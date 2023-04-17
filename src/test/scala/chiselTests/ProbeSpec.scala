@@ -77,7 +77,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
 
         class FooBundle extends Bundle {
           val bar = Bool()
-          val baz = Probe(UInt(8.W)) // FIXME not supported in FIRRTL, maybe want to flatten probes in Chisel?
+          val baz = UInt(8.W)
         }
 
         val io = IO(new Bundle {
@@ -111,6 +111,36 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
       "io.y.bar <= io.a.bar"
     )
   }
+
+  "Probe of a probe type" should "fail" in {
+    val exc = intercept[chisel3.ChiselException] {
+      ChiselStage.emitCHIRRTL(
+        new Module {
+          val a = Output(RWProbe(Probe(Bool())))
+        },
+        Array("--throw-on-first-error")
+      )
+    }
+    exc.getMessage should be("Cannot probe a probe.")
+  }
+
+  // "Probes of aggregates containing probes" should "fail" in {
+  //   val chirrtl = ChiselStage.emitCHIRRTL(
+  //     new Module {
+
+  //       class FooBundle extends Bundle {
+  //         val bar = Probe(UInt(8.W))
+  //       }
+
+  //       val foo = new FooBundle
+  //       val probeFoo = ProbeValue(foo)
+  //     },
+  //     Array("--full-stacktrace")
+  //   )
+
+  //   println(chirrtl)
+  //   // FIXME
+  // }
 
   "Probes" should "be able to access vector subindices" in {
     val chirrtl = ChiselStage.emitCHIRRTL(
