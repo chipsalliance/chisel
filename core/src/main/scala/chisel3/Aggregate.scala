@@ -81,17 +81,6 @@ sealed abstract class Aggregate extends Data {
     }
   }
 
-  // Emits the FIRRTL `this <- that`, or `this is invalid` if that == DontCare
-  private[chisel3] def firrtlPartialConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
-    // If the source is a DontCare, generate a DefInvalid for the sink,
-    //  otherwise, issue a Partial Connect.
-    if (that == DontCare) {
-      pushCommand(DefInvalid(sourceInfo, lref))
-    } else {
-      pushCommand(PartialConnect(sourceInfo, lref, Node(that)))
-    }
-  }
-
   override def do_asUInt(implicit sourceInfo: SourceInfo): UInt = {
     SeqUtils.do_asUInt(flatten.map(_.asUInt))
   }
@@ -183,6 +172,11 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
       case _ => stringAccessor(s"${sample_element.cloneType}[$length]")
     }
   }
+
+  /** Give this Vec a default, stable desired name using the supplied `Data`
+    * generator's `typeName`
+    */
+  override def typeName = s"Vec${length}_${gen.typeName}"
 
   private[chisel3] override def typeEquivalent(that: Data): Boolean = that match {
     case that: Vec[T] =>
@@ -772,7 +766,8 @@ object VecInit extends SourceInfoDoc {
 
   /** @group SourceInfoTransformMacro */
   def do_fill[T <: Data](n: Int)(gen: => T)(implicit sourceInfo: SourceInfo): Vec[T] =
-    apply(Seq.fill(n)(gen))
+    if (n == 0) { Wire(Vec(0, gen.cloneTypeFull)) }
+    else { apply(Seq.fill(n)(gen)) }
 
   /** Creates a new 2D [[Vec]] of length `n by m` composed of the result of the given
     * function applied to an element of data type T.

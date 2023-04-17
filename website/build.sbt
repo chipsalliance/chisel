@@ -22,7 +22,7 @@ lazy val micrositeSettings = Seq(
   micrositeName := "Chisel/FIRRTL",
   micrositeDescription := "Chisel/FIRRTL\nHardware Compiler Framework",
   micrositeUrl := "https://chipsalliance.github.io/",
-  micrositeBaseUrl := "chisel",
+  micrositeBaseUrl := "",
   micrositeConfigYaml := ConfigYml(
     yamlCustomProperties = Map("plugins" -> Seq("jekyll-redirect-from"))
   ),

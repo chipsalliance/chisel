@@ -6,10 +6,10 @@ import firrtl.AnnotationSeq
 import firrtl.options.{Dependency, Phase, StageOptions}
 import firrtl.options.Viewer.view
 
-import chisel3.internal.firrtl.{Emitter => OldEmitter}
-import chisel3.stage.{ChiselCircuitAnnotation, ChiselOptions}
+import chisel3.stage.{ChiselCircuitAnnotation, ChiselOptions, CircuitSerializationAnnotation}
+import CircuitSerializationAnnotation.FirrtlFileFormat
 
-import java.io.{File, FileWriter}
+import java.io.{BufferedOutputStream, File, FileOutputStream}
 
 /** Emit a [[chisel3.stage.ChiselCircuitAnnotation]] to a file if a [[chisel3.stage.ChiselOutputFileAnnotation]] is
   * present.
@@ -35,14 +35,13 @@ class Emitter extends Phase {
 
     annotations.flatMap {
       case a: ChiselCircuitAnnotation if copts.outputFile.isDefined =>
-        val file = new File(sopts.getBuildFileName(copts.outputFile.get, Some(".fir")))
-        val emitted = OldEmitter.emit(a.circuit)
-        val w = new FileWriter(file)
-        w.write(emitted)
-        w.close()
+        val filename = sopts.getBuildFileName(copts.outputFile.get, Some(".fir"))
+        val csa = CircuitSerializationAnnotation(a.circuit, filename, FirrtlFileFormat)
+        csa.doWriteToFile(new File(filename), Nil)
         Some(a)
       case a => Some(a)
     }
+    annotations
   }
 
 }

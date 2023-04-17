@@ -161,8 +161,6 @@ private[chisel3] object Converter {
       )
     case Connect(info, loc, exp) =>
       Some(fir.Connect(convert(info), convert(loc, ctx, info), convert(exp, ctx, info)))
-    case PartialConnect(info, loc, exp) =>
-      Some(fir.PartialConnect(convert(info), convert(loc, ctx, info), convert(exp, ctx, info)))
     case Attach(info, locs) =>
       Some(fir.Attach(convert(info), locs.map(l => convert(l, ctx, info))))
     case DefInvalid(info, arg) =>
@@ -333,19 +331,36 @@ private[chisel3] object Converter {
 
   def extractType(data: Data, info: SourceInfo): fir.Type = extractType(data, false, info)
 
-  def extractType(data: Data, clearDir: Boolean, info: SourceInfo, checkProbe: Boolean = true): fir.Type = {
-    if (checkProbe && data.probeInfo.nonEmpty) {
+// <<<<<<< HEAD
+//   def extractType(data: Data, clearDir: Boolean, info: SourceInfo, checkProbe: Boolean = true): fir.Type = {
+//     if (checkProbe && data.probeInfo.nonEmpty) {
+//       if (data.probeInfo.get.writable) {
+//         fir.RWProbeType(extractType(data, clearDir, info, false))
+//       } else {
+//         fir.ProbeType(extractType(data, clearDir, info, false))
+//       }
+//     } else {
+//       extractTypeImpl(data, clearDir, info)
+//     }
+//   }
+
+//   def extractTypeImpl(data: Data, clearDir: Boolean, info: SourceInfo): fir.Type = data match {
+// =======
+  def extractType(
+    data:       Data,
+    clearDir:   Boolean,
+    info:       SourceInfo,
+    checkProbe: Boolean = true,
+    checkConst: Boolean = true
+  ): fir.Type = data match {
+    case _ if (checkProbe && data.probeInfo.nonEmpty) =>
       if (data.probeInfo.get.writable) {
         fir.RWProbeType(extractType(data, clearDir, info, false))
       } else {
         fir.ProbeType(extractType(data, clearDir, info, false))
       }
-    } else {
-      extractTypeImpl(data, clearDir, info)
-    }
-  }
-
-  def extractTypeImpl(data: Data, clearDir: Boolean, info: SourceInfo): fir.Type = data match {
+    case _ if (checkConst && data.isConst) => fir.ConstType(extractType(data, clearDir, info, false))
+// >>>>>>> 64bbd9ff90a51d552a71e37408f3655a73fb979d
     case _: Clock      => fir.ClockType
     case _: AsyncReset => fir.AsyncResetType
     case _: ResetType  => fir.ResetType
@@ -417,11 +432,11 @@ private[chisel3] object Converter {
   }
 
   def convert(circuit: Circuit): fir.Circuit =
-    fir.Circuit(fir.NoInfo, circuit.components.map(convert), circuit.name, circuit.firrtlAnnotations.toSeq)
+    fir.Circuit(fir.NoInfo, circuit.components.map(convert), circuit.name)
 
   // TODO Unclear if this should just be the default
   def convertLazily(circuit: Circuit): fir.Circuit = {
     val lazyModules = LazyList() ++ circuit.components
-    fir.Circuit(fir.NoInfo, lazyModules.map(convert), circuit.name, circuit.firrtlAnnotations.toSeq)
+    fir.Circuit(fir.NoInfo, lazyModules.map(convert), circuit.name)
   }
 }

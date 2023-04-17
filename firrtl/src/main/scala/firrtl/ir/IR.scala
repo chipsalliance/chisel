@@ -3,6 +3,8 @@
 package firrtl
 package ir
 
+import firrtl.annotations.Annotation
+
 import dataclass.{data, since}
 import org.apache.commons.text.translate.{AggregateTranslator, JavaUnicodeEscaper, LookupTranslator}
 
@@ -280,10 +282,6 @@ object Block {
 }
 
 case class Block(stmts: Seq[Statement]) extends Statement with UseSerializer
-case class PartialConnect(info: Info, loc: Expression, expr: Expression)
-    extends Statement
-    with HasInfo
-    with UseSerializer
 case class Connect(info: Info, loc: Expression, expr: Expression) extends Statement with HasInfo with UseSerializer
 case class IsInvalid(info: Info, expr: Expression) extends Statement with HasInfo with UseSerializer
 case class Attach(info: Info, exprs: Seq[Expression]) extends Statement with HasInfo with UseSerializer
@@ -464,6 +462,9 @@ abstract class AggregateType extends Type
 
 case class ProbeType(underlying: Type) extends Type with UseSerializer
 case class RWProbeType(underlying: Type) extends Type with UseSerializer
+
+case class ConstType(underlying: Type) extends Type with UseSerializer
+
 case class UIntType(width: Width) extends GroundType with UseSerializer
 case class SIntType(width: Width) extends GroundType with UseSerializer
 
@@ -562,7 +563,6 @@ case class IntModule(
     extends DefModule
     with UseSerializer
 
-case class Circuit(info: Info, modules: Seq[DefModule], main: String, annotations: AnnotationSeq)
-    extends FirrtlNode
-    with HasInfo
-    with UseSerializer
+case class Circuit(info: Info, modules: Seq[DefModule], main: String) extends FirrtlNode with HasInfo with UseSerializer
+
+case class CircuitWithAnnos(circuit: Circuit, annotations: Seq[Annotation]) extends FirrtlNode with UseSerializer
