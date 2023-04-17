@@ -55,6 +55,8 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt, sourceInf
 
   if (t.isConst) Builder.error("Mem type cannot be const.")(sourceInfo)
 
+  requireNoProbeTypeModifier(t, "Cannot make a Mem of a Chisel type with a probe modifier.")(sourceInfo)
+
   _parent.foreach(_.addId(this))
 
   // if the memory is created in a scope with an implicit clock (-> clockInst is defined), we will perform checks that

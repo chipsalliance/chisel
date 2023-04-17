@@ -151,4 +151,65 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
     // )
   }
 
+  "Wire() of a probe" should "fail" in {
+    val exc = intercept[chisel3.ChiselException] {
+      ChiselStage.emitCHIRRTL(
+        new Module {
+          val w = Wire(Probe(Bool()))
+        },
+        Array("--throw-on-first-error")
+      )
+    }
+    exc.getMessage should be("Cannot make a wire of a Chisel type with a probe modifier.")
+  }
+
+  "WireInit of a probe" should "fail" in {
+    val exc = intercept[chisel3.ChiselException] {
+      ChiselStage.emitCHIRRTL(
+        new Module {
+          val w = WireInit(RWProbe(Bool()), false.B)
+        },
+        Array("--throw-on-first-error")
+      )
+    }
+    exc.getMessage should be("Cannot make a wire of a Chisel type with a probe modifier.")
+  }
+
+  "Reg() of a probe" should "fail" in {
+    val exc = intercept[chisel3.ChiselException] {
+      ChiselStage.emitCHIRRTL(
+        new Module {
+          val w = Reg(RWProbe(Bool()))
+        },
+        Array("--throw-on-first-error")
+      )
+    }
+    exc.getMessage should be("Cannot make a register of a Chisel type with a probe modifier.")
+  }
+
+  "RegInit of a probe" should "fail" in {
+    val exc = intercept[chisel3.ChiselException] {
+      ChiselStage.emitCHIRRTL(
+        new Module {
+          val w = RegInit(Probe(Bool()), false.B)
+        },
+        Array("--throw-on-first-error")
+      )
+    }
+    exc.getMessage should be("Cannot make a register of a Chisel type with a probe modifier.")
+  }
+
+  "Memories of probes" should "fail" in {
+    val exc = intercept[chisel3.ChiselException] {
+      ChiselStage.emitCHIRRTL(
+        new Module {
+          val mem = SyncReadMem(1024, RWProbe(Vec(4, UInt(32.W))))
+        },
+        Array("--throw-on-first-error")
+      )
+    }
+    exc.getMessage should be("Cannot make a Mem of a Chisel type with a probe modifier.")
+  }
+
+  // TODO probes of const types -- const of probe type?
 }

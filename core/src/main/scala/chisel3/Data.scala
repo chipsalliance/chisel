@@ -431,22 +431,11 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     case (_: SampleElementBinding[_] | _: MemTypeBinding[_]) => false
   }.getOrElse(false)
 
-  private[chisel3] def topBindingOpt: Option[TopBinding] = {
-    val binding = _binding.flatMap {
-      case ChildBinding(parent) => parent.topBindingOpt
-      case bindingVal: TopBinding => Some(bindingVal)
-      case SampleElementBinding(parent) => parent.topBindingOpt
-      case _: MemTypeBinding[_] => None
-    }
-    if (_probeInfo.nonEmpty) {
-      require(binding.nonEmpty, "Probe is unbound.")
-      val bindingVal = binding.get
-      require(
-        bindingVal.isInstanceOf[PortBinding] || bindingVal.isInstanceOf[ProbeBinding],
-        s"Probes must be bound to ports, not ${binding.get}"
-      )
-    }
-    binding
+  private[chisel3] def topBindingOpt: Option[TopBinding] = _binding.flatMap {
+    case ChildBinding(parent) => parent.topBindingOpt
+    case bindingVal: TopBinding => Some(bindingVal)
+    case SampleElementBinding(parent) => parent.topBindingOpt
+    case _: MemTypeBinding[_] => None
   }
 
   private[chisel3] def topBinding: TopBinding = topBindingOpt.get
@@ -950,6 +939,8 @@ trait WireFactory {
     val prevId = Builder.idGen.value
     val t = source // evaluate once (passed by name)
     requireIsChiselType(t, "wire type")
+    requireNoProbeTypeModifier(t, "Cannot make a wire of a Chisel type with a probe modifier.")
+
     val x = if (!t.mustClone(prevId)) t else t.cloneTypeFull
 
     // Bind each element of x to being a Wire
