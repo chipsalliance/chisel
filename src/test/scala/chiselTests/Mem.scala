@@ -243,6 +243,101 @@ class MemReadWriteTester extends BasicTester {
   }
 }
 
+class MemMaskedReadWriteTester extends BasicTester {
+  val (cnt, _) = Counter(true.B, 11)
+  val mem = SyncReadMem(2, Vec(4, UInt(8.W)))
+
+  // The address to write to, alternating between 0 and 1 each cycle
+  val address = Wire(UInt())
+  address := DontCare
+
+  // The data to write into the read-write port
+  val wdata = Wire(Vec(4, UInt(8.W)))
+  wdata := DontCare
+
+  // The bytemask used for masking readWrite
+  val mask = Wire(Vec(4, Bool()))
+  mask := DontCare
+
+  // Enable signal
+  val enable = Wire(Bool())
+  enable := true.B // By default, memory access is on
+
+  // Write signal
+  val isWrite = Wire(Bool())
+  isWrite := false.B // By default, writes are off
+
+  val rdata = mem.readWrite(address, wdata, mask, enable, isWrite)
+
+  switch(cnt) {
+    is(0.U) { // Cycle 1: Write (1.U, 2.U, 3.U, 4.U) with mask (1, 1, 1, 1) to address 0
+      address := 0.U
+      enable := true.B
+      isWrite := true.B
+      mask := VecInit.fill(4)(true.B)
+      wdata := VecInit(1.U, 2.U, 3.U, 4.U)
+    }
+    is(1.U) { // Cycle 2: Write (5.U, 6.U, 7.U, 8.U) with mask (1, 1, 1, 1) to address 1
+      address := 1.U
+      enable := true.B
+      isWrite := true.B
+      mask := VecInit.fill(4)(true.B)
+      wdata := VecInit(5.U, 6.U, 7.U, 8.U)
+    }
+    is(2.U) { // Cycle 3: Read from address 0 (data returned next cycle)
+      address := 0.U;
+      enable := true.B;
+      isWrite := false.B;
+    }
+    is(3.U) { // Cycle 4: Expect RDWR port to contain (1.U, 2.U, 3.U, 4.U), then read from address 1
+      assert(rdata === VecInit(1.U, 2.U, 3.U, 4.U))
+
+      address := 1.U;
+      enable := true.B;
+      isWrite := false.B;
+    }
+    is(4.U) { // Cycle 5: Expect rdata to contain (5.U, 6.U, 7.U, 8.U)
+      assert(rdata === VecInit(5.U, 6.U, 7.U, 8.U))
+    }
+    is(5.U) { // Cycle 6: Write (0.U, - , - , 0.U) with mask (1, 0, 0, 1) to address 0
+      address := 0.U
+      enable := true.B
+      isWrite := true.B
+      mask := VecInit(true.B, false.B, false.B, true.B)
+      // Bogus values for 2nd and 3rd indices to make sure they aren't actually written
+      wdata := VecInit(0.U, 100.U, 100.U, 0.U)
+    }
+    is(6.U) { // Cycle 7: Write (- , 0.U , 0.U , -) with mask (0, 1, 1, 0) to address 1
+      address := 1.U
+      enable := true.B
+      isWrite := true.B
+      mask := VecInit(false.B, true.B, true.B, false.B)
+      // Bogus values for 1st and 4th indices to make sure they aren't actually written
+      wdata := VecInit(100.U, 0.U, 0.U, 100.U)
+    }
+    is(7.U) { // Cycle 8: Read from address 0 (data returned next cycle)
+      address := 0.U;
+      enable := true.B;
+      isWrite := false.B;
+    }
+    is(8.U) { // Cycle 9: Expect RDWR port to contain (0.U, 2.U, 3.U, 0.U), then read from address 1
+      // NOT (0.U, 100.U, 100.U, 0.U)
+      assert(rdata === VecInit(0.U, 2.U, 3.U, 0.U))
+
+      address := 1.U;
+      enable := true.B;
+      isWrite := false.B;
+    }
+    is(9.U) { // Cycle 10: Expect rdata to contain (5.U, 0.U, 0.U, 8.U)
+      // NOT (100.U, 0.U, 0.U, 100.U)
+      assert(rdata === VecInit(5.U, 0.U, 0.U, 8.U))
+    }
+    is(10.U) { // Cycle 11: Stop
+      stop()
+    }
+  }
+}
+
 class MemorySpec extends ChiselPropSpec {
   property("Mem of Vec should work") {
     assertTesterPasses { new MemVecTester }
@@ -272,11 +367,19 @@ class MemorySpec extends ChiselPropSpec {
   property("SyncReadMems should be able to have an explicit number of read-write ports") {
     // Check if there is exactly one MemReadWrite port (TODO: extend to Nr/Nw?)
     val chirrtl = ChiselStage.emitCHIRRTL(new MemReadWriteTester)
-    println(chirrtl)
     chirrtl should include(s"rdwr mport rdata = mem[_rdata_T_1], clock")
 
     // Check read/write logic
     assertTesterPasses { new MemReadWriteTester }
+  }
+
+  property("SyncReadMem masked read-writes should work") {
+    // Check if there is exactly one MemReadWrite port (TODO: extend to Nr/Nw?)
+    val chirrtl = ChiselStage.emitCHIRRTL(new MemMaskedReadWriteTester)
+    chirrtl should include(s"rdwr mport rdata = mem[_rdata_T_1], clock")
+
+    // Check read/write logic
+    assertTesterPasses { new MemMaskedReadWriteTester }
   }
 
   property("Massive memories should be emitted in Verilog") {
