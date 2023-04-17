@@ -188,6 +188,33 @@ private class TrueDualPortMemory(addrW: Int, dataW: Int) extends RawModule {
   }
 }
 
+class MemReadWriteTester extends BasicTester {
+  val (cnt, _) = Counter(true.B, 5)
+  val mem = SyncReadMem(2, UInt(2.W))
+
+  // The address to write to, alternating between 0 and 1 each cycle
+  val address = cnt % 2.U
+
+  // The data to write into the read-write port
+  val wdata = Wire(UInt())
+  wdata := DontCare
+
+  // Write signal
+  val wenable = Wire(Bool())
+  wenable := false.B // By default, writes are off
+
+  // Create new read-write port, enabled on all cycles except the last
+  val rdata = mem.readWrite(address, wdata, cnt =/= 4.U, wenable)
+
+  switch(cnt) {
+    is(0.U) { wenable := true.B; wdata := 3.U } // Cycle 1: Address is 0, enable = true,  isWrite = true
+    is(1.U) { wenable := true.B; wdata := 2.U } // Cycle 2: Address is 1, enable = true,  isWrite = true
+    is(2.U) { assert(rdata === 3.U) } // Cycle 3: Address is 0, enable = true,  isWrite = false
+    is(3.U) { assert(rdata === 2.U) } // Cycle 4: Address is 1, enable = true,  isWrite = false
+    is(4.U) { stop() } // Cycle 5: Address is 0, enable = false, isWrite = false
+  }
+}
+
 class MemorySpec extends ChiselPropSpec {
   property("Mem of Vec should work") {
     assertTesterPasses { new MemVecTester }
@@ -212,6 +239,15 @@ class MemorySpec extends ChiselPropSpec {
 
   property("SyncReadMem should work with zero width entry") {
     assertTesterPasses { new SyncReadMemWithZeroWidthTester }
+  }
+
+  property("SyncReadMems should be able to have an explicit number of read-write ports") {
+    // Check read/write logic
+    assertTesterPasses { new MemReadWriteTester }
+
+    // Check if there is exactly one MemReadWrite port (TODO: extend to Nr/Nw?)
+    val chirrtl = ChiselStage.emitCHIRRTL(new MemReadWriteTester)
+    chirrtl should include(s"rdwr mport rdata = mem[_rdata_T_3], clock")
   }
 
   property("Massive memories should be emitted in Verilog") {

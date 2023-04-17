@@ -235,105 +235,6 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt, sourceInf
       when(cond) { port := datum }
   }
 
-  /** Creates a read-write accessor into the memory with dynamic addressing.
-    *
-    * @param idx memory element index to write into
-    * @param data new data to write
-    *
-    * @return The new read-write port of the memory
-    */
-  def readWrite(idx: UInt, data: T): T = readWrite_impl(idx, data, Builder.forcedClock, true)
-
-  /** Creates a read-write accessor into the memory with dynamic addressing.
-    *
-    * @param idx memory element index to write into
-    * @param data new data to write
-    * @param clock clock to bind to this accessor
-    *
-    * @return The value read from idx
-    */
-  def readWrite(idx: UInt, data: T, clock: Clock): T = readWrite_impl(idx, data, clock, true)
-
-  private def readWrite_impl(
-    idx:   UInt,
-    data:  T,
-    clock: Clock,
-    warn:  Boolean
-  ): T = {
-    if (warn && clockInst.isDefined && clock != clockInst.get) {
-      clockWarning(None, MemPortDirection.RDWR)
-    }
-    implicit val sourceInfo = UnlocatableSourceInfo
-    val port = makePort(UnlocatableSourceInfo, idx, MemPortDirection.RDWR, clock)
-    port := data
-
-    port
-  }
-
-  /** Creates a masked read-write accessor into the memory.
-    *
-    * @param idx memory element index to write into
-    * @param data new data to write
-    * @param mask write mask as a Seq of Bool: a write to the Vec element in
-    * memory is only performed if the corresponding mask index is true.
-    *
-    * @note this is only allowed if the memory's element data type is a Vec
-    */
-  def readWrite(
-    idx:  UInt,
-    data: T,
-    mask: Seq[Bool]
-  )(
-    implicit evidence: T <:< Vec[_]
-  ): T =
-    masked_readWrite_impl(idx, data, mask, Builder.forcedClock, true)
-
-  /** Creates a masked read-write accessor into the memory.
-    *
-    * @param idx memory element index to write into
-    * @param data new data to write
-    * @param mask write mask as a Seq of Bool: a write to the Vec element in
-    * memory is only performed if the corresponding mask index is true.
-    *
-    * @note this is only allowed if the memory's element data type is a Vec
-    */
-  def readWrite(
-    idx:   UInt,
-    data:  T,
-    mask:  Seq[Bool],
-    clock: Clock
-  )(
-    implicit evidence: T <:< Vec[_]
-  ): T =
-    masked_readWrite_impl(idx, data, mask, clock, true)
-
-  private def masked_readWrite_impl(
-    idx:   UInt,
-    data:  T,
-    mask:  Seq[Bool],
-    clock: Clock,
-    warn:  Boolean
-  )(
-    implicit evidence: T <:< Vec[_]
-  ): T = {
-    implicit val sourceInfo = UnlocatableSourceInfo
-    if (warn && clockInst.isDefined && clock != clockInst.get) {
-      clockWarning(None, MemPortDirection.RDWR)
-    }
-    val accessor = makePort(sourceInfo, idx, MemPortDirection.RDWR, clock).asInstanceOf[Vec[Data]]
-    val dataVec = data.asInstanceOf[Vec[Data]]
-    if (accessor.length != dataVec.length) {
-      Builder.error(s"Mem write data must contain ${accessor.length} elements (found ${dataVec.length})")
-    }
-    if (accessor.length != mask.length) {
-      Builder.error(s"Mem write mask must contain ${accessor.length} elements (found ${mask.length})")
-    }
-    for (((cond, port), datum) <- mask.zip(accessor).zip(dataVec))
-      when(cond) { port := datum }
-
-    accessor.asInstanceOf[T] // TODO: Should this be masked as well?
-  }
-
   private def makePort(
     sourceInfo: SourceInfo,
     idx:        UInt,
@@ -492,31 +393,50 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
   // note: we implement do_read(addr) for SyncReadMem in terms of do_read(addr, en) in order to ensure that
   //       `mem.read(addr)` will always behave the same as `mem.read(addr, true.B)`
 
-  def readWrite(idx: UInt, writeData: Data, en: Bool, isWrite: Bool): T = macro SourceInfoTransform.idxDataEnIswArg
+  /** Creates a read-write accessor into this SyncReadMem.
+    *
+    * @param idx memory element index to write into
+    * @param writeData new data to write
+    * @param enable enables access to the memory
+    * @param isWrite when enable is true, if this access is a write
+    *
+    * @return the memory port accessor
+    */
+  def readWrite(idx: UInt, writeData: T, en: Bool, isWrite: Bool): T = macro SourceInfoTransform.idxDataEnIswArg
 
   /** @group SourceInfoTransformMacro */
-  def do_readWrite(idx: UInt, writeData: Data, en: Bool, isWrite: Bool)(implicit sourceInfo: SourceInfo): T =
+  def do_readWrite(idx: UInt, writeData: T, en: Bool, isWrite: Bool)(implicit sourceInfo: SourceInfo): T =
     _readWrite_impl(idx, writeData, en, isWrite, Builder.forcedClock, true)
 
-  def readWrite(idx: UInt, writeData: Data, en: Bool, isWrite: Bool, clock: Clock): T =
+  /** Creates a read-write accessor into this SyncReadMem.
+    *
+    * @param idx memory element index to write into
+    * @param writeData new data to write
+    * @param enable enables access to the memory
+    * @param isWrite when enable is true, if this access is a write
+    * @param clock clock to bind to this accessor
+    *
+    * @return the memory port accessor
+    */
+  def readWrite(idx: UInt, writeData: T, en: Bool, isWrite: Bool, clock: Clock): T =
     macro SourceInfoTransform.idxDataEnIswClockArg
 
   /** @group SourceInfoTransformMacro */
   def do_readWrite(
-    idx:       UInt,
-    writeData: Data,
-    en:        Bool,
-    isWrite:   Bool,
-    clock:     Clock
+    idx:     UInt,
+    data:    T,
+    en:      Bool,
+    isWrite: Bool,
+    clock:   Clock
   )(
     implicit sourceInfo: SourceInfo
   ): T =
-    _readWrite_impl(idx, writeData, en, isWrite, clock, true)
+    _readWrite_impl(idx, data, en, isWrite, clock, true)
 
   /** @group SourceInfoTransformMacro */
   private def _readWrite_impl(
     addr:    UInt,
-    data:    Data,
+    data:    T,
     enable:  Bool,
     isWrite: Bool,
     clock:   Clock,
@@ -526,7 +446,8 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
   ): T = {
     val a = Wire(UInt())
     a := DontCare
-    var port: Option[T] = None
+
+    var port: Option[T] = None //super.do_apply_impl(a, clock, MemPortDirection.RDWR, warn)
     when(enable) {
       a := addr
       port = Some(super.do_apply_impl(a, clock, MemPortDirection.RDWR, warn))
