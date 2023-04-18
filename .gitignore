@@ -18,3 +18,4 @@ test_run_dir
 .metals
 .bloop
 metals.sbt
+version.txt
