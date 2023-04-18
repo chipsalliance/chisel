@@ -540,7 +540,7 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
     *     val rdata = Output(UInt(width.W))
     *   })
     *
-    *   val mem = SyncReadMem(2, UInt(width.W))
+    *   val mem = SyncReadMem(2, Vec(2, UInt(width.W)))
     *   val rwPort = mem.readWrite(io.address, io.wdata, io.mask, io.enable, io.isWrite)
     *   io.rdata := rwPort
     * }
