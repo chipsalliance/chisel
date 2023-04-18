@@ -400,9 +400,11 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
     * @param idx memory element index to write into
     * @param writeData new data to write
     * @param enable enables access to the memory
-    * @param isWrite when enable is true, if this access is a write
+    * @param isWrite performs a write instead of a read when enable is true; the return
+    * value becomes undefined when this parameter is true
     *
-    * @return the memory port accessor
+    * @return The value of the memory at idx when enable is true and isWrite is false,
+    * or an undefined value otherwise.
     *
     * @example Controlling a read/write port with IO signals
     * {{{
@@ -463,7 +465,7 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
     * @param writeData new data to write
     * @param enable enables access to the memory
     * @param isWrite performs a write instead of a read when enable is true; the return
-    * value becomes undefined when isWrite is true
+    * value becomes undefined when this parameter is true
     * @param clock clock to bind to this read-write port
     *
     * @return The value of the memory at idx when enable is true and isWrite is false,
@@ -519,7 +521,10 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
     * memory is only performed if the corresponding mask index is true.
     * @param enable enables access to the memory
     * @param isWrite performs a write instead of a read when enable is true; the return
-    * value becomes undefined when isWrite is true
+    * value becomes undefined when this parameter is true
+    *
+    * @return The read Vec value of the memory at idx when enable is true and isWrite is false,
+    * or an undefined value otherwise.
     *
     * @example Controlling a read/masked write port with IO signals
     * {{{
@@ -578,8 +583,6 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
     * }
     * }}}
     *
-    * @return The read Vec value of the memory at idx when enable is true and isWrite is false,
-    * or an undefined value otherwise.
     * @note this is only allowed if the memory's element data type is a Vec
     */
   def readWrite(
@@ -602,11 +605,12 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
     * memory is only performed if the corresponding mask index is true.
     * @param enable enables access to the memory
     * @param isWrite performs a write instead of a read when enable is true; the return
-    * value becomes undefined when isWrite is true
+    * value becomes undefined when this parameter is true
     * @param clock clock to bind to this read-write port
     *
     * @return The read Vec value of the memory at idx when enable is true and isWrite is false,
     * or an undefined value otherwise.
+    *
     * @note this is only allowed if the memory's element data type is a Vec
     */
   def readWrite(
