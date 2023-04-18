@@ -10,7 +10,7 @@ m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
 ga('create', 'UA-145179088-1' , 'auto');
 ga('send', 'pageview');
       </script></head><body><header id="site-header"><div class="navbar-wrapper"><div class="container"><div class="row"><div class="col-xs-3"><a href="/" class="brand"><div class="icon-wrapper"><span>Chisel/FIRRTL</span></div></a></div><div class="col-xs-9"><nav class="text-right"><ul class=""><li class="search-nav hidden-xs"><div id="search-dropdown"><label><i class="fa fa-search"></i>Search</label><input id="search-bar" type="text" placeholder="Enter keywords here..." onclick="displayToggleSearch(event)" /><ul id="search-dropdown-content" class="dropdown dropdown-content"></ul></div></li><li><a class="transparent-on-hover" href="https://github.com/chipsalliance/chisel" target="_blank" rel="noopener noreferrer"><i class="fa fa-github"></i><span class="hidden-sm hidden-xs">GitHub</span></a></li><li><a class="transparent-on-hover" href="chisel3/"><i class="fa fa-file-text"></i><span class="hidden-sm hidden-xs">Documentation</span></a></li></ul></nav></div></div></div></div><div class="jumbotron"><div class="container"><h1 class="text-center">Chisel/FIRRTL
-Hardware Compiler Framework</h1><h2></h2><p class="text-center"><a href="https://github.com/chipsalliance/chisel" target="_blank" rel="noopener noreferrer" class="btn btn-outline-inverse">View on GitHub</a></p></div></div><div id="horizontal-menu"><ul class="horizontal-nav"><li><a class="" href="/chisel3/">Chisel3</a></li><li><a class="" href="/community.html">Community</a></li></ul></div></header><main id="site-main"><section class="use"><div class="container"><div id="content"><p><img src="docs/src/images/chisel_logo.svg?sanitize=true" alt="Chisel" /></p>
+Hardware Compiler Framework</h1><h2></h2><p class="text-center"><a href="https://github.com/chipsalliance/chisel" target="_blank" rel="noopener noreferrer" class="btn btn-outline-inverse">View on GitHub</a></p></div></div><div id="horizontal-menu"><ul class="horizontal-nav"><li><a class="" href="/chisel3/">Chisel3</a></li><li><a class="" href="/community.html">Community</a></li></ul></div></header><main id="site-main"><section class="use"><div class="container"><div id="content"><p><img src="https://raw.githubusercontent.com/chipsalliance/chisel/main/docs/src/images/chisel_logo.svg?sanitize=true" alt="Chisel" /></p>
 
 <p>The <strong>Constructing Hardware in a Scala Embedded Language</strong> (<a href="https://www.chisel-lang.org"><strong>Chisel</strong></a>) is an open-source hardware description language (HDL) used to describe digital electronics and circuits at the register-transfer level that facilitates <strong>advanced circuit generation and design reuse for both ASIC and FPGA digital logic designs</strong>.</p>
 
@@ -241,7 +241,7 @@ Follow the <a href="https://github.com/freechipsproject/chisel-template">chisel-
 For example, in SBT this could be expressed as:</p>
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// build.sbt</span>
 <span class="n">scalaVersion</span> <span class="o">:=</span> <span class="s">"2.13.10"</span>
-<span class="k">val</span> <span class="nv">chiselVersion</span> <span class="k">=</span> <span class="s">"5.0.0-M2"</span>
+<span class="k">val</span> <span class="nv">chiselVersion</span> <span class="k">=</span> <span class="s">"5.0.0-RC1"</span>
 <span class="nf">addCompilerPlugin</span><span class="o">(</span><span class="s">"org.chipsalliance"</span> <span class="o">%</span> <span class="s">"chisel-plugin"</span> <span class="o">%</span> <span class="n">chiselVersion</span> <span class="n">cross</span> <span class="nv">CrossVersion</span><span class="o">.</span><span class="py">full</span><span class="o">)</span>
 <span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"org.chipsalliance"</span> <span class="o">%%</span> <span class="s">"chisel"</span> <span class="o">%</span> <span class="n">chiselVersion</span>
 </code></pre></div></div>
@@ -249,10 +249,10 @@ For example, in SBT this could be expressed as:</p>
 <p>For Chisel prior to v5.0.0, Chisel was published using a different artifact name:</p>
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// build.sbt</span>
 <span class="n">scalaVersion</span> <span class="o">:=</span> <span class="s">"2.13.10"</span>
-<span class="nf">addCompilerPlugin</span><span class="o">(</span><span class="s">"edu.berkeley.cs"</span> <span class="o">%</span> <span class="s">"chisel3-plugin"</span> <span class="o">%</span> <span class="s">"3.6.0-RC3"</span> <span class="n">cross</span> <span class="nv">CrossVersion</span><span class="o">.</span><span class="py">full</span><span class="o">)</span>
-<span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"edu.berkeley.cs"</span> <span class="o">%%</span> <span class="s">"chisel3"</span> <span class="o">%</span> <span class="s">"3.6.0-RC3"</span>
+<span class="nf">addCompilerPlugin</span><span class="o">(</span><span class="s">"edu.berkeley.cs"</span> <span class="o">%</span> <span class="s">"chisel3-plugin"</span> <span class="o">%</span> <span class="s">"3.6.0"</span> <span class="n">cross</span> <span class="nv">CrossVersion</span><span class="o">.</span><span class="py">full</span><span class="o">)</span>
+<span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"edu.berkeley.cs"</span> <span class="o">%%</span> <span class="s">"chisel3"</span> <span class="o">%</span> <span class="s">"3.6.0"</span>
 <span class="c1">// We also recommend using chiseltest for writing unit tests</span>
-<span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"edu.berkeley.cs"</span> <span class="o">%%</span> <span class="s">"chiseltest"</span> <span class="o">%</span> <span class="s">"0.6.0-RC3"</span> <span class="o">%</span> <span class="s">"test"</span>
+<span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"edu.berkeley.cs"</span> <span class="o">%%</span> <span class="s">"chiseltest"</span> <span class="o">%</span> <span class="s">"0.6.0"</span> <span class="o">%</span> <span class="s">"test"</span>
 </code></pre></div></div>
 
 <h3 id="guide-for-new-contributors">Guide For New Contributors</h3>
@@ -278,8 +278,8 @@ For example, in SBT this could be expressed as:</p>
   <li><a href="https://gitter.im/freechipsproject/chisel3"><strong>Gitter</strong></a>, where you can ask questions or discuss anything Chisel</li>
   <li><a href="https://www.chisel-lang.org"><strong>Website (3.6 and earlier)</strong></a> (<a href="https://github.com/freechipsproject/www.chisel-lang.org/">source</a>)</li>
   <li><a href="https://chipsalliance.github.io/chisel"><strong>Website (main)</strong></a> (<a href="website">source</a>) (Note that this will replace the above after the Chisel 5 release)</li>
-  <li><a href="https://scastie.scala-lang.org/ozhen2KjQUeInsPwYtLztw"><strong>Scastie (v5.0.0-M2)</strong></a> - cannot generate Verilog (firtool does not work in Scastie)</li>
-  <li><a href="https://scastie.scala-lang.org/WDDigVD0QYW7QNJpTzWk0A"><strong>Scastie (v3.6.0-RC3)</strong></a> - generates Verilog with legacy Scala FIRRTL Compiler</li>
+  <li><a href="https://scastie.scala-lang.org/0jvtH89lRxuKSHDyOrpAZw"><strong>Scastie (v5.0.0-RC1)</strong></a> - cannot generate Verilog (firtool does not work in Scastie)</li>
+  <li><a href="https://scastie.scala-lang.org/1XICrlaZQs6ZvxpuKdFdDw"><strong>Scastie (v3.6.0)</strong></a> - generates Verilog with legacy Scala FIRRTL Compiler</li>
   <li><a href="http://www.asic-world.com/verilog/veritut.html"><strong>asic-world</strong></a> If you aren’t familiar with verilog, this is a good tutorial.</li>
 </ul>
 
@@ -336,7 +336,7 @@ Check that each is installed on your <code class="language-plaintext highlighter
 
 <p>To use the development version of Chisel (<code class="language-plaintext highlighter-rouge">master</code> branch), you will need to build from source and publish locally.
 The repository version can be found by running <code class="language-plaintext highlighter-rouge">sbt version</code>.
-As of the time of writing it was: <code class="language-plaintext highlighter-rouge">5.0.0-M2+26-04e1528c-SNAPSHOT</code>.</p>
+As of the time of writing it was: <code class="language-plaintext highlighter-rouge">5.0.0-RC1+2-64bbd9ff-SNAPSHOT</code>.</p>
 
 <p>To publish your version of Chisel to the local Ivy (sbt’s dependency manager) repository, run:</p>
 
@@ -348,7 +348,7 @@ If you need to un-publish your local copy of Chisel, remove the directory genera
 
 <p>In order to have your projects use this version of Chisel, you should update the <code class="language-plaintext highlighter-rouge">libraryDependencies</code> setting in your project’s build.sbt file to use the current version, for example:</p>
 
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">chiselVersion</span> <span class="k">=</span> <span class="s">"5.0.0-M2+26-04e1528c-SNAPSHOT"</span>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">chiselVersion</span> <span class="k">=</span> <span class="s">"5.0.0-RC1+2-64bbd9ff-SNAPSHOT"</span>
 <span class="nf">addCompilerPlugin</span><span class="o">(</span><span class="s">"org.chipsalliance"</span> <span class="o">%</span> <span class="s">"chisel-plugin"</span> <span class="o">%</span> <span class="n">chiselVersion</span> <span class="n">cross</span> <span class="nv">CrossVersion</span><span class="o">.</span><span class="py">full</span><span class="o">)</span>
 <span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"org.chipsalliance"</span> <span class="o">%%</span> <span class="s">"chisel"</span> <span class="o">%</span> <span class="n">chiselVersion</span>
 </code></pre></div></div>
@@ -390,15 +390,15 @@ If you need to un-publish your local copy of Chisel, remove the directory genera
 
 <p>We encourage Chisel users (as opposed to Chisel developers), to use the latest release version of Chisel.
 This <a href="https://github.com/freechipsproject/chisel-template">chisel-template</a> repository is kept up-to-date, depending on the most recent version of Chisel.
-The recommended version is also captured near the top of this README, and in the <a href="https://github.com/chipsalliance/chisel3/releases">Github releases</a> section of this repo.
+The recommended version is also captured near the top of this README, and in the <a href="https://github.com/chipsalliance/chisel/releases">Github releases</a> section of this repo.
 If you encounter an issue with a released version of Chisel, please file an issue on GitHub mentioning the Chisel version and provide a simple test case (if possible).
 Try to reproduce the issue with the associated latest minor release (to verify that the issue hasn’t been addressed).</p>
 
 <p>For more information on our versioning policy and what versions of the various Chisel ecosystem projects work together, see <a href="https://www.chisel-lang.org/chisel3/docs/appendix/versioning.html">Chisel Project Versioning</a>.</p>
 
 <p>If you’re developing a Chisel library (or <code class="language-plaintext highlighter-rouge">chisel3</code> itself), you’ll probably want to work closer to the tip of the development trunk.
-By default, the master branches of the chisel repositories are configured to build and publish their version of the code as <code class="language-plaintext highlighter-rouge">Z.Y-SNAPSHOT</code>.
-Updated SNAPSHOTs are publised on every push to master.
+By default, the main branch of the chisel repository is configured to build and publish its version of the code as <code class="language-plaintext highlighter-rouge">&lt;version&gt;+&lt;n&gt;-g&lt;commit hash&gt;-SNAPSHOT</code>.
+Updated SNAPSHOTs are publised on every push to main.
 You are encouraged to do your development against the latest SNAPSHOT, but note that neither API nor ABI compatibility is guaranteed so your code may break at any time.</p>
 
 <h3 id="roadmap">Roadmap</h3>
