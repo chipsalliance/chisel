@@ -1,4 +1,4 @@
-![Chisel](docs/src/images/chisel_logo.svg?sanitize=true)
+![Chisel](https://raw.githubusercontent.com/chipsalliance/chisel/main/docs/src/images/chisel_logo.svg?sanitize=true)
 
 The **Constructing Hardware in a Scala Embedded Language** ([**Chisel**](https://www.chisel-lang.org)) is an open-source hardware description language (HDL) used to describe digital electronics and circuits at the register-transfer level that facilitates **advanced circuit generation and design reuse for both ASIC and FPGA digital logic designs**.
 
@@ -221,7 +221,7 @@ For example, in SBT this could be expressed as:
 ```scala
 // build.sbt
 scalaVersion := "2.13.10"
-val chiselVersion = "5.0.0-M2"
+val chiselVersion = "5.0.0-RC1"
 addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full)
 libraryDependencies += "org.chipsalliance" %% "chisel" % chiselVersion
 ```
@@ -230,10 +230,10 @@ For Chisel prior to v5.0.0, Chisel was published using a different artifact name
 ```scala
 // build.sbt
 scalaVersion := "2.13.10"
-addCompilerPlugin("edu.berkeley.cs" % "chisel3-plugin" % "3.6.0-RC3" cross CrossVersion.full)
-libraryDependencies += "edu.berkeley.cs" %% "chisel3" % "3.6.0-RC3"
+addCompilerPlugin("edu.berkeley.cs" % "chisel3-plugin" % "3.6.0" cross CrossVersion.full)
+libraryDependencies += "edu.berkeley.cs" %% "chisel3" % "3.6.0"
 // We also recommend using chiseltest for writing unit tests
-libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % "0.6.0-RC3" % "test"
+libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % "0.6.0" % "test"
 ```
 
 ### Guide For New Contributors
@@ -256,8 +256,8 @@ These simulation-based verification tools are available for Chisel:
 * [**Gitter**](https://gitter.im/freechipsproject/chisel3), where you can ask questions or discuss anything Chisel
 * [**Website (3.6 and earlier)**](https://www.chisel-lang.org) ([source](https://github.com/freechipsproject/www.chisel-lang.org/))
 * [**Website (main)**](https://chipsalliance.github.io/chisel) ([source](website)) (Note that this will replace the above after the Chisel 5 release)
-* [**Scastie (v5.0.0-M2)**](https://scastie.scala-lang.org/ozhen2KjQUeInsPwYtLztw) - cannot generate Verilog (firtool does not work in Scastie)
-* [**Scastie (v3.6.0-RC3)**](https://scastie.scala-lang.org/WDDigVD0QYW7QNJpTzWk0A) - generates Verilog with legacy Scala FIRRTL Compiler
+* [**Scastie (v5.0.0-RC1)**](https://scastie.scala-lang.org/0jvtH89lRxuKSHDyOrpAZw) - cannot generate Verilog (firtool does not work in Scastie)
+* [**Scastie (v3.6.0)**](https://scastie.scala-lang.org/1XICrlaZQs6ZvxpuKdFdDw) - generates Verilog with legacy Scala FIRRTL Compiler
 * [**asic-world**](http://www.asic-world.com/verilog/veritut.html) If you aren't familiar with verilog, this is a good tutorial.
 
 If you are migrating from Chisel2, see [the migration guide](https://www.chisel-lang.org/chisel3/docs/appendix/chisel3-vs-chisel2.html).
@@ -313,7 +313,7 @@ sbt test
 
 To use the development version of Chisel (`master` branch), you will need to build from source and publish locally.
 The repository version can be found by running `sbt version`.
-As of the time of writing it was: `5.0.0-M2+26-04e1528c-SNAPSHOT`.
+As of the time of writing it was: `5.0.0-RC1+2-64bbd9ff-SNAPSHOT`.
 
 To publish your version of Chisel to the local Ivy (sbt's dependency manager) repository, run:
 
@@ -327,7 +327,7 @@ If you need to un-publish your local copy of Chisel, remove the directory genera
 In order to have your projects use this version of Chisel, you should update the `libraryDependencies` setting in your project's build.sbt file to use the current version, for example:
 
 ```scala
-val chiselVersion = "5.0.0-M2+26-04e1528c-SNAPSHOT"
+val chiselVersion = "5.0.0-RC1+2-64bbd9ff-SNAPSHOT"
 addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full)
 libraryDependencies += "org.chipsalliance" %% "chisel" % chiselVersion
 ```
@@ -363,15 +363,15 @@ Code that touches lots of APIs that are private to the `chisel3` package should 
 
 We encourage Chisel users (as opposed to Chisel developers), to use the latest release version of Chisel.
 This [chisel-template](https://github.com/freechipsproject/chisel-template) repository is kept up-to-date, depending on the most recent version of Chisel.
-The recommended version is also captured near the top of this README, and in the [Github releases](https://github.com/chipsalliance/chisel3/releases) section of this repo.
+The recommended version is also captured near the top of this README, and in the [Github releases](https://github.com/chipsalliance/chisel/releases) section of this repo.
 If you encounter an issue with a released version of Chisel, please file an issue on GitHub mentioning the Chisel version and provide a simple test case (if possible).
 Try to reproduce the issue with the associated latest minor release (to verify that the issue hasn't been addressed).
 
 For more information on our versioning policy and what versions of the various Chisel ecosystem projects work together, see [Chisel Project Versioning](https://www.chisel-lang.org/chisel3/docs/appendix/versioning.html).
 
 If you're developing a Chisel library (or `chisel3` itself), you'll probably want to work closer to the tip of the development trunk.
-By default, the master branches of the chisel repositories are configured to build and publish their version of the code as `Z.Y-SNAPSHOT`.
-Updated SNAPSHOTs are publised on every push to master.
+By default, the main branch of the chisel repository is configured to build and publish its version of the code as `<version>+<n>-g<commit hash>-SNAPSHOT`.
+Updated SNAPSHOTs are publised on every push to main.
 You are encouraged to do your development against the latest SNAPSHOT, but note that neither API nor ABI compatibility is guaranteed so your code may break at any time.
 
 ### Roadmap
