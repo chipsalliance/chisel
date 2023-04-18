@@ -17,6 +17,11 @@ ThisBuild / firtoolVersion := {
   }
 }
 
+val emitVersion = taskKey[Unit]("Write the version to version.txt")
+emitVersion := {
+  IO.write(new java.io.File("version.txt"), version.value)
+}
+
 val defaultVersions = Map(
   "firrtl" -> "edu.berkeley.cs" %% "firrtl" % "1.6-SNAPSHOT"
   // chiseltest intentionally excluded so that release automation does not try to set its version

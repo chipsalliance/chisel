@@ -147,13 +147,25 @@ jobs:
           name: website
           path: website.tar.gz
 
+  scala-cli-template:
+    name: Test Scala-CLI Template
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        # Need to fetch full history for deriving version
+        with:
+          fetch-depth: 0
+      - name: Build and Test Scala-CLI Template
+        uses: ./.github/workflows/build-scala-cli-template
+
   # Sentinel job to simplify how we specify which checks need to pass in branch
   # protection and in Mergify. This job checks that all jobs were successful.
   #
   # When adding new jobs, please add them to `needs` below
   check-tests:
     name: "check tests"
-    needs: [ci, integration, std, doc, website]
+    needs: [ci, integration, std, doc, website, scala-cli-template]
     runs-on: ubuntu-20.04
     if: success() # only run if all tests have passed
     outputs:
