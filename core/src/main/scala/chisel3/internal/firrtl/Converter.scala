@@ -331,21 +331,6 @@ private[chisel3] object Converter {
 
   def extractType(data: Data, info: SourceInfo): fir.Type = extractType(data, false, info)
 
-// <<<<<<< HEAD
-//   def extractType(data: Data, clearDir: Boolean, info: SourceInfo, checkProbe: Boolean = true): fir.Type = {
-//     if (checkProbe && data.probeInfo.nonEmpty) {
-//       if (data.probeInfo.get.writable) {
-//         fir.RWProbeType(extractType(data, clearDir, info, false))
-//       } else {
-//         fir.ProbeType(extractType(data, clearDir, info, false))
-//       }
-//     } else {
-//       extractTypeImpl(data, clearDir, info)
-//     }
-//   }
-
-//   def extractTypeImpl(data: Data, clearDir: Boolean, info: SourceInfo): fir.Type = data match {
-// =======
   def extractType(
     data:       Data,
     clearDir:   Boolean,
@@ -355,12 +340,11 @@ private[chisel3] object Converter {
   ): fir.Type = data match {
     case _ if (checkProbe && data.probeInfo.nonEmpty) =>
       if (data.probeInfo.get.writable) {
-        fir.RWProbeType(extractType(data, clearDir, info, false))
+        fir.RWProbeType(extractType(data, clearDir, info, false, checkConst))
       } else {
-        fir.ProbeType(extractType(data, clearDir, info, false))
+        fir.ProbeType(extractType(data, clearDir, info, false, checkConst))
       }
-    case _ if (checkConst && data.isConst) => fir.ConstType(extractType(data, clearDir, info, false))
-// >>>>>>> 64bbd9ff90a51d552a71e37408f3655a73fb979d
+    case _ if (checkConst && data.isConst) => fir.ConstType(extractType(data, clearDir, info, checkProbe, false))
     case _: Clock      => fir.ClockType
     case _: AsyncReset => fir.AsyncResetType
     case _: ResetType  => fir.ResetType
