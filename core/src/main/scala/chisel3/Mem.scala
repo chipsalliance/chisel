@@ -393,7 +393,9 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
   // note: we implement do_read(addr) for SyncReadMem in terms of do_read(addr, en) in order to ensure that
   //       `mem.read(addr)` will always behave the same as `mem.read(addr, true.B)`
 
-  /** Creates a read-write accessor into this SyncReadMem.
+  /** Generates an explicit read-write port for this SyncReadMem. Note that this does not infer
+    * port directionality based on connection semantics and the `when` context unlike SyncReadMem.apply(),
+    * so the behavior of the port must be controlled by changing the values of the input parameters.
     *
     * @param idx memory element index to write into
     * @param writeData new data to write
@@ -401,6 +403,52 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
     * @param isWrite when enable is true, if this access is a write
     *
     * @return the memory port accessor
+    *
+    * @example Controlling a read/write port with IO signals
+    * {{{
+    * class MyMemWrapper extends Module {
+    *   val width = 2
+    *
+    *   val io = IO(new Bundle {
+    *     val address = Input(UInt())
+    *     val wdata = Input(UInt(width.W))
+    *     val enable = Input(Bool())
+    *     val isWrite = Input(Bool())
+    *     val rdata = Output(UInt(width.W))
+    *   })
+    *
+    *   val mem = SyncReadMem(2, UInt(width.W))
+    *   val rwPort = mem.readWrite(io.address, io.wdata, io.enable, io.isWrite)
+    *   io.rdata := rwPort
+    * }
+    *
+    * class Top extends Module {
+    *   val mem = Module(new MyMemWrapper)
+    *   mem.io := DontCare
+    *
+    *   val rdata = Wire(UInt(2.W))
+    *   readData := DontCare
+    *
+    *   // Read from the memory port
+    *   when(doRead) {
+    *     mem.io.enable := true.B
+    *     mem.io.isWrite := false.B
+    *     mem.io.address := someAddress
+    *   }
+    *   // Read data will show up on the next cycle
+    *   when(timeToRead) {
+    *     readData := mem.io.rdata
+    *   }
+    *
+    *   // Write to the memory
+    *   when(doWrite) {
+    *     mem.io.enable := true.B
+    *     mem.io.isWrite := true.B
+    *     mem.io.address := anotherAddress
+    *     mem.io.wdata := 3.U
+    *   }
+    * }
+    * }}}
     */
   def readWrite(idx: UInt, writeData: T, en: Bool, isWrite: Bool): T = macro SourceInfoTransform.idxDataEnIswArg
 
@@ -408,15 +456,18 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
   def do_readWrite(idx: UInt, writeData: T, en: Bool, isWrite: Bool)(implicit sourceInfo: SourceInfo): T =
     _readWrite_impl(idx, writeData, en, isWrite, Builder.forcedClock, true)
 
-  /** Creates a read-write accessor into this SyncReadMem.
+  /** Generates an explicit read-write port for this SyncReadMem, using a clock that may be
+    * different from the implicit clock.
     *
     * @param idx memory element index to write into
     * @param writeData new data to write
     * @param enable enables access to the memory
-    * @param isWrite when enable is true, if this access is a write
-    * @param clock clock to bind to this accessor
+    * @param isWrite performs a write instead of a read when enable is true; the return
+    * value becomes undefined when isWrite is true
+    * @param clock clock to bind to this read-write port
     *
-    * @return the memory port accessor
+    * @return The value of the memory at idx when enable is true and isWrite is false,
+    * or an undefined value otherwise.
     */
   def readWrite(idx: UInt, writeData: T, en: Bool, isWrite: Bool, clock: Clock): T =
     macro SourceInfoTransform.idxDataEnIswClockArg
@@ -459,16 +510,76 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
     port.get
   }
 
-  /** Creates a masked read-write accessor into this SyncReadMem.
+  /** Generates an explicit read-write port for this SyncReadMem, with a bytemask for
+    * performing partial writes to a Vec element.
     *
     * @param idx memory element index to write into
     * @param writeData new data to write
     * @param mask the write mask as a Seq of Bool: a write to the Vec element in
     * memory is only performed if the corresponding mask index is true.
     * @param enable enables access to the memory
-    * @param isWrite when enable is true, if this access is a write
+    * @param isWrite performs a write instead of a read when enable is true; the return
+    * value becomes undefined when isWrite is true
     *
-    * @return the memory port accessor
+    * @example Controlling a read/masked write port with IO signals
+    * {{{
+    * class MyMaskedMemWrapper extends Module {
+    *   val width = 2
+    *
+    *   val io = IO(new Bundle {
+    *     val address = Input(UInt())
+    *     val wdata = Input(UInt(width.W))
+    *     val mask = Input(Vec(2, Bool()))
+    *     val enable = Input(Bool())
+    *     val isWrite = Input(Bool())
+    *     val rdata = Output(UInt(width.W))
+    *   })
+    *
+    *   val mem = SyncReadMem(2, UInt(width.W))
+    *   val rwPort = mem.readWrite(io.address, io.wdata, io.mask, io.enable, io.isWrite)
+    *   io.rdata := rwPort
+    * }
+    *
+    * class Top extends Module {
+    *   val mem = Module(new MyMemWrapper)
+    *   mem.io := DontCare
+    *
+    *   val rdata = Wire(UInt(2.W))
+    *   readData := DontCare
+    *
+    *   // Read from the memory port
+    *   when(doRead) {
+    *     mem.io.enable := true.B
+    *     mem.io.isWrite := false.B
+    *     mem.io.address := someAddress
+    *   }
+    *   // Read data will show up on the next cycle
+    *   when(timeToRead) {
+    *     readData := mem.io.rdata
+    *   }
+    *
+    *   // Write to all Vec entries at a specific address in the memory
+    *   when(doNormalWrite) {
+    *     mem.io.enable := true.B
+    *     mem.io.isWrite := true.B
+    *     mem.io.mask := VecInit(true.B, true.B)
+    *     mem.io.address := anotherAddress
+    *     mem.io.wdata := VecInit(2.U, 3.U)
+    *   }
+    *
+    *   // Write to the memory with a partial bytemask
+    *   when(doMaskedWrite) {
+    *     mem.io.enable := true.B
+    *     mem.io.isWrite := true.B
+    *     mem.io.mask := VecInit(true.B, false.B) // Write only the first element of the vec at `anotherAddress`
+    *     mem.io.address := anotherAddress
+    *     mem.io.wdata := VecInit(0.U, 0.U)
+    *   }
+    * }
+    * }}}
+    *
+    * @return The read Vec value of the memory at idx when enable is true and isWrite is false,
+    * or an undefined value otherwise.
     * @note this is only allowed if the memory's element data type is a Vec
     */
   def readWrite(
@@ -481,17 +592,21 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
     implicit evidence: T <:< Vec[_]
   ): T = masked_readWrite_impl(idx, writeData, mask, en, isWrite, Builder.forcedClock, true)
 
-  /** Creates a masked read-write accessor into this SyncReadMem.
+  /** Generates an explicit read-write port for this SyncReadMem, with a bytemask for
+    * performing partial writes to a Vec element and a clock that may be different from
+    * the implicit clock.
     *
     * @param idx memory element index to write into
     * @param writeData new data to write
     * @param mask the write mask as a Seq of Bool: a write to the Vec element in
     * memory is only performed if the corresponding mask index is true.
     * @param enable enables access to the memory
-    * @param isWrite when enable is true, if this access is a write
-    * @param clock clock to bind to this accessor
+    * @param isWrite performs a write instead of a read when enable is true; the return
+    * value becomes undefined when isWrite is true
+    * @param clock clock to bind to this read-write port
     *
-    * @return the memory port accessor
+    * @return The read Vec value of the memory at idx when enable is true and isWrite is false,
+    * or an undefined value otherwise.
     * @note this is only allowed if the memory's element data type is a Vec
     */
   def readWrite(
