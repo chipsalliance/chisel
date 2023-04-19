@@ -24,6 +24,15 @@ object DataMirror {
     }
   }
 
+  def rootData(d: Data): Data = {
+    requireIsHardware(d)
+    d.binding.get match {
+      case _: TopBinding => d
+      case ChildBinding(p) => rootData(p)
+      case _               => throwException("Unexpected")
+    }
+  }
+
   /** Check if a given `Data` is an IO port
     * @param x the `Data` to check
     * @return `true` if x is an IO port, `false` otherwise

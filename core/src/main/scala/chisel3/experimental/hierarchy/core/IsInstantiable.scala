@@ -7,7 +7,12 @@ package chisel3.experimental.hierarchy.core
   *
   * This trait indicates whether a class can be returned from an Instance.
   */
-trait IsInstantiable
+trait IsInstantiable {
+
+  /** Used to record which val's are marked @public, so we can ensure all IO's are @public'd */
+  def _all_at_public: Option[Seq[Any]] = None
+  def _clock_reset:   Seq[Any] = Nil
+}
 
 object IsInstantiable {
   implicit class IsInstantiableExtensions[T <: IsInstantiable](i: T) {

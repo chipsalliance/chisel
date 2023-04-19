@@ -20,7 +20,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val definition = Definition(new AddOne)
         val i0 = Instance(definition)
       }
-      val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
+      val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top, Array("--full-stacktrace"))
       chirrtl should include("inst i0 of AddOne")
     }
     it("(0.b): name of an instanceclone should not error") {
@@ -413,6 +413,31 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       val (chirrtl, _) = getFirrtlAndAnnos(new AddTwoNestedInstantiableDataWrapper(4))
       exactly(3, chirrtl.serialize.split('\n')) should include("i1.in <= i0.out")
     }
+    it(
+      "(3.r): should require all IOs to be marked @public, if called .toDefinition, or .toInstance, or Definition.apply"
+    ) {
+      @instantiable
+      class Child extends Module {
+        @public val in = IO(Flipped(Bool()))
+        val out = IO(Bool()) //Whoopsie
+      }
+      class Top extends Module {
+        val m = Module(new Child)
+      }
+      class Top1 extends Module {
+        val m = Module(new Child).toDefinition
+      }
+      class Top2 extends Module {
+        val m = Module(new Child).toInstance
+      }
+      class Top3 extends Module {
+        val m = Definition(new Child)
+      }
+      getFirrtlAndAnnos(new Top()) // No exception
+      intercept[Exception] { getFirrtlAndAnnos(new Top1()) }
+      intercept[Exception] { getFirrtlAndAnnos(new Top2()) }
+      intercept[Exception] { getFirrtlAndAnnos(new Top3()) }
+    }
   }
   describe("(4) toInstance") {
     it("(4.a): should work on modules") {
@@ -650,7 +675,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
     it("(7.a): should work on simple Views") {
       @instantiable
       class MyModule extends RawModule {
-        val in = IO(Input(UInt(8.W)))
+        @public val in = IO(Input(UInt(8.W)))
         @public val out = IO(Output(UInt(8.W)))
         val sum = in + 1.U
         out := sum + 1.U

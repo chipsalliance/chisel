@@ -205,6 +205,21 @@ package object dataview {
     elt #:: rec(elt)
   }
 
+  // Get all original datas, recursively if an aggregate
+  private[chisel3] def unView(elt: Data): LazyList[Data] = {
+    def rec(d: Data): LazyList[Data] = d.topBindingOpt match {
+      case Some(ViewBinding(target)) => rec(target)
+      case Some(avb: AggregateViewBinding) =>
+        avb.childMap.get(d) match {
+          case None => LazyList.empty[Data] ++ avb.childMap.values.flatMap(rec)
+          case Some(e: Data) => rec(e)
+        }
+      case Some(x) => LazyList(reflect.DataMirror.rootData(d))
+      case None    => LazyList.empty
+    }
+    rec(elt)
+  }
+
   // Safe for all Data
   private[chisel3] def isView(d: Data): Boolean = d._parent.contains(ViewParent)
 

@@ -12,6 +12,7 @@ private[chisel3] object instantiableMacro {
     import c.universe._
     def processBody(stats: Seq[Tree]): (Seq[Tree], Iterable[Tree]) = {
       val extensions = scala.collection.mutable.ArrayBuffer.empty[Tree]
+      val refs = scala.collection.mutable.ArrayBuffer.empty[Tree]
       extensions += q"implicit val mg = new chisel3.internal.MacroGenerated{}"
       // Note the triple `_` prefixing `module` is to avoid conflicts if a user marks a 'val module'
       //  with @public; in this case, the lookup code is ambiguous between the generated `def module`
@@ -30,12 +31,16 @@ private[chisel3] object instantiableMacro {
                 Nil
               case aVal: ValDef =>
                 extensions += atPos(aVal.pos)(q"def ${aVal.name} = ___module._lookup(_.${aVal.name})")
+                refs += atPos(aVal.pos)(q"${aVal.name}")
                 if (aVal.name.toString == aVal.children.last.toString) Nil else Seq(aVal)
               case other => Seq(other)
             }
           case other => Seq(other)
         }
-      }
+      } ++ Seq(
+        q"override def _all_at_public: Option[Seq[Any]] = Some(Seq(..$refs) ++ super._all_at_public.getOrElse(Nil))"
+      )
+
       (resultStats, extensions)
     }
     val result = {
@@ -75,6 +80,7 @@ private[chisel3] object instantiableMacro {
             tpname
           )
       }
+
       val newObj = objOpt match {
         case None => q"""object ${tpname.toTermName} { ..$implicitClzs } """
         case Some(obj @ q"$mods object $tname extends { ..$earlydefns } with ..$parents { $self => ..$body }") =>
