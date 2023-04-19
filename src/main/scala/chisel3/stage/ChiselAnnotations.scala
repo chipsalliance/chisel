@@ -153,7 +153,7 @@ object ChiselGeneratorAnnotation extends HasShellOptions {
     * @throws firrtl.options.OptionsException if the module name is not found or if no parameterless constructor for
     * that Module is found.
     */
-  def apply(name: String, parameters: Any): ChiselGeneratorAnnotation = {
+  def apply(name: String, parameters: Object): ChiselGeneratorAnnotation = {
     val gen = () =>
       try {
         Class
@@ -211,7 +211,7 @@ object ChiselGeneratorAnnotation extends HasShellOptions {
           "class"
         )
 
-        Seq(ChiselGeneratorAnnotation(clazz, obj.extract[Product]))
+        Seq(ChiselGeneratorAnnotation(clazz, obj.extract[Object]))
       },
       helpText = "A name of a Chisel module to elaborate and some JSON to deserialize as its arguments",
       helpValueName = Some("<package>.<module>,<json>")
