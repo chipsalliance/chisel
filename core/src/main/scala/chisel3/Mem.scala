@@ -403,8 +403,8 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
     * @param isWrite performs a write instead of a read when enable is true; the return
     * value becomes undefined when this parameter is true
     *
-    * @return The value of the memory at idx when enable is true and isWrite is false,
-    * or an undefined value otherwise.
+    * @return The read data of the memory, which gives the value at idx when enable is true and isWrite is false,
+    * or an undefined value otherwise, on the following clock cycle.
     *
     * @example Controlling a read/write port with IO signals
     * {{{
@@ -420,36 +420,9 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
     *   })
     *
     *   val mem = SyncReadMem(2, UInt(width.W))
-    *   val rwPort = mem.readWrite(io.address, io.wdata, io.enable, io.isWrite)
-    *   io.rdata := rwPort
+    *   io.rdata := mem.readWrite(io.address, io.wdata, io.enable, io.isWrite)
     * }
     *
-    * class Top extends Module {
-    *   val mem = Module(new MyMemWrapper)
-    *   mem.io := DontCare
-    *
-    *   val rdata = Wire(UInt(2.W))
-    *   readData := DontCare
-    *
-    *   // Read from the memory port
-    *   when(doRead) {
-    *     mem.io.enable := true.B
-    *     mem.io.isWrite := false.B
-    *     mem.io.address := someAddress
-    *   }
-    *   // Read data will show up on the next cycle
-    *   when(timeToRead) {
-    *     readData := mem.io.rdata
-    *   }
-    *
-    *   // Write to the memory
-    *   when(doWrite) {
-    *     mem.io.enable := true.B
-    *     mem.io.isWrite := true.B
-    *     mem.io.address := anotherAddress
-    *     mem.io.wdata := 3.U
-    *   }
-    * }
     * }}}
     */
   def readWrite(idx: UInt, writeData: T, en: Bool, isWrite: Bool): T = macro SourceInfoTransform.idxDataEnIswArg
@@ -468,8 +441,8 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
     * value becomes undefined when this parameter is true
     * @param clock clock to bind to this read-write port
     *
-    * @return The value of the memory at idx when enable is true and isWrite is false,
-    * or an undefined value otherwise.
+    * @return The read data of the memory, which gives the value at idx when enable is true and isWrite is false,
+    * or an undefined value otherwise, on the following clock cycle.
     */
   def readWrite(idx: UInt, writeData: T, en: Bool, isWrite: Bool, clock: Clock): T =
     macro SourceInfoTransform.idxDataEnIswClockArg
@@ -523,8 +496,8 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
     * @param isWrite performs a write instead of a read when enable is true; the return
     * value becomes undefined when this parameter is true
     *
-    * @return The read Vec value of the memory at idx when enable is true and isWrite is false,
-    * or an undefined value otherwise.
+    * @return The read data Vec of the memory at idx when enable is true and isWrite is false,
+    * or an undefined value otherwise, on the following clock cycle
     *
     * @example Controlling a read/masked write port with IO signals
     * {{{
@@ -533,53 +506,15 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
     *
     *   val io = IO(new Bundle {
     *     val address = Input(UInt())
-    *     val wdata = Input(UInt(width.W))
+    *     val wdata = Input(Vec(2, UInt(width.W)))
     *     val mask = Input(Vec(2, Bool()))
     *     val enable = Input(Bool())
     *     val isWrite = Input(Bool())
-    *     val rdata = Output(UInt(width.W))
+    *     val rdata = Output(Vec(2, UInt(width.W)))
     *   })
     *
     *   val mem = SyncReadMem(2, Vec(2, UInt(width.W)))
-    *   val rwPort = mem.readWrite(io.address, io.wdata, io.mask, io.enable, io.isWrite)
-    *   io.rdata := rwPort
-    * }
-    *
-    * class Top extends Module {
-    *   val mem = Module(new MyMemWrapper)
-    *   mem.io := DontCare
-    *
-    *   val rdata = Wire(UInt(2.W))
-    *   readData := DontCare
-    *
-    *   // Read from the memory port
-    *   when(doRead) {
-    *     mem.io.enable := true.B
-    *     mem.io.isWrite := false.B
-    *     mem.io.address := someAddress
-    *   }
-    *   // Read data will show up on the next cycle
-    *   when(timeToRead) {
-    *     readData := mem.io.rdata
-    *   }
-    *
-    *   // Write to all Vec entries at a specific address in the memory
-    *   when(doNormalWrite) {
-    *     mem.io.enable := true.B
-    *     mem.io.isWrite := true.B
-    *     mem.io.mask := VecInit(true.B, true.B)
-    *     mem.io.address := anotherAddress
-    *     mem.io.wdata := VecInit(2.U, 3.U)
-    *   }
-    *
-    *   // Write to the memory with a partial bytemask
-    *   when(doMaskedWrite) {
-    *     mem.io.enable := true.B
-    *     mem.io.isWrite := true.B
-    *     mem.io.mask := VecInit(true.B, false.B) // Write only the first element of the vec at `anotherAddress`
-    *     mem.io.address := anotherAddress
-    *     mem.io.wdata := VecInit(0.U, 0.U)
-    *   }
+    *   io.rdata := mem.readWrite(io.address, io.wdata, io.mask, io.enable, io.isWrite)
     * }
     * }}}
     *
@@ -608,8 +543,8 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
     * value becomes undefined when this parameter is true
     * @param clock clock to bind to this read-write port
     *
-    * @return The read Vec value of the memory at idx when enable is true and isWrite is false,
-    * or an undefined value otherwise.
+    * @return The read data Vec of the memory at idx when enable is true and isWrite is false,
+    * or an undefined value otherwise, on the following clock cycle
     *
     * @note this is only allowed if the memory's element data type is a Vec
     */
