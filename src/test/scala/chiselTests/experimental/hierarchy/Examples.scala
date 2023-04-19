@@ -80,8 +80,8 @@ object Examples {
   @instantiable
   class AddTwoParameterized(width: Int, makeParameterizedOnes: Int => Seq[Instance[AddOneParameterized]])
       extends Module {
-    val in = IO(Input(UInt(width.W)))
-    val out = IO(Output(UInt(width.W)))
+    @public val in = IO(Input(UInt(width.W)))
+    @public val out = IO(Output(UInt(width.W)))
     val addOnes = makeParameterizedOnes(width)
     addOnes.head.in := in
     out := addOnes.last.out
@@ -89,8 +89,8 @@ object Examples {
   }
   @instantiable
   class AddTwoWithNested(width: Int, makeParameterizedOnes: Int => Seq[Instance[AddOneWithNested]]) extends Module {
-    val in = IO(Input(UInt(width.W)))
-    val out = IO(Output(UInt(width.W)))
+    @public val in = IO(Input(UInt(width.W)))
+    @public val out = IO(Output(UInt(width.W)))
     val addOnes = makeParameterizedOnes(width)
   }
 
@@ -223,7 +223,7 @@ object Examples {
   }
   @instantiable
   class HasSubFieldAccess extends Module {
-    val in = IO(Input(Valid(UInt(8.W))))
+    @public val in = IO(Input(Valid(UInt(8.W))))
     @public val valid = in.valid
     @public val bits = in.bits
   }

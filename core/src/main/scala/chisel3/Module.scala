@@ -148,9 +148,12 @@ object Module extends SourceInfoDoc {
   * @note Module instantiations must be wrapped in a Module() call.
   */
 abstract class Module extends RawModule {
+  // TODO: I don't understand why I need this
+  import experimental.hierarchy.core.Lookupable._
   // Implicit clock and reset pins
-  final val clock: Clock = IO(Input(Clock()))(UnlocatableSourceInfo).suggestName("clock")
-  final val reset: Reset = IO(Input(mkReset))(UnlocatableSourceInfo).suggestName("reset")
+  final val clock:           Clock = IO(Input(Clock()))(UnlocatableSourceInfo).suggestName("clock")
+  final val reset:           Reset = IO(Input(mkReset))(UnlocatableSourceInfo).suggestName("reset")
+  override def _clock_reset: Seq[Data] = Seq(clock, reset)
 
   // TODO It's hard to remove these deprecated override methods because they're used by
   //   Chisel.QueueCompatibility which extends chisel3.Queue which extends chisel3.Module
@@ -251,8 +254,14 @@ package experimental {
   object BaseModule {
     implicit class BaseModuleExtensions[T <: BaseModule](b: T) {
       import chisel3.experimental.hierarchy.core.{Definition, Instance}
-      def toInstance:   Instance[T] = new Instance(Proto(b))
-      def toDefinition: Definition[T] = new Definition(Proto(b))
+      def toInstance: Instance[T] = {
+        b.checkAtPublics()
+        new Instance(Proto(b))
+      }
+      def toDefinition: Definition[T] = {
+        b.checkAtPublics()
+        new Definition(Proto(b))
+      }
     }
   }
 
@@ -573,5 +582,29 @@ package experimental {
           case Some(c) => getRef.fullName(c)
         }
 
+    def checkAtPublics(): Unit = {
+      // Looks for everything that is Lookupable
+      def getData(a: Any): Iterable[Data] = a match {
+        case d: experimental.hierarchy.core.Hierarchy[_] =>
+          Nil // this isn't right, if its an instance of a container (non module), it could have an IO
+        case b: BaseModule                                      => Nil
+        case b: IsInstantiable                                  => b._all_at_public.toSeq.flatMap(_.flatMap(getData))
+        case b: MemBase[_]                                      => Nil
+        case d: Data if chisel3.experimental.dataview.isView(d) => dataview.unView(d)
+        case d: Data                                            => Seq(reflect.DataMirror.rootData(d))
+        case i: Iterable[_]                                     => i.flatMap(getData)
+        case i: Tuple2[_, _]                                    => getData(i._1) ++ getData(i._2)
+        case i: Either[_, _]                                    => i.left.toSeq.flatMap(getData) ++ i.toSeq.flatMap(getData)
+        case i: Option[_]                                       => i.toSeq.flatMap(getData)
+        case _ => Nil
+      }
+      _all_at_public.foreach { seq =>
+        val datas = (_clock_reset ++ seq).flatMap(getData).toSet
+        _ports.iterator.foreach {
+          case (io, si) =>
+            if (!datas.contains(io)) Builder.error(s"$io is an IO, but is not marked @public!")(si)
+        }
+      }
+    }
   }
 }
