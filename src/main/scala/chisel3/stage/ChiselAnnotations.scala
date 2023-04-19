@@ -145,12 +145,76 @@ object ChiselGeneratorAnnotation extends HasShellOptions {
     ChiselGeneratorAnnotation(gen)
   }
 
+  /** Construct a [[ChiselGeneratorAnnotation]] with a generator function that
+    * will try to construct a Chisel Module from using that Module's name and a
+    * single parameters object. The Module must both exist in the class path and
+    * take exactly the one parameter of the provided type.
+    * @param name a module name
+    * @throws firrtl.options.OptionsException if the module name is not found or if no parameterless constructor for
+    * that Module is found.
+    */
+  def apply(name: String, parameters: Any): ChiselGeneratorAnnotation = {
+    val gen = () =>
+      try {
+        Class
+          .forName(name)
+          .asInstanceOf[Class[_ <: RawModule]]
+          .getDeclaredConstructor(parameters.getClass())
+          .newInstance(parameters)
+      } catch {
+        // The reflective instantiation will box any exceptions thrown, unbox them here.
+        // Note that this does *not* need to chain with the catches below which are triggered by an
+        // invalid name or a constructor that takes arguments rather than by the code being run
+        // itself.
+        case e: InvocationTargetException =>
+          throw e.getCause
+        case e: ClassNotFoundException =>
+          throw new OptionsException(s"Unable to locate module '$name'! (Did you misspell it?)", e)
+        case e: NoSuchMethodException =>
+          throw new OptionsException(
+            s"Unable to create instance of module '$name' with parameter type '${parameters.getClass().getName()}'!",
+            e
+          )
+      }
+    ChiselGeneratorAnnotation(gen)
+  }
+
   val options = Seq(
     new ShellOption[String](
       longOption = "module",
       toAnnotationSeq = (a: String) => Seq(ChiselGeneratorAnnotation(a)),
       helpText = "The name of a Chisel module to elaborate (module must be in the classpath)",
       helpValueName = Some("<package>.<module>")
+    ),
+    new ShellOption[String](
+      longOption = "module-json",
+      toAnnotationSeq = (a: String) => {
+        import org.json4s._
+        import org.json4s.native.JsonMethods._
+
+        def findTypeHints(value: JValue): Seq[String] = value match {
+          case JObject(fields) =>
+            fields.flatMap {
+              case ("class", JString(name)) => Seq(name)
+              case (_, value)               => findTypeHints(value)
+            }
+          case JArray(arr) => arr.flatMap(findTypeHints)
+          case oJValue     => Seq()
+        }
+
+        val (clazz, obj) = a.splitAt(a.indexOf(',')) match {
+          case (c, json) => (c, parse(json))
+        }
+
+        implicit val formats: Formats = DefaultFormats + new FullTypeHints(
+          List(findTypeHints(obj).map(Class.forName(_)): _*),
+          "class"
+        )
+
+        Seq(ChiselGeneratorAnnotation(clazz, obj.extract[Product]))
+      },
+      helpText = "A name of a Chisel module to elaborate and some JSON to deserialize as its arguments",
+      helpValueName = Some("<package>.<module>,<json>")
     )
   )
 

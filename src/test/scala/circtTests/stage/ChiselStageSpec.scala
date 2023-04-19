@@ -65,6 +65,14 @@ object ChiselStageSpec {
     b := qux.b
   }
 
+  case class Parameters(width: Int)
+
+  class Corge(foo: Parameters) extends Module {
+    val a = IO(Input(UInt(foo.width.W)))
+    val b = IO(Output(UInt(foo.width.W)))
+    b := a
+  }
+
   import firrtl.annotations.NoTargetAnnotation
   import firrtl.options.Unserializable
   case object DummyAnnotation extends NoTargetAnnotation with Unserializable
@@ -333,6 +341,36 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
         )
 
       os.read(targetDir / "HasUnserializableAnnotation.fir") shouldNot include("DummyAnnotation")
+    }
+
+    it("should allow building a module from JSON") {
+      import org.json4s._
+      import org.json4s.native.JsonMethods._
+      import org.json4s.native.Serialization
+      import ChiselStageSpec.{Corge, Parameters}
+
+      val targetDir = baseDir / "should-allow-building-a-module-from-JSON"
+
+      implicit val defaultFormat = Serialization.formats(FullTypeHints(List(classOf[Parameters]), "class"))
+      val clazz = classOf[Corge].getName()
+      val json = Serialization.write(Parameters(42))
+
+      info(s"using --module-json $clazz,$json")
+      (new ChiselStage).execute(
+        Array(
+          "--module-json",
+          s"$clazz,$json",
+          "--target",
+          "chirrtl",
+          "--target-dir",
+          targetDir.toString,
+          "--full-stacktrace"
+        ),
+        Seq.empty
+      )
+
+      info("causes a 42-bit UInt to show up")
+      os.read(targetDir / "Corge.fir") should include("UInt<42>")
     }
   }
 
