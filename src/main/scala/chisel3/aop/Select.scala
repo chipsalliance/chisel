@@ -8,6 +8,7 @@ import chisel3.experimental.BaseModule
 import chisel3.internal.firrtl.{Definition => DefinitionIR, _}
 import chisel3.experimental.hierarchy.core._
 import chisel3.experimental.hierarchy.ModuleClone
+import chisel3.reflect.DataMirror
 import firrtl.annotations.ReferenceTarget
 
 import scala.reflect.runtime.universe.TypeTag
@@ -22,21 +23,15 @@ object Select {
     *
     * @param d Component to find leafs if aggregate typed. Intermediate fields/indicies are not included
     */
-  def getLeafs(d: Data): Seq[Data] = d match {
-    case r: Record => r.elementsIterator.flatMap(getLeafs).toSeq
-    case v: Vec[_] => v.getElements.flatMap(getLeafs)
-    case other => Seq(other)
-  }
+  @deprecated("Use DataMirror.collectLeafChildren instead")
+  def getLeafs(d: Data): Seq[Data] = DataMirror.collectLeafChildren(d)
 
   /** Return all expanded components, including intermediate aggregate nodes
     *
     * @param d Component to find leafs if aggregate typed. Intermediate fields/indicies ARE included
     */
-  def getIntermediateAndLeafs(d: Data): Seq[Data] = d match {
-    case r: Record => r +: r.elementsIterator.flatMap(getIntermediateAndLeafs).toSeq
-    case v: Vec[_] => v +: v.getElements.flatMap(getIntermediateAndLeafs)
-    case other => Seq(other)
-  }
+  @deprecated("Use DataMirror.collectAllChildren instead")
+  def getIntermediateAndLeafs(d: Data): Seq[Data] = DataMirror.collectAllChildren(d)
 
   /** Selects all instances/modules directly instantiated within given definition
     *
@@ -391,12 +386,12 @@ object Select {
     */
   def connectionsTo(module: BaseModule)(signal: Data): Seq[PredicatedConnect] = {
     check(module)
-    val sensitivitySignals = getIntermediateAndLeafs(signal).toSet
+    val sensitivitySignals = DataMirror.collectAllChildren(signal).toSet
     val predicatedConnects = mutable.ArrayBuffer[PredicatedConnect]()
     val isPort = module._component.get
       .asInstanceOf[DefModule]
       .ports
-      .flatMap { p => getIntermediateAndLeafs(p.id) }
+      .flatMap { p => DataMirror.collectAllChildren(p.id) }
       .contains(signal)
     var prePredicates: Seq[Predicate] = Nil
     var seenDef = isPort
@@ -405,7 +400,7 @@ object Select {
       (cmd: Command, preds) => {
         cmd match {
           case cmd: DefinitionIR if cmd.id.isInstanceOf[Data] =>
-            val x = getIntermediateAndLeafs(cmd.id.asInstanceOf[Data])
+            val x = DataMirror.collectAllChildren(cmd.id.asInstanceOf[Data])
             if (x.contains(signal)) prePredicates = preds
           case Connect(_, loc @ Node(d: Data), exp) =>
             val effected = getEffected(loc).toSet
@@ -470,7 +465,7 @@ object Select {
 
   // Given a loc, return all subcomponents of id that could be assigned to in connect
   private def getEffected(a: Arg): Seq[Data] = a match {
-    case Node(id: Data) => getIntermediateAndLeafs(id)
+    case Node(id: Data) => DataMirror.collectAllChildren(id)
     case Slot(imm, name) => Seq(imm.id.asInstanceOf[Record].elements(name))
     case Index(imm, _)   => getEffected(imm)
     case _               => throw new InternalErrorException("Match error: a=$a")
