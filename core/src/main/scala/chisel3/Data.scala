@@ -198,71 +198,16 @@ private[chisel3] object cloneSupertype {
 
 // Returns pairs of all fields, element-level and containers, in a Record and their path names
 private[chisel3] object getRecursiveFields {
-  def noPath(data: Data): Seq[Data] = data match {
-    case data: Record =>
-      data._elements.map {
-        case (_, fieldData) =>
-          getRecursiveFields.noPath(fieldData)
-      }.fold(Seq(data)) {
-        _ ++ _
-      }
-    case data: Vec[_] =>
-      data.getElements.zipWithIndex.map {
-        case (fieldData, fieldIndex) =>
-          getRecursiveFields.noPath(fieldData)
-      }.fold(Seq(data)) {
-        _ ++ _
-      }
-    case data: Element => Seq(data)
-  }
-  def apply(data: Data, path: String): Seq[(Data, String)] = data match {
-    case data: Record =>
-      data._elements.map {
-        case (fieldName, fieldData) =>
-          getRecursiveFields(fieldData, s"$path.$fieldName")
-      }.fold(Seq(data -> path)) {
-        _ ++ _
-      }
-    case data: Vec[_] =>
-      data.elementsIterator.zipWithIndex.map {
-        case (fieldData, fieldIndex) =>
-          getRecursiveFields(fieldData, path = s"$path($fieldIndex)")
-      }.fold(Seq(data -> path)) {
-        _ ++ _
-      }
-    case data: Element => Seq(data -> path)
-  }
+  def noPath(data:       Data): Seq[Data] = DataMirror.collectAllChildren(data)
+  def lazilyNoPath(data: Data): Seq[Data] = noPath(data).map {
+    case x => LazyList(x)
+  }.fold(LazyList()) { _ ++ _ }
 
-  def lazily(data: Data, path: String): Seq[(Data, String)] = data match {
-    case data: Record =>
-      LazyList(data -> path) ++
-        data._elements.view.flatMap {
-          case (fieldName, fieldData) =>
-            getRecursiveFields(fieldData, s"$path.$fieldName")
-        }
-    case data: Vec[_] =>
-      LazyList(data -> path) ++
-        data.elementsIterator.zipWithIndex.flatMap {
-          case (fieldData, fieldIndex) =>
-            getRecursiveFields(fieldData, path = s"$path($fieldIndex)")
-        }
-    case data: Element => LazyList(data -> path)
-  }
-  def lazilyNoPath(data: Data): Seq[Data] = data match {
-    case data: Record =>
-      LazyList(data) ++
-        data._elements.view.flatMap {
-          case (fieldName, fieldData) =>
-            getRecursiveFields.lazilyNoPath(fieldData)
-        }
-    case data: Vec[_] =>
-      LazyList(data) ++
-        data.getElements.view.flatMap {
-          case (fieldData) =>
-            getRecursiveFields.lazilyNoPath(fieldData)
-        }
-    case data: Element => LazyList(data)
-  }
+  def apply(data: Data, path: String): Seq[(Data, String)] =
+    DataMirror.collectMembersAndPaths(data, path) { case x => x }.toSeq
+  def lazily(data: Data, path: String): Seq[(Data, String)] = apply(data, path).map {
+    case x => LazyList(x)
+  }.fold(LazyList()) { _ ++ _ }
 }
 
 // Returns pairs of corresponding fields between two Records of the same type
