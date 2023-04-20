@@ -179,11 +179,66 @@ object DataMirror {
     }
   }
 
-  /** Return all expanded components, including intermediate aggregate nodes
+  // Old definition of collectLeafChildren
+  @deprecated("Use DataMirror.collectLeafChildren instead")
+  def getLeafs(d: Data): Seq[Data] = collectLeafChildren(d)
+
+  // Old definition of collectAllChildren
+  @deprecated("Use DataMirror.collectAllChildren instead")
+  def getIntermediateAndLeafs(d: Data): Seq[Data] = collectAllChildren(d)
+
+  /** Collect just the leaf components of a data component's children (i.e. anything that isn't
+    * a `Record` or a `Vec`, but an `Element`)
     *
-    * @param d Component to find leafs if aggregate typed. Intermediate fields/indicies ARE included
+    * @param d Data component to recursively collect leaf components.
+    *
+    * @return All `Element` components; intermediate fields/indices are not included
     */
-  def getIntermediateAndLeafs(d: Data): Seq[Data] = collectMembers(d) { case x => x }.toSeq
+  def collectLeafChildren(d: Data): Seq[Data] =
+    DataMirror.collectMembers(d) { case x: Element => x.asInstanceOf[Data] }.toSeq
+
+  /** Return all expanded child components of a data component, including intermediate aggregate
+    * nodes
+    *
+    * @param d Data component to recursively collect child components.
+    *
+    * @return All child components; intermediate fields/indices ARE included
+    */
+  def collectAllChildren(d: Data): Seq[Data] = collectMembers(d) { case x => x }.toSeq
+
+  /** Recursively collects all fields selected by collector within a data and additionally generates
+    * path names for each field
+    * Accepts a collector partial function, rather than a collector function
+    *
+    * @param data Data to collect fields, as well as all children datas it directly and indirectly instantiates
+    * @param path Recursively generated path name, starting with a root path
+    * @param collector Collector partial function to pick which components to collect
+    *
+    * @return A sequence of pairs that map a data field to its corresponding path name
+    *
+    * @tparam T Type of the component that will be collected
+    */
+  private[chisel3] def collectMembersAndPaths[T](
+    d:         Data,
+    path:      String = ""
+  )(collector: PartialFunction[Data, T]
+  ): Iterable[(T, String)] = {
+    val myItems = collector.lift(d).map { x => (x -> path) }
+    val deepChildrenItems = d match {
+      case a: Record =>
+        a._elements.flatMap {
+          case (fieldName, fieldData) =>
+            collectMembersAndPaths(fieldData, s"$path.$fieldName")(collector)
+        }
+      case a: Vec[_] =>
+        a.elementsIterator.zipWithIndex.flatMap {
+          case (fieldData, fieldIndex) =>
+            collectMembersAndPaths(fieldData, s"$path($fieldIndex)")(collector)
+        }
+      case other => Nil
+    }
+    myItems ++ deepChildrenItems
+  }
 
   /** Collects all fields selected by collector within a data and all recursive children fields
     * Accepts a collector partial function, rather than a collector function
@@ -195,7 +250,7 @@ object DataMirror {
   def collectMembers[T](d: Data)(collector: PartialFunction[Data, T]): Iterable[T] = {
     val myItems = collector.lift(d)
     val deepChildrenItems = d match {
-      case a: Aggregate => a.getElements.flatMap { x => collectMembers(x)(collector) }
+      case a: Aggregate => a.elementsIterator.flatMap { x => collectMembers(x)(collector) }
       case other => Nil
     }
     myItems ++ deepChildrenItems
