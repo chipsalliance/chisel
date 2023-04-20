@@ -341,6 +341,8 @@ object Flipped {
   * @define coll data
   */
 abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
+  def typeName: String = chiselClassName
+
   // This is a bad API that punches through object boundaries.
   private[chisel3] def flatten: IndexedSeq[Element] = {
     this match {

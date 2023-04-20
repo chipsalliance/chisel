@@ -109,6 +109,43 @@ private[chisel3] class IdGen {
 }
 
 private[chisel3] trait HasId extends chisel3.InstanceId {
+
+  /** Chisel's standard way to derive a name from its class
+    *
+    * The name of a class approximates the behavior of the Java Reflection `getSimpleName` method
+    * https://docs.oracle.com/javase/8/docs/api/java/lang/Class.html#getSimpleName-- with some modifications:
+    */
+  final def chiselClassName: String = {
+    /* The default class name is derived from the Java reflection derived class name. */
+    this match {
+      // Current algorithm to select a name for Aggregates
+      case _: Aggregate =>
+        try {
+          this.getClass.getSimpleName match {
+            case name if name.startsWith("$anon$") => "AnonymousBundle" // fallback for anonymous Bundle case
+            case "" if this.isInstanceOf[Bundle]   => "AnonymousBundle" // ditto, but on other platforms
+            case ""                                => "" // anonymous records have no name
+            case name                              => name
+          }
+        } catch {
+          // This happens if you have nested objects which your class is defined in
+          case e: java.lang.InternalError if e.getMessage == "Malformed class name" => this.getClass.toString
+        }
+      // Current algorithm to select a name for Modules
+      case _ =>
+        val baseName = this.getClass.getName
+        /* A sequence of string filters applied to the name */
+        val filters: Seq[String => String] = // Merge the "$$anon" name with previous name
+          Seq((a: String) => raw"\$$+anon".r.replaceAllIn(a, "_Anon"))
+
+        filters
+          .foldLeft(baseName) { case (str, filter) => filter(str) } // 1. Apply filters to baseName
+          .split("\\.|\\$") // 2. Split string at '.' or '$'
+          .filterNot(_.forall(_.isDigit)) // 3. Drop purely numeric names
+          .last // 4. Use the last name
+    }
+  }
+
   // using nullable var for better memory usage
   private var _parentVar:       BaseModule = Builder.currentModule.getOrElse(null)
   private[chisel3] def _parent: Option[BaseModule] = Option(_parentVar)

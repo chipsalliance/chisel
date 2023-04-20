@@ -230,7 +230,7 @@ private[chisel3] class ErrorLog(warningsAsErrors: Boolean, sourceRoots: Seq[File
   /** Returns the best guess at the first stack frame that belongs to user code.
     */
   private def getUserLineNumber = {
-    def isChiselClassname(className: String): Boolean = {
+    def isChiselClassname(chiselClassName: String): Boolean = {
       // List of classpath prefixes that are Chisel internals and should be ignored when looking for user code
       // utils are not part of internals and errors there can be reported
       val chiselPrefixes = Set(
@@ -241,7 +241,7 @@ private[chisel3] class ErrorLog(warningsAsErrors: Boolean, sourceRoots: Seq[File
         "chisel3.experimental.",
         "chisel3.package$" // for some compatibility / deprecated types
       )
-      !chiselPrefixes.filter(className.startsWith(_)).isEmpty
+      !chiselPrefixes.filter(chiselClassName.startsWith(_)).isEmpty
     }
 
     Thread
