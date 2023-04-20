@@ -13,6 +13,7 @@ import chisel3.experimental.{BaseModule, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal.sourceinfo.{InstTransform}
 import _root_.firrtl.annotations.{IsModule, ModuleName, ModuleTarget}
 import _root_.firrtl.AnnotationSeq
+import _root_.firrtl.ir.PortModifier
 
 object Module extends SourceInfoDoc {
 
@@ -258,6 +259,8 @@ package experimental {
         new Definition(Proto(b))
       }
     }
+
+    private[chisel3] case class Port(data: Data, info: SourceInfo, modifiers: Seq[PortModifier])
   }
 
   /** Abstract base class for Modules, an instantiable organizational unit for RTL.
@@ -357,16 +360,16 @@ package experimental {
       _ids
     }
 
-    private val _ports = new ArrayBuffer[(Data, SourceInfo)]()
+    private val _ports = new ArrayBuffer[BaseModule.Port]()
 
     // getPorts unfortunately already used for tester compatibility
     protected[chisel3] def getModulePorts: Seq[Data] = {
       require(_closed, "Can't get ports before module close")
-      _ports.iterator.map(_._1).toSeq
+      _ports.iterator.map(_.data).toSeq
     }
 
     // gets Ports along with there source locators
-    private[chisel3] def getModulePortsAndLocators: Seq[(Data, SourceInfo)] = {
+    private[chisel3] def getModulePortsAndLocators: Seq[BaseModule.Port] = {
       require(_closed, "Can't get ports before module close")
       _ports.toSeq
     }
@@ -374,14 +377,14 @@ package experimental {
     // These methods allow checking some properties of ports before the module is closed,
     // mainly for compatibility purposes.
     protected def portsContains(elem: Data): Boolean = {
-      _ports.exists { port => port._1 == elem }
+      _ports.exists { port => port.data == elem }
     }
 
     // This is dangerous because it can be called before the module is closed and thus there could
     // be more ports and names have not yet been finalized.
     // This should only to be used during the process of closing when it is safe to do so.
     private[chisel3] def findPort(name: String): Option[Data] =
-      _ports.collectFirst { case (data, _) if data.seedOpt.contains(name) => data }
+      _ports.collectFirst { case p if p.data.seedOpt.contains(name) => p.data }
 
     protected def portsSize: Int = _ports.size
 
@@ -395,22 +398,22 @@ package experimental {
     private[chisel3] def initializeInParent(): Unit
 
     private[chisel3] def namePorts(): Unit = {
-      for ((port, source) <- getModulePortsAndLocators) {
-        port._computeName(None) match {
+      for (port <- getModulePortsAndLocators) {
+        port.data._computeName(None) match {
           case Some(name) =>
             if (_namespace.contains(name)) {
               Builder.error(
-                s"""Unable to name port $port to "$name" in $this,""" +
-                  s" name is already taken by another port! ${source.makeMessage(x => x)}"
+                s"""Unable to name port ${port.data} to "$name" in $this,""" +
+                  s" name is already taken by another port! ${port.info.makeMessage(x => x)}"
               )(UnlocatableSourceInfo)
             }
-            port.setRef(ModuleIO(this, _namespace.name(name)))
+            port.data.setRef(ModuleIO(this, _namespace.name(name)))
           case None =>
             Builder.error(
-              s"Unable to name port $port in $this, " +
-                s"try making it a public field of the Module ${source.makeMessage(x => x)}"
+              s"Unable to name port ${port.data} in $this, " +
+                s"try making it a public field of the Module ${port.info.makeMessage(x => x)}"
             )(UnlocatableSourceInfo)
-            port.setRef(ModuleIO(this, "<UNNAMED>"))
+            port.data.setRef(ModuleIO(this, "<UNNAMED>"))
         }
       }
     }
@@ -541,21 +544,30 @@ package experimental {
     /** Chisel2 code didn't require the IO(...) wrapper and would assign a Chisel type directly to
       * io, then do operations on it. This binds a Chisel type in-place (mutably) as an IO.
       */
-    protected def _bindIoInPlace(iodef: Data)(implicit sourceInfo: SourceInfo): Unit = {
+    protected def _bindIoInPlace(iodef: Data, modifiers: Seq[PortModifier])(implicit sourceInfo: SourceInfo): Unit = {
 
       // Assign any signals (Chisel or chisel3) with Unspecified/Flipped directions to Output/Input
       Module.assignCompatDir(iodef)
 
-      iodef.bind(PortBinding(this))
-      _ports += iodef -> sourceInfo
+      iodef.bind(PortBinding(this, modifiers))
+      _ports += BaseModule.Port(iodef, sourceInfo, modifiers)
     }
+    protected def _bindIoInPlace(iodef: Data)(implicit sourceInfo: SourceInfo): Unit =
+      _bindIoInPlace(iodef, Seq.empty)
 
     /** Private accessor for _bindIoInPlace */
+    private[chisel3] def bindIoInPlace(
+      iodef:     Data,
+      modifiers: Seq[PortModifier]
+    )(
+      implicit sourceInfo: SourceInfo
+    ): Unit = _bindIoInPlace(iodef, modifiers)
+
     private[chisel3] def bindIoInPlace(
       iodef: Data
     )(
       implicit sourceInfo: SourceInfo
-    ): Unit = _bindIoInPlace(iodef)
+    ): Unit = bindIoInPlace(iodef)
 
     // Must have separate createSecretIO from addSecretIO to get plugin to name it
     // data must be a fresh Chisel type

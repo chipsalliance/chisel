@@ -3,6 +3,7 @@ package chisel3
 import chisel3.internal.requireIsChiselType // Fix ambiguous import
 import chisel3.internal.Builder
 import chisel3.experimental.SourceInfo
+import firrtl.ir.PortModifier
 
 object IO {
 
@@ -21,6 +22,23 @@ object IO {
     * Internal API.
     */
   def apply[T <: Data](iodef: => T)(implicit sourceInfo: SourceInfo): T = {
+    withModifiers[T](Seq.empty, iodef)
+  }
+
+  /** Constructs a const port for the current Module
+    *
+    * Works just like IO.apply but emits a const port instead of a normal port in FIRRTL.
+    */
+  def const[T <: Data](iodef: => T)(implicit sourceInfo: SourceInfo): T = {
+    withModifiers[T](Seq(PortModifier.Const), iodef)
+  }
+
+  private def withModifiers[T <: Data](
+    modifiers: Seq[PortModifier],
+    iodef:     => T
+  )(
+    implicit sourceInfo: SourceInfo
+  ): T = {
     val module = Module.currentModule.get // Impossible to fail
     require(!module.isClosed, "Can't add more ports after module close")
     val prevId = Builder.idGen.value
@@ -40,7 +58,7 @@ object IO {
             Builder.deprecated(e.getMessage, Some(s"${data.getClass}"))
             data
         }
-    module.bindIoInPlace(iodefClone)
+    module.bindIoInPlace(iodefClone, modifiers)
     iodefClone
   }
 }

@@ -396,7 +396,7 @@ private[chisel3] object Converter {
       case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip => false
     }
     val tpe = extractType(port.id, clearDir, port.sourceInfo, true, true)
-    fir.Port(convert(port.sourceInfo), getRef(port.id, port.sourceInfo).name, dir, tpe)
+    fir.Port(convert(port.sourceInfo), getRef(port.id, port.sourceInfo).name, dir, tpe, port.modifiers)
   }
 
   def convert(component: Component): fir.DefModule = component match {

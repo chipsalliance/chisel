@@ -42,11 +42,11 @@ abstract class RawModule extends BaseModule {
   private var _firrtlPorts: Option[Seq[firrtl.Port]] = None
 
   private[chisel3] def checkPorts(): Unit = {
-    for ((port, source) <- getModulePortsAndLocators) {
-      if (port._computeName(None).isEmpty) {
+    for (port <- getModulePortsAndLocators) {
+      if (port.data._computeName(None).isEmpty) {
         Builder.error(
           s"Unable to name port $port in $this, " +
-            s"try making it a public field of the Module ${source.makeMessage(x => x)}"
+            s"try making it a public field of the Module ${port.info.makeMessage(x => x)}"
         )(UnlocatableSourceInfo)
       }
     }
@@ -78,7 +78,7 @@ abstract class RawModule extends BaseModule {
                 id.forceName(default = "_T", _namespace)
               case MemoryPortBinding(_, _) =>
                 id.forceName(default = "MPORT", _namespace)
-              case PortBinding(_) =>
+              case PortBinding(_, _) =>
                 id.forceName(default = "PORT", _namespace, true, x => ModuleIO(this, x))
               case RegBinding(_, _) =>
                 id.forceName(default = "REG", _namespace)
@@ -92,8 +92,8 @@ abstract class RawModule extends BaseModule {
     }
 
     val firrtlPorts = getModulePortsAndLocators.map {
-      case (port, sourceInfo) =>
-        Port(port, port.specifiedDirection, sourceInfo)
+      case BaseModule.Port(port, sourceInfo, modifiers) =>
+        Port(port, port.specifiedDirection, sourceInfo, modifiers)
     }
     _firrtlPorts = Some(firrtlPorts)
 

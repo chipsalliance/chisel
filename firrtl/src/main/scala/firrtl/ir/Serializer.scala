@@ -346,8 +346,15 @@ object Serializer {
     case other  => b ++= other.serialize // Handle user-defined nodes
   }
 
+  private def s(node: PortModifier)(implicit b: StringBuilder, indent: Int): Unit = node match {
+    case PortModifier.Const => b ++= "const"
+  }
+
   private def s(node: Port)(implicit b: StringBuilder, indent: Int): Unit = node match {
-    case Port(info, name, direction, tpe) =>
+    case Port(info, name, direction, tpe, modifiers) =>
+      modifiers.foreach { mod =>
+        s(mod); b += ' '
+      }
       s(direction); b += ' '; b ++= name; b ++= " : "; s(tpe); s(info)
   }
 

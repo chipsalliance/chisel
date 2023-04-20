@@ -12,7 +12,7 @@ class PortSpec extends ChiselFreeSpec {
 
   class Dummy extends Module {
     val in = IO(new DummyIO)
-    val out = IO(Output(Bool()))
+    val out = chisel3.IO.const(Output(Bool()))
     out := in.foo.asUInt + in.bar
   }
 
@@ -26,5 +26,6 @@ class PortSpec extends ChiselFreeSpec {
       "output in : { flip foo : UInt<1>, flip bar : UInt<8>} @[src/test/scala/chiselTests/PortSpec.scala"
     )
     chirrtl should include("output out : UInt<1> @[src/test/scala/chiselTests/PortSpec.scala")
+    chirrtl should include("const output out : UInt<1> @[src/test/scala/chiselTests/PortSpec.scala")
   }
 }

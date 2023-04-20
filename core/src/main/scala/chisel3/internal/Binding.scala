@@ -6,6 +6,8 @@ import chisel3._
 import chisel3.experimental.BaseModule
 import chisel3.internal.firrtl.LitArg
 
+import _root_.firrtl.ir.PortModifier
+
 import scala.collection.immutable.VectorMap
 
 @deprecated(deprecatedPublicAPIMsg + ". Use chisel3.experimental.requireIsHardware instead", "Chisel 3.6")
@@ -87,7 +89,7 @@ sealed trait ConditionalDeclarable extends TopBinding {
 // TODO(twigg): Ops between unenclosed nodes can also be unenclosed
 // However, Chisel currently binds all op results to a module
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
-case class PortBinding(enclosure: BaseModule) extends ConstrainedBinding
+case class PortBinding(enclosure: BaseModule, modifiers: Seq[PortModifier] = Seq.empty) extends ConstrainedBinding
 
 // Added to handle BoringUtils in Chisel
 private[chisel3] case class SecretPortBinding(enclosure: BaseModule) extends ConstrainedBinding

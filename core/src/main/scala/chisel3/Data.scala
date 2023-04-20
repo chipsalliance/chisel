@@ -369,8 +369,8 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   override def autoSeed(name: String): this.type = {
     topBindingOpt match {
       // Ports are special in that the autoSeed will keep the first name, not the last name
-      case Some(PortBinding(m)) if hasAutoSeed && Builder.currentModule.contains(m) => this
-      case _                                                                        => super.autoSeed(name)
+      case Some(PortBinding(m, _)) if hasAutoSeed && Builder.currentModule.contains(m) => this
+      case _                                                                           => super.autoSeed(name)
     }
   }
 
@@ -492,7 +492,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     topBindingOpt match {
       case OpBinding(_, _)           => "OpResult"
       case MemoryPortBinding(_, _)   => "MemPort"
-      case PortBinding(_)            => "IO"
+      case PortBinding(_, _)         => "IO"
       case SecretPortBinding(_)      => "IO"
       case RegBinding(_, _)          => "Reg"
       case WireBinding(_, _)         => "Wire"

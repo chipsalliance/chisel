@@ -244,12 +244,12 @@ private[chisel3] object MonoConnect {
     val context_mod_opt = Some(context_mod)
 
     val sink_is_port = sink.topBinding match {
-      case PortBinding(_) => true
-      case _              => false
+      case _: PortBinding => true
+      case _ => false
     }
     val source_is_port = source.topBinding match {
-      case PortBinding(_) => true
-      case _              => false
+      case _: PortBinding => true
+      case _ => false
     }
 
     if (!checkWhenVisibility(sink)) {
@@ -339,7 +339,7 @@ private[chisel3] object MonoConnect {
     val traceFlipped = ((flipped ^ currentlyFlipped) || coercedFlip) && (!coercedAlign)
     data.binding.get match {
       case ChildBinding(parent) => traceFlow(wantToBeSink, traceFlipped, parent, context_mod)
-      case PortBinding(enclosure) =>
+      case PortBinding(enclosure, _) =>
         val childPort = enclosure != context_mod
         wantToBeSink ^ childPort ^ traceFlipped
       case _ => true

@@ -134,8 +134,13 @@ object Instance extends SourceInfoDoc {
           require(!_closed, s"Can't generate $desiredName module more than once")
           _closed = true
           val firrtlPorts = definition.proto.getModulePortsAndLocators.map {
-            case (port, sourceInfo) =>
-              Port(port, port.specifiedDirection, sourceInfo): @nowarn // Deprecated code allowed for internal use
+            case BaseModule.Port(port, sourceInfo, modifiers) =>
+              Port(
+                port,
+                port.specifiedDirection,
+                sourceInfo,
+                modifiers
+              ): @nowarn // Deprecated code allowed for internal use
           }
           val component = DefBlackBox(this, definition.proto.name, firrtlPorts, SpecifiedDirection.Unspecified, params)
           Some(component)

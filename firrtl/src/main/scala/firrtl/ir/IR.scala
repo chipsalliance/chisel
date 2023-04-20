@@ -491,12 +491,19 @@ case object Output extends Direction {
   def serialize: String = "output"
 }
 
+/** [[Port]] Modifier e.g. const */
+sealed trait PortModifier
+object PortModifier {
+  case object Const extends PortModifier
+}
+
 /** [[DefModule]] Port */
 case class Port(
   info:      Info,
   name:      String,
   direction: Direction,
-  tpe:       Type)
+  tpe:       Type,
+  modifiers: Seq[PortModifier] = Seq.empty)
     extends FirrtlNode
     with IsDeclaration
     with UseSerializer
