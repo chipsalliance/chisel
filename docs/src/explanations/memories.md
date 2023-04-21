@@ -128,7 +128,7 @@ class RDWR_Smem extends Module {
   })
 
   val mem = SyncReadMem(1024, UInt(width.W))
-  io.dataOut = mem.readWrite(io.addr, io.dataIn, io.enable, io.write)
+  io.dataOut := mem.readWrite(io.addr, io.dataIn, io.enable, io.write)
 }
 ```
 
