@@ -173,7 +173,22 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
     // )
   }
 
-  // TODO define with non-connectable src/sink should fail
+  "Probe define between non-connectable data types" should "fail" in {
+    val exc = intercept[chisel3.ChiselException] {
+      ChiselStage.emitCHIRRTL(
+        new RawModule {
+          val p = IO(Output(Probe(UInt(4.W))))
+
+          val w = WireInit(Bool(), false.B)
+          val v = ProbeValue(w)
+
+          define(p, v)
+        },
+        Array("--throw-on-first-error")
+      )
+    }
+    exc.getMessage should be("Cannot define a probe on a non-equivalent type.")
+  }
 
   "Probe of a probe type" should "fail" in {
     val exc = intercept[chisel3.ChiselException] {
