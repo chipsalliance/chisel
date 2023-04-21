@@ -1,17 +1,18 @@
 package chisel3.probe
 
 import chisel3.Data
-import chisel3.internal.Builder
+import chisel3.internal.{Builder, OpBinding}
 import chisel3.internal.firrtl.{ProbeExpr, RWProbeExpr}
-import chisel3.experimental.SourceInfo
+import chisel3.experimental.{requireIsHardware, SourceInfo}
 
 import scala.language.experimental.macros
 
 private[chisel3] sealed trait ProbeValueBase {
   protected def apply[T <: Data](source: T, writable: Boolean)(implicit sourceInfo: SourceInfo): T = {
+    requireIsHardware(source)
     // construct probe to return with cloned info
     val clone = if (writable) RWProbe(source.cloneType) else Probe(source.cloneType)
-    clone.bind(chisel3.internal.ProbeBinding(Builder.forcedUserModule, Builder.currentWhen, source))
+    clone.bind(OpBinding(Builder.forcedUserModule, Builder.currentWhen))
     if (writable) {
       clone.setRef(RWProbeExpr(source.ref))
     } else {

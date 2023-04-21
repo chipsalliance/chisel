@@ -6,16 +6,32 @@ import chisel3._
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
+import chisel3.Data.ProbeInfo
 import chisel3.experimental.SourceInfo
+import chisel3.reflect.DataMirror
 
 import scala.language.experimental.macros
 
 package object probe {
 
+  private[chisel3] def setProbeModifier[T <: Data](data: T, probeInfo: Option[ProbeInfo]): Unit = {
+    probeInfo.foreach { _ =>
+      data.probeInfo = probeInfo
+      data match {
+        case a: Aggregate =>
+          a.elementsIterator.foreach { e => setProbeModifier(e, probeInfo) }
+        case _ => // do nothing
+      }
+    }
+  }
+
   /** Initialize a probe with a provided probe value. */
-  def define(sink: Data, probeExpr: Data)(implicit sourceInfo: SourceInfo): Unit = {
-    requireHasProbeTypeModifier(sink)
-    requireHasProbeTypeModifier(probeExpr)
+  def define[T <: Data](sink: T, probeExpr: T)(implicit sourceInfo: SourceInfo): Unit = {
+    if (!DataMirror.checkTypeEquivalence(sink, probeExpr)) {
+      Builder.error("Cannot define a probe on a non-equivalent type.")
+    }
+    requireHasProbeTypeModifier(sink, "Expected sink to be a probe.")
+    requireHasProbeTypeModifier(probeExpr, "Expected source to be a probe expression.")
     pushCommand(ProbeDefine(sourceInfo, sink.ref, probeExpr.ref))
   }
 
@@ -23,9 +39,11 @@ package object probe {
   def read[T <: Data](source: T): T = macro chisel3.internal.sourceinfo.ProbeTransform.sourceRead[T]
 
   def do_read[T <: Data](source: T)(implicit sourceInfo: SourceInfo): T = {
+    requireIsHardware(source)
+    requireHasProbeTypeModifier(source)
     // construct probe to return with cloned info
     val clone = source.cloneTypeFull
-    clone.bind(chisel3.internal.ProbeBinding(Builder.forcedUserModule, Builder.currentWhen, source))
+    clone.bind(OpBinding(Builder.forcedUserModule, Builder.currentWhen))
     clone.setRef(ProbeRead(source.ref))
     clone.probeInfo = source.probeInfo
     clone

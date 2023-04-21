@@ -20,10 +20,9 @@ private[chisel3] sealed trait ProbeBase {
     val data = Output(source) // should only evaluate source once
     requireIsChiselType(data)
     requireNoProbeTypeModifier(data, "Cannot probe a probe.")
-    //require is not aggregate containing probe using datamirror
 
-    val ret = if (!data.mustClone(prevId)) data else data.cloneType.asInstanceOf[T]
-    ret.probeInfo = Some(ProbeInfo(writable))
+    val ret: T = if (!data.mustClone(prevId)) data else data.cloneType.asInstanceOf[T]
+    setProbeModifier(ret, Some(ProbeInfo(writable)))
     ret
   }
 }

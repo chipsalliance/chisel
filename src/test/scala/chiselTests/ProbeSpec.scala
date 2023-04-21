@@ -13,7 +13,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
 
   "Simple probe usage" should "work" in {
     val chirrtl = ChiselStage.emitCHIRRTL(
-      new Module {
+      new RawModule {
         val a = IO(Output(RWProbe(Bool())))
 
         val w = WireInit(Bool(), false.B)
@@ -74,9 +74,65 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
     )
   }
 
+  "Subfields of probed bundles" should "be accessible" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(
+      new RawModule {
+
+        class FooBundle() extends Bundle {
+          val a = Bool()
+          val b = Bool()
+        }
+
+        class Foo() extends RawModule {
+          val p = IO(Output(Probe(new FooBundle())))
+          val x = Wire(new FooBundle())
+          x := DontCare
+          define(p, ProbeValue(x))
+        }
+
+        val x = IO(Output(Bool()))
+        val y = IO(Output(Probe(Bool())))
+        val f = Module(new Foo())
+        x := read(f.p.b)
+        define(y, f.p.b)
+      },
+      Array("--full-stacktrace")
+    )
+
+    (processChirrtl(chirrtl) should contain).allOf(
+      "output p : Probe<{ a : UInt<1>, b : UInt<1>}>",
+      "wire x : { a : UInt<1>, b : UInt<1>}",
+      "define p = probe(x)",
+      "x <= read(f.p.b)",
+      "define y = f.p.b"
+    )
+  }
+
+  "Subindices of probed vectors" should "be accessible" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(
+      new RawModule {
+        class VecChild() extends RawModule {
+          val p = IO(Output(Vec(2, Probe(Vec(2, UInt(16.W))))))
+        }
+
+        val outProbe = IO(Output(Probe(UInt(16.W))))
+        val child = Module(new VecChild())
+        define(outProbe, child.p(0)(1))
+      },
+      Array("--full-stacktrace")
+    )
+
+    (processChirrtl(chirrtl) should contain).allOf(
+      "output p : Probe<UInt<16>[2]>[2]",
+      "output outProbe : Probe<UInt<16>>",
+      "define outProbe = child.p[0][1]"
+    )
+  }
+
+  // FIXME
   "Connectors" should "work with probes" in {
     val chirrtl = ChiselStage.emitCHIRRTL(
-      new Module {
+      new RawModule {
 
         class FooBundle extends Bundle {
           val bar = Bool()
@@ -117,10 +173,12 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
     // )
   }
 
+  // TODO define with non-connectable src/sink should fail
+
   "Probe of a probe type" should "fail" in {
     val exc = intercept[chisel3.ChiselException] {
       ChiselStage.emitCHIRRTL(
-        new Module {
+        new RawModule {
           val a = Output(RWProbe(Probe(Bool())))
         },
         Array("--throw-on-first-error")
@@ -129,6 +187,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
     exc.getMessage should be("Cannot probe a probe.")
   }
 
+  // TODO
   // "Probes of aggregates containing probes" should "fail" in {
   //   val chirrtl = ChiselStage.emitCHIRRTL(
   //     new Module {
@@ -147,49 +206,10 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
   //   // FIXME
   // }
 
-  "Probes" should "be able to access vector subindices" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(
-      new Module {
-
-        class VecChild() extends RawModule {
-          val io = IO(new Bundle {
-            val in = Input(Vec(2, UInt(16.W)))
-            val out = Output((Vec(2, Probe(Vec(2, UInt(16.W))))))
-          })
-          io.out.foreach { ele: Vec[UInt] => ele := io.in }
-        }
-
-        val io = IO(new Bundle {
-          val out = Output(RWProbe(UInt(16.W)))
-          val probeVec = Output(Probe(Vec(2, UInt(16.W))))
-          val vecProbe = Output(Vec(2, Probe(UInt(16.W))))
-        })
-
-        val child = Module(new VecChild())
-
-        // TODO how to handle define fowarding when taking elements from a vec
-
-        // Probe.define(io.out, child.io.out(0)(1))
-        // Probe.define(io.probeVec, Probe.probe(child.io.in))
-        // io.vecProbe.foreach { vp =>
-        //   Probe.define(vp, child.io.out)
-        // }
-      },
-      Array("--full-stacktrace")
-    )
-
-    println(chirrtl)
-
-    // (processChirrtl(chirrtl) should contain).allOf(
-    //   "output io : { flip in : UInt<16>[2], out : RWProbe<UInt<16>>[2][2]}",
-    //   "define io.out = child.io.out[0][1]"
-    // )
-  }
-
   "Wire() of a probe" should "fail" in {
     val exc = intercept[chisel3.ChiselException] {
       ChiselStage.emitCHIRRTL(
-        new Module {
+        new RawModule {
           val w = Wire(Probe(Bool()))
         },
         Array("--throw-on-first-error")
@@ -201,7 +221,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
   "WireInit of a probe" should "fail" in {
     val exc = intercept[chisel3.ChiselException] {
       ChiselStage.emitCHIRRTL(
-        new Module {
+        new RawModule {
           val w = WireInit(RWProbe(Bool()), false.B)
         },
         Array("--throw-on-first-error")
@@ -213,7 +233,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
   "Reg() of a probe" should "fail" in {
     val exc = intercept[chisel3.ChiselException] {
       ChiselStage.emitCHIRRTL(
-        new Module {
+        new RawModule {
           val w = Reg(RWProbe(Bool()))
         },
         Array("--throw-on-first-error")
@@ -237,7 +257,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
   "Memories of probes" should "fail" in {
     val exc = intercept[chisel3.ChiselException] {
       ChiselStage.emitCHIRRTL(
-        new Module {
+        new RawModule {
           val mem = SyncReadMem(1024, RWProbe(Vec(4, UInt(32.W))))
         },
         Array("--throw-on-first-error")
@@ -246,5 +266,9 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
     exc.getMessage should be("Cannot make a Mem of a Chisel type with a probe modifier.")
   }
 
-  // TODO probes of const types -- const of probe type?
+  // TODO probes of const type should work
+
+  // TODO writable probes of const type should fail
+
+  // TODO const of probe type should fail?
 }
