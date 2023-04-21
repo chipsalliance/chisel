@@ -594,6 +594,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       }
     }
     requireIsHardware(this)
+    requireVisible()
     topBindingOpt match {
       // DataView
       case Some(ViewBinding(target)) => reify(target).ref
