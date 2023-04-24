@@ -552,7 +552,59 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   /** Whether this Data has the same model ("data type") as that Data.
     * Data subtypes should overload this with checks against their own type.
     */
-  private[chisel3] def typeEquivalent(that: Data): Boolean
+  private[chisel3] final def typeEquivalent(
+    that: Data
+  ): Boolean = findFirstTypeMismatch(that, strictTypes = true, strictWidths = true).isEmpty
+
+  /** Find and report any type mismatches
+    *
+    * @param that Data being compared to this
+    * @param strictTypes Does class of Bundles or Records need to match? Inverse of "structural".
+    * @param strictWidths do widths need to match?
+    * @return None if types are equivalent, Some String reporting the first mismatch if not
+    */
+  private[chisel3] final def findFirstTypeMismatch(
+    that:         Data,
+    strictTypes:  Boolean,
+    strictWidths: Boolean
+  ): Option[String] = {
+    def rec(left: Data, right: Data): Option[String] =
+      (left, right) match {
+        // Careful, EnumTypes are Element and if we don't implement this, then they are all always equal
+        case (e1: EnumType, e2: EnumType) =>
+          // TODO, should we implement a form of structural equality for enums?
+          if (e1.factory == e2.factory) None
+          else Some(s": Left ($e1) and Right ($e2) have different types.")
+        case (e1: Element, e2: Element) if e1.getClass == e2.getClass =>
+          if (strictWidths && e1.width != e2.width) {
+            Some(s": Left ($e1) and Right ($e2) have different widths.")
+          } else {
+            None
+          }
+        case (r1: Record, r2: Record) if !strictTypes || r1.getClass == r2.getClass =>
+          val (larger, smaller, msg) =
+            if (r1._elements.size >= r2._elements.size) (r1, r2, "Left") else (r2, r1, "Right")
+          larger._elements.collectFirst {
+            case (name, data) =>
+              val recurse = smaller._elements.get(name) match {
+                case None        => Some(s": Dangling field on $msg")
+                case Some(data2) => rec(data, data2)
+              }
+              recurse.map("." + name + _)
+          }.flatten
+        case (v1: Vec[_], v2: Vec[_]) =>
+          if (v1.size != v2.size) {
+            Some(s": Left (size ${v1.size}) and Right (size ${v2.size}) have different lengths.")
+          } else {
+            val recurse = rec(v1.sample_element, v2.sample_element)
+            recurse.map("[_]" + _)
+          }
+        case _ => Some(s": Left ($left) and Right ($right) have different types.")
+      }
+    val leftType = if (this.hasBinding) this.cloneType else this
+    val rightType = if (that.hasBinding) that.cloneType else that
+    rec(leftType, rightType)
+  }
 
   private[chisel3] def requireVisible(): Unit = {
     val mod = topBindingOpt.flatMap(_.location)
@@ -1106,8 +1158,6 @@ final case object DontCare extends Element with connectable.ConnectableDocs {
     Builder.error("DontCare does not have a UInt representation")
     0.U
   }
-  // DontCare's only match themselves.
-  private[chisel3] def typeEquivalent(that: Data): Boolean = that == DontCare
 
   /** $colonGreaterEq
     *
