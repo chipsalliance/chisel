@@ -358,23 +358,23 @@ private[chisel3] object Converter {
       val childClearDir = clearDir ||
         d.specifiedDirection == SpecifiedDirection.Input || d.specifiedDirection == SpecifiedDirection.Output
       // if Vector is a probe, don't emit Probe<...> on its elements
-      fir.VectorType(extractType(d.sample_element, childClearDir, info, checkProbe, checkConst), d.length)
+      fir.VectorType(extractType(d.sample_element, childClearDir, info, checkProbe, true), d.length)
     case d: Record => {
       val childClearDir = clearDir ||
         d.specifiedDirection == SpecifiedDirection.Input || d.specifiedDirection == SpecifiedDirection.Output
       // if Record is a probe, don't emit Probe<...> on its elements
       def eltField(elt: Data): fir.Field = (childClearDir, firrtlUserDirOf(elt)) match {
         case (true, _) =>
-          fir.Field(getRef(elt, info).name, fir.Default, extractType(elt, true, info, checkProbe, checkConst))
+          fir.Field(getRef(elt, info).name, fir.Default, extractType(elt, true, info, checkProbe, true))
         case (false, SpecifiedDirection.Unspecified | SpecifiedDirection.Output) =>
-          fir.Field(getRef(elt, info).name, fir.Default, extractType(elt, false, info, checkProbe, checkConst))
+          fir.Field(getRef(elt, info).name, fir.Default, extractType(elt, false, info, checkProbe, true))
         case (false, SpecifiedDirection.Flip | SpecifiedDirection.Input) =>
-          fir.Field(getRef(elt, info).name, fir.Flip, extractType(elt, false, info, checkProbe, checkConst))
+          fir.Field(getRef(elt, info).name, fir.Flip, extractType(elt, false, info, checkProbe, true))
       }
       if (!d._isOpaqueType)
         fir.BundleType(d._elements.toIndexedSeq.reverse.map { case (_, e) => eltField(e) })
       else
-        extractType(d._elements.head._2, childClearDir, info, checkProbe, checkConst)
+        extractType(d._elements.head._2, childClearDir, info, checkProbe, true)
     }
   }
 
