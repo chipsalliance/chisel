@@ -14,12 +14,21 @@ import scala.language.experimental.macros
   */
 private[chisel3] sealed trait ProbeBase {
 
+  private def containsProbe(data: Data): Boolean = data match {
+    case a: Aggregate =>
+      a.elementsIterator.foldLeft(false)((res: Boolean, d: Data) => res || containsProbe(d))
+    case leaf => leaf.probeInfo.nonEmpty
+  }
+
   protected def apply[T <: Data](source: => T, writable: Boolean)(implicit sourceInfo: SourceInfo): T = {
     val prevId = Builder.idGen.value
     // call Output() to coerce passivity
     val data = Output(source) // should only evaluate source once
     requireIsChiselType(data)
     requireNoProbeTypeModifier(data, "Cannot probe a probe.")
+    if (containsProbe(data)) {
+      Builder.error("Cannot create a probe of an aggregate containing a probe.")
+    }
 
     val ret: T = if (!data.mustClone(prevId)) data else data.cloneType.asInstanceOf[T]
     setProbeModifier(ret, Some(ProbeInfo(writable)))

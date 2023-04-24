@@ -202,24 +202,19 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
     exc.getMessage should be("Cannot probe a probe.")
   }
 
-  // TODO
-  // "Probes of aggregates containing probes" should "fail" in {
-  //   val chirrtl = ChiselStage.emitCHIRRTL(
-  //     new Module {
-
-  //       class FooBundle extends Bundle {
-  //         val bar = Probe(UInt(8.W))
-  //       }
-
-  //       val foo = new FooBundle
-  //       val probeFoo = ProbeValue(foo)
-  //     },
-  //     Array("--full-stacktrace")
-  //   )
-
-  //   println(chirrtl)
-  //   // FIXME
-  // }
+  "Probes of aggregates containing probes" should "fail" in {
+    val exc = intercept[chisel3.ChiselException] {
+      ChiselStage.emitCHIRRTL(
+        new RawModule {
+          val out = IO(Output(Probe(new Bundle {
+            val a = Probe(Bool())
+          })))
+        },
+        Array("--throw-on-first-error")
+      )
+    }
+    exc.getMessage should be("Cannot create a probe of an aggregate containing a probe.")
+  }
 
   "Wire() of a probe" should "fail" in {
     val exc = intercept[chisel3.ChiselException] {
