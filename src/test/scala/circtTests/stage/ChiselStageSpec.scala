@@ -344,16 +344,12 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
     }
 
     it("should allow building a module from JSON") {
-      import org.json4s._
-      import org.json4s.native.JsonMethods._
-      import org.json4s.native.Serialization
       import ChiselStageSpec.{Corge, Parameters}
 
       val targetDir = baseDir / "should-allow-building-a-module-from-JSON"
 
-      implicit val defaultFormat = Serialization.formats(FullTypeHints(List(classOf[Parameters]), "class"))
       val clazz = classOf[Corge].getName()
-      val json = Serialization.write(Parameters(42))
+      val json = ChiselGeneratorAnnotation.serializeJSON(Parameters(42), classOf[Parameters] :: Nil)
 
       info(s"using --module-json $clazz,$json")
       (new ChiselStage).execute(

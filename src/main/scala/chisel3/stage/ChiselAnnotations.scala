@@ -218,6 +218,19 @@ object ChiselGeneratorAnnotation extends HasShellOptions {
     )
   )
 
+  /** Utility to write an arbitrary parameter to a JSON format that --module-json will understand.
+    * @param parameter the parameter to serialize to a JSON string
+    * @param classes a list of all classes that may exist recursively inside the parameter
+    */
+  def serializeJSON(parameter: Any, classes: List[Class[_]]): String = {
+    import org.json4s._
+    import org.json4s.native.JsonMethods._
+    import org.json4s.native.Serialization
+
+    implicit val defaultFormat = Serialization.formats(FullTypeHints(classes, "class"))
+    Serialization.write(parameter)
+  }
+
 }
 
 /** Stores a Chisel Circuit
