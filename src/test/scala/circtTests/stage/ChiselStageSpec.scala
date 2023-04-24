@@ -73,6 +73,28 @@ object ChiselStageSpec {
     b := a
   }
 
+  case class GraultAnnotation(width: Int)
+      extends firrtl.annotations.NoTargetAnnotation
+      with firrtl.options.CustomFileEmission {
+
+    override protected def baseFileName(a: firrtl.AnnotationSeq): String = "Grault"
+
+    override protected def suffix: Option[String] = Some(".file")
+
+    override def getBytes: Iterable[Byte] = width.toString.getBytes
+
+  }
+
+  class Grault(foo: Parameters) extends Module {
+    val a = IO(Input(UInt(foo.width.W)))
+    val b = IO(Output(UInt(foo.width.W)))
+    b := a
+
+    chisel3.experimental.annotate(new chisel3.experimental.ChiselAnnotation {
+      override def toFirrtl = GraultAnnotation(foo.width)
+    })
+  }
+
   import firrtl.annotations.NoTargetAnnotation
   import firrtl.options.Unserializable
   case object DummyAnnotation extends NoTargetAnnotation with Unserializable
@@ -368,6 +390,34 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
       info("causes a 42-bit UInt to show up")
       os.read(targetDir / "Corge.fir") should include("UInt<42>")
     }
+
+    it("should properly handle custom file emission when building from JSON") {
+      import ChiselStageSpec.{Grault, Parameters}
+
+      val targetDir = baseDir / "should-properly-handle-custom-file-emission-when-building-from-JSON"
+
+      val clazz = classOf[Grault].getName()
+      val json = ChiselGeneratorAnnotation.serializeJSON(Parameters(42), classOf[Parameters] :: Nil)
+
+      info(s"using --module-json $clazz,$json")
+      (new ChiselStage).execute(
+        Array(
+          "--module-json",
+          s"$clazz,$json",
+          "--target",
+          "chirrtl",
+          "--target-dir",
+          targetDir.toString,
+          "--full-stacktrace"
+        ),
+        Seq.empty
+      )
+
+      info("causes a 42-bit UInt to show up")
+      os.read(targetDir / "Grault.fir") should include("UInt<42>")
+
+      os.read(targetDir / "Grault.file") should include("42")
+    }
   }
 
   describe("ChiselStage exception handling") {
@@ -495,7 +545,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
       val lines = stdout.split("\n")
       // Fuzzy includes aren't ideal but there is ANSI color in these strings that is hard to match
       lines(0) should include(
-        "src/test/scala/circtTests/stage/ChiselStageSpec.scala:98:9: Negative shift amounts are illegal (got -1)"
+        "src/test/scala/circtTests/stage/ChiselStageSpec.scala:120:9: Negative shift amounts are illegal (got -1)"
       )
       lines(1) should include("    3.U >> -1")
       lines(2) should include("        ^")
@@ -516,7 +566,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
       // Fuzzy includes aren't ideal but there is ANSI color in these strings that is hard to match
       lines.size should equal(2)
       lines(0) should include(
-        "src/test/scala/circtTests/stage/ChiselStageSpec.scala:98:9: Negative shift amounts are illegal (got -1)"
+        "src/test/scala/circtTests/stage/ChiselStageSpec.scala:120:9: Negative shift amounts are illegal (got -1)"
       )
       (lines(1) should not).include("3.U >> -1")
     }
