@@ -17,6 +17,20 @@ ThisBuild / firtoolVersion := {
   }
 }
 
+// Previous versions are read from project/previous-versions.txt
+// If this file is empty or does not exist, no binary compatibility checking will be done
+// Add waivers to the directory defined by key `mimaFiltersDirectory` in files named: <since version>.backwards.excludes
+//   eg. unipublish/src/main/mima-filters/5.0.0.backwards.excludes
+val previousVersions = settingKey[Set[String]]("Previous versions for binary compatibility checking")
+ThisBuild / previousVersions := {
+  val file = new java.io.File("project/previous-versions.txt")
+  if (file.isFile) {
+    scala.io.Source.fromFile(file).getLines.toSet
+  } else {
+    Set()
+  }
+}
+
 val emitVersion = taskKey[Unit]("Write the version to version.txt")
 emitVersion := {
   IO.write(new java.io.File("version.txt"), version.value)
@@ -169,10 +183,6 @@ lazy val firrtlSettings = Seq(
   }
 )
 
-lazy val mimaSettings = Seq(
-  mimaPreviousArtifacts := Set()
-)
-
 lazy val assemblySettings = Seq(
   assembly / assemblyJarName := "firrtl.jar",
   assembly / test := {},
@@ -223,7 +233,6 @@ lazy val firrtl = (project in file("firrtl"))
     buildInfoUsePackageAsPath := true,
     buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion)
   )
-  .settings(mimaSettings)
   .settings(warningSuppression: _*)
   .settings(fatalWarningsSettings: _*)
 
@@ -297,8 +306,8 @@ lazy val plugin = (project in file("plugin"))
   )
   .settings(fatalWarningsSettings: _*)
   .settings(
-    mimaPreviousArtifacts := {
-      Set()
+    mimaPreviousArtifacts := previousVersions.value.map { version =>
+      (organization.value % name.value % version).cross(CrossVersion.full)
     }
   )
 
@@ -320,7 +329,6 @@ lazy val macros = (project in file("macros"))
     // Published as part of unipublish
     publish / skip := true
   )
-  .settings(mimaPreviousArtifacts := Set())
 
 lazy val core = (project in file("core"))
   .settings(commonSettings: _*)
@@ -334,7 +342,6 @@ lazy val core = (project in file("core"))
     // Published as part of unipublish
     publish / skip := true
   )
-  .settings(mimaPreviousArtifacts := Set())
   .settings(warningSuppression: _*)
   .settings(fatalWarningsSettings: _*)
   .settings(
@@ -409,7 +416,9 @@ lazy val unipublish =
     .settings(warningSuppression: _*)
     .settings(fatalWarningsSettings: _*)
     .settings(
-      mimaPreviousArtifacts := Set(),
+      mimaPreviousArtifacts := previousVersions.value.map { version =>
+        organization.value %% name.value % version
+      },
       // This is a pseudo-project with no class files, use the package jar instead
       mimaCurrentClassfiles := (Compile / packageBin).value,
       // Forward doc command to unidoc
