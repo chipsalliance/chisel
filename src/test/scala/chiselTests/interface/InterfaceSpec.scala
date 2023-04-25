@@ -15,8 +15,6 @@ class InterfaceSpec extends AnyFunSpec with Matchers {
   /** This is the definition of the interface. */
   object BarInterface extends Interface {
 
-    case class Struct(a: Int, b: String, c: Data)
-
     /** This is the agreed-upon port-level interface. */
     final class BarBundle extends Bundle {
       val a = Input(Bool())
@@ -27,12 +25,6 @@ class InterfaceSpec extends AnyFunSpec with Matchers {
 
     /** Generate the ports given the parameters. */
     override def ports() = new Ports
-
-    /** This is a Scala integer value on the Interface. */
-    final val int = 42
-
-    /** This is a Scala string value on the Interface. */
-    final val string = "hello world"
 
   }
 
