@@ -4,7 +4,7 @@ package chiselTests.naming
 
 import chisel3._
 import chisel3.aop.Select
-import chisel3.experimental.{noPrefix, prefix, AffectsChiselPrefix}
+import chisel3.experimental.{noPrefix, prefix, skipPrefix, AffectsChiselPrefix}
 import chiselTests.{ChiselPropSpec, Utils}
 import circt.stage.ChiselStage
 
@@ -62,6 +62,38 @@ class PrefixSpec extends ChiselPropSpec with Utils {
           "x2_wire2",
           "x2_foo_wire1",
           "x2"
+        )
+      )
+    }
+  }
+
+  property("Skipping a prefix should work") {
+    class Test extends Module {
+      def builder2(): UInt = {
+        skipPrefix {
+          val wire1 = Wire(UInt(3.W))
+          val wire2 = Wire(UInt(3.W))
+          wire2
+        }
+      }
+      def builder(): UInt = {
+        prefix("foo") {
+          builder2()
+        }
+      }
+      { val x1 = builder() }
+      { val x2 = builder2() }
+      { builder2() }
+    }
+    aspectTest(() => new Test) { top: Test =>
+      Select.wires(top).map(_.instanceName) should be(
+        List(
+          "x1_wire1",
+          "x1",
+          "wire1",
+          "x2",
+          "wire1_1",
+          "wire2"
         )
       )
     }

@@ -84,3 +84,24 @@ object noPrefix {
     ret
   }
 }
+
+object skipPrefix {
+
+  /** Use to remove the latest prefix value (if one exists) so signals within the scope are prefixed with one less value
+    * outside the scope
+    *
+    * @param f a function for which any generated components are given the prefix
+    * @tparam T The return type of the provided function
+    * @return The return value of the provided function
+    */
+  def apply[T](f: => T): T = {
+    val prefix = Builder.getPrefix
+    val skipped = if (prefix.nonEmpty) prefix.tail else prefix
+    Builder.clearPrefix()
+    Builder.setPrefix(skipped)
+    val ret = f
+    Builder.clearPrefix()
+    Builder.setPrefix(prefix)
+    ret
+  }
+}
