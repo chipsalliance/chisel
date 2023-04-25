@@ -321,7 +321,7 @@ package experimental {
     private[chisel3] var modulePortsAskedFor: Option[SourceInfo] = None
 
     /** Where a Module becomes fully closed (no secret ports drilled afterwards) */
-    private[chisel3] def fullyClosedLocation = toDefinitionCalled.orElse(modulePortsAskedFor)
+    private[chisel3] def isFullyClosed = fullyClosedErrorMessages.nonEmpty
     private[chisel3] def fullyClosedErrorMessages: Iterable[(SourceInfo, String)] = {
       toDefinitionCalled.map(si =>
         (si, s"Calling .toDefinition fully closes ${name}, but it is later bored through!")
@@ -561,17 +561,14 @@ package experimental {
     // data must be a fresh Chisel type
     private[chisel3] def createSecretIO(data: => Data)(implicit sourceInfo: SourceInfo): Data = {
       val iodef = data
-      // forcename
       internal.requireIsChiselType(iodef, "io type")
-
-      if (toDefinitionCalled.nonEmpty)
-        Builder.error("can only create secret ports when a module has not been used as a Definition")
-      if (modulePortsAskedFor.nonEmpty)
-        Builder.error("can only create secret ports when a module has not been asked for all its IO")
+      require(!isFullyClosed, "Cannot create secret ports if module is fully closed")
 
       iodef.bind(internal.SecretPortBinding(this))
       iodef
     }
+
+    private[chisel3] val secretPorts: ArrayBuffer[Port] = ArrayBuffer.empty
 
     // Must have separate createSecretIO from addSecretIO to get plugin to name it
     private[chisel3] def addSecretIO(iodef: Data)(implicit sourceInfo: SourceInfo): Data = {
@@ -583,8 +580,6 @@ package experimental {
       } else secretPorts += newPort
       iodef
     }
-
-    private[chisel3] val secretPorts: ArrayBuffer[Port] = ArrayBuffer.empty
 
     /**
       * This must wrap the datatype used to set the io field of any Module.

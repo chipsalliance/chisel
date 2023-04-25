@@ -17,7 +17,7 @@ abstract class ShouldntAssertTester(cyclesToWait: BigInt = 4) extends BasicTeste
   when(done) { stop() }
 }
 
-class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with MatchesOrOmits {
+class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with MatchesAndOmits {
   val args = Array("--throw-on-first-error", "--full-stacktrace")
 
   class BoringInverter extends Module {
@@ -151,7 +151,7 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
       b := BoringUtils.bore(bar.b_wire)
       c := BoringUtils.bore(c_wire)
     }
-    matchesOrOmits(circt.stage.ChiselStage.emitCHIRRTL(new Foo))(
+    matchesAndOmits(circt.stage.ChiselStage.emitCHIRRTL(new Foo))(
       "module Baz :",
       "output a_bore : UInt<1>",
       "a_bore <= a_wire",
@@ -194,7 +194,7 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
       val a = IO(Input(UInt(1.W)))
       val bar = Module(new Bar(a))
     }
-    matchesOrOmits(circt.stage.ChiselStage.emitCHIRRTL(new Foo))(
+    matchesAndOmits(circt.stage.ChiselStage.emitCHIRRTL(new Foo))(
       "module Bar :",
       "input q_bore : UInt<1>",
       "q <= q_bore_1", // Do normal connection before secret ones

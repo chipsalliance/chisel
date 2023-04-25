@@ -220,7 +220,7 @@ object BoringUtils {
     }
     def drill(source: Data, path: Seq[BaseModule], up: Boolean): Data = {
       path.foldLeft(source) {
-        case (rhs, module) if (module.fullyClosedLocation.nonEmpty) => boringError(module); DontCare
+        case (rhs, module) if (module.isFullyClosed) => boringError(module); DontCare
         case (rhs, module) =>
           skipPrefix { // so `lcaSource` isn't in the name of the secret port
             /** create a port, and drill up. */

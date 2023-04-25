@@ -362,12 +362,12 @@ trait Utils {
 }
 
 /** Contains helpful function to assert both statements to match, and statements to omit */
-trait MatchesOrOmits {
+trait MatchesAndOmits {
   private def matches(lines: List[String], matchh: String): Option[String] = lines.filter(_.contains(matchh)).lastOption
   private def omits(line:    String, omit:         String): Option[(String, String)] =
     if (line.contains(omit)) Some((omit, line)) else None
   private def omits(lines: List[String], omit: String): Seq[(String, String)] = lines.flatMap { omits(_, omit) }
-  def matchesOrOmits(output: String)(matchList: String*)(omitList: String*): Unit = {
+  def matchesAndOmits(output: String)(matchList: String*)(omitList: String*): Unit = {
     val lines = output.split("\n").toList
     val unmatched = matchList.flatMap { m =>
       if (matches(lines, m).nonEmpty) None else Some(m)
