@@ -354,12 +354,17 @@ private[chisel3] object Converter {
 
   def convert(component: Component): fir.DefModule = component match {
     case ctx @ DefModule(_, name, ports, cmds) =>
-      fir.Module(fir.NoInfo, name, ports.map(p => convert(p)), convert(cmds, ctx))
+      fir.Module(
+        fir.NoInfo,
+        name,
+        (ports ++ ctx.secretPorts).map(p => convert(p)),
+        convert(cmds ++ ctx.secretConnects, ctx)
+      )
     case ctx @ DefBlackBox(id, name, ports, topDir, params) =>
       fir.ExtModule(
         fir.NoInfo,
         name,
-        ports.map(p => convert(p, topDir)),
+        (ports ++ ctx.secretPorts).map(p => convert(p, topDir)),
         id.desiredName,
         params.keys.toList.sorted.map { name => convert(name, params(name)) }
       )
@@ -367,7 +372,7 @@ private[chisel3] object Converter {
       fir.IntModule(
         fir.NoInfo,
         name,
-        ports.map(p => convert(p, topDir)),
+        (ports ++ ctx.secretPorts).map(p => convert(p, topDir)),
         id.intrinsic,
         params.keys.toList.sorted.map { name => convert(name, params(name)) }
       )

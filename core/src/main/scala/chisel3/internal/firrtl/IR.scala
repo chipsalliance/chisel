@@ -13,6 +13,7 @@ import _root_.firrtl.annotations.Annotation
 import scala.collection.immutable.NumericRange
 import scala.math.BigDecimal.RoundingMode
 import scala.annotation.nowarn
+import scala.collection.mutable
 
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class PrimOp(name: String) {
@@ -361,11 +362,14 @@ abstract class Component extends Arg {
   def id:    BaseModule
   def name:  String
   def ports: Seq[Port]
+  val secretPorts: mutable.ArrayBuffer[Port] = id.secretPorts
 }
 
 @nowarn("msg=class Port") // delete when Port becomes private
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
-case class DefModule(id: RawModule, name: String, ports: Seq[Port], commands: Seq[Command]) extends Component
+case class DefModule(id: RawModule, name: String, ports: Seq[Port], commands: Seq[Command]) extends Component {
+  val secretConnects: mutable.ArrayBuffer[Connect] = mutable.ArrayBuffer[Connect]()
+}
 
 @nowarn("msg=class Port") // delete when Port becomes private
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")

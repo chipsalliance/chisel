@@ -89,6 +89,9 @@ sealed trait ConditionalDeclarable extends TopBinding {
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class PortBinding(enclosure: BaseModule) extends ConstrainedBinding
 
+// Added to handle BoringUtils in Chisel
+private[chisel3] case class SecretPortBinding(enclosure: BaseModule) extends ConstrainedBinding
+
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class OpBinding(enclosure: RawModule, visibility: Option[WhenContext])
     extends ConstrainedBinding
