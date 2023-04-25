@@ -401,4 +401,207 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (t: T, n: BigInt, val readU
   }
   // note: we implement do_read(addr) for SyncReadMem in terms of do_read(addr, en) in order to ensure that
   //       `mem.read(addr)` will always behave the same as `mem.read(addr, true.B)`
+
+  /** Generates an explicit read-write port for this SyncReadMem. Note that this does not infer
+    * port directionality based on connection semantics and the `when` context unlike SyncReadMem.apply(),
+    * so the behavior of the port must be controlled by changing the values of the input parameters.
+    *
+    * @param idx memory element index to write into
+    * @param writeData new data to write
+    * @param enable enables access to the memory
+    * @param isWrite performs a write instead of a read when enable is true; the return
+    * value becomes undefined when this parameter is true
+    *
+    * @return The read data of the memory, which gives the value at idx when enable is true and isWrite is false,
+    * or an undefined value otherwise, on the following clock cycle.
+    *
+    * @example Controlling a read/write port with IO signals
+    * {{{
+    * class MyMemWrapper extends Module {
+    *   val width = 2
+    *
+    *   val io = IO(new Bundle {
+    *     val address = Input(UInt())
+    *     val wdata = Input(UInt(width.W))
+    *     val enable = Input(Bool())
+    *     val isWrite = Input(Bool())
+    *     val rdata = Output(UInt(width.W))
+    *   })
+    *
+    *   val mem = SyncReadMem(2, UInt(width.W))
+    *   io.rdata := mem.readWrite(io.address, io.wdata, io.enable, io.isWrite)
+    * }
+    *
+    * }}}
+    */
+  def readWrite(idx: UInt, writeData: T, en: Bool, isWrite: Bool): T = macro SourceInfoTransform.idxDataEnIswArg
+
+  /** @group SourceInfoTransformMacro */
+  def do_readWrite(idx: UInt, writeData: T, en: Bool, isWrite: Bool)(implicit sourceInfo: SourceInfo): T =
+    _readWrite_impl(idx, writeData, en, isWrite, Builder.forcedClock, true)
+
+  /** Generates an explicit read-write port for this SyncReadMem, using a clock that may be
+    * different from the implicit clock.
+    *
+    * @param idx memory element index to write into
+    * @param writeData new data to write
+    * @param enable enables access to the memory
+    * @param isWrite performs a write instead of a read when enable is true; the return
+    * value becomes undefined when this parameter is true
+    * @param clock clock to bind to this read-write port
+    *
+    * @return The read data of the memory, which gives the value at idx when enable is true and isWrite is false,
+    * or an undefined value otherwise, on the following clock cycle.
+    */
+  def readWrite(idx: UInt, writeData: T, en: Bool, isWrite: Bool, clock: Clock): T =
+    macro SourceInfoTransform.idxDataEnIswClockArg
+
+  /** @group SourceInfoTransformMacro */
+  def do_readWrite(
+    idx:     UInt,
+    data:    T,
+    en:      Bool,
+    isWrite: Bool,
+    clock:   Clock
+  )(
+    implicit sourceInfo: SourceInfo
+  ): T =
+    _readWrite_impl(idx, data, en, isWrite, clock, true)
+
+  /** @group SourceInfoTransformMacro */
+  private def _readWrite_impl(
+    addr:    UInt,
+    data:    T,
+    enable:  Bool,
+    isWrite: Bool,
+    clock:   Clock,
+    warn:    Boolean
+  )(
+    implicit sourceInfo: SourceInfo
+  ): T = {
+    val a = Wire(UInt())
+    a := DontCare
+
+    var port: Option[T] = None
+    when(enable) {
+      a := addr
+      port = Some(super.do_apply_impl(a, clock, MemPortDirection.RDWR, warn))
+
+      when(isWrite) {
+        port.get := data
+      }
+    }
+    port.get
+  }
+
+  /** Generates an explicit read-write port for this SyncReadMem, with a bytemask for
+    * performing partial writes to a Vec element.
+    *
+    * @param idx memory element index to write into
+    * @param writeData new data to write
+    * @param mask the write mask as a Seq of Bool: a write to the Vec element in
+    * memory is only performed if the corresponding mask index is true.
+    * @param enable enables access to the memory
+    * @param isWrite performs a write instead of a read when enable is true; the return
+    * value becomes undefined when this parameter is true
+    *
+    * @return The read data Vec of the memory at idx when enable is true and isWrite is false,
+    * or an undefined value otherwise, on the following clock cycle
+    *
+    * @example Controlling a read/masked write port with IO signals
+    * {{{
+    * class MyMaskedMemWrapper extends Module {
+    *   val width = 2
+    *
+    *   val io = IO(new Bundle {
+    *     val address = Input(UInt())
+    *     val wdata = Input(Vec(2, UInt(width.W)))
+    *     val mask = Input(Vec(2, Bool()))
+    *     val enable = Input(Bool())
+    *     val isWrite = Input(Bool())
+    *     val rdata = Output(Vec(2, UInt(width.W)))
+    *   })
+    *
+    *   val mem = SyncReadMem(2, Vec(2, UInt(width.W)))
+    *   io.rdata := mem.readWrite(io.address, io.wdata, io.mask, io.enable, io.isWrite)
+    * }
+    * }}}
+    *
+    * @note this is only allowed if the memory's element data type is a Vec
+    */
+  def readWrite(
+    idx:       UInt,
+    writeData: T,
+    mask:      Seq[Bool],
+    en:        Bool,
+    isWrite:   Bool
+  )(
+    implicit evidence: T <:< Vec[_]
+  ): T = masked_readWrite_impl(idx, writeData, mask, en, isWrite, Builder.forcedClock, true)
+
+  /** Generates an explicit read-write port for this SyncReadMem, with a bytemask for
+    * performing partial writes to a Vec element and a clock that may be different from
+    * the implicit clock.
+    *
+    * @param idx memory element index to write into
+    * @param writeData new data to write
+    * @param mask the write mask as a Seq of Bool: a write to the Vec element in
+    * memory is only performed if the corresponding mask index is true.
+    * @param enable enables access to the memory
+    * @param isWrite performs a write instead of a read when enable is true; the return
+    * value becomes undefined when this parameter is true
+    * @param clock clock to bind to this read-write port
+    *
+    * @return The read data Vec of the memory at idx when enable is true and isWrite is false,
+    * or an undefined value otherwise, on the following clock cycle
+    *
+    * @note this is only allowed if the memory's element data type is a Vec
+    */
+  def readWrite(
+    idx:       UInt,
+    writeData: T,
+    mask:      Seq[Bool],
+    en:        Bool,
+    isWrite:   Bool,
+    clock:     Clock
+  )(
+    implicit evidence: T <:< Vec[_]
+  ): T = masked_readWrite_impl(idx, writeData, mask, en, isWrite, clock, true)
+
+  private def masked_readWrite_impl(
+    addr:    UInt,
+    data:    T,
+    mask:    Seq[Bool],
+    enable:  Bool,
+    isWrite: Bool,
+    clock:   Clock,
+    warn:    Boolean
+  )(
+    implicit evidence: T <:< Vec[_]
+  ): T = {
+    implicit val sourceInfo = UnlocatableSourceInfo
+    val a = Wire(UInt())
+    a := DontCare
+
+    var port: Option[T] = None
+    when(enable) {
+      a := addr
+      port = Some(super.do_apply_impl(a, clock, MemPortDirection.RDWR, warn))
+      val accessor = port.get.asInstanceOf[Vec[Data]]
+
+      when(isWrite) {
+        val dataVec = data.asInstanceOf[Vec[Data]]
+        if (accessor.length != dataVec.length) {
+          Builder.error(s"Mem write data must contain ${accessor.length} elements (found ${dataVec.length})")
+        }
+        if (accessor.length != mask.length) {
+          Builder.error(s"Mem write mask must contain ${accessor.length} elements (found ${mask.length})")
+        }
+
+        for (((cond, p), datum) <- mask.zip(accessor).zip(dataVec))
+          when(cond) { p := datum }
+      }
+    }
+    port.get
+  }
 }
