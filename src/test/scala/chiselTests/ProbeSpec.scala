@@ -36,10 +36,10 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
 
         class UTurn() extends RawModule {
           val io = IO(new Bundle {
-            val in = Input(Probe(Bool()))
+            val in = Input(RWProbe(Bool()))
             val out = Output(RWProbe(Bool()))
           })
-          io.out := io.in
+          define(io.out, io.in)
         }
 
         val u1 = Module(new UTurn())
@@ -63,7 +63,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
     )
 
     (processChirrtl(chirrtl) should contain).allOf(
-      "output io : { flip in : Probe<UInt<1>>, out : RWProbe<UInt<1>>}",
+      "output io : { flip in : RWProbe<UInt<1>>, out : RWProbe<UInt<1>>}",
       "define u1.io.in = probe(io.x)",
       "define u2.io.in = u1.io.out",
       "io.y <= read(u2.io.out)",
@@ -129,48 +129,113 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
     )
   }
 
-  // FIXME
-  "Connectors" should "work with probes" in {
+  "Properly excluded bulk connectors" should "work with Bundles containing probes" in {
     val chirrtl = ChiselStage.emitCHIRRTL(
       new RawModule {
-
-        class FooBundle extends Bundle {
-          val bar = Bool()
-          val baz = UInt(8.W)
+        class FooBundle() extends Bundle {
+          val bar = Probe(Bool())
+          val baz = UInt(4.W)
+          val qux = Flipped(Probe(UInt(4.W)))
+          val fizz = Flipped(Bool())
         }
-
         val io = IO(new Bundle {
-          val a = Input(new FooBundle)
-          val w = Output(Probe(new FooBundle))
-          val x = Output(new FooBundle)
-          val y = Output(new FooBundle)
-          val z = Output(new FooBundle)
+          val in = Flipped(new FooBundle())
+          val a = new FooBundle()
+          val b = new FooBundle()
+          val c = new FooBundle()
+          val d = Output(new FooBundle())
         })
 
-        // connecting two probe types
-        io.w := ProbeValue(io.a) // FIXME this should be a define
-
-        // connecting bundles containing probe types
-        // FIXME these error -- talk to Adam
-        io.x := io.a
-        io.z <> io.a
-        io.y :<>= io.a
+        io.a.exclude(_.bar, _.qux) :<>= io.in.exclude(_.bar, _.qux)
+        io.b.exclude(_.bar, _.qux) :<= io.in.exclude(_.bar, _.qux)
+        io.c.excludeProbes :>= io.in.excludeProbes
+        io.d.excludeProbes :#= io.in.excludeProbes
       },
       Array("--full-stacktrace")
     )
 
-    println(chirrtl)
+    (processChirrtl(chirrtl) should contain).allOf(
+      "io.in.fizz <= io.a.fizz",
+      "io.a.baz <= io.in.baz",
+      "io.b.baz <= io.in.baz",
+      "io.in.fizz <= io.c.fizz",
+      "io.d.fizz <= io.in.fizz",
+      "io.d.baz <= io.in.baz"
+    )
+  }
 
-    // (processChirrtl(chirrtl) should contain).allOf(
-    //   "io.w.baz <= probe(io.a).baz",
-    //   "io.w.bar <= probe(io.a).bar",
-    //   "io.x.baz <= io.a.baz",
-    //   "io.x.bar <= io.a.bar",
-    //   "io.z.baz <= io.a.baz",
-    //   "io.z.bar <= io.a.bar",
-    //   "io.y.baz <= io.a.baz",
-    //   "io.y.bar <= io.a.bar"
-    // )
+  "Improperly excluded :<>= connector" should "fail" in {
+    val exc = intercept[chisel3.ChiselException] {
+      ChiselStage.emitCHIRRTL(
+        new RawModule {
+          class FooBundle extends Bundle {
+            val bar = Probe(Bool())
+            val baz = UInt(4.W)
+          }
+          val io = IO(new Bundle {
+            val in = Input(new FooBundle)
+            val out = Output(new FooBundle)
+          })
+          io.out :<>= io.in
+        },
+        Array("--throw-on-first-error")
+      )
+    }
+    exc.getMessage should be("Cannot use connectables with probe types. Omit them prior to connection.")
+  }
+
+  ":= connector with probe" should "fail" in {
+    val exc = intercept[chisel3.ChiselException] {
+      ChiselStage.emitCHIRRTL(
+        new RawModule {
+          val io = IO(new Bundle {
+            val in = Input(Bool())
+            val out = Output(Probe(Bool()))
+          })
+          io.out := io.in
+        },
+        Array("--throw-on-first-error")
+      )
+    }
+    exc.getMessage should be(
+      "Connection between sink (ProbeSpec_Anon.io.out: IO[Bool]) and source (ProbeSpec_Anon.io.in: IO[Bool]) failed @: Sink io.out in ProbeSpec_Anon of Probed type cannot participate in a mono connection (:=)"
+    )
+  }
+
+  ":= connector with aggregate of probe" should "fail" in {
+    val exc = intercept[chisel3.ChiselException] {
+      ChiselStage.emitCHIRRTL(
+        new RawModule {
+          val io = IO(new Bundle {
+            val in = Input(Vec(2, Bool()))
+            val out = Output(Vec(2, Probe(Bool())))
+          })
+          io.out := io.in
+        },
+        Array("--throw-on-first-error")
+      )
+    }
+    exc.getMessage should be(
+      "Connection between sink (ProbeSpec_Anon.io.out: IO[Bool[2]]) and source (ProbeSpec_Anon.io.in: IO[Bool[2]]) failed @: Sink io.out in ProbeSpec_Anon of Probed type cannot participate in a mono connection (:=)"
+    )
+  }
+
+  "<> connector" should "fail" in {
+    val exc = intercept[chisel3.ChiselException] {
+      ChiselStage.emitCHIRRTL(
+        new RawModule {
+          val io = IO(new Bundle {
+            val in = Input(Vec(2, Probe(Bool())))
+            val out = Output(Vec(2, Probe(Bool())))
+          })
+          io.out <> io.in
+        },
+        Array("--throw-on-first-error")
+      )
+    }
+    exc.getMessage should be(
+      "Connection between left (ProbeSpec_Anon.io.out: IO[Bool[2]]) and source (ProbeSpec_Anon.io.in: IO[Bool[2]]) failed @Left of Probed type cannot participate in a bi connection (<>)"
+    )
   }
 
   "Probe define between non-connectable data types" should "fail" in {
@@ -280,5 +345,5 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
 
   // TODO writable probes of const type should fail
 
-  // TODO const of probe type should fail?
+  // TODO const of probe type should fail? --> put check in ConstSpec
 }

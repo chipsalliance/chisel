@@ -57,6 +57,10 @@ private[chisel3] object BiConnect {
     )
   def DontCareCantBeSink =
     BiConnectException(": DontCare cannot be a connection sink (LHS)")
+  def LeftProbeBiConnectionException(left: Data) =
+    BiConnectException(s"Left of Probed type cannot participate in a bi connection (<>)")
+  def RightProbeBiConnectionException(right: Data) =
+    BiConnectException(s"Right of Probed type cannot participate in a bi connection (<>)")
 
   /** This function is what recursively tries to connect a left and right together
     *
@@ -81,6 +85,12 @@ private[chisel3] object BiConnect {
     context_mod: RawModule
   ): Unit = {
     (left, right) match {
+      // Disallow monoconnecting Probe types
+      case (left_e: Data, _) if containsProbe(left_e) =>
+        throw LeftProbeBiConnectionException(left_e)
+      case (_, right_e: Data) if containsProbe(right_e) =>
+        throw RightProbeBiConnectionException(right_e)
+
       // Handle element case (root case)
       case (left_a: Analog, right_a: Analog) =>
         try {

@@ -113,6 +113,11 @@ final class Connectable[+T <: Data] private (
     this.copy(excluded = excluded ++ excludedMembers.toSet).asInstanceOf[Connectable[S]]
   }
 
+  /** Exclude probes */
+  def excludeProbes: Connectable[T] = excludeEach {
+    case f if (DataMirror.hasProbeTypeModifier(f)) => Seq(f)
+  }
+
   /** Add any elements of members that are OpaqueType */
   private def addOpaque(members: Seq[Data]): Seq[Data] = {
     members.flatMap {

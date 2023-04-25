@@ -4,7 +4,7 @@ package chisel3.probe
 
 import chisel3._
 import chisel3.Data.ProbeInfo
-import chisel3.internal.{requireIsChiselType, requireNoProbeTypeModifier, Builder}
+import chisel3.internal.{containsProbe, requireIsChiselType, requireNoProbeTypeModifier, Builder}
 import chisel3.experimental.SourceInfo
 
 import scala.language.experimental.macros
@@ -13,12 +13,6 @@ import scala.language.experimental.macros
   * writable probe modifier.
   */
 private[chisel3] sealed trait ProbeBase {
-
-  private def containsProbe(data: Data): Boolean = data match {
-    case a: Aggregate =>
-      a.elementsIterator.foldLeft(false)((res: Boolean, d: Data) => res || containsProbe(d))
-    case leaf => leaf.probeInfo.nonEmpty
-  }
 
   protected def apply[T <: Data](source: => T, writable: Boolean)(implicit sourceInfo: SourceInfo): T = {
     val prevId = Builder.idGen.value

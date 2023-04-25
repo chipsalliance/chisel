@@ -41,11 +41,12 @@ package object probe {
   def do_read[T <: Data](source: T)(implicit sourceInfo: SourceInfo): T = {
     requireIsHardware(source)
     requireHasProbeTypeModifier(source)
-    // construct probe to return with cloned info
+    // construct clone to bind to ProbeRead
     val clone = source.cloneTypeFull
     clone.bind(OpBinding(Builder.forcedUserModule, Builder.currentWhen))
     clone.setRef(ProbeRead(source.ref))
-    clone.probeInfo = source.probeInfo
+    // return a non-probe type Data that can be used in Data connects
+    clone.probeInfo = None
     clone
   }
 

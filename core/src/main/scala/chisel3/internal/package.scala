@@ -103,17 +103,27 @@ package object internal {
   private[chisel3] val ViewParent =
     Module.do_apply(new ViewParentAPI)(UnlocatableSourceInfo)
 
-  def requireHasProbeTypeModifier(probe: Data, errorMessage: String = "")(implicit sourceInfo: SourceInfo): Unit = {
+  private[chisel3] def requireHasProbeTypeModifier(
+    probe:        Data,
+    errorMessage: String = ""
+  )(
+    implicit sourceInfo: SourceInfo
+  ): Unit = {
     val msg = if (errorMessage.isEmpty) s"Expected a probe." else errorMessage
     if (!hasProbeTypeModifier(probe)) Builder.error(msg)
   }
 
-  def requireNoProbeTypeModifier(probe: Data, errorMessage: String = "")(implicit sourceInfo: SourceInfo): Unit = {
+  private[chisel3] def requireNoProbeTypeModifier(
+    probe:        Data,
+    errorMessage: String = ""
+  )(
+    implicit sourceInfo: SourceInfo
+  ): Unit = {
     val msg = if (errorMessage.isEmpty) s"Did not expect a probe." else errorMessage
     if (hasProbeTypeModifier(probe)) Builder.error(msg)
   }
 
-  def requireHasWritableProbeTypeModifier(
+  private[chisel3] def requireHasWritableProbeTypeModifier(
     probe:        Data,
     errorMessage: String = ""
   )(
@@ -122,5 +132,11 @@ package object internal {
     val msg = if (errorMessage.isEmpty) s"Expected a writable probe." else errorMessage
     requireHasProbeTypeModifier(probe)
     if (!probe.probeInfo.get.writable) Builder.error(msg)
+  }
+
+  private[chisel3] def containsProbe(data: Data): Boolean = data match {
+    case a: Aggregate =>
+      a.elementsIterator.foldLeft(false)((res: Boolean, d: Data) => res || containsProbe(d))
+    case leaf => leaf.probeInfo.nonEmpty
   }
 }
