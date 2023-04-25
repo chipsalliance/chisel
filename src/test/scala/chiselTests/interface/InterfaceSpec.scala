@@ -3,6 +3,7 @@ package chiselTests.interface
 
 import chisel3._
 import chisel3.interface.{ConformsTo, Interface}
+import circt.stage.ChiselStage
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -147,6 +148,28 @@ class InterfaceSpec extends AnyFunSpec with Matchers {
       info("link okay!")
       Drivers.link(dir, "compile-0/Foo.sv")
 
+    }
+
+  }
+
+  describe("Error behavior of Interfaces") {
+
+    it("should error if an Interface is not connected to") {
+
+      class Qux extends RawModule {
+        val a = IO(Input(Bool()))
+      }
+
+      implicit val quxConformance = new ConformsTo[BarInterface.type, Qux] {
+
+        override def genModule() = new Qux
+
+        override def portMap = Seq()
+      }
+
+      val exception = the[Exception] thrownBy circt.stage.ChiselStage.emitCHIRRTL(new (BarInterface.Wrapper.Module))
+
+      exception.getMessage() should include("unable to conform module 'Qux' to interface 'BarInterface'")
     }
 
   }

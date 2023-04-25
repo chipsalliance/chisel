@@ -34,6 +34,20 @@ sealed trait InterfaceCommon {
   */
 trait InterfaceGenerator extends InterfaceCommon
 
+/** Utilities related to Interface infastructure */
+object Interface {
+
+  /** An exception that indicates that the component-side conformance failed. This
+    * is used to wrap other exceptions which may hide the cause of the invalid
+    * conformance, e.g., a view was non-total.
+    * @param message the message for this exception
+    * @param cause an optional exception that caused this exception to occur
+    */
+  private case class InvalidConformance(message: String, cause: Throwable = null)
+      extends ChiselException(message, cause)
+
+}
+
 /** An interface between hardware units. Any module that implements this
   * interface may be separately compiled from any module that instantiates this
   * interface.
@@ -102,7 +116,17 @@ trait Interface extends InterfaceCommon { self: Singleton =>
         _ => ports(),
         conformance.portMap: _*
       )
-      io :<>= internal.viewAs[Ports]
+
+      // If the view fails, report this witha  slightly better error message.
+      try {
+        io :<>= internal.viewAs[Ports]
+      } catch {
+        case e: InvalidViewException =>
+          throw Interface.InvalidConformance(
+            s"unable to conform module '${internal.name}' to interface '$interfaceName' (see InvalidViewException below for more information)",
+            e
+          )
+      }
 
       override def desiredName = interfaceName
     }
