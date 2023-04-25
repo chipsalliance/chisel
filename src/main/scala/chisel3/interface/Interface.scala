@@ -70,11 +70,7 @@ trait Interface extends InterfaceCommon { self: Singleton =>
     className
       .drop(className.lastIndexOf('.') + 1)
       .split('$')
-      .toSeq
-      .filter {
-        case str if str.forall(_.isDigit) => false
-        case str                          => true
-      }
+      .filterNot(_.forall(_.isDigit))
       .last
   }
 
@@ -117,7 +113,7 @@ trait Interface extends InterfaceCommon { self: Singleton =>
         conformance.portMap: _*
       )
 
-      // If the view fails, report this witha  slightly better error message.
+      // If the view fails, report this with a slightly better error message.
       try {
         io :<>= internal.viewAs[Ports]
       } catch {
