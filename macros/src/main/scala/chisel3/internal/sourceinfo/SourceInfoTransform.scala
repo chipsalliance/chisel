@@ -223,6 +223,14 @@ class SourceInfoTransform(val c: Context) extends AutoSourceTransform {
     q"$thisObj.$doFuncTerm($idx, $en, $clock)($implicitSourceInfo)"
   }
 
+  def idxDataEnIswArg(idx: c.Tree, writeData: c.Tree, en: c.Tree, isWrite: c.Tree): c.Tree = {
+    q"$thisObj.$doFuncTerm($idx, $writeData, $en, $isWrite)($implicitSourceInfo)"
+  }
+
+  def idxDataEnIswClockArg(idx: c.Tree, writeData: c.Tree, en: c.Tree, isWrite: c.Tree, clock: c.Tree): c.Tree = {
+    q"$thisObj.$doFuncTerm($idx, $writeData, $en, $isWrite, $clock)($implicitSourceInfo)"
+  }
+
   def xEnArg(x: c.Tree, en: c.Tree): c.Tree = {
     q"$thisObj.$doFuncTerm($x, $en)($implicitSourceInfo)"
   }
