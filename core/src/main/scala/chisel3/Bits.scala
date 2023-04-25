@@ -426,9 +426,6 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
     }
   }
 
-  private[chisel3] override def typeEquivalent(that: Data): Boolean =
-    that.isInstanceOf[UInt] && this.width == that.width
-
   private[chisel3] override def cloneTypeWidth(w: Width): this.type =
     new UInt(w).asInstanceOf[this.type]
 
@@ -771,9 +768,6 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
     }
   }
 
-  private[chisel3] override def typeEquivalent(that: Data): Boolean =
-    this.getClass == that.getClass && this.width == that.width // TODO: should this be true for unspecified widths?
-
   private[chisel3] override def cloneTypeWidth(w: Width): this.type =
     new SInt(w).asInstanceOf[this.type]
 
@@ -1014,9 +1008,6 @@ final class ResetType(private[chisel3] val width: Width = Width(1)) extends Elem
 
   def cloneType: this.type = Reset().asInstanceOf[this.type]
 
-  private[chisel3] def typeEquivalent(that: Data): Boolean =
-    this.getClass == that.getClass
-
   override def litOption = None
 
   /** Not really supported */
@@ -1060,9 +1051,6 @@ sealed class AsyncReset(private[chisel3] val width: Width = Width(1)) extends El
   override def toString: String = stringAccessor("AsyncReset")
 
   def cloneType: this.type = AsyncReset().asInstanceOf[this.type]
-
-  private[chisel3] def typeEquivalent(that: Data): Boolean =
-    this.getClass == that.getClass
 
   override def litOption = None
 

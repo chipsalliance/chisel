@@ -19,9 +19,6 @@ sealed class Clock(private[chisel3] val width: Width = Width(1)) extends Element
 
   def cloneType: this.type = Clock().asInstanceOf[this.type]
 
-  private[chisel3] def typeEquivalent(that: Data): Boolean =
-    this.getClass == that.getClass
-
   override def connect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
     that match {
       case _: Clock | DontCare => super.connect(that)(sourceInfo)
