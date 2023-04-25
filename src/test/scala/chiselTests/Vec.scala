@@ -276,7 +276,7 @@ class VecSpec extends ChiselPropSpec with Utils {
     }
   }
 
-  property("0-width vectors should be compilable and have strongly-typed connection semantics") {
+  property("0-width Vecs should be connectable with normal connection semantics") {
     type ConnectOp = (Data, Data) => Unit
 
     def test[T <: Data](gen: => T)(connect: ConnectOp) = {
@@ -298,6 +298,20 @@ class VecSpec extends ChiselPropSpec with Utils {
       chirrtl should include(s"wire zeroWidthVec : UInt<8>[0]")
     }
 
+    def structuralTypingTest(connect: ConnectOp) = {
+      class Fizz extends Bundle {
+        val foo = UInt(8.W)
+      }
+      class Buzz extends Bundle {
+        val foo = UInt(8.W)
+      }
+      emitCHIRRTL(new Module {
+        val in = IO(Output(Vec(0, new Fizz)))
+        val out = IO(Input(Vec(0, new Buzz)))
+        connect(out, in)
+      })
+    }
+
     val connections: Seq[ConnectOp] = Seq(
       (sink, source) => { sink := source },
       (sink, source) => { sink <> source },
@@ -315,6 +329,8 @@ class VecSpec extends ChiselPropSpec with Utils {
       a[ChiselException] should be thrownBy extractCause[ChiselException] {
         test(8.S(8.W))(connect)
       }
+
+      structuralTypingTest(connect)
     }
   }
 

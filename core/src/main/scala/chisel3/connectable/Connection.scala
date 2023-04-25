@@ -208,11 +208,13 @@ private[chisel3] object Connection {
             // a UInt<8>[0] should not be connectable with a SInt<8>[0]
             // TODO: This is a "band-aid" fix and needs to be unified with the existing logic in a
             // more generalized and robust way
-            case (consumer: Vec[Data @unchecked], producer: Vec[Data @unchecked])
-                if (consumer.length == 0 && !consumer.typeEquivalent(producer)) =>
-              errors =
-                (s"Consumer (${consumer.cloneType.toString}) and producer (${producer.cloneType.toString}) have different types.") +: errors
-
+            case (consumer: Vec[Data @unchecked], producer: Vec[Data @unchecked]) if consumer.length == 0 =>
+              // This will miss cases but we currently don't have a way to check zero-width Vecs while being sensitive to waive, squeeze, or exclude.
+              if (conAlign.base.notWaivedOrSqueezedOrExcluded && proAlign.base.notWaivedOrSqueezedOrExcluded) {
+                consumer.findFirstTypeMismatch(producer, strictTypes = false, strictWidths = true).foreach { msg =>
+                  errors = s"Illegal connection to ${consumer.earlyName}$msg" +: errors
+                }
+              }
             case (consumer: Aggregate, producer: Aggregate) =>
               matchingZipOfChildren(Some(conAlign), Some(proAlign)).foreach {
                 case (ceo, peo) =>

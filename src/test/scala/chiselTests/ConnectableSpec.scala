@@ -1092,6 +1092,22 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         Nil
       )
     }
+    it("(4.f) waiving should be supported when connecting zero-width Vecs") {
+      class Base extends Module {
+        val enq = IO(Flipped(Vec(0, new Decoupled(true))))
+        val deq = IO(Vec(0, new Decoupled(false)))
+      }
+      class NotWaived extends Base {
+        (deq: Data) :<>= (enq: Data) // TODO there is an issue with the Seq[T] connectable winning out which ignores size 0 safety
+      }
+      val e = the[Exception] thrownBy ChiselStage.emitCHIRRTL(new NotWaived, args = Array("--throw-on-first-error"))
+      e.getMessage should include("Illegal connection to deq[_].data: Dangling field on Right")
+      class Waived extends Base {
+        // Also weird we have to upcast here, but without it, it wants Seq[Decoupled]
+        (deq: Data) :<>= enq.waiveAllAs[Data]
+      }
+      ChiselStage.emitCHIRRTL(new Waived)
+    }
   }
   describe("(5): Connectable squeezing") {
     import scala.collection.immutable.SeqMap
@@ -1248,6 +1264,24 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         ),
         Nil
       )
+    }
+    it("(5.h) Squeeze works for zero-width Vecs") {
+      class Base extends Module {
+        val enq = IO(Flipped(Vec(0, new Decoupled(true))))
+        val deq = IO(Vec(0, new Decoupled(false)))
+      }
+      class NotWaived extends Base {
+        (deq: Data) :<>= (enq: Data) // TODO there is an issue with the Seq[T] connectable winning out which ignores size 0 safety
+      }
+      val e = the[Exception] thrownBy ChiselStage.emitCHIRRTL(new NotWaived, args = Array("--throw-on-first-error"))
+      e.getMessage should include(
+        "Illegal connection to deq[_].data: Left (UInt<8>) and Right (UInt<32>) have different widths"
+      )
+      class Squeezed extends Base {
+        // Also weird we have to upcast here, but without it, it wants Seq[Decoupled]
+        (deq: Data) :<>= (enq.squeezeAll: Connectable[Data])
+      }
+      ChiselStage.emitCHIRRTL(new Squeezed)
     }
   }
   describe("(E): Connectable excluding") {
