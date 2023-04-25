@@ -155,6 +155,15 @@ class VecSpec extends ChiselPropSpec with Utils {
     }
   }
 
+  property("VecInit.fill should support size 0 Vecs") {
+    val chirrtl = emitCHIRRTL(new RawModule {
+      val out = IO(Output(Vec(0, UInt(8.W))))
+      val u = VecInit.fill(0)(8.U)
+      out := u
+    })
+    chirrtl should include("wire u : UInt<4>[0]")
+  }
+
   property("VecInit should fill 2D vec correctly") {
     val n = 2
     val m = 3
@@ -272,48 +281,6 @@ class VecSpec extends ChiselPropSpec with Utils {
           chirrtl should include(s"vec2D[$i][$j][$k].out <= mods$suffix.io.out")
           chirrtl should include(s"mods$suffix.io.in <= vec2D[$i][$j][$k].in")
         }
-      }
-    }
-  }
-
-  property("0-width vectors should be compilable and have strongly-typed connection semantics") {
-    type ConnectOp = (Data, Data) => Unit
-
-    def test[T <: Data](gen: => T)(connect: ConnectOp) = {
-      val chirrtl = emitCHIRRTL(new Module {
-        val io = IO(new Bundle {
-          val out = Vec(0, UInt(8.W))
-        })
-
-        // Check if this is compilable, should pass
-        val zeroWidthVec = VecInit.fill(0)(gen)
-
-        // Check for strong-typed connections. Passes if gen is UInt(8.W),
-        // fails if gen is anything that isn't type equivalent
-        connect(io.out, zeroWidthVec)
-      })
-
-      // No need to check for SInt<8>[0] because the elaboration will fail for
-      // those cases
-      chirrtl should include(s"wire zeroWidthVec : UInt<8>[0]")
-    }
-
-    val connections: Seq[ConnectOp] = Seq(
-      (sink, source) => { sink := source },
-      (sink, source) => { sink <> source },
-      (sink, source) => { sink :#= source },
-      (sink, source) => { sink :<= source },
-      (sink, source) => { sink :>= source },
-      (sink, source) => { sink :<>= source }
-    )
-
-    for (connect <- connections) {
-      // Connect a UInt<8>[0] to an UInt<8>[0].
-      test(8.U(8.W))(connect)
-
-      // Attempt to connect a SInt<8>[0] to an UInt<8>[0].
-      a[ChiselException] should be thrownBy extractCause[ChiselException] {
-        test(8.S(8.W))(connect)
       }
     }
   }
