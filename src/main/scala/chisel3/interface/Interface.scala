@@ -56,7 +56,7 @@ trait Interface extends InterfaceCommon { self: Singleton =>
 
   /** This types represents the type of a valid conformance to this Interface.
     */
-  private type Conformance[Mod <: RawModule] = ConformsTo[this.type, Mod]
+  private type Conformance[Mod <: BaseModule] = ConformsTo[this.type, Mod]
 
   /** The name of this interface. This will be used as the name of any module
     * that implements this interface.
@@ -95,7 +95,7 @@ trait Interface extends InterfaceCommon { self: Singleton =>
 
     /** The module that wraps any module which conforms to this Interface.
       */
-    final class Module[B <: RawModule](
+    final class Module[B <: BaseModule](
     )(
       implicit conformance: Conformance[B])
         extends RawModule
