@@ -23,7 +23,7 @@ ThisBuild / firtoolVersion := {
 //   eg. unipublish/src/main/mima-filters/5.0.0.backwards.excludes
 val previousVersions = settingKey[Set[String]]("Previous versions for binary compatibility checking")
 ThisBuild / previousVersions := {
-  val file = new java.io.File("project/previous-versions.txt")
+  val file = new java.io.File("project", "previous-versions.txt")
   if (file.isFile) {
     scala.io.Source.fromFile(file).getLines.toSet
   } else {
