@@ -17,6 +17,20 @@ ThisBuild / firtoolVersion := {
   }
 }
 
+// Previous versions are read from project/previous-versions.txt
+// If this file is empty or does not exist, no binary compatibility checking will be done
+// Add waivers to the directory defined by key `mimaFiltersDirectory` in files named: <since version>.backwards.excludes
+//   eg. unipublish/src/main/mima-filters/5.0.0.backwards.excludes
+val previousVersions = settingKey[Set[String]]("Previous versions for binary compatibility checking")
+ThisBuild / previousVersions := {
+  val file = new java.io.File("project", "previous-versions.txt")
+  if (file.isFile) {
+    scala.io.Source.fromFile(file).getLines.toSet
+  } else {
+    Set()
+  }
+}
+
 val emitVersion = taskKey[Unit]("Write the version to version.txt")
 emitVersion := {
   IO.write(new java.io.File("version.txt"), version.value)
@@ -123,6 +137,111 @@ lazy val publishSettings = Seq(
   }
 )
 
+<<<<<<< HEAD
+=======
+// FIRRTL SETTINGS
+
+lazy val isAtLeastScala213 = Def.setting {
+  import Ordering.Implicits._
+  CrossVersion.partialVersion(scalaVersion.value).exists(_ >= (2, 13))
+}
+
+lazy val firrtlSettings = Seq(
+  name := "firrtl",
+  addCompilerPlugin(scalafixSemanticdb),
+  scalacOptions := Seq(
+    "-deprecation",
+    "-unchecked",
+    "-language:reflectiveCalls",
+    "-language:existentials",
+    "-language:implicitConversions",
+    "-Yrangepos" // required by SemanticDB compiler plugin
+  ),
+  // Always target Java8 for maximum compatibility
+  javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
+  libraryDependencies ++= Seq(
+    "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+    "org.scalatest" %% "scalatest" % "3.2.14" % "test",
+    "org.scalatestplus" %% "scalacheck-1-15" % "3.2.11.0" % "test",
+    "com.github.scopt" %% "scopt" % "3.7.1",
+    "net.jcazevedo" %% "moultingyaml" % "0.4.2",
+    "org.json4s" %% "json4s-native" % "4.0.6",
+    "org.apache.commons" % "commons-text" % "1.10.0",
+    "io.github.alexarchambault" %% "data-class" % "0.2.5",
+    "com.lihaoyi" %% "os-lib" % "0.8.1"
+  ),
+  // macros for the data-class library
+  libraryDependencies ++= {
+    if (isAtLeastScala213.value) Nil
+    else Seq(compilerPlugin(("org.scalamacros" % "paradise" % "2.1.1").cross(CrossVersion.full)))
+  },
+  scalacOptions ++= {
+    if (isAtLeastScala213.value) Seq("-Ymacro-annotations")
+    else Nil
+  },
+  // starting with scala 2.13 the parallel collections are separate from the standard library
+  libraryDependencies ++= {
+    CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, major)) if major <= 12 => Seq()
+      case _                               => Seq("org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4")
+    }
+  }
+)
+
+lazy val assemblySettings = Seq(
+  assembly / assemblyJarName := "firrtl.jar",
+  assembly / test := {},
+  assembly / assemblyOutputPath := file("./utils/bin/firrtl.jar")
+)
+
+lazy val testAssemblySettings = Seq(
+  Test / assembly / test := {}, // Ditto above
+  Test / assembly / assemblyMergeStrategy := {
+    case PathList("firrtlTests", xs @ _*) => MergeStrategy.discard
+    case x =>
+      val oldStrategy = (Test / assembly / assemblyMergeStrategy).value
+      oldStrategy(x)
+  },
+  Test / assembly / assemblyJarName := s"firrtl-test.jar",
+  Test / assembly / assemblyOutputPath := file("./utils/bin/" + (Test / assembly / assemblyJarName).value)
+)
+
+lazy val svsim = (project in file("svsim"))
+  .settings(minimalSettings)
+  .settings(
+    // Published as part of unipublish
+    publish / skip := true,
+    libraryDependencies ++= Seq(
+      "org.scalatest" %% "scalatest" % "3.2.15" % "test",
+      "org.scalatestplus" %% "scalacheck-1-14" % "3.2.2.0" % "test"
+    )
+  )
+
+lazy val firrtl = (project in file("firrtl"))
+  .enablePlugins(ScalaUnidocPlugin)
+  .settings(
+    fork := true,
+    Test / testForkedParallel := true
+  )
+  .settings(commonSettings)
+  .settings(firrtlSettings)
+  .settings(assemblySettings)
+  .settings(inConfig(Test)(baseAssemblySettings))
+  .settings(testAssemblySettings)
+  .settings(
+    // Published as part of unipublish
+    publish / skip := true
+  )
+  .enablePlugins(BuildInfoPlugin)
+  .settings(
+    buildInfoPackage := name.value,
+    buildInfoUsePackageAsPath := true,
+    buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion)
+  )
+  .settings(warningSuppression: _*)
+  .settings(fatalWarningsSettings: _*)
+
+>>>>>>> 2c6028b03 (Read previousVersions for bincompat checking from a file (#3202))
 lazy val chiselSettings = Seq(
   name := "chisel3",
   libraryDependencies ++= Seq(
@@ -193,8 +312,8 @@ lazy val plugin = (project in file("plugin"))
   )
   .settings(fatalWarningsSettings: _*)
   .settings(
-    mimaPreviousArtifacts := {
-      Set()
+    mimaPreviousArtifacts := previousVersions.value.map { version =>
+      (organization.value % name.value % version).cross(CrossVersion.full)
     }
   )
 
@@ -212,8 +331,15 @@ lazy val usePluginSettings = Seq(
 lazy val macros = (project in file("macros"))
   .settings(name := "chisel3-macros")
   .settings(commonSettings: _*)
+<<<<<<< HEAD
   .settings(publishSettings: _*)
   .settings(mimaPreviousArtifacts := Set())
+=======
+  .settings(
+    // Published as part of unipublish
+    publish / skip := true
+  )
+>>>>>>> 2c6028b03 (Read previousVersions for bincompat checking from a file (#3202))
 
 lazy val firrtlRef = ProjectRef(workspaceDirectory / "firrtl", "firrtl")
 
@@ -226,8 +352,15 @@ lazy val core = (project in file("core"))
     buildInfoUsePackageAsPath := true,
     buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion, firtoolVersion)
   )
+<<<<<<< HEAD
   .settings(publishSettings: _*)
   .settings(mimaPreviousArtifacts := Set())
+=======
+  .settings(
+    // Published as part of unipublish
+    publish / skip := true
+  )
+>>>>>>> 2c6028b03 (Read previousVersions for bincompat checking from a file (#3202))
   .settings(warningSuppression: _*)
   .settings(fatalWarningsSettings: _*)
   .settings(
@@ -263,6 +396,7 @@ lazy val chisel = (project in file("."))
   .settings(warningSuppression: _*)
   .settings(fatalWarningsSettings: _*)
   .settings(
+<<<<<<< HEAD
     mimaPreviousArtifacts := Set(),
     Test / scalacOptions ++= Seq("-language:reflectiveCalls"),
     // Forward doc command to unidoc
@@ -290,6 +424,87 @@ lazy val chisel = (project in file("."))
             "master"
           } else {
             s"v${version.value}"
+=======
+    Test / scalacOptions ++= Seq("-language:reflectiveCalls")
+  )
+
+def addUnipublishDeps(proj: Project)(deps: Project*): Project = {
+  def inTestScope(module: ModuleID): Boolean = module.configurations.exists(_ == "test")
+  deps.foldLeft(proj) {
+    case (p, dep) =>
+      p.settings(
+        libraryDependencies ++= (dep / libraryDependencies).value.filterNot(inTestScope),
+        Compile / packageBin / mappings ++= (dep / Compile / packageBin / mappings).value,
+        Compile / packageSrc / mappings ++= (dep / Compile / packageSrc / mappings).value
+      )
+  }
+}
+
+// This is a pseudo-project that unifies all compilation units (excluding the plugin) into a single artifact
+// It should be used for all publishing and MiMa binary compatibility checking
+lazy val unipublish =
+  addUnipublishDeps(project in file("unipublish"))(
+    firrtl,
+    svsim,
+    macros,
+    core,
+    chisel
+  )
+    .aggregate(plugin) // Also publish the plugin when publishing this project
+    .settings(name := (chisel / name).value)
+    .enablePlugins(ScalaUnidocPlugin)
+    .settings(commonSettings: _*)
+    .settings(publishSettings: _*)
+    .settings(usePluginSettings: _*)
+    .settings(warningSuppression: _*)
+    .settings(fatalWarningsSettings: _*)
+    .settings(
+      mimaPreviousArtifacts := previousVersions.value.map { version =>
+        organization.value %% name.value % version
+      },
+      // This is a pseudo-project with no class files, use the package jar instead
+      mimaCurrentClassfiles := (Compile / packageBin).value,
+      // Forward doc command to unidoc
+      Compile / doc := (ScalaUnidoc / doc).value,
+      // Include unidoc as the ScalaDoc for publishing
+      Compile / packageDoc / mappings := (ScalaUnidoc / packageDoc / mappings).value,
+      Compile / doc / scalacOptions ++= Seq(
+        "-diagrams",
+        "-groups",
+        "-skip-packages",
+        "chisel3.internal",
+        "-diagrams-max-classes",
+        "25",
+        "-doc-version",
+        version.value,
+        "-doc-title",
+        name.value,
+        "-doc-root-content",
+        baseDirectory.value + "/root-doc.txt",
+        "-sourcepath",
+        (ThisBuild / baseDirectory).value.toString,
+        "-doc-source-url", {
+          val branch =
+            if (version.value.endsWith("-SNAPSHOT")) {
+              "master"
+            } else {
+              s"v${version.value}"
+            }
+          s"https://github.com/chipsalliance/chisel/tree/$branch€{FILE_PATH_EXT}#L€{FILE_LINE}"
+        },
+        "-language:implicitConversions"
+      ) ++
+        // Suppress compiler plugin for source files in core
+        // We don't need this in regular compile because we just don't add the chisel-plugin to core's scalacOptions
+        // This works around an issue where unidoc uses the exact same arguments for all source files.
+        // This is probably fundamental to how ScalaDoc works so there may be no solution other than this workaround.
+        // See https://github.com/sbt/sbt-unidoc/issues/107
+        (core / Compile / sources).value.map("-P:chiselplugin:INTERNALskipFile:" + _)
+        ++ {
+          CrossVersion.partialVersion(scalaVersion.value) match {
+            case Some((2, n)) if n >= 13 => "-implicits" :: Nil
+            case _                       => Nil
+>>>>>>> 2c6028b03 (Read previousVersions for bincompat checking from a file (#3202))
           }
         s"https://github.com/chipsalliance/chisel3/tree/$branch€{FILE_PATH_EXT}#L€{FILE_LINE}"
       }
