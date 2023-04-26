@@ -7,18 +7,21 @@ import chisel3.experimental.SourceInfo
 object IO {
 
   /** Constructs a port for the current Module
+    * 
+    * Will build an incoming port if the iodef has an outer Flipped or Input
+    * e.g. val io = IO(Flipped(Bool()))
+    * e.g. val io = IO(Input(Bool()))
     *
-    * This must wrap the datatype used to set the io field of any Module.
-    * i.e. All concrete modules must have defined io in this form:
-    * [lazy] val io[: io type] = IO(...[: io type])
+    * Will build an outgoming port if the iodef is not flipped, or marked as Output
+    * e.g. val io = IO(Bool())
+    * e.g. val io = IO(Output(Bool()))
+    * 
+    * i.e. All concrete modules must have defined ios in this form:
+    * val io[: io type] = IO(...[: io type])
     *
     * Items in [] are optional.
     *
     * The granted iodef must be a chisel type and not be bound to hardware.
-    *
-    * Also registers a Data as a port, also performing bindings. Cannot be called once ports are
-    * requested (so that all calls to ports will return the same information).
-    * Internal API.
     */
   def apply[T <: Data](iodef: => T)(implicit sourceInfo: SourceInfo): T = {
     val module = Module.currentModule.get // Impossible to fail
@@ -42,5 +45,55 @@ object IO {
         }
     module.bindIoInPlace(iodefClone)
     iodefClone
+  }
+}
+
+object Incoming {
+
+  /** Constructs an incoming port for the current Module
+    * 
+    * Requires iodef to not have an outer Flipped, Input, or Output
+    * 
+    * e.g. val io = Incoming(Bool())
+    * e.g. val io = Incoming(new Bundle( val x = Bool(); val y = Flipped(Bool()))
+    * e.g. val io = Incoming(Passive(new Bundle( val x = Bool(); val y = Flipped(Bool())))
+    * e.g. ERROR: val io = Incoming(Input(Bool()))
+    * e.g. ERROR: val io = Incoming(Output(Bool()))
+    * e.g. ERROR: val io = Incoming(Flipped(Bool()))
+    *
+    * i.e. All concrete modules must have defined ios in this form:
+    * val io[: io type] = IO(...[: io type])
+    *
+    * Items in [] are optional.
+    *
+    * The granted iodef must be a chisel type and not be bound to hardware.
+    */
+  def apply[T <: Data](iodef: => T)(implicit sourceInfo: SourceInfo): T = {
+    IO(Flipped(iodef))
+  }
+}
+
+object Outgoing {
+
+  /** Constructs an outgoing port for the current Module
+    * 
+    * Requires iodef to not have an outer Flipped, Input, or Output
+    * 
+    * e.g. val io = Outgoing(Bool())
+    * e.g. val io = Outgoing(new Bundle( val x = Bool(); val y = Flipped(Bool()))
+    * e.g. val io = Outgoing(Passive(new Bundle( val x = Bool(); val y = Flipped(Bool())))
+    * e.g. ERROR: val io = Outgoing(Input(Bool()))
+    * e.g. ERROR: val io = Outgoing(Output(Bool()))
+    * e.g. ERROR: val io = Outgoing(Flipped(Bool()))
+    *
+    * i.e. All concrete modules must have defined ios in this form:
+    * val io[: io type] = IO(...[: io type])
+    *
+    * Items in [] are optional.
+    *
+    * The granted iodef must be a chisel type and not be bound to hardware.
+    */
+  def apply[T <: Data](iodef: => T)(implicit sourceInfo: SourceInfo): T = {
+    IO(iodef)
   }
 }
