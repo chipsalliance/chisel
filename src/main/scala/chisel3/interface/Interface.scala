@@ -25,7 +25,7 @@ sealed trait InterfaceCommon {
   private[interface] type Ports <: Record
 
   /** Returns the Record that is the port-level interface. */
-  private[interface] def ports(): Ports
+  private[interface] val ports: Ports
 
 }
 
@@ -84,7 +84,7 @@ trait Interface extends InterfaceCommon { self: Singleton =>
       * instantiated by any user of this interface, i.e., a test harness.
       */
     final class BlackBox extends chisel3.BlackBox with Entity {
-      final val io = IO(ports())
+      final val io = IO(ports)
 
       override final def desiredName = interfaceName
     }
@@ -96,7 +96,7 @@ trait Interface extends InterfaceCommon { self: Singleton =>
       implicit conformance: Conformance[B])
         extends RawModule
         with Entity {
-      final val io = FlatIO(ports())
+      final val io = FlatIO(ports)
 
       // Use a dummy clock and reset connection when constructing the module.
       // This is fine as we rely on DataView to catch missing connections to
@@ -109,7 +109,7 @@ trait Interface extends InterfaceCommon { self: Singleton =>
       }
 
       private implicit val pm = PartialDataView[B, Ports](
-        _ => ports(),
+        _ => ports.cloneType,
         conformance.portMap: _*
       )
 
@@ -131,7 +131,7 @@ trait Interface extends InterfaceCommon { self: Singleton =>
       * just tied off.
       */
     final class Stub extends RawModule with Entity {
-      final val io = FlatIO(ports())
+      final val io = FlatIO(ports)
       io := DontCare
       dontTouch(io)
     }

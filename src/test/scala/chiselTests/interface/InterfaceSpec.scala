@@ -25,7 +25,7 @@ class InterfaceSpec extends AnyFunSpec with Matchers {
     override type Ports = BarBundle
 
     /** Generate the ports given the parameters. */
-    override def ports() = new Ports
+    override val ports = new Ports
 
   }
 

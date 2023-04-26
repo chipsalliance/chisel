@@ -26,7 +26,7 @@ class ParametricInterfaceSpec extends AnyFunSpec with Matchers {
 
     override type Ports = BarBundle
 
-    override def ports() = new BarBundle(width)
+    override val ports = new BarBundle(width)
 
   }
 
