@@ -84,6 +84,7 @@ abstract class RawModule extends BaseModule {
                 id.forceName(default = "REG", _namespace)
               case WireBinding(_, _) =>
                 id.forceName(default = "_WIRE", _namespace)
+              // probes have their refs set eagerly
               case _ => // don't name literals
             }
           } // else, don't name unbound types

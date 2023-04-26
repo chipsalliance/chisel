@@ -8,6 +8,7 @@ import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.DefInvalid
 import chisel3.experimental.{prefix, SourceInfo, UnlocatableSourceInfo}
 import chisel3.experimental.{attach, Analog}
+import chisel3.reflect.DataMirror.hasProbeTypeModifier
 import Alignment.matchingZipOfChildren
 
 import scala.collection.mutable
@@ -225,6 +226,10 @@ private[chisel3] object Connection {
                     deriveChildAlignment(f, proAlign)
                   )
               }
+            // Check that neither consumer nor producer contains probes
+            case (consumer: Data, producer: Data)
+                if (hasProbeTypeModifier(consumer) || hasProbeTypeModifier(producer)) =>
+              errors = "Cannot use connectables with probe types. Exclude them prior to connection." +: errors
             case (consumer, producer) =>
               val alignment = (
                 conAlign.alignsWith(proAlign),

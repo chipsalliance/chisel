@@ -51,6 +51,12 @@ object DataMirror {
     */
   def isReg(x: Data): Boolean = hasBinding[RegBinding](x)
 
+  /** Check if a given `Data` is a Probe
+    * @param x the `Data` to check
+    * @return `true` if x is a Probe, `false` otherwise
+    */
+  def hasProbeTypeModifier(x: Data): Boolean = x.probeInfo.nonEmpty
+
   /** Get an early guess for the name of this [[Data]]
     *
     * '''Warning: it is not guaranteed that this name will end up in the output FIRRTL or Verilog.'''
