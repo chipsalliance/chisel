@@ -441,6 +441,7 @@ class VecSpec extends ChiselPropSpec with Utils {
     }
   }
 
+<<<<<<< HEAD
   property("VecInit should iterate correctly") {
     forAll(Gen.choose(1, 10), smallPosInts) { (start: Int, len: Int) =>
       assertTesterPasses { new IterateTester(start, len)(x => x + 50.U) }
@@ -451,6 +452,50 @@ class VecSpec extends ChiselPropSpec with Utils {
     forAll(smallPosInts) { (n: Int) => assertTesterPasses { new ShiftRegisterTester(n) } }
   }
 
+=======
+  property("0-width vectors should be compilable and have strongly-typed connection semantics") {
+    type ConnectOp = (Data, Data) => Unit
+
+    def test[T <: Data](gen: => T)(connect: ConnectOp) = {
+      val chirrtl = emitCHIRRTL(new Module {
+        val io = IO(new Bundle {
+          val out = Vec(0, UInt(8.W))
+        })
+
+        // Check if this is compilable, should pass
+        val zeroWidthVec = VecInit.fill(0)(gen)
+
+        // Check for strong-typed connections. Passes if gen is UInt(8.W),
+        // fails if gen is anything that isn't type equivalent
+        connect(io.out, zeroWidthVec)
+      })
+
+      // No need to check for SInt<8>[0] because the elaboration will fail for
+      // those cases
+      chirrtl should include(s"wire zeroWidthVec : UInt<8>[0]")
+    }
+
+    val connections: Seq[ConnectOp] = Seq(
+      (sink, source) => { sink := source },
+      (sink, source) => { sink <> source },
+      (sink, source) => { sink :#= source },
+      (sink, source) => { sink :<= source },
+      (sink, source) => { sink :>= source },
+      (sink, source) => { sink :<>= source }
+    )
+
+    for (connect <- connections) {
+      // Connect a UInt<8>[0] to an UInt<8>[0].
+      test(8.U(8.W))(connect)
+
+      // Attempt to connect a SInt<8>[0] to an UInt<8>[0].
+      a[ChiselException] should be thrownBy extractCause[ChiselException] {
+        test(8.S(8.W))(connect)
+      }
+    }
+  }
+
+>>>>>>> d64bada01 (Patch VecInit.fill(0) invocation to successfully compile and yield a zero-width Vec (#3171))
   property("Infering widths on huge Vecs should not cause a stack overflow") {
     assertTesterPasses(new HugeVecTester(10000), annotations = TesterDriver.verilatorOnly)
   }
