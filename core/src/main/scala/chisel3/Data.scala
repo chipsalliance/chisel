@@ -441,8 +441,10 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   /** Adds this `Data` to its parents _ids if it should be added */
   private[chisel3] def maybeAddToParentIds(target: Binding): Unit = {
     // ConstrainedBinding means the thing actually corresponds to a Module, no need to add to _ids otherwise
-    if (target.isInstanceOf[ConstrainedBinding]) {
-      _parent.foreach(_.addId(this))
+    target match {
+      case c: SecretPortBinding  => // secret ports are handled differently, parent's don't need to know about that
+      case c: ConstrainedBinding => _parent.foreach(_.addId(this))
+      case _ =>
     }
   }
 
@@ -484,6 +486,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       case OpBinding(_, _)           => "OpResult"
       case MemoryPortBinding(_, _)   => "MemPort"
       case PortBinding(_)            => "IO"
+      case SecretPortBinding(_)      => "IO"
       case RegBinding(_, _)          => "Reg"
       case WireBinding(_, _)         => "Wire"
       case DontCareBinding()         => "(DontCare)"
@@ -612,9 +615,10 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       case Some(tb: TopBinding) if (mod == Builder.currentModule) =>
       case Some(pb: PortBinding)
           if (mod.flatMap(Builder.retrieveParent(_, Builder.currentModule.get)) == Builder.currentModule) =>
+      case Some(pb: SecretPortBinding) => // Ignore secret to not require visibility
       case Some(_: UnconstrainedBinding) =>
       case _ =>
-        throwException(s"operand '$this' is not visible from the current module")
+        throwException(s"operand '$this' is not visible from the current module ${Builder.currentModule.get.name}")
     }
     if (!MonoConnect.checkWhenVisibility(this)) {
       throwException(s"operand has escaped the scope of the when in which it was constructed")
