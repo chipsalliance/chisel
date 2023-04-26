@@ -74,6 +74,8 @@ jobs:
         uses: ./.github/workflows/setup-oss-cad-suite
       - name: Install Espresso
         uses: ./.github/workflows/install-espresso
+      - name: Install CIRCT
+        uses: ./.github/workflows/install-circt
       - name: Setup Scala
         uses: actions/setup-java@v3
         with:

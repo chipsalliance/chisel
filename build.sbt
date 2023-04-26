@@ -334,7 +334,7 @@ lazy val chisel = (project in file("."))
 
 // tests elaborating and executing/formally verifying a Chisel circuit with chiseltest
 lazy val integrationTests = (project in file("integration-tests"))
-  .dependsOn(chisel)
+  .dependsOn(chisel % "compile->compile;test->test")
   .dependsOn(standardLibrary)
   .settings(commonSettings: _*)
   .settings(warningSuppression: _*)
