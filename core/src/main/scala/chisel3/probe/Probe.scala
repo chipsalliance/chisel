@@ -39,6 +39,7 @@ object Probe extends ProbeBase {
     */
   def apply[T <: Data](source: => T): T = macro chisel3.internal.sourceinfo.ProbeTransform.sourceApply[T]
 
+  /** @group SourceInfoTransformMacro */
   def do_apply[T <: Data](source: => T)(implicit sourceInfo: SourceInfo): T = super.apply(source, false)
 }
 
@@ -48,5 +49,6 @@ object RWProbe extends ProbeBase {
     */
   def apply[T <: Data](source: => T): T = macro chisel3.internal.sourceinfo.ProbeTransform.sourceApply[T]
 
+  /** @group SourceInfoTransformMacro */
   def do_apply[T <: Data](source: => T)(implicit sourceInfo: SourceInfo): T = super.apply(source, true)
 }

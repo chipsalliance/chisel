@@ -44,6 +44,7 @@ package object probe {
   /** Access the value of a probe. */
   def read[T <: Data](source: T): T = macro chisel3.internal.sourceinfo.ProbeTransform.sourceRead[T]
 
+  /** @group SourceInfoTransformMacro */
   def do_read[T <: Data](source: T)(implicit sourceInfo: SourceInfo): T = {
     requireIsHardware(source)
     requireHasProbeTypeModifier(source)

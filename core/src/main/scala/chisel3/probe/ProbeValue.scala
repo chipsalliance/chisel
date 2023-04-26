@@ -29,6 +29,7 @@ object ProbeValue extends ProbeValueBase {
   /** Create a read-only probe expression. */
   def apply[T <: Data](source: T): T = macro chisel3.internal.sourceinfo.ProbeTransform.sourceApply[T]
 
+  /** @group SourceInfoTransformMacro */
   def do_apply[T <: Data](source: T)(implicit sourceInfo: SourceInfo): T = super.apply(source, writable = false)
 }
 
@@ -37,5 +38,6 @@ object RWProbeValue extends ProbeValueBase {
   /** Create a read/write probe expression. */
   def apply[T <: Data](source: T): T = macro chisel3.internal.sourceinfo.ProbeTransform.sourceApply[T]
 
+  /** @group SourceInfoTransformMacro */
   def do_apply[T <: Data](source: T)(implicit sourceInfo: SourceInfo): T = super.apply(source, writable = true)
 }
