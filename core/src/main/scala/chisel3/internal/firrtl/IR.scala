@@ -212,17 +212,13 @@ case class Index(imm: Arg, value: Arg) extends Arg {
   override def localName: String = s"${imm.localName}[${value.localName}]"
 }
 
-private[chisel3] case class ProbeExpr(probe: Arg) extends Arg {
+sealed trait ProbeDetails { this: Arg =>
+  val probe: Arg
   override def name: String = s"$probe"
 }
-
-private[chisel3] case class RWProbeExpr(probe: Arg) extends Arg {
-  override def name: String = s"$probe"
-}
-
-private[chisel3] case class ProbeRead(probe: Arg) extends Arg {
-  override def name = s"$probe"
-}
+private[chisel3] case class ProbeExpr(probe: Arg) extends Arg with ProbeDetails
+private[chisel3] case class RWProbeExpr(probe: Arg) extends Arg with ProbeDetails
+private[chisel3] case class ProbeRead(probe: Arg) extends Arg with ProbeDetails
 
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 object Width {

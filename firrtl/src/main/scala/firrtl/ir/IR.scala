@@ -196,7 +196,6 @@ abstract class Literal extends Expression {
   val value: BigInt
   val width: Width
 }
-
 case class UIntLiteral(value: BigInt, width: Width) extends Literal with UseSerializer {
   def tpe = UIntType(width)
 }

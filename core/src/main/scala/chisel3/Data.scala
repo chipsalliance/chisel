@@ -16,7 +16,6 @@ import chisel3.reflect.DataMirror
 import scala.collection.immutable.LazyList // Needed for 2.12 alias
 import scala.reflect.ClassTag
 import scala.util.Try
-import _root_.firrtl.ir.NoInfo
 
 /** User-specified directions.
   */

@@ -238,7 +238,7 @@ private[chisel3] object Connection {
             // Check that neither consumer nor producer contains probes
             case (consumer: Data, producer: Data)
                 if (hasProbeTypeModifier(consumer) || hasProbeTypeModifier(producer)) =>
-              errors = "Cannot use connectables with probe types. Omit them prior to connection." +: errors
+              errors = "Cannot use connectables with probe types. Exclude them prior to connection." +: errors
             case (consumer, producer) =>
               val alignment = (
                 conAlign.alignsWith(proAlign),

@@ -86,7 +86,6 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
         class Foo() extends RawModule {
           val p = IO(Output(Probe(new FooBundle())))
           val x = Wire(new FooBundle())
-          x := DontCare
           define(p, ProbeValue(x))
         }
 
@@ -181,7 +180,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
         Array("--throw-on-first-error")
       )
     }
-    exc.getMessage should be("Cannot use connectables with probe types. Omit them prior to connection.")
+    exc.getMessage should be("Cannot use connectables with probe types. Exclude them prior to connection.")
   }
 
   ":= connector with probe" should "fail" in {
@@ -340,6 +339,12 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
     }
     exc.getMessage should be("Cannot make a Mem of a Chisel type with a probe modifier.")
   }
+
+  // TODO define between RWProbe and Probe
+
+  // TODO read between RWProbe and Probe
+
+  // TODO force of Probe
 
   // TODO probes of const type should work
 

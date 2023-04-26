@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 package chisel3.probe
 
 import chisel3.Data
@@ -27,7 +29,7 @@ object ProbeValue extends ProbeValueBase {
   /** Create a read-only probe expression. */
   def apply[T <: Data](source: T): T = macro chisel3.internal.sourceinfo.ProbeTransform.sourceApply[T]
 
-  def do_apply[T <: Data](source: T)(implicit sourceInfo: SourceInfo): T = super.apply(source, false)
+  def do_apply[T <: Data](source: T)(implicit sourceInfo: SourceInfo): T = super.apply(source, writable = false)
 }
 
 object RWProbeValue extends ProbeValueBase {
@@ -35,5 +37,5 @@ object RWProbeValue extends ProbeValueBase {
   /** Create a read/write probe expression. */
   def apply[T <: Data](source: T): T = macro chisel3.internal.sourceinfo.ProbeTransform.sourceApply[T]
 
-  def do_apply[T <: Data](source: T)(implicit sourceInfo: SourceInfo): T = super.apply(source, true)
+  def do_apply[T <: Data](source: T)(implicit sourceInfo: SourceInfo): T = super.apply(source, writable = true)
 }
