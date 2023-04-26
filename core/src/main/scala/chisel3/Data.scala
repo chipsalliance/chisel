@@ -376,8 +376,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 
   // probeInfo only exists if this is a probe type
   private var _probeInfoVar:      ProbeInfo = null
-  private def _probeInfo:         Option[ProbeInfo] = Option(_probeInfoVar)
-  private[chisel3] def probeInfo: Option[ProbeInfo] = _probeInfo
+  private[chisel3] def probeInfo: Option[ProbeInfo] = Option(_probeInfoVar)
   private[chisel3] def probeInfo_=(probeInfo: Option[ProbeInfo]) = _probeInfoVar = probeInfo.getOrElse(null)
 
   // If this Data is constant, it must hold a constant value

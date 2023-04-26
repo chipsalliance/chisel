@@ -18,7 +18,6 @@ private[chisel3] sealed trait ProbeBase {
     val prevId = Builder.idGen.value
     // call Output() to coerce passivity
     val data = Output(source) // should only evaluate source once
-    requireIsChiselType(data)
     requireNoProbeTypeModifier(data, "Cannot probe a probe.")
     if (containsProbe(data)) {
       Builder.error("Cannot create a probe of an aggregate containing a probe.")

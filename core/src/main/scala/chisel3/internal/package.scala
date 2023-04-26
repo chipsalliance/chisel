@@ -130,7 +130,7 @@ package object internal {
     implicit sourceInfo: SourceInfo
   ): Unit = {
     val msg = if (errorMessage.isEmpty) s"Expected a writable probe." else errorMessage
-    requireHasProbeTypeModifier(probe)
+    requireHasProbeTypeModifier(probe, msg)
     if (!probe.probeInfo.get.writable) Builder.error(msg)
   }
 
