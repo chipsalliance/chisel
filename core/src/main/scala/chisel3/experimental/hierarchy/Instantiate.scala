@@ -99,9 +99,10 @@ object Instantiate {
 
   // Recursively box all Data (by traversing Products and Iterables) in DataBoxes
   private def boxAllData(a: Any): Any = a match {
-    case d:  Data        => new DataBox(d) // Must check this before Iterable because Vec is Iterable
+    case d: Data => new DataBox(d) // Must check this before Iterable because Vec is Iterable
+    // Must check before Product, because many Iterables are Products, but can still be equal, eg. List(1) == Vector(1)
     case it: Iterable[_] => it.map(boxAllData(_))
-    case p:  Product     => p.productIterator.map(boxAllData(_)).toSeq
+    case p:  Product     => Vector(p.getClass) ++ p.productIterator.map(boxAllData(_))
     case other => other
   }
 
