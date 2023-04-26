@@ -437,7 +437,15 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (t: T, n: BigInt, val readU
   def readWrite(idx: UInt, writeData: T, en: Bool, isWrite: Bool): T = macro SourceInfoTransform.idxDataEnIswArg
 
   /** @group SourceInfoTransformMacro */
-  def do_readWrite(idx: UInt, writeData: T, en: Bool, isWrite: Bool)(implicit sourceInfo: SourceInfo): T =
+  def do_readWrite(
+    idx:       UInt,
+    writeData: T,
+    en:        Bool,
+    isWrite:   Bool
+  )(
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
+  ): T =
     _readWrite_impl(idx, writeData, en, isWrite, Builder.forcedClock, true)
 
   /** Generates an explicit read-write port for this SyncReadMem, using a clock that may be
@@ -464,7 +472,8 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (t: T, n: BigInt, val readU
     isWrite: Bool,
     clock:   Clock
   )(
-    implicit sourceInfo: SourceInfo
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
   ): T =
     _readWrite_impl(idx, data, en, isWrite, clock, true)
 
@@ -477,7 +486,8 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (t: T, n: BigInt, val readU
     clock:   Clock,
     warn:    Boolean
   )(
-    implicit sourceInfo: SourceInfo
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
   ): T = {
     val a = Wire(UInt())
     a := DontCare
@@ -536,7 +546,9 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (t: T, n: BigInt, val readU
     en:        Bool,
     isWrite:   Bool
   )(
-    implicit evidence: T <:< Vec[_]
+    implicit evidence: T <:< Vec[_],
+    sourceInfo:        SourceInfo,
+    compileOptions:    CompileOptions
   ): T = masked_readWrite_impl(idx, writeData, mask, en, isWrite, Builder.forcedClock, true)
 
   /** Generates an explicit read-write port for this SyncReadMem, with a bytemask for
@@ -565,7 +577,9 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (t: T, n: BigInt, val readU
     isWrite:   Bool,
     clock:     Clock
   )(
-    implicit evidence: T <:< Vec[_]
+    implicit evidence: T <:< Vec[_],
+    sourceInfo:        SourceInfo,
+    compileOptions:    CompileOptions
   ): T = masked_readWrite_impl(idx, writeData, mask, en, isWrite, clock, true)
 
   private def masked_readWrite_impl(
@@ -577,9 +591,10 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (t: T, n: BigInt, val readU
     clock:   Clock,
     warn:    Boolean
   )(
-    implicit evidence: T <:< Vec[_]
+    implicit evidence: T <:< Vec[_],
+    sourceInfo:        SourceInfo,
+    compileOptions:    CompileOptions
   ): T = {
-    implicit val sourceInfo = UnlocatableSourceInfo
     val a = Wire(UInt())
     a := DontCare
 
