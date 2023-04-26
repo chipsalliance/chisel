@@ -38,7 +38,7 @@ private[chisel3] object BindingDirection {
     */
   def from(binding: TopBinding, direction: ActualDirection): BindingDirection = {
     binding match {
-      case PortBinding(_) =>
+      case _: PortBinding | _: SecretPortBinding =>
         direction match {
           case ActualDirection.Output => Output
           case ActualDirection.Input  => Input

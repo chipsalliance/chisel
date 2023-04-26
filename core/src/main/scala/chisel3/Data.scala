@@ -481,6 +481,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       case OpBinding(_, _)           => "OpResult"
       case MemoryPortBinding(_, _)   => "MemPort"
       case PortBinding(_)            => "IO"
+      case SecretPortBinding(_)      => "IO"
       case RegBinding(_, _)          => "Reg"
       case WireBinding(_, _)         => "Wire"
       case DontCareBinding()         => "(DontCare)"
