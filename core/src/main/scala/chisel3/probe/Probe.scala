@@ -4,8 +4,8 @@ package chisel3.probe
 
 import chisel3._
 import chisel3.Data.ProbeInfo
-import chisel3.internal.{containsProbe, requireIsChiselType, requireNoProbeTypeModifier, Builder}
 import chisel3.experimental.SourceInfo
+import chisel3.internal.{containsProbe, requireIsChiselType, requireNoProbeTypeModifier, Builder}
 
 import scala.language.experimental.macros
 
@@ -32,7 +32,7 @@ private[chisel3] sealed trait ProbeBase {
   }
 }
 
-object Probe extends ProbeBase {
+object Probe extends ProbeBase with SourceInfoDoc {
 
   /** Mark a Chisel type as with a probe modifier.
     */
@@ -42,7 +42,7 @@ object Probe extends ProbeBase {
   def do_apply[T <: Data](source: => T)(implicit sourceInfo: SourceInfo): T = super.apply(source, false)
 }
 
-object RWProbe extends ProbeBase {
+object RWProbe extends ProbeBase with SourceInfoDoc {
 
   /** Mark a Chisel type with a writable probe modifier.
     */

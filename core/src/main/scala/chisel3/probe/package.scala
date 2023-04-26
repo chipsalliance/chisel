@@ -12,7 +12,7 @@ import chisel3.reflect.DataMirror.{checkTypeEquivalence, hasProbeTypeModifier}
 
 import scala.language.experimental.macros
 
-package object probe {
+package object probe extends SourceInfoDoc {
 
   private[chisel3] def setProbeModifier[T <: Data](data: T, probeInfo: Option[ProbeInfo]): Unit = {
     probeInfo.foreach { _ =>
