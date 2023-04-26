@@ -1,9 +1,10 @@
 package chiselTests
 
 import chisel3._
-import chiselTests.{ChiselFlatSpec, Utils}
+import chisel3.probe.Probe
 import chisel3.experimental.BundleLiterals.AddBundleLiteralConstructor
 import chisel3.experimental.VecLiterals.AddVecLiteralConstructor
+import chiselTests.{ChiselFlatSpec, Utils}
 import circt.stage.ChiselStage
 
 class ConstSpec extends ChiselFlatSpec with Utils {
@@ -57,6 +58,18 @@ class ConstSpec extends ChiselFlatSpec with Utils {
       )
     }
     exc.getMessage should be("Mem type cannot be const.")
+  }
+
+  "Const of Probe" should "fail" in {
+    val exc = intercept[chisel3.ChiselException] {
+      ChiselStage.emitCHIRRTL(
+        new Module {
+          val p = Const(Probe(Bool()))
+        },
+        Array("--throw-on-first-error")
+      )
+    }
+    exc.getMessage should be("Cannot create Const of a Probe.")
   }
 
 }

@@ -45,7 +45,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
         val u1 = Module(new UTurn())
         val u2 = Module(new UTurn())
 
-        val n = ProbeValue(io.x)
+        val n = RWProbeValue(io.x)
 
         define(u1.io.in, n)
         define(u2.io.in, u1.io.out)
@@ -64,13 +64,35 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
 
     (processChirrtl(chirrtl) should contain).allOf(
       "output io : { flip in : RWProbe<UInt<1>>, out : RWProbe<UInt<1>>}",
-      "define u1.io.in = probe(io.x)",
+      "define u1.io.in = rwprobe(io.x)",
       "define u2.io.in = u1.io.out",
       "io.y <= read(u2.io.out)",
       "force_initial(u1.io.out, UInt<1>(\"h0\"))",
       "release_initial(u1.io.out)",
       "force(clock, io.x, u2.io.out, u1.io.out)",
       "release(clock, io.y, u2.io.out)"
+    )
+  }
+
+  "Probe methods in when contexts" should "work" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(
+      new RawModule {
+        val in = IO(Input(Bool()))
+        val out = IO(Output(RWProbe(Bool())))
+
+        val w = WireInit(Bool(), false.B)
+
+        when(in) {
+          define(out, RWProbeValue(in))
+          w := read(out)
+        }
+      },
+      Array("--full-stacktrace")
+    )
+    (processChirrtl(chirrtl) should contain).allOf(
+      "when in :",
+      "define out = rwprobe(in)",
+      "w <= read(out)"
     )
   }
 
@@ -340,15 +362,66 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
     exc.getMessage should be("Cannot make a Mem of a Chisel type with a probe modifier.")
   }
 
-  // TODO define between RWProbe and Probe
+  "Defining a Probe with a rwprobe()" should "work" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(
+      new RawModule {
+        val in = IO(Input(Bool()))
+        val out = IO(Output(Probe(Bool())))
+        define(out, RWProbeValue(in))
+      },
+      Array("--full-stacktrace")
+    )
+    processChirrtl(chirrtl) should contain("define out = rwprobe(in)")
+  }
 
-  // TODO read between RWProbe and Probe
+  "Defining a RWProbe with a probe()" should "fail" in {
+    val exc = intercept[chisel3.ChiselException] {
+      ChiselStage.emitCHIRRTL(
+        new RawModule {
+          val in = IO(Input(Bool()))
+          val out = IO(Output(RWProbe(Bool())))
+          define(out, ProbeValue(in))
+        },
+        Array("--throw-on-first-error")
+      )
+    }
+    exc.getMessage should be("Cannot use a non-writable probe expression to define a writable probe.")
+  }
 
-  // TODO force of Probe
+  "Force of a non-writable Probe" should "fail" in {
+    val exc = intercept[chisel3.ChiselException] {
+      ChiselStage.emitCHIRRTL(
+        new Module {
+          val in = IO(Input(Bool()))
+          val out = IO(Output(Probe(Bool())))
+          force(clock, in, out, in)
+        },
+        Array("--throw-on-first-error")
+      )
+    }
+    exc.getMessage should be("Cannot force a non-writable Probe.")
+  }
 
-  // TODO probes of const type should work
+  "Probes of Const type" should "work" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(
+      new RawModule {
+        val out = IO(Probe(Const(Bool())))
+      },
+      Array("--full-stacktrace")
+    )
+    processChirrtl(chirrtl) should contain("output out : Probe<const UInt<1>>")
+  }
 
-  // TODO writable probes of const type should fail
+  "RWProbes of Const type" should "fail" in {
+    val exc = intercept[chisel3.ChiselException] {
+      ChiselStage.emitCHIRRTL(
+        new RawModule {
+          val out = IO(RWProbe(Const(Bool())))
+        },
+        Array("--throw-on-first-error")
+      )
+    }
+    exc.getMessage should be("Cannot create a writable probe of a const type.")
+  }
 
-  // TODO const of probe type should fail? --> put check in ConstSpec
 }

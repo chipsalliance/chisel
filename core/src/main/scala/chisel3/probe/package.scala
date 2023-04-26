@@ -8,7 +8,7 @@ import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.Data.ProbeInfo
 import chisel3.experimental.SourceInfo
-import chisel3.reflect.DataMirror
+import chisel3.reflect.DataMirror.{checkTypeEquivalence, hasProbeTypeModifier}
 
 import scala.language.experimental.macros
 
@@ -27,11 +27,17 @@ package object probe {
 
   /** Initialize a probe with a provided probe value. */
   def define[T <: Data](sink: T, probeExpr: T)(implicit sourceInfo: SourceInfo): Unit = {
-    if (!DataMirror.checkTypeEquivalence(sink, probeExpr)) {
+    if (!checkTypeEquivalence(sink, probeExpr)) {
       Builder.error("Cannot define a probe on a non-equivalent type.")
     }
     requireHasProbeTypeModifier(sink, "Expected sink to be a probe.")
     requireHasProbeTypeModifier(probeExpr, "Expected source to be a probe expression.")
+    if (sink.probeInfo.get.writable) {
+      requireHasWritableProbeTypeModifier(
+        probeExpr,
+        "Cannot use a non-writable probe expression to define a writable probe."
+      )
+    }
     pushCommand(ProbeDefine(sourceInfo, sink.ref, probeExpr.ref))
   }
 
@@ -52,25 +58,25 @@ package object probe {
 
   /** Override existing driver of a writable probe on initialization. */
   def forceInitial(probe: Data, value: Data)(implicit sourceInfo: SourceInfo): Unit = {
-    requireHasWritableProbeTypeModifier(probe)
+    requireHasWritableProbeTypeModifier(probe, "Cannot forceInitial a non-writable Probe.")
     pushCommand(ProbeForceInitial(sourceInfo, probe.ref, value.ref))
   }
 
   /** Release initial driver on a probe. */
   def releaseInitial(probe: Data)(implicit sourceInfo: SourceInfo): Unit = {
-    requireHasWritableProbeTypeModifier(probe)
+    requireHasWritableProbeTypeModifier(probe, "Cannot releaseInitial a non-writable Probe.")
     pushCommand(ProbeReleaseInitial(sourceInfo, probe.ref))
   }
 
   /** Override existing driver of a writable probe. */
   def force(clock: Clock, cond: Bool, probe: Data, value: Data)(implicit sourceInfo: SourceInfo): Unit = {
-    requireHasWritableProbeTypeModifier(probe)
+    requireHasWritableProbeTypeModifier(probe, "Cannot force a non-writable Probe.")
     pushCommand(ProbeForce(sourceInfo, clock.ref, cond.ref, probe.ref, value.ref))
   }
 
   /** Release driver on a probe. */
   def release(clock: Clock, cond: Bool, probe: Data)(implicit sourceInfo: SourceInfo): Unit = {
-    requireHasWritableProbeTypeModifier(probe)
+    requireHasWritableProbeTypeModifier(probe, "Cannot release a non-writable Probe.")
     pushCommand(ProbeRelease(sourceInfo, clock.ref, cond.ref, probe.ref))
   }
 

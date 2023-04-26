@@ -23,6 +23,9 @@ private[chisel3] sealed trait ProbeBase {
     if (containsProbe(data)) {
       Builder.error("Cannot create a probe of an aggregate containing a probe.")
     }
+    if (writable && data.isConst) {
+      Builder.error("Cannot create a writable probe of a const type.")
+    }
 
     val ret: T = if (!data.mustClone(prevId)) data else data.cloneType.asInstanceOf[T]
     setProbeModifier(ret, Some(ProbeInfo(writable)))
