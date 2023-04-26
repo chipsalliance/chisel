@@ -224,14 +224,14 @@ class MemReadWriteTester extends BasicTester {
       wdata := 2.U
     }
     is(2.U) { // Cycle 3: Read from address 0 (data returned next cycle)
-      address := 0.U;
-      enable := true.B;
-      isWrite := false.B;
+      address := 0.U
+      enable := true.B
+      isWrite := false.B
     }
     is(3.U) { // Cycle 4: Expect RDWR port to contain 3.U, then read from address 1
-      address := 1.U;
-      enable := true.B;
-      isWrite := false.B;
+      address := 1.U
+      enable := true.B
+      isWrite := false.B
       assert(rdata === 3.U)
     }
     is(4.U) { // Cycle 5: Expect rdata to contain 2.U
@@ -285,16 +285,16 @@ class MemMaskedReadWriteTester extends BasicTester {
       wdata := VecInit(5.U, 6.U, 7.U, 8.U)
     }
     is(2.U) { // Cycle 3: Read from address 0 (data returned next cycle)
-      address := 0.U;
-      enable := true.B;
-      isWrite := false.B;
+      address := 0.U
+      enable := true.B
+      isWrite := false.B
     }
     is(3.U) { // Cycle 4: Expect RDWR port to contain (1.U, 2.U, 3.U, 4.U), then read from address 1
       assert(rdata === VecInit(1.U, 2.U, 3.U, 4.U))
 
-      address := 1.U;
-      enable := true.B;
-      isWrite := false.B;
+      address := 1.U
+      enable := true.B
+      isWrite := false.B
     }
     is(4.U) { // Cycle 5: Expect rdata to contain (5.U, 6.U, 7.U, 8.U)
       assert(rdata === VecInit(5.U, 6.U, 7.U, 8.U))
@@ -316,17 +316,17 @@ class MemMaskedReadWriteTester extends BasicTester {
       wdata := VecInit(100.U, 0.U, 0.U, 100.U)
     }
     is(7.U) { // Cycle 8: Read from address 0 (data returned next cycle)
-      address := 0.U;
-      enable := true.B;
-      isWrite := false.B;
+      address := 0.U
+      enable := true.B
+      isWrite := false.B
     }
     is(8.U) { // Cycle 9: Expect RDWR port to contain (0.U, 2.U, 3.U, 0.U), then read from address 1
       // NOT (0.U, 100.U, 100.U, 0.U)
       assert(rdata === VecInit(0.U, 2.U, 3.U, 0.U))
 
-      address := 1.U;
-      enable := true.B;
-      isWrite := false.B;
+      address := 1.U
+      enable := true.B
+      isWrite := false.B
     }
     is(9.U) { // Cycle 10: Expect rdata to contain (5.U, 0.U, 0.U, 8.U)
       // NOT (100.U, 0.U, 0.U, 100.U)
