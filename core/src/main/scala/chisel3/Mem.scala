@@ -381,14 +381,13 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
   )(
     implicit sourceInfo: SourceInfo
   ): T = {
-    val a = Wire(UInt())
-    a := DontCare
-    var port: Option[T] = None
+    val _a = WireDefault(chiselTypeOf(addr), DontCare)
+    var _port: Option[T] = None
     when(enable) {
-      a := addr
-      port = Some(super.do_apply_impl(a, clock, MemPortDirection.READ, warn))
+      _a := addr
+      _port = Some(super.do_apply_impl(_a, clock, MemPortDirection.READ, warn))
     }
-    port.get
+    _port.get
   }
   // note: we implement do_read(addr) for SyncReadMem in terms of do_read(addr, en) in order to ensure that
   //       `mem.read(addr)` will always behave the same as `mem.read(addr, true.B)`
@@ -470,19 +469,17 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
   )(
     implicit sourceInfo: SourceInfo
   ): T = {
-    val a = Wire(UInt())
-    a := DontCare
-
-    var port: Option[T] = None
+    val _a = WireDefault(chiselTypeOf(addr), DontCare)
+    var _port: Option[T] = None
     when(enable) {
-      a := addr
-      port = Some(super.do_apply_impl(a, clock, MemPortDirection.RDWR, warn))
+      _a := addr
+      _port = Some(super.do_apply_impl(_a, clock, MemPortDirection.RDWR, warn))
 
       when(isWrite) {
-        port.get := data
+        _port.get := data
       }
     }
-    port.get
+    _port.get
   }
 
   /** Generates an explicit read-write port for this SyncReadMem, with a bytemask for
@@ -571,14 +568,13 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
     implicit evidence: T <:< Vec[_]
   ): T = {
     implicit val sourceInfo = UnlocatableSourceInfo
-    val a = Wire(UInt())
-    a := DontCare
+    val _a = WireDefault(chiselTypeOf(addr), DontCare)
 
-    var port: Option[T] = None
+    var _port: Option[T] = None
     when(enable) {
-      a := addr
-      port = Some(super.do_apply_impl(a, clock, MemPortDirection.RDWR, warn))
-      val accessor = port.get.asInstanceOf[Vec[Data]]
+      _a := addr
+      _port = Some(super.do_apply_impl(_a, clock, MemPortDirection.RDWR, warn))
+      val accessor = _port.get.asInstanceOf[Vec[Data]]
 
       when(isWrite) {
         val dataVec = data.asInstanceOf[Vec[Data]]
@@ -593,6 +589,6 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
           when(cond) { p := datum }
       }
     }
-    port.get
+    _port.get
   }
 }
