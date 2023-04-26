@@ -37,7 +37,7 @@ object DataMirror {
     * @param x the `Data` to check
     * @return `true` if x is an IO port, `false` otherwise
     */
-  def isIO(x: Data): Boolean = hasBinding[PortBinding](x)
+  def isIO(x: Data): Boolean = hasBinding[PortBinding](x) || hasBinding[SecretPortBinding](x)
 
   /** Check if a given `Data` is a Wire
     * @param x the `Data` to check
