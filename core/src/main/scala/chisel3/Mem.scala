@@ -381,11 +381,9 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
   )(
     implicit sourceInfo: SourceInfo
   ): T = {
-    val _a = WireDefault(chiselTypeOf(addr), DontCare)
     var _port: Option[T] = None
     when(enable) {
-      _a := addr
-      _port = Some(super.do_apply_impl(_a, clock, MemPortDirection.READ, warn))
+      _port = Some(super.do_apply_impl(addr, clock, MemPortDirection.READ, warn))
     }
     _port.get
   }
@@ -469,11 +467,9 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
   )(
     implicit sourceInfo: SourceInfo
   ): T = {
-    val _a = WireDefault(chiselTypeOf(addr), DontCare)
     var _port: Option[T] = None
     when(enable) {
-      _a := addr
-      _port = Some(super.do_apply_impl(_a, clock, MemPortDirection.RDWR, warn))
+      _port = Some(super.do_apply_impl(addr, clock, MemPortDirection.RDWR, warn))
 
       when(isWrite) {
         _port.get := data
@@ -568,12 +564,10 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
     implicit evidence: T <:< Vec[_]
   ): T = {
     implicit val sourceInfo = UnlocatableSourceInfo
-    val _a = WireDefault(chiselTypeOf(addr), DontCare)
 
     var _port: Option[T] = None
     when(enable) {
-      _a := addr
-      _port = Some(super.do_apply_impl(_a, clock, MemPortDirection.RDWR, warn))
+      _port = Some(super.do_apply_impl(addr, clock, MemPortDirection.RDWR, warn))
       val accessor = _port.get.asInstanceOf[Vec[Data]]
 
       when(isWrite) {
