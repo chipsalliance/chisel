@@ -38,11 +38,14 @@ object SpecifiedDirection {
     */
   case object Flip extends SpecifiedDirection
 
+  case object Passive extends SpecifiedDirection
+
   def flip(dir: SpecifiedDirection): SpecifiedDirection = dir match {
     case Unspecified => Flip
     case Flip        => Unspecified
     case Output      => Input
     case Input       => Output
+    case Passive     => Passive
   }
 
   /** Returns the effective SpecifiedDirection of this node given the parent's effective SpecifiedDirection
@@ -50,6 +53,7 @@ object SpecifiedDirection {
     */
   def fromParent(parentDirection: SpecifiedDirection, thisDirection: SpecifiedDirection): SpecifiedDirection =
     (parentDirection, thisDirection) match {
+      case (SpecifiedDirection.Passive, _)                 => SpecifiedDirection.Passive
       case (SpecifiedDirection.Output, _)                  => SpecifiedDirection.Output
       case (SpecifiedDirection.Input, _)                   => SpecifiedDirection.Input
       case (SpecifiedDirection.Unspecified, thisDirection) => thisDirection
@@ -63,8 +67,16 @@ object SpecifiedDirection {
     val prevId = Builder.idGen.value
     val data = source // evaluate source once (passed by name)
     requireIsChiselType(data)
-    val out = if (!data.mustClone(prevId)) data else data.cloneType.asInstanceOf[T]
-    out.specifiedDirection = dir(data) // Must use original data, specified direction of clone is cleared
+    val out = if (!data.mustClone(prevId)) {
+      data
+    } else {
+      val clone = data.cloneType.asInstanceOf[T]
+      val direction = dir(data)
+      clone.specifiedDirection = dir(data) // Must use original data, specified direction of clone is cleared
+      if(direction == Passive) {
+        clone.allElements.foreach { e => e.specifiedDirection = Passive}
+      }
+    }
     out
   }
 
@@ -332,6 +344,12 @@ object Flipped {
   }
 }
 
+object Passive {
+  def apply[T <: Data](source: => T): T = {
+    SpecifiedDirection.specifiedDirection(source)(x => SpecifiedDirection.flip(x.specifiedDirection))
+  }
+}
+
 /** This forms the root of the type system for wire data types. The data value
   * must be representable as some number (need not be known at Chisel compile
   * time) of bits, and must have methods to pack / unpack structured data to /
@@ -394,6 +412,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       case (_: Analog, _) => // nothing to do
       case (_, SpecifiedDirection.Unspecified)                       => _specifiedDirection = SpecifiedDirection.Output
       case (_, SpecifiedDirection.Flip)                              => _specifiedDirection = SpecifiedDirection.Input
+      case (_, SpecifiedDirection.Passive)                           => _specifiedDirection = SpecifiedDirection.Output
       case (_, SpecifiedDirection.Input | SpecifiedDirection.Output) => // nothing to do
     }
   }
@@ -448,20 +467,16 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     }
   }
 
-  // Both _direction and _resolvedUserDirection are saved versions of computed variables (for
-  // efficiency, avoid expensive recomputation of frequent operations).
-  // Both are only valid after binding is set.
-
-  // Direction of this node, accounting for parents (force Input / Output) and children.
-  private var _directionVar: ActualDirection = null // using nullable var for better memory usage
-  private def _direction:    Option[ActualDirection] = Option(_directionVar)
-
-  private[chisel3] def direction: ActualDirection = _direction.get
-  private[chisel3] def direction_=(actualDirection: ActualDirection): Unit = {
-    if (_direction.isDefined) {
-      throw RebindingException(s"Attempted reassignment of resolved direction to $this")
+  private[chisel3] def direction: ActualDirection = {
+    requireIsHardware(this)
+    (binding.get, specifiedDirection) match {
+      case (ChildBinding(p), Passive) => p.direction
+      case (ChildBinding(p), Flipped) => ActualDirection.flip(p.direction)
+      case (ChildBinding(p), Unspecified) => p.direction
+      case (_: PortBinding | _: SecretPortBinding, Flipped)     => ActualDirection.Input
+      case (_: PortBinding | _: SecretPortBinding, Unspecified) => ActualDirection.Output
+      case (_: ConstrainedBinding) => ActualDirection.Unspecified // Not a port, so we don't have an actual direction
     }
-    _directionVar = actualDirection
   }
 
   private[chisel3] def stringAccessor(chiselType: String): String = {

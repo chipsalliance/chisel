@@ -24,14 +24,18 @@ object IO {
     * The granted iodef must be a chisel type and not be bound to hardware.
     */
   def apply[T <: Data](iodef: => T)(implicit sourceInfo: SourceInfo): T = {
+    val io = checkIO(iodef)
+    module.bindIoInPlace(io)
+    io
+  }
+
+  private[chisel3] def checkIO[T <: Data](iodef: => T)(implicit sourceInfo: SourceInfo): T = {
     val module = Module.currentModule.get // Impossible to fail
     require(!module.isClosed, "Can't add more ports after module close")
     val prevId = Builder.idGen.value
     val data = iodef // evaluate once (passed by name)
     requireIsChiselType(data, "io type")
 
-    // Clone the IO so we preserve immutability of data types
-    // Note: we don't clone if the data is fresh (to avoid unnecessary clones)
     val iodefClone =
       if (!data.mustClone(prevId)) data
       else
@@ -43,8 +47,7 @@ object IO {
             Builder.deprecated(e.getMessage, Some(s"${data.getClass}"))
             data
         }
-    module.bindIoInPlace(iodefClone)
-    iodefClone
+    data
   }
 }
 
@@ -58,7 +61,6 @@ object Incoming {
     * e.g. val io = Incoming(new Bundle( val x = Bool(); val y = Flipped(Bool()))
     * e.g. val io = Incoming(Passive(new Bundle( val x = Bool(); val y = Flipped(Bool())))
     * e.g. ERROR: val io = Incoming(Input(Bool()))
-    * e.g. ERROR: val io = Incoming(Output(Bool()))
     * e.g. ERROR: val io = Incoming(Flipped(Bool()))
     *
     * i.e. All concrete modules must have defined ios in this form:
@@ -69,7 +71,12 @@ object Incoming {
     * The granted iodef must be a chisel type and not be bound to hardware.
     */
   def apply[T <: Data](iodef: => T)(implicit sourceInfo: SourceInfo): T = {
-    IO(Flipped(iodef))
+    val io = checkIO(iodef)
+    if(io.specifiedDirection != SpecifiedDirection.Unspecified) {
+      Builder.error("Cannot create an Incoming port given a chisel type with an outer Flipped/Input/Output")
+    }
+    module.bindIoInPlace(Flipped(io))
+    io
   }
 }
 
@@ -94,6 +101,11 @@ object Outgoing {
     * The granted iodef must be a chisel type and not be bound to hardware.
     */
   def apply[T <: Data](iodef: => T)(implicit sourceInfo: SourceInfo): T = {
-    IO(iodef)
+    val io = checkIO(iodef)
+    if(io.specifiedDirection != SpecifiedDirection.Unspecified) {
+      Builder.error("Cannot create an Outgoing port given a chisel type with an outer Flipped/Input/Output")
+    }
+    module.bindIoInPlace(io)
+    io
   }
 }
