@@ -150,6 +150,24 @@ class InterfaceSpec extends AnyFunSpec with Matchers {
 
     }
 
+    it("should compile a stub") {
+
+      val dir = new java.io.File("test_run_dir/interface/InterfaceSpec/should-compile-a-stub")
+
+      import CompilationUnit2.bazConformance
+
+      info("compile okay!")
+      Drivers.compile(
+        dir,
+        Drivers.CompilationUnit(() => new CompilationUnit3.Foo),
+        Drivers.CompilationUnit(() => new (BarInterface.Wrapper.Stub))
+      )
+
+      info("link okay!")
+      Drivers.link(dir, "compile-0/Foo.sv")
+
+    }
+
   }
 
   describe("Error behavior of Interfaces") {
