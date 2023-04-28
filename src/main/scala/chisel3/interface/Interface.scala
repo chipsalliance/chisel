@@ -76,6 +76,8 @@ trait Interface extends InterfaceCommon { self: Singleton =>
 
   sealed trait Entity { this: BaseModule =>
     val io: Ports
+
+    override final def desiredName = interfaceName
   }
 
   object Wrapper {
@@ -85,8 +87,6 @@ trait Interface extends InterfaceCommon { self: Singleton =>
       */
     final class BlackBox extends chisel3.BlackBox with Entity {
       final val io = IO(ports)
-
-      override final def desiredName = interfaceName
     }
 
     /** The module that wraps any module which conforms to this Interface.
@@ -123,8 +123,6 @@ trait Interface extends InterfaceCommon { self: Singleton =>
             e
           )
       }
-
-      override def desiredName = interfaceName
     }
 
     /** A stub module that implements the interface. All IO of this module are
