@@ -8,13 +8,13 @@ import chisel3.internal.sourceinfo.{MemTransform, SourceInfoTransform}
 import scala.language.reflectiveCalls
 import scala.language.experimental.macros
 
-/** A bundle of signals representing a write memory port.
+/** A bundle of signals representing a read memory port.
   *
   * @tparam tpe The data type of the memory port
-  * @param width The width of the address signal
+  * @param addrWidth The width of the address signal
   */
-class RDPortInterface[T <: Data](tpe: T, width: Int) extends Bundle {
-  val addr = Input(UInt(width.W))
+class MemRdPortInterface[T <: Data](tpe: T, addrWidth: Int) extends Bundle {
+  val addr = Input(UInt(addrWidth.W))
   val enable = Input(Bool())
   val readValue = Output(tpe)
 }
@@ -22,10 +22,10 @@ class RDPortInterface[T <: Data](tpe: T, width: Int) extends Bundle {
 /** A bundle of signals representing a write memory port.
   *
   * @tparam tpe The data type of the memory port
-  * @param width The width of the address signal
+  * @param addrWidth The width of the address signal
   */
-class WRPortInterface[T <: Data](tpe: T, width: Int) extends Bundle {
-  val addr = Input(UInt(width.W))
+class MemWrPortInterface[T <: Data](tpe: T, addrWidth: Int) extends Bundle {
+  val addr = Input(UInt(addrWidth.W))
   val enable = Input(Bool())
   val writeValue = Input(tpe)
 }
@@ -33,10 +33,10 @@ class WRPortInterface[T <: Data](tpe: T, width: Int) extends Bundle {
 /** A bundle of signals representing a read/write memory port.
   *
   * @tparam tpe The data type of the memory port
-  * @param width The width of the address signal
+  * @param addrWidth The width of the address signal
   */
-class RWPortInterface[T <: Data](tpe: T, width: Int) extends Bundle {
-  val addr = Input(UInt(width.W))
+class MemRdWrPortInterface[T <: Data](tpe: T, addrWidth: Int) extends Bundle {
+  val addr = Input(UInt(addrWidth.W))
   val enable = Input(Bool())
   val isWrite = Input(Bool())
   val readValue = Output(tpe)
@@ -48,16 +48,16 @@ class RWPortInterface[T <: Data](tpe: T, width: Int) extends Bundle {
   *
   * @tparam tpe The data type of the memory port
   * @param width The width of the address wires of each port
-  * @param numRD The number of read ports
-  * @param numWR The number of write ports
-  * @param numRW The number of read/write ports
+  * @param numRd The number of read ports
+  * @param numWr The number of write ports
+  * @param numRdWr The number of read/write ports
   */
-class MemInterface[T <: Data](tpe: T, addrWidth: Int, numRD: Int, numWR: Int, numRW: Int) extends Bundle {
-  override def typeName: String = s"MemInterface_${MemInterface.portedness(numRD, numWR, numRW)}"
+class MemInterface[T <: Data](tpe: T, addrWidth: Int, numRd: Int, numWr: Int, numRdWr: Int) extends Bundle {
+  override def typeName: String = s"MemInterface_${MemInterface.portedness(numRd, numWr, numRdWr)}"
 
-  val rd: Vec[RDPortInterface[T]] = Vec(numRD, new RDPortInterface(tpe, addrWidth))
-  val wr: Vec[WRPortInterface[T]] = Vec(numWR, new WRPortInterface(tpe, addrWidth))
-  val rw: Vec[RWPortInterface[T]] = Vec(numRW, new RWPortInterface(tpe, addrWidth))
+  val rd: Vec[MemRdPortInterface[T]] = Vec(numRd, new MemRdPortInterface(tpe, addrWidth))
+  val wr: Vec[MemWrPortInterface[T]] = Vec(numWr, new MemWrPortInterface(tpe, addrWidth))
+  val rw: Vec[MemRdWrPortInterface[T]] = Vec(numRdWr, new MemRdWrPortInterface(tpe, addrWidth))
 }
 
 object MemInterface {
@@ -67,18 +67,19 @@ object MemInterface {
     *
     * @param size The desired size of the inner `SyncReadMem`
     * @tparam T The data type of the memory element
-    * @param numRD The number of desired read ports, >= 0
-    * @param numWR The number of desired write ports, >= 0
-    * @param numRW The number of desired read/write ports, >= 0
+    * @param numRd The number of desired read ports, >= 0
+    * @param numWr The number of desired write ports, >= 0
+    * @param numRdWr The number of desired read/write ports, >= 0
     *
     * @return A new `MemInterface` wire containing the control signals for each instantiated port
+    * @note This does *not* return the wrapper module itself, you must interact with it using the returned bundle
     */
   def apply[T <: Data](
-    size:  BigInt,
-    tpe:   T,
-    numRD: Int,
-    numWR: Int,
-    numRW: Int
+    size:    BigInt,
+    tpe:     T,
+    numRd:   Int,
+    numWr:   Int,
+    numRdWr: Int
   ): MemInterface[T] =
     macro MemTransform.apply_memInterface[T]
 
@@ -87,55 +88,55 @@ object MemInterface {
     *
     * @param size The desired size of the inner `SyncReadMem`
     * @tparam T The data type of the memory element
-    * @param numRD The number of desired read ports, >= 0
-    * @param numWR The number of desired write ports, >= 0
-    * @param numRW The number of desired read/write ports, >= 0
+    * @param numRd The number of desired read ports, >= 0
+    * @param numWr The number of desired write ports, >= 0
+    * @param numRdWr The number of desired read/write ports, >= 0
     * @param clock The clock to bind to each generated port, which may be different from the implicit clock
     *
     * @return A new `MemInterface` wire containing the control signals for each instantiated port
-    * @note This does *not* return the wrapper module itself, you must interact with it as a bundle
+    * @note This does *not* return the wrapper module itself, you must interact with it using the returned bundle
     */
   def apply[T <: Data](
-    size:  BigInt,
-    tpe:   T,
-    numRD: Int,
-    numWR: Int,
-    numRW: Int,
-    clock: Clock
+    size:    BigInt,
+    tpe:     T,
+    numRd:   Int,
+    numWr:   Int,
+    numRdWr: Int,
+    clock:   Clock
   ): MemInterface[T] =
     macro MemTransform.apply_memInterfaceClk[T]
 
   /** @group SourceInfoTransformMacro */
   def do_apply[T <: Data](
-    size:  BigInt,
-    tpe:   T,
-    numRD: Int,
-    numWR: Int,
-    numRW: Int
+    size:    BigInt,
+    tpe:     T,
+    numRd:   Int,
+    numWr:   Int,
+    numRdWr: Int
   )(
     implicit sourceInfo: SourceInfo
-  ): MemInterface[T] = memInterface_impl(size, tpe)(numRD, numWR, numRW, Builder.forcedClock)
+  ): MemInterface[T] = memInterface_impl(size, tpe)(numRd, numWr, numRdWr, Builder.forcedClock)
 
   /** @group SourceInfoTransformMacro */
   def do_apply[T <: Data](
-    size:  BigInt,
-    tpe:   T,
-    numRD: Int,
-    numWR: Int,
-    numRW: Int,
-    clock: Clock
+    size:    BigInt,
+    tpe:     T,
+    numRd:   Int,
+    numWr:   Int,
+    numRdWr: Int,
+    clock:   Clock
   )(
     implicit sourceInfo: SourceInfo
-  ): MemInterface[T] = memInterface_impl(size, tpe)(numRD, numWR, numRW, clock)
+  ): MemInterface[T] = memInterface_impl(size, tpe)(numRd, numWr, numRdWr, clock)
 
   /** @group SourceInfoTransformMacro */
   private def memInterface_impl[T <: Data](
-    size:  BigInt,
-    tpe:   T
-  )(numRD: Int,
-    numWR: Int,
-    numRW: Int,
-    clock: Clock
+    size:    BigInt,
+    tpe:     T
+  )(numRd:   Int,
+    numWr:   Int,
+    numRdWr: Int,
+    clock:   Clock
   )(
     implicit sourceInfo: SourceInfo
   ): MemInterface[T] = {
@@ -143,23 +144,23 @@ object MemInterface {
 
     val _wrappedMem = Module(new Module {
       override def desiredName: String =
-        s"SyncReadMemWrapper_${MemInterface.portedness(numRD, numWR, numRW)}_${tpe.typeName}"
+        s"SyncReadMemWrapper_${MemInterface.portedness(numRd, numWr, numRdWr)}_${tpe.typeName}"
 
-      val io = IO(new MemInterface(tpe, addrWidth, numRD, numWR, numRW))
+      val io = IO(new MemInterface(tpe, addrWidth, numRd, numWr, numRdWr))
 
       val _innerMem = SyncReadMem(size, tpe)
 
-      for (i <- 0 until numRD) {
+      for (i <- 0 until numRd) {
         io.rd(i).readValue := _innerMem.read(io.rd(i).addr, io.rd(i).enable, clock)
       }
 
-      for (i <- 0 until numWR) {
+      for (i <- 0 until numWr) {
         when(io.wr(i).enable) {
           _innerMem.write(io.wr(i).addr, io.wr(i).writeValue, clock)
         }
       }
 
-      for (i <- 0 until numRW) {
+      for (i <- 0 until numRdWr) {
         io.rw(i).readValue := _innerMem.readWrite(
           io.rw(i).addr,
           io.rw(i).writeValue,
@@ -170,7 +171,7 @@ object MemInterface {
       }
     })
 
-    val _out = Wire(new MemInterface(tpe, addrWidth, numRD, numWR, numRW))
+    val _out = Wire(new MemInterface(tpe, addrWidth, numRd, numWr, numRdWr))
     _wrappedMem.io <> _out
     _out
   }
