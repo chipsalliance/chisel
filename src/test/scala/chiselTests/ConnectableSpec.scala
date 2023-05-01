@@ -1764,5 +1764,19 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         Nil
       )
     }
+    it("(8.k) Use unsafe") {
+      class BoolBundleA extends Bundle { val foo = UInt(); val bar = Bool() }
+      class BoolBundleB extends Bundle { val foo = UInt() }
+      class MyModule extends Module {
+        val in = IO(Flipped(new BoolBundleA))
+        val out = IO(new BoolBundleB)
+        out.unsafe :<>= in.unsafe
+      }
+      testCheck(
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
+        Seq("out.foo <= in.foo"),
+        Nil
+      )
+    }
   }
 }

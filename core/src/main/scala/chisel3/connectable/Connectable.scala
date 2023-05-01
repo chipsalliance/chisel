@@ -24,6 +24,9 @@ final class Connectable[+T <: Data] private (
   /** True if no members are waived or squeezed or excluded */
   def notWaivedOrSqueezedOrExcluded = waived.isEmpty && squeezed.isEmpty && excluded.isEmpty
 
+  /** Connect to/from all fields regardless of Scala type, squeeze if necessary, and don't error if mismatched members */
+  def unsafe: Connectable[Data] = waiveAll.squeezeAll.asInstanceOf[Connectable[Data]]
+
   private[chisel3] def copy(
     waived:   Set[Data] = this.waived,
     squeezed: Set[Data] = this.squeezed,
