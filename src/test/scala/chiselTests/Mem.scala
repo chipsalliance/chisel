@@ -407,3 +407,61 @@ class MemorySpec extends ChiselPropSpec {
     ChiselStage.emitCHIRRTL(new TrueDualPortMemory(4, 32))
   }
 }
+
+class MemInterfaceSpec extends ChiselFunSpec {
+  describe("MemInterface") {
+    val portCombos: Seq[(Int, Int, Int)] =
+      for {
+        numRD <- 0 until 3;
+        numWR <- 0 until 3;
+        numRW <- 0 until 3 if (numRD + numWR + numRW) > 0
+      } yield (numRD, numWR, numRW)
+
+    portCombos.foreach {
+      case (numRD, numWR, numRW) =>
+        it(s"should generate a ${MemInterface.portedness(numRD, numWR, numRW)} SyncReadMem") {
+          class TestModule(val rd: Int, val wr: Int, val rw: Int) extends Module {
+            val mem = MemInterface(32, UInt(8.W), rd, wr, rw)
+
+            dontTouch(mem)
+
+            for (i <- 0 until rd) {
+              mem.rd(i) := DontCare
+            }
+            for (i <- 0 until wr) {
+              mem.wr(i) := DontCare
+            }
+            for (i <- 0 until rw) {
+              mem.rw(i) := DontCare
+            }
+          }
+          val chirrtl = ChiselStage.emitCHIRRTL(new TestModule(numRD, numWR, numRW), args = Array("--full-stacktrace"))
+          println(chirrtl)
+
+          // Check that the chirrtl ports actually exist and the signals
+          // are properly connected
+          for (rd <- 0 until numRD) {
+            val rdPortName = s"io_rd_${rd}_readValue_MPORT"
+            chirrtl should include(s"when io.rd[$rd].enable")
+            chirrtl should include(s"read mport $rdPortName")
+            chirrtl should include(s"io.rd[$rd].readValue <= $rdPortName")
+          }
+
+          for (wr <- 0 until numWR) {
+            val wrPortName = s"MPORT${if (wr == 0) "" else s"_$wr"}"
+            chirrtl should include(s"when io.wr[$wr].enable")
+            chirrtl should include(s"write mport $wrPortName")
+            chirrtl should include(s"$wrPortName <= io.wr[$wr].writeValue")
+          }
+
+          for (rw <- 0 until numRW) {
+            val rwPortName = s"io_rw_${rw}_readValue_MPORT"
+            chirrtl should include(s"when io.rw[$rw].enable")
+            chirrtl should include(s"rdwr mport $rwPortName")
+            chirrtl should include(s"when io.rw[$rw].isWrite")
+            chirrtl should include(s"$rwPortName <= io.rw[$rw].writeValue")
+          }
+        }
+    }
+  }
+}
