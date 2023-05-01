@@ -436,7 +436,6 @@ class MemInterfaceSpec extends ChiselFunSpec {
             }
           }
           val chirrtl = ChiselStage.emitCHIRRTL(new TestModule(numRD, numWR, numRW), args = Array("--full-stacktrace"))
-          println(chirrtl)
 
           // Check that the chirrtl ports actually exist and the signals
           // are properly connected
