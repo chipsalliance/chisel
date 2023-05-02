@@ -1810,5 +1810,24 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         Nil
       )
     }
+    it("(8.m) Erroring connections are Builder.error, not Exception as") {
+      class MyModule extends Module {
+        val in = IO(Flipped(Bool()))
+        val out = IO(Bool())
+        val connectionGoesThrough =
+          try {
+            in :<>= out
+            true
+          } catch {
+            case e: Throwable => false
+          }
+        // Don't throw exception immediately
+        assert(connectionGoesThrough)
+      }
+      // Still catches error at the end
+      intercept[Exception] {
+        ChiselStage.emitCHIRRTL({ new MyModule() })
+      }
+    }
   }
 }
