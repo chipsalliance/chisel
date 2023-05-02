@@ -110,41 +110,20 @@ private[chisel3] object Connection {
     doConnection(cRoot, pRoot, cOp)
   }
 
-  private def leafConnect(
-    consumer:     Data,
-    producer:     Data,
-    alignment:    Alignment,
-    connectionOp: Connection
-  )(
-    implicit sourceInfo: SourceInfo
-  ): Unit = {
-    (
-      consumer,
-      producer,
-      alignment,
-      connectionOp.connectToConsumer,
-      connectionOp.connectToProducer,
-      connectionOp.alwaysConnectToConsumer
-    ) match {
-      case (x: Analog, y: Analog, _, _, _, _) => connectAnalog(x, y)
-      case (x: Analog, DontCare, _, _, _, _) => connectAnalog(x, DontCare)
-      case (x, y, _: AlignedWithRoot, true, _, _) => consumer := producer
-      case (x, y, _: FlippedWithRoot, _, true, _) => producer := consumer
-      case (x, y, _, _, _, true) => consumer := producer
-      case other                 =>
-    }
-  }
-
   private def connect(
     l: Data,
     r: Data
   )(
     implicit sourceInfo: SourceInfo
   ): Unit = {
-    (l, r) match {
-      case (x: Analog, y: Analog) => connectAnalog(x, y)
-      case (x: Analog, DontCare) => connectAnalog(x, DontCare)
-      case (_, _) => l := r
+    try {
+      (l, r) match {
+        case (x: Analog, y: Analog) => connectAnalog(x, y)
+        case (x: Analog, DontCare) => connectAnalog(x, DontCare)
+        case (_, _) => l := r
+      }
+    } catch {
+      case e: Exception => Builder.error(e.getMessage)
     }
   }
 
