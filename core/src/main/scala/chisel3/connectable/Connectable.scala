@@ -21,15 +21,21 @@ final class Connectable[+T <: Data] private (
   private[chisel3] val excluded: Set[Data]) {
   requireIsHardware(base, s"Can only created Connectable of components, not unbound Chisel types")
 
-  /** True if no members are waived or squeezed or excluded */
-  def notWaivedOrSqueezedOrExcluded = waived.isEmpty && squeezed.isEmpty && excluded.isEmpty
-
   private[chisel3] def copy(
     waived:   Set[Data] = this.waived,
     squeezed: Set[Data] = this.squeezed,
     excluded: Set[Data] = this.excluded
   ): Connectable[T] =
     new Connectable(base, waived, squeezed, excluded)
+
+  /** True if no members are waived or squeezed or excluded */
+  def notWaivedOrSqueezedOrExcluded = waived.isEmpty && squeezed.isEmpty && excluded.isEmpty
+
+  /** Static cast to a super type */
+  def as[S <: Data](implicit ev: T <:< S): Connectable[S] = this.asInstanceOf[Connectable[S]]
+
+  /** Connect to/from all fields regardless of Scala type, squeeze if necessary, and don't error if mismatched members */
+  def unsafe: Connectable[Data] = waiveAll.squeezeAll.asInstanceOf[Connectable[Data]]
 
   /** Select members of base to waive
     *
@@ -87,6 +93,9 @@ final class Connectable[+T <: Data] private (
     val squeezedMembers = DataMirror.collectMembers(base) { case x => x }
     this.copy(squeezed = squeezedMembers.toSet) // not appending squeezed because we are collecting all members
   }
+
+  /** Squeeze all members of base and upcast to super type */
+  def squeezeAllAs[S <: Data](implicit ev: T <:< S): Connectable[S] = squeezeAll.asInstanceOf[Connectable[S]]
 
   /** Adds base to excludes */
   def exclude: Connectable[T] = this.copy(excluded = excluded ++ addOpaque(Seq(base)))
