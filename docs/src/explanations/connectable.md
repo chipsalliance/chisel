@@ -27,6 +27,7 @@ section: "chisel3"
    * [Connecting different sub-types of the same super-type, with colliding names](#connecting-different-sub-types-of-the-same-super-type-with-colliding-names)
    * [Connecting sub-types to super-types by waiving extra members](#connecting-sub-types-to-super-types-by-waiving-extra-members)
    * [Connecting different sub-types](#connecting-different-sub-types)
+ * [FAQ](#faq)
 
 ## Terminology
 
@@ -705,4 +706,31 @@ This generates the following Verilog, where `ready` and `valid` are connected, a
 
 ```scala mdoc:verilog
 getVerilogString(new Example7)
+```
+
+## FAQ
+
+### How do I connect two items as flexibly as possible (try your best but never error)
+
+Use `.unsafe` (both waives and allows squeezing of all fields).
+
+```scala mdoc:silent
+class ExampleUnsafe extends RawModule {
+  val in  = IO(Flipped(new Bundle { val foo = Bool(); val bar = Bool() }))
+  val out = IO(new Bundle { val baz = Bool(); val bar = Bool() })
+  out.unsafe :<>= in.unsafe // bar is connected, and nothing errors
+}
+```
+
+### How do I connect two items but don't care about the scala types being equivalent?
+
+Use `.as` (upcasts the Scala type).
+
+```scala mdoc:silent
+class ExampleUnsafe extends RawModule {
+  val in  = IO(Flipped(new Bundle { val foo = Bool(); val bar = Bool() }))
+  val out = IO(new Bundle { val foo = Bool(); val bar = Bool() })
+  // foo and bar are connected, although Scala types aren't the same
+  out.as[Data] :<>= in.as[Data]
+}
 ```
