@@ -727,7 +727,7 @@ class ExampleUnsafe extends RawModule {
 Use `.as` (upcasts the Scala type).
 
 ```scala mdoc:silent
-class ExampleUnsafe extends RawModule {
+class ExampleAs extends RawModule {
   val in  = IO(Flipped(new Bundle { val foo = Bool(); val bar = Bool() }))
   val out = IO(new Bundle { val foo = Bool(); val bar = Bool() })
   // foo and bar are connected, although Scala types aren't the same
