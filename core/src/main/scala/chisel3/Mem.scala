@@ -149,7 +149,7 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt, sourceInf
 
   /** @group SourceInfoTransformMacro */
   def do_write(idx: UInt, data: T)(implicit sourceInfo: SourceInfo): Unit =
-    write_impl(idx, data, Builder.forcedClock, false)
+    write_impl(idx, data, Builder.forcedClock, true)
 
   /** Creates a write accessor into the memory with a clock
     * that may be different from the implicit clock.
