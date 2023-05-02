@@ -45,6 +45,7 @@ ga('send', 'pageview');
       <li><a href="#connecting-different-sub-types">Connecting different sub-types</a></li>
     </ul>
   </li>
+  <li><a href="#faq">FAQ</a></li>
 </ul>
 
 <h2 id="terminology">Terminology</h2>
@@ -921,6 +922,31 @@ The <code class="language-plaintext highlighter-rouge">waive(_.bits)</code> does
   <span class="k">assign</span> <span class="n">out_valid</span> <span class="o">=</span> <span class="n">in_valid</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
 <span class="k">endmodule</span>
 
+</code></pre></div></div>
+
+<h2 id="faq">FAQ</h2>
+
+<h3 id="how-do-i-connect-two-items-as-flexibly-as-possible-try-your-best-but-never-error">How do I connect two items as flexibly as possible (try your best but never error)</h3>
+
+<p>Use <code class="language-plaintext highlighter-rouge">.unsafe</code> (both waives and allows squeezing of all fields).</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">ExampleUnsafe</span> <span class="k">extends</span> <span class="nc">RawModule</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">in</span>  <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Flipped</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span> <span class="o">{</span> <span class="k">val</span> <span class="nv">foo</span> <span class="k">=</span> <span class="nc">Bool</span><span class="o">();</span> <span class="k">val</span> <span class="nv">bar</span> <span class="k">=</span> <span class="nc">Bool</span><span class="o">()</span> <span class="o">}))</span>
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span> <span class="o">{</span> <span class="k">val</span> <span class="nv">baz</span> <span class="k">=</span> <span class="nc">Bool</span><span class="o">();</span> <span class="k">val</span> <span class="nv">bar</span> <span class="k">=</span> <span class="nc">Bool</span><span class="o">()</span> <span class="o">})</span>
+  <span class="nv">out</span><span class="o">.</span><span class="py">unsafe</span> <span class="o">:&lt;&gt;=</span> <span class="nv">in</span><span class="o">.</span><span class="py">unsafe</span> <span class="c1">// bar is connected, and nothing errors</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="how-do-i-connect-two-items-but-dont-care-about-the-scala-types-being-equivalent">How do I connect two items but don’t care about the scala types being equivalent?</h3>
+
+<p>Use <code class="language-plaintext highlighter-rouge">.as</code> (upcasts the Scala type).</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">ExampleAs</span> <span class="k">extends</span> <span class="nc">RawModule</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">in</span>  <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Flipped</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span> <span class="o">{</span> <span class="k">val</span> <span class="nv">foo</span> <span class="k">=</span> <span class="nc">Bool</span><span class="o">();</span> <span class="k">val</span> <span class="nv">bar</span> <span class="k">=</span> <span class="nc">Bool</span><span class="o">()</span> <span class="o">}))</span>
+  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span> <span class="o">{</span> <span class="k">val</span> <span class="nv">foo</span> <span class="k">=</span> <span class="nc">Bool</span><span class="o">();</span> <span class="k">val</span> <span class="nv">bar</span> <span class="k">=</span> <span class="nc">Bool</span><span class="o">()</span> <span class="o">})</span>
+  <span class="c1">// foo and bar are connected, although Scala types aren't the same</span>
+  <span class="nv">out</span><span class="o">.</span><span class="py">as</span><span class="o">[</span><span class="kt">Data</span><span class="o">]</span> <span class="o">:&lt;&gt;=</span> <span class="nv">in</span><span class="o">.</span><span class="py">as</span><span class="o">[</span><span class="kt">Data</span><span class="o">]</span>
+<span class="o">}</span>
 </code></pre></div></div>
 </section></div></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/highlight/highlight.pack.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/verilog.min.js"></script><script src="/lunr/lunr.js"></script><script>
 // For all code blocks, copy the language from the containing div
