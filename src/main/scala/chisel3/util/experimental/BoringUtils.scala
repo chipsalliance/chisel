@@ -3,6 +3,7 @@
 package chisel3.util.experimental
 
 import chisel3._
+import chisel3.probe.Probe
 import chisel3.experimental.{annotate, requireIsHardware, skipPrefix, BaseModule, ChiselAnnotation, SourceInfo}
 import chisel3.internal.{Builder, BuilderContextCache, NamedComponent, Namespace}
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
@@ -205,12 +206,13 @@ object BoringUtils {
 
   /** Access a source [[Data]] that may or may not be in the current module.  If
     * this is in a child module, then create ports to allow access the
-    * requrested source.
+    * requested source.
     */
-  def bore(source: Data)(implicit si: SourceInfo): Data = {
+  def bore(source: Data, createProbe: Boolean = false)(implicit si: SourceInfo): Data = {
     import reflect.DataMirror
     def parent(d: Data): BaseModule = d.topBinding.location.get
-    def purePortType = if (DataMirror.hasOuterFlip(source)) Flipped(chiselTypeOf(source)) else chiselTypeOf(source)
+    def purePortTypeBase = if (DataMirror.hasOuterFlip(source)) Flipped(chiselTypeOf(source)) else chiselTypeOf(source)
+    def purePortType = if (createProbe) Probe(purePortTypeBase) else purePortTypeBase
     def boringError(module: BaseModule): Unit = {
       (module.fullyClosedErrorMessages ++ Seq(
         (si, s"Can only bore into modules that are not fully closed: ${module.name} was fully closed")
@@ -262,9 +264,35 @@ object BoringUtils {
     val lcaSource = drill(source, upPath, true)
     val sink = drill(lcaSource, downPath.reverse, false)
 
-    /** Creating an intermediate wire so secret stuff never escapes */
-    val bore = Wire(purePortType)
-    thisModule.asInstanceOf[RawModule].secretConnection(bore, sink)
-    bore
+    if (createProbe) {
+      sink
+    } else {
+
+      /** Creating an intermediate wire so secret stuff never escapes */
+      val bore = Wire(purePortTypeBase)
+      thisModule.asInstanceOf[RawModule].secretConnection(bore, sink)
+      bore
+    }
   }
+
+  /** Access a source [[Data]] that may or may not be in the current module.  If
+    * this is in a child module, then create probe ports to allow access the
+    * requested source.
+    *
+    * Returns a probe Data type.
+    */
+  def tap(source: Data)(implicit si: SourceInfo): Data = {
+    bore(source, createProbe = true)
+  }
+
+  /** Access a source [[Data]] that may or may not be in the current module.  If
+    * this is in a child module, then create probe ports to allow access the
+    * requested source.
+    *
+    * Returns a non-probe Data type.
+    */
+  def tapAndRead(source: Data)(implicit si: SourceInfo): Data = {
+    probe.read(tap(source))
+  }
+
 }

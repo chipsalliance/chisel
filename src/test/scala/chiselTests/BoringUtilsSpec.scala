@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.probe
 import chisel3.util.Counter
 import chisel3.testers._
 import chisel3.experimental.{BaseModule, ChiselAnnotation}
@@ -273,5 +274,38 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
     )
     log should include("Calling .toDefinition fully closes Bar, but it is later bored through!")
     log should include("Can only bore into modules that are not fully closed")
+  }
+
+  "Tap from parent to child" should "work" in {
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(
+      new RawModule {
+        class Foo() extends RawModule {
+          val internalWire = Wire(Bool())
+        }
+
+        val foo = Module(new Foo())
+        val out = IO(Bool())
+        val outProbe = IO(probe.Probe(Bool()))
+
+        probe.define(outProbe, BoringUtils.tap(foo.internalWire))
+
+        out := BoringUtils.tapAndRead(foo.internalWire)
+      },
+      Array("--full-stacktrace", "--throw-on-first-error")
+    )
+    matchesAndOmits(chirrtl)(
+      "module Foo :",
+      "output bore : Probe<UInt<1>>",
+      "output out_bore : Probe<UInt<1>>",
+      "wire internalWire : UInt<1>",
+      "bore <= internalWire",
+      "out_bore <= internalWire",
+      "module BoringUtilsSpec_Anon :",
+      "output out : UInt<1>",
+      "output outProbe",
+      "inst foo of Foo",
+      "define outProbe = foo.bore",
+      "out <= read(foo.out_bore)"
+    )()
   }
 }
