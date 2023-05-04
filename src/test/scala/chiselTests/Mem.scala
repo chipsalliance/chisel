@@ -435,11 +435,6 @@ class MemorySpec extends ChiselPropSpec {
 
       // Should elaborate correctly
       val rdWrValue = mem.readWrite(addr, io.writeData, io.rwEnable, io.rwIsWrite)
-
-      dontTouch(io)
-      dontTouch(addr)
-      dontTouch(readValue)
-      dontTouch(rdWrValue)
     }
     ChiselStage.emitSystemVerilog(new TestModule)
   }
