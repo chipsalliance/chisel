@@ -415,6 +415,9 @@ class MemorySpec extends ChiselPropSpec {
 
         val rwEnable = Input(Bool())
         val rwIsWrite = Input(Bool())
+
+        val rdReadValue = Output(UInt(2.W))
+        val rwReadValue = Output(UInt(2.W))
       })
 
       // Address value declared and driven before the SyncReadMem declaration.
@@ -428,13 +431,11 @@ class MemorySpec extends ChiselPropSpec {
       val mem = SyncReadMem(4, UInt(2.W))
 
       // Should elaborate correctly
-      val readValue = mem.read(addr, io.rdEnable)
-
+      io.rdReadValue := mem.read(addr, io.rdEnable)
       // Should elaborate correctly
       mem.write(addr, io.writeData)
-
       // Should elaborate correctly
-      val rdWrValue = mem.readWrite(addr, io.writeData, io.rwEnable, io.rwIsWrite)
+      io.rwReadValue := mem.readWrite(addr, io.writeData, io.rwEnable, io.rwIsWrite)
     }
     ChiselStage.emitSystemVerilog(new TestModule)
   }
