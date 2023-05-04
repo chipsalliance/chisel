@@ -406,4 +406,41 @@ class MemorySpec extends ChiselPropSpec {
   property("memories in modules without implicit clock should compile without warning or error") {
     ChiselStage.emitCHIRRTL(new TrueDualPortMemory(4, 32))
   }
+
+  property("Memories can have addresses driven before their declarations") {
+    class TestModule extends Module {
+      val io = IO(new Bundle {
+        val rdEnable = Input(Bool())
+        val writeData = Input(UInt(2.W))
+
+        val rwEnable = Input(Bool())
+        val rwIsWrite = Input(Bool())
+      })
+
+      // Address value declared and driven before the SyncReadMem declaration.
+      // This is OK in Chisel, with the caveat that an intermediate wire is
+      // generated with the address after a memory port is instantiated -- if
+      // not then SFC and firtool are unable to infer the address value of the
+      // memory port correctly and results in an error
+      val addr = Wire(UInt(2.W))
+      addr := 0.U
+
+      val mem = SyncReadMem(4, UInt(2.W))
+
+      // Should elaborate correctly
+      val readValue = mem.read(addr, io.rdEnable)
+
+      // Should elaborate correctly
+      mem.write(addr, io.writeData)
+
+      // Should elaborate correctly
+      val rdWrValue = mem.readWrite(addr, io.writeData, io.rwEnable, io.rwIsWrite)
+
+      dontTouch(io)
+      dontTouch(addr)
+      dontTouch(readValue)
+      dontTouch(rdWrValue)
+    }
+    ChiselStage.emitSystemVerilog(new TestModule)
+  }
 }
