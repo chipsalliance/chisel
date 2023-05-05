@@ -85,4 +85,5 @@ jobs:
           commit-message: "Enable MiMa for ${{ needs.determine_version.outputs.version }}"
           body: "Enable MiMa for ${{ needs.determine_version.outputs.version }}"
           labels: Internal
+          token: ${{ secrets.CHISEL_BOT_TOKEN }}
 
