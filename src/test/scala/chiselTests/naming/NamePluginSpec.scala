@@ -267,6 +267,22 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
     }
   }
 
+  "Unapply assignments" should "name (but not prefix) local vals on the RHS" in {
+    class Test extends Module {
+      {
+        val (a, b) = {
+          val x, y = Wire(UInt(3.W))
+          val sum = WireInit(x + y)
+          (x, y)
+        }
+      }
+    }
+
+    aspectTest(() => new Test) { top: Test =>
+      Select.wires(top).map(_.instanceName) should be(List("a", "b", "sum"))
+    }
+  }
+
   "Unapply assignments" should "not override already named things" in {
     class Test extends Module {
       {

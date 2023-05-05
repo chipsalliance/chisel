@@ -2,7 +2,6 @@
 
 package chisel3
 
-import chisel3.ExplicitCompileOptions.Strict
 import chisel3.reflect.DataMirror.internal.chiselTypeClone
 import chisel3.experimental.SourceInfo
 
@@ -50,8 +49,7 @@ package object experimental {
     def apply(
       proto: BaseModule
     )(
-      implicit sourceInfo: chisel3.experimental.SourceInfo,
-      compileOptions:      CompileOptions
+      implicit sourceInfo: chisel3.experimental.SourceInfo
     ): ClonePorts = {
       BaseModule.cloneIORecord(proto)
     }
@@ -61,10 +59,6 @@ package object experimental {
     */
   object requireIsHardware {
     def apply(node: Data, msg: String = ""): Unit = {
-      node._parent match { // Compatibility layer hack
-        case Some(x) => x._compatAutoWrapPorts()
-        case _       =>
-      }
       if (!node.isSynthesizable) {
         val prefix = if (msg.nonEmpty) s"$msg " else ""
         throw ExpectedHardwareException(
@@ -88,7 +82,7 @@ package object experimental {
   val Direction = ActualDirection
 
   /** The same as [[IO]] except there is no prefix for the name of the val */
-  def FlatIO[T <: Record](gen: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = noPrefix {
+  def FlatIO[T <: Record](gen: => T)(implicit sourceInfo: SourceInfo): T = noPrefix {
     import dataview._
     def coerceDirection(d: Data) = {
       import chisel3.{SpecifiedDirection => SD}
@@ -100,7 +94,7 @@ package object experimental {
       }
     }
     val ports: Seq[Data] =
-      gen.elements.toSeq.reverse.map {
+      gen._elements.toSeq.reverse.map {
         case (name, data) =>
           val p = chisel3.IO(coerceDirection(chiselTypeClone(data).asInstanceOf[Data]))
           p.suggestName(name)
@@ -110,7 +104,7 @@ package object experimental {
 
     implicit val dv: DataView[Seq[Data], T] = DataView.mapping(
       _ => chiselTypeClone(gen).asInstanceOf[T],
-      (seq, rec) => seq.zip(rec.elements.toSeq.reverse).map { case (port, (_, field)) => port -> field }
+      (seq, rec) => seq.zip(rec._elements.toSeq.reverse).map { case (port, (_, field)) => port -> field }
     )
     ports.viewAs[T]
   }
@@ -151,7 +145,7 @@ package object experimental {
 
   object BundleLiterals {
     implicit class AddBundleLiteralConstructor[T <: Record](x: T) {
-      def Lit(elems: (T => (Data, Data))*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+      def Lit(elems: (T => (Data, Data))*)(implicit sourceInfo: SourceInfo): T = {
         x._makeLit(elems: _*)
       }
     }
@@ -168,7 +162,7 @@ package object experimental {
         * @param elems tuples of an index and a literal value
         * @return
         */
-      def Lit(elems: (Int, T)*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = {
+      def Lit(elems: (Int, T)*)(implicit sourceInfo: SourceInfo): Vec[T] = {
         x._makeLit(elems: _*)
       }
     }
@@ -178,7 +172,7 @@ package object experimental {
       /** This provides an literal construction method for cases using
         * object `Vec` as in `Vec.Lit(1.U, 2.U)`
         */
-      def Lit[T <: Data](elems: T*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = {
+      def Lit[T <: Data](elems: T*)(implicit sourceInfo: SourceInfo): Vec[T] = {
         require(elems.nonEmpty, s"Lit.Vec(...) must have at least one element")
         val indexElements = elems.zipWithIndex.map { case (element, index) => (index, element) }
         val widestElement = elems.maxBy(_.getWidth)
@@ -196,7 +190,7 @@ package object experimental {
     * Users may not instantiate this class directly. Instead they should use the implicit conversion from `Tuple2` in
     * `chisel3.experimental.conversions`
     */
-  final class HWTuple2[+A <: Data, +B <: Data] private[chisel3] (val _1: A, val _2: B) extends Bundle()(Strict) {
+  final class HWTuple2[+A <: Data, +B <: Data] private[chisel3] (val _1: A, val _2: B) extends Bundle() {
     // Because this implementation exists in chisel3.core, it cannot compile with the plugin, so we implement the behavior manually
     override protected def _usingPlugin:   Boolean = true
     override protected def _cloneTypeImpl: Bundle = new HWTuple2(chiselTypeClone(_1), chiselTypeClone(_2))
@@ -215,7 +209,7 @@ package object experimental {
     val _1: A,
     val _2: B,
     val _3: C)
-      extends Bundle()(Strict) {
+      extends Bundle() {
     // Because this implementation exists in chisel3.core, it cannot compile with the plugin, so we implement the behavior manually
     override protected def _usingPlugin: Boolean = true
     override protected def _cloneTypeImpl: Bundle = new HWTuple3(
@@ -240,7 +234,7 @@ package object experimental {
     val _2: B,
     val _3: C,
     val _4: D)
-      extends Bundle()(Strict) {
+      extends Bundle() {
     // Because this implementation exists in chisel3.core, it cannot compile with the plugin, so we implement the behavior manually
     override protected def _usingPlugin: Boolean = true
     override protected def _cloneTypeImpl: Bundle = new HWTuple4(
@@ -268,7 +262,7 @@ package object experimental {
     val _3: C,
     val _4: D,
     val _5: E)
-      extends Bundle()(Strict) {
+      extends Bundle() {
     // Because this implementation exists in chisel3.core, it cannot compile with the plugin, so we implement the behavior manually
     override protected def _usingPlugin: Boolean = true
     override protected def _cloneTypeImpl: Bundle = new HWTuple5(
@@ -299,7 +293,7 @@ package object experimental {
     val _4: D,
     val _5: E,
     val _6: F)
-      extends Bundle()(Strict) {
+      extends Bundle() {
     // Because this implementation exists in chisel3.core, it cannot compile with the plugin, so we implement the behavior manually
     override protected def _usingPlugin: Boolean = true
     override protected def _cloneTypeImpl: Bundle = new HWTuple6(
@@ -341,7 +335,7 @@ package object experimental {
     val _5: E,
     val _6: F,
     val _7: G)
-      extends Bundle()(Strict) {
+      extends Bundle() {
     // Because this implementation exists in chisel3.core, it cannot compile with the plugin, so we implement the behavior manually
     override protected def _usingPlugin: Boolean = true
     override protected def _cloneTypeImpl: Bundle = new HWTuple7(
@@ -387,7 +381,7 @@ package object experimental {
     val _6: F,
     val _7: G,
     val _8: H)
-      extends Bundle()(Strict) {
+      extends Bundle() {
     // Because this implementation exists in chisel3.core, it cannot compile with the plugin, so we implement the behavior manually
     override protected def _usingPlugin: Boolean = true
     override protected def _cloneTypeImpl: Bundle = new HWTuple8(
@@ -437,7 +431,7 @@ package object experimental {
     val _7: G,
     val _8: H,
     val _9: I)
-      extends Bundle()(Strict) {
+      extends Bundle() {
     // Because this implementation exists in chisel3.core, it cannot compile with the plugin, so we implement the behavior manually
     override protected def _usingPlugin: Boolean = true
     override protected def _cloneTypeImpl: Bundle = new HWTuple9(
@@ -491,7 +485,7 @@ package object experimental {
     val _8:  H,
     val _9:  I,
     val _10: J)
-      extends Bundle()(Strict) {
+      extends Bundle() {
     // Because this implementation exists in chisel3.core, it cannot compile with the plugin, so we implement the behavior manually
     override protected def _usingPlugin: Boolean = true
     override protected def _cloneTypeImpl: Bundle = new HWTuple10(

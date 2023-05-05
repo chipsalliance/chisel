@@ -54,32 +54,38 @@ trait ChiselRunners extends Assertions {
   }
 
   def assertKnownWidth(expected: Int)(gen: => Data): Unit = {
-    assertTesterPasses(new BasicTester {
-      val x = gen
-      assert(x.getWidth === expected)
+    class TestModule extends Module {
+      val testPoint = gen
+      assert(testPoint.getWidth === expected)
       // Sanity check that firrtl doesn't change the width
-      x := 0.U(0.W).asTypeOf(chiselTypeOf(x))
-      val (_, done) = chisel3.util.Counter(true.B, 2)
-      val ones = if (expected == 0) 0.U(0.W) else -1.S(expected.W).asUInt
-      when(done) {
-        chisel3.assert(~(x.asUInt) === ones)
-        stop()
-      }
-    })
+      testPoint := 0.U(0.W).asTypeOf(chiselTypeOf(testPoint))
+      dontTouch(testPoint)
+    }
+    val verilog = ChiselStage.emitSystemVerilog(new TestModule, Array.empty, Array("-disable-all-randomization"))
+    expected match {
+      case 0 => assert(!verilog.contains("testPoint"))
+      case 1 =>
+        assert(verilog.contains(s"testPoint"))
+        assert(!verilog.contains(s"0] testPoint"))
+      case _ => assert(verilog.contains(s"[${expected - 1}:0] testPoint"))
+    }
   }
 
   def assertInferredWidth(expected: Int)(gen: => Data): Unit = {
-    assertTesterPasses(new BasicTester {
-      val x = gen
-      assert(!x.isWidthKnown, s"Asserting that width should be inferred yet width is known to Chisel!")
-      x := 0.U(0.W).asTypeOf(chiselTypeOf(x))
-      val (_, done) = chisel3.util.Counter(true.B, 2)
-      val ones = if (expected == 0) 0.U(0.W) else -1.S(expected.W).asUInt
-      when(done) {
-        chisel3.assert(~(x.asUInt) === ones)
-        stop()
-      }
-    })
+    class TestModule extends Module {
+      val testPoint = gen
+      assert(!testPoint.isWidthKnown, s"Asserting that width should be inferred yet width is known to Chisel!")
+      testPoint := 0.U(0.W).asTypeOf(chiselTypeOf(testPoint))
+      dontTouch(testPoint)
+    }
+    val verilog = ChiselStage.emitSystemVerilog(new TestModule, Array.empty, Array("-disable-all-randomization"))
+    expected match {
+      case 0 => assert(!verilog.contains("testPoint"))
+      case 1 =>
+        assert(verilog.contains(s"testPoint"))
+        assert(!verilog.contains(s"0] testPoint"))
+      case _ => assert(verilog.contains(s"[${expected - 1}:0] testPoint"))
+    }
   }
 
   /** Compiles a Chisel Module to Verilog
@@ -101,7 +107,7 @@ trait ChiselRunners extends Assertions {
 
   def elaborateAndGetModule[A <: RawModule](t: => A): A = {
     var res: Any = null
-    ChiselStage.elaborate {
+    ChiselStage.emitCHIRRTL {
       res = t
       res.asInstanceOf[A]
     }
@@ -352,5 +358,24 @@ trait Utils {
         }
     }
 
+  }
+}
+
+/** Contains helpful function to assert both statements to match, and statements to omit */
+trait MatchesAndOmits {
+  private def matches(lines: List[String], matchh: String): Option[String] = lines.filter(_.contains(matchh)).lastOption
+  private def omits(line:    String, omit:         String): Option[(String, String)] =
+    if (line.contains(omit)) Some((omit, line)) else None
+  private def omits(lines: List[String], omit: String): Seq[(String, String)] = lines.flatMap { omits(_, omit) }
+  def matchesAndOmits(output: String)(matchList: String*)(omitList: String*): Unit = {
+    val lines = output.split("\n").toList
+    val unmatched = matchList.flatMap { m =>
+      if (matches(lines, m).nonEmpty) None else Some(m)
+    }.map(x => s"  > $x was unmatched")
+    val unomitted = omitList.flatMap { o => omits(lines, o) }.map {
+      case (o, l) => s"  > $o was not omitted in ($l)"
+    }
+    val results = unmatched ++ unomitted
+    assert(results.isEmpty, results.mkString("\n"))
   }
 }

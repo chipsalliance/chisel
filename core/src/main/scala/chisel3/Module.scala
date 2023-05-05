@@ -26,7 +26,7 @@ object Module extends SourceInfoDoc {
   def apply[T <: BaseModule](bc: => T): T = macro InstTransform.apply[T]
 
   /** @group SourceInfoTransformMacro */
-  def do_apply[T <: BaseModule](bc: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+  def do_apply[T <: BaseModule](bc: => T)(implicit sourceInfo: SourceInfo): T = {
     if (Builder.readyForModuleConstr) {
       throwException(
         "Error: Called Module() twice without instantiating a Module." +
@@ -80,7 +80,7 @@ object Module extends SourceInfoDoc {
     if (Builder.currentModule.isDefined && module._component.isDefined) {
       val component = module._component.get
       pushCommand(DefInstance(sourceInfo, module, component.ports))
-      module.initializeInParent(compileOptions)
+      module.initializeInParent()
     }
     module
   }
@@ -97,8 +97,7 @@ object Module extends SourceInfoDoc {
   private[chisel3] def do_pseudo_apply[T <: BaseModule](
     bc: => T
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): T = {
     val parent = Builder.currentModule
     val module: T = bc // bc is actually evaluated here
@@ -138,6 +137,7 @@ object Module extends SourceInfoDoc {
         }
     }
   }
+
 }
 
 /** Abstract base class for Modules, which behave much like Verilog modules.
@@ -147,10 +147,10 @@ object Module extends SourceInfoDoc {
   *
   * @note Module instantiations must be wrapped in a Module() call.
   */
-abstract class Module(implicit moduleCompileOptions: CompileOptions) extends RawModule {
+abstract class Module extends RawModule {
   // Implicit clock and reset pins
-  final val clock: Clock = IO(Input(Clock()))(UnlocatableSourceInfo, moduleCompileOptions).suggestName("clock")
-  final val reset: Reset = IO(Input(mkReset))(UnlocatableSourceInfo, moduleCompileOptions).suggestName("reset")
+  final val clock: Clock = IO(Input(Clock()))(UnlocatableSourceInfo).suggestName("clock")
+  final val reset: Reset = IO(Input(mkReset))(UnlocatableSourceInfo).suggestName("reset")
 
   // TODO It's hard to remove these deprecated override methods because they're used by
   //   Chisel.QueueCompatibility which extends chisel3.Queue which extends chisel3.Module
@@ -172,16 +172,7 @@ abstract class Module(implicit moduleCompileOptions: CompileOptions) extends Raw
   private[chisel3] def mkReset: Reset = {
     // Top module and compatibility mode use Bool for reset
     // Note that a Definition elaboration will lack a parent, but still not be a Top module
-    val inferReset = (_parent.isDefined || Builder.inDefinition) && moduleCompileOptions.inferModuleReset
-    if (moduleCompileOptions.migrateInferModuleReset && !moduleCompileOptions.inferModuleReset) {
-      this match {
-        case _: RequireSyncReset => // Good! It's been migrated.
-        case _ => // Bad! It hasn't been migrated.
-          Builder.error(
-            s"$desiredName is not inferring its module reset, but has not been marked `RequireSyncReset`. Please extend this trait."
-          )(UnlocatableSourceInfo)
-      }
-    }
+    val inferReset = (_parent.isDefined || Builder.inDefinition)
     if (inferReset) Reset() else Bool()
   }
 
@@ -190,10 +181,10 @@ abstract class Module(implicit moduleCompileOptions: CompileOptions) extends Raw
   Builder.currentReset = Some(reset)
   Builder.clearPrefix()
 
-  private[chisel3] override def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
+  private[chisel3] override def initializeInParent(): Unit = {
     implicit val sourceInfo = UnlocatableSourceInfo
 
-    super.initializeInParent(parentCompileOptions)
+    super.initializeInParent()
     clock := _override_clock.getOrElse(Builder.forcedClock)
     reset := _override_reset.getOrElse(Builder.forcedReset)
   }
@@ -210,7 +201,7 @@ package internal {
       * @note These are not true Data (the Record doesn't correspond to anything in the emitted
       * FIRRTL yet its elements *do*) so have some very specialized behavior.
       */
-    private[chisel3] class ClonePorts(elts: (String, Data)*)(implicit compileOptions: CompileOptions) extends Record {
+    private[chisel3] class ClonePorts(elts: (String, Data)*) extends Record {
       val elements = ListMap(elts.map { case (name, d) => name -> d.cloneTypeFull }: _*)
       def apply(field: String) = elements(field)
       override def cloneType = (new ClonePorts(elts: _*)).asInstanceOf[this.type]
@@ -219,8 +210,7 @@ package internal {
     private[chisel3] def cloneIORecord(
       proto: BaseModule
     )(
-      implicit sourceInfo: SourceInfo,
-      compileOptions:      CompileOptions
+      implicit sourceInfo: SourceInfo
     ): ClonePorts = {
       require(proto.isClosed, "Can't clone a module before module close")
       // Fake Module to serve as the _parent of the cloned ports
@@ -245,11 +235,6 @@ package internal {
       clonePorts.bind(PortBinding(cloneParent))
       clonePorts.setAllParents(Some(cloneParent))
       cloneParent._portsRecord = clonePorts
-      // Normally handled during Module construction but ClonePorts really lives in its parent's parent
-      if (!compileOptions.explicitInvalidate || Builder.currentModule.get.isInstanceOf[ImplicitInvalidate]) {
-        // FIXME This almost certainly doesn't work since clonePorts is not a real thing...
-        pushCommand(DefInvalid(sourceInfo, clonePorts.ref))
-      }
       if (proto.isInstanceOf[Module]) {
         clonePorts("clock") := Module.clock
         clonePorts("reset") := Module.reset
@@ -262,21 +247,51 @@ package internal {
 package experimental {
 
   import chisel3.experimental.hierarchy.core.{IsInstantiable, Proto}
+  import scala.annotation.nowarn
 
   object BaseModule {
-    implicit class BaseModuleExtensions[T <: BaseModule](b: T) {
+    implicit class BaseModuleExtensions[T <: BaseModule](b: T)(implicit si: SourceInfo) {
       import chisel3.experimental.hierarchy.core.{Definition, Instance}
-      def toInstance:   Instance[T] = new Instance(Proto(b))
-      def toDefinition: Definition[T] = new Definition(Proto(b))
+      def toInstance: Instance[T] = new Instance(Proto(b))
+      def toDefinition: Definition[T] = {
+        b.toDefinitionCalled = Some(si)
+        new Definition(Proto(b))
+      }
     }
   }
 
   /** Abstract base class for Modules, an instantiable organizational unit for RTL.
     */
   // TODO: seal this?
+  @nowarn("msg=class Port") // delete when Port becomes private
   abstract class BaseModule extends HasId with IsInstantiable {
     _parent.foreach(_.addId(this))
 
+    // Used with chisel3.naming.fixTraitIdentifier
+    protected def _traitModuleDefinitionIdentifierProposal: Option[String] = None
+
+    protected def _moduleDefinitionIdentifierProposal = {
+      val baseName = _traitModuleDefinitionIdentifierProposal.getOrElse(this.getClass.getName)
+
+      /* A sequence of string filters applied to the name */
+      val filters: Seq[String => String] =
+        Seq(((a: String) => raw"\$$+anon".r.replaceAllIn(a, "_Anon")) // Merge the "$$anon" name with previous name
+        )
+
+      filters
+        .foldLeft(baseName) { case (str, filter) => filter(str) } // 1. Apply filters to baseName
+        .split("\\.|\\$") // 2. Split string at '.' or '$'
+        .filterNot(_.forall(_.isDigit)) // 3. Drop purely numeric names
+        .last // 4. Use the last name
+    }
+    // Needed this to override identifier for DefinitionClone
+    private[chisel3] def _definitionIdentifier = {
+      val madeProposal = chisel3.naming.IdentifierProposer.makeProposal(this._moduleDefinitionIdentifierProposal)
+      Builder.globalIdentifierNamespace.name(madeProposal)
+    }
+
+    /** Represents an eagerly-determined unique and descriptive identifier for this module */
+    final val definitionIdentifier = _definitionIdentifier
     //
     // Builder Internals - this tracks which Module RTL construction belongs to.
     //
@@ -299,8 +314,22 @@ package experimental {
     //
     protected var _closed = false
 
-    /** Internal check if a Module is closed */
+    /** Internal check if a Module's constructor has finished executing */
     private[chisel3] def isClosed = _closed
+
+    private[chisel3] var toDefinitionCalled:  Option[SourceInfo] = None
+    private[chisel3] var modulePortsAskedFor: Option[SourceInfo] = None
+
+    /** Where a Module becomes fully closed (no secret ports drilled afterwards) */
+    private[chisel3] def isFullyClosed = fullyClosedErrorMessages.nonEmpty
+    private[chisel3] def fullyClosedErrorMessages: Iterable[(SourceInfo, String)] = {
+      toDefinitionCalled.map(si =>
+        (si, s"Calling .toDefinition fully closes ${name}, but it is later bored through!")
+      ) ++
+        modulePortsAskedFor.map(si =>
+          (si, s"Reflecting on all io's fully closes ${name}, but it is later bored through!")
+        )
+    }
 
     // Fresh Namespace because in Firrtl, Modules namespaces are disjoint with the global namespace
     private[chisel3] val _namespace = Namespace.empty
@@ -363,7 +392,7 @@ package experimental {
 
     /** Sets up this module in the parent context
       */
-    private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit
+    private[chisel3] def initializeInParent(): Unit
 
     private[chisel3] def namePorts(): Unit = {
       for ((port, source) <- getModulePortsAndLocators) {
@@ -501,26 +530,18 @@ package experimental {
       *
       * TODO: Use SeqMap/VectorMap when those data structures become available.
       */
-    private[chisel3] def getChiselPorts: Seq[(String, Data)] = {
+    private[chisel3] def getChiselPorts(implicit si: SourceInfo): Seq[(String, Data)] = {
       require(_closed, "Can't get ports before module close")
-      _component.get.ports.map { port =>
+      modulePortsAskedFor = Some(si) // super-lock down the module
+      (_component.get.ports ++ _component.get.secretPorts).map { port =>
         (port.id.getRef.asInstanceOf[ModuleIO].name, port.id)
       }
     }
 
-    /** Compatibility function. Allows Chisel2 code which had ports without the IO wrapper to
-      * compile under Bindings checks. Does nothing in non-compatibility mode.
-      *
-      * Should NOT be used elsewhere. This API will NOT last.
-      *
-      * TODO: remove this, perhaps by removing Bindings checks in compatibility mode.
-      */
-    def _compatAutoWrapPorts(): Unit = {}
-
     /** Chisel2 code didn't require the IO(...) wrapper and would assign a Chisel type directly to
       * io, then do operations on it. This binds a Chisel type in-place (mutably) as an IO.
       */
-    protected def _bindIoInPlace(iodef: Data)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit = {
+    protected def _bindIoInPlace(iodef: Data)(implicit sourceInfo: SourceInfo): Unit = {
 
       // Assign any signals (Chisel or chisel3) with Unspecified/Flipped directions to Output/Input
       Module.assignCompatDir(iodef)
@@ -533,9 +554,32 @@ package experimental {
     private[chisel3] def bindIoInPlace(
       iodef: Data
     )(
-      implicit sourceInfo: SourceInfo,
-      compileOptions:      CompileOptions
+      implicit sourceInfo: SourceInfo
     ): Unit = _bindIoInPlace(iodef)
+
+    // Must have separate createSecretIO from addSecretIO to get plugin to name it
+    // data must be a fresh Chisel type
+    private[chisel3] def createSecretIO(data: => Data)(implicit sourceInfo: SourceInfo): Data = {
+      val iodef = data
+      internal.requireIsChiselType(iodef, "io type")
+      require(!isFullyClosed, "Cannot create secret ports if module is fully closed")
+
+      iodef.bind(internal.SecretPortBinding(this))
+      iodef
+    }
+
+    private[chisel3] val secretPorts: ArrayBuffer[Port] = ArrayBuffer.empty
+
+    // Must have separate createSecretIO from addSecretIO to get plugin to name it
+    private[chisel3] def addSecretIO(iodef: Data)(implicit sourceInfo: SourceInfo): Data = {
+      val name = iodef._computeName(None).getOrElse("secret")
+      iodef.setRef(ModuleIO(this, _namespace.name(name)))
+      val newPort = new Port(iodef, iodef.specifiedDirection, sourceInfo)
+      if (_closed) {
+        _component.get.secretPorts += newPort
+      } else secretPorts += newPort
+      iodef
+    }
 
     /**
       * This must wrap the datatype used to set the io field of any Module.
@@ -553,7 +597,7 @@ package experimental {
       * TODO(twigg): Specifically walk the Data definition to call out which nodes
       * are problematic.
       */
-    protected def IO[T <: Data](iodef: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+    protected def IO[T <: Data](iodef: => T)(implicit sourceInfo: SourceInfo): T = {
       chisel3.IO.apply(iodef)
     }
 

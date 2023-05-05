@@ -51,7 +51,7 @@ class MemorySearchTester(c: MemorySearch) extends Tester(c) {
 class MemorySearchSpec extends ChiselPropSpec {
 
   property("MemorySearch should elaborate") {
-    ChiselStage.elaborate { new EnableShiftRegister }
+    ChiselStage.emitCHIRRTL { new EnableShiftRegister }
   }
 
   ignore("MemorySearch should return the correct result") {}

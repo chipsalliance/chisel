@@ -2,7 +2,7 @@
 
 package chiselTests
 import chisel3._
-import circt.stage.ChiselStage.elaborate
+import circt.stage.ChiselStage.emitCHIRRTL
 import org.scalatest.matchers.should.Matchers
 
 class BundleWithAnonymousInner(val w: Int) extends Bundle {
@@ -16,7 +16,7 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers with Utils {
   behavior.of("autoCloneType of inner Bundle in Chisel3")
 
   it should "clone a doubly-nested inner bundle successfully" in {
-    elaborate {
+    emitCHIRRTL {
       class Outer(val w: Int) extends Module {
         class Middle(val w: Int) {
           class InnerIOType extends Bundle {
@@ -32,7 +32,7 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers with Utils {
   }
 
   it should "clone an anonymous inner bundle successfully" in {
-    elaborate {
+    emitCHIRRTL {
       class TestTop(val w: Int) extends Module {
         val io = IO(new Bundle {})
         val myWire = Wire(new Bundle { val a = UInt(w.W) })
@@ -42,7 +42,7 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers with Utils {
   }
 
   it should "pick the correct $outer instance for an anonymous inner bundle" in {
-    elaborate {
+    emitCHIRRTL {
       class Inner(val w: Int) extends Module {
         val io = IO(new Bundle {
           val in = Input(UInt(w.W))
@@ -64,7 +64,7 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers with Utils {
   }
 
   it should "clone an anonymous, bound, inner bundle of another bundle successfully" in {
-    elaborate {
+    emitCHIRRTL {
       class TestModule(w: Int) extends Module {
         val io = IO(new BundleWithAnonymousInner(w))
         val w0 = WireDefault(io)
@@ -75,7 +75,7 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers with Utils {
   }
 
   it should "clone an anonymous, inner bundle of a Module, bound to another bundle successfully" in {
-    elaborate {
+    emitCHIRRTL {
       class TestModule(w: Int) extends Module {
         val bun = new Bundle {
           val foo = UInt(w.W)
@@ -91,7 +91,7 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers with Utils {
   }
 
   it should "clone a double-nested anonymous Bundle" in {
-    elaborate {
+    emitCHIRRTL {
       class TestModule() extends Module {
         val io = IO(new Bundle {
           val inner = Input(new Bundle {
@@ -104,7 +104,7 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers with Utils {
   }
 
   it should "support an anonymous doubly-nested inner bundle" in {
-    elaborate {
+    emitCHIRRTL {
       class Outer(val w: Int) extends Module {
         class Middle(val w: Int) {
           def getIO: Bundle = new Bundle {
@@ -119,7 +119,7 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers with Utils {
   }
 
   it should "support anonymous Inner bundles that capture type parameters from outer Bundles" in {
-    elaborate(new Module {
+    emitCHIRRTL(new Module {
       class MyBundle[T <: Data](n: Int, gen: T) extends Bundle {
         val foo = new Bundle {
           val x = Input(Vec(n, gen))

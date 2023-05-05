@@ -8,7 +8,7 @@ import chisel3.util.Decoupled
 
 class DecoupledSpec extends ChiselFlatSpec {
   "Decoupled() and Decoupled.empty" should "give DecoupledIO with empty payloads" in {
-    ChiselStage.elaborate(new Module {
+    ChiselStage.emitCHIRRTL(new Module {
       val io = IO(new Bundle {
         val in = Flipped(Decoupled())
         val out = Decoupled.empty

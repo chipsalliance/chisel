@@ -48,7 +48,7 @@ class GCDSpec extends ChiselPropSpec {
   )
 
   property("GCD should elaborate") {
-    ChiselStage.elaborate { new GCD }
+    ChiselStage.emitCHIRRTL { new GCD }
   }
 
   property("GCDTester should return the correct result") {

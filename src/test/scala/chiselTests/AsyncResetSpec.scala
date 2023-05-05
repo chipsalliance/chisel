@@ -142,11 +142,11 @@ class AsyncResetSpec extends ChiselFlatSpec with Utils {
   behavior.of("AsyncReset")
 
   it should "be able to be connected to DontCare" in {
-    ChiselStage.elaborate(new AsyncResetDontCareModule)
+    ChiselStage.emitCHIRRTL(new AsyncResetDontCareModule)
   }
 
   it should "be allowed with literal reset values" in {
-    ChiselStage.elaborate(new BasicTester {
+    ChiselStage.emitCHIRRTL(new BasicTester {
       withReset(reset.asAsyncReset)(RegInit(123.U))
     })
   }
@@ -164,7 +164,7 @@ class AsyncResetSpec extends ChiselFlatSpec with Utils {
 
   it should "NOT be allowed to connect directly to a Bool" in {
     a[ChiselException] should be thrownBy extractCause[ChiselException] {
-      ChiselStage.elaborate(new BasicTester {
+      ChiselStage.emitCHIRRTL(new BasicTester {
         val bool = Wire(Bool())
         val areset = reset.asAsyncReset
         bool := areset
@@ -181,7 +181,7 @@ class AsyncResetSpec extends ChiselFlatSpec with Utils {
   }
 
   it should "allow casting to and from Bool" in {
-    ChiselStage.elaborate(new BasicTester {
+    ChiselStage.emitCHIRRTL(new BasicTester {
       val r: Reset = reset
       val a: AsyncReset = WireInit(r.asAsyncReset)
       val b: Bool = a.asBool

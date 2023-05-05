@@ -71,11 +71,11 @@ class DataMirrorSpec extends ChiselFlatSpec {
       assertNone(typ)
       assertNone(vectyp)
     }
-    ChiselStage.elaborate(new MyModule)
+    ChiselStage.emitCHIRRTL(new MyModule)
   }
 
   it should "support getParent for normal modules" in {
-    ChiselStage.elaborate(new Parent)
+    ChiselStage.emitCHIRRTL(new Parent)
   }
 
   it should "support getParent for normal modules even when used in a D/I context" in {
@@ -85,7 +85,7 @@ class DataMirrorSpec extends ChiselFlatSpec {
       val inst = Instance(defn)
       DataMirror.getParent(this) should be(None)
     }
-    ChiselStage.elaborate(new Top)
+    ChiselStage.emitCHIRRTL(new Top)
   }
 
   it should "support getting name guesses even though they may change" in {
@@ -105,7 +105,7 @@ class DataMirrorSpec extends ChiselFlatSpec {
       queryNameGuess(io) should be("potato")
       queryNameGuess(io.foo) should be("potato.foo")
     }
-    ChiselStage.elaborate(new MyModule)
+    ChiselStage.emitCHIRRTL(new MyModule)
   }
 
   it should "not support name guesses for non-hardware" in {

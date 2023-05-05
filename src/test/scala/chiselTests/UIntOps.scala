@@ -208,20 +208,20 @@ class UIntLitZeroWidthTester extends BasicTester {
 class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
 
   property("Bools can be created from 1 bit UInts") {
-    ChiselStage.elaborate(new GoodBoolConversion)
+    ChiselStage.emitCHIRRTL(new GoodBoolConversion)
   }
 
   property("Bools cannot be created from 0 bit UInts") {
-    a[Exception] should be thrownBy extractCause[Exception] { ChiselStage.elaborate(new ZeroWidthBoolConversion) }
+    a[Exception] should be thrownBy extractCause[Exception] { ChiselStage.emitCHIRRTL(new ZeroWidthBoolConversion) }
   }
 
   property("Bools cannot be created from >1 bit UInts") {
-    a[Exception] should be thrownBy extractCause[Exception] { ChiselStage.elaborate(new BadBoolConversion) }
+    a[Exception] should be thrownBy extractCause[Exception] { ChiselStage.emitCHIRRTL(new BadBoolConversion) }
   }
 
   property("Out-of-bounds extraction from known-width UInts") {
     a[ChiselException] should be thrownBy extractCause[ChiselException] {
-      ChiselStage.elaborate(new RawModule {
+      ChiselStage.emitCHIRRTL(new RawModule {
         val u = IO(Input(UInt(2.W)))
         u(2, 1)
       })
@@ -230,7 +230,7 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
 
   property("Out-of-bounds single-bit extraction from known-width UInts") {
     a[ChiselException] should be thrownBy extractCause[ChiselException] {
-      ChiselStage.elaborate(new RawModule {
+      ChiselStage.emitCHIRRTL(new RawModule {
         val u = IO(Input(UInt(2.W)))
         u(2)
       })
@@ -239,7 +239,7 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
 
   property("Out-of-bounds extraction from known-zero-width UInts") {
     a[ChiselException] should be thrownBy extractCause[ChiselException] {
-      ChiselStage.elaborate(new RawModule {
+      ChiselStage.emitCHIRRTL(new RawModule {
         val u = IO(Input(UInt(0.W)))
         u(0, 0)
       })
@@ -248,7 +248,7 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
 
   property("Out-of-bounds single-bit extraction from known-zero-width UInts") {
     a[ChiselException] should be thrownBy extractCause[ChiselException] {
-      ChiselStage.elaborate(new RawModule {
+      ChiselStage.emitCHIRRTL(new RawModule {
         val u = IO(Input(UInt(0.W)))
         u(0)
       })
@@ -256,7 +256,7 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
   }
 
   property("UIntOps should elaborate") {
-    ChiselStage.elaborate { new UIntOps }
+    ChiselStage.emitCHIRRTL { new UIntOps }
   }
 
   property("UIntOpsTester should return the correct result") {
@@ -265,7 +265,7 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
 
   property("Negative shift amounts are invalid") {
     a[ChiselException] should be thrownBy extractCause[ChiselException] {
-      ChiselStage.elaborate(new NegativeShift(UInt()))
+      ChiselStage.emitCHIRRTL(new NegativeShift(UInt()))
     }
   }
 
@@ -288,7 +288,7 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
   }
 
   property("asBools should support chained apply") {
-    ChiselStage.elaborate(new Module {
+    ChiselStage.emitCHIRRTL(new Module {
       val io = IO(new Bundle {
         val in = Input(UInt(8.W))
         val out = Output(Bool())
@@ -397,15 +397,15 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
     }
 
     Seq(
-      grabLog(ChiselStage.elaborate(new TooWide)),
-      grabLog(ChiselStage.elaborate(new TooNarrow))
+      grabLog(ChiselStage.emitCHIRRTL(new TooWide)),
+      grabLog(ChiselStage.emitCHIRRTL(new TooNarrow))
     ).foreach {
       case (log, _) =>
         log should include("warn")
     }
 
     a[ChiselException] should be thrownBy extractCause[ChiselException] {
-      ChiselStage.elaborate(new RawModule {
+      ChiselStage.emitCHIRRTL(new RawModule {
         val in = IO(Input(UInt(0.W)))
         val index = IO(Input(UInt(1.W)))
         val out = IO(Output(Bool()))
@@ -431,7 +431,7 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
     }
 
     Seq(
-      grabLog(ChiselStage.elaborate(new Ok))
+      grabLog(ChiselStage.emitCHIRRTL(new Ok))
     ).foreach {
       case (log, _) =>
         log should be("")

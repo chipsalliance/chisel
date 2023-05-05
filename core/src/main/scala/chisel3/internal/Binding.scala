@@ -38,7 +38,7 @@ private[chisel3] object BindingDirection {
     */
   def from(binding: TopBinding, direction: ActualDirection): BindingDirection = {
     binding match {
-      case PortBinding(_) =>
+      case _: PortBinding | _: SecretPortBinding =>
         direction match {
           case ActualDirection.Output => Output
           case ActualDirection.Input  => Input
@@ -88,6 +88,9 @@ sealed trait ConditionalDeclarable extends TopBinding {
 // However, Chisel currently binds all op results to a module
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class PortBinding(enclosure: BaseModule) extends ConstrainedBinding
+
+// Added to handle BoringUtils in Chisel
+private[chisel3] case class SecretPortBinding(enclosure: BaseModule) extends ConstrainedBinding
 
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class OpBinding(enclosure: RawModule, visibility: Option[WhenContext])

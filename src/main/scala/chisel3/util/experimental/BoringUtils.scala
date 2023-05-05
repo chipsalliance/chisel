@@ -3,13 +3,11 @@
 package chisel3.util.experimental
 
 import chisel3._
-import chisel3.experimental.{annotate, ChiselAnnotation}
+import chisel3.experimental.{annotate, requireIsHardware, skipPrefix, BaseModule, ChiselAnnotation, SourceInfo}
 import chisel3.internal.{Builder, BuilderContextCache, NamedComponent, Namespace}
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
 import firrtl.passes.wiring.{SinkAnnotation, SourceAnnotation}
 import firrtl.annotations.{ComponentName, ModuleName}
-
-import scala.concurrent.SyncVar
 
 /** An exception related to BoringUtils
   * @param message the exception message
@@ -39,14 +37,14 @@ class BoringUtilsException(message: String) extends Exception(message)
   * We can then connect `x` to `y` using [[BoringUtils]] without modifiying the Chisel IO of `Constant`, `Expect`, or
   * modules that may instantiate them. There are two approaches to do this:
   *
-  * 1. Hierarchical boring using [[BoringUtils.bore]]
+  * 1. Hierarchical boring using BoringUtils.bore
   *
   * 2. Non-hierarchical boring using [[BoringUtils.addSink]]/[[BoringUtils.addSource]]
   *
   * ===Hierarchical Boring===
   *
   * Hierarchical boring involves connecting one sink instance to another source instance in a parent module. Below,
-  * module `Top` contains an instance of `Constant` and `Expect`. Using [[BoringUtils.bore]], we can connect
+  * module `Top` contains an instance of `Constant` and `Expect`. Using BoringUtils.bore, we can connect
   * `constant.x` to `expect.y`.
   *
   * {{{
@@ -55,6 +53,17 @@ class BoringUtilsException(message: String) extends Exception(message)
   *   val constant = Module(new Constant)
   *   val expect = Module(new Expect)
   *   BoringUtils.bore(constant.x, Seq(expect.y))
+  * }
+  * }}}
+  *
+  * Bottom-up boring involves boring a sink in a child instance to the current module, where it can be assigned from.
+  * Using BoringUtils.bore, we can connect from `constant.x` to `mywire`.
+  *
+  * {{{
+  * class Top extends Module {
+  *   val io = IO(new Bundle { val foo = UInt(3.W) })
+  *   val constant = Module(new Constant)
+  *   io.foo := BoringUtils.bore(constant.x)
   * }
   * }}}
   *
@@ -192,5 +201,70 @@ object BoringUtils {
     val genName = addSource(source, boringName, true, true)
     sinks.foreach(addSink(_, genName, true, true))
     genName
+  }
+
+  /** Access a source [[Data]] that may or may not be in the current module.  If
+    * this is in a child module, then create ports to allow access the
+    * requrested source.
+    */
+  def bore(source: Data)(implicit si: SourceInfo): Data = {
+    import reflect.DataMirror
+    def parent(d: Data): BaseModule = d.topBinding.location.get
+    def purePortType = if (DataMirror.hasOuterFlip(source)) Flipped(chiselTypeOf(source)) else chiselTypeOf(source)
+    def boringError(module: BaseModule): Unit = {
+      (module.fullyClosedErrorMessages ++ Seq(
+        (si, s"Can only bore into modules that are not fully closed: ${module.name} was fully closed")
+      )).foreach {
+        case (sourceInfo, msg) => Builder.error(msg)(sourceInfo)
+      }
+    }
+    def drill(source: Data, path: Seq[BaseModule], up: Boolean): Data = {
+      path.foldLeft(source) {
+        case (rhs, module) if (module.isFullyClosed) => boringError(module); DontCare
+        case (rhs, module) =>
+          skipPrefix { // so `lcaSource` isn't in the name of the secret port
+            /** create a port, and drill up. */
+            val bore = if (up) module.createSecretIO(purePortType) else module.createSecretIO(Flipped(purePortType))
+            module.addSecretIO(bore)
+            if (up) {
+              module.asInstanceOf[RawModule].secretConnection(bore, rhs)
+            } else parent(rhs).asInstanceOf[RawModule].secretConnection(bore, rhs)
+            bore
+          }
+      }
+    }
+
+    requireIsHardware(source)
+    val thisModule = Builder.currentModule.get
+    source.topBindingOpt match {
+      case None =>
+        Builder.error(s"Cannot bore from ${source._errorContext}")
+        return DontCare
+      case Some(internal.CrossModuleBinding) =>
+        Builder.error(
+          s"Cannot bore across a Definition/Instance boundary:${thisModule._errorContext} cannot access ${source}"
+        )
+        return DontCare
+      case _ => // Actually bore
+    }
+    if (parent(source) == thisModule) {
+
+      /** No boring to do */
+      return source
+    }
+
+    val lcaResult = DataMirror.findLCAPaths(source, thisModule)
+    if (lcaResult.isEmpty) {
+      Builder.error(s"Cannot bore from $source to ${thisModule.name}, as they do not share a least common ancestor")
+      return DontCare
+    }
+    val (upPath, downPath) = lcaResult.get
+    val lcaSource = drill(source, upPath, true)
+    val sink = drill(lcaSource, downPath.reverse, false)
+
+    /** Creating an intermediate wire so secret stuff never escapes */
+    val bore = Wire(purePortType)
+    thisModule.asInstanceOf[RawModule].secretConnection(bore, sink)
+    bore
   }
 }
