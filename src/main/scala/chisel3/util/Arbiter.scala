@@ -29,7 +29,7 @@ class ArbiterIO[T <: Data](private val gen: T, val n: Int) extends Bundle {
     */
   val out = Decoupled(gen)
 
-  /** One-Hot vector indicating which output was chosen
+  /** Index indicating which sender was chosen as output
     *
     * @group Signals
     */
