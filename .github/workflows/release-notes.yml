@@ -35,7 +35,10 @@ jobs:
           toTag: ${{ github.event.inputs.toTag }}
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Report Release Notes
-        run: echo '${{steps.release-notes.outputs.changelog}}' >> $GITHUB_STEP_SUMMARY
+        # Put output through env variable to make it robust to quotes
+        env:
+          CHANGELOG: ${{steps.release-notes.outputs.changelog}}
+        run: echo "$CHANGELOG" >> $GITHUB_STEP_SUMMARY
       - name: Upload Release Notes (on release)
         if: github.event_name == 'release'
         uses: softprops/action-gh-release@v0.1.15
