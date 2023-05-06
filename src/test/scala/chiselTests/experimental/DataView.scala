@@ -546,6 +546,40 @@ class DataViewSpec extends ChiselFlatSpec {
     chirrtl should include("dataOut <= vec[addrReg]")
   }
 
+  it should "allow views between reset types" in {
+    class A extends Bundle {
+      val bool = Bool()
+      val asyncreset = AsyncReset()
+    }
+
+    class B extends Bundle {
+      val reset_0 = Reset()
+      val reset_1 = Reset()
+    }
+
+    class Foo extends RawModule {
+      val a = Wire(new A)
+      val b = Wire(new B)
+
+      implicit val view = DataView[A, B](
+        _ => new B,
+        _.bool -> _.reset_0,
+        _.asyncreset -> _.reset_1
+      )
+
+      a.viewAs[B] := b
+    }
+
+    (ChiselStage
+      .emitCHIRRTL(new Foo, Array("--full-stacktrace"))
+      .split('\n')
+      .map(_.takeWhile(_ != '@'))
+      .map(_.trim) should contain).allOf(
+      "a.bool <= b.reset_0",
+      "a.asyncreset <= b.reset_1"
+    )
+  }
+
   it should "error if you try to dynamically index a Vec view that does not correspond to a Vec target" in {
     class MyModule extends Module {
       val inA, inB = IO(Input(UInt(8.W)))
