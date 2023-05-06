@@ -228,7 +228,9 @@ object BoringUtils {
             module.addSecretIO(bore)
             if (up) {
               module.asInstanceOf[RawModule].secretConnection(bore, rhs)
-            } else parent(rhs).asInstanceOf[RawModule].secretConnection(bore, rhs)
+            } else {
+              module.asInstanceOf[RawModule].secretConnection(rhs, bore)
+            }
             bore
           }
       }
@@ -259,12 +261,13 @@ object BoringUtils {
       return DontCare
     }
     val (upPath, downPath) = lcaResult.get
-    val lcaSource = drill(source, upPath, true)
-    val sink = drill(lcaSource, downPath.reverse, false)
+    val lcaSource = drill(source, upPath.tail, true)
 
-    /** Creating an intermediate wire so secret stuff never escapes */
+    /** Creating a wire to assign the result to.  We will return this. */
     val bore = Wire(purePortType)
-    thisModule.asInstanceOf[RawModule].secretConnection(bore, sink)
+    val sink = drill(bore, downPath.tail, false)
+
+    upPath.head.asInstanceOf[RawModule].secretConnection(sink, lcaSource)
     bore
   }
 }

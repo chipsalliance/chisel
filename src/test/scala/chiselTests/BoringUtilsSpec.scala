@@ -168,6 +168,34 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
     )()
   }
 
+  it should "bore up and down through the lowest common ancestor" in {
+    class Bar extends RawModule {
+      val a = Wire(Bool())
+    }
+
+    class Baz(_a: Bool) extends RawModule {
+      val b = WireInit(Bool(), BoringUtils.bore(_a))
+    }
+
+    class Foo extends RawModule {
+      val bar = Module(new Bar)
+      val baz = Module(new Baz(bar.a))
+    }
+
+    matchesAndOmits(circt.stage.ChiselStage.emitCHIRRTL(new Foo))(
+      "module Bar :",
+      "output b_bore : UInt<1>",
+      "b_bore <= a",
+      "module Baz :",
+      "input b_bore : UInt<1>",
+      "wire b_bore_1 : UInt<1>",
+      "b_bore_1 <= b_bore",
+      "b <= b_bore_1",
+      "module Foo",
+      "baz.b_bore <= bar.b_bore"
+    )()
+  }
+
   it should "not work over a Definition/Instance boundary" in {
     import chisel3.experimental.hierarchy._
     @instantiable
