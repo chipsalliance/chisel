@@ -157,7 +157,7 @@ lazy val firrtlSettings = Seq(
   libraryDependencies ++= Seq(
     "org.scala-lang" % "scala-reflect" % scalaVersion.value,
     "org.scalatest" %% "scalatest" % "3.2.14" % "test",
-    "org.scalatestplus" %% "scalacheck-1-15" % "3.2.11.0" % "test",
+    "org.scalatestplus" %% "scalacheck-1-16" % "3.2.14.0" % "test",
     "com.github.scopt" %% "scopt" % "3.7.1",
     "net.jcazevedo" %% "moultingyaml" % "0.4.2",
     "org.json4s" %% "json4s-native" % "4.0.6",
