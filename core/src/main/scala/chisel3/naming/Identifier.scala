@@ -33,7 +33,7 @@ object IdentifierProposer {
         }
       }
     }
-    if (s == "") s
+    if (s == "" || firstOkChar == -1) ""
     else
       s.substring(firstOkChar, if (finalChar == -1) lastOkChar + 1 else finalChar).map { x =>
         if (!legal(x)) '_' else x

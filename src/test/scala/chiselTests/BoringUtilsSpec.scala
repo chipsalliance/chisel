@@ -169,6 +169,34 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
     )()
   }
 
+  it should "bore up and down through the lowest common ancestor" in {
+    class Bar extends RawModule {
+      val a = Wire(Bool())
+    }
+
+    class Baz(_a: Bool) extends RawModule {
+      val b = WireInit(Bool(), BoringUtils.bore(_a))
+    }
+
+    class Foo extends RawModule {
+      val bar = Module(new Bar)
+      val baz = Module(new Baz(bar.a))
+    }
+
+    matchesAndOmits(circt.stage.ChiselStage.emitCHIRRTL(new Foo))(
+      "module Bar :",
+      "output b_bore : UInt<1>",
+      "b_bore <= a",
+      "module Baz :",
+      "input b_bore : UInt<1>",
+      "wire b_bore_1 : UInt<1>",
+      "b_bore_1 <= b_bore",
+      "b <= b_bore_1",
+      "module Foo",
+      "baz.b_bore <= bar.b_bore"
+    )()
+  }
+
   it should "not work over a Definition/Instance boundary" in {
     import chisel3.experimental.hierarchy._
     @instantiable
@@ -284,8 +312,8 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
         }
 
         val foo = Module(new Foo())
-        val out = IO(Bool())
         val outProbe = IO(probe.Probe(Bool()))
+        val out = IO(Bool())
 
         probe.define(outProbe, BoringUtils.tap(foo.internalWire))
 
@@ -293,6 +321,7 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
       },
       Array("--full-stacktrace", "--throw-on-first-error")
     )
+    println(chirrtl)
     matchesAndOmits(chirrtl)(
       "module Foo :",
       "output bore : Probe<UInt<1>>",
@@ -306,6 +335,8 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
       "inst foo of Foo",
       "define outProbe = foo.bore",
       "out <= read(foo.out_bore)"
-    )()
+    )(
+      "wire bore : UInt<1>"
+    )
   }
 }
