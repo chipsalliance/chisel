@@ -610,11 +610,8 @@ object PartialDataView {
           val aElts = a._elements
           val bElts = b._elements
           val bKeys = bElts.keySet
-          println(s"key set is $bKeys")
           val keys = aElts.keysIterator.filter(bKeys.contains)
-          val result = keys.map(k => aElts(k) -> bElts(k)).toSeq
-          println(s"result is $result")
-          result
+          keys.map(k => aElts(k) -> bElts(k)).toSeq
       }
     )
 }
