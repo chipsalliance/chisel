@@ -24,6 +24,8 @@ class InterfaceSpec extends AnyFunSpec with Matchers {
 
     override type Ports = BarBundle
 
+    override type Properties = Unit
+
     /** Generate the ports given the parameters. */
     override val ports = new Ports
 
@@ -55,6 +57,8 @@ class InterfaceSpec extends AnyFunSpec with Matchers {
           _.y -> _.b
         )
 
+        override def properties = {}
+
       }
   }
 
@@ -81,6 +85,8 @@ class InterfaceSpec extends AnyFunSpec with Matchers {
           _.hello -> _.a,
           _.world -> _.b
         )
+
+        override def properties = {}
 
       }
   }
@@ -156,16 +162,64 @@ class InterfaceSpec extends AnyFunSpec with Matchers {
 
       import CompilationUnit2.bazConformance
 
+      circt.stage.ChiselStage.emitCHIRRTL(new (BarInterface.Wrapper.Stub)(()), Array("--full-stacktrace"))
+
       info("compile okay!")
       Drivers.compile(
         dir,
         Drivers.CompilationUnit(() => new CompilationUnit3.Foo),
-        Drivers.CompilationUnit(() => new (BarInterface.Wrapper.Stub))
+        Drivers.CompilationUnit(() => new (BarInterface.Wrapper.Stub)(()))
       )
 
       info("link okay!")
       Drivers.link(dir, "compile-0/Foo.sv")
 
+    }
+  }
+
+  describe("Basic behavior of properties") {
+
+    // A container of the types of properties that are on this Interface.
+    case class SomeProperties(a: Int, b: String, c: Int => Int)
+
+    object InterfaceWithProperties extends Interface {
+      override type Ports = Bundle {}
+      override type Properties = SomeProperties
+      override val ports = new Bundle {}
+    }
+
+    class Bar extends RawModule
+
+    val conformanceGood = new ConformsTo[InterfaceWithProperties.type, Bar] {
+      override def genModule() = new Bar
+      override def portMap = Seq.empty
+      // The conformance defines the properties.
+      override def properties = SomeProperties(42, "hello", _ + 8)
+    }
+
+    val conformanceBad = new ConformsTo[InterfaceWithProperties.type, Bar] {
+      override def genModule() = new Bar
+      override def portMap = Seq.empty
+      // The conformance defines the properties.
+      override def properties = SomeProperties(51, "hello", _ + 8)
+    }
+
+    it("should be able to read properties") {
+      class Foo(conformance: ConformsTo[InterfaceWithProperties.type, Bar]) extends RawModule {
+        private implicit val c = conformance
+
+        val bar = Module(new InterfaceWithProperties.Wrapper.BlackBox)
+        private val properties = bar.properties[Bar]
+
+        // Check that the component works in this context.
+        require(properties.a <= 50)
+      }
+
+      info("a conformance with suitable properties should work")
+      ChiselStage.emitCHIRRTL(new Foo(conformanceGood))
+
+      info("a conformance with unsuitable properties should error")
+      an[IllegalArgumentException] shouldBe thrownBy(ChiselStage.emitCHIRRTL(new Foo(conformanceBad)))
     }
 
   }
@@ -183,6 +237,8 @@ class InterfaceSpec extends AnyFunSpec with Matchers {
         override def genModule() = new Qux
 
         override def portMap = Seq()
+
+        override def properties = ()
       }
 
       val exception = the[Exception] thrownBy circt.stage.ChiselStage.emitCHIRRTL(new (BarInterface.Wrapper.Module))
