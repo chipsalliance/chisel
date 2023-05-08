@@ -204,11 +204,7 @@ object BoringUtils {
     genName
   }
 
-  /** Access a source [[Data]] that may or may not be in the current module.  If
-    * this is in a child module, then create ports to allow access the
-    * requested source.
-    */
-  def bore(source: Data, createProbe: Boolean = false)(implicit si: SourceInfo): Data = {
+  private def boreOrTap(source: Data, createProbe: Boolean = false)(implicit si: SourceInfo): Data = {
     import reflect.DataMirror
     def parent(d: Data): BaseModule = d.topBinding.location.get
     def purePortTypeBase = if (DataMirror.hasOuterFlip(source)) Flipped(chiselTypeOf(source)) else chiselTypeOf(source)
@@ -277,13 +273,21 @@ object BoringUtils {
   }
 
   /** Access a source [[Data]] that may or may not be in the current module.  If
+    * this is in a child module, then create ports to allow access the
+    * requested source.
+    */
+  def bore(source: Data)(implicit si: SourceInfo): Data = {
+    boreOrTap(source, createProbe = false)
+  }
+
+  /** Access a source [[Data]] that may or may not be in the current module.  If
     * this is in a child module, then create probe ports to allow access the
     * requested source.
     *
     * Returns a probe Data type.
     */
   def tap(source: Data)(implicit si: SourceInfo): Data = {
-    bore(source, createProbe = true)
+    boreOrTap(source, createProbe = true)
   }
 
   /** Access a source [[Data]] that may or may not be in the current module.  If

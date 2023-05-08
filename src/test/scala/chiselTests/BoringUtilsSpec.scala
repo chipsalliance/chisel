@@ -321,7 +321,6 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
       },
       Array("--full-stacktrace", "--throw-on-first-error")
     )
-    println(chirrtl)
     matchesAndOmits(chirrtl)(
       "module Foo :",
       "output bore : Probe<UInt<1>>",
