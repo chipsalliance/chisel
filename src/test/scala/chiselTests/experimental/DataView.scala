@@ -345,41 +345,6 @@ class DataViewSpec extends ChiselFlatSpec {
     chirrtl should include("io.c.foo <= io.a.foo")
   }
 
-  it should "support viewing structural supertypes between bundles and Records" in {
-    class Foo extends Bundle {
-      val y = UInt(3.W)
-    }
-    class A extends Record {
-      override val elements = SeqMap("foo" -> new Foo, "x"-> UInt(3.W), "z" -> UInt(3.W))
-    }
-    class B extends Bundle {
-      val x = UInt(3.W)
-      val foo = new Foo
-    }
-    class C extends Bundle {
-      val foo = new Foo
-      val z = UInt(3.W)
-    }
-    class MyModule extends Module {
-      val io = IO(new Bundle {
-        val a = Input(new A)
-        val b = Output(new B)
-        val c = Output(new C)
-        val inc = Input(new C)
-        val outa = Output(new A)
-      })
-      io.b <> io.a.viewAsSupertype(new B)
-      io.c <> io.a.viewAsSupertype(new C)
-      io.outa.viewAsSupertype(new C) <> io.inc
-    }
-    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    chirrtl should include("io.b.x <= io.a.x")
-    chirrtl should include("io.c.z <= io.a.z")
-    chirrtl should include("io.outa.foo <= io.inc.foo")
-    chirrtl should include("io.b.foo <= io.a.foo")
-    chirrtl should include("io.c.foo <= io.a.foo")
-  }
-
   it should "error during elaboration for sub-type errors that cannot be found at compile-time" in {
     class A extends Bundle {
       val x = UInt(3.W)

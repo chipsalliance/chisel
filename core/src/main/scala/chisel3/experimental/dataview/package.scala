@@ -157,7 +157,6 @@ package object dataview {
         val targetsx = targets match {
           case collection.Seq(target: Element) => target
           case collection.Seq() =>
-            println(s"Adding ${data.toString} to $viewNonTotalErrors")
             viewNonTotalErrors = data :: viewNonTotalErrors
             data.asInstanceOf[Element] // Return the Data itself, will error after this map, cast is safe
           case x =>
@@ -177,7 +176,6 @@ package object dataview {
     }
     if (viewNonTotalErrors != Nil || targetNonTotalErrors != Nil) {
       val viewErrors = viewNonTotalErrors.map(f => viewFieldLookup.getOrElse(f, f.toString))
-      println(s"viewErrors: $viewErrors")
       nonTotalViewException(dataView, target, view, targetNonTotalErrors, viewErrors)
     }
 
