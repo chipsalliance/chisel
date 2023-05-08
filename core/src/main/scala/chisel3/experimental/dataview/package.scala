@@ -37,11 +37,11 @@ package object dataview {
     }
   }
 
-  /** Provides `viewAsSupertype` for subclasses of [[Bundle]] */
-  implicit class BundleUpcastable[T <: Bundle](target: T) {
+  /** Provides `viewAsSupertype` for subclasses of [[Record]] */
+  implicit class RecordUpcastable[T <: Record](target: T) {
 
     /** View a [[Bundle]] or [[Record]] as a parent type (upcast) */
-    def viewAsSupertype[V <: Bundle](proto: V)(implicit ev: ChiselSubtypeOf[T, V], sourceInfo: SourceInfo): V = {
+    def viewAsSupertype[V <: Record](proto: V)(implicit ev: ChiselSubtypeOf[T, V], sourceInfo: SourceInfo): V = {
       implicit val dataView = PartialDataView.supertype[T, V](_ => proto)
       target.viewAs[V]
     }
@@ -81,8 +81,8 @@ package object dataview {
     // Resulting bindings for each Element of the View
     // Kept separate from Aggregates for totality checking
     val elementBindings =
-      new mutable.HashMap[Data, mutable.ListBuffer[Element]] ++
-        viewFieldLookup.view.collect { case (elt: Element, _) => elt }
+      new mutable.LinkedHashMap[Data, mutable.ListBuffer[Element]] ++
+        getRecursiveFields(view, "_").collect { case (elt: Element, name) => elt }
           .map(_ -> new mutable.ListBuffer[Element])
 
     // Record any Aggregates that correspond 1:1 for reification
@@ -157,6 +157,7 @@ package object dataview {
         val targetsx = targets match {
           case collection.Seq(target: Element) => target
           case collection.Seq() =>
+            println(s"Adding ${data.toString} to $viewNonTotalErrors")
             viewNonTotalErrors = data :: viewNonTotalErrors
             data.asInstanceOf[Element] // Return the Data itself, will error after this map, cast is safe
           case x =>
@@ -176,6 +177,7 @@ package object dataview {
     }
     if (viewNonTotalErrors != Nil || targetNonTotalErrors != Nil) {
       val viewErrors = viewNonTotalErrors.map(f => viewFieldLookup.getOrElse(f, f.toString))
+      println(s"viewErrors: $viewErrors")
       nonTotalViewException(dataView, target, view, targetNonTotalErrors, viewErrors)
     }
 

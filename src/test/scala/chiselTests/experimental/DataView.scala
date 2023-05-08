@@ -10,6 +10,7 @@ import chisel3.reflect.DataMirror.internal.chiselTypeClone
 import chisel3.util.{Decoupled, DecoupledIO}
 import chiselTests.ChiselFlatSpec
 import circt.stage.ChiselStage
+import scala.collection.immutable.SeqMap
 
 object SimpleBundleDataView {
   class BundleA(val w: Int) extends Bundle {
@@ -187,6 +188,71 @@ class DataViewSpec extends ChiselFlatSpec {
     chirrtl should include("fooOut.foo <= barIn.foo")
   }
 
+  it should "support viewing a Record as a Parent Record type" in {
+    object Base {
+      def elements = SeqMap("foo" -> UInt(8.W))
+    }
+    class Foo extends Record {
+      override val elements = Base.elements
+    }
+    class Bar extends Foo {
+      override val elements = Base.elements ++ SeqMap("bar" -> UInt(8.W))
+    }
+
+    class MyModule extends Module {
+      val fooIn = IO(Input(new Foo))
+      val barOut = IO(Output(new Bar))
+      barOut.viewAsSupertype(new Foo) := fooIn
+
+      val barIn = IO(Input(new Bar))
+      val fooOut = IO(Output(new Foo))
+      fooOut := barIn.viewAsSupertype(new Foo)
+    }
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
+    chirrtl should include("barOut.foo <= fooIn.foo")
+    chirrtl should include("fooOut.foo <= barIn.foo")
+  }
+
+  it should "fail if you try viewing a Record as a poorly inherited Parent Record type" in {
+    class Foo extends Record {
+      override val elements = SeqMap("foo" -> UInt(8.W), "quz" -> UInt(8.W))
+    }
+    class Bar extends Foo {
+      // No actual relationship in the elements...
+      override val elements = SeqMap("bar" -> UInt(8.W))
+    }
+
+    class MyModule extends Module {
+      val fooIn = IO(Input(new Foo))
+      val barOut = IO(Output(new Bar))
+      barOut.viewAsSupertype(new Foo) := fooIn
+
+      val barIn = IO(Input(new Bar))
+      val fooOut = IO(Output(new Foo))
+      fooOut := barIn.viewAsSupertype(new Foo)
+    }
+    (the[InvalidViewException] thrownBy {
+      ChiselStage.emitCHIRRTL(new MyModule)
+    }).getMessage should include("View fields '_.quz, _.foo' are missing.")
+  }
+
+  it should "support viewing a Record of the same Scala type as supertype for the purposes of mismatched directions" in {
+    class Foo extends Record {
+      override val elements = SeqMap("foo" -> Decoupled(UInt(8.W)))
+    }
+
+    class MyModule extends Module {
+      val ifc = IO(Flipped(new Foo))
+      val ifcMon = IO(Input(new Foo))
+
+      ifc :<= DontCare
+      ifcMon.viewAsSupertype(chiselTypeOf(ifc)) :>= ifc
+    }
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
+    chirrtl should include("ifc.foo.bits is invalid")
+    chirrtl should include("ifc.foo.ready <= ifcMon.foo.ready")
+  }
+
   it should "be easy to make a PartialDataView viewing a Bundle as a Parent Bundle type" in {
     class Foo(x: Int) extends Bundle {
       val foo = UInt(x.W)
@@ -250,6 +316,41 @@ class DataViewSpec extends ChiselFlatSpec {
       val foo = new Foo
       val x = UInt(3.W)
       val z = UInt(3.W)
+    }
+    class B extends Bundle {
+      val x = UInt(3.W)
+      val foo = new Foo
+    }
+    class C extends Bundle {
+      val foo = new Foo
+      val z = UInt(3.W)
+    }
+    class MyModule extends Module {
+      val io = IO(new Bundle {
+        val a = Input(new A)
+        val b = Output(new B)
+        val c = Output(new C)
+        val inc = Input(new C)
+        val outa = Output(new A)
+      })
+      io.b <> io.a.viewAsSupertype(new B)
+      io.c <> io.a.viewAsSupertype(new C)
+      io.outa.viewAsSupertype(new C) <> io.inc
+    }
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
+    chirrtl should include("io.b.x <= io.a.x")
+    chirrtl should include("io.c.z <= io.a.z")
+    chirrtl should include("io.outa.foo <= io.inc.foo")
+    chirrtl should include("io.b.foo <= io.a.foo")
+    chirrtl should include("io.c.foo <= io.a.foo")
+  }
+
+  it should "support viewing structural supertypes between bundles and Records" in {
+    class Foo extends Bundle {
+      val y = UInt(3.W)
+    }
+    class A extends Record {
+      override val elements = SeqMap("foo" -> new Foo, "x"-> UInt(3.W), "z" -> UInt(3.W))
     }
     class B extends Bundle {
       val x = UInt(3.W)
