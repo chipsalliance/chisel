@@ -21,7 +21,7 @@ import scala.annotation.nowarn
   *
   * @param underlying The internal representation of the definition, which may be either be directly the object, or a clone of an object
   */
-final case class Definition[+A] private[chisel3] (private[chisel3] underlying: Underlying[A])
+final case class Definition[+A] private[chisel3] (private[chisel3] val underlying: Underlying[A])
     extends IsLookupable
     with SealedHierarchy[A] {
 
