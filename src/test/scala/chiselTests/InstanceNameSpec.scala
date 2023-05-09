@@ -6,8 +6,6 @@ import chisel3._
 import circt.stage.ChiselStage
 import chisel3.util.Queue
 
-import chisel3.internal.ChiselException
-
 class InstanceNameModule extends Module {
   val io = IO(new Bundle {
     val foo = Input(UInt(32.W))
@@ -28,7 +26,7 @@ class InstanceNameSpec extends ChiselFlatSpec {
   behavior.of("instanceName")
   val moduleName = "InstanceNameModule"
   var m: InstanceNameModule = _
-  ChiselStage.elaborate { m = new InstanceNameModule; m }
+  ChiselStage.emitCHIRRTL { m = new InstanceNameModule; m }
 
   it should "work with module IO" in {
     val io = m.io.pathName

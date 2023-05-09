@@ -5,6 +5,7 @@ package chiselTests
 import chisel3._
 import circt.stage.ChiselStage
 import chisel3.util._
+import scala.collection.immutable.LazyList // Needed for 2.12 alias
 
 import scala.collection.mutable
 
@@ -22,7 +23,14 @@ class PerNameIndexing(count: Int) extends NamedModuleTester {
     expectModuleName(Module(new Other(i)), genModName("Other", i))
   }
   val queues = Seq.tabulate(count) { i =>
-    expectModuleName(Module(new Queue(UInt(i.W), 16)), genModName("Queue", i))
+    expectModuleName(
+      Module(new Queue(UInt(i.W), 16) {
+        // For this test we need to override desiredName to give the old name, so that indexing
+        // is properly tested
+        override def desiredName = "Queue"
+      }),
+      genModName("Queue", i)
+    )
   }
 }
 
@@ -54,7 +62,7 @@ class IterableNaming extends NamedModuleTester {
   // default name because it is built eagerly but the compiler plugin doesn't know how to handle
   // infinite-size structures. Scala 2.13 LazyList would give the same old naming behavior but does
   // not exist in Scala 2.12 so this test has been simplified a bit.
-  val stream = Stream.continually(Module(new Other(8)))
+  val stream = LazyList.continually(Module(new Other(8)))
   val list = List.tabulate(4)(i => expectName(Module(new Other(i)), s"list_$i"))
 }
 
@@ -74,19 +82,19 @@ class BetterNamingTests extends ChiselFlatSpec {
 
   it should "provide unique counters for each name" in {
     var module: PerNameIndexing = null
-    ChiselStage.elaborate { module = new PerNameIndexing(4); module }
+    ChiselStage.emitCHIRRTL { module = new PerNameIndexing(4); module }
     assert(module.getNameFailures() == Nil)
   }
 
   it should "provide names for things defined in Iterable[HasId] and Option[HasId]" in {
     var module: IterableNaming = null
-    ChiselStage.elaborate { module = new IterableNaming; module }
+    ChiselStage.emitCHIRRTL { module = new IterableNaming; module }
     assert(module.getNameFailures() == Nil)
   }
 
   it should "allow digits to be field names in Records" in {
     var module: DigitFieldNamesInRecord = null
-    ChiselStage.elaborate { module = new DigitFieldNamesInRecord; module }
+    ChiselStage.emitCHIRRTL { module = new DigitFieldNamesInRecord; module }
     assert(module.getNameFailures() == Nil)
   }
 
@@ -94,7 +102,7 @@ class BetterNamingTests extends ChiselFlatSpec {
     class MyModule(withLits: Boolean) extends Module {
       val io = IO(new Bundle {})
       if (withLits) {
-        List(8.U, -3.S, 1.25.F(2.BP))
+        List(8.U, -3.S)
       }
       WireDefault(3.U)
     }

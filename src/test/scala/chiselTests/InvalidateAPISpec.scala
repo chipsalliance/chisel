@@ -3,21 +3,21 @@
 package chiselTests
 
 import chisel3._
-import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
+import chisel3.stage.ChiselGeneratorAnnotation
 import chisel3.util.Counter
-import firrtl.passes.CheckInitialization.RefNotInitializedException
-import firrtl.util.BackendCompilationUtilities
+import firrtl.util.BackendCompilationUtilities._
+import circt.stage.ChiselStage
 import org.scalatest._
 import org.scalatest.matchers.should.Matchers
 
-class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompilationUtilities with Utils {
+class InvalidateAPISpec extends ChiselPropSpec with Matchers with Utils {
 
-  def myGenerateFirrtl(t: => Module): String = ChiselStage.emitChirrtl(t)
+  def myGenerateFirrtl(t: => Module): String = ChiselStage.emitCHIRRTL(t)
   def compileFirrtl(t: => Module): Unit = {
     val testDir = createTestDirectory(this.getClass.getSimpleName)
 
     (new ChiselStage).execute(
-      Array[String]("-td", testDir.getAbsolutePath, "--compiler", "verilog"),
+      Array[String]("-td", testDir.getAbsolutePath, "--target", "verilog"),
       Seq(ChiselGeneratorAnnotation(() => t))
     )
   }
@@ -26,8 +26,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompila
     val out = Output(Bool())
   }
 
-  property("an output connected to DontCare should emit a Firrtl \"is invalid\" with Strict CompileOptions") {
-    import chisel3.ExplicitCompileOptions.Strict
+  property("an output connected to DontCare should emit a Firrtl \"is invalid\"") {
     class ModuleWithDontCare extends Module {
       val io = IO(new TrivialInterface)
       io.out := DontCare
@@ -37,8 +36,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompila
     firrtlOutput should include("io.out is invalid")
   }
 
-  property("an output without a DontCare should NOT emit a Firrtl \"is invalid\" with Strict CompileOptions") {
-    import chisel3.ExplicitCompileOptions.Strict
+  property("an output without a DontCare should NOT emit a Firrtl \"is invalid\"") {
     class ModuleWithoutDontCare extends Module {
       val io = IO(new TrivialInterface)
       io.out := io.in
@@ -47,18 +45,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompila
     (firrtlOutput should not).include("is invalid")
   }
 
-  property("an output without a DontCare should emit a Firrtl \"is invalid\" with NotStrict CompileOptions") {
-    import chisel3.ExplicitCompileOptions.NotStrict
-    class ModuleWithoutDontCare extends Module {
-      val io = IO(new TrivialInterface)
-      io.out := io.in
-    }
-    val firrtlOutput = myGenerateFirrtl(new ModuleWithoutDontCare)
-    firrtlOutput should include("io is invalid")
-  }
-
-  property("a bundle with a DontCare should emit a Firrtl \"is invalid\" with Strict CompileOptions") {
-    import chisel3.ExplicitCompileOptions.Strict
+  property("a bundle with a DontCare should emit a Firrtl \"is invalid\"") {
     class ModuleWithoutDontCare extends Module {
       val io = IO(new TrivialInterface)
       io <> DontCare
@@ -68,8 +55,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompila
     firrtlOutput should include("io.in is invalid")
   }
 
-  property("a Vec with a DontCare should emit a Firrtl \"is invalid\" with Strict CompileOptions and bulk connect") {
-    import chisel3.ExplicitCompileOptions.Strict
+  property("a Vec with a DontCare should emit a Firrtl \"is invalid\" with bulk connect") {
     val nElements = 5
     class ModuleWithoutDontCare extends Module {
       val io = IO(new Bundle {
@@ -82,8 +68,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompila
       firrtlOutput should include(s"io.outs[$i] is invalid")
   }
 
-  property("a Vec with a DontCare should emit a Firrtl \"is invalid\" with Strict CompileOptions and mono connect") {
-    import chisel3.ExplicitCompileOptions.Strict
+  property("a Vec with a DontCare should emit a Firrtl \"is invalid\" with mono connect") {
     val nElements = 5
     class ModuleWithoutDontCare extends Module {
       val io = IO(new Bundle {
@@ -97,35 +82,32 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompila
   }
 
   property("a DontCare cannot be a connection sink (LHS) for := ") {
-    import chisel3.ExplicitCompileOptions.Strict
     class ModuleWithDontCareSink extends Module {
       val io = IO(new TrivialInterface)
       DontCare := io.in
     }
     val exception = intercept[ChiselException] {
       extractCause[ChiselException] {
-        ChiselStage.elaborate(new ModuleWithDontCareSink)
+        ChiselStage.emitCHIRRTL(new ModuleWithDontCareSink)
       }
     }
     exception.getMessage should include("DontCare cannot be a connection sink")
   }
 
   property("a DontCare cannot be a connection sink (LHS) for <>") {
-    import chisel3.ExplicitCompileOptions.Strict
     class ModuleWithDontCareSink extends Module {
       val io = IO(new TrivialInterface)
       DontCare <> io.in
     }
     val exception = intercept[BiConnectException] {
       extractCause[BiConnectException] {
-        ChiselStage.elaborate(new ModuleWithDontCareSink)
+        circt.stage.ChiselStage.emitCHIRRTL(new ModuleWithDontCareSink)
       }
     }
     exception.getMessage should include("DontCare cannot be a connection sink (LHS)")
   }
 
-  property("FIRRTL should complain about partial initialization with Strict CompileOptions and conditional connect") {
-    import chisel3.ExplicitCompileOptions.Strict
+  property("FIRRTL should complain about partial initialization with conditional connect") {
     class ModuleWithIncompleteAssignment extends Module {
       val io = IO(new Bundle {
         val out = Output(Bool())
@@ -135,16 +117,15 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompila
         io.out := true.B
       }
     }
-    val exception = intercept[RefNotInitializedException] {
-      compileFirrtl(new ModuleWithIncompleteAssignment)
+    val exception = intercept[RuntimeException] {
+      circt.stage.ChiselStage.emitSystemVerilog(new ModuleWithIncompleteAssignment)
     }
-    exception.getMessage should include("is not fully initialized")
+    exception.getMessage should include("not fully initialized")
   }
 
   property(
-    "FIRRTL should not complain about partial initialization with Strict CompileOptions and conditional connect after unconditional connect"
+    "FIRRTL should not complain about partial initialization with conditional connect after unconditional connect"
   ) {
-    import chisel3.ExplicitCompileOptions.Strict
     class ModuleWithUnconditionalAssignment extends Module {
       val io = IO(new Bundle {
         val out = Output(Bool())
@@ -155,13 +136,12 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompila
         io.out := true.B
       }
     }
-    compileFirrtl(new ModuleWithUnconditionalAssignment)
+    circt.stage.ChiselStage.emitSystemVerilog(new ModuleWithUnconditionalAssignment)
   }
 
   property(
-    "FIRRTL should not complain about partial initialization with Strict CompileOptions and conditional connect with otherwise clause"
+    "FIRRTL should not complain about partial initialization with conditional connect with otherwise clause"
   ) {
-    import chisel3.ExplicitCompileOptions.Strict
     class ModuleWithConditionalAndOtherwiseAssignment extends Module {
       val io = IO(new Bundle {
         val out = Output(Bool())
@@ -174,59 +154,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompila
       }
     }
 
-    compileFirrtl(new ModuleWithConditionalAndOtherwiseAssignment)
-  }
-
-  property(
-    "an output without a DontCare should NOT emit a Firrtl \"is invalid\" with overriden NotStrict CompileOptions"
-  ) {
-    import chisel3.ExplicitCompileOptions.NotStrict
-    class ModuleWithoutDontCare extends Module {
-      override val compileOptions = chisel3.ExplicitCompileOptions.NotStrict.copy(explicitInvalidate = true)
-      val io = IO(new TrivialInterface)
-      io.out := io.in
-    }
-    val firrtlOutput = myGenerateFirrtl(new ModuleWithoutDontCare)
-    (firrtlOutput should not).include("is invalid")
-  }
-
-  property(
-    "an output without a DontCare should NOT emit a Firrtl \"is invalid\" with overriden NotStrict CompileOptions module definition"
-  ) {
-    import chisel3.ExplicitCompileOptions.NotStrict
-    abstract class ExplicitInvalidateModule
-        extends Module()(chisel3.ExplicitCompileOptions.NotStrict.copy(explicitInvalidate = true))
-    class ModuleWithoutDontCare extends ExplicitInvalidateModule {
-      val io = IO(new TrivialInterface)
-      io.out := io.in
-    }
-    val firrtlOutput = myGenerateFirrtl(new ModuleWithoutDontCare)
-    (firrtlOutput should not).include("is invalid")
-  }
-
-  property("an output without a DontCare should emit a Firrtl \"is invalid\" with overriden Strict CompileOptions") {
-    import chisel3.ExplicitCompileOptions.Strict
-    class ModuleWithoutDontCare extends Module {
-      override val compileOptions = chisel3.ExplicitCompileOptions.Strict.copy(explicitInvalidate = false)
-      val io = IO(new TrivialInterface)
-      io.out := io.in
-    }
-    val firrtlOutput = myGenerateFirrtl(new ModuleWithoutDontCare)
-    firrtlOutput should include("is invalid")
-  }
-
-  property(
-    "an output without a DontCare should emit a Firrtl \"is invalid\" with overriden Strict CompileOptions module definition"
-  ) {
-    import chisel3.ExplicitCompileOptions.Strict
-    abstract class ImplicitInvalidateModule
-        extends Module()(chisel3.ExplicitCompileOptions.NotStrict.copy(explicitInvalidate = false))
-    class ModuleWithoutDontCare extends ImplicitInvalidateModule {
-      val io = IO(new TrivialInterface)
-      io.out := io.in
-    }
-    val firrtlOutput = myGenerateFirrtl(new ModuleWithoutDontCare)
-    firrtlOutput should include("is invalid")
+    circt.stage.ChiselStage.emitSystemVerilog(new ModuleWithConditionalAndOtherwiseAssignment)
   }
 
   property("a clock should be able to be connected to a DontCare") {

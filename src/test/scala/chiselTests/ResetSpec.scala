@@ -38,7 +38,7 @@ class ResetSpec extends ChiselFlatSpec with Utils {
   behavior.of("Reset")
 
   it should "be able to be connected to DontCare" in {
-    ChiselStage.elaborate(new AbstractResetDontCareModule)
+    ChiselStage.emitCHIRRTL(new AbstractResetDontCareModule)
   }
 
   it should "be able to drive Bool" in {
@@ -105,7 +105,7 @@ class ResetSpec extends ChiselFlatSpec with Utils {
 
   "Chisel" should "error if sync and async modules are nested" in {
     a[ChiselException] should be thrownBy extractCause[ChiselException] {
-      ChiselStage.elaborate(new Module with RequireAsyncReset {
+      ChiselStage.emitCHIRRTL(new Module with RequireAsyncReset {
         val mod = Module(new Module with RequireSyncReset)
       })
     }

@@ -5,15 +5,16 @@ package chisel3.experimental.hierarchy.core
 import scala.language.experimental.macros
 import chisel3._
 import chisel3.experimental.hierarchy.{InstantiableClone, ModuleClone}
-import chisel3.internal.Builder
+import chisel3.internal.{throwException, Builder}
 import chisel3.experimental.{BaseModule, ExtModule, SourceInfo}
 import chisel3.internal.sourceinfo.InstanceTransform
 import chisel3.internal.firrtl.{Component, DefBlackBox, DefModule, Port}
 import firrtl.annotations.IsModule
-import chisel3.internal.throwException
+
+import scala.annotation.nowarn
 
 /** User-facing Instance type.
-  * Represents a unique instance of type [[A]] which are marked as @instantiable
+  * Represents a unique instance of type `A` which are marked as @instantiable
   * Can be created using Instance.apply method.
   *
   * @param underlying The internal representation of the instance, which may be either be directly the object, or a clone of an object
@@ -30,6 +31,7 @@ final case class Instance[+A] private[chisel3] (private[chisel3] underlying: Und
     case Proto(value: IsInstantiable) => None
     case Clone(i: BaseModule) => Some(i)
     case Clone(i: InstantiableClone[_]) => i.getInnerContext
+    case _ => throw new InternalErrorException("Match error: underlying=$underlying")
   }
 
   /** @return the context this instance. Note that for non-module clones, getInnerDataContext will be the same as getClonedParent */
@@ -37,10 +39,11 @@ final case class Instance[+A] private[chisel3] (private[chisel3] underlying: Und
     case Proto(value: BaseModule) => value._parent
     case Clone(i: BaseModule) => i._parent
     case Clone(i: InstantiableClone[_]) => i.getInnerContext
+    case _ => throw new InternalErrorException("Match error: underlying=$underlying")
   }
 
   /** Used by Chisel's internal macros. DO NOT USE in your normal Chisel code!!!
-    * Instead, mark the field you are accessing with [[@public]]
+    * Instead, mark the field you are accessing with [[public]]
     *
     * Given a selector function (that) which selects a member from the original, return the
     *   corresponding member from the instance.
@@ -78,6 +81,7 @@ object Instance extends SourceInfoDoc {
     def toTarget: IsModule = i.underlying match {
       case Proto(x: BaseModule) => x.getTarget
       case Clone(x: IsClone[_] with BaseModule) => x.getTarget
+      case _ => throw new InternalErrorException("Match error: i.underlying=${i.underlying}")
     }
 
     /** If this is an instance of a Module, returns the toAbsoluteTarget of this instance
@@ -86,8 +90,8 @@ object Instance extends SourceInfoDoc {
     def toAbsoluteTarget: IsModule = i.underlying match {
       case Proto(x) => x.toAbsoluteTarget
       case Clone(x: IsClone[_] with BaseModule) => x.toAbsoluteTarget
+      case _ => throw new InternalErrorException("Match error: i.underlying=${i.underlying}")
     }
-
   }
 
   /** A constructs an [[Instance]] from a [[Definition]]
@@ -106,8 +110,7 @@ object Instance extends SourceInfoDoc {
   def do_apply[T <: BaseModule with IsInstantiable](
     definition: Definition[T]
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): Instance[T] = {
     // Check to see if the module is already defined internally or externally
     val existingMod = Builder.components.map {
@@ -119,7 +122,7 @@ object Instance extends SourceInfoDoc {
     if (existingMod.isEmpty) {
       // Add a Definition that will get emitted as an ExtModule so that FIRRTL
       // does not complain about a missing element
-      val extModName = Builder.importDefinitionMap.getOrElse(
+      val extModName = Builder.importedDefinitionMap.getOrElse(
         definition.proto.name,
         throwException(
           "Imported Definition information not found - possibly forgot to add ImportDefinition annotation?"
@@ -132,7 +135,7 @@ object Instance extends SourceInfoDoc {
           _closed = true
           val firrtlPorts = definition.proto.getModulePortsAndLocators.map {
             case (port, sourceInfo) =>
-              Port(port, port.specifiedDirection, sourceInfo)
+              Port(port, port.specifiedDirection, sourceInfo): @nowarn // Deprecated code allowed for internal use
           }
           val component = DefBlackBox(this, definition.proto.name, firrtlPorts, SpecifiedDirection.Unspecified, params)
           Some(component)

@@ -2,17 +2,18 @@
 
 package chisel3.stage.phases
 
-import chisel3.experimental.RunFirrtlTransform
 import chisel3.internal.firrtl.Converter
 import chisel3.stage.ChiselCircuitAnnotation
-import firrtl.{AnnotationSeq, Transform}
+import firrtl.AnnotationSeq
 import firrtl.options.{Dependency, Phase}
-import firrtl.stage.{FirrtlCircuitAnnotation, RunFirrtlTransformAnnotation}
+import firrtl.stage.FirrtlCircuitAnnotation
 
-/** This prepares a [[ChiselCircuitAnnotation]] for compilation with FIRRTL. This does three things:
-  *   - Uses [[chisel3.internal.firrtl.Converter]] to generate a [[FirrtlCircuitAnnotation]]
-  *   - Extracts all [[firrtl.annotations.Annotation]]s from the [[chisel3.internal.firrtl.Circuit]]
-  *   - Generates any needed [[RunFirrtlTransformAnnotation]]s from extracted [[firrtl.annotations.Annotation]]s
+import scala.annotation.nowarn
+
+/** This prepares a `ChiselCircuitAnnotation for compilation with FIRRTL. This does three things:
+  *   - Uses `chisel3.internal.firrtl.Converter` to generate a FirrtlCircuitAnnotation`
+  *   - Extracts all `firrtl.annotations.Annotation`s from the `chisel3.internal.firrtl.Circuit`
+  *   - Generates any needed `RunFirrtlTransformAnnotation`s from extracted `firrtl.annotations.Annotation`s
   */
 class Convert extends Phase {
 
@@ -21,16 +22,15 @@ class Convert extends Phase {
   override def optionalPrerequisiteOf = Seq(Dependency[MaybeInjectingPhase])
   override def invalidates(a: Phase) = false
 
+  @nowarn("msg=Do not use annotations val of Circuit directly")
   def transform(annotations: AnnotationSeq): AnnotationSeq = annotations.flatMap {
     case a: ChiselCircuitAnnotation =>
       Some(a) ++
         /* Convert this Chisel Circuit to a FIRRTL Circuit */
         Some(FirrtlCircuitAnnotation(Converter.convert(a.circuit))) ++
         /* Convert all Chisel Annotations to FIRRTL Annotations */
-        a.circuit.firrtlAnnotations ++
-        a.circuit.annotations.collect {
-          case anno: RunFirrtlTransform => anno.transformClass
-        }.distinct.map { c: Class[_ <: Transform] => RunFirrtlTransformAnnotation(c.newInstance()) }
+        //TODO: clean up this code when firrtl is merged
+        a.circuit.firrtlAnnotations
     case a => Some(a)
   }
 

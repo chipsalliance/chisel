@@ -5,15 +5,11 @@ package chiselTests
 import chisel3._
 import chisel3.util.Counter
 import chisel3.testers._
-import chisel3.experimental.{BaseModule, ChiselAnnotation, RunFirrtlTransform}
+import chisel3.experimental.{BaseModule, ChiselAnnotation}
 import chisel3.util.experimental.BoringUtils
 
-import firrtl.{ChirrtlForm, CircuitForm, CircuitState, DependencyAPIMigration, Transform}
-import firrtl.annotations.{Annotation, NoTargetAnnotation}
-import firrtl.options.Dependency
-import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
-import firrtl.passes.wiring.{WiringException, WiringTransform}
-import firrtl.stage.Forms
+import firrtl.annotations.Annotation
+import firrtl.transforms.DontTouchAnnotation
 
 abstract class ShouldntAssertTester(cyclesToWait: BigInt = 4) extends BasicTester {
   val dut: BaseModule
@@ -21,17 +17,8 @@ abstract class ShouldntAssertTester(cyclesToWait: BigInt = 4) extends BasicTeste
   when(done) { stop() }
 }
 
-class StripNoDedupAnnotation extends Transform with DependencyAPIMigration {
-  override def prerequisites = Forms.ChirrtlForm
-  override def optionalPrerequisites = Seq.empty
-  override def optionalPrerequisiteOf = Dependency[WiringTransform] +: Forms.ChirrtlEmitters
-  override def invalidates(a: Transform) = false
-  def execute(state: CircuitState): CircuitState = {
-    state.copy(annotations = state.annotations.filter { case _: NoDedupAnnotation => false; case _ => true })
-  }
-}
-
-class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
+class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with MatchesAndOmits {
+  val args = Array("--throw-on-first-error", "--full-stacktrace")
 
   class BoringInverter extends Module {
     val io = IO(new Bundle {})
@@ -95,12 +82,16 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
     BoringUtils.bore(dut.sources(2).x, Seq(dut.sinks(3).x, dut.sinks(4).x, dut.sinks(5).x))
   }
 
-  trait FailViaDedup { this: TopTester =>
-    case object FooAnnotation extends NoTargetAnnotation
-    chisel3.experimental.annotate(new ChiselAnnotation with RunFirrtlTransform {
-      def toFirrtl:       Annotation = FooAnnotation
-      def transformClass: Class[_ <: Transform] = classOf[StripNoDedupAnnotation]
-    })
+  class TopTesterFail extends ShouldntAssertTester {
+    val dut = Module(new Top(4))
+    BoringUtils.addSource(dut.sources(1).x, "foo", disableDedup = true)
+    BoringUtils.addSink(dut.sinks(1).x, "foo", disableDedup = true)
+    BoringUtils.addSink(dut.sinks(2).x, "foo", disableDedup = true)
+
+    BoringUtils.addSource(dut.sources(2).x, "bar", disableDedup = true)
+    BoringUtils.addSink(dut.sinks(3).x, "bar", disableDedup = true)
+    BoringUtils.addSink(dut.sinks(4).x, "bar", disableDedup = true)
+    BoringUtils.addSink(dut.sinks(5).x, "bar", disableDedup = true)
   }
 
   behavior.of("BoringUtils.bore")
@@ -109,10 +100,13 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
     runTester(new TopTester, annotations = TesterDriver.verilatorOnly) should be(true)
   }
 
-  it should "throw an exception if NoDedupAnnotations are removed" in {
-    intercept[WiringException] {
-      runTester(new TopTester with FailViaDedup, annotations = Seq(TesterDriver.VerilatorBackend))
-    }.getMessage should startWith("Unable to determine source mapping for sink")
+  // TODO: this test is not really testing anything as MFC does boring during
+  // LowerAnnotations (which happens right after parsing).  Consider reworking
+  // this into a test that uses D/I (or some other mechanism of having a
+  // pre-deduplicated circuit).  This is likely better handled as a test in
+  // CIRCT than in Chisel.
+  it should "still work even with dedup off" in {
+    runTester(new TopTesterFail, annotations = Seq(TesterDriver.VerilatorBackend))
   }
 
   class InternalBore extends RawModule {
@@ -132,4 +126,180 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
     runTester(new InternalBoreTester, annotations = TesterDriver.verilatorOnly) should be(true)
   }
 
+  it should "work using new API" in {
+    class Baz extends RawModule {
+      val a_wire = WireInit(UInt(1.W), DontCare)
+      dontTouch(a_wire)
+    }
+    class Bar extends RawModule {
+      val b_wire = WireInit(UInt(2.W), DontCare)
+      dontTouch(b_wire)
+
+      val baz = Module(new Baz)
+    }
+    class Foo extends RawModule {
+      val a = IO(Output(UInt()))
+      val b = IO(Output(UInt()))
+      val c = IO(Output(UInt()))
+
+      val c_wire = WireInit(UInt(3.W), DontCare)
+      dontTouch(c_wire)
+
+      val bar = Module(new Bar)
+
+      a := BoringUtils.bore(bar.baz.a_wire)
+      b := BoringUtils.bore(bar.b_wire)
+      c := BoringUtils.bore(c_wire)
+    }
+    matchesAndOmits(circt.stage.ChiselStage.emitCHIRRTL(new Foo))(
+      "module Baz :",
+      "output a_bore : UInt<1>",
+      "a_bore <= a_wire",
+      "module Bar :",
+      "output b_bore : UInt<2>",
+      "a_bore <= baz.a_bore",
+      "b_bore <= b_wire",
+      "module Foo :",
+      "a <= a_bore",
+      "b <= b_bore",
+      "c <= c_wire",
+      "a_bore <= bar.a_bore",
+      "b_bore <= bar.b_bore"
+    )()
+  }
+
+  it should "bore up and down through the lowest common ancestor" in {
+    class Bar extends RawModule {
+      val a = Wire(Bool())
+    }
+
+    class Baz(_a: Bool) extends RawModule {
+      val b = WireInit(Bool(), BoringUtils.bore(_a))
+    }
+
+    class Foo extends RawModule {
+      val bar = Module(new Bar)
+      val baz = Module(new Baz(bar.a))
+    }
+
+    matchesAndOmits(circt.stage.ChiselStage.emitCHIRRTL(new Foo))(
+      "module Bar :",
+      "output b_bore : UInt<1>",
+      "b_bore <= a",
+      "module Baz :",
+      "input b_bore : UInt<1>",
+      "wire b_bore_1 : UInt<1>",
+      "b_bore_1 <= b_bore",
+      "b <= b_bore_1",
+      "module Foo",
+      "baz.b_bore <= bar.b_bore"
+    )()
+  }
+
+  it should "not work over a Definition/Instance boundary" in {
+    import chisel3.experimental.hierarchy._
+    @instantiable
+    class Bar extends RawModule {
+      @public val a_wire = WireInit(UInt(1.W), DontCare)
+    }
+    class Foo extends RawModule {
+      val bar = Instance(Definition((new Bar)))
+      BoringUtils.bore(bar.a_wire)
+    }
+    val e = intercept[Exception] {
+      circt.stage.ChiselStage.emitCHIRRTL(new Foo, args)
+    }
+    e.getMessage should include("Cannot bore across a Definition/Instance boundary")
+  }
+
+  it should "work boring upwards" in {
+    import chisel3.experimental.hierarchy._
+    class Bar(parentData: Data) extends RawModule {
+      val q = Wire(UInt(1.W))
+      q := BoringUtils.bore(parentData)
+    }
+    class Foo extends RawModule {
+      val a = IO(Input(UInt(1.W)))
+      val bar = Module(new Bar(a))
+    }
+    matchesAndOmits(circt.stage.ChiselStage.emitCHIRRTL(new Foo))(
+      "module Bar :",
+      "input q_bore : UInt<1>",
+      "q <= q_bore_1", // Do normal connection before secret ones
+      "q_bore_1 <= q_bore",
+      "module Foo :",
+      "input a : UInt<1>",
+      "bar.q_bore <= a"
+    )()
+  }
+
+  it should "be included in DataMirror.modulePorts" in {
+    import chisel3.reflect.DataMirror
+    class Bar extends RawModule {
+      val a_wire = WireInit(UInt(1.W), DontCare)
+      dontTouch(a_wire)
+    }
+    class Foo extends RawModule {
+      val a = IO(Output(UInt()))
+      val bar = Module(new Bar)
+      //val preBore = DataMirror.modulePorts(bar)
+      a := BoringUtils.bore(bar.a_wire)
+      val postBore = DataMirror.modulePorts(bar)
+      postBore.size should be(1)
+    }
+    circt.stage.ChiselStage.emitCHIRRTL(new Foo, args)
+  }
+  it should "fail if bore after calling DataMirror.modulePorts" in {
+    import chisel3.reflect.DataMirror
+    class Bar extends RawModule {
+      val a_wire = WireInit(UInt(1.W), DontCare)
+      dontTouch(a_wire)
+    }
+    class Foo extends RawModule {
+      val a = IO(Output(UInt()))
+      val bar = Module(new Bar)
+      val preBore = DataMirror.modulePorts(bar)
+      a := BoringUtils.bore(bar.a_wire)
+    }
+    val (log, res) = grabLog(
+      intercept[Exception] {
+        circt.stage.ChiselStage.emitCHIRRTL(new Foo)
+      }
+    )
+    log should include("Reflecting on all io's fully closes Bar, but it is later bored through!")
+    log should include("Can only bore into modules that are not fully closed")
+  }
+  it should "be ok if with .toDefinition, if it is after boring" in {
+    import chisel3.reflect.DataMirror
+    class Bar extends RawModule {
+      val a_wire = WireInit(UInt(1.W), DontCare)
+      dontTouch(a_wire)
+    }
+    class Foo extends RawModule {
+      val a = IO(Output(UInt()))
+      val bar = Module(new Bar)
+      a := BoringUtils.bore(bar.a_wire)
+      bar.toDefinition
+    }
+
+  }
+  it should "error if ever bored after calling .toDefinition" in {
+    import chisel3.reflect.DataMirror
+    class Bar extends RawModule {
+      val a_wire = WireInit(UInt(1.W), DontCare)
+    }
+    class Foo extends RawModule {
+      val bar = Module(new Bar)
+      bar.toDefinition
+      BoringUtils.bore(bar.a_wire)
+    }
+
+    val (log, res) = grabLog(
+      intercept[Exception] {
+        circt.stage.ChiselStage.emitCHIRRTL(new Foo)
+      }
+    )
+    log should include("Calling .toDefinition fully closes Bar, but it is later bored through!")
+    log should include("Can only bore into modules that are not fully closed")
+  }
 }

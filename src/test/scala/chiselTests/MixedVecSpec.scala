@@ -6,7 +6,6 @@ import circt.stage.ChiselStage
 import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util._
-import org.scalacheck.Shrink
 
 class MixedVecAssignTester(w: Int, values: List[Int]) extends BasicTester {
   val v = MixedVecInit(values.map(v => v.U(w.W)))
@@ -154,11 +153,6 @@ class MixedVecOneBitTester extends BasicTester {
 }
 
 class MixedVecSpec extends ChiselPropSpec with Utils {
-  // Disable shrinking on error.
-  // Not sure why this needs to be here, but the test behaves very weirdly without it (e.g. empty Lists, etc).
-  implicit val noShrinkListVal = Shrink[List[Int]](_ => Stream.empty)
-  implicit val noShrinkInt = Shrink[Int](_ => Stream.empty)
-
   property("MixedVec varargs API should work") {
     assertTesterPasses {
       new BasicTester {
@@ -213,21 +207,21 @@ class MixedVecSpec extends ChiselPropSpec with Utils {
 
   property("MixedVecs should not be able to take hardware types") {
     a[ExpectedChiselTypeException] should be thrownBy extractCause[ExpectedChiselTypeException] {
-      ChiselStage.elaborate(new Module {
+      ChiselStage.emitCHIRRTL(new Module {
         val io = IO(new Bundle {})
         val hw = Wire(MixedVec(Seq(UInt(8.W), Bool())))
         val illegal = MixedVec(hw)
       })
     }
     a[ExpectedChiselTypeException] should be thrownBy extractCause[ExpectedChiselTypeException] {
-      ChiselStage.elaborate(new Module {
+      ChiselStage.emitCHIRRTL(new Module {
         val io = IO(new Bundle {})
         val hw = Reg(MixedVec(Seq(UInt(8.W), Bool())))
         val illegal = MixedVec(hw)
       })
     }
     a[ExpectedChiselTypeException] should be thrownBy extractCause[ExpectedChiselTypeException] {
-      ChiselStage.elaborate(new Module {
+      ChiselStage.emitCHIRRTL(new Module {
         val io = IO(new Bundle {
           val v = Input(MixedVec(Seq(UInt(8.W), Bool())))
         })
@@ -262,7 +256,7 @@ class MixedVecSpec extends ChiselPropSpec with Utils {
 
   property("Connecting a MixedVec and something of different size should report a ChiselException") {
     an[IllegalArgumentException] should be thrownBy extractCause[IllegalArgumentException] {
-      ChiselStage.elaborate(new Module {
+      ChiselStage.emitCHIRRTL(new Module {
         val io = IO(new Bundle {
           val out = Output(MixedVec(Seq(UInt(8.W), Bool())))
         })
@@ -271,7 +265,7 @@ class MixedVecSpec extends ChiselPropSpec with Utils {
       })
     }
     an[IllegalArgumentException] should be thrownBy extractCause[IllegalArgumentException] {
-      ChiselStage.elaborate(new Module {
+      ChiselStage.emitCHIRRTL(new Module {
         val io = IO(new Bundle {
           val out = Output(MixedVec(Seq(UInt(8.W), Bool())))
         })

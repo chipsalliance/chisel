@@ -3,10 +3,9 @@
 package chiselTests
 
 import chisel3._
-import circt.stage.ChiselStage
-import chisel3.util.{Counter, Queue}
 import chisel3.testers.BasicTester
-import firrtl.checks.CheckResets.NonLiteralAsyncResetValueException
+import chisel3.util.{Counter, Queue}
+import circt.stage.ChiselStage
 
 class AsyncResetTester extends BasicTester {
   val (_, cDiv) = Counter(true.B, 4)
@@ -143,27 +142,29 @@ class AsyncResetSpec extends ChiselFlatSpec with Utils {
   behavior.of("AsyncReset")
 
   it should "be able to be connected to DontCare" in {
-    ChiselStage.elaborate(new AsyncResetDontCareModule)
+    ChiselStage.emitCHIRRTL(new AsyncResetDontCareModule)
   }
 
   it should "be allowed with literal reset values" in {
-    ChiselStage.elaborate(new BasicTester {
+    ChiselStage.emitCHIRRTL(new BasicTester {
       withReset(reset.asAsyncReset)(RegInit(123.U))
     })
   }
 
   it should "NOT be allowed with non-literal reset values" in {
-    a[NonLiteralAsyncResetValueException] should be thrownBy extractCause[NonLiteralAsyncResetValueException] {
+    val e = intercept[RuntimeException] {
       compile(new BasicTester {
         val x = WireInit(123.U + 456.U)
         withReset(reset.asAsyncReset)(RegInit(x))
       })
     }
+    e.getMessage should include
+    ("error: register \"REG\" has an async reset, but its reset value \"x\" is not driven with a constant value through wires, nodes, or connects")
   }
 
   it should "NOT be allowed to connect directly to a Bool" in {
     a[ChiselException] should be thrownBy extractCause[ChiselException] {
-      ChiselStage.elaborate(new BasicTester {
+      ChiselStage.emitCHIRRTL(new BasicTester {
         val bool = Wire(Bool())
         val areset = reset.asAsyncReset
         bool := areset
@@ -180,7 +181,7 @@ class AsyncResetSpec extends ChiselFlatSpec with Utils {
   }
 
   it should "allow casting to and from Bool" in {
-    ChiselStage.elaborate(new BasicTester {
+    ChiselStage.emitCHIRRTL(new BasicTester {
       val r: Reset = reset
       val a: AsyncReset = WireInit(r.asAsyncReset)
       val b: Bool = a.asBool
@@ -203,37 +204,6 @@ class AsyncResetSpec extends ChiselFlatSpec with Utils {
         chisel3.assert(reg === 27.S)
       }.otherwise {
         chisel3.assert(reg === -43.S)
-      }
-      when(done) { stop() }
-    })
-  }
-
-  it should "support Fixed regs" in {
-    assertTesterPasses(new BasicTester {
-      val reg = withReset(reset.asAsyncReset)(RegNext(-6.0.F(2.BP), 3.F(2.BP)))
-      val (count, done) = Counter(true.B, 4)
-      when(count === 0.U) {
-        chisel3.assert(reg === 3.F(2.BP))
-      }.otherwise {
-        chisel3.assert(reg === -6.0.F(2.BP))
-      }
-      when(done) { stop() }
-    })
-  }
-
-  it should "support Interval regs" in {
-    import chisel3.experimental._
-    assertTesterPasses(new BasicTester {
-      val reg = withReset(reset.asAsyncReset) {
-        val x = RegInit(Interval(range"[0,13]"), 13.I)
-        x := 7.I
-        x
-      }
-      val (count, done) = Counter(true.B, 4)
-      when(count === 0.U) {
-        chisel3.assert(reg === 13.I)
-      }.otherwise {
-        chisel3.assert(reg === 7.I)
       }
       when(done) { stop() }
     })

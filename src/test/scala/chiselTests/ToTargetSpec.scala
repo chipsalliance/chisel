@@ -3,13 +3,12 @@
 package chiselTests
 
 import chisel3._
-import chisel3.internal.ChiselException
 import circt.stage.ChiselStage
 
 class ToTargetSpec extends ChiselFlatSpec with Utils {
 
   var m: InstanceNameModule = _
-  ChiselStage.elaborate { m = new InstanceNameModule; m }
+  ChiselStage.emitCHIRRTL { m = new InstanceNameModule; m }
 
   val mn = "InstanceNameModule"
   val top = s"~$mn|$mn"
@@ -40,7 +39,7 @@ class ToTargetSpec extends ChiselFlatSpec with Utils {
 
   it should "work with modules" in {
     val q = m.q.toTarget.toString
-    assert(q == s"~$mn|Queue")
+    assert(q == s"~$mn|Queue4_UInt32")
   }
 
   it should "error on non-hardware types and provide information" in {
@@ -54,7 +53,7 @@ class ToTargetSpec extends ChiselFlatSpec with Utils {
 
     val e = the[ChiselException] thrownBy extractCause[ChiselException] {
       var e: Example = null
-      chisel3.stage.ChiselStage.elaborate { e = new Example; e }
+      circt.stage.ChiselStage.emitCHIRRTL { e = new Example; e }
       e.tpe.toTarget
     }
     e.getMessage should include(

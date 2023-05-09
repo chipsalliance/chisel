@@ -8,10 +8,10 @@ class SourceLocatorSpec extends ChiselFunSpec with Utils {
   describe("(0) Relative source paths") {
     it("(0.a): are emitted by default relative to `user-dir`") {
       class Top extends Module {
-        val w = Wire(UInt(1.W))
+        val w = WireInit(UInt(1.W), 0.U)
       }
-      val (chirrtl, _) = getFirrtlAndAnnos(new Top)
-      chirrtl.serialize should include("@[src/test/scala/chiselTests/SourceLocatorSpec.scala")
+      val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
+      chirrtl should include("@[src/test/scala/chiselTests/SourceLocatorSpec.scala")
     }
   }
 }

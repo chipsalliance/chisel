@@ -10,7 +10,7 @@ import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{MemTransform, SourceInfoTransform}
-import chisel3.experimental.{SourceInfo, SourceLine, UnlocatableSourceInfo}
+import chisel3.experimental.{SourceInfo, SourceLine}
 
 object Mem {
 
@@ -33,28 +33,30 @@ object Mem {
     size: BigInt,
     t:    T
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): Mem[T] = {
-    if (compileOptions.declaredTypeMustBeUnbound) {
-      requireIsChiselType(t, "memory type")
-    }
+    requireIsChiselType(t, "memory type")
     val mt = t.cloneTypeFull
-    val mem = new Mem(mt, size)
+    val mem = new Mem(mt, size, sourceInfo)
     mt.bind(MemTypeBinding(mem))
     pushCommand(DefMemory(sourceInfo, mem, mt, size))
     mem
   }
 
   /** @group SourceInfoTransformMacro */
-  def do_apply[T <: Data](size: Int, t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Mem[T] =
-    do_apply(BigInt(size), t)(sourceInfo, compileOptions)
+  def do_apply[T <: Data](size: Int, t: T)(implicit sourceInfo: SourceInfo): Mem[T] =
+    do_apply(BigInt(size), t)(sourceInfo)
 }
 
-sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
+sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt, sourceInfo: SourceInfo)
     extends HasId
     with NamedComponent
     with SourceInfoDoc {
+
+  if (t.isConst) Builder.error("Mem type cannot be const.")(sourceInfo)
+
+  requireNoProbeTypeModifier(t, "Cannot make a Mem of a Chisel type with a probe modifier.")(sourceInfo)
+
   _parent.foreach(_.addId(this))
 
   // if the memory is created in a scope with an implicit clock (-> clockInst is defined), we will perform checks that
@@ -78,7 +80,7 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
   def apply(x: BigInt): T = macro SourceInfoTransform.xArg
 
   /** @group SourceInfoTransformMacro */
-  def do_apply(idx: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+  def do_apply(idx: BigInt)(implicit sourceInfo: SourceInfo): T = {
     require(idx >= 0 && idx < length)
     apply(idx.asUInt, Builder.forcedClock)
   }
@@ -89,8 +91,8 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
   def apply(x: Int): T = macro SourceInfoTransform.xArg
 
   /** @group SourceInfoTransformMacro */
-  def do_apply(idx: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
-    do_apply(BigInt(idx))(sourceInfo, compileOptions)
+  def do_apply(idx: Int)(implicit sourceInfo: SourceInfo): T =
+    do_apply(BigInt(idx))(sourceInfo)
 
   /** Creates a read/write accessor into the memory with dynamic addressing.
     * See the class documentation of the memory for more detailed information.
@@ -98,12 +100,12 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
   def apply(x: UInt): T = macro SourceInfoTransform.xArg
 
   /** @group SourceInfoTransformMacro */
-  def do_apply(idx: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
+  def do_apply(idx: UInt)(implicit sourceInfo: SourceInfo): T =
     do_apply_impl(idx, Builder.forcedClock, MemPortDirection.INFER, true)
 
   def apply(x: UInt, y: Clock): T = macro SourceInfoTransform.xyArg
 
-  def do_apply(idx: UInt, clock: Clock)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
+  def do_apply(idx: UInt, clock: Clock)(implicit sourceInfo: SourceInfo): T =
     do_apply_impl(idx, clock, MemPortDirection.INFER, false)
 
   /** Creates a read accessor into the memory with dynamic addressing. See the
@@ -112,7 +114,7 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
   def read(x: UInt): T = macro SourceInfoTransform.xArg
 
   /** @group SourceInfoTransformMacro */
-  def do_read(idx: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
+  def do_read(idx: UInt)(implicit sourceInfo: SourceInfo): T =
     do_apply_impl(idx, Builder.forcedClock, MemPortDirection.READ, true)
 
   /** Creates a read accessor into the memory with dynamic addressing.
@@ -123,7 +125,7 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
   def read(x: UInt, y: Clock): T = macro SourceInfoTransform.xyArg
 
   /** @group SourceInfoTransformMacro */
-  def do_read(idx: UInt, clock: Clock)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
+  def do_read(idx: UInt, clock: Clock)(implicit sourceInfo: SourceInfo): T =
     do_apply_impl(idx, clock, MemPortDirection.READ, false)
 
   protected def do_apply_impl(
@@ -132,8 +134,7 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
     dir:   MemPortDirection,
     warn:  Boolean
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): T = {
     if (warn && clockInst.isDefined && clock != clockInst.get) {
       clockWarning(Some(sourceInfo), dir)
@@ -146,7 +147,10 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
     * @param idx memory element index to write into
     * @param data new data to write
     */
-  def write(idx: UInt, data: T)(implicit compileOptions: CompileOptions): Unit =
+  def write(idx: UInt, data: T): Unit = macro SourceInfoTransform.idxDataArg
+
+  /** @group SourceInfoTransformMacro */
+  def do_write(idx: UInt, data: T)(implicit sourceInfo: SourceInfo): Unit =
     write_impl(idx, data, Builder.forcedClock, true)
 
   /** Creates a write accessor into the memory with a clock
@@ -156,7 +160,10 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
     * @param data new data to write
     * @param clock clock to bind to this accessor
     */
-  def write(idx: UInt, data: T, clock: Clock)(implicit compileOptions: CompileOptions): Unit =
+  def write(idx: UInt, data: T, clock: Clock): Unit = macro SourceInfoTransform.idxDataClockArg
+
+  /** @group SourceInfoTransformMacro */
+  def do_write(idx: UInt, data: T, clock: Clock)(implicit sourceInfo: SourceInfo): Unit =
     write_impl(idx, data, clock, false)
 
   private def write_impl(
@@ -165,13 +172,12 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
     clock: Clock,
     warn:  Boolean
   )(
-    implicit compileOptions: CompileOptions
+    implicit sourceInfo: SourceInfo
   ): Unit = {
     if (warn && clockInst.isDefined && clock != clockInst.get) {
       clockWarning(None, MemPortDirection.WRITE)
     }
-    implicit val sourceInfo = UnlocatableSourceInfo
-    makePort(UnlocatableSourceInfo, idx, MemPortDirection.WRITE, clock) := data
+    makePort(sourceInfo, idx, MemPortDirection.WRITE, clock) := data
   }
 
   /** Creates a masked write accessor into the memory.
@@ -184,12 +190,20 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
     * @note this is only allowed if the memory's element data type is a Vec
     */
   def write(
+    idx:       UInt,
+    writeData: T,
+    mask:      Seq[Bool]
+  )(
+    implicit evidence: T <:< Vec[_]
+  ): Unit = macro SourceInfoTransform.idxDataMaskArg
+
+  def do_write(
     idx:  UInt,
     data: T,
     mask: Seq[Bool]
   )(
     implicit evidence: T <:< Vec[_],
-    compileOptions:    CompileOptions
+    sourceInfo:        SourceInfo
   ): Unit =
     masked_write_impl(idx, data, mask, Builder.forcedClock, true)
 
@@ -205,13 +219,22 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
     * @note this is only allowed if the memory's element data type is a Vec
     */
   def write(
+    idx:       UInt,
+    writeData: T,
+    mask:      Seq[Bool],
+    clock:     Clock
+  )(
+    implicit evidence: T <:< Vec[_]
+  ): Unit = macro SourceInfoTransform.idxDataMaskClockArg
+
+  def do_write(
     idx:   UInt,
     data:  T,
     mask:  Seq[Bool],
     clock: Clock
   )(
     implicit evidence: T <:< Vec[_],
-    compileOptions:    CompileOptions
+    sourceInfo:        SourceInfo
   ): Unit =
     masked_write_impl(idx, data, mask, clock, false)
 
@@ -223,9 +246,8 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
     warn:  Boolean
   )(
     implicit evidence: T <:< Vec[_],
-    compileOptions:    CompileOptions
+    sourceInfo:        SourceInfo
   ): Unit = {
-    implicit val sourceInfo = UnlocatableSourceInfo
     if (warn && clockInst.isDefined && clock != clockInst.get) {
       clockWarning(None, MemPortDirection.WRITE)
     }
@@ -246,8 +268,6 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
     idx:        UInt,
     dir:        MemPortDirection,
     clock:      Clock
-  )(
-    implicit compileOptions: CompileOptions
   ): T = {
     if (Builder.currentModule != _parent) {
       throwException(
@@ -255,7 +275,7 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
       )
     }
     requireIsHardware(idx, "memory port index")
-    val i = Vec.truncateIndex(idx, length)(sourceInfo, compileOptions)
+    val i = Vec.truncateIndex(idx, length)(sourceInfo)
 
     val port = pushCommand(
       DefMemPort(sourceInfo, t.cloneTypeFull, Node(this), dir, i.ref, clock.ref)
@@ -275,7 +295,8 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt)
   * @note when multiple conflicting writes are performed on a Mem element, the
   * result is undefined (unlike Vec, where the last assignment wins)
   */
-sealed class Mem[T <: Data] private[chisel3] (t: T, length: BigInt) extends MemBase(t, length) {
+sealed class Mem[T <: Data] private[chisel3] (t: T, length: BigInt, sourceInfo: SourceInfo)
+    extends MemBase(t, length, sourceInfo) {
   override protected def clockWarning(sourceInfo: Option[SourceInfo], dir: MemPortDirection): Unit = {
     // Do not issue clock warnings on reads, since they are not clocked
     if (dir != MemPortDirection.READ)
@@ -312,14 +333,11 @@ object SyncReadMem {
     t:    T,
     ruw:  ReadUnderWrite = Undefined
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): SyncReadMem[T] = {
-    if (compileOptions.declaredTypeMustBeUnbound) {
-      requireIsChiselType(t, "memory type")
-    }
+    requireIsChiselType(t, "memory type")
     val mt = t.cloneTypeFull
-    val mem = new SyncReadMem(mt, size, ruw)
+    val mem = new SyncReadMem(mt, size, ruw, sourceInfo)
     mt.bind(MemTypeBinding(mem))
     pushCommand(DefSeqMemory(sourceInfo, mem, mt, size, ruw))
     mem
@@ -331,10 +349,9 @@ object SyncReadMem {
     size: Int,
     t:    T
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): SyncReadMem[T] =
-    do_apply(BigInt(size), t)(sourceInfo, compileOptions)
+    do_apply(BigInt(size), t)(sourceInfo)
 
   /** @group SourceInfoTransformMacro */
   // Alternate signatures can't use default parameter values
@@ -343,10 +360,9 @@ object SyncReadMem {
     t:    T,
     ruw:  ReadUnderWrite
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): SyncReadMem[T] =
-    do_apply(BigInt(size), t, ruw)(sourceInfo, compileOptions)
+    do_apply(BigInt(size), t, ruw)(sourceInfo)
 }
 
 /** A sequential/synchronous-read, sequential/synchronous-write memory.
@@ -359,25 +375,29 @@ object SyncReadMem {
   * @note when multiple conflicting writes are performed on a Mem element, the
   * result is undefined (unlike Vec, where the last assignment wins)
   */
-sealed class SyncReadMem[T <: Data] private[chisel3] (t: T, n: BigInt, val readUnderWrite: SyncReadMem.ReadUnderWrite)
-    extends MemBase[T](t, n) {
+sealed class SyncReadMem[T <: Data] private[chisel3] (
+  t:                  T,
+  n:                  BigInt,
+  val readUnderWrite: SyncReadMem.ReadUnderWrite,
+  sourceInfo:         SourceInfo)
+    extends MemBase[T](t, n, sourceInfo) {
 
   override def read(x: UInt): T = macro SourceInfoTransform.xArg
 
   /** @group SourceInfoTransformMacro */
-  override def do_read(idx: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
+  override def do_read(idx: UInt)(implicit sourceInfo: SourceInfo): T =
     do_read(idx = idx, en = true.B)
 
   def read(x: UInt, en: Bool): T = macro SourceInfoTransform.xEnArg
 
   /** @group SourceInfoTransformMacro */
-  def do_read(idx: UInt, en: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
+  def do_read(idx: UInt, en: Bool)(implicit sourceInfo: SourceInfo): T =
     _read_impl(idx, en, Builder.forcedClock, true)
 
   def read(idx: UInt, en: Bool, clock: Clock): T = macro SourceInfoTransform.idxEnClockArg
 
   /** @group SourceInfoTransformMacro */
-  def do_read(idx: UInt, en: Bool, clock: Clock)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
+  def do_read(idx: UInt, en: Bool, clock: Clock)(implicit sourceInfo: SourceInfo): T =
     _read_impl(idx, en, clock, false)
 
   /** @group SourceInfoTransformMacro */
@@ -387,18 +407,238 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (t: T, n: BigInt, val readU
     clock:  Clock,
     warn:   Boolean
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): T = {
-    val a = Wire(UInt())
-    a := DontCare
-    var port: Option[T] = None
+    var _port: Option[T] = None
+    val _a = WireDefault(chiselTypeOf(addr), DontCare)
     when(enable) {
-      a := addr
-      port = Some(super.do_apply_impl(a, clock, MemPortDirection.READ, warn))
+      _a := addr
+      _port = Some(super.do_apply_impl(_a, clock, MemPortDirection.READ, warn))
     }
-    port.get
+    _port.get
   }
   // note: we implement do_read(addr) for SyncReadMem in terms of do_read(addr, en) in order to ensure that
   //       `mem.read(addr)` will always behave the same as `mem.read(addr, true.B)`
+
+  /** Generates an explicit read-write port for this SyncReadMem. Note that this does not infer
+    * port directionality based on connection semantics and the `when` context unlike SyncReadMem.apply(),
+    * so the behavior of the port must be controlled by changing the values of the input parameters.
+    *
+    * @param idx memory element index to write into
+    * @param writeData new data to write
+    * @param enable enables access to the memory
+    * @param isWrite performs a write instead of a read when enable is true; the return
+    * value becomes undefined when this parameter is true
+    *
+    * @return The read data of the memory, which gives the value at idx when enable is true and isWrite is false,
+    * or an undefined value otherwise, on the following clock cycle.
+    *
+    * @example Controlling a read/write port with IO signals
+    * {{{
+    * class MyMemWrapper extends Module {
+    *   val width = 2
+    *
+    *   val io = IO(new Bundle {
+    *     val address = Input(UInt())
+    *     val wdata = Input(UInt(width.W))
+    *     val enable = Input(Bool())
+    *     val isWrite = Input(Bool())
+    *     val rdata = Output(UInt(width.W))
+    *   })
+    *
+    *   val mem = SyncReadMem(2, UInt(width.W))
+    *   io.rdata := mem.readWrite(io.address, io.wdata, io.enable, io.isWrite)
+    * }
+    *
+    * }}}
+    */
+  def readWrite(idx: UInt, writeData: T, en: Bool, isWrite: Bool): T = macro SourceInfoTransform.idxDataEnIswArg
+
+  /** @group SourceInfoTransformMacro */
+  def do_readWrite(idx: UInt, writeData: T, en: Bool, isWrite: Bool)(implicit sourceInfo: SourceInfo): T =
+    _readWrite_impl(idx, writeData, en, isWrite, Builder.forcedClock, true)
+
+  /** Generates an explicit read-write port for this SyncReadMem, using a clock that may be
+    * different from the implicit clock.
+    *
+    * @param idx memory element index to write into
+    * @param writeData new data to write
+    * @param enable enables access to the memory
+    * @param isWrite performs a write instead of a read when enable is true; the return
+    * value becomes undefined when this parameter is true
+    * @param clock clock to bind to this read-write port
+    *
+    * @return The read data of the memory, which gives the value at idx when enable is true and isWrite is false,
+    * or an undefined value otherwise, on the following clock cycle.
+    */
+  def readWrite(idx: UInt, writeData: T, en: Bool, isWrite: Bool, clock: Clock): T =
+    macro SourceInfoTransform.idxDataEnIswClockArg
+
+  /** @group SourceInfoTransformMacro */
+  def do_readWrite(
+    idx:     UInt,
+    data:    T,
+    en:      Bool,
+    isWrite: Bool,
+    clock:   Clock
+  )(
+    implicit sourceInfo: SourceInfo
+  ): T =
+    _readWrite_impl(idx, data, en, isWrite, clock, true)
+
+  /** @group SourceInfoTransformMacro */
+  private def _readWrite_impl(
+    addr:    UInt,
+    data:    T,
+    enable:  Bool,
+    isWrite: Bool,
+    clock:   Clock,
+    warn:    Boolean
+  )(
+    implicit sourceInfo: SourceInfo
+  ): T = {
+    var _port: Option[T] = None
+    val _a = WireDefault(chiselTypeOf(addr), DontCare)
+    when(enable) {
+      _a := addr
+      _port = Some(super.do_apply_impl(_a, clock, MemPortDirection.RDWR, warn))
+
+      when(isWrite) {
+        _port.get := data
+      }
+    }
+    _port.get
+  }
+
+  /** Generates an explicit read-write port for this SyncReadMem, with a bytemask for
+    * performing partial writes to a Vec element.
+    *
+    * @param idx memory element index to write into
+    * @param writeData new data to write
+    * @param mask the write mask as a Seq of Bool: a write to the Vec element in
+    * memory is only performed if the corresponding mask index is true.
+    * @param enable enables access to the memory
+    * @param isWrite performs a write instead of a read when enable is true; the return
+    * value becomes undefined when this parameter is true
+    *
+    * @return The read data Vec of the memory at idx when enable is true and isWrite is false,
+    * or an undefined value otherwise, on the following clock cycle
+    *
+    * @example Controlling a read/masked write port with IO signals
+    * {{{
+    * class MyMaskedMemWrapper extends Module {
+    *   val width = 2
+    *
+    *   val io = IO(new Bundle {
+    *     val address = Input(UInt())
+    *     val wdata = Input(Vec(2, UInt(width.W)))
+    *     val mask = Input(Vec(2, Bool()))
+    *     val enable = Input(Bool())
+    *     val isWrite = Input(Bool())
+    *     val rdata = Output(Vec(2, UInt(width.W)))
+    *   })
+    *
+    *   val mem = SyncReadMem(2, Vec(2, UInt(width.W)))
+    *   io.rdata := mem.readWrite(io.address, io.wdata, io.mask, io.enable, io.isWrite)
+    * }
+    * }}}
+    *
+    * @note this is only allowed if the memory's element data type is a Vec
+    */
+  def readWrite(
+    idx:       UInt,
+    writeData: T,
+    mask:      Seq[Bool],
+    en:        Bool,
+    isWrite:   Bool
+  )(
+    implicit evidence: T <:< Vec[_]
+  ): T = macro SourceInfoTransform.idxDataMaskEnIswArg
+
+  def do_readWrite(
+    idx:       UInt,
+    writeData: T,
+    mask:      Seq[Bool],
+    en:        Bool,
+    isWrite:   Bool
+  )(
+    implicit evidence: T <:< Vec[_],
+    sourceInfo:        SourceInfo
+  ): T = masked_readWrite_impl(idx, writeData, mask, en, isWrite, Builder.forcedClock, true)
+
+  /** Generates an explicit read-write port for this SyncReadMem, with a bytemask for
+    * performing partial writes to a Vec element and a clock that may be different from
+    * the implicit clock.
+    *
+    * @param idx memory element index to write into
+    * @param writeData new data to write
+    * @param mask the write mask as a Seq of Bool: a write to the Vec element in
+    * memory is only performed if the corresponding mask index is true.
+    * @param enable enables access to the memory
+    * @param isWrite performs a write instead of a read when enable is true; the return
+    * value becomes undefined when this parameter is true
+    * @param clock clock to bind to this read-write port
+    *
+    * @return The read data Vec of the memory at idx when enable is true and isWrite is false,
+    * or an undefined value otherwise, on the following clock cycle
+    *
+    * @note this is only allowed if the memory's element data type is a Vec
+    */
+  def readWrite(
+    idx:       UInt,
+    writeData: T,
+    mask:      Seq[Bool],
+    en:        Bool,
+    isWrite:   Bool,
+    clock:     Clock
+  )(
+    implicit evidence: T <:< Vec[_]
+  ): T = macro SourceInfoTransform.idxDataMaskEnIswClockArg
+
+  def do_readWrite(
+    idx:       UInt,
+    writeData: T,
+    mask:      Seq[Bool],
+    en:        Bool,
+    isWrite:   Bool,
+    clock:     Clock
+  )(
+    implicit evidence: T <:< Vec[_],
+    sourceInfo:        SourceInfo
+  ) = masked_readWrite_impl(idx, writeData, mask, en, isWrite, clock, true)
+
+  private def masked_readWrite_impl(
+    addr:    UInt,
+    data:    T,
+    mask:    Seq[Bool],
+    enable:  Bool,
+    isWrite: Bool,
+    clock:   Clock,
+    warn:    Boolean
+  )(
+    implicit evidence: T <:< Vec[_],
+    sourceInfo:        SourceInfo
+  ): T = {
+    var _port: Option[T] = None
+    val _a = WireDefault(chiselTypeOf(addr), DontCare)
+    when(enable) {
+      _a := addr
+      _port = Some(super.do_apply_impl(_a, clock, MemPortDirection.RDWR, warn))
+      val accessor = _port.get.asInstanceOf[Vec[Data]]
+
+      when(isWrite) {
+        val dataVec = data.asInstanceOf[Vec[Data]]
+        if (accessor.length != dataVec.length) {
+          Builder.error(s"Mem write data must contain ${accessor.length} elements (found ${dataVec.length})")
+        }
+        if (accessor.length != mask.length) {
+          Builder.error(s"Mem write mask must contain ${accessor.length} elements (found ${mask.length})")
+        }
+
+        for (((cond, p), datum) <- mask.zip(accessor).zip(dataVec))
+          when(cond) { p := datum }
+      }
+    }
+    _port.get
+  }
 }

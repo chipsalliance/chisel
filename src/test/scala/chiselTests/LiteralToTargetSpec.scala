@@ -11,7 +11,7 @@ class LiteralToTargetSpec extends AnyFreeSpec with Matchers {
 
   "Literal Data should fail to be converted to ReferenceTarget" in {
 
-    (the[chisel3.internal.ChiselException] thrownBy {
+    (the[ChiselException] thrownBy {
 
       class Bar extends RawModule {
         val a = 1.U
@@ -22,7 +22,7 @@ class LiteralToTargetSpec extends AnyFreeSpec with Matchers {
         bar.a.toTarget
       }
 
-      ChiselStage.elaborate(new Foo)
+      ChiselStage.emitCHIRRTL(new Foo)
     } should have).message("Illegal component name: UInt<1>(\"h01\") (note: literals are illegal)")
   }
 }

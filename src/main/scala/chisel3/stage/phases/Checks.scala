@@ -2,14 +2,14 @@
 
 package chisel3.stage.phases
 
-import chisel3.stage.{ChiselOutputFileAnnotation, NoRunFirrtlCompilerAnnotation, PrintFullStackTraceAnnotation}
+import chisel3.stage.{ChiselOutputFileAnnotation, PrintFullStackTraceAnnotation}
 
 import firrtl.AnnotationSeq
 import firrtl.annotations.Annotation
 import firrtl.options.{Dependency, OptionsException, Phase}
 
 /** Sanity checks an [[firrtl.AnnotationSeq]] before running the main [[firrtl.options.Phase]]s of
-  * [[chisel3.stage.ChiselStage]].
+  * `chisel3.stage.ChiselStage`.
   */
 class Checks extends Phase {
 
@@ -19,25 +19,16 @@ class Checks extends Phase {
   override def invalidates(a: Phase) = false
 
   def transform(annotations: AnnotationSeq): AnnotationSeq = {
-    val noF, st, outF = collection.mutable.ListBuffer[Annotation]()
+    val st, outF = collection.mutable.ListBuffer[Annotation]()
     annotations.foreach {
-      case a: NoRunFirrtlCompilerAnnotation.type => a +=: noF
       case a: PrintFullStackTraceAnnotation.type => a +=: st
       case a: ChiselOutputFileAnnotation         => a +=: outF
       case _ =>
     }
 
-    if (noF.size > 1) {
-      throw new OptionsException(
-        s"""|At most one NoRunFirrtlCompilerAnnotation can be specified, but found '${noF.size}'. Did you duplicate:
-            |    - option or annotation: -chnrf, --no-run-firrtl, NoRunFirrtlCompilerAnnotation
-            |""".stripMargin
-      )
-    }
-
     if (st.size > 1) {
       throw new OptionsException(
-        s"""|At most one PrintFullStackTraceAnnotation can be specified, but found '${noF.size}'. Did you duplicate:
+        s"""|At most one PrintFullStackTraceAnnotation can be specified, but found '${st.size}'. Did you duplicate:
             |    - option or annotation: --full-stacktrace, PrintFullStackTraceAnnotation
             |""".stripMargin
       )

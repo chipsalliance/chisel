@@ -19,12 +19,9 @@ sealed class Clock(private[chisel3] val width: Width = Width(1)) extends Element
 
   def cloneType: this.type = Clock().asInstanceOf[this.type]
 
-  private[chisel3] def typeEquivalent(that: Data): Boolean =
-    this.getClass == that.getClass
-
-  override def connect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit =
+  override def connect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
     that match {
-      case _: Clock | DontCare => super.connect(that)(sourceInfo, connectCompileOptions)
+      case _: Clock | DontCare => super.connect(that)(sourceInfo)
       case _ => super.badConnect(that)(sourceInfo)
     }
 
@@ -36,16 +33,15 @@ sealed class Clock(private[chisel3] val width: Width = Width(1)) extends Element
   /** Returns the contents of the clock wire as a [[Bool]]. */
   final def asBool: Bool = macro SourceInfoTransform.noArg
 
-  def do_asBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = this.asUInt.asBool
+  def do_asBool(implicit sourceInfo: SourceInfo): Bool = this.asUInt.asBool
 
-  override def do_asUInt(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): UInt = pushOp(
+  override def do_asUInt(implicit sourceInfo: SourceInfo): UInt = pushOp(
     DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref)
   )
   private[chisel3] override def connectFromBits(
     that: Bits
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): Unit = {
     this := that.asBool.asClock
   }

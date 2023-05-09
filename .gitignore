@@ -17,4 +17,6 @@ test_run_dir
 .\#*
 .metals
 .bloop
+.scala-build
 metals.sbt
+version.txt

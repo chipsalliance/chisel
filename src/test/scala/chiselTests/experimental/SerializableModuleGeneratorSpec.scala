@@ -56,7 +56,7 @@ class SerializableModuleGeneratorSpec extends ChiselFlatSpec with Utils {
   }
 
   "SerializableModuleGenerator" should "be able to elaborate" in {
-    chisel3.stage.ChiselStage.emitChirrtl(g.module())
+    circt.stage.ChiselStage.emitCHIRRTL(g.module())
   }
 
   case class FooParameter() extends SerializableModuleParameter
@@ -66,7 +66,7 @@ class SerializableModuleGeneratorSpec extends ChiselFlatSpec with Utils {
   "InnerClass" should "not be able to serialize" in {
     assert(
       intercept[java.lang.IllegalArgumentException](
-        chisel3.stage.ChiselStage.emitChirrtl(
+        circt.stage.ChiselStage.emitCHIRRTL(
           {
             SerializableModuleGenerator(
               classOf[InnerFoo],

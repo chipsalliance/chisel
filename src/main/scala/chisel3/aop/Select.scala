@@ -3,16 +3,14 @@
 package chisel3.aop
 
 import chisel3._
-import chisel3.internal.{HasId}
+import chisel3.internal.{HasId, PseudoModule}
 import chisel3.experimental.BaseModule
-import chisel3.experimental.FixedPoint
 import chisel3.internal.firrtl.{Definition => DefinitionIR, _}
 import chisel3.experimental.hierarchy.core._
-import chisel3.internal.PseudoModule
 import chisel3.experimental.hierarchy.ModuleClone
 import firrtl.annotations.ReferenceTarget
-import scala.reflect.runtime.universe.TypeTag
 
+import scala.reflect.runtime.universe.TypeTag
 import scala.collection.mutable
 
 /** Use to select Chisel components in a module, after that module has been constructed
@@ -317,7 +315,7 @@ object Select {
   }
 
   /** Selects a kind of arithmetic or logical operator directly instantiated within given module
-    * The kind of operators are contained in [[chisel3.internal.firrtl.PrimOp]]
+    * The kind of operators are contained in `chisel3.internal.firrtl.PrimOp`
     * @param opKind the kind of operator, e.g. "mux", "add", or "bits"
     * @param module
     */
@@ -418,15 +416,6 @@ object Select {
                 .foreach(x => assert(x._1 == x._2, s"Prepredicates $x must match for signal $signal"))
               predicatedConnects += PredicatedConnect(preds.dropRight(prePredicates.size), d, expData, isBulk = false)
             }
-          case PartialConnect(_, loc @ Node(d: Data), exp) =>
-            val effected = getEffected(loc).toSet
-            if (sensitivitySignals.intersect(effected).nonEmpty) {
-              val expData = getData(exp)
-              prePredicates.reverse
-                .zip(preds.reverse)
-                .foreach(x => assert(x._1 == x._2, s"Prepredicates $x must match for signal $signal"))
-              predicatedConnects += PredicatedConnect(preds.dropRight(prePredicates.size), d, expData, isBulk = true)
-            }
           case other =>
         }
       }
@@ -482,16 +471,16 @@ object Select {
   // Given a loc, return all subcomponents of id that could be assigned to in connect
   private def getEffected(a: Arg): Seq[Data] = a match {
     case Node(id: Data) => getIntermediateAndLeafs(id)
-    case Slot(imm, name)   => Seq(imm.id.asInstanceOf[Record].elements(name))
-    case Index(imm, value) => getEffected(imm)
+    case Slot(imm, name) => Seq(imm.id.asInstanceOf[Record].elements(name))
+    case Index(imm, _)   => getEffected(imm)
+    case _               => throw new InternalErrorException("Match error: a=$a")
   }
 
   // Given an arg, return the corresponding id. Don't use on a loc of a connect.
   private def getId(a: Arg): HasId = a match {
     case Node(id) => id
-    case l: ULit  => l.num.U(l.w)
-    case l: SLit  => l.num.S(l.w)
-    case l: FPLit => FixedPoint(l.num, l.w, l.binaryPoint)
+    case l: ULit => l.num.U(l.w)
+    case l: SLit => l.num.S(l.w)
     case other =>
       sys.error(s"Something went horribly wrong! I was expecting ${other} to be a lit or a node!")
   }
@@ -513,6 +502,7 @@ object Select {
     case e: ChiselException =>
       i.getOptionRef.get match {
         case l: LitArg => l.num.intValue.toString
+        case _ => throw new InternalErrorException("Match error: i.getOptionRef.get=${i.getOptionRef.get}")
       }
   }
 

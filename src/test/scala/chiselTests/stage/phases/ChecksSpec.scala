@@ -2,7 +2,7 @@
 
 package chiselTests.stage.phases
 
-import chisel3.stage.{ChiselOutputFileAnnotation, NoRunFirrtlCompilerAnnotation, PrintFullStackTraceAnnotation}
+import chisel3.stage.{ChiselOutputFileAnnotation, PrintFullStackTraceAnnotation}
 import chisel3.stage.phases.Checks
 
 import firrtl.AnnotationSeq
@@ -21,13 +21,8 @@ class ChecksSpec extends AnyFlatSpec with Matchers {
   behavior.of(classOf[Checks].toString)
 
   it should "do nothing on sane annotation sequences" in new Fixture {
-    val a = Seq(NoRunFirrtlCompilerAnnotation, PrintFullStackTraceAnnotation)
+    val a = Seq(PrintFullStackTraceAnnotation)
     phase.transform(a).toSeq should be(a)
-  }
-
-  it should "throw an OptionsException if more than one NoRunFirrtlCompilerAnnotation is specified" in new Fixture {
-    val a = Seq(NoRunFirrtlCompilerAnnotation, NoRunFirrtlCompilerAnnotation)
-    checkExceptionMessage(phase, a, "At most one NoRunFirrtlCompilerAnnotation")
   }
 
   it should "throw an OptionsException if more than one PrintFullStackTraceAnnotation is specified" in new Fixture {

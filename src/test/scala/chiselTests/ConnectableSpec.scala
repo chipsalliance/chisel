@@ -3,14 +3,16 @@
 package chiselTests
 
 import org.scalatest._
-
 import chisel3._
-import chisel3.experimental.{Analog, FixedPoint}
+import chisel3.experimental.Analog
 import chisel3.experimental.BundleLiterals._
 import chisel3.experimental.VecLiterals._
-import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
-import chisel3.experimental.{DataMirror, OpaqueType}
+import chisel3.experimental.OpaqueType
+import chisel3.reflect.DataMirror
+
+import scala.annotation.nowarn
+import circt.stage.ChiselStage
 import scala.collection.immutable.SeqMap
 
 object ConnectableSpec {
@@ -40,21 +42,24 @@ object ConnectableSpec {
     }
   }
 
-  def vec[T <: Data](tpe:                 T, n:          Int = 3)(implicit c: CompileOptions) = Vec(n, tpe)
-  def alignedBundle[T <: Data](fieldType: T)(implicit c: CompileOptions) = new Bundle {
+  def vec[T <: Data](tpe:                 T, n: Int = 3) = Vec(n, tpe)
+  def alignedBundle[T <: Data](fieldType: T) = new Bundle {
     val foo = Flipped(Flipped(fieldType))
     val bar = Flipped(Flipped(fieldType))
   }
-  def mixedBundle[T <: Data](fieldType: T)(implicit c: CompileOptions) = new Bundle {
+  def mixedBundle[T <: Data](fieldType: T) = new Bundle {
     val foo = Flipped(Flipped(fieldType))
     val bar = Flipped(fieldType)
   }
 
-  def alignedFooBundle[T <: Data](fieldType: T)(implicit c: CompileOptions) = new Bundle {
+  def alignedFooBundle[T <: Data](fieldType: T) = new Bundle {
     val foo = Flipped(Flipped(fieldType))
   }
-  def flippedBarBundle[T <: Data](fieldType: T)(implicit c: CompileOptions) = new Bundle {
+  def flippedBarBundle[T <: Data](fieldType: T) = new Bundle {
     val bar = Flipped(fieldType)
+  }
+  def opaqueType[T <: Data](fieldType: T) = new Record with OpaqueType {
+    lazy val elements = SeqMap("" -> Flipped(Flipped(fieldType)))
   }
 
   def allElementTypes(): Seq[() => Data] = Seq(() => UInt(3.W))
@@ -69,21 +74,12 @@ object ConnectableSpec {
   def mixedFieldModifiers(fieldType: () => Data): Seq[() => Data] = {
     allFieldModifiers(fieldType).flatMap(x => allFieldModifiers(x))
   }
-  object InCompatibility {
-    implicit val c = Chisel.defaultCompileOptions
-    class MyCompatibilityBundle(f: () => Data) extends Bundle {
-      val foo = f()
-    }
-  }
   class MyBundle(f: () => Data) extends Bundle {
     val baz = f()
   }
   def allBundles(fieldType: () => Data): Seq[() => Data] = {
     mixedFieldModifiers(fieldType).flatMap { f =>
-      Seq(
-        () => new MyBundle(f),
-        () => new InCompatibility.MyCompatibilityBundle(f)
-      )
+      Seq(() => new MyBundle(f))
     }
   }
   def allVecs(element: () => Data): Seq[() => Data] = {
@@ -113,8 +109,6 @@ object ConnectableSpec {
 class ConnectableSpec extends ChiselFunSpec with Utils {
   import ConnectableSpec._
 
-  val chiselStage = (new ChiselStage)
-
   def testCheck(firrtl: String, matches: Seq[String], nonMatches: Seq[String]): String = {
     val unmatched = matches.collect {
       case m if !firrtl.contains(m) => m
@@ -135,7 +129,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     op:                   (Data, Data) => Unit,
     monitorOp:            Option[(Data, Data) => Unit]
   ): String = {
-    chiselStage.emitChirrtl(
+    ChiselStage.emitCHIRRTL(
       gen = new ConnectionTest(outType, inType, inDrivesOut, op, monitorOp, nTmps),
       args = Array("--full-stacktrace", "--throw-on-first-error")
     )
@@ -315,6 +309,12 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       implicit val op: (Data, Data) => Unit = (x: Data, y: Data) => { y :<>= x }
       testException(Bool(), Bool(), "cannot be written")
       testException(mixedBundle(Bool()), mixedBundle(Bool()), "cannot be written")
+    }
+    it("(0.p): Emit '<=' between wires of OpaqueTypes") {
+      implicit val nTmps = 1
+      test(opaqueType(UInt(8.W)), Seq("io.out <= wiresOut_0", "wiresOut_0 <= wiresIn_0", "wiresIn_0 <= io.in"))
+      // Note that this test inverts Wires
+      test(opaqueType(Flipped(UInt(8.W))), Seq("wiresOut_0 <= io.out", "wiresIn_0 <= wiresOut_0", "io.in <= wiresIn_0"))
     }
     // TODO Write test that demonstrates multiple evaluation of producer: => T
   }
@@ -526,6 +526,14 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       testException(Bool(), Bool(), "cannot be written")
       testException(mixedBundle(Bool()), mixedBundle(Bool()), "cannot be written")
     }
+    it("(1.p): Emit '<=' for wires of OpaqueTypes with aligned elements") {
+      implicit val nTmps = 1
+      test(opaqueType(UInt(8.W)), Seq("io.out <= wiresOut_0", "wiresOut_0 <= wiresIn_0", "wiresIn_0 <= io.in"))
+    }
+    it("(1.q): Emit nothing between wires of OpaqueTypes with flipped elements") {
+      implicit val nTmps = 1
+      test(opaqueType(Flipped(UInt(8.W))), Nil, Seq("<="))
+    }
   }
   describe("(2): :>= ") {
     implicit val op: (Data, Data) => Unit = { _ :>= _ }
@@ -690,6 +698,14 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     it("(2.o): Error with 'cannot be written' if driving module input") {
       implicit val op: (Data, Data) => Unit = (x: Data, y: Data) => { y :<= x }
       testException(mixedBundle(Bool()), mixedBundle(Bool()), "cannot be written")
+    }
+    it("(2.p): Emit nothing for wires of OpaqueTypes with aligned elements") {
+      implicit val nTmps = 1
+      test(opaqueType(UInt(8.W)), Nil, Seq("<="))
+    }
+    it("(2.q): Emit '<=' between wires of OpaqueTypes with flipped elements") {
+      implicit val nTmps = 1
+      test(opaqueType(Flipped(UInt(8.W))), Seq("wiresOut_0 <= io.out", "wiresIn_0 <= wiresOut_0", "io.in <= wiresIn_0"))
     }
   }
   describe("(3): :#= ") {
@@ -957,7 +973,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         out :<>= in.waiveEach { case d: Decoupled if d.data.nonEmpty => d.data.toSeq }
       }
       testCheck(
-        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq(
           "out.foo.valid <= in.foo.valid",
           "in.foo.ready <= out.foo.ready"
@@ -972,7 +988,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         out :<>= in.waive(_.data.get)
       }
       testCheck(
-        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq(
           "out.valid <= in.valid",
           "in.ready <= out.ready"
@@ -1000,7 +1016,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         BundleMap.waive(out) :<>= BundleMap.waive(in)
       }
       testCheck(
-        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq(
           "out.valid <= in.valid",
           "in.ready <= out.ready",
@@ -1030,7 +1046,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         BundleMap.waive(out) :<>= BundleMap.waive(in)
       }
       testCheck(
-        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq(
           "out.valid <= in.valid",
           "in.ready <= out.ready",
@@ -1068,7 +1084,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         )
       }
       testCheck(
-        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq(
           "in2.v[0].ready <= out3.v[0].ready",
           "in2.v[1].ready <= out3.v[1].ready"
@@ -1108,7 +1124,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         out :<>= in.squeezeEach { case d: Decoupled => Seq(d.data) }
       }
       testCheck(
-        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq(
           "out.foo.valid <= in.foo.valid",
           "in.foo.ready <= out.foo.ready",
@@ -1124,7 +1140,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         out :<>= in.squeeze
       }
       testCheck(
-        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq(
           "out <= in"
         ),
@@ -1151,7 +1167,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         BundleMap.waive(out) :<>= BundleMap.waive(in).squeezeAll
       }
       testCheck(
-        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq(
           "out.valid <= in.valid",
           "in.ready <= out.ready",
@@ -1178,7 +1194,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         out3.squeezeAll :>= in3
       }
       testCheck(
-        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq(
           "in3.v[0].ready <= out3.v[0].ready",
           "in3.v[1].ready <= out3.v[1].ready",
@@ -1198,7 +1214,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         out :<>= in.squeeze
       }
       testCheck(
-        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq(
           "out <= in"
         ),
@@ -1225,12 +1241,175 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         out :<>= inB.squeezeEach { case d: OpaqueRecord => Seq(d) }
       }
       testCheck(
-        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq(
           "out.opaque <= inA.opaque",
           "out.opaque <= inB.opaque"
         ),
         Nil
+      )
+    }
+    it("(5.h) Squeeze all as") {
+      class NestedDecoupled1 extends Bundle { val foo = new Decoupled(true) }
+      class NestedDecoupled2 extends Bundle { val foo = new Decoupled(true) }
+      class MyModule extends Module {
+        val in = IO(Flipped(new NestedDecoupled1()))
+        val out = IO(new NestedDecoupled2())
+        out.squeezeAllAs[Data] :<>= in.squeezeAllAs[Data]
+      }
+      testCheck(
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
+        Seq(
+          "out.foo.valid <= in.foo.valid",
+          "in.foo.ready <= out.foo.ready",
+          "out.foo.data <= in.foo.data"
+        ),
+        Nil
+      )
+    }
+  }
+  describe("(E): Connectable excluding") {
+    import scala.collection.immutable.SeqMap
+    class Decoupled(val hasBigData: Boolean) extends Bundle {
+      val valid = Bool()
+      val ready = Flipped(Bool())
+      val data = if (hasBigData) UInt(32.W) else UInt(8.W)
+    }
+    class BundleMap(fields: SeqMap[String, () => Data]) extends Record {
+      val elements = fields.map { case (name, gen) => name -> gen() }
+    }
+    object BundleMap {
+      def onlyIncludeUnion[T <: Data](x: T, y: T): (Connectable[T], Connectable[T]) = {
+        val xFields = collection.mutable.ArrayBuffer[Data]()
+        val yFields = collection.mutable.ArrayBuffer[Data]()
+        DataMirror.collectMembersOverAll(x.asInstanceOf[Data], y.asInstanceOf[Data]) {
+          case (Some(a), None) => xFields += a
+          case (None, Some(a)) => yFields += a
+        }
+        (Connectable(x, Set.empty, Set.empty, xFields.toSet), Connectable(y, Set.empty, Set.empty, yFields.toSet))
+      }
+    }
+    class DecoupledGen[T <: Data](val gen: () => T) extends Bundle {
+      val valid = Bool()
+      val ready = Flipped(Bool())
+      val data = gen()
+    }
+    it("(E.a) Using exclude works for nested field") {
+      class NestedDecoupled(val hasBigData: Boolean) extends Bundle {
+        val foo = new Decoupled(hasBigData)
+      }
+      class MyModule extends Module {
+        val in = IO(Flipped(new NestedDecoupled(true)))
+        val out = IO(new NestedDecoupled(false))
+        out.excludeEach { case d: Decoupled => Seq(d.data) } :<>= in.excludeEach { case d: Decoupled => Seq(d.data) }
+      }
+      testCheck(
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
+        Seq(
+          "out.foo.valid <= in.foo.valid",
+          "in.foo.ready <= out.foo.ready"
+        ),
+        Seq(
+          "out.foo.data <= in.foo.data"
+        )
+      )
+    }
+    it("(E.b) exclude works on UInt") {
+      class MyModule extends Module {
+        val in = IO(Flipped(UInt(3.W)))
+        val out = IO(UInt(1.W))
+        out.exclude :<>= in.exclude
+      }
+      testCheck(
+        ChiselStage.emitCHIRRTL({ new MyModule() }),
+        Nil,
+        Seq(
+          "out <= in"
+        )
+      )
+    }
+    it("(E.c) BundleMap example can use programmatic excluding") {
+      class MyModule extends Module {
+        def ab = new BundleMap(
+          SeqMap(
+            "a" -> (() => UInt(2.W)),
+            "b" -> (() => UInt(2.W))
+          )
+        )
+        def bc = new BundleMap(
+          SeqMap(
+            "b" -> (() => UInt(2.W)),
+            "c" -> (() => UInt(2.W))
+          )
+        )
+        val in = IO(Flipped(new DecoupledGen(() => ab)))
+        val out = IO(new DecoupledGen(() => bc))
+        //Programmatic
+        val (cout, cin) = BundleMap.onlyIncludeUnion(out, in)
+        cout :<>= cin
+      }
+      testCheck(
+        ChiselStage.emitCHIRRTL({ new MyModule() }),
+        Seq(
+          "out.valid <= in.valid",
+          "in.ready <= out.ready",
+          "out.data.b <= in.data.b"
+        ),
+        Nil
+      )
+    }
+    it("(E.e) Mismatched aggregate containing backpressure can be excluded only if actually connecting") {
+      class OnlyBackPressure(width: Int) extends Bundle {
+        val ready = Flipped(UInt(width.W))
+      }
+      class MyModule extends Module {
+        // Have to nest in bundle because it calls the connecting-to-seq version
+        val in2 = IO(Flipped(new Bundle { val v = Vec(2, new OnlyBackPressure(2)) }))
+        val out3 = IO(new Bundle { val v = Vec(3, new OnlyBackPressure(2)) })
+        // Should do nothing, but also doesn't error, which is good
+        out3.exclude(_.v(2)) :<= in2
+        out3.exclude(_.v(2)) :>= in2
+      }
+      testCheck(
+        ChiselStage.emitCHIRRTL({ new MyModule() }),
+        Seq(
+          "in2.v[0].ready <= out3.v[0].ready",
+          "in2.v[1].ready <= out3.v[1].ready"
+        ),
+        Nil
+      )
+    }
+    it("(E.f) exclude works on OpaqueType") {
+      class OpaqueRecord(width: Int) extends Record with OpaqueType {
+        private val underlying = UInt(width.W)
+        val elements = SeqMap("" -> underlying)
+      }
+      class MyModule extends Module {
+        val in = IO(Input(new OpaqueRecord(4)))
+        val out = IO(Output(new OpaqueRecord(2)))
+        out.exclude :<>= in.exclude
+      }
+      testCheck(
+        ChiselStage.emitCHIRRTL({ new MyModule() }),
+        Nil,
+        Seq(
+          "out <= in"
+        )
+      )
+    }
+    it("(E.g) matched fields with one side excluded errors") {
+      class MyModule extends Module {
+        val in = IO(Flipped(new Decoupled(true)))
+        val out = IO(new Decoupled(true))
+        out.exclude(_.data) :<>= in
+      }
+      val e = intercept[ChiselException] {
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
+      }
+      assert(
+        e.getMessage.contains(
+          "excluded field MyModule.out.data: IO[UInt<32>] has matching non-excluded field MyModule.in.data: IO[UInt<32>]"
+        )
       )
     }
   }
@@ -1260,7 +1439,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         io.bar := DontCare
         io.bar :<>= io.foo.viewAsSupertype(Input((new SmallBundle)))
       }
-      val out = (new ChiselStage).emitChirrtl(gen = new ConnectSupertype(), args = Array("--full-stacktrace"))
+      val out = ChiselStage.emitCHIRRTL(gen = new ConnectSupertype(), args = Array("--full-stacktrace"))
       assert(out.contains("io.out.f1 <= io.in.f1"))
       assert(out.contains("io.out.f2 <= io.in.f2"))
       assert(!out.contains("io.out.f3 <= io.in.f3"))
@@ -1296,7 +1475,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         io.out := DontCare
         io.out.viewAsSupertype(new SmallBundle) :<>= io.in.viewAsSupertype(Flipped(new SmallBundle))
       }
-      val out = ChiselStage.emitChirrtl { new ConnectCommonTrait() }
+      val out = ChiselStage.emitCHIRRTL { new ConnectCommonTrait() }
       assert(!out.contains("io.out <= io.in"))
       assert(!out.contains("io.out <- io.in"))
       assert(out.contains("io.out.common <= io.in.common"))
@@ -1314,7 +1493,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         a :<>= Seq(0.U, 1.U, 2.U)
         b :<>= VecInit(0.U, 1.U, 2.U)
       }
-      val out = ChiselStage.emitChirrtl { new ConnectVecSeqAndVecVec() }
+      val out = ChiselStage.emitCHIRRTL { new ConnectVecSeqAndVecVec() }
       assert(out.contains("""a[0] <= UInt<1>("h0")"""))
       assert(out.contains("""a[1] <= UInt<1>("h1")"""))
       assert(out.contains("""a[2] <= UInt<2>("h2")"""))
@@ -1342,7 +1521,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         w1 :<>= w0
       }
       val out =
-        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
       testCheck(
         out,
         Seq(
@@ -1382,7 +1561,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         hasOptional.waive(_.optional.get) :<>= lacksOptional
       }
       val out =
-        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
       testCheck(
         out,
         Seq(
@@ -1406,7 +1585,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         out :<>= in.waiveAs[ReadyValid](_.data)
       }
       val out =
-        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
       testCheck(
         out,
         Seq(
@@ -1433,7 +1612,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         out.waiveAs[ReadyValid](_.data) :<>= in
       }
       val out =
-        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
       testCheck(
         out,
         Seq(
@@ -1460,7 +1639,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         (out: ReadyValid) :<>= in
       }
       intercept[Exception] {
-        (new ChiselStage).emitVerilog({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
       }
     }
     it("(8.e) A structurally identical but fully aligned monitor version of a bundle can easily be connected to") {
@@ -1477,7 +1656,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         monitor :#= in
       }
       val out =
-        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
       testCheck(
         out,
         Seq(
@@ -1506,7 +1685,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         monitor :#= in.waiveAs[ReadyValid](_.data)
       }
       val out =
-        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
       testCheck(
         out,
         Seq(
@@ -1531,7 +1710,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         out.waiveAs[Decoupled](_.echo) :<>= in
       }
       val out =
-        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
       testCheck(
         out,
         Seq(
@@ -1557,7 +1736,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         (out: Decoupled) :<>= in
       }
       intercept[Exception] {
-        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
       }
     }
     it("(8.i) Partial connect on records") {
@@ -1570,7 +1749,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         out.waiveAll :<>= in.waiveAll
       }
       testCheck(
-        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq("out.b <= in.b"),
         Nil
       )
@@ -1584,7 +1763,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         out.waiveAllAs[Bundle] :<>= in.waiveAllAs[Bundle]
       }
       testCheck(
-        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq("out.foo <= in.foo"),
         Nil
       )
@@ -1598,10 +1777,57 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         (out: Bundle) :<>= in.waiveEach[Bundle] { case x: Bool => Seq(x) }
       }
       testCheck(
-        (new ChiselStage).emitChirrtl({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq("out.foo <= in.foo"),
         Nil
       )
+    }
+    it("(8.k) Use unsafe") {
+      class BoolBundleA extends Bundle { val foo = UInt(); val bar = Bool() }
+      class BoolBundleB extends Bundle { val foo = UInt() }
+      class MyModule extends Module {
+        val in = IO(Flipped(new BoolBundleA))
+        val out = IO(new BoolBundleB)
+        out.unsafe :<>= in.unsafe
+      }
+      testCheck(
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
+        Seq("out.foo <= in.foo"),
+        Nil
+      )
+    }
+    it("(8.l) Use as") {
+      class BoolBundleA extends Bundle { val foo = UInt() }
+      class BoolBundleB extends Bundle { val foo = UInt() }
+      class MyModule extends Module {
+        val in = IO(Flipped(new BoolBundleA))
+        val out = IO(new BoolBundleB)
+        out.as[Data] :<>= in.as[Data]
+      }
+      testCheck(
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
+        Seq("out.foo <= in.foo"),
+        Nil
+      )
+    }
+    it("(8.m) Erroring connections are Builder.error, not Exception as") {
+      class MyModule extends Module {
+        val in = IO(Flipped(Bool()))
+        val out = IO(Bool())
+        val connectionGoesThrough =
+          try {
+            in :<>= out
+            true
+          } catch {
+            case e: Throwable => false
+          }
+        // Don't throw exception immediately
+        assert(connectionGoesThrough)
+      }
+      // Still catches error at the end
+      intercept[Exception] {
+        ChiselStage.emitCHIRRTL({ new MyModule() })
+      }
     }
   }
 }

@@ -57,10 +57,19 @@ class ChiselPlugin(val global: Global) extends Plugin {
   val components: List[PluginComponent] = List[PluginComponent](
     new ChiselComponent(global, arguments),
     new BundleComponent(global, arguments),
+    new IdentifierComponent(global, arguments),
     new DeprecateSFCComponent(global, arguments)
   )
 
   override def init(options: List[String], error: String => Unit): Boolean = {
+    // Deprecate Scala 2.12 via the compiler plugin
+    val scalaVersion = scala.util.Properties.versionNumberString.split('.')
+    if (scalaVersion(0).toInt == 2 && scalaVersion(1).toInt == 12) {
+      val msg = s"Chisel 5 is the last version that will support Scala 2.12. Please upgrade to Scala 2.13."
+
+      global.reporter.warning(NoPosition, msg)
+    }
+
     for (option <- options) {
       if (option == arguments.useBundlePluginOpt) {
         val msg = s"'${arguments.useBundlePluginFullOpt}' is now default behavior, you can remove the scalacOption."
@@ -68,9 +77,6 @@ class ChiselPlugin(val global: Global) extends Plugin {
       } else if (option.startsWith(arguments.skipFilePluginOpt)) {
         val filename = option.stripPrefix(arguments.skipFilePluginOpt)
         arguments.skipFiles += filename
-        // Be annoying and warn because users are not supposed to use this
-        val msg = s"Option -P:${ChiselPlugin.name}:$option should only be used for internal chisel3 compiler purposes!"
-        global.reporter.warning(NoPosition, msg)
       } else if (option == arguments.genBundleElementsOpt) {
         val msg = s"'${arguments.genBundleElementsOpt}' is now default behavior, you can remove the scalacOption."
         global.reporter.warning(NoPosition, msg)
