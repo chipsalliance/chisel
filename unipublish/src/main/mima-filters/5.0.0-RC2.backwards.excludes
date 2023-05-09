@@ -1,0 +1,3 @@
+ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.experimental.dataview.package.BundleUpcastable")
+ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.experimental.dataview.package.BundleUpcastable")
+ProblemFilters.exclude[MissingClassProblem]("chisel3.experimental.dataview.package$BundleUpcastable")
