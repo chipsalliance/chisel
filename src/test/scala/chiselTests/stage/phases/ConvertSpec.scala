@@ -42,7 +42,8 @@ class ConvertSpec extends AnyFlatSpec with Matchers {
       .foldLeft(annos)((a, p) => p.transform(a))
 
     info("FIRRTL circuit generated")
-    annosx.collect { case a: FirrtlCircuitAnnotation => a.circuit.main }.toSeq should be(Seq("foo"))
+    val circuit = annosx.collectFirst { case a: FirrtlCircuitAnnotation => a.circuit }.get
+    circuit.main should be("foo")
 
     info("FIRRTL annotations generated")
     annosx.collect { case a: ConvertSpecFirrtlAnnotation => a.name }.toSeq should be(Seq("bar"))

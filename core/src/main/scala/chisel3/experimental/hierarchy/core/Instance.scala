@@ -110,8 +110,7 @@ object Instance extends SourceInfoDoc {
   def do_apply[T <: BaseModule with IsInstantiable](
     definition: Definition[T]
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): Instance[T] = {
     // Check to see if the module is already defined internally or externally
     val existingMod = Builder.components.map {
@@ -123,7 +122,7 @@ object Instance extends SourceInfoDoc {
     if (existingMod.isEmpty) {
       // Add a Definition that will get emitted as an ExtModule so that FIRRTL
       // does not complain about a missing element
-      val extModName = Builder.importDefinitionMap.getOrElse(
+      val extModName = Builder.importedDefinitionMap.getOrElse(
         definition.proto.name,
         throwException(
           "Imported Definition information not found - possibly forgot to add ImportDefinition annotation?"

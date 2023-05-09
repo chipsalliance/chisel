@@ -33,4 +33,5 @@ object TestUtils {
     }.get
     (circuit, processedAnnos)
   }
+
 }

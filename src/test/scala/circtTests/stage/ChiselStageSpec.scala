@@ -24,9 +24,12 @@ object ChiselStageSpec {
     val b = Output(Bool())
   }
 
-  class Foo extends RawModule {
+  class Foo(hasDontTouch: Boolean = false) extends RawModule {
     val a = IO(new FooBundle)
     val b = IO(Flipped(new FooBundle))
+    if (hasDontTouch) {
+      dontTouch(a)
+    }
     b <> a
   }
 
@@ -60,6 +63,19 @@ object ChiselStageSpec {
     val qux = Module(new Qux)
     qux.a := a
     b := qux.b
+  }
+
+  import firrtl.annotations.NoTargetAnnotation
+  import firrtl.options.Unserializable
+  case object DummyAnnotation extends NoTargetAnnotation with Unserializable
+
+  class HasUnserializableAnnotation extends RawModule {
+    val a = IO(Input(Bool()))
+    val b = IO(Output(Bool()))
+    b := a
+    chisel3.experimental.annotate(new chisel3.experimental.ChiselAnnotation {
+      def toFirrtl = DummyAnnotation
+    })
   }
 
   class UserExceptionModule extends RawModule {
@@ -114,6 +130,8 @@ class TraceSpec {
 }
 
 class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
+
+  private val baseDir = os.pwd / "test_run_dir" / this.getClass.getSimpleName
 
   describe("ChiselStage") {
 
@@ -277,6 +295,45 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
         file should exist
       }
     }
+
+    it("should emit Annotations inline in emitted CHIRRTL") {
+      val targetDir = os.pwd / "ChiselStageSpec" / "should-inline-Annotations-in-emitted-CHIRRTL"
+
+      val args: Array[String] = Array(
+        "--target",
+        "chirrtl",
+        "--target-dir",
+        targetDir.toString
+      )
+
+      (new ChiselStage)
+        .execute(
+          args,
+          Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.Foo(hasDontTouch = true)))
+        )
+
+      info("output file included an Annotation")
+      os.read(targetDir / "Foo.fir") should include("firrtl.transforms.DontTouchAnnotation")
+    }
+
+    it("should NOT emit Unserializable Annotations inline in emitted CHIRRTL") {
+      val targetDir = baseDir / "should-not-inline-Unserializable-Annotations-in-emitted-CHIRRTL"
+
+      val args: Array[String] = Array(
+        "--target",
+        "chirrtl",
+        "--target-dir",
+        targetDir.toString
+      )
+
+      (new ChiselStage)
+        .execute(
+          args,
+          Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.HasUnserializableAnnotation))
+        )
+
+      os.read(targetDir / "HasUnserializableAnnotation.fir") shouldNot include("DummyAnnotation")
+    }
   }
 
   describe("ChiselStage exception handling") {
@@ -404,7 +461,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
       val lines = stdout.split("\n")
       // Fuzzy includes aren't ideal but there is ANSI color in these strings that is hard to match
       lines(0) should include(
-        "src/test/scala/circtTests/stage/ChiselStageSpec.scala:74:9: Negative shift amounts are illegal (got -1)"
+        "src/test/scala/circtTests/stage/ChiselStageSpec.scala:90:9: Negative shift amounts are illegal (got -1)"
       )
       lines(1) should include("    3.U >> -1")
       lines(2) should include("        ^")
@@ -425,7 +482,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
       // Fuzzy includes aren't ideal but there is ANSI color in these strings that is hard to match
       lines.size should equal(2)
       lines(0) should include(
-        "src/test/scala/circtTests/stage/ChiselStageSpec.scala:74:9: Negative shift amounts are illegal (got -1)"
+        "src/test/scala/circtTests/stage/ChiselStageSpec.scala:90:9: Negative shift amounts are illegal (got -1)"
       )
       (lines(1) should not).include("3.U >> -1")
     }
@@ -498,6 +555,13 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
       lines(idx + 2) should equal("         ^")
     }
 
+    it("should report the firtool version against which Chisel was published in error messages") {
+      val e = intercept[java.lang.Exception] {
+        ChiselStage.emitSystemVerilog(new ChiselStageSpec.ErrorCaughtByFirtool)
+      }
+      val version = chisel3.BuildInfo.firtoolVersion.getOrElse("<unknown>")
+      e.getMessage should include(s"firtool version $version")
+    }
   }
 
   describe("ChiselStage custom transform support") {
@@ -867,9 +931,15 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
 
     }
 
-    it("should emit specification FIRRTL (CHIRRTL)") {
+    it("should emit specification FIRRTL (CHIRRTL) with the correct FIRRTL spec version") {
 
-      ChiselStage.emitCHIRRTL(new ChiselStageSpec.Foo) should include("circuit Foo")
+      val text = ChiselStage.emitCHIRRTL(new ChiselStageSpec.Foo(hasDontTouch = true))
+      info("found a version string")
+      text should include("FIRRTL version 2.0.0")
+      info("found an Annotation")
+      text should include("firrtl.transforms.DontTouchAnnotation")
+      info("found a circuit")
+      text should include("circuit Foo")
 
     }
 
@@ -904,7 +974,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
 
       val sv = ChiselStage.emitSystemVerilog(
         new ChiselStageSpec.Foo,
-        Array("--show-registrations"),
+        Array("--full-stacktrace"),
         Array("--strip-debug-info")
       )
       sv should include("Generated by CIRCT")
@@ -935,6 +1005,18 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
       val expectedOutput = new File(targetDir, "Bar.sv")
       expectedOutput should (exist)
       info(s"'$expectedOutput' exists")
+    }
+
+    it("""should error if give a "--target-directory" option""") {
+
+      val exception = intercept[firrtl.options.OptionsException] {
+        ChiselStage.emitCHIRRTL(new ChiselStageSpec.Foo, Array("--target-directory")) should include("circuit Foo")
+      }
+
+      val message = exception.getMessage
+      info("""The exception includes "Unknown option"""")
+      message should include("Unknown option --target-directory")
+
     }
 
   }

@@ -2,14 +2,16 @@
 
 package chisel3.experimental.hierarchy
 
-import chisel3.experimental.BaseModule
+import chisel3.experimental.{BaseModule, SourceInfo}
 import chisel3.internal.{HasId, PseudoModule}
 import chisel3.internal.firrtl.{Component, ModuleCloneIO, Ref}
 import chisel3.internal.{throwException, Namespace}
 import chisel3._
 
 // Private internal class to serve as a _parent for Data in cloned ports
-private[chisel3] class ModuleClone[T <: BaseModule](val getProto: T) extends PseudoModule with core.IsClone[T] {
+private[chisel3] class ModuleClone[T <: BaseModule](val getProto: T)(implicit si: SourceInfo)
+    extends PseudoModule
+    with core.IsClone[T] {
   override def toString = s"ModuleClone(${getProto})"
   // Do not call default addId function, which may modify a module that is already "closed"
   override def addId(d: HasId): Unit = ()
@@ -33,14 +35,14 @@ private[chisel3] class ModuleClone[T <: BaseModule](val getProto: T) extends Pse
     getProto match {
       // BlackBox needs special handling for its pseduo-io Bundle
       case protoBB: BlackBox =>
-        Map(protoBB._io.get -> getPorts.elements("io"))
+        Map(protoBB._io.get -> getPorts._elements("io"))
       case _ =>
-        val name2Port = getPorts.elements
+        val name2Port = getPorts._elements
         getProto.getChiselPorts.map { case (name, data) => data -> name2Port(name) }.toMap
     }
   }
   // This module doesn't actually exist in the FIRRTL so no initialization to do
-  private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = ()
+  private[chisel3] def initializeInParent(): Unit = ()
 
   // Name of this instance's module is the same as the proto's name
   override def desiredName: String = getProto.name
@@ -62,7 +64,7 @@ private[chisel3] class ModuleClone[T <: BaseModule](val getProto: T) extends Pse
       case _: BlackBox =>
         // Override the io Bundle's ref so that it thinks it is the top for purposes of
         // generating FIRRTL
-        record.elements("io").setRef(ref, force = true)
+        record._elements("io").setRef(ref, force = true)
       case _ => // Do nothing
     }
 

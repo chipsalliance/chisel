@@ -416,15 +416,6 @@ object Select {
                 .foreach(x => assert(x._1 == x._2, s"Prepredicates $x must match for signal $signal"))
               predicatedConnects += PredicatedConnect(preds.dropRight(prePredicates.size), d, expData, isBulk = false)
             }
-          case PartialConnect(_, loc @ Node(d: Data), exp) =>
-            val effected = getEffected(loc).toSet
-            if (sensitivitySignals.intersect(effected).nonEmpty) {
-              val expData = getData(exp)
-              prePredicates.reverse
-                .zip(preds.reverse)
-                .foreach(x => assert(x._1 == x._2, s"Prepredicates $x must match for signal $signal"))
-              predicatedConnects += PredicatedConnect(preds.dropRight(prePredicates.size), d, expData, isBulk = true)
-            }
           case other =>
         }
       }

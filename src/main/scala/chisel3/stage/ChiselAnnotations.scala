@@ -12,13 +12,15 @@ import firrtl.options.{
   StageOptions,
   Unserializable
 }
+import firrtl.options.internal.WriteableCircuitAnnotation
 import firrtl.options.Viewer.view
 import chisel3.{deprecatedMFCMessage, ChiselException, Module}
 import chisel3.RawModule
 import chisel3.internal.Builder
-import chisel3.internal.firrtl.{Circuit, Emitter => OldEmitter}
+import chisel3.internal.firrtl.{Circuit, Converter}
 import firrtl.AnnotationSeq
-import java.io.File
+import firrtl.ir.{CircuitWithAnnos, Serializer}
+import java.io.{BufferedWriter, File, FileWriter}
 import java.lang.reflect.InvocationTargetException
 
 /** Mixin that indicates that this is an [[firrtl.annotations.Annotation]] used to generate a [[ChiselOptions]] view.
@@ -182,7 +184,8 @@ import CircuitSerializationAnnotation._
   */
 case class CircuitSerializationAnnotation(circuit: Circuit, filename: String, format: Format)
     extends NoTargetAnnotation
-    with BufferedCustomFileEmission {
+    with BufferedCustomFileEmission
+    with WriteableCircuitAnnotation {
   /* Caching the hashCode for a large circuit is necessary due to repeated queries.
    * Not caching the hashCode will cause severe performance degredations for large [[Circuit]]s.
    */
@@ -192,12 +195,39 @@ case class CircuitSerializationAnnotation(circuit: Circuit, filename: String, fo
 
   protected def suffix: Option[String] = Some(format.extension)
 
-  override def getBytesBuffered: Iterable[Array[Byte]] = format match {
-    case FirrtlFileFormat =>
-      OldEmitter
-        .emitLazily(circuit)
-        .map(_.getBytes)
+  /** Write the circuit and annotations to the .fir file
+    */
+  override protected def writeToFileImpl(file: File, annos: Seq[Annotation]): Unit = {
+    val writer = new BufferedWriter(new FileWriter(file))
+
+    val it = emitLazily(annos)
+    it.foreach(writer.write(_))
+    writer.close()
   }
+
+  // Make this API visible in package chisel3 as well
+  private[chisel3] def doWriteToFile(file: File, annos: Seq[Annotation]): Unit = writeToFileImpl(file, annos)
+
+  /** Emit the circuit including annotations
+    *
+    * @note This API is lazy to improve performance and enable emitting circuits larger than 2 GiB
+    */
+  def emitLazily(annos: Seq[Annotation]): Iterable[String] = {
+    // First emit all circuit logic without modules
+    val prelude = {
+      val dummyCircuit = circuit.copy(components = Nil)
+      val converted = Converter.convert(dummyCircuit)
+      val withAnnos = CircuitWithAnnos(converted, annos)
+      Serializer.lazily(withAnnos)
+    }
+    val modules = circuit.components.iterator.map(Converter.convert)
+    val moduleStrings = modules.flatMap { m =>
+      Serializer.lazily(m, 1) ++ Seq("\n\n")
+    }
+    prelude ++ moduleStrings
+  }
+
+  override def getBytesBuffered: Iterable[Array[Byte]] = emitLazily(Nil).map(_.getBytes)
 }
 
 case class ChiselOutputFileAnnotation(file: String) extends NoTargetAnnotation with ChiselOption with Unserializable

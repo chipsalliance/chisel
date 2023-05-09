@@ -34,7 +34,7 @@ class LiteralExtractorSpec extends ChiselFlatSpec {
   }
 
   "litOption" should "return None for non-literal hardware" in {
-    ChiselStage.elaborate {
+    ChiselStage.emitCHIRRTL {
       new RawModule {
         val a = Wire(UInt())
         assert(a.litOption == None)

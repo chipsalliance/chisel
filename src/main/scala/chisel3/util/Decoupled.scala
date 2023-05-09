@@ -21,11 +21,6 @@ import scala.annotation.nowarn
   * @groupdesc Signals The actual hardware fields of the Bundle
   */
 abstract class ReadyValidIO[+T <: Data](gen: T) extends Bundle {
-  // Compatibility hack for rocket-chip
-  private val genType = (DataMirror.internal.isSynthesizable(gen), chisel3.internal.Builder.currentModule) match {
-    case (true, Some(module: Module)) if !module.compileOptions.declaredTypeMustBeUnbound => chiselTypeOf(gen)
-    case _ => gen
-  }
 
   /** Indicates that the consumer is ready to accept the data this cycle
     * @group Signals
@@ -40,7 +35,12 @@ abstract class ReadyValidIO[+T <: Data](gen: T) extends Bundle {
   /** The data to be transferred when ready and valid are asserted at the same cycle
     * @group Signals
     */
-  val bits = Output(genType)
+  val bits = Output(gen)
+
+  /** A stable typeName for this `ReadyValidIO` and any of its implementations
+    * using the supplied `Data` generator's `typeName`
+    */
+  override def typeName = s"${this.getClass.getSimpleName}_${gen.typeName}"
 }
 
 object ReadyValidIO {
@@ -204,12 +204,12 @@ class QueueIO[T <: Data](
    *  but internally, the queue implementation itself sits on the other side
    *  of the interface so uses the flipped instance.
    */
-  /** I/O to enqueue data (client is producer, and Queue object is consumer), is [[Chisel.DecoupledIO]] flipped.
+  /** I/O to enqueue data (client is producer, and Queue object is consumer), is [[chisel3.util.DecoupledIO]] flipped.
     * @group Signals
     */
   val enq = Flipped(EnqIO(gen))
 
-  /** I/O to dequeue data (client is consumer and Queue object is producer), is [[Chisel.DecoupledIO]]
+  /** I/O to dequeue data (client is consumer and Queue object is producer), is [[chisel3.util.DecoupledIO]]
     * @group Signals
     */
   val deq = Flipped(DeqIO(gen))
@@ -247,25 +247,14 @@ class Queue[T <: Data](
   val pipe:           Boolean = false,
   val flow:           Boolean = false,
   val useSyncReadMem: Boolean = false,
-  val hasFlush:       Boolean = false
-)(
-  implicit compileOptions: chisel3.CompileOptions)
+  val hasFlush:       Boolean = false)
     extends Module() {
   require(entries > -1, "Queue must have non-negative number of entries")
   require(entries != 0, "Use companion object Queue.apply for zero entries")
-  val genType = if (compileOptions.declaredTypeMustBeUnbound) {
-    requireIsChiselType(gen)
-    gen
-  } else {
-    if (DataMirror.internal.isSynthesizable(gen)) {
-      chiselTypeOf(gen)
-    } else {
-      gen
-    }
-  }
+  requireIsChiselType(gen)
 
-  val io = IO(new QueueIO(genType, entries, hasFlush))
-  val ram = if (useSyncReadMem) SyncReadMem(entries, genType, SyncReadMem.WriteFirst) else Mem(entries, genType)
+  val io = IO(new QueueIO(gen, entries, hasFlush))
+  val ram = if (useSyncReadMem) SyncReadMem(entries, gen, SyncReadMem.WriteFirst) else Mem(entries, gen)
   val enq_ptr = Counter(entries)
   val deq_ptr = Counter(entries)
   val maybe_full = RegInit(false.B)
@@ -329,6 +318,11 @@ class Queue[T <: Data](
       Mux(deq_ptr.value > enq_ptr.value, entries.asUInt + ptr_diff, ptr_diff)
     )
   }
+
+  /** Give this Queue a default, stable desired name using the supplied `Data`
+    * generator's `typeName`
+    */
+  override def desiredName = s"Queue${entries}_${gen.typeName}"
 }
 
 /** Factory for a generic hardware queue. */

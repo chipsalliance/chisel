@@ -116,6 +116,32 @@ object InstantiateSpec {
     @public val out = IO(Output(gen))
     out := in
   }
+
+  sealed trait MyEnumeration
+  case object FooEnum extends MyEnumeration
+  case object BarEnum extends MyEnumeration
+  case class FizzEnum(value: Int) extends MyEnumeration
+  case class BuzzEnum(value: Int) extends MyEnumeration
+
+  class ModuleParameterizedByProductTypes(param: MyEnumeration) extends Module {
+    override def desiredName = s"${this.getClass.getSimpleName}_$param"
+    val gen = param match {
+      case FooEnum     => UInt(8.W)
+      case BarEnum     => SInt(8.W)
+      case FizzEnum(n) => Vec(n, UInt(8.W))
+      case BuzzEnum(n) => Vec(n, SInt(8.W))
+    }
+    @public val in = IO(Input(gen))
+    @public val out = IO(Output(gen))
+    out := in
+  }
+
+  class ModuleParameterizedBySeq(param: Seq[Int]) extends Module {
+    override def desiredName = s"${this.getClass.getSimpleName}_" + param.mkString("_")
+    @public val in = param.map(w => IO(Input(UInt(w.W))))
+    @public val out = param.map(w => IO(Output(UInt(w.W))))
+    out.zip(in).foreach { case (o, i) => o := i }
+  }
 }
 
 class InstantiateSpec extends ChiselFunSpec with Utils {
@@ -285,19 +311,6 @@ class InstantiateSpec extends ChiselFunSpec with Utils {
     }
   }
 
-  describe("Otherwise identital Modules Instantiated with different CompileOptions") {
-    it("should NOT use the same Definition") {
-      val modules = convert(new Top {
-        val inst0 = Instantiate(new NoArgs)
-        val inst1 = {
-          implicit val options = ExplicitCompileOptions.NotStrict
-          Instantiate(new NoArgs)
-        }
-      }).modules.map(_.name)
-      assert(modules == Seq("NoArgs", "NoArgs_1", "Top"))
-    }
-  }
-
   describe("The Instantiate cache") {
     it("should NOT be shared between elaborations within the same JVM run") {
       class MyTop extends Top {
@@ -308,6 +321,46 @@ class InstantiateSpec extends ChiselFunSpec with Utils {
       // Building the same thing a second time should work
       val modules2 = convert(new MyTop).modules.map(_.name)
       assert(modules2 == Seq("OneArg", "Top"))
+    }
+
+    it("should properly handle case objects as parameters") {
+      class MyTop extends Top {
+        val inst0 = Instantiate(new ModuleParameterizedByProductTypes(FooEnum))
+        val inst1 = Instantiate(new ModuleParameterizedByProductTypes(BarEnum))
+      }
+      val modules = convert(new MyTop).modules.map(_.name)
+      assert(
+        modules == Seq("ModuleParameterizedByProductTypes_FooEnum", "ModuleParameterizedByProductTypes_BarEnum", "Top")
+      )
+    }
+
+    it("should properly handle case classes as parameters") {
+      class MyTop extends Top {
+        val inst0 = Instantiate(new ModuleParameterizedByProductTypes(FizzEnum(3)))
+        val inst1 = Instantiate(new ModuleParameterizedByProductTypes(BuzzEnum(3)))
+      }
+      val modules = convert(new MyTop).modules.map(_.name)
+      assert(
+        modules == Seq(
+          "ModuleParameterizedByProductTypes_FizzEnum3",
+          "ModuleParameterizedByProductTypes_BuzzEnum3",
+          "Top"
+        )
+      )
+    }
+
+    it("should properly handle Iterables") {
+      class MyTop extends Top {
+        val inst0 = Instantiate(new ModuleParameterizedBySeq(List(1, 2, 3)))
+        val inst1 = Instantiate(new ModuleParameterizedBySeq(Vector(1, 2, 3)))
+      }
+      val modules = convert(new MyTop).modules.map(_.name)
+      assert(
+        modules == Seq(
+          "ModuleParameterizedBySeq_1_2_3",
+          "Top"
+        )
+      )
     }
   }
 

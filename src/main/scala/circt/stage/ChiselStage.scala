@@ -14,10 +14,20 @@ import chisel3.stage.{
 }
 import chisel3.stage.CircuitSerializationAnnotation.FirrtlFileFormat
 import firrtl.{AnnotationSeq, EmittedVerilogCircuitAnnotation}
-import firrtl.options.{Dependency, Phase, PhaseManager, Shell, Stage, StageMain}
+import firrtl.options.{
+  BareShell,
+  CustomFileEmission,
+  Dependency,
+  Phase,
+  PhaseManager,
+  Shell,
+  Stage,
+  StageMain,
+  Unserializable
+}
 import firrtl.stage.FirrtlCircuitAnnotation
 
-trait CLI { this: Shell =>
+trait CLI { this: BareShell =>
   parser.note("CIRCT (MLIR FIRRTL Compiler) options")
   Seq(
     CIRCTTargetAnnotation,
@@ -94,16 +104,20 @@ object ChiselStage {
     val annos = Seq(
       ChiselGeneratorAnnotation(() => gen),
       CIRCTTargetAnnotation(CIRCTTarget.CHIRRTL)
-    ) ++ (new ChiselStage).shell.parse(args)
+    ) ++ (new BareShell("circt") with CLI).parse(args)
 
-    phase
-      .transform(annos)
-      .collectFirst {
-        case a: ChiselCircuitAnnotation => CircuitSerializationAnnotation(a.circuit, "", FirrtlFileFormat).getBytes
-      }
-      .get
-      .map(_.toChar)
-      .mkString
+    val resultAnnos = phase.transform(annos)
+
+    var circuitAnno: Option[CircuitSerializationAnnotation] = None
+    val inFileAnnos = resultAnnos.flatMap {
+      case a: ChiselCircuitAnnotation =>
+        circuitAnno = Some(CircuitSerializationAnnotation(a.circuit, "", FirrtlFileFormat))
+        None
+      case _: Unserializable     => None
+      case _: CustomFileEmission => None
+      case a => Some(a)
+    }
+    circuitAnno.get.emitLazily(inFileAnnos).mkString
   }
 
   /** Return a CHIRRTL circuit for a Chisel module
@@ -117,7 +131,7 @@ object ChiselStage {
     val annos = Seq(
       ChiselGeneratorAnnotation(() => gen),
       CIRCTTargetAnnotation(CIRCTTarget.CHIRRTL)
-    ) ++ (new ChiselStage).shell.parse(args)
+    ) ++ (new BareShell("circt") with CLI).parse(args)
 
     phase
       .transform(annos)
@@ -136,7 +150,7 @@ object ChiselStage {
     val annos = Seq(
       ChiselGeneratorAnnotation(() => gen),
       CIRCTTargetAnnotation(CIRCTTarget.FIRRTL)
-    ) ++ (new ChiselStage).shell.parse(args) ++ firtoolOpts.map(FirtoolOption(_))
+    ) ++ (new BareShell("circt") with CLI).parse(args) ++ firtoolOpts.map(FirtoolOption(_))
 
     phase
       .transform(annos)
@@ -155,7 +169,7 @@ object ChiselStage {
     val annos = Seq(
       ChiselGeneratorAnnotation(() => gen),
       CIRCTTargetAnnotation(CIRCTTarget.HW)
-    ) ++ (new ChiselStage).shell.parse(args) ++ firtoolOpts.map(FirtoolOption(_))
+    ) ++ (new BareShell("circt") with CLI).parse(args) ++ firtoolOpts.map(FirtoolOption(_))
 
     phase
       .transform(annos)
@@ -180,7 +194,7 @@ object ChiselStage {
     val annos = Seq(
       ChiselGeneratorAnnotation(() => gen),
       CIRCTTargetAnnotation(CIRCTTarget.SystemVerilog)
-    ) ++ (new circt.stage.ChiselStage).shell.parse(args) ++ firtoolOpts.map(FirtoolOption(_))
+    ) ++ (new BareShell("circt") with CLI).parse(args) ++ firtoolOpts.map(FirtoolOption(_))
     phase
       .transform(annos)
       .collectFirst {
@@ -211,6 +225,10 @@ object ChiselStage {
     *
     * @param gen a call-by-name Chisel module
     */
+  @deprecated(
+    "this exposes the internal Chisel circuit which was not supposed to be public---use either ChiselStage.convert or ChiselStage.emitCHIRRTL instead",
+    "Chisel 5.0"
+  )
   def elaborate(
     gen:  => RawModule,
     args: Array[String] = Array.empty
@@ -218,7 +236,7 @@ object ChiselStage {
     val annos = Seq(
       ChiselGeneratorAnnotation(() => gen),
       CIRCTTargetAnnotation(CIRCTTarget.CHIRRTL)
-    ) ++ (new ChiselStage).shell.parse(args)
+    ) ++ (new BareShell("circt") with CLI).parse(args)
 
     phase
       .transform(annos)

@@ -5,7 +5,7 @@ package chisel3
 import scala.util.Try
 import scala.language.experimental.macros
 import scala.annotation.nowarn
-import chisel3.experimental.{BaseModule, UnlocatableSourceInfo}
+import chisel3.experimental.{BaseModule, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal._
 import chisel3.experimental.hierarchy.{InstanceClone, ModuleClone}
 import chisel3.internal.Builder._
@@ -18,7 +18,7 @@ import scala.collection.immutable.VectorBuilder
   * multiple IO() declarations.
   */
 @nowarn("msg=class Port") // delete when Port becomes private
-abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends BaseModule {
+abstract class RawModule extends BaseModule {
   //
   // RTL construction internals
   //
@@ -40,8 +40,6 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
   // Other Internal Functions
   //
   private var _firrtlPorts: Option[Seq[firrtl.Port]] = None
-
-  val compileOptions = moduleCompileOptions
 
   private[chisel3] def checkPorts(): Unit = {
     for ((port, source) <- getModulePortsAndLocators) {
@@ -86,6 +84,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
                 id.forceName(default = "REG", _namespace)
               case WireBinding(_, _) =>
                 id.forceName(default = "_WIRE", _namespace)
+              // probes have their refs set eagerly
               case _ => // don't name literals
             }
           } // else, don't name unbound types
@@ -100,27 +99,24 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
 
     // Generate IO invalidation commands to initialize outputs as unused,
     //  unless the client wants explicit control over their generation.
-    val invalidateCommands = {
-      if (!compileOptions.explicitInvalidate || this.isInstanceOf[ImplicitInvalidate]) {
-        getModulePortsAndLocators.map { case (port, sourceInfo) => DefInvalid(sourceInfo, port.ref) }
-      } else {
-        Seq()
-      }
-    }
-    val component = DefModule(this, name, firrtlPorts, invalidateCommands ++: _commands.result())
+    val component = DefModule(this, name, firrtlPorts, _commands.result())
+
+    // Secret connections can be staged if user bored into children modules
+    component.secretConnects ++= stagedSecretConnects
     _component = Some(component)
     _component
   }
+  private[chisel3] val stagedSecretConnects = collection.mutable.ArrayBuffer[Connect]()
 
-  private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
-    implicit val sourceInfo = UnlocatableSourceInfo
-
-    if (!parentCompileOptions.explicitInvalidate || Builder.currentModule.get.isInstanceOf[ImplicitInvalidate]) {
-      for ((port, sourceInfo) <- getModulePortsAndLocators) {
-        pushCommand(DefInvalid(sourceInfo, port.ref))
-      }
+  private[chisel3] def secretConnection(left: Data, right: Data)(implicit si: SourceInfo): Unit = {
+    if (_closed) {
+      _component.get.asInstanceOf[DefModule].secretConnects += Connect(si, left.lref, Node(right))
+    } else {
+      stagedSecretConnects += Connect(si, left.lref, Node(right))
     }
   }
+
+  private[chisel3] def initializeInParent(): Unit = {}
 }
 
 trait RequireAsyncReset extends Module {
@@ -130,6 +126,3 @@ trait RequireAsyncReset extends Module {
 trait RequireSyncReset extends Module {
   override private[chisel3] def mkReset: Bool = Bool()
 }
-
-/** Mix with a [[RawModule]] to automatically connect DontCare to the module's ports, wires, and children instance IOs. */
-trait ImplicitInvalidate { self: RawModule => }
