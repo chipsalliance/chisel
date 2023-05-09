@@ -34,6 +34,18 @@ class UIntTransform(val c: Context) extends SourceInfoTransformMacro {
   }
 }
 
+class ProbeTransform(val c: Context) extends SourceInfoTransformMacro {
+  import c.universe._
+  def sourceApply[T: c.WeakTypeTag](source: c.Tree): c.Tree = {
+    val tpe = weakTypeOf[T]
+    q"$thisObj.do_apply[$tpe]($source)($implicitSourceInfo)"
+  }
+  def sourceRead[T: c.WeakTypeTag](source: c.Tree): c.Tree = {
+    val tpe = weakTypeOf[T]
+    q"$thisObj.do_read[$tpe]($source)($implicitSourceInfo)"
+  }
+}
+
 // Workaround for https://github.com/sbt/sbt/issues/3966
 object InstTransform
 // Module instantiation transform
@@ -219,8 +231,55 @@ class SourceInfoTransform(val c: Context) extends AutoSourceTransform {
     q"$thisObj.$doFuncTerm($n, $x)($implicitSourceInfo)"
   }
 
+  def idxDataArg(idx: c.Tree, data: c.Tree): c.Tree = {
+    q"$thisObj.$doFuncTerm($idx, $data)($implicitSourceInfo)"
+  }
+
+  def idxDataClockArg(idx: c.Tree, data: c.Tree, clock: c.Tree): c.Tree = {
+    q"$thisObj.$doFuncTerm($idx, $data, $clock)($implicitSourceInfo)"
+  }
+
   def idxEnClockArg(idx: c.Tree, en: c.Tree, clock: c.Tree): c.Tree = {
     q"$thisObj.$doFuncTerm($idx, $en, $clock)($implicitSourceInfo)"
+  }
+
+  def idxDataEnIswArg(idx: c.Tree, writeData: c.Tree, en: c.Tree, isWrite: c.Tree): c.Tree = {
+    q"$thisObj.$doFuncTerm($idx, $writeData, $en, $isWrite)($implicitSourceInfo)"
+  }
+
+  def idxDataMaskArg(idx: c.Tree, writeData: c.Tree, mask: c.Tree)(evidence: c.Tree): c.Tree = {
+    q"$thisObj.$doFuncTerm($idx, $writeData, $mask)($evidence, $implicitSourceInfo)"
+  }
+
+  def idxDataMaskClockArg(idx: c.Tree, writeData: c.Tree, mask: c.Tree, clock: c.Tree)(evidence: c.Tree): c.Tree = {
+    q"$thisObj.$doFuncTerm($idx, $writeData, $mask, $clock)($evidence, $implicitSourceInfo)"
+  }
+
+  def idxDataEnIswClockArg(idx: c.Tree, writeData: c.Tree, en: c.Tree, isWrite: c.Tree, clock: c.Tree): c.Tree = {
+    q"$thisObj.$doFuncTerm($idx, $writeData, $en, $isWrite, $clock)($implicitSourceInfo)"
+  }
+
+  def idxDataMaskEnIswArg(
+    idx:       c.Tree,
+    writeData: c.Tree,
+    mask:      c.Tree,
+    en:        c.Tree,
+    isWrite:   c.Tree
+  )(evidence:  c.Tree
+  ): c.Tree = {
+    q"$thisObj.$doFuncTerm($idx, $writeData, $mask, $en, $isWrite)($evidence, $implicitSourceInfo)"
+  }
+
+  def idxDataMaskEnIswClockArg(
+    idx:       c.Tree,
+    writeData: c.Tree,
+    mask:      c.Tree,
+    en:        c.Tree,
+    isWrite:   c.Tree,
+    clock:     c.Tree
+  )(evidence:  c.Tree
+  ): c.Tree = {
+    q"$thisObj.$doFuncTerm($idx, $writeData, $mask, $en, $isWrite, $clock)($evidence, $implicitSourceInfo)"
   }
 
   def xEnArg(x: c.Tree, en: c.Tree): c.Tree = {

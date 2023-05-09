@@ -4,6 +4,7 @@ package chisel3.internal
 
 import chisel3._
 import chisel3.experimental.{Analog, BaseModule, SourceInfo}
+import chisel3.internal.containsProbe
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.{Connect, Converter, DefInvalid}
 import chisel3.experimental.dataview.{isView, reify, reifyToAggregate}
@@ -73,6 +74,10 @@ private[chisel3] object MonoConnect {
     MonoConnectException(
       s"Source ${formatName(source)} and sink ${formatName(sink)} of type Analog cannot participate in a mono connection (:=)"
     )
+  def SourceProbeMonoConnectionException(source: Data) =
+    MonoConnectException(s"Source ${formatName(source)} of Probed type cannot participate in a mono connection (:=)")
+  def SinkProbeMonoConnectionException(sink: Data) =
+    MonoConnectException(s"Sink ${formatName(sink)} of Probed type cannot participate in a mono connection (:=)")
 
   def checkWhenVisibility(x: Data): Boolean = {
     x.topBinding match {
@@ -96,6 +101,12 @@ private[chisel3] object MonoConnect {
     context_mod: RawModule
   ): Unit = {
     (sink, source) match {
+
+      // Disallow monoconnecting Probe types
+      case (_, source_e: Data) if containsProbe(source_e) =>
+        throw SourceProbeMonoConnectionException(source_e)
+      case (sink_e: Data, _) if containsProbe(sink_e) =>
+        throw SinkProbeMonoConnectionException(sink_e)
 
       // Handle legal element cases, note (Bool, Bool) is caught by the first two, as Bool is a UInt
       case (sink_e: Bool, source_e: UInt) =>

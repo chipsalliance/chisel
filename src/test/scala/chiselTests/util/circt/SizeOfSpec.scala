@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chiselTests.util
+package chiselTests.util.circt
 
 import chisel3._
 import chisel3.testers.BasicTester
@@ -27,9 +27,8 @@ private class SizeOfTop extends Module {
 }
 
 class SizeOfSpec extends AnyFlatSpec with Matchers {
-  it should "Should work for types" in {
+  it should "work for types" in {
     val fir = ChiselStage.emitCHIRRTL(new SizeOfTop)
-    println(fir)
     (fir.split('\n').map(_.trim) should contain)
       .allOf("intmodule SizeOfIntrinsic :", "input i : UInt<65>", "output size : UInt<32>", "intrinsic = circt_sizeof")
   }

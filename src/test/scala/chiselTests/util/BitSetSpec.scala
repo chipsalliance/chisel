@@ -2,6 +2,7 @@ package chiselTests.util
 
 import chisel3.util.experimental.BitSet
 import chisel3.util.BitPat
+import _root_.circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -92,7 +93,7 @@ class BitSetSpec extends AnyFlatSpec with Matchers {
     import chisel3.util.experimental.decode.decoder
     // [0 - 256] part into: [0 - 31], [32 - 47, 64 - 127], [192 - 255]
     // "0011????" "10??????" is empty to error
-    circt.stage.ChiselStage.emitSystemVerilog(new Module {
+    ChiselStage.emitSystemVerilog(new Module {
       val in = IO(Input(UInt(8.W)))
       val out = IO(Output(UInt(4.W)))
       out := decoder.bitset(
@@ -120,7 +121,7 @@ class BitSetSpec extends AnyFlatSpec with Matchers {
     import chisel3.util.experimental.decode.decoder
     // [0 - 256] part into: [0 - 31], [32 - 47, 64 - 127], [192 - 255]
     // "0011????" "10??????" is empty to error
-    circt.stage.ChiselStage.emitSystemVerilog(new Module {
+    ChiselStage.emitSystemVerilog(new Module {
       val in = IO(Input(UInt(8.W)))
       val out = IO(Output(UInt(4.W)))
       out := decoder.bitset(

@@ -46,7 +46,7 @@ object v {
   val upickle = ivy"com.lihaoyi::upickle:2.0.0"
   val macroParadise = ivy"org.scalamacros:::paradise:2.1.1"
   val scalatest = ivy"org.scalatest::scalatest:3.2.14"
-  val scalacheck = ivy"org.scalatestplus::scalacheck-1-14:3.2.2.0"
+  val scalacheck = ivy"org.scalatestplus::scalacheck-1-15:3.2.11.0"
   val json4s = ivy"org.json4s::json4s-native:4.0.6"
   val dataclass = ivy"io.github.alexarchambault::data-class:0.2.5"
   val commonText = ivy"org.apache.commons:commons-text:1.10.0"

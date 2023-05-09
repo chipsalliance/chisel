@@ -65,6 +65,19 @@ object ChiselStageSpec {
     b := qux.b
   }
 
+  import firrtl.annotations.NoTargetAnnotation
+  import firrtl.options.Unserializable
+  case object DummyAnnotation extends NoTargetAnnotation with Unserializable
+
+  class HasUnserializableAnnotation extends RawModule {
+    val a = IO(Input(Bool()))
+    val b = IO(Output(Bool()))
+    b := a
+    chisel3.experimental.annotate(new chisel3.experimental.ChiselAnnotation {
+      def toFirrtl = DummyAnnotation
+    })
+  }
+
   class UserExceptionModule extends RawModule {
     assert(false, "User threw an exception")
   }
@@ -117,6 +130,8 @@ class TraceSpec {
 }
 
 class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
+
+  private val baseDir = os.pwd / "test_run_dir" / this.getClass.getSimpleName
 
   describe("ChiselStage") {
 
@@ -300,6 +315,25 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
       info("output file included an Annotation")
       os.read(targetDir / "Foo.fir") should include("firrtl.transforms.DontTouchAnnotation")
     }
+
+    it("should NOT emit Unserializable Annotations inline in emitted CHIRRTL") {
+      val targetDir = baseDir / "should-not-inline-Unserializable-Annotations-in-emitted-CHIRRTL"
+
+      val args: Array[String] = Array(
+        "--target",
+        "chirrtl",
+        "--target-dir",
+        targetDir.toString
+      )
+
+      (new ChiselStage)
+        .execute(
+          args,
+          Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.HasUnserializableAnnotation))
+        )
+
+      os.read(targetDir / "HasUnserializableAnnotation.fir") shouldNot include("DummyAnnotation")
+    }
   }
 
   describe("ChiselStage exception handling") {
@@ -427,7 +461,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
       val lines = stdout.split("\n")
       // Fuzzy includes aren't ideal but there is ANSI color in these strings that is hard to match
       lines(0) should include(
-        "src/test/scala/circtTests/stage/ChiselStageSpec.scala:77:9: Negative shift amounts are illegal (got -1)"
+        "src/test/scala/circtTests/stage/ChiselStageSpec.scala:90:9: Negative shift amounts are illegal (got -1)"
       )
       lines(1) should include("    3.U >> -1")
       lines(2) should include("        ^")
@@ -448,7 +482,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
       // Fuzzy includes aren't ideal but there is ANSI color in these strings that is hard to match
       lines.size should equal(2)
       lines(0) should include(
-        "src/test/scala/circtTests/stage/ChiselStageSpec.scala:77:9: Negative shift amounts are illegal (got -1)"
+        "src/test/scala/circtTests/stage/ChiselStageSpec.scala:90:9: Negative shift amounts are illegal (got -1)"
       )
       (lines(1) should not).include("3.U >> -1")
     }
@@ -901,7 +935,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
 
       val text = ChiselStage.emitCHIRRTL(new ChiselStageSpec.Foo(hasDontTouch = true))
       info("found a version string")
-      text should include("FIRRTL version 1.2.0")
+      text should include("FIRRTL version 2.0.0")
       info("found an Annotation")
       text should include("firrtl.transforms.DontTouchAnnotation")
       info("found a circuit")

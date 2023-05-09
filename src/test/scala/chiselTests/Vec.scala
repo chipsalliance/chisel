@@ -155,6 +155,15 @@ class VecSpec extends ChiselPropSpec with Utils {
     }
   }
 
+  property("VecInit.fill should support size 0 Vecs") {
+    val chirrtl = emitCHIRRTL(new RawModule {
+      val out = IO(Output(Vec(0, UInt(8.W))))
+      val u = VecInit.fill(0)(8.U)
+      out := u
+    })
+    chirrtl should include("wire u : UInt<4>[0]")
+  }
+
   property("VecInit should fill 2D vec correctly") {
     val n = 2
     val m = 3

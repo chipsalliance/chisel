@@ -247,18 +247,23 @@ package internal {
 package experimental {
 
   import chisel3.experimental.hierarchy.core.{IsInstantiable, Proto}
+  import scala.annotation.nowarn
 
   object BaseModule {
-    implicit class BaseModuleExtensions[T <: BaseModule](b: T) {
+    implicit class BaseModuleExtensions[T <: BaseModule](b: T)(implicit si: SourceInfo) {
       import chisel3.experimental.hierarchy.core.{Definition, Instance}
-      def toInstance:   Instance[T] = new Instance(Proto(b))
-      def toDefinition: Definition[T] = new Definition(Proto(b))
+      def toInstance: Instance[T] = new Instance(Proto(b))
+      def toDefinition: Definition[T] = {
+        b.toDefinitionCalled = Some(si)
+        new Definition(Proto(b))
+      }
     }
   }
 
   /** Abstract base class for Modules, an instantiable organizational unit for RTL.
     */
   // TODO: seal this?
+  @nowarn("msg=class Port") // delete when Port becomes private
   abstract class BaseModule extends HasId with IsInstantiable {
     _parent.foreach(_.addId(this))
 
@@ -309,8 +314,22 @@ package experimental {
     //
     protected var _closed = false
 
-    /** Internal check if a Module is closed */
+    /** Internal check if a Module's constructor has finished executing */
     private[chisel3] def isClosed = _closed
+
+    private[chisel3] var toDefinitionCalled:  Option[SourceInfo] = None
+    private[chisel3] var modulePortsAskedFor: Option[SourceInfo] = None
+
+    /** Where a Module becomes fully closed (no secret ports drilled afterwards) */
+    private[chisel3] def isFullyClosed = fullyClosedErrorMessages.nonEmpty
+    private[chisel3] def fullyClosedErrorMessages: Iterable[(SourceInfo, String)] = {
+      toDefinitionCalled.map(si =>
+        (si, s"Calling .toDefinition fully closes ${name}, but it is later bored through!")
+      ) ++
+        modulePortsAskedFor.map(si =>
+          (si, s"Reflecting on all io's fully closes ${name}, but it is later bored through!")
+        )
+    }
 
     // Fresh Namespace because in Firrtl, Modules namespaces are disjoint with the global namespace
     private[chisel3] val _namespace = Namespace.empty
@@ -511,9 +530,10 @@ package experimental {
       *
       * TODO: Use SeqMap/VectorMap when those data structures become available.
       */
-    private[chisel3] def getChiselPorts: Seq[(String, Data)] = {
+    private[chisel3] def getChiselPorts(implicit si: SourceInfo): Seq[(String, Data)] = {
       require(_closed, "Can't get ports before module close")
-      _component.get.ports.map { port =>
+      modulePortsAskedFor = Some(si) // super-lock down the module
+      (_component.get.ports ++ _component.get.secretPorts).map { port =>
         (port.id.getRef.asInstanceOf[ModuleIO].name, port.id)
       }
     }
@@ -536,6 +556,30 @@ package experimental {
     )(
       implicit sourceInfo: SourceInfo
     ): Unit = _bindIoInPlace(iodef)
+
+    // Must have separate createSecretIO from addSecretIO to get plugin to name it
+    // data must be a fresh Chisel type
+    private[chisel3] def createSecretIO(data: => Data)(implicit sourceInfo: SourceInfo): Data = {
+      val iodef = data
+      internal.requireIsChiselType(iodef, "io type")
+      require(!isFullyClosed, "Cannot create secret ports if module is fully closed")
+
+      iodef.bind(internal.SecretPortBinding(this))
+      iodef
+    }
+
+    private[chisel3] val secretPorts: ArrayBuffer[Port] = ArrayBuffer.empty
+
+    // Must have separate createSecretIO from addSecretIO to get plugin to name it
+    private[chisel3] def addSecretIO(iodef: Data)(implicit sourceInfo: SourceInfo): Data = {
+      val name = iodef._computeName(None).getOrElse("secret")
+      iodef.setRef(ModuleIO(this, _namespace.name(name)))
+      val newPort = new Port(iodef, iodef.specifiedDirection, sourceInfo)
+      if (_closed) {
+        _component.get.secretPorts += newPort
+      } else secretPorts += newPort
+      iodef
+    }
 
     /**
       * This must wrap the datatype used to set the io field of any Module.
