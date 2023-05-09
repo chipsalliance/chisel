@@ -25,6 +25,7 @@ class ParametricInterfaceSpec extends AnyFunSpec with Matchers {
   class BarInterfaceGenerator private[interface] (val width: Int) extends InterfaceGenerator {
 
     override type Ports = BarBundle
+    override type Properties = Unit
 
     override val ports = new BarBundle(width)
 
@@ -70,6 +71,8 @@ class ParametricInterfaceSpec extends AnyFunSpec with Matchers {
           _.x -> _.a,
           _.y -> _.b
         )
+
+        override def properties = {}
 
       }
 
@@ -142,6 +145,87 @@ class ParametricInterfaceSpec extends AnyFunSpec with Matchers {
 
       info("link okay!")
       Drivers.link(dir, "compile-0/Foo32.sv")
+
+    }
+
+    it("should support different kinds of properties") {
+
+      class FooBundle(width: Int) extends Bundle {
+        val a = IO(Input(UInt(width.W)))
+        val b = IO(Output(UInt(width.W)))
+      }
+
+      case class FooProperties(author: String)
+
+      /** This InterfaceGenerator takes one constructor argument, `a`.  This is
+        * preserved as a property of the Interface.
+        */
+      abstract class FooInterfaceGenerator(val a: Int) extends InterfaceGenerator {
+        override type Ports = FooBundle
+        override type Properties = FooProperties
+
+        /** This is a property of the Interface that varies with each interface. */
+        val width: Int
+      }
+
+      object Package {
+        object FooInterface_4 extends FooInterfaceGenerator(4) with Interface {
+          val width = a + 2
+          override val ports = new FooBundle(width)
+        }
+        object FooInterface_8 extends FooInterfaceGenerator(8) with Interface {
+          val width = a * 3
+          override val ports = new FooBundle(width)
+        }
+      }
+
+      class Bar(width: Int) extends RawModule {
+        val x = IO(Input(UInt(width.W)))
+        val y = IO(Output(UInt(width.W)))
+        y := x
+      }
+
+      val barConformance_4 = new ConformsTo[Package.FooInterface_4.type, Bar] {
+        override def genModule() = new Bar(Package.FooInterface_4.width)
+        override def portMap = Seq(
+          _.x -> _.a,
+          _.y -> _.b
+        )
+        override def properties = FooProperties("Alice")
+      }
+
+      val barConformance_8 = new ConformsTo[Package.FooInterface_8.type, Bar] {
+        override def genModule() = new Bar(Package.FooInterface_8.width)
+        override def portMap = Seq(
+          _.x -> _.a,
+          _.y -> _.b
+        )
+        override def properties = FooProperties("Bob")
+      }
+
+      class Baz(width: Int) extends RawModule {
+        val rr = IO(Input(UInt(width.W)))
+        val ss = IO(Output(UInt(width.W)))
+        ss := rr
+      }
+
+      val bazConformance_4 = new ConformsTo[Package.FooInterface_4.type, Baz] {
+        override def genModule() = new Baz(Package.FooInterface_4.width)
+        override def portMap = Seq(
+          _.rr -> _.a,
+          _.ss -> _.b
+        )
+        override def properties = FooProperties("Candice")
+      }
+
+      val bazConformance_8 = new ConformsTo[Package.FooInterface_8.type, Baz] {
+        override def genModule() = new Baz(Package.FooInterface_8.width)
+        override def portMap = Seq(
+          _.rr -> _.a,
+          _.ss -> _.b
+        )
+        override def properties = FooProperties("Dave")
+      }
 
     }
 

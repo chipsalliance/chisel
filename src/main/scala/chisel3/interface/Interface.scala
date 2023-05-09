@@ -17,12 +17,17 @@ trait ConformsTo[Intf <: Interface, Mod <: BaseModule] {
   /** Define how this module hooks up to the port-level interface. */
   private[interface] def portMap: Seq[(Mod, Intf#Ports) => (Data, Data)]
 
+  /** Return the properties associated with this specific implementation. */
+  private[interface] def properties: Intf#Properties
+
 }
 
 /** Functionality which is common */
 sealed trait InterfaceCommon {
 
   private[interface] type Ports <: Record
+
+  private[interface] type Properties
 
   /** Returns the Record that is the port-level interface. */
   private[interface] val ports: Ports
@@ -78,6 +83,9 @@ trait Interface extends InterfaceCommon { self: Singleton =>
     val io: Ports
 
     override final def desiredName = interfaceName
+
+    /** Return the properties of this instance. */
+    def properties[B <: BaseModule: Conformance]: Properties
   }
 
   object Wrapper {
@@ -87,6 +95,9 @@ trait Interface extends InterfaceCommon { self: Singleton =>
       */
     final class BlackBox extends chisel3.BlackBox with Entity {
       final val io = IO(ports)
+
+      /** Return the properties of this instance.  This requires brining a conformance into scope. */
+      override final def properties[B <: BaseModule: Conformance]: Properties = implicitly[Conformance[B]].properties
     }
 
     /** The module that wraps any module which conforms to this Interface.
@@ -97,6 +108,11 @@ trait Interface extends InterfaceCommon { self: Singleton =>
         extends RawModule
         with Entity {
       final val io = FlatIO(ports)
+
+      /** Return the properties of this instance.  This does not require bringing a
+        * conformance into scope as the component has been instantiated.
+        */
+      override def properties[B <: BaseModule: Conformance] = conformance.properties
 
       // Use a dummy clock and reset connection when constructing the module.
       // This is fine as we rely on DataView to catch missing connections to
@@ -128,10 +144,15 @@ trait Interface extends InterfaceCommon { self: Singleton =>
     /** A stub module that implements the interface. All IO of this module are
       * just tied off.
       */
-    final class Stub extends RawModule with Entity {
+    final class Stub(_properties: Properties) extends RawModule with Entity {
       final val io = FlatIO(ports)
       io := DontCare
       dontTouch(io)
+
+      /** Return the properties of this instance.  This returns the properties the
+        * user provided as constructor arguments.
+        */
+      final override def properties[B <: BaseModule: Conformance]: Properties = _properties
     }
 
   }
