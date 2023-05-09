@@ -42,7 +42,7 @@ object v {
     "2.12.17",
     "2.13.10"
   )
-  val osLib = ivy"com.lihaoyi::os-lib:0.8.1"
+  val osLib = ivy"com.lihaoyi::os-lib:0.9.1"
   val upickle = ivy"com.lihaoyi::upickle:3.1.0"
   val macroParadise = ivy"org.scalamacros:::paradise:2.1.1"
   val scalatest = ivy"org.scalatest::scalatest:3.2.14"
