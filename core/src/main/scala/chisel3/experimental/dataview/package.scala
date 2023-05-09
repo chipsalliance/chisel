@@ -82,7 +82,9 @@ package object dataview {
     // Kept separate from Aggregates for totality checking
     val elementBindings =
       new mutable.LinkedHashMap[Data, mutable.ListBuffer[Element]] ++
-        getRecursiveFields(view, "_").collect { case (elt: Element, name) => elt }
+        getRecursiveFields
+          .lazilyNoPath(view)
+          .collect { case (elt: Element) => elt }
           .map(_ -> new mutable.ListBuffer[Element])
 
     // Record any Aggregates that correspond 1:1 for reification
