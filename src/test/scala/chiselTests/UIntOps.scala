@@ -208,20 +208,20 @@ class UIntLitZeroWidthTester extends BasicTester {
 class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
 
   property("Bools can be created from 1 bit UInts") {
-    ChiselStage.elaborate(new GoodBoolConversion)
+    ChiselStage.emitCHIRRTL(new GoodBoolConversion)
   }
 
   property("Bools cannot be created from 0 bit UInts") {
-    a[Exception] should be thrownBy extractCause[Exception] { ChiselStage.elaborate(new ZeroWidthBoolConversion) }
+    a[Exception] should be thrownBy extractCause[Exception] { ChiselStage.emitCHIRRTL(new ZeroWidthBoolConversion) }
   }
 
   property("Bools cannot be created from >1 bit UInts") {
-    a[Exception] should be thrownBy extractCause[Exception] { ChiselStage.elaborate(new BadBoolConversion) }
+    a[Exception] should be thrownBy extractCause[Exception] { ChiselStage.emitCHIRRTL(new BadBoolConversion) }
   }
 
   property("Out-of-bounds extraction from known-width UInts") {
     a[ChiselException] should be thrownBy extractCause[ChiselException] {
-      ChiselStage.elaborate(new RawModule {
+      ChiselStage.emitCHIRRTL(new RawModule {
         val u = IO(Input(UInt(2.W)))
         u(2, 1)
       })
@@ -230,7 +230,7 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
 
   property("Out-of-bounds single-bit extraction from known-width UInts") {
     a[ChiselException] should be thrownBy extractCause[ChiselException] {
-      ChiselStage.elaborate(new RawModule {
+      ChiselStage.emitCHIRRTL(new RawModule {
         val u = IO(Input(UInt(2.W)))
         u(2)
       })
@@ -239,7 +239,7 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
 
   property("Out-of-bounds extraction from known-zero-width UInts") {
     a[ChiselException] should be thrownBy extractCause[ChiselException] {
-      ChiselStage.elaborate(new RawModule {
+      ChiselStage.emitCHIRRTL(new RawModule {
         val u = IO(Input(UInt(0.W)))
         u(0, 0)
       })
@@ -248,7 +248,7 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
 
   property("Out-of-bounds single-bit extraction from known-zero-width UInts") {
     a[ChiselException] should be thrownBy extractCause[ChiselException] {
-      ChiselStage.elaborate(new RawModule {
+      ChiselStage.emitCHIRRTL(new RawModule {
         val u = IO(Input(UInt(0.W)))
         u(0)
       })
@@ -256,7 +256,7 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
   }
 
   property("UIntOps should elaborate") {
-    ChiselStage.elaborate { new UIntOps }
+    ChiselStage.emitCHIRRTL { new UIntOps }
   }
 
   property("UIntOpsTester should return the correct result") {
@@ -265,7 +265,7 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
 
   property("Negative shift amounts are invalid") {
     a[ChiselException] should be thrownBy extractCause[ChiselException] {
-      ChiselStage.elaborate(new NegativeShift(UInt()))
+      ChiselStage.emitCHIRRTL(new NegativeShift(UInt()))
     }
   }
 
@@ -288,7 +288,7 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
   }
 
   property("asBools should support chained apply") {
-    ChiselStage.elaborate(new Module {
+    ChiselStage.emitCHIRRTL(new Module {
       val io = IO(new Bundle {
         val in = Input(UInt(8.W))
         val out = Output(Bool())
@@ -379,6 +379,62 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
       val y = WireDefault(UInt(0.W), DontCare)
       val op = x * y
       WireDefault(chiselTypeOf(op), op)
+    }
+  }
+
+  property("emit warning if dynamic index is too wide or too narrow") {
+    class TooWide extends Module {
+      val in = IO(Input(UInt(2.W)))
+      val index = IO(Input(UInt(2.W)))
+      val out = IO(Output(Bool()))
+      out := in(index)
+    }
+    class TooNarrow extends Module {
+      val in = IO(Input(UInt(3.W)))
+      val index = IO(Input(UInt(1.W)))
+      val out = IO(Output(Bool()))
+      out := in(index)
+    }
+
+    Seq(
+      grabLog(ChiselStage.emitCHIRRTL(new TooWide)),
+      grabLog(ChiselStage.emitCHIRRTL(new TooNarrow))
+    ).foreach {
+      case (log, _) =>
+        log should include("warn")
+    }
+
+    a[ChiselException] should be thrownBy extractCause[ChiselException] {
+      ChiselStage.emitCHIRRTL(new RawModule {
+        val in = IO(Input(UInt(0.W)))
+        val index = IO(Input(UInt(1.W)))
+        val out = IO(Output(Bool()))
+        out := in(index)
+      })
+    }
+
+    class Ok extends Module {
+      val in1 = IO(Input(UInt(9.W)))
+      val index1 = IO(Input(UInt(4.W)))
+      val out1 = IO(Output(Bool()))
+      out1 := in1(index1)
+
+      val in2 = IO(Input(UInt(8.W)))
+      val index2 = IO(Input(UInt(3.W)))
+      val out2 = IO(Output(Bool()))
+      out2 := in2(index2)
+
+      val in3 = IO(Input(Bool()))
+      val index3 = IO(Input(UInt(0.W)))
+      val out3 = IO(Output(Bool()))
+      out3 := in3(index3)
+    }
+
+    Seq(
+      grabLog(ChiselStage.emitCHIRRTL(new Ok))
+    ).foreach {
+      case (log, _) =>
+        log should be("")
     }
   }
 }

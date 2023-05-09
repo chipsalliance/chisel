@@ -5,7 +5,7 @@ package chiselTests
 import chisel3._
 import chisel3.experimental.BundleLiterals.AddBundleLiteralConstructor
 import chisel3.experimental.VecLiterals._
-import chisel3.experimental.{ChiselEnum, FixedPoint, VecLiteralException}
+import chisel3.experimental.VecLiteralException
 import chisel3.testers.BasicTester
 import chisel3.util.Counter
 import circt.stage.ChiselStage
@@ -405,7 +405,7 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
   "vec literals with non-literal values should fail" in {
     val exc = intercept[VecLiteralException] {
       extractCause[VecLiteralException] {
-        ChiselStage.elaborate {
+        ChiselStage.emitCHIRRTL {
           new RawModule {
             (Vec(3, UInt(11.W)).Lit(0 -> UInt()))
           }

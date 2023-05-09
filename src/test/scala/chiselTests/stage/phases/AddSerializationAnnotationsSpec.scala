@@ -33,15 +33,6 @@ class AddSerializationAnnotationsSpec extends AnyFlatSpec with Matchers {
       .toSeq should be(Seq(("Bar", FirrtlFileFormat)))
   }
 
-  it should "support ProtoBufFileFormat" in new Fixture {
-    val annotations: AnnotationSeq = Seq(ChiselGeneratorAnnotation(() => new Foo), ChiselOutputFileAnnotation("Bar.pb"))
-
-    manager
-      .transform(annotations)
-      .collect { case CircuitSerializationAnnotation(_, filename, format) => (filename, format) }
-      .toSeq should be(Seq(("Bar", ProtoBufFileFormat)))
-  }
-
   it should "support explicitly asking for FirrtlFileFormat" in new Fixture {
     val annotations: AnnotationSeq =
       Seq(ChiselGeneratorAnnotation(() => new Foo), ChiselOutputFileAnnotation("Bar.pb.fir"))

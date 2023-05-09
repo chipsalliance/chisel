@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import firrtl.annotations.{IsMember, Named}
-import chisel3.internal.firrtl.BinaryPoint
 import chisel3.internal.ExceptionHelpers
+
 import java.util.{MissingFormatArgumentException, UnknownFormatConversionException}
 import scala.collection.mutable
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 
 /** This package contains the main chisel3 API.
   */
@@ -114,10 +114,6 @@ package object chisel3 {
     }
   }
 
-  implicit class fromIntToBinaryPoint(int: Int) {
-    def BP: BinaryPoint = BinaryPoint(int)
-  }
-
   implicit class fromBooleanToLiteral(boolean: Boolean) {
 
     /** Boolean to Bool conversion, recommended style for constants.
@@ -128,31 +124,6 @@ package object chisel3 {
       */
     def asBool: Bool = Bool.Lit(boolean)
   }
-
-  // Fixed Point is experimental for now, but we alias the implicit conversion classes here
-  // to minimize disruption with existing code.
-  implicit class fromDoubleToLiteral(double: Double)
-      extends experimental.FixedPoint.Implicits.fromDoubleToLiteral(double)
-
-  implicit class fromBigDecimalToLiteral(bigDecimal: BigDecimal)
-      extends experimental.FixedPoint.Implicits.fromBigDecimalToLiteral(bigDecimal)
-
-  // Interval is experimental for now, but we alias the implicit conversion classes here
-  //  to minimize disruption with existing code.
-  implicit class fromIntToLiteralInterval(int: Int)
-      extends experimental.Interval.Implicits.fromIntToLiteralInterval(int)
-
-  implicit class fromLongToLiteralInterval(long: Long)
-      extends experimental.Interval.Implicits.fromLongToLiteralInterval(long)
-
-  implicit class fromBigIntToLiteralInterval(bigInt: BigInt)
-      extends experimental.Interval.Implicits.fromBigIntToLiteralInterval(bigInt)
-
-  implicit class fromDoubleToLiteralInterval(double: Double)
-      extends experimental.Interval.Implicits.fromDoubleToLiteralInterval(double)
-
-  implicit class fromBigDecimalToLiteralInterval(bigDecimal: BigDecimal)
-      extends experimental.Interval.Implicits.fromBigDecimalToLiteralInterval(bigDecimal)
 
   implicit class fromIntToWidth(int: Int) {
     def W: Width = Width(int)
@@ -225,7 +196,7 @@ package object chisel3 {
       *
       *  - <code>%n</code> - Returns [[Name]] Printable.
       *  - <code>%N</code> - Returns [[FullName]] Printable.
-      *  - <code>%b,%d,%x,%c</code> - Only applicable for types of [[Bits]] or dreived from it. - returns ([[Binary]],[[Decimal]],
+      *  - <code>%b,%d,%x,%c</code> - Only applicable for types of [[Bits]] or derived from it. - returns ([[Binary]],[[Decimal]],
       * [[Hexadecimal]],[[Character]]) Printable respectively.
       *  - Default - If no specifier given call [[Data.toPrintable]] on the Chisel Type.
       *
@@ -249,22 +220,22 @@ package object chisel3 {
       * val f1 = 30.2 // Scala float type.
       * val pable = cf"w1 = $w1%x f1 = $f1%2.2f. This is 100%% clear"
       *
-      * // pable is as follows
+      * // the val `pable` is equivalent to the following
       * // Printables(List(PString(w1 = ), Hexadecimal(UInt<5>(20)), PString( f1 = ), PString(30.20), PString(. This is 100), Percent, PString( clear)))
       * }}}
-      *
-      * @throws UnknownFormatConversionException
+      * throws UnknownFormatConversionException
       *         if literal percent not escaped with % or if the format specifier is not supported
       *         for the specific type
       *
-      * @throws StringContext.InvalidEscapeException
+      * throws StringContext.InvalidEscapeException
       *         if a `parts` string contains a backslash (`\`) character
       *         that does not start a valid escape sequence.
       *
-      * @throws IllegalArgumentException
+      * throws IllegalArgumentException
       *         if the number of `parts` in the enclosing `StringContext` does not exceed
       *         the number of arguments `arg` by exactly 1.
       */
+    @nowarn("msg=checkLengths in class StringContext is deprecated")
     def cf(args: Any*): Printable = {
 
       // Handle literal %
@@ -300,8 +271,9 @@ package object chisel3 {
 
       }
 
+      //TODO: Update this to current API when 2.12 is EOL
       sc.checkLengths(args) // Enforce sc.parts.size == pargs.size + 1
-      val parts = sc.parts.map(StringContext.treatEscapes)
+      val parts = sc.parts.map(StringContext.processEscapes)
       // The 1st part is assumed never to contain a format specifier.
       // If the 1st part of a string is an argument - then the 1st part will be an empty String.
       // So we need to parse parts following the 1st one to get the format specifiers if any

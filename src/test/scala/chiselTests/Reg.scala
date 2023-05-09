@@ -15,7 +15,7 @@ class RegSpec extends ChiselFlatSpec {
       val reg = Reg(UInt(2.W))
       DataMirror.widthOf(reg) should be(2.W)
     }
-    ChiselStage.elaborate { new RegOutTypeWidthTester }
+    ChiselStage.emitCHIRRTL { new RegOutTypeWidthTester }
   }
 
   "RegNext" should "be of unknown width" in {
@@ -27,7 +27,7 @@ class RegSpec extends ChiselFlatSpec {
       val reg3 = RegNext(2.U(3.W), 4.U(5.W))
       DataMirror.widthOf(reg3).known should be(false)
     }
-    ChiselStage.elaborate { new RegUnknownWidthTester }
+    ChiselStage.emitCHIRRTL { new RegUnknownWidthTester }
   }
 
   "RegInit" should "have width only if specified in the literal" in {
@@ -37,7 +37,7 @@ class RegSpec extends ChiselFlatSpec {
       val reg2 = RegInit(20.U(7.W))
       DataMirror.widthOf(reg2) should be(7.W)
     }
-    ChiselStage.elaborate { new RegForcedWidthTester }
+    ChiselStage.emitCHIRRTL { new RegForcedWidthTester }
   }
 }
 

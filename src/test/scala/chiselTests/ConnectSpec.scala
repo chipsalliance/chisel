@@ -3,7 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.{Analog, FixedPoint}
+import chisel3.experimental.Analog
 import chisel3.testers.BasicTester
 import circt.stage.ChiselStage
 
@@ -44,7 +44,7 @@ class ConnectSpec extends ChiselPropSpec with Utils {
   property("SInt := UInt should fail") {
     intercept[ChiselException] {
       extractCause[ChiselException] {
-        ChiselStage.elaborate { new CrossConnectTester(UInt(16.W), SInt(16.W)) }
+        ChiselStage.emitCHIRRTL { new CrossConnectTester(UInt(16.W), SInt(16.W)) }
       }
     }
   }
@@ -54,25 +54,17 @@ class ConnectSpec extends ChiselPropSpec with Utils {
   property("UInt := SInt should fail") {
     intercept[ChiselException] {
       extractCause[ChiselException] {
-        ChiselStage.elaborate { new CrossConnectTester(SInt(16.W), UInt(16.W)) }
+        ChiselStage.emitCHIRRTL { new CrossConnectTester(SInt(16.W), UInt(16.W)) }
       }
     }
   }
-  property("UInt := FixedPoint should fail") {
-    intercept[ChiselException] {
-      extractCause[ChiselException] {
-        ChiselStage.elaborate { new CrossConnectTester(FixedPoint(16.W, 8.BP), UInt(16.W)) }
-      }
-    }
-  }
-
   property("Clock := Clock should succeed") {
     assertTesterPasses { new CrossConnectTester(Clock(), Clock()) }
   }
   property("Clock := UInt should fail") {
     intercept[ChiselException] {
       extractCause[ChiselException] {
-        ChiselStage.elaborate { new CrossConnectTester(Clock(), UInt(16.W)) }
+        ChiselStage.emitCHIRRTL { new CrossConnectTester(Clock(), UInt(16.W)) }
       }
     }
   }
@@ -80,40 +72,40 @@ class ConnectSpec extends ChiselPropSpec with Utils {
   property("Analog := Analog should fail") {
     intercept[ChiselException] {
       extractCause[ChiselException] {
-        ChiselStage.elaborate { new CrossConnectTester(Analog(16.W), Analog(16.W)) }
+        ChiselStage.emitCHIRRTL { new CrossConnectTester(Analog(16.W), Analog(16.W)) }
       }
     }
   }
   property("Analog := UInt should fail") {
     intercept[ChiselException] {
       extractCause[ChiselException] {
-        ChiselStage.elaborate { new CrossConnectTester(Analog(16.W), UInt(16.W)) }
+        ChiselStage.emitCHIRRTL { new CrossConnectTester(Analog(16.W), UInt(16.W)) }
       }
     }
   }
   property("Analog := SInt should fail") {
     intercept[ChiselException] {
       extractCause[ChiselException] {
-        ChiselStage.elaborate { new CrossConnectTester(Analog(16.W), SInt(16.W)) }
+        ChiselStage.emitCHIRRTL { new CrossConnectTester(Analog(16.W), SInt(16.W)) }
       }
     }
   }
   property("UInt := Analog should fail") {
     intercept[ChiselException] {
       extractCause[ChiselException] {
-        ChiselStage.elaborate { new CrossConnectTester(UInt(16.W), Analog(16.W)) }
+        ChiselStage.emitCHIRRTL { new CrossConnectTester(UInt(16.W), Analog(16.W)) }
       }
     }
   }
   property("SInt := Analog should fail") {
     intercept[ChiselException] {
       extractCause[ChiselException] {
-        ChiselStage.elaborate { new CrossConnectTester(SInt(16.W), Analog(16.W)) }
+        ChiselStage.emitCHIRRTL { new CrossConnectTester(SInt(16.W), Analog(16.W)) }
       }
     }
   }
   property("Pipe internal connections should succeed") {
-    ChiselStage.elaborate(new PipeInternalWires)
+    ChiselStage.emitCHIRRTL(new PipeInternalWires)
   }
 
   property("Connect error messages should have meaningful information") {
@@ -126,7 +118,7 @@ class ConnectSpec extends ChiselPropSpec with Utils {
       inner.myReg := false.B // ERROR
     }
 
-    val assignError = the[ChiselException] thrownBy { ChiselStage.elaborate { new OuterAssignExample } }
+    val assignError = the[ChiselException] thrownBy { ChiselStage.emitCHIRRTL { new OuterAssignExample } }
     val expectedAssignError = """.*@: myReg in InnerExample cannot be written from module OuterAssignExample."""
     (assignError.getMessage should fullyMatch).regex(expectedAssignError)
 
@@ -136,12 +128,12 @@ class ConnectSpec extends ChiselPropSpec with Utils {
       myReg := inner.myReg // ERROR
     }
 
-    val readError = the[ChiselException] thrownBy { ChiselStage.elaborate { new OuterReadExample } }
+    val readError = the[ChiselException] thrownBy { ChiselStage.emitCHIRRTL { new OuterReadExample } }
     val expectedReadError = """.*@: myReg in InnerExample cannot be read from module OuterReadExample."""
     (readError.getMessage should fullyMatch).regex(expectedReadError)
 
     val typeMismatchError = the[ChiselException] thrownBy {
-      ChiselStage.elaborate {
+      ChiselStage.emitCHIRRTL {
         new RawModule {
           val myUInt = Wire(UInt(4.W))
           val mySInt = Wire(SInt(4.W))

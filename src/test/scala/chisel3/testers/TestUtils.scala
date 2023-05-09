@@ -3,9 +3,9 @@
 package chisel3.testers
 
 import chisel3.RawModule
-import chisel3.stage.{ChiselGeneratorAnnotation, ChiselPhase}
+import chisel3.stage.ChiselGeneratorAnnotation
 import chisel3.testers.TesterDriver.Backend
-import circt.stage.{CIRCTTarget, CIRCTTargetAnnotation}
+import circt.stage.{CIRCTTarget, CIRCTTargetAnnotation, ChiselStage}
 import firrtl.AnnotationSeq
 import firrtl.annotations.Annotation
 import firrtl.ir.Circuit
@@ -23,24 +23,15 @@ object TestUtils {
   // produced by it. New tests should not utilize this or getFirrtlAndAnnos
   def getChirrtlAndAnnotations(gen: => RawModule, annos: AnnotationSeq = Seq()): (Circuit, Seq[Annotation]) = {
     val dir = createTestDirectory(this.getClass.getSimpleName).toString
-    val targetDir = TargetDirAnnotation(dir)
-    val phase = new chisel3.stage.ChiselPhase {
-      override val targets = Seq(
-        Dependency[chisel3.stage.phases.Checks],
-        Dependency[chisel3.stage.phases.Elaborate],
-        Dependency[chisel3.stage.phases.AddImplicitOutputFile],
-        Dependency[chisel3.stage.phases.AddImplicitOutputAnnotationFile],
-        Dependency[chisel3.stage.phases.MaybeAspectPhase],
-        Dependency[chisel3.stage.phases.Convert],
-        Dependency[chisel3.stage.phases.MaybeInjectingPhase]
-      )
-    }
+    val processedAnnos = (new ChiselStage).execute(
+      Array("--target-dir", dir, "--target", "chirrtl"),
+      ChiselGeneratorAnnotation(() => gen) +: annos
+    )
 
-    val processedAnnos = phase
-      .transform(Seq(ChiselGeneratorAnnotation(() => gen), targetDir) ++ annos)
     val circuit = processedAnnos.collectFirst {
       case FirrtlCircuitAnnotation(a) => a
     }.get
     (circuit, processedAnnos)
   }
+
 }

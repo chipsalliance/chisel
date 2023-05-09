@@ -18,7 +18,7 @@ import scala.annotation.implicitNotFound
 sealed trait Hierarchy[+A] {
   private[chisel3] def underlying: Underlying[A]
   private[chisel3] def proto: A = underlying match {
-    case Proto(value: A) => value
+    case Proto(value) => value
     case Clone(i: IsClone[A]) => i.getProto
   }
 
@@ -66,7 +66,7 @@ sealed trait Hierarchy[+A] {
   private def inBaseClasses(clz: String): Boolean = superClasses.contains(clz)
 
   /** Used by Chisel's internal macros. DO NOT USE in your normal Chisel code!!!
-    * Instead, mark the field you are accessing with [[@public]]
+    * Instead, mark the field you are accessing with [[public]]
     *
     * Given a selector function (that) which selects a member from the original, return the
     *   corresponding member from the hierarchy.

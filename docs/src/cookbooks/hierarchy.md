@@ -85,7 +85,7 @@ class AddTwoInstantiate(width: Int) extends Module {
 }
 ```
 ```scala mdoc:verilog
-chisel3.stage.ChiselStage.emitVerilog(new AddTwoInstantiate(16))
+circt.stage.ChiselStage.emitSystemVerilog(new AddTwoInstantiate(16))
 ```
 
 ## How do I access internal fields of an instance?

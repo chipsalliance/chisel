@@ -55,4 +55,3 @@ docs/src/main/tut/contributors.md: build.sbt
 # we want to put the website docs.
 docs/src/main/tut/chisel3/docs: $(chisel3)/docs/ $(www-docs)
 	(cd $(chisel3) && sbt docs/mdoc && cp -r docs/generated website/docs/src/main/tut/chisel3/docs)
-

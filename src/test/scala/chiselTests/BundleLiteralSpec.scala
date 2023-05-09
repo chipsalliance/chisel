@@ -7,7 +7,7 @@ import circt.stage.ChiselStage
 import chisel3.testers.BasicTester
 import chisel3.experimental.BundleLiterals._
 import chisel3.experimental.VecLiterals.AddVecLiteralConstructor
-import chisel3.experimental.{BundleLiteralException, ChiselRange, FixedPoint, Interval}
+import chisel3.experimental.BundleLiteralException
 
 class BundleLiteralSpec extends ChiselFlatSpec with Utils {
   object MyEnum extends ChiselEnum {
@@ -84,7 +84,6 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
 
   "bundle literals of vec literals" should "work" in {
     assertTesterPasses(new BasicTester {
-      val range = range"[0,4].2"
       val bundleWithVecs = new Bundle {
         val a = Vec(2, UInt(4.W))
         val b = Vec(2, SInt(4.W))
@@ -264,7 +263,7 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
   "bundle literals with bad field specifiers" should "fail" in {
     val exc = intercept[BundleLiteralException] {
       extractCause[BundleLiteralException] {
-        ChiselStage.elaborate {
+        ChiselStage.emitCHIRRTL {
           new RawModule {
             val bundle = new MyBundle
             bundle.Lit(x => bundle.a -> 0.U) // DONT DO THIS, this gets past a syntax error to exercise the failure
@@ -278,7 +277,7 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
   "bundle literals with duplicate fields" should "fail" in {
     val exc = intercept[BundleLiteralException] {
       extractCause[BundleLiteralException] {
-        ChiselStage.elaborate {
+        ChiselStage.emitCHIRRTL {
           new RawModule {
             (new MyBundle).Lit(_.a -> 0.U, _.a -> 0.U)
           }
@@ -292,7 +291,7 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
   "bundle literals with non-literal values" should "fail" in {
     val exc = intercept[BundleLiteralException] {
       extractCause[BundleLiteralException] {
-        ChiselStage.elaborate {
+        ChiselStage.emitCHIRRTL {
           new RawModule {
             (new MyBundle).Lit(_.a -> UInt())
           }
@@ -306,7 +305,7 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
   "bundle literals with non-type-equivalent element fields" should "fail" in {
     val exc = intercept[BundleLiteralException] {
       extractCause[BundleLiteralException] {
-        ChiselStage.elaborate {
+        ChiselStage.emitCHIRRTL {
           new RawModule {
             (new MyBundle).Lit(_.a -> true.B)
           }
@@ -320,7 +319,7 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
   "bundle literals with non-type-equivalent sub-bundles" should "fail" in {
     val exc = intercept[BundleLiteralException] {
       extractCause[BundleLiteralException] {
-        ChiselStage.elaborate {
+        ChiselStage.emitCHIRRTL {
           new RawModule {
             (new MyOuterBundle).Lit(_.b -> (new MyBundle).Lit(_.a -> 0.U))
           }
@@ -334,7 +333,7 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
   "bundle literals with non-type-equivalent enum element fields" should "fail" in {
     val exc = intercept[BundleLiteralException] {
       extractCause[BundleLiteralException] {
-        ChiselStage.elaborate {
+        ChiselStage.emitCHIRRTL {
           new RawModule {
             (new MyBundle).Lit(_.c -> MyEnumB.sB)
           }
@@ -346,7 +345,7 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
   }
 
   "partial bundle literals" should "fail to pack" in {
-    ChiselStage.elaborate {
+    ChiselStage.emitCHIRRTL {
       new RawModule {
         val bundleLit = (new MyBundle).Lit(_.a -> 42.U)
         bundleLit.litOption should equal(None)

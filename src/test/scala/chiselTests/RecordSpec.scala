@@ -3,12 +3,11 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.{AutoCloneType, OpaqueType}
+import chisel3.experimental.OpaqueType
 import chisel3.reflect.DataMirror
 import chisel3.testers.BasicTester
 import chisel3.util.{Counter, Queue}
 import circt.stage.ChiselStage
-import chisel3.reflect.DataMirror
 
 import scala.collection.immutable.{ListMap, SeqMap}
 
@@ -209,12 +208,12 @@ object RecordSpec {
       if (boxed) new Boxed(gen) else new Unboxed(gen)
     }
   }
-  class Boxed[T <: Data](gen: T) extends MaybeBoxed[T] with AutoCloneType {
+  class Boxed[T <: Data](gen: T) extends MaybeBoxed[T] {
     def boxed = true
     lazy val elements = SeqMap("underlying" -> gen)
     def underlying = elements.head._2
   }
-  class Unboxed[T <: Data](gen: T) extends MaybeBoxed[T] with OpaqueType with AutoCloneType {
+  class Unboxed[T <: Data](gen: T) extends MaybeBoxed[T] with OpaqueType {
     def boxed = false
     lazy val elements = SeqMap("" -> gen)
     def underlying = elements.head._2
@@ -227,11 +226,11 @@ class RecordSpec extends ChiselFlatSpec with Utils {
   behavior.of("Records")
 
   they should "bulk connect similarly to Bundles" in {
-    ChiselStage.elaborate { new MyModule(fooBarType, fooBarType) }
+    ChiselStage.emitCHIRRTL { new MyModule(fooBarType, fooBarType) }
   }
 
   they should "bulk connect to Bundles" in {
-    ChiselStage.elaborate { new MyModule(new MyBundle, fooBarType) }
+    ChiselStage.emitCHIRRTL { new MyModule(new MyBundle, fooBarType) }
   }
 
   they should "emit FIRRTL bulk connects when possible" in {
@@ -249,7 +248,7 @@ class RecordSpec extends ChiselFlatSpec with Utils {
     }
 
     val e = intercept[AliasedAggregateFieldException] {
-      ChiselStage.elaborate {
+      ChiselStage.emitCHIRRTL {
         new Module {
           val io = IO(new AliasedFieldRecord)
         }
@@ -267,7 +266,7 @@ class RecordSpec extends ChiselFlatSpec with Utils {
 
   they should "work correctly for toTarget in nested OpaqueType Records" in {
     var mod: NestedRecordModule = null
-    ChiselStage.elaborate { mod = new NestedRecordModule; mod }
+    ChiselStage.emitCHIRRTL { mod = new NestedRecordModule; mod }
     val testStrings = Seq(
       mod.inst.io.foo.toTarget.serialize,
       mod.inst.io.foo.k.toTarget.serialize,
@@ -281,8 +280,8 @@ class RecordSpec extends ChiselFlatSpec with Utils {
 
   they should "work correctly with DataMirror in nested OpaqueType Records" in {
     var mod: NestedRecordModule = null
-    ChiselStage.elaborate { mod = new NestedRecordModule; mod }
-    val ports = chisel3.experimental.DataMirror.fullModulePorts(mod.inst)
+    ChiselStage.emitCHIRRTL { mod = new NestedRecordModule; mod }
+    val ports = DataMirror.fullModulePorts(mod.inst)
     val expectedPorts = Seq(
       ("clock", mod.inst.clock),
       ("reset", mod.inst.reset),
@@ -311,13 +310,13 @@ class RecordSpec extends ChiselFlatSpec with Utils {
 
   they should "throw an error when map contains a named element and OpaqueType is mixed in" in {
     (the[Exception] thrownBy extractCause[Exception] {
-      ChiselStage.elaborate { new NamedSingleElementModule }
+      ChiselStage.emitCHIRRTL { new NamedSingleElementModule }
     }).getMessage should include("Opaque types must have exactly one element with an empty name")
   }
 
   they should "throw an error when map contains more than one element and OpaqueType is mixed in" in {
     (the[Exception] thrownBy extractCause[Exception] {
-      ChiselStage.elaborate { new ErroneousOverrideModule }
+      ChiselStage.emitCHIRRTL { new ErroneousOverrideModule }
     }).getMessage should include("Opaque types must have exactly one element with an empty name")
   }
 
@@ -344,14 +343,14 @@ class RecordSpec extends ChiselFlatSpec with Utils {
 
   they should "work with .toTarget" in {
     var m: SingleElementRecordModule = null
-    ChiselStage.elaborate { m = new SingleElementRecordModule; m }
+    ChiselStage.emitCHIRRTL { m = new SingleElementRecordModule; m }
     val q = m.in1.toTarget.toString
     assert(q == "~SingleElementRecordModule|SingleElementRecordModule>in1")
   }
 
   they should "NOT work with .toTarget on non-data OpaqueType Record" in {
     var m: SingleElementRecordModule = null
-    ChiselStage.elaborate { m = new SingleElementRecordModule; m }
+    ChiselStage.emitCHIRRTL { m = new SingleElementRecordModule; m }
     a[ChiselException] shouldBe thrownBy { m.r.toTarget }
   }
 
@@ -373,16 +372,16 @@ class RecordSpec extends ChiselFlatSpec with Utils {
 
   "Bulk connect on Record" should "check that the fields match" in {
     (the[ChiselException] thrownBy extractCause[ChiselException] {
-      ChiselStage.elaborate { new MyModule(fooBarType, new CustomBundle("bar" -> UInt(32.W))) }
+      ChiselStage.emitCHIRRTL { new MyModule(fooBarType, new CustomBundle("bar" -> UInt(32.W))) }
     }).getMessage should include("Right Record missing field")
 
     (the[ChiselException] thrownBy extractCause[ChiselException] {
-      ChiselStage.elaborate { new MyModule(new CustomBundle("bar" -> UInt(32.W)), fooBarType) }
+      ChiselStage.emitCHIRRTL { new MyModule(new CustomBundle("bar" -> UInt(32.W)), fooBarType) }
     }).getMessage should include("Left Record missing field")
   }
 
   "CustomBundle" should "work like built-in aggregates" in {
-    ChiselStage.elaborate(new Module {
+    ChiselStage.emitCHIRRTL(new Module {
       val gen = new CustomBundle("foo" -> UInt(32.W))
       val io = IO(Output(gen))
       val wire = Wire(gen)
@@ -391,7 +390,7 @@ class RecordSpec extends ChiselFlatSpec with Utils {
   }
 
   "CustomBundle" should "check the types" in {
-    ChiselStage.elaborate { new RecordTypeTester }
+    ChiselStage.emitCHIRRTL { new RecordTypeTester }
   }
 
   "Record with unstable elements" should "error" in {
@@ -399,7 +398,7 @@ class RecordSpec extends ChiselFlatSpec with Utils {
       def elements = SeqMap("a" -> UInt(8.W))
     }
     val e = the[ChiselException] thrownBy {
-      ChiselStage.elaborate(new Module {
+      ChiselStage.emitCHIRRTL(new Module {
         val io = IO(Input(new MyRecord))
       })
     }
@@ -422,5 +421,28 @@ class RecordSpec extends ChiselFlatSpec with Utils {
     }
 
     err.getMessage should include("bundle plugin was unable to clone")
+  }
+
+  "Attempting to create a Record with bound nested elements" should "error" in {
+    class InnerNestedRecord[T <: Data](gen: T) extends Record {
+      val elements = SeqMap("a" -> gen)
+    }
+    class NestedRecord[T <: Data](gen: T) extends Record {
+      val inner1 = new InnerNestedRecord(gen)
+      val inner2 = new InnerNestedRecord(UInt(4.W))
+      val elements = SeqMap("a" -> inner1, "b" -> inner2)
+    }
+    class MyRecord[T <: Data](gen: T) extends Record {
+      val nested = new NestedRecord(gen)
+      val elements = SeqMap("a" -> nested)
+    }
+
+    val e = the[ChiselException] thrownBy {
+      ChiselStage.emitCHIRRTL(new Module {
+        val myReg = RegInit(0.U(8.W))
+        val io = IO(Input(new MyRecord(myReg)))
+      })
+    }
+    e.getMessage should include("must be a Chisel type, not hardware")
   }
 }

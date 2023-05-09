@@ -34,8 +34,7 @@ array [ condition -> selected_input_port ].
 Chisel also provides `MuxLookup` which is an n-way indexed multiplexer:
 
 ```scala
-MuxLookup(idx, default,
-          Array(0.U -> a, 1.U -> b, ...))
+MuxLookup(idx, default)(Array(0.U -> a, 1.U -> b, ...))
 ```
 
 This is the same as a `MuxCase`, where the conditions are all index based selection:

@@ -6,7 +6,7 @@ import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util.{Counter, PriorityMux}
 import chiselTests.ChiselFlatSpec
-import circt.stage.ChiselStage.emitCHIRRTL
+import _root_.circt.stage.ChiselStage.emitCHIRRTL
 
 class PriorityMuxTester extends BasicTester {
 

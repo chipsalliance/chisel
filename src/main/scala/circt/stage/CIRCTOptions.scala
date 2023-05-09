@@ -12,18 +12,18 @@ import java.io.File
   * @param target the specific IR or language target that CIRCT should compile to
   */
 class CIRCTOptions private[stage] (
-  val inputFile:         Option[File] = None,
   val outputFile:        Option[File] = None,
   val preserveAggregate: Option[PreserveAggregate.Type] = None,
   val target:            Option[CIRCTTarget.Type] = None,
-  val firtoolOptions:    Seq[String] = Seq.empty) {
+  val firtoolOptions:    Seq[String] = Seq.empty,
+  val splitVerilog:      Boolean = false) {
 
   private[stage] def copy(
-    inputFile:         Option[File] = inputFile,
     outputFile:        Option[File] = outputFile,
     preserveAggregate: Option[PreserveAggregate.Type] = preserveAggregate,
     target:            Option[CIRCTTarget.Type] = target,
-    firtoolOptions:    Seq[String] = firtoolOptions
-  ): CIRCTOptions = new CIRCTOptions(inputFile, outputFile, preserveAggregate, target, firtoolOptions)
+    firtoolOptions:    Seq[String] = firtoolOptions,
+    splitVerilog:      Boolean = splitVerilog
+  ): CIRCTOptions = new CIRCTOptions(outputFile, preserveAggregate, target, firtoolOptions, splitVerilog)
 
 }

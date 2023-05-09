@@ -30,7 +30,7 @@ object FillInterleaved {
   def apply(n: Int, in: UInt): UInt = macro SourceInfoTransform.nInArg
 
   /** @group SourceInfoTransformMacro */
-  def do_apply(n: Int, in: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
+  def do_apply(n: Int, in: UInt)(implicit sourceInfo: SourceInfo): UInt =
     _apply_impl(n, in.asBools)
 
   /** Creates n repetitions of each bit of x in order.
@@ -40,15 +40,14 @@ object FillInterleaved {
   def apply(n: Int, in: Seq[Bool]): UInt = macro SourceInfoTransform.nInArg
 
   /** @group SourceInfoTransformMacro */
-  def do_apply(n: Int, in: Seq[Bool])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
+  def do_apply(n: Int, in: Seq[Bool])(implicit sourceInfo: SourceInfo): UInt =
     _apply_impl(n, in)
 
   private def _apply_impl(
     n:  Int,
     in: Seq[Bool]
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): UInt = Cat(in.map(Fill(n, _)).reverse)
 }
 
@@ -68,18 +67,18 @@ object PopCount {
   def apply(in: Iterable[Bool]): UInt = macro SourceInfoTransform.inArg
 
   /** @group SourceInfoTransformMacro */
-  def do_apply(in: Iterable[Bool])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = _apply_impl(
+  def do_apply(in: Iterable[Bool])(implicit sourceInfo: SourceInfo): UInt = _apply_impl(
     in.toSeq
   )
 
   def apply(in: Bits): UInt = macro SourceInfoTransform.inArg
 
   /** @group SourceInfoTransformMacro */
-  def do_apply(in: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = _apply_impl(
+  def do_apply(in: Bits)(implicit sourceInfo: SourceInfo): UInt = _apply_impl(
     (0 until in.getWidth).map(in(_))
   )
 
-  private def _apply_impl(in: Iterable[Bool])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
+  private def _apply_impl(in: Iterable[Bool])(implicit sourceInfo: SourceInfo): UInt =
     SeqUtils.count(in.toSeq)
 }
 
@@ -101,7 +100,7 @@ object Fill {
   def apply(n: Int, x: UInt): UInt = macro SourceInfoTransform.nxArg
 
   /** @group SourceInfoTransformMacro */
-  def do_apply(n: Int, x: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
+  def do_apply(n: Int, x: UInt)(implicit sourceInfo: SourceInfo): UInt = {
     n match {
       case _ if n < 0 => throw new IllegalArgumentException(s"n (=$n) must be nonnegative integer.")
       case 0          => UInt(0.W)
@@ -129,7 +128,7 @@ object Fill {
   */
 object Reverse {
 
-  private def doit(in: UInt, length: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
+  private def doit(in: UInt, length: Int)(implicit sourceInfo: SourceInfo): UInt =
     length match {
       case _ if length < 0                                    => throw new IllegalArgumentException(s"length (=$length) must be nonnegative integer.")
       case _ if length <= 1                                   => in
@@ -152,5 +151,5 @@ object Reverse {
   def apply(in: UInt): UInt = macro SourceInfoTransform.inArg
 
   /** @group SourceInfoTransformMacro */
-  def do_apply(in: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = doit(in, in.getWidth)
+  def do_apply(in: UInt)(implicit sourceInfo: SourceInfo): UInt = doit(in, in.getWidth)
 }

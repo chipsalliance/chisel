@@ -12,7 +12,7 @@ import scala.collection.mutable
 
 /** Phase that consumes all Aspects and calls their toAnnotationSeq methods.
   *
-  * Consumes the [[chisel3.stage.DesignAnnotation]] and converts every [[Aspect]] into their annotations prior to executing FIRRTL
+  * Consumes the [[chisel3.stage.DesignAnnotation]] and converts every `Aspect` into their annotations prior to executing FIRRTL
   */
 class AspectPhase extends Phase {
   def transform(annotations: AnnotationSeq): AnnotationSeq = {

@@ -49,8 +49,8 @@ private[chisel3] object instantiableMacro {
       }
       val (newClz, implicitClzs, tpname) = clz match {
         case q"$mods class $tpname[..$tparams] $ctorMods(...$paramss) extends { ..$earlydefns } with ..$parents { $self => ..$stats }" =>
-          val defname = TypeName(tpname + c.freshName())
-          val instname = TypeName(tpname + c.freshName())
+          val defname = TypeName(tpname.toString + c.freshName())
+          val instname = TypeName(tpname.toString + c.freshName())
           val (newStats, extensions) = processBody(stats)
           val argTParams = tparams.map(_.name)
           (
@@ -62,8 +62,8 @@ private[chisel3] object instantiableMacro {
             tpname
           )
         case q"$mods trait $tpname[..$tparams] extends { ..$earlydefns } with ..$parents { $self => ..$stats }" =>
-          val defname = TypeName(tpname + c.freshName())
-          val instname = TypeName(tpname + c.freshName())
+          val defname = TypeName(tpname.toString + c.freshName())
+          val instname = TypeName(tpname.toString + c.freshName())
           val (newStats, extensions) = processBody(stats)
           val argTParams = tparams.map(_.name)
           (

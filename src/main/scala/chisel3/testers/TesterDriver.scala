@@ -12,9 +12,13 @@ import firrtl.stage.FirrtlCircuitAnnotation
 import firrtl.transforms.BlackBoxSourceHelper.writeResourceToDirectory
 
 import java.io._
+import scala.annotation.nowarn
 import scala.sys.process.ProcessLogger
 
+@nowarn("msg=trait BackendCompilationUtilities in package chisel3 is deprecated")
 object TesterDriver extends BackendCompilationUtilities {
+  //TODO: need to remove BackendCompilationUtilities here but it will break external API
+  //      unless all methods of it are implemented
 
   private[chisel3] trait Backend extends NoTargetAnnotation with Unserializable {
     def execute(
@@ -79,8 +83,7 @@ object TesterDriver extends BackendCompilationUtilities {
       })
 
       val dirName = annotationsFromPhase1.collectFirst { case TargetDirAnnotation(dirName) => dirName }.getOrElse(".")
-      val args = Array("-td", dirName)
-      val verilog = circt.stage.ChiselStage.emitSystemVerilog(t(), args)
+      val verilog = circt.stage.ChiselStage.emitSystemVerilog(t())
       val verilogPath = ensureExistingAbsolutePath(path.toString) / (target + ".v")
       os.write.over(verilogPath, verilog)
       // Use sys.Process to invoke a bunch of backend stuff, then run the resulting exe

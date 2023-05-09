@@ -2,6 +2,10 @@
 
 package circt.stage.phases
 
+import chisel3.experimental.hierarchy.core.ImportDefinitionAnnotation
+import chisel3.stage.{ChiselCircuitAnnotation, DesignAnnotation, SourceRootAnnotation}
+import chisel3.BuildInfo.{version => chiselVersion, firtoolVersion}
+
 import circt.Implicits.BooleanImplicits
 import circt.stage.{CIRCTOptions, CIRCTTarget, EmittedMLIR, PreserveAggregate}
 
@@ -19,9 +23,12 @@ import firrtl.options.{
 }
 import firrtl.options.phases.WriteOutputAnnotations
 import firrtl.options.Viewer.view
-import firrtl.stage.{FirrtlOptions, RunFirrtlTransformAnnotation}
+import firrtl.stage.FirrtlOptions
 import _root_.logger.LogLevel
+import chisel3.InternalErrorException
 
+import scala.util.control.NoStackTrace
+import scala.collection.mutable
 import java.io.File
 
 private object Helpers {
@@ -42,7 +49,7 @@ private object Helpers {
     */
   def extractAnnotationFile(string: String, filename: String): AnnotationSeq = {
     var inAnno = false
-    val filtered: String = string.lines.filter {
+    val filtered: String = string.linesIterator.filter {
       case line if line.startsWith("// ----- 8< ----- FILE") && line.contains(filename) =>
         inAnno = true
         false
@@ -76,6 +83,10 @@ private[this] object Exceptions {
         |${"-" * 78}""".stripMargin
   }
 
+  def versionAdvice: String =
+    s"Note that this version of Chisel ($chiselVersion) was published against firtool version " +
+      firtoolVersion.getOrElse("<unknown>") + "."
+
   /** Indicates that the firtool binary failed with a non-zero exit code.  This generally indicates a compiler error
     * either originating from a user error or from a crash.
     *
@@ -87,10 +98,11 @@ private[this] object Exceptions {
   class FirtoolNonZeroExitCode(binary: String, exitCode: Int, stdout: String, stderr: String)
       extends RuntimeException(
         dramaticError(
-          header = s"${binary} returned a non-zero exit code",
+          header = s"${binary} returned a non-zero exit code. $versionAdvice",
           body = s"ExitCode:\n${exitCode}\nSTDOUT:\n${stdout}\nSTDERR:\n${stderr}"
         )
       )
+      with NoStackTrace
 
   /** Indicates that the firtool binary was not found.  This likely indicates that the user didn't install
     * CIRCT/firtool.
@@ -110,19 +122,14 @@ private[this] object Exceptions {
 
 }
 
-/** A phase that calls and runs CIRCT, specifically `firtool`, while preserving an [[AnnotationSeq]] API.
-  *
-  * This is analogous to [[firrtl.stage.phases.Compiler]].
-  */
+/** A phase that calls and runs CIRCT, specifically `firtool`, while preserving an [[firrtl.AnnotationSeq AnnotationSeq]] API. */
 class CIRCT extends Phase {
 
   import Helpers._
   import scala.sys.process._
 
   override def prerequisites = Seq(
-    Dependency[firrtl.stage.phases.AddDefaults],
-    Dependency[firrtl.stage.phases.AddImplicitEmitter],
-    Dependency[firrtl.stage.phases.AddImplicitOutputFile]
+    Dependency[circt.stage.phases.AddImplicitOutputFile]
   )
   override def optionalPrerequisites = Seq.empty
   override def optionalPrerequisiteOf = Seq.empty
@@ -130,32 +137,40 @@ class CIRCT extends Phase {
 
   override def transform(annotations: AnnotationSeq): AnnotationSeq = {
     val circtOptions = view[CIRCTOptions](annotations)
+
+    // Early exit (do not run firtool) if the target is "CHIRRTL", i.e., specification FIRRTL.
+    circtOptions.target match {
+      case Some(CIRCTTarget.CHIRRTL) => return annotations
+      case _                         =>
+    }
+
     val firrtlOptions = view[FirrtlOptions](annotations)
     val stageOptions = view[StageOptions](annotations)
 
-    var inferReadWrite = false
-    var imcp = true
     var logLevel = _root_.logger.LogLevel.None
-    var split = false
+    var split = circtOptions.splitVerilog
+    val includeDirs = mutable.ArrayBuffer.empty[String]
 
-    val annotationsx: AnnotationSeq = annotations.flatMap {
+    // Partition the annotations into those that will be passed to CIRCT and
+    // those that are not.  The annotations that are in the passhtrough set will
+    // be returned without modification.
+    val (passthroughAnnotations, circtAnnotations) = annotations.partition {
+      case _: ImportDefinitionAnnotation[_] | _: DesignAnnotation[_] | _: ChiselCircuitAnnotation =>
+        true
+      case _ => false
+    }
+
+    val annotationsx: AnnotationSeq = circtAnnotations.flatMap {
       case a: CustomFileEmission => {
         val filename = a.filename(annotations)
         a.replacements(filename)
       }
-      case _: firrtl.EmitCircuitAnnotation => Nil
-      case _: firrtl.EmitAllModulesAnnotation => {
-        split = true
-        Nil
-      }
-      case firrtl.passes.memlib.InferReadWriteAnnotation =>
-        inferReadWrite = true
-        Nil
-      case firrtl.transforms.NoConstantPropagationAnnotation =>
-        imcp = false
-        Nil
+      case _:    ImportDefinitionAnnotation[_] => Nil
       case anno: _root_.logger.LogLevelAnnotation =>
         logLevel = anno.globalLogLevel
+        Nil
+      case SourceRootAnnotation(dir) =>
+        includeDirs += dir.toString
         Nil
       /* The following can be dropped. */
       case _: _root_.logger.ClassLogLevelAnnotation => Nil
@@ -190,11 +205,10 @@ class CIRCT extends Phase {
           case Some(PreserveAggregate.All)       => Seq("-preserve-aggregate=all")
           case None                              => None
         }) ++
-        circtOptions.preserveAggregate.map(_ => "-preserve-public-types=0") ++
-        (!inferReadWrite).option("-disable-infer-rw") ++
-        (!imcp).option("-disable-imcp") ++
+        circtOptions.preserveAggregate.map(_ => "-scalarize-top-module=0") ++
         /* Communicate the annotation file through a file. */
         (chiselAnnotationFilename.map(a => Seq("-annotation-file", a))).getOrElse(Seq.empty) ++
+        includeDirs.flatMap(d => Seq("--include-dir", d.toString)) ++
         /* Convert the target to a firtool-compatible option. */
         ((circtOptions.target, split) match {
           case (Some(CIRCTTarget.FIRRTL), false)        => Seq("-ir-fir")
@@ -236,7 +250,7 @@ class CIRCT extends Phase {
     val errors = stderrStream.toString
     if (exitValue != 0)
       throw new Exceptions.FirtoolNonZeroExitCode(binary, exitValue, result, errors)
-    if (split) {
+    val finalAnnotations = if (split) {
       logger.info(result)
       val file = new File(stageOptions.getBuildFileName(circtAnnotationFilename, Some(".anno.json")))
       file match {
@@ -262,9 +276,13 @@ class CIRCT extends Phase {
           throw new Exception(
             "No 'circtOptions.target' specified. This should be impossible if dependencies are satisfied!"
           )
+        case unknown =>
+          throw new InternalErrorException(s"Match Error: Unknon CIRCTTarget: $unknown")
       })
     }
 
+    // Return the passthrough annotations and the output annotations from CIRCT.
+    passthroughAnnotations ++ finalAnnotations
   }
 
 }

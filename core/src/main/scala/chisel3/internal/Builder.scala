@@ -11,15 +11,18 @@ import chisel3.internal.firrtl._
 import chisel3.internal.naming._
 import _root_.firrtl.annotations.{CircuitName, ComponentName, IsMember, ModuleName, Named, ReferenceTarget}
 import _root_.firrtl.annotations.AnnotationUtils.validComponentName
-import _root_.firrtl.{AnnotationSeq, RenameMap}
+import _root_.firrtl.AnnotationSeq
+import _root_.firrtl.renamemap.MutableRenameMap
+import _root_.firrtl.util.BackendCompilationUtilities._
 import chisel3.experimental.dataview.{reify, reifySingleData}
 import chisel3.internal.Builder.Prefix
 import logger.LazyLogging
 
 import scala.collection.mutable
 import scala.annotation.tailrec
+import java.io.File
 
-private[chisel3] class Namespace(keywords: Set[String]) {
+private[chisel3] class Namespace(keywords: Set[String], separator: Char = '_') {
   // This HashMap is compressed, not every name in the namespace is present here.
   // If the same name is requested multiple times, it only takes 1 entry in the HashMap and the
   // value is incremented for each time the name is requested.
@@ -33,22 +36,13 @@ private[chisel3] class Namespace(keywords: Set[String]) {
 
   @tailrec
   private def rename(n: String, index: Long): String = {
-    val tryName = s"${n}_${index}"
+    val tryName = s"${n}${separator}${index}"
     if (names.contains(tryName)) {
       rename(n, index + 1)
     } else {
       names(n) = index + 1
       tryName
     }
-  }
-
-  private def sanitize(s: String, leadingDigitOk: Boolean = false): String = {
-    // TODO what character set does FIRRTL truly support? using ANSI C for now
-    def legalStart(c: Char) = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'
-    def legal(c:      Char) = legalStart(c) || (c >= '0' && c <= '9')
-    val res = if (s.forall(legal)) s else s.filter(legal)
-    val headOk = (!res.isEmpty) && (leadingDigitOk || legalStart(res.head))
-    if (headOk) res else s"_$res"
   }
 
   /** Checks if `n` ends in `_\d+` and returns the substring before `_` if so, null otherwise */
@@ -61,7 +55,7 @@ private[chisel3] class Namespace(keywords: Set[String]) {
     }
     // Will get i == 0 for all digits or _\d+ with empty prefix, those have no prefix so returning 0 is correct
     if (i == n.size) 0 // no digits
-    else if (n(i) != '_') 0 // no _
+    else if (n(i) != separator) 0 // no _
     else i
   }
 
@@ -101,6 +95,7 @@ private[chisel3] class Namespace(keywords: Set[String]) {
 private[chisel3] object Namespace {
 
   /** Constructs an empty Namespace */
+  def empty(separator: Char): Namespace = new Namespace(Set.empty[String], separator)
   def empty: Namespace = new Namespace(Set.empty[String])
 }
 
@@ -113,7 +108,7 @@ private[chisel3] class IdGen {
   def value: Long = counter
 }
 
-private[chisel3] trait HasId extends InstanceId {
+private[chisel3] trait HasId extends chisel3.InstanceId {
   // using nullable var for better memory usage
   private var _parentVar:       BaseModule = Builder.currentModule.getOrElse(null)
   private[chisel3] def _parent: Option[BaseModule] = Option(_parentVar)
@@ -182,7 +177,7 @@ private[chisel3] trait HasId extends InstanceId {
     * If the final computed name conflicts with another name, it may get uniquified by appending
     * a digit at the end.
     *
-    * Is a higher priority than [[autoSeed]], in that regardless of whether [[autoSeed]]
+    * Is a higher priority than `autoSeed`, in that regardless of whether `autoSeed`
     * was called, [[suggestName]] will always take precedence.
     *
     * @param seed The seed for the name of this component
@@ -195,17 +190,6 @@ private[chisel3] trait HasId extends InstanceId {
       naming_prefix = Builder.getPrefix
     }
     this
-  }
-
-  // Internal version of .suggestName that can override a user-suggested name
-  // This only exists for maintaining "val io" naming in compatibility-mode Modules without IO
-  // wrapping
-  private[chisel3] def forceFinalName(seed: String): this.type = {
-    // This could be called with user prefixes, ignore them
-    noPrefix {
-      suggested_seedVar = seed
-      this.suggestName(seed)
-    }
   }
 
   /** Computes the name of this HasId, if one exists
@@ -239,11 +223,31 @@ private[chisel3] trait HasId extends InstanceId {
     refBuilder: String => Arg = Ref(_)
   ): Unit =
     if (_ref.isEmpty) {
-      val candidate_name = _computeName(Some(default).filterNot(_ => errorIfDup)).get
-      val available_name = namespace.name(candidate_name)
-      if (errorIfDup && (available_name != candidate_name)) {
-        Builder.error(s"Cannot have duplicate names $available_name and $candidate_name")(UnlocatableSourceInfo)
+      val candidate_name = _computeName(Some(default).filterNot(_ => errorIfDup)).getOrElse {
+        throwException(
+          s"Attempted to name a nameless IO port ($this): this is usually caused by instantiating an IO but not assigning it to a val.\n" +
+            s"Assign $this to a val, or explicitly call suggestName to seed a unique name"
+        )
       }
+
+      val sanitized = sanitize(candidate_name)
+      val available_name = namespace.name(candidate_name)
+
+      // Check for both cases of name duplication
+      if (errorIfDup && (available_name != sanitized)) {
+        // If sanitization occurred, then the sanitized name duplicate an existing name
+        if ((candidate_name != sanitized)) {
+          Builder.error(
+            s"Attempted to name $this with an unsanitary name '$candidate_name': sanitization results in a duplicated name '$sanitized'. Please seed a more unique name"
+          )(UnlocatableSourceInfo)
+        } else {
+          // Otherwise the candidate name duplicates an existing name
+          Builder.error(
+            s"Attempted to name $this with a duplicated name '$candidate_name'. Use suggestName to seed a unique name"
+          )(UnlocatableSourceInfo)
+        }
+      }
+
       setRef(refBuilder(available_name))
       // Clear naming prefix to free memory
       naming_prefix = Nil
@@ -307,7 +311,7 @@ private[chisel3] trait HasId extends InstanceId {
       (p._component, this) match {
         case (Some(c), _) => refName(c)
         case (None, d: Data) if d.topBindingOpt == Some(CrossModuleBinding) => _ref.get.localName
-        case (None, _: MemBase[Data]) => _ref.get.localName
+        case (None, _: MemBase[_]) => _ref.get.localName
         case (None, _) =>
           throwException(s"signalName/pathName should be called after circuit elaboration: $this, ${_parent}")
       }
@@ -412,52 +416,54 @@ private[chisel3] class ChiselContext() {
 private[chisel3] class DynamicContext(
   val annotationSeq:     AnnotationSeq,
   val throwOnFirstError: Boolean,
-  val warningsAsErrors:  Boolean) {
-  val importDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
+  val warningsAsErrors:  Boolean,
+  val sourceRoots:       Seq[File]) {
+  val importedDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
 
-  // Map holding the actual names of extModules
-  // Pick the definition name by default in case not passed through annotation.
-  val importDefinitionMap = importDefinitionAnnos
+  // Map from proto module name to ext-module name
+  // Pick the definition name by default in case not overridden
+  // 1. Ensure there are no repeated names for imported Definitions - both Proto Names as well as ExtMod Names
+  // 2. Return the distinct definition / extMod names
+  val importedDefinitionMap = importedDefinitionAnnos
     .map(a => a.definition.proto.name -> a.overrideDefName.getOrElse(a.definition.proto.name))
     .toMap
 
-  // Helper function which does 2 things
-  // 1. Ensure there are no repeated names for imported Definitions - both Proto Names as well as ExtMod Names
-  // 2. Return the distinct definition / extMod names
-  private def checkAndGeDistinctProtoExtModNames() = {
-    val importAllDefinitionProtoNames = importDefinitionAnnos.map { a => a.definition.proto.name }
-    val importDistinctDefinitionProtoNames = importDefinitionMap.keys.toSeq
-    val importAllDefinitionExtModNames = importDefinitionMap.toSeq.map(_._2)
-    val importDistinctDefinitionExtModNames = importAllDefinitionExtModNames.distinct
+  private def checkAndGetDistinctProtoExtModNames() = {
+    val allProtoNames = importedDefinitionAnnos.map { a => a.definition.proto.name }
+    val distinctProtoNames = importedDefinitionMap.keys.toSeq
+    val allExtModNames = importedDefinitionMap.toSeq.map(_._2)
+    val distinctExtModNames = allExtModNames.distinct
 
-    if (importDistinctDefinitionProtoNames.length < importAllDefinitionProtoNames.length) {
-      val duplicates = importAllDefinitionProtoNames.diff(importDistinctDefinitionProtoNames).mkString(", ")
+    if (distinctProtoNames.length < allProtoNames.length) {
+      val duplicates = allProtoNames.diff(distinctProtoNames).mkString(", ")
       throwException(s"Expected distinct imported Definition names but found duplicates for: $duplicates")
     }
-    if (importDistinctDefinitionExtModNames.length < importAllDefinitionExtModNames.length) {
-      val duplicates = importAllDefinitionExtModNames.diff(importDistinctDefinitionExtModNames).mkString(", ")
+    if (distinctExtModNames.length < allExtModNames.length) {
+      val duplicates = allExtModNames.diff(distinctExtModNames).mkString(", ")
       throwException(s"Expected distinct overrideDef names but found duplicates for: $duplicates")
     }
-    (importAllDefinitionProtoNames ++ importAllDefinitionExtModNames).distinct
+    (
+      (allProtoNames ++ allExtModNames).distinct,
+      importedDefinitionAnnos.map(a => a.definition.proto.definitionIdentifier)
+    )
   }
 
   val globalNamespace = Namespace.empty
+  val globalIdentifierNamespace = Namespace.empty('$')
 
   // Ensure imported Definitions emit as ExtModules with the correct name so
   // that instantiations will also use the correct name and prevent any name
   // conflicts with Modules/Definitions in this elaboration
-  checkAndGeDistinctProtoExtModNames().foreach {
-    globalNamespace.name(_)
+  checkAndGetDistinctProtoExtModNames() match {
+    case (names, identifiers) =>
+      names.foreach(globalNamespace.name(_))
+      identifiers.foreach(globalIdentifierNamespace.name(_))
   }
 
   val components = ArrayBuffer[Component]()
   val annotations = ArrayBuffer[ChiselAnnotation]()
   val newAnnotations = ArrayBuffer[ChiselMultiAnnotation]()
   var currentModule: Option[BaseModule] = None
-
-  // Enum annotations are added every time a ChiselEnum is bound
-  // To keep the number down, we keep them unique in the annotations
-  val enumAnnos = mutable.HashSet[ChiselAnnotation]()
 
   /** Contains a mapping from a elaborated module to their aspect
     * Set by [[ModuleAspect]]
@@ -467,7 +473,7 @@ private[chisel3] class DynamicContext(
   // Views that do not correspond to a single ReferenceTarget and thus require renaming
   val unnamedViews: ArrayBuffer[Data] = ArrayBuffer.empty
 
-  val instantiateCache: mutable.HashMap[Any, hierarchy.core.Definition[BaseModule]] = mutable.HashMap()
+  val contextCache: BuilderContextCache = BuilderContextCache.empty
 
   // Set by object Module.apply before calling class Module constructor
   // Used to distinguish between no Module() wrapping, multiple wrappings, and rewrapping
@@ -475,7 +481,7 @@ private[chisel3] class DynamicContext(
   var whenStack:            List[WhenContext] = Nil
   var currentClock:         Option[Clock] = None
   var currentReset:         Option[Reset] = None
-  val errors = new ErrorLog(warningsAsErrors)
+  val errors = new ErrorLog(warningsAsErrors, sourceRoots)
   val namingStack = new NamingStack
 
   // Used to indicate if this is the top-level module of full elaboration, or from a Definition
@@ -525,19 +531,19 @@ private[chisel3] object Builder extends LazyLogging {
 
   def idGen: IdGen = chiselContext.get.idGen
 
-  def globalNamespace: Namespace = dynamicContext.globalNamespace
-  def components:      ArrayBuffer[Component] = dynamicContext.components
-  def annotations:     ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
+  def globalNamespace:           Namespace = dynamicContext.globalNamespace
+  def globalIdentifierNamespace: Namespace = dynamicContext.globalIdentifierNamespace
+  def components:                ArrayBuffer[Component] = dynamicContext.components
+  def annotations:               ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
 
-  def instantiateCache: mutable.HashMap[Any, hierarchy.core.Definition[BaseModule]] = dynamicContext.instantiateCache
-  def enumAnnos:        mutable.HashSet[ChiselAnnotation] = dynamicContext.enumAnnos
+  def contextCache: BuilderContextCache = dynamicContext.contextCache
 
   // TODO : Unify this with annotations in the future - done this way for backward compatability
   def newAnnotations: ArrayBuffer[ChiselMultiAnnotation] = dynamicContext.newAnnotations
 
-  def annotationSeq:       AnnotationSeq = dynamicContext.annotationSeq
-  def namingStack:         NamingStack = dynamicContext.namingStack
-  def importDefinitionMap: Map[String, String] = dynamicContext.importDefinitionMap
+  def annotationSeq:         AnnotationSeq = dynamicContext.annotationSeq
+  def namingStack:           NamingStack = dynamicContext.namingStack
+  def importedDefinitionMap: Map[String, String] = dynamicContext.importedDefinitionMap
 
   def unnamedViews:  ArrayBuffer[Data] = dynamicContext.unnamedViews
   def viewNamespace: Namespace = chiselContext.get.viewNamespace
@@ -562,6 +568,8 @@ private[chisel3] object Builder extends LazyLogging {
         case Index(_, ULit(n, _)) => Some(n.toString) // Vec lit indexing
         case Index(_, _: Node) => None // Vec dynamic indexing
         case ModuleIO(_, n) => Some(n) // BlackBox port
+        case f =>
+          throw new InternalErrorException(s"Match Error: field=$f")
       }
       def map2[A, B](a: Option[A], b: Option[A])(f: (A, A) => B): Option[B] =
         a.flatMap(ax => b.map(f(ax, _)))
@@ -781,7 +789,7 @@ private[chisel3] object Builder extends LazyLogging {
     *
     * @param m exception message
     */
-  @throws(classOf[ChiselException])
+  @throws(classOf[chisel3.ChiselException])
   def exception(m: => String)(implicit sourceInfo: SourceInfo): Nothing = {
     error(m)
     throwException(m)
@@ -792,20 +800,11 @@ private[chisel3] object Builder extends LazyLogging {
     major.toInt
   }
 
-  def checkScalaVersion(): Unit = {
-    if (getScalaMajorVersion == 11) {
-      val url = _root_.firrtl.stage.transforms.CheckScalaVersion.migrationDocumentLink
-      val msg = s"Chisel 3.4 is the last version that will support Scala 2.11. " +
-        s"Please upgrade to Scala 2.12. See $url"
-      deprecated(msg, Some(""))
-    }
-  }
-
   // Builds a RenameMap for all Views that do not correspond to a single Data
   // These Data give a fake ReferenceTarget for .toTarget and .toReferenceTarget that the returned
   // RenameMap can split into the constituent parts
-  private[chisel3] def makeViewRenameMap: RenameMap = {
-    val renames = RenameMap()
+  private[chisel3] def makeViewRenameMap: MutableRenameMap = {
+    val renames = MutableRenameMap()
     for (view <- unnamedViews) {
       val localTarget = view.toTarget
       val absTarget = view.toAbsoluteTarget
@@ -825,9 +824,8 @@ private[chisel3] object Builder extends LazyLogging {
     forceModName:   Boolean = true
   ): (Circuit, T) = {
     dynamicContextVar.withValue(Some(dynamicContext)) {
-      ViewParent // Must initialize the singleton in a Builder context or weird things can happen
+      ViewParent: Unit // Must initialize the singleton in a Builder context or weird things can happen
       // in tiny designs/testcases that never access anything in chisel3.internal
-      checkScalaVersion()
       logger.info("Elaborating design...")
       val mod = f
       if (forceModName) { // This avoids definition name index skipping with D/I
@@ -872,7 +870,7 @@ object DynamicNamingStack {
     prefixRef
   }
 
-  def length(): Int = Builder.namingStackOption.get.length
+  def length(): Int = Builder.namingStackOption.get.length()
 }
 
 /** Casts BigInt to Int, issuing an error when the input isn't representable. */

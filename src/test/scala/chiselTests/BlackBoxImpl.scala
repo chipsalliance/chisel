@@ -107,10 +107,9 @@ class BlackBoxImplSpec extends AnyFreeSpec with Matchers {
       val annotations = Seq(
         TargetDirAnnotation(targetDir),
         ChiselGeneratorAnnotation(() => new UsesBlackBoxAddViaInline),
-        firrtl.EmitAllModulesAnnotation(classOf[firrtl.Emitter]),
         BlackBoxTargetDirAnno(".")
       )
-      (new ChiselStage).execute(Array("--target", "systemverilog"), annotations)
+      (new ChiselStage).execute(Array("--target", "systemverilog", "--split-verilog"), annotations)
 
       val verilogOutput = new File(targetDir, "BlackBoxAdd.v")
       verilogOutput.exists() should be(true)
@@ -120,10 +119,9 @@ class BlackBoxImplSpec extends AnyFreeSpec with Matchers {
       val annotations = Seq(
         TargetDirAnnotation(targetDir),
         ChiselGeneratorAnnotation(() => new UsesBlackBoxMinusViaResource),
-        firrtl.EmitAllModulesAnnotation(classOf[firrtl.Emitter]),
         BlackBoxTargetDirAnno(".")
       )
-      (new ChiselStage).execute(Array("--target", "systemverilog"), annotations)
+      (new ChiselStage).execute(Array("--target", "systemverilog", "--split-verilog"), annotations)
 
       val verilogOutput = new File(targetDir, "BlackBoxTest.v")
       verilogOutput.exists() should be(true)
@@ -136,10 +134,9 @@ class BlackBoxImplSpec extends AnyFreeSpec with Matchers {
       val annotations = Seq(
         TargetDirAnnotation(targetDir),
         ChiselGeneratorAnnotation(() => new UsesBlackBoxMinusViaPath),
-        firrtl.EmitAllModulesAnnotation(classOf[firrtl.Emitter]),
         BlackBoxTargetDirAnno(".")
       )
-      (new ChiselStage).execute(Array("--target", "systemverilog"), annotations)
+      (new ChiselStage).execute(Array("--target", "systemverilog", "--split-verilog"), annotations)
 
       val verilogOutput = new File(targetDir, "BlackBoxTest.v")
       verilogOutput.exists() should be(true)

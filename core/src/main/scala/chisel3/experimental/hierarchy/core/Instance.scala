@@ -11,8 +11,10 @@ import chisel3.internal.sourceinfo.InstanceTransform
 import chisel3.internal.firrtl.{Component, DefBlackBox, DefModule, Port}
 import firrtl.annotations.IsModule
 
+import scala.annotation.nowarn
+
 /** User-facing Instance type.
-  * Represents a unique instance of type [[A]] which are marked as @instantiable
+  * Represents a unique instance of type `A` which are marked as @instantiable
   * Can be created using Instance.apply method.
   *
   * @param underlying The internal representation of the instance, which may be either be directly the object, or a clone of an object
@@ -41,7 +43,7 @@ final case class Instance[+A] private[chisel3] (private[chisel3] underlying: Und
   }
 
   /** Used by Chisel's internal macros. DO NOT USE in your normal Chisel code!!!
-    * Instead, mark the field you are accessing with [[@public]]
+    * Instead, mark the field you are accessing with [[public]]
     *
     * Given a selector function (that) which selects a member from the original, return the
     *   corresponding member from the instance.
@@ -108,8 +110,7 @@ object Instance extends SourceInfoDoc {
   def do_apply[T <: BaseModule with IsInstantiable](
     definition: Definition[T]
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): Instance[T] = {
     // Check to see if the module is already defined internally or externally
     val existingMod = Builder.components.map {
@@ -121,7 +122,7 @@ object Instance extends SourceInfoDoc {
     if (existingMod.isEmpty) {
       // Add a Definition that will get emitted as an ExtModule so that FIRRTL
       // does not complain about a missing element
-      val extModName = Builder.importDefinitionMap.getOrElse(
+      val extModName = Builder.importedDefinitionMap.getOrElse(
         definition.proto.name,
         throwException(
           "Imported Definition information not found - possibly forgot to add ImportDefinition annotation?"
@@ -134,7 +135,7 @@ object Instance extends SourceInfoDoc {
           _closed = true
           val firrtlPorts = definition.proto.getModulePortsAndLocators.map {
             case (port, sourceInfo) =>
-              Port(port, port.specifiedDirection, sourceInfo)
+              Port(port, port.specifiedDirection, sourceInfo): @nowarn // Deprecated code allowed for internal use
           }
           val component = DefBlackBox(this, definition.proto.name, firrtlPorts, SpecifiedDirection.Unspecified, params)
           Some(component)
