@@ -5,7 +5,7 @@ package chisel3.reflect
 import chisel3._
 import chisel3.internal._
 import chisel3.internal.firrtl._
-import chisel3.experimental.BaseModule
+import chisel3.experimental.{BaseModule, SourceInfo}
 import scala.reflect.ClassTag
 
 object DataMirror {
@@ -14,6 +14,15 @@ object DataMirror {
   def directionOf(target: Data): ActualDirection = {
     requireIsHardware(target, "node requested directionality on")
     target.direction
+  }
+
+  /** Returns true if target has been `Flipped` or `Input` directly */
+  def hasOuterFlip(target: Data): Boolean = {
+    import chisel3.SpecifiedDirection.{Flip, Input}
+    target.specifiedDirection match {
+      case Flip | Input => true
+      case _            => false
+    }
   }
 
   private def hasBinding[B <: ConstrainedBinding: ClassTag](target: Data) = {
@@ -28,7 +37,7 @@ object DataMirror {
     * @param x the `Data` to check
     * @return `true` if x is an IO port, `false` otherwise
     */
-  def isIO(x: Data): Boolean = hasBinding[PortBinding](x)
+  def isIO(x: Data): Boolean = hasBinding[PortBinding](x) || hasBinding[SecretPortBinding](x)
 
   /** Check if a given `Data` is a Wire
     * @param x the `Data` to check
@@ -41,6 +50,12 @@ object DataMirror {
     * @return `true` if x is a Reg, `false` otherwise
     */
   def isReg(x: Data): Boolean = hasBinding[RegBinding](x)
+
+  /** Check if a given `Data` is a Probe
+    * @param x the `Data` to check
+    * @return `true` if x is a Probe, `false` otherwise
+    */
+  def hasProbeTypeModifier(x: Data): Boolean = x.probeInfo.nonEmpty
 
   /** Get an early guess for the name of this [[Data]]
     *
@@ -114,7 +129,7 @@ object DataMirror {
     * // )
     * }}}
     */
-  def modulePorts(target: BaseModule): Seq[(String, Data)] = target.getChiselPorts
+  def modulePorts(target: BaseModule)(implicit si: SourceInfo): Seq[(String, Data)] = target.getChiselPorts
 
   /** Returns a recursive representation of a module's ports with underscore-qualified names
     * {{{
@@ -145,7 +160,7 @@ object DataMirror {
     *       of its children.
     * @see [[DataMirror.modulePorts]] for a non-recursive representation of the ports.
     */
-  def fullModulePorts(target: BaseModule): Seq[(String, Data)] = {
+  def fullModulePorts(target: BaseModule)(implicit si: SourceInfo): Seq[(String, Data)] = {
     def getPortNames(name: String, data: Data): Seq[(String, Data)] = Seq(name -> data) ++ (data match {
       case _: Element => Seq()
       case r: Record =>
@@ -345,5 +360,31 @@ object DataMirror {
       case (l, r) => collectMembersOverAllForAnyFunction(l, r)(collector)
     }
     myItems ++ childItems
+  }
+
+  // Function to path upwards, stopping if reaching including
+  private[chisel3] def modulePath(h: HasId, until: Option[BaseModule]): Seq[BaseModule] = {
+    val me = h match {
+      case m: BaseModule => Seq(m)
+      case d: Data       => d.topBinding.location.toSeq
+      case m: MemBase[_] => m._parent.toSeq
+    }
+    if (me == until.toSeq) Nil
+    else {
+      me ++ me.flatMap(x => x._parent.toSeq.flatMap(p => modulePath(p, until)))
+    }
+  }
+  // Function to find the least common ancestor of two nodes
+  private[chisel3] def leastCommonAncestorModule(left: HasId, right: HasId): Option[BaseModule] = {
+    val leftPath = modulePath(left, None)
+    val leftPathSet = leftPath.toSet
+    val rightPath = modulePath(right, None)
+    rightPath.collectFirst { case p if leftPathSet.contains(p) => p }
+  }
+  // Returns LCA paths if a common ancestor exists.  The returned paths includes the LCA.
+  private[chisel3] def findLCAPaths(left: HasId, right: HasId): Option[(Seq[BaseModule], Seq[BaseModule])] = {
+    leastCommonAncestorModule(left, right).map { lca =>
+      (Seq(lca) ++ modulePath(left, Some(lca)), Seq(lca) ++ modulePath(right, Some(lca)))
+    }
   }
 }

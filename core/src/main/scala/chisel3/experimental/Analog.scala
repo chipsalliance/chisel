@@ -32,9 +32,6 @@ final class Analog private (private[chisel3] val width: Width) extends Element {
     */
   override def typeName = s"Analog$width"
 
-  private[chisel3] override def typeEquivalent(that: Data): Boolean =
-    that.isInstanceOf[Analog] && this.width == that.width
-
   override def litOption: Option[BigInt] = None
 
   def cloneType: this.type = new Analog(width).asInstanceOf[this.type]
@@ -61,7 +58,7 @@ final class Analog private (private[chisel3] val width: Width) extends Element {
     }
 
     targetTopBinding match {
-      case _: WireBinding | _: PortBinding | _: ViewBinding | _: AggregateViewBinding =>
+      case _: WireBinding | _: PortBinding | _: SecretPortBinding | _: ViewBinding | _: AggregateViewBinding =>
         direction = ActualDirection.Bidirectional(ActualDirection.Default)
       case x => throwException(s"Analog can only be Ports and Wires, not '$x'")
     }

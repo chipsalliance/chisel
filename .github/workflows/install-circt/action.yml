@@ -4,7 +4,7 @@ inputs:
   version:
     description: 'version to install'
     required: false
-    default: 'firtool-1.37.0'
+    default: 'firtool-1.40.0'
 
 runs:
   using: composite

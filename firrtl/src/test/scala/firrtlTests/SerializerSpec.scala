@@ -79,8 +79,7 @@ object SerializerSpec {
         childModuleIR,
         testModuleIR
       ),
-      "test",
-      Seq.empty
+      "test"
     )
 
 }
@@ -113,8 +112,7 @@ object SMemTestCircuit {
           )
         )
       ),
-      "Example",
-      Seq.empty
+      "Example"
     )
 
   def findRuw(c: Circuit): ReadUnderWrite.Value = {
@@ -167,6 +165,36 @@ class SerializerSpec extends AnyFlatSpec with Matchers {
     serialized should be(childModuleTabbed)
   }
 
+  it should "support emitting const types" in {
+    val constInt = DefWire(NoInfo, "constInt", ConstType(UIntType(IntWidth(3))))
+    Serializer.serialize(constInt) should be("wire constInt : const UInt<3>")
+
+    val constAsyncReset = DefWire(NoInfo, "constAsyncReset", ConstType(AsyncResetType))
+    Serializer.serialize(constAsyncReset) should be("wire constAsyncReset : const AsyncReset")
+
+    val constInput = Port(NoInfo, "in", Input, ConstType(SIntType(IntWidth(8))))
+    Serializer.serialize(constInput) should be("input in : const SInt<8>")
+
+    val constBundle = DefWire(
+      NoInfo,
+      "constBundle",
+      ConstType(
+        BundleType(
+          Seq(
+            Field("foo", Default, UIntType(IntWidth(32))),
+            Field("bar", Default, ConstType(SIntType(IntWidth(1))))
+          )
+        )
+      )
+    )
+    Serializer.serialize(constBundle) should be(
+      "wire constBundle : const { foo : UInt<32>, bar : const SInt<1>}"
+    )
+
+    val constVec = DefWire(NoInfo, "constVec", VectorType(ClockType, 10))
+    Serializer.serialize(constVec) should be("wire constVec : Clock[10]")
+  }
+
   it should "emit whens with empty Blocks correctly" in {
     val when = Conditionally(NoInfo, Reference("cond"), Block(Seq()), EmptyStmt)
     val serialized = Serializer.serialize(when, 1)
@@ -177,6 +205,48 @@ class SerializerSpec extends AnyFlatSpec with Matchers {
     (SMemTestCircuit.circuit(ReadUnderWrite.Undefined).serialize should not).include("undefined")
     SMemTestCircuit.circuit(ReadUnderWrite.New).serialize should include("new")
     SMemTestCircuit.circuit(ReadUnderWrite.Old).serialize should include("old")
+  }
+
+  it should "support emitting Probe/RWProbe types and related expressions/statements" in {
+    val probeInt = DefWire(NoInfo, "foo", ProbeType(UIntType(IntWidth(3))))
+    Serializer.serialize(probeInt) should be("wire foo : Probe<UInt<3>>")
+
+    val rwProbeBundle = Port(
+      NoInfo,
+      "foo",
+      Output,
+      RWProbeType(BundleType(Seq(Field("bar", Default, UIntType(IntWidth(32))))))
+    )
+    Serializer.serialize(rwProbeBundle) should be("output foo : RWProbe<{ bar : UInt<32>}>")
+
+    val probeVec = Port(
+      NoInfo,
+      "foo",
+      Output,
+      RWProbeType(VectorType(UIntType(IntWidth(32)), 4))
+    )
+    Serializer.serialize(probeVec) should be("output foo : RWProbe<UInt<32>[4]>")
+
+    val probeDefine = ProbeDefine(NoInfo, SubField(Reference("c"), "in"), ProbeExpr(Reference("in")))
+    Serializer.serialize(probeDefine) should be("define c.in = probe(in)")
+
+    val rwProbeDefine = ProbeDefine(NoInfo, SubField(Reference("c"), "in"), RWProbeExpr(Reference("in")))
+    Serializer.serialize(rwProbeDefine) should be("define c.in = rwprobe(in)")
+
+    val probeRead = Connect(NoInfo, Reference("out"), ProbeRead(Reference("c.out")))
+    Serializer.serialize(probeRead) should be("out <= read(c.out)")
+
+    val probeForceInitial = ProbeForceInitial(NoInfo, Reference("outProbe"), UIntLiteral(100, IntWidth(8)))
+    Serializer.serialize(probeForceInitial) should be("force_initial(outProbe, UInt<8>(\"h64\"))")
+
+    val probeReleaseInitial = ProbeReleaseInitial(NoInfo, Reference("outProbe"))
+    Serializer.serialize(probeReleaseInitial) should be("release_initial(outProbe)")
+
+    val probeForce = ProbeForce(NoInfo, Reference("clock"), Reference("cond"), Reference("outProbe"), Reference("in"))
+    Serializer.serialize(probeForce) should be("force(clock, cond, outProbe, in)")
+
+    val probeRelease = ProbeRelease(NoInfo, Reference("clock"), Reference("cond"), Reference("outProbe"))
+    Serializer.serialize(probeRelease) should be("release(clock, cond, outProbe)")
   }
 
   it should "support lazy serialization" in {

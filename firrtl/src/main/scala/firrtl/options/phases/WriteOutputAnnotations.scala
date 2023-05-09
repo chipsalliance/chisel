@@ -14,6 +14,7 @@ import firrtl.options.{
   Unserializable,
   Viewer
 }
+import firrtl.options.internal.WriteableCircuitAnnotation
 
 import java.io.{BufferedOutputStream, File, FileOutputStream, PrintWriter}
 
@@ -41,52 +42,93 @@ class WriteOutputAnnotations extends Phase {
   /** Write the input [[AnnotationSeq]] to a fie. */
   def transform(annotations: AnnotationSeq): AnnotationSeq = {
     val sopts = Viewer[StageOptions].view(annotations)
-    val filesWritten = mutable.HashMap.empty[String, Annotation]
-    val serializable: AnnotationSeq = annotations.toSeq.flatMap {
-      case _: Unserializable => None
-      case a: CustomFileEmission =>
-        val filename = a.filename(annotations)
-        val canonical = filename.getCanonicalPath()
+    val filesToWrite = mutable.HashMap.empty[String, Annotation]
+    // Grab the circuit annotation so we can write serializable annotations to it
+    // We also must calculate the filename because the annotation will be deleted before calling
+    // writeToFile
+    var circuitAnnoOpt: Option[(File, WriteableCircuitAnnotation)] = None
+    val serializable = annotations.flatMap { anno =>
+      // Check for file clobbering
+      anno match {
+        case _: Unserializable =>
+        case a: CustomFileEmission =>
+          val filename = a.filename(annotations)
+          val canonical = filename.getCanonicalPath()
 
-        filesWritten.get(canonical) match {
-          case None =>
-            val w = new BufferedOutputStream(new FileOutputStream(filename))
-            a match {
-              // Further optimized emission
-              case buf: BufferedCustomFileEmission =>
-                val it = buf.getBytesBuffered
-                it.foreach(bytearr => w.write(bytearr))
-              // Regular emission
-              case _ =>
-                a.getBytes match {
-                  case arr: mutable.ArraySeq[Byte] => w.write(arr.array.asInstanceOf[Array[Byte]])
-                  case other => other.foreach(w.write(_))
-                }
-            }
-            w.close()
-            filesWritten(canonical) = a
-          case Some(first) =>
+          filesToWrite.get(canonical) match {
+            case None =>
+            case Some(first) =>
+              val msg =
+                s"""|Multiple CustomFileEmission annotations would be serialized to the same file, '$canonical'
+                    |  - first writer:
+                    |      class: ${first.getClass.getName}
+                    |      trimmed serialization: ${first.serialize.take(80)}
+                    |  - second writer:
+                    |      class: ${a.getClass.getName}
+                    |      trimmed serialization: ${a.serialize.take(80)}
+                    |""".stripMargin
+              throw new PhaseException(msg)
+          }
+          filesToWrite(canonical) = a
+        case _ =>
+      }
+      // Write files with CustomFileEmission and filter out Unserializable ones
+      anno match {
+        case _:   Unserializable => None
+        case wca: WriteableCircuitAnnotation =>
+          val filename = wca.filename(annotations)
+          if (circuitAnnoOpt.nonEmpty) {
+            val Some((firstFN, firstWCA)) = circuitAnnoOpt
             val msg =
-              s"""|Multiple CustomFileEmission annotations would be serialized to the same file, '$canonical'
-                  |  - first writer:
-                  |      class: ${first.getClass.getName}
-                  |      trimmed serialization: ${first.serialize.take(80)}
-                  |  - second writer:
-                  |      class: ${a.getClass.getName}
-                  |      trimmed serialization: ${a.serialize.take(80)}
+              s"""|Multiple circuit annotations found--only 1 is supported
+                  | - first circuit:
+                  |     filename: $firstFN
+                  |     trimmed serialization: ${firstWCA.serialize.take(80)}
+                  | - second circuit:
+                  |     filename: $filename
+                  |     trimmed serialization: ${wca.serialize.take(80)}
+                  |
                   |""".stripMargin
             throw new PhaseException(msg)
-        }
-        a.replacements(filename)
-      case a => Some(a)
+          }
+          circuitAnnoOpt = Some(filename -> wca)
+          None
+        case a: CustomFileEmission =>
+          val filename = a.filename(annotations)
+          val canonical = filename.getCanonicalPath()
+
+          val w = new BufferedOutputStream(new FileOutputStream(filename))
+          a match {
+            // Further optimized emission
+            case buf: BufferedCustomFileEmission =>
+              val it = buf.getBytesBuffered
+              it.foreach(bytearr => w.write(bytearr))
+            // Regular emission
+            case _ =>
+              a.getBytes match {
+                case arr: mutable.ArraySeq[Byte] => w.write(arr.array.asInstanceOf[Array[Byte]])
+                case other => other.foreach(w.write(_))
+              }
+          }
+          w.close()
+          a.replacements(filename)
+        case a => Some(a)
+      }
     }
 
-    sopts.annotationFileOut match {
+    // If the circuit annotation exists, write annotations to it
+    circuitAnnoOpt match {
+      case Some((file, circuitAnno)) =>
+        circuitAnno.writeToFile(file, serializable)
       case None =>
-      case Some(file) =>
-        val pw = new PrintWriter(sopts.getBuildFileName(file, Some(".anno.json")))
-        pw.write(JsonProtocol.serialize(serializable))
-        pw.close()
+        // Otherwise, write to the old .anno.json
+        sopts.annotationFileOut match {
+          case None =>
+          case Some(file) =>
+            val pw = new PrintWriter(sopts.getBuildFileName(file, Some(".anno.json")))
+            pw.write(JsonProtocol.serialize(serializable))
+            pw.close()
+        }
     }
 
     annotations

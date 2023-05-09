@@ -1249,6 +1249,24 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         Nil
       )
     }
+    it("(5.h) Squeeze all as") {
+      class NestedDecoupled1 extends Bundle { val foo = new Decoupled(true) }
+      class NestedDecoupled2 extends Bundle { val foo = new Decoupled(true) }
+      class MyModule extends Module {
+        val in = IO(Flipped(new NestedDecoupled1()))
+        val out = IO(new NestedDecoupled2())
+        out.squeezeAllAs[Data] :<>= in.squeezeAllAs[Data]
+      }
+      testCheck(
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
+        Seq(
+          "out.foo.valid <= in.foo.valid",
+          "in.foo.ready <= out.foo.ready",
+          "out.foo.data <= in.foo.data"
+        ),
+        Nil
+      )
+    }
   }
   describe("(E): Connectable excluding") {
     import scala.collection.immutable.SeqMap
@@ -1763,6 +1781,53 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         Seq("out.foo <= in.foo"),
         Nil
       )
+    }
+    it("(8.k) Use unsafe") {
+      class BoolBundleA extends Bundle { val foo = UInt(); val bar = Bool() }
+      class BoolBundleB extends Bundle { val foo = UInt() }
+      class MyModule extends Module {
+        val in = IO(Flipped(new BoolBundleA))
+        val out = IO(new BoolBundleB)
+        out.unsafe :<>= in.unsafe
+      }
+      testCheck(
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
+        Seq("out.foo <= in.foo"),
+        Nil
+      )
+    }
+    it("(8.l) Use as") {
+      class BoolBundleA extends Bundle { val foo = UInt() }
+      class BoolBundleB extends Bundle { val foo = UInt() }
+      class MyModule extends Module {
+        val in = IO(Flipped(new BoolBundleA))
+        val out = IO(new BoolBundleB)
+        out.as[Data] :<>= in.as[Data]
+      }
+      testCheck(
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
+        Seq("out.foo <= in.foo"),
+        Nil
+      )
+    }
+    it("(8.m) Erroring connections are Builder.error, not Exception as") {
+      class MyModule extends Module {
+        val in = IO(Flipped(Bool()))
+        val out = IO(Bool())
+        val connectionGoesThrough =
+          try {
+            in :<>= out
+            true
+          } catch {
+            case e: Throwable => false
+          }
+        // Don't throw exception immediately
+        assert(connectionGoesThrough)
+      }
+      // Still catches error at the end
+      intercept[Exception] {
+        ChiselStage.emitCHIRRTL({ new MyModule() })
+      }
     }
   }
 }

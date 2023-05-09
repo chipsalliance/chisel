@@ -5,7 +5,7 @@ package chisel3
 import scala.util.Try
 import scala.language.experimental.macros
 import scala.annotation.nowarn
-import chisel3.experimental.{BaseModule, UnlocatableSourceInfo}
+import chisel3.experimental.{BaseModule, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal._
 import chisel3.experimental.hierarchy.{InstanceClone, ModuleClone}
 import chisel3.internal.Builder._
@@ -84,6 +84,7 @@ abstract class RawModule extends BaseModule {
                 id.forceName(default = "REG", _namespace)
               case WireBinding(_, _) =>
                 id.forceName(default = "_WIRE", _namespace)
+              // probes have their refs set eagerly
               case _ => // don't name literals
             }
           } // else, don't name unbound types
@@ -99,8 +100,20 @@ abstract class RawModule extends BaseModule {
     // Generate IO invalidation commands to initialize outputs as unused,
     //  unless the client wants explicit control over their generation.
     val component = DefModule(this, name, firrtlPorts, _commands.result())
+
+    // Secret connections can be staged if user bored into children modules
+    component.secretConnects ++= stagedSecretConnects
     _component = Some(component)
     _component
+  }
+  private[chisel3] val stagedSecretConnects = collection.mutable.ArrayBuffer[Connect]()
+
+  private[chisel3] def secretConnection(left: Data, right: Data)(implicit si: SourceInfo): Unit = {
+    if (_closed) {
+      _component.get.asInstanceOf[DefModule].secretConnects += Connect(si, left.lref, Node(right))
+    } else {
+      stagedSecretConnects += Connect(si, left.lref, Node(right))
+    }
   }
 
   private[chisel3] def initializeInParent(): Unit = {}
