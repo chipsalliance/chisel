@@ -593,12 +593,12 @@ object PartialDataView {
   ): DataView[T, V] =
     new DataView[T, V](mkView, mapping, _total = false)
 
-  /** Constructs a non-total [[DataView]] mapping from a [[Bundle]] type to a parent [[Bundle]] type
+  /** Constructs a non-total [[DataView]] mapping from a [[Bundle]] or [[Record]] type to a parent [[Bundle]] or [[Record]] type
     *
     * @param mkView a function constructing an instance `V` from an instance of `T`
-    * @return the [[DataView]] that enables viewing instances of a [[Bundle]] as instances of a parent type
+    * @return the [[DataView]] that enables viewing instances of a [[Bundle]]/[[Record]] as instances of a parent type
     */
-  def supertype[T <: Bundle, V <: Bundle](
+  def supertype[T <: Record, V <: Record](
     mkView: T => V
   )(
     implicit ev: ChiselSubtypeOf[T, V],
