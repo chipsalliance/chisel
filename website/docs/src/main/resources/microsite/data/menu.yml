@@ -199,7 +199,11 @@ options:
     menu_type: chisel3
     nested_options:
       - title: Latest
-        url: api/chisel3/latest/
+        url: api/chisel/latest/
+      - title: 6.0
+        url: api/chisel/6.0/
+      - title: 5.0
+        url: api/chisel/5.0/
       - title: 3.6
         url: api/chisel3/3.6/
       - title: 3.5

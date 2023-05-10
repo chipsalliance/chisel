@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chiselTests.util
+package chiselTests.util.circt
 
 import chisel3._
 import chisel3.stage.ChiselGeneratorAnnotation
@@ -31,9 +31,8 @@ private class IsXTop extends Module {
 }
 
 class IsXSpec extends AnyFlatSpec with Matchers {
-  it should "Should work for types" in {
+  it should "work for types" in {
     val fir = ChiselStage.emitCHIRRTL(new IsXTop)
-    println(fir)
     (
       (fir.split('\n').map(_.trim) should contain).allOf(
         "intmodule IsXIntrinsic :",

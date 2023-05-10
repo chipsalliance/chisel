@@ -2,14 +2,16 @@
 
 package chisel3.experimental.hierarchy
 
-import chisel3.experimental.BaseModule
+import chisel3.experimental.{BaseModule, SourceInfo}
 import chisel3.internal.{HasId, PseudoModule}
 import chisel3.internal.firrtl.{Component, ModuleCloneIO, Ref}
 import chisel3.internal.{throwException, Namespace}
 import chisel3._
 
 // Private internal class to serve as a _parent for Data in cloned ports
-private[chisel3] class ModuleClone[T <: BaseModule](val getProto: T) extends PseudoModule with core.IsClone[T] {
+private[chisel3] class ModuleClone[T <: BaseModule](val getProto: T)(implicit si: SourceInfo)
+    extends PseudoModule
+    with core.IsClone[T] {
   override def toString = s"ModuleClone(${getProto})"
   // Do not call default addId function, which may modify a module that is already "closed"
   override def addId(d: HasId): Unit = ()

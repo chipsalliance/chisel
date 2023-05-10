@@ -25,5 +25,6 @@ class IdentifierProposerSpec extends ChiselFunSpec {
     assert(IdentifierProposer.getProposal(Seq(1, 2, 3)) == "1_2_3")
     assert(IdentifierProposer.getProposal(List(1, 2, 3)) == "1_2_3")
     assert(IdentifierProposer.getProposal((1, 2)) == "1_2")
+    assert(IdentifierProposer.getProposal(()) == "")
   }
 }

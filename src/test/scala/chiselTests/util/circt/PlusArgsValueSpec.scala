@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chiselTests.util
+package chiselTests.util.circt
 
 import chisel3._
 import chisel3.testers.BasicTester
@@ -28,9 +28,8 @@ private class PlusArgsValueTop extends Module {
 }
 
 class PlusArgsValueSpec extends AnyFlatSpec with Matchers {
-  it should "Should work for types" in {
+  it should "work for types" in {
     val fir = ChiselStage.emitCHIRRTL(new PlusArgsValueTop)
-    println(fir)
     (fir.split('\n').map(_.trim.takeWhile(_ != '@')) should contain).inOrder(
       "intmodule PlusArgsValueIntrinsic :",
       "output found : UInt<1>",

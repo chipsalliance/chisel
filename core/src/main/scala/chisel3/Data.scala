@@ -341,6 +341,8 @@ object Flipped {
   * @define coll data
   */
 abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
+  import Data.ProbeInfo
+
   // This is a bad API that punches through object boundaries.
   private[chisel3] def flatten: IndexedSeq[Element] = {
     this match {
@@ -371,6 +373,11 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       case _                                                                        => super.autoSeed(name)
     }
   }
+
+  // probeInfo only exists if this is a probe type
+  private var _probeInfoVar:      ProbeInfo = null
+  private[chisel3] def probeInfo: Option[ProbeInfo] = Option(_probeInfoVar)
+  private[chisel3] def probeInfo_=(probeInfo: Option[ProbeInfo]) = _probeInfoVar = probeInfo.getOrElse(null)
 
   // If this Data is constant, it must hold a constant value
   private var _isConst:         Boolean = false
@@ -441,8 +448,10 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   /** Adds this `Data` to its parents _ids if it should be added */
   private[chisel3] def maybeAddToParentIds(target: Binding): Unit = {
     // ConstrainedBinding means the thing actually corresponds to a Module, no need to add to _ids otherwise
-    if (target.isInstanceOf[ConstrainedBinding]) {
-      _parent.foreach(_.addId(this))
+    target match {
+      case c: SecretPortBinding  => // secret ports are handled differently, parent's don't need to know about that
+      case c: ConstrainedBinding => _parent.foreach(_.addId(this))
+      case _ =>
     }
   }
 
@@ -484,6 +493,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       case OpBinding(_, _)           => "OpResult"
       case MemoryPortBinding(_, _)   => "MemPort"
       case PortBinding(_)            => "IO"
+      case SecretPortBinding(_)      => "IO"
       case RegBinding(_, _)          => "Reg"
       case WireBinding(_, _)         => "Wire"
       case DontCareBinding()         => "(DontCare)"
@@ -612,9 +622,10 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       case Some(tb: TopBinding) if (mod == Builder.currentModule) =>
       case Some(pb: PortBinding)
           if (mod.flatMap(Builder.retrieveParent(_, Builder.currentModule.get)) == Builder.currentModule) =>
+      case Some(pb: SecretPortBinding) => // Ignore secret to not require visibility
       case Some(_: UnconstrainedBinding) =>
       case _ =>
-        throwException(s"operand '$this' is not visible from the current module")
+        throwException(s"operand '$this' is not visible from the current module ${Builder.currentModule.get.name}")
     }
     if (!MonoConnect.checkWhenVisibility(this)) {
       throwException(s"operand has escaped the scope of the when in which it was constructed")
@@ -711,12 +722,13 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   /** Internal API; Chisel users should look at chisel3.chiselTypeOf(...).
     *
     * Returns a copy of this data type, with hardware bindings (if any) removed.
-    * Directionality data is still preserved.
+    * Directionality data and probe information is still preserved.
     */
   private[chisel3] def cloneTypeFull: this.type = {
     val clone = this.cloneType // get a fresh object, without bindings
     // Only the top-level direction needs to be fixed up, cloneType should do the rest
     clone.specifiedDirection = specifiedDirection
+    probe.setProbeModifier(clone, probeInfo)
     clone.isConst = isConst
     clone
   }
@@ -825,6 +837,8 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 object Data {
   // Needed for the `implicit def toConnectableDefault`
   import scala.language.implicitConversions
+
+  private[chisel3] case class ProbeInfo(val writable: Boolean)
 
   /** Provides :<=, :>=, :<>=, and :#= between consumer and producer of the same T <: Data */
   implicit class ConnectableDefault[T <: Data](consumer: T) extends connectable.ConnectableOperators[T](consumer)
@@ -979,6 +993,8 @@ trait WireFactory {
     val prevId = Builder.idGen.value
     val t = source // evaluate once (passed by name)
     requireIsChiselType(t, "wire type")
+    requireNoProbeTypeModifier(t, "Cannot make a wire of a Chisel type with a probe modifier.")
+
     val x = if (!t.mustClone(prevId)) t else t.cloneTypeFull
 
     // Bind each element of x to being a Wire
