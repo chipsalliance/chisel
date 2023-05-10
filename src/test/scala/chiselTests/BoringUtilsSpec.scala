@@ -321,13 +321,14 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
       },
       Array("--full-stacktrace", "--throw-on-first-error")
     )
+    println(chirrtl)
     matchesAndOmits(chirrtl)(
       "module Foo :",
       "output bore : Probe<UInt<1>>",
       "output out_bore : Probe<UInt<1>>",
       "wire internalWire : UInt<1>",
-      "bore <= internalWire",
-      "out_bore <= internalWire",
+      "define bore = probe(internalWire)",
+      "define out_bore = probe(internalWire)",
       "module BoringUtilsSpec_Anon :",
       "output out : UInt<1>",
       "output outProbe",
@@ -337,5 +338,73 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
     )(
       "wire bore : UInt<1>"
     )
+  }
+
+  "Tap from child to parent" should "work" in {
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(
+      new RawModule {
+        class Foo(parentData: Data) extends RawModule {
+          val outProbe = IO(probe.Probe(Bool()))
+          val out = IO(Bool())
+          probe.define(outProbe, BoringUtils.tap(parentData))
+          out := BoringUtils.tapAndRead(parentData)
+        }
+
+        val parentWire = Wire(Bool())
+
+        val foo = Module(new Foo(parentWire))
+      },
+      Array("--full-stacktrace", "--throw-on-first-error")
+    )
+    println(chirrtl)
+    matchesAndOmits(chirrtl)(
+      "module Foo :",
+      "output outProbe : Probe<UInt<1>>",
+      "output out : UInt<1> ",
+      "input bore : UInt<1>",
+      "define outProbe = probe(bore)",
+      "out <= read(probe(out_bore))",
+      "module BoringUtilsSpec_Anon :",
+      "wire parentWire : UInt<1>",
+      "inst foo of Foo",
+      "foo.bore <= parentWire",
+      "foo.out_bore <= parentWire"
+    )()
+  }
+
+  "Tap from child to sibling" should "work" in {
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(
+      new RawModule {
+        class Bar extends RawModule {
+          val a = Wire(Bool())
+          a := DontCare
+        }
+
+        class Baz(_a: Bool) extends RawModule {
+          val b = Wire(Bool())
+          b := BoringUtils.tapAndRead(_a)
+        }
+
+        val bar = Module(new Bar)
+        val baz = Module(new Baz(bar.a))
+      },
+      Array("--full-stacktrace", "--throw-on-first-error")
+    )
+    println(chirrtl)
+    matchesAndOmits(chirrtl)(
+      "module Bar :",
+      "output b_bore : Probe<UInt<1>>",
+      "wire a : UInt<1>",
+      "a is invalid ",
+      "define b_bore = probe(a)",
+      "module Baz :",
+      "input b_bore : UInt<1>",
+      "wire b : UInt<1>",
+      "b <= read(probe(b_bore))",
+      "module BoringUtilsSpec_Anon :",
+      "inst bar of Bar",
+      "inst baz of Baz",
+      "baz.b_bore <= read(bar.b_bore)"
+    )()
   }
 }

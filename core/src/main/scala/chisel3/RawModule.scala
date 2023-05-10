@@ -106,13 +106,34 @@ abstract class RawModule extends BaseModule {
     _component = Some(component)
     _component
   }
-  private[chisel3] val stagedSecretConnects = collection.mutable.ArrayBuffer[Connect]()
+  private[chisel3] val stagedSecretConnects = collection.mutable.ArrayBuffer[Command]()
 
   private[chisel3] def secretConnection(left: Data, right: Data)(implicit si: SourceInfo): Unit = {
-    if (_closed) {
-      _component.get.asInstanceOf[DefModule].secretConnects += Connect(si, left.lref, Node(right))
-    } else {
-      stagedSecretConnects += Connect(si, left.lref, Node(right))
+    (left.probeInfo, right.probeInfo) match {
+      case (Some(_), Some(_)) =>
+        if (_closed) {
+          _component.get.asInstanceOf[DefModule].secretConnects += ProbeDefine(si, left.lref, Node(right))
+        } else {
+          stagedSecretConnects += ProbeDefine(si, left.lref, Node(right))
+        }
+      case (Some(_), None) =>
+        if (_closed) {
+          _component.get.asInstanceOf[DefModule].secretConnects += ProbeDefine(si, left.lref, ProbeExpr(Node(right)))
+        } else {
+          stagedSecretConnects += ProbeDefine(si, left.lref, ProbeExpr(Node(right)))
+        }
+      case (None, Some(_)) =>
+        if (_closed) {
+          _component.get.asInstanceOf[DefModule].secretConnects += Connect(si, left.lref, ProbeRead(Node(right)))
+        } else {
+          stagedSecretConnects += Connect(si, left.lref, ProbeRead(Node(right)))
+        }
+      case (None, None) =>
+        if (_closed) {
+          _component.get.asInstanceOf[DefModule].secretConnects += Connect(si, left.lref, Node(right))
+        } else {
+          stagedSecretConnects += Connect(si, left.lref, Node(right))
+        }
     }
   }
 

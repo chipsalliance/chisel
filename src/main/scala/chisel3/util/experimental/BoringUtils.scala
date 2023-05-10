@@ -216,20 +216,17 @@ object BoringUtils {
         case (sourceInfo, msg) => Builder.error(msg)(sourceInfo)
       }
     }
-    def drill(source: Data, path: Seq[BaseModule], up: Boolean): Data = {
-      path.foldLeft(source) {
-        case (rhs, module) if (module.isFullyClosed) => boringError(module); DontCare
-        case (rhs, module) =>
+    def drill(source: Data, path: Seq[BaseModule], connectionLocation: Seq[BaseModule], up: Boolean): Data = {
+      path.zip(connectionLocation).foldLeft(source) {
+        case (rhs, (module, conLoc)) if (module.isFullyClosed) => boringError(module); DontCare
+        case (rhs, (module, conLoc)) =>
           skipPrefix { // so `lcaSource` isn't in the name of the secret port
             /** create a port, and drill up. */
-            val bore = if (up) module.createSecretIO(purePortType) else module.createSecretIO(Flipped(purePortType))
+            // if drilling down, don't drill Probe types
+            val bore = if (up) module.createSecretIO(purePortType) else module.createSecretIO(Flipped(purePortTypeBase))
             module.addSecretIO(bore)
-            if (up) {
-              module.asInstanceOf[RawModule].secretConnection(bore, rhs)
-            } else {
-              module.asInstanceOf[RawModule].secretConnection(rhs, bore)
-            }
-            bore
+            conLoc.asInstanceOf[RawModule].secretConnection(bore, rhs)
+            if (createProbe && bore.probeInfo.isEmpty) probe.ProbeValue(bore) else bore
           }
       }
     }
@@ -259,15 +256,16 @@ object BoringUtils {
       return DontCare
     }
     val (upPath, downPath) = lcaResult.get
-    val lcaSource = drill(source, upPath.tail, true)
+    val lcaSource = drill(source, upPath.tail.reverse, upPath.tail.reverse, true)
+    val sink = drill(lcaSource, downPath.tail, downPath, false)
 
     if (createProbe) {
-      drill(lcaSource, downPath.tail, false)
+      sink
     } else {
-       /** Creating a wire to assign the result to.  We will return this. */
+
+      /** Creating a wire to assign the result to.  We will return this. */
       val bore = Wire(purePortTypeBase)
-      val sink = drill(bore, downPath.tail, false)
-      upPath.head.asInstanceOf[RawModule].secretConnection(sink, lcaSource)
+      thisModule.asInstanceOf[RawModule].secretConnection(bore, sink)
       bore
     }
   }
