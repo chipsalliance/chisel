@@ -409,7 +409,7 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
       "input out_bore : UInt<1>",
       "out <= read(probe(out_bore))",
       "bar.out_bore <= read(probe(out_bore))",
-      "input bore : UInt<1>",
+      "input out_bore : UInt<1>",
       "foo.out_bore <= parentWire"
     )()
   }
