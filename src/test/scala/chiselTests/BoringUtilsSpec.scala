@@ -383,15 +383,11 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
       out := BoringUtils.tapAndRead(grandParentData)
     }
     class Foo(parentData: Data) extends RawModule {
-      val out = IO(Bool())
       val bar = Module(new Bar(parentData))
-      out := bar.out
     }
     class Top extends RawModule {
       val parentWire = Wire(Bool())
       val foo = Module(new Foo(parentWire))
-      val out = IO(Bool())
-      out := foo.out
     }
     val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
     matchesAndOmits(chirrtl)(
