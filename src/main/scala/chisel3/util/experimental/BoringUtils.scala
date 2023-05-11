@@ -217,7 +217,6 @@ object BoringUtils {
       }
     }
     def drill(source: Data, path: Seq[BaseModule], connectionLocation: Seq[BaseModule], up: Boolean): Data = {
-      // val directedConnectionLocation = if (up) path.zip(connectionLocation) else path.reverse.zip(connectionLocation.reverse)
       path.zip(connectionLocation).foldLeft(source) {
         case (rhs, (module, conLoc)) if (module.isFullyClosed) => boringError(module); DontCare
         case (rhs, (module, conLoc)) =>
@@ -227,7 +226,7 @@ object BoringUtils {
             val bore = if (up) module.createSecretIO(purePortType) else module.createSecretIO(Flipped(purePortTypeBase))
             module.addSecretIO(bore)
             conLoc.asInstanceOf[RawModule].secretConnection(bore, rhs)
-            if (createProbe && bore.probeInfo.isEmpty) probe.ProbeValue(bore) else bore
+            bore
           }
       }
     }
@@ -260,7 +259,7 @@ object BoringUtils {
     val lcaSource = drill(source, upPath.dropRight(1), upPath.dropRight(1), true)
     val sink = drill(lcaSource, downPath.reverse.tail, downPath.reverse, false)
 
-    if (createProbe) {
+    if (sink.probeInfo.nonEmpty) {
       sink
     } else {
 
@@ -286,7 +285,12 @@ object BoringUtils {
     * Returns a probe Data type.
     */
   def tap(source: Data)(implicit si: SourceInfo): Data = {
-    boreOrTap(source, createProbe = true)
+    val tapIntermediate = skipPrefix { boreOrTap(source, createProbe = true) }
+    if (tapIntermediate.probeInfo.nonEmpty) {
+      tapIntermediate
+    } else {
+      probe.ProbeValue(tapIntermediate)
+    }
   }
 
   /** Access a source [[Data]] that may or may not be in the current module.  If
@@ -296,7 +300,12 @@ object BoringUtils {
     * Returns a non-probe Data type.
     */
   def tapAndRead(source: Data)(implicit si: SourceInfo): Data = {
-    probe.read(tap(source))
+    val tapIntermediate = skipPrefix { boreOrTap(source, createProbe = true) }
+    if (tapIntermediate.probeInfo.nonEmpty) {
+      probe.read(tapIntermediate)
+    } else {
+      tapIntermediate
+    }
   }
 
 }
