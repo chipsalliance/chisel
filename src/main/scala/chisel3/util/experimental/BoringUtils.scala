@@ -217,6 +217,7 @@ object BoringUtils {
       }
     }
     def drill(source: Data, path: Seq[BaseModule], connectionLocation: Seq[BaseModule], up: Boolean): Data = {
+      // val directedConnectionLocation = if (up) path.zip(connectionLocation) else path.reverse.zip(connectionLocation.reverse)
       path.zip(connectionLocation).foldLeft(source) {
         case (rhs, (module, conLoc)) if (module.isFullyClosed) => boringError(module); DontCare
         case (rhs, (module, conLoc)) =>
@@ -256,8 +257,8 @@ object BoringUtils {
       return DontCare
     }
     val (upPath, downPath) = lcaResult.get
-    val lcaSource = drill(source, upPath.tail.reverse, upPath.tail.reverse, true)
-    val sink = drill(lcaSource, downPath.tail, downPath, false)
+    val lcaSource = drill(source, upPath.dropRight(1), upPath.dropRight(1), true)
+    val sink = drill(lcaSource, downPath.reverse.tail, downPath.reverse, false)
 
     if (createProbe) {
       sink

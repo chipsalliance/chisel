@@ -384,7 +384,7 @@ object DataMirror {
   // Returns LCA paths if a common ancestor exists.  The returned paths includes the LCA.
   private[chisel3] def findLCAPaths(left: HasId, right: HasId): Option[(Seq[BaseModule], Seq[BaseModule])] = {
     leastCommonAncestorModule(left, right).map { lca =>
-      (Seq(lca) ++ modulePath(left, Some(lca)), Seq(lca) ++ modulePath(right, Some(lca)))
+      (modulePath(left, Some(lca)) ++ Seq(lca), modulePath(right, Some(lca)) ++ Seq(lca))
     }
   }
 }
