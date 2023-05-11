@@ -7,9 +7,9 @@ www-docs = \
 	$(shell find $(chisel3)/docs/ -name "*.md")
 
 www-src = \
-	$(shell find docs/src/main/resources) \
 	docs/src/main/tut/chisel3/docs \
-	docs/src/main/tut/chisel3/index.md \
+	$(shell find docs/src/main/resources) \
+	$(shell find docs/src/main/tut) \
 	$(chisel3)/README.md
 
 # Get the latest version of some sequence of version strings

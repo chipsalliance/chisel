@@ -42,11 +42,11 @@ object v {
     "2.12.17",
     "2.13.10"
   )
-  val osLib = ivy"com.lihaoyi::os-lib:0.8.1"
-  val upickle = ivy"com.lihaoyi::upickle:2.0.0"
+  val osLib = ivy"com.lihaoyi::os-lib:0.9.1"
+  val upickle = ivy"com.lihaoyi::upickle:3.1.0"
   val macroParadise = ivy"org.scalamacros:::paradise:2.1.1"
   val scalatest = ivy"org.scalatest::scalatest:3.2.14"
-  val scalacheck = ivy"org.scalatestplus::scalacheck-1-14:3.2.2.0"
+  val scalacheck = ivy"org.scalatestplus::scalacheck-1-15:3.2.11.0"
   val json4s = ivy"org.json4s::json4s-native:4.0.6"
   val dataclass = ivy"io.github.alexarchambault::data-class:0.2.5"
   val commonText = ivy"org.apache.commons:commons-text:1.10.0"
@@ -63,7 +63,7 @@ private def majorScalaVersion(scalaVersion: String) = scalaVersion.split('.')(1)
 object firrtl extends mill.Cross[Firrtl](v.scalaCrossVersions: _*)
 
 class Firrtl(val crossScalaVersion: String)
-  extends common.FirrtlModule
+    extends common.FirrtlModule
     with ChiselPublishModule
     with CrossSbtModule
     with ScalafmtModule {
@@ -85,7 +85,7 @@ class Firrtl(val crossScalaVersion: String)
 object svsim extends mill.Cross[Svsim](v.scalaCrossVersions: _*)
 
 class Svsim(val crossScalaVersion: String)
-  extends common.SvsimModule
+    extends common.SvsimModule
     with ChiselPublishModule
     with CrossSbtModule
     with ScalafmtModule {
@@ -95,7 +95,7 @@ class Svsim(val crossScalaVersion: String)
 object firrtlut extends mill.Cross[FirrtlUnitTest](v.scalaCrossVersions: _*)
 
 class FirrtlUnitTest(val crossScalaVersion: String)
-  extends common.FirrtlUnitTestModule
+    extends common.FirrtlUnitTestModule
     with CrossModuleBase
     with ScalafmtModule {
   override def millSourcePath = firrtl(crossScalaVersion).millSourcePath
@@ -108,16 +108,14 @@ class FirrtlUnitTest(val crossScalaVersion: String)
 
   override def sources = T.sources {
     Seq(PathRef(millSourcePath / "src" / "test")) ++
-      matchingVersions(crossScalaVersion).map(s =>
-        PathRef(millSourcePath / "src" / "test" / s"scala-$s")
-      )
+      matchingVersions(crossScalaVersion).map(s => PathRef(millSourcePath / "src" / "test" / s"scala-$s"))
   }
 }
 
 object macros extends mill.Cross[Macros](v.scalaCrossVersions: _*)
 
 class Macros(val crossScalaVersion: String)
-  extends common.MacrosModule
+    extends common.MacrosModule
     with ChiselPublishModule
     with CrossSbtModule
     with ScalafmtModule {
@@ -131,7 +129,7 @@ class Macros(val crossScalaVersion: String)
 object core extends mill.Cross[Core](v.scalaCrossVersions: _*)
 
 class Core(val crossScalaVersion: String)
-  extends common.CoreModule
+    extends common.CoreModule
     with ChiselPublishModule
     with CrossSbtModule
     with ScalafmtModule {
@@ -154,7 +152,7 @@ class Core(val crossScalaVersion: String)
       val lines = Process(Seq("firtool", "--version")).lineStream
       lines.collectFirst {
         case Version(v) => Some(v)
-        case _ => None
+        case _          => None
       }.get
     } catch {
       case e: java.io.IOException => None
@@ -193,7 +191,7 @@ class Core(val crossScalaVersion: String)
 object plugin extends mill.Cross[Plugin](v.pluginScalaCrossVersions: _*)
 
 class Plugin(val crossScalaVersion: String)
-  extends common.PluginModule
+    extends common.PluginModule
     with ChiselPublishModule
     with CrossSbtModule
     with ScalafmtModule {
@@ -209,7 +207,7 @@ class Plugin(val crossScalaVersion: String)
 object chisel extends mill.Cross[Chisel](v.scalaCrossVersions: _*)
 
 class Chisel(val crossScalaVersion: String)
-  extends common.ChiselModule
+    extends common.ChiselModule
     with ChiselPublishModule
     with CrossSbtModule
     with ScalafmtModule {
@@ -229,7 +227,7 @@ class Chisel(val crossScalaVersion: String)
 object chiselut extends mill.Cross[ChiselUnitTest](v.scalaCrossVersions: _*)
 
 class ChiselUnitTest(val crossScalaVersion: String)
-  extends common.ChiselUnitTestModule
+    extends common.ChiselUnitTestModule
     with CrossModuleBase
     with ScalafmtModule {
   override def millSourcePath = chisel(crossScalaVersion).millSourcePath
@@ -246,17 +244,14 @@ class ChiselUnitTest(val crossScalaVersion: String)
 
   override def sources = T.sources {
     Seq(PathRef(millSourcePath / "src" / "test")) ++
-      matchingVersions(crossScalaVersion).map(s =>
-        PathRef(millSourcePath / "src" / "test" / s"scala-$s")
-      )
+      matchingVersions(crossScalaVersion).map(s => PathRef(millSourcePath / "src" / "test" / s"scala-$s"))
   }
 }
-
 
 object stdlib extends mill.Cross[Stdlib](v.scalaCrossVersions: _*)
 
 class Stdlib(val crossScalaVersion: String)
-  extends common.StdLibModule
+    extends common.StdLibModule
     with ChiselPublishModule
     with CrossSbtModule
     with ScalafmtModule {
