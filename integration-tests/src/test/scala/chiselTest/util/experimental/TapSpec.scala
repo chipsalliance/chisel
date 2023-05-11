@@ -24,6 +24,7 @@ class LeftUpper(tapSignal: UInt) extends Module {
 class RightLower extends Module {
   val tapMe = Wire(UInt(8.W))
   tapMe := 123.U
+  dontTouch(tapMe)
 }
 
 class RightUpper extends Module {
