@@ -503,4 +503,30 @@ class MemInterfaceSpec extends ChiselFunSpec {
         }
     }
   }
+
+  it(s"should support masking with Vec-valued data") {
+    class TestModule(val wr: Int, val rw: Int) extends Module {
+      val mem = MemInterface.withMask(32, Vec(3, UInt(8.W)), 0, wr, rw)
+
+      dontTouch(mem)
+
+      for (i <- 0 until wr) {
+        mem.wr(i) := DontCare
+      }
+      for (i <- 0 until rw) {
+        mem.rw(i) := DontCare
+      }
+    }
+    val chirrtl = ChiselStage.emitCHIRRTL(new TestModule(1, 1), args = Array("--full-stacktrace"))
+
+    chirrtl should include(
+      "wr : { flip addr : UInt<6>, flip enable : UInt<1>, flip writeValue : UInt<8>[3], flip mask : UInt<1>[3]}[1]"
+    )
+    chirrtl should include(
+      "rw : { flip addr : UInt<6>, flip enable : UInt<1>, flip isWrite : UInt<1>, readValue : UInt<8>[3], flip writeValue : UInt<8>[3], flip mask : UInt<1>[3]}[1]"
+    )
+
+    chirrtl should include(s"_mem_wrappedMem.io.wr[0].mask <= mem.wr[0].mask")
+    chirrtl should include(s"_mem_wrappedMem.io.rw[0].mask <= mem.rw[0].mask")
+  }
 }

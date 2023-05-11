@@ -23,24 +23,44 @@ class MemRdPortInterface[T <: Data](tpe: T, addrWidth: Int) extends Bundle {
   *
   * @tparam tpe The data type of the memory port
   * @param addrWidth The width of the address signal
+  * @param withMask Whether this read/write port interface should have an optional mask.
+  *
+  * @note `withMask` is only valid if tpe is a Vec; if this is not the case no mask will be initialized
+  *       regardless of the value of `withMask`.
   */
-class MemWrPortInterface[T <: Data](tpe: T, addrWidth: Int) extends Bundle {
+class MemWrPortInterface[T <: Data](tpe: T, addrWidth: Int, withMask: Boolean) extends Bundle {
+  val maskSize = tpe match {
+    case vec: Vec[_] => vec.size
+    case _ => 0
+  }
+
   val addr = Input(UInt(addrWidth.W))
   val enable = Input(Bool())
   val writeValue = Input(tpe)
+  val mask: Option[Vec[Bool]] = if (withMask && maskSize > 0) Some(Input(Vec(maskSize, Bool()))) else None
 }
 
 /** A bundle of signals representing a read/write memory port.
   *
   * @tparam tpe The data type of the memory port
   * @param addrWidth The width of the address signal
+  * @param withMask Whether this read/write port interface should have an optional mask.
+  *
+  * @note `withMask` is only valid if tpe is a Vec; if this is not the case no mask will be initialized
+  *       regardless of the value of `withMask`.
   */
-class MemRdWrPortInterface[T <: Data](tpe: T, addrWidth: Int) extends Bundle {
+class MemRdWrPortInterface[T <: Data](tpe: T, addrWidth: Int, withMask: Boolean) extends Bundle {
+  val maskSize = tpe match {
+    case vec: Vec[_] => vec.size
+    case _ => 0
+  }
+
   val addr = Input(UInt(addrWidth.W))
   val enable = Input(Bool())
   val isWrite = Input(Bool())
   val readValue = Output(tpe)
   val writeValue = Input(tpe)
+  val mask: Option[Vec[Bool]] = if (withMask && maskSize > 0) Some(Input(Vec(maskSize, Bool()))) else None
 }
 
 /** A IO bundle of signals connecting to the ports of a wrapped `SyncReadMem`, as requested by
@@ -52,12 +72,19 @@ class MemRdWrPortInterface[T <: Data](tpe: T, addrWidth: Int) extends Bundle {
   * @param numWr The number of write ports
   * @param numRdWr The number of read/write ports
   */
-class MemInterface[T <: Data](tpe: T, addrWidth: Int, numRd: Int, numWr: Int, numRdWr: Int) extends Bundle {
+class MemInterface[T <: Data](tpe: T, addrWidth: Int, numRd: Int, numWr: Int, numRdWr: Int, withMask: Boolean)
+    extends Bundle {
+  if (withMask) {
+    require(
+      tpe.isInstanceOf[Vec[_]],
+      s"masked writes require that MemInterface is instantiated with a data type of Vec (got $tpe instead)"
+    )
+  }
   override def typeName: String = s"MemInterface_${MemInterface.portedness(numRd, numWr, numRdWr)}"
 
   val rd: Vec[MemRdPortInterface[T]] = Vec(numRd, new MemRdPortInterface(tpe, addrWidth))
-  val wr: Vec[MemWrPortInterface[T]] = Vec(numWr, new MemWrPortInterface(tpe, addrWidth))
-  val rw: Vec[MemRdWrPortInterface[T]] = Vec(numRdWr, new MemRdWrPortInterface(tpe, addrWidth))
+  val wr: Vec[MemWrPortInterface[T]] = Vec(numWr, new MemWrPortInterface(tpe, addrWidth, withMask))
+  val rw: Vec[MemRdWrPortInterface[T]] = Vec(numRdWr, new MemRdWrPortInterface(tpe, addrWidth, withMask))
 }
 
 object MemInterface {
@@ -106,6 +133,54 @@ object MemInterface {
   ): MemInterface[T] =
     macro MemTransform.apply_memInterfaceClk[T]
 
+  /** Generates a [[SyncReadMem]] wrapper connected to an explicit number of read, write,
+    * and read/write ports, with masking capability on all write and read/write ports
+    *
+    * @param size The desired size of the inner `SyncReadMem`
+    * @tparam T The data type of the memory element
+    * @param numRd The number of desired read ports, >= 0
+    * @param numWr The number of desired write ports, >= 0
+    * @param numRdWr The number of desired read/write ports, >= 0
+    *
+    * @return A new `MemInterface` wire containing the control signals for each instantiated port
+    * @note This does *not* return the wrapper module itself, you must interact with it using the returned bundle
+    */
+  def withMask[T <: Data](
+    size:    BigInt,
+    tpe:     T,
+    numRd:   Int,
+    numWr:   Int,
+    numRdWr: Int
+  )(
+    implicit evidence: T <:< Vec[_]
+  ): MemInterface[T] =
+    macro MemTransform.memInterface_withMask[T]
+
+  /** Generates a [[SyncReadMem]] wrapper connected to an explicit number of read, write,
+    * and read/write ports, with masking capability on all write and read/write ports
+    *
+    * @param size The desired size of the inner `SyncReadMem`
+    * @tparam T The data type of the memory element
+    * @param numRd The number of desired read ports, >= 0
+    * @param numWr The number of desired write ports, >= 0
+    * @param numRdWr The number of desired read/write ports, >= 0
+    * @param clock The clock to bind to each generated port, which may be different from the implicit clock
+    *
+    * @return A new `MemInterface` wire containing the control signals for each instantiated port
+    * @note This does *not* return the wrapper module itself, you must interact with it using the returned bundle
+    */
+  def withMask[T <: Data](
+    size:    BigInt,
+    tpe:     T,
+    numRd:   Int,
+    numWr:   Int,
+    numRdWr: Int,
+    clock:   Clock
+  )(
+    implicit evidence: T <:< Vec[_]
+  ): MemInterface[T] =
+    macro MemTransform.memInterface_withMaskClk[T]
+
   /** @group SourceInfoTransformMacro */
   def do_apply[T <: Data](
     size:    BigInt,
@@ -130,6 +205,31 @@ object MemInterface {
   ): MemInterface[T] = memInterface_impl(size, tpe)(numRd, numWr, numRdWr, clock)
 
   /** @group SourceInfoTransformMacro */
+  def do_withMask[T <: Data](
+    size:    BigInt,
+    tpe:     T,
+    numRd:   Int,
+    numWr:   Int,
+    numRdWr: Int
+  )(
+    implicit sourceInfo: SourceInfo,
+    evidence:            T <:< Vec[_]
+  ): MemInterface[T] = memInterface_withMask_impl(size, tpe)(numRd, numWr, numRdWr, Builder.forcedClock)
+
+  /** @group SourceInfoTransformMacro */
+  def do_withMask[T <: Data](
+    size:    BigInt,
+    tpe:     T,
+    numRd:   Int,
+    numWr:   Int,
+    numRdWr: Int,
+    clock:   Clock
+  )(
+    implicit sourceInfo: SourceInfo,
+    evidence:            T <:< Vec[_]
+  ): MemInterface[T] = memInterface_withMask_impl(size, tpe)(numRd, numWr, numRdWr, clock)
+
+  /** @group SourceInfoTransformMacro */
   private def memInterface_impl[T <: Data](
     size:    BigInt,
     tpe:     T
@@ -146,7 +246,7 @@ object MemInterface {
       override def desiredName: String =
         s"SyncReadMemWrapper_${MemInterface.portedness(numRd, numWr, numRdWr)}_${tpe.typeName}"
 
-      val io = IO(new MemInterface(tpe, addrWidth, numRd, numWr, numRdWr))
+      val io = IO(new MemInterface(tpe, addrWidth, numRd, numWr, numRdWr, false))
 
       val _innerMem = SyncReadMem(size, tpe)
 
@@ -171,7 +271,56 @@ object MemInterface {
       }
     })
 
-    val _out = Wire(new MemInterface(tpe, addrWidth, numRd, numWr, numRdWr))
+    val _out = Wire(new MemInterface(tpe, addrWidth, numRd, numWr, numRdWr, false))
+    _wrappedMem.io <> _out
+    _out
+  }
+
+  /** @group SourceInfoTransformMacro */
+  private def memInterface_withMask_impl[T <: Data](
+    size:    BigInt,
+    tpe:     T
+  )(numRd:   Int,
+    numWr:   Int,
+    numRdWr: Int,
+    clock:   Clock
+  )(
+    implicit sourceInfo: SourceInfo,
+    evidence:            T <:< Vec[_]
+  ): MemInterface[T] = {
+    val addrWidth = log2Up(size + 1)
+
+    val _wrappedMem = Module(new Module {
+      override def desiredName: String =
+        s"SyncReadMemWrapper_${MemInterface.portedness(numRd, numWr, numRdWr)}_${tpe.typeName}"
+
+      val io = IO(new MemInterface(tpe, addrWidth, numRd, numWr, numRdWr, true))
+
+      val _innerMem = SyncReadMem(size, tpe)
+
+      for (i <- 0 until numRd) {
+        io.rd(i).readValue := _innerMem.read(io.rd(i).addr, io.rd(i).enable, clock)
+      }
+
+      for (i <- 0 until numWr) {
+        when(io.wr(i).enable) {
+          _innerMem.write(io.wr(i).addr, io.wr(i).writeValue, io.wr(i).mask.get, clock)
+        }
+      }
+
+      for (i <- 0 until numRdWr) {
+        io.rw(i).readValue := _innerMem.readWrite(
+          io.rw(i).addr,
+          io.rw(i).writeValue,
+          io.rw(i).mask.get,
+          io.rw(i).enable,
+          io.rw(i).isWrite,
+          clock
+        )
+      }
+    })
+
+    val _out = Wire(new MemInterface(tpe, addrWidth, numRd, numWr, numRdWr, true))
     _wrappedMem.io <> _out
     _out
   }
