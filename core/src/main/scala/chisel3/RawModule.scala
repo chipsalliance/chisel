@@ -120,9 +120,9 @@ abstract class RawModule extends BaseModule {
 }
 
 trait RequireAsyncReset extends Module {
-  override private[chisel3] def mkReset: AsyncReset = AsyncReset()
+  override def resetType = ModuleResetTypeAsync
 }
 
 trait RequireSyncReset extends Module {
-  override private[chisel3] def mkReset: Bool = Bool()
+  override def resetType = ModuleResetTypeBool
 }

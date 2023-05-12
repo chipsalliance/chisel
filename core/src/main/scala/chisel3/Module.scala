@@ -140,6 +140,17 @@ object Module extends SourceInfoDoc {
 
 }
 
+/** Allowed values for the types of Module.reset */
+sealed trait ModuleResetType
+/* The default reset type. This is Uninferred, unless it is the top Module, in which case it is Bool */
+case object ModuleResetTypeDefault extends ModuleResetType
+/* Explicitly Uninferred Reset, even if this is the top Module */
+case object ModuleResetTypeUninferred extends ModuleResetType
+/* Explicitly Bool (Synchronous) Reset */
+case object ModuleResetTypeBool extends ModuleResetType
+/* Explicitly Asynchronous Reset */
+case object ModuleResetTypeAsync extends ModuleResetType
+
 /** Abstract base class for Modules, which behave much like Verilog modules.
   * These may contain both logic and state which are written in the Module
   * body (constructor).
@@ -148,6 +159,10 @@ object Module extends SourceInfoDoc {
   * @note Module instantiations must be wrapped in a Module() call.
   */
 abstract class Module extends RawModule {
+
+  /** Override this to explicitly set the type of reset you want on this module , before any reset inference */
+  def resetType: ModuleResetType = ModuleResetTypeDefault
+
   // Implicit clock and reset pins
   final val clock: Clock = IO(Input(Clock()))(UnlocatableSourceInfo).suggestName("clock")
   final val reset: Reset = IO(Input(mkReset))(UnlocatableSourceInfo).suggestName("reset")
@@ -172,8 +187,15 @@ abstract class Module extends RawModule {
   private[chisel3] def mkReset: Reset = {
     // Top module and compatibility mode use Bool for reset
     // Note that a Definition elaboration will lack a parent, but still not be a Top module
-    val inferReset = (_parent.isDefined || Builder.inDefinition)
-    if (inferReset) Reset() else Bool()
+    resetType match {
+      case ModuleResetTypeDefault => {
+        val inferReset = (_parent.isDefined || Builder.inDefinition)
+        if (inferReset) Reset() else Bool()
+      }
+      case ModuleResetTypeUninferred => Reset()
+      case ModuleResetTypeBool       => Bool()
+      case ModuleResetTypeAsync      => AsyncReset()
+    }
   }
 
   // Setup ClockAndReset
