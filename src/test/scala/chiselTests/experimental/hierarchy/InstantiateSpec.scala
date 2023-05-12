@@ -7,6 +7,7 @@ import chisel3._
 import chisel3.util.Valid
 import chisel3.experimental.hierarchy._
 import circt.stage.ChiselStage.convert
+import chisel3.internal.instantiable
 
 // Note, the instantiable classes must not be inner classes because the materialized WeakTypeTags
 // will be different and they will not give the same hashCode when looking up the Definition in the
@@ -142,6 +143,14 @@ object InstantiateSpec {
     @public val out = param.map(w => IO(Output(UInt(w.W))))
     out.zip(in).foreach { case (o, i) => o := i }
   }
+}
+
+@instantiable
+class ParameterizedReset(val hasAsyncNotSyncReset: Boolean) extends Module with HasParameterizedResetType {
+  @public val in = IO(Input(UInt(8.W)))
+  @public val out = IO(Output(UInt(8.W)))
+  val reg = RegInit(in)
+  out := reg
 }
 
 class InstantiateSpec extends ChiselFunSpec with Utils {
@@ -397,5 +406,29 @@ class InstantiateSpec extends ChiselFunSpec with Utils {
       assert(modules == Seq("Should", "Not", "Get", "Here"))
       """ shouldNot compile
     }
+  }
+
+  it("Should make different Modules with reset type as a parameter") {
+    class MyTop extends Top {
+      withReset(reset.asAsyncReset) {
+        val inst0 = Instantiate(new ParameterizedReset(true))
+        val inst1 = Instantiate(new ParameterizedReset(true))
+      }
+      val inst2 = Instantiate(new ParameterizedReset(false))
+      val inst3 = Instantiate(new ParameterizedReset(false))
+
+      a[ChiselException] should be thrownBy {
+        val inst4 = Instantiate(new ParameterizedReset(true))
+      }
+
+    }
+    val modules = convert(new MyTop).modules.map(_.name)
+    assert(
+      modules == Seq(
+        "ParameterizedReset",
+        "ParameterizedReset_1",
+        "Top"
+      )
+    )
   }
 }

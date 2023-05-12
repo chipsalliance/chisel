@@ -126,3 +126,8 @@ trait RequireAsyncReset extends Module {
 trait RequireSyncReset extends Module {
   override private[chisel3] def mkReset: Bool = Bool()
 }
+
+trait HasParameterizedResetType extends Module {
+  val hasAsyncNotSyncReset: Boolean
+  override private[chisel3] def mkReset = if (hasAsyncNotSyncReset) AsyncReset() else Bool()
+}
