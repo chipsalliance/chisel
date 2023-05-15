@@ -126,10 +126,12 @@ abstract class RawModule extends BaseModule {
   private[chisel3] def initializeInParent(): Unit = {}
 }
 
+/** Enforce that the Module.reset be Asynchronous (AsyncReset) */
 trait RequireAsyncReset extends Module {
-  override private[chisel3] def mkReset: AsyncReset = AsyncReset()
+  override final def resetType = Module.ResetType.Asynchronous
 }
 
+/** Enforce that the Module.reset be Synchronous (Bool) */
 trait RequireSyncReset extends Module {
-  override private[chisel3] def mkReset: Bool = Bool()
+  override final def resetType = Module.ResetType.Synchronous
 }
