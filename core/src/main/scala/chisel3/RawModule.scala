@@ -123,12 +123,14 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions) extends 
   }
 }
 
+/** Enforce that the Module.reset be Asynchronous (AsyncReset) */
 trait RequireAsyncReset extends Module {
-  override private[chisel3] def mkReset: AsyncReset = AsyncReset()
+  override final def resetType = Module.ResetType.Asynchronous
 }
 
+/** Enforce that the Module.reset be Synchronous (Bool) */
 trait RequireSyncReset extends Module {
-  override private[chisel3] def mkReset: Bool = Bool()
+  override final def resetType = Module.ResetType.Synchronous
 }
 
 /** Mix with a [[RawModule]] to automatically connect DontCare to the module's ports, wires, and children instance IOs. */
