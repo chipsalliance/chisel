@@ -105,7 +105,7 @@ class ResetSpec extends ChiselFlatSpec with Utils {
 
   they should "be able to have parameterized top level reset type" in {
     class MyModule(hasAsyncNotSyncReset: Boolean) extends Module {
-      override def resetType = if (hasAsyncNotSyncReset) ModuleResetTypeAsync else ModuleResetTypeBool
+      override def resetType = if (hasAsyncNotSyncReset) Module.ResetType.Asynchronous else Module.ResetType.Synchronous
     }
     val firAsync = ChiselStage.emitCHIRRTL(new MyModule(true) {
       reset shouldBe an[AsyncReset]

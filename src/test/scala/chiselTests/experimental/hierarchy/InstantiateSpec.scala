@@ -147,7 +147,7 @@ object InstantiateSpec {
 
 @instantiable
 class ParameterizedReset(hasAsyncNotSyncReset: Boolean) extends Module {
-  override def resetType = if (hasAsyncNotSyncReset) ModuleResetTypeAsync else ModuleResetTypeBool
+  override def resetType = if (hasAsyncNotSyncReset) Module.ResetType.Asynchronous else Module.ResetType.Synchronous
   @public val in = IO(Input(UInt(8.W)))
   @public val out = IO(Output(UInt(8.W)))
   @public val reset = reset

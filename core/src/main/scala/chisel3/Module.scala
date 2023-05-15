@@ -138,18 +138,19 @@ object Module extends SourceInfoDoc {
     }
   }
 
+  /** Allowed values for the types of Module.reset */
+  object ResetType {
+    sealed trait Type
+    /* The default reset type. This is Uninferred, unless it is the top Module, in which case it is Bool */
+    case object Default extends Type
+    /* Explicitly Uninferred Reset, even if this is the top Module */
+    case object Uninferred extends Type
+    /* Explicitly Bool (Synchronous) Reset */
+    case object Synchronous extends Type
+    /* Explicitly Asynchronous Reset */
+    case object Asynchronous extends Type
+  }
 }
-
-/** Allowed values for the types of Module.reset */
-sealed trait ModuleResetType
-/* The default reset type. This is Uninferred, unless it is the top Module, in which case it is Bool */
-case object ModuleResetTypeDefault extends ModuleResetType
-/* Explicitly Uninferred Reset, even if this is the top Module */
-case object ModuleResetTypeUninferred extends ModuleResetType
-/* Explicitly Bool (Synchronous) Reset */
-case object ModuleResetTypeBool extends ModuleResetType
-/* Explicitly Asynchronous Reset */
-case object ModuleResetTypeAsync extends ModuleResetType
 
 /** Abstract base class for Modules, which behave much like Verilog modules.
   * These may contain both logic and state which are written in the Module
@@ -161,7 +162,7 @@ case object ModuleResetTypeAsync extends ModuleResetType
 abstract class Module extends RawModule {
 
   /** Override this to explicitly set the type of reset you want on this module , before any reset inference */
-  def resetType: ModuleResetType = ModuleResetTypeDefault
+  def resetType: Module.ResetType.Type = Module.ResetType.Default
 
   // Implicit clock and reset pins
   final val clock: Clock = IO(Input(Clock()))(UnlocatableSourceInfo).suggestName("clock")
@@ -188,13 +189,13 @@ abstract class Module extends RawModule {
     // Top module and compatibility mode use Bool for reset
     // Note that a Definition elaboration will lack a parent, but still not be a Top module
     resetType match {
-      case ModuleResetTypeDefault => {
+      case Module.ResetType.Default => {
         val inferReset = (_parent.isDefined || Builder.inDefinition)
         if (inferReset) Reset() else Bool()
       }
-      case ModuleResetTypeUninferred => Reset()
-      case ModuleResetTypeBool       => Bool()
-      case ModuleResetTypeAsync      => AsyncReset()
+      case Module.ResetType.Uninferred   => Reset()
+      case Module.ResetType.Synchronous  => Bool()
+      case Module.ResetType.Asynchronous => AsyncReset()
     }
   }
 

@@ -120,11 +120,11 @@ abstract class RawModule extends BaseModule {
 }
 
 trait RequireAsyncReset extends Module {
-  override def resetType = ModuleResetTypeAsync
+  override def resetType = Module.ResetType.Asynchronous
 }
 
 trait RequireSyncReset extends Module {
-  override def resetType = ModuleResetTypeBool
+  override def resetType = Module.ResetType.Synchronous
 }
 
 trait HasParameterizedResetType extends Module {
