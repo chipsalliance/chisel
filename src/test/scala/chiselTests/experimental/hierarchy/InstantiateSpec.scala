@@ -145,15 +145,8 @@ object InstantiateSpec {
   }
 }
 
-@instantiable
 class ParameterizedReset(hasAsyncNotSyncReset: Boolean) extends Module {
   override def resetType = if (hasAsyncNotSyncReset) Module.ResetType.Asynchronous else Module.ResetType.Synchronous
-  @public val in = IO(Input(UInt(8.W)))
-  @public val out = IO(Output(UInt(8.W)))
-  @public val reset = reset
-  val reg = RegInit(0.U)
-  reg := in
-  out := reg
 }
 
 class InstantiateSpec extends ChiselFunSpec with Utils {
