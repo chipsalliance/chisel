@@ -140,14 +140,20 @@ object Module extends SourceInfoDoc {
 
   /** Allowed values for the types of Module.reset */
   object ResetType {
+
+    /** Allowed values for the types of Module.reset */
     sealed trait Type
-    /* The default reset type. This is Uninferred, unless it is the top Module, in which case it is Bool */
+
+    /** The default reset type. This is Uninferred, unless it is the top Module, in which case it is Bool */
     case object Default extends Type
-    /* Explicitly Uninferred Reset, even if this is the top Module */
+
+    /** Explicitly Uninferred Reset, even if this is the top Module */
     case object Uninferred extends Type
-    /* Explicitly Bool (Synchronous) Reset */
+
+    /** Explicitly Bool (Synchronous) Reset */
     case object Synchronous extends Type
-    /* Explicitly Asynchronous Reset */
+
+    /** Explicitly Asynchronous Reset */
     case object Asynchronous extends Type
   }
 }
