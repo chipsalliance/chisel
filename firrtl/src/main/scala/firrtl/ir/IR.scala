@@ -229,6 +229,14 @@ case class DefRegister(
   info:  Info,
   name:  String,
   tpe:   Type,
+  clock: Expression)
+    extends Statement
+    with IsDeclaration
+    with UseSerializer
+case class DefRegisterWithReset(
+  info:  Info,
+  name:  String,
+  tpe:   Type,
   clock: Expression,
   reset: Expression,
   init:  Expression)

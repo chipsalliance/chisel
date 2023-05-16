@@ -121,14 +121,12 @@ private[chisel3] object Converter {
           convert(info),
           e.name,
           extractType(id, info),
-          convert(clock, ctx, info),
-          firrtl.Utils.zero,
-          convert(getRef(id, info), ctx, info)
+          convert(clock, ctx, info)
         )
       )
     case e @ DefRegInit(info, id, clock, reset, init) =>
       Some(
-        fir.DefRegister(
+        fir.DefRegisterWithReset(
           convert(info),
           e.name,
           extractType(id, info),

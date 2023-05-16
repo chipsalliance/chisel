@@ -238,7 +238,9 @@ object Serializer {
       sStmtName(print.name); s(info)
     case IsInvalid(info, expr)    => s(expr); b ++= " is invalid"; s(info)
     case DefWire(info, name, tpe) => b ++= "wire "; b ++= name; b ++= " : "; s(tpe); s(info)
-    case DefRegister(info, name, tpe, clock, reset, init) =>
+    case DefRegister(info, name, tpe, clock) =>
+      b ++= "reg "; b ++= name; b ++= " : "; s(tpe); b ++= ", "; s(clock); s(info)
+    case DefRegisterWithReset(info, name, tpe, clock, reset, init) =>
       b ++= "reg "; b ++= name; b ++= " : "; s(tpe); b ++= ", "; s(clock); b ++= " with :"; newLineAndIndent(1)
       b ++= "reset => ("; s(reset); b ++= ", "; s(init); b += ')'; s(info)
     case DefInstance(info, name, module, _) => b ++= "inst "; b ++= name; b ++= " of "; b ++= module; s(info)
