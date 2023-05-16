@@ -926,7 +926,7 @@ to a register:</p>
 </code></pre></div></div>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">ChiselStage</span><span class="o">.</span><span class="py">emitSystemVerilog</span><span class="o">(</span><span class="k">new</span> <span class="nc">BadRegConnect</span><span class="o">)</span>
-<span class="c1">// circt.stage.phases.Exceptions$FirtoolNonZeroExitCode: firtool returned a non-zero exit code. Note that this version of Chisel (0.0.0+1-f8c9cc5b-SNAPSHOT) was published against firtool version 1.40.0.</span>
+<span class="c1">// circt.stage.phases.Exceptions$FirtoolNonZeroExitCode: firtool returned a non-zero exit code. Note that this version of Chisel (0.0.0+1-3e8eb13a-SNAPSHOT) was published against firtool version 1.40.0.</span>
 <span class="c1">// ------------------------------------------------------------------------------</span>
 <span class="c1">// ExitCode:</span>
 <span class="c1">// 1</span>
@@ -934,7 +934,7 @@ to a register:</p>
 <span class="c1">// </span>
 <span class="c1">// STDERR:</span>
 <span class="c1">// cookbook.md:903:20: error: 'firrtl.reg' op result #0 must be a passive base type that does not contain analog, but got '!firrtl.bundle&lt;ready flip: uint&lt;1&gt;, valid: uint&lt;1&gt;, bits: uint&lt;8&gt;&gt;'</span>
-<span class="c1">// cookbook.md:903:20: note: see current operation: %5 = "firrtl.reg"(%arg0) {annotations = [], name = "monitor", nameKind = #firrtl&lt;name_kind interesting_name&gt;} : (!firrtl.clock) -&gt; !firrtl.bundle&lt;ready flip: uint&lt;1&gt;, valid: uint&lt;1&gt;, bits: uint&lt;8&gt;&gt;</span>
+<span class="c1">// cookbook.md:903:20: note: see current operation: %4 = "firrtl.reg"(%arg0) {annotations = [], name = "monitor", nameKind = #firrtl&lt;name_kind interesting_name&gt;} : (!firrtl.clock) -&gt; !firrtl.bundle&lt;ready flip: uint&lt;1&gt;, valid: uint&lt;1&gt;, bits: uint&lt;8&gt;&gt;</span>
 <span class="c1">// </span>
 <span class="c1">// ------------------------------------------------------------------------------</span>
 </code></pre></div></div>
