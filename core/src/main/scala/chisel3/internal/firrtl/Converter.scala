@@ -405,7 +405,7 @@ private[chisel3] object Converter {
         fir.NoInfo,
         name,
         (ports ++ ctx.secretPorts).map(p => convert(p)),
-        convert(cmds ++ ctx.secretConnects, ctx)
+        convert(cmds ++ ctx.secretCommands, ctx)
       )
     case ctx @ DefBlackBox(id, name, ports, topDir, params) =>
       fir.ExtModule(

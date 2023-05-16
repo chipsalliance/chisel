@@ -37,11 +37,11 @@ package object dataview {
     }
   }
 
-  /** Provides `viewAsSupertype` for subclasses of [[Bundle]] */
-  implicit class BundleUpcastable[T <: Bundle](target: T) {
+  /** Provides `viewAsSupertype` for subclasses of [[Record]] */
+  implicit class RecordUpcastable[T <: Record](target: T) {
 
     /** View a [[Bundle]] or [[Record]] as a parent type (upcast) */
-    def viewAsSupertype[V <: Bundle](proto: V)(implicit ev: ChiselSubtypeOf[T, V], sourceInfo: SourceInfo): V = {
+    def viewAsSupertype[V <: Record](proto: V)(implicit ev: ChiselSubtypeOf[T, V], sourceInfo: SourceInfo): V = {
       implicit val dataView = PartialDataView.supertype[T, V](_ => proto)
       target.viewAs[V]
     }
@@ -81,8 +81,10 @@ package object dataview {
     // Resulting bindings for each Element of the View
     // Kept separate from Aggregates for totality checking
     val elementBindings =
-      new mutable.HashMap[Data, mutable.ListBuffer[Element]] ++
-        viewFieldLookup.view.collect { case (elt: Element, _) => elt }
+      new mutable.LinkedHashMap[Data, mutable.ListBuffer[Element]] ++
+        getRecursiveFields
+          .lazilyNoPath(view)
+          .collect { case (elt: Element) => elt }
           .map(_ -> new mutable.ListBuffer[Element])
 
     // Record any Aggregates that correspond 1:1 for reification
