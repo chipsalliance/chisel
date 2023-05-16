@@ -16,7 +16,7 @@ class RegEnableSpec extends AnyFlatSpec with Matchers {
       out := RegEnable(in, true.B)
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    val reset = """reset.*RegSpec.scala""".r
+    val reset = """reg.*RegSpec.scala""".r
     (chirrtl should include).regex(reset)
     val update = """out_r.* in .*RegSpec.scala""".r
     (chirrtl should include).regex(update)
@@ -48,7 +48,7 @@ class ShiftRegisterSpec extends AnyFlatSpec with Matchers {
       out := ShiftRegister(in, 2, true.B)
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    val reset = """reset .*RegSpec.scala""".r
+    val reset = """reg .*RegSpec.scala""".r
     (chirrtl should include).regex(reset)
     val update = """out_r.* in .*RegSpec.scala""".r
     (chirrtl should include).regex(update)
@@ -62,7 +62,7 @@ class ShiftRegisterSpec extends AnyFlatSpec with Matchers {
       out := ShiftRegister(in, 2)
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    val reset = """reset .*RegSpec.scala""".r
+    val reset = """reg .*RegSpec.scala""".r
     (chirrtl should include).regex(reset)
     val update = """out_r.* in .*RegSpec.scala""".r
     (chirrtl should include).regex(update)
@@ -95,7 +95,7 @@ class ShiftRegistersSpec extends AnyFlatSpec with Matchers {
       out := ShiftRegisters(in, 2, true.B)(0)
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    val reset = """reset .*RegSpec.scala""".r
+    val reset = """reg .*RegSpec.scala""".r
     (chirrtl should include).regex(reset)
     val update = """out_r.* in .*RegSpec.scala""".r
     (chirrtl should include).regex(update)
@@ -109,7 +109,7 @@ class ShiftRegistersSpec extends AnyFlatSpec with Matchers {
       out := ShiftRegisters(in, 2)(0)
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    val reset = """reset .*RegSpec.scala""".r
+    val reset = """reg .*RegSpec.scala""".r
     (chirrtl should include).regex(reset)
     val update = """out_r.* in .*RegSpec.scala""".r
     (chirrtl should include).regex(update)
