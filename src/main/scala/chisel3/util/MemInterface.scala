@@ -111,29 +111,6 @@ object MemInterface {
     macro MemTransform.apply_memInterface[T]
 
   /** Generates a [[SyncReadMem]] wrapper connected to an explicit number of read, write,
-    * and read/write ports
-    *
-    * @param size The desired size of the inner `SyncReadMem`
-    * @tparam T The data type of the memory element
-    * @param numRd The number of desired read ports, >= 0
-    * @param numWr The number of desired write ports, >= 0
-    * @param numRdWr The number of desired read/write ports, >= 0
-    * @param clock The clock to bind to each generated port, which may be different from the implicit clock
-    *
-    * @return A new `MemInterface` wire containing the control signals for each instantiated port
-    * @note This does *not* return the wrapper module itself, you must interact with it using the returned bundle
-    */
-  def apply[T <: Data](
-    size:    BigInt,
-    tpe:     T,
-    numRd:   Int,
-    numWr:   Int,
-    numRdWr: Int,
-    clock:   Clock
-  ): MemInterface[T] =
-    macro MemTransform.apply_memInterfaceClk[T]
-
-  /** Generates a [[SyncReadMem]] wrapper connected to an explicit number of read, write,
     * and read/write ports, with masking capability on all write and read/write ports
     *
     * @param size The desired size of the inner `SyncReadMem`
@@ -156,31 +133,6 @@ object MemInterface {
   ): MemInterface[T] =
     macro MemTransform.memInterface_withMask[T]
 
-  /** Generates a [[SyncReadMem]] wrapper connected to an explicit number of read, write,
-    * and read/write ports, with masking capability on all write and read/write ports
-    *
-    * @param size The desired size of the inner `SyncReadMem`
-    * @tparam T The data type of the memory element
-    * @param numRd The number of desired read ports, >= 0
-    * @param numWr The number of desired write ports, >= 0
-    * @param numRdWr The number of desired read/write ports, >= 0
-    * @param clock The clock to bind to each generated port, which may be different from the implicit clock
-    *
-    * @return A new `MemInterface` wire containing the control signals for each instantiated port
-    * @note This does *not* return the wrapper module itself, you must interact with it using the returned bundle
-    */
-  def withMask[T <: Data](
-    size:    BigInt,
-    tpe:     T,
-    numRd:   Int,
-    numWr:   Int,
-    numRdWr: Int,
-    clock:   Clock
-  )(
-    implicit evidence: T <:< Vec[_]
-  ): MemInterface[T] =
-    macro MemTransform.memInterface_withMaskClk[T]
-
   /** @group SourceInfoTransformMacro */
   def do_apply[T <: Data](
     size:    BigInt,
@@ -193,18 +145,6 @@ object MemInterface {
   ): MemInterface[T] = memInterface_impl(size, tpe)(numRd, numWr, numRdWr, Builder.forcedClock)
 
   /** @group SourceInfoTransformMacro */
-  def do_apply[T <: Data](
-    size:    BigInt,
-    tpe:     T,
-    numRd:   Int,
-    numWr:   Int,
-    numRdWr: Int,
-    clock:   Clock
-  )(
-    implicit sourceInfo: SourceInfo
-  ): MemInterface[T] = memInterface_impl(size, tpe)(numRd, numWr, numRdWr, clock)
-
-  /** @group SourceInfoTransformMacro */
   def do_withMask[T <: Data](
     size:    BigInt,
     tpe:     T,
@@ -215,19 +155,6 @@ object MemInterface {
     implicit sourceInfo: SourceInfo,
     evidence:            T <:< Vec[_]
   ): MemInterface[T] = memInterface_withMask_impl(size, tpe)(numRd, numWr, numRdWr, Builder.forcedClock)
-
-  /** @group SourceInfoTransformMacro */
-  def do_withMask[T <: Data](
-    size:    BigInt,
-    tpe:     T,
-    numRd:   Int,
-    numWr:   Int,
-    numRdWr: Int,
-    clock:   Clock
-  )(
-    implicit sourceInfo: SourceInfo,
-    evidence:            T <:< Vec[_]
-  ): MemInterface[T] = memInterface_withMask_impl(size, tpe)(numRd, numWr, numRdWr, clock)
 
   /** @group SourceInfoTransformMacro */
   private def memInterface_impl[T <: Data](

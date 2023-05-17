@@ -104,16 +104,6 @@ class MemTransform(val c: Context) extends SourceInfoTransformMacro {
   ): c.Tree = {
     q"$thisObj.do_apply($size, $tpe, $numRd, $numWr, $numRdWr)($implicitSourceInfo)"
   }
-  def apply_memInterfaceClk[T: c.WeakTypeTag](
-    size:    c.Tree,
-    tpe:     c.Tree,
-    numRd:   c.Tree,
-    numWr:   c.Tree,
-    numRdWr: c.Tree,
-    clock:   c.Tree
-  ): c.Tree = {
-    q"$thisObj.do_apply($size, $tpe, $numRd, $numWr, $numRdWr, $clock)($implicitSourceInfo)"
-  }
 
   def memInterface_withMask[T: c.WeakTypeTag](
     size:     c.Tree,
@@ -124,17 +114,6 @@ class MemTransform(val c: Context) extends SourceInfoTransformMacro {
   )(evidence: c.Tree
   ): c.Tree = {
     q"$thisObj.do_withMask($size, $tpe, $numRd, $numWr, $numRdWr)($implicitSourceInfo, $evidence)"
-  }
-  def memInterface_withMaskClk[T: c.WeakTypeTag](
-    size:     c.Tree,
-    tpe:      c.Tree,
-    numRd:    c.Tree,
-    numWr:    c.Tree,
-    numRdWr:  c.Tree,
-    clock:    c.Tree
-  )(evidence: c.Tree
-  ): c.Tree = {
-    q"$thisObj.do_withMask($size, $tpe, $numRd, $numWr, $numRdWr, $clock)($implicitSourceInfo, $evidence)"
   }
 }
 
