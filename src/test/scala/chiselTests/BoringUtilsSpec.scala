@@ -469,6 +469,7 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
       val foo = Module(new Foo)
       val out = IO(Bool())
       out := probe.read(BoringUtils.rwTap(foo.bar.internalWire))
+      probe.forceInitial(BoringUtils.rwTap(foo.bar.internalWire), false.B)
     }
     val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
     println(chirrtl)
@@ -480,7 +481,8 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
       "output out_bore : RWProbe<UInt<1>>",
       "define out_bore = bar.out_bore",
       "module Top :",
-      "out <= read(foo.out_bore)"
+      "out <= read(foo.out_bore)",
+      "force_initial(foo.bore, UInt<1>(\"h0\"))"
     )()
   }
 
