@@ -452,9 +452,10 @@ class MemInterfaceSpec extends ChiselFunSpec {
   describe("MemInterface") {
     val portCombos: Seq[(Int, Int, Int)] =
       for {
-        numRD <- 0 until 3;
-        numWR <- 0 until 3;
-        numRW <- 0 until 3 if (numRD + numWR + numRW) > 0
+        numRD <- 0 until 3
+        numWR <- 0 until 3
+        numRW <- 0 until 3
+        if (numRD + numWR + numRW) > 0
       } yield (numRD, numWR, numRW)
 
     portCombos.foreach {
