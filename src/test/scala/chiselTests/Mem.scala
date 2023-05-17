@@ -506,7 +506,7 @@ class MemInterfaceSpec extends ChiselFunSpec {
 
   it(s"should support masking with Vec-valued data") {
     class TestModule(val wr: Int, val rw: Int) extends Module {
-      val mem = MemInterface.withMask(32, Vec(3, UInt(8.W)), 0, wr, rw)
+      val mem = MemInterface.masked(32, Vec(3, UInt(8.W)), 0, wr, rw)
 
       dontTouch(mem)
 
