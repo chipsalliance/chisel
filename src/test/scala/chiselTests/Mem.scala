@@ -481,25 +481,25 @@ class MemInterfaceSpec extends ChiselFunSpec {
           // Check that the chirrtl ports actually exist and the signals
           // are properly connected
           for (rd <- 0 until numRD) {
-            val rdPortName = s"mem_out_rd_${rd}_readValue_MPORT"
+            val rdPortName = s"mem_out_rd_${rd}_data_MPORT"
             chirrtl should include(s"when mem.rd[$rd].enable")
             chirrtl should include(s"read mport $rdPortName")
-            chirrtl should include(s"mem.rd[$rd].readValue <= $rdPortName")
+            chirrtl should include(s"mem.rd[$rd].data <= $rdPortName")
           }
 
           for (wr <- 0 until numWR) {
             val wrPortName = s"mem_MPORT${if (wr == 0) "" else s"_$wr"}"
             chirrtl should include(s"when mem.wr[$wr].enable")
             chirrtl should include(s"write mport $wrPortName")
-            chirrtl should include(s"$wrPortName <= mem.wr[$wr].writeValue")
+            chirrtl should include(s"$wrPortName <= mem.wr[$wr].data")
           }
 
           for (rw <- 0 until numRW) {
-            val rwPortName = s"mem_out_rw_${rw}_readValue_MPORT"
+            val rwPortName = s"mem_out_rw_${rw}_readData_MPORT"
             chirrtl should include(s"when mem.rw[$rw].enable")
             chirrtl should include(s"rdwr mport $rwPortName")
             chirrtl should include(s"when mem.rw[$rw].isWrite")
-            chirrtl should include(s"$rwPortName <= mem.rw[$rw].writeValue")
+            chirrtl should include(s"$rwPortName <= mem.rw[$rw].writeData")
           }
         }
     }
@@ -521,18 +521,18 @@ class MemInterfaceSpec extends ChiselFunSpec {
     val chirrtl = ChiselStage.emitCHIRRTL(new TestModule(1, 1), args = Array("--full-stacktrace"))
 
     chirrtl should include(
-      "wr : { flip addr : UInt<6>, flip enable : UInt<1>, flip writeValue : UInt<8>[3], flip mask : UInt<1>[3]}[1]"
+      "wr : { flip addr : UInt<6>, flip enable : UInt<1>, flip data : UInt<8>[3], flip mask : UInt<1>[3]}[1]"
     )
     chirrtl should include(
-      "rw : { flip addr : UInt<6>, flip enable : UInt<1>, flip isWrite : UInt<1>, readValue : UInt<8>[3], flip writeValue : UInt<8>[3], flip mask : UInt<1>[3]}[1]"
+      "rw : { flip addr : UInt<6>, flip enable : UInt<1>, flip isWrite : UInt<1>, readData : UInt<8>[3], flip writeData : UInt<8>[3], flip mask : UInt<1>[3]}[1]"
     )
 
     for (i <- 0 until 3) {
       chirrtl should include(s"when mem.wr[0].mask[$i]")
-      chirrtl should include(s"mem_MPORT[$i] <= mem.wr[0].writeValue[$i]")
+      chirrtl should include(s"mem_MPORT[$i] <= mem.wr[0].data[$i]")
 
       chirrtl should include(s"when mem.rw[0].mask[$i]")
-      chirrtl should include(s"mem_out_rw_0_readValue_MPORT[$i] <= mem.rw[0].writeValue[$i]")
+      chirrtl should include(s"mem_out_rw_0_readData_MPORT[$i] <= mem.rw[0].writeData[$i]")
     }
   }
 }

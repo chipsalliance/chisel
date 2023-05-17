@@ -16,7 +16,7 @@ import scala.language.experimental.macros
 class MemoryReadPort[T <: Data](tpe: T, addrWidth: Int) extends Bundle {
   val addr = Input(UInt(addrWidth.W))
   val enable = Input(Bool())
-  val readValue = Output(tpe)
+  val data = Output(tpe)
 }
 
 /** A bundle of signals representing a memory write port.
@@ -31,7 +31,7 @@ class MemoryReadPort[T <: Data](tpe: T, addrWidth: Int) extends Bundle {
 class MemoryWritePort[T <: Data] private[chisel3] (tpe: T, addrWidth: Int, masked: Boolean) extends Bundle {
   val addr = Input(UInt(addrWidth.W))
   val enable = Input(Bool())
-  val writeValue = Input(tpe)
+  val data = Input(tpe)
   val mask: Option[Vec[Bool]] = if (masked) {
     val maskSize = tpe match {
       case vec: Vec[_] => vec.size
@@ -56,8 +56,8 @@ class MemoryReadWritePort[T <: Data] private[chisel3] (tpe: T, addrWidth: Int, m
   val addr = Input(UInt(addrWidth.W))
   val enable = Input(Bool())
   val isWrite = Input(Bool())
-  val readValue = Output(tpe)
-  val writeValue = Input(tpe)
+  val readData = Output(tpe)
+  val writeData = Input(tpe)
   val mask: Option[Vec[Bool]] = if (masked) {
     val maskSize = tpe match {
       case vec: Vec[_] => vec.size
@@ -180,19 +180,19 @@ object MemInterface {
     val mem = SyncReadMem(size, tpe)
 
     for (i <- 0 until numRd) {
-      _out.rd(i).readValue := mem.read(_out.rd(i).addr, _out.rd(i).enable, clock)
+      _out.rd(i).data := mem.read(_out.rd(i).addr, _out.rd(i).enable, clock)
     }
 
     for (i <- 0 until numWr) {
       when(_out.wr(i).enable) {
-        mem.write(_out.wr(i).addr, _out.wr(i).writeValue, clock)
+        mem.write(_out.wr(i).addr, _out.wr(i).data, clock)
       }
     }
 
     for (i <- 0 until numRdWr) {
-      _out.rw(i).readValue := mem.readWrite(
+      _out.rw(i).readData := mem.readWrite(
         _out.rw(i).addr,
-        _out.rw(i).writeValue,
+        _out.rw(i).writeData,
         _out.rw(i).enable,
         _out.rw(i).isWrite,
         clock
@@ -219,19 +219,19 @@ object MemInterface {
     val mem = SyncReadMem(size, tpe)
 
     for (i <- 0 until numRd) {
-      _out.rd(i).readValue := mem.read(_out.rd(i).addr, _out.rd(i).enable, clock)
+      _out.rd(i).data := mem.read(_out.rd(i).addr, _out.rd(i).enable, clock)
     }
 
     for (i <- 0 until numWr) {
       when(_out.wr(i).enable) {
-        mem.write(_out.wr(i).addr, _out.wr(i).writeValue, _out.wr(i).mask.get, clock)
+        mem.write(_out.wr(i).addr, _out.wr(i).data, _out.wr(i).mask.get, clock)
       }
     }
 
     for (i <- 0 until numRdWr) {
-      _out.rw(i).readValue := mem.readWrite(
+      _out.rw(i).readData := mem.readWrite(
         _out.rw(i).addr,
-        _out.rw(i).writeValue,
+        _out.rw(i).writeData,
         _out.rw(i).mask.get,
         _out.rw(i).enable,
         _out.rw(i).isWrite,
