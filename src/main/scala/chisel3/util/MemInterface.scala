@@ -175,7 +175,7 @@ object MemInterface {
     implicit sourceInfo: SourceInfo
   ): MemInterface[T] = {
     val addrWidth = log2Up(size + 1)
-    
+
     val _out = Wire(new MemInterface(tpe, addrWidth, numRd, numWr, numRdWr, false))
     val mem = SyncReadMem(size, tpe)
 
