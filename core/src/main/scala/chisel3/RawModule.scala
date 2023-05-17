@@ -110,10 +110,11 @@ abstract class RawModule extends BaseModule {
 
   private[chisel3] def secretConnection(left: Data, right: Data)(implicit si: SourceInfo): Unit = {
     val rhs = (left.probeInfo.nonEmpty, right.probeInfo.nonEmpty) match {
-      case (true, true)   => ProbeDefine(si, left.lref, Node(right))
-      case (true, false)  => ProbeDefine(si, left.lref, ProbeExpr(Node(right)))
-      case (false, true)  => Connect(si, left.lref, ProbeRead(Node(right)))
-      case (false, false) => Connect(si, left.lref, Node(right))
+      case (true, true)                                 => ProbeDefine(si, left.lref, Node(right))
+      case (true, false) if left.probeInfo.get.writable => ProbeDefine(si, left.lref, RWProbeExpr(Node(right)))
+      case (true, false)                                => ProbeDefine(si, left.lref, ProbeExpr(Node(right)))
+      case (false, true)                                => Connect(si, left.lref, ProbeRead(Node(right)))
+      case (false, false)                               => Connect(si, left.lref, Node(right))
     }
     val secretCommands = if (_closed) {
       _component.get.asInstanceOf[DefModule].secretCommands

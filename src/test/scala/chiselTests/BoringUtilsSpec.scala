@@ -457,4 +457,68 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
       "foo.b_bore <= read(bar.b_bore)"
     )()
   }
+
+  "Downwards writable tap from grandparent to grandchild" should "work" in {
+    class Bar extends RawModule {
+      val internalWire = Wire(Bool())
+    }
+    class Foo extends RawModule {
+      val bar = Module(new Bar)
+    }
+    class Top extends RawModule {
+      val foo = Module(new Foo)
+      val out = IO(Bool())
+      out := probe.read(BoringUtils.rwTap(foo.bar.internalWire))
+      probe.forceInitial(BoringUtils.rwTap(foo.bar.internalWire), false.B)
+    }
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
+    println(chirrtl)
+    matchesAndOmits(chirrtl)(
+      "module Bar :",
+      "output out_bore : RWProbe<UInt<1>>",
+      "define out_bore = rwprobe(internalWire)",
+      "module Foo :",
+      "output out_bore : RWProbe<UInt<1>>",
+      "define out_bore = bar.out_bore",
+      "module Top :",
+      "out <= read(foo.out_bore)",
+      "force_initial(foo.bore, UInt<1>(\"h0\"))"
+    )()
+  }
+
+  "Upwards writable tap from child to parent" should "not work" in {
+    class Foo(parentData: Data) extends RawModule {
+      val outProbe = IO(probe.RWProbe(Bool()))
+      probe.define(outProbe, BoringUtils.rwTap(parentData))
+    }
+    class Top extends RawModule {
+      val parentWire = Wire(Bool())
+      val foo = Module(new Foo(parentWire))
+    }
+    val e = intercept[Exception] {
+      circt.stage.ChiselStage.emitCHIRRTL(new Top, Array("--throw-on-first-error"))
+    }
+    e.getMessage should include("Cannot drill writable probes upwards.")
+  }
+
+  "Writable tap from child to sibling at different levels" should "not work" in {
+    class Bar extends RawModule {
+      val a = Wire(Bool())
+    }
+    class Baz(_a: Bool) extends RawModule {
+      val b = Output(probe.RWProbe(Bool()))
+      b := BoringUtils.rwTap(_a)
+    }
+    class Foo(_a: Bool) extends RawModule {
+      val baz = Module(new Baz(_a))
+    }
+    class Top extends RawModule {
+      val bar = Module(new Bar)
+      val foo = Module(new Foo(bar.a))
+    }
+    val e = intercept[Exception] {
+      circt.stage.ChiselStage.emitCHIRRTL(new Top, Array("--throw-on-first-error"))
+    }
+    e.getMessage should include("Cannot drill writable probes upwards.")
+  }
 }
