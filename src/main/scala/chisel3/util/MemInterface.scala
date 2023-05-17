@@ -241,38 +241,29 @@ object MemInterface {
     implicit sourceInfo: SourceInfo
   ): MemInterface[T] = {
     val addrWidth = log2Up(size + 1)
-
-    val _wrappedMem = Module(new Module {
-      override def desiredName: String =
-        s"SyncReadMemWrapper_${MemInterface.portedness(numRd, numWr, numRdWr)}_${tpe.typeName}"
-
-      val io = IO(new MemInterface(tpe, addrWidth, numRd, numWr, numRdWr, false))
-
-      val _innerMem = SyncReadMem(size, tpe)
-
-      for (i <- 0 until numRd) {
-        io.rd(i).readValue := _innerMem.read(io.rd(i).addr, io.rd(i).enable, clock)
-      }
-
-      for (i <- 0 until numWr) {
-        when(io.wr(i).enable) {
-          _innerMem.write(io.wr(i).addr, io.wr(i).writeValue, clock)
-        }
-      }
-
-      for (i <- 0 until numRdWr) {
-        io.rw(i).readValue := _innerMem.readWrite(
-          io.rw(i).addr,
-          io.rw(i).writeValue,
-          io.rw(i).enable,
-          io.rw(i).isWrite,
-          clock
-        )
-      }
-    })
-
+    
     val _out = Wire(new MemInterface(tpe, addrWidth, numRd, numWr, numRdWr, false))
-    _wrappedMem.io <> _out
+    val mem = SyncReadMem(size, tpe)
+
+    for (i <- 0 until numRd) {
+      _out.rd(i).readValue := mem.read(_out.rd(i).addr, _out.rd(i).enable, clock)
+    }
+
+    for (i <- 0 until numWr) {
+      when(_out.wr(i).enable) {
+        mem.write(_out.wr(i).addr, _out.wr(i).writeValue, clock)
+      }
+    }
+
+    for (i <- 0 until numRdWr) {
+      _out.rw(i).readValue := mem.readWrite(
+        _out.rw(i).addr,
+        _out.rw(i).writeValue,
+        _out.rw(i).enable,
+        _out.rw(i).isWrite,
+        clock
+      )
+    }
     _out
   }
 
@@ -290,38 +281,30 @@ object MemInterface {
   ): MemInterface[T] = {
     val addrWidth = log2Up(size + 1)
 
-    val _wrappedMem = Module(new Module {
-      override def desiredName: String =
-        s"SyncReadMemWrapper_${MemInterface.portedness(numRd, numWr, numRdWr)}_${tpe.typeName}"
-
-      val io = IO(new MemInterface(tpe, addrWidth, numRd, numWr, numRdWr, true))
-
-      val _innerMem = SyncReadMem(size, tpe)
-
-      for (i <- 0 until numRd) {
-        io.rd(i).readValue := _innerMem.read(io.rd(i).addr, io.rd(i).enable, clock)
-      }
-
-      for (i <- 0 until numWr) {
-        when(io.wr(i).enable) {
-          _innerMem.write(io.wr(i).addr, io.wr(i).writeValue, io.wr(i).mask.get, clock)
-        }
-      }
-
-      for (i <- 0 until numRdWr) {
-        io.rw(i).readValue := _innerMem.readWrite(
-          io.rw(i).addr,
-          io.rw(i).writeValue,
-          io.rw(i).mask.get,
-          io.rw(i).enable,
-          io.rw(i).isWrite,
-          clock
-        )
-      }
-    })
-
     val _out = Wire(new MemInterface(tpe, addrWidth, numRd, numWr, numRdWr, true))
-    _wrappedMem.io <> _out
+    val mem = SyncReadMem(size, tpe)
+
+    for (i <- 0 until numRd) {
+      _out.rd(i).readValue := mem.read(_out.rd(i).addr, _out.rd(i).enable, clock)
+    }
+
+    for (i <- 0 until numWr) {
+      when(_out.wr(i).enable) {
+        mem.write(_out.wr(i).addr, _out.wr(i).writeValue, _out.wr(i).mask.get, clock)
+      }
+    }
+
+    for (i <- 0 until numRdWr) {
+      _out.rw(i).readValue := mem.readWrite(
+        _out.rw(i).addr,
+        _out.rw(i).writeValue,
+        _out.rw(i).mask.get,
+        _out.rw(i).enable,
+        _out.rw(i).isWrite,
+        clock
+      )
+    }
+
     _out
   }
 
