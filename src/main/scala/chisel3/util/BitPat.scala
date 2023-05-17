@@ -327,6 +327,14 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, val width: Int)
   def =/=(that: UInt):   Bool = macro SourceInfoTransform.thatArg
   def ##(that:  BitPat): BitPat = macro SourceInfoTransform.thatArg
 
+  override def equals(obj: Any): Boolean = {
+    obj match {
+      case that: BitPat => this.value == that.value && this.mask == that.mask && this.width == that.width
+      case that: BitSet => super.equals(obj)
+      case _ => false
+    }
+  }
+
   override def hashCode: Int =
     MurmurHash3.seqHash(Seq(this.value, this.mask, this.width))
 
@@ -362,14 +370,20 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, val width: Int)
     * @param that `BitPat` to be checked.
     * @return true if this and that `BitPat` have overlap.
     */
-  def overlap(that: BitPat): Boolean = ((mask & that.mask) & (value ^ that.value)) == 0
+  override def overlap(that: BitSet): Boolean = that match {
+    case that: BitPat => ((mask & that.mask) & (value ^ that.value)) == 0
+    case _ => super.overlap(that)
+  }
 
   /** Check whether this `BitSet` covers that (i.e. forall b matches that, b also matches this)
     *
     * @param that `BitPat` to be covered
     * @return true if this `BitSet` can cover that `BitSet`
     */
-  def cover(that: BitPat): Boolean = (mask & (~that.mask | (value ^ that.value))) == 0
+  override def cover(that: BitSet): Boolean = that match {
+    case that: BitPat => (mask & (~that.mask | (value ^ that.value))) == 0
+    case _ => super.cover(that)
+  }
 
   /** Intersect `this` and `that` `BitPat`.
     *
