@@ -375,6 +375,14 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, val width: Int)
     case _ => super.overlap(that)
   }
 
+  /** Check whether this `BitSet` overlap with that `BitSet`, i.e. !(intersect.isEmpty)
+    *
+    * @param that `BitSet` to be checked.
+    * @return true if this and that `BitSet` have overlap.
+    * @note this version only exists to maintain binary compatibility
+    */
+  def overlap(that: BitPat): Boolean = this.overlap(that: BitSet)
+
   /** Check whether this `BitSet` covers that (i.e. forall b matches that, b also matches this)
     *
     * @param that `BitPat` to be covered
@@ -384,6 +392,14 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, val width: Int)
     case that: BitPat => (mask & (~that.mask | (value ^ that.value))) == 0
     case _ => super.cover(that)
   }
+
+  /** Check whether this `BitSet` covers that (i.e. forall b matches that, b also matches this)
+    *
+    * @param that `BitPat` to be covered
+    * @return true if this `BitSet` can cover that `BitSet`
+    * @note this version only exists to maintain binary compatibility
+    */
+  def cover(that: BitPat): Boolean = this.cover(that: BitSet)
 
   /** Intersect `this` and `that` `BitPat`.
     *
