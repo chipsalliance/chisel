@@ -115,15 +115,17 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Setup Scala
-        uses: olafurpg/setup-scala@v10
+        uses: actions/setup-java@v3
         with:
-          java-version: adopt@1.8
-      - name: Cache Scala
-        uses: coursier/cache-action@v5
+          distribution: 'adopt'
+          java-version: '11'
+          cache: 'sbt'
       - name: Setup Ruby
-        uses: actions/setup-ruby@v1
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '2.7.8'
       - name: Setup Jekyll
         run: |
           gem install jekyll -v 4.2.0
