@@ -448,8 +448,8 @@ class MemorySpec extends ChiselPropSpec {
   }
 }
 
-class MemInterfaceSpec extends ChiselFunSpec {
-  describe("MemInterface") {
+class SRAMSpec extends ChiselFunSpec {
+  describe("SRAM") {
     val portCombos: Seq[(Int, Int, Int)] =
       for {
         numRD <- 0 until 3
@@ -460,9 +460,9 @@ class MemInterfaceSpec extends ChiselFunSpec {
 
     portCombos.foreach {
       case (numRD, numWR, numRW) =>
-        it(s"should generate a ${MemInterface.portedness(numRD, numWR, numRW)} SyncReadMem") {
+        it(s"should generate a ${SRAM.portedness(numRD, numWR, numRW)} memory") {
           class TestModule(val rd: Int, val wr: Int, val rw: Int) extends Module {
-            val mem = MemInterface(32, UInt(8.W), rd, wr, rw)
+            val mem = SRAM(32, UInt(8.W), rd, wr, rw)
 
             dontTouch(mem)
 
@@ -507,7 +507,7 @@ class MemInterfaceSpec extends ChiselFunSpec {
 
   it(s"should support masking with Vec-valued data") {
     class TestModule(val wr: Int, val rw: Int) extends Module {
-      val mem = MemInterface.masked(32, Vec(3, UInt(8.W)), 0, wr, rw)
+      val mem = SRAM.masked(32, Vec(3, UInt(8.W)), 0, wr, rw)
 
       dontTouch(mem)
 

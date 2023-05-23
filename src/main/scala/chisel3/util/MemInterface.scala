@@ -73,7 +73,7 @@ class MemoryReadWritePort[T <: Data] private[chisel3] (tpe: T, addrWidth: Int, m
 }
 
 /** A IO bundle of signals connecting to the ports of a wrapped `SyncReadMem`, as requested by
-  * `MemInterface.apply`.
+  * `SRAMInterface.apply`.
   *
   * @tparam tpe The data type of the memory port
   * @param width The width of the address wires of each port
@@ -81,25 +81,25 @@ class MemoryReadWritePort[T <: Data] private[chisel3] (tpe: T, addrWidth: Int, m
   * @param numWr The number of write ports
   * @param numRdWr The number of read/write ports
   */
-class MemInterface[T <: Data](tpe: T, addrWidth: Int, numRd: Int, numWr: Int, numRdWr: Int, masked: Boolean)
+class SRAMInterface[T <: Data](tpe: T, addrWidth: Int, numRd: Int, numWr: Int, numRdWr: Int, masked: Boolean)
     extends Bundle {
   if (masked) {
     require(
       tpe.isInstanceOf[Vec[_]],
-      s"masked writes require that MemInterface is instantiated with a data type of Vec (got $tpe instead)"
+      s"masked writes require that SRAMInterface is instantiated with a data type of Vec (got $tpe instead)"
     )
   }
-  override def typeName: String = s"MemInterface_${MemInterface.portedness(numRd, numWr, numRdWr)}"
+  override def typeName: String = s"SRAMInterface_${SRAM.portedness(numRd, numWr, numRdWr)}"
 
   val rd: Vec[MemoryReadPort[T]] = Vec(numRd, new MemoryReadPort(tpe, addrWidth))
   val wr: Vec[MemoryWritePort[T]] = Vec(numWr, new MemoryWritePort(tpe, addrWidth, masked))
   val rw: Vec[MemoryReadWritePort[T]] = Vec(numRdWr, new MemoryReadWritePort(tpe, addrWidth, masked))
 }
 
-object MemInterface {
+object SRAM {
 
-  /** Generates a [[SyncReadMem]] connected to an explicit number of read, write,
-    * and read/write ports within the current module.
+  /** Generates a [[SyncReadMem]] within the current module, connected to an explicit number
+    * of read, write, and read/write ports
     *
     * @param size The desired size of the inner `SyncReadMem`
     * @tparam T The data type of the memory element
@@ -107,7 +107,7 @@ object MemInterface {
     * @param numWr The number of desired write ports, >= 0
     * @param numRdWr The number of desired read/write ports, >= 0
     *
-    * @return A new `MemInterface` wire containing the control signals for each instantiated port
+    * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
     * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
     */
   def apply[T <: Data](
@@ -116,12 +116,11 @@ object MemInterface {
     numRd:   Int,
     numWr:   Int,
     numRdWr: Int
-  ): MemInterface[T] =
+  ): SRAMInterface[T] =
     macro MemTransform.apply_memInterface[T]
 
-  /** Generates a [[SyncReadMem]] wrapper connected to an explicit number of read, write,
-    * and read/write ports, with masking capability on all write and read/write ports,
-    * within the current module.
+  /** Generates a [[SyncReadMem]] within the current module, connected to an explicit number
+    * of read, write, and read/write ports, with masking capability on all write and read/write ports.
     *
     * @param size The desired size of the inner `SyncReadMem`
     * @tparam T The data type of the memory element
@@ -129,7 +128,7 @@ object MemInterface {
     * @param numWr The number of desired write ports, >= 0
     * @param numRdWr The number of desired read/write ports, >= 0
     *
-    * @return A new `MemInterface` wire containing the control signals for each instantiated port
+    * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
     * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
     */
   def masked[T <: Data](
@@ -140,7 +139,7 @@ object MemInterface {
     numRdWr: Int
   )(
     implicit evidence: T <:< Vec[_]
-  ): MemInterface[T] =
+  ): SRAMInterface[T] =
     macro MemTransform.masked_memInterface[T]
 
   /** @group SourceInfoTransformMacro */
@@ -152,7 +151,7 @@ object MemInterface {
     numRdWr: Int
   )(
     implicit sourceInfo: SourceInfo
-  ): MemInterface[T] = memInterface_impl(size, tpe)(numRd, numWr, numRdWr, Builder.forcedClock)
+  ): SRAMInterface[T] = memInterface_impl(size, tpe)(numRd, numWr, numRdWr, Builder.forcedClock)
 
   /** @group SourceInfoTransformMacro */
   def do_masked[T <: Data](
@@ -164,7 +163,7 @@ object MemInterface {
   )(
     implicit sourceInfo: SourceInfo,
     evidence:            T <:< Vec[_]
-  ): MemInterface[T] = masked_memInterface_impl(size, tpe)(numRd, numWr, numRdWr, Builder.forcedClock)
+  ): SRAMInterface[T] = masked_memInterface_impl(size, tpe)(numRd, numWr, numRdWr, Builder.forcedClock)
 
   /** @group SourceInfoTransformMacro */
   private def memInterface_impl[T <: Data](
@@ -176,10 +175,10 @@ object MemInterface {
     clock:   Clock
   )(
     implicit sourceInfo: SourceInfo
-  ): MemInterface[T] = {
+  ): SRAMInterface[T] = {
     val addrWidth = log2Up(size + 1)
 
-    val _out = Wire(new MemInterface(tpe, addrWidth, numRd, numWr, numRdWr, false))
+    val _out = Wire(new SRAMInterface(tpe, addrWidth, numRd, numWr, numRdWr, false))
     val mem = SyncReadMem(size, tpe)
 
     for (i <- 0 until numRd) {
@@ -219,10 +218,10 @@ object MemInterface {
   )(
     implicit sourceInfo: SourceInfo,
     evidence:            T <:< Vec[_]
-  ): MemInterface[T] = {
+  ): SRAMInterface[T] = {
     val addrWidth = log2Up(size + 1)
 
-    val _out = Wire(new MemInterface(tpe, addrWidth, numRd, numWr, numRdWr, true))
+    val _out = Wire(new SRAMInterface(tpe, addrWidth, numRd, numWr, numRdWr, true))
     val mem = SyncReadMem(size, tpe)
 
     for (i <- 0 until numRd) {
@@ -253,7 +252,7 @@ object MemInterface {
   }
 
   // Helper util to generate portedness descriptors based on the input parameters
-  // supplied to MemInterface.apply
+  // supplied to SRAM.apply
   def portedness(rd: Int, wr: Int, rw: Int): String = {
     val rdPorts: String = if (rd > 0) s"${rd}R" else ""
     val wrPorts: String = if (wr > 0) s"${wr}W" else ""
