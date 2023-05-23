@@ -588,7 +588,7 @@ package experimental {
 
     // Must have separate createSecretIO from addSecretIO to get plugin to name it
     // data must be a fresh Chisel type
-    private[chisel3] def createSecretIO(data: => Data)(implicit sourceInfo: SourceInfo): Data = {
+    private[chisel3] def createSecretIO[A <: Data](data: => A)(implicit sourceInfo: SourceInfo): A = {
       val iodef = data
       internal.requireIsChiselType(iodef, "io type")
       require(!isFullyClosed, "Cannot create secret ports if module is fully closed")
@@ -600,7 +600,7 @@ package experimental {
     private[chisel3] val secretPorts: ArrayBuffer[Port] = ArrayBuffer.empty
 
     // Must have separate createSecretIO from addSecretIO to get plugin to name it
-    private[chisel3] def addSecretIO(iodef: Data)(implicit sourceInfo: SourceInfo): Data = {
+    private[chisel3] def addSecretIO[A <: Data](iodef: A)(implicit sourceInfo: SourceInfo): A = {
       val name = iodef._computeName(None).getOrElse("secret")
       iodef.setRef(ModuleIO(this, _namespace.name(name)))
       val newPort = new Port(iodef, iodef.specifiedDirection, sourceInfo)
