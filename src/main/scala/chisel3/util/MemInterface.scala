@@ -14,9 +14,10 @@ import scala.language.experimental.macros
   * @param addrWidth The width of the address signal
   */
 class MemoryReadPort[T <: Data](tpe: T, addrWidth: Int) extends Bundle {
-  val addr = Input(UInt(addrWidth.W))
+  val address = Input(UInt(addrWidth.W))
   val enable = Input(Bool())
   val data = Output(tpe)
+  val clock = Input(Clock())
 }
 
 /** A bundle of signals representing a memory write port.
@@ -29,7 +30,7 @@ class MemoryReadPort[T <: Data](tpe: T, addrWidth: Int) extends Bundle {
   *       regardless of the value of `masked`.
   */
 class MemoryWritePort[T <: Data] private[chisel3] (tpe: T, addrWidth: Int, masked: Boolean) extends Bundle {
-  val addr = Input(UInt(addrWidth.W))
+  val address = Input(UInt(addrWidth.W))
   val enable = Input(Bool())
   val data = Input(tpe)
   val mask: Option[Vec[Bool]] = if (masked) {
@@ -41,6 +42,7 @@ class MemoryWritePort[T <: Data] private[chisel3] (tpe: T, addrWidth: Int, maske
   } else {
     None
   }
+  val clock = Input(Clock())
 }
 
 /** A bundle of signals representing a memory read/write port.
@@ -53,7 +55,7 @@ class MemoryWritePort[T <: Data] private[chisel3] (tpe: T, addrWidth: Int, maske
   *       regardless of the value of `masked`.
   */
 class MemoryReadWritePort[T <: Data] private[chisel3] (tpe: T, addrWidth: Int, masked: Boolean) extends Bundle {
-  val addr = Input(UInt(addrWidth.W))
+  val address = Input(UInt(addrWidth.W))
   val enable = Input(Bool())
   val isWrite = Input(Bool())
   val readData = Output(tpe)
@@ -67,6 +69,7 @@ class MemoryReadWritePort[T <: Data] private[chisel3] (tpe: T, addrWidth: Int, m
   } else {
     None
   }
+  val clock = Input(Clock())
 }
 
 /** A IO bundle of signals connecting to the ports of a wrapped `SyncReadMem`, as requested by
@@ -180,24 +183,28 @@ object MemInterface {
     val mem = SyncReadMem(size, tpe)
 
     for (i <- 0 until numRd) {
-      _out.rd(i).data := mem.read(_out.rd(i).addr, _out.rd(i).enable, clock)
+      _out.rd(i).data := mem.read(_out.rd(i).address, _out.rd(i).enable, _out.rd(i).clock)
+      _out.rd(i).clock :#= clock
     }
 
     for (i <- 0 until numWr) {
       when(_out.wr(i).enable) {
-        mem.write(_out.wr(i).addr, _out.wr(i).data, clock)
+        mem.write(_out.wr(i).address, _out.wr(i).data, _out.wr(i).clock)
       }
+      _out.wr(i).clock :#= clock
     }
 
     for (i <- 0 until numRdWr) {
       _out.rw(i).readData := mem.readWrite(
-        _out.rw(i).addr,
+        _out.rw(i).address,
         _out.rw(i).writeData,
         _out.rw(i).enable,
         _out.rw(i).isWrite,
-        clock
+        _out.rw(i).clock
       )
+      _out.rw(i).clock :#= clock
     }
+
     _out
   }
 
@@ -219,23 +226,26 @@ object MemInterface {
     val mem = SyncReadMem(size, tpe)
 
     for (i <- 0 until numRd) {
-      _out.rd(i).data := mem.read(_out.rd(i).addr, _out.rd(i).enable, clock)
+      _out.rd(i).clock :#= clock
+      _out.rd(i).data := mem.read(_out.rd(i).address, _out.rd(i).enable, _out.rd(i).clock)
     }
 
     for (i <- 0 until numWr) {
+      _out.wr(i).clock :#= clock
       when(_out.wr(i).enable) {
-        mem.write(_out.wr(i).addr, _out.wr(i).data, _out.wr(i).mask.get, clock)
+        mem.write(_out.wr(i).address, _out.wr(i).data, _out.wr(i).mask.get, _out.wr(i).clock)
       }
     }
 
     for (i <- 0 until numRdWr) {
+      _out.rw(i).clock := clock
       _out.rw(i).readData := mem.readWrite(
-        _out.rw(i).addr,
+        _out.rw(i).address,
         _out.rw(i).writeData,
         _out.rw(i).mask.get,
         _out.rw(i).enable,
         _out.rw(i).isWrite,
-        clock
+        _out.rw(i).clock
       )
     }
 
