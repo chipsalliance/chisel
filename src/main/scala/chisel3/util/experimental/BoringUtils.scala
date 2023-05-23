@@ -245,12 +245,10 @@ object BoringUtils {
     source.topBindingOpt match {
       case None =>
         Builder.error(s"Cannot bore from ${source._errorContext}")
-        return DontCare.asInstanceOf[A]
       case Some(internal.CrossModuleBinding) =>
         Builder.error(
           s"Cannot bore across a Definition/Instance boundary:${thisModule._errorContext} cannot access ${source}"
         )
-        return DontCare.asInstanceOf[A]
       case _ => // Actually bore
     }
     if (parent(source) == thisModule) {
@@ -262,7 +260,6 @@ object BoringUtils {
     val lcaResult = DataMirror.findLCAPaths(source, thisModule)
     if (lcaResult.isEmpty) {
       Builder.error(s"Cannot bore from $source to ${thisModule.name}, as they do not share a least common ancestor")
-      return DontCare.asInstanceOf[A]
     }
     val (upPath, downPath) = lcaResult.get
     val lcaSource = drill(source, upPath.dropRight(1), upPath.dropRight(1), true)
