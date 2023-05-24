@@ -117,6 +117,14 @@ object Module extends SourceInfoDoc {
     *   direction given by upper-levels (override Input / Output)
     */
   private[chisel3] def assignCompatDir(data: Data): Unit = {
+    // Collect all leaf elements of the data which have an unspecified or flipped
+    // direction, and assign explicit directions to them
+    DataMirror
+      .collectMembers(data) {
+        case x: Element if x.specifiedDirection == SpecifiedDirection.Unspecified | SpecifiedDirection.Flip => x
+      }
+      .foreach { x => x._assignCompatibilityExplicitDirection }
+
     data match {
       case data: Element => data._assignCompatibilityExplicitDirection
       case data: Aggregate =>

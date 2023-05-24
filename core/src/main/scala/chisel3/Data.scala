@@ -577,17 +577,8 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   }
 
   // Recursively set the parent of the start Data and any children (eg. in an Aggregate)
-  private[chisel3] def setAllParents(parent: Option[BaseModule]): Unit = {
-    def rec(data: Data): Unit = {
-      data._parent = parent
-      data match {
-        case _:   Element =>
-        case agg: Aggregate =>
-          agg.elementsIterator.foreach(rec)
-      }
-    }
-    rec(this)
-  }
+  private[chisel3] def setAllParents(parent: Option[BaseModule]): Unit =
+    DataMirror.collectAllChildren(this).foreach { x => x._parent = parent }
 
   private[chisel3] def width: Width
   private[chisel3] def firrtlConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit
