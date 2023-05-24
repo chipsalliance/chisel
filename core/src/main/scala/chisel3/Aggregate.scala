@@ -178,13 +178,6 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
     */
   override def typeName = s"Vec${length}_${gen.typeName}"
 
-  private[chisel3] override def typeEquivalent(that: Data): Boolean = that match {
-    case that: Vec[T] =>
-      this.length == that.length &&
-        (this.sample_element.typeEquivalent(that.sample_element))
-    case _ => false
-  }
-
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
     this.maybeAddToParentIds(target)
     binding = target
@@ -1202,18 +1195,6 @@ abstract class Record extends Aggregate {
   } catch {
     // This happens if your class is defined in an object and is anonymous
     case e: java.lang.InternalError if e.getMessage == "Malformed class name" => this.getClass.toString
-  }
-
-  private[chisel3] override def typeEquivalent(that: Data): Boolean = that match {
-    case that: Record =>
-      this.getClass == that.getClass &&
-        this._elements.size == that._elements.size &&
-        this._elements.forall {
-          case (name, model) =>
-            that._elements.contains(name) &&
-              (that._elements(name).typeEquivalent(model))
-        }
-    case _ => false
   }
 
   private[chisel3] final def allElements: Seq[Element] = elementsIterator.flatMap(_.allElements).toIndexedSeq

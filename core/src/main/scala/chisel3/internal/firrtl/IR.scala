@@ -13,6 +13,7 @@ import _root_.firrtl.annotations.Annotation
 import scala.collection.immutable.NumericRange
 import scala.math.BigDecimal.RoundingMode
 import scala.annotation.nowarn
+import scala.collection.mutable
 
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class PrimOp(name: String) {
@@ -212,6 +213,14 @@ case class Index(imm: Arg, value: Arg) extends Arg {
   override def localName: String = s"${imm.localName}[${value.localName}]"
 }
 
+sealed trait ProbeDetails { this: Arg =>
+  val probe: Arg
+  override def name: String = s"$probe"
+}
+private[chisel3] case class ProbeExpr(probe: Arg) extends Arg with ProbeDetails
+private[chisel3] case class RWProbeExpr(probe: Arg) extends Arg with ProbeDetails
+private[chisel3] case class ProbeRead(probe: Arg) extends Arg with ProbeDetails
+
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 object Width {
   def apply(x: Int): Width = KnownWidth(x)
@@ -308,6 +317,7 @@ case class DefMemPort[T <: Data](
   index:      Arg,
   clock:      Arg)
     extends Definition
+
 @nowarn("msg=class Port") // delete when Port becomes private
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class DefInstance(sourceInfo: SourceInfo, id: BaseModule, ports: Seq[Port]) extends Definition
@@ -337,6 +347,13 @@ case class Port(id: Data, dir: SpecifiedDirection, sourceInfo: SourceInfo)
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class Printf(id: printf.Printf, sourceInfo: SourceInfo, clock: Arg, pable: Printable) extends Definition
 
+private[chisel3] case class ProbeDefine(sourceInfo: SourceInfo, sink: Arg, probe: Arg) extends Command
+private[chisel3] case class ProbeForceInitial(sourceInfo: SourceInfo, probe: Arg, value: Arg) extends Command
+private[chisel3] case class ProbeReleaseInitial(sourceInfo: SourceInfo, probe: Arg) extends Command
+private[chisel3] case class ProbeForce(sourceInfo: SourceInfo, clock: Arg, cond: Arg, probe: Arg, value: Arg)
+    extends Command
+private[chisel3] case class ProbeRelease(sourceInfo: SourceInfo, clock: Arg, cond: Arg, probe: Arg) extends Command
+
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 object Formal extends Enumeration {
   val Assert = Value("assert")
@@ -359,11 +376,14 @@ abstract class Component extends Arg {
   def id:    BaseModule
   def name:  String
   def ports: Seq[Port]
+  val secretPorts: mutable.ArrayBuffer[Port] = id.secretPorts
 }
 
 @nowarn("msg=class Port") // delete when Port becomes private
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
-case class DefModule(id: RawModule, name: String, ports: Seq[Port], commands: Seq[Command]) extends Component
+case class DefModule(id: RawModule, name: String, ports: Seq[Port], commands: Seq[Command]) extends Component {
+  val secretCommands: mutable.ArrayBuffer[Command] = mutable.ArrayBuffer[Command]()
+}
 
 @nowarn("msg=class Port") // delete when Port becomes private
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")

@@ -7,6 +7,7 @@ import chisel3._
 import chisel3.util.Valid
 import chisel3.experimental.hierarchy._
 import circt.stage.ChiselStage.convert
+import chisel3.internal.instantiable
 
 // Note, the instantiable classes must not be inner classes because the materialized WeakTypeTags
 // will be different and they will not give the same hashCode when looking up the Definition in the
@@ -116,6 +117,36 @@ object InstantiateSpec {
     @public val out = IO(Output(gen))
     out := in
   }
+
+  sealed trait MyEnumeration
+  case object FooEnum extends MyEnumeration
+  case object BarEnum extends MyEnumeration
+  case class FizzEnum(value: Int) extends MyEnumeration
+  case class BuzzEnum(value: Int) extends MyEnumeration
+
+  class ModuleParameterizedByProductTypes(param: MyEnumeration) extends Module {
+    override def desiredName = s"${this.getClass.getSimpleName}_$param"
+    val gen = param match {
+      case FooEnum     => UInt(8.W)
+      case BarEnum     => SInt(8.W)
+      case FizzEnum(n) => Vec(n, UInt(8.W))
+      case BuzzEnum(n) => Vec(n, SInt(8.W))
+    }
+    @public val in = IO(Input(gen))
+    @public val out = IO(Output(gen))
+    out := in
+  }
+
+  class ModuleParameterizedBySeq(param: Seq[Int]) extends Module {
+    override def desiredName = s"${this.getClass.getSimpleName}_" + param.mkString("_")
+    @public val in = param.map(w => IO(Input(UInt(w.W))))
+    @public val out = param.map(w => IO(Output(UInt(w.W))))
+    out.zip(in).foreach { case (o, i) => o := i }
+  }
+}
+
+class ParameterizedReset(hasAsyncNotSyncReset: Boolean) extends Module {
+  override def resetType = if (hasAsyncNotSyncReset) Module.ResetType.Asynchronous else Module.ResetType.Synchronous
 }
 
 class InstantiateSpec extends ChiselFunSpec with Utils {
@@ -296,6 +327,46 @@ class InstantiateSpec extends ChiselFunSpec with Utils {
       val modules2 = convert(new MyTop).modules.map(_.name)
       assert(modules2 == Seq("OneArg", "Top"))
     }
+
+    it("should properly handle case objects as parameters") {
+      class MyTop extends Top {
+        val inst0 = Instantiate(new ModuleParameterizedByProductTypes(FooEnum))
+        val inst1 = Instantiate(new ModuleParameterizedByProductTypes(BarEnum))
+      }
+      val modules = convert(new MyTop).modules.map(_.name)
+      assert(
+        modules == Seq("ModuleParameterizedByProductTypes_FooEnum", "ModuleParameterizedByProductTypes_BarEnum", "Top")
+      )
+    }
+
+    it("should properly handle case classes as parameters") {
+      class MyTop extends Top {
+        val inst0 = Instantiate(new ModuleParameterizedByProductTypes(FizzEnum(3)))
+        val inst1 = Instantiate(new ModuleParameterizedByProductTypes(BuzzEnum(3)))
+      }
+      val modules = convert(new MyTop).modules.map(_.name)
+      assert(
+        modules == Seq(
+          "ModuleParameterizedByProductTypes_FizzEnum3",
+          "ModuleParameterizedByProductTypes_BuzzEnum3",
+          "Top"
+        )
+      )
+    }
+
+    it("should properly handle Iterables") {
+      class MyTop extends Top {
+        val inst0 = Instantiate(new ModuleParameterizedBySeq(List(1, 2, 3)))
+        val inst1 = Instantiate(new ModuleParameterizedBySeq(Vector(1, 2, 3)))
+      }
+      val modules = convert(new MyTop).modules.map(_.name)
+      assert(
+        modules == Seq(
+          "ModuleParameterizedBySeq_1_2_3",
+          "Top"
+        )
+      )
+    }
   }
 
   describe("Instantiate") {
@@ -331,5 +402,33 @@ class InstantiateSpec extends ChiselFunSpec with Utils {
       assert(modules == Seq("Should", "Not", "Get", "Here"))
       """ shouldNot compile
     }
+  }
+
+  it("Should make different Modules with reset type as a parameter") {
+    class MyTop extends Top {
+      withReset(reset.asAsyncReset) {
+        val inst0 = Instantiate(new ParameterizedReset(true))
+        val inst1 = Instantiate(new ParameterizedReset(true))
+      }
+      val inst2 = Instantiate(new ParameterizedReset(false))
+      val inst3 = Instantiate(new ParameterizedReset(false))
+
+      a[ChiselException] should be thrownBy {
+        val inst4 = Instantiate(new ParameterizedReset(true))
+      }
+      a[ChiselException] should be thrownBy {
+        withReset(reset.asAsyncReset) {
+          val inst5 = Instantiate(new ParameterizedReset(false))
+        }
+      }
+    }
+    val modules = convert(new MyTop).modules.map(_.name)
+    assert(
+      modules == Seq(
+        "ParameterizedReset",
+        "ParameterizedReset_1",
+        "Top"
+      )
+    )
   }
 }

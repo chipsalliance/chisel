@@ -146,6 +146,24 @@ object Module extends SourceInfoDoc {
     }
   }
 
+  /** Allowed values for the types of Module.reset */
+  object ResetType {
+
+    /** Allowed values for the types of Module.reset */
+    sealed trait Type
+
+    /** The default reset type. This is Uninferred, unless it is the top Module, in which case it is Bool */
+    case object Default extends Type
+
+    /** Explicitly Uninferred Reset, even if this is the top Module */
+    case object Uninferred extends Type
+
+    /** Explicitly Bool (Synchronous) Reset */
+    case object Synchronous extends Type
+
+    /** Explicitly Asynchronous Reset */
+    case object Asynchronous extends Type
+  }
 }
 
 /** Abstract base class for Modules, which behave much like Verilog modules.
@@ -156,6 +174,10 @@ object Module extends SourceInfoDoc {
   * @note Module instantiations must be wrapped in a Module() call.
   */
 abstract class Module extends RawModule {
+
+  /** Override this to explicitly set the type of reset you want on this module , before any reset inference */
+  def resetType: Module.ResetType.Type = Module.ResetType.Default
+
   // Implicit clock and reset pins
   final val clock: Clock = IO(Input(Clock()))(UnlocatableSourceInfo).suggestName("clock")
   final val reset: Reset = IO(Input(mkReset))(UnlocatableSourceInfo).suggestName("reset")
@@ -180,8 +202,15 @@ abstract class Module extends RawModule {
   private[chisel3] def mkReset: Reset = {
     // Top module and compatibility mode use Bool for reset
     // Note that a Definition elaboration will lack a parent, but still not be a Top module
-    val inferReset = (_parent.isDefined || Builder.inDefinition)
-    if (inferReset) Reset() else Bool()
+    resetType match {
+      case Module.ResetType.Default => {
+        val inferReset = (_parent.isDefined || Builder.inDefinition)
+        if (inferReset) Reset() else Bool()
+      }
+      case Module.ResetType.Uninferred   => Reset()
+      case Module.ResetType.Synchronous  => Bool()
+      case Module.ResetType.Asynchronous => AsyncReset()
+    }
   }
 
   // Setup ClockAndReset
@@ -255,18 +284,23 @@ package internal {
 package experimental {
 
   import chisel3.experimental.hierarchy.core.{IsInstantiable, Proto}
+  import scala.annotation.nowarn
 
   object BaseModule {
-    implicit class BaseModuleExtensions[T <: BaseModule](b: T) {
+    implicit class BaseModuleExtensions[T <: BaseModule](b: T)(implicit si: SourceInfo) {
       import chisel3.experimental.hierarchy.core.{Definition, Instance}
-      def toInstance:   Instance[T] = new Instance(Proto(b))
-      def toDefinition: Definition[T] = new Definition(Proto(b))
+      def toInstance: Instance[T] = new Instance(Proto(b))
+      def toDefinition: Definition[T] = {
+        b.toDefinitionCalled = Some(si)
+        new Definition(Proto(b))
+      }
     }
   }
 
   /** Abstract base class for Modules, an instantiable organizational unit for RTL.
     */
   // TODO: seal this?
+  @nowarn("msg=class Port") // delete when Port becomes private
   abstract class BaseModule extends HasId with IsInstantiable {
     _parent.foreach(_.addId(this))
 
@@ -317,8 +351,22 @@ package experimental {
     //
     protected var _closed = false
 
-    /** Internal check if a Module is closed */
+    /** Internal check if a Module's constructor has finished executing */
     private[chisel3] def isClosed = _closed
+
+    private[chisel3] var toDefinitionCalled:  Option[SourceInfo] = None
+    private[chisel3] var modulePortsAskedFor: Option[SourceInfo] = None
+
+    /** Where a Module becomes fully closed (no secret ports drilled afterwards) */
+    private[chisel3] def isFullyClosed = fullyClosedErrorMessages.nonEmpty
+    private[chisel3] def fullyClosedErrorMessages: Iterable[(SourceInfo, String)] = {
+      toDefinitionCalled.map(si =>
+        (si, s"Calling .toDefinition fully closes ${name}, but it is later bored through!")
+      ) ++
+        modulePortsAskedFor.map(si =>
+          (si, s"Reflecting on all io's fully closes ${name}, but it is later bored through!")
+        )
+    }
 
     // Fresh Namespace because in Firrtl, Modules namespaces are disjoint with the global namespace
     private[chisel3] val _namespace = Namespace.empty
@@ -519,9 +567,10 @@ package experimental {
       *
       * TODO: Use SeqMap/VectorMap when those data structures become available.
       */
-    private[chisel3] def getChiselPorts: Seq[(String, Data)] = {
+    private[chisel3] def getChiselPorts(implicit si: SourceInfo): Seq[(String, Data)] = {
       require(_closed, "Can't get ports before module close")
-      _component.get.ports.map { port =>
+      modulePortsAskedFor = Some(si) // super-lock down the module
+      (_component.get.ports ++ _component.get.secretPorts).map { port =>
         (port.id.getRef.asInstanceOf[ModuleIO].name, port.id)
       }
     }
@@ -544,6 +593,30 @@ package experimental {
     )(
       implicit sourceInfo: SourceInfo
     ): Unit = _bindIoInPlace(iodef)
+
+    // Must have separate createSecretIO from addSecretIO to get plugin to name it
+    // data must be a fresh Chisel type
+    private[chisel3] def createSecretIO[A <: Data](data: => A)(implicit sourceInfo: SourceInfo): A = {
+      val iodef = data
+      internal.requireIsChiselType(iodef, "io type")
+      require(!isFullyClosed, "Cannot create secret ports if module is fully closed")
+
+      iodef.bind(internal.SecretPortBinding(this))
+      iodef
+    }
+
+    private[chisel3] val secretPorts: ArrayBuffer[Port] = ArrayBuffer.empty
+
+    // Must have separate createSecretIO from addSecretIO to get plugin to name it
+    private[chisel3] def addSecretIO[A <: Data](iodef: A)(implicit sourceInfo: SourceInfo): A = {
+      val name = iodef._computeName(None).getOrElse("secret")
+      iodef.setRef(ModuleIO(this, _namespace.name(name)))
+      val newPort = new Port(iodef, iodef.specifiedDirection, sourceInfo)
+      if (_closed) {
+        _component.get.secretPorts += newPort
+      } else secretPorts += newPort
+      iodef
+    }
 
     /**
       * This must wrap the datatype used to set the io field of any Module.

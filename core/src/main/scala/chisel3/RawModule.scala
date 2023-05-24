@@ -5,7 +5,7 @@ package chisel3
 import scala.util.Try
 import scala.language.experimental.macros
 import scala.annotation.nowarn
-import chisel3.experimental.{BaseModule, UnlocatableSourceInfo}
+import chisel3.experimental.{BaseModule, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal._
 import chisel3.experimental.hierarchy.{InstanceClone, ModuleClone}
 import chisel3.internal.Builder._
@@ -84,6 +84,7 @@ abstract class RawModule extends BaseModule {
                 id.forceName(default = "REG", _namespace)
               case WireBinding(_, _) =>
                 id.forceName(default = "_WIRE", _namespace)
+              // probes have their refs set eagerly
               case _ => // don't name literals
             }
           } // else, don't name unbound types
@@ -99,17 +100,39 @@ abstract class RawModule extends BaseModule {
     // Generate IO invalidation commands to initialize outputs as unused,
     //  unless the client wants explicit control over their generation.
     val component = DefModule(this, name, firrtlPorts, _commands.result())
+
+    // Secret connections can be staged if user bored into children modules
+    component.secretCommands ++= stagedSecretCommands
     _component = Some(component)
     _component
+  }
+  private[chisel3] val stagedSecretCommands = collection.mutable.ArrayBuffer[Command]()
+
+  private[chisel3] def secretConnection(left: Data, right: Data)(implicit si: SourceInfo): Unit = {
+    val rhs = (left.probeInfo.nonEmpty, right.probeInfo.nonEmpty) match {
+      case (true, true)                                 => ProbeDefine(si, left.lref, Node(right))
+      case (true, false) if left.probeInfo.get.writable => ProbeDefine(si, left.lref, RWProbeExpr(Node(right)))
+      case (true, false)                                => ProbeDefine(si, left.lref, ProbeExpr(Node(right)))
+      case (false, true)                                => Connect(si, left.lref, ProbeRead(Node(right)))
+      case (false, false)                               => Connect(si, left.lref, Node(right))
+    }
+    val secretCommands = if (_closed) {
+      _component.get.asInstanceOf[DefModule].secretCommands
+    } else {
+      stagedSecretCommands
+    }
+    secretCommands += rhs
   }
 
   private[chisel3] def initializeInParent(): Unit = {}
 }
 
+/** Enforce that the Module.reset be Asynchronous (AsyncReset) */
 trait RequireAsyncReset extends Module {
-  override private[chisel3] def mkReset: AsyncReset = AsyncReset()
+  override final def resetType = Module.ResetType.Asynchronous
 }
 
+/** Enforce that the Module.reset be Synchronous (Bool) */
 trait RequireSyncReset extends Module {
-  override private[chisel3] def mkReset: Bool = Bool()
+  override final def resetType = Module.ResetType.Synchronous
 }

@@ -57,6 +57,10 @@ private[chisel3] object BiConnect {
     )
   def DontCareCantBeSink =
     BiConnectException(": DontCare cannot be a connection sink (LHS)")
+  def LeftProbeBiConnectionException(left: Data) =
+    BiConnectException(s"Left of Probed type cannot participate in a bi connection (<>)")
+  def RightProbeBiConnectionException(right: Data) =
+    BiConnectException(s"Right of Probed type cannot participate in a bi connection (<>)")
 
   /** This function is what recursively tries to connect a left and right together
     *
@@ -81,6 +85,12 @@ private[chisel3] object BiConnect {
     context_mod: RawModule
   ): Unit = {
     (left, right) match {
+      // Disallow monoconnecting Probe types
+      case (left_e: Data, _) if containsProbe(left_e) =>
+        throw LeftProbeBiConnectionException(left_e)
+      case (_, right_e: Data) if containsProbe(right_e) =>
+        throw RightProbeBiConnectionException(right_e)
+
       // Handle element case (root case)
       case (left_a: Analog, right_a: Analog) =>
         try {
@@ -106,14 +116,6 @@ private[chisel3] object BiConnect {
       case (left_v: Vec[Data @unchecked], right_v: Vec[Data @unchecked]) => {
         if (left_v.length != right_v.length) {
           throw MismatchedVecException
-        }
-
-        // Check for zero-width Vectors: both Vecs must be type equivalent, e.g.
-        // a UInt<8>[0] should not be connectable with a SInt<8>[0]
-        // TODO: This is a "band-aid" fix and needs to be unified with the existing logic in a
-        // more generalized and robust way, to account for things like Views
-        if (left_v.length == 0 && !left_v.typeEquivalent(right_v)) {
-          throw MismatchedException(left_v.cloneType.toString, right_v.cloneType.toString)
         }
 
         val leftReified:  Option[Aggregate] = if (isView(left_v)) reifyToAggregate(left_v) else Some(left_v)

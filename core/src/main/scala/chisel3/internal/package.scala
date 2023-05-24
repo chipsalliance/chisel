@@ -3,7 +3,8 @@
 package chisel3
 
 import firrtl.annotations.{IsModule, ModuleTarget}
-import chisel3.experimental.{BaseModule, UnlocatableSourceInfo}
+import chisel3.experimental.{BaseModule, SourceInfo, UnlocatableSourceInfo}
+import chisel3.reflect.DataMirror.hasProbeTypeModifier
 import chisel3.internal.firrtl.{Component, DefModule}
 import chisel3.internal.Builder.Prefix
 
@@ -101,4 +102,41 @@ package object internal {
     */
   private[chisel3] val ViewParent =
     Module.do_apply(new ViewParentAPI)(UnlocatableSourceInfo)
+
+  private[chisel3] def requireHasProbeTypeModifier(
+    probe:        Data,
+    errorMessage: String = ""
+  )(
+    implicit sourceInfo: SourceInfo
+  ): Unit = {
+    val msg = if (errorMessage.isEmpty) s"Expected a probe." else errorMessage
+    if (!hasProbeTypeModifier(probe)) Builder.error(msg)
+  }
+
+  private[chisel3] def requireNoProbeTypeModifier(
+    probe:        Data,
+    errorMessage: String = ""
+  )(
+    implicit sourceInfo: SourceInfo
+  ): Unit = {
+    val msg = if (errorMessage.isEmpty) s"Did not expect a probe." else errorMessage
+    if (hasProbeTypeModifier(probe)) Builder.error(msg)
+  }
+
+  private[chisel3] def requireHasWritableProbeTypeModifier(
+    probe:        Data,
+    errorMessage: String = ""
+  )(
+    implicit sourceInfo: SourceInfo
+  ): Unit = {
+    val msg = if (errorMessage.isEmpty) s"Expected a writable probe." else errorMessage
+    requireHasProbeTypeModifier(probe, msg)
+    if (!probe.probeInfo.get.writable) Builder.error(msg)
+  }
+
+  private[chisel3] def containsProbe(data: Data): Boolean = data match {
+    case a: Aggregate =>
+      a.elementsIterator.foldLeft(false)((res: Boolean, d: Data) => res || containsProbe(d))
+    case leaf => leaf.probeInfo.nonEmpty
+  }
 }
