@@ -11,6 +11,7 @@ import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
 import chisel3.experimental.{BaseModule, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal.sourceinfo.{InstTransform}
+import chisel3.reflect.DataMirror
 import _root_.firrtl.annotations.{IsModule, ModuleName, ModuleTarget}
 import _root_.firrtl.AnnotationSeq
 
