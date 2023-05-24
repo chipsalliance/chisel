@@ -207,7 +207,7 @@ lazy val svsim = (project in file("svsim"))
     // Published as part of unipublish
     publish / skip := true,
     libraryDependencies ++= Seq(
-      "org.scalatest" %% "scalatest" % "3.2.15" % "test",
+      "org.scalatest" %% "scalatest" % "3.2.16" % "test",
       "org.scalatestplus" %% "scalacheck-1-16" % "3.2.14.0" % "test"
     )
   )
@@ -239,7 +239,7 @@ lazy val firrtl = (project in file("firrtl"))
 lazy val chiselSettings = Seq(
   name := "chisel",
   libraryDependencies ++= Seq(
-    "org.scalatest" %% "scalatest" % "3.2.15" % "test",
+    "org.scalatest" %% "scalatest" % "3.2.16" % "test",
     "org.scalatestplus" %% "scalacheck-1-16" % "3.2.14.0" % "test",
     "com.lihaoyi" %% "upickle" % "3.1.0"
   )
