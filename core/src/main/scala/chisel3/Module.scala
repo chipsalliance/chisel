@@ -117,35 +117,14 @@ object Module extends SourceInfoDoc {
     * This recursively walks the tree, and assigns directions if no explicit
     *   direction given by upper-levels (override Input / Output)
     */
-  private[chisel3] def assignCompatDir(data: Data): Unit = {
+  private[chisel3] def assignCompatDir(data: Data): Unit =
     // Collect all leaf elements of the data which have an unspecified or flipped
     // direction, and assign explicit directions to them
     DataMirror
       .collectMembers(data) {
-        case x: Element if x.specifiedDirection == SpecifiedDirection.Unspecified | SpecifiedDirection.Flip => x
+        case x: Element if x.specifiedDirection == SpecifiedDirection.Unspecified || x.specifiedDirection == SpecifiedDirection.Flip => x
       }
       .foreach { x => x._assignCompatibilityExplicitDirection }
-
-    data match {
-      case data: Element => data._assignCompatibilityExplicitDirection
-      case data: Aggregate =>
-        data.specifiedDirection match {
-          // Recurse into children to ensure explicit direction set somewhere
-          case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip =>
-            data match {
-              case record: Record =>
-                record.elementsIterator.foreach(assignCompatDir(_))
-              case vec: Vec[_] =>
-                vec.elementsIterator.foreach(assignCompatDir(_))
-                assignCompatDir(vec.sample_element) // This is used in fromChildren computation
-            }
-          case SpecifiedDirection.Input | SpecifiedDirection.Output =>
-          // forced assign, nothing to do
-          // The .bind algorithm will automatically assign the direction here.
-          // Thus, no implicit assignment is necessary.
-        }
-    }
-  }
 
   /** Allowed values for the types of Module.reset */
   object ResetType {
