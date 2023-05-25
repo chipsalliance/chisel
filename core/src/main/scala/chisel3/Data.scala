@@ -198,7 +198,7 @@ private[chisel3] object cloneSupertype {
 
 // Returns pairs of all fields, element-level and containers, in a Record and their path names
 private[chisel3] object getRecursiveFields {
-  def noPath(data:       Data): Seq[Data] = DataMirror.collectAllChildren(data)
+  def noPath(data:       Data): Seq[Data] = DataMirror.collectAllMembers(data)
   def lazilyNoPath(data: Data): Seq[Data] = noPath(data).map {
     case x => LazyList(x)
   }.fold(LazyList()) { _ ++ _ }
@@ -641,7 +641,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 
   // Recursively set the parent of the start Data and any children (eg. in an Aggregate)
   private[chisel3] def setAllParents(parent: Option[BaseModule]): Unit =
-    DataMirror.collectAllChildren(this).foreach { x => x._parent = parent }
+    DataMirror.collectAllMembers(this).foreach { x => x._parent = parent }
 
   private[chisel3] def width: Width
   private[chisel3] def firrtlConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit

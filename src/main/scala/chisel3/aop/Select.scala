@@ -23,15 +23,15 @@ object Select {
     *
     * @param d Component to find leafs if aggregate typed. Intermediate fields/indicies are not included
     */
-  @deprecated("Use DataMirror.collectLeafChildren instead")
-  def getLeafs(d: Data): Seq[Data] = DataMirror.collectLeafChildren(d)
+  @deprecated("Use DataMirror.collectLeafMembers instead")
+  def getLeafs(d: Data): Seq[Data] = DataMirror.collectLeafMembers(d)
 
   /** Return all expanded components, including intermediate aggregate nodes
     *
     * @param d Component to find leafs if aggregate typed. Intermediate fields/indicies ARE included
     */
-  @deprecated("Use DataMirror.collectAllChildren instead")
-  def getIntermediateAndLeafs(d: Data): Seq[Data] = DataMirror.collectAllChildren(d)
+  @deprecated("Use DataMirror.collectAllMembers instead")
+  def getIntermediateAndLeafs(d: Data): Seq[Data] = DataMirror.collectAllMembers(d)
 
   /** Selects all instances/modules directly instantiated within given definition
     *
@@ -386,12 +386,12 @@ object Select {
     */
   def connectionsTo(module: BaseModule)(signal: Data): Seq[PredicatedConnect] = {
     check(module)
-    val sensitivitySignals = DataMirror.collectAllChildren(signal).toSet
+    val sensitivitySignals = DataMirror.collectAllMembers(signal).toSet
     val predicatedConnects = mutable.ArrayBuffer[PredicatedConnect]()
     val isPort = module._component.get
       .asInstanceOf[DefModule]
       .ports
-      .flatMap { p => DataMirror.collectAllChildren(p.id) }
+      .flatMap { p => DataMirror.collectAllMembers(p.id) }
       .contains(signal)
     var prePredicates: Seq[Predicate] = Nil
     var seenDef = isPort
@@ -400,7 +400,7 @@ object Select {
       (cmd: Command, preds) => {
         cmd match {
           case cmd: DefinitionIR if cmd.id.isInstanceOf[Data] =>
-            val x = DataMirror.collectAllChildren(cmd.id.asInstanceOf[Data])
+            val x = DataMirror.collectAllMembers(cmd.id.asInstanceOf[Data])
             if (x.contains(signal)) prePredicates = preds
           case Connect(_, loc @ Node(d: Data), exp) =>
             val effected = getEffected(loc).toSet
@@ -465,7 +465,7 @@ object Select {
 
   // Given a loc, return all subcomponents of id that could be assigned to in connect
   private def getEffected(a: Arg): Seq[Data] = a match {
-    case Node(id: Data) => DataMirror.collectAllChildren(id)
+    case Node(id: Data) => DataMirror.collectAllMembers(id)
     case Slot(imm, name) => Seq(imm.id.asInstanceOf[Record].elements(name))
     case Index(imm, _)   => getEffected(imm)
     case _               => throw new InternalErrorException("Match error: a=$a")

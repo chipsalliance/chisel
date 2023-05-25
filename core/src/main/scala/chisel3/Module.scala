@@ -122,7 +122,9 @@ object Module extends SourceInfoDoc {
     // direction, and assign explicit directions to them
     DataMirror
       .collectMembers(data) {
-        case x: Element if x.specifiedDirection == SpecifiedDirection.Unspecified || x.specifiedDirection == SpecifiedDirection.Flip => x
+        case x: Element
+            if x.specifiedDirection == SpecifiedDirection.Unspecified || x.specifiedDirection == SpecifiedDirection.Flip =>
+          x
       }
       .foreach { x => x._assignCompatibilityExplicitDirection }
 

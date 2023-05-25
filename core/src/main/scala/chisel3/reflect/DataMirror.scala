@@ -194,32 +194,32 @@ object DataMirror {
     }
   }
 
-  // Old definition of collectLeafChildren
-  @deprecated("Use DataMirror.collectLeafChildren instead")
-  def getLeafs(d: Data): Seq[Data] = collectLeafChildren(d)
+  // Old definition of collectLeafMembers
+  @deprecated("Use DataMirror.collectLeafMembers instead")
+  def getLeafs(d: Data): Seq[Data] = collectLeafMembers(d)
 
   // Old definition of collectAllChildren
-  @deprecated("Use DataMirror.collectAllChildren instead")
-  def getIntermediateAndLeafs(d: Data): Seq[Data] = collectAllChildren(d)
+  @deprecated("Use DataMirror.collectAllMembers instead")
+  def getIntermediateAndLeafs(d: Data): Seq[Data] = collectAllMembers(d)
 
-  /** Collect just the leaf components of a data component's children (i.e. anything that isn't
-    * a `Record` or a `Vec`, but an `Element`)
+  /** Recursively collect just the leaf components of a data component's children
+    * (i.e. anything that isn't a `Record` or a `Vec`, but an `Element`)
     *
     * @param d Data component to recursively collect leaf components.
     *
     * @return All `Element` components; intermediate fields/indices are not included
     */
-  def collectLeafChildren(d: Data): Seq[Data] =
+  def collectLeafMembers(d: Data): Seq[Data] =
     DataMirror.collectMembers(d) { case x: Element => x.asInstanceOf[Data] }.toSeq
 
-  /** Return all expanded child components of a data component, including intermediate aggregate
-    * nodes
+  /** Recursively collect all expanded member components of a data component, including
+    * intermediate aggregate nodes
     *
-    * @param d Data component to recursively collect child components.
+    * @param d Data component to recursively collect components.
     *
-    * @return All child components; intermediate fields/indices ARE included
+    * @return All member components; intermediate fields/indices ARE included
     */
-  def collectAllChildren(d: Data): Seq[Data] = collectMembers(d) { case x => x }.toSeq
+  def collectAllMembers(d: Data): Seq[Data] = collectMembers(d) { case x => x }.toSeq
 
   /** Recursively collects all fields selected by collector within a data and additionally generates
     * path names for each field
