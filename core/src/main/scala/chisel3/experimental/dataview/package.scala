@@ -101,7 +101,7 @@ package object dataview {
 
       // The elements may themselves be views, look through the potential chain of views for the Elements
       // that are actually members of the target or view
-      val tex = unfoldView(te).find(targetContains).getOrElse(err("Target", te))
+      val tex = unfoldView(te).find(x => targetContains(x) || x.isLit).getOrElse(err("Target", te))
       val vex = unfoldView(ve).find(viewFieldLookup.contains).getOrElse(err("View", ve))
 
       (tex, vex) match {
