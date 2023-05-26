@@ -62,6 +62,18 @@ object ValidExtensions {
   )
 }
 
+object DontCareDataView {
+  class Foo extends Bundle {
+    val a = UInt(8.W)
+    val b = UInt(8.W)
+  }
+  implicit def view = DataView[UInt, Foo](
+    _ => new Foo,
+    _ -> _.a,
+    (_, f) => DontCare -> f.b
+  )
+}
+
 class DataViewSpec extends ChiselFlatSpec {
 
   behavior.of("DataView")
@@ -884,6 +896,65 @@ class DataViewSpec extends ChiselFlatSpec {
   it should "error if a literal is used as part of the view" in {
     implicit val dv =
       DataView.mapping[Valid[UInt], UInt](_.bits.cloneType, (v, x) => Seq(v.bits -> x, v.valid -> true.B))
+    class MyModule extends Module {
+      val in = IO(Input(Valid(UInt(8.W))))
+      val out = IO(Output(UInt(8.W)))
+      out := in.viewAs[UInt]
+    }
+    val e = the[ChiselException] thrownBy {
+      ChiselStage.emitCHIRRTL(new MyModule, Array("--throw-on-first-error"))
+    }
+    e.getMessage should include("View mapping must only contain Elements within the View")
+  }
+
+  it should "support DontCare as part of the target" in {
+    import DontCareDataView._
+    class MyModule extends Module {
+      val in0, in1, in2, in3, in4 = IO(Input(UInt(8.W)))
+      val out0, out1, out2, out3, out4 = IO(Output(new Foo))
+      out0 := in0.viewAs[Foo]
+      out1 <> in1.viewAs[Foo]
+      out2 :<>= in2.viewAs[Foo]
+      out3 :<= in3.viewAs[Foo]
+      out4 :#= in4.viewAs[Foo]
+    }
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule, Array("--full-stacktrace"))
+    for (i <- 0 until 5) {
+      chirrtl should include(s"connect out$i.a, in$i")
+      chirrtl should include(s"invalidate out$i.b")
+    }
+  }
+
+  it should "error if a DontCare in a target would be driven" in {
+    import DontCareDataView._
+    class MyModule(op: (Foo, Foo) => Unit) extends Module {
+      val in = IO(Input(new Foo))
+      val out = IO(Output(UInt(8.W)))
+      op(out.viewAs[Foo], in)
+    }
+
+    val ops = Seq[(Foo, Foo) => Unit](
+      _ := _,
+      _ :<>= _,
+      _ :<= _,
+      _ :#= _
+    )
+
+    for (op <- ops) {
+      a[ChiselException] shouldBe thrownBy {
+        ChiselStage.emitCHIRRTL(new MyModule(op), Array("--throw-on-first-error"))
+      }
+    }
+    // <> does magical things with DontCare, including invalidating inputs!
+    // But the behavior matches DontCare <> in.b
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule(_ <> _))
+    chirrtl should include("invalidate in.b")
+    chirrtl should include("connect out, in.a")
+  }
+
+  it should "error if DontCare is used as part of the view" in {
+    implicit val dv =
+      DataView.mapping[Valid[UInt], UInt](_.bits.cloneType, (v, x) => Seq(v.bits -> x, v.valid -> DontCare))
     class MyModule extends Module {
       val in = IO(Input(Valid(UInt(8.W))))
       val out = IO(Output(UInt(8.W)))
