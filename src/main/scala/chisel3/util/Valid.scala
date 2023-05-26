@@ -36,6 +36,11 @@ class Valid[+T <: Data](gen: T) extends Bundle {
     * @return a Chisel [[Bool]] true if `valid` is asserted
     */
   def fire: Bool = valid
+
+  /** A non-ambiguous name of this `Valid` instance for use in generated Verilog names
+    * Inserts the parameterized generator's typeName, e.g. Valid_UInt4
+    */
+  override def typeName = s"${this.getClass.getSimpleName}_${gen.typeName}"
 }
 
 /** Factory for generating "valid" interfaces. A "valid" interface is a data-communicating interface between a producer
@@ -172,6 +177,12 @@ object Pipe {
   * @see The [[ShiftRegister$ ShiftRegister factory]] to generate a pipe without a [[Valid]] interface
   */
 class Pipe[T <: Data](val gen: T, val latency: Int = 1) extends Module {
+
+  /** A non-ambiguous name of this `Pipe` for use in generated Verilog names.
+    * Includes the latency cycle count in the name as well as the parameterized
+    * generator's `typeName`, e.g. `Pipe4_UInt4`
+    */
+  override def desiredName = s"${this.getClass.getSimpleName}${latency}_${gen.typeName}"
 
   /** Interface for [[Pipe]]s composed of a [[Valid]] input and [[Valid]] output
     * @define notAQueue

@@ -19,7 +19,8 @@ import scala.annotation.nowarn
   *
   * @param underlying The internal representation of the instance, which may be either be directly the object, or a clone of an object
   */
-final case class Instance[+A] private[chisel3] (private[chisel3] underlying: Underlying[A]) extends SealedHierarchy[A] {
+final case class Instance[+A] private[chisel3] (private[chisel3] val underlying: Underlying[A])
+    extends SealedHierarchy[A] {
   underlying match {
     case Proto(p: IsClone[_]) => chisel3.internal.throwException("Cannot have a Proto with a clone!")
     case other => //Ok
@@ -122,7 +123,7 @@ object Instance extends SourceInfoDoc {
     if (existingMod.isEmpty) {
       // Add a Definition that will get emitted as an ExtModule so that FIRRTL
       // does not complain about a missing element
-      val extModName = Builder.importDefinitionMap.getOrElse(
+      val extModName = Builder.importedDefinitionMap.getOrElse(
         definition.proto.name,
         throwException(
           "Imported Definition information not found - possibly forgot to add ImportDefinition annotation?"

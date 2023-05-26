@@ -2,32 +2,22 @@
 
 package circt.stage.phases
 
+import _root_.logger.LogLevel
+import chisel3.BuildInfo.{firtoolVersion, version => chiselVersion}
+import chisel3.InternalErrorException
 import chisel3.experimental.hierarchy.core.ImportDefinitionAnnotation
 import chisel3.stage.{ChiselCircuitAnnotation, DesignAnnotation, SourceRootAnnotation}
-
-import circt.Implicits.BooleanImplicits
 import circt.stage.{CIRCTOptions, CIRCTTarget, EmittedMLIR, PreserveAggregate}
-
-import firrtl.{AnnotationSeq, EmittedVerilogCircuit, EmittedVerilogCircuitAnnotation}
 import firrtl.annotations.JsonProtocol
-import firrtl.options.{
-  CustomFileEmission,
-  Dependency,
-  OptionsException,
-  OutputAnnotationFileAnnotation,
-  Phase,
-  StageError,
-  StageOptions,
-  StageUtils
-}
-import firrtl.options.phases.WriteOutputAnnotations
+import firrtl.ir.CircuitWithAnnos
 import firrtl.options.Viewer.view
+import firrtl.options.{CustomFileEmission, Dependency, OptionsException, Phase, StageOptions, Unserializable}
 import firrtl.stage.FirrtlOptions
-import _root_.logger.LogLevel
-import chisel3.InternalErrorException
+import firrtl.{AnnotationSeq, EmittedVerilogCircuit, EmittedVerilogCircuitAnnotation}
 
-import scala.collection.mutable
 import java.io.File
+import scala.collection.mutable
+import scala.util.control.NoStackTrace
 
 private object Helpers {
   implicit class LogLevelHelpers(logLevel: LogLevel.Value) {
@@ -81,6 +71,10 @@ private[this] object Exceptions {
         |${"-" * 78}""".stripMargin
   }
 
+  def versionAdvice: String =
+    s"Note that this version of Chisel ($chiselVersion) was published against firtool version " +
+      firtoolVersion.getOrElse("<unknown>") + "."
+
   /** Indicates that the firtool binary failed with a non-zero exit code.  This generally indicates a compiler error
     * either originating from a user error or from a crash.
     *
@@ -92,10 +86,11 @@ private[this] object Exceptions {
   class FirtoolNonZeroExitCode(binary: String, exitCode: Int, stdout: String, stderr: String)
       extends RuntimeException(
         dramaticError(
-          header = s"${binary} returned a non-zero exit code",
+          header = s"${binary} returned a non-zero exit code. $versionAdvice",
           body = s"ExitCode:\n${exitCode}\nSTDOUT:\n${stdout}\nSTDERR:\n${stderr}"
         )
       )
+      with NoStackTrace
 
   /** Indicates that the firtool binary was not found.  This likely indicates that the user didn't install
     * CIRCT/firtool.
@@ -119,6 +114,7 @@ private[this] object Exceptions {
 class CIRCT extends Phase {
 
   import Helpers._
+
   import scala.sys.process._
 
   override def prerequisites = Seq(
@@ -172,11 +168,16 @@ class CIRCT extends Phase {
     }
 
     /* Filter the annotations to only those things which CIRCT should see. */
-    (new WriteOutputAnnotations).transform(annotationsx)
+    val filteredAnnotations = annotationsx.flatMap {
+      case _: ChiselCircuitAnnotation => None
+      case _: Unserializable          => None
+      case _: CustomFileEmission      => None
+      case a => Some(a)
+    }
 
     val input: String = firrtlOptions.firrtlCircuit match {
       case None          => throw new OptionsException("No input file specified!")
-      case Some(circuit) => circuit.serialize
+      case Some(circuit) => CircuitWithAnnos(circuit = circuit, annotations = filteredAnnotations).serialize
     }
 
     val chiselAnnotationFilename: Option[String] =
@@ -198,9 +199,7 @@ class CIRCT extends Phase {
           case Some(PreserveAggregate.All)       => Seq("-preserve-aggregate=all")
           case None                              => None
         }) ++
-        circtOptions.preserveAggregate.map(_ => "-preserve-public-types=0") ++
-        /* Communicate the annotation file through a file. */
-        (chiselAnnotationFilename.map(a => Seq("-annotation-file", a))).getOrElse(Seq.empty) ++
+        circtOptions.preserveAggregate.map(_ => "-scalarize-top-module=0") ++
         includeDirs.flatMap(d => Seq("--include-dir", d.toString)) ++
         /* Convert the target to a firtool-compatible option. */
         ((circtOptions.target, split) match {

@@ -33,7 +33,6 @@ class TraceSpec extends ChiselFlatSpec with Matchers {
     (testDir, annos)
   }
 
-  //TODO: SFC->MFC, this test is ignored because MFC does not support the custom annotations used here
   "TraceFromAnnotations" should "be able to get nested name." in {
     class Bundle0 extends Bundle {
       val a = UInt(8.W)
@@ -182,9 +181,7 @@ class TraceSpec extends ChiselFlatSpec with Matchers {
     )
   }
 
-  // TODO: This is disabled until CIRCT 1.32 or 1.33 when there is a bug is fixed.  The CIRCT tarcking issue is:
-  //   - https://github.com/llvm/circt/issues/4661
-  "TraceFromCollideBundle" should "work" ignore {
+  "TraceFromCollideBundle" should "work" in {
     class CollideModule extends Module {
       val a = IO(
         Input(
@@ -240,7 +237,7 @@ class TraceSpec extends ChiselFlatSpec with Matchers {
     println(a0_c1_e)
     println(dut.a(0).c_1_e.toTarget)
     println(a0_c_1_e)
-    a0_c1_e should be(refTarget(topName, "a_0_c__1_e"))
+    a0_c1_e should be(refTarget(topName, "a_0_c_1_e"))
     a0_c_1_e should be(refTarget(topName, "a_0_c_1_e"))
   }
 

@@ -38,7 +38,7 @@ class ResetSpec extends ChiselFlatSpec with Utils {
   behavior.of("Reset")
 
   it should "be able to be connected to DontCare" in {
-    ChiselStage.elaborate(new AbstractResetDontCareModule)
+    ChiselStage.emitCHIRRTL(new AbstractResetDontCareModule)
   }
 
   it should "be able to drive Bool" in {
@@ -103,9 +103,24 @@ class ResetSpec extends ChiselFlatSpec with Utils {
     fir should include("input reset : AsyncReset")
   }
 
+  they should "be able to have parameterized top level reset type" in {
+    class MyModule(hasAsyncNotSyncReset: Boolean) extends Module {
+      override def resetType = if (hasAsyncNotSyncReset) Module.ResetType.Asynchronous else Module.ResetType.Synchronous
+    }
+    val firAsync = ChiselStage.emitCHIRRTL(new MyModule(true) {
+      reset shouldBe an[AsyncReset]
+    })
+    firAsync should include("input reset : AsyncReset")
+
+    val firSync = ChiselStage.emitCHIRRTL(new MyModule(false) {
+      reset shouldBe a[Bool]
+    })
+    firSync should include("input reset : UInt<1>")
+  }
+
   "Chisel" should "error if sync and async modules are nested" in {
     a[ChiselException] should be thrownBy extractCause[ChiselException] {
-      ChiselStage.elaborate(new Module with RequireAsyncReset {
+      ChiselStage.emitCHIRRTL(new Module with RequireAsyncReset {
         val mod = Module(new Module with RequireSyncReset)
       })
     }

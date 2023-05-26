@@ -51,6 +51,11 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
 
   def cloneType: this.type = cloneTypeWidth(width)
 
+  /** A non-ambiguous name of this `Bits` instance for use in generated Verilog names
+    * Inserts the width directly after the typeName, e.g. UInt4, SInt1
+    */
+  override def typeName: String = s"${this.getClass.getSimpleName}$width"
+
   /** Tail operator
     *
     * @param n the number of bits to remove
@@ -421,9 +426,6 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
     }
   }
 
-  private[chisel3] override def typeEquivalent(that: Data): Boolean =
-    that.isInstanceOf[UInt] && this.width == that.width
-
   private[chisel3] override def cloneTypeWidth(w: Width): this.type =
     new UInt(w).asInstanceOf[this.type]
 
@@ -766,9 +768,6 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
     }
   }
 
-  private[chisel3] override def typeEquivalent(that: Data): Boolean =
-    this.getClass == that.getClass && this.width == that.width // TODO: should this be true for unspecified widths?
-
   private[chisel3] override def cloneTypeWidth(w: Width): this.type =
     new SInt(w).asInstanceOf[this.type]
 
@@ -1009,9 +1008,6 @@ final class ResetType(private[chisel3] val width: Width = Width(1)) extends Elem
 
   def cloneType: this.type = Reset().asInstanceOf[this.type]
 
-  private[chisel3] def typeEquivalent(that: Data): Boolean =
-    this.getClass == that.getClass
-
   override def litOption = None
 
   /** Not really supported */
@@ -1056,9 +1052,6 @@ sealed class AsyncReset(private[chisel3] val width: Width = Width(1)) extends El
 
   def cloneType: this.type = AsyncReset().asInstanceOf[this.type]
 
-  private[chisel3] def typeEquivalent(that: Data): Boolean =
-    this.getClass == that.getClass
-
   override def litOption = None
 
   /** Not really supported */
@@ -1096,6 +1089,13 @@ sealed class AsyncReset(private[chisel3] val width: Width = Width(1)) extends El
   * @define numType $coll
   */
 sealed class Bool() extends UInt(1.W) with Reset {
+
+  /**
+    * Give this `Bool` a stable `typeName` for Verilog name generation.
+    * Specifying a Bool's width in its type name isn't necessary
+    */
+  override def typeName = "Bool"
+
   override def toString: String = {
     litToBooleanOption match {
       case Some(value) => s"Bool($value)"

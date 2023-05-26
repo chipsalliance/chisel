@@ -108,7 +108,7 @@ class ExtModuleSpec extends ChiselFlatSpec {
     assertTesterPasses({ new MultiExtModuleTester }, Seq("/chisel3/BlackBoxTest.v"), TesterDriver.verilatorOnly)
   }
   "DataMirror.modulePorts" should "work with ExtModule" in {
-    ChiselStage.elaborate(new Module {
+    ChiselStage.emitCHIRRTL(new Module {
       val io = IO(new Bundle {})
       val m = Module(new extmoduletests.BlackBoxPassthrough)
       assert(DataMirror.modulePorts(m) == Seq("in" -> m.in, "out" -> m.out))

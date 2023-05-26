@@ -81,17 +81,6 @@ sealed abstract class Aggregate extends Data {
     }
   }
 
-  // Emits the FIRRTL `this <- that`, or `this is invalid` if that == DontCare
-  private[chisel3] def firrtlPartialConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
-    // If the source is a DontCare, generate a DefInvalid for the sink,
-    //  otherwise, issue a Partial Connect.
-    if (that == DontCare) {
-      pushCommand(DefInvalid(sourceInfo, lref))
-    } else {
-      pushCommand(PartialConnect(sourceInfo, lref, Node(that)))
-    }
-  }
-
   override def do_asUInt(implicit sourceInfo: SourceInfo): UInt = {
     SeqUtils.do_asUInt(flatten.map(_.asUInt))
   }
@@ -184,12 +173,10 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
     }
   }
 
-  private[chisel3] override def typeEquivalent(that: Data): Boolean = that match {
-    case that: Vec[T] =>
-      this.length == that.length &&
-        (this.sample_element.typeEquivalent(that.sample_element))
-    case _ => false
-  }
+  /** Give this Vec a default, stable desired name using the supplied `Data`
+    * generator's `typeName`
+    */
+  override def typeName = s"Vec${length}_${gen.typeName}"
 
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
     this.maybeAddToParentIds(target)
@@ -772,7 +759,8 @@ object VecInit extends SourceInfoDoc {
 
   /** @group SourceInfoTransformMacro */
   def do_fill[T <: Data](n: Int)(gen: => T)(implicit sourceInfo: SourceInfo): Vec[T] =
-    apply(Seq.fill(n)(gen))
+    if (n == 0) { Wire(Vec(0, gen.cloneTypeFull)) }
+    else { apply(Seq.fill(n)(gen)) }
 
   /** Creates a new 2D [[Vec]] of length `n by m` composed of the result of the given
     * function applied to an element of data type T.
@@ -1207,18 +1195,6 @@ abstract class Record extends Aggregate {
   } catch {
     // This happens if your class is defined in an object and is anonymous
     case e: java.lang.InternalError if e.getMessage == "Malformed class name" => this.getClass.toString
-  }
-
-  private[chisel3] override def typeEquivalent(that: Data): Boolean = that match {
-    case that: Record =>
-      this.getClass == that.getClass &&
-        this._elements.size == that._elements.size &&
-        this._elements.forall {
-          case (name, model) =>
-            that._elements.contains(name) &&
-              (that._elements(name).typeEquivalent(model))
-        }
-    case _ => false
   }
 
   private[chisel3] final def allElements: Seq[Element] = elementsIterator.flatMap(_.allElements).toIndexedSeq

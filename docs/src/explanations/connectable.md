@@ -27,6 +27,7 @@ section: "chisel3"
    * [Connecting different sub-types of the same super-type, with colliding names](#connecting-different-sub-types-of-the-same-super-type-with-colliding-names)
    * [Connecting sub-types to super-types by waiving extra members](#connecting-sub-types-to-super-types-by-waiving-extra-members)
    * [Connecting different sub-types](#connecting-different-sub-types)
+ * [FAQ](#faq)
 
 ## Terminology
 
@@ -397,7 +398,7 @@ For example, a user may want to hook up anonymous `Record` components who may ha
 Alternatively, one may want to connect two types that have different widths.
 
 `Connectable` is the mechanism to specialize connection operator behavior in these scenarios.
-For additional members which are not present in the other component being connected to or for mismatched widths, they can be explicitly waived from the operator to be ignored, rather than trigger an error.
+For additional members which are not present in the other component being connected to, or for mismatched widths, or for always excluding a member from being connected too, they can be explicitly called out from the `Connectable` object, rather than trigger an error.
 
 In addition, there are other techniques that can be used to address similar use cases including `.viewAsSuperType`, a static cast to a supertype (e.g. `(x: T)`), or creating a custom dataview.
 For a discussion about when to use each technique, please continue [here](#techniques-for-connecting-structurally-inequivalent-chisel-types).
@@ -406,7 +407,7 @@ This section demonstrates how `Connectable` specifically can be used in a multit
 
 ### Connecting Records
 
-A not uncommon usecase is to try to connect two Records; for matching members, they should be connected, but for unmatched members, they should be ignored.
+A not uncommon usecase is to try to connect two Records; for matching members, they should be connected, but for unmatched members, the errors caused due to them being unmatched should be ignored.
 To accomplish this, use the other operators to initialize all Record members, then use `:<>=` with `waiveAll` to connect only the matching members.
 
 > Note that none of `.viewAsSuperType`, static casts, nor a custom DataView helps this case because the Scala types are still `Record`.
@@ -489,7 +490,7 @@ This generates the following Verilog, where `ready` and `valid` are connected, a
 getVerilogString(new Example6)
 ```
 
-### Always ignore extra members (partial connection operator)
+### Always ignore errors caused by extra members (partial connection operator)
 
 The most unsafe connection is to connect only members that are present in both consumer and producer, and ignore all other members.
 This is unsafe because this connection will never error on any Chisel types.
@@ -543,6 +544,35 @@ This generates the following Verilog, where `p` is implicitly truncated prior to
 getVerilogString(new Example14)
 ```
 
+### Excluding members from any operator on a Connectable
+
+If a user wants to always exclude a field from a connect, use the `exclude` mechanism which will never connect the field (as if it didn't exist to the connection).
+
+Note that if a field matches in both producer and consumer, but only one is excluded, the other non-excluded field will still trigger an error; to fix this, use either `waive` or `exclude`.
+
+```scala mdoc:silent
+import scala.collection.immutable.SeqMap
+
+class BundleWithSpecialField extends Bundle {
+  val foo = UInt(3.W)
+  val special = Bool()
+}
+class Example15 extends RawModule {
+  val p = IO(Flipped(new BundleWithSpecialField()))
+  val c = IO(new BundleWithSpecialField())
+
+  c.special := true.B // must initialize it
+
+  c.exclude(_.special) :<>= p.exclude(_.special)
+}
+```
+
+This generates the following Verilog, where the `special` field is not connected:
+
+```scala mdoc:verilog
+getVerilogString(new Example15)
+```
+
 ## Techniques for connecting structurally inequivalent Chisel types
 
 `DataView` and `viewAsSupertype` create a view of the component that has a different Chisel type.
@@ -566,7 +596,7 @@ Things to remember about `Connectable` vs `viewAsSupertype`/`DataView` vs static
 
 - `DataView` and `viewAsSupertype` will preemptively remove members that are not present in the new view which has a different Chisel type, thus `DataView` *does* affect what is connected
 - `Connectable` can be used to waive the error on members who end up being dangling or unconnected.
-Importantly, `Connectable` *does not* affect what is connected
+Importantly, `Connectable` waives *do not* affect what is connected
 - Static cast does not remove extra members, thus a static cast *does not* affect what is connected
 
 ### Connecting different sub-types of the same super-type, with colliding names
@@ -617,7 +647,7 @@ class Example13 extends RawModule {
 }
 ```
 
-Note that the `bits` fields ARE connected, even though they are waived, as `waive` just changes whether an error should be thrown if they are missing, NOT to not connect them if they are structurally equivalent.
+Note that the `bits` fields ARE connected, even though they are waived, as `waive` just changes whether an error should be thrown if they are missing, NOT to not connect them if they are structurally equivalent. To always omit the connection, use `exclude` on one side and either `exclude` or `waive` on the other side.
 
 ```scala mdoc:verilog
 getVerilogString(new Example13)
@@ -676,4 +706,31 @@ This generates the following Verilog, where `ready` and `valid` are connected, a
 
 ```scala mdoc:verilog
 getVerilogString(new Example7)
+```
+
+## FAQ
+
+### How do I connect two items as flexibly as possible (try your best but never error)
+
+Use `.unsafe` (both waives and allows squeezing of all fields).
+
+```scala mdoc:silent
+class ExampleUnsafe extends RawModule {
+  val in  = IO(Flipped(new Bundle { val foo = Bool(); val bar = Bool() }))
+  val out = IO(new Bundle { val baz = Bool(); val bar = Bool() })
+  out.unsafe :<>= in.unsafe // bar is connected, and nothing errors
+}
+```
+
+### How do I connect two items but don't care about the scala types being equivalent?
+
+Use `.as` (upcasts the Scala type).
+
+```scala mdoc:silent
+class ExampleAs extends RawModule {
+  val in  = IO(Flipped(new Bundle { val foo = Bool(); val bar = Bool() }))
+  val out = IO(new Bundle { val foo = Bool(); val bar = Bool() })
+  // foo and bar are connected, although Scala types aren't the same
+  out.as[Data] :<>= in.as[Data]
+}
 ```

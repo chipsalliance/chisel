@@ -5,6 +5,37 @@ enablePlugins(SiteScaladocPlugin)
 addCommandAlias("fmt", "; scalafmtAll ; scalafmtSbt")
 addCommandAlias("fmtCheck", "; scalafmtCheckAll ; scalafmtSbtCheck")
 
+lazy val firtoolVersion = settingKey[Option[String]]("Determine the version of firtool on the PATH")
+ThisBuild / firtoolVersion := {
+  import scala.sys.process._
+  val Version = """^CIRCT firtool-(\S+)$""".r
+  try {
+    val lines = Process(Seq("firtool", "--version")).lineStream
+    lines.collectFirst { case Version(v) => v }
+  } catch {
+    case e: java.io.IOException => None
+  }
+}
+
+// Previous versions are read from project/previous-versions.txt
+// If this file is empty or does not exist, no binary compatibility checking will be done
+// Add waivers to the directory defined by key `mimaFiltersDirectory` in files named: <since version>.backwards.excludes
+//   eg. unipublish/src/main/mima-filters/5.0.0.backwards.excludes
+val previousVersions = settingKey[Set[String]]("Previous versions for binary compatibility checking")
+ThisBuild / previousVersions := {
+  val file = new java.io.File("project", "previous-versions.txt")
+  if (file.isFile) {
+    scala.io.Source.fromFile(file).getLines.toSet
+  } else {
+    Set()
+  }
+}
+
+val emitVersion = taskKey[Unit]("Write the version to version.txt")
+emitVersion := {
+  IO.write(new java.io.File("version.txt"), version.value)
+}
+
 lazy val minimalSettings = Seq(
   organization := "org.chipsalliance",
   scalacOptions := Seq("-deprecation", "-feature"),
@@ -54,7 +85,9 @@ lazy val warningSuppression = Seq(
     "msg=migration to the MLIR:s",
     "msg=method hasDefiniteSize in trait IterableOnceOps is deprecated:s", // replacement `knownSize` is not in 2.12
     "msg=object JavaConverters in package collection is deprecated:s",
-    "msg=undefined in comment for method cf in class PrintableHelper:s"
+    "msg=undefined in comment for method cf in class PrintableHelper:s",
+    // This is deprecated for external users but not internal use
+    "cat=deprecation&origin=firrtl\\.options\\.internal\\.WriteableCircuitAnnotation:s"
   ).mkString(",")
 )
 
@@ -75,14 +108,18 @@ lazy val publishSettings = Seq(
   ),
   sonatypeCredentialHost := "s01.oss.sonatype.org",
   sonatypeRepository := "https://s01.oss.sonatype.org/service/local",
-  // Check that SBT Dynver can properly derive a version which requires unshallow clone
-  // We are just using 'publish / skip' as a hook to run this check when publishing
-  // This allows us to only require unshallow clones when publishing but lets CI do
-  // shallow clones for standard testing
+  // We are just using 'publish / skip' as a hook to run checks required for publishing,
+  // but that are not necessarily required for local development or running testing in CI
   publish / skip := {
+    // Check that SBT Dynver can properly derive a version which requires unshallow clone
     val v = version.value
     if (dynverGitDescribeOutput.value.hasNoTags) {
       sys.error(s"Failed to derive version from git tags. Maybe run `git fetch --unshallow`? Version: $v")
+    }
+    // Check that firtool exists on the PATH so Chisel can use the version it was tested against
+    // in error messages
+    if (firtoolVersion.value.isEmpty) {
+      sys.error(s"Failed to determine firtool version. Make sure firtool is found on the PATH.")
     }
     (publish / skip).value
   },
@@ -120,13 +157,13 @@ lazy val firrtlSettings = Seq(
   libraryDependencies ++= Seq(
     "org.scala-lang" % "scala-reflect" % scalaVersion.value,
     "org.scalatest" %% "scalatest" % "3.2.14" % "test",
-    "org.scalatestplus" %% "scalacheck-1-15" % "3.2.11.0" % "test",
-    "com.github.scopt" %% "scopt" % "3.7.1",
+    "org.scalatestplus" %% "scalacheck-1-16" % "3.2.14.0" % "test",
+    "com.github.scopt" %% "scopt" % "4.1.0",
     "net.jcazevedo" %% "moultingyaml" % "0.4.2",
     "org.json4s" %% "json4s-native" % "4.0.6",
     "org.apache.commons" % "commons-text" % "1.10.0",
-    "io.github.alexarchambault" %% "data-class" % "0.2.5",
-    "com.lihaoyi" %% "os-lib" % "0.8.1"
+    "io.github.alexarchambault" %% "data-class" % "0.2.6",
+    "com.lihaoyi" %% "os-lib" % "0.9.1"
   ),
   // macros for the data-class library
   libraryDependencies ++= {
@@ -143,15 +180,7 @@ lazy val firrtlSettings = Seq(
       case Some((2, major)) if major <= 12 => Seq()
       case _                               => Seq("org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4")
     }
-  },
-  resolvers ++= Seq(
-    Resolver.sonatypeRepo("snapshots"),
-    Resolver.sonatypeRepo("releases")
-  )
-)
-
-lazy val mimaSettings = Seq(
-  mimaPreviousArtifacts := Set()
+  }
 )
 
 lazy val assemblySettings = Seq(
@@ -178,8 +207,8 @@ lazy val svsim = (project in file("svsim"))
     // Published as part of unipublish
     publish / skip := true,
     libraryDependencies ++= Seq(
-      "org.scalatest" %% "scalatest" % "3.2.15" % "test",
-      "org.scalatestplus" %% "scalacheck-1-14" % "3.2.2.0" % "test"
+      "org.scalatest" %% "scalatest" % "3.2.16" % "test",
+      "org.scalatestplus" %% "scalacheck-1-16" % "3.2.14.0" % "test"
     )
   )
 
@@ -204,16 +233,15 @@ lazy val firrtl = (project in file("firrtl"))
     buildInfoUsePackageAsPath := true,
     buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion)
   )
-  .settings(mimaSettings)
   .settings(warningSuppression: _*)
   .settings(fatalWarningsSettings: _*)
 
 lazy val chiselSettings = Seq(
   name := "chisel",
   libraryDependencies ++= Seq(
-    "org.scalatest" %% "scalatest" % "3.2.15" % "test",
-    "org.scalatestplus" %% "scalacheck-1-14" % "3.2.2.0" % "test",
-    "com.lihaoyi" %% "upickle" % "2.0.0"
+    "org.scalatest" %% "scalatest" % "3.2.16" % "test",
+    "org.scalatestplus" %% "scalacheck-1-16" % "3.2.14.0" % "test",
+    "com.lihaoyi" %% "upickle" % "3.1.0"
   )
 ) ++ (
   // Tests from other projects may still run concurrently
@@ -278,8 +306,8 @@ lazy val plugin = (project in file("plugin"))
   )
   .settings(fatalWarningsSettings: _*)
   .settings(
-    mimaPreviousArtifacts := {
-      Set()
+    mimaPreviousArtifacts := previousVersions.value.map { version =>
+      (organization.value % name.value % version).cross(CrossVersion.full)
     }
   )
 
@@ -301,7 +329,6 @@ lazy val macros = (project in file("macros"))
     // Published as part of unipublish
     publish / skip := true
   )
-  .settings(mimaPreviousArtifacts := Set())
 
 lazy val core = (project in file("core"))
   .settings(commonSettings: _*)
@@ -309,20 +336,19 @@ lazy val core = (project in file("core"))
   .settings(
     buildInfoPackage := "chisel3",
     buildInfoUsePackageAsPath := true,
-    buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion)
+    buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion, firtoolVersion)
   )
   .settings(
     // Published as part of unipublish
     publish / skip := true
   )
-  .settings(mimaPreviousArtifacts := Set())
   .settings(warningSuppression: _*)
   .settings(fatalWarningsSettings: _*)
   .settings(
     name := "chisel-core",
     libraryDependencies ++= Seq(
-      "com.lihaoyi" %% "upickle" % "2.0.0",
-      "com.lihaoyi" %% "os-lib" % "0.8.1"
+      "com.lihaoyi" %% "upickle" % "3.1.0",
+      "com.lihaoyi" %% "os-lib" % "0.9.1"
     ),
     scalacOptions := scalacOptions.value ++ Seq(
       "-explaintypes",
@@ -390,7 +416,9 @@ lazy val unipublish =
     .settings(warningSuppression: _*)
     .settings(fatalWarningsSettings: _*)
     .settings(
-      mimaPreviousArtifacts := Set(),
+      mimaPreviousArtifacts := previousVersions.value.map { version =>
+        organization.value %% name.value % version
+      },
       // This is a pseudo-project with no class files, use the package jar instead
       mimaCurrentClassfiles := (Compile / packageBin).value,
       // Forward doc command to unidoc

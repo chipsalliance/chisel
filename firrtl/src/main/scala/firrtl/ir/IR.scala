@@ -3,6 +3,8 @@
 package firrtl
 package ir
 
+import firrtl.annotations.Annotation
+
 import dataclass.{data, since}
 import org.apache.commons.text.translate.{AggregateTranslator, JavaUnicodeEscaper, LookupTranslator}
 
@@ -227,6 +229,14 @@ case class DefRegister(
   info:  Info,
   name:  String,
   tpe:   Type,
+  clock: Expression)
+    extends Statement
+    with IsDeclaration
+    with UseSerializer
+case class DefRegisterWithReset(
+  info:  Info,
+  name:  String,
+  tpe:   Type,
   clock: Expression,
   reset: Expression,
   init:  Expression)
@@ -279,10 +289,6 @@ object Block {
 }
 
 case class Block(stmts: Seq[Statement]) extends Statement with UseSerializer
-case class PartialConnect(info: Info, loc: Expression, expr: Expression)
-    extends Statement
-    with HasInfo
-    with UseSerializer
 case class Connect(info: Info, loc: Expression, expr: Expression) extends Statement with HasInfo with UseSerializer
 case class IsInvalid(info: Info, expr: Expression) extends Statement with HasInfo with UseSerializer
 case class Attach(info: Info, exprs: Seq[Expression]) extends Statement with HasInfo with UseSerializer
@@ -328,6 +334,21 @@ object Print {
     Some((s.info, s.string, s.args, s.clk, s.en))
   }
 }
+
+case class ProbeDefine(info: Info, sink: Expression, probeExpr: Expression) extends Statement with UseSerializer
+case class ProbeExpr(expr: Expression, tpe: Type = UnknownType) extends Expression with UseSerializer
+
+case class RWProbeExpr(expr: Expression, tpe: Type = UnknownType) extends Expression with UseSerializer
+case class ProbeRead(expr: Expression, tpe: Type = UnknownType) extends Expression with UseSerializer
+
+case class ProbeForceInitial(info: Info, probe: Expression, value: Expression) extends Statement with UseSerializer
+case class ProbeReleaseInitial(info: Info, probe: Expression) extends Statement with UseSerializer
+case class ProbeForce(info: Info, clock: Expression, cond: Expression, probe: Expression, value: Expression)
+    extends Statement
+    with UseSerializer
+case class ProbeRelease(info: Info, clock: Expression, cond: Expression, probe: Expression)
+    extends Statement
+    with UseSerializer
 
 // formal
 object Formal extends Enumeration {
@@ -445,6 +466,12 @@ object GroundType {
   def unapply(ground: GroundType): Option[Width] = Some(ground.width)
 }
 abstract class AggregateType extends Type
+
+case class ProbeType(underlying: Type) extends Type with UseSerializer
+case class RWProbeType(underlying: Type) extends Type with UseSerializer
+
+case class ConstType(underlying: Type) extends Type with UseSerializer
+
 case class UIntType(width: Width) extends GroundType with UseSerializer
 case class SIntType(width: Width) extends GroundType with UseSerializer
 
@@ -529,7 +556,20 @@ case class ExtModule(
     extends DefModule
     with UseSerializer
 
-case class Circuit(info: Info, modules: Seq[DefModule], main: String, annotations: AnnotationSeq)
-    extends FirrtlNode
-    with HasInfo
+/** Intrinsic Module
+  *
+  * Used for compiler intrinsics.
+  * @param intrinsic Defined intrinsic of the module
+  */
+case class IntModule(
+  info:      Info,
+  name:      String,
+  ports:     Seq[Port],
+  intrinsic: String,
+  params:    Seq[Param])
+    extends DefModule
     with UseSerializer
+
+case class Circuit(info: Info, modules: Seq[DefModule], main: String) extends FirrtlNode with HasInfo with UseSerializer
+
+case class CircuitWithAnnos(circuit: Circuit, annotations: Seq[Annotation]) extends FirrtlNode with UseSerializer

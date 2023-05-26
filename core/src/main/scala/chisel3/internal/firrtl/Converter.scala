@@ -93,6 +93,12 @@ private[chisel3] object Converter {
     // TODO Simplify
     case lit: ILit =>
       throw new InternalErrorException(s"Unexpected ILit: $lit")
+    case e @ ProbeExpr(probe) =>
+      fir.ProbeExpr(convert(probe, ctx, info))
+    case e @ RWProbeExpr(probe) =>
+      fir.RWProbeExpr(convert(probe, ctx, info))
+    case e @ ProbeRead(probe) =>
+      fir.ProbeRead(convert(probe, ctx, info))
     case other =>
       throw new InternalErrorException(s"Unexpected type in convert $other")
   }
@@ -121,14 +127,12 @@ private[chisel3] object Converter {
           convert(info),
           e.name,
           extractType(id, info),
-          convert(clock, ctx, info),
-          firrtl.Utils.zero,
-          convert(getRef(id, info), ctx, info)
+          convert(clock, ctx, info)
         )
       )
     case e @ DefRegInit(info, id, clock, reset, init) =>
       Some(
-        fir.DefRegister(
+        fir.DefRegisterWithReset(
           convert(info),
           e.name,
           extractType(id, info),
@@ -155,8 +159,6 @@ private[chisel3] object Converter {
       )
     case Connect(info, loc, exp) =>
       Some(fir.Connect(convert(info), convert(loc, ctx, info), convert(exp, ctx, info)))
-    case PartialConnect(info, loc, exp) =>
-      Some(fir.PartialConnect(convert(info), convert(loc, ctx, info), convert(exp, ctx, info)))
     case Attach(info, locs) =>
       Some(fir.Attach(convert(info), locs.map(l => convert(l, ctx, info))))
     case DefInvalid(info, arg) =>
@@ -175,6 +177,31 @@ private[chisel3] object Converter {
           convert(clock, ctx, info),
           firrtl.Utils.one,
           e.name
+        )
+      )
+    case e @ ProbeDefine(sourceInfo, sink, probeExpr) =>
+      Some(fir.ProbeDefine(convert(sourceInfo), convert(sink, ctx, sourceInfo), convert(probeExpr, ctx, sourceInfo)))
+    case e @ ProbeForceInitial(sourceInfo, probe, value) =>
+      Some(fir.ProbeForceInitial(convert(sourceInfo), convert(probe, ctx, sourceInfo), convert(value, ctx, sourceInfo)))
+    case e @ ProbeReleaseInitial(sourceInfo, probe) =>
+      Some(fir.ProbeReleaseInitial(convert(sourceInfo), convert(probe, ctx, sourceInfo)))
+    case e @ ProbeForce(sourceInfo, clock, cond, probe, value) =>
+      Some(
+        fir.ProbeForce(
+          convert(sourceInfo),
+          convert(clock, ctx, sourceInfo),
+          convert(cond, ctx, sourceInfo),
+          convert(probe, ctx, sourceInfo),
+          convert(value, ctx, sourceInfo)
+        )
+      )
+    case e @ ProbeRelease(sourceInfo, clock, cond, probe) =>
+      Some(
+        fir.ProbeRelease(
+          convert(sourceInfo),
+          convert(clock, ctx, sourceInfo),
+          convert(cond, ctx, sourceInfo),
+          convert(probe, ctx, sourceInfo)
         )
       )
     case e @ Verification(_, op, info, clk, pred, msg) =>
@@ -300,9 +327,24 @@ private[chisel3] object Converter {
     case d => d.specifiedDirection
   }
 
-  def extractType(data: Data, info: SourceInfo): fir.Type = extractType(data, false, info)
+  def extractType(data: Data, info: SourceInfo): fir.Type = extractType(data, false, info, true, true)
 
-  def extractType(data: Data, clearDir: Boolean, info: SourceInfo): fir.Type = data match {
+  def extractType(
+    data:       Data,
+    clearDir:   Boolean,
+    info:       SourceInfo,
+    checkProbe: Boolean,
+    checkConst: Boolean
+  ): fir.Type = data match {
+    // extract underlying type for probe
+    case d if (checkProbe && d.probeInfo.nonEmpty) =>
+      if (d.probeInfo.get.writable) {
+        fir.RWProbeType(extractType(d, clearDir, info, false, checkConst))
+      } else {
+        fir.ProbeType(extractType(d, clearDir, info, false, checkConst))
+      }
+    // extract underlying type for const
+    case d if (checkConst && d.isConst) => fir.ConstType(extractType(d, clearDir, info, checkProbe, false))
     case _: Clock      => fir.ClockType
     case _: AsyncReset => fir.AsyncResetType
     case _: ResetType  => fir.ResetType
@@ -313,21 +355,24 @@ private[chisel3] object Converter {
     case d: Vec[_] =>
       val childClearDir = clearDir ||
         d.specifiedDirection == SpecifiedDirection.Input || d.specifiedDirection == SpecifiedDirection.Output
-      fir.VectorType(extractType(d.sample_element, childClearDir, info), d.length)
+      // if Vector is a probe, don't emit Probe<...> on its elements
+      fir.VectorType(extractType(d.sample_element, childClearDir, info, checkProbe, true), d.length)
     case d: Record => {
       val childClearDir = clearDir ||
         d.specifiedDirection == SpecifiedDirection.Input || d.specifiedDirection == SpecifiedDirection.Output
+      // if Record is a probe, don't emit Probe<...> on its elements
       def eltField(elt: Data): fir.Field = (childClearDir, firrtlUserDirOf(elt)) match {
-        case (true, _) => fir.Field(getRef(elt, info).name, fir.Default, extractType(elt, true, info))
+        case (true, _) =>
+          fir.Field(getRef(elt, info).name, fir.Default, extractType(elt, true, info, checkProbe, true))
         case (false, SpecifiedDirection.Unspecified | SpecifiedDirection.Output) =>
-          fir.Field(getRef(elt, info).name, fir.Default, extractType(elt, false, info))
+          fir.Field(getRef(elt, info).name, fir.Default, extractType(elt, false, info, checkProbe, true))
         case (false, SpecifiedDirection.Flip | SpecifiedDirection.Input) =>
-          fir.Field(getRef(elt, info).name, fir.Flip, extractType(elt, false, info))
+          fir.Field(getRef(elt, info).name, fir.Flip, extractType(elt, false, info, checkProbe, true))
       }
       if (!d._isOpaqueType)
         fir.BundleType(d._elements.toIndexedSeq.reverse.map { case (_, e) => eltField(e) })
       else
-        extractType(d._elements.head._2, childClearDir, info)
+        extractType(d._elements.head._2, childClearDir, info, checkProbe, true)
     }
   }
 
@@ -348,29 +393,42 @@ private[chisel3] object Converter {
       case SpecifiedDirection.Input | SpecifiedDirection.Output     => true
       case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip => false
     }
-    val tpe = extractType(port.id, clearDir, port.sourceInfo)
+    val tpe = extractType(port.id, clearDir, port.sourceInfo, true, true)
     fir.Port(convert(port.sourceInfo), getRef(port.id, port.sourceInfo).name, dir, tpe)
   }
 
   def convert(component: Component): fir.DefModule = component match {
     case ctx @ DefModule(_, name, ports, cmds) =>
-      fir.Module(fir.NoInfo, name, ports.map(p => convert(p)), convert(cmds, ctx))
+      fir.Module(
+        fir.NoInfo,
+        name,
+        (ports ++ ctx.secretPorts).map(p => convert(p)),
+        convert(cmds ++ ctx.secretCommands, ctx)
+      )
     case ctx @ DefBlackBox(id, name, ports, topDir, params) =>
       fir.ExtModule(
         fir.NoInfo,
         name,
-        ports.map(p => convert(p, topDir)),
+        (ports ++ ctx.secretPorts).map(p => convert(p, topDir)),
         id.desiredName,
+        params.keys.toList.sorted.map { name => convert(name, params(name)) }
+      )
+    case ctx @ DefIntrinsicModule(id, name, ports, topDir, params) =>
+      fir.IntModule(
+        fir.NoInfo,
+        name,
+        (ports ++ ctx.secretPorts).map(p => convert(p, topDir)),
+        id.intrinsic,
         params.keys.toList.sorted.map { name => convert(name, params(name)) }
       )
   }
 
   def convert(circuit: Circuit): fir.Circuit =
-    fir.Circuit(fir.NoInfo, circuit.components.map(convert), circuit.name, circuit.firrtlAnnotations.toSeq)
+    fir.Circuit(fir.NoInfo, circuit.components.map(convert), circuit.name)
 
   // TODO Unclear if this should just be the default
   def convertLazily(circuit: Circuit): fir.Circuit = {
     val lazyModules = LazyList() ++ circuit.components
-    fir.Circuit(fir.NoInfo, lazyModules.map(convert), circuit.name, circuit.firrtlAnnotations.toSeq)
+    fir.Circuit(fir.NoInfo, lazyModules.map(convert), circuit.name)
   }
 }

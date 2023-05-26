@@ -2,6 +2,7 @@ package chiselTests.util
 
 import chisel3.util.experimental.BitSet
 import chisel3.util.BitPat
+import _root_.circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -53,6 +54,57 @@ class BitSetSpec extends AnyFlatSpec with Matchers {
     expected.equals(aBitSet.subtract(bBitSet)) should be(true)
   }
 
+  it should "support checking equality" in {
+    val set = BitSet.fromString("""b100
+                                  |b101""".stripMargin)
+    val a = BitPat("b10?")
+    val a2 = BitPat("b10?")
+    val b = BitPat("b1??")
+
+    // Check both ways because BitPat overloads equals
+    assert(a != b)
+    assert(b != a)
+    assert(a == a2)
+    assert(a2 == a)
+    assert(set == a)
+    assert(a == set)
+  }
+
+  it should "support checking for cover" in {
+    val set = BitSet.fromString("""b110
+                                  |b100
+                                  |b101""".stripMargin)
+    val a = BitPat("b10?")
+    val b = BitPat("b1??")
+
+    a.cover(b) should be(false)
+    b.cover(a) should be(true)
+    set.cover(a) should be(true)
+    a.cover(set) should be(false)
+    set.cover(b) should be(false)
+    b.cover(set) should be(true)
+
+  }
+
+  it should "support checking for overlap" in {
+    val set = BitSet.fromString("""b01?0
+                                  |b0000""".stripMargin)
+    val a = BitPat("b00??")
+    val b = BitPat("b01?0")
+    val c = BitPat("b0000")
+    val d = BitPat("b1000")
+
+    a.overlap(b) should be(false)
+    a.overlap(c) should be(true)
+    b.overlap(c) should be(false)
+
+    // Check both ways because BitPat overloads overlap
+    set.overlap(a) should be(true)
+    a.overlap(set) should be(true)
+    set.overlap(d) should be(false)
+    d.overlap(set) should be(false)
+  }
+
   it should "be generated from BitPat union" in {
     val aBitSet = BitSet.fromString("""b001?0
                                       |b000??""".stripMargin)
@@ -92,7 +144,7 @@ class BitSetSpec extends AnyFlatSpec with Matchers {
     import chisel3.util.experimental.decode.decoder
     // [0 - 256] part into: [0 - 31], [32 - 47, 64 - 127], [192 - 255]
     // "0011????" "10??????" is empty to error
-    circt.stage.ChiselStage.emitSystemVerilog(new Module {
+    ChiselStage.emitSystemVerilog(new Module {
       val in = IO(Input(UInt(8.W)))
       val out = IO(Output(UInt(4.W)))
       out := decoder.bitset(
@@ -120,7 +172,7 @@ class BitSetSpec extends AnyFlatSpec with Matchers {
     import chisel3.util.experimental.decode.decoder
     // [0 - 256] part into: [0 - 31], [32 - 47, 64 - 127], [192 - 255]
     // "0011????" "10??????" is empty to error
-    circt.stage.ChiselStage.emitSystemVerilog(new Module {
+    ChiselStage.emitSystemVerilog(new Module {
       val in = IO(Input(UInt(8.W)))
       val out = IO(Output(UInt(4.W)))
       out := decoder.bitset(

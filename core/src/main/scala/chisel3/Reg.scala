@@ -39,6 +39,8 @@ object Reg {
     val prevId = Builder.idGen.value
     val t = source // evaluate once (passed by name)
     requireIsChiselType(t, "reg type")
+    if (t.isConst) Builder.error("Cannot create register with constant value.")(sourceInfo)
+    requireNoProbeTypeModifier(t, "Cannot make a register of a Chisel type with a probe modifier.")
     val reg = if (!t.mustClone(prevId)) t else t.cloneTypeFull
     val clock = Node(Builder.forcedClock)
 
@@ -176,6 +178,7 @@ object RegInit {
 
     reg.bind(RegBinding(Builder.forcedUserModule, Builder.currentWhen))
     requireIsHardware(init, "reg initializer")
+    requireNoProbeTypeModifier(t, "Cannot make a register of a Chisel type with a probe modifier.")
     pushCommand(DefRegInit(sourceInfo, reg, clock.ref, reset.ref, init.ref))
     reg
   }
