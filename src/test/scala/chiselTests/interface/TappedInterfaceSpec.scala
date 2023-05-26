@@ -41,7 +41,6 @@ class TappedInterfaceSpec extends AnyFunSpec with Matchers {
     class Bar extends RawModule {
       val x = IO(Input(Bool()))
       val y = IO(Output(Bool()))
-      // val rotation = IO(Input(UInt(2.W)))
       val lfsr = chisel3.util.random.LFSR(1)
       val z = Wire(Bool())
       z := lfsr
@@ -62,7 +61,7 @@ class TappedInterfaceSpec extends AnyFunSpec with Matchers {
       bar.x := hello
       world := bar.y
 
-      probe.define(goodbye, RWProbeValue(bar.z))
+      goodbye := chisel3.util.experimental.BoringUtils.tap(bar.z)
     }
 
     /** The owner of the "DUT" (Bar) needs to write this. This defines how to
