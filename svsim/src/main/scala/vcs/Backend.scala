@@ -37,9 +37,9 @@ object Backend {
         }
       ).flatten
       private[vcs] def verilogPreprocessorDefines = Seq(
-        (enableVcd, svsim.Backend.enableVcdTracingFlag),
-        (enableVpd, svsim.Backend.enableVpdTracingFlag),
-        (fsdbEnabled, svsim.Backend.enableFsdbTracingFlag)
+        (enableVcd, svsim.Backend.HarnessCompilationFlags.enableVcdTracingSupport),
+        (enableVpd, svsim.Backend.HarnessCompilationFlags.enableVpdTracingSupport),
+        (fsdbEnabled, svsim.Backend.HarnessCompilationFlags.enableFsdbTracingSupport)
       ).collect {
         case (true, value) =>
           svsim.CommonCompilationSettings.VerilogPreprocessorDefine(value)
@@ -90,13 +90,13 @@ final class Backend(
     extends svsim.Backend {
   type CompilationSettings = Backend.CompilationSettings
 
-  private[svsim] def invocationSettings(
+  def generateParameters(
     outputBinaryName:        String,
     topModuleName:           String,
     additionalHeaderPaths:   Seq[String],
     commonSettings:          CommonCompilationSettings,
     backendSpecificSettings: CompilationSettings
-  ): svsim.Backend.InvocationSettings = {
+  ): svsim.Backend.Parameters = {
     // These environment variables apply to both compilation and simulation
     val environment = Seq(
       backendSpecificSettings.archOverride
@@ -110,94 +110,98 @@ final class Backend(
     //format: off
     import CommonCompilationSettings._
     import Backend.CompilationSettings._
-    svsim.Backend.InvocationSettings(
+    svsim.Backend.Parameters(
       compilerPath = s"$vcsHome/bin/vcs",
-      compilerArguments = Seq[Seq[String]](
-        Seq(
-          "-full64", // Enable 64-bit compilation
-          "-sverilog", // Enable SystemVerilog
-          "-nc", // Do not emit copyright notice
-          // Specify resulting executable path
-          "-o", outputBinaryName, 
-          // Rename `main` so we use the `main` provided by `simulation-driver.cpp`
-          "-e", "simulation_main",
-        ),
-
-        Seq(
-          ("-licqueue", backendSpecificSettings.waitForLicenseIfUnavailable),
-          ("+vcs+initreg+random", backendSpecificSettings.randomlyInitializeRegisters)
-        ).collect {
-          case (flag, true) => flag
-        },
-
-        commonSettings.defaultTimescale match {
-          case Some(Timescale.FromString(value)) => Seq(s"-timescale=$value")
-          case None => Seq()
-        },
-
-        commonSettings.availableParallelism match {
-          case AvailableParallelism.Default => Seq()
-          case AvailableParallelism.UpTo(value) => Seq(s"-j${value}")
-        },
-        
-        commonSettings.libraryExtensions match {
-          case None => Seq()
-          case Some(extensions) => Seq((Seq("+libext") ++ extensions).mkString("+"))
-        },
-
-        commonSettings.libraryPaths match {
-          case None => Seq()
-          case Some(paths) => paths.flatMap(Seq("-y", _))
-        },
-
-        backendSpecificSettings.xProp match {
-          case None => Seq()
-          case Some(XProp.XMerge) => Seq("-xprop=xmerge")
-          case Some(XProp.TMerge) => Seq("-xprop=tmerge")
-        },
-
-        Seq(
-          ("-CFLAGS", Seq(
-            commonSettings.optimizationStyle match {
-              case OptimizationStyle.Default => Seq()
-              case OptimizationStyle.OptimizeForCompilationSpeed => Seq("-O0")
-            },
-            
-            additionalHeaderPaths.map { path => s"-I${path}" },
-            
-            Seq(
-              // Enable VCS support
-              s"-D${svsim.Backend.enableVCSSupportFlag}",
-              // VCS engages in ASLR shenanigans
-              s"-D${svsim.Backend.engagesInASLRShenanigansFlag}",
-            )
-          )),
-        ).collect {
-          /// Only include flags that have more than one value
-          case (flag, value) if !value.isEmpty => Seq(flag, value.flatten.mkString(" "))
-        }.flatten,
-
-        backendSpecificSettings.traceSettings.compileFlags,
-        
-        Seq(
-          commonSettings.verilogPreprocessorDefines,
+      compilerInvocation = svsim.Backend.Parameters.Invocation(
+        arguments = Seq[Seq[String]](
           Seq(
-            VerilogPreprocessorDefine(svsim.Backend.supportsDelayInPublicFunctionsFlag)
+            "-full64", // Enable 64-bit compilation
+            "-sverilog", // Enable SystemVerilog
+            "-nc", // Do not emit copyright notice
+            // Specify resulting executable path
+            "-o", outputBinaryName, 
+            // Rename `main` so we use the `main` provided by `simulation-driver.cpp`
+            "-e", "simulation_main",
           ),
-          backendSpecificSettings.traceSettings.verilogPreprocessorDefines
-        ).flatten.map(_.toCommandlineArgument),
-      ).flatten,
-      compilerEnvironment = environment ++ Seq(
-        "VCS_HOME" -> vcsHome,
-        "LM_LICENSE_FILE" -> lmLicenseFile,
-      ) ++ backendSpecificSettings.traceSettings.environment,
-      simulationArguments = Seq(
-        backendSpecificSettings.simulationSettings.assertionSettings match {
-          case None                                          => Seq()
-          case Some(Backend.AssertGlobalMaxFailCount(count)) => Seq("-assert", s"global_finish_maxfail=$count")
-        },
-      ).flatten,
-      simulationEnvironment = environment
+
+          Seq(
+            ("-licqueue", backendSpecificSettings.waitForLicenseIfUnavailable),
+            ("+vcs+initreg+random", backendSpecificSettings.randomlyInitializeRegisters)
+          ).collect {
+            case (flag, true) => flag
+          },
+
+          commonSettings.defaultTimescale match {
+            case Some(Timescale.FromString(value)) => Seq(s"-timescale=$value")
+            case None => Seq()
+          },
+
+          commonSettings.availableParallelism match {
+            case AvailableParallelism.Default => Seq()
+            case AvailableParallelism.UpTo(value) => Seq(s"-j${value}")
+          },
+          
+          commonSettings.libraryExtensions match {
+            case None => Seq()
+            case Some(extensions) => Seq((Seq("+libext") ++ extensions).mkString("+"))
+          },
+
+          commonSettings.libraryPaths match {
+            case None => Seq()
+            case Some(paths) => paths.flatMap(Seq("-y", _))
+          },
+
+          backendSpecificSettings.xProp match {
+            case None => Seq()
+            case Some(XProp.XMerge) => Seq("-xprop=xmerge")
+            case Some(XProp.TMerge) => Seq("-xprop=tmerge")
+          },
+
+          Seq(
+            ("-CFLAGS", Seq(
+              commonSettings.optimizationStyle match {
+                case OptimizationStyle.Default => Seq()
+                case OptimizationStyle.OptimizeForCompilationSpeed => Seq("-O0")
+              },
+              
+              additionalHeaderPaths.map { path => s"-I${path}" },
+              
+              Seq(
+                // Enable VCS support
+                s"-D${svsim.Backend.HarnessCompilationFlags.enableVCSSupport}",
+                // VCS engages in ASLR shenanigans
+                s"-D${svsim.Backend.HarnessCompilationFlags.backendEngagesInASLRShenanigans}",
+              )
+            )),
+          ).collect {
+            /// Only include flags that have more than one value
+            case (flag, value) if !value.isEmpty => Seq(flag, value.flatten.mkString(" "))
+          }.flatten,
+
+          backendSpecificSettings.traceSettings.compileFlags,
+          
+          Seq(
+            commonSettings.verilogPreprocessorDefines,
+            Seq(
+              VerilogPreprocessorDefine(svsim.Backend.HarnessCompilationFlags.supportsDelayInPublicFunctions)
+            ),
+            backendSpecificSettings.traceSettings.verilogPreprocessorDefines
+          ).flatten.map(_.toCommandlineArgument),
+        ).flatten,
+        environment = environment ++ Seq(
+          "VCS_HOME" -> vcsHome,
+          "LM_LICENSE_FILE" -> lmLicenseFile,
+        ) ++ backendSpecificSettings.traceSettings.environment
+      ),
+      simulationInvocation = svsim.Backend.Parameters.Invocation(
+        arguments = Seq(
+          backendSpecificSettings.simulationSettings.assertionSettings match {
+            case None                                          => Seq()
+            case Some(Backend.AssertGlobalMaxFailCount(count)) => Seq("-assert", s"global_finish_maxfail=$count")
+          },
+        ).flatten,
+        environment = environment
+      )
     )
     //format: on
   }
