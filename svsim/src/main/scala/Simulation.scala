@@ -3,8 +3,8 @@
 package svsim
 
 import scala.collection.mutable.Queue
+import scala.util.Try
 import java.io.{BufferedReader, BufferedWriter, File, InputStreamReader, OutputStreamWriter}
-import scala.util.{Failure, Success, Try}
 
 final class Simulation private[svsim] (
   executableName:           String,
