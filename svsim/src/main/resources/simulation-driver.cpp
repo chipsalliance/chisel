@@ -35,8 +35,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
-#include <sys/personality.h>
 #include <unistd.h>
+
+#ifdef SVSIM_BACKEND_ENGAGES_IN_ASLR_SHENANIGANS
+#include <sys/personality.h>
+#endif
 
 #ifdef SVSIM_ENABLE_VERILATOR_SUPPORT
 #include "verilated-sources/VsvsimTestbench__Dpi.h"
