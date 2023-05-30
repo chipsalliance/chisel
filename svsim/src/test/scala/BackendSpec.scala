@@ -75,6 +75,21 @@ trait BackendSpec extends AnyFunSpec with Matchers {
         )
       }
 
+      it("fails with a trailing exception") {
+        final case class TrailingException() extends Throwable
+        assertThrows[TrailingException] {
+          simulation.run(
+            verbose = false,
+            executionScriptLimit = None
+          ) { controller =>
+            val clock = controller.port("clock")
+            clock.check { _ =>
+              throw TrailingException()
+            }
+          }
+        }
+      }
+
       it("simulates correctly") {
         simulation.run(
           verbose = false,
