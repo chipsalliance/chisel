@@ -3,6 +3,7 @@
 package svsim
 
 import scala.collection.mutable.Queue
+import scala.util.Try
 import java.io.{BufferedReader, BufferedWriter, File, InputStreamReader, OutputStreamWriter}
 
 final class Simulation private[svsim] (
@@ -45,20 +46,38 @@ final class Simulation private[svsim] (
       conservativeCommandResolution = conservativeCommandResolution,
       logMessagesAndCommands = verbose
     )
-    try {
-      val outcome = body(controller)
-      // If the process is still running, give it an opportunity to shut down gracefully
-      controller.sendCommand(Simulation.Command.Done)
-      // Make sure errors are thrown from async commands at the end of the test
+    val bodyOutcome = Try {
+      val result = body(controller)
+      // Exceptions thrown from commands still in the queue when `body` returns should supercede returning `result`
       controller.completeInFlightCommands()
-      process.waitFor()
-      if (process.exitValue() != 0) {
-        throw new Exception(s"Nonzero exit status: ${process.exitValue()}")
-      }
-      outcome
-    } finally {
-      process.destroyForcibly()
+      result
     }
+
+    // Always attempt graceful shutdown, even if `body` failed.
+    val gracefulShutdownOutcome = Try[Unit] {
+      // If the process is still running, give it an opportunity to shut down gracefully
+      if (process.isAlive()) {
+        controller.sendCommand(Simulation.Command.Done)
+        controller.completeInFlightCommands()
+        process.waitFor()
+      }
+    }
+
+    // Ensure process is destroyed prior to returning or throwing an exception
+    process.destroyForcibly()
+
+    // Exceptions thrown from `body` have the highest priority
+    val result = bodyOutcome.get
+
+    // Nonzero exit status supercedes graceful-shutdown exceptions
+    if (process.exitValue() != 0) {
+      throw new Exception(s"Nonzero exit status: ${process.exitValue()}")
+    }
+
+    // Issues during graceful shutdown are considered test failures
+    gracefulShutdownOutcome.get
+
+    result
   }
 
 }
@@ -70,7 +89,7 @@ object Simulation {
 
   /** @note Methods in this class and `Simulation.Port` are somewhat lazy in their execution. Specifically, methods returning `Unit` neither flush the command buffer, nor do they actively read from the message buffer. Only commands which return a value will wait to return until the simulation has progressed to the point where the value is available. This can improve performance by essentially enabling batching of both commands and messages. If you want to ensure that all commands have been sent to the simulation executable, you can call `completeInFlightCommands()`.
     */
-  class Controller private[Simulation] (
+  final class Controller private[Simulation] (
     commandWriter:                 BufferedWriter,
     messageReader:                 BufferedReader,
     moduleInfo:                    ModuleInfo,
