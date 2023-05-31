@@ -9,16 +9,14 @@ trait PeekPokeAPI {
   case class FailedExpectationException[T](observed: T, expected: T, message: String)
       extends Exception(s"Failed Expectation: Observed value '$observed' != $expected. $message")
 
-  private def currentContext() = Simulator.dynamicSimulationContext.value.get
-
   implicit class testableClock(clock: Clock) {
     def step(cycles: Int = 1): Unit = {
-      val context = currentContext()
-      context.willEvaluate()
+      val module = AnySimulatedModule.current
+      module.willEvaluate()
       if (cycles == 0) {
-        context.controller.run(0)
+        module.controller.run(0)
       } else {
-        val simulationPort = context.simulationPorts(clock)
+        val simulationPort = module.port(clock)
         simulationPort.tick(
           timestepsPerPhase = 1,
           maxCycles = cycles,
@@ -34,15 +32,15 @@ trait PeekPokeAPI {
       * Stops early if the `sentinelPort` is equal to the `sentinelValue`.
       */
     def stepUntil(sentinelPort: Data, sentinelValue: BigInt, maxCycles: Int): Unit = {
-      val context = currentContext()
-      context.willEvaluate()
-      val simulationPort = context.simulationPorts(clock)
+      val module = AnySimulatedModule.current
+      module.willEvaluate()
+      val simulationPort = module.port(clock)
       simulationPort.tick(
         timestepsPerPhase = 1,
         maxCycles = maxCycles,
         inPhaseValue = 0,
         outOfPhaseValue = 1,
-        sentinel = Some(context.simulationPorts(sentinelPort), sentinelValue)
+        sentinel = Some(module.port(sentinelPort), sentinelValue)
       )
     }
   }
@@ -113,15 +111,15 @@ trait PeekPokeAPI {
       poke(literal.litValue)
     }
     def poke(value: BigInt): Unit = {
-      val context = currentContext()
-      context.willPoke()
-      val simulationPort = context.simulationPorts(data)
+      val module = AnySimulatedModule.current
+      module.willPoke()
+      val simulationPort = module.port(data)
       simulationPort.set(value)
     }
     def peekValue(): Simulation.Value = {
-      val context = currentContext()
-      context.willPeek()
-      val simulationPort = context.simulationPorts(data)
+      val module = AnySimulatedModule.current
+      module.willPeek()
+      val simulationPort = module.port(data)
       simulationPort.get(isSigned = isSigned)
     }
     def expect[T](
@@ -129,9 +127,9 @@ trait PeekPokeAPI {
       encode:       (Simulation.Value) => T,
       buildMessage: (T, T) => String
     ): Unit = {
-      val context = currentContext()
-      context.willPeek()
-      val simulationPort = context.simulationPorts(data)
+      val module = AnySimulatedModule.current
+      module.willPeek()
+      val simulationPort = module.port(data)
       simulationPort.check(isSigned = isSigned) { observedValue =>
         val observed = encode(observedValue)
         if (observed != expected) throw FailedExpectationException(observed, expected, buildMessage(observed, expected))

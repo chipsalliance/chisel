@@ -129,7 +129,7 @@ object Simulation {
 
       val messageCode = readChar() match {
         case Some(c) => c
-        case None    => throw Simulation.UnexpectedEndOfMessages()
+        case None    => throw Simulation.UnexpectedEndOfMessages
       }
 
       def mustRead(char: Char) = {
@@ -337,7 +337,7 @@ object Simulation {
     case class Log(message: String) extends Message
   }
 
-  case class UnexpectedEndOfMessages() extends Exception
+  case object UnexpectedEndOfMessages extends Exception
 
   sealed trait Command
   object Command {

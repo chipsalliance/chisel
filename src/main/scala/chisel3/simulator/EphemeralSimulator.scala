@@ -20,7 +20,7 @@ object EphemeralSimulator extends PeekPokeAPI {
   )(body:   (T) => Unit
   ): Unit = {
     synchronized {
-      simulator.simulate(module)({ (_, dut) => body(dut) }).result
+      simulator.simulate(module)({ module => body(module.wrapped) }).result
     }
   }
 
