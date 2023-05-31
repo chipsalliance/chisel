@@ -23,9 +23,31 @@ class VCSSpec extends BackendSpec {
   }
 }
 
+/**
+  * A Backend trivially wrapping the Verilator backend to demonstrate custom out-of-package backends.
+  */
+case class CustomVerilatorBackend(actualBackend: verilator.Backend) extends Backend {
+  type CompilationSettings = verilator.Backend.CompilationSettings
+  def generateParameters(
+    outputBinaryName:        String,
+    topModuleName:           String,
+    additionalHeaderPaths:   Seq[String],
+    commonSettings:          CommonCompilationSettings,
+    backendSpecificSettings: CompilationSettings
+  ): Backend.Parameters = {
+    actualBackend.generateParameters(
+      outputBinaryName,
+      topModuleName,
+      additionalHeaderPaths,
+      commonSettings,
+      backendSpecificSettings
+    )
+  }
+}
+
 class VerilatorSpec extends BackendSpec {
   import verilator.Backend.CompilationSettings._
-  val backend = verilator.Backend.initializeFromProcessEnvironment()
+  val backend = CustomVerilatorBackend(verilator.Backend.initializeFromProcessEnvironment())
   val compilationSettings = verilator.Backend.CompilationSettings(
     traceStyle = Some(TraceStyle.Vcd(traceUnderscore = false))
   )
