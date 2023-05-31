@@ -484,7 +484,7 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
   )(
     implicit sourceInfo: SourceInfo
   ): T =
-    _readWrite_impl(idx, data, en, isWrite, clock, false)
+    _readWrite_impl(idx, data, en, isWrite, clock, true)
 
   /** @group SourceInfoTransformMacro */
   private def _readWrite_impl(
@@ -605,7 +605,7 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
   )(
     implicit evidence: T <:< Vec[_],
     sourceInfo:        SourceInfo
-  ) = masked_readWrite_impl(idx, writeData, mask, en, isWrite, clock, false)
+  ) = masked_readWrite_impl(idx, writeData, mask, en, isWrite, clock, true)
 
   private def masked_readWrite_impl(
     addr:    UInt,
