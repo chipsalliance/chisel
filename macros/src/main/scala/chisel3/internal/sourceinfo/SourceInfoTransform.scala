@@ -96,24 +96,24 @@ class MemTransform(val c: Context) extends SourceInfoTransformMacro {
     q"$thisObj.do_apply($size, $t, $ruw)($implicitSourceInfo)"
   }
   def apply_memInterface[T: c.WeakTypeTag](
-    size:    c.Tree,
-    tpe:     c.Tree,
-    numRd:   c.Tree,
-    numWr:   c.Tree,
-    numRdWr: c.Tree
+    size:              c.Tree,
+    tpe:               c.Tree,
+    numReadPorts:      c.Tree,
+    numWritePorts:     c.Tree,
+    numReadwritePorts: c.Tree
   ): c.Tree = {
-    q"$thisObj.do_apply($size, $tpe, $numRd, $numWr, $numRdWr)($implicitSourceInfo)"
+    q"$thisObj.do_apply($size, $tpe, $numReadPorts, $numWritePorts, $numReadwritePorts)($implicitSourceInfo)"
   }
 
   def masked_memInterface[T: c.WeakTypeTag](
-    size:     c.Tree,
-    tpe:      c.Tree,
-    numRd:    c.Tree,
-    numWr:    c.Tree,
-    numRdWr:  c.Tree
-  )(evidence: c.Tree
+    size:              c.Tree,
+    tpe:               c.Tree,
+    numReadPorts:      c.Tree,
+    numWritePorts:     c.Tree,
+    numReadwritePorts: c.Tree
+  )(evidence:          c.Tree
   ): c.Tree = {
-    q"$thisObj.do_masked($size, $tpe, $numRd, $numWr, $numRdWr)($implicitSourceInfo, $evidence)"
+    q"$thisObj.do_masked($size, $tpe, $numReadPorts, $numWritePorts, $numReadwritePorts)($implicitSourceInfo, $evidence)"
   }
 }
 

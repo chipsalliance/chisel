@@ -467,13 +467,13 @@ class SRAMSpec extends ChiselFunSpec {
             dontTouch(mem)
 
             for (i <- 0 until rd) {
-              mem.rd(i) := DontCare
+              mem.readPorts(i) := DontCare
             }
             for (i <- 0 until wr) {
-              mem.wr(i) := DontCare
+              mem.writePorts(i) := DontCare
             }
             for (i <- 0 until rw) {
-              mem.rw(i) := DontCare
+              mem.readwritePorts(i) := DontCare
             }
           }
           val chirrtl = ChiselStage.emitCHIRRTL(new TestModule(numRD, numWR, numRW), args = Array("--full-stacktrace"))
@@ -481,25 +481,25 @@ class SRAMSpec extends ChiselFunSpec {
           // Check that the chirrtl ports actually exist and the signals
           // are properly connected
           for (rd <- 0 until numRD) {
-            val rdPortName = s"mem_out_rd_${rd}_data_MPORT"
-            chirrtl should include(s"when mem.rd[$rd].enable")
+            val rdPortName = s"mem_out_readPorts_${rd}_data_MPORT"
+            chirrtl should include(s"when mem.readPorts[$rd].enable")
             chirrtl should include(s"read mport $rdPortName")
-            chirrtl should include(s"mem.rd[$rd].data <= $rdPortName")
+            chirrtl should include(s"mem.readPorts[$rd].data <= $rdPortName")
           }
 
           for (wr <- 0 until numWR) {
             val wrPortName = s"mem_MPORT${if (wr == 0) "" else s"_$wr"}"
-            chirrtl should include(s"when mem.wr[$wr].enable")
+            chirrtl should include(s"when mem.writePorts[$wr].enable")
             chirrtl should include(s"write mport $wrPortName")
-            chirrtl should include(s"$wrPortName <= mem.wr[$wr].data")
+            chirrtl should include(s"$wrPortName <= mem.writePorts[$wr].data")
           }
 
           for (rw <- 0 until numRW) {
-            val rwPortName = s"mem_out_rw_${rw}_readData_MPORT"
-            chirrtl should include(s"when mem.rw[$rw].enable")
+            val rwPortName = s"mem_out_readwritePorts_${rw}_readData_MPORT"
+            chirrtl should include(s"when mem.readwritePorts[$rw].enable")
             chirrtl should include(s"rdwr mport $rwPortName")
-            chirrtl should include(s"when mem.rw[$rw].isWrite")
-            chirrtl should include(s"$rwPortName <= mem.rw[$rw].writeData")
+            chirrtl should include(s"when mem.readwritePorts[$rw].isWrite")
+            chirrtl should include(s"$rwPortName <= mem.readwritePorts[$rw].writeData")
           }
         }
     }

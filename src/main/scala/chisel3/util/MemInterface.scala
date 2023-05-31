@@ -77,11 +77,17 @@ class MemoryReadWritePort[T <: Data] private[chisel3] (tpe: T, addrWidth: Int, m
   *
   * @tparam tpe The data type of the memory port
   * @param width The width of the address wires of each port
-  * @param numRd The number of read ports
-  * @param numWr The number of write ports
-  * @param numRdWr The number of read/write ports
+  * @param numReadPorts The number of read ports
+  * @param numWritePorts The number of write ports
+  * @param numReadwritePorts The number of read/write ports
   */
-class SRAMInterface[T <: Data](tpe: T, addrWidth: Int, numRd: Int, numWr: Int, numRdWr: Int, masked: Boolean)
+class SRAMInterface[T <: Data](
+  tpe:               T,
+  addrWidth:         Int,
+  numReadPorts:      Int,
+  numWritePorts:     Int,
+  numReadwritePorts: Int,
+  masked:            Boolean)
     extends Bundle {
   if (masked) {
     require(
@@ -89,11 +95,12 @@ class SRAMInterface[T <: Data](tpe: T, addrWidth: Int, numRd: Int, numWr: Int, n
       s"masked writes require that SRAMInterface is instantiated with a data type of Vec (got $tpe instead)"
     )
   }
-  override def typeName: String = s"SRAMInterface_${SRAM.portedness(numRd, numWr, numRdWr)}"
+  override def typeName: String = s"SRAMInterface_${SRAM.portedness(numReadPorts, numWritePorts, numReadwritePorts)}"
 
-  val rd: Vec[MemoryReadPort[T]] = Vec(numRd, new MemoryReadPort(tpe, addrWidth))
-  val wr: Vec[MemoryWritePort[T]] = Vec(numWr, new MemoryWritePort(tpe, addrWidth, masked))
-  val rw: Vec[MemoryReadWritePort[T]] = Vec(numRdWr, new MemoryReadWritePort(tpe, addrWidth, masked))
+  val readPorts:  Vec[MemoryReadPort[T]] = Vec(numReadPorts, new MemoryReadPort(tpe, addrWidth))
+  val writePorts: Vec[MemoryWritePort[T]] = Vec(numWritePorts, new MemoryWritePort(tpe, addrWidth, masked))
+  val readwritePorts: Vec[MemoryReadWritePort[T]] =
+    Vec(numReadwritePorts, new MemoryReadWritePort(tpe, addrWidth, masked))
 }
 
 object SRAM {
@@ -103,19 +110,19 @@ object SRAM {
     *
     * @param size The desired size of the inner `SyncReadMem`
     * @tparam T The data type of the memory element
-    * @param numRd The number of desired read ports, >= 0
-    * @param numWr The number of desired write ports, >= 0
-    * @param numRdWr The number of desired read/write ports, >= 0
+    * @param numReadPorts The number of desired read ports, >= 0
+    * @param numWritePorts The number of desired write ports, >= 0
+    * @param numReadwritePorts The number of desired read/write ports, >= 0
     *
     * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
     * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
     */
   def apply[T <: Data](
-    size:    BigInt,
-    tpe:     T,
-    numRd:   Int,
-    numWr:   Int,
-    numRdWr: Int
+    size:              BigInt,
+    tpe:               T,
+    numReadPorts:      Int,
+    numWritePorts:     Int,
+    numReadwritePorts: Int
   ): SRAMInterface[T] =
     macro MemTransform.apply_memInterface[T]
 
@@ -124,19 +131,19 @@ object SRAM {
     *
     * @param size The desired size of the inner `SyncReadMem`
     * @tparam T The data type of the memory element
-    * @param numRd The number of desired read ports, >= 0
-    * @param numWr The number of desired write ports, >= 0
-    * @param numRdWr The number of desired read/write ports, >= 0
+    * @param numReadPorts The number of desired read ports, >= 0
+    * @param numWritePorts The number of desired write ports, >= 0
+    * @param numReadwritePorts The number of desired read/write ports, >= 0
     *
     * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
     * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
     */
   def masked[T <: Data](
-    size:    BigInt,
-    tpe:     T,
-    numRd:   Int,
-    numWr:   Int,
-    numRdWr: Int
+    size:              BigInt,
+    tpe:               T,
+    numReadPorts:      Int,
+    numWritePorts:     Int,
+    numReadwritePorts: Int
   )(
     implicit evidence: T <:< Vec[_]
   ): SRAMInterface[T] =
@@ -144,64 +151,66 @@ object SRAM {
 
   /** @group SourceInfoTransformMacro */
   def do_apply[T <: Data](
-    size:    BigInt,
-    tpe:     T,
-    numRd:   Int,
-    numWr:   Int,
-    numRdWr: Int
+    size:              BigInt,
+    tpe:               T,
+    numReadPorts:      Int,
+    numWritePorts:     Int,
+    numReadwritePorts: Int
   )(
     implicit sourceInfo: SourceInfo
-  ): SRAMInterface[T] = memInterface_impl(size, tpe)(numRd, numWr, numRdWr, Builder.forcedClock)
+  ): SRAMInterface[T] =
+    memInterface_impl(size, tpe)(numReadPorts, numWritePorts, numReadwritePorts, Builder.forcedClock)
 
   /** @group SourceInfoTransformMacro */
   def do_masked[T <: Data](
-    size:    BigInt,
-    tpe:     T,
-    numRd:   Int,
-    numWr:   Int,
-    numRdWr: Int
+    size:              BigInt,
+    tpe:               T,
+    numReadPorts:      Int,
+    numWritePorts:     Int,
+    numReadwritePorts: Int
   )(
     implicit sourceInfo: SourceInfo,
     evidence:            T <:< Vec[_]
-  ): SRAMInterface[T] = masked_memInterface_impl(size, tpe)(numRd, numWr, numRdWr, Builder.forcedClock)
+  ): SRAMInterface[T] =
+    masked_memInterface_impl(size, tpe)(numReadPorts, numWritePorts, numReadwritePorts, Builder.forcedClock)
 
   /** @group SourceInfoTransformMacro */
   private def memInterface_impl[T <: Data](
-    size:    BigInt,
-    tpe:     T
-  )(numRd:   Int,
-    numWr:   Int,
-    numRdWr: Int,
-    clock:   Clock
+    size:              BigInt,
+    tpe:               T
+  )(numReadPorts:      Int,
+    numWritePorts:     Int,
+    numReadwritePorts: Int,
+    clock:             Clock
   )(
     implicit sourceInfo: SourceInfo
   ): SRAMInterface[T] = {
     val addrWidth = log2Up(size + 1)
 
-    val _out = Wire(new SRAMInterface(tpe, addrWidth, numRd, numWr, numRdWr, false))
+    val _out = Wire(new SRAMInterface(tpe, addrWidth, numReadPorts, numWritePorts, numReadwritePorts, false))
     val mem = SyncReadMem(size, tpe)
 
-    for (i <- 0 until numRd) {
-      _out.rd(i).data := mem.read(_out.rd(i).address, _out.rd(i).enable, _out.rd(i).clock)
-      _out.rd(i).clock :#= clock
+    for (i <- 0 until numReadPorts) {
+      _out.readPorts(i).data := mem.read(_out.readPorts(i).address, _out.readPorts(i).enable, _out.readPorts(i).clock)
+      _out.readPorts(i).clock :#= clock
     }
 
-    for (i <- 0 until numWr) {
-      when(_out.wr(i).enable) {
-        mem.write(_out.wr(i).address, _out.wr(i).data, _out.wr(i).clock)
+    for (i <- 0 until numWritePorts) {
+      when(_out.writePorts(i).enable) {
+        mem.write(_out.writePorts(i).address, _out.writePorts(i).data, _out.writePorts(i).clock)
       }
-      _out.wr(i).clock :#= clock
+      _out.writePorts(i).clock :#= clock
     }
 
-    for (i <- 0 until numRdWr) {
-      _out.rw(i).readData := mem.readWrite(
-        _out.rw(i).address,
-        _out.rw(i).writeData,
-        _out.rw(i).enable,
-        _out.rw(i).isWrite,
-        _out.rw(i).clock
+    for (i <- 0 until numReadwritePorts) {
+      _out.readwritePorts(i).readData := mem.readWrite(
+        _out.readwritePorts(i).address,
+        _out.readwritePorts(i).writeData,
+        _out.readwritePorts(i).enable,
+        _out.readwritePorts(i).isWrite,
+        _out.readwritePorts(i).clock
       )
-      _out.rw(i).clock :#= clock
+      _out.readwritePorts(i).clock :#= clock
     }
 
     _out
@@ -209,42 +218,47 @@ object SRAM {
 
   /** @group SourceInfoTransformMacro */
   private def masked_memInterface_impl[T <: Data](
-    size:    BigInt,
-    tpe:     T
-  )(numRd:   Int,
-    numWr:   Int,
-    numRdWr: Int,
-    clock:   Clock
+    size:              BigInt,
+    tpe:               T
+  )(numReadPorts:      Int,
+    numWritePorts:     Int,
+    numReadwritePorts: Int,
+    clock:             Clock
   )(
     implicit sourceInfo: SourceInfo,
     evidence:            T <:< Vec[_]
   ): SRAMInterface[T] = {
     val addrWidth = log2Up(size + 1)
 
-    val _out = Wire(new SRAMInterface(tpe, addrWidth, numRd, numWr, numRdWr, true))
+    val _out = Wire(new SRAMInterface(tpe, addrWidth, numReadPorts, numWritePorts, numReadwritePorts, true))
     val mem = SyncReadMem(size, tpe)
 
-    for (i <- 0 until numRd) {
-      _out.rd(i).clock :#= clock
-      _out.rd(i).data := mem.read(_out.rd(i).address, _out.rd(i).enable, _out.rd(i).clock)
+    for (i <- 0 until numReadPorts) {
+      _out.readPorts(i).clock :#= clock
+      _out.readPorts(i).data := mem.read(_out.readPorts(i).address, _out.readPorts(i).enable, _out.readPorts(i).clock)
     }
 
-    for (i <- 0 until numWr) {
-      _out.wr(i).clock :#= clock
-      when(_out.wr(i).enable) {
-        mem.write(_out.wr(i).address, _out.wr(i).data, _out.wr(i).mask.get, _out.wr(i).clock)
+    for (i <- 0 until numWritePorts) {
+      _out.writePorts(i).clock :#= clock
+      when(_out.writePorts(i).enable) {
+        mem.write(
+          _out.writePorts(i).address,
+          _out.writePorts(i).data,
+          _out.writePorts(i).mask.get,
+          _out.writePorts(i).clock
+        )
       }
     }
 
-    for (i <- 0 until numRdWr) {
-      _out.rw(i).clock := clock
-      _out.rw(i).readData := mem.readWrite(
-        _out.rw(i).address,
-        _out.rw(i).writeData,
-        _out.rw(i).mask.get,
-        _out.rw(i).enable,
-        _out.rw(i).isWrite,
-        _out.rw(i).clock
+    for (i <- 0 until numReadwritePorts) {
+      _out.readwritePorts(i).clock := clock
+      _out.readwritePorts(i).readData := mem.readWrite(
+        _out.readwritePorts(i).address,
+        _out.readwritePorts(i).writeData,
+        _out.readwritePorts(i).mask.get,
+        _out.readwritePorts(i).enable,
+        _out.readwritePorts(i).isWrite,
+        _out.readwritePorts(i).clock
       )
     }
 
