@@ -95,26 +95,6 @@ class MemTransform(val c: Context) extends SourceInfoTransformMacro {
   def apply_ruw[T: c.WeakTypeTag](size: c.Tree, t: c.Tree, ruw: c.Tree): c.Tree = {
     q"$thisObj.do_apply($size, $t, $ruw)($implicitSourceInfo)"
   }
-  def apply_memInterface[T: c.WeakTypeTag](
-    size:              c.Tree,
-    tpe:               c.Tree,
-    numReadPorts:      c.Tree,
-    numWritePorts:     c.Tree,
-    numReadwritePorts: c.Tree
-  ): c.Tree = {
-    q"$thisObj.do_apply($size, $tpe, $numReadPorts, $numWritePorts, $numReadwritePorts)($implicitSourceInfo)"
-  }
-
-  def masked_memInterface[T: c.WeakTypeTag](
-    size:              c.Tree,
-    tpe:               c.Tree,
-    numReadPorts:      c.Tree,
-    numWritePorts:     c.Tree,
-    numReadwritePorts: c.Tree
-  )(evidence:          c.Tree
-  ): c.Tree = {
-    q"$thisObj.do_masked($size, $tpe, $numReadPorts, $numWritePorts, $numReadwritePorts)($implicitSourceInfo, $evidence)"
-  }
 }
 
 // Workaround for https://github.com/sbt/sbt/issues/3966

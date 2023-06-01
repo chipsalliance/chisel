@@ -123,8 +123,10 @@ object SRAM {
     numReadPorts:      Int,
     numWritePorts:     Int,
     numReadwritePorts: Int
+  )(
+    implicit sourceInfo: SourceInfo
   ): SRAMInterface[T] =
-    macro MemTransform.apply_memInterface[T]
+    memInterface_impl(size, tpe)(numReadPorts, numWritePorts, numReadwritePorts, Builder.forcedClock)
 
   /** Generates a [[SyncReadMem]] within the current module, connected to an explicit number
     * of read, write, and read/write ports, with masking capability on all write and read/write ports.
@@ -145,34 +147,10 @@ object SRAM {
     numWritePorts:     Int,
     numReadwritePorts: Int
   )(
-    implicit evidence: T <:< Vec[_]
-  ): SRAMInterface[T] =
-    macro MemTransform.masked_memInterface[T]
-
-  /** @group SourceInfoTransformMacro */
-  def do_apply[T <: Data](
-    size:              BigInt,
-    tpe:               T,
-    numReadPorts:      Int,
-    numWritePorts:     Int,
-    numReadwritePorts: Int
-  )(
-    implicit sourceInfo: SourceInfo
+    implicit evidence: T <:< Vec[_],
+    sourceInfo:        SourceInfo
   ): SRAMInterface[T] =
     memInterface_impl(size, tpe)(numReadPorts, numWritePorts, numReadwritePorts, Builder.forcedClock)
-
-  /** @group SourceInfoTransformMacro */
-  def do_masked[T <: Data](
-    size:              BigInt,
-    tpe:               T,
-    numReadPorts:      Int,
-    numWritePorts:     Int,
-    numReadwritePorts: Int
-  )(
-    implicit sourceInfo: SourceInfo,
-    evidence:            T <:< Vec[_]
-  ): SRAMInterface[T] =
-    masked_memInterface_impl(size, tpe)(numReadPorts, numWritePorts, numReadwritePorts, Builder.forcedClock)
 
   /** @group SourceInfoTransformMacro */
   private def memInterface_impl[T <: Data](
