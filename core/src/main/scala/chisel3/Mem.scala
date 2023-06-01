@@ -475,7 +475,7 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (t: T, n: BigInt, val readU
     implicit sourceInfo: SourceInfo,
     compileOptions:      CompileOptions
   ): T =
-    _readWrite_impl(idx, data, en, isWrite, clock, true)
+    _readWrite_impl(idx, data, en, isWrite, clock, false)
 
   /** @group SourceInfoTransformMacro */
   private def _readWrite_impl(
@@ -578,9 +578,14 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (t: T, n: BigInt, val readU
     clock:     Clock
   )(
     implicit evidence: T <:< Vec[_],
+<<<<<<< HEAD
     sourceInfo:        SourceInfo,
     compileOptions:    CompileOptions
   ): T = masked_readWrite_impl(idx, writeData, mask, en, isWrite, clock, true)
+=======
+    sourceInfo:        SourceInfo
+  ) = masked_readWrite_impl(idx, writeData, mask, en, isWrite, clock, false)
+>>>>>>> 9e392013b (Don't emit implicit clock warnings when an explicit clock is used (#3313))
 
   private def masked_readWrite_impl(
     addr:    UInt,
