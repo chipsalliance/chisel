@@ -578,14 +578,9 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (t: T, n: BigInt, val readU
     clock:     Clock
   )(
     implicit evidence: T <:< Vec[_],
-<<<<<<< HEAD
     sourceInfo:        SourceInfo,
     compileOptions:    CompileOptions
-  ): T = masked_readWrite_impl(idx, writeData, mask, en, isWrite, clock, true)
-=======
-    sourceInfo:        SourceInfo
-  ) = masked_readWrite_impl(idx, writeData, mask, en, isWrite, clock, false)
->>>>>>> 9e392013b (Don't emit implicit clock warnings when an explicit clock is used (#3313))
+  ): T = masked_readWrite_impl(idx, writeData, mask, en, isWrite, clock, false)
 
   private def masked_readWrite_impl(
     addr:    UInt,
