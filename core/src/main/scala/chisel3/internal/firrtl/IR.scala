@@ -311,6 +311,8 @@ abstract class Definition extends Command {
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class DefPrim[T <: Data](sourceInfo: SourceInfo, id: T, op: PrimOp, args: Arg*) extends Definition
 
+private[chisel3] case class DefNode[T <: Data](sourceInfo: SourceInfo, id: T, rvalue: Arg) extends Definition
+
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class DefInvalid(sourceInfo: SourceInfo, arg: Arg) extends Command
 

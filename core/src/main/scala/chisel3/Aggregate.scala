@@ -353,13 +353,24 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
       case ActualDirection.Bidirectional(ActualDirection.Flipped) => SpecifiedDirection.Flip
       case ActualDirection.Empty                                  => SpecifiedDirection.Unspecified
     }
-    // TODO port technically isn't directly child of this data structure, but the result of some
-    // muxes / demuxes. However, this does make access consistent with the top-level bindings.
-    // Perhaps there's a cleaner way of accomplishing this...
-    port.bind(ChildBinding(this), reconstructedResolvedDirection)
 
-    val i = Vec.truncateIndex(p, length)(UnlocatableSourceInfo)
+    val i = Vec.truncateIndex(p, length)
     port.setRef(this, i)
+
+    // For read dynamic indexes, we want to materialize a node, will be unused for writes
+    // Because port can be used as both an lvalue and an rvalue, we cannot just return the node, but for
+    // cases where it is used as an rvalue, we want a node to give it a good name
+    // The approach here is to create a special node that is pointed to by the SubAccessBinding so that
+    // we can forward any attempts to name or annotate the subaccess and return the node when an rvalue is requested.
+    // The node itself also has a reference to the subaccess to generate the actual FIRRTL of the subaccess
+    // Thus we have a weird circular dependency where the node refers to the subaccess and the subaccess binding refers to the node.
+    val rvalue = gen
+    rvalue.bind(OpBinding(Builder.forcedUserModule, Builder.currentWhen))
+    val node = DefNode(UnlocatableSourceInfo, rvalue, Node(port))
+    Builder.pushCommand(node)
+
+    val portBinding = SubAccessBinding(this, rvalue)
+    port.bind(portBinding, reconstructedResolvedDirection)
 
     port
   }

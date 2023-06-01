@@ -312,7 +312,18 @@ private[chisel3] trait HasId extends chisel3.InstanceId {
     case Some(ViewParent) => reifyTarget.map(_.instanceName).getOrElse(this.refName(ViewParent.fakeComponent))
     case Some(p) =>
       (p._component, this) match {
-        case (Some(c), _) => refName(c)
+        case (Some(c), _) =>
+          // Hack for annotating dynamic indices, grab the memoized rvalue node
+          // TODO do we need similar handling in the "None if _ref.isDefined" case?
+          val target = this match {
+            case d: Data =>
+              d.topBindingOpt match {
+                case Some(SubAccessBinding(_, rvalue)) => rvalue
+                case _                                 => this
+              }
+            case _ => this
+          }
+          target.refName(c)
         case (None, d: Data) if d.topBindingOpt == Some(CrossModuleBinding) => _ref.get.localName
         case (None, _: MemBase[_]) => _ref.get.localName
         case (None, _) if _ref.isDefined => {
@@ -362,7 +373,6 @@ private[chisel3] trait NamedComponent extends HasId {
     * @note Should not be called until circuit elaboration is complete
     */
   final def toNamed: ComponentName = {
-    assertValidTarget()
     ComponentName(this.instanceName, ModuleName(this.parentModName, CircuitName(this.circuitName)))
   }
 
@@ -370,7 +380,6 @@ private[chisel3] trait NamedComponent extends HasId {
     * @note Should not be called until circuit elaboration is complete
     */
   final def toTarget: ReferenceTarget = {
-    assertValidTarget()
     val name = this.instanceName
     if (!validComponentName(name)) throwException(s"Illegal component name: $name (note: literals are illegal)")
     import _root_.firrtl.annotations.{Target, TargetToken}
@@ -413,21 +422,6 @@ private[chisel3] trait NamedComponent extends HasId {
       case Some(ViewParent) => makeTarget(reifyParent)
       case Some(parent)     => makeTarget(parent)
       case None             => localTarget
-    }
-  }
-
-  private def assertValidTarget(): Unit = {
-    val isVecSubaccess = getOptionRef.map {
-      case Index(_, _: ULit) => true // Vec literal indexing
-      case Index(_, _: Node) => true // Vec dynamic indexing
-      case _ => false
-    }.getOrElse(false)
-
-    if (isVecSubaccess) {
-      throwException(
-        s"You cannot target Vec subaccess" + _errorContext +
-          ". Instead, assign it to a temporary (for example, with WireInit) and target the temporary."
-      )
     }
   }
 }

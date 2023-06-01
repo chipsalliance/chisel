@@ -120,6 +120,12 @@ case class ChildBinding(parent: Data) extends Binding {
   def location: Option[BaseModule] = parent.topBinding.location
 }
 
+// TODO need to store visibility and enclosure (although rvalue's parent is the enclosure) so that we can check
+// and not return the rvalue when it is out of lexical scope
+private[chisel3] case class SubAccessBinding(parent: Data, var rvalue: Data) extends TopBinding {
+  def location: Option[BaseModule] = parent.topBinding.location
+}
+
 /** Special binding for Vec.sample_element */
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class SampleElementBinding[T <: Data](parent: Vec[T]) extends Binding {
