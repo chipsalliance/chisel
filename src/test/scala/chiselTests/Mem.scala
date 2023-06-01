@@ -460,7 +460,14 @@ class SRAMSpec extends ChiselFunSpec {
 
     portCombos.foreach {
       case (numRD, numWR, numRW) =>
-        it(s"should generate a ${SRAM.portedness(numRD, numWR, numRW)} memory") {
+        val portedness: String = {
+          val rdPorts: String = if (numRD > 0) s"${numRD}R" else ""
+          val wrPorts: String = if (numWR > 0) s"${numWR}W" else ""
+          val rwPorts: String = if (numRW > 0) s"${numRW}RW" else ""
+
+          s"$rdPorts$wrPorts$rwPorts"
+        }
+        it(s"should generate a $portedness memory") {
           class TestModule(val rd: Int, val wr: Int, val rw: Int) extends Module {
             val mem = SRAM(32, UInt(8.W), rd, wr, rw)
 
@@ -512,27 +519,27 @@ class SRAMSpec extends ChiselFunSpec {
       dontTouch(mem)
 
       for (i <- 0 until wr) {
-        mem.wr(i) := DontCare
+        mem.writePorts(i) := DontCare
       }
       for (i <- 0 until rw) {
-        mem.rw(i) := DontCare
+        mem.readwritePorts(i) := DontCare
       }
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new TestModule(1, 1), args = Array("--full-stacktrace"))
 
     chirrtl should include(
-      "wr : { flip address : UInt<6>, flip enable : UInt<1>, flip data : UInt<8>[3], flip mask : UInt<1>[3], flip clock : Clock}[1]"
+      "writePorts : { flip address : UInt<6>, flip enable : UInt<1>, flip data : UInt<8>[3], flip mask : UInt<1>[3], flip clock : Clock}[1]"
     )
     chirrtl should include(
-      "rw : { flip address : UInt<6>, flip enable : UInt<1>, flip isWrite : UInt<1>, readData : UInt<8>[3], flip writeData : UInt<8>[3], flip mask : UInt<1>[3], flip clock : Clock}[1]"
+      "readwritePorts : { flip address : UInt<6>, flip enable : UInt<1>, flip isWrite : UInt<1>, readData : UInt<8>[3], flip writeData : UInt<8>[3], flip mask : UInt<1>[3], flip clock : Clock}[1]"
     )
 
     for (i <- 0 until 3) {
-      chirrtl should include(s"when mem.wr[0].mask[$i]")
-      chirrtl should include(s"mem_MPORT[$i] <= mem.wr[0].data[$i]")
+      chirrtl should include(s"when mem.writePorts[0].mask[$i]")
+      chirrtl should include(s"mem_MPORT[$i] <= mem.writePorts[0].data[$i]")
 
-      chirrtl should include(s"when mem.rw[0].mask[$i]")
-      chirrtl should include(s"mem_out_rw_0_readData_MPORT[$i] <= mem.rw[0].writeData[$i]")
+      chirrtl should include(s"when mem.readwritePorts[0].mask[$i]")
+      chirrtl should include(s"mem_out_readwritePorts_0_readData_MPORT[$i] <= mem.readwritePorts[0].writeData[$i]")
     }
   }
 }

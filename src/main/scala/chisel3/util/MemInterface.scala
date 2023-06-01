@@ -267,7 +267,7 @@ object SRAM {
 
   // Helper util to generate portedness descriptors based on the input parameters
   // supplied to SRAM.apply
-  def portedness(rd: Int, wr: Int, rw: Int): String = {
+  private[chisel3] def portedness(rd: Int, wr: Int, rw: Int): String = {
     val rdPorts: String = if (rd > 0) s"${rd}R" else ""
     val wrPorts: String = if (wr > 0) s"${wr}W" else ""
     val rwPorts: String = if (rw > 0) s"${rw}RW" else ""
