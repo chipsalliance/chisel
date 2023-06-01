@@ -40,7 +40,7 @@ a hardware compiler framework implemented by [LLVM CIRCT](https://github.com/llv
 [![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/chipsalliance/chisel.svg?include_prereleases&sort=semver)](https://github.com/chipsalliance/chisel/releases/latest)
 [![Scala version support](https://index.scala-lang.org/chipsalliance/chisel/chisel/latest-by-scala-version.svg?platform=jvm)](https://index.scala-lang.org/chipsalliance/chisel/chisel)
 [![Scala version support (chisel3)](https://index.scala-lang.org/chipsalliance/chisel/chisel3/latest-by-scala-version.svg?platform=jvm)](https://index.scala-lang.org/chipsalliance/chisel/chisel3)
-[![Sonatype Snapshots](https://img.shields.io/nexus/s/org.chipsalliance/chisel_2.13?server=https%3A%2F%2Fs01.oss.sonatype.org)](https://oss.sonatype.org/content/repositories/snapshots/org/chipsalliance/)
+[![Sonatype Snapshots](https://img.shields.io/nexus/s/org.chipsalliance/chisel_2.13?server=https%3A%2F%2Fs01.oss.sonatype.org)](https://s01.oss.sonatype.org/content/repositories/snapshots/org/chipsalliance/chisel_2.13)
 
 ## What does Chisel code look like?
 
