@@ -317,6 +317,12 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
     requireIsHardware(this, "vec")
     requireIsHardware(p, "vec index")
 
+    // Don't bother with complex dynamic indexing logic when the index is a literal and therefore static
+    p.litOption match {
+      case Some(idx) if idx < length => return this.apply(idx.intValue)
+      case _                         => // Fall through to control flow below
+    }
+
     // Special handling for views
     if (isView(this)) {
       reifySingleData(this) match {
