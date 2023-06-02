@@ -384,4 +384,24 @@ class VecSpec extends ChiselPropSpec with Utils {
       chirrtl should include("reg reg : { }[4]")
     }
   }
+
+  property("Vecs should emit static indices when indexing with a literal UInt") {
+    val chirrtl = emitCHIRRTL(new RawModule {
+      val vec = IO(Input(Vec(4, UInt(8.W))))
+      val out = IO(Output(UInt(8.W)))
+      out := vec(1.U)
+    })
+    chirrtl should include("out <= vec[1]")
+  }
+
+  // This is checking existing behavior, not because it's good but because we accidentally broke it.
+  // This behavior is slated to be deprecated and removed.
+  property("Vecs should support out-of-bounds dynamic indices") {
+    val chirrtl = emitCHIRRTL(new RawModule {
+      val vec = IO(Input(Vec(4, UInt(8.W))))
+      val out = IO(Output(UInt(8.W)))
+      out := vec(10.U)
+    })
+    chirrtl should include("""out <= vec[UInt<2>("h2")]""")
+  }
 }

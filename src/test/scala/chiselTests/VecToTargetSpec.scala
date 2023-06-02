@@ -72,7 +72,7 @@ class VecToTargetSpec extends ChiselFunSpec with VecToTargetSpecUtils {
     }
 
     describe("with a Chisel literal") {
-      (it should behave).like(conversionFails(foo.vecSubaccessChiselLit))
+      (it should behave).like(conversionSucceeds(foo.vecSubaccessChiselLit))
     }
 
     describe("with a Node") {
