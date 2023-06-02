@@ -310,17 +310,32 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
 
   /** Creates a dynamically indexed read or write accessor into the array.
     */
-  override def apply(p: UInt): T = macro CompileOptionsTransform.pArg
+  override def apply(p: UInt): T = macro SourceInfoTransform.pArg
 
   /** @group SourceInfoTransformMacro */
-  def do_apply(p: UInt)(implicit compileOptions: CompileOptions): T = {
+  def do_apply(p: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     requireIsHardware(this, "vec")
     requireIsHardware(p, "vec index")
 
     // Don't bother with complex dynamic indexing logic when the index is a literal and therefore static
+    // We also don't want to warn on literals that are "too small"
     p.litOption match {
       case Some(idx) if idx < length => return this.apply(idx.intValue)
       case _                         => // Fall through to control flow below
+    }
+
+    if (length == 0) {
+      Builder.warning(s"Cannot extract from Vec of size 0.")
+    } else {
+      p.widthOption.foreach { pWidth =>
+        val correctWidth = BigInt(length - 1).bitLength
+        def warn(msg: String) =
+          Builder.warning(
+            s"Dynamic index with width $pWidth is too $msg for Vec of size $length (expected index width $correctWidth)."
+          )
+        if (pWidth > correctWidth) warn("wide")
+        else if (pWidth < correctWidth) warn("narrow")
+      }
     }
 
     // Special handling for views
@@ -865,10 +880,13 @@ object VecInit extends SourceInfoDoc {
   * operations.
   */
 trait VecLike[T <: Data] extends IndexedSeq[T] with HasId with SourceInfoDoc {
-  def apply(p: UInt): T = macro CompileOptionsTransform.pArg
+
+  /** Creates a dynamically indexed read or write accessor into the array.
+    */
+  def apply(p: UInt): T = macro SourceInfoTransform.pArg
 
   /** @group SourceInfoTransformMacro */
-  def do_apply(p: UInt)(implicit compileOptions: CompileOptions): T
+  def do_apply(p: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T
 
   // IndexedSeq has its own hashCode/equals that we must not use
   override def hashCode: Int = super[HasId].hashCode

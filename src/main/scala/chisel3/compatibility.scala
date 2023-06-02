@@ -828,11 +828,11 @@ package object Chisel {
     import chisel3.experimental.DeprecatedSourceInfo
 
     @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
-    def read(idx: UInt)(implicit compileOptions: CompileOptions): T = a.do_apply(idx)(compileOptions)
+    def read(idx: UInt)(implicit compileOptions: CompileOptions): T = a.do_apply(idx)(DeprecatedSourceInfo, compileOptions)
 
     @deprecated("Chisel compatibility mode is deprecated. Use the chisel3 package instead.", "Chisel 3.6")
     def write(idx: UInt, data: T)(implicit compileOptions: CompileOptions): Unit =
-      a.do_apply(idx)(compileOptions).:=(data)(DeprecatedSourceInfo, compileOptions)
+      a.do_apply(idx)(DeprecatedSourceInfo, compileOptions).:=(data)(DeprecatedSourceInfo, compileOptions)
 
   }
 
