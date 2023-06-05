@@ -150,7 +150,7 @@ object SRAM {
     implicit evidence: T <:< Vec[_],
     sourceInfo:        SourceInfo
   ): SRAMInterface[T] =
-    memInterface_impl(size, tpe)(numReadPorts, numWritePorts, numReadwritePorts, Builder.forcedClock)
+    masked_memInterface_impl(size, tpe)(numReadPorts, numWritePorts, numReadwritePorts, Builder.forcedClock)
 
   private def memInterface_impl[T <: Data](
     size:              BigInt,
