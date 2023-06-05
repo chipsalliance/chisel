@@ -198,16 +198,13 @@ private[chisel3] object cloneSupertype {
 
 // Returns pairs of all fields, element-level and containers, in a Record and their path names
 private[chisel3] object getRecursiveFields {
-  def noPath(data:       Data): Seq[Data] = DataMirror.collectAllMembers(data)
-  def lazilyNoPath(data: Data): Seq[Data] = noPath(data).map {
-    case x => LazyList(x)
-  }.fold(LazyList()) { _ ++ _ }
+  def noPath(data:       Data): Seq[Data] = lazilyNoPath(data).toVector
+  def lazilyNoPath(data: Data): Iterable[Data] = DataMirror.collectMembers(data) { case x => x }
 
-  def apply(data: Data, path: String): Seq[(Data, String)] =
-    DataMirror.collectMembersAndPaths(data, path) { case x => x }.toSeq
-  def lazily(data: Data, path: String): Seq[(Data, String)] = apply(data, path).map {
-    case x => LazyList(x)
-  }.fold(LazyList()) { _ ++ _ }
+  def apply(data:  Data, path: String): Seq[(Data, String)] = lazily(data, path).toVector
+  def lazily(data: Data, path: String): Iterable[(Data, String)] = DataMirror.collectMembersAndPaths(data) {
+    case x => x
+  }
 }
 
 // Returns pairs of corresponding fields between two Records of the same type
