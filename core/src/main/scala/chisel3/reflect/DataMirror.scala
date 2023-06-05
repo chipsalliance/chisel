@@ -237,22 +237,24 @@ object DataMirror {
     d:         Data,
     path:      String = ""
   )(collector: PartialFunction[Data, T]
-  ): Iterable[(T, String)] = {
-    val myItems = collector.lift(d).map { x => (x -> path) }
-    val deepChildrenItems = d match {
-      case a: Record =>
-        a._elements.flatMap {
-          case (fieldName, fieldData) =>
-            collectMembersAndPaths(fieldData, s"$path.$fieldName")(collector)
-        }
-      case a: Vec[_] =>
-        a.elementsIterator.zipWithIndex.flatMap {
-          case (fieldData, fieldIndex) =>
-            collectMembersAndPaths(fieldData, s"$path($fieldIndex)")(collector)
-        }
-      case other => Nil
+  ): Iterable[(T, String)] = new Iterable[(T, String)] {
+    def iterator = {
+      val myItems = collector.lift(d).map { x => (x -> path) }
+      val deepChildrenItems = d match {
+        case a: Record =>
+          a._elements.iterator.flatMap {
+            case (fieldName, fieldData) =>
+              collectMembersAndPaths(fieldData, s"$path.$fieldName")(collector)
+          }
+        case a: Vec[_] =>
+          a.elementsIterator.zipWithIndex.flatMap {
+            case (fieldData, fieldIndex) =>
+              collectMembersAndPaths(fieldData, s"$path($fieldIndex)")(collector)
+          }
+        case other => Nil
+      }
+      myItems.iterator ++ deepChildrenItems
     }
-    myItems ++ deepChildrenItems
   }
 
   /** Collects all fields selected by collector within a data and all recursive children fields
@@ -262,13 +264,15 @@ object DataMirror {
     * @param collector Collector partial function to pick which components to collect
     * @tparam T Type of the component that will be collected
     */
-  def collectMembers[T](d: Data)(collector: PartialFunction[Data, T]): Iterable[T] = {
-    val myItems = collector.lift(d)
-    val deepChildrenItems = d match {
-      case a: Aggregate => a.elementsIterator.flatMap { x => collectMembers(x)(collector) }
-      case other => Nil
+  def collectMembers[T](d: Data)(collector: PartialFunction[Data, T]): Iterable[T] = new Iterable[T] {
+    def iterator = {
+      val myItems = collector.lift(d)
+      val deepChildrenItems = d match {
+        case a: Aggregate => a.elementsIterator.flatMap { x => collectMembers(x)(collector) }
+        case other => Nil
+      }
+      myItems.iterator ++ deepChildrenItems
     }
-    myItems ++ deepChildrenItems
   }
 
   // Alignment-aware collections
