@@ -152,7 +152,6 @@ object SRAM {
   ): SRAMInterface[T] =
     memInterface_impl(size, tpe)(numReadPorts, numWritePorts, numReadwritePorts, Builder.forcedClock)
 
-  /** @group SourceInfoTransformMacro */
   private def memInterface_impl[T <: Data](
     size:              BigInt,
     tpe:               T
@@ -194,7 +193,6 @@ object SRAM {
     _out
   }
 
-  /** @group SourceInfoTransformMacro */
   private def masked_memInterface_impl[T <: Data](
     size:              BigInt,
     tpe:               T
