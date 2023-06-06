@@ -115,6 +115,7 @@ lazy val pluginScalaVersions = Seq(
   "2.12.15",
   "2.12.16",
   "2.12.17",
+  "2.12.18",
   "2.13.0",
   "2.13.1",
   "2.13.2",
@@ -126,6 +127,10 @@ lazy val pluginScalaVersions = Seq(
   "2.13.8",
   "2.13.9",
   "2.13.10",
+<<<<<<< HEAD
+=======
+  "2.13.11"
+>>>>>>> b22c3ba2c (Add Scala 2.13.11 and 2.12.18 to plugin cross versions (#3327))
 )
 
 lazy val plugin = (project in file("plugin")).
