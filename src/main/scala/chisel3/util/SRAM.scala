@@ -92,7 +92,7 @@ class SRAMInterface[T <: Data](
       s"masked writes require that SRAMInterface is instantiated with a data type of Vec (got $tpe instead)"
     )
   }
-  override def typeName: String = s"SRAMInterface_${SRAM.portedness(numReadPorts, numWritePorts, numReadwritePorts)}"
+  override def typeName: String = s"SRAMInterface_${SRAM.portedness(numReadPorts, numWritePorts, numReadwritePorts)}${if(masked) "_masked" else ""}}_${tpe.typeName}"
 
   val readPorts:  Vec[MemoryReadPort[T]] = Vec(numReadPorts, new MemoryReadPort(tpe, addrWidth))
   val writePorts: Vec[MemoryWritePort[T]] = Vec(numWritePorts, new MemoryWritePort(tpe, addrWidth, masked))
