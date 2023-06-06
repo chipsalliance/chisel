@@ -103,16 +103,19 @@ class SRAMInterface[T <: Data](
 object SRAM {
 
   /** Generates a [[SyncReadMem]] within the current module, connected to an explicit number
-    * of read, write, and read/write ports
+    * of read, write, and read/write ports. This SRAM abstraction has both read and write capabilities: that is,
+    * it contains at least one read accessor (a read-only or read-write port), and at least one write accessor
+    * (a write-only or read-write port).
     *
     * @param size The desired size of the inner `SyncReadMem`
     * @tparam T The data type of the memory element
-    * @param numReadPorts The number of desired read ports, >= 0
-    * @param numWritePorts The number of desired write ports, >= 0
-    * @param numReadwritePorts The number of desired read/write ports, >= 0
+    * @param numReadPorts The number of desired read ports >= 0, and (numReadPorts + numReadwritePorts) > 0
+    * @param numWritePorts The number of desired write ports >= 0, and (numWritePorts + numReadwritePorts) > 0
+    * @param numReadwritePorts The number of desired read/write ports >= 0, and the above two conditions must hold
     *
     * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
     * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
+    * @note Read-only memories (R >= 1, W === 0, RW === 0) and write-only memories (R === 0, W >= 1, RW === 0) are not supported by this API, and will result in an error if declared.
     */
   def apply[T <: Data](
     size:              BigInt,
@@ -127,15 +130,18 @@ object SRAM {
 
   /** Generates a [[SyncReadMem]] within the current module, connected to an explicit number
     * of read, write, and read/write ports, with masking capability on all write and read/write ports.
+    * This SRAM abstraction has both read and write capabilities: that is, it contains at least one read
+    * accessor (a read-only or read-write port), and at least one write accessor (a write-only or read-write port).
     *
     * @param size The desired size of the inner `SyncReadMem`
     * @tparam T The data type of the memory element
-    * @param numReadPorts The number of desired read ports, >= 0
-    * @param numWritePorts The number of desired write ports, >= 0
-    * @param numReadwritePorts The number of desired read/write ports, >= 0
+    * @param numReadPorts The number of desired read ports >= 0, and (numReadPorts + numReadwritePorts) > 0
+    * @param numWritePorts The number of desired write ports >= 0, and (numWritePorts + numReadwritePorts) > 0
+    * @param numReadwritePorts The number of desired read/write ports >= 0, and the above two conditions must hold
     *
     * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
     * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
+    * @note Read-only memories (R >= 1, W === 0, RW === 0) and write-only memories (R === 0, W >= 1, RW === 0) are not supported by this API, and will result in an error if declared.
     */
   def masked[T <: Data](
     size:              BigInt,
@@ -159,6 +165,19 @@ object SRAM {
   )(
     implicit sourceInfo: SourceInfo
   ): SRAMInterface[T] = {
+    val isValidSRAM = ((numReadPorts + numReadwritePorts) > 0) && ((numWritePorts + numReadwritePorts) > 0)
+
+    if (!isValidSRAM) {
+      val badMemory =
+        if (numReadPorts + numReadwritePorts == 0)
+          "write-only SRAM (R + RW === 0)"
+        else
+          "read-only SRAM (W + RW === 0)"
+      Builder.error(
+        s"Attempted to initialize a $badMemory! SRAMs must have both at least one read accessor and at least one write accessor."
+      )
+    }
+
     val addrWidth = log2Up(size + 1)
 
     val _out = Wire(new SRAMInterface(tpe, addrWidth, numReadPorts, numWritePorts, numReadwritePorts, false))
@@ -198,6 +217,19 @@ object SRAM {
     implicit sourceInfo: SourceInfo,
     evidence:            T <:< Vec[_]
   ): SRAMInterface[T] = {
+    val isValidSRAM = ((numReadPorts + numReadwritePorts) > 0) && ((numWritePorts + numReadwritePorts) > 0)
+
+    if (!isValidSRAM) {
+      val badMemory =
+        if (numReadPorts + numReadwritePorts == 0)
+          "write-only SRAM (R + RW === 0)"
+        else
+          "read-only SRAM (W + RW === 0)"
+      Builder.error(
+        s"Attempted to initialize a $badMemory! SRAMs must have both at least one read accessor and at least one write accessor."
+      )
+    }
+
     val addrWidth = log2Up(size + 1)
 
     val _out = Wire(new SRAMInterface(tpe, addrWidth, numReadPorts, numWritePorts, numReadwritePorts, true))

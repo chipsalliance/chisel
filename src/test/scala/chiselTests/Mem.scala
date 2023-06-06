@@ -456,6 +456,8 @@ class SRAMSpec extends ChiselFunSpec {
         numWR <- 0 until 3
         numRW <- 0 until 3
         if (numRD + numWR + numRW) > 0
+        if (numRD + numRW) > 0
+        if (numWR + numRW) > 0
       } yield (numRD, numWR, numRW)
 
     portCombos.foreach {
@@ -540,6 +542,27 @@ class SRAMSpec extends ChiselFunSpec {
 
       chirrtl should include(s"when mem.readwritePorts[0].mask[$i]")
       chirrtl should include(s"mem_out_readwritePorts_0_readData_MPORT[$i] <= mem.readwritePorts[0].writeData[$i]")
+    }
+  }
+  describe("Read-only SRAM") {
+    it(s"should error") {
+      class TestModule extends Module {
+        val mem = SRAM(32, Vec(3, UInt(8.W)), 1, 0, 0)
+      }
+      intercept[Exception] {
+        ChiselStage.emitCHIRRTL(new TestModule, args = Array("--full-stacktrace"))
+      }
+    }
+  }
+
+  describe("Write-only SRAM") {
+    it(s"should error") {
+      class TestModule extends Module {
+        val mem = SRAM(32, Vec(3, UInt(8.W)), 0, 1, 0)
+      }
+      intercept[Exception] {
+        ChiselStage.emitCHIRRTL(new TestModule, args = Array("--full-stacktrace"))
+      }
     }
   }
 }
