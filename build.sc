@@ -9,23 +9,6 @@ import $file.common
 
 object v {
   val pluginScalaCrossVersions = Seq(
-    // scalamacros paradise version used is not published for 2.12.0 and 2.12.1
-    "2.12.2",
-    "2.12.3",
-    // 2.12.4 is broken in newer versions of Zinc: https://github.com/sbt/sbt/issues/6838
-    "2.12.5",
-    "2.12.6",
-    "2.12.7",
-    "2.12.8",
-    "2.12.9",
-    "2.12.10",
-    "2.12.11",
-    "2.12.12",
-    "2.12.13",
-    "2.12.14",
-    "2.12.15",
-    "2.12.16",
-    "2.12.17",
     "2.13.0",
     "2.13.1",
     "2.13.2",
@@ -39,7 +22,6 @@ object v {
     "2.13.10"
   )
   val scalaCrossVersions = Seq(
-    "2.12.17",
     "2.13.10"
   )
   val osLib = ivy"com.lihaoyi::os-lib:0.9.1"

@@ -6,16 +6,11 @@ private def majorScalaVersion(scalaVersion: String) = scalaVersion.split('.')(1)
 
 trait HasMacroAnnotations
   extends ScalaModule {
-  def macroParadiseIvy: Option[Dep]
 
-  def scalacPluginIvyDeps = super.scalacPluginIvyDeps() ++ macroParadiseIvy
+  def scalacPluginIvyDeps = super.scalacPluginIvyDeps()
 
   override def scalacOptions = T {
-    if (scalaVersion() == 12) {
-      require(macroParadiseIvy.isDefined, "macroParadiseIvy must be defined for Scala 2.12")
-    }
-    super.scalacOptions() ++
-      (if (majorScalaVersion(scalaVersion()) == 13) Agg("-Ymacro-annotations") else Agg.empty[String])
+    super.scalacOptions() ++ Agg("-Ymacro-annotations")
   }
 }
 
