@@ -202,7 +202,7 @@ private[chisel3] object getRecursiveFields {
   def lazilyNoPath(data: Data): Iterable[Data] = DataMirror.collectMembers(data) { case x => x }
 
   def apply(data:  Data, path: String): Seq[(Data, String)] = lazily(data, path).toVector
-  def lazily(data: Data, path: String): Iterable[(Data, String)] = DataMirror.collectMembersAndPaths(data) {
+  def lazily(data: Data, path: String): Iterable[(Data, String)] = DataMirror.collectMembersAndPaths(data, path) {
     case x => x
   }
 }
