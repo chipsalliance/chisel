@@ -19,10 +19,11 @@ object v {
     "2.13.7",
     "2.13.8",
     "2.13.9",
-    "2.13.10"
+    "2.13.10",
+    "2.13.11"
   )
   val scalaCrossVersions = Seq(
-    "2.13.10"
+    "2.13.11"
   )
   val osLib = ivy"com.lihaoyi::os-lib:0.9.1"
   val upickle = ivy"com.lihaoyi::upickle:3.1.0"
