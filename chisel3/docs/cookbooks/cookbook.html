@@ -44,7 +44,7 @@ ga('send', 'pageview');
   <li><a href="#how-do-i-create-an-optional-io">How do I create an optional I/O?</a></li>
   <li><a href="#how-do-i-create-io-without-a-prefix">How do I create I/O without a prefix?</a></li>
   <li><a href="#how-do-i-minimize-the-number-of-bits-used-in-an-output-vector">How do I minimize the number of bits used in an output vector</a></li>
-  <li><a href="#how-do-i-resolve-dynamic-index--is-too-widenarrow-for-extractee-">How do I resolve <code class="language-plaintext highlighter-rouge">Dynamic index ... is too wide/narrow for extractee ...</code>?</a></li>
+  <li><a href="#how-do-i-resolve-dynamic-index--is-too-widenarrow-for-extractee-">How do I resolve “Dynamic index … is too wide/narrow for extractee …”?</a></li>
   <li>Predictable Naming
     <ul>
       <li><a href="#how-do-i-get-chisel-to-name-signals-properly-in-blocks-like-whenwithclockandreset">How do I get Chisel to name signals properly in blocks like when/withClockAndReset?</a></li>
@@ -766,32 +766,90 @@ normal <code class="language-plaintext highlighter-rouge">val</code> prefix, you
 <span class="p">);</span>
 </code></pre></div></div>
 
-<h3 id="how-do-i-resolve-dynamic-index--is-too-widenarrow-for-extractee-">How do I resolve <code class="language-plaintext highlighter-rouge">Dynamic index ... is too wide/narrow for extractee ...</code>?</h3>
+<h3 id="how-do-i-resolve-dynamic-index--is-too-widenarrow-for-extractee-">How do I resolve “Dynamic index … is too wide/narrow for extractee …”?</h3>
 
-<p>If the index is too narrow you can use <code class="language-plaintext highlighter-rouge">.pad</code> to increase the width.</p>
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3.util.log2Up</span>
+<p>Chisel will warn if a dynamic index is not the correctly-sized width for indexing a Vec or UInt.
+“Correctly-sized” means that the width of the index should be the log2 of the size of the indexee.
+If the indexee is a non-power-of-2 size, use the ceiling of the log2 result.</p>
 
-<span class="k">class</span> <span class="nc">TooNarrow</span><span class="o">(</span><span class="n">extracteeWidth</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">indexWidth</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="o">{</span>
-  <span class="k">val</span> <span class="nv">extractee</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="nv">extracteeWidth</span><span class="o">.</span><span class="py">W</span><span class="o">))</span>
-  <span class="k">val</span> <span class="nv">index</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="nv">indexWidth</span><span class="o">.</span><span class="py">W</span><span class="o">))</span>
-  <span class="nf">extractee</span><span class="o">(</span><span class="nv">index</span><span class="o">.</span><span class="py">pad</span><span class="o">(</span><span class="nf">log2Up</span><span class="o">(</span><span class="n">extracteeWidth</span><span class="o">)))</span>
+<p>When the index does not have enough bits to address all entries or bits in the extractee, you can <code class="language-plaintext highlighter-rouge">.pad</code> the index to increase the width.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">TooNarrow</span> <span class="k">extends</span> <span class="nc">RawModule</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">extractee</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">7.</span><span class="n">W</span><span class="o">))</span>
+  <span class="k">val</span> <span class="nv">index</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">2.</span><span class="n">W</span><span class="o">))</span>
+  <span class="nf">extractee</span><span class="o">(</span><span class="n">index</span><span class="o">)</span>
 <span class="o">}</span>
+<span class="nf">compile</span><span class="o">(</span><span class="k">new</span> <span class="nc">TooNarrow</span><span class="o">)</span>
+<span class="c1">// [[33mwarn[0m] cookbook.md:788:12: Dynamic index with width 2 is too small for extractee of width 7</span>
+<span class="c1">// [[33mwarn[0m] There were [33m1 warning(s)[0m during hardware elaboration.</span>
 </code></pre></div></div>
 
-<p>If the index is too wide you can use a bit extract to select the correct bits.</p>
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">TooWide</span><span class="o">(</span><span class="n">extracteeWidth</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">indexWidth</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="o">{</span>
-  <span class="k">val</span> <span class="nv">extractee</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="nv">extracteeWidth</span><span class="o">.</span><span class="py">W</span><span class="o">))</span>
-  <span class="k">val</span> <span class="nv">index</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="nv">indexWidth</span><span class="o">.</span><span class="py">W</span><span class="o">))</span>
-  <span class="nf">extractee</span><span class="o">(</span><span class="nf">index</span><span class="o">(</span><span class="nf">log2Up</span><span class="o">(</span><span class="n">extracteeWidth</span><span class="o">)</span> <span class="o">-</span> <span class="mi">1</span><span class="o">,</span> <span class="mi">0</span><span class="o">))</span>
+<p>This can be fixed with <code class="language-plaintext highlighter-rouge">pad</code>:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">TooNarrowFixed</span> <span class="k">extends</span> <span class="nc">RawModule</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">extractee</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">7.</span><span class="n">W</span><span class="o">))</span>
+  <span class="k">val</span> <span class="nv">index</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">2.</span><span class="n">W</span><span class="o">))</span>
+  <span class="nf">extractee</span><span class="o">(</span><span class="nv">index</span><span class="o">.</span><span class="py">pad</span><span class="o">(</span><span class="mi">3</span><span class="o">))</span>
 <span class="o">}</span>
+<span class="nf">compile</span><span class="o">(</span><span class="k">new</span> <span class="nc">TooNarrowFixed</span><span class="o">)</span>
 </code></pre></div></div>
 
-<p>Or use both if you are working on a generator where the widths may be too wide or too narrow under different circumstances.</p>
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">TooWideOrNarrow</span><span class="o">(</span><span class="n">extracteeWidth</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">indexWidth</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="o">{</span>
-  <span class="k">val</span> <span class="nv">extractee</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="nv">extracteeWidth</span><span class="o">.</span><span class="py">W</span><span class="o">))</span>
-  <span class="k">val</span> <span class="nv">index</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="nv">indexWidth</span><span class="o">.</span><span class="py">W</span><span class="o">))</span>
-  <span class="nf">extractee</span><span class="o">(</span><span class="nv">index</span><span class="o">.</span><span class="py">pad</span><span class="o">(</span><span class="nf">log2Up</span><span class="o">(</span><span class="n">indexWidth</span><span class="o">))(</span><span class="nf">log2Up</span><span class="o">(</span><span class="n">extracteeWidth</span><span class="o">)</span> <span class="o">-</span> <span class="mi">1</span><span class="o">,</span> <span class="mi">0</span><span class="o">))</span>
+<h4 id="use-bit-extraction-when-the-index-is-too-wide">Use bit extraction when the index is too wide</h4>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">TooWide</span> <span class="k">extends</span> <span class="nc">RawModule</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">extractee</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="nc">Vec</span><span class="o">(</span><span class="mi">8</span><span class="o">,</span> <span class="nc">UInt</span><span class="o">(</span><span class="mf">32.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="k">val</span> <span class="nv">index</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">4.</span><span class="n">W</span><span class="o">))</span>
+  <span class="nf">extractee</span><span class="o">(</span><span class="n">index</span><span class="o">)</span>
 <span class="o">}</span>
+<span class="nf">compile</span><span class="o">(</span><span class="k">new</span> <span class="nc">TooWide</span><span class="o">)</span>
+<span class="c1">// [[33mwarn[0m] cookbook.md:814:12: Dynamic index with width 4 is too wide for Vec of size 8 (expected index width 3).</span>
+<span class="c1">// [[33mwarn[0m] There were [33m1 warning(s)[0m during hardware elaboration.</span>
+</code></pre></div></div>
+
+<p>This can be fixed with bit extraction:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">TooWideFixed</span> <span class="k">extends</span> <span class="nc">RawModule</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">extractee</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="nc">Vec</span><span class="o">(</span><span class="mi">8</span><span class="o">,</span> <span class="nc">UInt</span><span class="o">(</span><span class="mf">32.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="k">val</span> <span class="nv">index</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">4.</span><span class="n">W</span><span class="o">))</span>
+  <span class="nf">extractee</span><span class="o">(</span><span class="nf">index</span><span class="o">(</span><span class="mi">2</span><span class="o">,</span> <span class="mi">0</span><span class="o">))</span>
+<span class="o">}</span>
+<span class="nf">compile</span><span class="o">(</span><span class="k">new</span> <span class="nc">TooWideFixed</span><span class="o">)</span>
+</code></pre></div></div>
+
+<p>Note that size 1 <code class="language-plaintext highlighter-rouge">Vecs</code> and <code class="language-plaintext highlighter-rouge">UInts</code> should be indexed by a zero-width <code class="language-plaintext highlighter-rouge">UInt</code>:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">SizeOneVec</span> <span class="k">extends</span> <span class="nc">RawModule</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">extractee</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="nc">Vec</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="nc">UInt</span><span class="o">(</span><span class="mf">32.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="k">val</span> <span class="nv">index</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">0.</span><span class="n">W</span><span class="o">))</span>
+  <span class="nf">extractee</span><span class="o">(</span><span class="n">index</span><span class="o">)</span>
+<span class="o">}</span>
+<span class="nf">compile</span><span class="o">(</span><span class="k">new</span> <span class="nc">SizeOneVec</span><span class="o">)</span>
+</code></pre></div></div>
+
+<p>Because <code class="language-plaintext highlighter-rouge">pad</code> only pads if the desired width is less than the current width of the argument,
+you can use <code class="language-plaintext highlighter-rouge">pad</code> in conjunction with bit extraction when the widths may be too wide or too
+narrow under different circumstances</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3.util.log2Ceil</span>
+<span class="k">class</span> <span class="nc">TooWideOrNarrow</span><span class="o">(</span><span class="n">extracteeSize</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">indexWidth</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">extractee</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="nc">Vec</span><span class="o">(</span><span class="n">extracteeSize</span><span class="o">,</span> <span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="k">val</span> <span class="nv">index</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="nv">indexWidth</span><span class="o">.</span><span class="py">W</span><span class="o">))</span>
+  <span class="k">val</span> <span class="nv">correctWidth</span> <span class="k">=</span> <span class="nf">log2Ceil</span><span class="o">(</span><span class="n">extracteeSize</span><span class="o">)</span>
+  <span class="nf">extractee</span><span class="o">(</span><span class="nv">index</span><span class="o">.</span><span class="py">pad</span><span class="o">(</span><span class="n">correctWidth</span><span class="o">)(</span><span class="n">correctWidth</span> <span class="o">-</span> <span class="mi">1</span><span class="o">,</span> <span class="mi">0</span><span class="o">))</span>
+<span class="o">}</span>
+<span class="nf">compile</span><span class="o">(</span><span class="k">new</span> <span class="nc">TooWideOrNarrow</span><span class="o">(</span><span class="mi">8</span><span class="o">,</span> <span class="mi">2</span><span class="o">))</span>
+<span class="nf">compile</span><span class="o">(</span><span class="k">new</span> <span class="nc">TooWideOrNarrow</span><span class="o">(</span><span class="mi">8</span><span class="o">,</span> <span class="mi">4</span><span class="o">))</span>
+</code></pre></div></div>
+
+<p>Another option for dynamic bit selection of <code class="language-plaintext highlighter-rouge">UInts</code> (but not <code class="language-plaintext highlighter-rouge">Vec</code> dynamic indexing) is to do a dynamic
+right shift of the extractee by the index and then just bit select a single bit:</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">TooWideOrNarrowUInt</span><span class="o">(</span><span class="n">extracteeSize</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">indexWidth</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">extractee</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="nv">extracteeSize</span><span class="o">.</span><span class="py">W</span><span class="o">))</span>
+  <span class="k">val</span> <span class="nv">index</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="nv">indexWidth</span><span class="o">.</span><span class="py">W</span><span class="o">))</span>
+  <span class="o">(</span><span class="n">extractee</span> <span class="o">&gt;&gt;</span> <span class="n">index</span><span class="o">)(</span><span class="mi">0</span><span class="o">)</span>
+<span class="o">}</span>
+<span class="nf">compile</span><span class="o">(</span><span class="k">new</span> <span class="nc">TooWideOrNarrowUInt</span><span class="o">(</span><span class="mi">8</span><span class="o">,</span> <span class="mi">2</span><span class="o">))</span>
+<span class="nf">compile</span><span class="o">(</span><span class="k">new</span> <span class="nc">TooWideOrNarrowUInt</span><span class="o">(</span><span class="mi">8</span><span class="o">,</span> <span class="mi">4</span><span class="o">))</span>
 </code></pre></div></div>
 
 <h2 id="predictable-naming">Predictable Naming</h2>
@@ -824,17 +882,17 @@ normal <code class="language-plaintext highlighter-rouge">val</code> prefix, you
 <span class="k">module</span> <span class="n">Foo</span><span class="p">(</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
   <span class="kt">input</span>        <span class="n">clock</span><span class="p">,</span>	<span class="c1">// &lt;stdin&gt;:4:11</span>
                <span class="n">reset</span><span class="p">,</span>	<span class="c1">// &lt;stdin&gt;:5:11</span>
-               <span class="n">io_in_0</span><span class="p">,</span>	<span class="c1">// cookbook.md:808:14</span>
-               <span class="n">io_in_1</span><span class="p">,</span>	<span class="c1">// cookbook.md:808:14</span>
-               <span class="n">io_in_2</span><span class="p">,</span>	<span class="c1">// cookbook.md:808:14</span>
-               <span class="n">io_in_3</span><span class="p">,</span>	<span class="c1">// cookbook.md:808:14</span>
-  <span class="kt">input</span>  <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">io_idx</span><span class="p">,</span>	<span class="c1">// cookbook.md:808:14</span>
-  <span class="kt">input</span>        <span class="n">io_en</span><span class="p">,</span>	<span class="c1">// cookbook.md:808:14</span>
-  <span class="kt">output</span>       <span class="n">io_out</span>	<span class="c1">// cookbook.md:808:14</span>
+               <span class="n">io_in_0</span><span class="p">,</span>	<span class="c1">// cookbook.md:893:14</span>
+               <span class="n">io_in_1</span><span class="p">,</span>	<span class="c1">// cookbook.md:893:14</span>
+               <span class="n">io_in_2</span><span class="p">,</span>	<span class="c1">// cookbook.md:893:14</span>
+               <span class="n">io_in_3</span><span class="p">,</span>	<span class="c1">// cookbook.md:893:14</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">io_idx</span><span class="p">,</span>	<span class="c1">// cookbook.md:893:14</span>
+  <span class="kt">input</span>        <span class="n">io_en</span><span class="p">,</span>	<span class="c1">// cookbook.md:893:14</span>
+  <span class="kt">output</span>       <span class="n">io_out</span>	<span class="c1">// cookbook.md:893:14</span>
 <span class="p">);</span>
 
-  <span class="kt">wire</span> <span class="p">[</span><span class="mi">3</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="mi">_</span><span class="n">GEN</span> <span class="o">=</span> <span class="o">{{</span><span class="n">io_in_3</span><span class="o">}</span><span class="p">,</span> <span class="o">{</span><span class="n">io_in_2</span><span class="o">}</span><span class="p">,</span> <span class="o">{</span><span class="n">io_in_1</span><span class="o">}</span><span class="p">,</span> <span class="o">{</span><span class="n">io_in_0</span><span class="o">}}</span><span class="p">;</span>	<span class="c1">// cookbook.md:816:13</span>
-  <span class="k">assign</span> <span class="n">io_out</span> <span class="o">=</span> <span class="mi">_</span><span class="n">GEN</span><span class="p">[</span><span class="n">io_idx</span><span class="p">]</span> <span class="o">&amp;</span> <span class="n">io_en</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, cookbook.md:816:13</span>
+  <span class="kt">wire</span> <span class="p">[</span><span class="mi">3</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="mi">_</span><span class="n">GEN</span> <span class="o">=</span> <span class="o">{{</span><span class="n">io_in_3</span><span class="o">}</span><span class="p">,</span> <span class="o">{</span><span class="n">io_in_2</span><span class="o">}</span><span class="p">,</span> <span class="o">{</span><span class="n">io_in_1</span><span class="o">}</span><span class="p">,</span> <span class="o">{</span><span class="n">io_in_0</span><span class="o">}}</span><span class="p">;</span>	<span class="c1">// cookbook.md:901:13</span>
+  <span class="k">assign</span> <span class="n">io_out</span> <span class="o">=</span> <span class="mi">_</span><span class="n">GEN</span><span class="p">[</span><span class="n">io_idx</span><span class="p">]</span> <span class="o">&amp;</span> <span class="n">io_en</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, cookbook.md:901:13</span>
 <span class="k">endmodule</span>
 
 </code></pre></div></div>
@@ -849,17 +907,17 @@ normal <code class="language-plaintext highlighter-rouge">val</code> prefix, you
 <span class="k">module</span> <span class="n">Foo2</span><span class="p">(</span>	<span class="c1">// &lt;stdin&gt;:3:10</span>
   <span class="kt">input</span>        <span class="n">clock</span><span class="p">,</span>	<span class="c1">// &lt;stdin&gt;:4:11</span>
                <span class="n">reset</span><span class="p">,</span>	<span class="c1">// &lt;stdin&gt;:5:11</span>
-               <span class="n">io_in_0</span><span class="p">,</span>	<span class="c1">// cookbook.md:831:14</span>
-               <span class="n">io_in_1</span><span class="p">,</span>	<span class="c1">// cookbook.md:831:14</span>
-               <span class="n">io_in_2</span><span class="p">,</span>	<span class="c1">// cookbook.md:831:14</span>
-               <span class="n">io_in_3</span><span class="p">,</span>	<span class="c1">// cookbook.md:831:14</span>
-  <span class="kt">input</span>  <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">io_idx</span><span class="p">,</span>	<span class="c1">// cookbook.md:831:14</span>
-  <span class="kt">input</span>        <span class="n">io_en</span><span class="p">,</span>	<span class="c1">// cookbook.md:831:14</span>
-  <span class="kt">output</span>       <span class="n">io_out</span>	<span class="c1">// cookbook.md:831:14</span>
+               <span class="n">io_in_0</span><span class="p">,</span>	<span class="c1">// cookbook.md:916:14</span>
+               <span class="n">io_in_1</span><span class="p">,</span>	<span class="c1">// cookbook.md:916:14</span>
+               <span class="n">io_in_2</span><span class="p">,</span>	<span class="c1">// cookbook.md:916:14</span>
+               <span class="n">io_in_3</span><span class="p">,</span>	<span class="c1">// cookbook.md:916:14</span>
+  <span class="kt">input</span>  <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">io_idx</span><span class="p">,</span>	<span class="c1">// cookbook.md:916:14</span>
+  <span class="kt">input</span>        <span class="n">io_en</span><span class="p">,</span>	<span class="c1">// cookbook.md:916:14</span>
+  <span class="kt">output</span>       <span class="n">io_out</span>	<span class="c1">// cookbook.md:916:14</span>
 <span class="p">);</span>
 
-  <span class="kt">wire</span> <span class="p">[</span><span class="mi">3</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="mi">_</span><span class="n">GEN</span> <span class="o">=</span> <span class="o">{{</span><span class="n">io_in_3</span><span class="o">}</span><span class="p">,</span> <span class="o">{</span><span class="n">io_in_2</span><span class="o">}</span><span class="p">,</span> <span class="o">{</span><span class="n">io_in_1</span><span class="o">}</span><span class="p">,</span> <span class="o">{</span><span class="n">io_in_0</span><span class="o">}}</span><span class="p">;</span>	<span class="c1">// cookbook.md:838:19</span>
-  <span class="k">assign</span> <span class="n">io_out</span> <span class="o">=</span> <span class="mi">_</span><span class="n">GEN</span><span class="p">[</span><span class="n">io_idx</span><span class="p">]</span> <span class="o">&amp;</span> <span class="n">io_en</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, cookbook.md:838:19, :839:13</span>
+  <span class="kt">wire</span> <span class="p">[</span><span class="mi">3</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="mi">_</span><span class="n">GEN</span> <span class="o">=</span> <span class="o">{{</span><span class="n">io_in_3</span><span class="o">}</span><span class="p">,</span> <span class="o">{</span><span class="n">io_in_2</span><span class="o">}</span><span class="p">,</span> <span class="o">{</span><span class="n">io_in_1</span><span class="o">}</span><span class="p">,</span> <span class="o">{</span><span class="n">io_in_0</span><span class="o">}}</span><span class="p">;</span>	<span class="c1">// cookbook.md:923:19</span>
+  <span class="k">assign</span> <span class="n">io_out</span> <span class="o">=</span> <span class="mi">_</span><span class="n">GEN</span><span class="p">[</span><span class="n">io_idx</span><span class="p">]</span> <span class="o">&amp;</span> <span class="n">io_en</span><span class="p">;</span>	<span class="c1">// &lt;stdin&gt;:3:10, cookbook.md:923:19, :924:13</span>
 <span class="k">endmodule</span>
 
 </code></pre></div></div>
@@ -897,8 +955,8 @@ normal <code class="language-plaintext highlighter-rouge">val</code> prefix, you
         <span class="n">reset</span>	<span class="c1">// &lt;stdin&gt;:10:11</span>
 <span class="p">);</span>
 
-  <span class="n">Tea</span> <span class="n">drink</span> <span class="p">(</span>	<span class="c1">// cookbook.md:870:23</span>
-    <span class="p">.</span><span class="n">I</span> <span class="p">(</span><span class="mh">32'h2A</span><span class="p">),</span>	<span class="c1">// cookbook.md:873:16</span>
+  <span class="n">Tea</span> <span class="n">drink</span> <span class="p">(</span>	<span class="c1">// cookbook.md:955:23</span>
+    <span class="p">.</span><span class="n">I</span> <span class="p">(</span><span class="mh">32'h2A</span><span class="p">),</span>	<span class="c1">// cookbook.md:958:16</span>
     <span class="p">.</span><span class="n">O</span> <span class="p">(</span><span class="cm">/* unused */</span><span class="p">)</span>
   <span class="p">);</span>
 <span class="k">endmodule</span>
@@ -926,15 +984,15 @@ to a register:</p>
 </code></pre></div></div>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">ChiselStage</span><span class="o">.</span><span class="py">emitSystemVerilog</span><span class="o">(</span><span class="k">new</span> <span class="nc">BadRegConnect</span><span class="o">)</span>
-<span class="c1">// circt.stage.phases.Exceptions$FirtoolNonZeroExitCode: firtool returned a non-zero exit code. Note that this version of Chisel (0.0.0+1-af296bad-SNAPSHOT) was published against firtool version 1.40.0.</span>
+<span class="c1">// circt.stage.phases.Exceptions$FirtoolNonZeroExitCode: firtool returned a non-zero exit code. Note that this version of Chisel (0.0.0+1-11a624c6-SNAPSHOT) was published against firtool version 1.40.0.</span>
 <span class="c1">// ------------------------------------------------------------------------------</span>
 <span class="c1">// ExitCode:</span>
 <span class="c1">// 1</span>
 <span class="c1">// STDOUT:</span>
 <span class="c1">// </span>
 <span class="c1">// STDERR:</span>
-<span class="c1">// cookbook.md:903:20: error: 'firrtl.reg' op result #0 must be a passive base type that does not contain analog, but got '!firrtl.bundle&lt;ready flip: uint&lt;1&gt;, valid: uint&lt;1&gt;, bits: uint&lt;8&gt;&gt;'</span>
-<span class="c1">// cookbook.md:903:20: note: see current operation: %4 = "firrtl.reg"(%arg0) {annotations = [], name = "monitor", nameKind = #firrtl&lt;name_kind interesting_name&gt;} : (!firrtl.clock) -&gt; !firrtl.bundle&lt;ready flip: uint&lt;1&gt;, valid: uint&lt;1&gt;, bits: uint&lt;8&gt;&gt;</span>
+<span class="c1">// cookbook.md:988:20: error: 'firrtl.reg' op result #0 must be a passive base type that does not contain analog, but got '!firrtl.bundle&lt;ready flip: uint&lt;1&gt;, valid: uint&lt;1&gt;, bits: uint&lt;8&gt;&gt;'</span>
+<span class="c1">// cookbook.md:988:20: note: see current operation: %4 = "firrtl.reg"(%arg0) {annotations = [], name = "monitor", nameKind = #firrtl&lt;name_kind interesting_name&gt;} : (!firrtl.clock) -&gt; !firrtl.bundle&lt;ready flip: uint&lt;1&gt;, valid: uint&lt;1&gt;, bits: uint&lt;8&gt;&gt;</span>
 <span class="c1">// </span>
 <span class="c1">// ------------------------------------------------------------------------------</span>
 </code></pre></div></div>
