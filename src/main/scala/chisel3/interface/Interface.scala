@@ -4,6 +4,8 @@ package chisel3.interface
 import chisel3.{BlackBox => _, Module => _, _}
 import chisel3.experimental.{BaseModule, FlatIO}
 import chisel3.experimental.dataview._
+import chisel3.probe.define
+import chisel3.reflect.DataMirror
 import scala.annotation.implicitNotFound
 
 @implicitNotFound(
@@ -131,7 +133,21 @@ trait Interface extends InterfaceCommon { self: Singleton =>
 
       // If the view fails, report this with a slightly better error message.
       try {
-        io :<>= internal.viewAs[Ports]
+        val portsView = internal.viewAs[Ports]
+        // Bulk connect non-probes
+        io.excludeProbes :<>= portsView.excludeProbes
+
+        // Define corresponding probes
+        def probes(d: Data): Iterable[Data] = {
+          DataMirror
+            .collectMembers(d) {
+              case f if (DataMirror.hasProbeTypeModifier(f)) => Seq(f)
+            }
+            .flatten
+        }
+        probes(io).zip(probes(portsView)).foreach {
+          case (ioProbe, internalProbe) => define(ioProbe, internalProbe)
+        }
       } catch {
         case e: InvalidViewException =>
           throw Interface.InvalidConformance(

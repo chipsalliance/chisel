@@ -32,11 +32,12 @@ final object Simulator {
     outcome:             Try[T])
       extends BackendInvocationOutcome[T]
 
-  private[simulator] final class WorkspaceCompiler[T <: RawModule, U](
+  private[simulator] final class WorkspaceCompiler[T, U](
+    elaboratedModule:                 ElaboratedModule[T],
     workspace:                        Workspace,
     customSimulationWorkingDirectory: Option[String],
     verbose:                          Boolean,
-    body:                             (Simulation.Controller) => U)
+    body:                             (SimulatedModule[T]) => U)
       extends BackendProcessor {
     val results = scala.collection.mutable.Stack[BackendInvocationDigest[U]]()
 
@@ -60,7 +61,7 @@ final object Simulator {
             )
           val compilationEndTime = System.nanoTime()
           val simulationOutcome = Try {
-            simulation.run(body)
+            simulation.runElaboratedModule(elaboratedModule = elaboratedModule)(body)
           }
           val simulationEndTime = System.nanoTime()
           BackendInvocationDigest(
@@ -83,39 +84,6 @@ final object Simulator {
       })
     }
   }
-
-  private[simulator] final case class SimulationContext(
-    ports:      Seq[(Data, ModuleInfo.Port)],
-    controller: Simulation.Controller) {
-    val simulationPorts = ports.map { case (data, port) => data -> controller.port(port.name) }.toMap
-
-    // When using the low-level API, the user must explicitly call `controller.completeInFlightCommands()` to ensure that all commands are executed. When using a higher-level API like peek/poke, we handle this automatically.
-    private var shouldCompleteInFlightCommands: Boolean = false
-    def completeSimulation() = {
-      if (shouldCompleteInFlightCommands) {
-        shouldCompleteInFlightCommands = false
-        controller.completeInFlightCommands()
-      }
-    }
-
-    // The peek/poke API implicitly evaluates on the first peek after one or more pokes. This is _only_ for peek/poke and using `controller` directly will not provide this behavior.
-    private var evaluateBeforeNextPeek: Boolean = false
-    def willEvaluate() = {
-      evaluateBeforeNextPeek = false
-    }
-    def willPoke() = {
-      shouldCompleteInFlightCommands = true
-      evaluateBeforeNextPeek = true
-    }
-    def willPeek() = {
-      shouldCompleteInFlightCommands = true
-      if (evaluateBeforeNextPeek) {
-        willEvaluate()
-        controller.run(0)
-      }
-    }
-  }
-  private[simulator] val dynamicSimulationContext = new scala.util.DynamicVariable[Option[SimulationContext]](None)
 }
 
 trait Simulator {
@@ -128,24 +96,21 @@ trait Simulator {
   private[simulator] def processBackends(processor: Simulator.BackendProcessor): Unit
   private[simulator] def _simulate[T <: RawModule, U](
     module: => T
-  )(body:   (Simulation.Controller, T) => U
+  )(body:   (SimulatedModule[T]) => U
   ): Seq[Simulator.BackendInvocationDigest[U]] = {
     val workspace = new Workspace(path = workspacePath, workingDirectoryPrefix = workingDirectoryPrefix)
     workspace.reset()
-    val (dut, ports) = workspace.elaborateGeneratedModuleInternal({ () => module })
+    val elaboratedModule = workspace.elaborateGeneratedModule({ () => module })
     workspace.generateAdditionalSources()
     val compiler = new Simulator.WorkspaceCompiler(
+      elaboratedModule,
       workspace,
       customSimulationWorkingDirectory,
       verbose,
-      { controller =>
-        require(Simulator.dynamicSimulationContext.value.isEmpty, "Nested simulations are not supported.")
-        val context = Simulator.SimulationContext(ports, controller)
-        Simulator.dynamicSimulationContext.withValue(Some(context)) {
-          val outcome = body(controller, dut)
-          context.completeSimulation()
-          outcome
-        }
+      { (module: SimulatedModule[T]) =>
+        val outcome = body(module)
+        module.completeSimulation()
+        outcome
       }
     )
     processBackends(compiler)
@@ -158,7 +123,7 @@ trait MultiBackendSimulator extends Simulator {
 
   def simulate[T <: RawModule, U](
     module: => T
-  )(body:   (Simulation.Controller, T) => U
+  )(body:   (SimulatedModule[T]) => U
   ): Seq[Simulator.BackendInvocationDigest[U]] = {
     _simulate(module)(body)
   }
@@ -176,7 +141,7 @@ trait SingleBackendSimulator[T <: Backend] extends Simulator {
 
   def simulate[T <: RawModule, U](
     module: => T
-  )(body:   (Simulation.Controller, T) => U
+  )(body:   (SimulatedModule[T]) => U
   ): Simulator.BackendInvocationDigest[U] = {
     _simulate(module)(body).head
   }

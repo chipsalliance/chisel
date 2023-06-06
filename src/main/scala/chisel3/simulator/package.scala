@@ -4,23 +4,94 @@ import svsim._
 import chisel3.reflect.DataMirror
 
 package object simulator {
-  implicit class SimulationController(controller: Simulation.Controller) {
+
+  /**
+    * An opaque class that can be passed to `Simulation.run` to get access to a `SimulatedModule` in the simulation body.
+    */
+  final class ElaboratedModule[T] private[simulator] (
+    private[simulator] val wrapped: T,
+    private[simulator] val ports:   Seq[(Data, ModuleInfo.Port)])
+
+  /**
+    * A class that enables using a Chisel module to control an `svsim.Simulation`.
+    */
+  final class SimulatedModule[T] private[simulator] (
+    private[simulator] val elaboratedModule: ElaboratedModule[T],
+    controller:                              Simulation.Controller)
+      extends AnySimulatedModule(elaboratedModule.ports, controller) {
+    def wrapped: T = elaboratedModule.wrapped
+  }
+  sealed class AnySimulatedModule protected (
+    ports:          Seq[(Data, ModuleInfo.Port)],
+    val controller: Simulation.Controller) {
+
+    // -- Port Mapping
+
+    private val simulationPorts = ports.map {
+      case (data, port) => data -> controller.port(port.name)
+    }.toMap
     def port(data: Data): Simulation.Port = {
-      val context = Simulator.dynamicSimulationContext.value.get
-      assert(context.controller == controller)
-      context.simulationPorts(data)
+      simulationPorts(data)
+    }
+
+    // -- Peek/Poke API Support
+
+    // When using the low-level API, the user must explicitly call `controller.completeInFlightCommands()` to ensure that all commands are executed. When using a higher-level API like peek/poke, we handle this automatically.
+    private var shouldCompleteInFlightCommands: Boolean = false
+    private[simulator] def completeSimulation() = {
+      if (shouldCompleteInFlightCommands) {
+        shouldCompleteInFlightCommands = false
+        controller.completeInFlightCommands()
+      }
+    }
+
+    // The peek/poke API implicitly evaluates on the first peek after one or more pokes. This is _only_ for peek/poke and using `controller` directly will not provide this behavior.
+    private var evaluateBeforeNextPeek: Boolean = false
+    private[simulator] def willEvaluate() = {
+      evaluateBeforeNextPeek = false
+    }
+    private[simulator] def willPoke() = {
+      shouldCompleteInFlightCommands = true
+      evaluateBeforeNextPeek = true
+    }
+    private[simulator] def willPeek() = {
+      shouldCompleteInFlightCommands = true
+      if (evaluateBeforeNextPeek) {
+        willEvaluate()
+        controller.run(0)
+      }
+    }
+  }
+  private[simulator] object AnySimulatedModule {
+    private val dynamicVariable = new scala.util.DynamicVariable[Option[AnySimulatedModule]](None)
+    def withValue[T](module: AnySimulatedModule)(body: => T): T = {
+      require(dynamicVariable.value.isEmpty, "Nested simulations are not supported.")
+      dynamicVariable.withValue(Some(module))(body)
+    }
+    def current: AnySimulatedModule = dynamicVariable.value.get
+  }
+
+  implicit class ChiselSimulation(simulation: Simulation) {
+    def runElaboratedModule[T, U](
+      elaboratedModule:              ElaboratedModule[T],
+      conservativeCommandResolution: Boolean = false,
+      verbose:                       Boolean = false,
+      executionScriptLimit:          Option[Int] = None
+    )(body:                          SimulatedModule[T] => U
+    ): U = {
+      simulation.run(conservativeCommandResolution, verbose, executionScriptLimit) { controller =>
+        val module = new SimulatedModule(elaboratedModule, controller)
+        AnySimulatedModule.withValue(module) {
+          body(module)
+        }
+      }
     }
   }
 
   implicit class ChiselWorkspace(workspace: Workspace) {
     def elaborateGeneratedModule[T <: RawModule](
       generateModule: () => T
-    ): T = {
-      elaborateGeneratedModuleInternal(generateModule)._1
-    }
-    private[simulator] def elaborateGeneratedModuleInternal[T <: RawModule](
-      generateModule: () => T
-    ): (T, Seq[(Data, ModuleInfo.Port)]) = {
+    ): ElaboratedModule[T] = {
       // Use CIRCT to generate SystemVerilog sources, and potentially additional artifacts
       var someDut: Option[T] = None
       val outputAnnotations = (new circt.stage.ChiselStage).execute(
@@ -95,7 +166,7 @@ package object simulator {
           ports = ports.map(_._2)
         )
       )
-      (dut, ports)
+      new ElaboratedModule(dut, ports)
     }
   }
 }
