@@ -33,15 +33,10 @@ class MemoryWritePort[T <: Data] private[chisel3] (tpe: T, addrWidth: Int, maske
   val address = Input(UInt(addrWidth.W))
   val enable = Input(Bool())
   val data = Input(tpe)
-  val mask: Option[Vec[Bool]] = if (masked) {
-    val maskSize = tpe match {
-      case vec: Vec[_] => vec.size
-      case _ => 0
-    }
-    Some(Input(Vec(maskSize, Bool())))
-  } else {
-    None
-  }
+  val mask: Option[Vec[Bool]] = Option.when(masked)(Some(Input(Vec(tpe match {
+    case vec: Vec[_] => vec.size
+    case _ => 0
+  }, Bool()))))  
   val clock = Input(Clock())
 }
 
