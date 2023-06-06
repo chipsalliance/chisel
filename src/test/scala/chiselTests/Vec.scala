@@ -394,23 +394,55 @@ class VecSpec extends ChiselPropSpec with Utils {
     }
   }
 
-  property("Vecs should emit static indices when indexing with a literal UInt") {
-    val chirrtl = emitCHIRRTL(new RawModule {
+  property("Vecs should emit static indices when indexing with a literal UInt and not warn based on width") {
+    val (log, chirrtl) = grabLog(emitCHIRRTL(new RawModule {
       val vec = IO(Input(Vec(4, UInt(8.W))))
       val out = IO(Output(UInt(8.W)))
       out := vec(1.U)
-    })
+    }))
     chirrtl should include("out <= vec[1]")
+    log should be("")
   }
 
-  // This is checking existing behavior, not because it's good but because we accidentally broke it.
-  // This behavior is slated to be deprecated and removed.
-  property("Vecs should support out-of-bounds dynamic indices") {
-    val chirrtl = emitCHIRRTL(new RawModule {
+  property("Vecs should warn on out-of-bounds literal indices") {
+    val (log, chirrtl) = grabLog(emitCHIRRTL(new RawModule {
       val vec = IO(Input(Vec(4, UInt(8.W))))
       val out = IO(Output(UInt(8.W)))
       out := vec(10.U)
-    })
+    }))
     chirrtl should include("""out <= vec[UInt<2>("h2")]""")
+    log should include("Dynamic index with width 4 is too wide for Vec of size 4 (expected index width 2)")
+  }
+
+  property("Vecs should warn on too large dynamic indices") {
+    val (log, _) = grabLog(emitCHIRRTL(new RawModule {
+      val vec = IO(Input(Vec(7, UInt(8.W))))
+      val idx = IO(Input(UInt(8.W)))
+      val out = IO(Output(UInt(8.W)))
+      out := vec(idx)
+    }))
+    log should include("Dynamic index with width 8 is too wide for Vec of size 7 (expected index width 3)")
+  }
+
+  property("Vecs should warn on too small dynamic indices") {
+    val (log, _) = grabLog(emitCHIRRTL(new RawModule {
+      val vec = IO(Input(Vec(7, UInt(8.W))))
+      val idx = IO(Input(UInt(2.W)))
+      val out = IO(Output(UInt(8.W)))
+      out := vec(idx)
+    }))
+    log should include("Dynamic index with width 2 is too narrow for Vec of size 7 (expected index width 3)")
+  }
+
+  // This will have to be checked in firtool
+  property("Vecs should not warn on inferred with dynamic indices") {
+    val (log, _) = grabLog(emitCHIRRTL(new RawModule {
+      val vec = IO(Input(Vec(7, UInt(8.W))))
+      val idx = IO(Input(UInt(2.W)))
+      val out = IO(Output(UInt(8.W)))
+      val jdx = WireInit(UInt(), idx)
+      out := vec(jdx)
+    }))
+    log should be("")
   }
 }
