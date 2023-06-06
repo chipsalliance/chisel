@@ -127,10 +127,7 @@ lazy val pluginScalaVersions = Seq(
   "2.13.8",
   "2.13.9",
   "2.13.10",
-<<<<<<< HEAD
-=======
   "2.13.11"
->>>>>>> b22c3ba2c (Add Scala 2.13.11 and 2.12.18 to plugin cross versions (#3327))
 )
 
 lazy val plugin = (project in file("plugin")).
@@ -157,12 +154,12 @@ lazy val plugin = (project in file("plugin")).
       ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.internal.plugin.BundleComponent#MyTypingTransformer.getConstructorAndParams")
     ),
     mimaPreviousArtifacts := {
-      // There are not yet artifacts for 2.12.17, 2.13.9, nor 2.13.10; suppress until 3.5.5 is released
-      val skipVersions = Seq("2.12.17", "2.13.9", "2.13.10")
+      // There are not yet artifacts for 2.12.18 and 2.13.11; suppress until 3.5.7 is released
+      val skipVersions = Seq("2.12.18", "2.13.11")
       if (skipVersions.contains(scalaVersion.value)) {
         Set()
       } else {
-        Set("edu.berkeley.cs" % "chisel3-plugin" % "3.5.4" cross CrossVersion.full)
+        Set("edu.berkeley.cs" % "chisel3-plugin" % "3.5.6" cross CrossVersion.full)
       }
     }
   )
