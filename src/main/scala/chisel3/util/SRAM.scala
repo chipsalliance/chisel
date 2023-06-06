@@ -17,7 +17,6 @@ class MemoryReadPort[T <: Data](tpe: T, addrWidth: Int) extends Bundle {
   val address = Input(UInt(addrWidth.W))
   val enable = Input(Bool())
   val data = Output(tpe)
-  val clock = Input(Clock())
 }
 
 /** A bundle of signals representing a memory write port.
@@ -42,7 +41,6 @@ class MemoryWritePort[T <: Data] private[chisel3] (tpe: T, addrWidth: Int, maske
   } else {
     None
   }
-  val clock = Input(Clock())
 }
 
 /** A bundle of signals representing a memory read/write port.
@@ -69,7 +67,6 @@ class MemoryReadWritePort[T <: Data] private[chisel3] (tpe: T, addrWidth: Int, m
   } else {
     None
   }
-  val clock = Input(Clock())
 }
 
 /** A IO bundle of signals connecting to the ports of a wrapped `SyncReadMem`, as requested by
@@ -168,15 +165,13 @@ object SRAM {
     val mem = SyncReadMem(size, tpe)
 
     for (i <- 0 until numReadPorts) {
-      _out.readPorts(i).data := mem.read(_out.readPorts(i).address, _out.readPorts(i).enable, _out.readPorts(i).clock)
-      _out.readPorts(i).clock :#= clock
+      _out.readPorts(i).data := mem.read(_out.readPorts(i).address, _out.readPorts(i).enable, clock)
     }
 
     for (i <- 0 until numWritePorts) {
       when(_out.writePorts(i).enable) {
-        mem.write(_out.writePorts(i).address, _out.writePorts(i).data, _out.writePorts(i).clock)
+        mem.write(_out.writePorts(i).address, _out.writePorts(i).data, clock)
       }
-      _out.writePorts(i).clock :#= clock
     }
 
     for (i <- 0 until numReadwritePorts) {
@@ -185,9 +180,8 @@ object SRAM {
         _out.readwritePorts(i).writeData,
         _out.readwritePorts(i).enable,
         _out.readwritePorts(i).isWrite,
-        _out.readwritePorts(i).clock
+        clock
       )
-      _out.readwritePorts(i).clock :#= clock
     }
 
     _out
@@ -210,31 +204,28 @@ object SRAM {
     val mem = SyncReadMem(size, tpe)
 
     for (i <- 0 until numReadPorts) {
-      _out.readPorts(i).clock :#= clock
-      _out.readPorts(i).data := mem.read(_out.readPorts(i).address, _out.readPorts(i).enable, _out.readPorts(i).clock)
+      _out.readPorts(i).data := mem.read(_out.readPorts(i).address, _out.readPorts(i).enable, clock)
     }
 
     for (i <- 0 until numWritePorts) {
-      _out.writePorts(i).clock :#= clock
       when(_out.writePorts(i).enable) {
         mem.write(
           _out.writePorts(i).address,
           _out.writePorts(i).data,
           _out.writePorts(i).mask.get,
-          _out.writePorts(i).clock
+          clock
         )
       }
     }
 
     for (i <- 0 until numReadwritePorts) {
-      _out.readwritePorts(i).clock := clock
       _out.readwritePorts(i).readData := mem.readWrite(
         _out.readwritePorts(i).address,
         _out.readwritePorts(i).writeData,
         _out.readwritePorts(i).mask.get,
         _out.readwritePorts(i).enable,
         _out.readwritePorts(i).isWrite,
-        _out.readwritePorts(i).clock
+        clock
       )
     }
 
