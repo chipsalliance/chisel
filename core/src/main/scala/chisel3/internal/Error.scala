@@ -93,14 +93,41 @@ private[chisel3] object throwException {
     throw new chisel3.ChiselException(s, t)
 }
 
+private[chisel3] sealed trait UseColor
+private[chisel3] object UseColor {
+  case object Enabled extends UseColor
+  case object Disabled extends UseColor
+  case class Error(value: String) extends UseColor
+
+  val envVar = "CHISEL_USE_COLOR"
+
+  val value: UseColor = sys.env.get(envVar) match {
+    case None =>
+      val detect = System.console() != null && sys.env.get("TERM").exists(_ != "dumb")
+      if (detect) Enabled else Disabled
+    case Some("true")  => Enabled
+    case Some("false") => Disabled
+    case Some(other)   => Error(other)
+  }
+
+  def useColor: Boolean = value match {
+    case Enabled  => true
+    case Disabled => false
+    case Error(_) => false
+  }
+}
+
 /** Records and reports runtime errors and warnings. */
 private[chisel3] object ErrorLog {
-  val depTag = s"[${Console.BLUE}deprecated${Console.RESET}]"
-  val warnTag = s"[${Console.YELLOW}warn${Console.RESET}]"
-  val errTag = s"[${Console.RED}error${Console.RESET}]"
+  def withColor(color: String, message: String): String =
+    if (UseColor.useColor) color + message + Console.RESET else message
+  val depTag = "[" + withColor(Console.BLUE, "deprecated") + "]"
+  val warnTag = "[" + withColor(Console.YELLOW, "warn") + "]"
+  val errTag = "[" + withColor(Console.RED, "error") + "]"
 }
 
 private[chisel3] class ErrorLog(warningsAsErrors: Boolean, sourceRoots: Seq[File]) {
+  import ErrorLog.withColor
 
   private def getErrorLineInFile(sl: SourceLine): List[String] = {
     def tryFileInSourceRoot(sourceRoot: File): Option[List[String]] = {
@@ -179,6 +206,14 @@ private[chisel3] class ErrorLog(warningsAsErrors: Boolean, sourceRoots: Seq[File
 
   /** Throw an exception if any errors have yet occurred. */
   def checkpoint(logger: Logger): Unit = {
+    UseColor.value match {
+      case UseColor.Error(value) =>
+        logger.error(
+          s"[error] Invalid value for environment variable '${UseColor.envVar}', must be 'true', 'false', or not set!"
+        )
+      case _ =>
+    }
+
     deprecations.foreach {
       case ((message, sourceLoc), count) =>
         logger.warn(s"${ErrorLog.depTag} $sourceLoc ($count calls): $message")
@@ -187,8 +222,11 @@ private[chisel3] class ErrorLog(warningsAsErrors: Boolean, sourceRoots: Seq[File
 
     if (!deprecations.isEmpty) {
       logger.warn(
-        s"${ErrorLog.warnTag} ${Console.YELLOW}There were ${deprecations.size} deprecated function(s) used." +
-          s" These may stop compiling in a future release - you are encouraged to fix these issues.${Console.RESET}"
+        s"${ErrorLog.warnTag} " + withColor(
+          Console.YELLOW,
+          s"There were ${deprecations.size} deprecated function(s) used." +
+            " These may stop compiling in a future release - you are encouraged to fix these issues."
+        )
       )
       logger.warn(
         s"${ErrorLog.warnTag} Line numbers for deprecations reported by Chisel may be inaccurate; enable scalac compiler deprecation warnings via either of the following methods:"
@@ -204,15 +242,24 @@ private[chisel3] class ErrorLog(warningsAsErrors: Boolean, sourceRoots: Seq[File
 
     if (!allWarnings.isEmpty && !allErrors.isEmpty) {
       logger.warn(
-        s"${ErrorLog.errTag} There were ${Console.RED}${allErrors.size} error(s)${Console.RESET} and ${Console.YELLOW}${allWarnings.size} warning(s)${Console.RESET} during hardware elaboration."
+        s"${ErrorLog.errTag} There were " + withColor(Console.RED, s"${allErrors.size} error(s)") + " and " + withColor(
+          Console.YELLOW,
+          s"${allWarnings.size} warning(s)"
+        ) + " during hardware elaboration."
       )
     } else if (!allWarnings.isEmpty) {
       logger.warn(
-        s"${ErrorLog.warnTag} There were ${Console.YELLOW}${allWarnings.size} warning(s)${Console.RESET} during hardware elaboration."
+        s"${ErrorLog.warnTag} There were " + withColor(
+          Console.YELLOW,
+          s"${allWarnings.size} warning(s)"
+        ) + " during hardware elaboration."
       )
     } else if (!allErrors.isEmpty) {
       logger.warn(
-        s"${ErrorLog.errTag} There were ${Console.RED}${allErrors.size} error(s)${Console.RESET} during hardware elaboration."
+        s"${ErrorLog.errTag} There were " + withColor(
+          Console.RED,
+          s"${allErrors.size} error(s)"
+        ) + " during hardware elaboration."
       )
     }
 
