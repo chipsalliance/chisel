@@ -780,8 +780,8 @@ If the indexee is a non-power-of-2 size, use the ceiling of the log2 result.</p>
   <span class="nf">extractee</span><span class="o">(</span><span class="n">index</span><span class="o">)</span>
 <span class="o">}</span>
 <span class="nf">compile</span><span class="o">(</span><span class="k">new</span> <span class="nc">TooNarrow</span><span class="o">)</span>
-<span class="c1">// [[33mwarn[0m] cookbook.md:788:12: Dynamic index with width 2 is too small for extractee of width 7</span>
-<span class="c1">// [[33mwarn[0m] There were [33m1 warning(s)[0m during hardware elaboration.</span>
+<span class="c1">// [warn] cookbook.md:788:12: Dynamic index with width 2 is too small for extractee of width 7</span>
+<span class="c1">// [warn] There were 1 warning(s) during hardware elaboration.</span>
 </code></pre></div></div>
 
 <p>This can be fixed with <code class="language-plaintext highlighter-rouge">pad</code>:</p>
@@ -802,8 +802,8 @@ If the indexee is a non-power-of-2 size, use the ceiling of the log2 result.</p>
   <span class="nf">extractee</span><span class="o">(</span><span class="n">index</span><span class="o">)</span>
 <span class="o">}</span>
 <span class="nf">compile</span><span class="o">(</span><span class="k">new</span> <span class="nc">TooWide</span><span class="o">)</span>
-<span class="c1">// [[33mwarn[0m] cookbook.md:814:12: Dynamic index with width 4 is too wide for Vec of size 8 (expected index width 3).</span>
-<span class="c1">// [[33mwarn[0m] There were [33m1 warning(s)[0m during hardware elaboration.</span>
+<span class="c1">// [warn] cookbook.md:814:12: Dynamic index with width 4 is too wide for Vec of size 8 (expected index width 3).</span>
+<span class="c1">// [warn] There were 1 warning(s) during hardware elaboration.</span>
 </code></pre></div></div>
 
 <p>This can be fixed with bit extraction:</p>
@@ -984,7 +984,7 @@ to a register:</p>
 </code></pre></div></div>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">ChiselStage</span><span class="o">.</span><span class="py">emitSystemVerilog</span><span class="o">(</span><span class="k">new</span> <span class="nc">BadRegConnect</span><span class="o">)</span>
-<span class="c1">// circt.stage.phases.Exceptions$FirtoolNonZeroExitCode: firtool returned a non-zero exit code. Note that this version of Chisel (0.0.0+1-6e8eee88-SNAPSHOT) was published against firtool version 1.43.0.</span>
+<span class="c1">// circt.stage.phases.Exceptions$FirtoolNonZeroExitCode: firtool returned a non-zero exit code. Note that this version of Chisel (0.0.0+1-308eb6a4-SNAPSHOT) was published against firtool version 1.43.0.</span>
 <span class="c1">// ------------------------------------------------------------------------------</span>
 <span class="c1">// ExitCode:</span>
 <span class="c1">// 1</span>
