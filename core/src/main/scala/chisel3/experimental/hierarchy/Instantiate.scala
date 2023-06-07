@@ -45,7 +45,7 @@ object Instantiate {
     * @param con module construction, must be actual call to constructor (`new MyModule(...)`)
     * @return constructed module `Instance`
     */
-  def apply[A <: RawModule](con: => A): Instance[A] = macro internal.impl[A]
+  def apply[A <: BaseModule](con: => A): Instance[A] = macro internal.impl[A]
 
   // Data uses referential equality by default, but for looking up Data in the cache, we need to use
   // structural equality for Data unbound types and literal values
@@ -134,7 +134,7 @@ object Instantiate {
   private object internal {
     // impl cannot be private, but it can be inside of a private object which hides it from the public
     // API and ScalaDoc
-    def impl[A <: RawModule: c.WeakTypeTag](c: Context)(con: c.Tree): c.Tree = {
+    def impl[A <: BaseModule: c.WeakTypeTag](c: Context)(con: c.Tree): c.Tree = {
       import c.universe._
 
       def matchStructure(proto: List[List[Tree]], args: List[Tree]): List[List[Tree]] = {
