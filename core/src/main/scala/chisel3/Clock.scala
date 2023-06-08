@@ -35,7 +35,7 @@ sealed class Clock(private[chisel3] val width: Width = Width(1)) extends Element
 
   def do_asBool(implicit sourceInfo: SourceInfo): Bool = this.asUInt.asBool
 
-  override def do_asUInt(implicit sourceInfo: SourceInfo): UInt = pushOp(
+  override private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): UInt = pushOp(
     DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref)
   )
   private[chisel3] override def connectFromBits(

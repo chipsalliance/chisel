@@ -307,7 +307,7 @@ class VecSpec extends ChiselPropSpec with Utils {
         val foo = Bool()
         val bar = Vec(0, Bool())
       }
-      require(bundleWithZeroEntryVec.asUInt.getWidth == 1)
+      require(bundleWithZeroEntryVec.getWidth == 1)
 
       val m = Module(new Module {
         val io = IO(Output(bundleWithZeroEntryVec))

@@ -4,6 +4,7 @@ package chiselTests
 package experimental
 
 import chisel3._
+import chisel3.util.Valid
 import chisel3.experimental.OpaqueType
 import chisel3.reflect.DataMirror
 import circt.stage.ChiselStage
@@ -120,6 +121,11 @@ object OpaqueTypeSpec {
     lazy val elements = SeqMap("" -> gen)
     def underlying = elements.head._2
   }
+
+  class MaybeNoAsUInt(noAsUInt: Boolean) extends Record with OpaqueType {
+    lazy val elements = SeqMap("" -> UInt(8.W))
+    override protected def errorOnAsUInt = noAsUInt
+  }
 }
 
 class OpaqueTypeSpec extends ChiselFlatSpec with Utils {
@@ -222,5 +228,37 @@ class OpaqueTypeSpec extends ChiselFlatSpec with Utils {
     var m: SingleElementRecordModule = null
     ChiselStage.emitCHIRRTL { m = new SingleElementRecordModule; m }
     a[ChiselException] shouldBe thrownBy { m.r.toTarget }
+  }
+
+  they should "support making .asUInt illegal" in {
+    class AsUIntTester(gen: Data) extends RawModule {
+      val in = IO(Input(gen))
+      val out = IO(Output(UInt()))
+      out :#= in.asUInt
+    }
+    // First check that it works when it should
+    val chirrtl = ChiselStage.emitCHIRRTL(new AsUIntTester(new MaybeNoAsUInt(false)))
+    chirrtl should include("out <= in")
+
+    val e = the[ChiselException] thrownBy {
+      ChiselStage.emitCHIRRTL(new AsUIntTester(new MaybeNoAsUInt(true)), Array("--throw-on-first-error"))
+    }
+    e.getMessage should include("MaybeNoAsUInt does not support .asUInt.")
+  }
+
+  they should "support give a decent error for .asUInt nested in an Aggregate" in {
+    class AsUIntTester(gen: Data) extends RawModule {
+      val in = IO(Input(Valid(gen)))
+      val out = IO(Output(UInt()))
+      out :#= in.asUInt
+    }
+    // First check that it works when it should
+    val chirrtl = ChiselStage.emitCHIRRTL(new AsUIntTester(new MaybeNoAsUInt(false)))
+    chirrtl should include("cat(in.valid, in.bits)")
+
+    val e1 = the[ChiselException] thrownBy {
+      ChiselStage.emitCHIRRTL(new AsUIntTester(new MaybeNoAsUInt(true)), Array("--throw-on-first-error"))
+    }
+    e1.getMessage should include("Field '_.bits' of type MaybeNoAsUInt does not support .asUInt.")
   }
 }
