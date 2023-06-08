@@ -200,3 +200,51 @@ Chisel memories can be initialized from an external `binary` or `hex` file emitt
 
 For more information, check the experimental docs on [Loading Memories](../appendix/experimental-features#loading-memories) feature.
 
+## SRAM
+
+Chisel provides an API to generate `SRAM` memories, which are currently alternative APIs for `SyncReadMem`. The key difference between the `SRAM` and `SyncReadMem` APIs is the former's capability to declare a specific number of read, write, and read-write memory ports, which are interacted with using explicit bundles.
+
+```scala mdoc:silent
+class ModuleWithSRAM(numReadPorts: Int, numWritePorts: Int, numReadwritePorts: Int) extends Module {
+  val width: Int = 8
+
+  val io = IO(new SRAMInterface(1024, UInt(width.W), numReadPorts, numWritePorts, numReadwritePorts))
+
+  // Generate a SyncReadMem representing an SRAM with an explicit number of read, write, and read-write ports
+  io.mem :<>= SRAM(1024, UInt(width.W), numReadPorts, numWritePorts, numReadwritePorts)
+}
+```
+
+To interact with a desired port, index into the `numReadPorts`, `numWritePorts`, and `numReadwritePorts` signals:
+
+```scala mdoc:silent
+class TopModule extends Module {
+  // Declare a 2 read, 2 write, 2 read-write ported SRAM with 8-bit UInt data members
+  val memModule = Module(new ModuleWithSRAM(2, 2, 2))
+
+  // Whenever we want to read from the first read port
+  mem.io.readPorts(0).address := 100.U
+  mem.io.readPorts(0).enable := true.B
+
+  // Read data is returned one cycle after enable is driven
+  val foo = WireInit(UInt(8.W), mem.io.readPorts(0).data)
+
+  // Whenever we want to write to the second write port
+  mem.io.writePorts(1).address := 5.U
+  mem.io.writePorts(1).enable := true.B
+  mem.io.writePorts(1).data := 12.U
+
+  // Whenever we want to read or write to the third read-write port
+  // Write:
+  mem.io.readwritePorts(2).address := 5.U
+  mem.io.readwritePorts(2).enable := true.B
+  mem.io.readwritePorts(2).isWrite := true.B
+  mem.io.readwritePorts(2).writeData := 100.U
+
+  // Read:
+  mem.io.readwritePorts(2).address := 5.U
+  mem.io.readwritePorts(2).enable := true.B
+  mem.io.readwritePorts(2).isWrite := false.B
+  val bar = WireInit(UInt(8.W), mem.io.readwritePorts(2).readData)
+}
+```
