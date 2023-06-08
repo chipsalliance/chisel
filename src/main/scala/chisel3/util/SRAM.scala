@@ -72,19 +72,19 @@ class MemoryReadWritePort[T <: Data] private[chisel3] (tpe: T, addrWidth: Int, m
 /** A IO bundle of signals connecting to the ports of a wrapped `SyncReadMem`, as requested by
   * `SRAMInterface.apply`.
   *
+  * @param memSize The size of the memory, used to calculate the address width
   * @tparam tpe The data type of the memory port
-  * @param width The width of the address wires of each port
   * @param numReadPorts The number of read ports
   * @param numWritePorts The number of write ports
   * @param numReadwritePorts The number of read/write ports
   */
 class SRAMInterface[T <: Data](
+  memSize:           BigInt,
   tpe:               T,
-  addrWidth:         Int,
   numReadPorts:      Int,
   numWritePorts:     Int,
   numReadwritePorts: Int,
-  masked:            Boolean)
+  masked:            Boolean = false)
     extends Bundle {
   if (masked) {
     require(
@@ -93,6 +93,8 @@ class SRAMInterface[T <: Data](
     )
   }
   override def typeName: String = s"SRAMInterface_${SRAM.portedness(numReadPorts, numWritePorts, numReadwritePorts)}${if(masked) "_masked" else ""}}_${tpe.typeName}"
+
+  val addrWidth = log2Up(memSize + 1)
 
   val readPorts:  Vec[MemoryReadPort[T]] = Vec(numReadPorts, new MemoryReadPort(tpe, addrWidth))
   val writePorts: Vec[MemoryWritePort[T]] = Vec(numWritePorts, new MemoryWritePort(tpe, addrWidth, masked))
@@ -103,7 +105,7 @@ class SRAMInterface[T <: Data](
 object SRAM {
 
   /** Generates a [[SyncReadMem]] within the current module, connected to an explicit number
-    * of read, write, and read/write ports. This SRAM abstraction has both read and write capabilities: that is,
+    * of read, write, and read/write ports. This SRsizeAM abstraction has both read and write capabilities: that is,
     * it contains at least one read accessor (a read-only or read-write port), and at least one write accessor
     * (a write-only or read-write port).
     *
@@ -178,9 +180,7 @@ object SRAM {
       )
     }
 
-    val addrWidth = log2Up(size + 1)
-
-    val _out = Wire(new SRAMInterface(tpe, addrWidth, numReadPorts, numWritePorts, numReadwritePorts, false))
+    val _out = Wire(new SRAMInterface(size, tpe, numReadPorts, numWritePorts, numReadwritePorts))
     val mem = SyncReadMem(size, tpe)
 
     for (i <- 0 until numReadPorts) {
@@ -230,9 +230,7 @@ object SRAM {
       )
     }
 
-    val addrWidth = log2Up(size + 1)
-
-    val _out = Wire(new SRAMInterface(tpe, addrWidth, numReadPorts, numWritePorts, numReadwritePorts, true))
+    val _out = Wire(new SRAMInterface(size, tpe, numReadPorts, numWritePorts, numReadwritePorts, true))
     val mem = SyncReadMem(size, tpe)
 
     for (i <- 0 until numReadPorts) {
