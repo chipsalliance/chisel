@@ -96,13 +96,11 @@ object ConnectableSpec {
     }
     elements ++ allAggs ++ allNestedAgg
   }
-  def getInfo(t: Data): Seq[Any] = {
-    val childInfos = t match {
-      case a: Aggregate => a.getElements.flatMap(getInfo)
-      case other => Nil
+  def getInfo(t: Data): Seq[Any] = DataMirror
+    .collectMembers(t) {
+      case x => (x, DataMirror.specifiedDirectionOf(x))
     }
-    (t, DataMirror.specifiedDirectionOf(t)) +: childInfos
-  }
+    .toSeq
 
 }
 
