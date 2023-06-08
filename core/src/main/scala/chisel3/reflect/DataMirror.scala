@@ -210,7 +210,7 @@ object DataMirror {
     * @return All `Element` components; intermediate fields/indices are not included
     */
   def collectLeafMembers(d: Data): Seq[Data] =
-    DataMirror.collectMembers(d) { case x: Element => x.asInstanceOf[Data] }.toVector
+    DataMirror.collectMembers(d) { case x: Element => x }.toVector
 
   /** Recursively collect all expanded member components of a data component, including
     * intermediate aggregate nodes
