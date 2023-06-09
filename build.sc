@@ -45,7 +45,6 @@ object firrtl extends Cross[Firrtl](v.scalaCrossVersions)
 
 trait Firrtl
     extends common.FirrtlModule
-    with ChiselPublishModule
     with CrossSbtModule
     with ScalafmtModule {
   def millSourcePath = super.millSourcePath / os.up / "firrtl"
@@ -65,7 +64,6 @@ object svsim extends Cross[Svsim](v.scalaCrossVersions)
 
 trait Svsim
     extends common.SvsimModule
-    with ChiselPublishModule
     with CrossSbtModule
     with ScalafmtModule {
   def millSourcePath = super.millSourcePath / os.up / "svsim"
@@ -95,7 +93,6 @@ object macros extends Cross[Macros](v.scalaCrossVersions)
 
 trait Macros
     extends common.MacrosModule
-    with ChiselPublishModule
     with CrossSbtModule
     with ScalafmtModule {
   def millSourcePath = super.millSourcePath / os.up / "macros"
@@ -107,7 +104,6 @@ object core extends Cross[Core](v.scalaCrossVersions)
 
 trait Core
     extends common.CoreModule
-    with ChiselPublishModule
     with CrossSbtModule
     with ScalafmtModule {
   def millSourcePath = super.millSourcePath / os.up / "core"
@@ -167,7 +163,6 @@ object plugin extends Cross[Plugin](v.pluginScalaCrossVersions)
 
 trait Plugin
     extends common.PluginModule
-    with ChiselPublishModule
     with CrossSbtModule
     with ScalafmtModule {
   def millSourcePath = super.millSourcePath / os.up / "plugin"
@@ -183,7 +178,6 @@ object chisel extends Cross[Chisel](v.scalaCrossVersions)
 
 trait Chisel
     extends common.ChiselModule
-    with ChiselPublishModule
     with CrossSbtModule
     with ScalafmtModule {
   override def millSourcePath = super.millSourcePath / os.up
@@ -223,7 +217,6 @@ object stdlib extends Cross[Stdlib](v.scalaCrossVersions)
 
 trait Stdlib
     extends common.StdLibModule
-    with ChiselPublishModule
     with CrossSbtModule
     with ScalafmtModule {
   def millSourcePath = super.millSourcePath / os.up / "stdlib"
@@ -231,16 +224,4 @@ trait Stdlib
   def chiselModule = chisel(crossScalaVersion)
 
   def pluginModule = plugin(crossScalaVersion)
-}
-
-trait ChiselPublishModule extends PublishModule {
-  def pomSettings = PomSettings(
-    description = artifactName(),
-    organization = "org.chipsalliance",
-    url = "https://www.chisel-lang.org",
-    licenses = Seq(License.`Apache-2.0`),
-    versionControl = VersionControl.github("chipsalliance", "chisel"),
-    developers = Seq()
-  )
-  def publishVersion = "5.0-SNAPSHOT"
 }
