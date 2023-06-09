@@ -382,6 +382,32 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
     }
   }
 
+  property("Zero-width bit extractions should be supported") {
+    assertKnownWidth(0) {
+      val x = WireDefault(UInt(8.W), DontCare)
+      val op = x(-1, 0)
+      WireDefault(chiselTypeOf(op), op)
+    }
+    assertKnownWidth(0) {
+      val x = WireDefault(UInt(8.W), DontCare)
+      val hi = 5
+      val lo = 6
+      val op = (x >> lo)(hi - lo, 0)
+      WireDefault(chiselTypeOf(op), op)
+    }
+  }
+
+  property("Zero-width bit extractions from the middle of a UInt should give an actionable error") {
+    val (log, x) = grabLog(intercept[Exception](ChiselStage.emitCHIRRTL(new RawModule {
+      val x = WireDefault(UInt(8.W), DontCare)
+      val op = x(5, 6)
+      WireDefault(chiselTypeOf(op), op)
+    })))
+    log should include(
+      "Invalid bit range [hi=5, lo=6]. If you are trying to extract zero-width range, right-shift by 'lo' before extracting."
+    )
+  }
+
   property("emit warning if dynamic index is too wide or too narrow") {
     class TooWide extends Module {
       val in = IO(Input(UInt(2.W)))
