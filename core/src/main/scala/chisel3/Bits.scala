@@ -181,25 +181,40 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     *
     * @example
     * {{{
-    * myBits = 0x5 = 0b101
-    * myBits(1,0) => 0b01  // extracts the two least significant bits
+    *   val myBits = "0b101".U
+    *   myBits(1, 0) // "0b01".U  // extracts the two least significant bits
+    *
+    *   // Note that zero-width ranges are also legal
+    *   myBits(-1, 0) // 0.U(0.W) // zero-width UInt
     * }}}
     * @param x the high bit
     * @param y the low bit
-    * @return a hardware component contain the requested bits
+    * @return a hardware component containing the requested bits
     */
   final def apply(x: Int, y: Int): UInt = macro SourceInfoTransform.xyArg
 
   /** @group SourceInfoTransformMacro */
+<<<<<<< HEAD
   final def do_apply(x: Int, y: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
     if (x < y || y < 0) {
       Builder.error(s"Invalid bit range ($x,$y)")
+=======
+  final def do_apply(x: Int, y: Int)(implicit sourceInfo: SourceInfo): UInt = {
+    if ((x < y && !(x == -1 && y == 0)) || y < 0) {
+      val zeroWidthSuggestion =
+        if (x == y - 1) {
+          s". If you are trying to extract zero-width range, right-shift by 'lo' before extracting."
+        } else {
+          ""
+        }
+      Builder.error(s"Invalid bit range [hi=$x, lo=$y]$zeroWidthSuggestion")
+>>>>>>> b910bf946 (Add support for zero-width bit extraction (#3352))
     }
-    val w = x - y + 1
+    val resultWidth = x - y + 1
     // This preserves old behavior while a more more consistent API is under debate
     // See https://github.com/freechipsproject/chisel3/issues/867
     litOption.map { value =>
-      ((value >> y) & ((BigInt(1) << w) - 1)).asUInt(w.W)
+      ((value >> y) & ((BigInt(1) << resultWidth) - 1)).asUInt(resultWidth.W)
     }.getOrElse {
       requireIsHardware(this, "bits to be sliced")
 
@@ -210,21 +225,28 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
         case _                 =>
       }
 
-      pushOp(DefPrim(sourceInfo, UInt(Width(w)), BitsExtractOp, this.ref, ILit(x), ILit(y)))
+      // FIRRTL does not yet support empty extraction so we must return the zero-width wire here:
+      if (resultWidth == 0) {
+        0.U(0.W)
+      } else {
+        pushOp(DefPrim(sourceInfo, UInt(Width(resultWidth)), BitsExtractOp, this.ref, ILit(x), ILit(y)))
+      }
     }
   }
 
-  // REVIEW TODO: again, is this necessary? Or just have this and use implicits?
   /** Returns a subset of bits on this $coll from `hi` to `lo` (inclusive), statically addressed.
     *
     * @example
     * {{{
-    * myBits = 0x5 = 0b101
-    * myBits(1,0) => 0b01  // extracts the two least significant bits
+    *   val myBits = "0b101".U
+    *   myBits(1, 0) // "0b01".U  // extracts the two least significant bits
+    *
+    *   // Note that zero-width ranges are also legal
+    *   myBits(-1, 0) // 0.U(0.W) // zero-width UInt
     * }}}
     * @param x the high bit
     * @param y the low bit
-    * @return a hardware component contain the requested bits
+    * @return a hardware component containing the requested bits
     */
   final def apply(x: BigInt, y: BigInt): UInt = macro SourceInfoTransform.xyArg
 
