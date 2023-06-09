@@ -26,7 +26,6 @@ object v {
   )
   val osLib = ivy"com.lihaoyi::os-lib:0.9.1"
   val upickle = ivy"com.lihaoyi::upickle:3.1.0"
-  val macroParadise = ivy"org.scalamacros:::paradise:2.1.1"
   val scalatest = ivy"org.scalatest::scalatest:3.2.14"
   val scalacheck = ivy"org.scalatestplus::scalacheck-1-15:3.2.11.0"
   val json4s = ivy"org.json4s::json4s-native:4.0.6"
@@ -40,7 +39,6 @@ object v {
 
   def scalaLibrary(scalaVersion: String) = ivy"org.scala-lang:scala-library:$scalaVersion"
 }
-private def majorScalaVersion(scalaVersion: String) = scalaVersion.split('.')(1).toInt
 
 object firrtl extends mill.Cross[Firrtl](v.scalaCrossVersions: _*)
 
@@ -50,8 +48,6 @@ class Firrtl(val crossScalaVersion: String)
     with CrossSbtModule
     with ScalafmtModule {
   def millSourcePath = super.millSourcePath / os.up / "firrtl"
-
-  def macroParadiseIvy: Option[Dep] = if (majorScalaVersion(crossScalaVersion) < 13) Some(v.macroParadise) else None
 
   def osLibModuleIvy = v.osLib
 
@@ -104,8 +100,6 @@ class Macros(val crossScalaVersion: String)
   def millSourcePath = super.millSourcePath / os.up / "macros"
 
   def scalaReflectIvy = v.scalaReflect(crossScalaVersion)
-
-  def macroParadiseIvy: Option[Dep] = if (majorScalaVersion(crossScalaVersion) < 13) Some(v.macroParadise) else None
 }
 
 object core extends mill.Cross[Core](v.scalaCrossVersions: _*)
@@ -120,8 +114,6 @@ class Core(val crossScalaVersion: String)
   def firrtlModule = firrtl(crossScalaVersion)
 
   def macrosModule = macros(crossScalaVersion)
-
-  def macroParadiseIvy: Option[Dep] = if (majorScalaVersion(crossScalaVersion) < 13) Some(v.macroParadise) else None
 
   def osLibModuleIvy = v.osLib
 
@@ -202,8 +194,6 @@ class Chisel(val crossScalaVersion: String)
   def coreModule = core(crossScalaVersion)
 
   def pluginModule = plugin(crossScalaVersion)
-
-  def macroParadiseIvy = if (majorScalaVersion(crossScalaVersion) < 13) Some(v.macroParadise) else None
 }
 
 object chiselut extends mill.Cross[ChiselUnitTest](v.scalaCrossVersions: _*)
@@ -221,8 +211,6 @@ class ChiselUnitTest(val crossScalaVersion: String)
   def scalatestIvy = v.scalatest
 
   def scalacheckIvy = v.scalacheck
-
-  def macroParadiseIvy: Option[Dep] = if (majorScalaVersion(crossScalaVersion) < 13) Some(v.macroParadise) else None
 
   override def sources = T.sources {
     Seq(PathRef(millSourcePath / "src" / "test")) ++

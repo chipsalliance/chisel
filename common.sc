@@ -7,8 +7,6 @@ private def majorScalaVersion(scalaVersion: String) = scalaVersion.split('.')(1)
 trait HasMacroAnnotations
   extends ScalaModule {
 
-  def scalacPluginIvyDeps = super.scalacPluginIvyDeps()
-
   override def scalacOptions = T {
     super.scalacOptions() ++ Agg("-Ymacro-annotations")
   }
@@ -20,8 +18,6 @@ trait MacrosModule
   def scalaReflectIvy: Dep
 
   override def ivyDeps = super.ivyDeps() ++ Some(scalaReflectIvy)
-
-  override def scalacPluginIvyDeps = super.scalacPluginIvyDeps() ++ macroParadiseIvy
 }
 
 trait FirrtlModule 
@@ -94,7 +90,6 @@ trait CoreModule
   def osLibModuleIvy: Dep
 
   def upickleModuleIvy: Dep
-
 
   override def moduleDeps = super.moduleDeps ++ Seq(macrosModule, firrtlModule)
 
