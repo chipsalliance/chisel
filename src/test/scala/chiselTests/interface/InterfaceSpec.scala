@@ -284,11 +284,19 @@ class InterfaceSpec extends AnyFunSpec with Matchers {
           override def properties = {}
         }
 
+      class RefClient extends RawModule {
+        val x = IO(Output(Bool()))
+        val refInterface = chisel3.Module(new RefInterface.Wrapper.BlackBox)
+        x := read(refInterface.io.r)
+      }
+
       val dir = new java.io.File("test_run_dir/interface/InterfaceSpec/should-support-ref-types")
       Drivers.compile(
         dir,
-        Drivers.CompilationUnit(() => new (RefInterface.Wrapper.Module))
+        Drivers.CompilationUnit(() => new RefClient),
+        Drivers.CompilationUnit(() => new RefInterface.Wrapper.Module)
       )
+      Drivers.link(dir, "compile-0/RefClient.sv")
     }
 
   }
