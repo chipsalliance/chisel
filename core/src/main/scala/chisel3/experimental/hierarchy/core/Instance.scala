@@ -8,7 +8,7 @@ import chisel3.experimental.hierarchy.{InstantiableClone, ModuleClone}
 import chisel3.internal.{throwException, Builder}
 import chisel3.experimental.{BaseModule, ExtModule, SourceInfo}
 import chisel3.internal.sourceinfo.InstanceTransform
-import chisel3.internal.firrtl.{Component, DefBlackBox, DefModule, Port}
+import chisel3.internal.firrtl.{Component, DefBlackBox, DefIntrinsicModule, DefModule, Port}
 import firrtl.annotations.IsModule
 
 import scala.annotation.nowarn
@@ -116,8 +116,9 @@ object Instance extends SourceInfoDoc {
   ): Instance[T] = {
     // Check to see if the module is already defined internally or externally
     val existingMod = Builder.components.map {
-      case c: DefModule if c.id == definition.proto          => Some(c)
-      case c: DefBlackBox if c.name == definition.proto.name => Some(c)
+      case c: DefModule if c.id == definition.proto                 => Some(c)
+      case c: DefBlackBox if c.name == definition.proto.name        => Some(c)
+      case c: DefIntrinsicModule if c.name == definition.proto.name => Some(c)
       case _ => None
     }.flatten
 
