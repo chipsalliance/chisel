@@ -97,6 +97,35 @@ trait CoreModule
 
   def upickleModuleIvy: Dep
 
+  def firtoolVersion: T[Option[String]]
+
+  def buildVersion: T[String]
+
+  def generateBuildInfo = T {
+    val outputFile = T.dest / "BuildInfo.scala"
+    val firtoolVersionString = firtoolVersion().map("Some(" + _ + ")").getOrElse("None")
+    val contents =
+      s"""package chisel3
+         |case object BuildInfo {
+         |  val buildInfoPackage: String = "${artifactName()}"
+         |  val version: String = "${buildVersion()}"
+         |  val scalaVersion: String = "${scalaVersion()}"
+         |  val firtoolVersion: scala.Option[String] = $firtoolVersionString
+         |  override val toString: String = {
+         |    "buildInfoPackage: %s, version: %s, scalaVersion: %s, firtoolVersion %s".format(
+         |        buildInfoPackage, version, scalaVersion, firtoolVersion
+         |    )
+         |  }
+         |}
+         |""".stripMargin
+    os.write(outputFile, contents)
+    PathRef(T.dest)
+  }
+
+  override def generatedSources = T {
+    super.generatedSources() :+ generateBuildInfo()
+  }
+
   override def moduleDeps = super.moduleDeps ++ Seq(macrosModule, firrtlModule)
 
   override def ivyDeps = super.ivyDeps() ++ Agg(
