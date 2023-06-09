@@ -48,18 +48,10 @@ options:
         url: chisel3/docs/explanations/supported-hardware.html
         menu_type: chisel3
         menu_section: supported-hardware
-      - title: Connectable
-        url: chisel3/docs/explanations/connectable.html
-        menu_type: chisel3
-        menu_section: connectable
       - title: Data Types
         url: chisel3/docs/explanations/data-types.html
         menu_type: chisel3
         menu_section: data-types
-      - title: Dataview
-        url: chisel3/docs/explanations/dataview.html
-        menu_type: chisel3
-        menu_section: dataview
       - title: Bundles and Vecs
         url: chisel3/docs/explanations/bundles-and-vecs.html
         menu_type: chisel3
@@ -104,14 +96,14 @@ options:
         url: chisel3/docs/explanations/blackboxes.html
         menu_type: chisel3
         menu_section: blackboxes
-      - title: Intrinsics
-        url: chisel3/docs/explanations/intrinsics.html
-        menu_type: chisel3
-        menu_section: intrinsics
       - title: Enumerations
         url: chisel3/docs/explanations/chisel-enum.html
         menu_type: chisel3
         menu_section: enumerations
+      - title: DataView
+        url: chisel3/docs/explanations/dataview.html
+        menu_type: chisel3
+        menu_section: dataview
       - title: Functional Module Creation
         url: chisel3/docs/explanations/functional-module-creation.html
         menu_type: chisel3
@@ -144,6 +136,18 @@ options:
         url: chisel3/docs/explanations/unconnected-wires.html
         menu_type: chisel3
         menu_section: unconnected-wires
+      - title: Chisel Type vs Scala Type
+        url: chisel3/docs/explanations/chisel-type-vs-scala-type.html
+        menu_type: chisel3
+        menu_section: chisel-type-vs-scala-type
+      - title: Connectable Operators
+        url: chisel3/docs/explanations/connectable.html
+        menu_type: chisel3
+        menu_section: connectable
+      - title: Decoders
+        url: chisel3/docs/explanations/decoder.html
+        menu_type: chisel3
+        menu_section: decoders
       - title: Intrinsic Modules
         url: chisel3/docs/explanations/intrinsics.html
         menu_type: chisel3
@@ -152,22 +156,14 @@ options:
         url: chisel3/docs/explanations/annotations.html
         menu_type: chisel3
         menu_section: annotations
-      - title: Deep Dive into Connection Operators
-        url: chisel3/docs/explanations/connection-operators.html
-        menu_type: chisel3
-        menu_section: deep-dive-into-connection-operators
-      - title: Chisel Type vs Scala Type
-        url: chisel3/docs/explanations/chisel-type-vs-scala-type.html
-        menu_type: chisel3
-        menu_section: chisel-type-vs-scala-type
-      - title: Decoders
-        url: chisel3/docs/explanations/decoder.html
-        menu_type: chisel3
-        menu_section: decoders
       - title: Source Locators
         url: chisel3/docs/explanations/source-locators.html
         menu_type: chisel3
         menu_section: source-locators
+      - title: Deep Dive into Connection Operators
+        url: chisel3/docs/explanations/connection-operators.html
+        menu_type: chisel3
+        menu_section: deep-dive-into-connection-operators
   - title: Appendix
     url: chisel3/docs/appendix/appendix.html
     menu_type: chisel3
