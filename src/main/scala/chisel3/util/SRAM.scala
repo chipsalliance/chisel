@@ -107,7 +107,7 @@ class SRAMInterface[T <: Data](
 object SRAM {
 
   /** Generates a [[SyncReadMem]] within the current module, connected to an explicit number
-    * of read, write, and read/write ports. This SRsizeAM abstraction has both read and write capabilities: that is,
+    * of read, write, and read/write ports. This SRAM abstraction has both read and write capabilities: that is,
     * it contains at least one read accessor (a read-only or read-write port), and at least one write accessor
     * (a write-only or read-write port).
     *
