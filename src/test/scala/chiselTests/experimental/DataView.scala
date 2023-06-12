@@ -6,6 +6,7 @@ import chisel3._
 import chisel3.experimental.conversions._
 import chisel3.experimental.dataview._
 import chisel3.experimental.{Analog, HWTuple2}
+import chisel3.probe._
 import chisel3.reflect.DataMirror.internal.chiselTypeClone
 import chisel3.util.{Decoupled, DecoupledIO}
 import chiselTests.ChiselFlatSpec
@@ -780,6 +781,54 @@ class DataViewSpec extends ChiselFlatSpec {
     for (line <- expected) {
       chirrtl should include(line)
     }
+  }
+
+  it should "handle viewing Probes as their referenced type" in {
+    class MyModule extends Module {
+      val a = IO(Output(Probe(Bool())))
+      val w = WireInit(Bool(), false.B)
+      val w_probe = ProbeValue(w)
+      val w_probe_view = w_probe.viewAs[Bool]
+      define(a, w_probe_view)
+    }
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
+    chirrtl should include("define a = probe(w)")
+  }
+
+  it should "handle viewing RWProbes as their referenced type" in {
+    class MyModule extends Module {
+      val a = IO(Output(RWProbe(Bool())))
+      val w = WireInit(Bool(), false.B)
+      val w_probe = RWProbeValue(w)
+      val w_probe_view = w_probe.viewAs[Bool]
+      define(a, w_probe_view)
+    }
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
+    chirrtl should include("define a = rwprobe(w)")
+  }
+
+  it should "error if attempting to define a viewed a Probe as a RWProbe" in {
+    class MyModule extends Module {
+      val a = IO(Output(RWProbe(Bool())))
+      val w = WireInit(Bool(), false.B)
+      val w_probe = ProbeValue(w)
+      val w_probe_view = w_probe.viewAs[Bool]
+      define(a, w_probe_view)
+    }
+    val err = the[ChiselException] thrownBy (ChiselStage.emitCHIRRTL(new MyModule, Array("--throw-on-first-error")))
+    err.toString should include("Cannot use a non-writable probe expression to define a writable probe")
+  }
+
+  it should "error if attempting to connect a viewed a Probe to a connectable" in {
+    class MyModule extends Module {
+      val a = IO(Output(Bool()))
+      val w = WireInit(Bool(), false.B)
+      val w_probe = ProbeValue(w)
+      val w_probe_view = w_probe.viewAs[Bool]
+      a := w_probe_view
+    }
+    val err = the[ChiselException] thrownBy (ChiselStage.emitCHIRRTL(new MyModule, Array("--throw-on-first-error")))
+    err.toString should include("Probed type cannot participate in a mono connection")
   }
 
   behavior.of("PartialDataView")

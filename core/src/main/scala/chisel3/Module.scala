@@ -11,6 +11,7 @@ import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
 import chisel3.experimental.{BaseModule, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal.sourceinfo.{InstTransform}
+import chisel3.reflect.DataMirror
 import _root_.firrtl.annotations.{IsModule, ModuleName, ModuleTarget}
 import _root_.firrtl.AnnotationSeq
 
@@ -116,27 +117,16 @@ object Module extends SourceInfoDoc {
     * This recursively walks the tree, and assigns directions if no explicit
     *   direction given by upper-levels (override Input / Output)
     */
-  private[chisel3] def assignCompatDir(data: Data): Unit = {
-    data match {
-      case data: Element => data._assignCompatibilityExplicitDirection
-      case data: Aggregate =>
-        data.specifiedDirection match {
-          // Recurse into children to ensure explicit direction set somewhere
-          case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip =>
-            data match {
-              case record: Record =>
-                record.elementsIterator.foreach(assignCompatDir(_))
-              case vec: Vec[_] =>
-                vec.elementsIterator.foreach(assignCompatDir(_))
-                assignCompatDir(vec.sample_element) // This is used in fromChildren computation
-            }
-          case SpecifiedDirection.Input | SpecifiedDirection.Output =>
-          // forced assign, nothing to do
-          // The .bind algorithm will automatically assign the direction here.
-          // Thus, no implicit assignment is necessary.
-        }
-    }
-  }
+  private[chisel3] def assignCompatDir(data: Data): Unit =
+    // Collect all leaf elements of the data which have an unspecified or flipped
+    // direction, and assign explicit directions to them
+    DataMirror
+      .collectMembers(data) {
+        case x: Element
+            if x.specifiedDirection == SpecifiedDirection.Unspecified || x.specifiedDirection == SpecifiedDirection.Flip =>
+          x
+      }
+      .foreach { x => x._assignCompatibilityExplicitDirection }
 
   /** Allowed values for the types of Module.reset */
   object ResetType {
