@@ -4,7 +4,7 @@ inputs:
   version:
     description: 'version to install'
     required: false
-    default: '2021-11-09'
+    default: '2023-06-12'
 
 runs:
   using: composite
