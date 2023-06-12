@@ -131,9 +131,6 @@ class TappedInterfaceSpec extends AnyFunSpec with Matchers {
         */
       import CompilationUnit1.wrapperConformance
 
-      println(circt.stage.ChiselStage.emitCHIRRTL(new CompilationUnit1.WrapperModule, Array("--full-stacktrace")))
-      println(circt.stage.ChiselStage.emitCHIRRTL(new CompilationUnit2.Foo))
-
       info("compile okay!")
       Drivers.compile(
         dir,
