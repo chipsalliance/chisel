@@ -3,6 +3,8 @@
 package chisel3.util.experimental
 
 import chisel3._
+import chisel3.probe.{Probe, RWProbe}
+import chisel3.Data.ProbeInfo
 import chisel3.experimental.{annotate, requireIsHardware, skipPrefix, BaseModule, ChiselAnnotation, SourceInfo}
 import chisel3.internal.{Builder, BuilderContextCache, NamedComponent, Namespace}
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
@@ -203,14 +205,15 @@ object BoringUtils {
     genName
   }
 
-  /** Access a source [[Data]] that may or may not be in the current module.  If
-    * this is in a child module, then create ports to allow access the
-    * requrested source.
-    */
-  def bore(source: Data)(implicit si: SourceInfo): Data = {
+  private def boreOrTap[A <: Data](source: A, createProbe: Option[ProbeInfo] = None)(implicit si: SourceInfo): A = {
     import reflect.DataMirror
     def parent(d: Data): BaseModule = d.topBinding.location.get
-    def purePortType = if (DataMirror.hasOuterFlip(source)) Flipped(chiselTypeOf(source)) else chiselTypeOf(source)
+    def purePortTypeBase = if (DataMirror.hasOuterFlip(source)) Flipped(chiselTypeOf(source)) else chiselTypeOf(source)
+    def purePortType = createProbe match {
+      case Some(pi) if pi.writable => RWProbe(purePortTypeBase)
+      case Some(pi)                => Probe(purePortTypeBase)
+      case None                    => purePortTypeBase
+    }
     def boringError(module: BaseModule): Unit = {
       (module.fullyClosedErrorMessages ++ Seq(
         (si, s"Can only bore into modules that are not fully closed: ${module.name} was fully closed")
@@ -218,19 +221,20 @@ object BoringUtils {
         case (sourceInfo, msg) => Builder.error(msg)(sourceInfo)
       }
     }
-    def drill(source: Data, path: Seq[BaseModule], up: Boolean): Data = {
-      path.foldLeft(source) {
-        case (rhs, module) if (module.isFullyClosed) => boringError(module); DontCare
-        case (rhs, module) =>
+    def drill(source: A, path: Seq[BaseModule], connectionLocation: Seq[BaseModule], up: Boolean): A = {
+      path.zip(connectionLocation).foldLeft(source) {
+        case (rhs, (module, conLoc)) if (module.isFullyClosed) => boringError(module); DontCare.asInstanceOf[A]
+        case (rhs, (module, conLoc)) =>
           skipPrefix { // so `lcaSource` isn't in the name of the secret port
-            /** create a port, and drill up. */
-            val bore = if (up) module.createSecretIO(purePortType) else module.createSecretIO(Flipped(purePortType))
-            module.addSecretIO(bore)
-            if (up) {
-              module.asInstanceOf[RawModule].secretConnection(bore, rhs)
-            } else {
-              module.asInstanceOf[RawModule].secretConnection(rhs, bore)
+            if (!up && createProbe.nonEmpty && createProbe.get.writable) {
+              Builder.error("Cannot drill writable probes upwards.")
             }
+
+            /** create a port, and drill up. */
+            // if drilling down, don't drill Probe types
+            val bore = if (up) module.createSecretIO(purePortType) else module.createSecretIO(Flipped(purePortTypeBase))
+            module.addSecretIO(bore)
+            conLoc.asInstanceOf[RawModule].secretConnection(bore, rhs)
             bore
           }
       }
@@ -241,12 +245,10 @@ object BoringUtils {
     source.topBindingOpt match {
       case None =>
         Builder.error(s"Cannot bore from ${source._errorContext}")
-        return DontCare
       case Some(internal.CrossModuleBinding) =>
         Builder.error(
           s"Cannot bore across a Definition/Instance boundary:${thisModule._errorContext} cannot access ${source}"
         )
-        return DontCare
       case _ => // Actually bore
     }
     if (parent(source) == thisModule) {
@@ -258,16 +260,73 @@ object BoringUtils {
     val lcaResult = DataMirror.findLCAPaths(source, thisModule)
     if (lcaResult.isEmpty) {
       Builder.error(s"Cannot bore from $source to ${thisModule.name}, as they do not share a least common ancestor")
-      return DontCare
     }
     val (upPath, downPath) = lcaResult.get
-    val lcaSource = drill(source, upPath.tail, true)
+    val lcaSource = drill(source, upPath.dropRight(1), upPath.dropRight(1), true)
+    val sink = drill(lcaSource, downPath.reverse.tail, downPath.reverse, false)
 
-    /** Creating a wire to assign the result to.  We will return this. */
-    val bore = Wire(purePortType)
-    val sink = drill(bore, downPath.tail, false)
+    if (sink.probeInfo.nonEmpty) {
+      sink
+    } else {
 
-    upPath.head.asInstanceOf[RawModule].secretConnection(sink, lcaSource)
-    bore
+      /** Creating a wire to assign the result to.  We will return this. */
+      val bore = Wire(purePortTypeBase)
+      thisModule.asInstanceOf[RawModule].secretConnection(bore, sink)
+      bore
+    }
   }
+
+  /** Access a source [[Data]] that may or may not be in the current module.  If
+    * this is in a child module, then create ports to allow access to the
+    * requested source.
+    */
+  def bore[A <: Data](source: A)(implicit si: SourceInfo): A = {
+    boreOrTap(source, createProbe = None)
+  }
+
+  /** Access a source [[Data]] that may or may not be in the current module.  If
+    * this is in a child module, then create read-only probe ports to allow
+    * access to the requested source.
+    *
+    * Returns a probe Data type.
+    */
+  def tap[A <: Data](source: A)(implicit si: SourceInfo): A = {
+    val tapIntermediate = skipPrefix { boreOrTap(source, createProbe = Some(ProbeInfo(writable = false))) }
+    if (tapIntermediate.probeInfo.nonEmpty) {
+      tapIntermediate
+    } else {
+      probe.ProbeValue(tapIntermediate)
+    }
+  }
+
+  /** Access a source [[Data]] that may or may not be in the current module.  If
+    * this is in a child module, then create write-only probe ports to allow
+    * access to the requested source. Supports downward accesses only.
+    *
+    * Returns a probe Data type.
+    */
+  def rwTap[A <: Data](source: A)(implicit si: SourceInfo): A = {
+    val tapIntermediate = skipPrefix { boreOrTap(source, createProbe = Some(ProbeInfo(writable = true))) }
+    if (tapIntermediate.probeInfo.nonEmpty) {
+      tapIntermediate
+    } else {
+      probe.RWProbeValue(tapIntermediate)
+    }
+  }
+
+  /** Access a source [[Data]] that may or may not be in the current module.  If
+    * this is in a child module, then create read-only probe ports to allow
+    * access to the requested source.
+    *
+    * Returns a non-probe Data type.
+    */
+  def tapAndRead[A <: Data](source: A)(implicit si: SourceInfo): A = {
+    val tapIntermediate = skipPrefix { boreOrTap(source, createProbe = Some(ProbeInfo(writable = false))) }
+    if (tapIntermediate.probeInfo.nonEmpty) {
+      probe.read(tapIntermediate)
+    } else {
+      tapIntermediate
+    }
+  }
+
 }

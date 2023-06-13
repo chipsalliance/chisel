@@ -3,6 +3,7 @@ package svsim
 import java.io.{BufferedReader, BufferedWriter, File, FileWriter, InputStreamReader, PrintWriter}
 import java.nio.file.Paths
 import java.lang.ProcessBuilder.Redirect
+import scala.annotation.meta.param
 
 case class ModuleInfo(
   name:  String,
@@ -139,7 +140,7 @@ final class Workspace(
       l("  initial begin")
       l("    simulation_body();")
       l("  end")
-      l("  `ifdef ", Backend.supportsDelayInPublicFunctionsFlag)
+      l("  `ifdef ", Backend.HarnessCompilationFlags.supportsDelayInPublicFunctions)
       l("  export \"DPI-C\" task run_simulation;")
       l("  task run_simulation;")
       l("    input int timesteps;")
@@ -154,39 +155,39 @@ final class Workspace(
       l("  export \"DPI-C\" function simulation_initializeTrace;")
       l("  function void simulation_initializeTrace;")
       l("    input string traceFilePath;")
-      l("    `ifdef SVSIM_ENABLE_VCD_TRACING")
+      l("    `ifdef SVSIM_ENABLE_VCD_TRACING_SUPPORT")
       l("      $dumpfile({traceFilePath,\".vcd\"});")
       l("      $dumpvars(0, ", dut.instanceName,");")
       l("    `endif")
-      l("    `ifdef SVSIM_ENABLE_VPD_TRACING")
+      l("    `ifdef SVSIM_ENABLE_VPD_TRACING_SUPPORT")
       l("      $vcdplusfile({traceFilePath,\".vpd\"});")
       l("      $dumpvars(0, ", dut.instanceName,");")
       l("      $vcdpluson(0, ", dut.instanceName,");")
       l("    `endif")
-      l("    `ifdef SVSIM_ENABLE_FSDB_TRACING")
+      l("    `ifdef SVSIM_ENABLE_FSDB_TRACING_SUPPORT")
       l("      $fsdbDumpfile({traceFilePath,\".fsdb\"});")
       l("      $fsdbDumpvars(0, ", dut.instanceName,");")
       l("    `endif")
       l("  endfunction")
       l("  export \"DPI-C\" function simulation_enableTrace;")
       l("  function void simulation_enableTrace;")
-      l("    `ifdef SVSIM_ENABLE_VCD_TRACING")
+      l("    `ifdef SVSIM_ENABLE_VCD_TRACING_SUPPORT")
       l("    $dumpon;")
-      l("    `elsif SVSIM_ENABLE_VPD_TRACING")
+      l("    `elsif SVSIM_ENABLE_VPD_TRACING_SUPPORT")
       l("    $dumpon;")
       l("    `endif")
-      l("    `ifdef SVSIM_ENABLE_FSDB_TRACING")
+      l("    `ifdef SVSIM_ENABLE_FSDB_TRACING_SUPPORT")
       l("    $fsdbDumpon;")
       l("    `endif")
       l("  endfunction")
       l("  export \"DPI-C\" function simulation_disableTrace;")
       l("  function void simulation_disableTrace;")
-      l("    `ifdef SVSIM_ENABLE_VCD_TRACING")
+      l("    `ifdef SVSIM_ENABLE_VCD_TRACING_SUPPORT")
       l("    $dumpoff;")
-      l("    `elsif SVSIM_ENABLE_VPD_TRACING")
+      l("    `elsif SVSIM_ENABLE_VPD_TRACING_SUPPORT")
       l("    $dumpoff;")
       l("    `endif")
-      l("    `ifdef SVSIM_ENABLE_FSDB_TRACING")
+      l("    `ifdef SVSIM_ENABLE_FSDB_TRACING_SUPPORT")
       l("    $fsdbDumpoff;")
       l("    `endif")
       l("  endfunction")
@@ -265,7 +266,7 @@ final class Workspace(
     val workingDirectory = new File(workingDirectoryPath)
     workingDirectory.mkdir()
 
-    val invocationSettings = backend.invocationSettings(
+    val parameters = backend.generateParameters(
       outputBinaryName = "simulation",
       topModuleName = Workspace.testbenchModuleName,
       additionalHeaderPaths = Seq(workingDirectoryPath),
@@ -281,7 +282,7 @@ final class Workspace(
       "SVSIM_SIMULATION_LOG" -> s"$workingDirectoryPath/simulation-log.txt",
       // The simulation driver appends the appropriate extension to the file path
       "SVSIM_SIMULATION_TRACE" -> s"$workingDirectoryPath/trace"
-    ) ++ invocationSettings.simulationEnvironment
+    ) ++ parameters.simulationInvocation.environment
 
     // Emit Makefile for debugging (will be emitted even if compile fails)
     val makefileWriter = new LineWriter(s"$workingDirectoryPath/Makefile")
@@ -303,8 +304,8 @@ final class Workspace(
       l()
       l("simulation: clean")
       l("\t$(compilerEnvironment) \\")
-	    l("\t", invocationSettings.compilerPath, " \\")
-      for (argument <- invocationSettings.compilerArguments) {
+	    l("\t", parameters.compilerPath, " \\")
+      for (argument <- parameters.compilerInvocation.arguments) {
         val sanitizedArugment = argument
           .replace("$", "$$")
           .replace("'", "'\\''")
@@ -326,7 +327,7 @@ final class Workspace(
       l("\tcat ", executionScriptPath, " | { grep '^#' || true; } && \\")
       l("\tcat ", executionScriptPath, " | sed -n 's/^[0-9]*> \\(.*\\)/\\1/p' | \\")
       l("\t\t$(simulationEnvironment) $(shell pwd)/simulation \\")
-      for (argument <- invocationSettings.simulationArguments) {
+      for (argument <- parameters.simulationInvocation.arguments) {
       l("\t\t\t'", argument.replace("$", "$$"), "' \\")
       }
       l()
@@ -336,8 +337,8 @@ final class Workspace(
       }
       l()
       l("compilerEnvironment = \\")
-      for (((name, value), index) <- invocationSettings.compilerEnvironment.zipWithIndex) {
-      l("\t", name, "=", value, if (index != invocationSettings.compilerEnvironment.length - 1) " \\" else "")
+      for (((name, value), index) <- parameters.compilerInvocation.environment.zipWithIndex) {
+      l("\t", name, "=", value, if (index != parameters.compilerInvocation.environment.length - 1) " \\" else "")
       }
       l()
       l("simulationEnvironment = \\")
@@ -393,7 +394,7 @@ final class Workspace(
       executableName = "simulation",
       settings = Simulation.Settings(
         customWorkingDirectory = customSimulationWorkingDirectory,
-        arguments = invocationSettings.simulationArguments,
+        arguments = parameters.simulationInvocation.arguments,
         environment = simulationEnvironment.toMap
       ),
       workingDirectoryPath = workingDirectoryPath,

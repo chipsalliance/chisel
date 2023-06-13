@@ -562,6 +562,20 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
       val version = chisel3.BuildInfo.firtoolVersion.getOrElse("<unknown>")
       e.getMessage should include(s"firtool version $version")
     }
+
+    it("should properly report Builder.errors even if there is a later Exception") {
+      val (log, _) = grabLog {
+        intercept[java.lang.Exception] {
+          import chisel3._
+          ChiselStage.emitCHIRRTL(new Module {
+            val in = IO(Input(UInt(8.W)))
+            val y = in >> -1
+            require(false) // This should not suppress reporting the negative shift
+          })
+        }
+      }
+      log should include("Negative shift amounts are illegal (got -1)")
+    }
   }
 
   describe("ChiselStage custom transform support") {

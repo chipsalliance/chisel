@@ -7,6 +7,7 @@ import chisel3._
 import chisel3.util.Valid
 import chisel3.experimental.hierarchy._
 import circt.stage.ChiselStage.convert
+import chisel3.experimental.{ExtModule, IntrinsicModule}
 
 // Note, the instantiable classes must not be inner classes because the materialized WeakTypeTags
 // will be different and they will not give the same hashCode when looking up the Definition in the
@@ -142,6 +143,30 @@ object InstantiateSpec {
     @public val out = param.map(w => IO(Output(UInt(w.W))))
     out.zip(in).foreach { case (o, i) => o := i }
   }
+
+  @instantiable
+  class InstantiableBlackBox extends BlackBox {
+    @public val io = IO(new Bundle {
+      val in = Input(UInt(8.W))
+      val out = Output(UInt(8.W))
+    })
+  }
+
+  @instantiable
+  class InstantiableExtModule extends ExtModule {
+    @public val in = IO(Input(UInt(8.W)))
+    @public val out = IO(Output(UInt(8.W)))
+  }
+
+  @instantiable
+  class InstantiableIntrinsic extends IntrinsicModule("MyIntrinsic", Map()) {
+    @public val in = IO(Input(UInt(8.W)))
+    @public val out = IO(Output(UInt(8.W)))
+  }
+}
+
+class ParameterizedReset(hasAsyncNotSyncReset: Boolean) extends Module {
+  override def resetType = if (hasAsyncNotSyncReset) Module.ResetType.Asynchronous else Module.ResetType.Synchronous
 }
 
 class InstantiateSpec extends ChiselFunSpec with Utils {
@@ -373,6 +398,30 @@ class InstantiateSpec extends ChiselFunSpec with Utils {
       }).serialize
       chirrtl should include(s"inst inst of OneArg ${info.makeMessage(x => x)}")
     }
+
+    it("should support BlackBoxes") {
+      val modules = convert(new Top {
+        val inst0 = Instantiate(new InstantiableBlackBox)
+        val inst1 = Instantiate(new InstantiableBlackBox)
+      }).modules.map(_.name)
+      assert(modules == Seq("InstantiableBlackBox", "Top"))
+    }
+
+    it("should support ExtModules") {
+      val modules = convert(new Top {
+        val inst0 = Instantiate(new InstantiableExtModule)
+        val inst1 = Instantiate(new InstantiableExtModule)
+      }).modules.map(_.name)
+      assert(modules == Seq("InstantiableExtModule", "Top"))
+    }
+
+    it("should support Intrinsics") {
+      val modules = convert(new Top {
+        val inst0 = Instantiate(new InstantiableIntrinsic)
+        val inst1 = Instantiate(new InstantiableIntrinsic)
+      }).modules.map(_.name)
+      assert(modules == Seq("InstantiableIntrinsic", "Top"))
+    }
   }
 
   describe("Arguments not of the proper form `new ModuleSubclass(...)(...)`") {
@@ -397,5 +446,33 @@ class InstantiateSpec extends ChiselFunSpec with Utils {
       assert(modules == Seq("Should", "Not", "Get", "Here"))
       """ shouldNot compile
     }
+  }
+
+  it("Should make different Modules with reset type as a parameter") {
+    class MyTop extends Top {
+      withReset(reset.asAsyncReset) {
+        val inst0 = Instantiate(new ParameterizedReset(true))
+        val inst1 = Instantiate(new ParameterizedReset(true))
+      }
+      val inst2 = Instantiate(new ParameterizedReset(false))
+      val inst3 = Instantiate(new ParameterizedReset(false))
+
+      a[ChiselException] should be thrownBy {
+        val inst4 = Instantiate(new ParameterizedReset(true))
+      }
+      a[ChiselException] should be thrownBy {
+        withReset(reset.asAsyncReset) {
+          val inst5 = Instantiate(new ParameterizedReset(false))
+        }
+      }
+    }
+    val modules = convert(new MyTop).modules.map(_.name)
+    assert(
+      modules == Seq(
+        "ParameterizedReset",
+        "ParameterizedReset_1",
+        "Top"
+      )
+    )
   }
 }

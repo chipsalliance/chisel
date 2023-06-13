@@ -10,7 +10,6 @@ import chisel3.internal.{castToInt, throwException, HasId}
 import chisel3.EnumType
 import scala.annotation.{nowarn, tailrec}
 import scala.collection.immutable.{Queue, VectorBuilder}
-import scala.collection.immutable.LazyList // Needed for 2.12 alias
 
 @nowarn("msg=class Port") // delete when Port becomes private
 private[chisel3] object Converter {
@@ -127,14 +126,12 @@ private[chisel3] object Converter {
           convert(info),
           e.name,
           extractType(id, info),
-          convert(clock, ctx, info),
-          firrtl.Utils.zero,
-          convert(getRef(id, info), ctx, info)
+          convert(clock, ctx, info)
         )
       )
     case e @ DefRegInit(info, id, clock, reset, init) =>
       Some(
-        fir.DefRegister(
+        fir.DefRegisterWithReset(
           convert(info),
           e.name,
           extractType(id, info),
@@ -405,7 +402,7 @@ private[chisel3] object Converter {
         fir.NoInfo,
         name,
         (ports ++ ctx.secretPorts).map(p => convert(p)),
-        convert(cmds ++ ctx.secretConnects, ctx)
+        convert(cmds ++ ctx.secretCommands, ctx)
       )
     case ctx @ DefBlackBox(id, name, ports, topDir, params) =>
       fir.ExtModule(

@@ -11,6 +11,7 @@ import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
 import chisel3.experimental.{BaseModule, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal.sourceinfo.{InstTransform}
+import chisel3.reflect.DataMirror
 import _root_.firrtl.annotations.{IsModule, ModuleName, ModuleTarget}
 import _root_.firrtl.AnnotationSeq
 
@@ -116,28 +117,35 @@ object Module extends SourceInfoDoc {
     * This recursively walks the tree, and assigns directions if no explicit
     *   direction given by upper-levels (override Input / Output)
     */
-  private[chisel3] def assignCompatDir(data: Data): Unit = {
-    data match {
-      case data: Element => data._assignCompatibilityExplicitDirection
-      case data: Aggregate =>
-        data.specifiedDirection match {
-          // Recurse into children to ensure explicit direction set somewhere
-          case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip =>
-            data match {
-              case record: Record =>
-                record.elementsIterator.foreach(assignCompatDir(_))
-              case vec: Vec[_] =>
-                vec.elementsIterator.foreach(assignCompatDir(_))
-                assignCompatDir(vec.sample_element) // This is used in fromChildren computation
-            }
-          case SpecifiedDirection.Input | SpecifiedDirection.Output =>
-          // forced assign, nothing to do
-          // The .bind algorithm will automatically assign the direction here.
-          // Thus, no implicit assignment is necessary.
-        }
-    }
-  }
+  private[chisel3] def assignCompatDir(data: Data): Unit =
+    // Collect all leaf elements of the data which have an unspecified or flipped
+    // direction, and assign explicit directions to them
+    DataMirror
+      .collectMembers(data) {
+        case x: Element
+            if x.specifiedDirection == SpecifiedDirection.Unspecified || x.specifiedDirection == SpecifiedDirection.Flip =>
+          x
+      }
+      .foreach { x => x._assignCompatibilityExplicitDirection }
 
+  /** Allowed values for the types of Module.reset */
+  object ResetType {
+
+    /** Allowed values for the types of Module.reset */
+    sealed trait Type
+
+    /** The default reset type. This is Uninferred, unless it is the top Module, in which case it is Bool */
+    case object Default extends Type
+
+    /** Explicitly Uninferred Reset, even if this is the top Module */
+    case object Uninferred extends Type
+
+    /** Explicitly Bool (Synchronous) Reset */
+    case object Synchronous extends Type
+
+    /** Explicitly Asynchronous Reset */
+    case object Asynchronous extends Type
+  }
 }
 
 /** Abstract base class for Modules, which behave much like Verilog modules.
@@ -148,6 +156,10 @@ object Module extends SourceInfoDoc {
   * @note Module instantiations must be wrapped in a Module() call.
   */
 abstract class Module extends RawModule {
+
+  /** Override this to explicitly set the type of reset you want on this module , before any reset inference */
+  def resetType: Module.ResetType.Type = Module.ResetType.Default
+
   // Implicit clock and reset pins
   final val clock: Clock = IO(Input(Clock()))(UnlocatableSourceInfo).suggestName("clock")
   final val reset: Reset = IO(Input(mkReset))(UnlocatableSourceInfo).suggestName("reset")
@@ -172,8 +184,15 @@ abstract class Module extends RawModule {
   private[chisel3] def mkReset: Reset = {
     // Top module and compatibility mode use Bool for reset
     // Note that a Definition elaboration will lack a parent, but still not be a Top module
-    val inferReset = (_parent.isDefined || Builder.inDefinition)
-    if (inferReset) Reset() else Bool()
+    resetType match {
+      case Module.ResetType.Default => {
+        val inferReset = (_parent.isDefined || Builder.inDefinition)
+        if (inferReset) Reset() else Bool()
+      }
+      case Module.ResetType.Uninferred   => Reset()
+      case Module.ResetType.Synchronous  => Bool()
+      case Module.ResetType.Asynchronous => AsyncReset()
+    }
   }
 
   // Setup ClockAndReset
@@ -559,7 +578,7 @@ package experimental {
 
     // Must have separate createSecretIO from addSecretIO to get plugin to name it
     // data must be a fresh Chisel type
-    private[chisel3] def createSecretIO(data: => Data)(implicit sourceInfo: SourceInfo): Data = {
+    private[chisel3] def createSecretIO[A <: Data](data: => A)(implicit sourceInfo: SourceInfo): A = {
       val iodef = data
       internal.requireIsChiselType(iodef, "io type")
       require(!isFullyClosed, "Cannot create secret ports if module is fully closed")
@@ -571,7 +590,7 @@ package experimental {
     private[chisel3] val secretPorts: ArrayBuffer[Port] = ArrayBuffer.empty
 
     // Must have separate createSecretIO from addSecretIO to get plugin to name it
-    private[chisel3] def addSecretIO(iodef: Data)(implicit sourceInfo: SourceInfo): Data = {
+    private[chisel3] def addSecretIO[A <: Data](iodef: A)(implicit sourceInfo: SourceInfo): A = {
       val name = iodef._computeName(None).getOrElse("secret")
       iodef.setRef(ModuleIO(this, _namespace.name(name)))
       val newPort = new Port(iodef, iodef.specifiedDirection, sourceInfo)

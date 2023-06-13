@@ -70,6 +70,7 @@ where Vec takes a size as the first argument and a block returning a port as the
 ## Bulk Connections
 Once we have a defined Interface, we can connect to it via a [`MonoConnect`](https://www.chisel-lang.org/api/latest/chisel3/Data.html#:=) operator (`:=`) or [`BiConnect`](https://www.chisel-lang.org/api/latest/chisel3/Data.html#%3C%3E) operator (`<>`).
 
+
 ### `MonoConnect` Algorithm
 `MonoConnect.connect`, or `:=`, executes a mono-directional connection element-wise.
 
@@ -94,6 +95,8 @@ Note that the RHS element must be readable so, one of these must hold:
 
 ### `BiConnect` Algorithm
 `BiConnect.connect`, or `<>`, executes a bidirectional connection element-wise. Note that the arguments are left and right (not source and sink) so the intent is for the operation to be commutative. The connect operation will recurse down the left `Data` (with the right `Data`). An exception will be thrown if a movement through the left cannot be matched in the right, or if the right side has extra fields.
+
+> Note: We highly encourage new code to be written with the [`Connectable` Operators](https://www.chisel-lang.org/chisel3/docs/explanations/connectable.html) rather than the `<>` operator.
 
 Using the biconnect `<>` operator, we can now compose two filters into a filter block as follows:
 ```scala mdoc:silent

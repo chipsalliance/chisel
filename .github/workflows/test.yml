@@ -17,9 +17,9 @@ jobs:
       matrix:
         system: ["ubuntu-20.04"]
         jvm: ["8"]
-        scala: ["2.13.10", "2.12.17"]
+        scala: ["2.13.10"]
         espresso: ["2.4"]
-        circt: ["firtool-1.40.0"]
+        circt: ["firtool-1.43.0"]
     runs-on: ${{ matrix.system }}
 
     steps:
@@ -91,7 +91,7 @@ jobs:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
-        scala: [ "2.13.10", "2.12.17" ]
+        scala: ["2.13.10"]
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -103,8 +103,7 @@ jobs:
           distribution: 'adopt'
           java-version: '11'
           cache: 'sbt'
-      - name: Check Formatting (Scala 2.12 only)
-        if: startsWith(matrix.scala, '2.12')
+      - name: Check Formatting
         run: sbt ++${{ matrix.scala }} standardLibrary/scalafmtCheckAll
       - name: Unit Tests
         run: sbt ++${{ matrix.scala }} standardLibrary/test
@@ -115,15 +114,17 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Setup Scala
-        uses: olafurpg/setup-scala@v10
+        uses: actions/setup-java@v3
         with:
-          java-version: adopt@1.8
-      - name: Cache Scala
-        uses: coursier/cache-action@v5
+          distribution: 'adopt'
+          java-version: '11'
+          cache: 'sbt'
       - name: Setup Ruby
-        uses: actions/setup-ruby@v1
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '2.7.8'
       - name: Setup Jekyll
         run: |
           gem install jekyll -v 4.2.0
