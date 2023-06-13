@@ -39,7 +39,7 @@ emitVersion := {
 lazy val minimalSettings = Seq(
   organization := "org.chipsalliance",
   scalacOptions := Seq("-deprecation", "-feature"),
-  scalaVersion := "2.13.10"
+  scalaVersion := "2.13.11"
 )
 
 lazy val commonSettings = minimalSettings ++ Seq(
@@ -70,7 +70,9 @@ lazy val warningSuppression = Seq(
     "msg=object JavaConverters in package collection is deprecated:s",
     "msg=undefined in comment for method cf in class PrintableHelper:s",
     // This is deprecated for external users but not internal use
-    "cat=deprecation&origin=firrtl\\.options\\.internal\\.WriteableCircuitAnnotation:s"
+    "cat=deprecation&origin=firrtl\\.options\\.internal\\.WriteableCircuitAnnotation:s",
+    // Suppress Scala 3 behavior requiring explicit types on implicit definitions
+    "cat=other-implicit-type:s"
   ).mkString(",")
 )
 
@@ -436,7 +438,7 @@ lazy val docs = project // new documentation project
     scalacOptions ++= Seq(
       "-language:reflectiveCalls",
       "-language:implicitConversions",
-      "-Wconf:msg=firrtl:s"
+      "-Wconf:msg=firrtl:s,cat=other-implicit-type:s"
     ),
     mdocIn := file("docs/src"),
     mdocOut := file("docs/generated"),
