@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.util.Valid
 
 class SimpleBundle extends Bundle {
   val x = UInt(4.W)
@@ -30,6 +31,8 @@ object ZeroWidthBundle {
   }
 }
 
+class EmptyBundle extends Bundle
+
 class WidthSpec extends ChiselFlatSpec {
   "Literals without specified widths" should "get the minimum legal width" in {
     "hdeadbeef".U.getWidth should be(32)
@@ -41,6 +44,47 @@ class WidthSpec extends ChiselFlatSpec {
     1.S.getWidth should be(2)
     0.U.getWidth should be(1)
     0.S.getWidth should be(1)
+  }
+
+  behavior.of("Empty Aggregates")
+
+  they should "have a width of 0" in {
+    assertKnownWidth(0) {
+      Wire(Vec(0, UInt(8.W)))
+    }
+    assertKnownWidth(0) {
+      Wire(new EmptyBundle)
+    }
+  }
+
+  // This is a bug that has existed for basically forever
+  // This really should be assertKnownWidth(0)
+  they should "result in a 1-bit UInt when calling .asUInt" in {
+    assertInferredWidth(1) {
+      val x = Wire(Vec(0, UInt(8.W)))
+      WireInit(x.asUInt)
+    }
+    assertInferredWidth(1) {
+      val x = Wire(new EmptyBundle)
+      WireInit(x.asUInt)
+    }
+  }
+
+  they should "have a width of 0 inside of other Aggregates" in {
+    assertKnownWidth(1) {
+      Wire(Valid(Vec(0, UInt(8.W))))
+    }
+    assertKnownWidth(1) {
+      val x = WireInit(Valid(Vec(0, UInt(8.W))), DontCare)
+      WireInit(x.asUInt)
+    }
+    assertKnownWidth(1) {
+      Wire(Valid(new EmptyBundle))
+    }
+    assertKnownWidth(1) {
+      val x = WireInit(Valid(new EmptyBundle), DontCare)
+      WireInit(x.asUInt)
+    }
   }
 }
 
