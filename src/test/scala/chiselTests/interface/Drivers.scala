@@ -56,19 +56,26 @@ object Drivers {
   def link(dir: File, top: String) = {
 
     /** Generate includes from any subdirectories of "dir". */
-    val includes = dir
+    val includeDirs = dir
       .listFiles()
       .collect {
         case f if f.isDirectory && f.getName().startsWith("compile") => f
       }
+    val includes = includeDirs
       .map(dir => s"-I${dir.getPath()}")
+
+    /** Find any reference definition files, which need to be parsed by Verilator first */
+    val refDefinitionFiles = includeDirs.flatMap {
+      case f =>
+        f.listFiles().collect {
+          case f if f.getName().startsWith("ref_") => f.getPath()
+        }
+    }
 
     val cmd: Seq[String] = Seq(
       "verilator",
-      "-lint-only",
-      new File(dir, top).getPath(),
-      s"-I${dir.getPath()}"
-    ) ++ includes
+      "-lint-only"
+    ) ++ refDefinitionFiles ++ Seq(new File(dir, top).getPath(), s"-I${dir.getPath()}") ++ includes
 
     val stdoutStream, stderrStream = new java.io.ByteArrayOutputStream
     val stdoutWriter = new java.io.PrintWriter(stdoutStream)
