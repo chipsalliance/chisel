@@ -107,7 +107,7 @@ trait CoreModule
     val contents =
       s"""package chisel3
          |case object BuildInfo {
-         |  val buildInfoPackage: String = "${artifactName()}"
+         |  val buildInfoPackage: String = "chisel3"
          |  val version: String = "${buildVersion()}"
          |  val scalaVersion: String = "${scalaVersion()}"
          |  val firtoolVersion: scala.Option[String] = $firtoolVersionString
