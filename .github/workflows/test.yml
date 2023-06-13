@@ -31,12 +31,9 @@ jobs:
         uses: ./.github/workflows/install-espresso
         with:
           version: ${{ matrix.espresso }}
-      - name: Setup Scala
-        uses: actions/setup-java@v3
+      - uses: jodersky/setup-mill@master
         with:
-          distribution: 'adopt'
-          java-version: ${{ matrix.jvm }}
-          cache: 'sbt'
+          mill-version: 0.11.0
       - name: Install CIRCT
         uses: ./.github/workflows/install-circt
         with:
@@ -69,16 +66,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Setup Scala
-        uses: actions/setup-java@v3
+      - name: Install Mill
+        uses: jodersky/setup-mill@master
         with:
-          distribution: 'adopt'
-          java-version: '11'
-          cache: 'sbt'
-      - name: Install CIRCT
-        uses: ./.github/workflows/install-circt
+          mill-version: 0.11.0
       - name: Check Formatting
-        run: sbt fmtCheck
+        run: mill __[${{ matrix.scala }}].checkFormat
 
   integration:
     name: Integration Tests
@@ -90,12 +83,10 @@ jobs:
         uses: ./.github/workflows/setup-oss-cad-suite
       - name: Install Espresso
         uses: ./.github/workflows/install-espresso
-      - name: Setup Scala
-        uses: actions/setup-java@v3
+      - name: Install Mill
+        uses: jodersky/setup-mill@master
         with:
-          distribution: 'adopt'
-          java-version: '11'
-          cache: 'sbt'
+          mill-version: 0.11.0
       - name: Install CIRCT
         uses: ./.github/workflows/install-circt
       - name: Integration Tests
@@ -112,12 +103,10 @@ jobs:
         uses: actions/checkout@v3
       - name: Install Tabby OSS Cad Suite
         uses: ./.github/workflows/setup-oss-cad-suite
-      - name: Setup Scala
-        uses: actions/setup-java@v3
+      - name: Install Mill
+        uses: jodersky/setup-mill@master
         with:
-          distribution: 'adopt'
-          java-version: '11'
-          cache: 'sbt'
+          mill-version: 0.11.0
       - name: Check Formatting
         run: sbt ++${{ matrix.scala }} standardLibrary/scalafmtCheckAll
       - name: Unit Tests
@@ -130,12 +119,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Setup Scala
-        uses: actions/setup-java@v3
+      - name: Install Mill
+        uses: jodersky/setup-mill@master
         with:
-          distribution: 'adopt'
-          java-version: '11'
-          cache: 'sbt'
+          mill-version: 0.11.0
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
@@ -225,12 +212,10 @@ jobs:
           fetch-depth: 0
       - name: Install CIRCT
         uses: ./.github/workflows/install-circt
-      - name: Setup Scala
-        uses: actions/setup-java@v3
+      - name: Install Mill
+        uses: jodersky/setup-mill@master
         with:
-          distribution: 'adopt'
-          java-version: '8'
-          cache: 'sbt'
+          mill-version: 0.11.0
       - name: Setup GPG (for Publish)
         uses: olafurpg/setup-gpg@v3
       - name: Publish
