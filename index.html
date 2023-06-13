@@ -241,7 +241,7 @@ Follow the <a href="https://github.com/freechipsproject/chisel-template">chisel-
 For example, in SBT this could be expressed as:</p>
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// build.sbt</span>
 <span class="n">scalaVersion</span> <span class="o">:=</span> <span class="s">"2.13.10"</span>
-<span class="k">val</span> <span class="nv">chiselVersion</span> <span class="k">=</span> <span class="s">"5.0.0-RC1"</span>
+<span class="k">val</span> <span class="nv">chiselVersion</span> <span class="k">=</span> <span class="s">"5.0.0"</span>
 <span class="nf">addCompilerPlugin</span><span class="o">(</span><span class="s">"org.chipsalliance"</span> <span class="o">%</span> <span class="s">"chisel-plugin"</span> <span class="o">%</span> <span class="n">chiselVersion</span> <span class="n">cross</span> <span class="nv">CrossVersion</span><span class="o">.</span><span class="py">full</span><span class="o">)</span>
 <span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"org.chipsalliance"</span> <span class="o">%%</span> <span class="s">"chisel"</span> <span class="o">%</span> <span class="n">chiselVersion</span>
 </code></pre></div></div>
@@ -265,7 +265,7 @@ For example, in SBT this could be expressed as:</p>
 
 <ul>
   <li><a href="svsim"><strong>svsim</strong></a> is the lightweight testing library for Chisel, included in this repository.</li>
-  <li><a href="https://github.com/ucb-bar/chiseltest"><strong>chiseltest (Chisel 3.6 and before)</strong></a> is the batteries-included testing and formal verification library for Chisel-based RTL designs and a replacement for the former PeekPokeTester, providing the same base constructs but with a streamlined interface and concurrency support with <code class="language-plaintext highlighter-rouge">fork</code> and <code class="language-plaintext highlighter-rouge">join</code> with internal and Verilator integration for simulations.</li>
+  <li><a href="https://github.com/ucb-bar/chiseltest"><strong>chiseltest (Chisel 5.0 and before)</strong></a> is the batteries-included testing and formal verification library for Chisel-based RTL designs and a replacement for the former PeekPokeTester, providing the same base constructs but with a streamlined interface and concurrency support with <code class="language-plaintext highlighter-rouge">fork</code> and <code class="language-plaintext highlighter-rouge">join</code> with internal and Verilator integration for simulations.</li>
 </ul>
 
 <h2 id="documentation">Documentation</h2>
@@ -278,7 +278,7 @@ For example, in SBT this could be expressed as:</p>
   <li><a href="https://gitter.im/freechipsproject/chisel3"><strong>Gitter</strong></a>, where you can ask questions or discuss anything Chisel</li>
   <li><a href="https://www.chisel-lang.org"><strong>Website (3.6 and earlier)</strong></a> (<a href="https://github.com/freechipsproject/www.chisel-lang.org/">source</a>)</li>
   <li><a href="https://chipsalliance.github.io/chisel"><strong>Website (main)</strong></a> (<a href="website">source</a>) (Note that this will replace the above after the Chisel 5 release)</li>
-  <li><a href="https://scastie.scala-lang.org/0jvtH89lRxuKSHDyOrpAZw"><strong>Scastie (v5.0.0-RC1)</strong></a> - cannot generate Verilog (firtool does not work in Scastie)</li>
+  <li><a href="https://scastie.scala-lang.org/UAQiCxZLR863I3jI1yZ34w"><strong>Scastie (v5.0.0)</strong></a> - cannot generate Verilog (firtool does not work in Scastie)</li>
   <li><a href="https://scastie.scala-lang.org/1XICrlaZQs6ZvxpuKdFdDw"><strong>Scastie (v3.6.0)</strong></a> - generates Verilog with legacy Scala FIRRTL Compiler</li>
   <li><a href="http://www.asic-world.com/verilog/veritut.html"><strong>asic-world</strong></a> If you aren’t familiar with verilog, this is a good tutorial.</li>
 </ul>
@@ -287,7 +287,7 @@ For example, in SBT this could be expressed as:</p>
 
 <h3 id="chisel-dev-meeting">Chisel Dev Meeting</h3>
 
-<p>Chisel/FIRRTL development meetings happen every Monday from 1100–1200 PT.</p>
+<p>Chisel/FIRRTL development meetings happen every Monday from 9:00-10:00 am PT.</p>
 
 <p>Call-in info and meeting notes are available <a href="https://docs.google.com/document/d/1BLP2DYt59DqI-FgFCcjw8Ddl4K-WU0nHmQu0sZ_wAGo/">here</a>.</p>
 
@@ -321,7 +321,7 @@ sbt compile
 </code></pre></div></div>
 
 <p>In order to run the following unit tests, you will need several tools on your <code class="language-plaintext highlighter-rouge">PATH</code>, namely
-<a href="https://github.com/llvm/circt/releases/tag/firtool-1.38.0">firtool</a>,
+<a href="https://github.com/llvm/circt/releases/tag/firtool-1.43.0">firtool</a>,
 <a href="https://www.veripool.org/verilator/">verilator</a>,
 <a href="https://yosyshq.net/yosys/">yosys</a>,
 and <a href="https://github.com/chipsalliance/espresso">espresso</a>.
@@ -397,7 +397,7 @@ Try to reproduce the issue with the associated latest minor release (to verify t
 <p>For more information on our versioning policy and what versions of the various Chisel ecosystem projects work together, see <a href="https://www.chisel-lang.org/chisel3/docs/appendix/versioning.html">Chisel Project Versioning</a>.</p>
 
 <p>If you’re developing a Chisel library (or <code class="language-plaintext highlighter-rouge">chisel3</code> itself), you’ll probably want to work closer to the tip of the development trunk.
-By default, the main branch of the chisel repository is configured to build and publish its version of the code as <code class="language-plaintext highlighter-rouge">&lt;version&gt;+&lt;n&gt;-g&lt;commit hash&gt;-SNAPSHOT</code>.
+By default, the main branch of the chisel repository is configured to build and publish its version of the code as <code class="language-plaintext highlighter-rouge">&lt;version&gt;+&lt;n&gt;-&lt;commit hash&gt;-SNAPSHOT</code>.
 Updated SNAPSHOTs are publised on every push to main.
 You are encouraged to do your development against the latest SNAPSHOT, but note that neither API nor ABI compatibility is guaranteed so your code may break at any time.</p>
 
