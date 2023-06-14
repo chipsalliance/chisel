@@ -30,7 +30,7 @@ Please note that these examples make use of [Chisel's scala-style printing](../e
 * [How do I create an optional I/O?](#how-do-i-create-an-optional-io)
 * [How do I create I/O without a prefix?](#how-do-i-create-io-without-a-prefix)
 * [How do I minimize the number of bits used in an output vector](#how-do-i-minimize-the-number-of-bits-used-in-an-output-vector)
-* [How do I resolve `Dynamic index ... is too wide/narrow for extractee ...`?](#how-do-i-resolve-dynamic-index--is-too-widenarrow-for-extractee-)
+* [How do I resolve "Dynamic index ... is too wide/narrow for extractee ..."?](#how-do-i-resolve-dynamic-index--is-too-widenarrow-for-extractee-)
 * Predictable Naming
   * [How do I get Chisel to name signals properly in blocks like when/withClockAndReset?](#how-do-i-get-chisel-to-name-signals-properly-in-blocks-like-whenwithclockandreset)
   * [How do I get Chisel to name the results of vector reads properly?](#how-do-i-get-chisel-to-name-the-results-of-vector-reads-properly)
@@ -778,35 +778,104 @@ circt.stage.ChiselStage.emitSystemVerilog(new CountBits(4))
   .head + ");\n"
 ```
 
-### How do I resolve `Dynamic index ... is too wide/narrow for extractee ...`?
+### How do I resolve "Dynamic index ... is too wide/narrow for extractee ..."?
 
-If the index is too narrow you can use `.pad` to increase the width.
-```scala mdoc:silent
-import chisel3.util.log2Up
+Chisel will warn if a dynamic index is not the correctly-sized width for indexing a Vec or UInt.
+"Correctly-sized" means that the width of the index should be the log2 of the size of the indexee.
+If the indexee is a non-power-of-2 size, use the ceiling of the log2 result.
 
-class TooNarrow(extracteeWidth: Int, indexWidth: Int) {
-  val extractee = Wire(UInt(extracteeWidth.W))
-  val index = Wire(UInt(indexWidth.W))
-  extractee(index.pad(log2Up(extracteeWidth)))
+```scala mdoc:invisible:reset
+import chisel3._
+// Some other test is clobbering the global Logger which breaks the warnings below
+// Setting the output stream to the Console fixes the issue
+logger.Logger.setConsole()
+// Helper to throw away return value so it doesn't show up in mdoc
+def compile(gen: => chisel3.RawModule): Unit = {
+  circt.stage.ChiselStage.emitCHIRRTL(gen)
 }
 ```
 
-If the index is too wide you can use a bit extract to select the correct bits.
-```scala mdoc:silent
-class TooWide(extracteeWidth: Int, indexWidth: Int) {
-  val extractee = Wire(UInt(extracteeWidth.W))
-  val index = Wire(UInt(indexWidth.W))
-  extractee(index(log2Up(extracteeWidth) - 1, 0))
+When the index does not have enough bits to address all entries or bits in the extractee, you can `.pad` the index to increase the width.
+
+```scala mdoc
+class TooNarrow extends RawModule {
+  val extractee = Wire(UInt(7.W))
+  val index = Wire(UInt(2.W))
+  extractee(index)
 }
+compile(new TooNarrow)
 ```
 
-Or use both if you are working on a generator where the widths may be too wide or too narrow under different circumstances.
-```scala mdoc:silent
-class TooWideOrNarrow(extracteeWidth: Int, indexWidth: Int) {
-  val extractee = Wire(UInt(extracteeWidth.W))
-  val index = Wire(UInt(indexWidth.W))
-  extractee(index.pad(log2Up(indexWidth))(log2Up(extracteeWidth) - 1, 0))
+This can be fixed with `pad`:
+
+```scala mdoc
+class TooNarrowFixed extends RawModule {
+  val extractee = Wire(UInt(7.W))
+  val index = Wire(UInt(2.W))
+  extractee(index.pad(3))
 }
+compile(new TooNarrowFixed)
+```
+
+#### Use bit extraction when the index is too wide
+
+```scala mdoc
+class TooWide extends RawModule {
+  val extractee = Wire(Vec(8, UInt(32.W)))
+  val index = Wire(UInt(4.W))
+  extractee(index)
+}
+compile(new TooWide)
+```
+
+This can be fixed with bit extraction:
+
+```scala mdoc
+class TooWideFixed extends RawModule {
+  val extractee = Wire(Vec(8, UInt(32.W)))
+  val index = Wire(UInt(4.W))
+  extractee(index(2, 0))
+}
+compile(new TooWideFixed)
+```
+
+Note that size 1 `Vecs` and `UInts` should be indexed by a zero-width `UInt`:
+
+```scala mdoc
+class SizeOneVec extends RawModule {
+  val extractee = Wire(Vec(1, UInt(32.W)))
+  val index = Wire(UInt(0.W))
+  extractee(index)
+}
+compile(new SizeOneVec)
+```
+
+Because `pad` only pads if the desired width is less than the current width of the argument,
+you can use `pad` in conjunction with bit extraction when the widths may be too wide or too
+narrow under different circumstances
+
+```scala mdoc
+import chisel3.util.log2Ceil
+class TooWideOrNarrow(extracteeSize: Int, indexWidth: Int) extends Module {
+  val extractee = Wire(Vec(extracteeSize, UInt(8.W)))
+  val index = Wire(UInt(indexWidth.W))
+  val correctWidth = log2Ceil(extracteeSize)
+  extractee(index.pad(correctWidth)(correctWidth - 1, 0))
+}
+compile(new TooWideOrNarrow(8, 2))
+compile(new TooWideOrNarrow(8, 4))
+```
+
+Another option for dynamic bit selection of `UInts` (but not `Vec` dynamic indexing) is to do a dynamic
+right shift of the extractee by the index and then just bit select a single bit:
+```scala mdoc
+class TooWideOrNarrowUInt(extracteeSize: Int, indexWidth: Int) extends Module {
+  val extractee = Wire(UInt(extracteeSize.W))
+  val index = Wire(UInt(indexWidth.W))
+  (extractee >> index)(0)
+}
+compile(new TooWideOrNarrowUInt(8, 2))
+compile(new TooWideOrNarrowUInt(8, 4))
 ```
 
 ## Predictable Naming

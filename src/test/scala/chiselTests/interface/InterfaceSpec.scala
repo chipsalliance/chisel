@@ -3,6 +3,7 @@ package chiselTests.interface
 
 import chisel3._
 import chisel3.interface.{ConformsTo, Interface}
+import chisel3.probe._
 import circt.stage.ChiselStage
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
@@ -244,6 +245,58 @@ class InterfaceSpec extends AnyFunSpec with Matchers {
       val exception = the[Exception] thrownBy circt.stage.ChiselStage.emitCHIRRTL(new (BarInterface.Wrapper.Module))
 
       exception.getMessage() should include("unable to conform module 'Qux' to interface 'BarInterface'")
+    }
+
+  }
+
+  describe("Ref types in Interfaces") {
+
+    it("should support ref types") {
+      object RefInterface extends Interface {
+
+        final class RefBundle extends Bundle {
+          val r = Output(Probe(Bool()))
+        }
+
+        override type Ports = RefBundle
+
+        override type Properties = Unit
+
+        override val ports = new Ports
+
+      }
+
+      class RefComponent extends RawModule {
+        val w_ref = IO(Output(Probe(Bool())))
+        val w = WireInit(false.B)
+        val w_probe = ProbeValue(w)
+        define(w_ref, w_probe)
+      }
+
+      implicit val refConformance =
+        new ConformsTo[RefInterface.type, RefComponent] {
+          override def genModule() = new RefComponent
+
+          override def portMap = Seq(
+            _.w_ref -> _.r
+          )
+
+          override def properties = {}
+        }
+
+      class RefClient extends RawModule {
+        val x = IO(Output(Bool()))
+        val refInterface = chisel3.Module(new RefInterface.Wrapper.BlackBox)
+        x := read(refInterface.io.r)
+      }
+
+      val dir = new java.io.File("test_run_dir/interface/InterfaceSpec/should-support-ref-types")
+      Drivers.compile(
+        dir,
+        Drivers.CompilationUnit(() => new RefClient),
+        Drivers.CompilationUnit(() => new RefInterface.Wrapper.Module)
+      )
+      Drivers.link(dir, "compile-0/RefClient.sv")
     }
 
   }

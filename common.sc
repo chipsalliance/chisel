@@ -6,16 +6,9 @@ private def majorScalaVersion(scalaVersion: String) = scalaVersion.split('.')(1)
 
 trait HasMacroAnnotations
   extends ScalaModule {
-  def macroParadiseIvy: Option[Dep]
-
-  def scalacPluginIvyDeps = super.scalacPluginIvyDeps() ++ macroParadiseIvy
 
   override def scalacOptions = T {
-    if (scalaVersion() == 12) {
-      require(macroParadiseIvy.isDefined, "macroParadiseIvy must be defined for Scala 2.12")
-    }
-    super.scalacOptions() ++
-      (if (majorScalaVersion(scalaVersion()) == 13) Agg("-Ymacro-annotations") else Agg.empty[String])
+    super.scalacOptions() ++ Agg("-Ymacro-annotations")
   }
 }
 
@@ -25,8 +18,6 @@ trait MacrosModule
   def scalaReflectIvy: Dep
 
   override def ivyDeps = super.ivyDeps() ++ Some(scalaReflectIvy)
-
-  override def scalacPluginIvyDeps = super.scalacPluginIvyDeps() ++ macroParadiseIvy
 }
 
 trait FirrtlModule 
@@ -99,7 +90,6 @@ trait CoreModule
   def osLibModuleIvy: Dep
 
   def upickleModuleIvy: Dep
-
 
   override def moduleDeps = super.moduleDeps ++ Seq(macrosModule, firrtlModule)
 

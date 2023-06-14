@@ -5,7 +5,6 @@ package chiselTests
 import chisel3._
 import circt.stage.ChiselStage
 import chisel3.util._
-import scala.collection.immutable.LazyList // Needed for 2.12 alias
 
 import scala.collection.mutable
 
