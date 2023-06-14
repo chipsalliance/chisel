@@ -227,28 +227,28 @@ class TopModule extends Module {
   val mem = SRAM(1024, UInt(8.W), 2, 2, 2)
 
   // Whenever we want to read from the first read port
-  mem.io.readPorts(0).address := 100.U
-  mem.io.readPorts(0).enable := true.B
+  mem.readPorts(0).address := 100.U
+  mem.readPorts(0).enable := true.B
 
   // Read data is returned one cycle after enable is driven
-  val foo = WireInit(UInt(8.W), mem.io.readPorts(0).data)
+  val foo = WireInit(UInt(8.W), mem.readPorts(0).data)
 
   // Whenever we want to write to the second write port
-  mem.io.writePorts(1).address := 5.U
-  mem.io.writePorts(1).enable := true.B
-  mem.io.writePorts(1).data := 12.U
+  mem.writePorts(1).address := 5.U
+  mem.writePorts(1).enable := true.B
+  mem.writePorts(1).data := 12.U
 
   // Whenever we want to read or write to the third read-write port
   // Write:
-  mem.io.readwritePorts(2).address := 5.U
-  mem.io.readwritePorts(2).enable := true.B
-  mem.io.readwritePorts(2).isWrite := true.B
-  mem.io.readwritePorts(2).writeData := 100.U
+  mem.readwritePorts(2).address := 5.U
+  mem.readwritePorts(2).enable := true.B
+  mem.readwritePorts(2).isWrite := true.B
+  mem.readwritePorts(2).writeData := 100.U
 
   // Read:
-  mem.io.readwritePorts(2).address := 5.U
-  mem.io.readwritePorts(2).enable := true.B
-  mem.io.readwritePorts(2).isWrite := false.B
-  val bar = WireInit(UInt(8.W), mem.io.readwritePorts(2).readData)
+  mem.readwritePorts(2).address := 5.U
+  mem.readwritePorts(2).enable := true.B
+  mem.readwritePorts(2).isWrite := false.B
+  val bar = WireInit(UInt(8.W), mem.readwritePorts(2).readData)
 }
 ```
