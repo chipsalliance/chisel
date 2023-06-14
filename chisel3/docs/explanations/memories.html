@@ -196,6 +196,56 @@ ga('send', 'pageview');
 
 <p>For more information, check the experimental docs on <a href="../appendix/experimental-features#loading-memories">Loading Memories</a> feature.</p>
 
+<h2 id="sram">SRAM</h2>
+
+<p>Chisel provides an API to generate <code class="language-plaintext highlighter-rouge">SRAMs</code>, an alternative APIs for <code class="language-plaintext highlighter-rouge">SyncReadMem</code>.</p>
+
+<p>The key difference between the <code class="language-plaintext highlighter-rouge">SRAM</code> and <code class="language-plaintext highlighter-rouge">SyncReadMem</code> APIs is the former’s capability to declare a specific number of read, write, and read-write memory ports, which are interacted with using explicit bundles.</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3.util._</span>
+
+<span class="k">class</span> <span class="nc">ModuleWithSRAM</span><span class="o">(</span><span class="n">numReadPorts</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">numWritePorts</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">numReadwritePorts</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">width</span><span class="k">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">8</span>
+
+  <span class="k">val</span> <span class="nv">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">SRAMInterface</span><span class="o">(</span><span class="mi">1024</span><span class="o">,</span> <span class="nc">UInt</span><span class="o">(</span><span class="nv">width</span><span class="o">.</span><span class="py">W</span><span class="o">),</span> <span class="n">numReadPorts</span><span class="o">,</span> <span class="n">numWritePorts</span><span class="o">,</span> <span class="n">numReadwritePorts</span><span class="o">))</span>
+
+  <span class="c1">// Generate a SyncReadMem representing an SRAM with an explicit number of read, write, and read-write ports</span>
+  <span class="n">io</span> <span class="o">:&lt;&gt;=</span> <span class="nc">SRAM</span><span class="o">(</span><span class="mi">1024</span><span class="o">,</span> <span class="nc">UInt</span><span class="o">(</span><span class="nv">width</span><span class="o">.</span><span class="py">W</span><span class="o">),</span> <span class="n">numReadPorts</span><span class="o">,</span> <span class="n">numWritePorts</span><span class="o">,</span> <span class="n">numReadwritePorts</span><span class="o">)</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>To interact with a desired port, use the <code class="language-plaintext highlighter-rouge">readPorts</code>, <code class="language-plaintext highlighter-rouge">writePorts</code>, and <code class="language-plaintext highlighter-rouge">readwritePorts</code> fields:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">TopModule</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="c1">// Declare a 2 read, 2 write, 2 read-write ported SRAM with 8-bit UInt data members</span>
+  <span class="k">val</span> <span class="nv">mem</span> <span class="k">=</span> <span class="nc">SRAM</span><span class="o">(</span><span class="mi">1024</span><span class="o">,</span> <span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">),</span> <span class="mi">2</span><span class="o">,</span> <span class="mi">2</span><span class="o">,</span> <span class="mi">2</span><span class="o">)</span>
+
+  <span class="c1">// Whenever we want to read from the first read port</span>
+  <span class="nv">mem</span><span class="o">.</span><span class="py">readPorts</span><span class="o">(</span><span class="mi">0</span><span class="o">).</span><span class="py">address</span> <span class="o">:=</span> <span class="mf">100.</span><span class="n">U</span>
+  <span class="nv">mem</span><span class="o">.</span><span class="py">readPorts</span><span class="o">(</span><span class="mi">0</span><span class="o">).</span><span class="py">enable</span> <span class="o">:=</span> <span class="nv">true</span><span class="o">.</span><span class="py">B</span>
+
+  <span class="c1">// Read data is returned one cycle after enable is driven</span>
+  <span class="k">val</span> <span class="nv">foo</span> <span class="k">=</span> <span class="nc">WireInit</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">),</span> <span class="nv">mem</span><span class="o">.</span><span class="py">readPorts</span><span class="o">(</span><span class="mi">0</span><span class="o">).</span><span class="py">data</span><span class="o">)</span>
+
+  <span class="c1">// Whenever we want to write to the second write port</span>
+  <span class="nv">mem</span><span class="o">.</span><span class="py">writePorts</span><span class="o">(</span><span class="mi">1</span><span class="o">).</span><span class="py">address</span> <span class="o">:=</span> <span class="mf">5.</span><span class="n">U</span>
+  <span class="nv">mem</span><span class="o">.</span><span class="py">writePorts</span><span class="o">(</span><span class="mi">1</span><span class="o">).</span><span class="py">enable</span> <span class="o">:=</span> <span class="nv">true</span><span class="o">.</span><span class="py">B</span>
+  <span class="nv">mem</span><span class="o">.</span><span class="py">writePorts</span><span class="o">(</span><span class="mi">1</span><span class="o">).</span><span class="py">data</span> <span class="o">:=</span> <span class="mf">12.</span><span class="n">U</span>
+
+  <span class="c1">// Whenever we want to read or write to the third read-write port</span>
+  <span class="c1">// Write:</span>
+  <span class="nv">mem</span><span class="o">.</span><span class="py">readwritePorts</span><span class="o">(</span><span class="mi">2</span><span class="o">).</span><span class="py">address</span> <span class="o">:=</span> <span class="mf">5.</span><span class="n">U</span>
+  <span class="nv">mem</span><span class="o">.</span><span class="py">readwritePorts</span><span class="o">(</span><span class="mi">2</span><span class="o">).</span><span class="py">enable</span> <span class="o">:=</span> <span class="nv">true</span><span class="o">.</span><span class="py">B</span>
+  <span class="nv">mem</span><span class="o">.</span><span class="py">readwritePorts</span><span class="o">(</span><span class="mi">2</span><span class="o">).</span><span class="py">isWrite</span> <span class="o">:=</span> <span class="nv">true</span><span class="o">.</span><span class="py">B</span>
+  <span class="nv">mem</span><span class="o">.</span><span class="py">readwritePorts</span><span class="o">(</span><span class="mi">2</span><span class="o">).</span><span class="py">writeData</span> <span class="o">:=</span> <span class="mf">100.</span><span class="n">U</span>
+
+  <span class="c1">// Read:</span>
+  <span class="nv">mem</span><span class="o">.</span><span class="py">readwritePorts</span><span class="o">(</span><span class="mi">2</span><span class="o">).</span><span class="py">address</span> <span class="o">:=</span> <span class="mf">5.</span><span class="n">U</span>
+  <span class="nv">mem</span><span class="o">.</span><span class="py">readwritePorts</span><span class="o">(</span><span class="mi">2</span><span class="o">).</span><span class="py">enable</span> <span class="o">:=</span> <span class="nv">true</span><span class="o">.</span><span class="py">B</span>
+  <span class="nv">mem</span><span class="o">.</span><span class="py">readwritePorts</span><span class="o">(</span><span class="mi">2</span><span class="o">).</span><span class="py">isWrite</span> <span class="o">:=</span> <span class="nv">false</span><span class="o">.</span><span class="py">B</span>
+  <span class="k">val</span> <span class="nv">bar</span> <span class="k">=</span> <span class="nc">WireInit</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">),</span> <span class="nv">mem</span><span class="o">.</span><span class="py">readwritePorts</span><span class="o">(</span><span class="mi">2</span><span class="o">).</span><span class="py">readData</span><span class="o">)</span>
+<span class="o">}</span>
+</code></pre></div></div>
 </section></div></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/highlight/highlight.pack.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/verilog.min.js"></script><script src="/lunr/lunr.js"></script><script>
 // For all code blocks, copy the language from the containing div
 // to the inner code tag (where hljs expects it to be)
