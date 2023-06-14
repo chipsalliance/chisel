@@ -82,7 +82,9 @@ sealed abstract class Aggregate extends Data {
   }
 
   override def do_asUInt(implicit sourceInfo: SourceInfo): UInt = {
-    SeqUtils.do_asUInt(flatten.map(_.asUInt))
+    val flattened = flatten.map(_.do_asUInt)
+    // Special-case empty because SeqUtils.do_asUInt returns 0.U (which is 0.U(0.W))
+    if (flattened.isEmpty) 0.U(0.W) else SeqUtils.do_asUInt(flattened)
   }
 
   private[chisel3] override def connectFromBits(

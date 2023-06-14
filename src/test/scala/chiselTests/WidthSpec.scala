@@ -55,16 +55,11 @@ class WidthSpec extends ChiselFlatSpec {
     assertKnownWidth(0) {
       Wire(new EmptyBundle)
     }
-  }
-
-  // This is a bug that has existed for basically forever
-  // This really should be assertKnownWidth(0)
-  they should "result in a 1-bit UInt when calling .asUInt" in {
-    assertInferredWidth(1) {
+    assertKnownWidth(0) {
       val x = Wire(Vec(0, UInt(8.W)))
       WireInit(x.asUInt)
     }
-    assertInferredWidth(1) {
+    assertKnownWidth(0) {
       val x = Wire(new EmptyBundle)
       WireInit(x.asUInt)
     }
