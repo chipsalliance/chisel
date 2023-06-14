@@ -21,6 +21,7 @@ import logger.LazyLogging
 import scala.collection.mutable
 import scala.annotation.tailrec
 import java.io.File
+import scala.util.control.NonFatal
 
 private[chisel3] class Namespace(keywords: Set[String], separator: Char = '_') {
   // This HashMap is compressed, not every name in the namespace is present here.
@@ -827,10 +828,20 @@ private[chisel3] object Builder extends LazyLogging {
       ViewParent: Unit // Must initialize the singleton in a Builder context or weird things can happen
       // in tiny designs/testcases that never access anything in chisel3.internal
       logger.info("Elaborating design...")
-      val mod = f
-      if (forceModName) { // This avoids definition name index skipping with D/I
-        mod.forceName(mod.name, globalNamespace)
-      }
+      val mod =
+        try {
+          val m = f
+          if (forceModName) { // This avoids definition name index skipping with D/I
+            m.forceName(m.name, globalNamespace)
+          }
+          m
+        } catch {
+          case NonFatal(e) =>
+            // Make sure to report any aggregated errors in case the Exception is due to a tainted return value
+            // Note that errors.checkpoint may throw an Exception which will suppress e
+            errors.checkpoint(logger)
+            throw e
+        }
       errors.checkpoint(logger)
       logger.info("Done elaborating.")
 

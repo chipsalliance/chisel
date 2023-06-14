@@ -102,8 +102,7 @@ ChiselStage.emitSystemVerilog(new MyFlippedModule())
 
 (Chisel 3.2+)
 
-All elements of a `Vec` must be of the same type. If we want to create a Vec where the elements have different types, we
-can use a MixedVec:
+All elements of a `Vec` must have the same parameterization. If we want to create a Vec where the elements have the same type but different parameterizations, we can use a MixedVec:
 
 ```scala mdoc:silent
 import chisel3.util.MixedVec

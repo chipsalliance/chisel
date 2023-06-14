@@ -102,27 +102,37 @@ abstract class RawModule extends BaseModule {
     val component = DefModule(this, name, firrtlPorts, _commands.result())
 
     // Secret connections can be staged if user bored into children modules
-    component.secretConnects ++= stagedSecretConnects
+    component.secretCommands ++= stagedSecretCommands
     _component = Some(component)
     _component
   }
-  private[chisel3] val stagedSecretConnects = collection.mutable.ArrayBuffer[Connect]()
+  private[chisel3] val stagedSecretCommands = collection.mutable.ArrayBuffer[Command]()
 
   private[chisel3] def secretConnection(left: Data, right: Data)(implicit si: SourceInfo): Unit = {
-    if (_closed) {
-      _component.get.asInstanceOf[DefModule].secretConnects += Connect(si, left.lref, Node(right))
-    } else {
-      stagedSecretConnects += Connect(si, left.lref, Node(right))
+    val rhs = (left.probeInfo.nonEmpty, right.probeInfo.nonEmpty) match {
+      case (true, true)                                 => ProbeDefine(si, left.lref, Node(right))
+      case (true, false) if left.probeInfo.get.writable => ProbeDefine(si, left.lref, RWProbeExpr(Node(right)))
+      case (true, false)                                => ProbeDefine(si, left.lref, ProbeExpr(Node(right)))
+      case (false, true)                                => Connect(si, left.lref, ProbeRead(Node(right)))
+      case (false, false)                               => Connect(si, left.lref, Node(right))
     }
+    val secretCommands = if (_closed) {
+      _component.get.asInstanceOf[DefModule].secretCommands
+    } else {
+      stagedSecretCommands
+    }
+    secretCommands += rhs
   }
 
   private[chisel3] def initializeInParent(): Unit = {}
 }
 
+/** Enforce that the Module.reset be Asynchronous (AsyncReset) */
 trait RequireAsyncReset extends Module {
-  override private[chisel3] def mkReset: AsyncReset = AsyncReset()
+  override final def resetType = Module.ResetType.Asynchronous
 }
 
+/** Enforce that the Module.reset be Synchronous (Bool) */
 trait RequireSyncReset extends Module {
-  override private[chisel3] def mkReset: Bool = Bool()
+  override final def resetType = Module.ResetType.Synchronous
 }

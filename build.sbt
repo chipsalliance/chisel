@@ -39,8 +39,7 @@ emitVersion := {
 lazy val minimalSettings = Seq(
   organization := "org.chipsalliance",
   scalacOptions := Seq("-deprecation", "-feature"),
-  scalaVersion := "2.13.10",
-  crossScalaVersions := Seq("2.13.10", "2.12.17")
+  scalaVersion := "2.13.10"
 )
 
 lazy val commonSettings = minimalSettings ++ Seq(
@@ -49,31 +48,15 @@ lazy val commonSettings = minimalSettings ++ Seq(
   autoAPIMappings := true,
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   // Macros paradise is integrated into 2.13 but requires a scalacOption
-  scalacOptions ++= {
-    CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, n)) if n >= 13 => "-Ymacro-annotations" :: Nil
-      case _                       => Nil
-    }
-  },
-  libraryDependencies ++= {
-    CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, n)) if n >= 13 => Nil
-      case _                       => compilerPlugin(("org.scalamacros" % "paradise" % "2.1.1").cross(CrossVersion.full)) :: Nil
-    }
-  }
+  scalacOptions += "-Ymacro-annotations"
 )
 
 lazy val fatalWarningsSettings = Seq(
   scalacOptions ++= {
-    CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, n)) if n >= 13 =>
-        if (sys.props.contains("disableFatalWarnings")) {
-          Nil
-        } else {
-          "-Werror" :: Nil
-        }
-
-      case _ => Nil
+    if (sys.props.contains("disableFatalWarnings")) {
+      Nil
+    } else {
+      "-Werror" :: Nil
     }
   }
 )
@@ -136,11 +119,6 @@ lazy val publishSettings = Seq(
 
 // FIRRTL SETTINGS
 
-lazy val isAtLeastScala213 = Def.setting {
-  import Ordering.Implicits._
-  CrossVersion.partialVersion(scalaVersion.value).exists(_ >= (2, 13))
-}
-
 lazy val firrtlSettings = Seq(
   name := "firrtl",
   addCompilerPlugin(scalafixSemanticdb),
@@ -157,7 +135,7 @@ lazy val firrtlSettings = Seq(
   libraryDependencies ++= Seq(
     "org.scala-lang" % "scala-reflect" % scalaVersion.value,
     "org.scalatest" %% "scalatest" % "3.2.14" % "test",
-    "org.scalatestplus" %% "scalacheck-1-15" % "3.2.11.0" % "test",
+    "org.scalatestplus" %% "scalacheck-1-16" % "3.2.14.0" % "test",
     "com.github.scopt" %% "scopt" % "4.1.0",
     "net.jcazevedo" %% "moultingyaml" % "0.4.2",
     "org.json4s" %% "json4s-native" % "4.0.6",
@@ -165,22 +143,9 @@ lazy val firrtlSettings = Seq(
     "io.github.alexarchambault" %% "data-class" % "0.2.6",
     "com.lihaoyi" %% "os-lib" % "0.9.1"
   ),
-  // macros for the data-class library
-  libraryDependencies ++= {
-    if (isAtLeastScala213.value) Nil
-    else Seq(compilerPlugin(("org.scalamacros" % "paradise" % "2.1.1").cross(CrossVersion.full)))
-  },
-  scalacOptions ++= {
-    if (isAtLeastScala213.value) Seq("-Ymacro-annotations")
-    else Nil
-  },
+  scalacOptions += "-Ymacro-annotations",
   // starting with scala 2.13 the parallel collections are separate from the standard library
-  libraryDependencies ++= {
-    CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, major)) if major <= 12 => Seq()
-      case _                               => Seq("org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4")
-    }
-  }
+  libraryDependencies += "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4"
 )
 
 lazy val assemblySettings = Seq(
@@ -207,8 +172,8 @@ lazy val svsim = (project in file("svsim"))
     // Published as part of unipublish
     publish / skip := true,
     libraryDependencies ++= Seq(
-      "org.scalatest" %% "scalatest" % "3.2.15" % "test",
-      "org.scalatestplus" %% "scalacheck-1-15" % "3.2.11.0" % "test"
+      "org.scalatest" %% "scalatest" % "3.2.16" % "test",
+      "org.scalatestplus" %% "scalacheck-1-16" % "3.2.14.0" % "test"
     )
   )
 
@@ -239,8 +204,8 @@ lazy val firrtl = (project in file("firrtl"))
 lazy val chiselSettings = Seq(
   name := "chisel",
   libraryDependencies ++= Seq(
-    "org.scalatest" %% "scalatest" % "3.2.15" % "test",
-    "org.scalatestplus" %% "scalacheck-1-15" % "3.2.11.0" % "test",
+    "org.scalatest" %% "scalatest" % "3.2.16" % "test",
+    "org.scalatestplus" %% "scalacheck-1-16" % "3.2.14.0" % "test",
     "com.lihaoyi" %% "upickle" % "3.1.0"
   )
 ) ++ (
@@ -258,25 +223,7 @@ autoCompilerPlugins := true
 autoAPIMappings := true
 
 // Plugin must be fully cross-versioned (published for Scala minor version)
-// The plugin only works in Scala 2.12+
 lazy val pluginScalaVersions = Seq(
-  // scalamacros paradise version used is not published for 2.12.0 and 2.12.1
-  "2.12.2",
-  "2.12.3",
-  // 2.12.4 is broken in newer versions of Zinc: https://github.com/sbt/sbt/issues/6838
-  "2.12.5",
-  "2.12.6",
-  "2.12.7",
-  "2.12.8",
-  "2.12.9",
-  "2.12.10",
-  "2.12.11",
-  "2.12.12",
-  "2.12.13",
-  "2.12.14",
-  "2.12.15",
-  "2.12.16",
-  "2.12.17",
   "2.13.0",
   "2.13.1",
   "2.13.2",
@@ -287,7 +234,8 @@ lazy val pluginScalaVersions = Seq(
   "2.13.7",
   "2.13.8",
   "2.13.9",
-  "2.13.10"
+  "2.13.10",
+  "2.13.11"
 )
 
 lazy val plugin = (project in file("plugin"))
@@ -457,12 +405,7 @@ lazy val unipublish =
         // This is probably fundamental to how ScalaDoc works so there may be no solution other than this workaround.
         // See https://github.com/sbt/sbt-unidoc/issues/107
         (core / Compile / sources).value.map("-P:chiselplugin:INTERNALskipFile:" + _)
-        ++ {
-          CrossVersion.partialVersion(scalaVersion.value) match {
-            case Some((2, n)) if n >= 13 => "-implicits" :: Nil
-            case _                       => Nil
-          }
-        }
+        ++ Seq("-implicits")
     )
 
 // End-to-end tests that check the functionality of the emitted design with simulation

@@ -60,46 +60,59 @@ object CommonCompilationSettings {
 
 trait Backend {
   type CompilationSettings
-  private[svsim] def invocationSettings(
+  def generateParameters(
     outputBinaryName:        String,
     topModuleName:           String,
     additionalHeaderPaths:   Seq[String],
     commonSettings:          CommonCompilationSettings,
     backendSpecificSettings: CompilationSettings
-  ): Backend.InvocationSettings
+  ): Backend.Parameters
 }
 
-object Backend {
+final object Backend {
 
-  private[svsim] final case class InvocationSettings(
-    compilerPath:          String,
-    compilerArguments:     Seq[String],
-    compilerEnvironment:   Seq[(String, String)],
-    simulationArguments:   Seq[String],
-    simulationEnvironment: Seq[(String, String)])
+  final case class Parameters(
+    private[svsim] val compilerPath:         String,
+    private[svsim] val compilerInvocation:   Parameters.Invocation,
+    private[svsim] val simulationInvocation: Parameters.Invocation)
 
-  // -- Flags affecting shared code compilation
+  final object Parameters {
 
-  /** Verilator support requires that we manually implement some SystemVerilog functions, such as `run_simulation` and `simulation_main`. These flags control the Verilator-specific code paths.
+    /**
+      * Parameters for the invocation of a command-line tool. The constituent properties are private to `svsim` and not meant for external consumption (we may change this representation in the future, for example to [add convenient tracing functionality to make-replay](https://github.com/chipsalliance/chisel/issues/3150)).
+      */
+    final case class Invocation(
+      private[svsim] val arguments:   Seq[String],
+      private[svsim] val environment: Seq[(String, String)])
+  }
+
+  /**
+    * A namespace for flags affecting which code in the harness is compiled.
     */
-  private[svsim] val enableVerilatorSupportFlag = "SVSIM_ENABLE_VERILATOR_SUPPORT"
-  private[svsim] val enableVerilatorTraceFlag = "SVSIM_VERILATOR_TRACE_ENABLED"
+  object HarnessCompilationFlags {
 
-  /** This flag controls if VCS-specifc code is compiled.
-    */
-  private[svsim] val enableVCSSupportFlag = "SVSIM_ENABLE_VCS_SUPPORT"
+    /** Verilator support requires that we manually implement some SystemVerilog functions, such as `run_simulation` and `simulation_main`. These flags control the Verilator-specific code paths.
+      */
+    val enableVerilatorSupport = "SVSIM_ENABLE_VERILATOR_SUPPORT"
+    val enableVerilatorTrace = "SVSIM_VERILATOR_TRACE_ENABLED"
 
-  /** Flags enabling various tracing mechanisms.
-    */
-  private[svsim] val enableVcdTracingFlag = "SVSIM_ENABLE_VCD_TRACING"
-  private[svsim] val enableVpdTracingFlag = "SVSIM_ENABLE_VPD_TRACING"
-  private[svsim] val enableFsdbTracingFlag = "SVSIM_ENABLE_FSDB_TRACING"
+    /** This flag controls if VCS-specifc code is compiled.
+      */
+    val enableVCSSupport = "SVSIM_ENABLE_VCS_SUPPORT"
 
-  /** Verilator does not currently support delay (`#delay`) in DPI functions, so we omit the SystemVerilog definition of the `run_simulation` function and instead provide a C implementation.
-    */
-  private[svsim] val supportsDelayInPublicFunctionsFlag = "SVSIM_BACKEND_SUPPORTS_DELAY_IN_PUBLIC_FUNCTIONS"
+    /** Flags enabling various tracing mechanisms.
+      * Note: These flags do not cause tracing to occur, they simply support for these tracing mechanisms in the harness.
+      */
+    val enableVcdTracingSupport = "SVSIM_ENABLE_VCD_TRACING_SUPPORT"
+    val enableVpdTracingSupport = "SVSIM_ENABLE_VPD_TRACING_SUPPORT"
+    val enableFsdbTracingSupport = "SVSIM_ENABLE_FSDB_TRACING_SUPPORT"
 
-  /** VCS first checks whether address-space layout randomization (ASLR) is enabled, and if it is, _helpfully_ relaunches this executable with ASLR disabled. Unfortunately, this causes code executed prior to `simulation_main` to be executed twice, which is problematic, especially since we redirect `stdin` and `stdout`.
-    */
-  private[svsim] val engagesInASLRShenanigansFlag = "SVSIM_BACKEND_ENGAGES_IN_ASLR_SHENANIGANS"
+    /** Verilator does not currently support delay (`#delay`) in DPI functions, so we omit the SystemVerilog definition of the `run_simulation` function and instead provide a C implementation.
+      */
+    val supportsDelayInPublicFunctions = "SVSIM_BACKEND_SUPPORTS_DELAY_IN_PUBLIC_FUNCTIONS"
+
+    /** VCS first checks whether address-space layout randomization (ASLR) is enabled, and if it is, _helpfully_ relaunches this executable with ASLR disabled. Unfortunately, this causes code executed prior to `simulation_main` to be executed twice, which is problematic, especially since we redirect `stdin` and `stdout`.
+      */
+    val backendEngagesInASLRShenanigans = "SVSIM_BACKEND_ENGAGES_IN_ASLR_SHENANIGANS"
+  }
 }

@@ -20,7 +20,7 @@ Two especially notable directions on the roadmap below are:
 - Deprecations are backported to ease in users migrating to next major release
   (3.6).
 
-## 3.6 (Target 2022 November)
+## 3.6.0 (Apr 15 2023)
 
 This release is intended to provide a smooth path for the Chisel codebase to no
 longer depend on the 
@@ -51,7 +51,7 @@ spec and the Chisel APIs. Thus, the 3.6 release will:
 
 See the Q&A below.
 
-## 5.0.0 (Target Q1 2023)
+## 5.0.0 (May 19 2023)
 
 As we look forward to Chisel development, we plan to accelerate coordinated
 changes with the

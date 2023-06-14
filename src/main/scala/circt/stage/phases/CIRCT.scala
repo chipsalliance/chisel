@@ -2,34 +2,22 @@
 
 package circt.stage.phases
 
+import _root_.logger.LogLevel
+import chisel3.BuildInfo.{firtoolVersion, version => chiselVersion}
+import chisel3.InternalErrorException
 import chisel3.experimental.hierarchy.core.ImportDefinitionAnnotation
 import chisel3.stage.{ChiselCircuitAnnotation, DesignAnnotation, SourceRootAnnotation}
-import chisel3.BuildInfo.{version => chiselVersion, firtoolVersion}
-
-import circt.Implicits.BooleanImplicits
 import circt.stage.{CIRCTOptions, CIRCTTarget, EmittedMLIR, PreserveAggregate}
-
-import firrtl.{AnnotationSeq, EmittedVerilogCircuit, EmittedVerilogCircuitAnnotation}
 import firrtl.annotations.JsonProtocol
-import firrtl.options.{
-  CustomFileEmission,
-  Dependency,
-  OptionsException,
-  OutputAnnotationFileAnnotation,
-  Phase,
-  StageError,
-  StageOptions,
-  StageUtils
-}
-import firrtl.options.phases.WriteOutputAnnotations
+import firrtl.ir.CircuitWithAnnos
 import firrtl.options.Viewer.view
+import firrtl.options.{CustomFileEmission, Dependency, OptionsException, Phase, StageOptions, Unserializable}
 import firrtl.stage.FirrtlOptions
-import _root_.logger.LogLevel
-import chisel3.InternalErrorException
+import firrtl.{AnnotationSeq, EmittedVerilogCircuit, EmittedVerilogCircuitAnnotation}
 
-import scala.util.control.NoStackTrace
-import scala.collection.mutable
 import java.io.File
+import scala.collection.mutable
+import scala.util.control.NoStackTrace
 
 private object Helpers {
   implicit class LogLevelHelpers(logLevel: LogLevel.Value) {
@@ -126,6 +114,7 @@ private[this] object Exceptions {
 class CIRCT extends Phase {
 
   import Helpers._
+
   import scala.sys.process._
 
   override def prerequisites = Seq(
@@ -179,11 +168,16 @@ class CIRCT extends Phase {
     }
 
     /* Filter the annotations to only those things which CIRCT should see. */
-    (new WriteOutputAnnotations).transform(annotationsx)
+    val filteredAnnotations = annotationsx.flatMap {
+      case _: ChiselCircuitAnnotation => None
+      case _: Unserializable          => None
+      case _: CustomFileEmission      => None
+      case a => Some(a)
+    }
 
     val input: String = firrtlOptions.firrtlCircuit match {
       case None          => throw new OptionsException("No input file specified!")
-      case Some(circuit) => circuit.serialize
+      case Some(circuit) => CircuitWithAnnos(circuit = circuit, annotations = filteredAnnotations).serialize
     }
 
     val chiselAnnotationFilename: Option[String] =
@@ -206,8 +200,6 @@ class CIRCT extends Phase {
           case None                              => None
         }) ++
         circtOptions.preserveAggregate.map(_ => "-scalarize-top-module=0") ++
-        /* Communicate the annotation file through a file. */
-        (chiselAnnotationFilename.map(a => Seq("-annotation-file", a))).getOrElse(Seq.empty) ++
         includeDirs.flatMap(d => Seq("--include-dir", d.toString)) ++
         /* Convert the target to a firtool-compatible option. */
         ((circtOptions.target, split) match {

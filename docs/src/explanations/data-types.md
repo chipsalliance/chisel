@@ -19,14 +19,12 @@ format.  Boolean values are represented as type ```Bool```.  Note
 that these types are distinct from Scala's builtin types such as
 ```Int``` or ```Boolean```.
 
-> There is a new experimental type **Interval** which gives the developer more control of the type by allowing the definition of an IntervalRange.  See: [Interval Type](../appendix/experimental-features#interval-type)
-
 Additionally, Chisel defines `Bundles` for making
 collections of values with named fields (similar to ```structs``` in
 other languages), and ```Vecs``` for indexable collections of
 values.
 
-Bundles and Vecs will be covered later.
+Bundles and Vecs will be covered in the next section.
 
 Constant or literal values are expressed using Scala integers or
 strings passed to constructors for the types:

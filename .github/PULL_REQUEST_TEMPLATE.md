@@ -15,7 +15,7 @@ please describe the change in the "Release Notes" section below.
 
 #### Type of Improvement
 
-<!-- Choose one or more from the following:
+<!-- Choose one or more from the following (delete those that do not apply): -->
 - Feature (or new API)
 - API modification
 - API deprecation
@@ -25,15 +25,13 @@ please describe the change in the "Release Notes" section below.
 - Documentation or website-related
 - Dependency update
 - Internal or build-related (includes code refactoring/cleanup)
--->
+
 
 #### Desired Merge Strategy
 
-<!-- If approved, how should this PR be merged? -->
-<!-- Options are:
-- Squash: The PR will be squashed and merged (choose this if you have no preference.
+<!-- If approved, how should this PR be merged? Delete those that do not apply -->
+- Squash: The PR will be squashed and merged (choose this if you have no preference).
 - Rebase: You will rebase the PR onto master and it will be merged with a merge commit.
--->
 
 #### Release Notes
 <!--

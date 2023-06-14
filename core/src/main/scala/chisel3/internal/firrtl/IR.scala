@@ -382,7 +382,7 @@ abstract class Component extends Arg {
 @nowarn("msg=class Port") // delete when Port becomes private
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class DefModule(id: RawModule, name: String, ports: Seq[Port], commands: Seq[Command]) extends Component {
-  val secretConnects: mutable.ArrayBuffer[Connect] = mutable.ArrayBuffer[Connect]()
+  val secretCommands: mutable.ArrayBuffer[Command] = mutable.ArrayBuffer[Command]()
 }
 
 @nowarn("msg=class Port") // delete when Port becomes private
