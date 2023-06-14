@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM ubuntu:20.04
+FROM --platform=$BUILDPLATFORM ubuntu:22.04
 
 ARG TARGETARCH
 
@@ -19,8 +19,7 @@ RUN \
       git perl python3 make autoconf clang flex bison ccache \
       libgoogle-perftools-dev numactl perl-doc \
       libfl2 \
-      libfl-dev \
-      zlibc zlib1g zlib1g-dev
+      libfl-dev
 # Build from Source
 RUN \
   git clone -b v4.226 https://github.com/verilator/verilator /verilator-source && \
@@ -58,12 +57,20 @@ RUN \
   DEBIAN_FRONTEND=noninteractive \
     apt-get install -y \
       cmake \
-      ninja-build
-# You can select a specific release by changing this to, for example, `download/firtool-1.36.0`. The `download` part is weird because the GitHub URL changes based on if you use `latest` or not.
-ARG CIRCT_RELEASE=latest/download
-# Grab the source of the release from GitHub
-ADD https://github.com/llvm/circt/releases/$CIRCT_RELEASE/circt-full-sources.tar.gz /circt/source-bundle.tar.gz
-RUN cd /circt && mkdir source && tar xvf source-bundle.tar.gz --strip-components=1 -C /circt/source
+      ninja-build \
+      curl
+
+# Install recent git (required for `ls-tree --object-only`)
+RUN \
+  DEBIAN_FRONTEND=noninteractive \
+    apt-get install -y software-properties-common && \
+    apt-add-repository ppa:git-core/ppa && \
+    apt-get update -y && \
+    apt-get install -y git
+RUN git clone https://github.com/llvm/circt /circt/source
+# Grab the llvm source from GitHub directly to avoid having to clone the entire llvm-project repo
+RUN cd /circt/source && \
+    curl -L https://github.com/llvm/llvm-project/tarball/$(git ls-tree --object-only HEAD -- llvm) | tar xz --strip-components=1 -C llvm
 # Install firtool
 RUN cd /circt/source && \
     cmake \
