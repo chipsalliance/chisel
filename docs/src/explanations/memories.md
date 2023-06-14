@@ -202,7 +202,7 @@ For more information, check the experimental docs on [Loading Memories](../appen
 
 ## SRAM
 
-Chisel provides an API to generate `SRAM` memories, which are currently alternative APIs for `SyncReadMem`.
+Chisel provides an API to generate `SRAMs`, an alternative APIs for `SyncReadMem`.
 
 The key difference between the `SRAM` and `SyncReadMem` APIs is the former's capability to declare a specific number of read, write, and read-write memory ports, which are interacted with using explicit bundles.
 
