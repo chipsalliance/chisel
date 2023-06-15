@@ -201,6 +201,82 @@ object SRAM {
       None,
       sourceInfo
     )
+  
+  /** Generates a [[SyncReadMem]] within the current module, connected to an explicit number
+    * of read, write, and read/write ports. This SRAM abstraction has both read and write capabilities: that is,
+    * it contains at least one read accessor (a read-only or read-write port), and at least one write accessor
+    * (a write-only or read-write port).
+    *
+    * @param size The desired size of the inner `SyncReadMem`
+    * @tparam T The data type of the memory element
+    * @param numReadPorts The number of desired read ports >= 0, and (numReadPorts + numReadwritePorts) > 0
+    * @param numWritePorts The number of desired write ports >= 0, and (numWritePorts + numReadwritePorts) > 0
+    * @param numReadwritePorts The number of desired read/write ports >= 0, and the above two conditions must hold
+    *
+    * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
+    * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
+    * @note Read-only memories (R >= 1, W === 0, RW === 0) and write-only memories (R === 0, W >= 1, RW === 0) are not supported by this API, and will result in an error if declared.
+    */
+  def apply[T <: Data](
+    size:              BigInt,
+    tpe:               T,
+    readPortClocks:      Seq[Clock],
+    writePortClocks:     Seq[Clock],
+    readwritePortClocks: Seq[Clock]
+  )(
+    implicit sourceInfo: SourceInfo
+  ): SRAMInterface[T] =
+    memInterface_impl(
+      size,
+      tpe
+    )(
+      readPortClocks,
+      writePortClocks,
+      readwritePortClocks,
+      None
+    )(
+      None,
+      sourceInfo
+    )
+
+  /** Generates a [[SyncReadMem]] within the current module, connected to an explicit number
+    * of read, write, and read/write ports. This SRAM abstraction has both read and write capabilities: that is,
+    * it contains at least one read accessor (a read-only or read-write port), and at least one write accessor
+    * (a write-only or read-write port).
+    *
+    * @param size The desired size of the inner `SyncReadMem`
+    * @tparam T The data type of the memory element
+    * @param numReadPorts The number of desired read ports >= 0, and (numReadPorts + numReadwritePorts) > 0
+    * @param numWritePorts The number of desired write ports >= 0, and (numWritePorts + numReadwritePorts) > 0
+    * @param numReadwritePorts The number of desired read/write ports >= 0, and the above two conditions must hold
+    * @param memoryFile A memory file whose path is emitted as Verilog directives to initialize the inner `SyncReadMem`
+    *
+    * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
+    * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
+    * @note Read-only memories (R >= 1, W === 0, RW === 0) and write-only memories (R === 0, W >= 1, RW === 0) are not supported by this API, and will result in an error if declared.
+    */
+  def apply[T <: Data](
+    size:                BigInt,
+    tpe:                 T,
+    readPortClocks:      Seq[Clock],
+    writePortClocks:     Seq[Clock],
+    readwritePortClocks: Seq[Clock],
+    memoryFile:          MemoryFile
+  )(
+    implicit sourceInfo: SourceInfo
+  ): SRAMInterface[T] =
+    memInterface_impl(
+      size,
+      tpe
+    )(
+      readPortClocks,
+      writePortClocks,
+      readwritePortClocks,
+      Some(memoryFile)
+    )(
+      None,
+      sourceInfo
+    )
 
   /** Generates a [[SyncReadMem]] within the current module, connected to an explicit number
     * of read, write, and read/write ports, with masking capability on all write and read/write ports.
@@ -236,7 +312,7 @@ object SRAM {
       Some(evidence),
       sourceInfo
     )
-
+  
   /** Generates a [[SyncReadMem]] within the current module, connected to an explicit number
     * of read, write, and read/write ports, with masking capability on all write and read/write ports.
     * This SRAM abstraction has both read and write capabilities: that is, it contains at least one read
@@ -274,7 +350,86 @@ object SRAM {
       sourceInfo
     )
 
-  private def memInterface_impl[T <: Data](
+  /** Generates a [[SyncReadMem]] within the current module, connected to an explicit number
+    * of read, write, and read/write ports, with masking capability on all write and read/write ports.
+    * Each port is clocked with its own explicit `Clock`, rather than being given the implicit clock.
+    *
+    * @param size The desired size of the inner `SyncReadMem`
+    * @tparam T The data type of the memory element
+    * @param readPortClocks A sequence of clocks for each read port; and (numReadPorts + numReadwritePorts) > 0
+    * @param writePortClocks A sequence of clocks for each write port; and (numWritePorts + numReadwritePorts) > 0
+    * @param readwritePortClocks A sequence of clocks for each read-write port; and the above two conditions must hold
+    *
+    * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
+    * @note The size of each `Clock` sequence determines the corresponding number of read, write, and read-write ports
+    * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
+    * @note Read-only memories (R >= 1, W === 0, RW === 0) and write-only memories (R === 0, W >= 1, RW === 0) are not supported by this API, and will result in an error if declared.
+    */
+  def masked[T <: Data](
+    size:                BigInt,
+    tpe:                 T,
+    readPortClocks:      Seq[Clock],
+    writePortClocks:     Seq[Clock],
+    readwritePortClocks: Seq[Clock]
+  )(
+    implicit evidence: T <:< Vec[_],
+    sourceInfo:        SourceInfo
+  ): SRAMInterface[T] =
+    memInterface_impl(
+      size,
+      tpe
+    )(
+      readPortClocks,
+      writePortClocks,
+      readwritePortClocks,
+      None
+    )(
+      Some(evidence),
+      sourceInfo
+    )
+
+  /** Generates a [[SyncReadMem]] within the current module, connected to an explicit number
+    * of read, write, and read/write ports, with masking capability on all write and read/write ports.
+    * Each port is clocked with its own explicit `Clock`, rather than being given the implicit clock.
+    *
+    * @param size The desired size of the inner `SyncReadMem`
+    * @tparam T The data type of the memory element
+    * @param readPortClocks A sequence of clocks for each read port; and (numReadPorts + numReadwritePorts) > 0
+    * @param writePortClocks A sequence of clocks for each write port; and (numWritePorts + numReadwritePorts) > 0
+    * @param readwritePortClocks A sequence of clocks for each read-write port; and the above two conditions must hold
+    * @param memoryFile A memory file whose path is emitted as Verilog directives to initialize the inner `SyncReadMem`
+    *
+    * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
+    * @note The size of each `Clock` sequence determines the corresponding number of read, write, and read-write ports
+    * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
+    * @note Read-only memories (R >= 1, W === 0, RW === 0) and write-only memories (R === 0, W >= 1, RW === 0) are not supported by this API, and will result in an error if declared.
+    */
+  def masked[T <: Data](
+    size:                BigInt,
+    tpe:                 T,
+    readPortClocks:      Seq[Clock],
+    writePortClocks:     Seq[Clock],
+    readwritePortClocks: Seq[Clock],
+    memoryFile:          MemoryFile
+  )(
+    implicit evidence:   T <:< Vec[_],
+    sourceInfo:          SourceInfo
+  ): SRAMInterface[T] =
+    memInterface_impl(
+      size,
+      tpe
+    )(
+      readPortClocks,
+      writePortClocks,
+      readwritePortClocks,
+      Some(memoryFile)
+    )(
+      Some(evidence),
+      sourceInfo
+    )
+
+  private def memInterface_impl[T <: Data]
+  (
     size:                 BigInt,
     tpe:                  T
   )(
