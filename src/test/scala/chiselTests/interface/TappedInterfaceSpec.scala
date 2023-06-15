@@ -109,17 +109,17 @@ class TappedInterfaceSpec extends AnyFunSpec with Matchers {
       baz.io.a := a
       b := baz.io.b
 
-      // FIXME: uncomment out the force statements once
-      // https://github.com/chipsalliance/chisel/issues/3363 is resolved. The
-      // current CI version of Verilator does not support `force` statements.
-      // forceInitial(baz.io.c, true.B)
-      // force(clock, reset.asBool, baz.io.d, false.B)
+      forceInitial(baz.io.c, true.B)
+      force(clock, reset.asBool, baz.io.d, false.B)
     }
   }
 
   describe("Behavior of Interfaces") {
 
-    it("should compile a design separably") {
+    // FIXME: uncomment out the force statements once https://github.com/chipsalliance/chisel/issues/3363
+    // is resolved. The current CI version of Verilator does not support `force`
+    // statements.
+    ignore("should compile a design separably") {
 
       /** Now we compile the design into the "build/Interfaces" directory. Both
         * "Foo" and one copy of the "DUT", using the utility in "WrapperModuleInterface",
