@@ -5,6 +5,7 @@ import chisel3._
 import chisel3.internal.Builder
 import chisel3.experimental.SourceInfo
 import chisel3.internal.sourceinfo.{MemTransform, SourceInfoTransform}
+import chisel3.util.experimental.loadMemoryFromFileInline
 import scala.language.reflectiveCalls
 import scala.language.experimental.macros
 
@@ -116,6 +117,7 @@ object SRAM {
     * @param numReadPorts The number of desired read ports >= 0, and (numReadPorts + numReadwritePorts) > 0
     * @param numWritePorts The number of desired write ports >= 0, and (numWritePorts + numReadwritePorts) > 0
     * @param numReadwritePorts The number of desired read/write ports >= 0, and the above two conditions must hold
+    * @param contents A filesystem path to a binary file to preload this SRAM's contents with
     *
     * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
     * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
@@ -126,11 +128,12 @@ object SRAM {
     tpe:               T,
     numReadPorts:      Int,
     numWritePorts:     Int,
-    numReadwritePorts: Int
+    numReadwritePorts: Int,
+    contents:          Option[String] = None
   )(
     implicit sourceInfo: SourceInfo
   ): SRAMInterface[T] =
-    memInterface_impl(size, tpe)(numReadPorts, numWritePorts, numReadwritePorts, Builder.forcedClock)
+    memInterface_impl(size, tpe)(numReadPorts, numWritePorts, numReadwritePorts, Builder.forcedClock, contents)
 
   /** Generates a [[SyncReadMem]] within the current module, connected to an explicit number
     * of read, write, and read/write ports, with masking capability on all write and read/write ports.
@@ -142,6 +145,7 @@ object SRAM {
     * @param numReadPorts The number of desired read ports >= 0, and (numReadPorts + numReadwritePorts) > 0
     * @param numWritePorts The number of desired write ports >= 0, and (numWritePorts + numReadwritePorts) > 0
     * @param numReadwritePorts The number of desired read/write ports >= 0, and the above two conditions must hold
+    * @param contents A filesystem path to a binary file to preload this SRAM's contents with
     *
     * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
     * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
@@ -152,12 +156,13 @@ object SRAM {
     tpe:               T,
     numReadPorts:      Int,
     numWritePorts:     Int,
-    numReadwritePorts: Int
+    numReadwritePorts: Int,
+    contents:          Option[String] = None
   )(
     implicit evidence: T <:< Vec[_],
     sourceInfo:        SourceInfo
   ): SRAMInterface[T] =
-    masked_memInterface_impl(size, tpe)(numReadPorts, numWritePorts, numReadwritePorts, Builder.forcedClock)
+    masked_memInterface_impl(size, tpe)(numReadPorts, numWritePorts, numReadwritePorts, Builder.forcedClock, contents)
 
   private def memInterface_impl[T <: Data](
     size:              BigInt,
@@ -165,7 +170,8 @@ object SRAM {
   )(numReadPorts:      Int,
     numWritePorts:     Int,
     numReadwritePorts: Int,
-    clock:             Clock
+    clock:             Clock,
+    contents:          Option[String]
   )(
     implicit sourceInfo: SourceInfo
   ): SRAMInterface[T] = {
@@ -205,6 +211,8 @@ object SRAM {
       )
     }
 
+    contents.map { path: String => loadMemoryFromFileInline(mem, path) }
+
     _out
   }
 
@@ -214,7 +222,8 @@ object SRAM {
   )(numReadPorts:      Int,
     numWritePorts:     Int,
     numReadwritePorts: Int,
-    clock:             Clock
+    clock:             Clock,
+    contents:          Option[String]
   )(
     implicit sourceInfo: SourceInfo,
     evidence:            T <:< Vec[_]
@@ -260,6 +269,8 @@ object SRAM {
         clock
       )
     }
+
+    contents.map { path: String => loadMemoryFromFileInline(mem, path) }
 
     _out
   }
