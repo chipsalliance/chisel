@@ -10,7 +10,6 @@ import chisel3.internal.{castToInt, throwException, HasId}
 import chisel3.EnumType
 import scala.annotation.{nowarn, tailrec}
 import scala.collection.immutable.{Queue, VectorBuilder}
-import scala.collection.immutable.LazyList // Needed for 2.12 alias
 
 @nowarn("msg=class Port") // delete when Port becomes private
 private[chisel3] object Converter {
