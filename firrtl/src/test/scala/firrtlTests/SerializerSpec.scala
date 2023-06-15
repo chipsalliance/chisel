@@ -29,7 +29,7 @@ object SerializerSpec {
   }
 
   val testModule: String =
-    """module test| :
+    """module test :
       |  input in : UInt<8>
       |  output out : UInt<8>
       |
@@ -88,7 +88,7 @@ object SerializerSpec {
 object SMemTestCircuit {
   def src(ruw: String): String =
     s"""circuit Example :
-       |  module Example| :
+       |  module Example :
        |    smem mem : UInt<8> [8] $ruw@[main.scala 10:25]
        |""".stripMargin
 

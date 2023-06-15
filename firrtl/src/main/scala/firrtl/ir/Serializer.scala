@@ -367,7 +367,8 @@ object Serializer {
     case Module(info, name, ports, body, desiredName) =>
       val start = {
         implicit val b = new StringBuilder
-        doIndent(0); b ++= "module "; b ++= name; b ++= "|"; b ++= desiredName; b ++= " :"; s(info)
+        val desiredNameString: String = if (desiredName == "") "" else "|" + desiredName
+        doIndent(0); b ++= "module "; b ++= name; b ++= desiredNameString; b ++= " :"; s(info)
         ports.foreach { p => newLineAndIndent(1); s(p) }
         newLineNoIndent() // add a blank line between port declaration and body
         newLineNoIndent() // newline for body, sIt will indent
