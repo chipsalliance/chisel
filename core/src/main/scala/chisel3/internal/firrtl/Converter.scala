@@ -397,12 +397,13 @@ private[chisel3] object Converter {
   }
 
   def convert(component: Component): fir.DefModule = component match {
-    case ctx @ DefModule(_, name, ports, cmds) =>
+    case ctx @ DefModule(_, name, ports, cmds, desiredName) =>
       fir.Module(
         fir.NoInfo,
         name,
         (ports ++ ctx.secretPorts).map(p => convert(p)),
-        convert(cmds ++ ctx.secretCommands, ctx)
+        convert(cmds ++ ctx.secretCommands, ctx),
+        desiredName
       )
     case ctx @ DefBlackBox(id, name, ports, topDir, params) =>
       fir.ExtModule(
