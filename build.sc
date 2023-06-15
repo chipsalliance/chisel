@@ -1,4 +1,5 @@
 import $ivy.`com.github.lolgab::mill-mima::0.0.23`
+import $ivy.`io.chris-kipp::mill-ci-release::0.1.9`
 
 import mill._
 import mill.scalalib._
@@ -8,6 +9,7 @@ import mill.scalalib.scalafmt._
 import coursier.maven.MavenRepository
 import mill.scalalib.api.ZincWorkerUtil.matchingVersions
 import com.github.lolgab.mill.mima._
+import io.kipp.mill.ci.release.{CiReleaseModule, SonatypeHost}
 import $file.common
 
 object v {
@@ -212,6 +214,7 @@ trait Stdlib
 
 trait ChiselPublishModule
     extends PublishModule
+    with CiReleaseModule
     with Mima {
   def pomSettings = PomSettings(
     description = artifactName(),
@@ -221,6 +224,7 @@ trait ChiselPublishModule
     versionControl = VersionControl.github("chipsalliance", "chisel"),
     developers = Seq()
   )
-  def publishVersion = "5.0-SNAPSHOT"
   def mimaPreviousVersions = os.read.lines(os.pwd / "project" / "previous-versions.txt")
+
+  override def sonatypeHost = Some(SonatypeHost.s01)
 }
