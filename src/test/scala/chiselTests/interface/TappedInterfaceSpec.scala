@@ -109,8 +109,11 @@ class TappedInterfaceSpec extends AnyFunSpec with Matchers {
       baz.io.a := a
       b := baz.io.b
 
-      forceInitial(baz.io.c, true.B)
-      force(clock, reset.asBool, baz.io.d, false.B)
+      // FIXME: uncomment out the force statements once
+      // https://github.com/chipsalliance/chisel/issues/3363 is resolved. The
+      // current CI version of Verilator does not support `force` statements.
+      // forceInitial(baz.io.c, true.B)
+      // force(clock, reset.asBool, baz.io.d, false.B)
     }
   }
 
