@@ -1,9 +1,6 @@
 import mill._
 import mill.scalalib._
 
-// 12 or 13
-private def majorScalaVersion(scalaVersion: String) = scalaVersion.split('.')(1).toInt
-
 trait HasMacroAnnotations
   extends ScalaModule {
 
