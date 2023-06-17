@@ -47,7 +47,9 @@ trait SvsimModule
 }
 
 trait SvsimUnitTestModule
-  extends ScalaModule {
+  extends TestModule
+    with ScalaModule 
+    with TestModule.ScalaTest {
   def svsimModule: SvsimModule
 
   def scalatestIvy: Dep
@@ -55,6 +57,8 @@ trait SvsimUnitTestModule
   def scalacheckIvy: Dep
 
   override def moduleDeps = Seq(svsimModule)
+
+  override def defaultCommandName() = "test"
 
   override def ivyDeps = super.ivyDeps() ++ Agg(
     scalatestIvy,
@@ -73,6 +77,8 @@ trait FirrtlUnitTestModule
   def scalacheckIvy: Dep
 
   override def moduleDeps = Seq(firrtlModule)
+
+  override def defaultCommandName() = "test"
 
   override def ivyDeps = super.ivyDeps() ++ Agg(
     scalatestIvy,
@@ -161,6 +167,8 @@ trait ChiselUnitTestModule
   def scalacheckIvy: Dep
 
   override def moduleDeps = Seq(chiselModule)
+
+  override def defaultCommandName() = "test"
 
   override def ivyDeps = super.ivyDeps() ++ Agg(
     scalatestIvy,
