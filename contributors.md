@@ -52,6 +52,7 @@
 - [`@jcmartin`](https://github.com/jcmartin)
 - [`@jiegec`](https://github.com/jiegec)
 - [`@jimmysitu`](https://github.com/jimmysitu)
+- [`@JL102`](https://github.com/JL102)
 - [`@johnsbrew`](https://github.com/johnsbrew)
 - [`@jyhi`](https://github.com/jyhi)
 - [`@kammoh`](https://github.com/kammoh)
