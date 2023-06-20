@@ -182,7 +182,7 @@ class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule {
          |package chisel3
          |case object BuildInfo {
          |  val buildInfoPackage: String = "chisel3"
-         |  val version: String = "1.6.X"
+         |  val version: String = "${publishVersion()}"
          |  val scalaVersion: String = "${scalaVersion()}"
          |  val firtoolVersion: scala.Option[String] = None
          |  override val toString: String = {
