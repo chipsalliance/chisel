@@ -3,8 +3,6 @@ import mill.scalalib._
 import mill.scalalib.publish._
 import mill.scalalib.scalafmt._
 import coursier.maven.MavenRepository
-import $ivy.`com.lihaoyi::mill-contrib-buildinfo:$MILL_VERSION`
-import mill.contrib.buildinfo.BuildInfo
 
 object chisel3 extends mill.Cross[chisel3CrossModule]("2.13.10", "2.12.17")
 
@@ -89,7 +87,7 @@ trait CommonModule extends CrossSbtModule with PublishModule with ScalafmtModule
   )
 }
 
-class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule with BuildInfo {
+class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule {
   m =>
 
   /** Default behavior assumes `build.sc` in the upper path of `src`.
@@ -145,16 +143,6 @@ class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule wit
     override def moduleDeps = super.moduleDeps ++ Seq(stdlib) ++ chiseltestModule
   }
 
-  override def buildInfoPackageName = Some("chisel3")
-
-  override def buildInfoMembers = T {
-    Map(
-      "buildInfoPackage" -> artifactName(),
-      "version" -> publishVersion(),
-      "scalaVersion" -> scalaVersion()
-    )
-  }
-
   object macros extends CommonModule {
 
     /** millOuterCtx.segment.pathSegments didn't detect error here. */
@@ -187,10 +175,30 @@ class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule wit
         "-Xlint:infer-any"
       )
     }
+  private def generateBuildInfo = T {
+    val outputFile = T.dest / "BuildInfo.scala"
+    val contents =
+      s"""
+         |package chisel3
+         |case object BuildInfo {
+         |  val buildInfoPackage: String = "chisel3"
+         |  val version: String = "1.6.X"
+         |  val scalaVersion: String = "${scalaVersion()}"
+         |  val firtoolVersion: scala.Option[String] = None
+         |  override val toString: String = {
+         |    "buildInfoPackage: %s, version: %s, scalaVersion: %s, firtoolVersion %s".format(
+         |        buildInfoPackage, version, scalaVersion, firtoolVersion
+         |    )
+         |  }
+         |}
+         |""".stripMargin
+    os.write(outputFile, contents, createFolders = true)
+    PathRef(T.dest)
+  }
 
-    override def generatedSources = T {
-      Seq(generatedBuildInfo()._2)
-    }
+  override def generatedSources = T {
+    super.generatedSources() :+ generateBuildInfo()
+  }
   }
 
   object plugin extends CommonModule {
