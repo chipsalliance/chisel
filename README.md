@@ -34,7 +34,7 @@ a hardware compiler framework implemented by [LLVM CIRCT](https://github.com/llv
 
 ---
 
-[![Join the chat at https://gitter.im/chipsalliance/chisel](https://matrix.to/img/matrix-badge.svg)](https://gitter.im/chipsalliance/chisel?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Join the chat at https://gitter.im/freechipsproject/chisel3](https://matrix.to/img/matrix-badge.svg)](https://gitter.im/freechipsproject/chisel3?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Scaladoc](https://www.javadoc.io/badge/org.chipsalliance/chisel_2.13.svg?color=blue&label=Scaladoc)](https://javadoc.io/doc/org.chipsalliance/chisel_2.13/latest)
 ![CI](https://github.com/chipsalliance/chisel/actions/workflows/test.yml/badge.svg)
 [![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/chipsalliance/chisel.svg?include_prereleases&sort=semver)](https://github.com/chipsalliance/chisel/releases/latest)
