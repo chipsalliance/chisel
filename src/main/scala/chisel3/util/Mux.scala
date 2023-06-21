@@ -61,21 +61,6 @@ object PriorityMux {
   */
 object MuxLookup extends SourceInfoDoc {
 
-  /** Creates a cascade of n Muxs to search for a key value.
-    *
-    * @example {{{
-    * MuxLookup(idx, default, Seq(0.U -> a, 1.U -> b))
-    * }}}
-    *
-    * @param key a key to search for
-    * @param default a default value if nothing is found
-    * @param mapping a sequence to search of keys and values
-    * @return the value found or the default if not
-    */
-  @deprecated("Use MuxLookup(key, default)(mapping) instead", "Chisel 3.6")
-  def apply[S <: UInt, T <: Data](key: S, default: T, mapping: Seq[(S, T)]): T =
-    do_apply(key, default, mapping)
-
   /** @param key a key to search for
     * @param default a default value if nothing is found
     * @param mapping a sequence to search of keys and values

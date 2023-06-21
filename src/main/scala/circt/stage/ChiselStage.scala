@@ -221,31 +221,6 @@ object ChiselStage {
       Seq(ChiselGeneratorAnnotation(() => gen)) ++ firtoolOpts.map(FirtoolOption(_))
     )
 
-  /** Return a Chisel circuit for a Chisel module
-    *
-    * @param gen a call-by-name Chisel module
-    */
-  @deprecated(
-    "this exposes the internal Chisel circuit which was not supposed to be public---use either ChiselStage.convert or ChiselStage.emitCHIRRTL instead",
-    "Chisel 5.0"
-  )
-  def elaborate(
-    gen:  => RawModule,
-    args: Array[String] = Array.empty
-  ): chisel3.internal.firrtl.Circuit = {
-    val annos = Seq(
-      ChiselGeneratorAnnotation(() => gen),
-      CIRCTTargetAnnotation(CIRCTTarget.CHIRRTL)
-    ) ++ (new BareShell("circt") with CLI).parse(args)
-
-    phase
-      .transform(annos)
-      .collectFirst {
-        case ChiselCircuitAnnotation(a) => a
-      }
-      .get
-  }
-
 }
 
 /** Command line entry point to [[ChiselStage]] */

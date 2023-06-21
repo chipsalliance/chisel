@@ -8,8 +8,7 @@ import firrtl.util.{BackendCompilationUtilities => FirrtlBackendCompilationUtili
 import java.io._
 import _root_.logger.LazyLogging
 
-@deprecated("Use object firrtl.util.BackendCompilationUtilities instead", "Chisel 3.5")
-trait BackendCompilationUtilities extends LazyLogging {
+private[chisel3] trait BackendCompilationUtilities extends LazyLogging {
 
   import scala.sys.process.{ProcessBuilder, ProcessLogger, _}
 

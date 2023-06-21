@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chiselTests.stage
+package chisel3.stage
 
 import firrtl.options.Viewer.view
 import firrtl.RenameMap
