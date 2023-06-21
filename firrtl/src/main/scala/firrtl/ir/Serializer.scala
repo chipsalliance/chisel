@@ -82,15 +82,25 @@ object Serializer {
     case other  => b ++= other.serialize // Handle user-defined nodes
   }
 
+  /** Hash map containing names that were changed due to legalization. */
+  private val legalizedNames = scala.collection.mutable.HashMap.empty[String, String]
+
+  /** Generate a legal FIRRTL name. */
+  private def legalize(name: String): String = name match {
+    // If the name starts with a digit, then escape it with backticks.
+    case _ if name.head.isDigit => legalizedNames.getOrElseUpdate(name, s"`$name`")
+    case _                      => name
+  }
+
   private def s(str: StringLit)(implicit b: StringBuilder, indent: Int): Unit = b ++= str.serialize
 
   private def s(node: Expression)(implicit b: StringBuilder, indent: Int): Unit = node match {
-    case Reference(name, _) => b ++= name
+    case Reference(name, _) => b ++= legalize(name)
     case DoPrim(op, args, consts, _) =>
       b ++= op.toString; b += '('; s(args, ", ", consts.isEmpty); s(consts, ", "); b += ')'
     case UIntLiteral(value, width) =>
       b ++= "UInt"; s(width); b ++= "(0h"; b ++= value.toString(16); b ++= ")"
-    case SubField(expr, name, _)   => s(expr); b += '.'; b ++= name
+    case SubField(expr, name, _)   => s(expr); b += '.'; b ++= legalize(name)
     case SubIndex(expr, value, _)  => s(expr); b += '['; b ++= value.toString; b += ']'
     case SubAccess(expr, index, _) => s(expr); b += '['; s(index); b += ']'
     case Mux(cond, tval, fval, _) =>
@@ -227,7 +237,7 @@ object Serializer {
   }
 
   private def s(node: Statement)(implicit b: StringBuilder, indent: Int): Unit = node match {
-    case DefNode(info, name, value) => b ++= "node "; b ++= name; b ++= " = "; s(value); s(info)
+    case DefNode(info, name, value) => b ++= "node "; b ++= legalize(name); b ++= " = "; s(value); s(info)
     case Connect(info, loc, expr)   => b ++= "connect "; s(loc); b ++= ", "; s(expr); s(info)
     case c: Conditionally => b ++= sIt(c).mkString
     case EmptyStmt => b ++= "skip"
@@ -240,13 +250,15 @@ object Serializer {
       if (args.nonEmpty) b ++= ", "; s(args, ", "); b += ')'
       sStmtName(print.name); s(info)
     case IsInvalid(info, expr)    => b ++= "invalidate "; s(expr); s(info)
-    case DefWire(info, name, tpe) => b ++= "wire "; b ++= name; b ++= " : "; s(tpe); s(info)
+    case DefWire(info, name, tpe) => b ++= "wire "; b ++= legalize(name); b ++= " : "; s(tpe); s(info)
     case DefRegister(info, name, tpe, clock) =>
-      b ++= "reg "; b ++= name; b ++= " : "; s(tpe); b ++= ", "; s(clock); s(info)
+      b ++= "reg "; b ++= legalize(name); b ++= " : "; s(tpe); b ++= ", "; s(clock); s(info)
     case DefRegisterWithReset(info, name, tpe, clock, reset, init) =>
-      b ++= "regreset "; b ++= name; b ++= " : "; s(tpe); b ++= ", "; s(clock); b ++= ", "; s(reset); b ++= ", ";
+      b ++= "regreset "; b ++= legalize(name); b ++= " : "; s(tpe); b ++= ", "; s(clock); b ++= ", "; s(reset);
+      b ++= ", ";
       s(init); s(info)
-    case DefInstance(info, name, module, _) => b ++= "inst "; b ++= name; b ++= " of "; b ++= module; s(info)
+    case DefInstance(info, name, module, _) =>
+      b ++= "inst "; b ++= legalize(name); b ++= " of "; b ++= legalize(module); s(info)
     case DefMemory(
           info,
           name,
@@ -259,14 +271,14 @@ object Serializer {
           readwriters,
           readUnderWrite
         ) =>
-      b ++= "mem "; b ++= name; b ++= " :"; s(info); newLineAndIndent(1)
+      b ++= "mem "; b ++= legalize(name); b ++= " :"; s(info); newLineAndIndent(1)
       b ++= "data-type => "; s(dataType); newLineAndIndent(1)
       b ++= "depth => "; b ++= depth.toString(); newLineAndIndent(1)
       b ++= "read-latency => "; b ++= readLatency.toString; newLineAndIndent(1)
       b ++= "write-latency => "; b ++= writeLatency.toString; newLineAndIndent(1)
-      readers.foreach { r => b ++= "reader => "; b ++= r; newLineAndIndent(1) }
-      writers.foreach { w => b ++= "writer => "; b ++= w; newLineAndIndent(1) }
-      readwriters.foreach { r => b ++= "readwriter => "; b ++= r; newLineAndIndent(1) }
+      readers.foreach { r => b ++= "reader => "; b ++= legalize(r); newLineAndIndent(1) }
+      writers.foreach { w => b ++= "writer => "; b ++= legalize(w); newLineAndIndent(1) }
+      readwriters.foreach { r => b ++= "readwriter => "; b ++= legalize(r); newLineAndIndent(1) }
       b ++= "read-under-write => "; b ++= readUnderWrite.toString
     case Attach(info, exprs) =>
       // exprs should never be empty since the attach statement takes *at least* two signals according to the spec
@@ -278,13 +290,13 @@ object Serializer {
     // WIR
     case firrtl.CDefMemory(info, name, tpe, size, seq, readUnderWrite) =>
       if (seq) b ++= "smem " else b ++= "cmem "
-      b ++= name; b ++= " : "; s(tpe); b ++= " ["; b ++= size.toString(); b += ']'
+      b ++= legalize(name); b ++= " : "; s(tpe); b ++= " ["; b ++= size.toString(); b += ']'
       if (readUnderWrite != ReadUnderWrite.Undefined) { // undefined is the default
         b += ' '; b ++= readUnderWrite.toString
       }
       s(info)
     case firrtl.CDefMPort(info, name, _, mem, exps, direction) =>
-      b ++= direction.serialize; b ++= " mport "; b ++= name; b ++= " = "; b ++= mem
+      b ++= direction.serialize; b ++= " mport "; b ++= legalize(name); b ++= " = "; b ++= legalize(mem)
       b += '['; s(exps.head); b ++= "], "; s(exps(1)); s(info)
     case ProbeDefine(info, sink, probeExpr) =>
       b ++= "define "; s(sink); b ++= " = "; s(probeExpr); s(info)
@@ -322,7 +334,7 @@ object Serializer {
   }
 
   private def s(node: Field)(implicit b: StringBuilder, indent: Int): Unit = node match {
-    case Field(name, flip, tpe) => s(flip); b ++= name; b ++= " : "; s(tpe)
+    case Field(name, flip, tpe) => s(flip); b ++= legalize(name); b ++= " : "; s(tpe)
   }
 
   private def s(node: Type)(implicit b: StringBuilder, indent: Int): Unit = node match {
@@ -350,7 +362,7 @@ object Serializer {
 
   private def s(node: Port)(implicit b: StringBuilder, indent: Int): Unit = node match {
     case Port(info, name, direction, tpe) =>
-      s(direction); b += ' '; b ++= name; b ++= " : "; s(tpe); s(info)
+      s(direction); b += ' '; b ++= legalize(name); b ++= " : "; s(tpe); s(info)
   }
 
   private def s(node: Param)(implicit b: StringBuilder, indent: Int): Unit = node match {
@@ -367,7 +379,7 @@ object Serializer {
     case Module(info, name, ports, body) =>
       val start = {
         implicit val b = new StringBuilder
-        doIndent(0); b ++= "module "; b ++= name; b ++= " :"; s(info)
+        doIndent(0); b ++= "module "; b ++= legalize(name); b ++= " :"; s(info)
         ports.foreach { p => newLineAndIndent(1); s(p) }
         newLineNoIndent() // add a blank line between port declaration and body
         newLineNoIndent() // newline for body, sIt will indent
@@ -376,14 +388,14 @@ object Serializer {
       Iterator(start) ++ sIt(body)(indent + 1)
     case ExtModule(info, name, ports, defname, params) =>
       implicit val b = new StringBuilder
-      doIndent(0); b ++= "extmodule "; b ++= name; b ++= " :"; s(info)
+      doIndent(0); b ++= "extmodule "; b ++= legalize(name); b ++= " :"; s(info)
       ports.foreach { p => newLineAndIndent(1); s(p) }
       newLineAndIndent(1); b ++= "defname = "; b ++= defname
       params.foreach { p => newLineAndIndent(1); s(p) }
       Iterator(b.toString)
     case IntModule(info, name, ports, intrinsic, params) =>
       implicit val b = new StringBuilder
-      doIndent(0); b ++= "intmodule "; b ++= name; b ++= " :"; s(info)
+      doIndent(0); b ++= "intmodule "; b ++= legalize(name); b ++= " :"; s(info)
       ports.foreach { p => newLineAndIndent(1); s(p) }
       newLineAndIndent(1); b ++= "intrinsic = "; b ++= intrinsic
       params.foreach { p => newLineAndIndent(1); s(p) }
@@ -401,7 +413,7 @@ object Serializer {
     val prelude = {
       implicit val b = new StringBuilder
       b ++= s"FIRRTL version ${version.serialize}\n"
-      b ++= "circuit "; b ++= circuit.main; b ++= " :";
+      b ++= "circuit "; b ++= legalize(circuit.main); b ++= " :";
       if (annotations.nonEmpty) {
         b ++= "%["; b ++= JsonProtocol.serialize(annotations); b ++= "]";
       }
