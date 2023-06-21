@@ -62,7 +62,7 @@ class MixedVecZeroEntryTester extends BasicTester {
     val bar = zeroEntryMixedVec
   }
   require(0.U.asTypeOf(bundleWithZeroEntryVec).getWidth == 1)
-  require(bundleWithZeroEntryVec.asUInt.getWidth == 1)
+  require(bundleWithZeroEntryVec.getWidth == 1)
 
   val m = Module(new Module {
     val io = IO(Output(bundleWithZeroEntryVec))

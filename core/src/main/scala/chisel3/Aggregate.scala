@@ -81,8 +81,13 @@ sealed abstract class Aggregate extends Data {
     }
   }
 
-  override def do_asUInt(implicit sourceInfo: SourceInfo): UInt = {
-    SeqUtils.do_asUInt(flatten.map(_.asUInt))
+  // Due to prior lack of zero-width wire support, .asUInt for an empty Aggregate has returned 0.U (equivalent to 0.U(1.W))
+  // In the case where an empty Aggregate is a child of an outer Aggregate, however, it would flatten out the empty inner Aggregate
+  // This means we need the `first` argument so that we can preserve this behavior of Aggregates while still allowing subclasses
+  // to override .asUInt behavior
+  override private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): UInt = {
+    val elts = this.getElements.map(_._asUIntImpl(false))
+    if (elts.isEmpty && !first) 0.U(0.W) else SeqUtils.do_asUInt(elts)
   }
 
   private[chisel3] override def connectFromBits(

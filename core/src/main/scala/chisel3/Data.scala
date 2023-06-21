@@ -756,8 +756,12 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     */
   final def asUInt: UInt = macro SourceInfoTransform.noArg
 
+  // The actual implementation of do_asUInt
+  // @param first exists because of awkward behavior in Aggregate that requires changing 0.U to be zero-width to fix
+  private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): UInt
+
   /** @group SourceInfoTransformMacro */
-  def do_asUInt(implicit sourceInfo: SourceInfo): UInt
+  def do_asUInt(implicit sourceInfo: SourceInfo): UInt = this._asUIntImpl(true)
 
   /** Default pretty printing */
   def toPrintable: Printable
@@ -1102,7 +1106,7 @@ final case object DontCare extends Element with connectable.ConnectableDocs {
     Builder.error("connectFromBits: DontCare cannot be a connection sink (LHS)")
   }
 
-  def do_asUInt(implicit sourceInfo: chisel3.experimental.SourceInfo): UInt = {
+  override private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): UInt = {
     Builder.error("DontCare does not have a UInt representation")
     0.U
   }

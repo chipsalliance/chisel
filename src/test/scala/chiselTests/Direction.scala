@@ -397,7 +397,7 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
   }
 
   property("Using OpaqueTypes and Flipped together should calculate directions properly") {
-    import RecordSpec.{Boxed, Unboxed}
+    import chiselTests.experimental.OpaqueTypeSpec.{Boxed, Unboxed}
     class MyModule extends RawModule {
       val unboxedFlipped = IO(new Unboxed(Flipped(UInt(8.W))))
       assert(DataMirror.directionOf(unboxedFlipped.underlying) == Direction.Input)
