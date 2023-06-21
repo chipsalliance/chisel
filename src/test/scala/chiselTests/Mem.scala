@@ -512,38 +512,87 @@ class SRAMSpec extends ChiselFunSpec {
           }
         }
     }
-  }
 
-  it(s"should support masking with Vec-valued data") {
-    class TestModule(val wr: Int, val rw: Int) extends Module {
-      val mem = SRAM.masked(32, Vec(3, UInt(8.W)), 0, wr, rw)
+    it(s"should support masking with Vec-valued data") {
+      class TestModule(val wr: Int, val rw: Int) extends Module {
+        val mem = SRAM.masked(32, Vec(3, UInt(8.W)), 0, wr, rw)
 
-      dontTouch(mem)
+        dontTouch(mem)
 
-      for (i <- 0 until wr) {
-        mem.writePorts(i) := DontCare
+        for (i <- 0 until wr) {
+          mem.writePorts(i) := DontCare
+        }
+        for (i <- 0 until rw) {
+          mem.readwritePorts(i) := DontCare
+        }
       }
-      for (i <- 0 until rw) {
-        mem.readwritePorts(i) := DontCare
+      val chirrtl = ChiselStage.emitCHIRRTL(new TestModule(1, 1), args = Array("--full-stacktrace"))
+
+      chirrtl should include(
+        "writePorts : { flip address : UInt<6>, flip enable : UInt<1>, flip data : UInt<8>[3], flip mask : UInt<1>[3]}[1]"
+      )
+      chirrtl should include(
+        "readwritePorts : { flip address : UInt<6>, flip enable : UInt<1>, flip isWrite : UInt<1>, readData : UInt<8>[3], flip writeData : UInt<8>[3], flip mask : UInt<1>[3]}[1]"
+      )
+
+      for (i <- 0 until 3) {
+        chirrtl should include(s"when mem.writePorts[0].mask[$i]")
+        chirrtl should include(s"mem_MPORT[$i] <= mem.writePorts[0].data[$i]")
+
+        chirrtl should include(s"when mem.readwritePorts[0].mask[$i]")
+        chirrtl should include(s"mem_out_readwritePorts_0_readData_MPORT[$i] <= mem.readwritePorts[0].writeData[$i]")
       }
     }
-    val chirrtl = ChiselStage.emitCHIRRTL(new TestModule(1, 1), args = Array("--full-stacktrace"))
 
-    chirrtl should include(
-      "writePorts : { flip address : UInt<6>, flip enable : UInt<1>, flip data : UInt<8>[3], flip mask : UInt<1>[3]}[1]"
-    )
-    chirrtl should include(
-      "readwritePorts : { flip address : UInt<6>, flip enable : UInt<1>, flip isWrite : UInt<1>, readData : UInt<8>[3], flip writeData : UInt<8>[3], flip mask : UInt<1>[3]}[1]"
-    )
+    it(s"should support multiple clocks driving different ports") {
+      class TestModule extends Module {
+        val (counter, _) = Counter(true.B, 11)
+        val clock1: Clock = (counter === 1.U).asClock
+        val clock2: Clock = (counter === 2.U).asClock
+        val clock3: Clock = (counter === 3.U).asClock
 
-    for (i <- 0 until 3) {
-      chirrtl should include(s"when mem.writePorts[0].mask[$i]")
-      chirrtl should include(s"mem_MPORT[$i] <= mem.writePorts[0].data[$i]")
+        val readClocks = Seq(clock1, clock2, clock3)
+        val writeClocks = Seq(clock2, clock3, clock1)
+        val readwriteClocks = Seq(clock3, clock1, clock2)
 
-      chirrtl should include(s"when mem.readwritePorts[0].mask[$i]")
-      chirrtl should include(s"mem_out_readwritePorts_0_readData_MPORT[$i] <= mem.readwritePorts[0].writeData[$i]")
+        val mem = SRAM(
+          32,
+          Vec(3, UInt(8.W)),
+          readClocks,
+          writeClocks,
+          readwriteClocks
+        )
+
+        dontTouch(mem)
+
+        for (i <- 0 until 3) {
+          mem.readPorts(i) := DontCare
+          mem.writePorts(i) := DontCare
+          mem.readwritePorts(i) := DontCare
+        }
+      }
+      val chirrtl = ChiselStage.emitCHIRRTL(new TestModule, args = Array("--full-stacktrace"))
+
+      for (i <- 0 until 3) {
+        val rdClockIndex = i + 1
+        val wrClockIndex = ((i + 1) % 3) + 1
+        val rwClockIndex = ((i + 2) % 3) + 1
+
+        val wrIndexSuffix = if (i == 0) "" else s"_$i"
+
+        chirrtl should include(
+          s"read mport mem_out_readPorts_${i}_data_MPORT = mem_mem[_mem_out_readPorts_${i}_data_T], clock${rdClockIndex}"
+        )
+        chirrtl should include(
+          s"write mport mem_MPORT${wrIndexSuffix} = mem_mem[_mem_T${wrIndexSuffix}], clock${wrClockIndex}"
+        )
+        chirrtl should include(
+          s"rdwr mport mem_out_readwritePorts_${i}_readData_MPORT = mem_mem[_mem_out_readwritePorts_${i}_readData_T], clock${rwClockIndex}"
+        )
+      }
     }
   }
+
   describe("Read-only SRAM") {
     it(s"should error") {
       class TestModule extends Module {
