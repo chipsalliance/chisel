@@ -116,10 +116,7 @@ class TappedInterfaceSpec extends AnyFunSpec with Matchers {
 
   describe("Behavior of Interfaces") {
 
-    // FIXME: uncomment out the force statements once https://github.com/chipsalliance/chisel/issues/3363
-    // is resolved. The current CI version of Verilator does not support `force`
-    // statements.
-    ignore("should compile a design separably") {
+    it("should compile a design separably") {
 
       /** Now we compile the design into the "build/Interfaces" directory. Both
         * "Foo" and one copy of the "DUT", using the utility in "WrapperModuleInterface",
