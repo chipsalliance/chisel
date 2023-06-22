@@ -156,7 +156,16 @@ object SRAM {
   )(
     implicit sourceInfo: SourceInfo
   ): SRAMInterface[T] =
-    memInterface_impl(size, tpe)(numReadPorts, numWritePorts, numReadwritePorts, Builder.forcedClock, None)
+    memInterface_impl(size, tpe)(
+      numReadPorts,
+      numWritePorts,
+      numReadwritePorts,
+      Builder.forcedClock,
+      None
+    )(
+      None,
+      sourceInfo
+    )
 
   /** Generates a [[SyncReadMem]] within the current module, connected to an explicit number
     * of read, write, and read/write ports. This SRAM abstraction has both read and write capabilities: that is,
@@ -184,7 +193,16 @@ object SRAM {
   )(
     implicit sourceInfo: SourceInfo
   ): SRAMInterface[T] =
-    memInterface_impl(size, tpe)(numReadPorts, numWritePorts, numReadwritePorts, Builder.forcedClock, Some(memoryFile))
+    memInterface_impl(size, tpe)(
+      numReadPorts,
+      numWritePorts,
+      numReadwritePorts,
+      Builder.forcedClock,
+      Some(memoryFile)
+    )(
+      None,
+      sourceInfo
+    )
 
   /** Generates a [[SyncReadMem]] within the current module, connected to an explicit number
     * of read, write, and read/write ports, with masking capability on all write and read/write ports.
@@ -211,7 +229,16 @@ object SRAM {
     implicit evidence: T <:< Vec[_],
     sourceInfo:        SourceInfo
   ): SRAMInterface[T] =
-    masked_memInterface_impl(size, tpe)(numReadPorts, numWritePorts, numReadwritePorts, Builder.forcedClock, None)
+    memInterface_impl(size, tpe)(
+      numReadPorts,
+      numWritePorts,
+      numReadwritePorts,
+      Builder.forcedClock,
+      None
+    )(
+      Some(evidence),
+      sourceInfo
+    )
 
   /** Generates a [[SyncReadMem]] within the current module, connected to an explicit number
     * of read, write, and read/write ports, with masking capability on all write and read/write ports.
@@ -240,12 +267,15 @@ object SRAM {
     implicit evidence: T <:< Vec[_],
     sourceInfo:        SourceInfo
   ): SRAMInterface[T] =
-    masked_memInterface_impl(size, tpe)(
+    memInterface_impl(size, tpe)(
       numReadPorts,
       numWritePorts,
       numReadwritePorts,
       Builder.forcedClock,
       Some(memoryFile)
+    )(
+      Some(evidence),
+      sourceInfo
     )
 
   private def memInterface_impl[T <: Data](
@@ -257,8 +287,10 @@ object SRAM {
     clock:             Clock,
     memoryFile:        Option[MemoryFile]
   )(
-    implicit sourceInfo: SourceInfo
+    implicit evidenceOpt: Option[T <:< Vec[_]],
+    sourceInfo: SourceInfo
   ): SRAMInterface[T] = {
+    val isVecMem = evidenceOpt.isDefined
     val isValidSRAM = ((numReadPorts + numReadwritePorts) > 0) && ((numWritePorts + numReadwritePorts) > 0)
 
     if (!isValidSRAM) {
@@ -272,7 +304,7 @@ object SRAM {
       )
     }
 
-    val _out = Wire(new SRAMInterface(size, tpe, numReadPorts, numWritePorts, numReadwritePorts))
+    val _out = Wire(new SRAMInterface(size, tpe, numReadPorts, numWritePorts, numReadwritePorts, isVecMem))
     val mem = SyncReadMem(size, tpe)
 
     for (i <- 0 until numReadPorts) {
@@ -281,78 +313,38 @@ object SRAM {
 
     for (i <- 0 until numWritePorts) {
       when(_out.writePorts(i).enable) {
-        mem.write(_out.writePorts(i).address, _out.writePorts(i).data, clock)
+        if (isVecMem) {
+          mem.write(
+            _out.writePorts(i).address,
+            _out.writePorts(i).data,
+            _out.writePorts(i).mask.get,
+            clock
+          )(evidenceOpt.get)
+        } else {
+          mem.write(_out.writePorts(i).address, _out.writePorts(i).data, clock)
+        }
       }
     }
 
     for (i <- 0 until numReadwritePorts) {
-      _out.readwritePorts(i).readData := mem.readWrite(
-        _out.readwritePorts(i).address,
-        _out.readwritePorts(i).writeData,
-        _out.readwritePorts(i).enable,
-        _out.readwritePorts(i).isWrite,
-        clock
-      )
-    }
-
-    // Emit Verilog for preloading the memory from a file if requested
-    memoryFile.foreach { file: MemoryFile => loadMemoryFromFileInline(mem, file.path, file.fileType) }
-
-    _out
-  }
-
-  private def masked_memInterface_impl[T <: Data](
-    size:              BigInt,
-    tpe:               T
-  )(numReadPorts:      Int,
-    numWritePorts:     Int,
-    numReadwritePorts: Int,
-    clock:             Clock,
-    memoryFile:        Option[MemoryFile]
-  )(
-    implicit sourceInfo: SourceInfo,
-    evidence:            T <:< Vec[_]
-  ): SRAMInterface[T] = {
-    val isValidSRAM = ((numReadPorts + numReadwritePorts) > 0) && ((numWritePorts + numReadwritePorts) > 0)
-
-    if (!isValidSRAM) {
-      val badMemory =
-        if (numReadPorts + numReadwritePorts == 0)
-          "write-only SRAM (R + RW === 0)"
-        else
-          "read-only SRAM (W + RW === 0)"
-      Builder.error(
-        s"Attempted to initialize a $badMemory! SRAMs must have both at least one read accessor and at least one write accessor."
-      )
-    }
-
-    val _out = Wire(new SRAMInterface(size, tpe, numReadPorts, numWritePorts, numReadwritePorts, true))
-    val mem = SyncReadMem(size, tpe)
-
-    for (i <- 0 until numReadPorts) {
-      _out.readPorts(i).data := mem.read(_out.readPorts(i).address, _out.readPorts(i).enable, clock)
-    }
-
-    for (i <- 0 until numWritePorts) {
-      when(_out.writePorts(i).enable) {
-        mem.write(
-          _out.writePorts(i).address,
-          _out.writePorts(i).data,
-          _out.writePorts(i).mask.get,
+      if (isVecMem) {
+        _out.readwritePorts(i).readData := mem.readWrite(
+          _out.readwritePorts(i).address,
+          _out.readwritePorts(i).writeData,
+          _out.readwritePorts(i).mask.get,
+          _out.readwritePorts(i).enable,
+          _out.readwritePorts(i).isWrite,
+          clock
+        )(evidenceOpt.get)
+      } else {
+        _out.readwritePorts(i).readData := mem.readWrite(
+          _out.readwritePorts(i).address,
+          _out.readwritePorts(i).writeData,
+          _out.readwritePorts(i).enable,
+          _out.readwritePorts(i).isWrite,
           clock
         )
       }
-    }
-
-    for (i <- 0 until numReadwritePorts) {
-      _out.readwritePorts(i).readData := mem.readWrite(
-        _out.readwritePorts(i).address,
-        _out.readwritePorts(i).writeData,
-        _out.readwritePorts(i).mask.get,
-        _out.readwritePorts(i).enable,
-        _out.readwritePorts(i).isWrite,
-        clock
-      )
     }
 
     // Emit Verilog for preloading the memory from a file if requested
