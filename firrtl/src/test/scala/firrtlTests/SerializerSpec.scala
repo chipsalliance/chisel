@@ -338,7 +338,7 @@ class SerializerSpec extends AnyFlatSpec with Matchers {
         )
       )
       .split('\n')
-      .map(_.strip) should contain).allOf(
+      .map(_.dropWhile(_ == ' ')) should contain).allOf(
       "mem `42_mem` :",
       "reader => `42_r`",
       "writer => `42_w`",
