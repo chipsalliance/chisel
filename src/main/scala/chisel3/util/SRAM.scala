@@ -162,7 +162,7 @@ object SRAM {
     * @param numReadPorts The number of desired read ports >= 0, and (numReadPorts + numReadwritePorts) > 0
     * @param numWritePorts The number of desired write ports >= 0, and (numWritePorts + numReadwritePorts) > 0
     * @param numReadwritePorts The number of desired read/write ports >= 0, and the above two conditions must hold
-    * @param contents A filesystem path to a binary file to preload this SRAM's contents with
+    * @param memoryFile A memory file whose path is emitted as Verilog directives to initialize the inner `SyncReadMem`
     *
     * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
     * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
@@ -217,7 +217,7 @@ object SRAM {
     * @param numReadPorts The number of desired read ports >= 0, and (numReadPorts + numReadwritePorts) > 0
     * @param numWritePorts The number of desired write ports >= 0, and (numWritePorts + numReadwritePorts) > 0
     * @param numReadwritePorts The number of desired read/write ports >= 0, and the above two conditions must hold
-    * @param memoryFile A `MemoryFile` object, containing the filesystem path to the data to preload this SRAM with
+    * @param memoryFile A memory file whose path is emitted as Verilog directives to initialize the inner `SyncReadMem`
     *
     * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
     * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
