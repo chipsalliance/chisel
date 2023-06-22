@@ -111,6 +111,7 @@ class SRAMInterface[T <: Data](
   * See concrete subclasses [[BinaryMemoryFile]] and [[HexMemoryFile]]
   */
 sealed abstract class MemoryFile(private[chisel3] val fileType: MemoryLoadFileType) {
+
   /** The path to the memory contents file */
   val path: String
 }
