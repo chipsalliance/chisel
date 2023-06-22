@@ -234,7 +234,13 @@ object SRAM {
     implicit evidence: T <:< Vec[_],
     sourceInfo:        SourceInfo
   ): SRAMInterface[T] =
-    masked_memInterface_impl(size, tpe)(numReadPorts, numWritePorts, numReadwritePorts, Builder.forcedClock, Some(memoryFile))
+    masked_memInterface_impl(size, tpe)(
+      numReadPorts,
+      numWritePorts,
+      numReadwritePorts,
+      Builder.forcedClock,
+      Some(memoryFile)
+    )
 
   private def memInterface_impl[T <: Data](
     size:              BigInt,
