@@ -5,6 +5,8 @@ import chisel3._
 import chisel3.internal.Builder
 import chisel3.experimental.SourceInfo
 import chisel3.internal.sourceinfo.{MemTransform, SourceInfoTransform}
+import chisel3.util.experimental.loadMemoryFromFileInline
+import firrtl.annotations.MemoryLoadFileType
 import scala.language.reflectiveCalls
 import scala.language.experimental.macros
 
@@ -101,6 +103,30 @@ class SRAMInterface[T <: Data](
     Vec(numReadwritePorts, new MemoryReadWritePort(tpe, addrWidth, masked))
 }
 
+/** A memory file with which to preload an [[SRAM]]
+  *
+  * See concrete subclasses [[BinaryMemoryFile]] and [[HexMemoryFile]]
+  */
+sealed abstract class MemoryFile(private[chisel3] val fileType: MemoryLoadFileType) {
+
+  /** The path to the memory contents file */
+  val path: String
+}
+
+/** A binary memory file to preload an [[SRAM]] with, represented by a filesystem path. This will annotate
+  * the inner [[SyncReadMem]] with `loadMemoryFromFile` using `MemoryLoadFileType.Binary` as the file type.
+  *
+  * @param path The path to the binary file
+  */
+case class BinaryMemoryFile(path: String) extends MemoryFile(MemoryLoadFileType.Binary)
+
+/** A hex memory file to preload an [[SRAM]] with, represented by a filesystem path. This will annotate
+  * the inner [[SyncReadMem]] with `loadMemoryFromFile` using `MemoryLoadFileType.Hex` as the file type.
+  *
+  * @param path The path to the hex file
+  */
+case class HexMemoryFile(path: String) extends MemoryFile(MemoryLoadFileType.Hex)
+
 object SRAM {
 
   /** Generates a [[SyncReadMem]] within the current module, connected to an explicit number
@@ -127,7 +153,35 @@ object SRAM {
   )(
     implicit sourceInfo: SourceInfo
   ): SRAMInterface[T] =
-    memInterface_impl(size, tpe)(numReadPorts, numWritePorts, numReadwritePorts, Builder.forcedClock)
+    memInterface_impl(size, tpe)(numReadPorts, numWritePorts, numReadwritePorts, Builder.forcedClock, None)
+
+  /** Generates a [[SyncReadMem]] within the current module, connected to an explicit number
+    * of read, write, and read/write ports. This SRAM abstraction has both read and write capabilities: that is,
+    * it contains at least one read accessor (a read-only or read-write port), and at least one write accessor
+    * (a write-only or read-write port).
+    *
+    * @param size The desired size of the inner `SyncReadMem`
+    * @tparam T The data type of the memory element
+    * @param numReadPorts The number of desired read ports >= 0, and (numReadPorts + numReadwritePorts) > 0
+    * @param numWritePorts The number of desired write ports >= 0, and (numWritePorts + numReadwritePorts) > 0
+    * @param numReadwritePorts The number of desired read/write ports >= 0, and the above two conditions must hold
+    * @param memoryFile A memory file whose path is emitted as Verilog directives to initialize the inner `SyncReadMem`
+    *
+    * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
+    * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
+    * @note Read-only memories (R >= 1, W === 0, RW === 0) and write-only memories (R === 0, W >= 1, RW === 0) are not supported by this API, and will result in an error if declared.
+    */
+  def apply[T <: Data](
+    size:              BigInt,
+    tpe:               T,
+    numReadPorts:      Int,
+    numWritePorts:     Int,
+    numReadwritePorts: Int,
+    memoryFile:        MemoryFile
+  )(
+    implicit sourceInfo: SourceInfo
+  ): SRAMInterface[T] =
+    memInterface_impl(size, tpe)(numReadPorts, numWritePorts, numReadwritePorts, Builder.forcedClock, Some(memoryFile))
 
   /** Generates a [[SyncReadMem]] within the current module, connected to an explicit number
     * of read, write, and read/write ports, with masking capability on all write and read/write ports.
@@ -154,7 +208,42 @@ object SRAM {
     implicit evidence: T <:< Vec[_],
     sourceInfo:        SourceInfo
   ): SRAMInterface[T] =
-    masked_memInterface_impl(size, tpe)(numReadPorts, numWritePorts, numReadwritePorts, Builder.forcedClock)
+    masked_memInterface_impl(size, tpe)(numReadPorts, numWritePorts, numReadwritePorts, Builder.forcedClock, None)
+
+  /** Generates a [[SyncReadMem]] within the current module, connected to an explicit number
+    * of read, write, and read/write ports, with masking capability on all write and read/write ports.
+    * This SRAM abstraction has both read and write capabilities: that is, it contains at least one read
+    * accessor (a read-only or read-write port), and at least one write accessor (a write-only or read-write port).
+    *
+    * @param size The desired size of the inner `SyncReadMem`
+    * @tparam T The data type of the memory element
+    * @param numReadPorts The number of desired read ports >= 0, and (numReadPorts + numReadwritePorts) > 0
+    * @param numWritePorts The number of desired write ports >= 0, and (numWritePorts + numReadwritePorts) > 0
+    * @param numReadwritePorts The number of desired read/write ports >= 0, and the above two conditions must hold
+    * @param memoryFile A memory file whose path is emitted as Verilog directives to initialize the inner `SyncReadMem`
+    *
+    * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
+    * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
+    * @note Read-only memories (R >= 1, W === 0, RW === 0) and write-only memories (R === 0, W >= 1, RW === 0) are not supported by this API, and will result in an error if declared.
+    */
+  def masked[T <: Data](
+    size:              BigInt,
+    tpe:               T,
+    numReadPorts:      Int,
+    numWritePorts:     Int,
+    numReadwritePorts: Int,
+    memoryFile:        MemoryFile
+  )(
+    implicit evidence: T <:< Vec[_],
+    sourceInfo:        SourceInfo
+  ): SRAMInterface[T] =
+    masked_memInterface_impl(size, tpe)(
+      numReadPorts,
+      numWritePorts,
+      numReadwritePorts,
+      Builder.forcedClock,
+      Some(memoryFile)
+    )
 
   private def memInterface_impl[T <: Data](
     size:              BigInt,
@@ -162,7 +251,8 @@ object SRAM {
   )(numReadPorts:      Int,
     numWritePorts:     Int,
     numReadwritePorts: Int,
-    clock:             Clock
+    clock:             Clock,
+    memoryFile:        Option[MemoryFile]
   )(
     implicit sourceInfo: SourceInfo
   ): SRAMInterface[T] = {
@@ -202,6 +292,9 @@ object SRAM {
       )
     }
 
+    // Emit Verilog for preloading the memory from a file if requested
+    memoryFile.foreach { file: MemoryFile => loadMemoryFromFileInline(mem, file.path, file.fileType) }
+
     _out
   }
 
@@ -211,7 +304,8 @@ object SRAM {
   )(numReadPorts:      Int,
     numWritePorts:     Int,
     numReadwritePorts: Int,
-    clock:             Clock
+    clock:             Clock,
+    memoryFile:        Option[MemoryFile]
   )(
     implicit sourceInfo: SourceInfo,
     evidence:            T <:< Vec[_]
@@ -257,6 +351,9 @@ object SRAM {
         clock
       )
     }
+
+    // Emit Verilog for preloading the memory from a file if requested
+    memoryFile.foreach { file: MemoryFile => loadMemoryFromFileInline(mem, file.path, file.fileType) }
 
     _out
   }
