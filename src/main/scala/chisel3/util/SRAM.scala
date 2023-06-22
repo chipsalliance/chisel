@@ -106,7 +106,12 @@ class SRAMInterface[T <: Data](
     Vec(numReadwritePorts, new MemoryReadWritePort(tpe, addrWidth, masked))
 }
 
-private[chisel3] abstract class MemoryFile(private[chisel3] val fileType: MemoryLoadFileType) {
+/** A memory file with which to preload an [[SRAM]]
+  *
+  * See concrete subclasses [[BinaryMemoryFile]] and [[HexMemoryFile]]
+  */
+sealed abstract class MemoryFile(private[chisel3] val fileType: MemoryLoadFileType) {
+  /** The path to the memory contents file */
   val path: String
 }
 
@@ -290,7 +295,7 @@ object SRAM {
     }
 
     // Emit Verilog for preloading the memory from a file if requested
-    memoryFile.map { file: MemoryFile => loadMemoryFromFileInline(mem, file.path, file.fileType) }
+    memoryFile.foreach { file: MemoryFile => loadMemoryFromFileInline(mem, file.path, file.fileType) }
 
     _out
   }
@@ -350,7 +355,7 @@ object SRAM {
     }
 
     // Emit Verilog for preloading the memory from a file if requested
-    memoryFile.map { file: MemoryFile => loadMemoryFromFileInline(mem, file.path, file.fileType) }
+    memoryFile.foreach { file: MemoryFile => loadMemoryFromFileInline(mem, file.path, file.fileType) }
 
     _out
   }
