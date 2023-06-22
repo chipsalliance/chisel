@@ -6,6 +6,7 @@ import chisel3.internal.Builder
 import chisel3.experimental.SourceInfo
 import chisel3.internal.sourceinfo.{MemTransform, SourceInfoTransform}
 import chisel3.util.experimental.loadMemoryFromFileInline
+import firrtl.annotations.MemoryLoadFileType
 import scala.language.reflectiveCalls
 import scala.language.experimental.macros
 
@@ -105,6 +106,24 @@ class SRAMInterface[T <: Data](
     Vec(numReadwritePorts, new MemoryReadWritePort(tpe, addrWidth, masked))
 }
 
+private[chisel3] abstract class MemoryFile(private[chisel3] val fileType: MemoryLoadFileType) {
+  val path: String
+}
+
+/** A binary memory file to preload an [[SRAM]] with, represented by a filesystem path. This will annotate
+  * the inner [[SyncReadMem]] with `loadMemoryFromFile` using `MemoryLoadFileType.Binary` as the file type.
+  *
+  * @param path The path to the binary file
+  */
+case class BinaryMemoryFile(path: String) extends MemoryFile(MemoryLoadFileType.Binary)
+
+/** A hex memory file to preload an [[SRAM]] with, represented by a filesystem path. This will annotate
+  * the inner [[SyncReadMem]] with `loadMemoryFromFile` using `MemoryLoadFileType.Hex` as the file type.
+  *
+  * @param path The path to the hex file
+  */
+case class HexMemoryFile(path: String) extends MemoryFile(MemoryLoadFileType.Hex)
+
 object SRAM {
 
   /** Generates a [[SyncReadMem]] within the current module, connected to an explicit number
@@ -155,11 +174,11 @@ object SRAM {
     numReadPorts:      Int,
     numWritePorts:     Int,
     numReadwritePorts: Int,
-    loadMemoryFile:    String
+    memoryFile:        MemoryFile
   )(
     implicit sourceInfo: SourceInfo
   ): SRAMInterface[T] =
-    memInterface_impl(size, tpe)(numReadPorts, numWritePorts, numReadwritePorts, Builder.forcedClock, Some(loadMemoryFile))
+    memInterface_impl(size, tpe)(numReadPorts, numWritePorts, numReadwritePorts, Builder.forcedClock, Some(memoryFile))
 
   /** Generates a [[SyncReadMem]] within the current module, connected to an explicit number
     * of read, write, and read/write ports, with masking capability on all write and read/write ports.
@@ -198,7 +217,7 @@ object SRAM {
     * @param numReadPorts The number of desired read ports >= 0, and (numReadPorts + numReadwritePorts) > 0
     * @param numWritePorts The number of desired write ports >= 0, and (numWritePorts + numReadwritePorts) > 0
     * @param numReadwritePorts The number of desired read/write ports >= 0, and the above two conditions must hold
-    * @param loadMemoryFile A filesystem path to a binary file to preload this SRAM's contents with
+    * @param memoryFile A `MemoryFile` object, containing the filesystem path to the data to preload this SRAM with
     *
     * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
     * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
@@ -210,12 +229,12 @@ object SRAM {
     numReadPorts:      Int,
     numWritePorts:     Int,
     numReadwritePorts: Int,
-    loadMemoryFile:    String
+    memoryFile:        MemoryFile
   )(
     implicit evidence: T <:< Vec[_],
     sourceInfo:        SourceInfo
   ): SRAMInterface[T] =
-    masked_memInterface_impl(size, tpe)(numReadPorts, numWritePorts, numReadwritePorts, Builder.forcedClock, Some(loadMemoryFile))
+    masked_memInterface_impl(size, tpe)(numReadPorts, numWritePorts, numReadwritePorts, Builder.forcedClock, Some(memoryFile))
 
   private def memInterface_impl[T <: Data](
     size:              BigInt,
@@ -224,7 +243,7 @@ object SRAM {
     numWritePorts:     Int,
     numReadwritePorts: Int,
     clock:             Clock,
-    memoryFile:        Option[String]
+    memoryFile:        Option[MemoryFile]
   )(
     implicit sourceInfo: SourceInfo
   ): SRAMInterface[T] = {
@@ -264,7 +283,8 @@ object SRAM {
       )
     }
 
-    memoryFile.map { path: String => loadMemoryFromFileInline(mem, path) }
+    // Emit Verilog for preloading the memory from a file if requested
+    memoryFile.map { file: MemoryFile => loadMemoryFromFileInline(mem, file.path, file.fileType) }
 
     _out
   }
@@ -276,7 +296,7 @@ object SRAM {
     numWritePorts:     Int,
     numReadwritePorts: Int,
     clock:             Clock,
-    memoryFile:        Option[String]
+    memoryFile:        Option[MemoryFile]
   )(
     implicit sourceInfo: SourceInfo,
     evidence:            T <:< Vec[_]
@@ -323,7 +343,8 @@ object SRAM {
       )
     }
 
-    memoryFile.map { path: String => loadMemoryFromFileInline(mem, path) }
+    // Emit Verilog for preloading the memory from a file if requested
+    memoryFile.map { file: MemoryFile => loadMemoryFromFileInline(mem, file.path, file.fileType) }
 
     _out
   }
