@@ -72,7 +72,7 @@ abstract class EnumType(private[chisel3] val factory: ChiselEnum, selfAnnotating
   def do_>=(that: EnumType)(implicit sourceInfo: SourceInfo): Bool =
     compop(sourceInfo, GreaterEqOp, that)
 
-  override def do_asUInt(implicit sourceInfo: SourceInfo): UInt =
+  override private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): UInt =
     pushOp(DefPrim(sourceInfo, UInt(width), AsUIntOp, ref))
 
   protected[chisel3] override def width: Width = factory.width

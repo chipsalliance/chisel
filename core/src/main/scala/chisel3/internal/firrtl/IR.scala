@@ -91,17 +91,21 @@ case class Node(id: HasId) extends Arg {
 
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 object Arg {
-  def earlyLocalName(id: HasId): String = id.getOptionRef match {
-    case Some(Index(Node(imm), Node(value))) => s"${earlyLocalName(imm)}[${earlyLocalName(imm)}]"
-    case Some(Index(Node(imm), arg))         => s"${earlyLocalName(imm)}[${arg.localName}]"
-    case Some(Slot(Node(imm), name))         => s"${earlyLocalName(imm)}.$name"
-    case Some(OpaqueSlot(Node(imm)))         => s"${earlyLocalName(imm)}"
-    case Some(arg)                           => arg.name
-    case None =>
+  def earlyLocalName(id: HasId): String = earlyLocalName(id, true)
+
+  def earlyLocalName(id: HasId, includeRoot: Boolean): String = id.getOptionRef match {
+    case Some(Index(Node(imm), Node(value))) =>
+      s"${earlyLocalName(imm, includeRoot)}[${earlyLocalName(imm, includeRoot)}]"
+    case Some(Index(Node(imm), arg)) => s"${earlyLocalName(imm, includeRoot)}[${arg.localName}]"
+    case Some(Slot(Node(imm), name)) => s"${earlyLocalName(imm, includeRoot)}.$name"
+    case Some(OpaqueSlot(Node(imm))) => s"${earlyLocalName(imm, includeRoot)}"
+    case Some(arg) if includeRoot    => arg.name
+    case None if includeRoot =>
       id match {
         case data: Data => data._computeName(Some("?")).get
         case _ => "?"
       }
+    case _ => "_" // Used when includeRoot == false
   }
 }
 
