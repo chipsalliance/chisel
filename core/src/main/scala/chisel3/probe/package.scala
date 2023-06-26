@@ -53,8 +53,19 @@ package object probe extends SourceInfoDoc {
     clone.bind(OpBinding(Builder.forcedUserModule, Builder.currentWhen))
     clone.setRef(ProbeRead(source.ref))
     // return a non-probe type Data that can be used in Data connects
-    clone.probeInfo = None
+    clearProbeInfo(clone)
     clone
+  }
+
+  /** Recursively clear ProbeInfo */
+  private def clearProbeInfo[T <: Data](data: T): Unit = {
+    data match {
+      case a: Aggregate => {
+        a.probeInfo = None
+        a.elementsIterator.foreach(x => clearProbeInfo(x))
+      }
+      case leaf => { leaf.probeInfo = None }
+    }
   }
 
   /** Override existing driver of a writable probe on initialization. */
