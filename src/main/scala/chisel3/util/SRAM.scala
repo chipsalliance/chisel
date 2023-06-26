@@ -148,11 +148,11 @@ object SRAM {
     * @note Read-only memories (R >= 1, W === 0, RW === 0) and write-only memories (R === 0, W >= 1, RW === 0) are not supported by this API, and will result in an error if declared.
     */
   def apply[T <: Data](
-    size:              BigInt,
-    tpe:               T,
-    numReadPorts:      Int,
-    numWritePorts:     Int,
-    numReadwritePorts: Int
+    size:                BigInt,
+    tpe:                 T,
+    numReadPorts:        Int,
+    numWritePorts:       Int,
+    numReadwritePorts:   Int
   )(
     implicit sourceInfo: SourceInfo
   ): SRAMInterface[T] =
@@ -183,12 +183,12 @@ object SRAM {
     * @note Read-only memories (R >= 1, W === 0, RW === 0) and write-only memories (R === 0, W >= 1, RW === 0) are not supported by this API, and will result in an error if declared.
     */
   def apply[T <: Data](
-    size:              BigInt,
-    tpe:               T,
-    numReadPorts:      Int,
-    numWritePorts:     Int,
-    numReadwritePorts: Int,
-    memoryFile:        MemoryFile
+    size:                BigInt,
+    tpe:                 T,
+    numReadPorts:        Int,
+    numWritePorts:       Int,
+    numReadwritePorts:   Int,
+    memoryFile:          MemoryFile
   )(
     implicit sourceInfo: SourceInfo
   ): SRAMInterface[T] =
@@ -372,8 +372,8 @@ object SRAM {
     writePortClocks:     Seq[Clock],
     readwritePortClocks: Seq[Clock]
   )(
-    implicit evidence: T <:< Vec[_],
-    sourceInfo:        SourceInfo
+    implicit evidence:   T <:< Vec[_],
+    sourceInfo:          SourceInfo
   ): SRAMInterface[T] =
     memInterface_impl(
       size,
@@ -412,8 +412,8 @@ object SRAM {
     readwritePortClocks: Seq[Clock],
     memoryFile:          MemoryFile
   )(
-    implicit evidence: T <:< Vec[_],
-    sourceInfo:        SourceInfo
+    implicit evidence:   T <:< Vec[_],
+    sourceInfo:          SourceInfo
   ): SRAMInterface[T] =
     memInterface_impl(
       size,
@@ -436,8 +436,8 @@ object SRAM {
     readwritePortClocks: Seq[Clock],
     memoryFile:          Option[MemoryFile]
   )(
-    implicit evidenceOpt: Option[T <:< Vec[_]],
-    sourceInfo:           SourceInfo
+    evidenceOpt:         Option[T <:< Vec[_]],
+    sourceInfo:          SourceInfo
   ): SRAMInterface[T] = {
     val numReadPorts = readPortClocks.size
     val numWritePorts = writePortClocks.size
