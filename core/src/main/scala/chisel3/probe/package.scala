@@ -57,13 +57,14 @@ package object probe extends SourceInfoDoc {
     clone
   }
 
-  private def clearProbeInfo[T <: Data](data : T) : Unit = {
+  /** Recursively clear ProbeInfo */
+  private def clearProbeInfo[T <: Data](data: T): Unit = {
     data match {
       case a: Aggregate => {
         a.probeInfo = None
         a.elementsIterator.foreach(x => clearProbeInfo(x))
       }
-    case leaf => {leaf.probeInfo = None}
+      case leaf => { leaf.probeInfo = None }
     }
   }
 
