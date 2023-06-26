@@ -201,7 +201,7 @@ object SRAM {
       None,
       sourceInfo
     )
-  
+
   /** Generates a [[SyncReadMem]] within the current module, connected to an explicit number
     * of read, write, and read/write ports. This SRAM abstraction has both read and write capabilities: that is,
     * it contains at least one read accessor (a read-only or read-write port), and at least one write accessor
@@ -218,8 +218,8 @@ object SRAM {
     * @note Read-only memories (R >= 1, W === 0, RW === 0) and write-only memories (R === 0, W >= 1, RW === 0) are not supported by this API, and will result in an error if declared.
     */
   def apply[T <: Data](
-    size:              BigInt,
-    tpe:               T,
+    size:                BigInt,
+    tpe:                 T,
     readPortClocks:      Seq[Clock],
     writePortClocks:     Seq[Clock],
     readwritePortClocks: Seq[Clock]
@@ -312,7 +312,7 @@ object SRAM {
       Some(evidence),
       sourceInfo
     )
-  
+
   /** Generates a [[SyncReadMem]] within the current module, connected to an explicit number
     * of read, write, and read/write ports, with masking capability on all write and read/write ports.
     * This SRAM abstraction has both read and write capabilities: that is, it contains at least one read
@@ -412,8 +412,8 @@ object SRAM {
     readwritePortClocks: Seq[Clock],
     memoryFile:          MemoryFile
   )(
-    implicit evidence:   T <:< Vec[_],
-    sourceInfo:          SourceInfo
+    implicit evidence: T <:< Vec[_],
+    sourceInfo:        SourceInfo
   ): SRAMInterface[T] =
     memInterface_impl(
       size,
@@ -428,15 +428,13 @@ object SRAM {
       sourceInfo
     )
 
-  private def memInterface_impl[T <: Data]
-  (
-    size:                 BigInt,
-    tpe:                  T
-  )(
-    readPortClocks:       Seq[Clock],
-    writePortClocks:      Seq[Clock],
-    readwritePortClocks:  Seq[Clock],
-    memoryFile:           Option[MemoryFile]
+  private def memInterface_impl[T <: Data](
+    size:                BigInt,
+    tpe:                 T
+  )(readPortClocks:      Seq[Clock],
+    writePortClocks:     Seq[Clock],
+    readwritePortClocks: Seq[Clock],
+    memoryFile:          Option[MemoryFile]
   )(
     implicit evidenceOpt: Option[T <:< Vec[_]],
     sourceInfo:           SourceInfo
