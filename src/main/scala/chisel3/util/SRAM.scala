@@ -157,10 +157,9 @@ object SRAM {
     implicit sourceInfo: SourceInfo
   ): SRAMInterface[T] =
     memInterface_impl(size, tpe)(
-      numReadPorts,
-      numWritePorts,
-      numReadwritePorts,
-      Builder.forcedClock,
+      Seq.fill(numReadPorts)(Builder.forcedClock),
+      Seq.fill(numWritePorts)(Builder.forcedClock),
+      Seq.fill(numReadwritePorts)(Builder.forcedClock),
       None
     )(
       None,
@@ -194,10 +193,9 @@ object SRAM {
     implicit sourceInfo: SourceInfo
   ): SRAMInterface[T] =
     memInterface_impl(size, tpe)(
-      numReadPorts,
-      numWritePorts,
-      numReadwritePorts,
-      Builder.forcedClock,
+      Seq.fill(numReadPorts)(Builder.forcedClock),
+      Seq.fill(numWritePorts)(Builder.forcedClock),
+      Seq.fill(numReadwritePorts)(Builder.forcedClock),
       Some(memoryFile)
     )(
       None,
@@ -230,10 +228,9 @@ object SRAM {
     sourceInfo:        SourceInfo
   ): SRAMInterface[T] =
     memInterface_impl(size, tpe)(
-      numReadPorts,
-      numWritePorts,
-      numReadwritePorts,
-      Builder.forcedClock,
+      Seq.fill(numReadPorts)(Builder.forcedClock),
+      Seq.fill(numWritePorts)(Builder.forcedClock),
+      Seq.fill(numReadwritePorts)(Builder.forcedClock),
       None
     )(
       Some(evidence),
@@ -268,10 +265,9 @@ object SRAM {
     sourceInfo:        SourceInfo
   ): SRAMInterface[T] =
     memInterface_impl(size, tpe)(
-      numReadPorts,
-      numWritePorts,
-      numReadwritePorts,
-      Builder.forcedClock,
+      Seq.fill(numReadPorts)(Builder.forcedClock),
+      Seq.fill(numWritePorts)(Builder.forcedClock),
+      Seq.fill(numReadwritePorts)(Builder.forcedClock),
       Some(memoryFile)
     )(
       Some(evidence),
@@ -279,17 +275,20 @@ object SRAM {
     )
 
   private def memInterface_impl[T <: Data](
-    size:              BigInt,
-    tpe:               T
-  )(numReadPorts:      Int,
-    numWritePorts:     Int,
-    numReadwritePorts: Int,
-    clock:             Clock,
-    memoryFile:        Option[MemoryFile]
+    size:                 BigInt,
+    tpe:                  T
+  )(
+    readPortClocks:       Seq[Clock],
+    writePortClocks:      Seq[Clock],
+    readwritePortClocks:  Seq[Clock],
+    memoryFile:           Option[MemoryFile]
   )(
     implicit evidenceOpt: Option[T <:< Vec[_]],
-    sourceInfo: SourceInfo
+    sourceInfo:           SourceInfo
   ): SRAMInterface[T] = {
+    val numReadPorts = readPortClocks.size
+    val numWritePorts = writePortClocks.size
+    val numReadwritePorts = readwritePortClocks.size
     val isVecMem = evidenceOpt.isDefined
     val isValidSRAM = ((numReadPorts + numReadwritePorts) > 0) && ((numWritePorts + numReadwritePorts) > 0)
 
@@ -307,11 +306,11 @@ object SRAM {
     val _out = Wire(new SRAMInterface(size, tpe, numReadPorts, numWritePorts, numReadwritePorts, isVecMem))
     val mem = SyncReadMem(size, tpe)
 
-    for (i <- 0 until numReadPorts) {
+    for ((clock, i) <- readPortClocks.zipWithIndex) {
       _out.readPorts(i).data := mem.read(_out.readPorts(i).address, _out.readPorts(i).enable, clock)
     }
 
-    for (i <- 0 until numWritePorts) {
+    for ((clock, i) <- writePortClocks.zipWithIndex) {
       when(_out.writePorts(i).enable) {
         if (isVecMem) {
           mem.write(
@@ -326,7 +325,7 @@ object SRAM {
       }
     }
 
-    for (i <- 0 until numReadwritePorts) {
+    for ((clock, i) <- readwritePortClocks.zipWithIndex) {
       if (isVecMem) {
         _out.readwritePorts(i).readData := mem.readWrite(
           _out.readwritePorts(i).address,
