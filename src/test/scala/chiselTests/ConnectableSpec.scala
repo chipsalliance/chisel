@@ -154,7 +154,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
   def testDistinctTypes(
     tpeOut:     Data,
     tpeIn:      Data,
-    matches:    Seq[String] = Seq("io.out <= io.in"),
+    matches:    Seq[String] = Seq("connect io.out, io.in"),
     nonMatches: Seq[String] = Nil
   )(
     implicit inDrivesOut: Boolean,
@@ -164,7 +164,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
   ): String = testCheck(testBuild(tpeOut, tpeIn), matches, nonMatches)
   def test(
     tpeIn:      Data,
-    matches:    Seq[String] = Seq("io.out <= io.in"),
+    matches:    Seq[String] = Seq("connect io.out, io.in"),
     nonMatches: Seq[String] = Nil
   )(
     implicit inDrivesOut: Boolean,
@@ -180,7 +180,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     implicit val inDrivesOut = true
     implicit val nTmps = 0
 
-    it("(0.a): Emit '<=' between identical non-Analog ground types") {
+    it("(0.a): Emit 'connect' between identical non-Analog ground types") {
       test(Bool())
       test(UInt(16.W))
       test(SInt(16.W))
@@ -191,7 +191,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       testException(UInt(16.W), UInt(), "mismatched widths")
       testException(UInt(1.W), UInt(16.W), "mismatched widths")
     }
-    it("(0.b): Emit '<=' between identical aligned aggregate types") {
+    it("(0.b): Emit 'connect' between identical aligned aggregate types") {
       test(vec(Bool()))
       test(vec(UInt(16.W)))
       test(vec(SInt(16.W)))
@@ -202,7 +202,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(alignedBundle(SInt(16.W)))
       test(alignedBundle(Clock()))
     }
-    it("(0.c): Emit '<=' between identical aligned aggregate types, hierarchically") {
+    it("(0.c): Emit 'connect' between identical aligned aggregate types, hierarchically") {
       test(vec(vec(Bool())))
       test(vec(vec(UInt(16.W))))
       test(vec(vec(SInt(16.W))))
@@ -223,13 +223,13 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(alignedBundle(alignedBundle(SInt(16.W))))
       test(alignedBundle(alignedBundle(Clock())))
     }
-    it("(0.d): Emit '<=' between identical aggregate types with mixed flipped/aligned fields") {
+    it("(0.d): Emit 'connect' between identical aggregate types with mixed flipped/aligned fields") {
       test(mixedBundle(Bool()))
       test(mixedBundle(UInt(16.W)))
       test(mixedBundle(SInt(16.W)))
       test(mixedBundle(Clock()))
     }
-    it("(0.e): Emit '<=' between identical aggregate types with mixed flipped/aligned fields, hierarchically") {
+    it("(0.e): Emit 'connect' between identical aggregate types with mixed flipped/aligned fields, hierarchically") {
       test(vec(mixedBundle(Bool())))
       test(vec(mixedBundle(UInt(16.W))))
       test(vec(mixedBundle(SInt(16.W))))
@@ -282,37 +282,43 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       "(0.k): When connecting FROM DontCare, emit for aligned aggregate fields and error for flipped aggregate fields"
     ) {
       implicit val op: (Data, Data) => Unit = { (x, y) => x :<>= DontCare }
-      test(UInt(3.W), Seq("io.out is invalid"))
-      test(SInt(3.W), Seq("io.out is invalid"))
-      test(Clock(), Seq("io.out is invalid"))
-      test(Analog(3.W), Seq("io.out is invalid"))
-      test(vec(Bool()), Seq("io.out[0] is invalid", "io.out[1] is invalid", "io.out[2] is invalid"))
-      test(alignedBundle(Bool()), Seq("io.out.foo is invalid", "io.out.bar is invalid"))
+      test(UInt(3.W), Seq("invalidate io.out"))
+      test(SInt(3.W), Seq("invalidate io.out"))
+      test(Clock(), Seq("invalidate io.out"))
+      test(Analog(3.W), Seq("invalidate io.out"))
+      test(vec(Bool()), Seq("invalidate io.out[0]", "invalidate io.out[1]", "invalidate io.out[2]"))
+      test(alignedBundle(Bool()), Seq("invalidate io.out.foo", "invalidate io.out.bar"))
       testException(mixedBundle(Bool()), mixedBundle(Bool()), "DontCare cannot be a connection sink")
     }
     it("(0.l): Compile without 'sink cannot be driven errors' for mixed compatibility Bundles") {
-      allTypes().foreach { t => test(t(), Seq("<=")) }
+      allTypes().foreach { t => test(t(), Seq("connect")) }
     }
     it("(0.m): Error if different non-aggregate types") {
       testException(UInt(), SInt(), "Sink (UInt) and Source (SInt) have different types")
     }
-    it("(0.n): Emit '<=' between wires") {
+    it("(0.n): Emit 'connect' between wires") {
       implicit val nTmps = 1
-      test(Bool(), Seq("wiresOut_0 <= wiresIn_0"))
-      test(UInt(16.W), Seq("wiresOut_0 <= wiresIn_0"))
-      test(SInt(16.W), Seq("wiresOut_0 <= wiresIn_0"))
-      test(Clock(), Seq("wiresOut_0 <= wiresIn_0"))
+      test(Bool(), Seq("connect wiresOut_0, wiresIn_0"))
+      test(UInt(16.W), Seq("connect wiresOut_0, wiresIn_0"))
+      test(SInt(16.W), Seq("connect wiresOut_0, wiresIn_0"))
+      test(Clock(), Seq("connect wiresOut_0, wiresIn_0"))
     }
     it("(0.o): Error with 'cannot be written' if driving module input") {
       implicit val op: (Data, Data) => Unit = (x: Data, y: Data) => { y :<>= x }
       testException(Bool(), Bool(), "cannot be written")
       testException(mixedBundle(Bool()), mixedBundle(Bool()), "cannot be written")
     }
-    it("(0.p): Emit '<=' between wires of OpaqueTypes") {
+    it("(0.p): Emit 'connect' between wires of OpaqueTypes") {
       implicit val nTmps = 1
-      test(opaqueType(UInt(8.W)), Seq("io.out <= wiresOut_0", "wiresOut_0 <= wiresIn_0", "wiresIn_0 <= io.in"))
+      test(
+        opaqueType(UInt(8.W)),
+        Seq("connect io.out, wiresOut_0", "connect wiresOut_0, wiresIn_0", "connect wiresIn_0, io.in")
+      )
       // Note that this test inverts Wires
-      test(opaqueType(Flipped(UInt(8.W))), Seq("wiresOut_0 <= io.out", "wiresIn_0 <= wiresOut_0", "io.in <= wiresIn_0"))
+      test(
+        opaqueType(Flipped(UInt(8.W))),
+        Seq("connect wiresOut_0, io.out", "connect wiresIn_0, wiresOut_0", "connect io.in, wiresIn_0")
+      )
     }
     // TODO Write test that demonstrates multiple evaluation of producer: => T
   }
@@ -322,7 +328,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     implicit val inDrivesOut = true
     implicit val nTmps = 0
 
-    it("(1.a): Emit '<=' between identical non-Analog ground types") {
+    it("(1.a): Emit 'connect' between identical non-Analog ground types") {
       test(Bool())
       test(UInt(16.W))
       test(SInt(16.W))
@@ -333,11 +339,11 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       testException(UInt(16.W), UInt(), "mismatched widths")
       testException(UInt(1.W), UInt(16.W), "mismatched widths")
     }
-    it("(1.b): Emit multiple '<=' between identical aligned aggregate types") {
+    it("(1.b): Emit multiple 'connect' between identical aligned aggregate types") {
       val vecMatches = Seq(
-        "io.out[0] <= io.in[0]",
-        "io.out[1] <= io.in[1]",
-        "io.out[2] <= io.in[2]"
+        "connect io.out[0], io.in[0]",
+        "connect io.out[1], io.in[1]",
+        "connect io.out[2], io.in[2]"
       )
       test(vec(Bool()), vecMatches)
       test(vec(UInt(16.W)), vecMatches)
@@ -345,25 +351,25 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(vec(Clock()), vecMatches)
 
       val bundleMatches = Seq(
-        "io.out.bar <= io.in.bar",
-        "io.out.foo <= io.in.foo"
+        "connect io.out.bar, io.in.bar",
+        "connect io.out.foo, io.in.foo"
       )
       test(alignedBundle(Bool()), bundleMatches)
       test(alignedBundle(UInt(16.W)), bundleMatches)
       test(alignedBundle(SInt(16.W)), bundleMatches)
       test(alignedBundle(Clock()), bundleMatches)
     }
-    it("(1.c): Emit multiple '<=' between identical aligned aggregate types, hierarchically") {
+    it("(1.c): Emit multiple 'connect' between identical aligned aggregate types, hierarchically") {
       val vecVecMatches = Seq(
-        "io.out[0][0] <= io.in[0][0]",
-        "io.out[0][1] <= io.in[0][1]",
-        "io.out[0][2] <= io.in[0][2]",
-        "io.out[1][0] <= io.in[1][0]",
-        "io.out[1][1] <= io.in[1][1]",
-        "io.out[1][2] <= io.in[1][2]",
-        "io.out[2][0] <= io.in[2][0]",
-        "io.out[2][1] <= io.in[2][1]",
-        "io.out[2][2] <= io.in[2][2]"
+        "connect io.out[0][0], io.in[0][0]",
+        "connect io.out[0][1], io.in[0][1]",
+        "connect io.out[0][2], io.in[0][2]",
+        "connect io.out[1][0], io.in[1][0]",
+        "connect io.out[1][1], io.in[1][1]",
+        "connect io.out[1][2], io.in[1][2]",
+        "connect io.out[2][0], io.in[2][0]",
+        "connect io.out[2][1], io.in[2][1]",
+        "connect io.out[2][2], io.in[2][2]"
       )
       test(vec(vec(Bool())), vecVecMatches)
       test(vec(vec(UInt(16.W))), vecVecMatches)
@@ -371,12 +377,12 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(vec(vec(Clock())), vecVecMatches)
 
       val vecBundleMatches = Seq(
-        "io.out[0].bar <= io.in[0].bar",
-        "io.out[0].foo <= io.in[0].foo",
-        "io.out[1].bar <= io.in[1].bar",
-        "io.out[1].foo <= io.in[1].foo",
-        "io.out[2].bar <= io.in[2].bar",
-        "io.out[2].foo <= io.in[2].foo"
+        "connect io.out[0].bar, io.in[0].bar",
+        "connect io.out[0].foo, io.in[0].foo",
+        "connect io.out[1].bar, io.in[1].bar",
+        "connect io.out[1].foo, io.in[1].foo",
+        "connect io.out[2].bar, io.in[2].bar",
+        "connect io.out[2].foo, io.in[2].foo"
       )
       test(vec(alignedBundle(Bool())), vecBundleMatches)
       test(vec(alignedBundle(UInt(16.W))), vecBundleMatches)
@@ -384,12 +390,12 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(vec(alignedBundle(Clock())), vecBundleMatches)
 
       val bundleVecMatches = Seq(
-        "io.out.bar[0] <= io.in.bar[0]",
-        "io.out.bar[1] <= io.in.bar[1]",
-        "io.out.bar[2] <= io.in.bar[2]",
-        "io.out.foo[0] <= io.in.foo[0]",
-        "io.out.foo[1] <= io.in.foo[1]",
-        "io.out.foo[2] <= io.in.foo[2]"
+        "connect io.out.bar[0], io.in.bar[0]",
+        "connect io.out.bar[1], io.in.bar[1]",
+        "connect io.out.bar[2], io.in.bar[2]",
+        "connect io.out.foo[0], io.in.foo[0]",
+        "connect io.out.foo[1], io.in.foo[1]",
+        "connect io.out.foo[2], io.in.foo[2]"
       )
       test(alignedBundle(vec(Bool())), bundleVecMatches)
       test(alignedBundle(vec(UInt(16.W))), bundleVecMatches)
@@ -397,34 +403,34 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(alignedBundle(vec(Clock())), bundleVecMatches)
 
       val bundleBundleMatches = Seq(
-        "io.out.bar.bar <= io.in.bar.bar",
-        "io.out.bar.foo <= io.in.bar.foo",
-        "io.out.foo.bar <= io.in.foo.bar",
-        "io.out.foo.foo <= io.in.foo.foo"
+        "connect io.out.bar.bar, io.in.bar.bar",
+        "connect io.out.bar.foo, io.in.bar.foo",
+        "connect io.out.foo.bar, io.in.foo.bar",
+        "connect io.out.foo.foo, io.in.foo.foo"
       )
       test(alignedBundle(alignedBundle(Bool())), bundleBundleMatches)
       test(alignedBundle(alignedBundle(UInt(16.W))), bundleBundleMatches)
       test(alignedBundle(alignedBundle(SInt(16.W))), bundleBundleMatches)
       test(alignedBundle(alignedBundle(Clock())), bundleBundleMatches)
     }
-    it("(1.d): Emit '<=' between identical aggregate types with mixed flipped/aligned fields") {
-      val bundleMatches = Seq("io.out.foo <= io.in.foo")
-      val nonBundleMatches = Seq("io.in.bar <= io.out.bar")
+    it("(1.d): Emit 'connect' between identical aggregate types with mixed flipped/aligned fields") {
+      val bundleMatches = Seq("connect io.out.foo, io.in.foo")
+      val nonBundleMatches = Seq("connect io.in.bar, io.out.bar")
       test(mixedBundle(Bool()), bundleMatches, nonBundleMatches)
       test(mixedBundle(UInt(16.W)), bundleMatches, nonBundleMatches)
       test(mixedBundle(SInt(16.W)), bundleMatches, nonBundleMatches)
       test(mixedBundle(Clock()), bundleMatches, nonBundleMatches)
     }
-    it("(1.e): Emit '<=' between identical aggregate types with mixed flipped/aligned fields, hierarchically") {
+    it("(1.e): Emit 'connect' between identical aggregate types with mixed flipped/aligned fields, hierarchically") {
       val vecBundleMatches = Seq(
-        "io.out[0].foo <= io.in[0].foo",
-        "io.out[1].foo <= io.in[1].foo",
-        "io.out[2].foo <= io.in[2].foo"
+        "connect io.out[0].foo, io.in[0].foo",
+        "connect io.out[1].foo, io.in[1].foo",
+        "connect io.out[2].foo, io.in[2].foo"
       )
       val nonVecBundleMatches = Seq(
-        "io.in[0].bar <= io.out[0].bar",
-        "io.in[1].bar <= io.out[1].bar",
-        "io.in[2].bar <= io.out[2].bar"
+        "connect io.in[0].bar, io.out[0].bar",
+        "connect io.in[1].bar, io.out[1].bar",
+        "connect io.in[2].bar, io.out[2].bar"
       )
       test(vec(mixedBundle(Bool())), vecBundleMatches, nonVecBundleMatches)
       test(vec(mixedBundle(UInt(16.W))), vecBundleMatches, nonVecBundleMatches)
@@ -432,14 +438,14 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(vec(mixedBundle(Clock())), vecBundleMatches, nonVecBundleMatches)
 
       val bundleVecMatches = Seq(
-        "io.out.foo[0] <= io.in.foo[0]",
-        "io.out.foo[1] <= io.in.foo[1]",
-        "io.out.foo[2] <= io.in.foo[2]"
+        "connect io.out.foo[0], io.in.foo[0]",
+        "connect io.out.foo[1], io.in.foo[1]",
+        "connect io.out.foo[2], io.in.foo[2]"
       )
       val nonBundleVecMatches = Seq(
-        "io.in.bar[0] <= io.out.bar[0]",
-        "io.in.bar[1] <= io.out.bar[1]",
-        "io.in.bar[2] <= io.out.bar[2]"
+        "connect io.in.bar[0], io.out.bar[0]",
+        "connect io.in.bar[1], io.out.bar[1]",
+        "connect io.in.bar[2], io.out.bar[2]"
       )
       test(mixedBundle(vec(Bool())), bundleVecMatches, nonBundleVecMatches)
       test(mixedBundle(vec(UInt(16.W))), bundleVecMatches, nonBundleVecMatches)
@@ -447,12 +453,12 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(mixedBundle(vec(Clock())), bundleVecMatches, nonBundleVecMatches)
 
       val bundleBundleMatches = Seq(
-        "io.out.bar.bar <= io.in.bar.bar",
-        "io.out.foo.foo <= io.in.foo.foo"
+        "connect io.out.bar.bar, io.in.bar.bar",
+        "connect io.out.foo.foo, io.in.foo.foo"
       )
       val nonBundleBundleMatches = Seq(
-        "io.in.bar.foo <= io.out.bar.foo",
-        "io.in.foo.bar <= io.out.foo.bar"
+        "connect io.in.bar.foo, io.out.bar.foo",
+        "connect io.in.foo.bar, io.out.foo.bar"
       )
       test(mixedBundle(mixedBundle(Bool())), bundleBundleMatches, nonBundleBundleMatches)
       test(mixedBundle(mixedBundle(UInt(16.W))), bundleBundleMatches, nonBundleBundleMatches)
@@ -498,13 +504,13 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       "(1.k): When connecting FROM DontCare, emit for aligned aggregate fields and skip for flipped aggregate fields"
     ) {
       implicit val op: (Data, Data) => Unit = { (x, y) => x :<= DontCare }
-      test(UInt(3.W), Seq("io.out is invalid"))
-      test(SInt(3.W), Seq("io.out is invalid"))
-      test(Clock(), Seq("io.out is invalid"))
-      test(Analog(3.W), Seq("io.out is invalid"))
-      test(vec(Bool()), Seq("io.out[0] is invalid", "io.out[1] is invalid", "io.out[2] is invalid"))
-      test(alignedBundle(Bool()), Seq("io.out.foo is invalid", "io.out.bar is invalid"))
-      test(mixedBundle(Bool()), Seq("io.out.foo is invalid"))
+      test(UInt(3.W), Seq("invalidate io.out"))
+      test(SInt(3.W), Seq("invalidate io.out"))
+      test(Clock(), Seq("invalidate io.out"))
+      test(Analog(3.W), Seq("invalidate io.out"))
+      test(vec(Bool()), Seq("invalidate io.out[0]", "invalidate io.out[1]", "invalidate io.out[2]"))
+      test(alignedBundle(Bool()), Seq("invalidate io.out.foo", "invalidate io.out.bar"))
+      test(mixedBundle(Bool()), Seq("invalidate io.out.foo"))
     }
     it("(1.l): Compile without 'sink cannot be driven errors' for mixed compatibility Bundles") {
       allTypes().foreach { t => test(t(), Nil) }
@@ -512,25 +518,28 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     it("(1.m): Error if different non-aggregate types") {
       testException(UInt(), SInt(), "Sink (UInt) and Source (SInt) have different types")
     }
-    it("(1.n): Emit '<=' between wires") {
+    it("(1.n): Emit 'connect' between wires") {
       implicit val nTmps = 1
-      test(Bool(), Seq("wiresOut_0 <= wiresIn_0"))
-      test(UInt(16.W), Seq("wiresOut_0 <= wiresIn_0"))
-      test(SInt(16.W), Seq("wiresOut_0 <= wiresIn_0"))
-      test(Clock(), Seq("wiresOut_0 <= wiresIn_0"))
+      test(Bool(), Seq("connect wiresOut_0, wiresIn_0"))
+      test(UInt(16.W), Seq("connect wiresOut_0, wiresIn_0"))
+      test(SInt(16.W), Seq("connect wiresOut_0, wiresIn_0"))
+      test(Clock(), Seq("connect wiresOut_0, wiresIn_0"))
     }
     it("(1.o): Error with 'cannot be written' if driving module input") {
       implicit val op: (Data, Data) => Unit = (x: Data, y: Data) => { y :<= x }
       testException(Bool(), Bool(), "cannot be written")
       testException(mixedBundle(Bool()), mixedBundle(Bool()), "cannot be written")
     }
-    it("(1.p): Emit '<=' for wires of OpaqueTypes with aligned elements") {
+    it("(1.p): Emit 'connect' for wires of OpaqueTypes with aligned elements") {
       implicit val nTmps = 1
-      test(opaqueType(UInt(8.W)), Seq("io.out <= wiresOut_0", "wiresOut_0 <= wiresIn_0", "wiresIn_0 <= io.in"))
+      test(
+        opaqueType(UInt(8.W)),
+        Seq("connect io.out, wiresOut_0", "connect wiresOut_0, wiresIn_0", "connect wiresIn_0, io.in")
+      )
     }
     it("(1.q): Emit nothing between wires of OpaqueTypes with flipped elements") {
       implicit val nTmps = 1
-      test(opaqueType(Flipped(UInt(8.W))), Nil, Seq("<="))
+      test(opaqueType(Flipped(UInt(8.W))), Nil, Seq("connect"))
     }
   }
   describe("(2): :>= ") {
@@ -586,24 +595,24 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(alignedBundle(alignedBundle(SInt(16.W))), skip)
       test(alignedBundle(alignedBundle(Clock())), skip)
     }
-    it("(2.d): Emit '<=' between identical aggregate types with mixed flipped/aligned fields") {
-      val bundleMatches = Seq("io.in.bar <= io.out.bar")
-      val nonBundleMatches = Seq("io.out.foo <= io.in.foo")
+    it("(2.d): Emit 'connect' between identical aggregate types with mixed flipped/aligned fields") {
+      val bundleMatches = Seq("connect io.in.bar, io.out.bar")
+      val nonBundleMatches = Seq("connect io.out.foo, io.in.foo")
       test(mixedBundle(Bool()), bundleMatches, nonBundleMatches)
       test(mixedBundle(UInt(16.W)), bundleMatches, nonBundleMatches)
       test(mixedBundle(SInt(16.W)), bundleMatches, nonBundleMatches)
       test(mixedBundle(Clock()), bundleMatches, nonBundleMatches)
     }
-    it("(2.e): Emit '<=' between identical aggregate types with mixed flipped/aligned fields, hierarchically") {
+    it("(2.e): Emit 'connect' between identical aggregate types with mixed flipped/aligned fields, hierarchically") {
       val vecBundleMatches = Seq(
-        "io.in[0].bar <= io.out[0].bar",
-        "io.in[1].bar <= io.out[1].bar",
-        "io.in[2].bar <= io.out[2].bar"
+        "connect io.in[0].bar, io.out[0].bar",
+        "connect io.in[1].bar, io.out[1].bar",
+        "connect io.in[2].bar, io.out[2].bar"
       )
       val nonVecBundleMatches = Seq(
-        "io.out[0].foo <= io.in[0].foo",
-        "io.out[1].foo <= io.in[1].foo",
-        "io.out[2].foo <= io.in[2].foo"
+        "connect io.out[0].foo, io.in[0].foo",
+        "connect io.out[1].foo, io.in[1].foo",
+        "connect io.out[2].foo, io.in[2].foo"
       )
       test(vec(mixedBundle(Bool())), vecBundleMatches, nonVecBundleMatches)
       test(vec(mixedBundle(UInt(16.W))), vecBundleMatches, nonVecBundleMatches)
@@ -611,14 +620,14 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(vec(mixedBundle(Clock())), vecBundleMatches, nonVecBundleMatches)
 
       val bundleVecMatches = Seq(
-        "io.in.bar[0] <= io.out.bar[0]",
-        "io.in.bar[1] <= io.out.bar[1]",
-        "io.in.bar[2] <= io.out.bar[2]"
+        "connect io.in.bar[0], io.out.bar[0]",
+        "connect io.in.bar[1], io.out.bar[1]",
+        "connect io.in.bar[2], io.out.bar[2]"
       )
       val nonBundleVecMatches = Seq(
-        "io.out.foo[0] <= io.in.foo[0]",
-        "io.out.foo[1] <= io.in.foo[1]",
-        "io.out.foo[2] <= io.in.foo[2]"
+        "connect io.out.foo[0], io.in.foo[0]",
+        "connect io.out.foo[1], io.in.foo[1]",
+        "connect io.out.foo[2], io.in.foo[2]"
       )
       test(mixedBundle(vec(Bool())), bundleVecMatches, nonBundleVecMatches)
       test(mixedBundle(vec(UInt(16.W))), bundleVecMatches, nonBundleVecMatches)
@@ -626,12 +635,12 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(mixedBundle(vec(Clock())), bundleVecMatches, nonBundleVecMatches)
 
       val bundleBundleMatches = Seq(
-        "io.in.bar.foo <= io.out.bar.foo",
-        "io.in.foo.bar <= io.out.foo.bar"
+        "connect io.in.bar.foo, io.out.bar.foo",
+        "connect io.in.foo.bar, io.out.foo.bar"
       )
       val nonBundleBundleMatches = Seq(
-        "io.out.bar.bar <= io.in.bar.bar",
-        "io.out.foo.foo <= io.in.foo.foo"
+        "connect io.out.bar.bar, io.in.bar.bar",
+        "connect io.out.foo.foo, io.in.foo.foo"
       )
       test(mixedBundle(mixedBundle(Bool())), bundleBundleMatches, nonBundleBundleMatches)
       test(mixedBundle(mixedBundle(UInt(16.W))), bundleBundleMatches, nonBundleBundleMatches)
@@ -639,9 +648,9 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(mixedBundle(mixedBundle(Clock())), bundleBundleMatches, nonBundleBundleMatches)
     }
     it("(2.f): Throw exception between differing ground types") {
-      testDistinctTypes(UInt(3.W), SInt(3.W), Seq("skip"), Seq("<="))
-      testDistinctTypes(UInt(3.W), Clock(), Seq("skip"), Seq("<="))
-      testDistinctTypes(SInt(3.W), Clock(), Seq("skip"), Seq("<="))
+      testDistinctTypes(UInt(3.W), SInt(3.W), Seq("skip"), Seq("connect"))
+      testDistinctTypes(UInt(3.W), Clock(), Seq("skip"), Seq("connect"))
+      testDistinctTypes(SInt(3.W), Clock(), Seq("skip"), Seq("connect"))
     }
     it("(2.g): Emit 'attach' between Analog types or Aggregates with Analog types") {
       test(Analog(3.W), Seq("attach (io.out, io.in)"))
@@ -681,7 +690,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(Analog(3.W), Seq("skip"))
       test(vec(Bool()), Seq("skip"))
       test(alignedBundle(Bool()), Seq("skip"))
-      test(mixedBundle(Bool()), Seq("io.in.bar is invalid"))
+      test(mixedBundle(Bool()), Seq("invalidate io.in.bar"))
     }
     it("(2.l): Compile without 'sink cannot be driven errors' for mixed compatibility Bundles") {
       allTypes().foreach { t => test(t(), Nil) }
@@ -689,9 +698,9 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     it("(2.m): Error if different non-aggregate types") {
       testException(mixedBundle(UInt()), mixedBundle(SInt()), "Sink (SInt) and Source (UInt) have different types")
     }
-    it("(2.n): Emit '<=' between wires") {
+    it("(2.n): Emit 'connect' between wires") {
       implicit val nTmps = 1
-      test(mixedBundle(Bool()), Seq("wiresIn_0.bar <= wiresOut_0.bar"))
+      test(mixedBundle(Bool()), Seq("connect wiresIn_0.bar, wiresOut_0.bar"))
     }
     it("(2.o): Error with 'cannot be written' if driving module input") {
       implicit val op: (Data, Data) => Unit = (x: Data, y: Data) => { y :<= x }
@@ -699,11 +708,14 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     }
     it("(2.p): Emit nothing for wires of OpaqueTypes with aligned elements") {
       implicit val nTmps = 1
-      test(opaqueType(UInt(8.W)), Nil, Seq("<="))
+      test(opaqueType(UInt(8.W)), Nil, Seq("connect"))
     }
-    it("(2.q): Emit '<=' between wires of OpaqueTypes with flipped elements") {
+    it("(2.q): Emit 'connect' between wires of OpaqueTypes with flipped elements") {
       implicit val nTmps = 1
-      test(opaqueType(Flipped(UInt(8.W))), Seq("wiresOut_0 <= io.out", "wiresIn_0 <= wiresOut_0", "io.in <= wiresIn_0"))
+      test(
+        opaqueType(Flipped(UInt(8.W))),
+        Seq("connect wiresOut_0, io.out", "connect wiresIn_0, wiresOut_0", "connect io.in, wiresIn_0")
+      )
     }
   }
   describe("(3): :#= ") {
@@ -712,7 +724,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     implicit val inDrivesOut = true
     implicit val nTmps = 0
 
-    it("(3.a): Emit '<=' between identical non-Analog ground types") {
+    it("(3.a): Emit 'connect' between identical non-Analog ground types") {
       test(Bool())
       test(UInt(16.W))
       test(SInt(16.W))
@@ -724,11 +736,11 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       testException(UInt(16.W), UInt(), "mismatched widths")
       testException(UInt(1.W), UInt(16.W), "mismatched widths")
     }
-    it("(3.b): Emit multiple '<=' between identical aligned aggregate types") {
+    it("(3.b): Emit multiple 'connect' between identical aligned aggregate types") {
       val vecMatches = Seq(
-        "io.monitor[0] <= io.in[0]",
-        "io.monitor[1] <= io.in[1]",
-        "io.monitor[2] <= io.in[2]"
+        "connect io.monitor[0], io.in[0]",
+        "connect io.monitor[1], io.in[1]",
+        "connect io.monitor[2], io.in[2]"
       )
       test(vec(Bool()), vecMatches)
       test(vec(UInt(16.W)), vecMatches)
@@ -736,25 +748,25 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(vec(Clock()), vecMatches)
 
       val bundleMatches = Seq(
-        "io.monitor.bar <= io.in.bar",
-        "io.monitor.foo <= io.in.foo"
+        "connect io.monitor.bar, io.in.bar",
+        "connect io.monitor.foo, io.in.foo"
       )
       test(alignedBundle(Bool()), bundleMatches)
       test(alignedBundle(UInt(16.W)), bundleMatches)
       test(alignedBundle(SInt(16.W)), bundleMatches)
       test(alignedBundle(Clock()), bundleMatches)
     }
-    it("(3.c): Emit multiple '<=' between identical aligned aggregate types, hierarchically") {
+    it("(3.c): Emit multiple 'connect' between identical aligned aggregate types, hierarchically") {
       val vecVecMatches = Seq(
-        "io.monitor[0][0] <= io.in[0][0]",
-        "io.monitor[0][1] <= io.in[0][1]",
-        "io.monitor[0][2] <= io.in[0][2]",
-        "io.monitor[1][0] <= io.in[1][0]",
-        "io.monitor[1][1] <= io.in[1][1]",
-        "io.monitor[1][2] <= io.in[1][2]",
-        "io.monitor[2][0] <= io.in[2][0]",
-        "io.monitor[2][1] <= io.in[2][1]",
-        "io.monitor[2][2] <= io.in[2][2]"
+        "connect io.monitor[0][0], io.in[0][0]",
+        "connect io.monitor[0][1], io.in[0][1]",
+        "connect io.monitor[0][2], io.in[0][2]",
+        "connect io.monitor[1][0], io.in[1][0]",
+        "connect io.monitor[1][1], io.in[1][1]",
+        "connect io.monitor[1][2], io.in[1][2]",
+        "connect io.monitor[2][0], io.in[2][0]",
+        "connect io.monitor[2][1], io.in[2][1]",
+        "connect io.monitor[2][2], io.in[2][2]"
       )
       test(vec(vec(Bool())), vecVecMatches)
       test(vec(vec(UInt(16.W))), vecVecMatches)
@@ -762,12 +774,12 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(vec(vec(Clock())), vecVecMatches)
 
       val vecBundleMatches = Seq(
-        "io.monitor[0].bar <= io.in[0].bar",
-        "io.monitor[0].foo <= io.in[0].foo",
-        "io.monitor[1].bar <= io.in[1].bar",
-        "io.monitor[1].foo <= io.in[1].foo",
-        "io.monitor[2].bar <= io.in[2].bar",
-        "io.monitor[2].foo <= io.in[2].foo"
+        "connect io.monitor[0].bar, io.in[0].bar",
+        "connect io.monitor[0].foo, io.in[0].foo",
+        "connect io.monitor[1].bar, io.in[1].bar",
+        "connect io.monitor[1].foo, io.in[1].foo",
+        "connect io.monitor[2].bar, io.in[2].bar",
+        "connect io.monitor[2].foo, io.in[2].foo"
       )
       test(vec(alignedBundle(Bool())), vecBundleMatches)
       test(vec(alignedBundle(UInt(16.W))), vecBundleMatches)
@@ -775,12 +787,12 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(vec(alignedBundle(Clock())), vecBundleMatches)
 
       val bundleVecMatches = Seq(
-        "io.monitor.bar[0] <= io.in.bar[0]",
-        "io.monitor.bar[1] <= io.in.bar[1]",
-        "io.monitor.bar[2] <= io.in.bar[2]",
-        "io.monitor.foo[0] <= io.in.foo[0]",
-        "io.monitor.foo[1] <= io.in.foo[1]",
-        "io.monitor.foo[2] <= io.in.foo[2]"
+        "connect io.monitor.bar[0], io.in.bar[0]",
+        "connect io.monitor.bar[1], io.in.bar[1]",
+        "connect io.monitor.bar[2], io.in.bar[2]",
+        "connect io.monitor.foo[0], io.in.foo[0]",
+        "connect io.monitor.foo[1], io.in.foo[1]",
+        "connect io.monitor.foo[2], io.in.foo[2]"
       )
       test(alignedBundle(vec(Bool())), bundleVecMatches)
       test(alignedBundle(vec(UInt(16.W))), bundleVecMatches)
@@ -788,31 +800,31 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(alignedBundle(vec(Clock())), bundleVecMatches)
 
       val bundleBundleMatches = Seq(
-        "io.monitor.bar.bar <= io.in.bar.bar",
-        "io.monitor.bar.foo <= io.in.bar.foo",
-        "io.monitor.foo.bar <= io.in.foo.bar",
-        "io.monitor.foo.foo <= io.in.foo.foo"
+        "connect io.monitor.bar.bar, io.in.bar.bar",
+        "connect io.monitor.bar.foo, io.in.bar.foo",
+        "connect io.monitor.foo.bar, io.in.foo.bar",
+        "connect io.monitor.foo.foo, io.in.foo.foo"
       )
       test(alignedBundle(alignedBundle(Bool())), bundleBundleMatches)
       test(alignedBundle(alignedBundle(UInt(16.W))), bundleBundleMatches)
       test(alignedBundle(alignedBundle(SInt(16.W))), bundleBundleMatches)
       test(alignedBundle(alignedBundle(Clock())), bundleBundleMatches)
     }
-    it("(3.d): Emit '<=' between identical aggregate types with mixed flipped/aligned fields") {
-      val bundleMatches = Seq("io.monitor.foo <= io.in.foo", "io.monitor.bar <= io.in.bar")
+    it("(3.d): Emit 'connect' between identical aggregate types with mixed flipped/aligned fields") {
+      val bundleMatches = Seq("connect io.monitor.foo, io.in.foo", "connect io.monitor.bar, io.in.bar")
       test(mixedBundle(Bool()), bundleMatches)
       test(mixedBundle(UInt(16.W)), bundleMatches)
       test(mixedBundle(SInt(16.W)), bundleMatches)
       test(mixedBundle(Clock()), bundleMatches)
     }
-    it("(3.e): Emit '<=' between identical aggregate types with mixed flipped/aligned fields, hierarchically") {
+    it("(3.e): Emit 'connect' between identical aggregate types with mixed flipped/aligned fields, hierarchically") {
       val vecBundleMatches = Seq(
-        "io.monitor[0].foo <= io.in[0].foo",
-        "io.monitor[1].foo <= io.in[1].foo",
-        "io.monitor[2].foo <= io.in[2].foo",
-        "io.monitor[0].bar <= io.in[0].bar",
-        "io.monitor[1].bar <= io.in[1].bar",
-        "io.monitor[2].bar <= io.in[2].bar"
+        "connect io.monitor[0].foo, io.in[0].foo",
+        "connect io.monitor[1].foo, io.in[1].foo",
+        "connect io.monitor[2].foo, io.in[2].foo",
+        "connect io.monitor[0].bar, io.in[0].bar",
+        "connect io.monitor[1].bar, io.in[1].bar",
+        "connect io.monitor[2].bar, io.in[2].bar"
       )
       test(vec(mixedBundle(Bool())), vecBundleMatches)
       test(vec(mixedBundle(UInt(16.W))), vecBundleMatches)
@@ -820,12 +832,12 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(vec(mixedBundle(Clock())), vecBundleMatches)
 
       val bundleVecMatches = Seq(
-        "io.monitor.foo[0] <= io.in.foo[0]",
-        "io.monitor.foo[1] <= io.in.foo[1]",
-        "io.monitor.foo[2] <= io.in.foo[2]",
-        "io.monitor.bar[0] <= io.in.bar[0]",
-        "io.monitor.bar[1] <= io.in.bar[1]",
-        "io.monitor.bar[2] <= io.in.bar[2]"
+        "connect io.monitor.foo[0], io.in.foo[0]",
+        "connect io.monitor.foo[1], io.in.foo[1]",
+        "connect io.monitor.foo[2], io.in.foo[2]",
+        "connect io.monitor.bar[0], io.in.bar[0]",
+        "connect io.monitor.bar[1], io.in.bar[1]",
+        "connect io.monitor.bar[2], io.in.bar[2]"
       )
       test(mixedBundle(vec(Bool())), bundleVecMatches)
       test(mixedBundle(vec(UInt(16.W))), bundleVecMatches)
@@ -833,10 +845,10 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(mixedBundle(vec(Clock())), bundleVecMatches)
 
       val bundleBundleMatches = Seq(
-        "io.monitor.bar.bar <= io.in.bar.bar",
-        "io.monitor.foo.foo <= io.in.foo.foo",
-        "io.monitor.bar.foo <= io.in.bar.foo",
-        "io.monitor.foo.bar <= io.in.foo.bar"
+        "connect io.monitor.bar.bar, io.in.bar.bar",
+        "connect io.monitor.foo.foo, io.in.foo.foo",
+        "connect io.monitor.bar.foo, io.in.bar.foo",
+        "connect io.monitor.foo.bar, io.in.foo.bar"
       )
       test(mixedBundle(mixedBundle(Bool())), bundleBundleMatches)
       test(mixedBundle(mixedBundle(UInt(16.W))), bundleBundleMatches)
@@ -894,8 +906,8 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         alignedBundle(Bool()),
         mixedBundle(Bool()),
         Seq(
-          "io.out.foo <= io.in.foo",
-          "io.out.bar <= io.in.bar"
+          "connect io.out.foo, io.in.foo",
+          "connect io.out.bar, io.in.bar"
         )
       )
     }
@@ -904,21 +916,21 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     ) {
       implicit val op: (Data, Data) => Unit = { (x, y) => x :#= DontCare }
       implicit val monitorOp: Option[(Data, Data) => Unit] = None
-      test(UInt(3.W), Seq("io.out is invalid"))
-      test(SInt(3.W), Seq("io.out is invalid"))
-      test(Clock(), Seq("io.out is invalid"))
-      test(Analog(3.W), Seq("io.out is invalid"))
-      test(vec(Bool()), Seq("io.out[0] is invalid", "io.out[1] is invalid", "io.out[2] is invalid"))
-      test(alignedBundle(Bool()), Seq("io.out.foo is invalid", "io.out.bar is invalid"))
-      test(mixedBundle(Bool()), Seq("io.out.foo is invalid", "io.out.bar is invalid"))
+      test(UInt(3.W), Seq("invalidate io.out"))
+      test(SInt(3.W), Seq("invalidate io.out"))
+      test(Clock(), Seq("invalidate io.out"))
+      test(Analog(3.W), Seq("invalidate io.out"))
+      test(vec(Bool()), Seq("invalidate io.out[0]", "invalidate io.out[1]", "invalidate io.out[2]"))
+      test(alignedBundle(Bool()), Seq("invalidate io.out.foo", "invalidate io.out.bar"))
+      test(mixedBundle(Bool()), Seq("invalidate io.out.foo", "invalidate io.out.bar"))
     }
     it("(3.l): Compile without 'sink cannot be driven errors' for mixed compatibility Bundles") {
-      allTypes().foreach { t => test(t(), Seq("<=")) }
+      allTypes().foreach { t => test(t(), Seq("connect")) }
     }
     it("(3.m): Error if different non-aggregate types") {
       testException(UInt(), SInt(), "Sink (UInt) and Source (SInt) have different types")
     }
-    it("(3.n): Emit '<=' between wires") {
+    it("(3.n): Emit 'connect' between wires") {
       implicit val monitorOp: Option[(Data, Data) => Unit] = Some((x: Data, y: Data) => {
         val temp0 = Wire(chiselTypeOf(y))
         temp0 :#= y
@@ -929,8 +941,8 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(
         mixedBundle(Bool()),
         Seq(
-          "temp1.bar <= temp0.bar",
-          "temp1.foo <= temp0.foo"
+          "connect temp1.bar, temp0.bar",
+          "connect temp1.foo, temp0.foo"
         )
       )
     }
@@ -973,10 +985,10 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       testCheck(
         ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq(
-          "out.foo.valid <= in.foo.valid",
-          "in.foo.ready <= out.foo.ready"
+          "connect out.foo.valid, in.foo.valid",
+          "connect in.foo.ready, out.foo.ready"
         ),
-        Seq("out.foo.data <= in.foo.data")
+        Seq("connect out.foo.data, in.foo.data")
       )
     }
     it("(4.b) Inline waiver things") {
@@ -988,10 +1000,10 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       testCheck(
         ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq(
-          "out.valid <= in.valid",
-          "in.ready <= out.ready"
+          "connect out.valid, in.valid",
+          "connect in.ready, out.ready"
         ),
-        Seq("out.data <= in.data")
+        Seq("connect out.data, in.data")
       )
     }
     it("(4.c) BundleMap example can use programmatic waiving") {
@@ -1016,9 +1028,9 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       testCheck(
         ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq(
-          "out.valid <= in.valid",
-          "in.ready <= out.ready",
-          "out.data.b <= in.data.b"
+          "connect out.valid, in.valid",
+          "connect in.ready, out.ready",
+          "connect out.data.b, in.data.b"
         ),
         Nil
       )
@@ -1046,10 +1058,10 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       testCheck(
         ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq(
-          "out.valid <= in.valid",
-          "in.ready <= out.ready",
-          "out.data.b <= in.data.b",
-          "out.data.c <= UInt<1>(\"h1\")"
+          "connect out.valid, in.valid",
+          "connect in.ready, out.ready",
+          "connect out.data.b, in.data.b",
+          "connect out.data.c, UInt<1>(0h1)"
         ),
         Nil
       )
@@ -1084,8 +1096,8 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       testCheck(
         ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq(
-          "in2.v[0].ready <= out3.v[0].ready",
-          "in2.v[1].ready <= out3.v[1].ready"
+          "connect in2.v[0].ready, out3.v[0].ready",
+          "connect in2.v[1].ready, out3.v[1].ready"
         ),
         Nil
       )
@@ -1124,9 +1136,9 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       testCheck(
         ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq(
-          "out.foo.valid <= in.foo.valid",
-          "in.foo.ready <= out.foo.ready",
-          "out.foo.data <= in.foo.data"
+          "connect out.foo.valid, in.foo.valid",
+          "connect in.foo.ready, out.foo.ready",
+          "connect out.foo.data, in.foo.data"
         ),
         Nil
       )
@@ -1140,7 +1152,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       testCheck(
         ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq(
-          "out <= in"
+          "connect out, in"
         ),
         Nil
       )
@@ -1167,9 +1179,9 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       testCheck(
         ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq(
-          "out.valid <= in.valid",
-          "in.ready <= out.ready",
-          "out.data.b <= in.data.b"
+          "connect out.valid, in.valid",
+          "connect in.ready, out.ready",
+          "connect out.data.b, in.data.b"
         ),
         Nil
       )
@@ -1194,9 +1206,9 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       testCheck(
         ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq(
-          "in3.v[0].ready <= out3.v[0].ready",
-          "in3.v[1].ready <= out3.v[1].ready",
-          "in3.v[2].ready <= out3.v[2].ready"
+          "connect in3.v[0].ready, out3.v[0].ready",
+          "connect in3.v[1].ready, out3.v[1].ready",
+          "connect in3.v[2].ready, out3.v[2].ready"
         ),
         Nil
       )
@@ -1214,7 +1226,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       testCheck(
         ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq(
-          "out <= in"
+          "connect out, in"
         ),
         Nil
       )
@@ -1241,8 +1253,8 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       testCheck(
         ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq(
-          "out.opaque <= inA.opaque",
-          "out.opaque <= inB.opaque"
+          "connect out.opaque, inA.opaque",
+          "connect out.opaque, inB.opaque"
         ),
         Nil
       )
@@ -1258,9 +1270,9 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       testCheck(
         ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq(
-          "out.foo.valid <= in.foo.valid",
-          "in.foo.ready <= out.foo.ready",
-          "out.foo.data <= in.foo.data"
+          "connect out.foo.valid, in.foo.valid",
+          "connect in.foo.ready, out.foo.ready",
+          "connect out.foo.data, in.foo.data"
         ),
         Nil
       )
@@ -1304,11 +1316,11 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       testCheck(
         ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq(
-          "out.foo.valid <= in.foo.valid",
-          "in.foo.ready <= out.foo.ready"
+          "connect out.foo.valid, in.foo.valid",
+          "connect in.foo.ready, out.foo.ready"
         ),
         Seq(
-          "out.foo.data <= in.foo.data"
+          "connect out.foo.data, in.foo.data"
         )
       )
     }
@@ -1322,7 +1334,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         ChiselStage.emitCHIRRTL({ new MyModule() }),
         Nil,
         Seq(
-          "out <= in"
+          "connect out, in"
         )
       )
     }
@@ -1349,9 +1361,9 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       testCheck(
         ChiselStage.emitCHIRRTL({ new MyModule() }),
         Seq(
-          "out.valid <= in.valid",
-          "in.ready <= out.ready",
-          "out.data.b <= in.data.b"
+          "connect out.valid, in.valid",
+          "connect in.ready, out.ready",
+          "connect out.data.b, in.data.b"
         ),
         Nil
       )
@@ -1371,8 +1383,8 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       testCheck(
         ChiselStage.emitCHIRRTL({ new MyModule() }),
         Seq(
-          "in2.v[0].ready <= out3.v[0].ready",
-          "in2.v[1].ready <= out3.v[1].ready"
+          "connect in2.v[0].ready, out3.v[0].ready",
+          "connect in2.v[1].ready, out3.v[1].ready"
         ),
         Nil
       )
@@ -1391,7 +1403,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         ChiselStage.emitCHIRRTL({ new MyModule() }),
         Nil,
         Seq(
-          "out <= in"
+          "connect out, in"
         )
       )
     }
@@ -1438,16 +1450,16 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         io.bar :<>= io.foo.viewAsSupertype(Input((new SmallBundle)))
       }
       val out = ChiselStage.emitCHIRRTL(gen = new ConnectSupertype(), args = Array("--full-stacktrace"))
-      assert(out.contains("io.out.f1 <= io.in.f1"))
-      assert(out.contains("io.out.f2 <= io.in.f2"))
-      assert(!out.contains("io.out.f3 <= io.in.f3"))
-      assert(!out.contains("io.out <= io.in"))
+      assert(out.contains("connect io.out.f1, io.in.f1"))
+      assert(out.contains("connect io.out.f2, io.in.f2"))
+      assert(!out.contains("connect io.out.f3, io.in.f3"))
+      assert(!out.contains("connect io.out, io.in"))
       assert(!out.contains("io.out <- io.in"))
 
-      assert(out.contains("io.bar.f1 <= io.foo.f1"))
-      assert(out.contains("io.bar.f2 <= io.foo.f2"))
-      assert(!out.contains("io.bar.f3 <= io.foo.f3"))
-      assert(!out.contains("io.bar <= io.foo"))
+      assert(out.contains("connect io.bar.f1, io.foo.f1"))
+      assert(out.contains("connect io.bar.f2, io.foo.f2"))
+      assert(!out.contains("connect io.bar.f3, io.foo.f3"))
+      assert(!out.contains("connect io.bar, io.foo"))
       assert(!out.contains("io.bar <- io.foo"))
     }
     it("(6.p) :<>= works with DataView to connect a two Bundles with a common trait") {
@@ -1474,12 +1486,12 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         io.out.viewAsSupertype(new SmallBundle) :<>= io.in.viewAsSupertype(Flipped(new SmallBundle))
       }
       val out = ChiselStage.emitCHIRRTL { new ConnectCommonTrait() }
-      assert(!out.contains("io.out <= io.in"))
+      assert(!out.contains("connect io.out, io.in"))
       assert(!out.contains("io.out <- io.in"))
-      assert(out.contains("io.out.common <= io.in.common"))
-      assert(out.contains("io.in.commonFlipped <= io.out.commonFlipped"))
-      assert(!out.contains("io.out.b <= io.in.b"))
-      assert(!out.contains("io.in.a  <= io.out.a"))
+      assert(out.contains("connect io.out.common, io.in.common"))
+      assert(out.contains("connect io.in.commonFlipped, io.out.commonFlipped"))
+      assert(!out.contains("connect io.out.b, io.in.b"))
+      assert(!out.contains("connect io.in.a , io.out.a"))
     }
   }
 
@@ -1492,12 +1504,12 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         b :<>= VecInit(0.U, 1.U, 2.U)
       }
       val out = ChiselStage.emitCHIRRTL { new ConnectVecSeqAndVecVec() }
-      assert(out.contains("""a[0] <= UInt<1>("h0")"""))
-      assert(out.contains("""a[1] <= UInt<1>("h1")"""))
-      assert(out.contains("""a[2] <= UInt<2>("h2")"""))
-      assert(out.contains("""b[0] <= _WIRE[0]"""))
-      assert(out.contains("""b[1] <= _WIRE[1]"""))
-      assert(out.contains("""b[2] <= _WIRE[2]"""))
+      assert(out.contains("""connect a[0], UInt<1>(0h0)"""))
+      assert(out.contains("""connect a[1], UInt<1>(0h1)"""))
+      assert(out.contains("""connect a[2], UInt<2>(0h2)"""))
+      assert(out.contains("""connect b[0], _WIRE[0]"""))
+      assert(out.contains("""connect b[1], _WIRE[1]"""))
+      assert(out.contains("""connect b[2], _WIRE[2]"""))
     }
   }
 
@@ -1524,12 +1536,12 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         out,
         Seq(
           """wire w0 : { foo : UInt<3>, flip bar : UInt<3>}""",
-          """w0.bar <= UInt<1>("h1")""",
-          """w0.foo <= UInt<1>("h0")""",
+          """connect w0.bar, UInt<1>(0h1)""",
+          """connect w0.foo, UInt<1>(0h0)""",
           """wire w1 : { foo : UInt<3>, flip bar : UInt<3>}""",
-          """w1.bar <= UInt<1>("h1")""",
-          """w1.foo <= UInt<1>("h0")""",
-          """w1 <= w0"""
+          """connect w1.bar, UInt<1>(0h1)""",
+          """connect w1.foo, UInt<1>(0h0)""",
+          """connect w1, w0"""
         ),
         Nil
       )
@@ -1563,8 +1575,8 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       testCheck(
         out,
         Seq(
-          """lacksOptional.necessary.bar <= hasOptional.necessary.bar""",
-          """hasOptional.necessary.foo <= lacksOptional.necessary.foo"""
+          """connect lacksOptional.necessary.bar, hasOptional.necessary.bar""",
+          """connect hasOptional.necessary.foo, lacksOptional.necessary.foo"""
         ),
         Nil
       )
@@ -1587,8 +1599,8 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       testCheck(
         out,
         Seq(
-          """out.valid <= in.valid""",
-          """in.ready <= out.ready"""
+          """connect out.valid, in.valid""",
+          """connect in.ready, out.ready"""
         ),
         Nil
       )
@@ -1614,9 +1626,9 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       testCheck(
         out,
         Seq(
-          """out.data <= UInt<1>("h0")""",
-          """in.ready <= out.ready""",
-          """out.valid <= in.valid"""
+          """connect out.data, UInt<1>(0h0)""",
+          """connect in.ready, out.ready""",
+          """connect out.valid, in.valid"""
         ),
         Nil
       )
@@ -1658,9 +1670,9 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       testCheck(
         out,
         Seq(
-          """monitor.data <= in.data""",
-          """monitor.ready <= in.ready""",
-          """monitor.valid <= in.valid"""
+          """connect monitor.data, in.data""",
+          """connect monitor.ready, in.ready""",
+          """connect monitor.valid, in.valid"""
         ),
         Nil
       )
@@ -1687,8 +1699,8 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       testCheck(
         out,
         Seq(
-          """monitor.ready <= in.ready""",
-          """monitor.valid <= in.valid"""
+          """connect monitor.ready, in.ready""",
+          """connect monitor.valid, in.valid"""
         ),
         Nil
       )
@@ -1712,9 +1724,9 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       testCheck(
         out,
         Seq(
-          """in.ready <= out.ready""",
-          """out.valid <= in.valid""",
-          """out.data <= in.data"""
+          """connect in.ready, out.ready""",
+          """connect out.valid, in.valid""",
+          """connect out.data, in.data"""
         ),
         Nil
       )
@@ -1748,7 +1760,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       }
       testCheck(
         ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
-        Seq("out.b <= in.b"),
+        Seq("connect out.b, in.b"),
         Nil
       )
     }
@@ -1762,7 +1774,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       }
       testCheck(
         ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
-        Seq("out.foo <= in.foo"),
+        Seq("connect out.foo, in.foo"),
         Nil
       )
     }
@@ -1776,7 +1788,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       }
       testCheck(
         ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
-        Seq("out.foo <= in.foo"),
+        Seq("connect out.foo, in.foo"),
         Nil
       )
     }
@@ -1790,7 +1802,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       }
       testCheck(
         ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
-        Seq("out.foo <= in.foo"),
+        Seq("connect out.foo, in.foo"),
         Nil
       )
     }
@@ -1804,7 +1816,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       }
       testCheck(
         ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
-        Seq("out.foo <= in.foo"),
+        Seq("connect out.foo, in.foo"),
         Nil
       )
     }

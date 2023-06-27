@@ -78,11 +78,11 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
 
   "Vec literals should work when used to initialize a reg of vec" in {
     val firrtl = ChiselStage.emitCHIRRTL(new HasVecInit)
-    firrtl should include("""_y_WIRE[0] <= UInt<8>("hab")""")
-    firrtl should include("""_y_WIRE[1] <= UInt<8>("hcd")""")
-    firrtl should include("""_y_WIRE[2] <= UInt<8>("hef")""")
-    firrtl should include("""_y_WIRE[3] <= UInt<8>("hff")""")
-    firrtl should include("""      reset => (reset, _y_WIRE)""".stripMargin)
+    firrtl should include("""connect _y_WIRE[0], UInt<8>(0hab)""")
+    firrtl should include("""connect _y_WIRE[1], UInt<8>(0hcd)""")
+    firrtl should include("""connect _y_WIRE[2], UInt<8>(0hef)""")
+    firrtl should include("""connect _y_WIRE[3], UInt<8>(0hff)""")
+    firrtl should include("""regreset y : UInt<8>[4], clock, reset, _y_WIRE""".stripMargin)
   }
 
   //NOTE: I had problems where this would not work if this class declaration was inside test scope
@@ -93,11 +93,11 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
 
   "Vec literals should work when used to partially initialize a reg of vec" in {
     val firrtl = ChiselStage.emitCHIRRTL(new HasPartialVecInit)
-    firrtl should include("""_y_WIRE[0] <= UInt<8>("hab")""")
-    firrtl should include("""_y_WIRE[1] is invalid""")
-    firrtl should include("""_y_WIRE[2] <= UInt<8>("hef")""")
-    firrtl should include("""_y_WIRE[3] <= UInt<8>("hff")""")
-    firrtl should include("""      reset => (reset, _y_WIRE)""".stripMargin)
+    firrtl should include("""connect _y_WIRE[0], UInt<8>(0hab)""")
+    firrtl should include("""invalidate _y_WIRE[1]""")
+    firrtl should include("""connect _y_WIRE[2], UInt<8>(0hef)""")
+    firrtl should include("""connect _y_WIRE[3], UInt<8>(0hff)""")
+    firrtl should include("""regreset y : UInt<8>[4], clock, reset, _y_WIRE""".stripMargin)
   }
 
   class ResetRegWithPartialVecLiteral extends Module {
@@ -426,8 +426,8 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
     }
 
     val firrtl = ChiselStage.emitCHIRRTL(new VecExample5)
-    firrtl should include("""out[0] <= UInt<4>("ha")""")
-    firrtl should include("""out[1] <= UInt<4>("hb")""")
+    firrtl should include("""connect out[0], UInt<4>(0ha)""")
+    firrtl should include("""connect out[1], UInt<4>(0hb)""")
   }
 
   class SubBundle extends Bundle {
@@ -446,10 +446,10 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
 
   "vec literals can contain bundles and should not be bulk connected" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new VecExample)
-    chirrtl should include("""out[0].bar <= UInt<5>("h16")""")
-    chirrtl should include("""out[0].foo <= UInt<6>("h2a")""")
-    chirrtl should include("""out[1].bar <= UInt<2>("h3")""")
-    chirrtl should include("""out[1].foo <= UInt<3>("h7")""")
+    chirrtl should include("""connect out[0].bar, UInt<5>(0h16)""")
+    chirrtl should include("""connect out[0].foo, UInt<6>(0h2a)""")
+    chirrtl should include("""connect out[1].bar, UInt<2>(0h3)""")
+    chirrtl should include("""connect out[1].foo, UInt<3>(0h7)""")
   }
 
   "vec literals can have bundle children" in {

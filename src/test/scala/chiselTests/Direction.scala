@@ -459,7 +459,7 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
     // Check that emitted directions are correct.
     assert(emitted.contains("input incoming : { bits : UInt<3>, valid : UInt<1>, flip ready : UInt<1>}"))
     assert(emitted.contains("output outgoing : { bits : UInt<3>, valid : UInt<1>, flip ready : UInt<1>}"))
-    assert(emitted.contains("outgoing <= incoming"))
+    assert(emitted.contains("connect outgoing, incoming"))
   }
   property("Can now mix Input/Output and Flipped within the same bundle") {
     class Decoupled extends Bundle {
@@ -488,10 +488,10 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
         "input io : { producer : { bits : UInt<3>, valid : UInt<1>, flip ready : UInt<1>}, flip consumer : { bits : UInt<3>, valid : UInt<1>, flip ready : UInt<1>}, flip monitor : { bits : UInt<3>, valid : UInt<1>, ready : UInt<1>}, driver : { bits : UInt<3>, valid : UInt<1>, ready : UInt<1>}}"
       )
     )
-    assert(emitted.contains("io.consumer <= io.producer"))
-    assert(emitted.contains("io.monitor.bits <= io.driver.bits"))
-    assert(emitted.contains("io.monitor.valid <= io.driver.valid"))
-    assert(emitted.contains("io.monitor.ready <= io.driver.ready"))
+    assert(emitted.contains("connect io.consumer, io.producer"))
+    assert(emitted.contains("connect io.monitor.bits, io.driver.bits"))
+    assert(emitted.contains("connect io.monitor.valid, io.driver.valid"))
+    assert(emitted.contains("connect io.monitor.ready, io.driver.ready"))
   }
   property("Bugfix: marking Vec fields with mixed directionality as Output/Input clears inner directions") {
     class Decoupled extends Bundle {

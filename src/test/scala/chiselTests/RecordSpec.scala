@@ -128,8 +128,8 @@ class RecordSpec extends ChiselFlatSpec with Utils {
     val chirrtl = ChiselStage.emitCHIRRTL(
       gen = new ConnectionTestModule(fooBarType, fooBarType)
     )
-    chirrtl should include("io.outMono <= io.inMono @")
-    chirrtl should include("io.outBi <= io.inBi @")
+    chirrtl should include("connect io.outMono, io.inMono @")
+    chirrtl should include("connect io.outBi, io.inBi @")
   }
 
   they should "not allow aliased fields" in {

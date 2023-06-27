@@ -155,17 +155,17 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
     matchesAndOmits(circt.stage.ChiselStage.emitCHIRRTL(new Foo))(
       "module Baz :",
       "output a_bore : UInt<1>",
-      "a_bore <= a_wire",
+      "connect a_bore, a_wire",
       "module Bar :",
       "output b_bore : UInt<2>",
-      "a_bore <= baz.a_bore",
-      "b_bore <= b_wire",
+      "connect a_bore, baz.a_bore",
+      "connect b_bore, b_wire",
       "module Foo :",
-      "a <= a_bore",
-      "b <= b_bore",
-      "c <= c_wire",
-      "a_bore <= bar.a_bore",
-      "b_bore <= bar.b_bore"
+      "connect a, a_bore",
+      "connect b, b_bore",
+      "connect c, c_wire",
+      "connect a_bore, bar.a_bore",
+      "connect b_bore, bar.b_bore"
     )()
   }
 
@@ -186,14 +186,14 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
     matchesAndOmits(circt.stage.ChiselStage.emitCHIRRTL(new Foo))(
       "module Bar :",
       "output b_bore : UInt<1>",
-      "b_bore <= a",
+      "connect b_bore, a",
       "module Baz :",
       "input b_bore : UInt<1>",
       "wire b_bore_1 : UInt<1>",
-      "b_bore_1 <= b_bore",
-      "b <= b_bore_1",
+      "connect b_bore_1, b_bore",
+      "connect b, b_bore_1",
       "module Foo",
-      "baz.b_bore <= bar.b_bore"
+      "connect baz.b_bore, bar.b_bore"
     )()
   }
 
@@ -226,11 +226,11 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
     matchesAndOmits(circt.stage.ChiselStage.emitCHIRRTL(new Foo))(
       "module Bar :",
       "input q_bore : UInt<1>",
-      "q <= q_bore_1", // Do normal connection before secret ones
-      "q_bore_1 <= q_bore",
+      "connect q, q_bore_1", // Do normal connection before secret ones
+      "connect q_bore_1, q_bore",
       "module Foo :",
       "input a : UInt<1>",
-      "bar.q_bore <= a"
+      "connect bar.q_bore, a"
     )()
   }
 
@@ -324,7 +324,7 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
       "define out_bore = probe(internalWire)",
       "module Top :",
       "define outProbe = foo.bore",
-      "out <= read(foo.out_bore)"
+      "connect out, read(foo.out_bore)"
     )()
   }
 
@@ -349,7 +349,7 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
       "output out_bore : Probe<UInt<1>>",
       "define out_bore = bar.out_bore",
       "module Top :",
-      "out <= read(foo.out_bore)"
+      "connect out, read(foo.out_bore)"
     )()
   }
 
@@ -370,10 +370,10 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
       "input bore : UInt<1>",
       "input out_bore : UInt<1>",
       "define outProbe = probe(tapIntermediate)",
-      "out <= out_tapIntermediate",
+      "connect out, out_tapIntermediate",
       "module Top :",
-      "foo.bore <= parentWire",
-      "foo.out_bore <= parentWire"
+      "connect foo.bore, parentWire",
+      "connect foo.out_bore, parentWire"
     )()
   }
 
@@ -393,12 +393,12 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
     matchesAndOmits(chirrtl)(
       "module Bar :",
       "input out_bore : UInt<1>",
-      "out <= out_tapIntermediate",
+      "connect out, out_tapIntermediate",
       "module Foo :",
-      "bar.out_bore <= out_bore",
+      "connect bar.out_bore, out_bore",
       "input out_bore : UInt<1>",
       "module Top :",
-      "foo.out_bore <= parentWire"
+      "connect foo.out_bore, parentWire"
     )()
   }
 
@@ -421,9 +421,9 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
       "define b_bore = probe(a)",
       "module Baz :",
       "input b_bore : UInt<1>",
-      "b_tapIntermediate <= b_bore",
+      "connect b_tapIntermediate, b_bore",
       "module Top :",
-      "baz.b_bore <= read(bar.b_bore)"
+      "connect baz.b_bore, read(bar.b_bore)"
     )()
   }
 
@@ -449,12 +449,12 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
       "define b_bore = probe(a)",
       "module Baz :",
       "input b_bore : UInt<1>",
-      "b_tapIntermediate <= b_bore",
+      "connect b_tapIntermediate, b_bore",
       "module Foo :",
       "input b_bore : UInt<1>",
-      "baz.b_bore <= b_bore",
+      "connect baz.b_bore, b_bore",
       "module Top :",
-      "foo.b_bore <= read(bar.b_bore)"
+      "connect foo.b_bore, read(bar.b_bore)"
     )()
   }
 
@@ -481,8 +481,8 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
       "output out_bore : RWProbe<UInt<1>>",
       "define out_bore = bar.out_bore",
       "module Top :",
-      "out <= read(foo.out_bore)",
-      "force_initial(foo.bore, UInt<1>(\"h0\"))"
+      "connect out, read(foo.out_bore)",
+      "force_initial(foo.bore, UInt<1>(0h0))"
     )()
   }
 

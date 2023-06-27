@@ -26,36 +26,36 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with Utils {
     val out = Output(Bool())
   }
 
-  property("an output connected to DontCare should emit a Firrtl \"is invalid\"") {
+  property("an output connected to DontCare should emit a Firrtl \"invalidate\"") {
     class ModuleWithDontCare extends Module {
       val io = IO(new TrivialInterface)
       io.out := DontCare
       io.out := io.in
     }
     val firrtlOutput = myGenerateFirrtl(new ModuleWithDontCare)
-    firrtlOutput should include("io.out is invalid")
+    firrtlOutput should include("invalidate io.out")
   }
 
-  property("an output without a DontCare should NOT emit a Firrtl \"is invalid\"") {
+  property("an output without a DontCare should NOT emit a Firrtl \"invalidate\"") {
     class ModuleWithoutDontCare extends Module {
       val io = IO(new TrivialInterface)
       io.out := io.in
     }
     val firrtlOutput = myGenerateFirrtl(new ModuleWithoutDontCare)
-    (firrtlOutput should not).include("is invalid")
+    (firrtlOutput should not).include("invalidate")
   }
 
-  property("a bundle with a DontCare should emit a Firrtl \"is invalid\"") {
+  property("a bundle with a DontCare should emit a Firrtl \"invalidate\"") {
     class ModuleWithoutDontCare extends Module {
       val io = IO(new TrivialInterface)
       io <> DontCare
     }
     val firrtlOutput = myGenerateFirrtl(new ModuleWithoutDontCare)
-    firrtlOutput should include("io.out is invalid")
-    firrtlOutput should include("io.in is invalid")
+    firrtlOutput should include("invalidate io.out")
+    firrtlOutput should include("invalidate io.in")
   }
 
-  property("a Vec with a DontCare should emit a Firrtl \"is invalid\" with bulk connect") {
+  property("a Vec with a DontCare should emit a Firrtl \"invalidate\" with bulk connect") {
     val nElements = 5
     class ModuleWithoutDontCare extends Module {
       val io = IO(new Bundle {
@@ -65,10 +65,10 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with Utils {
     }
     val firrtlOutput = myGenerateFirrtl(new ModuleWithoutDontCare)
     for (i <- 0 until nElements)
-      firrtlOutput should include(s"io.outs[$i] is invalid")
+      firrtlOutput should include(s"invalidate io.outs[$i]")
   }
 
-  property("a Vec with a DontCare should emit a Firrtl \"is invalid\" with mono connect") {
+  property("a Vec with a DontCare should emit a Firrtl \"invalidate\" with mono connect") {
     val nElements = 5
     class ModuleWithoutDontCare extends Module {
       val io = IO(new Bundle {
@@ -78,7 +78,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with Utils {
     }
     val firrtlOutput = myGenerateFirrtl(new ModuleWithoutDontCare)
     for (i <- 0 until nElements)
-      firrtlOutput should include(s"io.ins[$i] is invalid")
+      firrtlOutput should include(s"invalidate io.ins[$i]")
   }
 
   property("a DontCare cannot be a connection sink (LHS) for := ") {
@@ -162,6 +162,6 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with Utils {
       val foo = IO(Output(Clock()))
       foo := DontCare
     }
-    myGenerateFirrtl(new ClockConnectedToDontCare) should include("foo is invalid")
+    myGenerateFirrtl(new ClockConnectedToDontCare) should include("invalidate foo")
   }
 }
