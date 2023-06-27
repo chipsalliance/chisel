@@ -108,4 +108,37 @@ class ConstSpec extends ChiselFlatSpec with Utils {
     chirrtl should include("connect out, in")
   }
 
+  class BidirectionalBundle extends Bundle {
+    val a = UInt(4.W)
+    val b = Flipped(Bool())
+  }
+
+  "Const to const bidirection connections using ':<>='" should "emit a direct passthrough connection" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new Module {
+      val in = IO(Const(Flipped(new BidirectionalBundle)))
+      val out = IO(Const(new BidirectionalBundle))
+      out :<>= in
+    })
+    chirrtl should include("connect out, in")
+  }
+
+  "Const to const bidirection connections using '<>'" should "emit a direct passthrough connection" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new Module {
+      val in = IO(Const(Flipped(new BidirectionalBundle)))
+      val out = IO(Const(new BidirectionalBundle))
+      out <> in
+    })
+    chirrtl should include("connect out, in")
+  }
+
+  "Const to const coercing mono connections using ':#='" should "emit elementwise connections" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new Module {
+      val in = IO(Const(Flipped(new BidirectionalBundle)))
+      val out = IO(Output(Const(new BidirectionalBundle)))
+      out :#= in
+    })
+    chirrtl should include("connect out.b, in.b")
+    chirrtl should include("connect out.a, in.a")
+  }
+
 }
