@@ -282,4 +282,106 @@ class SerializerSpec extends AnyFlatSpec with Matchers {
       "Once we traverse the serializer, everything should execute"
     )
   }
+
+  it should "add backticks to names which begin with a numeric character" in {
+    info("circuit okay!")
+    Serializer.serialize(Circuit(NoInfo, Seq.empty[DefModule], "42_Circuit")) should include("circuit `42_Circuit`")
+
+    info("modules okay!")
+    Serializer.serialize(Module(NoInfo, "42_module", Seq.empty, Block(Seq.empty))) should include("module `42_module`")
+    // TODO: an external module with a numeric defname should probably be rejected
+    Serializer.serialize(ExtModule(NoInfo, "42_extmodule", Seq.empty, "<TODO>", Seq.empty)) should include(
+      "extmodule `42_extmodule`"
+    )
+    Serializer.serialize(IntModule(NoInfo, "42_intmodule", Seq.empty, "foo", Seq.empty)) should include(
+      "intmodule `42_intmodule`"
+    )
+
+    info("ports okay!")
+    Serializer.serialize(Port(NoInfo, "42_port", Input, UIntType(IntWidth(1)))) should include("input `42_port`")
+
+    info("types okay!")
+    Serializer.serialize(BundleType(Seq(Field("42_field", Default, UIntType(IntWidth(1)))))) should include(
+      "{ `42_field` : UInt<1>}"
+    )
+
+    info("declarations okay!")
+    Serializer.serialize(DefNode(NoInfo, "42_dest", Reference("42_src"))) should include("node `42_dest` = `42_src`")
+    Serializer.serialize(DefWire(NoInfo, "42_wire", UIntType(IntWidth(1)))) should include("wire `42_wire`")
+    Serializer.serialize(DefRegister(NoInfo, "42_reg", UIntType(IntWidth(1)), Reference("42_clock"))) should include(
+      "reg `42_reg` : UInt<1>, `42_clock`"
+    )
+    Serializer.serialize(
+      DefRegisterWithReset(
+        NoInfo,
+        "42_regreset",
+        UIntType(IntWidth(1)),
+        Reference("42_clock"),
+        Reference("42_reset"),
+        Reference("42_init")
+      )
+    ) should include("regreset `42_regreset` : UInt<1>, `42_clock`, `42_reset`, `42_init`")
+    Serializer.serialize(DefInstance(NoInfo, "42_inst", "42_module")) should include("inst `42_inst` of `42_module`")
+    (Serializer
+      .serialize(
+        DefMemory(
+          NoInfo,
+          "42_mem",
+          UIntType(IntWidth(1)),
+          8,
+          1,
+          1,
+          Seq("42_r"),
+          Seq("42_w"),
+          Seq("42_rw"),
+          ReadUnderWrite.Undefined
+        )
+      )
+      .split('\n')
+      .map(_.dropWhile(_ == ' ')) should contain).allOf(
+      "mem `42_mem` :",
+      "reader => `42_r`",
+      "writer => `42_w`",
+      "readwriter => `42_rw`"
+    )
+    Serializer.serialize(
+      CDefMemory(NoInfo, "42_cmem", UIntType(IntWidth(1)), 8, true, ReadUnderWrite.Undefined)
+    ) should include("smem `42_cmem`")
+    Serializer.serialize(
+      firrtl.CDefMPort(
+        NoInfo,
+        "42_memport",
+        UIntType(IntWidth(1)),
+        "42_mem",
+        Seq(UIntLiteral(0, IntWidth(1)), Reference("42_clock")),
+        firrtl.MRead
+      )
+    ) should include("mport `42_memport` = `42_mem`[UInt<1>(0h0)], `42_clock`")
+
+    info("labeled statement okay!")
+    Serializer.serialize(
+      Stop(NoInfo, 1, Reference("42_clock"), Reference("42_enable"), "42_label")
+    ) should include("stop(`42_clock`, `42_enable`, 1) : `42_label`")
+    Serializer.serialize(
+      Print(
+        NoInfo,
+        StringLit("hello %x"),
+        Seq(Reference("42_arg")),
+        Reference("42_clock"),
+        Reference("42_enable"),
+        "42_label"
+      )
+    ) should include("""printf(`42_clock`, `42_enable`, "hello %x", `42_arg`) : `42_label`""")
+    Serializer.serialize(
+      Verification(
+        Formal.Assert,
+        NoInfo,
+        Reference("42_clock"),
+        Reference("42_predicate"),
+        Reference("42_enable"),
+        StringLit("message"),
+        "42_label"
+      )
+    ) should include("""assert(`42_clock`, `42_predicate`, `42_enable`, "message") : `42_label`""")
+  }
 }
