@@ -8,7 +8,7 @@ import chisel3.experimental.dataview._
 import chisel3.experimental.{Analog, HWTuple2}
 import chisel3.probe._
 import chisel3.reflect.DataMirror.internal.chiselTypeClone
-import chisel3.util.{Decoupled, DecoupledIO}
+import chisel3.util.{Decoupled, DecoupledIO, Valid, ValidIO}
 import chiselTests.ChiselFlatSpec
 import circt.stage.ChiselStage
 import scala.collection.immutable.SeqMap
@@ -52,6 +52,26 @@ object FlatDecoupledDataView {
     _.buzz -> _.bits.buzz
   )
   implicit val view2 = view.invert(_ => new FlatDecoupled)
+}
+
+object ValidExtensions {
+  implicit def view[T <: Data] = DataView[T, Valid[T]](
+    x => Valid(x.cloneType), // Valid will strip direction with `Output(...)` anyway
+    _ -> _.bits,
+    (_, v) => true.B -> v.valid
+  )
+}
+
+object DontCareDataView {
+  class Foo extends Bundle {
+    val a = UInt(8.W)
+    val b = UInt(8.W)
+  }
+  implicit def view = DataView[UInt, Foo](
+    _ => new Foo,
+    _ -> _.a,
+    (_, f) => DontCare -> f.b
+  )
 }
 
 class DataViewSpec extends ChiselFlatSpec {
@@ -698,10 +718,11 @@ class DataViewSpec extends ChiselFlatSpec {
       val fizz = UInt(8.W)
       val buzz = UInt(8.W)
     }
-    implicit val dv = DataView[BundleA, BundleB](_ => new BundleB, _.foo -> _.fizz, (_, b) => (3.U, b.buzz))
     class MyModule extends Module {
       val in = IO(Input(new BundleA))
       val out = IO(Output(new BundleB))
+      val foo = Wire(UInt(8.W))
+      implicit val dv = DataView[BundleA, BundleB](_ => new BundleB, _.foo -> _.fizz, (_, b) => (foo, b.buzz))
       out := in.viewAs[BundleB]
     }
     val err = the[InvalidViewException] thrownBy (ChiselStage.emitSystemVerilog(new MyModule))
@@ -829,6 +850,120 @@ class DataViewSpec extends ChiselFlatSpec {
     }
     val err = the[ChiselException] thrownBy (ChiselStage.emitCHIRRTL(new MyModule, Array("--throw-on-first-error")))
     err.toString should include("Probed type cannot participate in a mono connection")
+  }
+
+  it should "support literals as part of the target" in {
+    import ValidExtensions._
+    class MyModule extends Module {
+      val in0, in1, in2, in3, in4 = IO(Input(UInt(8.W)))
+      val out0, out1, out2, out3, out4 = IO(Output(Valid(UInt(8.W))))
+      out0 := in0.viewAs[Valid[UInt]]
+      out1 <> in1.viewAs[Valid[UInt]]
+      out2 :<>= in2.viewAs[Valid[UInt]]
+      out3 :<= in3.viewAs[Valid[UInt]]
+      out4 :#= in4.viewAs[Valid[UInt]]
+    }
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
+    for (i <- 0 until 5) {
+      chirrtl should include(s"connect out$i.bits, in$i")
+      chirrtl should include(s"connect out$i.valid, UInt<1>(0h1)")
+    }
+  }
+
+  it should "error if a literal in a target would be driven" in {
+    import ValidExtensions._
+    class MyModule(op: (Valid[UInt], Valid[UInt]) => Unit) extends Module {
+      val in = IO(Input(Valid(UInt(8.W))))
+      val out = IO(Output(UInt(8.W)))
+      op(out.viewAs[Valid[UInt]], in)
+    }
+
+    val ops = Seq[(Valid[UInt], Valid[UInt]) => Unit](
+      _ := _,
+      _ <> _,
+      _ :<>= _,
+      _ :<= _,
+      _ :#= _
+    )
+
+    for (op <- ops) {
+      a[ChiselException] shouldBe thrownBy {
+        ChiselStage.emitCHIRRTL(new MyModule(op), Array("--throw-on-first-error"))
+      }
+    }
+  }
+
+  it should "error if a literal is used as part of the view" in {
+    implicit val dv =
+      DataView.mapping[Valid[UInt], UInt](_.bits.cloneType, (v, x) => Seq(v.bits -> x, v.valid -> true.B))
+    class MyModule extends Module {
+      val in = IO(Input(Valid(UInt(8.W))))
+      val out = IO(Output(UInt(8.W)))
+      out := in.viewAs[UInt]
+    }
+    val e = the[ChiselException] thrownBy {
+      ChiselStage.emitCHIRRTL(new MyModule, Array("--throw-on-first-error"))
+    }
+    e.getMessage should include("View mapping must only contain Elements within the View")
+  }
+
+  it should "support DontCare as part of the target" in {
+    import DontCareDataView._
+    class MyModule extends Module {
+      val in0, in1, in2, in3, in4 = IO(Input(UInt(8.W)))
+      val out0, out1, out2, out3, out4 = IO(Output(new Foo))
+      out0 := in0.viewAs[Foo]
+      out1 <> in1.viewAs[Foo]
+      out2 :<>= in2.viewAs[Foo]
+      out3 :<= in3.viewAs[Foo]
+      out4 :#= in4.viewAs[Foo]
+    }
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule, Array("--full-stacktrace"))
+    for (i <- 0 until 5) {
+      chirrtl should include(s"connect out$i.a, in$i")
+      chirrtl should include(s"invalidate out$i.b")
+    }
+  }
+
+  it should "error if a DontCare in a target would be driven" in {
+    import DontCareDataView._
+    class MyModule(op: (Foo, Foo) => Unit) extends Module {
+      val in = IO(Input(new Foo))
+      val out = IO(Output(UInt(8.W)))
+      op(out.viewAs[Foo], in)
+    }
+
+    val ops = Seq[(Foo, Foo) => Unit](
+      _ := _,
+      _ :<>= _,
+      _ :<= _,
+      _ :#= _
+    )
+
+    for (op <- ops) {
+      a[ChiselException] shouldBe thrownBy {
+        ChiselStage.emitCHIRRTL(new MyModule(op), Array("--throw-on-first-error"))
+      }
+    }
+    // <> does magical things with DontCare, including invalidating inputs!
+    // But the behavior matches DontCare <> in.b
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule(_ <> _))
+    chirrtl should include("invalidate in.b")
+    chirrtl should include("connect out, in.a")
+  }
+
+  it should "error if DontCare is used as part of the view" in {
+    implicit val dv =
+      DataView.mapping[Valid[UInt], UInt](_.bits.cloneType, (v, x) => Seq(v.bits -> x, v.valid -> DontCare))
+    class MyModule extends Module {
+      val in = IO(Input(Valid(UInt(8.W))))
+      val out = IO(Output(UInt(8.W)))
+      out := in.viewAs[UInt]
+    }
+    val e = the[ChiselException] thrownBy {
+      ChiselStage.emitCHIRRTL(new MyModule, Array("--throw-on-first-error"))
+    }
+    e.getMessage should include("View mapping must only contain Elements within the View")
   }
 
   behavior.of("PartialDataView")
