@@ -464,7 +464,7 @@ package object Chisel {
   /** Compute the log2 rounded up with min value of 1 */
   object log2Up {
     def apply(in: BigInt): Int = {
-      require(in >= 0)
+      require(in >= 0, s"log2Up is only defined on integers >= 0, got $in")
       1.max((in - 1).bitLength)
     }
     def apply(in: Int): Int = apply(BigInt(in))

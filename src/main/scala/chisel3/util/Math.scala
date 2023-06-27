@@ -27,15 +27,7 @@ object log2Up {
   // https://github.com/freechipsproject/chisel3/issues/847
   //@chiselRuntimeDeprecated
   //@deprecated("Use log2Ceil instead", "chisel3")
-<<<<<<< HEAD
   def apply(in: BigInt): Int = Chisel.log2Up(in)
-=======
-  def apply(in: BigInt): Int = {
-    require(in >= 0, s"log2Up is only defined on integers >= 0, got $in")
-    1.max((in - 1).bitLength)
-  }
-  def apply(in: Int): Int = apply(BigInt(in))
->>>>>>> 88fecfc1c (Add messages to require statements in Math (#3385))
 }
 
 /** Compute the log2 of a Scala integer, rounded up.
