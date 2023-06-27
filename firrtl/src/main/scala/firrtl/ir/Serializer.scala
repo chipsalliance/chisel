@@ -312,7 +312,7 @@ object Serializer {
   }
 
   private def sStmtName(lbl: String)(implicit b: StringBuilder): Unit = {
-    if (lbl.nonEmpty) { b ++= s" : $lbl" }
+    if (lbl.nonEmpty) { b ++= s" : ${legalize(lbl)}" }
   }
 
   private def s(node: Width)(implicit b: StringBuilder, indent: Int): Unit = node match {

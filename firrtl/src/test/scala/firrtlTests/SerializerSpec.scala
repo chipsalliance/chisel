@@ -357,5 +357,31 @@ class SerializerSpec extends AnyFlatSpec with Matchers {
         firrtl.MRead
       )
     ) should include("mport `42_memport` = `42_mem`[UInt<1>(0h0)], `42_clock`")
+
+    info("labeled statement okay!")
+    Serializer.serialize(
+      Stop(NoInfo, 1, Reference("42_clock"), Reference("42_enable"), "42_label")
+    ) should include("stop(`42_clock`, `42_enable`, 1) : `42_label`")
+    Serializer.serialize(
+      Print(
+        NoInfo,
+        StringLit("hello %x"),
+        Seq(Reference("42_arg")),
+        Reference("42_clock"),
+        Reference("42_enable"),
+        "42_label"
+      )
+    ) should include("""printf(`42_clock`, `42_enable`, "hello %x", `42_arg`) : `42_label`""")
+    Serializer.serialize(
+      Verification(
+        Formal.Assert,
+        NoInfo,
+        Reference("42_clock"),
+        Reference("42_predicate"),
+        Reference("42_enable"),
+        StringLit("message"),
+        "42_label"
+      )
+    ) should include("""assert(`42_clock`, `42_predicate`, `42_enable`, "message") : `42_label`""")
   }
 }
