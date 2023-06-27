@@ -540,7 +540,9 @@ class SRAMSpec extends ChiselFunSpec {
         chirrtl should include(s"connect mem_MPORT[$i], mem.writePorts[0].data[$i]")
 
         chirrtl should include(s"when mem.readwritePorts[0].mask[$i]")
-        chirrtl should include(s"connect mem_out_readwritePorts_0_readData_MPORT[$i], mem.readwritePorts[0].writeData[$i]")
+        chirrtl should include(
+          s"connect mem_out_readwritePorts_0_readData_MPORT[$i], mem.readwritePorts[0].writeData[$i]"
+        )
       }
     }
 
