@@ -178,10 +178,10 @@ class OpaqueTypeSpec extends ChiselFlatSpec with Utils {
     val nestedRecordChirrtl = ChiselStage.emitCHIRRTL { new NestedRecordModule }
     nestedRecordChirrtl should include("input in : UInt<8>")
     nestedRecordChirrtl should include("output out : UInt<8>")
-    nestedRecordChirrtl should include("inst.io.foo <= in")
-    nestedRecordChirrtl should include("out <= inst.io.bar")
+    nestedRecordChirrtl should include("connect inst.io.foo, in")
+    nestedRecordChirrtl should include("connect out, inst.io.bar")
     nestedRecordChirrtl should include("output io : { flip foo : UInt<8>, bar : UInt<8>}")
-    nestedRecordChirrtl should include("io.bar <= io.foo")
+    nestedRecordChirrtl should include("connect io.bar, io.foo")
   }
 
   they should "throw an error when map contains a named element and OpaqueType is mixed in" in {
@@ -200,7 +200,7 @@ class OpaqueTypeSpec extends ChiselFlatSpec with Utils {
     val chirrtl = ChiselStage.emitCHIRRTL(new NotActuallyOpaqueTypeModule)
     chirrtl should include("input in : { y : UInt<8>, x : UInt<8>}")
     chirrtl should include("output out : { y : UInt<8>, x : UInt<8>}")
-    chirrtl should include("out <= in")
+    chirrtl should include("connect out, in")
   }
 
   they should "support conditional OpaqueTypes via traits and factory methods" in {
@@ -238,7 +238,7 @@ class OpaqueTypeSpec extends ChiselFlatSpec with Utils {
     }
     // First check that it works when it should
     val chirrtl = ChiselStage.emitCHIRRTL(new AsUIntTester(new MaybeNoAsUInt(false)))
-    chirrtl should include("out <= in")
+    chirrtl should include("connect out, in")
 
     val e = the[ChiselException] thrownBy {
       ChiselStage.emitCHIRRTL(new AsUIntTester(new MaybeNoAsUInt(true)), Array("--throw-on-first-error"))

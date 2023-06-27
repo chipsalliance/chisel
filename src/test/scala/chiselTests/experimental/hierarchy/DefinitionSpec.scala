@@ -546,8 +546,8 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
         "~Top|MyModule>sum".rt -> "bar"
       )
       val expectedLines = List(
-        "i.in <= foo",
-        "bar <= i.out"
+        "connect i.in, foo",
+        "connect bar, i.out"
       )
       val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
       val text = chirrtl.serialize
@@ -583,8 +583,8 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
         "~Top|MyModule>a.foo".rt -> "in_bar"
       )
       val expectedLines = List(
-        "i.a <= foo",
-        "bar <= i.b.foo"
+        "connect i.a, foo",
+        "connect bar, i.b.foo"
       )
       val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
       val text = chirrtl.serialize

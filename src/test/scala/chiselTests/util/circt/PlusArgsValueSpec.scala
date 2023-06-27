@@ -37,7 +37,7 @@ class PlusArgsValueSpec extends AnyFlatSpec with Matchers {
       "intrinsic = circt_plusargs_value",
       "parameter FORMAT = \"FOO=%d\"",
       "parameter FORMAT = \"BAR=%d\"",
-      "node _zv_T = mux(PlusArgsValueIntrinsic_2.found, PlusArgsValueIntrinsic_2.result, UInt<6>(\"h2a\")) "
+      "node _zv_T = mux(PlusArgsValueIntrinsic_2.found, PlusArgsValueIntrinsic_2.result, UInt<6>(0h2a)) "
     )
   }
 }

@@ -247,7 +247,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
       printf(cf"This is here $b1%x!!!! And should print everything else")
     }
     generateAndCheck(new MyModule) {
-      case Seq(Printf("This is here %x!!!! And should print everything else", Seq("UInt<4>(\"ha\")"))) =>
+      case Seq(Printf("This is here %x!!!! And should print everything else", Seq("UInt<4>(0ha)"))) =>
     }
   }
 
