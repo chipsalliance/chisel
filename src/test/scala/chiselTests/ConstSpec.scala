@@ -72,4 +72,40 @@ class ConstSpec extends ChiselFlatSpec with Utils {
     exc.getMessage should be("Cannot create Const of a Probe.")
   }
 
+  class FooBundle extends Bundle {
+    val a = UInt(4.W)
+    val b = Bool()
+  }
+
+  "Const to const connections" should "emit a direct passthrough connection" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new Module {
+      val in = IO(Input(Const(new FooBundle)))
+      val out = IO(Output(Const(new FooBundle)))
+      out := in
+    })
+    chirrtl should include("connect out, in")
+  }
+
+  "Const to non-const connections" should "emit a direct passthrough connection" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new Module {
+      val in = IO(Input(Const(new FooBundle)))
+      val out = IO(Output(new FooBundle))
+      out := in
+    })
+    chirrtl should include("connect out, in")
+  }
+
+  "Const to nested const connections" should "emit a direct passthrough connection" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new Module {
+      val in = IO(Input(Const(new Bundle {
+        val foo = new FooBundle
+      })))
+      val out = IO(Output(Const(new Bundle {
+        val foo = Const(new FooBundle)
+      })))
+      out := in
+    })
+    chirrtl should include("connect out, in")
+  }
+
 }
