@@ -52,9 +52,11 @@ class ConstSpec extends ChiselFlatSpec with Utils {
     val chirrtl = ChiselStage.emitCHIRRTL(new Module {
       val foo = Wire(Const(Vec(3, Const(UInt(8.W)))))
       val bar = Wire(Const(Vec(3, Const(Vec(2, Const(UInt(8.W)))))))
+      val baz = Wire(Const(Vec(3, Vec(2, Const(UInt(8.W))))))
     })
     chirrtl should include("wire foo : const UInt<8>[3]")
     chirrtl should include("wire bar : const UInt<8>[2][3]")
+    chirrtl should include("wire baz : const UInt<8>[2][3]")
   }
 
   "Memories of Const type" should "fail" in {

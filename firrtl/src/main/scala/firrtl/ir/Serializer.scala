@@ -337,22 +337,23 @@ object Serializer {
     case Field(name, flip, tpe) => s(flip); b ++= legalize(name); b ++= " : "; s(tpe)
   }
 
-  private def s(node: Type)(implicit b: StringBuilder, indent: Int): Unit = node match {
+  private def s(node: Type)(implicit b: StringBuilder, indent: Int): Unit = s(node, false)
+
+  private def s(node: Type, lastEmittedConst: Boolean)(implicit b: StringBuilder, indent: Int): Unit = node match {
     // Types
     case ProbeType(underlying: Type) => b ++= "Probe<"; s(underlying); b += '>'
     case RWProbeType(underlying: Type) => b ++= "RWProbe<"; s(underlying); b += '>'
     case ConstType(underlying: Type) => {
-      // Avoid emitting 'const const' for const vectors of const elements
-      underlying match {
-        case VectorType(ConstType(_), _) =>
-        case _                           => b ++= "const "
+      // Avoid emitting multiple consecurive 'const', which can otherwise occur for const vectors of const elements
+      if (!lastEmittedConst) {
+        b ++= "const "
       }
-      s(underlying)
+      s(underlying, true)(b, indent)
     }
     case UIntType(width: Width) => b ++= "UInt"; s(width)
     case SIntType(width: Width) => b ++= "SInt"; s(width)
     case BundleType(fields)    => b ++= "{ "; sField(fields, ", "); b += '}'
-    case VectorType(tpe, size) => s(tpe); b += '['; b ++= size.toString; b += ']'
+    case VectorType(tpe, size) => s(tpe, lastEmittedConst); b += '['; b ++= size.toString; b += ']'
     case ClockType             => b ++= "Clock"
     case ResetType             => b ++= "Reset"
     case AsyncResetType        => b ++= "AsyncReset"
