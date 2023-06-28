@@ -41,7 +41,7 @@ Please be sure to elaborate on any API changes or deprecations and any impact on
 
 ### Reviewer Checklist (only modified by reviewer)
 - [ ] Did you add the appropriate labels? (Select the most appropriate one based on the "Type of Improvement")
-- [ ] Did you mark the proper milestone (Bug fix: `3.5.x` or `3.6.x` depending on impact, API modification or big change: `5.0.0`)?
+- [ ] Did you mark the proper milestone (Bug fix: `3.5.x`, `3.6.x`, or `5.0.x` depending on impact, API modification or big change: `6.0`)?
 - [ ] Did you review?
 - [ ] Did you check whether all relevant Contributor checkboxes have been checked?
 - [ ] Did you do one of the following when ready to merge:
