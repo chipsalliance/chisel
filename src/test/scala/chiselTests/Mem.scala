@@ -549,13 +549,10 @@ class SRAMSpec extends ChiselFunSpec {
     it(s"should support multiple clocks driving different ports") {
       class TestModule extends Module {
         val (counter, _) = Counter(true.B, 11)
-        val clock1: Clock = (counter === 1.U).asClock
-        val clock2: Clock = (counter === 2.U).asClock
-        val clock3: Clock = (counter === 3.U).asClock
 
-        val readClocks = Seq(clock1, clock2, clock3)
-        val writeClocks = Seq(clock2, clock3, clock1)
-        val readwriteClocks = Seq(clock3, clock1, clock2)
+        val readClocks = IO(Input(Vec(3, Clock())))
+        val writeClocks = IO(Input(Vec(3, Clock())))
+        val readwriteClocks = IO(Input(Vec(3, Clock())))
 
         val mem = SRAM(
           32,
@@ -576,20 +573,16 @@ class SRAMSpec extends ChiselFunSpec {
       val chirrtl = ChiselStage.emitCHIRRTL(new TestModule, args = Array("--full-stacktrace"))
 
       for (i <- 0 until 3) {
-        val rdClockIndex = i + 1
-        val wrClockIndex = ((i + 1) % 3) + 1
-        val rwClockIndex = ((i + 2) % 3) + 1
-
         val wrIndexSuffix = if (i == 0) "" else s"_$i"
 
         chirrtl should include(
-          s"read mport mem_out_readPorts_${i}_data_MPORT = mem_mem[_mem_out_readPorts_${i}_data_T], clock${rdClockIndex}"
+          s"read mport mem_out_readPorts_${i}_data_MPORT = mem_mem[_mem_out_readPorts_${i}_data_T], readClocks[${i}]"
         )
         chirrtl should include(
-          s"write mport mem_MPORT${wrIndexSuffix} = mem_mem[_mem_T${wrIndexSuffix}], clock${wrClockIndex}"
+          s"write mport mem_MPORT${wrIndexSuffix} = mem_mem[_mem_T${wrIndexSuffix}], writeClocks[${i}]"
         )
         chirrtl should include(
-          s"rdwr mport mem_out_readwritePorts_${i}_readData_MPORT = mem_mem[_mem_out_readwritePorts_${i}_readData_T], clock${rwClockIndex}"
+          s"rdwr mport mem_out_readwritePorts_${i}_readData_MPORT = mem_mem[_mem_out_readwritePorts_${i}_readData_T], readwriteClocks[${i}]"
         )
       }
     }

@@ -155,16 +155,19 @@ object SRAM {
     numReadwritePorts: Int
   )(
     implicit sourceInfo: SourceInfo
-  ): SRAMInterface[T] =
-    memInterface_impl(size, tpe)(
-      Seq.fill(numReadPorts)(Builder.forcedClock),
-      Seq.fill(numWritePorts)(Builder.forcedClock),
-      Seq.fill(numReadwritePorts)(Builder.forcedClock),
-      None
-    )(
+  ): SRAMInterface[T] = {
+    val clock = Builder.forcedClock
+    memInterface_impl(
+      size,
+      tpe,
+      Seq.fill(numReadPorts)(clock),
+      Seq.fill(numWritePorts)(clock),
+      Seq.fill(numReadwritePorts)(clock),
+      None,
       None,
       sourceInfo
     )
+  }
 
   /** Generates a [[SyncReadMem]] within the current module, connected to an explicit number
     * of read, write, and read/write ports. This SRAM abstraction has both read and write capabilities: that is,
@@ -191,16 +194,19 @@ object SRAM {
     memoryFile:        MemoryFile
   )(
     implicit sourceInfo: SourceInfo
-  ): SRAMInterface[T] =
-    memInterface_impl(size, tpe)(
-      Seq.fill(numReadPorts)(Builder.forcedClock),
-      Seq.fill(numWritePorts)(Builder.forcedClock),
-      Seq.fill(numReadwritePorts)(Builder.forcedClock),
-      Some(memoryFile)
-    )(
+  ): SRAMInterface[T] = {
+    val clock = Builder.forcedClock
+    memInterface_impl(
+      size,
+      tpe,
+      Seq.fill(numReadPorts)(clock),
+      Seq.fill(numWritePorts)(clock),
+      Seq.fill(numReadwritePorts)(clock),
+      Some(memoryFile),
       None,
       sourceInfo
     )
+  }
 
   /** Generates a [[SyncReadMem]] within the current module, connected to an explicit number
     * of read, write, and read/write ports. This SRAM abstraction has both read and write capabilities: that is,
@@ -228,13 +234,11 @@ object SRAM {
   ): SRAMInterface[T] =
     memInterface_impl(
       size,
-      tpe
-    )(
+      tpe,
       readPortClocks,
       writePortClocks,
       readwritePortClocks,
-      None
-    )(
+      None,
       None,
       sourceInfo
     )
@@ -267,13 +271,11 @@ object SRAM {
   ): SRAMInterface[T] =
     memInterface_impl(
       size,
-      tpe
-    )(
+      tpe,
       readPortClocks,
       writePortClocks,
       readwritePortClocks,
-      Some(memoryFile)
-    )(
+      Some(memoryFile),
       None,
       sourceInfo
     )
@@ -303,12 +305,13 @@ object SRAM {
     implicit evidence: T <:< Vec[_],
     sourceInfo:        SourceInfo
   ): SRAMInterface[T] =
-    memInterface_impl(size, tpe)(
+    memInterface_impl(
+      size,
+      tpe,
       Seq.fill(numReadPorts)(Builder.forcedClock),
       Seq.fill(numWritePorts)(Builder.forcedClock),
       Seq.fill(numReadwritePorts)(Builder.forcedClock),
-      None
-    )(
+      None,
       Some(evidence),
       sourceInfo
     )
@@ -340,12 +343,13 @@ object SRAM {
     implicit evidence: T <:< Vec[_],
     sourceInfo:        SourceInfo
   ): SRAMInterface[T] =
-    memInterface_impl(size, tpe)(
+    memInterface_impl(
+      size,
+      tpe,
       Seq.fill(numReadPorts)(Builder.forcedClock),
       Seq.fill(numWritePorts)(Builder.forcedClock),
       Seq.fill(numReadwritePorts)(Builder.forcedClock),
-      Some(memoryFile)
-    )(
+      Some(memoryFile),
       Some(evidence),
       sourceInfo
     )
@@ -377,13 +381,11 @@ object SRAM {
   ): SRAMInterface[T] =
     memInterface_impl(
       size,
-      tpe
-    )(
+      tpe,
       readPortClocks,
       writePortClocks,
       readwritePortClocks,
-      None
-    )(
+      None,
       Some(evidence),
       sourceInfo
     )
@@ -417,25 +419,23 @@ object SRAM {
   ): SRAMInterface[T] =
     memInterface_impl(
       size,
-      tpe
-    )(
+      tpe,
       readPortClocks,
       writePortClocks,
       readwritePortClocks,
-      Some(memoryFile)
-    )(
+      Some(memoryFile),
       Some(evidence),
       sourceInfo
     )
 
   private def memInterface_impl[T <: Data](
     size:                BigInt,
-    tpe:                 T
-  )(readPortClocks:      Seq[Clock],
+    tpe:                 T,
+    readPortClocks:      Seq[Clock],
     writePortClocks:     Seq[Clock],
     readwritePortClocks: Seq[Clock],
-    memoryFile:          Option[MemoryFile]
-  )(evidenceOpt:         Option[T <:< Vec[_]],
+    memoryFile:          Option[MemoryFile],
+    evidenceOpt:         Option[T <:< Vec[_]],
     sourceInfo:          SourceInfo
   ): SRAMInterface[T] = {
     val numReadPorts = readPortClocks.size
@@ -458,41 +458,41 @@ object SRAM {
     val _out = Wire(new SRAMInterface(size, tpe, numReadPorts, numWritePorts, numReadwritePorts, isVecMem))
     val mem = SyncReadMem(size, tpe)
 
-    for ((clock, i) <- readPortClocks.zipWithIndex) {
-      _out.readPorts(i).data := mem.read(_out.readPorts(i).address, _out.readPorts(i).enable, clock)
+    for ((clock, port) <- readPortClocks.zip(_out.readPorts)) {
+      port.data := mem.read(port.address, port.enable, clock)
     }
 
-    for ((clock, i) <- writePortClocks.zipWithIndex) {
-      when(_out.writePorts(i).enable) {
+    for ((clock, port) <- writePortClocks.zip(_out.writePorts)) {
+      when(port.enable) {
         if (isVecMem) {
           mem.write(
-            _out.writePorts(i).address,
-            _out.writePorts(i).data,
-            _out.writePorts(i).mask.get,
+            port.address,
+            port.data,
+            port.mask.get,
             clock
           )(evidenceOpt.get)
         } else {
-          mem.write(_out.writePorts(i).address, _out.writePorts(i).data, clock)
+          mem.write(port.address, port.data, clock)
         }
       }
     }
 
-    for ((clock, i) <- readwritePortClocks.zipWithIndex) {
+    for ((clock, port) <- readwritePortClocks.zip(_out.readwritePorts)) {
       if (isVecMem) {
-        _out.readwritePorts(i).readData := mem.readWrite(
-          _out.readwritePorts(i).address,
-          _out.readwritePorts(i).writeData,
-          _out.readwritePorts(i).mask.get,
-          _out.readwritePorts(i).enable,
-          _out.readwritePorts(i).isWrite,
+        port.readData := mem.readWrite(
+          port.address,
+          port.writeData,
+          port.mask.get,
+          port.enable,
+          port.isWrite,
           clock
         )(evidenceOpt.get)
       } else {
-        _out.readwritePorts(i).readData := mem.readWrite(
-          _out.readwritePorts(i).address,
-          _out.readwritePorts(i).writeData,
-          _out.readwritePorts(i).enable,
-          _out.readwritePorts(i).isWrite,
+        port.readData := mem.readWrite(
+          port.address,
+          port.writeData,
+          port.enable,
+          port.isWrite,
           clock
         )
       }
