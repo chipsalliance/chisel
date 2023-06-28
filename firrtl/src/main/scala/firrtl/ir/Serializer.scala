@@ -341,7 +341,14 @@ object Serializer {
     // Types
     case ProbeType(underlying: Type) => b ++= "Probe<"; s(underlying); b += '>'
     case RWProbeType(underlying: Type) => b ++= "RWProbe<"; s(underlying); b += '>'
-    case ConstType(underlying: Type) => b ++= "const "; s(underlying)
+    case ConstType(underlying: Type) => {
+      // Avoid emitting 'const const' for const vectors of const elements
+      underlying match {
+        case VectorType(ConstType(_), _) =>
+        case _                           => b ++= "const "
+      }
+      s(underlying)
+    }
     case UIntType(width: Width) => b ++= "UInt"; s(width)
     case SIntType(width: Width) => b ++= "SInt"; s(width)
     case BundleType(fields)    => b ++= "{ "; sField(fields, ", "); b += '}'
