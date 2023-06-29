@@ -803,6 +803,17 @@ class DataViewSpec extends ChiselFlatSpec {
     }
   }
 
+  // In Chisel 6.0.0 this will become an error, but for now it at least needs to not crash
+  it should "not crash when calling .viewAs on unbound hardware" in {
+    class MyBundle(val foo: UInt, val bar: UInt) extends Bundle
+    implicit val view =
+      DataView[(UInt, UInt), MyBundle](x => new MyBundle(x._1.cloneType, x._2.cloneType), _._1 -> _.foo, _._2 -> _.bar)
+    class MyModule extends Module {
+      (UInt(8.W), UInt(8.W)).viewAs[MyBundle]
+    }
+    ChiselStage.emitCHIRRTL(new MyModule)
+  }
+
   it should "support literals as part of the target" in {
     import ValidExtensions._
     class MyModule extends Module {
