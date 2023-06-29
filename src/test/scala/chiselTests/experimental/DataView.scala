@@ -803,8 +803,6 @@ class DataViewSpec extends ChiselFlatSpec {
     }
   }
 
-<<<<<<< HEAD
-=======
   // In Chisel 6.0.0 this will become an error, but for now it at least needs to not crash
   it should "not crash when calling .viewAs on unbound hardware" in {
     class MyBundle(val foo: UInt, val bar: UInt) extends Bundle
@@ -816,55 +814,6 @@ class DataViewSpec extends ChiselFlatSpec {
     ChiselStage.emitCHIRRTL(new MyModule)
   }
 
-  it should "handle viewing Probes as their referenced type" in {
-    class MyModule extends Module {
-      val a = IO(Output(Probe(Bool())))
-      val w = WireInit(Bool(), false.B)
-      val w_probe = ProbeValue(w)
-      val w_probe_view = w_probe.viewAs[Bool]
-      define(a, w_probe_view)
-    }
-    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    chirrtl should include("define a = probe(w)")
-  }
-
-  it should "handle viewing RWProbes as their referenced type" in {
-    class MyModule extends Module {
-      val a = IO(Output(RWProbe(Bool())))
-      val w = WireInit(Bool(), false.B)
-      val w_probe = RWProbeValue(w)
-      val w_probe_view = w_probe.viewAs[Bool]
-      define(a, w_probe_view)
-    }
-    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    chirrtl should include("define a = rwprobe(w)")
-  }
-
-  it should "error if attempting to define a viewed a Probe as a RWProbe" in {
-    class MyModule extends Module {
-      val a = IO(Output(RWProbe(Bool())))
-      val w = WireInit(Bool(), false.B)
-      val w_probe = ProbeValue(w)
-      val w_probe_view = w_probe.viewAs[Bool]
-      define(a, w_probe_view)
-    }
-    val err = the[ChiselException] thrownBy (ChiselStage.emitCHIRRTL(new MyModule, Array("--throw-on-first-error")))
-    err.toString should include("Cannot use a non-writable probe expression to define a writable probe")
-  }
-
-  it should "error if attempting to connect a viewed a Probe to a connectable" in {
-    class MyModule extends Module {
-      val a = IO(Output(Bool()))
-      val w = WireInit(Bool(), false.B)
-      val w_probe = ProbeValue(w)
-      val w_probe_view = w_probe.viewAs[Bool]
-      a := w_probe_view
-    }
-    val err = the[ChiselException] thrownBy (ChiselStage.emitCHIRRTL(new MyModule, Array("--throw-on-first-error")))
-    err.toString should include("Probed type cannot participate in a mono connection")
-  }
-
->>>>>>> 1e524de9d (Deprecate calling .viewAs on non-hardware (#3395))
   it should "support literals as part of the target" in {
     import ValidExtensions._
     class MyModule extends Module {
