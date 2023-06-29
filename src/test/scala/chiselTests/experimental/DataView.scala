@@ -804,7 +804,7 @@ class DataViewSpec extends ChiselFlatSpec {
     }
   }
 
-  it should "error when calling .viewAs on unbound hardware" in {
+  it should "error when calling .viewAs on non-hardware Data" in {
     class MyBundle(val foo: UInt, val bar: UInt) extends Bundle
     implicit val view =
       DataView[(UInt, UInt), MyBundle](x => new MyBundle(x._1.cloneType, x._2.cloneType), _._1 -> _.foo, _._2 -> _.bar)
