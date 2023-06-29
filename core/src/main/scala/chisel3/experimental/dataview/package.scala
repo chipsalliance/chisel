@@ -238,7 +238,7 @@ package object dataview {
     */
   @tailrec private[chisel3] def reify(elt: Element, topBinding: TopBinding): Element =
     topBinding match {
-      case ViewBinding(target) => reify(target, elt.topBinding)
+      case ViewBinding(target) => reify(target, target.topBinding)
       case _                   => elt
     }
 
