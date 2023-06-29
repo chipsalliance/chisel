@@ -71,13 +71,11 @@ sealed class DataView[T: DataProduct, V <: Data] private[chisel3] (
     * @return a new `DataView` from the original `T` to new view-type `V2`
     */
   def andThen[V2 <: Data](g: DataView[V, V2])(implicit sourceInfo: SourceInfo): DataView[T, V2] = {
-    val self = this
-    // We have to pass the DataProducts and DataViews manually to .viewAs below
-    val tdp = implicitly[DataProduct[T]]
-    val vdp = implicitly[DataProduct[V]]
+    implicit val self: DataView[T, V] = this
+    implicit val gg:   DataView[V, V2] = g
     new DataView[T, V2](
       t => g.mkView(mkView(t)),
-      { case (t, v2) => List(t.viewAs[V](tdp, self).viewAs[V2](vdp, g) -> v2) },
+      { case (t, v2) => List(t.viewAs[V].viewAs[V2] -> v2) },
       this.total && g.total
     ) {
       override def toString: String = s"$self andThen $g"
