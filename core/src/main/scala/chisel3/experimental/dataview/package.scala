@@ -104,6 +104,9 @@ package object dataview {
       // that are actually members of the target or view
       val tex = unfoldView(te).find(x => targetContains(x) || x.isLit || x == DontCare).getOrElse(err("Target", te))
       val vex = unfoldView(ve).find(viewFieldLookup.contains).getOrElse(err("View", ve))
+      if (!tex.isSynthesizable) {
+        Builder.deprecated(s".viewAs should only be called on hardware, this will become an error in Chisel 6.0.0")
+      }
 
       (tex, vex) match {
         /* Allow views where the types are equal. */
