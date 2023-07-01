@@ -304,17 +304,19 @@ object SRAM {
   )(
     implicit evidence: T <:< Vec[_],
     sourceInfo:        SourceInfo
-  ): SRAMInterface[T] =
+  ): SRAMInterface[T] = {
+    val clock = Builder.forcedClock
     memInterface_impl(
       size,
       tpe,
-      Seq.fill(numReadPorts)(Builder.forcedClock),
-      Seq.fill(numWritePorts)(Builder.forcedClock),
-      Seq.fill(numReadwritePorts)(Builder.forcedClock),
+      Seq.fill(numReadPorts)(clock),
+      Seq.fill(numWritePorts)(clock),
+      Seq.fill(numReadwritePorts)(clock),
       None,
       Some(evidence),
       sourceInfo
     )
+  }
 
   /** Generates a [[SyncReadMem]] within the current module, connected to an explicit number
     * of read, write, and read/write ports, with masking capability on all write and read/write ports.
@@ -342,17 +344,19 @@ object SRAM {
   )(
     implicit evidence: T <:< Vec[_],
     sourceInfo:        SourceInfo
-  ): SRAMInterface[T] =
+  ): SRAMInterface[T] = {
+    val clock = Builder.forcedClock
     memInterface_impl(
       size,
       tpe,
-      Seq.fill(numReadPorts)(Builder.forcedClock),
-      Seq.fill(numWritePorts)(Builder.forcedClock),
-      Seq.fill(numReadwritePorts)(Builder.forcedClock),
+      Seq.fill(numReadPorts)(clock),
+      Seq.fill(numWritePorts)(clock),
+      Seq.fill(numReadwritePorts)(clock),
       Some(memoryFile),
       Some(evidence),
       sourceInfo
     )
+  }
 
   /** Generates a [[SyncReadMem]] within the current module, connected to an explicit number
     * of read, write, and read/write ports, with masking capability on all write and read/write ports.
