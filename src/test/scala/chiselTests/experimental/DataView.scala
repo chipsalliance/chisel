@@ -804,6 +804,18 @@ class DataViewSpec extends ChiselFlatSpec {
     }
   }
 
+  it should "error when calling .viewAs on non-hardware Data" in {
+    class MyBundle(val foo: UInt, val bar: UInt) extends Bundle
+    implicit val view =
+      DataView[(UInt, UInt), MyBundle](x => new MyBundle(x._1.cloneType, x._2.cloneType), _._1 -> _.foo, _._2 -> _.bar)
+    class MyModule extends Module {
+      (UInt(8.W), UInt(8.W)).viewAs[MyBundle]
+    }
+    a[ChiselException] shouldBe thrownBy {
+      ChiselStage.emitCHIRRTL(new MyModule, Array("--throw-on-first-error"))
+    }
+  }
+
   it should "handle viewing Probes as their referenced type" in {
     class MyModule extends Module {
       val a = IO(Output(Probe(Bool())))

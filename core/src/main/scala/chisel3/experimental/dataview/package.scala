@@ -16,7 +16,7 @@ package object dataview {
     * Calling `viewAs` also requires an implementation of [[DataView]] for the target type
     */
   implicit class DataViewable[T](target: T) {
-    def viewAs[V <: Data](implicit dataproduct: DataProduct[T], dataView: DataView[T, V]): V = {
+    def viewAs[V <: Data](implicit dataproduct: DataProduct[T], dataView: DataView[T, V], sourceInfo: SourceInfo): V = {
       // TODO put a try catch here for ExpectedHardwareException and perhaps others
       // It's likely users will accidentally use chiselTypeOf or something that may error,
       // The right thing to use is DataMirror...chiselTypeClone because of composition with DataView.andThen
@@ -70,7 +70,13 @@ package object dataview {
   }
 
   // TODO should this be moved to class Aggregate / can it be unified with Aggregate.bind?
-  private def doBind[T: DataProduct, V <: Data](target: T, view: V, dataView: DataView[T, V]): Unit = {
+  private def doBind[T: DataProduct, V <: Data](
+    target:   T,
+    view:     V,
+    dataView: DataView[T, V]
+  )(
+    implicit sourceInfo: SourceInfo
+  ): Unit = {
     val mapping = dataView.mapping(target, view)
     val total = dataView.total
     // Lookups to check the mapping results
@@ -103,6 +109,9 @@ package object dataview {
       // that are actually members of the target or view
       val tex = unfoldView(te).find(x => targetContains(x) || x.isLit || x == DontCare).getOrElse(err("Target", te))
       val vex = unfoldView(ve).find(viewFieldLookup.contains).getOrElse(err("View", ve))
+      if (!tex.isSynthesizable) {
+        Builder.exception(s".viewAs should only be called on hardware")
+      }
 
       (tex, vex) match {
         /* Allow views where the types are equal. */
@@ -237,7 +246,7 @@ package object dataview {
     */
   @tailrec private[chisel3] def reify(elt: Element, topBinding: TopBinding): Element =
     topBinding match {
-      case ViewBinding(target) => reify(target, elt.topBinding)
+      case ViewBinding(target) => reify(target, target.topBinding)
       case _                   => elt
     }
 
