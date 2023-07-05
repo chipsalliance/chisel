@@ -227,6 +227,7 @@ class QueueIO[T <: Data](
 }
 
 /** A hardware module implementing a Queue
+  *
   * @param gen The type of data to queue
   * @param entries The max number of entries in the queue
   * @param pipe True if a single entry queue can run at full throughput (like a pipeline). The ''ready'' signals are
@@ -319,8 +320,7 @@ class Queue[T <: Data](
     )
   }
 
-  /** Give this Queue a default, stable desired name using the supplied `Data`
-    * generator's `typeName`
+  /** Give this Queue a default, stable desired name using the supplied `Data` generator's `typeName`
     */
   override def desiredName = s"Queue${entries}_${gen.typeName}"
 }
