@@ -41,9 +41,9 @@ object v {
   def scalaLibrary(scalaVersion: String) = ivy"org.scala-lang:scala-library:$scalaVersion"
 }
 
-object firrtl extends mill.Cross[Firrtl](v.scalaCrossVersions: _*)
+object firrtl extends Cross[Firrtl](v.scalaCrossVersions)
 
-class Firrtl(val crossScalaVersion: String)
+trait Firrtl
     extends common.FirrtlModule
     with ChiselPublishModule
     with CrossSbtModule
@@ -61,9 +61,9 @@ class Firrtl(val crossScalaVersion: String)
   def scoptIvy = v.scopt
 }
 
-object svsim extends mill.Cross[Svsim](v.scalaCrossVersions: _*)
+object svsim extends Cross[Svsim](v.scalaCrossVersions)
 
-class Svsim(val crossScalaVersion: String)
+trait Svsim
     extends common.SvsimModule
     with ChiselPublishModule
     with CrossSbtModule
@@ -71,9 +71,9 @@ class Svsim(val crossScalaVersion: String)
   def millSourcePath = super.millSourcePath / os.up / "svsim"
 }
 
-object firrtlut extends mill.Cross[FirrtlUnitTest](v.scalaCrossVersions: _*)
+object firrtlut extends Cross[FirrtlUnitTest](v.scalaCrossVersions)
 
-class FirrtlUnitTest(val crossScalaVersion: String)
+trait FirrtlUnitTest
     extends common.FirrtlUnitTestModule
     with CrossModuleBase
     with ScalafmtModule {
@@ -91,9 +91,9 @@ class FirrtlUnitTest(val crossScalaVersion: String)
   }
 }
 
-object macros extends mill.Cross[Macros](v.scalaCrossVersions: _*)
+object macros extends Cross[Macros](v.scalaCrossVersions)
 
-class Macros(val crossScalaVersion: String)
+trait Macros
     extends common.MacrosModule
     with ChiselPublishModule
     with CrossSbtModule
@@ -103,9 +103,9 @@ class Macros(val crossScalaVersion: String)
   def scalaReflectIvy = v.scalaReflect(crossScalaVersion)
 }
 
-object core extends mill.Cross[Core](v.scalaCrossVersions: _*)
+object core extends Cross[Core](v.scalaCrossVersions)
 
-class Core(val crossScalaVersion: String)
+trait Core
     extends common.CoreModule
     with ChiselPublishModule
     with CrossSbtModule
@@ -163,9 +163,9 @@ class Core(val crossScalaVersion: String)
   }
 }
 
-object plugin extends mill.Cross[Plugin](v.pluginScalaCrossVersions: _*)
+object plugin extends Cross[Plugin](v.pluginScalaCrossVersions)
 
-class Plugin(val crossScalaVersion: String)
+trait Plugin
     extends common.PluginModule
     with ChiselPublishModule
     with CrossSbtModule
@@ -179,9 +179,9 @@ class Plugin(val crossScalaVersion: String)
   def scalaCompilerIvy: Dep = v.scalaCompiler(crossScalaVersion)
 }
 
-object chisel extends mill.Cross[Chisel](v.scalaCrossVersions: _*)
+object chisel extends Cross[Chisel](v.scalaCrossVersions)
 
-class Chisel(val crossScalaVersion: String)
+trait Chisel
     extends common.ChiselModule
     with ChiselPublishModule
     with CrossSbtModule
@@ -197,9 +197,9 @@ class Chisel(val crossScalaVersion: String)
   def pluginModule = plugin(crossScalaVersion)
 }
 
-object chiselut extends mill.Cross[ChiselUnitTest](v.scalaCrossVersions: _*)
+object chiselut extends Cross[ChiselUnitTest](v.scalaCrossVersions)
 
-class ChiselUnitTest(val crossScalaVersion: String)
+trait ChiselUnitTest
     extends common.ChiselUnitTestModule
     with CrossModuleBase
     with ScalafmtModule {
@@ -219,9 +219,9 @@ class ChiselUnitTest(val crossScalaVersion: String)
   }
 }
 
-object stdlib extends mill.Cross[Stdlib](v.scalaCrossVersions: _*)
+object stdlib extends Cross[Stdlib](v.scalaCrossVersions)
 
-class Stdlib(val crossScalaVersion: String)
+trait Stdlib
     extends common.StdLibModule
     with ChiselPublishModule
     with CrossSbtModule
