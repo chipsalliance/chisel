@@ -528,21 +528,6 @@ class SRAMSpec extends ChiselFunSpec {
       }
       val chirrtl = ChiselStage.emitCHIRRTL(new TestModule(1, 1), args = Array("--full-stacktrace"))
 
-<<<<<<< HEAD
-    chirrtl should include(
-      "writePorts : { flip address : UInt<6>, flip enable : UInt<1>, flip data : UInt<8>[3], flip mask : UInt<1>[3]}[1]"
-    )
-    chirrtl should include(
-      "readwritePorts : { flip address : UInt<6>, flip enable : UInt<1>, flip isWrite : UInt<1>, readData : UInt<8>[3], flip writeData : UInt<8>[3], flip mask : UInt<1>[3]}[1]"
-    )
-
-    for (i <- 0 until 3) {
-      chirrtl should include(s"when mem.writePorts[0].mask[$i]")
-      chirrtl should include(s"mem_MPORT[$i] <= mem.writePorts[0].data[$i]")
-
-      chirrtl should include(s"when mem.readwritePorts[0].mask[$i]")
-      chirrtl should include(s"mem_out_readwritePorts_0_readData_MPORT[$i] <= mem.readwritePorts[0].writeData[$i]")
-=======
       chirrtl should include(
         "writePorts : { flip address : UInt<6>, flip enable : UInt<1>, flip data : UInt<8>[3], flip mask : UInt<1>[3]}[1]"
       )
@@ -600,7 +585,6 @@ class SRAMSpec extends ChiselFunSpec {
           s"rdwr mport mem_out_readwritePorts_${i}_readData_MPORT = mem_mem[_mem_out_readwritePorts_${i}_readData_T], readwriteClocks[${i}]"
         )
       }
->>>>>>> d79ae71e7 (SRAM API: Add multiple-clocked port API (#3383))
     }
   }
 
