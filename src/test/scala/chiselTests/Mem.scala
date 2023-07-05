@@ -497,11 +497,11 @@ class SRAMSpec extends ChiselFunSpec {
 
       for (i <- 0 until 3) {
         chirrtl should include(s"when mem.writePorts[0].mask[$i]")
-        chirrtl should include(s"connect mem_MPORT[$i], mem.writePorts[0].data[$i]")
+        chirrtl should include(s"mem_MPORT[$i] <= mem.writePorts[0].data[$i]")
 
         chirrtl should include(s"when mem.readwritePorts[0].mask[$i]")
         chirrtl should include(
-          s"connect mem_out_readwritePorts_0_readData_MPORT[$i], mem.readwritePorts[0].writeData[$i]"
+          s"mem_out_readwritePorts_0_readData_MPORT[$i] <= mem.readwritePorts[0].writeData[$i]"
         )
       }
     }
@@ -536,13 +536,13 @@ class SRAMSpec extends ChiselFunSpec {
         val wrIndexSuffix = if (i == 0) "" else s"_$i"
 
         chirrtl should include(
-          s"read mport mem_out_readPorts_${i}_data_MPORT = mem_mem[_mem_out_readPorts_${i}_data_T], readClocks[${i}]"
+          s"read mport mem_out_readPorts_${i}_data_MPORT = mem_mem[_mem_out_readPorts_${i}_data_T_1], readClocks[${i}]"
         )
         chirrtl should include(
           s"write mport mem_MPORT${wrIndexSuffix} = mem_mem[_mem_T${wrIndexSuffix}], writeClocks[${i}]"
         )
         chirrtl should include(
-          s"rdwr mport mem_out_readwritePorts_${i}_readData_MPORT = mem_mem[_mem_out_readwritePorts_${i}_readData_T], readwriteClocks[${i}]"
+          s"rdwr mport mem_out_readwritePorts_${i}_readData_MPORT = mem_mem[_mem_out_readwritePorts_${i}_readData_T_1], readwriteClocks[${i}]"
         )
       }
     }
