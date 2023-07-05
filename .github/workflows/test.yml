@@ -48,6 +48,21 @@ jobs:
         #      support binary compatibility for the plugin
         run: sbt ++${{ matrix.scala }} unipublish/mimaReportBinaryIssues
 
+  mill:
+    name: compile project with mill
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install Mill
+        uses: jodersky/setup-mill@v0.3.0
+        with:
+          mill-version: 0.11.0
+      - name: Install CIRCT
+        uses: ./.github/workflows/install-circt
+      - name: Compile Mill
+        run: mill __.compile
+
   doc:
     name: Formatting
     runs-on: ubuntu-20.04
@@ -165,7 +180,7 @@ jobs:
   # When adding new jobs, please add them to `needs` below
   check-tests:
     name: "check tests"
-    needs: [ci, std, integration, doc, website, scala-cli-template]
+    needs: [mill, ci, std, integration, doc, website, scala-cli-template]
     runs-on: ubuntu-20.04
     if: success() # only run if all tests have passed
     outputs:
