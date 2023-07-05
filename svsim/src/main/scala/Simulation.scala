@@ -31,6 +31,7 @@ final class Simulation private[svsim] (
     val command = Seq(s"$workingDirectoryPath/$executableName") ++ settings.arguments
     val processBuilder = new ProcessBuilder(command: _*)
     processBuilder.directory(new File(cwd))
+    processBuilder.redirectError(ProcessBuilder.Redirect.INHERIT)
     val environment = settings.environment ++ Seq(
       Some("SVSIM_EXECUTION_SCRIPT" -> executionScriptPath),
       executionScriptLimit.map("SVSIM_EXECUTION_SCRIPT_LIMIT" -> _.toString)
