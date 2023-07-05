@@ -120,19 +120,19 @@ class ExtModuleSpec extends ChiselFlatSpec {
   it should "work with .suggestName (aka it should not require reflection for naming)" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new ExtModuleWithSuggestNameTester)
     chirrtl should include("input foo : UInt<8>")
-    chirrtl should include("inst.foo <= in")
+    chirrtl should include("connect inst.foo, in")
   }
 
   it should "work with FlatIO" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new ExtModuleWithFlatIOTester)
-    chirrtl should include("io.out <= inst.out")
-    chirrtl should include("inst.in <= io.in")
+    chirrtl should include("connect io.out, inst.out")
+    chirrtl should include("connect inst.in, io.in")
     chirrtl shouldNot include("badIO")
   }
 
   it should "not have invalidated ports in a chisel3._ context" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new ExtModuleInvalidatedTester)
-    chirrtl shouldNot include("inst.in is invalid")
-    chirrtl shouldNot include("inst.out is invalid")
+    chirrtl shouldNot include("invalidater inst.in")
+    chirrtl shouldNot include("invalidate inst.out")
   }
 }

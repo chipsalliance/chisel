@@ -42,6 +42,10 @@ object CheckTypes {
                 case Flip => compare(f2.tpe, f1.tpe)
               })
           }
+      // Const connection validity is checked later on in the Firrtl compiler.
+      case (sink: ConstType, source: ConstType) => compare(sink.underlying, source.underlying)
+      case (sink, source: ConstType) => compare(sink, source.underlying)
+      case (sink: ConstType, source) => compare(sink.underlying, source)
       case _ => false
     }
 

@@ -22,7 +22,7 @@ class FlatIOSpec extends ChiselFlatSpec {
     val chirrtl = emitCHIRRTL(new MyModule)
     chirrtl should include("input in : UInt<8>")
     chirrtl should include("output out : UInt<8>")
-    chirrtl should include("out <= in")
+    chirrtl should include("connect out, in")
   }
 
   it should "support bulk connections between FlatIOs and regular IOs" in {
@@ -32,8 +32,8 @@ class FlatIOSpec extends ChiselFlatSpec {
       out := in
     }
     val chirrtl = emitCHIRRTL(new MyModule)
-    chirrtl should include("out.bits <= bits")
-    chirrtl should include("out.valid <= valid")
+    chirrtl should include("connect out.bits, bits")
+    chirrtl should include("connect out.valid, valid")
   }
 
   it should "dynamically indexing Vecs inside of FlatIOs" in {
@@ -46,7 +46,7 @@ class FlatIOSpec extends ChiselFlatSpec {
       io.out(io.addr) := io.in(io.addr)
     }
     val chirrtl = emitCHIRRTL(new MyModule)
-    chirrtl should include("out[addr] <= in[addr]")
+    chirrtl should include("connect out[addr], in[addr]")
   }
 
   it should "support Analog members" in {
@@ -62,7 +62,7 @@ class FlatIOSpec extends ChiselFlatSpec {
       io.out <> io.in
     }
     val chirrtl = emitCHIRRTL(new MyModule)
-    chirrtl should include("out.foo <= in.foo")
+    chirrtl should include("connect out.foo, in.foo")
     chirrtl should include("attach (out.bar, in.bar)")
   }
 }

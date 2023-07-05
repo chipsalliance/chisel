@@ -1,4 +1,9 @@
-![Chisel](https://raw.githubusercontent.com/chipsalliance/chisel/main/docs/src/images/chisel_logo.svg?sanitize=true)
+<a href="https://www.chisel-lang.org">
+  <img src="https://raw.githubusercontent.com/chipsalliance/chisel/main/docs/src/images/chisel_logo.svg?sanitize=true" height="60">
+</a>
+<a href="https://www.chipsalliance.org">
+  <img align="right" src="https://raw.githubusercontent.com/chipsalliance/.github/main/profile/images/chips_alliance.svg?sanitize=true" height="60">
+</a>
 
 The **Constructing Hardware in a Scala Embedded Language** ([**Chisel**](https://www.chisel-lang.org)) is an open-source hardware description language (HDL) used to describe digital electronics and circuits at the register-transfer level that facilitates **advanced circuit generation and design reuse for both ASIC and FPGA digital logic designs**.
 
@@ -9,6 +14,8 @@ For more information on the benefits of Chisel see: ["What benefits does Chisel 
 
 Chisel is powered by [FIRRTL (Flexible Intermediate Representation for RTL)](https://github.com/chipsalliance/firrtl-spec),
 a hardware compiler framework implemented by [LLVM CIRCT](https://github.com/llvm/circt).
+
+Chisel is [permissively licensed](LICENSE) (Apache 2.0) under the guidance of [CHIPS Alliance](https://www.chipsalliance.org).
 
 - [What does Chisel code look like?](#what-does-chisel-code-look-like)
   - [LED blink](#led-blink)
@@ -34,7 +41,7 @@ a hardware compiler framework implemented by [LLVM CIRCT](https://github.com/llv
 
 ---
 
-[![Join the chat at https://gitter.im/chipsalliance/chisel](https://matrix.to/img/matrix-badge.svg)](https://gitter.im/chipsalliance/chisel?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Join the chat at https://gitter.im/freechipsproject/chisel3](https://matrix.to/img/matrix-badge.svg)](https://gitter.im/freechipsproject/chisel3?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Scaladoc](https://www.javadoc.io/badge/org.chipsalliance/chisel_2.13.svg?color=blue&label=Scaladoc)](https://javadoc.io/doc/org.chipsalliance/chisel_2.13/latest)
 ![CI](https://github.com/chipsalliance/chisel/actions/workflows/test.yml/badge.svg)
 [![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/chipsalliance/chisel.svg?include_prereleases&sort=semver)](https://github.com/chipsalliance/chisel/releases/latest)

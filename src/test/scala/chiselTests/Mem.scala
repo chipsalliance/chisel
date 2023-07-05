@@ -493,14 +493,14 @@ class SRAMSpec extends ChiselFunSpec {
             val rdPortName = s"mem_out_readPorts_${rd}_data_MPORT"
             chirrtl should include(s"when mem.readPorts[$rd].enable")
             chirrtl should include(s"read mport $rdPortName")
-            chirrtl should include(s"mem.readPorts[$rd].data <= $rdPortName")
+            chirrtl should include(s"connect mem.readPorts[$rd].data, $rdPortName")
           }
 
           for (wr <- 0 until numWR) {
             val wrPortName = s"mem_MPORT${if (wr == 0) "" else s"_$wr"}"
             chirrtl should include(s"when mem.writePorts[$wr].enable")
             chirrtl should include(s"write mport $wrPortName")
-            chirrtl should include(s"$wrPortName <= mem.writePorts[$wr].data")
+            chirrtl should include(s"connect $wrPortName, mem.writePorts[$wr].data")
           }
 
           for (rw <- 0 until numRW) {
@@ -508,42 +508,86 @@ class SRAMSpec extends ChiselFunSpec {
             chirrtl should include(s"when mem.readwritePorts[$rw].enable")
             chirrtl should include(s"rdwr mport $rwPortName")
             chirrtl should include(s"when mem.readwritePorts[$rw].isWrite")
-            chirrtl should include(s"$rwPortName <= mem.readwritePorts[$rw].writeData")
+            chirrtl should include(s"connect $rwPortName, mem.readwritePorts[$rw].writeData")
           }
         }
     }
-  }
 
-  it(s"should support masking with Vec-valued data") {
-    class TestModule(val wr: Int, val rw: Int) extends Module {
-      val mem = SRAM.masked(32, Vec(3, UInt(8.W)), 0, wr, rw)
+    it(s"should support masking with Vec-valued data") {
+      class TestModule(val wr: Int, val rw: Int) extends Module {
+        val mem = SRAM.masked(32, Vec(3, UInt(8.W)), 0, wr, rw)
 
-      dontTouch(mem)
+        dontTouch(mem)
 
-      for (i <- 0 until wr) {
-        mem.writePorts(i) := DontCare
+        for (i <- 0 until wr) {
+          mem.writePorts(i) := DontCare
+        }
+        for (i <- 0 until rw) {
+          mem.readwritePorts(i) := DontCare
+        }
       }
-      for (i <- 0 until rw) {
-        mem.readwritePorts(i) := DontCare
+      val chirrtl = ChiselStage.emitCHIRRTL(new TestModule(1, 1), args = Array("--full-stacktrace"))
+
+      chirrtl should include(
+        "writePorts : { flip address : UInt<6>, flip enable : UInt<1>, flip data : UInt<8>[3], flip mask : UInt<1>[3]}[1]"
+      )
+      chirrtl should include(
+        "readwritePorts : { flip address : UInt<6>, flip enable : UInt<1>, flip isWrite : UInt<1>, readData : UInt<8>[3], flip writeData : UInt<8>[3], flip mask : UInt<1>[3]}[1]"
+      )
+
+      for (i <- 0 until 3) {
+        chirrtl should include(s"when mem.writePorts[0].mask[$i]")
+        chirrtl should include(s"connect mem_MPORT[$i], mem.writePorts[0].data[$i]")
+
+        chirrtl should include(s"when mem.readwritePorts[0].mask[$i]")
+        chirrtl should include(
+          s"connect mem_out_readwritePorts_0_readData_MPORT[$i], mem.readwritePorts[0].writeData[$i]"
+        )
       }
     }
-    val chirrtl = ChiselStage.emitCHIRRTL(new TestModule(1, 1), args = Array("--full-stacktrace"))
 
-    chirrtl should include(
-      "writePorts : { flip address : UInt<6>, flip enable : UInt<1>, flip data : UInt<8>[3], flip mask : UInt<1>[3]}[1]"
-    )
-    chirrtl should include(
-      "readwritePorts : { flip address : UInt<6>, flip enable : UInt<1>, flip isWrite : UInt<1>, readData : UInt<8>[3], flip writeData : UInt<8>[3], flip mask : UInt<1>[3]}[1]"
-    )
+    it(s"should support multiple clocks driving different ports") {
+      class TestModule extends Module {
+        val (counter, _) = Counter(true.B, 11)
 
-    for (i <- 0 until 3) {
-      chirrtl should include(s"when mem.writePorts[0].mask[$i]")
-      chirrtl should include(s"mem_MPORT[$i] <= mem.writePorts[0].data[$i]")
+        val readClocks = IO(Input(Vec(3, Clock())))
+        val writeClocks = IO(Input(Vec(3, Clock())))
+        val readwriteClocks = IO(Input(Vec(3, Clock())))
 
-      chirrtl should include(s"when mem.readwritePorts[0].mask[$i]")
-      chirrtl should include(s"mem_out_readwritePorts_0_readData_MPORT[$i] <= mem.readwritePorts[0].writeData[$i]")
+        val mem = SRAM(
+          32,
+          Vec(3, UInt(8.W)),
+          readClocks,
+          writeClocks,
+          readwriteClocks
+        )
+
+        dontTouch(mem)
+
+        for (i <- 0 until 3) {
+          mem.readPorts(i) := DontCare
+          mem.writePorts(i) := DontCare
+          mem.readwritePorts(i) := DontCare
+        }
+      }
+      val chirrtl = ChiselStage.emitCHIRRTL(new TestModule, args = Array("--full-stacktrace"))
+
+      for (i <- 0 until 3) {
+        val wrIndexSuffix = if (i == 0) "" else s"_$i"
+
+        chirrtl should include(
+          s"read mport mem_out_readPorts_${i}_data_MPORT = mem_mem[_mem_out_readPorts_${i}_data_T], readClocks[${i}]"
+        )
+        chirrtl should include(
+          s"write mport mem_MPORT${wrIndexSuffix} = mem_mem[_mem_T${wrIndexSuffix}], writeClocks[${i}]"
+        )
+        chirrtl should include(
+          s"rdwr mport mem_out_readwritePorts_${i}_readData_MPORT = mem_mem[_mem_out_readwritePorts_${i}_readData_T], readwriteClocks[${i}]"
+        )
+      }
     }
   }
+
   describe("Read-only SRAM") {
     it(s"should error") {
       class TestModule extends Module {

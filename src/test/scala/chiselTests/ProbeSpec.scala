@@ -66,8 +66,8 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
       "output io : { flip in : RWProbe<UInt<1>>, out : RWProbe<UInt<1>>}",
       "define u1.io.in = rwprobe(io.x)",
       "define u2.io.in = u1.io.out",
-      "io.y <= read(u2.io.out)",
-      "force_initial(u1.io.out, UInt<1>(\"h0\"))",
+      "connect io.y, read(u2.io.out)",
+      "force_initial(u1.io.out, UInt<1>(0h0))",
       "release_initial(u1.io.out)",
       "force(clock, io.x, u2.io.out, u1.io.out)",
       "release(clock, io.y, u2.io.out)"
@@ -92,7 +92,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
     (processChirrtl(chirrtl) should contain).allOf(
       "when in :",
       "define out = rwprobe(in)",
-      "w <= read(out)"
+      "connect w, read(out)"
     )
   }
 
@@ -124,7 +124,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
       "output p : Probe<{ a : UInt<1>, b : UInt<1>}>",
       "wire x : { a : UInt<1>, b : UInt<1>}",
       "define p = probe(x)",
-      "x <= read(f.p.b)",
+      "connect x, read(f.p.b)",
       "define y = f.p.b"
     )
   }
@@ -176,12 +176,12 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
     )
 
     (processChirrtl(chirrtl) should contain).allOf(
-      "io.in.fizz <= io.a.fizz",
-      "io.a.baz <= io.in.baz",
-      "io.b.baz <= io.in.baz",
-      "io.in.fizz <= io.c.fizz",
-      "io.d.fizz <= io.in.fizz",
-      "io.d.baz <= io.in.baz"
+      "connect io.in.fizz, io.a.fizz",
+      "connect io.a.baz, io.in.baz",
+      "connect io.b.baz, io.in.baz",
+      "connect io.in.fizz, io.c.fizz",
+      "connect io.d.fizz, io.in.fizz",
+      "connect io.d.baz, io.in.baz"
     )
   }
 
