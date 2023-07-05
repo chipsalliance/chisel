@@ -151,7 +151,8 @@ object SRAM {
     numWritePorts:     Int,
     numReadwritePorts: Int
   )(
-    implicit sourceInfo: SourceInfo
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
   ): SRAMInterface[T] = {
     val clock = Builder.forcedClock
     memInterface_impl(
@@ -162,7 +163,8 @@ object SRAM {
       Seq.fill(numReadwritePorts)(clock),
       None,
       None,
-      sourceInfo
+      sourceInfo,
+      compileOptions
     )
   }
 
@@ -190,7 +192,8 @@ object SRAM {
     numReadwritePorts: Int,
     memoryFile:        MemoryFile
   )(
-    implicit sourceInfo: SourceInfo
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
   ): SRAMInterface[T] = {
     val clock = Builder.forcedClock
     memInterface_impl(
@@ -201,7 +204,8 @@ object SRAM {
       Seq.fill(numReadwritePorts)(clock),
       Some(memoryFile),
       None,
-      sourceInfo
+      sourceInfo,
+      compileOptions
     )
   }
 
@@ -227,7 +231,8 @@ object SRAM {
     writePortClocks:     Seq[Clock],
     readwritePortClocks: Seq[Clock]
   )(
-    implicit sourceInfo: SourceInfo
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
   ): SRAMInterface[T] =
     memInterface_impl(
       size,
@@ -237,7 +242,8 @@ object SRAM {
       readwritePortClocks,
       None,
       None,
-      sourceInfo
+      sourceInfo,
+      compileOptions
     )
 
   /** Generates a [[SyncReadMem]] within the current module, connected to an explicit number
@@ -264,7 +270,8 @@ object SRAM {
     readwritePortClocks: Seq[Clock],
     memoryFile:          MemoryFile
   )(
-    implicit sourceInfo: SourceInfo
+    implicit sourceInfo: SourceInfo,
+    compileOptions:      CompileOptions
   ): SRAMInterface[T] =
     memInterface_impl(
       size,
@@ -274,7 +281,8 @@ object SRAM {
       readwritePortClocks,
       Some(memoryFile),
       None,
-      sourceInfo
+      sourceInfo,
+      compileOptions
     )
 
   /** Generates a [[SyncReadMem]] within the current module, connected to an explicit number
@@ -300,7 +308,8 @@ object SRAM {
     numReadwritePorts: Int
   )(
     implicit evidence: T <:< Vec[_],
-    sourceInfo:        SourceInfo
+    sourceInfo:        SourceInfo,
+    compileOptions:    CompileOptions
   ): SRAMInterface[T] = {
     val clock = Builder.forcedClock
     memInterface_impl(
@@ -311,7 +320,8 @@ object SRAM {
       Seq.fill(numReadwritePorts)(clock),
       None,
       Some(evidence),
-      sourceInfo
+      sourceInfo,
+      compileOptions
     )
   }
 
@@ -340,7 +350,8 @@ object SRAM {
     memoryFile:        MemoryFile
   )(
     implicit evidence: T <:< Vec[_],
-    sourceInfo:        SourceInfo
+    sourceInfo:        SourceInfo,
+    compileOptions:    CompileOptions
   ): SRAMInterface[T] = {
     val clock = Builder.forcedClock
     memInterface_impl(
@@ -351,7 +362,8 @@ object SRAM {
       Seq.fill(numReadwritePorts)(clock),
       Some(memoryFile),
       Some(evidence),
-      sourceInfo
+      sourceInfo,
+      compileOptions
     )
   }
 
@@ -378,7 +390,8 @@ object SRAM {
     readwritePortClocks: Seq[Clock]
   )(
     implicit evidence: T <:< Vec[_],
-    sourceInfo:        SourceInfo
+    sourceInfo:        SourceInfo,
+    compileOptions:    CompileOptions
   ): SRAMInterface[T] =
     memInterface_impl(
       size,
@@ -388,7 +401,8 @@ object SRAM {
       readwritePortClocks,
       None,
       Some(evidence),
-      sourceInfo
+      sourceInfo,
+      compileOptions
     )
 
   /** Generates a [[SyncReadMem]] within the current module, connected to an explicit number
@@ -416,7 +430,8 @@ object SRAM {
     memoryFile:          MemoryFile
   )(
     implicit evidence: T <:< Vec[_],
-    sourceInfo:        SourceInfo
+    sourceInfo:        SourceInfo,
+    compileOptions:    CompileOptions
   ): SRAMInterface[T] =
     memInterface_impl(
       size,
@@ -426,7 +441,8 @@ object SRAM {
       readwritePortClocks,
       Some(memoryFile),
       Some(evidence),
-      sourceInfo
+      sourceInfo,
+      compileOptions
     )
 
   private def memInterface_impl[T <: Data](
@@ -437,7 +453,8 @@ object SRAM {
     readwritePortClocks: Seq[Clock],
     memoryFile:          Option[MemoryFile],
     evidenceOpt:         Option[T <:< Vec[_]],
-    sourceInfo:          SourceInfo
+    sourceInfo:          SourceInfo,
+    compileOptions:      CompileOptions
   ): SRAMInterface[T] = {
     val numReadPorts = readPortClocks.size
     val numWritePorts = writePortClocks.size
@@ -471,7 +488,7 @@ object SRAM {
             port.data,
             port.mask.get,
             clock
-          )(evidenceOpt.get)
+          )(evidenceOpt.get, compileOptions)
         } else {
           mem.write(port.address, port.data, clock)
         }
@@ -487,7 +504,7 @@ object SRAM {
           port.enable,
           port.isWrite,
           clock
-        )(evidenceOpt.get)
+        )(evidenceOpt.get, sourceInfo, compileOptions)
       } else {
         port.readData := mem.readWrite(
           port.address,
