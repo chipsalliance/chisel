@@ -22,10 +22,13 @@ package object stage {
         x match {
           case PrintFullStackTraceAnnotation => c.copy(printFullStackTrace = true)
           case ThrowOnFirstErrorAnnotation   => c.copy(throwOnFirstError = true)
-          case WarningsAsErrorsAnnotation    => c.copy(warningsAsErrors = true)
+          case WarningsAsErrorsAnnotation =>
+            c.copy(warningFilters = c.warningFilters :+ WarningsAsErrorsAnnotation.asFilter)
           case ChiselOutputFileAnnotation(f) => c.copy(outputFile = Some(f))
           case ChiselCircuitAnnotation(a)    => c.copy(chiselCircuit = Some(a))
           case SourceRootAnnotation(s)       => c.copy(sourceRoots = c.sourceRoots :+ s)
+          case a: WarningConfigurationAnnotation     => c.copy(warningFilters = c.warningFilters ++ a.filters)
+          case a: WarningConfigurationFileAnnotation => c.copy(warningFilters = c.warningFilters ++ a.filters)
         }
       }
 

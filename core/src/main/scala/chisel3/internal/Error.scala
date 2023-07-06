@@ -4,12 +4,16 @@ package chisel3.internal
 
 import scala.annotation.tailrec
 import scala.collection.mutable.{ArrayBuffer, LinkedHashMap, LinkedHashSet}
-import scala.util.control.NoStackTrace
+import scala.util.Try
+import scala.util.control.{NoStackTrace, NonFatal}
+import scala.util.matching.Regex
 import _root_.logger.Logger
 import java.io.File
+import java.nio.file.{FileSystems, PathMatcher, Paths}
+import java.util.regex.PatternSyntaxException
 import scala.io.Source
 
-import chisel3.experimental.{NoSourceInfo, SourceInfo, SourceLine, UnlocatableSourceInfo}
+import chisel3.experimental.{NoSourceInfo, SourceInfo, SourceLine, SourceLineNoCol, UnlocatableSourceInfo}
 
 object ExceptionHelpers {
 
@@ -86,6 +90,124 @@ object ExceptionHelpers {
   }
 }
 
+/** Filter for warnings that can suppress, keep as warning, or elevate to error
+  *
+  * May filter on source file or message, a None filter means "match everything"
+  */
+private[chisel3] case class WarningFilter(
+  src:    Option[PathMatcher],
+  id:     Option[WarningID.WarningID],
+  action: WarningFilter.Action) {
+
+  /** Does this filter apply to the warning? */
+  def applies(warning: Warning): Boolean = {
+    // Option.forall matches if None which is intentional
+    val idMatch = this.id.forall(_ == warning.id)
+    // Using def so that srcMatch won't run unless necessary
+    def srcMatch = this.src match {
+      case None => true // No src regex means match all
+      case Some(srcGlob) =>
+        val filename = warning.info.filenameOption
+        filename match {
+          case Some(filename) => srcGlob.matches(Paths.get(filename))
+          case None           => false
+        }
+    }
+    idMatch && srcMatch
+  }
+}
+private[chisel3] object WarningFilter {
+  sealed trait Action
+  case object Suppress extends Action
+  case object Warn extends Action
+  case object Error extends Action
+
+  // Some helpers for error reporting
+  private def actionOneOf = "must be one of ':e, :w, or :s'."
+  private def categoryOneOf = "must be one of 'any', 'src', or 'id'."
+
+  // TODO find a better way to deal with line and column
+  private def srcGlobDefault(base: String): String = base //s"**/$base"
+
+  /** Parse a String into a [[WarningFilter]]
+    *
+    * @param value String to parse
+    * @return Left on failure with index of invalid character and a message or Right of successfully built Warning Filters
+    */
+  def parse(value: String): Either[(Int, String), WarningFilter] = {
+    val actionIdx = value.lastIndexOf(':')
+    if (actionIdx < 0) {
+      return Left(value.size - 1 -> s"Filter '$value' is missing an action, $actionOneOf")
+    }
+    val (filterStr, actionStr) = value.splitAt(actionIdx)
+    val action: Action = actionStr match {
+      case ":e" => Error
+      case ":w" => Warn
+      case ":s" => Suppress
+      case other =>
+        return Left(actionIdx -> s"Invalid action '$other', $actionOneOf")
+    }
+    val filterParts: List[String] = filterStr.split("&").toList
+    // Add index for adding a carat in error reporting
+    val partsWithIndex: List[(Int, String)] =
+      filterParts
+        .mapAccumulate(0) { case (idx, s) => (idx + 1 + s.length, (idx, s)) } // + 1 for removed '&'
+        ._2
+
+    // Find and record the parts
+    var any:     Boolean = false
+    var srcGlob: Option[PathMatcher] = None
+    var id:      Option[WarningID.WarningID] = None
+    for ((idx, str) <- partsWithIndex) {
+      val catIdx = str.indexOf('=')
+      val (category, remainder) = if (catIdx < 0) (str, "") else str.splitAt(catIdx + 1) // +1 to include = in cat
+      val regex = category match {
+        case "any" =>
+          // Any must be unique
+          if (srcGlob.nonEmpty || id.nonEmpty || any) return Left(idx -> "'any' cannot be combined with other filters.")
+          if (catIdx != -1) return Left(idx -> "'any' cannot have modifiers.")
+          any = true
+        // Note that split puts '=' with the category instead of regex
+        case "src=" =>
+          if (any) return Left(idx -> "'any' cannot be combined with other filters.")
+          if (srcGlob.nonEmpty) return Left(idx -> s"Cannot have duplicates of the same category.")
+          val filesystem = FileSystems.getDefault()
+          try {
+            // Add defaults to make API more friendly
+            srcGlob = Some(filesystem.getPathMatcher("glob:" + srcGlobDefault(remainder)))
+          } catch {
+            case NonFatal(_) =>
+              val jdx = idx + "src=".length
+              return Left(jdx -> s"Invalid glob expression: '$remainder'")
+          }
+        case "id=" =>
+          if (id.nonEmpty) return Left(idx -> s"Cannot have duplicates of the same category.")
+          val warningId =
+            for {
+              value <- remainder.toIntOption
+              // Check for all digits because we don't want leading + or -
+              if remainder.forall(_.isDigit)
+              // Notably, maxId is 1 larger than the actual max id.
+              if value > 0 && value < WarningID.maxId
+            } yield WarningID(value)
+          warningId match {
+            case None =>
+              val jdx = idx + "id=".length
+              return Left(
+                jdx -> s"Warning ID must be an integer in range [1, ${WarningID.maxId - 1}], got '$remainder'."
+              )
+            case Some(value) =>
+              id = Some(value)
+          }
+        case other =>
+          val cleanCat = if (other.last == '=') other.init else other // Drop trailing =
+          return Left(idx -> s"Invalid category '$cleanCat', $categoryOneOf")
+      }
+    }
+    Right(WarningFilter(srcGlob, id, action))
+  }
+}
+
 private[chisel3] class Errors(message: String) extends chisel3.ChiselException(message) with NoStackTrace
 
 private[chisel3] object throwException {
@@ -126,7 +248,10 @@ private[chisel3] object ErrorLog {
   val errTag = "[" + withColor(Console.RED, "error") + "]"
 }
 
-private[chisel3] class ErrorLog(warningsAsErrors: Boolean, sourceRoots: Seq[File]) {
+private[chisel3] class ErrorLog(
+  warningFilters:    Seq[WarningFilter],
+  sourceRoots:       Seq[File],
+  throwOnFirstError: Boolean) {
   import ErrorLog.withColor
 
   private def getErrorLineInFile(sl: SourceLine): List[String] = {
@@ -158,40 +283,45 @@ private[chisel3] class ErrorLog(warningsAsErrors: Boolean, sourceRoots: Seq[File
   private def errorLocationString(si: Option[SourceInfo]): String = {
     si match {
       case Some(sl: SourceLine) => s"${sl.filename}:${sl.line}:${sl.col}"
-      case Some(_: NoSourceInfo) => {
-        getUserLineNumber match {
-          case Some(elt: StackTraceElement) => s"${elt.getFileName}:${elt.getLineNumber}"
-          case None => "(unknown)"
-        }
-      }
+      case Some(sl: SourceLineNoCol) => s"${sl.filename}:${sl.line}"
+      case Some(_: NoSourceInfo) => "(unknown)"
       case None => ""
     }
   }
 
-  private def errorEntry(msg: String, si: Option[SourceInfo], isFatal: Boolean): ErrorEntry = {
+  // TODO refactor this to just hold more information in the ErrorEntry and do extra processing at report time
+  // id is optional because it has only been applied to warnings, TODO apply to errors
+  private def logWarningOrError(msg: String, si: Option[SourceInfo], isFatal: Boolean): Unit = {
     val location = errorLocationString(si)
     val sourceLineAndCaret = si.collect { case sl: SourceLine => getErrorLineInFile(sl) }.getOrElse(Nil)
     val fullMessage = if (location.isEmpty) msg else s"$location: $msg"
-    ErrorEntry(fullMessage :: sourceLineAndCaret, isFatal)
+    val errorLines = fullMessage :: sourceLineAndCaret
+    val entry = ErrorEntry(errorLines, isFatal)
+    if (throwOnFirstError && isFatal) {
+      throwException(entry.serialize(includeTag = false))
+    }
+    errors += entry
   }
 
   /** Log an error message */
   def error(m: String, si: SourceInfo): Unit = {
-    errors += errorEntry(m, Some(si), true)
+    logWarningOrError(m, Some(si), true)
   }
 
-  private def warn(m: String, si: Option[SourceInfo]): ErrorEntry = errorEntry(m, si, warningsAsErrors)
-
-  /** Log a warning message */
-  def warning(m: String, si: SourceInfo): Unit = {
-    errors += warn(m, Some(si))
+  /** Log a warning, will have warning filters applied before logging */
+  def warning(warning: Warning): Unit = {
+    val action =
+      warningFilters.collectFirst { case wf if wf.applies(warning) => wf.action }
+        .getOrElse(WarningFilter.Warn) // Default is to warn
+    val doReport: Option[Boolean] = action match {
+      case WarningFilter.Error    => Some(true)
+      case WarningFilter.Warn     => Some(false)
+      case WarningFilter.Suppress => None
+    }
+    doReport.foreach { isFatal =>
+      logWarningOrError(warning.msg, Some(warning.info), isFatal)
+    }
   }
-
-  /** Log a warning message without a source locator. This is used when the
-    * locator wouldn't be helpful (e.g., due to lazy values).
-    */
-  def warningNoLoc(m: String): Unit =
-    errors += warn(m, None)
 
   /** Log a deprecation warning message */
   def deprecated(m: String, location: Option[String]): Unit = {
@@ -218,7 +348,7 @@ private[chisel3] class ErrorLog(warningsAsErrors: Boolean, sourceRoots: Seq[File
       case ((message, sourceLoc), count) =>
         logger.warn(s"${ErrorLog.depTag} $sourceLoc ($count calls): $message")
     }
-    errors.foreach(e => logger.error(e.serialize))
+    errors.foreach(e => logger.error(e.serialize(includeTag = true)))
 
     if (!deprecations.isEmpty) {
       logger.warn(
@@ -274,34 +404,6 @@ private[chisel3] class ErrorLog(warningsAsErrors: Boolean, sourceRoots: Seq[File
     }
   }
 
-  /** Returns the best guess at the first stack frame that belongs to user code.
-    */
-  private def getUserLineNumber = {
-    def isChiselClassname(className: String): Boolean = {
-      // List of classpath prefixes that are Chisel internals and should be ignored when looking for user code
-      // utils are not part of internals and errors there can be reported
-      val chiselPrefixes = Set(
-        "java.",
-        "scala.",
-        "chisel3.",
-        "chisel3.internal.",
-        "chisel3.experimental.",
-        "chisel3.package$" // for some compatibility / deprecated types
-      )
-      !chiselPrefixes.filter(className.startsWith(_)).isEmpty
-    }
-
-    Thread
-      .currentThread()
-      .getStackTrace
-      .toList
-      .dropWhile(
-        // Get rid of everything in Chisel core
-        ste => isChiselClassname(ste.getClassName)
-      )
-      .headOption
-  }
-
   private val errors = LinkedHashSet[ErrorEntry]()
   private val deprecations = LinkedHashMap[(String, String), Int]()
 
@@ -309,8 +411,12 @@ private[chisel3] class ErrorLog(warningsAsErrors: Boolean, sourceRoots: Seq[File
   private def elapsedTime: Long = System.currentTimeMillis - startTime
 }
 
+// id is optional because it has only been applied to warnings, TODO apply to errors
 private case class ErrorEntry(lines: Seq[String], isFatal: Boolean) {
   def tag = if (isFatal) ErrorLog.errTag else ErrorLog.warnTag
 
-  def serialize: String = lines.map(s"$tag " + _).mkString("\n")
+  def serialize(includeTag: Boolean): String = {
+    val linesx = if (includeTag) lines.map(s"$tag " + _) else lines
+    linesx.mkString("\n")
+  }
 }
