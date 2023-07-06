@@ -4,6 +4,7 @@ import mill.scalalib.publish._
 import mill.scalalib.scalafmt._
 import coursier.maven.MavenRepository
 import $ivy.`com.lihaoyi::mill-contrib-buildinfo:$MILL_VERSION`
+import $ivy.`com.lihaoyi::mill-contrib-bloop:$MILL_VERSION`
 import mill.contrib.buildinfo.BuildInfo
 
 object chisel3 extends mill.Cross[chisel3CrossModule]("2.13.10", "2.12.17")
@@ -218,4 +219,64 @@ class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule wit
 
   // make mill publish sbt compatible package
   override def artifactName = "chisel3"
+}
+
+//// TODO is mill.Module right?
+//object chiselcheck extends ScalafmtModule {
+//
+//  override def millSourcePath = wd / "test"
+//
+//  override def sources = T.sources(millSourcePath)
+//
+//  def run(mainClsName: String) = T.command {
+//      os.proc("java", "-cp", "foo", mainClsName).call()
+//  }
+//}
+
+val fooSrc = os.pwd / "test"
+// Tell ammonite to refresh when a new file is added to the directory
+interp.watch(fooSrc)
+
+val files = os.list(fooSrc).map(_.last)
+object foo extends Cross[Foo](files:_*)
+class Foo(file: String) extends ScalaModule {
+  def millSourcePath = {
+    val dir = os.pwd / "target" / "test" / file
+    val destSrc = dir / "src"
+    val destFile = destSrc / file
+    if(!os.exists(destFile)) {
+      os.makeDir.all(destSrc)
+      os.symlink(destFile, fooSrc / file)
+      //os.copy(fooSrc/ file, destFile)
+    }
+    dir
+  }
+  def scalaVersion = "2.13.10"
+
+  //def fizzbuzz = T.command {
+  //  println(file)
+  //  try {
+  //    this.compile
+  //  } catch {
+  //    case e: Exception =>
+  //      println(e)
+  //  }
+  //  file
+  //}
+
+  //override def mainClass = Some("Main")
+
+  override def moduleDeps = super.moduleDeps ++ Seq(chisel3("2.13.10"))
+
+  // For some reason this is not derived from the module dep on Chisel
+  override def repositories = super.repositories ++ Seq(
+    MavenRepository("https://oss.sonatype.org/content/repositories/snapshots"),
+    MavenRepository("https://oss.sonatype.org/content/repositories/releases")
+  )
+}
+
+object filecheck extends Module {
+  def test(file: String) = T.command {
+    foo(file).compile
+  }
 }
