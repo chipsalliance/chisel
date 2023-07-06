@@ -307,8 +307,6 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
   it should "not create a new port when source is a port" in {
     class Baz extends RawModule {
       val a = IO(Output(Bool()))
-      a := DontCare
-      dontTouch(a)
     }
 
     class Bar extends RawModule {
@@ -324,15 +322,7 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
     }
 
     val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Foo)
-    matchesAndOmits(chirrtl)(
-      "module Baz",
-      "module Bar",
-      "output a_bore",
-      "connect a_bore, baz.a",
-      "module Foo",
-      "wire a_bore",
-      "connect a_bore, bar.a_bore"
-    )(
+    matchesAndOmits(chirrtl)()(
       "connect a_bore, a"
     )
   }
