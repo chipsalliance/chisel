@@ -6,7 +6,7 @@ import chisel3._
 import chisel3.probe.{Probe, RWProbe}
 import chisel3.Data.ProbeInfo
 import chisel3.experimental.{annotate, requireIsHardware, skipPrefix, BaseModule, ChiselAnnotation, SourceInfo}
-import chisel3.internal.{Builder, BuilderContextCache, NamedComponent, Namespace}
+import chisel3.internal.{Builder, BuilderContextCache, NamedComponent, Namespace, PortBinding}
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
 import firrtl.passes.wiring.{SinkAnnotation, SourceAnnotation}
 import firrtl.annotations.{ComponentName, ModuleName}
@@ -214,6 +214,10 @@ object BoringUtils {
       case Some(pi)                => Probe(purePortTypeBase)
       case None                    => purePortTypeBase
     }
+    def isPort(d: Data): Boolean = d.topBindingOpt match {
+      case Some(PortBinding(_)) => true
+      case _                    => false
+    }
     def boringError(module: BaseModule): Unit = {
       (module.fullyClosedErrorMessages ++ Seq(
         (si, s"Can only bore into modules that are not fully closed: ${module.name} was fully closed")
@@ -224,6 +228,10 @@ object BoringUtils {
     def drill(source: A, path: Seq[BaseModule], connectionLocation: Seq[BaseModule], up: Boolean): A = {
       path.zip(connectionLocation).foldLeft(source) {
         case (rhs, (module, conLoc)) if (module.isFullyClosed) => boringError(module); DontCare.asInstanceOf[A]
+        case (rhs, (module, conLoc)) if (up && module == path(0) && isPort(rhs)) => {
+          // When drilling from the original source, if it's already a port just return it.
+          rhs
+        }
         case (rhs, (module, conLoc)) =>
           skipPrefix { // so `lcaSource` isn't in the name of the secret port
             if (!up && createProbe.nonEmpty && createProbe.get.writable) {

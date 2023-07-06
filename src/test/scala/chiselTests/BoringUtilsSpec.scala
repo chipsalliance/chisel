@@ -304,6 +304,39 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
     log should include("Can only bore into modules that are not fully closed")
   }
 
+  it should "not create a new port when source is a port" in {
+    class Baz extends RawModule {
+      val a = IO(Output(Bool()))
+      a := DontCare
+      dontTouch(a)
+    }
+
+    class Bar extends RawModule {
+      val baz = Module(new Baz)
+    }
+
+    class Foo extends RawModule {
+      val a = IO(Output(Bool()))
+
+      val bar = Module(new Bar)
+
+      a := BoringUtils.bore(bar.baz.a)
+    }
+
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Foo)
+    matchesAndOmits(chirrtl)(
+      "module Baz",
+      "module Bar",
+      "output a_bore",
+      "connect a_bore, baz.a",
+      "module Foo",
+      "wire a_bore",
+      "connect a_bore, bar.a_bore"
+    )(
+      "connect a_bore, a"
+    )
+  }
+
   "Downwards tap from parent to child" should "work" in {
     class Foo extends RawModule {
       val internalWire = Wire(Bool())
@@ -472,7 +505,6 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
       probe.forceInitial(BoringUtils.rwTap(foo.bar.internalWire), false.B)
     }
     val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
-    println(chirrtl)
     matchesAndOmits(chirrtl)(
       "module Bar :",
       "output out_bore : RWProbe<UInt<1>>",
