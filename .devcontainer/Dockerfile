@@ -85,5 +85,8 @@ RUN cd /circt/source && \
       --build ../build \
       --target install-firtool
     
+# Disable Chisel argument extensions, which cause issues when running tests from the VSCode UI
+ENV CHISEL_ARGUMENT_EXTENSIONS=DISABLE
+
 # Use VSCode for writing commit messages
 ENV GIT_EDITOR="code --wait"
