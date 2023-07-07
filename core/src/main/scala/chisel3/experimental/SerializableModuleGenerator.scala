@@ -1,83 +1,75 @@
 package chisel3.experimental
 
+import ujson.Obj
 import upickle.default._
 
-import scala.reflect.runtime.universe
+import scala.reflect.macros.whitebox
+import scala.reflect.runtime.universe._
+import scala.language.experimental.macros
 
-/** Parameter for SerializableModule, it should be serializable via upickle API.
-  * For more information, please refer to [[https://com-lihaoyi.github.io/upickle/]]
-  */
-trait SerializableModuleParameter
-
-/** Mixin this trait to let chisel auto serialize module, it has these constraints:
-  * 1. Module should not be any inner class of other class, since serializing outer class is impossible.
-  * 2. Module should have and only have one parameter with type `T`:
-  * {{{
-  * class FooSerializableModule[FooSerializableModuleParameter](val parameter: FooSerializableModuleParameter)
-  * }}}
-  * 3. user should guarantee the module is reproducible on their own.
-  */
-trait SerializableModule[T <: SerializableModuleParameter] { this: BaseModule =>
-  val parameter: T
+trait SerializableModule { this: BaseModule =>
+  type SerializableModuleParameter
+  val parameter: SerializableModuleParameter
 }
+
+abstract class SerializableModuleGenerator {
+  type M <: SerializableModule
+  // TODO: use macro to construct moduleClass
+  protected[chisel3] val moduleClass: Class[M]
+  // user should implement the serialization for M#SerializableModuleParameter
+  // compiler can observe the implicit function for serializedParameter
+  implicit val parameterRW: ReadWriter[M#SerializableModuleParameter]
+  val parameter:            M#SerializableModuleParameter
+  protected[chisel3] def moduleClassName = moduleClass.getName
+  protected[chisel3] def serializedParameter = upickle.default.writeJs(parameter)
+}
+
 object SerializableModuleGenerator {
-
-  /** serializer for SerializableModuleGenerator. */
-  implicit def rw[P <: SerializableModuleParameter, M <: SerializableModule[P]](
-    implicit rwP: ReadWriter[P],
-    pTypeTag:     universe.TypeTag[P],
-    mTypeTag:     universe.TypeTag[M]
-  ): ReadWriter[SerializableModuleGenerator[M, P]] = readwriter[ujson.Value].bimap[SerializableModuleGenerator[M, P]](
-    { (x: SerializableModuleGenerator[M, P]) =>
-      ujson
-        .Obj(
-          "parameter" -> upickle.default.writeJs[P](x.parameter),
-          "generator" -> x.generator.getName
-        )
-    },
-    { (json: ujson.Value) =>
-      SerializableModuleGenerator[M, P](
-        Class.forName(json.obj("generator").str).asInstanceOf[Class[M]],
-        upickle.default.read[P](json.obj("parameter"))
+  import SerializableModuleGeneratorImpl._
+  implicit def rw: upickle.default.ReadWriter[SerializableModuleGenerator] =
+    upickle.default
+      .readwriter[ujson.Value]
+      .bimap[SerializableModuleGenerator](
+        x =>
+          ujson.Obj(
+            "parameter" -> x.serializedParameter,
+            "module" -> x.moduleClassName
+          ),
+        json => {
+          val module = json.obj("module").toString
+          val parameter = json.obj("parameter").toString
+          import scala.reflect.runtime.{universe => ru}
+          val m = ru.runtimeMirror(getClass.getClassLoader)
+          val classSymbol = ru.typeOf[SerializableModuleGenerator].typeSymbol.asClass
+          val classMirror = m.reflectClass(classSymbol)
+          val decl = ru.typeOf[SerializableModuleGenerator].decl(ru.termNames.CONSTRUCTOR).asMethod
+          val ctorm = classMirror.reflectConstructor(decl)
+          // Oh my god, how to construct a abstract class with type M <: SerializableModule, and implicit parameter rwP: upickle.default.ReadWriter[M#SerializableModuleParameter] in it???
+          ???
+        }
       )
-    }
-  )
+  def apply[M <: SerializableModule](
+    parameter: M#SerializableModuleParameter
+  )(
+    implicit rwP: upickle.default.ReadWriter[M#SerializableModuleParameter]
+  ): SerializableModuleGenerator = macro applyImpl[M]
 }
 
-/** the serializable module generator:
-  * @param generator a non-inner class of module, which should be a subclass of [[SerializableModule]]
-  * @param parameter the parameter of `generator`
-  */
-case class SerializableModuleGenerator[M <: SerializableModule[P], P <: SerializableModuleParameter](
-  generator: Class[M],
-  parameter: P
-)(
-  implicit val pTag: universe.TypeTag[P],
-  implicit val mTag: universe.TypeTag[M]) {
-  private[chisel3] def construct: M = {
-    require(
-      generator.getConstructors.length == 1,
-      s"""only allow constructing SerializableModule from SerializableModuleParameter via class Module(val parameter: Parameter),
-         |you have ${generator.getConstructors.length} constructors
-         |""".stripMargin
-    )
-    require(
-      !generator.getConstructors.head.getParameterTypes.last.toString.contains("$"),
-      s"""You define your ${generator.getConstructors.head.getParameterTypes.last} inside other class.
-         |This is a forbidden behavior, since we cannot serialize the out classes,
-         |for debugging, these are full parameter types of constructor:
-         |${generator.getConstructors.head.getParameterTypes.mkString("\n")}
-         |""".stripMargin
-    )
-    require(
-      generator.getConstructors.head.getParameterCount == 1,
-      s"""You define multiple constructors:
-         |${generator.getConstructors.head.getParameterTypes.mkString("\n")}
-         |""".stripMargin
-    )
-    generator.getConstructors.head.newInstance(parameter).asInstanceOf[M]
+private[chisel3] object SerializableModuleGeneratorImpl {
+  def applyImpl[M <: SerializableModule: c.WeakTypeTag](
+    c:         whitebox.Context
+  )(parameter: c.Expr[M#SerializableModuleParameter]
+  )(rwP:       c.Expr[upickle.default.ReadWriter[M#SerializableModuleParameter]]
+  ): c.Expr[SerializableModuleGenerator] = {
+    import c.universe._
+    // the asInstanceOf static upper cast SerializableModuleGenerator{type M = chiselTests.experimental.GCDSerializableModule}
+    // to SerializableModuleGenerator for upickle being able to observe the implicit parameter rwP
+    c.Expr[SerializableModuleGenerator](q"""
+      new _root_.chisel3.experimental.SerializableModuleGenerator {
+        override type M = ${weakTypeOf[M]}
+        val parameter: ${weakTypeOf[M]}#SerializableModuleParameter = $parameter
+        override implicit val parameterRW: upickle.default.ReadWriter[${weakTypeOf[M]}#SerializableModuleParameter] = $rwP
+        override val moduleClass = classOf[M]
+      }.asInstanceOf[_root_.chisel3.experimental.SerializableModuleGenerator]""")
   }
-
-  /** elaborate a module from this generator. */
-  def module(): M = construct
 }
