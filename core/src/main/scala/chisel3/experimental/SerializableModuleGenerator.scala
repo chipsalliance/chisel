@@ -44,7 +44,7 @@ object SerializableModuleGenerator {
           val classMirror = m.reflectClass(classSymbol)
           val decl = ru.typeOf[SerializableModuleGenerator].decl(ru.termNames.CONSTRUCTOR).asMethod
           val ctorm = classMirror.reflectConstructor(decl)
-          // Oh my god, how to construct a abstract class with type M <: SerializableModule, and implicit parameter rwP: upickle.default.ReadWriter[M#SerializableModuleParameter] in it???
+          // reflect to concrete SerializableGenerator.SomeSerializableModuleImp to construct a SerializableModuleGenerator
           ???
         }
       )
@@ -56,6 +56,8 @@ object SerializableModuleGenerator {
 }
 
 private[chisel3] object SerializableModuleGeneratorImpl {
+
+  // TODO: for each concrete SerializableModule, generate SerializableGenerator.SomeSerializableModuleImp at compile time.
   def applyImpl[M <: SerializableModule: c.WeakTypeTag](
     c:         whitebox.Context
   )(parameter: c.Expr[M#SerializableModuleParameter]

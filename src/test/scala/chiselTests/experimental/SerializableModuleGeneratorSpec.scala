@@ -38,32 +38,33 @@ class GCDSerializableModule(val parameter: GCDSerializableModuleParameter) exten
   io.z := z
 }
 
+// TODO: this should be constructed by plugin
+class GCDSerializableGenerator$Auto(
+  val parameter: GCDSerializableModuleParameter
+)(
+  implicit val parameterRW: ReadWriter[GCDSerializableModuleParameter])
+    extends SerializableModuleGenerator {
+  override type M = GCDSerializableModule
+  override val moduleClass = classOf[M]
+}
+
 class SerializableModuleGeneratorSpec extends ChiselFlatSpec with Utils {
   "SerializableModuleGenerator" should "be serialized" in {
     // barely construct a SerializableModuleGenerator
-    val g = new SerializableModuleGenerator {
-      override type M = GCDSerializableModule
-      val parameter:                     GCDSerializableModuleParameter = GCDSerializableModuleParameter(16)
-      override implicit val parameterRW: upickle.default.ReadWriter[GCDSerializableModuleParameter] = macroRW
-      override val moduleClass = classOf[M]
-    }
+    val g = new GCDSerializableGenerator$Auto(GCDSerializableModuleParameter(16))(
+      macroRW[GCDSerializableModuleParameter]
+    )
 
     upickle.default.write(g.asInstanceOf[SerializableModuleGenerator]) should be(
       """{"parameter":{"width":16},"module":"chiselTests.experimental.GCDSerializableModule"}"""
     )
   }
 
-  "SerializableModuleGenerator" should "be able to construct with apply macro" in {
-    implicit val rwP: upickle.default.ReadWriter[GCDSerializableModuleParameter] = macroRW
-    val g = SerializableModuleGenerator[GCDSerializableModule](GCDSerializableModuleParameter(16))
-    upickle.default.write(g) should be(
-      """{"parameter":{"width":16},"module":"chiselTests.experimental.GCDSerializableModule"}"""
-    )
-  }
-
   "SerializableModuleGenerator" should "be able to construct with upickle reader" in {
     implicit val rwP: upickle.default.ReadWriter[GCDSerializableModuleParameter] = macroRW
-    upickle.default.read[SerializableModuleGenerator]("""{"parameter":{"width":16},"module":"chiselTests.experimental.GCDSerializableModule"}""")
+    upickle.default.read[SerializableModuleGenerator](
+      """{"parameter":{"width":16},"module":"chiselTests.experimental.GCDSerializableModule"}"""
+    )
   }
 
 }

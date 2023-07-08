@@ -58,7 +58,8 @@ class ChiselPlugin(val global: Global) extends Plugin {
     new ChiselComponent(global, arguments),
     new BundleComponent(global, arguments),
     new IdentifierComponent(global, arguments),
-    new DeprecateSFCComponent(global, arguments)
+    new DeprecateSFCComponent(global, arguments),
+    new SerializableGeneratorComponent(global, arguments)
   )
 
   override def init(options: List[String], error: String => Unit): Boolean = {
