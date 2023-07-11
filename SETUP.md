@@ -20,15 +20,15 @@ For a minimal setup, you only need to install [SBT (the Scala Build Tool)](http:
 
     Choose whatever version is being [used in continuous integration](.github/workflows/install-circt/action.yml)
     ```bash
-    wget -q -O - https://github.com/llvm/circt/releases/download/firtool-1.38.0/firrtl-bin-ubuntu-20.04.tar.gz | tar -zx
+    wget -q -O - https://github.com/llvm/circt/releases/download/firtool-1.45.0/firrtl-bin-linux-x64.tar.gz | tar -zx
     ```
-    This will give you a directory called `firtool-1.38.0` containing the firtool binary, add this to your PATH as appropriate.
+    This will give you a directory called `firtool-1.45.0` containing the firtool binary, add this to your PATH as appropriate.
     ```bash
-    export PATH=$PATH:$PWD/firtool-1.38.0/bin
+    export PATH=$PATH:$PWD/firtool-1.45.0/bin
     ```
     Alternatively, you can install the binary to a standard location by simply moving the binary (if you have root access).
     ```bash
-    mv firtool-1.38.0/bin/firtool /usr/local/bin/
+    mv firtool-1.45.0/bin/firtool /usr/local/bin/
     ```
 
 
