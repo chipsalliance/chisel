@@ -43,7 +43,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
       chirrtl should include("inst i0 of AddOne")
     }
-    it("0.3: BlackBoxes should be supported") {
+    it("(0.d): BlackBoxes should be supported") {
       class Top extends Module {
         val in = IO(Input(UInt(32.W)))
         val out = IO(Output(UInt(32.W)))
@@ -65,6 +65,15 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       chirrtl should include("connect out, i0.out")
       chirrtl should include("connect i1.in, io.in")
       chirrtl should include("connect io.out, i1.out")
+    }
+    it("(0.e): Instances with Bundles with unsanitary names should be supported") {
+      class Top extends Module {
+        val definition = Definition(new HasUnsanitaryBundleField)
+        val i0 = Instance(definition)
+        i0.in := 123.U
+      }
+      val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
+      chirrtl should include("connect i0.realIn.aminusx, UInt<7>(0h7b)")
     }
   }
   describe("(1) Annotations on instances in same chisel compilation") {
