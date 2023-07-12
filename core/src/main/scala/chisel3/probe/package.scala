@@ -70,8 +70,11 @@ package object probe extends SourceInfoDoc {
 
   /** Pad Data if it supports padding */
   private def padData[T <: Data](data: T, width: Int)(implicit sourceInfo: SourceInfo): T = {
-    if (!data.width.known) Builder.error("Data width unknown")
-    if (data.width.get > width) Builder.error(s"Data width ${data.width.get} is larger than $width.")
+    data.widthOption match {
+      case None => Builder.error("Data width unknown.")
+      case Some(w) =>
+        if (w > width) Builder.error(s"Data width $w is larger than $width.")
+    }
     data match {
       case d: Bits => d.pad(width).asInstanceOf[T]
       case d => d
