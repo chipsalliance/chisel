@@ -58,19 +58,31 @@ package object probe extends SourceInfoDoc {
   }
 
   /** Recursively clear ProbeInfo */
-  private def clearProbeInfo(data: Data): Unit = {
-    data.probeInfo = None
+  private def clearProbeInfo[T <: Data](data: T): Unit = {
     data match {
-      case a: Aggregate =>
+      case a: Aggregate => {
+        a.probeInfo = None
         a.elementsIterator.foreach(x => clearProbeInfo(x))
-      case _ => // do nothing
+      }
+      case leaf => { leaf.probeInfo = None }
+    }
+  }
+
+  /** Pad Data if it supports padding */
+  private def padData[T <: Data](data: T, width: Int)(implicit sourceInfo: SourceInfo): T = {
+    if (data.width.get > width) {
+      Builder.error(s"Data width ${data.width.get} is larger than $width.")
+    }
+    data match {
+      case d: Bits => d.pad(width).asInstanceOf[T]
+      case d => d
     }
   }
 
   /** Override existing driver of a writable probe on initialization. */
   def forceInitial(probe: Data, value: Data)(implicit sourceInfo: SourceInfo): Unit = {
     requireHasWritableProbeTypeModifier(probe, "Cannot forceInitial a non-writable Probe.")
-    pushCommand(ProbeForceInitial(sourceInfo, probe.ref, value.ref))
+    pushCommand(ProbeForceInitial(sourceInfo, probe.ref, padData(value, probe.width.get).ref))
   }
 
   /** Release initial driver on a probe. */
@@ -82,7 +94,7 @@ package object probe extends SourceInfoDoc {
   /** Override existing driver of a writable probe. */
   def force(clock: Clock, cond: Bool, probe: Data, value: Data)(implicit sourceInfo: SourceInfo): Unit = {
     requireHasWritableProbeTypeModifier(probe, "Cannot force a non-writable Probe.")
-    pushCommand(ProbeForce(sourceInfo, clock.ref, cond.ref, probe.ref, value.ref))
+    pushCommand(ProbeForce(sourceInfo, clock.ref, cond.ref, probe.ref, padData(value, probe.width.get).ref))
   }
 
   /** Release driver on a probe. */

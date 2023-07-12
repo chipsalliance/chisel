@@ -424,4 +424,34 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
     exc.getMessage should be("Cannot create a writable probe of a const type.")
   }
 
+  "Probe methods" should "properly extend constants that are not wide enough" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(
+      new Module {
+        val a = IO(Output(RWProbe(UInt(16.W))))
+        forceInitial(a, 123.U)
+        force(clock, reset.asBool, a, 456.U)
+      },
+      Array("--full-stacktrace")
+    )
+    (processChirrtl(chirrtl) should contain).allOf(
+      "node _T = pad(UInt<7>(0h7b), 16)",
+      "force_initial(a, _T)",
+      "node _T_2 = pad(UInt<9>(0h1c8), 16)",
+      "force(clock, _T_1, a, _T_2)"
+    )
+  }
+
+  "Probe methods" should "error out with constants that are too wide" in {
+    val exc = intercept[chisel3.ChiselException] {
+      ChiselStage.emitCHIRRTL(
+        new RawModule {
+          val a = IO(Output(RWProbe(UInt(2.W))))
+          forceInitial(a, 123.U)
+        },
+        Array("--throw-on-first-error")
+      )
+    }
+    exc.getMessage should be("Data width 7 is larger than 2.")
+  }
+
 }
