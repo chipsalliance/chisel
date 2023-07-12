@@ -469,4 +469,18 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
     exc.getMessage should be("Data width unknown.")
   }
 
+  it should "error out on probes of unknown widths" in {
+    val exc = intercept[chisel3.ChiselException] {
+      ChiselStage.emitCHIRRTL(
+        new Module {
+          val in = IO(Input(UInt(16.W)))
+          val p = IO(Output(RWProbe(UInt())))
+          force(clock, reset.asBool, p, in)
+        },
+        Array("--throw-on-first-error")
+      )
+    }
+    exc.getMessage should be("Probe width unknown.")
+  }
+
 }
