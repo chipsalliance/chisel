@@ -981,16 +981,13 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
   // of hardware created when connecting to one of these elements
   private def setElementRefs(): Unit = {
     val opaqueType = this._isOpaqueType
-    // Since elements is a map, it is impossible for two elements to have the same
-    // identifier; however, Namespace sanitizes identifiers to make them legal for Firrtl/Verilog
-    // which can cause collisions
-    val _namespace = Namespace.empty
     require(
       !opaqueType || (_elements.size == 1 && _elements.head._1 == ""),
       s"Opaque types must have exactly one element with an empty name, not ${_elements.size}: ${elements.keys.mkString(", ")}"
     )
+    // Names of _elements have already been namespaced (and therefore sanitized)
     for ((name, elt) <- _elements) {
-      elt.setRef(this, _namespace.name(name, leadingDigitOk = true), opaque = opaqueType)
+      elt.setRef(this, name, opaque = opaqueType)
     }
   }
 
@@ -1215,15 +1212,25 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
   // without having to recurse over all elements after the Record is
   // constructed. Laziness of _elements means that this check will
   // occur (only) at the first instance _elements is referenced.
-  private[chisel3] lazy val _elements: SeqMap[String, Data] = {
-    for ((name, field) <- elements) {
-      if (field.binding.isDefined) {
-        throw RebindingException(
-          s"Cannot create Record ${this.className}; element ${field} of Record must be a Chisel type, not hardware."
-        )
-      }
-    }
-    elements
+  // Also used to sanitize names and convert to more optimized VectorMap datastructure
+  private[chisel3] lazy val _elements: VectorMap[String, Data] = {
+    // Since elements is a map, it is impossible for two elements to have the same
+    // identifier; however, Namespace sanitizes identifiers to make them legal for Firrtl/Verilog
+    // which can cause collisions
+    // Note that OpaqueTypes cannot have sanitization (the name of the element needs to stay empty)
+    //   Use an empty Namespace to indicate OpaqueType
+    val namespace = Option.when(!this._isOpaqueType)(Namespace.empty)
+    elements.view.map {
+      case (name, field) =>
+        if (field.binding.isDefined) {
+          throw RebindingException(
+            s"Cannot create Record ${this.className}; element ${field} of Record must be a Chisel type, not hardware."
+          )
+        }
+        // namespace.name also sanitizes for firrtl, leave name alone for OpaqueTypes
+        val sanitizedName = namespace.map(_.name(name, leadingDigitOk = true)).getOrElse(name)
+        sanitizedName -> field
+    }.to(VectorMap) // VectorMap has O(1) lookup whereas ListMap is O(n)
   }
 
   /** Name for Pretty Printing */
