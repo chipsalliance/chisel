@@ -294,6 +294,17 @@ object Examples {
     @public val nested = new NestedInstantiable(in = leafIn, out = leafOut)
 
   }
+  @instantiable
+  class HasUnsanitaryBundleField extends Module {
+    class Interface extends Bundle {
+      val `a-x` = UInt(8.W)
+    }
+    val realIn = IO(Input(new Interface))
+    // It's important to have this redirection to trip an old bug
+    @public val in = realIn.`a-x`
+    @public val out = IO(Output(UInt(8.W)))
+    out := in
+  }
 
   class AddTwoNestedInstantiableData(width: Int) extends Module {
     val in = IO(Input(UInt(width.W)))
