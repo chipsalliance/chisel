@@ -1212,15 +1212,15 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
   // without having to recurse over all elements after the Record is
   // constructed. Laziness of _elements means that this check will
   // occur (only) at the first instance _elements is referenced.
-  // Also used to sanitize names and convert to more optimized VectorMap datastructure
-  private[chisel3] lazy val _elements: VectorMap[String, Data] = {
+  // Also used to sanitize names
+  private[chisel3] lazy val _elements: SeqMap[String, Data] = {
     // Since elements is a map, it is impossible for two elements to have the same
     // identifier; however, Namespace sanitizes identifiers to make them legal for Firrtl/Verilog
     // which can cause collisions
     // Note that OpaqueTypes cannot have sanitization (the name of the element needs to stay empty)
     //   Use an empty Namespace to indicate OpaqueType
-    val namespace = Option.when(!this._isOpaqueType)(Namespace.empty)
-    elements.view.map {
+    val namespace = if (!this._isOpaqueType) Some(Namespace.empty) else None
+    elements.map {
       case (name, field) =>
         if (field.binding.isDefined) {
           throw RebindingException(
@@ -1230,7 +1230,7 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
         // namespace.name also sanitizes for firrtl, leave name alone for OpaqueTypes
         val sanitizedName = namespace.map(_.name(name, leadingDigitOk = true)).getOrElse(name)
         sanitizedName -> field
-    }.to(VectorMap) // VectorMap has O(1) lookup whereas ListMap is O(n)
+    }
   }
 
   /** Name for Pretty Printing */
