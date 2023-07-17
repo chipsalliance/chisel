@@ -73,7 +73,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         i0.in := 123.U
       }
       val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
-      chirrtl should include("connect i0.realIn.aminusx, UInt<7>(0h7b)")
+      chirrtl should include("""i0.realIn.aminusx <= UInt<7>("h7b")""")
     }
   }
   describe("(1) Annotations on instances in same chisel compilation") {
