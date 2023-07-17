@@ -170,8 +170,8 @@ class LoadMemoryFromFileSpec extends AnyFreeSpec with Matchers {
 
     compile(new UsesMem(memoryDepth = 8, memoryType = UInt(16.W)), dir)
 
-    fileExistsWithMem(new File(dir, "memory_UsesMem_combMem_init.sv"), Some("./mem1"))
-    fileExistsWithMem(new File(dir, "memory_UsesMemLow_combMem_init.sv"), Some("./mem2"))
+    fileExistsWithMem(new File(dir, "memory_UsesMem_8x16_init.sv"), Some("./mem1"))
+    fileExistsWithMem(new File(dir, "memory_UsesMemLow_8x16_init.sv"), Some("./mem2"))
 
   }
 
@@ -180,7 +180,7 @@ class LoadMemoryFromFileSpec extends AnyFreeSpec with Matchers {
 
     compile(new UsesThreeMems(memoryDepth = 8, memoryType = UInt(16.W)), dir)
 
-    fileExistsWithMem(new File(dir, "memory1_combMem_init.sv"), Some("./mem1"))
+    fileExistsWithMem(new File(dir, "memory_8x16_init.sv"), Some("./mem1"))
 
   }
 
@@ -192,7 +192,7 @@ class LoadMemoryFromFileSpec extends AnyFreeSpec with Matchers {
     val memoryElements = Seq("a", "b", "c")
 
     // MFC emits a single memory for a memory of aggregate type.
-    fileExistsWithMem(new File(dir, "memory_combMem_init.sv"), Some("./mem"))
+    fileExistsWithMem(new File(dir, "memory_8x17_init.sv"), Some("./mem"))
 
   }
 
@@ -201,11 +201,11 @@ class LoadMemoryFromFileSpec extends AnyFreeSpec with Matchers {
 
     compile(new HasBinarySupport(memoryDepth = 8, memoryType = UInt(16.W)), dir)
 
-    val file = new File(dir, s"memory_combMem_init.sv")
+    val file = new File(dir, s"memory_8x16_init.sv")
     file should exist
 
     val fileText = io.Source.fromFile(file).getLines().mkString("\n")
-    fileText should include(s"""$$readmemb("./mem", memory_combMem.Memory);""")
+    fileText should include(s"""$$readmemb("./mem", memory_8x16.Memory);""")
   }
 
   "Module with more than one hex memory inline should work" in {
