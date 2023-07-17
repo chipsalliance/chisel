@@ -71,6 +71,7 @@ lazy val warningSuppression = Seq(
     "msg=undefined in comment for method cf in class PrintableHelper:s",
     // This is deprecated for external users but not internal use
     "cat=deprecation&origin=firrtl\\.options\\.internal\\.WriteableCircuitAnnotation:s",
+    "cat=deprecation&origin=chisel\\.util\\.experimental\\.BoringUtils:s",
     // Suppress Scala 3 behavior requiring explicit types on implicit definitions
     "cat=other-implicit-type:s"
   ).mkString(",")
