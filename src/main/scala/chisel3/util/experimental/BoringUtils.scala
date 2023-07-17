@@ -128,7 +128,10 @@ object BoringUtils {
     * @return the name used
     * @note if a uniqueName is not specified, the returned name may differ from the user-provided name
     */
-  @deprecated("Please use the new Boring API instead (BoringUtils.bore(source)). This will be removed in Chisel 7.0", "Chisel 7.0")
+  @deprecated(
+    "Please use the new Boring API instead (BoringUtils.bore(source)). This will be removed in Chisel 7.0",
+    "Chisel 7.0"
+  )
   def addSource(
     component:    NamedComponent,
     name:         String,
@@ -161,7 +164,10 @@ object BoringUtils {
     * @param forceExists if true, require that the provided `name` parameter already exists in the global namespace
     * @throws BoringUtilsException if name is expected to exist and it doesn't
     */
-  @deprecated("Please use the new Boring API instead (BoringUtils.bore(source)). This will be removed in Chisel 7.0", "Chisel 7.0")
+  @deprecated(
+    "Please use the new Boring API instead (BoringUtils.bore(source)). This will be removed in Chisel 7.0",
+    "Chisel 7.0"
+  )
   def addSink(
     component:    InstanceId,
     name:         String,
@@ -195,7 +201,10 @@ object BoringUtils {
     * @note the returned name will be based on the name of the source
     * component
     */
-  @deprecated("Please use the new Boring API instead (BoringUtils.bore(source)). This will be removed in Chisel 7.0", "Chisel 7.0")
+  @deprecated(
+    "Please use the new Boring API instead (BoringUtils.bore(source)). This will be removed in Chisel 7.0",
+    "Chisel 7.0"
+  )
   def bore(source: Data, sinks: Seq[Data]): String = {
     val boringName =
       try {
