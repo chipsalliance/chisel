@@ -130,7 +130,7 @@ object BoringUtils {
     */
   @deprecated(
     "Please use the new Boring API instead (BoringUtils.bore(source)). This will be removed in Chisel 7.0",
-    "Chisel 7.0"
+    "Chisel 6.0"
   )
   def addSource(
     component:    NamedComponent,
@@ -166,7 +166,7 @@ object BoringUtils {
     */
   @deprecated(
     "Please use the new Boring API instead (BoringUtils.bore(source)). This will be removed in Chisel 7.0",
-    "Chisel 7.0"
+    "Chisel 6.0"
   )
   def addSink(
     component:    InstanceId,
@@ -203,7 +203,7 @@ object BoringUtils {
     */
   @deprecated(
     "Please use the new Boring API instead (BoringUtils.bore(source)). This will be removed in Chisel 7.0",
-    "Chisel 7.0"
+    "Chisel 6.0"
   )
   def bore(source: Data, sinks: Seq[Data]): String = {
     val boringName =
