@@ -79,7 +79,7 @@ package object probe extends SourceInfoDoc {
     data.widthOption match {
       case None => Builder.error("Data width unknown.")
       case Some(w) =>
-        if (w > probeWidth) Builder.error(s"Data width $w is larger than $probeWidth.")
+        if (probe.widthOption.exists(w > _)) Builder.error(s"Data width $w is larger than $probeWidth.")
     }
 
     data match {
