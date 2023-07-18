@@ -424,4 +424,63 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
     exc.getMessage should be("Cannot create a writable probe of a const type.")
   }
 
+  "Probe force methods" should "properly extend values that are not wide enough" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(
+      new Module {
+        val in = IO(Input(UInt(4.W)))
+        val p = IO(Output(RWProbe(UInt(16.W))))
+        forceInitial(p, 123.U)
+        force(clock, reset.asBool, p, in)
+      },
+      Array("--full-stacktrace")
+    )
+    (processChirrtl(chirrtl) should contain).allOf(
+      "node _T = pad(UInt<7>(0h7b), 16)",
+      "force_initial(p, _T)",
+      "node _T_2 = pad(in, 16)",
+      "force(clock, _T_1, p, _T_2)"
+    )
+  }
+
+  it should "error out with constants that are too wide" in {
+    val exc = intercept[chisel3.ChiselException] {
+      ChiselStage.emitCHIRRTL(
+        new RawModule {
+          val a = IO(Output(RWProbe(UInt(2.W))))
+          forceInitial(a, 123.U)
+        },
+        Array("--throw-on-first-error")
+      )
+    }
+    exc.getMessage should be("Data width 7 is larger than 2.")
+  }
+
+  it should "error out on Wires of unknown widths" in {
+    val exc = intercept[chisel3.ChiselException] {
+      ChiselStage.emitCHIRRTL(
+        new Module {
+          val in = IO(Input(UInt()))
+          val p = IO(Output(RWProbe(UInt(16.W))))
+          force(clock, reset.asBool, p, in)
+        },
+        Array("--throw-on-first-error")
+      )
+    }
+    exc.getMessage should be("Data width unknown.")
+  }
+
+  it should "error out on probes of unknown widths" in {
+    val exc = intercept[chisel3.ChiselException] {
+      ChiselStage.emitCHIRRTL(
+        new Module {
+          val in = IO(Input(UInt(16.W)))
+          val p = IO(Output(RWProbe(UInt())))
+          force(clock, reset.asBool, p, in)
+        },
+        Array("--throw-on-first-error")
+      )
+    }
+    exc.getMessage should be("Probe width unknown.")
+  }
+
 }
