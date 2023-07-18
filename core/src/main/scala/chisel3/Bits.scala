@@ -143,6 +143,11 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
   final def do_apply(x: Int)(implicit sourceInfo: SourceInfo): Bool =
     do_extract(BigInt(x))
 
+  /** Grab the bottom n bits.  Return 0.U(0.W) if n==0. */
+  final def take(n: Int): UInt = macro SourceInfoTransform.nArg
+
+  final def do_take(n: Int)(implicit sourceInfo: SourceInfo): UInt = this.apply(n - 1, 0)
+
   /** Returns the specified bit on this wire as a [[Bool]], dynamically addressed.
     *
     * @param x a hardware component whose value will be used for dynamic addressing
