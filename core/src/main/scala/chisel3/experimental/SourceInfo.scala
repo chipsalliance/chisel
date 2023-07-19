@@ -57,11 +57,11 @@ case class SourceLine(filename: String, line: Int, col: Int) extends SourceInfo 
   *
   * Only used for warning and error reporting when no [[SourceLine]] is available
   */
-private[chisel3] case class SourceLineNoCol(filename: String, line: Int) extends SourceInfo {
+case class SourceLineNoCol(filename: String, line: Int) extends SourceInfo {
   def makeMessage(f: String => String): String = f(s"@[$filename $line]")
   def filenameOption: Option[String] = Some(filename)
 }
-private[chisel3] object SourceLineNoCol {
+object SourceLineNoCol {
 
   /** Returns the best guess at the first stack frame that belongs to user code.
     */
