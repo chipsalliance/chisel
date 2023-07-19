@@ -20,6 +20,7 @@ package object stage {
     def view(options: AnnotationSeq): ChiselOptions = options.collect { case a: ChiselOption => a }
       .foldLeft(new ChiselOptions()) { (c, x) =>
         x match {
+<<<<<<< HEAD
           case NoRunFirrtlCompilerAnnotation  => c.copy(runFirrtlCompiler = false)
           case PrintFullStackTraceAnnotation  => c.copy(printFullStackTrace = true)
           case ThrowOnFirstErrorAnnotation    => c.copy(throwOnFirstError = true)
@@ -28,6 +29,17 @@ package object stage {
           case ChiselOutputFileAnnotation(f)  => c.copy(outputFile = Some(f))
           case ChiselCircuitAnnotation(a)     => c.copy(chiselCircuit = Some(a))
           case SourceRootAnnotation(s)        => c.copy(sourceRoots = c.sourceRoots :+ s)
+=======
+          case PrintFullStackTraceAnnotation => c.copy(printFullStackTrace = true)
+          case ThrowOnFirstErrorAnnotation   => c.copy(throwOnFirstError = true)
+          case WarningsAsErrorsAnnotation =>
+            c.copy(warningFilters = c.warningFilters :+ WarningsAsErrorsAnnotation.asFilter)
+          case ChiselOutputFileAnnotation(f) => c.copy(outputFile = Some(f))
+          case ChiselCircuitAnnotation(a)    => c.copy(chiselCircuit = Some(a))
+          case SourceRootAnnotation(s)       => c.copy(sourceRoots = c.sourceRoots :+ s)
+          case a: WarningConfigurationAnnotation     => c.copy(warningFilters = c.warningFilters ++ a.filters)
+          case a: WarningConfigurationFileAnnotation => c.copy(warningFilters = c.warningFilters ++ a.filters)
+>>>>>>> 8e33a68b6 (Add support for configurable warnings (#3414))
         }
       }
 

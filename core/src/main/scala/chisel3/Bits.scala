@@ -15,8 +15,12 @@ import chisel3.internal.sourceinfo.{
 }
 import chisel3.internal.firrtl.PrimOp._
 import _root_.firrtl.{ir => firrtlir}
+<<<<<<< HEAD
 import _root_.firrtl.{constraint => firrtlconstraint}
 import chisel3.internal.{castToInt, Builder}
+=======
+import chisel3.internal.{castToInt, Builder, Warning, WarningID}
+>>>>>>> 8e33a68b6 (Add support for configurable warnings (#3414))
 
 /** Exists to unify common interfaces of [[Bits]] and [[Reset]].
   *
@@ -154,9 +158,11 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
       } else {
         x.widthOption.foreach { xWidth =>
           if (xWidth >= 31 || (1 << (xWidth - 1)) >= thisWidth) {
-            Builder.warning(s"Dynamic index with width $xWidth is too large for extractee of width $thisWidth")
+            val msg = s"Dynamic index with width $xWidth is too large for extractee of width $thisWidth"
+            Builder.warning(Warning(WarningID.DynamicBitSelectTooWide, msg))
           } else if ((1 << xWidth) < thisWidth) {
-            Builder.warning(s"Dynamic index with width $xWidth is too small for extractee of width $thisWidth")
+            val msg = s"Dynamic index with width $xWidth is too small for extractee of width $thisWidth"
+            Builder.warning(Warning(WarningID.DynamicBitSelectTooNarrow, msg))
           }
         }
       }

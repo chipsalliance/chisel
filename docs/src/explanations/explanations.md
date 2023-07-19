@@ -41,3 +41,13 @@ read these documents in the following order:
 * [Deep Dive into Connection Operators](connection-operators)
 * [Chisel Type vs Scala Type](chisel-type-vs-scala-type)
 * [Connectable Operators](connectable)
+<<<<<<< HEAD
+=======
+* [Decoders](decoder)
+* [Intrinsic Modules](intrinsics)
+* [Annotations](annotations)
+* [Source Locators](source-locators)
+* [Warnings](warnings)
+* [Deep Dive into Legacy Connection Operators](connection-operators)
+
+>>>>>>> 8e33a68b6 (Add support for configurable warnings (#3414))

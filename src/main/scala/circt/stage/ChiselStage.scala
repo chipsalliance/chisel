@@ -3,12 +3,45 @@
 package circt.stage
 
 import chisel3.RawModule
+<<<<<<< HEAD
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation, CircuitSerializationAnnotation}
+=======
+import chisel3.stage.{
+  ChiselCircuitAnnotation,
+  ChiselGeneratorAnnotation,
+  CircuitSerializationAnnotation,
+  PrintFullStackTraceAnnotation,
+  SourceRootAnnotation,
+  ThrowOnFirstErrorAnnotation,
+  WarningConfigurationAnnotation,
+  WarningConfigurationFileAnnotation,
+  WarningsAsErrorsAnnotation
+}
+>>>>>>> 8e33a68b6 (Add support for configurable warnings (#3414))
 import chisel3.stage.CircuitSerializationAnnotation.FirrtlFileFormat
 import firrtl.{AnnotationSeq, EmittedVerilogCircuitAnnotation}
 import firrtl.options.{Dependency, Phase, PhaseManager, Shell, Stage, StageMain}
 import firrtl.stage.FirrtlCircuitAnnotation
 
+<<<<<<< HEAD
+=======
+trait CLI { this: BareShell =>
+  parser.note("CIRCT (MLIR FIRRTL Compiler) options")
+  Seq(
+    CIRCTTargetAnnotation,
+    PreserveAggregate,
+    ChiselGeneratorAnnotation,
+    PrintFullStackTraceAnnotation,
+    ThrowOnFirstErrorAnnotation,
+    WarningsAsErrorsAnnotation,
+    WarningConfigurationAnnotation,
+    WarningConfigurationFileAnnotation,
+    SourceRootAnnotation,
+    SplitVerilog
+  ).foreach(_.addOptions(parser))
+}
+
+>>>>>>> 8e33a68b6 (Add support for configurable warnings (#3414))
 /** Entry point for running Chisel with the CIRCT compiler.
   *
   * This is intended to be a replacement for [[chisel3.stage.ChiselStage]].
