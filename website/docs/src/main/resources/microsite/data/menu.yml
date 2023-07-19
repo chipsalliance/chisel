@@ -160,6 +160,10 @@ options:
         url: chisel3/docs/explanations/source-locators.html
         menu_type: chisel3
         menu_section: source-locators
+      - title: Warnings
+        url: chisel3/docs/explanations/warnings.html
+        menu_type: chisel3
+        menu_section: warnings
       - title: Deep Dive into Connection Operators
         url: chisel3/docs/explanations/connection-operators.html
         menu_type: chisel3

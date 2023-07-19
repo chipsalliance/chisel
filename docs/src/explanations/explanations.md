@@ -43,5 +43,6 @@ read these documents in the following order:
 * [Intrinsic Modules](intrinsics)
 * [Annotations](annotations)
 * [Source Locators](source-locators)
+* [Warnings](warnings)
 * [Deep Dive into Legacy Connection Operators](connection-operators)
 
