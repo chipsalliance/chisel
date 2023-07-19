@@ -237,8 +237,9 @@ object Serializer {
   }
 
   private def s(node: Statement)(implicit b: StringBuilder, indent: Int): Unit = node match {
-    case DefNode(info, name, value) => b ++= "node "; b ++= legalize(name); b ++= " = "; s(value); s(info)
-    case Connect(info, loc, expr)   => b ++= "connect "; s(loc); b ++= ", "; s(expr); s(info)
+    case DefNode(info, name, value)  => b ++= "node "; b ++= legalize(name); b ++= " = "; s(value); s(info)
+    case Connect(info, loc, expr)    => b ++= "connect "; s(loc); b ++= ", "; s(expr); s(info)
+    case PropAssign(info, loc, expr) => b ++= "propassign "; s(loc); b ++= ", "; s(expr); s(info)
     case c: Conditionally => b ++= sIt(c).mkString
     case EmptyStmt => b ++= "skip"
     case bb: Block => b ++= sIt(bb).mkString

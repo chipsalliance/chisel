@@ -8,6 +8,7 @@ import chisel3.internal.containsProbe
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.{Connect, Converter, DefInvalid}
 import chisel3.experimental.dataview.{isView, reify, reifyToAggregate}
+import chisel3.properties.Property
 
 import scala.language.experimental.macros
 import scala.annotation.tailrec
@@ -407,6 +408,15 @@ private[chisel3] object checkConnect {
     sourceInfo:  SourceInfo,
     sink:        Element,
     source:      Element,
+    context_mod: RawModule
+  ): Unit = {
+    checkConnection(sourceInfo, sink, source, context_mod)
+  }
+
+  def apply[T](
+    sourceInfo:  SourceInfo,
+    sink:        Property[T],
+    source:      Property[T],
     context_mod: RawModule
   ): Unit = {
     checkConnection(sourceInfo, sink, source, context_mod)

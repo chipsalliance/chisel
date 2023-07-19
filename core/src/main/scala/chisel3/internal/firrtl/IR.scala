@@ -338,6 +338,7 @@ case class AltBegin(sourceInfo: SourceInfo) extends Command
 case class OtherwiseEnd(sourceInfo: SourceInfo, firrtlDepth: Int) extends Command
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class Connect(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
+private[chisel3] case class PropAssign(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class Attach(sourceInfo: SourceInfo, locs: Seq[Node]) extends Command
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")

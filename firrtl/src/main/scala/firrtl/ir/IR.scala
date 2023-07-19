@@ -302,6 +302,7 @@ object Block {
 
 case class Block(stmts: Seq[Statement]) extends Statement with UseSerializer
 case class Connect(info: Info, loc: Expression, expr: Expression) extends Statement with HasInfo with UseSerializer
+case class PropAssign(info: Info, loc: Expression, expr: Expression) extends Statement with HasInfo with UseSerializer
 case class IsInvalid(info: Info, expr: Expression) extends Statement with HasInfo with UseSerializer
 case class Attach(info: Info, exprs: Seq[Expression]) extends Statement with HasInfo with UseSerializer
 
