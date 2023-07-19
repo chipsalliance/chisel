@@ -99,8 +99,9 @@ package object internal {
   /** Special internal object representing the parent of all views
     *
     * @note this is a val instead of an object because of the need to wrap in Module(...)
+    * @note this is a lazy val so that calling functions in this package object doesn't create it
     */
-  private[chisel3] val ViewParent =
+  private[chisel3] lazy val ViewParent =
     Module.do_apply(new ViewParentAPI)(UnlocatableSourceInfo)
 
   private[chisel3] def requireHasProbeTypeModifier(
@@ -138,5 +139,17 @@ package object internal {
     case a: Aggregate =>
       a.elementsIterator.foldLeft(false)((res: Boolean, d: Data) => res || containsProbe(d))
     case leaf => leaf.probeInfo.nonEmpty
+  }
+
+  // TODO this exists in cats.Traverse, should we just use that?
+  private[chisel3] implicit class ListSyntax[A](xs: List[A]) {
+    def mapAccumulate[B, C](z: B)(f: (B, A) => (B, C)): (B, List[C]) = {
+      val (zz, result) = xs.foldLeft((z, List.empty[C])) {
+        case ((acc, res), a) =>
+          val (accx, c) = f(acc, a)
+          (accx, c :: res)
+      }
+      (zz, result.reverse)
+    }
   }
 }

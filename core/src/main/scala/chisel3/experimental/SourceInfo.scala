@@ -27,10 +27,14 @@ sealed trait SourceInfo {
     * Make a useful message if SourceInfo is available, nothing otherwise
     */
   def makeMessage(f: String => String): String
+
+  /** The filename for the originating source file, if known */
+  def filenameOption: Option[String]
 }
 
 sealed trait NoSourceInfo extends SourceInfo {
   def makeMessage(f: String => String): String = ""
+  def filenameOption: Option[String] = None
 }
 
 /** For when source info can't be generated because of a technical limitation, like for Reg because
@@ -46,6 +50,49 @@ case object DeprecatedSourceInfo extends NoSourceInfo
   */
 case class SourceLine(filename: String, line: Int, col: Int) extends SourceInfo {
   def makeMessage(f: String => String): String = f(s"@[$filename $line:$col]")
+  def filenameOption: Option[String] = Some(filename)
+}
+
+/** Source locator with a line but no column, derived from a stack trace
+  *
+  * Only used for warning and error reporting when no [[SourceLine]] is available
+  */
+private[chisel3] case class SourceLineNoCol(filename: String, line: Int) extends SourceInfo {
+  def makeMessage(f: String => String): String = f(s"@[$filename $line]")
+  def filenameOption: Option[String] = Some(filename)
+}
+private[chisel3] object SourceLineNoCol {
+
+  /** Returns the best guess at the first stack frame that belongs to user code.
+    */
+  private def getUserLineNumber: Option[StackTraceElement] = {
+    def isChiselClassname(className: String): Boolean = {
+      // List of classpath prefixes that are Chisel internals and should be ignored when looking for user code
+      // utils are not part of internals and errors there can be reported
+      val chiselPrefixes = Set(
+        "java.",
+        "scala.",
+        "chisel3.",
+        "chisel3.internal.",
+        "chisel3.experimental.",
+        "chisel3.package$" // for some compatibility / deprecated types
+      )
+      !chiselPrefixes.filter(className.startsWith(_)).isEmpty
+    }
+
+    Thread
+      .currentThread()
+      .getStackTrace
+      .toList
+      .dropWhile(
+        // Get rid of everything in Chisel core
+        ste => isChiselClassname(ste.getClassName)
+      )
+      .headOption
+  }
+
+  def materialize: Option[SourceLineNoCol] =
+    getUserLineNumber.map { elt => new SourceLineNoCol(elt.getFileName, elt.getLineNumber) }
 }
 
 object SourceInfo {
