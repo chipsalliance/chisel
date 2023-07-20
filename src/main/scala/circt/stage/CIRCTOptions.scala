@@ -26,6 +26,7 @@ class CIRCTOptions private[stage] (
     firtoolOptions:    Seq[String] = firtoolOptions,
     splitVerilog:      Boolean = splitVerilog,
     firtoolBinaryPath: Option[String] = firtoolBinaryPath
-  ): CIRCTOptions = new CIRCTOptions(outputFile, preserveAggregate, target, firtoolOptions, splitVerilog, firtoolBinaryPath)
+  ): CIRCTOptions =
+    new CIRCTOptions(outputFile, preserveAggregate, target, firtoolOptions, splitVerilog, firtoolBinaryPath)
 
 }
