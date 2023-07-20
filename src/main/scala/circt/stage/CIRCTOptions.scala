@@ -16,14 +16,16 @@ class CIRCTOptions private[stage] (
   val preserveAggregate: Option[PreserveAggregate.Type] = None,
   val target:            Option[CIRCTTarget.Type] = None,
   val firtoolOptions:    Seq[String] = Seq.empty,
-  val splitVerilog:      Boolean = false) {
+  val splitVerilog:      Boolean = false,
+  val firtoolBinaryPath: Option[String] = None) {
 
   private[stage] def copy(
     outputFile:        Option[File] = outputFile,
     preserveAggregate: Option[PreserveAggregate.Type] = preserveAggregate,
     target:            Option[CIRCTTarget.Type] = target,
     firtoolOptions:    Seq[String] = firtoolOptions,
-    splitVerilog:      Boolean = splitVerilog
-  ): CIRCTOptions = new CIRCTOptions(outputFile, preserveAggregate, target, firtoolOptions, splitVerilog)
+    splitVerilog:      Boolean = splitVerilog,
+    firtoolBinaryPath: Option[String] = firtoolBinaryPath
+  ): CIRCTOptions = new CIRCTOptions(outputFile, preserveAggregate, target, firtoolOptions, splitVerilog, firtoolBinaryPath)
 
 }

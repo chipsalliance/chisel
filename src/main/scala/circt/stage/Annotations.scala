@@ -101,6 +101,8 @@ case class EmittedMLIR(
 
 }
 
+case class FirtoolBinaryPath(option: String) extends NoTargetAnnotation with CIRCTOption
+
 case class FirtoolOption(option: String) extends NoTargetAnnotation with CIRCTOption
 
 /** Annotation that indicates that firtool should run using the
