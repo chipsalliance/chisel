@@ -13,7 +13,7 @@ import java.nio.file.{FileSystems, PathMatcher, Paths}
 import java.util.regex.PatternSyntaxException
 import scala.io.Source
 
-import chisel3.experimental.{NoSourceInfo, SourceInfo, SourceLine, SourceLineNoCol, UnlocatableSourceInfo}
+import chisel3.experimental.{NoSourceInfo, SourceInfo, SourceLine, UnlocatableSourceInfo}
 
 object ExceptionHelpers {
 
@@ -282,8 +282,7 @@ private[chisel3] class ErrorLog(
     */
   private def errorLocationString(si: Option[SourceInfo]): String = {
     si match {
-      case Some(sl: SourceLine) => s"${sl.filename}:${sl.line}:${sl.col}"
-      case Some(sl: SourceLineNoCol) => s"${sl.filename}:${sl.line}"
+      case Some(sl: SourceLine) => sl.serialize
       case Some(_: NoSourceInfo) => "(unknown)"
       case None => ""
     }
