@@ -522,22 +522,86 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
     e.getMessage should include("Cannot drill writable probes upwards.")
   }
 
-  "Defining a writable probe by tapping element within an aggregate" should "work" in {
+  "Defining a writable probe by tapping an element within an aggregate" should "work" in {
     val chirrtl = circt.stage.ChiselStage.emitSystemVerilog(
+      // val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(
       new RawModule {
         class Child() extends RawModule {
-          val io = IO(new Bundle {
-            val x = Output(Bool())
+          val b = Wire(new Bundle {
+            val x = Bool()
           })
+          b := DontCare
+          dontTouch(b)
         }
 
-        val outProbe = IO(probe.RWProbe(Bool()))
         val child = Module(new Child())
-        probe.define(outProbe, BoringUtils.rwTap(child.io.x))
+        val outRWProbe = IO(probe.RWProbe(Bool()))
+        probe.define(outRWProbe, BoringUtils.rwTap(child.b.x))
+        // val outProbe = IO(probe.Probe(Bool()))
+        // probe.define(outProbe, BoringUtils.tap(child.b.x))
       },
       Array("--full-stacktrace")
     )
-
     println(chirrtl)
+  }
+
+  "Defining a writable probe by tapping an IO" should "work" in {
+    val chirrtl = circt.stage.ChiselStage.emitSystemVerilog(
+      // val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(
+      new RawModule {
+        class Child() extends RawModule {
+          val x = IO(Output(Bool()))
+          x := DontCare
+          dontTouch(x)
+        }
+
+        val child = Module(new Child())
+        val outRWProbe = IO(probe.RWProbe(Bool()))
+        probe.define(outRWProbe, BoringUtils.rwTap(child.x))
+        // val outProbe = IO(probe.Probe(Bool()))
+        // probe.define(outProbe, BoringUtils.tap(child.x))
+      },
+      Array("--full-stacktrace")
+    )
+    println(chirrtl)
+  }
+
+  "Intermediary wire workaround" should "work" in {
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(
+      new RawModule {
+        class Child() extends RawModule {
+          val x = IO(Output(Bool()))
+          x := DontCare
+          dontTouch(x)
+          val intermed = Wire(Bool())
+          intermed := x
+        }
+
+        val child = Module(new Child())
+        val outRWProbe = IO(probe.RWProbe(Bool()))
+        probe.define(outRWProbe, BoringUtils.rwTap(child.intermed))
+        // val outProbe = IO(probe.Probe(Bool()))
+        // probe.define(outProbe, BoringUtils.tap(child.x))
+      },
+      Array("--full-stacktrace")
+    )
+    println(chirrtl)
+    val verilog = circt.stage.ChiselStage.emitSystemVerilog(
+      new RawModule {
+        class Child() extends RawModule {
+          val x = IO(Output(Bool()))
+          x := DontCare
+          dontTouch(x)
+          val intermed = Wire(Bool())
+          intermed := x
+        }
+
+        val child = Module(new Child())
+        val outRWProbe = IO(probe.RWProbe(Bool()))
+        probe.define(outRWProbe, BoringUtils.rwTap(child.intermed))
+      },
+      Array("--full-stacktrace")
+    )
+    println(verilog)
   }
 }
