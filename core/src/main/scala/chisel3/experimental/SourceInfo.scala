@@ -47,21 +47,21 @@ case object UnlocatableSourceInfo extends NoSourceInfo
 case object DeprecatedSourceInfo extends NoSourceInfo
 
 /** For FIRRTL lines from a Scala source line.
+  *
+  * @note A column == 0 indicates no column
   */
 case class SourceLine(filename: String, line: Int, col: Int) extends SourceInfo {
-  def makeMessage(f: String => String): String = f(s"@[$filename $line:$col]")
+  def makeMessage(f: String => String): String = f(s"@[${this.serialize}]")
   def filenameOption: Option[String] = Some(filename)
+
+  /** Convert to String for FIRRTL emission */
+  def serialize: String = {
+    if (col == 0) s"$filename $line" else s"$filename $line:$col"
+  }
 }
 
-/** Source locator with a line but no column, derived from a stack trace
-  *
-  * Only used for warning and error reporting when no [[SourceLine]] is available
-  */
-private[chisel3] case class SourceLineNoCol(filename: String, line: Int) extends SourceInfo {
-  def makeMessage(f: String => String): String = f(s"@[$filename $line]")
-  def filenameOption: Option[String] = Some(filename)
-}
-private[chisel3] object SourceLineNoCol {
+object SourceInfo {
+  implicit def materialize: SourceInfo = macro SourceInfoMacro.generate_source_info
 
   /** Returns the best guess at the first stack frame that belongs to user code.
     */
@@ -91,10 +91,9 @@ private[chisel3] object SourceLineNoCol {
       .headOption
   }
 
-  def materialize: Option[SourceLineNoCol] =
-    getUserLineNumber.map { elt => new SourceLineNoCol(elt.getFileName, elt.getLineNumber) }
-}
-
-object SourceInfo {
-  implicit def materialize: SourceInfo = macro SourceInfoMacro.generate_source_info
+  private[chisel3] def materializeFromStacktrace: SourceInfo =
+    getUserLineNumber match {
+      case Some(elt) => new SourceLine(elt.getFileName, elt.getLineNumber, 0)
+      case None      => UnlocatableSourceInfo
+    }
 }

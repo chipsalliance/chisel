@@ -2,7 +2,7 @@
 
 package chisel3.internal
 
-import chisel3.experimental.{SourceInfo, SourceLineNoCol, UnlocatableSourceInfo}
+import chisel3.experimental.SourceInfo
 
 ///////////////////////////////////////////////////
 // Never remove IDs and only ever add to the end //
@@ -30,7 +30,7 @@ private[chisel3] object Warning {
     new Warning(info, id, num + msg)
   }
   def noInfo(id: WarningID, msg: String): Warning = {
-    implicit val info = SourceLineNoCol.materialize.getOrElse(UnlocatableSourceInfo)
+    implicit val info = SourceInfo.materializeFromStacktrace
     Warning(id, msg)
   }
 }
