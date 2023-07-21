@@ -101,6 +101,7 @@ case class EmittedMLIR(
 
 }
 
+/** Annotation that tells [[circt.stage.phases.CIRCT CIRCT]] what firtool executable to use */
 case class FirtoolBinaryPath(option: String) extends NoTargetAnnotation with CIRCTOption
 
 case class FirtoolOption(option: String) extends NoTargetAnnotation with CIRCTOption
