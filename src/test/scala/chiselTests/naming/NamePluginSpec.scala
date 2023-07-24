@@ -375,4 +375,37 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
       Select.wires(top).map(_.instanceName) should be(List("_a_b_c"))
     }
   }
+
+  "tuples" should "be named" in {
+    class Test extends Module {
+      val x = (Wire(UInt(3.W)), Wire(UInt(3.W)))
+    }
+
+    aspectTest(() => new Test) { top: Test =>
+      Select.wires(top).map(_.instanceName) should be(List("x_1", "x_2"))
+    }
+  }
+
+  "nested tuples" should "be named" in {
+    class Test extends Module {
+      val x = (
+        (Wire(UInt(3.W)), Wire(UInt(3.W))),
+        (Wire(UInt(3.W)), Wire(UInt(3.W)))
+      )
+    }
+
+    aspectTest(() => new Test) { top: Test =>
+      Select.wires(top).map(_.instanceName) should be(List("x_1_1", "x_1_2", "x_2_1", "x_2_2"))
+    }
+  }
+
+  "tuples containing non-Data" should "be named" in {
+    class Test extends Module {
+      val x = (Wire(UInt(3.W)), "foobar", Wire(UInt(3.W)))
+    }
+
+    aspectTest(() => new Test) { top: Test =>
+      Select.wires(top).map(_.instanceName) should be(List("x_1", "x_3"))
+    }
+  }
 }

@@ -768,6 +768,12 @@ private[chisel3] object Builder extends LazyLogging {
       for ((elt, i) <- iter.zipWithIndex) {
         nameRecursively(s"${prefix}_${i}", elt, namer)
       }
+    case product: Product =>
+      product.productIterator.zipWithIndex.foreach {
+        case (elt, i) =>
+          // tuple field names are 1-based (_1, _2, _3, ...)
+          nameRecursively(s"${prefix}_${i + 1}", elt, namer)
+      }
     case _ => // Do nothing
   }
 
