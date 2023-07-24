@@ -101,7 +101,7 @@ case class EmittedMLIR(
 
 }
 
-case object FirtoolBinaryPath extends HasShellOptions {
+private[stage] case object FirtoolBinaryPath extends HasShellOptions {
   override def options = Seq(
     new ShellOption(
       longOption = "firtool-binary-path",
