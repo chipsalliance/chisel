@@ -68,10 +68,30 @@ package object probe extends SourceInfoDoc {
     }
   }
 
+  /** Pad [[Data]] to the width of a probe if it supports padding */
+  private def padDataToProbeWidth[T <: Data](data: T, probe: Data)(implicit sourceInfo: SourceInfo): T = {
+    // check probe width is known
+    requireHasProbeTypeModifier(probe, s"Expected $probe to be a probe.")
+    if (!probe.isWidthKnown) Builder.error("Probe width unknown.")
+    val probeWidth = probe.widthOption.getOrElse(0)
+
+    // check data width is known
+    data.widthOption match {
+      case None => Builder.error("Data width unknown.")
+      case Some(w) =>
+        if (probe.widthOption.exists(w > _)) Builder.error(s"Data width $w is larger than $probeWidth.")
+    }
+
+    data match {
+      case d: Bits => d.pad(probeWidth).asInstanceOf[T]
+      case d => d
+    }
+  }
+
   /** Override existing driver of a writable probe on initialization. */
   def forceInitial(probe: Data, value: Data)(implicit sourceInfo: SourceInfo): Unit = {
     requireHasWritableProbeTypeModifier(probe, "Cannot forceInitial a non-writable Probe.")
-    pushCommand(ProbeForceInitial(sourceInfo, probe.ref, value.ref))
+    pushCommand(ProbeForceInitial(sourceInfo, probe.ref, padDataToProbeWidth(value, probe).ref))
   }
 
   /** Release initial driver on a probe. */
@@ -83,7 +103,7 @@ package object probe extends SourceInfoDoc {
   /** Override existing driver of a writable probe. */
   def force(clock: Clock, cond: Bool, probe: Data, value: Data)(implicit sourceInfo: SourceInfo): Unit = {
     requireHasWritableProbeTypeModifier(probe, "Cannot force a non-writable Probe.")
-    pushCommand(ProbeForce(sourceInfo, clock.ref, cond.ref, probe.ref, value.ref))
+    pushCommand(ProbeForce(sourceInfo, clock.ref, cond.ref, probe.ref, padDataToProbeWidth(value, probe).ref))
   }
 
   /** Release driver on a probe. */

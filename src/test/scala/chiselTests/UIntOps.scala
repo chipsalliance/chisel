@@ -87,6 +87,12 @@ class UIntOpsTester(a: Long, b: Long) extends BasicTester {
   assert(dut.io.lesseqout === (a <= b).B)
   assert(dut.io.greateqout === (a >= b).B)
 
+  val zeroWidthWire = dut.io.greatout.take(0)
+  assert(zeroWidthWire.getWidth == 0, "take(0) should return a zero width")
+
+  val oneWidthWire = dut.io.greatout.take(1)
+  assert(oneWidthWire.getWidth == 1, "take(1) should return a one width")
+
   stop()
 }
 

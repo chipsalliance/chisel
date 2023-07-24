@@ -25,7 +25,7 @@ class ConstSpec extends ChiselFlatSpec with Utils {
         Array("--throw-on-first-error")
       )
     }
-    exc.getMessage should be("Cannot create register with constant value.")
+    exc.getMessage should include("Cannot create register with constant value.")
   }
 
   "Const modifier on I/O" should "emit FIRRTL const descriptors" in {
@@ -68,7 +68,7 @@ class ConstSpec extends ChiselFlatSpec with Utils {
         Array("--throw-on-first-error")
       )
     }
-    exc.getMessage should be("Mem type cannot be const.")
+    exc.getMessage should include("Mem type cannot be const.")
   }
 
   "Const of Probe" should "fail" in {
@@ -80,7 +80,7 @@ class ConstSpec extends ChiselFlatSpec with Utils {
         Array("--throw-on-first-error")
       )
     }
-    exc.getMessage should be("Cannot create Const of a Probe.")
+    exc.getMessage should include("Cannot create Const of a Probe.")
   }
 
   class FooBundle extends Bundle {

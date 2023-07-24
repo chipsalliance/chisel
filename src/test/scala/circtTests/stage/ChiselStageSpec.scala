@@ -461,7 +461,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
       val lines = stdout.split("\n")
       // Fuzzy includes aren't ideal but there is ANSI color in these strings that is hard to match
       lines(0) should include(
-        "src/test/scala/circtTests/stage/ChiselStageSpec.scala:90:9: Negative shift amounts are illegal (got -1)"
+        "src/test/scala/circtTests/stage/ChiselStageSpec.scala 90:9: Negative shift amounts are illegal (got -1)"
       )
       lines(1) should include("    3.U >> -1")
       lines(2) should include("        ^")
@@ -482,7 +482,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
       // Fuzzy includes aren't ideal but there is ANSI color in these strings that is hard to match
       lines.size should equal(2)
       lines(0) should include(
-        "src/test/scala/circtTests/stage/ChiselStageSpec.scala:90:9: Negative shift amounts are illegal (got -1)"
+        "src/test/scala/circtTests/stage/ChiselStageSpec.scala 90:9: Negative shift amounts are illegal (got -1)"
       )
       (lines(1) should not).include("3.U >> -1")
     }
@@ -507,7 +507,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
 
       val lines = stdout.split("\n")
       // Fuzzy includes aren't ideal but there is ANSI color in these strings that is hard to match
-      lines(0) should include("Foo:3:10: Negative shift amounts are illegal (got -1)")
+      lines(0) should include("Foo 3:10: Negative shift amounts are illegal (got -1)")
       lines(1) should include("I am the file in sourceroot1")
       lines(2) should include("         ^")
     }
@@ -532,7 +532,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
 
       val lines = stdout.split("\n")
       // Fuzzy includes aren't ideal but there is ANSI color in these strings that is hard to match
-      lines(0) should include("Foo:3:10: Negative shift amounts are illegal (got -1)")
+      lines(0) should include("Foo 3:10: Negative shift amounts are illegal (got -1)")
       lines(1) should include("I am the file in sourceroot2")
       lines(2) should include("         ^")
     }

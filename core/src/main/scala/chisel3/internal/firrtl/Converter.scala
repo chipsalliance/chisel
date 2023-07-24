@@ -45,8 +45,8 @@ private[chisel3] object Converter {
   }
 
   def convert(info: SourceInfo): fir.Info = info match {
-    case _: NoSourceInfo => fir.NoInfo
-    case SourceLine(fn, line, col) => fir.FileInfo.fromUnescaped(s"$fn $line:$col")
+    case _:  NoSourceInfo => fir.NoInfo
+    case sl: SourceLine   => fir.FileInfo.fromUnescaped(sl.serialize)
   }
 
   def convert(op: PrimOp): fir.PrimOp = firrtl.PrimOps.fromString(op.name)
