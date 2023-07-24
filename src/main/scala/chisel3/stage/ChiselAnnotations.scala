@@ -133,6 +133,20 @@ case class WarningConfigurationFileAnnotation(value: File)
     with Unserializable
     with ChiselOption {
 
+  /** Removes line comments (starting with '#') and trims leading and trailing whitespace
+    *
+    * Returns the trimmed String and the number of whitespace characters trimmed from the beginning
+    */
+  private def trimAndRemoveComments(s: String): (String, Int) = {
+    val commentStart = s.indexOf('#')
+    val noComment = if (commentStart == -1) s else s.splitAt(commentStart)._1 // Only take part before line comment
+    val trimmed = noComment.trim()
+    // We still need to calculate how much whitespace was removed for use in error messages
+    val amountTrimmedFromStart =
+      trimmed.headOption.map(c => s.indexOf(c)).filter(_ > 0).getOrElse(0)
+    (trimmed, amountTrimmedFromStart)
+  }
+
   // This is eager so that the validity of the value String can be checked right away
   private[chisel3] val filters: Seq[WarningFilter] = {
     require(value.exists, s"Warning configuration file '$value' must exist!")
@@ -140,13 +154,12 @@ case class WarningConfigurationFileAnnotation(value: File)
     val lines = scala.io.Source.fromFile(value).getLines()
     lines.zipWithIndex.flatMap {
       case (contents, lineNo) =>
-        // Strip line comments (denoted with #)
-        val str = contents.takeWhile(_ != '#')
+        val (str, jdx) = trimAndRemoveComments(contents)
         Option.when(str.nonEmpty) {
           WarningFilter.parse(str) match {
             case Right(wf) => wf
             case Left((idx, msg)) =>
-              val carat = (" " * idx) + "^"
+              val carat = (" " * (idx + jdx)) + "^"
               val info = s"$value:${lineNo + 1}:$idx" // +1 to lineNo because we start at 0 but files start with 1
               // Note tab before value and carat
               throw new Exception(
