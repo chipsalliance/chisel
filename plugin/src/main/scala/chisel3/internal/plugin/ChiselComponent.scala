@@ -232,7 +232,11 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
               val onames: List[Option[String]] =
                 fieldsOfInterest.zip(names).map { case (ok, name) => if (ok) Some(name) else None }
               val newRHS = transform(rhs)
-              val named = q"chisel3.internal.plugin.autoNameRecursivelyProduct($onames)($newRHS)"
+              // for tuple destructuring assignments, prefix using the concatenation of all names
+              // e.g. for `val (a, b, c) = ...` use prefix "a_b_c"
+              val prefix = names.map(_.stripPrefix("_")).mkString("_")
+              val prefixed = q"chisel3.experimental.prefix.apply[$tpt](name=$prefix)(f=$newRHS)"
+              val named = q"chisel3.internal.plugin.autoNameRecursivelyProduct($onames)($prefixed)"
               treeCopy.ValDef(dd, mods, name, tpt, localTyper.typed(named))
             case None => // It's not clear how this could happen but we don't want to crash
               super.transform(tree)
