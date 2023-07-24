@@ -185,7 +185,7 @@ class CIRCT extends Phase {
 
     val circtAnnotationFilename = "circt.anno.json"
 
-    val binary = "firtool"
+    val binary = circtOptions.firtoolBinaryPath.getOrElse("firtool")
 
     val cmd =
       Seq(binary, "-format=fir", "-warn-on-unprocessed-annotations", "-dedup") ++
