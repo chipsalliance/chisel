@@ -14,6 +14,7 @@ import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{SourceInfoTransform, VecTransform}
+import _root_.firrtl.{ir => fir}
 
 import java.lang.Math.{floor, log10, pow}
 import scala.collection.mutable
@@ -1449,4 +1450,51 @@ abstract class Bundle extends Record {
     *   the fields in the order they were defined
     */
   override def toPrintable: Printable = toPrintableHelper(_elements.toList.reverse)
+
+  /** An optional FIRRTL type alias name to give to this bundle. If overrided with a Some, for instance Some("UserBundle"),
+    * this causes emission of FIRRTL statements that declare that name for this bundle type:
+    *
+    * ```
+    * type UserBundle = { ... }
+    * ```
+    */
+  def aliasName: Option[String] = None
+
+  private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
+    super.bind(target, parentDirection)
+
+    aliasName.map(name => {
+      val sourceInfo = UnlocatableSourceInfo
+      val candidateAlias = name
+
+      // Compute the structural type of this bundle with no subfield aliasing
+      val thisType = Converter.extractType(
+        this,
+        sourceInfo
+      )
+
+      // If the name is already taken, check if there exists a *structurally equivalent* bundle with the same name, and
+      // simply error (TODO: disambiguate that name)
+      if (
+        Builder.globalBundleNamespace
+          .contains(candidateAlias) && Builder.bundleStructuralHashMap.get(candidateAlias).exists {
+          case (_, existingType) =>
+            thisType match {
+              // If this Bundle has already been aliased before, extractType now returns an `AliasType`, so
+              // we have to compare name inequality
+              case fir.AliasType(name) => name != candidateAlias
+              case otherType           => existingType != otherType
+            }
+        }
+      ) {
+        // Conflict found:
+        Builder.error(
+          s"Attempted to redeclare an existing type alias '$candidateAlias' with a new bundle structure '$thisType'!"
+        )(sourceInfo)
+      } else if (!Builder.globalBundleNamespace.contains(candidateAlias)) {
+        Builder.globalBundleNamespace.name(candidateAlias)
+        Builder.bundleStructuralHashMap.put(candidateAlias, (this, thisType))
+      }
+    })
+  }
 }

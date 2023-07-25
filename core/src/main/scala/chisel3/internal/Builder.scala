@@ -14,6 +14,7 @@ import _root_.firrtl.annotations.AnnotationUtils.validComponentName
 import _root_.firrtl.AnnotationSeq
 import _root_.firrtl.renamemap.MutableRenameMap
 import _root_.firrtl.util.BackendCompilationUtilities._
+import _root_.firrtl.{ir => fir}
 import chisel3.experimental.dataview.{reify, reifySingleData}
 import chisel3.internal.Builder.Prefix
 import logger.LazyLogging
@@ -451,6 +452,14 @@ private[chisel3] class DynamicContext(
 
   val globalNamespace = Namespace.empty
   val globalIdentifierNamespace = Namespace.empty('$')
+  val globalBundleNamespace = Namespace.empty
+
+  // A mapping from previously named bundles to their hashed structural/FIRRTL types, for
+  // disambiguation purposes when emitting type aliases
+  // Records are used as the key for this map to both represent their alias name and preserve
+  // the chisel Bundle structure when passing everything off to the Converter
+  private[chisel3] val bundleStructuralHashMap: mutable.LinkedHashMap[String, (Bundle, fir.Type)] =
+    mutable.LinkedHashMap.empty[String, (Bundle, fir.Type)]
 
   // Ensure imported Definitions emit as ExtModules with the correct name so
   // that instantiations will also use the correct name and prevent any name
@@ -534,8 +543,13 @@ private[chisel3] object Builder extends LazyLogging {
 
   def globalNamespace:           Namespace = dynamicContext.globalNamespace
   def globalIdentifierNamespace: Namespace = dynamicContext.globalIdentifierNamespace
-  def components:                ArrayBuffer[Component] = dynamicContext.components
-  def annotations:               ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
+
+  def bundleStructuralHashMap: mutable.LinkedHashMap[String, (Bundle, fir.Type)] =
+    dynamicContext.bundleStructuralHashMap
+  def globalBundleNamespace: Namespace = dynamicContext.globalBundleNamespace
+
+  def components:  ArrayBuffer[Component] = dynamicContext.components
+  def annotations: ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
 
   def contextCache: BuilderContextCache = dynamicContext.contextCache
 
@@ -845,7 +859,22 @@ private[chisel3] object Builder extends LazyLogging {
       errors.checkpoint(logger)
       logger.info("Done elaborating.")
 
-      (Circuit(components.last.name, components.toSeq, annotations.toSeq, makeViewRenameMap, newAnnotations.toSeq), mod)
+      val typeAliases = bundleStructuralHashMap.map {
+        // Discard the previously-computed FIRRTL type as the converter will now have alias information
+        case (name, (b: Bundle, _)) => DefTypeAlias(UnlocatableSourceInfo, b, name)
+      }.toSeq
+
+      (
+        Circuit(
+          components.last.name,
+          components.toSeq,
+          annotations.toSeq,
+          makeViewRenameMap,
+          newAnnotations.toSeq,
+          typeAliases
+        ),
+        mod
+      )
     }
   }
   initializeSingletons()

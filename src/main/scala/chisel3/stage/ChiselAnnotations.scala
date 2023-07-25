@@ -220,7 +220,8 @@ case class CircuitSerializationAnnotation(circuit: Circuit, filename: String, fo
       val withAnnos = CircuitWithAnnos(converted, annos)
       Serializer.lazily(withAnnos)
     }
-    val modules = circuit.components.iterator.map(Converter.convert)
+    val typeAliases: Seq[String] = circuit.typeAliases.map(_.name)
+    val modules = circuit.components.iterator.map(c => Converter.convert(c, typeAliases))
     val moduleStrings = modules.flatMap { m =>
       Serializer.lazily(m, 1) ++ Seq("\n\n")
     }

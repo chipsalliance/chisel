@@ -268,7 +268,8 @@ object Serializer {
       writers.foreach { w => b ++= "writer => "; b ++= w; newLineAndIndent(1) }
       readwriters.foreach { r => b ++= "readwriter => "; b ++= r; newLineAndIndent(1) }
       b ++= "read-under-write => "; b ++= readUnderWrite.toString
-    case Attach(info, exprs) =>
+    case DefTypeAlias(name, tpe) => b ++= "type "; b ++= name; b ++= " = "; s(tpe);
+    case Attach(info, exprs)     =>
       // exprs should never be empty since the attach statement takes *at least* two signals according to the spec
       b ++= "attach ("; s(exprs, ", "); b += ')'; s(info)
     case veri @ Verification(op, info, clk, pred, en, msg) =>
@@ -338,6 +339,7 @@ object Serializer {
     case ResetType             => b ++= "Reset"
     case AsyncResetType        => b ++= "AsyncReset"
     case AnalogType(width)     => b ++= "Analog"; s(width)
+    case AliasType(name)       => b ++= name
     case UnknownType           => b += '?'
     case other                 => b ++= other.serialize // Handle user-defined nodes
   }
@@ -408,7 +410,14 @@ object Serializer {
       s(circuit.info)
       Iterator(b.toString)
     }
+    val typeAliases = if (circuit.typeAliases.nonEmpty) {
+      implicit val b = new StringBuilder
+      circuit.typeAliases.foreach(ta => { b ++= s"${NewLine}"; doIndent(1); s(ta) })
+      b ++= s"${NewLine}"
+      Iterator(b.toString)
+    } else Iterator.empty
     prelude ++
+      typeAliases ++
       circuit.modules.iterator.zipWithIndex.flatMap {
         case (m, i) =>
           val newline = Iterator(if (i == 0) s"$NewLine" else s"${NewLine}${NewLine}")
