@@ -75,3 +75,16 @@ class ConnectExample extends RawModule {
 Connections are only supported between the same `Property` type. For example, a
 `Property[Int]` may only be connected to a `Property[Int]`. This is enforced by
 the Scala compiler.
+
+### Property Literals
+
+The legal `Property` types may be used to construct literals by applying the
+`Property` object to a literal value of the `Property` type. For example, a
+`Property` literal may be connected to an output `Property` type port:
+
+```scala mdoc:silent
+class LiteralExample extends RawModule {
+  val outPort = IO(Output(Property[Int]()))
+  outPort := Property(123)
+}
+```

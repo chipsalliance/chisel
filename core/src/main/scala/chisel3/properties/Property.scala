@@ -147,4 +147,12 @@ object Property {
   def apply[T: PropertyType](): Property[T] = {
     new Property[T]
   }
+
+  /** Create a new Property literal of type T.
+    */
+  def apply[T: PropertyType](lit: T): Property[T] = {
+    val literal = ir.PropertyLit[T](lit)
+    val result = new Property[T]
+    literal.bindLitArg(result)
+  }
 }

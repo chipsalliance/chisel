@@ -4,7 +4,7 @@ package chisel3.internal
 
 import chisel3._
 import chisel3.experimental.BaseModule
-import chisel3.internal.firrtl.LitArg
+import chisel3.internal.firrtl.{LitArg, PropertyLit}
 
 import scala.collection.immutable.VectorMap
 
@@ -162,3 +162,7 @@ case class BundleLitBinding(litMap: Map[Data, LitArg]) extends LitBinding
 // Literal binding attached to the root of a Vec, containing literal values of its children.
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class VecLitBinding(litMap: VectorMap[Data, LitArg]) extends LitBinding
+// Literal binding attached to a Property.
+private[chisel3] case class PropertyLitBinding(litProp: PropertyLit[_])
+    extends UnconstrainedBinding
+    with ReadOnlyBinding

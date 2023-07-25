@@ -231,6 +231,12 @@ object SIntLiteral {
   def minWidth(value: BigInt): Width = IntWidth(value.bitLength + 1)
   def apply(value:    BigInt): SIntLiteral = new SIntLiteral(value, minWidth(value))
 }
+
+case class IntegerPropertyLiteral(value: BigInt) extends Literal with UseSerializer {
+  def tpe = IntegerPropertyType
+  val width = UnknownWidth
+}
+
 case class DoPrim(op: PrimOp, args: Seq[Expression], consts: Seq[BigInt], tpe: Type)
     extends Expression
     with UseSerializer

@@ -17,6 +17,13 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
     """)
   }
 
+  it should "fail to compile with unsupported Property literals" in {
+    assertTypeError("""
+      class MyThing
+      val badProp = Property(new MyThing)
+    """)
+  }
+
   it should "support Int as a Property type" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
       val intProp = IO(Input(Property[Int]()))
@@ -24,6 +31,17 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
 
     matchesAndOmits(chirrtl)(
       "input intProp : Integer"
+    )()
+  }
+
+  it should "support Int as a Property literal" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val propOut = IO(Output(Property[Int]()))
+      propOut := Property(123)
+    })
+
+    matchesAndOmits(chirrtl)(
+      "propassign propOut, Integer(123)"
     )()
   }
 
@@ -37,6 +55,17 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
     )()
   }
 
+  it should "support Long as a Property literal" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val propOut = IO(Output(Property[Long]()))
+      propOut := Property(123)
+    })
+
+    matchesAndOmits(chirrtl)(
+      "propassign propOut, Integer(123)"
+    )()
+  }
+
   it should "support BigInt as a Property type" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
       val bigIntProp = IO(Input(Property[BigInt]()))
@@ -44,6 +73,17 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
 
     matchesAndOmits(chirrtl)(
       "input bigIntProp : Integer"
+    )()
+  }
+
+  it should "support BigInt as a Property literal" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val propOut = IO(Output(Property[BigInt]()))
+      propOut := Property(123)
+    })
+
+    matchesAndOmits(chirrtl)(
+      "propassign propOut, Integer(123)"
     )()
   }
 
