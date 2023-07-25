@@ -408,4 +408,14 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
       Select.wires(top).map(_.instanceName) should be(List("x_1", "x_3"))
     }
   }
+
+  "tuples nested in options" should "be named" in {
+    class Test extends Module {
+      val x = Option((Wire(UInt(3.W)), Wire(UInt(3.W))))
+    }
+
+    aspectTest(() => new Test) { top: Test =>
+      Select.wires(top).map(_.instanceName) should be(List("x_1", "x_2"))
+    }
+  }
 }
