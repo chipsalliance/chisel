@@ -80,6 +80,8 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
     }
 
     private val shouldMatchData: Type => Boolean = shouldMatchGen(tq"chisel3.Data")
+    private val shouldMatchProduct: Type => Boolean = shouldMatchGen(tq"Product")
+
     // Checking for all chisel3.internal.NamedComponents, but since it is internal, we instead have
     // to match the public subtypes
     private val shouldMatchNamedComp: Type => Boolean =
@@ -222,6 +224,38 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
           // Otherwise, continue
           super.transform(tree)
         }
+        // New experimental case for TupleN/Product
+      case dd@ValDef(mods, name, tpt, rhs@Match(_, _)) if okUnapply(dd) && shouldMatchProduct(inferType(rhs)) =>
+        println(s"We have a Product ${dd.toString.split("\n").head.take(50)}\nName: =${stringFromTermName(name)}")
+        rhs match {
+          case pq"$tupleType(..$tupleElements)" =>
+          //            if tupleType.toString.startsWith("scala.Tuple") && tupleContainsData(tupleElements)=>
+
+          println(s"We have a TupleN ${dd.toString.split("\n").head.take(50)}")
+          val tpe = inferType (tpt)
+          val fieldsOfInterest: List[Boolean] = tpe.typeArgs.map (shouldMatchData)
+            // Only transform if at least one field is of interest
+          if (fieldsOfInterest.reduce (_|| _) ) {
+            findUnapplyNames (rhs) match {
+              case Some (names) =>
+              val onames: List[Option[String]] =
+              fieldsOfInterest.zip (names).map {
+              case (ok, name) => if (ok) Some (name) else None
+              }
+              val newRHS = transform (rhs)
+              val named = q"chisel3.internal.plugin.autoNameRecursivelyProduct($onames)($newRHS)"
+              treeCopy.ValDef (dd, mods, name, tpt, localTyper.typed (named) )
+              case None => // It's not clear how this could happen but we don't want to crash
+              super.transform (tree)
+              }
+              } else {
+          super.transform (tree)
+          }
+        case _ =>
+          println("Bailing at tuple detection")
+          super.transform (tree)
+        }
+
       case dd @ ValDef(mods, name, tpt, rhs @ Match(_, _)) if okUnapply(dd) =>
         val tpe = inferType(tpt)
         val fieldsOfInterest: List[Boolean] = tpe.typeArgs.map(shouldMatchData)

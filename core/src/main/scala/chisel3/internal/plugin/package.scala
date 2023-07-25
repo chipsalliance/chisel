@@ -51,4 +51,36 @@ package object plugin {
     }
     result
   }
+
+  // The actual implementation
+  private def _withName[T <: Any](prevId: Long, name: String, nameMe: T): T = {
+    chisel3.internal.Builder.nameRecursively(
+      name,
+      nameMe,
+      (id: chisel3.internal.HasId, n: String) => {
+        // Name override only if result was created in this scope
+        if (id._id > prevId) {
+          id.forceAutoSeed(n)
+        }
+      }
+    )
+    nameMe
+  }
+  /** Used by Chisel's compiler plugin to automatically name signals
+    * DO NOT USE in your normal Chisel code!!!
+    *
+    * @param name The name to use a prefix across this Product
+    * @param nameMe The [[scala.Product]] to be named
+    * @tparam T The type of the thing to be named
+    * @return The thing, but with each member named
+    */
+  def withName[T <: Product](name: String, nameMe: => T): T = {
+    // The _id of the most recently constructed HasId
+    val prevId = Builder.idGen.value
+    val result = nameMe
+    for (t <- result.productIterator) {
+      _autoNameRecursively(prevId, name, t)
+    }
+    result
+  }
 }
