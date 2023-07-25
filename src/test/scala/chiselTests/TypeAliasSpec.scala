@@ -112,8 +112,8 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
   "Duplicate bundle type aliases with differing structures" should "error" in {
     (the[ChiselException] thrownBy extractCause[ChiselException] {
       class Test extends Module {
-        // All three of these bundles are structurally equivalent in FIRRTL and thus
-        // are equivalent, substitutable aliases for each other. Merge/dedup them into one
+        // These bundles are structurally unequivalent and so must be aliased with different names.
+        // Error if they share the same name
         class FooBundle extends Bundle {
           override def aliasName = Some("DifferentBundle")
 
