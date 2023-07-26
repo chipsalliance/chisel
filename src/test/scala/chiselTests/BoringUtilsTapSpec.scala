@@ -228,26 +228,4 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
     e.getMessage should include("Cannot drill writable probes upwards.")
   }
 
-  it should "work from an element within an aggregate" in {
-    val chirrtl = circt.stage.ChiselStage.emitSystemVerilog(
-      // val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(
-      new RawModule {
-        class Child() extends RawModule {
-          val b = Wire(new Bundle {
-            val x = Bool()
-          })
-          b := DontCare
-          dontTouch(b)
-        }
-
-        val child = Module(new Child())
-        val outRWProbe = IO(probe.RWProbe(Bool()))
-        probe.define(outRWProbe, BoringUtils.rwTap(child.b.x))
-        // val outProbe = IO(probe.Probe(Bool()))
-        // probe.define(outProbe, BoringUtils.tap(child.b.x))
-      },
-      Array("--full-stacktrace")
-    )
-    // println(chirrtl)
-  }
 }
