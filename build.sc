@@ -1,3 +1,6 @@
+import $ivy.`com.github.lolgab::mill-mima::0.0.23`
+import $ivy.`io.chris-kipp::mill-ci-release::0.1.9`
+
 import mill._
 import mill.scalalib._
 import mill.scalalib.TestModule._
@@ -5,6 +8,8 @@ import mill.scalalib.publish._
 import mill.scalalib.scalafmt._
 import coursier.maven.MavenRepository
 import mill.scalalib.api.ZincWorkerUtil.matchingVersions
+import com.github.lolgab.mill.mima._
+import io.kipp.mill.ci.release.{CiReleaseModule, SonatypeHost}
 import $file.common
 
 object v {
@@ -134,33 +139,7 @@ trait Core
     }
   }
 
-  def buildVersion = T("build-from-source")
-
-  private def generateBuildInfo = T {
-    val outputFile = T.dest / "chisel3" / "BuildInfo.scala"
-    val firtoolVersionString = firtoolVersion().map("Some(" + _ + ")").getOrElse("None")
-    val contents =
-      s"""
-         |package chisel3
-         |case object BuildInfo {
-         |  val buildInfoPackage: String = "${artifactName()}"
-         |  val version: String = "${buildVersion()}"
-         |  val scalaVersion: String = "${scalaVersion()}"
-         |  val firtoolVersion: scala.Option[String] = $firtoolVersionString
-         |  override val toString: String = {
-         |    "buildInfoPackage: %s, version: %s, scalaVersion: %s, firtoolVersion %s".format(
-         |        buildInfoPackage, version, scalaVersion, firtoolVersion
-         |    )
-         |  }
-         |}
-         |""".stripMargin
-    os.write(outputFile, contents, createFolders = true)
-    PathRef(T.dest)
-  }
-
-  override def generatedSources = T {
-    super.generatedSources() :+ generateBuildInfo()
-  }
+  def buildVersion = T(os.proc("git", "describe", "--tags", "--dirty").call().out.lines.head.stripPrefix("v"))
 }
 
 object plugin extends Cross[Plugin](v.pluginScalaCrossVersions)
@@ -233,7 +212,10 @@ trait Stdlib
   def pluginModule = plugin(crossScalaVersion)
 }
 
-trait ChiselPublishModule extends PublishModule {
+trait ChiselPublishModule
+    extends PublishModule
+    with CiReleaseModule
+    with Mima {
   def pomSettings = PomSettings(
     description = artifactName(),
     organization = "org.chipsalliance",
@@ -242,5 +224,7 @@ trait ChiselPublishModule extends PublishModule {
     versionControl = VersionControl.github("chipsalliance", "chisel"),
     developers = Seq()
   )
-  def publishVersion = "5.0-SNAPSHOT"
+  def mimaPreviousVersions = os.read.lines(os.pwd / "project" / "previous-versions.txt")
+
+  override def sonatypeHost = Some(SonatypeHost.s01)
 }
