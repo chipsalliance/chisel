@@ -272,8 +272,7 @@ object BoringUtils {
       case _ => // Actually bore
     }
     if (parent(source) == thisModule) {
-
-      /** No boring to do */
+      // No boring to do
       return source
     }
 
@@ -285,11 +284,10 @@ object BoringUtils {
     val lcaSource = drill(source, upPath.dropRight(1), upPath.dropRight(1), true)
     val sink = drill(lcaSource, downPath.reverse.tail, downPath.reverse, false)
 
-    if (sink.probeInfo.nonEmpty) {
+    if (createProbe.nonEmpty) {
       sink
     } else {
-
-      /** Creating a wire to assign the result to.  We will return this. */
+      // Creating a wire to assign the result to.  We will return this.
       val bore = Wire(purePortTypeBase)
       thisModule.asInstanceOf[RawModule].secretConnection(bore, sink)
       bore

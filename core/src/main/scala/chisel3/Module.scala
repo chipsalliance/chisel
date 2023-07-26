@@ -583,7 +583,8 @@ package experimental {
       internal.requireIsChiselType(iodef, "io type")
       require(!isFullyClosed, "Cannot create secret ports if module is fully closed")
 
-      iodef.bind(internal.SecretPortBinding(this))
+      Module.assignCompatDir(iodef)
+      iodef.bind(internal.SecretPortBinding(this), iodef.specifiedDirection)
       iodef
     }
 
