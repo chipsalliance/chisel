@@ -228,4 +228,44 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
     e.getMessage should include("Cannot drill writable probes upwards.")
   }
 
+  it should "work when tapping an element within a Bundle" in {
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(
+      new RawModule {
+        class Child() extends RawModule {
+          val b = Wire(new Bundle {
+            val x = Bool()
+          })
+        }
+
+        val child = Module(new Child())
+        val outRWProbe = IO(probe.RWProbe(Bool()))
+        probe.define(outRWProbe, BoringUtils.rwTap(child.b.x))
+      }
+    )
+    matchesAndOmits(chirrtl)(
+      "wire b : { x : UInt<1>}",
+      "define bore = rwprobe(b.x)",
+      "define outRWProbe = child.bore"
+    )()
+  }
+
+  it should "work when tapping an element within a Vec" in {
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(
+      new RawModule {
+        class Child() extends RawModule {
+          val b = Wire(Vec(4, Bool()))
+        }
+
+        val child = Module(new Child())
+        val outRWProbe = IO(probe.RWProbe(Bool()))
+        probe.define(outRWProbe, BoringUtils.rwTap(child.b(2)))
+      }
+    )
+    matchesAndOmits(chirrtl)(
+      "wire b : UInt<1>[4]",
+      "define bore = rwprobe(b[2])",
+      "define outRWProbe = child.bore"
+    )()
+  }
+
 }
