@@ -101,6 +101,20 @@ case class EmittedMLIR(
 
 }
 
+private[stage] case object FirtoolBinaryPath extends HasShellOptions {
+  override def options = Seq(
+    new ShellOption(
+      longOption = "firtool-binary-path",
+      toAnnotationSeq = (path: String) => Seq(FirtoolBinaryPath(path)),
+      helpText = """Specifies the path to the "firtool" binary Chisel should use.""",
+      helpValueName = Some("path")
+    )
+  )
+}
+
+/** Annotation that tells [[circt.stage.phases.CIRCT CIRCT]] what firtool executable to use */
+case class FirtoolBinaryPath(option: String) extends NoTargetAnnotation with CIRCTOption
+
 case class FirtoolOption(option: String) extends NoTargetAnnotation with CIRCTOption
 
 /** Annotation that indicates that firtool should run using the

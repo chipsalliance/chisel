@@ -254,9 +254,9 @@ class WarningConfigurationSpec extends AnyFunSpec with Matchers with chiselTests
     it("should support line comments") {
       val file = makeFile("with_comments.conf")(
         """|# Here is a comment
-           |id=1:s
-           |# And another one!
-           |any:e
+           |id=1:s  # And one at the end of a line
+           |  # And another one!
+           |any:e#what about this one?
            |""".stripMargin
       )
       val args = Array("--warn-conf-file", file.toString, "--throw-on-first-error")
@@ -283,6 +283,24 @@ class WarningConfigurationSpec extends AnyFunSpec with Matchers with chiselTests
             |any:w""".stripMargin
       )
       checkInvalid(badAction2, badln2, carat2, "Cannot have duplicates of the same category")
+    }
+
+    it("should support leading whitespace") {
+      val file = makeFile("leading_whitespace.conf")(
+        """|  id=1&src=**/WarningConfigurationSpec.scala:s
+           |    any:e""".stripMargin
+      )
+      val args = Array("--warn-conf-file", file.toString, "--throw-on-first-error")
+      ChiselStage.emitCHIRRTL(new ModuleWithWarning, args)
+
+      info("Including factoring them in to error messages")
+      val badln = "  id=1&id=4:s # And a comment!"
+      val carat = "       ^"
+      val badAction = makeFile("bad_action_leading_whitespace.conf")(
+        s"""|$badln
+            |any:e""".stripMargin
+      )
+      checkInvalid(badAction, badln, carat, "Cannot have duplicates of the same category")
     }
 
     it("should work when specified multiple times") {
