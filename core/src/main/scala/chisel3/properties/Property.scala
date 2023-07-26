@@ -4,6 +4,7 @@ package chisel3.properties
 
 import chisel3.{ActualDirection, BaseType, SpecifiedDirection}
 import chisel3.internal.Binding
+import chisel3.internal.{firrtl => ir}
 import scala.reflect.runtime.universe.{typeOf, TypeTag}
 import scala.annotation.implicitNotFound
 
@@ -14,14 +15,31 @@ import scala.annotation.implicitNotFound
   * Chisel.
   */
 @implicitNotFound("unsupported Property type ${T}")
-private[chisel3] class PropertyType[T]
+private[chisel3] trait PropertyType[T] {
+
+  /** Get the IR PropertyType for this PropertyType.
+    */
+  def getPropertyType(): ir.PropertyType
+}
 
 /** Companion object for PropertyType.
   *
   * Typeclass instances for valid Property types are defined here, so they will
   * be in the implicit scope and available for users.
   */
-private[chisel3] object PropertyType {}
+private[chisel3] object PropertyType {
+  implicit val intPropertyTypeInstance = new PropertyType[Int] {
+    def getPropertyType(): ir.PropertyType = ir.IntegerPropertyType
+  }
+
+  implicit val longPropertyTypeInstance = new PropertyType[Long] {
+    def getPropertyType(): ir.PropertyType = ir.IntegerPropertyType
+  }
+
+  implicit val bigIntPropertyTypeInstance = new PropertyType[BigInt] {
+    def getPropertyType(): ir.PropertyType = ir.IntegerPropertyType
+  }
+}
 
 /** Property is the base type for all properties.
   *
@@ -30,11 +48,7 @@ private[chisel3] object PropertyType {}
   * describe a set of non-hardware types, so they have no width, cannot be used
   * in aggregate Data types, and cannot be connected to Data types.
   */
-class Property[T: PropertyType: TypeTag] extends BaseType {
-
-  /** A TypeTag for the type T of this Property.
-    */
-  private[chisel3] val tpe = typeOf[T]
+class Property[T: PropertyType] extends BaseType {
 
   /** Bind this node to the in-memory graph.
     */
@@ -58,6 +72,14 @@ class Property[T: PropertyType: TypeTag] extends BaseType {
     clone.specifiedDirection = specifiedDirection
     clone
   }
+
+  /** Get the IR PropertyType for this Property.
+    *
+    * This delegates to the PropertyType to convert itself to an IR PropertyType.
+    */
+  private[chisel3] def getPropertyType(): ir.PropertyType = {
+    implicitly[PropertyType[T]].getPropertyType()
+  }
 }
 
 /** Companion object for Property.
@@ -66,7 +88,7 @@ object Property {
 
   /** Create a new Property based on the type T.
     */
-  def apply[T: PropertyType: TypeTag](): Property[T] = {
+  def apply[T: PropertyType](): Property[T] = {
     new Property[T]
   }
 }

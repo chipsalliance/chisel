@@ -5,6 +5,7 @@ package chisel3.internal.firrtl
 import chisel3._
 import chisel3.experimental._
 import chisel3.experimental.{NoSourceInfo, SourceInfo, SourceLine, UnlocatableSourceInfo}
+import chisel3.properties.Property
 import firrtl.{ir => fir}
 import chisel3.internal.{castToInt, throwException, HasId}
 import chisel3.EnumType
@@ -373,6 +374,10 @@ private[chisel3] object Converter {
       else
         extractType(t._elements.head._2, childClearDir, info, checkProbe, true)
     }
+    case t: Property[_] =>
+      t.getPropertyType() match {
+        case IntegerPropertyType => fir.IntegerPropertyType
+      }
   }
 
   def convert(name: String, param: Param): fir.Param = param match {
