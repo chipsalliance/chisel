@@ -5,11 +5,13 @@ package chisel3.internal.firrtl
 import chisel3._
 import chisel3.experimental._
 import chisel3.experimental.{NoSourceInfo, SourceInfo, SourceLine, UnlocatableSourceInfo}
+import chisel3.properties.Property
 import firrtl.{ir => fir}
 import chisel3.internal.{castToInt, throwException, HasId}
 import chisel3.EnumType
 import scala.annotation.{nowarn, tailrec}
 import scala.collection.immutable.{Queue, VectorBuilder}
+import scala.reflect.runtime.universe.typeOf
 
 @nowarn("msg=class Port") // delete when Port becomes private
 private[chisel3] object Converter {
@@ -373,6 +375,9 @@ private[chisel3] object Converter {
       else
         extractType(t._elements.head._2, childClearDir, info, checkProbe, true)
     }
+    case t: Property[_] if t.tpe =:= typeOf[Int]    => fir.IntegerPropertyType
+    case t: Property[_] if t.tpe =:= typeOf[Long]   => fir.IntegerPropertyType
+    case t: Property[_] if t.tpe =:= typeOf[BigInt] => fir.IntegerPropertyType
   }
 
   def convert(name: String, param: Param): fir.Param = param match {

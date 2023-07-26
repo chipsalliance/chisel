@@ -358,6 +358,7 @@ object Serializer {
     case ResetType             => b ++= "Reset"
     case AsyncResetType        => b ++= "AsyncReset"
     case AnalogType(width)     => b ++= "Analog"; s(width)
+    case IntegerPropertyType   => b ++= "Integer"
     case UnknownType           => b += '?'
     case other                 => b ++= other.serialize // Handle user-defined nodes
   }

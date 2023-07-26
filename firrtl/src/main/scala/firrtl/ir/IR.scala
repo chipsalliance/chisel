@@ -500,6 +500,9 @@ case object AsyncResetType extends GroundType with UseSerializer {
   val width = IntWidth(1)
 }
 case class AnalogType(width: Width) extends GroundType with UseSerializer
+
+case object IntegerPropertyType extends Type with UseSerializer
+
 case object UnknownType extends Type with UseSerializer
 
 /** [[Port]] Direction */

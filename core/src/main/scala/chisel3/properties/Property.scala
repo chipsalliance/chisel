@@ -21,7 +21,11 @@ private[chisel3] class PropertyType[T]
   * Typeclass instances for valid Property types are defined here, so they will
   * be in the implicit scope and available for users.
   */
-private[chisel3] object PropertyType {}
+private[chisel3] object PropertyType {
+  implicit val intPropertyTypeInstance = new PropertyType[Int]
+  implicit val longPropertyTypeInstance = new PropertyType[Long]
+  implicit val bigIntPropertyTypeInstance = new PropertyType[BigInt]
+}
 
 /** Property is the base type for all properties.
   *
