@@ -35,7 +35,6 @@ class OptionParserSpec extends AnyFlatSpec with Matchers with firrtl.testutils.U
 
   behavior.of("A default OptionsParser")
 
-
   it should "print to stderr on an invalid option" in new WithIntParser {
     grabStdOutErr { parser.parse(Array("--foo"), Seq[Annotation]()) }._2 should include("Unknown option --foo")
   }
