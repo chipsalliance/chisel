@@ -129,7 +129,9 @@ object DataMirror {
     * // )
     * }}}
     */
-  def modulePorts(target: BaseModule)(implicit si: SourceInfo): Seq[(String, Data)] = target.getChiselPorts
+  def modulePorts(target: BaseModule)(implicit si: SourceInfo): Seq[(String, Data)] = target.getChiselPorts.collect {
+    case (name, port: Data) => (name, port)
+  }
 
   /** Returns a recursive representation of a module's ports with underscore-qualified names
     * {{{

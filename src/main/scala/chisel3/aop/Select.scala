@@ -262,12 +262,15 @@ object Select {
     }
   }
 
-  /** Selects all ios on a given module
+  /** Selects all Data ios on a given module
+    *
+    * Note that Property ios are not returned.
+    *
     * @param module
     */
   def ios(module: BaseModule): Seq[Data] = {
     check(module)
-    module._component.get.asInstanceOf[DefModule].ports.map(_.id)
+    module._component.get.asInstanceOf[DefModule].ports.map(_.id).collect { case (d: Data) => d }
   }
 
   /** Selects all ios directly on a given Instance or Definition of a module
@@ -391,7 +394,12 @@ object Select {
     val isPort = module._component.get
       .asInstanceOf[DefModule]
       .ports
-      .flatMap { p => DataMirror.collectAllMembers(p.id) }
+      .flatMap { port =>
+        port.id match {
+          case d: Data => DataMirror.collectAllMembers(d)
+          case _ => Nil
+        }
+      }
       .contains(signal)
     var prePredicates: Seq[Predicate] = Nil
     var seenDef = isPort
