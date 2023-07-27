@@ -231,21 +231,33 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
   it should "work when tapping an element within a Bundle" in {
     val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(
       new RawModule {
+        class MiniBundle extends Bundle {
+          val x = Bool()
+        }
         class Child() extends RawModule {
-          val b = Wire(new Bundle {
-            val x = Bool()
-          })
+          val b = Wire(new MiniBundle)
         }
 
         val child = Module(new Child())
+
+        // directly tap Bundle element
         val outRWProbe = IO(probe.RWProbe(Bool()))
         probe.define(outRWProbe, BoringUtils.rwTap(child.b.x))
+
+        // tap Bundle, then access element
+        val outRWBundleProbe = IO(probe.RWProbe(new MiniBundle))
+        val outElem = IO(probe.RWProbe(Bool()))
+        probe.define(outRWBundleProbe, BoringUtils.rwTap(child.b))
+        probe.define(outElem, outRWBundleProbe.x)
       }
     )
     matchesAndOmits(chirrtl)(
       "wire b : { x : UInt<1>}",
       "define bore = rwprobe(b.x)",
-      "define outRWProbe = child.bore"
+      "define bore_1 = rwprobe(b)",
+      "define outRWProbe = child.bore",
+      "define outRWBundleProbe = child.bore_1",
+      "define outElem = outRWBundleProbe.x"
     )()
   }
 
@@ -254,17 +266,29 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       new RawModule {
         class Child() extends RawModule {
           val b = Wire(Vec(4, Bool()))
+          b := DontCare
         }
 
         val child = Module(new Child())
+
+        // directly tap Vec element
         val outRWProbe = IO(probe.RWProbe(Bool()))
         probe.define(outRWProbe, BoringUtils.rwTap(child.b(2)))
+
+        // tap Vec, then access element
+        val outRWVecProbe = IO(probe.RWProbe(Vec(4, Bool())))
+        val outElem = IO(probe.RWProbe(Bool()))
+        probe.define(outRWVecProbe, BoringUtils.rwTap(child.b))
+        probe.define(outElem, outRWVecProbe(1))
       }
     )
     matchesAndOmits(chirrtl)(
       "wire b : UInt<1>[4]",
       "define bore = rwprobe(b[2])",
-      "define outRWProbe = child.bore"
+      "define bore_1 = rwprobe(b)",
+      "define outRWProbe = child.bore",
+      "define outRWVecProbe = child.bore_1",
+      "define outElem = outRWVecProbe[1]"
     )()
   }
 
