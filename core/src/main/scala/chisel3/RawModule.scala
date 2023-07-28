@@ -71,7 +71,7 @@ abstract class RawModule extends BaseModule {
         case id: assume.Assume    => id.forceName(default = "assume", _namespace)
         case id: cover.Cover      => id.forceName(default = "cover", _namespace)
         case id: printf.Printf => id.forceName(default = "printf", _namespace)
-        case id: Data =>
+        case id: BaseType =>
           if (id.isSynthesizable) {
             id.topBinding match {
               case OpBinding(_, _) =>
