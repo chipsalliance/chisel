@@ -1516,16 +1516,8 @@ abstract class Bundle extends Record {
         // If the name is already taken, check if there exists a *structurally equivalent* bundle with the same name, and
         // simply error (TODO: disambiguate that name)
         if (
-          Builder.globalBundleNamespace
-            .contains(candidateAlias) && Builder.bundleStructuralHashMap.get(candidateAlias).exists {
-            case (_, existingType) =>
-              thisType match {
-                // If this Bundle has already been aliased before, extractType now returns an `AliasType`, so
-                // we have to compare name inequality
-                case fir.AliasType(name) => name != candidateAlias
-                case otherType           => existingType != otherType
-              }
-          }
+          Builder.globalBundleNamespace.contains(candidateAlias) &&
+            Builder.bundleStructuralHashMap.get(candidateAlias).exists(_._2 != thisType)
         ) {
           // Conflict found:
           Builder.error(
