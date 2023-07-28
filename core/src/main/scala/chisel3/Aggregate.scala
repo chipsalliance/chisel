@@ -1473,44 +1473,11 @@ abstract class Bundle extends Record {
     super.bind(target, parentDirection)
 
     aliasName.map(name => {
+      // TODO: Source locators that point to the specific `override def aliasName` line that generated this alias?
       val sourceInfo = UnlocatableSourceInfo
       val candidateAlias = sanitize(name)
 
-      // Filter out FIRRTL keywords that cause parser errors if used
-      val firrtlKeywords = Seq(
-        "FIRRTL",
-        "Clock",
-        "UInt",
-        "Reset",
-        "AsyncReset",
-        "Analog",
-        "Probe",
-        "RWProbe",
-        "version",
-        "type",
-        "circuit",
-        "parameter",
-        "input",
-        "output",
-        "extmodule",
-        "module",
-        "intmodule",
-        "intrinsic",
-        "defname",
-        "const",
-        "flip",
-        "reg",
-        "smem",
-        "cmem",
-        "mport",
-        "define",
-        "attach",
-        "inst",
-        "of",
-        "reset",
-        "printf"
-      )
-
+      // Filter out (TODO: disambiguate) FIRRTL keywords that cause parser errors if used
       if (firrtlKeywords.contains(candidateAlias)) {
         Builder.error(
           s"Attempted to override a FIRRTL keyword '$candidateAlias' with a type alias!"

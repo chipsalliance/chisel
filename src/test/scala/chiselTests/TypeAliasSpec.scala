@@ -175,7 +175,8 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
   "Bundle type aliases overriding an existing FIRRTL type" should "error" in {
     // Special keywords/types specified in the FIRRTL spec.
     // These result in parser errors and should not be allowed by Chisel
-    val firrtlTypes = Seq(
+    // Duplicated from the same list in the `internal` package object, which is private to chisel3
+    val firrtlKeywords = Seq(
       "FIRRTL",
       "Clock",
       "UInt",
@@ -206,11 +207,13 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
       "inst",
       "of",
       "reset",
-      "printf"
+      "printf",
+      "skip",
+      "node"
     )
 
     // Prevent statements like type Clock = { ... }
-    firrtlTypes.map { tpe =>
+    firrtlKeywords.map { tpe =>
       (the[ChiselException] thrownBy extractCause[ChiselException] {
         class Test(val firrtlType: String) extends Module {
           class FooBundle extends Bundle {

@@ -139,4 +139,46 @@ package object internal {
       a.elementsIterator.foldLeft(false)((res: Boolean, d: Data) => res || containsProbe(d))
     case leaf => leaf.probeInfo.nonEmpty
   }
+
+  /** The list of reserved keywords in FIRRTL which result in incorrect parsing when used in any statement outside
+    * of their correct use cases.
+    * This is vital for type aliases, which can in principle be named after these keywords but results
+    * in problematic and incorrect FIRRTL.
+    * Some words, like 'stop' and 'force', do not result in parser errors and consequently do not show up here.
+    */
+  private[chisel3] val firrtlKeywords = Seq(
+    "FIRRTL",
+    "Clock",
+    "UInt",
+    "Reset",
+    "AsyncReset",
+    "Analog",
+    "Probe",
+    "RWProbe",
+    "version",
+    "type",
+    "circuit",
+    "parameter",
+    "input",
+    "output",
+    "extmodule",
+    "module",
+    "intmodule",
+    "intrinsic",
+    "defname",
+    "const",
+    "flip",
+    "reg",
+    "smem",
+    "cmem",
+    "mport",
+    "define",
+    "attach",
+    "inst",
+    "of",
+    "reset",
+    "printf",
+    "skip",
+    "node"
+  )
 }
