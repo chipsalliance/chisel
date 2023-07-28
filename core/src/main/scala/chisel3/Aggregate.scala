@@ -1465,35 +1465,76 @@ abstract class Bundle extends Record {
 
     aliasName.map(name => {
       val sourceInfo = UnlocatableSourceInfo
-      val candidateAlias = name
+      val candidateAlias = sanitize(name)
 
-      // Compute the structural type of this bundle with no subfield aliasing
-      val thisType = Converter.extractType(
-        this,
-        sourceInfo
+      // Filter out FIRRTL keywords that cause parser errors if used
+      val firrtlKeywords = Seq(
+        "FIRRTL",
+        "Clock",
+        "UInt",
+        "Reset",
+        "AsyncReset",
+        "Analog",
+        "Probe",
+        "RWProbe",
+        "version",
+        "type",
+        "circuit",
+        "parameter",
+        "input",
+        "output",
+        "extmodule",
+        "module",
+        "intmodule",
+        "intrinsic",
+        "defname",
+        "const",
+        "flip",
+        "reg",
+        "smem",
+        "cmem",
+        "mport",
+        "define",
+        "attach",
+        "inst",
+        "of",
+        "reset",
+        "printf"
       )
 
-      // If the name is already taken, check if there exists a *structurally equivalent* bundle with the same name, and
-      // simply error (TODO: disambiguate that name)
-      if (
-        Builder.globalBundleNamespace
-          .contains(candidateAlias) && Builder.bundleStructuralHashMap.get(candidateAlias).exists {
-          case (_, existingType) =>
-            thisType match {
-              // If this Bundle has already been aliased before, extractType now returns an `AliasType`, so
-              // we have to compare name inequality
-              case fir.AliasType(name) => name != candidateAlias
-              case otherType           => existingType != otherType
-            }
-        }
-      ) {
-        // Conflict found:
+      if (firrtlKeywords.contains(candidateAlias)) {
         Builder.error(
-          s"Attempted to redeclare an existing type alias '$candidateAlias' with a new bundle structure '$thisType'!"
+          s"Attempted to override a FIRRTL keyword '$candidateAlias' with a type alias!"
         )(sourceInfo)
-      } else if (!Builder.globalBundleNamespace.contains(candidateAlias)) {
-        Builder.globalBundleNamespace.name(candidateAlias)
-        Builder.bundleStructuralHashMap.put(candidateAlias, (this, thisType))
+      } else {
+        // Compute the structural type of this bundle with no subfield aliasing
+        val thisType = Converter.extractType(
+          this,
+          sourceInfo
+        )
+
+        // If the name is already taken, check if there exists a *structurally equivalent* bundle with the same name, and
+        // simply error (TODO: disambiguate that name)
+        if (
+          Builder.globalBundleNamespace
+            .contains(candidateAlias) && Builder.bundleStructuralHashMap.get(candidateAlias).exists {
+            case (_, existingType) =>
+              thisType match {
+                // If this Bundle has already been aliased before, extractType now returns an `AliasType`, so
+                // we have to compare name inequality
+                case fir.AliasType(name) => name != candidateAlias
+                case otherType           => existingType != otherType
+              }
+          }
+        ) {
+          // Conflict found:
+          Builder.error(
+            s"Attempted to redeclare an existing type alias '$candidateAlias' with a new bundle structure '$thisType'!"
+          )(sourceInfo)
+        } else if (!Builder.globalBundleNamespace.contains(candidateAlias)) {
+          Builder.globalBundleNamespace.name(candidateAlias)
+          Builder.bundleStructuralHashMap.put(candidateAlias, (this, thisType))
+        }
       }
     })
   }

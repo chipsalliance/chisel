@@ -142,4 +142,67 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
       "Attempted to redeclare an existing type alias 'DifferentBundle' with a new bundle structure"
     )
   }
+
+  "Bundle type aliases overriding an existing FIRRTL type" should "error" in {
+    // Special keywords/types specified in the FIRRTL spec.
+    // These result in parser errors and should not be allowed by Chisel
+    val firrtlTypes = Seq(
+      "FIRRTL",
+      "Clock",
+      "UInt",
+      "Reset",
+      "AsyncReset",
+      "Analog",
+      "Probe",
+      "RWProbe",
+      "version",
+      "type",
+      "circuit",
+      "parameter",
+      "input",
+      "output",
+      "extmodule",
+      "module",
+      "intmodule",
+      "intrinsic",
+      "defname",
+      "const",
+      "flip",
+      "reg",
+      "smem",
+      "cmem",
+      "mport",
+      "define",
+      "attach",
+      "inst",
+      "of",
+      "reset",
+      "printf"
+    )
+
+    // Prevent statements like type Clock = { ... }
+    firrtlTypes.map { tpe =>
+      (the[ChiselException] thrownBy extractCause[ChiselException] {
+        class Test(val firrtlType: String) extends Module {
+          class FooBundle extends Bundle {
+            override def aliasName = Some(firrtlType)
+
+            val x = UInt(8.W)
+          }
+
+          val io = IO(new Bundle {
+            val in = Input(new FooBundle)
+            val out = Output(new FooBundle)
+          })
+
+          io.out.x :#= io.in.x
+        }
+
+        val args = Array("--throw-on-first-error", "--full-stacktrace")
+        val chirrtl = ChiselStage.emitCHIRRTL(new Test(tpe), args)
+      }).getMessage should include(
+        s"Attempted to override a FIRRTL keyword '$tpe' with a type alias!"
+      )
+    }
+  }
 }
