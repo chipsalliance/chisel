@@ -1457,8 +1457,17 @@ abstract class Bundle extends Record {
     * ```
     * type UserBundle = { ... }
     * ```
+    *
+    * This is used as a strong hint for the generated type alias: steps like sanitization and disambiguation
+    * may change the resulting alias by necessity, so there is no certain guarantee that the desired name will show up in
+    * the generated FIRRTL.
     */
   def aliasName: Option[String] = None
+
+  // The final sanitized and disambiguated alias for this bundle, generated when aliasName is a non-empty Option.
+  // This is important if sanitization and disambiguation results in a changed alias,
+  // as the sanitized name no longer matches the user-specified alias.
+  private[chisel3] var finalizedAlias: Option[String] = None
 
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
     super.bind(target, parentDirection)
@@ -1517,15 +1526,19 @@ abstract class Bundle extends Record {
         // simply error (TODO: disambiguate that name)
         if (
           Builder.globalBundleNamespace.contains(candidateAlias) &&
-            Builder.bundleStructuralHashMap.get(candidateAlias).exists(_._2 != thisType)
+          Builder.bundleStructuralHashMap.get(candidateAlias).exists(_._2 != thisType)
         ) {
           // Conflict found:
           Builder.error(
             s"Attempted to redeclare an existing type alias '$candidateAlias' with a new bundle structure '$thisType'!"
           )(sourceInfo)
-        } else if (!Builder.globalBundleNamespace.contains(candidateAlias)) {
-          Builder.globalBundleNamespace.name(candidateAlias)
-          Builder.bundleStructuralHashMap.put(candidateAlias, (this, thisType))
+        } else {
+          if (!Builder.globalBundleNamespace.contains(candidateAlias)) {
+            Builder.globalBundleNamespace.name(candidateAlias)
+            Builder.bundleStructuralHashMap.put(candidateAlias, (this, thisType))
+          }
+
+          finalizedAlias = Some(candidateAlias)
         }
       }
     })

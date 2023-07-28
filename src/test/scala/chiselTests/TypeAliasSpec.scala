@@ -143,6 +143,35 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
     )
   }
 
+  "Bundles with unsanitary names" should "properly sanitize" in {
+    class Test extends Module {
+      class FooBundle extends Bundle {
+        // Sanitizes to '_'; the sanitized alias needs to be used in the aliasing algorithm
+        // instead of the direct user-defined alias.
+        override def aliasName = Some("")
+
+        val x = UInt(8.W)
+        val y = UInt(8.W)
+      }
+
+      val io = IO(new Bundle {
+        val in = Input(new FooBundle)
+        val out = Output(new FooBundle)
+      })
+
+      val w = Wire(new FooBundle)
+
+      w :#= io.in
+      io.out :#= w
+    }
+
+    val chirrtl = ChiselStage.emitCHIRRTL(new Test)
+
+    chirrtl should include("type _ = { x : UInt<8>, y : UInt<8>}")
+    chirrtl should include("output io : { flip in : _, out : _}")
+    chirrtl should include("wire w : _")
+  }
+
   "Bundle type aliases overriding an existing FIRRTL type" should "error" in {
     // Special keywords/types specified in the FIRRTL spec.
     // These result in parser errors and should not be allowed by Chisel
