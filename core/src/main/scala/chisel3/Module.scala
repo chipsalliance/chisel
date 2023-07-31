@@ -63,10 +63,6 @@ object Module extends SourceInfoDoc {
           sourceInfo.makeMessage(" See " + _)
       )
     }
-    Builder.currentModule = parent // Back to parent!
-    Builder.whenStack = parentWhenStack
-    Builder.currentClock = saveClock // Back to clock and reset scope
-    Builder.currentReset = saveReset
 
     // Only add the component if the module generates one
     val componentOpt = module.generateComponent()
@@ -74,6 +70,12 @@ object Module extends SourceInfoDoc {
       Builder.components += component
     }
 
+    // Reset Builder state *after* generating the component, so any atModuleBodyEnd generators are still within the
+    // scope of the current Module.
+    Builder.currentModule = parent // Back to parent!
+    Builder.whenStack = parentWhenStack
+    Builder.currentClock = saveClock // Back to clock and reset scope
+    Builder.currentReset = saveReset
     Builder.setPrefix(savePrefix)
 
     // Handle connections at enclosing scope

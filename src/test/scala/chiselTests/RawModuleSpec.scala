@@ -59,13 +59,34 @@ class ImplicitModuleDirectlyInRawModuleTester extends BasicTester {
   stop()
 }
 
-class RawModuleSpec extends ChiselFlatSpec with Utils {
+class RawModuleSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
   "RawModule" should "elaborate" in {
     ChiselStage.emitCHIRRTL { new RawModuleWithImplicitModule }
   }
 
   "RawModule" should "work" in {
     assertTesterPasses({ new RawModuleTester })
+  }
+
+  "RawModule" should "support late stage generators with atModuleBodyEnd" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      atModuleBodyEnd {
+        val extraPort0 = IO(Output(Bool()))
+        extraPort0 := 0.B
+      }
+
+      atModuleBodyEnd {
+        val extraPort1 = IO(Output(Bool()))
+        extraPort1 := 1.B
+      }
+    })
+
+    matchesAndOmits(chirrtl)(
+      "output extraPort0 : UInt<1>",
+      "output extraPort1 : UInt<1>",
+      "connect extraPort0, UInt<1>(0h0)",
+      "connect extraPort1, UInt<1>(0h1)"
+    )()
   }
 
   "ImplicitModule in a withClock block in a RawModule" should "work" in {
