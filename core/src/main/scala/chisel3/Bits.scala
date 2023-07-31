@@ -15,7 +15,7 @@ import chisel3.internal.sourceinfo.{
 }
 import chisel3.internal.firrtl.PrimOp._
 import _root_.firrtl.{ir => firrtlir}
-import chisel3.internal.{castToInt, Builder}
+import chisel3.internal.{castToInt, Builder, Warning, WarningID}
 
 /** Exists to unify common interfaces of [[Bits]] and [[Reset]].
   *
@@ -143,6 +143,11 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
   final def do_apply(x: Int)(implicit sourceInfo: SourceInfo): Bool =
     do_extract(BigInt(x))
 
+  /** Grab the bottom n bits.  Return 0.U(0.W) if n==0. */
+  final def take(n: Int): UInt = macro SourceInfoTransform.nArg
+
+  final def do_take(n: Int)(implicit sourceInfo: SourceInfo): UInt = this.apply(n - 1, 0)
+
   /** Returns the specified bit on this wire as a [[Bool]], dynamically addressed.
     *
     * @param x a hardware component whose value will be used for dynamic addressing
@@ -158,9 +163,11 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
       } else {
         x.widthOption.foreach { xWidth =>
           if (xWidth >= 31 || (1 << (xWidth - 1)) >= thisWidth) {
-            Builder.warning(s"Dynamic index with width $xWidth is too large for extractee of width $thisWidth")
+            val msg = s"Dynamic index with width $xWidth is too large for extractee of width $thisWidth"
+            Builder.warning(Warning(WarningID.DynamicBitSelectTooWide, msg))
           } else if ((1 << xWidth) < thisWidth) {
-            Builder.warning(s"Dynamic index with width $xWidth is too small for extractee of width $thisWidth")
+            val msg = s"Dynamic index with width $xWidth is too small for extractee of width $thisWidth"
+            Builder.warning(Warning(WarningID.DynamicBitSelectTooNarrow, msg))
           }
         }
       }
@@ -754,7 +761,8 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
 
   override def do_asSInt(implicit sourceInfo: SourceInfo): SInt =
     pushOp(DefPrim(sourceInfo, SInt(width), AsSIntOp, ref))
-  override def do_asUInt(implicit sourceInfo: SourceInfo): UInt = this
+
+  override private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): UInt = this
 
   private[chisel3] override def connectFromBits(
     that: Bits
@@ -987,7 +995,7 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
   override def do_>>(that: UInt)(implicit sourceInfo: SourceInfo): SInt =
     binop(sourceInfo, SInt(this.width), DynamicShiftRightOp, that)
 
-  override def do_asUInt(implicit sourceInfo: SourceInfo): UInt = pushOp(
+  override private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): UInt = pushOp(
     DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref)
   )
   override def do_asSInt(implicit sourceInfo: SourceInfo): SInt = this
@@ -1029,7 +1037,7 @@ final class ResetType(private[chisel3] val width: Width = Width(1)) extends Elem
   /** Not really supported */
   def toPrintable: Printable = PString("Reset")
 
-  override def do_asUInt(implicit sourceInfo: SourceInfo): UInt = pushOp(
+  override private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): UInt = pushOp(
     DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref)
   )
 
@@ -1073,7 +1081,7 @@ sealed class AsyncReset(private[chisel3] val width: Width = Width(1)) extends El
   /** Not really supported */
   def toPrintable: Printable = PString("AsyncReset")
 
-  override def do_asUInt(implicit sourceInfo: SourceInfo): UInt = pushOp(
+  override private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): UInt = pushOp(
     DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref)
   )
 

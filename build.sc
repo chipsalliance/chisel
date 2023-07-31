@@ -9,23 +9,6 @@ import $file.common
 
 object v {
   val pluginScalaCrossVersions = Seq(
-    // scalamacros paradise version used is not published for 2.12.0 and 2.12.1
-    "2.12.2",
-    "2.12.3",
-    // 2.12.4 is broken in newer versions of Zinc: https://github.com/sbt/sbt/issues/6838
-    "2.12.5",
-    "2.12.6",
-    "2.12.7",
-    "2.12.8",
-    "2.12.9",
-    "2.12.10",
-    "2.12.11",
-    "2.12.12",
-    "2.12.13",
-    "2.12.14",
-    "2.12.15",
-    "2.12.16",
-    "2.12.17",
     "2.13.0",
     "2.13.1",
     "2.13.2",
@@ -36,15 +19,14 @@ object v {
     "2.13.7",
     "2.13.8",
     "2.13.9",
-    "2.13.10"
+    "2.13.10",
+    "2.13.11"
   )
   val scalaCrossVersions = Seq(
-    "2.12.17",
-    "2.13.10"
+    "2.13.11"
   )
   val osLib = ivy"com.lihaoyi::os-lib:0.9.1"
   val upickle = ivy"com.lihaoyi::upickle:3.1.0"
-  val macroParadise = ivy"org.scalamacros:::paradise:2.1.1"
   val scalatest = ivy"org.scalatest::scalatest:3.2.14"
   val scalacheck = ivy"org.scalatestplus::scalacheck-1-15:3.2.11.0"
   val json4s = ivy"org.json4s::json4s-native:4.0.6"
@@ -58,18 +40,15 @@ object v {
 
   def scalaLibrary(scalaVersion: String) = ivy"org.scala-lang:scala-library:$scalaVersion"
 }
-private def majorScalaVersion(scalaVersion: String) = scalaVersion.split('.')(1).toInt
 
-object firrtl extends mill.Cross[Firrtl](v.scalaCrossVersions: _*)
+object firrtl extends Cross[Firrtl](v.scalaCrossVersions)
 
-class Firrtl(val crossScalaVersion: String)
+trait Firrtl
     extends common.FirrtlModule
     with ChiselPublishModule
     with CrossSbtModule
     with ScalafmtModule {
   def millSourcePath = super.millSourcePath / os.up / "firrtl"
-
-  def macroParadiseIvy: Option[Dep] = if (majorScalaVersion(crossScalaVersion) < 13) Some(v.macroParadise) else None
 
   def osLibModuleIvy = v.osLib
 
@@ -82,9 +61,9 @@ class Firrtl(val crossScalaVersion: String)
   def scoptIvy = v.scopt
 }
 
-object svsim extends mill.Cross[Svsim](v.scalaCrossVersions: _*)
+object svsim extends Cross[Svsim](v.scalaCrossVersions)
 
-class Svsim(val crossScalaVersion: String)
+trait Svsim
     extends common.SvsimModule
     with ChiselPublishModule
     with CrossSbtModule
@@ -92,9 +71,9 @@ class Svsim(val crossScalaVersion: String)
   def millSourcePath = super.millSourcePath / os.up / "svsim"
 }
 
-object firrtlut extends mill.Cross[FirrtlUnitTest](v.scalaCrossVersions: _*)
+object firrtlut extends Cross[FirrtlUnitTest](v.scalaCrossVersions)
 
-class FirrtlUnitTest(val crossScalaVersion: String)
+trait FirrtlUnitTest
     extends common.FirrtlUnitTestModule
     with CrossModuleBase
     with ScalafmtModule {
@@ -112,9 +91,9 @@ class FirrtlUnitTest(val crossScalaVersion: String)
   }
 }
 
-object macros extends mill.Cross[Macros](v.scalaCrossVersions: _*)
+object macros extends Cross[Macros](v.scalaCrossVersions)
 
-class Macros(val crossScalaVersion: String)
+trait Macros
     extends common.MacrosModule
     with ChiselPublishModule
     with CrossSbtModule
@@ -122,13 +101,11 @@ class Macros(val crossScalaVersion: String)
   def millSourcePath = super.millSourcePath / os.up / "macros"
 
   def scalaReflectIvy = v.scalaReflect(crossScalaVersion)
-
-  def macroParadiseIvy: Option[Dep] = if (majorScalaVersion(crossScalaVersion) < 13) Some(v.macroParadise) else None
 }
 
-object core extends mill.Cross[Core](v.scalaCrossVersions: _*)
+object core extends Cross[Core](v.scalaCrossVersions)
 
-class Core(val crossScalaVersion: String)
+trait Core
     extends common.CoreModule
     with ChiselPublishModule
     with CrossSbtModule
@@ -138,8 +115,6 @@ class Core(val crossScalaVersion: String)
   def firrtlModule = firrtl(crossScalaVersion)
 
   def macrosModule = macros(crossScalaVersion)
-
-  def macroParadiseIvy: Option[Dep] = if (majorScalaVersion(crossScalaVersion) < 13) Some(v.macroParadise) else None
 
   def osLibModuleIvy = v.osLib
 
@@ -188,9 +163,9 @@ class Core(val crossScalaVersion: String)
   }
 }
 
-object plugin extends mill.Cross[Plugin](v.pluginScalaCrossVersions: _*)
+object plugin extends Cross[Plugin](v.pluginScalaCrossVersions)
 
-class Plugin(val crossScalaVersion: String)
+trait Plugin
     extends common.PluginModule
     with ChiselPublishModule
     with CrossSbtModule
@@ -204,9 +179,9 @@ class Plugin(val crossScalaVersion: String)
   def scalaCompilerIvy: Dep = v.scalaCompiler(crossScalaVersion)
 }
 
-object chisel extends mill.Cross[Chisel](v.scalaCrossVersions: _*)
+object chisel extends Cross[Chisel](v.scalaCrossVersions)
 
-class Chisel(val crossScalaVersion: String)
+trait Chisel
     extends common.ChiselModule
     with ChiselPublishModule
     with CrossSbtModule
@@ -220,13 +195,11 @@ class Chisel(val crossScalaVersion: String)
   def coreModule = core(crossScalaVersion)
 
   def pluginModule = plugin(crossScalaVersion)
-
-  def macroParadiseIvy = if (majorScalaVersion(crossScalaVersion) < 13) Some(v.macroParadise) else None
 }
 
-object chiselut extends mill.Cross[ChiselUnitTest](v.scalaCrossVersions: _*)
+object chiselut extends Cross[ChiselUnitTest](v.scalaCrossVersions)
 
-class ChiselUnitTest(val crossScalaVersion: String)
+trait ChiselUnitTest
     extends common.ChiselUnitTestModule
     with CrossModuleBase
     with ScalafmtModule {
@@ -240,17 +213,15 @@ class ChiselUnitTest(val crossScalaVersion: String)
 
   def scalacheckIvy = v.scalacheck
 
-  def macroParadiseIvy: Option[Dep] = if (majorScalaVersion(crossScalaVersion) < 13) Some(v.macroParadise) else None
-
   override def sources = T.sources {
     Seq(PathRef(millSourcePath / "src" / "test")) ++
       matchingVersions(crossScalaVersion).map(s => PathRef(millSourcePath / "src" / "test" / s"scala-$s"))
   }
 }
 
-object stdlib extends mill.Cross[Stdlib](v.scalaCrossVersions: _*)
+object stdlib extends Cross[Stdlib](v.scalaCrossVersions)
 
-class Stdlib(val crossScalaVersion: String)
+trait Stdlib
     extends common.StdLibModule
     with ChiselPublishModule
     with CrossSbtModule

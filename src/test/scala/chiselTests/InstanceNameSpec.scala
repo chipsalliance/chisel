@@ -35,7 +35,7 @@ class InstanceNameSpec extends ChiselFlatSpec {
 
   it should "work for literals" in {
     val x = m.x.pathName
-    assert(x == moduleName + ".UInt<2>(\"h03\")")
+    assert(x == moduleName + ".UInt<2>(0h03)")
   }
 
   it should "NOT work for non-hardware values" in {

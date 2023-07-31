@@ -17,11 +17,11 @@ class PipeSpec extends ChiselFlatSpec {
       bar := Pipe(foo.valid, bar.bits, 2)
     }
     val chirrtl = emitCHIRRTL(new MyModule)
-    chirrtl should include("reg bar_pipe_v")
-    chirrtl should include("reg bar_pipe_pipe_v")
+    chirrtl should include("regreset bar_pipe_v")
+    chirrtl should include("regreset bar_pipe_pipe_v")
     chirrtl should include("wire bar_pipe_pipe_out")
-    chirrtl should include("bar_pipe_pipe_out.valid <= bar_pipe_pipe_v")
-    chirrtl should include("bar <= bar_pipe_pipe_out")
+    chirrtl should include("connect bar_pipe_pipe_out.valid, bar_pipe_pipe_v")
+    chirrtl should include("connect bar, bar_pipe_pipe_out")
   }
 
   it should "Have decent names for Pipe(0)" in {
@@ -33,7 +33,7 @@ class PipeSpec extends ChiselFlatSpec {
     val chirrtl = emitCHIRRTL(new MyModule)
     (chirrtl should not).include("pipe")
     chirrtl should include("wire bar_out")
-    chirrtl should include("bar_out.valid <= foo.valid")
-    chirrtl should include("bar <= bar_out")
+    chirrtl should include("connect bar_out.valid, foo.valid")
+    chirrtl should include("connect bar, bar_out")
   }
 }

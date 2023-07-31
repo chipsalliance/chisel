@@ -1,5 +1,5 @@
 //> using repository "sonatype-s01:snapshots"
-//> using scala "2.13.10"
+//> using scala "2.13.11"
 //> using lib "org.chipsalliance::chisel::@VERSION@"
 //> using plugin "org.chipsalliance:::chisel-plugin::@VERSION@"
 //> using options "-unchecked", "-deprecation", "-language:reflectiveCalls", "-feature", "-Xcheckinit", "-Xfatal-warnings", "-Ywarn-dead-code", "-Ywarn-unused", "-Ymacro-annotations"

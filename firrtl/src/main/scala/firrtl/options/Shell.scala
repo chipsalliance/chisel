@@ -60,7 +60,9 @@ class Shell(applicationName: String) extends BareShell(applicationName) {
   }
 
   override protected def parserSetup(): Unit = {
-    registeredLibraries
+    if (sys.env.get("CHISEL_ARGUMENT_EXTENSIONS") != Some("DISABLE")) {
+      registeredLibraries
+    }
   }
 
   parser.note("Shell Options")

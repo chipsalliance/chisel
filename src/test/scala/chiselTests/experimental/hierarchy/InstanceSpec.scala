@@ -43,7 +43,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
       chirrtl should include("inst i0 of AddOne")
     }
-    it("0.3: BlackBoxes should be supported") {
+    it("(0.d): BlackBoxes should be supported") {
       class Top extends Module {
         val in = IO(Input(UInt(32.W)))
         val out = IO(Output(UInt(32.W)))
@@ -61,10 +61,19 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
       chirrtl should include("inst i0 of AddOneBlackBox")
       chirrtl should include("inst i1 of AddOneBlackBox")
-      chirrtl should include("i0.in <= in")
-      chirrtl should include("out <= i0.out")
-      chirrtl should include("i1.in <= io.in")
-      chirrtl should include("io.out <= i1.out")
+      chirrtl should include("connect i0.in, in")
+      chirrtl should include("connect out, i0.out")
+      chirrtl should include("connect i1.in, io.in")
+      chirrtl should include("connect io.out, i1.out")
+    }
+    it("(0.e): Instances with Bundles with unsanitary names should be supported") {
+      class Top extends Module {
+        val definition = Definition(new HasUnsanitaryBundleField)
+        val i0 = Instance(definition)
+        i0.in := 123.U
+      }
+      val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
+      chirrtl should include("connect i0.realIn.aminusx, UInt<7>(0h7b)")
     }
   }
   describe("(1) Annotations on instances in same chisel compilation") {
@@ -324,8 +333,8 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         "~Top|Top/i:HasSubFieldAccess>in.bits".rt -> "bits"
       )
       val lines = List(
-        "i.in.valid <= input.valid",
-        "i.in.bits <= input.bits"
+        "connect i.in.valid, input.valid",
+        "connect i.in.bits, input.bits"
       )
       val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
       val text = chirrtl.serialize
@@ -405,13 +414,13 @@ class InstanceSpec extends ChiselFunSpec with Utils {
     }
     it("(3.p): should make connectable IOs on nested IsInstantiables that have IO Datas in them") {
       val (chirrtl, _) = getFirrtlAndAnnos(new AddTwoNestedInstantiableData(4))
-      exactly(3, chirrtl.serialize.split('\n')) should include("i1.in <= i0.out")
+      exactly(3, chirrtl.serialize.split('\n')) should include("connect i1.in, i0.out")
     }
     it(
       "(3.q): should make connectable IOs on nested IsInstantiables's Data when the Instance and Definition do not have the same parent"
     ) {
       val (chirrtl, _) = getFirrtlAndAnnos(new AddTwoNestedInstantiableDataWrapper(4))
-      exactly(3, chirrtl.serialize.split('\n')) should include("i1.in <= i0.out")
+      exactly(3, chirrtl.serialize.split('\n')) should include("connect i1.in, i0.out")
     }
   }
   describe("(4) toInstance") {
@@ -673,8 +682,8 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         "~Top|Top/i:MyModule>sum".rt -> "bar"
       )
       val expectedLines = List(
-        "i.in <= foo",
-        "bar <= i.out"
+        "connect i.in, foo",
+        "connect bar, i.out"
       )
       val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
       val text = chirrtl.serialize
@@ -720,14 +729,14 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         "~Top|Top/i:MyModule>a.valid".rt -> "enq_valid"
       )
       val expectedLines = List(
-        "i.a.valid <= foo.valid",
-        "foo.ready <= i.a.ready",
-        "i.a.fizz <= foo.bits.fizz",
-        "i.a.buzz <= foo.bits.buzz",
-        "bar.valid <= i.b.valid",
-        "i.b.ready <= bar.ready",
-        "bar.bits.fizz <= i.b.fizz",
-        "bar.bits.buzz <= i.b.buzz"
+        "connect i.a.valid, foo.valid",
+        "connect foo.ready, i.a.ready",
+        "connect i.a.fizz, foo.bits.fizz",
+        "connect i.a.buzz, foo.bits.buzz",
+        "connect bar.valid, i.b.valid",
+        "connect i.b.ready, bar.ready",
+        "connect bar.bits.fizz, i.b.fizz",
+        "connect bar.bits.buzz, i.b.buzz"
       )
       val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
       val text = chirrtl.serialize
@@ -764,8 +773,8 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         "~Top|Top/i:MyModule>b.foo".rt -> "out_bar"
       )
       val lines = List(
-        "i.a <= foo",
-        "bar.bar <= i.b.foo"
+        "connect i.a, foo",
+        "connect bar.bar, i.b.foo"
       )
       val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
       val text = chirrtl.serialize
@@ -799,8 +808,8 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         "~Top|Top/i:MyModule>b".rt -> "i.ports"
       )
       val lines = List(
-        "i.a <= foo",
-        "bar <= i.b"
+        "connect i.a, foo",
+        "connect bar, i.b"
       )
       val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
       val text = chirrtl.serialize
@@ -843,8 +852,8 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         s"$inst>out".rt -> "outerView.out"
       )
       val expectedLines = List(
-        "i.in <= foo",
-        "bar <= i.out"
+        "connect i.in, foo",
+        "connect bar, i.out"
       )
       val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
       val text = chirrtl.serialize

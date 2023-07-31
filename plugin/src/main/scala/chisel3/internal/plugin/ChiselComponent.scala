@@ -79,12 +79,12 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
       }
     }
 
-    private val shouldMatchData: Type => Boolean = shouldMatchGen(tq"chisel3.Data")
+    private val shouldMatchBaseType: Type => Boolean = shouldMatchGen(tq"chisel3.BaseType")
     // Checking for all chisel3.internal.NamedComponents, but since it is internal, we instead have
     // to match the public subtypes
     private val shouldMatchNamedComp: Type => Boolean =
       shouldMatchGen(
-        tq"chisel3.Data",
+        tq"chisel3.BaseType",
         tq"chisel3.MemBase[_]",
         tq"chisel3.VerificationStatement"
       )
@@ -177,7 +177,7 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
       // Check if a subtree is a candidate
       case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd) =>
         val tpe = inferType(tpt)
-        val isData = shouldMatchData(tpe)
+        val isData = shouldMatchBaseType(tpe)
         val isNamedComp = isData || shouldMatchNamedComp(tpe)
         val isPrefixed = isNamedComp || shouldMatchChiselPrefixed(tpe)
 
@@ -224,7 +224,7 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
         }
       case dd @ ValDef(mods, name, tpt, rhs @ Match(_, _)) if okUnapply(dd) =>
         val tpe = inferType(tpt)
-        val fieldsOfInterest: List[Boolean] = tpe.typeArgs.map(shouldMatchData)
+        val fieldsOfInterest: List[Boolean] = tpe.typeArgs.map(shouldMatchBaseType)
         // Only transform if at least one field is of interest
         if (fieldsOfInterest.reduce(_ || _)) {
           findUnapplyNames(rhs) match {

@@ -1,4 +1,9 @@
-![Chisel](https://raw.githubusercontent.com/chipsalliance/chisel/main/docs/src/images/chisel_logo.svg?sanitize=true)
+<a href="https://www.chisel-lang.org">
+  <img src="https://raw.githubusercontent.com/chipsalliance/chisel/main/docs/src/images/chisel_logo.svg?sanitize=true" height="60">
+</a>
+<a href="https://www.chipsalliance.org">
+  <img align="right" src="https://raw.githubusercontent.com/chipsalliance/.github/main/profile/images/chips_alliance.svg?sanitize=true" height="60">
+</a>
 
 The **Constructing Hardware in a Scala Embedded Language** ([**Chisel**](https://www.chisel-lang.org)) is an open-source hardware description language (HDL) used to describe digital electronics and circuits at the register-transfer level that facilitates **advanced circuit generation and design reuse for both ASIC and FPGA digital logic designs**.
 
@@ -9,6 +14,8 @@ For more information on the benefits of Chisel see: ["What benefits does Chisel 
 
 Chisel is powered by [FIRRTL (Flexible Intermediate Representation for RTL)](https://github.com/chipsalliance/firrtl-spec),
 a hardware compiler framework implemented by [LLVM CIRCT](https://github.com/llvm/circt).
+
+Chisel is [permissively licensed](LICENSE) (Apache 2.0) under the guidance of [CHIPS Alliance](https://www.chipsalliance.org).
 
 - [What does Chisel code look like?](#what-does-chisel-code-look-like)
   - [LED blink](#led-blink)
@@ -34,7 +41,7 @@ a hardware compiler framework implemented by [LLVM CIRCT](https://github.com/llv
 
 ---
 
-[![Join the chat at https://gitter.im/chipsalliance/chisel](https://matrix.to/img/matrix-badge.svg)](https://gitter.im/chipsalliance/chisel?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Join the chat at https://gitter.im/freechipsproject/chisel3](https://matrix.to/img/matrix-badge.svg)](https://gitter.im/freechipsproject/chisel3?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Scaladoc](https://www.javadoc.io/badge/org.chipsalliance/chisel_2.13.svg?color=blue&label=Scaladoc)](https://javadoc.io/doc/org.chipsalliance/chisel_2.13/latest)
 ![CI](https://github.com/chipsalliance/chisel/actions/workflows/test.yml/badge.svg)
 [![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/chipsalliance/chisel.svg?include_prereleases&sort=semver)](https://github.com/chipsalliance/chisel/releases/latest)
@@ -221,7 +228,7 @@ For example, in SBT this could be expressed as:
 ```scala
 // build.sbt
 scalaVersion := "2.13.10"
-val chiselVersion = "5.0.0-RC1"
+val chiselVersion = "5.0.0"
 addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full)
 libraryDependencies += "org.chipsalliance" %% "chisel" % chiselVersion
 ```
@@ -245,7 +252,7 @@ If you are trying to make a contribution to this project, please read [CONTRIBUT
 These simulation-based verification tools are available for Chisel:
 
 * [**svsim**](svsim) is the lightweight testing library for Chisel, included in this repository.
-* [**chiseltest (Chisel 3.6 and before)**](https://github.com/ucb-bar/chiseltest) is the batteries-included testing and formal verification library for Chisel-based RTL designs and a replacement for the former PeekPokeTester, providing the same base constructs but with a streamlined interface and concurrency support with `fork` and `join` with internal and Verilator integration for simulations.
+* [**chiseltest (Chisel 5.0 and before)**](https://github.com/ucb-bar/chiseltest) is the batteries-included testing and formal verification library for Chisel-based RTL designs and a replacement for the former PeekPokeTester, providing the same base constructs but with a streamlined interface and concurrency support with `fork` and `join` with internal and Verilator integration for simulations.
 
 ## Documentation
 
@@ -256,7 +263,7 @@ These simulation-based verification tools are available for Chisel:
 * [**Gitter**](https://gitter.im/freechipsproject/chisel3), where you can ask questions or discuss anything Chisel
 * [**Website (3.6 and earlier)**](https://www.chisel-lang.org) ([source](https://github.com/freechipsproject/www.chisel-lang.org/))
 * [**Website (main)**](https://chipsalliance.github.io/chisel) ([source](website)) (Note that this will replace the above after the Chisel 5 release)
-* [**Scastie (v5.0.0-RC1)**](https://scastie.scala-lang.org/0jvtH89lRxuKSHDyOrpAZw) - cannot generate Verilog (firtool does not work in Scastie)
+* [**Scastie (v5.0.0)**](https://scastie.scala-lang.org/UAQiCxZLR863I3jI1yZ34w) - cannot generate Verilog (firtool does not work in Scastie)
 * [**Scastie (v3.6.0)**](https://scastie.scala-lang.org/1XICrlaZQs6ZvxpuKdFdDw) - generates Verilog with legacy Scala FIRRTL Compiler
 * [**asic-world**](http://www.asic-world.com/verilog/veritut.html) If you aren't familiar with verilog, this is a good tutorial.
 
@@ -264,7 +271,7 @@ If you are migrating from Chisel2, see [the migration guide](https://www.chisel-
 
 ### Chisel Dev Meeting
 
-Chisel/FIRRTL development meetings happen every Monday from 1100--1200 PT.
+Chisel/FIRRTL development meetings happen every Monday from 9:00-10:00 am PT.
 
 Call-in info and meeting notes are available [here](https://docs.google.com/document/d/1BLP2DYt59DqI-FgFCcjw8Ddl4K-WU0nHmQu0sZ_wAGo/).
 
@@ -297,7 +304,7 @@ sbt compile
 ```
 
 In order to run the following unit tests, you will need several tools on your `PATH`, namely
-[firtool](https://github.com/llvm/circt/releases/tag/firtool-1.38.0),
+[firtool](https://github.com/llvm/circt/releases/tag/firtool-1.43.0),
 [verilator](https://www.veripool.org/verilator/),
 [yosys](https://yosyshq.net/yosys/),
 and [espresso](https://github.com/chipsalliance/espresso).
@@ -370,7 +377,7 @@ Try to reproduce the issue with the associated latest minor release (to verify t
 For more information on our versioning policy and what versions of the various Chisel ecosystem projects work together, see [Chisel Project Versioning](https://www.chisel-lang.org/chisel3/docs/appendix/versioning.html).
 
 If you're developing a Chisel library (or `chisel3` itself), you'll probably want to work closer to the tip of the development trunk.
-By default, the main branch of the chisel repository is configured to build and publish its version of the code as `<version>+<n>-g<commit hash>-SNAPSHOT`.
+By default, the main branch of the chisel repository is configured to build and publish its version of the code as `<version>+<n>-<commit hash>-SNAPSHOT`.
 Updated SNAPSHOTs are publised on every push to main.
 You are encouraged to do your development against the latest SNAPSHOT, but note that neither API nor ABI compatibility is guaranteed so your code may break at any time.
 

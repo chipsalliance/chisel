@@ -156,8 +156,10 @@ package object simulator {
               }
           }
         }
+        // Chisel ports can be Data or Property, but there is no ABI for Property ports, so we only return Data.
         DataMirror.modulePorts(dut).flatMap {
-          case (name, data) => leafPorts(data, name)
+          case (name, data: Data) => leafPorts(data, name)
+          case _ => Nil
         }
       }
       workspace.elaborate(

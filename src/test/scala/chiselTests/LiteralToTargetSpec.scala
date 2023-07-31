@@ -23,6 +23,6 @@ class LiteralToTargetSpec extends AnyFreeSpec with Matchers {
       }
 
       ChiselStage.emitCHIRRTL(new Foo)
-    } should have).message("Illegal component name: UInt<1>(\"h01\") (note: literals are illegal)")
+    } should have).message("Illegal component name: UInt<1>(0h01) (note: literals are illegal)")
   }
 }

@@ -30,7 +30,8 @@ private[chisel3] class ModuleClone[T <: BaseModule](val getProto: T)(implicit si
     _component = getProto._component
     None
   }
-  // Maps proto ports to module clone's ports
+  // Maps proto ports to module clone's ports.
+  // Chisel ports can be Data or Property, but to clone as a Record, we can only return Data.
   private[chisel3] lazy val ioMap: Map[Data, Data] = {
     getProto match {
       // BlackBox needs special handling for its pseduo-io Bundle
@@ -38,7 +39,7 @@ private[chisel3] class ModuleClone[T <: BaseModule](val getProto: T)(implicit si
         Map(protoBB._io.get -> getPorts._elements("io"))
       case _ =>
         val name2Port = getPorts._elements
-        getProto.getChiselPorts.map { case (name, data) => data -> name2Port(name) }.toMap
+        getProto.getChiselPorts.collect { case (name, data: Data) => data -> name2Port(name) }.toMap
     }
   }
   // This module doesn't actually exist in the FIRRTL so no initialization to do

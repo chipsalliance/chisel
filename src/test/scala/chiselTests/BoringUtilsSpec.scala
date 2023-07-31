@@ -3,7 +3,6 @@
 package chiselTests
 
 import chisel3._
-import chisel3.probe
 import chisel3.util.Counter
 import chisel3.testers._
 import chisel3.experimental.{BaseModule, ChiselAnnotation}
@@ -155,17 +154,17 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
     matchesAndOmits(circt.stage.ChiselStage.emitCHIRRTL(new Foo))(
       "module Baz :",
       "output a_bore : UInt<1>",
-      "a_bore <= a_wire",
+      "connect a_bore, a_wire",
       "module Bar :",
       "output b_bore : UInt<2>",
-      "a_bore <= baz.a_bore",
-      "b_bore <= b_wire",
+      "connect a_bore, baz.a_bore",
+      "connect b_bore, b_wire",
       "module Foo :",
-      "a <= a_bore",
-      "b <= b_bore",
-      "c <= c_wire",
-      "a_bore <= bar.a_bore",
-      "b_bore <= bar.b_bore"
+      "connect a, a_bore",
+      "connect b, b_bore",
+      "connect c, c_wire",
+      "connect a_bore, bar.a_bore",
+      "connect b_bore, bar.b_bore"
     )()
   }
 
@@ -186,14 +185,14 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
     matchesAndOmits(circt.stage.ChiselStage.emitCHIRRTL(new Foo))(
       "module Bar :",
       "output b_bore : UInt<1>",
-      "b_bore <= a",
+      "connect b_bore, a",
       "module Baz :",
       "input b_bore : UInt<1>",
       "wire b_bore_1 : UInt<1>",
-      "b_bore_1 <= b_bore",
-      "b <= b_bore_1",
+      "connect b_bore_1, b_bore",
+      "connect b, b_bore_1",
       "module Foo",
-      "baz.b_bore <= bar.b_bore"
+      "connect baz.b_bore, bar.b_bore"
     )()
   }
 
@@ -226,11 +225,11 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
     matchesAndOmits(circt.stage.ChiselStage.emitCHIRRTL(new Foo))(
       "module Bar :",
       "input q_bore : UInt<1>",
-      "q <= q_bore_1", // Do normal connection before secret ones
-      "q_bore_1 <= q_bore",
+      "connect q, q_bore_1", // Do normal connection before secret ones
+      "connect q_bore_1, q_bore",
       "module Foo :",
       "input a : UInt<1>",
-      "bar.q_bore <= a"
+      "connect bar.q_bore, a"
     )()
   }
 
@@ -304,221 +303,26 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
     log should include("Can only bore into modules that are not fully closed")
   }
 
-  "Downwards tap from parent to child" should "work" in {
+  it should "not create a new port when source is a port" in {
+    class Baz extends RawModule {
+      val a = IO(Output(Bool()))
+    }
+
+    class Bar extends RawModule {
+      val baz = Module(new Baz)
+    }
+
     class Foo extends RawModule {
-      val internalWire = Wire(Bool())
-    }
-    class Top extends RawModule {
-      val foo = Module(new Foo())
-      val outProbe = IO(probe.Probe(Bool()))
-      val out = IO(Bool())
-      probe.define(outProbe, BoringUtils.tap(foo.internalWire))
-      out := BoringUtils.tapAndRead(foo.internalWire)
-    }
-    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
-    matchesAndOmits(chirrtl)(
-      "module Foo :",
-      "output bore : Probe<UInt<1>>",
-      "output out_bore : Probe<UInt<1>>",
-      "define bore = probe(internalWire)",
-      "define out_bore = probe(internalWire)",
-      "module Top :",
-      "define outProbe = foo.bore",
-      "out <= read(foo.out_bore)"
-    )()
-  }
+      val a = IO(Output(Bool()))
 
-  "Downwards tap from grandparent to grandchild" should "work" in {
-    class Bar extends RawModule {
-      val internalWire = Wire(Bool())
-    }
-    class Foo extends RawModule {
       val bar = Module(new Bar)
-    }
-    class Top extends RawModule {
-      val foo = Module(new Foo)
-      val out = IO(Bool())
-      out := BoringUtils.tapAndRead(foo.bar.internalWire)
-    }
-    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
-    matchesAndOmits(chirrtl)(
-      "module Bar :",
-      "output out_bore : Probe<UInt<1>>",
-      "define out_bore = probe(internalWire)",
-      "module Foo :",
-      "output out_bore : Probe<UInt<1>>",
-      "define out_bore = bar.out_bore",
-      "module Top :",
-      "out <= read(foo.out_bore)"
-    )()
-  }
 
-  "Upwards tap from child to parent" should "work" in {
-    class Foo(parentData: Data) extends RawModule {
-      val outProbe = IO(probe.Probe(Bool()))
-      val out = IO(Bool())
-      probe.define(outProbe, BoringUtils.tap(parentData))
-      out := BoringUtils.tapAndRead(parentData)
+      a := BoringUtils.bore(bar.baz.a)
     }
-    class Top extends RawModule {
-      val parentWire = Wire(Bool())
-      val foo = Module(new Foo(parentWire))
-    }
-    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
-    matchesAndOmits(chirrtl)(
-      "module Foo :",
-      "input bore : UInt<1>",
-      "input out_bore : UInt<1>",
-      "define outProbe = probe(tapIntermediate)",
-      "out <= out_tapIntermediate",
-      "module Top :",
-      "foo.bore <= parentWire",
-      "foo.out_bore <= parentWire"
-    )()
-  }
 
-  "Upwards tap from grandchild to grandparent" should "work" in {
-    class Bar(grandParentData: Data) extends RawModule {
-      val out = IO(Bool())
-      out := BoringUtils.tapAndRead(grandParentData)
-    }
-    class Foo(parentData: Data) extends RawModule {
-      val bar = Module(new Bar(parentData))
-    }
-    class Top extends RawModule {
-      val parentWire = Wire(Bool())
-      val foo = Module(new Foo(parentWire))
-    }
-    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
-    matchesAndOmits(chirrtl)(
-      "module Bar :",
-      "input out_bore : UInt<1>",
-      "out <= out_tapIntermediate",
-      "module Foo :",
-      "bar.out_bore <= out_bore",
-      "input out_bore : UInt<1>",
-      "module Top :",
-      "foo.out_bore <= parentWire"
-    )()
-  }
-
-  "Tap from child to sibling" should "work" in {
-    class Bar extends RawModule {
-      val a = Wire(Bool())
-    }
-    class Baz(_a: Bool) extends RawModule {
-      val b = Wire(Bool())
-      b := BoringUtils.tapAndRead(_a)
-    }
-    class Top extends RawModule {
-      val bar = Module(new Bar)
-      val baz = Module(new Baz(bar.a))
-    }
-    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
-    matchesAndOmits(chirrtl)(
-      "module Bar :",
-      "output b_bore : Probe<UInt<1>>",
-      "define b_bore = probe(a)",
-      "module Baz :",
-      "input b_bore : UInt<1>",
-      "b_tapIntermediate <= b_bore",
-      "module Top :",
-      "baz.b_bore <= read(bar.b_bore)"
-    )()
-  }
-
-  "Tap from child to sibling at different levels" should "work" in {
-    class Bar extends RawModule {
-      val a = Wire(Bool())
-    }
-    class Baz(_a: Bool) extends RawModule {
-      val b = Wire(Bool())
-      b := BoringUtils.tapAndRead(_a)
-    }
-    class Foo(_a: Bool) extends RawModule {
-      val baz = Module(new Baz(_a))
-    }
-    class Top extends RawModule {
-      val bar = Module(new Bar)
-      val foo = Module(new Foo(bar.a))
-    }
-    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
-    matchesAndOmits(chirrtl)(
-      "module Bar :",
-      "output b_bore : Probe<UInt<1>>",
-      "define b_bore = probe(a)",
-      "module Baz :",
-      "input b_bore : UInt<1>",
-      "b_tapIntermediate <= b_bore",
-      "module Foo :",
-      "input b_bore : UInt<1>",
-      "baz.b_bore <= b_bore",
-      "module Top :",
-      "foo.b_bore <= read(bar.b_bore)"
-    )()
-  }
-
-  "Downwards writable tap from grandparent to grandchild" should "work" in {
-    class Bar extends RawModule {
-      val internalWire = Wire(Bool())
-    }
-    class Foo extends RawModule {
-      val bar = Module(new Bar)
-    }
-    class Top extends RawModule {
-      val foo = Module(new Foo)
-      val out = IO(Bool())
-      out := probe.read(BoringUtils.rwTap(foo.bar.internalWire))
-      probe.forceInitial(BoringUtils.rwTap(foo.bar.internalWire), false.B)
-    }
-    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
-    println(chirrtl)
-    matchesAndOmits(chirrtl)(
-      "module Bar :",
-      "output out_bore : RWProbe<UInt<1>>",
-      "define out_bore = rwprobe(internalWire)",
-      "module Foo :",
-      "output out_bore : RWProbe<UInt<1>>",
-      "define out_bore = bar.out_bore",
-      "module Top :",
-      "out <= read(foo.out_bore)",
-      "force_initial(foo.bore, UInt<1>(\"h0\"))"
-    )()
-  }
-
-  "Upwards writable tap from child to parent" should "not work" in {
-    class Foo(parentData: Data) extends RawModule {
-      val outProbe = IO(probe.RWProbe(Bool()))
-      probe.define(outProbe, BoringUtils.rwTap(parentData))
-    }
-    class Top extends RawModule {
-      val parentWire = Wire(Bool())
-      val foo = Module(new Foo(parentWire))
-    }
-    val e = intercept[Exception] {
-      circt.stage.ChiselStage.emitCHIRRTL(new Top, Array("--throw-on-first-error"))
-    }
-    e.getMessage should include("Cannot drill writable probes upwards.")
-  }
-
-  "Writable tap from child to sibling at different levels" should "not work" in {
-    class Bar extends RawModule {
-      val a = Wire(Bool())
-    }
-    class Baz(_a: Bool) extends RawModule {
-      val b = Output(probe.RWProbe(Bool()))
-      b := BoringUtils.rwTap(_a)
-    }
-    class Foo(_a: Bool) extends RawModule {
-      val baz = Module(new Baz(_a))
-    }
-    class Top extends RawModule {
-      val bar = Module(new Bar)
-      val foo = Module(new Foo(bar.a))
-    }
-    val e = intercept[Exception] {
-      circt.stage.ChiselStage.emitCHIRRTL(new Top, Array("--throw-on-first-error"))
-    }
-    e.getMessage should include("Cannot drill writable probes upwards.")
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Foo)
+    matchesAndOmits(chirrtl)()(
+      "connect a_bore, a"
+    )
   }
 }

@@ -3,6 +3,8 @@
 package chisel3.experimental
 
 import chisel3._
+import chisel3.internal.{Builder, ChildBinding}
+import chisel3.internal.firrtl.Arg
 
 /** Indicates if this Record represents an "Opaque Type"
   *
@@ -14,9 +16,33 @@ import chisel3._
   * the Record may only contain a single element with an empty name
   * and there will be no `_` in the name for that element in the emitted Verilog.
   *
-  * @see RecordSpec in Chisel's tests for example usage and expected output
+  * @see OpaqueTypeSpec in Chisel's tests for example usage and expected output
   */
-trait OpaqueType { self: Record =>
+// Having both extends Data and the self type of Record may seem redundant, but it isn't
+// The self-type has to do with how they are implemented (via a single unnamed element),
+//   we eventually want to lift it in a backwards compatible way, by adding a new API
+trait OpaqueType extends Data { self: Record =>
+
+  abstract override private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): UInt = {
+    if (errorOnAsUInt) {
+      val coordinates =
+        if (this.binding.exists(_.isInstanceOf[ChildBinding])) {
+          val n = Arg.earlyLocalName(this, includeRoot = false)
+          s"Field '$n' of type "
+        } else {
+          ""
+        }
+
+      Builder.error(s"${coordinates}${this.typeName} does not support .asUInt.")
+    }
+    super._asUIntImpl(first)
+  }
+
+  /** If set to true, calling .asUInt on instances of this type will throw an Exception
+    *
+    * Users can override this to increase the "opacity" of their type.
+    */
+  protected def errorOnAsUInt: Boolean = false
 
   /** If set to true, indicates that this Record is an OpaqueType
     *

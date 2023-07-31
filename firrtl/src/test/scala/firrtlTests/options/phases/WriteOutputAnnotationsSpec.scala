@@ -77,25 +77,6 @@ class WriteOutputAnnotationsSpec extends AnyFlatSpec with Matchers with firrtl.t
     fileContainsAnnotations(file, expected)
   }
 
-  it should "do nothing if no output annotation file is specified" in new Fixture {
-    val annotations = Seq(
-      WriteOutputAnnotationsSpec.FooAnnotation,
-      WriteOutputAnnotationsSpec.BarAnnotation(0),
-      WriteOutputAnnotationsSpec.BarAnnotation(1)
-    )
-
-    val out = catchWrites { phase.transform(annotations) } match {
-      case Right(a) =>
-        info("no file writes occurred")
-        a
-      case Left(a) =>
-        fail(s"No file writes expected, but a write to '$a' ocurred!")
-    }
-
-    info("annotations are unmodified")
-    out.toSeq should be(annotations)
-  }
-
   it should "write CustomFileEmission annotations" in new Fixture {
     val file = new File("write-CustomFileEmission-annotations.anno.json")
     val annotations = Seq(

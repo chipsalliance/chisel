@@ -13,7 +13,6 @@ import chisel3.internal.sourceinfo._
 import chisel3.internal.firrtl._
 import chisel3.reflect.DataMirror
 
-import scala.collection.immutable.LazyList // Needed for 2.12 alias
 import scala.reflect.ClassTag
 import scala.util.Try
 
@@ -56,7 +55,7 @@ object SpecifiedDirection {
       case (SpecifiedDirection.Flip, thisDirection)        => SpecifiedDirection.flip(thisDirection)
     }
 
-  private[chisel3] def specifiedDirection[T <: Data](
+  private[chisel3] def specifiedDirection[T <: BaseType](
     source: => T
   )(dir:    T => SpecifiedDirection
   ): T = {
@@ -258,95 +257,28 @@ object chiselTypeOf {
   * Thus, an error will be thrown if these are used on bound Data
   */
 object Input {
-  def apply[T <: Data](source: => T): T = {
+  def apply[T <: BaseType](source: => T): T = {
     SpecifiedDirection.specifiedDirection(source)(_ => SpecifiedDirection.Input)
   }
 }
 object Output {
-  def apply[T <: Data](source: => T): T = {
+  def apply[T <: BaseType](source: => T): T = {
     SpecifiedDirection.specifiedDirection(source)(_ => SpecifiedDirection.Output)
   }
 }
 
 object Flipped {
-  def apply[T <: Data](source: => T): T = {
+  def apply[T <: BaseType](source: => T): T = {
     SpecifiedDirection.specifiedDirection(source)(x => SpecifiedDirection.flip(x.specifiedDirection))
   }
 }
 
-/** This forms the root of the type system for wire data types. The data value
-  * must be representable as some number (need not be known at Chisel compile
-  * time) of bits, and must have methods to pack / unpack structured data to /
-  * from bits.
+/** This forms the roots of the type system for Chisel's data types.
   *
-  * @groupdesc Connect Utilities for connecting hardware components
-  * @define coll data
+  * This includes both hardware and non-hardware types. All Chisel types must extend this trait, which itself extends
+  * HasId and NamedComponent. It also includes facilities for managing bindings, directions, and the cloning of types.
   */
-abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
-  import Data.ProbeInfo
-
-  // This is a bad API that punches through object boundaries.
-  private[chisel3] def flatten: IndexedSeq[Element] = {
-    this match {
-      case elt: Aggregate => elt.elementsIterator.toIndexedSeq.flatMap { _.flatten }
-      case elt: Element   => IndexedSeq(elt)
-      case elt => throwException(s"Cannot flatten type ${elt.getClass}")
-    }
-  }
-
-  // Must clone a Data if any of the following are true:
-  // * It has a binding
-  // * Its id is older than prevId (not "freshly created")
-  // * It is a Bundle or Record that contains a member older than prevId
-  private[chisel3] def mustClone(prevId: Long): Boolean = {
-    this.hasBinding || this._minId <= prevId
-  }
-
-  /** The minimum (aka "oldest") id that is part of this Data
-    *
-    * @note This is usually just _id except for some Records and Bundles
-    */
-  private[chisel3] def _minId: Long = this._id
-
-  override def autoSeed(name: String): this.type = {
-    topBindingOpt match {
-      // Ports are special in that the autoSeed will keep the first name, not the last name
-      case Some(PortBinding(m)) if hasAutoSeed && Builder.currentModule.contains(m) => this
-      case _                                                                        => super.autoSeed(name)
-    }
-  }
-
-  // probeInfo only exists if this is a probe type
-  private var _probeInfoVar:      ProbeInfo = null
-  private[chisel3] def probeInfo: Option[ProbeInfo] = Option(_probeInfoVar)
-  private[chisel3] def probeInfo_=(probeInfo: Option[ProbeInfo]) = _probeInfoVar = probeInfo.getOrElse(null)
-
-  // If this Data is constant, it must hold a constant value
-  private var _isConst:         Boolean = false
-  private[chisel3] def isConst: Boolean = _isConst
-  private[chisel3] def isConst_=(isConst: Boolean) = _isConst = isConst
-
-  // User-specified direction, local at this node only.
-  // Note that the actual direction of this node can differ from child and parent specifiedDirection.
-  private var _specifiedDirection:         SpecifiedDirection = SpecifiedDirection.Unspecified
-  private[chisel3] def specifiedDirection: SpecifiedDirection = _specifiedDirection
-  private[chisel3] def specifiedDirection_=(direction: SpecifiedDirection) = {
-    _specifiedDirection = direction
-  }
-
-  /** This overwrites a relative SpecifiedDirection with an explicit one, and is used to implement
-    * the compatibility layer where, at the elements, Flip is Input and unspecified is Output.
-    * DO NOT USE OUTSIDE THIS PURPOSE. THIS OPERATION IS DANGEROUS!
-    */
-  private[chisel3] def _assignCompatibilityExplicitDirection: Unit = {
-    (this, _specifiedDirection) match {
-      case (_: Analog, _) => // nothing to do
-      case (_, SpecifiedDirection.Unspecified)                       => _specifiedDirection = SpecifiedDirection.Output
-      case (_, SpecifiedDirection.Flip)                              => _specifiedDirection = SpecifiedDirection.Input
-      case (_, SpecifiedDirection.Input | SpecifiedDirection.Output) => // nothing to do
-    }
-  }
-
+trait BaseType extends HasId with NamedComponent {
   // Binding stores information about this node's position in the hardware graph.
   // This information is supplemental (more than is necessary to generate FIRRTL) and is used to
   // perform checks in Chisel, where more informative error messages are possible.
@@ -386,15 +318,12 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     * binding and direction are valid after this call completes.
     */
   private[chisel3] def bind(target: Binding, parentDirection: SpecifiedDirection = SpecifiedDirection.Unspecified): Unit
-
-  /** Adds this `Data` to its parents _ids if it should be added */
-  private[chisel3] def maybeAddToParentIds(target: Binding): Unit = {
-    // ConstrainedBinding means the thing actually corresponds to a Module, no need to add to _ids otherwise
-    target match {
-      case c: SecretPortBinding  => // secret ports are handled differently, parent's don't need to know about that
-      case c: ConstrainedBinding => _parent.foreach(_.addId(this))
-      case _ =>
-    }
+  // User-specified direction, local at this node only.
+  // Note that the actual direction of this node can differ from child and parent specifiedDirection.
+  protected var _specifiedDirection:       SpecifiedDirection = SpecifiedDirection.Unspecified
+  private[chisel3] def specifiedDirection: SpecifiedDirection = _specifiedDirection
+  private[chisel3] def specifiedDirection_=(direction: SpecifiedDirection) = {
+    _specifiedDirection = direction
   }
 
   // Both _direction and _resolvedUserDirection are saved versions of computed variables (for
@@ -411,6 +340,98 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       throw RebindingException(s"Attempted reassignment of resolved direction to $this")
     }
     _directionVar = actualDirection
+  }
+
+  // Must clone an BaseType if any of the following are true:
+  // * It has a binding
+  // * Its id is older than prevId (not "freshly created")
+  // * It is a Bundle or Record that contains a member older than prevId
+  private[chisel3] def mustClone(prevId: Long): Boolean = {
+    this.hasBinding || this._minId <= prevId
+  }
+
+  /** The minimum (aka "oldest") id that is part of this BaseType
+    *
+    * @note This is usually just _id except for some Records and Bundles
+    */
+  private[chisel3] def _minId: Long = this._id
+
+  /** Internal API; Chisel users should look at chisel3.chiselTypeOf(...).
+    *
+    * cloneType must be defined for any Chisel object extending BaseType.
+    * It is responsible for constructing a basic copy of the object being cloned.
+    *
+    * @return a copy of the object.
+    */
+  def cloneType: this.type
+
+  /** Internal API; Chisel users should look at chisel3.chiselTypeOf(...).
+    *
+    * Returns a copy of this BaseType type, with bindings (if any) removed.
+    * Directionality data and probe information is still preserved.
+    */
+  private[chisel3] def cloneTypeFull: this.type
+
+  /** Adds this `BaseType` to its parents _ids if it should be added */
+  private[chisel3] def maybeAddToParentIds(target: Binding): Unit = {
+    // ConstrainedBinding means the thing actually corresponds to a Module, no need to add to _ids otherwise
+    target match {
+      case c: SecretPortBinding  => // secret ports are handled differently, parent's don't need to know about that
+      case c: ConstrainedBinding => _parent.foreach(_.addId(this))
+      case _ =>
+    }
+  }
+}
+
+/** This forms the root of the type system for wire data types. The data value
+  * must be representable as some number (need not be known at Chisel compile
+  * time) of bits, and must have methods to pack / unpack structured data to /
+  * from bits.
+  *
+  * @groupdesc Connect Utilities for connecting hardware components
+  * @define coll data
+  */
+abstract class Data extends BaseType with SourceInfoDoc {
+  import Data.ProbeInfo
+
+  // This is a bad API that punches through object boundaries.
+  private[chisel3] def flatten: IndexedSeq[Element] = {
+    this match {
+      case elt: Aggregate => elt.elementsIterator.toIndexedSeq.flatMap { _.flatten }
+      case elt: Element   => IndexedSeq(elt)
+      case elt => throwException(s"Cannot flatten type ${elt.getClass}")
+    }
+  }
+
+  override def autoSeed(name: String): this.type = {
+    topBindingOpt match {
+      // Ports are special in that the autoSeed will keep the first name, not the last name
+      case Some(PortBinding(m)) if hasAutoSeed && Builder.currentModule.contains(m) => this
+      case _                                                                        => super.autoSeed(name)
+    }
+  }
+
+  // probeInfo only exists if this is a probe type
+  private var _probeInfoVar:      ProbeInfo = null
+  private[chisel3] def probeInfo: Option[ProbeInfo] = Option(_probeInfoVar)
+  private[chisel3] def probeInfo_=(probeInfo: Option[ProbeInfo]) = _probeInfoVar = probeInfo.getOrElse(null)
+
+  // If this Data is constant, it must hold a constant value
+  private var _isConst:         Boolean = false
+  private[chisel3] def isConst: Boolean = _isConst
+  private[chisel3] def isConst_=(isConst: Boolean) = _isConst = isConst
+
+  /** This overwrites a relative SpecifiedDirection with an explicit one, and is used to implement
+    * the compatibility layer where, at the elements, Flip is Input and unspecified is Output.
+    * DO NOT USE OUTSIDE THIS PURPOSE. THIS OPERATION IS DANGEROUS!
+    */
+  private[chisel3] def _assignCompatibilityExplicitDirection: Unit = {
+    (this, _specifiedDirection) match {
+      case (_: Analog, _) => // nothing to do
+      case (_, SpecifiedDirection.Unspecified)                       => _specifiedDirection = SpecifiedDirection.Output
+      case (_, SpecifiedDirection.Flip)                              => _specifiedDirection = SpecifiedDirection.Input
+      case (_, SpecifiedDirection.Input | SpecifiedDirection.Output) => // nothing to do
+    }
   }
 
   private[chisel3] def stringAccessor(chiselType: String): String = {
@@ -645,15 +666,6 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 
   /** Internal API; Chisel users should look at chisel3.chiselTypeOf(...).
     *
-    * cloneType must be defined for any Chisel object extending Data.
-    * It is responsible for constructing a basic copy of the object being cloned.
-    *
-    * @return a copy of the object.
-    */
-  def cloneType: this.type
-
-  /** Internal API; Chisel users should look at chisel3.chiselTypeOf(...).
-    *
     * Returns a copy of this data type, with hardware bindings (if any) removed.
     * Directionality data and probe information is still preserved.
     */
@@ -757,8 +769,12 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     */
   final def asUInt: UInt = macro SourceInfoTransform.noArg
 
+  // The actual implementation of do_asUInt
+  // @param first exists because of awkward behavior in Aggregate that requires changing 0.U to be zero-width to fix
+  private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): UInt
+
   /** @group SourceInfoTransformMacro */
-  def do_asUInt(implicit sourceInfo: SourceInfo): UInt
+  def do_asUInt(implicit sourceInfo: SourceInfo): UInt = this._asUIntImpl(true)
 
   /** Default pretty printing */
   def toPrintable: Printable
@@ -1103,7 +1119,7 @@ final case object DontCare extends Element with connectable.ConnectableDocs {
     Builder.error("connectFromBits: DontCare cannot be a connection sink (LHS)")
   }
 
-  def do_asUInt(implicit sourceInfo: chisel3.experimental.SourceInfo): UInt = {
+  override private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): UInt = {
     Builder.error("DontCare does not have a UInt representation")
     0.U
   }

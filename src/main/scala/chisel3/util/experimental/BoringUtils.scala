@@ -6,7 +6,7 @@ import chisel3._
 import chisel3.probe.{Probe, RWProbe}
 import chisel3.Data.ProbeInfo
 import chisel3.experimental.{annotate, requireIsHardware, skipPrefix, BaseModule, ChiselAnnotation, SourceInfo}
-import chisel3.internal.{Builder, BuilderContextCache, NamedComponent, Namespace}
+import chisel3.internal.{Builder, BuilderContextCache, NamedComponent, Namespace, PortBinding}
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
 import firrtl.passes.wiring.{SinkAnnotation, SourceAnnotation}
 import firrtl.annotations.{ComponentName, ModuleName}
@@ -128,6 +128,10 @@ object BoringUtils {
     * @return the name used
     * @note if a uniqueName is not specified, the returned name may differ from the user-provided name
     */
+  @deprecated(
+    "Please use the new Boring API instead (BoringUtils.bore(source)). This will be removed in Chisel 7.0",
+    "Chisel 6.0"
+  )
   def addSource(
     component:    NamedComponent,
     name:         String,
@@ -160,6 +164,10 @@ object BoringUtils {
     * @param forceExists if true, require that the provided `name` parameter already exists in the global namespace
     * @throws BoringUtilsException if name is expected to exist and it doesn't
     */
+  @deprecated(
+    "Please use the new Boring API instead (BoringUtils.bore(source)). This will be removed in Chisel 7.0",
+    "Chisel 6.0"
+  )
   def addSink(
     component:    InstanceId,
     name:         String,
@@ -193,6 +201,10 @@ object BoringUtils {
     * @note the returned name will be based on the name of the source
     * component
     */
+  @deprecated(
+    "Please use the new Boring API instead (BoringUtils.bore(source)). This will be removed in Chisel 7.0",
+    "Chisel 6.0"
+  )
   def bore(source: Data, sinks: Seq[Data]): String = {
     val boringName =
       try {
@@ -214,6 +226,10 @@ object BoringUtils {
       case Some(pi)                => Probe(purePortTypeBase)
       case None                    => purePortTypeBase
     }
+    def isPort(d: Data): Boolean = d.topBindingOpt match {
+      case Some(PortBinding(_)) => true
+      case _                    => false
+    }
     def boringError(module: BaseModule): Unit = {
       (module.fullyClosedErrorMessages ++ Seq(
         (si, s"Can only bore into modules that are not fully closed: ${module.name} was fully closed")
@@ -224,6 +240,10 @@ object BoringUtils {
     def drill(source: A, path: Seq[BaseModule], connectionLocation: Seq[BaseModule], up: Boolean): A = {
       path.zip(connectionLocation).foldLeft(source) {
         case (rhs, (module, conLoc)) if (module.isFullyClosed) => boringError(module); DontCare.asInstanceOf[A]
+        case (rhs, (module, _)) if (up && module == path(0) && isPort(rhs)) => {
+          // When drilling from the original source, if it's already a port just return it.
+          rhs
+        }
         case (rhs, (module, conLoc)) =>
           skipPrefix { // so `lcaSource` isn't in the name of the secret port
             if (!up && createProbe.nonEmpty && createProbe.get.writable) {
@@ -252,8 +272,7 @@ object BoringUtils {
       case _ => // Actually bore
     }
     if (parent(source) == thisModule) {
-
-      /** No boring to do */
+      // No boring to do
       return source
     }
 
@@ -265,11 +284,10 @@ object BoringUtils {
     val lcaSource = drill(source, upPath.dropRight(1), upPath.dropRight(1), true)
     val sink = drill(lcaSource, downPath.reverse.tail, downPath.reverse, false)
 
-    if (sink.probeInfo.nonEmpty) {
+    if (createProbe.nonEmpty) {
       sink
     } else {
-
-      /** Creating a wire to assign the result to.  We will return this. */
+      // Creating a wire to assign the result to.  We will return this.
       val bore = Wire(purePortTypeBase)
       thisModule.asInstanceOf[RawModule].secretConnection(bore, sink)
       bore

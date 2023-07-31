@@ -82,8 +82,13 @@ sealed abstract class Aggregate extends Data {
     }
   }
 
-  override def do_asUInt(implicit sourceInfo: SourceInfo): UInt = {
-    SeqUtils.do_asUInt(flatten.map(_.asUInt))
+  // Due to prior lack of zero-width wire support, .asUInt for an empty Aggregate has returned 0.U (equivalent to 0.U(1.W))
+  // In the case where an empty Aggregate is a child of an outer Aggregate, however, it would flatten out the empty inner Aggregate
+  // This means we need the `first` argument so that we can preserve this behavior of Aggregates while still allowing subclasses
+  // to override .asUInt behavior
+  override private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): UInt = {
+    val elts = this.getElements.map(_._asUIntImpl(false))
+    if (elts.isEmpty && !first) 0.U(0.W) else SeqUtils.do_asUInt(elts)
   }
 
   private[chisel3] override def connectFromBits(
@@ -304,16 +309,18 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
     }
 
     if (length == 0) {
-      Builder.warning(s"Cannot extract from Vec of size 0.")
+      Builder.warning(Warning(WarningID.ExtractFromVecSizeZero, s"Cannot extra from Vec of size 0."))
     } else {
       p.widthOption.foreach { pWidth =>
         val correctWidth = BigInt(length - 1).bitLength
-        def warn(msg: String) =
-          Builder.warning(
-            s"Dynamic index with width $pWidth is too $msg for Vec of size $length (expected index width $correctWidth)."
-          )
-        if (pWidth > correctWidth) warn("wide")
-        else if (pWidth < correctWidth) warn("narrow")
+        def mkMsg(msg: String): String =
+          s"Dynamic index with width $pWidth is too $msg for Vec of size $length (expected index width $correctWidth)."
+
+        if (pWidth > correctWidth) {
+          Builder.warning(Warning(WarningID.DynamicIndexTooWide, mkMsg("wide")))
+        } else if (pWidth < correctWidth) {
+          Builder.warning(Warning(WarningID.DynamicIndexTooNarrow, mkMsg("narrow")))
+        }
       }
     }
 
@@ -970,16 +977,13 @@ abstract class Record extends Aggregate {
   // of hardware created when connecting to one of these elements
   private def setElementRefs(): Unit = {
     val opaqueType = this._isOpaqueType
-    // Since elements is a map, it is impossible for two elements to have the same
-    // identifier; however, Namespace sanitizes identifiers to make them legal for Firrtl/Verilog
-    // which can cause collisions
-    val _namespace = Namespace.empty
     require(
       !opaqueType || (_elements.size == 1 && _elements.head._1 == ""),
       s"Opaque types must have exactly one element with an empty name, not ${_elements.size}: ${elements.keys.mkString(", ")}"
     )
+    // Names of _elements have already been namespaced (and therefore sanitized)
     for ((name, elt) <- _elements) {
-      elt.setRef(this, _namespace.name(name, leadingDigitOk = true), opaque = opaqueType)
+      elt.setRef(this, name, opaque = opaqueType)
     }
   }
 
@@ -1204,15 +1208,25 @@ abstract class Record extends Aggregate {
   // without having to recurse over all elements after the Record is
   // constructed. Laziness of _elements means that this check will
   // occur (only) at the first instance _elements is referenced.
-  private[chisel3] lazy val _elements: SeqMap[String, Data] = {
-    for ((name, field) <- elements) {
-      if (field.binding.isDefined) {
-        throw RebindingException(
-          s"Cannot create Record ${this.className}; element ${field} of Record must be a Chisel type, not hardware."
-        )
-      }
-    }
-    elements
+  // Also used to sanitize names and convert to more optimized VectorMap datastructure
+  private[chisel3] lazy val _elements: VectorMap[String, Data] = {
+    // Since elements is a map, it is impossible for two elements to have the same
+    // identifier; however, Namespace sanitizes identifiers to make them legal for Firrtl/Verilog
+    // which can cause collisions
+    // Note that OpaqueTypes cannot have sanitization (the name of the element needs to stay empty)
+    //   Use an empty Namespace to indicate OpaqueType
+    val namespace = Option.when(!this._isOpaqueType)(Namespace.empty)
+    elements.view.map {
+      case (name, field) =>
+        if (field.binding.isDefined) {
+          throw RebindingException(
+            s"Cannot create Record ${this.className}; element ${field} of Record must be a Chisel type, not hardware."
+          )
+        }
+        // namespace.name also sanitizes for firrtl, leave name alone for OpaqueTypes
+        val sanitizedName = namespace.map(_.name(name, leadingDigitOk = true)).getOrElse(name)
+        sanitizedName -> field
+    }.to(VectorMap) // VectorMap has O(1) lookup whereas ListMap is O(n)
   }
 
   /** Name for Pretty Printing */

@@ -66,8 +66,8 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
       "output io : { flip in : RWProbe<UInt<1>>, out : RWProbe<UInt<1>>}",
       "define u1.io.in = rwprobe(io.x)",
       "define u2.io.in = u1.io.out",
-      "io.y <= read(u2.io.out)",
-      "force_initial(u1.io.out, UInt<1>(\"h0\"))",
+      "connect io.y, read(u2.io.out)",
+      "force_initial(u1.io.out, UInt<1>(0h0))",
       "release_initial(u1.io.out)",
       "force(clock, io.x, u2.io.out, u1.io.out)",
       "release(clock, io.y, u2.io.out)"
@@ -92,7 +92,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
     (processChirrtl(chirrtl) should contain).allOf(
       "when in :",
       "define out = rwprobe(in)",
-      "w <= read(out)"
+      "connect w, read(out)"
     )
   }
 
@@ -124,7 +124,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
       "output p : Probe<{ a : UInt<1>, b : UInt<1>}>",
       "wire x : { a : UInt<1>, b : UInt<1>}",
       "define p = probe(x)",
-      "x <= read(f.p.b)",
+      "connect x, read(f.p.b)",
       "define y = f.p.b"
     )
   }
@@ -176,12 +176,12 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
     )
 
     (processChirrtl(chirrtl) should contain).allOf(
-      "io.in.fizz <= io.a.fizz",
-      "io.a.baz <= io.in.baz",
-      "io.b.baz <= io.in.baz",
-      "io.in.fizz <= io.c.fizz",
-      "io.d.fizz <= io.in.fizz",
-      "io.d.baz <= io.in.baz"
+      "connect io.in.fizz, io.a.fizz",
+      "connect io.a.baz, io.in.baz",
+      "connect io.b.baz, io.in.baz",
+      "connect io.in.fizz, io.c.fizz",
+      "connect io.d.fizz, io.in.fizz",
+      "connect io.d.baz, io.in.baz"
     )
   }
 
@@ -202,7 +202,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
         Array("--throw-on-first-error")
       )
     }
-    exc.getMessage should be("Cannot use connectables with probe types. Exclude them prior to connection.")
+    exc.getMessage should include("Cannot use connectables with probe types. Exclude them prior to connection.")
   }
 
   ":= connector with probe" should "fail" in {
@@ -218,7 +218,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
         Array("--throw-on-first-error")
       )
     }
-    exc.getMessage should be(
+    exc.getMessage should include(
       "Connection between sink (ProbeSpec_Anon.io.out: IO[Bool]) and source (ProbeSpec_Anon.io.in: IO[Bool]) failed @: Sink io.out in ProbeSpec_Anon of Probed type cannot participate in a mono connection (:=)"
     )
   }
@@ -236,7 +236,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
         Array("--throw-on-first-error")
       )
     }
-    exc.getMessage should be(
+    exc.getMessage should include(
       "Connection between sink (ProbeSpec_Anon.io.out: IO[Bool[2]]) and source (ProbeSpec_Anon.io.in: IO[Bool[2]]) failed @: Sink io.out in ProbeSpec_Anon of Probed type cannot participate in a mono connection (:=)"
     )
   }
@@ -273,7 +273,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
         Array("--throw-on-first-error")
       )
     }
-    exc.getMessage should be("Cannot define a probe on a non-equivalent type.")
+    exc.getMessage should include("Cannot define a probe on a non-equivalent type.")
   }
 
   "Probe of a probe type" should "fail" in {
@@ -285,7 +285,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
         Array("--throw-on-first-error")
       )
     }
-    exc.getMessage should be("Cannot probe a probe.")
+    exc.getMessage should include("Cannot probe a probe.")
   }
 
   "Probes of aggregates containing probes" should "fail" in {
@@ -299,7 +299,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
         Array("--throw-on-first-error")
       )
     }
-    exc.getMessage should be("Cannot create a probe of an aggregate containing a probe.")
+    exc.getMessage should include("Cannot create a probe of an aggregate containing a probe.")
   }
 
   "Wire() of a probe" should "fail" in {
@@ -311,7 +311,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
         Array("--throw-on-first-error")
       )
     }
-    exc.getMessage should be("Cannot make a wire of a Chisel type with a probe modifier.")
+    exc.getMessage should include("Cannot make a wire of a Chisel type with a probe modifier.")
   }
 
   "WireInit of a probe" should "fail" in {
@@ -323,7 +323,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
         Array("--throw-on-first-error")
       )
     }
-    exc.getMessage should be("Cannot make a wire of a Chisel type with a probe modifier.")
+    exc.getMessage should include("Cannot make a wire of a Chisel type with a probe modifier.")
   }
 
   "Reg() of a probe" should "fail" in {
@@ -335,7 +335,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
         Array("--throw-on-first-error")
       )
     }
-    exc.getMessage should be("Cannot make a register of a Chisel type with a probe modifier.")
+    exc.getMessage should include("Cannot make a register of a Chisel type with a probe modifier.")
   }
 
   "RegInit of a probe" should "fail" in {
@@ -347,7 +347,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
         Array("--throw-on-first-error")
       )
     }
-    exc.getMessage should be("Cannot make a register of a Chisel type with a probe modifier.")
+    exc.getMessage should include("Cannot make a register of a Chisel type with a probe modifier.")
   }
 
   "Memories of probes" should "fail" in {
@@ -359,7 +359,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
         Array("--throw-on-first-error")
       )
     }
-    exc.getMessage should be("Cannot make a Mem of a Chisel type with a probe modifier.")
+    exc.getMessage should include("Cannot make a Mem of a Chisel type with a probe modifier.")
   }
 
   "Defining a Probe with a rwprobe()" should "work" in {
@@ -385,7 +385,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
         Array("--throw-on-first-error")
       )
     }
-    exc.getMessage should be("Cannot use a non-writable probe expression to define a writable probe.")
+    exc.getMessage should include("Cannot use a non-writable probe expression to define a writable probe.")
   }
 
   "Force of a non-writable Probe" should "fail" in {
@@ -399,7 +399,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
         Array("--throw-on-first-error")
       )
     }
-    exc.getMessage should be("Cannot force a non-writable Probe.")
+    exc.getMessage should include("Cannot force a non-writable Probe.")
   }
 
   "Probes of Const type" should "work" in {
@@ -421,7 +421,66 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
         Array("--throw-on-first-error")
       )
     }
-    exc.getMessage should be("Cannot create a writable probe of a const type.")
+    exc.getMessage should include("Cannot create a writable probe of a const type.")
+  }
+
+  "Probe force methods" should "properly extend values that are not wide enough" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(
+      new Module {
+        val in = IO(Input(UInt(4.W)))
+        val p = IO(Output(RWProbe(UInt(16.W))))
+        forceInitial(p, 123.U)
+        force(clock, reset.asBool, p, in)
+      },
+      Array("--full-stacktrace")
+    )
+    (processChirrtl(chirrtl) should contain).allOf(
+      "node _T = pad(UInt<7>(0h7b), 16)",
+      "force_initial(p, _T)",
+      "node _T_2 = pad(in, 16)",
+      "force(clock, _T_1, p, _T_2)"
+    )
+  }
+
+  it should "error out with constants that are too wide" in {
+    val exc = intercept[chisel3.ChiselException] {
+      ChiselStage.emitCHIRRTL(
+        new RawModule {
+          val a = IO(Output(RWProbe(UInt(2.W))))
+          forceInitial(a, 123.U)
+        },
+        Array("--throw-on-first-error")
+      )
+    }
+    exc.getMessage should include("Data width 7 is larger than 2.")
+  }
+
+  it should "error out on Wires of unknown widths" in {
+    val exc = intercept[chisel3.ChiselException] {
+      ChiselStage.emitCHIRRTL(
+        new Module {
+          val in = IO(Input(UInt()))
+          val p = IO(Output(RWProbe(UInt(16.W))))
+          force(clock, reset.asBool, p, in)
+        },
+        Array("--throw-on-first-error")
+      )
+    }
+    exc.getMessage should include("Data width unknown.")
+  }
+
+  it should "error out on probes of unknown widths" in {
+    val exc = intercept[chisel3.ChiselException] {
+      ChiselStage.emitCHIRRTL(
+        new Module {
+          val in = IO(Input(UInt(16.W)))
+          val p = IO(Output(RWProbe(UInt())))
+          force(clock, reset.asBool, p, in)
+        },
+        Array("--throw-on-first-error")
+      )
+    }
+    exc.getMessage should include("Probe width unknown.")
   }
 
 }
