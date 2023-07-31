@@ -337,16 +337,16 @@ private[chisel3] object Converter {
     checkProbe:  Boolean,
     checkConst:  Boolean,
     typeAliases: Seq[String]
-  ): fir.Type = data match {
+  ): fir.Type = t match {
     // extract underlying type for probe
-    case t if (checkProbe && t.probeInfo.nonEmpty) =>
+    case t: Data if (checkProbe && t.probeInfo.nonEmpty) =>
       if (t.probeInfo.get.writable) {
         fir.RWProbeType(extractType(t, clearDir, info, false, checkConst, typeAliases))
       } else {
         fir.ProbeType(extractType(t, clearDir, info, false, checkConst, typeAliases))
       }
     // extract underlying type for const
-    case t if (checkConst && t.isConst) => fir.ConstType(extractType(t, clearDir, info, checkProbe, false, typeAliases))
+    case t: Data if (checkConst && t.isConst) => fir.ConstType(extractType(t, clearDir, info, checkProbe, false, typeAliases))
     case _: Clock      => fir.ClockType
     case _: AsyncReset => fir.AsyncResetType
     case _: ResetType  => fir.ResetType
