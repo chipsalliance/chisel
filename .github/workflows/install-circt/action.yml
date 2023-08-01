@@ -43,6 +43,7 @@ runs:
              --output download.zip
         file download.zip
         ls -la download.zip
+        cat download.zip | jq
         unzip -p download.zip | tar -zx -C circt/ --strip-components 1
         rm download.zip
 
