@@ -277,7 +277,7 @@ case class DefMemory(
 case class DefNode(info: Info, name: String, value: Expression) extends Statement with IsDeclaration with UseSerializer
 
 /** Record/bundle type definition that names a FIRRTL type with an alias name */
-case class DefTypeAlias(name: String, tpe: Type) extends Statement with UseSerializer
+case class DefTypeAlias(info: Info, name: String, tpe: Type) extends Statement with UseSerializer
 
 case class Conditionally(
   info:   Info,

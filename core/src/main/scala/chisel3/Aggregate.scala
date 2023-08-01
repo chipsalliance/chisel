@@ -8,7 +8,7 @@ import chisel3.experimental.dataview.{isView, reifySingleData, InvalidViewExcept
 import scala.collection.immutable.{SeqMap, VectorMap}
 import scala.collection.mutable.{HashSet, LinkedHashMap}
 import scala.language.experimental.macros
-import chisel3.experimental.{BaseModule, BundleLiteralException, OpaqueType, VecLiteralException}
+import chisel3.experimental.{BaseModule, BundleAlias, BundleLiteralException, OpaqueType, VecLiteralException}
 import chisel3.experimental.{SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
@@ -1476,7 +1476,7 @@ abstract class Bundle extends Record {
     * may change the resulting alias by necessity, so there is no certain guarantee that the desired name will show up in
     * the generated FIRRTL.
     */
-  def aliasName: Option[String] = None
+  def aliasName: Option[BundleAlias] = None
 
   // The final sanitized and disambiguated alias for this bundle, generated when aliasName is a non-empty Option.
   // This is important if sanitization and disambiguation results in a changed alias,
@@ -1486,22 +1486,19 @@ abstract class Bundle extends Record {
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
     super.bind(target, parentDirection)
 
-    aliasName.map(name => {
+    aliasName.map(alias => {
       // TODO: Source locators that point to the specific `override def aliasName` line that generated this alias?
-      val sourceInfo = UnlocatableSourceInfo
-      val candidateAlias = sanitize(name)
+      val sourceInfo = alias.info
+      val candidateAlias = s"${sanitize(alias.id)}"
 
       // Filter out (TODO: disambiguate) FIRRTL keywords that cause parser errors if used
       if (firrtlKeywords.contains(candidateAlias)) {
         Builder.error(
-          s"Attempted to override a FIRRTL keyword '$candidateAlias' with a type alias!"
+          s"Attempted to override a FIRRTL keyword '$candidateAlias' with a bundle type alias. Chisel does not automatically disambiguate aliases using these keywords at this time."
         )(sourceInfo)
       } else {
         // Compute the structural type of this bundle with no subfield aliasing
-        val thisType = Converter.extractType(
-          this,
-          sourceInfo
-        )
+        val thisType = Converter.extractType(this, sourceInfo)
 
         // If the name is already taken, check if there exists a *structurally equivalent* bundle with the same name, and
         // simply error (TODO: disambiguate that name)
@@ -1509,14 +1506,15 @@ abstract class Bundle extends Record {
           Builder.globalBundleNamespace.contains(candidateAlias) &&
           Builder.bundleStructuralHashMap.get(candidateAlias).exists(_._2 != thisType)
         ) {
+          val previousLine = Builder.bundleStructuralHashMap.get(candidateAlias).get._3
           // Conflict found:
           Builder.error(
-            s"Attempted to redeclare an existing type alias '$candidateAlias' with a new bundle structure '$thisType'!"
+            s"Attempted to redeclare an existing bundle type alias '$candidateAlias' with a new bundle structure \n'$thisType'. The alias was previously defined at: $previousLine"
           )(sourceInfo)
         } else {
           if (!Builder.globalBundleNamespace.contains(candidateAlias)) {
             Builder.globalBundleNamespace.name(candidateAlias)
-            Builder.bundleStructuralHashMap.put(candidateAlias, (this, thisType))
+            Builder.bundleStructuralHashMap.put(candidateAlias, (this, thisType, sourceInfo))
           }
 
           finalizedAlias = Some(candidateAlias)

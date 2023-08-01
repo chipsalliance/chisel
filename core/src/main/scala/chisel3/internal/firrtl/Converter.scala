@@ -346,14 +346,15 @@ private[chisel3] object Converter {
         fir.ProbeType(extractType(t, clearDir, info, false, checkConst, typeAliases))
       }
     // extract underlying type for const
-    case t: Data if (checkConst && t.isConst) => fir.ConstType(extractType(t, clearDir, info, checkProbe, false, typeAliases))
+    case t: Data if (checkConst && t.isConst) =>
+      fir.ConstType(extractType(t, clearDir, info, checkProbe, false, typeAliases))
     case _: Clock      => fir.ClockType
     case _: AsyncReset => fir.AsyncResetType
     case _: ResetType  => fir.ResetType
     case t: EnumType   => fir.UIntType(convert(t.width))
     case t: UInt       => fir.UIntType(convert(t.width))
     case t: SInt       => fir.SIntType(convert(t.width))
-    case t: Analog     => fir.AnalogType(convert(t.width))
+    case t: Analog => fir.AnalogType(convert(t.width))
     case t: Vec[_] =>
       val childClearDir = clearDir ||
         t.specifiedDirection == SpecifiedDirection.Input || t.specifiedDirection == SpecifiedDirection.Output
@@ -444,7 +445,11 @@ private[chisel3] object Converter {
         // as otherwise an AliasType will be generated, resulting in self-referential FIRRTL
         // statements like `type Foo = Foo`.
         val allAliasesExceptThisOne = typeAliases.filter(_ != ta.name)
-        fir.DefTypeAlias(ta.name, extractType(ta.underlying, ta.sourceInfo, allAliasesExceptThisOne))
+        fir.DefTypeAlias(
+          convert(ta.sourceInfo),
+          ta.name,
+          extractType(ta.underlying, ta.sourceInfo, allAliasesExceptThisOne)
+        )
       })
     )
   }
@@ -463,7 +468,11 @@ private[chisel3] object Converter {
         // as otherwise an AliasType will be generated, resulting in self-referential FIRRTL
         // statements like `type Foo = Foo`.
         val allAliasesExceptThisOne = typeAliases.filter(_ != ta.name)
-        fir.DefTypeAlias(ta.name, extractType(ta.underlying, ta.sourceInfo, allAliasesExceptThisOne))
+        fir.DefTypeAlias(
+          convert(ta.sourceInfo),
+          ta.name,
+          extractType(ta.underlying, ta.sourceInfo, allAliasesExceptThisOne)
+        )
       })
     )
   }

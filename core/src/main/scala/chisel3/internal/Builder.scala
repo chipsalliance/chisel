@@ -458,8 +458,8 @@ private[chisel3] class DynamicContext(
   // disambiguation purposes when emitting type aliases
   // Records are used as the key for this map to both represent their alias name and preserve
   // the chisel Bundle structure when passing everything off to the Converter
-  private[chisel3] val bundleStructuralHashMap: mutable.LinkedHashMap[String, (Bundle, fir.Type)] =
-    mutable.LinkedHashMap.empty[String, (Bundle, fir.Type)]
+  private[chisel3] val bundleStructuralHashMap: mutable.LinkedHashMap[String, (Bundle, fir.Type, SourceInfo)] =
+    mutable.LinkedHashMap.empty[String, (Bundle, fir.Type, SourceInfo)]
 
   // Ensure imported Definitions emit as ExtModules with the correct name so
   // that instantiations will also use the correct name and prevent any name
@@ -544,7 +544,7 @@ private[chisel3] object Builder extends LazyLogging {
   def globalNamespace:           Namespace = dynamicContext.globalNamespace
   def globalIdentifierNamespace: Namespace = dynamicContext.globalIdentifierNamespace
 
-  def bundleStructuralHashMap: mutable.LinkedHashMap[String, (Bundle, fir.Type)] =
+  def bundleStructuralHashMap: mutable.LinkedHashMap[String, (Bundle, fir.Type, SourceInfo)] =
     dynamicContext.bundleStructuralHashMap
   def globalBundleNamespace: Namespace = dynamicContext.globalBundleNamespace
 
@@ -870,7 +870,7 @@ private[chisel3] object Builder extends LazyLogging {
 
       val typeAliases = bundleStructuralHashMap.map {
         // Discard the previously-computed FIRRTL type as the converter will now have alias information
-        case (name, (b: Bundle, _)) => DefTypeAlias(UnlocatableSourceInfo, b, name)
+        case (name, (b: Bundle, _, info: SourceInfo)) => DefTypeAlias(info, b, name)
       }.toSeq
 
       (
