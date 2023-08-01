@@ -17,7 +17,7 @@ runs:
         key: circt-${{ runner.os }}-${{ inputs.version }}
 
     - shell: bash
-      if: inputs.version == 'nightly' && steps.cache-circt.outputs.cache-hit != 'true'
+      if: inputs.version != 'nightly' && steps.cache-circt.outputs.cache-hit != 'true'
       run: |
         mkdir circt
         wget -q -O - https://github.com/llvm/circt/releases/download/${{ inputs.version }}/firrtl-bin-linux-x64.tar.gz | tar -zx -C circt/ --strip-components 1
