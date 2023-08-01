@@ -5,6 +5,8 @@ runs:
   steps:
     - name: Install CIRCT
       uses: ./.github/workflows/install-circt
+      with:
+        github-token: ${{ gitub.token }}
     - name: Cache Scala-CLI
       uses: coursier/cache-action@v6
     - name: Setup Scala-CLI
