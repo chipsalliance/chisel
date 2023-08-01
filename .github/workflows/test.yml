@@ -19,7 +19,7 @@ jobs:
         jvm: ["8"]
         scala: ["2.13.11"]
         espresso: ["2.4"]
-        circt: ["firtool-1.47.0"]
+        circt: ["firtool-1.47.0", "nightly"]
     runs-on: ${{ matrix.system }}
 
     steps:
