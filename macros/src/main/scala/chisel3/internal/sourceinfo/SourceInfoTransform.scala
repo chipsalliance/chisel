@@ -247,12 +247,12 @@ class SourceInfoTransform(val c: Context) extends AutoSourceTransform {
     q"$thisObj.$doFuncTerm($idx, $writeData, $en, $isWrite)($implicitSourceInfo)"
   }
 
-  def idxDataMaskArg(idx: c.Tree, writeData: c.Tree, mask: c.Tree)(evidence: c.Tree): c.Tree = {
-    q"$thisObj.$doFuncTerm($idx, $writeData, $mask)($evidence, $implicitSourceInfo)"
+  def idxDataMaskArg(idx: c.Tree, writeData: c.Tree, mask: c.Tree): c.Tree = {
+    q"$thisObj.$doFuncTerm($idx, $writeData, $mask)($implicitSourceInfo)"
   }
 
-  def idxDataMaskClockArg(idx: c.Tree, writeData: c.Tree, mask: c.Tree, clock: c.Tree)(evidence: c.Tree): c.Tree = {
-    q"$thisObj.$doFuncTerm($idx, $writeData, $mask, $clock)($evidence, $implicitSourceInfo)"
+  def idxDataMaskClockArg(idx: c.Tree, writeData: c.Tree, mask: c.Tree, clock: c.Tree): c.Tree = {
+    q"$thisObj.$doFuncTerm($idx, $writeData, $mask, $clock)($implicitSourceInfo)"
   }
 
   def idxDataEnIswClockArg(idx: c.Tree, writeData: c.Tree, en: c.Tree, isWrite: c.Tree, clock: c.Tree): c.Tree = {
@@ -265,9 +265,8 @@ class SourceInfoTransform(val c: Context) extends AutoSourceTransform {
     mask:      c.Tree,
     en:        c.Tree,
     isWrite:   c.Tree
-  )(evidence:  c.Tree
   ): c.Tree = {
-    q"$thisObj.$doFuncTerm($idx, $writeData, $mask, $en, $isWrite)($evidence, $implicitSourceInfo)"
+    q"$thisObj.$doFuncTerm($idx, $writeData, $mask, $en, $isWrite)($implicitSourceInfo)"
   }
 
   def idxDataMaskEnIswClockArg(
@@ -277,9 +276,8 @@ class SourceInfoTransform(val c: Context) extends AutoSourceTransform {
     en:        c.Tree,
     isWrite:   c.Tree,
     clock:     c.Tree
-  )(evidence:  c.Tree
   ): c.Tree = {
-    q"$thisObj.$doFuncTerm($idx, $writeData, $mask, $en, $isWrite, $clock)($evidence, $implicitSourceInfo)"
+    q"$thisObj.$doFuncTerm($idx, $writeData, $mask, $en, $isWrite, $clock)($implicitSourceInfo)"
   }
 
   def xEnArg(x: c.Tree, en: c.Tree): c.Tree = {

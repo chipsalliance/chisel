@@ -164,7 +164,6 @@ object SRAM {
       Seq.fill(numWritePorts)(clock),
       Seq.fill(numReadwritePorts)(clock),
       None,
-      None,
       sourceInfo
     )
   }
@@ -203,7 +202,6 @@ object SRAM {
       Seq.fill(numWritePorts)(clock),
       Seq.fill(numReadwritePorts)(clock),
       Some(memoryFile),
-      None,
       sourceInfo
     )
   }
@@ -238,7 +236,6 @@ object SRAM {
       readPortClocks,
       writePortClocks,
       readwritePortClocks,
-      None,
       None,
       sourceInfo
     )
@@ -276,7 +273,6 @@ object SRAM {
       writePortClocks,
       readwritePortClocks,
       Some(memoryFile),
-      None,
       sourceInfo
     )
 
@@ -302,8 +298,7 @@ object SRAM {
     numWritePorts:     Int,
     numReadwritePorts: Int
   )(
-    implicit evidence: T <:< Vec[_],
-    sourceInfo:        SourceInfo
+    implicit sourceInfo: SourceInfo
   ): SRAMInterface[T] = {
     val clock = Builder.forcedClock
     memInterface_impl(
@@ -313,7 +308,6 @@ object SRAM {
       Seq.fill(numWritePorts)(clock),
       Seq.fill(numReadwritePorts)(clock),
       None,
-      Some(evidence),
       sourceInfo
     )
   }
@@ -342,8 +336,7 @@ object SRAM {
     numReadwritePorts: Int,
     memoryFile:        MemoryFile
   )(
-    implicit evidence: T <:< Vec[_],
-    sourceInfo:        SourceInfo
+    implicit sourceInfo: SourceInfo
   ): SRAMInterface[T] = {
     val clock = Builder.forcedClock
     memInterface_impl(
@@ -353,7 +346,6 @@ object SRAM {
       Seq.fill(numWritePorts)(clock),
       Seq.fill(numReadwritePorts)(clock),
       Some(memoryFile),
-      Some(evidence),
       sourceInfo
     )
   }
@@ -380,8 +372,7 @@ object SRAM {
     writePortClocks:     Seq[Clock],
     readwritePortClocks: Seq[Clock]
   )(
-    implicit evidence: T <:< Vec[_],
-    sourceInfo:        SourceInfo
+    implicit sourceInfo: SourceInfo
   ): SRAMInterface[T] =
     memInterface_impl(
       size,
@@ -390,7 +381,6 @@ object SRAM {
       writePortClocks,
       readwritePortClocks,
       None,
-      Some(evidence),
       sourceInfo
     )
 
@@ -418,8 +408,7 @@ object SRAM {
     readwritePortClocks: Seq[Clock],
     memoryFile:          MemoryFile
   )(
-    implicit evidence: T <:< Vec[_],
-    sourceInfo:        SourceInfo
+    implicit sourceInfo: SourceInfo
   ): SRAMInterface[T] =
     memInterface_impl(
       size,
@@ -428,7 +417,6 @@ object SRAM {
       writePortClocks,
       readwritePortClocks,
       Some(memoryFile),
-      Some(evidence),
       sourceInfo
     )
 
@@ -439,13 +427,11 @@ object SRAM {
     writePortClocks:     Seq[Clock],
     readwritePortClocks: Seq[Clock],
     memoryFile:          Option[MemoryFile],
-    evidenceOpt:         Option[T <:< Vec[_]],
     sourceInfo:          SourceInfo
   ): SRAMInterface[T] = {
     val numReadPorts = readPortClocks.size
     val numWritePorts = writePortClocks.size
     val numReadwritePorts = readwritePortClocks.size
-    val isVecMem = evidenceOpt.isDefined
     val isValidSRAM = ((numReadPorts + numReadwritePorts) > 0) && ((numWritePorts + numReadwritePorts) > 0)
 
     if (!isValidSRAM) {
@@ -459,7 +445,7 @@ object SRAM {
       )
     }
 
-    val _out = Wire(new SRAMInterface(size, tpe, numReadPorts, numWritePorts, numReadwritePorts, isVecMem))
+    val _out = Wire(new SRAMInterface(size, tpe, numReadPorts, numWritePorts, numReadwritePorts, true))
     val mem = SyncReadMem(size, tpe)
 
     for ((clock, port) <- readPortClocks.zip(_out.readPorts)) {
@@ -468,38 +454,24 @@ object SRAM {
 
     for ((clock, port) <- writePortClocks.zip(_out.writePorts)) {
       when(port.enable) {
-        if (isVecMem) {
-          mem.write(
-            port.address,
-            port.data,
-            port.mask.get,
-            clock
-          )(evidenceOpt.get)
-        } else {
-          mem.write(port.address, port.data, clock)
-        }
+        mem.write(
+          port.address,
+          port.data,
+          port.mask.get,
+          clock
+        )
       }
     }
 
     for ((clock, port) <- readwritePortClocks.zip(_out.readwritePorts)) {
-      if (isVecMem) {
-        port.readData := mem.readWrite(
-          port.address,
-          port.writeData,
-          port.mask.get,
-          port.enable,
-          port.isWrite,
-          clock
-        )(evidenceOpt.get)
-      } else {
-        port.readData := mem.readWrite(
-          port.address,
-          port.writeData,
-          port.enable,
-          port.isWrite,
-          clock
-        )
-      }
+      port.readData := mem.readWrite(
+        port.address,
+        port.writeData,
+        port.mask.get,
+        port.enable,
+        port.isWrite,
+        clock
+      )
     }
 
     // Emit Verilog for preloading the memory from a file if requested

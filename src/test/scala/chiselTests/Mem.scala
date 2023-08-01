@@ -446,6 +446,36 @@ class MemorySpec extends ChiselPropSpec {
     }
     ChiselStage.emitSystemVerilog(new TestModule)
   }
+
+  property("Bundle-typed memory with masked writes should compile") {
+    class MyMemoryType extends Bundle {
+      val data = UInt(64.W)
+      val pNext = UInt(6.W)
+      val gNext = UInt(6.W)
+      val gPrev = UInt(6.W)
+    }
+
+    class Foo extends Module {
+      val width: Int = 8
+      val io = IO(new Bundle {
+        val enable = Input(Bool())
+        val write = Input(Bool())
+        val addr = Input(UInt(10.W))
+        val mask = Input(Vec(4, Bool()))
+        val dataIn = Input(new MyMemoryType)
+        val dataOut = Output(new MyMemoryType)
+      })
+
+      // Create a 32-bit wide memory that is byte-masked
+      val mem = SyncReadMem(1024, new MyMemoryType)
+      // Write with mask
+      mem.write(io.addr, io.dataIn, io.mask)
+      io.dataOut := mem.read(io.addr, io.enable)
+    }
+
+    ChiselStage.emitSystemVerilog(new Foo, firtoolOpts = Array("-disable-all-randomization", "-strip-debug-info"))
+  }
+
 }
 
 class SRAMSpec extends ChiselFunSpec {
@@ -607,6 +637,30 @@ class SRAMSpec extends ChiselFunSpec {
       intercept[Exception] {
         ChiselStage.emitCHIRRTL(new TestModule, args = Array("--full-stacktrace"))
       }
+    }
+  }
+
+  describe("SRAM with bundle ports and masked writes") {
+    it(s"should compile to Verilog") {
+      class Type extends Bundle {
+        val a = UInt(8.W)
+        val b = Vec(2, UInt(4.W))
+      }
+      class TestModule extends Module {
+        val mem = SyncReadMem(32, new Type)
+        val writeData = Wire(new Type)
+        writeData.a := DontCare
+        writeData.b(0) := DontCare
+        writeData.b(1) := 15.U
+        mem.readWrite(4.U, writeData, Seq(false.B, false.B, true.B), true.B, true.B, Module.clock)
+      }
+      println(
+        ChiselStage.emitSystemVerilog(
+          new TestModule,
+          Array("--full-stacktrace", "--throw-on-first-error"),
+          firtoolOpts = Array("-disable-all-randomization", "-strip-debug-info", "-disable-opt")
+        )
+      )
     }
   }
 }
