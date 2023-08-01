@@ -41,6 +41,7 @@ jobs:
         uses: ./.github/workflows/install-circt
         with:
           version: ${{ matrix.circt }}
+          github-token: ${{ github.token }}
       - name: Test
         run: sbt ++${{ matrix.scala }} test
       - name: Binary compatibility
