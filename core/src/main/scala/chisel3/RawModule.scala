@@ -36,6 +36,42 @@ abstract class RawModule extends BaseModule {
     *      }
     *    }
     *  }}}
+    *
+    * Any generators registered with atModuleBodyEnd are the last code to execute when the Module is constructed. The
+    * execution order is:
+    *
+    *   - The constructors of any super classes or traits the Module extends
+    *   - The constructor of the Module itself
+    *   - The atModuleBodyEnd generators
+    *
+    * The atModuleBodyEnd generators execute in the lexical order they appear in the Module constructor.
+    *
+    * For example:
+    *
+    *  {{{
+    *    trait Parent {
+    *      // Executes first.
+    *      val foo = ...
+    *    }
+    *
+    *    class Example extends Parent {
+    *      // Executes second.
+    *      val bar = ...
+    *
+    *      atModuleBodyEnd {
+    *        // Executes fourth.
+    *        val qux = ...
+    *      }
+    *
+    *      atModuleBodyEnd {
+    *        // Executes fifth.
+    *        val quux = ...
+    *      }
+    *
+    *      // Executes third..
+    *      val baz = ...
+    *    }
+    *  }}}
     */
   protected def atModuleBodyEnd(gen: => Unit): Unit = {
     _atModuleBodyEnd += { () => gen }
