@@ -72,6 +72,9 @@ abstract class RawModule extends BaseModule {
     *      val baz = ...
     *    }
     *  }}}
+    *
+    * If atModuleBodyEnd is used in a Definition, any generated hardware will be included in the Definition. However, it
+    * is currently not possible to annotate any val within atModuleBodyEnd as @public.
     */
   protected def atModuleBodyEnd(gen: => Unit): Unit = {
     _atModuleBodyEnd += { () => gen }
