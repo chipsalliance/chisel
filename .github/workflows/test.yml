@@ -62,7 +62,7 @@ jobs:
       - name: Install CIRCT
         uses: ./.github/workflows/install-circt
         with:
-          github-token: ${{ gitub.token }}
+          github-token: ${{ github.token }}
       - name: Compile Mill
         run: mill __.compile
 
@@ -81,7 +81,7 @@ jobs:
       - name: Install CIRCT
         uses: ./.github/workflows/install-circt
         with:
-          github-token: ${{ gitub.token }}
+          github-token: ${{ github.token }}
       - name: Check Formatting
         run: sbt fmtCheck
 
@@ -104,7 +104,7 @@ jobs:
       - name: Install CIRCT
         uses: ./.github/workflows/install-circt
         with:
-          github-token: ${{ gitub.token }}
+          github-token: ${{ github.token }}
       - name: Integration Tests
         run: sbt integrationTests/test
 
@@ -154,7 +154,7 @@ jobs:
       - name: Install CIRCT
         uses: ./.github/workflows/install-circt
         with:
-          github-token: ${{ gitub.token }}
+          github-token: ${{ github.token }}
         #TODO: make the microsite building include building ScalaDoc
       - name: Build the docs
         run: sbt doc
@@ -235,7 +235,7 @@ jobs:
       - name: Install CIRCT
         uses: ./.github/workflows/install-circt
         with:
-          github-token: ${{ gitub.token }}
+          github-token: ${{ github.token }}
       - name: Setup Scala
         uses: actions/setup-java@v3
         with:
