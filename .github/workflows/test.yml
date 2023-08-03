@@ -41,6 +41,7 @@ jobs:
         uses: ./.github/workflows/install-circt
         with:
           version: ${{ matrix.circt }}
+          github-token: ${{ github.token }}
       - name: Test
         run: sbt ++${{ matrix.scala }} test
       - name: Binary compatibility
@@ -60,6 +61,8 @@ jobs:
           mill-version: 0.11.0
       - name: Install CIRCT
         uses: ./.github/workflows/install-circt
+        with:
+          github-token: ${{ github.token }}
       - name: Compile Mill
         run: mill __.compile
 
@@ -77,6 +80,8 @@ jobs:
           cache: 'sbt'
       - name: Install CIRCT
         uses: ./.github/workflows/install-circt
+        with:
+          github-token: ${{ github.token }}
       - name: Check Formatting
         run: sbt fmtCheck
 
@@ -98,6 +103,8 @@ jobs:
           cache: 'sbt'
       - name: Install CIRCT
         uses: ./.github/workflows/install-circt
+        with:
+          github-token: ${{ github.token }}
       - name: Integration Tests
         run: sbt integrationTests/test
 
@@ -146,6 +153,8 @@ jobs:
           gem install jekyll-redirect-from
       - name: Install CIRCT
         uses: ./.github/workflows/install-circt
+        with:
+          github-token: ${{ github.token }}
         #TODO: make the microsite building include building ScalaDoc
       - name: Build the docs
         run: sbt doc
@@ -225,6 +234,8 @@ jobs:
           fetch-depth: 0
       - name: Install CIRCT
         uses: ./.github/workflows/install-circt
+        with:
+          github-token: ${{ github.token }}
       - name: Setup Scala
         uses: actions/setup-java@v3
         with:

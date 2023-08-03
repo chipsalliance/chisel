@@ -2,24 +2,54 @@ name: Install CIRCT
 
 inputs:
   version:
-    description: 'version to install'
+    description: 'version to install ("nightly" installs latest nightly)'
     required: false
     default: 'firtool-1.48.0'
+  github-token:
+    description: 'The GitHub token used to download CIRCT nightly'
+    required: true
+    default: ${{ github.token }}
 
 runs:
   using: composite
   steps:
     - id: cache-circt
+      if: inputs.version != 'nightly'
       uses: actions/cache@v3
       with:
         path: circt
         key: circt-${{ runner.os }}-${{ inputs.version }}
 
     - shell: bash
-      if: steps.cache-circt.outputs.cache-hit != 'true'
+      if: inputs.version != 'nightly' && steps.cache-circt.outputs.cache-hit != 'true'
       run: |
         mkdir circt
         wget -q -O - https://github.com/llvm/circt/releases/download/${{ inputs.version }}/firrtl-bin-linux-x64.tar.gz | tar -zx -C circt/ --strip-components 1
 
+    - name: Download Latest Nighlty `firtool` binary
+      shell: bash
+      if: inputs.version == 'nightly'
+      run: |
+        ARTIFACT_NAME=firrtl-bin-linux-x64.tar.gz
+        ARTIFACT_ID=$(
+          curl -L \
+               -H "Accept: application/vnd.github+json" \
+               -H "Authorization: Bearer ${{ inputs.github-token }}" \
+               -H "X-GitHub-Api-Version: 2022-11-28" \
+               "https://api.github.com/repos/llvm/circt/actions/artifacts?name=$ARTIFACT_NAME&per_page=1" | \
+            jq '.artifacts[0].id')
+        echo $ARTIFACT_ID
+        curl -L \
+             -H "Accept: application/vnd.github+json" \
+             -H "Authorization: Bearer ${{ inputs.github-token }}" \
+             -H "X-GitHub-Api-Version: 2022-11-28" \
+             "https://api.github.com/repos/llvm/circt/actions/artifacts/$ARTIFACT_ID/zip" \
+             --output download.zip
+        mkdir circt/
+        unzip -p download.zip | tar -zx -C circt/ --strip-components 1
+        rm download.zip
+
     - shell: bash
-      run: echo "$(pwd)/circt/bin" >> $GITHUB_PATH
+      run: |
+        echo "$(pwd)/circt/bin" >> $GITHUB_PATH
+        ./circt/bin/firtool -version
