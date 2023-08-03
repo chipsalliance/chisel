@@ -28,11 +28,13 @@ systemic name-stability issues, please refer to the naming <a href="../cookbooks
 <span class="k">import</span> <span class="nn">chisel3.experimental.</span><span class="o">{</span><span class="n">prefix</span><span class="o">,</span> <span class="n">noPrefix</span><span class="o">}</span>
 </code></pre></div></div>
 
-<p>With the release of Chisel 3.5, users are required to add the following line to
-their build.sbt settings:</p>
+<p>Chisel users must also include the compiler plugin in their build settings.
+In SBT this is something like:</p>
 
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// chiselVersion is the String version (eg. "3.5.3")</span>
-<span class="nf">addCompilerPlugin</span><span class="o">(</span><span class="s">"edu.berkeley.cs"</span> <span class="o">%</span> <span class="s">"chisel3-plugin"</span> <span class="o">%</span> <span class="n">chiselVersion</span> <span class="n">cross</span> <span class="nv">CrossVersion</span><span class="o">.</span><span class="py">full</span><span class="o">)</span>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// For chisel versions 5.0.0+</span>
+<span class="nf">addCompilerPlugin</span><span class="o">(</span><span class="s">"org.chipsalliance"</span> <span class="o">%</span> <span class="s">"chisel-plugin"</span> <span class="o">%</span> <span class="s">"5.0.0"</span> <span class="n">cross</span> <span class="nv">CrossVersion</span><span class="o">.</span><span class="py">full</span><span class="o">)</span>
+<span class="c1">// For older chisel3 versions, eg. 3.6.0</span>
+<span class="nf">addCompilerPlugin</span><span class="o">(</span><span class="s">"edu.berkeley.cs"</span> <span class="o">%</span> <span class="s">"chisel3-plugin"</span> <span class="o">%</span> <span class="s">"3.6.0"</span> <span class="n">cross</span> <span class="nv">CrossVersion</span><span class="o">.</span><span class="py">full</span><span class="o">)</span>
 </code></pre></div></div>
 
 <p>This plugin will run after the ‘typer’ phase of the Scala compiler. It looks for any user code which is of the form
@@ -70,16 +72,28 @@ side of the val declaration:</p>
   <span class="k">val</span> <span class="nv">in</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">2.</span><span class="n">W</span><span class="o">)))</span>
   <span class="c1">// val in = autoNameRecursively("in")(prefix("in")(IO(Input(UInt(2.W)))))</span>
 
-  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">2.</span><span class="n">W</span><span class="o">)))</span>
-  <span class="c1">// val out = autoNameRecursively("out")(prefix("out")(IO(Output(UInt(2.W)))))</span>
+  <span class="k">val</span> <span class="nv">out1</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">4.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="c1">// val out1 = autoNameRecursively("out1")(prefix("out1")(IO(Output(UInt(4.W)))))</span>
+  <span class="k">val</span> <span class="nv">out2</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">4.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="c1">// val out2 = autoNameRecursively("out2")(prefix("out2")(IO(Output(UInt(4.W)))))</span>
+  <span class="k">val</span> <span class="nv">out3</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">4.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="c1">// val out3 = autoNameRecursively("out3")(prefix("out3")(IO(Output(UInt(4.W)))))</span>
 
-  <span class="k">def</span> <span class="nf">inXin</span><span class="o">()</span> <span class="k">=</span> <span class="n">in</span> <span class="o">*</span> <span class="n">in</span>
+  <span class="k">def</span> <span class="nf">func</span><span class="o">()</span> <span class="k">=</span> <span class="o">{</span>
+    <span class="k">val</span> <span class="nv">squared</span> <span class="k">=</span> <span class="n">in</span> <span class="o">*</span> <span class="n">in</span>
+    <span class="c1">// val squared = autoNameRecursively("squared")(prefix("squared")(in * in))</span>
+    <span class="n">out1</span> <span class="o">:=</span> <span class="n">squared</span>
+    <span class="k">val</span> <span class="nv">delay</span> <span class="k">=</span> <span class="nc">RegNext</span><span class="o">(</span><span class="n">squared</span><span class="o">)</span>
+    <span class="c1">// val delay = autoNameRecursively("delay")(prefix("delay")(RegNext(squared)))</span>
+    <span class="n">delay</span>
+  <span class="o">}</span>
 
-  <span class="k">val</span> <span class="nv">add</span> <span class="k">=</span> <span class="mf">3.</span><span class="n">U</span> <span class="o">+</span> <span class="nf">inXin</span><span class="o">()</span>
-  <span class="c1">// val add = autoNameRecursively("add")(prefix("add")(3.U + inXin()))</span>
-  <span class="c1">// Note that the intermediate result of the multiplication is prefixed with `add`</span>
+  <span class="k">val</span> <span class="nv">masked</span> <span class="k">=</span> <span class="mh">0xa</span><span class="o">.</span><span class="py">U</span> <span class="o">&amp;</span> <span class="nf">func</span><span class="o">()</span>
+  <span class="c1">// val masked = autoNameRecursively("masked")(prefix("masked")(0xa.U &amp; func()))</span>
+  <span class="c1">// Note that values created inside of `func()`` are prefixed with `masked`</span>
 
-  <span class="n">out</span> <span class="o">:=</span> <span class="n">add</span> <span class="o">+</span> <span class="mf">1.</span><span class="n">U</span>
+  <span class="n">out2</span> <span class="o">:=</span> <span class="n">masked</span> <span class="o">+</span> <span class="mf">1.</span><span class="n">U</span>
+  <span class="n">out3</span> <span class="o">:=</span> <span class="n">masked</span> <span class="o">-</span> <span class="mf">1.</span><span class="n">U</span>
 <span class="o">}</span>
 </code></pre></div></div>
 <div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Generated by CIRCT firtool-1.48.0</span>
@@ -87,10 +101,20 @@ side of the val declaration:</p>
   <span class="kt">input</span>        <span class="n">clock</span><span class="p">,</span>
                <span class="n">reset</span><span class="p">,</span>
   <span class="kt">input</span>  <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in</span><span class="p">,</span>
-  <span class="kt">output</span> <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">3</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out1</span><span class="p">,</span>
+               <span class="n">out2</span><span class="p">,</span>
+               <span class="n">out3</span>
 <span class="p">);</span>
 
-  <span class="k">assign</span> <span class="n">out</span> <span class="o">=</span> <span class="n">in</span> <span class="o">*</span> <span class="n">in</span><span class="p">;</span>
+  <span class="kt">wire</span> <span class="p">[</span><span class="mi">3</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="mi">_</span><span class="n">GEN</span> <span class="o">=</span> <span class="o">{</span><span class="mh">2'h0</span><span class="p">,</span> <span class="n">in</span><span class="o">}</span><span class="p">;</span>
+  <span class="kt">wire</span> <span class="p">[</span><span class="mi">3</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">masked_squared</span> <span class="o">=</span> <span class="mi">_</span><span class="n">GEN</span> <span class="o">*</span> <span class="mi">_</span><span class="n">GEN</span><span class="p">;</span>
+  <span class="kt">reg</span>  <span class="p">[</span><span class="mi">3</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">masked_delay</span><span class="p">;</span>
+  <span class="kt">wire</span> <span class="p">[</span><span class="mi">3</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">masked</span> <span class="o">=</span> <span class="n">masked_delay</span> <span class="o">&amp;</span> <span class="mh">4'hA</span><span class="p">;</span>
+  <span class="k">always</span> <span class="o">@</span><span class="p">(</span><span class="kt">posedge</span> <span class="n">clock</span><span class="p">)</span>
+    <span class="n">masked_delay</span> <span class="o">&lt;=</span> <span class="n">masked_squared</span><span class="p">;</span>
+  <span class="k">assign</span> <span class="n">out1</span> <span class="o">=</span> <span class="n">masked_squared</span><span class="p">;</span>
+  <span class="k">assign</span> <span class="n">out2</span> <span class="o">=</span> <span class="n">masked</span> <span class="o">+</span> <span class="mh">4'h1</span><span class="p">;</span>
+  <span class="k">assign</span> <span class="n">out3</span> <span class="o">=</span> <span class="n">masked</span> <span class="o">-</span> <span class="mh">4'h1</span><span class="p">;</span>
 <span class="k">endmodule</span>
 
 </code></pre></div></div>
@@ -102,14 +126,18 @@ While this is not implemented via the compiler plugin, the behavior should feel 
   <span class="k">val</span> <span class="nv">in</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">2.</span><span class="n">W</span><span class="o">)))</span>
   <span class="c1">// val in = autoNameRecursively("in")(prefix("in")(IO(Input(UInt(2.W)))))</span>
 
-  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">2.</span><span class="n">W</span><span class="o">)))</span>
-  <span class="c1">// val out = autoNameRecursively("out")(prefix("out")(IO(Output(UInt(2.W)))))</span>
+  <span class="k">val</span> <span class="nv">out1</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">4.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="c1">// val out1 = autoNameRecursively("out1")(prefix("out1")(IO(Output(UInt(4.W)))))</span>
+  <span class="k">val</span> <span class="nv">out2</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">4.</span><span class="n">W</span><span class="o">)))</span>
+  <span class="c1">// val out2 = autoNameRecursively("out2")(prefix("out2")(IO(Output(UInt(4.W)))))</span>
 
-  <span class="n">out</span> <span class="o">:=</span> <span class="o">{</span> <span class="c1">// technically this is not wrapped in autoNameRecursively nor prefix</span>
-    <span class="c1">// But the Chisel runtime will still use the name of `out` as a prefix</span>
-    <span class="k">val</span> <span class="nv">double</span> <span class="k">=</span> <span class="n">in</span> <span class="o">*</span> <span class="n">in</span>
-    <span class="c1">// val double = autoNameRecursively("double")(prefix("double")(in * in))</span>
-    <span class="n">double</span> <span class="o">+</span> <span class="mf">1.</span><span class="n">U</span>
+  <span class="n">out1</span> <span class="o">:=</span> <span class="o">{</span> <span class="c1">// technically this is not wrapped in autoNameRecursively nor prefix</span>
+    <span class="c1">// But the Chisel runtime will still use the name of `out1` as a prefix</span>
+    <span class="k">val</span> <span class="nv">squared</span> <span class="k">=</span> <span class="n">in</span> <span class="o">*</span> <span class="n">in</span>
+    <span class="n">out2</span> <span class="o">:=</span> <span class="n">squared</span>
+    <span class="k">val</span> <span class="nv">delayed</span> <span class="k">=</span> <span class="nc">RegNext</span><span class="o">(</span><span class="n">squared</span><span class="o">)</span>
+    <span class="c1">// val delayed = autoNameRecursively("delayed")(prefix("delayed")(RegNext(squared)))</span>
+    <span class="n">delayed</span> <span class="o">+</span> <span class="mf">1.</span><span class="n">U</span>
   <span class="o">}</span>
 <span class="o">}</span>
 </code></pre></div></div>
@@ -118,10 +146,17 @@ While this is not implemented via the compiler plugin, the behavior should feel 
   <span class="kt">input</span>        <span class="n">clock</span><span class="p">,</span>
                <span class="n">reset</span><span class="p">,</span>
   <span class="kt">input</span>  <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in</span><span class="p">,</span>
-  <span class="kt">output</span> <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">3</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out1</span><span class="p">,</span>
+               <span class="n">out2</span>
 <span class="p">);</span>
 
-  <span class="k">assign</span> <span class="n">out</span> <span class="o">=</span> <span class="n">in</span> <span class="o">*</span> <span class="n">in</span> <span class="o">+</span> <span class="mh">2'h1</span><span class="p">;</span>
+  <span class="kt">wire</span> <span class="p">[</span><span class="mi">3</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="mi">_</span><span class="n">GEN</span> <span class="o">=</span> <span class="o">{</span><span class="mh">2'h0</span><span class="p">,</span> <span class="n">in</span><span class="o">}</span><span class="p">;</span>
+  <span class="kt">wire</span> <span class="p">[</span><span class="mi">3</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out1_squared</span> <span class="o">=</span> <span class="mi">_</span><span class="n">GEN</span> <span class="o">*</span> <span class="mi">_</span><span class="n">GEN</span><span class="p">;</span>
+  <span class="kt">reg</span>  <span class="p">[</span><span class="mi">3</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out1_delayed</span><span class="p">;</span>
+  <span class="k">always</span> <span class="o">@</span><span class="p">(</span><span class="kt">posedge</span> <span class="n">clock</span><span class="p">)</span>
+    <span class="n">out1_delayed</span> <span class="o">&lt;=</span> <span class="n">out1_squared</span><span class="p">;</span>
+  <span class="k">assign</span> <span class="n">out1</span> <span class="o">=</span> <span class="n">out1_delayed</span> <span class="o">+</span> <span class="mh">4'h1</span><span class="p">;</span>
+  <span class="k">assign</span> <span class="n">out2</span> <span class="o">=</span> <span class="n">out1_squared</span><span class="p">;</span>
 <span class="k">endmodule</span>
 
 </code></pre></div></div>
@@ -190,53 +225,8 @@ Users who desire a prefix are encouraged to provide one as <a href="#prefixing">
 
 <h3 id="prefixing">Prefixing</h3>
 
-<p>As shown above, the compiler plugin automatically attempts to prefix some of your signals for you. However, you as a
-user can also add your own prefixes. This is especially useful for ECO-type fixes where you need to add some logic to a module
-but don’t want to influence other names in the module.</p>
-
-<p>In the following example, we prefix additional logic with “ECO”, where <code class="language-plaintext highlighter-rouge">Example4</code> is pre-ECO and <code class="language-plaintext highlighter-rouge">Example5</code> is post-ECO:</p>
-
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">Example4</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
-  <span class="k">val</span> <span class="nv">in</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">2.</span><span class="n">W</span><span class="o">)))</span>
-  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">()))</span>
-
-  <span class="k">val</span> <span class="nv">add</span> <span class="k">=</span> <span class="n">in</span> <span class="o">+</span> <span class="n">in</span> <span class="o">+</span> <span class="n">in</span>
-
-  <span class="n">out</span> <span class="o">:=</span> <span class="n">add</span> <span class="o">+</span> <span class="mf">1.</span><span class="n">U</span>
-<span class="o">}</span>
-
-<span class="k">class</span> <span class="nc">Example5</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
-  <span class="k">val</span> <span class="nv">in</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">2.</span><span class="n">W</span><span class="o">)))</span>
-  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">()))</span>
-
-  <span class="k">val</span> <span class="nv">add</span> <span class="k">=</span> <span class="n">in</span> <span class="o">+</span> <span class="n">in</span> <span class="o">+</span> <span class="n">in</span>
-
-  <span class="n">out</span> <span class="o">:=</span> <span class="nf">prefix</span><span class="o">(</span><span class="s">"ECO"</span><span class="o">)</span> <span class="o">{</span> <span class="n">add</span> <span class="o">+</span> <span class="mf">1.</span><span class="n">U</span> <span class="o">+</span> <span class="n">in</span> <span class="o">}</span>
-<span class="o">}</span>
-</code></pre></div></div>
-<div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Generated by CIRCT firtool-1.48.0</span>
-<span class="k">module</span> <span class="n">Example4</span><span class="p">(</span>
-  <span class="kt">input</span>        <span class="n">clock</span><span class="p">,</span>
-               <span class="n">reset</span><span class="p">,</span>
-  <span class="kt">input</span>  <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in</span><span class="p">,</span>
-  <span class="kt">output</span> <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out</span>
-<span class="p">);</span>
-
-  <span class="k">assign</span> <span class="n">out</span> <span class="o">=</span> <span class="o">{</span><span class="n">in</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mh">1'h0</span><span class="o">}</span> <span class="o">+</span> <span class="n">in</span> <span class="o">+</span> <span class="mh">2'h1</span><span class="p">;</span>
-<span class="k">endmodule</span>
-
-<span class="c1">// Generated by CIRCT firtool-1.48.0</span>
-<span class="k">module</span> <span class="n">Example5</span><span class="p">(</span>
-  <span class="kt">input</span>        <span class="n">clock</span><span class="p">,</span>
-               <span class="n">reset</span><span class="p">,</span>
-  <span class="kt">input</span>  <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in</span><span class="p">,</span>
-  <span class="kt">output</span> <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out</span>
-<span class="p">);</span>
-
-  <span class="k">assign</span> <span class="n">out</span> <span class="o">=</span> <span class="o">{</span><span class="n">in</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mh">1'h0</span><span class="o">}</span> <span class="o">+</span> <span class="n">in</span> <span class="o">+</span> <span class="n">in</span> <span class="o">+</span> <span class="mh">2'h1</span><span class="p">;</span>
-<span class="k">endmodule</span>
-
-</code></pre></div></div>
+<p>As shown above, the compiler plugin automatically attempts to prefix some of your signals for you.
+However, you as a user can also add your own prefixes by calling <code class="language-plaintext highlighter-rouge">prefix(...)</code>:</p>
 
 <p>Also note that the prefixes append to each other (including the prefix generated by the compiler plugin):</p>
 
@@ -244,7 +234,10 @@ but don’t want to influence other names in the module.</p>
   <span class="k">val</span> <span class="nv">in</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">2.</span><span class="n">W</span><span class="o">)))</span>
   <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">()))</span>
 
-  <span class="k">val</span> <span class="nv">add</span> <span class="k">=</span> <span class="nf">prefix</span><span class="o">(</span><span class="s">"foo"</span><span class="o">)</span> <span class="o">{</span> <span class="n">in</span> <span class="o">+</span> <span class="n">in</span> <span class="o">+</span> <span class="n">in</span> <span class="o">}</span>
+  <span class="k">val</span> <span class="nv">add</span> <span class="k">=</span> <span class="nf">prefix</span><span class="o">(</span><span class="s">"foo"</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">val</span> <span class="nv">sum</span> <span class="k">=</span> <span class="nc">RegNext</span><span class="o">(</span><span class="n">in</span> <span class="o">+</span> <span class="mf">1.</span><span class="n">U</span><span class="o">)</span>
+    <span class="n">sum</span> <span class="o">+</span> <span class="mf">1.</span><span class="n">U</span>
+  <span class="o">}</span>
 
   <span class="n">out</span> <span class="o">:=</span> <span class="n">add</span>
 <span class="o">}</span>
@@ -257,19 +250,25 @@ but don’t want to influence other names in the module.</p>
   <span class="kt">output</span> <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out</span>
 <span class="p">);</span>
 
-  <span class="k">assign</span> <span class="n">out</span> <span class="o">=</span> <span class="o">{</span><span class="n">in</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mh">1'h0</span><span class="o">}</span> <span class="o">+</span> <span class="n">in</span><span class="p">;</span>
+  <span class="kt">reg</span> <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">add_foo_sum</span><span class="p">;</span>
+  <span class="k">always</span> <span class="o">@</span><span class="p">(</span><span class="kt">posedge</span> <span class="n">clock</span><span class="p">)</span>
+    <span class="n">add_foo_sum</span> <span class="o">&lt;=</span> <span class="n">in</span> <span class="o">+</span> <span class="mh">2'h1</span><span class="p">;</span>
+  <span class="k">assign</span> <span class="n">out</span> <span class="o">=</span> <span class="n">add_foo_sum</span> <span class="o">+</span> <span class="mh">2'h1</span><span class="p">;</span>
 <span class="k">endmodule</span>
 
 </code></pre></div></div>
 
 <p>Sometimes you may want to disable the prefixing. This might occur if you are writing a library function and
-don’t want the prefixing behavior. In this case, you can use the <code class="language-plaintext highlighter-rouge">noPrefix</code> object:</p>
+don’t want the prefixing behavior. In this case, you can call <code class="language-plaintext highlighter-rouge">noPrefix</code>:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">Example7</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
   <span class="k">val</span> <span class="nv">in</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">2.</span><span class="n">W</span><span class="o">)))</span>
   <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">()))</span>
 
-  <span class="k">val</span> <span class="nv">add</span> <span class="k">=</span> <span class="n">noPrefix</span> <span class="o">{</span> <span class="n">in</span> <span class="o">+</span> <span class="n">in</span> <span class="o">+</span> <span class="n">in</span> <span class="o">}</span>
+  <span class="k">val</span> <span class="nv">add</span> <span class="k">=</span> <span class="n">noPrefix</span> <span class="o">{</span> 
+    <span class="k">val</span> <span class="nv">sum</span> <span class="k">=</span> <span class="nc">RegNext</span><span class="o">(</span><span class="n">in</span> <span class="o">+</span> <span class="mf">1.</span><span class="n">U</span><span class="o">)</span>
+    <span class="n">sum</span> <span class="o">+</span> <span class="mf">1.</span><span class="n">U</span>
+  <span class="o">}</span>
 
   <span class="n">out</span> <span class="o">:=</span> <span class="n">add</span>
 <span class="o">}</span>
@@ -282,7 +281,10 @@ don’t want the prefixing behavior. In this case, you can use the <code class="
   <span class="kt">output</span> <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out</span>
 <span class="p">);</span>
 
-  <span class="k">assign</span> <span class="n">out</span> <span class="o">=</span> <span class="o">{</span><span class="n">in</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mh">1'h0</span><span class="o">}</span> <span class="o">+</span> <span class="n">in</span><span class="p">;</span>
+  <span class="kt">reg</span> <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">sum</span><span class="p">;</span>
+  <span class="k">always</span> <span class="o">@</span><span class="p">(</span><span class="kt">posedge</span> <span class="n">clock</span><span class="p">)</span>
+    <span class="n">sum</span> <span class="o">&lt;=</span> <span class="n">in</span> <span class="o">+</span> <span class="mh">2'h1</span><span class="p">;</span>
+  <span class="k">assign</span> <span class="n">out</span> <span class="o">=</span> <span class="n">sum</span> <span class="o">+</span> <span class="mh">2'h1</span><span class="p">;</span>
 <span class="k">endmodule</span>
 
 </code></pre></div></div>
@@ -296,7 +298,10 @@ name will still be prefixed (including by the plugin). You can always use the <c
   <span class="k">val</span> <span class="nv">in</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">2.</span><span class="n">W</span><span class="o">)))</span>
   <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">()))</span>
 
-  <span class="k">val</span> <span class="nv">add</span> <span class="k">=</span> <span class="o">(</span><span class="n">in</span> <span class="o">+</span> <span class="o">(</span><span class="n">in</span> <span class="o">+</span> <span class="n">in</span><span class="o">).</span><span class="py">suggestName</span><span class="o">(</span><span class="s">"foo"</span><span class="o">))</span>
+  <span class="k">val</span> <span class="nv">add</span> <span class="k">=</span> <span class="o">{</span>
+    <span class="k">val</span> <span class="nv">sum</span> <span class="k">=</span> <span class="nc">RegNext</span><span class="o">(</span><span class="n">in</span> <span class="o">+</span> <span class="mf">1.</span><span class="n">U</span><span class="o">).</span><span class="py">suggestName</span><span class="o">(</span><span class="s">"foo"</span><span class="o">)</span>
+    <span class="n">sum</span> <span class="o">+</span> <span class="mf">1.</span><span class="n">U</span>
+  <span class="o">}</span>
 
   <span class="n">out</span> <span class="o">:=</span> <span class="n">add</span>
 <span class="o">}</span>
@@ -309,7 +314,10 @@ name will still be prefixed (including by the plugin). You can always use the <c
   <span class="kt">output</span> <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out</span>
 <span class="p">);</span>
 
-  <span class="k">assign</span> <span class="n">out</span> <span class="o">=</span> <span class="n">in</span> <span class="o">+</span> <span class="o">{</span><span class="n">in</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mh">1'h0</span><span class="o">}</span><span class="p">;</span>
+  <span class="kt">reg</span> <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">add_foo</span><span class="p">;</span>
+  <span class="k">always</span> <span class="o">@</span><span class="p">(</span><span class="kt">posedge</span> <span class="n">clock</span><span class="p">)</span>
+    <span class="n">add_foo</span> <span class="o">&lt;=</span> <span class="n">in</span> <span class="o">+</span> <span class="mh">2'h1</span><span class="p">;</span>
+  <span class="k">assign</span> <span class="n">out</span> <span class="o">=</span> <span class="n">add_foo</span> <span class="o">+</span> <span class="mh">2'h1</span><span class="p">;</span>
 <span class="k">endmodule</span>
 
 </code></pre></div></div>
@@ -327,7 +335,7 @@ however, it <em>can</em> affect prefixes derived from connections (eg. <code cla
     <span class="c1">// is derived from `val out0`, so this does not affect the name of mul</span>
     <span class="nv">port</span><span class="o">.</span><span class="py">suggestName</span><span class="o">(</span><span class="s">"foo"</span><span class="o">)</span>
     <span class="c1">// out0_mul</span>
-    <span class="k">val</span> <span class="nv">mul</span> <span class="k">=</span> <span class="n">in0</span> <span class="o">*</span> <span class="n">in1</span>
+    <span class="k">val</span> <span class="nv">mul</span> <span class="k">=</span> <span class="nc">RegNext</span><span class="o">(</span><span class="n">in0</span> <span class="o">*</span> <span class="n">in1</span><span class="o">)</span>
     <span class="n">port</span> <span class="o">:=</span> <span class="n">mul</span> <span class="o">+</span> <span class="mf">1.</span><span class="n">U</span>
     <span class="n">port</span>
   <span class="o">}</span>
@@ -337,7 +345,7 @@ however, it <em>can</em> affect prefixes derived from connections (eg. <code cla
 
   <span class="n">out1</span> <span class="o">:=</span> <span class="o">{</span>
     <span class="c1">// out1_sum</span>
-    <span class="k">val</span> <span class="nv">sum</span> <span class="k">=</span> <span class="n">in0</span> <span class="o">+</span> <span class="n">in1</span>
+    <span class="k">val</span> <span class="nv">sum</span> <span class="k">=</span> <span class="nc">RegNext</span><span class="o">(</span><span class="n">in0</span> <span class="o">+</span> <span class="n">in1</span><span class="o">)</span>
     <span class="n">sum</span> <span class="o">+</span> <span class="mf">1.</span><span class="n">U</span>
   <span class="o">}</span>
   <span class="c1">// Comes after so does *not* affect prefix above</span>
@@ -347,7 +355,7 @@ however, it <em>can</em> affect prefixes derived from connections (eg. <code cla
   <span class="nv">out2</span><span class="o">.</span><span class="py">suggestName</span><span class="o">(</span><span class="s">"fizz"</span><span class="o">)</span>
   <span class="n">out2</span> <span class="o">:=</span> <span class="o">{</span>
     <span class="c1">// fizz_diff</span>
-    <span class="k">val</span> <span class="nv">diff</span> <span class="k">=</span> <span class="n">in0</span> <span class="o">-</span> <span class="n">in1</span>
+    <span class="k">val</span> <span class="nv">diff</span> <span class="k">=</span> <span class="nc">RegNext</span><span class="o">(</span><span class="n">in0</span> <span class="o">-</span> <span class="n">in1</span><span class="o">)</span>
     <span class="n">diff</span> <span class="o">+</span> <span class="mf">1.</span><span class="n">U</span>
   <span class="o">}</span>
 <span class="o">}</span>
@@ -363,9 +371,17 @@ however, it <em>can</em> affect prefixes derived from connections (eg. <code cla
                <span class="n">fizz</span>
 <span class="p">);</span>
 
-  <span class="k">assign</span> <span class="n">foo</span> <span class="o">=</span> <span class="o">{</span><span class="mh">2'h0</span><span class="p">,</span> <span class="n">in0</span><span class="o">}</span> <span class="o">*</span> <span class="o">{</span><span class="mh">2'h0</span><span class="p">,</span> <span class="n">in1</span><span class="o">}</span> <span class="o">+</span> <span class="mh">4'h1</span><span class="p">;</span>
-  <span class="k">assign</span> <span class="n">bar</span> <span class="o">=</span> <span class="n">in0</span> <span class="o">+</span> <span class="n">in1</span> <span class="o">+</span> <span class="mh">2'h1</span><span class="p">;</span>
-  <span class="k">assign</span> <span class="n">fizz</span> <span class="o">=</span> <span class="n">in0</span> <span class="o">-</span> <span class="n">in1</span> <span class="o">+</span> <span class="mh">2'h1</span><span class="p">;</span>
+  <span class="kt">reg</span> <span class="p">[</span><span class="mi">3</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out0_mul</span><span class="p">;</span>
+  <span class="kt">reg</span> <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out1_sum</span><span class="p">;</span>
+  <span class="kt">reg</span> <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">fizz_diff</span><span class="p">;</span>
+  <span class="k">always</span> <span class="o">@</span><span class="p">(</span><span class="kt">posedge</span> <span class="n">clock</span><span class="p">)</span> <span class="k">begin</span>
+    <span class="n">out0_mul</span> <span class="o">&lt;=</span> <span class="o">{</span><span class="mh">2'h0</span><span class="p">,</span> <span class="n">in0</span><span class="o">}</span> <span class="o">*</span> <span class="o">{</span><span class="mh">2'h0</span><span class="p">,</span> <span class="n">in1</span><span class="o">}</span><span class="p">;</span>
+    <span class="n">out1_sum</span> <span class="o">&lt;=</span> <span class="n">in0</span> <span class="o">+</span> <span class="n">in1</span><span class="p">;</span>
+    <span class="n">fizz_diff</span> <span class="o">&lt;=</span> <span class="n">in0</span> <span class="o">-</span> <span class="n">in1</span><span class="p">;</span>
+  <span class="k">end</span> <span class="c1">// always @(posedge)</span>
+  <span class="k">assign</span> <span class="n">foo</span> <span class="o">=</span> <span class="n">out0_mul</span> <span class="o">+</span> <span class="mh">4'h1</span><span class="p">;</span>
+  <span class="k">assign</span> <span class="n">bar</span> <span class="o">=</span> <span class="n">out1_sum</span> <span class="o">+</span> <span class="mh">2'h1</span><span class="p">;</span>
+  <span class="k">assign</span> <span class="n">fizz</span> <span class="o">=</span> <span class="n">fizz_diff</span> <span class="o">+</span> <span class="mh">2'h1</span><span class="p">;</span>
 <span class="k">endmodule</span>
 
 </code></pre></div></div>
@@ -383,10 +399,15 @@ For example:</p>
   <span class="k">val</span> <span class="nv">in1</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">2.</span><span class="n">W</span><span class="o">)))</span>
 
   <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="o">{</span>
-    <span class="k">val</span> <span class="nv">port</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">()))</span>
+    <span class="c1">// We need 2 ports so firtool will maintain the common subexpression</span>
+    <span class="k">val</span> <span class="nv">port0</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">()))</span>
+    <span class="c1">// out_port1</span>
+    <span class="k">val</span> <span class="nv">port1</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">()))</span>
     <span class="k">val</span> <span class="nv">_sum</span> <span class="k">=</span> <span class="n">in0</span> <span class="o">+</span> <span class="n">in1</span>
-    <span class="n">port</span> <span class="o">:=</span> <span class="nc">_sum</span> <span class="o">+</span> <span class="mf">1.</span><span class="n">U</span>
-    <span class="n">port</span>
+    <span class="n">port0</span> <span class="o">:=</span> <span class="nc">_sum</span> <span class="o">+</span> <span class="mf">1.</span><span class="n">U</span>
+    <span class="n">port1</span> <span class="o">:=</span> <span class="nc">_sum</span> <span class="o">-</span> <span class="mf">1.</span><span class="n">U</span>
+    <span class="c1">// port0 is returned so will get the name "out"</span>
+    <span class="n">port0</span>
   <span class="o">}</span>
 <span class="o">}</span>
 </code></pre></div></div>
@@ -396,10 +417,13 @@ For example:</p>
                <span class="n">reset</span><span class="p">,</span>
   <span class="kt">input</span>  <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in0</span><span class="p">,</span>
                <span class="n">in1</span><span class="p">,</span>
-  <span class="kt">output</span> <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out</span><span class="p">,</span>
+               <span class="n">out_port1</span>
 <span class="p">);</span>
 
-  <span class="k">assign</span> <span class="n">out</span> <span class="o">=</span> <span class="n">in0</span> <span class="o">+</span> <span class="n">in1</span> <span class="o">+</span> <span class="mh">2'h1</span><span class="p">;</span>
+  <span class="kt">wire</span> <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="mi">_</span><span class="n">out_sum_T</span> <span class="o">=</span> <span class="n">in0</span> <span class="o">+</span> <span class="n">in1</span><span class="p">;</span>
+  <span class="k">assign</span> <span class="n">out</span> <span class="o">=</span> <span class="mi">_</span><span class="n">out_sum_T</span> <span class="o">+</span> <span class="mh">2'h1</span><span class="p">;</span>
+  <span class="k">assign</span> <span class="n">out_port1</span> <span class="o">=</span> <span class="mi">_</span><span class="n">out_sum_T</span> <span class="o">-</span> <span class="mh">2'h1</span><span class="p">;</span>
 <span class="k">endmodule</span>
 
 </code></pre></div></div>
@@ -409,13 +433,15 @@ For example:</p>
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">TemporaryPrefixExample</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
   <span class="k">val</span> <span class="nv">in0</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">2.</span><span class="n">W</span><span class="o">)))</span>
   <span class="k">val</span> <span class="nv">in1</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">2.</span><span class="n">W</span><span class="o">)))</span>
-  <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">()))</span>
+  <span class="k">val</span> <span class="nv">out0</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">()))</span>
+  <span class="k">val</span> <span class="nv">out1</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">()))</span>
 
   <span class="k">val</span> <span class="nv">_sum</span> <span class="k">=</span> <span class="o">{</span>
     <span class="k">val</span> <span class="nv">x</span> <span class="k">=</span> <span class="n">in0</span> <span class="o">+</span> <span class="n">in1</span>
+    <span class="n">out0</span> <span class="o">:=</span> <span class="n">x</span>
     <span class="n">x</span> <span class="o">+</span> <span class="mf">1.</span><span class="n">U</span>
   <span class="o">}</span>
-  <span class="n">out</span> <span class="o">:=</span> <span class="nc">_sum</span> <span class="o">&amp;</span> <span class="mh">0x2</span><span class="o">.</span><span class="py">U</span>
+  <span class="n">out1</span> <span class="o">:=</span> <span class="nc">_sum</span> <span class="o">&amp;</span> <span class="mh">0x2</span><span class="o">.</span><span class="py">U</span>
 <span class="o">}</span>
 </code></pre></div></div>
 <div class="language-verilog highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Generated by CIRCT firtool-1.48.0</span>
@@ -424,10 +450,13 @@ For example:</p>
                <span class="n">reset</span><span class="p">,</span>
   <span class="kt">input</span>  <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">in0</span><span class="p">,</span>
                <span class="n">in1</span><span class="p">,</span>
-  <span class="kt">output</span> <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out</span>
+  <span class="kt">output</span> <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">out0</span><span class="p">,</span>
+               <span class="n">out1</span>
 <span class="p">);</span>
 
-  <span class="k">assign</span> <span class="n">out</span> <span class="o">=</span> <span class="n">in0</span> <span class="o">+</span> <span class="n">in1</span> <span class="o">+</span> <span class="mh">2'h1</span> <span class="o">&amp;</span> <span class="mh">2'h2</span><span class="p">;</span>
+  <span class="kt">wire</span> <span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="mi">_</span><span class="n">sum_x_T</span> <span class="o">=</span> <span class="n">in0</span> <span class="o">+</span> <span class="n">in1</span><span class="p">;</span>
+  <span class="k">assign</span> <span class="n">out0</span> <span class="o">=</span> <span class="mi">_</span><span class="n">sum_x_T</span><span class="p">;</span>
+  <span class="k">assign</span> <span class="n">out1</span> <span class="o">=</span> <span class="mi">_</span><span class="n">sum_x_T</span> <span class="o">+</span> <span class="mh">2'h1</span> <span class="o">&amp;</span> <span class="mh">2'h2</span><span class="p">;</span>
 <span class="k">endmodule</span>
 
 </code></pre></div></div>
@@ -471,35 +500,6 @@ names more stable and is highly recommended to do.</p>
 <span class="k">endmodule</span>
 
 </code></pre></div></div>
-
-<h3 id="reflection-naming">Reflection Naming</h3>
-
-<p>Regardless of whether the compiler plugin is enabled or not, after Chisel constructs a module, it attempts to name all
-members of the Module. This will name all vals which are fields of the module class, but it will not name any
-vals in nested functions or scopes.</p>
-
-<p>If the plugin successfully names a signal, the reflection naming will do nothing. We plan to deprecate all reflection
-naming in a future Chisel release, but are leaving it to allow the plugin naming to be optional (but recommended).</p>
-
-<p>For example, the signals in the following module are in a nested scope; the plugin successfully names them, but
-reflection naming cannot:</p>
-
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">Example10</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
-  <span class="o">{</span>
-    <span class="k">val</span> <span class="nv">in</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">3.</span><span class="n">W</span><span class="o">)))</span>
-    <span class="k">val</span> <span class="nv">out</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">()))</span>
-
-    <span class="k">val</span> <span class="nv">add</span> <span class="k">=</span> <span class="n">in</span> <span class="o">+</span> <span class="n">in</span>
-
-    <span class="n">out</span> <span class="o">:=</span> <span class="n">add</span>
-  <span class="o">}</span>
-<span class="o">}</span>
-</code></pre></div></div>
-
-<h3 id="chiselname">@chiselName</h3>
-
-<p>This macro is no longer recommended as its functionality is entirely replaced by the compiler plugin. Feel free to
-delete from your Chisel designs!</p>
 </section></div></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/highlight/highlight.pack.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/verilog.min.js"></script><script src="/lunr/lunr.js"></script><script>
 // For all code blocks, copy the language from the containing div
 // to the inner code tag (where hljs expects it to be)
