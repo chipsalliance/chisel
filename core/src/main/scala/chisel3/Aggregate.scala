@@ -14,6 +14,7 @@ import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{SourceInfoTransform, VecTransform}
+import chisel3.reflect.DataMirror
 import _root_.firrtl.{ir => fir}
 
 import java.lang.Math.{floor, log10, pow}
@@ -1487,9 +1488,20 @@ abstract class Bundle extends Record {
     super.bind(target, parentDirection)
 
     aliasName.map(alias => {
-      // TODO: Source locators that point to the specific `override def aliasName` line that generated this alias?
+      // If the aliased bundle is coerced and it has flipped signals, then they must be stripped
+      val isFlipped = DataMirror
+        .collectMembers(this) { case d: Data if d.passiveDirection == SpecifiedDirection.Flip => d }
+        .toSeq
+        .nonEmpty
+      val isCoerced = direction match {
+        case ActualDirection.Input | ActualDirection.Output => true
+        case other                                          => false
+      }
+      val isStripped = isCoerced && isFlipped
+
+      // Don't emit an alias for a stripped type
       val sourceInfo = alias.info
-      val candidateAlias = s"${sanitize(alias.id)}"
+      val candidateAlias = s"${sanitize(alias.id)}${if (isStripped) "_stripped" else ""}"
 
       // Filter out (TODO: disambiguate) FIRRTL keywords that cause parser errors if used
       if (firrtlKeywords.contains(candidateAlias)) {

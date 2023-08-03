@@ -324,7 +324,12 @@ trait BaseType extends HasId with NamedComponent {
   private[chisel3] def specifiedDirection: SpecifiedDirection = _specifiedDirection
   private[chisel3] def specifiedDirection_=(direction: SpecifiedDirection) = {
     _specifiedDirection = direction
+    _passiveDirection = direction
   }
+
+  // Passive direction for this node, ignoring coercion from Input and Output.
+  private var _passiveDirection:         SpecifiedDirection = SpecifiedDirection.Unspecified
+  private[chisel3] def passiveDirection: SpecifiedDirection = _passiveDirection
 
   // Both _direction and _resolvedUserDirection are saved versions of computed variables (for
   // efficiency, avoid expensive recomputation of frequent operations).
