@@ -9,6 +9,27 @@ import firrtl.{AnnotationSeq, EmittedVerilogCircuitAnnotation}
 import firrtl.options.{Dependency, Phase, PhaseManager, Shell, Stage, StageMain}
 import firrtl.stage.FirrtlCircuitAnnotation
 
+<<<<<<< HEAD
+=======
+trait CLI { this: BareShell =>
+  parser.note("CIRCT (MLIR FIRRTL Compiler) options")
+  Seq(
+    CIRCTTargetAnnotation,
+    PreserveAggregate,
+    ChiselGeneratorAnnotation,
+    PrintFullStackTraceAnnotation,
+    ThrowOnFirstErrorAnnotation,
+    WarningsAsErrorsAnnotation,
+    WarningConfigurationAnnotation,
+    WarningConfigurationFileAnnotation,
+    SourceRootAnnotation,
+    SplitVerilog,
+    FirtoolBinaryPath,
+    DumpFir
+  ).foreach(_.addOptions(parser))
+}
+
+>>>>>>> 4db86b2f8 (Add --dump-fir option to ChiselStage (#3453))
 /** Entry point for running Chisel with the CIRCT compiler.
   *
   * This is intended to be a replacement for [[chisel3.stage.ChiselStage]].
