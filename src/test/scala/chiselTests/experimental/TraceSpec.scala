@@ -238,7 +238,7 @@ class TraceSpec extends ChiselFlatSpec with Matchers {
     println(dut.a(0).c_1_e.toTarget)
     println(a0_c_1_e)
     a0_c1_e should be(refTarget(topName, "a_0_c_1_e"))
-    a0_c_1_e should be(refTarget(topName, "a_0_c_1_e"))
+    a0_c_1_e should be(refTarget(topName, "a_0_c_1_e_0"))
   }
 
   "Inline should work" should "work" in {
@@ -324,7 +324,7 @@ class TraceSpec extends ChiselFlatSpec with Matchers {
     val m2_m1_not = finalTarget(annos)(m3.m2.m1.bar).head
     val m2_not = finalTarget(annos)(m3.m2.foo).head
 
-    m2_m1_not should be(instTarget("M3", "bar", "Not", Seq(Instance("m2") -> OfModule("M2"))))
+    m2_m1_not should be(instTarget("M3", "m1_bar", "Not", Seq(Instance("m2") -> OfModule("M2"))))
     m2_not should be(instTarget("M3", "foo", "Not", Seq(Instance("m2") -> OfModule("M2"))))
   }
 
