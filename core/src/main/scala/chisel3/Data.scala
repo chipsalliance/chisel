@@ -381,6 +381,10 @@ trait BaseType extends HasId with NamedComponent {
       case _ =>
     }
   }
+
+  private[chisel3] def earlyName: String = Arg.earlyLocalName(this)
+
+  private[chisel3] def parentNameOpt: Option[String] = this._parent.map(_.name)
 }
 
 /** This forms the root of the type system for wire data types. The data value
@@ -465,10 +469,6 @@ abstract class Data extends BaseType with SourceInfoDoc {
       case VecLitBinding(litMap)     => "(unhandled vec literal)"
       case _                         => ""
     }
-
-  private[chisel3] def earlyName: String = Arg.earlyLocalName(this)
-
-  private[chisel3] def parentNameOpt: Option[String] = this._parent.map(_.name)
 
   // Return ALL elements at root of this type.
   // Contasts with flatten, which returns just Bits
