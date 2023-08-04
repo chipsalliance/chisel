@@ -30,4 +30,3 @@ jobs:
         uses: softprops/action-gh-release@v0.1.15
         with:
           files: chisel-template.scala
-
