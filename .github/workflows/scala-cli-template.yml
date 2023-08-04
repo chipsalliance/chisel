@@ -20,6 +20,11 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: chisel-template.scala
+      - name: Display Template
+        run: |
+          echo "\`\`\`scala" >> $GITHUB_STEP_SUMMARY
+          cat chisel-template.scala >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
       - name: Upload To Release Page
         if: github.event_name == 'release'
         uses: softprops/action-gh-release@v0.1.15
