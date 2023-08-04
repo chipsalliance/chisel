@@ -418,4 +418,23 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
       Select.wires(top).map(_.instanceName) should be(List("x_1", "x_2"))
     }
   }
+
+  "tuple assignment" should "name IOs and registers" in {
+    class Test extends Module {
+      def myFunc(): (UInt, String) = {
+        val out = IO(Output(UInt(3.W)))
+        val in = IO(Input(UInt(3.W)))
+        out := Mux(in(0), RegNext(in + 2.U), in << 3)
+        (out, "Hi!")
+      }
+
+      val foo = myFunc()
+    }
+
+    aspectTest(() => new Test) { top: Test =>
+      Select.ios(top).map(_.instanceName) should be(List("clock", "reset", "foo_1", "foo_in"))
+      Select.registers(top).map(_.instanceName) should be(List("foo_out_REG"))
+      Select.wires(top).map(_.instanceName) should be(List())
+    }
+  }
 }

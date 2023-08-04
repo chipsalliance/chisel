@@ -772,7 +772,6 @@ private[chisel3] object Builder extends LazyLogging {
       product.productIterator.zip(product.productElementNames).foreach {
         case (elt, fullName) =>
           val name = fullName.stripPrefix("_")
-          // tuple field names are 1-based (_1, _2, _3, ...)
           nameRecursively(s"${prefix}_${name}", elt, namer)
       }
     case _ => // Do nothing
