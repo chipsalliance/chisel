@@ -13,7 +13,7 @@ on:
       - '*.x'
 
 env:
-  circt: "version-file"
+  circt: "default"
 
 jobs:
   set-circt-versions:
@@ -93,11 +93,6 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - name: Install CIRCT
-        uses: circt/install-circt@v1.1.1
-        with:
-          version: ${{ env.circt }}
-          github-token: ${{ github.token }}
       - name: Setup Scala
         uses: actions/setup-java@v3
         with:

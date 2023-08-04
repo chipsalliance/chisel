@@ -24,7 +24,7 @@ on:
         required: true
         type: string
       circt:
-        description: 'The CIRCT version to use (must be a valid release tag or "nightly")'
+        description: 'The CIRCT version to use (must be a valid release tag, "default", "nightly", or "version-file")'
         required: true
         type: string
       ref:
@@ -56,15 +56,24 @@ jobs:
           java-version: ${{ inputs.jvm }}
           cache: 'sbt'
       - name: Install CIRCT
+        id: install-circt
+        if: ${{ inputs.circt != 'default' }}
         uses: circt/install-circt@v1.1.1
         with:
           version: ${{ inputs.circt }}
           github-token: ${{ github.token }}
+      # TODO have install-circt do this
+      - name: Set FIRTOOL_PATH
+        if: steps.install-circt.outcome == 'success'
+        run: |
+          dir=$(dirname $(which firtool))
+          echo "FIRTOOL_PATH=$dir" >> "$GITHUB_ENV"
       - name: Print firtool version
+        if: steps.install-circt.outcome == 'success'
         run: |
           echo "The CIRCT version used is:" >> $GITHUB_STEP_SUMMARY
           echo \`\`\` >> $GITHUB_STEP_SUMMARY
-          firtool -version >> $GITHUB_STEP_SUMMARY
+          $FIRTOOL_PATH/firtool -version >> $GITHUB_STEP_SUMMARY
           echo \`\`\` >> $GITHUB_STEP_SUMMARY
       - name: Test
         run: sbt ++${{ inputs.scala }} test
@@ -94,10 +103,19 @@ jobs:
         uses: jodersky/setup-mill@v0.3.0
         with:
           mill-version: 0.11.5
+      # Mill needs firtool to compile with bindings, cannot use firtool-resolver at runtime
+      - name: Pick CIRCT version
+        id: circt-version
+        run: |
+          if [[ "${{ inputs.circt }}" == "default" ]]; then
+            echo "version=version-file" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=${{ inputs.circt }}" >> "$GITHUB_OUTPUT"
+          fi
       - name: Install CIRCT
         uses: circt/install-circt@v1.1.1
         with:
-          version: ${{ inputs.circt }}
+          version: ${{ steps.circt-version.outputs.version }}
           github-token: ${{ github.token }}
       - name: Compile Mill
         run: |
@@ -118,11 +136,6 @@ jobs:
           distribution: 'adopt'
           java-version: '11'
           cache: 'sbt'
-      - name: Install CIRCT
-        uses: circt/install-circt@v1.1.1
-        with:
-          version: ${{ inputs.circt }}
-          github-token: ${{ github.token }}
       - name: Check Formatting
         run: sbt fmtCheck
 
@@ -145,10 +158,18 @@ jobs:
           java-version: '11'
           cache: 'sbt'
       - name: Install CIRCT
+        id: install-circt
+        if: ${{ inputs.circt != 'default' }}
         uses: circt/install-circt@v1.1.1
         with:
           version: ${{ inputs.circt }}
           github-token: ${{ github.token }}
+      # TODO have install-circt do this
+      - name: Set FIRTOOL_PATH
+        if: steps.install-circt.outcome == 'success'
+        run: |
+          dir=$(dirname $(which firtool))
+          echo "FIRTOOL_PATH=$dir" >> "$GITHUB_ENV"
       - name: Integration Tests
         run: sbt integrationTests/test
 
@@ -198,10 +219,18 @@ jobs:
         with:
           node-version: 18
       - name: Install CIRCT
+        id: install-circt
+        if: ${{ inputs.circt != 'default' }}
         uses: circt/install-circt@v1.1.1
         with:
           version: ${{ inputs.circt }}
           github-token: ${{ github.token }}
+      # TODO have install-circt do this
+      - name: Set FIRTOOL_PATH
+        if: steps.install-circt.outcome == 'success'
+        run: |
+          dir=$(dirname $(which firtool))
+          echo "FIRTOOL_PATH=$dir" >> "$GITHUB_ENV"
         # TODO: make the website building include building ScalaDoc
       - name: Build the website
         run: make -C website build

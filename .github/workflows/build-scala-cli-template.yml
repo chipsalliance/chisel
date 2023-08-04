@@ -5,7 +5,7 @@ on:
     inputs:
       circt:
         description: 'The version of CIRCT to use'
-        default: 'version-file'
+        default: 'default'
         type: string
 
 jobs:
@@ -20,10 +20,18 @@ jobs:
         with:
           fetch-depth: 0
       - name: Install CIRCT
-        uses: circt/install-circt@v1.0.0
+        id: install-circt
+        if: ${{ inputs.circt != 'default' }}
+        uses: circt/install-circt@v1.1.1
         with:
           version: ${{ inputs.circt }}
           github-token: ${{ github.token }}
+      # TODO have install-circt do this
+      - name: Set FIRTOOL_PATH
+        if: steps.install-circt.outcome == 'success'
+        run: |
+          dir=$(dirname $(which firtool))
+          echo "FIRTOOL_PATH=$dir" >> "$GITHUB_ENV"
       - name: Cache Scala-CLI
         uses: coursier/cache-action@v6
       - name: Setup Scala-CLI
