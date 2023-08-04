@@ -172,15 +172,7 @@ jobs:
 
   scala-cli-template:
     name: Test Scala-CLI Template
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        # Need to fetch full history for deriving version
-        with:
-          fetch-depth: 0
-      - name: Build and Test Scala-CLI Template
-        uses: ./.github/workflows/build-scala-cli-template
+    uses: ./.github/workflows/build-scala-cli-template.yml
 
   # Sentinel job to simplify how we specify which checks need to pass in branch
   # protection and in Mergify. This job checks that all jobs were successful.
