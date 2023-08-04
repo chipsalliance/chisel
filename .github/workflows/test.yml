@@ -27,6 +27,11 @@ on:
         description: 'The CIRCT version to use (must be a valid release tag or "nightly")'
         required: true
         type: string
+      ref:
+        description: 'The branch, tag, or git hash to checkout'
+        default: ''
+        required: false
+        type: string
 
 jobs:
   ci:
@@ -36,6 +41,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.ref }}
       - name: Install Tabby OSS Cad Suite
         uses: ./.github/workflows/setup-oss-cad-suite
       - name: Install Espresso
@@ -66,6 +73,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.ref }}
       - name: Install Mill
         uses: jodersky/setup-mill@v0.3.0
         with:
@@ -84,6 +93,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.ref }}
       - name: Setup Scala
         uses: actions/setup-java@v3
         with:
@@ -104,6 +115,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.ref }}
       - name: Install Tabby OSS Cad Suite
         uses: ./.github/workflows/setup-oss-cad-suite
       - name: Install Espresso
@@ -131,6 +144,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.ref }}
       - name: Install Tabby OSS Cad Suite
         uses: ./.github/workflows/setup-oss-cad-suite
       - name: Setup Scala
@@ -151,6 +166,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.ref }}
       - name: Setup Scala
         uses: actions/setup-java@v3
         with:
