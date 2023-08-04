@@ -54,7 +54,15 @@ jobs:
     needs: check-tests
       # Pass only if check-tests set its output value
     steps:
-      - run: PASSED=${{ needs.check-tests.outputs.success }}
+      - run: |
+          PASSED=${{ needs.check-tests.outputs.success }}
+          if [[ $PASSED == "true" ]]; then
+            echo "### All tests passed! :rocket:" >> $GITHUB_STEP_SUMMARY
+            exit 0
+          else
+            echo "### One or more tests FAILED! :bangbang:" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
 
   # sbt ci-release publishes all cross versions so this job needs to be
   # separate from a Scala versions build matrix to avoid duplicate publishing
