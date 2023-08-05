@@ -73,6 +73,7 @@ jobs:
       - name: Install CIRCT
         uses: ./.github/workflows/install-circt
         with:
+          version: ${{ inputs.circt }}
           github-token: ${{ github.token }}
       - name: Compile Mill
         run: mill __.compile
@@ -92,6 +93,7 @@ jobs:
       - name: Install CIRCT
         uses: ./.github/workflows/install-circt
         with:
+          version: ${{ inputs.circt }}
           github-token: ${{ github.token }}
       - name: Check Formatting
         run: sbt fmtCheck
@@ -115,6 +117,7 @@ jobs:
       - name: Install CIRCT
         uses: ./.github/workflows/install-circt
         with:
+          version: ${{ inputs.circt }}
           github-token: ${{ github.token }}
       - name: Integration Tests
         run: sbt integrationTests/test
@@ -165,6 +168,7 @@ jobs:
       - name: Install CIRCT
         uses: ./.github/workflows/install-circt
         with:
+          version: ${{ inputs.circt }}
           github-token: ${{ github.token }}
         #TODO: make the microsite building include building ScalaDoc
       - name: Build the docs
@@ -184,3 +188,5 @@ jobs:
   scala-cli-template:
     name: Test Scala-CLI Template
     uses: ./.github/workflows/build-scala-cli-template.yml
+    with:
+      circt: ${{ inputs.circt }}

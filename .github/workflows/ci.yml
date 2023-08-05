@@ -10,16 +10,31 @@ on:
       - main
       - '*.x'
 
+env:
+  circt: "firtool-1.48.0"
+
 jobs:
+  set-circt-versions:
+    name: Set the CIRCT version from the env
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Set CIRCT Version
+        id: set-circt-version
+        run: |
+          echo versions='["${{ env.circt }}"]' >> $GITHUB_OUTPUT
+    outputs:
+      circt-versions: ${{ steps.set-circt-version.outputs.versions }}
+
   ci:
     name: ci
+    needs: [set-circt-versions]
     strategy:
       matrix:
         system: ["ubuntu-20.04"]
         jvm: [8]
         scala: ["2.13.11"]
         espresso: ["2.4"]
-        circt: ["firtool-1.48.0"]
+        circt: ${{ fromJSON(needs.set-circt-versions.outputs.circt-versions) }}
     uses: ./.github/workflows/test.yml
     with:
       system: ${{ matrix.system }}
@@ -79,6 +94,7 @@ jobs:
       - name: Install CIRCT
         uses: ./.github/workflows/install-circt
         with:
+          version: ${{ env.circt }}
           github-token: ${{ github.token }}
       - name: Setup Scala
         uses: actions/setup-java@v3

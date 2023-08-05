@@ -2,6 +2,11 @@ name: Build and Test Scala-CLI Template
 
 on:
   workflow_call:
+    inputs:
+      circt:
+        description: 'The version of CIRCT to use'
+        required: true
+        type: string
 
 jobs:
   build_template:
@@ -17,6 +22,7 @@ jobs:
       - name: Install CIRCT
         uses: ./.github/workflows/install-circt
         with:
+          version: ${{ inputs.circt }}
           github-token: ${{ github.token }}
       - name: Cache Scala-CLI
         uses: coursier/cache-action@v6
