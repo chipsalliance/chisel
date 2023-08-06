@@ -1,0 +1,12 @@
+[
+  {
+    "class": "circt.test",
+    "info": "a CircuitName Annotation",
+    "target": "test_mod"
+  },
+  {
+    "class": "circt.test",
+    "info": "a ModuleName Annotation",
+    "target": "test_mod.test_mod"
+  }
+]

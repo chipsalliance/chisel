@@ -1,0 +1,5 @@
+[submodule "llvm"]
+	path = llvm
+	url = https://github.com/llvm/llvm-project.git
+	shallow = true
+	branch = main

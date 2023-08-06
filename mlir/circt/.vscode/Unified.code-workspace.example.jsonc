@@ -1,0 +1,60 @@
+{
+  /**
+  This file defines an example VSCode workspace for working with both Circt and MLIR.
+  We are not committed to keeping it up-to-date, but we believe it is valueable as a starting point for folks interested in using VSCode as their IDE.
+  */
+  "folders": [
+    {
+      "name": "CIRCT",
+      "path": ".."
+    },
+    {
+      "name": "MLIR",
+      "path": "../llvm/mlir"
+    }
+  ],
+  "settings": {
+    "files.exclude": {
+      "llvm": true
+    },
+
+    "editor.detectIndentation": false,
+    "editor.insertSpaces": true,
+    "editor.useTabStops": true,
+    "editor.tabSize": 2,
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "xaver.clang-format",
+
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "cmake.sourceDirectory": "${workspaceFolder:CIRCT}/llvm/llvm",
+    "cmake.buildDirectory": "${workspaceFolder:CIRCT}/build/vscode",
+    "cmake.generator": "Ninja",
+    "cmake.configureArgs": [
+      // LLVM
+      "-DLLVM_ENABLE_PROJECTS=mlir",
+      "-DLLVM_TARGETS_TO_BUILD=X86;RISCV",
+      "-DLLVM_ENABLE_ASSERTIONS=ON",
+      "-DLLVM_BUILD_EXAMPLES=OFF",
+      "-DLLVM_ENABLE_OCAMLDOC=OFF",
+      "-DLLVM_ENABLE_BINDINGS=OFF",
+      "-DLLVM_BUILD_TOOLS=ON",
+      "-DLLVM_OPTIMIZED_TABLEGEN=ON",
+      "-DLLVM_INCLUDE_TOOLS=ON",
+      "-DLLVM_USE_SPLIT_DWARF=ON",
+      "-DLLVM_BUILD_LLVM_DYLIB=ON",
+      "-DLLVM_LINK_LLVM_DYLIB=ON",
+      /// If ccache is installed, this option can might speed up builds
+      // "-DLLVM_CCACHE_BUILD=ON",
+
+      // Circt
+      "-DLLVM_EXTERNAL_PROJECTS=circt",
+      "-DLLVM_EXTERNAL_CIRCT_SOURCE_DIR=${workspaceFolder:CIRCT}"
+    ]
+  },
+  "extensions": {
+    "recommendations": [
+      "xaver.clang-format",
+      "ms-vscode.cmake-tools"
+    ]
+  }
+}

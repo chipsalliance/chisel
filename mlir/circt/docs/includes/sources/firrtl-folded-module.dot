@@ -1,0 +1,22 @@
+digraph A {
+  graph [dpi=100]
+  {
+    node [shape=box style=filled]
+    {
+      Foo [fillcolor="#fff5eb"]
+    }
+    {
+      node [fillcolor="#e5f5e0"]
+      Bar
+    }
+    {
+      node [fillcolor="#fcbba1"]
+      Baz
+    }
+  }
+
+  Foo -> Bar [label="a"]
+  Foo -> Bar [label="b"]
+  Bar -> Baz [label="c"]
+  Bar -> Baz [label="d"]
+}

@@ -1,0 +1,13 @@
+[
+  {
+    "info": "@[Foo.scala 32:32]",
+    "id": "OMID:0",
+    "fields": [
+      {
+        "info": "@[Foo.scala 64:64 Bar.scala 128:128]",
+        "name": "stringVal",
+        "value": "OMString:hello"
+      }
+    ]
+  }
+]

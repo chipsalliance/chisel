@@ -1,0 +1,26 @@
+digraph A {
+  graph [dpi=100]
+  {
+    node [shape=box style=filled]
+    {
+      Foo [fillcolor="#fff5eb"]
+    }
+    {
+      node [fillcolor="#e5f5e0"]
+      "Foo/a:Bar" "Foo/b:Bar"
+    }
+    {
+      node [fillcolor="#fcbba1"]
+      "Foo/a:Bar/c:Baz" "Foo/a:Bar/d:Baz" "Foo/b:Bar/c:Baz" "Foo/b:Bar/d:Baz"
+    }
+  }
+
+  Foo -> "Foo/a:Bar" [label="a"]
+  Foo -> "Foo/b:Bar" [label="b"]
+
+  "Foo/a:Bar" -> "Foo/a:Bar/c:Baz" [label="c"]
+  "Foo/a:Bar" -> "Foo/a:Bar/d:Baz" [label="d"]
+
+  "Foo/b:Bar" -> "Foo/b:Bar/c:Baz" [label="c"]
+  "Foo/b:Bar" -> "Foo/b:Bar/d:Baz" [label="d"]
+}

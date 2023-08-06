@@ -1,0 +1,31 @@
+{
+  "name": "Circel",
+  "dockerFile": "Dockerfile",
+  "runArgs": [
+    "--cap-add=SYS_PTRACE",
+    "--security-opt",
+    "seccomp=unconfined"
+  ],
+  "mounts": [
+    /// VSCode settings in Docker need to be different from the host machine
+    "source=${localWorkspaceFolder}/.devcontainer/default/VSCode,target=${containerWorkspaceFolder}/.vscode,type=bind",
+    /// Use a named volume for the build products for optimal performance (https://code.visualstudio.com/remote/advancedcontainers/improve-performance?WT.mc_id=javascript-14373-yolasors#_use-a-targeted-named-volume)
+    "source=${localWorkspaceFolderBasename}-build,target=${containerWorkspaceFolder}/build,type=volume",
+    /// Use a named volume to share the ccache database. We use a simple name so that different devcontainers which build llvm could all share the same ccache database. Also share the configuration folder so configuration settings persist.
+    "source=shared-llvm-ccache-database,target=/root/.cache/ccache,type=volume",
+    "source=shared-llvm-ccache-config,target=/root/.config/ccache,type=volume"
+  ],
+  "containerEnv": {
+    "LOCAL_WORKSPACE_FOLDER": "${localWorkspaceFolder}"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "llvm-vs-code-extensions.vscode-clangd",
+        "llvm-vs-code-extensions.vscode-mlir",
+        "ms-vscode.cmake-tools",
+        "scalameta.metals"
+      ]
+    }
+  }
+}

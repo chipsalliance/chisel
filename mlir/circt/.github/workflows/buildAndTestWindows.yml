@@ -1,0 +1,91 @@
+name: Windows build and test
+
+# Run on request and every day at 12 noon UTC
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  # Build CIRCT and run its tests.
+  build-circt:
+    name: Build and Test
+    runs-on: windows-2019
+    steps:
+      - name: Configure Environment
+        run: echo "$GITHUB_WORKSPACE/llvm/install/bin" >> $GITHUB_PATH
+
+      # Clone the CIRCT repo and its submodules. Do shallow clone to save clone
+      # time.
+      - name: Get CIRCT
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+          submodules: "true"
+
+      # --------
+      # Restore LLVM from cache and build if it's not in there.
+      # --------
+
+      # Extract the LLVM submodule hash for use in the cache key.
+      - name: Get LLVM Hash
+        id: get-llvm-hash
+        run: echo "hash=$(git rev-parse @:./llvm)" >> $GITHUB_OUTPUT
+        shell: bash
+
+      # Try to fetch LLVM from the cache.
+      - name: Cache LLVM
+        id: cache-llvm
+        uses: actions/cache@v3
+        with:
+          path: |
+            llvm/install
+          key: ${{ runner.os }}-llvm-relobj-${{ steps.get-llvm-hash.outputs.hash }}
+
+      # Build LLVM if we didn't hit in the cache. Even though we build it in
+      # the previous job, there is a low chance that it'll have been evicted by
+      # the time we get here.
+      - name: Rebuild and Install LLVM
+        if: steps.cache-llvm.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          ./utils/find-vs.ps1
+          mkdir llvm/build
+          cd llvm/build
+          cmake ..\llvm -GNinja `
+            -DLLVM_ENABLE_PROJECTS=mlir -DLLVM_BUILD_EXAMPLES=OFF `
+            -DLLVM_TARGETS_TO_BUILD="host" `
+            -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_ASSERTIONS=ON `
+            -DLLVM_INSTALL_UTILS=ON -DCMAKE_INSTALL_PREFIX="$(pwd)/../install"
+          cmake --build . --target install --config Release
+          # Grab llvm-lit.py from build tree, we need it.
+          cp -v bin/llvm-lit.py ../install/bin/
+          # Nuke build tree to save disk space.
+          cd ..
+          rm -r -fo build
+          
+
+      # --------
+      # Build and test CIRCT in both debug and release mode.
+      # --------
+
+      # Build the CIRCT test target in release mode. The cmake scripts on
+      # Windows only support building with the same configuration as MLIR.
+      - name: Build and test CIRCT (release)
+        shell: pwsh
+        run: |
+          ./utils/find-vs.ps1
+          mkdir build_release
+          cd build_release
+          cmake ../ -GNinja `
+            -DLLVM_ENABLE_ASSERTIONS=ON `
+            -DMLIR_DIR="$(pwd)/../llvm/install/lib/cmake/mlir/" `
+            -DLLVM_DIR="$(pwd)/../llvm/install/lib/cmake/llvm/" `
+            -DLLVM_EXTERNAL_LIT="$(pwd)/../llvm/install/bin/llvm-lit.py" `
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo `
+            -DLLVM_LIT_ARGS="-v"
+          cmake --build . --config RelWithDebInfo
+          cmake --build . --target check-circt
+
+    # --- end of build-circt job.

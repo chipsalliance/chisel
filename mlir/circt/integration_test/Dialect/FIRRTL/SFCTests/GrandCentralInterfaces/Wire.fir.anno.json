@@ -1,0 +1,515 @@
+[
+  {
+    "class": "sifive.enterprise.grandcentral.ViewAnnotation",
+    "name": "MyView",
+    "companion": "~Top|MyView_companion",
+    "parent": "~Top|DUT",
+    "view": {
+      "class": "sifive.enterprise.grandcentral.AugmentedBundleType",
+      "defName": "MyInterface",
+      "elements": [
+        {
+          "name": "uint",
+          "description": "a wire called 'uint'",
+          "tpe": {
+            "class": "sifive.enterprise.grandcentral.AugmentedGroundType",
+            "ref": {
+              "circuit": "Top",
+              "module": "DUT",
+              "path": [],
+              "ref": "w",
+              "component": [
+                {
+                  "class": "firrtl.annotations.TargetToken$Field",
+                  "value": "uint"
+                }
+              ]
+            },
+            "tpe": {
+              "class": "sifive.enterprise.grandcentral.GrandCentralView$UnknownGroundType$"
+            }
+          }
+        },
+        {
+          "name": "vec",
+          "description": "a vector called 'vec'",
+          "tpe": {
+            "class": "sifive.enterprise.grandcentral.AugmentedVectorType",
+            "elements": [
+              {
+                "class": "sifive.enterprise.grandcentral.AugmentedGroundType",
+                "ref": {
+                  "circuit": "Top",
+                  "module": "DUT",
+                  "path": [],
+                  "ref": "w",
+                  "component": [
+                    {
+                      "class": "firrtl.annotations.TargetToken$Field",
+                      "value": "vec"
+                    },
+                    {
+                      "class": "firrtl.annotations.TargetToken$Index",
+                      "value": 0
+                    }
+                  ]
+                },
+                "tpe": {
+                  "class": "sifive.enterprise.grandcentral.GrandCentralView$UnknownGroundType$"
+                }
+              },
+              {
+                "class": "sifive.enterprise.grandcentral.AugmentedGroundType",
+                "ref": {
+                  "circuit": "Top",
+                  "module": "DUT",
+                  "path": [],
+                  "ref": "w",
+                  "component": [
+                    {
+                      "class": "firrtl.annotations.TargetToken$Field",
+                      "value": "vec"
+                    },
+                    {
+                      "class": "firrtl.annotations.TargetToken$Index",
+                      "value": 1
+                    }
+                  ]
+                },
+                "tpe": {
+                  "class": "sifive.enterprise.grandcentral.GrandCentralView$UnknownGroundType$"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "vecOfBundle",
+          "description": "a vector of a bundle",
+          "tpe": {
+            "class": "sifive.enterprise.grandcentral.AugmentedVectorType",
+            "elements": [
+              {
+                "class": "sifive.enterprise.grandcentral.AugmentedBundleType",
+                "defName": "VecOfBundle",
+                "elements": [
+                  {
+                    "name": "sint",
+                    "tpe": {
+                      "class": "sifive.enterprise.grandcentral.AugmentedGroundType",
+                      "ref": {
+                        "circuit": "Top",
+                        "module": "DUT",
+                        "path": [],
+                        "ref": "w",
+                        "component": [
+                          {
+                            "class": "firrtl.annotations.TargetToken$Field",
+                            "value": "vecOfBundle"
+                          },
+                          {
+                            "class": "firrtl.annotations.TargetToken$Index",
+                            "value": 0
+                          },
+                          {
+                            "class": "firrtl.annotations.TargetToken$Field",
+                            "value": "sint"
+                          }
+                        ]
+                      },
+                      "tpe": {
+                        "class": "sifive.enterprise.grandcentral.GrandCentralView$UnknownGroundType$"
+                      }
+                    }
+                  },
+                  {
+                    "name": "uint",
+                    "tpe": {
+                      "class": "sifive.enterprise.grandcentral.AugmentedGroundType",
+                      "ref": {
+                        "circuit": "Top",
+                        "module": "DUT",
+                        "path": [],
+                        "ref": "w",
+                        "component": [
+                          {
+                            "class": "firrtl.annotations.TargetToken$Field",
+                            "value": "vecOfBundle"
+                          },
+                          {
+                            "class": "firrtl.annotations.TargetToken$Index",
+                            "value": 0
+                          },
+                          {
+                            "class": "firrtl.annotations.TargetToken$Field",
+                            "value": "uint"
+                          }
+                        ]
+                      },
+                      "tpe": {
+                        "class": "sifive.enterprise.grandcentral.GrandCentralView$UnknownGroundType$"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "class": "sifive.enterprise.grandcentral.AugmentedBundleType",
+                "defName": "VecOfBundle",
+                "elements": [
+                  {
+                    "name": "sint",
+                    "tpe": {
+                      "class": "sifive.enterprise.grandcentral.AugmentedGroundType",
+                      "ref": {
+                        "circuit": "Top",
+                        "module": "DUT",
+                        "path": [],
+                        "ref": "w",
+                        "component": [
+                          {
+                            "class": "firrtl.annotations.TargetToken$Field",
+                            "value": "vecOfBundle"
+                          },
+                          {
+                            "class": "firrtl.annotations.TargetToken$Index",
+                            "value": 1
+                          },
+                          {
+                            "class": "firrtl.annotations.TargetToken$Field",
+                            "value": "sint"
+                          }
+                        ]
+                      },
+                      "tpe": {
+                        "class": "sifive.enterprise.grandcentral.GrandCentralView$UnknownGroundType$"
+                      }
+                    }
+                  },
+                  {
+                    "name": "uint",
+                    "tpe": {
+                      "class": "sifive.enterprise.grandcentral.AugmentedGroundType",
+                      "ref": {
+                        "circuit": "Top",
+                        "module": "DUT",
+                        "path": [],
+                        "ref": "w",
+                        "component": [
+                          {
+                            "class": "firrtl.annotations.TargetToken$Field",
+                            "value": "vecOfBundle"
+                          },
+                          {
+                            "class": "firrtl.annotations.TargetToken$Index",
+                            "value": 1
+                          },
+                          {
+                            "class": "firrtl.annotations.TargetToken$Field",
+                            "value": "uint"
+                          }
+                        ]
+                      },
+                      "tpe": {
+                        "class": "sifive.enterprise.grandcentral.GrandCentralView$UnknownGroundType$"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "otherOther",
+          "description": "another bundle",
+          "tpe": {
+            "class": "sifive.enterprise.grandcentral.AugmentedBundleType",
+            "defName": "OtherOther",
+            "elements": [
+              {
+                "name": "other",
+                "tpe": {
+                  "class": "sifive.enterprise.grandcentral.AugmentedBundleType",
+                  "defName": "Other",
+                  "elements": [
+                    {
+                      "name": "sint",
+                      "tpe": {
+                        "class": "sifive.enterprise.grandcentral.AugmentedGroundType",
+                        "ref": {
+                          "circuit": "Top",
+                          "module": "DUT",
+                          "path": [],
+                          "ref": "w",
+                          "component": [
+                            {
+                              "class": "firrtl.annotations.TargetToken$Field",
+                              "value": "otherOther"
+                            },
+                            {
+                              "class": "firrtl.annotations.TargetToken$Field",
+                              "value": "other"
+                            },
+                            {
+                              "class": "firrtl.annotations.TargetToken$Field",
+                              "value": "sint"
+                            }
+                          ]
+                        },
+                        "tpe": {
+                          "class": "sifive.enterprise.grandcentral.GrandCentralView$UnknownGroundType$"
+                        }
+                      }
+                    },
+                    {
+                      "name": "uint",
+                      "tpe": {
+                        "class": "sifive.enterprise.grandcentral.AugmentedGroundType",
+                        "ref": {
+                          "circuit": "Top",
+                          "module": "DUT",
+                          "path": [],
+                          "ref": "w",
+                          "component": [
+                            {
+                              "class": "firrtl.annotations.TargetToken$Field",
+                              "value": "otherOther"
+                            },
+                            {
+                              "class": "firrtl.annotations.TargetToken$Field",
+                              "value": "other"
+                            },
+                            {
+                              "class": "firrtl.annotations.TargetToken$Field",
+                              "value": "uint"
+                            }
+                          ]
+                        },
+                        "tpe": {
+                          "class": "sifive.enterprise.grandcentral.GrandCentralView$UnknownGroundType$"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "sub_uint",
+          "description": "a wire called 'uint' in the submodule",
+          "tpe": {
+            "class": "sifive.enterprise.grandcentral.AugmentedGroundType",
+            "ref": {
+              "circuit": "Top",
+              "module": "Submodule",
+              "path": [],
+              "ref": "w",
+              "component": [
+                {
+                  "class": "firrtl.annotations.TargetToken$Field",
+                  "value": "uint"
+                }
+              ]
+            },
+            "tpe": {
+              "class": "sifive.enterprise.grandcentral.GrandCentralView$UnknownGroundType$"
+            }
+          }
+        },
+        {
+          "name": "sub_vec",
+          "description": "a vector called 'vec' in the submodule",
+          "tpe": {
+            "class": "sifive.enterprise.grandcentral.AugmentedVectorType",
+            "elements": [
+              {
+                "class": "sifive.enterprise.grandcentral.AugmentedGroundType",
+                "ref": {
+                  "circuit": "Top",
+                  "module": "Submodule",
+                  "path": [],
+                  "ref": "w",
+                  "component": [
+                    {
+                      "class": "firrtl.annotations.TargetToken$Field",
+                      "value": "vec"
+                    },
+                    {
+                      "class": "firrtl.annotations.TargetToken$Index",
+                      "value": 0
+                    }
+                  ]
+                },
+                "tpe": {
+                  "class": "sifive.enterprise.grandcentral.GrandCentralView$UnknownGroundType$"
+                }
+              },
+              {
+                "class": "sifive.enterprise.grandcentral.AugmentedGroundType",
+                "ref": {
+                  "circuit": "Top",
+                  "module": "Submodule",
+                  "path": [],
+                  "ref": "w",
+                  "component": [
+                    {
+                      "class": "firrtl.annotations.TargetToken$Field",
+                      "value": "vec"
+                    },
+                    {
+                      "class": "firrtl.annotations.TargetToken$Index",
+                      "value": 1
+                    }
+                  ]
+                },
+                "tpe": {
+                  "class": "sifive.enterprise.grandcentral.GrandCentralView$UnknownGroundType$"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "sub_vecOfBundle",
+          "description": "a vector of a bundle in the submodule with a\nmultiline comment",
+          "tpe": {
+            "class": "sifive.enterprise.grandcentral.AugmentedVectorType",
+            "elements": [
+              {
+                "class": "sifive.enterprise.grandcentral.AugmentedBundleType",
+                "defName": "Sub_vecOfBundle",
+                "elements": [
+                  {
+                    "name": "sint",
+                    "tpe": {
+                      "class": "sifive.enterprise.grandcentral.AugmentedGroundType",
+                      "ref": {
+                        "circuit": "Top",
+                        "module": "Submodule",
+                        "path": [],
+                        "ref": "w",
+                        "component": [
+                          {
+                            "class": "firrtl.annotations.TargetToken$Field",
+                            "value": "vecOfBundle"
+                          },
+                          {
+                            "class": "firrtl.annotations.TargetToken$Index",
+                            "value": 0
+                          },
+                          {
+                            "class": "firrtl.annotations.TargetToken$Field",
+                            "value": "sint"
+                          }
+                        ]
+                      },
+                      "tpe": {
+                        "class": "sifive.enterprise.grandcentral.GrandCentralView$UnknownGroundType$"
+                      }
+                    }
+                  },
+                  {
+                    "name": "uint",
+                    "tpe": {
+                      "class": "sifive.enterprise.grandcentral.AugmentedGroundType",
+                      "ref": {
+                        "circuit": "Top",
+                        "module": "Submodule",
+                        "path": [],
+                        "ref": "w",
+                        "component": [
+                          {
+                            "class": "firrtl.annotations.TargetToken$Field",
+                            "value": "vecOfBundle"
+                          },
+                          {
+                            "class": "firrtl.annotations.TargetToken$Index",
+                            "value": 0
+                          },
+                          {
+                            "class": "firrtl.annotations.TargetToken$Field",
+                            "value": "uint"
+                          }
+                        ]
+                      },
+                      "tpe": {
+                        "class": "sifive.enterprise.grandcentral.GrandCentralView$UnknownGroundType$"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "class": "sifive.enterprise.grandcentral.AugmentedBundleType",
+                "defName": "Sub_vecOfBundle",
+                "elements": [
+                  {
+                    "name": "sint",
+                    "tpe": {
+                      "class": "sifive.enterprise.grandcentral.AugmentedGroundType",
+                      "ref": {
+                        "circuit": "Top",
+                        "module": "Submodule",
+                        "path": [],
+                        "ref": "w",
+                        "component": [
+                          {
+                            "class": "firrtl.annotations.TargetToken$Field",
+                            "value": "vecOfBundle"
+                          },
+                          {
+                            "class": "firrtl.annotations.TargetToken$Index",
+                            "value": 1
+                          },
+                          {
+                            "class": "firrtl.annotations.TargetToken$Field",
+                            "value": "sint"
+                          }
+                        ]
+                      },
+                      "tpe": {
+                        "class": "sifive.enterprise.grandcentral.GrandCentralView$UnknownGroundType$"
+                      }
+                    }
+                  },
+                  {
+                    "name": "uint",
+                    "tpe": {
+                      "class": "sifive.enterprise.grandcentral.AugmentedGroundType",
+                      "ref": {
+                        "circuit": "Top",
+                        "module": "Submodule",
+                        "path": [],
+                        "ref": "w",
+                        "component": [
+                          {
+                            "class": "firrtl.annotations.TargetToken$Field",
+                            "value": "vecOfBundle"
+                          },
+                          {
+                            "class": "firrtl.annotations.TargetToken$Index",
+                            "value": 1
+                          },
+                          {
+                            "class": "firrtl.annotations.TargetToken$Field",
+                            "value": "uint"
+                          }
+                        ]
+                      },
+                      "tpe": {
+                        "class": "sifive.enterprise.grandcentral.GrandCentralView$UnknownGroundType$"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+]

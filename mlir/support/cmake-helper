@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+
+set -e
+
+# Calls CMake, loading arguments from devcontainer settings to maintain a single source of truth.
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+PROJECT_ROOT=$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel)
+
+CMAKE_HELPER_BUILD_DIR=${CMAKE_HELPER_BUILD_DIR:-$PROJECT_ROOT/build}
+
+case "$1" in
+  "configure")
+    shift 1 # Remove "configure" from the arguments
+
+    VSCODE_SETTINGS_FILE=${VSCODE_SETTINGS_FILE:-$PROJECT_ROOT/.devcontainer/default/VSCode/settings.json}
+
+    # If specified, sets the CMAKE_{C,CXX}_COMPILER variables as specified in the CMake Tools kits file. 
+    CMAKE_TOOLS_KITS_FILE=${CMAKE_TOOLS_KITS_FILE:-}
+    CMAKE_TOOLS_KITS_FILE_INDEX=${CMAKE_TOOLS_KITS_FILE_INDEX:-0}
+    
+    CMAKE_ARGS=$(
+      set -e
+      echo "-DCMAKE_BUILD_TYPE=Debug"
+      cat "$VSCODE_SETTINGS_FILE" | \
+        sed 's@//.*@@' | \
+        sed "s@\${workspaceFolder}@$PROJECT_ROOT@" | \
+        jq -jr '"\"\(.["cmake.configureArgs"] | join("\" \""))\" -G \(.["cmake.generator"]) "'
+      if [[ ! -z "$CMAKE_TOOLS_KITS_FILE" ]]; then
+        cat "$CMAKE_TOOLS_KITS_FILE" | \
+          jq -r ".[$CMAKE_TOOLS_KITS_FILE_INDEX].compilers | \"-DCMAKE_C_COMPILER=\(.C) -DCMAKE_CXX_COMPILER=\(.CXX)\""
+      fi
+      echo "$@"
+    )
+
+    set -x
+    echo $CMAKE_ARGS | xargs cmake \
+      -S$PROJECT_ROOT/mlir/llvm/llvm \
+      -B$CMAKE_HELPER_BUILD_DIR
+    ;;
+  "build")
+    shift 1 # Remove "build" from the arguments
+
+    TARGETS=${@:-$(cat $PROJECT_ROOT/.devcontainer/default/VSCode/tasks.json | jq -r '[.tasks[] | select(.group | .kind == "build" and .isDefault)][0] | .targets | join(" ")')}
+
+    set -x
+    cmake \
+      --build $CMAKE_HELPER_BUILD_DIR \
+      --target $TARGETS --
+    ;;
+  *)
+    echo "Usage: $0 [configure|build]"
+    exit 1
+    ;;
+esac

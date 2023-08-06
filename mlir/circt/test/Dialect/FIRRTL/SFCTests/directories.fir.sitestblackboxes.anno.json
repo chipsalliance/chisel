@@ -1,0 +1,10 @@
+[
+  {
+    "class": "sifive.enterprise.firrtl.SitestBlackBoxAnnotation",
+    "filename": "design.sitest.json"
+  },
+  {
+    "class": "sifive.enterprise.firrtl.SitestTestHarnessBlackBoxAnnotation",
+    "filename": "testbench.sitest.json"
+  }
+]

@@ -1,0 +1,28 @@
+//===- CosimSchema.h.in - template for the ESI cosim schema  ----*- C++ -*-===//
+//
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+//
+//===----------------------------------------------------------------------===//
+//
+// CMake configures this file to fill the Cosim Capnp RPC schema.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef CIRCT_DIALECT_ESI_COSIM_COSIMSCHEMA_H
+#define CIRCT_DIALECT_ESI_COSIM_COSIMSCHEMA_H
+
+namespace circt {
+namespace esi {
+namespace cosim {
+
+constexpr char CosimSchema[] = R"""(
+@EsiCosimSchema@
+)""";
+
+} // namespace cosim
+} // namespace esi
+} // namespace circt
+
+#endif

@@ -1,0 +1,23 @@
+name: Check Formatting
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  formatting-cpp:
+    name: Check Formatting (C++)
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Format C++ code
+        uses: jidicula/clang-format-action@v4.11.0
+        with:
+          clang-format-version: 16
+          check-path: mlir/circel
+          fallback-style: llvm
+

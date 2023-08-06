@@ -1,0 +1,61 @@
+## Dialects, Conversions, Tools
+
+# Arc
+**/Dialect/Arc @fabianschuiki @maerhart
+tools/arcilator @fabianschuiki @maerhart
+
+# Calyx
+**/Dialect/Calyx @rachitnigam @cgyurgyik @mikeurbach @andrewb1999
+**/Conversion/CalyxToFSM @mortbopet
+**/Conversion/CalyxToHW @mortbopet @mikeurbach
+**/Conversion/SCFToCalyx @mikeurbach @mortbopet
+**/Conversion/LoopScheduleToCalyx @andrewb1999 @mikeurbach
+
+# DC
+**/Dialect/DC @mortbopet
+
+# ESI
+**/Dialect/ESI @teqdruid
+
+# FIRRTL
+**/FIRRTL* @darthscsi @dtzSiFive @seldridge
+*/firtool @dtzSiFive
+libs/Firtool @dtzSiFive
+
+# FSM
+**/Dialect/FSM @mortbopet
+
+# HWArith
+**/Dialect/HWArith @mortbopet @teqdruid
+
+# LLHD
+**/LLHD* @fabianschuiki @maerhart
+tools/llhd-sim @fabianschuiki @maerhart
+
+# Pipeline
+**/Dialect/Pipeline @mortbopet
+
+# Handshake
+**/Handshake* @Dinistro @mortbopet @RamirezLucas
+
+# HW
+# **/Dialect/HW
+
+# SV
+# **/Dialect/SV
+
+# Ibis
+**/Dialect/Ibis @teqdruid @mortbopet @blakep-msft
+
+## Conversions
+
+lib/Conversion/ExportVerilog @dtzSiFive
+
+
+## Infra
+
+# CI
+.github @teqdruid @dtzSiFive
+
+# PrettyPrinter
+**/Support/Pretty* @dtzSiFive

@@ -1,0 +1,147 @@
+{# This template is not generated. #}
+# Generated ESI runtime API.
+
+from .common import *
+
+{# Function to list port parameters for the service declaration
+   constructors. #}
+{%- macro port_list(ports) -%}
+  {% for port in ports -%}
+    {{-port.name}}_ports: typing.List[Port]{% if not loop.last %}, {% endif %}
+  {%- endfor %}
+{%- endmacro %}
+
+{# List of service declaration classes. E.g.:
+```
+class HostComms:
+
+  def __init__(self, to_host_ports: typing.List[Port], from_host_ports: typing.List[Port], req_resp_ports: typing.List[Port]):
+    self.to_host = to_host_ports
+    self.from_host = from_host_ports
+    self.req_resp = req_resp_ports
+
+  def to_host_read_any(self):
+    for p in self.to_host:
+      rc = p.read(block=False)
+      if rc is not None:
+        return rc
+    return None
+
+  def req_resp_read_any(self):
+    for p in self.req_resp:
+      rc = p.read(block=False)
+      if rc is not None:
+        return rc
+    return None
+```
+#}
+{%- for svc in services.declarations %}
+class {{ svc['name' ]}}:
+
+  def __init__(self, {{ port_list(svc.ports) }}):
+    {%- for port in svc.ports %}
+    self.{{port.name}} = {{port.name}}_ports
+    {%- endfor %}
+    pass
+
+  {% for port in svc.ports if port['to-server-type'] is defined -%}
+  def {{port.name}}_read_any(self):
+    for p in self.{{port.name}}:
+      rc = p.read(blocking_timeout=None)
+      if rc is not None:
+        return rc
+    return None
+
+  {% endfor -%}
+{% endfor %}
+
+
+{# "Namespace" for design modules. Section looks roughly like:
+```
+class DesignModules:
+
+  class top:
+
+    def __init__(self):
+      self.mid = DesignModules.Mid()
+
+
+  class Mid:
+
+    def __init__(self):
+      from_host = [
+        ReadPort(['Producer', 'loopback_in'], write_type=ESITypes.I32)
+      ]
+      to_host = [
+        WritePort(['Consumer', 'loopback_out'], read_type=ESITypes.I32)
+      ]
+      req_resp = [
+        ReadPort(['LoopbackInOut', 'loopback_inout'], write_type=ESITypes.I32)
+        WritePort(['LoopbackInOut', 'loopback_inout'], read_type=ESITypes.I16)
+      ]
+      self.host_comms = HostComms(from_host_ports=from_host, to_host_ports=to_host, req_resp_ports=req_resp)
+```
+#}
+class DesignModules:
+{% for mod in modules %}
+  class {{mod.name}}:
+
+    def __init__(self, backend):
+      self._backend = backend
+      {%- for inst_name, child_mod in mod.instances.items() %}
+      self.{{camel_to_snake(inst_name)}} = DesignModules.{{child_mod.name}}(backend.get_child("{{inst_name}}"))
+      {%- endfor %}
+      {%- for svc in mod.services %}
+      {%- set ports = get_ports_for_clients(svc.clients) -%}
+      {% for port_name, port_clients in ports.items() %}
+      {{port_name}} = [
+        {% for pc in port_clients -%}
+          {% if pc.to_client_type is defined and pc.to_server_type is defined -%}
+          ReadWritePort({{pc.client_name}}, backend, "{{svc.impl_type}}", read_type=ESITypes.{{get_type_name(pc.to_server_type)}}, write_type=ESITypes.{{get_type_name(pc.to_client_type)}})
+          {%- elif pc.to_client_type is defined -%}
+          WritePort({{pc.client_name}}, backend, "{{svc.impl_type}}", write_type=ESITypes.{{get_type_name(pc.to_client_type)}})
+          {%- elif pc.to_server_type is defined -%}
+          ReadPort({{pc.client_name}}, backend, "{{svc.impl_type}}", read_type=ESITypes.{{get_type_name(pc.to_server_type)}})
+          {%- endif -%}
+          {%- if not loop.last %}, {% endif %}
+        {%- if not loop.last %}
+        {% endif -%}
+        {% endfor %}
+      ]
+      {%- endfor %}
+      self.{{camel_to_snake(svc.service)}} = {{svc.service}}(
+        {%- for pn in ports.keys() -%}{{pn}}_ports={{pn}}{% if not loop.last %}, {% endif %}{% endfor -%}
+      )
+      {%- endfor %}
+      pass
+
+{% endfor %} 
+
+
+{# Types section. Example:`
+```
+class ESITypes:
+
+  I32 = IntType(32, False)
+  I16 = IntType(16, False)
+```
+#}
+class ESITypes:
+{% for type_name, type_dict in types.items() %}
+  {{type_name}} = {{type_str_of(type_dict)}}
+  {%- if type_dict.capnp_name is defined %}
+  {{type_name}}.capnp_name = "{{type_dict.capnp_name}}"
+  {% endif -%}
+{%- endfor %}
+  pass
+
+{# Instantiate the top modules. E.g.: 
+
+```
+top = DesignModules.top()
+```
+
+#}
+{% for top in tops %}
+{{top.name}} = lambda backend: DesignModules.{{top.name}}(backend.get_child("{{top.name}}"))
+{%- endfor %}

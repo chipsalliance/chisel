@@ -1,0 +1,87 @@
+name: Upload Wheels
+
+on:
+  release:
+    types: [created]
+  workflow_dispatch:
+  schedule:
+    - cron: 0 12 * * *
+
+jobs:
+  build_wheels:
+    name: Build wheels with ${{ matrix.config.cibw_build }}
+    runs-on: ${{ matrix.config.os }}
+    if: github.repository == 'llvm/circt'
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - os: ubuntu-20.04
+            cibw_build: cp37-manylinux_x86_64
+          - os: ubuntu-20.04
+            cibw_build: cp38-manylinux_x86_64
+          - os: ubuntu-20.04
+            cibw_build: cp310-manylinux_x86_64
+          - os: macos-latest
+            cibw_build: cp37-macosx_x86_64
+          - os: macos-latest
+            cibw_build: cp38-macosx_x86_64
+          - os: macos-latest
+            cibw_build: cp310-macosx_x86_64
+
+    steps:
+      - name: Get CIRCT
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+          submodules: "true"
+
+      - name: Unshallow CIRCT
+        run: |
+          git fetch --force --unshallow --tags --no-recurse-submodules
+
+      - name: Setup Python
+        uses: actions/setup-python@v3
+
+      - name: Install cibuildwheel
+        run: python -m pip install cibuildwheel==2.12.0
+
+      - name: Build wheels
+        run: python -m cibuildwheel --output-dir wheelhouse ./lib/Bindings/Python
+        env:
+          CIBW_BUILD: ${{ matrix.config.cibw_build }}
+          CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
+          CIBW_BUILD_FRONTEND: build
+          SETUPTOOLS_SCM_DEBUG: True
+
+      - name: Upload (stage) wheels as artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: python-wheels
+          path: ./wheelhouse/*.whl
+          retention-days: 7
+          if-no-files-found: error
+
+  push_wheels:
+    name: Push wheels (Tag or Nightly)
+    runs-on: ubuntu-20.04
+    if: github.repository == 'llvm/circt' && (github.ref_type == 'tag' || github.event_name == 'schedule')
+    needs: build_wheels
+
+    steps:
+      - name: Download wheels
+        uses: actions/download-artifact@v3
+        with:
+          name: python-wheels
+          path: ./wheelhouse/
+
+      - name: List downloaded wheels
+        run: ls -laR
+        working-directory: ./wheelhouse/
+
+      - name: Upload wheels to pypi
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_CIRCT_API_TOKEN }}
+          packages-dir: wheelhouse/
+          verify-metadata: false

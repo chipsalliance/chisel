@@ -1,0 +1,6 @@
+module MLIR_Bindings_Support {
+  requires cplusplus
+
+  umbrella "Bindings/Support"
+  module * { export * }
+}

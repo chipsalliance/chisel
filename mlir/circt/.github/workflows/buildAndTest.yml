@@ -1,0 +1,325 @@
+name: Build and Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [assigned, opened, synchronize, reopened]
+  workflow_dispatch:
+
+jobs:
+  # Do sanity check (clang-format and python-format) first.
+  sanity-check:
+    name: Sanity Check
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/circt/images/circt-ci-build:20230126201226
+    steps:
+      # Clone the CIRCT repo and its submodules. Do shallow clone to save clone
+      # time.
+      - name: Get CIRCT
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+          submodules: "false"
+
+      - name: Set git safe
+        run: |
+          git config --global --add safe.directory $PWD
+
+      # --------
+      # Lint the CIRCT C++ code.
+      # -------
+
+      # Choose the git commit to diff against for the purposes of linting.
+      # Since this workflow is triggered on both pushes and pull requests, we
+      # have to determine if the pull request target branch is set (which it
+      # will only be on the PR triggered flow). If it's not, then compare
+      # against the last commit.
+      - name: choose-commit
+        if: ${{ always() }}
+        env:
+          # Base ref is the target branch, in text form (not hash)
+          PR_BASE: ${{ github.base_ref }}
+        run: |
+          # Run clang-format
+          if [ -z "$PR_BASE" ]; then
+            DIFF_COMMIT_NAME="HEAD^"
+          else
+            DIFF_COMMIT_NAME="$PR_BASE"
+          fi
+          echo "DIFF_COMMIT_NAME=$DIFF_COMMIT_NAME" >> $GITHUB_ENV
+
+      # Since we did a shallow fetch for this repo, we must fetch the commit
+      # upon which we be diff'ing. The last step set the ref name in the
+      # $DIFF_COMMIT_NAME environment variable. When running the fetch, resolve
+      # it to the commit hash and pass that hash along to subsequent steps.
+      - name: git fetch base commit
+        continue-on-error: true
+        run: |
+          if echo "$DIFF_COMMIT_NAME" | grep -q HEAD; then
+            DIFF_COMMIT_SHA=$( git rev-parse $DIFF_COMMIT_NAME )
+          else
+            git fetch --recurse-submodules=no origin $DIFF_COMMIT_NAME
+            DIFF_COMMIT_SHA=$( git rev-parse origin/$DIFF_COMMIT_NAME )
+          fi
+          echo "DIFF_COMMIT=$DIFF_COMMIT_SHA" >> $GITHUB_ENV
+
+      # Run 'git clang-format', comparing against the target commit hash. If
+      # clang-format fixed anything, fail and output a patch.
+      - name: clang-format
+        if: ${{ always() }}
+        run: |
+          # Run clang-format
+          git clang-format $DIFF_COMMIT
+          git diff --ignore-submodules > clang-format.patch
+          if [ -s clang-format.patch ]; then
+            echo "Clang-format found formatting problems in the following " \
+              "files. See diff in the clang-format.patch artifact."
+            git diff --ignore-submodules --name-only
+            git checkout .
+            exit 1
+          fi
+          echo "Clang-format found no formatting problems"
+          exit 0
+
+      # Run yapf to check Python formatting.
+      - name: python-format
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          files=$(git diff --name-only $DIFF_COMMIT | grep -e '\.py$' || echo -n)
+          if [[ ! -z $files ]]; then
+            yapf --diff $files
+          fi
+
+      # Upload the format patches to an artifact (zip'd) associated
+      # with the workflow run. Only run this on a failure.
+      - name: Upload format patches
+        uses: actions/upload-artifact@v3
+        continue-on-error: true
+        if: ${{ failure() }}
+        with:
+          name: clang-format-patches
+          path: clang-*.patch
+
+      # Unfortunately, artifact uploads are always zips so display the diff as
+      # well to provide feedback at a glance.
+      - name: clang format patches display
+        if: ${{ failure() }}
+        continue-on-error: true
+        run: |
+          # Display patches
+          if [ ! -z clang-format.patch ]; then
+            echo "Clang-format patch"
+            echo "================"
+            cat clang-format.patch
+            echo "================"
+          fi
+
+  # --- end of sanity-check job.
+
+  # Configure CIRCT using LLVM's build system ("Unified" build). We do not actually build this configuration since it isn't as easy to cache LLVM artifacts in this mode.
+  configure-circt-unified:
+    name: Configure Unified Build
+    runs-on: ubuntu-20.04
+    steps:
+      # Clone the CIRCT repo and its submodules. Do shallow clone to save clone
+      # time.
+      - name: Get CIRCT
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+          submodules: "true"
+
+      - name: Configure Unified Build
+        run: |
+          mkdir configure_unified
+          cd configure_unified
+          cmake ../llvm/llvm \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_SHARED_LIBS=ON \
+            -DLLVM_ENABLE_PROJECTS=mlir \
+            -DLLVM_TARGETS_TO_BUILD=host \
+            -DLLVM_ENABLE_ASSERTIONS=ON \
+            -DLLVM_EXTERNAL_PROJECTS=circt \
+            -DLLVM_EXTERNAL_CIRCT_SOURCE_DIR=$PWD/..
+
+  # --- end of configure-circt-unified job.
+
+  # Build CIRCT and run its tests.
+  build-circt:
+    name: Build and Test
+    needs: sanity-check
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/circt/images/circt-ci-build:20230126201226
+    strategy:
+      matrix:
+        compiler:
+          # Our PR builds are trying to test the two corners of the build matrix:
+          # clang + release + noassert + static
+          # gcc   + debug   + assert   + shared
+          - cc: clang
+            cxx: clang++
+            mode: debug
+            assert: ON
+            shared: ON
+          - cc: gcc
+            cxx: g++
+            mode: release
+            assert: OFF
+            shared: OFF
+
+    steps:
+      - name: Configure Environment
+        run: echo "$GITHUB_WORKSPACE/llvm/install/bin" >> $GITHUB_PATH
+
+      # Clone the CIRCT repo and its submodules. Do shallow clone to save clone
+      # time.
+      - name: Get CIRCT
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+          submodules: "true"
+
+      - name: Set git safe
+        run: |
+          git config --global --add safe.directory $PWD
+
+      # --------
+      # Restore LLVM from cache and build if it's not in there.
+      # --------
+
+      # Extract the LLVM submodule hash for use in the cache key.
+      - name: Get LLVM Hash
+        id: get-llvm-hash
+        run: echo "hash=$(git rev-parse @:./llvm)" >> $GITHUB_OUTPUT
+
+      - name: Get workflow spec hash
+        id: get-workflow-hash
+        run: echo "hash=$(md5sum $GITHUB_WORKSPACE/.github/workflows/buildAndTest.yml | awk '{print $1}')" >> $GITHUB_OUTPUT
+
+      # Try to fetch LLVM from the cache.
+      - name: Cache LLVM
+        id: cache-llvm
+        uses: actions/cache@v3
+        with:
+          path: |
+            llvm/build/bin/llvm-lit
+            llvm/install
+          key: ${{ runner.os }}-llvm-${{ steps.get-llvm-hash.outputs.hash }}-${{ steps.get-workflow-hash.outputs.hash }}-${{ matrix.compiler.cc }} 
+
+      # Build LLVM if we didn't hit in the cache. Even though we build it in
+      # the previous job, there is a low chance that it'll have been evicted by
+      # the time we get here.
+      - name: Rebuild and Install LLVM
+        if: steps.cache-llvm.outputs.cache-hit != 'true'
+        run: utils/build-llvm.sh build install ${{ matrix.compiler.mode }} ${{ matrix.compiler.cc }} ${{ matrix.compiler.cxx }}
+
+      # --------
+      # Build and test CIRCT
+      # --------
+
+      - name: Build and Test CIRCT
+        run: |
+          mkdir build
+          cd build
+          cmake .. \
+            -GNinja \
+            -DBUILD_SHARED_LIBS=${{ matrix.compiler.shared }} \
+            -DCMAKE_BUILD_TYPE=${{ matrix.compiler.mode }} \
+            -DLLVM_ENABLE_ASSERTIONS=${{ matrix.compiler.assert }} \
+            -DMLIR_DIR=`pwd`/../llvm/install/lib/cmake/mlir \
+            -DLLVM_DIR=`pwd`/../llvm/install/lib/cmake/llvm \
+            -DLLVM_USE_LINKER=lld \
+            -DCMAKE_C_COMPILER=${{ matrix.compiler.cc }} \
+            -DCMAKE_CXX_COMPILER=${{ matrix.compiler.cxx }} \
+            -DLLVM_EXTERNAL_LIT=`pwd`/../llvm/build/bin/llvm-lit \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+            -DLLVM_LIT_ARGS="-v"
+          ninja check-circt check-circt-unit -j$(nproc)
+          ninja circt-doc
+
+      # --------
+      # Lint the CIRCT C++ code.
+      # -------
+
+      # Choose the git commit to diff against for the purposes of linting.
+      # Since this workflow is triggered on both pushes and pull requests, we
+      # have to determine if the pull request target branch is set (which it
+      # will only be on the PR triggered flow). If it's not, then compare
+      # against the last commit.
+      - name: choose-commit
+        if: ${{ always() }}
+        env:
+          # Base ref is the target branch, in text form (not hash)
+          PR_BASE: ${{ github.base_ref }}
+        run: |
+          # Run clang-format
+          if [ -z "$PR_BASE" ]; then
+            DIFF_COMMIT_NAME="HEAD^"
+          else
+            DIFF_COMMIT_NAME="$PR_BASE"
+          fi
+          echo "DIFF_COMMIT_NAME=$DIFF_COMMIT_NAME" >> $GITHUB_ENV
+
+      # Since we did a shallow fetch for this repo, we must fetch the commit
+      # upon which we be diff'ing. The last step set the ref name in the
+      # $DIFF_COMMIT_NAME environment variable. When running the fetch, resolve
+      # it to the commit hash and pass that hash along to subsequent steps.
+      - name: git fetch base commit
+        continue-on-error: true
+        run: |
+          if echo "$DIFF_COMMIT_NAME" | grep -q HEAD; then
+            DIFF_COMMIT_SHA=$( git rev-parse $DIFF_COMMIT_NAME )
+          else
+            git fetch --recurse-submodules=no origin $DIFF_COMMIT_NAME
+            DIFF_COMMIT_SHA=$( git rev-parse origin/$DIFF_COMMIT_NAME )
+          fi
+          echo "DIFF_COMMIT=$DIFF_COMMIT_SHA" >> $GITHUB_ENV
+
+      # Run clang-tidy against only the changes. The 'clang-tidy-diff' script
+      # does this if supplied with the diff.
+      - name: clang-tidy
+        if: ${{ always() }}
+        run: |
+          git diff -U0 $DIFF_COMMIT...HEAD | \
+            clang-tidy-diff -path build -p1 -fix -j$(nproc)
+          git clang-format -f $DIFF_COMMIT
+          git diff --ignore-submodules > clang-tidy.patch
+          if [ -s clang-tidy.patch ]; then
+            echo "Clang-tidy problems in the following files. " \
+              "See diff in the clang-tidy.patch artifact."
+            git diff --ignore-submodules --name-only
+            git checkout .
+            exit 1
+          fi
+          echo "Clang-tidy found no problems"
+          exit 0
+
+      # Upload the tidy patches to an artifact (zip'd) associated
+      # with the workflow run. Only run this on a failure.
+      - name: Upload tidy patches
+        uses: actions/upload-artifact@v3
+        continue-on-error: true
+        if: ${{ failure() }}
+        with:
+          name: clang-tidy-patches
+          path: clang-*.patch
+
+      # Unfortunately, artifact uploads are always zips so display the diff as
+      # well to provide feedback at a glance.
+      - name: clang tidy patches display
+        if: ${{ failure() }}
+        continue-on-error: true
+        run: |
+          if [ ! -z clang-tidy.patch ]; then
+            echo "Clang-tidy patch"
+            echo "================"
+            cat clang-tidy.patch
+            echo "================"
+          fi
+
+    # --- end of build-circt job.

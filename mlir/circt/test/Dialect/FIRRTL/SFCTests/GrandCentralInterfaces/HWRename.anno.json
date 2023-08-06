@@ -1,0 +1,30 @@
+[
+  {
+    "class": "sifive.enterprise.grandcentral.ViewAnnotation",
+    "name": "MyView",
+    "companion": "~Top|Companion",
+    "parent": "~Top|DUT",
+    "view": {
+      "class": "sifive.enterprise.grandcentral.AugmentedBundleType",
+      "defName": "MyInterface",
+      "elements": [
+        {
+          "name": "signed",
+          "tpe": {
+            "class": "sifive.enterprise.grandcentral.AugmentedGroundType",
+            "ref": {
+              "circuit": "Top",
+              "module": "DUT",
+              "path": [],
+              "ref": "signed",
+              "component": []
+            },
+            "tpe": {
+              "class": "sifive.enterprise.grandcentral.GrandCentralView$UnknownGroundType$"
+            }
+          }
+        }
+      ]
+    }
+  }
+]

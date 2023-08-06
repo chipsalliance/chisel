@@ -1,0 +1,104 @@
+name: Check Circel
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  check-scala-bindings:
+    name: Check Circel
+    runs-on: ubuntu-22.04
+    
+    strategy:
+      matrix:
+        scala-version: ["2.13"]
+        devcontainer-name: ["default"]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - name: Get cache key parts
+        id: get-submodule-hashes
+        run: |
+          echo "circt-hash=${{ hashFiles('mlir/circt/**' )}}" >> $GITHUB_OUTPUT
+          echo "llvm-hash=${{ hashFiles('mlir/llvm/**' )}}" >> $GITHUB_OUTPUT
+      - name: Restore ccache database
+        uses: actions/cache/restore@v3
+        with: 
+          path: ccache
+          key: circel-ccache-database-${{ steps.get-submodule-hashes.outputs.llvm-hash }}-${{ steps.get-submodule-hashes.outputs.circt-hash }}-${{ hashFiles('.devcontainer/**') }}-${{ hashFiles('mlir/circel/**') }}
+          restore-keys: |
+            circel-ccache-database-${{ steps.get-submodule-hashes.outputs.llvm-hash }}-${{ steps.get-submodule-hashes.outputs.circt-hash }}-${{ hashFiles('.devcontainer/**') }}-
+            circel-ccache-database-${{ steps.get-submodule-hashes.outputs.llvm-hash }}-${{ steps.get-submodule-hashes.outputs.circt-hash }}
+            circel-ccache-database-${{ steps.get-submodule-hashes.outputs.llvm-hash }}-
+            circel-ccache-database-
+      - name: Make devcontainer '${{ matrix.devcontainer-name }}' singular
+        run: .devcontainer/make-devcontainer-singular ${{ matrix.devcontainer-name }}
+      - name: Initialize devcontainer
+        uses: devcontainers/ci@v0.3
+        with:
+          imageName: ghcr.io/georgelyon/circel-${{ matrix.devcontainer-name }}-devcontainer
+          # We configure ccache to not evict anything during compilation, and we perform a cleanup after compilation completes
+          runCmd: |
+            date +%s > .workflow-start-seconds
+            export CCACHE_DIR=$PWD/ccache
+            ccache -M 1600GB
+            ccache -sv
+            ccache -z
+      - name: Configure CMake Project
+        uses: devcontainers/ci@v0.3
+        with:
+          runCmd: |
+            export CCACHE_DIR=$PWD/ccache
+            git config --global --add safe.directory $PWD
+            CMAKE_TOOLS_KITS_FILE=.devcontainer/cmake-tools-kits.json \
+              mlir/support/cmake-helper configure \
+                -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON
+      # We run the build, once to check the targets and once to log the errors without any progress logs cluttering the output (since it is a trivial incremental build). Please take care to make sure the following two steps stay in sync.
+      - name: Check targets
+        uses: devcontainers/ci@v0.3
+        with:
+          runCmd: |
+            export CCACHE_DIR=$PWD/ccache
+            git config --global --add safe.directory $PWD
+            mlir/support/cmake-helper build
+      - name: Log errors in a separate task
+        uses: devcontainers/ci@v0.3
+        with:
+          runCmd: |
+            export CCACHE_DIR=$PWD/ccache
+            git config --global --add safe.directory $PWD
+            mlir/support/cmake-helper build
+      # - name: Check Scala Bindings
+      #   uses: devcontainers/ci@v0.3
+      #   with:
+      #     runCmd: |
+      #       sbt "project / test"
+      - name: Clean up ccache
+        uses: devcontainers/ci@v0.3
+        with:
+          runCmd: |
+            export CCACHE_DIR=$PWD/ccache
+            ccache -sv
+            ccache -M 1GB
+            ccache --cleanup
+            ccache -sv
+      # Save the cache prior to pruning it
+      - name: Save ccache database
+        uses: actions/cache/save@v3
+        with: 
+          path: ccache
+          key: circel-ccache-database-${{ steps.get-submodule-hashes.outputs.llvm-hash }}-${{ steps.get-submodule-hashes.outputs.circt-hash }}-${{ hashFiles('.devcontainer/**') }}-${{ hashFiles('mlir/circel/**') }}
+      # If evicting everything that wasn't used this workflow does not reduce the cache past its maximum, it may benefit performance to increase the cache size.
+      - name: Log ccache estimated usage
+        uses: devcontainers/ci@v0.3
+        with:
+          runCmd: |
+            export CCACHE_DIR=$PWD/ccache
+            ccache --evict-older-than $(($(date +%s) - $(cat .workflow-start-seconds)))s
+            ccache -sv
