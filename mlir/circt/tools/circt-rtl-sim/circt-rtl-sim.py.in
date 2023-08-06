@@ -1,0 +1,335 @@
+#!@Python3_EXECUTABLE@
+
+# ===- circt-rtl-sim.py - CIRCT simulation driver -----------*- python -*-===//
+#
+# Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+# See https://llvm.org/LICENSE.txt for license information.
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+#
+# ===---------------------------------------------------------------------===//
+#
+# Script to drive CIRCT simulation tests.
+#
+# ===---------------------------------------------------------------------===//
+
+import argparse
+import os
+import subprocess
+import sys
+from typing import List
+
+ThisFileDir = os.path.dirname(__file__)
+DebugBuild = "@CMAKE_BUILD_TYPE@" == "Debug"
+
+
+class IEEEDriver:
+  """Common driver for event-based simulators."""
+
+  DefaultDriver = "driver.sv"
+
+  def __init__(self, path, args):
+    self.args = args
+
+    if args.no_default_driver:
+      self.top = args.top
+    else:
+      self.top = "driver"
+
+
+class Questa(IEEEDriver):
+  """Run and compile funcs for Questasim."""
+
+  def __init__(self, path, args):
+    super().__init__(path, args)
+
+    # Find Questa
+    if os.path.exists(path):
+      if os.path.isfile(path):
+        self.path = os.path.dirname(path)
+      else:
+        self.path = path
+    elif "@QUESTA_PATH@" != "":
+      self.path = "@QUESTA_PATH@"
+      if os.path.isfile(self.path):
+        self.path = os.path.dirname(self.path)
+    elif "QUESTA_PATH" in os.environ:
+      self.path = os.environ["QUESTA_PATH"]
+
+  def compile(self, sources, args):
+    self.dpiLibs = filter(lambda fn: fn.endswith(".so") or fn.endswith(".dll"),
+                          sources)
+    sources = filter(lambda fn: not (fn.endswith(".so") or fn.endswith(".dll")),
+                     sources)
+    vlog = os.path.join(self.path, "vlog")
+    args = [vlog, "-sv"] + args.split() + list(sources)
+    if self.args.gui:
+      args.append('+acc')
+    return subprocess.run(args)
+
+  def run(self, cycles, simargs):
+    vsim = os.path.join(self.path, "vsim")
+    # Note: vsim exit codes say nothing about the test run's pass/fail even
+    # if $fatal is encountered in the simulation.
+    if self.args.gui:
+      cmd = [vsim, self.top, "-gui", "-voptargs=\"+acc\""]
+    else:
+      cmd = [vsim, self.top, "-batch", "-do", "run -all"]
+    if cycles >= 0:
+      cmd.append(f"+cycles={cycles}")
+    for lib in self.dpiLibs:
+      svLib = os.path.splitext(lib)[0]
+      cmd.append("-sv_lib")
+      cmd.append(svLib)
+    if self.dpiLibs:
+      cmd.append("-cpppath")
+      cmd.append("@CMAKE_CXX_COMPILER@")
+    return subprocess.run(cmd + simargs.split())
+
+
+class Vivado(IEEEDriver):
+  """Run and compile funcs for Vivado."""
+
+  def __init__(self, path, args):
+    super().__init__(path, args)
+    self.path = path
+
+  def compile(self, sources, args):
+    sources = filter(lambda fn: not (fn.endswith(".so") or fn.endswith(".dll")),
+                     sources)
+    vlog = os.path.join(self.path, "xvlog")
+    work = self.libname + "=" + self.libname + ".dir"
+    args = [vlog, "-sv", "-work", work] + args.split() + list(sources)
+    rc = subprocess.run(args)
+    if rc.returncode != 0:
+      return rc
+
+    elab = os.path.join(self.path, "xelab")
+    top = self.libname + "." + self.top
+    args = [elab, top, "-lib", work, "-debug", "typical"]
+    return subprocess.run(args)
+
+  def run(self, cycles, simargs):
+    xsim = os.path.join(self.path, "xsim")
+
+    top = self.libname + "." + self.top
+    args = [xsim, top]
+
+    script = "script.tcl"
+    with open(script, "w") as f:
+      commands = "run -all\n"
+      if not self.args.gui:
+        commands += "quit\n"
+      f.write(commands)
+    args += ["-t", script]
+
+    if self.args.cycles >= 0:
+      args += ["-testplusarg", f"cycles={cycles}"]
+
+    if self.args.gui:
+      args.append("-gui")
+
+    return subprocess.run(args + simargs.split())
+
+  @property
+  def libname(self):
+    name = self.args.sources[0].split("/")[0].split('.')[0]
+    if not name:
+      name = "work"
+    return name
+
+
+class Iverilog(IEEEDriver):
+  """Run and compile funcs for Iverilog."""
+
+  def __init__(self, path, args):
+    super().__init__(path, args)
+
+    # Find the compiler & simulator.
+    self.iverilog = args.sim
+    self.vvp = os.path.join(os.path.dirname(self.iverilog), "vvp")
+
+  def compile(self, sources, args):
+    return subprocess.run(
+        [self.iverilog, "-s", self.top, "-g2005-sv", "-o", "obj.vvp"] +
+        args.split() + sources)
+
+  def run(self, cycles, args):
+    print(self.top)
+
+    cmd = [self.vvp, "obj.vvp"]
+
+    if cycles >= 0:
+      cmd.append(f"+cycles={cycles}")
+
+    cmd += args.split()
+    print(f"Running: {cmd}")
+    sys.stdout.flush()
+
+    return subprocess.run(cmd)
+
+
+class Verilator:
+  """Run and compile funcs for Verilator."""
+
+  DefaultDriver = "driver.cpp"
+
+  def __init__(self, args):
+    # Find Verilator.
+    if os.path.exists(args.sim):
+      self.verilator = args.sim
+    elif "@VERILATOR_PATH@" != "":
+      self.verilator = "@VERILATOR_PATH@"
+    elif "VERILATOR_PATH" in os.environ:
+      self.verilator = os.environ["VERILATOR_PATH"]
+
+    self.top = args.top
+
+  def compile(self, sources, args):
+    dpiLibs = filter(lambda fn: fn.endswith(".so") or fn.endswith(".dll"),
+                     sources)
+    self.ldPaths = ":".join([os.path.dirname(x) for x in dpiLibs])
+    debugFlags = []
+    cflags = []
+    if DebugBuild:
+      debugFlags = ["--trace", "--trace-params", "--trace-structs"]
+      cflags.append("-DTRACE")
+    cflagsIfNeeded = []
+    if len(cflags) > 0:
+      cflagsIfNeeded = ["-CFLAGS", " ".join(cflags)]
+    return call_logged([
+        self.verilator, "--cc", "--top-module", self.top, "-sv", "--build",
+        "--exe", "--assert"
+    ] + cflagsIfNeeded + debugFlags + args.split() + sources)
+
+  def run(self, cycles, args):
+    exe = os.path.join("obj_dir", "V" + self.top)
+    cmd = [exe]
+    if cycles >= 0:
+      cmd.append("--cycles")
+      cmd.append(str(cycles))
+    cmd += args.split()
+    print(f"Running: {cmd}")
+    sys.stdout.flush()
+    os.environ["LD_LIBRARY_PATH"] = self.ldPaths
+    return subprocess.run(cmd)
+
+
+def call_logged(cmd: List[str]):
+  cmd_str = " ".join(cmd)
+  print(f"Running: {cmd_str}")
+  return subprocess.run(cmd)
+
+
+def __main__(args):
+  argparser = argparse.ArgumentParser(
+      description="RTL simulation runner for CIRCT")
+
+  argparser.add_argument("--sim",
+                         type=str,
+                         default="verilator",
+                         help="Name of the RTL simulator (if in PATH) to " +
+                         "use or path to an executable.")
+  argparser.add_argument("--no-compile",
+                         dest="no_compile",
+                         action='store_true',
+                         help="Don't compile the simulation.")
+  argparser.add_argument("--no-run",
+                         dest="no_run",
+                         action='store_true',
+                         help="Don't run the simulation.")
+  argparser.add_argument("--gui",
+                         dest="gui",
+                         action='store_true',
+                         help="Bring up the GUI to run.")
+  argparser.add_argument("--top",
+                         type=str,
+                         default="top",
+                         help="Name of top module to run.")
+  argparser.add_argument("--objdir",
+                         type=str,
+                         default="",
+                         help="Select a directoy in which to run this test." +
+                         " Must be different from other tests in the same" +
+                         " directory. Defaults to 'sources[0].o'.")
+  argparser.add_argument("--no-objdir",
+                         dest="no_objdir",
+                         action='store_true',
+                         help="Don't create and run in subdir.")
+  argparser.add_argument("--simargs",
+                         type=str,
+                         default="",
+                         help="Simulation arguments string.")
+  argparser.add_argument("--compileargs",
+                         type=str,
+                         default="",
+                         help="Compilation arguments string.")
+  argparser.add_argument("--no-default-driver",
+                         dest="no_default_driver",
+                         action='store_true',
+                         help="Do not use the standard top module/drivers.")
+  argparser.add_argument("--cycles",
+                         type=int,
+                         default=-1,
+                         help="Number of cycles to run the simulator. " +
+                         " -1 means don't stop.")
+
+  argparser.add_argument("sources",
+                         nargs="+",
+                         help="The list of source files to be included.")
+
+  if len(args) <= 1:
+    argparser.print_help()
+    return
+  args = argparser.parse_args(args[1:])
+
+  sources = [os.path.abspath(s) for s in args.sources]
+  args.sources = sources
+
+  # Create and cd into a test directory before running
+  if not args.no_objdir:
+    if args.objdir != "":
+      objDir = args.objdir
+    else:
+      objDir = os.path.basename(args.sources[0])
+    testDir = f"{objDir}.d"
+    if not os.path.exists(testDir):
+      os.mkdir(testDir)
+    os.chdir(testDir)
+
+  # Break up simulator string
+  simParts = os.path.split(args.sim)
+  simName = simParts[1]
+
+  if simName in ["questa", "vsim", "vlog", "vopt"]:
+    sim = Questa(simParts[0], args)
+  elif simName == "xsim":
+    sim = Vivado(simParts[0], args)
+  elif simName == "iverilog":
+    sim = Iverilog(simParts[0], args)
+  elif simName == "verilator":
+    sim = Verilator(args)
+  else:
+    print(f"Could not determine simulator from '{args.sim}'", file=sys.stderr)
+    return 1
+
+  if not args.no_default_driver:
+    args.sources.append(os.path.join(ThisFileDir, sim.DefaultDriver))
+
+  if not args.no_compile:
+    rc = sim.compile(args.sources, args.compileargs)
+    if rc.returncode != 0:
+      return rc
+  if not args.no_run:
+    try:
+      rc = sim.run(args.cycles, args.simargs)
+    except KeyboardInterrupt:
+      # If we're instructed to run forever and it is expected for th sim to be
+      # killed via SIGINT.
+      if args.cycles != -1:
+        raise
+    return rc.returncode
+  return 0
+
+
+if __name__ == '__main__':
+  sys.exit(__main__(sys.argv))

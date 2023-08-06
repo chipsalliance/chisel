@@ -1,0 +1,37 @@
+# This file allows users to call find_package(CIRCT) and pick up our targets.
+
+@CIRCT_CONFIG_CODE@
+
+find_package(MLIR REQUIRED CONFIG
+             HINTS "@CIRCT_CONFIG_MLIR_CMAKE_DIR@")
+
+set(CIRCT_EXPORTED_TARGETS "@CIRCT_EXPORTS@")
+set(CIRCT_CMAKE_DIR "@CIRCT_CONFIG_CMAKE_DIR@")
+set(CIRCT_BINARY_DIR "@CIRCT_CONFIG_BINARY_DIR@")
+set(CIRCT_INCLUDE_DIRS "@CIRCT_CONFIG_INCLUDE_DIRS@")
+set(CIRCT_LIBRARY_DIRS "@CIRCT_CONFIG_LIBRARY_DIRS@")
+set(CIRCT_TOOLS_DIR "@CIRCT_CONFIG_TOOLS_DIR@")
+
+set_property(GLOBAL PROPERTY CIRCT_ALL_LIBS "@CIRCT_ALL_LIBS@")
+set_property(GLOBAL PROPERTY CIRCT_DIALECT_LIBS "@CIRCT_DIALECT_LIBS@")
+set_property(GLOBAL PROPERTY CIRCT_CONVERSION_LIBS "@CIRCT_CONVERSION_LIBS@")
+set_property(GLOBAL PROPERTY CIRCT_TRANSLATION_LIBS "@CIRCT_TRANSLATION_LIBS@")
+
+# Provide all our library targets to users.
+@CIRCT_CONFIG_INCLUDE_EXPORTS@
+
+# By creating these targets here, subprojects that depend on CIRCT's
+# tablegen-generated headers can always depend on these targets whether building
+# in-tree with CIRCT or not.
+if(NOT TARGET circt-tablegen-targets)
+  add_custom_target(circt-tablegen-targets)
+endif()
+if(NOT TARGET circt-headers)
+  add_custom_target(circt-headers)
+endif()
+if(NOT TARGET circt-generic-headers)
+  add_custom_target(circt-generic-headers)
+endif()
+if(NOT TARGET circt-doc)
+  add_custom_target(circt-doc)
+endif()

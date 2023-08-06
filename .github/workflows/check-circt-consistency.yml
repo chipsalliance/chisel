@@ -1,0 +1,23 @@
+name: Check CIRCT consistency
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    paths:
+      - mlir/llvm/**
+      - mlir/circt/**
+      - mlir/support/**
+    branches:
+      - main
+
+jobs:
+  formatting-cpp:
+    name: Check CIRCT consistency
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Check CIRCT consistency
+        run: |
+          ./mlir/support/circt-helper check-metadata-consistency

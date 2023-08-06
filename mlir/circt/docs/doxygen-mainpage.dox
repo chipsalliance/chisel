@@ -1,0 +1,16 @@
+/// @mainpage CIRCT
+///
+/// @section main_intro Introduction
+/// Welcome to CIRCT.
+///
+/// This documentation describes both the private and public interface of CIRCT.
+/// There are no instructions here on how to use CIRCT, only the APIs
+/// that make up the software. For usage instructions, please see
+/// the help command.
+///
+/// @section main_caveat Caveat
+/// This documentation is generated directly from the source code with doxygen.
+/// Since CIRCT is constantly under active development, what you're about to
+/// read is out of date! However, it may still be useful since certain portions
+/// of CIRCT are very stable.
+

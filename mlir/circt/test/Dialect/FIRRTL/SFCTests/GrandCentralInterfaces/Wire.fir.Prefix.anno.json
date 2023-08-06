@@ -1,0 +1,18 @@
+[
+  {
+    "class": "sifive.enterprise.firrtl.NestedPrefixModulesAnnotation",
+    "target": "~Top|Top",
+    "prefix": "FOO_",
+    "inclusive": true
+  },
+  {
+    "class": "sifive.enterprise.firrtl.NestedPrefixModulesAnnotation",
+    "target": "~Top|DUT",
+    "prefix": "BAR_",
+    "inclusive": true
+  },
+  {
+    "class": "sifive.enterprise.grandcentral.PrefixInterfacesAnnotation",
+    "prefix": "BAZ_"
+  }
+]

@@ -1,0 +1,248 @@
+#!/usr/bin/env bash
+
+set -e
+
+SUPPORT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+REPO_DIR="$(git -C "$SUPPORT_DIR" rev-parse --show-toplevel)"
+
+HELP_TEXT=$(cat <<EOF | fold -s -w80
+NAME
+  $(basename $0) - a lightweight tool for managing the CIRCT and LLVM sources included directly in this repository.
+
+SYNOPSYS
+  circt-helper update-circt <target-commit-ish> [--overwrite-local-changes]
+  circt-helper check-metadata-consistency
+
+DESCRIPTION
+  circt-helper is effectively a lightweight version of \`git submodule\`, specifically for the CIRCT project. \`git submodule\` is inconvenient for a number of reasons, and specifically including the LLVM project as a submodule is problematic because it is so large (~800MB in .git and a ~1.7GB checkout). Using circt-helper to manage the submodule instead brings this down to ~60MB in .git and ~200MB on disk. This significantly improves checkout time and performance of common git operations such as \`git status\`, greatly benefitting the developer experience and CI performance. It is worth mentioning that using \`git subtree\` would be worse, with all of the downsides mentioned except perhaps increasing the size of the checkout (though in a fragile way) and it would mix all of LLVMs history in with this repository.
+  Having the sources in-tree is also beneficial. This avoids developers needing to manage submodules independently via \`git submodule update --init --recursive\`, which is a common source of confusion and error. Also, this allows saving modifications to CIRCT and LLVM without requiring separate commits in the submodules (though this functionality should be used sparingly, and we should aggressively upstream any changes we need).
+  circt-helper does this by updating the managed sources (stored in the main repo under "mlir/circt" and "mlir/llvm") and metadata (stored in "mlir/support/metadata"). The managed sources are isolated from the rest of the repository to create an "input" snapshot. This script then checks out the CIRCT repo to the commit specified by "mlir/support/metadata/circt.sha" (and updates its LLVM submodule to the appropriate commit), and creates a "source" snapshot of the state of the repository. It then does the same for the target commit-ish, creating a "target" snapshot (check-metadata-consistency uses the source commit as the target to validate the state of the repository is consistent). Finally, an "output" snapshot is created by copying the "target" snapshot, and applying the diff between the "source" and "input" snapshots. This "output" snapshot is then synced back into the main repository, the CIRCT sha written to "mlir/support/metadata/circt.sha", and the LLVM sha written to "mlir/support/metadata/llvm.sha". Diffs between the "target" and "output" snapshots are stored in "mlir/support/metadata/circt.diff" and "mlir/support/metadata/llvm.diff" for reference. These diffs can be used to enforce or track user changes to the managed sources.
+  There are downsides to this approach, primarly that we have built our own bespoke mechanism which is not battle-tested by the wider community and may be unfamiliar to new developers. However, we believe that for this project the pros outweigh the cons. This script attempts to be as simple as possible (simplicity does not imply brevity, we want to avoid cleverness and check our assumptions frequently). We can also always fall back to submodules, with minimal impact developer experience.
+
+TROUBLESHOOTING
+  If you encounter issues with this script, you can try deleting "mlir/support/.checkout", and re-running the script. If issues still persist you can try manually saving any changes to managed source (for example, by making a copy of the "diff" files in "mlir/support/metadata), and running \`circt-helper update-circt <current sha> --overwrite-local-changes\`, and then re-applying your patch.
+EOF
+)
+
+METADATA_DIR="$SUPPORT_DIR/metadata"
+SOURCE_SHA=$(cat "$METADATA_DIR/circt.sha")
+
+# Parse Arguments
+TARGET_COMMITISH=""
+OVERWRITE_LOCAL_CHANGES="OFF"
+CHECK_METADATA_CONSISTENCY="OFF"
+case "$1" in 
+  "check-metadata-consistency") 
+    CHECK_METADATA_CONSISTENCY="ON"
+    TARGET_COMMITISH=$SOURCE_SHA
+    ;;
+  "update-circt") 
+    shift
+    TARGET_COMMITISH=$1
+    # Target commit-ish will be checked when creating snapshots
+    shift
+    case "$1" in 
+      "--overwrite-local-changes") 
+        OVERWRITE_LOCAL_CHANGES="ON"
+        shift
+        ;;
+    esac
+    if [ ! -z "$1" ]; then
+      echo "Unexpected argument: $1"
+      echo "$HELP_TEXT"
+      exit 1
+    fi
+    ;;
+  *)
+    echo "$HELP_TEXT"
+    exit 1
+    ;;
+esac
+
+# NOTE: Unfortunately, the LLVM testing infrastructure is python-based and creates a number of __pycache__ directories. These would normally be gitignored, but because we are conservative and don't allow any untracked files in the managed sources. To keep things simple, we delete these directories when using circt-helper.
+find "$REPO_DIR/mlir/llvm/llvm/utils/lit" -name "__pycache__" | xargs rm -rf 
+
+# Check for unexpected repository states
+assert_repo_is_clean() {
+  local REPO_ROOT="$1"
+  shift
+  git -C "$REPO_ROOT" update-index -q --refresh
+  TRACKED_CHANGES=$(git -C "$REPO_ROOT" diff-index HEAD --compact-summary -- $@)
+  if [ -n "$TRACKED_CHANGES" ]; then
+    echo "Unexpected changes detected in $REPO_ROOT:"
+    echo "$TRACKED_CHANGES"
+    echo "Aborting."
+    exit 1
+  fi
+  UNTRACKED_FILES=$(git -C "$REPO_ROOT" ls-files --others -- $@)
+  if [ -n "$UNTRACKED_FILES" ]; then 
+    echo "Untracked files detected in $REPO_ROOT:"
+    echo "$UNTRACKED_FILES"
+    echo "Aborting."
+    exit 1
+  fi
+}
+
+# Checkout or update (fetch) the CIRCT repo
+CHECKOUT_DIR="$SUPPORT_DIR/.checkout"
+if [ ! -d "$CHECKOUT_DIR" ]; then 
+  echo "▸ Cloning CIRCT repo to ${CHECKOUT_DIR}…"
+  git clone --recurse-submodules https://github.com/llvm/circt.git "$CHECKOUT_DIR"
+  git -C "$CHECKOUT_DIR" config --local advice.detachedHead false
+else 
+  echo "▸ Updating CIRCT repo in ${CHECKOUT_DIR}…"
+  assert_repo_is_clean "$CHECKOUT_DIR" .
+  git -C "$CHECKOUT_DIR" fetch --all
+fi
+
+# Clear the snapshots directory in preparation for creating new snapshots
+SNAPSHOTS_DIR="$SUPPORT_DIR/.snapshots"
+echo "▸ Deleting existing snapshots in ${SNAPSHOTS_DIR}…"
+rm -rf "$SNAPSHOTS_DIR"
+mkdir "$SNAPSHOTS_DIR"
+
+# This function defines which parts of the CIRCT and LLVM repos are synced as managed sources.
+create_remote_snapshot () {
+  local SNAPSHOT_DIR="$1"
+  local SNAPSHOT_COMMITISH="$2"
+  # Empty the snapshot directory
+  rm -rf "$SNAPSHOT_DIR"
+  mkdir "$SNAPSHOT_DIR"
+  # Update the checkout to the snapshot commit-ish
+  git -C "$CHECKOUT_DIR" checkout "$SNAPSHOT_COMMITISH"
+  git -C "$CHECKOUT_DIR" submodule update --init --recursive
+  # Save the SHAs for reference 
+  git -C "$CHECKOUT_DIR" rev-parse HEAD > "$SNAPSHOT_DIR-circt.sha"
+  git -C "$CHECKOUT_DIR/llvm" rev-parse HEAD > "$SNAPSHOT_DIR-llvm.sha"
+  # Sync everything other than LLVM from CIRCT because it is small
+  rsync -avqt \
+    --exclude={llvm,.git} \
+    "$CHECKOUT_DIR/" "$SNAPSHOT_DIR/circt"
+  # Only sync LLVM, MLIR and supporting files from LLVM. We also exclude some of the larger LLVM subfolders that we don't need.
+  rsync -avqt \
+    --exclude='llvm/'{test,lib/Target}'/**' \
+    --include={llvm,mlir,cmake,third-party}{,'/**'} \
+    --exclude='*' \
+    "$CHECKOUT_DIR/llvm/" "$SNAPSHOT_DIR/llvm"
+  # Not sure we actually need these but good to have (and omitting them from the CMake flow would be nontrivial).
+  rsync -avqt \
+    --prune-empty-dirs \
+    --include={AArch64,X86,RISCV}'/**' \
+    --exclude='*/**' \
+    "$CHECKOUT_DIR/llvm/llvm/lib/Target/" "$SNAPSHOT_DIR/llvm/llvm/lib/Target"
+  touch "$SNAPSHOT_DIR/llvm/llvm/test/CMakeLists.txt"
+}
+
+# Snapshots we need to create (see helptext for more info)
+INPUT_SNAPSHOT_DIR="$SNAPSHOTS_DIR/input"
+SOURCE_SNAPSHOT_DIR="$SNAPSHOTS_DIR/source"
+TARGET_SNAPSHOT_DIR="$SNAPSHOTS_DIR/target"
+OUTPUT_SNAPSHOT_DIR="$SNAPSHOTS_DIR/output"
+
+# MLIR_DIR is the directory containing the managed sources (in the "llvm" and "circt" subdirectories)
+MLIR_DIR="$REPO_DIR/mlir"
+
+# First, we create the target snapshot.
+echo "▸ Creating target snapshot…"
+create_remote_snapshot "$TARGET_SNAPSHOT_DIR" "$TARGET_COMMITISH"  
+
+case "$OVERWRITE_LOCAL_CHANGES" in 
+  "ON")
+    echo "▸ Ignoring local changes…"
+    # If we are ignoring local changes, the "input" and "source" snapshots are just copies of the "target" snapshot.
+    cp -pR "$TARGET_SNAPSHOT_DIR" "$INPUT_SNAPSHOT_DIR"
+    cp -pR "$TARGET_SNAPSHOT_DIR" "$SOURCE_SNAPSHOT_DIR"
+    ;;
+  "OFF")
+    echo "▸ Ensuring no unexpected changes in managed sources…"
+    assert_repo_is_clean "$REPO_DIR" mlir/{circt,llvm}
+    echo "▸ Creating input snapshot…"
+    mkdir "$INPUT_SNAPSHOT_DIR"
+    cp -pR "$MLIR_DIR/circt" "$INPUT_SNAPSHOT_DIR/circt"
+    cp -pR "$MLIR_DIR/llvm" "$INPUT_SNAPSHOT_DIR/llvm"
+    echo "▸ Creating source snapshot…"
+    create_remote_snapshot "$SOURCE_SNAPSHOT_DIR" "$SOURCE_SHA"
+    ;;
+  *)
+    echo "Unexpected value for OVERWRITE_LOCAL_CHANGES: $OVERWRITE_LOCAL_CHANGES"
+    exit 1
+    ;;
+esac
+
+# The standard `diff` tool doesn't have the exact semantics we need, so instead we provide a wrapper called `diff_helper` which modifies the behavior in the following ways:
+# - If a diff exists, `diff_helper` returns 0 whereas the standard `diff` tool would return 1 (which would cause a failure due to `set -e`)
+# - The standard diff tools uses the arguments to label the files in the diff, so `diff_helper` takes an additional argument of which directory to operate in, so it can pass relative paths to `diff`
+# - The standard diff tool includes file timestamps in the diff, which we don't want because they change every time `circt-helper` is run. `diff_helper` strips these out
+diff_helper() {
+  do_diff() {
+    pushd "$1" > /dev/null
+    set +e
+    # It is a limitation of `diff` that files only present in one directory either just show up as a log, or (because of `-N`) are treated as existing but empty in the other directory. This means that an empty file present in only one directory will _not_ register as a diff. We do not currently work around this.
+    diff -ruN "$2" "$3"
+    if [ $? -gt 1 ]; then
+      echo "\`diff $1 $2\` failed, aborting."
+      exit 1
+    fi
+    set -e
+    popd > /dev/null
+  }
+  # Trim modification timestamps
+  local YEAR_MONTH_DAY="[0-9]{4}-[0-9]{2}-[0-9]{2}"
+  local HOUR_MINUTE_SECOND="[0-9]{2}:[0-9]{2}:[0-9]{2}"
+  local SUBSECONDS="\.[0-9]+"
+  local TIMEZONE_OFFSET="\+[0-9]{4}"
+  local TIMESTAMP="$YEAR_MONTH_DAY $HOUR_MINUTE_SECOND($SUBSECONDS( $TIMEZONE_OFFSET){0,1}){0,1}"
+  do_diff "$@" | sed -E "s@^((-{3} target|\+{3} output).*[^[:space:]])[[:space:]]*$TIMESTAMP\$@\1@"
+}
+
+# At this point, the "input", "source" and "target" snapshots have been created. All that remains is to create the "output" snapshot. To do this, we copy the "target" snapshot, and apply the diff from the "input" to the "source" snapshot.
+echo "▸ Creating output snapshot…"
+
+# Use target snapshot as the basis for the output snapshot
+cp -pR "$TARGET_SNAPSHOT_DIR" "$OUTPUT_SNAPSHOT_DIR"
+
+# Patch target snapshot using the diff from input to source (and save the diff for reference). `-Vnone` and `--no-backup-if-mismatch` are used to avoid creating backup files which would pollute the output snapshot.
+diff_helper "$SNAPSHOTS_DIR" "source" "input" | \
+  tee "$SNAPSHOTS_DIR/input-to-source.diff" | \
+  patch -Vnone --no-backup-if-mismatch \
+    -p1 -d "$OUTPUT_SNAPSHOT_DIR"
+
+# At this point, the "output" snapshot should represent the managed sources we want in the repo. The last thing to do is to sync the state back into the repo and update the metadata.
+echo "▸ Writing output snapshot back to repo…"
+
+# Sync the output snapshot back into the repo
+rsync -avqt --delete{,-excluded} \
+  "$OUTPUT_SNAPSHOT_DIR/llvm/" "$MLIR_DIR/llvm"
+rsync -avqt --delete{,-excluded} \
+  "$OUTPUT_SNAPSHOT_DIR/circt/" "$MLIR_DIR/circt"
+
+# llvm and circt inherit the gitignore settings from the repo root, so we force-add all the sources in the output snapshot to ensure they make it in the index.
+find "$OUTPUT_SNAPSHOT_DIR" -type f | sed "s@^$OUTPUT_SNAPSHOT_DIR/@$MLIR_DIR/@" | xargs git add -f
+
+# Capture the diff from output to target, since the line numbers from the source diff might have been offset in the target snapshot. Also, we split the diff into two for easier comprehension.
+diff_helper "$SNAPSHOTS_DIR" {target,output}/llvm > "$METADATA_DIR/llvm.diff"
+diff_helper "$SNAPSHOTS_DIR" {target,output}/circt > "$METADATA_DIR/circt.diff"
+
+# Finally, save the current CIRCT and LLVM SHAs to the metadata directory. Note that the LLVM SHA is strictly informative and has no effect on the managed sources.
+cat "$TARGET_SNAPSHOT_DIR-llvm.sha" > "$METADATA_DIR/llvm.sha"
+cat "$TARGET_SNAPSHOT_DIR-circt.sha" > "$METADATA_DIR/circt.sha"
+
+case "$CHECK_METADATA_CONSISTENCY" in
+  "ON")
+    echo "▸ Checking metadata consistency…"
+    # If we are running check-metadata-consistency, then the target SHA was set to the source SHA and neither the managed sources nor the metadata should have changed.
+    if ! git -C "$REPO_DIR" diff --exit-code -- "$MLIR_DIR/"{llvm,circt,support/metadata}; then 
+      echo "▸ Found inconsistent metadata."
+      exit 1
+    else
+      echo "▸ Metadata is consistent."
+    fi
+    ;;
+  "OFF")
+    echo "▸ Done! ◂"
+    ;;
+  *)
+    echo "Unexpected value for CHECK_METADATA_CONSISTENCY: $CHECK_METADATA_CONSISTENCY"
+    exit 1
+    ;;
+esac

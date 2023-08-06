@@ -1,0 +1,19 @@
+#!/bin/bash
+
+PROJECT_ROOT=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )/.." &> /dev/null && pwd )
+
+DEVCONTAINER_NAME=$1
+if [ -z "$DEVCONTAINER_NAME" ]; then
+  echo <<- EOF
+		Usage: $0 <devcontainer-name>
+		
+	  The devcontainer/ci GitHub action does not support named devcontainers (i.e. ones located in subfolders of .devcontainer), so this script makes the selected devcontainer the singular devcontainer in the repo.
+		EOF
+  exit 1
+fi
+
+mv .devcontainer .actual-devcontainer
+cp -R .actual-devcontainer/$DEVCONTAINER_NAME .devcontainer
+
+# Copy the devcontainer back to its original location so bind mounts (like .vscode) resolve properly
+cp -R .actual-devcontainer/$DEVCONTAINER_NAME .devcontainer/$DEVCONTAINER_NAME

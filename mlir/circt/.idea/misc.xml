@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CMakeWorkspace" PROJECT_DIR="$PROJECT_DIR$/llvm/llvm">
+    <contentRoot DIR="$PROJECT_DIR$" />
+  </component>
+  <component name="CidrRootsConfiguration">
+    <sourceRoots>
+      <file path="$PROJECT_DIR$/build/include" />
+      <file path="$PROJECT_DIR$/build/tools/circt/include" />
+      <file path="$PROJECT_DIR$/build/tools/mlir/include" />
+    </sourceRoots>
+  </component>
+</project>

@@ -1,0 +1,82 @@
+name: Track LLVM Changes
+
+on:
+  schedule:
+    # 10:00 AM UTC is 3AM Pacific Time
+    - cron: '0 10 * * *'
+  # Run this workflow on pull requests which change this workflow
+  pull_request:
+    paths:
+      - .github/workflows/trackLLVMChanges.yml
+  workflow_dispatch:
+
+jobs:
+  track-llvm-changes:
+    name: Track LLVM Changes
+    runs-on: ubuntu-20.04
+    steps:
+      # Clone the CIRCT repo and its submodules. Do shallow clone to save clone
+      # time.
+      - name: Get CIRCT
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+          submodules: "true"
+
+      - name: Configure Project
+        run: |
+          mkdir build
+          cd build
+          cmake ../llvm/llvm \
+            -DLLVM_USE_LINKER=lld \
+            -DCMAKE_C_COMPILER=clang \
+            -DCMAKE_CXX_COMPILER=clang++ \
+            -DCMAKE_RULE_MESSAGES=OFF \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DBUILD_SHARED_LIBS=ON \
+            -DLLVM_ENABLE_PROJECTS=mlir \
+            -DLLVM_TARGETS_TO_BUILD=host \
+            -DLLVM_BUILD_EXAMPLES=OFF \
+            -DLLVM_INSTALL_UTILS=OFF \
+            -DLLVM_ENABLE_OCAMLDOC=OFF \
+            -DLLVM_ENABLE_BINDINGS=OFF \
+            -DLLVM_ENABLE_ASSERTIONS=ON \
+            -DLLVM_EXTERNAL_PROJECTS=circt \
+            -DLLVM_EXTERNAL_CIRCT_SOURCE_DIR=$PWD/.. \
+            -DLLVM_LIT_ARGS="-v"
+
+      - name: Build current LLVM commit
+        id: build-current-llvm-commit
+        run: |
+          cd llvm
+          echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+          cmake --build ../build --config Debug --target check-circt --target check-circt-unit -- -j$(nproc)
+
+      - name: Build latest LLVM commit
+        id: build-latest-llvm-commit
+        continue-on-error: true
+        run: |
+          cd llvm
+          git fetch origin main
+          git checkout --detach origin/main
+          echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+          cmake --build ../build --config Debug --target check-circt --target check-circt-unit -- -j$(nproc)
+
+      - name: Bisect commits
+        if: steps.build-latest-llvm-commit.outcome != 'success'
+        run: |
+          cd llvm
+          git bisect start ${{ steps.build-latest-llvm-commit.outputs.sha }} ${{ steps.build-current-llvm-commit.outputs.sha }} -- mlir llvm
+          git bisect run cmake --build ../build --config Debug --target check-circt --target check-circt-unit -- -j$(nproc)
+
+      # Summarize Results (re-run tests to make the log easier to parse)
+      - name: Summarize Results
+        if: steps.build-latest-llvm-commit.outcome != 'success'
+        run: |
+          cd llvm
+          git bisect log
+          FIRST_BAD_COMMIT=$(git bisect log | sed -n 's/# first bad commit: \[\([0-9a-f]*\)\].*/\1/p')
+          git checkout $FIRST_BAD_COMMIT
+          cmake --build ../build --config Debug --target check-circt --target check-circt-unit -- -j$(nproc)
+
+  # --- end of track-llvm-changes job.

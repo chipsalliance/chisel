@@ -1,0 +1,93 @@
+name: Short integration tests
+
+# Run the integration tests on one configuration (of the nightly matrix) on each
+# push to main. Should catch 95% of integration test breakages. Useful for
+# identifying the particular offending commit and emailing the commit author.
+
+# Note: currently the integration tests don't take that long to run (<1 min).
+# If, in the future, they take significantly longer (>~1 hour), we should
+# reconsider this.
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  # Build CIRCT and run its tests using a Docker container with all the
+  # integration testing prerequisite installed.
+  build-circt:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/circt/images/circt-integration-test:v12.2
+    strategy:
+      # Keep the 'matrix' strategy with one data point to make it obvious that
+      # this is one point in the overall matrix.
+      matrix:
+        build-assert: [ON]
+        build-shared: [ON]
+        build-type: [Release]
+        compiler:
+          - cc: clang
+            cxx: clang++
+
+    steps:
+      # Clone the CIRCT repo and its submodules. Do shallow clone to save clone
+      # time.
+      - name: Get CIRCT
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+          submodules: true
+
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: shortintegration-${{ matrix.build-assert }}-${{ matrix.build-type }}-${{ matrix.compiler.cc }} 
+          max-size: 1G
+
+      # --------
+      # Build and test CIRCT
+      # --------
+
+      - name: Configure CIRCT
+        env:
+          CC: ${{ matrix.compiler.cc }}
+          CXX: ${{ matrix.compiler.cxx }}
+          BUILD_ASSERT: ${{ matrix.build-assert }}
+          BUILD_SHARED: ${{ matrix.build-shared }}
+          BUILD_TYPE: ${{ matrix.build-type }}
+        run: |
+          export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
+          mkdir build && cd build
+          cmake -GNinja ../llvm/llvm \
+            -DBUILD_SHARED_LIBS=$BUILD_SHARED \
+            -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
+            -DCMAKE_C_COMPILER=$CC \
+            -DCMAKE_CXX_COMPILER=$CXX \
+            -DLLVM_CCACHE_BUILD=ON \
+            -DLLVM_ENABLE_ASSERTIONS=$BUILD_ASSERT \
+            -DLLVM_ENABLE_PROJECTS=mlir \
+            -DLLVM_EXTERNAL_PROJECTS=circt \
+            -DLLVM_EXTERNAL_CIRCT_SOURCE_DIR=.. \
+            -DLLVM_USE_LINKER=lld \
+            -DMLIR_ENABLE_BINDINGS_PYTHON=ON \
+            -DCIRCT_BINDINGS_PYTHON_ENABLED=ON \
+            -DLLVM_LIT_ARGS="-v --show-unsupported"
+      - name: Test CIRCT
+        run: |
+          ninja -C build check-circt -j$(nproc)
+      - name: Unit Test CIRCT
+        run: |
+          ninja -C build check-circt-unit -j$(nproc)
+      - name: Integration Test CIRCT
+        run: |
+          ninja -C build check-circt-integration -j$(nproc)
+
+      - name: Ccache stats
+        run: |
+          ccache -s

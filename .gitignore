@@ -10,7 +10,7 @@ target/
 *.swp
 *.fir
 *.v
-*.json
+./*.json
 test_run_dir
 *~
 \#*\#
@@ -21,3 +21,5 @@ test_run_dir
 metals.sbt
 version.txt
 .bsp
+.vscode
+build/

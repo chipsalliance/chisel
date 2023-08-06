@@ -1,0 +1,17 @@
+[
+	{
+		"class":"sifive.enterprise.firrtl.MarkDUTAnnotation",
+		"target": "test.memoryP"
+	},
+	{
+		"class":"sifive.enterprise.firrtl.SeqMemInstanceMetadataAnnotation",
+		"data":{
+			"baseAddress":1073741824,
+			"eccScheme":"none",
+			"eccBits":0,
+			"dataBits":8,
+			"eccIndices":[]
+		}, 
+    "target":"~test|memoryTest2>memory"
+  }
+]

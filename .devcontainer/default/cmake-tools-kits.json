@@ -1,0 +1,9 @@
+[
+  {
+    "name": "Clang 16",
+    "compilers": {
+      "C": "/usr/bin/clang-16",
+      "CXX": "/usr/bin/clang++-16"
+    }
+  }
+]

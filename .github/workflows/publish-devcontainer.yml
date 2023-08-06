@@ -1,0 +1,42 @@
+name: Publish Devcontainer
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/publish-devcontainer.yml
+      - .devcontainer/**
+    branches:
+      - main
+      - dev/george/squircel
+
+permissions:
+  packages: write
+
+jobs:
+  publish-devcontainer:
+    name: Publish Devcontainer
+    runs-on: ubuntu-22.04
+    
+    strategy:
+      matrix:
+        devcontainer-name: ["default"]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - name: Make devcontainer '${{ matrix.devcontainer-name }}' singular
+        run: .devcontainer/make-devcontainer-singular ${{ matrix.devcontainer-name }}
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2 
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build devcontainer
+        uses: devcontainers/ci@v0.3
+        with:
+          imageName: ghcr.io/georgelyon/circel-${{ matrix.devcontainer-name }}-devcontainer
+          runCmd: echo "Built!"

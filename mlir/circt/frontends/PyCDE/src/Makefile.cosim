@@ -1,0 +1,23 @@
+mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
+mkfile_dir := $(dir $(mkfile_path))
+
+VSIM_PATH := $(which vsim)
+
+ifneq ($(VSIM_PATH),)
+	QUESTA_PATH := $(basename $(VSIM_PATH))
+endif
+
+ifneq ($(QUESTA_PATH),)
+run_questa:
+	$(QUESTA_PATH)/vlog hw/*.sv
+	$(QUESTA_PATH)/vsim driver -c -sv_lib hw/libEsiCosimDpiServer -do "run -all; quit"
+endif
+
+VERILATOR_PATH := $(which verilator)
+ifneq ($(VERILATOR_PATH),)
+SV_SRCS = $(shell ls hw/*.sv | grep -v driver.sv)
+VERILATOR_SRCS = $(SV_SRCS) $(mkfile_dir)/hw/*.so hw/*.cpp
+run_verilator:
+	$(VERILATOR_PATH) --cc --top-module top -sv --build --exe --assert $(VERILATOR_SRCS)
+	LD_LIBRARY_PATH=hw obj_dir/Vtop
+endif

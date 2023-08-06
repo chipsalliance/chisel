@@ -1,0 +1,8 @@
+[
+  {
+    "class": "firrtl.annotations.MemoryFileInlineAnnotation",
+    "target": "~Foo|Foo>m",
+    "filename": "mem1.txt",
+    "hexOrBinary": "h"
+  }
+]

@@ -1,0 +1,69 @@
+// Note: There are some additional constraints on workspace settings because of how we test the configuration is valid. See `.devcontainer/extract-cmake-arguments.sh` for details
+{
+  // CMake Settings
+  "cmake.useProjectStatusView": true,
+  "cmake.sourceDirectory": "${workspaceFolder}/mlir/llvm/llvm",
+  "cmake.buildDirectory": "${workspaceFolder}/build/circel",
+  "cmake.installPrefix": "/usr/local",
+  "cmake.configureOnOpen": false,
+  "cmake.configureOnEdit": false,
+  "cmake.generator": "Ninja",
+  "cmake.configureArgs": [
+    // -- CMAKE
+    "-DCMAKE_WARN_DEPRECATED=OFF",
+    "-DCMAKE_C_COMPILER_LAUNCHER=ccache",
+    "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache",
+    // -- LLVM
+    "-DLLVM_ENABLE_ASSERTIONS=ON",
+    "-DLLVM_ENABLE_PROJECTS=mlir",
+    "-DLLVM_TARGETS_TO_BUILD=",
+    "-DLLVM_BUILD_EXAMPLES=OFF",
+    "-DLLVM_ENABLE_OCAMLDOC=OFF",
+    "-DLLVM_ENABLE_BINDINGS=OFF",
+    "-DLLVM_ENABLE_MODULES=OFF",
+    // -- LLVM (performance)
+    // LLVM_OPTIMIZED_TABLEGEN is not compatible with disabling LLHD
+    "-DLLVM_OPTIMIZED_TABLEGEN=OFF",
+    "-DLLVM_USE_SPLIT_DWARF=ON",
+    "-DLLVM_USE_RELATIVE_PATHS_IN_DEBUG_INFO=OFF",
+    "-DLLVM_USE_RELATIVE_PATHS_IN_FILES=OFF",
+    // -- CIRCT 
+    "-DLLVM_EXTERNAL_PROJECTS=circt;circel",
+    "-DLLVM_EXTERNAL_CIRCT_SOURCE_DIR=${workspaceFolder}/mlir/circt",
+    "-DLLVM_EXTERNAL_CIRCEL_SOURCE_DIR=${workspaceFolder}/mlir/circel",
+    // LLHD requires a LLVM_TARGET be built
+    "-DCIRCT_LLHD_SIM_ENABLED=OFF"
+  ],
+  // Clangd Settings
+  "clangd.path": "clangd-16",
+  "clangd.checkUpdates": false,
+  "clangd.onConfigChanged": "restart",
+  "clangd.arguments": [
+    "--compile-commands-dir=${workspaceFolder}/build/circel"
+  ],
+  // MLIR
+  "mlir.server_path": "/usr/local/bin/circt-lsp-server",
+  "mlir.onSettingsChanged": "restart",
+  // Java
+  "files.watcherExclude": {
+    "**/target": true
+  },
+  "remote.autoForwardPorts": false, // Metals opens some ports in the remote container that we don't need to forward to the host
+  // Workspace Settings
+  "files.exclude": {
+    // Other Editors
+    ".vim": true,
+    // Scala
+    ".metals": true,
+    // Exclude all llvm projects except for llvm and mlir (this is a bit convoluted because VSCode doesn't support negated glob patterns)
+    "circt/llvm/[^lm]*": true,
+    "circt/llvm/l[^l]*": true,
+    "circt/llvm/ll[^v]*": true,
+    "circt/llvm/llvm-*": true,
+    // Exclude some CIRCT noise
+    "circt/.*": true
+  },
+  "search.exclude": {
+    "build": true
+  }
+}

@@ -1,0 +1,115 @@
+name: Nightly integration tests
+
+# Run on request and every day at 12 noon UTC
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: 0 12 * * *
+
+jobs:
+  # Build CIRCT and run its tests using a Docker container with all the
+  # integration testing prerequisite installed.
+  build-circt:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/circt/images/circt-integration-test:v12.2
+    strategy:
+      fail-fast: false
+      matrix:
+        build-assert: [ON, OFF]
+        build-shared: [ON, OFF]
+        build-type: [Debug, Release]
+        compiler:
+          - cc: clang
+            cxx: clang++
+          - cc: gcc
+            cxx: g++
+        lit-flags: ['', '--vg']
+        exclude:
+          - build-type: Debug
+            compiler: {cc: gcc, cxx: g++}
+          - build-type: Debug
+            lit-flags: --vg
+          - build-type: Release
+            lit-flags: --vg
+            build-assert: OFF
+          - build-type: Release
+            lit-flags: --vg
+            build-shared: ON
+          # TODO: This corner is failing and has been for some time. #5253.
+          - build-type: Release
+            compiler: {cc: gcc, cxx: g++}
+            lit-flags: --vg
+
+    steps:
+      # Clone the CIRCT repo and its submodules. Do shallow clone to save clone
+      # time.
+      - name: Get CIRCT
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+          submodules: true
+
+      # Setup Ccache
+      - name: Ccache setup
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/${{ matrix.compiler.cc }}-${{ matrix.build-type }}-${{ matrix.build-shared }}-${{ matrix.build-assert }}/.ccache
+          ccache --set-config=cache_dir=$GITHUB_WORKSPACE/${{ matrix.compiler.cc }}-${{ matrix.build-type }}-${{ matrix.build-shared }}-${{ matrix.build-assert }}/.ccache
+          ccache --set-config=max_size=300M
+          ccache --set-config=compression=true
+          ccache -p
+          ccache -z
+
+      - name: Cache Ccache directory
+        uses: actions/cache@v3
+        with:
+          path: ${{ github.workspace }}/${{ matrix.compiler.cc }}-${{ matrix.build-type }}-${{ matrix.build-shared }}-${{ matrix.build-assert }}/.ccache
+          key: ${{ matrix.compiler.cc }}-${{ matrix.build-type }}-${{ matrix.build-shared }}-${{ matrix.build-assert }}-${{ github.sha }}
+          restore-keys: |
+            ${{ matrix.compiler.cc }}-${{ matrix.build-type }}-${{ matrix.build-shared }}-${{ matrix.build-assert }}-
+
+      # --------
+      # Build and test CIRCT
+      # --------
+
+      - name: Configure CIRCT
+        env:
+          CC: ${{ matrix.compiler.cc }}
+          CXX: ${{ matrix.compiler.cxx }}
+          BUILD_ASSERT: ${{ matrix.build-assert }}
+          BUILD_SHARED: ${{ matrix.build-shared }}
+          BUILD_TYPE: ${{ matrix.build-type }}
+        run: |
+          export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
+          mkdir build && cd build
+          cmake -GNinja ../llvm/llvm \
+            -DBUILD_SHARED_LIBS=$BUILD_SHARED \
+            -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
+            -DCMAKE_C_COMPILER=$CC \
+            -DCMAKE_CXX_COMPILER=$CXX \
+            -DLLVM_CCACHE_BUILD=ON \
+            -DLLVM_ENABLE_ASSERTIONS=$BUILD_ASSERT \
+            -DLLVM_ENABLE_PROJECTS=mlir \
+            -DLLVM_EXTERNAL_PROJECTS=circt \
+            -DLLVM_EXTERNAL_CIRCT_SOURCE_DIR=.. \
+            -DLLVM_TARGETS_TO_BUILD="host" \
+            -DLLVM_USE_LINKER=lld \
+            -DLLVM_USE_SPLIT_DWARF=ON \
+            -DMLIR_ENABLE_BINDINGS_PYTHON=ON \
+            -DCIRCT_BINDINGS_PYTHON_ENABLED=ON \
+            -DLLVM_LIT_ARGS="-v --show-unsupported ${{ matrix.lit-flags }}"
+      - name: Test CIRCT
+        run: |
+          ninja -C build check-circt -j$(nproc)
+      - name: Unit Test CIRCT
+        run: |
+          ninja -C build check-circt-unit -j$(nproc)
+      - name: Integration Test CIRCT
+        if: ${{ matrix.lit-flags == '' }}
+        run: |
+          ninja -C build check-circt-integration -j$(nproc)
+
+      - name: Ccache stats
+        run: |
+          ccache -s

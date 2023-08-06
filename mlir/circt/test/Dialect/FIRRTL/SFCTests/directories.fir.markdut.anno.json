@@ -1,0 +1,6 @@
+[
+  {
+    "class": "sifive.enterprise.firrtl.MarkDUTAnnotation",
+    "target": "~TestHarness|DUT"
+  }
+]

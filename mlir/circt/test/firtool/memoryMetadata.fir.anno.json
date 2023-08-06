@@ -1,0 +1,11 @@
+[
+  {
+    "class": "sifive.enterprise.firrtl.MarkDUTAnnotation",
+    "target": "test.dutModule"
+  },
+  {
+    "class": "chisel3.util.experimental.ForceNameAnnotation",
+    "target": "test.dutModule.m",
+    "name": "hello"
+  }
+]

@@ -1,0 +1,298 @@
+name: Upload Firrtl Release Artifacts
+
+on:
+  release:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      os:
+        type: choice
+        description: Operating System target
+        default: linux
+        options:
+          - linux
+          - macos
+          - windows
+      runTests:
+        type: choice
+        description: Run CIRCT tests
+        default: false
+        options:
+          - true
+          - false
+  # Run every day at 0700 UTC which is:
+  #   - 0000 PDT / 2300 PST
+  #   - 0300 EDT / 0200 EST
+  schedule:
+    - cron: '0 7 * * *'
+
+jobs:
+  publish-sources:
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-20.04
+    steps:
+      # Clone the CIRCT repo and its submodules. Do shallow clone to save clone
+      # time.
+      - name: Get CIRCT and LLVM
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+          submodules: "true"
+
+      # Package up sources for distribution, as the default source bundles from GitHub don't include LLVM.
+      - name: Create Source Archive
+        run: |
+          touch circt-full-sources.tar.gz
+          tar \
+            --exclude-vcs \
+            --exclude=circt-full-sources.tar.gz \
+            -czf \
+            circt-full-sources.tar.gz .
+          shasum -a 256 circt-full-sources.tar.gz | cut -d ' ' -f1 > circt-full-sources.tar.gz.sha256
+
+      - name: Upload Source Archive
+        uses: AButler/upload-release-assets@v2.0
+        with:
+          # The * will grab the .sha256 as well
+          files: circt-full-sources.tar.gz*
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+  # This job sets up the build matrix.
+  choose-matrix:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Add Linux
+        id: add-linux
+        if: github.event_name != 'workflow_dispatch' || inputs.os == 'linux'
+        env:
+          os: linux
+          runner: ubuntu-20.04
+          arch: x64
+          tar: tar czf
+          archive: tar.gz
+          sha256: shasum -a 256
+          cont: '\'
+          setup:
+          cmake-args: -DCMAKE_C_COMPILER=clang-12 -DCMAKE_CXX_COMPILER=clang++-12
+        run: |
+          json=$(echo '${{ toJSON(env) }}' | jq -c)
+          echo $json
+          echo "out=$json" >> $GITHUB_OUTPUT
+      - name: Add macOS
+        id: add-macos
+        if: github.event_name == 'release' || ( github.event_name == 'workflow_dispatch' && inputs.os == 'macos' )
+        env:
+          os: macos
+          runner: macos-11
+          arch: x64
+          tar: gtar czf
+          archive: tar.gz
+          sha256: shasum -a 256
+          cont: '\'
+          setup:
+          cmake-args:
+        run: |
+          json=$(echo '${{ toJSON(env) }}' | jq -c)
+          echo $json
+          echo "out=$json" >> $GITHUB_OUTPUT
+      - name: Add Windows
+        id: add-windows
+        if: github.event_name == 'release' || ( github.event_name == 'workflow_dispatch' && inputs.os == 'windows' )
+        env:
+          os: windows
+          runner: windows-2019
+          arch: x64
+          tar: tar czf
+          archive: zip
+          sha256: sha256sum
+          cont: '`'
+          setup: ./utils/find-vs.ps1
+          cmake-args:
+        run: |
+          json=$(echo '${{ toJSON(env) }}' | jq -c)
+          echo $json
+          echo "out=$json" >> $GITHUB_OUTPUT
+      - name: Add Build Options
+        id: add-build-options
+        env:
+          mode: release
+          assert: OFF
+          shared: OFF
+          stats: ON
+        run: |
+          json=$(echo '${{ toJSON(env) }}' | jq -c)
+          echo $json
+          echo "out=$json" >> $GITHUB_OUTPUT
+      - name: Build JSON Payloads
+        id: build-json-payloads
+        run: |
+          echo '${{ steps.add-build-options.outputs.out }}' | jq -sc . > options.json
+          echo build_configs=`cat options.json` >> $GITHUB_OUTPUT
+
+          echo "Build Config Matrix" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
+          cat options.json | jq >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+          echo '${{ steps.add-linux.outputs.out }}' '${{ steps.add-macos.outputs.out }}' '${{ steps.add-windows.outputs.out }}' | jq -sc . > runners.json
+          echo runners=`cat runners.json` >> $GITHUB_OUTPUT
+
+          echo "Runner/Operating System Matrix:" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
+          cat runners.json | jq >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+          case ${{ github.event_name }} in
+            workflow_dispatch)
+              ENV='{"runTests":${{ inputs.runTests }}}'
+            ;;
+            schedule)
+              ENV='{"runTests":false}'
+            ;;
+            *)
+              ENV='{"runTests":true}'
+            ;;
+          esac
+          echo environment=$ENV >> $GITHUB_OUTPUT
+
+          echo "Environment Configuration:" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
+          echo $ENV | jq >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+    outputs:
+      build_configs: ${{ steps.build-json-payloads.outputs.build_configs }}
+      runners: ${{ steps.build-json-payloads.outputs.runners }}
+      environment: ${{ steps.build-json-payloads.outputs.environment }}
+
+  publish:
+    needs:
+      - choose-matrix
+    strategy:
+      matrix:
+        build_config: ${{ fromJSON(needs.choose-matrix.outputs.build_configs) }}
+        runner: ${{ fromJSON(needs.choose-matrix.outputs.runners) }}
+    runs-on: ${{ matrix.runner.runner }}
+    env: ${{ fromJSON(needs.choose-matrix.outputs.environment) }}
+    steps:
+      # Clone the CIRCT repo and its submodules. Do shallow clone to save clone
+      # time.
+      - name: Get CIRCT
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+          submodules: "true"
+      # We need unshallow CIRCT for later "git describe"
+      - name: Unshallow CIRCT (but not LLVM)
+        run: |
+          git fetch --unshallow --no-recurse-submodules
+
+      - name: Setup Linux
+        if: matrix.runner.os == 'linux'
+        run: sudo apt-get install ninja-build
+
+      - name: Setup Ninja and GNU Tar Mac
+        if: matrix.runner.os == 'macos'
+        run: brew install ninja gnu-tar
+
+      - name: Configure CIRCT
+        run: |
+          ${{ matrix.runner.setup }}
+          mkdir build
+          cd build
+          echo $(pwd)
+          cmake -G Ninja -S "$(pwd)/../llvm/llvm" ${{ matrix.runner.cont }}
+            ${{ matrix.runner.cmake-args }} ${{ matrix.runner.cont }}
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_config.mode }} ${{ matrix.runner.cont }}
+            -DBUILD_SHARED_LIBS=${{ matrix.build_config.shared }} ${{ matrix.runner.cont }}
+            -DLLVM_BUILD_TOOLS=ON ${{ matrix.runner.cont }}
+            -DLLVM_BUILD_EXAMPLES=OFF ${{ matrix.runner.cont }}
+            -DLLVM_ENABLE_ASSERTIONS=${{ matrix.build_config.assert }} ${{ matrix.runner.cont }}
+            -DLLVM_ENABLE_PROJECTS=mlir ${{ matrix.runner.cont }}
+            -DLLVM_EXTERNAL_PROJECTS=circt ${{ matrix.runner.cont }}
+            -DLLVM_EXTERNAL_CIRCT_SOURCE_DIR=".." ${{ matrix.runner.cont }}
+            -DLLVM_OPTIMIZED_TABLEGEN=ON ${{ matrix.runner.cont }}
+            -DLLVM_STATIC_LINK_CXX_STDLIB=ON ${{ matrix.runner.cont }}
+            -DLLVM_ENABLE_TERMINFO=OFF ${{ matrix.runner.cont }}
+            -DLLVM_PARALLEL_LINK_JOBS=1 ${{ matrix.runner.cont }}
+            -DLLVM_TARGETS_TO_BUILD="host" ${{ matrix.runner.cont }}
+            -DLLVM_FORCE_ENABLE_STATS=${{ matrix.build_config.stats }} ${{ matrix.runner.cont }}
+            -DLLVM_ENABLE_ZSTD=OFF ${{ matrix.runner.cont }}
+            -DVERILATOR_DISABLE=ON ${{ matrix.runner.cont }}
+            -DLLVM_PARALLEL_LINK_JOBS=1 ${{ matrix.runner.cont }}
+            -DCIRCT_RELEASE_TAG_ENABLED=ON ${{ matrix.runner.cont }}
+            -DCIRCT_RELEASE_TAG=firtool ${{ matrix.runner.cont }}
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=OFF ${{ matrix.runner.cont }}
+            -DCMAKE_INSTALL_PREFIX="$(pwd)/../install"
+
+      - name: Test CIRCT
+        if: env.runTests == 'true'
+        run: |
+          ${{ matrix.runner.setup }}
+          ninja -C build check-circt check-circt-unit
+
+      - name: Install firtool
+        run: |
+          ${{ matrix.runner.setup }}
+          ninja -C build install-firtool
+          file install/*
+          file install/bin/*
+
+      # Specify bash for the Windows runner to work
+      - name: Name Install Directory
+        id: name_dir
+        shell: bash
+        run: |
+          BASE=$(git describe --tag)
+          SANITIZED=$(echo -n $BASE | tr '/' '-')
+          echo "value=$SANITIZED" >> "$GITHUB_OUTPUT"
+
+      - name: Name Archive
+        id: name_archive
+        shell: bash
+        run: |
+          NAME=firrtl-bin-${{ matrix.runner.os }}-${{ matrix.runner.arch }}.${{ matrix.runner.archive }}
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Package Binaries Linux and MacOS
+        if: matrix.runner.os == 'macos' || matrix.runner.os == 'linux'
+        run: |
+          mv install ${{ steps.name_dir.outputs.value }}
+          ${{ matrix.runner.tar }} ${{ steps.name_archive.outputs.name }} ${{ steps.name_dir.outputs.value }}
+
+      # Not sure how to create a zip in bash on Windows so using powershell
+      - name: Package Binaries Windows
+        if: matrix.runner.os == 'windows'
+        shell: pwsh
+        run: |
+          mv install ${{ steps.name_dir.outputs.value }}
+          Compress-Archive -Path ${{ steps.name_dir.outputs.value }} -DestinationPath ${{ steps.name_archive.outputs.name }}
+
+      # Specify bash for the Windows runner to work
+      - name: Show Tarball
+        shell: bash
+        run: |
+          ls -l ${{ steps.name_archive.outputs.name }}
+          ${{ matrix.runner.sha256 }} ${{ steps.name_archive.outputs.name }} | cut -d ' ' -f1 > ${{ steps.name_archive.outputs.name }}.sha256
+
+      - name: Upload Binary (Non-Tag)
+        uses: actions/upload-artifact@v3
+        if: github.ref_type != 'tag'
+        with:
+          name: ${{ steps.name_archive.outputs.name }}
+          path: ${{ steps.name_archive.outputs.name }}
+          retention-days: 7
+      - name: Upload SHA256 (Non-Tag)
+        uses: actions/upload-artifact@v3
+        if: github.ref_type != 'tag'
+        with:
+          name: ${{ steps.name_archive.outputs.name }}.sha256
+          path: ${{ steps.name_archive.outputs.name }}.sha256
+          retention-days: 7
+
+      - name: Upload Binaries (Tag)
+        uses: AButler/upload-release-assets@v2.0
+        if: github.ref_type == 'tag'
+        with:
+          # The * will grab the .sha256 as well
+          files: ${{ steps.name_archive.outputs.name }}*
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
