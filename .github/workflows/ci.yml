@@ -11,7 +11,7 @@ on:
       - '*.x'
 
 env:
-  circt: "firtool-1.48.0"
+  circt: "default"
 
 jobs:
   set-circt-versions:
