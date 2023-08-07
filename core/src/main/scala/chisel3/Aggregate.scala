@@ -1521,7 +1521,8 @@ abstract class Bundle extends Record {
           val bundleValue = Builder.bundleStructuralHashMap.get(candidateAlias).get
           // Conflict found:
           Builder.error(
-            s"Attempted to redeclare an existing bundle type alias '$candidateAlias' with a new bundle structure:\n'$thisType'.\nThe alias was previously defined at:\n'${bundleValue._3}'\nwith structure '${bundleValue._2}"
+            s"Attempted to redeclare an existing bundle type alias '$candidateAlias' with a new bundle structure:\n'$thisType'.\n\nThe alias was previously defined as:\n'${bundleValue._2}${bundleValue._3
+              .makeMessage(" " + _)}"
           )(sourceInfo)
         } else {
           if (!Builder.globalBundleNamespace.contains(candidateAlias)) {

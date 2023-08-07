@@ -220,7 +220,8 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
     msg should include(
       "Attempted to redeclare an existing bundle type alias 'DifferentBundle' with a new bundle structure"
     )
-    msg should include("The alias was previously defined at: SourceLine(src/test/scala/chiselTests/TypeAliasSpec.scala")
+    msg should include("The alias was previously defined as:")
+    msg should include("@[src/test/scala/chiselTests/TypeAliasSpec.scala")
   }
 
   "Bundles with unsanitary names" should "properly sanitize" in {
