@@ -1,0 +1,11 @@
+name: CD of CIRCT
+
+on:
+  workflow_dispatch:
+
+jobs:
+  hello-world:
+    name: Hello World
+    runs-on: ubuntu-20.04
+    steps:
+      - run: echo "hello world"
