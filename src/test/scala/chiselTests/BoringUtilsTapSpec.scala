@@ -266,7 +266,6 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       new RawModule {
         class Child() extends RawModule {
           val b = Wire(Vec(4, Bool()))
-          b := DontCare
         }
 
         val child = Module(new Child())
