@@ -3,7 +3,7 @@ name: Install CIRCT
 inputs:
   version:
     description: 'version to install ("nightly" installs latest nightly)'
-    required: true
+    default: 'default'
   github-token:
     description: 'The GitHub token used to download CIRCT nightly'
     required: true
@@ -22,8 +22,13 @@ runs:
     - shell: bash
       if: inputs.version != 'nightly' && steps.cache-circt.outputs.cache-hit != 'true'
       run: |
+        if [[ "${{ inputs.version }}" == "default" ]]; then
+          export VERSION="firtool-1.48.0"
+        else
+          export VERSION="${{ inputs.version }}"
+        fi
         mkdir circt
-        wget -q -O - https://github.com/llvm/circt/releases/download/${{ inputs.version }}/firrtl-bin-linux-x64.tar.gz | tar -zx -C circt/ --strip-components 1
+        wget -O - https://github.com/llvm/circt/releases/download/$VERSION/firrtl-bin-linux-x64.tar.gz | tar -zx -C circt/ --strip-components 1
 
     - name: Download Latest Nighlty `firtool` binary
       shell: bash

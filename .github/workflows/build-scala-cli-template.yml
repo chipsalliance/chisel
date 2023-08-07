@@ -5,7 +5,7 @@ on:
     inputs:
       circt:
         description: 'The version of CIRCT to use'
-        required: true
+        default: 'default'
         type: string
 
 jobs:
