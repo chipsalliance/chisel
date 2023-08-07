@@ -1,0 +1,27 @@
+name: Nightly CIRCT
+
+env:
+  # This is the name of the branch containing accumulated patches that need to
+  # be applied in order for the latest CIRCT to work with Chisel.
+  branch-name: ci/ci-circt-nightly
+
+on:
+  workflow_dispatch:
+  # Run every day at 0800 UTC which is:
+  #   - 0100 PDT / 0000 PST
+  #   - 0400 EDT / 0300 EST
+  # This time is one hour after the scheduled build of the firtool Nightly.
+  schedule:
+    - cron: '0 8 * * *'
+  # Run on PRs that target the
+  pull_request:
+    branches:
+      - ${{ branch-name }}
+
+jobs:
+  hello:
+    name: Hello World
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Hello
+        run: echo "World"

@@ -220,6 +220,34 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
 
     }
 
+    it("should optionally emit .fir when compiling to SystemVerilog") {
+
+      val targetDir = new File("test_run_dir/ChiselStageSpec")
+
+      val args: Array[String] = Array(
+        "--target",
+        "systemverilog",
+        "--target-dir",
+        targetDir.toString,
+        "--dump-fir"
+      )
+
+      val expectedSV = new File(targetDir, "Foo.sv")
+      expectedSV.delete()
+
+      val expectedFir = new File(targetDir, "Foo.fir")
+      expectedFir.delete()
+
+      (new ChiselStage)
+        .execute(args, Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.Foo)))
+
+      info(s"'$expectedSV' exists")
+      expectedSV should (exist)
+      info(s"'$expectedFir' exists")
+      expectedFir should (exist)
+
+    }
+
     it("should support custom firtool options") {
       val targetDir = new File("test_run_dir/ChiselStageSpec")
 
@@ -1072,6 +1100,20 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
       val message = exception.getMessage
       info("The exception includes the standard error message")
       message should include("Fatal errors during hardware elaboration. Look above for error list.")
+
+      info("The exception should not contain a stack trace")
+      exception.getStackTrace should be(Array())
+    }
+
+    it("should report a specific error if firtool is not found on the PATH") {
+      val exception = intercept[Exception] {
+        ChiselStage.emitSystemVerilog(new ChiselStageSpec.Foo, Array("--firtool-binary-path", "potato"))
+      }
+
+      info("The exception includes a useful error message")
+      val message = exception.getMessage
+      message should include("potato not found")
+      message should include("Chisel requires that firtool, the MLIR-based FIRRTL Compiler (MFC), is installed")
 
       info("The exception should not contain a stack trace")
       exception.getStackTrace should be(Array())

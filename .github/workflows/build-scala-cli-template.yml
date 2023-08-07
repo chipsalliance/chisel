@@ -1,0 +1,57 @@
+name: Build and Test Scala-CLI Template
+
+on:
+  workflow_call:
+    inputs:
+      circt:
+        description: 'The version of CIRCT to use'
+        default: 'default'
+        type: string
+
+jobs:
+  build_template:
+    name: Build and Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        # Need to fetch full history for deriving version
+        with:
+          fetch-depth: 0
+      - name: Install CIRCT
+        uses: ./.github/workflows/install-circt
+        with:
+          version: ${{ inputs.circt }}
+          github-token: ${{ github.token }}
+      - name: Cache Scala-CLI
+        uses: coursier/cache-action@v6
+      - name: Setup Scala-CLI
+        uses: VirtusLab/scala-cli-setup@v0.2.1
+        with:
+          jvm: adoptium:1.17
+          apps: sbt
+      - name: Generate Scala CLI Template
+        shell: bash
+        run: |
+          # Determine the version and insert it into the template
+          sbt emitVersion
+          VERSION=$(cat version.txt)
+          sed "s/@VERSION@/$VERSION/g" .github/workflows/build-scala-cli-template/chisel-template.scala > chisel-template.scala
+          # If the version does NOT contain SNAPSHOT, remove line including snapshots repo
+          if ! grep -qi 'snapshot' <<< $VERSION; then
+            sed -i '1d' chisel-template.scala
+          fi
+      # Need to publishLocal to test the template
+      - name: Publish Local
+        shell: bash
+        run: sbt "unipublish / publishLocal"
+      - name: Test Scala CLI Template
+        shell: bash
+        run: scala-cli chisel-template.scala
+      - name: Upload Template
+        uses: actions/upload-artifact@v3
+        with:
+          name: chisel-template.scala
+          path: chisel-template.scala
+          retention-days: 7
