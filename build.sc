@@ -245,3 +245,25 @@ trait ChiselPublishModule extends PublishModule {
 
   def publishVersion = "5.0-SNAPSHOT"
 }
+
+object circtpanamabinder extends Cross[CIRCTPanamaBinder](v.scalaCrossVersions)
+
+trait CIRCTPanamaBinder
+  extends common.CIRCTPanamaBinderModule
+    with ChiselPublishModule
+    with CrossSbtModule
+    with ScalafmtModule {
+  def millSourcePath = super.millSourcePath / os.up / "binder"
+
+  def header = T(PathRef(millSourcePath / "jextract-headers.h"))
+
+  def circtInstallPath = T(os.Path(sys.env.get("CIRCT_INSTALL_PATH").getOrElse("/usr/local")))
+
+  def includePaths = T(Seq(PathRef(circtInstallPath() / "include")))
+
+  def libraryPaths = T(Seq(PathRef(circtInstallPath() / "lib")))
+
+  def chiselModule = chisel(crossScalaVersion)
+
+  def pluginModule = plugin(crossScalaVersion)
+}
