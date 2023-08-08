@@ -27,6 +27,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           ref: main
+          fetch-depth: 0
       - run: |
           # Leave the staging branch unchanged if this is a PR.  This is not a
           # GitHub Actions-level "if" because we want this job to return success
@@ -38,8 +39,10 @@ jobs:
           # Rebase the staging branch on the default branch.  Create the staging
           # branch if it doesn't exist.
           git checkout -b ${{ env.branch-name }}
-          if [[ `git fetch origin ${{ env.branch-name }}` ]]; then
-            git reset --hard origin ${{ env.branch-name }}
+          if [[ ! `git fetch origin ${{ env.branch-name }}` ]]; then
+            git reset --hard origin/${{ env.branch-name }}
+            git config user.name chiselbot
+            git config user.email chiselbot@users.noreply.github.com
             git rebase origin/main
           fi
 
