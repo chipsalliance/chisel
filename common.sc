@@ -1,9 +1,6 @@
 import mill._
 import mill.scalalib._
 
-// 12 or 13
-private def majorScalaVersion(scalaVersion: String) = scalaVersion.split('.')(1).toInt
-
 trait HasMacroAnnotations
   extends ScalaModule {
 
@@ -133,11 +130,7 @@ trait HasChiselPlugin
 
 trait StdLibModule
   extends ScalaModule
-    with HasChiselPlugin {
-  def chiselModule: ChiselModule
-
-  override def moduleDeps = super.moduleDeps ++ Seq(chiselModule)
-}
+    with HasChisel
 
 trait ChiselModule
   extends ScalaModule
@@ -154,19 +147,23 @@ trait ChiselModule
   override def moduleDeps = super.moduleDeps ++ Seq(macrosModule, coreModule, svsimModule)
 }
 
+trait HasChisel
+  extends ScalaModule
+    with HasChiselPlugin {
+  def chiselModule: ChiselModule
+
+  override def moduleDeps = super.moduleDeps ++ Some(chiselModule)
+}
+
 trait ChiselUnitTestModule
   extends TestModule
     with ScalaModule
-    with HasChiselPlugin
+    with HasChisel
     with HasMacroAnnotations
     with TestModule.ScalaTest {
-  def chiselModule: ChiselModule
-
   def scalatestIvy: Dep
 
   def scalacheckIvy: Dep
-
-  override def moduleDeps = Seq(chiselModule)
 
   override def defaultCommandName() = "test"
 
