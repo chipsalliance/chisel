@@ -9,6 +9,9 @@ inputs:
     required: true
     default: ${{ github.token }}
 
+env:
+  circt-config: ./etc/circt.json
+
 runs:
   using: composite
   steps:
@@ -23,7 +26,7 @@ runs:
       if: inputs.version != 'nightly' && steps.cache-circt.outputs.cache-hit != 'true'
       run: |
         if [[ "${{ inputs.version }}" == "default" ]]; then
-          export VERSION="firtool-1.48.0"
+          export VERSION=`jq .version < ${{ env.circt-config }}`
         else
           export VERSION="${{ inputs.version }}"
         fi
