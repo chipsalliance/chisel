@@ -34,7 +34,7 @@ class Property[T: PropertyType: TypeTag] extends BaseType {
 
   /** A TypeTag for the type T of this Property.
     */
-  val tpe = typeOf[T]
+  private[chisel3] val tpe = typeOf[T]
 
   /** Bind this node to the in-memory graph.
     */
