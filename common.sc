@@ -17,7 +17,7 @@ trait MacrosModule
   override def ivyDeps = super.ivyDeps() ++ Some(scalaReflectIvy)
 }
 
-trait FirrtlModule 
+trait FirrtlModule
   extends ScalaModule
     with HasMacroAnnotations {
   def osLibModuleIvy: Dep
@@ -45,7 +45,7 @@ trait SvsimModule
 
 trait SvsimUnitTestModule
   extends TestModule
-    with ScalaModule 
+    with ScalaModule
     with TestModule.ScalaTest {
   def svsimModule: SvsimModule
 
