@@ -267,3 +267,22 @@ trait CIRCTPanamaBinder
 
   def pluginModule = plugin(crossScalaVersion)
 }
+
+object bindertest extends Cross[CIRCTPanamaBinderModuleTest](v.scalaCrossVersions)
+
+trait CIRCTPanamaBinderModuleTest
+  extends common.CIRCTPanamaBinderModuleTestModule
+    with CrossModuleBase
+    with ScalafmtModule {
+  override def millSourcePath = circtpanamabinder(crossScalaVersion).millSourcePath
+
+  def circtPanamaBinderModule = circtpanamabinder(crossScalaVersion)
+
+  def scalatestIvy = v.scalatest
+
+  def scalacheckIvy = v.scalacheck
+
+  override def sources = T.sources {
+    Seq(PathRef(millSourcePath / "src" / "test"))
+  }
+}

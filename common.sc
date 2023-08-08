@@ -403,3 +403,21 @@ trait HasCIRCTPanamaBinderModule
       .map(p => s"-Djava.library.path=${p.path}")
   )
 }
+
+trait CIRCTPanamaBinderModuleTestModule
+  extends TestModule
+    with ScalaModule
+    with HasCIRCTPanamaBinderModule
+    with HasMacroAnnotations
+    with TestModule.ScalaTest {
+  def scalatestIvy: Dep
+
+  def scalacheckIvy: Dep
+
+  override def defaultCommandName() = "test"
+
+  override def ivyDeps = super.ivyDeps() ++ Agg(
+    scalatestIvy,
+    scalacheckIvy
+  )
+}
