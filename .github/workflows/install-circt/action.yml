@@ -17,7 +17,7 @@ runs:
       if: inputs.version != 'nightly'
       run: |
         if [[ "${{ inputs.version }}" == "default" ]]; then
-          export VERSION=`jq .version < ./etc/circt.json`
+          export VERSION=`jq -r .version < ./etc/circt.json`
         else
           export VERSION="${{ inputs.version }}"
         fi
