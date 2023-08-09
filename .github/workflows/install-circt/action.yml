@@ -9,24 +9,15 @@ inputs:
     required: true
     default: ${{ github.token }}
 
-env:
-  circt-config: ./etc/circt.json
-
 runs:
   using: composite
   steps:
-    - id: cache-circt
+    - name: Download release `firtool` binary
+      shell: bash
       if: inputs.version != 'nightly'
-      uses: actions/cache@v3
-      with:
-        path: circt
-        key: circt-${{ runner.os }}-${{ inputs.version }}
-
-    - shell: bash
-      if: inputs.version != 'nightly' && steps.cache-circt.outputs.cache-hit != 'true'
       run: |
         if [[ "${{ inputs.version }}" == "default" ]]; then
-          export VERSION=`jq .version < ${{ env.circt-config }}`
+          export VERSION=`jq -r .version < ./etc/circt.json`
         else
           export VERSION="${{ inputs.version }}"
         fi
