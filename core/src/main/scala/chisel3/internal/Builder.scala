@@ -768,6 +768,12 @@ private[chisel3] object Builder extends LazyLogging {
       for ((elt, i) <- iter.zipWithIndex) {
         nameRecursively(s"${prefix}_${i}", elt, namer)
       }
+    case product: Product =>
+      product.productIterator.zip(product.productElementNames).foreach {
+        case (elt, fullName) =>
+          val name = fullName.stripPrefix("_")
+          nameRecursively(s"${prefix}_${name}", elt, namer)
+      }
     case _ => // Do nothing
   }
 
