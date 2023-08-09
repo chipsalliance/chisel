@@ -468,15 +468,15 @@ won’t get cloned:</p>
 <span class="nf">getVerilogString</span><span class="o">(</span><span class="k">new</span> <span class="nc">NewModule</span><span class="o">)</span>
 <span class="c1">// chisel3.AutoClonetypeException: The bundle plugin was unable to clone CustomBundleBroken$1 that has field 'fizz' aliased with base CustomBundleBroken$1.This likely happened because you tried nesting Data arguments inside of other data structures. Try wrapping the field(s) in Input(...), Output(...), or Flipped(...) if appropriate. As a last resort, you can call chisel3.reflect.DataMirror.internal.chiselTypeClone on any nested Data arguments. See the cookbook entry 'How do I deal with the "unable to clone" error?' for more details.</span>
 <span class="c1">// 	at ... ()</span>
-<span class="c1">// 	at repl.MdocSession$MdocApp17$$anonfun$70$NewModule$1$$anonfun$73$$anonfun$apply$62.apply(cookbook.md:444)</span>
-<span class="c1">// 	at repl.MdocSession$MdocApp17$$anonfun$70$NewModule$1$$anonfun$73$$anonfun$apply$62.apply(cookbook.md:444)</span>
+<span class="c1">// 	at repl.MdocSession$MdocApp17$$anonfun$70$NewModule$1$$anonfun$74$$anonfun$apply$63.apply(cookbook.md:444)</span>
+<span class="c1">// 	at repl.MdocSession$MdocApp17$$anonfun$70$NewModule$1$$anonfun$74$$anonfun$apply$63.apply(cookbook.md:444)</span>
 <span class="c1">// 	at chisel3.experimental.prefix$.apply(prefix.scala:50)</span>
-<span class="c1">// 	at repl.MdocSession$MdocApp17$$anonfun$70$NewModule$1$$anonfun$73.apply(cookbook.md:444)</span>
-<span class="c1">// 	at repl.MdocSession$MdocApp17$$anonfun$70$NewModule$1$$anonfun$73.apply(cookbook.md)</span>
+<span class="c1">// 	at repl.MdocSession$MdocApp17$$anonfun$70$NewModule$1$$anonfun$74.apply(cookbook.md:444)</span>
+<span class="c1">// 	at repl.MdocSession$MdocApp17$$anonfun$70$NewModule$1$$anonfun$74.apply(cookbook.md)</span>
 <span class="c1">// 	at chisel3.internal.plugin.package$.autoNameRecursively(package.scala:33)</span>
 <span class="c1">// 	at repl.MdocSession$MdocApp17$$anonfun$70$NewModule$1.&lt;init&gt;(cookbook.md:444)</span>
-<span class="c1">// 	at repl.MdocSession$MdocApp17$$anonfun$70$$anonfun$apply$66.apply(cookbook.md:449)</span>
-<span class="c1">// 	at repl.MdocSession$MdocApp17$$anonfun$70$$anonfun$apply$66.apply(cookbook.md:449)</span>
+<span class="c1">// 	at repl.MdocSession$MdocApp17$$anonfun$70$$anonfun$apply$67.apply(cookbook.md:449)</span>
+<span class="c1">// 	at repl.MdocSession$MdocApp17$$anonfun$70$$anonfun$apply$67.apply(cookbook.md:449)</span>
 <span class="c1">// 	at ... ()</span>
 <span class="c1">// 	at ... (Stack trace trimmed to user code only. Rerun with --full-stacktrace to see the full stack trace)</span>
 </code></pre></div></div>
@@ -610,8 +610,8 @@ Below, the left-hand side connection to <code class="language-plaintext highligh
 <span class="c1">// chisel3.package$ChiselException: Cannot reassign to read-only Foo.?: OpResult[Bool]</span>
 <span class="c1">// 	at ... ()</span>
 <span class="c1">// 	at repl.MdocSession$MdocApp26$Foo.&lt;init&gt;(cookbook.md:589)</span>
-<span class="c1">// 	at repl.MdocSession$MdocApp26$$anonfun$103$$anonfun$apply$87.apply(cookbook.md:597)</span>
-<span class="c1">// 	at repl.MdocSession$MdocApp26$$anonfun$103$$anonfun$apply$87.apply(cookbook.md:597)</span>
+<span class="c1">// 	at repl.MdocSession$MdocApp26$$anonfun$104$$anonfun$apply$90.apply(cookbook.md:597)</span>
+<span class="c1">// 	at repl.MdocSession$MdocApp26$$anonfun$104$$anonfun$apply$90.apply(cookbook.md:597)</span>
 <span class="c1">// 	at ... ()</span>
 <span class="c1">// 	at ... (Stack trace trimmed to user code only. Rerun with --full-stacktrace to see the full stack trace)</span>
 </code></pre></div></div>
@@ -984,7 +984,7 @@ to a register:</p>
 </code></pre></div></div>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">ChiselStage</span><span class="o">.</span><span class="py">emitSystemVerilog</span><span class="o">(</span><span class="k">new</span> <span class="nc">BadRegConnect</span><span class="o">)</span>
-<span class="c1">// circt.stage.phases.Exceptions$FirtoolNonZeroExitCode: firtool returned a non-zero exit code. Note that this version of Chisel (0.0.0+1-b2b7e1a7-SNAPSHOT) was published against firtool version 1.48.0.</span>
+<span class="c1">// circt.stage.phases.Exceptions$FirtoolNonZeroExitCode: firtool returned a non-zero exit code. Note that this version of Chisel (0.0.0+1-df606774-SNAPSHOT) was published against firtool version 1.48.0.</span>
 <span class="c1">// ------------------------------------------------------------------------------</span>
 <span class="c1">// ExitCode:</span>
 <span class="c1">// 1</span>
