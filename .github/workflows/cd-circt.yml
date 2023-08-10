@@ -176,7 +176,7 @@ jobs:
               echo $JSON | \
                 jq --arg a $tag \
                    --arg b $URL \
-                   '.releases += [{"text":$a,"url":$b}]'
+                   '.releases += [{"text": $a, "url": $b}]'
             )
           done
 
@@ -189,7 +189,7 @@ jobs:
               echo $JSON | \
                 jq --arg a $commit \
                    --arg b "$TITLE" \
-                   '.commits += [{"checksum":$a,"title":$b}]'
+                   '.commits += [{"checksum": $a, "title": $b}]'
             )
           done
           cd ../
@@ -287,7 +287,7 @@ jobs:
       - name: Setup Environment with Metadata
         id: setup-env
         run: |
-          echo pr-title=$(cat metadata/pr-title.md)
+          echo pr-title=$(cat metadata/pr-title.md) >> $GITHUB_OUTPUT
 
           EOF=$(cat /dev/urandom | base64 -w 128 | head -n8 | tail -n1)
           {
