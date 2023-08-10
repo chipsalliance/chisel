@@ -26,22 +26,20 @@ on:
     - cron: '0 1 * * *'
 
 jobs:
-  # This job examines the CIRCT and Chisel repositories to determine what
-  # version of CIRCT Chisel is using and what the latest version of CIRCT is
-  # available.
-  #   - tag-current: this is the latest published firtool release
-  #   - tag-latest: this is the firtool release that Chisel is using
+  # This job examines the CIRCT and Chisel repositories to determine the version
+  # of CIRCT that Chisel is using and the latest version of CIRCT that is
+  # available upstream.
   #
   # This job has to do a non-shallow checkout of both Chisel and CIRCT because
   # it needs to examine tags.
-  examine-tags:
-    name: Examine Tags
+  determine-versions:
+    name: Determine Versions
     runs-on: ubuntu-latest
     outputs:
       # The version of CIRCT that Chisel is _currently_ using.
-      tag-current: ${{ steps.get-tag-current.outputs.tag }}
+      version-current: ${{ steps.get-version-current.outputs.version }}
       # The latest version of CIRCT that is available.
-      tag-latest: ${{ steps.get-tag-latest.outputs.tag }}
+      version-latest: ${{ steps.get-version-latest.outputs.version }}
     steps:
       - name: Clone chipsalliance/chisel
         uses: actions/checkout@v3
@@ -55,19 +53,19 @@ jobs:
           repository: llvm/circt
           path: circt
       - name: Get Current Tag
-        id: get-tag-current
+        id: get-version-current
         run: |
           cd chisel/
-          TAG=$(jq -r '.version' < ${{ env.circt-config }})
-          echo tag=$TAG >> $GITHUB_OUTPUT
-          echo Current \`firtool\` tag is: \`$TAG\` >> $GITHUB_STEP_SUMMARY
+          VERSION=$(jq -r '.version' < ${{ env.circt-config }})
+          echo version=$VERSION >> $GITHUB_OUTPUT
+          echo Current \`firtool\` version is: \`$VERSION\` >> $GITHUB_STEP_SUMMARY
       - name: Get Latest Tag
-        id: get-tag-latest
+        id: get-version-latest
         run: |
           cd circt/
-          TAG=$(git tag --list 'firtool-*' | tail -n1)
-          echo tag=$TAG >> $GITHUB_OUTPUT
-          echo Latest \`firtool\` tag is: \`$TAG\` >> $GITHUB_STEP_SUMMARY
+          VERSION=$(git tag --list 'firtool-*' | tail -n1)
+          echo version=$VERSION >> $GITHUB_OUTPUT
+          echo Latest \`firtool\` version is: \`$VERSION\` >> $GITHUB_STEP_SUMMARY
 
   create-pr:
     # If a new version of CIRCT is available do the following logical actions.
@@ -85,10 +83,10 @@ jobs:
     #
     # This job re-clones both Chisel and CIRCT, in their entirety.  This is done
     # because it is simpler to gate the JSON (and commit and PR messages) behind
-    # the job where we know that a PR is going to be created.  We could save a
-    # CIRCT clone by doing this in the "Examine Tags" job at the cost of
-    # complicating this Workflow by needing to pass information through artifact
-    # upload/download.
+    # _this job_ where we know that a PR is going to be created.  We could save
+    # a CIRCT clone by doing this in the "Determine Versions" job at the cost of
+    # complicating this Workflow by needing to pass information between the
+    # jobs.
     #
     # TODO: Revisit the above decision.
     #
@@ -96,9 +94,9 @@ jobs:
     # [2]: "base" is GitHub lingo for "the branch without your changes".
     name: Create or Update PR
     needs:
-      - examine-tags
-    # Run if a new version of CIRCT is available.
-    if: needs.examine-tags.outputs.tag-latest != needs.examine-tags.outputs.tag-current
+      - determine-versions
+    # Run only if a new version of CIRCT is available.
+    if: needs.determine-versions.outputs.version-latest != needs.determine-versions.outputs.version-current
     runs-on: ubuntu-latest
     steps:
       - name: Checkout chipsalliance/chisel
@@ -121,8 +119,9 @@ jobs:
       #   - "releases": an array of releases that will be included
       #   - "commits": an array of commit objects that will be cherry-picked
       #
-      # As an example, if this is run to bump `firtool` from 1.48.0 to 1.45.0,
-      # the JSON object could look like:
+      # As an example, if this step is run where `firtool` will be bumped from
+      # 1.49.0 (current version) to 1.50.0 (latest version, the JSON object
+      # could look like:
       #
       #     {
       #       "current": "firtool-1.48.0",
@@ -150,12 +149,12 @@ jobs:
       #     }
       - name: Assemble JSON Metadata
         run: |
-          NEW_TAGS=$(cd circt/ && git tag --contains=${{ needs.examine-tags.outputs.tag-current }} | tail -n +2)
+          NEW_TAGS=$(cd circt/ && git tag --contains=${{ needs.determine-versions.outputs.version-current }} | tail -n +2)
 
           JSON='{"current": null, "latest": null, "releases": [], "commits": []}'
 
-          JSON=$(echo $JSON | jq ".current = \"${{ needs.examine-tags.outputs.tag-current }}\"")
-          JSON=$(echo $JSON | jq ".latest = \"${{ needs.examine-tags.outputs.tag-latest }}\"")
+          JSON=$(echo $JSON | jq ".current = \"${{ needs.determine-versions.outputs.version-current }}\"")
+          JSON=$(echo $JSON | jq ".latest = \"${{ needs.determine-versions.outputs.version-latest }}\"")
 
           for tag in $NEW_TAGS; do
             URL=$(curl -L \
@@ -223,8 +222,7 @@ jobs:
             -o metadata/commit-message.md
             /dev/null
       # Print the populated pandoc templates to the GitHub Actions step summary.
-      # (These will show up if you look at the "Summary" of a run of this
-      # Action.)
+      # (These will print on the "Summary" of a run of this Action.)
       - name: Show Metadata
         run: |
           echo "# PR Title" >> $GITHUB_STEP_SUMMARY
@@ -254,12 +252,14 @@ jobs:
         run: |
           cd chisel/
 
-          jq '.version = "${{ needs.examine-tags.outputs.tag-latest }}"' < ${{ env.circt-config }} > ../metadata/tmp.json
+          jq '.version = "${{ needs.determine-versions.outputs.version-latest }}"' < ${{ env.circt-config }} > ../metadata/tmp.json
           mv ../metadata/tmp.json ${{ env.circt-config }}
-      # Move the pandoc-created PR title/body and commit message into multi-line
+      # Move the pandoc-created PR title and commit message into multi-line
       # compatible (HereDoc) step outputs for use by the "Create PR" step [4].
       # Use a randomly generated HereDoc delimiter to avoid a collision with the
-      # commit messages.
+      # commit messages.  The PR body not passed in this way because the
+      # peter-evans GitHub Action for creating a PR supports passing the PR body
+      # as a file.
       #
       # [4]: https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#multiline-strings
       - name: Setup Environment with Metadata
@@ -269,11 +269,6 @@ jobs:
           {
             echo "pr-title<<$EOF"
             cat metadata/pr-title.md
-            echo $EOF
-          } >> $GITHUB_OUTPUT
-          {
-            echo "pr-body<<$EOF"
-            cat metadata/pr-body.md
             echo $EOF
           } >> $GITHUB_OUTPUT
           {
@@ -289,14 +284,14 @@ jobs:
         with:
           path: chisel
           token: ${{ secrets.CHISEL_BOT_TOKEN }}
-          branch: cd/bump-circt-from-${{ needs.examine-tags.outputs.tag-current }}-to-${{ needs.examine-tags.outputs.tag-latest }}
+          branch: cd/bump-circt-from-${{ needs.determine-versions.outputs.version-current }}-to-${{ needs.determine-versions.outputs.version-latest }}
           author: ${{ env.user }} <${{ env.email }}>
           committer: ${{ env.user }} <${{ env.email }}>
           reviewers: |
             seldridge
             jackkoenig
           title: ${{ steps.setup-env.outputs.pr-title }}
-          body: ${{ steps.setup-env.outputs.pr-body }}
+          body-path: metadata/pr-body.md
           commit-message: ${{ steps.setup-env.outputs.commit-message }}
           labels: |
             Dependency Update
