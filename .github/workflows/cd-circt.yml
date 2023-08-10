@@ -267,17 +267,17 @@ jobs:
         run: |
           EOF=$(cat /dev/urandom | base64 -w 128 | head -n8 | tail -n1)
           {
-            echo pr-title<<$EOF
+            echo "pr-title<<$EOF"
             cat metadata/pr-title.md
             echo $EOF
           } >> $GITHUB_OUTPUT
           {
-            echo pr-body<<$EOF
+            echo "pr-body<<$EOF"
             cat metadata/pr-body.md
             echo $EOF
           } >> $GITHUB_OUTPUT
           {
-            echo commit-message<<$EOF
+            echo "commit-message<<$EOF"
             cat metadata/commit-message.md
             echo $EOF
           } >> $GITHUB_OUTPUT
