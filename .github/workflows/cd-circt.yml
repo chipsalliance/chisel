@@ -254,27 +254,32 @@ jobs:
         run: |
           cd chisel/
 
-          jq '.version = "${{ needs.examine-tags.outputs.tag-latest }}"' < ${{ env.circt-config }} > tmp.json
-          mv tmp.json ${{ env.circt-config }}
+          jq '.version = "${{ needs.examine-tags.outputs.tag-latest }}"' < ${{ env.circt-config }} > ../metadata/tmp.json
+          mv ../metadata/tmp.json ${{ env.circt-config }}
       # Move the pandoc-created PR title/body and commit message into multi-line
-      # compatible step outputs for use by the "Create PR" step.
+      # compatible (HereDoc) step outputs for use by the "Create PR" step [4].
+      # Use a randomly generated HereDoc delimiter to avoid a collision with the
+      # commit messages.
+      #
+      # [4]: https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#multiline-strings
       - name: Setup Environment with Metadata
         id: setup-env
         run: |
+          EOF=$(cat /dev/urandom | base64 -w 128 | head -n8 | tail -n1)
           {
-            echo 'pr-title<<EOF'
+            echo pr-title<<$EOF
             cat metadata/pr-title.md
-            echo EOF
+            echo $EOF
           } >> $GITHUB_OUTPUT
           {
-            echo 'pr-body<<EOF'
+            echo pr-body<<$EOF
             cat metadata/pr-body.md
-            echo EOF
+            echo $EOF
           } >> $GITHUB_OUTPUT
           {
-            echo 'commit-message<<EOF'
+            echo commit-message<<$EOF
             cat metadata/commit-message.md
-            echo EOF
+            echo $EOF
           } >> $GITHUB_OUTPUT
       # Commit unstaged changes, create or update the PR, notify reviewers, and
       # add labels.
