@@ -6,6 +6,7 @@ import scala.util.Try
 import scala.language.experimental.macros
 import scala.annotation.nowarn
 import chisel3.experimental.{BaseModule, SourceInfo, UnlocatableSourceInfo}
+import chisel3.properties.Property
 import chisel3.internal._
 import chisel3.experimental.hierarchy.{InstanceClone, ModuleClone}
 import chisel3.internal.Builder._
@@ -176,13 +177,17 @@ abstract class RawModule extends BaseModule {
   }
   private[chisel3] val stagedSecretCommands = collection.mutable.ArrayBuffer[Command]()
 
-  private[chisel3] def secretConnection(left: Data, right: Data)(implicit si: SourceInfo): Unit = {
-    val rhs = (left.probeInfo.nonEmpty, right.probeInfo.nonEmpty) match {
-      case (true, true)                                 => ProbeDefine(si, left.lref, Node(right))
-      case (true, false) if left.probeInfo.get.writable => ProbeDefine(si, left.lref, RWProbeExpr(Node(right)))
-      case (true, false)                                => ProbeDefine(si, left.lref, ProbeExpr(Node(right)))
-      case (false, true)                                => Connect(si, left.lref, ProbeRead(Node(right)))
-      case (false, false)                               => Connect(si, left.lref, Node(right))
+  private[chisel3] def secretConnection(left: BaseType, right: BaseType)(implicit si: SourceInfo): Unit = {
+    val rhs = (left, right) match {
+      case (lprop: Property[_], rprop: Property[_]) => PropAssign(si, lprop.lref, Node(rprop))
+      case (ldata: Data, rdata: Data) =>
+        (ldata.probeInfo.nonEmpty, rdata.probeInfo.nonEmpty) match {
+          case (true, true)                                  => ProbeDefine(si, ldata.lref, Node(rdata))
+          case (true, false) if ldata.probeInfo.get.writable => ProbeDefine(si, ldata.lref, RWProbeExpr(Node(rdata)))
+          case (true, false)                                 => ProbeDefine(si, ldata.lref, ProbeExpr(Node(rdata)))
+          case (false, true)                                 => Connect(si, ldata.lref, ProbeRead(Node(rdata)))
+          case (false, false)                                => Connect(si, ldata.lref, Node(rdata))
+        }
     }
     val secretCommands = if (_closed) {
       _component.get.asInstanceOf[DefModule].secretCommands

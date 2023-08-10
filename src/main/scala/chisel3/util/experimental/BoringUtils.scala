@@ -6,6 +6,7 @@ import chisel3._
 import chisel3.probe.{Probe, RWProbe}
 import chisel3.Data.ProbeInfo
 import chisel3.experimental.{annotate, requireIsHardware, skipPrefix, BaseModule, ChiselAnnotation, SourceInfo}
+import chisel3.properties.Property
 import chisel3.internal.{Builder, BuilderContextCache, NamedComponent, Namespace, PortBinding}
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
 import firrtl.passes.wiring.{SinkAnnotation, SourceAnnotation}
@@ -217,16 +218,16 @@ object BoringUtils {
     genName
   }
 
-  private def boreOrTap[A <: Data](source: A, createProbe: Option[ProbeInfo] = None)(implicit si: SourceInfo): A = {
+  private def boreOrTap[A <: BaseType](source: A, createProbe: Option[ProbeInfo] = None)(implicit si: SourceInfo): A = {
     import reflect.DataMirror
-    def parent(d: Data): BaseModule = d.topBinding.location.get
+    def parent(d: BaseType): BaseModule = d.topBinding.location.get
     def purePortTypeBase = if (DataMirror.hasOuterFlip(source)) Flipped(chiselTypeOf(source)) else chiselTypeOf(source)
-    def purePortType = createProbe match {
-      case Some(pi) if pi.writable => RWProbe(purePortTypeBase)
-      case Some(pi)                => Probe(purePortTypeBase)
-      case None                    => purePortTypeBase
+    def purePortType = (createProbe, purePortTypeBase) match {
+      case (Some(pi), d: Data) if pi.writable => RWProbe(d)
+      case (Some(pi), d: Data) => Probe(d)
+      case (_, _) => purePortTypeBase
     }
-    def isPort(d: Data): Boolean = d.topBindingOpt match {
+    def isPort(d: BaseType): Boolean = d.topBindingOpt match {
       case Some(PortBinding(_)) => true
       case _                    => false
     }
@@ -255,7 +256,7 @@ object BoringUtils {
             val bore = if (up) module.createSecretIO(purePortType) else module.createSecretIO(Flipped(purePortTypeBase))
             module.addSecretIO(bore)
             conLoc.asInstanceOf[RawModule].secretConnection(bore, rhs)
-            bore
+            bore.asInstanceOf[A]
           }
       }
     }
@@ -287,10 +288,15 @@ object BoringUtils {
     if (createProbe.nonEmpty) {
       sink
     } else {
-      // Creating a wire to assign the result to.  We will return this.
-      val bore = Wire(purePortTypeBase)
-      thisModule.asInstanceOf[RawModule].secretConnection(bore, sink)
-      bore
+      purePortTypeBase match {
+        case _: Property[_] => sink
+        case d: Data => {
+          // Creating a wire to assign the result to.  We will return this.
+          val bore = Wire(d)
+          thisModule.asInstanceOf[RawModule].secretConnection(bore, sink)
+          bore.asInstanceOf[A]
+        }
+      }
     }
   }
 
@@ -298,7 +304,7 @@ object BoringUtils {
     * this is in a child module, then create ports to allow access to the
     * requested source.
     */
-  def bore[A <: Data](source: A)(implicit si: SourceInfo): A = {
+  def bore[A <: BaseType](source: A)(implicit si: SourceInfo): A = {
     boreOrTap(source, createProbe = None)
   }
 

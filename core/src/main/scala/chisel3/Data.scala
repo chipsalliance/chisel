@@ -243,7 +243,7 @@ private[chisel3] object getMatchedFields {
 /** Returns the chisel type of a hardware object, allowing other hardware to be constructed from it.
   */
 object chiselTypeOf {
-  def apply[T <: Data](target: T): T = {
+  def apply[T <: BaseType](target: T): T = {
     requireIsHardware(target)
     target.cloneTypeFull.asInstanceOf[T]
   }

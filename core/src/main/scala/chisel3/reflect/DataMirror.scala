@@ -17,7 +17,7 @@ object DataMirror {
   }
 
   /** Returns true if target has been `Flipped` or `Input` directly */
-  def hasOuterFlip(target: Data): Boolean = {
+  def hasOuterFlip(target: BaseType): Boolean = {
     import chisel3.SpecifiedDirection.{Flip, Input}
     target.specifiedDirection match {
       case Flip | Input => true
@@ -427,7 +427,7 @@ object DataMirror {
   private[chisel3] def modulePath(h: HasId, until: Option[BaseModule]): Seq[BaseModule] = {
     val me = h match {
       case m: BaseModule => Seq(m)
-      case d: Data       => d.topBinding.location.toSeq
+      case b: BaseType   => b.topBinding.location.toSeq
       case m: MemBase[_] => m._parent.toSeq
     }
     if (me == until.toSeq) Nil
