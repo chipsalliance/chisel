@@ -33,6 +33,35 @@ supplied when its module is instantiated. An output port with <code class="langu
 represents a part of the data model that may be accessed when its module is
 instantiated. As the complete design is generated, an arbitrary data model can
 be generated alongside it.</p>
+
+<p>The following are legal <code class="language-plaintext highlighter-rouge">Property</code> types:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">Property[Int]</code></li>
+  <li><code class="language-plaintext highlighter-rouge">Property[Long]</code></li>
+  <li><code class="language-plaintext highlighter-rouge">Property[BigInt]</code></li>
+</ul>
+
+<h2 id="using-properties">Using Properties</h2>
+
+<p>The <code class="language-plaintext highlighter-rouge">Property</code> functionality can be used with the following imports:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3._</span>
+<span class="k">import</span> <span class="nn">chisel3.properties.Property</span>
+</code></pre></div></div>
+
+<p>The subsections below show example uses of <code class="language-plaintext highlighter-rouge">Property</code> types in various Chisel
+constructs.</p>
+
+<h3 id="property-ports">Property Ports</h3>
+
+<p>The legal <code class="language-plaintext highlighter-rouge">Property</code> types may be used in ports. For example:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">Example</span> <span class="k">extends</span> <span class="nc">RawModule</span> <span class="o">{</span>
+  <span class="c1">// An Int Property type port.</span>
+  <span class="k">val</span> <span class="nv">myPort</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">Property</span><span class="o">[</span><span class="kt">Int</span><span class="o">]()))</span>
+<span class="o">}</span>
+</code></pre></div></div>
 </section></div></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/highlight/highlight.pack.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/verilog.min.js"></script><script src="/lunr/lunr.js"></script><script>
 // For all code blocks, copy the language from the containing div
 // to the inner code tag (where hljs expects it to be)
