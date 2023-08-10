@@ -273,23 +273,23 @@ jobs:
 
           jq '.version = "${{ needs.determine-versions.outputs.version-latest }}"' < ${{ env.circt-config }} > ../metadata/tmp.json
           mv ../metadata/tmp.json ${{ env.circt-config }}
-      # Move the pandoc-created PR title and commit message into multi-line
-      # compatible (HereDoc) step outputs for use by the "Create PR" step [4].
-      # Use a randomly generated HereDoc delimiter to avoid a collision with the
-      # commit messages.  The PR body not passed in this way because the
-      # peter-evans GitHub Action for creating a PR supports passing the PR body
-      # as a file.
+      # Put the pandoc-created PR title and commit message into step outputs so
+      # that we can pass these to the peter-evans/create-pull-request composite
+      # action in the next step.  Pass the commit message using a HereDoc (as
+      # GitHub suggests [4]) so that this will show up in a multi-line format
+      # correctly.  Use a unique HereDoc delimiter to avoid collisions with
+      # anything which may be in the commit message.
+      #
+      # The PR body is passed as a file in the next step because the
+      # peter-evans/create-pull-request composite action supports it.
       #
       # [4]: https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#multiline-strings
       - name: Setup Environment with Metadata
         id: setup-env
         run: |
+          echo pr-title=$(cat metadata/pr-title.md)
+
           EOF=$(cat /dev/urandom | base64 -w 128 | head -n8 | tail -n1)
-          {
-            echo "pr-title<<$EOF"
-            cat metadata/pr-title.md
-            echo $EOF
-          } >> $GITHUB_OUTPUT
           {
             echo "commit-message<<$EOF"
             cat metadata/commit-message.md
