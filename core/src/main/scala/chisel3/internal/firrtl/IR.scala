@@ -274,6 +274,9 @@ object MemPortDirection {
   object INFER extends MemPortDirection("infer")
 }
 
+private[chisel3] sealed trait PropertyType
+private[chisel3] case object IntegerPropertyType extends PropertyType
+
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 abstract class Command {
   def sourceInfo: SourceInfo

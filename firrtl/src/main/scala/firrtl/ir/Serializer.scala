@@ -15,7 +15,7 @@ object Serializer {
   val Indent = "  "
 
   // The version supported by the serializer.
-  val version = Version(3, 0, 0)
+  val version = Version(3, 1, 0)
 
   /** Converts a `FirrtlNode` into its string representation with
     * default indentation.
@@ -358,6 +358,7 @@ object Serializer {
     case ResetType             => b ++= "Reset"
     case AsyncResetType        => b ++= "AsyncReset"
     case AnalogType(width)     => b ++= "Analog"; s(width)
+    case IntegerPropertyType   => b ++= "Integer"
     case UnknownType           => b += '?'
     case other                 => b ++= other.serialize // Handle user-defined nodes
   }
