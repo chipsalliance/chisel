@@ -149,21 +149,35 @@ jobs:
       #     }
       - name: Assemble JSON Metadata
         run: |
-          NEW_TAGS=$(cd circt/ && git tag --contains=${{ needs.determine-versions.outputs.version-current }} | tail -n +2)
+          NEW_TAGS=$(
+            cd circt/ && \
+              git tag --contains=${{ needs.determine-versions.outputs.version-current }} | \
+                tail -n +2
+          )
 
-          JSON='{"current": null, "latest": null, "releases": [], "commits": []}'
-
-          JSON=$(echo $JSON | jq ".current = \"${{ needs.determine-versions.outputs.version-current }}\"")
-          JSON=$(echo $JSON | jq ".latest = \"${{ needs.determine-versions.outputs.version-latest }}\"")
+          JSON=$(
+            echo '{ "current": "", "latest": "", "releases": [], "commits": [] }' |
+              jq \
+                --arg a ${{ needs.determine-versions.outputs.version-current }} \
+                --arg b ${{ needs.determine-versions.outputs.version-latest }} \
+                '.current = $a | .latest = $b'
+          )
 
           for tag in $NEW_TAGS; do
-            URL=$(curl -L \
-                       -H "Accept: application/vnd.github+json" \
-                       -H "Authorization: ${{ github.token }}" \
-                       -H "X-GitHub-Api-Version: 2022-11-28" \
-                       https://api.github.com/repos/llvm/circt/releases/tags/$tag |\
-                    jq '.html_url')
-            JSON=$(echo $JSON | jq ".releases += [{\"text\":\"$tag\",\"url\":$URL}]" )
+            URL=$(
+              curl -L \
+                   -H "Accept: application/vnd.github+json" \
+                   -H "Authorization: ${{ github.token }}" \
+                   -H "X-GitHub-Api-Version: 2022-11-28" \
+                   https://api.github.com/repos/llvm/circt/releases/tags/$tag | \
+                jq '.html_url'
+            )
+            JSON=$(
+              echo $JSON | \
+                jq --arg a $tag \
+                   --arg b $URL \
+                   '.releases += [{"text":$a,"url":$b}]'
+            )
           done
 
           cd chisel/
@@ -171,7 +185,12 @@ jobs:
           COMMITS=$(git rev-list --reverse $MERGE_BASE..origin/${{ env.ref }})
           for commit in $COMMITS; do
             TITLE=$(git log --pretty=format:%s -n1 $commit)
-            JSON=$(echo $JSON | jq ".commits += [{\"checksum\":\"$commit\",\"title\":\"$TITLE\"}]")
+            JSON=$(
+              echo $JSON | \
+                jq --arg a $commit \
+                   --arg b "$TITLE" \
+                   '.commits += [{"checksum":$a,"title":$b}]'
+            )
           done
           cd ../
 
