@@ -19,7 +19,7 @@ private[chisel3] trait PropertyType[T] {
 
   /** Get the IR PropertyType for this PropertyType.
     */
-  def getPropertyType(): ir.PropertyType
+  def getPropertyType: ir.PropertyType
 }
 
 /** Companion object for PropertyType.
@@ -29,15 +29,15 @@ private[chisel3] trait PropertyType[T] {
   */
 private[chisel3] object PropertyType {
   implicit val intPropertyTypeInstance = new PropertyType[Int] {
-    def getPropertyType(): ir.PropertyType = ir.IntegerPropertyType
+    override def getPropertyType: ir.PropertyType = ir.IntegerPropertyType
   }
 
   implicit val longPropertyTypeInstance = new PropertyType[Long] {
-    def getPropertyType(): ir.PropertyType = ir.IntegerPropertyType
+    override def getPropertyType: ir.PropertyType = ir.IntegerPropertyType
   }
 
   implicit val bigIntPropertyTypeInstance = new PropertyType[BigInt] {
-    def getPropertyType(): ir.PropertyType = ir.IntegerPropertyType
+    override def getPropertyType: ir.PropertyType = ir.IntegerPropertyType
   }
 }
 
@@ -77,8 +77,8 @@ class Property[T: PropertyType] extends BaseType {
     *
     * This delegates to the PropertyType to convert itself to an IR PropertyType.
     */
-  private[chisel3] def getPropertyType(): ir.PropertyType = {
-    implicitly[PropertyType[T]].getPropertyType()
+  private[chisel3] def getPropertyType: ir.PropertyType = {
+    implicitly[PropertyType[T]].getPropertyType
   }
 }
 

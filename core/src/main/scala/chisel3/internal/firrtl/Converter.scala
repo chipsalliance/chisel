@@ -375,7 +375,7 @@ private[chisel3] object Converter {
         extractType(t._elements.head._2, childClearDir, info, checkProbe, true)
     }
     case t: Property[_] =>
-      t.getPropertyType() match {
+      t.getPropertyType match {
         case IntegerPropertyType => fir.IntegerPropertyType
       }
   }
