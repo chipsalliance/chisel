@@ -21,6 +21,10 @@ private[chisel3] trait PropertyType[T] {
   /** Get the IR PropertyType for this PropertyType.
     */
   def getPropertyType: ir.PropertyType
+
+  /** Get the IR PropertyLit for this PropertyType.
+    */
+  def getPropertyLit(lit: T): ir.PropertyLit
 }
 
 /** Companion object for PropertyType.
@@ -31,14 +35,20 @@ private[chisel3] trait PropertyType[T] {
 private[chisel3] object PropertyType {
   implicit val intPropertyTypeInstance = new PropertyType[Int] {
     override def getPropertyType: ir.PropertyType = ir.IntegerPropertyType
+
+    override def getPropertyLit(lit: Int): ir.PropertyLit = ir.IntegerPropertyLit(lit)
   }
 
   implicit val longPropertyTypeInstance = new PropertyType[Long] {
     override def getPropertyType: ir.PropertyType = ir.IntegerPropertyType
+
+    override def getPropertyLit(lit: Long): ir.PropertyLit = ir.IntegerPropertyLit(lit)
   }
 
   implicit val bigIntPropertyTypeInstance = new PropertyType[BigInt] {
     override def getPropertyType: ir.PropertyType = ir.IntegerPropertyType
+
+    override def getPropertyLit(lit: BigInt): ir.PropertyLit = ir.IntegerPropertyLit(lit)
   }
 }
 
@@ -151,7 +161,7 @@ object Property {
   /** Create a new Property literal of type T.
     */
   def apply[T: PropertyType](lit: T): Property[T] = {
-    val literal = ir.PropertyLit[T](lit)
+    val literal = implicitly[PropertyType[T]].getPropertyLit(lit)
     val result = new Property[T]
     literal.bindLitArg(result)
   }

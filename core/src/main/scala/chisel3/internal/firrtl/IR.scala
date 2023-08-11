@@ -173,27 +173,20 @@ case class SLit(n: BigInt, w: Width) extends LitArg(n, w) {
   *
   * These are not LitArgs, because not all property literals are integers.
   */
-private[chisel3] case class PropertyLit[T: PropertyTypeclass](lit: T) extends Arg {
-  def name:     String = s"PropertyLit($lit)"
+private[chisel3] sealed trait PropertyLit extends Arg {
+  def name:     String = "PropertyLit"
   def minWidth: Int = 0
-  def cloneWithWidth(newWidth: Width): this.type = PropertyLit[T](lit).asInstanceOf[this.type]
 
   /** Expose a bindLitArg API for PropertyLit, similar to LitArg.
     */
-  def bindLitArg(elem: Property[T]): Property[T] = {
+  def bindLitArg[T: PropertyTypeclass](elem: Property[T]): Property[T] = {
     elem.bind(PropertyLitBinding(this))
     elem.setRef(this)
     elem
   }
-
-  /** Get the IR PropertyType for this PropertyLit.
-    *
-    * This delegates to the PropertyTypeclass to convert itself to an IR PropertyType.
-    */
-  def getPropertyType: PropertyType = {
-    implicitly[PropertyTypeclass[T]].getPropertyType
-  }
 }
+
+private[chisel3] case class IntegerPropertyLit(lit: BigInt) extends PropertyLit
 
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class Ref(name: String) extends Arg

@@ -163,6 +163,4 @@ case class BundleLitBinding(litMap: Map[Data, LitArg]) extends LitBinding
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class VecLitBinding(litMap: VectorMap[Data, LitArg]) extends LitBinding
 // Literal binding attached to a Property.
-private[chisel3] case class PropertyLitBinding(litProp: PropertyLit[_])
-    extends UnconstrainedBinding
-    with ReadOnlyBinding
+private[chisel3] case class PropertyLitBinding(litProp: PropertyLit) extends UnconstrainedBinding with ReadOnlyBinding
