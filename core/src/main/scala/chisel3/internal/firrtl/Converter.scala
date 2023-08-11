@@ -427,6 +427,13 @@ private[chisel3] object Converter {
         id.intrinsic,
         params.keys.toList.sorted.map { name => convert(name, params(name)) }
       )
+    case ctx @ DefClass(_, name, ports, cmds) =>
+      fir.DefClass(
+        fir.NoInfo,
+        name,
+        ports.map(p => convert(p)),
+        convert(cmds, ctx)
+      )
   }
 
   def convert(circuit: Circuit): fir.Circuit =

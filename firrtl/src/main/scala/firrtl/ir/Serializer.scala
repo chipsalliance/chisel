@@ -410,6 +410,16 @@ object Serializer {
       newLineAndIndent(1); b ++= "intrinsic = "; b ++= intrinsic
       params.foreach { p => newLineAndIndent(1); s(p) }
       Iterator(b.toString)
+    case DefClass(info, name, ports, body) =>
+      val start = {
+        implicit val b = new StringBuilder
+        doIndent(0); b ++= "class "; b ++= name; b ++= " :"; s(info)
+        ports.foreach { p => newLineAndIndent(1); s(p) }
+        newLineNoIndent() // add a blank line between port declaration and body
+        newLineNoIndent() // newline for body, sIt will indent
+        b.toString
+      }
+      Iterator(start) ++ sIt(body)(indent + 1)
     case other =>
       Iterator(Indent * indent, other.serialize) // Handle user-defined nodes
   }

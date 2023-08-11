@@ -6,6 +6,7 @@ import firrtl.{ir => fir}
 import chisel3._
 import chisel3.internal._
 import chisel3.experimental._
+import chisel3.properties.Class
 import _root_.firrtl.{ir => firrtlir}
 import _root_.firrtl.{PrimOps, RenameMap}
 import _root_.firrtl.annotations.Annotation
@@ -410,6 +411,10 @@ private[chisel3] case class DefIntrinsicModule(
   ports:  Seq[Port],
   topDir: SpecifiedDirection,
   params: Map[String, Param])
+    extends Component
+
+@nowarn("msg=class Port") // delete when Port becomes private
+private[chisel3] case class DefClass(id: Class, name: String, ports: Seq[Port], commands: Seq[Command])
     extends Component
 
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
