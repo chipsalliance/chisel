@@ -52,8 +52,26 @@ constructs.
 The legal `Property` types may be used in ports. For example:
 
 ```scala mdoc:silent
-class Example extends RawModule {
+class PortsExample extends RawModule {
   // An Int Property type port.
   val myPort = IO(Input(Property[Int]()))
 }
 ```
+
+### Property Connections
+
+The legal `Property` types may be connected using the `:=` operator. For
+example, an input `Property` type port may be connected to an output `Property`
+type port:
+
+```scala mdoc:silent
+class ConnectExample extends RawModule {
+  val inPort = IO(Input(Property[Int]()))
+  val outPort = IO(Output(Property[Int]()))
+  outPort := inPort
+}
+```
+
+Connections are only supported between the same `Property` type. For example, a
+`Property[Int]` may only be connected to a `Property[Int]`. This is enforced by
+the Scala compiler.

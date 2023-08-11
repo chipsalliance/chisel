@@ -46,4 +46,26 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
       "input bigIntProp : Integer"
     )()
   }
+
+  it should "support connecting Property types of the same type" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val propIn = IO(Input(Property[Int]()))
+      val propOut = IO(Output(Property[Int]()))
+      propOut := propIn
+    })
+
+    matchesAndOmits(chirrtl)(
+      "propassign propOut, propIn"
+    )()
+  }
+
+  it should "fail to compile when connecting Property types of different types" in {
+    assertTypeError("""
+      new RawModule {
+        val propIn = IO(Input(Property[Int]()))
+        val propOut = IO(Output(Property[BigInt]()))
+        propOut := propIn
+      }
+    """)
+  }
 }

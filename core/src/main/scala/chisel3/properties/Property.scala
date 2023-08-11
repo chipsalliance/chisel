@@ -2,9 +2,10 @@
 
 package chisel3.properties
 
-import chisel3.{ActualDirection, BaseType, SpecifiedDirection}
-import chisel3.internal.Binding
+import chisel3.{ActualDirection, BaseType, MonoConnectException, SpecifiedDirection}
+import chisel3.internal.{checkConnect, throwException, Binding, Builder, MonoConnect, ReadOnlyBinding, TopBinding}
 import chisel3.internal.{firrtl => ir}
+import chisel3.experimental.{prefix, requireIsHardware, SourceInfo}
 import scala.reflect.runtime.universe.{typeOf, TypeTag}
 import scala.annotation.implicitNotFound
 
@@ -80,6 +81,61 @@ class Property[T: PropertyType] extends BaseType {
   private[chisel3] def getPropertyType: ir.PropertyType = {
     implicitly[PropertyType[T]].getPropertyType
   }
+
+  /** Connect a source Property[T] to this sink Property[T]
+    */
+  def :=(source: => Property[T])(implicit sourceInfo: SourceInfo): Unit = {
+    prefix(this) {
+      this.connect(source)(sourceInfo)
+    }
+  }
+
+  /** Internal implementation of connecting a source Property[T] to this sink Property[T].
+    */
+  private def connect(source: Property[T])(implicit sourceInfo: SourceInfo): Unit = {
+    requireIsHardware(this, "property to be connected to")
+    requireIsHardware(source, "property to be connected from")
+    this.topBinding match {
+      case _: ReadOnlyBinding => throwException(s"Cannot reassign to read-only $this")
+      case _ => // fine
+    }
+
+    try {
+      checkConnect(sourceInfo, this, source, Builder.referenceUserModule)
+    } catch {
+      case MonoConnectException(message) =>
+        throwException(
+          s"Connection between sink ($this) and source ($source) failed @: $message"
+        )
+    }
+
+    Builder.pushCommand(ir.PropAssign(sourceInfo, this.lref, source.ref))
+  }
+
+  /** Internal API: returns a ref that can be assigned to, if consistent with the binding.
+    */
+  private[chisel3] def lref: ir.Node = {
+    requireIsHardware(this)
+    requireVisible()
+    topBindingOpt match {
+      case Some(binding: ReadOnlyBinding) =>
+        throwException(s"internal error: attempted to generate LHS ref to ReadOnlyBinding $binding")
+      case Some(binding: TopBinding) => ir.Node(this)
+      case opt => throwException(s"internal error: unknown binding $opt in generating LHS ref")
+    }
+  }
+
+  /** Internal API: returns a ref, if bound.
+    */
+  private[chisel3] final def ref: ir.Arg = {
+    requireIsHardware(this)
+    requireVisible()
+    topBindingOpt match {
+      case Some(binding: TopBinding) => ir.Node(this)
+      case opt => throwException(s"internal error: unknown binding $opt in generating RHS ref")
+    }
+  }
+
 }
 
 /** Companion object for Property.
