@@ -6,7 +6,7 @@ import firrtl.{ir => fir}
 import chisel3._
 import chisel3.internal._
 import chisel3.experimental._
-import chisel3.properties.{Property, PropertyType => PropertyTypeclass}
+import chisel3.properties.{Property, PropertyType => PropertyTypeclass, Class, DynamicObject}
 import _root_.firrtl.{ir => firrtlir}
 import _root_.firrtl.{PrimOps, RenameMap}
 import _root_.firrtl.annotations.Annotation
@@ -103,7 +103,8 @@ object Arg {
     case Some(arg) if includeRoot    => arg.name
     case None if includeRoot =>
       id match {
-        case data: Data => data._computeName(Some("?")).get
+        case data: Data          => data._computeName(Some("?")).get
+        case obj:  DynamicObject => obj._computeName(Some("?")).get
         case _ => "?"
       }
     case _ => "_" // Used when includeRoot == false
@@ -306,6 +307,7 @@ private[chisel3] sealed trait PropertyType
 private[chisel3] case object IntegerPropertyType extends PropertyType
 private[chisel3] case object StringPropertyType extends PropertyType
 private[chisel3] case class SequencePropertyType(elementType: PropertyType) extends PropertyType
+private[chisel3] case class ClassPropertyType(name: String) extends PropertyType
 
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 abstract class Command {
@@ -358,6 +360,7 @@ case class DefMemPort[T <: Data](
 @nowarn("msg=class Port") // delete when Port becomes private
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class DefInstance(sourceInfo: SourceInfo, id: BaseModule, ports: Seq[Port]) extends Definition
+private[chisel3] case class DefObject(sourceInfo: SourceInfo, id: DynamicObject) extends Definition
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class WhenBegin(sourceInfo: SourceInfo, pred: Arg) extends Command
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
@@ -440,6 +443,10 @@ private[chisel3] case class DefIntrinsicModule(
   ports:  Seq[Port],
   topDir: SpecifiedDirection,
   params: Map[String, Param])
+    extends Component
+
+@nowarn("msg=class Port") // delete when Port becomes private
+private[chisel3] case class DefClass(id: Class, name: String, ports: Seq[Port], commands: Seq[Command])
     extends Component
 
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
