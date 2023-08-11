@@ -81,15 +81,6 @@ jobs:
     # metadata is used to drive the cherry-pick action of (1), the commit
     # message of (2), and the PR title and body of (3).
     #
-    # This job re-clones both Chisel and CIRCT, in their entirety.  This is done
-    # because it is simpler to gate the JSON (and commit and PR messages) behind
-    # _this job_ where we know that a PR is going to be created.  We could save
-    # a CIRCT clone by doing this in the "Determine Versions" job at the cost of
-    # complicating this Workflow by needing to pass information between the
-    # jobs.
-    #
-    # TODO: Revisit the above decision.
-    #
     # [1]: "compare" is GitHub lingo for "the branch with your changes".
     # [2]: "base" is GitHub lingo for "the branch without your changes".
     name: Create or Update PR
