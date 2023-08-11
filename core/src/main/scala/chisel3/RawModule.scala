@@ -188,6 +188,7 @@ abstract class RawModule extends BaseModule {
           case (false, true)                                 => Connect(si, ldata.lref, ProbeRead(Node(rdata)))
           case (false, false)                                => Connect(si, ldata.lref, Node(rdata))
         }
+      case (_, _) => throwException(s"Internal Error! Attempted secret connection between $left and $right")
     }
     val secretCommands = if (_closed) {
       _component.get.asInstanceOf[DefModule].secretCommands
