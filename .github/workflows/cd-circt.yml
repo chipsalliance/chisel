@@ -1,11 +1,307 @@
-name: CD of CIRCT
+name: CD (firtool)
+
+env:
+  # This is the name of the branch containing accumulated patches that need to
+  # be applied in order for the latest CIRCT to work with Chisel.
+  ref: ci/ci-circt-nightly
+  # This is the location, within the `chipsalliance/chisel` repository, of the
+  # configuration file which sets the CIRCT version.  This workflow assumes that
+  # this is a JSON object containing a key "version".
+  circt-config: ./etc/circt.json
+  # The name that will be associated with any created commits.
+  user: chiselbot
+  # The email address that will be associated with any created commits.
+  email: chiselbot@users.noreply.github.com
 
 on:
   workflow_dispatch:
+  # Run every day at 0100 UTC which is:
+  #   - 1800 PDT / 1700 PST
+  #   - 2100 EDT / 2000 EST
+  # This time is chosen because it is after a likely time that a CIRCT release
+  # would have happened (during the North American workday), but is not too late
+  # that somebody is not available to immediately approve.  Running this in the
+  # middle of the night isn't advantageous like typical nightly runs.
+  schedule:
+    - cron: '0 1 * * *'
 
 jobs:
-  hello-world:
-    name: Hello World
-    runs-on: ubuntu-20.04
+  # This job examines the CIRCT and Chisel repositories to determine the version
+  # of CIRCT that Chisel is using and the latest version of CIRCT that is
+  # available upstream.
+  #
+  # This job has to do a non-shallow checkout of both Chisel and CIRCT because
+  # it needs to examine tags.
+  determine-versions:
+    name: Determine Versions
+    runs-on: ubuntu-latest
+    outputs:
+      # The version of CIRCT that Chisel is _currently_ using.
+      version-current: ${{ steps.get-version-current.outputs.version }}
+      # The latest version of CIRCT that is available.
+      version-latest: ${{ steps.get-version-latest.outputs.version }}
     steps:
-      - run: echo "hello world"
+      - name: Clone chipsalliance/chisel
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          path: chisel
+      - name: Clone llvm/circt
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          repository: llvm/circt
+          path: circt
+      - name: Get Current Tag
+        id: get-version-current
+        run: |
+          cd chisel/
+          VERSION=$(jq -r '.version' < ${{ env.circt-config }})
+          echo version=$VERSION >> $GITHUB_OUTPUT
+          echo Current \`firtool\` version is: \`$VERSION\` >> $GITHUB_STEP_SUMMARY
+      - name: Get Latest Tag
+        id: get-version-latest
+        run: |
+          cd circt/
+          VERSION=$(git tag --list 'firtool-*' | tail -n1)
+          echo version=$VERSION >> $GITHUB_OUTPUT
+          echo Latest \`firtool\` version is: \`$VERSION\` >> $GITHUB_STEP_SUMMARY
+
+  create-pr:
+    # If a new version of CIRCT is available do the following logical actions.
+    #
+    #   1. Cherry-pick all commits from the `ci/ci-circt-nightly` staging branch
+    #      onto a new "compare" branch [1].
+    #   2. Create a new commit that updates the CIRCT version.
+    #   3. Create a new or update an existing Pull Request (PR) that merges this
+    #      branch with all changes into the `main` "base" branch [2] on GitHub.
+    #
+    # These logical steps are facilitated by a prerequisite step that assembles
+    # a bunch of JSON metadata about what is about to be done.  This JSON
+    # metadata is used to drive the cherry-pick action of (1), the commit
+    # message of (2), and the PR title and body of (3).
+    #
+    # [1]: "compare" is GitHub lingo for "the branch with your changes".
+    # [2]: "base" is GitHub lingo for "the branch without your changes".
+    name: Create or Update PR
+    needs:
+      - determine-versions
+    # Run only if a new version of CIRCT is available.
+    if: needs.determine-versions.outputs.version-latest != needs.determine-versions.outputs.version-current
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout chipsalliance/chisel
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          path: chisel
+      - name: Clone llvm/circt
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          repository: llvm/circt
+          path: circt
+      # Write a JSON object to the temporary file `metadata/metadata.json` that
+      # contains information about what this job is going to do.  Populate four
+      # members:
+      #
+      #   - "current": a string of the current `firtool` release used by Chisel
+      #   - "latest": a string of the latest `firtool` release provided by CIRCT
+      #   - "releases": an array of releases that will be included
+      #   - "commits": an array of commit objects that will be cherry-picked
+      #
+      # As an example, if this step is run where `firtool` will be bumped from
+      # 1.49.0 (current version) to 1.50.0 (latest version, the JSON object
+      # could look like:
+      #
+      #     {
+      #       "current": "firtool-1.48.0",
+      #       "latest": "firtool-1.50.0",
+      #       "release": [
+      #         {
+      #           "text": "firtool-1.49.0",
+      #           "url": "https://github.com/llvm/circt/releases/tag/firtool-1.49.0"
+      #         },
+      #         {
+      #           "text": "firtool-1.50.0",
+      #           "url": "https://github.com/llvm/circt/releases/tag/firtool-1.50.0"
+      #         }
+      #       ],
+      #       "commits": [
+      #         {
+      #           "checksum": "deadbeef",
+      #           "title": "Fixed a command line option that changed"
+      #         },
+      #         {
+      #           "checksum": "0badf00d",
+      #           "title": "Fixed a test which now passes"
+      #         }
+      #       ]
+      #     }
+      - name: Assemble JSON Metadata
+        run: |
+          NEW_TAGS=$(
+            cd circt/ && \
+              git tag --contains=${{ needs.determine-versions.outputs.version-current }} | \
+                tail -n +2
+          )
+
+          JSON=$(
+            echo '{ "current": "", "latest": "", "releases": [], "commits": [] }' |
+              jq \
+                --arg a ${{ needs.determine-versions.outputs.version-current }} \
+                --arg b ${{ needs.determine-versions.outputs.version-latest }} \
+                '.current = $a | .latest = $b'
+          )
+
+          for tag in $NEW_TAGS; do
+            URL=$(
+              curl -L \
+                   -H "Accept: application/vnd.github+json" \
+                   -H "Authorization: ${{ github.token }}" \
+                   -H "X-GitHub-Api-Version: 2022-11-28" \
+                   https://api.github.com/repos/llvm/circt/releases/tags/$tag | \
+                jq '.html_url'
+            )
+            JSON=$(
+              echo $JSON | \
+                jq --arg a $tag \
+                   --arg b $URL \
+                   '.releases += [{"text": $a, "url": $b}]'
+            )
+          done
+
+          cd chisel/
+          MERGE_BASE=$(git merge-base HEAD origin/${{ env.ref }})
+          COMMITS=$(git rev-list --reverse $MERGE_BASE..origin/${{ env.ref }})
+          for commit in $COMMITS; do
+            TITLE=$(git log --pretty=format:%s -n1 $commit)
+            JSON=$(
+              echo $JSON | \
+                jq --arg a $commit \
+                   --arg b "$TITLE" \
+                   '.commits += [{"checksum": $a, "title": $b}]'
+            )
+          done
+          cd ../
+
+          mkdir metadata/
+          echo $JSON | jq -c > metadata/metadata.json
+
+          echo "# Pandoc Metadata File" >> $GITHUB_STEP_SUMMARY
+          echo \`\`\`json >> $GITHUB_STEP_SUMMARY
+          echo $JSON | jq >> $GITHUB_STEP_SUMMARY
+          echo \`\`\` >> $GITHUB_STEP_SUMMARY
+      # The next three steps use pandoc [3] to populate templates for:
+      #
+      #   1. The PR title
+      #   2. The PR body
+      #   3. The message of the commit that bumps CIRCT
+      #
+      # The templates are defined in the `.github/workflows/cd-circt/`
+      # directory.
+      #
+      # [3]: https://pandoc.org/
+      - name: Generate PR Title
+        uses: docker://pandoc/core
+        with:
+          args: >-
+            --metadata-file=metadata/metadata.json
+            --template chisel/.github/workflows/cd-circt/pr-title.md
+            --from=markdown
+            --wrap=none
+            -o metadata/pr-title.md
+            /dev/null
+      - name: Generate PR Body
+        uses: docker://pandoc/core
+        with:
+          args: >-
+            --metadata-file=metadata/metadata.json
+            --template chisel/.github/workflows/cd-circt/pr-body.md
+            --from=markdown
+            --wrap=none
+            -o metadata/pr-body.md
+            /dev/null
+      - name: Generate Commit Message
+        uses: docker://pandoc/core
+        with:
+          args: >-
+            --metadata-file=metadata/metadata.json
+            --template chisel/.github/workflows/cd-circt/commit-message.md
+            --from=markdown
+            -o metadata/commit-message.md
+            /dev/null
+      # Print the populated pandoc templates to the GitHub Actions step summary.
+      # (These will print on the "Summary" of a run of this Action.)
+      - name: Show Metadata
+        run: |
+          echo "# PR Title" >> $GITHUB_STEP_SUMMARY
+          cat metadata/pr-title.md >> $GITHUB_STEP_SUMMARY
+
+          echo "# PR Body" >> $GITHUB_STEP_SUMMARY
+          cat metadata/pr-body.md >> $GITHUB_STEP_SUMMARY
+
+          echo "# Commit Message" >> $GITHUB_STEP_SUMMARY
+          cat metadata/commit-message.md >> $GITHUB_STEP_SUMMARY
+      # Using the information in the JSON Metadata, cherry-pick all commits from
+      # the `ci/ci-circt-nightly` branch.
+      - name: Cherry Pick Staging Branch Commits
+        run: |
+          cd chisel/
+          git checkout main
+
+          git config user.name ${{ env.user }}
+          git config user.email ${{ env.email }}
+
+          COMMITS=$(jq -r '.commits[].checksum' < ../metadata/metadata.json)
+          for commit in $COMMITS; do
+            git cherry-pick $commit
+          done
+      # Create unstaged changes that updates the CIRCT version to "latest".
+      - name: Update Chisel to Latest CIRCT
+        run: |
+          cd chisel/
+
+          jq '.version = "${{ needs.determine-versions.outputs.version-latest }}"' < ${{ env.circt-config }} > ../metadata/tmp.json
+          mv ../metadata/tmp.json ${{ env.circt-config }}
+      # Put the pandoc-created PR title and commit message into step outputs so
+      # that we can pass these to the peter-evans/create-pull-request composite
+      # action in the next step.  Pass the commit message using a HereDoc (as
+      # GitHub suggests [4]) so that this will show up in a multi-line format
+      # correctly.  Use a unique HereDoc delimiter to avoid collisions with
+      # anything which may be in the commit message.
+      #
+      # The PR body is passed as a file in the next step because the
+      # peter-evans/create-pull-request composite action supports it.
+      #
+      # [4]: https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#multiline-strings
+      - name: Setup Environment with Metadata
+        id: setup-env
+        run: |
+          echo pr-title=$(cat metadata/pr-title.md) >> $GITHUB_OUTPUT
+
+          EOF=$(cat /dev/urandom | base64 -w 128 | head -n8 | tail -n1)
+          {
+            echo "commit-message<<$EOF"
+            cat metadata/commit-message.md
+            echo $EOF
+          } >> $GITHUB_OUTPUT
+      # Commit unstaged changes, create or update the PR, notify reviewers, and
+      # add labels.
+      - name: Create PR
+        id: create-pr
+        uses: peter-evans/create-pull-request@v5
+        with:
+          path: chisel
+          token: ${{ secrets.CHISEL_BOT_TOKEN }}
+          branch: cd/bump-circt-from-${{ needs.determine-versions.outputs.version-current }}-to-${{ needs.determine-versions.outputs.version-latest }}
+          author: ${{ env.user }} <${{ env.email }}>
+          committer: ${{ env.user }} <${{ env.email }}>
+          reviewers: |
+            seldridge
+            jackkoenig
+          title: ${{ steps.setup-env.outputs.pr-title }}
+          body-path: metadata/pr-body.md
+          commit-message: ${{ steps.setup-env.outputs.commit-message }}
+          labels: |
+            Dependency Update
