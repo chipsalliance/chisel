@@ -291,4 +291,104 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
     )()
   }
 
+  it should "work when rw-tapping IO, as rwprobe() from inside module" in {
+    class Foo extends RawModule {
+      class InOutBundle extends Bundle {
+        val in = Flipped(Bool())
+        val out = Bool()
+      }
+      class Child() extends RawModule {
+        val v = IO(Vec(2, new InOutBundle))
+        v(0).out := v(0).in
+        v(1).out := v(1).in
+      }
+
+      val inputs = IO(Flipped(Vec(2, Bool())))
+      val child = Module(new Child())
+      child.v(0).in := inputs(0)
+      child.v(1).in := inputs(1)
+
+      // Directly rwTap field of bundle within vector.
+      val outV_0_out = IO(probe.RWProbe(Bool()))
+      probe.define(outV_0_out, BoringUtils.rwTap(child.v(0).out))
+
+      // Also rwTap flipped field (input port).
+      val outV_1_in = IO(probe.RWProbe(Bool()))
+      probe.define(outV_1_in, BoringUtils.rwTap(child.v(1).in))
+    }
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Foo)
+    matchesAndOmits(chirrtl)(
+      // Child
+      "output v : { flip in : UInt<1>, out : UInt<1>}[2]",
+      "define bore = rwprobe(v[0].out)",
+      "define bore_1 = rwprobe(v[1].in)",
+      // Forwarding probes out from instantiating module.
+      "define outV_0_out = child.bore",
+      "define outV_1_in = child.bore_1"
+    )()
+    // Send through firtool and lightly check output.
+    // Bit fragile across firtool versions.
+    val sv = circt.stage.ChiselStage.emitSystemVerilog(new Foo)
+    matchesAndOmits(sv)(
+      // Child ports.
+      "module Child(",
+      "input  v_0_in,",
+      "       v_1_in,",
+      "output v_0_out",
+      // Instantiation.
+      "Child child (",
+      ".v_0_in  (inputs_0),", // Alive because feeds outV_0_out probe.
+      ".v_1_in  (inputs_1),", // rwprobe target.
+      ".v_0_out (", // rwprobe target.
+      // Ref ABI.  Names of internal signals are subject to change.
+      "`define ref_Foo_Foo_outV_0_out child.v_0_out",
+      "`define ref_Foo_Foo_outV_1_in child.v_1_in"
+    )("v_1_out")
+  }
+
+  it should "work when tapping IO, as probe() from outside module" in {
+    class Foo extends RawModule {
+      class InOutBundle extends Bundle {
+        val in = Flipped(Bool())
+        val out = Bool()
+      }
+      class Child() extends RawModule {
+        val v = IO(Vec(2, new InOutBundle))
+        v(0).out := v(0).in
+        v(1).out := v(1).in
+      }
+
+      val inputs = IO(Flipped(Vec(2, Bool())))
+      val child = Module(new Child())
+      child.v(0).in := inputs(0)
+      child.v(1).in := inputs(1)
+
+      // Directly tap entire vector of bundles.
+      val outProbeForChildVec = IO(probe.Probe(Vec(2, new InOutBundle)))
+      probe.define(outProbeForChildVec, BoringUtils.tap(child.v))
+
+      // Also tap specific leaf.
+      val outV_1_in = IO(probe.Probe(Bool()))
+      probe.define(outV_1_in, BoringUtils.tap(child.v(1).in))
+
+      // Index through probe of aggregate to sibling leaf.
+      val outV_1_out_refsub = IO(probe.Probe(Bool()))
+      probe.define(outV_1_out_refsub, outProbeForChildVec(1).out)
+    }
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Foo)
+    matchesAndOmits(chirrtl)(
+      // Child port.
+      "output v : { flip in : UInt<1>, out : UInt<1>}[2]",
+      // Probes in terms of child instance ports.
+      "define outProbeForChildVec = probe(child.v)",
+      "define outV_1_in = probe(child.v[1].in)",
+      "define outV_1_out_refsub = outProbeForChildVec[1].out"
+    )("define bore")
+
+    // Send through firtool but don't inspect output.
+    // Read-only probes only ensure they'll read same as in input FIRRTL,
+    // and so there may be significant churn here.
+    // Simulation should always read same values.
+    circt.stage.ChiselStage.emitSystemVerilog(new Foo)
+  }
 }
