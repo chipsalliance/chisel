@@ -170,6 +170,8 @@ private[chisel3] object Converter {
       Some(fir.IsInvalid(convert(info), convert(arg, ctx, info)))
     case e @ DefInstance(info, id, _) =>
       Some(fir.DefInstance(convert(info), e.name, id.name))
+    case e @ DefObject(info, obj) =>
+      Some(fir.DefObject(convert(info), e.name, extractType(obj.getReference, info)))
     case e @ Stop(_, info, clock, ret) =>
       Some(fir.Stop(convert(info), ret, convert(clock, ctx, info), firrtl.Utils.one, e.name))
     case e @ Printf(_, info, clock, pable) =>
@@ -381,7 +383,8 @@ private[chisel3] object Converter {
     }
     case t: Property[_] =>
       t.getPropertyType match {
-        case IntegerPropertyType => fir.IntegerPropertyType
+        case IntegerPropertyType     => fir.IntegerPropertyType
+        case ClassPropertyType(name) => fir.ClassPropertyType(name)
       }
   }
 
@@ -429,6 +432,13 @@ private[chisel3] object Converter {
         (ports ++ ctx.secretPorts).map(p => convert(p, topDir)),
         id.intrinsic,
         params.keys.toList.sorted.map { name => convert(name, params(name)) }
+      )
+    case ctx @ DefClass(_, name, ports, cmds) =>
+      fir.DefClass(
+        fir.NoInfo,
+        name,
+        ports.map(p => convert(p)),
+        convert(cmds, ctx)
       )
   }
 

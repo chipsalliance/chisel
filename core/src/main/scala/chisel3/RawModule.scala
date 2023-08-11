@@ -8,6 +8,7 @@ import scala.annotation.nowarn
 import chisel3.experimental.{BaseModule, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal._
 import chisel3.experimental.hierarchy.{InstanceClone, ModuleClone}
+import chisel3.properties.Object
 import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
 import _root_.firrtl.annotations.{IsModule, ModuleTarget}
@@ -139,6 +140,12 @@ abstract class RawModule extends BaseModule {
         case id: assume.Assume    => id.forceName(default = "assume", _namespace)
         case id: cover.Cover      => id.forceName(default = "cover", _namespace)
         case id: printf.Printf => id.forceName(default = "printf", _namespace)
+        case id: Object => {
+          // Force name of the Object, and set its Property[Class] type's ref to the Object.
+          // The type's ref can't be set within instantiate, because the Object hasn't been named yet.
+          id.forceName(default = "_object", _namespace)
+          id.getReference.setRef(id.getRef)
+        }
         case id: BaseType =>
           if (id.isSynthesizable) {
             id.topBinding match {

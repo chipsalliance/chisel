@@ -2,12 +2,21 @@
 
 package chisel3.properties
 
-import chisel3.{ActualDirection, BaseType, MonoConnectException, SpecifiedDirection}
-import chisel3.internal.{checkConnect, throwException, Binding, Builder, MonoConnect, ReadOnlyBinding, TopBinding}
+import chisel3.{ActualDirection, BaseType, MonoConnectException, RawModule, SpecifiedDirection}
+import chisel3.internal.{
+  checkConnect,
+  throwException,
+  Binding,
+  Builder,
+  MonoConnect,
+  ObjectFieldBinding,
+  ReadOnlyBinding,
+  TopBinding
+}
 import chisel3.internal.{firrtl => ir}
 import chisel3.experimental.{prefix, requireIsHardware, SourceInfo}
 import scala.reflect.runtime.universe.{typeOf, TypeTag}
-import scala.annotation.implicitNotFound
+import scala.annotation.{implicitAmbiguous, implicitNotFound}
 
 /** PropertyType defines a typeclass for valid Property types.
   *
@@ -20,7 +29,7 @@ private[chisel3] trait PropertyType[T] {
 
   /** Get the IR PropertyType for this PropertyType.
     */
-  def getPropertyType: ir.PropertyType
+  def getPropertyType(value: Option[T]): ir.PropertyType
 }
 
 /** Companion object for PropertyType.
@@ -29,16 +38,29 @@ private[chisel3] trait PropertyType[T] {
   * be in the implicit scope and available for users.
   */
 private[chisel3] object PropertyType {
+  @implicitAmbiguous("unable to infer Property type. Please specify it explicitly in square brackets on the LHS.")
   implicit val intPropertyTypeInstance = new PropertyType[Int] {
-    override def getPropertyType: ir.PropertyType = ir.IntegerPropertyType
+    override def getPropertyType(_value: Option[Int]): ir.PropertyType = ir.IntegerPropertyType
   }
 
+  @implicitAmbiguous("unable to infer Property type. Please specify it explicitly in square brackets on the LHS.")
   implicit val longPropertyTypeInstance = new PropertyType[Long] {
-    override def getPropertyType: ir.PropertyType = ir.IntegerPropertyType
+    override def getPropertyType(_value: Option[Long]): ir.PropertyType = ir.IntegerPropertyType
   }
 
+  @implicitAmbiguous("unable to infer Property type. Please specify it explicitly in square brackets on the LHS.")
   implicit val bigIntPropertyTypeInstance = new PropertyType[BigInt] {
-    override def getPropertyType: ir.PropertyType = ir.IntegerPropertyType
+    override def getPropertyType(_value: Option[BigInt]): ir.PropertyType = ir.IntegerPropertyType
+  }
+
+  @implicitAmbiguous("unable to infer Property type. Please specify it explicitly in square brackets on the LHS.")
+  implicit val classPropertyTypeInstance = new PropertyType[Class] {
+    override def getPropertyType(value: Option[Class]): ir.PropertyType = ir.ClassPropertyType(value.get.name)
+  }
+
+  @implicitAmbiguous("unable to infer Property type. Please specify it explicitly in square brackets on the LHS.")
+  implicit val classStubPropertyTypeInstance = new PropertyType[ClassStub] {
+    override def getPropertyType(value: Option[ClassStub]): ir.PropertyType = ir.ClassPropertyType(value.get.name)
   }
 }
 
@@ -49,7 +71,7 @@ private[chisel3] object PropertyType {
   * describe a set of non-hardware types, so they have no width, cannot be used
   * in aggregate Data types, and cannot be connected to Data types.
   */
-class Property[T: PropertyType] extends BaseType {
+class Property[T: PropertyType](value: Option[T] = None) extends BaseType {
 
   /** Bind this node to the in-memory graph.
     */
@@ -62,7 +84,7 @@ class Property[T: PropertyType] extends BaseType {
 
   /** Clone type by simply constructing a new Property[T].
     */
-  override def cloneType: this.type = new Property[T].asInstanceOf[this.type]
+  override def cloneType: this.type = new Property[T](value).asInstanceOf[this.type]
 
   /** Clone type with extra information preserved.
     *
@@ -79,7 +101,7 @@ class Property[T: PropertyType] extends BaseType {
     * This delegates to the PropertyType to convert itself to an IR PropertyType.
     */
   private[chisel3] def getPropertyType: ir.PropertyType = {
-    implicitly[PropertyType[T]].getPropertyType
+    implicitly[PropertyType[T]].getPropertyType(value)
   }
 
   /** Connect a source Property[T] to this sink Property[T]
@@ -100,8 +122,11 @@ class Property[T: PropertyType] extends BaseType {
       case _ => // fine
     }
 
+    // Get the BaseModule this connect is occuring within, which may be a RawModule or Class.
+    val contextMod = Builder.referenceUserContainer
+
     try {
-      checkConnect(sourceInfo, this, source, Builder.referenceUserModule)
+      checkConnect(sourceInfo, this, source, contextMod)
     } catch {
       case MonoConnectException(message) =>
         throwException(
@@ -109,7 +134,12 @@ class Property[T: PropertyType] extends BaseType {
         )
     }
 
-    Builder.pushCommand(ir.PropAssign(sourceInfo, this.lref, source.ref))
+    // Add the PropAssign command directly onto the correct BaseModule subclass.
+    contextMod match {
+      case rm:  RawModule => rm.addCommand(ir.PropAssign(sourceInfo, this.lref, source.ref))
+      case cls: Class     => cls.addCommand(ir.PropAssign(sourceInfo, this.lref, source.ref))
+      case _ => throwException("Internal Error! Property connection can only occur within RawModule or Class.")
+    }
   }
 
   /** Internal API: returns a ref that can be assigned to, if consistent with the binding.
@@ -120,6 +150,13 @@ class Property[T: PropertyType] extends BaseType {
     topBindingOpt match {
       case Some(binding: ReadOnlyBinding) =>
         throwException(s"internal error: attempted to generate LHS ref to ReadOnlyBinding $binding")
+      case Some(binding: ObjectFieldBinding) => {
+        this.direction match {
+          case ActualDirection.Input => ir.Node(this)
+          case _ =>
+            throwException(s"Cannot connect to field ${ir.Arg.earlyLocalName(this)} with direction ${this.direction}")
+        }
+      }
       case Some(binding: TopBinding) => ir.Node(this)
       case opt => throwException(s"internal error: unknown binding $opt in generating LHS ref")
     }
@@ -131,6 +168,13 @@ class Property[T: PropertyType] extends BaseType {
     requireIsHardware(this)
     requireVisible()
     topBindingOpt match {
+      case Some(binding: ObjectFieldBinding) => {
+        this.direction match {
+          case ActualDirection.Output => ir.Node(this)
+          case _ =>
+            throwException(s"Cannot connect from field ${ir.Arg.earlyLocalName(this)} with direction ${this.direction}")
+        }
+      }
       case Some(binding: TopBinding) => ir.Node(this)
       case opt => throwException(s"internal error: unknown binding $opt in generating RHS ref")
     }
@@ -146,6 +190,12 @@ object Property {
     */
   def apply[T: PropertyType](): Property[T] = {
     new Property[T]
+  }
+
+  /** Create a new Property for a Class.
+    */
+  def apply(cls: Class): Property[Class] = {
+    new Property[Class](Some(cls))
   }
 
   /** Create a new Property literal of type T.
