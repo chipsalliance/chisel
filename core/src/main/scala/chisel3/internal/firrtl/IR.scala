@@ -185,14 +185,6 @@ private[chisel3] case class PropertyLit[T: PropertyTypeclass](lit: T) extends Ar
     elem.setRef(this)
     elem
   }
-
-  /** Get the IR PropertyType for this PropertyLit.
-    *
-    * This delegates to the PropertyTypeclass to convert itself to an IR PropertyType.
-    */
-  def getPropertyType: PropertyType = {
-    implicitly[PropertyTypeclass[T]].getPropertyType
-  }
 }
 
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
