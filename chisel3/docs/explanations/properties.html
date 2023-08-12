@@ -79,6 +79,18 @@ type port:</p>
 <p>Connections are only supported between the same <code class="language-plaintext highlighter-rouge">Property</code> type. For example, a
 <code class="language-plaintext highlighter-rouge">Property[Int]</code> may only be connected to a <code class="language-plaintext highlighter-rouge">Property[Int]</code>. This is enforced by
 the Scala compiler.</p>
+
+<h3 id="property-literals">Property Literals</h3>
+
+<p>The legal <code class="language-plaintext highlighter-rouge">Property</code> types may be used to construct literals by applying the
+<code class="language-plaintext highlighter-rouge">Property</code> object to a literal value of the <code class="language-plaintext highlighter-rouge">Property</code> type. For example, a
+<code class="language-plaintext highlighter-rouge">Property</code> literal may be connected to an output <code class="language-plaintext highlighter-rouge">Property</code> type port:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">LiteralExample</span> <span class="k">extends</span> <span class="nc">RawModule</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">outPort</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">Property</span><span class="o">[</span><span class="kt">Int</span><span class="o">]()))</span>
+  <span class="n">outPort</span> <span class="o">:=</span> <span class="nc">Property</span><span class="o">(</span><span class="mi">123</span><span class="o">)</span>
+<span class="o">}</span>
+</code></pre></div></div>
 </section></div></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/highlight/highlight.pack.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/verilog.min.js"></script><script src="/lunr/lunr.js"></script><script>
 // For all code blocks, copy the language from the containing div
 // to the inner code tag (where hljs expects it to be)
