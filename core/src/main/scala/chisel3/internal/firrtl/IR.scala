@@ -6,6 +6,7 @@ import firrtl.{ir => fir}
 import chisel3._
 import chisel3.internal._
 import chisel3.experimental._
+import chisel3.properties.{Property, PropertyType => PropertyTypeclass}
 import _root_.firrtl.{ir => firrtlir}
 import _root_.firrtl.{PrimOps, RenameMap}
 import _root_.firrtl.annotations.Annotation
@@ -165,6 +166,24 @@ case class SLit(n: BigInt, w: Width) extends LitArg(n, w) {
 
   def cloneWithWidth(newWidth: Width): this.type = {
     SLit(n, newWidth).asInstanceOf[this.type]
+  }
+}
+
+/** Literal property value.
+  *
+  * These are not LitArgs, because not all property literals are integers.
+  */
+private[chisel3] case class PropertyLit[T: PropertyTypeclass](lit: T) extends Arg {
+  def name:     String = s"PropertyLit($lit)"
+  def minWidth: Int = 0
+  def cloneWithWidth(newWidth: Width): this.type = PropertyLit[T](lit).asInstanceOf[this.type]
+
+  /** Expose a bindLitArg API for PropertyLit, similar to LitArg.
+    */
+  def bindLitArg(elem: Property[T]): Property[T] = {
+    elem.bind(PropertyLitBinding(this))
+    elem.setRef(this)
+    elem
   }
 }
 

@@ -108,6 +108,8 @@ object Serializer {
     case ValidIf(cond, value, _) => b ++= "validif("; s(cond); b ++= ", "; s(value); b += ')'
     case SIntLiteral(value, width) =>
       b ++= "SInt"; s(width); b ++= "(0h"; b ++= value.toString(16); b ++= ")"
+    case IntegerPropertyLiteral(value) =>
+      b ++= "Integer("; b ++= value.toString(10); b ++= ")"
     case ProbeExpr(expr, _)   => b ++= "probe("; s(expr); b += ')'
     case RWProbeExpr(expr, _) => b ++= "rwprobe("; s(expr); b += ')'
     case ProbeRead(expr, _)   => b ++= "read("; s(expr); b += ')'
