@@ -93,10 +93,9 @@ private[chisel3] object Converter {
     // TODO Simplify
     case lit: ILit =>
       throw new InternalErrorException(s"Unexpected ILit: $lit")
-    case lit: PropertyLit =>
-      lit match {
-        case IntegerPropertyLit(lit) => fir.IntegerPropertyLiteral(lit)
-      }
+    case PropertyLit(lit: Int) => fir.IntegerPropertyLiteral(lit)
+    case PropertyLit(lit: Long) => fir.IntegerPropertyLiteral(lit)
+    case PropertyLit(lit: BigInt) => fir.IntegerPropertyLiteral(lit)
     case e @ ProbeExpr(probe) =>
       fir.ProbeExpr(convert(probe, ctx, info))
     case e @ RWProbeExpr(probe) =>
