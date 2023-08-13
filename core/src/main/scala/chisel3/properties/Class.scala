@@ -12,9 +12,19 @@ import scala.collection.mutable.ArrayBuffer
 
 @nowarn("msg=class Port") // delete when Port becomes private
 class Class extends BaseModule {
+  protected def atModuleBodyEnd(gen: => Unit): Unit = {
+    _atModuleBodyEnd += { () => gen }
+  }
+  private val _atModuleBodyEnd = new ArrayBuffer[() => Unit]
+
   private[chisel3] override def generateComponent(): Option[Component] = {
     // Close the Class.
     require(!_closed, "Can't generate Class more than once")
+
+    // Evaluate any atModuleBodyEnd generators.
+    _atModuleBodyEnd.foreach { gen =>
+      gen()
+    }
 
     _closed = true
 
@@ -126,7 +136,7 @@ class Class extends BaseModule {
   *
   * This is used to get a Property[Class] type of an expected name.
   */
-private[chisel3] case class ClassStub(name: String)
+case class ClassStub(name: String)
 
 object Class {
   /** Helper to create a Property[Class] type for a Class of a given name.

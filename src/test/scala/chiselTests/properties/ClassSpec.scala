@@ -130,9 +130,9 @@ class ClassSpec extends ChiselFlatSpec with MatchesAndOmits {
 
   it should "provide a static method to materialize a Property[Class] type from a name" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val io = IO(Input(Class.getReferenceType("foo")))
+      val io = IO(Input(Class.getReferenceType("foo").asInstanceOf[Property[Class]]))
     })
-
+    println(chirrtl)
     matchesAndOmits(chirrtl)(
       "input io : Inst<foo>"
     )()
