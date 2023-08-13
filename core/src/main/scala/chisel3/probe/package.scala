@@ -112,4 +112,22 @@ package object probe extends SourceInfoDoc {
     pushCommand(ProbeRelease(sourceInfo, clock.ref, cond.ref, probe.ref))
   }
 
+  /** The mixin to define the probe signal for BlackBox. */
+  trait HasExtModuleDefine extends chisel3.util.HasExtModuleInline { this: chisel3.experimental.ExtModule =>
+
+    /** Create a ProbeType for external sources.
+      * @param tpe is the Chisel type of signal.
+      * @param path is the internal path of the signal see [[https://github.com/chipsalliance/firrtl-spec/blob/main/abi.md]]
+      */
+    def define[T <: chisel3.Element](tpe: T, path: Seq[String]): T = {
+      setInline(
+        s"firrtl_abi_definition_${path.mkString("_")}.sv",
+        s"`define ref_${path.mkString("_")} ${path.last}"
+      )
+      // it's not IO, but BlackBox can only bind IO
+      val io = IO(tpe).suggestName(path.last)
+      require(chisel3.reflect.DataMirror.hasProbeTypeModifier(io), "tpe should be a ProbeType")
+      io
+    }
+  }
 }
