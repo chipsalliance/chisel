@@ -60,6 +60,12 @@ jobs:
         with:
           version: ${{ inputs.circt }}
           github-token: ${{ github.token }}
+      - name: Print firtool version
+        run: |
+          echo "The CIRCT version used is:" >> $GITHUB_STEP_SUMMARY
+          echo \`\`\` >> $GITHUB_STEP_SUMMARY
+          firtool -version >> $GITHUB_STEP_SUMMARY
+          echo \`\`\` >> $GITHUB_STEP_SUMMARY
       - name: Test
         run: sbt ++${{ inputs.scala }} test
       - name: Binary compatibility
