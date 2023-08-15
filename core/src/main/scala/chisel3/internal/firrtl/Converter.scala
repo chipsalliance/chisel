@@ -97,6 +97,17 @@ private[chisel3] object Converter {
     case PropertyLit(lit: Long) => fir.IntegerPropertyLiteral(lit)
     case PropertyLit(lit: BigInt) => fir.IntegerPropertyLiteral(lit)
     case PropertyLit(lit: String) => fir.StringPropertyLiteral(lit)
+    // TODO can this be merged with PropertySeqValue?
+    case lit @ PropertyLit(seq: Seq[_]) =>
+      val pt = lit.propertyType
+      val values = seq.map(PropertyLit[Any](_)(pt)).map(convert(_, ctx, info))
+      // We know we have a Seq so do the unsafe cast because we need the element type out of it
+      val tpe = extractType(pt.getPropertyType.asInstanceOf[SequencePropertyType].elementType)
+      fir.SequencePropertyValue(tpe, values)
+    case value @ PropertySeqValue(args) =>
+      val values = args.map(convert(_, ctx, info))
+      val tpe = extractType(value.propertyType.getPropertyType)
+      fir.SequencePropertyValue(tpe, values)
     case e @ ProbeExpr(probe) =>
       fir.ProbeExpr(convert(probe, ctx, info))
     case e @ RWProbeExpr(probe) =>
@@ -335,6 +346,12 @@ private[chisel3] object Converter {
 
   def extractType(baseType: BaseType, info: SourceInfo): fir.Type = extractType(baseType, false, info, true, true)
 
+  def extractType(tpe: PropertyType): fir.PropertyType = tpe match {
+    case IntegerPropertyType               => fir.IntegerPropertyType
+    case StringPropertyType                => fir.StringPropertyType
+    case SequencePropertyType(elementType) => fir.SequencePropertyType(extractType(elementType))
+  }
+
   def extractType(
     baseType:   BaseType,
     clearDir:   Boolean,
@@ -380,11 +397,7 @@ private[chisel3] object Converter {
       else
         extractType(t._elements.head._2, childClearDir, info, checkProbe, true)
     }
-    case t: Property[_] =>
-      t.getPropertyType match {
-        case IntegerPropertyType => fir.IntegerPropertyType
-        case StringPropertyType  => fir.StringPropertyType
-      }
+    case t: Property[_] => extractType(t.getPropertyType)
   }
 
   def convert(name: String, param: Param): fir.Param = param match {

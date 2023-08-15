@@ -3,7 +3,17 @@
 package chisel3.properties
 
 import chisel3.{ActualDirection, BaseType, MonoConnectException, SpecifiedDirection}
-import chisel3.internal.{checkConnect, throwException, Binding, Builder, MonoConnect, ReadOnlyBinding, TopBinding}
+import chisel3.internal.{
+  checkConnect,
+  throwException,
+  Binding,
+  Builder,
+  MonoConnect,
+  PortBinding,
+  PropertyValueBinding,
+  ReadOnlyBinding,
+  TopBinding
+}
 import chisel3.internal.{firrtl => ir}
 import chisel3.experimental.{prefix, requireIsHardware, SourceInfo}
 import scala.reflect.runtime.universe.{typeOf, TypeTag}
@@ -43,6 +53,10 @@ private[chisel3] object PropertyType {
 
   implicit val stringPropertyTypeInstance = new PropertyType[String] {
     override def getPropertyType: ir.PropertyType = ir.StringPropertyType
+  }
+
+  implicit def sequencePropertyTypeInstance[A: PropertyType, F[_] <: Seq[_]] = new PropertyType[F[A]] {
+    override def getPropertyType: ir.PropertyType = ir.SequencePropertyType(implicitly[PropertyType[A]].getPropertyType)
   }
 }
 
@@ -158,5 +172,15 @@ object Property {
     val literal = ir.PropertyLit[T](lit)
     val result = new Property[T]
     literal.bindLitArg(result)
+  }
+
+  /** Create a new Seq Property value
+    */
+  def apply[T: PropertyType, F[_] <: Seq[_]](seq: F[Property[T]]): Property[F[T]] = {
+    val values = seq.asInstanceOf[Seq[Property[T]]].map(p => p.ref)
+    val result = new Property[F[T]]
+    result.bind(PropertyValueBinding)
+    result.setRef(ir.PropertySeqValue[T](values))
+    result
   }
 }

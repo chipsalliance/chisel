@@ -242,6 +242,8 @@ case class StringPropertyLiteral(value: String) extends Expression with UseSeria
   val width = UnknownWidth
 }
 
+case class SequencePropertyValue(tpe: Type, values: Seq[Expression]) extends Expression with UseSerializer
+
 case class DoPrim(op: PrimOp, args: Seq[Expression], consts: Seq[BigInt], tpe: Type)
     extends Expression
     with UseSerializer
@@ -513,9 +515,13 @@ case object AsyncResetType extends GroundType with UseSerializer {
 }
 case class AnalogType(width: Width) extends GroundType with UseSerializer
 
-case object IntegerPropertyType extends Type with UseSerializer
+sealed abstract class PropertyType extends Type with UseSerializer
 
-case object StringPropertyType extends Type with UseSerializer
+case object IntegerPropertyType extends PropertyType
+
+case object StringPropertyType extends PropertyType
+
+case class SequencePropertyType(tpe: PropertyType) extends PropertyType
 
 case object UnknownType extends Type with UseSerializer
 
