@@ -96,6 +96,7 @@ private[chisel3] object Converter {
     case PropertyLit(lit: Int) => fir.IntegerPropertyLiteral(lit)
     case PropertyLit(lit: Long) => fir.IntegerPropertyLiteral(lit)
     case PropertyLit(lit: BigInt) => fir.IntegerPropertyLiteral(lit)
+    case PropertyLit(lit: String) => fir.StringPropertyLiteral(lit)
     case e @ ProbeExpr(probe) =>
       fir.ProbeExpr(convert(probe, ctx, info))
     case e @ RWProbeExpr(probe) =>
@@ -382,6 +383,7 @@ private[chisel3] object Converter {
     case t: Property[_] =>
       t.getPropertyType match {
         case IntegerPropertyType => fir.IntegerPropertyType
+        case StringPropertyType  => fir.StringPropertyType
       }
   }
 
