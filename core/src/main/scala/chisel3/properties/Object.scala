@@ -14,7 +14,7 @@ import scala.collection.immutable.HashMap
   * The DynamicObject is generally unsafe, in that its getField method does not check the name, type, or direction of
   * the accessed field. It may be used with care, and a more typesafe version will be added.
   */
-case class DynamicObject private[chisel3] (className: String) extends HasId with NamedComponent {
+class DynamicObject private[chisel3] (className: String) extends HasId with NamedComponent {
   private val tpe = new Property[ClassType](Some(ClassType(className)))
 
   _parent.foreach(_.addId(this))
