@@ -35,6 +35,7 @@ The following are legal `Property` types:
 * `Property[Long]`
 * `Property[BigInt]`
 * `Property[String]`
+* `Property[Seq[A]]` (where `A` is itself a `Property`)
 
 ## Using Properties
 
@@ -77,15 +78,32 @@ Connections are only supported between the same `Property` type. For example, a
 `Property[Int]` may only be connected to a `Property[Int]`. This is enforced by
 the Scala compiler.
 
-### Property Literals
+### Property Values
 
-The legal `Property` types may be used to construct literals by applying the
-`Property` object to a literal value of the `Property` type. For example, a
-`Property` literal may be connected to an output `Property` type port:
+The legal `Property` types may be used to construct values by applying the
+`Property` object to a value of the `Property` type. For example, a
+`Property` value may be connected to an output `Property` type port:
 
 ```scala mdoc:silent
 class LiteralExample extends RawModule {
   val outPort = IO(Output(Property[Int]()))
   outPort := Property(123)
+}
+```
+
+### Property Sequences
+
+Similarly to the primitive `Property` types, sequences of `Properties` may also be
+for creating ports and values and they may also be connected:
+
+```scala mdoc:silent
+class SequenceExample extends RawModule {
+  val inPort = IO(Input(Property[Int]()))
+  val outPort1 = IO(Output(Property[Seq[Int]]()))
+  val outPort2 = IO(Output(Property[Seq[Int]]()))
+  // A Seq of literals can by turned into a Property
+  outPort1 := Property(Seq(123, 456))
+  // Property ports and literals can be mixed together into a Seq
+  outPort2 := Property(Seq(inPort, Property(789)))
 }
 ```

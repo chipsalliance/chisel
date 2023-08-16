@@ -129,4 +129,51 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
       }
     """)
   }
+
+  it should "support Seq[Int], Vector[Int], and List[Int] as a Property type" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val seqProp1 = IO(Input(Property[Seq[Int]]()))
+      val seqProp2 = IO(Input(Property[Vector[Int]]()))
+      val seqProp3 = IO(Input(Property[List[Int]]()))
+    })
+
+    matchesAndOmits(chirrtl)(
+      "input seqProp1 : List<Integer>",
+      "input seqProp2 : List<Integer>",
+      "input seqProp3 : List<Integer>"
+    )()
+  }
+
+  it should "support nested Seqs as a Property type" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val nestedSeqProp = IO(Input(Property[Seq[Seq[Seq[Int]]]]()))
+    })
+
+    matchesAndOmits(chirrtl)(
+      "input nestedSeqProp : List<List<List<Integer>>>"
+    )()
+  }
+
+  it should "support Seq[BigInt] as Property values" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val propOut = IO(Output(Property[Seq[BigInt]]()))
+      propOut := Property(Seq[BigInt](123, 456)) // The Int => BigInt implicit conversion fails here
+    })
+
+    matchesAndOmits(chirrtl)(
+      "propassign propOut, List<Integer>(Integer(123), Integer(456))"
+    )()
+  }
+
+  it should "support mixed Seqs of Integer literal and ports as Seq Property values" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val propIn = IO(Input(Property[BigInt]()))
+      val propOut = IO(Output(Property[Seq[BigInt]]()))
+      propOut := Property(Seq(propIn, Property(BigInt(123))))
+    })
+
+    matchesAndOmits(chirrtl)(
+      "propassign propOut, List<Integer>(propIn, Integer(123))"
+    )()
+  }
 }

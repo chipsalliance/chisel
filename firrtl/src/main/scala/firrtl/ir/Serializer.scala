@@ -112,6 +112,15 @@ object Serializer {
       b ++= "Integer("; b ++= value.toString(10); b ++= ")"
     case StringPropertyLiteral(value) =>
       b ++= "String(\""; b ++= value; b ++= "\")"
+    case SequencePropertyValue(tpe, values) =>
+      b ++= "List<"; s(tpe); b ++= ">(";
+      val lastIdx = values.size - 1
+      values.zipWithIndex.foreach {
+        case (value, idx) =>
+          s(value)
+          if (idx != lastIdx) b ++= ", "
+      }
+      b += ')'
     case ProbeExpr(expr, _)   => b ++= "probe("; s(expr); b += ')'
     case RWProbeExpr(expr, _) => b ++= "rwprobe("; s(expr); b += ')'
     case ProbeRead(expr, _)   => b ++= "read("; s(expr); b += ')'
@@ -357,16 +366,17 @@ object Serializer {
     }
     case UIntType(width: Width) => b ++= "UInt"; s(width)
     case SIntType(width: Width) => b ++= "SInt"; s(width)
-    case BundleType(fields)    => b ++= "{ "; sField(fields, ", "); b += '}'
-    case VectorType(tpe, size) => s(tpe, lastEmittedConst); b += '['; b ++= size.toString; b += ']'
-    case ClockType             => b ++= "Clock"
-    case ResetType             => b ++= "Reset"
-    case AsyncResetType        => b ++= "AsyncReset"
-    case AnalogType(width)     => b ++= "Analog"; s(width)
-    case IntegerPropertyType   => b ++= "Integer"
-    case StringPropertyType    => b ++= "String"
-    case UnknownType           => b += '?'
-    case other                 => b ++= other.serialize // Handle user-defined nodes
+    case BundleType(fields)        => b ++= "{ "; sField(fields, ", "); b += '}'
+    case VectorType(tpe, size)     => s(tpe, lastEmittedConst); b += '['; b ++= size.toString; b += ']'
+    case ClockType                 => b ++= "Clock"
+    case ResetType                 => b ++= "Reset"
+    case AsyncResetType            => b ++= "AsyncReset"
+    case AnalogType(width)         => b ++= "Analog"; s(width)
+    case IntegerPropertyType       => b ++= "Integer"
+    case StringPropertyType        => b ++= "String"
+    case SequencePropertyType(tpe) => b ++= "List<"; s(tpe, lastEmittedConst); b += '>'
+    case UnknownType               => b += '?'
+    case other                     => b ++= other.serialize // Handle user-defined nodes
   }
 
   private def s(node: Direction)(implicit b: StringBuilder, indent: Int): Unit = node match {

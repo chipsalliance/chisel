@@ -178,13 +178,22 @@ private[chisel3] case class PropertyLit[T: PropertyTypeclass](lit: T) extends Ar
   def minWidth: Int = 0
   def cloneWithWidth(newWidth: Width): this.type = PropertyLit[T](lit).asInstanceOf[this.type]
 
+  def propertyType: PropertyTypeclass[T] = implicitly[PropertyTypeclass[T]]
+
   /** Expose a bindLitArg API for PropertyLit, similar to LitArg.
     */
   def bindLitArg(elem: Property[T]): Property[T] = {
-    elem.bind(PropertyLitBinding(this))
+    elem.bind(PropertyValueBinding)
     elem.setRef(this)
     elem
   }
+}
+
+private[chisel3] case class PropertySeqValue[T: PropertyTypeclass](values: Seq[Arg]) extends Arg {
+  // TODO in theory this should be the valid FIRRTL representation
+  def name: String = s"PropertySeqValue($values)"
+
+  def propertyType: PropertyTypeclass[T] = implicitly[PropertyTypeclass[T]]
 }
 
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
@@ -296,6 +305,7 @@ object MemPortDirection {
 private[chisel3] sealed trait PropertyType
 private[chisel3] case object IntegerPropertyType extends PropertyType
 private[chisel3] case object StringPropertyType extends PropertyType
+private[chisel3] case class SequencePropertyType(elementType: PropertyType) extends PropertyType
 
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 abstract class Command {
