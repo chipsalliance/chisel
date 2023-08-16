@@ -4,22 +4,23 @@ package chiselTests.properties
 
 import chisel3._
 import chisel3.properties.{Class, Property}
+import chisel3.experimental.hierarchy.Definition
 import chiselTests.{ChiselFlatSpec, MatchesAndOmits}
 import circt.stage.ChiselStage
 
 class ObjectSpec extends ChiselFlatSpec with MatchesAndOmits {
-  behavior.of("Object")
+  behavior.of("DynamicObject")
 
   it should "support Objects in Class ports" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val cls = Module(new Class {
+      val cls = Definition(new Class {
         override def desiredName = "Test"
         val in = IO(Input(Property[Int]()))
         val out = IO(Output(Property[Int]()))
         out := in
       })
 
-      Module(new Class {
+      Definition(new Class {
         override def desiredName = "Parent"
         val out = IO(Output(Property(cls)))
         val obj1 = cls.instantiate
@@ -36,7 +37,7 @@ class ObjectSpec extends ChiselFlatSpec with MatchesAndOmits {
 
   it should "support Objects in Module ports" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val cls = Module(new Class {
+      val cls = Definition(new Class {
         override def desiredName = "Test"
         val in = IO(Input(Property[Int]()))
         val out = IO(Output(Property[Int]()))
@@ -61,7 +62,7 @@ class ObjectSpec extends ChiselFlatSpec with MatchesAndOmits {
   it should "prevent accessing non-existant Object fields" in {
     (the[ChiselException] thrownBy {
       ChiselStage.emitCHIRRTL(new RawModule {
-        val cls = Module(new Class {
+        val cls = Definition(new Class {
           override def desiredName = "Test"
           val out = IO(Output(Property[Int]()))
         })
@@ -74,7 +75,7 @@ class ObjectSpec extends ChiselFlatSpec with MatchesAndOmits {
 
   it should "support output Object fields as sources" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val cls = Module(new Class {
+      val cls = Definition(new Class {
         val out = IO(Output(Property[Int]()))
       })
 
@@ -92,7 +93,7 @@ class ObjectSpec extends ChiselFlatSpec with MatchesAndOmits {
   it should "prevent output Object fields as sources" in {
     (the[ChiselException] thrownBy {
       ChiselStage.emitCHIRRTL(new RawModule {
-        val cls = Module(new Class {
+        val cls = Definition(new Class {
           val out = IO(Output(Property[Int]()))
         })
 
@@ -105,7 +106,7 @@ class ObjectSpec extends ChiselFlatSpec with MatchesAndOmits {
 
   it should "support input Object fields as sinks" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val cls = Module(new Class {
+      val cls = Definition(new Class {
         val in = IO(Input(Property[Int]()))
       })
 
@@ -123,7 +124,7 @@ class ObjectSpec extends ChiselFlatSpec with MatchesAndOmits {
   it should "prevent input Object fields as sources" in {
     (the[ChiselException] thrownBy {
       ChiselStage.emitCHIRRTL(new RawModule {
-        val cls = Module(new Class {
+        val cls = Definition(new Class {
           val in = IO(Input(Property[Int]()))
         })
 

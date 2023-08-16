@@ -3,7 +3,8 @@
 package chiselTests.properties
 
 import chisel3._
-import chisel3.properties.{Class, Property}
+import chisel3.experimental.hierarchy.{instantiable, Definition, Instance}
+import chisel3.properties.{Class, DynamicObject, Property}
 import chiselTests.{ChiselFlatSpec, MatchesAndOmits}
 import circt.stage.ChiselStage
 
@@ -12,9 +13,9 @@ class ClassSpec extends ChiselFlatSpec with MatchesAndOmits {
 
   it should "serialize to FIRRTL with anonymous names" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      Module(new Class)
-      Module(new Class)
-      Module(new Class)
+      Definition(new Class)
+      Definition(new Class)
+      Definition(new Class)
     })
 
     matchesAndOmits(chirrtl)(
@@ -26,7 +27,7 @@ class ClassSpec extends ChiselFlatSpec with MatchesAndOmits {
 
   it should "serialize to FIRRTL with a desiredName" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      Module(new Class {
+      Definition(new Class {
         override def desiredName = "Foo"
       })
     })
@@ -50,7 +51,7 @@ class ClassSpec extends ChiselFlatSpec with MatchesAndOmits {
 
   it should "support Property type ports" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      Module(new Class {
+      Definition(new Class {
         val in = IO(Input(Property[Int]()))
         val out = IO(Output(Property[Int]()))
       })
@@ -65,7 +66,7 @@ class ClassSpec extends ChiselFlatSpec with MatchesAndOmits {
   it should "only support Property type ports" in {
     (the[ChiselException] thrownBy {
       ChiselStage.emitCHIRRTL(new RawModule {
-        Module(new Class {
+        Definition(new Class {
           val in = IO(Input(Bool()))
         })
       })
@@ -74,7 +75,7 @@ class ClassSpec extends ChiselFlatSpec with MatchesAndOmits {
 
   it should "support Property assignments" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      Module(new Class {
+      Definition(new Class {
         val in = IO(Input(Property[Int]()))
         val out = IO(Output(Property[Int]()))
         out := in
@@ -88,7 +89,7 @@ class ClassSpec extends ChiselFlatSpec with MatchesAndOmits {
 
   it should "support instantiation through its own API" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val cls = Module(new Class {
+      val cls = Definition(new Class {
         override def desiredName = "Test"
         val in = IO(Input(Property[Int]()))
         val out = IO(Output(Property[Int]()))
@@ -108,16 +109,16 @@ class ClassSpec extends ChiselFlatSpec with MatchesAndOmits {
 
   it should "support instantiation within a Class" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val cls = Module(new Class {
+      val cls = Definition(new Class {
         override def desiredName = "Test"
         val in = IO(Input(Property[Int]()))
         val out = IO(Output(Property[Int]()))
         out := in
       })
 
-      Module(new Class {
+      Definition(new Class {
         override def desiredName = "Parent"
-        val obj1 = cls.instantiate
+        val obj1 = Instance(cls)
       })
     })
 

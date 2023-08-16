@@ -11,6 +11,7 @@ import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
 import chisel3.experimental.{BaseModule, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal.sourceinfo.{InstTransform}
+import chisel3.properties.Class
 import chisel3.reflect.DataMirror
 import _root_.firrtl.annotations.{IsModule, ModuleName, ModuleTarget}
 import _root_.firrtl.AnnotationSeq
@@ -81,6 +82,12 @@ object Module extends SourceInfoDoc {
     // Handle connections at enclosing scope
     // We use _component because Modules that don't generate them may still have one
     if (Builder.currentModule.isDefined && module._component.isDefined) {
+      // Class only uses the Definition API, and is not allowed here.
+      module match {
+        case _: Class => throwException("Module() cannot be called on a Class")
+        case _ => ()
+      }
+
       val component = module._component.get
       pushCommand(DefInstance(sourceInfo, module, component.ports))
       module.initializeInParent()

@@ -8,7 +8,7 @@ import chisel3.internal.{throwException, HasId, NamedComponent, ObjectFieldBindi
 import scala.collection.immutable.HashMap
 import scala.language.dynamics
 
-class Object(cls: Class) extends HasId with NamedComponent with Dynamic {
+class DynamicObject private[chisel3] (cls: Class) extends HasId with NamedComponent with Dynamic {
   private val tpe = Property(cls)
 
   _parent.foreach(_.addId(this))

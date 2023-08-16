@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.properties.Class
 import chisel3.reflect.DataMirror
 import chisel3.stage.ChiselGeneratorAnnotation
 import circt.stage.{CIRCTTarget, CIRCTTargetAnnotation, ChiselStage, FirtoolOption}
@@ -120,6 +121,12 @@ class ModuleSpec extends ChiselPropSpec with Utils {
     (the[ChiselException] thrownBy extractCause[ChiselException] {
       ChiselStage.emitCHIRRTL { new ModuleRewrap }
     }).getMessage should include("This is probably due to rewrapping a Module instance")
+  }
+
+  property("Wrapping a Class in Module() should result in an error") {
+    (the[ChiselException] thrownBy extractCause[ChiselException] {
+      ChiselStage.emitCHIRRTL { new RawModule { Module(new Class {}) } }
+    }).getMessage should include("Module() cannot be called on a Class")
   }
 
   property("object Module.clock should return a reference to the currently in scope clock") {

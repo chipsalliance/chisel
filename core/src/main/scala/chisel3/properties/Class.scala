@@ -24,7 +24,7 @@ class Class extends BaseModule {
     // Now that elaboration is complete for this Module, we can finalize names
     for (id <- getIds) {
       id match {
-        case id: Object => {
+        case id: DynamicObject => {
           // Force name of the Object, and set its Property[ClassType] type's ref to the Object.
           // The type's ref can't be set within instantiate, because the Object hasn't been named yet.
           id.forceName(default = "_object", _namespace)
@@ -86,9 +86,9 @@ class Class extends BaseModule {
     _commands += c
   }
 
-  def instantiate(implicit sourceInfo: SourceInfo): Object = {
+  def instantiate(implicit sourceInfo: SourceInfo): DynamicObject = {
     // Instantiate the Object.
-    val obj = new Object(this)
+    val obj = new DynamicObject(this)
 
     // Get its Property[ClassType] type.
     val classProp = obj.getReference
@@ -129,6 +129,7 @@ class ClassType private[chisel3] (_name: String) {
 }
 
 object Class {
+
   /** Helper to create a Property[ClassType] type for a Class of a given name.
     *
     * This is useful when a Property[ClassType] type is needed but the class does not yet exist or is not available.
