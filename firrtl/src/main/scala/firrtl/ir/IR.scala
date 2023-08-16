@@ -271,7 +271,7 @@ case class DefInstance(info: Info, name: String, module: String, tpe: Type = Unk
     with IsDeclaration
     with UseSerializer
 
-case class DefObject(info: Info, name: String, tpe: Type) extends Statement with IsDeclaration with UseSerializer
+case class DefObject(info: Info, name: String, cls: String) extends Statement with IsDeclaration with UseSerializer
 
 object ReadUnderWrite extends Enumeration {
   val Undefined = Value("undefined")

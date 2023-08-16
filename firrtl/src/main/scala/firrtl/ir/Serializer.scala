@@ -263,7 +263,7 @@ object Serializer {
     case DefInstance(info, name, module, _) =>
       b ++= "inst "; b ++= legalize(name); b ++= " of "; b ++= legalize(module); s(info)
     case DefObject(info, name, cls) =>
-      b ++= "object "; b ++= legalize(name); b ++= " of "; s(cls); s(info)
+      b ++= "object "; b ++= legalize(name); b ++= " of "; b ++= legalize(cls); s(info)
     case DefMemory(
           info,
           name,

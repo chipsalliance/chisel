@@ -88,25 +88,22 @@ class ClassSpec extends ChiselFlatSpec with MatchesAndOmits {
   }
 
   it should "support instantiation through its own API" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(
-      new RawModule {
-        val cls = Definition(new Class {
-          override def desiredName = "Test"
-          val in = IO(Input(Property[Int]()))
-          val out = IO(Output(Property[Int]()))
-          out := in
-        })
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val cls = Definition(new Class {
+        override def desiredName = "Test"
+        val in = IO(Input(Property[Int]()))
+        val out = IO(Output(Property[Int]()))
+        out := in
+      })
 
-        val obj1 = Class.unsafeGetDynamicObject("Test")
-        val obj2 = Class.unsafeGetDynamicObject("Test")
-      },
-      Array("--full-stacktrace")
-    )
+      val obj1 = Class.unsafeGetDynamicObject("Test")
+      val obj2 = Class.unsafeGetDynamicObject("Test")
+    })
 
     matchesAndOmits(chirrtl)(
       "class Test",
-      "object obj1",
-      "object obj2"
+      "object obj1 of Test",
+      "object obj2 of Test"
     )()
   }
 
@@ -128,7 +125,7 @@ class ClassSpec extends ChiselFlatSpec with MatchesAndOmits {
     matchesAndOmits(chirrtl)(
       "class Test",
       "class Parent",
-      "object obj1"
+      "object obj1 of Test"
     )()
   }
 }

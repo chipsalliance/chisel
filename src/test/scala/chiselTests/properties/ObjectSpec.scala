@@ -72,7 +72,7 @@ class ObjectSpec extends ChiselFlatSpec with MatchesAndOmits {
     })
 
     matchesAndOmits(chirrtl)(
-      "object obj1",
+      "object obj1 of Test",
       "propassign out, obj1.out"
     )()
   }
@@ -90,7 +90,7 @@ class ObjectSpec extends ChiselFlatSpec with MatchesAndOmits {
     })
 
     matchesAndOmits(chirrtl)(
-      "object obj1",
+      "object obj1 of Test",
       "propassign obj1.in, in"
     )()
   }
