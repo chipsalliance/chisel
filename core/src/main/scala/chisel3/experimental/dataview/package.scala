@@ -36,7 +36,7 @@ package object dataview {
     }
   }
 
-  /** Provides `viewAsSupertype` for subclasses of [[Record]] */
+  /** Provides `viewAsSupertype` for subclasses of [[Bundle]] */
   @deprecated("Use RecordUpcastable instead", "chisel3.6")
   implicit class BundleUpcastable[T <: Bundle](target: T) {
 
