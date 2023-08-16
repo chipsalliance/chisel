@@ -86,9 +86,38 @@ class Class extends BaseModule {
     _commands += c
   }
 
-  def instantiate(implicit sourceInfo: SourceInfo): DynamicObject = {
+  private[properties] def getField[T: PropertyType](name: String): Option[Property[T]] = {
+    // TODO: inefficient and not actually type safe, need to figure out the right way.
+    getModulePortsAndLocators.collectFirst {
+      case (port, _) if port.seedOpt.contains(name) =>
+        port.asInstanceOf[Property[T]]
+    }
+  }
+}
+
+/** Represent a Class type for referencing a Class in a Property[ClassType]
+  */
+case class ClassType private[chisel3] (name: String)
+
+object Class {
+
+  /** Helper to create a Property[ClassType] type for a Class of a given name.
+    *
+    * This is useful when a Property[ClassType] type is needed but the class does not yet exist or is not available.
+    *
+    * *WARNING*: It is the caller's resonsibility to ensure the Class exists, this is not checked automatically.
+    */
+  def unsafeGetReferenceType(className: String): Property[ClassType] = {
+    new Property[ClassType](Some(new ClassType(className)))
+  }
+
+  /** Helper to create a DynamicObject for a Class of a given name.
+    *
+    * *WARNING*: It is the caller's resonsibility to ensure the Class exists, this is not checked automatically.
+    */
+  def unsafeGetDynamicObject(className: String)(implicit sourceInfo: SourceInfo): DynamicObject = {
     // Instantiate the Object.
-    val obj = new DynamicObject(this)
+    val obj = new DynamicObject(className)
 
     // Get its Property[ClassType] type.
     val classProp = obj.getReference
@@ -111,32 +140,5 @@ class Class extends BaseModule {
     }
 
     obj
-  }
-
-  private[properties] def getField[T: PropertyType](name: String): Option[Property[T]] = {
-    // TODO: inefficient and not actually type safe, need to figure out the right way.
-    getModulePortsAndLocators.collectFirst {
-      case (port, _) if port.seedOpt.contains(name) =>
-        port.asInstanceOf[Property[T]]
-    }
-  }
-}
-
-/** Represent a Class type for referencing a Class in a Property[ClassType]
-  */
-class ClassType private[chisel3] (_name: String) {
-  lazy val name = _name
-}
-
-object Class {
-
-  /** Helper to create a Property[ClassType] type for a Class of a given name.
-    *
-    * This is useful when a Property[ClassType] type is needed but the class does not yet exist or is not available.
-    *
-    * *WARNING*: It is the caller's resonsibility to ensure the Class exists, this is not checked automatically.
-    */
-  def unsafeGetReferenceType(className: String): Property[ClassType] = {
-    new Property[ClassType](Some(new ClassType(className)))
   }
 }

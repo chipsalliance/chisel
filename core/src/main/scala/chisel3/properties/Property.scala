@@ -187,12 +187,6 @@ object Property {
     new Property[T]
   }
 
-  /** Create a new Property for a Class.
-    */
-  def apply(cls: Class): Property[ClassType] = {
-    new Property[ClassType](Some(new ClassType(cls.name)))
-  }
-
   /** Create a new Property literal of type T.
     */
   def apply[T: PropertyType](lit: T): Property[T] = {

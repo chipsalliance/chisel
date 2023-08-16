@@ -88,17 +88,20 @@ class ClassSpec extends ChiselFlatSpec with MatchesAndOmits {
   }
 
   it should "support instantiation through its own API" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val cls = Definition(new Class {
-        override def desiredName = "Test"
-        val in = IO(Input(Property[Int]()))
-        val out = IO(Output(Property[Int]()))
-        out := in
-      })
+    val chirrtl = ChiselStage.emitCHIRRTL(
+      new RawModule {
+        val cls = Definition(new Class {
+          override def desiredName = "Test"
+          val in = IO(Input(Property[Int]()))
+          val out = IO(Output(Property[Int]()))
+          out := in
+        })
 
-      val obj1 = cls.instantiate
-      val obj2 = cls.instantiate
-    })
+        val obj1 = Class.unsafeGetDynamicObject("Test")
+        val obj2 = Class.unsafeGetDynamicObject("Test")
+      },
+      Array("--full-stacktrace")
+    )
 
     matchesAndOmits(chirrtl)(
       "class Test",
@@ -118,7 +121,7 @@ class ClassSpec extends ChiselFlatSpec with MatchesAndOmits {
 
       Definition(new Class {
         override def desiredName = "Parent"
-        val obj1 = Instance(cls)
+        val obj1 = Class.unsafeGetDynamicObject("Test")
       })
     })
 
@@ -126,16 +129,6 @@ class ClassSpec extends ChiselFlatSpec with MatchesAndOmits {
       "class Test",
       "class Parent",
       "object obj1"
-    )()
-  }
-
-  it should "provide a static method to materialize a Property[ClassType] type from a name" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val io = IO(Input(Class.unsafeGetReferenceType("foo")))
-    })
-
-    matchesAndOmits(chirrtl)(
-      "input io : Inst<foo>"
     )()
   }
 }

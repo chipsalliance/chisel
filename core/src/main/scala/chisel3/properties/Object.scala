@@ -6,25 +6,11 @@ import chisel3.SpecifiedDirection
 import chisel3.internal.{throwException, HasId, NamedComponent, ObjectFieldBinding}
 
 import scala.collection.immutable.HashMap
-import scala.language.dynamics
 
-class DynamicObject private[chisel3] (cls: Class) extends HasId with NamedComponent with Dynamic {
-  private val tpe = Property(cls)
+case class DynamicObject private[chisel3] (className: String) extends HasId with NamedComponent {
+  private val tpe = new Property[ClassType](Some(ClassType(className)))
 
   _parent.foreach(_.addId(this))
 
   def getReference: Property[ClassType] = tpe
-
-  def selectDynamic[T: PropertyType](name: String): Property[T] = {
-    val fieldOpt = cls.getField[T](name)
-
-    if (!fieldOpt.isDefined) {
-      throwException(s"Field $name does not exist on Class ${cls.name}")
-    }
-
-    val field = fieldOpt.get.cloneTypeFull
-    field.setRef(this, name)
-    field.bind(ObjectFieldBinding(_parent.get), SpecifiedDirection.Unspecified)
-    field
-  }
 }
