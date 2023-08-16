@@ -13,4 +13,11 @@ case class DynamicObject private[chisel3] (className: String) extends HasId with
   _parent.foreach(_.addId(this))
 
   def getReference: Property[ClassType] = tpe
+
+  def getField[T: PropertyType](name: String): Property[T] = {
+    val field = new Property[T](None)
+    field.setRef(this, name)
+    field.bind(ObjectFieldBinding(_parent.get), SpecifiedDirection.Unspecified)
+    field
+  }
 }

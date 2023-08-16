@@ -145,13 +145,6 @@ class Property[T: PropertyType](value: Option[T] = None) extends BaseType {
     topBindingOpt match {
       case Some(binding: ReadOnlyBinding) =>
         throwException(s"internal error: attempted to generate LHS ref to ReadOnlyBinding $binding")
-      case Some(binding: ObjectFieldBinding) => {
-        this.direction match {
-          case ActualDirection.Input => ir.Node(this)
-          case _ =>
-            throwException(s"Cannot connect to field ${ir.Arg.earlyLocalName(this)} with direction ${this.direction}")
-        }
-      }
       case Some(binding: TopBinding) => ir.Node(this)
       case opt => throwException(s"internal error: unknown binding $opt in generating LHS ref")
     }
@@ -163,13 +156,6 @@ class Property[T: PropertyType](value: Option[T] = None) extends BaseType {
     requireIsHardware(this)
     requireVisible()
     topBindingOpt match {
-      case Some(binding: ObjectFieldBinding) => {
-        this.direction match {
-          case ActualDirection.Output => ir.Node(this)
-          case _ =>
-            throwException(s"Cannot connect from field ${ir.Arg.earlyLocalName(this)} with direction ${this.direction}")
-        }
-      }
       case Some(binding: TopBinding) => ir.Node(this)
       case opt => throwException(s"internal error: unknown binding $opt in generating RHS ref")
     }
