@@ -38,7 +38,22 @@ package object dataview {
   }
 
   /** Provides `viewAsSupertype` for subclasses of [[Bundle]] */
+<<<<<<< HEAD
   implicit class BundleUpcastable[T <: Bundle](target: T) {
+=======
+  @deprecated("Use RecordUpcastable instead", "chisel3.6")
+  implicit class BundleUpcastable[T <: Bundle](target: T) {
+
+    /** View a [[Bundle]] or [[Record]] as a parent type (upcast) */
+    def viewAsSupertype[V <: Bundle](proto: V)(implicit ev: ChiselSubtypeOf[T, V], sourceInfo: SourceInfo): V = {
+      implicit val dataView = PartialDataView.supertype[T, V](_ => proto)
+      target.viewAs[V]
+    }
+  }
+
+  /** Provides `viewAsSupertype` for subclasses of [[Record]] */
+  implicit class RecordUpcastable[T <: Record](target: T) {
+>>>>>>> b904c1956 (Restore BundleUpcastable (#3487))
 
     /** View a [[Bundle]] or [[Record]] as a parent type (upcast) */
     def viewAsSupertype[V <: Bundle](proto: V)(implicit ev: ChiselSubtypeOf[T, V], sourceInfo: SourceInfo): V = {
