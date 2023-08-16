@@ -34,6 +34,7 @@ The following are legal `Property` types:
 * `Property[Int]`
 * `Property[Long]`
 * `Property[BigInt]`
+* `Property[String]`
 
 ## Using Properties
 

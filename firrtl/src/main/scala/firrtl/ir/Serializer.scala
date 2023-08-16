@@ -110,6 +110,8 @@ object Serializer {
       b ++= "SInt"; s(width); b ++= "(0h"; b ++= value.toString(16); b ++= ")"
     case IntegerPropertyLiteral(value) =>
       b ++= "Integer("; b ++= value.toString(10); b ++= ")"
+    case StringPropertyLiteral(value) =>
+      b ++= "String(\""; b ++= value; b ++= "\")"
     case ProbeExpr(expr, _)   => b ++= "probe("; s(expr); b += ')'
     case RWProbeExpr(expr, _) => b ++= "rwprobe("; s(expr); b += ')'
     case ProbeRead(expr, _)   => b ++= "read("; s(expr); b += ')'
@@ -362,6 +364,7 @@ object Serializer {
     case AsyncResetType        => b ++= "AsyncReset"
     case AnalogType(width)     => b ++= "Analog"; s(width)
     case IntegerPropertyType   => b ++= "Integer"
+    case StringPropertyType    => b ++= "String"
     case UnknownType           => b += '?'
     case other                 => b ++= other.serialize // Handle user-defined nodes
   }

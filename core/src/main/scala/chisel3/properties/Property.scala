@@ -40,6 +40,10 @@ private[chisel3] object PropertyType {
   implicit val bigIntPropertyTypeInstance = new PropertyType[BigInt] {
     override def getPropertyType: ir.PropertyType = ir.IntegerPropertyType
   }
+
+  implicit val stringPropertyTypeInstance = new PropertyType[String] {
+    override def getPropertyType: ir.PropertyType = ir.StringPropertyType
+  }
 }
 
 /** Property is the base type for all properties.

@@ -87,6 +87,27 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
     )()
   }
 
+  it should "support String as a Property type" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val stringProp = IO(Input(Property[String]()))
+    })
+
+    matchesAndOmits(chirrtl)(
+      "input stringProp : String"
+    )()
+  }
+
+  it should "support String as a Property literal" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val propOut = IO(Output(Property[String]()))
+      propOut := Property("fubar")
+    })
+
+    matchesAndOmits(chirrtl)(
+      "propassign propOut, String(\"fubar\")"
+    )()
+  }
+
   it should "support connecting Property types of the same type" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
       val propIn = IO(Input(Property[Int]()))

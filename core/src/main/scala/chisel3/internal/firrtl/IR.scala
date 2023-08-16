@@ -295,6 +295,7 @@ object MemPortDirection {
 
 private[chisel3] sealed trait PropertyType
 private[chisel3] case object IntegerPropertyType extends PropertyType
+private[chisel3] case object StringPropertyType extends PropertyType
 
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 abstract class Command {
