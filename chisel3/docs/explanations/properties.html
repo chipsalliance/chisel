@@ -41,6 +41,7 @@ be generated alongside it.</p>
   <li><code class="language-plaintext highlighter-rouge">Property[Long]</code></li>
   <li><code class="language-plaintext highlighter-rouge">Property[BigInt]</code></li>
   <li><code class="language-plaintext highlighter-rouge">Property[String]</code></li>
+  <li><code class="language-plaintext highlighter-rouge">Property[Seq[A]]</code> (where <code class="language-plaintext highlighter-rouge">A</code> is itself a <code class="language-plaintext highlighter-rouge">Property</code>)</li>
 </ul>
 
 <h2 id="using-properties">Using Properties</h2>
@@ -81,15 +82,31 @@ type port:</p>
 <code class="language-plaintext highlighter-rouge">Property[Int]</code> may only be connected to a <code class="language-plaintext highlighter-rouge">Property[Int]</code>. This is enforced by
 the Scala compiler.</p>
 
-<h3 id="property-literals">Property Literals</h3>
+<h3 id="property-values">Property Values</h3>
 
-<p>The legal <code class="language-plaintext highlighter-rouge">Property</code> types may be used to construct literals by applying the
-<code class="language-plaintext highlighter-rouge">Property</code> object to a literal value of the <code class="language-plaintext highlighter-rouge">Property</code> type. For example, a
-<code class="language-plaintext highlighter-rouge">Property</code> literal may be connected to an output <code class="language-plaintext highlighter-rouge">Property</code> type port:</p>
+<p>The legal <code class="language-plaintext highlighter-rouge">Property</code> types may be used to construct values by applying the
+<code class="language-plaintext highlighter-rouge">Property</code> object to a value of the <code class="language-plaintext highlighter-rouge">Property</code> type. For example, a
+<code class="language-plaintext highlighter-rouge">Property</code> value may be connected to an output <code class="language-plaintext highlighter-rouge">Property</code> type port:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">LiteralExample</span> <span class="k">extends</span> <span class="nc">RawModule</span> <span class="o">{</span>
   <span class="k">val</span> <span class="nv">outPort</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">Property</span><span class="o">[</span><span class="kt">Int</span><span class="o">]()))</span>
   <span class="n">outPort</span> <span class="o">:=</span> <span class="nc">Property</span><span class="o">(</span><span class="mi">123</span><span class="o">)</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="property-sequences">Property Sequences</h3>
+
+<p>Similarly to the primitive <code class="language-plaintext highlighter-rouge">Property</code> types, sequences of <code class="language-plaintext highlighter-rouge">Properties</code> may also be
+for creating ports and values and they may also be connected:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">SequenceExample</span> <span class="k">extends</span> <span class="nc">RawModule</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nv">inPort</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="nc">Property</span><span class="o">[</span><span class="kt">Int</span><span class="o">]()))</span>
+  <span class="k">val</span> <span class="nv">outPort1</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">Property</span><span class="o">[</span><span class="kt">Seq</span><span class="o">[</span><span class="kt">Int</span><span class="o">]]()))</span>
+  <span class="k">val</span> <span class="nv">outPort2</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Output</span><span class="o">(</span><span class="nc">Property</span><span class="o">[</span><span class="kt">Seq</span><span class="o">[</span><span class="kt">Int</span><span class="o">]]()))</span>
+  <span class="c1">// A Seq of literals can by turned into a Property</span>
+  <span class="n">outPort1</span> <span class="o">:=</span> <span class="nc">Property</span><span class="o">(</span><span class="nc">Seq</span><span class="o">(</span><span class="mi">123</span><span class="o">,</span> <span class="mi">456</span><span class="o">))</span>
+  <span class="c1">// Property ports and literals can be mixed together into a Seq</span>
+  <span class="n">outPort2</span> <span class="o">:=</span> <span class="nc">Property</span><span class="o">(</span><span class="nc">Seq</span><span class="o">(</span><span class="n">inPort</span><span class="o">,</span> <span class="nc">Property</span><span class="o">(</span><span class="mi">789</span><span class="o">)))</span>
 <span class="o">}</span>
 </code></pre></div></div>
 </section></div></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/highlight/highlight.pack.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/verilog.min.js"></script><script src="/lunr/lunr.js"></script><script>
