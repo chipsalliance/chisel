@@ -10,6 +10,13 @@ import chisel3.internal.firrtl.{Arg, Command, Component, DefClass, DefObject, Mo
 import scala.annotation.nowarn
 import scala.collection.mutable.ArrayBuffer
 
+/** Represents a user-defined Class, which is a module-like container of properties.
+  *
+  * A Class has ports like a hardware module, but its ports must be of Property type.
+  *
+  * Within a Class body, ports may be connected and other Classes may be instantiated. This means classes cannot
+  * construct hardware, only graphs of non-hardware Property information.
+  */
 @nowarn("msg=class Port") // delete when Port becomes private
 class Class extends BaseModule {
   private[chisel3] override def generateComponent(): Option[Component] = {
@@ -57,15 +64,6 @@ class Class extends BaseModule {
 
   private[chisel3] override def initializeInParent(): Unit = ()
 
-  override def IO[T <: BaseType](iodef: => T)(implicit sourceInfo: SourceInfo): T = {
-    val io = iodef // evaluate once so we can match on it (is it a problem to do here?)
-
-    io match {
-      case _: Data => throwException(s"Class ports must be Property type, but found $io")
-      case _ => chisel3.IO.apply(io)
-    }
-  }
-
   /** Add a PropAssign command to the Class
     *
     * Most commands are unsupported in Class, so the internal addCommand API explicitly supports certain commands.
@@ -84,14 +82,6 @@ class Class extends BaseModule {
   private def addCommandImpl(c: Command): Unit = {
     require(!_closed, "Can't write to Class after close")
     _commands += c
-  }
-
-  private[properties] def getField[T: PropertyType](name: String): Option[Property[T]] = {
-    // TODO: inefficient and not actually type safe, need to figure out the right way.
-    getModulePortsAndLocators.collectFirst {
-      case (port, _) if port.seedOpt.contains(name) =>
-        port.asInstanceOf[Property[T]]
-    }
   }
 }
 
