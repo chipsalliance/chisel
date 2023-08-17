@@ -189,6 +189,49 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
       elementsImpl
     }
 
+    def generateAutoTypename(bundle: ClassDef, thiz: global.This): Option[Tree] = {
+      // 1: Get immediate defined args of the Bundle
+      // 2: Determine an appropriate naming strategy based on the collection of elements:
+      //    - 1 numeric property only: Generate a name like MyBundle2
+      //    - Multiple numeric properties: Generate a name with word-like descriptors like MyBundle_${width}width
+      //    - Mixed elements: Numeric properties first, type names of Aggregate-likes after, like MyBundle_${width}property_${childBundle.typeName}
+
+      val (con, params) = getConstructorAndParams(bundle.impl.body, true)
+      if (con.isEmpty) {
+        global.reporter.warning(bundle.pos, "Unable to determine primary constructor!")
+        return None
+      }
+
+      val constructor = con.get
+      // The params have spaces after them (Scalac implementation detail)
+      val paramLookup: String => Symbol = params.map(sym => sym.name.toString.trim -> sym).toMap
+
+      // Create a this.<ref> for each field matching order of constructor arguments
+      // Unlike autoCloneType, just a list of (String, Tree) since we only care about the parameters themselves and not parameter lists
+      val typeNameConArgs: List[(Tree)] =
+        constructor.vparamss.flatMap(_.map { vp =>
+          val p = paramLookup(vp.name.toString)
+          // Make this.<ref>
+          val select = gen.mkAttributedSelect(thiz.asInstanceOf[Tree], p)
+          // Clone any Data parameters to avoid field aliasing, need full clone to include direction
+          val cloned = if (isData(vp.symbol)) cloneTypeFull(select.asInstanceOf[Tree]) else select
+          // Need to splat varargs
+          if (isVarArgs(vp.symbol)) q"$cloned: _*" else cloned
+        })
+
+      // Create a map from constructor argument name to constructor argument accessor
+      val typeNameConParamsSym =
+        bundle.symbol.newMethod(TermName("_typeNameConParams"), bundle.symbol.pos.focus, Flag.OVERRIDE | Flag.PROTECTED)
+      typeNameConParamsSym.resetFlag(Flags.METHOD)
+      typeNameConParamsSym.setInfo(NullaryMethodType(itAnyTpe))
+
+      val typeNameConParams = localTyper.typed(
+        DefDef(typeNameConParamsSym, q"scala.collection.immutable.Vector.apply[Any](..$typeNameConArgs)")
+      )
+
+      Some(typeNameConParams)
+    }
+
     override def transform(tree: Tree): Tree = tree match {
 
       case record: ClassDef
@@ -210,8 +253,10 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
           None
         }
 
+        val autoTypenameOpt = if (isBundle) generateAutoTypename(record, thiz) else None
+
         val withMethods = deriveClassDef(record) { t =>
-          deriveTemplate(t)(_ ++ cloneTypeImplOpt ++ usingPluginOpt ++ elementsImplOpt)
+          deriveTemplate(t)(_ ++ cloneTypeImplOpt ++ usingPluginOpt ++ elementsImplOpt ++ autoTypenameOpt)
         }
 
         super.transform(localTyper.typed(withMethods))

@@ -20,6 +20,7 @@ private[plugin] trait ChiselOuterUtils { outerSelf: TypingTransformers =>
     val seqOfDataTpe:   Type = inferType(tq"scala.collection.Seq[chisel3.Data]")
     val someOfDataTpe:  Type = inferType(tq"scala.Option[chisel3.Data]")
     val itStringAnyTpe: Type = inferType(tq"scala.collection.Iterable[(String,Any)]")
+    val itAnyTpe:       Type = inferType(tq"scala.collection.Iterable[Any]")
 
     def stringFromTypeName(name: TypeName): String =
       name.toString.trim() // Remove trailing space (Scalac implementation detail)
