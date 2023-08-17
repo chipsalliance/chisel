@@ -273,6 +273,8 @@ object Serializer {
       s(init); s(info)
     case DefInstance(info, name, module, _) =>
       b ++= "inst "; b ++= legalize(name); b ++= " of "; b ++= legalize(module); s(info)
+    case DefObject(info, name, cls) =>
+      b ++= "object "; b ++= legalize(name); b ++= " of "; b ++= legalize(cls); s(info)
     case DefMemory(
           info,
           name,
@@ -375,6 +377,7 @@ object Serializer {
     case IntegerPropertyType       => b ++= "Integer"
     case StringPropertyType        => b ++= "String"
     case SequencePropertyType(tpe) => b ++= "List<"; s(tpe, lastEmittedConst); b += '>'
+    case ClassPropertyType(name)   => b ++= "Inst<"; b ++= name; b += '>'
     case UnknownType               => b += '?'
     case other                     => b ++= other.serialize // Handle user-defined nodes
   }
@@ -425,6 +428,16 @@ object Serializer {
       newLineAndIndent(1); b ++= "intrinsic = "; b ++= intrinsic
       params.foreach { p => newLineAndIndent(1); s(p) }
       Iterator(b.toString)
+    case DefClass(info, name, ports, body) =>
+      val start = {
+        implicit val b = new StringBuilder
+        doIndent(0); b ++= "class "; b ++= name; b ++= " :"; s(info)
+        ports.foreach { p => newLineAndIndent(1); s(p) }
+        newLineNoIndent() // add a blank line between port declaration and body
+        newLineNoIndent() // newline for body, sIt will indent
+        b.toString
+      }
+      Iterator(start) ++ sIt(body)(indent + 1)
     case other =>
       Iterator(Indent * indent, other.serialize) // Handle user-defined nodes
   }

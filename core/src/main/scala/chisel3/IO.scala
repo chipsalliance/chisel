@@ -1,8 +1,9 @@
 package chisel3
 
 import chisel3.internal.requireIsChiselType // Fix ambiguous import
-import chisel3.internal.Builder
+import chisel3.internal.{throwException, Builder}
 import chisel3.experimental.SourceInfo
+import chisel3.properties.Class
 
 object IO {
 
@@ -26,6 +27,17 @@ object IO {
     val prevId = Builder.idGen.value
     val data = iodef // evaluate once (passed by name)
     requireIsChiselType(data, "io type")
+
+    // Fail if the module is a Class, and the type is Data.
+    module match {
+      case _: Class => {
+        data match {
+          case _: Data => throwException(s"Class ports must be Property type, but found $data")
+          case _ => ()
+        }
+      }
+      case _ => ()
+    }
 
     // Clone the IO so we preserve immutability of data types
     // Note: we don't clone if the data is fresh (to avoid unnecessary clones)

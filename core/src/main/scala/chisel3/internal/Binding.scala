@@ -5,6 +5,7 @@ package chisel3.internal
 import chisel3._
 import chisel3.experimental.BaseModule
 import chisel3.internal.firrtl.{LitArg, PropertyLit}
+import chisel3.properties.Class
 
 import scala.collection.immutable.VectorMap
 
@@ -109,6 +110,10 @@ case class RegBinding(enclosure: RawModule, visibility: Option[WhenContext])
 case class WireBinding(enclosure: RawModule, visibility: Option[WhenContext])
     extends ConstrainedBinding
     with ConditionalDeclarable
+
+private[chisel3] case class ClassBinding(enclosure: Class) extends ConstrainedBinding with ReadOnlyBinding
+
+private[chisel3] case class ObjectFieldBinding(enclosure: BaseModule) extends ConstrainedBinding
 
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class ChildBinding(parent: Data) extends Binding {

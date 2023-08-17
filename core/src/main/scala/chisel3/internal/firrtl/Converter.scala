@@ -102,11 +102,11 @@ private[chisel3] object Converter {
       val pt = lit.propertyType
       val values = seq.map(PropertyLit[Any](_)(pt)).map(convert(_, ctx, info))
       // We know we have a Seq so do the unsafe cast because we need the element type out of it
-      val tpe = extractType(pt.getPropertyType.asInstanceOf[SequencePropertyType].elementType)
+      val tpe = extractType(pt.getPropertyType(None).asInstanceOf[SequencePropertyType].elementType)
       fir.SequencePropertyValue(tpe, values)
     case value @ PropertySeqValue(args) =>
       val values = args.map(convert(_, ctx, info))
-      val tpe = extractType(value.propertyType.getPropertyType)
+      val tpe = extractType(value.propertyType.getPropertyType(None))
       fir.SequencePropertyValue(tpe, values)
     case e @ ProbeExpr(probe) =>
       fir.ProbeExpr(convert(probe, ctx, info))
@@ -182,6 +182,8 @@ private[chisel3] object Converter {
       Some(fir.IsInvalid(convert(info), convert(arg, ctx, info)))
     case e @ DefInstance(info, id, _) =>
       Some(fir.DefInstance(convert(info), e.name, id.name))
+    case e @ DefObject(info, obj) =>
+      Some(fir.DefObject(convert(info), e.name, obj.className))
     case e @ Stop(_, info, clock, ret) =>
       Some(fir.Stop(convert(info), ret, convert(clock, ctx, info), firrtl.Utils.one, e.name))
     case e @ Printf(_, info, clock, pable) =>
@@ -350,6 +352,7 @@ private[chisel3] object Converter {
     case IntegerPropertyType               => fir.IntegerPropertyType
     case StringPropertyType                => fir.StringPropertyType
     case SequencePropertyType(elementType) => fir.SequencePropertyType(extractType(elementType))
+    case ClassPropertyType(name)           => fir.ClassPropertyType(name)
   }
 
   def extractType(
@@ -444,6 +447,13 @@ private[chisel3] object Converter {
         (ports ++ ctx.secretPorts).map(p => convert(p, topDir)),
         id.intrinsic,
         params.keys.toList.sorted.map { name => convert(name, params(name)) }
+      )
+    case ctx @ DefClass(_, name, ports, cmds) =>
+      fir.DefClass(
+        fir.NoInfo,
+        name,
+        ports.map(p => convert(p)),
+        convert(cmds, ctx)
       )
   }
 
