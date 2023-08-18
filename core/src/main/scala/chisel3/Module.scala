@@ -98,8 +98,14 @@ object Module extends SourceInfoDoc {
   /** Returns the implicit Clock */
   def clock: Clock = Builder.forcedClock
 
+  /** Returns the implicit Clock, if it is defined */
+  def clockOption: Option[Clock] = Builder.currentClock
+
   /** Returns the implicit Reset */
   def reset: Reset = Builder.forcedReset
+
+  /** Returns the implicit Reset, if it is defined */
+  def resetOption: Option[Reset] = Builder.currentReset
 
   /** Returns the current Module */
   def currentModule: Option[BaseModule] = Builder.currentModule

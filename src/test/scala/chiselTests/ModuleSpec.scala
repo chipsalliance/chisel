@@ -129,7 +129,7 @@ class ModuleSpec extends ChiselPropSpec with Utils {
     }).getMessage should include("Module() cannot be called on a Class")
   }
 
-  property("object Module.clock should return a reference to the currently in scope clock") {
+  property("Module.clock should return a reference to the currently in scope clock") {
     ChiselStage.emitCHIRRTL(new Module {
       val io = IO(new Bundle {
         val clock2 = Input(Clock())
@@ -138,7 +138,27 @@ class ModuleSpec extends ChiselPropSpec with Utils {
       withClock(io.clock2) { assert(Module.clock eq io.clock2) }
     })
   }
-  property("object Module.reset should return a reference to the currently in scope reset") {
+
+  property("Module.clockOption should return a reference to the currently in scope clock") {
+    ChiselStage.emitCHIRRTL(new Module {
+      val clock2 = IO(Input(Clock()))
+      Module.clockOption should be(Some(this.clock))
+      withClock(clock2) {
+        Module.clockOption should be(Some(clock2))
+      }
+      withClock(None) {
+        Module.clockOption should be(None)
+      }
+    })
+  }
+
+  property("Module.clockOption should be None for a RawModule") {
+    ChiselStage.emitCHIRRTL(new RawModule {
+      Module.clockOption should be(None)
+    })
+  }
+
+  property("Module.reset should return a reference to the currently in scope reset") {
     ChiselStage.emitCHIRRTL(new Module {
       val io = IO(new Bundle {
         val reset2 = Input(Bool())
@@ -147,6 +167,26 @@ class ModuleSpec extends ChiselPropSpec with Utils {
       withReset(io.reset2) { assert(Module.reset eq io.reset2) }
     })
   }
+
+  property("Module.resetOption should return a reference to the currently in scope reset") {
+    ChiselStage.emitCHIRRTL(new Module {
+      val reset2 = IO(Input(AsyncReset()))
+      Module.resetOption should be(Some(this.reset))
+      withReset(reset2) {
+        Module.resetOption should be(Some(reset2))
+      }
+      withReset(None) {
+        Module.resetOption should be(None)
+      }
+    })
+  }
+
+  property("Module.resetOption should be None for a RawModule") {
+    ChiselStage.emitCHIRRTL(new RawModule {
+      Module.resetOption should be(None)
+    })
+  }
+
   property("object Module.currentModule should return an Option reference to the current Module") {
     def checkModule(mod: Module): Boolean = Module.currentModule.map(_ eq mod).getOrElse(false)
     ChiselStage.emitCHIRRTL(new Module {
