@@ -4,6 +4,8 @@ package chiselTests
 
 import chisel3._
 import chisel3.util._
+import chisel3.experimental.{annotate, ChiselAnnotation}
+import firrtl.transforms.DedupGroupAnnotation
 
 class DedupIO extends Bundle {
   val in = Flipped(Decoupled(UInt(32.W)))
@@ -80,5 +82,17 @@ class DedupSpec extends ChiselFlatSpec {
 
   it should "dedup modules that share a literal" in {
     assert(countModules(compile { new SharedConstantValDedupTop }) === 2)
+  }
+
+  it should "not dedup modules that are in different dedup groups" in {
+    def dedupGroup(m: Module, group: String): Unit = annotate(new ChiselAnnotation {
+      def toFirrtl = DedupGroupAnnotation(m.toTarget, group)
+    })
+    assert(countModules(compile {
+      val top = new SharedConstantValDedupTop
+      dedupGroup(top.inst0, "inst0")
+      dedupGroup(top.inst1, "inst1")
+      top
+    }) === 3)
   }
 }
