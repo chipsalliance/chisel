@@ -22,13 +22,13 @@ runs:
           export VERSION="${{ inputs.version }}"
         fi
         mkdir circt
-        wget -O - https://github.com/llvm/circt/releases/download/$VERSION/firtool-bin-linux-x64.tar.gz | tar -zx -C circt/ --strip-components 1
+        wget -O - https://github.com/llvm/circt/releases/download/$VERSION/firrtl-bin-linux-x64.tar.gz | tar -zx -C circt/ --strip-components 1
 
     - name: Download Latest Nighlty `firtool` binary
       shell: bash
       if: inputs.version == 'nightly'
       run: |
-        ARTIFACT_NAME=firtool-bin-linux-x64.tar.gz
+        ARTIFACT_NAME=firrtl-bin-linux-x64.tar.gz
         ARTIFACT_ID=$(
           curl -L \
                -H "Accept: application/vnd.github+json" \
