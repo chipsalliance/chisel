@@ -98,7 +98,7 @@ object Class {
     * *WARNING*: It is the caller's resonsibility to ensure the Class exists, this is not checked automatically.
     */
   def unsafeGetReferenceType(className: String): Property[ClassType] = {
-    new Property[ClassType](Some(new ClassType(className)))
+    Property[ClassType](new ClassType(className))
   }
 
   /** Helper to create a DynamicObject for a Class of a given name.

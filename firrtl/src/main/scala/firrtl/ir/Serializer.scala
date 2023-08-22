@@ -123,6 +123,15 @@ object Serializer {
           if (idx != lastIdx) b ++= ", "
       }
       b += ')'
+    case MapPropertyValue(tpe, values) =>
+      b ++= "Map<"; s(tpe); b ++= ">(";
+      val lastIdx = values.size - 1
+      values.zipWithIndex.foreach {
+        case ((key, value), idx) =>
+          b ++= StringLit(key).escape; b ++= " -> "; s(value)
+          if (idx != lastIdx) b ++= ", "
+      }
+      b += ')'
     case ProbeExpr(expr, _)   => b ++= "probe("; s(expr); b += ')'
     case RWProbeExpr(expr, _) => b ++= "rwprobe("; s(expr); b += ')'
     case ProbeRead(expr, _)   => b ++= "read("; s(expr); b += ')'
@@ -380,6 +389,7 @@ object Serializer {
     case StringPropertyType        => b ++= "String"
     case BooleanPropertyType       => b ++= "Bool"
     case SequencePropertyType(tpe) => b ++= "List<"; s(tpe, lastEmittedConst); b += '>'
+    case MapPropertyType(tpe)      => b ++= "Map<"; s(tpe, lastEmittedConst); b += '>'
     case ClassPropertyType(name)   => b ++= "Inst<"; b ++= name; b += '>'
     case UnknownType               => b += '?'
     case other                     => b ++= other.serialize // Handle user-defined nodes

@@ -248,6 +248,8 @@ case class BooleanPropertyLiteral(value: Boolean) extends Expression with UseSer
 
 case class SequencePropertyValue(tpe: Type, values: Seq[Expression]) extends Expression with UseSerializer
 
+case class MapPropertyValue(tpe: Type, values: Seq[(String, Expression)]) extends Expression with UseSerializer
+
 case class DoPrim(op: PrimOp, args: Seq[Expression], consts: Seq[BigInt], tpe: Type)
     extends Expression
     with UseSerializer
@@ -530,6 +532,8 @@ case object StringPropertyType extends PropertyType
 case object BooleanPropertyType extends PropertyType
 
 case class SequencePropertyType(tpe: PropertyType) extends PropertyType
+
+case class MapPropertyType(tpe: PropertyType) extends PropertyType
 
 case class ClassPropertyType(name: String) extends PropertyType
 

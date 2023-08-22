@@ -6,6 +6,8 @@ import chisel3._
 import chisel3.properties.Property
 import chiselTests.{ChiselFlatSpec, MatchesAndOmits}
 import circt.stage.ChiselStage
+import scala.collection.immutable.VectorMap
+import scala.collection.immutable.ListMap
 
 class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
   behavior.of("Property")
@@ -58,7 +60,7 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
   it should "support Long as a Property literal" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
       val propOut = IO(Output(Property[Long]()))
-      propOut := Property(123)
+      propOut := Property[Long](123)
     })
 
     matchesAndOmits(chirrtl)(
@@ -79,7 +81,7 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
   it should "support BigInt as a Property literal" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
       val propOut = IO(Output(Property[BigInt]()))
-      propOut := Property(123)
+      propOut := Property[BigInt](123)
     })
 
     matchesAndOmits(chirrtl)(
@@ -195,6 +197,55 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
 
     matchesAndOmits(chirrtl)(
       "propassign propOut, List<Integer>(propIn, Integer(123))"
+    )()
+  }
+
+  it should "support Map[Int], VectorMap[Int], and ListMap[Int] as a Property type" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val mapProp1 = IO(Input(Property[Map[String, Int]]()))
+      val mapProp2 = IO(Input(Property[VectorMap[String, Int]]()))
+      val mapProp3 = IO(Input(Property[ListMap[String, Int]]()))
+    })
+
+    matchesAndOmits(chirrtl)(
+      "input mapProp1 : Map<Integer>",
+      "input mapProp2 : Map<Integer>",
+      "input mapProp3 : Map<Integer>"
+    )()
+  }
+
+  it should "support nested Maps as a Property type" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val nestedMapProp = IO(Input(Property[Map[String, Map[String, Map[String, Int]]]]()))
+    })
+
+    matchesAndOmits(chirrtl)(
+      "input nestedMapProp : Map<Map<Map<Integer>>>"
+    )()
+  }
+
+  it should "support Map[String, BigInt] as Property values" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val propOut = IO(Output(Property[Map[String, BigInt]]()))
+      propOut := Property(
+        Map[String, BigInt]("foo" -> 123, "bar" -> 456)
+      ) // The Int => BigInt implicit conversion fails here
+    })
+
+    matchesAndOmits(chirrtl)(
+      """propassign propOut, Map<Integer>("bar" -> Integer(456), "foo" -> Integer(123))"""
+    )()
+  }
+
+  it should "support mixed Maps of Integer literal and ports as Map Property values" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val propIn = IO(Input(Property[BigInt]()))
+      val propOut = IO(Output(Property[Map[String, BigInt]]()))
+      propOut := Property(Map("foo" -> propIn, "bar" -> Property(BigInt(123))))
+    })
+
+    matchesAndOmits(chirrtl)(
+      """propassign propOut, Map<Integer>("bar" -> Integer(123), "foo" -> propIn)"""
     )()
   }
 }
