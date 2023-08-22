@@ -9,12 +9,14 @@ import scala.tools.nsc.plugins.PluginComponent
 import scala.tools.nsc.symtab.Flags
 import scala.tools.nsc.transform.TypingTransformers
 
-/** Performs three operations
+/** Performs four operations
   * 1) Records that this plugin ran on a bundle by adding a method
   *    `override protected def _usingPlugin: Boolean = true`
   * 2) Constructs a cloneType method
   * 3) Builds a `def elements` that is computed once in this plugin
   *    Eliminates needing reflection to discover the hardware fields of a `Bundle`
+  * 4) For Bundles which mix-in `HasAutoTypename`, builds a `def _typeNameConParams`
+  *    statement to override the constructor parameter list, used to generate a typeName
   *
   * @param global     the environment
   * @param arguments  run time parameters to code
@@ -71,6 +73,9 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
         case d: DefDef if isNullaryMethodNamed("cloneType", d) =>
           val prefix = if (isBundle) "Bundles" else "Records"
           val msg = s"$prefix cannot override cloneType. Let the compiler plugin generate it."
+          global.reporter.error(d.pos, msg)
+        case d: DefDef if isNullaryMethodNamed("_typeNameConParams", d) =>
+          val msg = "Users cannot override _typeNameConParams. Let the compiler plugin generate it."
           global.reporter.error(d.pos, msg)
         case _ =>
       }
@@ -253,7 +258,8 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
           None
         }
 
-        val autoTypenameOpt = if (isBundle) generateAutoTypename(record, thiz) else None
+        val autoTypenameOpt =
+          if (isBundle && isAutoTypenamed(record.symbol)) generateAutoTypename(record, thiz) else None
 
         val withMethods = deriveClassDef(record) { t =>
           deriveTemplate(t)(_ ++ cloneTypeImplOpt ++ usingPluginOpt ++ elementsImplOpt ++ autoTypenameOpt)
