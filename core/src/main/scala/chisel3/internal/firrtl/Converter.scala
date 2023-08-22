@@ -97,6 +97,7 @@ private[chisel3] object Converter {
     case PropertyLit(lit: Long) => fir.IntegerPropertyLiteral(lit)
     case PropertyLit(lit: BigInt) => fir.IntegerPropertyLiteral(lit)
     case PropertyLit(lit: String) => fir.StringPropertyLiteral(lit)
+    case PropertyLit(lit: Boolean) => fir.BooleanPropertyLiteral(lit)
     // TODO can this be merged with PropertySeqValue?
     case lit @ PropertyLit(seq: Seq[_]) =>
       val pt = lit.propertyType
@@ -351,6 +352,7 @@ private[chisel3] object Converter {
   def extractType(tpe: PropertyType): fir.PropertyType = tpe match {
     case IntegerPropertyType               => fir.IntegerPropertyType
     case StringPropertyType                => fir.StringPropertyType
+    case BooleanPropertyType               => fir.BooleanPropertyType
     case SequencePropertyType(elementType) => fir.SequencePropertyType(extractType(elementType))
     case ClassPropertyType(name)           => fir.ClassPropertyType(name)
   }

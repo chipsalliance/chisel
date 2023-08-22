@@ -64,6 +64,10 @@ private[chisel3] object PropertyType {
     override def getPropertyType(value: Option[String]): ir.PropertyType = ir.StringPropertyType
   }
 
+  implicit val boolPropertyTypeInstance = new PropertyType[Boolean] {
+    override def getPropertyType(value: Option[Boolean]): ir.PropertyType = ir.BooleanPropertyType
+  }
+
   implicit def sequencePropertyTypeInstance[A: PropertyType, F[_] <: Seq[_]] = new PropertyType[F[A]] {
     override def getPropertyType(value: Option[F[A]]): ir.PropertyType =
       ir.SequencePropertyType(implicitly[PropertyType[A]].getPropertyType(None))

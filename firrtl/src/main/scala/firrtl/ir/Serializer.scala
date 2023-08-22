@@ -112,6 +112,8 @@ object Serializer {
       b ++= "Integer("; b ++= value.toString(10); b ++= ")"
     case StringPropertyLiteral(value) =>
       b ++= "String(\""; b ++= value; b ++= "\")"
+    case BooleanPropertyLiteral(value) =>
+      b ++= s"Bool(${value})"
     case SequencePropertyValue(tpe, values) =>
       b ++= "List<"; s(tpe); b ++= ">(";
       val lastIdx = values.size - 1
@@ -376,6 +378,7 @@ object Serializer {
     case AnalogType(width)         => b ++= "Analog"; s(width)
     case IntegerPropertyType       => b ++= "Integer"
     case StringPropertyType        => b ++= "String"
+    case BooleanPropertyType       => b ++= "Bool"
     case SequencePropertyType(tpe) => b ++= "List<"; s(tpe, lastEmittedConst); b += '>'
     case ClassPropertyType(name)   => b ++= "Inst<"; b ++= name; b += '>'
     case UnknownType               => b += '?'

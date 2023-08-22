@@ -35,6 +35,7 @@ The following are legal `Property` types:
 * `Property[Long]`
 * `Property[BigInt]`
 * `Property[String]`
+* `Property[Boolean]`
 * `Property[Seq[A]]` (where `A` is itself a `Property`)
 
 ## Using Properties
