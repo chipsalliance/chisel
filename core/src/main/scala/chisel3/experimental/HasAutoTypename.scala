@@ -1,6 +1,7 @@
 package chisel3.experimental
 
 import chisel3.{Data, Record}
+import chisel3.internal.{sanitize}
 
 /** Trait for [[Record]]s that signals the compiler plugin to generate a typeName for the
   * inheriting [[Record]] based on the parameter values provided to its constructor.
@@ -39,13 +40,14 @@ trait HasAutoTypename {
   override def typeName: String = autoTypeName(getClass.getSimpleName, _typeNameConParams)
 
   private def autoTypeName(bundleName: String, typeNameParams: Iterable[Any]): String =
-    _typeNameConParams.foldLeft(getClass.getSimpleName) {
+    _typeNameConParams.foldLeft(bundleName) {
       case (prev, accessor) => prev + s"_${accessorString(accessor)}"
     }
 
   private def accessorString(accessor: Any): String = accessor match {
-    case d: Data   => d.typeName
-    case s: String => s
+    case d: Data => d.typeName
+    case s: String =>
+      sanitize(s, true) // Allow leading digits since this accessor string will occur after an underscore
     case _ => s"$accessor"
   }
 }
