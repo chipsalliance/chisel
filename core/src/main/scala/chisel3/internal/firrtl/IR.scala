@@ -306,6 +306,7 @@ object MemPortDirection {
 private[chisel3] sealed trait PropertyType
 private[chisel3] case object IntegerPropertyType extends PropertyType
 private[chisel3] case object StringPropertyType extends PropertyType
+private[chisel3] case object BooleanPropertyType extends PropertyType
 private[chisel3] case class SequencePropertyType(elementType: PropertyType) extends PropertyType
 private[chisel3] case class ClassPropertyType(name: String) extends PropertyType
 

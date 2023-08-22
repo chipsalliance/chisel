@@ -108,6 +108,27 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
     )()
   }
 
+  it should "support Boolean as a Property type" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val boolProp = IO(Input(Property[Boolean]()))
+    })
+
+    matchesAndOmits(chirrtl)(
+      "input boolProp : Bool"
+    )()
+  }
+
+  it should "support Boolean as a Property literal" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val propOut = IO(Output(Property[Boolean]()))
+      propOut := Property(false)
+    })
+
+    matchesAndOmits(chirrtl)(
+      "propassign propOut, Bool(false)"
+    )()
+  }
+
   it should "support connecting Property types of the same type" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
       val propIn = IO(Input(Property[Int]()))

@@ -242,6 +242,10 @@ case class StringPropertyLiteral(value: String) extends Expression with UseSeria
   val width = UnknownWidth
 }
 
+case class BooleanPropertyLiteral(value: Boolean) extends Expression with UseSerializer {
+  val tpe = BooleanPropertyType
+}
+
 case class SequencePropertyValue(tpe: Type, values: Seq[Expression]) extends Expression with UseSerializer
 
 case class DoPrim(op: PrimOp, args: Seq[Expression], consts: Seq[BigInt], tpe: Type)
@@ -522,6 +526,8 @@ sealed abstract class PropertyType extends Type with UseSerializer
 case object IntegerPropertyType extends PropertyType
 
 case object StringPropertyType extends PropertyType
+
+case object BooleanPropertyType extends PropertyType
 
 case class SequencePropertyType(tpe: PropertyType) extends PropertyType
 
