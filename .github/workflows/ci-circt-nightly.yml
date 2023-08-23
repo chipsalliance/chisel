@@ -7,12 +7,12 @@ env:
 
 on:
   workflow_dispatch:
-  # Run every day at 0800 UTC which is:
-  #   - 0100 PDT / 0000 PST
-  #   - 0400 EDT / 0300 EST
-  # This time is one hour after the scheduled build of the firtool Nightly.
+  # Run every day at 1000 UTC which is:
+  #   - 0300 PDT / 0200 PST
+  #   - 0600 EDT / 0500 EST
+  # This time is three hours after the scheduled build of the firtool Nightly.
   schedule:
-    - cron: '0 8 * * *'
+    - cron: '0 10 * * *'
   # Run on PRs that target the
   pull_request:
     branches:
