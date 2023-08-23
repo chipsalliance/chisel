@@ -18,7 +18,7 @@ runs:
     - shell: bash
       if: steps.cache-espresso.outputs.cache-hit != 'true'
       run: |
-        mkdir jextract
+        mkdir -p jextract
         cd jextract
         wget -q https://download.java.net/java/early_access/jextract/1/${{ inputs.file-name }}
         tar xzf ${{ inputs.file-name }}
