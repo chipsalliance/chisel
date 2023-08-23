@@ -15,6 +15,7 @@ import chisel3.properties.Class
 import chisel3.reflect.DataMirror
 import _root_.firrtl.annotations.{IsModule, ModuleName, ModuleTarget}
 import _root_.firrtl.AnnotationSeq
+import chisel3.internal.plugin.autoNameRecursively
 
 object Module extends SourceInfoDoc {
 
@@ -41,6 +42,8 @@ object Module extends SourceInfoDoc {
     val parentWhenStack = Builder.whenStack
 
     // Save then clear clock and reset to prevent leaking scope, must be set again in the Module
+    // Note that Disable is a function of whatever the current reset is, so it does not need a port
+    //   and thus does not change when we cross module boundaries
     val (saveClock, saveReset) = (Builder.currentClock, Builder.currentReset)
     val savePrefix = Builder.getPrefix
     Builder.clearPrefix()
@@ -106,6 +109,40 @@ object Module extends SourceInfoDoc {
 
   /** Returns the implicit Reset, if it is defined */
   def resetOption: Option[Reset] = Builder.currentReset
+
+  /** Returns the implicit Disable
+    *
+    * Note that [[Disable]] is a function of the implicit clock and reset
+    * so having no implicit clock or reset may imply no `Disable`.
+    */
+  def disable(implicit sourceInfo: SourceInfo): Disable =
+    disableOption.getOrElse(throwException("Error: No implicit disable."))
+
+  /** Returns the current implicit [[Disable]], if one is defined
+    *
+    * Note that [[Disable]] is a function of the implicit clock and reset
+    * so having no implicit clock or reset may imply no `Disable`.
+    */
+  def disableOption(implicit sourceInfo: SourceInfo): Option[Disable] = {
+    Builder.currentDisable match {
+      case Disable.Never       => None
+      case Disable.BeforeReset => hasBeenReset.map(x => autoNameRecursively("disable")(!x))
+    }
+  }
+
+  // Should this be public or should users just go through .disable?
+  // Note that having a reset but not clock means hasBeenReset is None, should we default to just !reset?
+  private def hasBeenReset(implicit sourceInfo: SourceInfo): Option[Disable] = {
+    // TODO memoize this
+    (Builder.currentClock, Builder.currentReset) match {
+      case (Some(clock), Some(reset)) =>
+        val hasBeenReset = Module(new HasBeenResetIntrinsic)
+        hasBeenReset.clock := clock
+        hasBeenReset.reset := reset
+        Some(new Disable(hasBeenReset.out))
+      case _ => None
+    }
+  }
 
   /** Returns the current Module */
   def currentModule: Option[BaseModule] = Builder.currentModule
@@ -178,6 +215,7 @@ abstract class Module extends RawModule {
   // Implicit clock and reset pins
   final val clock: Clock = IO(Input(Clock()))(UnlocatableSourceInfo).suggestName("clock")
   final val reset: Reset = IO(Input(mkReset))(UnlocatableSourceInfo).suggestName("reset")
+  // TODO add a way to memoize hasBeenReset iff it is used
 
   // TODO It's hard to remove these deprecated override methods because they're used by
   //   Chisel.QueueCompatibility which extends chisel3.Queue which extends chisel3.Module
@@ -213,6 +251,7 @@ abstract class Module extends RawModule {
   // Setup ClockAndReset
   Builder.currentClock = Some(clock)
   Builder.currentReset = Some(reset)
+  // Note that we do no such setup for disable, it will default to hasBeenReset of the currentReset
   Builder.clearPrefix()
 
   private[chisel3] override def initializeInParent(): Unit = {

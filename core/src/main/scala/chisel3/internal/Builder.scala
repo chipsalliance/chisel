@@ -483,6 +483,7 @@ private[chisel3] class DynamicContext(
   var whenStack:            List[WhenContext] = Nil
   var currentClock:         Option[Clock] = None
   var currentReset:         Option[Reset] = None
+  var currentDisable:       Disable.Type = Disable.BeforeReset
   val errors = new ErrorLog(warningFilters, sourceRoots, throwOnFirstError)
   val namingStack = new NamingStack
 
@@ -742,6 +743,11 @@ private[chisel3] object Builder extends LazyLogging {
     dynamicContext.currentReset = newReset
   }
 
+  def currentDisable: Disable.Type = dynamicContext.currentDisable
+  def currentDisable_=(newDisable: Disable.Type): Unit = {
+    dynamicContext.currentDisable = newDisable
+  }
+
   def inDefinition: Boolean = {
     dynamicContextVar.value
       .map(_.inDefinition)
@@ -790,6 +796,7 @@ private[chisel3] object Builder extends LazyLogging {
           val name = fullName.stripPrefix("_")
           nameRecursively(s"${prefix}_${name}", elt, namer)
       }
+    case disable: Disable => nameRecursively(prefix, disable.value, namer)
     case _ => // Do nothing
   }
 
