@@ -1,0 +1,31 @@
+name: Install Jextract
+
+inputs:
+  file-name:
+    description: 'File name to install'
+    required: false
+    default: 'openjdk-20-jextract+1-2_linux-x64_bin.tar.gz'
+
+runs:
+  using: composite
+  steps:
+    - id: cache-jextract
+      uses: actions/cache@v3
+      with:
+        path: jextract
+        key: jextract-${{ runner.os }}-${{ inputs.file-name }}
+
+    - shell: bash
+      if: steps.cache-espresso.outputs.cache-hit != 'true'
+      run: |
+        mkdir jextract
+        cd jextract
+        wget -q https://download.java.net/java/early_access/jextract/1/${{ inputs.file-name }}
+        tar xzf ${{ inputs.file-name }}
+
+    - shell: bash
+      run: |
+        cd jextract
+        DIR_NAME=$(ls -d jextract-*/ | head -c-2)
+        ./$DIR_NAME/bin/jextract --version
+        echo "$(pwd)/$DIR_NAME/bin" >> $GITHUB_PATH

@@ -81,6 +81,15 @@ jobs:
         uses: actions/checkout@v3
         with:
           ref: ${{ inputs.ref }}
+      # FIXME: installling jextract before installing mill to workaround `os.proc` can't find jextract in the outdated PATH env from mill server
+      - name: Install Jextract
+        uses: ./.github/workflows/install-jextract
+      - name: Setup Scala
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'adopt'
+          java-version: '20'
+          cache: 'sbt'
       - name: Install Mill
         uses: jodersky/setup-mill@v0.3.0
         with:
@@ -91,7 +100,9 @@ jobs:
           version: ${{ inputs.circt }}
           github-token: ${{ github.token }}
       - name: Compile Mill
-        run: mill __.compile
+        run: |
+          export CIRCT_INSTALL_PATH="$(pwd)/circt"
+          mill __.compile
 
   doc:
     name: Formatting
