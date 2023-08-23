@@ -29,6 +29,7 @@ import scala.annotation.{implicitAmbiguous, implicitNotFound}
   */
 @implicitNotFound("unsupported Property type ${T}")
 private[chisel3] trait PropertyType[T] {
+
   /** The property type coreesponding to T. This is the type parameter of the property returned by Property.apply
     */
   type Type
@@ -50,6 +51,8 @@ private[chisel3] trait PropertyType[T] {
   def convertUnderlying(value: T): Underlying
 }
 
+/** PropertyType where Type and Underlying are the same as T
+  */
 private[chisel3] trait SimplePropertyType[T] extends PropertyType[T] {
   final type Type = T
   final type Underlying = T
@@ -64,39 +67,33 @@ private[chisel3] trait SimplePropertyType[T] extends PropertyType[T] {
   * be in the implicit scope and available for users.
   */
 private[chisel3] object PropertyType {
-  @implicitAmbiguous("unable to infer Property type. Please specify it explicitly in square brackets on the LHS.")
-  implicit val intPropertyTypeInstance = new SimplePropertyType[Int] {
-    override def getPropertyType(_value: Option[Int]): fir.PropertyType = fir.IntegerPropertyType
-    override def convert(value:          Int):         fir.Expression = fir.IntegerPropertyLiteral(value)
-  }
+  def makeSimple[T](getType: Option[T] => fir.PropertyType, getExpression: T => fir.Expression): SimplePropertyType[T] =
+    new SimplePropertyType[T] {
+      def getPropertyType(value: Option[T]): fir.PropertyType = getType(value)
+      def convert(value:         T):         fir.Expression = getExpression(value)
+    }
 
   @implicitAmbiguous("unable to infer Property type. Please specify it explicitly in square brackets on the LHS.")
-  implicit val longPropertyTypeInstance = new SimplePropertyType[Long] {
-    override def getPropertyType(_value: Option[Long]): fir.PropertyType = fir.IntegerPropertyType
-    override def convert(value:          Long):         fir.Expression = fir.IntegerPropertyLiteral(value)
-  }
+  implicit val intPropertyTypeInstance = makeSimple[Int](_ => fir.IntegerPropertyType, fir.IntegerPropertyLiteral(_))
 
   @implicitAmbiguous("unable to infer Property type. Please specify it explicitly in square brackets on the LHS.")
-  implicit val bigIntPropertyTypeInstance = new SimplePropertyType[BigInt] {
-    override def getPropertyType(_value: Option[BigInt]): fir.PropertyType = fir.IntegerPropertyType
-    override def convert(value:          BigInt):         fir.Expression = fir.IntegerPropertyLiteral(value)
-  }
+  implicit val longPropertyTypeInstance = makeSimple[Long](_ => fir.IntegerPropertyType, fir.IntegerPropertyLiteral(_))
 
   @implicitAmbiguous("unable to infer Property type. Please specify it explicitly in square brackets on the LHS.")
-  implicit val classPropertyTypeInstance = new SimplePropertyType[ClassType] {
-    override def getPropertyType(value: Option[ClassType]): fir.PropertyType = fir.ClassPropertyType(value.get.name)
-    override def convert(value:         ClassType):         fir.Expression = fir.StringPropertyLiteral(value.name)
-  }
+  implicit val bigIntPropertyTypeInstance =
+    makeSimple[BigInt](_ => fir.IntegerPropertyType, fir.IntegerPropertyLiteral(_))
 
-  implicit val stringPropertyTypeInstance = new SimplePropertyType[String] {
-    override def getPropertyType(value: Option[String]): fir.PropertyType = fir.StringPropertyType
-    override def convert(value:         String):         fir.Expression = fir.StringPropertyLiteral(value)
-  }
+  @implicitAmbiguous("unable to infer Property type. Please specify it explicitly in square brackets on the LHS.")
+  implicit val classPropertyTypeInstance = makeSimple[ClassType](
+    value => fir.ClassPropertyType(value.get.name),
+    value => fir.StringPropertyLiteral(value.name)
+  )
 
-  implicit val boolPropertyTypeInstance = new SimplePropertyType[Boolean] {
-    override def getPropertyType(value: Option[Boolean]): fir.PropertyType = fir.BooleanPropertyType
-    override def convert(value:         Boolean):         fir.Expression = fir.BooleanPropertyLiteral(value)
-  }
+  implicit val stringPropertyTypeInstance =
+    makeSimple[String](_ => fir.StringPropertyType, fir.StringPropertyLiteral(_))
+
+  implicit val boolPropertyTypeInstance =
+    makeSimple[Boolean](_ => fir.BooleanPropertyType, fir.BooleanPropertyLiteral(_))
 
   implicit def propertyTypeInstance[T](implicit pte: PropertyType[T]) = new PropertyType[Property[T]] {
     type Type = T
