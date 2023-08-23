@@ -257,7 +257,7 @@ trait CIRCTPanamaBinder
 
   def header = T(PathRef(millSourcePath / "jextract-headers.h"))
 
-  def circtInstallPath = T(os.Path(sys.env.get("CIRCT_INSTALL_PATH").getOrElse("/usr/local")))
+  def circtInstallPath = T(os.Path(T.ctx.env.get("CIRCT_INSTALL_PATH").getOrElse("/usr/local")))
 
   def includePaths = T(Seq(PathRef(circtInstallPath() / "include")))
 
