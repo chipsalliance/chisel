@@ -16,6 +16,7 @@ package object hierarchy {
     * val i1 = Instance(d)
     * }}}
     */
+  // @scala.annotation.compileTimeOnly("this annotation should have been removed by chisel but was not!")
   class instantiable extends chisel3.internal.instantiable
 
   /** Classes marked with [[instantiable]] can have their vals marked with the [[public]] annotation to
@@ -44,6 +45,7 @@ package object hierarchy {
     * i1.in := i0.out
     * }}}
     */
+  // @scala.annotation.compileTimeOnly("this annotation should have been removed by chisel but was not!")
   class public extends chisel3.internal.public
 
   type Instance[P] = core.Instance[P]

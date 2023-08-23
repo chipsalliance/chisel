@@ -8,38 +8,55 @@ import scala.reflect.macros.whitebox
 
 private[chisel3] object instantiableMacro {
 
+  import java.io._
+
   def impl(c: whitebox.Context)(annottees: c.Expr[Any]*): c.Expr[Any] = {
     import c.universe._
+
+    val writer = new PrintWriter(new FileOutputStream(new File(s"/Users/koenig/work/chisel-disable/dump.txt"), true), true)
+
+    def unwrapScaladoc(t: Tree): Tree = {
+      writer.println(s"unwrapping $t: ${t.getClass()}")
+      import scala.tools.nsc.ast.Trees
+      if (t.isInstanceOf[Trees#DocDef]) {
+        ???
+        t.asInstanceOf[Trees#DocDef].definition.asInstanceOf[Tree]
+      }
+      else t
+    }
+    
     def processBody(stats: Seq[Tree]): (Seq[Tree], Iterable[Tree]) = {
       val extensions = scala.collection.mutable.ArrayBuffer.empty[Tree]
       extensions += q"implicit val mg = new chisel3.internal.MacroGenerated{}"
-      // Note the triple `_` prefixing `module` is to avoid conflicts if a user marks a 'val module'
-      //  with @public; in this case, the lookup code is ambiguous between the generated `def module`
-      //  function and the argument to the generated implicit class.
-      val resultStats = stats.flatMap { stat =>
-        stat match {
-          case hasPublic: ValOrDefDef if hasPublic.mods.annotations.toString.contains("new public()") =>
-            hasPublic match {
-              case aDef: DefDef =>
-                c.error(aDef.pos, s"Cannot mark a def as @public")
-                Nil
-              // For now, we only omit protected/private vals
-              case aVal: ValDef
-                  if aVal.mods.hasFlag(c.universe.Flag.PRIVATE) || aVal.mods.hasFlag(c.universe.Flag.PROTECTED) =>
-                c.error(aVal.pos, s"Cannot mark a private or protected val as @public")
-                Nil
-              case aVal: ValDef =>
-                extensions += atPos(aVal.pos)(q"def ${aVal.name} = ___module._lookup(_.${aVal.name})")
-                if (aVal.name.toString == aVal.children.last.toString) Nil else Seq(aVal)
-              case other => Seq(other)
-            }
-          case other => Seq(other)
-        }
+      
+      val processStatement: PartialFunction[Tree, Seq[Tree]] = {
+        case hasPublic: ValOrDefDef if hasPublic.mods.annotations.toString.contains("new public()") =>
+          hasPublic match {
+            case aDef: DefDef =>
+              c.error(aDef.pos, s"Cannot mark a def as @public")
+              Nil
+            // For now, we only omit protected/private vals
+            case aVal: ValDef
+                if aVal.mods.hasFlag(c.universe.Flag.PRIVATE) || aVal.mods.hasFlag(c.universe.Flag.PROTECTED) =>
+              c.error(aVal.pos, s"Cannot mark a private or protected val as @public")
+              Nil
+            case aVal: ValDef =>
+              // Note the triple `_` prefixing `module` is to avoid conflicts if a user marks a 'val module'
+              //  with @public; in this case, the lookup code is ambiguous between the generated `def module`
+              //  function and the argument to the generated implicit class.
+              extensions += atPos(aVal.pos)(q"def ${aVal.name} = ___module._lookup(_.${aVal.name})")
+              if (aVal.name.toString == aVal.children.last.toString) Nil else Seq(aVal)
+            case other => Seq(other)
+          }
+        case other => Seq(other)
       }
+
+      val resultStats = stats.map(unwrapScaladoc).flatMap(processStatement)
+
       (resultStats, extensions)
     }
     val result = {
-      val (clz, objOpt) = annottees.map(_.tree).toList match {
+      val (clz, objOpt) = annottees.map(_.tree)/*.map(unwrapScaladoc)*/.toList match {
         case Seq(c, o) => (c, Some(o))
         case Seq(c)    => (c, None)
         case _ =>
@@ -95,7 +112,10 @@ private[chisel3] object instantiableMacro {
         $newObj
       """
     }
-    c.Expr[Any](result)
+    val res = c.Expr[Any](result)
+    writer.println(s"Result = $res")
+    writer.close()
+    res
   }
 }
 

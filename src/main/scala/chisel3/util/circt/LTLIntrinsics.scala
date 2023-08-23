@@ -9,12 +9,12 @@ import chisel3.experimental.hierarchy.{instantiable, public}
 import circt.Intrinsic
 
 private object Utils {
-  private[chisel3] def withoutNone(params: Map[String, Option[Param]]): Map[String, Param] =
+  def withoutNone(params: Map[String, Option[Param]]): Map[String, Param] =
     params.collect { case (name, Some(param)) => (name, param) }
 }
 
 @instantiable
-private[chisel3] class BaseIntrinsic(
+class BaseIntrinsic(
   intrinsicName: String,
   maybeParams:   Map[String, Option[Param]] = Map.empty[String, Option[Param]])
     extends IntrinsicModule(f"circt_$intrinsicName", Utils.withoutNone(maybeParams)) {
@@ -26,9 +26,9 @@ private[chisel3] class BaseIntrinsic(
   override def desiredName = paramValues.fold(this.getClass.getSimpleName) { (a, b) => a + "_" + b }
 }
 
-/** Base class for all unary intrinsics with `in` and `out` ports. */
+// Base class for all unary intrinsics with `in` and `out` ports. */
 @instantiable
-private[chisel3] class UnaryLTLIntrinsic(
+class UnaryLTLIntrinsic(
   intrinsicName: String,
   params:        Map[String, Option[Param]] = Map.empty[String, Option[Param]])
     extends BaseIntrinsic(f"ltl_$intrinsicName", params) {
@@ -36,9 +36,9 @@ private[chisel3] class UnaryLTLIntrinsic(
   @public val out = IO(Output(Bool()))
 }
 
-/** Base class for all binary intrinsics with `lhs`, `rhs`, and `out` ports. */
+// Base class for all binary intrinsics with `lhs`, `rhs`, and `out` ports. */
 @instantiable
-private[chisel3] class BinaryLTLIntrinsic(
+class BinaryLTLIntrinsic(
   intrinsicName: String,
   params:        Map[String, Option[Param]] = Map.empty[String, Option[Param]])
     extends BaseIntrinsic(f"ltl_$intrinsicName", params) {
@@ -47,56 +47,56 @@ private[chisel3] class BinaryLTLIntrinsic(
   @public val out = IO(Output(Bool()))
 }
 
-/** A wrapper intrinsic for the CIRCT `ltl.and` operation. */
-private[chisel3] class LTLAndIntrinsic extends BinaryLTLIntrinsic("and")
+// A wrapper intrinsic for the CIRCT `ltl.and` operation. */
+class LTLAndIntrinsic extends BinaryLTLIntrinsic("and")
 
-/** A wrapper intrinsic for the CIRCT `ltl.or` operation. */
-private[chisel3] class LTLOrIntrinsic extends BinaryLTLIntrinsic("or")
+// A wrapper intrinsic for the CIRCT `ltl.or` operation. */
+class LTLOrIntrinsic extends BinaryLTLIntrinsic("or")
 
-/** A wrapper intrinsic for the CIRCT `ltl.delay` operation. */
-private[chisel3] class LTLDelayIntrinsic(delay: Int, length: Option[Int])
+// A wrapper intrinsic for the CIRCT `ltl.delay` operation. */
+class LTLDelayIntrinsic(delay: Int, length: Option[Int])
     extends UnaryLTLIntrinsic("delay", Map("delay" -> Some(IntParam(delay)), "length" -> length.map(IntParam(_))))
 
-/** A wrapper intrinsic for the CIRCT `ltl.concat` operation. */
-private[chisel3] class LTLConcatIntrinsic extends BinaryLTLIntrinsic("concat")
+// A wrapper intrinsic for the CIRCT `ltl.concat` operation. */
+class LTLConcatIntrinsic extends BinaryLTLIntrinsic("concat")
 
-/** A wrapper intrinsic for the CIRCT `ltl.not` operation. */
-private[chisel3] class LTLNotIntrinsic extends UnaryLTLIntrinsic("not")
+// A wrapper intrinsic for the CIRCT `ltl.not` operation. */
+class LTLNotIntrinsic extends UnaryLTLIntrinsic("not")
 
-/** A wrapper intrinsic for the CIRCT `ltl.implication` operation. */
-private[chisel3] class LTLImplicationIntrinsic extends BinaryLTLIntrinsic("implication")
+// A wrapper intrinsic for the CIRCT `ltl.implication` operation. */
+class LTLImplicationIntrinsic extends BinaryLTLIntrinsic("implication")
 
-/** A wrapper intrinsic for the CIRCT `ltl.eventually` operation. */
-private[chisel3] class LTLEventuallyIntrinsic extends UnaryLTLIntrinsic("eventually")
+// A wrapper intrinsic for the CIRCT `ltl.eventually` operation. */
+class LTLEventuallyIntrinsic extends UnaryLTLIntrinsic("eventually")
 
-/** A wrapper intrinsic for the CIRCT `ltl.clock` operation. */
+// A wrapper intrinsic for the CIRCT `ltl.clock` operation. */
 @instantiable
-private[chisel3] class LTLClockIntrinsic extends BaseIntrinsic("ltl_clock") {
+class LTLClockIntrinsic extends BaseIntrinsic("ltl_clock") {
   @public val in = IO(Input(Bool()))
   @public val clock = IO(Input(Clock()))
   @public val out = IO(Output(Bool()))
 }
 
-/** A wrapper intrinsic for the CIRCT `ltl.disable` operation. */
+// A wrapper intrinsic for the CIRCT `ltl.disable` operation. */
 @instantiable
-private[chisel3] class LTLDisableIntrinsic extends BaseIntrinsic("ltl_disable") {
+class LTLDisableIntrinsic extends BaseIntrinsic("ltl_disable") {
   @public val in = IO(Input(Bool()))
   @public val condition = IO(Input(Bool()))
   @public val out = IO(Output(Bool()))
 }
 
-/** Base class for assert, assume, and cover intrinsics. */
+// Base class for assert, assume, and cover intrinsics.
 @instantiable
-private[chisel3] class VerifAssertLikeIntrinsic(intrinsicName: String, label: Option[String])
+class VerifAssertLikeIntrinsic(intrinsicName: String, label: Option[String])
     extends BaseIntrinsic(f"verif_$intrinsicName", Map("label" -> label.map(StringParam(_)))) {
   @public val property = IO(Input(Bool()))
 }
 
-/** A wrapper intrinsic for the CIRCT `verif.assert` operation. */
-private[chisel3] class VerifAssertIntrinsic(label: Option[String]) extends VerifAssertLikeIntrinsic("assert", label)
+// A wrapper intrinsic for the CIRCT `verif.assert` operation.
+class VerifAssertIntrinsic(label: Option[String]) extends VerifAssertLikeIntrinsic("assert", label)
 
-/** A wrapper intrinsic for the CIRCT `verif.assume` operation. */
-private[chisel3] class VerifAssumeIntrinsic(label: Option[String]) extends VerifAssertLikeIntrinsic("assume", label)
+// A wrapper intrinsic for the CIRCT `verif.assume` operation.
+class VerifAssumeIntrinsic(label: Option[String]) extends VerifAssertLikeIntrinsic("assume", label)
 
-/** A wrapper intrinsic for the CIRCT `verif.cover` operation. */
-private[chisel3] class VerifCoverIntrinsic(label: Option[String]) extends VerifAssertLikeIntrinsic("cover", label)
+// A wrapper intrinsic for the CIRCT `verif.cover` operation.
+class VerifCoverIntrinsic(label: Option[String]) extends VerifAssertLikeIntrinsic("cover", label)

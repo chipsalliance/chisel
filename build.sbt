@@ -277,6 +277,7 @@ lazy val macros = (project in file("macros"))
   .settings(name := "chisel-macros")
   .settings(commonSettings: _*)
   .settings(
+    libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value,
     // Published as part of unipublish
     publish / skip := true
   )
@@ -354,10 +355,11 @@ lazy val unipublish =
   addUnipublishDeps(project in file("unipublish"))(
     firrtl,
     svsim,
-    macros,
+    //macros,
     core,
     chisel
   )
+    .dependsOn(macros)
     .aggregate(plugin) // Also publish the plugin when publishing this project
     .settings(name := (chisel / name).value)
     .enablePlugins(ScalaUnidocPlugin)
@@ -367,6 +369,8 @@ lazy val unipublish =
     .settings(warningSuppression: _*)
     .settings(fatalWarningsSettings: _*)
     .settings(
+      // Exclude macros project from unidoc so that the macros can be applied
+      ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(macros),
       mimaPreviousArtifacts := previousVersions.value.map { version =>
         organization.value %% name.value % version
       },
