@@ -231,7 +231,7 @@ sealed trait Property {
   def clock(clock: Clock): Property = Property.clock(this, clock)
 
   /** See `Property.disable`. */
-  def disable(cond: Bool): Property = Property.disable(this, cond)
+  def disable(cond: Disable): Property = Property.disable(this, cond)
 }
 
 /** Prefix-style utilities to work with properties.
@@ -322,10 +322,10 @@ object Property {
     * condition is true at any time during the evaluation of the property, the
     * evaluation is aborted. Equivalent to `disable iff (cond) prop` in SVA.
     */
-  def disable(prop: Property, cond: Bool): Property = {
+  def disable(prop: Property, cond: Disable): Property = {
     val ltl_disable = Module(new LTLDisableIntrinsic)
     ltl_disable.in := prop.inner
-    ltl_disable.condition := cond
+    ltl_disable.condition := cond.value
     OpaqueProperty(ltl_disable.out)
   }
 }
@@ -350,8 +350,8 @@ sealed abstract class AssertPropertyLike {
     */
   def apply(
     prop:    Property,
-    clock:   Option[Clock] = None,
-    disable: Option[Bool] = None,
+    clock:   Option[Clock] = Module.clockOption,
+    disable: Option[Disable] = Module.disableOption,
     label:   Option[String] = None
   ): Unit = {
     val disabled = disable.fold(prop)(prop.disable(_))

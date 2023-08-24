@@ -183,11 +183,12 @@ class LTLSpec extends AnyFlatSpec with Matchers {
   it should "support property disable operation" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
       val a, b = IO(Input(Bool()))
-      val p0: Property = a.disable(b)
+      val p0: Property = a.disable(b.asDisable)
     })
+    chirrtl should include("node _T = bits(b, 0, 0)")
     chirrtl should include("inst ltl_disable of LTLDisableIntrinsic")
     chirrtl should include("connect ltl_disable.in, a")
-    chirrtl should include("connect ltl_disable.condition, b")
+    chirrtl should include("connect ltl_disable.condition, _T")
   }
 
   it should "support simple property asserts/assumes/covers" in {
@@ -204,6 +205,32 @@ class LTLSpec extends AnyFlatSpec with Matchers {
     chirrtl should include("connect verif.property, a")
     chirrtl should include("connect verif_1.property, a")
     chirrtl should include("connect verif_2.property, a")
+  }
+
+  it should "use clock and disable by default for properties" in {
+
+    val properties = Seq(
+      AssertProperty -> "VerifAssertIntrinsic",
+      AssumeProperty -> "VerifAssumeIntrinsic",
+      CoverProperty -> "VerifCoverIntrinsic"
+    )
+
+    for ((prop, intrinsic) <- properties) {
+      val chirrtl = ChiselStage.emitCHIRRTL(new Module {
+        val a = IO(Input(Bool()))
+        prop(a)
+      })
+      chirrtl should include("inst HasBeenResetIntrinsic of HasBeenResetIntrinsic")
+      chirrtl should include("node disable = eq(HasBeenResetIntrinsic.out, UInt<1>(0h0))")
+      chirrtl should include("inst ltl_disable of LTLDisableIntrinsic")
+      chirrtl should include("connect ltl_disable.in, a")
+      chirrtl should include("connect ltl_disable.condition, disable")
+      chirrtl should include("inst ltl_clock of LTLClockIntrinsic")
+      chirrtl should include("connect ltl_clock.in, ltl_disable.out")
+      chirrtl should include("connect ltl_clock.clock, clock")
+      chirrtl should include(s"inst verif of $intrinsic")
+      chirrtl should include("connect verif.property, ltl_clock.out")
+    }
   }
 
   it should "support labeled property asserts/assumes/covers" in {
@@ -229,8 +256,8 @@ class LTLSpec extends AnyFlatSpec with Matchers {
       val a, b = IO(Input(Bool()))
       val c = IO(Input(Clock()))
       AssertProperty(a, clock = Some(c))
-      AssertProperty(a, disable = Some(b))
-      AssertProperty(a, clock = Some(c), disable = Some(b))
+      AssertProperty(a, disable = Some(b.asDisable))
+      AssertProperty(a, clock = Some(c), disable = Some(b.asDisable))
     })
 
     // with clock; emitted as `assert(clock(a, c))`
@@ -241,16 +268,18 @@ class LTLSpec extends AnyFlatSpec with Matchers {
     chirrtl should include("connect verif.property, ltl_clock.out")
 
     // with disable; emitted as `assert(disable(a, b))`
+    chirrtl should include("node x2 = bits(b, 0, 0)")
     chirrtl should include("inst ltl_disable of LTLDisableIntrinsic")
     chirrtl should include("connect ltl_disable.in, a")
-    chirrtl should include("connect ltl_disable.condition, b")
+    chirrtl should include("connect ltl_disable.condition, x2")
     chirrtl should include("inst verif_1 of VerifAssertIntrinsic")
     chirrtl should include("connect verif_1.property, ltl_disable.out")
 
     // with clock and disable; emitted as `assert(clock(disable(a, b), c))`
+    chirrtl should include("node _T = bits(b, 0, 0)")
     chirrtl should include("inst ltl_disable_1 of LTLDisableIntrinsic")
     chirrtl should include("connect ltl_disable_1.in, a")
-    chirrtl should include("connect ltl_disable_1.condition, b")
+    chirrtl should include("connect ltl_disable_1.condition, _T")
     chirrtl should include("inst ltl_clock_1 of LTLClockIntrinsic")
     chirrtl should include("connect ltl_clock_1.in, ltl_disable_1.out")
     chirrtl should include("connect ltl_clock_1.clock, c")
