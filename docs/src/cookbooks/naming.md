@@ -170,6 +170,10 @@ new MyBundle(UInt(8.W), 3).typeName // == "MyBundle_UInt8_3"
 
 ```scala mdoc:invisible:reset
 import chisel3._
+def emitSystemVerilog(gen: => RawModule): String = {
+  val prettyArgs = Array("--disable-all-randomization", "--strip-debug-info")
+  ChiselStage.emitSystemVerilog(gen, firtoolOpts = prettyArgs)
+}
 ```
 
 Auto-generated `typeName`s take the form of `{Bundle Name}_{Parameter Value 1}_{Parameter Value 2}_{...}`, and so our `MyBundle` can be equivalently expressed with:
