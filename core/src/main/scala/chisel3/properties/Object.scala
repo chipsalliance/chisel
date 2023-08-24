@@ -15,7 +15,7 @@ import scala.collection.immutable.HashMap
   * the accessed field. It may be used with care, and a more typesafe version will be added.
   */
 class DynamicObject private[chisel3] (val className: String) extends HasId with NamedComponent {
-  private val tpe = Property[ClassType](ClassType(className))
+  private val tpe = Property.makeWithValueOpt(Some(ClassType(className)))
 
   _parent.foreach(_.addId(this))
 

@@ -142,7 +142,7 @@ private[chisel3] object PropertyType {
   * describe a set of non-hardware types, so they have no width, cannot be used
   * in aggregate Data types, and cannot be connected to Data types.
   */
-sealed abstract class Property[T] extends BaseType { self =>
+abstract class Property[T] extends BaseType { self =>
   protected type TT
   protected val tpe: PropertyType[TT]
   protected def value: Option[TT]
@@ -250,27 +250,25 @@ sealed abstract class Property[T] extends BaseType { self =>
   */
 object Property {
 
+  private[chisel3] def makeWithValueOpt[T](valueOpt: Option[T])(implicit _tpe: PropertyType[T]): Property[_tpe.Type] = {
+    new Property[_tpe.Type] {
+      type TT = T
+      val tpe = _tpe
+      val value = valueOpt
+    }
+  }
+
   /** Create a new Property based on the type T.
     */
   def apply[T]()(implicit tpe: PropertyType[T]): Property[tpe.Type] = {
-    val _tpe = tpe
-    new Property[tpe.Type] {
-      type TT = T
-      val tpe = _tpe
-      val value = None
-    }
+    makeWithValueOpt(None)(tpe)
   }
 
   /** Create a new Property literal of type T.
     */
   def apply[T](lit: T)(implicit tpe: PropertyType[T]): Property[tpe.Type] = {
     val literal = ir.PropertyLit[tpe.Type, tpe.Underlying](tpe, tpe.convertUnderlying(lit))
-    val _tpe = tpe
-    val result = new Property[tpe.Type] {
-      type TT = T
-      val tpe = _tpe
-      val value = None
-    }
+    val result = makeWithValueOpt(None)(tpe)
     literal.bindLitArg(result)
   }
 }
