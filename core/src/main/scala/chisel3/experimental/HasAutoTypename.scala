@@ -7,21 +7,21 @@ import chisel3.internal.{sanitize}
   * inheriting [[Record]] based on the parameter values provided to its constructor.
   *
   * @example Consider a [[Bundle]] which manually implements `typeName`:
-  * ```
+  * {{{
   * class MyBundle(param1: Int, param2: Int)(gen: Data) extends Bundle {
   *   val foo = UInt(param1.W)
   *   val bar = UInt(param2.W)
   *   val data = gen
-  *   override def typeName = s"MyBundle_${param1}_${param2}_${gen.typeName}"
+  *   override def typeName = s"MyBundle_\${param1}_\${param2}_\${gen.typeName}"
   * }
   *
   * (new MyBundle(3, 4)(SInt(3.W))).typeName // "MyBundle_3_4_SInt3"
   * (new MyBundle(1, 32)(Bool())).typeName   // "MyBundle_1_32_Bool"
-  * ```
+  * }}}
   *
   * An identical `typeName` implementation can be generated and provided with `HasAutoTypename`, making
   * the manual implementation unnecessary:
-  * ```
+  * {{{
   * class MyBundle(param1: Int, param2: Int)(gen: Data) extends Bundle with HasAutoTypename {
   *   val foo = UInt(param1.W)
   *   val bar = UInt(param2.W)
@@ -30,7 +30,7 @@ import chisel3.internal.{sanitize}
   *
   * (new MyBundle(3, 4)(SInt(3.W))).typeName // "MyBundle_3_4_SInt3"
   * (new MyBundle(1, 32)(Bool())).typeName   // "MyBundle_1_32_Bool"
-  * ```
+  * }}}
   */
 trait HasAutoTypename {
   this: Record =>

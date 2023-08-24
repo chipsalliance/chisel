@@ -947,10 +947,10 @@ trait VecLike[T <: Data] extends IndexedSeq[T] with HasId with SourceInfoDoc {
   */
 abstract class Record extends Aggregate {
 
-  /** The list of parameter accessors used in the constructor of this [[Record]].
-    * @note This is automatically overrided via the compiler plugin within user-defined bundles that mix-in [[HasAutoTypename]],
-    *       and is meant for internal Chisel use only. Can not be manually overrided by
-    * @note This lives in Record rather than the [[HasAutoTypename]] trait, due to compiler implementation details
+  /** The list of parameter accessors used in the constructor of this [[chisel3.Record]].
+    * @note This is automatically overrided via the compiler plugin for user-defined bundles that mix-in [[chisel3.experimental.HasAutoTypename]],
+    *       and is meant for internal Chisel use only. Can not be manually overrided by users, or else an error will be thrown.
+    * @note This lives in Record rather than the [[chisel3.experimental.HasAutoTypename]] trait, due to compiler implementation details
     *       preventing us from overriding a definition within a trait via the compiler plugin
     */
   protected def _typeNameConParams: Iterable[Any] = Vector.empty

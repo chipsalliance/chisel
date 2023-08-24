@@ -151,6 +151,35 @@ The suggested pattern for `typeName`, and subsequently `desiredName`, is to fold
 
 `Bundles` that have multiple integer arguments aren't presently addressed by any of the built-in modules, and so implementing a descriptive and sufficiently differentiable `typeName` for such `Bundles` is left as an exercise to the reader. However, integers should not occur with an underscore before them at the very end of the `typeName` (e.g. `MyBundle_1`) because this is the _same_ syntax used for duplicates, and so would cause confusion. Having to disambiguate modules all named `Queue32_MyBundle_4_1`, `Queue32_MyBundle_4_2`, `Queue32_MyBundle_4_3`, and so on would be undesirable, indeed!
 
+### I don't want to override `typeName` over and over! Is there any easy way to generate a `typeName`?
+
+Yes, with the experimental `HasAutoTypename` trait. This trait can be mixed into your `Bundle`s to automatically generate a tuple-like `typeName` for them, based on the constructor parameters of that `Bundle`. Let's look at the previous examples:
+
+```scala mdoc:invisible:reset
+import chisel3._
+```
+
+```scala mdoc:silent
+class MyBundle[T <: Data](gen: T, intParam: Int) extends Bundle {
+  override def typeName = s"MyBundle_${gen.typeName}_${intParam}"
+  // ...
+}
+
+new MyBundle(UInt(8.W), 3).typeName // == "MyBundle_UInt8_3"
+```
+
+```scala mdoc:invisible:reset
+import chisel3._
+```
+
+Auto-generated `typeName`s take the form of `{Bundle Name}_{Parameter Value 1}_{Parameter Value 2}_{...}`, and so our `MyBundle` can be equivalently expressed with:
+```
+import chisel3.experimental.HasAutoTypename
+class MyBundle[T <: Data](gen: T, intParam: Int) extends Bundle with HasAutoTypename {
+  // ...
+}
+
+```
 ### I want to add some hardware or assertions, but each time I do all the signal names get bumped!
 
 This is the classic "ECO" problem, and we provide descriptions in [explanation](../explanations/naming). In short,
