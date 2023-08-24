@@ -84,15 +84,29 @@ class DedupSpec extends ChiselFlatSpec {
     assert(countModules(compile { new SharedConstantValDedupTop }) === 2)
   }
 
+  def dedupGroup(m: Module, group: String): Unit = annotate(new ChiselAnnotation {
+    def toFirrtl = DedupGroupAnnotation(m.toTarget, group)
+  })
+
   it should "not dedup modules that are in different dedup groups" in {
-    def dedupGroup(m: Module, group: String): Unit = annotate(new ChiselAnnotation {
-      def toFirrtl = DedupGroupAnnotation(m.toTarget, group)
-    })
     assert(countModules(compile {
       val top = new SharedConstantValDedupTop
       dedupGroup(top.inst0, "inst0")
       dedupGroup(top.inst1, "inst1")
       top
     }) === 3)
+  }
+
+  it should "error on conflicting dedup groups" in {
+    a[Exception] should be thrownBy {
+      compile {
+        val top = new SharedConstantValDedupTop
+        dedupGroup(top.inst0, "inst0")
+        dedupGroup(top.inst0, "anothergroup")
+        dedupGroup(top.inst1, "inst1")
+        dedupGroup(top.inst1, "anothergroup")
+        top
+      }
+    }
   }
 }
