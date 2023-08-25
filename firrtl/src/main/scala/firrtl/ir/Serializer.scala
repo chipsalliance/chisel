@@ -110,8 +110,8 @@ object Serializer {
       b ++= "SInt"; s(width); b ++= "(0h"; b ++= value.toString(16); b ++= ")"
     case IntegerPropertyLiteral(value) =>
       b ++= "Integer("; b ++= value.toString(10); b ++= ")"
-    case DecimalPropertyLiteral(value) =>
-      b ++= "Decimal("; b ++= value.toString(); b ++= ")"
+    case DoublePropertyLiteral(value) =>
+      b ++= "Double("; b ++= value.toString(); b ++= ")"
     case StringPropertyLiteral(value) =>
       b ++= "String(\""; b ++= value; b ++= "\")"
     case BooleanPropertyLiteral(value) =>
@@ -388,7 +388,7 @@ object Serializer {
     case AsyncResetType            => b ++= "AsyncReset"
     case AnalogType(width)         => b ++= "Analog"; s(width)
     case IntegerPropertyType       => b ++= "Integer"
-    case DecimalPropertyType       => b ++= "Decimal"
+    case DoublePropertyType        => b ++= "Double"
     case StringPropertyType        => b ++= "String"
     case BooleanPropertyType       => b ++= "Bool"
     case SequencePropertyType(tpe) => b ++= "List<"; s(tpe, lastEmittedConst); b += '>'

@@ -94,7 +94,7 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
     })
 
     matchesAndOmits(chirrtl)(
-      "input doubleProp : Decimal"
+      "input doubleProp : Double"
     )()
   }
 
@@ -105,28 +105,7 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
     })
 
     matchesAndOmits(chirrtl)(
-      "propassign propOut, Decimal(123.456)"
-    )()
-  }
-
-  it should "support BigDecimal as a Property type" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val bigDecimalProp = IO(Input(Property[BigDecimal]()))
-    })
-
-    matchesAndOmits(chirrtl)(
-      "input bigDecimalProp : Decimal"
-    )()
-  }
-
-  it should "support BigDecimal as a Property literal" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val propOut = IO(Output(Property[BigDecimal]()))
-      propOut := Property[BigDecimal](123.456)
-    })
-
-    matchesAndOmits(chirrtl)(
-      "propassign propOut, Decimal(123.456)"
+      "propassign propOut, Double(123.456)"
     )()
   }
 
