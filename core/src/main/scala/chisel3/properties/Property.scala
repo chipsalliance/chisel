@@ -20,6 +20,7 @@ import chisel3.internal.{firrtl => ir}
 import chisel3.experimental.{prefix, requireIsHardware, SourceInfo}
 import scala.reflect.runtime.universe.{typeOf, TypeTag}
 import scala.annotation.{implicitAmbiguous, implicitNotFound}
+import scala.collection.immutable.SeqMap
 
 /** PropertyType defines a typeclass for valid Property types.
   *
@@ -76,29 +77,29 @@ private[chisel3] class SeqPropertyType[A, F[A] <: Seq[A], PT <: PropertyType[A]]
     value.map(tpe.convertUnderlying(_))
 }
 
-private[chisel3] class MapPropertyType[A, F[A] <: Map[String, A], PT <: PropertyType[A]](val tpe: PT)
+private[chisel3] class MapPropertyType[A, F[A] <: SeqMap[String, A], PT <: PropertyType[A]](val tpe: PT)
     extends PropertyType[F[A]] {
   type Type = F[tpe.Type]
   override def getPropertyType(value: Option[F[A]]): fir.PropertyType =
     fir.MapPropertyType(tpe.getPropertyType(None))
-  type Underlying = Map[String, tpe.Underlying]
+  type Underlying = Seq[(String, tpe.Underlying)]
   override def convert(value: Underlying, ctx: ir.Component, info: SourceInfo): fir.Expression =
     fir.MapPropertyValue(
       tpe.getPropertyType(None),
       value.map {
         case (key, value) =>
           key -> tpe.convert(value, ctx, info)
-      }.toSeq.sortBy(_._1)
+      }
     )
   override def convertUnderlying(value: F[A]): Underlying =
-    value.view.mapValues(tpe.convertUnderlying(_)).toMap
+    value.toSeq.map { case (k, v) => k -> tpe.convertUnderlying(v) }
 }
 
 private[chisel3] trait LowPriorityPropertyTypeInstances {
   implicit def sequencePropertyTypeInstance[A, F[A] <: Seq[A]](implicit tpe: RecursivePropertyType[A]) =
     new SeqPropertyType[A, F, tpe.type](tpe) with RecursivePropertyType[F[A]]
 
-  implicit def mapPropertyTypeInstance[A, F[A] <: Map[String, A]](implicit tpe: RecursivePropertyType[A]) =
+  implicit def mapPropertyTypeInstance[A, F[A] <: SeqMap[String, A]](implicit tpe: RecursivePropertyType[A]) =
     new MapPropertyType[A, F, tpe.type](tpe) with RecursivePropertyType[F[A]]
 }
 
@@ -148,7 +149,7 @@ private[chisel3] object PropertyType extends LowPriorityPropertyTypeInstances {
   implicit def recursiveSequencePropertyTypeInstance[A, F[A] <: Seq[A]](implicit tpe: PropertyType[A]) =
     new SeqPropertyType[A, F, tpe.type](tpe)
 
-  implicit def recursiveMapPropertyTypeInstance[A, F[A] <: Map[String, A]](implicit tpe: PropertyType[A]) =
+  implicit def recursiveMapPropertyTypeInstance[A, F[A] <: SeqMap[String, A]](implicit tpe: PropertyType[A]) =
     new MapPropertyType[A, F, tpe.type](tpe)
 }
 
