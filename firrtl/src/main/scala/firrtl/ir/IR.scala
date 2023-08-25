@@ -237,6 +237,11 @@ case class IntegerPropertyLiteral(value: BigInt) extends Literal with UseSeriali
   val width = UnknownWidth
 }
 
+case class DecimalPropertyLiteral(value: BigDecimal) extends Expression with UseSerializer {
+  def tpe = DecimalPropertyType
+  val width = UnknownWidth
+}
+
 case class StringPropertyLiteral(value: String) extends Expression with UseSerializer {
   def tpe = StringPropertyType
   val width = UnknownWidth
@@ -526,6 +531,8 @@ case class AnalogType(width: Width) extends GroundType with UseSerializer
 sealed abstract class PropertyType extends Type with UseSerializer
 
 case object IntegerPropertyType extends PropertyType
+
+case object DecimalPropertyType extends PropertyType
 
 case object StringPropertyType extends PropertyType
 
