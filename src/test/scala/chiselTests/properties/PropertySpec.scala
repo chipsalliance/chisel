@@ -141,7 +141,6 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
     }
 
     val chirrtl = ChiselStage.emitCHIRRTL(new Foo)
-    info(chirrtl)
     matchesAndOmits(chirrtl)(
       "output a : Integer"
     )()
