@@ -634,14 +634,12 @@ abstract class Data extends BaseType with SourceInfoDoc {
       case Some(BundleLitBinding(litMap)) =>
         litMap.get(this) match {
           case Some(litArg) => litArg
-          // TODO make a Const once const is supported in firtool
-          case _ => materializeWire() // FIXME FIRRTL doesn't have Bundle literal expressions
+          case _            => materializeWire(true) // FIXME FIRRTL doesn't have Bundle literal expressions
         }
       case Some(VecLitBinding(litMap)) =>
         litMap.get(this) match {
           case Some(litArg) => litArg
-          // TODO make a Const once const is supported in firtool
-          case _ => materializeWire() // FIXME FIRRTL doesn't have Vec literal expressions
+          case _            => materializeWire(true) // FIXME FIRRTL doesn't have Vec literal expressions
         }
       case Some(DontCareBinding()) =>
         materializeWire() // FIXME FIRRTL doesn't have a DontCare expression so materialize a Wire

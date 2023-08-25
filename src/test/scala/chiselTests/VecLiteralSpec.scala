@@ -507,4 +507,12 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
     vec.getWidth should be(16 * 2)
     vec.litValue should be(BigInt("bbbb000a", 16))
   }
+
+  "vec literals should materialize const wires" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new Module {
+      val r = RegInit(Vec(2, UInt(4.W)).Lit(0 -> 1.U, 1 -> 2.U))
+    })
+    val wire = """wire.*: const UInt<4>\[2\]""".r
+    (chirrtl should include).regex(wire)
+  }
 }

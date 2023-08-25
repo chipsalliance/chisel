@@ -352,4 +352,12 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
       }
     }
   }
+
+  "bundle literals" should "materialize const wires" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new Module {
+      val r = RegInit((new MyBundle).Lit(_.a -> 42.U, _.b -> true.B, _.c -> MyEnum.sB))
+    })
+    val wire = """wire.*: const \{ a : UInt<8>, b : UInt<1>, c : UInt<1>\}""".r
+    (chirrtl should include).regex(wire)
+  }
 }
