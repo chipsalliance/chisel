@@ -132,6 +132,10 @@ private[chisel3] object PropertyType extends LowPriorityPropertyTypeInstances {
     makeSimple[BigInt](_ => fir.IntegerPropertyType, fir.IntegerPropertyLiteral(_))
 
   @implicitAmbiguous("unable to infer Property type. Please specify it explicitly in square brackets on the LHS.")
+  implicit val doublePropertyTypeInstance =
+    makeSimple[Double](_ => fir.DoublePropertyType, fir.DoublePropertyLiteral(_))
+
+  @implicitAmbiguous("unable to infer Property type. Please specify it explicitly in square brackets on the LHS.")
   implicit val classPropertyTypeInstance = makeSimple[ClassType](
     value => fir.ClassPropertyType(value.get.name),
     value => fir.StringPropertyLiteral(value.name)

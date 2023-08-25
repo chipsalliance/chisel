@@ -88,6 +88,27 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
     )()
   }
 
+  it should "support Double as a Property type" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val doubleProp = IO(Input(Property[Double]()))
+    })
+
+    matchesAndOmits(chirrtl)(
+      "input doubleProp : Double"
+    )()
+  }
+
+  it should "support Double as a Property literal" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val propOut = IO(Output(Property[Double]()))
+      propOut := Property[Double](123.456)
+    })
+
+    matchesAndOmits(chirrtl)(
+      "propassign propOut, Double(123.456)"
+    )()
+  }
+
   it should "support String as a Property type" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
       val stringProp = IO(Input(Property[String]()))
