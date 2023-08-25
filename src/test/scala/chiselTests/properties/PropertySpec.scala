@@ -130,6 +130,23 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
     )()
   }
 
+  it should "support Properties on an ExtModule" in {
+    // See: https://github.com/chipsalliance/chisel/issues/3509
+    class Bar extends experimental.ExtModule {
+      val a = IO(Output(Property[Int]()))
+    }
+
+    class Foo extends RawModule {
+      val bar = Module(new Bar)
+    }
+
+    val chirrtl = ChiselStage.emitCHIRRTL(new Foo)
+    info(chirrtl)
+    matchesAndOmits(chirrtl)(
+      "output a : Integer"
+    )()
+  }
+
   it should "support connecting Property types of the same type" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
       val propIn = IO(Input(Property[Int]()))
