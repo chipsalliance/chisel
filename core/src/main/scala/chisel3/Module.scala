@@ -435,9 +435,9 @@ package experimental {
     private val _ports = new ArrayBuffer[(BaseType, SourceInfo)]()
 
     // getPorts unfortunately already used for tester compatibility
-    protected[chisel3] def getModulePorts: Seq[Data] = {
+    protected[chisel3] def getModulePorts: Seq[BaseType] = {
       require(_closed, "Can't get ports before module close")
-      _ports.iterator.collect { case (d: Data, _) => d }.toSeq
+      _ports.iterator.collect { case (d: BaseType, _) => d }.toSeq
     }
 
     // gets Ports along with there source locators
