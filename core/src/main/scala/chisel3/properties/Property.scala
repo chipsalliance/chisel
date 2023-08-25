@@ -51,9 +51,11 @@ private[chisel3] trait PropertyType[T] {
   def convertUnderlying(value: T): Underlying
 }
 
+private[chisel3] trait RecursivePropertyType[T] extends PropertyType[T]
+
 /** PropertyType where Type and Underlying are the same as T
   */
-private[chisel3] trait SimplePropertyType[T] extends PropertyType[T] {
+private[chisel3] trait SimplePropertyType[T] extends RecursivePropertyType[T] {
   final type Type = T
   final type Underlying = T
   def convert(value:           T): fir.Expression
@@ -61,12 +63,51 @@ private[chisel3] trait SimplePropertyType[T] extends PropertyType[T] {
   def convertUnderlying(value: T): T = value
 }
 
+private[chisel3] class SeqPropertyType[A, F[A] <: Seq[A], PT <: PropertyType[A]](val tpe: PT)
+    extends PropertyType[F[A]] {
+  type Type = F[tpe.Type]
+  override def getPropertyType(value: Option[F[A]]): fir.PropertyType =
+    fir.SequencePropertyType(tpe.getPropertyType(None))
+
+  type Underlying = Seq[tpe.Underlying]
+  override def convert(value: Underlying, ctx: ir.Component, info: SourceInfo): fir.Expression =
+    fir.SequencePropertyValue(tpe.getPropertyType(None), value.map(tpe.convert(_, ctx, info)))
+  override def convertUnderlying(value: F[A]) =
+    value.map(tpe.convertUnderlying(_))
+}
+
+private[chisel3] class MapPropertyType[A, F[A] <: Map[String, A], PT <: PropertyType[A]](val tpe: PT)
+    extends PropertyType[F[A]] {
+  type Type = F[tpe.Type]
+  override def getPropertyType(value: Option[F[A]]): fir.PropertyType =
+    fir.MapPropertyType(tpe.getPropertyType(None))
+  type Underlying = Map[String, tpe.Underlying]
+  override def convert(value: Underlying, ctx: ir.Component, info: SourceInfo): fir.Expression =
+    fir.MapPropertyValue(
+      tpe.getPropertyType(None),
+      value.map {
+        case (key, value) =>
+          key -> tpe.convert(value, ctx, info)
+      }.toSeq.sortBy(_._1)
+    )
+  override def convertUnderlying(value: F[A]): Underlying =
+    value.view.mapValues(tpe.convertUnderlying(_)).toMap
+}
+
+private[chisel3] trait LowPriorityPropertyTypeInstances {
+  implicit def sequencePropertyTypeInstance[A, F[A] <: Seq[A]](implicit tpe: RecursivePropertyType[A]) =
+    new SeqPropertyType[A, F, tpe.type](tpe) with RecursivePropertyType[F[A]]
+
+  implicit def mapPropertyTypeInstance[A, F[A] <: Map[String, A]](implicit tpe: RecursivePropertyType[A]) =
+    new MapPropertyType[A, F, tpe.type](tpe) with RecursivePropertyType[F[A]]
+}
+
 /** Companion object for PropertyType.
   *
   * Typeclass instances for valid Property types are defined here, so they will
   * be in the implicit scope and available for users.
   */
-private[chisel3] object PropertyType {
+private[chisel3] object PropertyType extends LowPriorityPropertyTypeInstances {
   def makeSimple[T](getType: Option[T] => fir.PropertyType, getExpression: T => fir.Expression): SimplePropertyType[T] =
     new SimplePropertyType[T] {
       def getPropertyType(value: Option[T]): fir.PropertyType = getType(value)
@@ -95,8 +136,8 @@ private[chisel3] object PropertyType {
   implicit val boolPropertyTypeInstance =
     makeSimple[Boolean](_ => fir.BooleanPropertyType, fir.BooleanPropertyLiteral(_))
 
-  implicit def propertyTypeInstance[T](implicit pte: PropertyType[T]) = new PropertyType[Property[T]] {
-    type Type = T
+  implicit def propertyTypeInstance[T](implicit pte: RecursivePropertyType[T]) = new PropertyType[Property[T]] {
+    type Type = pte.Type
     override def getPropertyType(value: Option[Property[T]]): fir.PropertyType = pte.getPropertyType(None)
     override def convert(value:         Underlying, ctx: ir.Component, info: SourceInfo): fir.Expression =
       ir.Converter.convert(value, ctx, info)
@@ -104,35 +145,11 @@ private[chisel3] object PropertyType {
     override def convertUnderlying(value: Property[T]) = value.ref
   }
 
-  implicit def sequencePropertyTypeInstance[A, F[A] <: Seq[A]](implicit tpe: PropertyType[A]) = new PropertyType[F[A]] {
-    type Type = F[tpe.Type]
-    override def getPropertyType(value: Option[F[A]]): fir.PropertyType =
-      fir.SequencePropertyType(implicitly[PropertyType[A]].getPropertyType(None))
+  implicit def recursiveSequencePropertyTypeInstance[A, F[A] <: Seq[A]](implicit tpe: PropertyType[A]) =
+    new SeqPropertyType[A, F, tpe.type](tpe)
 
-    type Underlying = Seq[tpe.Underlying]
-    override def convert(value: Underlying, ctx: ir.Component, info: SourceInfo): fir.Expression =
-      fir.SequencePropertyValue(tpe.getPropertyType(None), value.map(tpe.convert(_, ctx, info)))
-    override def convertUnderlying(value: F[A]) =
-      value.map(tpe.convertUnderlying(_))
-  }
-
-  implicit def mapPropertyTypeInstance[A, F[A] <: Map[String, A]](implicit tpe: PropertyType[A]) =
-    new PropertyType[F[A]] {
-      type Type = F[tpe.Type]
-      override def getPropertyType(value: Option[F[A]]): fir.PropertyType =
-        fir.MapPropertyType(implicitly[PropertyType[A]].getPropertyType(None))
-      type Underlying = Map[String, tpe.Underlying]
-      override def convert(value: Underlying, ctx: ir.Component, info: SourceInfo): fir.Expression =
-        fir.MapPropertyValue(
-          tpe.getPropertyType(None),
-          value.map {
-            case (key, value) =>
-              key -> tpe.convert(value, ctx, info)
-          }.toSeq.sortBy(_._1)
-        )
-      override def convertUnderlying(value: F[A]): Underlying =
-        value.view.mapValues(tpe.convertUnderlying(_)).toMap
-    }
+  implicit def recursiveMapPropertyTypeInstance[A, F[A] <: Map[String, A]](implicit tpe: PropertyType[A]) =
+    new MapPropertyType[A, F, tpe.type](tpe)
 }
 
 /** Property is the base type for all properties.

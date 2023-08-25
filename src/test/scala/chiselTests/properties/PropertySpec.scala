@@ -248,4 +248,40 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
       """propassign propOut, Map<Integer>("bar" -> Integer(123), "foo" -> propIn)"""
     )()
   }
+
+  it should "support nested collections without nested Property[_] values" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val a = IO(Output(Property[Seq[Map[String, Seq[Property[Int]]]]]()))
+      val b = IO(Output(Property[Seq[Map[String, Property[Seq[Int]]]]]()))
+      val c = IO(Output(Property[Seq[Property[Map[String, Seq[Int]]]]]()))
+      val d = IO(Output(Property[Property[Seq[Map[String, Seq[Int]]]]]()))
+      a := Property(Seq[Map[String, Seq[Int]]](Map("foo" -> Seq(123))))
+      b := Property(Seq[Map[String, Seq[Int]]](Map("foo" -> Seq(123))))
+      c := Property(Seq[Map[String, Seq[Int]]](Map("foo" -> Seq(123))))
+      d := Property(Seq[Map[String, Seq[Int]]](Map("foo" -> Seq(123))))
+    })
+
+    assertTypeError {
+      "Property[Property[Property[Int]]]()"
+    }
+
+    matchesAndOmits(chirrtl)(
+      "output a : List<Map<List<Integer>>>",
+      "output b : List<Map<List<Integer>>>",
+      "output c : List<Map<List<Integer>>>",
+      "output d : List<Map<List<Integer>>>",
+      """propassign a, List<Map<List<Integer>>>(Map<List<Integer>>("foo" -> List<Integer>(Integer(123))))""",
+      """propassign b, List<Map<List<Integer>>>(Map<List<Integer>>("foo" -> List<Integer>(Integer(123))))""",
+      """propassign c, List<Map<List<Integer>>>(Map<List<Integer>>("foo" -> List<Integer>(Integer(123))))""",
+      """propassign d, List<Map<List<Integer>>>(Map<List<Integer>>("foo" -> List<Integer>(Integer(123))))"""
+    )()
+  }
+
+  it should "not support types with nested Property[_]" in {
+    assertTypeError("Property[Property[Property[Int]]]()")
+    assertTypeError("Property[Property[Seq[Property[Int]]]]()")
+    assertTypeError("Property[Property[Map[String, Property[Int]]]]()")
+    assertTypeError("Property[Property[Seq[Property[Seq[Property[Int]]]]]]()")
+    assertTypeError("Property[Property[Map[String, Property[Seq[Property[Int]]]]]]()")
+  }
 }
