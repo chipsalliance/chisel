@@ -52,6 +52,10 @@ private[chisel3] trait PropertyType[T] {
   def convertUnderlying(value: T): Underlying
 }
 
+/** Trait for PropertyTypes that may lookup themselves up during implicit resolution
+  *
+  * This is to disallow nested Property types e.g. Property[Property[Property[Int]]](), Property[Property[Seq[Property[Int]]]]()
+  */
 private[chisel3] trait RecursivePropertyType[T] extends PropertyType[T]
 
 /** PropertyType where Type and Underlying are the same as T
@@ -95,6 +99,8 @@ private[chisel3] class MapPropertyType[A, F[A] <: SeqMap[String, A], PT <: Prope
     value.toSeq.map { case (k, v) => k -> tpe.convertUnderlying(v) }
 }
 
+/** This contains recursive versions of Seq and SeqMap PropertyTypes. These instances need be lower priority to prevent ambiguous implicit errors with the non-recursive versions.
+  */
 private[chisel3] trait LowPriorityPropertyTypeInstances {
   implicit def sequencePropertyTypeInstance[A, F[A] <: Seq[A]](implicit tpe: RecursivePropertyType[A]) =
     new SeqPropertyType[A, F, tpe.type](tpe) with RecursivePropertyType[F[A]]
