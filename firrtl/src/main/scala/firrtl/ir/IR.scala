@@ -251,6 +251,10 @@ case class BooleanPropertyLiteral(value: Boolean) extends Expression with UseSer
   val tpe = BooleanPropertyType
 }
 
+case class PathPropertyLiteral(value: String) extends Expression with UseSerializer {
+  val tpe = PathPropertyType
+}
+
 case class SequencePropertyValue(tpe: Type, values: Seq[Expression]) extends Expression with UseSerializer
 
 case class MapPropertyValue(tpe: Type, values: Seq[(String, Expression)]) extends Expression with UseSerializer
@@ -537,6 +541,8 @@ case object DoublePropertyType extends PropertyType
 case object StringPropertyType extends PropertyType
 
 case object BooleanPropertyType extends PropertyType
+
+case object PathPropertyType extends PropertyType
 
 case class SequencePropertyType(tpe: PropertyType) extends PropertyType
 

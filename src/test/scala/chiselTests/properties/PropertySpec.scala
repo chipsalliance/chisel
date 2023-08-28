@@ -3,7 +3,7 @@
 package chiselTests.properties
 
 import chisel3._
-import chisel3.properties.Property
+import chisel3.properties.{PathType, Property}
 import chiselTests.{ChiselFlatSpec, MatchesAndOmits}
 import circt.stage.ChiselStage
 import scala.collection.immutable.{ListMap, SeqMap, VectorMap}
@@ -148,6 +148,39 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
 
     matchesAndOmits(chirrtl)(
       "propassign propOut, Bool(false)"
+    )()
+  }
+
+  it should "support paths as a Property type" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val pathProp = IO(Input(Property[PathType]()))
+    })
+
+    matchesAndOmits(chirrtl)(
+      "input pathProp : Path"
+    )()
+  }
+
+  it should "support path as a Property literal" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val propOutA = IO(Output(Property[PathType]()))
+      val propOutB = IO(Output(Property[PathType]()))
+      val propOutC = IO(Output(Property[PathType]()))
+      override def desiredName = "Top"
+      val inst = Module(new RawModule {
+        val data = WireInit(false.B)
+        val mem = SyncReadMem(1, Bool())
+        override def desiredName = "Foo"
+      })
+      propOutA := Property(inst)
+      propOutB := Property(inst.data)
+      propOutC := Property(inst.mem)
+    })
+
+    matchesAndOmits(chirrtl)(
+      """propassign propOutA, path("OMInstanceTarget:~Top|Top/inst:Foo")""",
+      """propassign propOutB, path("OMReferenceTarget:~Top|Top/inst:Foo>data")""",
+      """propassign propOutC, path("OMReferenceTarget:~Top|Top/inst:Foo>mem")"""
     )()
   }
 

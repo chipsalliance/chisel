@@ -116,6 +116,8 @@ object Serializer {
       b ++= "String(\""; b ++= value; b ++= "\")"
     case BooleanPropertyLiteral(value) =>
       b ++= s"Bool(${value})"
+    case PathPropertyLiteral(value) =>
+      b ++= "path(\""; b ++= value; b ++= "\")"
     case SequencePropertyValue(tpe, values) =>
       b ++= "List<"; s(tpe); b ++= ">(";
       val lastIdx = values.size - 1
@@ -391,6 +393,7 @@ object Serializer {
     case DoublePropertyType        => b ++= "Double"
     case StringPropertyType        => b ++= "String"
     case BooleanPropertyType       => b ++= "Bool"
+    case PathPropertyType          => b ++= "Path"
     case SequencePropertyType(tpe) => b ++= "List<"; s(tpe, lastEmittedConst); b += '>'
     case MapPropertyType(tpe)      => b ++= "Map<"; s(tpe, lastEmittedConst); b += '>'
     case ClassPropertyType(name)   => b ++= "Inst<"; b ++= name; b += '>'

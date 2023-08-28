@@ -2,7 +2,7 @@
 
 package chisel3.properties
 
-import chisel3.{ActualDirection, BaseType, MonoConnectException, RawModule, SpecifiedDirection}
+import chisel3.{ActualDirection, BaseType, Data, MemBase, MonoConnectException, RawModule, SpecifiedDirection}
 import chisel3.internal.{
   checkConnect,
   throwException,
@@ -21,6 +21,9 @@ import chisel3.experimental.{prefix, requireIsHardware, SourceInfo}
 import scala.reflect.runtime.universe.{typeOf, TypeTag}
 import scala.annotation.{implicitAmbiguous, implicitNotFound}
 import scala.collection.immutable.SeqMap
+import chisel3.experimental.BaseModule
+import chisel3.internal.NamedComponent
+import firrtl.annotations.{InstanceTarget, IsMember, ModuleTarget, ReferenceTarget, Target}
 
 /** PropertyType defines a typeclass for valid Property types.
   *
@@ -146,6 +149,32 @@ private[chisel3] object PropertyType extends LowPriorityPropertyTypeInstances {
 
   implicit val boolPropertyTypeInstance =
     makeSimple[Boolean](_ => fir.BooleanPropertyType, fir.BooleanPropertyLiteral(_))
+
+  implicit val pathTypeInstance = makeSimple[PathType](value => fir.PathPropertyType, _.convert())
+
+  implicit def modulePathTypeInstance[M <: BaseModule] = new RecursivePropertyType[M] {
+    type Type = PathType
+    override def getPropertyType(value: Option[M]): fir.PropertyType = fir.PathPropertyType
+    override def convert(value:         Underlying, ctx: ir.Component, info: SourceInfo): fir.Expression = value.convert()
+    type Underlying = PathType
+    override def convertUnderlying(value: M) = PathType(value)
+  }
+
+  implicit def referencePathTypeInstance[D <: Data] = new RecursivePropertyType[D] {
+    type Type = PathType
+    override def getPropertyType(value: Option[D]): fir.PropertyType = fir.PathPropertyType
+    override def convert(value:         Underlying, ctx: ir.Component, info: SourceInfo): fir.Expression = value.convert()
+    type Underlying = PathType
+    override def convertUnderlying(value: D) = PathType(value)
+  }
+
+  implicit def memPathTypeInstance[M <: MemBase[_]] = new RecursivePropertyType[M] {
+    type Type = PathType
+    override def getPropertyType(value: Option[M]): fir.PropertyType = fir.PathPropertyType
+    override def convert(value:         Underlying, ctx: ir.Component, info: SourceInfo): fir.Expression = value.convert()
+    type Underlying = PathType
+    override def convertUnderlying(value: M) = PathType(value)
+  }
 
   implicit def propertyTypeInstance[T](implicit pte: RecursivePropertyType[T]) = new PropertyType[Property[T]] {
     type Type = pte.Type
