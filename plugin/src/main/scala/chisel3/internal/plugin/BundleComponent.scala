@@ -195,12 +195,6 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
     }
 
     def generateAutoTypename(bundle: ClassDef, thiz: global.This): Option[Tree] = {
-      // 1: Get immediate defined args of the Bundle
-      // 2: Determine an appropriate naming strategy based on the collection of elements:
-      //    - 1 numeric property only: Generate a name like MyBundle2
-      //    - Multiple numeric properties: Generate a name with word-like descriptors like MyBundle_${width}width
-      //    - Mixed elements: Numeric properties first, type names of Aggregate-likes after, like MyBundle_${width}property_${childBundle.typeName}
-
       val (con, params) = getConstructorAndParams(bundle.impl.body, true)
       if (con.isEmpty) {
         global.reporter.warning(bundle.pos, "Unable to determine primary constructor!")
@@ -212,7 +206,7 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
       val paramLookup: String => Symbol = params.map(sym => sym.name.toString.trim -> sym).toMap
 
       // Create a this.<ref> for each field matching order of constructor arguments
-      // Unlike autoCloneType, just a list of (String, Tree) since we only care about the parameters themselves and not parameter lists
+      // Unlike autoCloneType, just a list of Tree since we only care about the parameters themselves and not parameter lists
       val typeNameConArgs: List[(Tree)] =
         constructor.vparamss.flatMap(_.map { vp =>
           val p = paramLookup(vp.name.toString)
@@ -224,7 +218,7 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
           if (isVarArgs(vp.symbol)) q"$cloned: _*" else cloned
         })
 
-      // Create a map from constructor argument name to constructor argument accessor
+      // Create an iterable out of all constructor argument accessors
       val typeNameConParamsSym =
         bundle.symbol.newMethod(TermName("_typeNameConParams"), bundle.symbol.pos.focus, Flag.OVERRIDE | Flag.PROTECTED)
       typeNameConParamsSym.resetFlag(Flags.METHOD)

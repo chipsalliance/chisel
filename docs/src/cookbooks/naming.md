@@ -170,6 +170,7 @@ new MyBundle(UInt(8.W), 3).typeName // == "MyBundle_UInt8_3"
 
 ```scala mdoc:invisible:reset
 import chisel3._
+import circt.stage.ChiselStage
 def emitSystemVerilog(gen: => RawModule): String = {
   val prettyArgs = Array("--disable-all-randomization", "--strip-debug-info")
   ChiselStage.emitSystemVerilog(gen, firtoolOpts = prettyArgs)
@@ -177,12 +178,14 @@ def emitSystemVerilog(gen: => RawModule): String = {
 ```
 
 Auto-generated `typeName`s take the form of `{Bundle Name}_{Parameter Value 1}_{Parameter Value 2}_{...}`, and so our `MyBundle` can be equivalently expressed with:
-```
+```scala mdoc:silent
 import chisel3.experimental.HasAutoTypename
 class MyBundle[T <: Data](gen: T, intParam: Int) extends Bundle with HasAutoTypename {
   // ...
+  // Note: No `override def typeName` statement here
 }
 
+new MyBundle(UInt(8.W), 3).typeName // == "MyBundle_UInt8_3"
 ```
 ### I want to add some hardware or assertions, but each time I do all the signal names get bumped!
 
