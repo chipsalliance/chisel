@@ -1,5 +1,7 @@
 package chisel3.experimental
 
+import chisel3.Record
+
 /** Wrapper object for a Record alias name. Primarily intended to provide an invocation point for source line locators, but
   * also contains pertinent information to generating FIRRTL alias statements.
   *
