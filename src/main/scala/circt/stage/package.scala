@@ -27,6 +27,7 @@ package object stage {
             case FirtoolBinaryPath(a)     => acc.copy(firtoolBinaryPath = Some(a))
             case FirtoolOption(a)         => acc.copy(firtoolOptions = acc.firtoolOptions :+ a)
             case SplitVerilog             => acc.copy(splitVerilog = true)
+            case DumpFir                  => acc.copy(dumpFir = true)
             case _                        => acc
           }
         }

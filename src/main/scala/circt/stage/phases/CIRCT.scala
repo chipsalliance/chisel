@@ -107,6 +107,7 @@ private[this] object Exceptions {
                     |  https://github.com/llvm/circt/releases""".stripMargin
         )
       )
+      with NoStackTrace
 
 }
 
@@ -175,10 +176,25 @@ class CIRCT extends Phase {
       case a => Some(a)
     }
 
-    val input: String = firrtlOptions.firrtlCircuit match {
-      case None          => throw new OptionsException("No input file specified!")
-      case Some(circuit) => CircuitWithAnnos(circuit = circuit, annotations = filteredAnnotations).serialize
+    val (serialization: Iterable[String], circuitName: String) = firrtlOptions.firrtlCircuit match {
+      case None => throw new OptionsException("No input file specified!")
+      // TODO can we avoid converting, how else would we include filteredAnnos?
+      case Some(circuit) =>
+        val cwa = CircuitWithAnnos(circuit = circuit, annotations = filteredAnnotations)
+        (firrtl.ir.Serializer.lazily(cwa), circuit.main)
     }
+
+    // FIRRTL is serialized either in memory or to a file
+    val input: Either[Iterable[String], os.Path] =
+      if (circtOptions.dumpFir) {
+        val td = os.Path(stageOptions.targetDir, os.pwd)
+        val filename = firrtlOptions.outputFileName.getOrElse(circuitName)
+        val firPath = td / s"$filename.fir"
+        os.write.over(firPath, serialization, createFolders = true)
+        Right(firPath)
+      } else {
+        Left(serialization)
+      }
 
     val chiselAnnotationFilename: Option[String] =
       stageOptions.annotationFileOut.map(stageOptions.getBuildFileName(_, Some(".anno.json")))
@@ -187,8 +203,9 @@ class CIRCT extends Phase {
 
     val binary = circtOptions.firtoolBinaryPath.getOrElse("firtool")
 
-    val cmd =
-      Seq(binary, "-format=fir", "-warn-on-unprocessed-annotations", "-dedup") ++
+    val cmd = // Only 1 of input or firFile will be Some
+      Seq(binary, input.fold(_ => "-format=fir", _.toString)) ++
+        Seq("-warn-on-unprocessed-annotations", "-dedup") ++
         Seq("-output-annotation-file", circtAnnotationFilename) ++
         circtOptions.firtoolOptions ++
         logLevel.toCIRCTOptions ++
@@ -223,16 +240,21 @@ class CIRCT extends Phase {
             )
         })
 
-    logger.info(s"""Running CIRCT: '${cmd.mkString(" ")} < $$input'""")
+    logger.info(s"""Running CIRCT: '${cmd.mkString(" ")}""" + input.fold(_ => " < $$input'", _ => "'"))
     val stdoutStream, stderrStream = new java.io.ByteArrayOutputStream
     val stdoutWriter = new java.io.PrintWriter(stdoutStream)
     val stderrWriter = new java.io.PrintWriter(stderrStream)
+    val stdin: os.ProcessInput = input match {
+      case Left(it) => (it: os.Source) // Static cast to apply implicit conversion
+      case Right(_) => os.Pipe
+    }
+    val stdout = os.ProcessOutput.Readlines(stdoutWriter.println)
+    val stderr = os.ProcessOutput.Readlines(stderrWriter.println)
     val exitValue =
       try {
-        (cmd #< new java.io.ByteArrayInputStream(input.getBytes))
-          .!(ProcessLogger(stdoutWriter.println, stderrWriter.println))
+        os.proc(cmd).call(check = false, stdin = stdin, stdout = stdout, stderr = stderr).exitCode
       } catch {
-        case a: java.lang.RuntimeException if a.getMessage().startsWith("No exit code") =>
+        case a: java.io.IOException if a.getMessage().startsWith("Cannot run program") =>
           throw new Exceptions.FirtoolNotFound(binary)
       }
     stdoutWriter.close()

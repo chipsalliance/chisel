@@ -287,4 +287,24 @@ class MultiClockSpec extends ChiselFlatSpec with Utils {
       when(done) { stop() }
     })
   }
+
+  it should "support setting Clock and Reset to None" in {
+    val e1 = the[ChiselException] thrownBy {
+      ChiselStage.emitCHIRRTL(new Module {
+        withClockAndReset(None, Some(this.reset)) {
+          Reg(UInt(8.W))
+        }
+      })
+    }
+    e1.getMessage should include("No implicit clock.")
+
+    val e2 = the[ChiselException] thrownBy {
+      ChiselStage.emitCHIRRTL(new Module {
+        withClockAndReset(Some(this.clock), None) {
+          RegInit(0.U(8.W))
+        }
+      })
+    }
+    e2.getMessage should include("No implicit reset.")
+  }
 }

@@ -37,32 +37,44 @@ object FileInfo {
   def fromUnescaped(s: String): FileInfo = new FileInfo(escape(s))
 
   /** prepends a `\` to: `\`, `\n`, `\t` and `]` */
-  def escape(s: String): String = EscapeFirrtl.translate(s)
+  def escape(s: String): String = {
+    // Only run translator if String contains a character needing escaping,
+    // Speeds up common case
+    if (s.exists(char => escapePairs.contains(char))) {
+      EscapeFirrtl.translate(s)
+    } else {
+      s
+    }
+  }
 
   /** removes the `\` in front of `\`, `\n`, `\t` and `]` */
-  def unescape(s: String): String = UnescapeFirrtl.translate(s)
+  def unescape(s: String): String = {
+    // Only run translator if String contains '\' which implies something needs unescaping
+    // Speeds up common case
+    if (s.contains('\\')) {
+      UnescapeFirrtl.translate(s)
+    } else {
+      s
+    }
+  }
 
   /** take an already escaped String and do the additional escaping needed for Verilog comment */
   def escapedToVerilog(s: String) = EscapedToVerilog.translate(s)
 
   // custom `CharSequenceTranslator` for FIRRTL Info String escaping
   type CharMap = (CharSequence, CharSequence)
-  private val EscapeFirrtl = new LookupTranslator(
-    Seq[CharMap](
-      "\\" -> "\\\\",
-      "\n" -> "\\n",
-      "\t" -> "\\t",
-      "]" -> "\\]"
-    ).toMap.asJava
+  private val escapePairs: Map[Char, String] = Map(
+    '\\' -> "\\\\",
+    '\n' -> "\\n",
+    '\t' -> "\\t",
+    ']' -> "\\]"
   )
-  private val UnescapeFirrtl = new LookupTranslator(
-    Seq[CharMap](
-      "\\\\" -> "\\",
-      "\\n" -> "\n",
-      "\\t" -> "\t",
-      "\\]" -> "]"
-    ).toMap.asJava
-  )
+  // Helper for constructing the LookupTranslators
+  private def escapePairsCharSeq: Map[CharSequence, CharSequence] = escapePairs.map { case (k, v) => k.toString -> v }
+
+  private val EscapeFirrtl = new LookupTranslator(escapePairsCharSeq.asJava)
+  private val UnescapeFirrtl = new LookupTranslator(escapePairsCharSeq.map(_.swap).asJava)
+
   // EscapeFirrtl + EscapedToVerilog essentially does the same thing as running StringEscapeUtils.unescapeJava
   private val EscapedToVerilog = new AggregateTranslator(
     new LookupTranslator(
@@ -219,6 +231,34 @@ object SIntLiteral {
   def minWidth(value: BigInt): Width = IntWidth(value.bitLength + 1)
   def apply(value:    BigInt): SIntLiteral = new SIntLiteral(value, minWidth(value))
 }
+
+case class IntegerPropertyLiteral(value: BigInt) extends Literal with UseSerializer {
+  def tpe = IntegerPropertyType
+  val width = UnknownWidth
+}
+
+case class DoublePropertyLiteral(value: Double) extends Expression with UseSerializer {
+  def tpe = DoublePropertyType
+  val width = UnknownWidth
+}
+
+case class StringPropertyLiteral(value: String) extends Expression with UseSerializer {
+  def tpe = StringPropertyType
+  val width = UnknownWidth
+}
+
+case class BooleanPropertyLiteral(value: Boolean) extends Expression with UseSerializer {
+  val tpe = BooleanPropertyType
+}
+
+case class PathPropertyLiteral(value: String) extends Expression with UseSerializer {
+  val tpe = PathPropertyType
+}
+
+case class SequencePropertyValue(tpe: Type, values: Seq[Expression]) extends Expression with UseSerializer
+
+case class MapPropertyValue(tpe: Type, values: Seq[(String, Expression)]) extends Expression with UseSerializer
+
 case class DoPrim(op: PrimOp, args: Seq[Expression], consts: Seq[BigInt], tpe: Type)
     extends Expression
     with UseSerializer
@@ -252,6 +292,8 @@ case class DefInstance(info: Info, name: String, module: String, tpe: Type = Unk
     extends Statement
     with IsDeclaration
     with UseSerializer
+
+case class DefObject(info: Info, name: String, cls: String) extends Statement with IsDeclaration with UseSerializer
 
 object ReadUnderWrite extends Enumeration {
   val Undefined = Value("undefined")
@@ -294,6 +336,7 @@ object Block {
 
 case class Block(stmts: Seq[Statement]) extends Statement with UseSerializer
 case class Connect(info: Info, loc: Expression, expr: Expression) extends Statement with HasInfo with UseSerializer
+case class PropAssign(info: Info, loc: Expression, expr: Expression) extends Statement with HasInfo with UseSerializer
 case class IsInvalid(info: Info, expr: Expression) extends Statement with HasInfo with UseSerializer
 case class Attach(info: Info, exprs: Seq[Expression]) extends Statement with HasInfo with UseSerializer
 
@@ -492,7 +535,27 @@ case object AsyncResetType extends GroundType with UseSerializer {
   val width = IntWidth(1)
 }
 case class AnalogType(width: Width) extends GroundType with UseSerializer
+
 case class AliasType(name: String) extends Type with UseSerializer
+
+sealed abstract class PropertyType extends Type with UseSerializer
+
+case object IntegerPropertyType extends PropertyType
+
+case object DoublePropertyType extends PropertyType
+
+case object StringPropertyType extends PropertyType
+
+case object BooleanPropertyType extends PropertyType
+
+case object PathPropertyType extends PropertyType
+
+case class SequencePropertyType(tpe: PropertyType) extends PropertyType
+
+case class MapPropertyType(tpe: PropertyType) extends PropertyType
+
+case class ClassPropertyType(name: String) extends PropertyType
+
 case object UnknownType extends Type with UseSerializer
 
 /** [[Port]] Direction */
@@ -574,6 +637,10 @@ case class IntModule(
   params:    Seq[Param])
     extends DefModule
     with UseSerializer
+
+/** Class definition
+  */
+case class DefClass(info: Info, name: String, ports: Seq[Port], body: Statement) extends DefModule with UseSerializer
 
 case class Circuit(info: Info, modules: Seq[DefModule], main: String, typeAliases: Seq[DefTypeAlias] = Seq.empty)
     extends FirrtlNode
