@@ -309,7 +309,12 @@ lazy val core = (project in file("core"))
       "-Xcheckinit",
       "-Xlint:infer-any"
 //      , "-Xlint:missing-interpolator"
-    )
+    ),
+    Compile / sourceGenerators += {
+      sourceManaged
+        .map(dir => Boilerplate.generate(dir / "boilerplate"))
+        .taskValue,
+    },
   )
   .dependsOn(macros)
   .dependsOn(firrtl)
