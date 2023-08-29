@@ -44,7 +44,7 @@ object v {
 object firrtl extends Cross[Firrtl](v.scalaCrossVersions)
 
 trait Firrtl
-    extends common.FirrtlModule
+  extends common.FirrtlModule
     with ChiselPublishModule
     with CrossSbtModule
     with ScalafmtModule {
@@ -64,7 +64,7 @@ trait Firrtl
 object svsim extends Cross[Svsim](v.scalaCrossVersions)
 
 trait Svsim
-    extends common.SvsimModule
+  extends common.SvsimModule
     with ChiselPublishModule
     with CrossSbtModule
     with ScalafmtModule {
@@ -74,7 +74,7 @@ trait Svsim
 object firrtlut extends Cross[FirrtlUnitTest](v.scalaCrossVersions)
 
 trait FirrtlUnitTest
-    extends common.FirrtlUnitTestModule
+  extends common.FirrtlUnitTestModule
     with CrossModuleBase
     with ScalafmtModule {
   override def millSourcePath = firrtl(crossScalaVersion).millSourcePath
@@ -94,7 +94,7 @@ trait FirrtlUnitTest
 object macros extends Cross[Macros](v.scalaCrossVersions)
 
 trait Macros
-    extends common.MacrosModule
+  extends common.MacrosModule
     with ChiselPublishModule
     with CrossSbtModule
     with ScalafmtModule {
@@ -106,7 +106,7 @@ trait Macros
 object core extends Cross[Core](v.scalaCrossVersions)
 
 trait Core
-    extends common.CoreModule
+  extends common.CoreModule
     with ChiselPublishModule
     with CrossSbtModule
     with ScalafmtModule {
@@ -127,7 +127,7 @@ trait Core
       val lines = Process(Seq("firtool", "--version")).lineStream
       lines.collectFirst {
         case Version(v) => Some(v)
-        case _          => None
+        case _ => None
       }.get
     } catch {
       case e: java.io.IOException => None
@@ -166,7 +166,7 @@ trait Core
 object plugin extends Cross[Plugin](v.pluginScalaCrossVersions)
 
 trait Plugin
-    extends common.PluginModule
+  extends common.PluginModule
     with ChiselPublishModule
     with CrossSbtModule
     with ScalafmtModule {
@@ -182,7 +182,7 @@ trait Plugin
 object chisel extends Cross[Chisel](v.scalaCrossVersions)
 
 trait Chisel
-    extends common.ChiselModule
+  extends common.ChiselModule
     with ChiselPublishModule
     with CrossSbtModule
     with ScalafmtModule {
@@ -200,7 +200,7 @@ trait Chisel
 object chiselut extends Cross[ChiselUnitTest](v.scalaCrossVersions)
 
 trait ChiselUnitTest
-    extends common.ChiselUnitTestModule
+  extends common.ChiselUnitTestModule
     with CrossModuleBase
     with ScalafmtModule {
   override def millSourcePath = chisel(crossScalaVersion).millSourcePath
@@ -222,7 +222,7 @@ trait ChiselUnitTest
 object stdlib extends Cross[Stdlib](v.scalaCrossVersions)
 
 trait Stdlib
-    extends common.StdLibModule
+  extends common.StdLibModule
     with ChiselPublishModule
     with CrossSbtModule
     with ScalafmtModule {
@@ -242,5 +242,47 @@ trait ChiselPublishModule extends PublishModule {
     versionControl = VersionControl.github("chipsalliance", "chisel"),
     developers = Seq()
   )
+
   def publishVersion = "5.0-SNAPSHOT"
+}
+
+object circtpanamabinder extends Cross[CIRCTPanamaBinder](v.scalaCrossVersions)
+
+trait CIRCTPanamaBinder
+  extends common.CIRCTPanamaBinderModule
+    with ChiselPublishModule
+    with CrossSbtModule
+    with ScalafmtModule {
+  def millSourcePath = super.millSourcePath / os.up / "binder"
+
+  def header = T(PathRef(millSourcePath / "jextract-headers.h"))
+
+  def circtInstallPath = T(os.Path(T.ctx.env.get("CIRCT_INSTALL_PATH").getOrElse("/usr/local")))
+
+  def includePaths = T(Seq(PathRef(circtInstallPath() / "include")))
+
+  def libraryPaths = T(Seq(PathRef(circtInstallPath() / "lib")))
+
+  def chiselModule = chisel(crossScalaVersion)
+
+  def pluginModule = plugin(crossScalaVersion)
+}
+
+object bindertest extends Cross[CIRCTPanamaBinderModuleTest](v.scalaCrossVersions)
+
+trait CIRCTPanamaBinderModuleTest
+  extends common.CIRCTPanamaBinderModuleTestModule
+    with CrossModuleBase
+    with ScalafmtModule {
+  override def millSourcePath = circtpanamabinder(crossScalaVersion).millSourcePath
+
+  def circtPanamaBinderModule = circtpanamabinder(crossScalaVersion)
+
+  def scalatestIvy = v.scalatest
+
+  def scalacheckIvy = v.scalacheck
+
+  override def sources = T.sources {
+    Seq(PathRef(millSourcePath / "src" / "test"))
+  }
 }

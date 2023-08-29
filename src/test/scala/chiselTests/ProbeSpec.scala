@@ -4,6 +4,8 @@ package chiselTests
 
 import chisel3._
 import chisel3.probe._
+import chisel3.util.Counter
+import chisel3.testers.{BasicTester, TesterDriver}
 import circt.stage.ChiselStage
 
 class ProbeSpec extends ChiselFlatSpec with Utils {
@@ -483,4 +485,71 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
     exc.getMessage should include("Probe width unknown.")
   }
 
+  "Probe force/release reg example" should "work in simulator" in {
+    // Simple example forcing a register and checking basic behavior.
+
+    // Demonstrate that a bundle with data + probes works.
+    class MiniBundle extends Bundle {
+      val x = Flipped(UInt(16.W))
+      val refs = new Bundle {
+        val out = RWProbe(UInt(16.W))
+        val reg = RWProbe(UInt(16.W))
+      }
+    }
+    class Top extends Module {
+      val b = IO(new MiniBundle)
+      val out = IO(Output(UInt(16.W)))
+
+      val r = Reg(UInt(16.W))
+      r := b.x
+      out := r
+
+      // Export rwprobe's to various signals.
+      // Verilator errors if we attempt to force an input port,
+      // so don't include that in this test.
+      define(b.refs.out, RWProbeValue(out))
+      define(b.refs.reg, RWProbeValue(r))
+    }
+    runTester(new BasicTester {
+      val dut = Module(new Top)
+
+      val (cycle, done) = Counter(true.B, 20)
+      dut.b.x := 42.U
+
+      chisel3.assert(dut.b.x === 42.U)
+      chisel3.assert(read(dut.b.refs.out) === dut.out)
+
+      // Force cycle to register.
+      // Verilator's force (as documented) doesn't update when the RHS changes
+      // which it should per SV spec.  Workaround by forcing repeatedly below.
+      forceInitial(dut.b.refs.reg, cycle)
+      // Additionally, 'initial force ...' doesn't seem to work here (?).
+      // So do this on cycle zero explicitly for compatibility.
+      force(clock, cycle === 0.U, dut.b.refs.reg, cycle)
+
+      when(0.U < cycle && cycle <= 10.U) {
+        // Force cycle and check we observe it on output a cycle later.
+        chisel3.assert(dut.out === cycle - 1.U)
+        force(clock, true.B, dut.b.refs.reg, cycle)
+      }.elsewhen(cycle === 11.U) {
+        // Check last value, release.
+        chisel3.assert(dut.out === 10.U)
+        release(clock, true.B, dut.b.refs.reg)
+      }.elsewhen(cycle === 12.U) {
+        // Check original value is restored.
+        chisel3.assert(dut.out === 42.U)
+      }
+      // Force the register and the output port.
+      force(clock, cycle >= 13.U, dut.b.refs.reg, cycle)
+      force(clock, cycle >= 13.U, dut.b.refs.out, 123.U)
+      when(cycle > 13.U) {
+        // Register reads the value forced to it.
+        chisel3.assert(read(dut.b.refs.reg) === cycle)
+        // Output signal should have value forced to it.
+        chisel3.assert(dut.out === 123.U)
+      }
+
+      when(done) { stop() }
+    }) should be(true)
+  }
 }

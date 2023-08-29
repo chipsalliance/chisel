@@ -51,6 +51,8 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
         } else if (outerMatches(s)) {
           // These are type parameters, loops *are* possible here
           recShouldMatch(s.typeArgs.head, seen + s)
+        } else if (definitions.isTupleType(s)) {
+          s.typeArgs.exists(t => recShouldMatch(t, seen + s))
         } else {
           // This is the standard inheritance hierarchy, Scalac catches loops here
           s.parents.exists(p => recShouldMatch(p, seen))
@@ -59,7 +61,8 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
 
       // If doesn't match container pattern, exit early
       def earlyExit(t: Type): Boolean = {
-        !(t.matchesPattern(inferType(tq"Iterable[_]")) || t.matchesPattern(inferType(tq"Option[_]")))
+        !(t.matchesPattern(inferType(tq"Iterable[_]")) || t.matchesPattern(inferType(tq"Option[_]")) || definitions
+          .isTupleType(t))
       }
 
       // Return function so that it captures the cache
@@ -86,7 +89,9 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
       shouldMatchGen(
         tq"chisel3.BaseType",
         tq"chisel3.MemBase[_]",
-        tq"chisel3.VerificationStatement"
+        tq"chisel3.VerificationStatement",
+        tq"chisel3.properties.DynamicObject",
+        tq"chisel3.Disable"
       )
     private val shouldMatchModule:   Type => Boolean = shouldMatchGen(tq"chisel3.experimental.BaseModule")
     private val shouldMatchInstance: Type => Boolean = shouldMatchGen(tq"chisel3.experimental.hierarchy.Instance[_]")

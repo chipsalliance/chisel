@@ -3,6 +3,8 @@ name: Continuous Integration
 on:
   workflow_dispatch:
   pull_request:
+    branches-ignore:
+      - ci/ci-circt-nightly
   push:
     tags:
       - '*'

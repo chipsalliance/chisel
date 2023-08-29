@@ -45,4 +45,5 @@ read these documents in the following order:
 * [Source Locators](source-locators)
 * [Warnings](warnings)
 * [Deep Dive into Legacy Connection Operators](connection-operators)
+* [Properties](properties)
 
