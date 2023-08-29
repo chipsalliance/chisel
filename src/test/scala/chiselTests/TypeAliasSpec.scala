@@ -2,12 +2,12 @@ package chiselTests
 
 import chisel3._
 import circt.stage.ChiselStage
-import chisel3.experimental.BundleAlias
+import chisel3.experimental.{BundleAlias, HasTypeAlias}
 
 class TypeAliasSpec extends ChiselFlatSpec with Utils {
   "Bundles with opt-in alias names" should "have an emitted FIRRTL type alias" in {
     class Test extends Module {
-      class FooBundle extends Bundle {
+      class FooBundle extends Bundle with HasTypeAlias {
         override def aliasName = Some(BundleAlias(typeName))
 
         val x = UInt(8.W)
@@ -35,12 +35,12 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
 
   "Bundles with opt-in FIRRTL type aliases" should "support nesting" in {
     class Test extends Module {
-      class BarBundle extends Bundle {
+      class BarBundle extends Bundle with HasTypeAlias {
         override def aliasName = Some(BundleAlias("Buzz"))
 
         val y = UInt(8.W)
       }
-      class FooBundle extends Bundle {
+      class FooBundle extends Bundle with HasTypeAlias {
         override def aliasName = Some(BundleAlias("Fizz"))
 
         val x = UInt(8.W)
@@ -68,7 +68,7 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
 
   "Bundles with opt-in FIRRTL type aliases" should "generate normal aliases for coerced, monodirectional/unflipped bundles" in {
     class MonoStrippedTest extends Module {
-      class BarBundle extends Bundle {
+      class BarBundle extends Bundle with HasTypeAlias {
         override def aliasName = Some(BundleAlias("Buzz"))
 
         val x = UInt(8.W)
@@ -90,7 +90,7 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
 
   "Bundles with opt-in FIRRTL type aliases" should "generate modified aliases for coerced, bidirectional bundles" in {
     class StandardStrippedTest extends Module {
-      class BarBundle extends Bundle {
+      class BarBundle extends Bundle with HasTypeAlias {
         override def aliasName = Some(BundleAlias("Buzz"))
 
         val x = UInt(8.W)
@@ -117,7 +117,7 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
 
   "Bundles with opt-in FIRRTL type aliases" should "generate modified aliases for coerced, monodirectional/flipped bundles" in {
     class FlippedMonoStrippedTest extends Module {
-      class BarBundle extends Bundle {
+      class BarBundle extends Bundle with HasTypeAlias {
         override def aliasName = Some(BundleAlias("Buzz"))
 
         // These flips get stripped by both Input() and Output()
@@ -146,19 +146,19 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
     class Test extends Module {
       // All three of these bundles are structurally equivalent in FIRRTL and thus
       // are equivalent, substitutable aliases for each other. Merge/dedup them into one
-      class FooBundle extends Bundle {
+      class FooBundle extends Bundle with HasTypeAlias {
         override def aliasName = Some(BundleAlias("IdenticalBundle"))
 
         val x = UInt(8.W)
         val y = UInt(8.W)
       }
-      class FooBarBundle extends Bundle {
+      class FooBarBundle extends Bundle with HasTypeAlias {
         override def aliasName = Some(BundleAlias("IdenticalBundle"))
 
         val x = UInt(8.W)
         val y = UInt(8.W)
       }
-      class BarBundle extends Bundle {
+      class BarBundle extends Bundle with HasTypeAlias {
         override def aliasName = Some(BundleAlias("IdenticalBundle"))
 
         val x = UInt(8.W)
@@ -191,13 +191,13 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
       class Test extends Module {
         // These bundles are structurally unequivalent and so must be aliased with different names.
         // Error if they share the same name
-        class FooBundle extends Bundle {
+        class FooBundle extends Bundle with HasTypeAlias {
           override def aliasName = Some(BundleAlias("DifferentBundle"))
 
           val x = Bool()
           val y = UInt(8.W)
         }
-        class BarBundle extends Bundle {
+        class BarBundle extends Bundle with HasTypeAlias {
           override def aliasName = Some(BundleAlias("DifferentBundle"))
 
           val x = SInt(8.W)
@@ -226,7 +226,7 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
 
   "Bundles with unsanitary names" should "properly sanitize" in {
     class Test extends Module {
-      class FooBundle extends Bundle {
+      class FooBundle extends Bundle with HasTypeAlias {
         // Sanitizes to '_'; the sanitized alias needs to be used in the aliasing algorithm
         // instead of the direct user-defined alias.
         override def aliasName = Some(BundleAlias(""))
@@ -297,7 +297,7 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
     firrtlKeywords.map { tpe =>
       (the[ChiselException] thrownBy extractCause[ChiselException] {
         class Test(val firrtlType: String) extends Module {
-          class FooBundle extends Bundle {
+          class FooBundle extends Bundle with HasTypeAlias {
             override def aliasName = Some(BundleAlias(firrtlType))
 
             val x = UInt(8.W)
