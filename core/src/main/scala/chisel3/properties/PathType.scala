@@ -7,9 +7,9 @@ import chisel3.experimental.BaseModule
 import firrtl.annotations.{InstanceTarget, IsMember, ModuleTarget, ReferenceTarget}
 import firrtl.ir.{PathPropertyLiteral}
 
-/** Represent a Path type for referencing a hardware instance or member in a Property[PathType]
+/** Represent a Path type for referencing a hardware instance or member in a Property[Path]
   */
-sealed abstract class PathType {
+sealed abstract class Path {
   private[chisel3] def toTarget(): IsMember
 
   private[chisel3] def convert(): PathPropertyLiteral = {
@@ -23,28 +23,28 @@ sealed abstract class PathType {
   }
 }
 
-object PathType {
+object Path {
 
-  /** Construct a PathType that refers to a Module
+  /** Construct a Path that refers to a Module
     */
-  def apply(module: BaseModule): PathType = {
-    new PathType {
+  def apply(module: BaseModule): Path = {
+    new Path {
       def toTarget(): IsMember = module.toAbsoluteTarget
     }
   }
 
-  /** Construct a PathType that refers to a Data
+  /** Construct a Path that refers to a Data
     */
-  def apply(data: Data): PathType = {
-    new PathType {
+  def apply(data: Data): Path = {
+    new Path {
       def toTarget(): IsMember = data.toAbsoluteTarget
     }
   }
 
-  /** Construct a PathType that refers to a Memory
+  /** Construct a Path that refers to a Memory
     */
-  def apply(mem: MemBase[_]): PathType = {
-    new PathType {
+  def apply(mem: MemBase[_]): Path = {
+    new Path {
       def toTarget(): IsMember = mem.toAbsoluteTarget
     }
   }

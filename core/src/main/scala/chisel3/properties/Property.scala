@@ -150,30 +150,30 @@ private[chisel3] object PropertyType extends LowPriorityPropertyTypeInstances {
   implicit val boolPropertyTypeInstance =
     makeSimple[Boolean](_ => fir.BooleanPropertyType, fir.BooleanPropertyLiteral(_))
 
-  implicit val pathTypeInstance = makeSimple[PathType](value => fir.PathPropertyType, _.convert())
+  implicit val pathTypeInstance = makeSimple[Path](value => fir.PathPropertyType, _.convert())
 
   implicit def modulePathTypeInstance[M <: BaseModule] = new RecursivePropertyType[M] {
-    type Type = PathType
+    type Type = Path
     override def getPropertyType(value: Option[M]): fir.PropertyType = fir.PathPropertyType
     override def convert(value:         Underlying, ctx: ir.Component, info: SourceInfo): fir.Expression = value.convert()
-    type Underlying = PathType
-    override def convertUnderlying(value: M) = PathType(value)
+    type Underlying = Path
+    override def convertUnderlying(value: M) = Path(value)
   }
 
   implicit def referencePathTypeInstance[D <: Data] = new RecursivePropertyType[D] {
-    type Type = PathType
+    type Type = Path
     override def getPropertyType(value: Option[D]): fir.PropertyType = fir.PathPropertyType
     override def convert(value:         Underlying, ctx: ir.Component, info: SourceInfo): fir.Expression = value.convert()
-    type Underlying = PathType
-    override def convertUnderlying(value: D) = PathType(value)
+    type Underlying = Path
+    override def convertUnderlying(value: D) = Path(value)
   }
 
   implicit def memPathTypeInstance[M <: MemBase[_]] = new RecursivePropertyType[M] {
-    type Type = PathType
+    type Type = Path
     override def getPropertyType(value: Option[M]): fir.PropertyType = fir.PathPropertyType
     override def convert(value:         Underlying, ctx: ir.Component, info: SourceInfo): fir.Expression = value.convert()
-    type Underlying = PathType
-    override def convertUnderlying(value: M) = PathType(value)
+    type Underlying = Path
+    override def convertUnderlying(value: M) = Path(value)
   }
 
   implicit def propertyTypeInstance[T](implicit pte: RecursivePropertyType[T]) = new PropertyType[Property[T]] {
