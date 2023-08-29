@@ -375,4 +375,66 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
       Select.wires(top).map(_.instanceName) should be(List("_a_b_c"))
     }
   }
+
+  "tuples" should "be named" in {
+    class Test extends Module {
+      val x = (Wire(UInt(3.W)), Wire(UInt(3.W)))
+    }
+
+    aspectTest(() => new Test) { top: Test =>
+      Select.wires(top).map(_.instanceName) should be(List("x_1", "x_2"))
+    }
+  }
+
+  "nested tuples" should "be named" in {
+    class Test extends Module {
+      val x = (
+        (Wire(UInt(3.W)), Wire(UInt(3.W))),
+        (Wire(UInt(3.W)), Wire(UInt(3.W)))
+      )
+    }
+
+    aspectTest(() => new Test) { top: Test =>
+      Select.wires(top).map(_.instanceName) should be(List("x_1_1", "x_1_2", "x_2_1", "x_2_2"))
+    }
+  }
+
+  "tuples containing non-Data" should "be named" in {
+    class Test extends Module {
+      val x = (Wire(UInt(3.W)), "foobar", Wire(UInt(3.W)))
+    }
+
+    aspectTest(() => new Test) { top: Test =>
+      Select.wires(top).map(_.instanceName) should be(List("x_1", "x_3"))
+    }
+  }
+
+  "tuples nested in options" should "be named" in {
+    class Test extends Module {
+      val x = Option((Wire(UInt(3.W)), Wire(UInt(3.W))))
+    }
+
+    aspectTest(() => new Test) { top: Test =>
+      Select.wires(top).map(_.instanceName) should be(List("x_1", "x_2"))
+    }
+  }
+
+  "tuple assignment" should "name IOs and registers" in {
+    class Test extends Module {
+      def myFunc(): (UInt, String) = {
+        val out = IO(Output(UInt(3.W)))
+        val in = IO(Input(UInt(3.W)))
+        out := Mux(in(0), RegNext(in + 2.U), in << 3)
+        (out, "Hi!")
+      }
+
+      val foo = myFunc()
+    }
+
+    aspectTest(() => new Test) { top: Test =>
+      Select.ios(top).map(_.instanceName) should be(List("clock", "reset", "foo_1", "foo_in"))
+      Select.registers(top).map(_.instanceName) should be(List("foo_out_REG"))
+      Select.wires(top).map(_.instanceName) should be(List())
+    }
+  }
 }

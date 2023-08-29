@@ -8,10 +8,12 @@ import scala.annotation.nowarn
 import chisel3.experimental.{BaseModule, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal._
 import chisel3.experimental.hierarchy.{InstanceClone, ModuleClone}
+import chisel3.properties.DynamicObject
 import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
 import _root_.firrtl.annotations.{IsModule, ModuleTarget}
 import scala.collection.immutable.VectorBuilder
+import scala.collection.mutable.ArrayBuffer
 
 /** Abstract base class for Modules that contain Chisel RTL.
   * This abstract base class is a user-defined module which does not include implicit clock and reset and supports
@@ -19,6 +21,67 @@ import scala.collection.immutable.VectorBuilder
   */
 @nowarn("msg=class Port") // delete when Port becomes private
 abstract class RawModule extends BaseModule {
+
+  /** Hook to invoke hardware generators after the rest of the Module is constructed.
+    *
+    * This is a power-user API, and should not normally be needed.
+    *
+    * In rare cases, it is necessary to run hardware generators at a late stage, but still within the scope of the
+    * Module. In these situations, atModuleBodyEnd may be used to register such generators. For example:
+    *
+    *  {{{
+    *    class Example extends RawModule {
+    *      atModuleBodyEnd {
+    *        val extraPort0 = IO(Output(Bool()))
+    *        extraPort0 := 0.B
+    *      }
+    *    }
+    *  }}}
+    *
+    * Any generators registered with atModuleBodyEnd are the last code to execute when the Module is constructed. The
+    * execution order is:
+    *
+    *   - The constructors of any super classes or traits the Module extends
+    *   - The constructor of the Module itself
+    *   - The atModuleBodyEnd generators
+    *
+    * The atModuleBodyEnd generators execute in the lexical order they appear in the Module constructor.
+    *
+    * For example:
+    *
+    *  {{{
+    *    trait Parent {
+    *      // Executes first.
+    *      val foo = ...
+    *    }
+    *
+    *    class Example extends Parent {
+    *      // Executes second.
+    *      val bar = ...
+    *
+    *      atModuleBodyEnd {
+    *        // Executes fourth.
+    *        val qux = ...
+    *      }
+    *
+    *      atModuleBodyEnd {
+    *        // Executes fifth.
+    *        val quux = ...
+    *      }
+    *
+    *      // Executes third..
+    *      val baz = ...
+    *    }
+    *  }}}
+    *
+    * If atModuleBodyEnd is used in a Definition, any generated hardware will be included in the Definition. However, it
+    * is currently not possible to annotate any val within atModuleBodyEnd as @public.
+    */
+  protected def atModuleBodyEnd(gen: => Unit): Unit = {
+    _atModuleBodyEnd += { () => gen }
+  }
+  private val _atModuleBodyEnd = new ArrayBuffer[() => Unit]
+
   //
   // RTL construction internals
   //
@@ -54,6 +117,12 @@ abstract class RawModule extends BaseModule {
 
   private[chisel3] override def generateComponent(): Option[Component] = {
     require(!_closed, "Can't generate module more than once")
+
+    // Evaluate any atModuleBodyEnd generators.
+    _atModuleBodyEnd.foreach { gen =>
+      gen()
+    }
+
     _closed = true
 
     // Check to make sure that all ports can be named
@@ -71,6 +140,12 @@ abstract class RawModule extends BaseModule {
         case id: assume.Assume    => id.forceName(default = "assume", _namespace)
         case id: cover.Cover      => id.forceName(default = "cover", _namespace)
         case id: printf.Printf => id.forceName(default = "printf", _namespace)
+        case id: DynamicObject => {
+          // Force name of the DynamicObject, and set its Property[ClassType] type's ref to the DynamicObject.
+          // The type's ref can't be set upon instantiation, because the DynamicObject hasn't been named yet.
+          id.forceName(default = "_object", _namespace)
+          id.getReference.setRef(id.getRef)
+        }
         case id: BaseType =>
           if (id.isSynthesizable) {
             id.topBinding match {

@@ -1016,6 +1016,12 @@ sealed trait Reset extends Element with ToBoolable {
 
   /** @group SourceInfoTransformMacro */
   def do_asAsyncReset(implicit sourceInfo: SourceInfo): AsyncReset
+
+  /** Casts this $coll to a [[Disable]] */
+  final def asDisable: Disable = macro SourceInfoWhiteboxTransform.noArg
+
+  /** @group SourceInfoTransformMacro */
+  def do_asDisable(implicit sourceInfo: SourceInfo): Disable = new Disable(this.asBool)
 }
 
 object Reset {

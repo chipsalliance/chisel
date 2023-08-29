@@ -386,6 +386,26 @@ trait BaseType extends HasId with NamedComponent {
       case _ =>
     }
   }
+
+  private[chisel3] def earlyName: String = Arg.earlyLocalName(this)
+
+  private[chisel3] def parentNameOpt: Option[String] = this._parent.map(_.name)
+
+  private[chisel3] def requireVisible(): Unit = {
+    val mod = topBindingOpt.flatMap(_.location)
+    topBindingOpt match {
+      case Some(tb: TopBinding) if (mod == Builder.currentModule) =>
+      case Some(pb: PortBinding)
+          if (mod.flatMap(Builder.retrieveParent(_, Builder.currentModule.get)) == Builder.currentModule) =>
+      case Some(pb: SecretPortBinding) => // Ignore secret to not require visibility
+      case Some(_: UnconstrainedBinding) =>
+      case _ =>
+        throwException(s"operand '$this' is not visible from the current module ${Builder.currentModule.get.name}")
+    }
+    if (!MonoConnect.checkWhenVisibility(this)) {
+      throwException(s"operand has escaped the scope of the when in which it was constructed")
+    }
+  }
 }
 
 /** This forms the root of the type system for wire data types. The data value
@@ -470,10 +490,6 @@ abstract class Data extends BaseType with SourceInfoDoc {
       case VecLitBinding(litMap)     => "(unhandled vec literal)"
       case _                         => ""
     }
-
-  private[chisel3] def earlyName: String = Arg.earlyLocalName(this)
-
-  private[chisel3] def parentNameOpt: Option[String] = this._parent.map(_.name)
 
   // Return ALL elements at root of this type.
   // Contasts with flatten, which returns just Bits
@@ -582,22 +598,6 @@ abstract class Data extends BaseType with SourceInfoDoc {
     val leftType = if (this.hasBinding) this.cloneType else this
     val rightType = if (that.hasBinding) that.cloneType else that
     rec(leftType, rightType)
-  }
-
-  private[chisel3] def requireVisible(): Unit = {
-    val mod = topBindingOpt.flatMap(_.location)
-    topBindingOpt match {
-      case Some(tb: TopBinding) if (mod == Builder.currentModule) =>
-      case Some(pb: PortBinding)
-          if (mod.flatMap(Builder.retrieveParent(_, Builder.currentModule.get)) == Builder.currentModule) =>
-      case Some(pb: SecretPortBinding) => // Ignore secret to not require visibility
-      case Some(_: UnconstrainedBinding) =>
-      case _ =>
-        throwException(s"operand '$this' is not visible from the current module ${Builder.currentModule.get.name}")
-    }
-    if (!MonoConnect.checkWhenVisibility(this)) {
-      throwException(s"operand has escaped the scope of the when in which it was constructed")
-    }
   }
 
   // Internal API: returns a ref that can be assigned to, if consistent with the binding
