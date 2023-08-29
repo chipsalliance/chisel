@@ -398,7 +398,7 @@ private[chisel3] object Converter {
 
   def convert(
     port:        Port,
-    typeAliases: Seq[String],
+    typeAliases: Seq[String] = Seq.empty,
     topDir:      SpecifiedDirection = SpecifiedDirection.Unspecified
   ): fir.Port = {
     val resolvedDir = SpecifiedDirection.fromParent(topDir, firrtlUserDirOf(port.id))
