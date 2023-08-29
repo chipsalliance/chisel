@@ -6,6 +6,7 @@ import mill.scalalib.scalafmt._
 import coursier.maven.MavenRepository
 import mill.scalalib.api.ZincWorkerUtil.matchingVersions
 import $file.common
+import $file.project.Boilerplate
 
 object v {
   val pluginScalaCrossVersions = Seq(
@@ -158,8 +159,18 @@ trait Core
     PathRef(T.dest)
   }
 
+  private def generateBoilerplate = T {
+    val outputDir = T.dest / "chisel3" / "boilerplate"
+    Boilerplate.Boilerplate.templates.map { template =>
+      val file = outputDir / template.filename
+      os.write(file, template.content, createFolders = true)
+      PathRef(file)
+    }
+  }
+
+
   override def generatedSources = T {
-    super.generatedSources() :+ generateBuildInfo()
+    super.generatedSources() :+ generateBuildInfo() :++ generateBoilerplate()
   }
 }
 

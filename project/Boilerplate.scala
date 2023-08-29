@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import sbt._
 import scala.collection.mutable.ArrayBuffer
 
 /** This is a simplified version of https://github.com/milessabin/shapeless/blob/80d26bc132139eb887fe1e8d39abbdb8dcb20117/project/Boilerplate.scala
@@ -25,11 +24,11 @@ object Boilerplate {
     * i.e. interpolate the string (1 to $Arity).map(fn).mkString(start = start, sep = sep, end = end)
     */
   case class Repeated(
-    fn: Int => String,
+    fn:    Int => String,
     start: String = "",
-    sep: String = ", ",
-    end: String = "",
-  ) extends Arg
+    sep:   String = ", ",
+    end:   String = "")
+      extends Arg
 
   private class Line(start: String) {
     private val stripped = start.dropWhile(_.isWhitespace)
@@ -63,7 +62,7 @@ object Boilerplate {
     * - contiguous lines beginning with '|' are repeated only once and may only interpolate Literals
     * - contiguous lines beginning with '-' are repeated for arities 1-22 with Arity being substituted with the current arrity and Repeated being called for the range [1, current-arity]
     */
-  implicit class BlockHelper(val sc: StringContext) extends AnyVal {
+  implicit class BlockHelper(val sc: StringContext) {
     def block(args: Arg*): String = {
       val partsIterator = sc.parts.iterator
       val argsIterator = args.iterator
@@ -104,7 +103,7 @@ object Boilerplate {
             block.foreach { line =>
               line.foreach {
                 case Literal(s) => builder ++= s
-                case Arity => builder ++= arity.toString()
+                case Arity      => builder ++= arity.toString()
                 case r: Repeated =>
                   builder ++= r.start
                   (1 to arity).foreach { i =>
@@ -122,7 +121,7 @@ object Boilerplate {
           block.foreach { line =>
             line.foreach {
               case Literal(s) => builder ++= s
-              case arg => throw new IllegalArgumentException(s"$arg is not allowed in a non-repeated block")
+              case arg        => throw new IllegalArgumentException(s"$arg is not allowed in a non-repeated block")
             }
             builder += '\n'
           }
@@ -187,16 +186,7 @@ object Boilerplate {
               -  )
               |
               |}
-              |""",
+              |"""
     )
   )
-
-  /** Returns a seq of the generated files.  As a side-effect, it actually generates them... */
-  def generate(dir: File) = {
-    templates.map { template =>
-      val file = dir / template.filename
-      IO.write(file, template.content)
-      file
-    }
-  }
 }
