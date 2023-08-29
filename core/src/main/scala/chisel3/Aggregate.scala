@@ -1466,73 +1466,58 @@ abstract class Bundle extends Record {
     */
   override def toPrintable: Printable = toPrintableHelper(_elements.toList.reverse)
 
-  /** An optional FIRRTL type alias name to give to this bundle. If overrided with a Some, for instance Some("UserBundle"),
-    * this causes emission of FIRRTL statements that declare that name for this bundle type:
-    *
-    * ```
-    * type UserBundle = { ... }
-    * ```
-    *
-    * This is used as a strong hint for the generated type alias: steps like sanitization and disambiguation
-    * may change the resulting alias by necessity, so there is no certain guarantee that the desired name will show up in
-    * the generated FIRRTL.
-    */
-  def aliasName: Option[BundleAlias] = None
-
-  // The final sanitized and disambiguated alias for this bundle, generated when aliasName is a non-empty Option.
-  // This is important if sanitization and disambiguation results in a changed alias,
-  // as the sanitized name no longer matches the user-specified alias.
-  private[chisel3] var finalizedAlias: Option[String] = None
-
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
     super.bind(target, parentDirection)
 
-    aliasName.map(alias => {
-      // If the aliased bundle is coerced and it has flipped signals, then they must be stripped
-      val isFlipped = DataMirror
-        .collectMembers(this) { case d: Data if d.passiveDirection == SpecifiedDirection.Flip => d }
-        .toSeq
-        .nonEmpty
-      val isCoerced = direction match {
-        case ActualDirection.Input | ActualDirection.Output => true
-        case other                                          => false
-      }
-      val isStripped = isCoerced && isFlipped
-
-      // Don't emit an alias for a stripped type
-      val sourceInfo = alias.info
-      val candidateAlias = s"${sanitize(alias.id)}${if (isStripped) "_stripped" else ""}"
-
-      // Filter out (TODO: disambiguate) FIRRTL keywords that cause parser errors if used
-      if (firrtlKeywords.contains(candidateAlias)) {
-        Builder.error(
-          s"Attempted to override a FIRRTL keyword '$candidateAlias' with a bundle type alias. Chisel does not automatically disambiguate aliases using these keywords at this time."
-        )(sourceInfo)
-      } else {
-        // Compute the structural type of this bundle with no subfield aliasing
-        val thisType = Converter.extractType(this, sourceInfo)
-
-        // If the name is already taken, check if there exists a *structurally equivalent* bundle with the same name, and
-        // simply error (TODO: disambiguate that name)
-        if (
-          Builder.globalBundleNamespace.contains(candidateAlias) &&
-          Builder.bundleStructuralHashMap.get(candidateAlias).exists(_._2 != thisType)
-        ) {
-          val bundleValue = Builder.bundleStructuralHashMap.get(candidateAlias).get
-          // Conflict found:
-          Builder.error(
-            s"Attempted to redeclare an existing bundle type alias '$candidateAlias' with a new bundle structure:\n'$thisType'.\n\nThe alias was previously defined as:\n'${bundleValue._2}${bundleValue._3
-              .makeMessage(" " + _)}"
-          )(sourceInfo)
-        } else {
-          if (!Builder.globalBundleNamespace.contains(candidateAlias)) {
-            Builder.globalBundleNamespace.name(candidateAlias)
-            Builder.bundleStructuralHashMap.put(candidateAlias, (this, thisType, sourceInfo))
+    this match {
+      case aliasedBundle: HasTypeAlias =>
+        aliasedBundle.aliasName.map(alias => {
+          // If the aliased bundle is coerced and it has flipped signals, then they must be stripped
+          val isFlipped = DataMirror
+            .collectMembers(this) { case d: Data if d.passiveDirection == SpecifiedDirection.Flip => d }
+            .toSeq
+            .nonEmpty
+          val isCoerced = direction match {
+            case ActualDirection.Input | ActualDirection.Output => true
+            case other                                          => false
           }
+          val isStripped = isCoerced && isFlipped
 
-          finalizedAlias = Some(candidateAlias)
-        }
-      }
-    })
+          val sourceInfo = alias.info
+          val candidateAlias = s"${sanitize(alias.id)}${if (isStripped) "_stripped" else ""}"
+
+          // Filter out (TODO: disambiguate) FIRRTL keywords that cause parser errors if used
+          if (firrtlKeywords.contains(candidateAlias)) {
+            Builder.error(
+              s"Attempted to override a FIRRTL keyword '$candidateAlias' with a bundle type alias. Chisel does not automatically disambiguate aliases using these keywords at this time."
+            )(sourceInfo)
+          } else {
+            // Compute the structural type of this bundle with no subfield aliasing
+            val thisType = Converter.extractType(this, sourceInfo)
+
+            // If the name is already taken, check if there exists a *structurally equivalent* bundle with the same name, and
+            // simply error (TODO: disambiguate that name)
+            if (
+              Builder.globalBundleNamespace.contains(candidateAlias) &&
+              Builder.bundleStructuralHashMap.get(candidateAlias).exists(_._2 != thisType)
+            ) {
+              val bundleValue = Builder.bundleStructuralHashMap.get(candidateAlias).get
+              // Conflict found:
+              Builder.error(
+                s"Attempted to redeclare an existing bundle type alias '$candidateAlias' with a new bundle structure:\n'$thisType'.\n\nThe alias was previously defined as:\n'${bundleValue._2}${bundleValue._3
+                  .makeMessage(" " + _)}"
+              )(sourceInfo)
+            } else {
+              if (!Builder.globalBundleNamespace.contains(candidateAlias)) {
+                Builder.globalBundleNamespace.name(candidateAlias)
+                Builder.bundleStructuralHashMap.put(candidateAlias, (this, thisType, sourceInfo))
+              }
+
+              aliasedBundle.finalizedAlias = Some(candidateAlias)
+            }
+          }
+        })
+      case _ =>
+    }
   }
 }

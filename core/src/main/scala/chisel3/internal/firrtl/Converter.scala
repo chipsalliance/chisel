@@ -361,7 +361,7 @@ private[chisel3] object Converter {
       // if Vector is a probe, don't emit Probe<...> on its elements
       fir.VectorType(extractType(t.sample_element, childClearDir, info, checkProbe, true, typeAliases), t.length)
     // Handle aliased bundles: Emit an AliasType directly
-    case t: Bundle if t.finalizedAlias.exists { typeAliases.contains(_) } =>
+    case t: HasTypeAlias if t.finalizedAlias.exists { typeAliases.contains(_) } =>
       fir.AliasType(t.finalizedAlias.get)
     case t: Record => {
       val childClearDir = clearDir ||
