@@ -40,7 +40,7 @@ trait HasAutoTypename {
   override def typeName: String = autoTypeName(getClass.getSimpleName, _typeNameConParams)
 
   private def autoTypeName(bundleName: String, typeNameParams: Iterable[Any]): String =
-    _typeNameConParams.foldLeft(bundleName) {
+    _typeNameConParams.foldLeft(sanitize(bundleName)) {
       case (prev, accessor) => prev + s"_${accessorString(accessor)}"
     }
 
