@@ -280,8 +280,10 @@ object Serializer {
       writers.foreach { w => b ++= "writer => "; b ++= legalize(w); newLineAndIndent(1) }
       readwriters.foreach { r => b ++= "readwriter => "; b ++= legalize(r); newLineAndIndent(1) }
       b ++= "read-under-write => "; b ++= readUnderWrite.toString
-    case DefTypeAlias(info, name, tpe) => b ++= "type "; b ++= name; b ++= " = "; s(tpe) //; s(info) TODO: Uncomment once firtool accepts infos for type aliases
-    case Attach(info, exprs)           =>
+    case DefTypeAlias(info, name, tpe) =>
+      b ++= "type "; b ++= name; b ++= " = ";
+      s(tpe) //; s(info) TODO: Uncomment once firtool accepts infos for type aliases
+    case Attach(info, exprs) =>
       // exprs should never be empty since the attach statement takes *at least* two signals according to the spec
       b ++= "attach ("; s(exprs, ", "); b += ')'; s(info)
     case veri @ Verification(op, info, clk, pred, en, msg) =>

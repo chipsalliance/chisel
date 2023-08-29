@@ -10,8 +10,9 @@ package chisel3.experimental
 case class BundleAlias private[chisel3] (info: SourceInfo, id: String, strippedSuffix: String = "_stripped")
 
 object BundleAlias {
-  def apply(id: String)(implicit info: SourceInfo): BundleAlias = BundleAlias(info, id)
-  def apply(id: String, strippedSuffix: String)(implicit info: SourceInfo): BundleAlias = BundleAlias(info, id, strippedSuffix)
+  def apply(id: String)(implicit info:  SourceInfo): BundleAlias = BundleAlias(info, id)
+  def apply(id: String, strippedSuffix: String)(implicit info: SourceInfo): BundleAlias =
+    BundleAlias(info, id, strippedSuffix)
 }
 
 trait HasTypeAlias {
@@ -27,7 +28,7 @@ trait HasTypeAlias {
     *   override def aliasName = Some("UserBundle")
     * }
     * }}}
-    * 
+    *
     * {{{
     * circuit Top :
     *   type UserBundle = { ... }
