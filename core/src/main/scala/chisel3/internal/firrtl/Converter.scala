@@ -442,8 +442,8 @@ private[chisel3] object Converter {
       fir.DefClass(
         fir.NoInfo,
         name,
-        ports.map(p => convert(p)),
-        convert(cmds, ctx)
+        ports.map(p => convert(p, typeAliases)),
+        convert(cmds, ctx, typeAliases)
       )
   }
 
