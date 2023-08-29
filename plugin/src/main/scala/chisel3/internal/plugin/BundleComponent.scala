@@ -181,7 +181,11 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
       conArgsOpt.map { conArgs =>
         // Create an iterable out of all constructor argument accessors
         val typeNameConParamsSym =
-          bundle.symbol.newMethod(TermName("_typeNameConParams"), bundle.symbol.pos.focus, Flag.OVERRIDE | Flag.PROTECTED)
+          bundle.symbol.newMethod(
+            TermName("_typeNameConParams"),
+            bundle.symbol.pos.focus,
+            Flag.OVERRIDE | Flag.PROTECTED
+          )
         typeNameConParamsSym.resetFlag(Flags.METHOD)
         typeNameConParamsSym.setInfo(NullaryMethodType(itAnyTpe))
 
