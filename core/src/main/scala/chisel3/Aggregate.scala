@@ -1484,7 +1484,7 @@ abstract class Bundle extends Record {
           val isStripped = isCoerced && isFlipped
 
           val sourceInfo = alias.info
-          val candidateAlias = s"${sanitize(alias.id)}${if (isStripped) "_stripped" else ""}"
+          val candidateAlias = sanitize(s"${alias.id}${if (isStripped) alias.strippedSuffix else ""}")
 
           // Filter out (TODO: disambiguate) FIRRTL keywords that cause parser errors if used
           if (firrtlKeywords.contains(candidateAlias)) {

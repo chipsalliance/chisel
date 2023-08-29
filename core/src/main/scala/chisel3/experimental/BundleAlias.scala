@@ -1,9 +1,17 @@
 package chisel3.experimental
 
-case class BundleAlias private[chisel3] (info: SourceInfo, id: String)
+/** Wrapper object for a Record alias name. Primarily intended to provide an invocation point for source line locators, but
+  * also contains pertinent information to generating FIRRTL alias statements.
+  *
+  * @param id The desired name to generate an alias statement
+  * @param strippedSuffix In the case of forced coersion by [[Input]] or [[Output]], the string to append to the end of the
+  *        alias name. Takes the default value of `"_stripped"`
+  */
+case class BundleAlias private[chisel3] (info: SourceInfo, id: String, strippedSuffix: String = "_stripped")
 
 object BundleAlias {
   def apply(id: String)(implicit info: SourceInfo): BundleAlias = BundleAlias(info, id)
+  def apply(id: String, strippedSuffix: String)(implicit info: SourceInfo): BundleAlias = BundleAlias(info, id, strippedSuffix)
 }
 
 trait HasTypeAlias {
