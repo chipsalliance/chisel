@@ -18,11 +18,11 @@ object IO {
     *
     * The granted iodef must be a chisel type and not be bound to hardware.
     *
-    * Also registers a BaseType as a port, also performing bindings. Cannot be called once ports are
+    * Also registers a Data as a port, also performing bindings. Cannot be called once ports are
     * requested (so that all calls to ports will return the same information).
     * Internal API.
     */
-  def apply[T <: BaseType](iodef: => T)(implicit sourceInfo: SourceInfo): T = {
+  def apply[T <: Data](iodef: => T)(implicit sourceInfo: SourceInfo): T = {
     val module = Module.currentModule.get // Impossible to fail
     require(!module.isClosed, "Can't add more ports after module close")
     val prevId = Builder.idGen.value

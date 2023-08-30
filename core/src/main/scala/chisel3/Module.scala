@@ -432,16 +432,16 @@ package experimental {
       _ids
     }
 
-    private val _ports = new ArrayBuffer[(BaseType, SourceInfo)]()
+    private val _ports = new ArrayBuffer[(Data, SourceInfo)]()
 
     // getPorts unfortunately already used for tester compatibility
-    protected[chisel3] def getModulePorts: Seq[BaseType] = {
+    protected[chisel3] def getModulePorts: Seq[Data] = {
       require(_closed, "Can't get ports before module close")
-      _ports.iterator.collect { case (d: BaseType, _) => d }.toSeq
+      _ports.iterator.collect { case (d: Data, _) => d }.toSeq
     }
 
     // gets Ports along with there source locators
-    private[chisel3] def getModulePortsAndLocators: Seq[(BaseType, SourceInfo)] = {
+    private[chisel3] def getModulePortsAndLocators: Seq[(Data, SourceInfo)] = {
       require(_closed, "Can't get ports before module close")
       _ports.toSeq
     }
@@ -455,7 +455,7 @@ package experimental {
     // This is dangerous because it can be called before the module is closed and thus there could
     // be more ports and names have not yet been finalized.
     // This should only to be used during the process of closing when it is safe to do so.
-    private[chisel3] def findPort(name: String): Option[BaseType] =
+    private[chisel3] def findPort(name: String): Option[Data] =
       _ports.collectFirst { case (data, _) if data.seedOpt.contains(name) => data }
 
     protected def portsSize: Int = _ports.size
@@ -605,7 +605,7 @@ package experimental {
       *
       * TODO: Use SeqMap/VectorMap when those data structures become available.
       */
-    private[chisel3] def getChiselPorts(implicit si: SourceInfo): Seq[(String, BaseType)] = {
+    private[chisel3] def getChiselPorts(implicit si: SourceInfo): Seq[(String, Data)] = {
       require(_closed, "Can't get ports before module close")
       modulePortsAskedFor = Some(si) // super-lock down the module
       (_component.get.ports ++ _component.get.secretPorts).map { port =>
@@ -616,10 +616,10 @@ package experimental {
     /** Chisel2 code didn't require the IO(...) wrapper and would assign a Chisel type directly to
       * io, then do operations on it. This binds a Chisel type in-place (mutably) as an IO.
       */
-    protected def _bindIoInPlace(iodef: BaseType)(implicit sourceInfo: SourceInfo): Unit = {
+    protected def _bindIoInPlace(iodef: Data)(implicit sourceInfo: SourceInfo): Unit = {
 
       // Assign any signals (Chisel or chisel3) with Unspecified/Flipped directions to Output/Input.
-      // This is only required for Data, not all BaseTypes in general.
+      // This is only required for Data, not all Datas in general.
       iodef match {
         case (data: Data) => Module.assignCompatDir(data)
         case _ => ()
@@ -631,7 +631,7 @@ package experimental {
 
     /** Private accessor for _bindIoInPlace */
     private[chisel3] def bindIoInPlace(
-      iodef: BaseType
+      iodef: Data
     )(
       implicit sourceInfo: SourceInfo
     ): Unit = _bindIoInPlace(iodef)
@@ -670,14 +670,14 @@ package experimental {
       *
       * The granted iodef must be a chisel type and not be bound to hardware.
       *
-      * Also registers an BaseType as a port, also performing bindings. Cannot be called once ports are
+      * Also registers an Data as a port, also performing bindings. Cannot be called once ports are
       * requested (so that all calls to ports will return the same information).
       * Internal API.
       *
-      * TODO(twigg): Specifically walk the BaseType definition to call out which nodes
+      * TODO(twigg): Specifically walk the Data definition to call out which nodes
       * are problematic.
       */
-    protected def IO[T <: BaseType](iodef: => T)(implicit sourceInfo: SourceInfo): T = {
+    protected def IO[T <: Data](iodef: => T)(implicit sourceInfo: SourceInfo): T = {
       chisel3.IO.apply(iodef)
     }
 

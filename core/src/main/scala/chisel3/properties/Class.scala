@@ -2,7 +2,7 @@
 
 package chisel3.properties
 
-import chisel3.{BaseType, Data, RawModule, SpecifiedDirection}
+import chisel3.{Data, RawModule, SpecifiedDirection}
 import chisel3.experimental.{BaseModule, SourceInfo}
 import chisel3.internal.{throwException, Builder, ClassBinding, OpBinding}
 import chisel3.internal.firrtl.{Arg, Command, Component, DefClass, DefObject, ModuleIO, Port, PropAssign}
@@ -37,7 +37,7 @@ class Class extends BaseModule {
           id.forceName(default = "_object", _namespace)
           id.getReference.setRef(id.getRef)
         }
-        case id: BaseType =>
+        case id: Data =>
           if (id.isSynthesizable) {
             id.topBinding match {
               case ClassBinding(_) =>

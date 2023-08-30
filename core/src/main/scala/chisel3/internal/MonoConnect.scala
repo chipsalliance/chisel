@@ -38,21 +38,21 @@ import scala.annotation.tailrec
   */
 
 private[chisel3] object MonoConnect {
-  def formatName(data: BaseType) = s"""${data.earlyName} in ${data.parentNameOpt.getOrElse("(unknown)")}"""
+  def formatName(data: Data) = s"""${data.earlyName} in ${data.parentNameOpt.getOrElse("(unknown)")}"""
 
   // These are all the possible exceptions that can be thrown.
   // These are from element-level connection
-  def UnreadableSourceException(sink: BaseType, source: BaseType) =
+  def UnreadableSourceException(sink: Data, source: Data) =
     MonoConnectException(
       s"""${formatName(source)} cannot be read from module ${sink.parentNameOpt.getOrElse("(unknown)")}."""
     )
-  def UnwritableSinkException(sink: BaseType, source: BaseType) =
+  def UnwritableSinkException(sink: Data, source: Data) =
     MonoConnectException(
       s"""${formatName(sink)} cannot be written from module ${source.parentNameOpt.getOrElse("(unknown)")}."""
     )
-  def SourceEscapedWhenScopeException(source: BaseType) =
+  def SourceEscapedWhenScopeException(source: Data) =
     MonoConnectException(s"Source ${formatName(source)} has escaped the scope of the when in which it was constructed.")
-  def SinkEscapedWhenScopeException(sink: BaseType) =
+  def SinkEscapedWhenScopeException(sink: Data) =
     MonoConnectException(s"Sink ${formatName(sink)} has escaped the scope of the when in which it was constructed.")
   def UnknownRelationException =
     MonoConnectException("Sink or source unavailable to current module.")
@@ -61,26 +61,26 @@ private[chisel3] object MonoConnect {
     MonoConnectException("Sink and Source are different length Vecs.")
   def MissingFieldException(field: String) =
     MonoConnectException(s"Source Record missing field ($field).")
-  def MismatchedException(sink: BaseType, source: BaseType) =
+  def MismatchedException(sink: Data, source: Data) =
     MonoConnectException(
       s"Sink (${sink.cloneType.toString}) and Source (${source.cloneType.toString}) have different types."
     )
   def DontCareCantBeSink =
     MonoConnectException("DontCare cannot be a connection sink")
-  def AnalogCantBeMonoSink(sink: BaseType) =
+  def AnalogCantBeMonoSink(sink: Data) =
     MonoConnectException(s"Sink ${formatName(sink)} of type Analog cannot participate in a mono connection (:=)")
-  def AnalogCantBeMonoSource(source: BaseType) =
+  def AnalogCantBeMonoSource(source: Data) =
     MonoConnectException(s"Source ${formatName(source)} of type Analog cannot participate in a mono connection (:=)")
-  def AnalogMonoConnectionException(source: BaseType, sink: BaseType) =
+  def AnalogMonoConnectionException(source: Data, sink: Data) =
     MonoConnectException(
       s"Source ${formatName(source)} and sink ${formatName(sink)} of type Analog cannot participate in a mono connection (:=)"
     )
-  def SourceProbeMonoConnectionException(source: BaseType) =
+  def SourceProbeMonoConnectionException(source: Data) =
     MonoConnectException(s"Source ${formatName(source)} of Probed type cannot participate in a mono connection (:=)")
-  def SinkProbeMonoConnectionException(sink: BaseType) =
+  def SinkProbeMonoConnectionException(sink: Data) =
     MonoConnectException(s"Sink ${formatName(sink)} of Probed type cannot participate in a mono connection (:=)")
 
-  def checkWhenVisibility(x: BaseType): Boolean = {
+  def checkWhenVisibility(x: Data): Boolean = {
     x.topBinding match {
       case mp: MemoryPortBinding =>
         true // TODO (albert-magyar): remove this "bridge" for odd enable logic of current CHIRRTL memories
@@ -440,8 +440,8 @@ private[chisel3] object checkConnect {
 
   private def checkConnection(
     sourceInfo:  SourceInfo,
-    sink:        BaseType,
-    source:      BaseType,
+    sink:        Data,
+    source:      Data,
     context_mod: BaseModule
   ): Unit = {
     import BindingDirection.{Input, Internal, Output} // Using extensively so import these

@@ -58,7 +58,7 @@ package object experimental {
   /** Requires that a node is hardware ("bound")
     */
   object requireIsHardware {
-    def apply(node: BaseType, msg: String = ""): Unit = {
+    def apply(node: Data, msg: String = ""): Unit = {
       if (!node.isSynthesizable) {
         val prefix = if (msg.nonEmpty) s"$msg " else ""
         throw ExpectedHardwareException(
@@ -72,7 +72,7 @@ package object experimental {
   /** Requires that a node is a chisel type (not hardware, "unbound")
     */
   object requireIsChiselType {
-    def apply(node: BaseType, msg: String = ""): Unit = if (node.isSynthesizable) {
+    def apply(node: Data, msg: String = ""): Unit = if (node.isSynthesizable) {
       val prefix = if (msg.nonEmpty) s"$msg " else ""
       throw ExpectedChiselTypeException(s"$prefix'$node' must be a Chisel type, not hardware")
     }
