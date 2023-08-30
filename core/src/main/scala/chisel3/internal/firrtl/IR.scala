@@ -175,7 +175,7 @@ case class SLit(n: BigInt, w: Width) extends LitArg(n, w) {
   * These are not LitArgs, because not all property literals are integers.
   */
 private[chisel3] case class PropertyLit[T, U](
-  propertyType: PropertyTypeclass[_] { type Underlying = U; type Type = T },
+  propertyType: PropertyTypeclass[T] { type Underlying = U },
   lit:          U)
     extends Arg {
   def name:     String = s"PropertyLit($lit)"

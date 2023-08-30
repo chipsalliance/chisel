@@ -6,9 +6,9 @@ import chisel3._
 import chisel3.experimental.{Analog, BaseModule, SourceInfo}
 import chisel3.internal.containsProbe
 import chisel3.internal.Builder.pushCommand
-import chisel3.internal.firrtl.{Connect, Converter, DefInvalid}
+import chisel3.internal.firrtl.{Connect, Converter, DefInvalid, PropAssign}
 import chisel3.experimental.dataview.{isView, reify, reifyToAggregate}
-import chisel3.properties.Property
+import chisel3.properties.{Class, Property}
 
 import scala.language.experimental.macros
 import scala.annotation.tailrec
@@ -99,7 +99,7 @@ private[chisel3] object MonoConnect {
     sourceInfo:  SourceInfo,
     sink:        Data,
     source:      Data,
-    context_mod: RawModule
+    context_mod: BaseModule
   ): Unit = {
     (sink, source) match {
 
@@ -132,6 +132,8 @@ private[chisel3] object MonoConnect {
         elemConnect(sourceInfo, sink_e, source_e, context_mod)
       case (sink_e: UnsafeEnum, source_e: UInt) =>
         elemConnect(sourceInfo, sink_e, source_e, context_mod)
+      case (sink_p: Property[_], source_p: Property[_]) =>
+        propConnect(sourceInfo, sink_p, source_p, context_mod)
 
       // Handle Vec case
       case (sink_v: Vec[Data @unchecked], source_v: Vec[Data @unchecked]) =>
@@ -232,7 +234,7 @@ private[chisel3] object MonoConnect {
     implicit sourceInfo: SourceInfo,
     sink:                Data,
     source:              Data,
-    context_mod:         RawModule
+    context_mod:         BaseModule
   ): Boolean = {
     import ActualDirection.{Bidirectional, Input, Output}
     // If source has no location, assume in context module
@@ -331,7 +333,7 @@ private[chisel3] object MonoConnect {
     wantToBeSink:     Boolean,
     currentlyFlipped: Boolean,
     data:             Data,
-    context_mod:      RawModule
+    context_mod:      BaseModule
   ): Boolean = {
     val sdir = data.specifiedDirection
     val coercedFlip = sdir == SpecifiedDirection.Input
@@ -346,8 +348,8 @@ private[chisel3] object MonoConnect {
       case _ => true
     }
   }
-  def canBeSink(data:   Data, context_mod: RawModule): Boolean = traceFlow(true, false, data, context_mod)
-  def canBeSource(data: Data, context_mod: RawModule): Boolean = traceFlow(false, false, data, context_mod)
+  def canBeSink(data:   Data, context_mod: BaseModule): Boolean = traceFlow(true, false, data, context_mod)
+  def canBeSource(data: Data, context_mod: BaseModule): Boolean = traceFlow(false, false, data, context_mod)
 
   /** Check whether two Data can be bulk connected (<=) in FIRRTL. (MonoConnect case)
     *
@@ -359,7 +361,7 @@ private[chisel3] object MonoConnect {
     sink:        Data,
     source:      Data,
     sourceInfo:  SourceInfo,
-    context_mod: RawModule
+    context_mod: BaseModule
   ): Boolean = {
     // Assuming we're using a <>, check if a FIRRTL.<= connection operator is valid in that case
     def biConnectCheck =
@@ -388,7 +390,7 @@ private[chisel3] object MonoConnect {
     implicit sourceInfo: SourceInfo,
     _sink:               Element,
     _source:             Element,
-    context_mod:         RawModule
+    context_mod:         BaseModule
   ): Unit = {
     // Reify sink and source if they're views.
     val sink = reify(_sink)
@@ -396,6 +398,20 @@ private[chisel3] object MonoConnect {
 
     checkConnect(sourceInfo, sink, source, context_mod)
     issueConnect(sink, source)
+  }
+
+  def propConnect(
+    sourceInfo: SourceInfo,
+    sink:       Property[_],
+    source:     Property[_],
+    context:    BaseModule
+  ): Unit = {
+    // Add the PropAssign command directly onto the correct BaseModule subclass.
+    context match {
+      case rm:  RawModule => rm.addCommand(PropAssign(sourceInfo, sink.lref, source.ref))
+      case cls: Class     => cls.addCommand(PropAssign(sourceInfo, sink.lref, source.ref))
+      case _ => throwException("Internal Error! Property connection can only occur within RawModule or Class.")
+    }
   }
 }
 

@@ -507,7 +507,7 @@ abstract class Data extends BaseType with SourceInfoDoc {
     }
 
     try {
-      MonoConnect.connect(sourceInfo, this, that, Builder.referenceUserModule)
+      MonoConnect.connect(sourceInfo, this, that, Builder.referenceUserContainer)
     } catch {
       case MonoConnectException(message) =>
         throwException(
@@ -609,7 +609,7 @@ abstract class Data extends BaseType with SourceInfoDoc {
   }
 
   // Internal API: returns a ref, if bound
-  private[chisel3] final def ref: Arg = {
+  private[chisel3] def ref: Arg = {
     def materializeWire(makeConst: Boolean = false): Arg = {
       if (!Builder.currentModule.isDefined) throwException(s"internal error: cannot materialize ref for $this")
       implicit val sourceInfo = UnlocatableSourceInfo

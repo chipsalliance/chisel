@@ -4,6 +4,7 @@ import chisel3.internal.requireIsChiselType // Fix ambiguous import
 import chisel3.internal.{throwException, Builder}
 import chisel3.experimental.SourceInfo
 import chisel3.properties.Class
+import chisel3.properties.Property
 
 object IO {
 
@@ -32,8 +33,8 @@ object IO {
     module match {
       case _: Class => {
         data match {
-          case _: Data => throwException(s"Class ports must be Property type, but found $data")
-          case _ => ()
+          case _: Property[_] => ()
+          case _ => throwException(s"Class ports must be Property type, but found $data")
         }
       }
       case _ => ()

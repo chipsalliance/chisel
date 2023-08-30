@@ -256,7 +256,7 @@ private[chisel3] object BiConnect {
     sink:        Data,
     source:      Data,
     sourceInfo:  SourceInfo,
-    context_mod: RawModule
+    context_mod: BaseModule
   ): Boolean = {
 
     // check that the aggregates have the same types
