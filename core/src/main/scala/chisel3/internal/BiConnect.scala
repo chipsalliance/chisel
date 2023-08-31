@@ -10,6 +10,7 @@ import chisel3.internal.firrtl.{Connect, Converter, DefInvalid}
 
 import scala.language.experimental.macros
 import _root_.firrtl.passes.CheckTypes
+import chisel3.properties.Property
 
 /**
   * BiConnect.connect executes a bidirectional connection element-wise.
@@ -112,6 +113,9 @@ private[chisel3] object BiConnect {
         elemConnect(sourceInfo, left_e, right_e, context_mod)
         // TODO(twigg): Verify the element-level classes are connectable
       }
+      case (left_p: Property[_], right_p: Property[_]) =>
+        // We can consider supporting this, but it's a lot of code and we should be moving away from <> anyway
+        Builder.error(s"<> is not supported by Properties, use :<>= instead")(sourceInfo)
       // Handle Vec case
       case (left_v: Vec[Data @unchecked], right_v: Vec[Data @unchecked]) => {
         if (left_v.length != right_v.length) {

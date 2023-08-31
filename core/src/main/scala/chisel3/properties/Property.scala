@@ -200,7 +200,7 @@ final class Property[T] private (tpe: PropertyType[T], valueOpt: Option[T]) exte
   private[chisel3] def firrtlConnect(that:   Data)(implicit sourceInfo: SourceInfo): Unit = ???
   def litOption:              Option[BigInt] = ???
   def toPrintable:            Printable = ???
-  private[chisel3] def width: ir.Width = ???
+  private[chisel3] def width: ir.Width = ir.UnknownWidth()
 
   /** Bind this node to the in-memory graph.
     */

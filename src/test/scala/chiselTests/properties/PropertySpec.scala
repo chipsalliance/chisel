@@ -355,4 +355,106 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
     assertTypeError("Property[Property[Seq[Property[Seq[Property[Int]]]]]]()")
     assertTypeError("Property[Property[SeqMap[String, Property[Seq[Property[Int]]]]]]()")
   }
+
+  it should "be supported as a field of a Bundle" in {
+    class MyBundle extends Bundle {
+      val foo = UInt(8.W)
+      val bar = Property[BigInt]()
+    }
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val propOut = IO(Output(new MyBundle))
+      propOut.foo := 123.U
+      propOut.bar := Property(3)
+    })
+    matchesAndOmits(chirrtl)(
+      "output propOut : { foo : UInt<8>, bar : Integer}",
+      "connect propOut.foo, UInt<7>(0h7b)",
+      "propassign propOut.bar, Integer(3)"
+    )()
+  }
+
+  it should "being a flipped field of a Bundle" in {
+    class MyBundle extends Bundle {
+      val foo = UInt(8.W)
+      val bar = Flipped(Property[BigInt]())
+    }
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val aligned = IO(new MyBundle)
+      val flipped = IO(Flipped(new MyBundle))
+      aligned.foo := flipped.foo
+      flipped.bar := aligned.bar
+    })
+    matchesAndOmits(chirrtl)(
+      "output aligned : { foo : UInt<8>, flip bar : Integer}",
+      "input flipped : { foo : UInt<8>, flip bar : Integer}",
+      "propassign flipped.bar, aligned.bar",
+      "connect aligned.foo, flipped.foo"
+    )()
+  }
+
+  it should "support connectable operators when nested in a Bundle" in {
+    class MyBundle extends Bundle {
+      val foo = Property[String]()
+      val bar = Flipped(Property[BigInt]())
+    }
+    abstract class MyBaseModule extends RawModule {
+      val aligned = IO(new MyBundle)
+      val flipped = IO(Flipped(new MyBundle))
+    }
+    val chirrtl1 = ChiselStage.emitCHIRRTL(new MyBaseModule {
+      aligned :<>= flipped
+    })
+    matchesAndOmits(chirrtl1)(
+      "output aligned : { foo : String, flip bar : Integer}",
+      "input flipped : { foo : String, flip bar : Integer}",
+      "propassign flipped.bar, aligned.bar",
+      "propassign aligned.foo, flipped.foo"
+    )()
+
+    val chirrtl2 = ChiselStage.emitCHIRRTL(new MyBaseModule {
+      aligned :<= flipped
+    })
+    matchesAndOmits(chirrtl2)(
+      "output aligned : { foo : String, flip bar : Integer}",
+      "input flipped : { foo : String, flip bar : Integer}",
+      "propassign aligned.foo, flipped.foo"
+    )("propassign flipped.bar, aligned.bar")
+
+    val chirrtl3 = ChiselStage.emitCHIRRTL(new MyBaseModule {
+      aligned :>= flipped
+    })
+    matchesAndOmits(chirrtl3)(
+      "output aligned : { foo : String, flip bar : Integer}",
+      "input flipped : { foo : String, flip bar : Integer}",
+      "propassign flipped.bar, aligned.bar"
+    )("propassign aligned.foo, flipped.foo")
+
+    val chirrtl4 = ChiselStage.emitCHIRRTL(new RawModule {
+      val out = IO(Output(new MyBundle))
+      val in = IO(Input(new MyBundle))
+      out :#= in
+    })
+    matchesAndOmits(chirrtl4)(
+      "output out : { foo : String, bar : Integer}",
+      "input in : { foo : String, bar : Integer}",
+      "propassign out.bar, in.bar",
+      "propassign out.foo, in.foo"
+    )()
+  }
+
+  it should "NOT support <>" in {
+    class MyBundle extends Bundle {
+      val foo = Property[String]()
+      val bar = Flipped(Property[BigInt]())
+    }
+    val e = the[ChiselException] thrownBy ChiselStage.emitCHIRRTL(
+      new RawModule {
+        val aligned = IO(new MyBundle)
+        val flipped = IO(Flipped(new MyBundle))
+        aligned <> flipped
+      },
+      Array("--throw-on-first-error")
+    )
+    e.getMessage should include("<> is not supported by Properties")
+  }
 }
