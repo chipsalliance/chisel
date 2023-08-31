@@ -106,7 +106,8 @@ private[chisel3] trait LowPriorityPropertyTypeInstances {
   * Typeclass instances for valid Property types are defined here, so they will
   * be in the implicit scope and available for users.
   */
-private[chisel3] object PropertyType extends LowPriorityPropertyTypeInstances {
+private[chisel3] object PropertyType extends TuplePropertyTypeInstances with LowPriorityPropertyTypeInstances {
+
   def makeSimple[T](getType: Option[T] => fir.PropertyType, getExpression: T => fir.Expression): SimplePropertyType[T] =
     new SimplePropertyType[T] {
       def getPropertyType(value: Option[T]): fir.PropertyType = getType(value)

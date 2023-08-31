@@ -317,6 +317,49 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
     )()
   }
 
+  it should "support tuples as a Property type" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val a = IO(Output(Property[(Int, String)]()))
+      val b = IO(Output(Property[(Int, (String, Seq[Double]))]()))
+      val c = IO(Output(Property[(Int, String, Seq[Double], Int, String)]()))
+    })
+
+    matchesAndOmits(chirrtl)(
+      "output a : Tuple<Integer, String>",
+      "output b : Tuple<Integer, Tuple<String, List<Double>>>",
+      "output c : Tuple<Integer, String, List<Double>, Integer, String>"
+    )()
+  }
+
+  it should "support tuples as Property values" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val a = IO(Output(Property[(Int, String, Seq[Double])]()))
+      val b = IO(Output(Property[(Int, String, Seq[Double])]()))
+      val c = IO(Output(Property[(Int, String, Seq[Double])]()))
+      val d = IO(Output(Property[(Int, String, Seq[Double])]()))
+      val e = IO(Output(Property[(Int, String, Seq[Double])]()))
+
+      a := Property((123, "foobar", Seq(123.456)))
+      b := Property((123, Property("foobar"), Seq(123.456)))
+      c := Property((123, "foobar", Property(Seq(123.456))))
+      d := Property((Property(123), "foobar", Seq(123.456)))
+      e := Property((Property(123), Property("foobar"), Seq(Property(123.456))))
+    })
+
+    matchesAndOmits(chirrtl)(
+      "output a : Tuple<Integer, String, List<Double>>",
+      "output b : Tuple<Integer, String, List<Double>>",
+      "output c : Tuple<Integer, String, List<Double>>",
+      "output d : Tuple<Integer, String, List<Double>>",
+      "output e : Tuple<Integer, String, List<Double>>",
+      """propassign a, Tuple<Integer, String, List<Double>>(Integer(123), String("foobar"), List<Double>(Double(123.456)))""",
+      """propassign b, Tuple<Integer, String, List<Double>>(Integer(123), String("foobar"), List<Double>(Double(123.456)))""",
+      """propassign c, Tuple<Integer, String, List<Double>>(Integer(123), String("foobar"), List<Double>(Double(123.456)))""",
+      """propassign d, Tuple<Integer, String, List<Double>>(Integer(123), String("foobar"), List<Double>(Double(123.456)))""",
+      """propassign e, Tuple<Integer, String, List<Double>>(Integer(123), String("foobar"), List<Double>(Double(123.456)))"""
+    )()
+  }
+
   it should "support nested collections without nested Property[_] values" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
       val a = IO(Output(Property[Seq[SeqMap[String, Seq[Property[Int]]]]]()))
