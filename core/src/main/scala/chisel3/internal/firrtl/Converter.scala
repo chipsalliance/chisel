@@ -396,9 +396,16 @@ private[chisel3] object Converter {
     case RawParam(value)    => fir.RawStringParam(name, value)
   }
 
+  // TODO: Modify Panama CIRCT to account for type aliasing information. This is a temporary hack to
+  // allow Panama CIRCT to compile
+  def convert(
+    port:   Port,
+    topDir: SpecifiedDirection
+  ): fir.Port = convert(port, Seq.empty, topDir)
+
   def convert(
     port:        Port,
-    typeAliases: Seq[String] = Seq.empty,
+    typeAliases: Seq[String],
     topDir:      SpecifiedDirection = SpecifiedDirection.Unspecified
   ): fir.Port = {
     val resolvedDir = SpecifiedDirection.fromParent(topDir, firrtlUserDirOf(port.id))
