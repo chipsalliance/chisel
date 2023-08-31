@@ -146,7 +146,7 @@ abstract class RawModule extends BaseModule {
           id.forceName(default = "_object", _namespace)
           id.getReference.setRef(id.getRef)
         }
-        case id: BaseType =>
+        case id: Data =>
           if (id.isSynthesizable) {
             id.topBinding match {
               case OpBinding(_, _) =>

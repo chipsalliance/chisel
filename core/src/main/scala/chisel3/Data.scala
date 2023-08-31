@@ -55,7 +55,7 @@ object SpecifiedDirection {
       case (SpecifiedDirection.Flip, thisDirection)        => SpecifiedDirection.flip(thisDirection)
     }
 
-  private[chisel3] def specifiedDirection[T <: BaseType](
+  private[chisel3] def specifiedDirection[T <: Data](
     source: => T
   )(dir:    T => SpecifiedDirection
   ): T = {
@@ -257,28 +257,95 @@ object chiselTypeOf {
   * Thus, an error will be thrown if these are used on bound Data
   */
 object Input {
-  def apply[T <: BaseType](source: => T): T = {
+  def apply[T <: Data](source: => T): T = {
     SpecifiedDirection.specifiedDirection(source)(_ => SpecifiedDirection.Input)
   }
 }
 object Output {
-  def apply[T <: BaseType](source: => T): T = {
+  def apply[T <: Data](source: => T): T = {
     SpecifiedDirection.specifiedDirection(source)(_ => SpecifiedDirection.Output)
   }
 }
 
 object Flipped {
-  def apply[T <: BaseType](source: => T): T = {
+  def apply[T <: Data](source: => T): T = {
     SpecifiedDirection.specifiedDirection(source)(x => SpecifiedDirection.flip(x.specifiedDirection))
   }
 }
 
-/** This forms the roots of the type system for Chisel's data types.
+/** This forms the root of the type system for wire data types. The data value
+  * must be representable as some number (need not be known at Chisel compile
+  * time) of bits, and must have methods to pack / unpack structured data to /
+  * from bits.
   *
-  * This includes both hardware and non-hardware types. All Chisel types must extend this trait, which itself extends
-  * HasId and NamedComponent. It also includes facilities for managing bindings, directions, and the cloning of types.
+  * @groupdesc Connect Utilities for connecting hardware components
+  * @define coll data
   */
-trait BaseType extends HasId with NamedComponent {
+abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
+  import Data.ProbeInfo
+
+  // This is a bad API that punches through object boundaries.
+  private[chisel3] def flatten: IndexedSeq[Element] = {
+    this match {
+      case elt: Aggregate => elt.elementsIterator.toIndexedSeq.flatMap { _.flatten }
+      case elt: Element   => IndexedSeq(elt)
+      case elt => throwException(s"Cannot flatten type ${elt.getClass}")
+    }
+  }
+
+  // Must clone a Data if any of the following are true:
+  // * It has a binding
+  // * Its id is older than prevId (not "freshly created")
+  // * It is a Bundle or Record that contains a member older than prevId
+  private[chisel3] def mustClone(prevId: Long): Boolean = {
+    this.hasBinding || this._minId <= prevId
+  }
+
+  /** The minimum (aka "oldest") id that is part of this Data
+    *
+    * @note This is usually just _id except for some Records and Bundles
+    */
+  private[chisel3] def _minId: Long = this._id
+
+  override def autoSeed(name: String): this.type = {
+    topBindingOpt match {
+      // Ports are special in that the autoSeed will keep the first name, not the last name
+      case Some(PortBinding(m)) if hasAutoSeed && Builder.currentModule.contains(m) => this
+      case _                                                                        => super.autoSeed(name)
+    }
+  }
+
+  // probeInfo only exists if this is a probe type
+  private var _probeInfoVar:      ProbeInfo = null
+  private[chisel3] def probeInfo: Option[ProbeInfo] = Option(_probeInfoVar)
+  private[chisel3] def probeInfo_=(probeInfo: Option[ProbeInfo]) = _probeInfoVar = probeInfo.getOrElse(null)
+
+  // If this Data is constant, it must hold a constant value
+  private var _isConst:         Boolean = false
+  private[chisel3] def isConst: Boolean = _isConst
+  private[chisel3] def isConst_=(isConst: Boolean) = _isConst = isConst
+
+  // User-specified direction, local at this node only.
+  // Note that the actual direction of this node can differ from child and parent specifiedDirection.
+  private var _specifiedDirection:         SpecifiedDirection = SpecifiedDirection.Unspecified
+  private[chisel3] def specifiedDirection: SpecifiedDirection = _specifiedDirection
+  private[chisel3] def specifiedDirection_=(direction: SpecifiedDirection) = {
+    _specifiedDirection = direction
+  }
+
+  /** This overwrites a relative SpecifiedDirection with an explicit one, and is used to implement
+    * the compatibility layer where, at the elements, Flip is Input and unspecified is Output.
+    * DO NOT USE OUTSIDE THIS PURPOSE. THIS OPERATION IS DANGEROUS!
+    */
+  private[chisel3] def _assignCompatibilityExplicitDirection: Unit = {
+    (this, _specifiedDirection) match {
+      case (_: Analog, _) => // nothing to do
+      case (_, SpecifiedDirection.Unspecified)                       => _specifiedDirection = SpecifiedDirection.Output
+      case (_, SpecifiedDirection.Flip)                              => _specifiedDirection = SpecifiedDirection.Input
+      case (_, SpecifiedDirection.Input | SpecifiedDirection.Output) => // nothing to do
+    }
+  }
+
   // Binding stores information about this node's position in the hardware graph.
   // This information is supplemental (more than is necessary to generate FIRRTL) and is used to
   // perform checks in Chisel, where more informative error messages are possible.
@@ -318,12 +385,15 @@ trait BaseType extends HasId with NamedComponent {
     * binding and direction are valid after this call completes.
     */
   private[chisel3] def bind(target: Binding, parentDirection: SpecifiedDirection = SpecifiedDirection.Unspecified): Unit
-  // User-specified direction, local at this node only.
-  // Note that the actual direction of this node can differ from child and parent specifiedDirection.
-  protected var _specifiedDirection:       SpecifiedDirection = SpecifiedDirection.Unspecified
-  private[chisel3] def specifiedDirection: SpecifiedDirection = _specifiedDirection
-  private[chisel3] def specifiedDirection_=(direction: SpecifiedDirection) = {
-    _specifiedDirection = direction
+
+  /** Adds this `Data` to its parents _ids if it should be added */
+  private[chisel3] def maybeAddToParentIds(target: Binding): Unit = {
+    // ConstrainedBinding means the thing actually corresponds to a Module, no need to add to _ids otherwise
+    target match {
+      case c: SecretPortBinding  => // secret ports are handled differently, parent's don't need to know about that
+      case c: ConstrainedBinding => _parent.foreach(_.addId(this))
+      case _ =>
+    }
   }
 
   // Both _direction and _resolvedUserDirection are saved versions of computed variables (for
@@ -340,118 +410,6 @@ trait BaseType extends HasId with NamedComponent {
       throw RebindingException(s"Attempted reassignment of resolved direction to $this")
     }
     _directionVar = actualDirection
-  }
-
-  // Must clone an BaseType if any of the following are true:
-  // * It has a binding
-  // * Its id is older than prevId (not "freshly created")
-  // * It is a Bundle or Record that contains a member older than prevId
-  private[chisel3] def mustClone(prevId: Long): Boolean = {
-    this.hasBinding || this._minId <= prevId
-  }
-
-  /** The minimum (aka "oldest") id that is part of this BaseType
-    *
-    * @note This is usually just _id except for some Records and Bundles
-    */
-  private[chisel3] def _minId: Long = this._id
-
-  /** Internal API; Chisel users should look at chisel3.chiselTypeOf(...).
-    *
-    * cloneType must be defined for any Chisel object extending BaseType.
-    * It is responsible for constructing a basic copy of the object being cloned.
-    *
-    * @return a copy of the object.
-    */
-  def cloneType: this.type
-
-  /** Internal API; Chisel users should look at chisel3.chiselTypeOf(...).
-    *
-    * Returns a copy of this BaseType type, with bindings (if any) removed.
-    * Directionality data and probe information is still preserved.
-    */
-  private[chisel3] def cloneTypeFull: this.type
-
-  /** Adds this `BaseType` to its parents _ids if it should be added */
-  private[chisel3] def maybeAddToParentIds(target: Binding): Unit = {
-    // ConstrainedBinding means the thing actually corresponds to a Module, no need to add to _ids otherwise
-    target match {
-      case c: SecretPortBinding  => // secret ports are handled differently, parent's don't need to know about that
-      case c: ConstrainedBinding => _parent.foreach(_.addId(this))
-      case _ =>
-    }
-  }
-
-  private[chisel3] def earlyName: String = Arg.earlyLocalName(this)
-
-  private[chisel3] def parentNameOpt: Option[String] = this._parent.map(_.name)
-
-  private[chisel3] def requireVisible(): Unit = {
-    val mod = topBindingOpt.flatMap(_.location)
-    topBindingOpt match {
-      case Some(tb: TopBinding) if (mod == Builder.currentModule) =>
-      case Some(pb: PortBinding)
-          if (mod.flatMap(Builder.retrieveParent(_, Builder.currentModule.get)) == Builder.currentModule) =>
-      case Some(pb: SecretPortBinding) => // Ignore secret to not require visibility
-      case Some(_: UnconstrainedBinding) =>
-      case _ =>
-        throwException(s"operand '$this' is not visible from the current module ${Builder.currentModule.get.name}")
-    }
-    if (!MonoConnect.checkWhenVisibility(this)) {
-      throwException(s"operand has escaped the scope of the when in which it was constructed")
-    }
-  }
-}
-
-/** This forms the root of the type system for wire data types. The data value
-  * must be representable as some number (need not be known at Chisel compile
-  * time) of bits, and must have methods to pack / unpack structured data to /
-  * from bits.
-  *
-  * @groupdesc Connect Utilities for connecting hardware components
-  * @define coll data
-  */
-abstract class Data extends BaseType with SourceInfoDoc {
-  import Data.ProbeInfo
-
-  // This is a bad API that punches through object boundaries.
-  private[chisel3] def flatten: IndexedSeq[Element] = {
-    this match {
-      case elt: Aggregate => elt.elementsIterator.toIndexedSeq.flatMap { _.flatten }
-      case elt: Element   => IndexedSeq(elt)
-      case elt => throwException(s"Cannot flatten type ${elt.getClass}")
-    }
-  }
-
-  override def autoSeed(name: String): this.type = {
-    topBindingOpt match {
-      // Ports are special in that the autoSeed will keep the first name, not the last name
-      case Some(PortBinding(m)) if hasAutoSeed && Builder.currentModule.contains(m) => this
-      case _                                                                        => super.autoSeed(name)
-    }
-  }
-
-  // probeInfo only exists if this is a probe type
-  private var _probeInfoVar:      ProbeInfo = null
-  private[chisel3] def probeInfo: Option[ProbeInfo] = Option(_probeInfoVar)
-  private[chisel3] def probeInfo_=(probeInfo: Option[ProbeInfo]) = _probeInfoVar = probeInfo.getOrElse(null)
-
-  // If this Data is constant, it must hold a constant value
-  private var _isConst:         Boolean = false
-  private[chisel3] def isConst: Boolean = _isConst
-  private[chisel3] def isConst_=(isConst: Boolean) = _isConst = isConst
-
-  /** This overwrites a relative SpecifiedDirection with an explicit one, and is used to implement
-    * the compatibility layer where, at the elements, Flip is Input and unspecified is Output.
-    * DO NOT USE OUTSIDE THIS PURPOSE. THIS OPERATION IS DANGEROUS!
-    */
-  private[chisel3] def _assignCompatibilityExplicitDirection: Unit = {
-    (this, _specifiedDirection) match {
-      case (_: Analog, _) => // nothing to do
-      case (_, SpecifiedDirection.Unspecified)                       => _specifiedDirection = SpecifiedDirection.Output
-      case (_, SpecifiedDirection.Flip)                              => _specifiedDirection = SpecifiedDirection.Input
-      case (_, SpecifiedDirection.Input | SpecifiedDirection.Output) => // nothing to do
-    }
   }
 
   private[chisel3] def stringAccessor(chiselType: String): String = {
@@ -486,6 +444,20 @@ abstract class Data extends BaseType with SourceInfoDoc {
       case _                         => ""
     }
 
+  private[chisel3] def earlyName: String = Arg.earlyLocalName(this)
+
+  private[chisel3] def parentNameOpt: Option[String] = this._parent.map(_.name)
+
+  /** Useful information for recoverable errors that will allow the error to deduplicate */
+  private[chisel3] def _localErrorContext: String = {
+    if (this.binding.exists(_.isInstanceOf[ChildBinding])) {
+      val n = Arg.earlyLocalName(this, includeRoot = false)
+      s"Field '$n' of type ${this.typeName}"
+    } else {
+      this.typeName
+    }
+  }
+
   // Return ALL elements at root of this type.
   // Contasts with flatten, which returns just Bits
   // TODO: refactor away this, this is outside the scope of Data
@@ -507,7 +479,7 @@ abstract class Data extends BaseType with SourceInfoDoc {
     }
 
     try {
-      MonoConnect.connect(sourceInfo, this, that, Builder.referenceUserModule)
+      MonoConnect.connect(sourceInfo, this, that, Builder.referenceUserContainer)
     } catch {
       case MonoConnectException(message) =>
         throwException(
@@ -595,6 +567,22 @@ abstract class Data extends BaseType with SourceInfoDoc {
     rec(leftType, rightType)
   }
 
+  private[chisel3] def requireVisible(): Unit = {
+    val mod = topBindingOpt.flatMap(_.location)
+    topBindingOpt match {
+      case Some(tb: TopBinding) if (mod == Builder.currentModule) =>
+      case Some(pb: PortBinding)
+          if (mod.flatMap(Builder.retrieveParent(_, Builder.currentModule.get)) == Builder.currentModule) =>
+      case Some(pb: SecretPortBinding) => // Ignore secret to not require visibility
+      case Some(_: UnconstrainedBinding) =>
+      case _ =>
+        throwException(s"operand '$this' is not visible from the current module ${Builder.currentModule.get.name}")
+    }
+    if (!MonoConnect.checkWhenVisibility(this)) {
+      throwException(s"operand has escaped the scope of the when in which it was constructed")
+    }
+  }
+
   // Internal API: returns a ref that can be assigned to, if consistent with the binding
   private[chisel3] def lref: Node = {
     requireIsHardware(this)
@@ -609,7 +597,7 @@ abstract class Data extends BaseType with SourceInfoDoc {
   }
 
   // Internal API: returns a ref, if bound
-  private[chisel3] final def ref: Arg = {
+  private[chisel3] def ref: Arg = {
     def materializeWire(makeConst: Boolean = false): Arg = {
       if (!Builder.currentModule.isDefined) throwException(s"internal error: cannot materialize ref for $this")
       implicit val sourceInfo = UnlocatableSourceInfo
@@ -661,6 +649,15 @@ abstract class Data extends BaseType with SourceInfoDoc {
 
   private[chisel3] def width: Width
   private[chisel3] def firrtlConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit
+
+  /** Internal API; Chisel users should look at chisel3.chiselTypeOf(...).
+    *
+    * cloneType must be defined for any Chisel object extending Data.
+    * It is responsible for constructing a basic copy of the object being cloned.
+    *
+    * @return a copy of the object.
+    */
+  def cloneType: this.type
 
   /** Internal API; Chisel users should look at chisel3.chiselTypeOf(...).
     *

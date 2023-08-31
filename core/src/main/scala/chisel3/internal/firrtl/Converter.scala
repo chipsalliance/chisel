@@ -324,7 +324,7 @@ private[chisel3] object Converter {
     case KnownWidth(value) => fir.IntWidth(value)
   }
 
-  private def firrtlUserDirOf(t: BaseType): SpecifiedDirection = t match {
+  private def firrtlUserDirOf(t: Data): SpecifiedDirection = t match {
     case t: Vec[_] =>
       SpecifiedDirection.fromParent(t.specifiedDirection, firrtlUserDirOf(t.sample_element))
     case t: Record if t._isOpaqueType =>
@@ -332,10 +332,10 @@ private[chisel3] object Converter {
     case t => t.specifiedDirection
   }
 
-  def extractType(baseType: BaseType, info: SourceInfo): fir.Type = extractType(baseType, false, info, true, true)
+  def extractType(baseType: Data, info: SourceInfo): fir.Type = extractType(baseType, false, info, true, true)
 
   def extractType(
-    baseType:   BaseType,
+    baseType:   Data,
     clearDir:   Boolean,
     info:       SourceInfo,
     checkProbe: Boolean,

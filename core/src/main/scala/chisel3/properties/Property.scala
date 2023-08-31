@@ -1,21 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chisel3.properties
+package chisel3
+package properties
 
-import chisel3.{ActualDirection, BaseType, Data, MemBase, MonoConnectException, RawModule, SpecifiedDirection}
-import chisel3.internal.{
-  checkConnect,
-  throwException,
-  Binding,
-  Builder,
-  MonoConnect,
-  ObjectFieldBinding,
-  PortBinding,
-  PropertyValueBinding,
-  ReadOnlyBinding,
-  TopBinding
-}
 import firrtl.{ir => fir}
+import firrtl.annotations.{InstanceTarget, IsMember, ModuleTarget, ReferenceTarget, Target}
+import chisel3.internal._
 import chisel3.internal.{firrtl => ir}
 import chisel3.experimental.{prefix, requireIsHardware, SourceInfo}
 import scala.reflect.runtime.universe.{typeOf, TypeTag}
@@ -23,7 +13,6 @@ import scala.annotation.{implicitAmbiguous, implicitNotFound}
 import scala.collection.immutable.SeqMap
 import chisel3.experimental.BaseModule
 import chisel3.internal.NamedComponent
-import firrtl.annotations.{InstanceTarget, IsMember, ModuleTarget, ReferenceTarget, Target}
 
 /** PropertyType defines a typeclass for valid Property types.
   *
@@ -160,13 +149,17 @@ private[chisel3] object PropertyType extends LowPriorityPropertyTypeInstances {
     override def convertUnderlying(value: M) = Path(value)
   }
 
-  implicit def referencePathTypeInstance[D <: Data] = new RecursivePropertyType[D] {
+  private def dataPathTypeInstance[D <: Data] = new RecursivePropertyType[D] {
     type Type = Path
     override def getPropertyType(value: Option[D]): fir.PropertyType = fir.PathPropertyType
     override def convert(value:         Underlying, ctx: ir.Component, info: SourceInfo): fir.Expression = value.convert()
     type Underlying = Path
     override def convertUnderlying(value: D) = Path(value)
   }
+
+  // We can't just do <: Data because Property subclasses Data
+  implicit def aggregatePathTypeInstance[A <: Aggregate] = dataPathTypeInstance[A]
+  implicit def elementPathTypeInstance[E <: Element] = dataPathTypeInstance[E]
 
   implicit def memPathTypeInstance[M <: MemBase[_]] = new RecursivePropertyType[M] {
     type Type = Path
@@ -199,10 +192,34 @@ private[chisel3] object PropertyType extends LowPriorityPropertyTypeInstances {
   * describe a set of non-hardware types, so they have no width, cannot be used
   * in aggregate Data types, and cannot be connected to Data types.
   */
-abstract class Property[T] extends BaseType { self =>
+sealed trait Property[T] extends Data { self =>
   protected type TT
   protected val tpe: PropertyType[TT]
   protected def value: Option[TT]
+
+  private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): chisel3.UInt = {
+    Builder.error(s"${this._localErrorContext} does not support .asUInt.")
+    0.U
+  }
+  private[chisel3] def allElements: Seq[Element] = Nil
+  private[chisel3] def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo): Unit = {
+    Builder.error(s"${this._localErrorContext} cannot be driven by Bits")
+  }
+  private[chisel3] def firrtlConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
+    that match {
+      case pthat: Property[_] => MonoConnect.propConnect(sourceInfo, this, pthat, Builder.forcedUserModule)
+      case other => Builder.error(s"${this._localErrorContext} cannot be connected to ${that._localErrorContext}")
+    }
+
+  }
+
+  def litOption: Option[BigInt] = None
+  def toPrintable: Printable = {
+    throwException(s"Properties do not support hardware printing" + this._errorContext)
+  }
+  private[chisel3] def width: ir.Width = ir.UnknownWidth()
+
+  override def typeName: String = s"Property[${tpe.getPropertyType(value).serialize}]"
 
   /** Bind this node to the in-memory graph.
     */
@@ -239,47 +256,9 @@ abstract class Property[T] extends BaseType { self =>
     tpe.getPropertyType(value)
   }
 
-  /** Connect a source Property[T] to this sink Property[T]
-    */
-  def :=(source: => Property[T])(implicit sourceInfo: SourceInfo): Unit = {
-    prefix(this) {
-      this.connect(source)(sourceInfo)
-    }
-  }
-
-  /** Internal implementation of connecting a source Property[T] to this sink Property[T].
-    */
-  private def connect(source: Property[T])(implicit sourceInfo: SourceInfo): Unit = {
-    requireIsHardware(this, "property to be connected to")
-    requireIsHardware(source, "property to be connected from")
-    this.topBinding match {
-      case _: ReadOnlyBinding => throwException(s"Cannot reassign to read-only $this")
-      case _ => // fine
-    }
-
-    // Get the BaseModule this connect is occuring within, which may be a RawModule or Class.
-    val contextMod = Builder.referenceUserContainer
-
-    try {
-      checkConnect(sourceInfo, this, source, contextMod)
-    } catch {
-      case MonoConnectException(message) =>
-        throwException(
-          s"Connection between sink ($this) and source ($source) failed @: $message"
-        )
-    }
-
-    // Add the PropAssign command directly onto the correct BaseModule subclass.
-    contextMod match {
-      case rm:  RawModule => rm.addCommand(ir.PropAssign(sourceInfo, this.lref, source.ref))
-      case cls: Class     => cls.addCommand(ir.PropAssign(sourceInfo, this.lref, source.ref))
-      case _ => throwException("Internal Error! Property connection can only occur within RawModule or Class.")
-    }
-  }
-
   /** Internal API: returns a ref that can be assigned to, if consistent with the binding.
     */
-  private[chisel3] def lref: ir.Node = {
+  private[chisel3] override def lref: ir.Node = {
     requireIsHardware(this)
     requireVisible()
     topBindingOpt match {
@@ -292,7 +271,7 @@ abstract class Property[T] extends BaseType { self =>
 
   /** Internal API: returns a ref, if bound.
     */
-  private[chisel3] final def ref: ir.Arg = {
+  private[chisel3] override def ref: ir.Arg = {
     requireIsHardware(this)
     requireVisible()
     topBindingOpt match {

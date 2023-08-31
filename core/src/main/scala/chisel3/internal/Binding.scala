@@ -11,12 +11,12 @@ import scala.collection.immutable.VectorMap
 
 @deprecated(deprecatedPublicAPIMsg + ". Use chisel3.experimental.requireIsHardware instead", "Chisel 3.6")
 object requireIsHardware {
-  def apply(node: BaseType, msg: String = ""): Unit = chisel3.experimental.requireIsHardware.apply(node, msg)
+  def apply(node: Data, msg: String = ""): Unit = chisel3.experimental.requireIsHardware.apply(node, msg)
 }
 
 @deprecated(deprecatedPublicAPIMsg + ". Use chisel3.experimental.requireIsChiselType instead", "Chisel 3.6")
 object requireIsChiselType {
-  def apply(node: BaseType, msg: String = ""): Unit = chisel3.experimental.requireIsChiselType.apply(node, msg)
+  def apply(node: Data, msg: String = ""): Unit = chisel3.experimental.requireIsChiselType.apply(node, msg)
 }
 
 // Element only direction used for the Binding system only.

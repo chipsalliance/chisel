@@ -25,15 +25,7 @@ trait OpaqueType extends Data { self: Record =>
 
   abstract override private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): UInt = {
     if (errorOnAsUInt) {
-      val coordinates =
-        if (this.binding.exists(_.isInstanceOf[ChildBinding])) {
-          val n = Arg.earlyLocalName(this, includeRoot = false)
-          s"Field '$n' of type "
-        } else {
-          ""
-        }
-
-      Builder.error(s"${coordinates}${this.typeName} does not support .asUInt.")
+      Builder.error(s"${this._localErrorContext} does not support .asUInt.")
     }
     super._asUIntImpl(first)
   }
