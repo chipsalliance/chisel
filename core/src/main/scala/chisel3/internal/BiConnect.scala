@@ -5,12 +5,12 @@ package chisel3.internal
 import chisel3._
 import chisel3.experimental.dataview.{isView, reify, reifyToAggregate}
 import chisel3.experimental.{attach, Analog, BaseModule, SourceInfo}
+import chisel3.properties.Property
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.{Connect, Converter, DefInvalid}
 
 import scala.language.experimental.macros
 import _root_.firrtl.passes.CheckTypes
-import chisel3.properties.Property
 
 /**
   * BiConnect.connect executes a bidirectional connection element-wise.

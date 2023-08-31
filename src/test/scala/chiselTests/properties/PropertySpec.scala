@@ -337,11 +337,11 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
       "output a : List<Map<List<Integer>>>",
       "output b : List<Map<List<Integer>>>",
       "output c : List<Map<List<Integer>>>",
-      // "output d : List<Map<List<Integer>>>",
+      "output d : List<Map<List<Integer>>>",
       """propassign a, List<Map<List<Integer>>>(Map<List<Integer>>("foo" -> List<Integer>(Integer(123))))""",
       """propassign b, List<Map<List<Integer>>>(Map<List<Integer>>("foo" -> List<Integer>(Integer(123))))""",
-      """propassign c, List<Map<List<Integer>>>(Map<List<Integer>>("foo" -> List<Integer>(Integer(123))))"""
-      // """propassign d, List<Map<List<Integer>>>(Map<List<Integer>>("foo" -> List<Integer>(Integer(123))))"""
+      """propassign c, List<Map<List<Integer>>>(Map<List<Integer>>("foo" -> List<Integer>(Integer(123))))""",
+      """propassign d, List<Map<List<Integer>>>(Map<List<Integer>>("foo" -> List<Integer>(Integer(123))))"""
     )()
   }
 

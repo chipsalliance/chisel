@@ -3,8 +3,7 @@ package chisel3
 import chisel3.internal.requireIsChiselType // Fix ambiguous import
 import chisel3.internal.{throwException, Builder}
 import chisel3.experimental.SourceInfo
-import chisel3.properties.Class
-import chisel3.properties.Property
+import chisel3.properties.{Class, Property}
 
 object IO {
 
