@@ -44,7 +44,7 @@ class Elaborate extends Phase {
          */
         case scala.util.control.NonFatal(a) =>
           if (!chiselOptions.printFullStackTrace) {
-            // a.trimStackTraceToUserCode()
+            a.trimStackTraceToUserCode()
           }
           throw (a)
       }
