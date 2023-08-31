@@ -453,7 +453,7 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
       },
       Array("--throw-on-first-error")
     )
-    e.getMessage should include("<> is not supported by Properties")
+    e.getMessage should include("Field '_.bar' of type Property[Integer] does not support <>, use :<>= instead")
   }
 
   it should "support being nested in a Bundle in a wire" in {
@@ -477,5 +477,43 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
       "propassign wire.bar, outgoing.bar",
       "propassign outgoing.foo, wire.foo"
     )()
+  }
+
+  it should "have None litOption" in {
+    ChiselStage.emitCHIRRTL(new RawModule {
+      val propOut = IO(Output(Property[BigInt]()))
+      val propLit = Property[BigInt](123)
+      propOut.litOption should be(None)
+      // Even though we could technically return a value for Property[Int|Long|BigInt], it's misleading
+      // since the typical litOption is for hardware bits values
+      // If we want an API to get literal values out of Properties, we should add a different API that returns type T
+      propLit.litOption should be(None)
+    })
+  }
+
+  it should "give a decent error when .asUInt is called on it" in {
+    class MyBundle extends Bundle {
+      val foo = UInt(8.W)
+      val bar = Property[BigInt]()
+    }
+
+    val e1 = the[ChiselException] thrownBy (ChiselStage.emitCHIRRTL(
+      new RawModule {
+        val in = IO(Input(Property[String]()))
+        in.asUInt
+      },
+      Array("--throw-on-first-error")
+    ))
+    e1.getMessage should include("Property[String] does not support .asUInt.")
+
+    val e2 = the[ChiselException] thrownBy (ChiselStage.emitCHIRRTL(
+      new RawModule {
+        val in = IO(Input(new MyBundle))
+        in.asUInt
+      },
+      Array("--throw-on-first-error")
+    ))
+    e2.getMessage should include("Field '_.bar' of type Property[Integer] does not support .asUInt")
+
   }
 }

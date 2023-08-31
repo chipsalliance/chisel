@@ -197,13 +197,30 @@ sealed trait Property[T] extends Data { self =>
   protected val tpe: PropertyType[TT]
   protected def value: Option[TT]
 
-  private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): chisel3.UInt = ???
-  private[chisel3] def allElements: Seq[Element] = ???
-  private[chisel3] def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo): Unit = ???
-  private[chisel3] def firrtlConnect(that:   Data)(implicit sourceInfo: SourceInfo): Unit = ???
-  def litOption:              Option[BigInt] = ???
-  def toPrintable:            Printable = ???
+  private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): chisel3.UInt = {
+    Builder.error(s"${this._localErrorContext} does not support .asUInt.")
+    0.U
+  }
+  private[chisel3] def allElements: Seq[Element] = Nil
+  private[chisel3] def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo): Unit = {
+    Builder.error(s"${this._localErrorContext} cannot be driven by Bits")
+  }
+  private[chisel3] def firrtlConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
+    that match {
+      case pthat: Property[_] => MonoConnect.propConnect(sourceInfo, this, pthat, Builder.forcedUserModule)
+      case other => Builder.error(s"${this._localErrorContext} cannot be connected to ${that._localErrorContext}")
+    }
+
+  }
+
+  def litOption: Option[BigInt] = None
+  def toPrintable: Printable = {
+    Builder.error(s"${this._localErrorContext} does not support hardware printing")
+    PString("")
+  }
   private[chisel3] def width: ir.Width = ir.UnknownWidth()
+
+  override def typeName: String = s"Property[${tpe.getPropertyType(value).serialize}]"
 
   /** Bind this node to the in-memory graph.
     */

@@ -448,6 +448,16 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 
   private[chisel3] def parentNameOpt: Option[String] = this._parent.map(_.name)
 
+  /** Useful information for recoverable errors that will allow the error to deduplicate */
+  private[chisel3] def _localErrorContext: String = {
+    if (this.binding.exists(_.isInstanceOf[ChildBinding])) {
+      val n = Arg.earlyLocalName(this, includeRoot = false)
+      s"Field '$n' of type ${this.typeName}"
+    } else {
+      this.typeName
+    }
+  }
+
   // Return ALL elements at root of this type.
   // Contasts with flatten, which returns just Bits
   // TODO: refactor away this, this is outside the scope of Data
