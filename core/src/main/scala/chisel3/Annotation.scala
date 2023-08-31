@@ -7,7 +7,7 @@ import chisel3.internal.Builder
 import chisel3.{Data, InstanceId, RawModule}
 import firrtl.annotations._
 import firrtl.options.Unserializable
-import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
+import firrtl.transforms.{DedupGroupAnnotation, DontTouchAnnotation, NoDedupAnnotation}
 
 /** Interface for Annotations in Chisel
   *
@@ -77,5 +77,18 @@ object doNotDedup {
     */
   def apply[T <: RawModule](module: T): Unit = {
     annotate(new ChiselAnnotation { def toFirrtl = NoDedupAnnotation(module.toNamed) })
+  }
+}
+
+object dedupGroup {
+
+  /** Assign the targeted module to a dedup group. Only modules in the same group may be deduplicated.
+    *
+    * @param module The module to be marked
+    * @param group The name of the dedup group to assign the module to
+    * @return Unmodified signal `module`
+    */
+  def apply[T <: RawModule](module: T, group: String): Unit = {
+    annotate(new ChiselAnnotation { def toFirrtl = DedupGroupAnnotation(module.toTarget, group) })
   }
 }

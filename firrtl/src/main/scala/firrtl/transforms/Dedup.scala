@@ -9,3 +9,8 @@ import firrtl.annotations._
 case class NoDedupAnnotation(target: ModuleTarget) extends SingleTargetAnnotation[ModuleTarget] {
   def duplicate(n: ModuleTarget): NoDedupAnnotation = NoDedupAnnotation(n)
 }
+
+/** Assign the targeted module to a dedup group. Only modules in the same group may be deduplicated. */
+case class DedupGroupAnnotation(target: ModuleTarget, group: String) extends SingleTargetAnnotation[ModuleTarget] {
+  def duplicate(n: ModuleTarget): DedupGroupAnnotation = DedupGroupAnnotation(n, group)
+}
