@@ -309,19 +309,19 @@ lazy val core = (project in file("core"))
       "-Xcheckinit",
       "-Xlint:infer-any"
 //      , "-Xlint:missing-interpolator"
-    ),
-    Compile / sourceGenerators += {
-      sourceManaged.map { dir =>
-        Boilerplate.templates.map { template =>
-          val file = dir / template.filename
-          IO.write(file, template.content)
-          file
-        }
-      }.taskValue,
-    }
+    )
   )
   .dependsOn(macros)
   .dependsOn(firrtl)
+
+lazy val generateBoilerplate = taskKey[Unit]("generate boilerplate code for the core project")
+generateBoilerplate := {
+  val dir = (core / Compile / scalaSource).value
+  Boilerplate.templates.foreach { template =>
+    val file = dir / template.filename
+    IO.write(file, template.content)
+  }
+}
 
 // This will always be the root project, even if we are a sub-project.
 lazy val root = RootProject(file("."))
