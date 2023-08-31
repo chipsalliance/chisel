@@ -322,12 +322,11 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
       val a = IO(Output(Property[Seq[SeqMap[String, Seq[Property[Int]]]]]()))
       val b = IO(Output(Property[Seq[SeqMap[String, Property[Seq[Int]]]]]()))
       val c = IO(Output(Property[Seq[Property[SeqMap[String, Seq[Int]]]]]()))
-      // FIXME This became ambiguous, but it shouldn't have worked in the first place, right?
-      // val d = IO(Output(Property[Property[Seq[SeqMap[String, Seq[Int]]]]]()))
+      val d = IO(Output(Property[Property[Seq[SeqMap[String, Seq[Int]]]]]()))
       a := Property(Seq[SeqMap[String, Seq[Int]]](SeqMap("foo" -> Seq(123))))
       b := Property(Seq[SeqMap[String, Seq[Int]]](SeqMap("foo" -> Seq(123))))
       c := Property(Seq[SeqMap[String, Seq[Int]]](SeqMap("foo" -> Seq(123))))
-      // d := Property(Seq[SeqMap[String, Seq[Int]]](SeqMap("foo" -> Seq(123))))
+      d := Property(Seq[SeqMap[String, Seq[Int]]](SeqMap("foo" -> Seq(123))))
     })
 
     assertTypeError {
@@ -514,6 +513,20 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
       Array("--throw-on-first-error")
     ))
     e2.getMessage should include("Field '_.bar' of type Property[Integer] does not support .asUInt")
+  }
 
+  it should "give a decent error when used in a printf" in {
+    class MyBundle extends Bundle {
+      val foo = UInt(8.W)
+      val bar = Property[BigInt]()
+    }
+    val e = the[ChiselException] thrownBy (ChiselStage.emitCHIRRTL(
+      new RawModule {
+        val in = IO(Input(new MyBundle))
+        printf(cf"in = $in\n")
+      },
+      Array("--throw-on-first-error")
+    ))
+    e.getMessage should include("Properties do not support hardware printing: 'in_bar', in module 'PropertySpec_Anon'")
   }
 }

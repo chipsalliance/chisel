@@ -215,8 +215,7 @@ sealed trait Property[T] extends Data { self =>
 
   def litOption: Option[BigInt] = None
   def toPrintable: Printable = {
-    Builder.error(s"${this._localErrorContext} does not support hardware printing")
-    PString("")
+    throwException(s"Properties do not support hardware printing" + this._errorContext)
   }
   private[chisel3] def width: ir.Width = ir.UnknownWidth()
 
