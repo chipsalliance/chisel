@@ -7,21 +7,116 @@ env:
 
 on:
   workflow_dispatch:
-  # Run every day at 0800 UTC which is:
-  #   - 0100 PDT / 0000 PST
-  #   - 0400 EDT / 0300 EST
-  # This time is one hour after the scheduled build of the firtool Nightly.
+  # Run every day at 1000 UTC which is:
+  #   - 0300 PDT / 0200 PST
+  #   - 0600 EDT / 0500 EST
+  # This time is three hours after the scheduled build of the firtool Nightly.
   schedule:
-    - cron: '0 8 * * *'
+    - cron: '0 10 * * *'
   # Run on PRs that target the
   pull_request:
     branches:
-      - ${{ branch-name }}
+      - ci/ci-circt-nightly
 
 jobs:
-  hello:
-    name: Hello World
+  update-branch:
+    name: Integrate staging branch with default branch
     runs-on: ubuntu-20.04
     steps:
-      - name: Hello
-        run: echo "World"
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: main
+          fetch-depth: 0
+      - run: |
+          # Leave the staging branch unchanged if this is a PR.  This is not a
+          # GitHub Actions-level "if" because we want this job to return success
+          # (so that subsequent jobs run).
+          if [[ ${{ github.event_name }} == 'pull_request' ]]; then
+            exit 0
+          fi
+
+          # Rebase the staging branch on the default branch.  Create the staging
+          # branch if it doesn't exist.
+          git checkout -b ${{ env.branch-name }}
+          if [[ ! `git fetch origin ${{ env.branch-name }}` ]]; then
+            git reset --hard origin/${{ env.branch-name }}
+            git config user.name chiselbot
+            git config user.email chiselbot@users.noreply.github.com
+            git rebase origin/main
+          fi
+
+          git push --force origin ${{ env.branch-name }}
+
+  # If this is running on a PR, then use the branch of the PR.  Otherwise, use
+  # the staging branch.
+  determine-branch:
+    name: Determine what branch to run tests on
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Determine Branch
+        id: determine-branch
+        run: |
+          if [[ ${{ github.event_name }} != 'pull_request' ]]; then
+            echo branches='["${{ env.branch-name }}"]' >> $GITHUB_OUTPUT
+          else
+            echo branches='["${{ github.ref }}"]' >> $GITHUB_OUTPUT
+          fi
+    outputs:
+      branches: ${{ steps.determine-branch.outputs.branches }}
+
+  ci:
+    name: ci
+    needs: [update-branch, determine-branch]
+    strategy:
+      matrix:
+        system: ["ubuntu-20.04"]
+        jvm: [8]
+        scala: ["2.13.11"]
+        espresso: ["2.4"]
+        circt: ["nightly"]
+        ref: ${{ fromJSON(needs.determine-branch.outputs.branches) }}
+    uses: ./.github/workflows/test.yml
+    with:
+      system: ${{ matrix.system }}
+      jvm: ${{ matrix.jvm }}
+      scala: ${{ matrix.scala }}
+      espresso: ${{ matrix.espresso }}
+      circt: ${{ matrix.circt }}
+      ref: ${{ matrix.ref }}
+
+  # Sentinel job to simplify how we specify which checks need to pass in branch
+  # protection and in Mergify. This job checks that all matrix jobs were
+  # successful.
+  check-tests:
+    name: "check tests"
+    needs: [ci]
+    runs-on: ubuntu-20.04
+    outputs:
+      success: ${{ steps.setoutput.outputs.success }}
+    steps:
+      - id: setoutput
+        run: echo "success=true" >> $GITHUB_OUTPUT
+
+  # Related to check-tests above, this job _always_ runs (even if tests fail
+  # and thus check-steps is skipped). This two sentinel job approach avoids an
+  # issue where failing tests causes a single sentinel job to be skipped which
+  # counts as passing for purposes of branch protection.
+  #
+  # See: https://brunoscheufler.com/blog/2022-04-09-the-required-github-status-check-that-wasnt
+  all_tests_passed:
+    name: "all tests passed"
+    runs-on: ubuntu-20.04
+    if: always() # Always run so that we never skip this check
+    needs: check-tests
+      # Pass only if check-tests set its output value
+    steps:
+      - run: |
+          PASSED=${{ needs.check-tests.outputs.success }}
+          if [[ $PASSED == "true" ]]; then
+            echo "### All tests passed! :rocket:" >> $GITHUB_STEP_SUMMARY
+            exit 0
+          else
+            echo "### One or more tests FAILED! :bangbang:" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi

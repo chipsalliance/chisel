@@ -5,6 +5,7 @@ package chisel3.internal.firrtl
 import chisel3._
 import chisel3.experimental._
 import chisel3.experimental.{NoSourceInfo, SourceInfo, SourceLine, UnlocatableSourceInfo}
+import chisel3.properties.Property
 import firrtl.{ir => fir}
 import chisel3.internal.{castToInt, throwException, HasId}
 import chisel3.EnumType
@@ -92,6 +93,7 @@ private[chisel3] object Converter {
     // TODO Simplify
     case lit: ILit =>
       throw new InternalErrorException(s"Unexpected ILit: $lit")
+    case PropertyLit(tpe, lit) => tpe.convert(lit, ctx, info)
     case e @ ProbeExpr(probe) =>
       fir.ProbeExpr(convert(probe, ctx, info))
     case e @ RWProbeExpr(probe) =>
@@ -158,12 +160,16 @@ private[chisel3] object Converter {
       )
     case Connect(info, loc, exp) =>
       Some(fir.Connect(convert(info), convert(loc, ctx, info), convert(exp, ctx, info)))
+    case PropAssign(info, loc, exp) =>
+      Some(fir.PropAssign(convert(info), convert(loc, ctx, info), convert(exp, ctx, info)))
     case Attach(info, locs) =>
       Some(fir.Attach(convert(info), locs.map(l => convert(l, ctx, info))))
     case DefInvalid(info, arg) =>
       Some(fir.IsInvalid(convert(info), convert(arg, ctx, info)))
     case e @ DefInstance(info, id, _) =>
       Some(fir.DefInstance(convert(info), e.name, id.name))
+    case e @ DefObject(info, obj) =>
+      Some(fir.DefObject(convert(info), e.name, obj.className))
     case e @ Stop(_, info, clock, ret) =>
       Some(fir.Stop(convert(info), ret, convert(clock, ctx, info), firrtl.Utils.one, e.name))
     case e @ Printf(_, info, clock, pable) =>
@@ -373,6 +379,7 @@ private[chisel3] object Converter {
       else
         extractType(t._elements.head._2, childClearDir, info, checkProbe, true)
     }
+    case t: Property[_] => t.getPropertyType
   }
 
   def convert(name: String, param: Param): fir.Param = param match {
@@ -419,6 +426,13 @@ private[chisel3] object Converter {
         (ports ++ ctx.secretPorts).map(p => convert(p, topDir)),
         id.intrinsic,
         params.keys.toList.sorted.map { name => convert(name, params(name)) }
+      )
+    case ctx @ DefClass(_, name, ports, cmds) =>
+      fir.DefClass(
+        fir.NoInfo,
+        name,
+        ports.map(p => convert(p)),
+        convert(cmds, ctx)
       )
   }
 
