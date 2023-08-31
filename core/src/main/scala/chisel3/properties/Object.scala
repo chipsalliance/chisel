@@ -27,8 +27,7 @@ class DynamicObject private[chisel3] (val className: String) extends HasId with 
     *
     * *WARNING*: It is the caller's responsibility to ensure the field exists, with the correct type and direction.
     */
-  // def getField[T](name: String)(implicit tpe: PropertyType[T]): Property[tpe.Type] = {
-  def getField[T](name: String)(implicit tpe: PropertyType[T]): Property[T] = {
+  def getField[T](name: String)(implicit tpe: PropertyType[T]): Property[tpe.Type] = {
     val field = Property[T]()
     field.setRef(this, name)
     field.bind(ObjectFieldBinding(_parent.get), SpecifiedDirection.Unspecified)

@@ -212,15 +212,12 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
     )()
   }
 
-  it should "fail to compile when connecting Property types of different types" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+  it should "fail to compile when connectable connecting Property types of different types" in {
+    assertTypeError("""new RawModule {
       val propIn = IO(Input(Property[Int]()))
       val propOut = IO(Output(Property[BigInt]()))
-      propOut := propIn
-    })
-    matchesAndOmits(chirrtl)(
-      "propassign propOut, propIn"
-    )()
+      propOut :#= propIn
+    }""")
   }
 
   it should "support Seq[Int], Vector[Int], and List[Int] as a Property type" in {
@@ -262,7 +259,8 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
       val propIn = IO(Input(Property[BigInt]()))
       val propOut = IO(Output(Property[Seq[BigInt]]()))
-      propOut := Property(Seq(propIn, Property(BigInt(123))))
+      // Use connectable to show that Property[Seq[Property[A]]]
+      propOut :#= Property(Seq(propIn, Property(BigInt(123))))
     })
 
     matchesAndOmits(chirrtl)(
@@ -456,5 +454,28 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
       Array("--throw-on-first-error")
     )
     e.getMessage should include("<> is not supported by Properties")
+  }
+
+  it should "support being nested in a Bundle in a wire" in {
+    class MyBundle extends Bundle {
+      val foo = Property[String]()
+      val bar = Flipped(Property[BigInt]())
+    }
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val outgoing = IO(new MyBundle)
+      val incoming = IO(Flipped(new MyBundle))
+      val wire = Wire(new MyBundle)
+      wire :<>= incoming
+      outgoing :<>= wire
+    })
+    matchesAndOmits(chirrtl)(
+      "output outgoing : { foo : String, flip bar : Integer}",
+      "input incoming : { foo : String, flip bar : Integer}",
+      "wire wire : { foo : String, flip bar : Integer}",
+      "propassign incoming.bar, wire.bar",
+      "propassign wire.foo, incoming.foo",
+      "propassign wire.bar, outgoing.bar",
+      "propassign outgoing.foo, wire.foo"
+    )()
   }
 }

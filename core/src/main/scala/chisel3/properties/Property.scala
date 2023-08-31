@@ -192,7 +192,10 @@ private[chisel3] object PropertyType extends LowPriorityPropertyTypeInstances {
   * describe a set of non-hardware types, so they have no width, cannot be used
   * in aggregate Data types, and cannot be connected to Data types.
   */
-final class Property[T] private (tpe: PropertyType[T], valueOpt: Option[T]) extends Data { self =>
+sealed trait Property[T] extends Data { self =>
+  protected type TT
+  protected val tpe: PropertyType[TT]
+  protected def value: Option[TT]
 
   private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): chisel3.UInt = ???
   private[chisel3] def allElements: Seq[Element] = ???
@@ -213,7 +216,11 @@ final class Property[T] private (tpe: PropertyType[T], valueOpt: Option[T]) exte
 
   /** Clone type by simply constructing a new Property[T].
     */
-  override def cloneType: this.type = new Property[T](tpe, valueOpt).asInstanceOf[this.type]
+  override def cloneType: this.type = new Property[T] {
+    type TT = self.TT
+    val tpe = self.tpe
+    val value = self.value
+  }.asInstanceOf[this.type]
 
   /** Clone type with extra information preserved.
     *
@@ -230,7 +237,7 @@ final class Property[T] private (tpe: PropertyType[T], valueOpt: Option[T]) exte
     * This delegates to the PropertyType to convert itself to an IR PropertyType.
     */
   private[chisel3] def getPropertyType: fir.PropertyType = {
-    tpe.getPropertyType(valueOpt)
+    tpe.getPropertyType(value)
   }
 
   /** Internal API: returns a ref that can be assigned to, if consistent with the binding.
@@ -263,19 +270,24 @@ final class Property[T] private (tpe: PropertyType[T], valueOpt: Option[T]) exte
   */
 object Property {
 
-  private[chisel3] def makeWithValueOpt[T](valueOpt: Option[T])(implicit _tpe: PropertyType[T]): Property[T] =
-    new Property[T](_tpe, valueOpt)
+  private[chisel3] def makeWithValueOpt[T](valueOpt: Option[T])(implicit _tpe: PropertyType[T]): Property[_tpe.Type] = {
+    new Property[_tpe.Type] {
+      type TT = T
+      val tpe = _tpe
+      val value = valueOpt
+    }
+  }
 
   /** Create a new Property based on the type T.
     */
-  def apply[T]()(implicit tpe: PropertyType[T]): Property[T] = {
+  def apply[T]()(implicit tpe: PropertyType[T]): Property[tpe.Type] = {
     makeWithValueOpt(None)(tpe)
   }
 
   /** Create a new Property literal of type T.
     */
-  def apply[T](lit: T)(implicit tpe: PropertyType[T]): Property[T] = {
-    val literal = ir.PropertyLit[T, tpe.Underlying](tpe, tpe.convertUnderlying(lit))
+  def apply[T](lit: T)(implicit tpe: PropertyType[T]): Property[tpe.Type] = {
+    val literal = ir.PropertyLit[tpe.Type, tpe.Underlying](tpe, tpe.convertUnderlying(lit))
     val result = makeWithValueOpt(None)(tpe)
     literal.bindLitArg(result)
   }
