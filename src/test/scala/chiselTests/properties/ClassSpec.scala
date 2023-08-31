@@ -64,13 +64,14 @@ class ClassSpec extends ChiselFlatSpec with MatchesAndOmits {
   }
 
   it should "only support Property type ports" in {
-    (the[ChiselException] thrownBy {
+    val e = the[ChiselException] thrownBy {
       ChiselStage.emitCHIRRTL(new RawModule {
         Definition(new Class {
           val in = IO(Input(Bool()))
         })
-      })
-    }).getMessage should include("Class ports must be Property type")
+      }, Array("--throw-on-first-error"))
+    }
+    e.getMessage should include("Class ports must be Property type, but found Bool.")
   }
 
   it should "support Property assignments" in {

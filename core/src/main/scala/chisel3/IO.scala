@@ -34,7 +34,7 @@ object IO {
       case _: Class => {
         data match {
           case _: Property[_] => ()
-          case _ => throwException(s"Class ports must be Property type, but found $data")
+          case _ => Builder.error(s"Class ports must be Property type, but found ${data._localErrorContext}.")
         }
       }
       case _ => ()
