@@ -49,7 +49,7 @@ object Path {
     }
   }
 
-  /** Construct a Path that refers to a Memory
+  /** Construct a Path from a target
     */
   def apply(target: IsMember): Path = {
     new Path {
