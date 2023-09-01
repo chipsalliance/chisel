@@ -21,7 +21,7 @@ import chisel3.internal.NamedComponent
   * Chisel.
   */
 @implicitNotFound("unsupported Property type ${T}")
-private[chisel3] trait PropertyType[T] {
+sealed trait PropertyType[T] {
 
   /** The property type coreesponding to T. This is the type parameter of the property returned by Property.apply
     */
@@ -43,6 +43,10 @@ private[chisel3] trait PropertyType[T] {
     */
   def convertUnderlying(value: T): Underlying
 }
+
+/** Non-sealed subclass of PropertyType for tuples to extend, since they are generated in a different file
+  */
+private[chisel3] trait TuplePropertyType[T] extends PropertyType[T]
 
 /** Trait for PropertyTypes that may lookup themselves up during implicit resolution
   *
@@ -106,7 +110,7 @@ private[chisel3] trait LowPriorityPropertyTypeInstances {
   * Typeclass instances for valid Property types are defined here, so they will
   * be in the implicit scope and available for users.
   */
-private[chisel3] object PropertyType extends TuplePropertyTypeInstances with LowPriorityPropertyTypeInstances {
+object PropertyType extends TuplePropertyTypeInstances with LowPriorityPropertyTypeInstances {
 
   def makeSimple[T](getType: Option[T] => fir.PropertyType, getExpression: T => fir.Expression): SimplePropertyType[T] =
     new SimplePropertyType[T] {

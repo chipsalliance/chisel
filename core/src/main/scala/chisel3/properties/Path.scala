@@ -48,4 +48,12 @@ object Path {
       def toTarget(): IsMember = mem.toAbsoluteTarget
     }
   }
+
+  /** Construct a Path that refers to a Memory
+    */
+  def apply(target: IsMember): Path = {
+    new Path {
+      def toTarget(): IsMember = target
+    }
+  }
 }
