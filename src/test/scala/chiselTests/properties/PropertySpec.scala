@@ -268,7 +268,7 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
     )()
   }
 
-  it should "support SeqMap[Int], VectorMap[Int], and ListMap[Int] as a Property type" in {
+  it should "support SeqMap[String, Int], VectorMap[String, Int], and ListMap[String, Int] as a Property type" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
       val mapProp1 = IO(Input(Property[SeqMap[String, Int]]()))
       val mapProp2 = IO(Input(Property[VectorMap[String, Int]]()))
@@ -276,9 +276,9 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
     })
 
     matchesAndOmits(chirrtl)(
-      "input mapProp1 : Map<Integer>",
-      "input mapProp2 : Map<Integer>",
-      "input mapProp3 : Map<Integer>"
+      "input mapProp1 : Map<String, Integer>",
+      "input mapProp2 : Map<String, Integer>",
+      "input mapProp3 : Map<String, Integer>"
     )()
   }
 
@@ -288,7 +288,7 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
     })
 
     matchesAndOmits(chirrtl)(
-      "input nestedMapProp : Map<Map<Map<Integer>>>"
+      "input nestedMapProp : Map<String, Map<String, Map<String, Integer>>>"
     )()
   }
 
@@ -296,12 +296,25 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
       val propOut = IO(Output(Property[SeqMap[String, BigInt]]()))
       propOut := Property(
-        SeqMap[String, BigInt]("foo" -> 123, "bar" -> 456)
-      ) // The Int => BigInt implicit conversion fails here
+        SeqMap("foo" -> 123, "bar" -> 456)
+      )
     })
 
     matchesAndOmits(chirrtl)(
-      """propassign propOut, Map<Integer>("foo" -> Integer(123), "bar" -> Integer(456))"""
+      """propassign propOut, Map<String, Integer>(String("foo") -> Integer(123), String("bar") -> Integer(456))"""
+    )()
+  }
+
+  it should "support VectorMap[BigInt, String] as Property values" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val propOut = IO(Output(Property[VectorMap[BigInt, String]]()))
+      propOut := Property(
+        VectorMap(123 -> "foo", 456 -> "bar")
+      )
+    })
+
+    matchesAndOmits(chirrtl)(
+      """propassign propOut, Map<Integer, String>(Integer(123) -> String("foo"), Integer(456) -> String("bar"))"""
     )()
   }
 
@@ -313,7 +326,7 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
     })
 
     matchesAndOmits(chirrtl)(
-      """propassign propOut, Map<Integer>("foo" -> propIn, "bar" -> Integer(123))"""
+      """propassign propOut, Map<String, Integer>(String("foo") -> propIn, String("bar") -> Integer(123))"""
     )()
   }
 
@@ -377,14 +390,14 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
     }
 
     matchesAndOmits(chirrtl)(
-      "output a : List<Map<List<Integer>>>",
-      "output b : List<Map<List<Integer>>>",
-      "output c : List<Map<List<Integer>>>",
-      "output d : List<Map<List<Integer>>>",
-      """propassign a, List<Map<List<Integer>>>(Map<List<Integer>>("foo" -> List<Integer>(Integer(123))))""",
-      """propassign b, List<Map<List<Integer>>>(Map<List<Integer>>("foo" -> List<Integer>(Integer(123))))""",
-      """propassign c, List<Map<List<Integer>>>(Map<List<Integer>>("foo" -> List<Integer>(Integer(123))))""",
-      """propassign d, List<Map<List<Integer>>>(Map<List<Integer>>("foo" -> List<Integer>(Integer(123))))"""
+      "output a : List<Map<String, List<Integer>>>",
+      "output b : List<Map<String, List<Integer>>>",
+      "output c : List<Map<String, List<Integer>>>",
+      "output d : List<Map<String, List<Integer>>>",
+      """propassign a, List<Map<String, List<Integer>>>(Map<String, List<Integer>>(String("foo") -> List<Integer>(Integer(123))))""",
+      """propassign b, List<Map<String, List<Integer>>>(Map<String, List<Integer>>(String("foo") -> List<Integer>(Integer(123))))""",
+      """propassign c, List<Map<String, List<Integer>>>(Map<String, List<Integer>>(String("foo") -> List<Integer>(Integer(123))))""",
+      """propassign d, List<Map<String, List<Integer>>>(Map<String, List<Integer>>(String("foo") -> List<Integer>(Integer(123))))"""
     )()
   }
 
