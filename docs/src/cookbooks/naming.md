@@ -164,7 +164,9 @@ class MyBundle[T <: Data](gen: T, intParam: Int) extends Bundle {
   override def typeName = s"MyBundle_${gen.typeName}_${intParam}"
   // ...
 }
+```
 
+```scala mdoc
 new MyBundle(UInt(8.W), 3).typeName
 ```
 
@@ -184,7 +186,9 @@ class MyBundle[T <: Data](gen: T, intParam: Int) extends Bundle with HasAutoType
   // ...
   // Note: No `override def typeName` statement here
 }
+```
 
+```scala mdoc
 new MyBundle(UInt(8.W), 3).typeName
 ```
 ### I want to add some hardware or assertions, but each time I do all the signal names get bumped!
