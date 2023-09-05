@@ -146,7 +146,7 @@ object Boilerplate {
               -  ${Repeated(i => s"_$i, PT$i <: PropertyType[_$i]")}
               -](
               -  ${Repeated(i => s"val tpe$i: PT$i")}
-              -) extends PropertyType[Tuple${Arity}[${Repeated(i => s"_$i")}]] {
+              -) extends TuplePropertyType[Tuple${Arity}[${Repeated(i => s"_$i")}]] {
               -  type Tuple = Tuple$Arity[${Repeated(i => s"_$i")}]
               -  type Type = Tuple$Arity[${Repeated(i => s"tpe$i.Type")}]
               -  type Underlying = Tuple$Arity[${Repeated(i => s"tpe$i.Underlying")}]
