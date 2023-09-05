@@ -218,7 +218,7 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
     }).getMessage
 
     msg should include(
-      "Attempted to redeclare an existing bundle type alias 'DifferentBundle' with a new bundle structure"
+      "Attempted to redeclare an existing type alias 'DifferentBundle' with a new Record structure"
     )
     msg should include("The alias was previously defined as:")
     msg should include("@[src/test/scala/chiselTests/TypeAliasSpec.scala")

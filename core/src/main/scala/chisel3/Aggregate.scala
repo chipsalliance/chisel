@@ -1062,6 +1062,57 @@ abstract class Record extends Aggregate {
         }
     }
     setElementRefs()
+
+    this match {
+      case aliasedBundle: HasTypeAlias =>
+        aliasedBundle.aliasName.map(alias => {
+          // If the aliased bundle is coerced and it has flipped signals, then they must be stripped
+          val isFlipped = DataMirror
+            .collectMembers(this) { case d: Data if d.passiveDirection == SpecifiedDirection.Flip => d }
+            .toSeq
+            .nonEmpty
+          val isCoerced = direction match {
+            case ActualDirection.Input | ActualDirection.Output => true
+            case other                                          => false
+          }
+          val isStripped = isCoerced && isFlipped
+
+          val sourceInfo = alias.info
+          val candidateAlias = sanitize(s"${alias.id}${if (isStripped) alias.strippedSuffix else ""}")
+
+          // Filter out (TODO: disambiguate) FIRRTL keywords that cause parser errors if used
+          if (firrtlKeywords.contains(candidateAlias)) {
+            Builder.error(
+              s"Attempted to override a FIRRTL keyword '$candidateAlias' with a bundle type alias. Chisel does not automatically disambiguate aliases using these keywords at this time."
+            )(sourceInfo)
+          } else {
+            // Compute the structural type of this bundle with no subfield aliasing
+            val thisType = Converter.extractType(this, sourceInfo)
+
+            // If the name is already taken, check if there exists a *structurally equivalent* bundle with the same name, and
+            // simply error (TODO: disambiguate that name)
+            if (
+              Builder.globalBundleNamespace.contains(candidateAlias) &&
+              Builder.bundleStructuralHashMap.get(candidateAlias).exists(_._2 != thisType)
+            ) {
+              val bundleValue = Builder.bundleStructuralHashMap.get(candidateAlias).get
+              // Conflict found:
+              Builder.error(
+                s"Attempted to redeclare an existing type alias '$candidateAlias' with a new Record structure:\n'$thisType'.\n\nThe alias was previously defined as:\n'${bundleValue._2}${bundleValue._3
+                  .makeMessage(" " + _)}"
+              )(sourceInfo)
+            } else {
+              if (!Builder.globalBundleNamespace.contains(candidateAlias)) {
+                Builder.globalBundleNamespace.name(candidateAlias)
+                Builder.bundleStructuralHashMap.put(candidateAlias, (this, thisType, sourceInfo))
+              }
+
+              aliasedBundle.finalizedAlias = Some(candidateAlias)
+            }
+          }
+        })
+      case _ =>
+    }
   }
 
   /** Creates a Bundle literal of this type with specified values. this must be a chisel type.
@@ -1473,58 +1524,4 @@ abstract class Bundle extends Record {
     */
   override def toPrintable: Printable = toPrintableHelper(_elements.toList.reverse)
 
-  private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
-    super.bind(target, parentDirection)
-
-    this match {
-      case aliasedBundle: HasTypeAlias =>
-        aliasedBundle.aliasName.map(alias => {
-          // If the aliased bundle is coerced and it has flipped signals, then they must be stripped
-          val isFlipped = DataMirror
-            .collectMembers(this) { case d: Data if d.passiveDirection == SpecifiedDirection.Flip => d }
-            .toSeq
-            .nonEmpty
-          val isCoerced = direction match {
-            case ActualDirection.Input | ActualDirection.Output => true
-            case other                                          => false
-          }
-          val isStripped = isCoerced && isFlipped
-
-          val sourceInfo = alias.info
-          val candidateAlias = sanitize(s"${alias.id}${if (isStripped) alias.strippedSuffix else ""}")
-
-          // Filter out (TODO: disambiguate) FIRRTL keywords that cause parser errors if used
-          if (firrtlKeywords.contains(candidateAlias)) {
-            Builder.error(
-              s"Attempted to override a FIRRTL keyword '$candidateAlias' with a bundle type alias. Chisel does not automatically disambiguate aliases using these keywords at this time."
-            )(sourceInfo)
-          } else {
-            // Compute the structural type of this bundle with no subfield aliasing
-            val thisType = Converter.extractType(this, sourceInfo)
-
-            // If the name is already taken, check if there exists a *structurally equivalent* bundle with the same name, and
-            // simply error (TODO: disambiguate that name)
-            if (
-              Builder.globalBundleNamespace.contains(candidateAlias) &&
-              Builder.bundleStructuralHashMap.get(candidateAlias).exists(_._2 != thisType)
-            ) {
-              val bundleValue = Builder.bundleStructuralHashMap.get(candidateAlias).get
-              // Conflict found:
-              Builder.error(
-                s"Attempted to redeclare an existing bundle type alias '$candidateAlias' with a new bundle structure:\n'$thisType'.\n\nThe alias was previously defined as:\n'${bundleValue._2}${bundleValue._3
-                  .makeMessage(" " + _)}"
-              )(sourceInfo)
-            } else {
-              if (!Builder.globalBundleNamespace.contains(candidateAlias)) {
-                Builder.globalBundleNamespace.name(candidateAlias)
-                Builder.bundleStructuralHashMap.put(candidateAlias, (this, thisType, sourceInfo))
-              }
-
-              aliasedBundle.finalizedAlias = Some(candidateAlias)
-            }
-          }
-        })
-      case _ =>
-    }
-  }
 }
