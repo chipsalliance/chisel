@@ -192,6 +192,8 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
     */
   override def typeName = s"Vec${length}_${gen.typeName}"
 
+  override def isFlipped = sample_element.isFlipped
+
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
     this.maybeAddToParentIds(target)
     binding = target
@@ -1027,6 +1029,12 @@ abstract class Record extends Aggregate {
     }
   }
 
+  /* Tracking variable for deciding Record flipped-ness. */
+  private[chisel3] var _isFlipped: Boolean = false
+
+  /* In the context of Records, isFlipped is assigned true if any of its children are flipped. */
+  override def isFlipped: Boolean = _isFlipped
+
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
     this.maybeAddToParentIds(target)
     binding = target
@@ -1047,6 +1055,9 @@ abstract class Record extends Aggregate {
         )
       }
       child.bind(ChildBinding(this), resolvedDirection)
+
+      // Update the flipped tracker based on the flipped-ness of this specific child element
+      _isFlipped |= child.isFlipped
     }
 
     // Check that children obey the directionality rules.
@@ -1063,19 +1074,16 @@ abstract class Record extends Aggregate {
     }
     setElementRefs()
 
+    // If the aliased bundle is coerced and it has flipped signals, then they must be stripped
+    val isCoerced = direction match {
+      case ActualDirection.Input | ActualDirection.Output => true
+      case other                                          => false
+    }
+    val isStripped = isCoerced && isFlipped
+
     this match {
       case aliasedBundle: HasTypeAlias =>
         aliasedBundle.aliasName.map(alias => {
-          // If the aliased bundle is coerced and it has flipped signals, then they must be stripped
-          val isFlipped = DataMirror
-            .collectMembers(this) { case d: Data if d.passiveDirection == SpecifiedDirection.Flip => d }
-            .toSeq
-            .nonEmpty
-          val isCoerced = direction match {
-            case ActualDirection.Input | ActualDirection.Output => true
-            case other                                          => false
-          }
-          val isStripped = isCoerced && isFlipped
 
           val sourceInfo = alias.info
           val candidateAlias = sanitize(s"${alias.id}${if (isStripped) alias.strippedSuffix else ""}")
@@ -1083,10 +1091,9 @@ abstract class Record extends Aggregate {
           // Filter out (TODO: disambiguate) FIRRTL keywords that cause parser errors if used
           if (firrtlKeywords.contains(candidateAlias)) {
             Builder.error(
-              s"Attempted to override a FIRRTL keyword '$candidateAlias' with a bundle type alias. Chisel does not automatically disambiguate aliases using these keywords at this time."
+              s"Attempted to override a FIRRTL keyword '$candidateAlias' with a type alias. Chisel does not automatically disambiguate aliases using these keywords at this time."
             )(sourceInfo)
           } else {
-            // Compute the structural type of this bundle with no subfield aliasing
             val thisType = Converter.extractType(this, sourceInfo)
 
             // If the name is already taken, check if there exists a *structurally equivalent* bundle with the same name, and
