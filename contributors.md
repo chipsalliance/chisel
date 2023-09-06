@@ -34,7 +34,7 @@
 - [`@edwardcwang`](https://github.com/edwardcwang)
 - [`@ekiwi`](https://github.com/ekiwi)
 - [`@ekiwi-sifive`](https://github.com/ekiwi-sifive)
-- [`@Eymay`](https://github.com/Eymay)
+- [`@eymay`](https://github.com/eymay)
 - [`@fabianschuiki`](https://github.com/fabianschuiki)
 - [`@felixonmars`](https://github.com/felixonmars)
 - [`@ferresb`](https://github.com/ferresb)
