@@ -151,14 +151,14 @@ object Boilerplate {
               -  type Type = Tuple$Arity[${Repeated(i => s"tpe$i.Type")}]
               -  type Underlying = Tuple$Arity[${Repeated(i => s"tpe$i.Underlying")}]
               -
-              -  override def getPropertyType(value: Option[Tuple]): fir.PropertyType =
+              -  override def getPropertyType(): fir.PropertyType =
               -    fir.TuplePropertyType(Seq(
-              -      ${Repeated(i => s"tpe$i.getPropertyType(None)")}
+              -      ${Repeated(i => s"tpe$i.getPropertyType()")}
               -    ))
               -
               -  override def convert(value: Underlying, ctx: ir.Component, info: SourceInfo): fir.Expression =
               -    fir.TuplePropertyValue(Seq(
-              -      ${Repeated(i => s"tpe$i.getPropertyType(None) -> tpe$i.convert(value._$i, ctx, info)")}
+              -      ${Repeated(i => s"tpe$i.getPropertyType() -> tpe$i.convert(value._$i, ctx, info)")}
               -    ))
               -
               -  override def convertUnderlying(value: Tuple): Underlying =

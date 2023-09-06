@@ -87,7 +87,32 @@ class Class extends BaseModule {
 
 /** Represent a Class type for referencing a Class in a Property[ClassType]
   */
-case class ClassType private[chisel3] (name: String)
+case class ClassType private[chisel3] (name: String) { self =>
+  /** A tag type representing an instance of this ClassType
+    *
+    * This can be used to create a Property IOs
+    * {{{
+    *   val cls = ClassType("foobar")
+    *   val io = IO(Property[cls.Type]())
+    *
+    *   io :#= cls.unsafeGetReferenceType
+    * }}}
+    */
+  sealed trait Type
+
+  object Type {
+    import firrtl.{ir => fir}
+    import chisel3.internal.{firrtl => ir}
+    implicit val classTypeProvider: ClassTypeProvider[Type] = ClassTypeProvider(self)
+    implicit val propertyType = new ClassTypePropertyType[Property[ClassType] with self.Type](self) {
+      override def convert(value: Underlying, ctx: ir.Component, info: SourceInfo): fir.Expression = ir.Converter.convert(value, ctx, info)
+      type Underlying = ir.Arg
+      override def convertUnderlying(value: Property[ClassType] with self.Type) = value.ref
+    }
+  }
+}
+
+final class AnyClassType
 
 object Class {
 
@@ -98,7 +123,7 @@ object Class {
     * *WARNING*: It is the caller's resonsibility to ensure the Class exists, this is not checked automatically.
     */
   def unsafeGetReferenceType(className: String): Property[ClassType] = {
-    Property.makeWithValueOpt(Some(ClassType(className)))
+    Property[ClassType]()(PropertyType.classTypePropertyType(ClassTypeProvider(ClassType(className))))
   }
 
   /** Helper to create a DynamicObject for a Class of a given name.
@@ -107,7 +132,7 @@ object Class {
     */
   def unsafeGetDynamicObject(className: String)(implicit sourceInfo: SourceInfo): DynamicObject = {
     // Instantiate the Object.
-    val obj = new DynamicObject(className)
+    val obj = new DynamicObject(ClassType(className))
 
     // Get its Property[ClassType] type.
     val classProp = obj.getReference

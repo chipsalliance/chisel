@@ -3,10 +3,12 @@
 package chiselTests.properties
 
 import chisel3._
-import chisel3.properties.{Path, Property}
+import chisel3.properties.{Class, Path, Property, PropertyType}
 import chiselTests.{ChiselFlatSpec, MatchesAndOmits}
 import circt.stage.ChiselStage
 import scala.collection.immutable.{ListMap, SeqMap, VectorMap}
+import chisel3.properties.ClassType
+import chisel3.properties.AnyClassType
 
 class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
   behavior.of("Property")
@@ -584,5 +586,71 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
       Array("--throw-on-first-error")
     ))
     e.getMessage should include("Properties do not support hardware printing: 'in_bar', in module 'PropertySpec_Anon'")
+  }
+
+  it should "not be able to get the ClassType of a Property[T] if T != ClassType" in {
+    assertTypeError("""
+      val intProp = Property[Int](123)
+      val foobar = Property[intProp.ClassType]()
+    """)
+  }
+
+  it should "emit correct types for all the ways of creating class references and properties" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val cls = ClassType("MyClass")
+      val a = IO(Input(Property[cls.Type]()))
+      val b = IO(Output(Property[Seq[cls.Type]]()))
+      val c = IO(Output(a.cloneType))
+
+      val myClass = Class.unsafeGetDynamicObject("MyClass")
+
+      // collections of Property[ClassType] need to be cast to a specific ClassType
+      b :#= Property(Seq(a.as(cls), myClass.getReference.as(cls)))
+      assertTypeError("""
+        b :#= Property(Seq(a, myClass.getReference))
+      """)
+
+      // this is still fine because we already know the ClassType of a
+      c :#= a
+
+      // note that assigning to a property of the wrong ClassType is still possible, because everything has type Property[ClassType]
+      c :#= Class.unsafeGetDynamicObject("SomeOtherClass").getReference
+
+      val obj = Class.unsafeGetDynamicObject("FooBar")
+      val objRef = obj.getReference
+      val d = IO(Output(objRef.cloneType))
+      val e = IO(Output(Property[objRef.ClassType]()))
+      val f = IO(Output(Class.unsafeGetReferenceType(obj.className.name)))
+
+      d :#= obj.getReference
+      e :#= obj.getReference
+      f :#= obj.getReference
+
+      // AnyRef
+      val g = IO(Output(Property[AnyClassType]()))
+      g :#= objRef
+      g :#= myClass.getReference
+    })
+
+    matchesAndOmits(chirrtl)(
+      "input a : Inst<MyClass>",
+      "output b : List<Inst<MyClass>>",
+      "output c : Inst<MyClass>",
+      "object myClass of MyClass",
+      "propassign b, List<Inst<MyClass>>(a, myClass)",
+      "propassign c, a",
+
+      "object obj of FooBar",
+      "output e : Inst<FooBar>",
+      "output d : Inst<FooBar>",
+      "output f : Inst<FooBar>",
+      "propassign d, obj",
+      "propassign e, obj",
+      "propassign f, obj",
+
+      "output g : AnyRef",
+      "propassign g, obj",
+      "propassign g, myClass",
+    )()
   }
 }
