@@ -871,6 +871,42 @@ private[chisel3] object Builder extends LazyLogging {
     renames
   }
 
+  def setAlias(alias: String, record: Record, sourceInfo: SourceInfo): Option[String] = {
+    // Filter out (TODO: disambiguate) FIRRTL keywords that cause parser errors if used
+    if (firrtlKeywords.contains(alias)) {
+      Builder.error(
+        s"Attempted to override a FIRRTL keyword '$alias' with a type alias. Chisel does not automatically disambiguate aliases using these keywords at this time."
+      )(sourceInfo)
+
+      None
+    } else {
+      val tpe = Converter.extractType(record, sourceInfo)
+
+      // If the name is already taken, check if there exists a *structurally equivalent* bundle with the same name, and
+      // simply error (TODO: disambiguate that name)
+      if (
+        Builder.globalBundleNamespace.contains(alias) &&
+        Builder.bundleStructuralHashMap.get(alias).exists(_._2 != tpe)
+      ) {
+        val recordValue = Builder.bundleStructuralHashMap.get(alias).get
+        // Conflict found:
+        error(
+          s"Attempted to redeclare an existing type alias '$alias' with a new Record structure:\n'$tpe'.\n\nThe alias was previously defined as:\n'${recordValue._2}${recordValue._3
+            .makeMessage(" " + _)}"
+        )(sourceInfo)
+
+        None
+      } else {
+        if (!Builder.globalBundleNamespace.contains(alias)) {
+          Builder.globalBundleNamespace.name(alias)
+          Builder.bundleStructuralHashMap.put(alias, (record, tpe, sourceInfo))
+        }
+
+        Some(alias)
+      }
+    }
+  }
+
   private[chisel3] def build[T <: BaseModule](
     f:              => T,
     dynamicContext: DynamicContext,

@@ -314,7 +314,7 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
         val args = Array("--throw-on-first-error", "--full-stacktrace")
         val chirrtl = ChiselStage.emitCHIRRTL(new Test(tpe), args)
       }).getMessage should include(
-        s"Attempted to override a FIRRTL keyword '$tpe' with a bundle type alias. Chisel does not automatically disambiguate aliases using these keywords at this time."
+        s"Attempted to override a FIRRTL keyword '$tpe' with a type alias. Chisel does not automatically disambiguate aliases using these keywords at this time."
       )
     }
   }
