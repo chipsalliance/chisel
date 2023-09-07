@@ -111,25 +111,11 @@ private[chisel3] trait LowPriorityPropertyTypeInstances {
     vtpe:          RecursivePropertyType[V]
   ) =
     new MapPropertyType[K, V, F, ktpe.type, vtpe.type](ktpe, vtpe) with RecursivePropertyType[F[K, V]]
-
-  implicit val anyRefPropertyType = new PropertyType[AnyClassType] {
-    type Type = ClassType
-    override def getPropertyType(): fir.PropertyType = fir.AnyRefPropertyType
-
-    // we rely on the fact there is no public constructor for AnyClassType
-    // so users can never create a property literal of AnyClassType and
-    // these methods should never be called
-    override def convert(value:         Underlying, ctx: ir.Component, info: SourceInfo): fir.Expression = ???
-    type Underlying = Nothing
-    override def convertUnderlying(value: AnyClassType) = ???
-  }
-
 }
 
-private [chisel3] abstract class ClassTypePropertyType[T](val classType: ClassType) extends RecursivePropertyType[T] {
+private [chisel3] abstract class ClassTypePropertyType[T](val classType: fir.PropertyType) extends RecursivePropertyType[T] {
   type Type = ClassType
-  override def getPropertyType(): fir.PropertyType = fir.ClassPropertyType(classType.name)
-  override def convert(value:         Underlying, ctx: ir.Component, info: SourceInfo): fir.Expression = fir.StringPropertyLiteral(classType.name)
+  override def getPropertyType(): fir.PropertyType = classType
 }
 
 /** Companion object for PropertyType.
@@ -160,8 +146,13 @@ private[chisel3] object PropertyType extends TuplePropertyTypeInstances with Low
     makeSimple[Double](fir.DoublePropertyType, fir.DoublePropertyLiteral(_))
 
   implicit def classTypePropertyType[T](implicit provider: ClassTypeProvider[T]) = new ClassTypePropertyType[T](provider.classType) {
-    type Underlying = ClassType
-    override def convertUnderlying(value: T) = provider.classType
+    // we rely on the fact there are no public constructors for values that provide
+    // ClassTypePropertyType (AnyClassType, ClassType#Type, Property[ClassType]#ClassType)
+    // so users can never create a property literal of these values so
+    // these methods should never be called
+    type Underlying = Nothing
+    override def convert(value: Underlying, ctx: ir.Component, info: SourceInfo): fir.Expression = ???
+    override def convertUnderlying(value: T) = ???
   }
 
   implicit val stringPropertyTypeInstance =
@@ -229,11 +220,8 @@ private[chisel3] object PropertyType extends TuplePropertyTypeInstances with Low
 sealed trait Property[T] extends Data { self =>
   sealed trait ClassType
   object ClassType {
-    // this asInstanceOf relies on PropertyType.classTypePropertyType being the only way of creating a Property[ClassType]
-    private def unsafeGetClassType() = tpe.asInstanceOf[ClassTypePropertyType[_]].classType
-
-    implicit def classTypeProvider(implicit evidence: T =:= chisel3.properties.ClassType): ClassTypeProvider[ClassType] = ClassTypeProvider(unsafeGetClassType())
-    implicit def propertyType(implicit evidence: T =:= chisel3.properties.ClassType) = new ClassTypePropertyType[Property[ClassType] with self.ClassType](unsafeGetClassType()) {
+    implicit def classTypeProvider(implicit evidence: T =:= chisel3.properties.ClassType): ClassTypeProvider[ClassType] = ClassTypeProvider(getPropertyType)
+    implicit def propertyType(implicit evidence: T =:= chisel3.properties.ClassType) = new ClassTypePropertyType[Property[ClassType] with self.ClassType](getPropertyType) {
       override def convert(value: Underlying, ctx: ir.Component, info: SourceInfo): fir.Expression =
         ir.Converter.convert(value, ctx, info)
       type Underlying = ir.Arg
@@ -327,11 +315,14 @@ sealed trait Property[T] extends Data { self =>
 }
 
 trait ClassTypeProvider[A] {
-  val classType: ClassType
+  val classType: fir.PropertyType
 }
 
 object ClassTypeProvider {
-  def apply[A](_classType: ClassType) = new ClassTypeProvider[A] {
+  def apply[A](className: String) = new ClassTypeProvider[A] {
+    val classType = fir.ClassPropertyType(className)
+  }
+  def apply[A](_classType: fir.PropertyType) = new ClassTypeProvider[A] {
     val classType = _classType
   }
 }
@@ -344,10 +335,14 @@ trait Typeable[T, Lit] {
   */
 object Property {
 
-  implicit class ClassTypePropertyOps(prop: Property[ClassType]) {
+  implicit class ClassTypePropertyOps(prop: Property[ClassType]) extends AnyRef {
     // This cast should be safe, because there are no members of cls.Type to access
     def as(cls: ClassType): Property[ClassType] with cls.Type =
       prop.asInstanceOf[Property[ClassType] with cls.Type]
+
+    // This cast should be safe, because there are no members of cls.Type to access
+    def asAnyClassType: Property[ClassType] with AnyClassType =
+      prop.asInstanceOf[Property[ClassType] with AnyClassType]
 
     // This cast should be safe, because there are no members of prop.ClassType to access
     def as(prop: Property[ClassType]): Property[ClassType] with prop.ClassType =

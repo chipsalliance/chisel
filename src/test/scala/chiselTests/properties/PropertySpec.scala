@@ -628,8 +628,10 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
 
       // AnyRef
       val g = IO(Output(Property[AnyClassType]()))
+      val h = IO(Output(Property[Seq[AnyClassType]]()))
       g :#= objRef
       g :#= myClass.getReference
+      h :#= Property(Seq(objRef.asAnyClassType, myClass.getReference.asAnyClassType))
     })
 
     matchesAndOmits(chirrtl)(
@@ -649,8 +651,10 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
       "propassign f, obj",
 
       "output g : AnyRef",
+      "output h : List<AnyRef>",
       "propassign g, obj",
       "propassign g, myClass",
+      "propassign h, List<AnyRef>(obj, myClass)",
     )()
   }
 }

@@ -2,10 +2,11 @@
 
 package chisel3.properties
 
+import firrtl.{ir => fir}
 import chisel3.{Data, RawModule, SpecifiedDirection}
 import chisel3.experimental.{BaseModule, SourceInfo}
 import chisel3.internal.{throwException, Builder, ClassBinding, OpBinding}
-import chisel3.internal.firrtl.{Arg, Command, Component, DefClass, DefObject, ModuleIO, Port, PropAssign}
+import chisel3.internal.firrtl.{Arg, Command, Component, Converter, DefClass, DefObject, ModuleIO, Port, PropAssign}
 
 import scala.annotation.nowarn
 import scala.collection.mutable.ArrayBuffer
@@ -101,18 +102,28 @@ case class ClassType private[chisel3] (name: String) { self =>
   sealed trait Type
 
   object Type {
-    import firrtl.{ir => fir}
-    import chisel3.internal.{firrtl => ir}
-    implicit val classTypeProvider: ClassTypeProvider[Type] = ClassTypeProvider(self)
-    implicit val propertyType = new ClassTypePropertyType[Property[ClassType] with self.Type](self) {
-      override def convert(value: Underlying, ctx: ir.Component, info: SourceInfo): fir.Expression = ir.Converter.convert(value, ctx, info)
-      type Underlying = ir.Arg
+    implicit val classTypeProvider: ClassTypeProvider[Type] = ClassTypeProvider(name)
+    implicit val propertyType = new ClassTypePropertyType[Property[ClassType] with self.Type](classTypeProvider.classType) {
+      override def convert(value: Underlying, ctx: Component, info: SourceInfo): fir.Expression = Converter.convert(value, ctx, info)
+      type Underlying = Arg
       override def convertUnderlying(value: Property[ClassType] with self.Type) = value.ref
     }
   }
 }
 
-final class AnyClassType
+sealed trait AnyClassType
+
+object AnyClassType {
+  implicit val classTypeProvider: ClassTypeProvider[AnyClassType] = ClassTypeProvider(fir.AnyRefPropertyType)
+  implicit val propertyType = new RecursivePropertyType[Property[ClassType] with AnyClassType] {
+    type Type = ClassType
+    override def getPropertyType(): fir.PropertyType = fir.AnyRefPropertyType
+
+    override def convert(value: Underlying, ctx: Component, info: SourceInfo): fir.Expression = Converter.convert(value, ctx, info)
+    type Underlying = Arg
+    override def convertUnderlying(value: Property[ClassType] with AnyClassType) = value.ref
+  }
+}
 
 object Class {
 
@@ -123,7 +134,8 @@ object Class {
     * *WARNING*: It is the caller's resonsibility to ensure the Class exists, this is not checked automatically.
     */
   def unsafeGetReferenceType(className: String): Property[ClassType] = {
-    Property[ClassType]()(PropertyType.classTypePropertyType(ClassTypeProvider(ClassType(className))))
+    val cls = ClassType(className)
+    Property[cls.Type]()
   }
 
   /** Helper to create a DynamicObject for a Class of a given name.
