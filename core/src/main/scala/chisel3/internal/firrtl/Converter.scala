@@ -469,7 +469,7 @@ private[chisel3] object Converter {
         fir.DefTypeAlias(
           convert(ta.sourceInfo),
           ta.name,
-          extractType(ta.underlying, ta.sourceInfo, allAliasesExceptThisOne)
+          ta.underlying
         )
       })
     )
@@ -488,11 +488,10 @@ private[chisel3] object Converter {
         // This is not guaranteed if the alias name set contains this type alias's name itself
         // as otherwise an AliasType will be generated, resulting in self-referential FIRRTL
         // statements like `type Foo = Foo`.
-        val allAliasesExceptThisOne = typeAliases.filter(_ != ta.name)
         fir.DefTypeAlias(
           convert(ta.sourceInfo),
           ta.name,
-          extractType(ta.underlying, ta.sourceInfo, allAliasesExceptThisOne)
+          ta.underlying
         )
       })
     )

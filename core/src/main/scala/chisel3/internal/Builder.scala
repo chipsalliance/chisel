@@ -453,14 +453,18 @@ private[chisel3] class DynamicContext(
 
   val globalNamespace = Namespace.empty
   val globalIdentifierNamespace = Namespace.empty('$')
-  val globalBundleNamespace = Namespace.empty
 
   // A mapping from previously named bundles to their hashed structural/FIRRTL types, for
   // disambiguation purposes when emitting type aliases
   // Records are used as the key for this map to both represent their alias name and preserve
   // the chisel Bundle structure when passing everything off to the Converter
-  private[chisel3] val bundleStructuralHashMap: mutable.LinkedHashMap[String, (Record, fir.Type, SourceInfo)] =
-    mutable.LinkedHashMap.empty[String, (Record, fir.Type, SourceInfo)]
+  private[chisel3] val bundleStructuralHashMap: mutable.LinkedHashMap[String, (fir.Type, SourceInfo)] =
+    mutable.LinkedHashMap.empty[String, (fir.Type, SourceInfo)]
+  // Similar to bundleStructuralHashMap, but a direct mapping of alias to FIRRTL type. This is populated
+  // at the same time as bundleStructuralHashMap, and is intended to avoid mapping over the entire structure map
+  // while adding each new potential alias.
+  private[chisel3] val aliasMap: mutable.LinkedHashMap[String, fir.Type] =
+    mutable.LinkedHashMap.empty[String, fir.Type]
 
   // Ensure imported Definitions emit as ExtModules with the correct name so
   // that instantiations will also use the correct name and prevent any name
@@ -546,9 +550,9 @@ private[chisel3] object Builder extends LazyLogging {
   def globalNamespace:           Namespace = dynamicContext.globalNamespace
   def globalIdentifierNamespace: Namespace = dynamicContext.globalIdentifierNamespace
 
-  def bundleStructuralHashMap: mutable.LinkedHashMap[String, (Record, fir.Type, SourceInfo)] =
+  def bundleStructuralHashMap: mutable.LinkedHashMap[String, (fir.Type, SourceInfo)] =
     dynamicContext.bundleStructuralHashMap
-  def globalBundleNamespace: Namespace = dynamicContext.globalBundleNamespace
+  def aliasMap: mutable.LinkedHashMap[String, fir.Type] = dynamicContext.aliasMap
 
   def components:  ArrayBuffer[Component] = dynamicContext.components
   def annotations: ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
@@ -880,26 +884,27 @@ private[chisel3] object Builder extends LazyLogging {
 
       None
     } else {
-      val tpe = Converter.extractType(record, sourceInfo)
+      val tpe = Converter.extractType(record, sourceInfo, aliasMap.keys.toSeq)
 
       // If the name is already taken, check if there exists a *structurally equivalent* bundle with the same name, and
       // simply error (TODO: disambiguate that name)
       if (
-        Builder.globalBundleNamespace.contains(alias) &&
-        Builder.bundleStructuralHashMap.get(alias).exists(_._2 != tpe)
+        Builder.aliasMap.contains(alias) &&
+        Builder.aliasMap.get(alias).exists(_ != tpe)
       ) {
+        // Get full structural map value
         val recordValue = Builder.bundleStructuralHashMap.get(alias).get
         // Conflict found:
         error(
-          s"Attempted to redeclare an existing type alias '$alias' with a new Record structure:\n'$tpe'.\n\nThe alias was previously defined as:\n'${recordValue._2}${recordValue._3
+          s"Attempted to redeclare an existing type alias '$alias' with a new Record structure:\n'$tpe'.\n\nThe alias was previously defined as:\n'${recordValue._1}${recordValue._2
             .makeMessage(" " + _)}"
         )(sourceInfo)
 
         None
       } else {
-        if (!Builder.globalBundleNamespace.contains(alias)) {
-          Builder.globalBundleNamespace.name(alias)
-          Builder.bundleStructuralHashMap.put(alias, (record, tpe, sourceInfo))
+        if (!Builder.aliasMap.contains(alias)) {
+          Builder.aliasMap.put(alias, tpe)
+          Builder.bundleStructuralHashMap.put(alias, (tpe, sourceInfo))
         }
 
         Some(alias)
@@ -935,7 +940,7 @@ private[chisel3] object Builder extends LazyLogging {
 
       val typeAliases = bundleStructuralHashMap.flatMap {
         // Discard the previously-computed FIRRTL type as the converter will now have alias information
-        case (name, (b: Bundle, _, info: SourceInfo)) => Some(DefTypeAlias(info, b, name))
+        case (name, (underlying: fir.Type, info: SourceInfo)) => Some(DefTypeAlias(info, underlying, name))
         case _ => None
       }.toSeq
 

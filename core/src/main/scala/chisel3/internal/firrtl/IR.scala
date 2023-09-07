@@ -409,7 +409,7 @@ abstract class Component extends Arg {
 }
 
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
-private[chisel3] case class DefTypeAlias(sourceInfo: SourceInfo, underlying: Bundle, val name: String)
+private[chisel3] case class DefTypeAlias(sourceInfo: SourceInfo, underlying: fir.Type, val name: String)
 
 @nowarn("msg=class Port") // delete when Port becomes private
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")

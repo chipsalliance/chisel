@@ -318,4 +318,43 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
       )
     }
   }
+
+  "Nested bundles with nested FIRRTL type aliases" should "generate with previously-defined aliases" in {
+    // This test primarily checks if aliased Bundles are being recursively walked at most once during the alias generation step.
+    // This holds true whenever:
+    // 1) The bundle itself contains no nested aliased bundles: then its entire firrtl type structure is walked during its associated Record.bind call
+    // 2) The bundle contains nested aliased bundles: Each nested, aliased bundle is recursively bound by the Record.bind call and so are walked once,
+    //    and their generated alias is reused as the recursive walk for the parent bundle
+    class Test extends Module {
+      class FooBundle(width: Int) extends Bundle with HasTypeAlias {
+        override def aliasName = Some(BundleAlias("FooBundle"))
+        val x = UInt(width.W)
+      }
+      class BarBundle(width: Int) extends Bundle with HasTypeAlias {
+        override def aliasName = Some(BundleAlias("BarBundle"))
+        val y = SInt(width.W)
+      }
+      // All three of these bundles are structurally equivalent in FIRRTL and thus
+      // are equivalent, substitutable aliases for each other. Merge/dedup them into one
+      class ParentBundle extends Bundle with HasTypeAlias {
+        override def aliasName = Some(BundleAlias("ParentBundle"))
+
+        val foo = new FooBundle(8)
+        val bar = new BarBundle(3)
+      }
+
+      val io = IO(new Bundle {
+        val in = Input(new ParentBundle)
+        val out = Output(new ParentBundle)
+      })
+
+      io.out :#= io.in
+    }
+
+    val chirrtl = ChiselStage.emitCHIRRTL(new Test)
+
+    chirrtl should include("type FooBundle = { x : UInt<8>}")
+    chirrtl should include("type BarBundle = { y : SInt<3>}")
+    chirrtl should include("type ParentBundle = { foo : FooBundle, bar : BarBundle}")
+  }
 }
