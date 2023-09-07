@@ -89,6 +89,7 @@ class Class extends BaseModule {
 /** Represent a Class type for referencing a Class in a Property[ClassType]
   */
 case class ClassType private[chisel3] (name: String) { self =>
+
   /** A tag type representing an instance of this ClassType
     *
     * This can be used to create a Property IOs
@@ -103,16 +104,18 @@ case class ClassType private[chisel3] (name: String) { self =>
 
   private object Type {
     implicit val classTypeProvider: ClassTypeProvider[Type] = ClassTypeProvider(name)
-    implicit val propertyType = new ClassTypePropertyType[Property[ClassType] with self.Type](classTypeProvider.classType) {
-      override def convert(value: Underlying, ctx: Component, info: SourceInfo): fir.Expression = Converter.convert(value, ctx, info)
-      type Underlying = Arg
-      override def convertUnderlying(value: Property[ClassType] with self.Type) = value.ref
-    }
+    implicit val propertyType =
+      new ClassTypePropertyType[Property[ClassType] with self.Type](classTypeProvider.classType) {
+        override def convert(value: Underlying, ctx: Component, info: SourceInfo): fir.Expression =
+          Converter.convert(value, ctx, info)
+        type Underlying = Arg
+        override def convertUnderlying(value: Property[ClassType] with self.Type) = value.ref
+      }
   }
 }
 
 object ClassType {
-  private def apply(name: String): ClassType = new ClassType(name)
+  private def apply(name:            String): ClassType = new ClassType(name)
   def unsafeGetClassTypeByName(name: String): ClassType = ClassType(name)
 }
 
@@ -124,7 +127,8 @@ object AnyClassType {
     type Type = ClassType
     override def getPropertyType(): fir.PropertyType = fir.AnyRefPropertyType
 
-    override def convert(value: Underlying, ctx: Component, info: SourceInfo): fir.Expression = Converter.convert(value, ctx, info)
+    override def convert(value: Underlying, ctx: Component, info: SourceInfo): fir.Expression =
+      Converter.convert(value, ctx, info)
     type Underlying = Arg
     override def convertUnderlying(value: Property[ClassType] with AnyClassType) = value.ref
   }

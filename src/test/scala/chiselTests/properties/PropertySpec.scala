@@ -653,7 +653,6 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
       "object myClass of MyClass",
       "propassign b, List<Inst<MyClass>>(a, myClass)",
       "propassign c, a",
-
       "object obj of FooBar",
       "output e : Inst<FooBar>",
       "output d : Inst<FooBar>",
@@ -661,24 +660,21 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
       "propassign d, obj",
       "propassign e, obj",
       "propassign f, obj",
-
       "output g : AnyRef",
       "output h : List<AnyRef>",
       "propassign g, obj",
       "propassign g, myClass",
       "propassign h, List<AnyRef>(obj, myClass)",
-
       "output fooA : Inst<foo>",
       "output fooB : Inst<foo>",
       "object fooObj of foo",
       "propassign fooA, fooObj",
       "propassign fooB, fooObj",
-
       "output barA : Inst<bar>",
       "output barB : Inst<bar>",
       "object barObj of bar",
       "propassign barA, barObj",
-      "propassign barB, barObj",
+      "propassign barB, barObj"
     )()
   }
 }
