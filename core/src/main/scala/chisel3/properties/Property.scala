@@ -219,7 +219,7 @@ private[chisel3] object PropertyType extends TuplePropertyTypeInstances with Low
   */
 sealed trait Property[T] extends Data { self =>
   sealed trait ClassType
-  object ClassType {
+  private object ClassType {
     implicit def classTypeProvider(implicit evidence: T =:= chisel3.properties.ClassType): ClassTypeProvider[ClassType] = ClassTypeProvider(getPropertyType)
     implicit def propertyType(implicit evidence: T =:= chisel3.properties.ClassType) = new ClassTypePropertyType[Property[ClassType] with self.ClassType](getPropertyType) {
       override def convert(value: Underlying, ctx: ir.Component, info: SourceInfo): fir.Expression =
@@ -314,21 +314,17 @@ sealed trait Property[T] extends Data { self =>
 
 }
 
-trait ClassTypeProvider[A] {
+private[chisel3] sealed trait ClassTypeProvider[A] {
   val classType: fir.PropertyType
 }
 
-object ClassTypeProvider {
+private[chisel3] object ClassTypeProvider {
   def apply[A](className: String) = new ClassTypeProvider[A] {
     val classType = fir.ClassPropertyType(className)
   }
   def apply[A](_classType: fir.PropertyType) = new ClassTypeProvider[A] {
     val classType = _classType
   }
-}
-
-trait Typeable[T, Lit] {
-  def convertUnderlying(l: Lit): T
 }
 
 /** Companion object for Property.

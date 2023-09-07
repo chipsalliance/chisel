@@ -101,7 +101,7 @@ case class ClassType private[chisel3] (name: String) { self =>
     */
   sealed trait Type
 
-  object Type {
+  private object Type {
     implicit val classTypeProvider: ClassTypeProvider[Type] = ClassTypeProvider(name)
     implicit val propertyType = new ClassTypePropertyType[Property[ClassType] with self.Type](classTypeProvider.classType) {
       override def convert(value: Underlying, ctx: Component, info: SourceInfo): fir.Expression = Converter.convert(value, ctx, info)
@@ -109,6 +109,11 @@ case class ClassType private[chisel3] (name: String) { self =>
       override def convertUnderlying(value: Property[ClassType] with self.Type) = value.ref
     }
   }
+}
+
+object ClassType {
+  private def apply(name: String): ClassType = new ClassType(name)
+  def unsafeGetClassTypeByName(name: String): ClassType = ClassType(name)
 }
 
 sealed trait AnyClassType
@@ -134,7 +139,7 @@ object Class {
     * *WARNING*: It is the caller's resonsibility to ensure the Class exists, this is not checked automatically.
     */
   def unsafeGetReferenceType(className: String): Property[ClassType] = {
-    val cls = ClassType(className)
+    val cls = ClassType.unsafeGetClassTypeByName(className)
     Property[cls.Type]()
   }
 
@@ -144,7 +149,7 @@ object Class {
     */
   def unsafeGetDynamicObject(className: String)(implicit sourceInfo: SourceInfo): DynamicObject = {
     // Instantiate the Object.
-    val obj = new DynamicObject(ClassType(className))
+    val obj = new DynamicObject(ClassType.unsafeGetClassTypeByName(className))
 
     // Get its Property[ClassType] type.
     val classProp = obj.getReference

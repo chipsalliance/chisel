@@ -597,7 +597,7 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
 
   it should "emit correct types for all the ways of creating class references and properties" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val cls = ClassType("MyClass")
+      val cls = ClassType.unsafeGetClassTypeByName("MyClass")
       val a = IO(Input(Property[cls.Type]()))
       val b = IO(Output(Property[Seq[cls.Type]]()))
       val c = IO(Output(a.cloneType))
@@ -632,6 +632,18 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
       g :#= objRef
       g :#= myClass.getReference
       h :#= Property(Seq(objRef.asAnyClassType, myClass.getReference.asAnyClassType))
+
+      // should work with methods
+      def connectAB(cls: ClassType) = {
+        val a = IO(Output(Property[cls.Type]())).suggestName(cls.name + "A")
+        val b = IO(Output(Property[cls.Type]())).suggestName(cls.name + "B")
+        val obj = Class.unsafeGetDynamicObject(cls.name).suggestName(cls.name + "Obj")
+        a := obj.getReference
+        b := obj.getReference
+      }
+
+      connectAB(ClassType.unsafeGetClassTypeByName("foo"))
+      connectAB(ClassType.unsafeGetClassTypeByName("bar"))
     })
 
     matchesAndOmits(chirrtl)(
@@ -655,6 +667,18 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
       "propassign g, obj",
       "propassign g, myClass",
       "propassign h, List<AnyRef>(obj, myClass)",
+
+      "output fooA : Inst<foo>",
+      "output fooB : Inst<foo>",
+      "object fooObj of foo",
+      "propassign fooA, fooObj",
+      "propassign fooB, fooObj",
+
+      "output barA : Inst<bar>",
+      "output barB : Inst<bar>",
+      "object barObj of bar",
+      "propassign barA, barObj",
+      "propassign barB, barObj",
     )()
   }
 }
