@@ -118,25 +118,25 @@ See the <a href="chisel-enum#casting">ChiselEnum explanation</a> for more inform
 
 <p>This warning occurs when dynamically indexing a <code class="language-plaintext highlighter-rouge">UInt</code> or an <code class="language-plaintext highlighter-rouge">SInt</code> with an index that is wider than necessary to address all bits in the indexee.
 It indicates that some of the high-bits of the index are ignored by the indexing operation.
-It can be fixed as described in the <a href="../cookbooks/cookbook#how-do-i-resolve-dynamic-index--is-too-widenarrow-for-extractee">Cookbook</a>.</p>
+It can be fixed as described in the <a href="../cookbooks/cookbook#dynamic-index-too-wide-narrow">Cookbook</a>.</p>
 
 <h3 id="w003-dynamic-bit-select-too-narrow">[W003] Dynamic bit select too narrow</h3>
 
 <p>This warning occurs when dynamically indexing a <code class="language-plaintext highlighter-rouge">UInt</code> or an <code class="language-plaintext highlighter-rouge">SInt</code> with an index that is to small to address all bits in the indexee.
 It indicates that some bits of the indexee cannot be reached by the indexing operation.
-It can be fixed as described in the <a href="../cookbooks/cookbook#how-do-i-resolve-dynamic-index--is-too-widenarrow-for-extractee">Cookbook</a>.</p>
+It can be fixed as described in the <a href="../cookbooks/cookbook#dynamic-index-too-wide-narrow">Cookbook</a>.</p>
 
 <h3 id="w004-dynamic-index-too-wide">[W004] Dynamic index too wide</h3>
 
 <p>This warning occurs when dynamically indexing a <code class="language-plaintext highlighter-rouge">Vec</code> with an index that is wider than necessary to address all elements of the <code class="language-plaintext highlighter-rouge">Vec</code>.
 It indicates that some of the high-bits of the index are ignored by the indexing operation.
-It can be fixed as described in the <a href="../cookbooks/cookbook#how-do-i-resolve-dynamic-index--is-too-widenarrow-for-extractee">Cookbook</a>.</p>
+It can be fixed as described in the <a href="../cookbooks/cookbook#dynamic-index-too-wide-narrow">Cookbook</a>.</p>
 
 <h3 id="w005-dynamic-index-too-narrow">[W005] Dynamic index too narrow</h3>
 
 <p>This warning occurs when dynamically indexing a <code class="language-plaintext highlighter-rouge">Vec</code> with an index that is to small to address all elements in the <code class="language-plaintext highlighter-rouge">Vec</code>.
 It indicates that some elements of the <code class="language-plaintext highlighter-rouge">Vec</code> cannot be reached by the indexing operation.
-It can be fixed as described in the <a href="../cookbooks/cookbook#how-do-i-resolve-dynamic-index--is-too-widenarrow-for-extractee">Cookbook</a>.</p>
+It can be fixed as described in the <a href="../cookbooks/cookbook#dynamic-index-too-wide-narrow">Cookbook</a>.</p>
 
 <h3 id="w006-extract-from-vec-of-size-0">[W006] Extract from Vec of size 0</h3>
 
