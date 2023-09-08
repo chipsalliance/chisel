@@ -5,6 +5,7 @@ package chisel3.internal
 import chisel3._
 import chisel3.experimental.dataview.{isView, reify, reifyToAggregate}
 import chisel3.experimental.{attach, Analog, BaseModule, SourceInfo}
+import chisel3.properties.Property
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.{Connect, Converter, DefInvalid}
 
@@ -112,6 +113,9 @@ private[chisel3] object BiConnect {
         elemConnect(sourceInfo, left_e, right_e, context_mod)
         // TODO(twigg): Verify the element-level classes are connectable
       }
+      case (left_p: Property[_], right_p: Property[_]) =>
+        // We can consider supporting this, but it's a lot of code and we should be moving away from <> anyway
+        Builder.error(s"${left_p._localErrorContext} does not support <>, use :<>= instead")(sourceInfo)
       // Handle Vec case
       case (left_v: Vec[Data @unchecked], right_v: Vec[Data @unchecked]) => {
         if (left_v.length != right_v.length) {
@@ -256,7 +260,7 @@ private[chisel3] object BiConnect {
     sink:        Data,
     source:      Data,
     sourceInfo:  SourceInfo,
-    context_mod: RawModule
+    context_mod: BaseModule
   ): Boolean = {
 
     // check that the aggregates have the same types

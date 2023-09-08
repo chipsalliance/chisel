@@ -169,7 +169,7 @@ private[chisel3] object Converter {
     case e @ DefInstance(info, id, _) =>
       Some(fir.DefInstance(convert(info), e.name, id.name))
     case e @ DefObject(info, obj) =>
-      Some(fir.DefObject(convert(info), e.name, obj.className))
+      Some(fir.DefObject(convert(info), e.name, obj.className.name))
     case e @ Stop(_, info, clock, ret) =>
       Some(fir.Stop(convert(info), ret, convert(clock, ctx, info), firrtl.Utils.one, e.name))
     case e @ Printf(_, info, clock, pable) =>
@@ -325,7 +325,7 @@ private[chisel3] object Converter {
     case KnownWidth(value) => fir.IntWidth(value)
   }
 
-  private def firrtlUserDirOf(t: BaseType): SpecifiedDirection = t match {
+  private def firrtlUserDirOf(t: Data): SpecifiedDirection = t match {
     case t: Vec[_] =>
       SpecifiedDirection.fromParent(t.specifiedDirection, firrtlUserDirOf(t.sample_element))
     case t: Record if t._isOpaqueType =>
@@ -333,17 +333,17 @@ private[chisel3] object Converter {
     case t => t.specifiedDirection
   }
 
-  def extractType(t: BaseType, info: SourceInfo, typeAliases: Seq[String] = Seq.empty): fir.Type =
-    extractType(t, false, info, true, true, typeAliases)
+  def extractType(baseType: Data, info: SourceInfo, typeAliases: Seq[String] = Seq.empty): fir.Type =
+    extractType(baseType, false, info, true, true, typeAliases)
 
   def extractType(
-    t:           BaseType,
-    clearDir:    Boolean,
-    info:        SourceInfo,
-    checkProbe:  Boolean,
-    checkConst:  Boolean,
+    baseType:   Data,
+    clearDir:   Boolean,
+    info:       SourceInfo,
+    checkProbe: Boolean,
+    checkConst: Boolean,
     typeAliases: Seq[String]
-  ): fir.Type = t match {
+  ): fir.Type = baseType match {
     // extract underlying type for probe
     case t: Data if (checkProbe && t.probeInfo.nonEmpty) =>
       if (t.probeInfo.get.writable) {

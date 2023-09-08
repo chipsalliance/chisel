@@ -3,7 +3,7 @@ package chisel3
 import chisel3.internal.requireIsChiselType // Fix ambiguous import
 import chisel3.internal.{throwException, Builder}
 import chisel3.experimental.SourceInfo
-import chisel3.properties.Class
+import chisel3.properties.{Class, Property}
 
 object IO {
 
@@ -17,11 +17,11 @@ object IO {
     *
     * The granted iodef must be a chisel type and not be bound to hardware.
     *
-    * Also registers a BaseType as a port, also performing bindings. Cannot be called once ports are
+    * Also registers a Data as a port, also performing bindings. Cannot be called once ports are
     * requested (so that all calls to ports will return the same information).
     * Internal API.
     */
-  def apply[T <: BaseType](iodef: => T)(implicit sourceInfo: SourceInfo): T = {
+  def apply[T <: Data](iodef: => T)(implicit sourceInfo: SourceInfo): T = {
     val module = Module.currentModule.get // Impossible to fail
     require(!module.isClosed, "Can't add more ports after module close")
     val prevId = Builder.idGen.value
@@ -32,8 +32,8 @@ object IO {
     module match {
       case _: Class => {
         data match {
-          case _: Data => throwException(s"Class ports must be Property type, but found $data")
-          case _ => ()
+          case _: Property[_] => ()
+          case _ => Builder.error(s"Class ports must be Property type, but found ${data._localErrorContext}.")
         }
       }
       case _ => ()
