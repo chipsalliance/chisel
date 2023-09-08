@@ -460,18 +460,7 @@ private[chisel3] object Converter {
       fir.NoInfo,
       circuit.components.map(c => convert(c, typeAliases)),
       circuit.name,
-      circuit.typeAliases.map(ta => {
-        // To generate the correct FIRRTL type alias we need to always emit a BundleType.
-        // This is not guaranteed if the alias name set contains this type alias's name itself
-        // as otherwise an AliasType will be generated, resulting in self-referential FIRRTL
-        // statements like `type Foo = Foo`.
-        val allAliasesExceptThisOne = typeAliases.filter(_ != ta.name)
-        fir.DefTypeAlias(
-          convert(ta.sourceInfo),
-          ta.name,
-          ta.underlying
-        )
-      })
+      circuit.typeAliases.map(ta => fir.DefTypeAlias(convert(ta.sourceInfo), ta.name, ta.underlying))
     )
   }
 

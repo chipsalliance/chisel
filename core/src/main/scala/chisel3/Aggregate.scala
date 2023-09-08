@@ -1075,19 +1075,7 @@ abstract class Record extends Aggregate {
     setElementRefs()
 
     this match {
-      case aliasedBundle: HasTypeAlias =>
-        aliasedBundle.aliasName.map(alias => {
-          // If the aliased bundle is coerced and it has flipped signals, then they must be stripped
-          val isCoerced = direction match {
-            case ActualDirection.Input | ActualDirection.Output => true
-            case other                                          => false
-          }
-          val isStripped = isCoerced && isFlipped
-          val sourceInfo = alias.info
-          val candidateAlias = sanitize(s"${alias.id}${if (isStripped) alias.strippedSuffix else ""}")
-
-          aliasedBundle.finalizedAlias = Builder.setAlias(candidateAlias, this, sourceInfo)
-        })
+      case aliasedRecord: HasTypeAlias => Builder.setRecordAlias(aliasedRecord)
       case _ =>
     }
   }

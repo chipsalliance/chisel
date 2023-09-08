@@ -458,13 +458,8 @@ private[chisel3] class DynamicContext(
   // disambiguation purposes when emitting type aliases
   // Records are used as the key for this map to both represent their alias name and preserve
   // the chisel Bundle structure when passing everything off to the Converter
-  private[chisel3] val bundleStructuralHashMap: mutable.LinkedHashMap[String, (fir.Type, SourceInfo)] =
+  private[chisel3] val aliasMap: mutable.LinkedHashMap[String, (fir.Type, SourceInfo)] =
     mutable.LinkedHashMap.empty[String, (fir.Type, SourceInfo)]
-  // Similar to bundleStructuralHashMap, but a direct mapping of alias to FIRRTL type. This is populated
-  // at the same time as bundleStructuralHashMap, and is intended to avoid mapping over the entire structure map
-  // while adding each new potential alias.
-  private[chisel3] val aliasMap: mutable.LinkedHashMap[String, fir.Type] =
-    mutable.LinkedHashMap.empty[String, fir.Type]
 
   // Ensure imported Definitions emit as ExtModules with the correct name so
   // that instantiations will also use the correct name and prevent any name
@@ -550,9 +545,8 @@ private[chisel3] object Builder extends LazyLogging {
   def globalNamespace:           Namespace = dynamicContext.globalNamespace
   def globalIdentifierNamespace: Namespace = dynamicContext.globalIdentifierNamespace
 
-  def bundleStructuralHashMap: mutable.LinkedHashMap[String, (fir.Type, SourceInfo)] =
-    dynamicContext.bundleStructuralHashMap
-  def aliasMap: mutable.LinkedHashMap[String, fir.Type] = dynamicContext.aliasMap
+  def aliasMap: mutable.LinkedHashMap[String, (fir.Type, SourceInfo)] =
+    dynamicContext.aliasMap
 
   def components:  ArrayBuffer[Component] = dynamicContext.components
   def annotations: ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
@@ -875,41 +869,55 @@ private[chisel3] object Builder extends LazyLogging {
     renames
   }
 
-  def setAlias(alias: String, record: Record, sourceInfo: SourceInfo): Option[String] = {
-    // Filter out (TODO: disambiguate) FIRRTL keywords that cause parser errors if used
-    if (firrtlKeywords.contains(alias)) {
-      Builder.error(
-        s"Attempted to override a FIRRTL keyword '$alias' with a type alias. Chisel does not automatically disambiguate aliases using these keywords at this time."
-      )(sourceInfo)
+  def setRecordAlias(record: Record with HasTypeAlias): Unit = {
+    val alias = record.aliasName.flatMap { candidateAlias =>
+      {
+        val sourceInfo = candidateAlias.info
 
-      None
-    } else {
-      val tpe = Converter.extractType(record, sourceInfo, aliasMap.keys.toSeq)
-
-      // If the name is already taken, check if there exists a *structurally equivalent* bundle with the same name, and
-      // simply error (TODO: disambiguate that name)
-      if (
-        Builder.aliasMap.contains(alias) &&
-        Builder.aliasMap.get(alias).exists(_ != tpe)
-      ) {
-        // Get full structural map value
-        val recordValue = Builder.bundleStructuralHashMap.get(alias).get
-        // Conflict found:
-        error(
-          s"Attempted to redeclare an existing type alias '$alias' with a new Record structure:\n'$tpe'.\n\nThe alias was previously defined as:\n'${recordValue._1}${recordValue._2
-            .makeMessage(" " + _)}"
-        )(sourceInfo)
-
-        None
-      } else {
-        if (!Builder.aliasMap.contains(alias)) {
-          Builder.aliasMap.put(alias, tpe)
-          Builder.bundleStructuralHashMap.put(alias, (tpe, sourceInfo))
+        // If the aliased bundle is coerced and it has flipped signals, then they must be stripped
+        val isCoerced = record.direction match {
+          case ActualDirection.Input | ActualDirection.Output => true
+          case other                                          => false
         }
+        val isStripped = isCoerced && record.isFlipped
 
-        Some(alias)
+        // The true alias, after sanitization and (TODO) disambiguation
+        val alias = sanitize(s"${candidateAlias.id}${if (isStripped) candidateAlias.strippedSuffix else ""}")
+        // Filter out (TODO: disambiguate) FIRRTL keywords that cause parser errors if used
+        if (firrtlKeywords.contains(alias)) {
+          Builder.error(
+            s"Attempted to override a FIRRTL keyword '$alias' with a type alias. Chisel does not automatically disambiguate aliases using these keywords at this time."
+          )(sourceInfo)
+
+          None
+        } else {
+          val tpe = Converter.extractType(record, sourceInfo, aliasMap.keys.toSeq)
+          // If the name is already taken, check if there exists a *structurally equivalent* bundle with the same name, and
+          // simply error (TODO: disambiguate that name)
+          if (
+            Builder.aliasMap.contains(alias) &&
+            Builder.aliasMap.get(alias).exists(_._1 != tpe)
+          ) {
+            // Get full structural map value
+            val recordValue = Builder.aliasMap.get(alias).get
+            // Conflict found:
+            error(
+              s"Attempted to redeclare an existing type alias '$alias' with a new Record structure:\n'$tpe'.\n\nThe alias was previously defined as:\n'${recordValue._1}${recordValue._2
+                .makeMessage(" " + _)}"
+            )(sourceInfo)
+
+            None
+          } else {
+            if (!Builder.aliasMap.contains(alias)) {
+              Builder.aliasMap.put(alias, (tpe, sourceInfo))
+            }
+
+            Some(alias)
+          }
+        }
       }
     }
+    record.finalizedAlias = alias
   }
 
   private[chisel3] def build[T <: BaseModule](
@@ -938,7 +946,7 @@ private[chisel3] object Builder extends LazyLogging {
       errors.checkpoint(logger)
       logger.info("Done elaborating.")
 
-      val typeAliases = bundleStructuralHashMap.flatMap {
+      val typeAliases = aliasMap.flatMap {
         // Discard the previously-computed FIRRTL type as the converter will now have alias information
         case (name, (underlying: fir.Type, info: SourceInfo)) => Some(DefTypeAlias(info, underlying, name))
         case _ => None
