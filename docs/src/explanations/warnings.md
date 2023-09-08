@@ -121,25 +121,26 @@ See the [ChiselEnum explanation](chisel-enum#casting) for more information and h
 
 This warning occurs when dynamically indexing a `UInt` or an `SInt` with an index that is wider than necessary to address all bits in the indexee.
 It indicates that some of the high-bits of the index are ignored by the indexing operation.
-It can be fixed as described in the [Cookbook](../cookbooks/cookbook#how-do-i-resolve-dynamic-index--is-too-widenarrow-for-extractee).
+It can be fixed as described in the [Cookbook](../cookbooks/cookbook#dynamic-index-too-wide-narrow).
 
 ### [W003] Dynamic bit select too narrow
 
 This warning occurs when dynamically indexing a `UInt` or an `SInt` with an index that is to small to address all bits in the indexee.
 It indicates that some bits of the indexee cannot be reached by the indexing operation.
-It can be fixed as described in the [Cookbook](../cookbooks/cookbook#how-do-i-resolve-dynamic-index--is-too-widenarrow-for-extractee).
+It can be fixed as described in the [Cookbook](../cookbooks/cookbook#dynamic-index-too-wide-narrow).
 
 ### [W004] Dynamic index too wide
 
 This warning occurs when dynamically indexing a `Vec` with an index that is wider than necessary to address all elements of the `Vec`.
 It indicates that some of the high-bits of the index are ignored by the indexing operation.
-It can be fixed as described in the [Cookbook](../cookbooks/cookbook#how-do-i-resolve-dynamic-index--is-too-widenarrow-for-extractee).
+It can be fixed as described in the [Cookbook](../cookbooks/cookbook#dynamic-index-too-wide-narrow).
 
 ### [W005] Dynamic index too narrow
 
 This warning occurs when dynamically indexing a `Vec` with an index that is to small to address all elements in the `Vec`.
 It indicates that some elements of the `Vec` cannot be reached by the indexing operation.
-It can be fixed as described in the [Cookbook](../cookbooks/cookbook#how-do-i-resolve-dynamic-index--is-too-widenarrow-for-extractee).
+It can be fixed as described in the [Cookbook](../cookbooks/cookbook#dynamic-index-too-wide-narrow).
+
 
 ### [W006] Extract from Vec of size 0
 

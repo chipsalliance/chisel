@@ -1,13 +1,14 @@
 buildDir ?= build
 subprojects = $(buildDir)/subprojects
 docs = $(buildDir)/docs
+website_docs_dest = docs/src/main/tut/chisel3/docs
 chisel3 = ../
 
 www-docs = \
 	$(shell find $(chisel3)/docs/ -name "*.md")
 
 www-src = \
-	docs/src/main/tut/chisel3/docs \
+	$(website_docs_dest) \
 	$(shell find docs/src/main/resources) \
 	$(shell find docs/src/main/tut) \
 	$(chisel3)/README.md
@@ -28,7 +29,7 @@ all: docs/target/site/index.html
 
 # Remove the output of all build targets
 clean:
-	rm -rf docs/target docs/src/main/tut/contributors.md docs/src/main/tut/chisel3/docs
+	rm -rf docs/target docs/src/main/tut/contributors.md $(website_docs_dest)
 
 # Remove everything
 mrproper:
@@ -53,5 +54,5 @@ docs/src/main/tut/contributors.md: build.sbt
 # Build docs in subproject with a specific tag.
 # This command is brittle as it assumes chisel3 is up one dir from here in the path to where
 # we want to put the website docs.
-docs/src/main/tut/chisel3/docs: $(chisel3)/docs/ $(www-docs)
-	(cd $(chisel3) && sbt docs/mdoc && cp -r docs/generated website/docs/src/main/tut/chisel3/docs)
+$(website_docs_dest): $(chisel3)/docs/ $(www-docs)
+	(cd $(chisel3) && sbt docs/mdoc && rm -rf website/$(website_docs_dest) && cp -r docs/generated website/$(website_docs_dest))
