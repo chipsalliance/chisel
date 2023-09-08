@@ -294,7 +294,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   }
 
   // Whether this node has a specified flipped direction, ignoring coercion via Input/Output
-  private[chisel3] def isFlipped: Boolean
+  private[chisel3] def isFlipped: Boolean = false
 
   // Must clone a Data if any of the following are true:
   // * It has a binding
