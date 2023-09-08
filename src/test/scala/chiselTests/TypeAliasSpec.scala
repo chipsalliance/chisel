@@ -65,6 +65,30 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
     chirrtl should include("out : Fizz")
     chirrtl should include("wire w : Fizz")
   }
+  
+  "Bundles with opt-in alias names" should "allow user-specified stripped suffixing" in {
+    class Test extends Module {
+      class FooBundle extends Bundle with HasTypeAlias {
+        override def aliasName = RecordAlias(typeName, "_testSuffix")
+
+        val x = Flipped(UInt(8.W))
+        val y = UInt(8.W)
+      }
+
+      val io = IO(new Bundle {
+        val in = Input(new FooBundle)
+        val out = Output(new FooBundle)
+      })
+
+      io.out :#= io.in
+    }
+
+    val chirrtl = ChiselStage.emitCHIRRTL(new Test)
+
+    chirrtl should include("type FooBundle_testSuffix = { x : UInt<8>, y : UInt<8>}")
+    chirrtl should include("flip in : FooBundle_testSuffix")
+    chirrtl should include("out : FooBundle_testSuffix")
+  }
 
   "Bundles with opt-in FIRRTL type aliases" should "generate normal aliases for coerced, monodirectional/unflipped bundles" in {
     class MonoStrippedTest extends Module {
