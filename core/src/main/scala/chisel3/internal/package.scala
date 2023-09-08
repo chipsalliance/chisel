@@ -152,4 +152,43 @@ package object internal {
       (zz, result.reverse)
     }
   }
+
+  /** The list of banned type alias words which will cause generation of bad FIRRTL. These are usually
+    * keyword tokens that would be automatically lexed by firtool, and so cause parsing errors.
+    */
+  private[chisel3] val illegalTypeAliases = Seq(
+    "FIRRTL",
+    "Clock",
+    "UInt",
+    "Reset",
+    "AsyncReset",
+    "Analog",
+    "Probe",
+    "RWProbe",
+    "version",
+    "type",
+    "circuit",
+    "parameter",
+    "input",
+    "output",
+    "extmodule",
+    "module",
+    "intmodule",
+    "intrinsic",
+    "defname",
+    "const",
+    "flip",
+    "reg",
+    "smem",
+    "cmem",
+    "mport",
+    "define",
+    "attach",
+    "inst",
+    "of",
+    "reset",
+    "printf",
+    "skip",
+    "node"
+  )
 }

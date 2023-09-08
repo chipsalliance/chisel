@@ -67,4 +67,8 @@ abstract class Element extends Data {
     }
   }
 
+  override def containsAFlipped = specifiedDirection match {
+    case SpecifiedDirection.Flip | SpecifiedDirection.Input => true
+    case _                                                  => false
+  }
 }

@@ -185,12 +185,102 @@ import chisel3.experimental.HasAutoTypename
 class MyBundle[T <: Data](gen: T, intParam: Int) extends Bundle with HasAutoTypename {
   // ...
   // Note: No `override def typeName` statement here
-}
-```
 
 ```scala mdoc
 new MyBundle(UInt(8.W), 3).typeName
 ```
+
+### Can I name my bundles in FIRRTL, so I don't generate extremely long bundle types?
+
+Yes, using the `HasTypeName` trait. FIRRTL has a construct to alias a bundle type with a type alias like so:
+
+```
+circuit Top :
+  type MyBundle = { foo : UInt<8>, bar : UInt<1>}
+  
+  module Top :
+    //...
+```
+
+These can be automatically emitted from Chisel by mixing `HasTypeName` into a user-defined `Record`, and implementing a field named `aliasName` with a `RecordAlias(...)` instance.
+
+```scala mdoc:silent
+import chisel3.experimental.{HasTypeAlias, RecordAlias}
+
+class AliasedBundle extends Bundle with HasTypeAlias {
+  override def aliasName = RecordAlias("MyAliasedBundle")
+  val foo = UInt(8.W)
+  val bar = Bool()
+}
+```
+
+Let's see what happens when we generate FIRRTL using this `Bundle`:
+
+```scala mdoc:invisible
+def emitFIRRTL(gen: => RawModule): String = {
+  ChiselStage.emitCHIRRTL(gen)
+}
+```
+```scala mdoc
+emitFIRRTL(new Module {
+  val wire = Wire(new AliasedBundle)
+})
+```
+
+`HasTypeAlias` also supports nested bundles, too:
+```scala mdoc:silent
+class Child extends Bundle with HasTypeAlias {
+  override def aliasName = RecordAlias("ChildBundle")
+  val x = UInt(8.W)
+}
+
+class Parent extends Bundle with HasTypeAlias {
+  override def aliasName = RecordAlias("ParentBundle")
+  val child = new Child
+}
+```
+```scala mdoc
+emitFIRRTL(new Module {
+  val wire = Wire(new Parent)
+})
+```
+
+### I keep seeing _stripped suffixing everywhere in my FIRRTL?
+
+The string passed to `RecordAlias` serves as a _strong hint_ for the resulting FIRRTL type alias. There are some circumstances where the structure of a `Record` can be modified and so the original type alias doesn't represent the correct type anymore. Let's look at the case of `Input(...)` and `Output(...)`, which strips any `Flipped(...)` calls within a `Record`:
+
+```scala mdoc:silent
+class StrippedBundle extends Bundle with HasTypeAlias {
+  override def aliasName = RecordAlias("StrippedBundle")
+  val flipped = Flipped(UInt(8.W))
+  val normal = UInt(8.W)
+}
+```
+
+```scala mdoc
+emitFIRRTL(new Module {
+  val in = IO(Input(new StrippedBundle))
+})
+```
+
+A slightly different alias with the suffixed name `StrippedBundle_stripped` is generated, and importantly aliases a fundamentally different bundle type. Note how the bundle type doesn't contain a `flip flipped : UInt<8>` field!
+
+By default, the suffix appended to `Record` names is `"_stripped"`. This can be defined by users with an additional string argument passed to `RecordAlias(alias, strippedSuffix)`:
+
+```scala mdoc:silent
+class CustomStrippedBundle extends Bundle with HasTypeAlias {
+  override def aliasName = RecordAlias("StrippedBundle", "Foo")
+  val flipped = Flipped(UInt(8.W))
+  val normal = UInt(8.W)
+}
+```
+
+```scala mdoc
+emitFIRRTL(new Module {
+  val in = IO(Input(new CustomStrippedBundle))
+})
+```
+
 ### I want to add some hardware or assertions, but each time I do all the signal names get bumped!
 
 This is the classic "ECO" problem, and we provide descriptions in [explanation](../explanations/naming). In short,
