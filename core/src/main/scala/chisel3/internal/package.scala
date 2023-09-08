@@ -153,13 +153,10 @@ package object internal {
     }
   }
 
-  /** The list of reserved keywords in FIRRTL which result in incorrect parsing when used in any statement outside
-    * of their correct use cases.
-    * This is vital for type aliases, which can in principle be named after these keywords but results
-    * in problematic and incorrect FIRRTL.
-    * Some words, like 'stop' and 'force', do not result in parser errors and consequently do not show up here.
+  /** The list of banned type alias words which will cause generation of bad FIRRTL. These are usually
+    * keyword tokens that would be automatically lexed by firtool, and so cause parsing errors.
     */
-  private[chisel3] val firrtlKeywords = Seq(
+  private[chisel3] val illegalTypeAliases = Seq(
     "FIRRTL",
     "Clock",
     "UInt",

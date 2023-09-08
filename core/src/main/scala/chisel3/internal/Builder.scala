@@ -884,9 +884,9 @@ private[chisel3] object Builder extends LazyLogging {
         // The true alias, after sanitization and (TODO) disambiguation
         val alias = sanitize(s"${candidateAlias.id}${if (isStripped) candidateAlias.strippedSuffix else ""}")
         // Filter out (TODO: disambiguate) FIRRTL keywords that cause parser errors if used
-        if (firrtlKeywords.contains(alias)) {
+        if (illegalTypeAliases.contains(alias)) {
           Builder.error(
-            s"Attempted to override a FIRRTL keyword '$alias' with a type alias. Chisel does not automatically disambiguate aliases using these keywords at this time."
+            s"Attempted to use an illegal word '$alias' for a type alias. Chisel does not automatically disambiguate these aliases at this time."
           )(sourceInfo)
 
           None
