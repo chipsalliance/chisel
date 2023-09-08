@@ -8,13 +8,7 @@ import chisel3.experimental.dataview.{isView, reifySingleData, InvalidViewExcept
 import scala.collection.immutable.{SeqMap, VectorMap}
 import scala.collection.mutable.{HashSet, LinkedHashMap}
 import scala.language.experimental.macros
-import chisel3.experimental.{
-  BaseModule,
-  BundleLiteralException,
-  HasTypeAlias,
-  OpaqueType,
-  VecLiteralException
-}
+import chisel3.experimental.{BaseModule, BundleLiteralException, HasTypeAlias, OpaqueType, VecLiteralException}
 import chisel3.experimental.{SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand

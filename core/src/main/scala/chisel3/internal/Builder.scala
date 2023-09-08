@@ -870,7 +870,7 @@ private[chisel3] object Builder extends LazyLogging {
   }
 
   def setRecordAlias(record: Record with HasTypeAlias, parentDirection: SpecifiedDirection): Unit = {
-    val finalizedAlias: Option[String] = { 
+    val finalizedAlias: Option[String] = {
       val sourceInfo = record.aliasName.info
 
       // If the aliased bundle is coerced and it has flipped signals, then they must be stripped

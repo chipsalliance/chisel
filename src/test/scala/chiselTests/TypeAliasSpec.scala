@@ -65,7 +65,7 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
     chirrtl should include("out : Fizz")
     chirrtl should include("wire w : Fizz")
   }
-  
+
   "Bundles with opt-in alias names" should "allow user-specified stripped suffixing" in {
     class Test extends Module {
       class FooBundle extends Bundle with HasTypeAlias {
@@ -424,19 +424,18 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
         val in = Input(new FooRecord)
         val out = Output(new FooRecord)
       })
-    
+
       io.out :#= io.in
     }
 
     val chirrtl = ChiselStage.emitCHIRRTL(new Test)
 
-
     chirrtl should include("type FooRecord = { bar : UInt<1>, foo : UInt<8>}")
-    
+
     chirrtl should include("flip in : FooRecord")
     chirrtl should include("out : FooRecord")
   }
-  
+
   "Type alises" should "work on Records with flipped, coerced Elements" in {
     import scala.collection.immutable.SeqMap
     class Test extends Module {
@@ -450,19 +449,18 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
         val in = Input(new FooRecord)
         val out = Output(new FooRecord)
       })
-    
+
       io.out :#= io.in
     }
 
     val chirrtl = ChiselStage.emitCHIRRTL(new Test)
 
-
     chirrtl should include("type FooRecord_stripped = { bar : UInt<1>, foo : UInt<8>}")
-    
+
     chirrtl should include("flip in : FooRecord_stripped")
     chirrtl should include("out : FooRecord_stripped")
   }
-  
+
   "Type alises" should "work on Records with flipped, uncoerced Elements" in {
     import scala.collection.immutable.SeqMap
     class Test extends Module {
@@ -476,19 +474,18 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
         val in = Flipped(new FooRecord)
         val out = new FooRecord
       })
-    
+
       io.out :<>= io.in
     }
 
     val chirrtl = ChiselStage.emitCHIRRTL(new Test)
 
-
     chirrtl should include("type FooRecord = { bar : UInt<1>, flip foo : UInt<8>}")
-    
+
     chirrtl should include("flip in : FooRecord")
     chirrtl should include("out : FooRecord")
   }
-  
+
   "Type alises" should "work on Records with monodirectional/flipped/uncoerced Elements" in {
     import scala.collection.immutable.SeqMap
     class Test extends Module {
@@ -502,15 +499,14 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
         val in = Flipped(new FooRecord)
         val out = new FooRecord
       })
-    
+
       io.out :<>= io.in
     }
 
     val chirrtl = ChiselStage.emitCHIRRTL(new Test)
 
-
     chirrtl should include("type FooRecord = { flip bar : UInt<1>, flip foo : UInt<8>}")
-    
+
     chirrtl should include("flip in : FooRecord")
     chirrtl should include("out : FooRecord")
   }

@@ -45,14 +45,14 @@ trait HasTypeAlias {
     *
     * In case of coercion with [[Input]] and [[Output]], which inherently modifies the structure of Records, an additional suffix
     * is appended to any such Records which contain flipped values subsequently 'stripped' by `Input`/`Output`.
-    * 
+    *
     * @example
     * {{{
     * class MyBundle extends Bundle with HasTypeAlias {
     *   override def aliasName = RecordAlias("UserBundle")
     *   val foo = Flipped(UInt(8.W))
     * }
-    * 
+    *
     * class Top extends Module {
     *   val in = IO(Input(new MyBundle)) // Note that this strips flipped-ness from in.foo
     * }

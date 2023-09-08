@@ -337,11 +337,11 @@ private[chisel3] object Converter {
     extractType(baseType, false, info, true, true, typeAliases)
 
   def extractType(
-    baseType:   Data,
-    clearDir:   Boolean,
-    info:       SourceInfo,
-    checkProbe: Boolean,
-    checkConst: Boolean,
+    baseType:    Data,
+    clearDir:    Boolean,
+    info:        SourceInfo,
+    checkProbe:  Boolean,
+    checkConst:  Boolean,
     typeAliases: Seq[String]
   ): fir.Type = baseType match {
     // extract underlying type for probe
