@@ -556,6 +556,8 @@ case class TuplePropertyType(types: Seq[PropertyType]) extends PropertyType
 
 case class ClassPropertyType(name: String) extends PropertyType
 
+case object AnyRefPropertyType extends PropertyType
+
 case object UnknownType extends Type with UseSerializer
 
 /** [[Port]] Direction */

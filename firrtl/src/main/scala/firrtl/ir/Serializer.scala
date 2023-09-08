@@ -422,6 +422,7 @@ object Serializer {
       }
       b += '>'
     case ClassPropertyType(name) => b ++= "Inst<"; b ++= name; b += '>'
+    case AnyRefPropertyType      => b ++= "AnyRef"
     case UnknownType             => b += '?'
     case other                   => b ++= other.serialize // Handle user-defined nodes
   }

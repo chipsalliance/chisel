@@ -2,10 +2,11 @@
 
 package chisel3.properties
 
+import firrtl.{ir => fir}
 import chisel3.{Data, RawModule, SpecifiedDirection}
 import chisel3.experimental.{BaseModule, SourceInfo}
 import chisel3.internal.{throwException, Builder, ClassBinding, OpBinding}
-import chisel3.internal.firrtl.{Arg, Command, Component, DefClass, DefObject, ModuleIO, Port, PropAssign}
+import chisel3.internal.firrtl.{Arg, Command, Component, Converter, DefClass, DefObject, ModuleIO, Port, PropAssign}
 
 import scala.annotation.nowarn
 import scala.collection.mutable.ArrayBuffer
@@ -87,7 +88,51 @@ class Class extends BaseModule {
 
 /** Represent a Class type for referencing a Class in a Property[ClassType]
   */
-case class ClassType private[chisel3] (name: String)
+case class ClassType private[chisel3] (name: String) { self =>
+
+  /** A tag type representing an instance of this ClassType
+    *
+    * This can be used to create a Property IOs
+    * {{{
+    *   val cls = ClassType("foobar")
+    *   val io = IO(Property[cls.Type]())
+    *
+    *   io :#= cls.unsafeGetReferenceType
+    * }}}
+    */
+  sealed trait Type
+
+  private object Type {
+    implicit val classTypeProvider: ClassTypeProvider[Type] = ClassTypeProvider(name)
+    implicit val propertyType =
+      new ClassTypePropertyType[Property[ClassType] with self.Type](classTypeProvider.classType) {
+        override def convert(value: Underlying, ctx: Component, info: SourceInfo): fir.Expression =
+          Converter.convert(value, ctx, info)
+        type Underlying = Arg
+        override def convertUnderlying(value: Property[ClassType] with self.Type) = value.ref
+      }
+  }
+}
+
+object ClassType {
+  private def apply(name:            String): ClassType = new ClassType(name)
+  def unsafeGetClassTypeByName(name: String): ClassType = ClassType(name)
+}
+
+sealed trait AnyClassType
+
+object AnyClassType {
+  implicit val classTypeProvider: ClassTypeProvider[AnyClassType] = ClassTypeProvider(fir.AnyRefPropertyType)
+  implicit val propertyType = new RecursivePropertyType[Property[ClassType] with AnyClassType] {
+    type Type = ClassType
+    override def getPropertyType(): fir.PropertyType = fir.AnyRefPropertyType
+
+    override def convert(value: Underlying, ctx: Component, info: SourceInfo): fir.Expression =
+      Converter.convert(value, ctx, info)
+    type Underlying = Arg
+    override def convertUnderlying(value: Property[ClassType] with AnyClassType) = value.ref
+  }
+}
 
 object Class {
 
@@ -98,7 +143,8 @@ object Class {
     * *WARNING*: It is the caller's resonsibility to ensure the Class exists, this is not checked automatically.
     */
   def unsafeGetReferenceType(className: String): Property[ClassType] = {
-    Property.makeWithValueOpt(Some(ClassType(className)))
+    val cls = ClassType.unsafeGetClassTypeByName(className)
+    Property[cls.Type]()
   }
 
   /** Helper to create a DynamicObject for a Class of a given name.
@@ -107,7 +153,7 @@ object Class {
     */
   def unsafeGetDynamicObject(className: String)(implicit sourceInfo: SourceInfo): DynamicObject = {
     // Instantiate the Object.
-    val obj = new DynamicObject(className)
+    val obj = new DynamicObject(ClassType.unsafeGetClassTypeByName(className))
 
     // Get its Property[ClassType] type.
     val classProp = obj.getReference
