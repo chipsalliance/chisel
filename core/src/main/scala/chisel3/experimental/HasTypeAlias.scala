@@ -27,13 +27,14 @@ trait HasTypeAlias {
     * @example
     * {{{
     * class MyBundle extends Bundle with HasTypeAlias {
-    *   override def aliasName = Some("UserBundle")
+    *   override def aliasName = RecordAlias("UserBundle")
     * }
     * }}}
     *
     * {{{
     * circuit Top :
     *   type UserBundle = { ... }
+    *
     *   module Top :
     *     // ...
     * }}}
@@ -41,6 +42,32 @@ trait HasTypeAlias {
     * This is used as a strong hint for the generated type alias: steps like sanitization and disambiguation
     * may change the resulting alias by necessity, so there is no certain guarantee that the desired name will show up in
     * the generated FIRRTL.
+    *
+    * In case of coercion with [[Input]] and [[Output]], which inherently modifies the structure of Records, an additional suffix
+    * is appended to any such Records which contain flipped values subsequently 'stripped' by `Input`/`Output`.
+    * 
+    * @example
+    * {{{
+    * class MyBundle extends Bundle with HasTypeAlias {
+    *   override def aliasName = RecordAlias("UserBundle")
+    *   val foo = Flipped(UInt(8.W))
+    * }
+    * 
+    * class Top extends Module {
+    *   val in = IO(Input(new MyBundle)) // Note that this strips flipped-ness from in.foo
+    * }
+    * }}}
+    *
+    * {{{
+    * circuit Top :
+    *   type UserBundle_stripped = { foo : UInt<8>}
+    *
+    *   module Top :
+    *     flip in : UserBundle_stripped
+    *     // ...
+    * }}}
+    *
+    * This suffix can be modified by providing a secondary string when instantiating `RecordAlias`.
     */
   def aliasName: RecordAlias
 
