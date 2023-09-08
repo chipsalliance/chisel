@@ -15,7 +15,7 @@ object Serializer {
   val Indent = "  "
 
   // The version supported by the serializer.
-  val version = Version(3, 1, 0)
+  val version = Version(3, 2, 0)
 
   /** Converts a `FirrtlNode` into its string representation with
     * default indentation.
@@ -128,12 +128,28 @@ object Serializer {
       }
       b += ')'
     case MapPropertyValue(tpe, values) =>
-      b ++= "Map<"; s(tpe); b ++= ">(";
+      s(tpe)
+      b += '('
       val lastIdx = values.size - 1
       values.zipWithIndex.foreach {
         case ((key, value), idx) =>
-          b ++= StringLit(key).escape; b ++= " -> "; s(value)
+          s(key); b ++= " -> "; s(value)
           if (idx != lastIdx) b ++= ", "
+      }
+      b += ')'
+    case TuplePropertyValue(values) =>
+      b ++= "Tuple<"
+      val lastIdx = values.size - 1
+      values.zipWithIndex.foreach {
+        case ((tpe, _), i) =>
+          s(tpe)
+          if (i != lastIdx) b ++= ", "
+      }
+      b ++= ">("
+      values.zipWithIndex.foreach {
+        case ((_, value), i) =>
+          s(value)
+          if (i != lastIdx) b ++= ", "
       }
       b += ')'
     case ProbeExpr(expr, _)   => b ++= "probe("; s(expr); b += ')'
@@ -395,10 +411,20 @@ object Serializer {
     case BooleanPropertyType       => b ++= "Bool"
     case PathPropertyType          => b ++= "Path"
     case SequencePropertyType(tpe) => b ++= "List<"; s(tpe, lastEmittedConst); b += '>'
-    case MapPropertyType(tpe)      => b ++= "Map<"; s(tpe, lastEmittedConst); b += '>'
-    case ClassPropertyType(name)   => b ++= "Inst<"; b ++= name; b += '>'
-    case UnknownType               => b += '?'
-    case other                     => b ++= other.serialize // Handle user-defined nodes
+    case MapPropertyType(k, v)     => b ++= "Map<"; s(k, lastEmittedConst); b ++= ", "; s(v, lastEmittedConst); b += '>'
+    case TuplePropertyType(types) =>
+      val lastIdx = types.size - 1
+      b ++= "Tuple<"
+      types.zipWithIndex.foreach {
+        case (tpe, i) =>
+          s(tpe, lastEmittedConst)
+          if (i != lastIdx) b ++= ", "
+      }
+      b += '>'
+    case ClassPropertyType(name) => b ++= "Inst<"; b ++= name; b += '>'
+    case AnyRefPropertyType      => b ++= "AnyRef"
+    case UnknownType             => b += '?'
+    case other                   => b ++= other.serialize // Handle user-defined nodes
   }
 
   private def s(node: Direction)(implicit b: StringBuilder, indent: Int): Unit = node match {

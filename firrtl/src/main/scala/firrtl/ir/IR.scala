@@ -257,7 +257,11 @@ case class PathPropertyLiteral(value: String) extends Expression with UseSeriali
 
 case class SequencePropertyValue(tpe: Type, values: Seq[Expression]) extends Expression with UseSerializer
 
-case class MapPropertyValue(tpe: Type, values: Seq[(String, Expression)]) extends Expression with UseSerializer
+case class MapPropertyValue(tpe: Type, values: Seq[(Expression, Expression)]) extends Expression with UseSerializer
+
+case class TuplePropertyValue(values: Seq[(PropertyType, Expression)]) extends Expression with UseSerializer {
+  val tpe = TuplePropertyType(values.map(_._1))
+}
 
 case class DoPrim(op: PrimOp, args: Seq[Expression], consts: Seq[BigInt], tpe: Type)
     extends Expression
@@ -546,9 +550,13 @@ case object PathPropertyType extends PropertyType
 
 case class SequencePropertyType(tpe: PropertyType) extends PropertyType
 
-case class MapPropertyType(tpe: PropertyType) extends PropertyType
+case class MapPropertyType(ktpe: PropertyType, vtpe: PropertyType) extends PropertyType
+
+case class TuplePropertyType(types: Seq[PropertyType]) extends PropertyType
 
 case class ClassPropertyType(name: String) extends PropertyType
+
+case object AnyRefPropertyType extends PropertyType
 
 case object UnknownType extends Type with UseSerializer
 
