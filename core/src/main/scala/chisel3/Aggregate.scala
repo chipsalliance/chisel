@@ -191,7 +191,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
     */
   override def typeName = s"Vec${length}_${gen.typeName}"
 
-  override def isFlipped = sample_element.isFlipped
+  override def containsAFlipped = sample_element.containsAFlipped
 
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
     this.maybeAddToParentIds(target)
@@ -1029,10 +1029,10 @@ abstract class Record extends Aggregate {
   }
 
   /* Tracking variable for deciding Record flipped-ness. */
-  private[chisel3] var _isFlipped: Boolean = false
+  private[chisel3] var _containsAFlipped: Boolean = false
 
-  /* In the context of Records, isFlipped is assigned true if any of its children are flipped. */
-  override def isFlipped: Boolean = _isFlipped
+  /* In the context of Records, containsAFlipped is assigned true if any of its children are flipped. */
+  override def containsAFlipped: Boolean = _containsAFlipped
 
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
     this.maybeAddToParentIds(target)
@@ -1056,7 +1056,7 @@ abstract class Record extends Aggregate {
       child.bind(ChildBinding(this), resolvedDirection)
 
       // Update the flipped tracker based on the flipped-ness of this specific child element
-      _isFlipped |= child.isFlipped
+      _containsAFlipped |= child.containsAFlipped
     }
 
     // Check that children obey the directionality rules.

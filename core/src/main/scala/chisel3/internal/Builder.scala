@@ -878,7 +878,7 @@ private[chisel3] object Builder extends LazyLogging {
         case SpecifiedDirection.Input | SpecifiedDirection.Output => true
         case other                                                => false
       }
-      val isStripped = isCoerced && record.isFlipped
+      val isStripped = isCoerced && record.containsAFlipped
 
       // The true alias, after sanitization and (TODO) disambiguation
       val alias = sanitize(s"${record.aliasName.id}${if (isStripped) record.aliasName.strippedSuffix else ""}")
