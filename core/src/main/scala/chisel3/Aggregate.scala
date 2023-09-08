@@ -10,7 +10,6 @@ import scala.collection.mutable.{HashSet, LinkedHashMap}
 import scala.language.experimental.macros
 import chisel3.experimental.{
   BaseModule,
-  BundleAlias,
   BundleLiteralException,
   HasTypeAlias,
   OpaqueType,

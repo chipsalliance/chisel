@@ -870,54 +870,52 @@ private[chisel3] object Builder extends LazyLogging {
   }
 
   def setRecordAlias(record: Record with HasTypeAlias, parentDirection: SpecifiedDirection): Unit = {
-    val alias = record.aliasName.flatMap { candidateAlias =>
-      {
-        val sourceInfo = candidateAlias.info
+    val finalizedAlias: Option[String] = { 
+      val sourceInfo = record.aliasName.info
 
-        // If the aliased bundle is coerced and it has flipped signals, then they must be stripped
-        val isCoerced = parentDirection match {
-          case SpecifiedDirection.Input | SpecifiedDirection.Output => true
-          case other                                                => false
-        }
-        val isStripped = isCoerced && record.isFlipped
+      // If the aliased bundle is coerced and it has flipped signals, then they must be stripped
+      val isCoerced = parentDirection match {
+        case SpecifiedDirection.Input | SpecifiedDirection.Output => true
+        case other                                                => false
+      }
+      val isStripped = isCoerced && record.isFlipped
 
-        // The true alias, after sanitization and (TODO) disambiguation
-        val alias = sanitize(s"${candidateAlias.id}${if (isStripped) candidateAlias.strippedSuffix else ""}")
-        // Filter out (TODO: disambiguate) FIRRTL keywords that cause parser errors if used
-        if (illegalTypeAliases.contains(alias)) {
-          Builder.error(
-            s"Attempted to use an illegal word '$alias' for a type alias. Chisel does not automatically disambiguate these aliases at this time."
+      // The true alias, after sanitization and (TODO) disambiguation
+      val alias = sanitize(s"${record.aliasName.id}${if (isStripped) record.aliasName.strippedSuffix else ""}")
+      // Filter out (TODO: disambiguate) FIRRTL keywords that cause parser errors if used
+      if (illegalTypeAliases.contains(alias)) {
+        Builder.error(
+          s"Attempted to use an illegal word '$alias' for a type alias. Chisel does not automatically disambiguate these aliases at this time."
+        )(sourceInfo)
+
+        None
+      } else {
+        val tpe = Converter.extractType(record, isCoerced, sourceInfo, true, true, aliasMap.keys.toSeq)
+        // If the name is already taken, check if there exists a *structurally equivalent* bundle with the same name, and
+        // simply error (TODO: disambiguate that name)
+        if (
+          Builder.aliasMap.contains(alias) &&
+          Builder.aliasMap.get(alias).exists(_._1 != tpe)
+        ) {
+          // Get full structural map value
+          val recordValue = Builder.aliasMap.get(alias).get
+          // Conflict found:
+          error(
+            s"Attempted to redeclare an existing type alias '$alias' with a new Record structure:\n'$tpe'.\n\nThe alias was previously defined as:\n'${recordValue._1}${recordValue._2
+              .makeMessage(" " + _)}"
           )(sourceInfo)
 
           None
         } else {
-          val tpe = Converter.extractType(record, isCoerced, sourceInfo, true, true, aliasMap.keys.toSeq)
-          // If the name is already taken, check if there exists a *structurally equivalent* bundle with the same name, and
-          // simply error (TODO: disambiguate that name)
-          if (
-            Builder.aliasMap.contains(alias) &&
-            Builder.aliasMap.get(alias).exists(_._1 != tpe)
-          ) {
-            // Get full structural map value
-            val recordValue = Builder.aliasMap.get(alias).get
-            // Conflict found:
-            error(
-              s"Attempted to redeclare an existing type alias '$alias' with a new Record structure:\n'$tpe'.\n\nThe alias was previously defined as:\n'${recordValue._1}${recordValue._2
-                .makeMessage(" " + _)}"
-            )(sourceInfo)
-
-            None
-          } else {
-            if (!Builder.aliasMap.contains(alias)) {
-              Builder.aliasMap.put(alias, (tpe, sourceInfo))
-            }
-
-            Some(alias)
+          if (!Builder.aliasMap.contains(alias)) {
+            Builder.aliasMap.put(alias, (tpe, sourceInfo))
           }
+
+          Some(alias)
         }
       }
     }
-    record.finalizedAlias = alias
+    record.finalizedAlias = finalizedAlias
   }
 
   private[chisel3] def build[T <: BaseModule](
@@ -947,7 +945,6 @@ private[chisel3] object Builder extends LazyLogging {
       logger.info("Done elaborating.")
 
       val typeAliases = aliasMap.flatMap {
-        // Discard the previously-computed FIRRTL type as the converter will now have alias information
         case (name, (underlying: fir.Type, info: SourceInfo)) => Some(DefTypeAlias(info, underlying, name))
         case _ => None
       }.toSeq

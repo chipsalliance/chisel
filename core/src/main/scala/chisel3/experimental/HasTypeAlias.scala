@@ -9,12 +9,12 @@ import chisel3.Record
   * @param strippedSuffix In the case of forced coersion by [[Input]] or [[Output]], the string to append to the end of the
   *        alias name. Takes the default value of `"_stripped"`
   */
-case class BundleAlias private[chisel3] (info: SourceInfo, id: String, strippedSuffix: String = "_stripped")
+case class RecordAlias private[chisel3] (info: SourceInfo, id: String, strippedSuffix: String = "_stripped")
 
-object BundleAlias {
-  def apply(id: String)(implicit info:  SourceInfo): BundleAlias = BundleAlias(info, id)
-  def apply(id: String, strippedSuffix: String)(implicit info: SourceInfo): BundleAlias =
-    BundleAlias(info, id, strippedSuffix)
+object RecordAlias {
+  def apply(id: String)(implicit info:  SourceInfo): RecordAlias = RecordAlias(info, id)
+  def apply(id: String, strippedSuffix: String)(implicit info: SourceInfo): RecordAlias =
+    RecordAlias(info, id, strippedSuffix)
 }
 
 trait HasTypeAlias {
@@ -42,7 +42,7 @@ trait HasTypeAlias {
     * may change the resulting alias by necessity, so there is no certain guarantee that the desired name will show up in
     * the generated FIRRTL.
     */
-  def aliasName: Option[BundleAlias] = None
+  def aliasName: RecordAlias
 
   // The final sanitized and disambiguated alias for this bundle, generated when aliasName is a non-empty Option.
   // This is important if sanitization and disambiguation results in a changed alias,
