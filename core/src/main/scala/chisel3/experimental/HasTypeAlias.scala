@@ -20,8 +20,8 @@ object RecordAlias {
 trait HasTypeAlias {
   this: Record =>
 
-  /** An optional FIRRTL type alias name to give to this [[Record]]. If overrided with a `Some(...)`, for instance
-    * `Some(BundleAlias("UserBundle"))`, this causes emission of circuit-level FIRRTL statements that declare that name for
+  /** An optional FIRRTL type alias name to give to this [[Record]]. If overrided with an instance of a [[RecordAlias]], such as
+    * `RecordAlias("UserBundle")`, this causes emission of circuit-level FIRRTL statements that declare that name for
     * this bundle type:
     *
     * @example
