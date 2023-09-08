@@ -869,15 +869,15 @@ private[chisel3] object Builder extends LazyLogging {
     renames
   }
 
-  def setRecordAlias(record: Record with HasTypeAlias): Unit = {
+  def setRecordAlias(record: Record with HasTypeAlias, parentDirection: SpecifiedDirection): Unit = {
     val alias = record.aliasName.flatMap { candidateAlias =>
       {
         val sourceInfo = candidateAlias.info
 
         // If the aliased bundle is coerced and it has flipped signals, then they must be stripped
-        val isCoerced = record.direction match {
-          case ActualDirection.Input | ActualDirection.Output => true
-          case other                                          => false
+        val isCoerced = parentDirection match {
+          case SpecifiedDirection.Input | SpecifiedDirection.Output => true
+          case other                                                => false
         }
         val isStripped = isCoerced && record.isFlipped
 
@@ -891,7 +891,7 @@ private[chisel3] object Builder extends LazyLogging {
 
           None
         } else {
-          val tpe = Converter.extractType(record, sourceInfo, aliasMap.keys.toSeq)
+          val tpe = Converter.extractType(record, isCoerced, sourceInfo, true, true, aliasMap.keys.toSeq)
           // If the name is already taken, check if there exists a *structurally equivalent* bundle with the same name, and
           // simply error (TODO: disambiguate that name)
           if (

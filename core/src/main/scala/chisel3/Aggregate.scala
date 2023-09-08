@@ -1075,7 +1075,7 @@ abstract class Record extends Aggregate {
     setElementRefs()
 
     this match {
-      case aliasedRecord: HasTypeAlias => Builder.setRecordAlias(aliasedRecord)
+      case aliasedRecord: HasTypeAlias => Builder.setRecordAlias(aliasedRecord, resolvedDirection)
       case _ =>
     }
   }

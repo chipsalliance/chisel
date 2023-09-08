@@ -320,11 +320,6 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
   }
 
   "Nested bundles with nested FIRRTL type aliases" should "generate with previously-defined aliases" in {
-    // This test primarily checks if aliased Bundles are being recursively walked at most once during the alias generation step.
-    // This holds true whenever:
-    // 1) The bundle itself contains no nested aliased bundles: then its entire firrtl type structure is walked during its associated Record.bind call
-    // 2) The bundle contains nested aliased bundles: Each nested, aliased bundle is recursively bound by the Record.bind call and so are walked once,
-    //    and their generated alias is reused as the recursive walk for the parent bundle
     class Test extends Module {
       class FooBundle(width: Int) extends Bundle with HasTypeAlias {
         override def aliasName = Some(BundleAlias("FooBundle"))
@@ -356,5 +351,39 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
     chirrtl should include("type FooBundle = { x : UInt<8>}")
     chirrtl should include("type BarBundle = { y : SInt<3>}")
     chirrtl should include("type ParentBundle = { foo : FooBundle, bar : BarBundle}")
+  }
+
+  "Nested bundles with nested FIRRTL type aliases which have flipped values" should "generate properly" in {
+    // Similar to the previous test, but also checks for proper hierarchal propagation of directionality to child
+    // alias bundles
+    class Test extends Module {
+      class ChildBundle(width: Int) extends Bundle with HasTypeAlias {
+        override def aliasName = Some(BundleAlias("ChildBundle"))
+        val y = Flipped(SInt(width.W))
+      }
+      class ParentBundle extends Bundle with HasTypeAlias {
+        override def aliasName = Some(BundleAlias("ParentBundle"))
+
+        val bar = new ChildBundle(3)
+      }
+
+      val io = IO(new Bundle {
+        val in = Input(new ParentBundle)
+        val out = Output(new ParentBundle)
+      })
+
+      io.out :#= io.in
+    }
+
+    val chirrtl = ChiselStage.emitCHIRRTL(new Test)
+
+    // Check for bad stripped alias: Whenever there is no strip suffix, or the flip is still present
+    chirrtl shouldNot include("type ChildBundle = { y : SInt<3>}")
+    chirrtl shouldNot include("type ChildBundle = { flip y : SInt<3>}")
+    chirrtl shouldNot include("type ChildBundle_stripped = { flip y : SInt<3>}")
+    chirrtl should include("type ChildBundle_stripped = { y : SInt<3>}")
+
+    // Stripped parent alias should also be present
+    chirrtl should include("type ParentBundle_stripped = { bar : ChildBundle_stripped}")
   }
 }
