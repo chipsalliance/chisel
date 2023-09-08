@@ -408,6 +408,9 @@ abstract class Component extends Arg {
   val secretPorts: mutable.ArrayBuffer[Port] = id.secretPorts
 }
 
+@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
+private[chisel3] case class DefTypeAlias(sourceInfo: SourceInfo, underlying: fir.Type, val name: String)
+
 @nowarn("msg=class Port") // delete when Port becomes private
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class DefModule(id: RawModule, name: String, ports: Seq[Port], commands: Seq[Command]) extends Component {
@@ -448,10 +451,17 @@ case class Circuit(
   @deprecated("Do not use newAnnotations val of Circuit directly - use firrtlAnnotations instead. Will be removed in a future release",
     "Chisel 3.5")
 
-  newAnnotations: Seq[ChiselMultiAnnotation]) {
+  newAnnotations: Seq[ChiselMultiAnnotation],
+  typeAliases:    Seq[DefTypeAlias]) {
 
-  def this(name: String, components: Seq[Component], annotations: Seq[ChiselAnnotation], renames: RenameMap) =
-    this(name, components, annotations, renames, Seq.empty)
+  def this(
+    name:        String,
+    components:  Seq[Component],
+    annotations: Seq[ChiselAnnotation],
+    renames:     RenameMap,
+    typeAliases: Seq[DefTypeAlias]
+  ) =
+    this(name, components, annotations, renames, Seq.empty, typeAliases)
 
   def firrtlAnnotations: Iterable[Annotation] =
     annotations.flatMap(_.toFirrtl.update(renames)) ++ newAnnotations.flatMap(
@@ -462,18 +472,27 @@ case class Circuit(
     name:        String = name,
     components:  Seq[Component] = components,
     annotations: Seq[ChiselAnnotation] = annotations,
-    renames:     RenameMap = renames
-  ) = Circuit(name, components, annotations, renames, newAnnotations)
+    renames:     RenameMap = renames,
+    typeAliases: Seq[DefTypeAlias] = typeAliases
+  ) = Circuit(name, components, annotations, renames, newAnnotations, typeAliases)
 
 }
 
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 object Circuit
-    extends scala.runtime.AbstractFunction4[String, Seq[Component], Seq[ChiselAnnotation], RenameMap, Circuit] {
-  def unapply(c: Circuit): Option[(String, Seq[Component], Seq[ChiselAnnotation], RenameMap)] = {
-    Some((c.name, c.components, c.annotations, c.renames))
+    extends scala.runtime.AbstractFunction5[String, Seq[Component], Seq[ChiselAnnotation], RenameMap, Seq[
+      DefTypeAlias
+    ], Circuit] {
+  def unapply(c: Circuit): Option[(String, Seq[Component], Seq[ChiselAnnotation], RenameMap, Seq[DefTypeAlias])] = {
+    Some((c.name, c.components, c.annotations, c.renames, c.typeAliases))
   }
 
-  def apply(name: String, components: Seq[Component], annotations: Seq[ChiselAnnotation], renames: RenameMap): Circuit =
-    new Circuit(name, components, annotations, renames)
+  def apply(
+    name:        String,
+    components:  Seq[Component],
+    annotations: Seq[ChiselAnnotation],
+    renames:     RenameMap,
+    typeAliases: Seq[DefTypeAlias] = Seq.empty
+  ): Circuit =
+    new Circuit(name, components, annotations, renames, typeAliases)
 }

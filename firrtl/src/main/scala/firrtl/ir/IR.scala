@@ -321,6 +321,10 @@ case class DefMemory(
     with IsDeclaration
     with UseSerializer
 case class DefNode(info: Info, name: String, value: Expression) extends Statement with IsDeclaration with UseSerializer
+
+/** Record/bundle type definition that names a FIRRTL type with an alias name */
+case class DefTypeAlias(info: Info, name: String, tpe: Type) extends Statement with UseSerializer
+
 case class Conditionally(
   info:   Info,
   pred:   Expression,
@@ -536,6 +540,8 @@ case object AsyncResetType extends GroundType with UseSerializer {
 }
 case class AnalogType(width: Width) extends GroundType with UseSerializer
 
+case class AliasType(name: String) extends Type with UseSerializer
+
 sealed abstract class PropertyType extends Type with UseSerializer
 
 case object IntegerPropertyType extends PropertyType
@@ -644,6 +650,9 @@ case class IntModule(
   */
 case class DefClass(info: Info, name: String, ports: Seq[Port], body: Statement) extends DefModule with UseSerializer
 
-case class Circuit(info: Info, modules: Seq[DefModule], main: String) extends FirrtlNode with HasInfo with UseSerializer
+case class Circuit(info: Info, modules: Seq[DefModule], main: String, typeAliases: Seq[DefTypeAlias] = Seq.empty)
+    extends FirrtlNode
+    with HasInfo
+    with UseSerializer
 
 case class CircuitWithAnnos(circuit: Circuit, annotations: Seq[Annotation]) extends FirrtlNode with UseSerializer

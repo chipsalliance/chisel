@@ -8,12 +8,14 @@ import chisel3.experimental.dataview.{isView, reifySingleData, InvalidViewExcept
 import scala.collection.immutable.{SeqMap, VectorMap}
 import scala.collection.mutable.{HashSet, LinkedHashMap}
 import scala.language.experimental.macros
-import chisel3.experimental.{BaseModule, BundleLiteralException, OpaqueType, VecLiteralException}
+import chisel3.experimental.{BaseModule, BundleLiteralException, HasTypeAlias, OpaqueType, VecLiteralException}
 import chisel3.experimental.{SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{SourceInfoTransform, VecTransform}
+import chisel3.reflect.DataMirror
+import _root_.firrtl.{ir => fir}
 
 import java.lang.Math.{floor, log10, pow}
 import scala.collection.mutable
@@ -182,6 +184,8 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
     * generator's `typeName`
     */
   override def typeName = s"Vec${length}_${gen.typeName}"
+
+  override def containsAFlipped = sample_element.containsAFlipped
 
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
     this.maybeAddToParentIds(target)
@@ -1018,6 +1022,12 @@ abstract class Record extends Aggregate {
     }
   }
 
+  /* Tracking variable for deciding Record flipped-ness. */
+  private[chisel3] var _containsAFlipped: Boolean = false
+
+  /* In the context of Records, containsAFlipped is assigned true if any of its children are flipped. */
+  override def containsAFlipped: Boolean = _containsAFlipped
+
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
     this.maybeAddToParentIds(target)
     binding = target
@@ -1038,6 +1048,9 @@ abstract class Record extends Aggregate {
         )
       }
       child.bind(ChildBinding(this), resolvedDirection)
+
+      // Update the flipped tracker based on the flipped-ness of this specific child element
+      _containsAFlipped |= child.containsAFlipped
     }
 
     // Check that children obey the directionality rules.
@@ -1053,6 +1066,11 @@ abstract class Record extends Aggregate {
         }
     }
     setElementRefs()
+
+    this match {
+      case aliasedRecord: HasTypeAlias => Builder.setRecordAlias(aliasedRecord, resolvedDirection)
+      case _ =>
+    }
   }
 
   /** Creates a Bundle literal of this type with specified values. this must be a chisel type.
@@ -1463,4 +1481,5 @@ abstract class Bundle extends Record {
     *   the fields in the order they were defined
     */
   override def toPrintable: Printable = toPrintableHelper(_elements.toList.reverse)
+
 }

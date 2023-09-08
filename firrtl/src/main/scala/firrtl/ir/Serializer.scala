@@ -327,6 +327,9 @@ object Serializer {
       writers.foreach { w => b ++= "writer => "; b ++= legalize(w); newLineAndIndent(1) }
       readwriters.foreach { r => b ++= "readwriter => "; b ++= legalize(r); newLineAndIndent(1) }
       b ++= "read-under-write => "; b ++= readUnderWrite.toString
+    case DefTypeAlias(info, name, tpe) =>
+      b ++= "type "; b ++= name; b ++= " = ";
+      s(tpe) //; s(info) TODO: Uncomment once firtool accepts infos for type aliases
     case Attach(info, exprs) =>
       // exprs should never be empty since the attach statement takes *at least* two signals according to the spec
       b ++= "attach ("; s(exprs, ", "); b += ')'; s(info)
@@ -423,6 +426,7 @@ object Serializer {
       b += '>'
     case ClassPropertyType(name) => b ++= "Inst<"; b ++= name; b += '>'
     case AnyRefPropertyType      => b ++= "AnyRef"
+    case AliasType(name)         => b ++= name
     case UnknownType             => b += '?'
     case other                   => b ++= other.serialize // Handle user-defined nodes
   }
@@ -503,7 +507,14 @@ object Serializer {
       s(circuit.info)
       Iterator(b.toString)
     }
+    val typeAliases = if (circuit.typeAliases.nonEmpty) {
+      implicit val b = new StringBuilder
+      circuit.typeAliases.foreach(ta => { b ++= s"${NewLine}"; doIndent(1); s(ta) })
+      b ++= s"${NewLine}"
+      Iterator(b.toString)
+    } else Iterator.empty
     prelude ++
+      typeAliases ++
       circuit.modules.iterator.zipWithIndex.flatMap {
         case (m, i) =>
           val newline = Iterator(if (i == 0) s"$NewLine" else s"${NewLine}${NewLine}")

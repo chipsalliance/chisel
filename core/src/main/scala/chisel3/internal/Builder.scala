@@ -15,6 +15,7 @@ import _root_.firrtl.annotations.AnnotationUtils.validComponentName
 import _root_.firrtl.AnnotationSeq
 import _root_.firrtl.renamemap.MutableRenameMap
 import _root_.firrtl.util.BackendCompilationUtilities._
+import _root_.firrtl.{ir => fir}
 import chisel3.experimental.dataview.{reify, reifySingleData}
 import chisel3.internal.Builder.Prefix
 import logger.LazyLogging
@@ -453,6 +454,13 @@ private[chisel3] class DynamicContext(
   val globalNamespace = Namespace.empty
   val globalIdentifierNamespace = Namespace.empty('$')
 
+  // A mapping from previously named bundles to their hashed structural/FIRRTL types, for
+  // disambiguation purposes when emitting type aliases
+  // Records are used as the key for this map to both represent their alias name and preserve
+  // the chisel Bundle structure when passing everything off to the Converter
+  private[chisel3] val aliasMap: mutable.LinkedHashMap[String, (fir.Type, SourceInfo)] =
+    mutable.LinkedHashMap.empty[String, (fir.Type, SourceInfo)]
+
   // Ensure imported Definitions emit as ExtModules with the correct name so
   // that instantiations will also use the correct name and prevent any name
   // conflicts with Modules/Definitions in this elaboration
@@ -536,8 +544,12 @@ private[chisel3] object Builder extends LazyLogging {
 
   def globalNamespace:           Namespace = dynamicContext.globalNamespace
   def globalIdentifierNamespace: Namespace = dynamicContext.globalIdentifierNamespace
-  def components:                ArrayBuffer[Component] = dynamicContext.components
-  def annotations:               ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
+
+  def aliasMap: mutable.LinkedHashMap[String, (fir.Type, SourceInfo)] =
+    dynamicContext.aliasMap
+
+  def components:  ArrayBuffer[Component] = dynamicContext.components
+  def annotations: ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
 
   def contextCache: BuilderContextCache = dynamicContext.contextCache
 
@@ -857,6 +869,55 @@ private[chisel3] object Builder extends LazyLogging {
     renames
   }
 
+  def setRecordAlias(record: Record with HasTypeAlias, parentDirection: SpecifiedDirection): Unit = {
+    val finalizedAlias: Option[String] = {
+      val sourceInfo = record.aliasName.info
+
+      // If the aliased bundle is coerced and it has flipped signals, then they must be stripped
+      val isCoerced = parentDirection match {
+        case SpecifiedDirection.Input | SpecifiedDirection.Output => true
+        case other                                                => false
+      }
+      val isStripped = isCoerced && record.containsAFlipped
+
+      // The true alias, after sanitization and (TODO) disambiguation
+      val alias = sanitize(s"${record.aliasName.id}${if (isStripped) record.aliasName.strippedSuffix else ""}")
+      // Filter out (TODO: disambiguate) FIRRTL keywords that cause parser errors if used
+      if (illegalTypeAliases.contains(alias)) {
+        Builder.error(
+          s"Attempted to use an illegal word '$alias' for a type alias. Chisel does not automatically disambiguate these aliases at this time."
+        )(sourceInfo)
+
+        None
+      } else {
+        val tpe = Converter.extractType(record, isCoerced, sourceInfo, true, true, aliasMap.keys.toSeq)
+        // If the name is already taken, check if there exists a *structurally equivalent* bundle with the same name, and
+        // simply error (TODO: disambiguate that name)
+        if (
+          Builder.aliasMap.contains(alias) &&
+          Builder.aliasMap.get(alias).exists(_._1 != tpe)
+        ) {
+          // Get full structural map value
+          val recordValue = Builder.aliasMap.get(alias).get
+          // Conflict found:
+          error(
+            s"Attempted to redeclare an existing type alias '$alias' with a new Record structure:\n'$tpe'.\n\nThe alias was previously defined as:\n'${recordValue._1}${recordValue._2
+              .makeMessage(" " + _)}"
+          )(sourceInfo)
+
+          None
+        } else {
+          if (!Builder.aliasMap.contains(alias)) {
+            Builder.aliasMap.put(alias, (tpe, sourceInfo))
+          }
+
+          Some(alias)
+        }
+      }
+    }
+    record.finalizedAlias = finalizedAlias
+  }
+
   private[chisel3] def build[T <: BaseModule](
     f:              => T,
     dynamicContext: DynamicContext,
@@ -883,7 +944,22 @@ private[chisel3] object Builder extends LazyLogging {
       errors.checkpoint(logger)
       logger.info("Done elaborating.")
 
-      (Circuit(components.last.name, components.toSeq, annotations.toSeq, makeViewRenameMap, newAnnotations.toSeq), mod)
+      val typeAliases = aliasMap.flatMap {
+        case (name, (underlying: fir.Type, info: SourceInfo)) => Some(DefTypeAlias(info, underlying, name))
+        case _ => None
+      }.toSeq
+
+      (
+        Circuit(
+          components.last.name,
+          components.toSeq,
+          annotations.toSeq,
+          makeViewRenameMap,
+          newAnnotations.toSeq,
+          typeAliases
+        ),
+        mod
+      )
     }
   }
   initializeSingletons()
