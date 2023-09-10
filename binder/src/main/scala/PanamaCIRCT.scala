@@ -21,7 +21,9 @@ class PanamaCIRCT {
     // Register dialects
     Seq(
       CAPI.mlirGetDialectHandle__firrtl__(arena),
-      CAPI.mlirGetDialectHandle__chirrtl__(arena)
+      CAPI.mlirGetDialectHandle__chirrtl__(arena),
+      CAPI.mlirGetDialectHandle__sv__(arena),
+      CAPI.mlirGetDialectHandle__seq__(arena)
     ).foreach(CAPI.mlirDialectHandleLoadDialect(arena, _, mlirCtx))
 
     mlirCtx
@@ -42,6 +44,15 @@ class PanamaCIRCT {
     val buffer = MemorySegment.allocateNative(bytes.length + 1, arena.scope())
     buffer.copyFrom(MemorySegment.ofArray(bytes))
     MlirStringRef(CAPI.mlirStringRefCreateFromCString(arena, buffer))
+  }
+
+  private def newStringCallback(callback: String => Unit): MlirStringCallback = {
+    val cb = new circt.MlirStringCallback {
+      def apply(message: MemorySegment, userData: MemorySegment) = {
+        callback(MlirStringRef(message).toString)
+      }
+    }
+    MlirStringCallback(circt.MlirStringCallback.allocate(cb, arena.scope()))
   }
 
   private def seqToArray[T <: ForeignType[_]](xs: Seq[T]): (MemorySegment, Int) = {
@@ -179,17 +190,61 @@ class PanamaCIRCT {
 
   def mlirF64TypeGet() = MlirType(CAPI.mlirF64TypeGet(arena, mlirCtx))
 
-  def mlirOperationDump(op: MlirOperation) = CAPI.mlirOperationDump(op.get)
+  def mlirOperationPrint(op: MlirOperation, callback: String => Unit) = CAPI.mlirOperationPrint(op.get, newStringCallback(callback).get, NULL)
 
   def mlirExportFIRRTL(module: MlirModule, callback: String => Unit) = {
-    val cb = new circt.MlirStringCallback {
-      def apply(message: MemorySegment, userData: MemorySegment) = {
-        callback(MlirStringRef(message).toString)
-      }
-    }
-    val stub = circt.MlirStringCallback.allocate(cb, arena.scope())
-    CAPI.mlirExportFIRRTL(arena, module.get, stub, NULL)
+    CAPI.mlirExportFIRRTL(arena, module.get, newStringCallback(callback).get, NULL)
   }
+
+  def mlirPassManagerCreate() = MlirPassManager(CAPI.mlirPassManagerCreate(arena, mlirCtx))
+
+  def mlirPassManagerAddOwnedPass(pm: MlirPassManager, pass: MlirPass) = {
+    CAPI.mlirPassManagerAddOwnedPass(pm.get, pass.get)
+  }
+
+  def mlirPassManagerGetNestedUnder(pm: MlirPassManager, operationName: String) = MlirOpPassManager(
+    CAPI.mlirPassManagerGetNestedUnder(arena, pm.get, newString(operationName).get)
+  )
+
+  def mlirPassManagerRunOnOp(pm: MlirPassManager, op: MlirOperation) = MlirLogicalResult(
+    CAPI.mlirPassManagerRunOnOp(arena, pm.get, op.get)
+  )
+
+  def mlirOpPassManagerAddOwnedPass(pm: MlirOpPassManager, pass: MlirPass) = {
+    CAPI.mlirOpPassManagerAddOwnedPass(pm.get, pass.get)
+  }
+
+  def mlirOpPassManagerGetNestedUnder(pm: MlirOpPassManager, operationName: String) = MlirOpPassManager(
+    CAPI.mlirOpPassManagerGetNestedUnder(arena, pm.get, newString(operationName).get)
+  )
+
+  def firtoolPopulatePreprocessTransforms(pm: MlirPassManager) = MlirLogicalResult(
+    CAPI.firtoolPopulatePreprocessTransforms(arena, pm.get)
+  )
+
+  def firtoolPopulateCHIRRTLToLowFIRRTL(pm: MlirPassManager, module: MlirModule, inputFilename: String) =
+    MlirLogicalResult(CAPI.firtoolPopulateCHIRRTLToLowFIRRTL(arena, pm.get, module.get, newString(inputFilename).get))
+
+  def firtoolPopulateLowFIRRTLToHW(pm: MlirPassManager) = MlirLogicalResult(
+    CAPI.firtoolPopulateLowFIRRTLToHW(arena, pm.get)
+  )
+
+  def firtoolPopulateHWToSV(pm: MlirPassManager) = MlirLogicalResult(
+    CAPI.firtoolPopulateHWToSV(arena, pm.get)
+  )
+
+  def firtoolPopulateExportVerilog(pm: MlirPassManager, callback: String => Unit) = 
+    MlirLogicalResult(
+      CAPI.firtoolPopulateExportVerilog(arena, pm.get, newStringCallback(callback).get, NULL)
+    )
+
+  def firtoolPopulateExportSplitVerilog(pm: MlirPassManager, directory: String) = MlirLogicalResult(
+    CAPI.firtoolPopulateExportSplitVerilog(arena, pm.get, newString(directory).get)
+  )
+
+  def mlirLogicalResultIsSuccess(res: MlirLogicalResult): Boolean = circt.MlirLogicalResult.value$get(res.get) != 0
+
+  def mlirLogicalResultIsFailure(res: MlirLogicalResult): Boolean = circt.MlirLogicalResult.value$get(res.get) == 0
 
   def firrtlTypeGetUInt(width: Int) = MlirType(CAPI.firrtlTypeGetUInt(arena, mlirCtx, width))
 
@@ -226,6 +281,10 @@ class PanamaCIRCT {
 
   def firrtlAttrGetParamDecl(name: String, tpe: MlirType, value: MlirAttribute) = MlirAttribute(
     CAPI.firrtlAttrGetParamDecl(arena, mlirCtx, mlirIdentifierGet(name).get, tpe.get, value.get)
+  )
+
+  def firrtlAttrGetConvention(convention: FIRRTLConvention) = MlirAttribute(
+    CAPI.firrtlAttrGetConvention(arena, mlirCtx, convention.value)
   )
 
   def firrtlAttrGetNameKind(nameKind: FIRRTLNameKind) = MlirAttribute(
@@ -356,11 +415,60 @@ object MlirStringRef {
   private[circt] def apply(ptr: MemorySegment) = new MlirStringRef(ptr)
 }
 
+final case class MlirLogicalResult(ptr: MemorySegment) extends ForeignType[MemorySegment] {
+  private[circt] def get = ptr
+  private[circt] val sizeof = circt.MlirLogicalResult.sizeof().toInt
+}
+object MlirLogicalResult {
+  private[circt] def apply(ptr: MemorySegment) = new MlirLogicalResult(ptr)
+}
+
+final case class MlirStringCallback(ptr: MemorySegment) extends ForeignType[MemorySegment] {
+  private[circt] def get = ptr
+  private[circt] val sizeof = CAPI.C_POINTER.byteSize().toInt
+}
+object MlirStringCallback {
+  private[circt] def apply(ptr: MemorySegment) = new MlirStringCallback(ptr)
+}
+
+final case class MlirPassManager(ptr: MemorySegment) extends ForeignType[MemorySegment] {
+  private[circt] def get = ptr
+  private[circt] val sizeof = circt.MlirPassManager.sizeof().toInt
+}
+object MlirPassManager {
+  private[circt] def apply(ptr: MemorySegment) = new MlirPassManager(ptr)
+}
+
+final case class MlirOpPassManager(ptr: MemorySegment) extends ForeignType[MemorySegment] {
+  private[circt] def get = ptr
+  private[circt] val sizeof = circt.MlirOpPassManager.sizeof().toInt
+}
+object MlirOpPassManager {
+  private[circt] def apply(ptr: MemorySegment) = new MlirOpPassManager(ptr)
+}
+
+final case class MlirPass(ptr: MemorySegment) extends ForeignType[MemorySegment] {
+  private[circt] def get = ptr
+  private[circt] val sizeof = circt.MlirPass.sizeof().toInt
+}
+object MlirPass {
+  private[circt] def apply(ptr: MemorySegment) = new MlirPass(ptr)
+}
+
 final case class FIRRTLBundleField(name: String, isFlip: Boolean, tpe: MlirType)
 
 //
 // MLIR & CIRCT Enums
 //
+
+sealed abstract class FIRRTLConvention(val value: Int) extends ForeignType[Int] {
+  private[circt] def get = value
+  private[circt] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
+}
+object FIRRTLConvention {
+  final case object Internal extends FIRRTLConvention(value = CAPI.FIRRTL_CONVENTION_INTERNAL())
+  final case object Scalarized extends FIRRTLConvention(value = CAPI.FIRRTL_CONVENTION_SCALARIZED())
+}
 
 sealed abstract class FIRRTLNameKind(val value: Int) extends ForeignType[Int] {
   private[circt] def get = value

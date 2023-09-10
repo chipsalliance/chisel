@@ -9,8 +9,9 @@ import chisel3.assume.Assume
 import chisel3.cover.Cover
 import chisel3.internal.firrtl._
 
-private[chisel3] abstract class CIRCTConverter {
-  val firrtlStream: Writable
+abstract class CIRCTConverter {
+  val firrtlStream:  Writable
+  val verilogStream: Writable
 
   def visitCircuit(name: String): Unit
 

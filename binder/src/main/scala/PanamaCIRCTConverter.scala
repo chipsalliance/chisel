@@ -469,13 +469,31 @@ class PanamaCIRCTConverter extends CIRCTConverter {
     }
   }
 
-  def dumpMlir(): Unit = {
-    circt.mlirOperationDump(circt.mlirModuleGetOperation(mlirRootModule))
+  val mlirStream = new Writable {
+    def writeBytesTo(out: OutputStream): Unit = {
+      circt.mlirOperationPrint(circt.mlirModuleGetOperation(mlirRootModule), message => out.write(message.getBytes))
+    }
   }
 
   val firrtlStream = new Writable {
     def writeBytesTo(out: OutputStream): Unit = {
       circt.mlirExportFIRRTL(mlirRootModule, message => out.write(message.getBytes))
+    }
+  }
+
+  val verilogStream = new Writable {
+    def writeBytesTo(out: OutputStream): Unit = {
+      def assert_result(result: MlirLogicalResult): Unit = {
+        assert(circt.mlirLogicalResultIsSuccess(result))
+      }
+
+      val pm = circt.mlirPassManagerCreate()
+      assert_result(circt.firtoolPopulatePreprocessTransforms(pm))
+      assert_result(circt.firtoolPopulateCHIRRTLToLowFIRRTL(pm, mlirRootModule, "-"))
+      assert_result(circt.firtoolPopulateLowFIRRTLToHW(pm))
+      assert_result(circt.firtoolPopulateHWToSV(pm))
+      assert_result(circt.firtoolPopulateExportVerilog(pm, message => out.write(message.getBytes)))
+      assert_result(circt.mlirPassManagerRunOnOp(pm, circt.mlirModuleGetOperation(mlirRootModule)))
     }
   }
 
@@ -512,6 +530,7 @@ class PanamaCIRCTConverter extends CIRCTConverter {
       .OpBuilder("firrtl.module", firCtx.circuitBlock, circt.unkLoc)
       .withRegion(Seq((ports.types, ports.locs)))
       .withNamedAttr("sym_name", circt.mlirStringAttrGet(defModule.name))
+      .withNamedAttr("convention", circt.firrtlAttrGetConvention(FIRRTLConvention.Internal)) // TODO: handle it corretly
       .withNamedAttr("annotations", circt.emptyArrayAttr)
     val firModule = util.moduleBuilderInsertPorts(builder, ports).build()
 
