@@ -157,7 +157,7 @@ renaming these signals with more context-dependent names, but it is a work in pr
 
 <h3 id="can-i-name-my-bundles-in-firrtl-so-i-dont-generate-extremely-long-bundle-types">Can I name my bundles in FIRRTL, so I don’t generate extremely long bundle types?</h3>
 
-<p>Yes, using the <code class="language-plaintext highlighter-rouge">HasTypeName</code> trait. FIRRTL has a construct to alias a bundle type with a type alias like so:</p>
+<p>Yes, using the <code class="language-plaintext highlighter-rouge">HasTypeAlias</code> trait. FIRRTL has a construct to alias a bundle type with a type alias like so:</p>
 
 <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>circuit Top :
   type MyBundle = { foo : UInt&lt;8&gt;, bar : UInt&lt;1&gt;}
@@ -166,7 +166,7 @@ renaming these signals with more context-dependent names, but it is a work in pr
     //...
 </code></pre></div></div>
 
-<p>These can be automatically emitted from Chisel by mixing <code class="language-plaintext highlighter-rouge">HasTypeName</code> into a user-defined <code class="language-plaintext highlighter-rouge">Record</code>, and implementing a field named <code class="language-plaintext highlighter-rouge">aliasName</code> with a <code class="language-plaintext highlighter-rouge">RecordAlias(...)</code> instance.</p>
+<p>These can be automatically emitted from Chisel by mixing <code class="language-plaintext highlighter-rouge">HasTypeAlias</code> into a user-defined <code class="language-plaintext highlighter-rouge">Record</code>, and implementing a field named <code class="language-plaintext highlighter-rouge">aliasName</code> with a <code class="language-plaintext highlighter-rouge">RecordAlias(...)</code> instance.</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3.experimental.</span><span class="o">{</span><span class="nc">HasTypeAlias</span><span class="o">,</span> <span class="nc">RecordAlias</span><span class="o">}</span>
 
@@ -223,9 +223,9 @@ renaming these signals with more context-dependent names, but it is a work in pr
 <span class="c1">// """</span>
 </code></pre></div></div>
 
-<h3 id="i-keep-seeing-_stripped-suffixing-everywhere-in-my-firrtl">I keep seeing _stripped suffixing everywhere in my FIRRTL?</h3>
+<h3 id="why-do-i-keep-seeing-_stripped-suffixing-everywhere-in-my-firrtl-i-didnt-specify-that-in-my-aliasname">Why do I keep seeing _stripped suffixing everywhere in my FIRRTL? I didn’t specify that in my <code class="language-plaintext highlighter-rouge">aliasName</code>.</h3>
 
-<p>The string passed to <code class="language-plaintext highlighter-rouge">RecordAlias</code> serves as a <em>strong hint</em> for the resulting FIRRTL type alias. There are some circumstances where the structure of a <code class="language-plaintext highlighter-rouge">Record</code> can be modified and so the original type alias doesn’t represent the correct type anymore. Let’s look at the case of <code class="language-plaintext highlighter-rouge">Input(...)</code> and <code class="language-plaintext highlighter-rouge">Output(...)</code>, which strips any <code class="language-plaintext highlighter-rouge">Flipped(...)</code> calls within a <code class="language-plaintext highlighter-rouge">Record</code>:</p>
+<p>You’re using an <code class="language-plaintext highlighter-rouge">Input(...)</code> or <code class="language-plaintext highlighter-rouge">Output(...)</code> in conjunction with an aliased <code class="language-plaintext highlighter-rouge">Record</code> that contains a <code class="language-plaintext highlighter-rouge">Flipped(...)</code>. These flipped values are stripped by <code class="language-plaintext highlighter-rouge">Input</code> and <code class="language-plaintext highlighter-rouge">Output</code> which fundamentally changes the type of the parent <code class="language-plaintext highlighter-rouge">Record</code>:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">StrippedBundle</span> <span class="k">extends</span> <span class="nc">Bundle</span> <span class="k">with</span> <span class="nc">HasTypeAlias</span> <span class="o">{</span>
   <span class="k">override</span> <span class="k">def</span> <span class="nf">aliasName</span> <span class="k">=</span> <span class="nc">RecordAlias</span><span class="o">(</span><span class="s">"StrippedBundle"</span><span class="o">)</span>
@@ -251,7 +251,7 @@ renaming these signals with more context-dependent names, but it is a work in pr
 <span class="c1">// """</span>
 </code></pre></div></div>
 
-<p>A slightly different alias with the suffixed name <code class="language-plaintext highlighter-rouge">StrippedBundle_stripped</code> is generated, and importantly aliases a fundamentally different bundle type. Note how the bundle type doesn’t contain a <code class="language-plaintext highlighter-rouge">flip flipped : UInt&lt;8&gt;</code> field!</p>
+<p>Note how the bundle type doesn’t contain a <code class="language-plaintext highlighter-rouge">flip flipped : UInt&lt;8&gt;</code> field, and the alias gains a <code class="language-plaintext highlighter-rouge">"_stripped"</code> suffix! This <code class="language-plaintext highlighter-rouge">Bundle</code> type is no longer the same as the one we wrote in Chisel, so we have to distinguish it as such.</p>
 
 <p>By default, the suffix appended to <code class="language-plaintext highlighter-rouge">Record</code> names is <code class="language-plaintext highlighter-rouge">"_stripped"</code>. This can be defined by users with an additional string argument passed to <code class="language-plaintext highlighter-rouge">RecordAlias(alias, strippedSuffix)</code>:</p>
 
