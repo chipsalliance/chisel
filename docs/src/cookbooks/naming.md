@@ -194,7 +194,7 @@ new MyBundle(UInt(8.W), 3).typeName
 
 ### Can I name my bundles in FIRRTL, so I don't generate extremely long bundle types?
 
-Yes, using the `HasTypeName` trait. FIRRTL has a construct to alias a bundle type with a type alias like so:
+Yes, using the `HasTypeAlias` trait. FIRRTL has a construct to alias a bundle type with a type alias like so:
 
 ```
 circuit Top :
@@ -204,7 +204,7 @@ circuit Top :
     //...
 ```
 
-These can be automatically emitted from Chisel by mixing `HasTypeName` into a user-defined `Record`, and implementing a field named `aliasName` with a `RecordAlias(...)` instance.
+These can be automatically emitted from Chisel by mixing `HasTypeAlias` into a user-defined `Record`, and implementing a field named `aliasName` with a `RecordAlias(...)` instance.
 
 ```scala mdoc:silent
 import chisel3.experimental.{HasTypeAlias, RecordAlias}
@@ -247,9 +247,9 @@ emitFIRRTL(new Module {
 })
 ```
 
-### I keep seeing _stripped suffixing everywhere in my FIRRTL?
+### Why do I keep seeing _stripped suffixing everywhere in my FIRRTL? I didn't specify that in my `aliasName`.
 
-The string passed to `RecordAlias` serves as a _strong hint_ for the resulting FIRRTL type alias. There are some circumstances where the structure of a `Record` can be modified and so the original type alias doesn't represent the correct type anymore. Let's look at the case of `Input(...)` and `Output(...)`, which strips any `Flipped(...)` calls within a `Record`:
+You're using an `Input(...)` or `Output(...)` in conjunction with an aliased `Record` that contains a `Flipped(...)`. These flipped values are stripped by `Input` and `Output` which fundamentally changes the type of the parent `Record`:
 
 ```scala mdoc:silent
 class StrippedBundle extends Bundle with HasTypeAlias {
@@ -265,7 +265,7 @@ emitFIRRTL(new Module {
 })
 ```
 
-A slightly different alias with the suffixed name `StrippedBundle_stripped` is generated, and importantly aliases a fundamentally different bundle type. Note how the bundle type doesn't contain a `flip flipped : UInt<8>` field!
+Note how the bundle type doesn't contain a `flip flipped : UInt<8>` field, and the alias gains a `"_stripped"` suffix! This `Bundle` type is no longer the same as the one we wrote in Chisel, so we have to distinguish it as such.
 
 By default, the suffix appended to `Record` names is `"_stripped"`. This can be defined by users with an additional string argument passed to `RecordAlias(alias, strippedSuffix)`:
 
