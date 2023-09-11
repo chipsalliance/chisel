@@ -185,6 +185,8 @@ import chisel3.experimental.HasAutoTypename
 class MyBundle[T <: Data](gen: T, intParam: Int) extends Bundle with HasAutoTypename {
   // ...
   // Note: No `override def typeName` statement here
+}
+```
 
 ```scala mdoc
 new MyBundle(UInt(8.W), 3).typeName
