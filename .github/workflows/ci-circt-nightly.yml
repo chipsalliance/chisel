@@ -72,7 +72,7 @@ jobs:
       matrix:
         system: ["ubuntu-20.04"]
         jvm: [8]
-        scala: ["2.13.11"]
+        scala: ["2.13.12"]
         espresso: ["2.4"]
         circt: ["nightly"]
         ref: ${{ fromJSON(needs.determine-branch.outputs.branches) }}
