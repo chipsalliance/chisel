@@ -155,6 +155,32 @@ renaming these signals with more context-dependent names, but it is a work in pr
 
 <p><code class="language-plaintext highlighter-rouge">Bundles</code> that have multiple integer arguments aren’t presently addressed by any of the built-in modules, and so implementing a descriptive and sufficiently differentiable <code class="language-plaintext highlighter-rouge">typeName</code> for such <code class="language-plaintext highlighter-rouge">Bundles</code> is left as an exercise to the reader. However, integers should not occur with an underscore before them at the very end of the <code class="language-plaintext highlighter-rouge">typeName</code> (e.g. <code class="language-plaintext highlighter-rouge">MyBundle_1</code>) because this is the <em>same</em> syntax used for duplicates, and so would cause confusion. Having to disambiguate modules all named <code class="language-plaintext highlighter-rouge">Queue32_MyBundle_4_1</code>, <code class="language-plaintext highlighter-rouge">Queue32_MyBundle_4_2</code>, <code class="language-plaintext highlighter-rouge">Queue32_MyBundle_4_3</code>, and so on would be undesirable, indeed!</p>
 
+<h3 id="i-dont-want-to-override-typename-over-and-over-is-there-any-easy-way-to-generate-a-typename">I don’t want to override <code class="language-plaintext highlighter-rouge">typeName</code> over and over! Is there any easy way to generate a <code class="language-plaintext highlighter-rouge">typeName</code>?</h3>
+
+<p>Yes, with the experimental <code class="language-plaintext highlighter-rouge">HasAutoTypename</code> trait. This trait can be mixed into your <code class="language-plaintext highlighter-rouge">Bundle</code>s to automatically generate a tuple-like <code class="language-plaintext highlighter-rouge">typeName</code> for them, based on the constructor parameters of that <code class="language-plaintext highlighter-rouge">Bundle</code>. Let’s look at the previous examples:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">MyBundle</span><span class="o">[</span><span class="kt">T</span> <span class="k">&lt;:</span> <span class="kt">Data</span><span class="o">](</span><span class="n">gen</span><span class="k">:</span> <span class="kt">T</span><span class="o">,</span> <span class="n">intParam</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">Bundle</span> <span class="o">{</span>
+  <span class="k">override</span> <span class="k">def</span> <span class="nf">typeName</span> <span class="k">=</span> <span class="n">s</span><span class="s">"MyBundle_${gen.typeName}_${intParam}"</span>
+  <span class="c1">// ...</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">new</span> <span class="nc">MyBundle</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">),</span> <span class="mi">3</span><span class="o">).</span><span class="py">typeName</span>
+<span class="c1">// res7: String = "MyBundle_UInt&lt;8&gt;_3"</span>
+</code></pre></div></div>
+
+<p>Auto-generated <code class="language-plaintext highlighter-rouge">typeName</code>s take the form of <code class="language-plaintext highlighter-rouge">{Bundle Name}_{Parameter Value 1}_{Parameter Value 2}_{...}</code>, and so our <code class="language-plaintext highlighter-rouge">MyBundle</code> can be equivalently expressed with:</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">chisel3.experimental.HasAutoTypename</span>
+<span class="k">class</span> <span class="nc">MyBundle</span><span class="o">[</span><span class="kt">T</span> <span class="k">&lt;:</span> <span class="kt">Data</span><span class="o">](</span><span class="n">gen</span><span class="k">:</span> <span class="kt">T</span><span class="o">,</span> <span class="n">intParam</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">Bundle</span> <span class="k">with</span> <span class="nc">HasAutoTypename</span> <span class="o">{</span>
+  <span class="c1">// ...</span>
+  <span class="c1">// Note: No `override def typeName` statement here</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">new</span> <span class="nc">MyBundle</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">),</span> <span class="mi">3</span><span class="o">).</span><span class="py">typeName</span>
+<span class="c1">// res9: String = "MyBundle_UInt&lt;8&gt;_3"</span>
+</code></pre></div></div>
+
 <h3 id="can-i-name-my-bundles-in-firrtl-so-i-dont-generate-extremely-long-bundle-types">Can I name my bundles in FIRRTL, so I don’t generate extremely long bundle types?</h3>
 
 <p>Yes, using the <code class="language-plaintext highlighter-rouge">HasTypeAlias</code> trait. FIRRTL has a construct to alias a bundle type with a type alias like so:</p>
@@ -182,7 +208,7 @@ renaming these signals with more context-dependent names, but it is a work in pr
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">emitFIRRTL</span><span class="o">(</span><span class="k">new</span> <span class="nc">Module</span> <span class="o">{</span>
   <span class="k">val</span> <span class="nv">wire</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="k">new</span> <span class="nc">AliasedBundle</span><span class="o">)</span>
 <span class="o">})</span>
-<span class="c1">// res6: String = """FIRRTL version 3.2.0</span>
+<span class="c1">// res10: String = """FIRRTL version 3.2.0</span>
 <span class="c1">// circuit _18_Anon :</span>
 <span class="c1">//   type MyAliasedBundle = { foo : UInt&lt;8&gt;, bar : UInt&lt;1&gt;}</span>
 <span class="c1">// </span>
@@ -190,7 +216,7 @@ renaming these signals with more context-dependent names, but it is a work in pr
 <span class="c1">//     input clock : Clock</span>
 <span class="c1">//     input reset : UInt&lt;1&gt;</span>
 <span class="c1">// </span>
-<span class="c1">//     wire wire : MyAliasedBundle @[naming.md 193:18]</span>
+<span class="c1">//     wire wire : MyAliasedBundle @[naming.md 253:18]</span>
 <span class="c1">// </span>
 <span class="c1">// """</span>
 </code></pre></div></div>
@@ -209,7 +235,7 @@ renaming these signals with more context-dependent names, but it is a work in pr
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">emitFIRRTL</span><span class="o">(</span><span class="k">new</span> <span class="nc">Module</span> <span class="o">{</span>
   <span class="k">val</span> <span class="nv">wire</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="k">new</span> <span class="nc">Parent</span><span class="o">)</span>
 <span class="o">})</span>
-<span class="c1">// res7: String = """FIRRTL version 3.2.0</span>
+<span class="c1">// res11: String = """FIRRTL version 3.2.0</span>
 <span class="c1">// circuit _22_Anon :</span>
 <span class="c1">//   type ChildBundle = { x : UInt&lt;8&gt;}</span>
 <span class="c1">//   type ParentBundle = { child : ChildBundle}</span>
@@ -218,7 +244,7 @@ renaming these signals with more context-dependent names, but it is a work in pr
 <span class="c1">//     input clock : Clock</span>
 <span class="c1">//     input reset : UInt&lt;1&gt;</span>
 <span class="c1">// </span>
-<span class="c1">//     wire wire : ParentBundle @[naming.md 216:18]</span>
+<span class="c1">//     wire wire : ParentBundle @[naming.md 276:18]</span>
 <span class="c1">// </span>
 <span class="c1">// """</span>
 </code></pre></div></div>
@@ -237,14 +263,14 @@ renaming these signals with more context-dependent names, but it is a work in pr
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">emitFIRRTL</span><span class="o">(</span><span class="k">new</span> <span class="nc">Module</span> <span class="o">{</span>
   <span class="k">val</span> <span class="nv">in</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="k">new</span> <span class="nc">StrippedBundle</span><span class="o">))</span>
 <span class="o">})</span>
-<span class="c1">// res8: String = """FIRRTL version 3.2.0</span>
+<span class="c1">// res12: String = """FIRRTL version 3.2.0</span>
 <span class="c1">// circuit _26_Anon :</span>
 <span class="c1">//   type StrippedBundle_stripped = { flipped : UInt&lt;8&gt;, normal : UInt&lt;8&gt;}</span>
 <span class="c1">// </span>
 <span class="c1">//   module _26_Anon :</span>
 <span class="c1">//     input clock : Clock</span>
 <span class="c1">//     input reset : UInt&lt;1&gt;</span>
-<span class="c1">//     input in : StrippedBundle_stripped @[naming.md 234:14]</span>
+<span class="c1">//     input in : StrippedBundle_stripped @[naming.md 294:14]</span>
 <span class="c1">// </span>
 <span class="c1">//     skip</span>
 <span class="c1">// </span>
@@ -265,14 +291,14 @@ renaming these signals with more context-dependent names, but it is a work in pr
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">emitFIRRTL</span><span class="o">(</span><span class="k">new</span> <span class="nc">Module</span> <span class="o">{</span>
   <span class="k">val</span> <span class="nv">in</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="nc">Input</span><span class="o">(</span><span class="k">new</span> <span class="nc">CustomStrippedBundle</span><span class="o">))</span>
 <span class="o">})</span>
-<span class="c1">// res9: String = """FIRRTL version 3.2.0</span>
+<span class="c1">// res13: String = """FIRRTL version 3.2.0</span>
 <span class="c1">// circuit _30_Anon :</span>
 <span class="c1">//   type StrippedBundleFoo = { flipped : UInt&lt;8&gt;, normal : UInt&lt;8&gt;}</span>
 <span class="c1">// </span>
 <span class="c1">//   module _30_Anon :</span>
 <span class="c1">//     input clock : Clock</span>
 <span class="c1">//     input reset : UInt&lt;1&gt;</span>
-<span class="c1">//     input in : StrippedBundleFoo @[naming.md 252:14]</span>
+<span class="c1">//     input in : StrippedBundleFoo @[naming.md 312:14]</span>
 <span class="c1">// </span>
 <span class="c1">//     skip</span>
 <span class="c1">// </span>
