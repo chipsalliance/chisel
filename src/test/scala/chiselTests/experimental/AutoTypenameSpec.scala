@@ -28,6 +28,11 @@ class BundleBundle(gen: HasAutoTypename) extends Bundle with HasAutoTypename {
   val foo = gen
 }
 
+class MultiParamBundle(x: Int)(y: String)(implicit z: Int) extends Bundle with HasAutoTypename {
+  val foo = UInt(x.W)
+  val bar = UInt(z.W)
+}
+
 class AutoTypenameSpec extends ChiselFlatSpec {
   private def runTest(gen: Bundle, expectedTypename: String): Unit = {
     val chirrtl = ChiselStage.emitCHIRRTL(new Top(gen))
@@ -72,4 +77,8 @@ class AutoTypenameSpec extends ChiselFlatSpec {
     )
   }
 
+  "Bundles with multiple parameter lists" should "have generated type names of a single flattened parameter list" in {
+    implicit val z: Int = 20
+    runTest(new MultiParamBundle(8)("Some_kind_of_bundle"), "MultiParamBundle_8_Some_kind_of_bundle_20")
+  }
 }
