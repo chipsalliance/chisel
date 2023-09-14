@@ -11,15 +11,17 @@ private[plugin] trait ChiselOuterUtils { outerSelf: TypingTransformers =>
   trait ChiselInnerUtils { innerSelf: outerSelf.TypingTransformer =>
     def inferType(t: Tree): Type = localTyper.typed(t, nsc.Mode.TYPEmode).tpe
 
-    val baseModuleTpe:  Type = inferType(tq"chisel3.experimental.BaseModule")
-    val stringTpe:      Type = inferType(tq"String")
-    val bundleTpe:      Type = inferType(tq"chisel3.Bundle")
-    val recordTpe:      Type = inferType(tq"chisel3.Record")
-    val dataTpe:        Type = inferType(tq"chisel3.Data")
-    val ignoreSeqTpe:   Type = inferType(tq"chisel3.IgnoreSeqInBundle")
-    val seqOfDataTpe:   Type = inferType(tq"scala.collection.Seq[chisel3.Data]")
-    val someOfDataTpe:  Type = inferType(tq"scala.Option[chisel3.Data]")
-    val itStringAnyTpe: Type = inferType(tq"scala.collection.Iterable[(String,Any)]")
+    val baseModuleTpe:   Type = inferType(tq"chisel3.experimental.BaseModule")
+    val stringTpe:       Type = inferType(tq"String")
+    val bundleTpe:       Type = inferType(tq"chisel3.Bundle")
+    val autoTypenameTpe: Type = inferType(tq"chisel3.experimental.HasAutoTypename")
+    val recordTpe:       Type = inferType(tq"chisel3.Record")
+    val dataTpe:         Type = inferType(tq"chisel3.Data")
+    val ignoreSeqTpe:    Type = inferType(tq"chisel3.IgnoreSeqInBundle")
+    val seqOfDataTpe:    Type = inferType(tq"scala.collection.Seq[chisel3.Data]")
+    val someOfDataTpe:   Type = inferType(tq"scala.Option[chisel3.Data]")
+    val itStringAnyTpe:  Type = inferType(tq"scala.collection.Iterable[(String,Any)]")
+    val itAnyTpe:        Type = inferType(tq"scala.collection.Iterable[Any]")
 
     def stringFromTypeName(name: TypeName): String =
       name.toString.trim() // Remove trailing space (Scalac implementation detail)
@@ -27,6 +29,7 @@ private[plugin] trait ChiselOuterUtils { outerSelf: TypingTransformers =>
     def isAModule(sym: Symbol): Boolean = { sym.tpe <:< baseModuleTpe }
     def isExactBaseModule(sym: Symbol): Boolean = { sym.tpe =:= baseModuleTpe }
     def isABundle(sym: Symbol): Boolean = { sym.tpe <:< bundleTpe }
+    def isAutoTypenamed(sym: Symbol): Boolean = { sym.tpe <:< autoTypenameTpe }
     def isARecord(sym: Symbol): Boolean = { sym.tpe <:< recordTpe }
     def isIgnoreSeqInBundle(sym: Symbol): Boolean = { sym.tpe <:< ignoreSeqTpe }
     def isSeqOfData(sym: Symbol): Boolean = {
