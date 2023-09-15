@@ -12,6 +12,7 @@ import chisel3.internal._
 import chisel3.internal.sourceinfo._
 import chisel3.internal.firrtl._
 import chisel3.reflect.DataMirror
+import chisel3.util.simpleClassName
 
 import scala.reflect.ClassTag
 import scala.util.Try
@@ -778,7 +779,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   def toPrintable: Printable
 
   /** A non-ambiguous name of this `Data` for use in generated Verilog names */
-  def typeName: String = this.getClass.getSimpleName
+  def typeName: String = simpleClassName(this.getClass)
 }
 
 object Data {

@@ -7,6 +7,7 @@ package chisel3.util
 
 import chisel3._
 import chisel3.experimental.prefix
+import chisel3.util.simpleClassName
 
 /** A [[Bundle]] that adds a `valid` bit to some data. This indicates that the user expects a "valid" interface between
   * a producer and a consumer. Here, the producer asserts the `valid` bit when data on the `bits` line contains valid
@@ -40,7 +41,7 @@ class Valid[+T <: Data](gen: T) extends Bundle {
   /** A non-ambiguous name of this `Valid` instance for use in generated Verilog names
     * Inserts the parameterized generator's typeName, e.g. Valid_UInt4
     */
-  override def typeName = s"${this.getClass.getSimpleName}_${gen.typeName}"
+  override def typeName = s"${simpleClassName(this.getClass)}_${gen.typeName}"
 }
 
 /** Factory for generating "valid" interfaces. A "valid" interface is a data-communicating interface between a producer
@@ -182,7 +183,7 @@ class Pipe[T <: Data](val gen: T, val latency: Int = 1) extends Module {
     * Includes the latency cycle count in the name as well as the parameterized
     * generator's `typeName`, e.g. `Pipe4_UInt4`
     */
-  override def desiredName = s"${this.getClass.getSimpleName}${latency}_${gen.typeName}"
+  override def desiredName = s"${simpleClassName(this.getClass)}${latency}_${gen.typeName}"
 
   /** Interface for [[Pipe]]s composed of a [[Valid]] input and [[Valid]] output
     * @define notAQueue
