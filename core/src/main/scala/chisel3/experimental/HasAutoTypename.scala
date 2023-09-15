@@ -1,7 +1,7 @@
 package chisel3.experimental
 
 import chisel3.{Data, Record}
-import chisel3.internal.{Builder, sanitize}
+import chisel3.internal.{sanitize, Builder}
 import chisel3.util.simpleClassName
 
 /** Trait for [[Record]]s that signals the compiler plugin to generate a typeName for the

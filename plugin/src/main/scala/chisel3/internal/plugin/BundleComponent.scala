@@ -182,7 +182,10 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
         val recordIsInnerClass = !(record.symbol.isPackageClass || record.symbol.outerClass.isStaticOwner)
         if (recordIsInnerClass) {
           val illegalRecordTypeStr = if (record.name.toString.contains("anon")) "anonymous" else "inner"
-          global.reporter.error(record.pos, s"Users can not mix 'HasAutoTypename' into an $illegalRecordTypeStr Record. Pull the Record definition into its own outer class.")
+          global.reporter.error(
+            record.pos,
+            s"Users can not mix 'HasAutoTypename' into an $illegalRecordTypeStr Record. Pull the Record definition into its own outer class."
+          )
           None
         } else {
           // Create an iterable out of all constructor argument accessors
@@ -195,9 +198,11 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
           typeNameConParamsSym.resetFlag(Flags.METHOD)
           typeNameConParamsSym.setInfo(NullaryMethodType(itAnyTpe))
 
-          Some(localTyper.typed(
-            DefDef(typeNameConParamsSym, q"scala.collection.immutable.Vector.apply[Any](..${conArgs})")
-          ))
+          Some(
+            localTyper.typed(
+              DefDef(typeNameConParamsSym, q"scala.collection.immutable.Vector.apply[Any](..${conArgs})")
+            )
+          )
         }
       }
     }
