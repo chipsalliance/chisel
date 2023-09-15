@@ -179,9 +179,14 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
 
     def generateAutoTypename(record: ClassDef, thiz: global.This, conArgsOpt: Option[List[Tree]]): Option[Tree] = {
       conArgsOpt.flatMap { conArgs =>
-        val recordIsInnerClass = !(record.symbol.isPackageClass || record.symbol.outerClass.isStaticOwner)
-        if (recordIsInnerClass) {
-          val illegalRecordTypeStr = if (record.name.toString.contains("anon")) "anonymous" else "inner"
+        // Check if the class is an inner class within an outer concrete class (not a static object or a package)
+        val recordIsInnerClassInOuterClass =
+          !(record.symbol.outerClass.isStaticOwner || record.symbol.outerClass.isPackageClass)
+        val recordIsAnon = record.symbol.isAnonOrRefinementClass
+
+        // Anonymous `Records` in any scope are forbidden, as well as inner `Records` contained in outer classes
+        if (recordIsInnerClassInOuterClass || recordIsAnon) {
+          val illegalRecordTypeStr = if (recordIsAnon) "anonymous" else "inner"
           global.reporter.error(
             record.pos,
             s"Users can not mix 'HasAutoTypename' into an $illegalRecordTypeStr Record. Pull the Record definition into its own outer class."
