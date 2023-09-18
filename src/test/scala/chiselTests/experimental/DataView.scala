@@ -978,6 +978,39 @@ class DataViewSpec extends ChiselFlatSpec {
     e.getMessage should include("View mapping must only contain Elements within the View")
   }
 
+  it should "use the target in error messages involving the view" in {
+    val e1 = the[ChiselException] thrownBy (
+      ChiselStage.emitCHIRRTL(
+        new RawModule {
+          override def desiredName = "Top"
+          val in = IO(Input(UInt(8.W)))
+          val out = IO(Output(SInt(8.W)))
+          out.viewAs[SInt] := in
+        },
+        Array("--throw-on-first-error")
+      )
+    )
+    e1.getMessage should include(
+      "Connection between sink (Top.out: IO[SInt<8>]) and source (Top.in: IO[UInt<8>]) failed"
+    )
+
+    val e2 = the[ChiselException] thrownBy (
+      ChiselStage.emitCHIRRTL(
+        new RawModule {
+          override def desiredName = "Top"
+          val foo, bar = IO(Input(UInt(8.W)))
+          val fizz, buzz = IO(Output(SInt(8.W)))
+          // Unfortunately, := does a bad job when the view doesn't map to a single Data, but at least connectables do a good job
+          ((fizz, buzz).viewAs: Data) :#= ((foo, bar).viewAs: Data)
+        },
+        Array("--throw-on-first-error")
+      )
+    )
+    e2.getMessage should include(
+      "Connection between sink (Top.buzz: IO[SInt<8>]) and source (Top.bar: IO[UInt<8>]) failed"
+    )
+  }
+
   behavior.of("PartialDataView")
 
   it should "still error if the mapping is non-total in the view" in {

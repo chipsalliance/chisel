@@ -7,6 +7,7 @@ import chisel3.experimental.dataview.reify
 import scala.language.experimental.macros
 import chisel3.experimental.{Analog, BaseModule}
 import chisel3.experimental.{prefix, SourceInfo, UnlocatableSourceInfo}
+import chisel3.experimental.dataview.reifySingleData
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal._
 import chisel3.internal.sourceinfo._
@@ -416,14 +417,16 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   }
 
   private[chisel3] def stringAccessor(chiselType: String): String = {
-    topBindingOpt match {
+    // Trace views to give better error messages
+    val thiz = reifySingleData(this).getOrElse(this)
+    thiz.topBindingOpt match {
       case None => chiselType
       // Handle DontCares specially as they are "literal-like" but not actually literals
       case Some(DontCareBinding()) => s"$chiselType(DontCare)"
       case Some(topBinding) =>
-        val binding: String = _bindingToString(topBinding)
-        val name = earlyName
-        val mod = parentNameOpt.map(_ + ".").getOrElse("")
+        val binding: String = thiz._bindingToString(topBinding)
+        val name = thiz.earlyName
+        val mod = thiz.parentNameOpt.map(_ + ".").getOrElse("")
 
         s"$mod$name: $binding[$chiselType]"
     }
