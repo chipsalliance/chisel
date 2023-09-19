@@ -165,11 +165,11 @@ object Class {
     // Bind the Property[ClassType] type for this Object.
     contextMod match {
       case rm: RawModule => {
-        rm.addCommand(DefObject(sourceInfo, obj))
+        rm.addCommand(DefObject(sourceInfo, obj, obj.className.name))
         classProp.bind(OpBinding(rm, Builder.currentWhen), SpecifiedDirection.Unspecified)
       }
       case cls: Class => {
-        cls.addCommand(DefObject(sourceInfo, obj))
+        cls.addCommand(DefObject(sourceInfo, obj, obj.className.name))
         classProp.bind(ClassBinding(cls), SpecifiedDirection.Unspecified)
       }
       case _ => throwException("Internal Error! Property connection can only occur within RawModule or Class.")

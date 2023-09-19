@@ -20,6 +20,8 @@ import chisel3.util.simpleClassName
 
 object Module extends SourceInfoDoc {
 
+  import scala.annotation.nowarn
+
   /** A wrapper method that all Module instantiations must be wrapped in
     * (necessary to help Chisel track internal state).
     *
@@ -30,6 +32,7 @@ object Module extends SourceInfoDoc {
   def apply[T <: BaseModule](bc: => T): T = macro InstTransform.apply[T]
 
   /** @group SourceInfoTransformMacro */
+  @nowarn("msg=class Port") // delete when Port becomes private
   def do_apply[T <: BaseModule](bc: => T)(implicit sourceInfo: SourceInfo): T = {
     if (Builder.readyForModuleConstr) {
       throwException(
@@ -93,7 +96,14 @@ object Module extends SourceInfoDoc {
       }
 
       val component = module._component.get
-      pushCommand(DefInstance(sourceInfo, module, component.ports))
+      component match {
+        case DefClass(_, name, _, _) =>
+          Builder.referenceUserContainer match {
+            case rm:  RawModule => rm.addCommand(DefObject(sourceInfo, module, name))
+            case cls: Class     => cls.addCommand(DefObject(sourceInfo, module, name))
+          }
+        case _ => pushCommand(DefInstance(sourceInfo, module, component.ports))
+      }
       module.initializeInParent()
     }
     module

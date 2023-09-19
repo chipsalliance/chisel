@@ -348,7 +348,7 @@ case class DefMemPort[T <: Data](
 @nowarn("msg=class Port") // delete when Port becomes private
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class DefInstance(sourceInfo: SourceInfo, id: BaseModule, ports: Seq[Port]) extends Definition
-private[chisel3] case class DefObject(sourceInfo: SourceInfo, id: DynamicObject) extends Definition
+private[chisel3] case class DefObject(sourceInfo: SourceInfo, id: HasId, className: String) extends Definition
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class WhenBegin(sourceInfo: SourceInfo, pred: Arg) extends Command
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
