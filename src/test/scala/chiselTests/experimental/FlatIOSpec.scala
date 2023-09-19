@@ -65,4 +65,15 @@ class FlatIOSpec extends ChiselFlatSpec {
     chirrtl should include("connect out.foo, in.foo")
     chirrtl should include("attach (out.bar, in.bar)")
   }
+
+  it should "be an `IO` for elements and vectors" in {
+
+    class Foo extends RawModule {
+      val a = FlatIO(UInt(1.W))
+      val b = FlatIO(Vec(2, UInt(2.W)))
+    }
+    val chirrtl = emitCHIRRTL(new Foo)
+    chirrtl should include("output a : UInt<1>")
+    chirrtl should include("output b : UInt<2>[2]")
+  }
 }
