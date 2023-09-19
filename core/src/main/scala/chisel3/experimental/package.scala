@@ -81,8 +81,11 @@ package object experimental {
   type Direction = ActualDirection
   val Direction = ActualDirection
 
-  /** The same as [[IO]] except there is no prefix for the name of the val */
-  def FlatIO[T <: Record](gen: => T)(implicit sourceInfo: SourceInfo): T = noPrefix {
+  /** The same as [[IO]] except there is no prefix when given a [[Record]] or
+    * [[Bundle]].  For [[Element]] ([[UInt]], etc.) or [[Vec]] types, this is
+    * the same as [[IO]].
+    */
+  def FlatIO[T <: Data](gen: => T)(implicit sourceInfo: SourceInfo): T = noPrefix {
     import dataview._
     def coerceDirection(d: Data) = {
       import chisel3.{SpecifiedDirection => SD}
@@ -93,20 +96,27 @@ package object experimental {
         case _         => d
       }
     }
-    val ports: Seq[Data] =
-      gen._elements.toSeq.reverse.map {
-        case (name, data) =>
-          val p = chisel3.IO(coerceDirection(chiselTypeClone(data).asInstanceOf[Data]))
-          p.suggestName(name)
-          p
 
-      }
+    type R = T with Record
+    gen match {
+      case _:      Element => IO(gen)
+      case _:      Vec[_] => IO(gen)
+      case record: R =>
+        val ports: Seq[Data] =
+          record._elements.toSeq.reverse.map {
+            case (name, data) =>
+              val p = chisel3.IO(coerceDirection(chiselTypeClone(data).asInstanceOf[Data]))
+              p.suggestName(name)
+              p
 
-    implicit val dv: DataView[Seq[Data], T] = DataView.mapping(
-      _ => chiselTypeClone(gen).asInstanceOf[T],
-      (seq, rec) => seq.zip(rec._elements.toSeq.reverse).map { case (port, (_, field)) => port -> field }
-    )
-    ports.viewAs[T]
+          }
+
+        implicit val dv: DataView[Seq[Data], R] = DataView.mapping(
+          _ => chiselTypeClone(gen).asInstanceOf[R],
+          (seq, rec) => seq.zip(rec._elements.toSeq.reverse).map { case (port, (_, field)) => port -> field }
+        )
+        ports.viewAs[R]
+    }
   }
 
   class dump extends chisel3.internal.naming.dump
