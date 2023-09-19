@@ -3,6 +3,7 @@
 package chisel3.properties
 
 import chisel3.SpecifiedDirection
+import chisel3.experimental.BaseModule
 import chisel3.internal.{throwException, HasId, NamedComponent, ObjectFieldBinding}
 
 import scala.collection.immutable.HashMap
@@ -41,4 +42,25 @@ class DynamicObject private[chisel3] (val className: ClassType) extends HasId wi
     field.bind(ObjectFieldBinding(_parent.get), SpecifiedDirection.Unspecified)
     field
   }
+}
+
+/** Represents an instance of a Class.
+  *
+  * This exists to associate an Instance[Class] with a Property[ClassType] for that Class.
+  *
+  * After the instance's ModuleClone has been named, the StaticObject and underlying Property[ClassType] have their ref
+  * set to the ModuleClone's ref.
+  */
+private[chisel3] class StaticObject(baseModule: BaseModule) extends HasId with NamedComponent {
+  private val tpe = Class.unsafeGetReferenceType(baseModule.name)
+
+  _parent.foreach(_.addId(this))
+
+  /** Get a reference to this Object, suitable for use in Ports or supported Property collections.
+    */
+  def getReference: Property[ClassType] = tpe
+
+  /** Get the underlying BaseModule of the Instance[Class] for this Object.
+    */
+  def getInstanceModule: BaseModule = baseModule
 }

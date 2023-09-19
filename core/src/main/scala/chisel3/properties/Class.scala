@@ -5,6 +5,7 @@ package chisel3.properties
 import firrtl.{ir => fir}
 import chisel3.{Data, RawModule, SpecifiedDirection}
 import chisel3.experimental.{BaseModule, SourceInfo}
+import chisel3.experimental.hierarchy.{Definition, ModuleClone}
 import chisel3.internal.{throwException, Builder, ClassBinding, OpBinding}
 import chisel3.internal.firrtl.{Arg, Command, Component, Converter, DefClass, DefObject, ModuleIO, Port, PropAssign}
 
@@ -32,11 +33,18 @@ class Class extends BaseModule {
     // Now that elaboration is complete for this Module, we can finalize names
     for (id <- getIds) {
       id match {
+        case id: ModuleClone[_] => id.setRefAndPortsRef(_namespace) // special handling
         case id: DynamicObject => {
           // Force name of the Object, and set its Property[ClassType] type's ref to the Object.
           // The type's ref can't be set within instantiate, because the Object hasn't been named yet.
           id.forceName(default = "_object", _namespace)
           id.getReference.setRef(id.getRef)
+        }
+        case id: StaticObject => {
+          // Set the StaticObject's ref and Property[ClassType] type's ref to the BaseModule for the Class.
+          // These refs can't be set upon instantiation, because the ModuleClone hasn't been named yet.
+          id.setRef(id.getInstanceModule.getRef)
+          id.getReference.setRef(id.getInstanceModule.getRef)
         }
         case id: Data =>
           if (id.isSynthesizable) {
@@ -135,6 +143,23 @@ object AnyClassType {
 }
 
 object Class {
+
+  /** Helper to create a Property[ClassType] type for a Definition[Class].
+    *
+    * This is useful when a Property[ClassType] type is needed for references to instances of the Class.
+    *
+    * This method is safe, and should be used over unsafeGetReferenceType when possible.
+    */
+  def getReferenceType(cls: Definition[Class]): Property[ClassType] = {
+    // Get the BaseModule for the Class this is a definition of.
+    val baseModule = cls.getInnerDataContext.getOrElse(
+      throwException("Internal Error! Class instance did not have an associated BaseModule.")
+    )
+
+    // Get a Property[ClassType] type from the Class name.
+    val classType = ClassType.unsafeGetClassTypeByName(baseModule.name)
+    Property[classType.Type]()
+  }
 
   /** Helper to create a Property[ClassType] type for a Class of a given name.
     *
