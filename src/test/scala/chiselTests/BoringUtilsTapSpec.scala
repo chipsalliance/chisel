@@ -404,8 +404,13 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       probe.define(tapTarget, BoringUtils.rwTap(internalWire))
     }
     class Top(fooDef: Definition[Foo]) extends RawModule {
-      val fooInst = Instance(fooDef)
-      probe.forceInitial(fooInst.tapTarget, true.B)
+      val fooInstA = Instance(fooDef)
+      val fooInstB = Instance(fooDef)
+
+      probe.forceInitial(fooInstA.tapTarget, true.B)
+
+      val outProbe = IO(probe.RWProbe(Bool()))
+      probe.define(outProbe, fooInstB.tapTarget)
     }
     val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top(Definition(new Foo)), Array("--full-stacktrace"))
     matchesAndOmits(chirrtl)(
@@ -413,7 +418,8 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       "output tapTarget : RWProbe<UInt<1>>",
       "define tapTarget = rwprobe(internalWire)",
       "module Top :",
-      "force_initial(fooInst.tapTarget, UInt<1>(0h1))"
+      "force_initial(fooInstA.tapTarget, UInt<1>(0h1))",
+      "define outProbe = fooInstB.tapTarget"
     )()
 
     // Check that firtool also passes
