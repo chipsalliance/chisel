@@ -229,6 +229,9 @@ private[chisel3] object Converter {
     case _ => None
   }
 
+  /** Trait used for tracking when or group regions. */
+  private sealed trait RegionFrame
+
   /** Internal datastructure to help translate Chisel's flat Command structure to FIRRTL's AST
     *
     * In particular, when scoping is translated from flat with begin end to a nested datastructure
@@ -241,6 +244,10 @@ private[chisel3] object Converter {
     */
   // TODO we should probably have a different structure in the IR to close elses
   private case class WhenFrame(when: fir.Conditionally, outer: VectorBuilder[fir.Statement], alt: Boolean)
+      extends RegionFrame
+
+  /** Internal datastructure to help convert optional groups to FIRRTL. */
+  private case class GroupFrame(group: fir.GroupDefine, outer: VectorBuilder[fir.Statement]) extends RegionFrame
 
   /** Convert Chisel IR Commands into FIRRTL Statements
     *
@@ -253,7 +260,7 @@ private[chisel3] object Converter {
     */
   def convert(cmds: Seq[Command], ctx: Component, typeAliases: Seq[String]): fir.Statement = {
     var stmts = new VectorBuilder[fir.Statement]()
-    var scope: List[WhenFrame] = Nil
+    var scope: List[RegionFrame] = Nil
     var cmdsIt = cmds.iterator.buffered
     // Extra var because sometimes we want to push a Command to the head of cmdsIt
     // This is more efficient than changing the iterator
@@ -280,7 +287,7 @@ private[chisel3] object Converter {
               stmts = new VectorBuilder[fir.Statement]
               scope = frame :: scope
             case WhenEnd(info, depth, _) =>
-              val frame = scope.head
+              val frame = scope.head.asInstanceOf[WhenFrame]
               val when =
                 if (frame.alt) frame.when.copy(alt = fir.Block(stmts.result()))
                 else frame.when.copy(conseq = fir.Block(stmts.result()))
@@ -303,7 +310,7 @@ private[chisel3] object Converter {
                   scope = scope.tail
               }
             case OtherwiseEnd(info, depth) =>
-              val frame = scope.head
+              val frame = scope.head.asInstanceOf[WhenFrame]
               val when = frame.when.copy(alt = fir.Block(stmts.result()))
               // TODO For some reason depth == 1 indicates the last closing otherwise whereas
               //  depth == 0 indicates last closing when
@@ -312,6 +319,17 @@ private[chisel3] object Converter {
               }
               stmts = frame.outer
               stmts += when
+              scope = scope.tail
+            case GroupDefBegin(info, declaration) =>
+              val groupDefine = fir.GroupDefine(convert(info), declaration.name, fir.EmptyStmt)
+              val frame = GroupFrame(groupDefine, stmts)
+              stmts = new VectorBuilder[fir.Statement]
+              scope = frame :: scope
+            case GroupDefEnd(info) =>
+              val frame = scope.head.asInstanceOf[GroupFrame]
+              val groupDefine = frame.group.copy(body = fir.Block(stmts.result()))
+              stmts = frame.outer
+              stmts += groupDefine
               scope = scope.tail
           }
       }
@@ -454,13 +472,21 @@ private[chisel3] object Converter {
       )
   }
 
+  def rec(decl: GroupDecl): fir.GroupDeclare = {
+    val convention = decl.convention match {
+      case GroupConvention.Bind => fir.GroupConvention.Bind
+    }
+    fir.GroupDeclare(convert(decl.sourceInfo), decl.name, convention, decl.children.map(rec))
+  }
+
   def convert(circuit: Circuit): fir.Circuit = {
     val typeAliases: Seq[String] = circuit.typeAliases.map(_.name)
     fir.Circuit(
       fir.NoInfo,
       circuit.components.map(c => convert(c, typeAliases)),
       circuit.name,
-      circuit.typeAliases.map(ta => fir.DefTypeAlias(convert(ta.sourceInfo), ta.name, ta.underlying))
+      circuit.typeAliases.map(ta => fir.DefTypeAlias(convert(ta.sourceInfo), ta.name, ta.underlying)),
+      circuit.groups.map(rec)
     )
   }
 

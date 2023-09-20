@@ -178,6 +178,9 @@ object Serializer {
   private case object AltBegin extends PseudoStatement
   private case object WhenEnd extends PseudoStatement
 
+  private case class GroupDefineBegin(info: Info, declaration: String) extends PseudoStatement
+  private case object GroupDefineEnd extends PseudoStatement
+
   // This does not extend Iterator[Statement] because
   //  1. It is extended by StmtsSerializer which extends Iterator[String]
   //  2. Flattening out whens introduces fake Statements needed for [un]indenting
@@ -206,6 +209,10 @@ object Serializer {
             }
             val last = underlying
             underlying = stmts ++ last
+          case GroupDefine(info, declaration, body) =>
+            val begin = GroupDefineBegin(info, declaration)
+            val last = underlying
+            underlying = Iterator(begin, body, GroupDefineEnd) ++ last
           case other =>
             next = other
         }
@@ -245,6 +252,12 @@ object Serializer {
             b ++= "else :"
             indent += 1
           case WhenEnd =>
+            indent -= 1
+          case GroupDefineBegin(info, declaration) =>
+            doIndent()
+            b ++= s"group $declaration :"; s(info)
+            indent += 1
+          case GroupDefineEnd =>
             indent -= 1
           case other =>
             doIndent()
@@ -513,8 +526,19 @@ object Serializer {
       b ++= s"${NewLine}"
       Iterator(b.toString)
     } else Iterator.empty
+    val groups = if (circuit.groups.nonEmpty) {
+      implicit val b = new StringBuilder
+      def groupIt(groupDecl: GroupDeclare)(implicit indent: Int): Unit = {
+        b ++= s"${NewLine}"; doIndent(); b ++= s"declgroup ${groupDecl.name}, ${groupDecl.convention} :"
+        s(groupDecl.info)
+        groupDecl.body.foreach(groupIt(_)(indent + 1))
+      }
+      circuit.groups.foreach(groupIt(_)(1))
+      Iterator(b.toString)
+    } else Iterator.empty
     prelude ++
       typeAliases ++
+      groups ++
       circuit.modules.iterator.zipWithIndex.flatMap {
         case (m, i) =>
           val newline = Iterator(if (i == 0) s"$NewLine" else s"${NewLine}${NewLine}")

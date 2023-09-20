@@ -473,6 +473,7 @@ private[chisel3] class DynamicContext(
   val components = ArrayBuffer[Component]()
   val annotations = ArrayBuffer[ChiselAnnotation]()
   val newAnnotations = ArrayBuffer[ChiselMultiAnnotation]()
+  val groups = mutable.LinkedHashSet[group.Declaration]()
   var currentModule: Option[BaseModule] = None
 
   /** Contains a mapping from a elaborated module to their aspect
@@ -492,6 +493,7 @@ private[chisel3] class DynamicContext(
   var currentClock:         Option[Clock] = None
   var currentReset:         Option[Reset] = None
   var currentDisable:       Disable.Type = Disable.BeforeReset
+  var groupStack:           List[group.Declaration] = Nil
   val errors = new ErrorLog(warningFilters, sourceRoots, throwOnFirstError)
   val namingStack = new NamingStack
 
@@ -550,6 +552,8 @@ private[chisel3] object Builder extends LazyLogging {
 
   def components:  ArrayBuffer[Component] = dynamicContext.components
   def annotations: ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
+
+  def groups: mutable.LinkedHashSet[group.Declaration] = dynamicContext.groups
 
   def contextCache: BuilderContextCache = dynamicContext.contextCache
 
@@ -760,6 +764,11 @@ private[chisel3] object Builder extends LazyLogging {
     dynamicContext.currentDisable = newDisable
   }
 
+  def groupStack: List[group.Declaration] = dynamicContext.groupStack
+  def groupStack_=(s: List[group.Declaration]): Unit = {
+    dynamicContext.groupStack = s
+  }
+
   def inDefinition: Boolean = {
     dynamicContextVar.value
       .map(_.inDefinition)
@@ -949,6 +958,31 @@ private[chisel3] object Builder extends LazyLogging {
         case _ => None
       }.toSeq
 
+      /** Stores an adjacency list representation of groups.  Connections indicating children. */
+      val groupAdjacencyList = mutable
+        .LinkedHashMap[group.Declaration, mutable.LinkedHashSet[group.Declaration]]()
+        .withDefault(_ => mutable.LinkedHashSet[group.Declaration]())
+
+      // Populate the adjacency list.
+      groups.foreach { group =>
+        groupAdjacencyList(group.parent) = groupAdjacencyList(group.parent) += group
+      }
+
+      /** For a `group.Declaration`, walk all its children and fold them into a
+        * `GroupDecl`.  This "folding" creates one `GroupDecl` for each child
+        * nested under each parent `GroupDecl`.
+        */
+      def foldGroupDecls(decl: group.Declaration): GroupDecl = {
+        val children = groupAdjacencyList(decl)
+        val convention = decl.convention match {
+          case group.Convention.Bind => GroupConvention.Bind
+          case _                     => ???
+        }
+        GroupDecl(decl.sourceInfo, decl.name, convention, children.map(foldGroupDecls).toSeq)
+      }
+
+      val rootGroups = groupAdjacencyList(group.Declaration.Root)
+
       (
         Circuit(
           components.last.name,
@@ -956,7 +990,8 @@ private[chisel3] object Builder extends LazyLogging {
           annotations.toSeq,
           makeViewRenameMap,
           newAnnotations.toSeq,
-          typeAliases
+          typeAliases,
+          rootGroups.map(foldGroupDecls).toSeq
         ),
         mod
       )
