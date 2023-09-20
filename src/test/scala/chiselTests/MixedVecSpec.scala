@@ -70,4 +70,14 @@ class MixedVecSpec extends ChiselPropSpec with Utils {
     chirrtl should include("connect io.outMono, io.inMono")
     chirrtl should include("connect io.outBi, io.inBi")
   }
+
+  property("MixedVec should be a Seq") {
+    // Compile Only Check
+    class Foo extends Module {
+      val io = IO(new Bundle {
+        val inMono = Input(MixedVec(Seq(UInt(8.W), UInt(16.W), UInt(4.W), UInt(7.W))))
+      })
+      val foo: Seq[UInt] = io.inMono
+    }
+  }
 }

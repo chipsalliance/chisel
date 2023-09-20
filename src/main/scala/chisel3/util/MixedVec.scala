@@ -87,7 +87,7 @@ object MixedVec {
   * v(2) := 101.U(32.W)
   * }}}
   */
-final class MixedVec[T <: Data](private val eltsIn: Seq[T]) extends Record with collection.IndexedSeq[T] {
+final class MixedVec[T <: Data](private val eltsIn: Seq[T]) extends Record with collection.immutable.IndexedSeq[T] {
   // We want to create MixedVec only with Chisel types.
   eltsIn.foreach(e => requireIsChiselType(e))
 
