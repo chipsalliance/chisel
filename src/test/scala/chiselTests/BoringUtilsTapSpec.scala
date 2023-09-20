@@ -391,4 +391,26 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
     // Simulation should always read same values.
     circt.stage.ChiselStage.emitSystemVerilog(new Foo)
   }
+
+  it should "work with D/I" in {
+    import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance}
+    @instantiable trait FooInterface {
+      @public val tapTarget: Bool
+    }
+    class Foo extends RawModule with FooInterface {
+      val internalWire = Wire(Bool())
+      override val tapTarget = BoringUtils.rwTap(internalWire)
+      dontTouch(tapTarget)
+    }
+    class Top(fooDef: Definition[Foo]) extends RawModule {
+      val fooInst = Instance(fooDef)
+      probe.forceInitial(fooInst.tapTarget, true.B)
+    }
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top(Definition(new Foo)), Array("--full-stacktrace"))
+    println(chirrtl)
+    // matchesAndOmits(chirrtl)(
+    //   "module Foo :",
+    // )()
+    // circt.stage.ChiselStage.emitSystemVerilog(new Foo)
+  }
 }
