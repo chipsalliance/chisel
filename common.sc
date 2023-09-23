@@ -292,6 +292,8 @@ trait CIRCTPanamaBinderModule
     "mlirBlockCreate",
     "mlirBlockGetArgument",
     "mlirBlockAppendOwnedOperation",
+    "mlirBlockInsertOwnedOperationAfter",
+    "mlirBlockInsertOwnedOperationBefore",
     "mlirRegionAppendOwnedBlock",
     "mlirOperationStateAddOwnedRegions",
     "mlirOperationDump",

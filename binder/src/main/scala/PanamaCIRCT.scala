@@ -122,6 +122,14 @@ class PanamaCIRCT {
     CAPI.mlirBlockAppendOwnedOperation(block.get, operation.get)
   }
 
+  def mlirBlockInsertOwnedOperationAfter(block: MlirBlock, reference: MlirOperation, operation: MlirOperation) = {
+    CAPI.mlirBlockInsertOwnedOperationAfter(block.get, reference.get, operation.get)
+  }
+
+  def mlirBlockInsertOwnedOperationBefore(block: MlirBlock, reference: MlirOperation, operation: MlirOperation) = {
+    CAPI.mlirBlockInsertOwnedOperationBefore(block.get, reference.get, operation.get)
+  }
+
   def mlirRegionCreate() = MlirRegion(CAPI.mlirRegionCreate(arena))
 
   def mlirRegionAppendOwnedBlock(region: MlirRegion, block: MlirBlock) = {
