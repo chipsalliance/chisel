@@ -124,20 +124,34 @@ class PanamaCIRCTConverter extends CIRCTConverter {
   val mlirRootModule = circt.mlirModuleCreateEmpty(circt.unkLoc)
 
   object util {
+    def getWidthOrSentinel(width: fir.Width): Int = width match {
+      case fir.UnknownWidth => -1
+      case fir.IntWidth(v)  => v.toInt
+    }
+
+    /// If this is an IntType, AnalogType, or sugar type for a single bit (Clock,
+    /// Reset, etc) then return the bitwidth.  Return -1 if the is one of these
+    /// types but without a specified bitwidth.  Return -2 if this isn't a simple
+    /// type.
+    def getWidthOrSentinel(tpe: fir.Type): Int = {
+      tpe match {
+        case fir.ClockType | fir.ResetType | fir.AsyncResetType => 1
+        case fir.UIntType(width) => getWidthOrSentinel(width)
+        case fir.SIntType(width) => getWidthOrSentinel(width)
+        case fir.AnalogType(width) => getWidthOrSentinel(width)
+        case _: fir.BundleType | _: fir.VectorType => -2
+        case _ => throw new Exception("unhandled")
+      }
+    }
 
     def convert(firType: fir.Type): MlirType = {
-      def convertFirWidth(width: fir.Width) = width match {
-        case fir.UnknownWidth => -1
-        case fir.IntWidth(v)  => v.toInt
-      }
-
       firType match {
-        case t: fir.UIntType => circt.firrtlTypeGetUInt(convertFirWidth(t.width))
-        case t: fir.SIntType => circt.firrtlTypeGetSInt(convertFirWidth(t.width))
+        case t: fir.UIntType => circt.firrtlTypeGetUInt(getWidthOrSentinel(t.width))
+        case t: fir.SIntType => circt.firrtlTypeGetSInt(getWidthOrSentinel(t.width))
         case fir.ClockType      => circt.firrtlTypeGetClock()
         case fir.ResetType      => circt.firrtlTypeGetReset()
         case fir.AsyncResetType => circt.firrtlTypeGetAsyncReset()
-        case t: fir.AnalogType => circt.firrtlTypeGetAnalog(convertFirWidth(t.width))
+        case t: fir.AnalogType => circt.firrtlTypeGetAnalog(getWidthOrSentinel(t.width))
         case t: fir.VectorType => circt.firrtlTypeGetVector(convert(t.tpe), t.size)
         case t: fir.BundleType =>
           circt.firrtlTypeGetBundle(
@@ -552,10 +566,59 @@ class PanamaCIRCTConverter extends CIRCTConverter {
   def visitConnect(connect: Connect): Unit = {
     val loc = util.convert(connect.sourceInfo)
 
+    val dest = util.referTo(connect.loc.id, loc)
+    var src = util.referTo(connect.exp, loc)
+
+    val destWidth = util.getWidthOrSentinel(dest.tpe)
+    val srcWidth = util.getWidthOrSentinel(src.tpe)
+
+    if (!(destWidth < 0 || srcWidth < 0)) {
+      if (destWidth < srcWidth) {
+        val isSignedDest = dest.tpe.isInstanceOf[fir.SIntType]
+        val tmpType = dest.tpe match {
+          case t: fir.UIntType => t
+          case fir.SIntType(width) => fir.UIntType(width)
+        }
+        src = Reference.Value(
+          util
+            .OpBuilder("firrtl.tail", firCtx.currentBlock, loc)
+            .withNamedAttrs(Seq(("amount", circt.mlirIntegerAttrGet(circt.mlirIntegerTypeGet(32), srcWidth - destWidth))))
+            .withOperands(Seq(src.value))
+            .withResult(util.convert(tmpType))
+            .build()
+            .results(0),
+          tmpType
+        )
+
+        if (isSignedDest) {
+          src = Reference.Value(
+            util
+              .OpBuilder("firrtl.asSInt", firCtx.currentBlock, loc)
+              .withOperands(Seq(src.value))
+              .withResult(util.convert(dest.tpe))
+              .build()
+              .results(0),
+            dest.tpe
+          )
+        }
+      } else if (srcWidth < destWidth) {
+        src = Reference.Value(
+          util
+            .OpBuilder("firrtl.pad", firCtx.currentBlock, loc)
+            .withNamedAttrs(Seq(("amount", circt.mlirIntegerAttrGet(circt.mlirIntegerTypeGet(32), destWidth))))
+            .withOperands(Seq(src.value))
+            .withResult(util.convert(dest.tpe))
+            .build()
+            .results(0),
+          dest.tpe
+        )
+      }
+    }
+
     util
       .OpBuilder("firrtl.connect", firCtx.currentBlock, loc)
-      .withOperand( /* dest */ util.referTo(connect.loc.id, loc).value)
-      .withOperand( /* src */ util.referTo(connect.exp, loc).value)
+      .withOperand( /* dest */ dest.value)
+      .withOperand( /* src */ src.value)
       .build()
   }
 
