@@ -867,12 +867,20 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
         val a = IO(Input(Bool()))
         val b = IO(Output(Bool()))
 
+        // Chisel groups modules for deduping using their
+        // desiredNames. By setting the desiredName here, we can make
+        // sure that these RawModules get put in the same
+        // deduplication group
+        override def desiredName = "Bar"
+
         b := a
       }
 
       class Bar extends RawModule {
         val a = IO(Input(Bool()))
         val b = IO(Output(Bool()))
+
+        override def desiredName = "Bar"
 
         b := a
       }
