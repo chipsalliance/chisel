@@ -179,7 +179,7 @@ class PanamaCIRCTConverter extends CIRCTConverter {
     def convert(name: String, parameter: Param): MlirAttribute = {
       val (tpe, value) = parameter match {
         case IntParam(value) =>
-          val tpe = circt.mlirIntegerTypeGet(max(bitLength(value.toInt), 32))
+          val tpe = circt.mlirIntegerTypeGet(max(bitLength(value), 32))
           (tpe, circt.mlirIntegerAttrGet(tpe, value.toInt))
         case DoubleParam(value) =>
           val tpe = circt.mlirF64TypeGet()
@@ -222,15 +222,7 @@ class PanamaCIRCTConverter extends CIRCTConverter {
         .withNamedAttr("portLocations", circt.mlirArrayAttrGet(ports.locAttrs))
     }
 
-    def bitLength(n: Int): Int = {
-      var bits = 0
-      var num = n
-      while (num != 0) {
-        bits += 1
-        num >>>= 1
-      }
-      max(bits, 1)
-    }
+    def bitLength(n: BigInt): Int = max(n.bitLength, 1)
 
     def widthShl(lhs: fir.Width, rhs: fir.Width): fir.Width = (lhs, rhs) match {
       case (l: fir.IntWidth, r: fir.IntWidth) => fir.IntWidth(l.width.toInt << r.width.toInt)

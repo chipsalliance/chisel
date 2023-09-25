@@ -32,6 +32,12 @@ class TruncationTest extends RawModule {
   dest := src
 }
 
+// https://github.com/chipsalliance/chisel/issues/3548#issuecomment-1734346659
+class BitLengthOfNeg1Test extends RawModule {
+  val a = IO(Output(UInt()))
+  a := -1.S.asUInt
+}
+
 class BinderTest extends AnyFlatSpec with Matchers {
 
   def StreamString(module: => RawModule, stream: CIRCTConverter => Writable): String = Seq(
@@ -77,5 +83,7 @@ class BinderTest extends AnyFlatSpec with Matchers {
         .and(include("counterWrap_c_value <=")))
 
     firrtlString(new TruncationTest) should include("connect dest, tail(src, 8)")
+
+    firrtlString(new BitLengthOfNeg1Test) should include("asUInt(SInt<1>(-1))")
   }
 }
