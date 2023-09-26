@@ -111,4 +111,15 @@ class DataMirrorSpec extends ChiselFlatSpec {
   it should "not support name guesses for non-hardware" in {
     an[ExpectedHardwareException] should be thrownBy DataMirror.queryNameGuess(UInt(8.W))
   }
+
+  "chiselTypeClone" should "preserve Scala type information" in {
+    class MyModule extends Module {
+      val in = IO(Input(UInt(8.W)))
+      val out = IO(Output(DataMirror.internal.chiselTypeClone(in)))
+      // The connection checks the types
+      out :#= in
+    }
+    ChiselStage.emitCHIRRTL(new MyModule)
+  }
+
 }
