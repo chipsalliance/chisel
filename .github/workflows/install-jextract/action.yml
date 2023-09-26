@@ -4,7 +4,7 @@ inputs:
   file-name:
     description: 'File name to install'
     required: false
-    default: 'openjdk-20-jextract+1-2_linux-x64_bin.tar.gz'
+    default: 'openjdk-21-jextract+1-2_linux-x64_bin.tar.gz'
 
 runs:
   using: composite
