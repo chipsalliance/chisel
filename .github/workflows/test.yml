@@ -88,7 +88,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'adopt'
-          java-version: '20'
+          java-version: '21'
           cache: 'sbt'
       - name: Install Mill
         uses: jodersky/setup-mill@v0.3.0
