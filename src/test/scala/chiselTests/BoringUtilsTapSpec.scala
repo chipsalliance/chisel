@@ -472,7 +472,6 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       val a = WireInit(DecoupledIO(Bool()), DontCare)
       val dummyA = Wire(Output(chiselTypeOf(a)))
       // FIXME we shouldn't need this intermediate wire
-      // https://github.com/chipsalliance/chisel/issues/3556
       // https://github.com/chipsalliance/chisel/issues/3557
       dummyA :#= a
       dontTouch(a)
