@@ -172,6 +172,10 @@ options:
         url: chisel3/docs/explanations/properties.html
         menu_type: chisel3
         menu_section: properties
+      - title: Optional Groups
+        url: chisel3/docs/explanations/optional-groups.html
+        menu_type: chisel3
+        menu_section: optional-groups
   - title: Appendix
     url: chisel3/docs/appendix/appendix.html
     menu_type: chisel3
