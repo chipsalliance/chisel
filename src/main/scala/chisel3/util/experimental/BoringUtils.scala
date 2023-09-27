@@ -220,7 +220,9 @@ object BoringUtils {
   private def boreOrTap[A <: Data](source: A, createProbe: Option[ProbeInfo] = None)(implicit si: SourceInfo): A = {
     import reflect.DataMirror
     def parent(d: Data): BaseModule = d.topBinding.location.get
-    def purePortTypeBase = if (DataMirror.hasOuterFlip(source)) Flipped(chiselTypeOf(source)) else chiselTypeOf(source)
+    def purePortTypeBase = if (createProbe.nonEmpty) Output(chiselTypeOf(source))
+    else if (DataMirror.hasOuterFlip(source)) Flipped(chiselTypeOf(source))
+    else chiselTypeOf(source)
     def purePortType = createProbe match {
       case Some(pi) if pi.writable => RWProbe(purePortTypeBase)
       case Some(pi)                => Probe(purePortTypeBase)
