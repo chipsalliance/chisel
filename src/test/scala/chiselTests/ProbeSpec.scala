@@ -552,4 +552,21 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
       when(done) { stop() }
     }) should be(true)
   }
+
+  "Enum probe" should "work" in {
+    object MyEnum extends ChiselEnum {
+      val e0, e1, e2 = Value
+    }
+    val chirrtl = ChiselStage.emitCHIRRTL(
+      new RawModule {
+        val a = IO(Output(RWProbe(MyEnum())))
+
+        val w = WireInit(MyEnum(), MyEnum.e1)
+        val w_probe = RWProbeValue(w)
+        define(a, w_probe)
+      },
+      Array("--full-stacktrace")
+    )
+    processChirrtl(chirrtl) should contain("define a = rwprobe(w)")
+  }
 }
