@@ -177,21 +177,34 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
       elementsImpl
     }
 
-    def generateAutoTypename(bundle: ClassDef, thiz: global.This, conArgsOpt: Option[List[Tree]]): Option[Tree] = {
-      conArgsOpt.map { conArgs =>
-        // Create an iterable out of all constructor argument accessors
-        val typeNameConParamsSym =
-          bundle.symbol.newMethod(
-            TermName("_typeNameConParams"),
-            bundle.symbol.pos.focus,
-            Flag.OVERRIDE | Flag.PROTECTED
-          )
-        typeNameConParamsSym.resetFlag(Flags.METHOD)
-        typeNameConParamsSym.setInfo(NullaryMethodType(itAnyTpe))
+    def generateAutoTypename(record: ClassDef, thiz: global.This, conArgsOpt: Option[List[Tree]]): Option[Tree] = {
+      conArgsOpt.flatMap { conArgs =>
+        val recordIsAnon = record.symbol.isAnonOrRefinementClass
 
-        localTyper.typed(
-          DefDef(typeNameConParamsSym, q"scala.collection.immutable.Vector.apply[Any](..${conArgs})")
-        )
+        // Anonymous `Records` in any scope are forbidden
+        if (record.symbol.isAnonOrRefinementClass) {
+          global.reporter.error(
+            record.pos,
+            "Users cannot mix 'HasAutoTypename' into an anonymous Record. Create a named class."
+          )
+          None
+        } else {
+          // Create an iterable out of all constructor argument accessors
+          val typeNameConParamsSym =
+            record.symbol.newMethod(
+              TermName("_typeNameConParams"),
+              record.symbol.pos.focus,
+              Flag.OVERRIDE | Flag.PROTECTED
+            )
+          typeNameConParamsSym.resetFlag(Flags.METHOD)
+          typeNameConParamsSym.setInfo(NullaryMethodType(itAnyTpe))
+
+          Some(
+            localTyper.typed(
+              DefDef(typeNameConParamsSym, q"scala.collection.immutable.Vector.apply[Any](..${conArgs})")
+            )
+          )
+        }
       }
     }
 
@@ -245,7 +258,7 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
         }
 
         val autoTypenameOpt =
-          if (isBundle && isAutoTypenamed(record.symbol)) generateAutoTypename(record, thiz, conArgs.map(_.flatten))
+          if (isAutoTypenamed(record.symbol)) generateAutoTypename(record, thiz, conArgs.map(_.flatten))
           else None
 
         val withMethods = deriveClassDef(record) { t =>

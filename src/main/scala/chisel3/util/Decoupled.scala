@@ -8,6 +8,7 @@ package chisel3.util
 import chisel3._
 import chisel3.experimental.{requireIsChiselType, Direction}
 import chisel3.reflect.DataMirror
+import chisel3.util.simpleClassName
 
 import scala.annotation.nowarn
 
@@ -40,7 +41,7 @@ abstract class ReadyValidIO[+T <: Data](gen: T) extends Bundle {
   /** A stable typeName for this `ReadyValidIO` and any of its implementations
     * using the supplied `Data` generator's `typeName`
     */
-  override def typeName = s"${this.getClass.getSimpleName}_${gen.typeName}"
+  override def typeName = s"${simpleClassName(this.getClass)}_${gen.typeName}"
 }
 
 object ReadyValidIO {

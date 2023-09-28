@@ -16,6 +16,7 @@ import chisel3.internal.sourceinfo.{
 import chisel3.internal.firrtl.PrimOp._
 import _root_.firrtl.{ir => firrtlir}
 import chisel3.internal.{castToInt, Builder, Warning, WarningID}
+import chisel3.util.simpleClassName
 
 /** Exists to unify common interfaces of [[Bits]] and [[Reset]].
   *
@@ -54,7 +55,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
   /** A non-ambiguous name of this `Bits` instance for use in generated Verilog names
     * Inserts the width directly after the typeName, e.g. UInt4, SInt1
     */
-  override def typeName: String = s"${this.getClass.getSimpleName}$width"
+  override def typeName: String = s"${simpleClassName(this.getClass)}$width"
 
   /** Tail operator
     *
