@@ -185,7 +185,7 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
         if (record.symbol.isAnonOrRefinementClass) {
           global.reporter.error(
             record.pos,
-            "Users can not mix 'HasAutoTypename' into an anonymous Record. Pull the Record definition into its own outer class."
+            "Users cannot mix 'HasAutoTypename' into an anonymous Record. Create a named class."
           )
           None
         } else {
