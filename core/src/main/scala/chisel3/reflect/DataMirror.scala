@@ -191,8 +191,8 @@ object DataMirror {
   object internal {
     def isSynthesizable(target: Data): Boolean = target.isSynthesizable
     // For those odd cases where you need to care about object reference and uniqueness
-    def chiselTypeClone[T <: Data](target: Data): T = {
-      target.cloneTypeFull.asInstanceOf[T]
+    def chiselTypeClone[T <: Data](target: T): T = {
+      target.cloneTypeFull
     }
   }
 

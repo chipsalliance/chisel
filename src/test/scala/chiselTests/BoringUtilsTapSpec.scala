@@ -391,4 +391,108 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
     // Simulation should always read same values.
     circt.stage.ChiselStage.emitSystemVerilog(new Foo)
   }
+
+  it should "work with D/I" in {
+    import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance}
+    @instantiable trait FooInterface {
+      @public val tapTarget: Bool = IO(probe.RWProbe(Bool()))
+    }
+    class Foo extends RawModule with FooInterface {
+      val internalWire = Wire(Bool())
+      internalWire := DontCare
+
+      probe.define(tapTarget, BoringUtils.rwTap(internalWire))
+    }
+    class Top(fooDef: Definition[Foo]) extends RawModule {
+      val fooInstA = Instance(fooDef)
+      val fooInstB = Instance(fooDef)
+
+      probe.forceInitial(fooInstA.tapTarget, true.B)
+
+      val outProbe = IO(probe.RWProbe(Bool()))
+      probe.define(outProbe, fooInstB.tapTarget)
+    }
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top(Definition(new Foo)), Array("--full-stacktrace"))
+    matchesAndOmits(chirrtl)(
+      "module Foo :",
+      "output tapTarget : RWProbe<UInt<1>>",
+      "define tapTarget = rwprobe(internalWire)",
+      "module Top :",
+      "force_initial(fooInstA.tapTarget, UInt<1>(0h1))",
+      "define outProbe = fooInstB.tapTarget"
+    )()
+
+    // Check that firtool also passes
+    val verilog = circt.stage.ChiselStage.emitSystemVerilog(new Top(Definition(new Foo)))
+  }
+
+  it should "work with DecoupledIO in a hierarchy" in {
+    import chisel3.util.{Decoupled, DecoupledIO}
+    class Bar() extends RawModule {
+      val decoupledThing = Wire(Decoupled(Bool()))
+      decoupledThing := DontCare
+    }
+    class Foo() extends RawModule {
+      val bar = Module(new Bar())
+    }
+    class FakeView(foo: Foo) extends RawModule {
+      val decoupledThing = Wire(DecoupledIO(Bool()))
+      decoupledThing := BoringUtils.tapAndRead(foo.bar.decoupledThing)
+    }
+    class Top() extends RawModule {
+      val foo = Module(new Foo())
+      val fakeView = Module(new FakeView(foo))
+    }
+
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top(), Array("--full-stacktrace"))
+    matchesAndOmits(chirrtl)(
+      "module Bar :",
+      "output decoupledThing_bore : Probe<{ ready : UInt<1>, valid : UInt<1>, bits : UInt<1>}>",
+      "define decoupledThing_bore = probe(decoupledThing)",
+      "module Foo :",
+      "output decoupledThing_bore : Probe<{ ready : UInt<1>, valid : UInt<1>, bits : UInt<1>}>",
+      "define decoupledThing_bore = bar.decoupledThing_bore",
+      "module FakeView :",
+      "input decoupledThing_bore : { ready : UInt<1>, valid : UInt<1>, bits : UInt<1>}",
+      "module Top :",
+      "connect fakeView.decoupledThing_bore, read(foo.decoupledThing_bore)"
+    )()
+
+    // Check that firtool also passes
+    val verilog = circt.stage.ChiselStage.emitSystemVerilog(new Top())
+  }
+
+  it should "work with DecoupledIO" in {
+    import chisel3.util.{Decoupled, DecoupledIO}
+    class Bar(b: DecoupledIO[Bool]) extends RawModule {
+      BoringUtils.tapAndRead(b)
+    }
+
+    class Foo extends RawModule {
+      val a = WireInit(DecoupledIO(Bool()), DontCare)
+      val dummyA = Wire(Output(chiselTypeOf(a)))
+      // FIXME we shouldn't need this intermediate wire
+      // https://github.com/chipsalliance/chisel/issues/3557
+      dummyA :#= a
+      dontTouch(a)
+
+      val bar = Module(new Bar(dummyA))
+    }
+
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Foo, Array("--full-stacktrace"))
+
+    matchesAndOmits(chirrtl)(
+      "module Bar :",
+      "input bore : { ready : UInt<1>, valid : UInt<1>, bits : UInt<1>}",
+      "module Foo :",
+      "wire a : { flip ready : UInt<1>, valid : UInt<1>, bits : UInt<1>}",
+      // FIXME shouldn't need intermediate wire
+      "wire dummyA : { ready : UInt<1>, valid : UInt<1>, bits : UInt<1>}",
+      "connect bar.bore, dummyA"
+    )()
+
+    // Check that firtool also passes
+    val verilog = circt.stage.ChiselStage.emitSystemVerilog(new Foo)
+  }
+
 }

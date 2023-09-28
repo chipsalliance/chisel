@@ -71,7 +71,7 @@ object Reference {
   final case class SubIndexDynamic(index: MlirValue, tpe: fir.Type) extends Reference
 }
 
-case class WhenContext(op: Op, var inAlt: Boolean) {
+case class WhenContext(op: Op, parent: MlirBlock, var inAlt: Boolean) {
   def block: MlirBlock = op.region(if (!inAlt) 0 else 1).block(0)
 }
 
@@ -103,7 +103,7 @@ class FirContext {
     opModules = opModules :+ (name, newModule)
   }
 
-  def enterWhen(whenOp: Op): Unit = whenStack.push(WhenContext(whenOp, false))
+  def enterWhen(whenOp: Op): Unit = whenStack.push(WhenContext(whenOp, currentBlock, false))
   def enterAlt(): Unit = whenStack.top.inAlt = true
   def leaveOtherwise(depth: Int): Unit = (1 to depth).foreach(_ => whenStack.pop)
   def leaveWhen(depth:      Int, hasAlt: Boolean): Unit = if (!hasAlt) (0 to depth).foreach(_ => whenStack.pop)
@@ -113,6 +113,8 @@ class FirContext {
   def currentModuleName:  String = opModules.last._1
   def currentModuleBlock: MlirBlock = opModules.last._2.region(0).block(0)
   def currentBlock:       MlirBlock = if (whenStack.nonEmpty) whenStack.top.block else currentModuleBlock
+  def currentWhen:        Option[WhenContext] = Option.when(whenStack.nonEmpty)(whenStack.top)
+  def rootWhen:           Option[WhenContext] = Option.when(whenStack.nonEmpty)(whenStack.last)
 }
 
 case class PanamaCIRCTConverterAnnotation(converter: PanamaCIRCTConverter) extends NoTargetAnnotation
@@ -251,7 +253,7 @@ class PanamaCIRCTConverter extends CIRCTConverter {
       def withResult(r: MlirType): OpBuilder = { results = results :+ r; this }
       def withResults(rs: Seq[MlirType]): OpBuilder = { results = results ++ rs; this }
 
-      def build(): Op = {
+      private[OpBuilder] def buildImpl(inserter: MlirOperation => Unit): Op = {
         val state = circt.mlirOperationStateGet(opName, loc)
 
         circt.mlirOperationStateAddAttributes(state, attrs)
@@ -274,7 +276,7 @@ class PanamaCIRCTConverter extends CIRCTConverter {
         circt.mlirOperationStateAddOwnedRegions(state, builtRegions.map(_.region))
 
         val op = circt.mlirOperationCreate(state)
-        circt.mlirBlockAppendOwnedOperation(parent, op)
+        inserter(op)
 
         val resultVals = results.zipWithIndex.map {
           case (_, i) => circt.mlirOperationGetResult(op, i)
@@ -282,6 +284,10 @@ class PanamaCIRCTConverter extends CIRCTConverter {
 
         Op(state, op, builtRegions, resultVals)
       }
+
+      def build(): Op = buildImpl(circt.mlirBlockAppendOwnedOperation(parent, _))
+      def buildAfter(ref: Op): Op = buildImpl(circt.mlirBlockInsertOwnedOperationAfter(parent, ref.op, _))
+      def buildBefore(ref: Op): Op = buildImpl(circt.mlirBlockInsertOwnedOperationBefore(parent, ref.op, _))
     }
 
     def newConstantValue(resultType: fir.Type, valueType: MlirType, value: Int, loc: MlirLocation): MlirValue = {
@@ -635,8 +641,12 @@ class PanamaCIRCTConverter extends CIRCTConverter {
   def visitDefMemPort[T <: ChiselData](defMemPort: DefMemPort[T]): Unit = {
     val loc = util.convert(defMemPort.sourceInfo)
 
-    val op = util
-      .OpBuilder("chirrtl.memoryport", firCtx.currentBlock, loc)
+    val (parent, build) = firCtx.rootWhen match {
+      case Some(when) => (when.parent, (opBuilder: util.OpBuilder) => opBuilder.buildBefore(when.op))
+      case None       => (firCtx.currentBlock, (opBuilder: util.OpBuilder) => opBuilder.build())
+    }
+
+    val op = build(util.OpBuilder("chirrtl.memoryport", parent, loc)
       .withNamedAttr(
         "direction",
         circt.firrtlAttrGetMemDir(defMemPort.dir match {
@@ -650,8 +660,7 @@ class PanamaCIRCTConverter extends CIRCTConverter {
       .withNamedAttr("annotations", circt.emptyArrayAttr)
       .withOperand( /* memory */ util.referTo(defMemPort.source.id, loc).value)
       .withResult( /* data */ util.convert(Converter.extractType(defMemPort.id, defMemPort.sourceInfo)))
-      .withResult( /* port */ circt.chirrtlTypeGetCMemoryPort())
-      .build()
+      .withResult( /* port */ circt.chirrtlTypeGetCMemoryPort()))
 
     util
       .OpBuilder("chirrtl.memoryport.access", firCtx.currentBlock, loc)

@@ -23,6 +23,7 @@ object IO {
     */
   def apply[T <: Data](iodef: => T)(implicit sourceInfo: SourceInfo): T = {
     val module = Module.currentModule.get // Impossible to fail
+    require(module.isIOCreationAllowed, "This module cannot have user-created IO")
     require(!module.isClosed, "Can't add more ports after module close")
     val prevId = Builder.idGen.value
     val data = iodef // evaluate once (passed by name)
