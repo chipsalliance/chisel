@@ -218,28 +218,111 @@ class PanamaCIRCT {
     CAPI.mlirOpPassManagerGetNestedUnder(arena, pm.get, newString(operationName).get)
   )
 
-  def firtoolPopulatePreprocessTransforms(pm: MlirPassManager) = MlirLogicalResult(
-    CAPI.firtoolPopulatePreprocessTransforms(arena, pm.get)
+  def firtoolOptionsCreateDefault() = FirtoolOptions(CAPI.firtoolOptionsCreateDefault(arena))
+  def firtoolOptionsDestroy(options: FirtoolOptions) = CAPI.firtoolOptionsDestroy(options.get)
+  def firtoolOptionsSetOutputFilename(options: FirtoolOptions, value: String) = CAPI.firtoolOptionsSetOutputFilename(options.get, newString(value).get)
+  def firtoolOptionsGetOutputFilename(options: FirtoolOptions): String = (CAPI.firtoolOptionsGetOutputFilename(arena, options.get)).toString
+  def firtoolOptionsSetDisableAnnotationsUnknown(options: FirtoolOptions, value: Boolean) = CAPI.firtoolOptionsSetDisableAnnotationsUnknown(options.get, value)
+  def firtoolOptionsGetDisableAnnotationsUnknown(options: FirtoolOptions): Boolean = CAPI.firtoolOptionsGetDisableAnnotationsUnknown(options.get)
+  def firtoolOptionsSetDisableAnnotationsClassless(options: FirtoolOptions, value: Boolean) = CAPI.firtoolOptionsSetDisableAnnotationsClassless(options.get, value)
+  def firtoolOptionsGetDisableAnnotationsClassless(options: FirtoolOptions): Boolean = CAPI.firtoolOptionsGetDisableAnnotationsClassless(options.get)
+  def firtoolOptionsSetLowerAnnotationsNoRefTypePorts(options: FirtoolOptions, value: Boolean) = CAPI.firtoolOptionsSetLowerAnnotationsNoRefTypePorts(options.get, value)
+  def firtoolOptionsGetLowerAnnotationsNoRefTypePorts(options: FirtoolOptions): Boolean = CAPI.firtoolOptionsGetLowerAnnotationsNoRefTypePorts(options.get)
+  def firtoolOptionsSetPreserveAggregate(options: FirtoolOptions, value: FirtoolPreserveAggregateMode) = CAPI.firtoolOptionsSetPreserveAggregate(options.get, value.get)
+  def firtoolOptionsGetPreserveAggregate(options: FirtoolOptions) = new FirtoolPreserveAggregateMode(CAPI.firtoolOptionsGetPreserveAggregate(options.get))
+  def firtoolOptionsSetPreserveValues(options: FirtoolOptions, value: FirtoolPreserveValuesMode) = CAPI.firtoolOptionsSetPreserveValues(options.get, value.get)
+  def firtoolOptionsGetPreserveValues(options: FirtoolOptions) = new FirtoolPreserveValuesMode(CAPI.firtoolOptionsGetPreserveValues(options.get))
+  def firtoolOptionsSetBuildMode(options: FirtoolOptions, value: FirtoolBuildMode) = CAPI.firtoolOptionsSetBuildMode(options.get, value.get)
+  def firtoolOptionsGetBuildMode(options: FirtoolOptions) = new FirtoolBuildMode(CAPI.firtoolOptionsGetBuildMode(options.get))
+  def firtoolOptionsSetDisableOptimization(options: FirtoolOptions, value: Boolean) = CAPI.firtoolOptionsSetDisableOptimization(options.get, value)
+  def firtoolOptionsGetDisableOptimization(options: FirtoolOptions): Boolean = CAPI.firtoolOptionsGetDisableOptimization(options.get)
+  def firtoolOptionsSetExportChiselInterface(options: FirtoolOptions, value: Boolean) = CAPI.firtoolOptionsSetExportChiselInterface(options.get, value)
+  def firtoolOptionsGetExportChiselInterface(options: FirtoolOptions): Boolean = CAPI.firtoolOptionsGetExportChiselInterface(options.get)
+  def firtoolOptionsSetChiselInterfaceOutDirectory(options: FirtoolOptions, value: String) = CAPI.firtoolOptionsSetChiselInterfaceOutDirectory(options.get, newString(value).get)
+  def firtoolOptionsGetChiselInterfaceOutDirectory(options: FirtoolOptions): String = (CAPI.firtoolOptionsGetChiselInterfaceOutDirectory(arena, options.get)).toString
+  def firtoolOptionsSetVbToBv(options: FirtoolOptions, value: Boolean) = CAPI.firtoolOptionsSetVbToBv(options.get, value)
+  def firtoolOptionsGetVbToBv(options: FirtoolOptions): Boolean = CAPI.firtoolOptionsGetVbToBv(options.get)
+  def firtoolOptionsSetDedup(options: FirtoolOptions, value: Boolean) = CAPI.firtoolOptionsSetDedup(options.get, value)
+  def firtoolOptionsGetDedup(options: FirtoolOptions): Boolean = CAPI.firtoolOptionsGetDedup(options.get)
+  def firtoolOptionsSetGrandCentralInstantiateCompanionOnly(options: FirtoolOptions, value: Boolean) = CAPI.firtoolOptionsSetGrandCentralInstantiateCompanionOnly(options.get, value)
+  def firtoolOptionsGetGrandCentralInstantiateCompanionOnly(options: FirtoolOptions): Boolean = CAPI.firtoolOptionsGetGrandCentralInstantiateCompanionOnly(options.get)
+  def firtoolOptionsSetDisableAggressiveMergeConnections(options: FirtoolOptions, value: Boolean) = CAPI.firtoolOptionsSetDisableAggressiveMergeConnections(options.get, value)
+  def firtoolOptionsGetDisableAggressiveMergeConnections(options: FirtoolOptions): Boolean = CAPI.firtoolOptionsGetDisableAggressiveMergeConnections(options.get)
+  def firtoolOptionsSetEmitOMIR(options: FirtoolOptions, value: Boolean) = CAPI.firtoolOptionsSetEmitOMIR(options.get, value)
+  def firtoolOptionsGetEmitOMIR(options: FirtoolOptions): Boolean = CAPI.firtoolOptionsGetEmitOMIR(options.get)
+  def firtoolOptionsSetOMIROutFile(options: FirtoolOptions, value: String) = CAPI.firtoolOptionsSetOMIROutFile(options.get, newString(value).get)
+  def firtoolOptionsGetOMIROutFile(options: FirtoolOptions): String = (CAPI.firtoolOptionsGetOMIROutFile(arena, options.get)).toString
+  def firtoolOptionsSetLowerMemories(options: FirtoolOptions, value: Boolean) = CAPI.firtoolOptionsSetLowerMemories(options.get, value)
+  def firtoolOptionsGetLowerMemories(options: FirtoolOptions): Boolean = CAPI.firtoolOptionsGetLowerMemories(options.get)
+  def firtoolOptionsSetBlackBoxRootPath(options: FirtoolOptions, value: String) = CAPI.firtoolOptionsSetBlackBoxRootPath(options.get, newString(value).get)
+  def firtoolOptionsGetBlackBoxRootPath(options: FirtoolOptions): String = (CAPI.firtoolOptionsGetBlackBoxRootPath(arena, options.get)).toString
+  def firtoolOptionsSetReplSeqMem(options: FirtoolOptions, value: Boolean) = CAPI.firtoolOptionsSetReplSeqMem(options.get, value)
+  def firtoolOptionsGetReplSeqMem(options: FirtoolOptions): Boolean = CAPI.firtoolOptionsGetReplSeqMem(options.get)
+  def firtoolOptionsSetReplSeqMemFile(options: FirtoolOptions, value: String) = CAPI.firtoolOptionsSetReplSeqMemFile(options.get, newString(value).get)
+  def firtoolOptionsGetReplSeqMemFile(options: FirtoolOptions): String = (CAPI.firtoolOptionsGetReplSeqMemFile(arena, options.get)).toString
+  def firtoolOptionsSetExtractTestCode(options: FirtoolOptions, value: Boolean) = CAPI.firtoolOptionsSetExtractTestCode(options.get, value)
+  def firtoolOptionsGetExtractTestCode(options: FirtoolOptions): Boolean = CAPI.firtoolOptionsGetExtractTestCode(options.get)
+  def firtoolOptionsSetIgnoreReadEnableMem(options: FirtoolOptions, value: Boolean) = CAPI.firtoolOptionsSetIgnoreReadEnableMem(options.get, value)
+  def firtoolOptionsGetIgnoreReadEnableMem(options: FirtoolOptions): Boolean = CAPI.firtoolOptionsGetIgnoreReadEnableMem(options.get)
+  def firtoolOptionsSetDisableRandom(options: FirtoolOptions, value: FirtoolRandomKind) = CAPI.firtoolOptionsSetDisableRandom(options.get, value.get)
+  def firtoolOptionsGetDisableRandom(options: FirtoolOptions) = new FirtoolRandomKind(CAPI.firtoolOptionsGetDisableRandom(options.get))
+  def firtoolOptionsSetOutputAnnotationFilename(options: FirtoolOptions, value: String) = CAPI.firtoolOptionsSetOutputAnnotationFilename(options.get, newString(value).get)
+  def firtoolOptionsGetOutputAnnotationFilename(options: FirtoolOptions): String = (CAPI.firtoolOptionsGetOutputAnnotationFilename(arena, options.get)).toString
+  def firtoolOptionsSetEnableAnnotationWarning(options: FirtoolOptions, value: Boolean) = CAPI.firtoolOptionsSetEnableAnnotationWarning(options.get, value)
+  def firtoolOptionsGetEnableAnnotationWarning(options: FirtoolOptions): Boolean = CAPI.firtoolOptionsGetEnableAnnotationWarning(options.get)
+  def firtoolOptionsSetAddMuxPragmas(options: FirtoolOptions, value: Boolean) = CAPI.firtoolOptionsSetAddMuxPragmas(options.get, value)
+  def firtoolOptionsGetAddMuxPragmas(options: FirtoolOptions): Boolean = CAPI.firtoolOptionsGetAddMuxPragmas(options.get)
+  def firtoolOptionsSetEmitChiselAssertsAsSVA(options: FirtoolOptions, value: Boolean) = CAPI.firtoolOptionsSetEmitChiselAssertsAsSVA(options.get, value)
+  def firtoolOptionsGetEmitChiselAssertsAsSVA(options: FirtoolOptions): Boolean = CAPI.firtoolOptionsGetEmitChiselAssertsAsSVA(options.get)
+  def firtoolOptionsSetEmitSeparateAlwaysBlocks(options: FirtoolOptions, value: Boolean) = CAPI.firtoolOptionsSetEmitSeparateAlwaysBlocks(options.get, value)
+  def firtoolOptionsGetEmitSeparateAlwaysBlocks(options: FirtoolOptions): Boolean = CAPI.firtoolOptionsGetEmitSeparateAlwaysBlocks(options.get)
+  def firtoolOptionsSetEtcDisableInstanceExtraction(options: FirtoolOptions, value: Boolean) = CAPI.firtoolOptionsSetEtcDisableInstanceExtraction(options.get, value)
+  def firtoolOptionsGetEtcDisableInstanceExtraction(options: FirtoolOptions): Boolean = CAPI.firtoolOptionsGetEtcDisableInstanceExtraction(options.get)
+  def firtoolOptionsSetEtcDisableRegisterExtraction(options: FirtoolOptions, value: Boolean) = CAPI.firtoolOptionsSetEtcDisableRegisterExtraction(options.get, value)
+  def firtoolOptionsGetEtcDisableRegisterExtraction(options: FirtoolOptions): Boolean = CAPI.firtoolOptionsGetEtcDisableRegisterExtraction(options.get)
+  def firtoolOptionsSetEtcDisableModuleInlining(options: FirtoolOptions, value: Boolean) = CAPI.firtoolOptionsSetEtcDisableModuleInlining(options.get, value)
+  def firtoolOptionsGetEtcDisableModuleInlining(options: FirtoolOptions): Boolean = CAPI.firtoolOptionsGetEtcDisableModuleInlining(options.get)
+  def firtoolOptionsSetAddVivadoRAMAddressConflictSynthesisBugWorkaround(options: FirtoolOptions, value: Boolean) = CAPI.firtoolOptionsSetAddVivadoRAMAddressConflictSynthesisBugWorkaround(options.get, value)
+  def firtoolOptionsGetAddVivadoRAMAddressConflictSynthesisBugWorkaround(options: FirtoolOptions): Boolean = CAPI.firtoolOptionsGetAddVivadoRAMAddressConflictSynthesisBugWorkaround(options.get)
+  def firtoolOptionsSetCkgModuleName(options: FirtoolOptions, value: String) = CAPI.firtoolOptionsSetCkgModuleName(options.get, newString(value).get)
+  def firtoolOptionsGetCkgModuleName(options: FirtoolOptions): String = (CAPI.firtoolOptionsGetCkgModuleName(arena, options.get)).toString
+  def firtoolOptionsSetCkgInputName(options: FirtoolOptions, value: String) = CAPI.firtoolOptionsSetCkgInputName(options.get, newString(value).get)
+  def firtoolOptionsGetCkgInputName(options: FirtoolOptions): String = (CAPI.firtoolOptionsGetCkgInputName(arena, options.get)).toString
+  def firtoolOptionsSetCkgOutputName(options: FirtoolOptions, value: String) = CAPI.firtoolOptionsSetCkgOutputName(options.get, newString(value).get)
+  def firtoolOptionsGetCkgOutputName(options: FirtoolOptions): String = (CAPI.firtoolOptionsGetCkgOutputName(arena, options.get)).toString
+  def firtoolOptionsSetCkgEnableName(options: FirtoolOptions, value: String) = CAPI.firtoolOptionsSetCkgEnableName(options.get, newString(value).get)
+  def firtoolOptionsGetCkgEnableName(options: FirtoolOptions): String = (CAPI.firtoolOptionsGetCkgEnableName(arena, options.get)).toString
+  def firtoolOptionsSetCkgTestEnableName(options: FirtoolOptions, value: String) = CAPI.firtoolOptionsSetCkgTestEnableName(options.get, newString(value).get)
+  def firtoolOptionsGetCkgTestEnableName(options: FirtoolOptions): String = (CAPI.firtoolOptionsGetCkgTestEnableName(arena, options.get)).toString
+  def firtoolOptionsSetExportModuleHierarchy(options: FirtoolOptions, value: Boolean) = CAPI.firtoolOptionsSetExportModuleHierarchy(options.get, value)
+  def firtoolOptionsGetExportModuleHierarchy(options: FirtoolOptions): Boolean = CAPI.firtoolOptionsGetExportModuleHierarchy(options.get)
+  def firtoolOptionsSetStripFirDebugInfo(options: FirtoolOptions, value: Boolean) = CAPI.firtoolOptionsSetStripFirDebugInfo(options.get, value)
+  def firtoolOptionsGetStripFirDebugInfo(options: FirtoolOptions): Boolean = CAPI.firtoolOptionsGetStripFirDebugInfo(options.get)
+  def firtoolOptionsSetStripDebugInfo(options: FirtoolOptions, value: Boolean) = CAPI.firtoolOptionsSetStripDebugInfo(options.get, value)
+  def firtoolOptionsGetStripDebugInfo(options: FirtoolOptions): Boolean = CAPI.firtoolOptionsGetStripDebugInfo(options.get)
+
+  def firtoolPopulatePreprocessTransforms(pm: MlirPassManager, options: FirtoolOptions) = MlirLogicalResult(
+    CAPI.firtoolPopulatePreprocessTransforms(arena, pm.get, options.get)
   )
 
-  def firtoolPopulateCHIRRTLToLowFIRRTL(pm: MlirPassManager, module: MlirModule, inputFilename: String) =
-    MlirLogicalResult(CAPI.firtoolPopulateCHIRRTLToLowFIRRTL(arena, pm.get, module.get, newString(inputFilename).get))
+  def firtoolPopulateCHIRRTLToLowFIRRTL(pm: MlirPassManager, options: FirtoolOptions, module: MlirModule, inputFilename: String) =
+    MlirLogicalResult(CAPI.firtoolPopulateCHIRRTLToLowFIRRTL(arena, pm.get, options.get, module.get, newString(inputFilename).get))
 
-  def firtoolPopulateLowFIRRTLToHW(pm: MlirPassManager) = MlirLogicalResult(
-    CAPI.firtoolPopulateLowFIRRTLToHW(arena, pm.get)
+  def firtoolPopulateLowFIRRTLToHW(pm: MlirPassManager, options: FirtoolOptions) = MlirLogicalResult(
+    CAPI.firtoolPopulateLowFIRRTLToHW(arena, pm.get, options.get)
   )
 
-  def firtoolPopulateHWToSV(pm: MlirPassManager) = MlirLogicalResult(
-    CAPI.firtoolPopulateHWToSV(arena, pm.get)
+  def firtoolPopulateHWToSV(pm: MlirPassManager, options: FirtoolOptions) = MlirLogicalResult(
+    CAPI.firtoolPopulateHWToSV(arena, pm.get, options.get)
   )
 
-  def firtoolPopulateExportVerilog(pm: MlirPassManager, callback: String => Unit) = 
+  def firtoolPopulateExportVerilog(pm: MlirPassManager, options: FirtoolOptions, callback: String => Unit) = 
     MlirLogicalResult(
-      CAPI.firtoolPopulateExportVerilog(arena, pm.get, newStringCallback(callback).get, NULL)
+      CAPI.firtoolPopulateExportVerilog(arena, pm.get, options.get, newStringCallback(callback).get, NULL)
     )
 
-  def firtoolPopulateExportSplitVerilog(pm: MlirPassManager, directory: String) = MlirLogicalResult(
-    CAPI.firtoolPopulateExportSplitVerilog(arena, pm.get, newString(directory).get)
+  def firtoolPopulateExportSplitVerilog(pm: MlirPassManager, options: FirtoolOptions, directory: String) = MlirLogicalResult(
+    CAPI.firtoolPopulateExportSplitVerilog(arena, pm.get, options.get, newString(directory).get)
   )
 
   def mlirLogicalResultIsSuccess(res: MlirLogicalResult): Boolean = circt.MlirLogicalResult.value$get(res.get) != 0
@@ -457,6 +540,14 @@ object MlirPass {
 
 final case class FIRRTLBundleField(name: String, isFlip: Boolean, tpe: MlirType)
 
+final case class FirtoolOptions(ptr: MemorySegment) extends ForeignType[MemorySegment] {
+  private[circt] def get = ptr
+  private[circt] val sizeof = circt.FirtoolOptions.sizeof().toInt
+}
+object FirtoolOptions {
+  private[circt] def apply(ptr: MemorySegment) = new FirtoolOptions(ptr)
+}
+
 //
 // MLIR & CIRCT Enums
 //
@@ -508,3 +599,45 @@ object FIRRTLMemDir {
   final case object Write extends FIRRTLMemDir(value = CAPI.FIRRTL_MEM_DIR_WRITE())
   final case object ReadWrite extends FIRRTLMemDir(value = CAPI.FIRRTL_MEM_DIR_READ_WRITE())
 }
+
+sealed class FirtoolPreserveAggregateMode(val value: Int) extends ForeignType[Int] {
+  private[circt] def get = value
+  private[circt] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
+}
+object FirtoolPreserveAggregateMode {
+  final case object None extends FirtoolPreserveAggregateMode(value = CAPI.FIRTOOL_PRESERVE_AGGREGATE_MODE_NONE())
+  final case object OneDimVec extends FirtoolPreserveAggregateMode(value = CAPI.FIRTOOL_PRESERVE_AGGREGATE_MODE_ONE_DIM_VEC())
+  final case object Vec extends FirtoolPreserveAggregateMode(value = CAPI.FIRTOOL_PRESERVE_AGGREGATE_MODE_VEC())
+  final case object All extends FirtoolPreserveAggregateMode(value = CAPI.FIRTOOL_PRESERVE_AGGREGATE_MODE_ALL())
+}
+
+sealed class FirtoolPreserveValuesMode(val value: Int) extends ForeignType[Int] {
+  private[circt] def get = value
+  private[circt] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
+}
+object FirtoolPreserveValuesMode {
+  final case object None extends FirtoolPreserveValuesMode(value = CAPI.FIRTOOL_PRESERVE_VALUES_MODE_NONE())
+  final case object Named extends FirtoolPreserveValuesMode(value = CAPI.FIRTOOL_PRESERVE_VALUES_MODE_NAMED())
+  final case object All extends FirtoolPreserveValuesMode(value = CAPI.FIRTOOL_PRESERVE_VALUES_MODE_ALL())
+}
+
+sealed class FirtoolBuildMode(val value: Int) extends ForeignType[Int] {
+  private[circt] def get = value
+  private[circt] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
+}
+object FirtoolBuildMode {
+  final case object Debug extends FirtoolBuildMode(value = CAPI.FIRTOOL_BUILD_MODE_DEBUG())
+  final case object Release extends FirtoolBuildMode(value = CAPI.FIRTOOL_BUILD_MODE_RELEASE())
+}
+
+sealed class FirtoolRandomKind(val value: Int) extends ForeignType[Int] {
+  private[circt] def get = value
+  private[circt] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
+}
+object FirtoolRandomKind {
+  final case object None extends FirtoolRandomKind(value = CAPI.FIRTOOL_RANDOM_KIND_NONE())
+  final case object Mem extends FirtoolRandomKind(value = CAPI.FIRTOOL_RANDOM_KIND_MEM())
+  final case object Reg extends FirtoolRandomKind(value = CAPI.FIRTOOL_RANDOM_KIND_REG())
+  final case object All extends FirtoolRandomKind(value = CAPI.FIRTOOL_RANDOM_KIND_ALL())
+}
+
