@@ -79,6 +79,10 @@ object group {
   ): Unit = {
     Builder.pushCommand(GroupDefBegin(sourceInfo, declaration))
     addDeclarations(declaration)
+    require(
+      Builder.groupStack.head == declaration.parent,
+      s"nested group '${declaration.name}' must be wrapped in parent group '${declaration.parent.name}'"
+    )
     Builder.groupStack = declaration :: Builder.groupStack
     block
     Builder.pushCommand(GroupDefEnd(sourceInfo))

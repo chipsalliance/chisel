@@ -45,4 +45,22 @@ class GroupSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
     )()
   }
 
+  "Groups error checking" should "require that a nested group definition matches its declaration nesting" in {
+
+    object A extends group.Declaration(group.Convention.Bind) {
+      object B extends group.Declaration(group.Convention.Bind)
+    }
+
+    class Foo extends RawModule {
+      group(A.B) {
+        val a = Wire(Bool())
+      }
+    }
+
+    intercept[IllegalArgumentException] { ChiselStage.emitCHIRRTL(new Foo) }.getMessage() should include(
+      "nested group 'B' must be wrapped in parent group 'A'"
+    )
+
+  }
+
 }
