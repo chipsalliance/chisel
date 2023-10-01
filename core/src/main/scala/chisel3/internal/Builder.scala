@@ -493,7 +493,7 @@ private[chisel3] class DynamicContext(
   var currentClock:         Option[Clock] = None
   var currentReset:         Option[Reset] = None
   var currentDisable:       Disable.Type = Disable.BeforeReset
-  var groupStack:           List[group.Declaration] = Nil
+  var groupStack:           List[group.Declaration] = group.Declaration.rootDeclaration :: Nil
   val errors = new ErrorLog(warningFilters, sourceRoots, throwOnFirstError)
   val namingStack = new NamingStack
 
