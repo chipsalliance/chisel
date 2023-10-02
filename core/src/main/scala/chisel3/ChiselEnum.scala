@@ -12,6 +12,7 @@ import chisel3.internal.firrtl.PrimOp._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo._
 import chisel3.internal.{
+  containsProbe,
   throwException,
   Binding,
   Builder,
@@ -143,8 +144,10 @@ abstract class EnumType(private[chisel3] val factory: ChiselEnum, selfAnnotating
   ): Unit = {
     super.bind(target, parentDirection)
 
-    // Make sure we only annotate hardware and not literals
-    if (selfAnnotating && isSynthesizable && topBindingOpt.get.isInstanceOf[ConstrainedBinding]) {
+    // Make sure we only annotate hardware and not literals or probes.
+    if (
+      selfAnnotating && isSynthesizable && topBindingOpt.get.isInstanceOf[ConstrainedBinding] && !containsProbe(this)
+    ) {
       annotateEnum()
     }
   }
