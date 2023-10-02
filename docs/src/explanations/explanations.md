@@ -46,4 +46,4 @@ read these documents in the following order:
 * [Warnings](warnings)
 * [Deep Dive into Legacy Connection Operators](connection-operators)
 * [Properties](properties)
-
+* [Optional Groups](optional-groups)

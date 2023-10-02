@@ -141,20 +141,8 @@ class Foo extends Module {
 
 ```
 
-After compilation, this will produce four Verilog files (one for `Foo` and one
-for each optional group definition in module `Foo`):
-
-1. `Foo`
-1. `Foo_Verification`
-1. `Foo_Verification_Assert`
-1. `Foo_Verification_Debug`
-
-The ports of each module created from an optional group will be automatically
-determined based on what that group captured from outside the group.  In the
-example above, the `Verification` group definition captured port `a`.  Both the
-`Assert` and `Debug` group definitions captured `a` and `a_d0`.
-
-Additionally, three bind files (one for each optional group declaration):
+After compilation, this will produce three group include files with the
+following filenames.  One file is created for each optional group:
 
 1. `groups_Foo_Verification.sv`
 1. `groups_Foo_Verification_Assert.sv`
@@ -165,9 +153,34 @@ include the optional functionality describe by the `Verification`, `Assert`, or
 `Debug` groups.  The `Assert` and `Debug` bind files automatically include the
 `Verification` bind file for the user.
 
-_Note: the names of the modules generated for each group are FIRRTL compiler
-implementation defined!  You should not rely on the names of these modules.
-Instead use one of the bind files which do have a stable name._
+#### Implementation Notes
+
+_Note: the names of the modules and the names of any files that contain these
+modules are FIRRTL compiler implementation defined!  The only guarantee is the
+existence of the three group include files.  The information in this subsection
+is for informational purposes to aid understanding._
+
+In implementation, a FIRRTL compiler creates four Verilog modules for the
+circuit above (one for `Foo` and one for each optional group definition in
+module `Foo`):
+
+1. `Foo`
+1. `Foo_Verification`
+1. `Foo_Verification_Assert`
+1. `Foo_Verification_Debug`
+
+These will typically be created in separate files with names that match the
+modules, i.e., `Foo.sv`, `Foo_Verification.sv`, `Foo_Verification_Assert.sv`,
+and `Foo_Verification_Debug.sv`.
+
+The ports of each module created from an optional group definition will be
+automatically determined based on what that group captured from outside the
+group.  In the example above, the `Verification` group definition captured port
+`a`.  Both the `Assert` and `Debug` group definitions captured `a` and `a_d0`.
+Groups may be optimized to remove/add ports or to move logic into an optional
+group.
+
+#### Verilog Output
 
 The complete Verilog output for this example is reproduced below:
 
