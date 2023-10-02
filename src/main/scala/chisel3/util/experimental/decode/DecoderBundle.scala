@@ -23,11 +23,15 @@ trait DecodeField[T <: DecodePattern, D <: Data] {
 
   def chiselType: D
 
+  def default: BitPat = dc
+
   final def width: Int = chiselType.getWidth
 
   def dc: BitPat = BitPat.dontCare(width)
 
   def genTable(op: T): BitPat
+
+  require(width == default.width)
 }
 
 /**
@@ -76,10 +80,10 @@ class DecodeTable[I <: DecodePattern](patterns: Seq[I], fields: Seq[DecodeField[
 
   def bundle: DecodeBundle = new DecodeBundle(fields)
 
-  private val _table = patterns.map { op =>
-    op.bitPat -> fields.reverse.map(field => field.genTable(op)).reduce(_ ## _)
-  }
-  val table: TruthTable = TruthTable(_table, BitPat.dontCare(_table.head._2.getWidth))
+  val table: TruthTable = TruthTable(
+    patterns.map { op => op.bitPat -> fields.reverse.map(field => field.genTable(op)).reduce(_ ## _) },
+    fields.reverse.map(_.default).reduce(_ ## _)
+  )
 
   def decode(input: UInt): DecodeBundle = chisel3.util.experimental.decode.decoder(input, table).asTypeOf(bundle)
 }
