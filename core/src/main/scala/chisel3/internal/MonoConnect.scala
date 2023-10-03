@@ -102,11 +102,14 @@ private[chisel3] object MonoConnect {
     context_mod: BaseModule
   ): Unit = {
     (sink, source) match {
+      // Two probes are connected at the root.
+      case (source_e, sink_e) if (hasProbeTypeModifer(source_e) && hasProbeTypeModifier(sink_e)) =>
+        probeDefine(sourceInfo, sink_e, source_e, context_mod)
 
-      // Disallow monoconnecting Probe types
-      case (_, source_e: Data) if containsProbe(source_e) =>
+      // A probe-y thing cannot be connected to a different probe-y thing.
+      case (_, source_e: Data) if hasProbeTypeModifer(source_e) =>
         throw SourceProbeMonoConnectionException(source_e)
-      case (sink_e: Data, _) if containsProbe(sink_e) =>
+      case (sink_e: Data, _) if hasProbeTypeModifer(sink_e) =>
         throw SinkProbeMonoConnectionException(sink_e)
 
       // Handle legal element cases, note (Bool, Bool) is caught by the first two, as Bool is a UInt
@@ -412,6 +415,15 @@ private[chisel3] object MonoConnect {
       case cls: Class     => cls.addCommand(PropAssign(sourceInfo, sink.lref, source.ref))
       case _ => throwException("Internal Error! Property connection can only occur within RawModule or Class.")
     }
+  }
+
+  def probeDefine(
+    sourceInfo: SourceInfo,
+    sink: Data,
+    Source: Data,
+    context: BaseModule
+  ): Unit = {
+    context.addCommand(ProbeDefine(sourceInfo, sink.lref, source.ref))
   }
 }
 
