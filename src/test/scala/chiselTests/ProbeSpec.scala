@@ -219,7 +219,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
       }
     )
     processChirrtl(chirrtl) should contain("define io.out = io.in")
-    processChirrtl(chirrtl) should not contain("out.baz")
+    processChirrtl(chirrtl) should not contain ("out.baz")
   }
 
   "Mismatched probe/non-probe with :<>= connector" should "fail" in {

@@ -853,7 +853,7 @@ object Data {
         (left, right) match {
           case (None, None)                            => Nil
           case (lOpt, rOpt) if isDifferent(lOpt, rOpt) => Nil
-          case (lOpt, rOpt) if isProbe(lOpt, rOpt) => Nil
+          case (lOpt, rOpt) if isProbe(lOpt, rOpt)     => Nil
           case (lOpt: Option[Vec[Data] @unchecked], rOpt: Option[Vec[Data] @unchecked]) if isVec(lOpt, rOpt) =>
             (0 until (lOpt.size.max(rOpt.size))).map { i => (lOpt.grab(i), rOpt.grab(i)) }
           case (lOpt: Option[Record @unchecked], rOpt: Option[Record @unchecked]) if isRecord(lOpt, rOpt) =>
