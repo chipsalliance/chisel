@@ -187,24 +187,38 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
     )
   }
 
-  "Improperly excluded :<>= connector" should "fail" in {
+  ":<>= connector" should "work" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(
+      new RawModule {
+        class FooBundle extends Bundle {
+          val bar = Probe(Bool())
+          val baz = UInt(4.W)
+        }
+        val io = IO(new Bundle {
+          val in = Input(new FooBundle)
+          val out = Output(new FooBundle)
+        })
+        io.out :<>= io.in
+      },
+    )
+    processChirrtl(chirrtl) should contain("define io.out.bar = io.in.bar")
+    processChirrtl(chirrtl) should contain("connect io.out.baz, io.in.baz")
+  }
+
+  "Mismatched probe/non-probe with :<>= connector" should "fail" in {
     val exc = intercept[chisel3.ChiselException] {
       ChiselStage.emitCHIRRTL(
         new RawModule {
-          class FooBundle extends Bundle {
-            val bar = Probe(Bool())
-            val baz = UInt(4.W)
-          }
           val io = IO(new Bundle {
-            val in = Input(new FooBundle)
-            val out = Output(new FooBundle)
+            val in = Input(Vec(2, Bool()))
+            val out = Output(Vec(2, Probe(Bool())))
           })
           io.out :<>= io.in
         },
         Array("--throw-on-first-error")
       )
     }
-    exc.getMessage should include("Cannot use connectables with probe types. Exclude them prior to connection.")
+    exc.getMessage should include("mismatched probe/non-probe types in ProbeSpec_Anon.io.out[0]: IO[Bool] and ProbeSpec_Anon.io.in[0]: IO[Bool].")
   }
 
   ":= connector with probe/non-probe" should "fail" in {
