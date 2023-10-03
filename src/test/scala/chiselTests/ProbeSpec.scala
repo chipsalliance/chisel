@@ -207,7 +207,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
     exc.getMessage should include("Cannot use connectables with probe types. Exclude them prior to connection.")
   }
 
-  ":= connector with probe" should "fail" in {
+  ":= connector with probe/non-probe" should "fail" in {
     val exc = intercept[chisel3.ChiselException] {
       ChiselStage.emitCHIRRTL(
         new RawModule {
@@ -223,6 +223,19 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
     exc.getMessage should include(
       "Connection between sink (ProbeSpec_Anon.io.out: IO[Bool]) and source (ProbeSpec_Anon.io.in: IO[Bool]) failed @: Sink io.out in ProbeSpec_Anon of Probed type cannot participate in a mono connection (:=)"
     )
+  }
+
+  ":= connector with probe" should "work" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(
+      new RawModule {
+        val io = IO(new Bundle {
+          val in = Input(Probe(Bool()))
+          val out = Output(Probe(Bool()))
+        })
+        io.out := io.in
+      },
+    )
+    processChirrtl(chirrtl) should contain("define io.out = io.in")
   }
 
   ":= connector with aggregate of probe/non-probe" should "fail" in {
@@ -262,7 +275,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
   }
 
   ":= connector with aggregates of probe" should "work" in {
-      println(ChiselStage.emitCHIRRTL(
+     var chirrtl = ChiselStage.emitCHIRRTL(
         new RawModule {
           val io = IO(new Bundle {
             val in = Input(Vec(2, Probe(Bool())))
@@ -270,7 +283,9 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
           })
           io.out := io.in
         },
-      ))
+      )
+     processChirrtl(chirrtl) should contain("define io.out[0] = io.in[0]")
+     processChirrtl(chirrtl) should contain("define io.out[1] = io.in[1]")
   }
 
   "Probe define between non-connectable data types" should "fail" in {

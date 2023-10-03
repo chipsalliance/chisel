@@ -104,7 +104,7 @@ private[chisel3] object MonoConnect {
   ): Unit = {
     (sink, source) match {
       // Two probes are connected at the root.
-      case (source_e, sink_e) if (DataMirror.hasProbeTypeModifier(source_e) && DataMirror.hasProbeTypeModifier(sink_e)) =>
+      case (sink_e, source_e) if (DataMirror.hasProbeTypeModifier(sink_e) && DataMirror.hasProbeTypeModifier(source_e)) =>
         probeDefine(sourceInfo, sink_e, source_e, context_mod)
 
       // A probe-y thing cannot be connected to a different probe-y thing.
