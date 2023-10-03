@@ -184,12 +184,12 @@ private[chisel3] object Connection {
         // Recursive Case 4: non-empty orientations
         case (conAlign: NonEmptyAlignment, proAlign: NonEmptyAlignment) =>
           (conAlign.member, proAlign.member) match {
-            case (consumer: Aggregate, producer: Aggregate) =>
+            case (consumer: Aggregate, producer: Aggregate) if !hasProbeTypeModifier(consumer) && !hasProbeTypeModifier(producer) =>
               matchingZipOfChildren(Some(conAlign), Some(proAlign)).foreach {
                 case (ceo, peo) =>
                   doConnection(ceo.getOrElse(conAlign.empty), peo.getOrElse(proAlign.empty))
               }
-            case (consumer: Aggregate, DontCare) =>
+            case (consumer: Aggregate, DontCare) if !hasProbeTypeModifier(consumer) =>
               consumer.getElements.foreach {
                 case f =>
                   doConnection(
@@ -197,7 +197,7 @@ private[chisel3] object Connection {
                     deriveChildAlignment(f, conAlign).swap(DontCare)
                   )
               }
-            case (DontCare, producer: Aggregate) =>
+            case (DontCare, producer: Aggregate) if !hasProbeTypeModifier(producer)  =>
               producer.getElements.foreach {
                 case f =>
                   doConnection(
