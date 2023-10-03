@@ -270,7 +270,8 @@ object DataMirror {
     def iterator = {
       val myItems = collector.lift(d)
       val deepChildrenItems = d match {
-        case a: Aggregate if (!hasProbeTypeModifier(a)) => a.elementsIterator.flatMap { x => collectMembers(x)(collector) }
+        case a: Aggregate if (!hasProbeTypeModifier(a)) =>
+          a.elementsIterator.flatMap { x => collectMembers(x)(collector) }
         case other => Nil
       }
       myItems.iterator ++ deepChildrenItems

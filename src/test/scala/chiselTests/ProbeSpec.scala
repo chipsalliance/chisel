@@ -199,7 +199,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
           val out = Output(new FooBundle)
         })
         io.out :<>= io.in
-      },
+      }
     )
     processChirrtl(chirrtl) should contain("define io.out.bar = io.in.bar")
     processChirrtl(chirrtl) should contain("connect io.out.baz, io.in.baz")
@@ -218,7 +218,9 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
         Array("--throw-on-first-error")
       )
     }
-    exc.getMessage should include("mismatched probe/non-probe types in ProbeSpec_Anon.io.out[0]: IO[Bool] and ProbeSpec_Anon.io.in[0]: IO[Bool].")
+    exc.getMessage should include(
+      "mismatched probe/non-probe types in ProbeSpec_Anon.io.out[0]: IO[Bool] and ProbeSpec_Anon.io.in[0]: IO[Bool]."
+    )
   }
 
   ":= connector with probe/non-probe" should "fail" in {
@@ -247,7 +249,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
           val out = Output(Probe(Bool()))
         })
         io.out := io.in
-      },
+      }
     )
     processChirrtl(chirrtl) should contain("define io.out = io.in")
   }
@@ -289,17 +291,17 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
   }
 
   ":= connector with aggregates of probe" should "work" in {
-     var chirrtl = ChiselStage.emitCHIRRTL(
-        new RawModule {
-          val io = IO(new Bundle {
-            val in = Input(Vec(2, Probe(Bool())))
-            val out = Output(Vec(2, Probe(Bool())))
-          })
-          io.out := io.in
-        },
-      )
-     processChirrtl(chirrtl) should contain("define io.out[0] = io.in[0]")
-     processChirrtl(chirrtl) should contain("define io.out[1] = io.in[1]")
+    var chirrtl = ChiselStage.emitCHIRRTL(
+      new RawModule {
+        val io = IO(new Bundle {
+          val in = Input(Vec(2, Probe(Bool())))
+          val out = Output(Vec(2, Probe(Bool())))
+        })
+        io.out := io.in
+      }
+    )
+    processChirrtl(chirrtl) should contain("define io.out[0] = io.in[0]")
+    processChirrtl(chirrtl) should contain("define io.out[1] = io.in[1]")
   }
 
   "Probe define between non-connectable data types" should "fail" in {

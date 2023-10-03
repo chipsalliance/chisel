@@ -6,7 +6,7 @@ import chisel3._
 import chisel3.experimental.{Analog, BaseModule, SourceInfo}
 import chisel3.internal.containsProbe
 import chisel3.internal.Builder.pushCommand
-import chisel3.internal.firrtl.{Connect, Converter, DefInvalid, PropAssign, ProbeDefine}
+import chisel3.internal.firrtl.{Connect, Converter, DefInvalid, ProbeDefine, PropAssign}
 import chisel3.experimental.dataview.{isView, reify, reifyToAggregate}
 import chisel3.properties.{Class, Property}
 import chisel3.reflect.DataMirror
@@ -104,7 +104,8 @@ private[chisel3] object MonoConnect {
   ): Unit = {
     (sink, source) match {
       // Two probes are connected at the root.
-      case (sink_e, source_e) if (DataMirror.hasProbeTypeModifier(sink_e) && DataMirror.hasProbeTypeModifier(source_e)) =>
+      case (sink_e, source_e)
+          if (DataMirror.hasProbeTypeModifier(sink_e) && DataMirror.hasProbeTypeModifier(source_e)) =>
         probeDefine(sourceInfo, sink_e, source_e, context_mod)
 
       // A probe-y thing cannot be connected to a different probe-y thing.
@@ -420,12 +421,12 @@ private[chisel3] object MonoConnect {
 
   def probeDefine(
     sourceInfo: SourceInfo,
-    sink: Data,
-    source: Data,
-    context: BaseModule
+    sink:       Data,
+    source:     Data,
+    context:    BaseModule
   ): Unit = {
     context match {
-      case rm:  RawModule => rm.addCommand(ProbeDefine(sourceInfo, sink.lref, source.ref))
+      case rm: RawModule => rm.addCommand(ProbeDefine(sourceInfo, sink.lref, source.ref))
       case _ => throwException("Internal Error! Probe connection can only occur within RawModule.")
     }
   }
