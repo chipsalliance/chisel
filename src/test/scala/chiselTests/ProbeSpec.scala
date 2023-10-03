@@ -205,6 +205,23 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
     processChirrtl(chirrtl) should contain("connect io.out.baz, io.in.baz")
   }
 
+  ":<>= connector with probes of aggregates" should "work" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(
+      new RawModule {
+        class FooBundle extends Bundle {
+          val baz = UInt(4.W)
+        }
+        val io = IO(new Bundle {
+          val in = Input(Probe(new FooBundle))
+          val out = Output(Probe(new FooBundle))
+        })
+        io.out :<>= io.in
+      }
+    )
+    processChirrtl(chirrtl) should contain("define io.out = io.in")
+    processChirrtl(chirrtl) should not contain("out.baz")
+  }
+
   "Mismatched probe/non-probe with :<>= connector" should "fail" in {
     val exc = intercept[chisel3.ChiselException] {
       ChiselStage.emitCHIRRTL(
