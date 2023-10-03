@@ -6,9 +6,10 @@ import chisel3._
 import chisel3.experimental.{Analog, BaseModule, SourceInfo}
 import chisel3.internal.containsProbe
 import chisel3.internal.Builder.pushCommand
-import chisel3.internal.firrtl.{Connect, Converter, DefInvalid, PropAssign}
+import chisel3.internal.firrtl.{Connect, Converter, DefInvalid, PropAssign, ProbeDefine}
 import chisel3.experimental.dataview.{isView, reify, reifyToAggregate}
 import chisel3.properties.{Class, Property}
+import chisel3.reflect.DataMirror
 
 import scala.language.experimental.macros
 import scala.annotation.tailrec
@@ -103,13 +104,13 @@ private[chisel3] object MonoConnect {
   ): Unit = {
     (sink, source) match {
       // Two probes are connected at the root.
-      case (source_e, sink_e) if (hasProbeTypeModifer(source_e) && hasProbeTypeModifier(sink_e)) =>
+      case (source_e, sink_e) if (DataMirror.hasProbeTypeModifier(source_e) && DataMirror.hasProbeTypeModifier(sink_e)) =>
         probeDefine(sourceInfo, sink_e, source_e, context_mod)
 
       // A probe-y thing cannot be connected to a different probe-y thing.
-      case (_, source_e: Data) if hasProbeTypeModifer(source_e) =>
+      case (_, source_e: Data) if DataMirror.hasProbeTypeModifier(source_e) =>
         throw SourceProbeMonoConnectionException(source_e)
-      case (sink_e: Data, _) if hasProbeTypeModifer(sink_e) =>
+      case (sink_e: Data, _) if DataMirror.hasProbeTypeModifier(sink_e) =>
         throw SinkProbeMonoConnectionException(sink_e)
 
       // Handle legal element cases, note (Bool, Bool) is caught by the first two, as Bool is a UInt
@@ -420,10 +421,13 @@ private[chisel3] object MonoConnect {
   def probeDefine(
     sourceInfo: SourceInfo,
     sink: Data,
-    Source: Data,
+    source: Data,
     context: BaseModule
   ): Unit = {
-    context.addCommand(ProbeDefine(sourceInfo, sink.lref, source.ref))
+    context match {
+      case rm:  RawModule => rm.addCommand(ProbeDefine(sourceInfo, sink.lref, source.ref))
+      case _ => throwException("Internal Error! Probe connection can only occur within RawModule.")
+    }
   }
 }
 
