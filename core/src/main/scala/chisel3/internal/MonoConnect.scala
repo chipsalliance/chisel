@@ -425,6 +425,7 @@ private[chisel3] object MonoConnect {
     source:     Data,
     context:    BaseModule
   ): Unit = {
+    checkConnect.checkConnection(sourceInfo, sink, source, context)
     context match {
       case rm: RawModule => rm.addCommand(ProbeDefine(sourceInfo, sink.lref, source.ref))
       case _ => throwException("Internal Error! Probe connection can only occur within RawModule.")
@@ -455,7 +456,7 @@ private[chisel3] object checkConnect {
     checkConnection(sourceInfo, sink, source, context_mod)
   }
 
-  private def checkConnection(
+  def checkConnection(
     sourceInfo:  SourceInfo,
     sink:        Data,
     source:      Data,

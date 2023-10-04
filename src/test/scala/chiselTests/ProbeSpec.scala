@@ -271,6 +271,24 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
     processChirrtl(chirrtl) should contain("define io.out = io.in")
   }
 
+  ":= connector with probes but in wrong direction" should "fail" in {
+    val exc = intercept[chisel3.ChiselException] {
+      val chirrtl = ChiselStage.emitCHIRRTL(
+        new RawModule {
+          val io = IO(new Bundle {
+            val in = Input(Probe(Bool()))
+            val out = Output(Probe(Bool()))
+          })
+          io.in := io.out
+        },
+        Array("--throw-on-first-error")
+      )
+    }
+    exc.getMessage should include(
+      "Connection between sink (ProbeSpec_Anon.io.in: IO[Bool]) and source (ProbeSpec_Anon.io.out: IO[Bool]) failed @: io.in in ProbeSpec_Anon cannot be written from module ProbeSpec_Anon"
+    )
+  }
+
   ":= connector with aggregate of probe/non-probe" should "fail" in {
     val exc = intercept[chisel3.ChiselException] {
       ChiselStage.emitCHIRRTL(
