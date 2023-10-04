@@ -326,7 +326,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
   }
 
   ":= connector with aggregates of probe" should "work" in {
-    var chirrtl = ChiselStage.emitCHIRRTL(
+    val chirrtl = ChiselStage.emitCHIRRTL(
       new RawModule {
         val io = IO(new Bundle {
           val in = Input(Vec(2, Probe(Bool())))
