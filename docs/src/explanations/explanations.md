@@ -1,7 +1,5 @@
 ---
-layout: docs
-title:  "Explanations"
-section: "chisel3"
+sidebar_position: 2
 ---
 
 # Explanations
@@ -46,4 +44,4 @@ read these documents in the following order:
 * [Warnings](warnings)
 * [Deep Dive into Legacy Connection Operators](connection-operators)
 * [Properties](properties)
-* [Optional Groups](optional-groups)
+* [Layers](layers)

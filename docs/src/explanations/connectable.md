@@ -10,13 +10,13 @@ section: "chisel3"
  * [Alignment: Flipped vs Aligned](#alignment-flipped-vs-aligned)
  * [Input/Output](#inputoutput)
  * [Connecting components with fully aligned members](#connecting-components-with-fully-aligned-members)
-   * [Mono-direction connection operator (:=)](#mono-direction-connection-operator-)
+   * [Mono-direction connection operator (`:=`)](#mono-direction-connection-operator-)
  * [Connecting components with mixed alignment members](#connecting-components-with-mixed-alignment-members)
-   * [Bi-direction connection operator (:<>=)](#bi-direction-connection-operator-)
+   * [Bi-direction connection operator (`:<>=`)](#bi-direction-connection-operator-)
    * [Port-Direction Computation versus Connection-Direction Computation](#port-direction-computation-versus-connection-direction-computation)
-   * [Aligned connection operator (:<=)](#aligned-connection-operator-)
-   * [Flipped connection operator (:>=)](#flipped-connection-operator-)
-   * [Coercing mono-direction connection operator (:#=)](#coercing-mono-direction-connection-operator-)
+   * [Aligned connection operator (`:<=`)](#aligned-connection-operator-)
+   * [Flipped connection operator (`:>=`)](#flipped-connection-operator-)
+   * [Coercing mono-direction connection operator (`:#=`)](#coercing-mono-direction-connection-operator-)
  * [Connectable](#connectable)
    * [Connecting Records](#connecting-records)
    * [Defaults with waived connections](#defaults-with-waived-connections)
@@ -259,7 +259,7 @@ First we will introduce the most common Chisel connection operator, `:<>=`, usef
 Then, we will explore the remainder of the the Chisel connection operators.
 
 
-### Bi-direction connection operator (:<>=)
+### Bi-direction connection operator (`:<>=`)
 
 For connections where you want 'bulk-connect-like-semantics' where the aligned members are driven producer-to-consumer and flipped members are driven consumer-to-producer, use `:<>=`.
 
@@ -311,7 +311,7 @@ This is the same error a user would get using a mono-directioned operator: `x :=
 In summary, the port-direction computation is relative to the root marked `IO`, but connection-direction computation is relative to the consumer/producer that the connection is doing.
 This has the positive property that connection semantics are solely based on the Chisel structural type and its relative alignments of the consumer/producer (nothing more, nothing less).
 
-### Aligned connection operator (:<=)
+### Aligned connection operator (`:<=`)
 
 For connections where you want the aligned-half of 'bulk-connect-like-semantics' where the aligned members are driven producer-to-consumer and flipped members are ignored, use `:<=` (the "aligned connection").
 
@@ -330,7 +330,7 @@ This generates the following Verilog, where the aligned members are driven `inco
 getVerilogString(new Example2)
 ```
 
-### Flipped connection operator (:>=)
+### Flipped connection operator (`:>=`)
 
 For connections where you want the flipped-half of 'bulk-connect-like-semantics' where the aligned members are ignored and flipped members are connected consumer-to-producer, use `:>=` (the "flipped connection", or "backpressure connection").
 
@@ -351,7 +351,7 @@ getVerilogString(new Example3)
 
 > Note: Astute observers will realize that semantically `c :<>= p` is exactly equivalent to `c :<= p` followed by `c :>= p`.
 
-### Coercing mono-direction connection operator (:#=)
+### Coercing mono-direction connection operator (`:#=`)
 
 For connections where you want to every producer member to always drive every consumer member, regardless of alignment, use `:#=` (the "coercion connection").
 This operator is useful for initializing wires whose types contain members of mixed alignment.

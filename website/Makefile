@@ -1,58 +1,63 @@
+
+this_dir := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
+chisel_dir := $(realpath $(this_dir)/..)
+relative_to_this_dir := $(notdir $(this_dir))
+
+mdoc_out := $(chisel_dir)/docs/generated
+
 buildDir ?= build
-subprojects = $(buildDir)/subprojects
-docs = $(buildDir)/docs
-website_docs_dest = docs/src/main/tut/chisel3/docs
-chisel3 = ../
+website_docs_dir = $(this_dir)/docs
+install_timestamp = $(this_dir)/node_modules/timestamp
 
-www-docs = \
-	$(shell find $(chisel3)/docs/ -name "*.md")
+# Everything not in the website directory
+# This is overly conservative but okay until we can do something more precise
+chisel-non-website-from-root = \
+	$(shell git -C $(chisel_dir) ls-files ':!:$(relative_to_this_dir)/*')
 
-www-src = \
-	$(website_docs_dest) \
-	$(shell find docs/src/main/resources) \
-	$(shell find docs/src/main/tut) \
-	$(chisel3)/README.md
+# The above, but absolute paths
+chisel-non-website = \
+	$(addprefix $(chisel_dir)/,$(chisel-non-website-from-root))
 
-# Get the latest version of some sequence of version strings
-# Usage: $(call getTags,$(foo))
-define latest
-$(shell echo $(1) | tr " " "\n" | sort -Vr | head -n1 | sed 's/^v//')
-endef
+default: build
 
+# Using introduction as standin for all md files
+# Note this doesn't work when a markdown file is deleted
+$(mdoc_out)/introduction.md: $(chisel-non-website)
+	cd $(chisel_dir) && sbt docs/mdoc
 
-.PHONY: all clean mrproper publish serve
-.PRECIOUS: \
-	$(subprojects)/chisel3/%/.git $(subprojects)/chisel3/%/target/scala-$(scalaVersion)/unidoc/index.html
+$(website_docs_dir):
+	mkdir -p $@
 
-# Build the site into the default directory (docs/target/site)
-all: docs/target/site/index.html
+$(website_docs_dir)/introduction.md: $(mdoc_out)/introduction.md | $(website_docs_dir)
+	cp -R $(mdoc_out)/* $(this_dir)/docs/
 
-# Remove the output of all build targets
+contributors_dir = $(this_dir)/src/pages/generated
+contributors = $(contributors_dir)/contributors.md
+
+$(contributors_dir):
+	mkdir -p $@
+
+# Unclear what this should depend on
+$(contributors): $(chisel-non-website) | $(contributors_dir)
+	cd $(chisel_dir) && sbt docs/determineContributors
+
+$(install_timestamp): $(this_dir)/package.json
+	cd $(this_dir) && npm install
+	touch $@
+
+install: $(install_timestamp)
+
+build: $(this_dir)/docs/introduction.md $(contributors) $(install_timestamp)
+	cd $(this_dir) && npm run build
+
+# Must run build first
+serve: build
+	cd $(this_dir) && npm run serve
+
 clean:
-	rm -rf docs/target docs/src/main/tut/contributors.md $(website_docs_dest)
+	rm -rf $(this_dir)/docs $(this_dir)/build $(this_dir)/src/pages/generated $(chisel_dir)/docs/generated
 
-# Remove everything
-mrproper:
-	rm -rf $(buildDir) target project/target
+mrproper: clean
+	rm -rf $(this_dir)/node_modules $(this_dir)/package-lock.json
 
-# Publish Microsite
-publish: all
-	sbt docs/ghpagesPushSite
-
-# Start a Jekyll server for the site
-serve: all
-	(cd docs/target/site && jekyll serve)
-
-# Build the sbt-microsite
-docs/target/site/index.html: build.sbt docs/src/main/tut/contributors.md $(www-src)
-	sbt docs/makeMicrosite
-
-# Determine contributors
-docs/src/main/tut/contributors.md: build.sbt
-	sbt contributors/determineContributors
-
-# Build docs in subproject with a specific tag.
-# This command is brittle as it assumes chisel3 is up one dir from here in the path to where
-# we want to put the website docs.
-$(website_docs_dest): $(chisel3)/docs/ $(www-docs)
-	(cd $(chisel3) && sbt docs/mdoc && rm -rf website/$(website_docs_dest) && cp -r docs/generated website/$(website_docs_dest))
+.PHONY: clean mrproper serve install

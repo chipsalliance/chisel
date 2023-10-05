@@ -1,0 +1,38 @@
+/**
+ * Any CSS included here will be global. The classic template
+ * bundles Infima by default. Infima is a CSS framework designed to
+ * work well for content-centric websites.
+ */
+
+/* You can override the default Infima variables here. */
+/* Known colors:
+ *   - Chisel logo: #212560
+ *   - FIRRTL logo: #136527
+ *   - Cal gold: #FDB515
+ * Generated with: https://docusaurus.io/docs/styling-layout
+ *   Input: #212560
+ */
+:root {
+  --ifm-color-primary: #212560;
+  --ifm-color-primary-dark: #1e2156;
+  --ifm-color-primary-darker: #1c1f52;
+  --ifm-color-primary-darkest: #171a43;
+  --ifm-color-primary-light: #24296a;
+  --ifm-color-primary-lighter: #262b6e;
+  --ifm-color-primary-lightest: #2b307d;
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+}
+/* Generated with: https://docusaurus.io/docs/styling-layout
+ *   Input:  #FDB515
+ */
+[data-theme='dark'] {
+  --ifm-color-primary: #fdb515;
+  --ifm-color-primary-dark: #f5a902;
+  --ifm-color-primary-darker: #e7a002;
+  --ifm-color-primary-darkest: #be8402;
+  --ifm-color-primary-light: #fdbe30;
+  --ifm-color-primary-lighter: #fdc23e;
+  --ifm-color-primary-lightest: #fecf67;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}

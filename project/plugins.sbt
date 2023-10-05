@@ -31,3 +31,7 @@ addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.5.0")
 // From FIRRTL
 
 addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "2.1.1")
+
+// For generating contributors
+
+libraryDependencies += "com.47deg" %% "github4s" % "0.28.1"
