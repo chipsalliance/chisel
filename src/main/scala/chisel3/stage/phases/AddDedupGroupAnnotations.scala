@@ -30,10 +30,7 @@ class AddDedupGroupAnnotations extends Phase {
     val skipAnnos = annotations.collect { case x: DedupGroupAnnotation => x.target }.toSet
 
     @nowarn("msg=class Port")
-    val annos = circuit.components.filterNot {
-      case x @ DefBlackBox(id, _, _, _, _) => id.toString contains "Instance"
-      case x                               => false
-    }.collect {
+    val annos = circuit.components.collect {
       case x if !(skipAnnos.contains(x.id.toTarget)) => DedupGroupAnnotation(x.id.toTarget, x.id.desiredName)
     }
     annos ++ annotations
