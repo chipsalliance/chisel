@@ -205,14 +205,20 @@ object DataMirror {
   def getIntermediateAndLeafs(d: Data): Seq[Data] = collectAllMembers(d)
 
   /** Recursively collect just the leaf components of a data component's children
-    * (i.e. anything that isn't a `Record` or a `Vec`, but an `Element`)
+    * (i.e. anything that isn't a `Record` or a `Vec`, but an `Element`).
+    * Probes of aggregates are also considered leaves.
     *
     * @param d Data component to recursively collect leaf components.
     *
     * @return All `Element` components; intermediate fields/indices are not included
     */
   def collectLeafMembers(d: Data): Seq[Data] =
-    DataMirror.collectMembers(d) { case x: Element => x }.toVector
+    DataMirror
+      .collectMembers(d) {
+        case x: Element => x
+        case x if hasProbeTypeModifier(x) => x
+      }
+      .toVector
 
   /** Recursively collect all expanded member components of a data component, including
     * intermediate aggregate nodes
