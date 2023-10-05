@@ -140,8 +140,7 @@ object ShiftRegister {
     useDualPortSram: Boolean,
     name:            Option[String]
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): T = _apply_impl_mem(in, n, en, useDualPortSram, name)
 
   private def _apply_impl_mem[T <: Data](
@@ -151,8 +150,7 @@ object ShiftRegister {
     useDualPortSram: Boolean = false,
     name:            Option[String] = None
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): T = {
     if (n == 0) {
       in
