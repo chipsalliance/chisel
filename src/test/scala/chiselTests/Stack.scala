@@ -70,7 +70,7 @@ class StackTester(c: Stack) extends Tester(c) {
 class StackSpec extends ChiselPropSpec {
 
   property("Stack should elaborate") {
-    ChiselStage.elaborate { new ChiselStack(2) }
+    ChiselStage.emitCHIRRTL { new ChiselStack(2) }
   }
 
   ignore("StackTester should return the correct result") {}

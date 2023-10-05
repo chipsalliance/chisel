@@ -9,19 +9,22 @@ import scala.tools.nsc.plugins.PluginComponent
 import scala.tools.nsc.symtab.Flags
 import scala.tools.nsc.transform.TypingTransformers
 
-/** Performs three operations
+/** Performs four operations
   * 1) Records that this plugin ran on a bundle by adding a method
   *    `override protected def _usingPlugin: Boolean = true`
   * 2) Constructs a cloneType method
   * 3) Builds a `def elements` that is computed once in this plugin
   *    Eliminates needing reflection to discover the hardware fields of a `Bundle`
+  * 4) For Bundles which mix-in `HasAutoTypename`, builds a `def _typeNameConParams`
+  *    statement to override the constructor parameter list, used to generate a typeName
   *
   * @param global     the environment
   * @param arguments  run time parameters to code
   */
 private[plugin] class BundleComponent(val global: Global, arguments: ChiselPluginArguments)
     extends PluginComponent
-    with TypingTransformers {
+    with TypingTransformers
+    with ChiselOuterUtils {
   import global._
 
   val phaseName: String = "chiselbundlephase"
@@ -37,55 +40,10 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
     }
   }
 
-  private class MyTypingTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
-
-    def inferType(t: Tree): Type = localTyper.typed(t, nsc.Mode.TYPEmode).tpe
-
-    val bundleTpe:      Type = inferType(tq"chisel3.Bundle")
-    val recordTpe:      Type = inferType(tq"chisel3.Record")
-    val dataTpe:        Type = inferType(tq"chisel3.Data")
-    val ignoreSeqTpe:   Type = inferType(tq"chisel3.IgnoreSeqInBundle")
-    val seqOfDataTpe:   Type = inferType(tq"scala.collection.Seq[chisel3.Data]")
-    val someOfDataTpe:  Type = inferType(tq"scala.Option[chisel3.Data]")
-    val itStringAnyTpe: Type = inferType(tq"scala.collection.Iterable[(String,Any)]")
-
-    // Not cached because it should only be run once per class (thus once per Type)
-    def isABundle(sym: Symbol): Boolean = { sym.tpe <:< bundleTpe }
-
-    def isARecord(sym: Symbol): Boolean = { sym.tpe <:< recordTpe }
-
-    def isIgnoreSeqInBundle(sym: Symbol): Boolean = { sym.tpe <:< ignoreSeqTpe }
-
-    def isSeqOfData(sym: Symbol): Boolean = {
-      val tpe = sym.tpe
-      tpe match {
-        case NullaryMethodType(resultType) =>
-          resultType <:< seqOfDataTpe
-        case _ =>
-          false
-      }
-    }
-
-    def isOptionOfData(symbol: Symbol): Boolean = {
-      val tpe = symbol.tpe
-      tpe match {
-        case NullaryMethodType(resultType) =>
-          resultType <:< someOfDataTpe
-        case _ =>
-          false
-      }
-    }
-    def isExactBundle(sym: Symbol): Boolean = { sym.tpe =:= bundleTpe }
-
-    // Cached because this is run on every argument to every Bundle
-    val isDataCache = new mutable.HashMap[Type, Boolean]
-    def isData(sym: Symbol): Boolean = isDataCache.getOrElseUpdate(sym.tpe, sym.tpe <:< dataTpe)
+  private class MyTypingTransformer(unit: CompilationUnit) extends TypingTransformer(unit) with ChiselInnerUtils {
 
     def cloneTypeFull(tree: Tree): Tree =
       localTyper.typed(q"chisel3.reflect.DataMirror.internal.chiselTypeClone[${tree.tpe}]($tree)")
-
-    def isNullaryMethodNamed(name: String, defdef: DefDef): Boolean =
-      defdef.name.decodedName.toString == name && defdef.tparams.isEmpty && defdef.vparamss.isEmpty
 
     def isVarArgs(sym: Symbol): Boolean = definitions.isRepeatedParamType(sym.tpe)
 
@@ -96,7 +54,13 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
         case acc: ValDef if acc.symbol.isParamAccessor =>
           paramAccessors += acc.symbol
         case con: DefDef if con.symbol.isPrimaryConstructor =>
-          primaryConstructor = Some(con)
+          if (con.symbol.isPrivate) {
+            val msg = "Private bundle constructors cannot automatically be cloned, try making it package private"
+            global.reporter.error(con.pos, msg)
+          } else {
+            primaryConstructor = Some(con)
+          }
+
         case d: DefDef if isNullaryMethodNamed("_cloneTypeImpl", d) =>
           val msg = "Users cannot override _cloneTypeImpl. Let the compiler plugin generate it."
           global.reporter.error(d.pos, msg)
@@ -110,51 +74,41 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
           val prefix = if (isBundle) "Bundles" else "Records"
           val msg = s"$prefix cannot override cloneType. Let the compiler plugin generate it."
           global.reporter.error(d.pos, msg)
+        case d: DefDef if isNullaryMethodNamed("_typeNameConParams", d) =>
+          val msg = "Users cannot override _typeNameConParams. Let the compiler plugin generate it."
+          global.reporter.error(d.pos, msg)
         case _ =>
       }
       (primaryConstructor, paramAccessors.toList)
     }
 
-    def generateAutoCloneType(record: ClassDef, thiz: global.This, isBundle: Boolean): Option[Tree] = {
-      val (con, params) = getConstructorAndParams(record.impl.body, isBundle)
-      if (con.isEmpty) {
-        global.reporter.warning(record.pos, "Unable to determine primary constructor!")
-        return None
+    def generateAutoCloneType(
+      record:     ClassDef,
+      thiz:       global.This,
+      conArgsOpt: Option[List[List[Tree]]],
+      isBundle:   Boolean
+    ): Option[Tree] = {
+      conArgsOpt.map { conArgs =>
+        val tparamList = record.tparams.map { t => Ident(t.symbol) }
+        val ttpe =
+          if (tparamList.nonEmpty) AppliedTypeTree(Ident(record.symbol), tparamList) else Ident(record.symbol)
+        val newUntyped = New(ttpe, conArgs)
+
+        // TODO For private default constructors this crashes with a
+        // TypeError. Figure out how to make this local to the object so
+        // that private default constructors work.
+        val neww = localTyper.typed(newUntyped)
+
+        // Create the symbol for the method and have it be associated with the Record class
+        val cloneTypeSym =
+          record.symbol.newMethod(TermName("_cloneTypeImpl"), record.symbol.pos.focus, Flag.OVERRIDE | Flag.PROTECTED)
+        // Handwritten cloneTypes don't have the Method flag set, unclear if it matters
+        cloneTypeSym.resetFlag(Flags.METHOD)
+
+        cloneTypeSym.setInfo(NullaryMethodType(recordTpe))
+
+        localTyper.typed(DefDef(cloneTypeSym, neww))
       }
-
-      val constructor = con.get
-
-      // The params have spaces after them (Scalac implementation detail)
-      val paramLookup: String => Symbol = params.map(sym => sym.name.toString.trim -> sym).toMap
-
-      // Create a this.<ref> for each field matching order of constructor arguments
-      // List of Lists because we can have multiple parameter lists
-      val conArgs: List[List[Tree]] =
-        constructor.vparamss.map(_.map { vp =>
-          val p = paramLookup(vp.name.toString)
-          // Make this.<ref>
-          val select = gen.mkAttributedSelect(thiz.asInstanceOf[Tree], p)
-          // Clone any Data parameters to avoid field aliasing, need full clone to include direction
-          val cloned = if (isData(vp.symbol)) cloneTypeFull(select.asInstanceOf[Tree]) else select
-          // Need to splat varargs
-          if (isVarArgs(vp.symbol)) q"$cloned: _*" else cloned
-        })
-
-      val tparamList = record.tparams.map { t => Ident(t.symbol) }
-      val ttpe =
-        if (tparamList.nonEmpty) AppliedTypeTree(Ident(record.symbol), tparamList) else Ident(record.symbol)
-      val newUntyped = New(ttpe, conArgs)
-      val neww = localTyper.typed(newUntyped)
-
-      // Create the symbol for the method and have it be associated with the Record class
-      val cloneTypeSym =
-        record.symbol.newMethod(TermName("_cloneTypeImpl"), record.symbol.pos.focus, Flag.OVERRIDE | Flag.PROTECTED)
-      // Handwritten cloneTypes don't have the Method flag set, unclear if it matters
-      cloneTypeSym.resetFlag(Flags.METHOD)
-
-      cloneTypeSym.setInfo(NullaryMethodType(recordTpe))
-
-      Some(localTyper.typed(DefDef(cloneTypeSym, neww)))
     }
 
     def generateElements(bundle: ClassDef, thiz: global.This): Tree = {
@@ -223,15 +177,74 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
       elementsImpl
     }
 
+    def generateAutoTypename(record: ClassDef, thiz: global.This, conArgsOpt: Option[List[Tree]]): Option[Tree] = {
+      conArgsOpt.flatMap { conArgs =>
+        val recordIsAnon = record.symbol.isAnonOrRefinementClass
+
+        // Anonymous `Records` in any scope are forbidden
+        if (record.symbol.isAnonOrRefinementClass) {
+          global.reporter.error(
+            record.pos,
+            "Users cannot mix 'HasAutoTypename' into an anonymous Record. Create a named class."
+          )
+          None
+        } else {
+          // Create an iterable out of all constructor argument accessors
+          val typeNameConParamsSym =
+            record.symbol.newMethod(
+              TermName("_typeNameConParams"),
+              record.symbol.pos.focus,
+              Flag.OVERRIDE | Flag.PROTECTED
+            )
+          typeNameConParamsSym.resetFlag(Flags.METHOD)
+          typeNameConParamsSym.setInfo(NullaryMethodType(itAnyTpe))
+
+          Some(
+            localTyper.typed(
+              DefDef(typeNameConParamsSym, q"scala.collection.immutable.Vector.apply[Any](..${conArgs})")
+            )
+          )
+        }
+      }
+    }
+
+    // Creates a list of constructor parameter accessors from the argument value. Returns a Some if a constructor
+    // is found, or None otherwise.
+    private def extractConArgs(record: ClassDef, thiz: global.This, isBundle: Boolean): Option[List[List[Tree]]] = {
+      val (con, params) = getConstructorAndParams(record.impl.body, isBundle)
+      if (con.isEmpty) {
+        global.reporter.warning(record.pos, "Unable to determine primary constructor!")
+        return None
+      }
+
+      val constructor = con.get
+
+      // The params have spaces after them (Scalac implementation detail)
+      val paramLookup: String => Symbol = params.map(sym => sym.name.toString.trim -> sym).toMap
+
+      // Create a this.<ref> for each field matching order of constructor arguments
+      // List of Lists because we can have multiple parameter lists
+      Some(constructor.vparamss.map(_.map { vp =>
+        val p = paramLookup(vp.name.toString)
+        // Make this.<ref>
+        val select = gen.mkAttributedSelect(thiz.asInstanceOf[Tree], p)
+        // Clone any Data parameters to avoid field aliasing, need full clone to include direction
+        val cloned = if (isData(vp.symbol)) cloneTypeFull(select.asInstanceOf[Tree]) else select
+        // Need to splat varargs
+        if (isVarArgs(vp.symbol)) q"$cloned: _*" else cloned
+      }))
+    }
+
     override def transform(tree: Tree): Tree = tree match {
 
       case record: ClassDef
           if isARecord(record.symbol) && !record.mods.hasFlag(Flag.ABSTRACT) => // check that its not abstract
         val isBundle: Boolean = isABundle(record.symbol)
         val thiz:     global.This = gen.mkAttributedThis(record.symbol)
+        val conArgs:  Option[List[List[Tree]]] = extractConArgs(record, thiz, isBundle)
 
         // ==================== Generate _cloneTypeImpl ====================
-        val cloneTypeImplOpt = generateAutoCloneType(record, thiz, isBundle)
+        val cloneTypeImplOpt = generateAutoCloneType(record, thiz, conArgs, isBundle)
 
         // ==================== Generate val elements (Bundles only) ====================
         val elementsImplOpt = if (isBundle) Some(generateElements(record, thiz)) else None
@@ -244,8 +257,12 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
           None
         }
 
+        val autoTypenameOpt =
+          if (isAutoTypenamed(record.symbol)) generateAutoTypename(record, thiz, conArgs.map(_.flatten))
+          else None
+
         val withMethods = deriveClassDef(record) { t =>
-          deriveTemplate(t)(_ ++ cloneTypeImplOpt ++ usingPluginOpt ++ elementsImplOpt)
+          deriveTemplate(t)(_ ++ cloneTypeImplOpt ++ usingPluginOpt ++ elementsImplOpt ++ autoTypenameOpt)
         }
 
         super.transform(localTyper.typed(withMethods))

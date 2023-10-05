@@ -28,7 +28,7 @@ object log2Up {
   //@chiselRuntimeDeprecated
   //@deprecated("Use log2Ceil instead", "chisel3")
   def apply(in: BigInt): Int = {
-    require(in >= 0)
+    require(in >= 0, s"log2Up is only defined on integers >= 0, got $in")
     1.max((in - 1).bitLength)
   }
   def apply(in: Int): Int = apply(BigInt(in))
@@ -50,7 +50,7 @@ object log2Up {
   */
 object log2Ceil {
   def apply(in: BigInt): Int = {
-    require(in > 0)
+    require(in > 0, s"log2 is only defined on integers > 0, got $in")
     (in - 1).bitLength
   }
   def apply(in: Int): Int = apply(BigInt(in))
@@ -114,7 +114,7 @@ object unsignedBitLength {
     * @return - an Int representing the number of bits to encode.
     */
   def apply(in: BigInt): Int = {
-    require(in >= 0)
+    require(in >= 0, s"Unsigned integers must be non-negative, got $in")
     in.bitLength
   }
 }

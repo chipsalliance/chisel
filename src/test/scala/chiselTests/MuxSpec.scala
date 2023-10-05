@@ -28,19 +28,47 @@ class MuxSpec extends ChiselFlatSpec {
   }
 }
 
+class MuxLookupEnumTester extends BasicTester {
+  object TestEnum extends ChiselEnum {
+    val a = Value
+    val b = Value(7.U)
+    val c = Value
+  }
+  val mapping = TestEnum.all.zipWithIndex.map {
+    case (e, i) =>
+      e -> i.U
+  }
+  assert(MuxLookup(TestEnum.a, 3.U)(mapping) === 0.U)
+  assert(MuxLookup(TestEnum.b, 3.U)(mapping) === 1.U)
+  assert(MuxLookup(TestEnum.c, 3.U)(mapping) === 2.U)
+
+  val incompleteMapping = Seq(TestEnum.a -> 0.U, TestEnum.c -> 2.U)
+  assert(MuxLookup(TestEnum.a, 3.U)(incompleteMapping) === 0.U)
+  assert(MuxLookup(TestEnum.b, 3.U)(incompleteMapping) === 3.U)
+  assert(MuxLookup(TestEnum.c, 3.U)(incompleteMapping) === 2.U)
+
+  stop()
+}
+
+class MuxLookupEnumSpec extends ChiselFlatSpec {
+  "MuxLookup with enum selector" should "pass basic checks" in {
+    assertTesterPasses { new MuxLookupEnumTester }
+  }
+}
+
 class MuxLookupWrapper(keyWidth: Int, default: Int, mapping: () => Seq[(UInt, UInt)]) extends RawModule {
   val outputWidth = log2Ceil(default).max(keyWidth) // make room for default value
   val key = IO(Input(UInt(keyWidth.W)))
   val output = IO(Output(UInt(outputWidth.W)))
-  output := MuxLookup(key, default.U, mapping())
+  output := MuxLookup(key, default.U)(mapping())
 }
 
 class MuxLookupExhaustiveSpec extends ChiselPropSpec {
   val keyWidth = 2
   val default = 9 // must be less than 10 to avoid hex/decimal mismatches
-  val firrtlLit = s"""UInt<4>("h$default")"""
+  val firrtlLit = s"""UInt<4>(0h$default)"""
 
-  // Assumes there are no literals with 'UInt<4>("h09")' in the output FIRRTL
+  // Assumes there are no literals with 'UInt<4>(0h09)' in the output FIRRTL
   // Assumes no binary recoding in output
 
   val incomplete = () => Seq(0.U -> 1.U, 1.U -> 2.U, 2.U -> 3.U)

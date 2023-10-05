@@ -6,8 +6,6 @@ import chisel3._
 import circt.stage.ChiselStage
 import chisel3.util.Queue
 
-import chisel3.internal.ChiselException
-
 class InstanceNameModule extends Module {
   val io = IO(new Bundle {
     val foo = Input(UInt(32.W))
@@ -28,7 +26,7 @@ class InstanceNameSpec extends ChiselFlatSpec {
   behavior.of("instanceName")
   val moduleName = "InstanceNameModule"
   var m: InstanceNameModule = _
-  ChiselStage.elaborate { m = new InstanceNameModule; m }
+  ChiselStage.emitCHIRRTL { m = new InstanceNameModule; m }
 
   it should "work with module IO" in {
     val io = m.io.pathName
@@ -37,7 +35,7 @@ class InstanceNameSpec extends ChiselFlatSpec {
 
   it should "work for literals" in {
     val x = m.x.pathName
-    assert(x == moduleName + ".UInt<2>(\"h03\")")
+    assert(x == moduleName + ".UInt<2>(0h03)")
   }
 
   it should "NOT work for non-hardware values" in {

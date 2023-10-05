@@ -43,7 +43,7 @@ class LazyCloneSpec extends ChiselFlatSpec {
         val y = Input(new Foo)
       }))
     }
-    ChiselStage.elaborate(new MyModule)
+    ChiselStage.emitCHIRRTL(new MyModule)
     Counter.count should be(2L)
   }
 
@@ -56,7 +56,7 @@ class LazyCloneSpec extends ChiselFlatSpec {
         val y = Input(foo)
       }))
     }
-    ChiselStage.elaborate(new MyModule)
+    ChiselStage.emitCHIRRTL(new MyModule)
     Counter.count should be(3L)
   }
 
@@ -68,7 +68,7 @@ class LazyCloneSpec extends ChiselFlatSpec {
         val bar = Input(new Bar(UInt(8.W)))
       }))
     }
-    ChiselStage.elaborate(new MyModule)
+    ChiselStage.emitCHIRRTL(new MyModule)
     Counter.count should be(2L)
   }
 
@@ -80,7 +80,7 @@ class LazyCloneSpec extends ChiselFlatSpec {
       val out = IO(Output(new GenRecord(gen)))
       out := in
     }
-    ChiselStage.elaborate(new MyModule)
+    ChiselStage.emitCHIRRTL(new MyModule)
     Counter.count should be(4L)
   }
 
@@ -91,7 +91,7 @@ class LazyCloneSpec extends ChiselFlatSpec {
       val out = IO(Output(new GenRecord(UInt(8.W))))
       out := in
     }
-    ChiselStage.elaborate(new MyModule)
+    ChiselStage.emitCHIRRTL(new MyModule)
     Counter.count should be(2L)
   }
 
@@ -103,7 +103,7 @@ class LazyCloneSpec extends ChiselFlatSpec {
       val out = IO(Output(new NestedGenBundle(gen)))
       out := in
     }
-    ChiselStage.elaborate(new MyModule)
+    ChiselStage.emitCHIRRTL(new MyModule)
     Counter.count should be(4L)
   }
 
@@ -114,7 +114,7 @@ class LazyCloneSpec extends ChiselFlatSpec {
       val out = IO(Output(new NestedGenBundle(UInt(8.W))))
       out := in
     }
-    ChiselStage.elaborate(new MyModule)
+    ChiselStage.emitCHIRRTL(new MyModule)
     Counter.count should be(2L)
   }
 
@@ -125,7 +125,7 @@ class LazyCloneSpec extends ChiselFlatSpec {
       val out = IO(Output(Vec(2, new Foo)))
       out := in
     }
-    ChiselStage.elaborate(new MyModule)
+    ChiselStage.emitCHIRRTL(new MyModule)
     // Each Vec has 3 clones of Foo + the original Foo, then the Vec isn't cloned
     Counter.count should be(8L)
   }
@@ -138,7 +138,7 @@ class LazyCloneSpec extends ChiselFlatSpec {
       val out = IO(Output(Vec(2, gen)))
       out := in
     }
-    ChiselStage.elaborate(new MyModule)
+    ChiselStage.emitCHIRRTL(new MyModule)
     // Each Vec has 3 clones of Foo + the original Foo, then the Vec isn't cloned
     Counter.count should be(7L)
   }

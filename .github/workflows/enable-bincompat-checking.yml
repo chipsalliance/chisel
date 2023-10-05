@@ -1,0 +1,89 @@
+name: Enable Binary Compatibility Checking
+
+on:
+  release:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version for which to enable binary compatibility checking'
+        require: true
+
+permissions:
+  pull-requests: write
+  contents: write
+
+jobs:
+  determine_version:
+    name: Determine Version
+    runs-on: ubuntu-latest
+    outputs:
+        version: ${{ steps.dowork.outputs.version }}
+
+    steps:
+      - id: dowork
+        run: |
+          if [[ -z "${{ inputs.version }}" ]]; then
+            echo "version=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+          fi
+
+  determine_branches:
+    name: Determine Branches
+    runs-on: ubuntu-latest
+    needs: [determine_version]
+    outputs:
+      branches: ${{ steps.determine-branches.outputs.branches }}
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Check Valid
+        run: |
+          VERSION=${{ needs.determine_version.outputs.version }}
+          if git rev-parse $VERSION; then
+            echo "Valid version!"
+          else
+            echo "$VERSION is not an existing tag!" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+      - id: determine-branches
+        run: |
+          VERSION=${{ needs.determine_version.outputs.version }}
+          touch branches.txt
+          STABLE=$(git for-each-ref --format='%(refname:short)' refs/remotes/origin/*.x)
+          for branch in $STABLE origin/main; do
+            if git merge-base --is-ancestor $VERSION $branch; then
+              echo ${branch#origin/} >> branches.txt
+            fi
+          done
+          echo "branches=$(jq -ncR [inputs] branches.txt)" >> "$GITHUB_OUTPUT"
+
+  open_prs:
+    name: Open Pull Requests
+    runs-on: ubuntu-latest
+    needs: [determine_version, determine_branches]
+    strategy:
+      matrix:
+        branch: ${{ fromJson(needs.determine_branches.outputs.branches) }}
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Create file
+        run: |
+          VERSION=${{ needs.determine_version.outputs.version }}
+          VERSION_NO_V=${VERSION#v}
+          echo $VERSION_NO_V >> project/previous-versions.txt
+      - name: Open PR
+        uses: peter-evans/create-pull-request@v5
+        with:
+          base: ${{ matrix.branch }}
+          branch: bincompat/${{ matrix.branch }}/${{ needs.determine_version.outputs.version }}
+          title: "[${{ matrix.branch }}] Enable MiMa for ${{ needs.determine_version.outputs.version }}"
+          commit-message: "Enable MiMa for ${{ needs.determine_version.outputs.version }}"
+          body: "Enable MiMa for ${{ needs.determine_version.outputs.version }}"
+          labels: Internal
+          token: ${{ secrets.CHISEL_BOT_TOKEN }}
+

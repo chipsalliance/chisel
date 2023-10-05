@@ -61,13 +61,13 @@ class IllegalRefSpec extends ChiselFlatSpec with Utils {
     case (k, v) =>
       s"Illegal cross-module references in ${k}" should "fail" in {
         a[ChiselException] should be thrownBy extractCause[ChiselException] {
-          ChiselStage.elaborate { new IllegalRefOuter(v) }
+          ChiselStage.emitCHIRRTL { new IllegalRefOuter(v) }
         }
       }
 
       s"Using a signal that has escaped its enclosing when scope in ${k}" should "fail" in {
         a[ChiselException] should be thrownBy extractCause[ChiselException] {
-          ChiselStage.elaborate { new CrossWhenConnect(v) }
+          ChiselStage.emitCHIRRTL { new CrossWhenConnect(v) }
         }
       }
   }

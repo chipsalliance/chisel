@@ -36,7 +36,7 @@ class PadsTester(c: Pads) extends Tester(c) {
 class PadderSpec extends ChiselPropSpec {
 
   property("Padder should elaborate") {
-    ChiselStage.elaborate { new Padder }
+    ChiselStage.emitCHIRRTL { new Padder }
   }
 
   ignore("PadderTester should return the correct result") {}

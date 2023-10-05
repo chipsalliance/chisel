@@ -116,7 +116,7 @@ class RiscTester(c: Risc) extends Tester(c) {
 class RiscSpec extends ChiselPropSpec {
 
   property("Risc should elaborate") {
-    ChiselStage.elaborate { new Risc }
+    ChiselStage.emitCHIRRTL { new Risc }
   }
 
   ignore("RiscTester should return the correct result") {}

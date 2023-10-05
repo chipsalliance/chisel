@@ -2,7 +2,6 @@
 
 package chisel3
 
-import chisel3.ExplicitCompileOptions.Strict
 import chisel3.reflect.DataMirror.internal.chiselTypeClone
 import chisel3.experimental.SourceInfo
 
@@ -50,8 +49,7 @@ package object experimental {
     def apply(
       proto: BaseModule
     )(
-      implicit sourceInfo: chisel3.experimental.SourceInfo,
-      compileOptions:      CompileOptions
+      implicit sourceInfo: chisel3.experimental.SourceInfo
     ): ClonePorts = {
       BaseModule.cloneIORecord(proto)
     }
@@ -61,10 +59,6 @@ package object experimental {
     */
   object requireIsHardware {
     def apply(node: Data, msg: String = ""): Unit = {
-      node._parent match { // Compatibility layer hack
-        case Some(x: BaseModule) => x._compatAutoWrapPorts
-        case _ =>
-      }
       if (!node.isSynthesizable) {
         val prefix = if (msg.nonEmpty) s"$msg " else ""
         throw ExpectedHardwareException(
@@ -87,47 +81,42 @@ package object experimental {
   type Direction = ActualDirection
   val Direction = ActualDirection
 
-  /** The same as [[IO]] except there is no prefix for the name of the val */
-  def FlatIO[T <: Record](gen: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = noPrefix {
+  /** The same as [[IO]] except there is no prefix when given a [[Record]] or
+    * [[Bundle]].  For [[Element]] ([[UInt]], etc.) or [[Vec]] types, this is
+    * the same as [[IO]].
+    */
+  def FlatIO[T <: Data](gen: => T)(implicit sourceInfo: SourceInfo): T = noPrefix {
     import dataview._
     def coerceDirection(d: Data) = {
       import chisel3.{SpecifiedDirection => SD}
-      DataMirror.specifiedDirectionOf(gen) match {
+      chisel3.reflect.DataMirror.specifiedDirectionOf(gen) match {
         case SD.Flip   => Flipped(d)
         case SD.Input  => Input(d)
         case SD.Output => Output(d)
         case _         => d
       }
     }
-    val ports: Seq[Data] =
-      gen.elements.toSeq.reverse.map {
-        case (name, data) =>
-          val p = chisel3.IO(coerceDirection(chiselTypeClone(data).asInstanceOf[Data]))
-          p.suggestName(name)
-          p
 
-      }
+    type R = T with Record
+    gen match {
+      case _:      Element => IO(gen)
+      case _:      Vec[_] => IO(gen)
+      case record: R =>
+        val ports: Seq[Data] =
+          record._elements.toSeq.reverse.map {
+            case (name, data) =>
+              val p = chisel3.IO(coerceDirection(chiselTypeClone(data).asInstanceOf[Data]))
+              p.suggestName(name)
+              p
 
-    implicit val dv: DataView[Seq[Data], T] = DataView.mapping(
-      _ => chiselTypeClone(gen).asInstanceOf[T],
-      (seq, rec) => seq.zip(rec.elements.toSeq.reverse).map { case (port, (_, field)) => port -> field }
-    )
-    ports.viewAs[T]
-  }
+          }
 
-  implicit class ChiselRange(val sc: StringContext) extends AnyVal {
-
-    import scala.language.experimental.macros
-
-    /** Specifies a range using mathematical range notation. Variables can be interpolated using
-      * standard string interpolation syntax.
-      * @example {{{
-      * UInt(range"[0, 2)")
-      * UInt(range"[0, \$myInt)")
-      * UInt(range"[0, \${myInt + 2})")
-      * }}}
-      */
-    def range(args: Any*): chisel3.internal.firrtl.IntervalRange = macro chisel3.internal.RangeTransform.apply
+        implicit val dv: DataView[Seq[Data], R] = DataView.mapping(
+          _ => chiselTypeClone(gen).asInstanceOf[R],
+          (seq, rec) => seq.zip(rec._elements.toSeq.reverse).map { case (port, (_, field)) => port -> field }
+        )
+        ports.viewAs[R]
+    }
   }
 
   class dump extends chisel3.internal.naming.dump
@@ -160,12 +149,13 @@ package object experimental {
     *   // Name without AffectsChiselPrefix: "value_1"
     *   val nonData2 = new NotAData
     * }
+    * }}}
     */
   trait AffectsChiselPrefix
 
   object BundleLiterals {
     implicit class AddBundleLiteralConstructor[T <: Record](x: T) {
-      def Lit(elems: (T => (Data, Data))*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+      def Lit(elems: (T => (Data, Data))*)(implicit sourceInfo: SourceInfo): T = {
         x._makeLit(elems: _*)
       }
     }
@@ -182,7 +172,7 @@ package object experimental {
         * @param elems tuples of an index and a literal value
         * @return
         */
-      def Lit(elems: (Int, T)*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = {
+      def Lit(elems: (Int, T)*)(implicit sourceInfo: SourceInfo): Vec[T] = {
         x._makeLit(elems: _*)
       }
     }
@@ -192,7 +182,7 @@ package object experimental {
       /** This provides an literal construction method for cases using
         * object `Vec` as in `Vec.Lit(1.U, 2.U)`
         */
-      def Lit[T <: Data](elems: T*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = {
+      def Lit[T <: Data](elems: T*)(implicit sourceInfo: SourceInfo): Vec[T] = {
         require(elems.nonEmpty, s"Lit.Vec(...) must have at least one element")
         val indexElements = elems.zipWithIndex.map { case (element, index) => (index, element) }
         val widestElement = elems.maxBy(_.getWidth)
@@ -202,44 +192,15 @@ package object experimental {
     }
   }
 
-  /** Use to add a prefix to any components generated in the provided scope.
-    *
-    * @example {{{
-    *
-    * val x1 = prefix("first") {
-    *   // Anything generated here will be prefixed with "first"
-    * }
-    *
-    * val x2 = prefix(mysignal) {
-    *   // Anything generated here will be prefixed with the name of mysignal
-    * }
-    *
-    * }}}
-    */
-  val prefix = chisel3.internal.prefix
-
-  /** Use to clear existing prefixes so no signals within the scope are prefixed
-    * by signals/names outside the scope
-    *
-    * @example {{{
-    *
-    * val x1 = prefix("first") {
-    *   // Anything generated here will have no prefix.
-    *   // The result returned from this would *still* be called `x1` however.
-    * }
-    * }}}
-    */
-  val noPrefix = chisel3.internal.noPrefix
-
   // ****************************** Hardware equivalents of Scala Tuples ******************************
   // These are intended to be used via DataView
 
-  /** [[Data]] equivalent of Scala's [[Tuple2]]
+  /** [[Data]] equivalent of Scala's [[scala.Tuple2]]
     *
     * Users may not instantiate this class directly. Instead they should use the implicit conversion from `Tuple2` in
     * `chisel3.experimental.conversions`
     */
-  final class HWTuple2[+A <: Data, +B <: Data] private[chisel3] (val _1: A, val _2: B) extends Bundle()(Strict) {
+  final class HWTuple2[+A <: Data, +B <: Data] private[chisel3] (val _1: A, val _2: B) extends Bundle() {
     // Because this implementation exists in chisel3.core, it cannot compile with the plugin, so we implement the behavior manually
     override protected def _usingPlugin:   Boolean = true
     override protected def _cloneTypeImpl: Bundle = new HWTuple2(chiselTypeClone(_1), chiselTypeClone(_2))
@@ -249,7 +210,7 @@ package object experimental {
     )
   }
 
-  /** [[Data]] equivalent of Scala's [[Tuple3]]
+  /** [[Data]] equivalent of Scala's [[scala.Tuple3]]
     *
     * Users may not instantiate this class directly. Instead they should use the implicit conversion from `Tuple3` in
     * `chisel3.experimental.conversions`
@@ -258,7 +219,7 @@ package object experimental {
     val _1: A,
     val _2: B,
     val _3: C)
-      extends Bundle()(Strict) {
+      extends Bundle() {
     // Because this implementation exists in chisel3.core, it cannot compile with the plugin, so we implement the behavior manually
     override protected def _usingPlugin: Boolean = true
     override protected def _cloneTypeImpl: Bundle = new HWTuple3(
@@ -273,7 +234,7 @@ package object experimental {
     )
   }
 
-  /** [[Data]] equivalent of Scala's [[Tuple4]]
+  /** [[Data]] equivalent of Scala's [[scala.Tuple4]]
     *
     * Users may not instantiate this class directly. Instead they should use the implicit conversion from `Tuple4` in
     * `chisel3.experimental.conversions`
@@ -283,7 +244,7 @@ package object experimental {
     val _2: B,
     val _3: C,
     val _4: D)
-      extends Bundle()(Strict) {
+      extends Bundle() {
     // Because this implementation exists in chisel3.core, it cannot compile with the plugin, so we implement the behavior manually
     override protected def _usingPlugin: Boolean = true
     override protected def _cloneTypeImpl: Bundle = new HWTuple4(
@@ -300,7 +261,7 @@ package object experimental {
     )
   }
 
-  /** [[Data]] equivalent of Scala's [[Tuple5]]
+  /** [[Data]] equivalent of Scala's [[scala.Tuple5]]
     *
     * Users may not instantiate this class directly. Instead they should use the implicit conversion from `Tuple5` in
     * `chisel3.experimental.conversions`
@@ -311,7 +272,7 @@ package object experimental {
     val _3: C,
     val _4: D,
     val _5: E)
-      extends Bundle()(Strict) {
+      extends Bundle() {
     // Because this implementation exists in chisel3.core, it cannot compile with the plugin, so we implement the behavior manually
     override protected def _usingPlugin: Boolean = true
     override protected def _cloneTypeImpl: Bundle = new HWTuple5(
@@ -330,7 +291,7 @@ package object experimental {
     )
   }
 
-  /** [[Data]] equivalent of Scala's [[Tuple6]]
+  /** [[Data]] equivalent of Scala's [[scala.Tuple6]]
     *
     * Users may not instantiate this class directly. Instead they should use the implicit conversion from `Tuple6` in
     * `chisel3.experimental.conversions`
@@ -342,7 +303,7 @@ package object experimental {
     val _4: D,
     val _5: E,
     val _6: F)
-      extends Bundle()(Strict) {
+      extends Bundle() {
     // Because this implementation exists in chisel3.core, it cannot compile with the plugin, so we implement the behavior manually
     override protected def _usingPlugin: Boolean = true
     override protected def _cloneTypeImpl: Bundle = new HWTuple6(
@@ -363,7 +324,7 @@ package object experimental {
     )
   }
 
-  /** [[Data]] equivalent of Scala's [[Tuple7]]
+  /** [[Data]] equivalent of Scala's [[scala.Tuple7]]
     *
     * Users may not instantiate this class directly. Instead they should use the implicit conversion from `Tuple7` in
     * `chisel3.experimental.conversions`
@@ -384,7 +345,7 @@ package object experimental {
     val _5: E,
     val _6: F,
     val _7: G)
-      extends Bundle()(Strict) {
+      extends Bundle() {
     // Because this implementation exists in chisel3.core, it cannot compile with the plugin, so we implement the behavior manually
     override protected def _usingPlugin: Boolean = true
     override protected def _cloneTypeImpl: Bundle = new HWTuple7(
@@ -407,7 +368,7 @@ package object experimental {
     )
   }
 
-  /** [[Data]] equivalent of Scala's [[Tuple8]]
+  /** [[Data]] equivalent of Scala's [[scala.Tuple8]]
     *
     * Users may not instantiate this class directly. Instead they should use the implicit conversion from `Tuple8` in
     * `chisel3.experimental.conversions`
@@ -430,7 +391,7 @@ package object experimental {
     val _6: F,
     val _7: G,
     val _8: H)
-      extends Bundle()(Strict) {
+      extends Bundle() {
     // Because this implementation exists in chisel3.core, it cannot compile with the plugin, so we implement the behavior manually
     override protected def _usingPlugin: Boolean = true
     override protected def _cloneTypeImpl: Bundle = new HWTuple8(
@@ -455,7 +416,7 @@ package object experimental {
     )
   }
 
-  /** [[Data]] equivalent of Scala's [[Tuple9]]
+  /** [[Data]] equivalent of Scala's [[scala.Tuple9]]
     *
     * Users may not instantiate this class directly. Instead they should use the implicit conversion from `Tuple9` in
     * `chisel3.experimental.conversions`
@@ -480,7 +441,7 @@ package object experimental {
     val _7: G,
     val _8: H,
     val _9: I)
-      extends Bundle()(Strict) {
+      extends Bundle() {
     // Because this implementation exists in chisel3.core, it cannot compile with the plugin, so we implement the behavior manually
     override protected def _usingPlugin: Boolean = true
     override protected def _cloneTypeImpl: Bundle = new HWTuple9(
@@ -507,7 +468,7 @@ package object experimental {
     )
   }
 
-  /** [[Data]] equivalent of Scala's [[Tuple9]]
+  /** [[Data]] equivalent of Scala's [[scala.Tuple9]]
     *
     * Users may not instantiate this class directly. Instead they should use the implicit conversion from `Tuple9` in
     * `chisel3.experimental.conversions`
@@ -534,7 +495,7 @@ package object experimental {
     val _8:  H,
     val _9:  I,
     val _10: J)
-      extends Bundle()(Strict) {
+      extends Bundle() {
     // Because this implementation exists in chisel3.core, it cannot compile with the plugin, so we implement the behavior manually
     override protected def _usingPlugin: Boolean = true
     override protected def _cloneTypeImpl: Bundle = new HWTuple10(
@@ -562,5 +523,7 @@ package object experimental {
       "_10" -> _10
     )
   }
+
+  @deprecated("This value has moved to chisel3.reflect", "Chisel 3.6")
   val DataMirror = chisel3.reflect.DataMirror
 }

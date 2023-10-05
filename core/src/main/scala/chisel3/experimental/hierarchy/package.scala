@@ -3,7 +3,7 @@ package chisel3.experimental
 package object hierarchy {
 
   /** Classes or traits which will be used with the [[Definition]] + [[Instance]] api should be marked
-    * with the [[@instantiable]] annotation at the class/trait definition.
+    * with the [[instantiable]] annotation at the class/trait definition.
     *
     * @example {{{
     * @instantiable
@@ -18,10 +18,10 @@ package object hierarchy {
     */
   class instantiable extends chisel3.internal.instantiable
 
-  /** Classes marked with [[@instantiable]] can have their vals marked with the [[@public]] annotation to
+  /** Classes marked with [[instantiable]] can have their vals marked with the [[public]] annotation to
     * enable accessing these values from a [[Definition]] or [[Instance]] of the class.
     *
-    * Only vals of the the following types can be marked [[@public]]:
+    * Only vals of the the following types can be marked [[public]]:
     *   1. IsInstantiable
     *   2. IsLookupable
     *   3. Data

@@ -5,7 +5,7 @@ package chiselTests
 import chisel3._
 import chisel3.experimental.BundleLiterals.AddBundleLiteralConstructor
 import chisel3.experimental.VecLiterals._
-import chisel3.experimental.{ChiselEnum, FixedPoint, VecLiteralException}
+import chisel3.experimental.VecLiteralException
 import chisel3.testers.BasicTester
 import chisel3.util.Counter
 import circt.stage.ChiselStage
@@ -78,11 +78,11 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
 
   "Vec literals should work when used to initialize a reg of vec" in {
     val firrtl = ChiselStage.emitCHIRRTL(new HasVecInit)
-    firrtl should include("""_y_WIRE[0] <= UInt<8>("hab")""")
-    firrtl should include("""_y_WIRE[1] <= UInt<8>("hcd")""")
-    firrtl should include("""_y_WIRE[2] <= UInt<8>("hef")""")
-    firrtl should include("""_y_WIRE[3] <= UInt<8>("hff")""")
-    firrtl should include("""      reset => (reset, _y_WIRE)""".stripMargin)
+    firrtl should include("""connect _y_WIRE[0], UInt<8>(0hab)""")
+    firrtl should include("""connect _y_WIRE[1], UInt<8>(0hcd)""")
+    firrtl should include("""connect _y_WIRE[2], UInt<8>(0hef)""")
+    firrtl should include("""connect _y_WIRE[3], UInt<8>(0hff)""")
+    firrtl should include("""regreset y : UInt<8>[4], clock, reset, _y_WIRE""".stripMargin)
   }
 
   //NOTE: I had problems where this would not work if this class declaration was inside test scope
@@ -93,11 +93,11 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
 
   "Vec literals should work when used to partially initialize a reg of vec" in {
     val firrtl = ChiselStage.emitCHIRRTL(new HasPartialVecInit)
-    firrtl should include("""_y_WIRE[0] <= UInt<8>("hab")""")
-    firrtl should include("""_y_WIRE[1] is invalid""")
-    firrtl should include("""_y_WIRE[2] <= UInt<8>("hef")""")
-    firrtl should include("""_y_WIRE[3] <= UInt<8>("hff")""")
-    firrtl should include("""      reset => (reset, _y_WIRE)""".stripMargin)
+    firrtl should include("""connect _y_WIRE[0], UInt<8>(0hab)""")
+    firrtl should include("""invalidate _y_WIRE[1]""")
+    firrtl should include("""connect _y_WIRE[2], UInt<8>(0hef)""")
+    firrtl should include("""connect _y_WIRE[3], UInt<8>(0hff)""")
+    firrtl should include("""regreset y : UInt<8>[4], clock, reset, _y_WIRE""".stripMargin)
   }
 
   class ResetRegWithPartialVecLiteral extends Module {
@@ -320,43 +320,23 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
     }
   }
 
-  //TODO: decide what behavior here should be
-  "This doesn't work should it" ignore {
-    assertTesterPasses {
-      new BasicTester {
-        def vecFactory = Vec(2, FixedPoint(8.W, 4.BP))
-
-        val vecWire1 = Wire(Output(vecFactory))
-        val vecLit1 = vecFactory.Lit(0 -> (1.5).F(8.W, 4.BP))
-        val vecLit2 = vecFactory.Lit(1 -> (3.25).F(8.W, 4.BP))
-
-        vecWire1 := vecLit1
-        vecWire1 := vecLit2
-        printf("vw1(0) %x  vw1(1) %x\n", vecWire1(0).asUInt, vecWire1(1).asUInt)
-        chisel3.assert(vecWire1(0) === (1.5).F(8.W, 4.BP))
-        chisel3.assert(vecWire1(1) === (3.25).F(8.W, 4.BP))
-        stop()
-      }
-    }
-  }
-
   "partially initialized Vec literals should assign" in {
     assertTesterPasses {
       new BasicTester {
-        def vecFactory = Vec(2, FixedPoint(8.W, 4.BP))
+        def vecFactory = Vec(2, UInt(8.W))
 
         val vecWire1 = Wire(Output(vecFactory))
         val vecWire2 = Wire(Output(vecFactory))
-        val vecLit1 = vecFactory.Lit(0 -> (1.5).F(8.W, 4.BP))
-        val vecLit2 = vecFactory.Lit(1 -> (3.25).F(8.W, 4.BP))
+        val vecLit1 = vecFactory.Lit(0 -> 6.U(8.W))
+        val vecLit2 = vecFactory.Lit(1 -> 13.U(8.W))
 
         vecWire1 := vecLit1
         vecWire2 := vecLit2
-        vecWire1(1) := (0.5).F(8.W, 4.BP)
+        vecWire1(1) := 2.U(8.W)
         printf("vw1(0) %x  vw1(1) %x\n", vecWire1(0).asUInt, vecWire1(1).asUInt)
-        chisel3.assert(vecWire1(0) === (1.5).F(8.W, 4.BP))
-        chisel3.assert(vecWire1(1) === (0.5).F(8.W, 4.BP)) // Last connect won
-        chisel3.assert(vecWire2(1) === (3.25).F(8.W, 4.BP))
+        chisel3.assert(vecWire1(0) === 6.U(8.W))
+        chisel3.assert(vecWire1(1) === 2.U(8.W)) // Last connect won
+        chisel3.assert(vecWire2(1) === 13.U(8.W))
         stop()
       }
     }
@@ -425,7 +405,7 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
   "vec literals with non-literal values should fail" in {
     val exc = intercept[VecLiteralException] {
       extractCause[VecLiteralException] {
-        ChiselStage.elaborate {
+        ChiselStage.emitCHIRRTL {
           new RawModule {
             (Vec(3, UInt(11.W)).Lit(0 -> UInt()))
           }
@@ -446,8 +426,8 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
     }
 
     val firrtl = ChiselStage.emitCHIRRTL(new VecExample5)
-    firrtl should include("""out[0] <= UInt<4>("ha")""")
-    firrtl should include("""out[1] <= UInt<4>("hb")""")
+    firrtl should include("""connect out[0], UInt<4>(0ha)""")
+    firrtl should include("""connect out[1], UInt<4>(0hb)""")
   }
 
   class SubBundle extends Bundle {
@@ -466,10 +446,10 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
 
   "vec literals can contain bundles and should not be bulk connected" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new VecExample)
-    chirrtl should include("""out[0].bar <= UInt<5>("h16")""")
-    chirrtl should include("""out[0].foo <= UInt<6>("h2a")""")
-    chirrtl should include("""out[1].bar <= UInt<2>("h3")""")
-    chirrtl should include("""out[1].foo <= UInt<3>("h7")""")
+    chirrtl should include("""connect out[0].bar, UInt<5>(0h16)""")
+    chirrtl should include("""connect out[0].foo, UInt<6>(0h2a)""")
+    chirrtl should include("""connect out[1].bar, UInt<2>(0h3)""")
+    chirrtl should include("""connect out[1].foo, UInt<3>(0h7)""")
   }
 
   "vec literals can have bundle children" in {
@@ -526,5 +506,13 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
     vec.length should be(2)
     vec.getWidth should be(16 * 2)
     vec.litValue should be(BigInt("bbbb000a", 16))
+  }
+
+  "vec literals should materialize const wires" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new Module {
+      val r = RegInit(Vec(2, UInt(4.W)).Lit(0 -> 1.U, 1 -> 2.U))
+    })
+    val wire = """wire.*: const UInt<4>\[2\]""".r
+    (chirrtl should include).regex(wire)
   }
 }

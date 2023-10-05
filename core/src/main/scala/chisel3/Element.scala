@@ -67,8 +67,8 @@ abstract class Element extends Data {
     }
   }
 
-  // Since we are an element, we can just emit a Connect
-  private[chisel3] def firrtlPartialConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
-    firrtlConnect(that)
+  override def containsAFlipped = specifiedDirection match {
+    case SpecifiedDirection.Flip | SpecifiedDirection.Input => true
+    case _                                                  => false
   }
 }

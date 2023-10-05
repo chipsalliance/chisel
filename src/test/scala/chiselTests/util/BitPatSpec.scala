@@ -3,7 +3,7 @@
 package chiselTests.util
 
 import chisel3.util.BitPat
-import circt.stage.ChiselStage
+import _root_.circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 

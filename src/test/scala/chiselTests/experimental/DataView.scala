@@ -6,10 +6,12 @@ import chisel3._
 import chisel3.experimental.conversions._
 import chisel3.experimental.dataview._
 import chisel3.experimental.{Analog, HWTuple2}
+import chisel3.probe._
 import chisel3.reflect.DataMirror.internal.chiselTypeClone
-import chisel3.util.{Decoupled, DecoupledIO}
+import chisel3.util.{Decoupled, DecoupledIO, Valid, ValidIO}
 import chiselTests.ChiselFlatSpec
 import circt.stage.ChiselStage
+import scala.collection.immutable.SeqMap
 
 object SimpleBundleDataView {
   class BundleA(val w: Int) extends Bundle {
@@ -52,6 +54,26 @@ object FlatDecoupledDataView {
   implicit val view2 = view.invert(_ => new FlatDecoupled)
 }
 
+object ValidExtensions {
+  implicit def view[T <: Data] = DataView[T, Valid[T]](
+    x => Valid(x.cloneType), // Valid will strip direction with `Output(...)` anyway
+    _ -> _.bits,
+    (_, v) => true.B -> v.valid
+  )
+}
+
+object DontCareDataView {
+  class Foo extends Bundle {
+    val a = UInt(8.W)
+    val b = UInt(8.W)
+  }
+  implicit def view = DataView[UInt, Foo](
+    _ => new Foo,
+    _ -> _.a,
+    (_, f) => DontCare -> f.b
+  )
+}
+
 class DataViewSpec extends ChiselFlatSpec {
 
   behavior.of("DataView")
@@ -64,7 +86,7 @@ class DataViewSpec extends ChiselFlatSpec {
       out := in.viewAs[BundleB]
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    chirrtl should include("out.bar <= in.foo")
+    chirrtl should include("connect out.bar, in.foo")
   }
 
   it should "be a bidirectional mapping" in {
@@ -75,7 +97,7 @@ class DataViewSpec extends ChiselFlatSpec {
       out.viewAs[BundleA] := in
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    chirrtl should include("out.bar <= in.foo")
+    chirrtl should include("connect out.bar, in.foo")
   }
 
   it should "handle viewing UInts as UInts" in {
@@ -87,8 +109,8 @@ class DataViewSpec extends ChiselFlatSpec {
       bar.viewAs[UInt] := in
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    chirrtl should include("foo <= in")
-    chirrtl should include("bar <= in")
+    chirrtl should include("connect foo, in")
+    chirrtl should include("connect bar, in")
   }
 
   it should "handle viewing Analogs as Analogs" in {
@@ -113,8 +135,8 @@ class DataViewSpec extends ChiselFlatSpec {
       buzz.viewAs[MyBundle] := in
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    chirrtl should include("fizz <= in")
-    chirrtl should include("buzz <= in")
+    chirrtl should include("connect fizz, in")
+    chirrtl should include("connect buzz, in")
   }
 
   it should "handle viewing Vecs as their same concrete type" in {
@@ -126,8 +148,8 @@ class DataViewSpec extends ChiselFlatSpec {
       buzz.viewAs[Vec[UInt]] := in
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    chirrtl should include("fizz <= in")
-    chirrtl should include("buzz <= in")
+    chirrtl should include("connect fizz, in")
+    chirrtl should include("connect buzz, in")
   }
 
   it should "handle viewing Vecs as Bundles and vice versa" in {
@@ -140,10 +162,10 @@ class DataViewSpec extends ChiselFlatSpec {
       out2.viewAs[MyBundle] := in
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    chirrtl should include("out[0] <= in.bar")
-    chirrtl should include("out[1] <= in.foo")
-    chirrtl should include("out2[0] <= in.bar")
-    chirrtl should include("out2[1] <= in.foo")
+    chirrtl should include("connect out[0], in.bar")
+    chirrtl should include("connect out[1], in.foo")
+    chirrtl should include("connect out2[0], in.bar")
+    chirrtl should include("connect out2[1], in.foo")
   }
 
   it should "work with bidirectional connections for nested types" in {
@@ -156,14 +178,14 @@ class DataViewSpec extends ChiselFlatSpec {
       deq2.viewAs[DecoupledIO[FizzBuzz]] <> enq
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    chirrtl should include("deq.valid <= enq.valid")
-    chirrtl should include("enq.ready <= deq.ready")
-    chirrtl should include("deq.fizz <= enq.bits.fizz")
-    chirrtl should include("deq.buzz <= enq.bits.buzz")
-    chirrtl should include("deq2.valid <= enq.valid")
-    chirrtl should include("enq.ready <= deq2.ready")
-    chirrtl should include("deq2.fizz <= enq.bits.fizz")
-    chirrtl should include("deq2.buzz <= enq.bits.buzz")
+    chirrtl should include("connect deq.valid, enq.valid")
+    chirrtl should include("connect enq.ready, deq.ready")
+    chirrtl should include("connect deq.fizz, enq.bits.fizz")
+    chirrtl should include("connect deq.buzz, enq.bits.buzz")
+    chirrtl should include("connect deq2.valid, enq.valid")
+    chirrtl should include("connect enq.ready, deq2.ready")
+    chirrtl should include("connect deq2.fizz, enq.bits.fizz")
+    chirrtl should include("connect deq2.buzz, enq.bits.buzz")
   }
 
   it should "support viewing a Bundle as a Parent Bundle type" in {
@@ -183,8 +205,73 @@ class DataViewSpec extends ChiselFlatSpec {
       fooOut := barIn.viewAsSupertype(new Foo)
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    chirrtl should include("barOut.foo <= fooIn.foo")
-    chirrtl should include("fooOut.foo <= barIn.foo")
+    chirrtl should include("connect barOut.foo, fooIn.foo")
+    chirrtl should include("connect fooOut.foo, barIn.foo")
+  }
+
+  it should "support viewing a Record as a Parent Record type" in {
+    object Base {
+      def elements = SeqMap("foo" -> UInt(8.W))
+    }
+    class Foo extends Record {
+      override val elements = Base.elements
+    }
+    class Bar extends Foo {
+      override val elements = Base.elements ++ SeqMap("bar" -> UInt(8.W))
+    }
+
+    class MyModule extends Module {
+      val fooIn = IO(Input(new Foo))
+      val barOut = IO(Output(new Bar))
+      barOut.viewAsSupertype(new Foo) := fooIn
+
+      val barIn = IO(Input(new Bar))
+      val fooOut = IO(Output(new Foo))
+      fooOut := barIn.viewAsSupertype(new Foo)
+    }
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
+    chirrtl should include("connect barOut.foo, fooIn.foo")
+    chirrtl should include("connect fooOut.foo, barIn.foo")
+  }
+
+  it should "fail if you try viewing a Record as a poorly inherited Parent Record type" in {
+    class Foo extends Record {
+      override val elements = SeqMap("foo" -> UInt(8.W), "quz" -> UInt(8.W))
+    }
+    class Bar extends Foo {
+      // No actual relationship in the elements...
+      override val elements = SeqMap("bar" -> UInt(8.W))
+    }
+
+    class MyModule extends Module {
+      val fooIn = IO(Input(new Foo))
+      val barOut = IO(Output(new Bar))
+      barOut.viewAsSupertype(new Foo) := fooIn
+
+      val barIn = IO(Input(new Bar))
+      val fooOut = IO(Output(new Foo))
+      fooOut := barIn.viewAsSupertype(new Foo)
+    }
+    (the[InvalidViewException] thrownBy {
+      ChiselStage.emitCHIRRTL(new MyModule)
+    }).getMessage should include("View fields '_.quz, _.foo' are missing.")
+  }
+
+  it should "support viewing a Record of the same Scala type as supertype for the purposes of mismatched directions" in {
+    class Foo extends Record {
+      override val elements = SeqMap("foo" -> Decoupled(UInt(8.W)))
+    }
+
+    class MyModule extends Module {
+      val ifc = IO(Flipped(new Foo))
+      val ifcMon = IO(Input(new Foo))
+
+      ifc :<= DontCare
+      ifcMon.viewAsSupertype(chiselTypeOf(ifc)) :>= ifc
+    }
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
+    chirrtl should include("invalidate ifc.foo.bits")
+    chirrtl should include("connect ifc.foo.ready, ifcMon.foo.ready")
   }
 
   it should "be easy to make a PartialDataView viewing a Bundle as a Parent Bundle type" in {
@@ -205,8 +292,8 @@ class DataViewSpec extends ChiselFlatSpec {
       fooOut := barIn.viewAs[Foo]
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    chirrtl should include("barOut.foo <= fooIn.foo")
-    chirrtl should include("fooOut.foo <= barIn.foo")
+    chirrtl should include("connect barOut.foo, fooIn.foo")
+    chirrtl should include("connect fooOut.foo, barIn.foo")
   }
 
   it should "support viewing structural supertypes" in {
@@ -236,10 +323,10 @@ class DataViewSpec extends ChiselFlatSpec {
       io.outa.viewAsSupertype(new C) <> io.inc
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    chirrtl should include("io.b.x <= io.a.x")
-    chirrtl should include("io.c.z <= io.a.z")
-    chirrtl should include("io.outa.z <= io.inc.z")
-    chirrtl should include("io.outa.y <= io.inc.y")
+    chirrtl should include("connect io.b.x, io.a.x")
+    chirrtl should include("connect io.c.z, io.a.z")
+    chirrtl should include("connect io.outa.z, io.inc.z")
+    chirrtl should include("connect io.outa.y, io.inc.y")
   }
 
   it should "support viewing structural supertypes with bundles" in {
@@ -272,11 +359,11 @@ class DataViewSpec extends ChiselFlatSpec {
       io.outa.viewAsSupertype(new C) <> io.inc
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    chirrtl should include("io.b.x <= io.a.x")
-    chirrtl should include("io.c.z <= io.a.z")
-    chirrtl should include("io.outa.foo <= io.inc.foo")
-    chirrtl should include("io.b.foo <= io.a.foo")
-    chirrtl should include("io.c.foo <= io.a.foo")
+    chirrtl should include("connect io.b.x, io.a.x")
+    chirrtl should include("connect io.c.z, io.a.z")
+    chirrtl should include("connect io.outa.foo, io.inc.foo")
+    chirrtl should include("connect io.b.foo, io.a.foo")
+    chirrtl should include("connect io.c.foo, io.a.foo")
   }
 
   it should "error during elaboration for sub-type errors that cannot be found at compile-time" in {
@@ -402,13 +489,13 @@ class DataViewSpec extends ChiselFlatSpec {
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
     val expected = List(
       "node x = and(a, b.value)",
-      "and <= x",
+      "connect and, x",
       "node y = mux(cond, a, b.value)",
-      "mux <= y",
+      "connect mux, y",
       "node aBits = bits(a, 3, 0)",
       "node bBits = bits(b.value, 3, 0)",
       "node abCat = cat(aBits, bBits)",
-      "bitsCat <= abCat"
+      "connect bitsCat, abCat"
     )
     for (line <- expected) {
       chirrtl should include(line)
@@ -425,7 +512,7 @@ class DataViewSpec extends ChiselFlatSpec {
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
     chirrtl should include("node cat = cat(barIn.foo, barIn.bar)")
-    chirrtl should include("fooOut <= cat")
+    chirrtl should include("connect fooOut, cat")
   }
 
   it should "be composable" in {
@@ -446,8 +533,8 @@ class DataViewSpec extends ChiselFlatSpec {
       z := b.viewAs[Bar].viewAs[Fizz]
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    chirrtl should include("y.fizz <= a.foo")
-    chirrtl should include("z.fizz <= b.foo")
+    chirrtl should include("connect y.fizz, a.foo")
+    chirrtl should include("connect z.fizz, b.foo")
   }
 
   it should "enable using Seq like Data" in {
@@ -512,8 +599,8 @@ class DataViewSpec extends ChiselFlatSpec {
       dataOut := selected
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    chirrtl should include("vec[addr] <= dataIn")
-    chirrtl should include("dataOut <= vec[addr]")
+    chirrtl should include("connect vec[addr], dataIn")
+    chirrtl should include("connect dataOut, vec[addr]")
   }
 
   it should "support dynamic indexing for Vecs that correspond 1:1 in a view" in {
@@ -542,8 +629,42 @@ class DataViewSpec extends ChiselFlatSpec {
       dataOut := selected
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    chirrtl should include("vec[addrReg] <= dataIn")
-    chirrtl should include("dataOut <= vec[addrReg]")
+    chirrtl should include("connect vec[addrReg], dataIn")
+    chirrtl should include("connect dataOut, vec[addrReg]")
+  }
+
+  it should "allow views between reset types" in {
+    class A extends Bundle {
+      val bool = Bool()
+      val asyncreset = AsyncReset()
+    }
+
+    class B extends Bundle {
+      val reset_0 = Reset()
+      val reset_1 = Reset()
+    }
+
+    class Foo extends RawModule {
+      val a = Wire(new A)
+      val b = Wire(new B)
+
+      implicit val view = DataView[A, B](
+        _ => new B,
+        _.bool -> _.reset_0,
+        _.asyncreset -> _.reset_1
+      )
+
+      a.viewAs[B] := b
+    }
+
+    (ChiselStage
+      .emitCHIRRTL(new Foo, Array("--full-stacktrace"))
+      .split('\n')
+      .map(_.takeWhile(_ != '@'))
+      .map(_.trim) should contain).allOf(
+      "connect a.bool, b.reset_0",
+      "connect a.asyncreset, b.reset_1"
+    )
   }
 
   it should "error if you try to dynamically index a Vec view that does not correspond to a Vec target" in {
@@ -597,10 +718,11 @@ class DataViewSpec extends ChiselFlatSpec {
       val fizz = UInt(8.W)
       val buzz = UInt(8.W)
     }
-    implicit val dv = DataView[BundleA, BundleB](_ => new BundleB, _.foo -> _.fizz, (_, b) => (3.U, b.buzz))
     class MyModule extends Module {
       val in = IO(Input(new BundleA))
       val out = IO(Output(new BundleB))
+      val foo = Wire(UInt(8.W))
+      implicit val dv = DataView[BundleA, BundleB](_ => new BundleB, _.foo -> _.fizz, (_, b) => (foo, b.buzz))
       out := in.viewAs[BundleB]
     }
     val err = the[InvalidViewException] thrownBy (ChiselStage.emitSystemVerilog(new MyModule))
@@ -676,10 +798,217 @@ class DataViewSpec extends ChiselFlatSpec {
     }
 
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    val expected = ('a' to 'f').map(c => s"$c is invalid")
+    val expected = ('a' to 'f').map(c => s"invalidate $c")
     for (line <- expected) {
       chirrtl should include(line)
     }
+  }
+
+  it should "error when calling .viewAs on non-hardware Data" in {
+    class MyBundle(val foo: UInt, val bar: UInt) extends Bundle
+    implicit val view =
+      DataView[(UInt, UInt), MyBundle](x => new MyBundle(x._1.cloneType, x._2.cloneType), _._1 -> _.foo, _._2 -> _.bar)
+    class MyModule extends Module {
+      (UInt(8.W), UInt(8.W)).viewAs[MyBundle]
+    }
+    a[ChiselException] shouldBe thrownBy {
+      ChiselStage.emitCHIRRTL(new MyModule, Array("--throw-on-first-error"))
+    }
+  }
+
+  it should "handle viewing Probes as their referenced type" in {
+    class MyModule extends Module {
+      val a = IO(Output(Probe(Bool())))
+      val w = WireInit(Bool(), false.B)
+      val w_probe = ProbeValue(w)
+      val w_probe_view = w_probe.viewAs[Bool]
+      define(a, w_probe_view)
+    }
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
+    chirrtl should include("define a = probe(w)")
+  }
+
+  it should "handle viewing RWProbes as their referenced type" in {
+    class MyModule extends Module {
+      val a = IO(Output(RWProbe(Bool())))
+      val w = WireInit(Bool(), false.B)
+      val w_probe = RWProbeValue(w)
+      val w_probe_view = w_probe.viewAs[Bool]
+      define(a, w_probe_view)
+    }
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
+    chirrtl should include("define a = rwprobe(w)")
+  }
+
+  it should "error if attempting to define a viewed a Probe as a RWProbe" in {
+    class MyModule extends Module {
+      val a = IO(Output(RWProbe(Bool())))
+      val w = WireInit(Bool(), false.B)
+      val w_probe = ProbeValue(w)
+      val w_probe_view = w_probe.viewAs[Bool]
+      define(a, w_probe_view)
+    }
+    val err = the[ChiselException] thrownBy (ChiselStage.emitCHIRRTL(new MyModule, Array("--throw-on-first-error")))
+    err.toString should include("Cannot use a non-writable probe expression to define a writable probe")
+  }
+
+  it should "error if attempting to connect a viewed a Probe to a connectable" in {
+    class MyModule extends Module {
+      val a = IO(Output(Bool()))
+      val w = WireInit(Bool(), false.B)
+      val w_probe = ProbeValue(w)
+      val w_probe_view = w_probe.viewAs[Bool]
+      a := w_probe_view
+    }
+    val err = the[ChiselException] thrownBy (ChiselStage.emitCHIRRTL(new MyModule, Array("--throw-on-first-error")))
+    err.toString should include("Probed type cannot participate in a mono connection")
+  }
+
+  it should "support literals as part of the target" in {
+    import ValidExtensions._
+    class MyModule extends Module {
+      val in0, in1, in2, in3, in4 = IO(Input(UInt(8.W)))
+      val out0, out1, out2, out3, out4 = IO(Output(Valid(UInt(8.W))))
+      out0 := in0.viewAs[Valid[UInt]]
+      out1 <> in1.viewAs[Valid[UInt]]
+      out2 :<>= in2.viewAs[Valid[UInt]]
+      out3 :<= in3.viewAs[Valid[UInt]]
+      out4 :#= in4.viewAs[Valid[UInt]]
+    }
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
+    for (i <- 0 until 5) {
+      chirrtl should include(s"connect out$i.bits, in$i")
+      chirrtl should include(s"connect out$i.valid, UInt<1>(0h1)")
+    }
+  }
+
+  it should "error if a literal in a target would be driven" in {
+    import ValidExtensions._
+    class MyModule(op: (Valid[UInt], Valid[UInt]) => Unit) extends Module {
+      val in = IO(Input(Valid(UInt(8.W))))
+      val out = IO(Output(UInt(8.W)))
+      op(out.viewAs[Valid[UInt]], in)
+    }
+
+    val ops = Seq[(Valid[UInt], Valid[UInt]) => Unit](
+      _ := _,
+      _ <> _,
+      _ :<>= _,
+      _ :<= _,
+      _ :#= _
+    )
+
+    for (op <- ops) {
+      a[ChiselException] shouldBe thrownBy {
+        ChiselStage.emitCHIRRTL(new MyModule(op), Array("--throw-on-first-error"))
+      }
+    }
+  }
+
+  it should "error if a literal is used as part of the view" in {
+    implicit val dv =
+      DataView.mapping[Valid[UInt], UInt](_.bits.cloneType, (v, x) => Seq(v.bits -> x, v.valid -> true.B))
+    class MyModule extends Module {
+      val in = IO(Input(Valid(UInt(8.W))))
+      val out = IO(Output(UInt(8.W)))
+      out := in.viewAs[UInt]
+    }
+    val e = the[ChiselException] thrownBy {
+      ChiselStage.emitCHIRRTL(new MyModule, Array("--throw-on-first-error"))
+    }
+    e.getMessage should include("View mapping must only contain Elements within the View")
+  }
+
+  it should "support DontCare as part of the target" in {
+    import DontCareDataView._
+    class MyModule extends Module {
+      val in0, in1, in2, in3, in4 = IO(Input(UInt(8.W)))
+      val out0, out1, out2, out3, out4 = IO(Output(new Foo))
+      out0 := in0.viewAs[Foo]
+      out1 <> in1.viewAs[Foo]
+      out2 :<>= in2.viewAs[Foo]
+      out3 :<= in3.viewAs[Foo]
+      out4 :#= in4.viewAs[Foo]
+    }
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule, Array("--full-stacktrace"))
+    for (i <- 0 until 5) {
+      chirrtl should include(s"connect out$i.a, in$i")
+      chirrtl should include(s"invalidate out$i.b")
+    }
+  }
+
+  it should "error if a DontCare in a target would be driven" in {
+    import DontCareDataView._
+    class MyModule(op: (Foo, Foo) => Unit) extends Module {
+      val in = IO(Input(new Foo))
+      val out = IO(Output(UInt(8.W)))
+      op(out.viewAs[Foo], in)
+    }
+
+    val ops = Seq[(Foo, Foo) => Unit](
+      _ := _,
+      _ :<>= _,
+      _ :<= _,
+      _ :#= _
+    )
+
+    for (op <- ops) {
+      a[ChiselException] shouldBe thrownBy {
+        ChiselStage.emitCHIRRTL(new MyModule(op), Array("--throw-on-first-error"))
+      }
+    }
+    // <> does magical things with DontCare, including invalidating inputs!
+    // But the behavior matches DontCare <> in.b
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule(_ <> _))
+    chirrtl should include("invalidate in.b")
+    chirrtl should include("connect out, in.a")
+  }
+
+  it should "error if DontCare is used as part of the view" in {
+    implicit val dv =
+      DataView.mapping[Valid[UInt], UInt](_.bits.cloneType, (v, x) => Seq(v.bits -> x, v.valid -> DontCare))
+    class MyModule extends Module {
+      val in = IO(Input(Valid(UInt(8.W))))
+      val out = IO(Output(UInt(8.W)))
+      out := in.viewAs[UInt]
+    }
+    val e = the[ChiselException] thrownBy {
+      ChiselStage.emitCHIRRTL(new MyModule, Array("--throw-on-first-error"))
+    }
+    e.getMessage should include("View mapping must only contain Elements within the View")
+  }
+
+  it should "use the target in error messages involving the view" in {
+    val e1 = the[ChiselException] thrownBy (
+      ChiselStage.emitCHIRRTL(
+        new RawModule {
+          override def desiredName = "Top"
+          val in = IO(Input(UInt(8.W)))
+          val out = IO(Output(SInt(8.W)))
+          out.viewAs[SInt] := in
+        },
+        Array("--throw-on-first-error")
+      )
+    )
+    e1.getMessage should include(
+      "Connection between sink (Top.out: IO[SInt<8>]) and source (Top.in: IO[UInt<8>]) failed"
+    )
+
+    val e2 = the[ChiselException] thrownBy (
+      ChiselStage.emitCHIRRTL(
+        new RawModule {
+          override def desiredName = "Top"
+          val foo, bar = IO(Input(UInt(8.W)))
+          val fizz, buzz = IO(Output(SInt(8.W)))
+          // Unfortunately, := does a bad job when the view doesn't map to a single Data, but at least connectables do a good job
+          ((fizz, buzz).viewAs: Data) :#= ((foo, bar).viewAs: Data)
+        },
+        Array("--throw-on-first-error")
+      )
+    )
+    e2.getMessage should include(
+      "Connection between sink (Top.buzz: IO[SInt<8>]) and source (Top.bar: IO[UInt<8>]) failed"
+    )
   }
 
   behavior.of("PartialDataView")

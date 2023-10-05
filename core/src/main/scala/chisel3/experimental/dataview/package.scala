@@ -4,21 +4,19 @@ package chisel3.experimental
 
 import chisel3._
 import chisel3.internal._
-import chisel3.experimental.SourceInfo
 
 import scala.annotation.{implicitNotFound, tailrec}
 import scala.collection.mutable
-import scala.collection.immutable.LazyList // Needed for 2.12 alias
 
 package object dataview {
-  case class InvalidViewException(message: String) extends ChiselException(message)
+  case class InvalidViewException(message: String) extends chisel3.ChiselException(message)
 
   /** Provides `viewAs` for types that have an implementation of [[DataProduct]]
     *
     * Calling `viewAs` also requires an implementation of [[DataView]] for the target type
     */
   implicit class DataViewable[T](target: T) {
-    def viewAs[V <: Data](implicit dataproduct: DataProduct[T], dataView: DataView[T, V]): V = {
+    def viewAs[V <: Data](implicit dataproduct: DataProduct[T], dataView: DataView[T, V], sourceInfo: SourceInfo): V = {
       // TODO put a try catch here for ExpectedHardwareException and perhaps others
       // It's likely users will accidentally use chiselTypeOf or something that may error,
       // The right thing to use is DataMirror...chiselTypeClone because of composition with DataView.andThen
@@ -39,10 +37,21 @@ package object dataview {
   }
 
   /** Provides `viewAsSupertype` for subclasses of [[Bundle]] */
+  @deprecated("Use RecordUpcastable instead", "chisel3.6")
   implicit class BundleUpcastable[T <: Bundle](target: T) {
 
     /** View a [[Bundle]] or [[Record]] as a parent type (upcast) */
     def viewAsSupertype[V <: Bundle](proto: V)(implicit ev: ChiselSubtypeOf[T, V], sourceInfo: SourceInfo): V = {
+      implicit val dataView = PartialDataView.supertype[T, V](_ => proto)
+      target.viewAs[V]
+    }
+  }
+
+  /** Provides `viewAsSupertype` for subclasses of [[Record]] */
+  implicit class RecordUpcastable[T <: Record](target: T) {
+
+    /** View a [[Bundle]] or [[Record]] as a parent type (upcast) */
+    def viewAsSupertype[V <: Record](proto: V)(implicit ev: ChiselSubtypeOf[T, V], sourceInfo: SourceInfo): V = {
       implicit val dataView = PartialDataView.supertype[T, V](_ => proto)
       target.viewAs[V]
     }
@@ -72,7 +81,13 @@ package object dataview {
   }
 
   // TODO should this be moved to class Aggregate / can it be unified with Aggregate.bind?
-  private def doBind[T: DataProduct, V <: Data](target: T, view: V, dataView: DataView[T, V]): Unit = {
+  private def doBind[T: DataProduct, V <: Data](
+    target:   T,
+    view:     V,
+    dataView: DataView[T, V]
+  )(
+    implicit sourceInfo: SourceInfo
+  ): Unit = {
     val mapping = dataView.mapping(target, view)
     val total = dataView.total
     // Lookups to check the mapping results
@@ -82,8 +97,10 @@ package object dataview {
     // Resulting bindings for each Element of the View
     // Kept separate from Aggregates for totality checking
     val elementBindings =
-      new mutable.HashMap[Data, mutable.ListBuffer[Element]] ++
-        viewFieldLookup.view.collect { case (elt: Element, _) => elt }
+      new mutable.LinkedHashMap[Data, mutable.ListBuffer[Element]] ++
+        getRecursiveFields
+          .lazilyNoPath(view)
+          .collect { case (elt: Element) => elt }
           .map(_ -> new mutable.ListBuffer[Element])
 
     // Record any Aggregates that correspond 1:1 for reification
@@ -101,23 +118,39 @@ package object dataview {
 
       // The elements may themselves be views, look through the potential chain of views for the Elements
       // that are actually members of the target or view
-      val tex = unfoldView(te).find(targetContains).getOrElse(err("Target", te))
+      val tex = unfoldView(te).find(x => targetContains(x) || x.isLit || x == DontCare).getOrElse(err("Target", te))
       val vex = unfoldView(ve).find(viewFieldLookup.contains).getOrElse(err("View", ve))
+      if (!tex.isSynthesizable) {
+        Builder.exception(s".viewAs should only be called on hardware")
+      }
 
-      if (tex.getClass != vex.getClass) {
-        val fieldName = viewFieldName(vex)
-        throw InvalidViewException(s"Field $fieldName specified as view of non-type-equivalent value $tex")
+      (tex, vex) match {
+        /* Allow views where the types are equal. */
+        case (a, b) if a.getClass == b.getClass =>
+          // View width must be unknown or match target width
+          if (vex.widthKnown && vex.width != tex.width) {
+            def widthAsString(x: Element) = x.widthOption.map("<" + _ + ">").getOrElse("<unknown>")
+            val fieldName = viewFieldName(vex)
+            val vwidth = widthAsString(vex)
+            val twidth = widthAsString(tex)
+            throw InvalidViewException(
+              s"View field $fieldName has width ${vwidth} that is incompatible with target value $tex's width ${twidth}"
+            )
+          }
+        /* allow bool <=> reset views. */
+        case (a: Bool, _: Reset) =>
+        case (_: Reset, a: Bool) =>
+        /* Allow AsyncReset <=> Reset views. */
+        case (a: AsyncReset, _: Reset) =>
+        case (_: Reset, a: AsyncReset) =>
+        /* Allow DontCare in the target only */
+        case (DontCare, _) =>
+        /* All other views produce a runtime error. */
+        case _ =>
+          val fieldName = viewFieldName(vex)
+          throw InvalidViewException(s"Field $fieldName specified as view of non-type-equivalent value $tex")
       }
-      // View width must be unknown or match target width
-      if (vex.widthKnown && vex.width != tex.width) {
-        def widthAsString(x: Element) = x.widthOption.map("<" + _ + ">").getOrElse("<unknown>")
-        val fieldName = viewFieldName(vex)
-        val vwidth = widthAsString(vex)
-        val twidth = widthAsString(tex)
-        throw InvalidViewException(
-          s"View field $fieldName has width ${vwidth} that is incompatible with target value $tex's width ${twidth}"
-        )
-      }
+
       elementBindings(vex) += tex
     }
 
@@ -224,7 +257,7 @@ package object dataview {
     */
   @tailrec private[chisel3] def reify(elt: Element, topBinding: TopBinding): Element =
     topBinding match {
-      case ViewBinding(target) => reify(target, elt.topBinding)
+      case ViewBinding(target) => reify(target, target.topBinding)
       case _                   => elt
     }
 

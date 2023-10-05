@@ -40,7 +40,8 @@ object OHToUInt {
   * PriorityEncoder("b0110".U) // results in 1.U
   * }}}
   *
-  * Multiple bits may be high in the input.
+  * @note Multiple bits may be high in the input.
+  * @note If no bits are high, the result is undefined.
   */
 object PriorityEncoder {
   def apply(in: Seq[Bool]): UInt = PriorityMux(in, (0 until in.size).map(_.asUInt))

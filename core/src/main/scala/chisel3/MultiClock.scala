@@ -15,13 +15,22 @@ object withClockAndReset {
     * @param block the block of code to run with new implicit Clock and Reset
     * @return the result of the block
     */
-  def apply[T](clock: Clock, reset: Reset)(block: => T): T = {
+  def apply[T](clock: Clock, reset: Reset)(block: => T): T = apply(Some(clock), Some(reset))(block)
+
+  /** Creates a new Clock and Reset scope
+    *
+    * @param clock the new implicit Clock, None will set no implicit clock
+    * @param reset the new implicit Reset, None will set no implicit reset
+    * @param block the block of code to run with new implicit Clock and Reset
+    * @return the result of the block
+    */
+  def apply[T](clock: Option[Clock], reset: Option[Reset])(block: => T): T = {
     // Save parentScope
     val parentClock = Builder.currentClock
     val parentReset = Builder.currentReset
 
-    Builder.currentClock = Some(clock)
-    Builder.currentReset = Some(reset)
+    Builder.currentClock = clock
+    Builder.currentReset = reset
 
     val res = block // execute block
 
@@ -40,10 +49,18 @@ object withClock {
     * @param block the block of code to run with new implicit Clock
     * @return the result of the block
     */
-  def apply[T](clock: Clock)(block: => T): T = {
+  def apply[T](clock: Clock)(block: => T): T = apply(Some(clock))(block)
+
+  /** Creates a new Clock scope
+    *
+    * @param clock the new implicit Clock, None will set no implicit clock
+    * @param block the block of code to run with new implicit Clock
+    * @return the result of the block
+    */
+  def apply[T](clock: Option[Clock])(block: => T): T = {
     // Save parentScope
     val parentClock = Builder.currentClock
-    Builder.currentClock = Some(clock)
+    Builder.currentClock = clock
     val res = block // execute block
     // Return to old scope
     Builder.currentClock = parentClock
@@ -59,10 +76,18 @@ object withReset {
     * @param block the block of code to run with new implicit Reset
     * @return the result of the block
     */
-  def apply[T](reset: Reset)(block: => T): T = {
+  def apply[T](reset: Reset)(block: => T): T = apply(Some(reset))(block)
+
+  /** Creates a new Reset scope
+    *
+    * @param reset the new implicit Reset, None will set no implicit reset
+    * @param block the block of code to run with new implicit Reset
+    * @return the result of the block
+    */
+  def apply[T](reset: Option[Reset])(block: => T): T = {
     // Save parentScope
     val parentReset = Builder.currentReset
-    Builder.currentReset = Some(reset)
+    Builder.currentReset = reset
     val res = block // execute block
     // Return to old scope
     Builder.currentReset = parentReset

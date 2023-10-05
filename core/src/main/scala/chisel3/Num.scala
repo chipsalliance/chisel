@@ -2,9 +2,8 @@
 
 package chisel3
 
-import chisel3.internal.ChiselException
-import chisel3.internal.firrtl.{BinaryPoint, KnownBinaryPoint}
 import chisel3.internal.sourceinfo.SourceInfoTransform
+
 import scala.language.experimental.macros
 import chisel3.experimental.SourceInfo
 
@@ -45,7 +44,7 @@ trait Num[T <: Data] {
   final def +(that: T): T = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_+(that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T
+  def do_+(that: T)(implicit sourceInfo: SourceInfo): T
 
   /** Multiplication operator
     *
@@ -58,7 +57,7 @@ trait Num[T <: Data] {
   final def *(that: T): T = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_*(that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T
+  def do_*(that: T)(implicit sourceInfo: SourceInfo): T
 
   /** Division operator
     *
@@ -71,7 +70,7 @@ trait Num[T <: Data] {
   final def /(that: T): T = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_/(that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T
+  def do_/(that: T)(implicit sourceInfo: SourceInfo): T
 
   /** Modulo operator
     *
@@ -83,7 +82,7 @@ trait Num[T <: Data] {
   final def %(that: T): T = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_%(that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T
+  def do_%(that: T)(implicit sourceInfo: SourceInfo): T
 
   /** Subtraction operator
     *
@@ -95,7 +94,7 @@ trait Num[T <: Data] {
   final def -(that: T): T = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_-(that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T
+  def do_-(that: T)(implicit sourceInfo: SourceInfo): T
 
   /** Less than operator
     *
@@ -106,7 +105,7 @@ trait Num[T <: Data] {
   final def <(that: T): Bool = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_<(that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
+  def do_<(that: T)(implicit sourceInfo: SourceInfo): Bool
 
   /** Less than or equal to operator
     *
@@ -117,7 +116,7 @@ trait Num[T <: Data] {
   final def <=(that: T): Bool = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_<=(that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
+  def do_<=(that: T)(implicit sourceInfo: SourceInfo): Bool
 
   /** Greater than operator
     *
@@ -128,7 +127,7 @@ trait Num[T <: Data] {
   final def >(that: T): Bool = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_>(that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
+  def do_>(that: T)(implicit sourceInfo: SourceInfo): Bool
 
   /** Greater than or equal to operator
     *
@@ -139,7 +138,7 @@ trait Num[T <: Data] {
   final def >=(that: T): Bool = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_>=(that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
+  def do_>=(that: T)(implicit sourceInfo: SourceInfo): Bool
 
   /** Absolute value operator
     *
@@ -150,7 +149,7 @@ trait Num[T <: Data] {
   final def abs: T = macro SourceInfoTransform.noArg
 
   /** @group SourceInfoTransformMacro */
-  def do_abs(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T
+  def do_abs(implicit sourceInfo: SourceInfo): T
 
   /** Minimum operator
     *
@@ -162,7 +161,7 @@ trait Num[T <: Data] {
   final def min(that: T): T = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_min(that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
+  def do_min(that: T)(implicit sourceInfo: SourceInfo): T =
     Mux(this < that, this.asInstanceOf[T], that)
 
   /** Maximum operator
@@ -175,7 +174,7 @@ trait Num[T <: Data] {
   final def max(that: T): T = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_max(that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
+  def do_max(that: T)(implicit sourceInfo: SourceInfo): T =
     Mux(this < that, that, this.asInstanceOf[T])
 }
 
@@ -183,8 +182,6 @@ object Num extends NumObject
 
 /** NumbObject has a lot of convenience methods for converting between
   * BigInts and Double and BigDecimal
-  * For backwards compatibility this is used with FixedPoint and Interval objects
-  * but is better used with the Num Object
   */
 trait NumObject {
   val MaxBitsBigIntToBigDecimal = 108
@@ -203,20 +200,6 @@ trait NumObject {
   }
 
   /**
-    * How to create a bigint from a big decimal with a specific binaryPoint
-    * @param x           a BigDecimal value
-    * @param binaryPoint a binaryPoint that you would like to use
-    * @return
-    */
-  def toBigInt(x: Double, binaryPoint: BinaryPoint): BigInt = {
-    binaryPoint match {
-      case KnownBinaryPoint(n) => toBigInt(x, n)
-      case x =>
-        throw new ChiselException(s"Error converting Double $x to BigInt, binary point must be known, not $x")
-    }
-  }
-
-  /**
     * How to create a bigint from a big decimal with a specific binaryPoint (int)
     * @param x           a BigDecimal value
     * @param binaryPoint a binaryPoint that you would like to use
@@ -226,20 +209,6 @@ trait NumObject {
     val multiplier = math.pow(2, binaryPoint)
     val result = (x * multiplier).rounded.toBigInt
     result
-  }
-
-  /**
-    * How to create a bigint from a big decimal with a specific binaryPoint
-    * @param value           a BigDecimal value
-    * @param binaryPoint a binaryPoint that you would like to use
-    * @return
-    */
-  def toBigInt(value: BigDecimal, binaryPoint: BinaryPoint): BigInt = {
-    binaryPoint match {
-      case KnownBinaryPoint(n) => toBigInt(value, n)
-      case x =>
-        throw new ChiselException(s"Error converting BigDecimal $value to BigInt, binary point must be known, not $x")
-    }
   }
 
   /**
@@ -260,20 +229,6 @@ trait NumObject {
   }
 
   /**
-    * converts a bigInt with the given binaryPoint into the double representation
-    * @param value       a bigint
-    * @param binaryPoint the implied binaryPoint of @i
-    * @return
-    */
-  def toDouble(value: BigInt, binaryPoint: BinaryPoint): Double = {
-    binaryPoint match {
-      case KnownBinaryPoint(n) => toDouble(value, n)
-      case x =>
-        throw new ChiselException(s"Error converting BigDecimal $value to BigInt, binary point must be known, not $x")
-    }
-  }
-
-  /**
     * converts a bigInt with the given binaryPoint into the BigDecimal representation
     * @param value           a bigint
     * @param binaryPoint the implied binaryPoint of @i
@@ -290,17 +245,4 @@ trait NumObject {
     result
   }
 
-  /**
-    * converts a bigInt with the given binaryPoint into the BigDecimal representation
-    * @param value           a bigint
-    * @param binaryPoint the implied binaryPoint of @i
-    * @return
-    */
-  def toBigDecimal(value: BigInt, binaryPoint: BinaryPoint): BigDecimal = {
-    binaryPoint match {
-      case KnownBinaryPoint(n) => toBigDecimal(value, n)
-      case x =>
-        throw new ChiselException(s"Error converting BigDecimal $value to BigInt, binary point must be known, not $x")
-    }
-  }
 }

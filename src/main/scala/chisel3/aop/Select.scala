@@ -3,16 +3,15 @@
 package chisel3.aop
 
 import chisel3._
-import chisel3.internal.{HasId}
+import chisel3.internal.{HasId, PseudoModule}
 import chisel3.experimental.BaseModule
-import chisel3.experimental.FixedPoint
 import chisel3.internal.firrtl.{Definition => DefinitionIR, _}
 import chisel3.experimental.hierarchy.core._
-import chisel3.internal.PseudoModule
 import chisel3.experimental.hierarchy.ModuleClone
+import chisel3.reflect.DataMirror
 import firrtl.annotations.ReferenceTarget
-import scala.reflect.runtime.universe.TypeTag
 
+import scala.reflect.runtime.universe.TypeTag
 import scala.collection.mutable
 
 /** Use to select Chisel components in a module, after that module has been constructed
@@ -24,21 +23,15 @@ object Select {
     *
     * @param d Component to find leafs if aggregate typed. Intermediate fields/indicies are not included
     */
-  def getLeafs(d: Data): Seq[Data] = d match {
-    case r: Record => r.elementsIterator.flatMap(getLeafs).toSeq
-    case v: Vec[_] => v.getElements.flatMap(getLeafs)
-    case other => Seq(other)
-  }
+  @deprecated("Use DataMirror.collectLeafMembers instead")
+  def getLeafs(d: Data): Seq[Data] = DataMirror.collectLeafMembers(d)
 
   /** Return all expanded components, including intermediate aggregate nodes
     *
     * @param d Component to find leafs if aggregate typed. Intermediate fields/indicies ARE included
     */
-  def getIntermediateAndLeafs(d: Data): Seq[Data] = d match {
-    case r: Record => r +: r.elementsIterator.flatMap(getIntermediateAndLeafs).toSeq
-    case v: Vec[_] => v +: v.getElements.flatMap(getIntermediateAndLeafs)
-    case other => Seq(other)
-  }
+  @deprecated("Use DataMirror.collectAllMembers instead")
+  def getIntermediateAndLeafs(d: Data): Seq[Data] = DataMirror.collectAllMembers(d)
 
   /** Selects all instances/modules directly instantiated within given definition
     *
@@ -269,12 +262,15 @@ object Select {
     }
   }
 
-  /** Selects all ios on a given module
+  /** Selects all Data ios on a given module
+    *
+    * Note that Property ios are not returned.
+    *
     * @param module
     */
   def ios(module: BaseModule): Seq[Data] = {
     check(module)
-    module._component.get.asInstanceOf[DefModule].ports.map(_.id)
+    module._component.get.asInstanceOf[DefModule].ports.map(_.id).collect { case (d: Data) => d }
   }
 
   /** Selects all ios directly on a given Instance or Definition of a module
@@ -317,7 +313,7 @@ object Select {
   }
 
   /** Selects a kind of arithmetic or logical operator directly instantiated within given module
-    * The kind of operators are contained in [[chisel3.internal.firrtl.PrimOp]]
+    * The kind of operators are contained in `chisel3.internal.firrtl.PrimOp`
     * @param opKind the kind of operator, e.g. "mux", "add", or "bits"
     * @param module
     */
@@ -393,12 +389,17 @@ object Select {
     */
   def connectionsTo(module: BaseModule)(signal: Data): Seq[PredicatedConnect] = {
     check(module)
-    val sensitivitySignals = getIntermediateAndLeafs(signal).toSet
+    val sensitivitySignals = DataMirror.collectAllMembers(signal).toSet
     val predicatedConnects = mutable.ArrayBuffer[PredicatedConnect]()
     val isPort = module._component.get
       .asInstanceOf[DefModule]
       .ports
-      .flatMap { p => getIntermediateAndLeafs(p.id) }
+      .flatMap { port =>
+        port.id match {
+          case d: Data => DataMirror.collectAllMembers(d)
+          case _ => Nil
+        }
+      }
       .contains(signal)
     var prePredicates: Seq[Predicate] = Nil
     var seenDef = isPort
@@ -407,7 +408,7 @@ object Select {
       (cmd: Command, preds) => {
         cmd match {
           case cmd: DefinitionIR if cmd.id.isInstanceOf[Data] =>
-            val x = getIntermediateAndLeafs(cmd.id.asInstanceOf[Data])
+            val x = DataMirror.collectAllMembers(cmd.id.asInstanceOf[Data])
             if (x.contains(signal)) prePredicates = preds
           case Connect(_, loc @ Node(d: Data), exp) =>
             val effected = getEffected(loc).toSet
@@ -417,15 +418,6 @@ object Select {
                 .zip(preds.reverse)
                 .foreach(x => assert(x._1 == x._2, s"Prepredicates $x must match for signal $signal"))
               predicatedConnects += PredicatedConnect(preds.dropRight(prePredicates.size), d, expData, isBulk = false)
-            }
-          case PartialConnect(_, loc @ Node(d: Data), exp) =>
-            val effected = getEffected(loc).toSet
-            if (sensitivitySignals.intersect(effected).nonEmpty) {
-              val expData = getData(exp)
-              prePredicates.reverse
-                .zip(preds.reverse)
-                .foreach(x => assert(x._1 == x._2, s"Prepredicates $x must match for signal $signal"))
-              predicatedConnects += PredicatedConnect(preds.dropRight(prePredicates.size), d, expData, isBulk = true)
             }
           case other =>
         }
@@ -481,17 +473,17 @@ object Select {
 
   // Given a loc, return all subcomponents of id that could be assigned to in connect
   private def getEffected(a: Arg): Seq[Data] = a match {
-    case Node(id: Data) => getIntermediateAndLeafs(id)
-    case Slot(imm, name)   => Seq(imm.id.asInstanceOf[Record].elements(name))
-    case Index(imm, value) => getEffected(imm)
+    case Node(id: Data) => DataMirror.collectAllMembers(id)
+    case Slot(imm, name) => Seq(imm.id.asInstanceOf[Record].elements(name))
+    case Index(imm, _)   => getEffected(imm)
+    case _               => throw new InternalErrorException("Match error: a=$a")
   }
 
   // Given an arg, return the corresponding id. Don't use on a loc of a connect.
   private def getId(a: Arg): HasId = a match {
     case Node(id) => id
-    case l: ULit  => l.num.U(l.w)
-    case l: SLit  => l.num.S(l.w)
-    case l: FPLit => FixedPoint(l.num, l.w, l.binaryPoint)
+    case l: ULit => l.num.U(l.w)
+    case l: SLit => l.num.S(l.w)
     case other =>
       sys.error(s"Something went horribly wrong! I was expecting ${other} to be a lit or a node!")
   }
@@ -513,6 +505,7 @@ object Select {
     case e: ChiselException =>
       i.getOptionRef.get match {
         case l: LitArg => l.num.intValue.toString
+        case _ => throw new InternalErrorException("Match error: i.getOptionRef.get=${i.getOptionRef.get}")
       }
   }
 

@@ -36,6 +36,38 @@ object printf {
     formatIn.map(escaped).mkString("")
   }
 
+  private[chisel3] def _checkFormatString(c: blackbox.Context)(fmt: c.Tree): Unit = {
+    import c.universe._
+
+    val errorString = "The s-interpolator prints the Scala .toString of Data objects rather than the value " +
+      "of the hardware wire during simulation. Use the cf-interpolator instead. If you want " +
+      "an elaboration time print, use println."
+
+    // Error on Data in the AST by matching on the Scala 2.13 string
+    // interpolation lowering to concatenation
+    def throwOnChiselData(x: c.Tree): Unit = x match {
+      case q"$x+$y" => {
+        if (x.tpe <:< typeOf[chisel3.Data] || y.tpe <:< typeOf[chisel3.Data]) {
+          c.error(c.enclosingPosition, errorString)
+        } else {
+          throwOnChiselData(x)
+          throwOnChiselData(y)
+        }
+      }
+      case _ =>
+    }
+    throwOnChiselData(fmt)
+
+    fmt match {
+      case q"scala.StringContext.apply(..$_).s(..$_)" =>
+        c.error(
+          c.enclosingPosition,
+          errorString
+        )
+      case _ =>
+    }
+  }
+
   /** Named class for [[printf]]s. */
   final class Printf private[chisel3] (val pable: Printable) extends VerificationStatement
 
@@ -76,29 +108,19 @@ object printf {
     * @param fmt printf format string
     * @param data format string varargs containing data to print
     */
-  def apply(fmt: String, data: Bits*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Printf =
+  def apply(fmt: String, data: Bits*)(implicit sourceInfo: SourceInfo): Printf =
     macro _applyMacroWithInterpolatorCheck
 
   def _applyMacroWithInterpolatorCheck(
-    c:              blackbox.Context
-  )(fmt:            c.Tree,
-    data:           c.Tree*
-  )(sourceInfo:     c.Tree,
-    compileOptions: c.Tree
+    c:          blackbox.Context
+  )(fmt:        c.Tree,
+    data:       c.Tree*
+  )(sourceInfo: c.Tree
   ): c.Tree = {
     import c.universe._
-    fmt match {
-      case q"scala.StringContext.apply(..$_).s(..$_)" =>
-        c.error(
-          c.enclosingPosition,
-          "The s-interpolator prints the Scala .toString of Data objects rather than the value " +
-            "of the hardware wire during simulation. Use the cf-interpolator instead. If you want " +
-            "an elaboration time print, use println."
-        )
-      case _ =>
-    }
+    _checkFormatString(c)(fmt)
     val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("printfWithReset"))
-    q"$apply_impl_do(_root_.chisel3.Printable.pack($fmt, ..$data))($sourceInfo, $compileOptions)"
+    q"$apply_impl_do(_root_.chisel3.Printable.pack($fmt, ..$data))($sourceInfo)"
   }
 
   /** Prints a message in simulation
@@ -115,14 +137,13 @@ object printf {
     * @see [[Printable]] documentation
     * @param pable [[Printable]] to print
     */
-  def apply(pable: Printable)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Printf =
-    printfWithReset(pable)(sourceInfo, compileOptions)
+  def apply(pable: Printable)(implicit sourceInfo: SourceInfo): Printf =
+    printfWithReset(pable)(sourceInfo)
 
   private[chisel3] def printfWithReset(
     pable: Printable
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): Printf = {
     var printfId: Printf = null
     when(!Module.reset.asBool) {
@@ -134,8 +155,7 @@ object printf {
   private[chisel3] def printfWithoutReset(
     pable: Printable
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): Printf = {
     val clock = Builder.forcedClock
     val printfId = new Printf(pable)
@@ -149,8 +169,7 @@ object printf {
     fmt:  String,
     data: Bits*
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): Printf =
     printfWithoutReset(Printable.pack(fmt, data: _*))
 }

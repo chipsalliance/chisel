@@ -3,10 +3,10 @@
 package chiselTests.util
 
 import chisel3._
-import chisel3.experimental.noPrefix
 import chisel3.util.Cat
+import chisel3.experimental.noPrefix
 import chiselTests.ChiselFlatSpec
-import circt.stage.ChiselStage
+import _root_.circt.stage.ChiselStage
 
 object CatSpec {
 
@@ -23,11 +23,11 @@ class CatSpec extends ChiselFlatSpec {
 
   import CatSpec._
 
-  behavior.of("util.Cat")
+  behavior.of("chisel3.util.Cat")
 
   it should "not fail to elaborate a zero-element Vec" in {
 
-    ChiselStage.elaborate(new JackIsATypeSystemGod)
+    ChiselStage.emitCHIRRTL(new JackIsATypeSystemGod)
 
   }
 

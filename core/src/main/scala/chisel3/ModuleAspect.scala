@@ -10,11 +10,8 @@ import chisel3.internal.{Builder, PseudoModule}
   * It adds itself as an aspect to the module, which allows proper checking of connection and binding legality.
   *
   * @param module Module for which this object is an aspect of
-  * @param moduleCompileOptions
   */
-abstract class ModuleAspect private[chisel3] (module: RawModule)(implicit moduleCompileOptions: CompileOptions)
-    extends RawModule
-    with PseudoModule {
+abstract class ModuleAspect private[chisel3] (module: RawModule) extends RawModule with PseudoModule {
 
   Builder.addAspect(module, this)
 

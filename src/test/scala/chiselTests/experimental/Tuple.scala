@@ -31,10 +31,10 @@ class TupleSpec extends ChiselFlatSpec {
       ((w, x), (y, z)) := ((a, b), (c, d))
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    chirrtl should include("w <= a")
-    chirrtl should include("x <= b")
-    chirrtl should include("y <= c")
-    chirrtl should include("z <= d")
+    chirrtl should include("connect w, a")
+    chirrtl should include("connect x, b")
+    chirrtl should include("connect y, c")
+    chirrtl should include("connect z, d")
   }
 
   it should "enable using Tuple3 like Data" in {

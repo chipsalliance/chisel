@@ -6,11 +6,10 @@ section: "chisel3"
 
 ## Chisel API Documentation
 
-We host only the latest minor version for each major version to keep the size down for website hosting.
 Please see the page about [Versioning](../chisel3/docs/appendix/versioning.html) for more information about major and minor versioning and binary compatibility.
 
-* [3.5](3.5/)
-* [3.4](3.4.4/)
-* [3.3](3.3.3/)
-* [3.2](3.2.8/)
-
+* [Latest](chisel/latest)
+* [6.0](chisel/6.0/)
+* [5.0](chisel/5.0/)
+* [3.6](chisel3/3.6/)
+* [3.5](chisel3/3.5/)

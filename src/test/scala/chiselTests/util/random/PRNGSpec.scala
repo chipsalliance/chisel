@@ -69,7 +69,7 @@ class PRNGSpec extends ChiselFlatSpec with Utils {
   it should "throw an exception if the step size is < 1" in {
     {
       the[IllegalArgumentException] thrownBy extractCause[IllegalArgumentException] {
-        ChiselStage.elaborate(new CyclePRNG(0, Some(1), 1, true))
+        ChiselStage.emitCHIRRTL(new CyclePRNG(0, Some(1), 1, true))
       }
     }.getMessage should include("Width must be greater than zero!")
   }
@@ -77,7 +77,7 @@ class PRNGSpec extends ChiselFlatSpec with Utils {
   it should "throw an exception if the step size is <= 0" in {
     {
       the[IllegalArgumentException] thrownBy extractCause[IllegalArgumentException] {
-        ChiselStage.elaborate(new CyclePRNG(1, Some(1), 0, true))
+        ChiselStage.emitCHIRRTL(new CyclePRNG(1, Some(1), 0, true))
       }
     }.getMessage should include("Step size must be greater than one!")
   }

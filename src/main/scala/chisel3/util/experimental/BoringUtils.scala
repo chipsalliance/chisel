@@ -3,13 +3,13 @@
 package chisel3.util.experimental
 
 import chisel3._
-import chisel3.experimental.{annotate, ChiselAnnotation, RunFirrtlTransform}
-import chisel3.internal.{InstanceId, NamedComponent, Namespace}
+import chisel3.probe.{Probe, RWProbe}
+import chisel3.Data.ProbeInfo
+import chisel3.experimental.{annotate, requireIsHardware, skipPrefix, BaseModule, ChiselAnnotation, SourceInfo}
+import chisel3.internal.{Builder, BuilderContextCache, NamedComponent, Namespace, PortBinding}
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
-import firrtl.passes.wiring.{SinkAnnotation, SourceAnnotation, WiringTransform}
+import firrtl.passes.wiring.{SinkAnnotation, SourceAnnotation}
 import firrtl.annotations.{ComponentName, ModuleName}
-
-import scala.concurrent.SyncVar
 
 /** An exception related to BoringUtils
   * @param message the exception message
@@ -39,14 +39,14 @@ class BoringUtilsException(message: String) extends Exception(message)
   * We can then connect `x` to `y` using [[BoringUtils]] without modifiying the Chisel IO of `Constant`, `Expect`, or
   * modules that may instantiate them. There are two approaches to do this:
   *
-  * 1. Hierarchical boring using [[BoringUtils.bore]]
+  * 1. Hierarchical boring using BoringUtils.bore
   *
   * 2. Non-hierarchical boring using [[BoringUtils.addSink]]/[[BoringUtils.addSource]]
   *
   * ===Hierarchical Boring===
   *
   * Hierarchical boring involves connecting one sink instance to another source instance in a parent module. Below,
-  * module `Top` contains an instance of `Constant` and `Expect`. Using [[BoringUtils.bore]], we can connect
+  * module `Top` contains an instance of `Constant` and `Expect`. Using BoringUtils.bore, we can connect
   * `constant.x` to `expect.y`.
   *
   * {{{
@@ -55,6 +55,17 @@ class BoringUtilsException(message: String) extends Exception(message)
   *   val constant = Module(new Constant)
   *   val expect = Module(new Expect)
   *   BoringUtils.bore(constant.x, Seq(expect.y))
+  * }
+  * }}}
+  *
+  * Bottom-up boring involves boring a sink in a child instance to the current module, where it can be assigned from.
+  * Using BoringUtils.bore, we can connect from `constant.x` to `mywire`.
+  *
+  * {{{
+  * class Top extends Module {
+  *   val io = IO(new Bundle { val foo = UInt(3.W) })
+  *   val constant = Module(new Constant)
+  *   io.foo := BoringUtils.bore(constant.x)
   * }
   * }}}
   *
@@ -98,19 +109,15 @@ class BoringUtilsException(message: String) extends Exception(message)
   */
 object BoringUtils {
   /* A global namespace for boring ids */
-  private val namespace: SyncVar[Namespace] = new SyncVar
-  namespace.put(Namespace.empty)
+  private[chisel3] case object CacheKey extends BuilderContextCache.Key[Namespace]
+  private def boringNamespace = Builder.contextCache.getOrElseUpdate(CacheKey, Namespace.empty)
 
   /* Get a new name (value) from the namespace */
   private def newName(value: String): String = {
-    val ns = namespace.take()
-    val valuex = ns.name(value)
-    namespace.put(ns)
-    valuex
+    boringNamespace.name(value)
   }
-
   /* True if the requested name (value) exists in the namespace */
-  private def checkName(value: String): Boolean = namespace.get.contains(value)
+  private def checkName(value: String): Boolean = boringNamespace.contains(value)
 
   /** Add a named source cross module reference
     * @param component source circuit component
@@ -121,6 +128,10 @@ object BoringUtils {
     * @return the name used
     * @note if a uniqueName is not specified, the returned name may differ from the user-provided name
     */
+  @deprecated(
+    "Please use the new Boring API instead (BoringUtils.bore(source)). This will be removed in Chisel 7.0",
+    "Chisel 6.0"
+  )
   def addSource(
     component:    NamedComponent,
     name:         String,
@@ -135,9 +146,8 @@ object BoringUtils {
       else { Seq[ChiselAnnotation]() }
     val annotations =
       Seq(
-        new ChiselAnnotation with RunFirrtlTransform {
+        new ChiselAnnotation {
           def toFirrtl = SourceAnnotation(component.toNamed, id)
-          def transformClass = classOf[WiringTransform]
         },
         new ChiselAnnotation { def toFirrtl = DontTouchAnnotation(component.toNamed) }
       ) ++ maybeDedup
@@ -154,6 +164,10 @@ object BoringUtils {
     * @param forceExists if true, require that the provided `name` parameter already exists in the global namespace
     * @throws BoringUtilsException if name is expected to exist and it doesn't
     */
+  @deprecated(
+    "Please use the new Boring API instead (BoringUtils.bore(source)). This will be removed in Chisel 7.0",
+    "Chisel 6.0"
+  )
   def addSink(
     component:    InstanceId,
     name:         String,
@@ -173,9 +187,8 @@ object BoringUtils {
       if (disableDedup) { Seq(new ChiselAnnotation { def toFirrtl = NoDedupAnnotation(moduleName) }) }
       else { Seq[ChiselAnnotation]() }
     val annotations =
-      Seq(new ChiselAnnotation with RunFirrtlTransform {
+      Seq(new ChiselAnnotation {
         def toFirrtl = SinkAnnotation(component.toNamed, name)
-        def transformClass = classOf[WiringTransform]
       }) ++ maybeDedup
     annotations.foreach(annotate(_))
   }
@@ -188,6 +201,10 @@ object BoringUtils {
     * @note the returned name will be based on the name of the source
     * component
     */
+  @deprecated(
+    "Please use the new Boring API instead (BoringUtils.bore(source)). This will be removed in Chisel 7.0",
+    "Chisel 6.0"
+  )
   def bore(source: Data, sinks: Seq[Data]): String = {
     val boringName =
       try {
@@ -198,6 +215,140 @@ object BoringUtils {
     val genName = addSource(source, boringName, true, true)
     sinks.foreach(addSink(_, genName, true, true))
     genName
+  }
+
+  private def boreOrTap[A <: Data](source: A, createProbe: Option[ProbeInfo] = None)(implicit si: SourceInfo): A = {
+    import reflect.DataMirror
+    def parent(d: Data): BaseModule = d.topBinding.location.get
+    def purePortTypeBase = if (createProbe.nonEmpty) Output(chiselTypeOf(source))
+    else if (DataMirror.hasOuterFlip(source)) Flipped(chiselTypeOf(source))
+    else chiselTypeOf(source)
+    def purePortType = createProbe match {
+      case Some(pi) if pi.writable => RWProbe(purePortTypeBase)
+      case Some(pi)                => Probe(purePortTypeBase)
+      case None                    => purePortTypeBase
+    }
+    def isPort(d: Data): Boolean = d.topBindingOpt match {
+      case Some(PortBinding(_)) => true
+      case _                    => false
+    }
+    def boringError(module: BaseModule): Unit = {
+      (module.fullyClosedErrorMessages ++ Seq(
+        (si, s"Can only bore into modules that are not fully closed: ${module.name} was fully closed")
+      )).foreach {
+        case (sourceInfo, msg) => Builder.error(msg)(sourceInfo)
+      }
+    }
+    def drill(source: A, path: Seq[BaseModule], connectionLocation: Seq[BaseModule], up: Boolean): A = {
+      path.zip(connectionLocation).foldLeft(source) {
+        case (rhs, (module, conLoc)) if (module.isFullyClosed) => boringError(module); DontCare.asInstanceOf[A]
+        case (rhs, (module, _))
+            if (up && module == path(0) && isPort(rhs) && (!createProbe.nonEmpty || !createProbe.get.writable)) => {
+          // When drilling from the original source, if it's already a port just return it.
+          // As an exception, insist rwTaps are done from within the module and exported out.
+          rhs
+        }
+        case (rhs, (module, conLoc)) =>
+          skipPrefix { // so `lcaSource` isn't in the name of the secret port
+            if (!up && createProbe.nonEmpty && createProbe.get.writable) {
+              Builder.error("Cannot drill writable probes upwards.")
+            }
+
+            /** create a port, and drill up. */
+            // if drilling down, don't drill Probe types
+            val bore = if (up) module.createSecretIO(purePortType) else module.createSecretIO(Flipped(purePortTypeBase))
+            module.addSecretIO(bore)
+            conLoc.asInstanceOf[RawModule].secretConnection(bore, rhs)
+            bore
+          }
+      }
+    }
+
+    requireIsHardware(source)
+    val thisModule = Builder.currentModule.get
+    source.topBindingOpt match {
+      case None =>
+        Builder.error(s"Cannot bore from ${source._errorContext}")
+      case Some(internal.CrossModuleBinding) =>
+        Builder.error(
+          s"Cannot bore across a Definition/Instance boundary:${thisModule._errorContext} cannot access ${source}"
+        )
+      case _ => // Actually bore
+    }
+    if (parent(source) == thisModule) {
+      // No boring to do
+      return source
+    }
+
+    val lcaResult = DataMirror.findLCAPaths(source, thisModule)
+    if (lcaResult.isEmpty) {
+      Builder.error(s"Cannot bore from $source to ${thisModule.name}, as they do not share a least common ancestor")
+    }
+    val (upPath, downPath) = lcaResult.get
+    val lcaSource = drill(source, upPath.dropRight(1), upPath.dropRight(1), true)
+    val sink = drill(lcaSource, downPath.reverse.tail, downPath.reverse, false)
+
+    if (createProbe.nonEmpty) {
+      sink
+    } else {
+      // Creating a wire to assign the result to.  We will return this.
+      val bore = Wire(purePortTypeBase)
+      thisModule.asInstanceOf[RawModule].secretConnection(bore, sink)
+      bore
+    }
+  }
+
+  /** Access a source [[Data]] that may or may not be in the current module.  If
+    * this is in a child module, then create ports to allow access to the
+    * requested source.
+    */
+  def bore[A <: Data](source: A)(implicit si: SourceInfo): A = {
+    boreOrTap(source, createProbe = None)
+  }
+
+  /** Access a source [[Data]] that may or may not be in the current module.  If
+    * this is in a child module, then create read-only probe ports to allow
+    * access to the requested source.
+    *
+    * Returns a probe Data type.
+    */
+  def tap[A <: Data](source: A)(implicit si: SourceInfo): A = {
+    val tapIntermediate = skipPrefix { boreOrTap(source, createProbe = Some(ProbeInfo(writable = false))) }
+    if (tapIntermediate.probeInfo.nonEmpty) {
+      tapIntermediate
+    } else {
+      probe.ProbeValue(tapIntermediate)
+    }
+  }
+
+  /** Access a source [[Data]] that may or may not be in the current module.  If
+    * this is in a child module, then create write-only probe ports to allow
+    * access to the requested source. Supports downward accesses only.
+    *
+    * Returns a probe Data type.
+    */
+  def rwTap[A <: Data](source: A)(implicit si: SourceInfo): A = {
+    val tapIntermediate = skipPrefix { boreOrTap(source, createProbe = Some(ProbeInfo(writable = true))) }
+    if (tapIntermediate.probeInfo.nonEmpty) {
+      tapIntermediate
+    } else {
+      probe.RWProbeValue(tapIntermediate)
+    }
+  }
+
+  /** Access a source [[Data]] that may or may not be in the current module.  If
+    * this is in a child module, then create read-only probe ports to allow
+    * access to the requested source.
+    *
+    * Returns a non-probe Data type.
+    */
+  def tapAndRead[A <: Data](source: A)(implicit si: SourceInfo): A = {
+    val tapIntermediate = skipPrefix { boreOrTap(source, createProbe = Some(ProbeInfo(writable = false))) }
+    if (tapIntermediate.probeInfo.nonEmpty) {
+      probe.read(tapIntermediate)
+    } else {
+      tapIntermediate
+    }
   }
 
 }

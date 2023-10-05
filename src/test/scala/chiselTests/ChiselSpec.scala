@@ -2,49 +2,112 @@
 
 package chiselTests
 
+import _root_.logger.Logger
 import chisel3._
 import chisel3.aop.Aspect
-import chisel3.stage.{
-  ChiselGeneratorAnnotation,
-  ChiselStage,
-  NoRunFirrtlCompilerAnnotation,
-  PrintFullStackTraceAnnotation
-}
+import chisel3.stage.{ChiselGeneratorAnnotation, PrintFullStackTraceAnnotation}
 import chisel3.testers._
+import circt.stage.{CIRCTTarget, CIRCTTargetAnnotation, ChiselStage}
+import chisel3.simulator._
+import svsim._
 import firrtl.annotations.Annotation
 import firrtl.ir.Circuit
+import firrtl.stage.FirrtlCircuitAnnotation
 import firrtl.util.BackendCompilationUtilities
 import firrtl.{AnnotationSeq, EmittedVerilogCircuitAnnotation}
-import _root_.logger.Logger
-import firrtl.stage.FirrtlCircuitAnnotation
 import org.scalacheck._
 import org.scalatest._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.funspec.AnyFunSpec
-import org.scalatest.propspec.AnyPropSpec
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.propspec.AnyPropSpec
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
 import java.io.{ByteArrayOutputStream, PrintStream}
 import java.security.Permission
 import scala.reflect.ClassTag
+import java.text.SimpleDateFormat
+import java.util.Calendar
 
 /** Common utility functions for Chisel unit tests. */
-trait ChiselRunners extends Assertions with BackendCompilationUtilities {
+trait ChiselRunners extends Assertions {
+  private val verilatorBackend = verilator.Backend.initializeFromProcessEnvironment()
+  private val timeStampFormat = new SimpleDateFormat("yyyyMMddHHmmss")
   def runTester(
     t:                    => BasicTester,
     additionalVResources: Seq[String] = Seq(),
     annotations:          AnnotationSeq = Seq()
   ): Boolean = {
-    // Change this to enable Treadle as a backend
-    val defaultBackend = {
-      val useTreadle = sys.env.get("CHISEL3_CI_USE_TREADLE").isDefined
-      if (useTreadle) chisel3.testers.TreadleBackend else chisel3.testers.TesterDriver.defaultBackend
+    val workspacePath = Seq(
+      "test_run_dir",
+      getClass.getSimpleName,
+      /// This is taken from the legacy `TesterDriver` class. It isn't ideal and we hope to improve this eventually.
+      timeStampFormat.format(Calendar.getInstance().getTime())
+    ).mkString("/")
+    val workspace = new Workspace(workspacePath)
+    workspace.reset()
+    val elaboratedModule = workspace.elaborateGeneratedModule({ () => t })
+    additionalVResources.foreach(workspace.addPrimarySourceFromResource(getClass(), _))
+    workspace.generateAdditionalSources()
+    val simulation = workspace.compile(verilatorBackend)(
+      "verilator", {
+        import CommonCompilationSettings._
+        CommonCompilationSettings(
+          availableParallelism = AvailableParallelism.UpTo(Runtime.getRuntime().availableProcessors()),
+          optimizationStyle = OptimizationStyle.OptimizeForCompilationSpeed,
+          verilogPreprocessorDefines = Seq(
+            VerilogPreprocessorDefine("ASSERT_VERBOSE_COND", s"!${Workspace.testbenchModuleName}.reset"),
+            VerilogPreprocessorDefine("PRINTF_COND", s"!${Workspace.testbenchModuleName}.reset"),
+            VerilogPreprocessorDefine("STOP_COND", s"!${Workspace.testbenchModuleName}.reset")
+          )
+        )
+      },
+      verilator.Backend
+        .CompilationSettings(disabledWarnings = Seq("WIDTH", "STMTDLY"), disableFatalExitOnWarnings = true),
+      customSimulationWorkingDirectory = None,
+      verbose = false
+    )
+    try {
+      simulation
+        .runElaboratedModule(elaboratedModule) { module =>
+          val dut = module.wrapped
+          val clock = module.port(dut.clock)
+          val reset = module.port(dut.reset)
+          reset.set(1)
+          clock.tick(
+            timestepsPerPhase = 1,
+            maxCycles = 10,
+            inPhaseValue = 1,
+            outOfPhaseValue = 0,
+            sentinel = None
+          )
+          reset.set(0)
+
+          val elapsedCycles = clock.tick(
+            timestepsPerPhase = 1,
+            maxCycles = 10000,
+            inPhaseValue = 1,
+            outOfPhaseValue = 0,
+            sentinel = None
+          )
+        }
+      true
+    } catch {
+      // We eventually want to have a more structured way of detecting assertions, but this works for now.
+      case svsim.Simulation.UnexpectedEndOfMessages =>
+        val filename = s"$workspacePath/workdir-verilator/simulation-log.txt"
+        for (line <- scala.io.Source.fromFile(filename).getLines()) {
+          if (line.contains("Verilog $finish")) {
+            // We don't immediately exit on $finish, so we need to ignore assertions that happen after a call to $finish
+            return true
+          }
+          if (line.contains("Assertion failed")) {
+            return false
+          }
+        }
+        return true
     }
-    val hasBackend = TestUtils.containsBackend(annotations)
-    val annos: Seq[Annotation] = if (hasBackend) annotations else defaultBackend +: annotations
-    TesterDriver.execute(() => t, additionalVResources, annos)
   }
   def assertTesterPasses(
     t:                    => BasicTester,
@@ -62,32 +125,38 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
   }
 
   def assertKnownWidth(expected: Int)(gen: => Data): Unit = {
-    assertTesterPasses(new BasicTester {
-      val x = gen
-      assert(x.getWidth === expected)
+    class TestModule extends Module {
+      val testPoint = gen
+      assert(testPoint.getWidth === expected)
       // Sanity check that firrtl doesn't change the width
-      x := 0.U(0.W).asTypeOf(chiselTypeOf(x))
-      val (_, done) = chisel3.util.Counter(true.B, 2)
-      val ones = if (expected == 0) 0.U(0.W) else -1.S(expected.W).asUInt
-      when(done) {
-        chisel3.assert(~(x.asUInt) === ones)
-        stop()
-      }
-    })
+      testPoint := 0.U(0.W).asTypeOf(chiselTypeOf(testPoint))
+      dontTouch(testPoint)
+    }
+    val verilog = ChiselStage.emitSystemVerilog(new TestModule, Array.empty, Array("-disable-all-randomization"))
+    expected match {
+      case 0 => assert(!verilog.contains("testPoint"))
+      case 1 =>
+        assert(verilog.contains(s"testPoint"))
+        assert(!verilog.contains(s"0] testPoint"))
+      case _ => assert(verilog.contains(s"[${expected - 1}:0] testPoint"))
+    }
   }
 
   def assertInferredWidth(expected: Int)(gen: => Data): Unit = {
-    assertTesterPasses(new BasicTester {
-      val x = gen
-      assert(!x.isWidthKnown, s"Asserting that width should be inferred yet width is known to Chisel!")
-      x := 0.U(0.W).asTypeOf(chiselTypeOf(x))
-      val (_, done) = chisel3.util.Counter(true.B, 2)
-      val ones = if (expected == 0) 0.U(0.W) else -1.S(expected.W).asUInt
-      when(done) {
-        chisel3.assert(~(x.asUInt) === ones)
-        stop()
-      }
-    })
+    class TestModule extends Module {
+      val testPoint = gen
+      assert(!testPoint.isWidthKnown, s"Asserting that width should be inferred yet width is known to Chisel!")
+      testPoint := 0.U(0.W).asTypeOf(chiselTypeOf(testPoint))
+      dontTouch(testPoint)
+    }
+    val verilog = ChiselStage.emitSystemVerilog(new TestModule, Array.empty, Array("-disable-all-randomization"))
+    expected match {
+      case 0 => assert(!verilog.contains("testPoint"))
+      case 1 =>
+        assert(verilog.contains(s"testPoint"))
+        assert(!verilog.contains(s"0] testPoint"))
+      case _ => assert(verilog.contains(s"[${expected - 1}:0] testPoint"))
+    }
   }
 
   /** Compiles a Chisel Module to Verilog
@@ -98,8 +167,8 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
   def compile(t: => RawModule): String = {
     (new ChiselStage)
       .execute(
-        Array("--target-dir", createTestDirectory(this.getClass.getSimpleName).toString),
-        Seq(ChiselGeneratorAnnotation(() => t))
+        Array("--target-dir", BackendCompilationUtilities.createTestDirectory(this.getClass.getSimpleName).toString),
+        Seq(ChiselGeneratorAnnotation(() => t), CIRCTTargetAnnotation(CIRCTTarget.SystemVerilog))
       )
       .collectFirst {
         case EmittedVerilogCircuitAnnotation(a) => a.value
@@ -109,7 +178,7 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
 
   def elaborateAndGetModule[A <: RawModule](t: => A): A = {
     var res: Any = null
-    ChiselStage.elaborate {
+    ChiselStage.emitCHIRRTL {
       res = t
       res.asInstanceOf[A]
     }
@@ -122,17 +191,7 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
     * @return The FIRRTL Circuit and Annotations _before_ FIRRTL compilation
     */
   def getFirrtlAndAnnos(t: => RawModule, providedAnnotations: Seq[Annotation] = Nil): (Circuit, Seq[Annotation]) = {
-    val args = Array(
-      "--target-dir",
-      createTestDirectory(this.getClass.getSimpleName).toString,
-      "--no-run-firrtl",
-      "--full-stacktrace"
-    )
-    val annos = (new ChiselStage).execute(args, Seq(ChiselGeneratorAnnotation(() => t)) ++ providedAnnotations)
-    val circuit = annos.collectFirst {
-      case FirrtlCircuitAnnotation(c) => c
-    }.getOrElse(fail("No FIRRTL Circuit found!!"))
-    (circuit, annos)
+    TestUtils.getChirrtlAndAnnotations(t, providedAnnotations)
   }
 }
 
@@ -242,71 +301,6 @@ trait Utils {
     */
   private case class ExitException(status: Int) extends SecurityException(s"Found a sys.exit with code $status")
 
-  /** A security manager that converts calls to System.exit into [[ExitException]]s by explicitly disabling the ability of
-    * a thread to actually exit. For more information, see:
-    *   - https://docs.oracle.com/javase/tutorial/essential/environment/security.html
-    */
-  private class ExceptOnExit extends SecurityManager {
-    override def checkPermission(perm: Permission): Unit = {}
-    override def checkPermission(perm: Permission, context: Object): Unit = {}
-    override def checkExit(status: Int): Unit = {
-      super.checkExit(status)
-      throw ExitException(status)
-    }
-  }
-
-  /** Encodes a file that some code tries to write to
-    * @param the file name
-    */
-  private case class WriteException(file: String) extends SecurityException(s"Tried to write to file $file")
-
-  /** A security manager that converts writes to any file into [[WriteException]]s.
-    */
-  private class ExceptOnWrite extends SecurityManager {
-    override def checkPermission(perm: Permission): Unit = {}
-    override def checkPermission(perm: Permission, context: Object): Unit = {}
-    override def checkWrite(file: String): Unit = {
-      super.checkWrite(file)
-      throw WriteException(file)
-    }
-  }
-
-  /** Run some Scala code (a thunk) in an environment where all System.exit are caught and returned. This avoids a
-    * situation where a test results in something actually exiting and killing the entire test. This is necessary if you
-    * want to test a command line program, e.g., the `main` method of [[firrtl.options.Stage Stage]].
-    *
-    * NOTE: THIS WILL NOT WORK IN SITUATIONS WHERE THE THUNK IS CATCHING ALL [[Exception]]s OR [[Throwable]]s, E.G.,
-    * SCOPT. IF THIS IS HAPPENING THIS WILL NOT WORK. REPEAT THIS WILL NOT WORK.
-    * @param thunk some Scala code
-    * @return either the output of the thunk (`Right[T]`) or an exit code (`Left[Int]`)
-    */
-  def catchStatus[T](thunk: => T): Either[Int, T] = {
-    try {
-      System.setSecurityManager(new ExceptOnExit())
-      Right(thunk)
-    } catch {
-      case ExitException(a) => Left(a)
-    } finally {
-      System.setSecurityManager(null)
-    }
-  }
-
-  /** Run some Scala code (a thunk) in an environment where file writes are caught and the file that a program tries to
-    * write to is returned. This is useful if you want to test that some thunk either tries to write to a specific file
-    * or doesn't try to write at all.
-    */
-  def catchWrites[T](thunk: => T): Either[String, T] = {
-    throw new Exception("Do not use, not thread-safe")
-    try {
-      System.setSecurityManager(new ExceptOnWrite())
-      Right(thunk)
-    } catch {
-      case WriteException(a) => Left(a)
-    } finally {
-      System.setSecurityManager(null)
-    }
-  }
-
   /** A tester which runs generator and uses an aspect to check the returned object
     * @param gen function to generate a Chisel module
     * @param f a function to check the Chisel module
@@ -316,7 +310,11 @@ trait Utils {
     // Runs chisel stage
     def run[T <: RawModule](gen: () => T, annotations: AnnotationSeq): AnnotationSeq = {
       new ChiselStage().run(
-        Seq(ChiselGeneratorAnnotation(gen), NoRunFirrtlCompilerAnnotation, PrintFullStackTraceAnnotation) ++ annotations
+        Seq(
+          ChiselGeneratorAnnotation(gen),
+          CIRCTTargetAnnotation(CIRCTTarget.CHIRRTL),
+          PrintFullStackTraceAnnotation
+        ) ++ annotations
       )
     }
     // Creates a wrapping aspect to contain checking function
@@ -366,5 +364,24 @@ trait Utils {
         }
     }
 
+  }
+}
+
+/** Contains helpful function to assert both statements to match, and statements to omit */
+trait MatchesAndOmits {
+  private def matches(lines: List[String], matchh: String): Option[String] = lines.filter(_.contains(matchh)).lastOption
+  private def omits(line:    String, omit:         String): Option[(String, String)] =
+    if (line.contains(omit)) Some((omit, line)) else None
+  private def omits(lines: List[String], omit: String): Seq[(String, String)] = lines.flatMap { omits(_, omit) }
+  def matchesAndOmits(output: String)(matchList: String*)(omitList: String*): Unit = {
+    val lines = output.split("\n").toList
+    val unmatched = matchList.flatMap { m =>
+      if (matches(lines, m).nonEmpty) None else Some(m)
+    }.map(x => s"  > $x was unmatched")
+    val unomitted = omitList.flatMap { o => omits(lines, o) }.map {
+      case (o, l) => s"  > $o was not omitted in ($l)"
+    }
+    val results = unmatched ++ unomitted
+    assert(results.isEmpty, results.mkString("\n"))
   }
 }

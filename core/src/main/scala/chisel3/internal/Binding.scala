@@ -4,7 +4,8 @@ package chisel3.internal
 
 import chisel3._
 import chisel3.experimental.BaseModule
-import chisel3.internal.firrtl.LitArg
+import chisel3.internal.firrtl.{LitArg, PropertyLit}
+import chisel3.properties.Class
 
 import scala.collection.immutable.VectorMap
 
@@ -38,7 +39,7 @@ private[chisel3] object BindingDirection {
     */
   def from(binding: TopBinding, direction: ActualDirection): BindingDirection = {
     binding match {
-      case PortBinding(_) =>
+      case _: PortBinding | _: SecretPortBinding =>
         direction match {
           case ActualDirection.Output => Output
           case ActualDirection.Input  => Input
@@ -89,6 +90,9 @@ sealed trait ConditionalDeclarable extends TopBinding {
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class PortBinding(enclosure: BaseModule) extends ConstrainedBinding
 
+// Added to handle BoringUtils in Chisel
+private[chisel3] case class SecretPortBinding(enclosure: BaseModule) extends ConstrainedBinding
+
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class OpBinding(enclosure: RawModule, visibility: Option[WhenContext])
     extends ConstrainedBinding
@@ -106,6 +110,10 @@ case class RegBinding(enclosure: RawModule, visibility: Option[WhenContext])
 case class WireBinding(enclosure: RawModule, visibility: Option[WhenContext])
     extends ConstrainedBinding
     with ConditionalDeclarable
+
+private[chisel3] case class ClassBinding(enclosure: Class) extends ConstrainedBinding with ReadOnlyBinding
+
+private[chisel3] case class ObjectFieldBinding(enclosure: BaseModule) extends ConstrainedBinding
 
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class ChildBinding(parent: Data) extends Binding {
@@ -159,3 +167,5 @@ case class BundleLitBinding(litMap: Map[Data, LitArg]) extends LitBinding
 // Literal binding attached to the root of a Vec, containing literal values of its children.
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class VecLitBinding(litMap: VectorMap[Data, LitArg]) extends LitBinding
+// Literal binding attached to a Property.
+private[chisel3] case object PropertyValueBinding extends UnconstrainedBinding with ReadOnlyBinding

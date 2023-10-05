@@ -5,14 +5,16 @@ package chisel3
 import chisel3.experimental.dataview.reify
 
 import scala.language.experimental.macros
-import chisel3.experimental.{Analog, BaseModule, DataMirror, FixedPoint, Interval}
-import chisel3.experimental.{SourceInfo, UnlocatableSourceInfo}
+import chisel3.experimental.{Analog, BaseModule}
+import chisel3.experimental.{prefix, SourceInfo, UnlocatableSourceInfo}
+import chisel3.experimental.dataview.reifySingleData
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal._
 import chisel3.internal.sourceinfo._
 import chisel3.internal.firrtl._
+import chisel3.reflect.DataMirror
+import chisel3.util.simpleClassName
 
-import scala.collection.immutable.LazyList // Needed for 2.12 alias
 import scala.reflect.ClassTag
 import scala.util.Try
 
@@ -58,14 +60,10 @@ object SpecifiedDirection {
   private[chisel3] def specifiedDirection[T <: Data](
     source: => T
   )(dir:    T => SpecifiedDirection
-  )(
-    implicit compileOptions: CompileOptions
   ): T = {
     val prevId = Builder.idGen.value
     val data = source // evaluate source once (passed by name)
-    if (compileOptions.checkSynthesizable) {
-      requireIsChiselType(data)
-    }
+    requireIsChiselType(data)
     val out = if (!data.mustClone(prevId)) data else data.cloneType.asInstanceOf[T]
     out.specifiedDirection = dir(data) // Must use original data, specified direction of clone is cleared
     out
@@ -159,8 +157,7 @@ private[chisel3] object cloneSupertype {
     elts:        Seq[T],
     createdType: String
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): T = {
     require(!elts.isEmpty, s"can't create $createdType with no inputs")
 
@@ -177,20 +174,6 @@ private[chisel3] object cloneSupertype {
             // TODO: perhaps redefine Widths to allow >= op?
             if (elt1.width == (elt1.width.max(elt2.width))) elt1 else elt2
           case (elt1: SInt, elt2: SInt) => if (elt1.width == (elt1.width.max(elt2.width))) elt1 else elt2
-          case (elt1: FixedPoint, elt2: FixedPoint) => {
-            (elt1.binaryPoint, elt2.binaryPoint, elt1.width, elt2.width) match {
-              case (KnownBinaryPoint(bp1), KnownBinaryPoint(bp2), KnownWidth(w1), KnownWidth(w2)) =>
-                val maxBinaryPoint = bp1.max(bp2)
-                val maxIntegerWidth = (w1 - bp1).max(w2 - bp2)
-                FixedPoint((maxIntegerWidth + maxBinaryPoint).W, (maxBinaryPoint).BP)
-              case (KnownBinaryPoint(bp1), KnownBinaryPoint(bp2), _, _) =>
-                FixedPoint(Width(), (bp1.max(bp2)).BP)
-              case _ => FixedPoint()
-            }
-          }
-          case (elt1: Interval, elt2: Interval) =>
-            val range = if (elt1.range.width == elt1.range.width.max(elt2.range.width)) elt1.range else elt2.range
-            Interval(range)
           case (elt1, elt2) =>
             throw new AssertionError(
               s"can't create $createdType with heterogeneous types ${elt1.getClass} and ${elt2.getClass}"
@@ -216,70 +199,12 @@ private[chisel3] object cloneSupertype {
 
 // Returns pairs of all fields, element-level and containers, in a Record and their path names
 private[chisel3] object getRecursiveFields {
-  def noPath(data: Data): Seq[Data] = data match {
-    case data: Record =>
-      data.elements.map {
-        case (_, fieldData) =>
-          getRecursiveFields.noPath(fieldData)
-      }.fold(Seq(data)) {
-        _ ++ _
-      }
-    case data: Vec[_] =>
-      data.getElements.zipWithIndex.map {
-        case (fieldData, fieldIndex) =>
-          getRecursiveFields.noPath(fieldData)
-      }.fold(Seq(data)) {
-        _ ++ _
-      }
-    case data: Element => Seq(data)
-  }
-  def apply(data: Data, path: String): Seq[(Data, String)] = data match {
-    case data: Record =>
-      data.elements.map {
-        case (fieldName, fieldData) =>
-          getRecursiveFields(fieldData, s"$path.$fieldName")
-      }.fold(Seq(data -> path)) {
-        _ ++ _
-      }
-    case data: Vec[_] =>
-      data.elementsIterator.zipWithIndex.map {
-        case (fieldData, fieldIndex) =>
-          getRecursiveFields(fieldData, path = s"$path($fieldIndex)")
-      }.fold(Seq(data -> path)) {
-        _ ++ _
-      }
-    case data: Element => Seq(data -> path)
-  }
+  def noPath(data:       Data): Seq[Data] = lazilyNoPath(data).toVector
+  def lazilyNoPath(data: Data): Iterable[Data] = DataMirror.collectMembers(data) { case x => x }
 
-  def lazily(data: Data, path: String): Seq[(Data, String)] = data match {
-    case data: Record =>
-      LazyList(data -> path) ++
-        data.elements.view.flatMap {
-          case (fieldName, fieldData) =>
-            getRecursiveFields(fieldData, s"$path.$fieldName")
-        }
-    case data: Vec[_] =>
-      LazyList(data -> path) ++
-        data.elementsIterator.zipWithIndex.flatMap {
-          case (fieldData, fieldIndex) =>
-            getRecursiveFields(fieldData, path = s"$path($fieldIndex)")
-        }
-    case data: Element => LazyList(data -> path)
-  }
-  def lazilyNoPath(data: Data): Seq[Data] = data match {
-    case data: Record =>
-      LazyList(data) ++
-        data.elements.view.flatMap {
-          case (fieldName, fieldData) =>
-            getRecursiveFields.lazilyNoPath(fieldData)
-        }
-    case data: Vec[_] =>
-      LazyList(data) ++
-        data.getElements.view.flatMap {
-          case (fieldData) =>
-            getRecursiveFields.lazilyNoPath(fieldData)
-        }
-    case data: Element => LazyList(data)
+  def apply(data:  Data, path: String): Seq[(Data, String)] = lazily(data, path).toVector
+  def lazily(data: Data, path: String): Iterable[(Data, String)] = DataMirror.collectMembersAndPaths(data, path) {
+    case x => x
   }
 }
 
@@ -291,13 +216,13 @@ private[chisel3] object getMatchedFields {
       require(x.typeEquivalent(y))
       Seq(x -> y)
     case (x: Record, y: Record) =>
-      (x.elements
-        .zip(y.elements))
+      (x._elements
+        .zip(y._elements))
         .map {
           case ((xName, xElt), (yName, yElt)) =>
             require(
               xName == yName,
-              s"$xName != $yName, ${x.elements}, ${y.elements}, $x, $y"
+              s"$xName != $yName, ${x._elements}, ${y._elements}, $x, $y"
             ) // assume fields returned in same, deterministic order
             getMatchedFields(xElt, yElt)
         }
@@ -334,18 +259,18 @@ object chiselTypeOf {
   * Thus, an error will be thrown if these are used on bound Data
   */
 object Input {
-  def apply[T <: Data](source: => T)(implicit compileOptions: CompileOptions): T = {
+  def apply[T <: Data](source: => T): T = {
     SpecifiedDirection.specifiedDirection(source)(_ => SpecifiedDirection.Input)
   }
 }
 object Output {
-  def apply[T <: Data](source: => T)(implicit compileOptions: CompileOptions): T = {
+  def apply[T <: Data](source: => T): T = {
     SpecifiedDirection.specifiedDirection(source)(_ => SpecifiedDirection.Output)
   }
 }
 
 object Flipped {
-  def apply[T <: Data](source: => T)(implicit compileOptions: CompileOptions): T = {
+  def apply[T <: Data](source: => T): T = {
     SpecifiedDirection.specifiedDirection(source)(x => SpecifiedDirection.flip(x.specifiedDirection))
   }
 }
@@ -359,6 +284,8 @@ object Flipped {
   * @define coll data
   */
 abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
+  import Data.ProbeInfo
+
   // This is a bad API that punches through object boundaries.
   private[chisel3] def flatten: IndexedSeq[Element] = {
     this match {
@@ -367,6 +294,9 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       case elt => throwException(s"Cannot flatten type ${elt.getClass}")
     }
   }
+
+  // Whether this node'e element(s) possess a specified flipped direction, ignoring coercion via Input/Output
+  private[chisel3] def containsAFlipped: Boolean = false
 
   // Must clone a Data if any of the following are true:
   // * It has a binding
@@ -389,6 +319,16 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       case _                                                                        => super.autoSeed(name)
     }
   }
+
+  // probeInfo only exists if this is a probe type
+  private var _probeInfoVar:      ProbeInfo = null
+  private[chisel3] def probeInfo: Option[ProbeInfo] = Option(_probeInfoVar)
+  private[chisel3] def probeInfo_=(probeInfo: Option[ProbeInfo]) = _probeInfoVar = probeInfo.getOrElse(null)
+
+  // If this Data is constant, it must hold a constant value
+  private var _isConst:         Boolean = false
+  private[chisel3] def isConst: Boolean = _isConst
+  private[chisel3] def isConst_=(isConst: Boolean) = _isConst = isConst
 
   // User-specified direction, local at this node only.
   // Note that the actual direction of this node can differ from child and parent specifiedDirection.
@@ -418,7 +358,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   private def _binding:    Option[Binding] = Option(_bindingVar)
   // Only valid after node is bound (synthesizable), crashes otherwise
   protected[chisel3] def binding: Option[Binding] = _binding
-  protected def binding_=(target: Binding) {
+  protected def binding_=(target: Binding): Unit = {
     if (_binding.isDefined) {
       throw RebindingException(s"Attempted reassignment of binding to $this, from: ${target}")
     }
@@ -454,8 +394,10 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   /** Adds this `Data` to its parents _ids if it should be added */
   private[chisel3] def maybeAddToParentIds(target: Binding): Unit = {
     // ConstrainedBinding means the thing actually corresponds to a Module, no need to add to _ids otherwise
-    if (target.isInstanceOf[ConstrainedBinding]) {
-      _parent.foreach(_.addId(this))
+    target match {
+      case c: SecretPortBinding  => // secret ports are handled differently, parent's don't need to know about that
+      case c: ConstrainedBinding => _parent.foreach(_.addId(this))
+      case _ =>
     }
   }
 
@@ -468,7 +410,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   private def _direction:    Option[ActualDirection] = Option(_directionVar)
 
   private[chisel3] def direction: ActualDirection = _direction.get
-  private[chisel3] def direction_=(actualDirection: ActualDirection) {
+  private[chisel3] def direction_=(actualDirection: ActualDirection): Unit = {
     if (_direction.isDefined) {
       throw RebindingException(s"Attempted reassignment of resolved direction to $this")
     }
@@ -476,14 +418,16 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   }
 
   private[chisel3] def stringAccessor(chiselType: String): String = {
-    topBindingOpt match {
+    // Trace views to give better error messages
+    val thiz = reifySingleData(this).getOrElse(this)
+    thiz.topBindingOpt match {
       case None => chiselType
       // Handle DontCares specially as they are "literal-like" but not actually literals
       case Some(DontCareBinding()) => s"$chiselType(DontCare)"
       case Some(topBinding) =>
-        val binding: String = _bindingToString(topBinding)
-        val name = earlyName
-        val mod = parentNameOpt.map(_ + ".").getOrElse("")
+        val binding: String = thiz._bindingToString(topBinding)
+        val name = thiz.earlyName
+        val mod = thiz.parentNameOpt.map(_ + ".").getOrElse("")
 
         s"$mod$name: $binding[$chiselType]"
     }
@@ -497,6 +441,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       case OpBinding(_, _)           => "OpResult"
       case MemoryPortBinding(_, _)   => "MemPort"
       case PortBinding(_)            => "IO"
+      case SecretPortBinding(_)      => "IO"
       case RegBinding(_, _)          => "Reg"
       case WireBinding(_, _)         => "Wire"
       case DontCareBinding()         => "(DontCare)"
@@ -510,6 +455,16 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 
   private[chisel3] def parentNameOpt: Option[String] = this._parent.map(_.name)
 
+  /** Useful information for recoverable errors that will allow the error to deduplicate */
+  private[chisel3] def _localErrorContext: String = {
+    if (this.binding.exists(_.isInstanceOf[ChildBinding])) {
+      val n = Arg.earlyLocalName(this, includeRoot = false)
+      s"Field '$n' of type ${this.typeName}"
+    } else {
+      this.typeName
+    }
+  }
+
   // Return ALL elements at root of this type.
   // Contasts with flatten, which returns just Bits
   // TODO: refactor away this, this is outside the scope of Data
@@ -521,77 +476,103 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   private[chisel3] def connect(
     that: Data
   )(
-    implicit sourceInfo:   SourceInfo,
-    connectCompileOptions: CompileOptions
+    implicit sourceInfo: SourceInfo
   ): Unit = {
-    if (connectCompileOptions.checkSynthesizable) {
-      requireIsHardware(this, "data to be connected")
-      requireIsHardware(that, "data to be connected")
-      this.topBinding match {
-        case _: ReadOnlyBinding => throwException(s"Cannot reassign to read-only $this")
-        case _ => // fine
-      }
+    requireIsHardware(this, "data to be connected")
+    requireIsHardware(that, "data to be connected")
+    this.topBinding match {
+      case _: ReadOnlyBinding => throwException(s"Cannot reassign to read-only $this")
+      case _ => // fine
     }
-    if (connectCompileOptions.migrateMonoConnections) {
-      getRecursiveFields.lazilyNoPath(this).collect {
-        case d if d.direction != this.direction =>
-          Builder.error(s"$this cannot be used with := because submember $d has inverse orientation; use :#= instead")
-      }
-      getRecursiveFields.lazilyNoPath(that).collect {
-        case d if d.direction != that.direction =>
-          Builder.error(s"$that cannot be used with := because submember $d has inverse orientation; use :#= instead")
-      }
-    }
-    if (connectCompileOptions.emitStrictConnects) {
 
-      try {
-        MonoConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.referenceUserModule)
-      } catch {
-        case MonoConnectException(message) =>
-          throwException(
-            s"Connection between sink ($this) and source ($that) failed @: $message"
-          )
-      }
-    } else {
-      this.firrtlPartialConnect(that)
+    try {
+      MonoConnect.connect(sourceInfo, this, that, Builder.referenceUserContainer)
+    } catch {
+      case MonoConnectException(message) =>
+        throwException(
+          s"Connection between sink ($this) and source ($that) failed @: $message"
+        )
     }
   }
   private[chisel3] def bulkConnect(
     that: Data
   )(
-    implicit sourceInfo:   SourceInfo,
-    connectCompileOptions: CompileOptions
+    implicit sourceInfo: SourceInfo
   ): Unit = {
-    if (connectCompileOptions.checkSynthesizable) {
-      requireIsHardware(this, s"data to be bulk-connected")
-      requireIsHardware(that, s"data to be bulk-connected")
-      (this.topBinding, that.topBinding) match {
-        case (_: ReadOnlyBinding, _: ReadOnlyBinding) => throwException(s"Both $this and $that are read-only")
-        // DontCare cannot be a sink (LHS)
-        case (_: DontCareBinding, _) => throw BiConnect.DontCareCantBeSink
-        case _ => // fine
-      }
+    requireIsHardware(this, s"data to be bulk-connected")
+    requireIsHardware(that, s"data to be bulk-connected")
+    (this.topBinding, that.topBinding) match {
+      case (_: ReadOnlyBinding, _: ReadOnlyBinding) => throwException(s"Both $this and $that are read-only")
+      // DontCare cannot be a sink (LHS)
+      case (_: DontCareBinding, _) => throw BiConnect.DontCareCantBeSink
+      case _ => // fine
     }
-    if (connectCompileOptions.emitStrictConnects) {
-      try {
-        BiConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.referenceUserModule)
-      } catch {
-        case BiConnectException(message) =>
-          throwException(
-            s"Connection between left ($this) and source ($that) failed @$message"
-          )
-      }
-    } else {
-      if (connectCompileOptions.migrateBulkConnections)
-        Builder.error(s"Cannot use <> in an `import Chisel._` file; use :<>= instead")
-      this.firrtlPartialConnect(that)
+    try {
+      BiConnect.connect(sourceInfo, this, that, Builder.referenceUserModule)
+    } catch {
+      case BiConnectException(message) =>
+        throwException(
+          s"Connection between left ($this) and source ($that) failed @$message"
+        )
     }
   }
 
   /** Whether this Data has the same model ("data type") as that Data.
     * Data subtypes should overload this with checks against their own type.
     */
-  private[chisel3] def typeEquivalent(that: Data): Boolean
+  private[chisel3] final def typeEquivalent(
+    that: Data
+  ): Boolean = findFirstTypeMismatch(that, strictTypes = true, strictWidths = true).isEmpty
+
+  /** Find and report any type mismatches
+    *
+    * @param that Data being compared to this
+    * @param strictTypes Does class of Bundles or Records need to match? Inverse of "structural".
+    * @param strictWidths do widths need to match?
+    * @return None if types are equivalent, Some String reporting the first mismatch if not
+    */
+  private[chisel3] final def findFirstTypeMismatch(
+    that:         Data,
+    strictTypes:  Boolean,
+    strictWidths: Boolean
+  ): Option[String] = {
+    def rec(left: Data, right: Data): Option[String] =
+      (left, right) match {
+        // Careful, EnumTypes are Element and if we don't implement this, then they are all always equal
+        case (e1: EnumType, e2: EnumType) =>
+          // TODO, should we implement a form of structural equality for enums?
+          if (e1.factory == e2.factory) None
+          else Some(s": Left ($e1) and Right ($e2) have different types.")
+        case (e1: Element, e2: Element) if e1.getClass == e2.getClass =>
+          if (strictWidths && e1.width != e2.width) {
+            Some(s": Left ($e1) and Right ($e2) have different widths.")
+          } else {
+            None
+          }
+        case (r1: Record, r2: Record) if !strictTypes || r1.getClass == r2.getClass =>
+          val (larger, smaller, msg) =
+            if (r1._elements.size >= r2._elements.size) (r1, r2, "Left") else (r2, r1, "Right")
+          larger._elements.collectFirst {
+            case (name, data) =>
+              val recurse = smaller._elements.get(name) match {
+                case None        => Some(s": Dangling field on $msg")
+                case Some(data2) => rec(data, data2)
+              }
+              recurse.map("." + name + _)
+          }.flatten
+        case (v1: Vec[_], v2: Vec[_]) =>
+          if (v1.size != v2.size) {
+            Some(s": Left (size ${v1.size}) and Right (size ${v2.size}) have different lengths.")
+          } else {
+            val recurse = rec(v1.sample_element, v2.sample_element)
+            recurse.map("[_]" + _)
+          }
+        case _ => Some(s": Left ($left) and Right ($right) have different types.")
+      }
+    val leftType = if (this.hasBinding) this.cloneType else this
+    val rightType = if (that.hasBinding) that.cloneType else that
+    rec(leftType, rightType)
+  }
 
   private[chisel3] def requireVisible(): Unit = {
     val mod = topBindingOpt.flatMap(_.location)
@@ -599,9 +580,10 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       case Some(tb: TopBinding) if (mod == Builder.currentModule) =>
       case Some(pb: PortBinding)
           if (mod.flatMap(Builder.retrieveParent(_, Builder.currentModule.get)) == Builder.currentModule) =>
+      case Some(pb: SecretPortBinding) => // Ignore secret to not require visibility
       case Some(_: UnconstrainedBinding) =>
       case _ =>
-        throwException(s"operand '$this' is not visible from the current module")
+        throwException(s"operand '$this' is not visible from the current module ${Builder.currentModule.get.name}")
     }
     if (!MonoConnect.checkWhenVisibility(this)) {
       throwException(s"operand has escaped the scope of the when in which it was constructed")
@@ -622,12 +604,15 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   }
 
   // Internal API: returns a ref, if bound
-  private[chisel3] final def ref: Arg = {
-    def materializeWire(): Arg = {
+  private[chisel3] def ref: Arg = {
+    def materializeWire(makeConst: Boolean = false): Arg = {
       if (!Builder.currentModule.isDefined) throwException(s"internal error: cannot materialize ref for $this")
-      implicit val compileOptions = ExplicitCompileOptions.Strict
       implicit val sourceInfo = UnlocatableSourceInfo
-      WireDefault(this).ref
+      if (makeConst) {
+        WireDefault(Const(chiselTypeOf(this)), this).ref
+      } else {
+        WireDefault(this).ref
+      }
     }
     requireIsHardware(this)
     topBindingOpt match {
@@ -644,12 +629,12 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       case Some(BundleLitBinding(litMap)) =>
         litMap.get(this) match {
           case Some(litArg) => litArg
-          case _            => materializeWire() // FIXME FIRRTL doesn't have Bundle literal expressions
+          case _            => materializeWire(true) // FIXME FIRRTL doesn't have Bundle literal expressions
         }
       case Some(VecLitBinding(litMap)) =>
         litMap.get(this) match {
           case Some(litArg) => litArg
-          case _            => materializeWire() // FIXME FIRRTL doesn't have Vec literal expressions
+          case _            => materializeWire(true) // FIXME FIRRTL doesn't have Vec literal expressions
         }
       case Some(DontCareBinding()) =>
         materializeWire() // FIXME FIRRTL doesn't have a DontCare expression so materialize a Wire
@@ -666,21 +651,11 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   }
 
   // Recursively set the parent of the start Data and any children (eg. in an Aggregate)
-  private[chisel3] def setAllParents(parent: Option[BaseModule]): Unit = {
-    def rec(data: Data): Unit = {
-      data._parent = parent
-      data match {
-        case _:   Element =>
-        case agg: Aggregate =>
-          agg.elementsIterator.foreach(rec)
-      }
-    }
-    rec(this)
-  }
+  private[chisel3] def setAllParents(parent: Option[BaseModule]): Unit =
+    DataMirror.collectAllMembers(this).foreach { x => x._parent = parent }
 
   private[chisel3] def width: Width
-  private[chisel3] def firrtlConnect(that:        Data)(implicit sourceInfo: SourceInfo): Unit
-  private[chisel3] def firrtlPartialConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit
+  private[chisel3] def firrtlConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit
 
   /** Internal API; Chisel users should look at chisel3.chiselTypeOf(...).
     *
@@ -694,12 +669,14 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   /** Internal API; Chisel users should look at chisel3.chiselTypeOf(...).
     *
     * Returns a copy of this data type, with hardware bindings (if any) removed.
-    * Directionality data is still preserved.
+    * Directionality data and probe information is still preserved.
     */
   private[chisel3] def cloneTypeFull: this.type = {
     val clone = this.cloneType // get a fresh object, without bindings
     // Only the top-level direction needs to be fixed up, cloneType should do the rest
     clone.specifiedDirection = specifiedDirection
+    probe.setProbeModifier(clone, probeInfo)
+    clone.isConst = isConst
     clone
   }
 
@@ -714,15 +691,15 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     * @param that the Data to connect from
     * @group connection
     */
-  final def :=(that: => Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = {
+  final def :=(that: => Data)(implicit sourceInfo: SourceInfo): Unit = {
     prefix(this) {
-      this.connect(that)(sourceInfo, connectionCompileOptions)
+      this.connect(that)(sourceInfo)
     }
   }
 
   /** The "bulk connect operator", assigning elements in this Vec from elements in a Vec.
     *
-    * For chisel3._, uses the [[BiConnect]] algorithm; sub-elements of `that` may end up driving sub-elements of `this`
+    * For chisel3._, uses the `chisel3.internal.BiConnect` algorithm; sub-elements of that` may end up driving sub-elements of `this`
     *  - Complicated semantics, hard to write quickly, will likely be deprecated in the future
     *
     * For Chisel._, emits the FIRRTL.<- operator
@@ -731,9 +708,9 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     * @param that the Data to connect from
     * @group connection
     */
-  final def <>(that: => Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = {
+  final def <>(that: => Data)(implicit sourceInfo: SourceInfo): Unit = {
     prefix(this) {
-      this.bulkConnect(that)(sourceInfo, connectionCompileOptions)
+      this.bulkConnect(that)(sourceInfo)
     }
   }
 
@@ -771,7 +748,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   def asTypeOf[T <: Data](that: T): T = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_asTypeOf[T <: Data](that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+  def do_asTypeOf[T <: Data](that: T)(implicit sourceInfo: SourceInfo): T = {
     val thatCloned = Wire(that.cloneTypeFull)
     thatCloned.connectFromBits(this.asUInt)
     thatCloned
@@ -782,8 +759,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   private[chisel3] def connectFromBits(
     that: Bits
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): Unit
 
   /** Reinterpret cast to UInt.
@@ -795,16 +771,25 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     */
   final def asUInt: UInt = macro SourceInfoTransform.noArg
 
+  // The actual implementation of do_asUInt
+  // @param first exists because of awkward behavior in Aggregate that requires changing 0.U to be zero-width to fix
+  private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): UInt
+
   /** @group SourceInfoTransformMacro */
-  def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt
+  def do_asUInt(implicit sourceInfo: SourceInfo): UInt = this._asUIntImpl(true)
 
   /** Default pretty printing */
   def toPrintable: Printable
+
+  /** A non-ambiguous name of this `Data` for use in generated Verilog names */
+  def typeName: String = simpleClassName(this.getClass)
 }
 
 object Data {
   // Needed for the `implicit def toConnectableDefault`
   import scala.language.implicitConversions
+
+  private[chisel3] case class ProbeInfo(val writable: Boolean)
 
   /** Provides :<=, :>=, :<>=, and :#= between consumer and producer of the same T <: Data */
   implicit class ConnectableDefault[T <: Data](consumer: T) extends connectable.ConnectableOperators[T](consumer)
@@ -829,49 +814,52 @@ object Data {
     *
     * Only zips immediate children (vs members, which are all children/grandchildren etc.)
     */
-  implicit private[chisel3] val DataMatchingZipOfChildren = new DataMirror.HasMatchingZipOfChildren[Data] {
+  implicit val dataMatchingZipOfChildren: DataMirror.HasMatchingZipOfChildren[Data] =
+    new DataMirror.HasMatchingZipOfChildren[Data] {
 
-    implicit class VecOptOps(vOpt: Option[Vec[Data]]) {
-      // Like .get, but its already defined on Option
-      def grab(i: Int): Option[Data] = vOpt.flatMap { _.lift(i) }
-      def size = vOpt.map(_.size).getOrElse(0)
-    }
-    implicit class RecordOptGet(rOpt: Option[Record]) {
-      // Like .get, but its already defined on Option
-      def grab(k: String): Option[Data] = rOpt.flatMap { _.elements.get(k) }
-      def keys: Iterable[String] = rOpt.map { r => r.elements.map(_._1) }.getOrElse(Seq.empty[String])
-    }
-    //TODO(azidar): Rewrite this to be more clear, probably not the cleanest way to express this
-    private def isDifferent(l: Option[Data], r: Option[Data]): Boolean =
-      l.nonEmpty && r.nonEmpty && !isRecord(l, r) && !isVec(l, r) && !isElement(l, r)
-    private def isRecord(l: Option[Data], r: Option[Data]): Boolean =
-      l.orElse(r).map { _.isInstanceOf[Record] }.getOrElse(false)
-    private def isVec(l: Option[Data], r: Option[Data]): Boolean =
-      l.orElse(r).map { _.isInstanceOf[Vec[_]] }.getOrElse(false)
-    private def isElement(l: Option[Data], r: Option[Data]): Boolean =
-      l.orElse(r).map { _.isInstanceOf[Element] }.getOrElse(false)
-
-    /** Zips matching children of `left` and `right`; returns Nil if both are empty
-      *
-      * The canonical API to iterate through two Chisel types or components, where
-      * matching children are provided together, while non-matching members are provided
-      * separately
-      *
-      * Only zips immediate children (vs members, which are all children/grandchildren etc.)
-      *
-      * Returns Nil if both are different types
-      */
-    def matchingZipOfChildren(left: Option[Data], right: Option[Data]): Seq[(Option[Data], Option[Data])] =
-      (left, right) match {
-        case (None, None)                            => Nil
-        case (lOpt, rOpt) if isDifferent(lOpt, rOpt) => Nil
-        case (lOpt: Option[Vec[Data] @unchecked], rOpt: Option[Vec[Data] @unchecked]) if isVec(lOpt, rOpt) =>
-          (0 until (lOpt.size.max(rOpt.size))).map { i => (lOpt.grab(i), rOpt.grab(i)) }
-        case (lOpt: Option[Record @unchecked], rOpt: Option[Record @unchecked]) if isRecord(lOpt, rOpt) =>
-          (lOpt.keys ++ rOpt.keys).toList.distinct.map { k => (lOpt.grab(k), rOpt.grab(k)) }
-        case (lOpt, rOpt) if isElement(lOpt, rOpt) => Nil
+      implicit class VecOptOps(vOpt: Option[Vec[Data]]) {
+        // Like .get, but its already defined on Option
+        def grab(i: Int): Option[Data] = vOpt.flatMap { _.lift(i) }
+        def size = vOpt.map(_.size).getOrElse(0)
       }
-  }
+      implicit class RecordOptGet(rOpt: Option[Record]) {
+        // Like .get, but its already defined on Option
+        def grab(k: String): Option[Data] = rOpt.flatMap { _._elements.get(k) }
+        def keys: Iterable[String] = rOpt.map { r => r._elements.map(_._1) }.getOrElse(Seq.empty[String])
+      }
+      //TODO(azidar): Rewrite this to be more clear, probably not the cleanest way to express this
+      private def isDifferent(l: Option[Data], r: Option[Data]): Boolean =
+        l.nonEmpty && r.nonEmpty && !isRecord(l, r) && !isVec(l, r) && !isElement(l, r)
+      private def isRecord(l: Option[Data], r: Option[Data]): Boolean =
+        l.orElse(r).map { _.isInstanceOf[Record] }.getOrElse(false)
+      private def isVec(l: Option[Data], r: Option[Data]): Boolean =
+        l.orElse(r).map { _.isInstanceOf[Vec[_]] }.getOrElse(false)
+      private def isElement(l: Option[Data], r: Option[Data]): Boolean =
+        l.orElse(r).map { _.isInstanceOf[Element] }.getOrElse(false)
+
+      /** Zips matching children of `left` and `right`; returns Nil if both are empty
+        *
+        * The canonical API to iterate through two Chisel types or components, where
+        * matching children are provided together, while non-matching members are provided
+        * separately
+        *
+        * Only zips immediate children (vs members, which are all children/grandchildren etc.)
+        *
+        * Returns Nil if both are different types
+        */
+      def matchingZipOfChildren(left: Option[Data], right: Option[Data]): Seq[(Option[Data], Option[Data])] =
+        (left, right) match {
+          case (None, None)                            => Nil
+          case (lOpt, rOpt) if isDifferent(lOpt, rOpt) => Nil
+          case (lOpt: Option[Vec[Data] @unchecked], rOpt: Option[Vec[Data] @unchecked]) if isVec(lOpt, rOpt) =>
+            (0 until (lOpt.size.max(rOpt.size))).map { i => (lOpt.grab(i), rOpt.grab(i)) }
+          case (lOpt: Option[Record @unchecked], rOpt: Option[Record @unchecked]) if isRecord(lOpt, rOpt) =>
+            (lOpt.keys ++ rOpt.keys).toList.distinct.map { k => (lOpt.grab(k), rOpt.grab(k)) }
+          case (lOpt: Option[Element @unchecked], rOpt: Option[Element @unchecked]) if isElement(lOpt, rOpt) => Nil
+          case _ =>
+            throw new InternalErrorException(s"Match Error: left=$left, right=$right")
+        }
+    }
 
   /**
     * Provides generic, recursive equality for [[Bundle]] and [[Vec]] hardware. This avoids the
@@ -886,7 +874,7 @@ object Data {
     *
     * @param lhs The [[Data]] hardware on the left-hand side of the equality
     */
-  implicit class DataEquality[T <: Data](lhs: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) {
+  implicit class DataEquality[T <: Data](lhs: T)(implicit sourceInfo: SourceInfo) {
 
     /** Dynamic recursive equality operator for generic [[Data]]
       *
@@ -900,8 +888,6 @@ object Data {
         case (thiz: SInt, that: SInt) => thiz === that
         case (thiz: AsyncReset, that: AsyncReset) => thiz.asBool === that.asBool
         case (thiz: Reset, that: Reset) => thiz === that
-        case (thiz: Interval, that: Interval) => thiz === that
-        case (thiz: FixedPoint, that: FixedPoint) => thiz === that
         case (thiz: EnumType, that: EnumType) => thiz === that
         case (thiz: Clock, that: Clock) => thiz.asUInt === that.asUInt
         case (thiz: Vec[_], that: Vec[_]) =>
@@ -914,22 +900,22 @@ object Data {
               .reduce(_ && _)
           }
         case (thiz: Record, that: Record) =>
-          if (thiz.elements.size != that.elements.size) {
+          if (thiz._elements.size != that._elements.size) {
             throwException(s"Cannot compare Bundles $thiz and $that: Bundle types differ")
           } else {
-            thiz.elements.map {
+            thiz._elements.map {
               case (thisName, thisData) =>
-                if (!that.elements.contains(thisName))
+                if (!that._elements.contains(thisName))
                   throwException(
                     s"Cannot compare Bundles $thiz and $that: field $thisName (from $thiz) was not found in $that"
                   )
 
-                val thatData = that.elements(thisName)
+                val thatData = that._elements(thisName)
 
                 try {
                   thisData === thatData
                 } catch {
-                  case e: ChiselException =>
+                  case e: chisel3.ChiselException =>
                     throwException(
                       s"Cannot compare field $thisName in Bundles $thiz and $that: ${e.getMessage.split(": ").last}"
                     )
@@ -954,21 +940,18 @@ trait WireFactory {
   /** Construct a [[Wire]] from a type template
     * @param t The template from which to construct this wire
     */
-  def apply[T <: Data](source: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+  def apply[T <: Data](source: => T)(implicit sourceInfo: SourceInfo): T = {
     val prevId = Builder.idGen.value
     val t = source // evaluate once (passed by name)
-    if (compileOptions.declaredTypeMustBeUnbound) {
-      requireIsChiselType(t, "wire type")
-    }
+    requireIsChiselType(t, "wire type")
+    requireNoProbeTypeModifier(t, "Cannot make a wire of a Chisel type with a probe modifier.")
+
     val x = if (!t.mustClone(prevId)) t else t.cloneTypeFull
 
     // Bind each element of x to being a Wire
     x.bind(WireBinding(Builder.forcedUserModule, Builder.currentWhen))
 
     pushCommand(DefWire(sourceInfo, x))
-    if (!compileOptions.explicitInvalidate || Builder.currentModule.get.isInstanceOf[ImplicitInvalidate]) {
-      pushCommand(DefInvalid(sourceInfo, x.ref))
-    }
 
     x
   }
@@ -994,6 +977,55 @@ trait WireFactory {
   * }}}
   */
 object Wire extends WireFactory
+
+private[chisel3] sealed trait WireDefaultImpl {
+
+  private def applyImpl[T <: Data](
+    t:    T,
+    init: Data
+  )(
+    implicit sourceInfo: SourceInfo
+  ): T = {
+    val x = Wire(t)
+    requireIsHardware(init, "wire initializer")
+    x := init
+    x
+  }
+
+  /** Construct a [[Wire]] with a type template and a [[chisel3.DontCare]] default
+    * @param t The type template used to construct this [[Wire]]
+    * @param init The default connection to this [[Wire]], can only be [[DontCare]]
+    * @note This is really just a specialized form of `apply[T <: Data](t: T, init: T): T` with [[DontCare]] as `init`
+    */
+  def apply[T <: Data](
+    t:    T,
+    init: DontCare.type
+  )(
+    implicit sourceInfo: SourceInfo
+  ): T = {
+    applyImpl(t, init)
+  }
+
+  /** Construct a [[Wire]] with a type template and a default connection
+    * @param t The type template used to construct this [[Wire]]
+    * @param init The hardware value that will serve as the default value
+    */
+  def apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo): T = {
+    applyImpl(t, init)
+  }
+
+  /** Construct a [[Wire]] with a default connection
+    * @param init The hardware value that will serve as a type template and default value
+    */
+  def apply[T <: Data](init: T)(implicit sourceInfo: SourceInfo): T = {
+    val model = (init match {
+      // If init is a literal without forced width OR any non-literal, let width be inferred
+      case init: Bits if !init.litIsForcedWidth.getOrElse(false) => init.cloneTypeWidth(Width())
+      case _ => init.cloneTypeFull
+    }).asInstanceOf[T]
+    apply(model, init)
+  }
+}
 
 /** Utility for constructing hardware wires with a default connection
   *
@@ -1050,60 +1082,17 @@ object Wire extends WireFactory
   *   x
   * }
   * }}}
+  */
+object WireDefault extends WireDefaultImpl
+
+/** Utility for constructing hardware wires with a default connection
   *
-  * @note The `Default` in `WireDefault` refers to a `default` connection. This is in contrast to
+  * Alias for [[WireDefault]].
+  *
+  * @note The `Init` in `WireInit` refers to a "default" connection. This is in contrast to
   * [[RegInit]] where the `Init` refers to a value on reset.
   */
-object WireDefault {
-
-  private def applyImpl[T <: Data](
-    t:    T,
-    init: Data
-  )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
-  ): T = {
-    val x = Wire(t)
-    requireIsHardware(init, "wire initializer")
-    x := init
-    x
-  }
-
-  /** Construct a [[Wire]] with a type template and a [[chisel3.DontCare]] default
-    * @param t The type template used to construct this [[Wire]]
-    * @param init The default connection to this [[Wire]], can only be [[DontCare]]
-    * @note This is really just a specialized form of `apply[T <: Data](t: T, init: T): T` with [[DontCare]] as `init`
-    */
-  def apply[T <: Data](
-    t:    T,
-    init: DontCare.type
-  )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
-  ): T = {
-    applyImpl(t, init)
-  }
-
-  /** Construct a [[Wire]] with a type template and a default connection
-    * @param t The type template used to construct this [[Wire]]
-    * @param init The hardware value that will serve as the default value
-    */
-  def apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
-    applyImpl(t, init)
-  }
-
-  /** Construct a [[Wire]] with a default connection
-    * @param init The hardware value that will serve as a type template and default value
-    */
-  def apply[T <: Data](init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
-    val model = (init match {
-      // If init is a literal without forced width OR any non-literal, let width be inferred
-      case init: Bits if !init.litIsForcedWidth.getOrElse(false) => init.cloneTypeWidth(Width())
-      case _ => init.cloneTypeFull
-    }).asInstanceOf[T]
-    apply(model, init)
-  }
-}
+object WireInit extends WireDefaultImpl
 
 /** RHS (source) for Invalidate API.
   * Causes connection logic to emit a DefInvalid when connected to an output port (or wire).
@@ -1127,18 +1116,15 @@ final case object DontCare extends Element with connectable.ConnectableDocs {
   private[chisel3] def connectFromBits(
     that: Bits
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): Unit = {
     Builder.error("connectFromBits: DontCare cannot be a connection sink (LHS)")
   }
 
-  def do_asUInt(implicit sourceInfo: chisel3.experimental.SourceInfo, compileOptions: CompileOptions): UInt = {
+  override private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): UInt = {
     Builder.error("DontCare does not have a UInt representation")
     0.U
   }
-  // DontCare's only match themselves.
-  private[chisel3] def typeEquivalent(that: Data): Boolean = that == DontCare
 
   /** $colonGreaterEq
     *

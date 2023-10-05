@@ -32,8 +32,7 @@ object when {
     cond:  => Bool
   )(block: => Any
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): WhenContext = {
     new WhenContext(sourceInfo, Some(() => cond), block, 0, Nil)
   }
@@ -53,7 +52,6 @@ object when {
     * }}}
     */
   def cond: Bool = {
-    implicit val compileOptions = ExplicitCompileOptions.Strict
     implicit val sourceInfo = UnlocatableSourceInfo
     val whens = Builder.whenStack
     whens.foldRight(true.B) {
@@ -84,7 +82,6 @@ final class WhenContext private[chisel3] (
 
   /** Returns the local condition, inverted for an otherwise */
   private[chisel3] def localCond: Bool = {
-    implicit val compileOptions = ExplicitCompileOptions.Strict
     implicit val sourceInfo = UnlocatableSourceInfo
     val alt = altConds.foldRight(true.B) {
       case (c, acc) => acc & !c()
@@ -104,8 +101,7 @@ final class WhenContext private[chisel3] (
     elseCond: => Bool
   )(block:    => Any
   )(
-    implicit sourceInfo: SourceInfo,
-    compileOptions:      CompileOptions
+    implicit sourceInfo: SourceInfo
   ): WhenContext = {
     new WhenContext(sourceInfo, Some(() => elseCond), block, firrtlDepth + 1, cond ++: altConds)
   }
@@ -117,7 +113,7 @@ final class WhenContext private[chisel3] (
     * assignment of the Bool node of the predicate in the correct
     * place.
     */
-  def otherwise(block: => Any)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit =
+  def otherwise(block: => Any)(implicit sourceInfo: SourceInfo): Unit =
     new WhenContext(sourceInfo, None, block, firrtlDepth + 1, cond ++: altConds)
 
   def active: Boolean = scopeOpen

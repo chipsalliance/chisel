@@ -38,11 +38,11 @@ class IOCModuleWire extends Module {
 class IOCompatibilitySpec extends ChiselPropSpec with Matchers with Utils {
 
   property("IOCModuleVec should elaborate") {
-    ChiselStage.elaborate { new IOCModuleVec(2) }
+    ChiselStage.emitCHIRRTL { new IOCModuleVec(2) }
   }
 
   property("IOCModuleWire should elaborate") {
-    ChiselStage.elaborate { new IOCModuleWire }
+    ChiselStage.emitCHIRRTL { new IOCModuleWire }
   }
 
   class IOUnwrapped extends Module {
@@ -52,7 +52,7 @@ class IOCompatibilitySpec extends ChiselPropSpec with Matchers with Utils {
 
   property("Unwrapped IO should generate an exception") {
     a[BindingException] should be thrownBy extractCause[BindingException] {
-      ChiselStage.elaborate(new IOUnwrapped)
+      ChiselStage.emitCHIRRTL(new IOUnwrapped)
     }
   }
 }

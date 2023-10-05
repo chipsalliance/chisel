@@ -34,9 +34,9 @@ class PipelinedResetModule extends Module {
 
 // This relies on reset being asserted for 3 or more cycles
 class PipelinedResetTester extends BasicTester {
-  val module = Module(new PipelinedResetModule)
+  val pipelinedResetModule = Module(new PipelinedResetModule)
 
-  module.reset := RegNext(RegNext(RegNext(reset)))
+  pipelinedResetModule.reset := RegNext(RegNext(RegNext(reset)))
 
   val (_, done) = Counter(!reset.asBool, 4)
   when(done) {
@@ -157,18 +157,18 @@ class AssertSpec extends ChiselFlatSpec with Utils {
     assertTesterPasses { new AssertPrintablePortScope }
   }
   "Assert Printables" should "respect wire scoping" in {
-    a[ChiselException] should be thrownBy { ChiselStage.elaborate(new AssertPrintableWireScope) }
+    a[ChiselException] should be thrownBy { ChiselStage.emitCHIRRTL(new AssertPrintableWireScope) }
   }
   "Assume Printables" should "respect port scoping" in {
     assertTesterPasses { new AssumePrintablePortScope }
   }
 
   "Assume Printables" should "respect wire scoping" in {
-    a[ChiselException] should be thrownBy { ChiselStage.elaborate(new AssumePrintableWireScope) }
+    a[ChiselException] should be thrownBy { ChiselStage.emitCHIRRTL(new AssumePrintableWireScope) }
   }
 
   "Assert Printables" should "respect when scope" in {
-    a[ChiselException] should be thrownBy { ChiselStage.elaborate(new AssertPrintableFailingWhenScope) }
+    a[ChiselException] should be thrownBy { ChiselStage.emitCHIRRTL(new AssertPrintableFailingWhenScope) }
   }
 
   "Assertions" should "allow the modulo operator % in the message" in {
@@ -186,7 +186,7 @@ class AssertSpec extends ChiselFlatSpec with Utils {
   they should "not allow unescaped % in the message" in {
     a[java.util.UnknownFormatConversionException] should be thrownBy {
       extractCause[java.util.UnknownFormatConversionException] {
-        ChiselStage.elaborate { new BadUnescapedPercentAssertTester }
+        ChiselStage.emitCHIRRTL { new BadUnescapedPercentAssertTester }
       }
     }
   }
@@ -197,7 +197,7 @@ class AssertSpec extends ChiselFlatSpec with Utils {
   they should "not allow unescaped % in the printable message" in {
     a[java.util.UnknownFormatConversionException] should be thrownBy {
       extractCause[java.util.UnknownFormatConversionException] {
-        ChiselStage.elaborate { new BadUnescapedPercentAssertTester }
+        ChiselStage.emitCHIRRTL { new BadUnescapedPercentAssertTester }
       }
     }
   }

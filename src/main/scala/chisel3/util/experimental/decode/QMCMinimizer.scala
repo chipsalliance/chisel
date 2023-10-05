@@ -3,6 +3,7 @@
 package chisel3.util.experimental.decode
 
 import chisel3.util.BitPat
+import chisel3.InternalErrorException
 
 import scala.annotation.tailrec
 import scala.math.Ordered.orderingToOrdered
@@ -169,33 +170,33 @@ object QMCMinimizer extends Minimizer {
     */
   private def getCover(implicants: Seq[Implicant], minterms: Seq[Implicant]): Seq[Implicant] = {
 
-    /** Calculate the implementation cost (using comparators) of a list of implicants, more don't cares is cheaper
-      *
-      * @param cover Implicant list
-      * @return How many comparators need to implement this list of implicants
-      */
+    /* Calculate the implementation cost (using comparators) of a list of implicants, more don't cares is cheaper
+     *
+     * @param cover Implicant list
+     * @return How many comparators need to implement this list of implicants
+     */
     def getCost(cover: Seq[Implicant]): Int = cover.map(_.bp.mask.bitCount).sum
 
-    /** Determine if one combination of prime implicants is cheaper when implementing as comparators.
-      * Shorter term list is cheaper, term list with more don't cares is cheaper (less comparators)
-      *
-      * @param a    Operand a
-      * @param b    Operand b
-      * @return `a` < `b`
-      */
+    /* Determine if one combination of prime implicants is cheaper when implementing as comparators.
+     * Shorter term list is cheaper, term list with more don't cares is cheaper (less comparators)
+     *
+     * @param a    Operand a
+     * @param b    Operand b
+     * @return `a` < `b`
+     */
     def cheaper(a: Seq[Implicant], b: Seq[Implicant]): Boolean = {
       val ca = getCost(a)
       val cb = getCost(b)
 
-      /** If `a` < `b`
-        *
-        * Like comparing the dictionary order of two strings.
-        * Define `a` < `b` if both `a` and `b` are empty.
-        *
-        * @param a Operand a
-        * @param b Operand b
-        * @return `a` < `b`
-        */
+      /* If `a` < `b`
+       *
+       * Like comparing the dictionary order of two strings.
+       * Define `a` < `b` if both `a` and `b` are empty.
+       *
+       * @param a Operand a
+       * @param b Operand b
+       * @return `a` < `b`
+       */
       @tailrec
       def listLess(a: Seq[Implicant], b: Seq[Implicant]): Boolean =
         b.nonEmpty && (a.isEmpty || a.head < b.head || a.head == b.head && listLess(a.tail, b.tail))
@@ -260,6 +261,7 @@ object QMCMinimizer extends Minimizer {
           (maxt ++ dc, false)
         case x if !x.mask.testBit(i) => // default to ?
           (mint, true)
+        case _ => throw new InternalErrorException("Match error: table.default=${table.default}")
       }
 
       implicants.foreach(_.isPrime = true)

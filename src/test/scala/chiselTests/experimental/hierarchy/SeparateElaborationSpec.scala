@@ -5,23 +5,26 @@ package chiselTests.experimental.hierarchy
 import chiselTests.ChiselFunSpec
 import chisel3._
 import chisel3.experimental.BaseModule
-import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation, ChiselStage, DesignAnnotation}
+import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation, DesignAnnotation}
 import chisel3.experimental.hierarchy.{Definition, Instance}
 import chisel3.experimental.hierarchy.core.ImportDefinitionAnnotation
+import circt.stage.{CIRCTTarget, CIRCTTargetAnnotation, ChiselStage}
 import firrtl.AnnotationSeq
-import firrtl.options.TargetDirAnnotation
+import firrtl.util.BackendCompilationUtilities.createTestDirectory
 
 import java.nio.file.Paths
+import scala.annotation.nowarn
 import scala.io.Source
 
 class SeparateElaborationSpec extends ChiselFunSpec with Utils {
   import Examples._
 
   /** Return a [[DesignAnnotation]] from a list of annotations. */
+  @nowarn("msg=is unchecked since it is eliminated by erasure")
   private def getDesignAnnotation[T <: RawModule](annos: AnnotationSeq): DesignAnnotation[T] = {
     val designAnnos = annos.flatMap { a =>
       a match {
-        case a: DesignAnnotation[T] => Some(a)
+        case a: DesignAnnotation[T] => Some(a) //TODO: cleanup, T is necessary to make type of designAnnos right
         case _ => None
       }
     }
@@ -31,10 +34,10 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
 
   /** Elaborates [[AddOne]] and returns its [[Definition]]. */
   private def getAddOneDefinition(testDir: String): Definition[AddOne] = {
-    val dutAnnos = (new ChiselStage).run(
+    val dutAnnos = (new ChiselStage).execute(
+      Array("--target-dir", testDir, "--target", "systemverilog"),
       Seq(
-        ChiselGeneratorAnnotation(() => new AddOne),
-        TargetDirAnnotation(testDir)
+        ChiselGeneratorAnnotation(() => new AddOne)
       )
     )
 
@@ -69,15 +72,15 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
         dontTouch(mod.out)
       }
 
-      (new ChiselStage).run(
+      (new ChiselStage).execute(
+        Array("--target-dir", testDir, "--target", "systemverilog"),
         Seq(
           ChiselGeneratorAnnotation(() => new Testbench(dutDef)),
-          TargetDirAnnotation(testDir),
           ImportDefinitionAnnotation(dutDef)
         )
       )
 
-      val tb_rtl = Source.fromFile(s"$testDir/Testbench.v").getLines.mkString
+      val tb_rtl = Source.fromFile(s"$testDir/Testbench.sv").getLines().mkString
       tb_rtl should include("module AddOne_1(")
       tb_rtl should include("AddOne_1 mod (")
       (tb_rtl should not).include("module AddOne(")
@@ -101,15 +104,15 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
         dontTouch(inst0.out)
       }
 
-      (new ChiselStage).run(
+      (new ChiselStage).execute(
+        Array("--target-dir", testDir, "--target", "systemverilog"),
         Seq(
           ChiselGeneratorAnnotation(() => new Testbench(dutDef)),
-          TargetDirAnnotation(testDir),
           ImportDefinitionAnnotation(dutDef)
         )
       )
 
-      val tb_rtl = Source.fromFile(s"$testDir/Testbench.v").getLines.mkString
+      val tb_rtl = Source.fromFile(s"$testDir/Testbench.sv").getLines().mkString
       tb_rtl should include("module AddOne_1(")
       tb_rtl should include("AddOne_1 inst0 (")
       (tb_rtl should not).include("module AddOne(")
@@ -132,10 +135,9 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
       }
 
       // If there is a repeat module definition, FIRRTL emission will fail
-      (new ChiselStage).emitFirrtl(
-        gen = new Testbench(dutDef),
-        args = Array("-td", testDir, "--full-stacktrace"),
-        annotations = Seq(ImportDefinitionAnnotation(dutDef))
+      (new ChiselStage).execute(
+        args = Array("-td", testDir, "--full-stacktrace", "--target", "chirrtl"),
+        annotations = Seq(ChiselGeneratorAnnotation(() => new Testbench(dutDef)), ImportDefinitionAnnotation(dutDef))
       )
     }
   }
@@ -146,18 +148,18 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
     ) {
       val testDir = createTestDirectory(this.getClass.getSimpleName).toString
 
-      val dutAnnos0 = (new ChiselStage).run(
+      val dutAnnos0 = (new ChiselStage).execute(
+        Array("--target-dir", s"$testDir/dutDef0", "--target", "systemverilog"),
         Seq(
-          ChiselGeneratorAnnotation(() => new AddOneParameterized(4)),
-          TargetDirAnnotation(s"$testDir/dutDef0")
+          ChiselGeneratorAnnotation(() => new AddOneParameterized(4))
         )
       )
       val dutDef0 = getDesignAnnotation(dutAnnos0).design.asInstanceOf[AddOneParameterized].toDefinition
 
-      val dutAnnos1 = (new ChiselStage).run(
+      val dutAnnos1 = (new ChiselStage).execute(
+        Array("--target-dir", s"$testDir/dutDef1", "--target", "systemverilog"),
         Seq(
           ChiselGeneratorAnnotation(() => new AddOneParameterized(8)),
-          TargetDirAnnotation(s"$testDir/dutDef1"),
           // pass in previously elaborated Definitions
           ImportDefinitionAnnotation(dutDef0)
         )
@@ -173,21 +175,21 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
         inst1.in := 0.U
       }
 
-      (new ChiselStage).run(
+      (new ChiselStage).execute(
+        Array("--target-dir", testDir, "--target", "systemverilog", "--split-verilog"),
         Seq(
           ChiselGeneratorAnnotation(() => new Testbench(dutDef0, dutDef1)),
-          TargetDirAnnotation(testDir),
           ImportDefinitionAnnotation(dutDef0),
           ImportDefinitionAnnotation(dutDef1)
         )
       )
 
-      val dutDef0_rtl = Source.fromFile(s"$testDir/dutDef0/AddOneParameterized.v").getLines.mkString
+      val dutDef0_rtl = Source.fromFile(s"$testDir/dutDef0/AddOneParameterized.sv").getLines().mkString
       dutDef0_rtl should include("module AddOneParameterized(")
-      val dutDef1_rtl = Source.fromFile(s"$testDir/dutDef1/AddOneParameterized_1.v").getLines.mkString
+      val dutDef1_rtl = Source.fromFile(s"$testDir/dutDef1/AddOneParameterized_1.sv").getLines().mkString
       dutDef1_rtl should include("module AddOneParameterized_1(")
 
-      val tb_rtl = Source.fromFile(s"$testDir/Testbench.v").getLines.mkString
+      val tb_rtl = Source.fromFile(s"$testDir/Testbench.sv").getLines().mkString
       tb_rtl should include("AddOneParameterized inst0 (")
       tb_rtl should include("AddOneParameterized_1 inst1 (")
       (tb_rtl should not).include("module AddOneParameterized(")
@@ -199,18 +201,18 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
     ) {
       val testDir = createTestDirectory(this.getClass.getSimpleName).toString
 
-      val dutAnnos0 = (new ChiselStage).run(
+      val dutAnnos0 = (new ChiselStage).execute(
+        Array("--target-dir", s"$testDir/dutDef0", "--target", "systemverilog"),
         Seq(
-          ChiselGeneratorAnnotation(() => new AddOneParameterized(4)),
-          TargetDirAnnotation(s"$testDir/dutDef0")
+          ChiselGeneratorAnnotation(() => new AddOneParameterized(4))
         )
       )
       val dutDef0 = getDesignAnnotation(dutAnnos0).design.asInstanceOf[AddOneParameterized].toDefinition
 
-      val dutAnnos1 = (new ChiselStage).run(
+      val dutAnnos1 = (new ChiselStage).execute(
+        Array("--target-dir", s"$testDir/dutDef1", "--target", "systemverilog"),
         Seq(
-          ChiselGeneratorAnnotation(() => new AddOneParameterized(8)),
-          TargetDirAnnotation(s"$testDir/dutDef1")
+          ChiselGeneratorAnnotation(() => new AddOneParameterized(8))
         )
       )
       val dutDef1 = getDesignAnnotation(dutAnnos1).design.asInstanceOf[AddOneParameterized].toDefinition
@@ -226,16 +228,16 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
 
       // Because these elaborations have no knowledge of each other, they create
       // modules of the same name
-      val dutDef0_rtl = Source.fromFile(s"$testDir/dutDef0/AddOneParameterized.v").getLines.mkString
+      val dutDef0_rtl = Source.fromFile(s"$testDir/dutDef0/AddOneParameterized.sv").getLines().mkString
       dutDef0_rtl should include("module AddOneParameterized(")
-      val dutDef1_rtl = Source.fromFile(s"$testDir/dutDef1/AddOneParameterized.v").getLines.mkString
+      val dutDef1_rtl = Source.fromFile(s"$testDir/dutDef1/AddOneParameterized.sv").getLines().mkString
       dutDef1_rtl should include("module AddOneParameterized(")
 
       val errMsg = intercept[ChiselException] {
-        (new ChiselStage).run(
+        (new ChiselStage).execute(
+          Array("--target-dir", testDir, "--target", "systemverilog"),
           Seq(
             ChiselGeneratorAnnotation(() => new Testbench(dutDef0, dutDef1)),
-            TargetDirAnnotation(testDir),
             ImportDefinitionAnnotation(dutDef0),
             ImportDefinitionAnnotation(dutDef1)
           )
@@ -253,19 +255,19 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
     ) {
       val testDir = createTestDirectory(this.getClass.getSimpleName).toString
 
-      val dutAnnos0 = (new ChiselStage).run(
+      val dutAnnos0 = (new ChiselStage).execute(
+        Array("--target-dir", s"$testDir/dutDef0", "--target", "systemverilog"),
         Seq(
-          ChiselGeneratorAnnotation(() => new AddTwoMixedModules),
-          TargetDirAnnotation(s"$testDir/dutDef0")
+          ChiselGeneratorAnnotation(() => new AddTwoMixedModules)
         )
       )
       val dutDef0 = getDesignAnnotation(dutAnnos0).design.asInstanceOf[AddTwoMixedModules].toDefinition
       val importDefinitionAnnos0 = allModulesToImportedDefs(dutAnnos0)
 
-      val dutAnnos1 = (new ChiselStage).run(
+      val dutAnnos1 = (new ChiselStage).execute(
+        Array("--target-dir", s"$testDir/dutDef1", "--target", "systemverilog"),
         Seq(
-          ChiselGeneratorAnnotation(() => new AddTwoMixedModules),
-          TargetDirAnnotation(s"$testDir/dutDef1")
+          ChiselGeneratorAnnotation(() => new AddTwoMixedModules)
         ) ++ importDefinitionAnnos0
       )
       val dutDef1 = getDesignAnnotation(dutAnnos1).design.asInstanceOf[AddTwoMixedModules].toDefinition
@@ -280,21 +282,21 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
         inst1.in := 0.U
       }
 
-      val dutDef0_rtl = Source.fromFile(s"$testDir/dutDef0/AddTwoMixedModules.v").getLines.mkString
+      val dutDef0_rtl = Source.fromFile(s"$testDir/dutDef0/AddTwoMixedModules.sv").getLines().mkString
       dutDef0_rtl should include("module AddOne(")
       dutDef0_rtl should include("module AddTwoMixedModules(")
-      val dutDef1_rtl = Source.fromFile(s"$testDir/dutDef1/AddTwoMixedModules_1.v").getLines.mkString
+      val dutDef1_rtl = Source.fromFile(s"$testDir/dutDef1/AddTwoMixedModules_1.sv").getLines().mkString
       dutDef1_rtl should include("module AddOne_2(")
       dutDef1_rtl should include("module AddTwoMixedModules_1(")
 
-      (new ChiselStage).run(
+      (new ChiselStage).execute(
+        Array("--target-dir", testDir, "--target", "systemverilog"),
         Seq(
-          ChiselGeneratorAnnotation(() => new Testbench(dutDef0, dutDef1)),
-          TargetDirAnnotation(testDir)
+          ChiselGeneratorAnnotation(() => new Testbench(dutDef0, dutDef1))
         ) ++ importDefinitionAnnos0 ++ importDefinitionAnnos1
       )
 
-      val tb_rtl = Source.fromFile(s"$testDir/Testbench.v").getLines.mkString
+      val tb_rtl = Source.fromFile(s"$testDir/Testbench.sv").getLines().mkString
       tb_rtl should include("AddTwoMixedModules inst0 (")
       tb_rtl should include("AddTwoMixedModules_1 inst1 (")
       (tb_rtl should not).include("module AddTwoMixedModules(")
@@ -307,20 +309,20 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
   ) {
     val testDir = createTestDirectory(this.getClass.getSimpleName).toString
 
-    val dutAnnos0 = (new ChiselStage).run(
+    val dutAnnos0 = (new ChiselStage).execute(
+      Array("--target-dir", s"$testDir/dutDef0", "--target", "systemverilog"),
       Seq(
-        ChiselGeneratorAnnotation(() => new AddTwoMixedModules),
-        TargetDirAnnotation(s"$testDir/dutDef0")
+        ChiselGeneratorAnnotation(() => new AddTwoMixedModules)
       )
     )
     val dutDef0 = getDesignAnnotation(dutAnnos0).design.asInstanceOf[AddTwoMixedModules].toDefinition
     val importDefinitionAnnos0 = allModulesToImportedDefs(dutAnnos0)
 
-    val dutAnnos1 = (new ChiselStage).run(
+    val dutAnnos1 = (new ChiselStage).execute(
+      Array("--target-dir", s"$testDir/dutDef1", "--target", "systemverilog"),
       Seq(
         ChiselGeneratorAnnotation(() => new AddTwoMixedModules),
-        ImportDefinitionAnnotation(dutDef0),
-        TargetDirAnnotation(s"$testDir/dutDef1")
+        ImportDefinitionAnnotation(dutDef0)
       )
     )
     val dutDef1 = getDesignAnnotation(dutAnnos1).design.asInstanceOf[AddTwoMixedModules].toDefinition
@@ -335,18 +337,18 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
       inst1.in := 0.U
     }
 
-    val dutDef0_rtl = Source.fromFile(s"$testDir/dutDef0/AddTwoMixedModules.v").getLines.mkString
+    val dutDef0_rtl = Source.fromFile(s"$testDir/dutDef0/AddTwoMixedModules.sv").getLines().mkString
     dutDef0_rtl should include("module AddOne(")
     dutDef0_rtl should include("module AddTwoMixedModules(")
-    val dutDef1_rtl = Source.fromFile(s"$testDir/dutDef1/AddTwoMixedModules_1.v").getLines.mkString
+    val dutDef1_rtl = Source.fromFile(s"$testDir/dutDef1/AddTwoMixedModules_1.sv").getLines().mkString
     dutDef1_rtl should include("module AddOne(")
     dutDef1_rtl should include("module AddTwoMixedModules_1(")
 
     val errMsg = intercept[ChiselException] {
-      (new ChiselStage).run(
+      (new ChiselStage).execute(
+        Array("--target-dir", testDir, "--target", "systemverilog"),
         Seq(
-          ChiselGeneratorAnnotation(() => new Testbench(dutDef0, dutDef1)),
-          TargetDirAnnotation(testDir)
+          ChiselGeneratorAnnotation(() => new Testbench(dutDef0, dutDef1))
         ) ++ importDefinitionAnnos0 ++ importDefinitionAnnos1
       )
     }
@@ -371,15 +373,15 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
         dontTouch(mod.out)
       }
 
-      (new ChiselStage).run(
+      (new ChiselStage).execute(
+        Array("--target-dir", testDir, "--target", "systemverilog"),
         Seq(
           ChiselGeneratorAnnotation(() => new Testbench(dutDef)),
-          TargetDirAnnotation(testDir),
           ImportDefinitionAnnotation(dutDef, Some("CustomPrefix_AddOne_CustomSuffix"))
         )
       )
 
-      val tb_rtl = Source.fromFile(s"$testDir/Testbench.v").getLines.mkString
+      val tb_rtl = Source.fromFile(s"$testDir/Testbench.sv").getLines().mkString
 
       tb_rtl should include("module AddOne_1(")
       tb_rtl should include("AddOne_1 mod (")
@@ -393,18 +395,18 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
   ) {
     val testDir = createTestDirectory(this.getClass.getSimpleName).toString
 
-    val dutAnnos0 = (new ChiselStage).run(
+    val dutAnnos0 = (new ChiselStage).execute(
+      Array("--target-dir", s"$testDir/dutDef0", "--target", "systemverilog"),
       Seq(
-        ChiselGeneratorAnnotation(() => new AddOneParameterized(4)),
-        TargetDirAnnotation(s"$testDir/dutDef0")
+        ChiselGeneratorAnnotation(() => new AddOneParameterized(4))
       )
     )
     val dutDef0 = getDesignAnnotation(dutAnnos0).design.asInstanceOf[AddOneParameterized].toDefinition
 
-    val dutAnnos1 = (new ChiselStage).run(
+    val dutAnnos1 = (new ChiselStage).execute(
+      Array("--target-dir", s"$testDir/dutDef1", "--target", "systemverilog"),
       Seq(
         ChiselGeneratorAnnotation(() => new AddOneParameterized(8)),
-        TargetDirAnnotation(s"$testDir/dutDef1"),
         // pass in previously elaborated Definitions
         ImportDefinitionAnnotation(dutDef0)
       )
@@ -420,21 +422,21 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
       inst1.in := 0.U
     }
 
-    (new ChiselStage).run(
+    (new ChiselStage).execute(
+      Array("--target-dir", testDir, "--target", "systemverilog"),
       Seq(
         ChiselGeneratorAnnotation(() => new Testbench(dutDef0, dutDef1)),
-        TargetDirAnnotation(testDir),
         ImportDefinitionAnnotation(dutDef0, Some("Inst1_Prefix_AddOnePramaterized_Inst1_Suffix")),
         ImportDefinitionAnnotation(dutDef1, Some("Inst2_Prefix_AddOnePrameterized_1_Inst2_Suffix"))
       )
     )
 
-    val dutDef0_rtl = Source.fromFile(s"$testDir/dutDef0/AddOneParameterized.v").getLines.mkString
+    val dutDef0_rtl = Source.fromFile(s"$testDir/dutDef0/AddOneParameterized.sv").getLines().mkString
     dutDef0_rtl should include("module AddOneParameterized(")
-    val dutDef1_rtl = Source.fromFile(s"$testDir/dutDef1/AddOneParameterized_1.v").getLines.mkString
+    val dutDef1_rtl = Source.fromFile(s"$testDir/dutDef1/AddOneParameterized_1.sv").getLines().mkString
     dutDef1_rtl should include("module AddOneParameterized_1(")
 
-    val tb_rtl = Source.fromFile(s"$testDir/Testbench.v").getLines.mkString
+    val tb_rtl = Source.fromFile(s"$testDir/Testbench.sv").getLines().mkString
     tb_rtl should include("Inst1_Prefix_AddOnePramaterized_Inst1_Suffix inst0 (")
     tb_rtl should include("Inst2_Prefix_AddOnePrameterized_1_Inst2_Suffix inst1 (")
     (tb_rtl should not).include("module AddOneParameterized(")
@@ -446,19 +448,19 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
   ) {
     val testDir = createTestDirectory(this.getClass.getSimpleName).toString
 
-    val dutAnnos0 = (new ChiselStage).run(
+    val dutAnnos0 = (new ChiselStage).execute(
+      Array("--target-dir", s"$testDir/dutDef0", "--target", "systemverilog"),
       Seq(
-        ChiselGeneratorAnnotation(() => new AddOneParameterized(4)),
-        TargetDirAnnotation(s"$testDir/dutDef0")
+        ChiselGeneratorAnnotation(() => new AddOneParameterized(4))
       )
     )
     val importDefinitionAnnos0 = allModulesToImportedDefs(dutAnnos0)
     val dutDef0 = getDesignAnnotation(dutAnnos0).design.asInstanceOf[AddOneParameterized].toDefinition
 
-    val dutAnnos1 = (new ChiselStage).run(
+    val dutAnnos1 = (new ChiselStage).execute(
+      Array("--target-dir", s"$testDir/dutDef1", "--target", "systemverilog"),
       Seq(
         ChiselGeneratorAnnotation(() => new AddOneParameterized(8)),
-        TargetDirAnnotation(s"$testDir/dutDef1"),
         // pass in previously elaborated Definitions
         ImportDefinitionAnnotation(dutDef0)
       )
@@ -475,16 +477,16 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
       inst1.in := 0.U
     }
 
-    val dutDef0_rtl = Source.fromFile(s"$testDir/dutDef0/AddOneParameterized.v").getLines.mkString
+    val dutDef0_rtl = Source.fromFile(s"$testDir/dutDef0/AddOneParameterized.sv").getLines().mkString
     dutDef0_rtl should include("module AddOneParameterized(")
-    val dutDef1_rtl = Source.fromFile(s"$testDir/dutDef1/AddOneParameterized_1.v").getLines.mkString
+    val dutDef1_rtl = Source.fromFile(s"$testDir/dutDef1/AddOneParameterized_1.sv").getLines().mkString
     dutDef1_rtl should include("module AddOneParameterized_1(")
 
     val errMsg = intercept[ChiselException] {
-      (new ChiselStage).run(
+      (new ChiselStage).execute(
+        Array("--target-dir", testDir, "--target", "systemverilog"),
         Seq(
           ChiselGeneratorAnnotation(() => new Testbench(dutDef0, dutDef1)),
-          TargetDirAnnotation(testDir),
           ImportDefinitionAnnotation(dutDef0, Some("Inst1_Prefix_AddOnePrameterized_Inst1_Suffix")),
           ImportDefinitionAnnotation(dutDef1, Some("Inst1_Prefix_AddOnePrameterized_Inst1_Suffix"))
         )

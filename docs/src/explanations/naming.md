@@ -21,15 +21,24 @@ systemic name-stability issues, please refer to the naming [cookbook](../cookboo
 // Imports used by the following examples
 import chisel3._
 import chisel3.experimental.{prefix, noPrefix}
-import circt.stage.ChiselStage
 ```
 
-With the release of Chisel 3.5, users are required to add the following line to
-their build.sbt settings:
+```scala mdoc:invisible
+import circt.stage.ChiselStage
+def emitSystemVerilog(gen: => RawModule): String = {
+  val prettyArgs = Array("--disable-all-randomization", "--strip-debug-info")
+  ChiselStage.emitSystemVerilog(gen, firtoolOpts = prettyArgs)
+}
+```
+
+Chisel users must also include the compiler plugin in their build settings.
+In SBT this is something like:
 
 ```scala
-// chiselVersion is the String version (eg. "3.5.3")
-addCompilerPlugin("edu.berkeley.cs" % "chisel3-plugin" % chiselVersion cross CrossVersion.full)
+// For chisel versions 5.0.0+
+addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % "5.0.0" cross CrossVersion.full)
+// For older chisel3 versions, eg. 3.6.0
+addCompilerPlugin("edu.berkeley.cs" % "chisel3-plugin" % "3.6.0" cross CrossVersion.full)
 ```
 
 This plugin will run after the 'typer' phase of the Scala compiler. It looks for any user code which is of the form
@@ -51,7 +60,7 @@ class Example1 extends Module {
 }
 ```
 ```scala mdoc:verilog
-ChiselStage.emitSystemVerilog(new Example1)
+emitSystemVerilog(new Example1)
 ```
 
 Otherwise, it is rewritten to also include the name as a prefix to any signals generated while executing the right-hand-
@@ -62,20 +71,32 @@ class Example2 extends Module {
   val in = IO(Input(UInt(2.W)))
   // val in = autoNameRecursively("in")(prefix("in")(IO(Input(UInt(2.W)))))
 
-  val out = IO(Output(UInt(2.W)))
-  // val out = autoNameRecursively("out")(prefix("out")(IO(Output(UInt(2.W)))))
+  val out1 = IO(Output(UInt(4.W)))
+  // val out1 = autoNameRecursively("out1")(prefix("out1")(IO(Output(UInt(4.W)))))
+  val out2 = IO(Output(UInt(4.W)))
+  // val out2 = autoNameRecursively("out2")(prefix("out2")(IO(Output(UInt(4.W)))))
+  val out3 = IO(Output(UInt(4.W)))
+  // val out3 = autoNameRecursively("out3")(prefix("out3")(IO(Output(UInt(4.W)))))
 
-  def inXin() = in * in
+  def func() = {
+    val squared = in * in
+    // val squared = autoNameRecursively("squared")(prefix("squared")(in * in))
+    out1 := squared
+    val delay = RegNext(squared)
+    // val delay = autoNameRecursively("delay")(prefix("delay")(RegNext(squared)))
+    delay
+  }
 
-  val add = 3.U + inXin()
-  // val add = autoNameRecursively("add")(prefix("add")(3.U + inXin()))
-  // Note that the intermediate result of the multiplication is prefixed with `add`
+  val masked = 0xa.U & func()
+  // val masked = autoNameRecursively("masked")(prefix("masked")(0xa.U & func()))
+  // Note that values created inside of `func()`` are prefixed with `masked`
 
-  out := add + 1.U
+  out2 := masked + 1.U
+  out3 := masked - 1.U
 }
 ```
 ```scala mdoc:verilog
-ChiselStage.emitSystemVerilog(new Example2)
+emitSystemVerilog(new Example2)
 ```
 
 Prefixing can also be derived from the name of signals on the left-hand side of a connection.
@@ -86,19 +107,23 @@ class ConnectPrefixing extends Module {
   val in = IO(Input(UInt(2.W)))
   // val in = autoNameRecursively("in")(prefix("in")(IO(Input(UInt(2.W)))))
 
-  val out = IO(Output(UInt(2.W)))
-  // val out = autoNameRecursively("out")(prefix("out")(IO(Output(UInt(2.W)))))
+  val out1 = IO(Output(UInt(4.W)))
+  // val out1 = autoNameRecursively("out1")(prefix("out1")(IO(Output(UInt(4.W)))))
+  val out2 = IO(Output(UInt(4.W)))
+  // val out2 = autoNameRecursively("out2")(prefix("out2")(IO(Output(UInt(4.W)))))
 
-  out := { // technically this is not wrapped in autoNameRecursively nor prefix
-    // But the Chisel runtime will still use the name of `out` as a prefix
-    val double = in * in
-    // val double = autoNameRecursively("double")(prefix("double")(in * in))
-    double + 1.U
+  out1 := { // technically this is not wrapped in autoNameRecursively nor prefix
+    // But the Chisel runtime will still use the name of `out1` as a prefix
+    val squared = in * in
+    out2 := squared
+    val delayed = RegNext(squared)
+    // val delayed = autoNameRecursively("delayed")(prefix("delayed")(RegNext(squared)))
+    delayed + 1.U
   }
 }
 ```
 ```scala mdoc:verilog
-ChiselStage.emitSystemVerilog(new ConnectPrefixing)
+emitSystemVerilog(new ConnectPrefixing)
 ```
 
 Note that the naming also works if the hardware type is nested in an `Option` or a subtype of `Iterable`:
@@ -109,19 +134,22 @@ class Example3 extends Module {
   // val in = autoNameRecursively("in")(prefix("in")(IO(Input(UInt(2.W)))))
 
   val out = IO(Output(UInt()))
-  // val out = autoNameRecursively("out")(prefix("out")(IO(Output(UInt(2.W)))))
+  // val out = autoNameRecursively("out")(prefix("out")(IO(Output(UInt()))))
 
-  def inXin() = in * in
+  def func() = {
+    val delay = RegNext(in)
+    delay + 1.U
+  }
 
-  val opt = Some(3.U + inXin())
-  // Note that the intermediate result of the inXin() is prefixed with `opt`:
-  // val opt = autoNameRecursively("opt")(prefix("opt")(Some(3.U + inXin())))
+  val opt = Some(func())
+  // Note that the register in func() is prefixed with `opt`:
+  // val opt = autoNameRecursively("opt")(prefix("opt")(Some(func()))
 
   out := opt.get + 1.U
 }
 ```
 ```scala mdoc:verilog
-ChiselStage.emitSystemVerilog(new Example3)
+emitSystemVerilog(new Example3)
 ```
 
 There is also a slight variant (`autoNameRecursivelyProduct`) for naming hardware with names provided by an unapply:
@@ -135,7 +163,7 @@ class UnapplyExample extends Module {
 }
 ```
 ```scala mdoc:verilog
-ChiselStage.emitSystemVerilog(new UnapplyExample)
+emitSystemVerilog(new UnapplyExample)
 ```
 
 Note that the compiler plugin will not insert a prefix in these cases because it is ambiguous what the prefix should be.
@@ -143,35 +171,8 @@ Users who desire a prefix are encouraged to provide one as [described below](#pr
 
 ### Prefixing
 
-As shown above, the compiler plugin automatically attempts to prefix some of your signals for you. However, you as a
-user can also add your own prefixes. This is especially useful for ECO-type fixes where you need to add some logic to a module
-but don't want to influence other names in the module.
-
-In the following example, we prefix additional logic with "ECO", where `Example4` is pre-ECO and `Example5` is post-ECO:
-
-```scala mdoc
-class Example4 extends Module {
-  val in = IO(Input(UInt(2.W)))
-  val out = IO(Output(UInt()))
-
-  val add = in + in + in
-
-  out := add + 1.U
-}
-
-class Example5 extends Module {
-  val in = IO(Input(UInt(2.W)))
-  val out = IO(Output(UInt()))
-
-  val add = in + in + in
-
-  out := prefix("ECO") { add + 1.U + in }
-}
-```
-```scala mdoc:verilog
-ChiselStage.emitSystemVerilog(new Example4)
-ChiselStage.emitSystemVerilog(new Example5)
-```
+As shown above, the compiler plugin automatically attempts to prefix some of your signals for you.
+However, you as a user can also add your own prefixes by calling `prefix(...)`:
 
 Also note that the prefixes append to each other (including the prefix generated by the compiler plugin):
 
@@ -180,30 +181,36 @@ class Example6 extends Module {
   val in = IO(Input(UInt(2.W)))
   val out = IO(Output(UInt()))
 
-  val add = prefix("foo") { in + in + in }
+  val add = prefix("foo") {
+    val sum = RegNext(in + 1.U)
+    sum + 1.U
+  }
 
   out := add
 }
 ```
 ```scala mdoc:verilog
-ChiselStage.emitSystemVerilog(new Example6)
+emitSystemVerilog(new Example6)
 ```
 
 Sometimes you may want to disable the prefixing. This might occur if you are writing a library function and
-don't want the prefixing behavior. In this case, you can use the `noPrefix` object:
+don't want the prefixing behavior. In this case, you can call `noPrefix`:
 
 ```scala mdoc
 class Example7 extends Module {
   val in = IO(Input(UInt(2.W)))
   val out = IO(Output(UInt()))
 
-  val add = noPrefix { in + in + in }
+  val add = noPrefix { 
+    val sum = RegNext(in + 1.U)
+    sum + 1.U
+  }
 
   out := add
 }
 ```
 ```scala mdoc:verilog
-ChiselStage.emitSystemVerilog(new Example7)
+emitSystemVerilog(new Example7)
 ```
 
 ### Suggest a Signal's Name (or the instance name of a Module)
@@ -216,13 +223,16 @@ class Example8 extends Module {
   val in = IO(Input(UInt(2.W)))
   val out = IO(Output(UInt()))
 
-  val add = (in + (in + in).suggestName("foo"))
+  val add = {
+    val sum = RegNext(in + 1.U).suggestName("foo")
+    sum + 1.U
+  }
 
   out := add
 }
 ```
 ```scala mdoc:verilog
-ChiselStage.emitSystemVerilog(new Example8)
+emitSystemVerilog(new Example8)
 ```
 
 Note that using `.suggestName` does **not** affect prefixes derived from val names;
@@ -239,7 +249,7 @@ class ConnectionPrefixExample extends Module {
     // is derived from `val out0`, so this does not affect the name of mul
     port.suggestName("foo")
     // out0_mul
-    val mul = in0 * in1
+    val mul = RegNext(in0 * in1)
     port := mul + 1.U
     port
   }
@@ -249,7 +259,7 @@ class ConnectionPrefixExample extends Module {
 
   out1 := {
     // out1_sum
-    val sum = in0 + in1
+    val sum = RegNext(in0 + in1)
     sum + 1.U
   }
   // Comes after so does *not* affect prefix above
@@ -259,13 +269,13 @@ class ConnectionPrefixExample extends Module {
   out2.suggestName("fizz")
   out2 := {
     // fizz_diff
-    val diff = in0 - in1
+    val diff = RegNext(in0 - in1)
     diff + 1.U
   }
 }
 ```
 ```scala mdoc:verilog
-ChiselStage.emitSystemVerilog(new ConnectionPrefixExample)
+emitSystemVerilog(new ConnectionPrefixExample)
 ```
 
 As this example illustrates, this behavior is slightly inconsistent so is subject to change in a future version of Chisel.
@@ -283,15 +293,20 @@ class TemporaryExample extends Module {
   val in1 = IO(Input(UInt(2.W)))
 
   val out = {
-    val port = IO(Output(UInt()))
+    // We need 2 ports so firtool will maintain the common subexpression
+    val port0 = IO(Output(UInt()))
+    // out_port1
+    val port1 = IO(Output(UInt()))
     val _sum = in0 + in1
-    port := _sum + 1.U
-    port
+    port0 := _sum + 1.U
+    port1 := _sum - 1.U
+    // port0 is returned so will get the name "out"
+    port0
   }
 }
 ```
 ```scala mdoc:verilog
-ChiselStage.emitSystemVerilog(new TemporaryExample)
+emitSystemVerilog(new TemporaryExample)
 ```
 
 If an unnamed signal is itself used to generate a prefix, the leading `_` will be ignored to avoid double `__` in the names of further nested signals.
@@ -301,17 +316,19 @@ If an unnamed signal is itself used to generate a prefix, the leading `_` will b
 class TemporaryPrefixExample extends Module {
   val in0 = IO(Input(UInt(2.W)))
   val in1 = IO(Input(UInt(2.W)))
-  val out = IO(Output(UInt()))
+  val out0 = IO(Output(UInt()))
+  val out1 = IO(Output(UInt()))
 
   val _sum = {
     val x = in0 + in1
+    out0 := x
     x + 1.U
   }
-  out := _sum & 0x2.U
+  out1 := _sum & 0x2.U
 }
 ```
 ```scala mdoc:verilog
-ChiselStage.emitSystemVerilog(new TemporaryPrefixExample)
+emitSystemVerilog(new TemporaryPrefixExample)
 ```
 
 
@@ -333,36 +350,6 @@ class Example9(width: Int) extends Module {
 }
 ```
 ```scala mdoc:verilog
-ChiselStage.emitSystemVerilog(new Example9(8))
-ChiselStage.emitSystemVerilog(new Example9(1))
+emitSystemVerilog(new Example9(8))
+emitSystemVerilog(new Example9(1))
 ```
-
-### Reflection Naming
-
-Regardless of whether the compiler plugin is enabled or not, after Chisel constructs a module, it attempts to name all
-members of the Module. This will name all vals which are fields of the module class, but it will not name any
-vals in nested functions or scopes.
-
-If the plugin successfully names a signal, the reflection naming will do nothing. We plan to deprecate all reflection
-naming in a future Chisel release, but are leaving it to allow the plugin naming to be optional (but recommended).
-
-For example, the signals in the following module are in a nested scope; the plugin successfully names them, but
-reflection naming cannot:
-
-```scala mdoc
-class Example10 extends Module {
-  {
-    val in = IO(Input(UInt(3.W)))
-    val out = IO(Output(UInt()))
-
-    val add = in + in
-
-    out := add
-  }
-}
-```
-
-### @chiselName
-
-This macro is no longer recommended as its functionality is entirely replaced by the compiler plugin. Feel free to
-delete from your Chisel designs!

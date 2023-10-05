@@ -80,14 +80,8 @@ package experimental {
       _component
     }
 
-    private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
+    private[chisel3] def initializeInParent(): Unit = {
       implicit val sourceInfo = UnlocatableSourceInfo
-
-      if (!parentCompileOptions.explicitInvalidate) {
-        for (port <- getModulePorts) {
-          pushCommand(DefInvalid(sourceInfo, port.ref))
-        }
-      }
     }
   }
 }
@@ -129,9 +123,7 @@ package experimental {
   */
 @nowarn("msg=class Port") // delete when Port becomes private
 abstract class BlackBox(
-  val params: Map[String, Param] = Map.empty[String, Param]
-)(
-  implicit compileOptions: CompileOptions)
+  val params: Map[String, Param] = Map.empty[String, Param])
     extends BaseBlackBox {
 
   // Find a Record port named "io" for purposes of stripping the prefix
@@ -144,8 +136,6 @@ abstract class BlackBox(
   protected def _compatIoPortBound() = _io.exists(portsContains(_))
 
   private[chisel3] override def generateComponent(): Option[Component] = {
-    _compatAutoWrapPorts() // pre-IO(...) compatibility hack
-
     // Restrict IO to just io, clock, and reset
     if (!_io.exists(portsContains)) {
       throwException(s"BlackBox '$this' must have a port named 'io' of type Record wrapped in IO(...)!")
@@ -178,11 +168,5 @@ abstract class BlackBox(
     _component
   }
 
-  private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
-    if (!parentCompileOptions.explicitInvalidate) {
-      for ((_, port) <- _io.map(_.elements).getOrElse(Nil)) {
-        pushCommand(DefInvalid(UnlocatableSourceInfo, port.ref))
-      }
-    }
-  }
+  private[chisel3] def initializeInParent(): Unit = {}
 }

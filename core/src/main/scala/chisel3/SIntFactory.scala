@@ -2,7 +2,7 @@
 
 package chisel3
 
-import chisel3.internal.firrtl.{IntervalRange, SLit, Width}
+import chisel3.internal.firrtl.{SLit, Width}
 
 trait SIntFactory {
 
@@ -11,11 +11,6 @@ trait SIntFactory {
 
   /** Create a SInt type or port with fixed width. */
   def apply(width: Width): SInt = new SInt(width)
-
-  /** Create a SInt with the specified range */
-  def apply(range: IntervalRange): SInt = {
-    apply(range.getWidth)
-  }
 
   /** Create an SInt literal with specified width. */
   protected[chisel3] def Lit(value: BigInt, width: Width): SInt = {

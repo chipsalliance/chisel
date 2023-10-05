@@ -5,7 +5,6 @@ package chisel3.experimental.hierarchy
 import chisel3.experimental.BaseModule
 import chisel3.internal.PseudoModule
 import chisel3.internal.firrtl.{Component, Ref}
-import chisel3.CompileOptions
 
 /** Represents a module viewed from a different instance context.
   *
@@ -20,12 +19,13 @@ private[chisel3] final class InstanceClone[T <: BaseModule](val getProto: T, val
     extends PseudoModule
     with core.IsClone[T] {
   override def toString = s"InstanceClone(${getProto})"
+  override private[chisel3] def _definitionIdentifier = getProto.definitionIdentifier
   // No addition components are generated
   private[chisel3] def generateComponent(): Option[Component] = None
   // Necessary for toTarget to work
   private[chisel3] def setAsInstanceRef(): Unit = { this.setRef(Ref(instName())) }
   // This module doesn't acutally exist in the FIRRTL so no initialization to do
-  private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = ()
+  private[chisel3] def initializeInParent(): Unit = ()
   // Instance name is the same as proto's instance name
   override def instanceName = instName()
   // Module name is the same as proto's module name

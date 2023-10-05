@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
-
 package chisel3.util
 
-import scala.language.experimental.macros
-
 import chisel3._
+
 import chisel3.experimental.SourceInfo
 import chisel3.internal.sourceinfo.SourceInfoTransform
+
+import scala.language.experimental.macros
 
 /** Concatenates elements of the input, in order, together.
   *
@@ -26,7 +26,7 @@ object Cat {
   def apply[T <: Bits](a: T, r: T*): UInt = macro SourceInfoTransform.arArg
 
   /** @group SourceInfoTransformMacro */
-  def do_apply[T <: Bits](a: T, r: T*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
+  def do_apply[T <: Bits](a: T, r: T*)(implicit sourceInfo: SourceInfo): UInt =
     _apply_impl(a :: r.toList)
 
   /** Concatenates the data elements of the input sequence, in reverse sequence order, together.
@@ -39,9 +39,9 @@ object Cat {
   def apply[T <: Bits](r: Seq[T]): UInt = macro SourceInfoTransform.rArg
 
   /** @group SourceInfoTransformMacro */
-  def do_apply[T <: Bits](r: Seq[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
+  def do_apply[T <: Bits](r: Seq[T])(implicit sourceInfo: SourceInfo): UInt =
     _apply_impl(r)
 
-  private def _apply_impl[T <: Bits](r: Seq[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
+  private def _apply_impl[T <: Bits](r: Seq[T])(implicit sourceInfo: SourceInfo): UInt =
     SeqUtils.asUInt(r.reverse)
 }

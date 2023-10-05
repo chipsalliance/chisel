@@ -1,0 +1,15 @@
+{
+  "name": "Chisel Development",
+  "dockerFile": "Dockerfile",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "remote.autoForwardPorts": false,
+      },
+      "extensions": [
+        "scalameta.metals",
+        "mshr-h.veriloghdl",
+      ]
+    }
+  }
+}

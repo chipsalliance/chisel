@@ -73,6 +73,8 @@ private[chisel3] sealed trait Alignment {
 
   final def isSqueezed: Boolean = base.squeezed.contains(member)
 
+  final def isExcluded: Boolean = base.excluded.contains(member)
+
   // Whether the current member is an aggregate
   final def isAgg: Boolean = member.isInstanceOf[Aggregate]
 
@@ -94,6 +96,7 @@ private[chisel3] case class EmptyAlignment(base: Connectable[Data], isConsumer: 
   def member = DontCare
   def waived = Set.empty
   def squeezed = Set.empty
+  def excluded = Set.empty
   def invert = this
   def coerced = false
   def coerce = this
@@ -167,7 +170,7 @@ object Alignment {
     left:  Option[Alignment],
     right: Option[Alignment]
   ): Seq[(Option[Alignment], Option[Alignment])] = {
-    Data.DataMatchingZipOfChildren.matchingZipOfChildren(left.map(_.member), right.map(_.member)).map {
+    Data.dataMatchingZipOfChildren.matchingZipOfChildren(left.map(_.member), right.map(_.member)).map {
       case (l, r) => l.map(deriveChildAlignment(_, left.get)) -> r.map(deriveChildAlignment(_, right.get))
     }
   }

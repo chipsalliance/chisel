@@ -1,7 +1,8 @@
 package chiselTests
 import chisel3._
 import chisel3.experimental.{annotate, ChiselMultiAnnotation}
-import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
+import chisel3.stage.ChiselGeneratorAnnotation
+import circt.stage.ChiselStage
 import firrtl.stage.FirrtlCircuitAnnotation
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -51,7 +52,7 @@ class NewAnnotationsSpec extends AnyFreeSpec with Matchers {
     "NoDedup and DontTouch work as expected" in {
       val dutAnnos = stage
         .execute(
-          Array("-X", "low", "--target-dir", "test_run_dir"),
+          Array("--target", "chirrtl", "--target-dir", "test_run_dir"),
           Seq(ChiselGeneratorAnnotation(() => new UsesMuchUsedModule))
         )
 
@@ -64,8 +65,8 @@ class NewAnnotationsSpec extends AnyFreeSpec with Matchers {
 
       noDedupAnnosCombined should include("~UsesMuchUsedModule|MuchUsedModule_2")
       noDedupAnnosCombined should include("~UsesMuchUsedModule|MuchUsedModule_3")
-      dontTouchAnnosCombined should include("~UsesMuchUsedModule|UsesMuchUsedModule/mod1:MuchUsedModule>io_out")
-      dontTouchAnnosCombined should include("~UsesMuchUsedModule|UsesMuchUsedModule/mod1:MuchUsedModule>io_in")
+      dontTouchAnnosCombined should include("~UsesMuchUsedModule|MuchUsedModule_1>io.out")
+      dontTouchAnnosCombined should include("~UsesMuchUsedModule|MuchUsedModule_1>io.in")
 
     }
   }

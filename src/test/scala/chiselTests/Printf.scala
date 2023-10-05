@@ -3,28 +3,27 @@
 package chiselTests
 
 import chisel3._
-import chisel3.testers.BasicTester
 import circt.stage.ChiselStage
 
-class SinglePrintfTester() extends BasicTester {
+class SinglePrintfTester() extends Module {
   val x = 254.U
   printf("x=%x", x)
   stop()
 }
 
-class ASCIIPrintfTester() extends BasicTester {
+class ASCIIPrintfTester() extends Module {
   printf((0x20 to 0x7e).map(_.toChar).mkString.replace("%", "%%"))
   stop()
 }
 
-class MultiPrintfTester() extends BasicTester {
+class MultiPrintfTester() extends Module {
   val x = 254.U
   val y = 255.U
   printf("x=%x y=%x", x, y)
   stop()
 }
 
-class ASCIIPrintableTester extends BasicTester {
+class ASCIIPrintableTester extends Module {
   printf(PString((0x20 to 0x7e).map(_.toChar).mkString("")))
   stop()
 }
@@ -41,43 +40,35 @@ class ScopeTesterModule extends Module {
   val wp = cf"$w"
 }
 
-class PrintablePrintfScopeTester extends BasicTester {
-  ChiselStage.elaborate {
-    new Module {
-      val mod = Module(new ScopeTesterModule)
-      printf(mod.p)
-    }
-  }
-  stop()
-}
-
-class PrintablePrintfWireScopeTester extends BasicTester {
-  ChiselStage.elaborate {
-    new Module {
-      val mod = Module(new ScopeTesterModule)
-      printf(mod.wp)
-    }
-  }
-  stop()
-}
-
 class PrintfSpec extends ChiselFlatSpec {
-  "A printf with a single argument" should "run" in {
-    assertTesterPasses { new SinglePrintfTester }
+  "A printf with a single argument" should "elaborate" in {
+    ChiselStage.emitCHIRRTL(new SinglePrintfTester)
   }
-  "A printf with multiple arguments" should "run" in {
-    assertTesterPasses { new MultiPrintfTester }
+  "A printf with multiple arguments" should "elaborate" in {
+    ChiselStage.emitCHIRRTL(new MultiPrintfTester)
   }
-  "A printf with ASCII characters 1-127" should "run" in {
-    assertTesterPasses { new ASCIIPrintfTester }
+  "A printf with ASCII characters 1-127" should "elaborate" in {
+    ChiselStage.emitCHIRRTL(new ASCIIPrintfTester)
   }
-  "A printf with Printable ASCII characters 1-127" should "run" in {
-    assertTesterPasses { new ASCIIPrintableTester }
+  "A printf with Printable ASCII characters 1-127" should "elaborate" in {
+    ChiselStage.emitCHIRRTL(new ASCIIPrintableTester)
   }
-  "A printf with Printable" should "respect port scopes" in {
-    assertTesterPasses { new PrintablePrintfScopeTester }
+  "A printf with Printable targeting a format string using a port in another module" should "elaborate" in {
+    ChiselStage.emitCHIRRTL {
+      new Module {
+        val mod = Module(new ScopeTesterModule)
+        printf(mod.p)
+      }
+    }
   }
-  "A printf with Printable" should "respect wire scopes" in {
-    a[ChiselException] should be thrownBy { assertTesterPasses { new PrintablePrintfWireScopeTester } }
+  "A printf with Printable targeting a format string using a wire inside another module" should "error" in {
+    a[ChiselException] should be thrownBy {
+      circt.stage.ChiselStage.emitCHIRRTL {
+        new Module {
+          val mod = Module(new ScopeTesterModule)
+          printf(mod.wp)
+        }
+      }
+    }
   }
 }

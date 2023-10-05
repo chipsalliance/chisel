@@ -1,0 +1,32 @@
+name: Generate Scala CLI Template
+
+on:
+  release:
+    types: [created]
+  workflow_dispatch:
+
+jobs:
+  generate_scala_cli_template:
+    name: Generate Scala CLI Template
+    uses: ./.github/workflows/build-scala-cli-template.yml
+
+  publish_template:
+    name: Generate Scala CLI Template
+    needs: [generate_scala_cli_template]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download Generated CLI Template
+        uses: actions/download-artifact@v3
+        with:
+          name: chisel-template.scala
+      - name: Display Template
+        run: |
+          echo "\`\`\`scala" >> $GITHUB_STEP_SUMMARY
+          cat chisel-template.scala >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+      - name: Upload To Release Page
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v0.1.15
+        with:
+          files: chisel-template.scala

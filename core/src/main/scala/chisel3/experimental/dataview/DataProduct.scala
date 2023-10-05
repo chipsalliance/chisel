@@ -92,7 +92,7 @@ object DataProduct extends LowPriorityDataProduct {
     }
   }
 
-  /** [[DataProduct]] implementation for any [[Tuple2]] where each field has an implementation of `DataProduct`. */
+  /** [[DataProduct]] implementation for any [[scala.Tuple2]] where each field has an implementation of `DataProduct`. */
   implicit def tuple2DataProduct[A: DataProduct, B: DataProduct]: DataProduct[(A, B)] = new DataProduct[(A, B)] {
     def dataIterator(tup: (A, B), path: String): Iterator[(Data, String)] = {
       val dpa = implicitly[DataProduct[A]]
@@ -102,7 +102,7 @@ object DataProduct extends LowPriorityDataProduct {
     }
   }
 
-  /** [[DataProduct]] implementation for any [[Tuple3]] where each field has an implementation of `DataProduct`. */
+  /** [[DataProduct]] implementation for any [[scala.Tuple3]] where each field has an implementation of `DataProduct`. */
   implicit def tuple3DataProduct[A: DataProduct, B: DataProduct, C: DataProduct]: DataProduct[(A, B, C)] =
     new DataProduct[(A, B, C)] {
       def dataIterator(tup: (A, B, C), path: String): Iterator[(Data, String)] = {
@@ -114,7 +114,7 @@ object DataProduct extends LowPriorityDataProduct {
       }
     }
 
-  /** [[DataProduct]] implementation for any [[Tuple4]] where each field has an implementation of `DataProduct`. */
+  /** [[DataProduct]] implementation for any [[scala.Tuple4]] where each field has an implementation of `DataProduct`. */
   implicit def tuple4DataProduct[
     A: DataProduct,
     B: DataProduct,
@@ -135,7 +135,7 @@ object DataProduct extends LowPriorityDataProduct {
       }
     }
 
-  /** [[DataProduct]] implementation for any [[Tuple5]] where each field has an implementation of `DataProduct`. */
+  /** [[DataProduct]] implementation for any [[scala.Tuple5]] where each field has an implementation of `DataProduct`. */
   implicit def tuple5DataProduct[
     A: DataProduct,
     B: DataProduct,
@@ -159,7 +159,7 @@ object DataProduct extends LowPriorityDataProduct {
       }
     }
 
-  /** [[DataProduct]] implementation for any [[Tuple6]] where each field has an implementation of `DataProduct`. */
+  /** [[DataProduct]] implementation for any [[scala.Tuple6]] where each field has an implementation of `DataProduct`. */
   implicit def tuple6DataProduct[
     A: DataProduct,
     B: DataProduct,
@@ -186,7 +186,7 @@ object DataProduct extends LowPriorityDataProduct {
       }
     }
 
-  /** [[DataProduct]] implementation for any [[Tuple7]] where each field has an implementation of `DataProduct`. */
+  /** [[DataProduct]] implementation for any [[scala.Tuple7]] where each field has an implementation of `DataProduct`. */
   implicit def tuple7DataProduct[
     A: DataProduct,
     B: DataProduct,
@@ -216,7 +216,7 @@ object DataProduct extends LowPriorityDataProduct {
       }
     }
 
-  /** [[DataProduct]] implementation for any [[Tuple8]] where each field has an implementation of `DataProduct`. */
+  /** [[DataProduct]] implementation for any [[scala.Tuple8]] where each field has an implementation of `DataProduct`. */
   implicit def tuple8DataProduct[
     A: DataProduct,
     B: DataProduct,
@@ -249,7 +249,7 @@ object DataProduct extends LowPriorityDataProduct {
       }
     }
 
-  /** [[DataProduct]] implementation for any [[Tuple9]] where each field has an implementation of `DataProduct`. */
+  /** [[DataProduct]] implementation for any [[scala.Tuple9]] where each field has an implementation of `DataProduct`. */
   implicit def tuple9DataProduct[
     A: DataProduct,
     B: DataProduct,
@@ -285,7 +285,7 @@ object DataProduct extends LowPriorityDataProduct {
       }
     }
 
-  /** [[DataProduct]] implementation for any [[Tuple9]] where each field has an implementation of `DataProduct`. */
+  /** [[DataProduct]] implementation for any [[scala.Tuple9]] where each field has an implementation of `DataProduct`. */
   implicit def tuple10DataProduct[
     A: DataProduct,
     B: DataProduct,

@@ -3,7 +3,8 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.{requireIsChiselType, DataMirror}
+import chisel3.experimental.requireIsChiselType
+import chisel3.reflect.DataMirror
 import scala.collection.immutable.ListMap
 
 // An example of how Record might be extended

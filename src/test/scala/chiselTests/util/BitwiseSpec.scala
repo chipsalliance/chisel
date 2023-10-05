@@ -2,7 +2,7 @@ package chiselTests.util
 
 import chisel3._
 import chisel3.util.{Fill, FillInterleaved, PopCount, Reverse}
-import circt.stage.ChiselStage
+import _root_.circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 

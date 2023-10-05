@@ -17,14 +17,25 @@ import experimental.{prefix, requireIsHardware}
 final class Connectable[+T <: Data] private (
   val base:                      T,
   private[chisel3] val waived:   Set[Data],
-  private[chisel3] val squeezed: Set[Data]) {
+  private[chisel3] val squeezed: Set[Data],
+  private[chisel3] val excluded: Set[Data]) {
   requireIsHardware(base, s"Can only created Connectable of components, not unbound Chisel types")
 
-  /** True if no members are waived or squeezed */
-  def notSpecial = waived.isEmpty && squeezed.isEmpty
+  private[chisel3] def copy(
+    waived:   Set[Data] = this.waived,
+    squeezed: Set[Data] = this.squeezed,
+    excluded: Set[Data] = this.excluded
+  ): Connectable[T] =
+    new Connectable(base, waived, squeezed, excluded)
 
-  private[chisel3] def copy(waived: Set[Data] = this.waived, squeezed: Set[Data] = this.squeezed): Connectable[T] =
-    new Connectable(base, waived, squeezed)
+  /** True if no members are waived or squeezed or excluded */
+  def notWaivedOrSqueezedOrExcluded = waived.isEmpty && squeezed.isEmpty && excluded.isEmpty
+
+  /** Static cast to a super type */
+  def as[S <: Data](implicit ev: T <:< S): Connectable[S] = this.asInstanceOf[Connectable[S]]
+
+  /** Connect to/from all fields regardless of Scala type, squeeze if necessary, and don't error if mismatched members */
+  def unsafe: Connectable[Data] = waiveAll.squeezeAll.asInstanceOf[Connectable[Data]]
 
   /** Select members of base to waive
     *
@@ -83,6 +94,39 @@ final class Connectable[+T <: Data] private (
     this.copy(squeezed = squeezedMembers.toSet) // not appending squeezed because we are collecting all members
   }
 
+  /** Squeeze all members of base and upcast to super type */
+  def squeezeAllAs[S <: Data](implicit ev: T <:< S): Connectable[S] = squeezeAll.asInstanceOf[Connectable[S]]
+
+  /** Adds base to excludes */
+  def exclude: Connectable[T] = this.copy(excluded = excluded ++ addOpaque(Seq(base)))
+
+  /** Select members of base to exclude
+    *
+    * @param members functions given the base return a member to exclude
+    */
+  def exclude(members: (T => Data)*): Connectable[T] = this.copy(excluded = excluded ++ members.map(f => f(base)).toSet)
+
+  /** Select members of base to exclude and static cast to a new type
+    *
+    * @param members functions given the base return a member to exclude
+    */
+  def excludeAs[S <: Data](members: (T => Data)*)(implicit ev: T <:< S): Connectable[S] =
+    this.copy(excluded = excluded ++ members.map(f => f(base)).toSet).asInstanceOf[Connectable[S]]
+
+  /** Programmatically select members of base to exclude and static cast to a new type
+    *
+    * @param members partial function applied to all recursive members of base, if match, can return a member to exclude
+    */
+  def excludeEach[S <: Data](pf: PartialFunction[Data, Seq[Data]])(implicit ev: T <:< S): Connectable[S] = {
+    val excludedMembers = DataMirror.collectMembers(base)(pf).flatten
+    this.copy(excluded = excluded ++ excludedMembers.toSet).asInstanceOf[Connectable[S]]
+  }
+
+  /** Exclude probes */
+  def excludeProbes: Connectable[T] = excludeEach {
+    case f if (DataMirror.hasProbeTypeModifier(f)) => Seq(f)
+  }
+
   /** Add any elements of members that are OpaqueType */
   private def addOpaque(members: Seq[Data]): Seq[Data] = {
     members.flatMap {
@@ -98,13 +142,18 @@ object Connectable {
   def apply[T <: Data](
     base:             T,
     waiveSelection:   Data => Boolean = { _ => false },
-    squeezeSelection: Data => Boolean = { _ => false }
+    squeezeSelection: Data => Boolean = { _ => false },
+    excludeSelection: Data => Boolean = { _ => false }
   ): Connectable[T] = {
-    val (waived, squeezed) = {
+    val (waived, squeezed, excluded) = {
       val members = DataMirror.collectMembers(base) { case x => x }
-      (members.filter(waiveSelection).toSet, members.filter(squeezeSelection).toSet)
+      (
+        members.filter(waiveSelection).toSet,
+        members.filter(squeezeSelection).toSet,
+        members.filter(excludeSelection).toSet
+      )
     }
-    new Connectable(base, waived, squeezed)
+    new Connectable(base, waived, squeezed, excluded)
   }
 
   /** The default connection operators for Chisel hardware components
@@ -125,7 +174,7 @@ object Connectable {
     * $chiselTypeRestrictions
     *
     * Additional notes:
-    * - Connecting two [[util.DecoupledIO]]'s would connect `bits`, `valid`, AND `ready` from producer to consumer (despite `ready` being flipped)
+    * - Connecting two `util.DecoupledIO`'s would connect `bits`, `valid`, AND `ready` from producer to consumer (despite `ready` being flipped)
     * - Functionally equivalent to chisel3.:=, but different than Chisel.:=
     *
     * @group connection
@@ -143,7 +192,7 @@ object Connectable {
     * $chiselTypeRestrictions
     *
     * Additional notes:
-    *  - Connecting two [[util.DecoupledIO]]'s would connect `bits` and `valid` from producer to consumer, but leave `ready` unconnected
+    *  - Connecting two `util.DecoupledIO`'s would connect `bits` and `valid` from producer to consumer, but leave `ready` unconnected
     *
     * @group connection
     *
@@ -160,7 +209,7 @@ object Connectable {
     * $chiselTypeRestrictions
     *
     * Additional notes:
-    *  - Connecting two [[util.DecoupledIO]]'s would connect `ready` from consumer to producer, but leave `bits` and `valid` unconnected
+    *  - Connecting two `util.DecoupledIO`'s would connect `ready` from consumer to producer, but leave `bits` and `valid` unconnected
     *
     * @group connection
     *
@@ -182,7 +231,7 @@ object Connectable {
     * - An additional type restriction is that all relative orientations of `consumer` and `producer` must match exactly.
     *
     * Additional notes:
-    *  - Connecting two wires of [[util.DecoupledIO]] chisel type would connect `bits` and `valid` from producer to consumer, and `ready` from consumer to producer.
+    *  - Connecting two wires of `util.DecoupledIO` chisel type would connect `bits` and `valid` from producer to consumer, and `ready` from consumer to producer.
     *  - If the types of consumer and producer also have identical relative flips, then we can emit FIRRTL.<= as it is a stricter version of chisel3.:<>=
     *  - "turk-duck-en" is a dish where a turkey is stuffed with a duck, which is stuffed with a chicken; `:<>=` is a `:=` stuffed with a `<>`
     *
@@ -258,6 +307,23 @@ object Connectable {
       }
     }
 
+    /** There are cases when we need to reverse a FIRRTL connection
+      *
+      * Namely, OpaqueTypes of flipped fields since the flip is not present in the emitted FIRRTL
+      * @todo when refactoring internals, this firrtl-specific behavior should probably be moved
+      *   into Chisel IR lowering to FIRRTL IR. Such a change will likely conflict with the logic in
+      *   BiConnect which uses AbsoluteDirection to "Do the right thing"TM.
+      */
+    private def doFirrtlConnect[S <: Data](consumer: T, producer: S)(implicit sourceInfo: SourceInfo): Unit = {
+      val flip = consumer match {
+        case rec: Record if rec._isOpaqueType =>
+          rec.elementsIterator.next().specifiedDirection == SpecifiedDirection.Flip
+        case _ => false
+      }
+      val (lhs, rhs) = if (flip) (producer, consumer) else (consumer, producer)
+      lhs.firrtlConnect(rhs)
+    }
+
     /** $colonLessGreaterEq
       *
       * @group connection
@@ -266,7 +332,7 @@ object Connectable {
     final def :<>=[S <: Data](lProducer: => S)(implicit evidence: T =:= S, sourceInfo: SourceInfo): Unit = {
       val producer = prefix(consumer.base) { lProducer }
       if (ColonLessGreaterEq.canFirrtlConnect(consumer, producer)) {
-        consumer.base.firrtlConnect(producer)
+        doFirrtlConnect(consumer.base, producer)
       } else {
         connect(consumer, producer, ColonLessGreaterEq)
       }
@@ -280,7 +346,7 @@ object Connectable {
     final def :<>=[S <: Data](producer: Connectable[S])(implicit evidence: T =:= S, sourceInfo: SourceInfo): Unit = {
       prefix(consumer.base) {
         if (ColonLessGreaterEq.canFirrtlConnect(consumer, producer)) {
-          consumer.base.firrtlConnect(producer.base)
+          doFirrtlConnect(consumer.base, producer.base)
         } else {
           connect(consumer, producer, ColonLessGreaterEq)
         }

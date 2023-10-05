@@ -35,12 +35,12 @@ object Reg {
     * Value will not change unless the [[Reg]] is given a connection.
     * @param t The template from which to construct this wire
     */
-  def apply[T <: Data](source: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+  def apply[T <: Data](source: => T)(implicit sourceInfo: SourceInfo): T = {
     val prevId = Builder.idGen.value
     val t = source // evaluate once (passed by name)
-    if (compileOptions.declaredTypeMustBeUnbound) {
-      requireIsChiselType(t, "reg type")
-    }
+    requireIsChiselType(t, "reg type")
+    if (t.isConst) Builder.error("Cannot create register with constant value.")(sourceInfo)
+    requireNoProbeTypeModifier(t, "Cannot make a register of a Chisel type with a probe modifier.")
     val reg = if (!t.mustClone(prevId)) t else t.cloneTypeFull
     val clock = Node(Builder.forcedClock)
 
@@ -78,7 +78,7 @@ object Reg {
 object RegNext {
 
   /** Returns a register ''with an unset width'' connected to the signal `next` and with no reset value. */
-  def apply[T <: Data](next: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+  def apply[T <: Data](next: T)(implicit sourceInfo: SourceInfo): T = {
     val model = (next match {
       case next: Bits => next.cloneTypeWidth(Width())
       case next => next.cloneTypeFull
@@ -92,7 +92,7 @@ object RegNext {
   }
 
   /** Returns a register ''with an unset width'' connected to the signal `next` and with the reset value `init`. */
-  def apply[T <: Data](next: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+  def apply[T <: Data](next: T, init: T)(implicit sourceInfo: SourceInfo): T = {
     val model = (next match {
       case next: Bits => next.cloneTypeWidth(Width())
       case next => next.cloneTypeFull
@@ -170,16 +170,15 @@ object RegInit {
     * @param t The type template used to construct this [[Reg]]
     * @param init The value the [[Reg]] is initialized to on reset
     */
-  def apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
-    if (compileOptions.declaredTypeMustBeUnbound) {
-      requireIsChiselType(t, "reg type")
-    }
+  def apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo): T = {
+    requireIsChiselType(t, "reg type")
     val reg = t.cloneTypeFull
     val clock = Builder.forcedClock
     val reset = Builder.forcedReset
 
     reg.bind(RegBinding(Builder.forcedUserModule, Builder.currentWhen))
     requireIsHardware(init, "reg initializer")
+    requireNoProbeTypeModifier(t, "Cannot make a register of a Chisel type with a probe modifier.")
     pushCommand(DefRegInit(sourceInfo, reg, clock.ref, reset.ref, init.ref))
     reg
   }
@@ -187,7 +186,7 @@ object RegInit {
   /** Construct a [[Reg]] initialized on reset to the specified value.
     * @param init Initial value that serves as a type template and reset value
     */
-  def apply[T <: Data](init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+  def apply[T <: Data](init: T)(implicit sourceInfo: SourceInfo): T = {
     val model = (init match {
       // If init is a literal without forced width OR any non-literal, let width be inferred
       case init: Bits if !init.litIsForcedWidth.getOrElse(false) => init.cloneTypeWidth(Width())

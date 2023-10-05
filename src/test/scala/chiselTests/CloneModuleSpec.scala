@@ -5,7 +5,7 @@ package chiselTests
 import chisel3._
 import circt.stage.ChiselStage
 import chisel3.util.{log2Ceil, Decoupled, DeqIO, EnqIO, Queue, QueueIO}
-import chisel3.experimental.{CloneModuleAsRecord, IO}
+import chisel3.experimental.CloneModuleAsRecord
 import chisel3.testers.BasicTester
 
 class MultiIOQueue[T <: Data](gen: T, val entries: Int) extends Module {
@@ -117,21 +117,21 @@ class CloneModuleSpec extends ChiselPropSpec {
     }
     // ********** Checking the output of CloneModuleAsRecord **********
     // Note that we overrode desiredName so that Top is named "Top"
-    mod.q1.io.enq.toTarget.serialize should be("~Top|Queue>io.enq")
-    mod.q2_io.deq.toTarget.serialize should be("~Top|Queue>io.deq")
-    mod.q1.io.enq.toAbsoluteTarget.serialize should be("~Top|Top/q1:Queue>io.enq")
-    mod.q2_io.deq.toAbsoluteTarget.serialize should be("~Top|Top/q2:Queue>io.deq")
+    mod.q1.io.enq.toTarget.serialize should be("~Top|Queue4_UInt8>io.enq")
+    mod.q2_io.deq.toTarget.serialize should be("~Top|Queue4_UInt8>io.deq")
+    mod.q1.io.enq.toAbsoluteTarget.serialize should be("~Top|Top/q1:Queue4_UInt8>io.enq")
+    mod.q2_io.deq.toAbsoluteTarget.serialize should be("~Top|Top/q2:Queue4_UInt8>io.deq")
     // Legacy APIs that nevertheless were tricky to get right
-    mod.q1.io.enq.toNamed.serialize should be("Top.Queue.io.enq")
-    mod.q2_io.deq.toNamed.serialize should be("Top.Queue.io.deq")
+    mod.q1.io.enq.toNamed.serialize should be("Top.Queue4_UInt8.io.enq")
+    mod.q2_io.deq.toNamed.serialize should be("Top.Queue4_UInt8.io.deq")
     mod.q1.io.enq.instanceName should be("io.enq")
     mod.q2_io.deq.instanceName should be("io.deq")
     mod.q1.io.enq.pathName should be("Top.q1.io.enq")
     mod.q2_io.deq.pathName should be("Top.q2.io.deq")
     mod.q1.io.enq.parentPathName should be("Top.q1")
     mod.q2_io.deq.parentPathName should be("Top.q2")
-    mod.q1.io.enq.parentModName should be("Queue")
-    mod.q2_io.deq.parentModName should be("Queue")
+    mod.q1.io.enq.parentModName should be("Queue4_UInt8")
+    mod.q2_io.deq.parentModName should be("Queue4_UInt8")
 
     // ********** Checking the wire cloned from the output of CloneModuleAsRecord **********
     val wire_io = mod.q2_wire("io").asInstanceOf[QueueIO[UInt]]

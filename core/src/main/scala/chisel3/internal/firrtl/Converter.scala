@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 package chisel3.internal.firrtl
+
 import chisel3._
 import chisel3.experimental._
 import chisel3.experimental.{NoSourceInfo, SourceInfo, SourceLine, UnlocatableSourceInfo}
+import chisel3.properties.Property
 import firrtl.{ir => fir}
 import chisel3.internal.{castToInt, throwException, HasId}
-
+import chisel3.EnumType
 import scala.annotation.{nowarn, tailrec}
 import scala.collection.immutable.{Queue, VectorBuilder}
-import scala.collection.immutable.LazyList // Needed for 2.12 alias
 
 @nowarn("msg=class Port") // delete when Port becomes private
 private[chisel3] object Converter {
@@ -45,8 +46,8 @@ private[chisel3] object Converter {
   }
 
   def convert(info: SourceInfo): fir.Info = info match {
-    case _: NoSourceInfo => fir.NoInfo
-    case SourceLine(fn, line, col) => fir.FileInfo(fir.StringLit(s"$fn $line:$col"))
+    case _:  NoSourceInfo => fir.NoInfo
+    case sl: SourceLine   => fir.FileInfo.fromUnescaped(sl.serialize)
   }
 
   def convert(op: PrimOp): fir.PrimOp = firrtl.PrimOps.fromString(op.name)
@@ -90,22 +91,21 @@ private[chisel3] object Converter {
       val uint = convert(ULit(unsigned, slit.width), ctx, info)
       fir.DoPrim(firrtl.PrimOps.AsSInt, Seq(uint), Seq.empty, fir.UnknownType)
     // TODO Simplify
-    case fplit @ FPLit(n, w, bp) =>
-      val unsigned = if (n < 0) (BigInt(1) << fplit.width.get) + n else n
-      val uint = convert(ULit(unsigned, fplit.width), ctx, info)
-      val lit = bp.asInstanceOf[KnownBinaryPoint].value
-      fir.DoPrim(firrtl.PrimOps.AsFixedPoint, Seq(uint), Seq(lit), fir.UnknownType)
-    case intervalLit @ IntervalLit(n, w, bp) =>
-      val unsigned = if (n < 0) (BigInt(1) << intervalLit.width.get) + n else n
-      val uint = convert(ULit(unsigned, intervalLit.width), ctx, info)
-      val lit = bp.asInstanceOf[KnownBinaryPoint].value
-      fir.DoPrim(firrtl.PrimOps.AsInterval, Seq(uint), Seq(n, n, lit), fir.UnknownType)
     case lit: ILit =>
-      throwException(s"Internal Error! Unexpected ILit: $lit")
+      throw new InternalErrorException(s"Unexpected ILit: $lit")
+    case PropertyLit(tpe, lit) => tpe.convert(lit, ctx, info)
+    case e @ ProbeExpr(probe) =>
+      fir.ProbeExpr(convert(probe, ctx, info))
+    case e @ RWProbeExpr(probe) =>
+      fir.RWProbeExpr(convert(probe, ctx, info))
+    case e @ ProbeRead(probe) =>
+      fir.ProbeRead(convert(probe, ctx, info))
+    case other =>
+      throw new InternalErrorException(s"Unexpected type in convert $other")
   }
 
   /** Convert Commands that map 1:1 to Statements */
-  def convertSimpleCommand(cmd: Command, ctx: Component): Option[fir.Statement] = cmd match {
+  def convertSimpleCommand(cmd: Command, ctx: Component, typeAliases: Seq[String]): Option[fir.Statement] = cmd match {
     case e: DefPrim[_] =>
       val consts = e.args.collect { case ILit(i) => i }
       val args = e.args.flatMap {
@@ -121,33 +121,31 @@ private[chisel3] object Converter {
       }
       Some(fir.DefNode(convert(e.sourceInfo), e.name, expr))
     case e @ DefWire(info, id) =>
-      Some(fir.DefWire(convert(info), e.name, extractType(id, info)))
+      Some(fir.DefWire(convert(info), e.name, extractType(id, info, typeAliases)))
     case e @ DefReg(info, id, clock) =>
       Some(
         fir.DefRegister(
           convert(info),
           e.name,
-          extractType(id, info),
-          convert(clock, ctx, info),
-          firrtl.Utils.zero,
-          convert(getRef(id, info), ctx, info)
+          extractType(id, info, typeAliases),
+          convert(clock, ctx, info)
         )
       )
     case e @ DefRegInit(info, id, clock, reset, init) =>
       Some(
-        fir.DefRegister(
+        fir.DefRegisterWithReset(
           convert(info),
           e.name,
-          extractType(id, info),
+          extractType(id, info, typeAliases),
           convert(clock, ctx, info),
           convert(reset, ctx, info),
           convert(init, ctx, info)
         )
       )
     case e @ DefMemory(info, id, t, size) =>
-      Some(firrtl.CDefMemory(convert(info), e.name, extractType(t, info), size, false))
+      Some(firrtl.CDefMemory(convert(info), e.name, extractType(t, info, typeAliases), size, false))
     case e @ DefSeqMemory(info, id, t, size, ruw) =>
-      Some(firrtl.CDefMemory(convert(info), e.name, extractType(t, info), size, true, ruw))
+      Some(firrtl.CDefMemory(convert(info), e.name, extractType(t, info, typeAliases), size, true, ruw))
     case e: DefMemPort[_] =>
       val info = e.sourceInfo
       Some(
@@ -162,14 +160,16 @@ private[chisel3] object Converter {
       )
     case Connect(info, loc, exp) =>
       Some(fir.Connect(convert(info), convert(loc, ctx, info), convert(exp, ctx, info)))
-    case PartialConnect(info, loc, exp) =>
-      Some(fir.PartialConnect(convert(info), convert(loc, ctx, info), convert(exp, ctx, info)))
+    case PropAssign(info, loc, exp) =>
+      Some(fir.PropAssign(convert(info), convert(loc, ctx, info), convert(exp, ctx, info)))
     case Attach(info, locs) =>
       Some(fir.Attach(convert(info), locs.map(l => convert(l, ctx, info))))
     case DefInvalid(info, arg) =>
       Some(fir.IsInvalid(convert(info), convert(arg, ctx, info)))
     case e @ DefInstance(info, id, _) =>
       Some(fir.DefInstance(convert(info), e.name, id.name))
+    case e @ DefObject(info, obj) =>
+      Some(fir.DefObject(convert(info), e.name, obj.className.name))
     case e @ Stop(_, info, clock, ret) =>
       Some(fir.Stop(convert(info), ret, convert(clock, ctx, info), firrtl.Utils.one, e.name))
     case e @ Printf(_, info, clock, pable) =>
@@ -182,6 +182,31 @@ private[chisel3] object Converter {
           convert(clock, ctx, info),
           firrtl.Utils.one,
           e.name
+        )
+      )
+    case e @ ProbeDefine(sourceInfo, sink, probeExpr) =>
+      Some(fir.ProbeDefine(convert(sourceInfo), convert(sink, ctx, sourceInfo), convert(probeExpr, ctx, sourceInfo)))
+    case e @ ProbeForceInitial(sourceInfo, probe, value) =>
+      Some(fir.ProbeForceInitial(convert(sourceInfo), convert(probe, ctx, sourceInfo), convert(value, ctx, sourceInfo)))
+    case e @ ProbeReleaseInitial(sourceInfo, probe) =>
+      Some(fir.ProbeReleaseInitial(convert(sourceInfo), convert(probe, ctx, sourceInfo)))
+    case e @ ProbeForce(sourceInfo, clock, cond, probe, value) =>
+      Some(
+        fir.ProbeForce(
+          convert(sourceInfo),
+          convert(clock, ctx, sourceInfo),
+          convert(cond, ctx, sourceInfo),
+          convert(probe, ctx, sourceInfo),
+          convert(value, ctx, sourceInfo)
+        )
+      )
+    case e @ ProbeRelease(sourceInfo, clock, cond, probe) =>
+      Some(
+        fir.ProbeRelease(
+          convert(sourceInfo),
+          convert(clock, ctx, sourceInfo),
+          convert(cond, ctx, sourceInfo),
+          convert(probe, ctx, sourceInfo)
         )
       )
     case e @ Verification(_, op, info, clk, pred, msg) =>
@@ -204,6 +229,9 @@ private[chisel3] object Converter {
     case _ => None
   }
 
+  /** Trait used for tracking when or group regions. */
+  private sealed trait RegionFrame
+
   /** Internal datastructure to help translate Chisel's flat Command structure to FIRRTL's AST
     *
     * In particular, when scoping is translated from flat with begin end to a nested datastructure
@@ -216,6 +244,10 @@ private[chisel3] object Converter {
     */
   // TODO we should probably have a different structure in the IR to close elses
   private case class WhenFrame(when: fir.Conditionally, outer: VectorBuilder[fir.Statement], alt: Boolean)
+      extends RegionFrame
+
+  /** Internal datastructure to help convert optional groups to FIRRTL. */
+  private case class GroupFrame(group: fir.GroupDefine, outer: VectorBuilder[fir.Statement]) extends RegionFrame
 
   /** Convert Chisel IR Commands into FIRRTL Statements
     *
@@ -223,11 +255,12 @@ private[chisel3] object Converter {
     *   the module in which they are defined vs. parent modules
     * @param cmds Chisel IR Commands to convert
     * @param ctx Component (Module) context within which we are translating
+    * @param typeAliases Set of aliased type names to emit FIRRTL alias types for
     * @return FIRRTL Statement that is equivalent to the input cmds
     */
-  def convert(cmds: Seq[Command], ctx: Component): fir.Statement = {
+  def convert(cmds: Seq[Command], ctx: Component, typeAliases: Seq[String]): fir.Statement = {
     var stmts = new VectorBuilder[fir.Statement]()
-    var scope: List[WhenFrame] = Nil
+    var scope: List[RegionFrame] = Nil
     var cmdsIt = cmds.iterator.buffered
     // Extra var because sometimes we want to push a Command to the head of cmdsIt
     // This is more efficient than changing the iterator
@@ -240,7 +273,7 @@ private[chisel3] object Converter {
       } else {
         cmdsIt.next()
       }
-      convertSimpleCommand(cmd, ctx) match {
+      convertSimpleCommand(cmd, ctx, typeAliases) match {
         // Most Commands map 1:1
         case Some(stmt) =>
           stmts += stmt
@@ -254,7 +287,7 @@ private[chisel3] object Converter {
               stmts = new VectorBuilder[fir.Statement]
               scope = frame :: scope
             case WhenEnd(info, depth, _) =>
-              val frame = scope.head
+              val frame = scope.head.asInstanceOf[WhenFrame]
               val when =
                 if (frame.alt) frame.when.copy(alt = fir.Block(stmts.result()))
                 else frame.when.copy(conseq = fir.Block(stmts.result()))
@@ -277,7 +310,7 @@ private[chisel3] object Converter {
                   scope = scope.tail
               }
             case OtherwiseEnd(info, depth) =>
-              val frame = scope.head
+              val frame = scope.head.asInstanceOf[WhenFrame]
               val when = frame.when.copy(alt = fir.Block(stmts.result()))
               // TODO For some reason depth == 1 indicates the last closing otherwise whereas
               //  depth == 0 indicates last closing when
@@ -286,6 +319,17 @@ private[chisel3] object Converter {
               }
               stmts = frame.outer
               stmts += when
+              scope = scope.tail
+            case GroupDefBegin(info, declaration) =>
+              val groupDefine = fir.GroupDefine(convert(info), declaration.name, fir.EmptyStmt)
+              val frame = GroupFrame(groupDefine, stmts)
+              stmts = new VectorBuilder[fir.Statement]
+              scope = frame :: scope
+            case GroupDefEnd(info) =>
+              val frame = scope.head.asInstanceOf[GroupFrame]
+              val groupDefine = frame.group.copy(body = fir.Block(stmts.result()))
+              stmts = frame.outer
+              stmts += groupDefine
               scope = scope.tail
           }
       }
@@ -299,48 +343,68 @@ private[chisel3] object Converter {
     case KnownWidth(value) => fir.IntWidth(value)
   }
 
-  def convert(bp: BinaryPoint): fir.Width = bp match {
-    case UnknownBinaryPoint      => fir.UnknownWidth
-    case KnownBinaryPoint(value) => fir.IntWidth(value)
+  private def firrtlUserDirOf(t: Data): SpecifiedDirection = t match {
+    case t: Vec[_] =>
+      SpecifiedDirection.fromParent(t.specifiedDirection, firrtlUserDirOf(t.sample_element))
+    case t: Record if t._isOpaqueType =>
+      SpecifiedDirection.fromParent(t.specifiedDirection, firrtlUserDirOf(t.elementsIterator.next()))
+    case t => t.specifiedDirection
   }
 
-  private def firrtlUserDirOf(d: Data): SpecifiedDirection = d match {
-    case d: Vec[_] =>
-      SpecifiedDirection.fromParent(d.specifiedDirection, firrtlUserDirOf(d.sample_element))
-    case d => d.specifiedDirection
-  }
+  def extractType(baseType: Data, info: SourceInfo, typeAliases: Seq[String] = Seq.empty): fir.Type =
+    extractType(baseType, false, info, true, true, typeAliases)
 
-  def extractType(data: Data, info: SourceInfo): fir.Type = extractType(data, false, info)
-
-  def extractType(data: Data, clearDir: Boolean, info: SourceInfo): fir.Type = data match {
+  def extractType(
+    baseType:    Data,
+    clearDir:    Boolean,
+    info:        SourceInfo,
+    checkProbe:  Boolean,
+    checkConst:  Boolean,
+    typeAliases: Seq[String]
+  ): fir.Type = baseType match {
+    // extract underlying type for probe
+    case t: Data if (checkProbe && t.probeInfo.nonEmpty) =>
+      if (t.probeInfo.get.writable) {
+        fir.RWProbeType(extractType(t, clearDir, info, false, checkConst, typeAliases))
+      } else {
+        fir.ProbeType(extractType(t, clearDir, info, false, checkConst, typeAliases))
+      }
+    // extract underlying type for const
+    case t: Data if (checkConst && t.isConst) =>
+      fir.ConstType(extractType(t, clearDir, info, checkProbe, false, typeAliases))
     case _: Clock      => fir.ClockType
     case _: AsyncReset => fir.AsyncResetType
     case _: ResetType  => fir.ResetType
-    case d: EnumType   => fir.UIntType(convert(d.width))
-    case d: UInt       => fir.UIntType(convert(d.width))
-    case d: SInt       => fir.SIntType(convert(d.width))
-    case d: FixedPoint => fir.FixedType(convert(d.width), convert(d.binaryPoint))
-    case d: Interval   => fir.IntervalType(d.range.lowerBound, d.range.upperBound, d.range.firrtlBinaryPoint)
-    case d: Analog => fir.AnalogType(convert(d.width))
-    case d: Vec[_] =>
+    case t: EnumType   => fir.UIntType(convert(t.width))
+    case t: UInt       => fir.UIntType(convert(t.width))
+    case t: SInt       => fir.SIntType(convert(t.width))
+    case t: Analog => fir.AnalogType(convert(t.width))
+    case t: Vec[_] =>
       val childClearDir = clearDir ||
-        d.specifiedDirection == SpecifiedDirection.Input || d.specifiedDirection == SpecifiedDirection.Output
-      fir.VectorType(extractType(d.sample_element, childClearDir, info), d.length)
-    case d: Record => {
+        t.specifiedDirection == SpecifiedDirection.Input || t.specifiedDirection == SpecifiedDirection.Output
+      // if Vector is a probe, don't emit Probe<...> on its elements
+      fir.VectorType(extractType(t.sample_element, childClearDir, info, checkProbe, true, typeAliases), t.length)
+    // Handle aliased bundles: Emit an AliasType directly
+    case t: HasTypeAlias if t.finalizedAlias.exists { typeAliases.contains(_) } =>
+      fir.AliasType(t.finalizedAlias.get)
+    case t: Record => {
       val childClearDir = clearDir ||
-        d.specifiedDirection == SpecifiedDirection.Input || d.specifiedDirection == SpecifiedDirection.Output
+        t.specifiedDirection == SpecifiedDirection.Input || t.specifiedDirection == SpecifiedDirection.Output
+      // if Record is a probe, don't emit Probe<...> on its elements
       def eltField(elt: Data): fir.Field = (childClearDir, firrtlUserDirOf(elt)) match {
-        case (true, _) => fir.Field(getRef(elt, info).name, fir.Default, extractType(elt, true, info))
+        case (true, _) =>
+          fir.Field(getRef(elt, info).name, fir.Default, extractType(elt, true, info, checkProbe, true, typeAliases))
         case (false, SpecifiedDirection.Unspecified | SpecifiedDirection.Output) =>
-          fir.Field(getRef(elt, info).name, fir.Default, extractType(elt, false, info))
+          fir.Field(getRef(elt, info).name, fir.Default, extractType(elt, false, info, checkProbe, true, typeAliases))
         case (false, SpecifiedDirection.Flip | SpecifiedDirection.Input) =>
-          fir.Field(getRef(elt, info).name, fir.Flip, extractType(elt, false, info))
+          fir.Field(getRef(elt, info).name, fir.Flip, extractType(elt, false, info, checkProbe, true, typeAliases))
       }
-      if (!d._isOpaqueType)
-        fir.BundleType(d.elements.toIndexedSeq.reverse.map { case (_, e) => eltField(e) })
+      if (!t._isOpaqueType)
+        fir.BundleType(t._elements.toIndexedSeq.reverse.map { case (_, e) => eltField(e) })
       else
-        extractType(d.elements.head._2, childClearDir, info)
+        extractType(t._elements.head._2, childClearDir, info, checkProbe, true, typeAliases)
     }
+    case t: Property[_] => t.getPropertyType
   }
 
   def convert(name: String, param: Param): fir.Param = param match {
@@ -350,8 +414,19 @@ private[chisel3] object Converter {
     case RawParam(value)    => fir.RawStringParam(name, value)
   }
 
-  def convert(port: Port, topDir: SpecifiedDirection = SpecifiedDirection.Unspecified): fir.Port = {
-    val resolvedDir = SpecifiedDirection.fromParent(topDir, port.dir)
+  // TODO: Modify Panama CIRCT to account for type aliasing information. This is a temporary hack to
+  // allow Panama CIRCT to compile
+  def convert(
+    port:   Port,
+    topDir: SpecifiedDirection
+  ): fir.Port = convert(port, Seq.empty, topDir)
+
+  def convert(
+    port:        Port,
+    typeAliases: Seq[String],
+    topDir:      SpecifiedDirection = SpecifiedDirection.Unspecified
+  ): fir.Port = {
+    val resolvedDir = SpecifiedDirection.fromParent(topDir, firrtlUserDirOf(port.id))
     val dir = resolvedDir match {
       case SpecifiedDirection.Unspecified | SpecifiedDirection.Output => fir.Output
       case SpecifiedDirection.Flip | SpecifiedDirection.Input         => fir.Input
@@ -360,29 +435,80 @@ private[chisel3] object Converter {
       case SpecifiedDirection.Input | SpecifiedDirection.Output     => true
       case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip => false
     }
-    val tpe = extractType(port.id, clearDir, port.sourceInfo)
+    val tpe = extractType(port.id, clearDir, port.sourceInfo, true, true, typeAliases)
     fir.Port(convert(port.sourceInfo), getRef(port.id, port.sourceInfo).name, dir, tpe)
   }
 
-  def convert(component: Component): fir.DefModule = component match {
+  def convert(component: Component, typeAliases: Seq[String]): fir.DefModule = component match {
     case ctx @ DefModule(_, name, ports, cmds) =>
-      fir.Module(fir.NoInfo, name, ports.map(p => convert(p)), convert(cmds, ctx))
+      fir.Module(
+        fir.NoInfo,
+        name,
+        (ports ++ ctx.secretPorts).map(p => convert(p, typeAliases)),
+        convert(cmds ++ ctx.secretCommands, ctx, typeAliases)
+      )
     case ctx @ DefBlackBox(id, name, ports, topDir, params) =>
       fir.ExtModule(
         fir.NoInfo,
         name,
-        ports.map(p => convert(p, topDir)),
+        (ports ++ ctx.secretPorts).map(p => convert(p, typeAliases, topDir)),
         id.desiredName,
         params.keys.toList.sorted.map { name => convert(name, params(name)) }
       )
+    case ctx @ DefIntrinsicModule(id, name, ports, topDir, params) =>
+      fir.IntModule(
+        fir.NoInfo,
+        name,
+        (ports ++ ctx.secretPorts).map(p => convert(p, typeAliases, topDir)),
+        id.intrinsic,
+        params.keys.toList.sorted.map { name => convert(name, params(name)) }
+      )
+    case ctx @ DefClass(_, name, ports, cmds) =>
+      fir.DefClass(
+        fir.NoInfo,
+        name,
+        ports.map(p => convert(p, typeAliases)),
+        convert(cmds, ctx, typeAliases)
+      )
   }
 
-  def convert(circuit: Circuit): fir.Circuit =
-    fir.Circuit(fir.NoInfo, circuit.components.map(convert), circuit.name)
+  def rec(decl: GroupDecl): fir.GroupDeclare = {
+    val convention = decl.convention match {
+      case GroupConvention.Bind => fir.GroupConvention.Bind
+    }
+    fir.GroupDeclare(convert(decl.sourceInfo), decl.name, convention, decl.children.map(rec))
+  }
+
+  def convert(circuit: Circuit): fir.Circuit = {
+    val typeAliases: Seq[String] = circuit.typeAliases.map(_.name)
+    fir.Circuit(
+      fir.NoInfo,
+      circuit.components.map(c => convert(c, typeAliases)),
+      circuit.name,
+      circuit.typeAliases.map(ta => fir.DefTypeAlias(convert(ta.sourceInfo), ta.name, ta.underlying)),
+      circuit.groups.map(rec)
+    )
+  }
 
   // TODO Unclear if this should just be the default
   def convertLazily(circuit: Circuit): fir.Circuit = {
     val lazyModules = LazyList() ++ circuit.components
-    fir.Circuit(fir.NoInfo, lazyModules.map(convert), circuit.name)
+    val typeAliases: Seq[String] = circuit.typeAliases.map(_.name)
+    fir.Circuit(
+      fir.NoInfo,
+      lazyModules.map(lm => convert(lm, typeAliases)),
+      circuit.name,
+      circuit.typeAliases.map(ta => {
+        // To generate the correct FIRRTL type alias we need to always emit a BundleType.
+        // This is not guaranteed if the alias name set contains this type alias's name itself
+        // as otherwise an AliasType will be generated, resulting in self-referential FIRRTL
+        // statements like `type Foo = Foo`.
+        fir.DefTypeAlias(
+          convert(ta.sourceInfo),
+          ta.name,
+          ta.underlying
+        )
+      })
+    )
   }
 }

@@ -13,7 +13,8 @@ import scala.tools.nsc.transform.TypingTransformers
 //   a Plugin and a PluginComponent.
 class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
     extends PluginComponent
-    with TypingTransformers {
+    with TypingTransformers
+    with ChiselOuterUtils {
   import global._
   val runsAfter: List[String] = List[String]("typer")
   val phaseName: String = "chiselcomponent"
@@ -27,7 +28,7 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
     }
   }
 
-  class MyTypingTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
+  class MyTypingTransformer(unit: CompilationUnit) extends TypingTransformer(unit) with ChiselInnerUtils {
 
     private def shouldMatchGen(bases: Tree*): Type => Boolean = {
       val cache = mutable.HashMap.empty[Type, Boolean]
@@ -50,6 +51,8 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
         } else if (outerMatches(s)) {
           // These are type parameters, loops *are* possible here
           recShouldMatch(s.typeArgs.head, seen + s)
+        } else if (definitions.isTupleType(s)) {
+          s.typeArgs.exists(t => recShouldMatch(t, seen + s))
         } else {
           // This is the standard inheritance hierarchy, Scalac catches loops here
           s.parents.exists(p => recShouldMatch(p, seen))
@@ -58,7 +61,8 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
 
       // If doesn't match container pattern, exit early
       def earlyExit(t: Type): Boolean = {
-        !(t.matchesPattern(inferType(tq"Iterable[_]")) || t.matchesPattern(inferType(tq"Option[_]")))
+        !(t.matchesPattern(inferType(tq"Iterable[_]")) || t.matchesPattern(inferType(tq"Option[_]")) || definitions
+          .isTupleType(t))
       }
 
       // Return function so that it captures the cache
@@ -85,7 +89,9 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
       shouldMatchGen(
         tq"chisel3.Data",
         tq"chisel3.MemBase[_]",
-        tq"chisel3.VerificationStatement"
+        tq"chisel3.VerificationStatement",
+        tq"chisel3.properties.DynamicObject",
+        tq"chisel3.Disable"
       )
     private val shouldMatchModule:   Type => Boolean = shouldMatchGen(tq"chisel3.experimental.BaseModule")
     private val shouldMatchInstance: Type => Boolean = shouldMatchGen(tq"chisel3.experimental.hierarchy.Instance[_]")
@@ -93,9 +99,6 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
       shouldMatchGen(
         tq"chisel3.experimental.AffectsChiselPrefix"
       )
-
-    // Given a type tree, infer the type and return it
-    private def inferType(t: Tree): Type = localTyper.typed(t, nsc.Mode.TYPEmode).tpe
 
     // Indicates whether a ValDef is properly formed to get name
     private def okVal(dd: ValDef): Boolean = {
@@ -233,7 +236,8 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
             case Some(names) =>
               val onames: List[Option[String]] =
                 fieldsOfInterest.zip(names).map { case (ok, name) => if (ok) Some(name) else None }
-              val named = q"chisel3.internal.plugin.autoNameRecursivelyProduct($onames)($rhs)"
+              val newRHS = transform(rhs)
+              val named = q"chisel3.internal.plugin.autoNameRecursivelyProduct($onames)($newRHS)"
               treeCopy.ValDef(dd, mods, name, tpt, localTyper.typed(named))
             case None => // It's not clear how this could happen but we don't want to crash
               super.transform(tree)

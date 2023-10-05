@@ -55,7 +55,7 @@ class Counter private (r: Range, oldN: Option[Int] = None) extends AffectsChisel
     *
     * @param n number of steps before the counter resets
     */
-  def this(n: Int) { this(0 until math.max(1, n), Some(n)) }
+  def this(n: Int) = { this(0 until math.max(1, n), Some(n)) }
 
   /** The current value of the counter. */
   val value = if (r.length > 1) RegInit(r.head.U(width.W)) else WireInit(r.head.U)

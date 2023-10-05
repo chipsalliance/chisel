@@ -1,0 +1,50 @@
+name: Generate Release Notes
+
+on:
+  release:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      toTag:
+        description: 'Tag or ref for which to generate release notes'
+        required: true
+      fromTag:
+        # If you leave this blank, it'll select previous SemVer version
+        # WARNING: Cannot use anything older than a005498 because of the git tree merge
+        description: 'Tag or ref from which to start generating release notes'
+        required: false
+
+
+jobs:
+  generate_release_notes:
+    name: Generate Release Notes
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Build Release Notes
+        id: release-notes
+        uses: mikepenz/release-changelog-builder-action@v3.7.0
+        with:
+          configuration: .github/workflows/config/release-notes.json
+          failOnError: true
+          # Amazingly, on release where the inputs are empty, this just does the right thing
+          # The "toTag" is the released tag, and the "fromTag" is the previous tag according to SemVer
+          fromTag: ${{ github.event.inputs.fromTag }}
+          toTag: ${{ github.event.inputs.toTag }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Report Release Notes
+        # Put output through env variable to make it robust to quotes
+        env:
+          CHANGELOG: ${{steps.release-notes.outputs.changelog}}
+        run: echo "$CHANGELOG" >> $GITHUB_STEP_SUMMARY
+      - name: Upload Release Notes (on release)
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v0.1.15
+        with:
+          body: ${{ steps.release-notes.outputs.changelog }}
+      - name: Error on uncategorized PRs
+        if: steps.release-notes.outputs.uncategorized_prs != 0
+        run: exit 1
+

@@ -1,0 +1,90 @@
+# Fixes up Mergify-created backport PRs to include necessary labels and other
+# information for release notes generation
+
+name: Backport Fixup
+
+on:
+  pull_request:
+    types: [opened]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: 'Number of the Pull Request to Fixup'
+        require: true
+
+permissions:
+  pull-requests: write
+  contents: write
+
+jobs:
+  resolve_prs:
+    name: Resolve PRs
+    runs-on: ubuntu-latest
+    # If triggering PR actually is a backport, then original_pr will be set
+    outputs:
+        backport_pr: ${{ steps.backport.outputs.pr }}
+        original_pr: ${{ steps.original.outputs.pr }}
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Figure out backport PR number
+        id: backport
+        run: |
+          if [[ -z "${{ inputs.pr }}" ]]; then
+            echo "pr=${{ github.event.number }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "pr=${{ inputs.pr }}" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Figure out original PR number (if one exists)
+        id: original
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BP_PR=${{ steps.backport.outputs.pr }}
+          TITLE=$(gh pr view --json title --jq '.title' $BP_PR)
+          if [[ "$TITLE" =~ \(backport\ #([0-9]+)\) ]]; then
+            echo "pr=${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
+          else
+            echo "$BP_PR is not a backport PR!" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  fixup_backport:
+    name: Fixup the backport PR
+    runs-on: ubuntu-latest
+    needs: [resolve_prs]
+    if: ${{ needs.resolve_prs.outputs.original_pr }}
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Copy over labels
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BP_PR=${{ needs.resolve_prs.outputs.backport_pr }}
+          ORIG_PR=${{ needs.resolve_prs.outputs.original_pr }}
+
+          # Long line but the paste joining must be done right away or we run into issues with spaces in labels
+          LABELS=$(gh pr view --json labels --jq '.labels | .[].name | select(. != "Backported")' $ORIG_PR | paste -sd "," -)
+          gh pr edit $BP_PR --add-label "$LABELS"
+      - name: Copy over body
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BP_PR=${{ needs.resolve_prs.outputs.backport_pr }}
+          ORIG_PR=${{ needs.resolve_prs.outputs.original_pr }}
+
+          gh pr view --json body --jq '.body' $ORIG_PR > orig_body.txt
+          gh pr view --json body --jq '.body' $BP_PR > bp_body.txt
+
+          if grep -q '# Original PR Body' bp_body.txt; then
+            # Copy BP PR body but remove original PR body from bottom
+            sed '/# Original PR Body/q' bp_body.txt > new_bp_body.txt
+            echo "" >> new_bp_body.txt
+          else
+            cp bp_body.txt new_bp_body.txt
+            echo -e "\n----\n\n# Original PR Body\n" >> new_bp_body.txt
+          fi
+
+          cat orig_body.txt >> new_bp_body.txt
+
+          gh pr edit $BP_PR --body-file new_bp_body.txt

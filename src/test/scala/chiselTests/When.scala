@@ -146,7 +146,7 @@ class WhenSpec extends ChiselFlatSpec with Utils {
 
   "Returning in a when scope" should "give a reasonable error message" in {
     val e = the[ChiselException] thrownBy extractCause[ChiselException] {
-      ChiselStage.elaborate(new Module {
+      ChiselStage.emitCHIRRTL(new Module {
         val io = IO(new Bundle {
           val foo = Input(UInt(8.W))
           val bar = Input(UInt(8.W))

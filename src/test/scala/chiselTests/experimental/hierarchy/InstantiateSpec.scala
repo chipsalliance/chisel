@@ -7,6 +7,7 @@ import chisel3._
 import chisel3.util.Valid
 import chisel3.experimental.hierarchy._
 import circt.stage.ChiselStage.convert
+import chisel3.experimental.{ExtModule, IntrinsicModule}
 
 // Note, the instantiable classes must not be inner classes because the materialized WeakTypeTags
 // will be different and they will not give the same hashCode when looking up the Definition in the
@@ -116,6 +117,56 @@ object InstantiateSpec {
     @public val out = IO(Output(gen))
     out := in
   }
+
+  sealed trait MyEnumeration
+  case object FooEnum extends MyEnumeration
+  case object BarEnum extends MyEnumeration
+  case class FizzEnum(value: Int) extends MyEnumeration
+  case class BuzzEnum(value: Int) extends MyEnumeration
+
+  class ModuleParameterizedByProductTypes(param: MyEnumeration) extends Module {
+    override def desiredName = s"${this.getClass.getSimpleName}_$param"
+    val gen = param match {
+      case FooEnum     => UInt(8.W)
+      case BarEnum     => SInt(8.W)
+      case FizzEnum(n) => Vec(n, UInt(8.W))
+      case BuzzEnum(n) => Vec(n, SInt(8.W))
+    }
+    @public val in = IO(Input(gen))
+    @public val out = IO(Output(gen))
+    out := in
+  }
+
+  class ModuleParameterizedBySeq(param: Seq[Int]) extends Module {
+    override def desiredName = s"${this.getClass.getSimpleName}_" + param.mkString("_")
+    @public val in = param.map(w => IO(Input(UInt(w.W))))
+    @public val out = param.map(w => IO(Output(UInt(w.W))))
+    out.zip(in).foreach { case (o, i) => o := i }
+  }
+
+  @instantiable
+  class InstantiableBlackBox extends BlackBox {
+    @public val io = IO(new Bundle {
+      val in = Input(UInt(8.W))
+      val out = Output(UInt(8.W))
+    })
+  }
+
+  @instantiable
+  class InstantiableExtModule extends ExtModule {
+    @public val in = IO(Input(UInt(8.W)))
+    @public val out = IO(Output(UInt(8.W)))
+  }
+
+  @instantiable
+  class InstantiableIntrinsic extends IntrinsicModule("MyIntrinsic", Map()) {
+    @public val in = IO(Input(UInt(8.W)))
+    @public val out = IO(Output(UInt(8.W)))
+  }
+}
+
+class ParameterizedReset(hasAsyncNotSyncReset: Boolean) extends Module {
+  override def resetType = if (hasAsyncNotSyncReset) Module.ResetType.Asynchronous else Module.ResetType.Synchronous
 }
 
 class InstantiateSpec extends ChiselFunSpec with Utils {
@@ -285,19 +336,6 @@ class InstantiateSpec extends ChiselFunSpec with Utils {
     }
   }
 
-  describe("Otherwise identital Modules Instantiated with different CompileOptions") {
-    it("should NOT use the same Definition") {
-      val modules = convert(new Top {
-        val inst0 = Instantiate(new NoArgs)
-        val inst1 = {
-          implicit val options = ExplicitCompileOptions.NotStrict
-          Instantiate(new NoArgs)
-        }
-      }).modules.map(_.name)
-      assert(modules == Seq("NoArgs", "NoArgs_1", "Top"))
-    }
-  }
-
   describe("The Instantiate cache") {
     it("should NOT be shared between elaborations within the same JVM run") {
       class MyTop extends Top {
@@ -309,6 +347,46 @@ class InstantiateSpec extends ChiselFunSpec with Utils {
       val modules2 = convert(new MyTop).modules.map(_.name)
       assert(modules2 == Seq("OneArg", "Top"))
     }
+
+    it("should properly handle case objects as parameters") {
+      class MyTop extends Top {
+        val inst0 = Instantiate(new ModuleParameterizedByProductTypes(FooEnum))
+        val inst1 = Instantiate(new ModuleParameterizedByProductTypes(BarEnum))
+      }
+      val modules = convert(new MyTop).modules.map(_.name)
+      assert(
+        modules == Seq("ModuleParameterizedByProductTypes_FooEnum", "ModuleParameterizedByProductTypes_BarEnum", "Top")
+      )
+    }
+
+    it("should properly handle case classes as parameters") {
+      class MyTop extends Top {
+        val inst0 = Instantiate(new ModuleParameterizedByProductTypes(FizzEnum(3)))
+        val inst1 = Instantiate(new ModuleParameterizedByProductTypes(BuzzEnum(3)))
+      }
+      val modules = convert(new MyTop).modules.map(_.name)
+      assert(
+        modules == Seq(
+          "ModuleParameterizedByProductTypes_FizzEnum3",
+          "ModuleParameterizedByProductTypes_BuzzEnum3",
+          "Top"
+        )
+      )
+    }
+
+    it("should properly handle Iterables") {
+      class MyTop extends Top {
+        val inst0 = Instantiate(new ModuleParameterizedBySeq(List(1, 2, 3)))
+        val inst1 = Instantiate(new ModuleParameterizedBySeq(Vector(1, 2, 3)))
+      }
+      val modules = convert(new MyTop).modules.map(_.name)
+      assert(
+        modules == Seq(
+          "ModuleParameterizedBySeq_1_2_3",
+          "Top"
+        )
+      )
+    }
   }
 
   describe("Instantiate") {
@@ -319,6 +397,30 @@ class InstantiateSpec extends ChiselFunSpec with Utils {
         val inst = Instantiate(new OneArg(3))
       }).serialize
       chirrtl should include(s"inst inst of OneArg ${info.makeMessage(x => x)}")
+    }
+
+    it("should support BlackBoxes") {
+      val modules = convert(new Top {
+        val inst0 = Instantiate(new InstantiableBlackBox)
+        val inst1 = Instantiate(new InstantiableBlackBox)
+      }).modules.map(_.name)
+      assert(modules == Seq("InstantiableBlackBox", "Top"))
+    }
+
+    it("should support ExtModules") {
+      val modules = convert(new Top {
+        val inst0 = Instantiate(new InstantiableExtModule)
+        val inst1 = Instantiate(new InstantiableExtModule)
+      }).modules.map(_.name)
+      assert(modules == Seq("InstantiableExtModule", "Top"))
+    }
+
+    it("should support Intrinsics") {
+      val modules = convert(new Top {
+        val inst0 = Instantiate(new InstantiableIntrinsic)
+        val inst1 = Instantiate(new InstantiableIntrinsic)
+      }).modules.map(_.name)
+      assert(modules == Seq("InstantiableIntrinsic", "Top"))
     }
   }
 
@@ -344,5 +446,33 @@ class InstantiateSpec extends ChiselFunSpec with Utils {
       assert(modules == Seq("Should", "Not", "Get", "Here"))
       """ shouldNot compile
     }
+  }
+
+  it("Should make different Modules with reset type as a parameter") {
+    class MyTop extends Top {
+      withReset(reset.asAsyncReset) {
+        val inst0 = Instantiate(new ParameterizedReset(true))
+        val inst1 = Instantiate(new ParameterizedReset(true))
+      }
+      val inst2 = Instantiate(new ParameterizedReset(false))
+      val inst3 = Instantiate(new ParameterizedReset(false))
+
+      a[ChiselException] should be thrownBy {
+        val inst4 = Instantiate(new ParameterizedReset(true))
+      }
+      a[ChiselException] should be thrownBy {
+        withReset(reset.asAsyncReset) {
+          val inst5 = Instantiate(new ParameterizedReset(false))
+        }
+      }
+    }
+    val modules = convert(new MyTop).modules.map(_.name)
+    assert(
+      modules == Seq(
+        "ParameterizedReset",
+        "ParameterizedReset_1",
+        "Top"
+      )
+    )
   }
 }

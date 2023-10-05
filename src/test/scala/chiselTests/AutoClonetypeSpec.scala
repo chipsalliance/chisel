@@ -4,7 +4,7 @@ package chiselTests
 
 import chisel3._
 import chisel3.util.QueueIO
-import circt.stage.ChiselStage.elaborate
+import circt.stage.ChiselStage.emitCHIRRTL
 
 import scala.collection.immutable.ListMap
 
@@ -93,7 +93,7 @@ class RecordWithVerbotenMethods(w: Int) extends Record {
 class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
 
   "Bundles with Scala args" should "not need clonetype" in {
-    elaborate {
+    emitCHIRRTL {
       new Module {
         val io = IO(new Bundle {})
 
@@ -104,7 +104,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
   }
 
   "Bundles with Scala implicit args" should "not need clonetype" in {
-    elaborate {
+    emitCHIRRTL {
       new Module {
         val io = IO(new Bundle {})
 
@@ -117,7 +117,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
   }
 
   "Bundles with Scala explicit and impicit args" should "not need clonetype" in {
-    elaborate {
+    emitCHIRRTL {
       new Module {
         val io = IO(new Bundle {})
 
@@ -131,7 +131,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
   }
 
   "Subtyped Bundles" should "not need clonetype" in {
-    elaborate {
+    emitCHIRRTL {
       new Module {
         val io = IO(new Bundle {})
 
@@ -141,7 +141,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
         assert(myWire.i2 == 4)
       }
     }
-    elaborate {
+    emitCHIRRTL {
       new Module {
         val io = IO(new Bundle {})
 
@@ -158,7 +158,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
   }
 
   "Subtyped Bundles that don't clone well" should "be now be supported!" in {
-    elaborate {
+    emitCHIRRTL {
       new Module {
         val io = IO(new Bundle {})
         val myWire = Wire(new SubBundleInvalid(8, 4))
@@ -167,11 +167,11 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
   }
 
   "Inner bundles with Scala args" should "not need clonetype" in {
-    elaborate { new ModuleWithInner }
+    emitCHIRRTL { new ModuleWithInner }
   }
 
   "Bundles with arguments as fields" should "not need clonetype" in {
-    elaborate {
+    emitCHIRRTL {
       new Module {
         val io = IO(Output(new BundleWithArgumentField(UInt(8.W), UInt(8.W))))
         io.x := 1.U
@@ -181,7 +181,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
   }
 
   it should "also work when giving directions to the fields" in {
-    elaborate {
+    emitCHIRRTL {
       new Module {
         val io = IO(new BundleWithArgumentField(Input(UInt(8.W)), Output(UInt(8.W))))
         io.y := io.x
@@ -190,7 +190,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
   }
 
   "Bundles inside companion objects" should "not need clonetype" in {
-    elaborate {
+    emitCHIRRTL {
       new Module {
         val io = IO(Output(new CompanionObjectWithBundle.Inner))
         io.data := 1.U
@@ -199,7 +199,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
   }
 
   "Parameterized bundles inside companion objects" should "not need clonetype" in {
-    elaborate {
+    emitCHIRRTL {
       new Module {
         val io = IO(Output(new CompanionObjectWithBundle.ParameterizedInner(8)))
         io.data := 1.U
@@ -208,7 +208,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
   }
 
   "Nested directioned anonymous Bundles" should "not need clonetype" in {
-    elaborate {
+    emitCHIRRTL {
       new Module {
         val io = IO(new NestedAnonymousBundle)
         val a = WireDefault(io)
@@ -218,7 +218,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
   }
 
   "3.0 null compatibility" should "not need clonetype" in {
-    elaborate {
+    emitCHIRRTL {
       new Module {
         class InnerClassThing {
           def createBundle: Bundle = new Bundle {
@@ -233,7 +233,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
 
   "Aliased fields" should "be caught" in {
     a[ChiselException] should be thrownBy extractCause[ChiselException] {
-      elaborate {
+      emitCHIRRTL {
         new Module {
           val bundleFieldType = UInt(8.W)
           val io = IO(Output(new Bundle {
@@ -251,7 +251,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
         val a = typeTuple._1
       }
 
-      elaborate {
+      emitCHIRRTL {
         new Module {
           // This needs to be constructed before the call to Output, otherwise it won't be cloned
           // thanks to lazy cloning
@@ -270,7 +270,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
         val x = Output(UInt(3.W))
       }))
     }
-    elaborate { new TestModule }
+    emitCHIRRTL { new TestModule }
   }
 
   "Wrapped IO construction with parent references" should "not fail for autoclonetype" in {
@@ -282,7 +282,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
         val x = Output(UInt(blah.W))
       }))
     }
-    elaborate { new TestModule(3) }
+    emitCHIRRTL { new TestModule(3) }
   }
 
   "Autoclonetype" should "support Bundles with if-blocks" in {
@@ -296,7 +296,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
       })
       io.out := io.in
     }
-    elaborate(new MyModule(3))
+    emitCHIRRTL(new MyModule(3))
   }
 
   behavior.of("Compiler Plugin Autoclonetype")
@@ -308,14 +308,14 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
       io.count := 0.U
       io.error := true.B
     }
-    elaborate(new MyModule)
+    emitCHIRRTL(new MyModule)
   }
 
   it should "support Bundles with non-val parameters" in {
     class MyBundle(i: Int) extends Bundle {
       val foo = UInt(i.W)
     }
-    elaborate {
+    emitCHIRRTL {
       new Module {
         val in = IO(Input(new MyBundle(8)))
         val out = IO(Output(new MyBundle(8)))
@@ -328,7 +328,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
     class MyBundle[T <: Data](gen: T) extends Bundle {
       val foo = gen
     }
-    elaborate {
+    emitCHIRRTL {
       new Module {
         val in = IO(Input(new MyBundle(UInt(8.W))))
         val out = IO(Output(new MyBundle(UInt(8.W))))
@@ -341,7 +341,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
     class MyBundle(implicit i: Int) extends Bundle {
       val foo = UInt(i.W)
     }
-    elaborate {
+    emitCHIRRTL {
       new Module {
         implicit val x = 8
         val in = IO(Input(new MyBundle))
@@ -355,7 +355,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
     class MyBundle(i: Int)(j: Int, jj: Int)(k: UInt) extends Bundle {
       val foo = UInt((i + j + jj + k.getWidth).W)
     }
-    elaborate {
+    emitCHIRRTL {
       new Module {
         val in = IO(Input(new MyBundle(8)(8, 8)(UInt(8.W))))
         val out = IO(Output(new MyBundle(8)(8, 8)(UInt(8.W))))
@@ -368,7 +368,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
     class MyBundle(i: Int) extends Bundle {
       val foo = UInt(i.W)
     }
-    elaborate {
+    emitCHIRRTL {
       new Module {
         val in = IO(Input(new MyBundle(8)))
         val out = IO(Output(new MyBundle(8)))
@@ -386,7 +386,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
       val out = IO(Output(new MyBundle(4)))
       out := in
     }
-    elaborate(new MyModule(UInt(8.W)))
+    emitCHIRRTL(new MyModule(UInt(8.W)))
   }
 
   it should "work for higher-kinded types" in {
@@ -400,7 +400,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
       val io = IO(Output(new MyBundle[UInt, DataGen[UInt]](new DataGen(UInt(3.W)))))
       io.foo := 0.U
     }
-    elaborate(new MyModule)
+    emitCHIRRTL(new MyModule)
   }
 
   it should "support Bundles with vararg arguments" in {
@@ -419,7 +419,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
       val out = IO(Output(new VarArgsBundle(1)(2, 3, 4)))
       out := in
     }
-    elaborate(new MyModule)
+    emitCHIRRTL(new MyModule)
   }
 
   it should "support Records that mixin AutoCloneType" in {
@@ -429,7 +429,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
       val out = IO(Output(gen))
       out := in
     }
-    elaborate(new MyModule)
+    emitCHIRRTL(new MyModule)
   }
 
   it should "support Records that don't mixin AutoCloneType and use forbidden methods" in {
@@ -439,6 +439,21 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
       val out = IO(Output(gen))
       out := in
     }
-    elaborate(new MyModule)
+    emitCHIRRTL(new MyModule)
+  }
+
+  it should "compile with package private default bundle constructors" in {
+    class PrivateDefaultConsBundle private[chiselTests] (w: Int) extends Bundle {
+      val x = UInt(w.W)
+    }
+    object PrivateDefaultConsBundle {
+      def apply(w: Int): PrivateDefaultConsBundle = new PrivateDefaultConsBundle(w)
+    }
+    class MyModule extends Module {
+      val in = IO(Input(PrivateDefaultConsBundle(8)))
+      val out = IO(Output(PrivateDefaultConsBundle(8)))
+      out := in
+    }
+    emitCHIRRTL(new MyModule)
   }
 }

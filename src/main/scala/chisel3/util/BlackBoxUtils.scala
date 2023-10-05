@@ -3,8 +3,8 @@
 package chisel3.util
 
 import chisel3._
-import chisel3.experimental.{ChiselAnnotation, RunFirrtlTransform}
-import firrtl.transforms.{BlackBoxInlineAnno, BlackBoxNotFoundException, BlackBoxPathAnno, BlackBoxSourceHelper}
+import chisel3.experimental.ChiselAnnotation
+import firrtl.transforms.{BlackBoxInlineAnno, BlackBoxNotFoundException, BlackBoxPathAnno}
 import firrtl.annotations.ModuleName
 import logger.LazyLogging
 
@@ -45,9 +45,8 @@ trait HasBlackBoxResource extends BlackBox {
     * }}}
     */
   def addResource(blackBoxResource: String): Unit = {
-    val anno = new ChiselAnnotation with RunFirrtlTransform {
+    val anno = new ChiselAnnotation {
       def toFirrtl = BlackBoxInlineAnno.fromResource(blackBoxResource, self.toNamed)
-      def transformClass = classOf[BlackBoxSourceHelper]
     }
     chisel3.experimental.annotate(anno)
   }
@@ -62,9 +61,8 @@ trait HasBlackBoxInline extends BlackBox {
     * @param blackBoxInline The black box contents
     */
   def setInline(blackBoxName: String, blackBoxInline: String): Unit = {
-    val anno = new ChiselAnnotation with RunFirrtlTransform {
+    val anno = new ChiselAnnotation {
       def toFirrtl = BlackBoxInlineAnno(self.toNamed, blackBoxName, blackBoxInline)
-      def transformClass = classOf[BlackBoxSourceHelper]
     }
     chisel3.experimental.annotate(anno)
   }
@@ -80,9 +78,8 @@ trait HasBlackBoxPath extends BlackBox {
     * target directory.
     */
   def addPath(blackBoxPath: String): Unit = {
-    val anno = new ChiselAnnotation with RunFirrtlTransform {
+    val anno = new ChiselAnnotation {
       def toFirrtl = BlackBoxPathAnno(self.toNamed, blackBoxPath)
-      def transformClass = classOf[BlackBoxSourceHelper]
     }
     chisel3.experimental.annotate(anno)
   }

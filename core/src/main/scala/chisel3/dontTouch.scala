@@ -19,9 +19,6 @@ import firrtl.transforms.DontTouchAnnotation
   *   dontTouch(dead) // Marking it as such will preserve it
   * }
   * }}}
-  * @note Calling this on [[Data]] creates an annotation that Chisel emits to a separate annotations
-  * file. This file must be passed to FIRRTL independently of the `.fir` file. The execute methods
-  * in [[chisel3.Driver]] will pass the annotations to FIRRTL automatically.
   * @note Because this is an optimization barrier, constants will not be propagated through a signal marked as
   * dontTouch.
   */
@@ -33,10 +30,8 @@ object dontTouch {
     * @param data The signal to be marked
     * @return Unmodified signal `data`
     */
-  def apply[T <: Data](data: T)(implicit compileOptions: CompileOptions): T = {
-    if (compileOptions.checkSynthesizable) {
-      requireIsHardware(data, "Data marked dontTouch")
-    }
+  def apply[T <: Data](data: T): T = {
+    requireIsHardware(data, "Data marked dontTouch")
     annotate(new ChiselAnnotation { def toFirrtl = DontTouchAnnotation(data.toNamed) })
     data
   }

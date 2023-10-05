@@ -64,8 +64,8 @@ class DecodeBundle(fields: Seq[DecodeField[_, _]]) extends Record {
 /**
   * A structured way of generating large decode tables, often found in CPU instruction decoders
   *
-  * Each field is a [[DecoderPattern]], its genTable method will be called for each possible pattern and gives expected
-  * output for this field as a [[BitPat]].
+  * Each field is a `DecoderPattern`, its genTable method will be called for each possible pattern and gives expected
+  * output for this field as a `BitPat`.
   *
   * @param patterns all possible input patterns, should implement trait DecoderPattern
   * @param fields   all fields as decoded output

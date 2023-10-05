@@ -67,42 +67,6 @@ class ModWithTrivalInterface extends Module {
 }
 ```
 
-This feature is controlled by `CompileOptions.explicitInvalidate` and is set to `false` in `NotStrict` (Chisel2 compatibility mode),
-and `true` in `Strict` mode.
-
-You can selectively enable this for Chisel2 compatibility mode by providing your own explicit `compileOptions`,
-either for a group of Modules (via inheritance):
-```scala mdoc:silent
-abstract class ExplicitInvalidateModule extends Module()(chisel3.ExplicitCompileOptions.NotStrict.copy(explicitInvalidate = true))
-```
-or on a per-Module basis:
-```scala mdoc:silent
-class MyModule extends Module {
-  override val compileOptions = chisel3.ExplicitCompileOptions.NotStrict.copy(explicitInvalidate = true)
-  val io = IO(new Bundle { /* ... */ } )
-  // ...
-}
-```
-
-Or conversely, disable this stricter checking (which is now the default in pure chisel3):
-```scala mdoc:silent
-abstract class ImplicitInvalidateModule extends Module()(chisel3.ExplicitCompileOptions.Strict.copy(explicitInvalidate = false))
-```
-or on a per-Module basis:
-```scala mdoc:invisible:reset
-import chisel3._
-```
-```scala mdoc:silent
-class MyModule extends Module {
-  override val compileOptions = chisel3.ExplicitCompileOptions.Strict.copy(explicitInvalidate = false)
-  val io = IO(new Bundle { /* ... */ } )
-  // ...
-}
-```
-
-Please see the corresponding [API tests](https://github.com/freechipsproject/chisel3/blob/master/src/test/scala/chiselTests/InvalidateAPISpec.scala)
-for examples.
-
 ### Determining the unconnected element
 
 I have an interface with 42 wires.
