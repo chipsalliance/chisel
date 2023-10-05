@@ -535,7 +535,7 @@ package experimental {
     }
 
     /** Legalized name of this module. */
-    lazy val name =
+    final lazy val name =
       try {
         // PseudoModules are not "true modules" and thus should share
         // their original modules names without uniquification

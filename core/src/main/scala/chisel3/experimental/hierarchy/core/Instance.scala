@@ -130,9 +130,8 @@ object Instance extends SourceInfoDoc {
           "Imported Definition information not found - possibly forgot to add ImportDefinition annotation?"
         )
       )
-      class EmptyExtModule extends ExtModule {
+      class EmptyExtModule extends ExtModule with PseudoModule {
         override def desiredName: String = extModName
-        override lazy val name = definition.proto.name
         override def generateComponent(): Option[Component] = {
           require(!_closed, s"Can't generate $desiredName module more than once")
           _closed = true
