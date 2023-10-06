@@ -3,7 +3,41 @@
 package chiselTests
 
 import chisel3._
+import chisel3.properties.{Path, Property}
 import circt.stage.ChiselStage
+
+class RelativeInnerModule extends RawModule {
+  val wire = Wire(Bool())
+}
+
+class RelativeOuterModule extends RawModule {
+  val inner = Module(new RelativeInnerModule())
+
+  atModuleBodyEnd {
+    val reference = inner.wire.toRelativeTarget(Some(this))
+    val referenceOut = IO(Output(Property[Path]()))
+    referenceOut := Property(Path(reference))
+  }
+}
+
+class RelativeDefaultModule extends RawModule {
+  val inner = Module(new RelativeInnerModule())
+
+  atModuleBodyEnd {
+    val reference = inner.wire.toRelativeTarget(None)
+    val referenceOut = IO(Output(Property[Path]()))
+    referenceOut := Property(Path(reference))
+  }
+}
+
+class RelativeSiblingsModule extends RawModule {
+  val inner1 = Module(new RelativeInnerModule())
+  val inner2 = Module(new RelativeInnerModule())
+
+  atModuleBodyEnd {
+    val reference = inner1.wire.toRelativeTarget(Some(inner2))
+  }
+}
 
 class ToTargetSpec extends ChiselFlatSpec with Utils {
 
@@ -58,6 +92,30 @@ class ToTargetSpec extends ChiselFlatSpec with Utils {
     }
     e.getMessage should include(
       "You cannot access the .instanceName or .toTarget of non-hardware Data: 'tpe', in module 'Example'"
+    )
+  }
+
+  behavior.of(".toRelativeTarget")
+
+  it should "work with modules being elaborated within atModuleBodyEnd" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RelativeOuterModule)
+
+    chirrtl should include("~RelativeOuterModule|RelativeOuterModule/inner:RelativeInnerModule>wire")
+  }
+
+  it should "default to the root module in the requested hierarchy" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RelativeDefaultModule)
+
+    chirrtl should include("~RelativeDefaultModule|RelativeDefaultModule/inner:RelativeInnerModule>wire")
+  }
+
+  it should "raise an exception when the requested root is not an ancestor" in {
+    val e = the[ChiselException] thrownBy {
+      ChiselStage.emitCHIRRTL(new RelativeSiblingsModule)
+    }
+
+    e.getMessage should include(
+      "Requested .toRelativeTarget relative to RelativeInnerModule_1, but it is not an ancestor"
     )
   }
 }

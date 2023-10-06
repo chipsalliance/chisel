@@ -601,6 +601,32 @@ package experimental {
       }
     }
 
+    /** Returns a FIRRTL ModuleTarget that references this object, relative to an optional root.
+      *
+      * If `root` is defined, the target is a hierarchical path starting from `root`.
+      *
+      * If `root` is not defined, the target is a hierarchical path equivalent to `toAbsoluteTarget`.
+      *
+      * @note If `root` is defined, and has not finished elaboration, this must be called within `atModuleBodyEnd`.
+      * @note The BaseModule must be a descendant of `root`, if it is defined.
+      * @note This doesn't have special handling for Views.
+      */
+    final def toRelativeTarget(root: Option[BaseModule]): IsModule = {
+      (root, _parent) match {
+        // If root was defined, and we are it, return this.
+        case (Some(_), _) if root.get == this => getTarget
+        // If root was defined, and we are not there yet, recurse up.
+        case (Some(definedRoot), Some(parent)) => parent.toRelativeTarget(root).instOf(this.instanceName, name)
+        // If root was defined, and there is no parent, the root was not an ancestor.
+        case (Some(definedRoot), None) =>
+          throwException(s"Requested .toRelativeTarget relative to ${definedRoot.name}, but it is not an ancestor")
+        // If root was not defined, and there is a parent, recurse up.
+        case (None, Some(parent)) => parent.toRelativeTarget(root).instOf(this.instanceName, name)
+        // If root was not defined, and there is no parent, return this.
+        case (None, None) => getTarget
+      }
+    }
+
     /**
       * Internal API. Returns a list of this module's generated top-level ports as a map of a String
       * (FIRRTL name) to the IO object. Only valid after the module is closed.
