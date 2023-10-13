@@ -423,7 +423,11 @@ package experimental {
 
     // Fresh Namespace because in Firrtl, Modules namespaces are disjoint with the global namespace
     private[chisel3] val _namespace = Namespace.empty
-    private val _ids = ArrayBuffer[HasId]()
+
+    // Expose _ids in Chisel. The ids should almost always be accessed through getIds, but there is a use-case to access
+    // the ids directly in generateComponent.
+    private[chisel3] val _ids = ArrayBuffer[HasId]()
+
     private[chisel3] def addId(d: HasId): Unit = {
       if (Builder.aspectModule(this).isDefined) {
         aspectModule(this).get.addId(d)
