@@ -5,7 +5,7 @@ package chisel3.experimental.hierarchy.core
 import scala.language.experimental.macros
 import chisel3._
 import chisel3.experimental.hierarchy.{InstantiableClone, ModuleClone}
-import chisel3.internal.{throwException, Builder, PseudoModule}
+import chisel3.internal.{throwException, Builder}
 import chisel3.experimental.{BaseModule, ExtModule, SourceInfo}
 import chisel3.internal.sourceinfo.InstanceTransform
 import chisel3.internal.firrtl.{Component, DefBlackBox, DefIntrinsicModule, DefModule, Port}
@@ -130,7 +130,7 @@ object Instance extends SourceInfoDoc {
           "Imported Definition information not found - possibly forgot to add ImportDefinition annotation?"
         )
       )
-      class EmptyExtModule extends ExtModule with PseudoModule {
+      class EmptyExtModule extends ExtModule {
         override def desiredName: String = extModName
         override private[chisel3] def _isImportedDefinition = true
         override def generateComponent(): Option[Component] = {
