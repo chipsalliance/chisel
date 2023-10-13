@@ -20,10 +20,10 @@ class FixedIOModuleSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
     class Foo extends FixedIORawModule[Bool](Bool()) {
       val a = IO(Bool())
     }
-    val exception = intercept[IllegalArgumentException] {
-      ChiselStage.emitCHIRRTL(new Foo)
+    val exception = intercept[ChiselException] {
+      ChiselStage.emitCHIRRTL(new Foo, Array("--throw-on-first-error"))
     }
-    exception.getMessage should include("This module cannot have user-created IO")
+    exception.getMessage should include("This module cannot have IOs instantiated after calling disallowIOCreation()")
   }
 
   "FixedIOBlackBox" should "create a module with flattend IO" in {
@@ -45,6 +45,23 @@ class FixedIOModuleSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
       "output io : UInt<1>",
       "output a : UInt<2>"
     )()
+  }
+
+  "User defined RawModules" should "be able to lock down their ios" in {
+
+    class Bar extends RawModule {
+      val in = IO(Input(UInt(1.W)))
+      val out = IO(Output(UInt(1.W)))
+
+      disallowIOCreation()
+
+      val other = IO(Input(UInt(1.W)))
+    }
+
+    val exception = intercept[ChiselException] {
+      ChiselStage.emitCHIRRTL(new Bar, Array("--throw-on-first-error"))
+    }
+    exception.getMessage should include("This module cannot have IOs instantiated after calling disallowIOCreation()")
   }
 
 }

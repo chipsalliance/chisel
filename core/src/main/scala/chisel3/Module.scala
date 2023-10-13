@@ -403,7 +403,7 @@ package experimental {
     private[chisel3] def isIOCreationAllowed = _isIOCreationAllowed
 
     /** Disallow any more IO creation for this module. */
-    private[chisel3] def disallowIOCreation(): Unit = {
+    def disallowIOCreation(): Unit = {
       _isIOCreationAllowed = false
     }
 
