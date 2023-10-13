@@ -8,6 +8,7 @@ import chisel3.internal.firrtl.{ProbeExpr, RWProbeExpr}
 import chisel3.experimental.{requireIsHardware, SourceInfo}
 
 import scala.language.experimental.macros
+import chisel3.Aggregate
 
 private[chisel3] sealed trait ProbeValueBase {
   protected def apply[T <: Data](source: T, writable: Boolean)(implicit sourceInfo: SourceInfo): T = {

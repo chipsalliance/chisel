@@ -123,9 +123,10 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
     )
 
     (processChirrtl(chirrtl) should contain).allOf(
-      "output p : Probe<{ a : UInt<1>, b : UInt<1>}>",
+      "output p : { a : Probe<UInt<1>>, b : Probe<UInt<1>>}",
       "wire x : { a : UInt<1>, b : UInt<1>}",
-      "define p = probe(x)",
+      "define p.b = probe(x).b",
+      "define p.a = probe(x).a",
       "connect x, read(f.p.b)",
       "define y = f.p.b"
     )
@@ -149,6 +150,132 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
       "output p : Probe<UInt<16>[2]>[2]",
       "output outProbe : Probe<UInt<16>>",
       "define outProbe = child.p[0][1]"
+    )
+  }
+
+  "Probe methods on Bundles" should "operate on leaf elements" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(
+      new Module {
+        class BarBundle() extends Bundle {
+          val a = Bool()
+          val b = Bool()
+        }
+
+        class FooBundle() extends Bundle {
+          val barA = new BarBundle()
+          val barB = new BarBundle()
+        }
+
+        class Foo() extends RawModule {
+          val foo = IO(Output(RWProbe(new FooBundle())))
+          val fooForceInternalBundle = IO(Output(RWProbe(new FooBundle())))
+          val fooForceGrandchildBool = IO(Output(RWProbe(new FooBundle())))
+        }
+
+        val f = Module(new Foo())
+
+        // defines tests
+        val defBundle = IO(Output(RWProbe(new FooBundle())))
+        define(defBundle, f.foo)
+
+        val defInternalBundle = IO(Output(RWProbe(new BarBundle())))
+        define(defInternalBundle, f.foo.barA)
+
+        val defGrandchildBool = IO(Output(RWProbe(Bool())))
+        define(defGrandchildBool, f.foo.barB.a)
+
+        // read tests
+        val readBundle = IO(Output(new FooBundle()))
+        readBundle := read(f.foo)
+
+        val readInternalBundle = IO(Output(new BarBundle()))
+        readInternalBundle := read(f.foo.barA)
+
+        val readGrandchildBool = IO(Output(Bool()))
+        readGrandchildBool := read(f.foo.barB.b)
+
+        // force initial and release initial tests
+        val forceFoo = IO(Input(new FooBundle()))
+        forceInitial(f.foo, forceFoo)
+        releaseInitial(f.foo)
+        forceInitial(f.fooForceInternalBundle.barA, forceFoo.barA)
+        releaseInitial(f.fooForceInternalBundle.barA)
+        forceInitial(f.fooForceGrandchildBool.barB.a, forceFoo.barB.a)
+        releaseInitial(f.fooForceGrandchildBool.barB.a)
+
+        // force and release tests
+        val cond = reset.asBool
+        force(clock, cond, f.foo, forceFoo)
+        release(clock, cond, f.foo)
+        force(clock, cond, f.fooForceInternalBundle.barA, forceFoo.barA)
+        release(clock, cond, f.fooForceInternalBundle.barA)
+        force(clock, cond, f.fooForceGrandchildBool.barB.a, forceFoo.barB.a)
+        release(clock, cond, f.fooForceGrandchildBool.barB.a)
+      },
+      Array("--full-stacktrace", "--throw-on-first-error")
+    )
+
+    (processChirrtl(chirrtl) should contain).allOf(
+      // RWProbe<> split out into leaves
+      "output foo : { barA : { a : RWProbe<UInt<1>>, b : RWProbe<UInt<1>>}, barB : { a : RWProbe<UInt<1>>, b : RWProbe<UInt<1>>}}",
+      // define tests
+      "define defBundle.barB.b = f.foo.barB.b",
+      "define defBundle.barB.a = f.foo.barB.a",
+      "define defBundle.barA.b = f.foo.barA.b",
+      "define defBundle.barA.a = f.foo.barA.a",
+      "define defInternalBundle.b = f.foo.barA.b",
+      "define defInternalBundle.a = f.foo.barA.a",
+      "define defGrandchildBool = f.foo.barB.a",
+      // read of FooBundle
+      "wire readBundle_probe_read : { barA : { a : UInt<1>, b : UInt<1>}, barB : { a : UInt<1>, b : UInt<1>}}",
+      "wire readBundle_probe_read_1 : { a : UInt<1>, b : UInt<1>}",
+      "connect readBundle_probe_read_1.b, read(f.foo.barB.b)",
+      "connect readBundle_probe_read_1.a, read(f.foo.barB.a)",
+      "connect readBundle_probe_read.barB.b, readBundle_probe_read_1.b",
+      "connect readBundle_probe_read.barB.a, readBundle_probe_read_1.a",
+      "wire readBundle_probe_read_2 : { a : UInt<1>, b : UInt<1>}",
+      "connect readBundle_probe_read_2.b, read(f.foo.barA.b)",
+      "connect readBundle_probe_read_2.a, read(f.foo.barA.a)",
+      "connect readBundle_probe_read.barA.b, readBundle_probe_read_2.b",
+      "connect readBundle_probe_read.barA.a, readBundle_probe_read_2.a",
+      "connect readBundle, readBundle_probe_read",
+      // read of BarBundle
+      "wire readInternalBundle_probe_read : { a : UInt<1>, b : UInt<1>}",
+      "connect readInternalBundle_probe_read.b, read(f.foo.barA.b)",
+      "connect readInternalBundle_probe_read.a, read(f.foo.barA.a)",
+      "connect readInternalBundle, readInternalBundle_probe_read",
+      // read of Bool
+      "connect readGrandchildBool, read(f.foo.barB.b)",
+      // force initial and release initial tests
+      "force_initial(f.foo.barB.b, forceFoo.barB.b)",
+      "force_initial(f.foo.barB.a, forceFoo.barB.a)",
+      "force_initial(f.foo.barA.b, forceFoo.barA.b)",
+      "force_initial(f.foo.barA.a, forceFoo.barA.a)",
+      "release_initial(f.foo.barB.b)",
+      "release_initial(f.foo.barB.a)",
+      "release_initial(f.foo.barA.b)",
+      "release_initial(f.foo.barA.a)",
+      "force_initial(f.fooForceInternalBundle.barA.b, forceFoo.barA.b)",
+      "force_initial(f.fooForceInternalBundle.barA.a, forceFoo.barA.a)",
+      "release_initial(f.fooForceInternalBundle.barA.b)",
+      "release_initial(f.fooForceInternalBundle.barA.a)",
+      "force_initial(f.fooForceGrandchildBool.barB.a, forceFoo.barB.a)",
+      "release_initial(f.fooForceGrandchildBool.barB.a)",
+      // force and release tests
+      "force(clock, cond, f.foo.barB.b, forceFoo.barB.b)",
+      "force(clock, cond, f.foo.barB.a, forceFoo.barB.a)",
+      "force(clock, cond, f.foo.barA.b, forceFoo.barA.b)",
+      "force(clock, cond, f.foo.barA.a, forceFoo.barA.a)",
+      "release(clock, cond, f.foo.barB.b)",
+      "release(clock, cond, f.foo.barB.a)",
+      "release(clock, cond, f.foo.barA.b)",
+      "release(clock, cond, f.foo.barA.a)",
+      "force(clock, cond, f.fooForceInternalBundle.barA.b, forceFoo.barA.b)",
+      "force(clock, cond, f.fooForceInternalBundle.barA.a, forceFoo.barA.a)",
+      "release(clock, cond, f.fooForceInternalBundle.barA.b)",
+      "release(clock, cond, f.fooForceInternalBundle.barA.a)",
+      "force(clock, cond, f.fooForceGrandchildBool.barB.a, forceFoo.barB.a)",
+      "release(clock, cond, f.fooForceGrandchildBool.barB.a)"
     )
   }
 
