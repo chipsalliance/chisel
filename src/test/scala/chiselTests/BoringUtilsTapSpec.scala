@@ -333,13 +333,13 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       // Child ports.
       "module Child(",
       "input  v_0_in,",
-      "       v_1_in,",
-      "output v_0_out",
+      "output v_0_out,",
+      "input  v_1_in",
       // Instantiation.
       "Child child (",
       ".v_0_in  (inputs_0),", // Alive because feeds outV_0_out probe.
-      ".v_1_in  (inputs_1),", // rwprobe target.
       ".v_0_out (", // rwprobe target.
+      ".v_1_in  (inputs_1)", // rwprobe target.
       // Ref ABI.  Names of internal signals are subject to change.
       "`define ref_Foo_Foo_outV_0_out child.v_0_out",
       "`define ref_Foo_Foo_outV_1_in child.v_1_in"
