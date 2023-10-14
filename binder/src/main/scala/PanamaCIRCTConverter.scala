@@ -136,9 +136,9 @@ class PanamaCIRCTConverter extends CIRCTConverter {
     def getWidthOrSentinel(tpe: fir.Type): Int = {
       tpe match {
         case fir.ClockType | fir.ResetType | fir.AsyncResetType => 1
-        case fir.UIntType(width) => getWidthOrSentinel(width)
-        case fir.SIntType(width) => getWidthOrSentinel(width)
-        case fir.AnalogType(width) => getWidthOrSentinel(width)
+        case fir.UIntType(width)                                => getWidthOrSentinel(width)
+        case fir.SIntType(width)                                => getWidthOrSentinel(width)
+        case fir.AnalogType(width)                              => getWidthOrSentinel(width)
         case _: fir.BundleType | _: fir.VectorType => -2
         case _ => throw new Exception("unhandled")
       }
@@ -292,7 +292,7 @@ class PanamaCIRCTConverter extends CIRCTConverter {
       }
 
       def build(): Op = buildImpl(circt.mlirBlockAppendOwnedOperation(parent, _))
-      def buildAfter(ref: Op): Op = buildImpl(circt.mlirBlockInsertOwnedOperationAfter(parent, ref.op, _))
+      def buildAfter(ref:  Op): Op = buildImpl(circt.mlirBlockInsertOwnedOperationAfter(parent, ref.op, _))
       def buildBefore(ref: Op): Op = buildImpl(circt.mlirBlockInsertOwnedOperationBefore(parent, ref.op, _))
     }
 
@@ -575,7 +575,9 @@ class PanamaCIRCTConverter extends CIRCTConverter {
         src = Reference.Value(
           util
             .OpBuilder("firrtl.tail", firCtx.currentBlock, loc)
-            .withNamedAttrs(Seq(("amount", circt.mlirIntegerAttrGet(circt.mlirIntegerTypeGet(32), srcWidth - destWidth))))
+            .withNamedAttrs(
+              Seq(("amount", circt.mlirIntegerAttrGet(circt.mlirIntegerTypeGet(32), srcWidth - destWidth)))
+            )
             .withOperands(Seq(src.value))
             .withResult(util.convert(tmpType))
             .build()
@@ -721,21 +723,24 @@ class PanamaCIRCTConverter extends CIRCTConverter {
       case None       => (firCtx.currentBlock, (opBuilder: util.OpBuilder) => opBuilder.build())
     }
 
-    val op = build(util.OpBuilder("chirrtl.memoryport", parent, loc)
-      .withNamedAttr(
-        "direction",
-        circt.firrtlAttrGetMemDir(defMemPort.dir match {
-          case MemPortDirection.READ  => FIRRTLMemDir.Read
-          case MemPortDirection.WRITE => FIRRTLMemDir.Write
-          case MemPortDirection.RDWR  => FIRRTLMemDir.ReadWrite
-          case MemPortDirection.INFER => FIRRTLMemDir.Infer
-        })
-      )
-      .withNamedAttr("name", circt.mlirStringAttrGet(Converter.getRef(defMemPort.id, defMemPort.sourceInfo).name))
-      .withNamedAttr("annotations", circt.emptyArrayAttr)
-      .withOperand( /* memory */ util.referTo(defMemPort.source.id, loc).value)
-      .withResult( /* data */ util.convert(Converter.extractType(defMemPort.id, defMemPort.sourceInfo)))
-      .withResult( /* port */ circt.chirrtlTypeGetCMemoryPort()))
+    val op = build(
+      util
+        .OpBuilder("chirrtl.memoryport", parent, loc)
+        .withNamedAttr(
+          "direction",
+          circt.firrtlAttrGetMemDir(defMemPort.dir match {
+            case MemPortDirection.READ  => FIRRTLMemDir.Read
+            case MemPortDirection.WRITE => FIRRTLMemDir.Write
+            case MemPortDirection.RDWR  => FIRRTLMemDir.ReadWrite
+            case MemPortDirection.INFER => FIRRTLMemDir.Infer
+          })
+        )
+        .withNamedAttr("name", circt.mlirStringAttrGet(Converter.getRef(defMemPort.id, defMemPort.sourceInfo).name))
+        .withNamedAttr("annotations", circt.emptyArrayAttr)
+        .withOperand( /* memory */ util.referTo(defMemPort.source.id, loc).value)
+        .withResult( /* data */ util.convert(Converter.extractType(defMemPort.id, defMemPort.sourceInfo)))
+        .withResult( /* port */ circt.chirrtlTypeGetCMemoryPort())
+    )
 
     util
       .OpBuilder("chirrtl.memoryport.access", firCtx.currentBlock, loc)
