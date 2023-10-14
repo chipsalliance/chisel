@@ -12,7 +12,7 @@ import org.llvm.circt.CAPI
 // Wrapper for CIRCT APIs with Panama framework
 class PanamaCIRCT {
   // Open an arena for memory management of MLIR API calling in this context instance
-  private val arena = Arena.openConfined()
+  private val arena = Arena.ofConfined()
 
   // Create MLIR context and register dialects we need
   private val mlirCtx = {
@@ -41,7 +41,7 @@ class PanamaCIRCT {
 
   private def newString(string: String): MlirStringRef = {
     val bytes = string.getBytes()
-    val buffer = MemorySegment.allocateNative(bytes.length + 1, arena.scope())
+    val buffer = arena.allocate(bytes.length + 1)
     buffer.copyFrom(MemorySegment.ofArray(bytes))
     MlirStringRef(CAPI.mlirStringRefCreateFromCString(arena, buffer))
   }
@@ -52,14 +52,14 @@ class PanamaCIRCT {
         callback(MlirStringRef(message).toString)
       }
     }
-    MlirStringCallback(circt.MlirStringCallback.allocate(cb, arena.scope()))
+    MlirStringCallback(circt.MlirStringCallback.allocate(cb, arena))
   }
 
   private def seqToArray[T <: ForeignType[_]](xs: Seq[T]): (MemorySegment, Int) = {
     if (xs.nonEmpty) {
       val sizeOfT = xs(0).sizeof
 
-      val buffer = MemorySegment.allocateNative(sizeOfT * xs.length, arena.scope())
+      val buffer = arena.allocate(sizeOfT * xs.length)
       xs.zipWithIndex.foreach {
         case (x, i) =>
           x.get match {
@@ -244,8 +244,8 @@ class PanamaCIRCT {
   def firtoolOptionsGetVbToBv(options: FirtoolOptions): Boolean = CAPI.firtoolOptionsGetVbToBv(options.get)
   def firtoolOptionsSetDedup(options: FirtoolOptions, value: Boolean) = CAPI.firtoolOptionsSetDedup(options.get, value)
   def firtoolOptionsGetDedup(options: FirtoolOptions): Boolean = CAPI.firtoolOptionsGetDedup(options.get)
-  def firtoolOptionsSetGrandCentralInstantiateCompanionOnly(options: FirtoolOptions, value: Boolean) = CAPI.firtoolOptionsSetGrandCentralInstantiateCompanionOnly(options.get, value)
-  def firtoolOptionsGetGrandCentralInstantiateCompanionOnly(options: FirtoolOptions): Boolean = CAPI.firtoolOptionsGetGrandCentralInstantiateCompanionOnly(options.get)
+  def firtoolOptionsSetCompanionMode(options: FirtoolOptions, value: FirtoolCompanionMode) = CAPI.firtoolOptionsSetCompanionMode(options.get, value.get)
+  def firtoolOptionsGetCompanionMode(options: FirtoolOptions) = CAPI.firtoolOptionsGetCompanionMode(options.get)
   def firtoolOptionsSetDisableAggressiveMergeConnections(options: FirtoolOptions, value: Boolean) = CAPI.firtoolOptionsSetDisableAggressiveMergeConnections(options.get, value)
   def firtoolOptionsGetDisableAggressiveMergeConnections(options: FirtoolOptions): Boolean = CAPI.firtoolOptionsGetDisableAggressiveMergeConnections(options.get)
   def firtoolOptionsSetEmitOMIR(options: FirtoolOptions, value: Boolean) = CAPI.firtoolOptionsSetEmitOMIR(options.get, value)
@@ -639,5 +639,15 @@ object FirtoolRandomKind {
   final case object Mem extends FirtoolRandomKind(value = CAPI.FIRTOOL_RANDOM_KIND_MEM())
   final case object Reg extends FirtoolRandomKind(value = CAPI.FIRTOOL_RANDOM_KIND_REG())
   final case object All extends FirtoolRandomKind(value = CAPI.FIRTOOL_RANDOM_KIND_ALL())
+}
+
+sealed class FirtoolCompanionMode(val value: Int) extends ForeignType[Int] {
+  private[circt] def get = value
+  private[circt] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
+}
+object FirtoolCompanionMode {
+  final case object Bind extends FirtoolCompanionMode(value = CAPI.FIRTOOL_COMPANION_MODE_BIND())
+  final case object Instantiate extends FirtoolCompanionMode(value = CAPI.FIRTOOL_COMPANION_MODE_INSTANTIATE())
+  final case object Drop extends FirtoolCompanionMode(value = CAPI.FIRTOOL_COMPANION_MODE_DROP())
 }
 

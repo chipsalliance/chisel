@@ -359,8 +359,8 @@ trait CIRCTPanamaBinderModule
     "firtoolOptionsGetVbToBv",
     "firtoolOptionsSetDedup",
     "firtoolOptionsGetDedup",
-    "firtoolOptionsSetGrandCentralInstantiateCompanionOnly",
-    "firtoolOptionsGetGrandCentralInstantiateCompanionOnly",
+    "firtoolOptionsSetCompanionMode",
+    "firtoolOptionsGetCompanionMode",
     "firtoolOptionsSetDisableAggressiveMergeConnections",
     "firtoolOptionsGetDisableAggressiveMergeConnections",
     "firtoolOptionsSetEmitOMIR",
@@ -460,6 +460,10 @@ trait CIRCTPanamaBinderModule
     "FIRTOOL_RANDOM_KIND_MEM",
     "FIRTOOL_RANDOM_KIND_REG",
     "FIRTOOL_RANDOM_KIND_ALL",
+    // enum FirtoolCompanionMode
+    "FIRTOOL_COMPANION_MODE_BIND",
+    "FIRTOOL_COMPANION_MODE_INSTANTIATE",
+    "FIRTOOL_COMPANION_MODE_DROP",
   ))
 
   def includeStructs = T(Seq(
