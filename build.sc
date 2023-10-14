@@ -9,22 +9,7 @@ import $file.common
 import $file.project.Boilerplate
 
 object v {
-  val pluginScalaCrossVersions = Seq(
-    "2.13.0",
-    "2.13.1",
-    "2.13.2",
-    "2.13.3",
-    "2.13.4",
-    "2.13.5",
-    "2.13.6",
-    "2.13.7",
-    "2.13.8",
-    "2.13.9",
-    "2.13.10",
-    "2.13.11",
-    "2.13.12"
-  )
-  val scalaCrossVersions = Seq(
+  val scalaVersions = Seq(
     "2.13.12"
   )
   val osLib = ivy"com.lihaoyi::os-lib:0.9.1"
@@ -43,7 +28,7 @@ object v {
   def scalaLibrary(scalaVersion: String) = ivy"org.scala-lang:scala-library:$scalaVersion"
 }
 
-object firrtl extends Cross[Firrtl](v.scalaCrossVersions)
+object firrtl extends Cross[Firrtl](v.scalaVersions)
 
 trait Firrtl
   extends common.FirrtlModule
@@ -63,7 +48,7 @@ trait Firrtl
   def scoptIvy = v.scopt
 }
 
-object svsim extends Cross[Svsim](v.scalaCrossVersions)
+object svsim extends Cross[Svsim](v.scalaVersions)
 
 trait Svsim
   extends common.SvsimModule
@@ -73,7 +58,7 @@ trait Svsim
   def millSourcePath = super.millSourcePath / os.up / "svsim"
 }
 
-object firrtlut extends Cross[FirrtlUnitTest](v.scalaCrossVersions)
+object firrtlut extends Cross[FirrtlUnitTest](v.scalaVersions)
 
 trait FirrtlUnitTest
   extends common.FirrtlUnitTestModule
@@ -93,7 +78,7 @@ trait FirrtlUnitTest
   }
 }
 
-object macros extends Cross[Macros](v.scalaCrossVersions)
+object macros extends Cross[Macros](v.scalaVersions)
 
 trait Macros
   extends common.MacrosModule
@@ -105,7 +90,7 @@ trait Macros
   def scalaReflectIvy = v.scalaReflect(crossScalaVersion)
 }
 
-object core extends Cross[Core](v.scalaCrossVersions)
+object core extends Cross[Core](v.scalaVersions)
 
 trait Core
   extends common.CoreModule
@@ -175,7 +160,7 @@ trait Core
   }
 }
 
-object plugin extends Cross[Plugin](v.pluginScalaCrossVersions)
+object plugin extends Cross[Plugin](v.scalaVersions)
 
 trait Plugin
   extends common.PluginModule
@@ -191,7 +176,7 @@ trait Plugin
   def scalaCompilerIvy: Dep = v.scalaCompiler(crossScalaVersion)
 }
 
-object chisel extends Cross[Chisel](v.scalaCrossVersions)
+object chisel extends Cross[Chisel](v.scalaVersions)
 
 trait Chisel
   extends common.ChiselModule
@@ -209,7 +194,7 @@ trait Chisel
   def pluginModule = plugin(crossScalaVersion)
 }
 
-object chiselut extends Cross[ChiselUnitTest](v.scalaCrossVersions)
+object chiselut extends Cross[ChiselUnitTest](v.scalaVersions)
 
 trait ChiselUnitTest
   extends common.ChiselUnitTestModule
@@ -231,7 +216,7 @@ trait ChiselUnitTest
   }
 }
 
-object stdlib extends Cross[Stdlib](v.scalaCrossVersions)
+object stdlib extends Cross[Stdlib](v.scalaVersions)
 
 trait Stdlib
   extends common.StdLibModule
@@ -258,7 +243,7 @@ trait ChiselPublishModule extends PublishModule {
   def publishVersion = "5.0-SNAPSHOT"
 }
 
-object circtpanamabinder extends Cross[CIRCTPanamaBinder](v.scalaCrossVersions)
+object circtpanamabinder extends Cross[CIRCTPanamaBinder](v.scalaVersions)
 
 trait CIRCTPanamaBinder
   extends common.CIRCTPanamaBinderModule
@@ -280,7 +265,7 @@ trait CIRCTPanamaBinder
   def pluginModule = plugin(crossScalaVersion)
 }
 
-object bindertest extends Cross[CIRCTPanamaBinderModuleTest](v.scalaCrossVersions)
+object bindertest extends Cross[CIRCTPanamaBinderModuleTest](v.scalaVersions)
 
 trait CIRCTPanamaBinderModuleTest
   extends common.CIRCTPanamaBinderModuleTestModule

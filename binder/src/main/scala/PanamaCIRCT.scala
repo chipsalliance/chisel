@@ -12,7 +12,7 @@ import org.llvm.circt.CAPI
 // Wrapper for CIRCT APIs with Panama framework
 class PanamaCIRCT {
   // Open an arena for memory management of MLIR API calling in this context instance
-  private val arena = Arena.openConfined()
+  private val arena = Arena.ofConfined()
 
   // Create MLIR context and register dialects we need
   private val mlirCtx = {
@@ -39,7 +39,7 @@ class PanamaCIRCT {
 
   private def newString(string: String): MlirStringRef = {
     val bytes = string.getBytes()
-    val buffer = MemorySegment.allocateNative(bytes.length + 1, arena.scope())
+    val buffer = arena.allocate(bytes.length + 1)
     buffer.copyFrom(MemorySegment.ofArray(bytes))
     MlirStringRef(CAPI.mlirStringRefCreateFromCString(arena, buffer))
   }
@@ -48,7 +48,7 @@ class PanamaCIRCT {
     if (xs.nonEmpty) {
       val sizeOfT = xs(0).sizeof
 
-      val buffer = MemorySegment.allocateNative(sizeOfT * xs.length, arena.scope())
+      val buffer = arena.allocate(sizeOfT * xs.length)
       xs.zipWithIndex.foreach {
         case (x, i) =>
           x.get match {
@@ -187,7 +187,7 @@ class PanamaCIRCT {
         callback(MlirStringRef(message).toString)
       }
     }
-    val stub = circt.MlirStringCallback.allocate(cb, arena.scope())
+    val stub = circt.MlirStringCallback.allocate(cb, arena)
     CAPI.mlirExportFIRRTL(arena, module.get, stub, NULL)
   }
 

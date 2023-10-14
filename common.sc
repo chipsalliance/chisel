@@ -236,7 +236,7 @@ trait HasJextractGeneratedSources
     }
   }
 
-  override def javacOptions = T(super.javacOptions() ++ Seq("--enable-preview", "--release", "20"))
+  override def javacOptions = T(super.javacOptions() ++ Seq("--enable-preview", "--release", "21"))
 }
 
 trait CIRCTPanamaBinderModule
