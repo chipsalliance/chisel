@@ -236,7 +236,7 @@ trait HasJextractGeneratedSources
     }
   }
 
-  override def javacOptions = T(super.javacOptions() ++ Seq("--enable-preview", "--release", "20"))
+  override def javacOptions = T(super.javacOptions() ++ Seq("--enable-preview", "--release", "21"))
 }
 
 trait CIRCTPanamaBinderModule
@@ -251,6 +251,8 @@ trait CIRCTPanamaBinderModule
     "mlirContextDestroy",
     "mlirGetDialectHandle__firrtl__",
     "mlirGetDialectHandle__chirrtl__",
+    "mlirGetDialectHandle__sv__",
+    "mlirGetDialectHandle__seq__",
     "mlirDialectHandleLoadDialect",
     // "mlirStringRefCreate", // inline function cannot be generated
     "mlirStringRefCreateFromCString",
@@ -296,7 +298,7 @@ trait CIRCTPanamaBinderModule
     "mlirBlockInsertOwnedOperationBefore",
     "mlirRegionAppendOwnedBlock",
     "mlirOperationStateAddOwnedRegions",
-    "mlirOperationDump",
+    "mlirOperationPrint",
     "mlirExportFIRRTL",
     //
     // FIRRTL Type
@@ -312,6 +314,7 @@ trait CIRCTPanamaBinderModule
     // FIRRTL Attribute
     "firrtlAttrGetPortDirs",
     "firrtlAttrGetParamDecl",
+    "firrtlAttrGetConvention",
     "firrtlAttrGetNameKind",
     "firrtlAttrGetRUW",
     "firrtlAttrGetMemoryInit",
@@ -319,13 +322,115 @@ trait CIRCTPanamaBinderModule
     //
     // CHIRRTL Attribute
     "chirrtlTypeGetCMemory",
-    "chirrtlTypeGetCMemoryPort"
+    "chirrtlTypeGetCMemoryPort",
+
+    "mlirPassManagerCreate",
+    "mlirPassManagerCreateOnOperation",
+    "mlirPassManagerDestroy",
+    "mlirPassManagerGetNestedUnder",
+    "mlirPassManagerRunOnOp",
+    "mlirPassManagerAddOwnedPass",
+    "mlirOpPassManagerGetNestedUnder",
+    "mlirOpPassManagerAddOwnedPass",
+
+    "firtoolOptionsCreateDefault",
+    "firtoolOptionsDestroy",
+    "firtoolOptionsSetOutputFilename",
+    "firtoolOptionsGetOutputFilename",
+    "firtoolOptionsSetDisableAnnotationsUnknown",
+    "firtoolOptionsGetDisableAnnotationsUnknown",
+    "firtoolOptionsSetDisableAnnotationsClassless",
+    "firtoolOptionsGetDisableAnnotationsClassless",
+    "firtoolOptionsSetLowerAnnotationsNoRefTypePorts",
+    "firtoolOptionsGetLowerAnnotationsNoRefTypePorts",
+    "firtoolOptionsSetPreserveAggregate",
+    "firtoolOptionsGetPreserveAggregate",
+    "firtoolOptionsSetPreserveValues",
+    "firtoolOptionsGetPreserveValues",
+    "firtoolOptionsSetBuildMode",
+    "firtoolOptionsGetBuildMode",
+    "firtoolOptionsSetDisableOptimization",
+    "firtoolOptionsGetDisableOptimization",
+    "firtoolOptionsSetExportChiselInterface",
+    "firtoolOptionsGetExportChiselInterface",
+    "firtoolOptionsSetChiselInterfaceOutDirectory",
+    "firtoolOptionsGetChiselInterfaceOutDirectory",
+    "firtoolOptionsSetVbToBv",
+    "firtoolOptionsGetVbToBv",
+    "firtoolOptionsSetDedup",
+    "firtoolOptionsGetDedup",
+    "firtoolOptionsSetCompanionMode",
+    "firtoolOptionsGetCompanionMode",
+    "firtoolOptionsSetDisableAggressiveMergeConnections",
+    "firtoolOptionsGetDisableAggressiveMergeConnections",
+    "firtoolOptionsSetEmitOMIR",
+    "firtoolOptionsGetEmitOMIR",
+    "firtoolOptionsSetOMIROutFile",
+    "firtoolOptionsGetOMIROutFile",
+    "firtoolOptionsSetLowerMemories",
+    "firtoolOptionsGetLowerMemories",
+    "firtoolOptionsSetBlackBoxRootPath",
+    "firtoolOptionsGetBlackBoxRootPath",
+    "firtoolOptionsSetReplSeqMem",
+    "firtoolOptionsGetReplSeqMem",
+    "firtoolOptionsSetReplSeqMemFile",
+    "firtoolOptionsGetReplSeqMemFile",
+    "firtoolOptionsSetExtractTestCode",
+    "firtoolOptionsGetExtractTestCode",
+    "firtoolOptionsSetIgnoreReadEnableMem",
+    "firtoolOptionsGetIgnoreReadEnableMem",
+    "firtoolOptionsSetDisableRandom",
+    "firtoolOptionsGetDisableRandom",
+    "firtoolOptionsSetOutputAnnotationFilename",
+    "firtoolOptionsGetOutputAnnotationFilename",
+    "firtoolOptionsSetEnableAnnotationWarning",
+    "firtoolOptionsGetEnableAnnotationWarning",
+    "firtoolOptionsSetAddMuxPragmas",
+    "firtoolOptionsGetAddMuxPragmas",
+    "firtoolOptionsSetEmitChiselAssertsAsSVA",
+    "firtoolOptionsGetEmitChiselAssertsAsSVA",
+    "firtoolOptionsSetEmitSeparateAlwaysBlocks",
+    "firtoolOptionsGetEmitSeparateAlwaysBlocks",
+    "firtoolOptionsSetEtcDisableInstanceExtraction",
+    "firtoolOptionsGetEtcDisableInstanceExtraction",
+    "firtoolOptionsSetEtcDisableRegisterExtraction",
+    "firtoolOptionsGetEtcDisableRegisterExtraction",
+    "firtoolOptionsSetEtcDisableModuleInlining",
+    "firtoolOptionsGetEtcDisableModuleInlining",
+    "firtoolOptionsSetAddVivadoRAMAddressConflictSynthesisBugWorkaround",
+    "firtoolOptionsGetAddVivadoRAMAddressConflictSynthesisBugWorkaround",
+    "firtoolOptionsSetCkgModuleName",
+    "firtoolOptionsGetCkgModuleName",
+    "firtoolOptionsSetCkgInputName",
+    "firtoolOptionsGetCkgInputName",
+    "firtoolOptionsSetCkgOutputName",
+    "firtoolOptionsGetCkgOutputName",
+    "firtoolOptionsSetCkgEnableName",
+    "firtoolOptionsGetCkgEnableName",
+    "firtoolOptionsSetCkgTestEnableName",
+    "firtoolOptionsGetCkgTestEnableName",
+    "firtoolOptionsSetExportModuleHierarchy",
+    "firtoolOptionsGetExportModuleHierarchy",
+    "firtoolOptionsSetStripFirDebugInfo",
+    "firtoolOptionsGetStripFirDebugInfo",
+    "firtoolOptionsSetStripDebugInfo",
+    "firtoolOptionsGetStripDebugInfo",
+    "firtoolPopulatePreprocessTransforms",
+    "firtoolPopulateCHIRRTLToLowFIRRTL",
+    "firtoolPopulateLowFIRRTLToHW",
+    "firtoolPopulateHWToSV",
+    "firtoolPopulateExportVerilog",
+    "firtoolPopulateExportSplitVerilog",
+    "firtoolPopulateFinalizeIR",
   ))
 
   def includeConstants = T(Seq(
     // enum FIRRTLPortDirection
     "FIRRTL_PORT_DIR_INPUT",
     "FIRRTL_PORT_DIR_OUTPUT",
+    // enum FIRRTLConvention
+    "FIRRTL_CONVENTION_INTERNAL",
+    "FIRRTL_CONVENTION_SCALARIZED",
     // enum FIRRTLNameKind
     "FIRRTL_NAME_KIND_DROPPABLE_NAME",
     "FIRRTL_NAME_KIND_INTERESTING_NAME",
@@ -337,7 +442,28 @@ trait CIRCTPanamaBinderModule
     "FIRRTL_MEM_DIR_INFER",
     "FIRRTL_MEM_DIR_READ",
     "FIRRTL_MEM_DIR_WRITE",
-    "FIRRTL_MEM_DIR_READ_WRITE"
+    "FIRRTL_MEM_DIR_READ_WRITE",
+    // enum FirtoolPreserveAggregateMode
+    "FIRTOOL_PRESERVE_AGGREGATE_MODE_NONE",
+    "FIRTOOL_PRESERVE_AGGREGATE_MODE_ONE_DIM_VEC",
+    "FIRTOOL_PRESERVE_AGGREGATE_MODE_VEC",
+    "FIRTOOL_PRESERVE_AGGREGATE_MODE_ALL",
+    // enum FirtoolPreserveValuesMode
+    "FIRTOOL_PRESERVE_VALUES_MODE_NONE",
+    "FIRTOOL_PRESERVE_VALUES_MODE_NAMED",
+    "FIRTOOL_PRESERVE_VALUES_MODE_ALL",
+    // enum FirtoolBuildMode
+    "FIRTOOL_BUILD_MODE_DEBUG",
+    "FIRTOOL_BUILD_MODE_RELEASE",
+    // enum FirtoolRandomKind
+    "FIRTOOL_RANDOM_KIND_NONE",
+    "FIRTOOL_RANDOM_KIND_MEM",
+    "FIRTOOL_RANDOM_KIND_REG",
+    "FIRTOOL_RANDOM_KIND_ALL",
+    // enum FirtoolCompanionMode
+    "FIRTOOL_COMPANION_MODE_BIND",
+    "FIRTOOL_COMPANION_MODE_INSTANTIATE",
+    "FIRTOOL_COMPANION_MODE_DROP",
   ))
 
   def includeStructs = T(Seq(
@@ -355,7 +481,12 @@ trait CIRCTPanamaBinderModule
     "MlirOperation",
     "MlirOperationState",
     "MlirNamedAttribute",
-    "FIRRTLBundleField"
+    "MlirPassManager",
+    "MlirOpPassManager",
+    "MlirPass",
+    "MlirLogicalResult",
+    "FIRRTLBundleField",
+    "FirtoolOptions"
   ))
 
   def includeTypedefs = T(Seq(
@@ -371,6 +502,9 @@ trait CIRCTPanamaBinderModule
     "CIRCTCAPIFIRRTL",
     "CIRCTCAPICHIRRTL",
     "CIRCTCAPIHW",
+    "CIRCTCAPISV",
+    "CIRCTCAPISeq",
+    "CIRCTCAPIFirtool",
     "CIRCTCAPIExportFIRRTL",
     "CIRCTCAPIExportVerilog",
     "CIRCTFIRRTL",

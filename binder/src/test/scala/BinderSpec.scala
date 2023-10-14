@@ -2,9 +2,11 @@
 
 package chiselTests.util.random
 
+import geny.Writable
 import chisel3._
 import chisel3.util._
 import chisel3.experimental._
+import chisel3.internal.CIRCTConverter
 import chisel3.internal.panama.circt.PanamaCIRCTConverterAnnotation
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -24,9 +26,21 @@ class Blinky(freq: Int, startOn: Boolean = false) extends Module {
   io.led0 := led
 }
 
+class TruncationTest extends RawModule {
+  val dest = IO(Output(UInt(8.W)))
+  val src = IO(Input(UInt(16.W)))
+  dest := src
+}
+
+// https://github.com/chipsalliance/chisel/issues/3548#issuecomment-1734346659
+class BitLengthOfNeg1Test extends RawModule {
+  val a = IO(Output(UInt()))
+  a := -1.S.asUInt
+}
+
 class BinderTest extends AnyFlatSpec with Matchers {
 
-  def firrtlString(module: => RawModule): String = Seq(
+  def streamString(module: => RawModule, stream: CIRCTConverter => Writable): String = Seq(
     new chisel3.stage.phases.Elaborate,
     chisel3.internal.panama.Convert
   ).foldLeft(
@@ -35,47 +49,41 @@ class BinderTest extends AnyFlatSpec with Matchers {
     .collectFirst {
       case PanamaCIRCTConverterAnnotation(converter) =>
         val string = new java.io.ByteArrayOutputStream
-        converter.firrtlStream.writeBytesTo(string)
+        stream(converter).writeBytesTo(string)
         new String(string.toByteArray)
     }
     .get
 
+  def firrtlString(module:  => RawModule): String = streamString(module, _.firrtlStream)
+  def verilogString(module: => RawModule): String = streamString(module, _.verilogStream)
+
   behavior.of("binder")
 
   it should "generate RTL with circt binder" in {
-    firrtlString(new EmptyModule) should equal(
-      """|circuit EmptyModule :
-         |  module EmptyModule :
-         |""".stripMargin)
+    firrtlString(new EmptyModule) should
+      (include("FIRRTL version")
+        .and(include("circuit EmptyModule :"))
+        .and(include("module EmptyModule :")))
 
-    firrtlString(new Blinky(1000)) should equal(
-      """|circuit Blinky :
-         |  module Blinky :
-         |    input clock : Clock
-         |    input reset : UInt<1>
-         |    output io : { led0 : UInt<1> }
-         |
-         |    reg led : UInt<1>, clock with :
-         |      reset => (reset, UInt<1>(0)) @[binder/src/test/scala/BinderSpec.scala 19:20]
-         |    reg counterWrap_c_value : UInt<9>, clock with :
-         |      reset => (reset, UInt<9>(0)) @[src/main/scala/chisel3/util/Counter.scala 61:40]
-         |    wire counterWrap : UInt<1> @[src/main/scala/chisel3/util/Counter.scala 117:24]
-         |    counterWrap <= UInt<1>(0) @[src/main/scala/chisel3/util/Counter.scala 117:24]
-         |    when UInt<1>(1) : @[src/main/scala/chisel3/util/Counter.scala 118:16]
-         |      node counterWrap_wrap_wrap = eq(counterWrap_c_value, UInt<9>(499)) @[src/main/scala/chisel3/util/Counter.scala 73:24]
-         |      node _counterWrap_wrap_value_T = add(counterWrap_c_value, UInt<1>(1)) @[src/main/scala/chisel3/util/Counter.scala 77:24]
-         |      node _counterWrap_wrap_value_T_1 = tail(_counterWrap_wrap_value_T, 1) @[src/main/scala/chisel3/util/Counter.scala 77:24]
-         |      counterWrap_c_value <= _counterWrap_wrap_value_T_1 @[src/main/scala/chisel3/util/Counter.scala 77:15]
-         |      when counterWrap_wrap_wrap : @[src/main/scala/chisel3/util/Counter.scala 87:20]
-         |        counterWrap_c_value <= UInt<1>(0) @[src/main/scala/chisel3/util/Counter.scala 87:28]
-         |      else :
-         |      counterWrap <= counterWrap_wrap_wrap @[src/main/scala/chisel3/util/Counter.scala 118:23]
-         |    else :
-         |    when counterWrap : @[binder/src/test/scala/BinderSpec.scala 21:21]
-         |      node _led_T = not(led) @[binder/src/test/scala/BinderSpec.scala 22:12]
-         |      led <= _led_T @[binder/src/test/scala/BinderSpec.scala 22:9]
-         |    else :
-         |    io.led0 <= led @[binder/src/test/scala/BinderSpec.scala 24:11]
-         |""".stripMargin)
+    firrtlString(new Blinky(1000)) should
+      (include("circuit Blinky")
+        .and(include("module Blinky"))
+        .and(include("input clock : Clock"))
+        .and(include("input reset : UInt<1>"))
+        .and(include("output io : { led0 : UInt<1> }"))
+        .and(include("when counterWrap"))
+        .and(include("connect led, _led_T")))
+
+    verilogString(new Blinky(1000)) should
+      (include("module Blinky")
+        .and(include("input  clock,"))
+        .and(include("       reset,"))
+        .and(include("output io_led0"))
+        .and(include("if (counterWrap)"))
+        .and(include("counterWrap_c_value <=")))
+
+    firrtlString(new TruncationTest) should include("connect dest, tail(src, 8)")
+
+    firrtlString(new BitLengthOfNeg1Test) should include("asUInt(SInt<1>(-1))")
   }
 }
