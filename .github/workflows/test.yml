@@ -93,7 +93,7 @@ jobs:
       - name: Install Mill
         uses: jodersky/setup-mill@v0.3.0
         with:
-          mill-version: 0.11.0
+          mill-version: 0.11.5
       - name: Install CIRCT
         uses: circt/install-circt@v1.0.0
         with:
