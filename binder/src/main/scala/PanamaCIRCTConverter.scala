@@ -489,18 +489,18 @@ class PanamaCIRCTConverter extends CIRCTConverter {
 
   val verilogStream = new Writable {
     def writeBytesTo(out: OutputStream): Unit = {
-      def assert_result(result: MlirLogicalResult): Unit = {
+      def assertResult(result: MlirLogicalResult): Unit = {
         assert(circt.mlirLogicalResultIsSuccess(result))
       }
 
       val pm = circt.mlirPassManagerCreate()
       val options = circt.firtoolOptionsCreateDefault()
-      assert_result(circt.firtoolPopulatePreprocessTransforms(pm, options))
-      assert_result(circt.firtoolPopulateCHIRRTLToLowFIRRTL(pm, options, mlirRootModule, "-"))
-      assert_result(circt.firtoolPopulateLowFIRRTLToHW(pm, options))
-      assert_result(circt.firtoolPopulateHWToSV(pm, options))
-      assert_result(circt.firtoolPopulateExportVerilog(pm, options, message => out.write(message.getBytes)))
-      assert_result(circt.mlirPassManagerRunOnOp(pm, circt.mlirModuleGetOperation(mlirRootModule)))
+      assertResult(circt.firtoolPopulatePreprocessTransforms(pm, options))
+      assertResult(circt.firtoolPopulateCHIRRTLToLowFIRRTL(pm, options, mlirRootModule, "-"))
+      assertResult(circt.firtoolPopulateLowFIRRTLToHW(pm, options))
+      assertResult(circt.firtoolPopulateHWToSV(pm, options))
+      assertResult(circt.firtoolPopulateExportVerilog(pm, options, message => out.write(message.getBytes)))
+      assertResult(circt.mlirPassManagerRunOnOp(pm, circt.mlirModuleGetOperation(mlirRootModule)))
     }
   }
 

@@ -40,7 +40,7 @@ class BitLengthOfNeg1Test extends RawModule {
 
 class BinderTest extends AnyFlatSpec with Matchers {
 
-  def StreamString(module: => RawModule, stream: CIRCTConverter => Writable): String = Seq(
+  def streamString(module: => RawModule, stream: CIRCTConverter => Writable): String = Seq(
     new chisel3.stage.phases.Elaborate,
     chisel3.internal.panama.Convert
   ).foldLeft(
@@ -54,8 +54,8 @@ class BinderTest extends AnyFlatSpec with Matchers {
     }
     .get
 
-  def firrtlString(module:  => RawModule): String = StreamString(module, _.firrtlStream)
-  def verilogString(module: => RawModule): String = StreamString(module, _.verilogStream)
+  def firrtlString(module:  => RawModule): String = streamString(module, _.firrtlStream)
+  def verilogString(module: => RawModule): String = streamString(module, _.verilogStream)
 
   behavior.of("binder")
 
