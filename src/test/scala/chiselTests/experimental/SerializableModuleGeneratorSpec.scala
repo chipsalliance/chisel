@@ -3,17 +3,14 @@
 package chiselTests
 package experimental
 import chisel3._
-import chisel3.experimental.{SerializableModule, SerializableModuleGenerator, SerializableModuleParameter}
+import chisel3.experimental.{SerializableModule, SerializableModuleGenerator}
+import upickle.default
 import upickle.default._
-object GCDSerializableModuleParameter {
-  implicit def rwP: ReadWriter[GCDSerializableModuleParameter] = macroRW
-}
 
-case class GCDSerializableModuleParameter(width: Int) extends SerializableModuleParameter
+case class GCDSerializableModuleParameter(width: Int)
 
-class GCDSerializableModule(val parameter: GCDSerializableModuleParameter)
-    extends Module
-    with SerializableModule[GCDSerializableModuleParameter] {
+class GCDSerializableModule(val parameter: GCDSerializableModuleParameter) extends Module with SerializableModule {
+  type SerializableModuleParameter = GCDSerializableModuleParameter
   val io = IO(new Bundle {
     val a = Input(UInt(parameter.width.W))
     val b = Input(UInt(parameter.width.W))
@@ -41,42 +38,33 @@ class GCDSerializableModule(val parameter: GCDSerializableModuleParameter)
   io.z := z
 }
 
+// TODO: this should be constructed by plugin
+class GCDSerializableGenerator$Auto(
+  val parameter: GCDSerializableModuleParameter
+)(
+  implicit val parameterRW: ReadWriter[GCDSerializableModuleParameter])
+    extends SerializableModuleGenerator {
+  override type M = GCDSerializableModule
+  override val moduleClass = classOf[M]
+}
+
 class SerializableModuleGeneratorSpec extends ChiselFlatSpec with Utils {
-  val g = SerializableModuleGenerator(
-    classOf[GCDSerializableModule],
-    GCDSerializableModuleParameter(32)
-  )
+  "SerializableModuleGenerator" should "be serialized" in {
+    // barely construct a SerializableModuleGenerator
+    val g = new GCDSerializableGenerator$Auto(GCDSerializableModuleParameter(16))(
+      macroRW[GCDSerializableModuleParameter]
+    )
 
-  "SerializableModuleGenerator" should "be serialized and deserialized" in {
-    assert(
-      g == upickle.default.read[SerializableModuleGenerator[GCDSerializableModule, GCDSerializableModuleParameter]](
-        upickle.default.write(g)
-      )
+    upickle.default.write(g.asInstanceOf[SerializableModuleGenerator]) should be(
+      """{"parameter":{"width":16},"module":"chiselTests.experimental.GCDSerializableModule"}"""
     )
   }
 
-  "SerializableModuleGenerator" should "be able to elaborate" in {
-    circt.stage.ChiselStage.emitCHIRRTL(g.module())
-  }
-
-  case class FooParameter() extends SerializableModuleParameter
-
-  class InnerFoo(val parameter: FooParameter) extends RawModule with SerializableModule[FooParameter]
-
-  "InnerClass" should "not be able to serialize" in {
-    assert(
-      intercept[java.lang.IllegalArgumentException](
-        circt.stage.ChiselStage.emitCHIRRTL(
-          {
-            SerializableModuleGenerator(
-              classOf[InnerFoo],
-              FooParameter()
-            ).module()
-          }
-        )
-      ).getMessage.contains(
-        "You define your class chiselTests.experimental.SerializableModuleGeneratorSpec$FooParameter inside other class."
-      )
+  "SerializableModuleGenerator" should "be able to construct with upickle reader" in {
+    implicit val rwP: upickle.default.ReadWriter[GCDSerializableModuleParameter] = macroRW
+    upickle.default.read[SerializableModuleGenerator](
+      """{"parameter":{"width":16},"module":"chiselTests.experimental.GCDSerializableModule"}"""
     )
   }
+
 }

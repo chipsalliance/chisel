@@ -23,11 +23,15 @@ private[plugin] trait ChiselOuterUtils { outerSelf: TypingTransformers =>
     val itStringAnyTpe:  Type = inferType(tq"scala.collection.Iterable[(String,Any)]")
     val itAnyTpe:        Type = inferType(tq"scala.collection.Iterable[Any]")
 
+    // TODO: rather than modifying the old API, we should consider a renaming.
+    val serializableModuleTpe: Type = inferType(tq"chisel3.experimental.SerializableModule")
+
     def stringFromTypeName(name: TypeName): String =
       name.toString.trim() // Remove trailing space (Scalac implementation detail)
 
     def isAModule(sym: Symbol): Boolean = { sym.tpe <:< baseModuleTpe }
     def isExactBaseModule(sym: Symbol): Boolean = { sym.tpe =:= baseModuleTpe }
+    def isASerializableModuleTpe(sym: Symbol): Boolean = { sym.tpe <:< serializableModuleTpe }
     def isABundle(sym: Symbol): Boolean = { sym.tpe <:< bundleTpe }
     def isAutoTypenamed(sym: Symbol): Boolean = { sym.tpe <:< autoTypenameTpe }
     def isARecord(sym: Symbol): Boolean = { sym.tpe <:< recordTpe }
