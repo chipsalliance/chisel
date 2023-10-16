@@ -132,7 +132,6 @@ object Instance extends SourceInfoDoc {
       )
       class EmptyExtModule extends ExtModule {
         override def desiredName: String = extModName
-        override private[chisel3] def _isImportedDefinition = true
         override def generateComponent(): Option[Component] = {
           require(!_closed, s"Can't generate $desiredName module more than once")
           _closed = true

@@ -70,7 +70,6 @@ class ChiselStage extends Stage {
         Dependency[chisel3.stage.phases.MaybeAspectPhase],
         Dependency[chisel3.stage.phases.AddSerializationAnnotations],
         Dependency[chisel3.stage.phases.Convert],
-        Dependency[chisel3.stage.phases.AddDedupGroupAnnotations],
         Dependency[chisel3.stage.phases.MaybeInjectingPhase],
         Dependency[circt.stage.phases.AddImplicitOutputFile],
         Dependency[circt.stage.phases.Checks],
