@@ -45,6 +45,12 @@ final: prev:
       hash = "sha256-2OPThXaj1lhT1er12mSKzl41FSrKmTLN2xfh9YdbnWk=";
       fetchSubmodules = true;
     };
+    patches = (old.patches or []) ++ [
+      (prev.fetchpatch {
+        url = "https://github.com/llvm/circt/pull/6292.patch";
+        hash = "sha256-snl5WPCq8RCtGy2zxW4cSbHcM+VIuVG66PYjh0d5cV0=";
+      })
+    ];
     preConfigure = ''
       find ./test -name '*.mlir' -exec sed -i 's|/usr/bin/env|${final.coreutils}/bin/env|g' {} \;
       substituteInPlace cmake/modules/GenVersionFile.cmake --replace "unknown git version" "${version}"
