@@ -2,10 +2,11 @@
 
 package chisel3.internal.panama.circt
 
+import chisel3.libfirtool.FirtoolLibOption
+
 import java.lang.foreign._
 import java.lang.foreign.MemorySegment.NULL
 import java.lang.foreign.ValueLayout._
-
 import org.llvm.circt
 import org.llvm.circt.CAPI
 

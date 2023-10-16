@@ -19,6 +19,7 @@ import chisel3.cover.{Cover => VerifCover}
 import chisel3.printf.{Printf => VerifPrintf}
 import chisel3.stop.{Stop => VerifStop}
 import chisel3.internal.CIRCTConverter
+import chisel3.libfirtool.{BuildMode, CompanionMode, FirtoolLibOption, PreserveAggregateMode, PreserveValuesMode, RandomKind}
 
 case class Region(region: MlirRegion, blocks: Seq[MlirBlock]) {
   def get(): MlirRegion = region
@@ -117,8 +118,7 @@ class FirContext {
   def rootWhen:           Option[WhenContext] = Option.when(whenStack.nonEmpty)(whenStack.last)
 }
 
-case class PanamaCIRCTConverterAnnotation(converter: PanamaCIRCTConverter) extends NoTargetAnnotation
-class PanamaCIRCTConverter extends CIRCTConverter {
+class PanamaCIRCTConverter(firtoolLibOption: FirtoolLibOption) extends CIRCTConverter {
   val circt = new PanamaCIRCT
   val firCtx = new FirContext
   val mlirRootModule = circt.mlirModuleCreateEmpty(circt.unkLoc)
@@ -494,7 +494,70 @@ class PanamaCIRCTConverter extends CIRCTConverter {
       }
 
       val pm = circt.mlirPassManagerCreate()
+      // map option to C-API based option
       val options = circt.firtoolOptionsCreateDefault()
+      firtoolLibOption.outputFilename.foreach(option => circt.firtoolOptionsSetOutputFilename(options, option: String))
+      firtoolLibOption.disableAnnotationsUnknown.foreach(option => circt.firtoolOptionsSetDisableAnnotationsUnknown(options, option: Boolean))
+      firtoolLibOption.disableAnnotationsClassless.foreach(option => circt.firtoolOptionsSetDisableAnnotationsClassless(options, option: Boolean))
+      firtoolLibOption.lowerAnnotationsNoRefTypePorts.foreach(option => circt.firtoolOptionsSetLowerAnnotationsNoRefTypePorts(options, option: Boolean))
+      firtoolLibOption.preserveAggregate.foreach(option => circt.firtoolOptionsSetPreserveAggregate(options, option match {
+        case PreserveAggregateMode.None => FirtoolPreserveAggregateMode.None
+        case PreserveAggregateMode.OneDimVec => FirtoolPreserveAggregateMode.OneDimVec
+        case PreserveAggregateMode.Vec => FirtoolPreserveAggregateMode.Vec
+        case PreserveAggregateMode.All => FirtoolPreserveAggregateMode.All
+      }))
+      firtoolLibOption.preserveValues.foreach(option => circt.firtoolOptionsSetPreserveValues(options, option match {
+        case PreserveValuesMode.None => FirtoolPreserveValuesMode.None
+        case PreserveValuesMode.Named => FirtoolPreserveValuesMode.Named
+        case PreserveValuesMode.All => FirtoolPreserveValuesMode.All
+      }))
+      firtoolLibOption.buildMode.foreach(option => circt.firtoolOptionsSetBuildMode(options, option match {
+        case BuildMode.Debug => FirtoolBuildMode.Debug
+        case BuildMode.Release => FirtoolBuildMode.Release
+      }))
+      firtoolLibOption.disableOptimization.foreach(option => circt.firtoolOptionsSetDisableOptimization(options, option: Boolean))
+      firtoolLibOption.exportChiselInterface.foreach(option => circt.firtoolOptionsSetExportChiselInterface(options, option: Boolean))
+      firtoolLibOption.chiselInterfaceOutDirectory.foreach(option => circt.firtoolOptionsSetChiselInterfaceOutDirectory(options, option: String))
+      firtoolLibOption.vbToBv.foreach(option => circt.firtoolOptionsSetVbToBv(options, option: Boolean))
+      firtoolLibOption.dedup.foreach(option => circt.firtoolOptionsSetDedup(options, option: Boolean))
+      firtoolLibOption.companionMode.foreach(option => circt.firtoolOptionsSetCompanionMode(options, option match {
+        case CompanionMode.Bind => FirtoolCompanionMode.Bind
+        case CompanionMode.Instantiate => FirtoolCompanionMode.Instantiate
+        case CompanionMode.Drop => FirtoolCompanionMode.Drop
+      }))
+      firtoolLibOption.disableAggressiveMergeConnections.foreach(option => circt.firtoolOptionsSetDisableAggressiveMergeConnections(options, option: Boolean))
+      firtoolLibOption.emitOMIR.foreach(option => circt.firtoolOptionsSetEmitOMIR(options, option: Boolean))
+      firtoolLibOption.omirOutFile.foreach(option => circt.firtoolOptionsSetOMIROutFile(options, option: String))
+      firtoolLibOption.lowerMemories.foreach(option => circt.firtoolOptionsSetLowerMemories(options, option: Boolean))
+      firtoolLibOption.blackBoxRootPath.foreach(option => circt.firtoolOptionsSetBlackBoxRootPath(options, option: String))
+      firtoolLibOption.replSeqMem.foreach(option => circt.firtoolOptionsSetReplSeqMem(options, option: Boolean))
+      firtoolLibOption.replSeqMemFile.foreach(option => circt.firtoolOptionsSetReplSeqMemFile(options, option: String))
+      firtoolLibOption.extractTestCode.foreach(option => circt.firtoolOptionsSetExtractTestCode(options, option: Boolean))
+      firtoolLibOption.ignoreReadEnableMem.foreach(option => circt.firtoolOptionsSetIgnoreReadEnableMem(options, option: Boolean))
+      firtoolLibOption.disableRandom.foreach(option => circt.firtoolOptionsSetDisableRandom(options, option match {
+        case RandomKind.None => FirtoolRandomKind.None
+        case RandomKind.Mem => FirtoolRandomKind.Mem
+        case RandomKind.Reg => FirtoolRandomKind.Reg
+        case RandomKind.All => FirtoolRandomKind.All
+      }))
+      firtoolLibOption.outputAnnotationFilename.foreach(option => circt.firtoolOptionsSetOutputAnnotationFilename(options, option: String))
+      firtoolLibOption.enableAnnotationWarning.foreach(option => circt.firtoolOptionsSetEnableAnnotationWarning(options, option: Boolean))
+      firtoolLibOption.addMuxPragmas.foreach(option => circt.firtoolOptionsSetAddMuxPragmas(options, option: Boolean))
+      firtoolLibOption.emitChiselAssertsAsSVA.foreach(option => circt.firtoolOptionsSetEmitChiselAssertsAsSVA(options, option: Boolean))
+      firtoolLibOption.emitSeparateAlwaysBlocks.foreach(option => circt.firtoolOptionsSetEmitSeparateAlwaysBlocks(options, option: Boolean))
+      firtoolLibOption.etcDisableInstanceExtraction.foreach(option => circt.firtoolOptionsSetEtcDisableInstanceExtraction(options, option: Boolean))
+      firtoolLibOption.etcDisableRegisterExtraction.foreach(option => circt.firtoolOptionsSetEtcDisableRegisterExtraction(options, option: Boolean))
+      firtoolLibOption.etcDisableModuleInlining.foreach(option => circt.firtoolOptionsSetEtcDisableModuleInlining(options, option: Boolean))
+      firtoolLibOption.addVivadoRAMAddressConflictSynthesisBugWorkaround.foreach(option => circt.firtoolOptionsSetAddVivadoRAMAddressConflictSynthesisBugWorkaround(options, option: Boolean))
+      firtoolLibOption.ckgModuleName.foreach(option => circt.firtoolOptionsSetCkgModuleName(options, option: String))
+      firtoolLibOption.ckgInputName.foreach(option => circt.firtoolOptionsSetCkgInputName(options, option: String))
+      firtoolLibOption.ckgOutputName.foreach(option => circt.firtoolOptionsSetCkgOutputName(options, option: String))
+      firtoolLibOption.ckgEnableName.foreach(option => circt.firtoolOptionsSetCkgEnableName(options, option: String))
+      firtoolLibOption.ckgTestEnableName.foreach(option => circt.firtoolOptionsSetCkgTestEnableName(options, option: String))
+      firtoolLibOption.exportModuleHierarchy.foreach(option => circt.firtoolOptionsSetExportModuleHierarchy(options, option: Boolean))
+      firtoolLibOption.stripFirDebugInfo.foreach(option => circt.firtoolOptionsSetStripFirDebugInfo(options, option: Boolean))
+      firtoolLibOption.stripDebugInfo.foreach(option => circt.firtoolOptionsSetStripDebugInfo(options, option: Boolean))
+
       assertResult(circt.firtoolPopulatePreprocessTransforms(pm, options))
       assertResult(circt.firtoolPopulateCHIRRTLToLowFIRRTL(pm, options, mlirRootModule, "-"))
       assertResult(circt.firtoolPopulateLowFIRRTLToHW(pm, options))
@@ -1188,8 +1251,8 @@ class PanamaCIRCTConverter extends CIRCTConverter {
 }
 
 private[chisel3] object PanamaCIRCTConverter {
-  def convert(circuit: Circuit): PanamaCIRCTConverter = {
-    implicit val cvt = new PanamaCIRCTConverter
+  def convert(circuit: Circuit, option: FirtoolLibOption): PanamaCIRCTConverter = {
+    implicit val cvt = new PanamaCIRCTConverter(option)
     visitCircuit(circuit)
     cvt
   }

@@ -2,12 +2,11 @@
 
 package chiselTests.util.random
 
-import geny.Writable
 import chisel3._
-import chisel3.util._
-import chisel3.experimental._
 import chisel3.internal.CIRCTConverter
-import chisel3.internal.panama.circt.PanamaCIRCTConverterAnnotation
+import chisel3.libfirtool.PanamaCIRCTConverterAnnotation
+import chisel3.util._
+import geny.Writable
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -85,5 +84,6 @@ class BinderTest extends AnyFlatSpec with Matchers {
     firrtlString(new TruncationTest) should include("connect dest, tail(src, 8)")
 
     firrtlString(new BitLengthOfNeg1Test) should include("asUInt(SInt<1>(-1))")
+    println(verilogString(new EmptyModule))
   }
 }

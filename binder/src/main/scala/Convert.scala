@@ -2,7 +2,8 @@
 
 package chisel3.internal.panama
 
-import chisel3.internal.panama.circt.{PanamaCIRCTConverter, PanamaCIRCTConverterAnnotation}
+import chisel3.internal.panama.circt.PanamaCIRCTConverter
+import chisel3.libfirtool.{FirtoolLibOption, FirtoolLibOptionAnnotation, PanamaCIRCTConverterAnnotation}
 import chisel3.stage.ChiselCircuitAnnotation
 import chisel3.stage.phases.Elaborate
 import firrtl.AnnotationSeq
@@ -17,7 +18,9 @@ object Convert extends Phase {
   def transform(annotations: AnnotationSeq): AnnotationSeq =
     annotations.flatMap {
       case c @ ChiselCircuitAnnotation(circuit) =>
-        Seq(c, PanamaCIRCTConverterAnnotation(PanamaCIRCTConverter.convert(circuit)))
+        Seq(c, PanamaCIRCTConverterAnnotation(PanamaCIRCTConverter.convert(circuit, annotations.collectFirst {
+          case FirtoolLibOptionAnnotation(option) => option
+        }.getOrElse(FirtoolLibOption()))))
       case a => Seq(a)
     }
 }
