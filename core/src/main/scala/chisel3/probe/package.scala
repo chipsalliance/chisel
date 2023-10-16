@@ -8,7 +8,7 @@ import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.Data.ProbeInfo
 import chisel3.experimental.SourceInfo
-import chisel3.reflect.DataMirror.{checkTypeEquivalence, hasProbeTypeModifier}
+import chisel3.reflect.DataMirror.{checkTypeEquivalence, hasProbeTypeModifier, collectLeafMembers}
 
 import scala.language.experimental.macros
 
@@ -19,11 +19,9 @@ package object probe extends SourceInfoDoc {
     */
   private[chisel3] def setProbeModifier[T <: Data](data: T, probeInfo: Option[ProbeInfo]): Unit = {
     probeInfo.foreach { _ =>
-      data match {
-        case a: Aggregate =>
-          a.elementsIterator.foreach { e => setProbeModifier(e, probeInfo) }
-        case _ => data.probeInfo = probeInfo
-      }
+      println(s"in setProbeModifier for $data")
+      collectLeafMembers(data).foreach { e => println(s"setting probeInfo $probeInfo for elem $e")
+        e.probeInfo = probeInfo }
     }
   }
 
@@ -32,21 +30,17 @@ package object probe extends SourceInfoDoc {
     if (!checkTypeEquivalence(sink, probeExpr)) {
       Builder.error("Cannot define a probe on a non-equivalent type.")
     }
-
-    if (sink.isInstanceOf[Aggregate]) {
-      val sinkElems = sink.asInstanceOf[Aggregate].getElements
-      val probeExprElems = probeExpr.asInstanceOf[Aggregate].getElements
-      sinkElems.zip(probeExprElems).foreach { case (s, pe) => define(s, pe) }
-    } else {
-      requireHasProbeTypeModifier(sink, "Expected sink to be a probe.")
-      requireHasProbeTypeModifier(probeExpr, "Expected source to be a probe expression.")
-      if (sink.probeInfo.get.writable) {
+    collectLeafMembers(sink).zip(collectLeafMembers(probeExpr)).foreach { case (s, pe) =>
+      requireHasProbeTypeModifier(s, "Expected sink to be a probe.")
+      println(s"source: $pe")
+      requireHasProbeTypeModifier(pe, "Expected source to be a probe expression.")
+      if (s.probeInfo.get.writable) {
         requireHasWritableProbeTypeModifier(
-          probeExpr,
+          pe,
           "Cannot use a non-writable probe expression to define a writable probe."
         )
       }
-      pushCommand(ProbeDefine(sourceInfo, sink.ref, probeExpr.ref))
+      pushCommand(ProbeDefine(sourceInfo, s.ref, pe.ref))
     }
   }
 
@@ -60,9 +54,9 @@ package object probe extends SourceInfoDoc {
     val clone = source.cloneTypeFull
     clone.bind(OpBinding(Builder.forcedUserModule, Builder.currentWhen))
     val cloneRef = if (source.isInstanceOf[Aggregate]) {
-      val tmp = Wire(source.cloneTypeFull)
-      val sourceElems = source.asInstanceOf[Aggregate].getElements
-      val tmpElems = tmp.asInstanceOf[Aggregate].elementsIterator
+      val tmp = Wire(Output(source.cloneTypeFull))
+      val sourceElems = collectLeafMembers(source)
+      val tmpElems = collectLeafMembers(tmp)
       sourceElems.zip(tmpElems).foreach { case (e, t) => t :#= do_read(e) }
       tmp.suggestName("probe_read")
       tmp.ref
@@ -76,15 +70,9 @@ package object probe extends SourceInfoDoc {
     clone
   }
 
-  /** Recursively clear ProbeInfo */
+  /** Clear all ProbeInfo */
   private def clearProbeInfo[T <: Data](data: T): Unit = {
-    data match {
-      case a: Aggregate => {
-        a.probeInfo = None
-        a.elementsIterator.foreach(x => clearProbeInfo(x))
-      }
-      case leaf => { leaf.probeInfo = None }
-    }
+    collectLeafMembers(data).foreach { elem => elem.probeInfo = None }
   }
 
   /** Pad [[Data]] to the width of a probe if it supports padding */
@@ -112,24 +100,17 @@ package object probe extends SourceInfoDoc {
     if (!checkTypeEquivalence(probe, value)) {
       Builder.error("Cannot force a probe with a non-equivalent type.")
     }
-    if (probe.isInstanceOf[Aggregate]) {
-      val probeElems = probe.asInstanceOf[Aggregate].getElements
-      val valueElems = value.asInstanceOf[Aggregate].elementsIterator
-      probeElems.zip(valueElems).foreach { case (e, v) => forceInitial(e, v) }
-    } else {
-      requireHasWritableProbeTypeModifier(probe, "Cannot forceInitial a non-writable Probe.")
-      pushCommand(ProbeForceInitial(sourceInfo, probe.ref, padDataToProbeWidth(value, probe).ref))
+    collectLeafMembers(probe).zip(collectLeafMembers(value)).foreach { case (p, v) =>
+      requireHasWritableProbeTypeModifier(p, "Cannot forceInitial a non-writable Probe.")
+      pushCommand(ProbeForceInitial(sourceInfo, p.ref, padDataToProbeWidth(v, p).ref))
     }
   }
 
   /** Release initial driver on a probe. */
   def releaseInitial(probe: Data)(implicit sourceInfo: SourceInfo): Unit = {
-    if (probe.isInstanceOf[Aggregate]) {
-      val probeElems = probe.asInstanceOf[Aggregate].getElements
-      probeElems.foreach { case e => releaseInitial(e) }
-    } else {
-      requireHasWritableProbeTypeModifier(probe, "Cannot releaseInitial a non-writable Probe.")
-      pushCommand(ProbeReleaseInitial(sourceInfo, probe.ref))
+    collectLeafMembers(probe).foreach { p =>
+      requireHasWritableProbeTypeModifier(p, "Cannot releaseInitial a non-writable Probe.")
+      pushCommand(ProbeReleaseInitial(sourceInfo, p.ref))
     }
   }
 
@@ -138,24 +119,17 @@ package object probe extends SourceInfoDoc {
     if (!checkTypeEquivalence(probe, value)) {
       Builder.error("Cannot force a probe with a non-equivalent type.")
     }
-    if (probe.isInstanceOf[Aggregate]) {
-      val probeElems = probe.asInstanceOf[Aggregate].getElements
-      val valueElems = value.asInstanceOf[Aggregate].elementsIterator
-      probeElems.zip(valueElems).foreach { case (e, v) => force(clock, cond, e, v) }
-    } else {
-      requireHasWritableProbeTypeModifier(probe, "Cannot force a non-writable Probe.")
-      pushCommand(ProbeForce(sourceInfo, clock.ref, cond.ref, probe.ref, padDataToProbeWidth(value, probe).ref))
+    collectLeafMembers(probe).zip(collectLeafMembers(value)).foreach { case (p, v) =>
+      requireHasWritableProbeTypeModifier(p, "Cannot force a non-writable Probe.")
+      pushCommand(ProbeForce(sourceInfo, clock.ref, cond.ref, p.ref, padDataToProbeWidth(v, p).ref))
     }
   }
 
   /** Release driver on a probe. */
   def release(clock: Clock, cond: Bool, probe: Data)(implicit sourceInfo: SourceInfo): Unit = {
-    if (probe.isInstanceOf[Aggregate]) {
-      val probeElems = probe.asInstanceOf[Aggregate].getElements
-      probeElems.foreach { case e => release(clock, cond, e) }
-    } else {
-      requireHasWritableProbeTypeModifier(probe, "Cannot release a non-writable Probe.")
-      pushCommand(ProbeRelease(sourceInfo, clock.ref, cond.ref, probe.ref))
+    collectLeafMembers(probe).foreach { p =>
+      requireHasWritableProbeTypeModifier(p, "Cannot release a non-writable Probe.")
+      pushCommand(ProbeRelease(sourceInfo, clock.ref, cond.ref, p.ref))
     }
   }
 

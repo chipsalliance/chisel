@@ -143,7 +143,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
         val child = Module(new VecChild())
         define(outProbe, child.p(0)(1))
       },
-      Array("--full-stacktrace")
+      Array("--full-stacktrace", "--throw-on-first-error")
     )
 
     (processChirrtl(chirrtl) should contain).allOf(
@@ -185,7 +185,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
         define(defGrandchildBool, f.foo.barB.a)
 
         // read tests
-        val readBundle = IO(Output(new FooBundle()))
+        val readBundle = IO(Output(new FooBundle())) // TODO check with directions
         readBundle := read(f.foo)
 
         val readInternalBundle = IO(Output(new BarBundle()))
@@ -215,6 +215,8 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
       Array("--full-stacktrace", "--throw-on-first-error")
     )
 
+    // println(chirrtl)
+
     (processChirrtl(chirrtl) should contain).allOf(
       // RWProbe<> split out into leaves
       "output foo : { barA : { a : RWProbe<UInt<1>>, b : RWProbe<UInt<1>>}, barB : { a : RWProbe<UInt<1>>, b : RWProbe<UInt<1>>}}",
@@ -228,16 +230,10 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
       "define defGrandchildBool = f.foo.barB.a",
       // read of FooBundle
       "wire readBundle_probe_read : { barA : { a : UInt<1>, b : UInt<1>}, barB : { a : UInt<1>, b : UInt<1>}}",
-      "wire readBundle_probe_read_1 : { a : UInt<1>, b : UInt<1>}",
-      "connect readBundle_probe_read_1.b, read(f.foo.barB.b)",
-      "connect readBundle_probe_read_1.a, read(f.foo.barB.a)",
-      "connect readBundle_probe_read.barB.b, readBundle_probe_read_1.b",
-      "connect readBundle_probe_read.barB.a, readBundle_probe_read_1.a",
-      "wire readBundle_probe_read_2 : { a : UInt<1>, b : UInt<1>}",
-      "connect readBundle_probe_read_2.b, read(f.foo.barA.b)",
-      "connect readBundle_probe_read_2.a, read(f.foo.barA.a)",
-      "connect readBundle_probe_read.barA.b, readBundle_probe_read_2.b",
-      "connect readBundle_probe_read.barA.a, readBundle_probe_read_2.a",
+      "connect readBundle_probe_read.barB.b, read(f.foo.barB.b)",
+      "connect readBundle_probe_read.barB.a, read(f.foo.barB.a)",
+      "connect readBundle_probe_read.barA.b, read(f.foo.barA.b)",
+      "connect readBundle_probe_read.barA.a, read(f.foo.barA.a)",
       "connect readBundle, readBundle_probe_read",
       // read of BarBundle
       "wire readInternalBundle_probe_read : { a : UInt<1>, b : UInt<1>}",
