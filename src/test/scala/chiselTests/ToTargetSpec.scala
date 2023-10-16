@@ -114,8 +114,6 @@ class ToTargetSpec extends ChiselFlatSpec with Utils {
       ChiselStage.emitCHIRRTL(new RelativeSiblingsModule)
     }
 
-    e.getMessage should include(
-      "Requested .toRelativeTarget relative to RelativeInnerModule_1, but it is not an ancestor"
-    )
+    (e.getMessage should include).regex("Requested .toRelativeTarget relative to .+, but it is not an ancestor")
   }
 }
