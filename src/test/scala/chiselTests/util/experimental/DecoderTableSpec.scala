@@ -42,10 +42,20 @@ class DecoderTableSpec extends ChiselFlatSpec {
     }
   }
 
+  object legal extends BoolDecodeField[Insn] {
+    override def name = "legal"
+
+    // default decode to n rather than don't care, for some special elements
+    override def default: BitPat = n
+
+    override def genTable(i: Insn): BitPat = y
+  }
+
   class ExampleALUDecoder extends Module {
     val inst = IO(Input(UInt(4.W)))
     val isWideOp = IO(Output(Bool()))
     val isAddOp = IO(Output(Bool()))
+    val isLegal = IO(Output(Bool()))
 
     val allInstructions = Seq(
       Insn(Op.add, true),
@@ -54,10 +64,11 @@ class DecoderTableSpec extends ChiselFlatSpec {
       Insn(Op.sub, false)
     )
 
-    val decodeTable = new DecodeTable(allInstructions, Seq(IsWideOp, IsAddOp))
+    val decodeTable = new DecodeTable(allInstructions, Seq(IsWideOp, IsAddOp, legal))
     val decodedBundle = decodeTable.decode(inst)
     isWideOp := decodedBundle(IsWideOp)
     isAddOp := decodedBundle(IsAddOp)
+    isLegal := decodedBundle(legal)
   }
 
   "DecoderTable" should "elaborate a decoder" in {
