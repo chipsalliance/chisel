@@ -27,3 +27,4 @@ jobs:
           pr-reviewers: |
             seldridge
             jackkoenig
+          github-token: ${{ secrets.CHISEL_BOT_TOKEN }}
