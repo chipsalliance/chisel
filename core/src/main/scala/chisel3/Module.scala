@@ -612,23 +612,21 @@ package experimental {
       * @note This doesn't have special handling for Views.
       */
     final def toRelativeTarget(root: Option[BaseModule]): IsModule = {
-      (root, _parent) match {
-        // If root was defined, and we are it, return this.
-        case (Some(_), _) if root.get == this => getTarget
-        // If root was defined, and we are not there yet, recurse up.
-        case (Some(definedRoot), Some(parent)) => parent.toRelativeTarget(root).instOf(this.instanceName, name)
-        // If root was defined, and we are at a ViewParent, use its absolute target.
-        case (Some(definedRoot), None) if this == ViewParent => ViewParent.absoluteTarget
-        // If root was defined, and there is no parent, the root was not an ancestor.
-        case (Some(definedRoot), None) =>
-          throwException(s"Requested .toRelativeTarget relative to ${definedRoot.name}, but it is not an ancestor")
-        // If root was not defined, and there is a parent, recurse up.
-        case (None, Some(parent)) => parent.toRelativeTarget(root).instOf(this.instanceName, name)
-        // If root was not defined, and we are at a ViewParent, use its absolute target.
-        case (None, None) if this == ViewParent => ViewParent.absoluteTarget
-        // If root was not defined, and there is no parent, return this.
-        case (None, None) => getTarget
-      }
+      // If root was defined, and we are it, return this.
+      if (root.contains(this)) getTarget
+      // If we are a ViewParent, use its absolute target.
+      else if (this == ViewParent) ViewParent.absoluteTarget
+      // Otherwise check if root and _parent are defined.
+      else
+        (root, _parent) match {
+          // If root was defined, and we are not there yet, recurse up.
+          case (_, Some(parent)) => parent.toRelativeTarget(root).instOf(this.instanceName, name)
+          // If root was defined, and there is no parent, the root was not an ancestor.
+          case (Some(definedRoot), None) =>
+            throwException(s"Requested .toRelativeTarget relative to ${definedRoot.name}, but it is not an ancestor")
+          // If root was not defined, and there is no parent, return this.
+          case (None, None) => getTarget
+        }
     }
 
     /**
