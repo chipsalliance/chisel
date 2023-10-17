@@ -22,7 +22,7 @@ jobs:
         with:
           user: chiselbot
           email: chiselbot@users.noreply.github.com
-          labels: |
+          pr-labels: |
             Dependency Update
           pr-reviewers: |
             seldridge
