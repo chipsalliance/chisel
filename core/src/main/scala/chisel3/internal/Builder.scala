@@ -402,8 +402,9 @@ private[chisel3] trait NamedComponent extends HasId {
     def makeTarget(p: BaseModule) =
       p.toRelativeTarget(root).ref(localTarget.ref).copy(component = localTarget.component)
     _parent match {
-      case Some(parent) => makeTarget(parent)
-      case None         => localTarget
+      case Some(ViewParent) => makeTarget(reifyParent)
+      case Some(parent)     => makeTarget(parent)
+      case None             => localTarget
     }
   }
 

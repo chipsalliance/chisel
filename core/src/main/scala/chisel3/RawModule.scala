@@ -174,7 +174,7 @@ abstract class RawModule extends BaseModule {
     checkPorts()
 
     // Take a second pass through any ids generated during atModuleBodyEnd blocks to finalize names for them.
-    for (id <- _ids.drop(numInitialIds)) {
+    for (id <- _ids.view.drop(numInitialIds)) {
       nameId(id)
     }
 

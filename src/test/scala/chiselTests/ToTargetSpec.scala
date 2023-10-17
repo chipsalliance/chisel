@@ -10,32 +10,50 @@ class RelativeInnerModule extends RawModule {
   val wire = Wire(Bool())
 }
 
-class RelativeOuterModule extends RawModule {
+class RelativeMiddleModule extends RawModule {
   val inner = Module(new RelativeInnerModule())
+}
+
+class RelativeOuterRootModule extends RawModule {
+  val middle = Module(new RelativeMiddleModule())
 
   atModuleBodyEnd {
-    val reference = inner.wire.toRelativeTarget(Some(this))
+    val reference = middle.inner.wire.toRelativeTarget(Some(this))
     val referenceOut = IO(Output(Property[Path]()))
     referenceOut := Property(Path(reference))
   }
 }
 
-class RelativeDefaultModule extends RawModule {
+class RelativeOuterMiddleModule extends RawModule {
+  val middle = Module(new RelativeMiddleModule())
+  val reference = middle.inner.wire.toRelativeTarget(Some(middle))
+  val referenceOut = IO(Output(Property[Path]()))
+  referenceOut := Property(Path(reference))
+}
+
+class RelativeOuterLocalModule extends RawModule {
   val inner = Module(new RelativeInnerModule())
+  val reference = inner.wire.toRelativeTarget(Some(inner))
+  val referenceOut = IO(Output(Property[Path]()))
+  referenceOut := Property(Path(reference))
+}
+
+class RelativeDefaultModule extends RawModule {
+  val middle = Module(new RelativeMiddleModule())
 
   atModuleBodyEnd {
-    val reference = inner.wire.toRelativeTarget(None)
+    val reference = middle.inner.wire.toRelativeTarget(None)
     val referenceOut = IO(Output(Property[Path]()))
     referenceOut := Property(Path(reference))
   }
 }
 
 class RelativeSiblingsModule extends RawModule {
-  val inner1 = Module(new RelativeInnerModule())
-  val inner2 = Module(new RelativeInnerModule())
+  val middle1 = Module(new RelativeMiddleModule())
+  val middle2 = Module(new RelativeMiddleModule())
 
   atModuleBodyEnd {
-    val reference = inner1.wire.toRelativeTarget(Some(inner2))
+    val reference = middle1.inner.wire.toRelativeTarget(Some(middle2))
   }
 }
 
@@ -97,16 +115,32 @@ class ToTargetSpec extends ChiselFlatSpec with Utils {
 
   behavior.of(".toRelativeTarget")
 
-  it should "work with modules being elaborated within atModuleBodyEnd" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RelativeOuterModule)
+  it should "work relative to modules being elaborated within atModuleBodyEnd" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RelativeOuterRootModule)
 
-    chirrtl should include("~RelativeOuterModule|RelativeOuterModule/inner:RelativeInnerModule>wire")
+    chirrtl should include(
+      "~RelativeOuterRootModule|RelativeOuterRootModule/middle:RelativeMiddleModule/inner:RelativeInnerModule>wire"
+    )
+  }
+
+  it should "work relative to non top-level modules that have been elaborated" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RelativeOuterMiddleModule)
+
+    chirrtl should include("~RelativeOuterMiddleModule|RelativeMiddleModule/inner:RelativeInnerModule>wire")
+  }
+
+  it should "work relative to non top-level modules for components local to the root" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RelativeOuterLocalModule)
+
+    chirrtl should include("~RelativeOuterLocalModule|RelativeInnerModule>wire")
   }
 
   it should "default to the root module in the requested hierarchy" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RelativeDefaultModule)
 
-    chirrtl should include("~RelativeDefaultModule|RelativeDefaultModule/inner:RelativeInnerModule>wire")
+    chirrtl should include(
+      "~RelativeDefaultModule|RelativeDefaultModule/middle:RelativeMiddleModule/inner:RelativeInnerModule>wire"
+    )
   }
 
   it should "raise an exception when the requested root is not an ancestor" in {
