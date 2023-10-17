@@ -75,7 +75,7 @@ ga('send', 'pageview');
       <li>see section <a href="#alignment-flipped-vs-aligned">below</a> for a detailed definition</li>
     </ul>
   </li>
-  <li>“structural type check” - Chisel type <code class="language-plaintext highlighter-rouge">A</code> is structurally equivalent to Chisel type <code class="language-plaintext highlighter-rouge">B</code> if <code class="language-plaintext highlighter-rouge">A</code> and <code class="language-plaintext highlighter-rouge">B</code> have matching bundle field names and types (<code class="language-plaintext highlighter-rouge">Record</code> vs <code class="language-plaintext highlighter-rouge">Vector</code> vs <code class="language-plaintext highlighter-rouge">Element</code>), vector sizes, <code class="language-plaintext highlighter-rouge">Element</code> types (UInt/SInt/Bool/Clock etc))
+  <li>“structural type check” - Chisel type <code class="language-plaintext highlighter-rouge">A</code> is structurally equivalent to Chisel type <code class="language-plaintext highlighter-rouge">B</code> if <code class="language-plaintext highlighter-rouge">A</code> and <code class="language-plaintext highlighter-rouge">B</code> have matching bundle field names and types (<code class="language-plaintext highlighter-rouge">Record</code> vs <code class="language-plaintext highlighter-rouge">Vector</code> vs <code class="language-plaintext highlighter-rouge">Element</code>), probe modifiers (probe vs nonprobe), vector sizes, <code class="language-plaintext highlighter-rouge">Element</code> types (UInt/SInt/Bool/Clock)
     <ul>
       <li>ignores relative alignment (flippedness)</li>
     </ul>
