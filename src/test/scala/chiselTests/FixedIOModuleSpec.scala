@@ -23,7 +23,7 @@ class FixedIOModuleSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
     val exception = intercept[ChiselException] {
       ChiselStage.emitCHIRRTL(new Foo, Array("--throw-on-first-error"))
     }
-    exception.getMessage should include("This module cannot have IOs instantiated after calling disallowIOCreation()")
+    exception.getMessage should include("This module cannot have IOs instantiated after disallowing IOs")
   }
 
   "FixedIOBlackBox" should "create a module with flattend IO" in {
@@ -53,7 +53,7 @@ class FixedIOModuleSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
       val in = IO(Input(UInt(1.W)))
       val out = IO(Output(UInt(1.W)))
 
-      disallowIOCreation()
+      endIOCreation()
 
       val other = IO(Input(UInt(1.W)))
     }
@@ -61,7 +61,31 @@ class FixedIOModuleSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
     val exception = intercept[ChiselException] {
       ChiselStage.emitCHIRRTL(new Bar, Array("--throw-on-first-error"))
     }
-    exception.getMessage should include("This module cannot have IOs instantiated after calling disallowIOCreation()")
+    exception.getMessage should include("This module cannot have IOs instantiated after disallowing IOs")
   }
 
+  "User defined RawModules" should "be able to lock down their ios in a scope" in {
+
+    class Bar(illegalIO: Boolean) extends RawModule {
+      val in = IO(Input(UInt(1.W)))
+      val out = IO(Output(UInt(1.W)))
+
+      withoutIO {
+        if (illegalIO) {
+          val other = IO(Input(UInt(1.W)))
+        }
+      }
+      val end = IO(Input(UInt(1.W)))
+    }
+
+    val exception = intercept[ChiselException] {
+      ChiselStage.emitCHIRRTL(new Bar(true), Array("--throw-on-first-error"))
+    }
+    exception.getMessage should include("This module cannot have IOs instantiated after disallowing IOs")
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Bar(false)))(
+      "input in : UInt<1>",
+      "output out : UInt<1>",
+      "input end : UInt<1>"
+    )()
+  }
 }

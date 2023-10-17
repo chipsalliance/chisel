@@ -24,7 +24,11 @@ object IO {
   def apply[T <: Data](iodef: => T)(implicit sourceInfo: SourceInfo): T = {
     val module = Module.currentModule.get // Impossible to fail
     if (!module.isIOCreationAllowed)
-      Builder.error("This module cannot have IOs instantiated after calling disallowIOCreation()")
+      Builder.error(
+        s"This module cannot have IOs instantiated after disallowing IOs: ${module._whereIOCreationIsDisallowed
+          .map(_.makeMessage { s: String => s })
+          .mkString(",")}"
+      )
     require(!module.isClosed, "Can't add more ports after module close")
     val prevId = Builder.idGen.value
     val data = iodef // evaluate once (passed by name)

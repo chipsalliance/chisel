@@ -95,3 +95,15 @@ object withReset {
   }
 
 }
+
+object withoutIO {
+
+  /** Creates a new scope that IO creation is illegal
+    *
+    * @param block the block of code to run with where IO creation is illegal
+    * @return the result of the block
+    */
+  def apply[T](block: => T)(implicit si: experimental.SourceInfo): T = {
+    Builder.currentModule.get.disallowIO(block)
+  }
+}
