@@ -94,7 +94,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Install CIRCT
-        uses: circt/install-circt@v1.0.0
+        uses: circt/install-circt@v1.1.1
         with:
           version: ${{ env.circt }}
           github-token: ${{ github.token }}
