@@ -11,6 +11,7 @@ import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{MemTransform, SourceInfoTransform}
 import chisel3.experimental.{SourceInfo, SourceLine}
+import chisel3.reflect.DataMirror.containsProbeTypeModifier
 
 object Mem {
 
@@ -54,8 +55,7 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt, sourceInf
     with SourceInfoDoc {
 
   if (t.isConst) Builder.error("Mem type cannot be const.")(sourceInfo)
-
-  requireNoProbeTypeModifier(t, "Cannot make a Mem of a Chisel type with a probe modifier.")(sourceInfo)
+  if (containsProbeTypeModifier(t)) Builder.error("Cannot make a Mem of a Chisel type with a probe modifier.")(sourceInfo)
 
   _parent.foreach(_.addId(this))
 
