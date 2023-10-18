@@ -115,8 +115,53 @@ abstract class RawModule extends BaseModule {
     }
   }
 
+  /** Finalize name for an id created during this RawModule's constructor.
+    *
+    * @param id The id to finalize.
+    */
+  private def nameId(id: HasId) = id match {
+    case id: ModuleClone[_]   => id.setRefAndPortsRef(_namespace) // special handling
+    case id: InstanceClone[_] => id.setAsInstanceRef()
+    case id: BaseModule       => id.forceName(default = id.desiredName, _namespace)
+    case id: MemBase[_]       => id.forceName(default = "MEM", _namespace)
+    case id: stop.Stop        => id.forceName(default = "stop", _namespace)
+    case id: assert.Assert    => id.forceName(default = "assert", _namespace)
+    case id: assume.Assume    => id.forceName(default = "assume", _namespace)
+    case id: cover.Cover      => id.forceName(default = "cover", _namespace)
+    case id: printf.Printf => id.forceName(default = "printf", _namespace)
+    case id: DynamicObject => {
+      // Force name of the DynamicObject, and set its Property[ClassType] type's ref to the DynamicObject.
+      // The type's ref can't be set upon instantiation, because the DynamicObject hasn't been named yet.
+      id.forceName(default = "_object", _namespace)
+      id.getReference.setRef(id.getRef)
+    }
+    case id: Data =>
+      if (id.isSynthesizable) {
+        id.topBinding match {
+          case OpBinding(_, _) =>
+            id.forceName(default = "_T", _namespace)
+          case MemoryPortBinding(_, _) =>
+            id.forceName(default = "MPORT", _namespace)
+          case PortBinding(_) =>
+            id.forceName(default = "PORT", _namespace, true, x => ModuleIO(this, x))
+          case RegBinding(_, _) =>
+            id.forceName(default = "REG", _namespace)
+          case WireBinding(_, _) =>
+            id.forceName(default = "_WIRE", _namespace)
+          // probes have their refs set eagerly
+          case _ => // don't name literals
+        }
+      } // else, don't name unbound types
+  }
+
   private[chisel3] override def generateComponent(): Option[Component] = {
     require(!_closed, "Can't generate module more than once")
+
+    // Now that elaboration is complete for this Module, we can finalize names that have been generated thus far.
+    val numInitialIds = _ids.size
+    for (id <- _ids) {
+      nameId(id)
+    }
 
     // Evaluate any atModuleBodyEnd generators.
     _atModuleBodyEnd.foreach { gen =>
@@ -128,42 +173,9 @@ abstract class RawModule extends BaseModule {
     // Check to make sure that all ports can be named
     checkPorts()
 
-    // Now that elaboration is complete for this Module, we can finalize names
-    for (id <- getIds) {
-      id match {
-        case id: ModuleClone[_]   => id.setRefAndPortsRef(_namespace) // special handling
-        case id: InstanceClone[_] => id.setAsInstanceRef()
-        case id: BaseModule       => id.forceName(default = id.desiredName, _namespace)
-        case id: MemBase[_]       => id.forceName(default = "MEM", _namespace)
-        case id: stop.Stop        => id.forceName(default = "stop", _namespace)
-        case id: assert.Assert    => id.forceName(default = "assert", _namespace)
-        case id: assume.Assume    => id.forceName(default = "assume", _namespace)
-        case id: cover.Cover      => id.forceName(default = "cover", _namespace)
-        case id: printf.Printf => id.forceName(default = "printf", _namespace)
-        case id: DynamicObject => {
-          // Force name of the DynamicObject, and set its Property[ClassType] type's ref to the DynamicObject.
-          // The type's ref can't be set upon instantiation, because the DynamicObject hasn't been named yet.
-          id.forceName(default = "_object", _namespace)
-          id.getReference.setRef(id.getRef)
-        }
-        case id: Data =>
-          if (id.isSynthesizable) {
-            id.topBinding match {
-              case OpBinding(_, _) =>
-                id.forceName(default = "_T", _namespace)
-              case MemoryPortBinding(_, _) =>
-                id.forceName(default = "MPORT", _namespace)
-              case PortBinding(_) =>
-                id.forceName(default = "PORT", _namespace, true, x => ModuleIO(this, x))
-              case RegBinding(_, _) =>
-                id.forceName(default = "REG", _namespace)
-              case WireBinding(_, _) =>
-                id.forceName(default = "_WIRE", _namespace)
-              // probes have their refs set eagerly
-              case _ => // don't name literals
-            }
-          } // else, don't name unbound types
-      }
+    // Take a second pass through any ids generated during atModuleBodyEnd blocks to finalize names for them.
+    for (id <- _ids.view.drop(numInitialIds)) {
+      nameId(id)
     }
 
     val firrtlPorts = getModulePortsAndLocators.map {

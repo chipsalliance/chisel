@@ -423,7 +423,11 @@ package experimental {
 
     // Fresh Namespace because in Firrtl, Modules namespaces are disjoint with the global namespace
     private[chisel3] val _namespace = Namespace.empty
-    private val _ids = ArrayBuffer[HasId]()
+
+    // Expose _ids in Chisel. The ids should almost always be accessed through getIds, but there is a use-case to access
+    // the ids directly in generateComponent.
+    private[chisel3] val _ids = ArrayBuffer[HasId]()
+
     private[chisel3] def addId(d: HasId): Unit = {
       if (Builder.aspectModule(this).isDefined) {
         aspectModule(this).get.addId(d)
@@ -595,6 +599,34 @@ package experimental {
           // it possible to deprecate and remove .toAbsoluteTarget
           if (this == ViewParent) ViewParent.absoluteTarget else getTarget
       }
+    }
+
+    /** Returns a FIRRTL ModuleTarget that references this object, relative to an optional root.
+      *
+      * If `root` is defined, the target is a hierarchical path starting from `root`.
+      *
+      * If `root` is not defined, the target is a hierarchical path equivalent to `toAbsoluteTarget`.
+      *
+      * @note If `root` is defined, and has not finished elaboration, this must be called within `atModuleBodyEnd`.
+      * @note The BaseModule must be a descendant of `root`, if it is defined.
+      * @note This doesn't have special handling for Views.
+      */
+    final def toRelativeTarget(root: Option[BaseModule]): IsModule = {
+      // If root was defined, and we are it, return this.
+      if (root.contains(this)) getTarget
+      // If we are a ViewParent, use its absolute target.
+      else if (this == ViewParent) ViewParent.absoluteTarget
+      // Otherwise check if root and _parent are defined.
+      else
+        (root, _parent) match {
+          // If root was defined, and we are not there yet, recurse up.
+          case (_, Some(parent)) => parent.toRelativeTarget(root).instOf(this.instanceName, name)
+          // If root was defined, and there is no parent, the root was not an ancestor.
+          case (Some(definedRoot), None) =>
+            throwException(s"Requested .toRelativeTarget relative to ${definedRoot.name}, but it is not an ancestor")
+          // If root was not defined, and there is no parent, return this.
+          case (None, None) => getTarget
+        }
     }
 
     /**
