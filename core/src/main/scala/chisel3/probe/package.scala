@@ -8,7 +8,7 @@ import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.Data.ProbeInfo
 import chisel3.experimental.SourceInfo
-import chisel3.reflect.DataMirror.{checkTypeEquivalence, hasProbeTypeModifier, collectLeafMembers, collectAllMembers}
+import chisel3.reflect.DataMirror.{checkTypeEquivalence, collectAllMembers, collectLeafMembers, hasProbeTypeModifier}
 
 import scala.language.experimental.macros
 
@@ -19,11 +19,13 @@ package object probe extends SourceInfoDoc {
     */
   private[chisel3] def setProbeModifier[T <: Data](data: T, probeInfo: Option[ProbeInfo]): Unit = {
     probeInfo.foreach { _ =>
-      collectAllMembers(data).foreach { e => e match {
-        case v: Vec[_] => setProbeModifier(v.sample_element, probeInfo)
-        case v: Aggregate => // do nothing
-        case _ => e.probeInfo = probeInfo
-      }}
+      collectAllMembers(data).foreach { e =>
+        e match {
+          case v: Vec[_]    => setProbeModifier(v.sample_element, probeInfo)
+          case v: Aggregate => // do nothing
+          case _ => e.probeInfo = probeInfo
+        }
+      }
     }
   }
 
@@ -32,17 +34,17 @@ package object probe extends SourceInfoDoc {
     if (!checkTypeEquivalence(sink, probeExpr)) {
       Builder.error("Cannot define a probe on a non-equivalent type.")
     }
-    collectLeafMembers(sink).zip(collectLeafMembers(probeExpr)).foreach { case (s, pe) =>
-      requireHasProbeTypeModifier(s, "Expected sink to be a probe.")
-      println(s"source: $pe")
-      requireHasProbeTypeModifier(pe, "Expected source to be a probe expression.")
-      if (s.probeInfo.get.writable) {
-        requireHasWritableProbeTypeModifier(
-          pe,
-          "Cannot use a non-writable probe expression to define a writable probe."
-        )
-      }
-      pushCommand(ProbeDefine(sourceInfo, s.ref, pe.ref))
+    collectLeafMembers(sink).zip(collectLeafMembers(probeExpr)).foreach {
+      case (s, pe) =>
+        requireHasProbeTypeModifier(s, "Expected sink to be a probe.")
+        requireHasProbeTypeModifier(pe, "Expected source to be a probe expression.")
+        if (s.probeInfo.get.writable) {
+          requireHasWritableProbeTypeModifier(
+            pe,
+            "Cannot use a non-writable probe expression to define a writable probe."
+          )
+        }
+        pushCommand(ProbeDefine(sourceInfo, s.ref, pe.ref))
     }
   }
 
@@ -100,12 +102,14 @@ package object probe extends SourceInfoDoc {
 
   /** Override existing driver of a writable probe on initialization. */
   def forceInitial[T <: Data](probe: T, value: T)(implicit sourceInfo: SourceInfo): Unit = {
-    if (!checkTypeEquivalence(probe, value)) {
-      Builder.error("Cannot force a probe with a non-equivalent type.")
-    }
-    collectLeafMembers(probe).zip(collectLeafMembers(value)).foreach { case (p, v) =>
-      requireHasWritableProbeTypeModifier(p, "Cannot forceInitial a non-writable Probe.")
-      pushCommand(ProbeForceInitial(sourceInfo, p.ref, padDataToProbeWidth(v, p).ref))
+    collectLeafMembers(probe).zip(collectLeafMembers(value)).foreach {
+      case (p, v) =>
+        val padValue = padDataToProbeWidth(v, p)
+        if (!checkTypeEquivalence(p, padValue)) {
+          Builder.error("Cannot forceInitial a probe with a non-equivalent type.")
+        }
+        requireHasWritableProbeTypeModifier(p, "Cannot forceInitial a non-writable Probe.")
+        pushCommand(ProbeForceInitial(sourceInfo, p.ref, padValue.ref))
     }
   }
 
@@ -119,12 +123,14 @@ package object probe extends SourceInfoDoc {
 
   /** Override existing driver of a writable probe. */
   def force[T <: Data](clock: Clock, cond: Bool, probe: T, value: T)(implicit sourceInfo: SourceInfo): Unit = {
-    if (!checkTypeEquivalence(probe, value)) {
-      Builder.error("Cannot force a probe with a non-equivalent type.")
-    }
-    collectLeafMembers(probe).zip(collectLeafMembers(value)).foreach { case (p, v) =>
-      requireHasWritableProbeTypeModifier(p, "Cannot force a non-writable Probe.")
-      pushCommand(ProbeForce(sourceInfo, clock.ref, cond.ref, p.ref, padDataToProbeWidth(v, p).ref))
+    collectLeafMembers(probe).zip(collectLeafMembers(value)).foreach {
+      case (p, v) =>
+        val padValue = padDataToProbeWidth(v, p)
+        if (!checkTypeEquivalence(p, padValue)) {
+          Builder.error("Cannot force a probe with a non-equivalent type.")
+        }
+        requireHasWritableProbeTypeModifier(p, "Cannot force a non-writable Probe.")
+        pushCommand(ProbeForce(sourceInfo, clock.ref, cond.ref, p.ref, padValue.ref))
     }
   }
 

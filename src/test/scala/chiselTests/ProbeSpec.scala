@@ -238,8 +238,6 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
       Array("--full-stacktrace", "--throw-on-first-error")
     )
 
-    // println(chirrtl)
-
     (processChirrtl(chirrtl) should contain).allOf(
       // RWProbe<> split out into leaves
       "output foo : { barA : { a : RWProbe<UInt<1>>, b : RWProbe<UInt<1>>}, barB : { a : RWProbe<UInt<1>>, b : RWProbe<UInt<1>>}}",
