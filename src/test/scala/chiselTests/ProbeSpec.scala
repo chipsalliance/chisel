@@ -136,20 +136,43 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
     val chirrtl = ChiselStage.emitCHIRRTL(
       new RawModule {
         class VecChild() extends RawModule {
-          val p = IO(Output(Vec(2, Probe(Vec(2, UInt(16.W))))))
+          val foo = IO(Output(Vec(2, RWProbe(Vec(2, UInt(16.W))))))
+          val bar = IO(Output(RWProbe(Vec(2, Vec(2, UInt(16.W))))))
         }
-
-        val outProbe = IO(Output(Probe(UInt(16.W))))
         val child = Module(new VecChild())
-        define(outProbe, child.p(0)(1))
+
+        val outRWProbe = IO(Output(RWProbe(UInt(16.W))))
+        define(outRWProbe, child.foo(0)(1))
+        val outRWProbeVec = IO(Output(RWProbe(Vec(2, UInt(16.W)))))
+        define(outRWProbeVec, child.foo(1))
+
+        val out = IO(Output(UInt(16.W)))
+        out := read(child.bar(1)(1))
+        val outVec = IO(Output(Vec(2, UInt(16.W))))
+        outVec := read(child.bar(0))
+
+        val forceVal = IO(Input(Vec(2, Vec(2, UInt(16.W)))))
+        forceInitial(child.bar, forceVal)
       },
-      Array("--full-stacktrace", "--throw-on-first-error")
+      Array("--full-stacktrace")
     )
 
     (processChirrtl(chirrtl) should contain).allOf(
-      "output p : Probe<UInt<16>[2]>[2]",
-      "output outProbe : Probe<UInt<16>>",
-      "define outProbe = child.p[0][1]"
+      "output foo : RWProbe<UInt<16>>[2][2]",
+      "output bar : RWProbe<UInt<16>>[2][2]",
+      "define outRWProbe = child.foo[0][1]",
+      "define outRWProbeVec[0] = child.foo[1][0]",
+      "define outRWProbeVec[1] = child.foo[1][1]",
+      "connect out, read(child.bar[1][1])",
+      "wire probe_read : RWProbe<UInt<16>>[2]",
+      "connect probe_read[0], read(child.bar[0][0])",
+      "connect probe_read[1], read(child.bar[0][1])",
+      "connect outVec[0], probe_read[0]",
+      "connect outVec[1], probe_read[1]",
+      "force_initial(child.bar[0][0], forceVal[0][0])",
+      "force_initial(child.bar[0][1], forceVal[0][1])",
+      "force_initial(child.bar[1][0], forceVal[1][0])",
+      "force_initial(child.bar[1][1], forceVal[1][1])"
     )
   }
 

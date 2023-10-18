@@ -369,7 +369,9 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
   def apply(idx: Int): T = self(idx)
 
   override def cloneType: this.type = {
-    new Vec(gen.cloneTypeFull, length).asInstanceOf[this.type]
+    val ret = new Vec(sample_element.cloneTypeFull, length).asInstanceOf[this.type]
+    ret.probeInfo = this.probeInfo
+    ret
   }
 
   override def getElements: Seq[Data] = self

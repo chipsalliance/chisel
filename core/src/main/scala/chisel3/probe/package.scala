@@ -8,7 +8,7 @@ import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.Data.ProbeInfo
 import chisel3.experimental.SourceInfo
-import chisel3.reflect.DataMirror.{checkTypeEquivalence, hasProbeTypeModifier, collectLeafMembers}
+import chisel3.reflect.DataMirror.{checkTypeEquivalence, hasProbeTypeModifier, collectLeafMembers, collectAllMembers}
 
 import scala.language.experimental.macros
 
@@ -19,9 +19,11 @@ package object probe extends SourceInfoDoc {
     */
   private[chisel3] def setProbeModifier[T <: Data](data: T, probeInfo: Option[ProbeInfo]): Unit = {
     probeInfo.foreach { _ =>
-      println(s"in setProbeModifier for $data")
-      collectLeafMembers(data).foreach { e => println(s"setting probeInfo $probeInfo for elem $e")
-        e.probeInfo = probeInfo }
+      collectAllMembers(data).foreach { e => e match {
+        case v: Vec[_] => setProbeModifier(v.sample_element, probeInfo)
+        case v: Aggregate => // do nothing
+        case _ => e.probeInfo = probeInfo
+      }}
     }
   }
 
@@ -55,6 +57,7 @@ package object probe extends SourceInfoDoc {
     clone.bind(OpBinding(Builder.forcedUserModule, Builder.currentWhen))
     val cloneRef = if (source.isInstanceOf[Aggregate]) {
       val tmp = Wire(Output(source.cloneTypeFull))
+      clearProbeInfo(tmp)
       val sourceElems = collectLeafMembers(source)
       val tmpElems = collectLeafMembers(tmp)
       sourceElems.zip(tmpElems).foreach { case (e, t) => t :#= do_read(e) }
