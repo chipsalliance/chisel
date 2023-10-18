@@ -382,27 +382,25 @@ private[chisel3] object Converter {
     case t: Vec[_] =>
       val childClearDir = clearDir ||
         t.specifiedDirection == SpecifiedDirection.Input || t.specifiedDirection == SpecifiedDirection.Output
-      // if Vector is a probe, don't emit Probe<...> on its elements
-      fir.VectorType(extractType(t.sample_element, childClearDir, info, checkProbe, true, typeAliases), t.length)
+      fir.VectorType(extractType(t.sample_element, childClearDir, info, true, true, typeAliases), t.length)
     // Handle aliased bundles: Emit an AliasType directly
     case t: HasTypeAlias if t.finalizedAlias.exists { typeAliases.contains(_) } =>
       fir.AliasType(t.finalizedAlias.get)
     case t: Record => {
       val childClearDir = clearDir ||
         t.specifiedDirection == SpecifiedDirection.Input || t.specifiedDirection == SpecifiedDirection.Output
-      // if Record is a probe, don't emit Probe<...> on its elements
       def eltField(elt: Data): fir.Field = (childClearDir, firrtlUserDirOf(elt)) match {
         case (true, _) =>
-          fir.Field(getRef(elt, info).name, fir.Default, extractType(elt, true, info, checkProbe, true, typeAliases))
+          fir.Field(getRef(elt, info).name, fir.Default, extractType(elt, true, info, true, true, typeAliases))
         case (false, SpecifiedDirection.Unspecified | SpecifiedDirection.Output) =>
-          fir.Field(getRef(elt, info).name, fir.Default, extractType(elt, false, info, checkProbe, true, typeAliases))
+          fir.Field(getRef(elt, info).name, fir.Default, extractType(elt, false, info, true, true, typeAliases))
         case (false, SpecifiedDirection.Flip | SpecifiedDirection.Input) =>
-          fir.Field(getRef(elt, info).name, fir.Flip, extractType(elt, false, info, checkProbe, true, typeAliases))
+          fir.Field(getRef(elt, info).name, fir.Flip, extractType(elt, false, info, true, true, typeAliases))
       }
       if (!t._isOpaqueType)
         fir.BundleType(t._elements.toIndexedSeq.reverse.map { case (_, e) => eltField(e) })
       else
-        extractType(t._elements.head._2, childClearDir, info, checkProbe, true, typeAliases)
+        extractType(t._elements.head._2, childClearDir, info, true, true, typeAliases)
     }
     case t: Property[_] => t.getPropertyType
   }
