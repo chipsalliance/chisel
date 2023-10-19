@@ -315,6 +315,13 @@ private[chisel3] trait HasId extends chisel3.InstanceId {
         case (Some(c), _) => refName(c)
         case (None, d: Data) if d.topBindingOpt == Some(CrossModuleBinding) => _ref.get.localName
         case (None, _: MemBase[_]) => _ref.get.localName
+        case (None, _) if _ref.isDefined => {
+          // Support instance names for HasIds that don't have a _parent set yet, but do have a _ref set.
+          // This allows most HasIds to be named in atModuleBodyEnd, for example.
+          // However, this is only valid if the _ref's fullName doesn't depend on the component name.
+          // Notably, this is not valid for ports of instances, and other constructs that need the _parent's name.
+          _ref.get.localName
+        }
         case (None, _) =>
           throwException(s"signalName/pathName should be called after circuit elaboration: $this, ${_parent}")
       }
