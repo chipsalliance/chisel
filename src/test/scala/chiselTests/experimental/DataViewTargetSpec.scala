@@ -3,6 +3,7 @@
 package chiselTests.experimental
 
 import chisel3._
+import chisel3.experimental.BaseModule
 import chisel3.experimental.dataview._
 import chisel3.experimental.conversions._
 import chisel3.experimental.{annotate, ChiselAnnotation}
@@ -18,6 +19,9 @@ object DataViewTargetSpec {
   })
   private def markAbs(d: Data, id: Int) = annotate(new ChiselAnnotation {
     override def toFirrtl: Annotation = DummyAnno(d.toAbsoluteTarget, id)
+  })
+  private def markRel(d: Data, root: Option[BaseModule], id: Int) = annotate(new ChiselAnnotation {
+    override def toFirrtl: Annotation = DummyAnno(d.toRelativeTarget(root), id)
   })
 }
 
@@ -168,6 +172,36 @@ class DataViewTargetSpec extends ChiselFlatSpec {
       3 -> "~MyParent|MyParent/inst:MyChild>io.d",
       4 -> "~MyParent|MyChild>io.b",
       4 -> "~MyParent|MyChild>io.d"
+    )
+    pairs should equal(expected)
+  }
+
+  it should "support views with toRelativeTarget" in {
+    class MyBundle extends Bundle {
+      val foo = UInt(8.W)
+      val bars = Vec(2, UInt(8.W))
+    }
+    implicit val dv =
+      DataView[MyBundle, Vec[UInt]](_ => Vec(3, UInt(8.W)), _.foo -> _(0), _.bars(0) -> _(1), _.bars(1) -> _(2))
+    class MyChild extends Module {
+      val out = IO(Output(new MyBundle))
+      val outView = out.viewAs[Vec[UInt]]
+      out := 0.U.asTypeOf(new MyBundle)
+    }
+    class MyParent extends Module {
+      val inst = Module(new MyChild)
+      atModuleBodyEnd {
+        markRel(inst.outView, Some(this), 0)
+        markRel(inst.outView, Some(inst), 1)
+        markRel(inst.outView, None, 2)
+      }
+    }
+    val (_, annos) = getFirrtlAndAnnos(new MyParent)
+    val pairs = annos.collect { case DummyAnno(t, idx) => (idx, t.toString) }.sorted
+    val expected = Seq(
+      0 -> "~MyParent|MyParent/inst:MyChild>out",
+      1 -> "~MyParent|MyChild>out",
+      2 -> "~MyParent|MyParent/inst:MyChild>out"
     )
     pairs should equal(expected)
   }

@@ -13,7 +13,7 @@ on:
       - '*.x'
 
 env:
-  circt: "default"
+  circt: "version-file"
 
 jobs:
   set-circt-versions:
@@ -94,7 +94,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Install CIRCT
-        uses: ./.github/workflows/install-circt
+        uses: circt/install-circt@v1.1.1
         with:
           version: ${{ env.circt }}
           github-token: ${{ github.token }}

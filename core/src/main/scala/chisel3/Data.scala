@@ -829,13 +829,15 @@ object Data {
       }
       //TODO(azidar): Rewrite this to be more clear, probably not the cleanest way to express this
       private def isDifferent(l: Option[Data], r: Option[Data]): Boolean =
-        l.nonEmpty && r.nonEmpty && !isRecord(l, r) && !isVec(l, r) && !isElement(l, r)
+        l.nonEmpty && r.nonEmpty && !isRecord(l, r) && !isVec(l, r) && !isElement(l, r) && !isProbe(l, r)
       private def isRecord(l: Option[Data], r: Option[Data]): Boolean =
         l.orElse(r).map { _.isInstanceOf[Record] }.getOrElse(false)
       private def isVec(l: Option[Data], r: Option[Data]): Boolean =
         l.orElse(r).map { _.isInstanceOf[Vec[_]] }.getOrElse(false)
       private def isElement(l: Option[Data], r: Option[Data]): Boolean =
         l.orElse(r).map { _.isInstanceOf[Element] }.getOrElse(false)
+      private def isProbe(l: Option[Data], r: Option[Data]): Boolean =
+        l.orElse(r).map { x => x.isInstanceOf[Data] && DataMirror.hasProbeTypeModifier(x) }.getOrElse(false)
 
       /** Zips matching children of `left` and `right`; returns Nil if both are empty
         *
@@ -851,6 +853,7 @@ object Data {
         (left, right) match {
           case (None, None)                            => Nil
           case (lOpt, rOpt) if isDifferent(lOpt, rOpt) => Nil
+          case (lOpt, rOpt) if isProbe(lOpt, rOpt)     => Nil
           case (lOpt: Option[Vec[Data] @unchecked], rOpt: Option[Vec[Data] @unchecked]) if isVec(lOpt, rOpt) =>
             (0 until (lOpt.size.max(rOpt.size))).map { i => (lOpt.grab(i), rOpt.grab(i)) }
           case (lOpt: Option[Record @unchecked], rOpt: Option[Record @unchecked]) if isRecord(lOpt, rOpt) =>
@@ -944,7 +947,6 @@ trait WireFactory {
     val prevId = Builder.idGen.value
     val t = source // evaluate once (passed by name)
     requireIsChiselType(t, "wire type")
-    requireNoProbeTypeModifier(t, "Cannot make a wire of a Chisel type with a probe modifier.")
 
     val x = if (!t.mustClone(prevId)) t else t.cloneTypeFull
 

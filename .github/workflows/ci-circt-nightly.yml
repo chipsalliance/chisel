@@ -19,55 +19,29 @@ on:
       - ci/ci-circt-nightly
 
 jobs:
-  update-branch:
-    name: Integrate staging branch with default branch
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          ref: main
-          fetch-depth: 0
-      - run: |
-          # Leave the staging branch unchanged if this is a PR.  This is not a
-          # GitHub Actions-level "if" because we want this job to return success
-          # (so that subsequent jobs run).
-          if [[ ${{ github.event_name }} == 'pull_request' ]]; then
-            exit 0
-          fi
-
-          # Rebase the staging branch on the default branch.  Create the staging
-          # branch if it doesn't exist.
-          git checkout -b ${{ env.branch-name }}
-          if [[ ! `git fetch origin ${{ env.branch-name }}` ]]; then
-            git reset --hard origin/${{ env.branch-name }}
-            git config user.name chiselbot
-            git config user.email chiselbot@users.noreply.github.com
-            git rebase origin/main
-          fi
-
-          git push --force origin ${{ env.branch-name }}
-
-  # If this is running on a PR, then use the branch of the PR.  Otherwise, use
-  # the staging branch.
   determine-branch:
-    name: Determine what branch to run tests on
-    runs-on: ubuntu-20.04
+    name: 'Update Staging Branch and Determine Target Branch'
+    runs-on: ubuntu-latest
     steps:
+      - name: Update Staging Branch
+        uses: circt/update-staging-branch@v1.0.0
+        with:
+          user: chiselbot
+          email: chiselbot@users.noreply.github.com
+          main-branch: main
+          staging-branch: ${{ env.branch-name }}
       - name: Determine Branch
         id: determine-branch
+        shell: bash
         run: |
-          if [[ ${{ github.event_name }} != 'pull_request' ]]; then
-            echo branches='["${{ env.branch-name }}"]' >> $GITHUB_OUTPUT
-          else
-            echo branches='["${{ github.ref }}"]' >> $GITHUB_OUTPUT
-          fi
+          branch=$(git rev-parse --abbrev-ref HEAD)
+          echo branches=\[\"$branch\"\] >> $GITHUB_OUTPUT
     outputs:
       branches: ${{ steps.determine-branch.outputs.branches }}
 
   ci:
     name: ci
-    needs: [update-branch, determine-branch]
+    needs: [determine-branch]
     strategy:
       matrix:
         system: ["ubuntu-20.04"]

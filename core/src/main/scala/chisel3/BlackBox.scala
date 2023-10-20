@@ -12,8 +12,13 @@ import scala.annotation.nowarn
 
 package internal {
 
-  private[chisel3] abstract class BaseBlackBox extends BaseModule
-
+  private[chisel3] abstract class BaseBlackBox extends BaseModule {
+    // Hack to make it possible to run the AddDedupAnnotation
+    // pass. Because of naming bugs in imported definitions in D/I, it
+    // is not possible to properly name EmptyExtModule created from
+    // Defintions. See unit test SeparateElaborationSpec #4.a
+    private[chisel3] def _isImportedDefinition: Boolean = false
+  }
 }
 
 package experimental {

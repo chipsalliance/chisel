@@ -4,7 +4,7 @@ inputs:
   file-name:
     description: 'File name to install'
     required: false
-    default: 'openjdk-20-jextract+1-2_linux-x64_bin.tar.gz'
+    default: 'openjdk-21-jextract+1-2_linux-x64_bin.tar.gz'
 
 runs:
   using: composite
@@ -16,7 +16,7 @@ runs:
         key: jextract-${{ runner.os }}-${{ inputs.file-name }}
 
     - shell: bash
-      if: steps.cache-espresso.outputs.cache-hit != 'true'
+      if: steps.cache-jextract.outputs.cache-hit != 'true'
       run: |
         mkdir -p jextract
         cd jextract
