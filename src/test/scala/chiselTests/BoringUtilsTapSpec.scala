@@ -229,66 +229,79 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
   }
 
   it should "work when tapping an element within a Bundle" in {
-    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(
-      new RawModule {
-        class MiniBundle extends Bundle {
-          val x = Bool()
-        }
-        class Child() extends RawModule {
-          val b = Wire(new MiniBundle)
-        }
-
-        val child = Module(new Child())
-
-        // directly tap Bundle element
-        val outRWProbe = IO(probe.RWProbe(Bool()))
-        probe.define(outRWProbe, BoringUtils.rwTap(child.b.x))
-
-        // tap Bundle, then access element
-        val outRWBundleProbe = IO(probe.RWProbe(new MiniBundle))
-        val outElem = IO(probe.RWProbe(Bool()))
-        probe.define(outRWBundleProbe, BoringUtils.rwTap(child.b))
-        probe.define(outElem, outRWBundleProbe.x)
+    class BundleTest extends RawModule {
+      class MiniBundle extends Bundle {
+        val x = Bool()
+        val y = Bool()
       }
-    )
+      class Child() extends RawModule {
+        val b = Wire(new MiniBundle)
+        b := DontCare
+      }
+
+      val child = Module(new Child())
+
+      // directly tap Bundle element
+      val outRWProbe = IO(probe.RWProbe(Bool()))
+      probe.define(outRWProbe, BoringUtils.rwTap(child.b.x))
+
+      // tap Bundle, then access element
+      val outRWBundleProbe = IO(probe.RWProbe(new MiniBundle))
+      probe.define(outRWBundleProbe, BoringUtils.rwTap(child.b))
+      val outElem = IO(probe.RWProbe(Bool()))
+      probe.define(outElem, outRWBundleProbe.x)
+    }
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new BundleTest)
     matchesAndOmits(chirrtl)(
-      "wire b : { x : UInt<1>}",
+      "wire b : { x : UInt<1>, y : UInt<1>}",
       "define bore = rwprobe(b.x)",
-      "define bore_1 = rwprobe(b)",
+      "define bore_1.y = rwprobe(b.y)",
+      "define bore_1.x = rwprobe(b.x)",
       "define outRWProbe = child.bore",
-      "define outRWBundleProbe = child.bore_1",
+      "define outRWBundleProbe.y = child.bore_1.y",
+      "define outRWBundleProbe.x = child.bore_1.x",
       "define outElem = outRWBundleProbe.x"
     )()
+    // Check that firtool also passes
+    val verilog = circt.stage.ChiselStage.emitSystemVerilog(new BundleTest)
   }
 
   it should "work when tapping an element within a Vec" in {
-    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(
-      new RawModule {
-        class Child() extends RawModule {
-          val b = Wire(Vec(4, Bool()))
-        }
-
-        val child = Module(new Child())
-
-        // directly tap Vec element
-        val outRWProbe = IO(probe.RWProbe(Bool()))
-        probe.define(outRWProbe, BoringUtils.rwTap(child.b(2)))
-
-        // tap Vec, then access element
-        val outRWVecProbe = IO(probe.RWProbe(Vec(4, Bool())))
-        val outElem = IO(probe.RWProbe(Bool()))
-        probe.define(outRWVecProbe, BoringUtils.rwTap(child.b))
-        probe.define(outElem, outRWVecProbe(1))
+    class VecTest extends RawModule {
+      class Child() extends RawModule {
+        val b = Wire(Vec(4, Bool()))
+        b := DontCare
       }
-    )
+
+      val child = Module(new Child())
+
+      // directly tap Vec element
+      val outRWProbe = IO(probe.RWProbe(Bool()))
+      probe.define(outRWProbe, BoringUtils.rwTap(child.b(2)))
+
+      // tap Vec, then access element
+      val outRWVecProbe = IO(probe.RWProbe(Vec(4, Bool())))
+      val outElem = IO(probe.RWProbe(Bool()))
+      probe.define(outRWVecProbe, BoringUtils.rwTap(child.b))
+      probe.define(outElem, outRWVecProbe(1))
+    }
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new VecTest)
     matchesAndOmits(chirrtl)(
       "wire b : UInt<1>[4]",
       "define bore = rwprobe(b[2])",
-      "define bore_1 = rwprobe(b)",
+      "define bore_1[0] = rwprobe(b[0])",
+      "define bore_1[1] = rwprobe(b[1])",
+      "define bore_1[2] = rwprobe(b[2])",
+      "define bore_1[3] = rwprobe(b[3])",
       "define outRWProbe = child.bore",
-      "define outRWVecProbe = child.bore_1",
+      "define outRWVecProbe[0] = child.bore_1[0]",
+      "define outRWVecProbe[1] = child.bore_1[1]",
+      "define outRWVecProbe[2] = child.bore_1[2]",
+      "define outRWVecProbe[3] = child.bore_1[3]",
       "define outElem = outRWVecProbe[1]"
     )()
+    // Check that firtool also passes
+    val verilog = circt.stage.ChiselStage.emitSystemVerilog(new VecTest)
   }
 
   it should "work when rw-tapping IO, as rwprobe() from inside module" in {
@@ -333,13 +346,13 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       // Child ports.
       "module Child(",
       "input  v_0_in,",
-      "       v_1_in,",
-      "output v_0_out",
+      "output v_0_out,",
+      "input  v_1_in",
       // Instantiation.
       "Child child (",
       ".v_0_in  (inputs_0),", // Alive because feeds outV_0_out probe.
-      ".v_1_in  (inputs_1),", // rwprobe target.
-      ".v_0_out (", // rwprobe target.
+      ".v_0_out (/* unused */)", // rwprobe target.
+      ".v_1_in  (inputs_1)", // rwprobe target.
       // Ref ABI.  Names of internal signals are subject to change.
       "`define ref_Foo_Foo_outV_0_out child.v_0_out",
       "`define ref_Foo_Foo_outV_1_in child.v_1_in"
@@ -375,12 +388,20 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       val outV_1_out_refsub = IO(probe.Probe(Bool()))
       probe.define(outV_1_out_refsub, outProbeForChildVec(1).out)
     }
-    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Foo)
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Foo, Array("--full-stacktrace"))
     matchesAndOmits(chirrtl)(
       // Child port.
       "output v : { flip in : UInt<1>, out : UInt<1>}[2]",
       // Probes in terms of child instance ports.
-      "define outProbeForChildVec = probe(child.v)",
+      "wire probe_value : { in : Probe<UInt<1>>, out : Probe<UInt<1>>}[2]",
+      "define probe_value[0].out = probe(child.v[0].out)",
+      "define probe_value[0].in = probe(child.v[0].in)",
+      "define probe_value[1].out = probe(child.v[1].out)",
+      "define probe_value[1].in = probe(child.v[1].in)",
+      "define outProbeForChildVec[0].out = probe_value[0].out",
+      "define outProbeForChildVec[0].in = probe_value[0].in",
+      "define outProbeForChildVec[1].out = probe_value[1].out",
+      "define outProbeForChildVec[1].in = probe_value[1].in",
       "define outV_1_in = probe(child.v[1].in)",
       "define outV_1_out_refsub = outProbeForChildVec[1].out"
     )("define bore")
@@ -447,15 +468,21 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
     val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top(), Array("--full-stacktrace"))
     matchesAndOmits(chirrtl)(
       "module Bar :",
-      "output decoupledThing_bore : Probe<{ ready : UInt<1>, valid : UInt<1>, bits : UInt<1>}>",
-      "define decoupledThing_bore = probe(decoupledThing)",
+      "output decoupledThing_bore : { ready : Probe<UInt<1>>, valid : Probe<UInt<1>>, bits : Probe<UInt<1>>}",
+      "define decoupledThing_bore.bits = probe(decoupledThing.bits)",
+      "define decoupledThing_bore.valid = probe(decoupledThing.valid)",
+      "define decoupledThing_bore.ready = probe(decoupledThing.ready)",
       "module Foo :",
-      "output decoupledThing_bore : Probe<{ ready : UInt<1>, valid : UInt<1>, bits : UInt<1>}>",
-      "define decoupledThing_bore = bar.decoupledThing_bore",
+      "output decoupledThing_bore : { ready : Probe<UInt<1>>, valid : Probe<UInt<1>>, bits : Probe<UInt<1>>}",
+      "define decoupledThing_bore.bits = bar.decoupledThing_bore.bits",
+      "define decoupledThing_bore.valid = bar.decoupledThing_bore.valid",
+      "define decoupledThing_bore.ready = bar.decoupledThing_bore.ready",
       "module FakeView :",
       "input decoupledThing_bore : { ready : UInt<1>, valid : UInt<1>, bits : UInt<1>}",
       "module Top :",
-      "connect fakeView.decoupledThing_bore, read(foo.decoupledThing_bore)"
+      "connect fakeView.decoupledThing_bore.bits, read(foo.decoupledThing_bore.bits)",
+      "connect fakeView.decoupledThing_bore.valid, read(foo.decoupledThing_bore.valid)",
+      "connect fakeView.decoupledThing_bore.ready, read(foo.decoupledThing_bore.ready)"
     )()
 
     // Check that firtool also passes

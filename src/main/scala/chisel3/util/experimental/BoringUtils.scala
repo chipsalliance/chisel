@@ -5,6 +5,7 @@ package chisel3.util.experimental
 import chisel3._
 import chisel3.probe.{Probe, RWProbe}
 import chisel3.Data.ProbeInfo
+import chisel3.reflect.DataMirror.containsProbeTypeModifier
 import chisel3.experimental.{annotate, requireIsHardware, skipPrefix, BaseModule, ChiselAnnotation, SourceInfo}
 import chisel3.internal.{Builder, BuilderContextCache, NamedComponent, Namespace, PortBinding}
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
@@ -314,7 +315,7 @@ object BoringUtils {
     */
   def tap[A <: Data](source: A)(implicit si: SourceInfo): A = {
     val tapIntermediate = skipPrefix { boreOrTap(source, createProbe = Some(ProbeInfo(writable = false))) }
-    if (tapIntermediate.probeInfo.nonEmpty) {
+    if (containsProbeTypeModifier(tapIntermediate)) {
       tapIntermediate
     } else {
       probe.ProbeValue(tapIntermediate)
@@ -329,7 +330,7 @@ object BoringUtils {
     */
   def rwTap[A <: Data](source: A)(implicit si: SourceInfo): A = {
     val tapIntermediate = skipPrefix { boreOrTap(source, createProbe = Some(ProbeInfo(writable = true))) }
-    if (tapIntermediate.probeInfo.nonEmpty) {
+    if (containsProbeTypeModifier(tapIntermediate)) {
       tapIntermediate
     } else {
       probe.RWProbeValue(tapIntermediate)
@@ -344,7 +345,7 @@ object BoringUtils {
     */
   def tapAndRead[A <: Data](source: A)(implicit si: SourceInfo): A = {
     val tapIntermediate = skipPrefix { boreOrTap(source, createProbe = Some(ProbeInfo(writable = false))) }
-    if (tapIntermediate.probeInfo.nonEmpty) {
+    if (containsProbeTypeModifier(tapIntermediate)) {
       probe.read(tapIntermediate)
     } else {
       tapIntermediate

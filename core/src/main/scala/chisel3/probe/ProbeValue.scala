@@ -2,24 +2,46 @@
 
 package chisel3.probe
 
-import chisel3.{Data, SourceInfoDoc}
+import chisel3.{Data, Output, SourceInfoDoc, Wire}
 import chisel3.internal.{Builder, OpBinding}
-import chisel3.internal.firrtl.{ProbeExpr, RWProbeExpr}
+import chisel3.internal.Builder.pushCommand
+import chisel3.internal.firrtl.{ProbeDefine, ProbeExpr, RWProbeExpr}
 import chisel3.experimental.{requireIsHardware, SourceInfo}
+import chisel3.reflect.DataMirror.collectLeafMembers
 
 import scala.language.experimental.macros
+import chisel3.Aggregate
 
 private[chisel3] sealed trait ProbeValueBase {
   protected def apply[T <: Data](source: T, writable: Boolean)(implicit sourceInfo: SourceInfo): T = {
     requireIsHardware(source)
     // construct probe to return with cloned info
-    val clone = if (writable) RWProbe(source.cloneType) else Probe(source.cloneType)
+    val clone = if (writable) RWProbe(source.cloneTypeFull) else Probe(source.cloneTypeFull)
     clone.bind(OpBinding(Builder.forcedUserModule, Builder.currentWhen))
-    if (writable) {
-      clone.setRef(RWProbeExpr(source.ref))
+    // create reference for clone
+    val cloneRef = if (source.isInstanceOf[Aggregate]) {
+      // intermediate probe to hook up to aggregate elements
+      val intermediate = Wire(Output(if (writable) RWProbe(source.cloneTypeFull) else Probe(source.cloneTypeFull)))
+      collectLeafMembers(intermediate).zip(collectLeafMembers(source)).foreach {
+        case (i, s) =>
+          if (writable) {
+            pushCommand(ProbeDefine(sourceInfo, i.ref, RWProbeExpr(s.ref)))
+          } else {
+            pushCommand(ProbeDefine(sourceInfo, i.ref, ProbeExpr(s.ref)))
+          }
+      }
+      intermediate.suggestName("probe_value")
+      intermediate.ref
     } else {
-      clone.setRef(ProbeExpr(source.ref))
+      // leaf case
+      if (writable) {
+        RWProbeExpr(source.ref)
+      } else {
+        ProbeExpr(source.ref)
+      }
     }
+
+    clone.setRef(cloneRef)
     clone
   }
 }

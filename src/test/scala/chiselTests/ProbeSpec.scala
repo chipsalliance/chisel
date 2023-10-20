@@ -208,7 +208,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
         define(defGrandchildBool, f.foo.barB.a)
 
         // read tests
-        val readBundle = IO(Output(new FooBundle())) // TODO check with directions
+        val readBundle = IO(Output(new FooBundle()))
         readBundle := read(f.foo)
 
         val readInternalBundle = IO(Output(new BarBundle()))

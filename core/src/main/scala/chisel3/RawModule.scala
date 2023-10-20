@@ -11,6 +11,7 @@ import chisel3.experimental.hierarchy.{InstanceClone, ModuleClone}
 import chisel3.properties.DynamicObject
 import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
+import chisel3.reflect.DataMirror.{collectLeafMembers, containsProbeTypeModifier, hasProbeTypeModifier}
 import _root_.firrtl.annotations.{IsModule, ModuleTarget}
 import scala.collection.immutable.VectorBuilder
 import scala.collection.mutable.ArrayBuffer
@@ -183,20 +184,31 @@ abstract class RawModule extends BaseModule {
   }
   private[chisel3] val stagedSecretCommands = collection.mutable.ArrayBuffer[Command]()
 
+  private def secretProbeDefines(left: Data, right: Data)(implicit si: SourceInfo): Seq[Command] = {
+    collectLeafMembers(left).zip(collectLeafMembers(right)).map {
+      case (l, r) =>
+        (hasProbeTypeModifier(l), hasProbeTypeModifier(r)) match {
+          case (true, true)                              => ProbeDefine(si, l.lref, Node(r))
+          case (true, false) if l.probeInfo.get.writable => ProbeDefine(si, l.lref, RWProbeExpr(Node(r)))
+          case (true, false)                             => ProbeDefine(si, l.lref, ProbeExpr(Node(r)))
+          case (false, true)                             => Connect(si, l.lref, ProbeRead(Node(r)))
+          case (false, false)                            => Connect(si, l.lref, Node(r))
+        }
+    }
+  }
+
   private[chisel3] def secretConnection(left: Data, right: Data)(implicit si: SourceInfo): Unit = {
-    val rhs = (left.probeInfo.nonEmpty, right.probeInfo.nonEmpty) match {
-      case (true, true)                                 => ProbeDefine(si, left.lref, Node(right))
-      case (true, false) if left.probeInfo.get.writable => ProbeDefine(si, left.lref, RWProbeExpr(Node(right)))
-      case (true, false)                                => ProbeDefine(si, left.lref, ProbeExpr(Node(right)))
-      case (false, true)                                => Connect(si, left.lref, ProbeRead(Node(right)))
-      case (false, false)                               => Connect(si, left.lref, Node(right))
+    val rhs = if (containsProbeTypeModifier(left) || containsProbeTypeModifier(right)) {
+      secretProbeDefines(left, right)
+    } else {
+      Seq(Connect(si, left.lref, Node(right)))
     }
     val secretCommands = if (_closed) {
       _component.get.asInstanceOf[DefModule].secretCommands
     } else {
       stagedSecretCommands
     }
-    secretCommands += rhs
+    secretCommands ++= rhs
   }
 
   private[chisel3] def initializeInParent(): Unit = {}

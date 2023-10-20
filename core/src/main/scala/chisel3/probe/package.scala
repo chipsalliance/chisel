@@ -58,13 +58,14 @@ package object probe extends SourceInfoDoc {
     val clone = source.cloneTypeFull
     clone.bind(OpBinding(Builder.forcedUserModule, Builder.currentWhen))
     val cloneRef = if (source.isInstanceOf[Aggregate]) {
-      val tmp = Wire(Output(source.cloneTypeFull))
-      clearProbeInfo(tmp)
+      // intermediate wire to facilitate aggregate read
+      val intermediate = Wire(Output(source.cloneTypeFull))
+      clearProbeInfo(intermediate)
       val sourceElems = collectLeafMembers(source)
-      val tmpElems = collectLeafMembers(tmp)
-      sourceElems.zip(tmpElems).foreach { case (e, t) => t :#= do_read(e) }
-      tmp.suggestName("probe_read")
-      tmp.ref
+      val intermediateElems = collectLeafMembers(intermediate)
+      sourceElems.zip(intermediateElems).foreach { case (e, t) => t :#= do_read(e) }
+      intermediate.suggestName("probe_read")
+      intermediate.ref
     } else {
       requireHasProbeTypeModifier(source)
       ProbeRead(source.ref)
