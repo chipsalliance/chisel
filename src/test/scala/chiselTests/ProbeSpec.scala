@@ -382,28 +382,22 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
     exc.getMessage should include("Cannot create a probe of an aggregate containing a probe.")
   }
 
-  "Wire() of a probe" should "fail" in {
-    val exc = intercept[chisel3.ChiselException] {
-      ChiselStage.emitCHIRRTL(
-        new RawModule {
-          val w = Wire(Probe(Bool()))
-        },
-        Array("--throw-on-first-error")
-      )
-    }
-    exc.getMessage should include("Cannot make a wire of a Chisel type with a probe modifier.")
+  "Wire() of a probe" should "work" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val w = Wire(Probe(Bool()))
+    })
+    processChirrtl(chirrtl) should contain("wire w : Probe<UInt<1>>")
   }
 
-  "WireInit of a probe" should "fail" in {
-    val exc = intercept[chisel3.ChiselException] {
-      ChiselStage.emitCHIRRTL(
-        new RawModule {
-          val w = WireInit(RWProbe(Bool()), false.B)
-        },
-        Array("--throw-on-first-error")
-      )
+  "WireInit of a probe" should "work" in {
+    class Test extends RawModule {
+      val init = WireInit(Bool(), false.B)
+      val w = WireInit(RWProbe(Bool()), RWProbeValue(init))
     }
-    exc.getMessage should include("Cannot make a wire of a Chisel type with a probe modifier.")
+    val chirrtl = ChiselStage.emitCHIRRTL(new Test)
+    processChirrtl(chirrtl) should contain("wire w : RWProbe<UInt<1>>")
+    processChirrtl(chirrtl) should contain("define w = rwprobe(init)")
+    ChiselStage.emitSystemVerilog(new Test)
   }
 
   "Reg() of a probe" should "fail" in {

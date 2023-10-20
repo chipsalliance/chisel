@@ -947,7 +947,6 @@ trait WireFactory {
     val prevId = Builder.idGen.value
     val t = source // evaluate once (passed by name)
     requireIsChiselType(t, "wire type")
-    requireNoProbeTypeModifier(t, "Cannot make a wire of a Chisel type with a probe modifier.")
 
     val x = if (!t.mustClone(prevId)) t else t.cloneTypeFull
 
