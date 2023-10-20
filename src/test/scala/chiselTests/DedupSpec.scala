@@ -7,6 +7,7 @@ import chisel3.util._
 import chisel3.experimental.{annotate, dedupGroup, ChiselAnnotation}
 import firrtl.transforms.DedupGroupAnnotation
 import chisel3.experimental.hierarchy._
+import chisel3.util.circt.PlusArgsValue
 
 class DedupIO extends Bundle {
   val in = Flipped(Decoupled(UInt(32.W)))
@@ -84,6 +85,10 @@ class SharedConstantValDedupTopDesiredName extends Module {
   io.out := inst0.io.out + inst1.io.out
 }
 
+class ModuleWithIntrinsic extends Module {
+  val plusarg = PlusArgsValue(Bool(), "plusarg=%d")
+}
+
 class DedupSpec extends ChiselFlatSpec {
   private val ModuleRegex = """\s*module\s+(\w+)\b.*""".r
   def countModules(verilog: String): Int =
@@ -128,5 +133,13 @@ class DedupSpec extends ChiselFlatSpec {
         top
       }
     }
+  }
+
+  it should "not add DedupGroupAnnotation to intrinsics" in {
+    val (_, annos) = getFirrtlAndAnnos(new ModuleWithIntrinsic)
+    val dedupGroupAnnos = annos.collect {
+      case DedupGroupAnnotation(target, _) => target.module
+    }
+    dedupGroupAnnos should contain theSameElementsAs Seq("ModuleWithIntrinsic")
   }
 }
