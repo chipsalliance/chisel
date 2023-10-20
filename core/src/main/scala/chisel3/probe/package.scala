@@ -21,6 +21,7 @@ package object probe extends SourceInfoDoc {
     probeInfo.foreach { _ =>
       collectAllMembers(data).foreach { e =>
         e match {
+          // sample_element is used to determine the Vec element type in the converter
           case v: Vec[_]    => setProbeModifier(v.sample_element, probeInfo)
           case v: Aggregate => // do nothing
           case _ => e.probeInfo = probeInfo
