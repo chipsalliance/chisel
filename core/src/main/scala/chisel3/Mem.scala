@@ -55,8 +55,9 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt, sourceInf
     with SourceInfoDoc {
 
   if (t.isConst) Builder.error("Mem type cannot be const.")(sourceInfo)
-  if (containsProbeTypeModifier(t))
+  if (containsProbeTypeModifier(t)) {
     Builder.error("Cannot make a Mem of a Chisel type with a probe modifier.")(sourceInfo)
+  }
 
   _parent.foreach(_.addId(this))
 

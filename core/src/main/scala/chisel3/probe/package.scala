@@ -57,18 +57,19 @@ package object probe extends SourceInfoDoc {
     // construct clone to bind to ProbeRead
     val clone = source.cloneTypeFull
     clone.bind(OpBinding(Builder.forcedUserModule, Builder.currentWhen))
-    val cloneRef = if (source.isInstanceOf[Aggregate]) {
-      // intermediate wire to facilitate aggregate read
-      val intermediate = Wire(Output(source.cloneTypeFull))
-      clearProbeInfo(intermediate)
-      val sourceElems = collectLeafMembers(source)
-      val intermediateElems = collectLeafMembers(intermediate)
-      sourceElems.zip(intermediateElems).foreach { case (e, t) => t :#= do_read(e) }
-      intermediate.suggestName("probe_read")
-      intermediate.ref
-    } else {
-      requireHasProbeTypeModifier(source)
-      ProbeRead(source.ref)
+    val cloneRef = source match {
+      case agg: Aggregate =>
+        // intermediate wire to facilitate aggregate read
+        val intermediate = Wire(Output(agg.cloneTypeFull))
+        clearProbeInfo(intermediate)
+        val sourceElems = collectLeafMembers(agg)
+        val intermediateElems = collectLeafMembers(intermediate)
+        sourceElems.zip(intermediateElems).foreach { case (e, t) => t :#= do_read(e) }
+        intermediate.suggestName("probe_read")
+        intermediate.ref
+      case s =>
+        requireHasProbeTypeModifier(s)
+        ProbeRead(s.ref)
     }
     clone.setRef(cloneRef)
     // return a non-probe type Data that can be used in Data connects

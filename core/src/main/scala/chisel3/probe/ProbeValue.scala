@@ -19,26 +19,26 @@ private[chisel3] sealed trait ProbeValueBase {
     val clone = if (writable) RWProbe(source.cloneTypeFull) else Probe(source.cloneTypeFull)
     clone.bind(OpBinding(Builder.forcedUserModule, Builder.currentWhen))
     // create reference for clone
-    val cloneRef = if (source.isInstanceOf[Aggregate]) {
-      // intermediate probe to hook up to aggregate elements
-      val intermediate = Wire(Output(if (writable) RWProbe(source.cloneTypeFull) else Probe(source.cloneTypeFull)))
-      collectLeafMembers(intermediate).zip(collectLeafMembers(source)).foreach {
-        case (i, s) =>
-          if (writable) {
-            pushCommand(ProbeDefine(sourceInfo, i.ref, RWProbeExpr(s.ref)))
-          } else {
-            pushCommand(ProbeDefine(sourceInfo, i.ref, ProbeExpr(s.ref)))
-          }
-      }
-      intermediate.suggestName("probe_value")
-      intermediate.ref
-    } else {
-      // leaf case
-      if (writable) {
-        RWProbeExpr(source.ref)
-      } else {
-        ProbeExpr(source.ref)
-      }
+    val cloneRef = source match {
+      case agg: Aggregate =>
+        // intermediate probe to hook up to aggregate elements
+        val intermediate = Wire(Output(if (writable) RWProbe(agg.cloneTypeFull) else Probe(agg.cloneTypeFull)))
+        collectLeafMembers(intermediate).zip(collectLeafMembers(agg)).foreach {
+          case (i, s) =>
+            if (writable) {
+              pushCommand(ProbeDefine(sourceInfo, i.ref, RWProbeExpr(s.ref)))
+            } else {
+              pushCommand(ProbeDefine(sourceInfo, i.ref, ProbeExpr(s.ref)))
+            }
+        }
+        intermediate.suggestName("probe_value")
+        intermediate.ref
+      case s =>
+        if (writable) {
+          RWProbeExpr(s.ref)
+        } else {
+          ProbeExpr(s.ref)
+        }
     }
 
     clone.setRef(cloneRef)
