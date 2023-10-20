@@ -494,12 +494,19 @@ class PanamaCIRCTConverter extends CIRCTConverter {
       }
 
       val pm = circt.mlirPassManagerCreate()
-      val options = circt.firtoolOptionsCreateDefault()
-      assertResult(circt.firtoolPopulatePreprocessTransforms(pm, options))
-      assertResult(circt.firtoolPopulateCHIRRTLToLowFIRRTL(pm, options, mlirRootModule, "-"))
-      assertResult(circt.firtoolPopulateLowFIRRTLToHW(pm, options))
-      assertResult(circt.firtoolPopulateHWToSV(pm, options))
-      assertResult(circt.firtoolPopulateExportVerilog(pm, options, message => out.write(message.getBytes)))
+
+      val generalOpts = circt.firtoolGeneralOptionsCreateDefault()
+      val preprocessTransformsOpts = circt.firtoolPreprocessTransformsOptionsCreateDefault(generalOpts)
+      val chirrtlOpts = circt.firtoolCHIRRTLToLowFIRRTLOptionsCreateDefault(generalOpts)
+      val lowFIRRTLToHWOpts = circt.firtoolLowFIRRTLToHWOptionsCreateDefault(generalOpts)
+      val hwToSVOpts = circt.firtoolHWToSVOptionsCreateDefault(generalOpts)
+      val exportVerilogeOpts = circt.firtoolExportVerilogOptionsCreateDefault(generalOpts)
+
+      assertResult(circt.firtoolPopulatePreprocessTransforms(pm, preprocessTransformsOpts))
+      assertResult(circt.firtoolPopulateCHIRRTLToLowFIRRTL(pm, chirrtlOpts))
+      assertResult(circt.firtoolPopulateLowFIRRTLToHW(pm, lowFIRRTLToHWOpts))
+      assertResult(circt.firtoolPopulateHWToSV(pm, hwToSVOpts))
+      assertResult(circt.firtoolPopulateExportVerilog(pm, exportVerilogeOpts, message => out.write(message.getBytes)))
       assertResult(circt.mlirPassManagerRunOnOp(pm, circt.mlirModuleGetOperation(mlirRootModule)))
     }
   }
