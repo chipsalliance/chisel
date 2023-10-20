@@ -121,12 +121,14 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
       },
       Array("--full-stacktrace")
     )
-
     (processChirrtl(chirrtl) should contain).allOf(
       "output p : { a : Probe<UInt<1>>, b : Probe<UInt<1>>}",
       "wire x : { a : UInt<1>, b : UInt<1>}",
-      "define p.b = probe(x).b",
-      "define p.a = probe(x).a",
+      "wire probe_value : { a : Probe<UInt<1>>, b : Probe<UInt<1>>}",
+      "define probe_value.b = probe(x.b)",
+      "define probe_value.a = probe(x.a)",
+      "define p.b = probe_value.b",
+      "define p.a = probe_value.a",
       "connect x, read(f.p.b)",
       "define y = f.p.b"
     )
@@ -362,8 +364,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
         io.out :<>= io.in
       }
     )
-    processChirrtl(chirrtl) should contain("define io.out = io.in")
-    processChirrtl(chirrtl) should not contain ("out.baz")
+    processChirrtl(chirrtl) should contain("define io.out.baz = io.in.baz")
   }
 
   "Mismatched probe/non-probe with :<>= connector" should "fail" in {
