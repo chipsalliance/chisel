@@ -1,6 +1,11 @@
 import mill._
+import mill.api.Result
 import mill.scalalib._
-import $file.common
+import mill.scalalib.api.CompilationResult
+import mill.util.Jvm
+
+import java.util
+import scala.jdk.StreamConverters.StreamHasToScala
 
 trait SvsimUnitTestModule
   extends TestModule
@@ -77,3 +82,33 @@ trait CIRCTPanamaBinderModuleTestModule
     scalacheckIvy
   )
 }
+
+trait LitUtilityModule
+  extends ScalaModule
+    with common.HasCIRCTPanamaBinderModule
+    with common.HasMacroAnnotations
+
+trait LitModule
+  extends Module {
+  def crossScalaVersions: T[Seq[String]]
+  def runClasspath: T[Seq[os.Path]]
+  def pluginJars: T[Seq[os.Path]]
+  def javaLibraryPath: T[Seq[os.Path]]
+  def javaHome: T[os.Path]
+  def chiselLitDir: T[os.Path]
+  def litConfigIn: T[PathRef]
+  def litConfig: T[PathRef] = T {
+    os.write(
+      T.dest / "lit.site.cfg.py",
+      os.read(litConfigIn().path)
+        .replaceAll("@CROSS_SCALA_VERSION@", crossScalaVersions().mkString(","))
+        .replaceAll("@RUN_CLASSPATH@", runClasspath().mkString(","))
+        .replaceAll("@OPT_PLUGIN_JARS@", pluginJars().mkString(","))
+        .replaceAll("@JAVA_HOME@", javaHome().toString)
+        .replaceAll("@JAVA_OPT_JAVA_LIBRARY_PATH@", javaLibraryPath().mkString(","))
+        .replaceAll("@CHISEL_LIT_DIR@", chiselLitDir().toString)
+      )
+    PathRef(T.dest / "lit.site.cfg.py")
+  }
+  def run(args: String*) = T.command(os.proc("llvm-lit", litConfig().path).call(T.dest, stdout = os.ProcessOutput.Readlines(line => T.ctx().log.debug("[lit] " + line))))
+ }

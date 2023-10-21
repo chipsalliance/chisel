@@ -288,3 +288,27 @@ trait CIRCTPanamaBinderModuleTest
     Seq(PathRef(millSourcePath / "src" / "test"))
   }
 }
+
+object filecheckutility extends Cross[LitUtility](v.scalaCrossVersions)
+
+trait LitUtility
+  extends tests.LitUtilityModule
+    with CrossModuleBase
+    with ScalafmtModule {
+  def millSourcePath = super.millSourcePath / "utility"
+  def circtPanamaBinderModule = circtpanamabinder(crossScalaVersion)
+}
+
+object lit extends LitModule
+
+trait LitModule
+  extends tests.LitModule {
+  def crossValue = "2.13.12"
+  def crossScalaVersions: T[Seq[String]] = T(v.scalaCrossVersions)
+  def runClasspath: T[Seq[os.Path]] = T(filecheckutility(crossValue).runClasspath().map(_.path))
+  def pluginJars: T[Seq[os.Path]] = T(Seq(filecheckutility(crossValue).circtPanamaBinderModule.pluginModule.jar().path))
+  def javaLibraryPath: T[Seq[os.Path]] = T(filecheckutility(crossValue).circtPanamaBinderModule.libraryPaths().map(_.path))
+  def javaHome: T[os.Path] = T(os.Path(sys.props("java.home")))
+  def chiselLitDir: T[os.Path] = T(millSourcePath)
+  def litConfigIn: T[PathRef] = T.source(millSourcePath / "tests" / "lit.site.cfg.py.in")
+}
