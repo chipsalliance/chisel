@@ -6,6 +6,7 @@ import mill.scalalib.scalafmt._
 import coursier.maven.MavenRepository
 import mill.scalalib.api.ZincWorkerUtil.matchingVersions
 import $file.common
+import $file.tests
 import $file.project.Boilerplate
 
 object v {
