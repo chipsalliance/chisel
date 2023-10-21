@@ -1,11 +1,11 @@
 import mill._
 import mill.scalalib._
-import mill.scalalib.TestModule._
 import mill.scalalib.publish._
 import mill.scalalib.scalafmt._
-import coursier.maven.MavenRepository
+import mill.define.Cross
 import mill.scalalib.api.ZincWorkerUtil.matchingVersions
 import $file.common
+import $file.tests
 
 object v {
   val pluginScalaCrossVersions = Seq(
@@ -270,4 +270,28 @@ trait CIRCTPanamaBinderModuleTest
   override def sources = T.sources {
     Seq(PathRef(millSourcePath / "src" / "test"))
   }
+}
+
+object filecheckutility extends Cross[LitUtility](v.scalaCrossVersions)
+
+trait LitUtility
+  extends tests.LitUtilityModule
+    with CrossModuleBase
+    with ScalafmtModule {
+  def millSourcePath = super.millSourcePath / "utility"
+  def circtPanamaBinderModule = circtpanamabinder(crossScalaVersion)
+}
+
+object lit extends Cross[Lit](v.scalaCrossVersions)
+
+trait Lit
+  extends tests.LitModule
+    with Cross.Module[String] {
+  def scalaVersion: T[String] = crossValue
+  def runClasspath: T[Seq[os.Path]] = T(filecheckutility(crossValue).runClasspath().map(_.path))
+  def pluginJars: T[Seq[os.Path]] = T(Seq(filecheckutility(crossValue).circtPanamaBinderModule.pluginModule.jar().path))
+  def javaLibraryPath: T[Seq[os.Path]] = T(filecheckutility(crossValue).circtPanamaBinderModule.libraryPaths().map(_.path))
+  def javaHome: T[os.Path] = T(os.Path(sys.props("java.home")))
+  def chiselLitDir: T[os.Path] = T(millSourcePath)
+  def litConfigIn: T[PathRef] = T.source(millSourcePath / "tests" / "lit.site.cfg.py.in")
 }
