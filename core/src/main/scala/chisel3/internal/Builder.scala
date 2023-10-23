@@ -387,6 +387,27 @@ private[chisel3] trait NamedComponent extends HasId {
     }
   }
 
+  /** Returns a FIRRTL ReferenceTarget that references this object, relative to an optional root.
+    *
+    * If `root` is defined, the target is a hierarchical path starting from `root`.
+    *
+    * If `root` is not defined, the target is a hierarchical path equivalent to `toAbsoluteTarget`.
+    *
+    * @note If `root` is defined, and has not finished elaboration, this must be called within `atModuleBodyEnd`.
+    * @note The NamedComponent must be a descendant of `root`, if it is defined.
+    * @note This doesn't have special handling for Views.
+    */
+  final def toRelativeTarget(root: Option[BaseModule]): ReferenceTarget = {
+    val localTarget = toTarget
+    def makeTarget(p: BaseModule) =
+      p.toRelativeTarget(root).ref(localTarget.ref).copy(component = localTarget.component)
+    _parent match {
+      case Some(ViewParent) => makeTarget(reifyParent)
+      case Some(parent)     => makeTarget(parent)
+      case None             => localTarget
+    }
+  }
+
   private def assertValidTarget(): Unit = {
     val isVecSubaccess = getOptionRef.map {
       case Index(_, _: ULit) => true // Vec literal indexing

@@ -56,7 +56,7 @@ jobs:
           java-version: ${{ inputs.jvm }}
           cache: 'sbt'
       - name: Install CIRCT
-        uses: circt/install-circt@v1.0.0
+        uses: circt/install-circt@v1.1.1
         with:
           version: ${{ inputs.circt }}
           github-token: ${{ github.token }}
@@ -88,14 +88,14 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'adopt'
-          java-version: '20'
+          java-version: '21'
           cache: 'sbt'
       - name: Install Mill
         uses: jodersky/setup-mill@v0.3.0
         with:
-          mill-version: 0.11.0
+          mill-version: 0.11.5
       - name: Install CIRCT
-        uses: circt/install-circt@v1.0.0
+        uses: circt/install-circt@v1.1.1
         with:
           version: ${{ inputs.circt }}
           github-token: ${{ github.token }}
@@ -119,7 +119,7 @@ jobs:
           java-version: '11'
           cache: 'sbt'
       - name: Install CIRCT
-        uses: circt/install-circt@v1.0.0
+        uses: circt/install-circt@v1.1.1
         with:
           version: ${{ inputs.circt }}
           github-token: ${{ github.token }}
@@ -145,7 +145,7 @@ jobs:
           java-version: '11'
           cache: 'sbt'
       - name: Install CIRCT
-        uses: circt/install-circt@v1.0.0
+        uses: circt/install-circt@v1.1.1
         with:
           version: ${{ inputs.circt }}
           github-token: ${{ github.token }}
@@ -200,7 +200,7 @@ jobs:
           gem install jekyll -v 4.2.0
           gem install jekyll-redirect-from
       - name: Install CIRCT
-        uses: circt/install-circt@v1.0.0
+        uses: circt/install-circt@v1.1.1
         with:
           version: ${{ inputs.circt }}
           github-token: ${{ github.token }}

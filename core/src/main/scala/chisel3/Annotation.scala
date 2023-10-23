@@ -88,7 +88,7 @@ object dedupGroup {
     * @param group The name of the dedup group to assign the module to
     * @return Unmodified signal `module`
     */
-  def apply[T <: RawModule](module: T, group: String): Unit = {
+  def apply[T <: BaseModule](module: T, group: String): Unit = {
     annotate(new ChiselAnnotation { def toFirrtl = DedupGroupAnnotation(module.toTarget, group) })
   }
 }

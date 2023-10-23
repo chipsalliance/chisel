@@ -6,9 +6,10 @@ import chisel3._
 import chisel3.experimental.{Analog, BaseModule, SourceInfo}
 import chisel3.internal.containsProbe
 import chisel3.internal.Builder.pushCommand
-import chisel3.internal.firrtl.{Connect, Converter, DefInvalid, PropAssign}
+import chisel3.internal.firrtl.{Connect, Converter, DefInvalid, ProbeDefine, PropAssign}
 import chisel3.experimental.dataview.{isView, reify, reifyToAggregate}
 import chisel3.properties.{Class, Property}
+import chisel3.reflect.DataMirror
 
 import scala.language.experimental.macros
 import scala.annotation.tailrec
@@ -102,11 +103,15 @@ private[chisel3] object MonoConnect {
     context_mod: BaseModule
   ): Unit = {
     (sink, source) match {
+      // Two probes are connected at the root.
+      case (sink_e, source_e)
+          if (DataMirror.hasProbeTypeModifier(sink_e) && DataMirror.hasProbeTypeModifier(source_e)) =>
+        probeDefine(sourceInfo, sink_e, source_e, context_mod)
 
-      // Disallow monoconnecting Probe types
-      case (_, source_e: Data) if containsProbe(source_e) =>
+      // A probe-y thing cannot be connected to a different probe-y thing.
+      case (_, source_e: Data) if DataMirror.hasProbeTypeModifier(source_e) =>
         throw SourceProbeMonoConnectionException(source_e)
-      case (sink_e: Data, _) if containsProbe(sink_e) =>
+      case (sink_e: Data, _) if DataMirror.hasProbeTypeModifier(sink_e) =>
         throw SinkProbeMonoConnectionException(sink_e)
 
       // Handle legal element cases, note (Bool, Bool) is caught by the first two, as Bool is a UInt
@@ -413,6 +418,19 @@ private[chisel3] object MonoConnect {
       case _ => throwException("Internal Error! Property connection can only occur within RawModule or Class.")
     }
   }
+
+  def probeDefine(
+    sourceInfo: SourceInfo,
+    sink:       Data,
+    source:     Data,
+    context:    BaseModule
+  ): Unit = {
+    checkConnect.checkConnection(sourceInfo, sink, source, context)
+    context match {
+      case rm: RawModule => rm.addCommand(ProbeDefine(sourceInfo, sink.lref, source.ref))
+      case _ => throwException("Internal Error! Probe connection can only occur within RawModule.")
+    }
+  }
 }
 
 /** This object can be applied to check if element-level connection is allowed.
@@ -438,7 +456,7 @@ private[chisel3] object checkConnect {
     checkConnection(sourceInfo, sink, source, context_mod)
   }
 
-  private def checkConnection(
+  def checkConnection(
     sourceInfo:  SourceInfo,
     sink:        Data,
     source:      Data,

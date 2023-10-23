@@ -205,14 +205,20 @@ object DataMirror {
   def getIntermediateAndLeafs(d: Data): Seq[Data] = collectAllMembers(d)
 
   /** Recursively collect just the leaf components of a data component's children
-    * (i.e. anything that isn't a `Record` or a `Vec`, but an `Element`)
+    * (i.e. anything that isn't a `Record` or a `Vec`, but an `Element`).
+    * Probes of aggregates are also considered leaves.
     *
     * @param d Data component to recursively collect leaf components.
     *
     * @return All `Element` components; intermediate fields/indices are not included
     */
   def collectLeafMembers(d: Data): Seq[Data] =
-    DataMirror.collectMembers(d) { case x: Element => x }.toVector
+    DataMirror
+      .collectMembers(d) {
+        case x: Element => x
+        case x if hasProbeTypeModifier(x) => x
+      }
+      .toVector
 
   /** Recursively collect all expanded member components of a data component, including
     * intermediate aggregate nodes
@@ -243,12 +249,12 @@ object DataMirror {
     def iterator = {
       val myItems = collector.lift(d).map { x => (x -> path) }
       val deepChildrenItems = d match {
-        case a: Record =>
+        case a: Record if (!hasProbeTypeModifier(a)) =>
           a._elements.iterator.flatMap {
             case (fieldName, fieldData) =>
               collectMembersAndPaths(fieldData, s"$path.$fieldName")(collector)
           }
-        case a: Vec[_] =>
+        case a: Vec[_] if (!hasProbeTypeModifier(a)) =>
           a.elementsIterator.zipWithIndex.flatMap {
             case (fieldData, fieldIndex) =>
               collectMembersAndPaths(fieldData, s"$path($fieldIndex)")(collector)
@@ -270,7 +276,8 @@ object DataMirror {
     def iterator = {
       val myItems = collector.lift(d)
       val deepChildrenItems = d match {
-        case a: Aggregate => a.elementsIterator.flatMap { x => collectMembers(x)(collector) }
+        case a: Aggregate if (!hasProbeTypeModifier(a)) =>
+          a.elementsIterator.flatMap { x => collectMembers(x)(collector) }
         case other => Nil
       }
       myItems.iterator ++ deepChildrenItems

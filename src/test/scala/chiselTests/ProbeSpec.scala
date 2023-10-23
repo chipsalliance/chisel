@@ -187,27 +187,60 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
     )
   }
 
-  "Improperly excluded :<>= connector" should "fail" in {
+  ":<>= connector" should "work" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(
+      new RawModule {
+        class FooBundle extends Bundle {
+          val bar = Probe(Bool())
+          val baz = UInt(4.W)
+        }
+        val io = IO(new Bundle {
+          val in = Input(new FooBundle)
+          val out = Output(new FooBundle)
+        })
+        io.out :<>= io.in
+      }
+    )
+    processChirrtl(chirrtl) should contain("define io.out.bar = io.in.bar")
+    processChirrtl(chirrtl) should contain("connect io.out.baz, io.in.baz")
+  }
+
+  ":<>= connector with probes of aggregates" should "work" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(
+      new RawModule {
+        class FooBundle extends Bundle {
+          val baz = UInt(4.W)
+        }
+        val io = IO(new Bundle {
+          val in = Input(Probe(new FooBundle))
+          val out = Output(Probe(new FooBundle))
+        })
+        io.out :<>= io.in
+      }
+    )
+    processChirrtl(chirrtl) should contain("define io.out = io.in")
+    processChirrtl(chirrtl) should not contain ("out.baz")
+  }
+
+  "Mismatched probe/non-probe with :<>= connector" should "fail" in {
     val exc = intercept[chisel3.ChiselException] {
       ChiselStage.emitCHIRRTL(
         new RawModule {
-          class FooBundle extends Bundle {
-            val bar = Probe(Bool())
-            val baz = UInt(4.W)
-          }
           val io = IO(new Bundle {
-            val in = Input(new FooBundle)
-            val out = Output(new FooBundle)
+            val in = Input(Vec(2, Bool()))
+            val out = Output(Vec(2, Probe(Bool())))
           })
           io.out :<>= io.in
         },
         Array("--throw-on-first-error")
       )
     }
-    exc.getMessage should include("Cannot use connectables with probe types. Exclude them prior to connection.")
+    exc.getMessage should include(
+      "mismatched probe/non-probe types in ProbeSpec_Anon.io.out[0]: IO[Bool] and ProbeSpec_Anon.io.in[0]: IO[Bool]."
+    )
   }
 
-  ":= connector with probe" should "fail" in {
+  ":= connector with probe/non-probe" should "fail" in {
     val exc = intercept[chisel3.ChiselException] {
       ChiselStage.emitCHIRRTL(
         new RawModule {
@@ -225,7 +258,38 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
     )
   }
 
-  ":= connector with aggregate of probe" should "fail" in {
+  ":= connector with probe" should "work" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(
+      new RawModule {
+        val io = IO(new Bundle {
+          val in = Input(Probe(Bool()))
+          val out = Output(Probe(Bool()))
+        })
+        io.out := io.in
+      }
+    )
+    processChirrtl(chirrtl) should contain("define io.out = io.in")
+  }
+
+  ":= connector with probes but in wrong direction" should "fail" in {
+    val exc = intercept[chisel3.ChiselException] {
+      val chirrtl = ChiselStage.emitCHIRRTL(
+        new RawModule {
+          val io = IO(new Bundle {
+            val in = Input(Probe(Bool()))
+            val out = Output(Probe(Bool()))
+          })
+          io.in := io.out
+        },
+        Array("--throw-on-first-error")
+      )
+    }
+    exc.getMessage should include(
+      "Connection between sink (ProbeSpec_Anon.io.in: IO[Bool]) and source (ProbeSpec_Anon.io.out: IO[Bool]) failed @: io.in in ProbeSpec_Anon cannot be written from module ProbeSpec_Anon"
+    )
+  }
+
+  ":= connector with aggregate of probe/non-probe" should "fail" in {
     val exc = intercept[chisel3.ChiselException] {
       ChiselStage.emitCHIRRTL(
         new RawModule {
@@ -239,7 +303,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
       )
     }
     exc.getMessage should include(
-      "Connection between sink (ProbeSpec_Anon.io.out: IO[Bool[2]]) and source (ProbeSpec_Anon.io.in: IO[Bool[2]]) failed @: Sink io.out in ProbeSpec_Anon of Probed type cannot participate in a mono connection (:=)"
+      "Connection between sink (ProbeSpec_Anon.io.out: IO[Bool[2]]) and source (ProbeSpec_Anon.io.in: IO[Bool[2]]) failed @: (0)Sink io.out[0] in ProbeSpec_Anon of Probed type cannot participate in a mono connection (:=)"
     )
   }
 
@@ -259,6 +323,20 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
     exc.getMessage should be(
       "Connection between left (ProbeSpec_Anon.io.out: IO[Bool[2]]) and source (ProbeSpec_Anon.io.in: IO[Bool[2]]) failed @Left of Probed type cannot participate in a bi connection (<>)"
     )
+  }
+
+  ":= connector with aggregates of probe" should "work" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(
+      new RawModule {
+        val io = IO(new Bundle {
+          val in = Input(Vec(2, Probe(Bool())))
+          val out = Output(Vec(2, Probe(Bool())))
+        })
+        io.out := io.in
+      }
+    )
+    processChirrtl(chirrtl) should contain("define io.out[0] = io.in[0]")
+    processChirrtl(chirrtl) should contain("define io.out[1] = io.in[1]")
   }
 
   "Probe define between non-connectable data types" should "fail" in {
@@ -304,28 +382,22 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
     exc.getMessage should include("Cannot create a probe of an aggregate containing a probe.")
   }
 
-  "Wire() of a probe" should "fail" in {
-    val exc = intercept[chisel3.ChiselException] {
-      ChiselStage.emitCHIRRTL(
-        new RawModule {
-          val w = Wire(Probe(Bool()))
-        },
-        Array("--throw-on-first-error")
-      )
-    }
-    exc.getMessage should include("Cannot make a wire of a Chisel type with a probe modifier.")
+  "Wire() of a probe" should "work" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val w = Wire(Probe(Bool()))
+    })
+    processChirrtl(chirrtl) should contain("wire w : Probe<UInt<1>>")
   }
 
-  "WireInit of a probe" should "fail" in {
-    val exc = intercept[chisel3.ChiselException] {
-      ChiselStage.emitCHIRRTL(
-        new RawModule {
-          val w = WireInit(RWProbe(Bool()), false.B)
-        },
-        Array("--throw-on-first-error")
-      )
+  "WireInit of a probe" should "work" in {
+    class Test extends RawModule {
+      val init = WireInit(Bool(), false.B)
+      val w = WireInit(RWProbe(Bool()), RWProbeValue(init))
     }
-    exc.getMessage should include("Cannot make a wire of a Chisel type with a probe modifier.")
+    val chirrtl = ChiselStage.emitCHIRRTL(new Test)
+    processChirrtl(chirrtl) should contain("wire w : RWProbe<UInt<1>>")
+    processChirrtl(chirrtl) should contain("define w = rwprobe(init)")
+    ChiselStage.emitSystemVerilog(new Test)
   }
 
   "Reg() of a probe" should "fail" in {

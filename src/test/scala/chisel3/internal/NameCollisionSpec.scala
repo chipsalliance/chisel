@@ -64,8 +64,7 @@ class NameCollisionSpec extends ChiselFlatSpec with Utils {
   }
 
   it should "error on nameless ports being assigned default names" in {
-
-    (the[ChiselException] thrownBy extractCause[ChiselException] {
+    ((the[ChiselException] thrownBy extractCause[ChiselException] {
       ChiselStage.emitCHIRRTL(
         new Module {
           // Write to an output port that isn't assigned to a val, and so doesn't get prefixed
@@ -73,6 +72,6 @@ class NameCollisionSpec extends ChiselFlatSpec with Utils {
         },
         Array("--throw-on-first-error")
       )
-    }).getMessage should include("try making it a public field of the Module")
+    }).getMessage should include).regex("Assign .+ to a val, or explicitly call suggestName to seed a unique name")
   }
 }

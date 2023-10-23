@@ -236,7 +236,7 @@ trait HasJextractGeneratedSources
     }
   }
 
-  override def javacOptions = T(super.javacOptions() ++ Seq("--enable-preview", "--release", "20"))
+  override def javacOptions = T(super.javacOptions() ++ Seq("--enable-preview", "--release", "21"))
 }
 
 trait CIRCTPanamaBinderModule
@@ -244,144 +244,15 @@ trait CIRCTPanamaBinderModule
     with HasJextractGeneratedSources
     with HasChisel {
 
-  def includeFunctions = T(Seq(
-    //
-    // MLIR
-    "mlirContextCreate",
-    "mlirContextDestroy",
-    "mlirGetDialectHandle__firrtl__",
-    "mlirGetDialectHandle__chirrtl__",
-    "mlirDialectHandleLoadDialect",
-    // "mlirStringRefCreate", // inline function cannot be generated
-    "mlirStringRefCreateFromCString",
-    "mlirLocationGetAttribute",
-    "mlirLocationUnknownGet",
-    "mlirLocationFileLineColGet",
-    "mlirModuleCreateEmpty",
-    "mlirModuleDestroy",
-    "mlirModuleGetBody",
-    "mlirModuleGetOperation",
-    "mlirOperationStateGet",
-    "mlirNamedAttributeGet",
-    "mlirIntegerAttrGet",
-    "mlirFloatAttrDoubleGet",
-    "mlirStringAttrGet",
-    "mlirArrayAttrGet",
-    "mlirTypeAttrGet",
-    "mlirArrayAttrGet",
-    "mlirUnitAttrGet",
-    ////////////////////
-    // Integer types
-    ////////////////////
-    "mlirIntegerTypeGet",
-    "mlirIntegerTypeUnsignedGet",
-    "mlirIntegerTypeSignedGet",
-    ////////////////////
-    "mlirF64TypeGet",
-    "mlirNoneTypeGet",
-    ////////////////////
-    "mlirIdentifierGet",
-    "mlirFlatSymbolRefAttrGet",
-    // "mlirAttributeParseGet", // We should not "parse" anything
-    "mlirOperationStateAddOperands",
-    "mlirOperationStateAddResults",
-    "mlirOperationStateAddAttributes",
-    "mlirOperationGetResult",
-    "mlirRegionCreate",
-    "mlirOperationCreate",
-    "mlirBlockCreate",
-    "mlirBlockGetArgument",
-    "mlirBlockAppendOwnedOperation",
-    "mlirBlockInsertOwnedOperationAfter",
-    "mlirBlockInsertOwnedOperationBefore",
-    "mlirRegionAppendOwnedBlock",
-    "mlirOperationStateAddOwnedRegions",
-    "mlirOperationDump",
-    "mlirExportFIRRTL",
-    //
-    // FIRRTL Type
-    "firrtlTypeGetUInt",
-    "firrtlTypeGetSInt",
-    "firrtlTypeGetClock",
-    "firrtlTypeGetReset",
-    "firrtlTypeGetAsyncReset",
-    "firrtlTypeGetAnalog",
-    "firrtlTypeGetVector",
-    "firrtlTypeGetBundle",
-    //
-    // FIRRTL Attribute
-    "firrtlAttrGetPortDirs",
-    "firrtlAttrGetParamDecl",
-    "firrtlAttrGetNameKind",
-    "firrtlAttrGetRUW",
-    "firrtlAttrGetMemoryInit",
-    "firrtlAttrGetMemDir",
-    //
-    // CHIRRTL Attribute
-    "chirrtlTypeGetCMemory",
-    "chirrtlTypeGetCMemoryPort"
-  ))
-
-  def includeConstants = T(Seq(
-    // enum FIRRTLPortDirection
-    "FIRRTL_PORT_DIR_INPUT",
-    "FIRRTL_PORT_DIR_OUTPUT",
-    // enum FIRRTLNameKind
-    "FIRRTL_NAME_KIND_DROPPABLE_NAME",
-    "FIRRTL_NAME_KIND_INTERESTING_NAME",
-    // enum FIRRTLRUW
-    "FIRRTL_RUW_UNDEFINED",
-    "FIRRTL_RUW_OLD",
-    "FIRRTL_RUW_NEW",
-    // enum FIRRTLMemDir
-    "FIRRTL_MEM_DIR_INFER",
-    "FIRRTL_MEM_DIR_READ",
-    "FIRRTL_MEM_DIR_WRITE",
-    "FIRRTL_MEM_DIR_READ_WRITE"
-  ))
-
-  def includeStructs = T(Seq(
-    "MlirContext",
-    "MlirDialectHandle",
-    "MlirStringRef",
-    "MlirType",
-    "MlirValue",
-    "MlirLocation",
-    "MlirAttribute",
-    "MlirIdentifier",
-    "MlirModule",
-    "MlirBlock",
-    "MlirRegion",
-    "MlirOperation",
-    "MlirOperationState",
-    "MlirNamedAttribute",
-    "FIRRTLBundleField"
-  ))
-
-  def includeTypedefs = T(Seq(
-    "MlirStringCallback"
-  ))
-
-  def includeUnions = T(Seq.empty[String])
-
-  def includeVars = T(Seq.empty[String])
-
-  def linkLibraries = T(Seq(
-    "MLIRCAPIIR",
-    "CIRCTCAPIFIRRTL",
-    "CIRCTCAPICHIRRTL",
-    "CIRCTCAPIHW",
-    "CIRCTCAPIExportFIRRTL",
-    "CIRCTCAPIExportVerilog",
-    "CIRCTFIRRTL",
-    "CIRCTHW",
-    "CIRCTExportFIRRTL",
-    "CIRCTExportVerilog",
-    "MLIRCAPIRegisterEverything"
-  ))
+  def includeConstants = T.input(os.read.lines(millSourcePath / "includeConstants.txt").filter(s => s.nonEmpty && !s.startsWith("#")))
+  def includeFunctions = T.input(os.read.lines(millSourcePath / "includeFunctions.txt").filter(s => s.nonEmpty && !s.startsWith("#")))
+  def includeStructs = T.input(os.read.lines(millSourcePath / "includeStructs.txt").filter(s => s.nonEmpty && !s.startsWith("#")))
+  def includeTypedefs = T.input(os.read.lines(millSourcePath / "includeTypedefs.txt").filter(s => s.nonEmpty && !s.startsWith("#")))
+  def includeUnions = T.input(os.read.lines(millSourcePath / "includeUnions.txt").filter(s => s.nonEmpty && !s.startsWith("#")))
+  def includeVars = T.input(os.read.lines(millSourcePath / "includeVars.txt").filter(s => s.nonEmpty && !s.startsWith("#")))
+  def linkLibraries = T.input(os.read.lines(millSourcePath / "linkLibraries.txt").filter(s => s.nonEmpty && !s.startsWith("#")))
 
   def target: T[String] = T("org.llvm.circt")
-
   def headerClassName: T[String] = T("CAPI")
 }
 

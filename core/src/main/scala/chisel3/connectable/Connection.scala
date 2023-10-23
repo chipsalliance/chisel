@@ -184,12 +184,13 @@ private[chisel3] object Connection {
         // Recursive Case 4: non-empty orientations
         case (conAlign: NonEmptyAlignment, proAlign: NonEmptyAlignment) =>
           (conAlign.member, proAlign.member) match {
-            case (consumer: Aggregate, producer: Aggregate) =>
+            case (consumer: Aggregate, producer: Aggregate)
+                if !hasProbeTypeModifier(consumer) && !hasProbeTypeModifier(producer) =>
               matchingZipOfChildren(Some(conAlign), Some(proAlign)).foreach {
                 case (ceo, peo) =>
                   doConnection(ceo.getOrElse(conAlign.empty), peo.getOrElse(proAlign.empty))
               }
-            case (consumer: Aggregate, DontCare) =>
+            case (consumer: Aggregate, DontCare) if !hasProbeTypeModifier(consumer) =>
               consumer.getElements.foreach {
                 case f =>
                   doConnection(
@@ -197,7 +198,7 @@ private[chisel3] object Connection {
                     deriveChildAlignment(f, conAlign).swap(DontCare)
                   )
               }
-            case (DontCare, producer: Aggregate) =>
+            case (DontCare, producer: Aggregate) if !hasProbeTypeModifier(producer) =>
               producer.getElements.foreach {
                 case f =>
                   doConnection(
@@ -207,8 +208,8 @@ private[chisel3] object Connection {
               }
             // Check that neither consumer nor producer contains probes
             case (consumer: Data, producer: Data)
-                if (hasProbeTypeModifier(consumer) || hasProbeTypeModifier(producer)) =>
-              errors = "Cannot use connectables with probe types. Exclude them prior to connection." +: errors
+                if (hasProbeTypeModifier(consumer) ^ hasProbeTypeModifier(producer)) =>
+              errors = s"mismatched probe/non-probe types in ${consumer} and ${producer}." +: errors
             case (consumer, producer) =>
               val alignment = (
                 conAlign.alignsWith(proAlign),
