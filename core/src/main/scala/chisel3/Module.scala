@@ -394,17 +394,39 @@ package experimental {
     private[chisel3] def isClosed = _closed
 
     /** Mutable state that indicates if IO is allowed to be created for this module.
+      *  - List.empty: IO creation is allowed
+      *  - List.nonEmpty: IO creation is not allowed at contained location(s)
       * This can be used for advanced Chisel library APIs that want to limit
       * what IO is allowed to be created for a module.
       */
-    private var _isIOCreationAllowed = true
+    private[chisel3] var _whereIOCreationIsDisallowed: List[SourceInfo] = Nil
 
     /** If true, then this module is allowed to have user-created IO. */
-    private[chisel3] def isIOCreationAllowed = _isIOCreationAllowed
+    private[chisel3] def isIOCreationAllowed = _whereIOCreationIsDisallowed.isEmpty
 
     /** Disallow any more IO creation for this module. */
-    private[chisel3] def disallowIOCreation(): Unit = {
-      _isIOCreationAllowed = false
+    private def disallowIOCreation()(implicit si: SourceInfo): Unit = {
+      _whereIOCreationIsDisallowed = si +: _whereIOCreationIsDisallowed
+    }
+
+    /** Remove one layer of disallowed IO creation
+      * Note that IO creation is only legal if _whereIOCreationIsDisallowed is empty
+      */
+    private def allowIOCreation(): Unit = {
+      if (_whereIOCreationIsDisallowed.nonEmpty) {
+        _whereIOCreationIsDisallowed = _whereIOCreationIsDisallowed.tail
+      }
+    }
+
+    /** Disallow any more IO creation for this module. */
+    def endIOCreation()(implicit si: SourceInfo): Unit = disallowIOCreation()
+
+    /** Disallow any more IO creation for this module. */
+    private[chisel3] def disallowIO[T](thunk: => T)(implicit si: SourceInfo): T = {
+      disallowIOCreation()
+      val ret = thunk
+      allowIOCreation()
+      ret
     }
 
     private[chisel3] var toDefinitionCalled:  Option[SourceInfo] = None
