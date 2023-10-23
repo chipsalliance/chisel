@@ -14,7 +14,7 @@ sealed trait FixedIOBaseModule[A <: Data] extends BaseModule {
   protected def ioGenerator: A
 
   final val io = FlatIO(ioGenerator)
-  disallowIOCreation()
+  endIOCreation()
 
 }
 

@@ -405,15 +405,20 @@ package experimental {
     private[chisel3] def isIOCreationAllowed = _whereIOCreationIsDisallowed.isEmpty
 
     /** Disallow any more IO creation for this module. */
-    def disallowIOCreation()(implicit si: SourceInfo): Unit = {
+    private def disallowIOCreation()(implicit si: SourceInfo): Unit = {
       _whereIOCreationIsDisallowed = si +: _whereIOCreationIsDisallowed
     }
+
+    /** Remove one layer of disallowed IO creation
+      * Note that IO creation is only legal if _whereIOCreationIsDisallowed is empty
+      */
     private def allowIOCreation(): Unit = {
       if (_whereIOCreationIsDisallowed.nonEmpty) {
         _whereIOCreationIsDisallowed = _whereIOCreationIsDisallowed.tail
       }
     }
 
+    /** Disallow any more IO creation for this module. */
     def endIOCreation()(implicit si: SourceInfo): Unit = disallowIOCreation()
 
     /** Disallow any more IO creation for this module. */
