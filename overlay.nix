@@ -1,4 +1,4 @@
-final: prev:
+circtSrc: final: prev:
 {
   mill = (prev.mill.overrideAttrs (oldAttrs: rec {
     version = "0.11.5";
@@ -26,7 +26,7 @@ final: prev:
 
   espresso = final.callPackage ./nix/espresso.nix { };
   circt = prev.circt.overrideAttrs (old: rec {
-    version = "1.57.0";
+    version = circtSrc.shortRev;
     cmakeFlags = [
       "-DBUILD_SHARED_LIBS=ON"
       "-DLLVM_ENABLE_BINDINGS=OFF"
@@ -38,16 +38,10 @@ final: prev:
       "-DLLVM_EXTERNAL_CIRCT_SOURCE_DIR=.."
       "-DCIRCT_LLHD_SIM_ENABLED=OFF"
     ];
-    src = final.fetchFromGitHub {
-      owner = "llvm";
-      repo = "circt";
-      rev = "firtool-${version}";
-      hash = "sha256-2OPThXaj1lhT1er12mSKzl41FSrKmTLN2xfh9YdbnWk=";
-      fetchSubmodules = true;
-    };
+    src = circtSrc;
     preConfigure = ''
       find ./test -name '*.mlir' -exec sed -i 's|/usr/bin/env|${final.coreutils}/bin/env|g' {} \;
-      substituteInPlace cmake/modules/GenVersionFile.cmake --replace "unknown git version" "${version}"
+      substituteInPlace cmake/modules/GenVersionFile.cmake --replace "unknown git version" "git version ${version}"
     '';
     installPhase = ''
       runHook preInstall
