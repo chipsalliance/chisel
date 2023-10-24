@@ -57,7 +57,7 @@ private[chisel3] class Namespace(keywords: Set[String], separator: Char = '_') {
       i -= 1
     }
     // Will get i == 0 for all digits or _\d+ with empty prefix, those have no prefix so returning 0 is correct
-    if (i == n.size) 0 // no digits
+    if (i >= (n.size - 1)) 0 // no digits
     else if (n(i) != separator) 0 // no _
     else i
   }
