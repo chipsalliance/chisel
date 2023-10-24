@@ -22,6 +22,7 @@
             mill
             circt
             jextract
+            llvm-lit
           ];
         in
         {
