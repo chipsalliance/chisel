@@ -51,4 +51,5 @@ circtSrc: final: prev:
     '';
   });
 
+  llvm-lit = final.callPackage ./nix/llvm-lit.nix { };
 }
