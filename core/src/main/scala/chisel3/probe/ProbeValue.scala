@@ -7,7 +7,7 @@ import chisel3.internal.{Builder, OpBinding}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.{ProbeDefine, ProbeExpr, RWProbeExpr}
 import chisel3.experimental.{requireIsHardware, SourceInfo}
-import chisel3.reflect.DataMirror.collectLeafMembers
+import chisel3.reflect.DataMirror.collectMembersOverMatches
 
 import scala.language.experimental.macros
 import chisel3.Aggregate
@@ -23,7 +23,8 @@ private[chisel3] sealed trait ProbeValueBase {
       case agg: Aggregate =>
         // intermediate probe to hook up to aggregate elements
         val intermediate = Wire(Output(if (writable) RWProbe(agg.cloneTypeFull) else Probe(agg.cloneTypeFull)))
-        collectLeafMembers(intermediate).zip(collectLeafMembers(agg)).foreach {
+        collectMembersOverMatches(intermediate.asInstanceOf[Data], source.asInstanceOf[Data]) {
+          case (i: Aggregate, s: Aggregate) => // do nothing; only operate on leaves
           case (i, s) =>
             if (writable) {
               pushCommand(ProbeDefine(sourceInfo, i.ref, RWProbeExpr(s.ref)))

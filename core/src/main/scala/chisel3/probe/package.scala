@@ -8,7 +8,13 @@ import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.Data.ProbeInfo
 import chisel3.experimental.SourceInfo
-import chisel3.reflect.DataMirror.{checkTypeEquivalence, collectAllMembers, collectLeafMembers, hasProbeTypeModifier}
+import chisel3.reflect.DataMirror.{
+  checkTypeEquivalence,
+  collectAllMembers,
+  collectLeafMembers,
+  collectMembersOverMatches,
+  hasProbeTypeModifier
+}
 
 import scala.language.experimental.macros
 
@@ -35,7 +41,8 @@ package object probe extends SourceInfoDoc {
     if (!checkTypeEquivalence(sink, probeExpr)) {
       Builder.error("Cannot define a probe on a non-equivalent type.")
     }
-    collectLeafMembers(sink).zip(collectLeafMembers(probeExpr)).foreach {
+    collectMembersOverMatches(sink.asInstanceOf[Data], probeExpr.asInstanceOf[Data]) {
+      case (s: Aggregate, pe: Aggregate) => // do nothing; only operate on leaves
       case (s, pe) =>
         requireHasProbeTypeModifier(s, "Expected sink to be a probe.")
         requireHasProbeTypeModifier(pe, "Expected source to be a probe expression.")
@@ -63,9 +70,10 @@ package object probe extends SourceInfoDoc {
         // intermediate wire to facilitate aggregate read
         val intermediate = Wire(Output(agg.cloneTypeFull))
         clearProbeInfo(intermediate)
-        val sourceElems = collectLeafMembers(agg)
-        val intermediateElems = collectLeafMembers(intermediate)
-        sourceElems.zip(intermediateElems).foreach { case (e, t) => t :#= do_read(e) }
+        collectMembersOverMatches(agg.asInstanceOf[Data], intermediate.asInstanceOf[Data]) {
+          case (aggElem: Aggregate, intermedElem: Aggregate) => // do nothing; only operate on leaves
+          case (aggElem, intermedElem) => intermedElem :#= do_read(aggElem)
+        }
         intermediate.suggestName("probe_read")
         intermediate.ref
       case s =>
@@ -105,7 +113,8 @@ package object probe extends SourceInfoDoc {
 
   /** Override existing driver of a writable probe on initialization. */
   def forceInitial[T <: Data](probe: T, value: T)(implicit sourceInfo: SourceInfo): Unit = {
-    collectLeafMembers(probe).zip(collectLeafMembers(value)).foreach {
+    collectMembersOverMatches(probe.asInstanceOf[Data], value.asInstanceOf[Data]) {
+      case (p: Aggregate, v: Aggregate) => // do nothing; only operate on leaves
       case (p, v) =>
         val padValue = padDataToProbeWidth(v, p)
         if (!checkTypeEquivalence(p, padValue)) {
@@ -126,7 +135,8 @@ package object probe extends SourceInfoDoc {
 
   /** Override existing driver of a writable probe. */
   def force[T <: Data](clock: Clock, cond: Bool, probe: T, value: T)(implicit sourceInfo: SourceInfo): Unit = {
-    collectLeafMembers(probe).zip(collectLeafMembers(value)).foreach {
+    collectMembersOverMatches(probe.asInstanceOf[Data], value.asInstanceOf[Data]) {
+      case (p: Aggregate, v: Aggregate) => // do nothing; only operate on leaves
       case (p, v) =>
         val padValue = padDataToProbeWidth(v, p)
         if (!checkTypeEquivalence(p, padValue)) {

@@ -464,7 +464,6 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       val foo = Module(new Foo())
       val fakeView = Module(new FakeView(foo))
     }
-
     val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top(), Array("--full-stacktrace"))
     matchesAndOmits(chirrtl)(
       "module Bar :",
