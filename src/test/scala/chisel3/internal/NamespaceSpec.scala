@@ -78,4 +78,10 @@ class NamespaceSpec extends AnyFlatSpec {
     name("x") should be("x_2")
     name("x_0") should be("x_0_1")
   }
+
+  they should "support resolving collisions between <name> and <name>_" in {
+    val namespace = Namespace.empty
+    namespace.name("mouth") should be("mouth")
+    namespace.name("mouth_") should be("mouth_")
+  }
 }
