@@ -15,7 +15,7 @@ sealed abstract class Path {
   private[chisel3] def convert(): PathPropertyLiteral = {
     val target = toTarget()
     val targetType = target match {
-      case _: ModuleTarget    => "OMModuleTarget"
+      case _: ModuleTarget    => "OMInstanceTarget"
       case _: InstanceTarget  => "OMInstanceTarget"
       case _: ReferenceTarget => "OMReferenceTarget"
     }

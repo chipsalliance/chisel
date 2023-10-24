@@ -168,6 +168,7 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
       val propOutA = IO(Output(Property[Path]()))
       val propOutB = IO(Output(Property[Path]()))
       val propOutC = IO(Output(Property[Path]()))
+      val propOutD = IO(Output(Property[Path]()))
       override def desiredName = "Top"
       val inst = Module(new RawModule {
         val data = WireInit(false.B)
@@ -177,12 +178,14 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
       propOutA := Property(inst)
       propOutB := Property(inst.data)
       propOutC := Property(inst.mem)
+      propOutD := Property(this)
     })
 
     matchesAndOmits(chirrtl)(
       """propassign propOutA, path("OMInstanceTarget:~Top|Top/inst:Foo")""",
       """propassign propOutB, path("OMReferenceTarget:~Top|Top/inst:Foo>data")""",
-      """propassign propOutC, path("OMReferenceTarget:~Top|Top/inst:Foo>mem")"""
+      """propassign propOutC, path("OMReferenceTarget:~Top|Top/inst:Foo>mem")""",
+      """propassign propOutD, path("OMInstanceTarget:~Top|Top")"""
     )()
   }
 
