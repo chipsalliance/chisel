@@ -83,5 +83,7 @@ class NamespaceSpec extends AnyFlatSpec {
     val namespace = Namespace.empty
     namespace.name("mouth") should be("mouth")
     namespace.name("mouth_") should be("mouth_")
+    namespace.name("mouth") should be("mouth_1")
+    namespace.name("mouth_") should be("mouth__1")
   }
 }
