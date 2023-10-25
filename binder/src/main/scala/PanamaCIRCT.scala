@@ -391,7 +391,7 @@ class PanamaCIRCT {
     inputFilename: String
   ) =
     MlirLogicalResult(
-      CAPI.firtoolPopulateCHIRRTLToLowFIRRTL(arena, pm.get, options.get, module.get, newString(inputFilename).get)
+      CAPI.firtoolPopulateCHIRRTLToLowFIRRTL(arena, pm.get, options.get, newString(inputFilename).get)
     )
 
   def firtoolPopulateLowFIRRTLToHW(pm: MlirPassManager, options: FirtoolOptions) = MlirLogicalResult(
