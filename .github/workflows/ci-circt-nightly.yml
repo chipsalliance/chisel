@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Update Staging Branch
-        uses: circt/update-staging-branch@v1.0.0
+        uses: circt/update-staging-branch@test
         with:
           user: chiselbot
           email: chiselbot@users.noreply.github.com
