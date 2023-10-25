@@ -58,12 +58,11 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
 
         releaseInitial(u1.io.out)
 
-        force(clock, io.x, u2.io.out, u1.io.out)
-        release(clock, io.y, u2.io.out)
+        when(io.x) { force(u2.io.out, u1.io.out) }
+        when(io.y) { release(u2.io.out) }
       },
       Array("--full-stacktrace")
     )
-
     (processChirrtl(chirrtl) should contain).allOf(
       "output io : { flip in : RWProbe<UInt<1>>, out : RWProbe<UInt<1>>}",
       "define u1.io.in = rwprobe(io.x)",
@@ -71,8 +70,8 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
       "connect io.y, read(u2.io.out)",
       "force_initial(u1.io.out, UInt<1>(0h0))",
       "release_initial(u1.io.out)",
-      "force(clock, io.x, u2.io.out, u1.io.out)",
-      "release(clock, io.y, u2.io.out)"
+      "force(clock, _T, u2.io.out, u1.io.out)",
+      "release(clock, _T_1, u2.io.out)"
     )
   }
 
@@ -468,7 +467,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
         new Module {
           val in = IO(Input(Bool()))
           val out = IO(Output(Probe(Bool())))
-          force(clock, in, out, in)
+          force(out, in)
         },
         Array("--throw-on-first-error")
       )
@@ -504,7 +503,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
         val in = IO(Input(UInt(4.W)))
         val p = IO(Output(RWProbe(UInt(16.W))))
         forceInitial(p, 123.U)
-        force(clock, reset.asBool, p, in)
+        force(p, in)
       },
       Array("--full-stacktrace")
     )
@@ -535,7 +534,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
         new Module {
           val in = IO(Input(UInt()))
           val p = IO(Output(RWProbe(UInt(16.W))))
-          force(clock, reset.asBool, p, in)
+          force(p, in)
         },
         Array("--throw-on-first-error")
       )
@@ -549,7 +548,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
         new Module {
           val in = IO(Input(UInt(16.W)))
           val p = IO(Output(RWProbe(UInt())))
-          force(clock, reset.asBool, p, in)
+          force(p, in)
         },
         Array("--throw-on-first-error")
       )
@@ -597,23 +596,25 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
       forceInitial(dut.b.refs.reg, cycle)
       // Additionally, 'initial force ...' doesn't seem to work here (?).
       // So do this on cycle zero explicitly for compatibility.
-      force(clock, cycle === 0.U, dut.b.refs.reg, cycle)
+      when(cycle === 0.U) { force(dut.b.refs.reg, cycle) }
 
       when(0.U < cycle && cycle <= 10.U) {
         // Force cycle and check we observe it on output a cycle later.
         chisel3.assert(dut.out === cycle - 1.U)
-        force(clock, true.B, dut.b.refs.reg, cycle)
+        force(dut.b.refs.reg, cycle)
       }.elsewhen(cycle === 11.U) {
         // Check last value, release.
         chisel3.assert(dut.out === 10.U)
-        release(clock, true.B, dut.b.refs.reg)
+        release(dut.b.refs.reg)
       }.elsewhen(cycle === 12.U) {
         // Check original value is restored.
         chisel3.assert(dut.out === 42.U)
       }
       // Force the register and the output port.
-      force(clock, cycle >= 13.U, dut.b.refs.reg, cycle)
-      force(clock, cycle >= 13.U, dut.b.refs.out, 123.U)
+      when(cycle >= 13.U) {
+        force(dut.b.refs.reg, cycle)
+        force(dut.b.refs.out, 123.U)
+      }
       when(cycle > 13.U) {
         // Register reads the value forced to it.
         chisel3.assert(read(dut.b.refs.reg) === cycle)

@@ -101,14 +101,18 @@ package object probe extends SourceInfoDoc {
   }
 
   /** Override existing driver of a writable probe. */
-  def force(clock: Clock, cond: Bool, probe: Data, value: Data)(implicit sourceInfo: SourceInfo): Unit = {
+  def force(probe: Data, value: Data)(implicit sourceInfo: SourceInfo): Unit = {
     requireHasWritableProbeTypeModifier(probe, "Cannot force a non-writable Probe.")
+    val clock = Builder.forcedClock
+    val cond = Module.disableOption.map(!_.value).getOrElse(true.B)
     pushCommand(ProbeForce(sourceInfo, clock.ref, cond.ref, probe.ref, padDataToProbeWidth(value, probe).ref))
   }
 
   /** Release driver on a probe. */
-  def release(clock: Clock, cond: Bool, probe: Data)(implicit sourceInfo: SourceInfo): Unit = {
+  def release(probe: Data)(implicit sourceInfo: SourceInfo): Unit = {
     requireHasWritableProbeTypeModifier(probe, "Cannot release a non-writable Probe.")
+    val clock = Builder.forcedClock
+    val cond = Module.disableOption.map(!_.value).getOrElse(true.B)
     pushCommand(ProbeRelease(sourceInfo, clock.ref, cond.ref, probe.ref))
   }
 
