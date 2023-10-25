@@ -11,7 +11,7 @@ import chisel3.stage._
 import chisel3.stage.CircuitSerializationAnnotation._
 import chisel3.ChiselException
 import chisel3.experimental.dedupGroup
-import chisel3.internal.firrtl.{DefBlackBox, DefIntrinsicModule}
+import chisel3.internal.firrtl.{DefBlackBox, DefClass, DefIntrinsicModule}
 
 class AddDedupGroupAnnotations extends Phase {
   override def prerequisites = Seq.empty
@@ -33,6 +33,7 @@ class AddDedupGroupAnnotations extends Phase {
     val annos = circuit.components.filter {
       case x @ DefBlackBox(id, _, _, _, _)   => !id._isImportedDefinition
       case DefIntrinsicModule(_, _, _, _, _) => false
+      case DefClass(_, _, _, _)              => false
       case x                                 => true
     }.collect {
       case x if !(skipAnnos.contains(x.id.toTarget)) => DedupGroupAnnotation(x.id.toTarget, x.id.desiredName)
