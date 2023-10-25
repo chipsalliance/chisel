@@ -10,7 +10,7 @@ import firrtl.ir.{PathPropertyLiteral}
 /** Represent a Path type for referencing a hardware instance or member in a Property[Path]
   */
 sealed abstract class Path {
-  private[chisel3] def toTarget(): IsMember
+  private[chisel3] def toTarget():     IsMember
   private[chisel3] def isMemberTarget: Boolean
 
   private[chisel3] def convert(): PathPropertyLiteral = {
@@ -39,7 +39,7 @@ object Path {
   def apply(module: BaseModule): Path = apply(module, false)
   def apply(module: BaseModule, _isMemberTarget: Boolean): Path = {
     new Path {
-      def toTarget(): IsMember = module.toAbsoluteTarget
+      def toTarget():     IsMember = module.toAbsoluteTarget
       def isMemberTarget: Boolean = _isMemberTarget
     }
   }
@@ -49,7 +49,7 @@ object Path {
   def apply(data: Data): Path = apply(data, false)
   def apply(data: Data, _isMemberTarget: Boolean): Path = {
     new Path {
-      def toTarget(): IsMember = data.toAbsoluteTarget
+      def toTarget():     IsMember = data.toAbsoluteTarget
       def isMemberTarget: Boolean = _isMemberTarget
     }
   }
@@ -59,7 +59,7 @@ object Path {
   def apply(mem: MemBase[_]): Path = apply(mem, false)
   def apply(mem: MemBase[_], _isMemberTarget: Boolean): Path = {
     new Path {
-      def toTarget(): IsMember = mem.toAbsoluteTarget
+      def toTarget():     IsMember = mem.toAbsoluteTarget
       def isMemberTarget: Boolean = _isMemberTarget
     }
   }
@@ -69,7 +69,7 @@ object Path {
   def apply(target: IsMember): Path = apply(target, false)
   def apply(target: IsMember, _isMemberTarget: Boolean): Path = {
     new Path {
-      def toTarget(): IsMember = target
+      def toTarget():     IsMember = target
       def isMemberTarget: Boolean = _isMemberTarget
     }
   }
