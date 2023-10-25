@@ -5,6 +5,8 @@
   <img align="right" src="https://raw.githubusercontent.com/chipsalliance/.github/main/profile/images/chips_alliance.svg?sanitize=true" height="60">
 </a>
 
+foo
+
 The **Constructing Hardware in a Scala Embedded Language** ([**Chisel**](https://www.chisel-lang.org)) is an open-source hardware description language (HDL) used to describe digital electronics and circuits at the register-transfer level that facilitates **advanced circuit generation and design reuse for both ASIC and FPGA digital logic designs**.
 
 Chisel adds hardware construction primitives to the [Scala](https://www.scala-lang.org) programming language, providing designers with the power of a modern programming language to write complex, parameterizable circuit generators that produce synthesizable Verilog.
