@@ -5,6 +5,8 @@ package chiselTests
 import chisel3._
 import chisel3.util._
 import chisel3.experimental.{annotate, dedupGroup, ChiselAnnotation}
+import chisel3.experimental.hierarchy.Definition
+import chisel3.properties.Class
 import firrtl.transforms.DedupGroupAnnotation
 import chisel3.experimental.hierarchy._
 import chisel3.util.circt.PlusArgsValue
@@ -89,6 +91,10 @@ class ModuleWithIntrinsic extends Module {
   val plusarg = PlusArgsValue(Bool(), "plusarg=%d")
 }
 
+class ModuleWithClass extends Module {
+  val cls = Definition(new Class)
+}
+
 class DedupSpec extends ChiselFlatSpec {
   private val ModuleRegex = """\s*module\s+(\w+)\b.*""".r
   def countModules(verilog: String): Int =
@@ -141,5 +147,13 @@ class DedupSpec extends ChiselFlatSpec {
       case DedupGroupAnnotation(target, _) => target.module
     }
     dedupGroupAnnos should contain theSameElementsAs Seq("ModuleWithIntrinsic")
+  }
+
+  it should "not add DedupGroupAnnotation to classes" in {
+    val (_, annos) = getFirrtlAndAnnos(new ModuleWithClass)
+    val dedupGroupAnnos = annos.collect {
+      case DedupGroupAnnotation(target, _) => target.module
+    }
+    dedupGroupAnnos should contain theSameElementsAs Seq("ModuleWithClass")
   }
 }
