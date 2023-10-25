@@ -9,7 +9,7 @@ import chisel3.internal.firrtl.DefInvalid
 import chisel3.experimental.{prefix, SourceInfo, UnlocatableSourceInfo}
 import chisel3.experimental.{attach, Analog}
 import chisel3.reflect.DataMirror.hasProbeTypeModifier
-import Alignment.matchingZipOfChildren
+import ConnectableAlignment.matchingZipOfChildren
 
 import scala.collection.mutable
 
@@ -137,52 +137,52 @@ private[chisel3] object Connection {
   ): Unit = {
 
     var errors: List[String] = Nil
-    import Alignment.deriveChildAlignment
+    import ConnectableAlignment.deriveChildAlignment
 
     def doConnection(
-      conAlign: Alignment,
-      proAlign: Alignment
+      conAlign: ConnectableAlignment,
+      proAlign: ConnectableAlignment
     )(
       implicit sourceInfo: SourceInfo
     ): Unit = {
-      (conAlign, proAlign) match {
+      (conAlign.align, proAlign.align) match {
         // Base Case 0: should probably never happen
         case (_: EmptyAlignment, _: EmptyAlignment) => ()
 
         // Base Case 1: early exit if dangling/unconnected is excluded
-        case (conAlign: Alignment, proAlign: Alignment) if conAlign.isExcluded && proAlign.isExcluded => ()
+        case (_: Alignment, _: Alignment) if conAlign.isExcluded && proAlign.isExcluded => ()
 
         // Base Case 2(A,B): early exit if dangling/unconnected is wavied or excluded
-        case (conAlign: NonEmptyAlignment, _: EmptyAlignment) if conAlign.isWaived || conAlign.isExcluded => ()
-        case (_: EmptyAlignment, proAlign: NonEmptyAlignment) if proAlign.isWaived || proAlign.isExcluded => ()
+        case (_: NonEmptyAlignment, _: EmptyAlignment) if conAlign.isWaived || conAlign.isExcluded => ()
+        case (_: EmptyAlignment, _: NonEmptyAlignment) if proAlign.isWaived || proAlign.isExcluded => ()
 
         // Base Case 3: early exit if dangling/unconnected is wavied
-        case (conAlign: NonEmptyAlignment, proAlign: NonEmptyAlignment) if conAlign.isExcluded || proAlign.isExcluded =>
+        case (_: NonEmptyAlignment, _: NonEmptyAlignment) if conAlign.isExcluded || proAlign.isExcluded =>
           val (excluded, included) =
             if (conAlign.isExcluded) (conAlign, proAlign)
             else (proAlign, conAlign)
           errors = (s"excluded field ${excluded.member} has matching non-excluded field ${included.member}") +: errors
 
         // Base Case 4: early exit if operator requires matching orientations, but they don't align
-        case (conAlign: NonEmptyAlignment, proAlign: NonEmptyAlignment)
+        case (_: NonEmptyAlignment, _: NonEmptyAlignment)
             if (!conAlign.alignsWith(proAlign)) && (connectionOp.noWrongOrientations) =>
           errors = (s"inversely oriented fields ${conAlign.member} and ${proAlign.member}") +: errors
 
         // Base Case 5: early exit if operator requires matching widths, but they aren't the same
-        case (conAlign: NonEmptyAlignment, proAlign: NonEmptyAlignment)
+        case (_: NonEmptyAlignment, _: NonEmptyAlignment)
             if (conAlign.truncationRequired(proAlign, connectionOp).nonEmpty) && (connectionOp.noMismatchedWidths) =>
           val mustBeTruncated = conAlign.truncationRequired(proAlign, connectionOp).get
           errors =
             (s"mismatched widths of ${conAlign.member} and ${proAlign.member} might require truncation of $mustBeTruncated") +: errors
 
         // Base Case 6: operator error on dangling/unconnected fields
-        case (consumer: NonEmptyAlignment, _: EmptyAlignment) =>
-          errors = (s"${consumer.errorWord(connectionOp)} consumer field ${conAlign.member}") +: errors
-        case (_: EmptyAlignment, producer: NonEmptyAlignment) =>
-          errors = (s"${producer.errorWord(connectionOp)} producer field ${proAlign.member}") +: errors
+        case (_: NonEmptyAlignment, _: EmptyAlignment) =>
+          errors = (s"${conAlign.errorWord(connectionOp)} consumer field ${conAlign.member}") +: errors
+        case (_: EmptyAlignment, _: NonEmptyAlignment) =>
+          errors = (s"${proAlign.errorWord(connectionOp)} producer field ${proAlign.member}") +: errors
 
         // Recursive Case 4: non-empty orientations
-        case (conAlign: NonEmptyAlignment, proAlign: NonEmptyAlignment) =>
+        case (_: NonEmptyAlignment, _: NonEmptyAlignment) =>
           (conAlign.member, proAlign.member) match {
             case (consumer: Aggregate, producer: Aggregate)
                 if !hasProbeTypeModifier(consumer) && !hasProbeTypeModifier(producer) =>
@@ -233,7 +233,7 @@ private[chisel3] object Connection {
     }
 
     // Start recursive connection
-    doConnection(Alignment(consumer, true), Alignment(producer, false))
+    doConnection(ConnectableAlignment(consumer, true), ConnectableAlignment(producer, false))
 
     // If any errors are collected, error.
     if (errors.nonEmpty) {

@@ -7,11 +7,9 @@ import chisel3.experimental.Analog
 import chisel3.reflect.DataMirror
 import chisel3.internal.{ChildBinding, TopBinding}
 
-// Indicates whether the active side is aligned or flipped relative to the active side's root
-// Internal datastructure used to compute connectable operator connections
+// Represent aligned or flipped relative to an original root.
+// Used for walking types and their alignment, accounting for coercion.
 private[chisel3] sealed trait Alignment {
-  def base: Connectable[Data]
-
   // The member for whom this alignment is for
   def member: Data
 
@@ -38,65 +36,15 @@ private[chisel3] sealed trait Alignment {
   // Whether two alignments are aligned
   final def alignsWith(o: Alignment): Boolean = o.alignment == this.alignment
 
-  private def skipWidth(x: Data): Boolean = x.isInstanceOf[Aggregate] || x.isInstanceOf[DontCare.type]
-
-  final def truncationRequired(o: Alignment, op: Connection): Option[Data] = (this.member, o.member) match {
-    case (x, y) if (skipWidth(x) || skipWidth(y)) => None
-    case (x, y) =>
-      val lAndROpt = computeLandR(this.member, o.member, op)
-      lAndROpt.map {
-        case (l, r) if !(base.squeezed.contains(r) || o.base.squeezed.contains(r)) =>
-          (l.widthOption, r.widthOption) match {
-            case (None, _)                       => None // l will infer a large enough width
-            case (Some(x), None)                 => Some(r) // r could infer a larger width than l's width
-            case (Some(lw), Some(rw)) if lw < rw => Some(r)
-            case (Some(lw), Some(rw))            => None
-          }
-        case (l, r) => None
-      }.getOrElse(None)
-  }
-
-  // Returns loc and roc
-  final def computeLandR(c: Data, p: Data, op: Connection): Option[(Data, Data)] = {
-    (c, p, this, op.connectToConsumer, op.connectToProducer, op.alwaysConnectToConsumer) match {
-      case (x: Analog, y: Analog, _, _, _, _) => Some((x, y))
-      case (x: Analog, DontCare, _, _, _, _) => Some((x, DontCare))
-      case (x, y, _: AlignedWithRoot, true, _, _) => Some((c, p))
-      case (x, y, _: FlippedWithRoot, _, true, _) => Some((p, c))
-      case (x, y, _, _, _, true) => Some((c, p))
-      case other                 => None
-    }
-  }
-
-  // Whether the current member is waived
-  final def isWaived: Boolean = base.waived.contains(member)
-
-  final def isSqueezed: Boolean = base.squeezed.contains(member)
-
-  final def isExcluded: Boolean = base.excluded.contains(member)
-
   // Whether the current member is an aggregate
   final def isAgg: Boolean = member.isInstanceOf[Aggregate]
 
-  // If erroring, determine the correct word to use
-  final def errorWord(op: Connection): String =
-    (isConsumer, op.connectToConsumer, op.connectToProducer, alignment) match {
-      case (true, true, _, "aligned")  => "unconnected"
-      case (false, _, true, "flipped") => "unconnected"
-      case (true, _, true, "flipped")  => "dangling"
-      case (false, true, _, "aligned") => "dangling"
-      case other                       => "unmatched"
-    }
-
-  final def empty = EmptyAlignment(base, isConsumer)
+  final def empty = EmptyAlignment(isConsumer)
 }
 
 // The alignment datastructure for a missing field
-private[chisel3] case class EmptyAlignment(base: Connectable[Data], isConsumer: Boolean) extends Alignment {
+private[chisel3] case class EmptyAlignment(isConsumer: Boolean) extends Alignment {
   def member = DontCare
-  def waived = Set.empty
-  def squeezed = Set.empty
-  def excluded = Set.empty
   def invert = this
   def coerced = false
   def coerce = this
@@ -107,33 +55,30 @@ private[chisel3] case class EmptyAlignment(base: Connectable[Data], isConsumer: 
 private[chisel3] sealed trait NonEmptyAlignment extends Alignment
 
 private[chisel3] case class AlignedWithRoot(
-  base:       Connectable[Data],
   member:     Data,
   coerced:    Boolean,
   isConsumer: Boolean)
     extends NonEmptyAlignment {
-  def invert = if (coerced) this else FlippedWithRoot(base, member, coerced, isConsumer)
-  def coerce = this.copy(base, member, true)
+  def invert = if (coerced) this else FlippedWithRoot(member, coerced, isConsumer)
+  def coerce = this.copy(member, true)
   def swap(d: Data): Alignment = this.copy(member = d)
   def alignment: String = "aligned"
 }
 
 private[chisel3] case class FlippedWithRoot(
-  base:       Connectable[Data],
   member:     Data,
   coerced:    Boolean,
   isConsumer: Boolean)
     extends NonEmptyAlignment {
-  def invert = if (coerced) this else AlignedWithRoot(base, member, coerced, isConsumer)
-  def coerce = this.copy(base, member, true)
+  def invert = if (coerced) this else AlignedWithRoot(member, coerced, isConsumer)
+  def coerce = this.copy(member, true)
   def swap(d: Data): Alignment = this.copy(member = d)
   def alignment: String = "flipped"
 }
 
 object Alignment {
-
-  private[chisel3] def apply(base: Connectable[Data], isConsumer: Boolean): Alignment =
-    AlignedWithRoot(base, base.base, isCoercing(base.base), isConsumer)
+  private[chisel3] def apply(base: Data, isConsumer: Boolean): Alignment =
+    AlignedWithRoot(base, isCoercing(base), isConsumer)
 
   /** Indicates whether a member of a component or type is coercing
     * This occurs if the member or a parent of member is declared with an `Input` or `Output`
@@ -171,6 +116,95 @@ object Alignment {
     right: Option[Alignment]
   ): Seq[(Option[Alignment], Option[Alignment])] = {
     Data.dataMatchingZipOfChildren.matchingZipOfChildren(left.map(_.member), right.map(_.member)).map {
+      case (l, r) => l.map(deriveChildAlignment(_, left.get)) -> r.map(deriveChildAlignment(_, right.get))
+    }
+  }
+}
+
+// Track base of a connectable and its Alignment, with extra helpers for using in connections.
+// Internal datastructure used to compute connectable operator connections
+private[chisel3] case class ConnectableAlignment(base: Connectable[Data], align: Alignment) {
+
+  private def skipWidth(x: Data): Boolean = x.isInstanceOf[Aggregate] || x.isInstanceOf[DontCare.type]
+
+  // Returns loc and roc
+  final def computeLandR(c: Data, p: Data, op: Connection): Option[(Data, Data)] = {
+    (c, p, this.align, op.connectToConsumer, op.connectToProducer, op.alwaysConnectToConsumer) match {
+      case (x: Analog, y: Analog, _, _, _, _) => Some((x, y))
+      case (x: Analog, DontCare, _, _, _, _) => Some((x, DontCare))
+      case (x, y, _: AlignedWithRoot, true, _, _) => Some((c, p))
+      case (x, y, _: FlippedWithRoot, _, true, _) => Some((p, c))
+      case (x, y, _, _, _, true) => Some((c, p))
+      case other                 => None
+    }
+  }
+
+  final def truncationRequired(o: ConnectableAlignment, op: Connection): Option[Data] =
+    (align.member, o.align.member) match {
+      case (x, y) if (skipWidth(x) || skipWidth(y)) => None
+      case (x, y) =>
+        val lAndROpt = computeLandR(align.member, o.align.member, op)
+        lAndROpt.map {
+          case (l, r) if !(base.squeezed.contains(r) || o.base.squeezed.contains(r)) =>
+            (l.widthOption, r.widthOption) match {
+              case (None, _)                       => None // l will infer a large enough width
+              case (Some(x), None)                 => Some(r) // r could infer a larger width than l's width
+              case (Some(lw), Some(rw)) if lw < rw => Some(r)
+              case (Some(lw), Some(rw))            => None
+            }
+          case (l, r) => None
+        }.getOrElse(None)
+    }
+
+  // Whether the current member is waived
+  final def isWaived: Boolean = base.waived.contains(align.member)
+
+  // Whether the current member is squeezed
+  final def isSqueezed: Boolean = base.squeezed.contains(align.member)
+
+  // Whether the current member is excluded
+  final def isExcluded: Boolean = base.excluded.contains(align.member)
+
+  // If erroring, determine the correct word to use
+  final def errorWord(op: Connection): String =
+    (align.isConsumer, op.connectToConsumer, op.connectToProducer, align.alignment) match {
+      case (true, true, _, "aligned")  => "unconnected"
+      case (false, _, true, "flipped") => "unconnected"
+      case (true, _, true, "flipped")  => "dangling"
+      case (false, true, _, "aligned") => "dangling"
+      case other                       => "unmatched"
+    }
+
+  /// Expose some underlying Alignment methods for convenience.
+  /// Define in terms of ConnectableAlignment but defer to Alignment's code.
+
+  final def member: Data = align.member
+
+  final def alignsWith(o: ConnectableAlignment): Boolean = align.alignsWith(o.align)
+
+  // Whether the current member is an aggregate
+  final def isAgg: Boolean = align.isAgg
+
+  final def empty = ConnectableAlignment(base, align.empty)
+
+  final def swap(d: Data): ConnectableAlignment = ConnectableAlignment(base, align.swap(d))
+}
+
+object ConnectableAlignment {
+  private[chisel3] def apply(base: Connectable[Data], isConsumer: Boolean): ConnectableAlignment =
+    ConnectableAlignment(base, Alignment(base.base, isConsumer))
+
+  private[chisel3] def deriveChildAlignment(
+    subMember:       Data,
+    parentAlignment: ConnectableAlignment
+  ): ConnectableAlignment = {
+    ConnectableAlignment(parentAlignment.base, Alignment.deriveChildAlignment(subMember, parentAlignment.align))
+  }
+  private[chisel3] def matchingZipOfChildren(
+    left:  Option[ConnectableAlignment],
+    right: Option[ConnectableAlignment]
+  ): Seq[(Option[ConnectableAlignment], Option[ConnectableAlignment])] = {
+    Data.dataMatchingZipOfChildren.matchingZipOfChildren(left.map(_.align.member), right.map(_.align.member)).map {
       case (l, r) => l.map(deriveChildAlignment(_, left.get)) -> r.map(deriveChildAlignment(_, right.get))
     }
   }
