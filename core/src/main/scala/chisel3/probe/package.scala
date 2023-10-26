@@ -98,7 +98,7 @@ package object probe extends SourceInfoDoc {
   /** Override existing driver of a writable probe on initialization.
     *
     * @param probe writable Probe to force
-    * @value value to force onto the probe
+    * @param value to force onto the probe
     */
   def forceInitial(probe: Data, value: Data)(implicit sourceInfo: SourceInfo): Unit = {
     requireHasWritableProbeTypeModifier(probe, "Cannot forceInitial a non-writable Probe.")
@@ -117,7 +117,7 @@ package object probe extends SourceInfoDoc {
   /** Override existing driver of a writable probe.
     *
     * @param probe writable Probe to force
-    * @value value to force onto the probe
+    * @param value to force onto the probe
     */
   def force(probe: Data, value: Data)(implicit sourceInfo: SourceInfo): Unit = {
     requireHasWritableProbeTypeModifier(probe, "Cannot force a non-writable Probe.")
