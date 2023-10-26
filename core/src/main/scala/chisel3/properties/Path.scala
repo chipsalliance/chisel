@@ -10,12 +10,12 @@ import firrtl.ir.{PathPropertyLiteral}
 /** Represent a Path type for referencing a hardware instance or member in a Property[Path]
   */
 sealed abstract class Path {
-  private[chisel3] def toTarget():     IsMember
-  private[chisel3] def isMemberTarget: Boolean
+  private[chisel3] def toTarget():   IsMember
+  private[chisel3] def isMemberPath: Boolean
 
   private[chisel3] def convert(): PathPropertyLiteral = {
     val target = toTarget()
-    val targetType = if (isMemberTarget) {
+    val targetType = if (isMemberPath) {
       target match {
         case _: ModuleTarget    => "OMMemberInstanceTarget"
         case _: InstanceTarget  => "OMMemberInstanceTarget"
@@ -37,40 +37,44 @@ object Path {
   /** Construct a Path that refers to a Module
     */
   def apply(module: BaseModule): Path = apply(module, false)
-  def apply(module: BaseModule, _isMemberTarget: Boolean): Path = {
+  def apply(module: BaseModule, isMemberPath: Boolean): Path = {
+    val _isMemberPath = isMemberPath // avoid name shadowing below
     new Path {
-      def toTarget():     IsMember = module.toAbsoluteTarget
-      def isMemberTarget: Boolean = _isMemberTarget
+      def toTarget():   IsMember = module.toAbsoluteTarget
+      def isMemberPath: Boolean = _isMemberPath
     }
   }
 
   /** Construct a Path that refers to a Data
     */
   def apply(data: Data): Path = apply(data, false)
-  def apply(data: Data, _isMemberTarget: Boolean): Path = {
+  def apply(data: Data, isMemberPath: Boolean): Path = {
+    val _isMemberPath = isMemberPath // avoid name shadowing below
     new Path {
-      def toTarget():     IsMember = data.toAbsoluteTarget
-      def isMemberTarget: Boolean = _isMemberTarget
+      def toTarget():   IsMember = data.toAbsoluteTarget
+      def isMemberPath: Boolean = _isMemberPath
     }
   }
 
   /** Construct a Path that refers to a Memory
     */
   def apply(mem: MemBase[_]): Path = apply(mem, false)
-  def apply(mem: MemBase[_], _isMemberTarget: Boolean): Path = {
+  def apply(mem: MemBase[_], isMemberPath: Boolean): Path = {
+    val _isMemberPath = isMemberPath // avoid name shadowing below
     new Path {
-      def toTarget():     IsMember = mem.toAbsoluteTarget
-      def isMemberTarget: Boolean = _isMemberTarget
+      def toTarget():   IsMember = mem.toAbsoluteTarget
+      def isMemberPath: Boolean = _isMemberPath
     }
   }
 
   /** Construct a Path from a target
     */
   def apply(target: IsMember): Path = apply(target, false)
-  def apply(target: IsMember, _isMemberTarget: Boolean): Path = {
+  def apply(target: IsMember, isMemberPath: Boolean): Path = {
+    val _isMemberPath = isMemberPath // avoid name shadowing below
     new Path {
-      def toTarget():     IsMember = target
-      def isMemberTarget: Boolean = _isMemberTarget
+      def toTarget():   IsMember = target
+      def isMemberPath: Boolean = _isMemberPath
     }
   }
 }
