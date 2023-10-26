@@ -108,7 +108,7 @@ trait LitModule
         .replaceAll("@JAVA_OPT_JAVA_LIBRARY_PATH@", javaLibraryPath().mkString(","))
         .replaceAll("@CHISEL_LIT_DIR@", chiselLitDir().toString)
       )
-    PathRef(T.dest / "lit.site.cfg.py")
+    PathRef(T.dest)
   }
   def run(args: String*) = T.command(os.proc("llvm-lit", litConfig().path).call(T.dest, stdout = os.ProcessOutput.Readlines(line => T.ctx().log.debug("[lit] " + line))))
  }
