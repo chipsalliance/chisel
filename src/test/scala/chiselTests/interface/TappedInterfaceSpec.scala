@@ -110,7 +110,7 @@ class TappedInterfaceSpec extends AnyFunSpec with Matchers {
       b := baz.io.b
 
       forceInitial(baz.io.c, true.B)
-      force(clock, reset.asBool, baz.io.d, false.B)
+      force(baz.io.d, false.B)
     }
   }
 
