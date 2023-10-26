@@ -114,7 +114,12 @@ package object probe extends SourceInfoDoc {
     pushCommand(ProbeReleaseInitial(sourceInfo, probe.ref))
   }
 
-  /** Override existing driver of a writable probe.
+  /** Override existing driver of a writable probe. If called within the scope
+    * of a [[when]] block, the force will only occur on cycles that the when
+    * condition is true.
+    *
+    * Fires only when reset has been asserted and then deasserted through the
+    * [[Disable]] API.
     *
     * @param probe writable Probe to force
     * @param value to force onto the probe
@@ -126,7 +131,12 @@ package object probe extends SourceInfoDoc {
     pushCommand(ProbeForce(sourceInfo, clock.ref, cond.ref, probe.ref, padDataToProbeWidth(value, probe).ref))
   }
 
-  /** Release driver on a probe.
+  /** Release driver on a probe. If called within the scope of a [[when]]
+    * block, the release will only occur on cycles that the when condition
+    * is true.
+    *
+    * Fires only when reset has been asserted and then deasserted through the
+    * [[Disable]] API.
     *
     * @param probe writable Probe to release
     */
