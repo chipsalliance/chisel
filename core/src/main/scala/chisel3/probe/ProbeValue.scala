@@ -12,17 +12,23 @@ import scala.language.experimental.macros
 private[chisel3] sealed trait ProbeValueBase {
   protected def apply[T <: Data](source: T, writable: Boolean)(implicit sourceInfo: SourceInfo): T = {
     requireIsHardware(source)
-    if (source.isLit) {
-      Builder.error("Cannot get a probe value from a literal.")
-    }
-
     // construct probe to return with cloned info
     val clone = if (writable) RWProbe(source.cloneType) else Probe(source.cloneType)
     clone.bind(OpBinding(Builder.forcedUserModule, Builder.currentWhen))
     if (writable) {
+      if (source.isLit) {
+        Builder.error("Cannot get a probe value from a literal.")
+      }
       clone.setRef(RWProbeExpr(source.ref))
     } else {
-      clone.setRef(ProbeExpr(source.ref))
+      val ref = if (source.isLit) {
+        // FIXME create a node instead of a wire?
+        val intermed = chisel3.Wire(source.cloneType)
+        intermed := source
+        intermed.suggestName("lit_probe_val")
+        intermed.ref
+      } else { source.ref }
+      clone.setRef(ProbeExpr(ref))
     }
     clone
   }
