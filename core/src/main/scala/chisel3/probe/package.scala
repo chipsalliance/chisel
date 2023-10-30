@@ -8,16 +8,15 @@ import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.Data.ProbeInfo
 import chisel3.experimental.SourceInfo
-import chisel3.reflect.DataMirror.{checkTypeEquivalence, hasProbeTypeModifier}
+import chisel3.reflect.DataMirror.{checkTypeEquivalence, collectAllMembers, hasProbeTypeModifier}
 
 import scala.language.experimental.macros
-import chisel3.reflect.DataMirror
 
 package object probe extends SourceInfoDoc {
 
   private[chisel3] def setProbeModifier[T <: Data](data: T, probeInfo: Option[ProbeInfo]): Unit = {
     probeInfo.foreach { _ =>
-      DataMirror.collectAllMembers(data).foreach { member =>
+      collectAllMembers(data).foreach { member =>
         member.probeInfo = probeInfo
         // also set sample_element's probe information in Vecs
         member match {
