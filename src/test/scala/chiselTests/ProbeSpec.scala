@@ -475,6 +475,19 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
     exc.getMessage should include("Cannot force a non-writable Probe.")
   }
 
+  "ProbeValue() on a literal" should "fail" in {
+    val exc = intercept[chisel3.ChiselException] {
+      ChiselStage.emitCHIRRTL(
+        new RawModule {
+          val out = IO(Output(RWProbe(Bool())))
+          define(out, ProbeValue(true.B))
+        },
+        Array("--throw-on-first-error")
+      )
+    }
+    exc.getMessage should include("Cannot get a probe value from a literal.")
+  }
+
   "Probes of Const type" should "work" in {
     val chirrtl = ChiselStage.emitCHIRRTL(
       new RawModule {

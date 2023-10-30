@@ -12,6 +12,10 @@ import scala.language.experimental.macros
 private[chisel3] sealed trait ProbeValueBase {
   protected def apply[T <: Data](source: T, writable: Boolean)(implicit sourceInfo: SourceInfo): T = {
     requireIsHardware(source)
+    if (source.isLit) {
+      Builder.error("Cannot get a probe value from a literal.")
+    }
+
     // construct probe to return with cloned info
     val clone = if (writable) RWProbe(source.cloneType) else Probe(source.cloneType)
     clone.bind(OpBinding(Builder.forcedUserModule, Builder.currentWhen))
