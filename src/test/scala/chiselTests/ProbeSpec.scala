@@ -496,8 +496,12 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
       },
       Array("--full-stacktrace")
     )
-    println(chirrtl)
-    // processChirrtl(chirrtl) should contain("")
+    (processChirrtl(chirrtl) should contain).allOf(
+      "output out : Probe<UInt<1>>",
+      "wire lit_probe_val : UInt<1>",
+      "connect lit_probe_val, UInt<1>(0h1)",
+      "define out = probe(lit_probe_val)"
+    )
   }
 
   "Probes of Const type" should "work" in {

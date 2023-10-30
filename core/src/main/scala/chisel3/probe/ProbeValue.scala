@@ -22,7 +22,6 @@ private[chisel3] sealed trait ProbeValueBase {
       clone.setRef(RWProbeExpr(source.ref))
     } else {
       val ref = if (source.isLit) {
-        // FIXME create a node instead of a wire?
         val intermed = chisel3.Wire(source.cloneType)
         intermed := source
         intermed.suggestName("lit_probe_val")
