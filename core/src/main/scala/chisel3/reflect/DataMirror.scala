@@ -334,7 +334,7 @@ object DataMirror {
 
   /** Check if the given Data is fully aligned w.r.t base.  Chisel version of FIRRTL "passive".
     *
-    * @param base Data to check full alignment for
+    * @param base Data to check full alignment for and relative to
     * @return `true` if Data is fully aligned, `false` otherwise.
     */
   def isFullyAligned(base: Data): Boolean = collectFlippedDeep(base)(_ => false).isEmpty
