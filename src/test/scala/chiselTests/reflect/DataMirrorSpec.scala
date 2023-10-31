@@ -127,9 +127,12 @@ class DataMirrorSpec extends ChiselFlatSpec {
     class InputOutputTest extends Bundle {
       val incoming = Input(DecoupledIO(UInt(8.W)))
       val outgoing = Output(DecoupledIO(UInt(8.W)))
+      val mixed = DecoupledIO(UInt(8.W))
     }
+    // Top-level negative test.
     assert(!DataMirror.isFullyAligned(new InputOutputTest()))
 
+    // Various positive tests, coerced.
     assert(DataMirror.isFullyAligned(new InputOutputTest().incoming))
     assert(DataMirror.isFullyAligned(new InputOutputTest().outgoing))
     assert(DataMirror.isFullyAligned(Input(new InputOutputTest())))
@@ -138,8 +141,29 @@ class DataMirrorSpec extends ChiselFlatSpec {
     assert(DataMirror.isFullyAligned(Output(new InputOutputTest()).incoming))
     assert(DataMirror.isFullyAligned(Output(new InputOutputTest()).incoming.ready))
 
+    // Negative test mixed, check positive when coerced.
+    assert(!DataMirror.isFullyAligned(new InputOutputTest().mixed))
+    assert(DataMirror.isFullyAligned(Input(new InputOutputTest().mixed)))
+
+    // Check DecoupledIO directly, as well as coerced.
     assert(!DataMirror.isFullyAligned(new DecoupledIO(UInt(8.W))))
     assert(DataMirror.isFullyAligned(Input(new DecoupledIO(UInt(8.W)))))
+
+    // Positive test, simple vector + flipped vector.
+    assert(DataMirror.isFullyAligned(Vec(2, UInt(1.W))))
+    assert(DataMirror.isFullyAligned(Flipped(Vec(2, UInt(1.W)))))
+
+    // Positive test, zero-length vector of non-aligned elements.
+    assert(DataMirror.isFullyAligned(Vec(0, new DecoupledIO(UInt(8.W)))))
+
+    // Negative test: vector of flipped (?).
+    assert(!DataMirror.isFullyAligned(Vec(2, Flipped(UInt(1.W)))))
+
+    // Check empty bundle (no members).
+    assert(DataMirror.isFullyAligned(new Bundle{}))
+
+    // Check ground type.
+    assert(DataMirror.isFullyAligned(UInt(8.W)))
   }
 
 }
