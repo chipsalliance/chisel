@@ -25,6 +25,8 @@ private[chisel3] sealed trait ProbeBase {
     if (writable && data.isConst) {
       Builder.error("Cannot create a writable probe of a const type.")
     }
+    // TODO error if trying to probe a non-passive type
+    // https://github.com/chipsalliance/chisel/issues/3609
 
     val ret: T = if (!data.mustClone(prevId)) data else data.cloneType.asInstanceOf[T]
     setProbeModifier(ret, Some(ProbeInfo(writable)))

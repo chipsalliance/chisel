@@ -16,9 +16,18 @@ private[chisel3] sealed trait ProbeValueBase {
     val clone = if (writable) RWProbe(source.cloneType) else Probe(source.cloneType)
     clone.bind(OpBinding(Builder.forcedUserModule, Builder.currentWhen))
     if (writable) {
+      if (source.isLit) {
+        Builder.error("Cannot get a probe value from a literal.")
+      }
       clone.setRef(RWProbeExpr(source.ref))
     } else {
-      clone.setRef(ProbeExpr(source.ref))
+      val ref = if (source.isLit) {
+        val intermed = chisel3.Wire(source.cloneType)
+        intermed := source
+        intermed.suggestName("lit_probe_val")
+        intermed.ref
+      } else { source.ref }
+      clone.setRef(ProbeExpr(ref))
     }
     clone
   }
