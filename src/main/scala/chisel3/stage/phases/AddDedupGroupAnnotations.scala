@@ -15,7 +15,7 @@ import chisel3.internal.firrtl.{DefBlackBox, DefClass, DefIntrinsicModule}
 
 class AddDedupGroupAnnotations extends Phase {
   override def prerequisites = Seq.empty
-  override def optionalPrerequisites = Seq(Dependency[Convert])
+  override def optionalPrerequisites: Seq[Dependency[Phase]] = Seq(Dependency[Convert])
   override def optionalPrerequisiteOf = Seq.empty
   override def invalidates(a: Phase) = false
 
