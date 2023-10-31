@@ -6,6 +6,7 @@ import chisel3._
 import chisel3.reflect.DataMirror
 import chiselTests.ChiselFlatSpec
 import circt.stage.ChiselStage
+import chisel3.util.DecoupledIO
 
 object DataMirrorSpec {
   import org.scalatest.matchers.should.Matchers._
@@ -120,6 +121,25 @@ class DataMirrorSpec extends ChiselFlatSpec {
       out :#= in
     }
     ChiselStage.emitCHIRRTL(new MyModule)
+  }
+
+  "isFullyAligned" should "work" in {
+    class InputOutputTest extends Bundle {
+      val incoming = Input(DecoupledIO(UInt(8.W)))
+      val outgoing = Output(DecoupledIO(UInt(8.W)))
+    }
+    assert(!DataMirror.isFullyAligned(new InputOutputTest()))
+
+    assert(DataMirror.isFullyAligned(new InputOutputTest().incoming))
+    assert(DataMirror.isFullyAligned(new InputOutputTest().outgoing))
+    assert(DataMirror.isFullyAligned(Input(new InputOutputTest())))
+    assert(DataMirror.isFullyAligned(Input(new InputOutputTest()).outgoing))
+    assert(DataMirror.isFullyAligned(Output(new InputOutputTest())))
+    assert(DataMirror.isFullyAligned(Output(new InputOutputTest()).incoming))
+    assert(DataMirror.isFullyAligned(Output(new InputOutputTest()).incoming.ready))
+
+    assert(!DataMirror.isFullyAligned(new DecoupledIO(UInt(8.W))))
+    assert(DataMirror.isFullyAligned(Input(new DecoupledIO(UInt(8.W)))))
   }
 
 }

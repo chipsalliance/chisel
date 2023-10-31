@@ -332,6 +332,13 @@ object DataMirror {
     }.map(_._1).flatten
   }
 
+  /** Check if the given Data is fully aligned w.r.t base.  Chisel version of FIRRTL "passive".
+    *
+    * @param base Data to check full alignment for
+    * @return `true` if Data is fully aligned, `false` otherwise.
+    */
+  def isFullyAligned(base: Data): Boolean = collectFlippedDeep(base)(_ => false).isEmpty
+
   /** Typeclass trait to use collectMembersOverMatches, collectMembersOverAll, collectMembersOverAllForAny, collectMembersOverAllForAnyFunction */
   trait HasMatchingZipOfChildren[T] {
     def matchingZipOfChildren(left: Option[T], right: Option[T]): Seq[(Option[T], Option[T])]
