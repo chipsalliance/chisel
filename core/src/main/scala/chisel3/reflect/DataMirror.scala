@@ -285,7 +285,7 @@ object DataMirror {
   }
 
   // Alignment-aware collections
-  import connectable.{AlignedWithRoot, Alignment, FlippedWithRoot}
+  import connectable.{AlignedWithRoot, Alignment, ConnectableAlignment, FlippedWithRoot}
   // Implement typeclass to enable collecting over Alignment
   implicit val AlignmentMatchingZipOfChildren = new HasMatchingZipOfChildren[Alignment] {
     def matchingZipOfChildren(
@@ -293,6 +293,15 @@ object DataMirror {
       right: Option[Alignment]
     ): Seq[(Option[Alignment], Option[Alignment])] =
       Alignment.matchingZipOfChildren(left, right)
+  }
+
+  // Implement typeclass to enable collecting over ConnectableAlignment
+  implicit val ConnectableAlignmentMatchingZipOfChildren = new HasMatchingZipOfChildren[ConnectableAlignment] {
+    def matchingZipOfChildren(
+      left:  Option[ConnectableAlignment],
+      right: Option[ConnectableAlignment]
+    ): Seq[(Option[ConnectableAlignment], Option[ConnectableAlignment])] =
+      ConnectableAlignment.matchingZipOfChildren(left, right)
   }
 
   /** Collects all members of base who are aligned w.r.t. base
