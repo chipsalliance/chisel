@@ -104,7 +104,7 @@ case class ClassType private[chisel3] (name: String) { self =>
 
   private object Type {
     implicit val classTypeProvider: ClassTypeProvider[Type] = ClassTypeProvider(name)
-    implicit val propertyType =
+    implicit val propertyType: ClassTypePropertyType.Aux[Property[ClassType] with self.Type, Arg] =
       new ClassTypePropertyType[Property[ClassType] with self.Type](classTypeProvider.classType) {
         override def convert(value: Underlying, ctx: Component, info: SourceInfo): fir.Expression =
           Converter.convert(value, ctx, info)
@@ -123,15 +123,16 @@ sealed trait AnyClassType
 
 object AnyClassType {
   implicit val classTypeProvider: ClassTypeProvider[AnyClassType] = ClassTypeProvider(fir.AnyRefPropertyType)
-  implicit val propertyType = new RecursivePropertyType[Property[ClassType] with AnyClassType] {
-    type Type = ClassType
-    override def getPropertyType(): fir.PropertyType = fir.AnyRefPropertyType
+  implicit val propertyType: RecursivePropertyType.Aux[Property[ClassType] with AnyClassType, ClassType, Arg] =
+    new RecursivePropertyType[Property[ClassType] with AnyClassType] {
+      type Type = ClassType
+      override def getPropertyType(): fir.PropertyType = fir.AnyRefPropertyType
 
-    override def convert(value: Underlying, ctx: Component, info: SourceInfo): fir.Expression =
-      Converter.convert(value, ctx, info)
-    type Underlying = Arg
-    override def convertUnderlying(value: Property[ClassType] with AnyClassType) = value.ref
-  }
+      override def convert(value: Underlying, ctx: Component, info: SourceInfo): fir.Expression =
+        Converter.convert(value, ctx, info)
+      type Underlying = Arg
+      override def convertUnderlying(value: Property[ClassType] with AnyClassType) = value.ref
+    }
 }
 
 object Class {

@@ -287,22 +287,24 @@ object DataMirror {
   // Alignment-aware collections
   import connectable.{AlignedWithRoot, Alignment, ConnectableAlignment, FlippedWithRoot}
   // Implement typeclass to enable collecting over Alignment
-  implicit val AlignmentMatchingZipOfChildren = new HasMatchingZipOfChildren[Alignment] {
-    def matchingZipOfChildren(
-      left:  Option[Alignment],
-      right: Option[Alignment]
-    ): Seq[(Option[Alignment], Option[Alignment])] =
-      Alignment.matchingZipOfChildren(left, right)
-  }
+  implicit val AlignmentMatchingZipOfChildren: HasMatchingZipOfChildren[Alignment] =
+    new HasMatchingZipOfChildren[Alignment] {
+      def matchingZipOfChildren(
+        left:  Option[Alignment],
+        right: Option[Alignment]
+      ): Seq[(Option[Alignment], Option[Alignment])] =
+        Alignment.matchingZipOfChildren(left, right)
+    }
 
   // Implement typeclass to enable collecting over ConnectableAlignment
-  implicit val ConnectableAlignmentMatchingZipOfChildren = new HasMatchingZipOfChildren[ConnectableAlignment] {
-    def matchingZipOfChildren(
-      left:  Option[ConnectableAlignment],
-      right: Option[ConnectableAlignment]
-    ): Seq[(Option[ConnectableAlignment], Option[ConnectableAlignment])] =
-      ConnectableAlignment.matchingZipOfChildren(left, right)
-  }
+  implicit val ConnectableAlignmentMatchingZipOfChildren: HasMatchingZipOfChildren[ConnectableAlignment] =
+    new HasMatchingZipOfChildren[ConnectableAlignment] {
+      def matchingZipOfChildren(
+        left:  Option[ConnectableAlignment],
+        right: Option[ConnectableAlignment]
+      ): Seq[(Option[ConnectableAlignment], Option[ConnectableAlignment])] =
+        ConnectableAlignment.matchingZipOfChildren(left, right)
+    }
 
   /** Collects all members of base who are aligned w.r.t. base
     * Accepts a collector partial function, rather than a collector function

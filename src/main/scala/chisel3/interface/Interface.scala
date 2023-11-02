@@ -126,10 +126,11 @@ trait Interface extends InterfaceCommon { self: Singleton =>
         chisel3.Module(conformance.genModule())
       }
 
-      private implicit val pm = PartialDataView[B, Ports](
-        _ => ports.cloneType,
-        conformance.portMap: _*
-      )
+      private implicit val pm: DataView[B, Ports] =
+        PartialDataView[B, Ports](
+          _ => ports.cloneType,
+          conformance.portMap: _*
+        )
 
       // If the view fails, report this with a slightly better error message.
       try {
