@@ -80,7 +80,8 @@ object Incoming {
     * The granted iodef must be a non-flipped chisel type and not be bound to hardware.
     */
   def apply[T <: Data](iodef: => T)(implicit sourceInfo: SourceInfo): T = {
-    if (SpecifiedDirection.isFlipped(iodef.specifiedDirection)) Builder.error("Incoming(..) cannot accept a chisel typed which is flipped")
+    if (SpecifiedDirection.isFlipped(iodef.specifiedDirection))
+      Builder.error("Incoming(..) cannot accept a chisel typed which is flipped")
     IO(Flipped(iodef))
   }
 }
@@ -106,7 +107,8 @@ object Outgoing {
     * The granted iodef must be a non-flipped chisel type and not be bound to hardware.
     */
   def apply[T <: Data](iodef: => T)(implicit sourceInfo: SourceInfo): T = {
-    if (SpecifiedDirection.isFlipped(iodef.specifiedDirection)) Builder.error("Outgoing(..) cannot accept a chisel typed which is flipped")
+    if (SpecifiedDirection.isFlipped(iodef.specifiedDirection))
+      Builder.error("Outgoing(..) cannot accept a chisel typed which is flipped")
     IO(iodef)
   }
 }

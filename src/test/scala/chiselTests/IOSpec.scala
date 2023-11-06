@@ -35,7 +35,7 @@ class IOCModuleWire extends Module {
   io.out := inc.out
 }
 
-class IOCompatibilitySpec extends ChiselPropSpec with Matchers with Utils {
+class IOSpec extends ChiselPropSpec with Matchers with Utils with MatchesAndOmits {
 
   property("IOCModuleVec should elaborate") {
     ChiselStage.emitCHIRRTL { new IOCModuleVec(2) }
@@ -54,5 +54,28 @@ class IOCompatibilitySpec extends ChiselPropSpec with Matchers with Utils {
     a[BindingException] should be thrownBy extractCause[BindingException] {
       ChiselStage.emitCHIRRTL(new IOUnwrapped)
     }
+  }
+
+  property("Incoming/Outgoing should generate an input/output without coercing alignment") {
+    class Test extends Module {
+      val in = Incoming(new util.DecoupledIO(UInt(32.W)))
+      val out = Outgoing(new util.DecoupledIO(UInt(32.W)))
+      out :<>= in
+    }
+    val result = ChiselStage.emitCHIRRTL { new Test }
+    matchesAndOmits(result)("input in", "output out", "flip ready")()
+  }
+
+  property("Incoming/Outgoing should fail an input/output") {
+    class Test extends Module {
+      val in = Incoming(Flipped(new util.DecoupledIO(UInt(32.W))))
+      val out = Outgoing(Flipped(new util.DecoupledIO(UInt(32.W))))
+      in :<>= out
+    }
+    val (err, _) = grabLog { intercept[ChiselException] { ChiselStage.emitCHIRRTL { new Test } } }
+    matchesAndOmits(err)(
+      "Incoming(..) cannot accept a chisel typed which is flipped",
+      "Outgoing(..) cannot accept a chisel typed which is flipped"
+    )()
   }
 }

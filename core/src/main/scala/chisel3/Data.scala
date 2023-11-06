@@ -51,7 +51,7 @@ object SpecifiedDirection {
     * @param dir provided specified direction
     * @return
     */
-  private[chisel3] def isFlipped(dir: SpecifiedDirection): Boolean  = dir match {
+  private[chisel3] def isFlipped(dir: SpecifiedDirection): Boolean = dir match {
     case Unspecified => false
     case Flip        => true
     case Output      => false
@@ -309,9 +309,9 @@ object Output {
 
 /** Creates a field of a parent [[Aggregate]] which is
   *  - flipped relative to that parent
-  * 
+  *
   * E.g. The following will create a field `i` of `b` where `i` is flipped relative to `b`
-  * 
+  *
   * ```scala
   * val b = new Bundle {
   *   val i = Flipped(new Decoupled(UInt(32.W))
