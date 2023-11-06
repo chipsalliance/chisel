@@ -46,6 +46,18 @@ object SpecifiedDirection {
     case Input       => Output
   }
 
+  /** Returns true if specified direction manifests as a flipped field
+    *
+    * @param dir provided specified direction
+    * @return
+    */
+  private[chisel3] def isFlipped(dir: SpecifiedDirection): Boolean  = dir match {
+    case Unspecified => false
+    case Flip        => true
+    case Output      => false
+    case Input       => true
+  }
+
   /** Returns the effective SpecifiedDirection of this node given the parent's effective SpecifiedDirection
     * and the user-specified SpecifiedDirection of this node.
     */
@@ -251,8 +263,17 @@ object chiselTypeOf {
   }
 }
 
-/**
-  * Input, Output, and Flipped are used to define the directions of Module IOs.
+/** Creates a field of a parent [[Aggregate]] which is
+  *  - flipped relative to that parent
+  *  - coerced all members of the field to be aligned
+  *
+  * E.g. The following will create a field `i` of `b` where all recursive sub-elements of `i` are aligned, and where `i` flipped relative to `b`
+  *
+  * ```scala
+  * val b = new Bundle {
+  *   val i = Input(new Decoupled(UInt(32.W))
+  * }
+  * ```
   *
   * Note that they currently clone their source argument, including its bindings.
   *
@@ -263,12 +284,44 @@ object Input {
     SpecifiedDirection.specifiedDirection(source)(_ => SpecifiedDirection.Input)
   }
 }
+
+/** Creates a field of a parent [[Aggregate]] which is
+  *  - aligned relative to that parent
+  *  - coerced all members of the field to be aligned
+  *
+  * E.g. The following will create a field `i` of `b` where all recursive sub-elements of `i` are aligned, and where `i` is also aligned relative to `b`
+  *
+  * ```scala
+  * val b = new Bundle {
+  *   val i = Output(new Decoupled(UInt(32.W))
+  * }
+  * ```
+  *
+  * Note that they currently clone their source argument, including its bindings.
+  *
+  * Thus, an error will be thrown if these are used on bound Data
+  */
 object Output {
   def apply[T <: Data](source: => T): T = {
     SpecifiedDirection.specifiedDirection(source)(_ => SpecifiedDirection.Output)
   }
 }
 
+/** Creates a field of a parent [[Aggregate]] which is
+  *  - flipped relative to that parent
+  * 
+  * E.g. The following will create a field `i` of `b` where `i` is flipped relative to `b`
+  * 
+  * ```scala
+  * val b = new Bundle {
+  *   val i = Flipped(new Decoupled(UInt(32.W))
+  * }
+  * ```
+  *
+  * Note that they currently clone their source argument, including its bindings.
+  *
+  * Thus, an error will be thrown if these are used on bound Data
+  */
 object Flipped {
   def apply[T <: Data](source: => T): T = {
     SpecifiedDirection.specifiedDirection(source)(x => SpecifiedDirection.flip(x.specifiedDirection))
