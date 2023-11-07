@@ -348,16 +348,7 @@ object DataMirror {
     right:     D
   )(collector: PartialFunction[(D, D), T]
   ): Seq[T] = {
-    def newCollector(lOpt: Option[D], rOpt: Option[D]): Option[(Option[T], Option[Unit])] = {
-      (lOpt, rOpt) match {
-        case (Some(l), Some(r)) =>
-          collector.lift((l, r)) match {
-            case Some(x) => Some((Some(x), None))
-            case None    => None
-          }
-        case other => None
-      }
-    }
+    // TODO: commit separately.
     collectMembersOverAllForAnyFunction(Some(left), Some(right)) {
       case (Some(l), Some(r)) =>
         collector.lift((l, r)) match {
