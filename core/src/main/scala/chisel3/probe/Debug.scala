@@ -12,6 +12,7 @@ import chisel3.Data.ProbeInfo
 import scala.collection.IndexedSeqView
 import chisel3.InternalErrorException
 import chisel3.probe.force
+import chisel3.internal.sourceinfo.SourceInfo
 
 sealed trait DebugKind
 case object ProducerKind extends DebugKind
@@ -102,7 +103,7 @@ class Debug[T <: Data] private (original: T, kind: DebugKind) extends Record wit
   private val underlying = debugify(original, kind)
   def elements = SeqMap("" -> underlying)
 
-  def define(value: T): Unit = {
+  def define(value: T)(implicit sourceInfo: SourceInfo): Unit = {
     // No probe info on 'value'.
 
     // TODO: Ensure value is a static reference?
@@ -120,7 +121,7 @@ class Debug[T <: Data] private (original: T, kind: DebugKind) extends Record wit
     }
     // "only use once"
   }
-  def materialize: T = {
+  def materialize(implicit sourceInfo: SourceInfo): T = {
     val w = Wire(original.cloneTypeFull)
     walkMembers(Some(Alignment(w, true)), Some(Alignment(underlying, true))) {
       case (Some(a: Alignment), Some(b: Alignment)) =>
