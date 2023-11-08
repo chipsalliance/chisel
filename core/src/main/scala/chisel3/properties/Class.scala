@@ -10,6 +10,7 @@ import chisel3.internal.firrtl.{Arg, Command, Component, Converter, DefClass, De
 
 import scala.annotation.nowarn
 import scala.collection.mutable.ArrayBuffer
+import chisel3.experimental.UnlocatableSourceInfo
 
 /** Represents a user-defined Class, which is a module-like container of properties.
   *
@@ -19,7 +20,7 @@ import scala.collection.mutable.ArrayBuffer
   * construct hardware, only graphs of non-hardware Property information.
   */
 @nowarn("msg=class Port") // delete when Port becomes private
-class Class extends BaseModule {
+class Class extends BaseModule()(UnlocatableSourceInfo) {
   private[chisel3] override def generateComponent(): Option[Component] = {
     // Close the Class.
     require(!_closed, "Can't generate Class more than once")

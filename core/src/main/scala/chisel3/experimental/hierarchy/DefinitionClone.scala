@@ -5,6 +5,7 @@ package chisel3.experimental.hierarchy
 import chisel3.experimental.BaseModule
 import chisel3.internal.{HasId, PseudoModule}
 import chisel3.internal.firrtl.{Component, Ref}
+import chisel3.experimental.UnlocatableSourceInfo
 
 /** Represents a Definition root module, when accessing something from a definition
   *
@@ -14,7 +15,10 @@ import chisel3.internal.firrtl.{Component, Ref}
   * target whose root is the Definition. This DefinitionClone is used to represent the root parent of the
   * InstanceClone (which represents the returned module).
   */
-private[chisel3] class DefinitionClone[T <: BaseModule](val getProto: T) extends PseudoModule with core.IsClone[T] {
+private[chisel3] class DefinitionClone[T <: BaseModule](val getProto: T)
+    extends BaseModule()(UnlocatableSourceInfo)
+    with PseudoModule
+    with core.IsClone[T] {
   override def toString = s"DefinitionClone(${getProto})"
   override private[chisel3] def _definitionIdentifier = getProto.definitionIdentifier
   // No addition components are generated

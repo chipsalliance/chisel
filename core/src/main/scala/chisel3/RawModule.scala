@@ -19,8 +19,12 @@ import scala.collection.mutable.ArrayBuffer
   * This abstract base class is a user-defined module which does not include implicit clock and reset and supports
   * multiple IO() declarations.
   */
+// Dummy argument is required to ensure the constructors lower to different Java bytecode
 @nowarn("msg=class Port") // delete when Port becomes private
-abstract class RawModule extends BaseModule {
+abstract class RawModule private (sourceInfo: SourceInfo, dummy: Int = 0) extends BaseModule()(sourceInfo) {
+
+  // We don't want the sourceInfo to be available in the body of the class, so use auxiliary consructor with the implicit
+  def this()(implicit sourceInfo: SourceInfo) = this(sourceInfo)
 
   /** Hook to invoke hardware generators after the rest of the Module is constructed.
     *

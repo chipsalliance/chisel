@@ -5,6 +5,7 @@ package chisel3.experimental.hierarchy
 import chisel3.experimental.BaseModule
 import chisel3.internal.PseudoModule
 import chisel3.internal.firrtl.{Component, Ref}
+import chisel3.experimental.UnlocatableSourceInfo
 
 /** Represents a module viewed from a different instance context.
   *
@@ -16,7 +17,8 @@ import chisel3.internal.firrtl.{Component, Ref}
   * for ModuleClone.
   */
 private[chisel3] final class InstanceClone[T <: BaseModule](val getProto: T, val instName: () => String)
-    extends PseudoModule
+    extends BaseModule()(UnlocatableSourceInfo)
+    with PseudoModule
     with core.IsClone[T] {
   override def toString = s"InstanceClone(${getProto})"
   override private[chisel3] def _definitionIdentifier = getProto.definitionIdentifier

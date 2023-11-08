@@ -12,7 +12,7 @@ import scala.annotation.nowarn
 
 package internal {
 
-  private[chisel3] abstract class BaseBlackBox extends BaseModule {
+  private[chisel3] abstract class BaseBlackBox(implicit sourceInfo: SourceInfo) extends BaseModule {
     // Hack to make it possible to run the AddDedupAnnotation
     // pass. Because of naming bugs in imported definitions in D/I, it
     // is not possible to properly name EmptyExtModule created from
@@ -69,7 +69,13 @@ package experimental {
     * @note The parameters API is experimental and may change
     */
   @nowarn("msg=class Port") // delete when Port becomes private
-  abstract class ExtModule(val params: Map[String, Param] = Map.empty[String, Param]) extends BaseBlackBox {
+  abstract class ExtModule private (sourceInfo: SourceInfo, val params: Map[String, Param])
+      extends BaseBlackBox()(sourceInfo) {
+
+    // We don't want the sourceInfo to be available in the body of the class, so use auxiliary consructor with the implicit
+    def this(params: Map[String, Param] = Map.empty[String, Param])(implicit sourceInfo: SourceInfo) =
+      this(sourceInfo, params)
+
     private[chisel3] override def generateComponent(): Option[Component] = {
       require(!_closed, "Can't generate module more than once")
       _closed = true
@@ -127,9 +133,12 @@ package experimental {
   * @note The parameters API is experimental and may change
   */
 @nowarn("msg=class Port") // delete when Port becomes private
-abstract class BlackBox(
-  val params: Map[String, Param] = Map.empty[String, Param])
-    extends BaseBlackBox {
+abstract class BlackBox private (sourceInfo: SourceInfo, val params: Map[String, Param])
+    extends BaseBlackBox()(sourceInfo) {
+
+  // We don't want the sourceInfo to be available in the body of the class, so use auxiliary consructor with the implicit
+  def this(params: Map[String, Param] = Map.empty[String, Param])(implicit sourceInfo: SourceInfo) =
+    this(sourceInfo, params)
 
   // Find a Record port named "io" for purposes of stripping the prefix
   private[chisel3] lazy val _io: Option[Record] =

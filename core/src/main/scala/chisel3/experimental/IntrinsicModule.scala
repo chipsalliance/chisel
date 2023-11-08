@@ -8,7 +8,7 @@ import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import scala.annotation.nowarn
 
-private[chisel3] abstract class BaseIntrinsicModule(intrinsicName: String) extends BaseModule {
+private[chisel3] abstract class BaseIntrinsicModule(intrinsicName: String) extends BaseModule()(UnlocatableSourceInfo) {
   val intrinsic = intrinsicName
 }
 

@@ -321,4 +321,9 @@ class ModuleSpec extends ChiselPropSpec with Utils {
     val s = Source.fromFile(s"$testDir/PlusOne.sv").mkString("")
     assert(s.contains("assign io_out = io_in + 32'h1"))
   }
+
+  property("Modules should have source locators") {
+    val chirrtl = ChiselStage.emitCHIRRTL(new PlusOne)
+    println(chirrtl)
+  }
 }

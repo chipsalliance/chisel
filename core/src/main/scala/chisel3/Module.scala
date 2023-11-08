@@ -208,7 +208,11 @@ object Module extends SourceInfoDoc {
   *
   * @note Module instantiations must be wrapped in a Module() call.
   */
-abstract class Module extends RawModule {
+// Dummy argument is required to ensure the constructors lower to different Java bytecode
+abstract class Module private (sourceInfo: SourceInfo, dummy: Int = 0) extends RawModule()(sourceInfo) {
+
+  // We don't want the sourceInfo to be available in the body of the class, so use auxiliary consructor with the implicit
+  def this()(implicit sourceInfo: SourceInfo) = this(sourceInfo)
 
   /** Override this to explicitly set the type of reset you want on this module , before any reset inference */
   def resetType: Module.ResetType.Type = Module.ResetType.Default
@@ -339,8 +343,15 @@ package experimental {
   /** Abstract base class for Modules, an instantiable organizational unit for RTL.
     */
   // TODO: seal this?
+  // Dummy argument is required to ensure the constructors lower to different Java bytecode
   @nowarn("msg=class Port") // delete when Port becomes private
-  abstract class BaseModule extends HasId with IsInstantiable {
+  abstract class BaseModule private (private[chisel3] val sourceInfo: SourceInfo, dummy: Int = 0)
+      extends HasId
+      with IsInstantiable {
+
+    // We don't want the sourceInfo to be available in the body of the class, so use auxiliary consructor with the implicit
+    def this()(implicit sourceInfo: SourceInfo) = this(sourceInfo)
+
     _parent.foreach(_.addId(this))
 
     // Used with chisel3.naming.fixTraitIdentifier

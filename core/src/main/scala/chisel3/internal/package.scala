@@ -28,7 +28,7 @@ package object internal {
   trait MacroGenerated
 
   /** Marker trait for modules that are not true modules */
-  private[chisel3] trait PseudoModule extends BaseModule
+  private[chisel3] trait PseudoModule { self: BaseModule => }
 
   /* Check if a String name is a temporary name */
   def isTemp(name: String): Boolean = name.nonEmpty && name.head == '_'
@@ -76,7 +76,7 @@ package object internal {
   }
 
   /** Internal API for [[ViewParent]] */
-  sealed private[chisel3] class ViewParentAPI extends RawModule() with PseudoModule {
+  sealed private[chisel3] class ViewParentAPI extends RawModule()(UnlocatableSourceInfo) with PseudoModule {
     // We must provide `absoluteTarget` but not `toTarget` because otherwise they would be exactly
     // the same and we'd have no way to distinguish the kind of target when renaming view targets in
     // the Converter
