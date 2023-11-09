@@ -43,10 +43,6 @@ sealed trait PropertyType[T] {
   def convertUnderlying(value: T): Underlying
 }
 
-/** Non-sealed subclass of PropertyType for tuples to extend, since they are generated in a different file
-  */
-private[chisel3] trait TuplePropertyType[T] extends PropertyType[T]
-
 /** Trait for PropertyTypes that may lookup themselves up during implicit resolution
   *
   * This is to disallow nested Property types e.g. Property[Property[Property[Int]]](), Property[Property[Seq[Property[Int]]]]()
@@ -94,7 +90,7 @@ private[chisel3] abstract class ClassTypePropertyType[T](val classType: fir.Prop
   * Typeclass instances for valid Property types are defined here, so they will
   * be in the implicit scope and available for users.
   */
-private[chisel3] object PropertyType extends TuplePropertyTypeInstances with LowPriorityPropertyTypeInstances {
+private[chisel3] object PropertyType extends LowPriorityPropertyTypeInstances {
 
   def makeSimple[T](tpe: fir.PropertyType, getExpression: T => fir.Expression): SimplePropertyType[T] =
     new SimplePropertyType[T] {

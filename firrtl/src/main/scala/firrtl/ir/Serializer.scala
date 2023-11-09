@@ -127,21 +127,6 @@ object Serializer {
           if (idx != lastIdx) b ++= ", "
       }
       b += ')'
-    case TuplePropertyValue(values) =>
-      b ++= "Tuple<"
-      val lastIdx = values.size - 1
-      values.zipWithIndex.foreach {
-        case ((tpe, _), i) =>
-          s(tpe)
-          if (i != lastIdx) b ++= ", "
-      }
-      b ++= ">("
-      values.zipWithIndex.foreach {
-        case ((_, value), i) =>
-          s(value)
-          if (i != lastIdx) b ++= ", "
-      }
-      b += ')'
     case ProbeExpr(expr, _)   => b ++= "probe("; s(expr); b += ')'
     case RWProbeExpr(expr, _) => b ++= "rwprobe("; s(expr); b += ')'
     case ProbeRead(expr, _)   => b ++= "read("; s(expr); b += ')'
@@ -417,20 +402,11 @@ object Serializer {
     case BooleanPropertyType       => b ++= "Bool"
     case PathPropertyType          => b ++= "Path"
     case SequencePropertyType(tpe) => b ++= "List<"; s(tpe, lastEmittedConst); b += '>'
-    case TuplePropertyType(types) =>
-      val lastIdx = types.size - 1
-      b ++= "Tuple<"
-      types.zipWithIndex.foreach {
-        case (tpe, i) =>
-          s(tpe, lastEmittedConst)
-          if (i != lastIdx) b ++= ", "
-      }
-      b += '>'
-    case ClassPropertyType(name) => b ++= "Inst<"; b ++= name; b += '>'
-    case AnyRefPropertyType      => b ++= "AnyRef"
-    case AliasType(name)         => b ++= name
-    case UnknownType             => b += '?'
-    case other                   => b ++= other.serialize // Handle user-defined nodes
+    case ClassPropertyType(name)   => b ++= "Inst<"; b ++= name; b += '>'
+    case AnyRefPropertyType        => b ++= "AnyRef"
+    case AliasType(name)           => b ++= name
+    case UnknownType               => b += '?'
+    case other                     => b ++= other.serialize // Handle user-defined nodes
   }
 
   private def s(node: Direction)(implicit b: StringBuilder, indent: Int): Unit = node match {
