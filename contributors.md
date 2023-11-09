@@ -26,6 +26,7 @@
 - [`@diningyo`](https://github.com/diningyo)
 - [`@djmmoss`](https://github.com/djmmoss)
 - [`@dkravitz-sifive`](https://github.com/dkravitz-sifive)
+- [`@Dobios`](https://github.com/Dobios)
 - [`@donggyukim`](https://github.com/donggyukim)
 - [`@dt27182`](https://github.com/dt27182)
 - [`@ducky64`](https://github.com/ducky64)
