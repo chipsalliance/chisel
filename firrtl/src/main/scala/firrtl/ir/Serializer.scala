@@ -127,16 +127,6 @@ object Serializer {
           if (idx != lastIdx) b ++= ", "
       }
       b += ')'
-    case MapPropertyValue(tpe, values) =>
-      s(tpe)
-      b += '('
-      val lastIdx = values.size - 1
-      values.zipWithIndex.foreach {
-        case ((key, value), idx) =>
-          s(key); b ++= " -> "; s(value)
-          if (idx != lastIdx) b ++= ", "
-      }
-      b += ')'
     case TuplePropertyValue(values) =>
       b ++= "Tuple<"
       val lastIdx = values.size - 1
@@ -427,7 +417,6 @@ object Serializer {
     case BooleanPropertyType       => b ++= "Bool"
     case PathPropertyType          => b ++= "Path"
     case SequencePropertyType(tpe) => b ++= "List<"; s(tpe, lastEmittedConst); b += '>'
-    case MapPropertyType(k, v)     => b ++= "Map<"; s(k, lastEmittedConst); b ++= ", "; s(v, lastEmittedConst); b += '>'
     case TuplePropertyType(types) =>
       val lastIdx = types.size - 1
       b ++= "Tuple<"
