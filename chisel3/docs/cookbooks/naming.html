@@ -212,7 +212,7 @@ renaming these signals with more context-dependent names, but it is a work in pr
 <span class="c1">// circuit _18_Anon :</span>
 <span class="c1">//   type MyAliasedBundle = { foo : UInt&lt;8&gt;, bar : UInt&lt;1&gt;}</span>
 <span class="c1">// </span>
-<span class="c1">//   module _18_Anon :</span>
+<span class="c1">//   module _18_Anon : @[naming.md 252:28]</span>
 <span class="c1">//     input clock : Clock</span>
 <span class="c1">//     input reset : UInt&lt;1&gt;</span>
 <span class="c1">// </span>
@@ -240,7 +240,7 @@ renaming these signals with more context-dependent names, but it is a work in pr
 <span class="c1">//   type ChildBundle = { x : UInt&lt;8&gt;}</span>
 <span class="c1">//   type ParentBundle = { child : ChildBundle}</span>
 <span class="c1">// </span>
-<span class="c1">//   module _22_Anon :</span>
+<span class="c1">//   module _22_Anon : @[naming.md 275:28]</span>
 <span class="c1">//     input clock : Clock</span>
 <span class="c1">//     input reset : UInt&lt;1&gt;</span>
 <span class="c1">// </span>
@@ -267,7 +267,7 @@ renaming these signals with more context-dependent names, but it is a work in pr
 <span class="c1">// circuit _26_Anon :</span>
 <span class="c1">//   type StrippedBundle_stripped = { flipped : UInt&lt;8&gt;, normal : UInt&lt;8&gt;}</span>
 <span class="c1">// </span>
-<span class="c1">//   module _26_Anon :</span>
+<span class="c1">//   module _26_Anon : @[naming.md 293:28]</span>
 <span class="c1">//     input clock : Clock</span>
 <span class="c1">//     input reset : UInt&lt;1&gt;</span>
 <span class="c1">//     input in : StrippedBundle_stripped @[naming.md 294:14]</span>
@@ -295,7 +295,7 @@ renaming these signals with more context-dependent names, but it is a work in pr
 <span class="c1">// circuit _30_Anon :</span>
 <span class="c1">//   type StrippedBundleFoo = { flipped : UInt&lt;8&gt;, normal : UInt&lt;8&gt;}</span>
 <span class="c1">// </span>
-<span class="c1">//   module _30_Anon :</span>
+<span class="c1">//   module _30_Anon : @[naming.md 311:28]</span>
 <span class="c1">//     input clock : Clock</span>
 <span class="c1">//     input reset : UInt&lt;1&gt;</span>
 <span class="c1">//     input in : StrippedBundleFoo @[naming.md 312:14]</span>

@@ -110,7 +110,7 @@ ga('send', 'pageview');
 </span>  <span class="cp">`endif</span> <span class="c1">// PRINTF_COND</span>
 <span class="cp">`endif</span> <span class="c1">// not def PRINTF_COND_</span>
 
-<span class="k">module</span> <span class="n">HelloWorld</span><span class="p">(</span>	<span class="c1">// &lt;stdin&gt;:3:3</span>
+<span class="k">module</span> <span class="n">HelloWorld</span><span class="p">(</span>	<span class="c1">// faqs.md:11:7</span>
   <span class="kt">input</span> <span class="n">clock</span><span class="p">,</span>	<span class="c1">// &lt;stdin&gt;:4:11</span>
         <span class="n">reset</span>	<span class="c1">// &lt;stdin&gt;:5:11</span>
 <span class="p">);</span>
@@ -188,7 +188,7 @@ will ONLY return the string representation, and will not emit a <code class="lan
 </code></pre></div></div>
 <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>FIRRTL version 3.3.0
 circuit MyFirrtlModule :
-  module MyFirrtlModule :
+  module MyFirrtlModule : @[faqs.md 64:7]
     input clock : Clock
     input reset : UInt&lt;1&gt;
     output io : { } @[faqs.md 65:14]
