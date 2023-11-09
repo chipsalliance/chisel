@@ -30,15 +30,15 @@ class IntrinsicModuleSpec extends ChiselFlatSpec {
   (ChiselStage
     .emitCHIRRTL(new IntModuleTester)
     .split('\n')
-    .map(x => x.trim)
+    .map(_.trim.takeWhile(_ != '@'))
     should contain).allOf(
-    "intmodule IntModuleTest :",
+    "intmodule IntModuleTest : ",
     "intrinsic = TestIntrinsic",
-    "intmodule IntModuleParam :",
+    "intmodule IntModuleParam : ",
     "parameter STRING = \"one\"",
     "parameter REAL = 1.0",
     "intrinsic = OtherIntrinsic",
-    "intmodule IntModuleGenName :",
+    "intmodule IntModuleGenName : ",
     "intrinsic = someIntName"
   )
 }

@@ -343,6 +343,12 @@ package experimental {
   abstract class BaseModule extends HasId with IsInstantiable {
     _parent.foreach(_.addId(this))
 
+    // Protected so it can be overridden by the compiler plugin
+    protected def _sourceInfo: SourceInfo = UnlocatableSourceInfo
+
+    // Accessor for Chisels internals
+    private[chisel3] final def _getSourceLocator: SourceInfo = _sourceInfo
+
     // Used with chisel3.naming.fixTraitIdentifier
     protected def _traitModuleDefinitionIdentifierProposal: Option[String] = None
 

@@ -34,8 +34,8 @@ class IsXSpec extends AnyFlatSpec with Matchers {
   it should "work for types" in {
     val fir = ChiselStage.emitCHIRRTL(new IsXTop)
     (
-      (fir.split('\n').map(_.trim) should contain).allOf(
-        "intmodule IsXIntrinsic :",
+      (fir.split('\n').map(_.trim.takeWhile(_ != '@')) should contain).allOf(
+        "intmodule IsXIntrinsic : ",
         "input i : UInt<65>",
         "output found : UInt<1>",
         "intrinsic = circt_isX",
