@@ -12,14 +12,8 @@ object SourceInfoMacro {
   def generate_source_info(c: Context): c.Tree = {
     import c.universe._
     val p = c.enclosingPosition
+    val path = SourceInfoFileResolver.resolve(p.source)
 
-    val userDir = sys.props.get("user.dir") // Figure out what to do if not provided
-    val projectRoot = sys.props.get("chisel.project.root")
-    val root = projectRoot.orElse(userDir)
-
-    val path = root.map(r => p.source.file.canonicalPath.stripPrefix(r)).getOrElse(p.source.file.name)
-    val pathNoStartingSlash = if (path(0) == '/') path.tail else path
-
-    q"_root_.chisel3.experimental.SourceLine($pathNoStartingSlash, ${p.line}, ${p.column})"
+    q"_root_.chisel3.experimental.SourceLine($path, ${p.line}, ${p.column})"
   }
 }

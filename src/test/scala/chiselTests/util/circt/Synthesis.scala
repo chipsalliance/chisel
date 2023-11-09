@@ -23,9 +23,9 @@ private class Mux2CellTop extends Module {
 class Mux2CellSpec extends AnyFlatSpec with Matchers {
   it should "work for types" in {
     val fir = ChiselStage.emitCHIRRTL(new Mux2CellTop)
-    (fir.split('\n').map(_.trim) should contain)
+    (fir.split('\n').map(_.trim.takeWhile(_ != '@')) should contain)
       .allOf(
-        "intmodule Mux2CellIntrinsic :",
+        "intmodule Mux2CellIntrinsic : ",
         "input sel : UInt<1>",
         "input high : UInt<32>",
         "input low : UInt<32>",
@@ -48,9 +48,9 @@ private class Mux4CellTop extends Module {
 class Mux4CellSpec extends AnyFlatSpec with Matchers {
   it should "work for types" in {
     val fir = ChiselStage.emitCHIRRTL(new Mux4CellTop)
-    (fir.split('\n').map(_.trim) should contain)
+    (fir.split('\n').map(_.trim.takeWhile(_ != '@')) should contain)
       .allOf(
-        "intmodule Mux4CellIntrinsic :",
+        "intmodule Mux4CellIntrinsic : ",
         "input sel : UInt<2>",
         "input v3 : UInt<32>",
         "input v2 : UInt<32>",

@@ -9,6 +9,8 @@ import scala.tools.nsc.{Global, Phase}
 import scala.tools.nsc.plugins.PluginComponent
 import scala.tools.nsc.transform.TypingTransformers
 
+import chisel3.internal.sourceinfo.SourceInfoFileResolver
+
 // The component of the chisel plugin. Not sure exactly what the difference is between
 //   a Plugin and a PluginComponent.
 class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
@@ -245,6 +247,24 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
         } else {
           super.transform(tree)
         }
+      // Also look for Module class definitions for inserting source locators
+      case module: ClassDef if isAModule(module.symbol) && !module.mods.hasFlag(Flag.ABSTRACT) =>
+        val path = SourceInfoFileResolver.resolve(module.pos.source)
+        val info = localTyper.typed(q"chisel3.experimental.SourceLine($path, ${module.pos.line}, ${module.pos.column})")
+
+        val sourceInfoSym =
+          module.symbol.newMethod(TermName("_sourceInfo"), module.symbol.pos.focus, Flag.OVERRIDE | Flag.PROTECTED)
+        sourceInfoSym.resetFlag(Flags.METHOD)
+        sourceInfoSym.setInfo(NullaryMethodType(sourceInfoTpe))
+        val sourceInfoImpl = localTyper.typed(
+          DefDef(sourceInfoSym, info)
+        )
+
+        val moduleWithInfo = deriveClassDef(module) { t =>
+          deriveTemplate(t)(sourceInfoImpl :: _)
+        }
+        super.transform(localTyper.typed(moduleWithInfo))
+
       // Otherwise, continue
       case _ => super.transform(tree)
     }

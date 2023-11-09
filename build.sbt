@@ -371,6 +371,10 @@ lazy val unipublish =
     .aggregate(plugin) // Also publish the plugin when publishing this project
     .settings(name := (chisel / name).value)
     .enablePlugins(ScalaUnidocPlugin)
+    .settings(
+      // Plugin isn't part of Chisel's public API, exclude from ScalaDoc
+      ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(plugin)
+    )
     .settings(commonSettings: _*)
     .settings(publishSettings: _*)
     .settings(usePluginSettings: _*)

@@ -23,8 +23,8 @@ private class PlusArgsTestTop extends Module {
 class PlusArgsTestSpec extends AnyFlatSpec with Matchers {
   it should "work for types" in {
     val fir = ChiselStage.emitCHIRRTL(new PlusArgsTestTop)
-    (fir.split('\n').map(_.trim) should contain).allOf(
-      "intmodule PlusArgsTestIntrinsic :",
+    (fir.split('\n').map(_.trim.takeWhile(_ != '@')) should contain).allOf(
+      "intmodule PlusArgsTestIntrinsic : ",
       "output found : UInt<1>",
       "intrinsic = circt_plusargs_test",
       "parameter FORMAT = \"FOO\"",
