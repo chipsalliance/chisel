@@ -24,6 +24,31 @@ class RelativeOuterRootModule extends RawModule {
   }
 }
 
+class RelativeCurrentModule extends RawModule {
+  val wire = Wire(Bool())
+
+  val child = Module(new RawModule {
+    override def desiredName = "Child"
+    val io = IO(Output(Bool()))
+  })
+
+  val io = IO(Output(Bool()))
+
+  atModuleBodyEnd {
+    val reference1 = wire.toRelativeTarget(Some(this))
+    val referenceOut1 = IO(Output(Property[Path]()))
+    referenceOut1 := Property(Path(reference1))
+
+    val reference2 = child.io.toRelativeTarget(Some(this))
+    val referenceOut2 = IO(Output(Property[Path]()))
+    referenceOut2 := Property(Path(reference2))
+
+    val reference3 = io.toRelativeTarget(Some(this))
+    val referenceOut3 = IO(Output(Property[Path]()))
+    referenceOut3 := Property(Path(reference3))
+  }
+}
+
 class RelativeOuterMiddleModule extends RawModule {
   val middle = Module(new RelativeMiddleModule())
   val reference = middle.inner.wire.toRelativeTarget(Some(middle))
@@ -121,6 +146,14 @@ class ToTargetSpec extends ChiselFlatSpec with Utils {
     chirrtl should include(
       "~RelativeOuterRootModule|RelativeOuterRootModule/middle:RelativeMiddleModule/inner:RelativeInnerModule>wire"
     )
+  }
+
+  it should "work relative to modules being elaborated for HasIds within the module" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RelativeCurrentModule)
+
+    chirrtl should include("~RelativeCurrentModule|RelativeCurrentModule>wire")
+    chirrtl should include("~RelativeCurrentModule|RelativeCurrentModule/child:Child>io")
+    chirrtl should include("~RelativeCurrentModule|RelativeCurrentModule>io")
   }
 
   it should "work relative to non top-level modules that have been elaborated" in {
