@@ -148,7 +148,7 @@ class ToTargetSpec extends ChiselFlatSpec with Utils {
     )
   }
 
-  it should "work relative to modules being elaborated for NamedComponents within the module" in {
+  it should "work relative to modules being elaborated for HasIds within the module" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RelativeCurrentModule)
 
     chirrtl should include("~RelativeCurrentModule|RelativeCurrentModule>wire")

@@ -317,9 +317,10 @@ private[chisel3] trait HasId extends chisel3.InstanceId {
         case (None, _: MemBase[_]) => _ref.get.localName
         case (None, _) if _ref.isDefined => {
           // Support instance names for HasIds that don't have a _parent set yet, but do have a _ref set.
-          // This allows most HasIds to be named in atModuleBodyEnd, for example.
-          // However, this is only valid if the _ref's fullName doesn't depend on the component name.
-          // Notably, this is not valid for ports of instances, and other constructs that need the _parent's name.
+          // This allows HasIds to be named in atModuleBodyEnd, for example.
+          // In this case, we directly use the localName. This is valid, because the only time names are
+          // context-dependent is on ports. If a port doesn't have a _parent set yet, the port must be within
+          // the currently elaborating module, and should be named by its localName.
           _ref.get.localName
         }
         case (None, _) =>
