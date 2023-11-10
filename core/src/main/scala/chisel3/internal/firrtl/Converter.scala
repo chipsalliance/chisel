@@ -333,6 +333,10 @@ private[chisel3] object Converter {
               stmts = frame.outer
               stmts += groupDefine
               scope = scope.tail
+            case lazyCmd: LazyCommand[_] =>
+              if (lazyCmd.isUsed) {
+                nextCmd = lazyCmd.value
+              }
           }
       }
     }

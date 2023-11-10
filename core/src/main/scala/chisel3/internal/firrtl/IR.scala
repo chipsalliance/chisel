@@ -302,6 +302,16 @@ abstract class Command {
   def sourceInfo: SourceInfo
 }
 
+/** Box for defining Commands that may or may not be used */
+private[chisel3] case class LazyCommand[A <: Command](value: A) extends Command {
+  private var _used = false
+  def markUsed(): Unit = {
+    _used = true
+  }
+  def isUsed:     Boolean = _used
+  def sourceInfo: SourceInfo = value.sourceInfo
+}
+
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 abstract class Definition extends Command {
   def id: HasId

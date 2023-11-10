@@ -4,7 +4,7 @@ package chisel3.internal
 
 import chisel3._
 import chisel3.experimental.BaseModule
-import chisel3.internal.firrtl.{LitArg, PropertyLit}
+import chisel3.internal.firrtl.{DefNode, LazyCommand, LitArg, PropertyLit}
 import chisel3.properties.Class
 
 import scala.collection.immutable.VectorMap
@@ -122,7 +122,7 @@ case class ChildBinding(parent: Data) extends Binding {
 
 // TODO need to store visibility and enclosure (although rvalue's parent is the enclosure) so that we can check
 // and not return the rvalue when it is out of lexical scope
-private[chisel3] case class SubAccessBinding(parent: Data, var rvalue: Data) extends TopBinding {
+private[chisel3] case class SubAccessBinding(parent: Data, rvalue: LazyCommand[DefNode[Data]]) extends TopBinding {
   def location: Option[BaseModule] = parent.topBinding.location
 }
 

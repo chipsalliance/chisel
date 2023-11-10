@@ -318,8 +318,8 @@ private[chisel3] trait HasId extends chisel3.InstanceId {
           val target = this match {
             case d: Data =>
               d.topBindingOpt match {
-                case Some(SubAccessBinding(_, rvalue)) => rvalue
-                case _                                 => this
+                case Some(SubAccessBinding(_, rvalueCmd)) => rvalueCmd.value.id
+                case _                                    => this
               }
             case _ => this
           }

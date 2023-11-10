@@ -364,10 +364,14 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
     // we can forward any attempts to name or annotate the subaccess and return the node when an rvalue is requested.
     // The node itself also has a reference to the subaccess to generate the actual FIRRTL of the subaccess
     // Thus we have a weird circular dependency where the node refers to the subaccess and the subaccess binding refers to the node.
-    val rvalue = gen
-    rvalue.bind(OpBinding(Builder.forcedUserModule, Builder.currentWhen))
-    val node = DefNode(UnlocatableSourceInfo, rvalue, Node(port))
-    Builder.pushCommand(node)
+    val rvalue = {
+      val data = gen
+      data.bind(OpBinding(Builder.forcedUserModule, Builder.currentWhen))
+      val node: DefNode[Data] = DefNode(UnlocatableSourceInfo, data, Node(port))
+      val command = LazyCommand(node)
+      Builder.pushCommand(command)
+      command
+    }
 
     val portBinding = SubAccessBinding(this, rvalue)
     port.bind(portBinding, reconstructedResolvedDirection)
