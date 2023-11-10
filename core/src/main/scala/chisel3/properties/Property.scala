@@ -10,7 +10,6 @@ import chisel3.internal.{firrtl => ir}
 import chisel3.experimental.{prefix, requireIsHardware, SourceInfo}
 import scala.reflect.runtime.universe.{typeOf, TypeTag}
 import scala.annotation.{implicitAmbiguous, implicitNotFound}
-import scala.collection.immutable.SeqMap
 import chisel3.experimental.BaseModule
 import chisel3.internal.NamedComponent
 
@@ -44,10 +43,6 @@ sealed trait PropertyType[T] {
   def convertUnderlying(value: T): Underlying
 }
 
-/** Non-sealed subclass of PropertyType for tuples to extend, since they are generated in a different file
-  */
-private[chisel3] trait TuplePropertyType[T] extends PropertyType[T]
-
 /** Trait for PropertyTypes that may lookup themselves up during implicit resolution
   *
   * This is to disallow nested Property types e.g. Property[Property[Property[Int]]](), Property[Property[Seq[Property[Int]]]]()
@@ -77,40 +72,11 @@ private[chisel3] class SeqPropertyType[A, F[A] <: Seq[A], PT <: PropertyType[A]]
     value.map(tpe.convertUnderlying(_))
 }
 
-private[chisel3] class MapPropertyType[K, V, F[K, V] <: SeqMap[K, V], KPT <: PropertyType[K], VPT <: PropertyType[V]](
-  val ktpe: KPT,
-  val vtpe: VPT)
-    extends PropertyType[F[K, V]] {
-  type Type = F[ktpe.Type, vtpe.Type]
-  override def getPropertyType(): fir.PropertyType =
-    fir.MapPropertyType(ktpe.getPropertyType(), vtpe.getPropertyType())
-  type Underlying = Seq[(ktpe.Underlying, vtpe.Underlying)]
-  override def convert(value: Underlying, ctx: ir.Component, info: SourceInfo): fir.Expression =
-    fir.MapPropertyValue(
-      fir.MapPropertyType(
-        ktpe.getPropertyType(),
-        vtpe.getPropertyType()
-      ),
-      value.map {
-        case (key, value) =>
-          ktpe.convert(key, ctx, info) -> vtpe.convert(value, ctx, info)
-      }
-    )
-  override def convertUnderlying(value: F[K, V]): Underlying =
-    value.toSeq.map { case (k, v) => ktpe.convertUnderlying(k) -> vtpe.convertUnderlying(v) }
-}
-
-/** This contains recursive versions of Seq and SeqMap PropertyTypes. These instances need be lower priority to prevent ambiguous implicit errors with the non-recursive versions.
+/** This contains recursive versions of Seq PropertyTypes. These instances need be lower priority to prevent ambiguous implicit errors with the non-recursive versions.
   */
 private[chisel3] trait LowPriorityPropertyTypeInstances {
   implicit def sequencePropertyTypeInstance[A, F[A] <: Seq[A]](implicit tpe: RecursivePropertyType[A]) =
     new SeqPropertyType[A, F, tpe.type](tpe) with RecursivePropertyType[F[A]]
-
-  implicit def mapPropertyTypeInstance[K, V, F[K, V] <: SeqMap[K, V]](
-    implicit ktpe: RecursivePropertyType[K],
-    vtpe:          RecursivePropertyType[V]
-  ) =
-    new MapPropertyType[K, V, F, ktpe.type, vtpe.type](ktpe, vtpe) with RecursivePropertyType[F[K, V]]
 }
 
 private[chisel3] abstract class ClassTypePropertyType[T](val classType: fir.PropertyType)
@@ -124,7 +90,7 @@ private[chisel3] abstract class ClassTypePropertyType[T](val classType: fir.Prop
   * Typeclass instances for valid Property types are defined here, so they will
   * be in the implicit scope and available for users.
   */
-private[chisel3] object PropertyType extends TuplePropertyTypeInstances with LowPriorityPropertyTypeInstances {
+private[chisel3] object PropertyType extends LowPriorityPropertyTypeInstances {
 
   def makeSimple[T](tpe: fir.PropertyType, getExpression: T => fir.Expression): SimplePropertyType[T] =
     new SimplePropertyType[T] {
@@ -204,12 +170,6 @@ private[chisel3] object PropertyType extends TuplePropertyTypeInstances with Low
 
   implicit def recursiveSequencePropertyTypeInstance[A, F[A] <: Seq[A]](implicit tpe: PropertyType[A]) =
     new SeqPropertyType[A, F, tpe.type](tpe)
-
-  implicit def recursiveMapPropertyTypeInstance[K, V, F[K, V] <: SeqMap[K, V]](
-    implicit ktpe: PropertyType[K],
-    vtpe:          PropertyType[V]
-  ) =
-    new MapPropertyType[K, V, F, ktpe.type, vtpe.type](ktpe, vtpe)
 }
 
 /** Property is the base type for all properties.

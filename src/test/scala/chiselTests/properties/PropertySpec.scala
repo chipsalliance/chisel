@@ -6,7 +6,6 @@ import chisel3._
 import chisel3.properties.{Class, Path, Property, PropertyType}
 import chiselTests.{ChiselFlatSpec, MatchesAndOmits}
 import circt.stage.ChiselStage
-import scala.collection.immutable.{ListMap, SeqMap, VectorMap}
 import chisel3.properties.ClassType
 import chisel3.properties.AnyClassType
 
@@ -296,121 +295,12 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
     )()
   }
 
-  it should "support SeqMap[String, Int], VectorMap[String, Int], and ListMap[String, Int] as a Property type" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val mapProp1 = IO(Input(Property[SeqMap[String, Int]]()))
-      val mapProp2 = IO(Input(Property[VectorMap[String, Int]]()))
-      val mapProp3 = IO(Input(Property[ListMap[String, Int]]()))
-    })
-
-    matchesAndOmits(chirrtl)(
-      "input mapProp1 : Map<String, Integer>",
-      "input mapProp2 : Map<String, Integer>",
-      "input mapProp3 : Map<String, Integer>"
-    )()
-  }
-
-  it should "support nested Maps as a Property type" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val nestedMapProp = IO(Input(Property[SeqMap[String, SeqMap[String, SeqMap[String, Int]]]]()))
-    })
-
-    matchesAndOmits(chirrtl)(
-      "input nestedMapProp : Map<String, Map<String, Map<String, Integer>>>"
-    )()
-  }
-
-  it should "support SeqMap[String, BigInt] as Property values" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val propOut = IO(Output(Property[SeqMap[String, BigInt]]()))
-      propOut := Property(
-        SeqMap("foo" -> 123, "bar" -> 456)
-      )
-    })
-
-    matchesAndOmits(chirrtl)(
-      """propassign propOut, Map<String, Integer>(String("foo") -> Integer(123), String("bar") -> Integer(456))"""
-    )()
-  }
-
-  it should "support VectorMap[BigInt, String] as Property values" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val propOut = IO(Output(Property[VectorMap[BigInt, String]]()))
-      propOut := Property(
-        VectorMap(123 -> "foo", 456 -> "bar")
-      )
-    })
-
-    matchesAndOmits(chirrtl)(
-      """propassign propOut, Map<Integer, String>(Integer(123) -> String("foo"), Integer(456) -> String("bar"))"""
-    )()
-  }
-
-  it should "support mixed Maps of Integer literal and ports as Map Property values" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val propIn = IO(Input(Property[BigInt]()))
-      val propOut = IO(Output(Property[SeqMap[String, BigInt]]()))
-      propOut := Property(SeqMap("foo" -> propIn, "bar" -> Property(BigInt(123))))
-    })
-
-    matchesAndOmits(chirrtl)(
-      """propassign propOut, Map<String, Integer>(String("foo") -> propIn, String("bar") -> Integer(123))"""
-    )()
-  }
-
-  it should "support tuples as a Property type" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val a = IO(Output(Property[(Int, String)]()))
-      val b = IO(Output(Property[(Int, (String, Seq[Double]))]()))
-      val c = IO(Output(Property[(Int, String, Seq[Double], Int, String)]()))
-    })
-
-    matchesAndOmits(chirrtl)(
-      "output a : Tuple<Integer, String>",
-      "output b : Tuple<Integer, Tuple<String, List<Double>>>",
-      "output c : Tuple<Integer, String, List<Double>, Integer, String>"
-    )()
-  }
-
-  it should "support tuples as Property values" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val a = IO(Output(Property[(Int, String, Seq[Double])]()))
-      val b = IO(Output(Property[(Int, String, Seq[Double])]()))
-      val c = IO(Output(Property[(Int, String, Seq[Double])]()))
-      val d = IO(Output(Property[(Int, String, Seq[Double])]()))
-      val e = IO(Output(Property[(Int, String, Seq[Double])]()))
-
-      a := Property((123, "foobar", Seq(123.456)))
-      b := Property((123, Property("foobar"), Seq(123.456)))
-      c := Property((123, "foobar", Property(Seq(123.456))))
-      d := Property((Property(123), "foobar", Seq(123.456)))
-      e := Property((Property(123), Property("foobar"), Seq(Property(123.456))))
-    })
-
-    matchesAndOmits(chirrtl)(
-      "output a : Tuple<Integer, String, List<Double>>",
-      "output b : Tuple<Integer, String, List<Double>>",
-      "output c : Tuple<Integer, String, List<Double>>",
-      "output d : Tuple<Integer, String, List<Double>>",
-      "output e : Tuple<Integer, String, List<Double>>",
-      """propassign a, Tuple<Integer, String, List<Double>>(Integer(123), String("foobar"), List<Double>(Double(123.456)))""",
-      """propassign b, Tuple<Integer, String, List<Double>>(Integer(123), String("foobar"), List<Double>(Double(123.456)))""",
-      """propassign c, Tuple<Integer, String, List<Double>>(Integer(123), String("foobar"), List<Double>(Double(123.456)))""",
-      """propassign d, Tuple<Integer, String, List<Double>>(Integer(123), String("foobar"), List<Double>(Double(123.456)))""",
-      """propassign e, Tuple<Integer, String, List<Double>>(Integer(123), String("foobar"), List<Double>(Double(123.456)))"""
-    )()
-  }
-
   it should "support nested collections without nested Property[_] values" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val a = IO(Output(Property[Seq[SeqMap[String, Seq[Property[Int]]]]]()))
-      val b = IO(Output(Property[Seq[SeqMap[String, Property[Seq[Int]]]]]()))
-      val c = IO(Output(Property[Seq[Property[SeqMap[String, Seq[Int]]]]]()))
-      val d = IO(Output(Property[Property[Seq[SeqMap[String, Seq[Int]]]]]()))
-      a := Property(Seq[SeqMap[String, Seq[Int]]](SeqMap("foo" -> Seq(123))))
-      b := Property(Seq[SeqMap[String, Seq[Int]]](SeqMap("foo" -> Seq(123))))
-      c := Property(Seq[SeqMap[String, Seq[Int]]](SeqMap("foo" -> Seq(123))))
-      d := Property(Seq[SeqMap[String, Seq[Int]]](SeqMap("foo" -> Seq(123))))
+      val a = IO(Output(Property[Seq[Seq[Property[Int]]]]()))
+      val b = IO(Output(Property[Seq[Property[Seq[Int]]]]()))
+      a := Property(Seq[Seq[Int]](Seq(123)))
+      b := Property(Seq[Seq[Int]](Seq(123)))
     })
 
     assertTypeError {
@@ -418,23 +308,17 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
     }
 
     matchesAndOmits(chirrtl)(
-      "output a : List<Map<String, List<Integer>>>",
-      "output b : List<Map<String, List<Integer>>>",
-      "output c : List<Map<String, List<Integer>>>",
-      "output d : List<Map<String, List<Integer>>>",
-      """propassign a, List<Map<String, List<Integer>>>(Map<String, List<Integer>>(String("foo") -> List<Integer>(Integer(123))))""",
-      """propassign b, List<Map<String, List<Integer>>>(Map<String, List<Integer>>(String("foo") -> List<Integer>(Integer(123))))""",
-      """propassign c, List<Map<String, List<Integer>>>(Map<String, List<Integer>>(String("foo") -> List<Integer>(Integer(123))))""",
-      """propassign d, List<Map<String, List<Integer>>>(Map<String, List<Integer>>(String("foo") -> List<Integer>(Integer(123))))"""
+      "output a : List<List<Integer>>",
+      "output b : List<List<Integer>>",
+      """propassign a, List<List<Integer>>(List<Integer>(Integer(123)))""",
+      """propassign b, List<List<Integer>>(List<Integer>(Integer(123)))"""
     )()
   }
 
   it should "not support types with nested Property[_]" in {
     assertTypeError("Property[Property[Property[Int]]]()")
     assertTypeError("Property[Property[Seq[Property[Int]]]]()")
-    assertTypeError("Property[Property[SeqMap[String, Property[Int]]]]()")
     assertTypeError("Property[Property[Seq[Property[Seq[Property[Int]]]]]]()")
-    assertTypeError("Property[Property[SeqMap[String, Property[Seq[Property[Int]]]]]]()")
   }
 
   it should "be supported as a field of a Bundle" in {
