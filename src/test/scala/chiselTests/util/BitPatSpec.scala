@@ -2,6 +2,7 @@
 
 package chiselTests.util
 
+import chisel3._
 import chisel3.util.BitPat
 import _root_.circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
@@ -48,5 +49,33 @@ class BitPatSpec extends AnyFlatSpec with Matchers {
     b(2, 0) should be(BitPat("b???"))
     b(4, 3) should be(BitPat("b01"))
     b(6, 6) should be(BitPat("b1"))
+  }
+
+  it should "construct BitPat from Bundle" in {
+    import chisel3.experimental.ChiselEnum
+
+    object MyEnum extends ChiselEnum {
+      val sA, sB = Value
+    }
+
+    class MyBundle extends Bundle {
+      class YourBundle extends Bundle {
+        val b = Bool()
+        val c = MyEnum()
+      }
+      val a = UInt(8.W)
+      val b = new YourBundle
+      val c = MyEnum()
+    }
+
+    import chisel3.util.BitPat.RecordToBitPat
+
+    (new MyBundle).bp { b =>
+      Map(
+        b.a -> BitPat(5.U(8.W)), // 00000101
+        b.c -> BitPat(MyEnum.sB.litValue.U(MyEnum.getWidth.W)), // 1
+        b.b.c -> BitPat(MyEnum.sA.litValue.U(MyEnum.getWidth.W)), // 0
+      )
+    } == BitPat("b1_0_?_0_0000101")
   }
 }

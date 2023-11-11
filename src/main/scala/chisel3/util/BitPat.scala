@@ -10,7 +10,18 @@ import scala.collection.mutable
 import scala.util.hashing.MurmurHash3
 
 object BitPat {
-
+  implicit class RecordToBitPat[T <: Record](x: T) {
+    def bp[T <: Record](terms: x.type => Map[Data, BitPat]): BitPat ={
+      x.allElements.map{ e =>
+        terms(x).get(e) match {
+          case Some(value) =>
+            require(value.getWidth == e.getWidth, "BitPat width and data width not equal failed to construct BitPat.")
+            value
+          case None => chisel3.util.BitPat.dontCare(e.getWidth)
+        }
+      }
+    }.reduce(_ ## _)
+  }
   private[chisel3] implicit val bitPatOrder = new Ordering[BitPat] {
     import scala.math.Ordered.orderingToOrdered
     def compare(x: BitPat, y: BitPat): Int = (x.getWidth, x.value, x.mask).compare(y.getWidth, y.value, y.mask)
