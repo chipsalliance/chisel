@@ -71,9 +71,7 @@ lazy val warningSuppression = Seq(
     "msg=undefined in comment for method cf in class PrintableHelper:s",
     // This is deprecated for external users but not internal use
     "cat=deprecation&origin=firrtl\\.options\\.internal\\.WriteableCircuitAnnotation:s",
-    "cat=deprecation&origin=chisel3\\.util\\.experimental\\.BoringUtils.*:s",
-    // Suppress Scala 3 behavior requiring explicit types on implicit definitions
-    "cat=other-implicit-type:s"
+    "cat=deprecation&origin=chisel3\\.util\\.experimental\\.BoringUtils.*:s"
   ).mkString(",")
 )
 
@@ -331,6 +329,11 @@ lazy val chisel = (project in file("."))
   .dependsOn(firrtl)
   .dependsOn(svsim)
   .aggregate(macros, core, plugin, firrtl, svsim)
+  .settings(
+    // Suppress Scala 3 behavior requiring explicit types on implicit definitions
+    // Note this must come before the -Wconf is warningSuppression
+    Test / scalacOptions += "-Wconf:cat=other-implicit-type:s"
+  )
   .settings(warningSuppression: _*)
   .settings(fatalWarningsSettings: _*)
   .settings(

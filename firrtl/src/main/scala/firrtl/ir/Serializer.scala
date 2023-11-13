@@ -206,7 +206,7 @@ object Serializer {
 
     // We could initialze the StringBuilder size, but this is bad for small modules which may not
     // even reach the bufferSize.
-    private implicit val b = new StringBuilder
+    private implicit val b: StringBuilder = new StringBuilder
 
     // The flattening of Whens into WhenBegin and friends requires us to keep track of the
     // indention level
