@@ -323,7 +323,8 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   // Special handling for Vec dynamic indices which themselves cannot be named so they forward the name
   // to a special rvalue node
   private[chisel3] override def forceAutoSeed(seed: String): this.type = this.binding match {
-    case Some(SubAccessBinding(_, rvalueCmd)) =>
+    case Some(SubAccessBinding(_, lvalueCmd, rvalueCmd)) =>
+      lvalueCmd.value.id.forceAutoSeed(seed)
       rvalueCmd.value.id.forceAutoSeed(seed)
       this
     case _ => super.forceAutoSeed(seed)
@@ -655,7 +656,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
           requireVisible()
         }
         binding match {
-          case SubAccessBinding(_, rvalueCmd) =>
+          case SubAccessBinding(_, _, rvalueCmd) =>
             rvalueCmd.markUsed()
             Node(rvalueCmd.value.id)
           case _ => Node(this)

@@ -370,10 +370,16 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
       val node: DefNode[Data] = DefNode(UnlocatableSourceInfo, data, Node(port))
       val command = LazyCommand(node)
       Builder.pushCommand(command)
-      command
     }
 
-    val portBinding = SubAccessBinding(this, rvalue)
+    val lvalue = {
+      val data = gen
+      data.bind(WireBinding(Builder.forcedUserModule, Builder.currentWhen))
+      val command = LazyCommand(DefWire(sourceInfo, data))
+      Builder.pushCommand(command)
+    }
+
+    val portBinding = SubAccessBinding(this, lvalue, rvalue)
     port.bind(portBinding, reconstructedResolvedDirection)
 
     port
