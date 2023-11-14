@@ -177,7 +177,8 @@ class ClassSpec extends ChiselFlatSpec with MatchesAndOmits {
     matchesAndOmits(chirrtl)(
       "class Test",
       "object obj1 of Test",
-      "object obj2 of Test"
+      "object obj2 of Test",
+      "propassign obj2.in, obj1.out"
     )()
   }
 }
