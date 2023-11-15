@@ -444,7 +444,7 @@ class PanamaCIRCT {
     MlirType(CAPI.firrtlTypeGetBundle(arena, mlirCtx, fields.length, buffer))
   }
 
-  def firrtlAttrGetPortDirs(dirs: Seq[FIRRTLPortDir]): MlirAttribute = {
+  def firrtlAttrGetPortDirs(dirs: Seq[FIRRTLDirection]): MlirAttribute = {
     val (ptr, length) = seqToArray(dirs)
     MlirAttribute(CAPI.firrtlAttrGetPortDirs(arena, mlirCtx, length, ptr))
   }
@@ -657,13 +657,13 @@ object FIRRTLNameKind {
   final case object InterestingName extends FIRRTLNameKind(value = CAPI.FIRRTL_NAME_KIND_INTERESTING_NAME())
 }
 
-sealed abstract class FIRRTLPortDir(val value: Int) extends ForeignType[Int] {
+sealed abstract class FIRRTLDirection(val value: Int) extends ForeignType[Int] {
   private[circt] def get = value
   private[circt] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
 }
-object FIRRTLPortDir {
-  final case object Input extends FIRRTLPortDir(value = CAPI.FIRRTL_PORT_DIR_INPUT())
-  final case object Output extends FIRRTLPortDir(value = CAPI.FIRRTL_PORT_DIR_OUTPUT())
+object FIRRTLDirection {
+  final case object In extends FIRRTLDirection(value = CAPI.FIRRTL_DIRECTION_IN())
+  final case object Out extends FIRRTLDirection(value = CAPI.FIRRTL_DIRECTION_OUT())
 }
 
 sealed abstract class firrtlAttrGetRUW(val value: Int) extends ForeignType[Int] {
