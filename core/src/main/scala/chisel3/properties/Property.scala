@@ -350,6 +350,14 @@ object Property {
     def as(prop: Property[ClassType]): Property[ClassType] with prop.ClassType =
       prop.asInstanceOf[Property[ClassType] with prop.ClassType]
 
+    /** Connect a reference to an Instance[Class] to a Property[ClassType] prop.
+      *
+      * This method allows Instances of Classes to be safely connected to Property[ClassType] ports, so the references
+      * can be passed through the hierarchy.
+      *
+      * @param source An Instance[T <: Class], where T is the same class as prop's ClassType.
+      * @param sourceInfo The source location where the connection is made, for error messages.
+      */
     def :=[T <: Class](source: Instance[T])(implicit sourceInfo: SourceInfo) = {
       // Get the BaseModule from the source Instance.
       val baseModule = source.getInnerDataContext.getOrElse(
