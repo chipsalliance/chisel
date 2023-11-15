@@ -33,7 +33,7 @@ case class Op(state: MlirOperationState, op: MlirOperation, regions: Seq[Region]
 
 case class Ports(
   types:           Seq[MlirType],
-  dirs:            Seq[FIRRTLPortDir],
+  dirs:            Seq[FIRRTLDirection],
   locs:            Seq[MlirLocation],
   names:           Seq[String],
   nameAttrs:       Seq[MlirAttribute],
@@ -199,8 +199,8 @@ class PanamaCIRCTConverter extends CIRCTConverter {
       Ports(
         types = types,
         dirs = irs.map(_.direction match {
-          case fir.Input  => FIRRTLPortDir.Input
-          case fir.Output => FIRRTLPortDir.Output
+          case fir.Input  => FIRRTLDirection.In
+          case fir.Output => FIRRTLDirection.Out
         }),
         locs = locs,
         names = irs.map(_.name),
