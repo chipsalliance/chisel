@@ -523,9 +523,6 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
       // this is still fine because we already know the ClassType of a
       c :#= a
 
-      // note that assigning to a property of the wrong ClassType is still possible, because everything has type Property[ClassType]
-      c :#= Class.unsafeGetDynamicObject("SomeOtherClass").getReference
-
       val obj = Class.unsafeGetDynamicObject("FooBar")
       val objRef = obj.getReference
       val d = IO(Output(objRef.cloneType))

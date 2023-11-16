@@ -3,7 +3,7 @@
 package chiselTests.properties
 
 import chisel3._
-import chisel3.experimental.hierarchy.{instantiable, Definition, Instance}
+import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance}
 import chisel3.properties.{Class, DynamicObject, Property}
 import chiselTests.{ChiselFlatSpec, MatchesAndOmits}
 import circt.stage.ChiselStage
@@ -130,6 +130,55 @@ class ClassSpec extends ChiselFlatSpec with MatchesAndOmits {
       "class Test",
       "class Parent",
       "object obj1 of Test"
+    )()
+  }
+
+  it should "support instantiation with Instance" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(
+      new RawModule {
+        val cls = Definition(new Class {
+          override def desiredName = "Test"
+          val in = IO(Input(Property[Int]()))
+          val out = IO(Output(Property[Int]()))
+          out := in
+        })
+
+        val obj1 = Instance(cls)
+        val obj2 = Instance(cls)
+      }
+    )
+
+    matchesAndOmits(chirrtl)(
+      "class Test",
+      "object obj1 of Test",
+      "object obj2 of Test"
+    )()
+  }
+
+  it should "support @instantiable and @public" in {
+    @instantiable
+    class Test extends Class {
+      @public val in = IO(Input(Property[Int]()))
+      @public val out = IO(Output(Property[Int]()))
+      out := in
+    }
+
+    val chirrtl = ChiselStage.emitCHIRRTL(
+      new RawModule {
+        val cls = Definition(new Test)
+
+        val obj1 = Instance(cls)
+        val obj2 = Instance(cls)
+
+        obj2.in := obj1.out
+      }
+    )
+
+    matchesAndOmits(chirrtl)(
+      "class Test",
+      "object obj1 of Test",
+      "object obj2 of Test",
+      "propassign obj2.in, obj1.out"
     )()
   }
 }

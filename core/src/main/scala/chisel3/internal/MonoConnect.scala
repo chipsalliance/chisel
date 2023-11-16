@@ -2,6 +2,7 @@
 
 package chisel3.internal
 
+import _root_.firrtl.ir.ClassPropertyType
 import chisel3._
 import chisel3.experimental.{Analog, BaseModule, SourceInfo}
 import chisel3.internal.containsProbe
@@ -455,6 +456,7 @@ private[chisel3] object checkConnect {
     context_mod: BaseModule
   ): Unit = {
     checkConnection(sourceInfo, sink, source, context_mod)
+    checkConnect.checkPropertyConnection(sourceInfo, sink, source)
   }
 
   def checkConnection(
@@ -553,5 +555,33 @@ private[chisel3] object checkConnect {
     // Not quite sure where left and right are compared to current module
     // so just error out
     else throw UnknownRelationException
+  }
+
+  // Extra checks specific to Property types. Most of the checks are baked into the Scala type system, but the actual
+  // class names underlying a Property[ClassType] are runtime values, so the check that they match is a runtime check.
+  def checkPropertyConnection(sourceInfo: SourceInfo, sink: Property[_], source: Property[_]): Unit = {
+    // If source is a ClassType, get the source Property[ClassType] expected class name.
+    val sourceClassNameOpt = source.getPropertyType match {
+      case ClassPropertyType(name) => Some(name)
+      case _                       => None
+    }
+
+    // If sink is a ClassType, get the sink Property[ClassType] expected class name.
+    val sinkClassNameOpt = sink.getPropertyType match {
+      case ClassPropertyType(name) => Some(name)
+      case _                       => None
+    }
+
+    // We are guaranteed that source and sink are the same Property type by the Scala type system, but if they're both
+    // Property[ClassType] we need to check they are the same class.
+    (sourceClassNameOpt, sinkClassNameOpt) match {
+      case (Some(sourceClassName), Some(sinkClassName)) if (sinkClassName != sourceClassName) =>
+        throwException(
+          sourceInfo.makeMessage(info =>
+            s"Sink Property[ClassType] expected class $sinkClassName, but source Instance[Class] was class $sourceClassName $info"
+          )
+        )
+      case (_, _) => ()
+    }
   }
 }

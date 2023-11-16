@@ -8,6 +8,7 @@ import firrtl.annotations.{InstanceTarget, IsMember, ModuleTarget, ReferenceTarg
 import chisel3.internal._
 import chisel3.internal.{firrtl => ir}
 import chisel3.experimental.{prefix, requireIsHardware, SourceInfo}
+import chisel3.experimental.hierarchy.Instance
 import scala.reflect.runtime.universe.{typeOf, TypeTag}
 import scala.annotation.{implicitAmbiguous, implicitNotFound}
 import chisel3.experimental.BaseModule
