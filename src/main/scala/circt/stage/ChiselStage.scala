@@ -41,7 +41,8 @@ trait CLI { this: BareShell =>
     WarningConfigurationAnnotation,
     WarningConfigurationFileAnnotation,
     SourceRootAnnotation,
-    SplitVerilog
+    SplitVerilog,
+    DumpFir
   ).foreach(_.addOptions(parser))
 }
 

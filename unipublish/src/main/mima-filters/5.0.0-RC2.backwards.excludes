@@ -8,3 +8,4 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("chisel3.experimental.Sourc
 ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.internal.ErrorEntry.serialize")
 # Constructor is package private
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("chisel3.stage.ChiselOptions.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("circt.stage.CIRCTOptions.this")

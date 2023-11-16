@@ -220,6 +220,34 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
 
     }
 
+    it("should optionally emit .fir when compiling to SystemVerilog") {
+
+      val targetDir = new File("test_run_dir/ChiselStageSpec")
+
+      val args: Array[String] = Array(
+        "--target",
+        "systemverilog",
+        "--target-dir",
+        targetDir.toString,
+        "--dump-fir"
+      )
+
+      val expectedSV = new File(targetDir, "Foo.sv")
+      expectedSV.delete()
+
+      val expectedFir = new File(targetDir, "Foo.fir")
+      expectedFir.delete()
+
+      (new ChiselStage)
+        .execute(args, Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.Foo)))
+
+      info(s"'$expectedSV' exists")
+      expectedSV should (exist)
+      info(s"'$expectedFir' exists")
+      expectedFir should (exist)
+
+    }
+
     it("should support custom firtool options") {
       val targetDir = new File("test_run_dir/ChiselStageSpec")
 
