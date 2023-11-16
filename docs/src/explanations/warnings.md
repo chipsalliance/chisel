@@ -74,7 +74,7 @@ def compile(gen: => chisel3.RawModule, args: Array[String] = Array()): Unit = {
 import circt.stage.ChiselStage.emitSystemVerilog
 import chisel3._
 class TooWideIndexModule extends RawModule {
-  val in = IO(Input(Vec(4, UInt(8.W))))
+  val in = IO(Input(UInt(8.W)))
   val idx = IO(Input(UInt(8.W))) // This index is wider than necessary
   val out = IO(Output(UInt(8.W)))
 
@@ -83,27 +83,28 @@ class TooWideIndexModule extends RawModule {
 compile(new TooWideIndexModule)
 ```
 
-As shown in the warning, this warning is `W004` (which can be fixed [as described below](#w004-dynamic-index-too-wide)), we can suppress it with an `id` filter which will suppress all instances of this warning in the elaboration run.
+As shown in the warning, this warning is `W002` (which can be fixed [as described below](#w002-dynamic-bit-select-too-wide)), we can suppress it with an `id` filter which will suppress all instances of this warning in the elaboration run.
+
 
 ```scala mdoc
-compile(new TooWideIndexModule, args = Array("--warn-conf", "id=4:s"))
+compile(new TooWideIndexModule, args = Array("--warn-conf", "id=2:s"))
 ```
 
 It is generally advisable to make warning suppressions as precise as possible, so we could combine this `id` filter with a `src` glob filter for just this file:
 
 ```scala mdoc
-compile(new TooWideIndexModule, args = Array("--warn-conf", "id=4&src=**warnings.md:s"))
+compile(new TooWideIndexModule, args = Array("--warn-conf", "id=2&src=**warnings.md:s"))
 ```
 
 Finally, users are encouraged to treat warnings as errors to the extend possible,
 so they should always end any warning configuration with `any:e` to elevate all unmatched warnings to errors:
 
 ```scala mdoc
-compile(new TooWideIndexModule, args = Array("--warn-conf", "id=4&src=**warnings.md:s,any:e"))
+compile(new TooWideIndexModule, args = Array("--warn-conf", "id=2&src=**warnings.md:s,any:e"))
 // Or
-compile(new TooWideIndexModule, args = Array("--warn-conf", "id=4&src=**warnings.md:s", "--warn-conf", "any:e"))
+compile(new TooWideIndexModule, args = Array("--warn-conf", "id=2&src=**warnings.md:s", "--warn-conf", "any:e"))
 // Or
-compile(new TooWideIndexModule, args = Array("--warn-conf", "id=4&src=**warnings.md:s", "--warnings-as-errors"))
+compile(new TooWideIndexModule, args = Array("--warn-conf", "id=2&src=**warnings.md:s", "--warnings-as-errors"))
 ```
 
 ## Warning Glossary
@@ -129,19 +130,3 @@ This warning occurs when dynamically indexing a `UInt` or an `SInt` with an inde
 It indicates that some bits of the indexee cannot be reached by the indexing operation.
 It can be fixed as described in the [Cookbook](../cookbooks/cookbook#how-do-i-resolve-dynamic-index--is-too-widenarrow-for-extractee).
 
-### [W004] Dynamic index too wide
-
-This warning occurs when dynamically indexing a `Vec` with an index that is wider than necessary to address all elements of the `Vec`.
-It indicates that some of the high-bits of the index are ignored by the indexing operation.
-It can be fixed as described in the [Cookbook](../cookbooks/cookbook#how-do-i-resolve-dynamic-index--is-too-widenarrow-for-extractee).
-
-### [W005] Dynamic index too narrow
-
-This warning occurs when dynamically indexing a `Vec` with an index that is to small to address all elements in the `Vec`.
-It indicates that some elements of the `Vec` cannot be reached by the indexing operation.
-It can be fixed as described in the [Cookbook](../cookbooks/cookbook#how-do-i-resolve-dynamic-index--is-too-widenarrow-for-extractee).
-
-### [W006] Extract from Vec of size 0
-
-This warning occurs when indexing a `Vec` with no elements.
-It can be fixed by removing the indexing operation for the size zero `Vec` (perhaps via guarding with an `if-else` or `Option.when`).

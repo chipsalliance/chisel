@@ -142,7 +142,7 @@ case class WarningConfigurationFileAnnotation(value: File)
       case (contents, lineNo) =>
         // Strip line comments (denoted with #)
         val str = contents.takeWhile(_ != '#')
-        Option.when(str.nonEmpty) {
+        if (str.nonEmpty) Some {
           WarningFilter.parse(str) match {
             case Right(wf) => wf
             case Left((idx, msg)) =>
@@ -154,6 +154,7 @@ case class WarningConfigurationFileAnnotation(value: File)
               )
           }
         }
+        else None
     }.toVector
   }
 }

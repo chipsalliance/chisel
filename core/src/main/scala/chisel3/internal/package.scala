@@ -102,45 +102,6 @@ package object internal {
     */
   private[chisel3] lazy val ViewParent =
     Module.do_apply(new ViewParentAPI)(UnlocatableSourceInfo)
-<<<<<<< HEAD
-=======
-
-  private[chisel3] def requireHasProbeTypeModifier(
-    probe:        Data,
-    errorMessage: String = ""
-  )(
-    implicit sourceInfo: SourceInfo
-  ): Unit = {
-    val msg = if (errorMessage.isEmpty) s"Expected a probe." else errorMessage
-    if (!hasProbeTypeModifier(probe)) Builder.error(msg)
-  }
-
-  private[chisel3] def requireNoProbeTypeModifier(
-    probe:        Data,
-    errorMessage: String = ""
-  )(
-    implicit sourceInfo: SourceInfo
-  ): Unit = {
-    val msg = if (errorMessage.isEmpty) s"Did not expect a probe." else errorMessage
-    if (hasProbeTypeModifier(probe)) Builder.error(msg)
-  }
-
-  private[chisel3] def requireHasWritableProbeTypeModifier(
-    probe:        Data,
-    errorMessage: String = ""
-  )(
-    implicit sourceInfo: SourceInfo
-  ): Unit = {
-    val msg = if (errorMessage.isEmpty) s"Expected a writable probe." else errorMessage
-    requireHasProbeTypeModifier(probe, msg)
-    if (!probe.probeInfo.get.writable) Builder.error(msg)
-  }
-
-  private[chisel3] def containsProbe(data: Data): Boolean = data match {
-    case a: Aggregate =>
-      a.elementsIterator.foldLeft(false)((res: Boolean, d: Data) => res || containsProbe(d))
-    case leaf => leaf.probeInfo.nonEmpty
-  }
 
   // TODO this exists in cats.Traverse, should we just use that?
   private[chisel3] implicit class ListSyntax[A](xs: List[A]) {
@@ -153,5 +114,4 @@ package object internal {
       (zz, result.reverse)
     }
   }
->>>>>>> 8e33a68b6 (Add support for configurable warnings (#3414))
 }
