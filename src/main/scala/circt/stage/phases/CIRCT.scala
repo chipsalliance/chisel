@@ -182,18 +182,11 @@ class CIRCT extends Phase {
     /* Filter the annotations to only those things which CIRCT should see. */
     (new WriteOutputAnnotations).transform(annotationsx)
 
-<<<<<<< HEAD
-    val input: String = firrtlOptions.firrtlCircuit match {
-      case None          => throw new OptionsException("No input file specified!")
-      case Some(circuit) => circuit.serialize
-=======
     val (serialization: Iterable[String], circuitName: String) = firrtlOptions.firrtlCircuit match {
       case None => throw new OptionsException("No input file specified!")
       // TODO can we avoid converting, how else would we include filteredAnnos?
       case Some(circuit) =>
-        val cwa = CircuitWithAnnos(circuit = circuit, annotations = filteredAnnotations)
-        (firrtl.ir.Serializer.lazily(cwa), circuit.main)
->>>>>>> 4db86b2f8 (Add --dump-fir option to ChiselStage (#3453))
+        (firrtl.ir.Serializer.lazily(circuit), circuit.main)
     }
 
     // FIRRTL is serialized either in memory or to a file

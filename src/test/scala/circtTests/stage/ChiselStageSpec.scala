@@ -1105,19 +1105,5 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
       exception.getStackTrace should be(Array())
     }
 
-    it("should report a specific error if firtool is not found on the PATH") {
-      val exception = intercept[Exception] {
-        ChiselStage.emitSystemVerilog(new ChiselStageSpec.Foo, Array("--firtool-binary-path", "potato"))
-      }
-
-      info("The exception includes a useful error message")
-      val message = exception.getMessage
-      message should include("potato not found")
-      message should include("Chisel requires that firtool, the MLIR-based FIRRTL Compiler (MFC), is installed")
-
-      info("The exception should not contain a stack trace")
-      exception.getStackTrace should be(Array())
-    }
-
   }
 }
