@@ -153,8 +153,8 @@ object Serializer {
   private case object AltBegin extends PseudoStatement
   private case object WhenEnd extends PseudoStatement
 
-  private case class GroupDefineBegin(info: Info, declaration: String) extends PseudoStatement
-  private case object GroupDefineEnd extends PseudoStatement
+  private case class LayerBlockBegin(info: Info, layer: String) extends PseudoStatement
+  private case object LayerBlockEnd extends PseudoStatement
 
   // This does not extend Iterator[Statement] because
   //  1. It is extended by StmtsSerializer which extends Iterator[String]
@@ -184,10 +184,10 @@ object Serializer {
             }
             val last = underlying
             underlying = stmts ++ last
-          case GroupDefine(info, declaration, body) =>
-            val begin = GroupDefineBegin(info, declaration)
+          case LayerBlock(info, layer, body) =>
+            val begin = LayerBlockBegin(info, layer)
             val last = underlying
-            underlying = Iterator(begin, body, GroupDefineEnd) ++ last
+            underlying = Iterator(begin, body, LayerBlockEnd) ++ last
           case other =>
             next = other
         }
@@ -228,11 +228,11 @@ object Serializer {
             indent += 1
           case WhenEnd =>
             indent -= 1
-          case GroupDefineBegin(info, declaration) =>
+          case LayerBlockBegin(info, layer) =>
             doIndent()
-            b ++= s"group $declaration :"; s(info)
+            b ++= s"group $layer :"; s(info)
             indent += 1
-          case GroupDefineEnd =>
+          case LayerBlockEnd =>
             indent -= 1
           case other =>
             doIndent()
@@ -491,19 +491,19 @@ object Serializer {
       b ++= s"${NewLine}"
       Iterator(b.toString)
     } else Iterator.empty
-    val groups = if (circuit.groups.nonEmpty) {
+    val layers = if (circuit.layers.nonEmpty) {
       implicit val b = new StringBuilder
-      def groupIt(groupDecl: GroupDeclare)(implicit indent: Int): Unit = {
-        b ++= s"${NewLine}"; doIndent(); b ++= s"declgroup ${groupDecl.name}, ${groupDecl.convention} :"
-        s(groupDecl.info)
-        groupDecl.body.foreach(groupIt(_)(indent + 1))
+      def layerIt(layer: Layer)(implicit indent: Int): Unit = {
+        b ++= s"${NewLine}"; doIndent(); b ++= s"declgroup ${layer.name}, ${layer.convention} :"
+        s(layer.info)
+        layer.body.foreach(layerIt(_)(indent + 1))
       }
-      circuit.groups.foreach(groupIt(_)(1))
+      circuit.layers.foreach(layerIt(_)(1))
       Iterator(b.toString)
     } else Iterator.empty
     prelude ++
       typeAliases ++
-      groups ++
+      layers ++
       circuit.modules.iterator.zipWithIndex.flatMap {
         case (m, i) =>
           val newline = Iterator(if (i == 0) s"$NewLine" else s"${NewLine}${NewLine}")

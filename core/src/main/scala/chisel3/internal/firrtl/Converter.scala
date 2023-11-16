@@ -229,7 +229,7 @@ private[chisel3] object Converter {
     case _ => None
   }
 
-  /** Trait used for tracking when or group regions. */
+  /** Trait used for tracking when or layer regions. */
   private sealed trait RegionFrame
 
   /** Internal datastructure to help translate Chisel's flat Command structure to FIRRTL's AST
@@ -246,8 +246,8 @@ private[chisel3] object Converter {
   private case class WhenFrame(when: fir.Conditionally, outer: VectorBuilder[fir.Statement], alt: Boolean)
       extends RegionFrame
 
-  /** Internal datastructure to help convert optional groups to FIRRTL. */
-  private case class GroupFrame(group: fir.GroupDefine, outer: VectorBuilder[fir.Statement]) extends RegionFrame
+  /** Internal datastructure to help convert layer blocks to FIRRTL. */
+  private case class LayerBlockFrame(layer: fir.LayerBlock, outer: VectorBuilder[fir.Statement]) extends RegionFrame
 
   /** Convert Chisel IR Commands into FIRRTL Statements
     *
@@ -320,16 +320,16 @@ private[chisel3] object Converter {
               stmts = frame.outer
               stmts += when
               scope = scope.tail
-            case GroupDefBegin(info, declaration) =>
-              val groupDefine = fir.GroupDefine(convert(info), declaration.name, fir.EmptyStmt)
-              val frame = GroupFrame(groupDefine, stmts)
+            case LayerBlockBegin(info, layer) =>
+              val block = fir.LayerBlock(convert(info), layer.name, fir.EmptyStmt)
+              val frame = LayerBlockFrame(block, stmts)
               stmts = new VectorBuilder[fir.Statement]
               scope = frame :: scope
-            case GroupDefEnd(info) =>
-              val frame = scope.head.asInstanceOf[GroupFrame]
-              val groupDefine = frame.group.copy(body = fir.Block(stmts.result()))
+            case LayerBlockEnd(info) =>
+              val frame = scope.head.asInstanceOf[LayerBlockFrame]
+              val block = frame.layer.copy(body = fir.Block(stmts.result()))
               stmts = frame.outer
-              stmts += groupDefine
+              stmts += block
               scope = scope.tail
           }
       }
@@ -472,11 +472,11 @@ private[chisel3] object Converter {
       )
   }
 
-  def rec(decl: GroupDecl): fir.GroupDeclare = {
-    val convention = decl.convention match {
-      case GroupConvention.Bind => fir.GroupConvention.Bind
+  def rec(layer: Layer): fir.Layer = {
+    val convention = layer.convention match {
+      case LayerConvention.Bind => fir.LayerConvention.Bind
     }
-    fir.GroupDeclare(convert(decl.sourceInfo), decl.name, convention, decl.children.map(rec))
+    fir.Layer(convert(layer.sourceInfo), layer.name, convention, layer.children.map(rec))
   }
 
   def convert(circuit: Circuit): fir.Circuit = {
@@ -486,7 +486,7 @@ private[chisel3] object Converter {
       circuit.components.map(c => convert(c, typeAliases)),
       circuit.name,
       circuit.typeAliases.map(ta => fir.DefTypeAlias(convert(ta.sourceInfo), ta.name, ta.underlying)),
-      circuit.groups.map(rec)
+      circuit.layers.map(rec)
     )
   }
 
