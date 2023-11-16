@@ -450,7 +450,7 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
       a should be(c)
       b should be(d)
     })
-    chirrtl should include("connect y, a")
-    chirrtl should include("connect z, b")
+    chirrtl should include("y <= a")
+    chirrtl should include("z <= b")
   }
 }
