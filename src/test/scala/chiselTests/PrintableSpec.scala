@@ -177,6 +177,20 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
     }
   }
 
+  it should "print use the sanitized names of Bundle elements" in {
+    class MyModule extends Module {
+      class UnsanitaryBundle extends Bundle {
+        val `a-x` = UInt(8.W)
+      }
+      val myBun = Wire(new UnsanitaryBundle)
+      myBun.`a-x` := 0.U
+      printf(p"$myBun")
+    }
+    generateAndCheck(new MyModule) {
+      case Seq(Printf("UnsanitaryBundle(aminusx -> %d)", Seq("myBun.aminusx"))) =>
+    }
+  }
+
   // Unit tests for cf
   it should "print regular scala variables with cf format specifier" in {
 

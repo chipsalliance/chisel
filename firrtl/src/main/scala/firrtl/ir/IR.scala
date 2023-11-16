@@ -37,32 +37,44 @@ object FileInfo {
   def fromUnescaped(s: String): FileInfo = new FileInfo(escape(s))
 
   /** prepends a `\` to: `\`, `\n`, `\t` and `]` */
-  def escape(s: String): String = EscapeFirrtl.translate(s)
+  def escape(s: String): String = {
+    // Only run translator if String contains a character needing escaping,
+    // Speeds up common case
+    if (s.exists(char => escapePairs.contains(char))) {
+      EscapeFirrtl.translate(s)
+    } else {
+      s
+    }
+  }
 
   /** removes the `\` in front of `\`, `\n`, `\t` and `]` */
-  def unescape(s: String): String = UnescapeFirrtl.translate(s)
+  def unescape(s: String): String = {
+    // Only run translator if String contains '\' which implies something needs unescaping
+    // Speeds up common case
+    if (s.contains('\\')) {
+      UnescapeFirrtl.translate(s)
+    } else {
+      s
+    }
+  }
 
   /** take an already escaped String and do the additional escaping needed for Verilog comment */
   def escapedToVerilog(s: String) = EscapedToVerilog.translate(s)
 
   // custom `CharSequenceTranslator` for FIRRTL Info String escaping
   type CharMap = (CharSequence, CharSequence)
-  private val EscapeFirrtl = new LookupTranslator(
-    Seq[CharMap](
-      "\\" -> "\\\\",
-      "\n" -> "\\n",
-      "\t" -> "\\t",
-      "]" -> "\\]"
-    ).toMap.asJava
+  private val escapePairs: Map[Char, String] = Map(
+    '\\' -> "\\\\",
+    '\n' -> "\\n",
+    '\t' -> "\\t",
+    ']' -> "\\]"
   )
-  private val UnescapeFirrtl = new LookupTranslator(
-    Seq[CharMap](
-      "\\\\" -> "\\",
-      "\\n" -> "\n",
-      "\\t" -> "\t",
-      "\\]" -> "]"
-    ).toMap.asJava
-  )
+  // Helper for constructing the LookupTranslators
+  private def escapePairsCharSeq: Map[CharSequence, CharSequence] = escapePairs.map { case (k, v) => k.toString -> v }
+
+  private val EscapeFirrtl = new LookupTranslator(escapePairsCharSeq.asJava)
+  private val UnescapeFirrtl = new LookupTranslator(escapePairsCharSeq.map(_.swap).asJava)
+
   // EscapeFirrtl + EscapedToVerilog essentially does the same thing as running StringEscapeUtils.unescapeJava
   private val EscapedToVerilog = new AggregateTranslator(
     new LookupTranslator(

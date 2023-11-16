@@ -12,7 +12,7 @@ private[chisel3] object instantiableMacro {
     import c.universe._
     def processBody(stats: Seq[Tree]): (Seq[Tree], Iterable[Tree]) = {
       val extensions = scala.collection.mutable.ArrayBuffer.empty[Tree]
-      extensions += q"implicit val mg = new chisel3.internal.MacroGenerated{}"
+      extensions += q"implicit val mg: chisel3.internal.MacroGenerated = new chisel3.internal.MacroGenerated {}"
       // Note the triple `_` prefixing `module` is to avoid conflicts if a user marks a 'val module'
       //  with @public; in this case, the lookup code is ambiguous between the generated `def module`
       //  function and the argument to the generated implicit class.
