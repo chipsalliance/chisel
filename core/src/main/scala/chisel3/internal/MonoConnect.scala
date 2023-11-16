@@ -412,7 +412,7 @@ private[chisel3] object MonoConnect {
     source:     Property[_],
     context:    BaseModule
   ): Unit = {
-    checkConnect.checkPropertyConnection(sourceInfo, sink, source)
+    checkConnect(sourceInfo, sink, source, context)
     // Add the PropAssign command directly onto the correct BaseModule subclass.
     context match {
       case rm:  RawModule => rm.addCommand(PropAssign(sourceInfo, sink.lref, source.ref))
@@ -449,13 +449,14 @@ private[chisel3] object checkConnect {
     checkConnection(sourceInfo, sink, source, context_mod)
   }
 
-  def apply[T](
+  def apply(
     sourceInfo:  SourceInfo,
-    sink:        Property[T],
-    source:      Property[T],
+    sink:        Property[_],
+    source:      Property[_],
     context_mod: BaseModule
   ): Unit = {
     checkConnection(sourceInfo, sink, source, context_mod)
+    checkConnect.checkPropertyConnection(sourceInfo, sink, source)
   }
 
   def checkConnection(

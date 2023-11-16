@@ -43,7 +43,7 @@ class UpDownTest extends BasicTester {
   *       LeftUpper   RightUpper
   *          /           \
   *    LeftLower       RightLower
-  * 
+  *
   * Tap a signal in RightLower from LeftLower and check that it contains the
   * correct value.
   */

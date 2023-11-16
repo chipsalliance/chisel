@@ -11,7 +11,6 @@ import chisel3.experimental.{prefix, requireIsHardware, SourceInfo}
 import chisel3.experimental.hierarchy.Instance
 import scala.reflect.runtime.universe.{typeOf, TypeTag}
 import scala.annotation.{implicitAmbiguous, implicitNotFound}
-import scala.collection.immutable.SeqMap
 import chisel3.experimental.BaseModule
 import chisel3.internal.NamedComponent
 
@@ -45,15 +44,17 @@ sealed trait PropertyType[T] {
   def convertUnderlying(value: T): Underlying
 }
 
-/** Non-sealed subclass of PropertyType for tuples to extend, since they are generated in a different file
-  */
-private[chisel3] trait TuplePropertyType[T] extends PropertyType[T]
-
 /** Trait for PropertyTypes that may lookup themselves up during implicit resolution
   *
   * This is to disallow nested Property types e.g. Property[Property[Property[Int]]](), Property[Property[Seq[Property[Int]]]]()
   */
 private[chisel3] trait RecursivePropertyType[T] extends PropertyType[T]
+
+private[chisel3] object RecursivePropertyType {
+
+  /** Type alias for simplifying explicit RecursivePropertyType type ascriptions */
+  type Aux[T, Type0, Underlying0] = RecursivePropertyType[T] { type Type = Type0; type Underlying = Underlying0 }
+}
 
 /** PropertyType where Type and Underlying are the same as T
   */
@@ -78,40 +79,13 @@ private[chisel3] class SeqPropertyType[A, F[A] <: Seq[A], PT <: PropertyType[A]]
     value.map(tpe.convertUnderlying(_))
 }
 
-private[chisel3] class MapPropertyType[K, V, F[K, V] <: SeqMap[K, V], KPT <: PropertyType[K], VPT <: PropertyType[V]](
-  val ktpe: KPT,
-  val vtpe: VPT)
-    extends PropertyType[F[K, V]] {
-  type Type = F[ktpe.Type, vtpe.Type]
-  override def getPropertyType(): fir.PropertyType =
-    fir.MapPropertyType(ktpe.getPropertyType(), vtpe.getPropertyType())
-  type Underlying = Seq[(ktpe.Underlying, vtpe.Underlying)]
-  override def convert(value: Underlying, ctx: ir.Component, info: SourceInfo): fir.Expression =
-    fir.MapPropertyValue(
-      fir.MapPropertyType(
-        ktpe.getPropertyType(),
-        vtpe.getPropertyType()
-      ),
-      value.map {
-        case (key, value) =>
-          ktpe.convert(key, ctx, info) -> vtpe.convert(value, ctx, info)
-      }
-    )
-  override def convertUnderlying(value: F[K, V]): Underlying =
-    value.toSeq.map { case (k, v) => ktpe.convertUnderlying(k) -> vtpe.convertUnderlying(v) }
-}
-
-/** This contains recursive versions of Seq and SeqMap PropertyTypes. These instances need be lower priority to prevent ambiguous implicit errors with the non-recursive versions.
+/** This contains recursive versions of Seq PropertyTypes. These instances need be lower priority to prevent ambiguous implicit errors with the non-recursive versions.
   */
 private[chisel3] trait LowPriorityPropertyTypeInstances {
-  implicit def sequencePropertyTypeInstance[A, F[A] <: Seq[A]](implicit tpe: RecursivePropertyType[A]) =
+  implicit def sequencePropertyTypeInstance[A, F[A] <: Seq[A]](
+    implicit tpe: RecursivePropertyType[A]
+  ): SeqPropertyType[A, F, tpe.type] with RecursivePropertyType[F[A]] =
     new SeqPropertyType[A, F, tpe.type](tpe) with RecursivePropertyType[F[A]]
-
-  implicit def mapPropertyTypeInstance[K, V, F[K, V] <: SeqMap[K, V]](
-    implicit ktpe: RecursivePropertyType[K],
-    vtpe:          RecursivePropertyType[V]
-  ) =
-    new MapPropertyType[K, V, F, ktpe.type, vtpe.type](ktpe, vtpe) with RecursivePropertyType[F[K, V]]
 }
 
 private[chisel3] abstract class ClassTypePropertyType[T](val classType: fir.PropertyType)
@@ -120,12 +94,21 @@ private[chisel3] abstract class ClassTypePropertyType[T](val classType: fir.Prop
   override def getPropertyType(): fir.PropertyType = classType
 }
 
+private[chisel3] object ClassTypePropertyType {
+
+  /** Type alias for simplifying explicit ClassTypePropertyType type ascriptions */
+  type Aux[T, Underlying0] = ClassTypePropertyType[T] { type Underlying = Underlying0 }
+}
+
 /** Companion object for PropertyType.
   *
   * Typeclass instances for valid Property types are defined here, so they will
   * be in the implicit scope and available for users.
   */
-private[chisel3] object PropertyType extends TuplePropertyTypeInstances with LowPriorityPropertyTypeInstances {
+private[chisel3] object PropertyType extends LowPriorityPropertyTypeInstances {
+
+  /** Type alias for simplifying explicit PropertyType type ascriptions */
+  type Aux[T, Type0, Underlying0] = PropertyType[T] { type Type = Type0; type Underlying = Underlying0 }
 
   def makeSimple[T](tpe: fir.PropertyType, getExpression: T => fir.Expression): SimplePropertyType[T] =
     new SimplePropertyType[T] {
@@ -134,20 +117,24 @@ private[chisel3] object PropertyType extends TuplePropertyTypeInstances with Low
     }
 
   @implicitAmbiguous("unable to infer Property type. Please specify it explicitly in square brackets on the LHS.")
-  implicit val intPropertyTypeInstance = makeSimple[Int](fir.IntegerPropertyType, fir.IntegerPropertyLiteral(_))
+  implicit val intPropertyTypeInstance: SimplePropertyType[Int] =
+    makeSimple[Int](fir.IntegerPropertyType, fir.IntegerPropertyLiteral(_))
 
   @implicitAmbiguous("unable to infer Property type. Please specify it explicitly in square brackets on the LHS.")
-  implicit val longPropertyTypeInstance = makeSimple[Long](fir.IntegerPropertyType, fir.IntegerPropertyLiteral(_))
+  implicit val longPropertyTypeInstance: SimplePropertyType[Long] =
+    makeSimple[Long](fir.IntegerPropertyType, fir.IntegerPropertyLiteral(_))
 
   @implicitAmbiguous("unable to infer Property type. Please specify it explicitly in square brackets on the LHS.")
-  implicit val bigIntPropertyTypeInstance =
+  implicit val bigIntPropertyTypeInstance: SimplePropertyType[BigInt] =
     makeSimple[BigInt](fir.IntegerPropertyType, fir.IntegerPropertyLiteral(_))
 
   @implicitAmbiguous("unable to infer Property type. Please specify it explicitly in square brackets on the LHS.")
-  implicit val doublePropertyTypeInstance =
+  implicit val doublePropertyTypeInstance: SimplePropertyType[Double] =
     makeSimple[Double](fir.DoublePropertyType, fir.DoublePropertyLiteral(_))
 
-  implicit def classTypePropertyType[T](implicit provider: ClassTypeProvider[T]) =
+  implicit def classTypePropertyType[T](
+    implicit provider: ClassTypeProvider[T]
+  ): ClassTypePropertyType.Aux[T, Nothing] =
     new ClassTypePropertyType[T](provider.classType) {
       // we rely on the fact there are no public constructors for values that provide
       // ClassTypePropertyType (AnyClassType, ClassType#Type, Property[ClassType]#ClassType)
@@ -158,23 +145,24 @@ private[chisel3] object PropertyType extends TuplePropertyTypeInstances with Low
       override def convertUnderlying(value: T) = ???
     }
 
-  implicit val stringPropertyTypeInstance =
+  implicit val stringPropertyTypeInstance: SimplePropertyType[String] =
     makeSimple[String](fir.StringPropertyType, fir.StringPropertyLiteral(_))
 
-  implicit val boolPropertyTypeInstance =
+  implicit val boolPropertyTypeInstance: SimplePropertyType[Boolean] =
     makeSimple[Boolean](fir.BooleanPropertyType, fir.BooleanPropertyLiteral(_))
 
-  implicit val pathTypeInstance = makeSimple[Path](fir.PathPropertyType, _.convert())
+  implicit val pathTypeInstance: SimplePropertyType[Path] = makeSimple[Path](fir.PathPropertyType, _.convert())
 
-  implicit def modulePathTypeInstance[M <: BaseModule] = new RecursivePropertyType[M] {
-    type Type = Path
-    override def getPropertyType(): fir.PropertyType = fir.PathPropertyType
-    override def convert(value: Underlying, ctx: ir.Component, info: SourceInfo): fir.Expression = value.convert()
-    type Underlying = Path
-    override def convertUnderlying(value: M) = Path(value)
-  }
+  implicit def modulePathTypeInstance[M <: BaseModule]: RecursivePropertyType.Aux[M, Path, Path] =
+    new RecursivePropertyType[M] {
+      type Type = Path
+      override def getPropertyType(): fir.PropertyType = fir.PathPropertyType
+      override def convert(value: Underlying, ctx: ir.Component, info: SourceInfo): fir.Expression = value.convert()
+      type Underlying = Path
+      override def convertUnderlying(value: M) = Path(value)
+    }
 
-  private def dataPathTypeInstance[D <: Data] = new RecursivePropertyType[D] {
+  private def dataPathTypeInstance[D <: Data]: RecursivePropertyType.Aux[D, Path, Path] = new RecursivePropertyType[D] {
     type Type = Path
     override def getPropertyType(): fir.PropertyType = fir.PathPropertyType
     override def convert(value: Underlying, ctx: ir.Component, info: SourceInfo): fir.Expression = value.convert()
@@ -183,18 +171,22 @@ private[chisel3] object PropertyType extends TuplePropertyTypeInstances with Low
   }
 
   // We can't just do <: Data because Property subclasses Data
-  implicit def aggregatePathTypeInstance[A <: Aggregate] = dataPathTypeInstance[A]
-  implicit def elementPathTypeInstance[E <: Element] = dataPathTypeInstance[E]
+  implicit def aggregatePathTypeInstance[A <: Aggregate]: RecursivePropertyType.Aux[A, Path, Path] =
+    dataPathTypeInstance[A]
+  implicit def elementPathTypeInstance[E <: Element]: RecursivePropertyType.Aux[E, Path, Path] = dataPathTypeInstance[E]
 
-  implicit def memPathTypeInstance[M <: MemBase[_]] = new RecursivePropertyType[M] {
-    type Type = Path
-    override def getPropertyType(): fir.PropertyType = fir.PathPropertyType
-    override def convert(value: Underlying, ctx: ir.Component, info: SourceInfo): fir.Expression = value.convert()
-    type Underlying = Path
-    override def convertUnderlying(value: M) = Path(value)
-  }
+  implicit def memPathTypeInstance[M <: MemBase[_]]: RecursivePropertyType.Aux[M, Path, Path] =
+    new RecursivePropertyType[M] {
+      type Type = Path
+      override def getPropertyType(): fir.PropertyType = fir.PathPropertyType
+      override def convert(value: Underlying, ctx: ir.Component, info: SourceInfo): fir.Expression = value.convert()
+      type Underlying = Path
+      override def convertUnderlying(value: M) = Path(value)
+    }
 
-  implicit def propertyTypeInstance[T](implicit pte: RecursivePropertyType[T]) = new PropertyType[Property[T]] {
+  implicit def propertyTypeInstance[T](
+    implicit pte: RecursivePropertyType[T]
+  ): PropertyType.Aux[Property[T], pte.Type, ir.Arg] = new PropertyType[Property[T]] {
     type Type = pte.Type
     override def getPropertyType(): fir.PropertyType = pte.getPropertyType()
     override def convert(value: Underlying, ctx: ir.Component, info: SourceInfo): fir.Expression =
@@ -203,14 +195,10 @@ private[chisel3] object PropertyType extends TuplePropertyTypeInstances with Low
     override def convertUnderlying(value: Property[T]) = value.ref
   }
 
-  implicit def recursiveSequencePropertyTypeInstance[A, F[A] <: Seq[A]](implicit tpe: PropertyType[A]) =
+  implicit def recursiveSequencePropertyTypeInstance[A, F[A] <: Seq[A]](
+    implicit tpe: PropertyType[A]
+  ): SeqPropertyType[A, F, tpe.type] =
     new SeqPropertyType[A, F, tpe.type](tpe)
-
-  implicit def recursiveMapPropertyTypeInstance[K, V, F[K, V] <: SeqMap[K, V]](
-    implicit ktpe: PropertyType[K],
-    vtpe:          PropertyType[V]
-  ) =
-    new MapPropertyType[K, V, F, ktpe.type, vtpe.type](ktpe, vtpe)
 }
 
 /** Property is the base type for all properties.
@@ -226,7 +214,9 @@ sealed trait Property[T] extends Data { self =>
     implicit def classTypeProvider(
       implicit evidence: T =:= chisel3.properties.ClassType
     ): ClassTypeProvider[ClassType] = ClassTypeProvider(getPropertyType)
-    implicit def propertyType(implicit evidence: T =:= chisel3.properties.ClassType) =
+    implicit def propertyType(
+      implicit evidence: T =:= chisel3.properties.ClassType
+    ): ClassTypePropertyType.Aux[Property[ClassType] with self.ClassType, ir.Arg] =
       new ClassTypePropertyType[Property[ClassType] with self.ClassType](getPropertyType) {
         override def convert(value: Underlying, ctx: ir.Component, info: SourceInfo): fir.Expression =
           ir.Converter.convert(value, ctx, info)

@@ -11,7 +11,7 @@ import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
 import chisel3.experimental.{BaseModule, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal.sourceinfo.{InstTransform}
-import chisel3.properties.Class
+import chisel3.properties.{Class, Property}
 import chisel3.reflect.DataMirror
 import _root_.firrtl.annotations.{IsModule, ModuleName, ModuleTarget}
 import _root_.firrtl.AnnotationSeq
@@ -186,6 +186,9 @@ object Module extends SourceInfoDoc {
     DataMirror
       .collectMembers(data) {
         case x: Element
+            if x.specifiedDirection == SpecifiedDirection.Unspecified || x.specifiedDirection == SpecifiedDirection.Flip =>
+          x
+        case x: Property[_]
             if x.specifiedDirection == SpecifiedDirection.Unspecified || x.specifiedDirection == SpecifiedDirection.Flip =>
           x
       }
@@ -690,11 +693,7 @@ package experimental {
     protected def _bindIoInPlace(iodef: Data)(implicit sourceInfo: SourceInfo): Unit = {
 
       // Assign any signals (Chisel or chisel3) with Unspecified/Flipped directions to Output/Input.
-      // This is only required for Data, not all Datas in general.
-      iodef match {
-        case (data: Data) => Module.assignCompatDir(data)
-        case _ => ()
-      }
+      Module.assignCompatDir(iodef)
 
       iodef.bind(PortBinding(this))
       _ports += iodef -> sourceInfo

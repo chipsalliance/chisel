@@ -257,12 +257,6 @@ case class PathPropertyLiteral(value: String) extends Expression with UseSeriali
 
 case class SequencePropertyValue(tpe: Type, values: Seq[Expression]) extends Expression with UseSerializer
 
-case class MapPropertyValue(tpe: Type, values: Seq[(Expression, Expression)]) extends Expression with UseSerializer
-
-case class TuplePropertyValue(values: Seq[(PropertyType, Expression)]) extends Expression with UseSerializer {
-  val tpe = TuplePropertyType(values.map(_._1))
-}
-
 case class DoPrim(op: PrimOp, args: Seq[Expression], consts: Seq[BigInt], tpe: Type)
     extends Expression
     with UseSerializer
@@ -401,18 +395,18 @@ case class ProbeRelease(info: Info, clock: Expression, cond: Expression, probe: 
     extends Statement
     with UseSerializer
 
-object GroupConvention {
+object LayerConvention {
   sealed trait Type
   case object Bind extends Type {
     override def toString: String = "bind"
   }
 }
 
-case class GroupDeclare(info: Info, name: String, convention: GroupConvention.Type, body: Seq[GroupDeclare])
+case class Layer(info: Info, name: String, convention: LayerConvention.Type, body: Seq[Layer])
     extends FirrtlNode
     with IsDeclaration
     with UseSerializer
-case class GroupDefine(info: Info, declaration: String, body: Statement) extends Statement with UseSerializer
+case class LayerBlock(info: Info, layer: String, body: Statement) extends Statement with UseSerializer
 
 // formal
 object Formal extends Enumeration {
@@ -569,10 +563,6 @@ case object PathPropertyType extends PropertyType
 
 case class SequencePropertyType(tpe: PropertyType) extends PropertyType
 
-case class MapPropertyType(ktpe: PropertyType, vtpe: PropertyType) extends PropertyType
-
-case class TuplePropertyType(types: Seq[PropertyType]) extends PropertyType
-
 case class ClassPropertyType(name: String) extends PropertyType
 
 case object AnyRefPropertyType extends PropertyType
@@ -668,7 +658,7 @@ case class Circuit(
   modules:     Seq[DefModule],
   main:        String,
   typeAliases: Seq[DefTypeAlias] = Seq.empty,
-  groups:      Seq[GroupDeclare] = Seq.empty)
+  layers:      Seq[Layer] = Seq.empty)
     extends FirrtlNode
     with HasInfo
     with UseSerializer

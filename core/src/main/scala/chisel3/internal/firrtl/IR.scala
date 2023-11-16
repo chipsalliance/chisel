@@ -367,19 +367,19 @@ case class ConnectInit(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Comm
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class Stop(id: stop.Stop, sourceInfo: SourceInfo, clock: Arg, ret: Int) extends Definition
 
-private[chisel3] object GroupConvention {
+private[chisel3] object LayerConvention {
   sealed trait Type
   case object Bind extends Type
 }
 
-private[chisel3] case class GroupDecl(
+private[chisel3] case class Layer(
   sourceInfo: SourceInfo,
   name:       String,
-  convention: GroupConvention.Type,
-  children:   Seq[GroupDecl])
+  convention: LayerConvention.Type,
+  children:   Seq[Layer])
 
-private[chisel3] case class GroupDefBegin(sourceInfo: SourceInfo, declaration: group.Declaration) extends Command
-private[chisel3] case class GroupDefEnd(sourceInfo: SourceInfo) extends Command
+private[chisel3] case class LayerBlockBegin(sourceInfo: SourceInfo, layer: chisel3.layer.Layer) extends Command
+private[chisel3] case class LayerBlockEnd(sourceInfo: SourceInfo) extends Command
 
 // Note this is just deprecated which will cause deprecation warnings, use @nowarn
 @deprecated(
@@ -468,7 +468,7 @@ case class Circuit(
 
   newAnnotations: Seq[ChiselMultiAnnotation],
   typeAliases:    Seq[DefTypeAlias],
-  groups:         Seq[GroupDecl]) {
+  layers:         Seq[Layer]) {
 
   def this(
     name:        String,
@@ -476,9 +476,9 @@ case class Circuit(
     annotations: Seq[ChiselAnnotation],
     renames:     RenameMap,
     typeAliases: Seq[DefTypeAlias],
-    groups:      Seq[GroupDecl]
+    layers:      Seq[Layer]
   ) =
-    this(name, components, annotations, renames, Seq.empty, typeAliases, groups)
+    this(name, components, annotations, renames, Seq.empty, typeAliases, layers)
 
   def firrtlAnnotations: Iterable[Annotation] =
     annotations.flatMap(_.toFirrtl.update(renames)) ++ newAnnotations.flatMap(
@@ -491,8 +491,8 @@ case class Circuit(
     annotations: Seq[ChiselAnnotation] = annotations,
     renames:     RenameMap = renames,
     typeAliases: Seq[DefTypeAlias] = typeAliases,
-    groups:      Seq[GroupDecl] = groups
-  ) = Circuit(name, components, annotations, renames, newAnnotations, typeAliases, groups)
+    layers:      Seq[Layer] = layers
+  ) = Circuit(name, components, annotations, renames, newAnnotations, typeAliases, layers)
 
 }
 
@@ -500,7 +500,7 @@ case class Circuit(
 object Circuit
     extends scala.runtime.AbstractFunction6[String, Seq[Component], Seq[ChiselAnnotation], RenameMap, Seq[
       DefTypeAlias
-    ], Seq[GroupDecl], Circuit] {
+    ], Seq[Layer], Circuit] {
   def unapply(c: Circuit): Option[(String, Seq[Component], Seq[ChiselAnnotation], RenameMap, Seq[DefTypeAlias])] = {
     Some((c.name, c.components, c.annotations, c.renames, c.typeAliases))
   }
@@ -511,7 +511,7 @@ object Circuit
     annotations: Seq[ChiselAnnotation],
     renames:     RenameMap,
     typeAliases: Seq[DefTypeAlias] = Seq.empty,
-    groups:      Seq[GroupDecl] = Seq.empty
+    layers:      Seq[Layer] = Seq.empty
   ): Circuit =
-    new Circuit(name, components, annotations, renames, typeAliases, groups)
+    new Circuit(name, components, annotations, renames, typeAliases, layers)
 }

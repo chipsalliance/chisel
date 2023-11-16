@@ -127,31 +127,6 @@ object Serializer {
           if (idx != lastIdx) b ++= ", "
       }
       b += ')'
-    case MapPropertyValue(tpe, values) =>
-      s(tpe)
-      b += '('
-      val lastIdx = values.size - 1
-      values.zipWithIndex.foreach {
-        case ((key, value), idx) =>
-          s(key); b ++= " -> "; s(value)
-          if (idx != lastIdx) b ++= ", "
-      }
-      b += ')'
-    case TuplePropertyValue(values) =>
-      b ++= "Tuple<"
-      val lastIdx = values.size - 1
-      values.zipWithIndex.foreach {
-        case ((tpe, _), i) =>
-          s(tpe)
-          if (i != lastIdx) b ++= ", "
-      }
-      b ++= ">("
-      values.zipWithIndex.foreach {
-        case ((_, value), i) =>
-          s(value)
-          if (i != lastIdx) b ++= ", "
-      }
-      b += ')'
     case ProbeExpr(expr, _)   => b ++= "probe("; s(expr); b += ')'
     case RWProbeExpr(expr, _) => b ++= "rwprobe("; s(expr); b += ')'
     case ProbeRead(expr, _)   => b ++= "read("; s(expr); b += ')'
@@ -178,8 +153,8 @@ object Serializer {
   private case object AltBegin extends PseudoStatement
   private case object WhenEnd extends PseudoStatement
 
-  private case class GroupDefineBegin(info: Info, declaration: String) extends PseudoStatement
-  private case object GroupDefineEnd extends PseudoStatement
+  private case class LayerBlockBegin(info: Info, layer: String) extends PseudoStatement
+  private case object LayerBlockEnd extends PseudoStatement
 
   // This does not extend Iterator[Statement] because
   //  1. It is extended by StmtsSerializer which extends Iterator[String]
@@ -209,10 +184,10 @@ object Serializer {
             }
             val last = underlying
             underlying = stmts ++ last
-          case GroupDefine(info, declaration, body) =>
-            val begin = GroupDefineBegin(info, declaration)
+          case LayerBlock(info, layer, body) =>
+            val begin = LayerBlockBegin(info, layer)
             val last = underlying
-            underlying = Iterator(begin, body, GroupDefineEnd) ++ last
+            underlying = Iterator(begin, body, LayerBlockEnd) ++ last
           case other =>
             next = other
         }
@@ -231,7 +206,7 @@ object Serializer {
 
     // We could initialze the StringBuilder size, but this is bad for small modules which may not
     // even reach the bufferSize.
-    private implicit val b = new StringBuilder
+    private implicit val b: StringBuilder = new StringBuilder
 
     // The flattening of Whens into WhenBegin and friends requires us to keep track of the
     // indention level
@@ -253,11 +228,11 @@ object Serializer {
             indent += 1
           case WhenEnd =>
             indent -= 1
-          case GroupDefineBegin(info, declaration) =>
+          case LayerBlockBegin(info, layer) =>
             doIndent()
-            b ++= s"group $declaration :"; s(info)
+            b ++= s"group $layer :"; s(info)
             indent += 1
-          case GroupDefineEnd =>
+          case LayerBlockEnd =>
             indent -= 1
           case other =>
             doIndent()
@@ -427,21 +402,11 @@ object Serializer {
     case BooleanPropertyType       => b ++= "Bool"
     case PathPropertyType          => b ++= "Path"
     case SequencePropertyType(tpe) => b ++= "List<"; s(tpe, lastEmittedConst); b += '>'
-    case MapPropertyType(k, v)     => b ++= "Map<"; s(k, lastEmittedConst); b ++= ", "; s(v, lastEmittedConst); b += '>'
-    case TuplePropertyType(types) =>
-      val lastIdx = types.size - 1
-      b ++= "Tuple<"
-      types.zipWithIndex.foreach {
-        case (tpe, i) =>
-          s(tpe, lastEmittedConst)
-          if (i != lastIdx) b ++= ", "
-      }
-      b += '>'
-    case ClassPropertyType(name) => b ++= "Inst<"; b ++= name; b += '>'
-    case AnyRefPropertyType      => b ++= "AnyRef"
-    case AliasType(name)         => b ++= name
-    case UnknownType             => b += '?'
-    case other                   => b ++= other.serialize // Handle user-defined nodes
+    case ClassPropertyType(name)   => b ++= "Inst<"; b ++= name; b += '>'
+    case AnyRefPropertyType        => b ++= "AnyRef"
+    case AliasType(name)           => b ++= name
+    case UnknownType               => b += '?'
+    case other                     => b ++= other.serialize // Handle user-defined nodes
   }
 
   private def s(node: Direction)(implicit b: StringBuilder, indent: Int): Unit = node match {
@@ -526,19 +491,19 @@ object Serializer {
       b ++= s"${NewLine}"
       Iterator(b.toString)
     } else Iterator.empty
-    val groups = if (circuit.groups.nonEmpty) {
+    val layers = if (circuit.layers.nonEmpty) {
       implicit val b = new StringBuilder
-      def groupIt(groupDecl: GroupDeclare)(implicit indent: Int): Unit = {
-        b ++= s"${NewLine}"; doIndent(); b ++= s"declgroup ${groupDecl.name}, ${groupDecl.convention} :"
-        s(groupDecl.info)
-        groupDecl.body.foreach(groupIt(_)(indent + 1))
+      def layerIt(layer: Layer)(implicit indent: Int): Unit = {
+        b ++= s"${NewLine}"; doIndent(); b ++= s"declgroup ${layer.name}, ${layer.convention} :"
+        s(layer.info)
+        layer.body.foreach(layerIt(_)(indent + 1))
       }
-      circuit.groups.foreach(groupIt(_)(1))
+      circuit.layers.foreach(layerIt(_)(1))
       Iterator(b.toString)
     } else Iterator.empty
     prelude ++
       typeAliases ++
-      groups ++
+      layers ++
       circuit.modules.iterator.zipWithIndex.flatMap {
         case (m, i) =>
           val newline = Iterator(if (i == 0) s"$NewLine" else s"${NewLine}${NewLine}")

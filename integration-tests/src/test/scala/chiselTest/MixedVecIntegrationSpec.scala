@@ -83,7 +83,7 @@ class MixedVecUIntDynamicIndexTester extends BasicTester {
     wire(i) := i.U
   }
 
-  val vecWire = VecInit(wire : Seq[UInt])
+  val vecWire = VecInit(wire: Seq[UInt])
 
   val (cycle, done) = Counter(true.B, n)
   assert(vecWire(cycle) === cycle)
