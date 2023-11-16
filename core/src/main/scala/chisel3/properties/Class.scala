@@ -5,7 +5,7 @@ package chisel3.properties
 import firrtl.{ir => fir}
 import chisel3.{Data, RawModule, SpecifiedDirection}
 import chisel3.experimental.{BaseModule, SourceInfo}
-import chisel3.experimental.hierarchy.{Definition, ModuleClone}
+import chisel3.experimental.hierarchy.{Definition, Instance, ModuleClone}
 import chisel3.internal.{throwException, Builder, ClassBinding, OpBinding}
 import chisel3.internal.firrtl.{Arg, Command, Component, Converter, DefClass, DefObject, ModuleIO, Port, PropAssign}
 
@@ -144,23 +144,6 @@ object AnyClassType {
 
 object Class {
 
-  /** Helper to create a Property[ClassType] type for a Definition[Class].
-    *
-    * This is useful when a Property[ClassType] type is needed for references to instances of the Class.
-    *
-    * This method is safe, and should be used over unsafeGetReferenceType when possible.
-    */
-  def getReferenceType(cls: Definition[Class]): Property[ClassType] = {
-    // Get the BaseModule for the Class this is a definition of.
-    val baseModule = cls.getInnerDataContext.getOrElse(
-      throwException("Internal Error! Class instance did not have an associated BaseModule.")
-    )
-
-    // Get a Property[ClassType] type from the Class name.
-    val classType = ClassType.unsafeGetClassTypeByName(baseModule.name)
-    Property[classType.Type]()
-  }
-
   /** Helper to create a Property[ClassType] type for a Class of a given name.
     *
     * This is useful when a Property[ClassType] type is needed but the class does not yet exist or is not available.
@@ -201,5 +184,58 @@ object Class {
     }
 
     obj
+  }
+
+  implicit class ClassDefinitionOps[T <: Class](definition: Definition[T]) {
+
+    /** Get a Property[ClassType] type from a Definition[Class].
+      *
+      * This is useful when a Property[ClassType] type is needed for references to instances of the Class.
+      *
+      * This method is safe, and should be used over unsafeGetReferenceType when possible.
+      */
+    def getPropertyType: Property[ClassType] = {
+      // Get the BaseModule for the Class this is a definition of.
+      val baseModule = definition.getInnerDataContext.getOrElse(
+        throwException("Internal Error! Class instance did not have an associated BaseModule.")
+      )
+
+      // Get a Property[ClassType] type from the Class name.
+      val classType = ClassType.unsafeGetClassTypeByName(baseModule.name)
+      Property[classType.Type]()
+    }
+  }
+
+  implicit class ClassInstanceOps[T <: Class](instance: Instance[T]) {
+
+    /** Get a reference to an Instance[Class] as a Property[ClassType] property type.
+      *
+      * This method allows Instances of Classes to be safely connected to Property[ClassType] ports, so the references
+      * can be passed through the hierarchy.
+      */
+    def getPropertyTypeReference: Property[ClassType] = {
+      // Get the BaseModule from the Instance.
+      val baseModule = instance.getInnerDataContext.getOrElse(
+        throwException("Internal Error! Class instance did not have an associated BaseModule.")
+      )
+
+      // Get a StaticObject for bookkeeping.
+      val staticObject = new StaticObject(baseModule)
+      val ref = staticObject.getReference
+
+      // Bind the source type.
+      val contextMod = Builder.referenceUserContainer
+      contextMod match {
+        case rm: RawModule => {
+          ref.bind(OpBinding(rm, Builder.currentWhen), SpecifiedDirection.Unspecified)
+        }
+        case cls: Class => {
+          ref.bind(ClassBinding(cls), SpecifiedDirection.Unspecified)
+        }
+        case _ => throwException("Internal Error! Property connection can only occur within RawModule or Class.")
+      }
+
+      ref
+    }
   }
 }

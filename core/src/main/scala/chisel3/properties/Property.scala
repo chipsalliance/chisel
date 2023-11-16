@@ -349,55 +349,6 @@ object Property {
     // This cast should be safe, because there are no members of prop.ClassType to access
     def as(prop: Property[ClassType]): Property[ClassType] with prop.ClassType =
       prop.asInstanceOf[Property[ClassType] with prop.ClassType]
-
-    /** Connect a reference to an Instance[Class] to a Property[ClassType] prop.
-      *
-      * This method allows Instances of Classes to be safely connected to Property[ClassType] ports, so the references
-      * can be passed through the hierarchy.
-      *
-      * @param source An Instance[T <: Class], where T is the same class as prop's ClassType.
-      * @param sourceInfo The source location where the connection is made, for error messages.
-      */
-    def :=[T <: Class](source: Instance[T])(implicit sourceInfo: SourceInfo) = {
-      // Get the BaseModule from the source Instance.
-      val baseModule = source.getInnerDataContext.getOrElse(
-        throwException("Internal Error! Class instance did not have an associated BaseModule.")
-      )
-
-      // Get the sink Property[ClassType] expected class name.
-      val propClassName = prop.getPropertyType match {
-        case fir.ClassPropertyType(name) => name
-        case _                           => throwException("Internal Error! Property[ClassType] underlying type was not ClassPropertyType")
-      }
-
-      // Assert the sink expects the same class as the source represents.
-      if (propClassName != baseModule.name) {
-        throwException(
-          sourceInfo.makeMessage(info =>
-            s"Sink Property[ClassType] expected class $propClassName, but source Instance[Class] was class ${baseModule.name} $info"
-          )
-        )
-      }
-
-      // Get a StaticObject for bookkeeping.
-      val staticObject = new StaticObject(baseModule)
-      val ref = staticObject.getReference
-
-      // Bind the source type.
-      val contextMod = Builder.referenceUserContainer
-      contextMod match {
-        case rm: RawModule => {
-          ref.bind(OpBinding(rm, Builder.currentWhen), SpecifiedDirection.Unspecified)
-        }
-        case cls: Class => {
-          ref.bind(ClassBinding(cls), SpecifiedDirection.Unspecified)
-        }
-        case _ => throwException("Internal Error! Property connection can only occur within RawModule or Class.")
-      }
-
-      // Finally, connect the source to the sink.
-      prop := ref
-    }
   }
 
   private[chisel3] def makeWithValueOpt[T](implicit _tpe: PropertyType[T]): Property[_tpe.Type] = {
