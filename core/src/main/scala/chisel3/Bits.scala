@@ -374,6 +374,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
   /** @group SourceInfoTransformMacro */
   def do_asSInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt
 
+<<<<<<< HEAD
   /** Reinterpret this $coll as a `FixedPoint`.
     *
     * @note The value is not guaranteed to be preserved. For example, a [[UInt]] of width 3 and value 7 (0b111) would
@@ -407,6 +408,9 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
   }
 
   final def do_asBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
+=======
+  def do_asBool(implicit sourceInfo: SourceInfo): Bool = {
+>>>>>>> d5e65a337 (Don't emit nodes when calling .asBool on a Bool)
     width match {
       case KnownWidth(1) => this(0)
       case _             => throwException(s"can't covert ${this.getClass.getSimpleName}$width to Bool")
@@ -1305,6 +1309,8 @@ sealed class Bool() extends UInt(1.W) with Reset {
 
   /** @group SourceInfoTransformMacro */
   def do_&&(that: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = this & that
+
+  override def do_asBool(implicit sourceInfo: SourceInfo): Bool = this
 
   /** Reinterprets this $coll as a clock */
   def asClock: Clock = macro SourceInfoTransform.noArg
