@@ -205,7 +205,7 @@ class CIRCT extends Phase {
 
     val cmd = // Only 1 of input or firFile will be Some
       Seq(binary, input.fold(_ => "-format=fir", _.toString)) ++
-        Seq("-warn-on-unprocessed-annotations", "-dedup") ++
+        Seq("-warn-on-unprocessed-annotations") ++
         Seq("-output-annotation-file", circtAnnotationFilename) ++
         circtOptions.firtoolOptions ++
         logLevel.toCIRCTOptions ++
