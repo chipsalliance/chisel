@@ -1,26 +1,26 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chiselTests.util
+package chiselTests
 
 import chisel3._
 import chiselTests.{ChiselFlatSpec, MatchesAndOmits, Utils}
 import _root_.circt.stage.ChiselStage
 
-class GroupSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
+class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
 
-  "Groups" should "allow for creation of a group and nested groups" in {
+  "Layers" should "allow for creation of a layer and nested layers" in {
 
-    object A extends group.Declaration(group.Convention.Bind) {
-      object B extends group.Declaration(group.Convention.Bind)
+    object A extends layer.Layer(layer.Convention.Bind) {
+      object B extends layer.Layer(layer.Convention.Bind)
     }
 
     class Foo extends RawModule {
       val a = IO(Input(Bool()))
 
-      group(A) {
+      layer.block(A) {
         val w = WireInit(a)
         dontTouch(w)
-        group(A.B) {
+        layer.block(A.B) {
           val x = WireInit(w)
           dontTouch(x)
         }
@@ -45,20 +45,20 @@ class GroupSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
     )()
   }
 
-  "Groups error checking" should "require that a nested group definition matches its declaration nesting" in {
+  "Layers error checking" should "require that a nested layer definition matches its declaration nesting" in {
 
-    object A extends group.Declaration(group.Convention.Bind) {
-      object B extends group.Declaration(group.Convention.Bind)
+    object A extends layer.Layer(layer.Convention.Bind) {
+      object B extends layer.Layer(layer.Convention.Bind)
     }
 
     class Foo extends RawModule {
-      group(A.B) {
+      layer.block(A.B) {
         val a = Wire(Bool())
       }
     }
 
     intercept[IllegalArgumentException] { ChiselStage.emitCHIRRTL(new Foo) }.getMessage() should include(
-      "nested group 'B' must be wrapped in parent group 'A'"
+      "nested layer 'B' must be wrapped in parent layer 'A'"
     )
 
   }

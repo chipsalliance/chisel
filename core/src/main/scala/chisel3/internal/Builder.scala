@@ -502,7 +502,7 @@ private[chisel3] class DynamicContext(
   val components = ArrayBuffer[Component]()
   val annotations = ArrayBuffer[ChiselAnnotation]()
   val newAnnotations = ArrayBuffer[ChiselMultiAnnotation]()
-  val groups = mutable.LinkedHashSet[group.Declaration]()
+  val layers = mutable.LinkedHashSet[layer.Layer]()
   var currentModule: Option[BaseModule] = None
 
   /** Contains a mapping from a elaborated module to their aspect
@@ -522,7 +522,7 @@ private[chisel3] class DynamicContext(
   var currentClock:         Option[Clock] = None
   var currentReset:         Option[Reset] = None
   var currentDisable:       Disable.Type = Disable.BeforeReset
-  var groupStack:           List[group.Declaration] = group.Declaration.rootDeclaration :: Nil
+  var layerStack:           List[layer.Layer] = layer.Layer.root :: Nil
   val errors = new ErrorLog(warningFilters, sourceRoots, throwOnFirstError)
   val namingStack = new NamingStack
 
@@ -582,7 +582,7 @@ private[chisel3] object Builder extends LazyLogging {
   def components:  ArrayBuffer[Component] = dynamicContext.components
   def annotations: ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
 
-  def groups: mutable.LinkedHashSet[group.Declaration] = dynamicContext.groups
+  def layers: mutable.LinkedHashSet[layer.Layer] = dynamicContext.layers
 
   def contextCache: BuilderContextCache = dynamicContext.contextCache
 
@@ -793,9 +793,9 @@ private[chisel3] object Builder extends LazyLogging {
     dynamicContext.currentDisable = newDisable
   }
 
-  def groupStack: List[group.Declaration] = dynamicContext.groupStack
-  def groupStack_=(s: List[group.Declaration]): Unit = {
-    dynamicContext.groupStack = s
+  def layerStack: List[layer.Layer] = dynamicContext.layerStack
+  def layerStack_=(s: List[layer.Layer]): Unit = {
+    dynamicContext.layerStack = s
   }
 
   def inDefinition: Boolean = {
@@ -987,30 +987,28 @@ private[chisel3] object Builder extends LazyLogging {
         case _ => None
       }.toSeq
 
-      /** Stores an adjacency list representation of groups.  Connections indicating children. */
-      val groupAdjacencyList = mutable
-        .LinkedHashMap[group.Declaration, mutable.LinkedHashSet[group.Declaration]]()
-        .withDefault(_ => mutable.LinkedHashSet[group.Declaration]())
+      /** Stores an adjacency list representation of layers.  Connections indicating children. */
+      val layerAdjacencyList = mutable
+        .LinkedHashMap[layer.Layer, mutable.LinkedHashSet[layer.Layer]]()
+        .withDefault(_ => mutable.LinkedHashSet[layer.Layer]())
 
       // Populate the adjacency list.
-      groups.foreach { group =>
-        groupAdjacencyList(group.parent) = groupAdjacencyList(group.parent) += group
+      layers.foreach { layer =>
+        layerAdjacencyList(layer.parent) = layerAdjacencyList(layer.parent) += layer
       }
 
-      /** For a `group.Declaration`, walk all its children and fold them into a
-        * `GroupDecl`.  This "folding" creates one `GroupDecl` for each child
-        * nested under each parent `GroupDecl`.
+      /** For a `layer.Layer` all its children and fold them into a `Layer`.  This
+        * "folding" creates one `Layer` for each child nested under each parent
+        * `Layer`.
         */
-      def foldGroupDecls(decl: group.Declaration): GroupDecl = {
-        val children = groupAdjacencyList(decl)
-        val convention = decl.convention match {
-          case group.Convention.Bind => GroupConvention.Bind
+      def foldLayers(l: layer.Layer): Layer = {
+        val children = layerAdjacencyList(l)
+        val convention = l.convention match {
+          case layer.Convention.Bind => LayerConvention.Bind
           case _                     => ???
         }
-        GroupDecl(decl.sourceInfo, decl.name, convention, children.map(foldGroupDecls).toSeq)
+        Layer(l.sourceInfo, l.name, convention, children.map(foldLayers).toSeq)
       }
-
-      val rootGroups = groupAdjacencyList(group.Declaration.Root)
 
       (
         Circuit(
@@ -1020,7 +1018,7 @@ private[chisel3] object Builder extends LazyLogging {
           makeViewRenameMap,
           newAnnotations.toSeq,
           typeAliases,
-          rootGroups.map(foldGroupDecls).toSeq
+          layerAdjacencyList(layer.Layer.Root).map(foldLayers).toSeq
         ),
         mod
       )
