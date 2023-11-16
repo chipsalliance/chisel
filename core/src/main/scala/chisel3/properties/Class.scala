@@ -214,7 +214,7 @@ object Class {
       * This method allows Instances of Classes to be safely connected to Property[ClassType] ports, so the references
       * can be passed through the hierarchy.
       */
-    def getPropertyTypeReference: Property[ClassType] = {
+    def getPropertyReference: Property[ClassType] = {
       // Get the BaseModule from the Instance.
       val baseModule = instance.getInnerDataContext.getOrElse(
         throwException("Internal Error! Class instance did not have an associated BaseModule.")

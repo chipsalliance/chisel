@@ -123,8 +123,8 @@ class ObjectSpec extends ChiselFlatSpec with MatchesAndOmits {
             val obj1 = Instance(cls1)
             val obj2 = Instance(cls2)
 
-            out1 := obj1.getPropertyTypeReference
-            out2 := obj2.getPropertyTypeReference
+            out1 := obj1.getPropertyReference
+            out2 := obj2.getPropertyReference
           }
         })
       }
@@ -165,8 +165,8 @@ class ObjectSpec extends ChiselFlatSpec with MatchesAndOmits {
           val obj1 = Instance(cls1)
           val obj2 = Instance(cls2)
 
-          out1 := obj1.getPropertyTypeReference
-          out2 := obj2.getPropertyTypeReference
+          out1 := obj1.getPropertyReference
+          out2 := obj2.getPropertyReference
         })
       }
     )
@@ -195,7 +195,7 @@ class ObjectSpec extends ChiselFlatSpec with MatchesAndOmits {
         Module(new RawModule {
           val outClass1 = IO(Output(cls1.getPropertyType))
           val objClass2 = Instance(cls2)
-          outClass1 := objClass2.getPropertyTypeReference
+          outClass1 := objClass2.getPropertyReference
         })
       }
     )
