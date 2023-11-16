@@ -463,4 +463,20 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
         log should be("")
     }
   }
+
+  property("Calling .asBool on a Bool should be a noop") {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val a = IO(Input(Bool()))
+      val b: UInt = IO(Input(Bool()))
+      val y, z = IO(Output(Bool()))
+      val c = a.asBool
+      val d = b.asBool
+      y := c
+      z := d
+      a should be(c)
+      b should be(d)
+    })
+    chirrtl should include("connect y, a")
+    chirrtl should include("connect z, b")
+  }
 }
