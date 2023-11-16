@@ -62,13 +62,8 @@ private def majorScalaVersion(scalaVersion: String) = scalaVersion.split('.')(1)
 
 object firrtl extends Cross[Firrtl](v.scalaCrossVersions)
 
-<<<<<<< HEAD
-class Firrtl(val crossScalaVersion: String)
-  extends common.FirrtlModule
-=======
 trait Firrtl
     extends common.FirrtlModule
->>>>>>> 1f485a1a4 (Upgrade mill to 0.11.0 (#3367))
     with ChiselPublishModule
     with CrossSbtModule
     with ScalafmtModule {
@@ -89,13 +84,8 @@ trait Firrtl
 
 object svsim extends Cross[Svsim](v.scalaCrossVersions)
 
-<<<<<<< HEAD
-class Svsim(val crossScalaVersion: String)
-  extends common.SvsimModule
-=======
 trait Svsim
     extends common.SvsimModule
->>>>>>> 1f485a1a4 (Upgrade mill to 0.11.0 (#3367))
     with ChiselPublishModule
     with CrossSbtModule
     with ScalafmtModule {
@@ -104,13 +94,8 @@ trait Svsim
 
 object firrtlut extends Cross[FirrtlUnitTest](v.scalaCrossVersions)
 
-<<<<<<< HEAD
-class FirrtlUnitTest(val crossScalaVersion: String)
-  extends common.FirrtlUnitTestModule
-=======
 trait FirrtlUnitTest
     extends common.FirrtlUnitTestModule
->>>>>>> 1f485a1a4 (Upgrade mill to 0.11.0 (#3367))
     with CrossModuleBase
     with ScalafmtModule {
   override def millSourcePath = firrtl(crossScalaVersion).millSourcePath
@@ -131,13 +116,8 @@ trait FirrtlUnitTest
 
 object macros extends Cross[Macros](v.scalaCrossVersions)
 
-<<<<<<< HEAD
-class Macros(val crossScalaVersion: String)
-  extends common.MacrosModule
-=======
 trait Macros
     extends common.MacrosModule
->>>>>>> 1f485a1a4 (Upgrade mill to 0.11.0 (#3367))
     with ChiselPublishModule
     with CrossSbtModule
     with ScalafmtModule {
@@ -150,13 +130,8 @@ trait Macros
 
 object core extends Cross[Core](v.scalaCrossVersions)
 
-<<<<<<< HEAD
-class Core(val crossScalaVersion: String)
-  extends common.CoreModule
-=======
 trait Core
     extends common.CoreModule
->>>>>>> 1f485a1a4 (Upgrade mill to 0.11.0 (#3367))
     with ChiselPublishModule
     with CrossSbtModule
     with ScalafmtModule {
@@ -217,13 +192,8 @@ trait Core
 
 object plugin extends Cross[Plugin](v.pluginScalaCrossVersions)
 
-<<<<<<< HEAD
-class Plugin(val crossScalaVersion: String)
-  extends common.PluginModule
-=======
 trait Plugin
-    extends common.PluginModule
->>>>>>> 1f485a1a4 (Upgrade mill to 0.11.0 (#3367))
+  extends common.PluginModule
     with ChiselPublishModule
     with CrossSbtModule
     with ScalafmtModule {
@@ -238,13 +208,8 @@ trait Plugin
 
 object chisel extends Cross[Chisel](v.scalaCrossVersions)
 
-<<<<<<< HEAD
-class Chisel(val crossScalaVersion: String)
-  extends common.ChiselModule
-=======
 trait Chisel
     extends common.ChiselModule
->>>>>>> 1f485a1a4 (Upgrade mill to 0.11.0 (#3367))
     with ChiselPublishModule
     with CrossSbtModule
     with ScalafmtModule {
@@ -263,13 +228,8 @@ trait Chisel
 
 object chiselut extends Cross[ChiselUnitTest](v.scalaCrossVersions)
 
-<<<<<<< HEAD
-class ChiselUnitTest(val crossScalaVersion: String)
-  extends common.ChiselUnitTestModule
-=======
 trait ChiselUnitTest
     extends common.ChiselUnitTestModule
->>>>>>> 1f485a1a4 (Upgrade mill to 0.11.0 (#3367))
     with CrossModuleBase
     with ScalafmtModule {
   override def millSourcePath = chisel(crossScalaVersion).millSourcePath
@@ -292,18 +252,10 @@ trait ChiselUnitTest
   }
 }
 
-<<<<<<< HEAD
-
-object stdlib extends mill.Cross[Stdlib](v.scalaCrossVersions: _*)
-
-class Stdlib(val crossScalaVersion: String)
-  extends common.StdLibModule
-=======
 object stdlib extends Cross[Stdlib](v.scalaCrossVersions)
 
 trait Stdlib
     extends common.StdLibModule
->>>>>>> 1f485a1a4 (Upgrade mill to 0.11.0 (#3367))
     with ChiselPublishModule
     with CrossSbtModule
     with ScalafmtModule {
