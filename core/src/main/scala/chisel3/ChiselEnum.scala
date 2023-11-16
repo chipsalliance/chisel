@@ -11,7 +11,16 @@ import chisel3.internal.Builder.pushOp
 import chisel3.internal.firrtl.PrimOp._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo._
-import chisel3.internal.{throwException, Binding, Builder, BuilderContextCache, ChildBinding, ConstrainedBinding}
+import chisel3.internal.{
+  throwException,
+  Binding,
+  Builder,
+  BuilderContextCache,
+  ChildBinding,
+  ConstrainedBinding,
+  Warning,
+  WarningID
+}
 
 import chisel3.experimental.EnumAnnotations._
 
@@ -306,10 +315,11 @@ abstract class ChiselEnum {
     } else if (n.getWidth > this.getWidth) {
       throwException(s"The UInt being cast to $enumTypeName is wider than $enumTypeName's width ($getWidth)")
     } else {
+      // TODO fold this into warning filters
       if (!Builder.suppressEnumCastWarning && warn && !this.isTotal) {
-        Builder.warning(
+        val msg =
           s"Casting non-literal UInt to $enumTypeName. You can use $enumTypeName.safe to cast without this warning."
-        )
+        Builder.warning(Warning(WarningID.UnsafeUIntCastToEnum, msg))
       }
       val glue = Wire(new UnsafeEnum(width))
       glue := n

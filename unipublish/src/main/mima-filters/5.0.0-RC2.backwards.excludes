@@ -2,3 +2,9 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.experimental.datavie
 ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.experimental.dataview.package.BundleUpcastable")
 ProblemFilters.exclude[MissingClassProblem]("chisel3.experimental.dataview.package$BundleUpcastable")
 ProblemFilters.exclude[FinalClassProblem]("svsim.Simulation$Controller")
+# SourceInfo is sealed
+ProblemFilters.exclude[ReversedMissingMethodProblem]("chisel3.experimental.SourceInfo.filenameOption")
+# ErrorEntry is private
+ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.internal.ErrorEntry.serialize")
+# Constructor is package private
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("chisel3.stage.ChiselOptions.this")
