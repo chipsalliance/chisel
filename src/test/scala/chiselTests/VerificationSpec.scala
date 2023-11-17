@@ -33,14 +33,14 @@ class VerificationSpec extends ChiselPropSpec with Matchers {
     val lines = fir.split("\n").map(_.trim).toIndexedSeq
 
     // reset guard around the verification statement
-    assertContains(lines, "when _T_2 : ")
+    assertContains(lines, "when _T_1 : ")
     assertContains(lines, "cover(clock, _T, UInt<1>(\"h1\"), \"\")")
 
-    assertContains(lines, "when _T_6 : ")
-    assertContains(lines, "assume(clock, _T_4, UInt<1>(\"h1\"), \"\")")
+    assertContains(lines, "when _T_5 : ")
+    assertContains(lines, "assume(clock, _T_3, UInt<1>(\"h1\"), \"\")")
 
-    assertContains(lines, "when _T_10 : ")
-    assertContains(lines, "assert(clock, _T_8, UInt<1>(\"h1\"), \"\")")
+    assertContains(lines, "when _T_8 : ")
+    assertContains(lines, "assert(clock, _T_6, UInt<1>(\"h1\"), \"\")")
   }
 
   property("annotation of verification constructs should work") {
