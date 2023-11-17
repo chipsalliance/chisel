@@ -406,7 +406,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     throwException(s"Cannot call .asInterval on $this")
   }
 
-  final def do_asBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
+  def do_asBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
     width match {
       case KnownWidth(1) => this(0)
       case _             => throwException(s"can't covert ${this.getClass.getSimpleName}$width to Bool")
@@ -1305,6 +1305,8 @@ sealed class Bool() extends UInt(1.W) with Reset {
 
   /** @group SourceInfoTransformMacro */
   def do_&&(that: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = this & that
+
+  override def do_asBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = this
 
   /** Reinterprets this $coll as a clock */
   def asClock: Clock = macro SourceInfoTransform.noArg
