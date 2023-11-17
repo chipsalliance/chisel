@@ -267,8 +267,6 @@ class PanamaCIRCT {
   def firtoolOptionsSetVbToBv(options: FirtoolOptions, value: Boolean) =
     CAPI.firtoolOptionsSetVbToBv(options.get, value)
   def firtoolOptionsGetVbToBv(options:        FirtoolOptions): Boolean = CAPI.firtoolOptionsGetVbToBv(options.get)
-  def firtoolOptionsSetDedup(options:         FirtoolOptions, value: Boolean) = CAPI.firtoolOptionsSetDedup(options.get, value)
-  def firtoolOptionsGetDedup(options:         FirtoolOptions): Boolean = CAPI.firtoolOptionsGetDedup(options.get)
   def firtoolOptionsSetCompanionMode(options: FirtoolOptions, value: FirtoolCompanionMode) =
     CAPI.firtoolOptionsSetCompanionMode(options.get, value.get)
   def firtoolOptionsGetCompanionMode(options:                     FirtoolOptions) = CAPI.firtoolOptionsGetCompanionMode(options.get)
