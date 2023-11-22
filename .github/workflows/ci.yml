@@ -115,6 +115,10 @@ jobs:
           PGP_SECRET: ${{ secrets.PGP_SECRET }}
           SONATYPE_PASSWORD: ${{ secrets.CHIPSALLIANCE_SONATYPE_PASSWORD }}
           SONATYPE_USERNAME: ${{ secrets.CHIPSALLIANCE_SONATYPE_USERNAME }}
+      - run: |
+          sbt emitVersion
+          echo "Published version: $(cat version.txt)" >> $GITHUB_STEP_SUMMARY
+
 
   deploy_website:
     name: Deploy Website
