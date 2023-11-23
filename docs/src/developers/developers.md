@@ -1,7 +1,5 @@
 ---
-layout: docs
-title:  "Developers"
-section: "chisel3"
+sidebar_position: 4
 ---
 
 # Developer Documentation

@@ -191,28 +191,22 @@ jobs:
           distribution: 'adopt'
           java-version: '11'
           cache: 'sbt'
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          ruby-version: '2.7.8'
-      - name: Setup Jekyll
-        run: |
-          gem install jekyll -v 4.2.0
-          gem install jekyll-redirect-from
+          node-version: 18
       - name: Install CIRCT
         uses: circt/install-circt@v1.1.1
         with:
           version: ${{ inputs.circt }}
           github-token: ${{ github.token }}
-        #TODO: make the microsite building include building ScalaDoc
-      - name: Build the docs
-        run: sbt doc
-      - name: Build the microsite
-        run: make -C website
+        # TODO: make the website building include building ScalaDoc
+      - name: Build the website
+        run: make -C website build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Tar built website
-        run: tar zcf website.tar.gz website/docs/target/site
+        run: tar zcf website.tar.gz website/build
       - name: Share Built Website
         uses: actions/upload-artifact@v3
         with:

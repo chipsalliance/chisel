@@ -1,7 +1,5 @@
 ---
-layout: docs
-title:  "Introduction"
-section: "chisel3"
+sidebar_position: 0
 ---
 
 # An Introduction to Chisel
@@ -19,21 +17,20 @@ reusable, you will find it important to leverage the underlying power
 of the Scala language. We recommend you consult one of the excellent
 Scala books to become more expert in Scala programming.
 
-For a tutorial covering both Chisel and Scala, see the 
+For a tutorial covering both Chisel and Scala, see the
 [**online Chisel Bootcamp**](https://mybinder.org/v2/gh/freechipsproject/chisel-bootcamp/master).
 
-For quick reference "How-To" guides see the [Cookbooks](cookbooks/cookbooks).
+For quick reference "How-To" guides see the [Cookbooks](./cookbooks).
 
-For a deeper introduction to key concepts in  Chisel see the [Explanations](explanations/explanations).
+For a deeper introduction to key concepts in  Chisel see the [Explanations](./explanations).
 
-The [API Documentation](https://www.chisel-lang.org/api/) gives the detailed reference for the Chisel source code.
-Note that previous versions can be found via the sidebar menu at [https://www.chisel-lang.org/chisel3].
+The [API Documentation](../api/) gives the detailed reference for the Chisel source code.
 
-The [Resources](resources/resources) provides links to other useful resources for learning and working with Chisel.
+The [Resources](./resources) provides links to other useful resources for learning and working with Chisel.
 
-The [Appendix](appendix/appendix) covers some more advanced topics.
+The [Appendix](./appendix) covers some more advanced topics.
 
-The [Developers](developers/developers) section provides information for those working on the Chisel library itself.
+The [Developers](./developers) section provides information for those working on the Chisel library itself.
 
 >Throughout these pages, we format commentary on our design choices as in
 this paragraph.  You should be able to skip the commentary sections
