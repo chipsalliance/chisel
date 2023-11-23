@@ -7,7 +7,7 @@ import firrtl.{ir => fir}
 import firrtl.annotations.{InstanceTarget, IsMember, ModuleTarget, ReferenceTarget, Target}
 import chisel3.internal._
 import chisel3.internal.{firrtl => ir}
-import chisel3.experimental.{prefix, requireIsHardware, SourceInfo}
+import chisel3.experimental.{prefix, requireIsHardware, Analog, SourceInfo}
 import chisel3.experimental.hierarchy.Instance
 import scala.reflect.runtime.universe.{typeOf, TypeTag}
 import scala.annotation.{implicitAmbiguous, implicitNotFound}
@@ -170,10 +170,13 @@ private[chisel3] object PropertyType extends LowPriorityPropertyTypeInstances {
     override def convertUnderlying(value: D) = Path(value)
   }
 
-  // We can't just do <: Data because Property subclasses Data
+  // We can't just do <: Element because Property subclasses Element
   implicit def aggregatePathTypeInstance[A <: Aggregate]: RecursivePropertyType.Aux[A, Path, Path] =
     dataPathTypeInstance[A]
-  implicit def elementPathTypeInstance[E <: Element]: RecursivePropertyType.Aux[E, Path, Path] = dataPathTypeInstance[E]
+  implicit def bitsPathTypeInstance[E <: ToBoolable]: RecursivePropertyType.Aux[E, Path, Path] = dataPathTypeInstance[E]
+  implicit def clockPathTypeInstance[E <: Clock]:     RecursivePropertyType.Aux[E, Path, Path] = dataPathTypeInstance[E]
+  implicit def analogPathTypeInstance[E <: Analog]:   RecursivePropertyType.Aux[E, Path, Path] = dataPathTypeInstance[E]
+  implicit def enumPathTypeInstance[E <: EnumType]:   RecursivePropertyType.Aux[E, Path, Path] = dataPathTypeInstance[E]
 
   implicit def memPathTypeInstance[M <: MemBase[_]]: RecursivePropertyType.Aux[M, Path, Path] =
     new RecursivePropertyType[M] {
@@ -208,7 +211,7 @@ private[chisel3] object PropertyType extends LowPriorityPropertyTypeInstances {
   * describe a set of non-hardware types, so they have no width, cannot be used
   * in aggregate Data types, and cannot be connected to Data types.
   */
-sealed trait Property[T] extends Data { self =>
+sealed trait Property[T] extends Element { self =>
   sealed trait ClassType
   private object ClassType {
     implicit def classTypeProvider(
@@ -231,11 +234,10 @@ sealed trait Property[T] extends Data { self =>
     Builder.error(s"${this._localErrorContext} does not support .asUInt.")
     0.U
   }
-  private[chisel3] def allElements: Seq[Element] = Nil
   private[chisel3] def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo): Unit = {
     Builder.error(s"${this._localErrorContext} cannot be driven by Bits")
   }
-  private[chisel3] def firrtlConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
+  override private[chisel3] def firrtlConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
     that match {
       case pthat: Property[_] => MonoConnect.propConnect(sourceInfo, this, pthat, Builder.forcedUserModule)
       case other => Builder.error(s"${this._localErrorContext} cannot be connected to ${that._localErrorContext}")
@@ -243,7 +245,7 @@ sealed trait Property[T] extends Data { self =>
 
   }
 
-  def litOption: Option[BigInt] = None
+  override def litOption: Option[BigInt] = None
   def toPrintable: Printable = {
     throwException(s"Properties do not support hardware printing" + this._errorContext)
   }
