@@ -22,6 +22,8 @@ For a tutorial covering both Chisel and Scala, see the
 
 For quick reference "How-To" guides see the [Cookbooks](./cookbooks).
 
+If you like a textbook to learn Chisel and also a bit of digital design in general, you may be interested in reading [Digital Design with Chisel](http://www.imm.dtu.dk/~masca/chisel-book.html). It is available in English, Chinese, Japanese, and Vietnamese.
+
 For a deeper introduction to key concepts in  Chisel see the [Explanations](./explanations).
 
 The [API Documentation](../api/) gives the detailed reference for the Chisel source code.
