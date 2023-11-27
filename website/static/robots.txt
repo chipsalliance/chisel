@@ -1,0 +1,5 @@
+# Algolia-Crawler-Verif: BF10E85101F030BF
+
+User-agent: *
+Allow: /
+Sitemap: https://www.chisel-lang.org/sitemap.xml
