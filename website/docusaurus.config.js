@@ -152,6 +152,15 @@ const config = {
           'verilog',
         ],
       },
+      // Algolia search integration: https://docusaurus.io/docs/search
+      algolia: {
+        appId: 'TTFNIAC3CJ',
+        apiKey: '6a4ec6ef68c7b32aca79adf7440604ca',
+        indexName: 'chisel-lang',
+        contextualSearch: true,
+        searchPagePath: 'search',
+        insights: true,
+      },
     }),
 
   plugins: [
