@@ -15,6 +15,31 @@ const config = {
   // For GitHub pages deployment, it is often '/<projectName>/'
   baseUrl: '/',
 
+  // Github pages adds trailing slashes by default, we cannot leave this
+  // undefined or the Algolia webcrawler won't work.
+  // One side-effect of making it false is that markdown files that have the
+  // same name as their parent directory or have the name `index.md` now map
+  // to `<parent directory>.html`. This means that any links they have to other
+  // markdown files in the same directory now need to include the directory
+  // path. For example:
+  //
+  // docs
+  // └── foo
+  //     ├── foo.md (or index.md)
+  //     ├── bar.md
+  //     └── fizz.md
+  //
+  // This maps to the following .html:
+  // docs
+  // ├── foo.html
+  // └── foo
+  //     ├── bar.html
+  //     └── fizz.html
+  //
+  // A link from bar.md to fizz.md is [link](fizz).
+  // A link from foo.md to fizz.md is [link](foo/fizz).
+  trailingSlash: false,
+
   // GitHub pages deployment config.
   organizationName: 'chipsalliance',
   projectName: 'chisel',
