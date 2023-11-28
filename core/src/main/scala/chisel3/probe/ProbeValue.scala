@@ -12,8 +12,9 @@ import scala.language.experimental.macros
 private[chisel3] sealed trait ProbeValueBase {
   protected def apply[T <: Data](source: T, writable: Boolean)(implicit sourceInfo: SourceInfo): T = {
     requireIsHardware(source)
+
     // construct probe to return with cloned info
-    val clone = if (writable) RWProbe(source.cloneType) else Probe(source.cloneType)
+    val clone = if (writable) RWProbe(source.cloneTypeFull) else Probe(source.cloneTypeFull)
     clone.bind(OpBinding(Builder.forcedUserModule, Builder.currentWhen))
     if (writable) {
       if (source.isLit) {
@@ -22,8 +23,8 @@ private[chisel3] sealed trait ProbeValueBase {
       clone.setRef(RWProbeExpr(source.ref))
     } else {
       val ref = if (source.isLit) {
-        val intermed = chisel3.Wire(source.cloneType)
-        intermed := source
+        val intermed = chisel3.Wire(chisel3.Output(source.cloneTypeFull))
+        intermed :#= source
         intermed.suggestName("lit_probe_val")
         intermed.ref
       } else { source.ref }

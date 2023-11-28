@@ -668,4 +668,20 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
     }
     ChiselStage.emitSystemVerilog(new TestMod)
   }
+
+  "ProbeValue of ProbeValue (#3648)" should "error" in {
+    val exc = intercept[chisel3.ChiselException] {
+      ChiselStage.emitCHIRRTL(
+        new RawModule {
+          val a = IO(Probe(Bool()))
+
+          val b = WireInit(Bool(), DontCare)
+
+          define(a, ProbeValue(ProbeValue(b)))
+        },
+        Array("--throw-on-first-error", "--full-stacktrace")
+      )
+    }
+    exc.getMessage should include("Cannot probe a probe")
+  }
 }
