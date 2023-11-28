@@ -161,6 +161,7 @@ class DataMirrorSpec extends ChiselFlatSpec {
 
     // Check empty bundle (no members).
     assert(DataMirror.isFullyAligned(new Bundle {}))
+    assert(DataMirror.isFullyAligned(Flipped(new Bundle {})))
 
     // Check ground type.
     assert(DataMirror.isFullyAligned(UInt(8.W)))
