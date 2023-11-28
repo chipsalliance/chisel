@@ -18,6 +18,14 @@ chisel-non-website-from-root = \
 chisel-non-website = \
 	$(addprefix $(chisel_dir)/,$(chisel-non-website-from-root))
 
+# Every file commited to git in the website directory
+chisel-website-only-from-root = \
+	$(shell git -C $(this_dir) ls-files)
+
+# The above, but absolute paths
+chisel-website-only = \
+	$(addprefix $(this_dir)/,$(chisel-website-only-from-root))
+
 default: build
 
 # Using introduction as standin for all md files
@@ -47,7 +55,7 @@ $(install_timestamp): $(this_dir)/package.json
 
 install: $(install_timestamp)
 
-build: $(this_dir)/docs/introduction.md $(contributors) $(install_timestamp)
+build: $(this_dir)/docs/introduction.md $(contributors) $(install_timestamp) $(chisel-website-only)
 	cd $(this_dir) && npm run build
 
 # Must run build first

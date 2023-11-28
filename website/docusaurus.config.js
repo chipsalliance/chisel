@@ -90,9 +90,16 @@ const config = {
           {to: '/community', label: 'Community', position: 'left'},
           {to: '/api', label: 'API', position: 'left'},
           {
-            href: 'https://github.com/chipsalliance/chisel',
-            label: 'GitHub',
+            href: 'https://www.chipsalliance.org/',
             position: 'right',
+            className: 'header-chipsalliance-link',
+            'aria-label': 'ChipsAlliance link',
+          },
+          {
+            href: 'https://github.com/chipsalliance/chisel',
+            position: 'right',
+            className: 'header-github-link',
+            'aria-label': 'GitHub repository',
           },
         ],
       },
