@@ -14,4 +14,4 @@ The following additional resources and references may be useful:
 
 - [Chisel Cheatsheet](https://github.com/freechipsproject/chisel-cheatsheet/releases/latest/download/chisel_cheatsheet.pdf)
 - [Digital Design With Chisel](https://github.com/schoeberl/chisel-book)
-- [Frequently Asked Questions](faqs)
+- [Frequently Asked Questions](resources/faqs)

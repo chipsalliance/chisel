@@ -6,6 +6,6 @@ sidebar_position: 4
 
 Tips and tricks for Chisel developers:
 
-* [Embedding Chisel as an sbt subproject](sbt-subproject)
-* [Test Coverage](test-coverage)
-* [Developers Style Guide](style)
+* [Embedding Chisel as an sbt subproject](developers/sbt-subproject)
+* [Test Coverage](developers/test-coverage)
+* [Developers Style Guide](developers/style)

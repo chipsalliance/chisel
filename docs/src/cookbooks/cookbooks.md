@@ -8,8 +8,8 @@ Welcome to the Chisel Cookbooks, where we capture frequently-used design pattern
 If you have any requests or examples to share,
 please [file an issue](https://github.com/chipsalliance/chisel3/issues/new) and let us know!
 
-* [General Cookbooks](cookbook)
-* [Naming Cookbook](naming)
-* [Troubleshooting Guide](troubleshooting)
-* [Hierarchy Cookbook](hierarchy)
-* [DataView Cookbook](dataview)
+* [General Cookbooks](cookbooks/cookbook)
+* [Naming Cookbook](cookbooks/naming)
+* [Troubleshooting Guide](cookbooks/troubleshooting)
+* [Hierarchy Cookbook](cookbooks/hierarchy)
+* [DataView Cookbook](cookbooks/dataview)
