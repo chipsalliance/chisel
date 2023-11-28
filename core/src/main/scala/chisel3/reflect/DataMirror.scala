@@ -333,6 +333,8 @@ object DataMirror {
   }
 
   /** Check if the given Data is fully aligned w.r.t base.  Chisel version of FIRRTL "passive".
+    * All Data are considered fully aligned to themselves regardless of their specified direction
+    * or relevant coerced directions of their parents.  See `collectFlippedDeep`.
     *
     * @param base Data to check full alignment for and relative to
     * @return `true` if Data is fully aligned, `false` otherwise.
