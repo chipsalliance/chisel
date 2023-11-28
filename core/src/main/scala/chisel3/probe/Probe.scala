@@ -28,7 +28,7 @@ private[chisel3] sealed trait ProbeBase {
     // TODO error if trying to probe a non-passive type
     // https://github.com/chipsalliance/chisel/issues/3609
 
-    val ret: T = if (!data.mustClone(prevId)) data else data.cloneType.asInstanceOf[T]
+    val ret: T = Output(data)
     setProbeModifier(ret, Some(ProbeInfo(writable)))
     ret
   }
