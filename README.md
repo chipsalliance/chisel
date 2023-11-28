@@ -383,4 +383,4 @@ You are encouraged to do your development against the latest SNAPSHOT, but note 
 
 ### Roadmap
 
-See [Roadmap](https://github.com/chipsalliance/chisel3/blob/master/ROADMAP.md).
+See [Roadmap](https://github.com/chipsalliance/chisel3/blob/master/ROADMAP.md).   
