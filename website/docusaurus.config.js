@@ -157,7 +157,9 @@ const config = {
         appId: 'TTFNIAC3CJ',
         apiKey: '6a4ec6ef68c7b32aca79adf7440604ca',
         indexName: 'chisel-lang',
-        contextualSearch: true,
+        // When true, this adds facets which (with default settings) break search results
+        // It is probably fixable, see: https://docusaurus.io/docs/search#contextual-search
+        contextualSearch: false,
         searchPagePath: 'search',
         insights: true,
       },
