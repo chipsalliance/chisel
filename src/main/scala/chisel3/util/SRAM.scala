@@ -30,7 +30,7 @@ class MemoryReadPort[T <: Data](tpe: T, addrWidth: Int) extends Bundle {
   * @note `masked` is only valid if tpe is a Vec; if this is not the case no mask will be initialized
   *       regardless of the value of `masked`.
   */
-class MemoryWritePort[T <: Data] (tpe: T, addrWidth: Int, masked: Boolean) extends Bundle {
+class MemoryWritePort[T <: Data](tpe: T, addrWidth: Int, masked: Boolean) extends Bundle {
   val address = Input(UInt(addrWidth.W))
   val enable = Input(Bool())
   val data = Input(tpe)
@@ -54,7 +54,7 @@ class MemoryWritePort[T <: Data] (tpe: T, addrWidth: Int, masked: Boolean) exten
   * @note `masked` is only valid if tpe is a Vec; if this is not the case no mask will be initialized
   *       regardless of the value of `masked`.
   */
-class MemoryReadWritePort[T <: Data] (tpe: T, addrWidth: Int, masked: Boolean) extends Bundle {
+class MemoryReadWritePort[T <: Data](tpe: T, addrWidth: Int, masked: Boolean) extends Bundle {
   val address = Input(UInt(addrWidth.W))
   val enable = Input(Bool())
   val isWrite = Input(Bool())
