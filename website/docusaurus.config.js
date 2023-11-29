@@ -175,7 +175,8 @@ const config = {
   plugins: [
     [
       '@docusaurus/plugin-client-redirects',
-      {
+      { // Clean up links including .html, /myPages.html -> /myPage
+        fromExtensions: ['html', 'htm'],
         redirects: [
           { // Redirect old latest API docs link
             from: '/api/chisel3/latest',
@@ -190,9 +191,12 @@ const config = {
           // Redirect from all /chisel3/docs/X links to /docs/X
           // This catches many broken links from old sbt-microsites website
           if (to.includes('/docs')) {
-            return [
-              to.replace('/docs', '/chisel3/docs')
-            ];
+            const from1 = to.replace('/docs', '/chisel3/docs');
+            // Include redirects for .html/.htm because fromExtensions does not
+            // compose with these redirects automatically.
+            const from2 = from1.concat(".html");
+            const from3 = from1.concat(".htm");
+            return [from1, from2, from3];
           }
           return undefined;
         },
