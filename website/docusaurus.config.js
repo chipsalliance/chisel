@@ -86,7 +86,7 @@ const config = {
           src: 'img/chisel-tool.svg',
         },
         items: [
-          {to: '/docs/introduction', label: 'Docs', position: 'left'},
+          {to: '/docs', label: 'Docs', position: 'left'},
           {to: '/community', label: 'Community', position: 'left'},
           {to: '/api', label: 'API', position: 'left'},
           {
@@ -110,8 +110,8 @@ const config = {
             title: 'Docs',
             items: [
               {
-                label: 'Introduction',
-                to: '/docs/introduction',
+                label: 'Docs',
+                to: '/docs',
               },
               {
                 label: 'ScalaDoc',
@@ -177,7 +177,25 @@ const config = {
       '@docusaurus/plugin-client-redirects',
       {
         redirects: [
+          { // Redirect old latest API docs link
+            from: '/api/chisel3/latest',
+            to: '/api',
+          },
+          { // Redirect old chisel3 docs landing page
+            from: '/chisel3',
+            to: '/docs',
+          },
         ],
+        createRedirects(to) {
+          // Redirect from all /chisel3/docs/X links to /docs/X
+          // This catches many broken links from old sbt-microsites website
+          if (to.includes('/docs')) {
+            return [
+              to.replace('/docs', '/chisel3/docs')
+            ];
+          }
+          return undefined;
+        },
       },
     ],
   ],
