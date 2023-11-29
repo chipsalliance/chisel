@@ -216,7 +216,7 @@ class CIRCT extends Phase {
           case Some(PreserveAggregate.All)       => Seq("-preserve-aggregate=all")
           case None                              => None
         }) ++
-        circtOptions.preserveAggregate.map(_ => "-scalarize-top-module=0") ++
+        circtOptions.preserveAggregate.map(_ => "-scalarize-public-modules=0") ++
         includeDirs.flatMap(d => Seq("--include-dir", d.toString)) ++
         /* Convert the target to a firtool-compatible option. */
         ((circtOptions.target, split) match {

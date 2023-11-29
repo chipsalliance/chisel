@@ -41,7 +41,7 @@ class ConventionSpec extends AnyFunSpec with Matchers {
       val options = Array(
         "--preserve-aggregate=all",
         "--strip-debug-info",
-        "--scalarize-top-module=false",
+        "--scalarize-public-modules=true",
         "--lowering-options=disallowPortDeclSharing"
       )
 
