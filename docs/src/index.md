@@ -20,19 +20,19 @@ Scala books to become more expert in Scala programming.
 For a tutorial covering both Chisel and Scala, see the
 [**online Chisel Bootcamp**](https://mybinder.org/v2/gh/freechipsproject/chisel-bootcamp/master).
 
-For quick reference "How-To" guides see the [Cookbooks](./cookbooks).
+For quick reference "How-To" guides see the [Cookbooks](docs/cookbooks).
 
 If you like a textbook to learn Chisel and also a bit of digital design in general, you may be interested in reading [Digital Design with Chisel](http://www.imm.dtu.dk/~masca/chisel-book.html). It is available in English, Chinese, Japanese, and Vietnamese.
 
-For a deeper introduction to key concepts in  Chisel see the [Explanations](./explanations).
+For a deeper introduction to key concepts in  Chisel see the [Explanations](docs/explanations).
 
-The [API Documentation](../api/) gives the detailed reference for the Chisel source code.
+The [API Documentation](../api) gives the detailed reference for the Chisel source code.
 
-The [Resources](./resources) provides links to other useful resources for learning and working with Chisel.
+The [Resources](docs/resources) provides links to other useful resources for learning and working with Chisel.
 
-The [Appendix](./appendix) covers some more advanced topics.
+The [Appendix](docs/appendix) covers some more advanced topics.
 
-The [Developers](./developers) section provides information for those working on the Chisel library itself.
+The [Developers](docs/developers) section provides information for those working on the Chisel library itself.
 
 >Throughout these pages, we format commentary on our design choices as in
 this paragraph.  You should be able to skip the commentary sections

@@ -28,15 +28,15 @@ chisel-website-only = \
 
 default: build
 
-# Using introduction as standin for all md files
+# Using index as standin for all md files
 # Note this doesn't work when a markdown file is deleted
-$(mdoc_out)/introduction.md: $(chisel-non-website)
+$(mdoc_out)/index.md: $(chisel-non-website)
 	cd $(chisel_dir) && sbt docs/mdoc
 
 $(website_docs_dir):
 	mkdir -p $@
 
-$(website_docs_dir)/introduction.md: $(mdoc_out)/introduction.md | $(website_docs_dir)
+$(website_docs_dir)/index.md: $(mdoc_out)/index.md | $(website_docs_dir)
 	cp -R $(mdoc_out)/* $(this_dir)/docs/
 
 contributors_dir = $(this_dir)/src/pages/generated
@@ -55,7 +55,7 @@ $(install_timestamp): $(this_dir)/package.json
 
 install: $(install_timestamp)
 
-build: $(this_dir)/docs/introduction.md $(contributors) $(install_timestamp) $(chisel-website-only)
+build: $(this_dir)/docs/index.md $(contributors) $(install_timestamp) $(chisel-website-only)
 	cd $(this_dir) && npm run build
 
 # Must run build first
