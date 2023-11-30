@@ -328,6 +328,27 @@ object Flipped {
   }
 }
 
+/** Creates a field of a parent [[Aggregate]] which is
+  *  - aligned relative to that parent
+  *
+  * E.g. The following will create a field `i` of `b` where `i` is aligned (not flipped) relative to `b`
+  *
+  * ```scala
+  * val b = new Bundle {
+  *   val i = Aligned(new Decoupled(UInt(32.W))
+  * }
+  * ```
+  *
+  * Note that they currently clone their source argument, including its bindings.
+  *
+  * Thus, an error will be thrown if these are used on bound Data
+  */
+object Aligned {
+  def apply[T <: Data](source: => T): T = {
+    SpecifiedDirection.specifiedDirection(source)(x => x.specifiedDirection)
+  }
+}
+
 /** This forms the root of the type system for wire data types. The data value
   * must be representable as some number (need not be known at Chisel compile
   * time) of bits, and must have methods to pack / unpack structured data to /

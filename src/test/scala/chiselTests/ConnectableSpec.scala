@@ -26,7 +26,7 @@ object ConnectableSpec {
       extends Module {
     val io = IO(new Bundle {
       val in = Flipped(inType)
-      val out = Flipped(Flipped(outType)) // no clonetype, no Aligned (yet)
+      val out = Aligned(outType) // no clonetype, no Aligned (yet)
       val monitor = monitorOp.map(mop => {
         Output(inType)
       })
@@ -44,22 +44,22 @@ object ConnectableSpec {
 
   def vec[T <: Data](tpe:                 T, n: Int = 3) = Vec(n, tpe)
   def alignedBundle[T <: Data](fieldType: T) = new Bundle {
-    val foo = Flipped(Flipped(fieldType))
-    val bar = Flipped(Flipped(fieldType))
+    val foo = Aligned(fieldType)
+    val bar = Aligned(fieldType)
   }
   def mixedBundle[T <: Data](fieldType: T) = new Bundle {
-    val foo = Flipped(Flipped(fieldType))
+    val foo = Aligned(fieldType)
     val bar = Flipped(fieldType)
   }
 
   def alignedFooBundle[T <: Data](fieldType: T) = new Bundle {
-    val foo = Flipped(Flipped(fieldType))
+    val foo = Aligned(fieldType)
   }
   def flippedBarBundle[T <: Data](fieldType: T) = new Bundle {
     val bar = Flipped(fieldType)
   }
   def opaqueType[T <: Data](fieldType: T) = new Record with OpaqueType {
-    lazy val elements = SeqMap("" -> Flipped(Flipped(fieldType)))
+    lazy val elements = SeqMap("" -> Aligned(fieldType))
   }
 
   def allElementTypes(): Seq[() => Data] = Seq(() => UInt(3.W))
