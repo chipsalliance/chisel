@@ -84,8 +84,8 @@ endmodule
 
 ```scala mdoc:silent
 class PassthroughGenerator(width: Int = 8) extends Module {
-    val in = IO(Input(UInt(width.W)))
-    val out = IO(Output(UInt(width.W)))
+    val in = Incoming(UInt(width.W))
+    val out = Outgoing(UInt(width.W))
 
     out := in
 }
@@ -122,9 +122,9 @@ class ParameterizedWidthAdder(
   in1Width: Int,
   sumWidth: Int) extends Module {
 
-  val in0 = IO(Input(UInt(in0Width.W)))
-  val in1 = IO(Input(UInt(in1Width.W)))
-  val sum = IO(Output(UInt(sumWidth.W)))
+  val in0 = Incoming(UInt(in0Width.W))
+  val in1 = Incoming(UInt(in1Width.W))
+  val sum = Outgoing(UInt(sumWidth.W))
 
   // a +& b includes the carry, a + b does not
   sum := in0 +& in1
@@ -287,8 +287,8 @@ endmodule
 
 ```scala mdoc:silent
 class RegisterModule extends Module {
-  val in  = IO(Input(UInt(8.W)))
-  val out = IO(Output(UInt(8.W)))
+  val in  = Incoming(UInt(8.W))
+  val out = Outgoing(UInt(8.W))
 
   val differentClock = IO(Input(Clock()))
   val differentSyncReset = IO(Input(Bool()))
@@ -367,9 +367,9 @@ endmodule
 
 ```scala mdoc:silent
 class CaseStatementModule extends Module {
-  val a, b, c= IO(Input(UInt(3.W)))
-  val sel = IO(Input(UInt(2.W)))
-  val out = IO(Output(UInt(3.W)))
+  val a, b, c= Incoming(UInt(3.W))
+  val sel = Incoming(UInt(2.W))
+  val out = Outgoing(UInt(3.W))
 
   // default goes first
   out := 0.U
@@ -429,9 +429,9 @@ class CaseStatementEnumModule1 extends Module {
   }
 
    import AluMux1Sel._
-   val rs1, pc = IO(Input(UInt(3.W)))
+   val rs1, pc = Incoming(UInt(3.W))
    val sel = IO(Input(AluMux1Sel()))
-   val out = IO(Output(UInt(3.W)))
+   val out = Outgoing(UInt(3.W))
 
    // default goes first
    out := 0.U
@@ -772,24 +772,24 @@ endmodule
 ```scala mdoc:silent
 class OperatorExampleModule extends Module {
 
-  val x, y, c = IO(Input(UInt(32.W)))
+  val x, y, c = Incoming(UInt(32.W))
 
   val add_res, sub_res,
   mod_res, div_res, and_res,
   or_res, xor_res, not_res,
   logical_not_res, mux_res,
-  rshift_res , lshift_res = IO(Output(UInt(32.W)))
+  rshift_res , lshift_res = Outgoing(UInt(32.W))
 
   val logical_and_res, logical_or_res,
   equ_res, not_equ_res, andR_res,
   orR_res, xorR_res, gt_res,lt_res,
   geq_res, leq_res,single_bitselect_res = IO(Output(Bool()))
 
-  val mul_res, cat_res= IO(Output(UInt(64.W)))
+  val mul_res, cat_res= Outgoing(UInt(64.W))
 
-  val multiple_bitselect_res = IO(Output(UInt(2.W)))
+  val multiple_bitselect_res = Outgoing(UInt(2.W))
 
-  val fill_res = IO(Output(UInt((3*32).W)))
+  val fill_res = Outgoing(UInt((3*32).W))
 
   add_res := x + y
   sub_res := x - y

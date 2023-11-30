@@ -23,7 +23,7 @@ import chisel3._
 
 ```scala mdoc:fail
 class MyModule extends Module {
-  val in = IO(Input(UInt(8.W)))
+  val in = Incoming(UInt(8.W))
   printf(s"in = $in\n")
 }
 ```

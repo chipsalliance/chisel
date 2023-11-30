@@ -80,12 +80,12 @@ class ABBundle extends Bundle {
 class MyFlippedModule extends RawModule {
   // Normal instantiation of the bundle
   // 'a' is an Input and 'b' is an Output
-  val normalBundle = IO(new ABBundle)
+  val normalBundle = Outgoing(new ABBundle)
   normalBundle.b := normalBundle.a
 
   // Flipped recursively flips the direction of all Bundle fields
   // Now 'a' is an Output and 'b' is an Input
-  val flippedBundle = IO(Flipped(new ABBundle))
+  val flippedBundle = Incoming(new ABBundle)
   flippedBundle.a := flippedBundle.b
 }
 ```

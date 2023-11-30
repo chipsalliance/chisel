@@ -114,8 +114,8 @@ object Verification extends group.Declaration(group.Convention.Bind) {
 }
 
 class Foo extends Module {
-  val a = IO(Input(UInt(32.W)))
-  val b = IO(Output(UInt(32.W)))
+  val a = Incoming(UInt(32.W))
+  val b = Outgoing(UInt(32.W))
 
   b := a +% 1.U
 

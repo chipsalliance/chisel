@@ -45,9 +45,9 @@ import chisel3.stage.ChiselGeneratorAnnotation
 import circt.stage.ChiselStage
 
 class Adder extends Module {
-  val a = IO(Input(UInt(8.W)))
-  val b = IO(Input(UInt(8.W)))
-  val c = IO(Output(UInt(8.W)))
+  val a = Incoming(UInt(8.W))
+  val b = Incoming(UInt(8.W))
+  val c = Outgoing(UInt(8.W))
   c := a +& b
 }
 

@@ -28,8 +28,8 @@ class SimpleDecoder extends Module {
       BitPat("b111") -> BitPat("b1")
     ),
     BitPat("b0"))
-  val input = IO(Input(UInt(3.W)))
-  val output = IO(Output(UInt(1.W)))
+  val input = Incoming(UInt(3.W))
+  val output = Outgoing(UInt(1.W))
   output := decoder(input, table)
 }
 ```
@@ -68,7 +68,7 @@ class SimpleDecodeTable extends Module {
   val allPossibleInputs = Seq(Pattern("addi", BigInt("0x2")) /* can be generated */)
   val decodeTable = new DecodeTable(allPossibleInputs, Seq(NameContainsAdd))
   
-  val input = IO(Input(UInt(4.W)))
+  val input = Incoming(UInt(4.W))
   val isAddType = IO(Output(Bool()))
   val decodeResult = decodeTable.decode(input)
   isAddType := decodeResult(NameContainsAdd)

@@ -37,7 +37,7 @@ class IBUFDS extends BlackBox(Map("DIFF_TERM" -> "TRUE",
 }
 
 class Top extends Module {
-  val io = IO(new Bundle {})
+  val io = Outgoing(new Bundle {})
   val ibufds = Module(new IBUFDS)
   // connecting one of IBUFDS's input clock ports to Top's clock signal
   ibufds.io.I := clock

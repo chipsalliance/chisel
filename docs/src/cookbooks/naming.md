@@ -52,8 +52,8 @@ The `prefix` API can help with code inside `when` clauses:
 ```scala mdoc:silent
 class ExampleWhenPrefix extends Module {
 
-  val in = IO(Input(UInt(4.W)))
-  val out = IO(Output(UInt(4.W)))
+  val in = Incoming(UInt(4.W))
+  val out = Outgoing(UInt(4.W))
 
   out := DontCare
 
@@ -301,8 +301,8 @@ You can use the `noPrefix { ... }` to strip the prefix from all signals generate
 import chisel3.experimental.noPrefix
 
 class ExampleNoPrefix extends Module {
-  val in = IO(Input(UInt(2.W)))
-  val out = IO(Output(UInt()))
+  val in = Incoming(UInt(2.W))
+  val out = Outgoing(UInt())
 
   val add = noPrefix {
     // foo will not get a prefix
@@ -326,23 +326,23 @@ In cases where a FIRRTL transform renames a signal/instance, you can use the `fo
 import chisel3.util.experimental.{forceName, InlineInstance}
 
 class WrapperExample extends Module {
-  val in = IO(Input(UInt(3.W)))
-  val out = IO(Output(UInt(3.W)))
+  val in = Incoming(UInt(3.W))
+  val out = Outgoing(UInt(3.W))
   val inst = Module(new Wrapper)
   inst.in := in
   out := inst.out
 }
 class Wrapper extends Module with InlineInstance {
-  val in = IO(Input(UInt(3.W)))
-  val out = IO(Output(UInt(3.W)))
+  val in = Incoming(UInt(3.W))
+  val out = Outgoing(UInt(3.W))
   val inst = Module(new MyLeaf)
   forceName(inst, "inst")
   inst.in := in
   out := inst.out
 }
 class MyLeaf extends Module {
-  val in = IO(Input(UInt(3.W)))
-  val out = IO(Output(UInt(3.W)))
+  val in = Incoming(UInt(3.W))
+  val out = Outgoing(UInt(3.W))
   out := in
 }
 ```

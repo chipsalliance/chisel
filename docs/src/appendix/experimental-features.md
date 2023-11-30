@@ -7,11 +7,15 @@ section: "chisel3"
 
 Chisel has a number of new features that are worth checking out.  This page is an informal list of these features and projects.
 
-- [FixedPoint](#fixed-point)
-- [Module Variants](#module-variants)
-- [Bundle Literals](#bundle-literals)
-- [Vec Literals](#vec-literals)
-- [Loading Memories for simulation or FPGA initialization](#loading-memories)
+- [Experimental Features](#experimental-features)
+    - [FixedPoint  ](#fixedpoint--)
+    - [Module Variants ](#module-variants-)
+    - [Bundle Literals ](#bundle-literals-)
+    - [Vec Literals](#vec-literals)
+    - [Inline initialization with external file](#inline-initialization-with-external-file)
+      - [SystemVerilog Bind Initialization](#systemverilog-bind-initialization)
+    - [Notes on files](#notes-on-files)
+    - [Aggregate memories](#aggregate-memories)
 
 
 ### FixedPoint  <a name="fixed-point"></a>
@@ -43,7 +47,7 @@ class MyBundle extends Bundle {
 }
 
 class Example extends RawModule {
-  val out = IO(Output(new MyBundle))
+  val out = Outgoing(new MyBundle)
   out := (new MyBundle).Lit(_.a -> 8.U, _.b -> true.B)
 }
 ```
@@ -59,7 +63,7 @@ described in the [Cookbook](../cookbooks/cookbook#how-do-i-partially-reset-an-ag
 
 ```scala mdoc
 class Example2 extends RawModule {
-  val out = IO(Output(new MyBundle))
+  val out = Outgoing(new MyBundle)
   out := (new MyBundle).Lit(_.b -> true.B)
 }
 ```
@@ -72,16 +76,16 @@ Bundle literals can also be nested arbitrarily.
 
 ```scala mdoc
 class ChildBundle extends Bundle {
-  val foo = UInt(8.W)
+  val foo = Aligned(UInt(8.W))
 }
 
 class ParentBundle extends Bundle {
-  val a = UInt(8.W)
-  val b = new ChildBundle
+  val a = Aligned(UInt(8.W))
+  val b = Aligned(new ChildBundle)
 }
 
 class Example3 extends RawModule {
-  val out = IO(Output(new ParentBundle))
+  val out = Outgoing(new ParentBundle)
   out := (new ParentBundle).Lit(_.a -> 123.U, _.b -> (new ChildBundle).Lit(_.foo -> 42.U))
 }
 ```
@@ -100,7 +104,7 @@ import chisel3._
 import chisel3.experimental.VecLiterals._
 
 class VecExample1 extends Module {
-  val out = IO(Output(Vec(2, UInt(4.W))))
+  val out = Outgoing(Vec(2, UInt(4.W)))
   out := Vec.Lit(0xa.U, 0xbb.U)
 }
 ```
@@ -115,7 +119,7 @@ import chisel3._
 import chisel3.experimental.VecLiterals._
 
 class VecExample1a extends Module {
-  val out = IO(Output(Vec(2, UInt(4.W))))
+  val out = Outgoing(Vec(2, UInt(4.W)))
   out := Vec(2, UInt(4.W)).Lit(0 -> 1.U, 1 -> 2.U)
 }
 ```
@@ -132,7 +136,7 @@ described in the [Cookbook](../cookbooks/cookbook#how-do-i-partially-reset-an-ag
 
 ```scala mdoc
 class VecExample2 extends RawModule {
-  val out = IO(Output(Vec(4, UInt(4.W))))
+  val out = Outgoing(Vec(4, UInt(4.W)))
   out := Vec(4, UInt(4.W)).Lit(0 -> 1.U, 3 -> 7.U)
 }
 ```
@@ -145,7 +149,7 @@ Registers can be initialized from Vec literals
 
 ```scala mdoc
 class VecExample3 extends Module {
-  val out = IO(Output(Vec(4, UInt(8.W))))
+  val out = Outgoing(Vec(4, UInt(8.W)))
   val y = RegInit(
     Vec(4, UInt(8.W)).Lit(0 -> 0xAB.U(8.W), 1 -> 0xCD.U(8.W), 2 -> 0xEF.U(8.W), 3 -> 0xFF.U(8.W))
   )
@@ -161,7 +165,7 @@ Vec literals can also be nested arbitrarily.
 
 ```scala mdoc
 class VecExample5 extends RawModule {
-  val out = IO(Output(Vec(2, new ChildBundle)))
+  val out = Outgoing(Vec(2, new ChildBundle))
   out := Vec(2, new ChildBundle).Lit(
     0 -> (new ChildBundle).Lit(_.foo -> 42.U),
     1 -> (new ChildBundle).Lit(_.foo -> 7.U)
@@ -185,12 +189,12 @@ import chisel3.util.experimental.loadMemoryFromFileInline
 
 class InitMemInline(memoryFile: String = "") extends Module {
   val width: Int = 32
-  val io = IO(new Bundle {
-    val enable = Input(Bool())
-    val write = Input(Bool())
-    val addr = Input(UInt(10.W))
-    val dataIn = Input(UInt(width.W))
-    val dataOut = Output(UInt(width.W))
+  val io = Outgoing(new Bundle {
+    val enable  = Flipped(Bool())
+    val write   = Flipped(Bool())
+    val addr    = Flipped(UInt(10.W))
+    val dataIn  = Flipped(UInt(width.W))
+    val dataOut = Aligned(UInt(width.W))
   })
 
   val mem = SyncReadMem(1024, UInt(width.W))
@@ -219,9 +223,9 @@ import chisel3._
 import chisel3.util.experimental.loadMemoryFromFile
 
 class InitMemBind(val bits: Int, val size: Int, filename: String) extends Module {
-  val io = IO(new Bundle {
-    val nia = Input(UInt(bits.W))
-    val insn = Output(UInt(32.W))
+  val io = Outgoing(new Bundle {
+    val nia  = Flipped(UInt(bits.W))
+    val insn = Aligned(UInt(32.W))
   })
 
   val memory = Mem(size, UInt(32.W))

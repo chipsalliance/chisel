@@ -50,8 +50,8 @@ Example use:
 ````
 ```scala mdoc:silent
 class MyModule extends RawModule {
-  val in = IO(Input(UInt(8.W)))
-  val out = IO(Output(UInt(8.W)))
+  val in = Incoming(UInt(8.W))
+  val out = Outgoing(UInt(8.W))
   out := in + 1.U
 }
 ```
@@ -64,8 +64,8 @@ It will then concatenate the resulting Strings and wrap them in triple backticks
 ````
 ```scala
 class MyModule extends RawModule {
-  val in = IO(Input(UInt(8.W)))
-  val out = IO(Output(UInt(8.W)))
+  val in = Incoming(UInt(8.W))
+  val out = Outgoing(UInt(8.W))
   out := in + 1.U
 }
 ```

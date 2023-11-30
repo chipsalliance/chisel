@@ -212,7 +212,7 @@ import chisel3.util._
 class ModuleWithSRAM(numReadPorts: Int, numWritePorts: Int, numReadwritePorts: Int) extends Module {
   val width: Int = 8
 
-  val io = IO(new SRAMInterface(1024, UInt(width.W), numReadPorts, numWritePorts, numReadwritePorts))
+  val io = Outgoing(new SRAMInterface(1024, UInt(width.W), numReadPorts, numWritePorts, numReadwritePorts))
 
   // Generate a SyncReadMem representing an SRAM with an explicit number of read, write, and read-write ports
   io :<>= SRAM(1024, UInt(width.W), numReadPorts, numWritePorts, numReadwritePorts)

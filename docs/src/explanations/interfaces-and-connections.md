@@ -48,7 +48,7 @@ where flip recursively changes the direction of a bundle, changing input to outp
 We can now define a filter by defining a filter class extending module:
 ```scala mdoc:silent
 class Filter extends Module {
-  val io = IO(new FilterIO)
+  val io = Outgoing(new FilterIO)
   // ...
 }
 ```
@@ -101,7 +101,7 @@ Note that the RHS element must be readable so, one of these must hold:
 Using the biconnect `<>` operator, we can now compose two filters into a filter block as follows:
 ```scala mdoc:silent
 class Block extends Module {
-  val io = IO(new FilterIO)
+  val io = Outgoing(new FilterIO)
   val f1 = Module(new Filter)
   val f2 = Module(new Filter)
   f1.io.x <> io.x
@@ -120,8 +120,8 @@ class NotReallyAFilterIO extends Bundle {
   val z = Output(new Bool())
 }
 class Block2 extends Module {
-  val io1 = IO(new FilterIO)
-  val io2 = IO(Flipped(new NotReallyAFilterIO))
+  val io1 = Outgoing(new FilterIO)
+  val io2 = Incoming(new NotReallyAFilterIO)
 
   io1 <> io2
 }
@@ -136,7 +136,7 @@ For example, putting two temporary wires and connecting them here will not work,
 ```scala mdoc:silent
 
 class BlockWithTemporaryWires extends Module {
-  val io = IO(new FilterIO)
+  val io = Outgoing(new FilterIO)
   val f1 = Module(new Filter)
   val f2 = Module(new Filter)
   f1.io.x <> io.x

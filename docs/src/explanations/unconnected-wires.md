@@ -61,7 +61,7 @@ class TrivialInterface extends Bundle {
 
 class ModWithTrivalInterface extends Module {
   // ...
-  val io = IO(new TrivialInterface)
+  val io = Outgoing(new TrivialInterface)
   io <> DontCare
   // ...
 }

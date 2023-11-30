@@ -226,8 +226,8 @@ class FullyAlignedBundle extends Bundle {
   val b = Bool()
 }
 class Example0 extends RawModule {
-  val incoming = IO(Flipped(new FullyAlignedBundle))
-  val outgoing = IO(new FullyAlignedBundle)
+  val incoming = Incoming(new FullyAlignedBundle)
+  val outgoing = Outgoing(new FullyAlignedBundle)
   outgoing := incoming
 }
 ```
@@ -265,8 +265,8 @@ For connections where you want 'bulk-connect-like-semantics' where the aligned m
 
 ```scala mdoc:silent
 class Example1 extends RawModule {
-  val incoming = IO(Flipped(new MixedAlignmentBundle))
-  val outgoing = IO(new MixedAlignmentBundle)
+  val incoming = Incoming(new MixedAlignmentBundle)
+  val outgoing = Outgoing(new MixedAlignmentBundle)
   outgoing :<>= incoming
 }
 ```
@@ -285,8 +285,8 @@ In the following example connecting from `incoming.alignedChild` to `outgoing.al
 
 ```scala mdoc:silent
 class Example1a extends RawModule {
-  val incoming = IO(Flipped(new MixedAlignmentBundle))
-  val outgoing = IO(new MixedAlignmentBundle)
+  val incoming = Incoming(new MixedAlignmentBundle)
+  val outgoing = Outgoing(new MixedAlignmentBundle)
   outgoing.alignedChild :<>= incoming.alignedChild // whether incoming.alignedChild is aligned/flipped to incoming is IRRELEVANT to what gets connected with :<>=
 }
 ```
@@ -296,7 +296,7 @@ A common source of confusion is to mistake the process for determining whether `
 While both processes consider relative alignment, they are distinct.
 
 The port-direction computation always computes alignment relative to the component marked with `IO`.
-An `IO(Flipped(gen))` is an incoming port, and any member of `gen` that is aligned/flipped with `gen` is an incoming/outgoing port.
+An `Incoming(gen)` is an incoming port, and any member of `gen` that is aligned/flipped with `gen` is an incoming/outgoing port.
 An `IO(gen)` is an outgoing port, and any member of `gen` that is aligned/flipped with `gen` is an outgoing/incoming port.
 
 The connection-direction computation always computes alignment based on the explicit consumer/producer referenced for the connection.
@@ -317,8 +317,8 @@ For connections where you want the aligned-half of 'bulk-connect-like-semantics'
 
 ```scala mdoc:silent
 class Example2 extends RawModule {
-  val incoming = IO(Flipped(new MixedAlignmentBundle))
-  val outgoing = IO(new MixedAlignmentBundle)
+  val incoming = Incoming(new MixedAlignmentBundle)
+  val outgoing = Outgoing(new MixedAlignmentBundle)
   incoming.flippedChild := DontCare // Otherwise FIRRTL throws an uninitialization error
   outgoing :<= incoming
 }
@@ -336,8 +336,8 @@ For connections where you want the flipped-half of 'bulk-connect-like-semantics'
 
 ```scala mdoc:silent
 class Example3 extends RawModule {
-  val incoming = IO(Flipped(new MixedAlignmentBundle))
-  val outgoing = IO(new MixedAlignmentBundle)
+  val incoming = Incoming(new MixedAlignmentBundle)
+  val outgoing = Outgoing(new MixedAlignmentBundle)
   outgoing.alignedChild := DontCare // Otherwise FIRRTL throws an uninitialization error
   outgoing :>= incoming
 }
@@ -419,7 +419,7 @@ class Example9 extends RawModule {
   val abType = new Record { val elements = SeqMap("a" -> Bool(), "b" -> Flipped(Bool())) }
   val bcType = new Record { val elements = SeqMap("b" -> Flipped(Bool()), "c" -> Bool()) }
 
-  val p = IO(Flipped(abType))
+  val p = Incoming(abType)
   val c = IO(bcType)
 
   DontCare :>= p
@@ -478,8 +478,8 @@ class MyDecoupledOpt(hasBits: Boolean) extends Bundle {
   val bits = if (hasBits) Some(UInt(32.W)) else None
 }
 class Example6 extends RawModule {
-  val in  = IO(Flipped(new MyDecoupledOpt(true)))
-  val out = IO(new MyDecoupledOpt(false))
+  val in  = Incoming(new MyDecoupledOpt(true))
+  val out = Outgoing(new MyDecoupledOpt(false))
   out :<>= in.waive(_.bits.get) // We can know to call .get because we can inspect in.bits.isEmpty
 }
 ```
@@ -505,8 +505,8 @@ class OnlyB extends Bundle {
   val b = UInt(32.W)
 }
 class Example11 extends RawModule {
-  val in  = IO(Flipped(new OnlyA))
-  val out = IO(new OnlyB)
+  val in  = Incoming(new OnlyA)
+  val out = Outgoing(new OnlyB)
 
   out := DontCare
 
@@ -531,8 +531,8 @@ If implicit truncation behavior is desired, then `Connectable` provides a `squee
 import scala.collection.immutable.SeqMap
 
 class Example14 extends RawModule {
-  val p = IO(Flipped(UInt(4.W)))
-  val c = IO(UInt(3.W))
+  val p = Incoming(UInt(4.W))
+  val c =Outgoing(UInt(3.W))
 
   c :<>= p.squeeze
 }
@@ -558,8 +558,8 @@ class BundleWithSpecialField extends Bundle {
   val special = Bool()
 }
 class Example15 extends RawModule {
-  val p = IO(Flipped(new BundleWithSpecialField()))
-  val c = IO(new BundleWithSpecialField())
+  val p = Incoming(new BundleWithSpecialField())
+  val c = Outgoing(new BundleWithSpecialField())
 
   c.special := true.B // must initialize it
 
@@ -613,8 +613,8 @@ class MyDecoupledOtherBits extends MyReadyValid {
   val bits = UInt(32.W)
 }
 class Example12 extends RawModule {
-  val in  = IO(Flipped(new MyDecoupled))
-  val out = IO(new MyDecoupledOtherBits)
+  val in  = Incoming(new MyDecoupled)
+  val out = Outgoing(new MyDecoupledOtherBits)
 
   out := DontCare
 
@@ -638,8 +638,8 @@ The `waive(_.bits)` does nothing, because the `bits` are not dangling nor unconn
 ```scala mdoc:silent
 import experimental.dataview._
 class Example13 extends RawModule {
-  val in  = IO(Flipped(new MyDecoupled))
-  val out = IO(new MyDecoupledOtherBits)
+  val in  = Incoming(new MyDecoupled)
+  val out = Outgoing(new MyDecoupledOtherBits)
 
   out := DontCare
 
@@ -668,8 +668,8 @@ class MyDecoupled extends MyReadyValid {
   val bits = UInt(32.W)
 }
 class Example5 extends RawModule {
-  val in  = IO(Flipped(new MyDecoupled))
-  val out = IO(new MyReadyValid)
+  val in  = Incoming(new MyDecoupled)
+  val out = Outgoing(new MyReadyValid)
   out :<>= in.waiveAs[MyReadyValid](_.bits)
 }
 ```
@@ -696,8 +696,8 @@ class HasEcho extends MyReadyValid {
   val echo = Flipped(UInt(32.W))
 }
 class Example7 extends RawModule {
-  val in  = IO(Flipped(new HasBits))
-  val out = IO(new HasEcho)
+  val in  = Incoming(new HasBits)
+  val out = Outgoing(new HasEcho)
   out.waiveAs[MyReadyValid](_.echo) :<>= in.waiveAs[MyReadyValid](_.bits)
 }
 ```
@@ -716,8 +716,8 @@ Use `.unsafe` (both waives and allows squeezing of all fields).
 
 ```scala mdoc:silent
 class ExampleUnsafe extends RawModule {
-  val in  = IO(Flipped(new Bundle { val foo = Bool(); val bar = Bool() }))
-  val out = IO(new Bundle { val baz = Bool(); val bar = Bool() })
+  val in  = Incoming(new Bundle { val foo = Bool(); val bar = Bool() })
+  val out = Outgoing(new Bundle { val baz = Bool(); val bar = Bool() })
   out.unsafe :<>= in.unsafe // bar is connected, and nothing errors
 }
 ```
@@ -728,8 +728,8 @@ Use `.as` (upcasts the Scala type).
 
 ```scala mdoc:silent
 class ExampleAs extends RawModule {
-  val in  = IO(Flipped(new Bundle { val foo = Bool(); val bar = Bool() }))
-  val out = IO(new Bundle { val foo = Bool(); val bar = Bool() })
+  val in  = Incoming(new Bundle { val foo = Bool(); val bar = Bool() })
+  val out = Outgoing(new Bundle { val foo = Bool(); val bar = Bool() })
   // foo and bar are connected, although Scala types aren't the same
   out.as[Data] :<>= in.as[Data]
 }

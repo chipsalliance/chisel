@@ -58,7 +58,7 @@ class AluMux1Bundle extends Bundle {
 }
 
 class AluMux1File extends Module {
-  val io = IO(new AluMux1Bundle)
+  val io = Outgoing(new AluMux1Bundle)
 
   // Default value for aluMux1Out
   io.aluMux1Out := 0.U
@@ -115,7 +115,7 @@ You can cast an enum to a `UInt` using `.asUInt`:
 ```scala mdoc
 class ToUInt extends RawModule {
   val in = IO(Input(Opcode()))
-  val out = IO(Output(UInt()))
+  val out = Outgoing(UInt())
   out := in.asUInt
 }
 ```
@@ -129,7 +129,7 @@ You can cast from a `UInt` to an enum by passing the `UInt` to the apply method 
 
 ```scala mdoc
 class FromUInt extends Module {
-  val in = IO(Input(UInt(7.W)))
+  val in = Incoming(UInt(7.W))
   val out = IO(Output(Opcode()))
   out := Opcode(in)
 }
@@ -151,7 +151,7 @@ to a `Bool` indicating if the Enum is in a valid state:
 
 ```scala mdoc
 class SafeFromUInt extends Module {
-  val in = IO(Input(UInt(7.W)))
+  val in = Incoming(UInt(7.W))
   val out = IO(Output(Opcode()))
   val (value, valid) = Opcode.safe(in)
   assert(valid, "Enum state must be valid, got %d!", in)
@@ -177,7 +177,7 @@ class MyBundle extends Bundle {
 }
 
 class SuppressedFromUInt extends Module {
-  val in = IO(Input(UInt(15.W)))
+  val in = Incoming(UInt(15.W))
   val out = IO(Output(new MyBundle()))
   suppressEnumCastWarning {
     out := in.asTypeOf(new MyBundle)

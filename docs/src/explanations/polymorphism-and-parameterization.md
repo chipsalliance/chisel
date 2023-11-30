@@ -81,7 +81,7 @@ We can now define `Filter` by defining a module class that also takes a link typ
 
 ```scala mdoc:silent
 class Filter[T <: Data](gen: T) extends Module {
-  val io = IO(new FilterIO(gen))
+  val io = Outgoing(new FilterIO(gen))
   // ...
 }
 ```
@@ -203,16 +203,16 @@ trait MyAdder {
 }
 
 class Mod1 extends RawModule with MyAdder {
-    val in1 = IO(Input(UInt(8.W)))
-    val in2 = IO(Input(UInt(8.W)))
-    val out = IO(Output(UInt(8.W)))
+    val in1 = Incoming(UInt(8.W))
+    val in2 = Incoming(UInt(8.W))
+    val out = Outgoing(UInt(8.W))
     out := in1 + in2
 }
 
 class Mod2 extends RawModule with MyAdder {
-    val in1 = IO(Input(UInt(8.W)))
-    val in2 = IO(Input(UInt(8.W)))
-    val out = IO(Output(UInt(8.W)))
+    val in1 = Incoming(UInt(8.W))
+    val in2 = Incoming(UInt(8.W))
+    val out = Outgoing(UInt(8.W))
     out := in1 - in2
 }
 

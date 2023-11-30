@@ -46,14 +46,14 @@ import chisel3.experimental.hierarchy.{Definition, Instance, instantiable, publi
 
 @instantiable
 class AddOne(width: Int) extends Module {
-  @public val in  = IO(Input(UInt(width.W)))
-  @public val out = IO(Output(UInt(width.W)))
+  @public val in  = Incoming(UInt(width.W))
+  @public val out = Outgoing(UInt(width.W))
   out := in + 1.U
 }
 
 class AddTwo(width: Int) extends Module {
-  val in  = IO(Input(UInt(width.W)))
-  val out = IO(Output(UInt(width.W)))
+  val in  = Incoming(UInt(width.W))
+  val out = Outgoing(UInt(width.W))
   val addOneDef = Definition(new AddOne(width))
   val i0 = Instance(addOneDef)
   val i1 = Instance(addOneDef)
@@ -75,8 +75,8 @@ multiple instances of `AddOne`.
 import chisel3.experimental.hierarchy.Instantiate
 
 class AddTwoInstantiate(width: Int) extends Module {
-  val in  = IO(Input(UInt(width.W)))
-  val out = IO(Output(UInt(width.W)))
+  val in  = Incoming(UInt(width.W))
+  val out = Outgoing(UInt(width.W))
   val i0 = Instantiate(new AddOne(width))
   val i1 = Instantiate(new AddOne(width))
   i0.in := in
@@ -184,8 +184,8 @@ import chisel3.experimental.hierarchy.{Definition, instantiable, public}
 @instantiable
 class AddOne(val width: Int) extends RawModule {
   @public val width = width
-  @public val in  = IO(Input(UInt(width.W)))
-  @public val out = IO(Output(UInt(width.W)))
+  @public val in  = Incoming(UInt(width.W))
+  @public val out = Outgoing(UInt(width.W))
   out := in + 1.U
 }
 
@@ -220,16 +220,16 @@ import chisel3.experimental.hierarchy.{Definition, Instance, instantiable, publi
 @instantiable
 class AddOne(val width: Int) extends Module {
   @public val width = width
-  @public val in  = IO(Input(UInt(width.W)))
-  @public val out = IO(Output(UInt(width.W)))
+  @public val in  = Incoming(UInt(width.W))
+  @public val out = Outgoing(UInt(width.W))
   out := in + 1.U
 }
 
 class AddTwo(addOneDef: Definition[AddOne]) extends Module {
   val i0 = Instance(addOneDef)
   val i1 = Instance(addOneDef)
-  val in  = IO(Input(UInt(addOneDef.width.W)))
-  val out = IO(Output(UInt(addOneDef.width.W)))
+  val in  = Incoming(UInt(addOneDef.width.W))
+  val out = Outgoing(UInt(addOneDef.width.W))
   i0.in := in
   i1.in := i0.out
   out   := i1.out

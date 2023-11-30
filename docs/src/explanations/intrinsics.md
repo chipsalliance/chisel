@@ -37,7 +37,7 @@ import chisel3.experimental.IntrinsicModule
 class ExampleIntrinsicModule(str: String) extends IntrinsicModule(
   "OtherIntrinsic",
   Map("STRING" -> str)) {
-  val foo = IO(new Bundle() {
+  val foo = Outgoing(new Bundle() {
     val in = Input(UInt())
     val out = Output(UInt(32.W))
   })

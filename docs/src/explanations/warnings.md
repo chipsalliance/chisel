@@ -75,8 +75,8 @@ import circt.stage.ChiselStage.emitSystemVerilog
 import chisel3._
 class TooWideIndexModule extends RawModule {
   val in = IO(Input(Vec(4, UInt(8.W))))
-  val idx = IO(Input(UInt(8.W))) // This index is wider than necessary
-  val out = IO(Output(UInt(8.W)))
+  val idx = Incoming(UInt(8.W)) // This index is wider than necessary
+  val out = Outgoing(UInt(8.W))
 
   out := in(idx)
 }

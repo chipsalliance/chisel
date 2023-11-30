@@ -69,7 +69,7 @@ package intro
 ```scala mdoc:silent
 import chisel3._
 class HelloWorld extends Module {
-  val io = IO(new Bundle{})
+  val io = Outgoing(new Bundle{})
   printf("hello world\n")
 }
 ```
@@ -158,7 +158,7 @@ import chisel3._
 import circt.stage.ChiselStage
 
 class MyFirrtlModule extends Module {
-  val io = IO(new Bundle{})
+  val io = Outgoing(new Bundle{})
 }
 
 object FirrtlMain extends App {

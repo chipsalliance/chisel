@@ -55,7 +55,7 @@ class VerilogAXIBundle(val addrWidth: Int) extends Bundle {
 
 // Instantiated as
 class my_module extends RawModule {
-  val AXI = IO(new VerilogAXIBundle(20))
+  val AXI = Outgoing(new VerilogAXIBundle(20))
 }
 ```
 
@@ -83,7 +83,7 @@ class AXIBundle(val addrWidth: Int) extends Bundle {
 }
 // Instantiated as
 class MyModule extends RawModule {
-  val axi = IO(new AXIBundle(20))
+  val axi = Outgoing(new AXIBundle(20))
 }
 ```
 
@@ -128,7 +128,7 @@ it were the more structured type:
 
 ```scala mdoc
 class AXIStub extends RawModule {
-  val AXI = IO(new VerilogAXIBundle(20))
+  val AXI = Outgoing(new VerilogAXIBundle(20))
   val view = AXI.viewAs[AXIBundle]
 
   // We can now manipulate `AXI` via `view`
@@ -165,8 +165,8 @@ types:
 
 ```scala mdoc
 class ConnectionExample extends RawModule {
-  val in = IO(new AXIBundle(20))
-  val out = IO(Flipped(new VerilogAXIBundle(20)))
+  val in = Outgoing(new AXIBundle(20))
+  val out = Incoming(new VerilogAXIBundle(20))
   out.viewAs[AXIBundle] <> in
 }
 ```
@@ -194,9 +194,9 @@ see an error like the following:
 
 ```scala mdoc:fail
 class TupleExample extends RawModule {
-  val a, b, c, d = IO(Input(UInt(8.W)))
+  val a, b, c, d = Incoming(UInt(8.W))
   val cond = IO(Input(Bool()))
-  val x, y = IO(Output(UInt(8.W)))
+  val x, y = Outgoing(UInt(8.W))
   (x, y) := Mux(cond, (a, b), (c, d))
 }
 ```
@@ -219,9 +219,9 @@ Now, we can use `.viewAs` to view Tuples as if they were subtypes of `Data`:
 
 ```scala mdoc
 class TupleVerboseExample extends RawModule {
-  val a, b, c, d = IO(Input(UInt(8.W)))
+  val a, b, c, d = Incoming(UInt(8.W))
   val cond = IO(Input(Bool()))
-  val x, y = IO(Output(UInt(8.W)))
+  val x, y = Outgoing(UInt(8.W))
   (x, y).viewAs[HWTuple2[UInt, UInt]] := Mux(cond, (a, b).viewAs[HWTuple2[UInt, UInt]], (c, d).viewAs[HWTuple2[UInt, UInt]])
 }
 ```
@@ -238,9 +238,9 @@ Now, the original code just works!
 
 ```scala mdoc
 class TupleExample extends RawModule {
-  val a, b, c, d = IO(Input(UInt(8.W)))
+  val a, b, c, d = Incoming(UInt(8.W))
   val cond = IO(Input(Bool()))
-  val x, y = IO(Output(UInt(8.W)))
+  val x, y = Outgoing(UInt(8.W))
   (x, y) := Mux(cond, (a, b), (c, d))
 }
 ```

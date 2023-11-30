@@ -123,7 +123,7 @@ Now our original code works:
 class Example(useBar: Boolean) extends Module {
   val io = IO(new Bundle {
     val in = IO(Input(UInt(8.W)))
-    val out = IO(Output(UInt(8.W)))
+    val out = Outgoing(UInt(8.W))
   })
 
   // Now, inst is inferred to be of type "HasCommonInterface"

@@ -55,7 +55,7 @@ class MyBundle extends Bundle {
   // val foo = autoNameRecursively("foo")(Input(UInt(3.W)))
 }
 class Example1 extends Module {
-  val io = IO(new MyBundle())
+  val io = Outgoing(new MyBundle())
   // val io = autoNameRecursively("io")(IO(new MyBundle()))
 }
 ```
@@ -68,15 +68,15 @@ side of the val declaration:
 
 ```scala mdoc
 class Example2 extends Module {
-  val in = IO(Input(UInt(2.W)))
-  // val in = autoNameRecursively("in")(prefix("in")(IO(Input(UInt(2.W)))))
+  val in = Incoming(UInt(2.W))
+  // val in = autoNameRecursively("in")(prefix("in")(Incoming(UInt(2.W))))
 
-  val out1 = IO(Output(UInt(4.W)))
-  // val out1 = autoNameRecursively("out1")(prefix("out1")(IO(Output(UInt(4.W)))))
-  val out2 = IO(Output(UInt(4.W)))
-  // val out2 = autoNameRecursively("out2")(prefix("out2")(IO(Output(UInt(4.W)))))
-  val out3 = IO(Output(UInt(4.W)))
-  // val out3 = autoNameRecursively("out3")(prefix("out3")(IO(Output(UInt(4.W)))))
+  val out1 = Outgoing(UInt(4.W))
+  // val out1 = autoNameRecursively("out1")(prefix("out1")(Outgoing(UInt(4.W))))
+  val out2 = Outgoing(UInt(4.W))
+  // val out2 = autoNameRecursively("out2")(prefix("out2")(Outgoing(UInt(4.W))))
+  val out3 = Outgoing(UInt(4.W))
+  // val out3 = autoNameRecursively("out3")(prefix("out3")(Outgoing(UInt(4.W))))
 
   def func() = {
     val squared = in * in
@@ -104,13 +104,13 @@ While this is not implemented via the compiler plugin, the behavior should feel 
 
 ```scala mdoc
 class ConnectPrefixing extends Module {
-  val in = IO(Input(UInt(2.W)))
-  // val in = autoNameRecursively("in")(prefix("in")(IO(Input(UInt(2.W)))))
+  val in = Incoming(UInt(2.W))
+  // val in = autoNameRecursively("in")(prefix("in")(Incoming(UInt(2.W))))
 
-  val out1 = IO(Output(UInt(4.W)))
-  // val out1 = autoNameRecursively("out1")(prefix("out1")(IO(Output(UInt(4.W)))))
-  val out2 = IO(Output(UInt(4.W)))
-  // val out2 = autoNameRecursively("out2")(prefix("out2")(IO(Output(UInt(4.W)))))
+  val out1 = Outgoing(UInt(4.W))
+  // val out1 = autoNameRecursively("out1")(prefix("out1")(Outgoing(UInt(4.W))))
+  val out2 = Outgoing(UInt(4.W))
+  // val out2 = autoNameRecursively("out2")(prefix("out2")(Outgoing(UInt(4.W))))
 
   out1 := { // technically this is not wrapped in autoNameRecursively nor prefix
     // But the Chisel runtime will still use the name of `out1` as a prefix
@@ -130,11 +130,11 @@ Note that the naming also works if the hardware type is nested in an `Option` or
 
 ```scala mdoc
 class Example3 extends Module {
-  val in = IO(Input(UInt(2.W)))
-  // val in = autoNameRecursively("in")(prefix("in")(IO(Input(UInt(2.W)))))
+  val in = Incoming(UInt(2.W))
+  // val in = autoNameRecursively("in")(prefix("in")(Incoming(UInt(2.W))))
 
-  val out = IO(Output(UInt()))
-  // val out = autoNameRecursively("out")(prefix("out")(IO(Output(UInt()))))
+  val out = Outgoing(UInt())
+  // val out = autoNameRecursively("out")(prefix("out")(Outgoing(UInt())))
 
   def func() = {
     val delay = RegNext(in)
@@ -155,7 +155,7 @@ emitSystemVerilog(new Example3)
 There is also a slight variant (`autoNameRecursivelyProduct`) for naming hardware with names provided by an unapply:
 ```scala mdoc
 class UnapplyExample extends Module {
-  def mkIO() = (IO(Input(UInt(2.W))), IO(Output(UInt())))
+  def mkIO() = (Incoming(UInt(2.W))), Outgoing(UInt())
   val (in, out) = mkIO()
   // val (in, out) = autoNameRecursivelyProduct(List(Some("in"), Some("out")))(mkIO())
 
@@ -178,8 +178,8 @@ Also note that the prefixes append to each other (including the prefix generated
 
 ```scala mdoc
 class Example6 extends Module {
-  val in = IO(Input(UInt(2.W)))
-  val out = IO(Output(UInt()))
+  val in = Incoming(UInt(2.W))
+  val out = Outgoing(UInt())
 
   val add = prefix("foo") {
     val sum = RegNext(in + 1.U)
@@ -198,8 +198,8 @@ don't want the prefixing behavior. In this case, you can call `noPrefix`:
 
 ```scala mdoc
 class Example7 extends Module {
-  val in = IO(Input(UInt(2.W)))
-  val out = IO(Output(UInt()))
+  val in = Incoming(UInt(2.W))
+  val out = Outgoing(UInt())
 
   val add = noPrefix { 
     val sum = RegNext(in + 1.U)
@@ -220,8 +220,8 @@ name will still be prefixed (including by the plugin). You can always use the `n
 
 ```scala mdoc
 class Example8 extends Module {
-  val in = IO(Input(UInt(2.W)))
-  val out = IO(Output(UInt()))
+  val in = Incoming(UInt(2.W))
+  val out = Outgoing(UInt())
 
   val add = {
     val sum = RegNext(in + 1.U).suggestName("foo")
@@ -240,11 +240,11 @@ however, it _can_ affect prefixes derived from connections (eg. `:=`):
 
 ```scala mdoc
 class ConnectionPrefixExample extends Module {
-  val in0 = IO(Input(UInt(2.W)))
-  val in1 = IO(Input(UInt(2.W)))
+  val in0 = Incoming(UInt(2.W))
+  val in1 = Incoming(UInt(2.W))
 
   val out0 = {
-    val port = IO(Output(UInt()))
+    val port = Outgoing(UInt())
     // Even though this suggestName is before mul, the prefix used in this scope
     // is derived from `val out0`, so this does not affect the name of mul
     port.suggestName("foo")
@@ -254,8 +254,8 @@ class ConnectionPrefixExample extends Module {
     port
   }
 
-  val out1 = IO(Output(UInt()))
-  val out2 = IO(Output(UInt()))
+  val out1 = Outgoing(UInt())
+  val out2 = Outgoing(UInt())
 
   out1 := {
     // out1_sum
@@ -289,14 +289,14 @@ For example:
 
 ```scala mdoc
 class TemporaryExample extends Module {
-  val in0 = IO(Input(UInt(2.W)))
-  val in1 = IO(Input(UInt(2.W)))
+  val in0 = Incoming(UInt(2.W))
+  val in1 = Incoming(UInt(2.W))
 
   val out = {
     // We need 2 ports so firtool will maintain the common subexpression
-    val port0 = IO(Output(UInt()))
+    val port0 = Outgoing(UInt())
     // out_port1
-    val port1 = IO(Output(UInt()))
+    val port1 = Outgoing(UInt())
     val _sum = in0 + in1
     port0 := _sum + 1.U
     port1 := _sum - 1.U
@@ -314,10 +314,10 @@ If an unnamed signal is itself used to generate a prefix, the leading `_` will b
 
 ```scala mdoc
 class TemporaryPrefixExample extends Module {
-  val in0 = IO(Input(UInt(2.W)))
-  val in1 = IO(Input(UInt(2.W)))
-  val out0 = IO(Output(UInt()))
-  val out1 = IO(Output(UInt()))
+  val in0 = Incoming(UInt(2.W))
+  val in1 = Incoming(UInt(2.W))
+  val out0 = Outgoing(UInt())
+  val out1 = Outgoing(UInt())
 
   val _sum = {
     val x = in0 + in1
@@ -341,8 +341,8 @@ names more stable and is highly recommended to do.
 ```scala mdoc
 class Example9(width: Int) extends Module {
   override val desiredName = s"EXAMPLE9WITHWIDTH$width"
-  val in = IO(Input(UInt(width.W)))
-  val out = IO(Output(UInt()))
+  val in = Incoming(UInt(width.W))
+  val out = Outgoing(UInt())
 
   val add = (in + (in + in).suggestName("foo"))
 

@@ -711,8 +711,8 @@ In most cases, you can simply call `IO` multiple times:
 import chisel3._
 
 class MyModule extends Module {
-  val in = IO(Input(UInt(8.W)))
-  val out = IO(Output(UInt(8.W)))
+  val in = Incoming(UInt(8.W))
+  val out = Outgoing(UInt(8.W))
 
   out := in +% 1.U
 }
@@ -758,8 +758,8 @@ import chisel3._
 
 // Count the number of set bits up to and including each bit position
 class CountBits(width: Int) extends Module {
-  val bits = IO(Input(UInt(width.W)))
-  val countSequence = Seq.tabulate(width)(i => IO(Output(UInt())))
+  val bits = Incoming(UInt(width.W))
+  val countSequence = Seq.tabulate(width)(i => Outgoing(UInt()))
   val countVector = IO(Output(Vec(width, UInt())))
   countSequence.zipWithIndex.foreach { case (port, i) =>
     port := util.PopCount(bits(i, 0))
@@ -955,7 +955,7 @@ class Coffee extends BlackBox {
 }
 
 class Salt extends Module {
-    val io = IO(new Bundle {})
+    val io = Outgoing(new Bundle {})
     val drink = Module(new Coffee)
     override def desiredName = "SodiumMonochloride"
 

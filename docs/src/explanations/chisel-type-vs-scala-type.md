@@ -105,7 +105,7 @@ Can only `:=` from hardware:
 ```scala mdoc:silent
 // Do this...
 elaborate(new Module {
-  val hardware = IO(new MyBundle(3))
+  val hardware = Outgoing(new MyBundle(3))
   val moarHardware = Wire(new MyBundle(3))
   moarHardware := DontCare
   hardware := moarHardware
@@ -114,7 +114,7 @@ elaborate(new Module {
 ```scala mdoc:crash
 // Not this...
 elaborate(new Module {
-  val hardware = IO(new MyBundle(3))
+  val hardware = Outgoing(new MyBundle(3))
   val chiselType = new MyBundle(3)
   hardware := chiselType
 })
@@ -214,7 +214,7 @@ Can only call `directionOf` on Hardware:
 import chisel3.reflect.DataMirror
 
 class Child extends Module{
-  val hardware = IO(new MyBundle(3))
+  val hardware = Outgoing(new MyBundle(3))
   hardware := DontCare
   val chiselType = new MyBundle(3)
 }

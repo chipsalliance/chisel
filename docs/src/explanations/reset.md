@@ -99,7 +99,7 @@ class ResetAgnosticModule extends Module {
 class ResetAgnosticRawModule extends RawModule {
   val clk = IO(Input(Clock()))
   val rst = IO(Input(Reset()))
-  val out = IO(Output(UInt(8.W)))
+  val out = Outgoing(UInt(8.W))
 
   val resetAgnosticReg = withClockAndReset(clk, rst)(RegInit(0.U(8.W)))
   resetAgnosticReg := resetAgnosticReg + 1.U

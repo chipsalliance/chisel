@@ -29,7 +29,7 @@ class Mux2IO extends Bundle {
 }
 
 class Mux2 extends Module {
-  val io = IO(new Mux2IO)
+  val io = Outgoing(new Mux2IO)
   io.out := (io.sel & io.in1) | (~io.sel & io.in0)
 }
 ```
@@ -60,7 +60,7 @@ class Mux4IO extends Bundle {
   val out = Output(UInt(1.W))
 }
 class Mux4 extends Module {
-  val io = IO(new Mux4IO)
+  val io = Outgoing(new Mux4IO)
 
   val m0 = Module(new Mux2)
   m0.io.sel := io.sel(0)
