@@ -198,17 +198,17 @@ This makes every member of `gen` aligned with every other member of `gen`.
 Consider the following alignments between grandparent and grandchildren.
 Because `alignedCoerced` and `flippedCoerced` are aligned with all their recursive members, they are fully aligned.
 Thus, only their alignment to `g` influences grandchildren alignment:
- * `g` is aligned w.r.t `g.alignedCoerced.alignedChild`
- * `g` is aligned w.r.t `g.alignedCoerced.flippedChild`
- * `g` is flipped w.r.t `g.flippedCoerced.alignedChild`
- * `g` is flipped w.r.t `g.flippedCoerced.flippedChild`
+ * `g` is aligned w.r.t `g.alignedCoerced.alignedCoerced`
+ * `g` is aligned w.r.t `g.alignedCoerced.flippedCoerced`
+ * `g` is flipped w.r.t `g.flippedCoerced.alignedCoerced`
+ * `g` is flipped w.r.t `g.flippedCoerced.flippedCoerced`
 
 Consider the following alignment relationships starting from `g.alignedCoerced` and `g.flippedCoerced`.
-*Note that whether `g.alignedCoerced` is aligned/flipped relative to `g` has no effect on the aligned/flipped relationship between `g.alignedCoerced` and `g.alignedCoerced.alignedChild` or `g.alignedCoerced.flippedChild` because alignment is only relative to the two members in question! However, because alignment is coerced, everything is aligned between `g.alignedCoerced`/`g.flippedAligned` and their children*:
- * `g.alignedCoerced` is aligned w.r.t. `g.alignedCoerced.alignedChild`
- * `g.alignedCoerced` is aligned w.r.t. `g.alignedCoerced.flippedChild`
- * `g.flippedCoerced` is aligned w.r.t. `g.flippedCoerced.alignedChild`
- * `g.flippedCoerced` is aligned w.r.t. `g.flippedCoerced.flippedChild`
+*Note that whether `g.alignedCoerced` is aligned/flipped relative to `g` has no effect on the aligned/flipped relationship between `g.alignedCoerced` and `g.alignedCoerced.alignedCoerced` or `g.alignedCoerced.flippedCoerced` because alignment is only relative to the two members in question! However, because alignment is coerced, everything is aligned between `g.alignedCoerced`/`g.flippedAligned` and their children*:
+ * `g.alignedCoerced` is aligned w.r.t. `g.alignedCoerced.alignedCoerced`
+ * `g.alignedCoerced` is aligned w.r.t. `g.alignedCoerced.flippedCoerced`
+ * `g.flippedCoerced` is aligned w.r.t. `g.flippedCoerced.alignedCoerced`
+ * `g.flippedCoerced` is aligned w.r.t. `g.flippedCoerced.flippedCoerced`
 
 In summary, `Input(gen)` and `Output(gen)` recursively coerce children alignment, as well as dictate `gen`'s alignment to its parent bundle (if it exists).
 
