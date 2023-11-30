@@ -228,7 +228,7 @@ For example, in SBT this could be expressed as:
 ```scala
 // build.sbt
 scalaVersion := "2.13.10"
-val chiselVersion = "5.0.0"
+val chiselVersion = "5.1.0"
 addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full)
 libraryDependencies += "org.chipsalliance" %% "chisel" % chiselVersion
 ```
@@ -263,7 +263,7 @@ These simulation-based verification tools are available for Chisel:
 * [**Gitter**](https://gitter.im/freechipsproject/chisel3), where you can ask questions or discuss anything Chisel
 * [**Website (3.6 and earlier)**](https://www.chisel-lang.org) ([source](https://github.com/freechipsproject/www.chisel-lang.org/))
 * [**Website (main)**](https://chipsalliance.github.io/chisel) ([source](website)) (Note that this will replace the above after the Chisel 5 release)
-* [**Scastie (v5.0.0)**](https://scastie.scala-lang.org/UAQiCxZLR863I3jI1yZ34w) - cannot generate Verilog (firtool does not work in Scastie)
+* [**Scastie (v5.1.0)**](https://scastie.scala-lang.org/FfHRZUF4QuiD7PHTQoWINQ) - cannot generate Verilog (firtool does not work in Scastie)
 * [**Scastie (v3.6.0)**](https://scastie.scala-lang.org/1XICrlaZQs6ZvxpuKdFdDw) - generates Verilog with legacy Scala FIRRTL Compiler
 * [**asic-world**](http://www.asic-world.com/verilog/veritut.html) If you aren't familiar with verilog, this is a good tutorial.
 
@@ -320,7 +320,7 @@ sbt test
 
 To use the development version of Chisel (`master` branch), you will need to build from source and publish locally.
 The repository version can be found by running `sbt version`.
-As of the time of writing it was: `5.0.0-RC1+2-64bbd9ff-SNAPSHOT`.
+As of the time of writing it was: `6.0.0-M3+131-ca74d07e-SNAPSHOT`.
 
 To publish your version of Chisel to the local Ivy (sbt's dependency manager) repository, run:
 
@@ -334,7 +334,7 @@ If you need to un-publish your local copy of Chisel, remove the directory genera
 In order to have your projects use this version of Chisel, you should update the `libraryDependencies` setting in your project's build.sbt file to use the current version, for example:
 
 ```scala
-val chiselVersion = "5.0.0-RC1+2-64bbd9ff-SNAPSHOT"
+val chiselVersion = "6.0.0-M3+131-ca74d07e-SNAPSHOT"
 addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full)
 libraryDependencies += "org.chipsalliance" %% "chisel" % chiselVersion
 ```
