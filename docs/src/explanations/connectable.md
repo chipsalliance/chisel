@@ -33,10 +33,10 @@ section: "chisel3"
 
  * "Chisel type" - a `Data` that is not bound to hardware, i.e. not a component. (more details [here](chisel-type-vs-scala-type)).
    * E.g. `UInt(3.W)`, `new Bundle {..}`, `Vec(3, SInt(2.W))` are all Chisel types
- * `Aggregate` - a Chisel type or component that contains other Chisel types or components (i.e. `Vec`, `Record`, or `Bundle`)
- * `Element` - a Chisel type or component that does not contain other Chisel types or components (e.g. `UInt`, `SInt`, `Clock`, `Bool` etc.)
  * "component" - a `Data` that is bound to hardware (`IO`, `Reg`, `Wire`, etc.)
    * E.g. `Wire(UInt(3.W))` is a component, whose Chisel type is `UInt(3.W)`
+ * `Aggregate` - a Chisel type or component that contains other Chisel types or components (i.e. `Vec`, `Record`, or `Bundle`)
+ * `Element` - a Chisel type or component that does not contain other Chisel types or components (e.g. `UInt`, `SInt`, `Clock`, `Bool` etc.)
  * "member" - a Chisel type or component, or any of its children (could be an `Aggregate` or an `Element`)
    * E.g. `Vec(3, UInt(2.W))(0)` is a member of the parent `Vec` Chisel type
    * E.g. `Wire(Vec(3, UInt(2.W)))(0)` is a member of the parent `Wire` component
@@ -59,7 +59,7 @@ The one exception to the structural type-equivalence rule is using the `Connecta
 
 Aggregate (`Record`, `Vec`, `Bundle`) Chisel types can include data members which are flipped relative to one another.
 Due to this, there are many desired connection behaviors between two Chisel components.
-The following are the Chisel connection operators:
+The following are the Chisel connection operators between a consumer `c` and producer `p`:
  * `c := p` (mono-direction): connects all `p` members to `c`; requires `c` and `p` to not have any flipped members
  * `c :#= p` (coercing mono-direction): connects all `p` members to `c`; regardless of alignment
  * `c :<= p` (aligned-direction): connects all aligned (non-flipped) `c` members from `p`
@@ -75,7 +75,7 @@ These operators may appear to be a random collection of symbols; however, the ch
  * `>` always indicates that some signals will be driven consumer-to-producer, or left-to-right.
    * Hence, `c :>= p` drives members in consumer (`c`) to members producer (`p`).
    * Hence, `c :<>= p` both drives members from `p` to `c` and from `c` to `p`.
- * `#` always indicates to ignore member alignment and to drive producer-to-consumer.
+ * `#` always indicates to ignore member alignment and to drive producer-to-consumer, or right-to-left.
    * Hence, `c :#= p` always drives members from `p` to `c` ignoring direction.
 
 > Note: in addition, an operator that ends in `=` has assignment-precedence, which means that `x :<>= y + z` will translate to `x :<>= (y + z)`, rather than `(x :<>= y) + z`.
@@ -349,7 +349,7 @@ This generates the following Verilog, where the aligned members are ignored and 
 getVerilogString(new Example3)
 ```
 
-> Note: Astute observers will realize that semantically `c :<>= p` is exactly equivalent to `c :<= p` followed by `c :>= p`.
+> Note: Astute observers will realize that `c :<>= p` is semantically equivalent to `c :<= p` followed by `c :>= p`.
 
 ### Coercing mono-direction connection operator (`:#=`)
 
@@ -371,7 +371,7 @@ This generates the following Verilog, where all members are driven from the lite
 getVerilogString(new Example4)
 ```
 
-> Note: Astute observers will realize that semantically `c :#= p` is exactly equivalent to `c :<= p` followed by `p :>= c` (note `p` and `c` switched places in the second connection).
+> Note: Astute observers will realize that `c :#= p` is semantically equivalent to `c :<= p` followed by `p :>= c` (note `p` and `c` switched places in the second connection).
 
 Another use case for `:#=` is for connecting a mixed-directional bundle to a fully-aligned monitor.
 
@@ -393,7 +393,7 @@ getVerilogString(new Example4b)
 ```
 ## Connectable
 
-It is not uncommon for a user to want to connect Chisel components which are not type equivalent.
+Sometimes a user wants to connect Chisel components which are not type equivalent.
 For example, a user may want to hook up anonymous `Record` components who may have an intersection of their fields being equivalent, but cannot because they are not structurally equivalent.
 Alternatively, one may want to connect two types that have different widths.
 
@@ -407,7 +407,7 @@ This section demonstrates how `Connectable` specifically can be used in a multit
 
 ### Connecting Records
 
-A not uncommon usecase is to try to connect two `Record`s; for matching members, they should be connected, but for unmatched members, the errors caused due to them being unmatched should be ignored.
+One use case is to try to connect two `Record`s; for matching members, they should be connected, but for unmatched members, the errors caused due to them being unmatched should be ignored.
 To accomplish this, use the other operators to initialize all `Record` members, then use `:<>=` with `.waive` to connect only the matching members.
 
 > Note that none of `.viewAsSuperType`, static casts, nor a custom `DataView` helps this case because the Scala types are still `Record`.
@@ -437,7 +437,7 @@ getVerilogString(new Example9)
 
 ### Defaults with waived connections
 
-Another not uncommon usecase is to try to connect two `Record`s; for matching members, they should be connected, but for unmatched members, *they should be connected to a default value*.
+Another use case is to try to connect two `Record`s; for matching members, they should be connected, but for unmatched members, *they should be connected to a default value*.
 To accomplish this, use the other operators to initialize all `Record` members, then use `:<>=` with `.waive` to connect only the matching members.
 
 
@@ -538,7 +538,7 @@ class Example14 extends RawModule {
 }
 ```
 
-This generates the following Verilog, where `p` is implicitly truncated prior to driving `c`:
+This generates the following Verilog, where `p` is truncated prior to driving `c`:
 
 ```scala mdoc:verilog
 getVerilogString(new Example14)
