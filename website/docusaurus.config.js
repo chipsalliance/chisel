@@ -115,7 +115,10 @@ const config = {
               },
               {
                 label: 'ScalaDoc',
-                href: 'https://javadoc.io/doc/org.chipsalliance/chisel_2.13/latest/index.html'
+                // pathname is needed by Docusaurus to correctly handle
+                // internal links in the static folder, see
+                // https://docusaurus.io/docs/advanced/routing#escaping-from-spa-redirects
+                to: 'pathname:///api/latest',
               }
             ],
           },
@@ -178,10 +181,6 @@ const config = {
       { // Clean up links including .html, /myPages.html -> /myPage
         fromExtensions: ['html', 'htm'],
         redirects: [
-          { // Redirect old latest API docs link
-            from: '/api/chisel3/latest',
-            to: '/api',
-          },
           { // Redirect old chisel3 docs landing page
             from: '/chisel3',
             to: '/docs',
