@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Update Staging Branch
-        uses: circt/update-staging-branch@v1.1.0
+        uses: circt/update-staging-branch@v1.2.0
         with:
           user: chiselbot
           email: chiselbot@users.noreply.github.com
@@ -34,7 +34,7 @@ jobs:
         id: determine-branch
         shell: bash
         run: |
-          branch=$(git rev-parse --abbrev-ref HEAD)
+          branch=$(git rev-parse HEAD)
           echo branches=\[\"$branch\"\] >> $GITHUB_OUTPUT
     outputs:
       branches: ${{ steps.determine-branch.outputs.branches }}
