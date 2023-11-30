@@ -39,15 +39,19 @@ $(website_docs_dir):
 $(website_docs_dir)/index.md: $(mdoc_out)/index.md | $(website_docs_dir)
 	cp -R $(mdoc_out)/* $(this_dir)/docs/
 
-contributors_dir = $(this_dir)/src/pages/generated
-contributors = $(contributors_dir)/contributors.md
+generated_dir = $(this_dir)/src/pages/generated
+contributors = $(generated_dir)/contributors.md
+scaladoc_links = $(generated_dir)/scaladoc_links.md
 
-$(contributors_dir):
+$(generated_dir):
 	mkdir -p $@
 
 # Unclear what this should depend on
-$(contributors): $(chisel-non-website) | $(contributors_dir)
+$(contributors): $(chisel-non-website) | $(generated_dir)
 	cd $(chisel_dir) && sbt docs/determineContributors
+
+$(scaladoc_links): $(chisel-non-website) | $(generated_dir)
+	cd $(chisel_dir) && sbt docs/generateScalaDocLinks
 
 $(install_timestamp): $(this_dir)/package.json
 	cd $(this_dir) && npm install
@@ -55,7 +59,7 @@ $(install_timestamp): $(this_dir)/package.json
 
 install: $(install_timestamp)
 
-build: $(this_dir)/docs/index.md $(contributors) $(install_timestamp) $(chisel-website-only)
+build: $(this_dir)/docs/index.md $(contributors) $(scaladoc_links) $(install_timestamp) $(chisel-website-only)
 	cd $(this_dir) && npm run build
 
 # Must run build first

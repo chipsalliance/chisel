@@ -10,17 +10,12 @@ object Contributors {
 
   import java.util.concurrent.Executors
 
-  import cats.effect.{Blocker, ContextShift, IO}
+  import cats.effect.IO
   import org.http4s.client.{Client, JavaNetClientBuilder}
 
-  import scala.concurrent.ExecutionContext.global
+  import cats.effect.unsafe.implicits.global
 
-  val httpClient: Client[IO] = {
-    val blockingPool = Executors.newFixedThreadPool(5)
-    val blocker = Blocker.liftExecutorService(blockingPool)
-    implicit val cs: ContextShift[IO] = IO.contextShift(global)
-    JavaNetClientBuilder[IO](blocker).create // use BlazeClientBuilder for production use
-  }
+  val httpClient: Client[IO] = JavaNetClientBuilder[IO].create
 
   val token: Option[String] = sys.env.get("GITHUB_TOKEN")
 

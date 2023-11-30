@@ -34,4 +34,4 @@ addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "2.1.1")
 
 // For generating contributors
 
-libraryDependencies += "com.47deg" %% "github4s" % "0.28.1"
+libraryDependencies += "com.47deg" %% "github4s" % "0.32.1"
