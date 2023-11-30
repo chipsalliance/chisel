@@ -17,4 +17,4 @@ MlirOpPassManager
 MlirPass
 MlirLogicalResult
 FIRRTLBundleField
-FirtoolOptions
+CirctFirtoolFirtoolOptions
