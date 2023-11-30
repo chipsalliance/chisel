@@ -55,16 +55,16 @@ The `Connectable` operators are the standard way to connect Chisel hardware comp
 
 All connection operators require the two hardware components (consumer and producer) to be structurally type equivalent.
 
-The one exception to the structural type-equivalence rule is using the `Connectable` mechanism, detailed at this [section](#waived-data) towards the end of this document.
+The one exception to the structural type-equivalence rule is using the `Connectable` mechanism, detailed at this [section](#techniques-for-connecting-structurally-inequivalent-chisel-types) towards the end of this document.
 
 Aggregate (`Record`, `Vec`, `Bundle`) Chisel types can include data members which are flipped relative to one another.
 Due to this, there are many desired connection behaviors between two Chisel components.
 The following are the Chisel connection operators:
- * `c := p` (mono-direction): connects all p members to c; requires c & p to not have any flipped members
- * `c :#= p` (coercing mono-direction): connects all p members to c; regardless of alignment
- * `c :<= p` (aligned-direction): connects all aligned (non-flipped) c members from p
- * `c :>= p` (flipped-direction): connects all flipped p members from c
- * `c :<>= p` (bi-direction operator): connects all aligned c members from p; all flipped p members from c
+ * `c := p` (mono-direction): connects all `p` members to `c`; requires `c` and `p` to not have any flipped members
+ * `c :#= p` (coercing mono-direction): connects all `p` members to `c`; regardless of alignment
+ * `c :<= p` (aligned-direction): connects all aligned (non-flipped) `c` members from `p`
+ * `c :>= p` (flipped-direction): connects all flipped `p` members from `c`
+ * `c :<>= p` (bi-direction operator): connects all aligned `c` members from `p`; all flipped `p` members from `c`
 
 These operators may appear to be a random collection of symbols; however, the characters are consistent between operators and self-describe the semantics of each operator:
  * `:` always indicates the consumer, or left-hand-side, of the operator.
@@ -78,7 +78,7 @@ These operators may appear to be a random collection of symbols; however, the ch
  * `#` always indicates to ignore member alignment and to drive producer-to-consumer.
    * Hence, `c :#= p` always drives members from `p` to `c` ignoring direction.
 
-> Note: in addition, an operator that ends in `=` has assignment-precendence, which means that `x :<>= y + z` will translate to `x :<>= (y + z)`, rather than `(x :<>= y) + z`.
+> Note: in addition, an operator that ends in `=` has assignment-precedence, which means that `x :<>= y + z` will translate to `x :<>= (y + z)`, rather than `(x :<>= y) + z`.
 This was not true of the `<>` operator and was a minor painpoint for users.
 
 
@@ -106,7 +106,7 @@ First, every member is always aligned with themselves:
  * `p.flippedChild` is aligned w.r.t `p.flippedChild`
 
 Next, we list all parent/child relationships.
-Because the `flippedChild` field is `Flipped`, it changes its aligment relative to its parent. 
+Because the `flippedChild` field is `Flipped`, it changes its alignment relative to its parent.
  * `p` is aligned w.r.t `p.alignedChild`
  * `p` is flipped w.r.t `p.flippedChild`
 
@@ -126,7 +126,7 @@ class MyModule1 extends Module {
 }
 ```
 
-Consider the following alignements between grandparent and grandchildren.
+Consider the following alignments between grandparent and grandchildren.
 An odd number of flips indicate a flipped relationship; even numbers of flips indicate an aligned relationship.
  * `g` is aligned w.r.t `g.flippedParent.flippedChild`
  * `g` is aligned w.r.t `g.alignedParent.alignedChild`
@@ -171,7 +171,7 @@ class MyModule2 extends Module {
 }
 ```
 
-The aligments are the same as the previous `Parent` example:
+The alignments are the same as the previous `Parent` example:
  * `p` is aligned w.r.t `p`
  * `p.alignedCoerced` is aligned w.r.t `p.alignedCoerced`
  * `p.flippedCoerced` is aligned w.r.t `p.flippedCoerced`
@@ -256,7 +256,7 @@ class MixedAlignmentBundle extends Bundle {
 
 Due to this, there are many desired connection behaviors between two Chisel components.
 First we will introduce the most common Chisel connection operator, `:<>=`, useful for connecting components with members of mixed-alignments, then take a moment to investigate a common source of confusion between port-direction and connection-direction.
-Then, we will explore the remainder of the the Chisel connection operators.
+Then, we will explore the remainder of the Chisel connection operators.
 
 
 ### Bi-direction connection operator (`:<>=`)
@@ -292,7 +292,7 @@ class Example1a extends RawModule {
 ```
 
 While `incoming.flippedChild`'s alignment with `incoming` does not affect our operators, it does influence whether `incoming.flippedChild` is an output or input port of my module.
-A common source of confusion is to mistake the process for determining whether `incoming.flippedChild` will resolve to a verilog `output`/`input` (the port-direction computation) with the process for determining how `:<>=` drives what with what (the connection-direction computation).
+A common source of confusion is to mistake the process for determining whether `incoming.flippedChild` will resolve to a Verilog `output`/`input` (the port-direction computation) with the process for determining how `:<>=` drives what with what (the connection-direction computation).
 While both processes consider relative alignment, they are distinct.
 
 The port-direction computation always computes alignment relative to the component marked with `IO`.
@@ -343,7 +343,7 @@ class Example3 extends RawModule {
 }
 ```
 
-This generates the following Verilog, where the aligned members are ignore and the flipped members are driven `outgoing` to `incoming`:
+This generates the following Verilog, where the aligned members are ignored and the flipped members are driven `outgoing` to `incoming`:
 
 ```scala mdoc:verilog
 getVerilogString(new Example3)
@@ -360,7 +360,7 @@ This operator is useful for initializing wires whose types contain members of mi
 import chisel3.experimental.BundleLiterals._
 class Example4 extends RawModule {
   val w = Wire(new MixedAlignmentBundle)
-  dontTouch(w) // So we see it in the output verilog
+  dontTouch(w) // So we see it in the output Verilog
   w :#= (new MixedAlignmentBundle).Lit(_.alignedChild -> true.B, _.flippedChild -> true.B)
 }
 ```
@@ -380,7 +380,7 @@ import chisel3.experimental.BundleLiterals._
 class Example4b extends RawModule {
   val monitor = IO(Output(new MixedAlignmentBundle))
   val w = Wire(new MixedAlignmentBundle)
-  dontTouch(w) // So we see it in the output verilog
+  dontTouch(w) // So we see it in the output Verilog
   w :#= DontCare
   monitor :#= w
 }
@@ -398,19 +398,19 @@ For example, a user may want to hook up anonymous `Record` components who may ha
 Alternatively, one may want to connect two types that have different widths.
 
 `Connectable` is the mechanism to specialize connection operator behavior in these scenarios.
-For additional members which are not present in the other component being connected to, or for mismatched widths, or for always excluding a member from being connected too, they can be explicitly called out from the `Connectable` object, rather than trigger an error.
+For additional members which are not present in the other component being connected to, or for mismatched widths, or for always excluding a member from being connected to, they can be explicitly called out from the `Connectable` object, rather than trigger an error.
 
-In addition, there are other techniques that can be used to address similar use cases including `.viewAsSuperType`, a static cast to a supertype (e.g. `(x: T)`), or creating a custom dataview.
+In addition, there are other techniques that can be used to address similar use cases including `.viewAsSuperType`, a static cast to a supertype (e.g. `(x: T)`), or creating a custom `DataView`.
 For a discussion about when to use each technique, please continue [here](#techniques-for-connecting-structurally-inequivalent-chisel-types).
 
 This section demonstrates how `Connectable` specifically can be used in a multitude of scenarios.
 
 ### Connecting Records
 
-A not uncommon usecase is to try to connect two Records; for matching members, they should be connected, but for unmatched members, the errors caused due to them being unmatched should be ignored.
-To accomplish this, use the other operators to initialize all Record members, then use `:<>=` with `waiveAll` to connect only the matching members.
+A not uncommon usecase is to try to connect two `Record`s; for matching members, they should be connected, but for unmatched members, the errors caused due to them being unmatched should be ignored.
+To accomplish this, use the other operators to initialize all `Record` members, then use `:<>=` with `.waive` to connect only the matching members.
 
-> Note that none of `.viewAsSuperType`, static casts, nor a custom DataView helps this case because the Scala types are still `Record`.
+> Note that none of `.viewAsSuperType`, static casts, nor a custom `DataView` helps this case because the Scala types are still `Record`.
 
 ```scala mdoc:silent
 import scala.collection.immutable.SeqMap
@@ -437,8 +437,8 @@ getVerilogString(new Example9)
 
 ### Defaults with waived connections
 
-Another not uncommon usecase is to try to connect two Records; for matching members, they should be connected, but for unmatched members, *they should be connected a default value*.
-To accomplish this, use the other operators to initialize all Record members, then use `:<>=` with `waiveAll` to connect only the matching members.
+Another not uncommon usecase is to try to connect two `Record`s; for matching members, they should be connected, but for unmatched members, *they should be connected to a default value*.
+To accomplish this, use the other operators to initialize all `Record` members, then use `:<>=` with `.waive` to connect only the matching members.
 
 
 ```scala mdoc:silent
@@ -469,7 +469,7 @@ getVerilogString(new Example10)
 
 ### Connecting types with optional members
 
-In the following example, we can use `:<>=` and `waive` to connect two `MyDecoupledOpts`'s, where only one has a `bits` member.
+In the following example, we can use `:<>=` and `.waive` to connect two `MyDecoupledOpts`'s, where only one has a `bits` member.
 
 ```scala mdoc:silent
 class MyDecoupledOpt(hasBits: Boolean) extends Bundle {
@@ -522,10 +522,10 @@ getVerilogString(new Example11)
 
 ### Connecting components with different widths
 
-Non-connectable operators implicitly truncate if a component with a larger width is connected to a component with a smaller width.
-Connectable operators disallow this implicit truncation behavior and require the driven component to be equal or larger in width that the sourcing component.
+Non-`Connectable` operators implicitly truncate if a component with a larger width is connected to a component with a smaller width.
+`Connectable` operators disallow this implicit truncation behavior and require the driven component to be equal or larger in width that the sourcing component.
 
-If implicit truncation behavior is desired, then `Connectable` provides a `squeeze` mechanism which will allow the connection to continue and implicit trunction to continue.
+If implicit truncation behavior is desired, then `Connectable` provides a `squeeze` mechanism which will allow the connection to continue with implicit truncation.
 
 ```scala mdoc:silent
 import scala.collection.immutable.SeqMap
@@ -546,9 +546,9 @@ getVerilogString(new Example14)
 
 ### Excluding members from any operator on a Connectable
 
-If a user wants to always exclude a field from a connect, use the `exclude` mechanism which will never connect the field (as if it didn't exist to the connection).
+If a user wants to always exclude a field from a connect, use the `.exclude` mechanism which will never connect the field (as if it didn't exist to the connection).
 
-Note that if a field matches in both producer and consumer, but only one is excluded, the other non-excluded field will still trigger an error; to fix this, use either `waive` or `exclude`.
+Note that if a field matches in both producer and consumer, but only one is excluded, the other non-excluded field will still trigger an error; to fix this, use either `.waive` or `.exclude`.
 
 ```scala mdoc:silent
 import scala.collection.immutable.SeqMap
@@ -575,10 +575,10 @@ getVerilogString(new Example15)
 
 ## Techniques for connecting structurally inequivalent Chisel types
 
-`DataView` and `viewAsSupertype` create a view of the component that has a different Chisel type.
+`DataView` and `.viewAsSupertype` create a view of the component that has a different Chisel type.
 This means that a user can first create a `DataView` of the consumer or producer (or both) so that the Chisel types are structurally equivalent.
-This is useful when the difference between the consumer and producers aren't super nested, and also if they have rich Scala types which encode their structure.
-In general, `DataView` is the preferred mechanism to use (if you can) because it maintains the most about of Chisel information in the Scala type, but there are many instances where it doesn't work and thus one must fall back on `Connectable`.
+This is useful when the difference between the consumer and producer aren't super nested, and also if they have rich Scala types which encode their structure.
+In general, `DataView` is the preferred mechanism to use (if you can) because it maintains the most amount of Chisel information in the Scala type, but there are many instances where it doesn't work and thus one must fall back on `Connectable`.
 
 `Connectable` does not change the Chisel type, but instead changes the semantics of the operator to not error on the waived members if they are dangling or unconnected.
 This is useful for when differences between the consumer and producer do not show up in the Scala type system (e.g. present/missing fields of type `Option[Data]`, or anonymous `Record`s) or are deeply nested in a bundle that is especially onerous to create a `DataView`.
@@ -592,9 +592,9 @@ The reason is to encourage users to use the Scala type system to encode Chisel i
 When all else fails one can always manually expand the connection to do what they want to happen, member by member.
 The down-side to this approach is its verbosity and that adding new members to a component will require updating the manual connections.
 
-Things to remember about `Connectable` vs `viewAsSupertype`/`DataView` vs static cast (e.g. `(x: T)`):
+Things to remember about `Connectable` vs `.viewAsSupertype`/`DataView` vs static cast (e.g. `(x: T)`):
 
-- `DataView` and `viewAsSupertype` will preemptively remove members that are not present in the new view which has a different Chisel type, thus `DataView` *does* affect what is connected
+- `DataView` and `.viewAsSupertype` will preemptively remove members that are not present in the new view which has a different Chisel type, thus `DataView` *does* affect what is connected
 - `Connectable` can be used to waive the error on members who end up being dangling or unconnected.
 Importantly, `Connectable` waives *do not* affect what is connected
 - Static cast does not remove extra members, thus a static cast *does not* affect what is connected
@@ -602,7 +602,7 @@ Importantly, `Connectable` waives *do not* affect what is connected
 ### Connecting different sub-types of the same super-type, with colliding names
 
 In these examples, we are connecting `MyDecoupled` with `MyDecoupledOtherBits`.
-Both are subtypes of `MyReadyValid`, and both have a `bits` field of `UInt(32.W)`.
+Both are subtypes of `MyReadyValid`, and both have a `bits` field of type `UInt(32.W)`.
 
 The first example will use `.viewAsSupertype` to connect them as `MyReadyValid`.
 Because it changes the Chisel type to omit both `bits` fields, the `bits` fields are unconnected.
@@ -631,7 +631,7 @@ getVerilogString(new Example12)
 The second example will use a static cast and `.waive(_.bits)` to connect them as `MyReadyValid`.
 Note that because the static cast does not change the Chisel type, the connection finds that both consumer and producer have a `bits` field.
 This means that since they are structurally equivalent, they match and are connected.
-The `waive(_.bits)` does nothing, because the `bits` are not dangling nor unconnected.
+The `waive(_.bits)` does nothing, because the `bits` are neither dangling nor unconnected.
 
 
 
@@ -647,7 +647,8 @@ class Example13 extends RawModule {
 }
 ```
 
-Note that the `bits` fields ARE connected, even though they are waived, as `waive` just changes whether an error should be thrown if they are missing, NOT to not connect them if they are structurally equivalent. To always omit the connection, use `exclude` on one side and either `exclude` or `waive` on the other side.
+Note that the `bits` fields ARE connected, even though they are waived, as `.waive` just changes whether an error should be thrown if they are missing, NOT to not connect them if they are structurally equivalent.
+To always omit the connection, use `.exclude` on one side and either `.exclude` or `.waive` on the other side.
 
 ```scala mdoc:verilog
 getVerilogString(new Example13)
@@ -686,7 +687,7 @@ getVerilogString(new Example5)
 
 Note that the connection operator requires the `consumer` and `producer` to be the same Scala type to encourage capturing more information statically, but they can always be cast to `Data` or another common supertype prior to connecting.
 
-In the following example, we can use `:<>=` and `waiveAs` to connect two different sub-types of `MyReadyValid`.
+In the following example, we can use `:<>=` and `.waiveAs` to connect two different sub-types of `MyReadyValid`.
 
 ```scala mdoc:silent
 class HasBits extends MyReadyValid {
@@ -722,7 +723,7 @@ class ExampleUnsafe extends RawModule {
 }
 ```
 
-### How do I connect two items but don't care about the scala types being equivalent?
+### How do I connect two items but don't care about the Scala types being equivalent?
 
 Use `.as` (upcasts the Scala type).
 
