@@ -36,6 +36,14 @@ emitVersion := {
   IO.write(new java.io.File("version.txt"), version.value)
 }
 
+val emitLatestVersion = taskKey[Unit]("Write the latest stable version to latest-version.txt")
+emitLatestVersion := {
+  import Releases.{getLatest, releases}
+  import Version.SemanticVersion
+  val latest = getLatest(releases().map(SemanticVersion.parse))
+  IO.write(new java.io.File("latest-version.txt"), latest.serialize)
+}
+
 lazy val minimalSettings = Seq(
   organization := "org.chipsalliance",
   scalacOptions := Seq("-deprecation", "-feature"),

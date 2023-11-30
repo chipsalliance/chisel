@@ -9,6 +9,7 @@
 .cache-loader
 /docs
 generated
+/static/api/latest
 # Debatable if this should be included or not
 package-lock.json
 

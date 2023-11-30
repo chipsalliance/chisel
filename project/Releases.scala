@@ -82,7 +82,9 @@ object Releases {
     val latest = getLatest(parsed)
     val major = getLatestForEachMajorVersion(parsed)
     (List(
-      s"- [Latest](${javadocIO(latest)})",
+      // pathname is needed by Docusaurus to correctly handle internal links in the static folder,
+      // see https://docusaurus.io/docs/advanced/routing#escaping-from-spa-redirects
+      s"- [Latest (${latest.serialize})](pathname:///api/latest/index.html)",
       s"- [Snapshot](${sonatype(snapshot)})"
     ) ++ major.reverse.map { v =>
       s"- [${v.serialize}](${javadocIO(v)})"

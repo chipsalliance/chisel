@@ -7,6 +7,7 @@ mdoc_out := $(chisel_dir)/docs/generated
 
 buildDir ?= build
 website_docs_dir = $(this_dir)/docs
+latest_scaladoc_dir = $(this_dir)/static/api/latest
 install_timestamp = $(this_dir)/node_modules/timestamp
 
 # Everything not in the website directory
@@ -39,6 +40,25 @@ $(website_docs_dir):
 $(website_docs_dir)/index.md: $(mdoc_out)/index.md | $(website_docs_dir)
 	cp -R $(mdoc_out)/* $(this_dir)/docs/
 
+latest_version = $(chisel_dir)/latest-version.txt
+
+$(latest_version): $(chisel-non-website)
+	cd $(chisel_dir) && sbt emitLatestVersion
+
+$(latest_scaladoc_dir):
+	mkdir -p $@
+
+# Must touch target because it was built when the latest release was made
+# unzip doesn't support operating on stdin so we need a temp file
+$(latest_scaladoc_dir)/index.html: $(latest_version) | $(latest_scaladoc_dir)
+	$(eval VER := $(shell cat $(latest_version)))
+	$(eval URL := https://repo1.maven.org/maven2/org/chipsalliance/chisel_2.13/$(VER)/chisel_2.13-$(VER)-javadoc.jar)
+	cd $(latest_scaladoc_dir) && \
+	  wget -q -O temp.jar $(URL) && \
+	  unzip -q temp.jar && \
+	  rm -rf temp.jar
+	touch $@
+
 generated_dir = $(this_dir)/src/pages/generated
 contributors = $(generated_dir)/contributors.md
 scaladoc_links = $(generated_dir)/scaladoc_links.md
@@ -59,12 +79,13 @@ $(install_timestamp): $(this_dir)/package.json
 
 install: $(install_timestamp)
 
-build: $(this_dir)/docs/index.md $(contributors) $(scaladoc_links) $(install_timestamp) $(chisel-website-only)
+build: $(this_dir)/docs/index.md $(latest_scaladoc_dir)/index.html $(contributors) $(scaladoc_links) $(install_timestamp) $(chisel-website-only)
 	cd $(this_dir) && npm run build
 
-# Must run build first
+# Use python to serve the actual build directory instead of using npm run serve
+# This is needed in order for the serving of the ScalaDoc to work correctly
 serve: build
-	cd $(this_dir) && npm run serve
+	cd $(this_dir)/build && python3 -m http.server
 
 clean:
 	rm -rf $(this_dir)/docs $(this_dir)/build $(this_dir)/src/pages/generated $(chisel_dir)/docs/generated

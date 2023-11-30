@@ -19,4 +19,5 @@ test_run_dir
 .scala-build
 metals.sbt
 version.txt
+latest-version.txt
 .bsp
