@@ -4,6 +4,8 @@ generated/
 .classpath
 .idea
 .idea_modules/
+.direnv/
+.envrc
 .project
 target/
 *.iml
@@ -14,6 +16,7 @@ test_run_dir
 *~
 \#*\#
 .\#*
+.vscode
 .metals
 .bloop
 .scala-build
