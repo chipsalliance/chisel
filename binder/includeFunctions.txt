@@ -19,7 +19,9 @@ mlirOperationStateGet
 mlirNamedAttributeGet
 mlirIntegerAttrGet
 mlirFloatAttrDoubleGet
+mlirBoolAttrGet
 mlirStringAttrGet
+mlirStringAttrGetValue
 mlirArrayAttrGet
 mlirTypeAttrGet
 mlirArrayAttrGet
@@ -66,6 +68,14 @@ firrtlTypeGetAsyncReset
 firrtlTypeGetAnalog
 firrtlTypeGetVector
 firrtlTypeGetBundle
+firrtlTypeGetAnyRef
+firrtlTypeGetInteger
+firrtlTypeGetDouble
+firrtlTypeGetString
+firrtlTypeGetBoolean
+firrtlTypeGetPath
+firrtlTypeGetList
+firrtlTypeGetClass
 
 # FIRRTL Attribute
 firrtlAttrGetPortDirs
@@ -132,3 +142,68 @@ circtFirtoolPopulateHWToSV
 circtFirtoolPopulateExportVerilog
 circtFirtoolPopulateExportSplitVerilog
 circtFirtoolPopulateFinalizeIR
+
+#
+# OM C-API
+#
+
+# Type
+omTypeIsAClassType
+omClassTypeGetTypeID
+omClassTypeGetName
+omTypeIsAFrozenBasePathType
+omFrozenBasePathTypeGetTypeID
+omTypeIsAFrozenPathType
+omFrozenPathTypeGetTypeID
+omTypeIsAMapType
+omMapTypeGetKeyType
+omTypeIsAStringType
+# Evaluator
+omEvaluatorNew
+omEvaluatorInstantiate
+omEvaluatorGetModule
+# Object
+omEvaluatorObjectIsNull
+omEvaluatorObjectGetType
+omEvaluatorObjectGetField
+omEvaluatorObjectGetHash
+omEvaluatorObjectIsEq
+omEvaluatorObjectGetFieldNames
+# EvaluatorValue
+omEvaluatorValueGetContext
+omEvaluatorValueGetLoc
+omEvaluatorValueIsNull
+omEvaluatorValueIsAObject
+omEvaluatorValueIsAPrimitive
+omEvaluatorValueGetPrimitive
+omEvaluatorValueFromPrimitive
+omEvaluatorValueIsAList
+omEvaluatorListGetNumElements
+omEvaluatorListGetElement
+omEvaluatorValueIsATuple
+omEvaluatorTupleGetNumElements
+omEvaluatorTupleGetElement
+omEvaluatorMapGetElement
+omEvaluatorMapGetKeys
+omEvaluatorValueIsAMap
+omEvaluatorMapGetType
+omEvaluatorValueIsABasePath
+omEvaluatorBasePathGetEmpty
+omEvaluatorValueIsAPath
+omEvaluatorPathGetAsString
+# ReferenceAttr API
+omAttrIsAReferenceAttr
+omReferenceAttrGetInnerRef
+# IntegerAttr API
+omAttrIsAIntegerAttr
+omIntegerAttrGetInt
+omIntegerAttrGet
+# ListAttr API
+omAttrIsAListAttr
+omListAttrGetNumElements
+omListAttrGetElement
+# MapAttr API
+omAttrIsAMapAttr
+omMapAttrGetNumElements
+omMapAttrGetElementKey
+omMapAttrGetElementValue

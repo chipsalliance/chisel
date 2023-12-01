@@ -10,8 +10,12 @@ import chisel3.cover.Cover
 import chisel3.internal.firrtl._
 
 abstract class CIRCTConverter {
+  val mlirStream:    Writable
   val firrtlStream:  Writable
   val verilogStream: Writable
+
+  def passManager(): CIRCTPassManager
+  def om():          CIRCTOM
 
   def visitCircuit(name: String): Unit
 
@@ -60,4 +64,6 @@ abstract class CIRCTConverter {
   def visitAssume(assume: Verification[Assume]): Unit
 
   def visitCover(cover: Verification[Cover]): Unit
+
+  def visitPropAssign(parent: Component, propAssign: PropAssign): Unit
 }
