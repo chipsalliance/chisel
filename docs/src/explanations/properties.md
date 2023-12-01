@@ -10,6 +10,12 @@ Chisel *properties* represent information about the design that is not hardware.
 This is useful to capture domain-specific knowledge and design intent alongside
 the hardware description within the same generator.
 
+:::warning
+
+Properties are under active development and are not yet considered stable.
+
+:::
+
 ## Property Types
 
 The core primitive for using properties is the `Property` type.
