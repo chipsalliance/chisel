@@ -33,10 +33,12 @@ mlirF64TypeGet
 mlirNoneTypeGet
 mlirIdentifierGet
 mlirFlatSymbolRefAttrGet
+mlirValueGetType
 # mlirAttributeParseGet: We should not parse anything
 mlirOperationStateAddOperands
 mlirOperationStateAddResults
 mlirOperationStateAddAttributes
+mlirOperationStateEnableResultTypeInference
 mlirOperationGetResult
 mlirRegionCreate
 mlirOperationCreate
@@ -68,6 +70,9 @@ firrtlTypeGetAsyncReset
 firrtlTypeGetAnalog
 firrtlTypeGetVector
 firrtlTypeGetBundle
+firrtlTypeIsAOpenBundle
+firrtlTypeGetBundleFieldIndex
+firrtlTypeGetRef
 firrtlTypeGetAnyRef
 firrtlTypeGetInteger
 firrtlTypeGetDouble
@@ -89,6 +94,10 @@ firrtlAttrGetMemDir
 # CHIRRTL Attribute
 chirrtlTypeGetCMemory
 chirrtlTypeGetCMemoryPort
+
+# HW Attribute
+hwInnerRefAttrGet
+hwInnerSymAttrGet
 
 # circtFirtoolOptions
 circtFirtoolOptionsCreateDefault
