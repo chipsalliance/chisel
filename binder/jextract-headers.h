@@ -8,6 +8,7 @@
 #include <circt-c/Dialect/HW.h>
 #include <circt-c/Dialect/SV.h>
 #include <circt-c/Dialect/Seq.h>
+#include <circt-c/Dialect/OM.h>
 #include <circt-c/Firtool/Firtool.h>
 #include <circt-c/ExportFIRRTL.h>
 #include <circt-c/ExportVerilog.h>
