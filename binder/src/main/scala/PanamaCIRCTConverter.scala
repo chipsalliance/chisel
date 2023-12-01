@@ -10,6 +10,7 @@ import scala.math._
 import firrtl.{ir => fir}
 import firrtl.annotations.NoTargetAnnotation
 import chisel3.{Data => ChiselData, _}
+import chisel3.properties.PropertyType
 import chisel3.experimental._
 import chisel3.internal._
 import chisel3.internal.firrtl._
@@ -165,6 +166,18 @@ class PanamaCIRCTConverter extends CIRCTConverter {
                 convert(field.tpe)
               )
             )
+          )
+        case fir.AnyRefPropertyType  => circt.firrtlTypeGetAnyRef()
+        case fir.IntegerPropertyType => circt.firrtlTypeGetInteger()
+        case fir.DoublePropertyType  => circt.firrtlTypeGetDouble()
+        case fir.StringPropertyType  => circt.firrtlTypeGetString()
+        case fir.BooleanPropertyType => circt.firrtlTypeGetBoolean()
+        case fir.PathPropertyType    => circt.firrtlTypeGetPath()
+        case t: fir.SequencePropertyType => circt.firrtlTypeGetList(convert(t.tpe))
+        case t: fir.ClassPropertyType =>
+          circt.firrtlTypeGetClass(
+            circt.mlirFlatSymbolRefAttrGet(t.name),
+            Seq.empty /* TODO: where is the elements? */
           )
       }
     }
@@ -439,7 +452,7 @@ class PanamaCIRCTConverter extends CIRCTConverter {
       }
     }
 
-    def referTo(arg: Arg, loc: MlirLocation): Reference.Value = {
+    def referTo(arg: Arg, loc: MlirLocation, ctx: Option[(Component, SourceInfo)] = None): Reference.Value = {
       def referToNewConstant(n: Int, w: Width, isSigned: Boolean): Reference.Value = {
         val (firWidth, valWidth) = w match {
           case _: UnknownWidth =>
@@ -453,11 +466,52 @@ class PanamaCIRCTConverter extends CIRCTConverter {
         Reference.Value(util.newConstantValue(resultType, valueType, n.toInt, loc), resultType)
       }
 
+      def referToNewProperty[T, U](propLit: PropertyLit[T, U]): Reference.Value = {
+        def rec(tpe: fir.PropertyType, exp: fir.Expression): MlirValue = {
+          val (opName, attrs, operands) = exp match {
+            case fir.IntegerPropertyLiteral(value) =>
+              val attrs = Seq(
+                (
+                  "value",
+                  circt.mlirIntegerAttrGet(circt.mlirIntegerTypeSignedGet(util.bitLength(value) + 1), value.toInt)
+                )
+              )
+              ("integer", attrs, Seq.empty)
+            case fir.DoublePropertyLiteral(value) =>
+              val attrs = Seq(("value", circt.mlirFloatAttrDoubleGet(circt.mlirF64TypeGet(), value)))
+              ("double", attrs, Seq.empty)
+            case fir.StringPropertyLiteral(value) =>
+              val attrs = Seq(("value", circt.mlirStringAttrGet(value)))
+              ("string", attrs, Seq.empty)
+            case fir.BooleanPropertyLiteral(value) =>
+              val attrs = Seq(("value", circt.mlirBoolAttrGet(value)))
+              ("bool", attrs, Seq.empty)
+            case fir.PathPropertyLiteral(value) =>
+              val attrs = Seq(("target", circt.mlirStringAttrGet(value)))
+              ("unresolved_path", attrs, Seq.empty)
+            case fir.SequencePropertyValue(elementTpe, values) =>
+              ("list.create", Seq.empty, values.map(rec(elementTpe.asInstanceOf[fir.PropertyType], _)))
+          }
+          util
+            .OpBuilder(s"firrtl.$opName", firCtx.currentBlock, loc)
+            .withNamedAttrs(attrs)
+            .withOperands(operands)
+            .withResult(util.convert(tpe))
+            .build()
+            .results(0)
+        }
+
+        val tpe = propLit.propertyType.getPropertyType()
+        val exp = propLit.propertyType.convert(propLit.lit, ctx.get._1, ctx.get._2);
+        Reference.Value(rec(tpe, exp), tpe)
+      }
+
       arg match {
         case Node(id)           => referTo(id, loc)
         case ULit(value, width) => referToNewConstant(value.toInt, width, false)
         case SLit(value, width) => referToNewConstant(value.toInt, width, true)
-        case unhandled          => throw new Exception(s"unhandled arg type to be reference: $unhandled")
+        case propLit: PropertyLit[_, _] => referToNewProperty(propLit)
+        case unhandled => throw new Exception(s"unhandled arg type to be reference: $unhandled")
       }
     }
 
@@ -503,6 +557,9 @@ class PanamaCIRCTConverter extends CIRCTConverter {
       assertResult(circt.mlirPassManagerRunOnOp(pm, circt.mlirModuleGetOperation(mlirRootModule)))
     }
   }
+
+  def passManager(): CIRCTPassManager = new PanamaCIRCTPassManager(circt, mlirRootModule)
+  def om():          CIRCTOM = new PanamaCIRCTOM(circt, mlirRootModule)
 
   def visitCircuit(name: String): Unit = {
     val firCircuit = util
@@ -1185,6 +1242,28 @@ class PanamaCIRCTConverter extends CIRCTConverter {
     // TODO: CIRCT emits `assert` for this, is it expected?
     visitVerification(cover, "firrtl.cover", Seq.empty)
   }
+
+  def visitPropAssign(parent: Component, propAssign: PropAssign): Unit = {
+    val loc = util.convert(propAssign.sourceInfo)
+
+    val dest = util.referTo(propAssign.loc.id, loc)
+    var src = util.referTo(
+      Converter.getRef(
+        propAssign.exp match {
+          case Node(id) => id
+        },
+        propAssign.sourceInfo
+      ),
+      loc,
+      Some((parent, propAssign.sourceInfo))
+    )
+
+    util
+      .OpBuilder("firrtl.propassign", firCtx.currentBlock, loc)
+      .withOperand( /* dest */ dest.value)
+      .withOperand( /* src */ src.value)
+      .build()
+  }
 }
 
 private[chisel3] object PanamaCIRCTConverter {
@@ -1236,6 +1315,7 @@ private[chisel3] object PanamaCIRCTConverter {
           case cover:        Verification[VerifCover]  => visitVerfiCover(cover)
           case printf:       Verification[VerifPrintf] => visitVerfiPrintf(printf)
           case stop:         Verification[VerifStop]   => visitVerfiStop(stop)
+          case propAssign:   PropAssign                => visitPropAssign(defModule, propAssign)
           case unhandled => throw new Exception(s"unhandled op: $unhandled")
         }
     }
@@ -1317,5 +1397,8 @@ private[chisel3] object PanamaCIRCTConverter {
   def visitVerfiStop(stop: Verification[VerifStop])(implicit cvt: CIRCTConverter): Unit = {
     // TODO: Not used anywhere?
     throw new Exception("unimplemented")
+  }
+  def visitPropAssign(parent: Component, propAssign: PropAssign)(implicit cvt: CIRCTConverter): Unit = {
+    cvt.visitPropAssign(parent, propAssign)
   }
 }

@@ -2,12 +2,15 @@
 
 package chiselTests.util.random
 
+import java.io.OutputStream
 import geny.Writable
+import scala.collection.immutable.SeqMap
 import chisel3._
 import chisel3.util._
 import chisel3.experimental._
 import chisel3.internal.CIRCTConverter
-import chisel3.internal.panama.circt.PanamaCIRCTConverterAnnotation
+import chisel3.internal.panama.circt._
+import chisel3.properties._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -36,6 +39,18 @@ class TruncationTest extends RawModule {
 class BitLengthOfNeg1Test extends RawModule {
   val a = IO(Output(UInt()))
   a := -1.S.asUInt
+}
+
+class PropertyTest extends RawModule {
+  val i = IO(Input(UInt(8.W)))
+
+  val p = IO(Output(Property[Path]()))
+  p := Property(Path(i))
+
+  val a = IO(Output(Property[Seq[Seq[Property[Int]]]]()))
+  val b = IO(Output(Property[Seq[Property[Seq[Int]]]]()))
+  a := Property(Seq[Seq[Int]](Seq(123)))
+  b := Property(Seq[Seq[Int]](Seq(123)))
 }
 
 class BinderTest extends AnyFlatSpec with Matchers {
@@ -85,5 +100,28 @@ class BinderTest extends AnyFlatSpec with Matchers {
     firrtlString(new TruncationTest) should include("connect dest, tail(src, 8)")
 
     firrtlString(new BitLengthOfNeg1Test) should include("asUInt(SInt<1>(-1))")
+
+    streamString(
+      new PropertyTest,
+      (converter: CIRCTConverter) => {
+        val pm = converter.passManager()
+        assert(pm.populatePreprocessTransforms())
+        assert(pm.populateCHIRRTLToLowFIRRTL())
+        assert(pm.populateLowFIRRTLToHW())
+        assert(pm.populateFinalizeIR())
+        assert(pm.run())
+
+        val om = converter.om()
+        val evaluator = om.evaluator()
+        val obj = evaluator.instantiate("PropertyTest_Class", Seq(om.newBasePathEmpty))
+        val path = obj.field("p").asInstanceOf[PanamaCIRCTOMEvaluatorValuePath].asString
+
+        assert(path == "OMReferenceTarget:~PropertyTest|PropertyTest>i")
+
+        converter.mlirStream
+      }
+    ) should include("om.class.field @p, %1 : !om.frozenpath")
+      .and(include("om.class.field @a, %3 : !om.list<!om.list<!om.integer>>"))
+      .and(include("om.class.field @b, %3 : !om.list<!om.list<!om.integer>>"))
   }
 }
