@@ -17,4 +17,7 @@ MlirOpPassManager
 MlirPass
 MlirLogicalResult
 FIRRTLBundleField
+FIRRTLClassElement
 CirctFirtoolFirtoolOptions
+OMEvaluator
+OMEvaluatorValue
