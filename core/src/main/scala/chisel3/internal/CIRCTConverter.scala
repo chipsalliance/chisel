@@ -23,6 +23,8 @@ abstract class CIRCTConverter {
 
   def visitDefModule(defModule: DefModule): Unit
 
+  def visitDefIntrinsicModule(defIntrinsicModule: DefIntrinsicModule): Unit
+
   def visitAltBegin(altBegin: AltBegin): Unit
 
   def visitAttach(attach: Attach): Unit
@@ -64,6 +66,16 @@ abstract class CIRCTConverter {
   def visitAssume(assume: Verification[Assume]): Unit
 
   def visitCover(cover: Verification[Cover]): Unit
+
+  def visitProbeDefine(parent: Component, probeDefine: ProbeDefine): Unit
+
+  def visitProbeForceInitial(parent: Component, probeForceInitial: ProbeForceInitial): Unit
+
+  def visitProbeReleaseInitial(parent: Component, probeReleaseInitial: ProbeReleaseInitial): Unit
+
+  def visitProbeForce(parent: Component, probeForce: ProbeForce): Unit
+
+  def visitProbeRelease(parent: Component, probeRelease: ProbeRelease): Unit
 
   def visitPropAssign(parent: Component, propAssign: PropAssign): Unit
 }

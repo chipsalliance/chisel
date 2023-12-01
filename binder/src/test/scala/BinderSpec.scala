@@ -6,6 +6,7 @@ import java.io.OutputStream
 import geny.Writable
 import scala.collection.immutable.SeqMap
 import chisel3._
+import chisel3.probe._
 import chisel3.util._
 import chisel3.experimental._
 import chisel3.internal.CIRCTConverter
@@ -53,6 +54,20 @@ class PropertyTest extends RawModule {
   b := Property(Seq[Seq[Int]](Seq(123)))
 }
 
+class ProbeSimpleTest extends Module {
+  val a = IO(Output(RWProbe(Bool())))
+
+  val w = WireInit(Bool(), false.B)
+  val w_probe = RWProbeValue(w)
+  define(a, w_probe)
+
+  forceInitial(a, false.B)
+  releaseInitial(a)
+
+  force(a, false.B)
+  release(a)
+}
+
 class BinderTest extends AnyFlatSpec with Matchers {
 
   def streamString(module: => RawModule, stream: CIRCTConverter => Writable): String = Seq(
@@ -69,6 +84,7 @@ class BinderTest extends AnyFlatSpec with Matchers {
     }
     .get
 
+  def mlirString(module:    => RawModule): String = streamString(module, _.mlirStream)
   def firrtlString(module:  => RawModule): String = streamString(module, _.firrtlStream)
   def verilogString(module: => RawModule): String = streamString(module, _.verilogStream)
 
@@ -123,5 +139,11 @@ class BinderTest extends AnyFlatSpec with Matchers {
     ) should include("om.class.field @p, %1 : !om.frozenpath")
       .and(include("om.class.field @a, %3 : !om.list<!om.list<!om.integer>>"))
       .and(include("om.class.field @b, %3 : !om.list<!om.list<!om.integer>>"))
+
+    firrtlString(new ProbeSimpleTest) should include("define a = rwprobe(w)")
+      .and(include("force_initial(a, UInt<1>(0))"))
+      .and(include("release_initial(a)"))
+      .and(include("force(clock, _T, a, UInt<1>(0))"))
+      .and(include("release(clock, _T_1, a)"))
   }
 }
