@@ -115,6 +115,9 @@ class PanamaCIRCT {
     }
   }
 
+  def mlirOperationStateEnableResultTypeInference(state: MlirOperationState): Unit =
+    CAPI.mlirOperationStateEnableResultTypeInference(state.get)
+
   def mlirOperationCreate(state: MlirOperationState) = MlirOperation(CAPI.mlirOperationCreate(arena, state.get))
 
   def mlirOperationGetResult(operation: MlirOperation, pos: Int) = MlirValue(
@@ -186,6 +189,8 @@ class PanamaCIRCT {
   def mlirFlatSymbolRefAttrGet(symbol: String) = MlirAttribute(
     CAPI.mlirFlatSymbolRefAttrGet(arena, mlirCtx, newString(symbol).get)
   )
+
+  def mlirValueGetType(tpe: MlirValue) = MlirType(CAPI.mlirValueGetType(arena, tpe.get))
 
   def mlirNoneTypeGet() = MlirType(CAPI.mlirNoneTypeGet(arena, mlirCtx))
 
@@ -386,6 +391,15 @@ class PanamaCIRCT {
     MlirType(CAPI.firrtlTypeGetBundle(arena, mlirCtx, fields.length, buffer))
   }
 
+  def firrtlTypeIsAOpenBundle(tpe: MlirType): Boolean = CAPI.firrtlTypeIsAOpenBundle(tpe.get)
+
+  def firrtlTypeGetBundleFieldIndex(tpe: MlirType, fieldName: String): Int =
+    CAPI.firrtlTypeGetBundleFieldIndex(tpe.get, newString(fieldName).get)
+
+  def firrtlTypeGetRef(target: MlirType, forceable: Boolean) = MlirType(
+    CAPI.firrtlTypeGetRef(arena, target.get, forceable)
+  )
+
   def firrtlTypeGetAnyRef() = MlirType(CAPI.firrtlTypeGetAnyRef(arena, mlirCtx))
 
   def firrtlTypeGetInteger() = MlirType(CAPI.firrtlTypeGetInteger(arena, mlirCtx))
@@ -438,6 +452,12 @@ class PanamaCIRCT {
   )
 
   def chirrtlTypeGetCMemoryPort() = MlirType(CAPI.chirrtlTypeGetCMemoryPort(arena, mlirCtx))
+
+  def hwInnerRefAttrGet(moduleName: String, innerSym: String) =
+    MlirAttribute(CAPI.hwInnerRefAttrGet(arena, mlirStringAttrGet(moduleName).get, mlirStringAttrGet(innerSym).get))
+
+  def hwInnerSymAttrGet(symName: String) =
+    MlirAttribute(CAPI.hwInnerSymAttrGet(arena, mlirStringAttrGet(symName).get))
 
   //
   // OM C-API
