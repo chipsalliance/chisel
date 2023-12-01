@@ -9,6 +9,7 @@ buildDir ?= build
 website_docs_dir = $(this_dir)/docs
 latest_scaladoc_dir = $(this_dir)/static/api/latest
 install_timestamp = $(this_dir)/node_modules/timestamp
+build_timestamp = $(this_dir)/build.timestamp
 
 # Everything not in the website directory
 # This is overly conservative but okay until we can do something more precise
@@ -79,8 +80,11 @@ $(install_timestamp): $(this_dir)/package.json
 
 install: $(install_timestamp)
 
-build: $(this_dir)/docs/index.md $(latest_scaladoc_dir)/index.html $(contributors) $(scaladoc_links) $(install_timestamp) $(chisel-website-only)
+$(build_timestamp): $(this_dir)/docs/index.md $(latest_scaladoc_dir)/index.html $(contributors) $(scaladoc_links) $(install_timestamp) $(chisel-website-only)
 	cd $(this_dir) && npm run build
+	touch $@
+
+build: $(build_timestamp)
 
 # Use python to serve the actual build directory instead of using npm run serve
 # This is needed in order for the serving of the ScalaDoc to work correctly
@@ -93,4 +97,4 @@ clean:
 mrproper: clean
 	rm -rf $(this_dir)/node_modules $(this_dir)/package-lock.json
 
-.PHONY: clean mrproper serve install
+.PHONY: clean mrproper serve install build

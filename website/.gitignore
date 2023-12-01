@@ -3,6 +3,7 @@
 
 # Production
 /build
+/build.timestamp
 
 # Generated files
 .docusaurus
