@@ -217,6 +217,14 @@ object BoringUtils {
     genName
   }
 
+  @deprecated(
+    "Please use the new Boring API instead (BoringUtils.bore(source)). This will be removed in Chisel 7.0",
+    "Chisel 6.0"
+  )
+  def bore(source: Data, sink: Data): String = {
+    bore(source, Seq(sink))
+  }
+
   private def boreOrTap[A <: Data](source: A, createProbe: Option[ProbeInfo] = None)(implicit si: SourceInfo): A = {
     import reflect.DataMirror
     def parent(d: Data): BaseModule = d.topBinding.location.get

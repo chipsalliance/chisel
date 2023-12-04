@@ -168,6 +168,24 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
     )()
   }
 
+  it should "bore with bore(a, b)" in {
+    class Baz extends Module {
+      val a = IO(Output(Bool()))
+    }
+
+    class Bar extends Module {
+      val baz = Module(new Baz)
+    }
+
+    class Foo extends Module {
+      val a = IO(Output(Bool()))
+
+      val bar = Module(new Bar)
+
+      BoringUtils.bore(bar.baz.a, a)
+    }
+  }
+
   it should "bore up and down through the lowest common ancestor" in {
     class Bar extends RawModule {
       val a = Wire(Bool())
