@@ -7,7 +7,7 @@ import chisel3.internal.Builder
 import chisel3.{Data, InstanceId, RawModule}
 import firrtl.annotations._
 import firrtl.options.Unserializable
-import firrtl.transforms.{DedupGroupAnnotation, DontTouchAnnotation, NoDedupAnnotation}
+import firrtl.transforms.{DedupGroupAnnotation, NoDedupAnnotation}
 
 /** Interface for Annotations in Chisel
   *
