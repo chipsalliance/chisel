@@ -113,9 +113,6 @@ private[chisel3] object BiConnect {
         elemConnect(sourceInfo, left_e, right_e, context_mod)
         // TODO(twigg): Verify the element-level classes are connectable
       }
-      case (left_p: Property[_], right_p: Property[_]) =>
-        // We can consider supporting this, but it's a lot of code and we should be moving away from <> anyway
-        Builder.error(s"${left_p._localErrorContext} does not support <>, use :<>= instead")(sourceInfo)
       // Handle Vec case
       case (left_v: Vec[Data @unchecked], right_v: Vec[Data @unchecked]) => {
         if (left_v.length != right_v.length) {

@@ -408,10 +408,14 @@ private[chisel3] object MonoConnect {
 
   def propConnect(
     sourceInfo: SourceInfo,
-    sink:       Property[_],
-    source:     Property[_],
+    sinkProp:   Property[_],
+    sourceProp: Property[_],
     context:    BaseModule
   ): Unit = {
+    // Reify sink and source if they're views.
+    val sink = reify(sinkProp)
+    val source = reify(sourceProp)
+
     checkConnect(sourceInfo, sink, source, context)
     // Add the PropAssign command directly onto the correct BaseModule subclass.
     context match {
@@ -447,16 +451,13 @@ private[chisel3] object checkConnect {
     context_mod: BaseModule
   ): Unit = {
     checkConnection(sourceInfo, sink, source, context_mod)
-  }
 
-  def apply(
-    sourceInfo:  SourceInfo,
-    sink:        Property[_],
-    source:      Property[_],
-    context_mod: BaseModule
-  ): Unit = {
-    checkConnection(sourceInfo, sink, source, context_mod)
-    checkConnect.checkPropertyConnection(sourceInfo, sink, source)
+    // Extra checks for Property[_] elements.
+    (sink, source) match {
+      case (sinkProp: Property[_], sourceProp: Property[_]) =>
+        checkConnect.checkPropertyConnection(sourceInfo, sinkProp, sourceProp)
+      case (_, _) =>
+    }
   }
 
   def checkConnection(

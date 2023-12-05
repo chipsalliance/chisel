@@ -4,6 +4,7 @@ package chisel3.experimental
 
 import chisel3._
 import chisel3.internal._
+import chisel3.properties.Property
 
 import scala.annotation.{implicitNotFound, tailrec}
 import scala.collection.mutable
@@ -145,6 +146,8 @@ package object dataview {
         case (_: Reset, a: AsyncReset) =>
         /* Allow DontCare in the target only */
         case (DontCare, _) =>
+        /* Allow Property[_] <=> Property[_] views when the underlying type is the same */
+        case (a: Property[_], b: Property[_]) if a.getPropertyType == b.getPropertyType =>
         /* All other views produce a runtime error. */
         case _ =>
           val fieldName = viewFieldName(vex)
