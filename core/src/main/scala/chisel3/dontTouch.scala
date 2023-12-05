@@ -28,6 +28,7 @@ object dontTouch {
     *
     * @note Requires the argument to be bound to hardware
     * @param data The signal to be marked
+    * @param markAgg If true, mark the entire aggregate rather than the fields
     * @return Unmodified signal `data`
     */
   def apply[T <: Data](data: T, markAgg: Boolean = false): T = {
