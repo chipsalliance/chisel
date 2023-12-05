@@ -34,7 +34,7 @@ object dontTouch {
   def apply[T <: Data](data: T, markAgg: Boolean = false): T = {
     requireIsHardware(data, "Data marked dontTouch")
     (data, markAgg) match {
-       case (agg: Aggregate, false)             => agg.getElements.foreach(dontTouch.apply)
+       case (agg: Aggregate, false)             => agg.getElements.foreach(dontTouch.apply( _, markAgg))
        case (_: Element, false) | (_, true)     => annotate(new ChiselAnnotation { def toFirrtl = DontTouchAnnotation(data.toNamed) })
        case (_, _)                              => throw new ChiselException("Non-hardware dontTouchLeaves")
     }
