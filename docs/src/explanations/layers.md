@@ -73,7 +73,7 @@ class Foo extends RawModule {
 
 ## Conventions
 
-Currently, there is only one supported convetion, `Bind`.  This will cause layer
+Currently, there is only one supported convention, `Bind`.  This will cause layer
 blocks to be lowered to Verilog modules that are instantiated via the
 SystemVerilog `bind` mechanism.  The lowering to Verilog of layer blocks avoids
 illegal nested usage of `bind`.
