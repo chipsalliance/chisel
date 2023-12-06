@@ -3,10 +3,10 @@
     "circtSrc": {
       "flake": false,
       "locked": {
-        "lastModified": 1698112219,
-        "narHash": "sha256-ELek/eT4lgDISqMExhha/aTSr7EIgC/nR+P2BQlIn0Y=",
+        "lastModified": 1701546577,
+        "narHash": "sha256-hT4Xar1wZ1L398j6oAERgUYfEKy4JxdMnPMsHy8SqsE=",
         "ref": "refs/heads/main",
-        "rev": "beb9c36acde0232b866aacaf331843ac15272141",
+        "rev": "670a34716a6887c532aceed89217d950728f7641",
         "shallow": true,
         "submodules": true,
         "type": "git",
@@ -39,11 +39,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1697270026,
-        "narHash": "sha256-MrMgRlFe/B4RBRZXT++C+BV3FAGevJJCNKm87E+97jY=",
+        "lastModified": 1701614968,
+        "narHash": "sha256-qtsL6AW33SPO1Bfa3GnqmiBpMJPRegVzwMjGXyvjbFc=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "4fc27bc59ea4b7b93fb372f4740303c7195dfb0b",
+        "rev": "18f875916745f288c653c6720195a0c82a58828e",
         "type": "github"
       },
       "original": {
