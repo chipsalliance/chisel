@@ -1,0 +1,16 @@
+// RUN: scala-cli --server=false --java-home=%JAVAHOME --extra-jars=%RUNCLASSPATH --scala-version=%SCALAVERSION --scala-option="-Xplugin:%SCALAPLUGINJARS" --java-opt="--enable-native-access=ALL-UNNAMED --enable-preview -Djava.library.path=%JAVALIBRARYPATH" %s | FileCheck %s
+
+import chisel3._
+import circt.stage.ChiselStage
+class FooBundle extends Bundle {
+  val foo = Input(UInt(3.W))
+}
+// CHECK-LABEL: module FooModule
+// CHECK: input clock : Clock
+// CHECK: input reset : UInt<1>
+class FooModule extends Module {
+  // CHECK: output io : { flip foo : UInt<3>} 
+  val io = IO(new FooBundle)
+  // CHECK: skip
+}
+println(ChiselStage.emitCHIRRTL(new FooModule))

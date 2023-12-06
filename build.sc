@@ -278,7 +278,7 @@ trait LitUtility
   extends tests.LitUtilityModule
     with CrossModuleBase
     with ScalafmtModule {
-  def millSourcePath = super.millSourcePath / "litutility"
+  def millSourcePath = super.millSourcePath / os.up / "lit" / "utility"
   def circtPanamaBinderModule = circtpanamabinder(crossScalaVersion)
 }
 
