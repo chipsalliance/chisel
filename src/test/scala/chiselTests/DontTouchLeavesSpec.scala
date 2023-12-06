@@ -10,8 +10,8 @@ import firrtl.transforms.DontTouchAnnotation
 
 class HasDeadCodeChildLeaves(withDontTouchAgg: Boolean) extends Module {
   val io = IO(new Bundle {
-    val a = Input(new Bundle {val a1 = UInt(32.W); val a2 = UInt(32.W)})
-    val b = Output(new Bundle {val b1 = UInt(32.W); val b2 = UInt(32.W)})
+    val a = Input(new Bundle { val a1 = UInt(32.W); val a2 = UInt(32.W) })
+    val b = Output(new Bundle { val b1 = UInt(32.W); val b2 = UInt(32.W) })
   })
 
   io.b.b1 := io.a.a1
@@ -36,11 +36,11 @@ class DontTouchLeavesSpec extends ChiselFlatSpec with Utils {
   "fields" should "be marked don't touch by default" in {
     val (_, annos) = getFirrtlAndAnnos(new HasDeadCodeLeaves(false))
     annos should contain(DontTouchAnnotation("~HasDeadCodeLeaves|HasDeadCodeChildLeaves>io.a.a1".rt))
-    annos should not contain(DontTouchAnnotation("~HasDeadCodeLeaves|HasDeadCodeChildLeaves>io.a".rt))
+    annos should not contain (DontTouchAnnotation("~HasDeadCodeLeaves|HasDeadCodeChildLeaves>io.a".rt))
   }
   "aggregates" should "be marked if marked markAgg is true" in {
     val (_, annos) = getFirrtlAndAnnos(new HasDeadCodeLeaves(true))
-    annos should not contain(DontTouchAnnotation("~HasDeadCodeLeaves|HasDeadCodeChildLeaves>io.a.a1".rt))
+    annos should not contain (DontTouchAnnotation("~HasDeadCodeLeaves|HasDeadCodeChildLeaves>io.a.a1".rt))
     annos should contain(DontTouchAnnotation("~HasDeadCodeLeaves|HasDeadCodeChildLeaves>io.a".rt))
   }
 }
