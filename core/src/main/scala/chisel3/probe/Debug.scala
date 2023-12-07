@@ -40,6 +40,10 @@ class Debug[T <: Data] private (original: T, kind: DebugKind) extends Record wit
     case _ => throw new InternalErrorException(s"Match Error: $x")
   }
 
+  override def cloneType: this.type = {
+    new Debug(original, kind).asInstanceOf[this.type]
+  }
+
   private def debugify(original: T, kind: DebugKind): Data = {
     // Pre-condition: original has no probeinfo, recursively.
     // original: No probe modifiers already.
