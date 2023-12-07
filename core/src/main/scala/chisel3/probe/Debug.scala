@@ -11,7 +11,7 @@ import chisel3.SpecifiedDirection.Unspecified
 import chisel3.Data.ProbeInfo
 import scala.collection.IndexedSeqView
 import chisel3.InternalErrorException
-import chisel3.probe.force
+import chisel3.probe.forceInitial
 import chisel3.internal.sourceinfo.SourceInfo
 
 sealed trait DebugKind
@@ -131,11 +131,9 @@ class Debug[T <: Data] private (original: T, kind: DebugKind) extends Record wit
       case (Some(a: Alignment), Some(b: Alignment)) =>
         (a.member, b.member) match {
           case (am: Element, bm: Element) => {
-            // TODO: force_initial if not under a "when"?
-            // TODO: do the force/release+reg thing J sketched...
-            // TODO: Instead of here, add a probe.force_release helper.
+            // TODO: Ensure not under a 'when'?
             if (isFlipped(a))
-              force(bm, am)
+              forceInitial(bm, am)
             else
               am := read(bm)
             false
