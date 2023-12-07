@@ -73,7 +73,7 @@ class DebugSpec extends ChiselFlatSpec with MatchesAndOmits {
       val prod = IO(Debug.producer(t.io))
       // Can't do this presently, "soon": https://github.com/llvm/circt/pull/6258
       //prod.define(t.io)
-      //io:<>= t.data
+      //io:<>= t.io
       val w = Wire(new DecoupledAgg())
       w :<>= t.io
       io :<>= w
