@@ -139,13 +139,8 @@ class DebugSpec extends ChiselFlatSpec with MatchesAndOmits {
       val debug = IO(new DecoupledAgg())
 
       val c = Module(new Child)
-      // c.in :<>= in
       withDisable(Disable.Never) {
         debug :<>= c.prod.materialize
-
-        // TODO: Test wire gets name, which it seems to.
-        // val m = c.prod.materialize
-        // debug :<>= m
       }
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new Example, Array("--full-stacktrace"))
@@ -153,12 +148,8 @@ class DebugSpec extends ChiselFlatSpec with MatchesAndOmits {
     println(pruneSourceLoc(chirrtl))
 
     println(ChiselStage.emitSystemVerilog((new Example)))
-    // matchesAndOmits(chirrtl)(
-    //   "output a : { flip incoming : { flip ready : UInt<1>, valid : UInt<1>, bits : UInt<8>}, outgoing : { flip ready : UInt<1>, valid : UInt<1>, bits : UInt<8>}}",
-    //   "output take : { incoming : { ready : RWProbe<UInt<1>>, valid : RWProbe<UInt<1>>, bits : RWProbe<UInt<8>>}, outgoing : { ready : RWProbe<UInt<1>>, valid : RWProbe<UInt<1>>, bits : RWProbe<UInt<8>>}}",
-    //   "output prod : { incoming : { ready : Probe<UInt<1>>, valid : RWProbe<UInt<1>>, bits : RWProbe<UInt<8>>}, outgoing : { ready : RWProbe<UInt<1>>, valid : Probe<UInt<1>>, bits : Probe<UInt<8>>}}",
-    //   "output cons : { incoming : { ready : RWProbe<UInt<1>>, valid : Probe<UInt<1>>, bits : Probe<UInt<8>>}, outgoing : { ready : Probe<UInt<1>>, valid : RWProbe<UInt<1>>, bits : RWProbe<UInt<8>>}}",
-    //   "output ro : { incoming : { ready : Probe<UInt<1>>, valid : Probe<UInt<1>>, bits : Probe<UInt<8>>}, outgoing : { ready : Probe<UInt<1>>, valid : Probe<UInt<1>>, bits : Probe<UInt<8>>}}"
-    // )()
+    matchesAndOmits(chirrtl)(
+      "output in : { incoming : { ready : Probe<UInt<1>>, valid : RWProbe<UInt<1>>, bits : RWProbe<UInt<8>>}, outgoing : { ready : RWProbe<UInt<1>>, valid : Probe<UInt<1>>, bits : Probe<UInt<8>>}}"
+    )()
   }
 }
