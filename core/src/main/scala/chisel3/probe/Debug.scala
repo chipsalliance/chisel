@@ -49,6 +49,13 @@ class Debug[T <: Data] private (original: T, kind: DebugKind) extends Record wit
     case _ => throw new InternalErrorException(s"Match Error: $x")
   }
 
+  private def shouldBeWritable(flip: Boolean): Boolean = kind match {
+      case ProducerKind => flip
+      case ConsumerKind => !flip
+      case ReadOnlyKind => false
+      case TakeOverKind => true
+    }
+
   private def debugify(original: T, kind: DebugKind): Data = {
     // Pre-condition: original has no probeinfo, recursively.
     // original: No probe modifiers already.
@@ -56,23 +63,16 @@ class Debug[T <: Data] private (original: T, kind: DebugKind) extends Record wit
     val isConsumer = true; // TODO: Revisit
     val copy = original.cloneTypeFull
 
-    def pi(flip: Boolean): ProbeInfo = kind match {
-      case ProducerKind => ProbeInfo(flip)
-      case ConsumerKind => ProbeInfo(!flip)
-      case ReadOnlyKind => ProbeInfo(false)
-      case TakeOverKind => ProbeInfo(true)
-    }
-
     walkMembers(Some(Alignment(copy, isConsumer)), None) {
       case (Some(x: Alignment), _) =>
         (isFlipped(x), x.member) match {
           // Elements: Set probeinfo according to flip.
           case (flip: Boolean, x: Element) => {
-            setProbeModifier(x, Some(pi(flip)))
+            setProbeModifier(x, Some(ProbeInfo(shouldBeWritable(flip))))
             false
           }
           case (flip: Boolean, x: Vec[_]) => {
-            x.sample_element.probeInfo = Some(pi(flip))
+            x.sample_element.probeInfo = Some(ProbeInfo(shouldBeWritable(flip)))
             false
           }
           case _ => true
@@ -97,7 +97,7 @@ class Debug[T <: Data] private (original: T, kind: DebugKind) extends Record wit
       case (Some(a: Alignment), Some(b: Alignment)) =>
         (a.member, b.member) match {
           case (am: Element, bm: Element) => {
-            probe.`package`.define(bm, if (isFlipped(a)) RWProbeValue(am) else ProbeValue(am))
+            probe.`package`.define(bm, if (shouldBeWritable(isFlipped(a))) RWProbeValue(am) else ProbeValue(am))
             false
           }
           case _ => true
