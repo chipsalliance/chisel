@@ -32,11 +32,11 @@ class DebugSpec extends ChiselFlatSpec with MatchesAndOmits {
       // Input probe
       // val c = IO(Flipped(Debug.producer(new DecoupledAgg())))
 
-      val data = WireInit(a)
-      take.define(data)
-      prod.define(data)
-      cons.define(data)
-      ro.define(data)
+      val io = WireInit(a)
+      take.define(io)
+      prod.define(io)
+      cons.define(io)
+      ro.define(io)
 
       val test = prod.materialize
 
@@ -56,39 +56,42 @@ class DebugSpec extends ChiselFlatSpec with MatchesAndOmits {
     // And compilation through to SV.
     ChiselStage.emitSystemVerilog((new Example))
   }
-  "Debug.producer examples" should "work" in {
+  "Debug.producer example start-to-finish" should "work" in {
     class Test extends Module {
-      val in = IO(new DecoupledAgg())
+      val io = IO(new DecoupledAgg())
 
-      in.outgoing :<= DontCare
-      dontTouch(in.outgoing)
-      DontCare :>= in.incoming
-      dontTouch(in.incoming)
+      io.outgoing :<= DontCare
+      dontTouch(io.outgoing)
+      DontCare :>= io.incoming
+      dontTouch(io.incoming)
     }
     class Child extends Module {
-      val in = IO(new DecoupledAgg())
+      val io = IO(new DecoupledAgg())
 
       val t = Module(new Test)
 
-      val prod = IO(Debug.producer(t.in))
+      val prod = IO(Debug.producer(t.io))
       // Can't do this presently, "soon": https://github.com/llvm/circt/pull/6258
+      //prod.define(t.io)
+      //io:<>= t.data
       val w = Wire(new DecoupledAgg())
-      w :<>= t.in
-      in :<>= w
+      w :<>= t.io
+      io :<>= w
       prod.define(w)
     }
     class Example extends Module {
-      val in = IO(new DecoupledAgg())
+      val io = IO(new DecoupledAgg())
       val debug = IO(new DecoupledAgg())
 
       val c = Module(new Child)
-      in :<>= c.in
+      io :<>= c.io
 
       withDisable(Disable.Never) {
         debug :<>= c.prod.materialize
       }
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new Example)
+println(chirrtl)
 
     ChiselStage.emitSystemVerilog((new Example))
     matchesAndOmits(chirrtl)(
@@ -106,12 +109,12 @@ class DebugSpec extends ChiselFlatSpec with MatchesAndOmits {
   }
   "Debug on extmodule" should "work" in {
     class Test extends ExtModule {
-      val in = IO(Debug.producer(new DecoupledAgg()))
+      val io = IO(Debug.producer(new DecoupledAgg()))
     }
     class Child extends Module {
       val t = Module(new Test)
-      val prod = IO(chiselTypeOf(t.in))
-      prod :<>= t.in
+      val prod = IO(chiselTypeOf(t.io))
+      prod :<>= t.io
     }
     class Example extends Module {
       val debug = IO(new DecoupledAgg())
@@ -127,7 +130,7 @@ class DebugSpec extends ChiselFlatSpec with MatchesAndOmits {
 
     println(ChiselStage.emitSystemVerilog((new Example)))
     matchesAndOmits(chirrtl)(
-      "output in : { incoming : { ready : Probe<UInt<1>>, valid : RWProbe<UInt<1>>, bits : RWProbe<UInt<8>>}, outgoing : { ready : RWProbe<UInt<1>>, valid : Probe<UInt<1>>, bits : Probe<UInt<8>>}}"
+      "output io : { incoming : { ready : Probe<UInt<1>>, valid : RWProbe<UInt<1>>, bits : RWProbe<UInt<8>>}, outgoing : { ready : RWProbe<UInt<1>>, valid : Probe<UInt<1>>, bits : Probe<UInt<8>>}}"
     )()
   }
 }
