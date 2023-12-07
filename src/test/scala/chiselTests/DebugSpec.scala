@@ -16,50 +16,41 @@ class DebugSpec extends ChiselFlatSpec with MatchesAndOmits {
   private def pruneSourceLoc(s: String): String = {
     s.split("\n").map(_.takeWhile(_ != '@')).mkString("\n")
   }
+  class DecoupledAgg extends Bundle {
+    val incoming = Flipped(DecoupledIO(UInt(8.W)))
+    val outgoing = DecoupledIO(UInt(8.W))
+  }
 
-  "Debug examples" should "work" in {
-    class DecoupledAgg extends Bundle {
-      val incoming = Flipped(DecoupledIO(UInt(8.W)))
-      val outgoing = DecoupledIO(UInt(8.W))
-    }
-    class InputOutputTest extends Bundle {
-      val incoming = Input(DecoupledIO(UInt(8.W)))
-      val outgoing = Output(DecoupledIO(UInt(8.W)))
-    }
+  "Debug kinds" should "work in ports and produce valid define" in {
     class Example extends Module {
-      val a = IO(new DecoupledAgg())
-      // { output a: {
-      //     flipped incoming: { flipped ready: UInt<1>, valid: UInt<1> },
-      //             outgoing: { flipped ready: UInt<1>, valid: UInt<1> },
-      // }
+      val a = IO(Flipped(new DecoupledAgg()))
 
       val take = IO(Debug.takeOver(new DecoupledAgg()))
       val prod = IO(Debug.producer(new DecoupledAgg()))
       val cons = IO(Debug.consumer(new DecoupledAgg()))
       val ro = IO(Debug.readAlways(new DecoupledAgg()))
-      // val test = Debug.producer(a)
+      // Input probe
       // val c = IO(Flipped(Debug.producer(new DecoupledAgg())))
-      // val b = IO(Debug.producer(IO(new DecoupledAgg())))
 
-      // val b = IO(new Debug(new DecoupledIO(UInt(8.W)), ProducerKind))
-
-//      println(s"isFullyAligned(DecoupledAgg): ${DataMirror.isFullyAligned(new DecoupledAgg())}")
-//      println(s"isFullyAligned(DecoupledAgg.incoming): ${DataMirror.isFullyAligned(new DecoupledAgg().incoming)}")
-//      println(s"isFullyAligned(DecoupledAgg.outgoing): ${DataMirror.isFullyAligned(new DecoupledAgg().outgoing)}")
-//      println(s"isFullyAligned(Output(DecoupledAgg)): ${DataMirror.isFullyAligned(Output(new DecoupledAgg()))}")
-//      println(s"isFullyAligned(Input(DecoupledAgg)): ${DataMirror.isFullyAligned(Input(new DecoupledAgg()))}")
-//
-//      println(s"isFullyAligned(InputOutputTest.incoming): ${DataMirror.isFullyAligned(new InputOutputTest().incoming)}")
-//      println(s"isFullyAligned(InputOutputTest.outgoing): ${DataMirror.isFullyAligned(new InputOutputTest().outgoing)}")
+      val data = WireInit(a)
+      take.define(data)
+      prod.define(data)
+      cons.define(data)
+      ro.define(data)
 
       val test = prod.materialize
+
+      a := DontCare
+      test := DontCare
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new Example)
 
     println(chirrtl)
 
+    println(ChiselStage.emitSystemVerilog((new Example)))
+
     matchesAndOmits(chirrtl)(
-      "output a : { flip incoming : { flip ready : UInt<1>, valid : UInt<1>, bits : UInt<8>}, outgoing : { flip ready : UInt<1>, valid : UInt<1>, bits : UInt<8>}}",
+      "input a : { flip incoming : { flip ready : UInt<1>, valid : UInt<1>, bits : UInt<8>}, outgoing : { flip ready : UInt<1>, valid : UInt<1>, bits : UInt<8>}}",
       "output take : { incoming : { ready : RWProbe<UInt<1>>, valid : RWProbe<UInt<1>>, bits : RWProbe<UInt<8>>}, outgoing : { ready : RWProbe<UInt<1>>, valid : RWProbe<UInt<1>>, bits : RWProbe<UInt<8>>}}",
       "output prod : { incoming : { ready : Probe<UInt<1>>, valid : RWProbe<UInt<1>>, bits : RWProbe<UInt<8>>}, outgoing : { ready : RWProbe<UInt<1>>, valid : Probe<UInt<1>>, bits : Probe<UInt<8>>}}",
       "output cons : { incoming : { ready : RWProbe<UInt<1>>, valid : Probe<UInt<1>>, bits : Probe<UInt<8>>}, outgoing : { ready : Probe<UInt<1>>, valid : RWProbe<UInt<1>>, bits : RWProbe<UInt<8>>}}",
@@ -67,10 +58,6 @@ class DebugSpec extends ChiselFlatSpec with MatchesAndOmits {
     )()
   }
   "Debug.producer examples" should "work" in {
-    class DecoupledAgg extends Bundle {
-      val incoming = Flipped(DecoupledIO(UInt(8.W)))
-      val outgoing = DecoupledIO(UInt(8.W))
-    }
     class Test extends Module {
       val in = IO(new DecoupledAgg())
 
@@ -123,10 +110,6 @@ class DebugSpec extends ChiselFlatSpec with MatchesAndOmits {
     // )()
   }
   "Debug on extmodule" should "work" in {
-    class DecoupledAgg extends Bundle {
-      val incoming = Flipped(DecoupledIO(UInt(8.W)))
-      val outgoing = DecoupledIO(UInt(8.W))
-    }
     class Test extends ExtModule {
       val in = IO(Debug.producer(new DecoupledAgg()))
     }
