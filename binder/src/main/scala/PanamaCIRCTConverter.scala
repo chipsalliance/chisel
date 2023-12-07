@@ -33,7 +33,7 @@ case class Op(state: MlirOperationState, op: MlirOperation, regions: Seq[Region]
 
 case class Ports(
   types:           Seq[MlirType],
-  dirs:            Seq[FIRRTLPortDir],
+  dirs:            Seq[FIRRTLDirection],
   locs:            Seq[MlirLocation],
   names:           Seq[String],
   nameAttrs:       Seq[MlirAttribute],
@@ -199,8 +199,8 @@ class PanamaCIRCTConverter extends CIRCTConverter {
       Ports(
         types = types,
         dirs = irs.map(_.direction match {
-          case fir.Input  => FIRRTLPortDir.Input
-          case fir.Output => FIRRTLPortDir.Output
+          case fir.Input  => FIRRTLDirection.In
+          case fir.Output => FIRRTLDirection.Out
         }),
         locs = locs,
         names = irs.map(_.name),
@@ -494,12 +494,7 @@ class PanamaCIRCTConverter extends CIRCTConverter {
       }
 
       val pm = circt.mlirPassManagerCreate()
-      val options = circt.firtoolOptionsCreateDefault()
-      assertResult(circt.firtoolPopulatePreprocessTransforms(pm, options))
-      assertResult(circt.firtoolPopulateCHIRRTLToLowFIRRTL(pm, options, mlirRootModule, "-"))
-      assertResult(circt.firtoolPopulateLowFIRRTLToHW(pm, options))
-      assertResult(circt.firtoolPopulateHWToSV(pm, options))
-      assertResult(circt.firtoolPopulateExportVerilog(pm, options, message => out.write(message.getBytes)))
+      val options = circt.circtFirtoolOptionsCreateDefault()
       assertResult(circt.mlirPassManagerRunOnOp(pm, circt.mlirModuleGetOperation(mlirRootModule)))
     }
   }
