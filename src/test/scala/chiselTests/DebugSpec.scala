@@ -132,11 +132,10 @@ class DebugSpec extends ChiselFlatSpec with MatchesAndOmits {
     }
     class Child extends Module {
       val t = Module(new Test)
-      val prod = IO(t.in.cloneType)
+      val prod = IO(chiselTypeOf(t.in))
       prod :<>= t.in
     }
     class Example extends Module {
-      val in = IO(new DecoupledAgg())
       val debug = IO(new DecoupledAgg())
 
       val c = Module(new Child)
