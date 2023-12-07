@@ -43,12 +43,8 @@ class DebugSpec extends ChiselFlatSpec with MatchesAndOmits {
       a := DontCare
       test := DontCare
     }
+    // Check FIRRTL.
     val chirrtl = ChiselStage.emitCHIRRTL(new Example)
-
-    println(chirrtl)
-
-    println(ChiselStage.emitSystemVerilog((new Example)))
-
     matchesAndOmits(chirrtl)(
       "input a : { flip incoming : { flip ready : UInt<1>, valid : UInt<1>, bits : UInt<8>}, outgoing : { flip ready : UInt<1>, valid : UInt<1>, bits : UInt<8>}}",
       "output take : { incoming : { ready : RWProbe<UInt<1>>, valid : RWProbe<UInt<1>>, bits : RWProbe<UInt<8>>}, outgoing : { ready : RWProbe<UInt<1>>, valid : RWProbe<UInt<1>>, bits : RWProbe<UInt<8>>}}",
@@ -56,12 +52,14 @@ class DebugSpec extends ChiselFlatSpec with MatchesAndOmits {
       "output cons : { incoming : { ready : RWProbe<UInt<1>>, valid : Probe<UInt<1>>, bits : Probe<UInt<8>>}, outgoing : { ready : Probe<UInt<1>>, valid : RWProbe<UInt<1>>, bits : RWProbe<UInt<8>>}}",
       "output ro : { incoming : { ready : Probe<UInt<1>>, valid : Probe<UInt<1>>, bits : Probe<UInt<8>>}, outgoing : { ready : Probe<UInt<1>>, valid : Probe<UInt<1>>, bits : Probe<UInt<8>>}}"
     )()
+
+    // And compilation through to SV.
+    ChiselStage.emitSystemVerilog((new Example))
   }
   "Debug.producer examples" should "work" in {
     class Test extends Module {
       val in = IO(new DecoupledAgg())
 
-      // in.outgoing :<>= in.incoming
       in.outgoing :<= DontCare
       dontTouch(in.outgoing)
       DontCare :>= in.incoming
@@ -71,7 +69,6 @@ class DebugSpec extends ChiselFlatSpec with MatchesAndOmits {
       val in = IO(new DecoupledAgg())
 
       val t = Module(new Test)
-      // in :<>= t.in
 
       val prod = IO(Debug.producer(t.in))
       // Can't do this presently, "soon": https://github.com/llvm/circt/pull/6258
@@ -85,29 +82,27 @@ class DebugSpec extends ChiselFlatSpec with MatchesAndOmits {
       val debug = IO(new DecoupledAgg())
 
       val c = Module(new Child)
-      // c.in :<>= in
       in :<>= c.in
 
       withDisable(Disable.Never) {
         debug :<>= c.prod.materialize
-
-        // TODO: Test wire gets name, which it seems to.
-        // val m = c.prod.materialize
-        // debug :<>= m
       }
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new Example)
 
-    println(pruneSourceLoc(chirrtl))
-
-    println(ChiselStage.emitSystemVerilog((new Example)))
-    // matchesAndOmits(chirrtl)(
-    //   "output a : { flip incoming : { flip ready : UInt<1>, valid : UInt<1>, bits : UInt<8>}, outgoing : { flip ready : UInt<1>, valid : UInt<1>, bits : UInt<8>}}",
-    //   "output take : { incoming : { ready : RWProbe<UInt<1>>, valid : RWProbe<UInt<1>>, bits : RWProbe<UInt<8>>}, outgoing : { ready : RWProbe<UInt<1>>, valid : RWProbe<UInt<1>>, bits : RWProbe<UInt<8>>}}",
-    //   "output prod : { incoming : { ready : Probe<UInt<1>>, valid : RWProbe<UInt<1>>, bits : RWProbe<UInt<8>>}, outgoing : { ready : RWProbe<UInt<1>>, valid : Probe<UInt<1>>, bits : Probe<UInt<8>>}}",
-    //   "output cons : { incoming : { ready : RWProbe<UInt<1>>, valid : Probe<UInt<1>>, bits : Probe<UInt<8>>}, outgoing : { ready : Probe<UInt<1>>, valid : RWProbe<UInt<1>>, bits : RWProbe<UInt<8>>}}",
-    //   "output ro : { incoming : { ready : Probe<UInt<1>>, valid : Probe<UInt<1>>, bits : Probe<UInt<8>>}, outgoing : { ready : Probe<UInt<1>>, valid : Probe<UInt<1>>, bits : Probe<UInt<8>>}}"
-    // )()
+    ChiselStage.emitSystemVerilog((new Example))
+    matchesAndOmits(chirrtl)(
+      // Child.prod
+      "output prod : { incoming : { ready : Probe<UInt<1>>, valid : RWProbe<UInt<1>>, bits : RWProbe<UInt<8>>}, outgoing : { ready : RWProbe<UInt<1>>, valid : Probe<UInt<1>>, bits : Probe<UInt<8>>}}",
+      // Check the define
+      "define prod.outgoing.bits = probe(w.outgoing.bits)",
+      "define prod.outgoing.valid = probe(w.outgoing.valid)",
+      "define prod.outgoing.ready = rwprobe(w.outgoing.ready)",
+      "define prod.incoming.bits = rwprobe(w.incoming.bits)",
+      "define prod.incoming.valid = rwprobe(w.incoming.valid)",
+      "define prod.incoming.ready = probe(w.incoming.ready)",
+      // Check the force/read bits too
+    )()
   }
   "Debug on extmodule" should "work" in {
     class Test extends ExtModule {
