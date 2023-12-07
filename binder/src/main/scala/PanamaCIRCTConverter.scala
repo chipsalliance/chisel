@@ -495,6 +495,11 @@ class PanamaCIRCTConverter extends CIRCTConverter {
 
       val pm = circt.mlirPassManagerCreate()
       val options = circt.circtFirtoolOptionsCreateDefault()
+      assertResult(circt.circtFirtoolPopulatePreprocessTransforms(pm, options))
+      assertResult(circt.circtFirtoolPopulateCHIRRTLToLowFIRRTL(pm, options, mlirRootModule, "-"))
+      assertResult(circt.circtFirtoolPopulateLowFIRRTLToHW(pm, options))
+      assertResult(circt.circtFirtoolPopulateHWToSV(pm, options))
+      assertResult(circt.circtFirtoolPopulateExportVerilog(pm, options, message => out.write(message.getBytes)))
       assertResult(circt.mlirPassManagerRunOnOp(pm, circt.mlirModuleGetOperation(mlirRootModule)))
     }
   }
