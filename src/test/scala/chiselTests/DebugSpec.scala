@@ -57,7 +57,7 @@ class DebugSpec extends ChiselFlatSpec with MatchesAndOmits {
     ChiselStage.emitSystemVerilog((new Example))
   }
   "Debug.producer example start-to-finish" should "work" in {
-    class Test extends Module {
+    class Leaf extends Module {
       val io = IO(new DecoupledAgg())
 
       io.outgoing :<= DontCare
@@ -65,10 +65,10 @@ class DebugSpec extends ChiselFlatSpec with MatchesAndOmits {
       DontCare :>= io.incoming
       dontTouch(io.incoming)
     }
-    class Child extends Module {
+    class Mid extends Module {
       val io = IO(new DecoupledAgg())
 
-      val t = Module(new Test)
+      val t = Module(new Leaf)
 
       val prod = IO(Debug.producer(t.io))
       // Can't do this presently, "soon": https://github.com/llvm/circt/pull/6258
@@ -83,7 +83,7 @@ class DebugSpec extends ChiselFlatSpec with MatchesAndOmits {
       val io = IO(new DecoupledAgg())
       val debug = IO(new DecoupledAgg())
 
-      val c = Module(new Child)
+      val c = Module(new Mid)
       io :<>= c.io
 
       withDisable(Disable.Never) {
@@ -91,46 +91,51 @@ class DebugSpec extends ChiselFlatSpec with MatchesAndOmits {
       }
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new Example)
-println(chirrtl)
-
-    ChiselStage.emitSystemVerilog((new Example))
     matchesAndOmits(chirrtl)(
-      // Child.prod
+      // Mid.prod
       "output prod : { incoming : { ready : Probe<UInt<1>>, valid : RWProbe<UInt<1>>, bits : RWProbe<UInt<8>>}, outgoing : { ready : RWProbe<UInt<1>>, valid : Probe<UInt<1>>, bits : Probe<UInt<8>>}}",
-      // Check the define
+      // Check the define (using explicit bounce wire for now)
       "define prod.outgoing.bits = probe(w.outgoing.bits)",
       "define prod.outgoing.valid = probe(w.outgoing.valid)",
       "define prod.outgoing.ready = rwprobe(w.outgoing.ready)",
       "define prod.incoming.bits = rwprobe(w.incoming.bits)",
       "define prod.incoming.valid = rwprobe(w.incoming.valid)",
       "define prod.incoming.ready = probe(w.incoming.ready)",
-      // Check the force/read bits too
+      // Check the materialize wire and generated read/force's
+      "wire _debug_WIRE : { flip incoming : { flip ready : UInt<1>, valid : UInt<1>, bits : UInt<8>}, outgoing : { flip ready : UInt<1>, valid : UInt<1>, bits : UInt<8>}}",
+      "connect _debug_WIRE.outgoing.bits, read(c.prod.outgoing.bits)",
+      "connect _debug_WIRE.outgoing.valid, read(c.prod.outgoing.valid)",
+      "force_initial(c.prod.outgoing.ready, _debug_WIRE.outgoing.ready)",
+      "force_initial(c.prod.incoming.bits, _debug_WIRE.incoming.bits)",
+      "force_initial(c.prod.incoming.valid, _debug_WIRE.incoming.valid)",
+      "connect _debug_WIRE.incoming.ready, read(c.prod.incoming.ready)",
+      "connect debug, _debug_WIRE"
     )()
+
+    ChiselStage.emitSystemVerilog((new Example))
   }
   "Debug on extmodule" should "work" in {
-    class Test extends ExtModule {
+    class Leaf extends ExtModule {
       val io = IO(Debug.producer(new DecoupledAgg()))
     }
-    class Child extends Module {
-      val t = Module(new Test)
+    class Mid extends Module {
+      val t = Module(new Leaf)
       val prod = IO(chiselTypeOf(t.io))
       prod :<>= t.io
     }
     class Example extends Module {
       val debug = IO(new DecoupledAgg())
 
-      val c = Module(new Child)
+      val c = Module(new Mid)
       withDisable(Disable.Never) {
         debug :<>= c.prod.materialize
       }
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new Example, Array("--full-stacktrace"))
-
-    println(pruneSourceLoc(chirrtl))
-
-    println(ChiselStage.emitSystemVerilog((new Example)))
     matchesAndOmits(chirrtl)(
       "output io : { incoming : { ready : Probe<UInt<1>>, valid : RWProbe<UInt<1>>, bits : RWProbe<UInt<8>>}, outgoing : { ready : RWProbe<UInt<1>>, valid : Probe<UInt<1>>, bits : Probe<UInt<8>>}}"
     )()
+
+    ChiselStage.emitSystemVerilog((new Example))
   }
 }
