@@ -27,7 +27,7 @@ class Debug[T <: Data] private (original: T, kind: DebugKind) extends Record wit
   }
 
   /// Do not allow asUInt.
-  protected override def errorOnAsUInt: Boolean = false
+  protected override def errorOnAsUInt: Boolean = true
 
   // TODO: Look at what Property.scala implements for possible details to consider.
 

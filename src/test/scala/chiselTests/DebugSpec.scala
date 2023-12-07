@@ -131,11 +131,20 @@ class DebugSpec extends ChiselFlatSpec with MatchesAndOmits {
         debug :<>= c.prod.materialize
       }
     }
-    val chirrtl = ChiselStage.emitCHIRRTL(new Example, Array("--full-stacktrace"))
+    val chirrtl = ChiselStage.emitCHIRRTL(new Example)
     matchesAndOmits(chirrtl)(
       "output io : { incoming : { ready : Probe<UInt<1>>, valid : RWProbe<UInt<1>>, bits : RWProbe<UInt<8>>}, outgoing : { ready : RWProbe<UInt<1>>, valid : Probe<UInt<1>>, bits : Probe<UInt<8>>}}"
     )()
 
     ChiselStage.emitSystemVerilog((new Example))
+  }
+
+  "Debug.asUInt" should "fail" in {
+    val exc = intercept[chisel3.ChiselException] {
+      ChiselStage.emitCHIRRTL(new RawModule {
+        val u = Debug.producer(Bool()).asUInt
+      }, Array("--throw-on-first-error"))
+    }
+    exc.getMessage should include("Debug does not support .asUInt")
   }
 }
