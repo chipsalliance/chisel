@@ -22,6 +22,15 @@ case object TakeOverKind extends DebugKind
 
 class Debug[T <: Data] private (original: T, kind: DebugKind) extends Record with OpaqueType {
 
+  override def cloneType: this.type = {
+    new Debug(original, kind).asInstanceOf[this.type]
+  }
+
+  /// Do not allow asUInt.
+  protected override def errorOnAsUInt: Boolean = false
+
+  // TODO: Look at what Property.scala implements for possible details to consider.
+
   // Walk members, recursing if callback returns true.
   private def walkMembers[D: DataMirror.HasMatchingZipOfChildren, L, R](
     left:    Option[D],
@@ -38,10 +47,6 @@ class Debug[T <: Data] private (original: T, kind: DebugKind) extends Record wit
     case _: AlignedWithRoot => false
     case _: FlippedWithRoot => true
     case _ => throw new InternalErrorException(s"Match Error: $x")
-  }
-
-  override def cloneType: this.type = {
-    new Debug(original, kind).asInstanceOf[this.type]
   }
 
   private def debugify(original: T, kind: DebugKind): Data = {
