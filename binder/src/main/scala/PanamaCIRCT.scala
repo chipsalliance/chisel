@@ -223,6 +223,126 @@ class PanamaCIRCT {
   def circtFirtoolOptionsDestroy(options:           CirctFirtoolFirtoolOptions) = CAPI.circtFirtoolOptionsDestroy(options.get)
   def circtFirtoolOptionsSetOutputFilename(options: CirctFirtoolFirtoolOptions, value: String) =
     CAPI.circtFirtoolOptionsSetOutputFilename(options.get, newString(value).get)
+  def circtFirtoolOptionsSetDisableUnknownAnnotations(options: CirctFirtoolFirtoolOptions, value: Boolean) =
+    CAPI.circtFirtoolOptionsSetDisableUnknownAnnotations(options.get, value)
+  def circtFirtoolOptionsSetDisableAnnotationsClassless(options: CirctFirtoolFirtoolOptions, value: Boolean) =
+    CAPI.circtFirtoolOptionsSetDisableAnnotationsClassless(options.get, value)
+  def circtFirtoolOptionsSetLowerAnnotationsNoRefTypePorts(options: CirctFirtoolFirtoolOptions, value: Boolean) =
+    CAPI.circtFirtoolOptionsSetLowerAnnotationsNoRefTypePorts(options.get, value)
+  def circtFirtoolOptionsSetPreserveAggregate(
+    options: CirctFirtoolFirtoolOptions,
+    value:   CirctFirtoolPreserveAggregateMode
+  ) = CAPI.circtFirtoolOptionsSetPreserveAggregate(options.get, value.get)
+  def circtFirtoolOptionsSetPreserveValues(options: CirctFirtoolFirtoolOptions, value: CirctFirtoolPreserveValuesMode) =
+    CAPI.circtFirtoolOptionsSetPreserveValues(options.get, value.get)
+  def circtFirtoolOptionsSetBuildMode(options: CirctFirtoolFirtoolOptions, value: CirctFirtoolBuildMode) =
+    CAPI.circtFirtoolOptionsSetBuildMode(options.get, value.get)
+  def circtFirtoolOptionsSetDisableOptimization(options: CirctFirtoolFirtoolOptions, value: Boolean) =
+    CAPI.circtFirtoolOptionsSetDisableOptimization(options.get, value)
+  def circtFirtoolOptionsSetExportChiselInterface(options: CirctFirtoolFirtoolOptions, value: Boolean) =
+    CAPI.circtFirtoolOptionsSetExportChiselInterface(options.get, value)
+  def circtFirtoolOptionsSetChiselInterfaceOutDirectory(options: CirctFirtoolFirtoolOptions, value: String) =
+    CAPI.circtFirtoolOptionsSetChiselInterfaceOutDirectory(options.get, newString(value).get)
+  def circtFirtoolOptionsSetVbToBv(options: CirctFirtoolFirtoolOptions, value: Boolean) =
+    CAPI.circtFirtoolOptionsSetVbToBv(options.get, value)
+  def circtFirtoolOptionsSetNoDedup(options: CirctFirtoolFirtoolOptions, value: Boolean) =
+    CAPI.circtFirtoolOptionsSetNoDedup(options.get, value)
+  def circtFirtoolOptionsSetCompanionMode(options: CirctFirtoolFirtoolOptions, value: CirctFirtoolCompanionMode) =
+    CAPI.circtFirtoolOptionsSetCompanionMode(options.get, value.get)
+  def circtFirtoolOptionsSetDisableAggressiveMergeConnections(options: CirctFirtoolFirtoolOptions, value: Boolean) =
+    CAPI.circtFirtoolOptionsSetDisableAggressiveMergeConnections(options.get, value)
+  def circtFirtoolOptionsSetEmitOmir(options: CirctFirtoolFirtoolOptions, value: Boolean) =
+    CAPI.circtFirtoolOptionsSetEmitOmir(options.get, value)
+  def circtFirtoolOptionsSetOmirOutFile(options: CirctFirtoolFirtoolOptions, value: String) =
+    CAPI.circtFirtoolOptionsSetOmirOutFile(options.get, newString(value).get)
+  def circtFirtoolOptionsSetLowerMemories(options: CirctFirtoolFirtoolOptions, value: Boolean) =
+    CAPI.circtFirtoolOptionsSetLowerMemories(options.get, value)
+  def circtFirtoolOptionsSetBlackBoxRootPath(options: CirctFirtoolFirtoolOptions, value: String) =
+    CAPI.circtFirtoolOptionsSetBlackBoxRootPath(options.get, newString(value).get)
+  def circtFirtoolOptionsSetReplSeqMem(options: CirctFirtoolFirtoolOptions, value: Boolean) =
+    CAPI.circtFirtoolOptionsSetReplSeqMem(options.get, value)
+  def circtFirtoolOptionsSetReplSeqMemFile(options: CirctFirtoolFirtoolOptions, value: String) =
+    CAPI.circtFirtoolOptionsSetReplSeqMemFile(options.get, newString(value).get)
+  def circtFirtoolOptionsSetExtractTestCode(options: CirctFirtoolFirtoolOptions, value: Boolean) =
+    CAPI.circtFirtoolOptionsSetExtractTestCode(options.get, value)
+  def circtFirtoolOptionsSetIgnoreReadEnableMem(options: CirctFirtoolFirtoolOptions, value: Boolean) =
+    CAPI.circtFirtoolOptionsSetIgnoreReadEnableMem(options.get, value)
+  def circtFirtoolOptionsSetDisableRandom(options: CirctFirtoolFirtoolOptions, value: CirctFirtoolRandomKind) =
+    CAPI.circtFirtoolOptionsSetDisableRandom(options.get, value.get)
+  def circtFirtoolOptionsSetOutputAnnotationFilename(options: CirctFirtoolFirtoolOptions, value: String) =
+    CAPI.circtFirtoolOptionsSetOutputAnnotationFilename(options.get, newString(value).get)
+  def circtFirtoolOptionsSetEnableAnnotationWarning(options: CirctFirtoolFirtoolOptions, value: Boolean) =
+    CAPI.circtFirtoolOptionsSetEnableAnnotationWarning(options.get, value)
+  def circtFirtoolOptionsSetAddMuxPragmas(options: CirctFirtoolFirtoolOptions, value: Boolean) =
+    CAPI.circtFirtoolOptionsSetAddMuxPragmas(options.get, value)
+  def circtFirtoolOptionsSetEmitChiselAssertsAsSVA(options: CirctFirtoolFirtoolOptions, value: Boolean) =
+    CAPI.circtFirtoolOptionsSetEmitChiselAssertsAsSVA(options.get, value)
+  def circtFirtoolOptionsSetEmitSeparateAlwaysBlocks(options: CirctFirtoolFirtoolOptions, value: Boolean) =
+    CAPI.circtFirtoolOptionsSetEmitSeparateAlwaysBlocks(options.get, value)
+  def circtFirtoolOptionsSetEtcDisableInstanceExtraction(options: CirctFirtoolFirtoolOptions, value: Boolean) =
+    CAPI.circtFirtoolOptionsSetEtcDisableInstanceExtraction(options.get, value)
+  def circtFirtoolOptionsSetEtcDisableRegisterExtraction(options: CirctFirtoolFirtoolOptions, value: Boolean) =
+    CAPI.circtFirtoolOptionsSetEtcDisableRegisterExtraction(options.get, value)
+  def circtFirtoolOptionsSetEtcDisableModuleInlining(options: CirctFirtoolFirtoolOptions, value: Boolean) =
+    CAPI.circtFirtoolOptionsSetEtcDisableModuleInlining(options.get, value)
+  def circtFirtoolOptionsSetAddVivadoRAMAddressConflictSynthesisBugWorkaround(
+    options: CirctFirtoolFirtoolOptions,
+    value:   Boolean
+  ) = CAPI.circtFirtoolOptionsSetAddVivadoRAMAddressConflictSynthesisBugWorkaround(options.get, value)
+  def circtFirtoolOptionsSetCkgModuleName(options: CirctFirtoolFirtoolOptions, value: String) =
+    CAPI.circtFirtoolOptionsSetCkgModuleName(options.get, newString(value).get)
+  def circtFirtoolOptionsSetCkgInputName(options: CirctFirtoolFirtoolOptions, value: String) =
+    CAPI.circtFirtoolOptionsSetCkgInputName(options.get, newString(value).get)
+  def circtFirtoolOptionsSetCkgOutputName(options: CirctFirtoolFirtoolOptions, value: String) =
+    CAPI.circtFirtoolOptionsSetCkgOutputName(options.get, newString(value).get)
+  def circtFirtoolOptionsSetCkgEnableName(options: CirctFirtoolFirtoolOptions, value: String) =
+    CAPI.circtFirtoolOptionsSetCkgEnableName(options.get, newString(value).get)
+  def circtFirtoolOptionsSetCkgTestEnableName(options: CirctFirtoolFirtoolOptions, value: String) =
+    CAPI.circtFirtoolOptionsSetCkgTestEnableName(options.get, newString(value).get)
+  def circtFirtoolOptionsSetExportModuleHierarchy(options: CirctFirtoolFirtoolOptions, value: Boolean) =
+    CAPI.circtFirtoolOptionsSetExportModuleHierarchy(options.get, value)
+  def circtFirtoolOptionsSetStripFirDebugInfo(options: CirctFirtoolFirtoolOptions, value: Boolean) =
+    CAPI.circtFirtoolOptionsSetStripFirDebugInfo(options.get, value)
+  def circtFirtoolOptionsSetStripDebugInfo(options: CirctFirtoolFirtoolOptions, value: Boolean) =
+    CAPI.circtFirtoolOptionsSetStripDebugInfo(options.get, value)
+
+  def circtFirtoolPopulatePreprocessTransforms(pm: MlirPassManager, options: CirctFirtoolFirtoolOptions) =
+    MlirLogicalResult(
+      CAPI.circtFirtoolPopulatePreprocessTransforms(arena, pm.get, options.get)
+    )
+
+  def circtFirtoolPopulateCHIRRTLToLowFIRRTL(
+    pm:            MlirPassManager,
+    options:       CirctFirtoolFirtoolOptions,
+    module:        MlirModule,
+    inputFilename: String
+  ) = MlirLogicalResult(
+    CAPI.circtFirtoolPopulateCHIRRTLToLowFIRRTL(arena, pm.get, options.get, newString(inputFilename).get)
+  )
+
+  def circtFirtoolPopulateLowFIRRTLToHW(pm: MlirPassManager, options: CirctFirtoolFirtoolOptions) = MlirLogicalResult(
+    CAPI.circtFirtoolPopulateLowFIRRTLToHW(arena, pm.get, options.get)
+  )
+
+  def circtFirtoolPopulateHWToSV(pm: MlirPassManager, options: CirctFirtoolFirtoolOptions) = MlirLogicalResult(
+    CAPI.circtFirtoolPopulateHWToSV(arena, pm.get, options.get)
+  )
+
+  def circtFirtoolPopulateExportVerilog(
+    pm:       MlirPassManager,
+    options:  CirctFirtoolFirtoolOptions,
+    callback: String => Unit
+  ) = MlirLogicalResult(
+    CAPI.circtFirtoolPopulateExportVerilog(arena, pm.get, options.get, newStringCallback(callback).get, NULL)
+  )
+
+  def circtFirtoolPopulateExportSplitVerilog(
+    pm:        MlirPassManager,
+    options:   CirctFirtoolFirtoolOptions,
+    directory: String
+  ) = MlirLogicalResult(
+    CAPI.circtFirtoolPopulateExportSplitVerilog(arena, pm.get, options.get, newString(directory).get)
+  )
 
   def mlirLogicalResultIsSuccess(res: MlirLogicalResult): Boolean = circt.MlirLogicalResult.value$get(res.get) != 0
 
@@ -504,6 +624,14 @@ sealed class CirctFirtoolPreserveAggregateMode(val value: Int) extends ForeignTy
   private[circt] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
 }
 object CirctFirtoolPreserveAggregateMode {
+  final case object None
+      extends CirctFirtoolPreserveAggregateMode(value = CAPI.CIRCT_FIRTOOL_PRESERVE_AGGREGATE_MODE_NONE())
+  final case object OneDimVec
+      extends CirctFirtoolPreserveAggregateMode(value = CAPI.CIRCT_FIRTOOL_PRESERVE_AGGREGATE_MODE_ONE_DIM_VEC())
+  final case object Vec
+      extends CirctFirtoolPreserveAggregateMode(value = CAPI.CIRCT_FIRTOOL_PRESERVE_AGGREGATE_MODE_VEC())
+  final case object All
+      extends CirctFirtoolPreserveAggregateMode(value = CAPI.CIRCT_FIRTOOL_PRESERVE_AGGREGATE_MODE_ALL())
 }
 
 sealed class CirctFirtoolPreserveValuesMode(val value: Int) extends ForeignType[Int] {
@@ -511,6 +639,12 @@ sealed class CirctFirtoolPreserveValuesMode(val value: Int) extends ForeignType[
   private[circt] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
 }
 object CirctFirtoolPreserveValuesMode {
+  final case object Strip
+      extends CirctFirtoolPreserveValuesMode(value = CAPI.CIRCT_FIRTOOL_PRESERVE_VALUES_MODE_STRIP())
+  final case object None extends CirctFirtoolPreserveValuesMode(value = CAPI.CIRCT_FIRTOOL_PRESERVE_VALUES_MODE_NONE())
+  final case object Named
+      extends CirctFirtoolPreserveValuesMode(value = CAPI.CIRCT_FIRTOOL_PRESERVE_VALUES_MODE_NAMED())
+  final case object All extends CirctFirtoolPreserveValuesMode(value = CAPI.CIRCT_FIRTOOL_PRESERVE_VALUES_MODE_ALL())
 }
 
 sealed class CirctFirtoolBuildMode(val value: Int) extends ForeignType[Int] {
@@ -518,6 +652,9 @@ sealed class CirctFirtoolBuildMode(val value: Int) extends ForeignType[Int] {
   private[circt] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
 }
 object CirctFirtoolBuildMode {
+  final case object Default extends CirctFirtoolBuildMode(value = CAPI.CIRCT_FIRTOOL_BUILD_MODE_DEFAULT())
+  final case object Debug extends CirctFirtoolBuildMode(value = CAPI.CIRCT_FIRTOOL_BUILD_MODE_DEBUG())
+  final case object Release extends CirctFirtoolBuildMode(value = CAPI.CIRCT_FIRTOOL_BUILD_MODE_RELEASE())
 }
 
 sealed class CirctFirtoolRandomKind(val value: Int) extends ForeignType[Int] {
@@ -525,6 +662,10 @@ sealed class CirctFirtoolRandomKind(val value: Int) extends ForeignType[Int] {
   private[circt] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
 }
 object CirctFirtoolRandomKind {
+  final case object None extends CirctFirtoolRandomKind(value = CAPI.CIRCT_FIRTOOL_RANDOM_KIND_NONE())
+  final case object Mem extends CirctFirtoolRandomKind(value = CAPI.CIRCT_FIRTOOL_RANDOM_KIND_MEM())
+  final case object Reg extends CirctFirtoolRandomKind(value = CAPI.CIRCT_FIRTOOL_RANDOM_KIND_REG())
+  final case object All extends CirctFirtoolRandomKind(value = CAPI.CIRCT_FIRTOOL_RANDOM_KIND_ALL())
 }
 
 sealed class CirctFirtoolCompanionMode(val value: Int) extends ForeignType[Int] {
@@ -532,4 +673,8 @@ sealed class CirctFirtoolCompanionMode(val value: Int) extends ForeignType[Int] 
   private[circt] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
 }
 object CirctFirtoolCompanionMode {
+  final case object Bind extends CirctFirtoolCompanionMode(value = CAPI.CIRCT_FIRTOOL_COMPANION_MODE_BIND())
+  final case object Instantiate
+      extends CirctFirtoolCompanionMode(value = CAPI.CIRCT_FIRTOOL_COMPANION_MODE_INSTANTIATE())
+  final case object Drop extends CirctFirtoolCompanionMode(value = CAPI.CIRCT_FIRTOOL_COMPANION_MODE_DROP())
 }
