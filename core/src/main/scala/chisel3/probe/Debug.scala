@@ -58,7 +58,6 @@ class Debug[T <: Data] private (original: T, kind: DebugKind) extends Record wit
 
   private def debugify(original: T, kind: DebugKind): Data = {
     // Pre-condition: original has no probeinfo, recursively.
-    // original: No probe modifiers already.
 
     val isConsumer = true; // TODO: Revisit
     val copy = original.cloneTypeFull
@@ -71,10 +70,12 @@ class Debug[T <: Data] private (original: T, kind: DebugKind) extends Record wit
             setProbeModifier(x, Some(ProbeInfo(shouldBeWritable(flip))))
             false
           }
+          // Vector: special handling (sample_element).
           case (flip: Boolean, x: Vec[_]) => {
             x.sample_element.probeInfo = Some(ProbeInfo(shouldBeWritable(flip)))
             false
           }
+          // Otherwise, recurse until hit one of the above.
           case _ => true
         }
       case _ => false
@@ -89,7 +90,7 @@ class Debug[T <: Data] private (original: T, kind: DebugKind) extends Record wit
   def elements = SeqMap("" -> underlying)
 
   def define(value: T)(implicit sourceInfo: SourceInfo): Unit = {
-    // No probe info on 'value'.
+    // Pre-condition: No probe info on 'value'.
 
     // TODO: Ensure value is a static reference?
     // For now, just let firtool tell us.
