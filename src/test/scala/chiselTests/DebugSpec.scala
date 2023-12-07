@@ -10,6 +10,7 @@ import circt.stage.ChiselStage
 import chisel3.util.DecoupledIO
 import chisel3.reflect.DataMirror
 import firrtl.transforms.DontTouchAnnotation
+import chisel3.experimental.ExtModule
 
 class DebugSpec extends ChiselFlatSpec with MatchesAndOmits {
   private def pruneSourceLoc(s: String): String = {
@@ -109,6 +110,46 @@ class DebugSpec extends ChiselFlatSpec with MatchesAndOmits {
       }
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new Example)
+
+    println(pruneSourceLoc(chirrtl))
+
+    println(ChiselStage.emitSystemVerilog((new Example)))
+    // matchesAndOmits(chirrtl)(
+    //   "output a : { flip incoming : { flip ready : UInt<1>, valid : UInt<1>, bits : UInt<8>}, outgoing : { flip ready : UInt<1>, valid : UInt<1>, bits : UInt<8>}}",
+    //   "output take : { incoming : { ready : RWProbe<UInt<1>>, valid : RWProbe<UInt<1>>, bits : RWProbe<UInt<8>>}, outgoing : { ready : RWProbe<UInt<1>>, valid : RWProbe<UInt<1>>, bits : RWProbe<UInt<8>>}}",
+    //   "output prod : { incoming : { ready : Probe<UInt<1>>, valid : RWProbe<UInt<1>>, bits : RWProbe<UInt<8>>}, outgoing : { ready : RWProbe<UInt<1>>, valid : Probe<UInt<1>>, bits : Probe<UInt<8>>}}",
+    //   "output cons : { incoming : { ready : RWProbe<UInt<1>>, valid : Probe<UInt<1>>, bits : Probe<UInt<8>>}, outgoing : { ready : Probe<UInt<1>>, valid : RWProbe<UInt<1>>, bits : RWProbe<UInt<8>>}}",
+    //   "output ro : { incoming : { ready : Probe<UInt<1>>, valid : Probe<UInt<1>>, bits : Probe<UInt<8>>}, outgoing : { ready : Probe<UInt<1>>, valid : Probe<UInt<1>>, bits : Probe<UInt<8>>}}"
+    // )()
+  }
+  "Debug on extmodule" should "work" in {
+    class DecoupledAgg extends Bundle {
+      val incoming = Flipped(DecoupledIO(UInt(8.W)))
+      val outgoing = DecoupledIO(UInt(8.W))
+    }
+    class Test extends ExtModule {
+      val in = IO(Debug.producer(new DecoupledAgg()))
+    }
+    class Child extends Module {
+      val t = Module(new Test)
+      val prod = IO(t.in.cloneType)
+      prod :<>= t.in
+    }
+    class Example extends Module {
+      val in = IO(new DecoupledAgg())
+      val debug = IO(new DecoupledAgg())
+
+      val c = Module(new Child)
+      // c.in :<>= in
+      withDisable(Disable.Never) {
+        debug :<>= c.prod.materialize
+
+        // TODO: Test wire gets name, which it seems to.
+        // val m = c.prod.materialize
+        // debug :<>= m
+      }
+    }
+    val chirrtl = ChiselStage.emitCHIRRTL(new Example, Array("--full-stacktrace"))
 
     println(pruneSourceLoc(chirrtl))
 
