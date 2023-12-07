@@ -57,31 +57,6 @@ class Debug[T <: Data] private (original: T, kind: DebugKind) extends Record wit
       case ReadOnlyKind => ProbeInfo(false)
       case TakeOverKind => ProbeInfo(true)
     }
-    // Flip-encoding...
-    // Not plan but keeping for now.
-    /*
-   walkMembers(Some(Alignment(copy, isConsumer)), None) {
-      case (Some(x: Alignment), _) =>
-        (isFlipped(x), x.member) match {
-        // Elements: Set probeinfo according to flip.
-        case (flip : Boolean, x : Element) => {
-          setProbeModifier(x, Some(Data.ProbeInfo(flip)))
-          if (flip)
-            x.specifiedDirection_=(SpecifiedDirection.flip(x.specifiedDirection))
-          false
-        }
-        case (flip : Boolean, x : Vec[_]) => {
-          // setProbeModifier(x.sample_element, Some(Data.ProbeInfo(!flip)))
-          x.sample_element.probeInfo = Some(Data.ProbeInfo(flip))
-          if (flip)
-            x.sample_element.specifiedDirection_=(SpecifiedDirection.flip(x.sample_element.specifiedDirection))
-          false
-        }
-        case _ => true
-      }
-      case _ => false
-   }
-     */
 
     walkMembers(Some(Alignment(copy, isConsumer)), None) {
       case (Some(x: Alignment), _) =>
@@ -102,6 +77,7 @@ class Debug[T <: Data] private (original: T, kind: DebugKind) extends Record wit
     copy.specifiedDirection_=(SpecifiedDirection.Output)
     copy
     // TODO: Investigate why "Output(copy)" loses the probe info
+    // PR3654 fixes this for "top-level" modifiers, but nothing recursively copies them presently?
     //Output(copy)
   }
   private val underlying = debugify(original, kind)
