@@ -34,6 +34,9 @@ class TruncationTest extends RawModule {
   val dest = IO(Output(UInt(8.W)))
   val src = IO(Input(UInt(16.W)))
   dest := src
+
+  val vDest = IO(Output(Vec(4, UInt(1.W))))
+  vDest := VecInit(Seq.fill(4)(1.U(2.W)))
 }
 
 // https://github.com/chipsalliance/chisel/issues/3548#issuecomment-1734346659
@@ -113,7 +116,11 @@ class BinderTest extends AnyFlatSpec with Matchers {
         .and(include("if (counterWrap)"))
         .and(include("counterWrap_c_value <=")))
 
-    firrtlString(new TruncationTest) should include("connect dest, tail(src, 8)")
+    verilogString(new TruncationTest) should include("assign dest = src[7:0]")
+      .and(include("assign vDest_0 = 1'h1"))
+      .and(include("assign vDest_1 = 1'h1"))
+      .and(include("assign vDest_2 = 1'h1"))
+      .and(include("assign vDest_3 = 1'h1"))
 
     firrtlString(new BitLengthOfNeg1Test) should include("asUInt(SInt<1>(-1))")
 
