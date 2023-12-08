@@ -28,11 +28,17 @@ object dontTouch {
     *
     * @note Requires the argument to be bound to hardware
     * @param data The signal to be marked
+    * @param markAgg If true, mark the entire aggregate rather than the fields
     * @return Unmodified signal `data`
     */
-  def apply[T <: Data](data: T): T = {
+  def apply[T <: Data](data: T, markAgg: Boolean = false): T = {
     requireIsHardware(data, "Data marked dontTouch")
-    annotate(new ChiselAnnotation { def toFirrtl = DontTouchAnnotation(data.toNamed) })
+    (data, markAgg) match {
+      case (agg: Aggregate, false) => agg.getElements.foreach(dontTouch.apply(_, markAgg))
+      case (_: Element, false) | (_, true) =>
+        annotate(new ChiselAnnotation { def toFirrtl = DontTouchAnnotation(data.toNamed) })
+      case (_, _) => throw new ChiselException("Non-hardware dontTouchLeaves")
+    }
     data
   }
 }
