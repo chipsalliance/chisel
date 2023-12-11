@@ -34,6 +34,35 @@ object Module extends SourceInfoDoc {
   /** @group SourceInfoTransformMacro */
   @nowarn("msg=class Port") // delete when Port becomes private
   def do_apply[T <: BaseModule](bc: => T)(implicit sourceInfo: SourceInfo): T = {
+    // Instantiate the module definition.
+    val module = evaluate[T](bc)
+
+    // Handle connections at enclosing scope
+    // We use _component because Modules that don't generate them may still have one
+    if (Builder.currentModule.isDefined && module._component.isDefined) {
+      // Class only uses the Definition API, and is not allowed here.
+      module match {
+        case _: Class => throwException("Module() cannot be called on a Class. Please use Definition().")
+        case _ => ()
+      }
+
+      val component = module._component.get
+      component match {
+        case DefClass(_, name, _, _) =>
+          Builder.referenceUserContainer match {
+            case rm:  RawModule => rm.addCommand(DefObject(sourceInfo, module, name))
+            case cls: Class     => cls.addCommand(DefObject(sourceInfo, module, name))
+          }
+        case _ => pushCommand(DefInstance(sourceInfo, module, component.ports))
+      }
+      module.initializeInParent()
+    }
+
+    module
+  }
+
+  /** Build a module definition */
+  private[chisel3] def evaluate[T <: BaseModule](bc: => T)(implicit sourceInfo: SourceInfo): T = {
     if (Builder.readyForModuleConstr) {
       throwException(
         "Error: Called Module() twice without instantiating a Module." +
@@ -86,26 +115,6 @@ object Module extends SourceInfoDoc {
     Builder.currentReset = saveReset
     Builder.setPrefix(savePrefix)
 
-    // Handle connections at enclosing scope
-    // We use _component because Modules that don't generate them may still have one
-    if (Builder.currentModule.isDefined && module._component.isDefined) {
-      // Class only uses the Definition API, and is not allowed here.
-      module match {
-        case _: Class => throwException("Module() cannot be called on a Class. Please use Definition().")
-        case _ => ()
-      }
-
-      val component = module._component.get
-      component match {
-        case DefClass(_, name, _, _) =>
-          Builder.referenceUserContainer match {
-            case rm:  RawModule => rm.addCommand(DefObject(sourceInfo, module, name))
-            case cls: Class     => cls.addCommand(DefObject(sourceInfo, module, name))
-          }
-        case _ => pushCommand(DefInstance(sourceInfo, module, component.ports))
-      }
-      module.initializeInParent()
-    }
     module
   }
 
