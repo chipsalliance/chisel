@@ -340,13 +340,8 @@ class TraceSpec extends ChiselFlatSpec with Matchers {
     val dut = annos.collectFirst { case DesignAnnotation(dut) => dut }.get.asInstanceOf[M]
     val allTargets = finalTargetMap(annos)
     allTargets(dut.a.toAbsoluteTarget) should be(Seq(refTarget("M", "a")))
-    allTargets(dut.b.toAbsoluteTarget) should be(
-      Seq(
-        refTarget("M", "b_0"),
-        refTarget("M", "b_1")
-      )
-    )
     allTargets(dut.b(0).toAbsoluteTarget) should be(Seq(refTarget("M", "b_0")))
     allTargets(dut.b(1).toAbsoluteTarget) should be(Seq(refTarget("M", "b_1")))
+    allTargets.keys should not contain (dut.b.toAbsoluteTarget)
   }
 }
