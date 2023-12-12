@@ -218,14 +218,14 @@ object BoringUtils {
   }
 
   /** Connect a source to one sink
-   *
-   * @param source a source component
-   * @param sink  one sink components
-   * @return the name of the signal used to connect the source to the
-   *         sinks
-   * @note the returned name will be based on the name of the source
-   *       component
-   */
+    *
+    * @param source a source component
+    * @param sink  one sink components
+    * @return the name of the signal used to connect the source to the
+    *         sinks
+    * @note the returned name will be based on the name of the source
+    *       component
+    */
   @deprecated(
     "Please use the new Boring API instead (BoringUtils.bore(source)). This will be removed in Chisel 7.0",
     "Chisel 6.0"
