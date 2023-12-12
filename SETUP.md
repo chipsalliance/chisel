@@ -1,11 +1,13 @@
 # Chisel Local Setup
 Instructions for setting up your environment to run Chisel locally.
 
-For a minimal setup, you only need to install [SBT (the Scala Build Tool)](http://www.scala-sbt.org), which will automatically fetch the appropriate version of Scala and Chisel based on on your project configuration.
+For a minimal setup, you only need to install [SBT (the Scala Build Tool)](http://www.scala-sbt.org), which will automatically fetch the appropriate version of Scala and Chisel based on your project configuration.
 
 [Firtool](https://github.com/llvm/circt) is required to generate Verilog.
 
-[Verilator](https://www.veripool.org/wiki/verilator) is installation is required to simulate your Verilog designs.
+[Verilator](https://www.veripool.org/wiki/verilator) Installation is required to simulate your Verilog designs.
+
+For `firrtool` check the following URL to find the latest version: https://github.com/llvm/circt/releases/latest
 
 ## Ubuntu Linux
 
@@ -20,11 +22,11 @@ For a minimal setup, you only need to install [SBT (the Scala Build Tool)](http:
 
     Choose whatever version is being [used in continuous integration](.github/workflows/install-circt/action.yml)
     ```bash
-    wget -q -O - https://github.com/llvm/circt/releases/download/firtool-1.58.0/firrtl-bin-linux-x64.tar.gz | tar -zx
+    wget -q -O - https://github.com/llvm/circt/releases/download/firtool-1.61.0/firrtl-bin-linux-x64.tar.gz | tar -zx
     ```
     This will give you a directory called `firtool-1.38.0` containing the firtool binary, add this to your PATH as appropriate.
     ```bash
-    export PATH=$PATH:$PWD/firtool-1.58.0/bin
+    export PATH=$PATH:$PWD/firtool-1.61.0/bin
     ```
     Alternatively, you can install the binary to a standard location by simply moving the binary (if you have root access).
     ```bash
@@ -88,13 +90,13 @@ There are no issues with generating Verilog from Chisel, which can be pushed to 
 1.  Install firtool
 
     ```bash
-    wget -q -O - https://github.com/llvm/circt/releases/download/firtool-1.38.0/firrtl-bin-macos-x64.tar.gz | tar -zx
+    wget -q -O - https://github.com/llvm/circt/releases/download/firtool-1.61.0/firrtl-bin-macos-x64.tar.gz | tar -zx
     ```
     This will give you a directory called `firtool-1.58.0` containing the firtool binary, add this to your PATH as appropriate.
     ```bash
-    export PATH=$PATH:$PWD/firtool-1.58.0/bin
+    export PATH=$PATH:$PWD/firtool-1.61.0/bin
     ```
     Alternatively, you can install the binary to a standard location by simply moving the binary.
     ```bash
-    mv firtool-1.38.0/bin/firtool /usr/local/bin/
+    mv firtool-1.61.0/bin/firtool /usr/local/bin/
     ```
