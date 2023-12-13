@@ -44,8 +44,12 @@ object Releases {
     getReleases(Github[IO](httpClient, token))
       .unsafeRunSync()
 
-  /* Get latest non-prerelease version */
-  def getLatest(releases: List[SemanticVersion]): SemanticVersion = releases.filterNot(_.prerelease).max
+  /* Get latest non-milestone version
+   *
+   * @note Release Candidates count for latest, but Milestone releases do not
+   */
+  def getLatest(releases: List[SemanticVersion]): SemanticVersion =
+    releases.filter(_.milestone.isEmpty).max
 
   /* Get latest for each major version (newer than v3.5.0)
    *

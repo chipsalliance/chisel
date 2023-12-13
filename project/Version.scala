@@ -22,18 +22,28 @@ object Version {
 
   object SemanticVersion {
 
-    implicit val ordering: Ordering[SemanticVersion] = {
-      // We need None to be greater than Some, default is reversed
-      implicit val forOption: Ordering[Option[Int]] = new Ordering[Option[Int]] {
-        def compare(x: Option[Int], y: Option[Int]): Int = (x, y) match {
-          case (None, None)       => 0
-          case (None, _)          => 1
-          case (_, None)          => -1
-          case (Some(x), Some(y)) => x.compareTo(y)
+    // Scala 2.13 provides .orElseBy, but SBT uses 2.12 so we have to do it ourselves
+    private implicit class OrderingExtensions[A](a: Ordering[A]) {
+      def orElseBy[B](f: A => B)(implicit ord: Ordering[B]): Ordering[A] = new Ordering[A] {
+        def compare(x: A, y: A): Int = {
+          val priority = a.compare(x, y)
+          if (priority != 0) priority
+          else Ordering.by[A, B](f).compare(x, y)
         }
       }
-      Ordering.by(x => (x.major, x.minor, x.patch, x.candidate, x.milestone))
     }
+
+    // Ordering is a sequence of 4 checks:
+    // 1. version (major, then minor, then patch)
+    // 2. not pre-release
+    // 3. release candidate
+    // 4. milestone
+    implicit val ordering: Ordering[SemanticVersion] =
+      Ordering
+        .by[SemanticVersion, (Int, Int, Int)](x => (x.major, x.minor, x.patch))
+        .orElseBy(!_.prerelease)
+        .orElseBy(_.candidate)
+        .orElseBy(_.milestone)
 
     private val Parsed = """^v(\d+)\.(\d+)\.(\d+)(?:-RC(\d+))?(?:-M(\d+))?""".r
 
