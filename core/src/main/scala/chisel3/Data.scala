@@ -12,6 +12,7 @@ import chisel3.internal.Builder.pushCommand
 import chisel3.internal._
 import chisel3.internal.sourceinfo._
 import chisel3.internal.firrtl._
+import chisel3.properties.Property
 import chisel3.reflect.DataMirror
 import chisel3.util.simpleClassName
 
@@ -543,6 +544,13 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
           // TODO, should we implement a form of structural equality for enums?
           if (e1.factory == e2.factory) None
           else Some(s": Left ($e1) and Right ($e2) have different types.")
+        // Properties should be considered equal when getPropertyType is equal, not when getClass is equal.
+        case (p1: Property[_], p2: Property[_]) =>
+          if (p1.getPropertyType != p2.getPropertyType) {
+            Some(s": Left ($p1) and Right ($p2) have different types")
+          } else {
+            None
+          }
         case (e1: Element, e2: Element) if e1.getClass == e2.getClass =>
           if (strictWidths && e1.width != e2.width) {
             Some(s": Left ($e1) and Right ($e2) have different widths.")

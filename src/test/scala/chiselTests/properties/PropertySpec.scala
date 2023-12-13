@@ -588,4 +588,24 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
       "propassign flatModule.prop, Integer(1)"
     )()
   }
+
+  it should "support FlatIO when used in a Bundle" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      class PropBundle extends Bundle {
+        val int = Property[Int]()
+      }
+
+      val flatModule = Module(new RawModule {
+        val io = FlatIO(new Bundle {
+          val prop = Input(new PropBundle)
+        })
+      })
+
+      flatModule.io.prop.int := Property(1)
+    })
+
+    matchesAndOmits(chirrtl)(
+      "propassign flatModule.prop.int, Integer(1)"
+    )()
+  }
 }
