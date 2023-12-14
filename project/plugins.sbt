@@ -28,5 +28,19 @@ addSbtPlugin("com.github.sbt" % "sbt-ci-release" % "1.5.11")
 
 addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.5.0")
 
+<<<<<<< HEAD
 // From FIRRTL for building from source
 addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.9.33")
+=======
+// From FIRRTL
+
+addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "2.1.1")
+
+// For generating contributors
+
+libraryDependencies += "com.47deg" %% "github4s" % "0.32.1"
+
+// For firtool version
+libraryDependencies += "com.lihaoyi" %% "os-lib" % "0.9.2"
+libraryDependencies += "com.lihaoyi" %% "upickle" % "3.1.3"
+>>>>>>> 3938a465e (Switch to firtool-resolver (#3458))

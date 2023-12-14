@@ -7,7 +7,11 @@ import chisel3.experimental.SourceLine
 
 import circt.stage.{ChiselStage, FirtoolOption, PreserveAggregate}
 
+<<<<<<< HEAD
 import firrtl.annotations.DeletedAnnotation
+=======
+import _root_.logger.LogLevel
+>>>>>>> 3938a465e (Switch to firtool-resolver (#3458))
 import firrtl.EmittedVerilogCircuitAnnotation
 import firrtl.stage.FirrtlCircuitAnnotation
 
@@ -282,6 +286,63 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
         file should exist
       }
     }
+<<<<<<< HEAD
+=======
+
+    it("should emit Annotations inline in emitted CHIRRTL") {
+      val targetDir = os.pwd / "ChiselStageSpec" / "should-inline-Annotations-in-emitted-CHIRRTL"
+
+      val args: Array[String] = Array(
+        "--target",
+        "chirrtl",
+        "--target-dir",
+        targetDir.toString
+      )
+
+      (new ChiselStage)
+        .execute(
+          args,
+          Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.Foo(hasDontTouch = true)))
+        )
+
+      info("output file included an Annotation")
+      os.read(targetDir / "Foo.fir") should include("firrtl.transforms.DontTouchAnnotation")
+    }
+
+    it("should NOT emit Unserializable Annotations inline in emitted CHIRRTL") {
+      val targetDir = baseDir / "should-not-inline-Unserializable-Annotations-in-emitted-CHIRRTL"
+
+      val args: Array[String] = Array(
+        "--target",
+        "chirrtl",
+        "--target-dir",
+        targetDir.toString
+      )
+
+      (new ChiselStage)
+        .execute(
+          args,
+          Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.HasUnserializableAnnotation))
+        )
+
+      os.read(targetDir / "HasUnserializableAnnotation.fir") shouldNot include("DummyAnnotation")
+    }
+
+    it("should forward firtool-resolver logging under log-level debug") {
+      // By default it should NOT show anything
+      val (log1, _) = grabLog {
+        ChiselStage.emitSystemVerilog(new ChiselStageSpec.Foo)
+      }
+      log1 shouldNot include("Checking FIRTOOL_PATH for firtool")
+
+      // circt.stage.ChiselStage does not currently accept --log-level so we have to use testing
+      // APIs to set the level
+      val (log2, _) = grabLogLevel(LogLevel.Debug) {
+        ChiselStage.emitSystemVerilog(new ChiselStageSpec.Foo)
+      }
+      log2 should include("Checking FIRTOOL_PATH for firtool")
+    }
+>>>>>>> 3938a465e (Switch to firtool-resolver (#3458))
   }
 
   describe("ChiselStage exception handling") {
@@ -409,7 +470,11 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
       val lines = stdout.split("\n")
       // Fuzzy includes aren't ideal but there is ANSI color in these strings that is hard to match
       lines(0) should include(
+<<<<<<< HEAD
         "src/test/scala/circtTests/stage/ChiselStageSpec.scala:75:9: Negative shift amounts are illegal (got -1)"
+=======
+        "src/test/scala/circtTests/stage/ChiselStageSpec.scala 91:9: Negative shift amounts are illegal (got -1)"
+>>>>>>> 3938a465e (Switch to firtool-resolver (#3458))
       )
       lines(1) should include("    3.U >> -1")
       lines(2) should include("        ^")
@@ -430,7 +495,11 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
       // Fuzzy includes aren't ideal but there is ANSI color in these strings that is hard to match
       lines.size should equal(2)
       lines(0) should include(
+<<<<<<< HEAD
         "src/test/scala/circtTests/stage/ChiselStageSpec.scala:75:9: Negative shift amounts are illegal (got -1)"
+=======
+        "src/test/scala/circtTests/stage/ChiselStageSpec.scala 91:9: Negative shift amounts are illegal (got -1)"
+>>>>>>> 3938a465e (Switch to firtool-resolver (#3458))
       )
       (lines(1) should not).include("3.U >> -1")
     }
@@ -1009,5 +1078,22 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
       exception.getStackTrace should be(Array())
     }
 
+<<<<<<< HEAD
+=======
+    it("should report a specific error if firtool is not found on the PATH") {
+      val exception = intercept[Exception] {
+        ChiselStage.emitSystemVerilog(new ChiselStageSpec.Foo, Array("--firtool-binary-path", "potato"))
+      }
+
+      info("The exception includes a useful error message")
+      val message = exception.getMessage
+      message should include("Cannot run program \"potato\"")
+      message should include("Chisel requires firtool, the MLIR-based FIRRTL Compiler (MFC), to generate Verilog.")
+
+      info("The exception should not contain a stack trace")
+      exception.getStackTrace should be(Array())
+    }
+
+>>>>>>> 3938a465e (Switch to firtool-resolver (#3458))
   }
 }

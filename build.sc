@@ -63,6 +63,21 @@ trait CommonModule extends CrossSbtModule with PublishModule with ScalafmtModule
     MavenRepository("https://oss.sonatype.org/content/repositories/snapshots"),
     MavenRepository("https://oss.sonatype.org/content/repositories/releases")
   )
+<<<<<<< HEAD
+=======
+  val scalaCrossVersions = Seq(
+    "2.13.12"
+  )
+  val osLib = ivy"com.lihaoyi::os-lib:0.9.1"
+  val upickle = ivy"com.lihaoyi::upickle:3.1.0"
+  val firtoolResolver = ivy"org.chipsalliance::firtool-resolver:1.0.0"
+  val scalatest = ivy"org.scalatest::scalatest:3.2.14"
+  val scalacheck = ivy"org.scalatestplus::scalacheck-1-15:3.2.11.0"
+  val json4s = ivy"org.json4s::json4s-native:4.0.6"
+  val dataclass = ivy"io.github.alexarchambault::data-class:0.2.5"
+  val commonText = ivy"org.apache.commons:commons-text:1.10.0"
+  val scopt = ivy"com.github.scopt::scopt:3.7.1"
+>>>>>>> 3938a465e (Switch to firtool-resolver (#3458))
 
   override def scalacOptions = T {
     super.scalacOptions() ++ Agg(
@@ -119,6 +134,7 @@ class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule {
 
     override def crossScalaVersion = m.crossScalaVersion
 
+<<<<<<< HEAD
     override def scalacPluginClasspath = T { m.scalacPluginClasspath() }
   }
 
@@ -177,6 +193,21 @@ class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule {
     }
   private def generateBuildInfo = T {
     val outputFile = T.dest / "BuildInfo.scala"
+=======
+  def firtoolResolverModuleIvy = v.firtoolResolver
+
+  def firtoolVersion = T {
+    val contents = os.read(os.pwd / "etc" / "circt.json")
+    val read = upickle.default.read[Map[String, String]](contents)
+    read("version").stripPrefix("firtool-")
+  }
+
+  def buildVersion = T("build-from-source")
+
+  private def generateBuildInfo = T {
+    val outputFile = T.dest / "chisel3" / "BuildInfo.scala"
+    val firtoolVersionString = "Some(\"" + firtoolVersion() + "\")"
+>>>>>>> 3938a465e (Switch to firtool-resolver (#3458))
     val contents =
       s"""
          |package chisel3
