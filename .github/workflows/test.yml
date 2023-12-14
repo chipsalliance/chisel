@@ -24,8 +24,8 @@ on:
         required: true
         type: string
       circt:
-        description: 'The CIRCT version to use (must be a valid release tag, "default", "nightly", or "version-file")'
-        required: true
+        description: 'The CIRCT version to use (must be a valid release tag, "nightly", or "version-file").
+                      Leave off (or empty) to let Chisel manage the CIRCT version'
         type: string
       ref:
         description: 'The branch, tag, or git hash to checkout'
@@ -57,7 +57,7 @@ jobs:
           cache: 'sbt'
       - name: Install CIRCT
         id: install-circt
-        if: ${{ inputs.circt != 'default' }}
+        if: ${{ inputs.circt }}
         uses: circt/install-circt@v1.1.1
         with:
           version: ${{ inputs.circt }}
@@ -107,7 +107,7 @@ jobs:
       - name: Pick CIRCT version
         id: circt-version
         run: |
-          if [[ "${{ inputs.circt }}" == "default" ]]; then
+          if [[ -z "${{ inputs.circt }}" ]]; then
             echo "version=version-file" >> "$GITHUB_OUTPUT"
           else
             echo "version=${{ inputs.circt }}" >> "$GITHUB_OUTPUT"
@@ -159,7 +159,7 @@ jobs:
           cache: 'sbt'
       - name: Install CIRCT
         id: install-circt
-        if: ${{ inputs.circt != 'default' }}
+        if: ${{ inputs.circt }}
         uses: circt/install-circt@v1.1.1
         with:
           version: ${{ inputs.circt }}
@@ -220,7 +220,7 @@ jobs:
           node-version: 18
       - name: Install CIRCT
         id: install-circt
-        if: ${{ inputs.circt != 'default' }}
+        if: ${{ inputs.circt }}
         uses: circt/install-circt@v1.1.1
         with:
           version: ${{ inputs.circt }}

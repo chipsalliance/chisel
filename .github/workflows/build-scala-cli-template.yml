@@ -5,7 +5,6 @@ on:
     inputs:
       circt:
         description: 'The version of CIRCT to use'
-        default: 'default'
         type: string
 
 jobs:
@@ -21,7 +20,7 @@ jobs:
           fetch-depth: 0
       - name: Install CIRCT
         id: install-circt
-        if: ${{ inputs.circt != 'default' }}
+        if: ${{ inputs.circt }}
         uses: circt/install-circt@v1.1.1
         with:
           version: ${{ inputs.circt }}

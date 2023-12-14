@@ -12,38 +12,21 @@ on:
       - main
       - '*.x'
 
-env:
-  circt: "default"
-
 jobs:
-  set-circt-versions:
-    name: Set the CIRCT version from the env
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Set CIRCT Version
-        id: set-circt-version
-        run: |
-          echo versions='["${{ env.circt }}"]' >> $GITHUB_OUTPUT
-    outputs:
-      circt-versions: ${{ steps.set-circt-version.outputs.versions }}
-
   ci:
     name: ci
-    needs: [set-circt-versions]
     strategy:
       matrix:
         system: ["ubuntu-20.04"]
         jvm: [8]
         scala: ["2.13.12"]
         espresso: ["2.4"]
-        circt: ${{ fromJSON(needs.set-circt-versions.outputs.circt-versions) }}
     uses: ./.github/workflows/test.yml
     with:
       system: ${{ matrix.system }}
       jvm: ${{ matrix.jvm }}
       scala: ${{ matrix.scala }}
       espresso: ${{ matrix.espresso }}
-      circt: ${{ matrix.circt }}
 
   # Sentinel job to simplify how we specify which checks need to pass in branch
   # protection and in Mergify. This job checks that all matrix jobs were
