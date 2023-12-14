@@ -49,6 +49,11 @@ jobs:
         uses: ./.github/workflows/install-espresso
         with:
           version: ${{ inputs.espresso }}
+      - name: Install FileCheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install llvm-12-tools
+          echo "/usr/lib/llvm-12/bin" >> $GITHUB_PATH
       - name: Setup Scala
         uses: actions/setup-java@v3
         with:

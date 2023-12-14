@@ -6,7 +6,7 @@ import chisel3._
 import circt.stage.ChiselStage
 import chisel3.util.Decoupled
 
-class DecoupledSpec extends ChiselFlatSpec {
+class DecoupledSpec extends ChiselFlatSpec with FileCheck {
   "Decoupled() and Decoupled.empty" should "give DecoupledIO with empty payloads" in {
     ChiselStage.emitCHIRRTL(new Module {
       val io = IO(new Bundle {
@@ -19,21 +19,17 @@ class DecoupledSpec extends ChiselFlatSpec {
   }
 
   "Decoupled.map" should "apply a function to a wrapped Data" in {
-    val chirrtl = ChiselStage
-      .emitCHIRRTL(new Module {
-        val enq = IO(Flipped(Decoupled(UInt(8.W))))
-        val deq = IO(Decoupled(UInt(8.W)))
-        deq <> enq.map(_ + 1.U)
-      })
-
-    // Check for data assignment
-    chirrtl should include("""node _deq_map_bits_T = add(enq.bits, UInt<1>(0h1)""")
-    chirrtl should include("""node _deq_map_bits = tail(_deq_map_bits_T, 1)""")
-    chirrtl should include("""connect _deq_map.bits, _deq_map_bits""")
-    chirrtl should include("""connect deq, _deq_map""")
-
-    // Check for back-pressure (ready signal is driven in the opposite direction of bits + valid)
-    chirrtl should include("""connect enq.ready, _deq_map.ready""")
+    generateFirrtlAndFileCheck(new Module {
+      val enq = IO(Flipped(Decoupled(UInt(8.W))))
+      val deq = IO(Decoupled(UInt(8.W)))
+      deq <> enq.map(_ + 1.U)
+    })("""|CHECK: node [[node1:[a-zA-Z0-9_]+]] = add(enq.bits, UInt<1>(0h1))
+          |CHECK: node [[node2:[a-zA-Z0-9_]+]] = tail([[node1]], 1)
+          |CHECK: connect [[result:[a-zA-Z0-9_]+]].bits, [[node2]]
+          |# Check for back-pressure (ready signal is driven in the opposite direction of bits + valid)
+          |CHECK: connect enq.ready, [[result]].ready
+          |CHECK: connect deq, [[result]]
+          |""".stripMargin)
   }
 
   "Decoupled.map" should "apply a function to a wrapped Bundle" in {

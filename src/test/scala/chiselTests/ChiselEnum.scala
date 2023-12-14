@@ -361,7 +361,7 @@ class IsOneOfTester extends BasicTester {
   stop()
 }
 
-class ChiselEnumSpec extends ChiselFlatSpec with Utils {
+class ChiselEnumSpec extends ChiselFlatSpec with Utils with FileCheck {
 
   behavior.of("ChiselEnum")
 
@@ -482,9 +482,11 @@ class ChiselEnumSpec extends ChiselFlatSpec with Utils {
       val out = IO(Output(MyEnum()))
       out := MyEnum(in)
     }
-    val (log, _) = grabLog(ChiselStage.emitCHIRRTL(new MyModule))
-    log should include("warn")
-    log should include("Casting non-literal UInt")
+    elaborateAndFileCheckOutAndErr(new MyModule)(
+      """| CHECK:      [W001] Casting non-literal UInt to [[enum:[a-zA-Z0-9_$.]+]].
+         | CHECK-SAME: You can use [[enum]].safe to cast without this warning.
+         |""".stripMargin
+    )
   }
 
   it should "NOT warn if the Enum is total" in {

@@ -195,6 +195,50 @@ trait ChiselRunners extends Assertions {
   }
 }
 
+trait FileCheck extends BeforeAndAfterEachTestData { this: Suite =>
+  import scala.Console.{withErr, withOut}
+
+  private def sanitize(n: String): String = n.replaceAll(" ", "_").replaceAll("\\W+", "")
+
+  private val testRunDir: os.Path = os.pwd / os.RelPath(BackendCompilationUtilities.TestDirectory)
+  private val suiteDir:   os.Path = testRunDir / sanitize(suiteName)
+  private var checkFile:  Option[os.Path] = None
+
+  override def beforeEach(testData: TestData): Unit = {
+    // TODO check that these are always available
+    val nameDir = suiteDir / sanitize(testData.name)
+    os.makeDir.all(nameDir)
+    checkFile = Some(nameDir / s"${sanitize(testData.text)}.check")
+    super.beforeEach(testData) // To be stackable, must call super.beforeEach
+  }
+
+  override def afterEach(testData: TestData): Unit = {
+    checkFile = None
+    super.afterEach(testData) // To be stackable, must call super.beforeEach
+  }
+
+  /** Run FileCheck on a String against some checks */
+  def fileCheckString(in: String, fileCheckArgs: String*)(check: String): Unit = {
+    // Filecheck needs the thing to check in a file
+    os.write.over(checkFile.get, check)
+    val extraArgs = os.Shellable(fileCheckArgs)
+    os.proc("FileCheck", checkFile.get, extraArgs).call(stdin = in)
+  }
+
+  /** Elaborate a Module to FIRRTL and check the FIRRTL with FileCheck */
+  def generateFirrtlAndFileCheck(t: => RawModule, fileCheckArgs: String*)(check: String): Unit = {
+    fileCheckString(ChiselStage.emitCHIRRTL(t), fileCheckArgs: _*)(check)
+  }
+
+  /** Elaborate a Module, capture the stdout and stderr, check stdout and stderr with FileCheck */
+  def elaborateAndFileCheckOutAndErr(t: => RawModule, fileCheckArgs: String*)(check: String): Unit = {
+    val outStream = new ByteArrayOutputStream()
+    withOut(outStream)(withErr(outStream)(ChiselStage.emitCHIRRTL(t)))
+    val result = outStream.toString
+    fileCheckString(outStream.toString, fileCheckArgs: _*)(check)
+  }
+}
+
 /** Spec base class for BDD-style testers. */
 abstract class ChiselFlatSpec extends AnyFlatSpec with ChiselRunners with Matchers
 
