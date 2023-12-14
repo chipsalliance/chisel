@@ -5,18 +5,6 @@ enablePlugins(SiteScaladocPlugin)
 addCommandAlias("fmt", "; scalafmtAll ; scalafmtSbt")
 addCommandAlias("fmtCheck", "; scalafmtCheckAll ; scalafmtSbtCheck")
 
-lazy val firtoolVersion = settingKey[Option[String]]("Determine the version of firtool on the PATH")
-ThisBuild / firtoolVersion := {
-  import scala.sys.process._
-  val Version = """^CIRCT firtool-(\S+)$""".r
-  try {
-    val lines = Process(Seq("firtool", "--version")).lineStream
-    lines.collectFirst { case Version(v) => v }
-  } catch {
-    case e: java.io.IOException => None
-  }
-}
-
 // Previous versions are read from project/previous-versions.txt
 // If this file is empty or does not exist, no binary compatibility checking will be done
 // Add waivers to the directory defined by key `mimaFiltersDirectory` in files named: <since version>.backwards.excludes
@@ -115,11 +103,6 @@ lazy val publishSettings = Seq(
     val v = version.value
     if (dynverGitDescribeOutput.value.hasNoTags) {
       sys.error(s"Failed to derive version from git tags. Maybe run `git fetch --unshallow`? Version: $v")
-    }
-    // Check that firtool exists on the PATH so Chisel can use the version it was tested against
-    // in error messages
-    if (firtoolVersion.value.isEmpty) {
-      sys.error(s"Failed to determine firtool version. Make sure firtool is found on the PATH.")
     }
     (publish / skip).value
   },
@@ -239,9 +222,16 @@ lazy val firrtl = (project in file("firrtl"))
 lazy val chiselSettings = Seq(
   name := "chisel",
   libraryDependencies ++= Seq(
+<<<<<<< HEAD
     "org.scalatest" %% "scalatest" % "3.2.15" % "test",
     "org.scalatestplus" %% "scalacheck-1-14" % "3.2.2.0" % "test",
     "com.lihaoyi" %% "upickle" % "2.0.0"
+=======
+    "org.scalatest" %% "scalatest" % "3.2.16" % "test",
+    "org.scalatestplus" %% "scalacheck-1-16" % "3.2.14.0" % "test",
+    "com.lihaoyi" %% "upickle" % "3.1.0",
+    "org.chipsalliance" %% "firtool-resolver" % "1.0.0"
+>>>>>>> 3938a465e (Switch to firtool-resolver (#3458))
   )
 ) ++ (
   // Tests from other projects may still run concurrently
@@ -339,7 +329,11 @@ lazy val core = (project in file("core"))
   .settings(
     buildInfoPackage := "chisel3",
     buildInfoUsePackageAsPath := true,
-    buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion, firtoolVersion)
+    buildInfoKeys := {
+      // This remains an Option for backwards compatibility reasons
+      val firtoolVersion = BuildInfoKey("firtoolVersion", Option(FirtoolVersion.version))
+      Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion, firtoolVersion)
+    }
   )
   .settings(
     // Published as part of unipublish

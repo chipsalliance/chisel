@@ -106,12 +106,17 @@ trait CoreModule
 
   def upickleModuleIvy: Dep
 
+<<<<<<< HEAD
+=======
+  def firtoolResolverModuleIvy: Dep
+>>>>>>> 3938a465e (Switch to firtool-resolver (#3458))
 
   override def moduleDeps = super.moduleDeps ++ Seq(macrosModule, firrtlModule)
 
   override def ivyDeps = super.ivyDeps() ++ Agg(
     osLibModuleIvy,
-    upickleModuleIvy
+    upickleModuleIvy,
+    firtoolResolverModuleIvy
   )
 }
 
