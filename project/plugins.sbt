@@ -35,3 +35,7 @@ addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "2.1.1")
 // For generating contributors
 
 libraryDependencies += "com.47deg" %% "github4s" % "0.32.1"
+
+// For firtool version
+libraryDependencies += "com.lihaoyi" %% "os-lib" % "0.9.2"
+libraryDependencies += "com.lihaoyi" %% "upickle" % "3.1.3"
