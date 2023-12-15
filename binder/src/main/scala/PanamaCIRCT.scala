@@ -124,6 +124,9 @@ class PanamaCIRCT {
     CAPI.mlirOperationGetResult(arena, operation.get, pos)
   )
 
+  def mlirOperationSetInherentAttributeByName(op: MlirOperation, name: String, attr: MlirAttribute): Unit =
+    CAPI.mlirOperationSetInherentAttributeByName(op.get, newString(name).get, attr.get)
+
   def mlirBlockCreate(args: Seq[MlirType], locs: Seq[MlirLocation]): MlirBlock = {
     assert(args.length == locs.length)
     val length = args.length
