@@ -4,15 +4,11 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/master";
     flake-utils.url = "github:numtide/flake-utils";
-    circtSrc = {
-      url = "git+https://github.com/llvm/circt?submodules=1&shallow=1";
-      flake = false;
-    };
   };
 
-  outputs = { self, nixpkgs, flake-utils, circtSrc }@inputs:
+  outputs = { self, nixpkgs, flake-utils }@inputs:
     let
-      overlay = import ./overlay.nix circtSrc ;
+      overlay = import ./overlay.nix;
     in
     flake-utils.lib.eachDefaultSystem
       (system:
