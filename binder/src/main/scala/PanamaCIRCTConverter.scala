@@ -79,9 +79,11 @@ case class WhenContext(op: Op, parent: MlirBlock, var inAlt: Boolean) {
 class FirContext {
   var opCircuit: Op = null
   var opModules: Seq[(String, Op)] = Seq.empty
-  val items = mutable.Map.empty[Long, Seq[MlirValue]]
   val whenStack = mutable.Stack.empty[WhenContext]
 
+  // TODO: It's a bit dirty, let's refactor it later
+  val items = mutable.Map.empty[Long, Seq[MlirValue]]
+  val ops = mutable.Map.empty[Long, MlirOperation]
   def newItem(id:    HasId, value: MlirValue) = items += ((id._id, Seq(value)))
   def newItemVec(id: HasId, value: Seq[MlirValue]) = items += ((id._id, value))
   def getItem(id: HasId): Option[MlirValue] = {
@@ -556,6 +558,11 @@ class PanamaCIRCTConverter extends CIRCTConverter {
                 case ProbeExpr(probe) =>
                   referToNewProbe(data, Left(referTo(probe, loc).value))
                 case RWProbeExpr(probe) =>
+                  circt.mlirOperationSetInherentAttributeByName(
+                    firCtx.ops.get(probe.asInstanceOf[Node].id._id).get,
+                    "inner_sym",
+                    circt.hwInnerSymAttrGet(probe.localName)
+                  )
                   referToNewProbe(data, Right(circt.hwInnerRefAttrGet(ctx.get._1.id.name, probe.localName)))
                 case _ => referTo(id, loc)
               }
@@ -574,11 +581,11 @@ class PanamaCIRCTConverter extends CIRCTConverter {
         .withNamedAttr("name", circt.mlirStringAttrGet(name))
         .withNamedAttr("nameKind", circt.firrtlAttrGetNameKind(FIRRTLNameKind.InterestingName))
         .withNamedAttr("annotations", circt.emptyArrayAttr)
-        .withNamedAttr("inner_sym", circt.hwInnerSymAttrGet(name))
         .withOperand(input)
         .withResult(util.convert(resultType))
         // .withResult( /* ref */ )
         .build()
+      firCtx.ops += ((id._id, op.op))
       firCtx.newItem(id, op.results(0))
     }
 
@@ -817,10 +824,10 @@ class PanamaCIRCTConverter extends CIRCTConverter {
       .withNamedAttr("name", circt.mlirStringAttrGet(wireName))
       .withNamedAttr("nameKind", circt.firrtlAttrGetNameKind(FIRRTLNameKind.InterestingName))
       .withNamedAttr("annotations", circt.emptyArrayAttr)
-      .withNamedAttr("inner_sym", circt.hwInnerSymAttrGet(wireName))
       .withResult(util.convert(Converter.extractType(defWire.id, defWire.sourceInfo)))
       // .withResult( /* ref */ )
       .build()
+    firCtx.ops += ((defWire.id._id, op.op))
     firCtx.newItem(defWire.id, op.results(0))
   }
 
@@ -868,7 +875,7 @@ class PanamaCIRCTConverter extends CIRCTConverter {
     val ports = util.convert(defInstance.ports)
     val moduleName = defInstance.id.name
 
-    val results = util
+    val op = util
       .OpBuilder("firrtl.instance", firCtx.currentBlock, loc)
       .withNamedAttr("moduleName", circt.mlirFlatSymbolRefAttrGet(moduleName))
       .withNamedAttr("name", circt.mlirStringAttrGet(defInstance.name))
@@ -877,10 +884,10 @@ class PanamaCIRCTConverter extends CIRCTConverter {
       .withNamedAttr("portNames", circt.mlirArrayAttrGet(ports.nameAttrs))
       .withNamedAttr("portAnnotations", circt.mlirArrayAttrGet(ports.annotationAttrs))
       .withNamedAttr("annotations", circt.emptyArrayAttr)
-      .withNamedAttr("inner_sym", circt.hwInnerSymAttrGet(defInstance.name))
       .withResults(ports.types)
       .build()
-      .results
+    val results = op.results
+    firCtx.ops += ((defInstance.id._id, op.op))
     firCtx.newItemVec(defInstance.id, results)
   }
 
@@ -1301,10 +1308,10 @@ class PanamaCIRCTConverter extends CIRCTConverter {
       .withNamedAttr("name", circt.mlirStringAttrGet(name))
       .withNamedAttr("nameKind", circt.firrtlAttrGetNameKind(FIRRTLNameKind.InterestingName))
       .withNamedAttr("annotations", circt.emptyArrayAttr)
-      .withNamedAttr("inner_sym", circt.hwInnerSymAttrGet(name))
       .withOperand( /* clockVal */ util.referTo(defReg.clock, loc).value)
       .withResult( /* result */ util.convert(Converter.extractType(defReg.id, defReg.sourceInfo)))
       .build()
+    firCtx.ops += ((defReg.id._id, op.op))
     firCtx.newItem(defReg.id, op.results(0))
   }
 
@@ -1316,12 +1323,12 @@ class PanamaCIRCTConverter extends CIRCTConverter {
       .withNamedAttr("name", circt.mlirStringAttrGet(name))
       .withNamedAttr("nameKind", circt.firrtlAttrGetNameKind(FIRRTLNameKind.InterestingName))
       .withNamedAttr("annotations", circt.emptyArrayAttr)
-      .withNamedAttr("inner_sym", circt.hwInnerSymAttrGet(name))
       .withOperand( /* clockVal */ util.referTo(defRegInit.clock, loc).value)
       .withOperand( /* reset */ util.referTo(defRegInit.reset, loc).value)
       .withOperand( /* init */ util.referTo(defRegInit.init, loc).value)
       .withResult( /* result */ util.convert(Converter.extractType(defRegInit.id, defRegInit.sourceInfo)))
       .build()
+    firCtx.ops += ((defRegInit.id._id, op.op))
     firCtx.newItem(defRegInit.id, op.results(0))
   }
 
