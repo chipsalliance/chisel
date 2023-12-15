@@ -1,34 +1,15 @@
 {
   "nodes": {
-    "circtSrc": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1701546577,
-        "narHash": "sha256-hT4Xar1wZ1L398j6oAERgUYfEKy4JxdMnPMsHy8SqsE=",
-        "ref": "refs/heads/main",
-        "rev": "670a34716a6887c532aceed89217d950728f7641",
-        "shallow": true,
-        "submodules": true,
-        "type": "git",
-        "url": "https://github.com/llvm/circt"
-      },
-      "original": {
-        "shallow": true,
-        "submodules": true,
-        "type": "git",
-        "url": "https://github.com/llvm/circt"
-      }
-    },
     "flake-utils": {
       "inputs": {
         "systems": "systems"
       },
       "locked": {
-        "lastModified": 1694529238,
-        "narHash": "sha256-zsNZZGTGnMOf9YpHKJqMSsa0dXbfmxeoJ7xHlrt+xmY=",
+        "lastModified": 1701680307,
+        "narHash": "sha256-kAuep2h5ajznlPMD9rnQyffWG8EM/C73lejGofXvdM8=",
         "owner": "numtide",
         "repo": "flake-utils",
-        "rev": "ff7b65b44d01cf9ba6a71320833626af21126384",
+        "rev": "4022d587cbbfd70fe950c1e2083a02621806a725",
         "type": "github"
       },
       "original": {
@@ -39,11 +20,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1701614968,
-        "narHash": "sha256-qtsL6AW33SPO1Bfa3GnqmiBpMJPRegVzwMjGXyvjbFc=",
+        "lastModified": 1702650774,
+        "narHash": "sha256-2Ge4iPcdtcAoTlY8DE3TXLylyBhq6s55syN80wQa8TI=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "18f875916745f288c653c6720195a0c82a58828e",
+        "rev": "6dc35418f314315d5cdb6d87529bcd9103a97bfc",
         "type": "github"
       },
       "original": {
@@ -55,7 +36,6 @@
     },
     "root": {
       "inputs": {
-        "circtSrc": "circtSrc",
         "flake-utils": "flake-utils",
         "nixpkgs": "nixpkgs"
       }
