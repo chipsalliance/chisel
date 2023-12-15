@@ -35,6 +35,4 @@ final: prev:
       fetchSubmodules = true;
     };
   });
-
-  llvm-lit = final.callPackage ./nix/llvm-lit.nix { };
 }
