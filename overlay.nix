@@ -34,5 +34,9 @@ final: prev:
       sha256 = "sha256-gExhWkhVhIpTKRCfF26pZnrcrf//ASQJDxEKbYc570s=";
       fetchSubmodules = true;
     };
+    preConfigure = ''
+      find ./test -name '*.mlir' -exec sed -i 's|/usr/bin/env|${final.coreutils}/bin/env|g' {} \;
+      substituteInPlace cmake/modules/GenVersionFile.cmake --replace "unknown git version" "nightly"
+    '';
   });
 }
