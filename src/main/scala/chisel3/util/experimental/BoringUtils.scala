@@ -3,7 +3,7 @@
 package chisel3.util.experimental
 
 import chisel3._
-import chisel3.probe.{Probe, RWProbe, ProbeLike}
+import chisel3.probe.{Probe, ProbeLike, RWProbe}
 import chisel3.Data.ProbeInfo
 import chisel3.experimental.{annotate, requireIsHardware, skipPrefix, BaseModule, ChiselAnnotation, SourceInfo}
 import chisel3.internal.{Builder, BuilderContextCache, NamedComponent, Namespace, PortBinding}
@@ -217,7 +217,12 @@ object BoringUtils {
     genName
   }
 
-  private def boreOrTap[A <: Data](source: A, createProbe: Option[ProbeInfo] = None)(implicit si: SourceInfo): Either[A, ProbeLike[A]] = {
+  private def boreOrTap[A <: Data](
+    source:      A,
+    createProbe: Option[ProbeInfo] = None
+  )(
+    implicit si: SourceInfo
+  ): Either[A, ProbeLike[A]] = {
     import reflect.DataMirror
     def parent(d: Data): BaseModule = d.topBinding.location.get
     def purePortTypeBase = if (createProbe.nonEmpty) Output(chiselTypeOf(source))
@@ -239,11 +244,18 @@ object BoringUtils {
         case (sourceInfo, msg) => Builder.error(msg)(sourceInfo)
       }
     }
-    def drill(drillSource: Either[A, ProbeLike[A]], path: Seq[BaseModule], connectionLocation: Seq[BaseModule], up: Boolean): Either[A, ProbeLike[A]] = {
+    def drill(
+      drillSource:        Either[A, ProbeLike[A]],
+      path:               Seq[BaseModule],
+      connectionLocation: Seq[BaseModule],
+      up:                 Boolean
+    ): Either[A, ProbeLike[A]] = {
       path.zip(connectionLocation).foldLeft(drillSource) {
         case (rhs, (module, conLoc)) if (module.isFullyClosed) => boringError(module); Left(DontCare.asInstanceOf[A])
         case (rhs, (module, _))
-            if (up && module == path(0) && isPort(rhs.merge) && (!createProbe.nonEmpty || !createProbe.get.writable)) => {
+            if (up && module == path(0) && isPort(
+              rhs.merge
+            ) && (!createProbe.nonEmpty || !createProbe.get.writable)) => {
           // When drilling from the original source, if it's already a port just return it.
           // As an exception, insist rwTaps are done from within the module and exported out.
           rhs
@@ -256,14 +268,18 @@ object BoringUtils {
 
             /** create a port, and drill up. */
             // if drilling down, don't drill Probe types
-            val bore: Either[A, ProbeLike[A]] = if (up) module.createSecretIO(purePortType) else module.createSecretIO(Left(Flipped(purePortTypeBase)))
+            val bore: Either[A, ProbeLike[A]] =
+              if (up) module.createSecretIO(purePortType) else module.createSecretIO(Left(Flipped(purePortTypeBase)))
             val boreData = bore.merge
             module.addSecretIO(boreData)
             (bore, rhs) match {
               // secretConnection still handles the subtleties in the different kinds of probe connections
-              case (Right(boreProbe), Left(rhs)) => conLoc.asInstanceOf[RawModule].secretConnection(boreProbe.underlying, rhs)
-              case (Left(bore), Right(rhsProbe)) => conLoc.asInstanceOf[RawModule].secretConnection(bore, rhsProbe.underlying)
-              case (Right(boreProbe), Right(rhsProbe)) => conLoc.asInstanceOf[RawModule].secretConnection(boreProbe.underlying, rhsProbe.underlying)
+              case (Right(boreProbe), Left(rhs)) =>
+                conLoc.asInstanceOf[RawModule].secretConnection(boreProbe.underlying, rhs)
+              case (Left(bore), Right(rhsProbe)) =>
+                conLoc.asInstanceOf[RawModule].secretConnection(bore, rhsProbe.underlying)
+              case (Right(boreProbe), Right(rhsProbe)) =>
+                conLoc.asInstanceOf[RawModule].secretConnection(boreProbe.underlying, rhsProbe.underlying)
               case (Left(bore), Left(rhs)) => conLoc.asInstanceOf[RawModule].secretConnection(bore, rhs)
             }
             bore
@@ -293,7 +309,7 @@ object BoringUtils {
     }
     val (upPath, downPath) = lcaResult.get
     val lcaSource: Either[A, ProbeLike[A]] = drill(Left(source), upPath.dropRight(1), upPath.dropRight(1), true)
-    val sink: Either[A, ProbeLike[A]] = drill(lcaSource, downPath.reverse.tail, downPath.reverse, false)
+    val sink:      Either[A, ProbeLike[A]] = drill(lcaSource, downPath.reverse.tail, downPath.reverse, false)
 
     if (createProbe.nonEmpty) {
       sink
@@ -321,12 +337,14 @@ object BoringUtils {
     * Returns a probe Data type.
     */
   def tap[A <: Data](source: A)(implicit si: SourceInfo): Probe[A] = {
-    val tapIntermediate: Either[A, ProbeLike[A]] = skipPrefix { boreOrTap(source, createProbe = Some(ProbeInfo(writable = false))) }
-   tapIntermediate.fold(
-    left => probe.ProbeValue(left),
-    right => right.asInstanceOf[Probe[A]]
-   )
-}
+    val tapIntermediate: Either[A, ProbeLike[A]] = skipPrefix {
+      boreOrTap(source, createProbe = Some(ProbeInfo(writable = false)))
+    }
+    tapIntermediate.fold(
+      left => probe.ProbeValue(left),
+      right => right.asInstanceOf[Probe[A]]
+    )
+  }
 
   /** Access a source [[Data]] that may or may not be in the current module.  If
     * this is in a child module, then create write-only probe ports to allow
@@ -335,7 +353,9 @@ object BoringUtils {
     * Returns a read-write probe Data type.
     */
   def rwTap[A <: Data](source: A)(implicit si: SourceInfo): RWProbe[A] = {
-    val tapIntermediate: Either[A, ProbeLike[A]] = skipPrefix { boreOrTap(source, createProbe = Some(ProbeInfo(writable = true))) }
+    val tapIntermediate: Either[A, ProbeLike[A]] = skipPrefix {
+      boreOrTap(source, createProbe = Some(ProbeInfo(writable = true)))
+    }
     tapIntermediate.fold(
       left => probe.RWProbeValue(left),
       right => right.asInstanceOf[RWProbe[A]]
@@ -351,7 +371,7 @@ object BoringUtils {
   def tapAndRead[A <: Data](source: A)(implicit si: SourceInfo): A = {
     val tapIntermediate = skipPrefix { boreOrTap(source, createProbe = Some(ProbeInfo(writable = false))) }
     tapIntermediate.fold(
-      left => left, 
+      left => left,
       right => probe.read(right)
     )
   }

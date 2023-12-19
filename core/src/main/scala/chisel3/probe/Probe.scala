@@ -4,24 +4,24 @@ package chisel3.probe
 
 import chisel3._
 import chisel3.Data.ProbeInfo
-import chisel3.experimental.{SourceInfo, OpaqueType}
+import chisel3.experimental.{OpaqueType, SourceInfo}
 import chisel3.internal.{containsProbe, requireIsChiselType, requireNoProbeTypeModifier, Builder}
 
 import scala.collection.immutable.SeqMap
 import scala.language.experimental.macros
 
 abstract sealed trait ProbeLike[+T <: Data] extends Record with OpaqueType {
-  private [chisel3] def underlying: T
+  private[chisel3] def underlying: T
 }
 
 class Probe[+T <: Data](gen: => T)(implicit sourceInfo: SourceInfo) extends ProbeLike[T] {
-    private [chisel3] val underlying = ProbeInternal(gen, false)
-    val elements = SeqMap("" -> underlying)
+  private[chisel3] val underlying = ProbeInternal(gen, false)
+  val elements = SeqMap("" -> underlying)
 }
 
-class RWProbe[+T <: Data](gen: => T)(implicit sourceInfo: SourceInfo) extends ProbeLike[T] { 
-    private [chisel3] val underlying = ProbeInternal(gen, true)
-    val elements = SeqMap("" -> underlying)
+class RWProbe[+T <: Data](gen: => T)(implicit sourceInfo: SourceInfo) extends ProbeLike[T] {
+  private[chisel3] val underlying = ProbeInternal(gen, true)
+  val elements = SeqMap("" -> underlying)
 }
 
 /** Utilities for creating and working with Chisel types that have a probe or
@@ -29,7 +29,7 @@ class RWProbe[+T <: Data](gen: => T)(implicit sourceInfo: SourceInfo) extends Pr
   */
 private[probe] object ProbeInternal {
 
-  private [probe] def apply[T <: Data](source: => T, writable: Boolean)(implicit sourceInfo: SourceInfo): T = {
+  private[probe] def apply[T <: Data](source: => T, writable: Boolean)(implicit sourceInfo: SourceInfo): T = {
     val prevId = Builder.idGen.value
     // call Output() to coerce passivity
     val data = Output(source) // should only evaluate source once

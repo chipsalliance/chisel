@@ -55,7 +55,7 @@ object DataMirror {
     * @param x the `Data` to check
     * @return `true` if x is a Probe, `false` otherwise
     */
-  private [chisel3] def hasProbeTypeModifier(x: Data): Boolean = x.probeInfo.nonEmpty
+  private[chisel3] def hasProbeTypeModifier(x: Data): Boolean = x.probeInfo.nonEmpty
 
   /** Get an early guess for the name of this [[Data]]
     *

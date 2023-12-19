@@ -709,7 +709,11 @@ package experimental {
 
     // Must have separate createSecretIO from addSecretIO to get plugin to name it
     // data must be a fresh Chisel type
-    private[chisel3] def createSecretIO[A <: Data, PT <: ProbeLike[A]](data: => Either[A, PT])(implicit sourceInfo: SourceInfo): Either[A, PT] = {
+    private[chisel3] def createSecretIO[A <: Data, PT <: ProbeLike[A]](
+      data: => Either[A, PT]
+    )(
+      implicit sourceInfo: SourceInfo
+    ): Either[A, PT] = {
       val iodef = data.merge
       internal.requireIsChiselType(iodef, "io type")
       require(!isFullyClosed, "Cannot create secret ports if module is fully closed")
