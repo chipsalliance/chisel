@@ -3,6 +3,8 @@
 package chisel3
 
 import chisel3.experimental.{annotate, requireIsHardware, ChiselAnnotation}
+import chisel3.properties.Property
+import chisel3.reflect.DataMirror
 import firrtl.transforms.DontTouchAnnotation
 
 /** Marks that a signal's leaves are an optimization barrier to Chisel and the
@@ -34,6 +36,8 @@ object dontTouch {
   def apply[T <: Data](data: T): T = {
     requireIsHardware(data, "Data marked dontTouch")
     data match {
+      case d if DataMirror.hasProbeTypeModifier(d) => ()
+      case _:   Property[_] => ()
       case agg: Aggregate => agg.getElements.foreach(dontTouch.apply)
       case _:   Element =>
         annotate(new ChiselAnnotation { def toFirrtl = DontTouchAnnotation(data.toNamed) })
