@@ -398,11 +398,11 @@ lazy val unipublish =
         "-doc-source-url", {
           val branch =
             if (version.value.endsWith("-SNAPSHOT")) {
-              "master"
+              "main"
             } else {
               s"v${version.value}"
             }
-          s"https://github.com/chipsalliance/chisel/tree/$branch€{FILE_PATH_EXT}#L€{FILE_LINE}"
+          s"https://github.com/chipsalliance/chisel/tree/$branch/€{FILE_PATH_EXT}#L€{FILE_LINE}"
         },
         "-language:implicitConversions"
       ) ++
