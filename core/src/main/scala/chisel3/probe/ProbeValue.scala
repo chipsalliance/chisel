@@ -16,11 +16,11 @@ object ProbeValue extends SourceInfoDoc {
     * @param source the hardware element you want to probe
     * @return the Probe connectd to source
     */
-  private[chisel3] def apply[T <: Data](source: T): Probe[T] =
+  def apply[T <: Data](source: T): Probe[T] =
     macro chisel3.internal.sourceinfo.ProbeTransform.sourceApply[T]
 
   /** @group SourceInfoTransformMacro */
-  private[chisel3] def do_apply[T <: Data](source: T)(implicit sourceInfo: SourceInfo): Probe[T] = {
+  def do_apply[T <: Data](source: T)(implicit sourceInfo: SourceInfo): Probe[T] = {
     requireIsHardware(source)
     // construct probe to return with cloned info
     val clone = Probe(source.cloneType)
@@ -37,11 +37,11 @@ object RWProbeValue extends SourceInfoDoc {
     * @param source the hardware element you want to probe
     * @return the RWProbe connectd to source
     */
-  private[chisel3] def apply[T <: Data](source: T): RWProbe[T] =
+  def apply[T <: Data](source: T): RWProbe[T] =
     macro chisel3.internal.sourceinfo.ProbeTransform.sourceApply[T]
 
   /** @group SourceInfoTransformMacro */
-  private[chisel3] def do_apply[T <: Data](source: T)(implicit sourceInfo: SourceInfo): RWProbe[T] = {
+  def do_apply[T <: Data](source: T)(implicit sourceInfo: SourceInfo): RWProbe[T] = {
     requireIsHardware(source)
     // construct probe to return with cloned info
     val clone = RWProbe(source.cloneType)
