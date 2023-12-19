@@ -114,7 +114,7 @@ trait Core
   def firtoolResolverModuleIvy = v.firtoolResolver
 
   def firtoolVersion = T {
-    val contents = os.read(os.pwd / "etc" / "circt.json")
+    val contents = os.read(millSourcePath / os.up / "etc" / "circt.json")
     val read = upickle.default.read[Map[String, String]](contents)
     read("version").stripPrefix("firtool-")
   }
