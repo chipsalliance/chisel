@@ -24,11 +24,7 @@ object ProbeValue extends SourceInfoDoc {
     // construct probe to return with cloned info
     val clone = Probe(source.cloneType)
     clone.underlying.bind(OpBinding(Builder.forcedUserModule, Builder.currentWhen))
-    if (writable) {
-      clone.setRef(RWProbeExpr(source.ref))
-    } else {
-      clone.underlying.setRef(ProbeExpr(source.ref))
-    }
+    clone.underlying.setRef(ProbeExpr(source.ref))
     clone
   }
 }

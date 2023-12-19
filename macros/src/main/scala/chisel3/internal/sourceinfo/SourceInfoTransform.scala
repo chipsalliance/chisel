@@ -36,7 +36,7 @@ class UIntTransform(val c: Context) extends SourceInfoTransformMacro {
 
 class ProbeTransform(val c: Context) extends SourceInfoTransformMacro {
   import c.universe._
-  def sourceApply[T: c.WeakTypeTag](source: c.Tree): c.Tree = {
+  def sourceApply[T: c.WeakTypeTag](source: c.Tree): Probe[c.Tree] = {
     val tpe = weakTypeOf[T]
     q"$thisObj.do_apply[$tpe]($source)($implicitSourceInfo)"
   }

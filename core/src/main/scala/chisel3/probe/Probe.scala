@@ -4,27 +4,32 @@ package chisel3.probe
 
 import chisel3._
 import chisel3.Data.ProbeInfo
-import chisel3.experimental.SourceInfo
+import chisel3.experimental.{SourceInfo, OpaqueType}
 import chisel3.internal.{containsProbe, requireIsChiselType, requireNoProbeTypeModifier, Builder}
 
+import scala.collection.immutable.SeqMap
 import scala.language.experimental.macros
 
-class Probe[T <: Data](gen: T)(implicit sourceInfo: SourceInfo) extends Record with OpaqueType{
-    private [chisel3.probe] val underlying = ProbeInternal(gen)
+abstract sealed trait ProbeLike[+T <: Data] extends Record with OpaqueType {
+  private [chisel3] def underlying: T
+}
+
+class Probe[+T <: Data](gen: => T)(implicit sourceInfo: SourceInfo) extends ProbeLike[T] {
+    private [chisel3] val underlying = ProbeInternal(gen, false)
     val elements = SeqMap("" -> underlying)
 }
 
-class RWProbe[T <: Data](gen: T)(implicit sourceInfo: SourceInfo) extends Record with OpaqueType { 
-    private val [chisel3.probe] underlying = RWProbeInternal(gen)
+class RWProbe[+T <: Data](gen: => T)(implicit sourceInfo: SourceInfo) extends ProbeLike[T] { 
+    private [chisel3] val underlying = ProbeInternal(gen, true)
     val elements = SeqMap("" -> underlying)
 }
 
 /** Utilities for creating and working with Chisel types that have a probe or
   * writable probe modifier.
   */
-private[chisel3] sealed trait ProbeBase {
+private[probe] object ProbeInternal {
 
-  protected def apply[T <: Data](source: => T, writable: Boolean)(implicit sourceInfo: SourceInfo): T = {
+  private [probe] def apply[T <: Data](source: => T, writable: Boolean)(implicit sourceInfo: SourceInfo): T = {
     val prevId = Builder.idGen.value
     // call Output() to coerce passivity
     val data = Output(source) // should only evaluate source once
@@ -44,26 +49,6 @@ private[chisel3] sealed trait ProbeBase {
   }
 }
 
-object ProbeInternal extends ProbeBase with SourceInfoDoc {
-
-  /** Mark a Chisel type as with a probe modifier.
-    */
-  private [chisel3] def apply[T <: Data](source: => T): T = macro chisel3.internal.sourceinfo.ProbeTransform.sourceApply[T]
-
-  /** @group SourceInfoTransformMacro */
-  private [chisel3] def do_apply[T <: Data](source: => T)(implicit sourceInfo: SourceInfo): T = super.apply(source, false)
-}
-
-object RWProbeInternal extends ProbeBase with SourceInfoDoc {
-
-  /** Mark a Chisel type with a writable probe modifier.
-    */
-  private [chisel3] def apply[T <: Data](source: => T): T = macro chisel3.internal.sourceinfo.ProbeTransform.sourceApply[T]
-
-  /** @group SourceInfoTransformMacro */
-  private [chisel3] def do_apply[T <: Data](source: => T)(implicit sourceInfo: SourceInfo): T = super.apply(source, true)
-}
-
 object Probe extends SourceInfoDoc {
 
   /** Mark a Chisel type as with a probe modifier.
@@ -71,15 +56,15 @@ object Probe extends SourceInfoDoc {
   def apply[T <: Data](source: => T): Probe[T] = macro chisel3.internal.sourceinfo.ProbeTransform.sourceApply[T]
 
   /** @group SourceInfoTransformMacro */
-  private [chisel3] def do_apply[T <: Data](source: => T)(implicit sourceInfo: SourceInfo): Probe[T] = new Probe(gen)
+  def do_apply[T <: Data](source: => T)(implicit sourceInfo: SourceInfo): Probe[T] = new Probe(source)
 }
 
-object RWProbeInternal extends ProbeBase with SourceInfoDoc {
+object RWProbe extends SourceInfoDoc {
 
   /** Mark a Chisel type with a writable probe modifier.
     */
-  private [chisel3] def apply[T <: Data](source: => T): RWProbe[T] = macro chisel3.internal.sourceinfo.ProbeTransform.sourceApply[T]
+  def apply[T <: Data](source: => T): RWProbe[T] = macro chisel3.internal.sourceinfo.ProbeTransform.sourceApply[T]
 
   /** @group SourceInfoTransformMacro */
-  private [chisel3] def do_apply[T <: Data](source: => T)(implicit sourceInfo: SourceInfo): RWProbe[T] = new RWProbe(gen)
+  def do_apply[T <: Data](source: => T)(implicit sourceInfo: SourceInfo): RWProbe[T] = new RWProbe(source)
 }
