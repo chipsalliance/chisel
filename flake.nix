@@ -27,7 +27,7 @@
           devShell = pkgs.mkShell {
             buildInputs = deps;
             env = {
-              CIRCT_INSTALL_PATH = pkgs.circt;
+              CIRCT_INSTALL_PATH = pkgs.circt-all;
             };
           };
         }
