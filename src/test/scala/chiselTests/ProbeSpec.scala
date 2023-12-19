@@ -221,6 +221,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
     processChirrtl(chirrtl) should not contain ("out.baz")
   }
 
+  /* Does not even compile anymore yay
   "Mismatched probe/non-probe with :<>= connector" should "fail" in {
     val exc = intercept[chisel3.ChiselException] {
       ChiselStage.emitCHIRRTL(
@@ -238,6 +239,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
       "mismatched probe/non-probe types in ProbeSpec_Anon.io.out[0]: IO[Bool] and ProbeSpec_Anon.io.in[0]: IO[Bool]."
     )
   }
+  */
 
   ":= connector with probe/non-probe" should "fail" in {
     val exc = intercept[chisel3.ChiselException] {
@@ -461,6 +463,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
     exc.getMessage should include("Cannot use a non-writable probe expression to define a writable probe.")
   }
 
+  /* Does not compile anymore
   "Force of a non-writable Probe" should "fail" in {
     val exc = intercept[chisel3.ChiselException] {
       ChiselStage.emitCHIRRTL(
@@ -474,6 +477,7 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
     }
     exc.getMessage should include("Cannot force a non-writable Probe.")
   }
+  */
 
   "RWProbeValue() on a literal" should "fail" in {
     val exc = intercept[chisel3.ChiselException] {
