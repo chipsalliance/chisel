@@ -208,12 +208,13 @@ jobs:
           ref: ${{ inputs.ref }}
           # Need full history to correctly determine SNAPSHOT version
           fetch-depth: 0
+      - name: Cache Scala
+        uses: coursier/cache-action@v6
       - name: Setup Scala
-        uses: actions/setup-java@v3
+        uses: VirtusLab/scala-cli-setup@v1
         with:
-          distribution: 'adopt'
-          java-version: '11'
-          cache: 'sbt'
+          jvm: adopt:11
+          apps: sbt
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
