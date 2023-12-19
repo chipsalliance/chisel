@@ -435,6 +435,7 @@ lazy val standardLibrary = (project in file("stdlib"))
 
 val determineContributors = taskKey[Unit]("determine contributors for subprojects")
 val generateScalaDocLinks = taskKey[Unit]("generate links to API Docs for releases")
+val firtoolVersionsTableTask = taskKey[Seq[File]]("generate markdown table mapping Chisel versions to firtool versions")
 
 import Version._
 
@@ -459,6 +460,25 @@ lazy val docs = project // new documentation project
     )
   )
   .settings(fatalWarningsSettings: _*)
+  .settings(
+    firtoolVersionsTableTask / fileInputs ++= {
+      val rootGlob = (root / baseDirectory).value.toGlob
+      Seq(rootGlob / "build.sbt", rootGlob / "project" / "*.sbt", rootGlob / "project" / "*.scala")
+    },
+    firtoolVersionsTableTask := {
+      val logger = streams.value.log
+      val file = (Compile / sourceManaged).value / "FirtoolVersionsTable.scala"
+      // Only write the file if an input has changed
+      if (!file.exists || firtoolVersionsTableTask.inputFileChanges.hasChanges) {
+        // Escaping newlines makes it easier to generate the file
+        val table = FirtoolVersionsTable.generateTable.replaceAll("\n", "\\\\n")
+        logger.info(s"Writing $file...")
+        IO.write(file, s"""object FirtoolVersionsTable { def table = "$table" }""")
+      }
+      Seq(file)
+    },
+    Compile / sourceGenerators += firtoolVersionsTableTask.taskValue
+  )
   .settings(
     determineContributors := {
       import java.io.{File, PrintWriter}
