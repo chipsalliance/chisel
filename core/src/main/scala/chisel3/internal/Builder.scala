@@ -33,7 +33,6 @@ private[chisel3] class Namespace(keywords: Set[String], separator: Char = '_') {
   // checking if a name is present in the Namespace is more complex than just checking the HashMap,
   // see getIndex below.
   private val names = collection.mutable.HashMap[String, Long]()
-  def copyTo(other: Namespace): Unit = names.foreach { case (s: String, l: Long) => other.names(s) = l }
   for (keyword <- keywords)
     names(keyword) = 1
 
@@ -449,7 +448,8 @@ private[chisel3] class DynamicContext(
   val annotationSeq:     AnnotationSeq,
   val throwOnFirstError: Boolean,
   val warningFilters:    Seq[WarningFilter],
-  val sourceRoots:       Seq[File]) {
+  val sourceRoots:       Seq[File],
+  val defaultNamespace:  Option[Namespace] = None) {
   val importedDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
 
   // Map from proto module name to ext-module name
@@ -480,7 +480,7 @@ private[chisel3] class DynamicContext(
     )
   }
 
-  val globalNamespace = Namespace.empty
+  val globalNamespace = defaultNamespace.getOrElse(Namespace.empty)
   val globalIdentifierNamespace = Namespace.empty('$')
 
   // A mapping from previously named bundles to their hashed structural/FIRRTL types, for

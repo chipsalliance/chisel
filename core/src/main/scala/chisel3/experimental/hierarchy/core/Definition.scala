@@ -101,15 +101,19 @@ object Definition extends SourceInfoDoc {
   ): Definition[T] = {
     val dynamicContext = {
       val context = Builder.captureContext()
-      new DynamicContext(Nil, context.throwOnFirstError, context.warningFilters, context.sourceRoots)
+      new DynamicContext(
+        Nil,
+        context.throwOnFirstError,
+        context.warningFilters,
+        context.sourceRoots,
+        Some(context.globalNamespace)
+      )
     }
-    Builder.globalNamespace.copyTo(dynamicContext.globalNamespace)
     dynamicContext.inDefinition = true
     val (ir, module) = Builder.build(Module(proto), dynamicContext, false)
     Builder.components ++= ir.components
     Builder.annotations ++= ir.annotations: @nowarn // this will go away when firrtl is merged
     module._circuit = Builder.currentModule
-    dynamicContext.globalNamespace.copyTo(Builder.globalNamespace)
     new Definition(Proto(module))
   }
 
