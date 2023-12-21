@@ -213,7 +213,7 @@ jobs:
       - name: Setup Scala
         uses: VirtusLab/scala-cli-setup@v1
         with:
-          jvm: adopt:11
+          jvm: adoptium:17
           apps: sbt
       - name: Setup Node
         uses: actions/setup-node@v4
