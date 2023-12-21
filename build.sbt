@@ -363,7 +363,8 @@ lazy val unipublish =
     .enablePlugins(ScalaUnidocPlugin)
     .settings(
       // Plugin isn't part of Chisel's public API, exclude from ScalaDoc
-      ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(plugin)
+      // Even though this project doesn't depend on docs, Unidoc pulls it in unless we exclude it
+      ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(plugin) -- inProjects(docs)
     )
     .settings(commonSettings: _*)
     .settings(publishSettings: _*)
