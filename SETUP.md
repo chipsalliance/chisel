@@ -24,13 +24,13 @@ For `firrtool` check the following URL to find the latest version: https://githu
     ```bash
     wget -q -O - https://github.com/llvm/circt/releases/download/firtool-1.61.0/firrtl-bin-linux-x64.tar.gz | tar -zx
     ```
-    This will give you a directory called `firtool-1.38.0` containing the firtool binary, add this to your PATH as appropriate.
+    This will give you a directory called `firtool-1.61.0` containing the firtool binary, add this to your PATH as appropriate.
     ```bash
     export PATH=$PATH:$PWD/firtool-1.61.0/bin
     ```
     Alternatively, you can install the binary to a standard location by simply moving the binary (if you have root access).
     ```bash
-    mv firtool-1.58.0/bin/firtool /usr/local/bin/
+    mv firtool-1.61.0/bin/firtool /usr/local/bin/
     ```
 
 
@@ -92,7 +92,7 @@ There are no issues with generating Verilog from Chisel, which can be pushed to 
     ```bash
     wget -q -O - https://github.com/llvm/circt/releases/download/firtool-1.61.0/firrtl-bin-macos-x64.tar.gz | tar -zx
     ```
-    This will give you a directory called `firtool-1.58.0` containing the firtool binary, add this to your PATH as appropriate.
+    This will give you a directory called `firtool-1.61.0` containing the firtool binary, add this to your PATH as appropriate.
     ```bash
     export PATH=$PATH:$PWD/firtool-1.61.0/bin
     ```
