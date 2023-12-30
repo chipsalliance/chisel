@@ -758,6 +758,7 @@ class PanamaCIRCTConverter extends CIRCTConverter {
     val builder = util
       .OpBuilder("firrtl.extmodule", firCtx.circuitBlock, circt.unkLoc)
       .withNamedAttr("sym_name", nameAttr)
+      .withNamedAttr("sym_visibility", circt.mlirStringAttrGet("private"))
       .withNamedAttr("defname", nameAttr)
       .withNamedAttr("parameters", circt.mlirArrayAttrGet(defBlackBox.params.map(p => util.convert(p._1, p._2)).toSeq))
       .withNamedAttr("annotations", circt.emptyArrayAttr)
@@ -773,6 +774,7 @@ class PanamaCIRCTConverter extends CIRCTConverter {
       .OpBuilder("firrtl.intmodule", firCtx.circuitBlock, circt.unkLoc)
       .withRegionNoBlock()
       .withNamedAttr("sym_name", circt.mlirStringAttrGet(defIntrinsicModule.name))
+      .withNamedAttr("sym_visibility", circt.mlirStringAttrGet("private"))
       .withNamedAttr("intrinsic", circt.mlirStringAttrGet(defIntrinsicModule.id.intrinsic))
       .withNamedAttr(
         "parameters",
@@ -787,10 +789,13 @@ class PanamaCIRCTConverter extends CIRCTConverter {
   def visitDefModule(defModule: DefModule): Unit = {
     val ports = util.convert(defModule.ports)
 
+    val isMainModule = defModule.id.circuitName == defModule.name
+
     val builder = util
       .OpBuilder("firrtl.module", firCtx.circuitBlock, circt.unkLoc)
       .withRegion(Seq((ports.types, ports.locs)))
       .withNamedAttr("sym_name", circt.mlirStringAttrGet(defModule.name))
+      .withNamedAttr("sym_visibility", circt.mlirStringAttrGet(if (isMainModule) "public" else "private"))
       .withNamedAttr("convention", circt.firrtlAttrGetConvention(FIRRTLConvention.Internal)) // TODO: handle it corretly
       .withNamedAttr("annotations", circt.emptyArrayAttr)
     val firModule = util.moduleBuilderInsertPorts(builder, ports).build()
