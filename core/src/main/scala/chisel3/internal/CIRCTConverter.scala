@@ -13,6 +13,7 @@ abstract class CIRCTConverter {
   val mlirStream:    Writable
   val firrtlStream:  Writable
   val verilogStream: Writable
+  def exportSplitVerilog(directory: os.Path): Unit
 
   def passManager(): CIRCTPassManager
   def om():          CIRCTOM
