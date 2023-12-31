@@ -737,6 +737,21 @@ class PanamaCIRCTConverter extends CIRCTConverter {
     }
   }
 
+  def exportSplitVerilog(directory: os.Path): Unit = {
+    def assertResult(result: MlirLogicalResult): Unit = {
+      assert(circt.mlirLogicalResultIsSuccess(result))
+    }
+
+    val pm = circt.mlirPassManagerCreate()
+    val options = circt.circtFirtoolOptionsCreateDefault()
+    assertResult(circt.circtFirtoolPopulatePreprocessTransforms(pm, options))
+    assertResult(circt.circtFirtoolPopulateCHIRRTLToLowFIRRTL(pm, options, mlirRootModule, "-"))
+    assertResult(circt.circtFirtoolPopulateLowFIRRTLToHW(pm, options))
+    assertResult(circt.circtFirtoolPopulateHWToSV(pm, options))
+    assertResult(circt.circtFirtoolPopulateExportSplitVerilog(pm, options, directory.toString))
+    assertResult(circt.mlirPassManagerRunOnOp(pm, circt.mlirModuleGetOperation(mlirRootModule)))
+  }
+
   def passManager(): CIRCTPassManager = new PanamaCIRCTPassManager(circt, mlirRootModule)
   def om():          CIRCTOM = new PanamaCIRCTOM(circt, mlirRootModule)
 
