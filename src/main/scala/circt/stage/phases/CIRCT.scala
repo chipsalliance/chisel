@@ -26,7 +26,7 @@ private object Helpers {
       case LogLevel.Warn  => Seq.empty
       case LogLevel.Info  => Seq("-verbose-pass-executions")
       case LogLevel.Debug => Seq("-verbose-pass-executions")
-      case LogLevel.Trace => Seq("-verbose-pass-executions", "-print-ir-after-all")
+      case LogLevel.Trace => Seq("-verbose-pass-executions", "-mlir-print-ir-after-all")
       case LogLevel.None  => Seq.empty
     }
   }
