@@ -106,7 +106,8 @@ object Definition extends SourceInfoDoc {
         context.throwOnFirstError,
         context.warningFilters,
         context.sourceRoots,
-        Some(context.globalNamespace)
+        Some(context.globalNamespace),
+        Builder.allDefinitions
       )
     }
     dynamicContext.inDefinition = true
@@ -114,7 +115,7 @@ object Definition extends SourceInfoDoc {
     Builder.components ++= ir.components
     Builder.annotations ++= ir.annotations: @nowarn // this will go away when firrtl is merged
     module._circuit = Builder.currentModule
-    new Definition(Proto(module))
+    module.toDefinition
   }
 
 }
