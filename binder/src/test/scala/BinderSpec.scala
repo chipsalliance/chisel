@@ -8,6 +8,7 @@ import scala.collection.immutable.SeqMap
 import chisel3._
 import chisel3.probe._
 import chisel3.util._
+import chisel3.util.experimental._
 import chisel3.experimental._
 import chisel3.internal.CIRCTConverter
 import chisel3.internal.panama.circt._
@@ -69,6 +70,18 @@ class ProbeSimpleTest extends Module {
 
   force(a, false.B)
   release(a)
+}
+
+class BoreBar extends RawModule {
+  val a = Wire(Bool())
+}
+class BoreBaz(_a: Bool) extends RawModule {
+  val b = Wire(Bool())
+  b := BoringUtils.tapAndRead(_a)
+}
+class BoreTop extends RawModule {
+  val bar = Module(new BoreBar)
+  val baz = Module(new BoreBaz(bar.a))
 }
 
 class BinderTest extends AnyFlatSpec with Matchers {
@@ -152,5 +165,7 @@ class BinderTest extends AnyFlatSpec with Matchers {
       .and(include("release_initial(a)"))
       .and(include("force(clock, _T, a, UInt<1>(0))"))
       .and(include("release(clock, _T_1, a)"))
+
+    firrtlString(new BoreTop) should include("output b_bore")
   }
 }
