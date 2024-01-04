@@ -398,6 +398,7 @@ class PanamaCIRCTConverter extends CIRCTConverter {
               case WireBinding(enclosure, visibility)       => rec(enclosure, chain :+ referToValue(data))
               case OpBinding(enclosure, visibility)         => rec(enclosure, chain :+ referToValue(data))
               case RegBinding(enclosure, visibility)        => rec(enclosure, chain :+ referToValue(data))
+              case SecretPortBinding(enclosure)             => rec(enclosure, chain :+ referToPort(data, enclosure))
               case unhandled                                => throw new Exception(s"unhandled binding $unhandled")
             }
           case mem:  Mem[ChiselData]         => chain :+ referToValue(mem.t)
@@ -767,7 +768,7 @@ class PanamaCIRCTConverter extends CIRCTConverter {
   }
 
   def visitDefBlackBox(defBlackBox: DefBlackBox): Unit = {
-    val ports = util.convert(defBlackBox.ports, defBlackBox.topDir)
+    val ports = util.convert(defBlackBox.ports ++ defBlackBox.id.secretPorts, defBlackBox.topDir)
     val nameAttr = circt.mlirStringAttrGet(defBlackBox.name)
 
     val builder = util
@@ -783,7 +784,7 @@ class PanamaCIRCTConverter extends CIRCTConverter {
   }
 
   def visitDefIntrinsicModule(defIntrinsicModule: DefIntrinsicModule): Unit = {
-    val ports = util.convert(defIntrinsicModule.ports, defIntrinsicModule.topDir)
+    val ports = util.convert(defIntrinsicModule.ports ++ defIntrinsicModule.id.secretPorts, defIntrinsicModule.topDir)
 
     val builder = util
       .OpBuilder("firrtl.intmodule", firCtx.circuitBlock, circt.unkLoc)
@@ -802,7 +803,7 @@ class PanamaCIRCTConverter extends CIRCTConverter {
   }
 
   def visitDefModule(defModule: DefModule): Unit = {
-    val ports = util.convert(defModule.ports)
+    val ports = util.convert(defModule.ports ++ defModule.id.secretPorts)
 
     val isMainModule = defModule.id.circuitName == defModule.name
 
