@@ -168,6 +168,16 @@ private[chisel3] object Converter {
       Some(fir.IsInvalid(convert(info), convert(arg, ctx, info)))
     case e @ DefInstance(info, id, _) =>
       Some(fir.DefInstance(convert(info), e.name, id.name))
+    case e @ DefInstanceChoice(info, _, default, option, choices) =>
+      Some(
+        fir.DefInstanceChoice(
+          convert(info),
+          e.name,
+          default.name,
+          option,
+          choices.map { case (opt, mod) => (opt, mod.name) }
+        )
+      )
     case e @ DefObject(info, _, className) =>
       Some(fir.DefObject(convert(info), e.name, className))
     case e @ Stop(_, info, clock, ret) =>
@@ -472,11 +482,19 @@ private[chisel3] object Converter {
       )
   }
 
-  def rec(layer: Layer): fir.Layer = {
+  def convertLayer(layer: Layer): fir.Layer = {
     val convention = layer.convention match {
       case LayerConvention.Bind => fir.LayerConvention.Bind
     }
-    fir.Layer(convert(layer.sourceInfo), layer.name, convention, layer.children.map(rec))
+    fir.Layer(convert(layer.sourceInfo), layer.name, convention, layer.children.map(convertLayer))
+  }
+
+  def convertOption(option: DefOption): fir.DefOption = {
+    fir.DefOption(
+      convert(option.sourceInfo),
+      option.name,
+      option.cases.map(optCase => fir.DefOptionCase(convert(optCase.sourceInfo), optCase.name))
+    )
   }
 
   def convert(circuit: Circuit): fir.Circuit = {
@@ -486,7 +504,8 @@ private[chisel3] object Converter {
       circuit.components.map(c => convert(c, typeAliases)),
       circuit.name,
       circuit.typeAliases.map(ta => fir.DefTypeAlias(convert(ta.sourceInfo), ta.name, ta.underlying)),
-      circuit.layers.map(rec)
+      circuit.layers.map(convertLayer),
+      circuit.options.map(convertOption)
     )
   }
 

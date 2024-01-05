@@ -3,8 +3,9 @@
 package chisel3.util.experimental.decode
 
 import chisel3.util.BitPat
+import chisel3.internal.groupByIntoSeq
+
 import scala.util.hashing.MurmurHash3
-import scala.collection.mutable
 
 sealed class TruthTable private (val table: Seq[(BitPat, BitPat)], val default: BitPat) {
   def inputWidth = table.head._1.getWidth
@@ -192,16 +193,5 @@ object TruthTable {
         },
       bitPat(tables.flatMap { case (table, indexes) => table.default.rawString.zip(indexes) })
     )
-  }
-
-  /** Similar to Seq.groupBy except that it preserves ordering of elements within each group */
-  private def groupByIntoSeq[A, K](xs: Iterable[A])(f: A => K): Seq[(K, Seq[A])] = {
-    val map = mutable.LinkedHashMap.empty[K, mutable.ListBuffer[A]]
-    for (x <- xs) {
-      val key = f(x)
-      val l = map.getOrElseUpdate(key, mutable.ListBuffer.empty[A])
-      l += x
-    }
-    map.view.map({ case (k, vs) => k -> vs.toList }).toList
   }
 }

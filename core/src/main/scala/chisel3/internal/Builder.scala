@@ -503,6 +503,7 @@ private[chisel3] class DynamicContext(
   val annotations = ArrayBuffer[ChiselAnnotation]()
   val newAnnotations = ArrayBuffer[ChiselMultiAnnotation]()
   val layers = mutable.LinkedHashSet[layer.Layer]()
+  val options = mutable.LinkedHashSet[choice.Case]()
   var currentModule: Option[BaseModule] = None
 
   /** Contains a mapping from a elaborated module to their aspect
@@ -582,7 +583,8 @@ private[chisel3] object Builder extends LazyLogging {
   def components:  ArrayBuffer[Component] = dynamicContext.components
   def annotations: ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
 
-  def layers: mutable.LinkedHashSet[layer.Layer] = dynamicContext.layers
+  def layers:  mutable.LinkedHashSet[layer.Layer] = dynamicContext.layers
+  def options: mutable.LinkedHashSet[choice.Case] = dynamicContext.options
 
   def contextCache: BuilderContextCache = dynamicContext.contextCache
 
@@ -1010,6 +1012,15 @@ private[chisel3] object Builder extends LazyLogging {
         Layer(l.sourceInfo, l.name, convention, children.map(foldLayers).toSeq)
       }
 
+      val optionDefs = groupByIntoSeq(options)(opt => opt.group).map {
+        case (optGroup, cases) =>
+          DefOption(
+            optGroup.sourceInfo,
+            optGroup.name,
+            cases.map(optCase => DefOptionCase(optCase.sourceInfo, optCase.name))
+          )
+      }
+
       (
         Circuit(
           components.last.name,
@@ -1018,7 +1029,8 @@ private[chisel3] object Builder extends LazyLogging {
           makeViewRenameMap,
           newAnnotations.toSeq,
           typeAliases,
-          layerAdjacencyList(layer.Layer.Root).map(foldLayers).toSeq
+          layerAdjacencyList(layer.Layer.Root).map(foldLayers).toSeq,
+          optionDefs
         ),
         mod
       )

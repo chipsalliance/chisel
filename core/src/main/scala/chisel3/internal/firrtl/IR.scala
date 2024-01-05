@@ -348,6 +348,13 @@ case class DefMemPort[T <: Data](
 @nowarn("msg=class Port") // delete when Port becomes private
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class DefInstance(sourceInfo: SourceInfo, id: BaseModule, ports: Seq[Port]) extends Definition
+private[chisel3] case class DefInstanceChoice(
+  sourceInfo: SourceInfo,
+  id:         HasId,
+  default:    BaseModule,
+  option:     String,
+  choices:    Seq[(String, BaseModule)])
+    extends Definition
 private[chisel3] case class DefObject(sourceInfo: SourceInfo, id: HasId, className: String) extends Definition
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class WhenBegin(sourceInfo: SourceInfo, pred: Arg) extends Command
@@ -380,6 +387,12 @@ private[chisel3] case class Layer(
 
 private[chisel3] case class LayerBlockBegin(sourceInfo: SourceInfo, layer: chisel3.layer.Layer) extends Command
 private[chisel3] case class LayerBlockEnd(sourceInfo: SourceInfo) extends Command
+
+private[chisel3] case class DefOption(
+  sourceInfo: SourceInfo,
+  name:       String,
+  cases:      Seq[DefOptionCase])
+private[chisel3] case class DefOptionCase(sourceInfo: SourceInfo, name: String)
 
 // Note this is just deprecated which will cause deprecation warnings, use @nowarn
 @deprecated(
@@ -468,7 +481,8 @@ case class Circuit(
 
   newAnnotations: Seq[ChiselMultiAnnotation],
   typeAliases:    Seq[DefTypeAlias],
-  layers:         Seq[Layer]) {
+  layers:         Seq[Layer],
+  options:        Seq[DefOption]) {
 
   def this(
     name:        String,
@@ -476,9 +490,10 @@ case class Circuit(
     annotations: Seq[ChiselAnnotation],
     renames:     RenameMap,
     typeAliases: Seq[DefTypeAlias],
-    layers:      Seq[Layer]
+    layers:      Seq[Layer],
+    options:     Seq[DefOption]
   ) =
-    this(name, components, annotations, renames, Seq.empty, typeAliases, layers)
+    this(name, components, annotations, renames, Seq.empty, typeAliases, layers, options)
 
   def firrtlAnnotations: Iterable[Annotation] =
     annotations.flatMap(_.toFirrtl.update(renames)) ++ newAnnotations.flatMap(
@@ -491,16 +506,17 @@ case class Circuit(
     annotations: Seq[ChiselAnnotation] = annotations,
     renames:     RenameMap = renames,
     typeAliases: Seq[DefTypeAlias] = typeAliases,
-    layers:      Seq[Layer] = layers
-  ) = Circuit(name, components, annotations, renames, newAnnotations, typeAliases, layers)
+    layers:      Seq[Layer] = layers,
+    options:     Seq[DefOption] = options
+  ) = Circuit(name, components, annotations, renames, newAnnotations, typeAliases, layers, options)
 
 }
 
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 object Circuit
-    extends scala.runtime.AbstractFunction6[String, Seq[Component], Seq[ChiselAnnotation], RenameMap, Seq[
+    extends scala.runtime.AbstractFunction7[String, Seq[Component], Seq[ChiselAnnotation], RenameMap, Seq[
       DefTypeAlias
-    ], Seq[Layer], Circuit] {
+    ], Seq[Layer], Seq[DefOption], Circuit] {
   def unapply(c: Circuit): Option[(String, Seq[Component], Seq[ChiselAnnotation], RenameMap, Seq[DefTypeAlias])] = {
     Some((c.name, c.components, c.annotations, c.renames, c.typeAliases))
   }
@@ -511,7 +527,8 @@ object Circuit
     annotations: Seq[ChiselAnnotation],
     renames:     RenameMap,
     typeAliases: Seq[DefTypeAlias] = Seq.empty,
-    layers:      Seq[Layer] = Seq.empty
+    layers:      Seq[Layer] = Seq.empty,
+    options:     Seq[DefOption] = Seq.empty
   ): Circuit =
-    new Circuit(name, components, annotations, renames, typeAliases, layers)
+    new Circuit(name, components, annotations, renames, typeAliases, layers, options)
 }

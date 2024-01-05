@@ -10,6 +10,7 @@ import chisel3.internal.Builder.Prefix
 
 import scala.util.Try
 import scala.annotation.{implicitNotFound, nowarn}
+import scala.collection.mutable
 
 package object internal {
 
@@ -191,4 +192,15 @@ package object internal {
     "skip",
     "node"
   )
+
+  /** Similar to Seq.groupBy except that it preserves ordering of elements within each group */
+  private[chisel3] def groupByIntoSeq[A, K](xs: Iterable[A])(f: A => K): Seq[(K, Seq[A])] = {
+    val map = mutable.LinkedHashMap.empty[K, mutable.ListBuffer[A]]
+    for (x <- xs) {
+      val key = f(x)
+      val l = map.getOrElseUpdate(key, mutable.ListBuffer.empty[A])
+      l += x
+    }
+    map.view.map({ case (k, vs) => k -> vs.toList }).toList
+  }
 }

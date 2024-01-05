@@ -291,6 +291,16 @@ case class DefInstance(info: Info, name: String, module: String, tpe: Type = Unk
     with IsDeclaration
     with UseSerializer
 
+case class DefInstanceChoice(
+  info:    Info,
+  name:    String,
+  default: String,
+  option:  String,
+  choices: Seq[(String, String)])
+    extends Statement
+    with IsDeclaration
+    with UseSerializer
+
 case class DefObject(info: Info, name: String, cls: String) extends Statement with IsDeclaration with UseSerializer
 
 object ReadUnderWrite extends Enumeration {
@@ -407,6 +417,10 @@ case class Layer(info: Info, name: String, convention: LayerConvention.Type, bod
     with IsDeclaration
     with UseSerializer
 case class LayerBlock(info: Info, layer: String, body: Statement) extends Statement with UseSerializer
+
+// option and case
+case class DefOption(info: Info, name: String, cases: Seq[DefOptionCase])
+case class DefOptionCase(info: Info, name: String)
 
 // formal
 object Formal extends Enumeration {
@@ -658,7 +672,8 @@ case class Circuit(
   modules:     Seq[DefModule],
   main:        String,
   typeAliases: Seq[DefTypeAlias] = Seq.empty,
-  layers:      Seq[Layer] = Seq.empty)
+  layers:      Seq[Layer] = Seq.empty,
+  options:     Seq[DefOption] = Seq.empty)
     extends FirrtlNode
     with HasInfo
     with UseSerializer
