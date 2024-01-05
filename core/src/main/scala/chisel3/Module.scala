@@ -237,23 +237,6 @@ abstract class Module extends RawModule {
   final val reset: Reset = IO(Input(mkReset))(UnlocatableSourceInfo).suggestName("reset")
   // TODO add a way to memoize hasBeenReset iff it is used
 
-  // TODO It's hard to remove these deprecated override methods because they're used by
-  //   Chisel.QueueCompatibility which extends chisel3.Queue which extends chisel3.Module
-  private var _override_clock: Option[Clock] = None
-  private var _override_reset: Option[Bool] = None
-  @deprecated("Use withClock at Module instantiation", "Chisel 3.5")
-  protected def override_clock: Option[Clock] = _override_clock
-  @deprecated("Use withClock at Module instantiation", "Chisel 3.5")
-  protected def override_reset: Option[Bool] = _override_reset
-  @deprecated("Use withClock at Module instantiation", "Chisel 3.5")
-  protected def override_clock_=(rhs: Option[Clock]): Unit = {
-    _override_clock = rhs
-  }
-  @deprecated("Use withClock at Module instantiation", "Chisel 3.5")
-  protected def override_reset_=(rhs: Option[Bool]): Unit = {
-    _override_reset = rhs
-  }
-
   private[chisel3] def mkReset: Reset = {
     // Top module and compatibility mode use Bool for reset
     // Note that a Definition elaboration will lack a parent, but still not be a Top module
@@ -278,8 +261,8 @@ abstract class Module extends RawModule {
     implicit val sourceInfo = UnlocatableSourceInfo
 
     super.initializeInParent()
-    clock := _override_clock.getOrElse(Builder.forcedClock)
-    reset := _override_reset.getOrElse(Builder.forcedReset)
+    clock := Builder.forcedClock
+    reset := Builder.forcedReset
   }
 }
 
