@@ -103,6 +103,19 @@ class ResetSpec extends ChiselFlatSpec with Utils {
     fir should include("input reset : AsyncReset")
   }
 
+  they should "be able to override the value of the implicit reset" in {
+    val verilog = ChiselStage.emitSystemVerilog(new Module with OverrideReset {
+      val gate = IO(Input(Bool()))
+      val in = IO(Input(UInt(8.W)))
+      val out = IO(Output(UInt(8.W)))
+      internalReset := reset.asBool || gate
+      val r = RegInit(0.U)
+      out := r
+      r := in
+    })
+    verilog should include("if (reset | gate)")
+  }
+
   they should "be able to have parameterized top level reset type" in {
     class MyModule(hasAsyncNotSyncReset: Boolean) extends Module {
       override def resetType = if (hasAsyncNotSyncReset) Module.ResetType.Asynchronous else Module.ResetType.Synchronous

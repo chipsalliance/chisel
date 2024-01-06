@@ -33,4 +33,20 @@ class ClockSpec extends ChiselPropSpec {
     val circuit = ChiselStage.emitCHIRRTL(new WithClockAndNoReset)
     circuit.contains("reg a : UInt<1>, clock2") should be(true)
   }
+
+  property("Should be able to override the value of the implicit clock") {
+    val verilog = ChiselStage.emitSystemVerilog(new Module with OverrideClock {
+      val gate = IO(Input(Bool()))
+      val in = IO(Input(UInt(8.W)))
+      val out = IO(Output(UInt(8.W)))
+      val gatedClock = (clock.asBool || gate).asClock
+      internalClock := gatedClock
+      val r = Reg(UInt(8.W))
+      out := r
+      r := in
+    })
+    // Signal name really should be gatedClock, hopefully fixed in future version of firtool
+    verilog should include("_gatedClock_T_2 = clock | gate;")
+    verilog should include("always @(posedge _gatedClock_T_2)")
+  }
 }
