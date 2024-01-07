@@ -781,10 +781,12 @@ class PanamaCIRCTConverter extends CIRCTConverter {
 
     val builder = util
       .OpBuilder("firrtl.extmodule", firCtx.circuitBlock, circt.unkLoc)
+      .withRegionNoBlock()
       .withNamedAttr("sym_name", nameAttr)
       .withNamedAttr("sym_visibility", circt.mlirStringAttrGet("private"))
       .withNamedAttr("defname", nameAttr)
       .withNamedAttr("parameters", circt.mlirArrayAttrGet(defBlackBox.params.map(p => util.convert(p._1, p._2)).toSeq))
+      .withNamedAttr("convention", circt.firrtlAttrGetConvention(FIRRTLConvention.Internal)) // TODO: handle it corretly
       .withNamedAttr("annotations", circt.emptyArrayAttr)
     val firModule = util.moduleBuilderInsertPorts(builder, ports).build()
 
