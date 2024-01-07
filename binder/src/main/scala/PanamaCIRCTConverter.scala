@@ -534,44 +534,47 @@ class PanamaCIRCTConverter extends CIRCTConverter {
         Reference.Value(rec(tpe, exp), tpe)
       }
 
-      def referToNewProbe(probe: ChiselData, target: Either[MlirValue, MlirAttribute]): Reference.Value = {
-        val resultType = Converter.extractType(probe, srcInfo)
-        val op = target match {
-          case Left(value) =>
-            util
+      def referToNewProbe(id: HasId, data: ChiselData): Option[Reference.Value] = {
+        val expr = Converter.getRef(id, srcInfo)
+        val resultType = Converter.extractType(data, srcInfo)
+        expr match {
+          case ProbeExpr(probe) =>
+            val op = util
               .OpBuilder(s"firrtl.ref.send", firCtx.currentBlock, util.convert(srcInfo))
-              .withOperand(value)
+              .withOperand(referTo(probe, srcInfo).value)
               .withResult(util.convert(resultType))
               .build()
-          case Right(attr) =>
-            util
+            Some(Reference.Value(op.results(0), resultType))
+          case RWProbeExpr(probe) =>
+            circt.mlirOperationSetInherentAttributeByName(
+              firCtx.ops.get(probe.asInstanceOf[Node].id._id).get,
+              "inner_sym",
+              circt.hwInnerSymAttrGet(probe.localName)
+            )
+            val op = util
               .OpBuilder("firrtl.ref.rwprobe", firCtx.currentBlock, util.convert(srcInfo))
-              .withNamedAttr("target", attr)
+              .withNamedAttr("target", circt.hwInnerRefAttrGet(parent.get.id.name, probe.localName))
               .withResult(util.convert(resultType))
               .build()
+            Some(Reference.Value(op.results(0), resultType))
+          case ProbeRead(probe) =>
+            val op = util
+              .OpBuilder(s"firrtl.ref.resolve", firCtx.currentBlock, util.convert(srcInfo))
+              .withOperand(referTo(probe, srcInfo).value)
+              .withResult(util.convert(resultType))
+              .build()
+            Some(Reference.Value(op.results(0), resultType))
+          case _ => None
         }
-        Reference.Value(op.results(0), resultType)
       }
 
       arg match {
         case Node(id) =>
+          // Workaround, as the current implementation relies on Binding. We will probably remove the
+          // current Binding implementation eventually, and use Expression instead
           id match {
-            case data: ChiselData if data.probeInfo.nonEmpty =>
-              // Workaround, as the current implementation relies on Binding. We will probably remove the
-              // current Binding implementation eventually, and use Expression instead
-              val expr = Converter.getRef(id, srcInfo)
-              expr match {
-                case ProbeExpr(probe) =>
-                  referToNewProbe(data, Left(referTo(probe, srcInfo).value))
-                case RWProbeExpr(probe) =>
-                  circt.mlirOperationSetInherentAttributeByName(
-                    firCtx.ops.get(probe.asInstanceOf[Node].id._id).get,
-                    "inner_sym",
-                    circt.hwInnerSymAttrGet(probe.localName)
-                  )
-                  referToNewProbe(data, Right(circt.hwInnerRefAttrGet(parent.get.id.name, probe.localName)))
-                case _ => referTo(id, srcInfo)
-              }
+            case data: ChiselData if data.probeInfo.nonEmpty || data.getOptionRef.isDefined =>
+              referToNewProbe(id, data).getOrElse { referTo(id, srcInfo) }
             case _ => referTo(id, srcInfo)
           }
         case ULit(value, width) => referToNewConstant(value.toInt, width, false)

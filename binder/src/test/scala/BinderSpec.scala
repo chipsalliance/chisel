@@ -84,6 +84,17 @@ class BoreTop extends RawModule {
   val baz = Module(new BoreBaz(bar.a))
 }
 
+class ProbeRead extends RawModule {
+  val clockP = IO(RWProbe(Bool()))
+  val resetP = IO(RWProbe(Bool()))
+  val clock = IO(Output(Clock()))
+  val reset = IO(Output(Bool()))
+
+  val genClock = read(clockP)
+  clock := genClock.asClock
+  reset := read(resetP)
+}
+
 class BinderTest extends AnyFlatSpec with Matchers {
 
   def streamString(module: => RawModule, stream: CIRCTConverter => Writable): String = Seq(
@@ -167,5 +178,6 @@ class BinderTest extends AnyFlatSpec with Matchers {
       .and(include("release(clock, _T_1, a)"))
 
     firrtlString(new BoreTop) should include("output b_bore")
+    firrtlString(new ProbeRead) should include("asClock(read(clockP))")
   }
 }
