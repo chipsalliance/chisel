@@ -899,7 +899,7 @@ class PanamaCIRCTConverter extends CIRCTConverter {
 
   def visitDefInstance(defInstance: DefInstance): Unit = {
     val loc = util.convert(defInstance.sourceInfo)
-    val ports = util.convert(defInstance.ports)
+    val ports = util.convert(defInstance.ports ++ defInstance.id.secretPorts)
     val moduleName = defInstance.id.name
 
     val op = util
