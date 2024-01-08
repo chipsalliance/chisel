@@ -1518,7 +1518,9 @@ private[chisel3] object PanamaCIRCTConverter {
   }
   def visitDefModule(defModule: DefModule)(implicit cvt: CIRCTConverter): Unit = {
     cvt.visitDefModule(defModule)
-    defModule.commands.zip(defModule.commands.map(Some(_)).drop(1) :+ None).foreach {
+    val commands = defModule.commands ++ defModule.secretCommands
+    // Workaround for https://github.com/chipsalliance/chisel/issues/3435, peeking the next command
+    commands.zip(commands.map(Some(_)).drop(1) :+ None).foreach {
       case (cmd, nextCmd) =>
         cmd match {
           // Command
