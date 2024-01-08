@@ -178,6 +178,8 @@ class BinderTest extends AnyFlatSpec with Matchers {
       .and(include("release(clock, _T_1, a)"))
 
     firrtlString(new BoreTop) should include("output b_bore")
+      .and(include("define b_bore = probe(a)"))
+      .and(include("connect baz.b_bore, read(bar.b_bore)"))
     firrtlString(new ProbeRead) should include("asClock(read(clockP))")
   }
 }

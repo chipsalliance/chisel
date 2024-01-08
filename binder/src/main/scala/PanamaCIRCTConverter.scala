@@ -142,8 +142,10 @@ class PanamaCIRCTConverter extends CIRCTConverter {
         case fir.UIntType(width)                                => getWidthOrSentinel(width)
         case fir.SIntType(width)                                => getWidthOrSentinel(width)
         case fir.AnalogType(width)                              => getWidthOrSentinel(width)
+        case fir.ProbeType(underlying)                          => getWidthOrSentinel(underlying)
+        case fir.RWProbeType(underlying)                        => getWidthOrSentinel(underlying)
         case _: fir.BundleType | _: fir.VectorType => -2
-        case _ => throw new Exception("unhandled")
+        case unhandled => throw new Exception(s"unhandled: $unhandled")
       }
     }
 
@@ -534,38 +536,29 @@ class PanamaCIRCTConverter extends CIRCTConverter {
         Reference.Value(rec(tpe, exp), tpe)
       }
 
-      def referToNewProbe(id: HasId, data: ChiselData): Option[Reference.Value] = {
-        val expr = Converter.getRef(id, srcInfo)
-        val resultType = Converter.extractType(data, srcInfo)
-        expr match {
+      def referToNewProbe(expr: Arg, resultType: fir.Type): Option[Reference.Value] = {
+        val builder = expr match {
           case ProbeExpr(probe) =>
-            val op = util
+            util
               .OpBuilder(s"firrtl.ref.send", firCtx.currentBlock, util.convert(srcInfo))
               .withOperand(referTo(probe, srcInfo).value)
-              .withResult(util.convert(resultType))
-              .build()
-            Some(Reference.Value(op.results(0), resultType))
           case RWProbeExpr(probe) =>
             circt.mlirOperationSetInherentAttributeByName(
               firCtx.ops.get(probe.asInstanceOf[Node].id._id).get,
               "inner_sym",
               circt.hwInnerSymAttrGet(probe.localName)
             )
-            val op = util
+            util
               .OpBuilder("firrtl.ref.rwprobe", firCtx.currentBlock, util.convert(srcInfo))
               .withNamedAttr("target", circt.hwInnerRefAttrGet(parent.get.id.name, probe.localName))
-              .withResult(util.convert(resultType))
-              .build()
-            Some(Reference.Value(op.results(0), resultType))
           case ProbeRead(probe) =>
-            val op = util
+            util
               .OpBuilder(s"firrtl.ref.resolve", firCtx.currentBlock, util.convert(srcInfo))
               .withOperand(referTo(probe, srcInfo).value)
-              .withResult(util.convert(resultType))
-              .build()
-            Some(Reference.Value(op.results(0), resultType))
-          case _ => None
+          case _ => return None
         }
+        val op = builder.withResult(util.convert(resultType)).build()
+        Some(Reference.Value(op.results(0), resultType))
       }
 
       arg match {
@@ -574,9 +567,21 @@ class PanamaCIRCTConverter extends CIRCTConverter {
           // current Binding implementation eventually, and use Expression instead
           id match {
             case data: ChiselData if data.probeInfo.nonEmpty || data.getOptionRef.isDefined =>
-              referToNewProbe(id, data).getOrElse { referTo(id, srcInfo) }
+              referToNewProbe(Converter.getRef(id, srcInfo), Converter.extractType(data, srcInfo)).getOrElse {
+                referTo(id, srcInfo)
+              }
             case _ => referTo(id, srcInfo)
           }
+        case arg @ ProbeExpr(data) =>
+          val retTpe =
+            fir.ProbeType(Converter.extractType(data.asInstanceOf[Node].id.asInstanceOf[ChiselData], srcInfo))
+          referToNewProbe(arg, retTpe).get
+        case arg @ ProbeRead(data) =>
+          val retTpe = Converter
+            .extractType(data.asInstanceOf[Node].id.asInstanceOf[ChiselData], srcInfo)
+            .asInstanceOf[fir.ProbeType]
+            .underlying
+          referToNewProbe(arg, retTpe).get
         case ULit(value, width) => referToNewConstant(value.toInt, width, false)
         case SLit(value, width) => referToNewConstant(value.toInt, width, true)
         case propLit: PropertyLit[_, _] => referToNewProperty(propLit)
