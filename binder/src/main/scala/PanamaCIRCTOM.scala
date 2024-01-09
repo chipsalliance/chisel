@@ -50,15 +50,15 @@ object PanamaCIRCTOMEvaluatorValue {
 
 class PanamaCIRCTOMEvaluatorValueList private[chisel3] (circt: PanamaCIRCT, val value: OMEvaluatorValue)
     extends PanamaCIRCTOMEvaluatorValue {
-  val numElements: Int = circt.omEvaluatorListGetNumElements(value)
-  def getElement(index: Int) =
+  val numElements: Long = circt.omEvaluatorListGetNumElements(value)
+  def getElement(index: Long) =
     PanamaCIRCTOMEvaluatorValue.newValue(circt, circt.omEvaluatorListGetElement(value, index))
 }
 
 class PanamaCIRCTOMEvaluatorValueTuple private[chisel3] (circt: PanamaCIRCT, val value: OMEvaluatorValue)
     extends PanamaCIRCTOMEvaluatorValue {
-  val numElements: Int = circt.omEvaluatorTupleGetNumElements(value)
-  def getElement(index: Int) =
+  val numElements: Long = circt.omEvaluatorTupleGetNumElements(value)
+  def getElement(index: Long) =
     PanamaCIRCTOMEvaluatorValue.newValue(circt, circt.omEvaluatorTupleGetElement(value, index))
 }
 

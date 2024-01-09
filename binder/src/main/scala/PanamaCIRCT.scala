@@ -120,7 +120,7 @@ class PanamaCIRCT {
 
   def mlirOperationCreate(state: MlirOperationState) = MlirOperation(CAPI.mlirOperationCreate(arena, state.get))
 
-  def mlirOperationGetResult(operation: MlirOperation, pos: Int) = MlirValue(
+  def mlirOperationGetResult(operation: MlirOperation, pos: Long) = MlirValue(
     CAPI.mlirOperationGetResult(arena, operation.get, pos)
   )
 
@@ -133,7 +133,7 @@ class PanamaCIRCT {
     MlirBlock(CAPI.mlirBlockCreate(arena, length, seqToArray(args)._1, seqToArray(locs)._1))
   }
 
-  def mlirBlockGetArgument(block: MlirBlock, pos: Int) = MlirValue(CAPI.mlirBlockGetArgument(arena, block.get, pos))
+  def mlirBlockGetArgument(block: MlirBlock, pos: Long) = MlirValue(CAPI.mlirBlockGetArgument(arena, block.get, pos))
 
   def mlirBlockAppendOwnedOperation(block: MlirBlock, operation: MlirOperation) = {
     CAPI.mlirBlockAppendOwnedOperation(block.get, operation.get)
@@ -183,7 +183,7 @@ class PanamaCIRCT {
     MlirStringRef(string).toString
   }
 
-  def mlirIntegerAttrGet(tpe: MlirType, value: Int) = MlirAttribute(CAPI.mlirIntegerAttrGet(arena, tpe.get, value))
+  def mlirIntegerAttrGet(tpe: MlirType, value: Long) = MlirAttribute(CAPI.mlirIntegerAttrGet(arena, tpe.get, value))
 
   def mlirFloatAttrDoubleGet(tpe: MlirType, value: Double) = MlirAttribute(
     CAPI.mlirFloatAttrDoubleGet(arena, mlirCtx, tpe.get, value)
@@ -378,7 +378,7 @@ class PanamaCIRCT {
 
   def firrtlTypeGetAnalog(width: Int) = MlirType(CAPI.firrtlTypeGetAnalog(arena, mlirCtx, width))
 
-  def firrtlTypeGetVector(element: MlirType, count: Int) = MlirType(
+  def firrtlTypeGetVector(element: MlirType, count: Long) = MlirType(
     CAPI.firrtlTypeGetVector(arena, mlirCtx, element.get, count)
   )
 
@@ -450,7 +450,7 @@ class PanamaCIRCT {
 
   def firrtlAttrGetMemDir(dir: FIRRTLMemDir) = MlirAttribute(CAPI.firrtlAttrGetMemDir(arena, mlirCtx, dir.value))
 
-  def chirrtlTypeGetCMemory(elementType: MlirType, numElements: Int) = MlirType(
+  def chirrtlTypeGetCMemory(elementType: MlirType, numElements: Long) = MlirType(
     CAPI.chirrtlTypeGetCMemory(arena, mlirCtx, elementType.get, numElements)
   )
 
@@ -509,16 +509,16 @@ class PanamaCIRCT {
   )
   def omEvaluatorValueIsAList(evaluatorValue: OMEvaluatorValue): Boolean =
     CAPI.omEvaluatorValueIsAList(evaluatorValue.get)
-  def omEvaluatorListGetNumElements(evaluatorValue: OMEvaluatorValue): Int =
-    CAPI.omEvaluatorListGetNumElements(evaluatorValue.get).toInt
-  def omEvaluatorListGetElement(evaluatorValue: OMEvaluatorValue, pos: Int) = OMEvaluatorValue(
+  def omEvaluatorListGetNumElements(evaluatorValue: OMEvaluatorValue): Long =
+    CAPI.omEvaluatorListGetNumElements(evaluatorValue.get)
+  def omEvaluatorListGetElement(evaluatorValue: OMEvaluatorValue, pos: Long) = OMEvaluatorValue(
     CAPI.omEvaluatorListGetElement(arena, evaluatorValue.get, pos)
   )
   def omEvaluatorValueIsATuple(evaluatorValue: OMEvaluatorValue): Boolean =
     CAPI.omEvaluatorValueIsATuple(evaluatorValue.get)
-  def omEvaluatorTupleGetNumElements(evaluatorValue: OMEvaluatorValue): Int =
-    CAPI.omEvaluatorTupleGetNumElements(evaluatorValue.get).toInt
-  def omEvaluatorTupleGetElement(evaluatorValue: OMEvaluatorValue, pos: Int) = OMEvaluatorValue(
+  def omEvaluatorTupleGetNumElements(evaluatorValue: OMEvaluatorValue): Long =
+    CAPI.omEvaluatorTupleGetNumElements(evaluatorValue.get)
+  def omEvaluatorTupleGetElement(evaluatorValue: OMEvaluatorValue, pos: Long) = OMEvaluatorValue(
     CAPI.omEvaluatorTupleGetElement(arena, evaluatorValue.get, pos)
   )
   def omEvaluatorMapGetElement(evaluatorValue: OMEvaluatorValue, attr: MlirAttribute) = OMEvaluatorValue(
@@ -544,16 +544,16 @@ class PanamaCIRCT {
   def omIntegerAttrGetInt(attr:        MlirAttribute) = MlirAttribute(CAPI.omIntegerAttrGetInt(arena, attr.get))
   def omIntegerAttrGet(attr:           MlirAttribute) = MlirAttribute(CAPI.omIntegerAttrGet(arena, attr.get))
   def omAttrIsAListAttr(attr:          MlirAttribute): Boolean = CAPI.omAttrIsAListAttr(attr.get)
-  def omListAttrGetNumElements(attr:   MlirAttribute): Int = CAPI.omListAttrGetNumElements(attr.get).toInt
-  def omListAttrGetElement(attr:       MlirAttribute, pos: Int) = MlirAttribute(
+  def omListAttrGetNumElements(attr:   MlirAttribute): Long = CAPI.omListAttrGetNumElements(attr.get)
+  def omListAttrGetElement(attr:       MlirAttribute, pos: Long) = MlirAttribute(
     CAPI.omListAttrGetElement(arena, attr.get, pos)
   )
   def omAttrIsAMapAttr(attr:        MlirAttribute): Boolean = CAPI.omAttrIsAMapAttr(attr.get)
-  def omMapAttrGetNumElements(attr: MlirAttribute): Int = CAPI.omMapAttrGetNumElements(attr.get).toInt
-  def omMapAttrGetElementKey(attr:  MlirAttribute, pos: Int) = MlirIdentifier(
+  def omMapAttrGetNumElements(attr: MlirAttribute): Long = CAPI.omMapAttrGetNumElements(attr.get)
+  def omMapAttrGetElementKey(attr:  MlirAttribute, pos: Long) = MlirIdentifier(
     CAPI.omMapAttrGetElementKey(arena, attr.get, pos)
   )
-  def omMapAttrGetElementValue(attr: MlirAttribute, pos: Int) = MlirAttribute(
+  def omMapAttrGetElementValue(attr: MlirAttribute, pos: Long) = MlirAttribute(
     CAPI.omMapAttrGetElementValue(arena, attr.get, pos)
   )
 }
