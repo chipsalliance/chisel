@@ -725,12 +725,14 @@ class PanamaCIRCTConverter extends CIRCTConverter {
   val mlirStream = new Writable {
     def writeBytesTo(out: OutputStream): Unit = {
       circt.mlirOperationPrint(circt.mlirModuleGetOperation(mlirRootModule), message => out.write(message.getBytes))
+      out.flush()
     }
   }
 
   val firrtlStream = new Writable {
     def writeBytesTo(out: OutputStream): Unit = {
       circt.mlirExportFIRRTL(mlirRootModule, message => out.write(message.getBytes))
+      out.flush()
     }
   }
 
@@ -748,6 +750,7 @@ class PanamaCIRCTConverter extends CIRCTConverter {
       assertResult(circt.circtFirtoolPopulateHWToSV(pm, options))
       assertResult(circt.circtFirtoolPopulateExportVerilog(pm, options, message => out.write(message.getBytes)))
       assertResult(circt.mlirPassManagerRunOnOp(pm, circt.mlirModuleGetOperation(mlirRootModule)))
+      out.flush()
     }
   }
 
