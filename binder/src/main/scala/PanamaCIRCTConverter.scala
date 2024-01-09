@@ -127,16 +127,16 @@ class PanamaCIRCTConverter extends CIRCTConverter {
   val mlirRootModule = circt.mlirModuleCreateEmpty(circt.unkLoc)
 
   object util {
-    def getWidthOrSentinel(width: fir.Width): Int = width match {
+    def getWidthOrSentinel(width: fir.Width): BigInt = width match {
       case fir.UnknownWidth => -1
-      case fir.IntWidth(v)  => v.toInt
+      case fir.IntWidth(v)  => v
     }
 
     /// If this is an IntType, AnalogType, or sugar type for a single bit (Clock,
     /// Reset, etc) then return the bitwidth.  Return -1 if the is one of these
     /// types but without a specified bitwidth.  Return -2 if this isn't a simple
     /// type.
-    def getWidthOrSentinel(tpe: fir.Type): Int = {
+    def getWidthOrSentinel(tpe: fir.Type): BigInt = {
       tpe match {
         case fir.ClockType | fir.ResetType | fir.AsyncResetType => 1
         case fir.UIntType(width)                                => getWidthOrSentinel(width)
@@ -151,12 +151,12 @@ class PanamaCIRCTConverter extends CIRCTConverter {
 
     def convert(firType: fir.Type): MlirType = {
       firType match {
-        case t: fir.UIntType => circt.firrtlTypeGetUInt(getWidthOrSentinel(t.width))
-        case t: fir.SIntType => circt.firrtlTypeGetSInt(getWidthOrSentinel(t.width))
+        case t: fir.UIntType => circt.firrtlTypeGetUInt(getWidthOrSentinel(t.width).toInt)
+        case t: fir.SIntType => circt.firrtlTypeGetSInt(getWidthOrSentinel(t.width).toInt)
         case fir.ClockType      => circt.firrtlTypeGetClock()
         case fir.ResetType      => circt.firrtlTypeGetReset()
         case fir.AsyncResetType => circt.firrtlTypeGetAsyncReset()
-        case t: fir.AnalogType => circt.firrtlTypeGetAnalog(getWidthOrSentinel(t.width))
+        case t: fir.AnalogType => circt.firrtlTypeGetAnalog(getWidthOrSentinel(t.width).toInt)
         case t: fir.VectorType => circt.firrtlTypeGetVector(convert(t.tpe), t.size)
         case t: fir.BundleType =>
           circt.firrtlTypeGetBundle(
@@ -199,7 +199,7 @@ class PanamaCIRCTConverter extends CIRCTConverter {
       val (tpe, value) = parameter match {
         case IntParam(value) =>
           val tpe = circt.mlirIntegerTypeGet(max(bitLength(value), 32))
-          (tpe, circt.mlirIntegerAttrGet(tpe, value.toInt))
+          (tpe, circt.mlirIntegerAttrGet(tpe, value.toLong))
         case DoubleParam(value) =>
           val tpe = circt.mlirF64TypeGet()
           (tpe, circt.mlirFloatAttrDoubleGet(tpe, value))
@@ -244,7 +244,7 @@ class PanamaCIRCTConverter extends CIRCTConverter {
     def bitLength(n: BigInt): Int = max(n.bitLength, 1)
 
     def widthShl(lhs: fir.Width, rhs: fir.Width): fir.Width = (lhs, rhs) match {
-      case (l: fir.IntWidth, r: fir.IntWidth) => fir.IntWidth(l.width.toInt << r.width.toInt)
+      case (l: fir.IntWidth, r: fir.IntWidth) => fir.IntWidth(l.width << r.width.toInt)
       case _ => fir.UnknownWidth
     }
 
@@ -329,10 +329,10 @@ class PanamaCIRCTConverter extends CIRCTConverter {
       def buildBefore(ref: Op): Op = buildImpl(circt.mlirBlockInsertOwnedOperationBefore(parent, ref.op, _))
     }
 
-    def newConstantValue(resultType: fir.Type, valueType: MlirType, value: Int, loc: MlirLocation): MlirValue = {
+    def newConstantValue(resultType: fir.Type, valueType: MlirType, value: BigInt, loc: MlirLocation): MlirValue = {
       util
         .OpBuilder("firrtl.constant", firCtx.currentBlock, loc)
-        .withNamedAttr("value", circt.mlirIntegerAttrGet(valueType, value))
+        .withNamedAttr("value", circt.mlirIntegerAttrGet(valueType, value.toLong))
         .withResult(util.convert(resultType))
         .build()
         .results(0)
@@ -484,7 +484,7 @@ class PanamaCIRCTConverter extends CIRCTConverter {
       srcInfo: SourceInfo,
       parent:  Option[Component] = None
     ): Reference.Value = {
-      def referToNewConstant(n: Int, w: Width, isSigned: Boolean): Reference.Value = {
+      def referToNewConstant(n: BigInt, w: Width, isSigned: Boolean): Reference.Value = {
         val (firWidth, valWidth) = w match {
           case _: UnknownWidth =>
             val bitLen = util.bitLength(n)
@@ -494,7 +494,7 @@ class PanamaCIRCTConverter extends CIRCTConverter {
         val resultType = if (isSigned) fir.SIntType(firWidth) else fir.UIntType(firWidth)
         val valueType =
           if (isSigned) circt.mlirIntegerTypeSignedGet(valWidth) else circt.mlirIntegerTypeUnsignedGet(valWidth)
-        Reference.Value(util.newConstantValue(resultType, valueType, n.toInt, util.convert(srcInfo)), resultType)
+        Reference.Value(util.newConstantValue(resultType, valueType, n, util.convert(srcInfo)), resultType)
       }
 
       def referToNewProperty[T, U](propLit: PropertyLit[T, U]): Reference.Value = {
@@ -504,7 +504,7 @@ class PanamaCIRCTConverter extends CIRCTConverter {
               val attrs = Seq(
                 (
                   "value",
-                  circt.mlirIntegerAttrGet(circt.mlirIntegerTypeSignedGet(util.bitLength(value) + 1), value.toInt)
+                  circt.mlirIntegerAttrGet(circt.mlirIntegerTypeSignedGet(util.bitLength(value) + 1), value.toLong)
                 )
               )
               ("integer", attrs, Seq.empty)
@@ -582,8 +582,8 @@ class PanamaCIRCTConverter extends CIRCTConverter {
             .asInstanceOf[fir.ProbeType]
             .underlying
           referToNewProbe(arg, retTpe).get
-        case ULit(value, width) => referToNewConstant(value.toInt, width, false)
-        case SLit(value, width) => referToNewConstant(value.toInt, width, true)
+        case ULit(value, width) => referToNewConstant(value, width, false)
+        case SLit(value, width) => referToNewConstant(value, width, true)
         case propLit: PropertyLit[_, _] => referToNewProperty(propLit)
         case unhandled => throw new Exception(s"unhandled arg type to be reference: $unhandled")
       }
@@ -678,7 +678,7 @@ class PanamaCIRCTConverter extends CIRCTConverter {
             util
               .OpBuilder("firrtl.tail", firCtx.currentBlock, loc)
               .withNamedAttrs(
-                Seq(("amount", circt.mlirIntegerAttrGet(circt.mlirIntegerTypeGet(32), srcWidth - destWidth)))
+                Seq(("amount", circt.mlirIntegerAttrGet(circt.mlirIntegerTypeGet(32), (srcWidth - destWidth).toLong)))
               )
               .withOperands(Seq(src.value))
               .withResult(util.convert(tmpType))
@@ -702,7 +702,7 @@ class PanamaCIRCTConverter extends CIRCTConverter {
           src = Reference.Value(
             util
               .OpBuilder("firrtl.pad", firCtx.currentBlock, loc)
-              .withNamedAttrs(Seq(("amount", circt.mlirIntegerAttrGet(circt.mlirIntegerTypeGet(32), destWidth))))
+              .withNamedAttrs(Seq(("amount", circt.mlirIntegerAttrGet(circt.mlirIntegerTypeGet(32), destWidth.toLong))))
               .withOperands(Seq(src.value))
               .withResult(util.convert(dest.tpe))
               .build()
@@ -1046,12 +1046,12 @@ class PanamaCIRCTConverter extends CIRCTConverter {
       // Results
       //   result: uint : <input - amount>
       case PrimOp.TailOp =>
-        val (input, amount) = (arg(0), litArg(1).toInt)
+        val (input, amount) = (arg(0), litArg(1))
         val width = input.tpe match {
           case fir.SIntType(inputWidth) => inputWidth - fir.IntWidth(amount)
           case fir.UIntType(inputWidth) => inputWidth - fir.IntWidth(amount)
         }
-        val attrs = Seq(("amount", circt.mlirIntegerAttrGet(circt.mlirIntegerTypeGet(32), amount)))
+        val attrs = Seq(("amount", circt.mlirIntegerAttrGet(circt.mlirIntegerTypeGet(32), amount.toLong)))
         (attrs, Seq(input), fir.UIntType(width))
 
       // Attributes
@@ -1061,12 +1061,12 @@ class PanamaCIRCTConverter extends CIRCTConverter {
       // Results
       //   result: uint : <amount>
       case PrimOp.HeadOp =>
-        val (input, amount) = (arg(0), litArg(1).toInt)
+        val (input, amount) = (arg(0), litArg(1))
         val width = input.tpe match {
           case fir.SIntType(_) => amount
           case fir.UIntType(_) => amount
         }
-        val attrs = Seq(("amount", circt.mlirIntegerAttrGet(circt.mlirIntegerTypeGet(32), amount)))
+        val attrs = Seq(("amount", circt.mlirIntegerAttrGet(circt.mlirIntegerTypeGet(32), amount.toLong)))
         (attrs, Seq(input), fir.UIntType(fir.IntWidth(width)))
 
       // Operands
@@ -1115,12 +1115,12 @@ class PanamaCIRCTConverter extends CIRCTConverter {
       // Results
       //   result: sint or uint : <input + amount>
       case PrimOp.ShiftLeftOp =>
-        val (input, amount) = (arg(0), litArg(1).toInt)
+        val (input, amount) = (arg(0), litArg(1))
         val (width, retTypeFn) = input.tpe match {
           case fir.SIntType(inputWidth) => (inputWidth + fir.IntWidth(amount), fir.SIntType)
           case fir.UIntType(inputWidth) => (inputWidth + fir.IntWidth(amount), fir.UIntType)
         }
-        val attrs = Seq(("amount", circt.mlirIntegerAttrGet(circt.mlirIntegerTypeGet(32), amount)))
+        val attrs = Seq(("amount", circt.mlirIntegerAttrGet(circt.mlirIntegerTypeGet(32), amount.toLong)))
         (attrs, Seq(input), retTypeFn(width))
 
       // Attributes
@@ -1130,12 +1130,12 @@ class PanamaCIRCTConverter extends CIRCTConverter {
       // Results
       //   result: sint or uint : <max(input - amount, 1)>
       case PrimOp.ShiftRightOp =>
-        val (input, amount) = (arg(0), litArg(1).toInt)
+        val (input, amount) = (arg(0), litArg(1))
         val (width, retTypeFn) = input.tpe match {
           case fir.SIntType(inputWidth) => ((inputWidth - fir.IntWidth(amount)).max(fir.IntWidth(1)), fir.SIntType)
           case fir.UIntType(inputWidth) => ((inputWidth - fir.IntWidth(amount)).max(fir.IntWidth(1)), fir.UIntType)
         }
-        val attrs = Seq(("amount", circt.mlirIntegerAttrGet(circt.mlirIntegerTypeGet(32), amount)))
+        val attrs = Seq(("amount", circt.mlirIntegerAttrGet(circt.mlirIntegerTypeGet(32), amount.toLong)))
         (attrs, Seq(input), retTypeFn(width))
 
       // Operands
@@ -1213,10 +1213,13 @@ class PanamaCIRCTConverter extends CIRCTConverter {
       //   result: uint : <hi - lo + 1>
       case PrimOp.BitsExtractOp =>
         val (input, hi, lo) =
-          (arg(0), litArg(1).toInt, litArg(2).toInt)
+          (arg(0), litArg(1), litArg(2))
         val width = hi - lo + 1
         val intType = circt.mlirIntegerTypeGet(32)
-        val attrs = Seq(("hi", circt.mlirIntegerAttrGet(intType, hi)), ("lo", circt.mlirIntegerAttrGet(intType, lo)))
+        val attrs = Seq(
+          ("hi", circt.mlirIntegerAttrGet(intType, hi.toLong)),
+          ("lo", circt.mlirIntegerAttrGet(intType, lo.toLong))
+        )
         (attrs, Seq(input), fir.UIntType(fir.IntWidth(width)))
 
       // Operands
@@ -1236,12 +1239,12 @@ class PanamaCIRCTConverter extends CIRCTConverter {
       // Results
       //   result: sint or uint : <max(input, amount)>
       case PrimOp.PadOp =>
-        val (input, amount) = (arg(0), litArg(1).toInt)
+        val (input, amount) = (arg(0), litArg(1))
         val (width, retTypeFn) = input.tpe match {
-          case fir.SIntType(fir.IntWidth(inputWidth)) => (max(inputWidth.toInt, amount), fir.SIntType)
-          case fir.UIntType(fir.IntWidth(inputWidth)) => (max(inputWidth.toInt, amount), fir.UIntType)
+          case fir.SIntType(fir.IntWidth(inputWidth)) => (inputWidth.max(amount), fir.SIntType)
+          case fir.UIntType(fir.IntWidth(inputWidth)) => (inputWidth.max(amount), fir.UIntType)
         }
-        val attrs = Seq(("amount", circt.mlirIntegerAttrGet(circt.mlirIntegerTypeGet(32), amount)))
+        val attrs = Seq(("amount", circt.mlirIntegerAttrGet(circt.mlirIntegerTypeGet(32), amount.toLong)))
         (attrs, Seq(input), retTypeFn(fir.IntWidth(width)))
 
       // Operands
