@@ -63,17 +63,17 @@ jobs:
           version: ${{ inputs.circt }}
           github-token: ${{ github.token }}
       # TODO have install-circt do this
-      - name: Set FIRTOOL_PATH
+      - name: Set CHISEL_FIRTOOL_PATH
         if: steps.install-circt.outcome == 'success'
         run: |
           dir=$(dirname $(which firtool))
-          echo "FIRTOOL_PATH=$dir" >> "$GITHUB_ENV"
+          echo "CHISEL_FIRTOOL_PATH=$dir" >> "$GITHUB_ENV"
       - name: Print firtool version
         if: steps.install-circt.outcome == 'success'
         run: |
           echo "The CIRCT version used is:" >> $GITHUB_STEP_SUMMARY
           echo \`\`\` >> $GITHUB_STEP_SUMMARY
-          $FIRTOOL_PATH/firtool -version >> $GITHUB_STEP_SUMMARY
+          $CHISEL_FIRTOOL_PATH/firtool -version >> $GITHUB_STEP_SUMMARY
           echo \`\`\` >> $GITHUB_STEP_SUMMARY
       - name: Test
         run: sbt ++${{ inputs.scala }} test
@@ -165,11 +165,11 @@ jobs:
           version: ${{ inputs.circt }}
           github-token: ${{ github.token }}
       # TODO have install-circt do this
-      - name: Set FIRTOOL_PATH
+      - name: Set CHISEL_FIRTOOL_PATH
         if: steps.install-circt.outcome == 'success'
         run: |
           dir=$(dirname $(which firtool))
-          echo "FIRTOOL_PATH=$dir" >> "$GITHUB_ENV"
+          echo "CHISEL_FIRTOOL_PATH=$dir" >> "$GITHUB_ENV"
       - name: Integration Tests
         run: sbt integrationTests/test
 
@@ -227,11 +227,11 @@ jobs:
           version: ${{ inputs.circt }}
           github-token: ${{ github.token }}
       # TODO have install-circt do this
-      - name: Set FIRTOOL_PATH
+      - name: Set CHISEL_FIRTOOL_PATH
         if: steps.install-circt.outcome == 'success'
         run: |
           dir=$(dirname $(which firtool))
-          echo "FIRTOOL_PATH=$dir" >> "$GITHUB_ENV"
+          echo "CHISEL_FIRTOOL_PATH=$dir" >> "$GITHUB_ENV"
         # TODO: make the website building include building ScalaDoc
       - name: Build the website
         run: make -C website build

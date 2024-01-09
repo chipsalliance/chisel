@@ -26,11 +26,11 @@ jobs:
           version: ${{ inputs.circt }}
           github-token: ${{ github.token }}
       # TODO have install-circt do this
-      - name: Set FIRTOOL_PATH
+      - name: Set CHISEL_FIRTOOL_PATH
         if: steps.install-circt.outcome == 'success'
         run: |
           dir=$(dirname $(which firtool))
-          echo "FIRTOOL_PATH=$dir" >> "$GITHUB_ENV"
+          echo "CHISEL_FIRTOOL_PATH=$dir" >> "$GITHUB_ENV"
       - name: Cache Scala-CLI
         uses: coursier/cache-action@v6
       - name: Setup Scala-CLI

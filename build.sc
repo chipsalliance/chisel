@@ -17,7 +17,7 @@ object v {
   )
   val osLib = ivy"com.lihaoyi::os-lib:0.9.1"
   val upickle = ivy"com.lihaoyi::upickle:3.1.0"
-  val firtoolResolver = ivy"org.chipsalliance::firtool-resolver:1.2.0"
+  val firtoolResolver = ivy"org.chipsalliance::firtool-resolver:1.3.0"
   val scalatest = ivy"org.scalatest::scalatest:3.2.14"
   val scalacheck = ivy"org.scalatestplus::scalacheck-1-15:3.2.11.0"
   val json4s = ivy"org.json4s::json4s-native:4.0.6"
