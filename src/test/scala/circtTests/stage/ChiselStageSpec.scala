@@ -369,14 +369,14 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
       val (log1, _) = grabLog {
         ChiselStage.emitSystemVerilog(new ChiselStageSpec.Foo)
       }
-      log1 shouldNot include("Checking FIRTOOL_PATH for firtool")
+      log1 shouldNot include("Checking CHISEL_FIRTOOL_PATH for firtool")
 
       // circt.stage.ChiselStage does not currently accept --log-level so we have to use testing
       // APIs to set the level
       val (log2, _) = grabLogLevel(LogLevel.Debug) {
         ChiselStage.emitSystemVerilog(new ChiselStageSpec.Foo)
       }
-      log2 should include("Checking FIRTOOL_PATH for firtool")
+      log2 should include("Checking CHISEL_FIRTOOL_PATH for firtool")
     }
   }
 
