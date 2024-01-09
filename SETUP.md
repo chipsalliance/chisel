@@ -92,7 +92,7 @@ There are no issues with generating Verilog from Chisel, which can be pushed to 
     ```bash
     wget -q -O - https://github.com/llvm/circt/releases/download/firtool-1.61.0/firrtl-bin-macos-x64.tar.gz | tar -zx
     ```
-    This will give you a directory called `firtool-1.58.0` containing the firtool binary, add this to your PATH as appropriate.
+    This will give you a directory called `firtool-1.61.0` containing the firtool binary, add this to your PATH as appropriate.
     ```bash
     export PATH=$PATH:$PWD/firtool-1.61.0/bin
     ```
