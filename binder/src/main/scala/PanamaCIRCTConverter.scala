@@ -1321,10 +1321,10 @@ class PanamaCIRCTConverter extends CIRCTConverter {
       // Operands
       //   input: 1-bit uint/sint/analog, reset, asyncreset, or clock
       // Results
-      //   result: clock
+      //   result: async reset
       case PrimOp.AsAsyncResetOp =>
         val input = arg(0)
-        (Seq.empty, Seq(input), fir.ClockType)
+        (Seq.empty, Seq(input), fir.AsyncResetType)
 
       case _ => throw new Exception(s"defPrim: $defPrim")
     }
