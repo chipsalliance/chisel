@@ -3,6 +3,7 @@
 package chiselTests
 package experimental.hierarchy
 
+import circt.stage.ChiselStage.emitCHIRRTL
 import chisel3._
 import chisel3.experimental.BaseModule
 import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance}
@@ -453,7 +454,6 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       }
       def f(i: Seq[Instance[AddTwo]]): Data = i.head.i0.innerWire
       val (c, annos) = getFirrtlAndAnnos(new Top)
-      println(c.serialize)
       //TODO: Should this be ~Top|Top... ??
       annos.collect { case c: MarkAnnotation => c } should contain(
         MarkAnnotation("~Top|AddTwo/i0:AddOne>innerWire".rt, "blah")
@@ -1211,6 +1211,50 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         )
       })
       getFirrtlAndAnnos(new HasMultipleTypeParamsInside, Seq(aspect))
+    }
+  }
+  describe("(11) .suggestName") {
+    it("11.1 suggestName for Instances") {
+      class Top extends Module {
+        val definition = Definition(new AddOne)
+        val inst0 = Instance(definition)
+        val inst1 = Module(new AddOne).toInstance
+        inst0.suggestName("potato")
+        inst1.suggestName("potato")
+      }
+      val chirrtl = emitCHIRRTL(new Top)
+      chirrtl should include("inst potato of AddOne")
+      chirrtl should include("inst potato_1 of AddOne_1")
+    }
+    it("11.2 suggestName at instantiation") {
+      class Top extends Module {
+        val k = Instance(Definition(new AddOne)).suggestName("potato")
+      }
+      val chirrtl = emitCHIRRTL(new Top)
+      chirrtl should include("inst potato of AddOne")
+    }
+    it("11.3 suggestName with sanitization") {
+      class Top extends Module {
+        val definition = Definition(new AddOne)
+        val inst0 = Instance(definition)
+        val inst1 = Instance(definition)
+        inst0.suggestName("potato")
+        inst1.suggestName("potato")
+      }
+      val chirrtl = emitCHIRRTL(new Top)
+      chirrtl should include("inst potato of AddOne")
+      chirrtl should include("inst potato_1 of AddOne")
+    }
+    it("11.4 suggestName with multi-def collision sanitization") {
+      class Top extends Module {
+        val potato = Wire(UInt(8.W))
+        val inst0 = Module(new AddOne()).suggestName("potato")
+        val inst1 = Instance(Definition(new AddOne)).suggestName("potato")
+      }
+      val chirrtl = emitCHIRRTL(new Top)
+      chirrtl should include("wire potato : UInt<8>")
+      chirrtl should include("inst potato_1 of AddOne")
+      chirrtl should include("inst potato_2 of AddOne_1")
     }
   }
 }
