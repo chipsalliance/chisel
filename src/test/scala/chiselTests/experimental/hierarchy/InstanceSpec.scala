@@ -1218,10 +1218,13 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       class Top extends Module {
         val definition = Definition(new AddOne)
         val inst0 = Instance(definition)
+        val inst1 = Module(new AddOne).toInstance
         inst0.suggestName("potato")
+        inst1.suggestName("potato")
       }
       val chirrtl = emitCHIRRTL(new Top)
       chirrtl should include("inst potato of AddOne")
+      chirrtl should include("inst potato_1 of AddOne_1")
     }
     it("11.2 suggestName at instantiation") {
       class Top extends Module {
