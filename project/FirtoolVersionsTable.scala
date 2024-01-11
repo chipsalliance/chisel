@@ -24,8 +24,9 @@ object FirtoolVersionsTable extends App {
     val version = chiselVersion.serialize
     // echo "println(chisel3.BuildInfo.firtoolVersion.get)" | scala-cli -S 2.13 --dep org.chipsalliance::chisel:6.0.0-RC1 -
     val cmd = "println(chisel3.BuildInfo.firtoolVersion.get)"
+    // --server=false makes it a little slower but avoids hangs in CI
     val proc = os
-      .proc("scala-cli", "-S", "2.13", "--dep", s"org.chipsalliance::chisel:$version", "-")
+      .proc("scala-cli", "--server=false", "-S", "2.13", "--dep", s"org.chipsalliance::chisel:$version", "-")
       .call(stdin = cmd, stdout = os.Pipe, stderr = os.Pipe)
     proc.out.trim
   }
