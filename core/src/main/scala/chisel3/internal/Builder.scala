@@ -342,8 +342,7 @@ private[chisel3] trait HasId extends chisel3.InstanceId {
     case Some(p)          => p.name
     case None             => throwException(s"$instanceName doesn't have a parent")
   }
-  // TODO Should this be public?
-  protected def circuitName: String = _parent match {
+  def circuitName: String = _parent match {
     case None =>
       _circuit match {
         case None    => instanceName
