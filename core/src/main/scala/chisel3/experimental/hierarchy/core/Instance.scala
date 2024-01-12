@@ -6,7 +6,7 @@ import scala.language.experimental.macros
 import chisel3._
 import chisel3.experimental.hierarchy.{InstantiableClone, ModuleClone}
 import chisel3.internal.{throwException, Builder}
-import chisel3.experimental.{BaseModule, ExtModule, SourceInfo}
+import chisel3.experimental.{BaseModule, ExtModule, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal.sourceinfo.InstanceTransform
 import chisel3.internal.firrtl.{Component, DefBlackBox, DefIntrinsicModule, DefModule, Port}
 import firrtl.annotations.IsModule
@@ -92,6 +92,12 @@ object Instance extends SourceInfoDoc {
       case Proto(x) => x.toAbsoluteTarget
       case Clone(x: IsClone[_] with BaseModule) => x.toAbsoluteTarget
       case _ => throw new InternalErrorException("Match error: i.underlying=${i.underlying}")
+    }
+
+    def suggestName(name: String): Unit = i.underlying match {
+      case Clone(m: BaseModule) => m.suggestName(name)
+      case Proto(m) => m.suggestName(name)
+      case x        => Builder.exception(s"Cannot call .suggestName on $x")(UnlocatableSourceInfo)
     }
   }
 
