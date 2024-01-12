@@ -1,10 +1,10 @@
-circtSrc: final: prev:
+final: prev:
 {
   mill = (prev.mill.overrideAttrs (oldAttrs: rec {
-    version = "0.11.5";
+    version = "0.11.6";
     src = prev.fetchurl {
       url = "https://github.com/com-lihaoyi/mill/releases/download/${version}/${version}-assembly";
-      hash = "sha256-sCJMCy4TLRQV3zI28Aydv5a8OV8OHOjLbwhfyIlxOeY=";
+      hash = "sha256-vGhjnOKvR2RdgFx3WsM217SO9gcKZknPaf7LKo3SJPU=";
     };
   })).override {
     jre = final.openjdk21;
@@ -24,32 +24,30 @@ circtSrc: final: prev:
     };
   }));
 
-  espresso = final.callPackage ./nix/espresso.nix { };
-  circt = prev.circt.overrideAttrs (old: rec {
-    version = circtSrc.shortRev;
-    cmakeFlags = [
-      "-DBUILD_SHARED_LIBS=ON"
-      "-DLLVM_ENABLE_BINDINGS=OFF"
-      "-DLLVM_ENABLE_OCAMLDOC=OFF"
-      "-DLLVM_BUILD_EXAMPLES=OFF"
-      "-DLLVM_OPTIMIZED_TABLEGEN=ON"
-      "-DLLVM_ENABLE_PROJECTS=mlir"
-      "-DLLVM_EXTERNAL_PROJECTS=circt"
-      "-DLLVM_EXTERNAL_CIRCT_SOURCE_DIR=.."
-      "-DCIRCT_LLHD_SIM_ENABLED=OFF"
+#  This script can be used for override circt for debuging.
+#  circt = prev.circt.overrideAttrs (old: rec {
+#    version = "nightly";
+#    src = final.fetchFromGitHub {
+#      owner = "llvm";
+#      repo = "circt";
+#      rev = "57372957e8365b34ca469299b8c864d830e836a1";
+#      sha256 = "sha256-gExhWkhVhIpTKRCfF26pZnrcrf//ASQJDxEKbYc570s=";
+#      fetchSubmodules = true;
+#    };
+#    preConfigure = ''
+#      find ./test -name '*.mlir' -exec sed -i 's|/usr/bin/env|${final.coreutils}/bin/env|g' {} \;
+#      substituteInPlace cmake/modules/GenVersionFile.cmake --replace "unknown git version" "nightly"
+#    '';
+#  });
+  circt-all = final.symlinkJoin {
+    name = "circt-all";
+    paths = with final; [
+      circt
+      circt.dev
+      circt.lib
+      circt.llvm
+      circt.llvm.dev
+      circt.llvm.lib
     ];
-    src = circtSrc;
-    preConfigure = ''
-      find ./test -name '*.mlir' -exec sed -i 's|/usr/bin/env|${final.coreutils}/bin/env|g' {} \;
-      substituteInPlace cmake/modules/GenVersionFile.cmake --replace "unknown git version" "git version ${version}"
-    '';
-    installPhase = ''
-      runHook preInstall
-      mkdir -p $out
-      CMAKE_INSTALL_PREFIX=$out cmake --build . --target install --config Release
-      runHook postInstall
-    '';
-  });
-
-  llvm-lit = final.callPackage ./nix/llvm-lit.nix { };
+  };
 }

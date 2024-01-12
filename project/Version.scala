@@ -1,11 +1,63 @@
 // See LICENSE for license details.
 
+import scala.util.control.NonFatal
+
 object Version {
 
   sealed trait Branch { def serialize: String }
 
-  case class SemanticVersion(major: Int, minor: Int, patch: Int) extends Branch {
-    def serialize: String = s"v$major.$minor.$patch"
+  case class SemanticVersion(major: Int, minor: Int, patch: Int, candidate: Option[Int], milestone: Option[Int])
+      extends Branch
+      with Ordered[SemanticVersion] {
+    require(!(candidate.nonEmpty && milestone.nonEmpty), s"Cannot be both a release candidate and a milestone! $this")
+
+    def prerelease: Boolean = candidate.nonEmpty || milestone.nonEmpty
+
+    private def suffix: String = (candidate.map("-RC" + _).toSeq ++ milestone.map("-M" + _)).mkString
+
+    def serialize: String = s"$major.$minor.$patch" + suffix
+
+    def compare(that: SemanticVersion): Int = SemanticVersion.ordering.compare(this, that)
+  }
+
+  object SemanticVersion {
+
+    // Scala 2.13 provides .orElseBy, but SBT uses 2.12 so we have to do it ourselves
+    private implicit class OrderingExtensions[A](a: Ordering[A]) {
+      def orElseBy[B](f: A => B)(implicit ord: Ordering[B]): Ordering[A] = new Ordering[A] {
+        def compare(x: A, y: A): Int = {
+          val priority = a.compare(x, y)
+          if (priority != 0) priority
+          else Ordering.by[A, B](f).compare(x, y)
+        }
+      }
+    }
+
+    // Ordering is a sequence of 4 checks:
+    // 1. version (major, then minor, then patch)
+    // 2. not pre-release
+    // 3. release candidate
+    // 4. milestone
+    implicit val ordering: Ordering[SemanticVersion] =
+      Ordering
+        .by[SemanticVersion, (Int, Int, Int)](x => (x.major, x.minor, x.patch))
+        .orElseBy(!_.prerelease)
+        .orElseBy(_.candidate)
+        .orElseBy(_.milestone)
+
+    private val Parsed = """^v(\d+)\.(\d+)\.(\d+)(?:-RC(\d+))?(?:-M(\d+))?""".r
+
+    def parse(str: String): SemanticVersion = try {
+      str match {
+        case Parsed(major, minor, patch, rc, m) =>
+          val rcOpt = Option(rc).map(_.toInt)
+          val mOpt = Option(m).map(_.toInt)
+          SemanticVersion(major.toInt, minor.toInt, patch.toInt, rcOpt, mOpt)
+      }
+    } catch {
+      case NonFatal(e) =>
+        throw new Exception(s"Cannot parse $str as a semantic version, error: $e")
+    }
   }
 
   case object Master extends Branch {

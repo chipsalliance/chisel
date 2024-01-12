@@ -5,18 +5,6 @@ enablePlugins(SiteScaladocPlugin)
 addCommandAlias("fmt", "; scalafmtAll ; scalafmtSbt")
 addCommandAlias("fmtCheck", "; scalafmtCheckAll ; scalafmtSbtCheck")
 
-lazy val firtoolVersion = settingKey[Option[String]]("Determine the version of firtool on the PATH")
-ThisBuild / firtoolVersion := {
-  import scala.sys.process._
-  val Version = """^CIRCT firtool-(\S+)$""".r
-  try {
-    val lines = Process(Seq("firtool", "--version")).lineStream
-    lines.collectFirst { case Version(v) => v }
-  } catch {
-    case e: java.io.IOException => None
-  }
-}
-
 // Previous versions are read from project/previous-versions.txt
 // If this file is empty or does not exist, no binary compatibility checking will be done
 // Add waivers to the directory defined by key `mimaFiltersDirectory` in files named: <since version>.backwards.excludes
@@ -34,6 +22,14 @@ ThisBuild / previousVersions := {
 val emitVersion = taskKey[Unit]("Write the version to version.txt")
 emitVersion := {
   IO.write(new java.io.File("version.txt"), version.value)
+}
+
+val emitLatestVersion = taskKey[Unit]("Write the latest stable version to latest-version.txt")
+emitLatestVersion := {
+  import Releases.{getLatest, releases}
+  import Version.SemanticVersion
+  val latest = getLatest(releases().map(SemanticVersion.parse))
+  IO.write(new java.io.File("latest-version.txt"), latest.serialize)
 }
 
 lazy val minimalSettings = Seq(
@@ -99,11 +95,6 @@ lazy val publishSettings = Seq(
     val v = version.value
     if (dynverGitDescribeOutput.value.hasNoTags) {
       sys.error(s"Failed to derive version from git tags. Maybe run `git fetch --unshallow`? Version: $v")
-    }
-    // Check that firtool exists on the PATH so Chisel can use the version it was tested against
-    // in error messages
-    if (firtoolVersion.value.isEmpty) {
-      sys.error(s"Failed to determine firtool version. Make sure firtool is found on the PATH.")
     }
     (publish / skip).value
   },
@@ -207,7 +198,8 @@ lazy val chiselSettings = Seq(
   libraryDependencies ++= Seq(
     "org.scalatest" %% "scalatest" % "3.2.16" % "test",
     "org.scalatestplus" %% "scalacheck-1-16" % "3.2.14.0" % "test",
-    "com.lihaoyi" %% "upickle" % "3.1.0"
+    "com.lihaoyi" %% "upickle" % "3.1.0",
+    "org.chipsalliance" %% "firtool-resolver" % "1.3.0"
   )
 ) ++ (
   // Tests from other projects may still run concurrently
@@ -286,7 +278,11 @@ lazy val core = (project in file("core"))
   .settings(
     buildInfoPackage := "chisel3",
     buildInfoUsePackageAsPath := true,
-    buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion, firtoolVersion)
+    buildInfoKeys := {
+      // This remains an Option for backwards compatibility reasons
+      val firtoolVersion = BuildInfoKey("firtoolVersion", Option(FirtoolVersion.version))
+      Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion, firtoolVersion)
+    }
   )
   .settings(
     // Published as part of unipublish
@@ -367,7 +363,8 @@ lazy val unipublish =
     .enablePlugins(ScalaUnidocPlugin)
     .settings(
       // Plugin isn't part of Chisel's public API, exclude from ScalaDoc
-      ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(plugin)
+      // Even though this project doesn't depend on docs, Unidoc pulls it in unless we exclude it
+      ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(plugin) -- inProjects(docs)
     )
     .settings(commonSettings: _*)
     .settings(publishSettings: _*)
@@ -402,11 +399,11 @@ lazy val unipublish =
         "-doc-source-url", {
           val branch =
             if (version.value.endsWith("-SNAPSHOT")) {
-              "master"
+              "main"
             } else {
               s"v${version.value}"
             }
-          s"https://github.com/chipsalliance/chisel/tree/$branch€{FILE_PATH_EXT}#L€{FILE_LINE}"
+          s"https://github.com/chipsalliance/chisel/tree/$branch/€{FILE_PATH_EXT}#L€{FILE_LINE}"
         },
         "-language:implicitConversions"
       ) ++
@@ -438,6 +435,8 @@ lazy val standardLibrary = (project in file("stdlib"))
   .settings(usePluginSettings: _*)
 
 val determineContributors = taskKey[Unit]("determine contributors for subprojects")
+val generateScalaDocLinks = taskKey[Unit]("generate links to API Docs for releases")
+val firtoolVersionsTableTask = taskKey[Seq[File]]("generate markdown table mapping Chisel versions to firtool versions")
 
 import Version._
 
@@ -463,6 +462,25 @@ lazy val docs = project // new documentation project
   )
   .settings(fatalWarningsSettings: _*)
   .settings(
+    firtoolVersionsTableTask / fileInputs ++= {
+      val rootGlob = (root / baseDirectory).value.toGlob
+      Seq(rootGlob / "build.sbt", rootGlob / "project" / "*.sbt", rootGlob / "project" / "*.scala")
+    },
+    firtoolVersionsTableTask := {
+      val logger = streams.value.log
+      val file = (Compile / sourceManaged).value / "FirtoolVersionsTable.scala"
+      // Only write the file if an input has changed
+      if (!file.exists || firtoolVersionsTableTask.inputFileChanges.hasChanges) {
+        // Escaping newlines makes it easier to generate the file
+        val table = FirtoolVersionsTable.generateTable.replaceAll("\n", "\\\\n")
+        logger.info(s"Writing $file...")
+        IO.write(file, s"""object FirtoolVersionsTable { def table = "$table" }""")
+      }
+      Seq(file)
+    },
+    Compile / sourceGenerators += firtoolVersionsTableTask.taskValue
+  )
+  .settings(
     determineContributors := {
       import java.io.{File, PrintWriter}
       val uniqueContributors =
@@ -487,6 +505,16 @@ lazy val docs = project // new documentation project
       val writer = new PrintWriter(new File("website/src/pages/generated/contributors.md"))
       writer.write(s"""|<!-- Automatically generated by build.sbt 'contributors' task -->
                        |${Contributors.contributorsMarkdown(uniqueContributors)}""".stripMargin)
+      writer.close()
+    },
+    generateScalaDocLinks := {
+      val outputFile = "website/src/pages/generated/scaladoc_links.md"
+      import java.io.{File, PrintWriter}
+      val snapshot = version.value
+      val markdown = Releases.generateMarkdown(snapshot)
+      val writer = new PrintWriter(new File(outputFile))
+      writer.write(s"""|<!-- Automatically generated by build.sbt 'generateScalaDocLinks' task -->
+                       |$markdown""".stripMargin)
       writer.close()
     }
   )

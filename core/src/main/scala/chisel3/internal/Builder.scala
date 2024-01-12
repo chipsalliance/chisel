@@ -33,7 +33,6 @@ private[chisel3] class Namespace(keywords: Set[String], separator: Char = '_') {
   // checking if a name is present in the Namespace is more complex than just checking the HashMap,
   // see getIndex below.
   private val names = collection.mutable.HashMap[String, Long]()
-  def copyTo(other: Namespace): Unit = names.foreach { case (s: String, l: Long) => other.names(s) = l }
   for (keyword <- keywords)
     names(keyword) = 1
 
@@ -343,8 +342,7 @@ private[chisel3] trait HasId extends chisel3.InstanceId {
     case Some(p)          => p.name
     case None             => throwException(s"$instanceName doesn't have a parent")
   }
-  // TODO Should this be public?
-  protected def circuitName: String = _parent match {
+  def circuitName: String = _parent match {
     case None =>
       _circuit match {
         case None    => instanceName
@@ -449,7 +447,8 @@ private[chisel3] class DynamicContext(
   val annotationSeq:     AnnotationSeq,
   val throwOnFirstError: Boolean,
   val warningFilters:    Seq[WarningFilter],
-  val sourceRoots:       Seq[File]) {
+  val sourceRoots:       Seq[File],
+  val defaultNamespace:  Option[Namespace] = None) {
   val importedDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
 
   // Map from proto module name to ext-module name
@@ -480,7 +479,7 @@ private[chisel3] class DynamicContext(
     )
   }
 
-  val globalNamespace = Namespace.empty
+  val globalNamespace = defaultNamespace.getOrElse(Namespace.empty)
   val globalIdentifierNamespace = Namespace.empty('$')
 
   // A mapping from previously named bundles to their hashed structural/FIRRTL types, for
@@ -503,6 +502,7 @@ private[chisel3] class DynamicContext(
   val annotations = ArrayBuffer[ChiselAnnotation]()
   val newAnnotations = ArrayBuffer[ChiselMultiAnnotation]()
   val layers = mutable.LinkedHashSet[layer.Layer]()
+  val options = mutable.LinkedHashSet[choice.Case]()
   var currentModule: Option[BaseModule] = None
 
   /** Contains a mapping from a elaborated module to their aspect
@@ -582,7 +582,8 @@ private[chisel3] object Builder extends LazyLogging {
   def components:  ArrayBuffer[Component] = dynamicContext.components
   def annotations: ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
 
-  def layers: mutable.LinkedHashSet[layer.Layer] = dynamicContext.layers
+  def layers:  mutable.LinkedHashSet[layer.Layer] = dynamicContext.layers
+  def options: mutable.LinkedHashSet[choice.Case] = dynamicContext.options
 
   def contextCache: BuilderContextCache = dynamicContext.contextCache
 
@@ -1010,6 +1011,15 @@ private[chisel3] object Builder extends LazyLogging {
         Layer(l.sourceInfo, l.name, convention, children.map(foldLayers).toSeq)
       }
 
+      val optionDefs = groupByIntoSeq(options)(opt => opt.group).map {
+        case (optGroup, cases) =>
+          DefOption(
+            optGroup.sourceInfo,
+            optGroup.name,
+            cases.map(optCase => DefOptionCase(optCase.sourceInfo, optCase.name))
+          )
+      }
+
       (
         Circuit(
           components.last.name,
@@ -1018,7 +1028,8 @@ private[chisel3] object Builder extends LazyLogging {
           makeViewRenameMap,
           newAnnotations.toSeq,
           typeAliases,
-          layerAdjacencyList(layer.Layer.Root).map(foldLayers).toSeq
+          layerAdjacencyList(layer.Layer.Root).map(foldLayers).toSeq,
+          optionDefs
         ),
         mod
       )

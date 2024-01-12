@@ -71,4 +71,10 @@ private[chisel3] class ModuleClone[T <: BaseModule](val getProto: T)(implicit si
 
     this.setRef(Ref(instName))
   }
+
+  override def suggestName(seed: => String): this.type = {
+    // Forward the suggestName to the underlying _portsRecord
+    _portsRecord.suggestName(seed)
+    this
+  }
 }

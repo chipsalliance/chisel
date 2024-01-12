@@ -94,11 +94,14 @@ trait CoreModule
 
   def upickleModuleIvy: Dep
 
+  def firtoolResolverModuleIvy: Dep
+
   override def moduleDeps = super.moduleDeps ++ Seq(macrosModule, firrtlModule)
 
   override def ivyDeps = super.ivyDeps() ++ Agg(
     osLibModuleIvy,
-    upickleModuleIvy
+    upickleModuleIvy,
+    firtoolResolverModuleIvy
   )
 }
 

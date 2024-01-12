@@ -7,6 +7,7 @@ import chisel3.experimental.SourceLine
 
 import circt.stage.{ChiselStage, FirtoolOption, PreserveAggregate}
 
+import _root_.logger.LogLevel
 import firrtl.EmittedVerilogCircuitAnnotation
 import firrtl.stage.FirrtlCircuitAnnotation
 
@@ -362,6 +363,21 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
 
       os.read(targetDir / "HasUnserializableAnnotation.fir") shouldNot include("DummyAnnotation")
     }
+
+    it("should forward firtool-resolver logging under log-level debug") {
+      // By default it should NOT show anything
+      val (log1, _) = grabLog {
+        ChiselStage.emitSystemVerilog(new ChiselStageSpec.Foo)
+      }
+      log1 shouldNot include("Checking CHISEL_FIRTOOL_PATH for firtool")
+
+      // circt.stage.ChiselStage does not currently accept --log-level so we have to use testing
+      // APIs to set the level
+      val (log2, _) = grabLogLevel(LogLevel.Debug) {
+        ChiselStage.emitSystemVerilog(new ChiselStageSpec.Foo)
+      }
+      log2 should include("Checking CHISEL_FIRTOOL_PATH for firtool")
+    }
   }
 
   describe("ChiselStage exception handling") {
@@ -489,7 +505,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
       val lines = stdout.split("\n")
       // Fuzzy includes aren't ideal but there is ANSI color in these strings that is hard to match
       lines(0) should include(
-        "src/test/scala/circtTests/stage/ChiselStageSpec.scala 90:9: Negative shift amounts are illegal (got -1)"
+        "src/test/scala/circtTests/stage/ChiselStageSpec.scala 91:9: Negative shift amounts are illegal (got -1)"
       )
       lines(1) should include("    3.U >> -1")
       lines(2) should include("        ^")
@@ -510,7 +526,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
       // Fuzzy includes aren't ideal but there is ANSI color in these strings that is hard to match
       lines.size should equal(2)
       lines(0) should include(
-        "src/test/scala/circtTests/stage/ChiselStageSpec.scala 90:9: Negative shift amounts are illegal (got -1)"
+        "src/test/scala/circtTests/stage/ChiselStageSpec.scala 91:9: Negative shift amounts are illegal (got -1)"
       )
       (lines(1) should not).include("3.U >> -1")
     }
@@ -1120,8 +1136,8 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
 
       info("The exception includes a useful error message")
       val message = exception.getMessage
-      message should include("potato not found")
-      message should include("Chisel requires that firtool, the MLIR-based FIRRTL Compiler (MFC), is installed")
+      message should include("Cannot run program \"potato\"")
+      message should include("Chisel requires firtool, the MLIR-based FIRRTL Compiler (MFC), to generate Verilog.")
 
       info("The exception should not contain a stack trace")
       exception.getStackTrace should be(Array())

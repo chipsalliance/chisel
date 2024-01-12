@@ -86,13 +86,20 @@ const config = {
           src: 'img/chisel-tool.svg',
         },
         items: [
-          {to: '/docs/introduction', label: 'Docs', position: 'left'},
+          {to: '/docs', label: 'Docs', position: 'left'},
           {to: '/community', label: 'Community', position: 'left'},
           {to: '/api', label: 'API', position: 'left'},
           {
-            href: 'https://github.com/chipsalliance/chisel',
-            label: 'GitHub',
+            href: 'https://www.chipsalliance.org/',
             position: 'right',
+            className: 'header-chipsalliance-link',
+            'aria-label': 'ChipsAlliance link',
+          },
+          {
+            href: 'https://github.com/chipsalliance/chisel',
+            position: 'right',
+            className: 'header-github-link',
+            'aria-label': 'GitHub repository',
           },
         ],
       },
@@ -103,12 +110,15 @@ const config = {
             title: 'Docs',
             items: [
               {
-                label: 'Introduction',
-                to: '/docs/introduction',
+                label: 'Docs',
+                to: '/docs',
               },
               {
                 label: 'ScalaDoc',
-                href: 'https://javadoc.io/doc/org.chipsalliance/chisel_2.13/latest/index.html'
+                // pathname is needed by Docusaurus to correctly handle
+                // internal links in the static folder, see
+                // https://docusaurus.io/docs/advanced/routing#escaping-from-spa-redirects
+                to: 'pathname:///api/latest',
               }
             ],
           },
@@ -152,14 +162,43 @@ const config = {
           'verilog',
         ],
       },
+      // Algolia search integration: https://docusaurus.io/docs/search
+      algolia: {
+        appId: 'TTFNIAC3CJ',
+        apiKey: '6a4ec6ef68c7b32aca79adf7440604ca',
+        indexName: 'chisel-lang',
+        // When true, this adds facets which (with default settings) break search results
+        // It is probably fixable, see: https://docusaurus.io/docs/search#contextual-search
+        contextualSearch: false,
+        searchPagePath: 'search',
+        insights: true,
+      },
     }),
 
   plugins: [
     [
       '@docusaurus/plugin-client-redirects',
-      {
+      { // Clean up links including .html, /myPages.html -> /myPage
+        fromExtensions: ['html', 'htm'],
         redirects: [
+          { // Redirect old chisel3 docs landing page
+            from: '/chisel3',
+            to: '/docs',
+          },
         ],
+        createRedirects(to) {
+          // Redirect from all /chisel3/docs/X links to /docs/X
+          // This catches many broken links from old sbt-microsites website
+          if (to.includes('/docs')) {
+            const from1 = to.replace('/docs', '/chisel3/docs');
+            // Include redirects for .html/.htm because fromExtensions does not
+            // compose with these redirects automatically.
+            const from2 = from1.concat(".html");
+            const from3 = from1.concat(".htm");
+            return [from1, from2, from3];
+          }
+          return undefined;
+        },
       },
     ],
   ],

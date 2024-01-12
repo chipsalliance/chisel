@@ -10,14 +10,21 @@ import chisel3.cover.Cover
 import chisel3.internal.firrtl._
 
 abstract class CIRCTConverter {
+  val mlirStream:    Writable
   val firrtlStream:  Writable
   val verilogStream: Writable
+  def exportSplitVerilog(directory: os.Path): Unit
+
+  def passManager(): CIRCTPassManager
+  def om():          CIRCTOM
 
   def visitCircuit(name: String): Unit
 
   def visitDefBlackBox(defBlackBox: DefBlackBox): Unit
 
   def visitDefModule(defModule: DefModule): Unit
+
+  def visitDefIntrinsicModule(defIntrinsicModule: DefIntrinsicModule): Unit
 
   def visitAltBegin(altBegin: AltBegin): Unit
 
@@ -60,4 +67,16 @@ abstract class CIRCTConverter {
   def visitAssume(assume: Verification[Assume]): Unit
 
   def visitCover(cover: Verification[Cover]): Unit
+
+  def visitProbeDefine(parent: Component, probeDefine: ProbeDefine): Unit
+
+  def visitProbeForceInitial(parent: Component, probeForceInitial: ProbeForceInitial): Unit
+
+  def visitProbeReleaseInitial(parent: Component, probeReleaseInitial: ProbeReleaseInitial): Unit
+
+  def visitProbeForce(parent: Component, probeForce: ProbeForce): Unit
+
+  def visitProbeRelease(parent: Component, probeRelease: ProbeRelease): Unit
+
+  def visitPropAssign(parent: Component, propAssign: PropAssign): Unit
 }

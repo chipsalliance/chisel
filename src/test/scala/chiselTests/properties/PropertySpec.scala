@@ -3,6 +3,7 @@
 package chiselTests.properties
 
 import chisel3._
+import chisel3.experimental.FlatIO
 import chisel3.properties.{Class, Path, Property, PropertyType}
 import chiselTests.{ChiselFlatSpec, MatchesAndOmits}
 import circt.stage.ChiselStage
@@ -407,22 +408,6 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
     )()
   }
 
-  it should "NOT support <>" in {
-    class MyBundle extends Bundle {
-      val foo = Property[String]()
-      val bar = Flipped(Property[BigInt]())
-    }
-    val e = the[ChiselException] thrownBy ChiselStage.emitCHIRRTL(
-      new RawModule {
-        val aligned = IO(new MyBundle)
-        val flipped = IO(Flipped(new MyBundle))
-        aligned <> flipped
-      },
-      Array("--throw-on-first-error")
-    )
-    e.getMessage should include("Field '_.bar' of type Property[Integer] does not support <>, use :<>= instead")
-  }
-
   it should "support being nested in a Bundle in a wire" in {
     class MyBundle extends Bundle {
       val foo = Property[String]()
@@ -582,6 +567,45 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
       "object barObj of bar",
       "propassign barA, barObj",
       "propassign barB, barObj"
+    )()
+  }
+
+  it should "support FlatIO" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val flatModule = Module(new RawModule {
+        val io = FlatIO(new Bundle {
+          val bool = Input(Bool())
+          val prop = Input(Property[Int]())
+        })
+      })
+
+      flatModule.io.bool := true.B
+      flatModule.io.prop := Property(1)
+    })
+
+    matchesAndOmits(chirrtl)(
+      "connect flatModule.bool, UInt<1>(0h1)",
+      "propassign flatModule.prop, Integer(1)"
+    )()
+  }
+
+  it should "support FlatIO when used in a Bundle" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      class PropBundle extends Bundle {
+        val int = Property[Int]()
+      }
+
+      val flatModule = Module(new RawModule {
+        val io = FlatIO(new Bundle {
+          val prop = Input(new PropBundle)
+        })
+      })
+
+      flatModule.io.prop.int := Property(1)
+    })
+
+    matchesAndOmits(chirrtl)(
+      "propassign flatModule.prop.int, Integer(1)"
     )()
   }
 }

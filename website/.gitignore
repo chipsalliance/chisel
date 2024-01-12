@@ -3,12 +3,14 @@
 
 # Production
 /build
+/build.timestamp
 
 # Generated files
 .docusaurus
 .cache-loader
 /docs
 generated
+/static/api/latest
 # Debatable if this should be included or not
 package-lock.json
 

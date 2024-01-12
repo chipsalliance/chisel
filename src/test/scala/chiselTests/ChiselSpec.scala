@@ -2,7 +2,7 @@
 
 package chiselTests
 
-import _root_.logger.Logger
+import _root_.logger.{LogLevel, LogLevelAnnotation, Logger}
 import chisel3._
 import chisel3.aop.Aspect
 import chisel3.stage.{ChiselGeneratorAnnotation, PrintFullStackTraceAnnotation}
@@ -286,10 +286,17 @@ trait Utils {
     * @param thunk some Scala code
     * @return a tuple containing LOGGED, and what the thunk returns
     */
-  def grabLog[T](thunk: => T): (String, T) = {
+  def grabLog[T](thunk: => T): (String, T) = grabLogLevel(LogLevel.default)(thunk)
+
+  /** Run some Scala thunk and return all logged messages as Strings
+    * @param level the log level to use
+    * @param thunk some Scala code
+    * @return a tuple containing LOGGED, and what the thunk returns
+    */
+  def grabLogLevel[T](level: LogLevel.Value)(thunk: => T): (String, T) = {
     val baos = new ByteArrayOutputStream()
     val stream = new PrintStream(baos, true, "utf-8")
-    val ret = Logger.makeScope(Nil) {
+    val ret = Logger.makeScope(LogLevelAnnotation(level) :: Nil) {
       Logger.setOutput(stream)
       thunk
     }

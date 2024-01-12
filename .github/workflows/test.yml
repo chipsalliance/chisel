@@ -24,8 +24,8 @@ on:
         required: true
         type: string
       circt:
-        description: 'The CIRCT version to use (must be a valid release tag or "nightly")'
-        required: true
+        description: 'The CIRCT version to use (must be a valid release tag, "nightly", or "version-file").
+                      Leave off (or empty) to let Chisel manage the CIRCT version'
         type: string
       ref:
         description: 'The branch, tag, or git hash to checkout'
@@ -56,15 +56,24 @@ jobs:
           java-version: ${{ inputs.jvm }}
           cache: 'sbt'
       - name: Install CIRCT
+        id: install-circt
+        if: ${{ inputs.circt }}
         uses: circt/install-circt@v1.1.1
         with:
           version: ${{ inputs.circt }}
           github-token: ${{ github.token }}
+      # TODO have install-circt do this
+      - name: Set CHISEL_FIRTOOL_PATH
+        if: steps.install-circt.outcome == 'success'
+        run: |
+          dir=$(dirname $(which firtool))
+          echo "CHISEL_FIRTOOL_PATH=$dir" >> "$GITHUB_ENV"
       - name: Print firtool version
+        if: steps.install-circt.outcome == 'success'
         run: |
           echo "The CIRCT version used is:" >> $GITHUB_STEP_SUMMARY
           echo \`\`\` >> $GITHUB_STEP_SUMMARY
-          firtool -version >> $GITHUB_STEP_SUMMARY
+          $CHISEL_FIRTOOL_PATH/firtool -version >> $GITHUB_STEP_SUMMARY
           echo \`\`\` >> $GITHUB_STEP_SUMMARY
       - name: Test
         run: sbt ++${{ inputs.scala }} test
@@ -94,10 +103,19 @@ jobs:
         uses: jodersky/setup-mill@v0.3.0
         with:
           mill-version: 0.11.5
+      # Mill needs firtool to compile with bindings, cannot use firtool-resolver at runtime
+      - name: Pick CIRCT version
+        id: circt-version
+        run: |
+          if [[ -z "${{ inputs.circt }}" ]]; then
+            echo "version=version-file" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=${{ inputs.circt }}" >> "$GITHUB_OUTPUT"
+          fi
       - name: Install CIRCT
         uses: circt/install-circt@v1.1.1
         with:
-          version: ${{ inputs.circt }}
+          version: ${{ steps.circt-version.outputs.version }}
           github-token: ${{ github.token }}
       - name: Compile Mill
         run: |
@@ -118,11 +136,6 @@ jobs:
           distribution: 'adopt'
           java-version: '11'
           cache: 'sbt'
-      - name: Install CIRCT
-        uses: circt/install-circt@v1.1.1
-        with:
-          version: ${{ inputs.circt }}
-          github-token: ${{ github.token }}
       - name: Check Formatting
         run: sbt fmtCheck
 
@@ -145,10 +158,18 @@ jobs:
           java-version: '11'
           cache: 'sbt'
       - name: Install CIRCT
+        id: install-circt
+        if: ${{ inputs.circt }}
         uses: circt/install-circt@v1.1.1
         with:
           version: ${{ inputs.circt }}
           github-token: ${{ github.token }}
+      # TODO have install-circt do this
+      - name: Set CHISEL_FIRTOOL_PATH
+        if: steps.install-circt.outcome == 'success'
+        run: |
+          dir=$(dirname $(which firtool))
+          echo "CHISEL_FIRTOOL_PATH=$dir" >> "$GITHUB_ENV"
       - name: Integration Tests
         run: sbt integrationTests/test
 
@@ -185,21 +206,32 @@ jobs:
         uses: actions/checkout@v3
         with:
           ref: ${{ inputs.ref }}
+          # Need full history to correctly determine SNAPSHOT version
+          fetch-depth: 0
+      - name: Cache Scala
+        uses: coursier/cache-action@v6
       - name: Setup Scala
-        uses: actions/setup-java@v3
+        uses: VirtusLab/scala-cli-setup@v1
         with:
-          distribution: 'adopt'
-          java-version: '11'
-          cache: 'sbt'
+          jvm: adoptium:17
+          apps: sbt
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 18
       - name: Install CIRCT
+        id: install-circt
+        if: ${{ inputs.circt }}
         uses: circt/install-circt@v1.1.1
         with:
           version: ${{ inputs.circt }}
           github-token: ${{ github.token }}
+      # TODO have install-circt do this
+      - name: Set CHISEL_FIRTOOL_PATH
+        if: steps.install-circt.outcome == 'success'
+        run: |
+          dir=$(dirname $(which firtool))
+          echo "CHISEL_FIRTOOL_PATH=$dir" >> "$GITHUB_ENV"
         # TODO: make the website building include building ScalaDoc
       - name: Build the website
         run: make -C website build

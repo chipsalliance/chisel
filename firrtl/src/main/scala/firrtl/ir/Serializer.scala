@@ -292,6 +292,14 @@ object Serializer {
       s(init); s(info)
     case DefInstance(info, name, module, _) =>
       b ++= "inst "; b ++= legalize(name); b ++= " of "; b ++= legalize(module); s(info)
+    case DefInstanceChoice(info, name, default, option, choices) =>
+      b ++= "instchoice "; b ++= legalize(name); b ++= " of "; b ++= legalize(default);
+      b ++= ", "; b ++= legalize(option); b ++= " : "; s(info)
+      choices.foreach {
+        case (choice, module) =>
+          newLineAndIndent(1)
+          b ++= legalize(choice); b ++= " => "; b ++= legalize(module)
+      }
     case DefObject(info, name, cls) =>
       b ++= "object "; b ++= legalize(name); b ++= " of "; b ++= legalize(cls); s(info)
     case DefMemory(
@@ -485,6 +493,21 @@ object Serializer {
       s(circuit.info)
       Iterator(b.toString)
     }
+    val options = if (circuit.options.nonEmpty) {
+      implicit val b = new StringBuilder
+      circuit.options.foreach { optGroup =>
+        newLineAndIndent(1)
+        b ++= s"option ${optGroup.name} :"
+        s(optGroup.info)
+        optGroup.cases.foreach { optCase =>
+          newLineAndIndent(2)
+          b ++= optCase.name
+          s(optCase.info)
+        }
+        newLineNoIndent()
+      }
+      Iterator(b.toString)
+    } else Iterator.empty
     val typeAliases = if (circuit.typeAliases.nonEmpty) {
       implicit val b = new StringBuilder
       circuit.typeAliases.foreach(ta => { b ++= s"${NewLine}"; doIndent(1); s(ta) })
@@ -502,6 +525,7 @@ object Serializer {
       Iterator(b.toString)
     } else Iterator.empty
     prelude ++
+      options ++
       typeAliases ++
       layers ++
       circuit.modules.iterator.zipWithIndex.flatMap {
