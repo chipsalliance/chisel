@@ -80,17 +80,14 @@ class MemoryReadWritePort[T <: Data](tpe: T, addrWidth: Int, masked: Boolean) ex
   * @param numWritePorts The number of write ports
   * @param numReadwritePorts The number of read/write ports
   * @param masked Whether the memory is write masked
-  * @param underlying Points to SRAM that instantiates this interface; None by
-  *                   default if this was instantiated directly
   */
 class SRAMInterface[T <: Data](
-  memSize:                          BigInt,
-  tpe:                              T,
-  numReadPorts:                     Int,
-  numWritePorts:                    Int,
-  numReadwritePorts:                Int,
-  masked:                           Boolean = false,
-  private[chisel3] val _underlying: Option[HasTarget] = None)
+  memSize:           BigInt,
+  tpe:               T,
+  numReadPorts:      Int,
+  numWritePorts:     Int,
+  numReadwritePorts: Int,
+  masked:            Boolean = false)
     extends Bundle {
   if (masked) {
     require(
@@ -109,6 +106,12 @@ class SRAMInterface[T <: Data](
   val readwritePorts: Vec[MemoryReadWritePort[T]] =
     Vec(numReadwritePorts, new MemoryReadWritePort(tpe, addrWidth, masked))
 
+  private[chisel3] var _underlying: Option[HasTarget] = None
+
+  /** Set underlying target information. This is intended to store information
+    * about the SRAM that instantiates this interface and should be set to None
+    * by default if this interface was instantiated directly.
+    */
   def underlying: Option[HasTarget] = _underlying
 }
 
@@ -466,9 +469,8 @@ object SRAM {
     }
 
     val mem = SyncReadMem(size, tpe)
-    val _out = Wire(
-      new SRAMInterface(size, tpe, numReadPorts, numWritePorts, numReadwritePorts, isVecMem, Some(HasTarget(mem)))
-    )
+    val _out = Wire(new SRAMInterface(size, tpe, numReadPorts, numWritePorts, numReadwritePorts, isVecMem))
+    _out._underlying = Some(HasTarget(mem))
 
     for ((clock, port) <- readPortClocks.zip(_out.readPorts)) {
       port.data := mem.read(port.address, port.enable, clock)
