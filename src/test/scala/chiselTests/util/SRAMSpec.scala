@@ -39,8 +39,7 @@ class SRAMSpec extends ChiselFlatSpec {
     )
 
     val dummyAnno = annos.collectFirst { case DummyAnno(t) => (t.toString) }
-    require(dummyAnno.nonEmpty)
-    dummyAnno.get should include("~Top|Top>sram_mem")
+    dummyAnno should be(Some("~Top|Top>sram_mem"))
   }
 
 }

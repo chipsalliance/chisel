@@ -108,10 +108,7 @@ class SRAMInterface[T <: Data](
 
   private[chisel3] var _underlying: Option[HasTarget] = None
 
-  /** Set underlying target information. This is intended to store information
-    * about the SRAM that instantiates this interface and should be set to None
-    * by default if this interface was instantiated directly.
-    */
+  /** Target information for annotating the underlying SRAM if it is known. */
   def underlying: Option[HasTarget] = _underlying
 }
 
