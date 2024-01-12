@@ -79,6 +79,7 @@ class MemoryReadWritePort[T <: Data](tpe: T, addrWidth: Int, masked: Boolean) ex
   * @param numReadPorts The number of read ports
   * @param numWritePorts The number of write ports
   * @param numReadwritePorts The number of read/write ports
+  * @param masked Whether the memory is write masked
   */
 class SRAMInterface[T <: Data](
   memSize:           BigInt,
@@ -104,6 +105,11 @@ class SRAMInterface[T <: Data](
   val writePorts: Vec[MemoryWritePort[T]] = Vec(numWritePorts, new MemoryWritePort(tpe, addrWidth, masked))
   val readwritePorts: Vec[MemoryReadWritePort[T]] =
     Vec(numReadwritePorts, new MemoryReadWritePort(tpe, addrWidth, masked))
+
+  private[chisel3] var _underlying: Option[HasTarget] = None
+
+  /** Target information for annotating the underlying SRAM if it is known. */
+  def underlying: Option[HasTarget] = _underlying
 }
 
 /** A memory file with which to preload an [[SRAM]]
@@ -459,8 +465,9 @@ object SRAM {
       )
     }
 
-    val _out = Wire(new SRAMInterface(size, tpe, numReadPorts, numWritePorts, numReadwritePorts, isVecMem))
     val mem = SyncReadMem(size, tpe)
+    val _out = Wire(new SRAMInterface(size, tpe, numReadPorts, numWritePorts, numReadwritePorts, isVecMem))
+    _out._underlying = Some(HasTarget(mem))
 
     for ((clock, port) <- readPortClocks.zip(_out.readPorts)) {
       port.data := mem.read(port.address, port.enable, clock)
