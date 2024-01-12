@@ -3,7 +3,6 @@
 package chiselTests.properties
 
 import chisel3._
-import chisel3.experimental.FlatIO
 import chisel3.properties.{Class, Path, Property, PropertyType}
 import chiselTests.{ChiselFlatSpec, MatchesAndOmits}
 import circt.stage.ChiselStage

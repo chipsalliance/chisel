@@ -5,7 +5,7 @@ package chiselTests.experimental
 import chisel3._
 import chisel3.util.Valid
 import circt.stage.ChiselStage.emitCHIRRTL
-import chisel3.experimental.{Analog, FlatIO}
+import chisel3.experimental.Analog
 import chiselTests.ChiselFlatSpec
 
 class FlatIOSpec extends ChiselFlatSpec {

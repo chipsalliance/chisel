@@ -2,7 +2,7 @@
 
 package chisel3
 
-import chisel3.experimental.{BaseModule, ExtModule, FlatIO, Param}
+import chisel3.experimental.{BaseModule, ExtModule, Param}
 
 /** A module or external module whose IO is generated from a specific generator.
   * This module may have no additional IO created other than what is specified

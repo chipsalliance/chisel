@@ -727,7 +727,6 @@ normal `val` prefix, you can use `FlatIO`:
 
 ```scala mdoc:silent:reset
 import chisel3._
-import chisel3.experimental.FlatIO
 
 class MyBundle extends Bundle {
   val foo = Input(UInt(8.W))

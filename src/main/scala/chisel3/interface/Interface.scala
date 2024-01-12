@@ -2,7 +2,7 @@
 package chisel3.interface
 
 import chisel3.{BlackBox => _, Module => _, _}
-import chisel3.experimental.{BaseModule, FlatIO}
+import chisel3.experimental.BaseModule
 import chisel3.experimental.dataview._
 import chisel3.probe.define
 import chisel3.reflect.DataMirror
