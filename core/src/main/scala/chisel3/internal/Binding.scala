@@ -4,7 +4,7 @@ package chisel3.internal
 
 import chisel3._
 import chisel3.experimental.BaseModule
-import chisel3.internal.firrtl.{LitArg, PropertyLit}
+import chisel3.internal.firrtl.{DefNode, DefWire, LazyCommand, LitArg, PropertyLit}
 import chisel3.properties.Class
 
 import scala.collection.immutable.VectorMap
@@ -117,6 +117,16 @@ private[chisel3] case class ObjectFieldBinding(enclosure: BaseModule) extends Co
 
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 case class ChildBinding(parent: Data) extends Binding {
+  def location: Option[BaseModule] = parent.topBinding.location
+}
+
+// TODO need to store visibility and enclosure (although rvalue's parent is the enclosure) so that we can check
+// and not return the rvalue when it is out of lexical scope
+private[chisel3] case class SubAccessBinding(
+  parent: Data,
+  lvalue: LazyCommand[DefWire],
+  rvalue: LazyCommand[DefNode[Data]])
+    extends TopBinding {
   def location: Option[BaseModule] = parent.topBinding.location
 }
 
