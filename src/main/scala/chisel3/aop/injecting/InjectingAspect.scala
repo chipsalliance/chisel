@@ -63,7 +63,6 @@ abstract class InjectorAspect[T <: RawModule, M <: RawModule](
           chiselOptions.throwOnFirstError,
           chiselOptions.warningFilters,
           chiselOptions.sourceRoots,
-          None,
           Nil // FIXME this maybe should somehow grab definitions from earlier elaboration
         )
       // Add existing module names into the namespace. If injection logic instantiates new modules

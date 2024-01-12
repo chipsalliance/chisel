@@ -5,18 +5,10 @@ package chisel3.experimental.hierarchy.core
 import scala.language.experimental.macros
 import chisel3._
 import chisel3.experimental.hierarchy.{InstantiableClone, ModuleClone}
-<<<<<<< HEAD
-import chisel3.internal.{throwException, Builder}
+import chisel3.internal.{throwException, BaseBlackBox, Builder}
 import chisel3.experimental.{BaseModule, ExtModule, SourceInfo}
 import chisel3.internal.sourceinfo.InstanceTransform
 import chisel3.internal.firrtl.{Component, DefBlackBox, DefIntrinsicModule, DefModule, Port}
-=======
-import chisel3.internal.{throwException, BaseBlackBox, Builder}
-import chisel3.experimental.{BaseModule, ExtModule, SourceInfo, UnlocatableSourceInfo}
-import chisel3.internal.sourceinfo.InstanceTransform
-import chisel3.internal.firrtl.{Component, DefBlackBox, DefClass, DefIntrinsicModule, DefModule, Port}
-import chisel3.properties.Class
->>>>>>> a050b8cda (Fix using Definitions as arguments to Definitions (#3726))
 import firrtl.annotations.IsModule
 
 import scala.annotation.nowarn
@@ -123,22 +115,12 @@ object Instance extends SourceInfoDoc {
     implicit sourceInfo: SourceInfo
   ): Instance[T] = {
     // Check to see if the module is already defined internally or externally
-<<<<<<< HEAD
-    val existingMod = Builder.components.map {
-      case c: DefModule if c.id == definition.proto                 => Some(c)
-      case c: DefBlackBox if c.name == definition.proto.name        => Some(c)
-      case c: DefIntrinsicModule if c.name == definition.proto.name => Some(c)
-      case _ => None
-    }.flatten
-=======
     val existingMod = Builder.allDefinitions.view.flatten.map(_.proto).exists {
-      case c: Class               => c == definition.proto
       case c: RawModule           => c == definition.proto
       case c: BaseBlackBox        => c.name == definition.proto.name
       case c: BaseIntrinsicModule => c.name == definition.proto.name
       case _ => false
     }
->>>>>>> a050b8cda (Fix using Definitions as arguments to Definitions (#3726))
 
     if (!existingMod) {
       // Add a Definition that will get emitted as an ExtModule so that FIRRTL

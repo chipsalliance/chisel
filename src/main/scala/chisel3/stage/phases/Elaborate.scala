@@ -35,7 +35,6 @@ class Elaborate extends Phase {
             chiselOptions.throwOnFirstError,
             chiselOptions.warningFilters,
             chiselOptions.sourceRoots,
-            None,
             Nil
           )
         val (circuit, dut) =
