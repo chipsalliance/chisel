@@ -193,8 +193,6 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt, sourceInf
     idx:       UInt,
     writeData: T,
     mask:      Seq[Bool]
-  )(
-    implicit evidence: T <:< Vec[_]
   ): Unit = macro SourceInfoTransform.idxDataMaskArg
 
   def do_write(
@@ -202,8 +200,7 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt, sourceInf
     data: T,
     mask: Seq[Bool]
   )(
-    implicit evidence: T <:< Vec[_],
-    sourceInfo:        SourceInfo
+    implicit sourceInfo: SourceInfo
   ): Unit =
     masked_write_impl(idx, data, mask, Builder.forcedClock, true)
 
@@ -223,8 +220,6 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt, sourceInf
     writeData: T,
     mask:      Seq[Bool],
     clock:     Clock
-  )(
-    implicit evidence: T <:< Vec[_]
   ): Unit = macro SourceInfoTransform.idxDataMaskClockArg
 
   def do_write(
@@ -233,8 +228,7 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt, sourceInf
     mask:  Seq[Bool],
     clock: Clock
   )(
-    implicit evidence: T <:< Vec[_],
-    sourceInfo:        SourceInfo
+    implicit sourceInfo: SourceInfo
   ): Unit =
     masked_write_impl(idx, data, mask, clock, false)
 
@@ -245,21 +239,20 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt, sourceInf
     clock: Clock,
     warn:  Boolean
   )(
-    implicit evidence: T <:< Vec[_],
-    sourceInfo:        SourceInfo
+    implicit sourceInfo: SourceInfo
   ): Unit = {
     if (warn && clockInst.isDefined && clock != clockInst.get) {
       clockWarning(None, MemPortDirection.WRITE)
     }
-    val accessor = makePort(sourceInfo, idx, MemPortDirection.WRITE, clock).asInstanceOf[Vec[Data]]
-    val dataVec = data.asInstanceOf[Vec[Data]]
-    if (accessor.length != dataVec.length) {
-      Builder.error(s"Mem write data must contain ${accessor.length} elements (found ${dataVec.length})")
+    val accessorVec: Seq[Data] = seqFromData(makePort(sourceInfo, idx, MemPortDirection.WRITE, clock))
+    val dataVec:     Seq[Data] = seqFromData(data)
+    if (accessorVec.length != dataVec.length) {
+      Builder.error(s"Mem write data must contain ${accessorVec.length} elements (found ${dataVec.length})")
     }
-    if (accessor.length != mask.length) {
-      Builder.error(s"Mem write mask must contain ${accessor.length} elements (found ${mask.length})")
+    if (accessorVec.length != mask.length) {
+      Builder.error(s"Mem write mask must contain ${accessorVec.length} elements (found ${mask.length})")
     }
-    for (((cond, port), datum) <- mask.zip(accessor).zip(dataVec))
+    for (((cond, port), datum) <- mask.zip(accessorVec).zip(dataVec))
       when(cond) { port := datum }
   }
 
@@ -283,6 +276,12 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt, sourceInf
     // Bind each element of port to being a MemoryPort
     port.bind(MemoryPortBinding(Builder.forcedUserModule, Builder.currentWhen))
     port
+  }
+
+  private[chisel3] def seqFromData(data: Data): Seq[Data] = data match {
+    case a: Record => a.getElements.flatMap(seqFromData)
+    case a: Vec[_] => a.allElements.flatMap(seqFromData)
+    case _ => Seq(data)
   }
 }
 
@@ -551,8 +550,6 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
     mask:      Seq[Bool],
     en:        Bool,
     isWrite:   Bool
-  )(
-    implicit evidence: T <:< Vec[_]
   ): T = macro SourceInfoTransform.idxDataMaskEnIswArg
 
   def do_readWrite(
@@ -562,8 +559,7 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
     en:        Bool,
     isWrite:   Bool
   )(
-    implicit evidence: T <:< Vec[_],
-    sourceInfo:        SourceInfo
+    implicit sourceInfo: SourceInfo
   ): T = masked_readWrite_impl(idx, writeData, mask, en, isWrite, Builder.forcedClock, true)
 
   /** Generates an explicit read-write port for this SyncReadMem, with a bytemask for
@@ -591,8 +587,6 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
     en:        Bool,
     isWrite:   Bool,
     clock:     Clock
-  )(
-    implicit evidence: T <:< Vec[_]
   ): T = macro SourceInfoTransform.idxDataMaskEnIswClockArg
 
   def do_readWrite(
@@ -603,8 +597,7 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
     isWrite:   Bool,
     clock:     Clock
   )(
-    implicit evidence: T <:< Vec[_],
-    sourceInfo:        SourceInfo
+    implicit sourceInfo: SourceInfo
   ) = masked_readWrite_impl(idx, writeData, mask, en, isWrite, clock, false)
 
   private def masked_readWrite_impl(
@@ -616,18 +609,17 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
     clock:   Clock,
     warn:    Boolean
   )(
-    implicit evidence: T <:< Vec[_],
-    sourceInfo:        SourceInfo
+    implicit sourceInfo: SourceInfo
   ): T = {
     var _port: Option[T] = None
     val _a = WireDefault(chiselTypeOf(addr), DontCare)
     when(enable) {
       _a := addr
       _port = Some(super.do_apply_impl(_a, clock, MemPortDirection.RDWR, warn))
-      val accessor = _port.get.asInstanceOf[Vec[Data]]
+      val accessor = seqFromData(_port.get)
 
       when(isWrite) {
-        val dataVec = data.asInstanceOf[Vec[Data]]
+        val dataVec = seqFromData(data)
         if (accessor.length != dataVec.length) {
           Builder.error(s"Mem write data must contain ${accessor.length} elements (found ${dataVec.length})")
         }
