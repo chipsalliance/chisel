@@ -79,8 +79,9 @@ class MemoryReadWritePort[T <: Data](tpe: T, addrWidth: Int, masked: Boolean) ex
   * @param numReadPorts The number of read ports
   * @param numWritePorts The number of write ports
   * @param numReadwritePorts The number of read/write ports
-  * @param masked TODO
-  * @param underlying TODO
+  * @param masked Whether the memory is write masked
+  * @param underlying Points to SRAM that instantiates this interface; None by
+  *                   default if this was instantiated directly
   */
 class SRAMInterface[T <: Data](
   memSize:           BigInt,
@@ -89,8 +90,8 @@ class SRAMInterface[T <: Data](
   numWritePorts:     Int,
   numReadwritePorts: Int,
   masked:            Boolean = false,
-  val underlying:    Option[HasTarget] = None // points to SRAM that instantiates this
-) extends Bundle {
+  val underlying:    Option[HasTarget] = None)
+    extends Bundle {
   if (masked) {
     require(
       tpe.isInstanceOf[Vec[_]],

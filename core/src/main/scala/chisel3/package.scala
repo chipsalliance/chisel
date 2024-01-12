@@ -414,6 +414,8 @@ package object chisel3 {
 
   final val deprecatedPublicAPIMsg = "APIs in chisel3.internal are not intended to be public"
 
+  /** Contains universal methods for target accesses.
+    */
   trait HasTarget {
     def toTarget:         ReferenceTarget
     def toAbsoluteTarget: ReferenceTarget
@@ -424,9 +426,6 @@ package object chisel3 {
 
     /** This wrapping hides the actual object, ensuring users only have access
       * to the target methods (instead of the type of the underlying object).
-      *
-      * @param t
-      * @return
       */
     def wrap(t: HasTarget): HasTarget = new HasTarget {
       def toTarget = t.toTarget
