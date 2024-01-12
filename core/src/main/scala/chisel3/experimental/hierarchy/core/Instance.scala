@@ -5,13 +5,15 @@ package chisel3.experimental.hierarchy.core
 import scala.language.experimental.macros
 import chisel3._
 import chisel3.experimental.hierarchy.{InstantiableClone, ModuleClone}
-import chisel3.internal.{throwException, Builder}
+import chisel3.internal.{throwException, BaseBlackBox, Builder}
 import chisel3.experimental.{BaseModule, ExtModule, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal.sourceinfo.InstanceTransform
 import chisel3.internal.firrtl.{Component, DefBlackBox, DefClass, DefIntrinsicModule, DefModule, Port}
+import chisel3.properties.Class
 import firrtl.annotations.IsModule
 
 import scala.annotation.nowarn
+import chisel3.experimental.BaseIntrinsicModule
 
 /** User-facing Instance type.
   * Represents a unique instance of type `A` which are marked as @instantiable
@@ -120,21 +122,21 @@ object Instance extends SourceInfoDoc {
     implicit sourceInfo: SourceInfo
   ): Instance[T] = {
     // Check to see if the module is already defined internally or externally
-    val existingMod = Builder.components.map {
-      case c: DefClass if c.id == definition.proto                  => Some(c)
-      case c: DefModule if c.id == definition.proto                 => Some(c)
-      case c: DefBlackBox if c.name == definition.proto.name        => Some(c)
-      case c: DefIntrinsicModule if c.name == definition.proto.name => Some(c)
-      case _ => None
-    }.flatten
+    val existingMod = Builder.allDefinitions.view.flatten.map(_.proto).exists {
+      case c: Class               => c == definition.proto
+      case c: RawModule           => c == definition.proto
+      case c: BaseBlackBox        => c.name == definition.proto.name
+      case c: BaseIntrinsicModule => c.name == definition.proto.name
+      case _ => false
+    }
 
-    if (existingMod.isEmpty) {
+    if (!existingMod) {
       // Add a Definition that will get emitted as an ExtModule so that FIRRTL
       // does not complain about a missing element
       val extModName = Builder.importedDefinitionMap.getOrElse(
         definition.proto.name,
         throwException(
-          "Imported Definition information not found - possibly forgot to add ImportDefinition annotation?"
+          s"Imported Definition information not found for ${definition.proto.name} - possibly forgot to add ImportDefinition annotation?"
         )
       )
       class EmptyExtModule extends ExtModule {

@@ -352,8 +352,13 @@ package experimental {
       import chisel3.experimental.hierarchy.core.{Definition, Instance}
       def toInstance: Instance[T] = new Instance(Proto(b))
       def toDefinition: Definition[T] = {
+        val result = new Definition(Proto(b))
+        // .toDefinition is sometimes called in Select APIs outside of Chisel elaboration
+        if (Builder.inContext) {
+          Builder.definitions += result
+        }
         b.toDefinitionCalled = Some(si)
-        new Definition(Proto(b))
+        result
       }
     }
   }
