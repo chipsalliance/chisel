@@ -6,7 +6,12 @@ import scala.util.DynamicVariable
 import scala.collection.mutable.ArrayBuffer
 import chisel3._
 import chisel3.experimental._
+<<<<<<< HEAD
 import chisel3.experimental.hierarchy.core.{Clone, ImportDefinitionAnnotation, Instance}
+=======
+import chisel3.experimental.hierarchy.core.{Clone, Definition, ImportDefinitionAnnotation, Instance}
+import chisel3.properties.Class
+>>>>>>> a050b8cda (Fix using Definitions as arguments to Definitions (#3726))
 import chisel3.internal.firrtl._
 import chisel3.internal.naming._
 import _root_.firrtl.annotations.{CircuitName, ComponentName, IsMember, ModuleName, Named, ReferenceTarget}
@@ -418,7 +423,14 @@ private[chisel3] class DynamicContext(
   val annotationSeq:     AnnotationSeq,
   val throwOnFirstError: Boolean,
   val warningFilters:    Seq[WarningFilter],
+<<<<<<< HEAD
   val sourceRoots:       Seq[File]) {
+=======
+  val sourceRoots:       Seq[File],
+  val defaultNamespace:  Option[Namespace],
+  // Definitions from other scopes in the same elaboration, use allDefinitions below
+  val outerScopeDefinitions: List[Iterable[Definition[_]]]) {
+>>>>>>> a050b8cda (Fix using Definitions as arguments to Definitions (#3726))
   val importedDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
 
   // Map from proto module name to ext-module name
@@ -462,6 +474,7 @@ private[chisel3] class DynamicContext(
   }
 
   val components = ArrayBuffer[Component]()
+  val definitions = ArrayBuffer[Definition[_]]()
   val annotations = ArrayBuffer[ChiselAnnotation]()
   val newAnnotations = ArrayBuffer[ChiselMultiAnnotation]()
   var currentModule: Option[BaseModule] = None
@@ -501,6 +514,9 @@ private[chisel3] object Builder extends LazyLogging {
     dynamicContextVar.value.get
   }
 
+  /** Check if we are in a Builder context */
+  def inContext: Boolean = dynamicContextVar.value.isDefined
+
   // Used to suppress warnings when casting from a UInt to an Enum
   var suppressEnumCastWarning: Boolean = false
 
@@ -534,8 +550,25 @@ private[chisel3] object Builder extends LazyLogging {
 
   def globalNamespace:           Namespace = dynamicContext.globalNamespace
   def globalIdentifierNamespace: Namespace = dynamicContext.globalIdentifierNamespace
+<<<<<<< HEAD
   def components:                ArrayBuffer[Component] = dynamicContext.components
   def annotations:               ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
+=======
+
+  def aliasMap: mutable.LinkedHashMap[String, (fir.Type, SourceInfo)] =
+    dynamicContext.aliasMap
+
+  def components:  ArrayBuffer[Component] = dynamicContext.components
+  def definitions: ArrayBuffer[Definition[_]] = dynamicContext.definitions
+
+  /** All definitions from current elaboration, including Definitions passed as an argument to this one */
+  def allDefinitions: List[Iterable[Definition[_]]] = definitions :: dynamicContext.outerScopeDefinitions
+
+  def annotations: ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
+
+  def layers:  mutable.LinkedHashSet[layer.Layer] = dynamicContext.layers
+  def options: mutable.LinkedHashSet[choice.Case] = dynamicContext.options
+>>>>>>> a050b8cda (Fix using Definitions as arguments to Definitions (#3726))
 
   def contextCache: BuilderContextCache = dynamicContext.contextCache
 

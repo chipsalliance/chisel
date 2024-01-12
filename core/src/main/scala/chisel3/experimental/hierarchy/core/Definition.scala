@@ -101,7 +101,18 @@ object Definition extends SourceInfoDoc {
   ): Definition[T] = {
     val dynamicContext = {
       val context = Builder.captureContext()
+<<<<<<< HEAD
       new DynamicContext(Nil, context.throwOnFirstError, context.warningFilters, context.sourceRoots)
+=======
+      new DynamicContext(
+        Nil,
+        context.throwOnFirstError,
+        context.warningFilters,
+        context.sourceRoots,
+        Some(context.globalNamespace),
+        Builder.allDefinitions
+      )
+>>>>>>> a050b8cda (Fix using Definitions as arguments to Definitions (#3726))
     }
     Builder.globalNamespace.copyTo(dynamicContext.globalNamespace)
     dynamicContext.inDefinition = true
@@ -109,8 +120,12 @@ object Definition extends SourceInfoDoc {
     Builder.components ++= ir.components
     Builder.annotations ++= ir.annotations: @nowarn // this will go away when firrtl is merged
     module._circuit = Builder.currentModule
+<<<<<<< HEAD
     dynamicContext.globalNamespace.copyTo(Builder.globalNamespace)
     new Definition(Proto(module))
+=======
+    module.toDefinition
+>>>>>>> a050b8cda (Fix using Definitions as arguments to Definitions (#3726))
   }
 
 }
