@@ -84,13 +84,13 @@ class MemoryReadWritePort[T <: Data](tpe: T, addrWidth: Int, masked: Boolean) ex
   *                   default if this was instantiated directly
   */
 class SRAMInterface[T <: Data](
-  memSize:           BigInt,
-  tpe:               T,
-  numReadPorts:      Int,
-  numWritePorts:     Int,
-  numReadwritePorts: Int,
-  masked:            Boolean = false,
-  val underlying:    Option[HasTarget] = None)
+  memSize:                          BigInt,
+  tpe:                              T,
+  numReadPorts:                     Int,
+  numWritePorts:                    Int,
+  numReadwritePorts:                Int,
+  masked:                           Boolean = false,
+  private[chisel3] val _underlying: Option[HasTarget] = None)
     extends Bundle {
   if (masked) {
     require(
@@ -108,6 +108,8 @@ class SRAMInterface[T <: Data](
   val writePorts: Vec[MemoryWritePort[T]] = Vec(numWritePorts, new MemoryWritePort(tpe, addrWidth, masked))
   val readwritePorts: Vec[MemoryReadWritePort[T]] =
     Vec(numReadwritePorts, new MemoryReadWritePort(tpe, addrWidth, masked))
+
+  def underlying: Option[HasTarget] = _underlying
 }
 
 /** A memory file with which to preload an [[SRAM]]
@@ -465,7 +467,7 @@ object SRAM {
 
     val mem = SyncReadMem(size, tpe)
     val _out = Wire(
-      new SRAMInterface(size, tpe, numReadPorts, numWritePorts, numReadwritePorts, isVecMem, Some(HasTarget.wrap(mem)))
+      new SRAMInterface(size, tpe, numReadPorts, numWritePorts, numReadwritePorts, isVecMem, Some(HasTarget(mem)))
     )
 
     for ((clock, port) <- readPortClocks.zip(_out.readPorts)) {

@@ -355,7 +355,7 @@ private[chisel3] trait HasId extends chisel3.InstanceId {
 }
 
 /** Holds the implementation of toNamed for Data and MemBase */
-private[chisel3] trait NamedComponent extends HasId with HasTarget {
+private[chisel3] trait NamedComponent extends HasId {
 
   /** Returns a FIRRTL ComponentName that references this object
     * @note Should not be called until circuit elaboration is complete

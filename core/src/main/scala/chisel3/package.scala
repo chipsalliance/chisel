@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import firrtl.annotations.{IsMember, Named, ReferenceTarget}
-import chisel3.internal.ExceptionHelpers
+import chisel3.internal.{ExceptionHelpers, NamedComponent}
 import chisel3.experimental.BaseModule
 
 import java.util.{MissingFormatArgumentException, UnknownFormatConversionException}
@@ -416,7 +416,7 @@ package object chisel3 {
 
   /** Contains universal methods for target accesses.
     */
-  trait HasTarget {
+  sealed trait HasTarget {
     def toTarget:         ReferenceTarget
     def toAbsoluteTarget: ReferenceTarget
     def toRelativeTarget(root: Option[BaseModule]): ReferenceTarget
@@ -427,7 +427,7 @@ package object chisel3 {
     /** This wrapping hides the actual object, ensuring users only have access
       * to the target methods (instead of the type of the underlying object).
       */
-    def wrap(t: HasTarget): HasTarget = new HasTarget {
+    private[chisel3] def apply(t: NamedComponent): HasTarget = new HasTarget {
       def toTarget = t.toTarget
       def toAbsoluteTarget = t.toAbsoluteTarget
       def toRelativeTarget(root: Option[BaseModule]) = t.toRelativeTarget(root)
