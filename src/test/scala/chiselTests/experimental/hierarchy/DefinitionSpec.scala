@@ -90,6 +90,34 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       chirrtl.serialize should include("module AddOneWithNested_2 :")
       chirrtl.serialize should include("module AddOneWithNested_3 :")
     }
+
+    it("(0.g): definitions should work as arguments to definitions") {
+      class Top extends Module {
+        val addOne = Definition(new AddOne)
+        val addTwo = Definition(new AddTwoDefinitionArgument(addOne))
+        val inst = Instance(addTwo)
+        inst.in := 12.U
+      }
+      val chirrtl = getFirrtlAndAnnos(new Top)._1.serialize
+      chirrtl should include("module AddOne :")
+      chirrtl shouldNot include("module AddOne_")
+      chirrtl should include("module AddTwoDefinitionArgument :")
+      chirrtl should include("module Top :")
+    }
+    it("(0.h): definitions created from Modules should work as arguments to definitions") {
+      class Top extends Module {
+        val addOne = Module(new AddOne)
+        val addTwo = Definition(new AddTwoDefinitionArgument(addOne.toDefinition))
+        val inst = Instance(addTwo)
+        inst.in := 12.U
+      }
+      val chirrtl = getFirrtlAndAnnos(new Top)._1.serialize
+      chirrtl should include("module AddOne :")
+      chirrtl shouldNot include("module AddOne_")
+      chirrtl should include("module AddTwoDefinitionArgument :")
+      chirrtl should include("module Top :")
+      chirrtl should include("inst addOne of AddOne")
+    }
   }
   describe("1: Annotations on definitions in same chisel compilation") {
     it("1.0: should work on a single definition, annotating the definition") {

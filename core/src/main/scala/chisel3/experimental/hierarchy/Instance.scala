@@ -4,6 +4,7 @@ package chisel3.experimental.hierarchy
 
 import scala.language.experimental.macros
 import chisel3._
+<<<<<<< HEAD:core/src/main/scala/chisel3/experimental/hierarchy/Instance.scala
 import chisel3.internal.BaseModule.{InstantiableClone, IsClone, ModuleClone}
 import chisel3.internal.Builder
 import chisel3.internal.sourceinfo.{InstanceTransform, SourceInfo}
@@ -11,6 +12,18 @@ import chisel3.experimental.{BaseModule, ExtModule}
 import chisel3.internal.firrtl.{Component, DefBlackBox, DefModule, Port}
 import firrtl.annotations.IsModule
 import chisel3.internal.throwException
+=======
+import chisel3.experimental.hierarchy.{InstantiableClone, ModuleClone}
+import chisel3.internal.{throwException, BaseBlackBox, Builder}
+import chisel3.experimental.{BaseModule, ExtModule, SourceInfo, UnlocatableSourceInfo}
+import chisel3.internal.sourceinfo.InstanceTransform
+import chisel3.internal.firrtl.{Component, DefBlackBox, DefClass, DefIntrinsicModule, DefModule, Port}
+import chisel3.properties.Class
+import firrtl.annotations.IsModule
+
+import scala.annotation.nowarn
+import chisel3.experimental.BaseIntrinsicModule
+>>>>>>> a050b8cda (Fix using Definitions as arguments to Definitions (#3726)):core/src/main/scala/chisel3/experimental/hierarchy/core/Instance.scala
 
 /** User-facing Instance type.
   * Represents a unique instance of type [[A]] which are marked as @instantiable
@@ -110,19 +123,29 @@ object Instance extends SourceInfoDoc {
     compileOptions:      CompileOptions
   ): Instance[T] = {
     // Check to see if the module is already defined internally or externally
+<<<<<<< HEAD:core/src/main/scala/chisel3/experimental/hierarchy/Instance.scala
     val existingMod = Builder.components.map {
       case c: DefModule if c.id == definition.proto          => Some(c)
       case c: DefBlackBox if c.name == definition.proto.name => Some(c)
       case _ => None
     }.flatten
+=======
+    val existingMod = Builder.allDefinitions.view.flatten.map(_.proto).exists {
+      case c: Class               => c == definition.proto
+      case c: RawModule           => c == definition.proto
+      case c: BaseBlackBox        => c.name == definition.proto.name
+      case c: BaseIntrinsicModule => c.name == definition.proto.name
+      case _ => false
+    }
+>>>>>>> a050b8cda (Fix using Definitions as arguments to Definitions (#3726)):core/src/main/scala/chisel3/experimental/hierarchy/core/Instance.scala
 
-    if (existingMod.isEmpty) {
+    if (!existingMod) {
       // Add a Definition that will get emitted as an ExtModule so that FIRRTL
       // does not complain about a missing element
       val extModName = Builder.importDefinitionMap.getOrElse(
         definition.proto.name,
         throwException(
-          "Imported Definition information not found - possibly forgot to add ImportDefinition annotation?"
+          s"Imported Definition information not found for ${definition.proto.name} - possibly forgot to add ImportDefinition annotation?"
         )
       )
       class EmptyExtModule extends ExtModule {

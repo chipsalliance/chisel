@@ -103,7 +103,18 @@ object Definition extends SourceInfoDoc {
   ): Definition[T] = {
     val dynamicContext = {
       val context = Builder.captureContext()
+<<<<<<< HEAD:core/src/main/scala/chisel3/experimental/hierarchy/Definition.scala
       new DynamicContext(Nil, context.throwOnFirstError, context.warnReflectiveNaming, context.warningsAsErrors)
+=======
+      new DynamicContext(
+        Nil,
+        context.throwOnFirstError,
+        context.warningFilters,
+        context.sourceRoots,
+        Some(context.globalNamespace),
+        Builder.allDefinitions
+      )
+>>>>>>> a050b8cda (Fix using Definitions as arguments to Definitions (#3726)):core/src/main/scala/chisel3/experimental/hierarchy/core/Definition.scala
     }
     Builder.globalNamespace.copyTo(dynamicContext.globalNamespace)
     dynamicContext.inDefinition = true
@@ -111,8 +122,12 @@ object Definition extends SourceInfoDoc {
     Builder.components ++= ir.components
     Builder.annotations ++= ir.annotations
     module._circuit = Builder.currentModule
+<<<<<<< HEAD:core/src/main/scala/chisel3/experimental/hierarchy/Definition.scala
     dynamicContext.globalNamespace.copyTo(Builder.globalNamespace)
     new Definition(Proto(module))
+=======
+    module.toDefinition
+>>>>>>> a050b8cda (Fix using Definitions as arguments to Definitions (#3726)):core/src/main/scala/chisel3/experimental/hierarchy/core/Definition.scala
   }
 
 }
