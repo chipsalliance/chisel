@@ -20,7 +20,7 @@ import scala.collection.mutable.ArrayBuffer
   * multiple IO() declarations.
   */
 @nowarn("msg=class Port") // delete when Port becomes private
-abstract class RawModule extends BaseModule {
+class RawModule extends BaseModule {
 
   /** Hook to invoke hardware generators after the rest of the Module is constructed.
     *
