@@ -11,7 +11,6 @@ import firrtl.annotations.NoTargetAnnotation
 import firrtl.options.{TargetDirAnnotation, Unserializable}
 
 import scala.io.Source
-import scala.annotation.nowarn
 
 class SimpleIO extends Bundle {
   val in = Input(UInt(32.W))

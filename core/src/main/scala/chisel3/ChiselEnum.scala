@@ -8,8 +8,8 @@ import scala.reflect.macros.blackbox.Context
 import scala.collection.mutable
 import chisel3.experimental.{annotate, requireIsHardware, ChiselAnnotation, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal.Builder.pushOp
-import chisel3.internal.firrtl.PrimOp._
-import chisel3.internal.firrtl._
+import chisel3.internal.firrtl.ir.PrimOp._
+import chisel3.internal.firrtl.ir._
 import chisel3.internal.sourceinfo._
 import chisel3.internal.{
   containsProbe,

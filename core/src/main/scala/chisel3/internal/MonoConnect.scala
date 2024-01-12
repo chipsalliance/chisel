@@ -7,7 +7,8 @@ import chisel3._
 import chisel3.experimental.{Analog, BaseModule, SourceInfo}
 import chisel3.internal.containsProbe
 import chisel3.internal.Builder.pushCommand
-import chisel3.internal.firrtl.{Connect, Converter, DefInvalid, ProbeDefine, PropAssign}
+import chisel3.internal.firrtl.ir.{Connect, DefInvalid, ProbeDefine, PropAssign}
+import chisel3.internal.firrtl.Converter
 import chisel3.experimental.dataview.{isView, reify, reifyToAggregate}
 import chisel3.properties.{Class, Property}
 import chisel3.reflect.DataMirror

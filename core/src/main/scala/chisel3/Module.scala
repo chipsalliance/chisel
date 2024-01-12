@@ -8,7 +8,7 @@ import scala.language.experimental.macros
 
 import chisel3.internal._
 import chisel3.internal.Builder._
-import chisel3.internal.firrtl._
+import chisel3.internal.firrtl.ir._
 import chisel3.experimental.{BaseModule, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal.sourceinfo.{InstTransform}
 import chisel3.properties.{Class, Property}
@@ -20,8 +20,6 @@ import chisel3.util.simpleClassName
 
 object Module extends SourceInfoDoc {
 
-  import scala.annotation.nowarn
-
   /** A wrapper method that all Module instantiations must be wrapped in
     * (necessary to help Chisel track internal state).
     *
@@ -32,7 +30,6 @@ object Module extends SourceInfoDoc {
   def apply[T <: BaseModule](bc: => T): T = macro InstTransform.apply[T]
 
   /** @group SourceInfoTransformMacro */
-  @nowarn("msg=class Port") // delete when Port becomes private
   def do_apply[T <: BaseModule](bc: => T)(implicit sourceInfo: SourceInfo): T = {
     // Instantiate the module definition.
     val module = evaluate[T](bc)
@@ -345,7 +342,6 @@ package internal {
 package experimental {
 
   import chisel3.experimental.hierarchy.core.{IsInstantiable, Proto}
-  import scala.annotation.nowarn
 
   object BaseModule {
     implicit class BaseModuleExtensions[T <: BaseModule](b: T)(implicit si: SourceInfo) {
@@ -366,7 +362,6 @@ package experimental {
   /** Abstract base class for Modules, an instantiable organizational unit for RTL.
     */
   // TODO: seal this?
-  @nowarn("msg=class Port") // delete when Port becomes private
   abstract class BaseModule extends HasId with IsInstantiable {
     _parent.foreach(_.addId(this))
 

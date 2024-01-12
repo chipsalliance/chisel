@@ -4,7 +4,6 @@ package chiselTests
 
 import chisel3._
 import chisel3.experimental.AffectsChiselPrefix
-import chisel3.internal.firrtl.UnknownWidth
 import chisel3.stage.ChiselGeneratorAnnotation
 import circt.stage.ChiselStage
 import chisel3.util._

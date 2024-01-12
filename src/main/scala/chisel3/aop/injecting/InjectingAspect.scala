@@ -5,7 +5,7 @@ package chisel3.aop.injecting
 import chisel3.{withClockAndReset, Module, ModuleAspect, RawModule}
 import chisel3.aop._
 import chisel3.internal.{Builder, DynamicContext}
-import chisel3.internal.firrtl.DefModule
+import chisel3.internal.firrtl.ir.DefModule
 import chisel3.stage.{ChiselOptions, DesignAnnotation}
 import firrtl.annotations.{Annotation, ModuleTarget}
 import firrtl.options.Viewer.view

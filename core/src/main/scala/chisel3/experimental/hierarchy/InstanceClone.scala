@@ -4,7 +4,7 @@ package chisel3.experimental.hierarchy
 
 import chisel3.experimental.BaseModule
 import chisel3.internal.PseudoModule
-import chisel3.internal.firrtl.{Component, Ref}
+import chisel3.internal.firrtl.ir.{Component, Ref}
 
 /** Represents a module viewed from a different instance context.
   *

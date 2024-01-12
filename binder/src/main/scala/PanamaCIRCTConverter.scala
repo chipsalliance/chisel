@@ -13,7 +13,8 @@ import chisel3.{Data => ChiselData, _}
 import chisel3.properties.PropertyType
 import chisel3.experimental._
 import chisel3.internal._
-import chisel3.internal.firrtl._
+import chisel3.internal.firrtl.ir._
+import chisel3.internal.firrtl.Converter
 import chisel3.assert.{Assert => VerifAssert}
 import chisel3.assume.{Assume => VerifAssume}
 import chisel3.cover.{Cover => VerifCover}

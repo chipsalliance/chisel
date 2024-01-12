@@ -4,7 +4,7 @@ package chisel3.internal
 
 import chisel3._
 import chisel3.experimental.BaseModule
-import chisel3.internal.firrtl.{LitArg, PropertyLit}
+import chisel3.internal.firrtl.ir.{LitArg, PropertyLit}
 import chisel3.properties.Class
 
 import scala.collection.immutable.VectorMap

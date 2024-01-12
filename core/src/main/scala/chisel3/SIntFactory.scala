@@ -2,7 +2,7 @@
 
 package chisel3
 
-import chisel3.internal.firrtl.{SLit, Width}
+import chisel3.internal.firrtl.ir.SLit
 
 trait SIntFactory {
 

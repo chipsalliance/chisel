@@ -13,7 +13,7 @@ import scala.annotation.{nowarn, tailrec}
 package object chisel3 {
   import internal.chiselRuntimeDeprecated
   import experimental.{DeprecatedSourceInfo, UnlocatableSourceInfo}
-  import internal.firrtl.{Port, Width}
+  import internal.firrtl.ir.Port
   import internal.Builder
 
   import scala.language.implicitConversions

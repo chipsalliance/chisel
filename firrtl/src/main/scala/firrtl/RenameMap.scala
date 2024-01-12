@@ -8,7 +8,6 @@ import firrtl.annotations.TargetToken.{Field, Index, Instance, OfModule}
 import firrtl.renamemap._
 
 import scala.collection.mutable
-import scala.annotation.nowarn
 
 object RenameMap {
   def apply(map: collection.Map[Named, Seq[Named]]): RenameMap = MutableRenameMap.fromNamed(map)

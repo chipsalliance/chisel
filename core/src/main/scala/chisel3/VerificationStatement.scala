@@ -6,7 +6,7 @@ import scala.reflect.macros.blackbox.Context
 import scala.language.experimental.macros
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
-import chisel3.internal.firrtl._
+import chisel3.internal.firrtl.ir._
 import chisel3.experimental.SourceInfo
 
 import scala.annotation.nowarn

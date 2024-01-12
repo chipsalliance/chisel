@@ -7,7 +7,7 @@ import chisel3.{Data, VerificationStatement}
 import chisel3.assert.Assert
 import chisel3.assume.Assume
 import chisel3.cover.Cover
-import chisel3.internal.firrtl._
+import chisel3.internal.firrtl.ir._
 
 abstract class CIRCTConverter {
   val mlirStream:    Writable

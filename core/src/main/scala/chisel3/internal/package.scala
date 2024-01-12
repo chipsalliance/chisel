@@ -5,11 +5,11 @@ package chisel3
 import firrtl.annotations.{IsModule, ModuleTarget}
 import chisel3.experimental.{BaseModule, SourceInfo, UnlocatableSourceInfo}
 import chisel3.reflect.DataMirror.hasProbeTypeModifier
-import chisel3.internal.firrtl.{Component, DefModule}
+import chisel3.internal.firrtl.ir.{Component, DefModule}
 import chisel3.internal.Builder.Prefix
 
 import scala.util.Try
-import scala.annotation.{implicitNotFound, nowarn}
+import scala.annotation.implicitNotFound
 import scala.collection.mutable
 
 package object internal {

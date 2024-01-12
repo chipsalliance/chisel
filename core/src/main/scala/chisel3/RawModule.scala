@@ -4,13 +4,12 @@ package chisel3
 
 import scala.util.Try
 import scala.language.experimental.macros
-import scala.annotation.nowarn
 import chisel3.experimental.{BaseModule, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal._
 import chisel3.experimental.hierarchy.{InstanceClone, ModuleClone}
 import chisel3.properties.{DynamicObject, StaticObject}
 import chisel3.internal.Builder._
-import chisel3.internal.firrtl._
+import chisel3.internal.firrtl.ir._
 import _root_.firrtl.annotations.{IsModule, ModuleTarget}
 import scala.collection.immutable.VectorBuilder
 import scala.collection.mutable.ArrayBuffer
@@ -19,7 +18,6 @@ import scala.collection.mutable.ArrayBuffer
   * This abstract base class is a user-defined module which does not include implicit clock and reset and supports
   * multiple IO() declarations.
   */
-@nowarn("msg=class Port") // delete when Port becomes private
 abstract class RawModule extends BaseModule {
 
   /** Hook to invoke hardware generators after the rest of the Module is constructed.
@@ -102,7 +100,7 @@ abstract class RawModule extends BaseModule {
   //
   // Other Internal Functions
   //
-  private var _firrtlPorts: Option[Seq[firrtl.Port]] = None
+  private var _firrtlPorts: Option[Seq[Port]] = None
 
   private[chisel3] def checkPorts(): Unit = {
     for ((port, source) <- getModulePortsAndLocators) {

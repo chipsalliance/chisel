@@ -9,7 +9,7 @@ import chisel3.{Data, FixedIOBaseModule, Module, SourceInfoDoc}
 import chisel3.experimental.{BaseModule, SourceInfo}
 import chisel3.internal.{groupByIntoSeq, Builder, WireBinding}
 import chisel3.internal.Builder.pushCommand
-import chisel3.internal.firrtl.DefInstanceChoice
+import chisel3.internal.firrtl.ir.DefInstanceChoice
 import chisel3.internal.sourceinfo.InstChoiceTransform
 
 object ModuleChoice extends SourceInfoDoc {
