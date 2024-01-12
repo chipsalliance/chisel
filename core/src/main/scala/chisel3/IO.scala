@@ -9,11 +9,7 @@ object IO {
 
   /** Constructs a port for the current Module
     *
-    * This must wrap the datatype used to set the io field of any Module.
-    * i.e. All concrete modules must have defined io in this form:
-    * [lazy] val io[: io type] = IO(...[: io type])
-    *
-    * Items in [] are optional.
+    * This must wrap the datatype used to create an io port of any Module.
     *
     * The granted iodef must be a chisel type and not be bound to hardware.
     *
@@ -60,5 +56,59 @@ object IO {
         }
     module.bindIoInPlace(iodefClone)
     iodefClone
+  }
+}
+
+object Incoming {
+
+  /** Constructs an incoming port of the provided `iodef` chisel type for the current Module
+    *
+    * The following example creates a input (and mixed-alignment) aggregate port in the current module
+    *
+    * ```scala
+    *   val i = Incoming(new Decoupled(UInt(32.W)))
+    * ```
+    * In this example, the sub-elements of `i` are ports of the following direction:
+    *  * `i.bits` is an input port
+    *  * `i.valid` is an input port
+    *  * `i.ready` is an output port
+    *
+    * Note that `Incoming(foo)` is equivalent to `IO(Flipped(foo))`
+    *
+    * This must wrap the datatype used to create an io port of any Module.
+    *
+    * The granted iodef must be a non-flipped chisel type and not be bound to hardware.
+    */
+  def apply[T <: Data](iodef: => T)(implicit sourceInfo: SourceInfo): T = {
+    if (SpecifiedDirection.isFlipped(iodef.specifiedDirection))
+      Builder.error("Incoming(..) cannot accept a chisel typed which is flipped")
+    IO(Flipped(iodef))
+  }
+}
+
+object Outgoing {
+
+  /** Constructs an outgoing port of the provided `iodef` chisel type for the current Module
+    *
+    * The following example creates a output (and mixed-alignment) aggregate port in the current module
+    *
+    * ```scala
+    *   val i = Outgoing(new Decoupled(UInt(32.W)))
+    * ```
+    * In this example, the sub-elements of `i` are ports of the following direction:
+    *  * `i.bits` is an output port
+    *  * `i.valid` is an output port
+    *  * `i.ready` is an input port
+    *
+    * Note that `Outgoing(foo)` is equivalent to `IO(foo)`
+    *
+    * This must wrap the datatype used to create an io port of any Module.
+    *
+    * The granted iodef must be a non-flipped chisel type and not be bound to hardware.
+    */
+  def apply[T <: Data](iodef: => T)(implicit sourceInfo: SourceInfo): T = {
+    if (SpecifiedDirection.isFlipped(iodef.specifiedDirection))
+      Builder.error("Outgoing(..) cannot accept a chisel typed which is flipped")
+    IO(iodef)
   }
 }
