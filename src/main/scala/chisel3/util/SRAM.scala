@@ -79,6 +79,8 @@ class MemoryReadWritePort[T <: Data](tpe: T, addrWidth: Int, masked: Boolean) ex
   * @param numReadPorts The number of read ports
   * @param numWritePorts The number of write ports
   * @param numReadwritePorts The number of read/write ports
+  * @param masked TODO
+  * @param underlying TODO
   */
 class SRAMInterface[T <: Data](
   memSize:           BigInt,
@@ -86,8 +88,9 @@ class SRAMInterface[T <: Data](
   numReadPorts:      Int,
   numWritePorts:     Int,
   numReadwritePorts: Int,
-  masked:            Boolean = false)
-    extends Bundle {
+  masked:            Boolean = false,
+  val underlying:    Option[HasTarget] = None // points to SRAM that instantiates this
+) extends Bundle {
   if (masked) {
     require(
       tpe.isInstanceOf[Vec[_]],
@@ -459,8 +462,10 @@ object SRAM {
       )
     }
 
-    val _out = Wire(new SRAMInterface(size, tpe, numReadPorts, numWritePorts, numReadwritePorts, isVecMem))
     val mem = SyncReadMem(size, tpe)
+    val _out = Wire(
+      new SRAMInterface(size, tpe, numReadPorts, numWritePorts, numReadwritePorts, isVecMem, Some(HasTarget.wrap(mem)))
+    )
 
     for ((clock, port) <- readPortClocks.zip(_out.readPorts)) {
       port.data := mem.read(port.address, port.enable, clock)

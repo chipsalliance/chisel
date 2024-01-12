@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import firrtl.annotations.{IsMember, Named}
+import firrtl.annotations.{IsMember, Named, ReferenceTarget}
 import chisel3.internal.ExceptionHelpers
+import chisel3.experimental.BaseModule
 
 import java.util.{MissingFormatArgumentException, UnknownFormatConversionException}
 import scala.collection.mutable
@@ -412,4 +413,26 @@ package object chisel3 {
     "this feature will not be supported as part of the migration to the MLIR-based FIRRTL Compiler (MFC). For more information about this migration, please see the Chisel ROADMAP.md."
 
   final val deprecatedPublicAPIMsg = "APIs in chisel3.internal are not intended to be public"
+
+  trait HasTarget {
+    def toTarget:         ReferenceTarget
+    def toAbsoluteTarget: ReferenceTarget
+    def toRelativeTarget(root: Option[BaseModule]): ReferenceTarget
+  }
+
+  object HasTarget {
+
+    /** This wrapping hides the actual object, ensuring users only have access
+      * to the target methods (instead of the type of the underlying object).
+      *
+      * @param t
+      * @return
+      */
+    def wrap(t: HasTarget): HasTarget = new HasTarget {
+      def toTarget = t.toTarget
+      def toAbsoluteTarget = t.toAbsoluteTarget
+      def toRelativeTarget(root: Option[BaseModule]) = t.toRelativeTarget(root)
+    }
+
+  }
 }
