@@ -4,8 +4,8 @@ package chisel3.probe
 
 import chisel3._
 import chisel3.Data.ProbeInfo
-import chisel3.experimental.SourceInfo
-import chisel3.internal.{containsProbe, requireIsChiselType, requireNoProbeTypeModifier, Builder}
+import chisel3.experimental.{requireIsChiselType, SourceInfo}
+import chisel3.internal.{containsProbe, requireNoProbeTypeModifier, Builder}
 
 import scala.language.experimental.macros
 

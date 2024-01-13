@@ -61,7 +61,7 @@ object Lookupable {
   )(
     implicit sourceInfo: SourceInfo
   ): T = {
-    internal.requireIsHardware(data, "cross module reference type")
+    experimental.requireIsHardware(data, "cross module reference type")
     data._parent match {
       case None => data
       case Some(parent) =>

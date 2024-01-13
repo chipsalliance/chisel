@@ -7,7 +7,7 @@ import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.ir._
 import chisel3.Data.ProbeInfo
-import chisel3.experimental.SourceInfo
+import chisel3.experimental.{requireIsHardware, SourceInfo}
 import chisel3.reflect.DataMirror.{checkTypeEquivalence, collectAllMembers, hasProbeTypeModifier}
 
 import scala.language.experimental.macros

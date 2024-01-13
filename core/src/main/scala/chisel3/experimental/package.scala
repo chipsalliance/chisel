@@ -21,13 +21,6 @@ package object experimental {
   implicit def fromDoubleToDoubleParam(x: Double): DoubleParam = DoubleParam(x)
   implicit def fromStringToStringParam(x: String): StringParam = StringParam(x)
 
-  @deprecated("This type has moved to chisel3", "Chisel 3.5")
-  type ChiselEnum = chisel3.ChiselEnum
-  @deprecated("This type has moved to chisel3", "Chisel 3.5")
-  type EnumType = chisel3.EnumType
-  @deprecated("This type has moved to chisel3", "Chisel 3.5")
-  val suppressEnumCastWarning = chisel3.suppressEnumCastWarning
-
   // Rocket Chip-style clonemodule
 
   /** A record containing the results of CloneModuleAsRecord
@@ -488,7 +481,4 @@ package object experimental {
       "_10" -> _10
     )
   }
-
-  @deprecated("This value has moved to chisel3.reflect", "Chisel 3.6")
-  val DataMirror = chisel3.reflect.DataMirror
 }
