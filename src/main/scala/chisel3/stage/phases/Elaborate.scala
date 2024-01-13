@@ -34,7 +34,8 @@ class Elaborate extends Phase {
             annotations,
             chiselOptions.throwOnFirstError,
             chiselOptions.warningFilters,
-            chiselOptions.sourceRoots
+            chiselOptions.sourceRoots,
+            Nil
           )
         val (circuit, dut) =
           Builder.build(Module(gen()), context)

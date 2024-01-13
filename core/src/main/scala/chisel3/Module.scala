@@ -280,8 +280,15 @@ package experimental {
   object BaseModule {
     implicit class BaseModuleExtensions[T <: BaseModule](b: T) {
       import chisel3.experimental.hierarchy.core.{Definition, Instance}
-      def toInstance:   Instance[T] = new Instance(Proto(b))
-      def toDefinition: Definition[T] = new Definition(Proto(b))
+      def toInstance: Instance[T] = new Instance(Proto(b))
+      def toDefinition: Definition[T] = {
+        val result = new Definition(Proto(b))
+        // .toDefinition is sometimes called in Select APIs outside of Chisel elaboration
+        if (Builder.inContext) {
+          Builder.definitions += result
+        }
+        result
+      }
     }
   }
 
