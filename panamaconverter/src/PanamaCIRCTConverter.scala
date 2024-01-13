@@ -589,13 +589,17 @@ class PanamaCIRCTConverter {
     }
 
     def newNode(id: HasId, name: String, resultType: fir.Type, input: MlirValue, loc: MlirLocation): Unit = {
+      newNode(id, name, util.convert(resultType), input, loc)
+    }
+
+    def newNode(id: HasId, name: String, resultType: MlirType, input: MlirValue, loc: MlirLocation): Unit = {
       val op = util
         .OpBuilder("firrtl.node", firCtx.currentBlock, loc)
         .withNamedAttr("name", circt.mlirStringAttrGet(name))
         .withNamedAttr("nameKind", circt.firrtlAttrGetNameKind(FIRRTLNameKind.InterestingName))
         .withNamedAttr("annotations", circt.emptyArrayAttr)
         .withOperand(input)
-        .withResult(util.convert(resultType))
+        .withResult(resultType)
         // .withResult( /* ref */ )
         .build()
       firCtx.ops += ((id._id, op.op))
@@ -1431,9 +1435,15 @@ class PanamaCIRCTConverter {
       .OpBuilder(s"firrtl.${defPrim.op.toString}", firCtx.currentBlock, loc)
       .withNamedAttrs(attrs)
       .withOperands(operands.map(_.value))
-      .withResult(util.convert(resultType))
+      // Chisel will produce zero-width types (`{S,U}IntType(IntWidth(0))`) for zero values
+      // This causes problems for example `Cat(u32 >> 32, u32)`, we expect it produces type `UIntType(IntWidth(33))` but width 32 is calculated since the first operand of `Cat` is zero-width
+      // To easily fix this, we use the result type inferred by CIRCT instead of giving it manually from Chisel
+      //
+      // .withResult(util.convert(resultType))
+      .withResultInference(1)
       .build()
-    util.newNode(defPrim.id, name, resultType, op.results(0), loc)
+    val resultTypeInferred = circt.mlirValueGetType(op.results(0))
+    util.newNode(defPrim.id, name, resultTypeInferred, op.results(0), loc)
   }
 
   def visitDefReg(defReg: DefReg): Unit = {
