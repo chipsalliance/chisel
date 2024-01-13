@@ -5,7 +5,7 @@ on:
     inputs:
       system:
         description: 'The GitHub runner to use'
-        default: 'ubuntu-20.04'
+        default: 'ubuntu-22.04'
         required: true
         type: string
       jvm:
@@ -84,7 +84,7 @@ jobs:
 
   mill:
     name: compile project with mill
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -124,7 +124,7 @@ jobs:
 
   doc:
     name: Formatting
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -141,7 +141,7 @@ jobs:
 
   integration:
     name: Integration Tests
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -175,7 +175,7 @@ jobs:
 
   std:
     name: Standard Library Tests
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         scala: ["2.13.12"]
@@ -199,7 +199,7 @@ jobs:
 
   website:
     name: Build Mdoc & Website
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout
