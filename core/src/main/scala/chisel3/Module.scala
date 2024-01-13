@@ -9,7 +9,7 @@ import scala.language.experimental.macros
 import chisel3.internal._
 import chisel3.internal.Builder._
 import chisel3.internal.firrtl.ir._
-import chisel3.experimental.{BaseModule, SourceInfo, UnlocatableSourceInfo}
+import chisel3.experimental.{requireIsChiselType, BaseModule, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal.sourceinfo.{InstTransform}
 import chisel3.properties.{Class, Property}
 import chisel3.reflect.DataMirror
@@ -719,7 +719,7 @@ package experimental {
     // data must be a fresh Chisel type
     private[chisel3] def createSecretIO[A <: Data](data: => A)(implicit sourceInfo: SourceInfo): A = {
       val iodef = data
-      internal.requireIsChiselType(iodef, "io type")
+      requireIsChiselType(iodef, "io type")
       require(!isFullyClosed, "Cannot create secret ports if module is fully closed")
 
       Module.assignCompatDir(iodef)
