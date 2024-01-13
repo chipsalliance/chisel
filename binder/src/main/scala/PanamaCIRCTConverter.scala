@@ -721,6 +721,114 @@ class PanamaCIRCTConverter extends CIRCTConverter {
         .withOperand( /* src */ src.value)
         .build()
     }
+
+    case class RecursiveTypeProperties(isPassive: Boolean, containsAnalog: Boolean)
+
+    def recursiveTypeProperties(tpe: fir.Type): RecursiveTypeProperties = {
+      tpe match {
+        case fir.ClockType | fir.ResetType | fir.AsyncResetType | _: fir.SIntType | _: fir.UIntType =>
+          RecursiveTypeProperties(true, false)
+        case _:      fir.AnalogType => RecursiveTypeProperties(true, true)
+        case bundle: fir.BundleType =>
+          bundle.fields.foldLeft(RecursiveTypeProperties(true, false)) {
+            case (properties, field) =>
+              val fieldProperties = recursiveTypeProperties(field.tpe)
+              RecursiveTypeProperties(
+                properties.isPassive && fieldProperties.isPassive && field.flip == fir.Flip,
+                properties.containsAnalog || fieldProperties.containsAnalog
+              )
+          }
+        case _:      fir.PropertyType => RecursiveTypeProperties(true, false)
+        case vector: fir.VectorType   => recursiveTypeProperties(vector.tpe)
+      }
+    }
+
+    sealed trait Flow
+    object Flow {
+      final case object None extends Flow
+      final case object Source extends Flow
+      final case object Sink extends Flow
+      final case object Duplex extends Flow
+    }
+
+    def swapFlow(flow: Flow): Flow = flow match {
+      case Flow.None   => Flow.None
+      case Flow.Source => Flow.Sink
+      case Flow.Sink   => Flow.Source
+      case Flow.Duplex => Flow.Duplex
+    }
+
+    def foldFlow(value: Reference.Value, acc: Flow = Flow.Source): Flow = {
+      circt.firrtlValueFoldFlow(
+        value.value,
+        acc match {
+          case Flow.None   => 0
+          case Flow.Source => 1
+          case Flow.Sink   => 2
+          case Flow.Duplex => 3
+        }
+      ) match {
+        case 0 => Flow.None
+        case 1 => Flow.Source
+        case 2 => Flow.Sink
+        case 3 => Flow.Duplex
+      }
+    }
+
+    def emitInvalidate(value: Reference.Value, loc: MlirLocation): Unit = emitInvalidate(value, loc, foldFlow(value))
+
+    def emitInvalidate(value: Reference.Value, loc: MlirLocation, flow: Flow): Unit = {
+      val props = recursiveTypeProperties(value.tpe)
+      if (props.isPassive && !props.containsAnalog) {
+        if (flow == Flow.Source) {
+          return
+        }
+
+        val invalidValue = Reference.Value(
+          util
+            .OpBuilder("firrtl.invalidvalue", firCtx.currentBlock, loc)
+            .withResult(util.convert(value.tpe))
+            .build()
+            .results(0),
+          value.tpe
+        )
+        emitConnect(value, invalidValue, loc)
+        return
+      }
+
+      val indexType = circt.mlirIntegerTypeGet(32)
+      value.tpe match {
+        case bundle: fir.BundleType =>
+          bundle.fields.zipWithIndex.foreach {
+            case (field, index) =>
+              val fieldAccess = Reference.Value(
+                util
+                  .OpBuilder("firrtl.subfield", firCtx.currentBlock, loc)
+                  .withNamedAttr("fieldIndex", circt.mlirIntegerAttrGet(indexType, index))
+                  .withOperand(value.value)
+                  .withResult(util.convert(field.tpe))
+                  .build()
+                  .results(0),
+                field.tpe
+              )
+              emitInvalidate(fieldAccess, loc, if (field.flip == fir.Flip) swapFlow(flow) else flow)
+          }
+        case vector: fir.VectorType =>
+          for (index <- 0 until vector.size) {
+            val elementAccess = Reference.Value(
+              util
+                .OpBuilder("firrtl.subindex", firCtx.currentBlock, loc)
+                .withNamedAttr("index", circt.mlirIntegerAttrGet(indexType, index))
+                .withOperand(value.value)
+                .withResult(util.convert(vector.tpe))
+                .build()
+                .results(0),
+              vector.tpe
+            )
+            emitInvalidate(elementAccess, loc, flow)
+          }
+      }
+    }
   }
 
   val mlirStream = new Writable {
@@ -873,17 +981,7 @@ class PanamaCIRCTConverter extends CIRCTConverter {
     val loc = util.convert(defInvalid.sourceInfo)
     val dest = util.referTo(defInvalid.arg, defInvalid.sourceInfo)
 
-    val invalidValue = util
-      .OpBuilder("firrtl.invalidvalue", firCtx.currentBlock, loc)
-      .withResult(util.convert(dest.tpe))
-      .build()
-      .results(0)
-
-    util
-      .OpBuilder("firrtl.connect", firCtx.currentBlock, loc)
-      .withOperand( /* dest */ dest.value)
-      .withOperand( /* src */ invalidValue)
-      .build()
+    util.emitInvalidate(dest, loc)
   }
 
   def visitOtherwiseEnd(otherwiseEnd: OtherwiseEnd): Unit = {

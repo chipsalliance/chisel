@@ -95,6 +95,13 @@ class ProbeRead extends RawModule {
   reset := read(resetP)
 }
 
+class DontCareIOTest extends Module {
+  val io = IO(new Bundle {
+    val in = Flipped(DecoupledIO(UInt(8.W)))
+  })
+  io.in := DontCare
+}
+
 class BinderTest extends AnyFlatSpec with Matchers {
 
   def streamString(module: => RawModule, stream: CIRCTConverter => Writable): String = Seq(
@@ -181,5 +188,7 @@ class BinderTest extends AnyFlatSpec with Matchers {
       .and(include("define b_bore = probe(a)"))
       .and(include("connect baz.b_bore, read(bar.b_bore)"))
     firrtlString(new ProbeRead) should include("asClock(read(clockP))")
+
+    verilogString(new DontCareIOTest) should include("assign io_in_ready = 1'h0")
   }
 }

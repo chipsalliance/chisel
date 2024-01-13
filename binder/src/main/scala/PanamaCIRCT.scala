@@ -450,6 +450,8 @@ class PanamaCIRCT {
 
   def firrtlAttrGetMemDir(dir: FIRRTLMemDir) = MlirAttribute(CAPI.firrtlAttrGetMemDir(arena, mlirCtx, dir.value))
 
+  def firrtlValueFoldFlow(value: MlirValue, flow: Int): Int = CAPI.firrtlValueFoldFlow(value.get, flow)
+
   def chirrtlTypeGetCMemory(elementType: MlirType, numElements: Long) = MlirType(
     CAPI.chirrtlTypeGetCMemory(arena, mlirCtx, elementType.get, numElements)
   )

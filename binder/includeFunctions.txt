@@ -91,6 +91,7 @@ firrtlAttrGetNameKind
 firrtlAttrGetRUW
 firrtlAttrGetMemoryInit
 firrtlAttrGetMemDir
+firrtlValueFoldFlow
 
 # CHIRRTL Attribute
 chirrtlTypeGetCMemory
