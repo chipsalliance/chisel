@@ -13,7 +13,7 @@ jobs:
   publish_template:
     name: Generate Scala CLI Template
     needs: [generate_scala_cli_template]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Download Generated CLI Template

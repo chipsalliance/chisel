@@ -14,7 +14,7 @@ on:
 jobs:
   check_labels:
     name: Check Labels
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: docker://agilepathway/pull-request-label-checker:v1.4.25
         with:

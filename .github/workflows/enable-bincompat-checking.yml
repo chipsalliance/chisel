@@ -16,7 +16,7 @@ permissions:
 jobs:
   determine_version:
     name: Determine Version
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     outputs:
         version: ${{ steps.dowork.outputs.version }}
 
@@ -31,7 +31,7 @@ jobs:
 
   determine_branches:
     name: Determine Branches
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: [determine_version]
     outputs:
       branches: ${{ steps.determine-branches.outputs.branches }}
@@ -63,7 +63,7 @@ jobs:
 
   open_prs:
     name: Open Pull Requests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: [determine_version, determine_branches]
     strategy:
       matrix:

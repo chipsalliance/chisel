@@ -17,7 +17,7 @@ jobs:
     name: ci
     strategy:
       matrix:
-        system: ["ubuntu-20.04"]
+        system: ["ubuntu-22.04"]
         jvm: [8]
         scala: ["2.13.12"]
         espresso: ["2.4"]
@@ -34,7 +34,7 @@ jobs:
   check-tests:
     name: "check tests"
     needs: ci
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     outputs:
       success: ${{ steps.setoutput.outputs.success }}
     steps:
@@ -49,7 +49,7 @@ jobs:
   # See: https://brunoscheufler.com/blog/2022-04-09-the-required-github-status-check-that-wasnt
   all_tests_passed:
     name: "all tests passed"
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: always() # Always run so that we never skip this check
     needs: check-tests
       # Pass only if check-tests set its output value
@@ -68,7 +68,7 @@ jobs:
   # separate from a Scala versions build matrix to avoid duplicate publishing
   publish:
     needs: [all_tests_passed]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: github.event_name == 'push'
 
     steps:
@@ -101,7 +101,7 @@ jobs:
 
   deploy_website:
     name: Deploy Website
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: [all_tests_passed]
     # Only Deploy website on pushes to main, may change to a stable branch
     if: (github.event_name == 'push') && (github.ref_name == 'main')

@@ -18,7 +18,7 @@ on:
 jobs:
   generate_release_notes:
     name: Generate Release Notes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout
