@@ -102,6 +102,13 @@ class DontCareIOTest extends Module {
   io.in := DontCare
 }
 
+class ZeroWidthTest extends Module {
+  val a = IO(Input(UInt(32.W)))
+  val b = IO(Input(SInt(32.W)))
+  val c = IO(Output(UInt(33.W)))
+  c := Cat(a >> 32, b)
+}
+
 class BinderTest extends AnyFlatSpec with Matchers {
 
   def streamString(module: => RawModule, stream: CIRCTConverter => Writable): String = Seq(
@@ -190,5 +197,8 @@ class BinderTest extends AnyFlatSpec with Matchers {
     firrtlString(new ProbeRead) should include("asClock(read(clockP))")
 
     verilogString(new DontCareIOTest) should include("assign io_in_ready = 1'h0")
+    mlirString(new ZeroWidthTest) should include(
+      "firrtl.cat %_c_T, %c_lo : (!firrtl.uint<1>, !firrtl.uint<32>) -> !firrtl.uint<33>"
+    )
   }
 }
