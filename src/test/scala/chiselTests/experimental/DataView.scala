@@ -821,7 +821,7 @@ class DataViewSpec extends ChiselFlatSpec {
       val a = IO(Output(Probe(Bool())))
       val w = WireInit(Bool(), false.B)
       val w_probe = ProbeValue(w)
-      val w_probe_view = w_probe.viewAs[Bool]
+      val w_probe_view = w_probe.viewAs[Probe[Bool]]
       define(a, w_probe_view)
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
@@ -833,7 +833,7 @@ class DataViewSpec extends ChiselFlatSpec {
       val a = IO(Output(RWProbe(Bool())))
       val w = WireInit(Bool(), false.B)
       val w_probe = RWProbeValue(w)
-      val w_probe_view = w_probe.viewAs[Bool]
+      val w_probe_view = w_probe.viewAs[RWProbe[Bool]]
       define(a, w_probe_view)
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
@@ -845,7 +845,7 @@ class DataViewSpec extends ChiselFlatSpec {
       val a = IO(Output(RWProbe(Bool())))
       val w = WireInit(Bool(), false.B)
       val w_probe = ProbeValue(w)
-      val w_probe_view = w_probe.viewAs[Bool]
+      val w_probe_view = w_probe.viewAs[Probe[Bool]]
       define(a, w_probe_view)
     }
     val err = the[ChiselException] thrownBy (ChiselStage.emitCHIRRTL(new MyModule, Array("--throw-on-first-error")))
@@ -857,7 +857,7 @@ class DataViewSpec extends ChiselFlatSpec {
       val a = IO(Output(Bool()))
       val w = WireInit(Bool(), false.B)
       val w_probe = ProbeValue(w)
-      val w_probe_view = w_probe.viewAs[Bool]
+      val w_probe_view = w_probe.viewAs[Probe[Bool]]
       a := w_probe_view
     }
     val err = the[ChiselException] thrownBy (ChiselStage.emitCHIRRTL(new MyModule, Array("--throw-on-first-error")))

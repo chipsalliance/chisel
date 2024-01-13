@@ -27,12 +27,12 @@ package object probe extends SourceInfoDoc {
     }
   }
 
-  /** Initialize a probe with a provided probe value.
+  /** Connect a probe with a provided probe value.
     *
-    * @param sink probe to initialize
-    * @param probeExpr value to initialize the sink to
+    * @param sink probe to connect
+    * @param probeExpr probe expression to connect the sink to
     */
-  def define[T <: Data](sink: T, probeExpr: T)(implicit sourceInfo: SourceInfo): Unit = {
+  private[chisel3] def define[T <: Data](sink: T, probeExpr: T)(implicit sourceInfo: SourceInfo): Unit = {
     if (!checkTypeEquivalence(sink, probeExpr)) {
       Builder.error("Cannot define a probe on a non-equivalent type.")
     }
@@ -47,14 +47,25 @@ package object probe extends SourceInfoDoc {
     pushCommand(ProbeDefine(sourceInfo, sink.ref, probeExpr.ref))
   }
 
+  /** Connect a probe with a provided probe value.
+    *
+    * @param sink probe to connect
+    * @param probeExpr probe expression to connect the sink to
+    */
+  def define[T <: Data](sink: ProbeLike[T], probeExpr: ProbeLike[T])(implicit sourceInfo: SourceInfo): Unit = {
+    (sink, probeExpr) match {
+      case (_: RWProbe[T], _: Probe[T]) =>
+        Builder.error(s"Cannot use a non-writable probe expression $probeExpr to define a writable probe $sink.")
+      case _ => define(sink.underlying, probeExpr.underlying)
+    }
+    define(sink.underlying, probeExpr.underlying)
+  }
+
   /** Access the value of a probe.
     *
     * @param source probe whose value is getting accessed
     */
-  def read[T <: Data](source: T): T = macro chisel3.internal.sourceinfo.ProbeTransform.sourceRead[T]
-
-  /** @group SourceInfoTransformMacro */
-  def do_read[T <: Data](source: T)(implicit sourceInfo: SourceInfo): T = {
+  private[chisel3] def read[T <: Data](source: T)(implicit sourceInfo: SourceInfo): T = {
     requireIsHardware(source)
     requireHasProbeTypeModifier(source)
     // construct clone to bind to ProbeRead
@@ -65,6 +76,12 @@ package object probe extends SourceInfoDoc {
     clearProbeInfo(clone)
     clone
   }
+
+  /** Access the value of a probe.
+    *
+    * @param source probe whose value is getting accessed
+    */
+  def read[T <: Data](source: ProbeLike[T])(implicit sourceInfo: SourceInfo): T = read(source.underlying)
 
   /** Recursively clear ProbeInfo */
   private def clearProbeInfo[T <: Data](data: T): Unit = {
@@ -97,23 +114,38 @@ package object probe extends SourceInfoDoc {
     }
   }
 
+  private def forceInitial(probe: Data, value: Data)(implicit sourceInfo: SourceInfo): Unit = {
+    requireHasWritableProbeTypeModifier(probe, "Cannot forceInitial a non-writable Probe.")
+    pushCommand(ProbeForceInitial(sourceInfo, probe.ref, padDataToProbeWidth(value, probe).ref))
+  }
+
   /** Override existing driver of a writable probe on initialization.
     *
     * @param probe writable Probe to force
     * @param value to force onto the probe
     */
-  def forceInitial(probe: Data, value: Data)(implicit sourceInfo: SourceInfo): Unit = {
-    requireHasWritableProbeTypeModifier(probe, "Cannot forceInitial a non-writable Probe.")
-    pushCommand(ProbeForceInitial(sourceInfo, probe.ref, padDataToProbeWidth(value, probe).ref))
+  def forceInitial[T <: Data](probe: RWProbe[T], value: T)(implicit sourceInfo: SourceInfo): Unit = {
+    forceInitial(probe.underlying, value)
+  }
+
+  private def releaseInitial(probe: Data)(implicit sourceInfo: SourceInfo): Unit = {
+    requireHasWritableProbeTypeModifier(probe, "Cannot releaseInitial a non-writable Probe.")
+    pushCommand(ProbeReleaseInitial(sourceInfo, probe.ref))
   }
 
   /** Release initial driver on a probe.
     *
     * @param probe writable Probe to release
     */
-  def releaseInitial(probe: Data)(implicit sourceInfo: SourceInfo): Unit = {
-    requireHasWritableProbeTypeModifier(probe, "Cannot releaseInitial a non-writable Probe.")
-    pushCommand(ProbeReleaseInitial(sourceInfo, probe.ref))
+  def releaseInitial[T <: Data](probe: RWProbe[T])(implicit sourceInfo: SourceInfo): Unit = releaseInitial(
+    probe.underlying
+  )
+
+  private def force(probe: Data, value: Data)(implicit sourceInfo: SourceInfo): Unit = {
+    requireHasWritableProbeTypeModifier(probe, "Cannot force a non-writable Probe.")
+    val clock = Builder.forcedClock
+    val cond = Module.disableOption.map(!_.value).getOrElse(true.B)
+    pushCommand(ProbeForce(sourceInfo, clock.ref, cond.ref, probe.ref, padDataToProbeWidth(value, probe).ref))
   }
 
   /** Override existing driver of a writable probe. If called within the scope
@@ -126,11 +158,14 @@ package object probe extends SourceInfoDoc {
     * @param probe writable Probe to force
     * @param value to force onto the probe
     */
-  def force(probe: Data, value: Data)(implicit sourceInfo: SourceInfo): Unit = {
-    requireHasWritableProbeTypeModifier(probe, "Cannot force a non-writable Probe.")
+  def force[T <: Data](probe: RWProbe[T], value: T)(implicit sourceInfo: SourceInfo): Unit =
+    force(probe.underlying, value)
+
+  private def release(probe: Data)(implicit sourceInfo: SourceInfo): Unit = {
+    requireHasWritableProbeTypeModifier(probe, "Cannot release a non-writable Probe.")
     val clock = Builder.forcedClock
     val cond = Module.disableOption.map(!_.value).getOrElse(true.B)
-    pushCommand(ProbeForce(sourceInfo, clock.ref, cond.ref, probe.ref, padDataToProbeWidth(value, probe).ref))
+    pushCommand(ProbeRelease(sourceInfo, clock.ref, cond.ref, probe.ref))
   }
 
   /** Release driver on a probe. If called within the scope of a [[when]]
@@ -142,11 +177,6 @@ package object probe extends SourceInfoDoc {
     *
     * @param probe writable Probe to release
     */
-  def release(probe: Data)(implicit sourceInfo: SourceInfo): Unit = {
-    requireHasWritableProbeTypeModifier(probe, "Cannot release a non-writable Probe.")
-    val clock = Builder.forcedClock
-    val cond = Module.disableOption.map(!_.value).getOrElse(true.B)
-    pushCommand(ProbeRelease(sourceInfo, clock.ref, cond.ref, probe.ref))
-  }
+  def release[T <: Data](probe: RWProbe[T])(implicit sourceInfo: SourceInfo): Unit = release(probe.underlying)
 
 }

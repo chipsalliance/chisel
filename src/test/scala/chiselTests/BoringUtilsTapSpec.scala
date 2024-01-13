@@ -395,7 +395,7 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
   it should "work with D/I" in {
     import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance}
     @instantiable trait FooInterface {
-      @public val tapTarget: Bool = IO(probe.RWProbe(Bool()))
+      @public val tapTarget: probe.RWProbe[Bool] = IO(probe.RWProbe(Bool()))
     }
     class Foo extends RawModule with FooInterface {
       val internalWire = Wire(Bool())

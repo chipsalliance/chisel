@@ -9,44 +9,44 @@ import chisel3.experimental.{requireIsHardware, SourceInfo}
 
 import scala.language.experimental.macros
 
-private[chisel3] sealed trait ProbeValueBase {
-  protected def apply[T <: Data](source: T, writable: Boolean)(implicit sourceInfo: SourceInfo): T = {
+object ProbeValue extends SourceInfoDoc {
+
+  /** Create a read-only probe expression connected to an existing hardware element
+    *
+    * @param source the hardware element you want to probe
+    * @return the Probe connectd to source
+    */
+  def apply[T <: Data](source: T): Probe[T] =
+    macro chisel3.internal.sourceinfo.ProbeTransform.sourceApply[T]
+
+  /** @group SourceInfoTransformMacro */
+  def do_apply[T <: Data](source: T)(implicit sourceInfo: SourceInfo): Probe[T] = {
     requireIsHardware(source)
     // construct probe to return with cloned info
-    val clone = if (writable) RWProbe(source.cloneType) else Probe(source.cloneType)
-    clone.bind(OpBinding(Builder.forcedUserModule, Builder.currentWhen))
-    if (writable) {
-      if (source.isLit) {
-        Builder.error("Cannot get a probe value from a literal.")
-      }
-      clone.setRef(RWProbeExpr(source.ref))
-    } else {
-      val ref = if (source.isLit) {
-        val intermed = chisel3.Wire(source.cloneType)
-        intermed := source
-        intermed.suggestName("lit_probe_val")
-        intermed.ref
-      } else { source.ref }
-      clone.setRef(ProbeExpr(ref))
-    }
+    val clone = Probe(source.cloneType)
+    clone.underlying.bind(OpBinding(Builder.forcedUserModule, Builder.currentWhen))
+    clone.underlying.setRef(ProbeExpr(source.ref))
     clone
   }
 }
 
-object ProbeValue extends ProbeValueBase with SourceInfoDoc {
+object RWProbeValue extends SourceInfoDoc {
 
-  /** Create a read-only probe expression. */
-  def apply[T <: Data](source: T): T = macro chisel3.internal.sourceinfo.ProbeTransform.sourceApply[T]
-
-  /** @group SourceInfoTransformMacro */
-  def do_apply[T <: Data](source: T)(implicit sourceInfo: SourceInfo): T = super.apply(source, writable = false)
-}
-
-object RWProbeValue extends ProbeValueBase with SourceInfoDoc {
-
-  /** Create a read/write probe expression. */
-  def apply[T <: Data](source: T): T = macro chisel3.internal.sourceinfo.ProbeTransform.sourceApply[T]
+  /** Create a read/write probe expression connected to an existing hardware element
+    *
+    * @param source the hardware element you want to probe
+    * @return the RWProbe connectd to source
+    */
+  def apply[T <: Data](source: T): RWProbe[T] =
+    macro chisel3.internal.sourceinfo.ProbeTransform.sourceApply[T]
 
   /** @group SourceInfoTransformMacro */
-  def do_apply[T <: Data](source: T)(implicit sourceInfo: SourceInfo): T = super.apply(source, writable = true)
+  def do_apply[T <: Data](source: T)(implicit sourceInfo: SourceInfo): RWProbe[T] = {
+    requireIsHardware(source)
+    // construct probe to return with cloned info
+    val clone = RWProbe(source.cloneType)
+    clone.underlying.bind(OpBinding(Builder.forcedUserModule, Builder.currentWhen))
+    clone.underlying.setRef(RWProbeExpr(source.ref))
+    clone
+  }
 }

@@ -10,6 +10,7 @@ import chisel3.internal._
 import chisel3.internal.Builder._
 import chisel3.internal.firrtl.ir._
 import chisel3.experimental.{BaseModule, SourceInfo, UnlocatableSourceInfo}
+import chisel3.probe.{ProbeLike}
 import chisel3.internal.sourceinfo.{InstTransform}
 import chisel3.properties.{Class, Property}
 import chisel3.reflect.DataMirror
@@ -717,14 +718,18 @@ package experimental {
 
     // Must have separate createSecretIO from addSecretIO to get plugin to name it
     // data must be a fresh Chisel type
-    private[chisel3] def createSecretIO[A <: Data](data: => A)(implicit sourceInfo: SourceInfo): A = {
-      val iodef = data
+    private[chisel3] def createSecretIO[A <: Data, PT <: ProbeLike[A]](
+      data: => Either[A, PT]
+    )(
+      implicit sourceInfo: SourceInfo
+    ): Either[A, PT] = {
+      val iodef = data.merge
       internal.requireIsChiselType(iodef, "io type")
       require(!isFullyClosed, "Cannot create secret ports if module is fully closed")
 
       Module.assignCompatDir(iodef)
       iodef.bind(internal.SecretPortBinding(this), iodef.specifiedDirection)
-      iodef
+      data.fold(left => Left(iodef.asInstanceOf[A]), right => Right(iodef.asInstanceOf[PT]))
     }
 
     private[chisel3] val secretPorts: ArrayBuffer[Port] = ArrayBuffer.empty
