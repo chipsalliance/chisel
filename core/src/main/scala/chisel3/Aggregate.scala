@@ -12,7 +12,7 @@ import chisel3.experimental.{BaseModule, BundleLiteralException, HasTypeAlias, O
 import chisel3.experimental.{SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
-import chisel3.internal.firrtl._
+import chisel3.internal.firrtl.ir._
 import chisel3.internal.sourceinfo.{SourceInfoTransform, VecTransform}
 import chisel3.reflect.DataMirror
 import _root_.firrtl.{ir => fir}

@@ -4,7 +4,7 @@ package chisel3.experimental.hierarchy
 
 import chisel3.experimental.{BaseModule, SourceInfo}
 import chisel3.internal.{HasId, PseudoModule}
-import chisel3.internal.firrtl.{Component, ModuleCloneIO, Ref}
+import chisel3.internal.firrtl.ir.{Component, ModuleCloneIO, Ref}
 import chisel3.internal.{throwException, Namespace}
 import chisel3._
 

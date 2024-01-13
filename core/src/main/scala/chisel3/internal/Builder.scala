@@ -8,7 +8,8 @@ import chisel3._
 import chisel3.experimental._
 import chisel3.experimental.hierarchy.core.{Clone, Definition, ImportDefinitionAnnotation, Instance}
 import chisel3.properties.Class
-import chisel3.internal.firrtl._
+import chisel3.internal.firrtl.ir._
+import chisel3.internal.firrtl.Converter
 import chisel3.internal.naming._
 import _root_.firrtl.annotations.{CircuitName, ComponentName, IsMember, ModuleName, Named, ReferenceTarget}
 import _root_.firrtl.annotations.AnnotationUtils.validComponentName

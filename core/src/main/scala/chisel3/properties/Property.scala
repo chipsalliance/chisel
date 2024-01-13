@@ -6,7 +6,7 @@ package properties
 import firrtl.{ir => fir}
 import firrtl.annotations.{InstanceTarget, IsMember, ModuleTarget, ReferenceTarget, Target}
 import chisel3.internal._
-import chisel3.internal.{firrtl => ir}
+import chisel3.internal.firrtl.{ir, Converter}
 import chisel3.experimental.{prefix, requireIsHardware, Analog, SourceInfo}
 import chisel3.experimental.hierarchy.Instance
 import scala.reflect.runtime.universe.{typeOf, TypeTag}
@@ -193,7 +193,7 @@ private[chisel3] object PropertyType extends LowPriorityPropertyTypeInstances {
     type Type = pte.Type
     override def getPropertyType(): fir.PropertyType = pte.getPropertyType()
     override def convert(value: Underlying, ctx: ir.Component, info: SourceInfo): fir.Expression =
-      ir.Converter.convert(value, ctx, info)
+      Converter.convert(value, ctx, info)
     type Underlying = ir.Arg
     override def convertUnderlying(value: Property[T]) = value.ref
   }
@@ -222,7 +222,7 @@ sealed trait Property[T] extends Element { self =>
     ): ClassTypePropertyType.Aux[Property[ClassType] with self.ClassType, ir.Arg] =
       new ClassTypePropertyType[Property[ClassType] with self.ClassType](getPropertyType) {
         override def convert(value: Underlying, ctx: ir.Component, info: SourceInfo): fir.Expression =
-          ir.Converter.convert(value, ctx, info)
+          Converter.convert(value, ctx, info)
         type Underlying = ir.Arg
         override def convertUnderlying(value: Property[ClassType] with self.ClassType) = value.ref
       }
@@ -249,7 +249,7 @@ sealed trait Property[T] extends Element { self =>
   def toPrintable: Printable = {
     throwException(s"Properties do not support hardware printing" + this._errorContext)
   }
-  private[chisel3] def width: ir.Width = ir.UnknownWidth()
+  private[chisel3] def width: Width = UnknownWidth()
 
   override def typeName: String = s"Property[${tpe.getPropertyType().serialize}]"
 

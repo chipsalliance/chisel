@@ -7,9 +7,9 @@ import chisel3.{Data, RawModule, SpecifiedDirection}
 import chisel3.experimental.{BaseModule, SourceInfo}
 import chisel3.experimental.hierarchy.{Definition, Instance, ModuleClone}
 import chisel3.internal.{throwException, Builder, ClassBinding, OpBinding}
-import chisel3.internal.firrtl.{Arg, Command, Component, Converter, DefClass, DefObject, ModuleIO, Port, PropAssign}
+import chisel3.internal.firrtl.ir.{Arg, Command, Component, DefClass, DefObject, ModuleIO, Port, PropAssign}
+import chisel3.internal.firrtl.Converter
 
-import scala.annotation.nowarn
 import scala.collection.mutable.ArrayBuffer
 
 /** Represents a user-defined Class, which is a module-like container of properties.
@@ -19,7 +19,6 @@ import scala.collection.mutable.ArrayBuffer
   * Within a Class body, ports may be connected and other Classes may be instantiated. This means classes cannot
   * construct hardware, only graphs of non-hardware Property information.
   */
-@nowarn("msg=class Port") // delete when Port becomes private
 class Class extends BaseModule {
   private[chisel3] override def generateComponent(): Option[Component] = {
     // Close the Class.

@@ -8,8 +8,8 @@ import chisel3.internal._
 import chisel3.internal.Builder.pushOp
 import chisel3.experimental.{requireIsHardware, SourceInfo}
 import chisel3.internal.sourceinfo.MuxTransform
-import chisel3.internal.firrtl._
-import chisel3.internal.firrtl.PrimOp._
+import chisel3.internal.firrtl.ir._
+import chisel3.internal.firrtl.ir.PrimOp._
 
 object Mux extends SourceInfoDoc {
 

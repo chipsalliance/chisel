@@ -5,8 +5,6 @@ import chisel3.util.Decoupled
 import circt.stage.ChiselStage
 import chisel3.testers.BasicTester
 
-import scala.annotation.nowarn
-
 class BulkConnectSpec extends ChiselPropSpec {
   property("Chisel connects should emit FIRRTL bulk connects when possible") {
     val chirrtl = ChiselStage.emitCHIRRTL(new Module {

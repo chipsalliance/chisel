@@ -11,7 +11,7 @@ import chisel3.experimental.dataview.reifySingleData
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal._
 import chisel3.internal.sourceinfo._
-import chisel3.internal.firrtl._
+import chisel3.internal.firrtl.ir._
 import chisel3.properties.Property
 import chisel3.reflect.DataMirror
 import chisel3.util.simpleClassName

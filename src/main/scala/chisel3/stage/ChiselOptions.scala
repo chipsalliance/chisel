@@ -2,7 +2,7 @@
 
 package chisel3.stage
 
-import chisel3.internal.firrtl.Circuit
+import chisel3.internal.firrtl.ir.Circuit
 import chisel3.internal.WarningFilter
 import java.io.File
 

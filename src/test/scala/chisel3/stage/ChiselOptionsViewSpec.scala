@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chiselTests.stage
+package chisel3.stage
 
 import firrtl.options.Viewer.view
 import firrtl.RenameMap
 
 import chisel3.stage._
-import chisel3.internal.firrtl.Circuit
+import chisel3.internal.firrtl.ir.Circuit
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 

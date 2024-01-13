@@ -4,7 +4,7 @@ package chisel3
 
 import chisel3.experimental.{SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal.{Builder, HasId}
-import chisel3.internal.firrtl.{LayerBlockBegin, LayerBlockEnd, Node}
+import chisel3.internal.firrtl.ir.{LayerBlockBegin, LayerBlockEnd, Node}
 import chisel3.util.simpleClassName
 import scala.collection.mutable.LinkedHashSet
 

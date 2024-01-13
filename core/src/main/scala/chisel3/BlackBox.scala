@@ -5,10 +5,9 @@ package chisel3
 import chisel3.experimental.{BaseModule, Param}
 import chisel3.internal.BaseBlackBox
 import chisel3.internal.Builder.pushCommand
-import chisel3.internal.firrtl._
+import chisel3.internal.firrtl.ir._
 import chisel3.internal.throwException
 import chisel3.experimental.{SourceInfo, UnlocatableSourceInfo}
-import scala.annotation.nowarn
 
 package internal {
 
@@ -68,7 +67,6 @@ package experimental {
     * }}}
     * @note The parameters API is experimental and may change
     */
-  @nowarn("msg=class Port") // delete when Port becomes private
   abstract class ExtModule(val params: Map[String, Param] = Map.empty[String, Param]) extends BaseBlackBox {
     private[chisel3] override def generateComponent(): Option[Component] = {
       require(!_closed, "Can't generate module more than once")
@@ -126,7 +124,6 @@ package experimental {
   * }}}
   * @note The parameters API is experimental and may change
   */
-@nowarn("msg=class Port") // delete when Port becomes private
 abstract class BlackBox(
   val params: Map[String, Param] = Map.empty[String, Param])
     extends BaseBlackBox {

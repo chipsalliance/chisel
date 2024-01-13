@@ -5,14 +5,12 @@ package chisel3.experimental
 import chisel3.SpecifiedDirection
 import chisel3.experimental.{BaseModule, Param}
 import chisel3.internal.Builder.pushCommand
-import chisel3.internal.firrtl._
-import scala.annotation.nowarn
+import chisel3.internal.firrtl.ir._
 
 private[chisel3] abstract class BaseIntrinsicModule(intrinsicName: String) extends BaseModule {
   val intrinsic = intrinsicName
 }
 
-@nowarn("msg=class Port") // delete when Port becomes private
 abstract class IntrinsicModule(intrinsicName: String, val params: Map[String, Param] = Map.empty[String, Param])
     extends BaseIntrinsicModule(intrinsicName) {
   private[chisel3] override def generateComponent(): Option[Component] = {

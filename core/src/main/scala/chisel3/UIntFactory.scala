@@ -2,7 +2,7 @@
 
 package chisel3
 
-import chisel3.internal.firrtl.{KnownWidth, ULit, UnknownWidth, Width}
+import chisel3.internal.firrtl.ir.ULit
 import firrtl.Utils
 
 // This is currently a factory because both Bits and UInt inherit it.

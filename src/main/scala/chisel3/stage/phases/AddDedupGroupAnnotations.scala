@@ -4,14 +4,13 @@ import firrtl.AnnotationSeq
 import firrtl.options.{Dependency, Phase}
 import firrtl.options.Viewer.view
 import firrtl.transforms.DedupGroupAnnotation
-import scala.annotation.nowarn
 
 import chisel3.experimental.BaseModule
 import chisel3.stage._
 import chisel3.stage.CircuitSerializationAnnotation._
 import chisel3.ChiselException
 import chisel3.experimental.dedupGroup
-import chisel3.internal.firrtl.{DefBlackBox, DefClass, DefIntrinsicModule}
+import chisel3.internal.firrtl.ir.{DefBlackBox, DefClass, DefIntrinsicModule}
 
 class AddDedupGroupAnnotations extends Phase {
   override def prerequisites = Seq.empty
@@ -29,7 +28,6 @@ class AddDedupGroupAnnotations extends Phase {
 
     val skipAnnos = annotations.collect { case x: DedupGroupAnnotation => x.target }.toSet
 
-    @nowarn("msg=class Port")
     val annos = circuit.components.filter {
       case x @ DefBlackBox(id, _, _, _, _)   => !id._isImportedDefinition
       case DefIntrinsicModule(_, _, _, _, _) => false

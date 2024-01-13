@@ -2,7 +2,7 @@
 
 package chisel3
 
-import chisel3.internal.firrtl.{ULit, Width}
+import chisel3.internal.firrtl.ir.ULit
 
 trait BoolFactory {
 

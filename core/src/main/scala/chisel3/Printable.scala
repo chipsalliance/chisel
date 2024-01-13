@@ -2,7 +2,7 @@
 
 package chisel3
 
-import chisel3.internal.firrtl.Component
+import chisel3.internal.firrtl.ir.Component
 
 import scala.collection.mutable
 
