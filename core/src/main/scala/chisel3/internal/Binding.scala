@@ -41,19 +41,23 @@ private[chisel3] object BindingDirection {
 }
 
 // Location refers to 'where' in the Module hierarchy this lives
+@deprecated(deprecatedPublicAPIMsg, "Chisel 6.0")
 sealed trait Binding {
   def location: Option[BaseModule]
 }
 // Top-level binding representing hardware, not a pointer to another binding (like ChildBinding)
+@deprecated(deprecatedPublicAPIMsg, "Chisel 6.0")
 sealed trait TopBinding extends Binding
 
 // Constrained-ness refers to whether 'bound by Module boundaries'
 // An unconstrained binding, like a literal, can be read by everyone
+@deprecated(deprecatedPublicAPIMsg, "Chisel 6.0")
 sealed trait UnconstrainedBinding extends TopBinding {
   def location: Option[BaseModule] = None
 }
 // A constrained binding can only be read/written by specific modules
 // Location will track where this Module is, and the bound object can be referenced in FIRRTL
+@deprecated(deprecatedPublicAPIMsg, "Chisel 6.0")
 sealed trait ConstrainedBinding extends TopBinding {
   def enclosure: BaseModule
   def location: Option[BaseModule] = {
@@ -68,36 +72,33 @@ sealed trait ConstrainedBinding extends TopBinding {
 }
 
 // A binding representing a data that cannot be (re)assigned to.
+@deprecated(deprecatedPublicAPIMsg, "Chisel 6.0")
 sealed trait ReadOnlyBinding extends TopBinding
 
 // A component that can potentially be declared inside a 'when'
+@deprecated(deprecatedPublicAPIMsg, "Chisel 6.0")
 sealed trait ConditionalDeclarable extends TopBinding {
   def visibility: Option[WhenContext]
 }
 
 // TODO(twigg): Ops between unenclosed nodes can also be unenclosed
 // However, Chisel currently binds all op results to a module
-@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
-case class PortBinding(enclosure: BaseModule) extends ConstrainedBinding
+private[chisel3] case class PortBinding(enclosure: BaseModule) extends ConstrainedBinding
 
 // Added to handle BoringUtils in Chisel
 private[chisel3] case class SecretPortBinding(enclosure: BaseModule) extends ConstrainedBinding
 
-@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
-case class OpBinding(enclosure: RawModule, visibility: Option[WhenContext])
+private[chisel3] case class OpBinding(enclosure: RawModule, visibility: Option[WhenContext])
     extends ConstrainedBinding
     with ReadOnlyBinding
     with ConditionalDeclarable
-@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
-case class MemoryPortBinding(enclosure: RawModule, visibility: Option[WhenContext])
+private[chisel3] case class MemoryPortBinding(enclosure: RawModule, visibility: Option[WhenContext])
     extends ConstrainedBinding
     with ConditionalDeclarable
-@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
-case class RegBinding(enclosure: RawModule, visibility: Option[WhenContext])
+private[chisel3] case class RegBinding(enclosure: RawModule, visibility: Option[WhenContext])
     extends ConstrainedBinding
     with ConditionalDeclarable
-@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
-case class WireBinding(enclosure: RawModule, visibility: Option[WhenContext])
+private[chisel3] case class WireBinding(enclosure: RawModule, visibility: Option[WhenContext])
     extends ConstrainedBinding
     with ConditionalDeclarable
 
@@ -105,26 +106,22 @@ private[chisel3] case class ClassBinding(enclosure: Class) extends ConstrainedBi
 
 private[chisel3] case class ObjectFieldBinding(enclosure: BaseModule) extends ConstrainedBinding
 
-@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
-case class ChildBinding(parent: Data) extends Binding {
+private[chisel3] case class ChildBinding(parent: Data) extends Binding {
   def location: Option[BaseModule] = parent.topBinding.location
 }
 
 /** Special binding for Vec.sample_element */
-@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
-case class SampleElementBinding[T <: Data](parent: Vec[T]) extends Binding {
+private[chisel3] case class SampleElementBinding[T <: Data](parent: Vec[T]) extends Binding {
   def location = parent.topBinding.location
 }
 
 /** Special binding for Mem types */
-@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
-case class MemTypeBinding[T <: Data](parent: MemBase[T]) extends Binding {
+private[chisel3] case class MemTypeBinding[T <: Data](parent: MemBase[T]) extends Binding {
   def location: Option[BaseModule] = parent._parent
 }
 // A DontCare element has a specific Binding, somewhat like a literal.
 // It is a source (RHS). It may only be connected/applied to sinks.
-@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
-case class DontCareBinding() extends UnconstrainedBinding
+private[chisel3] case class DontCareBinding() extends UnconstrainedBinding
 
 // Views currently only support 1:1 Element-level mappings
 private[chisel3] case class ViewBinding(target: Element) extends UnconstrainedBinding
@@ -142,20 +139,17 @@ private[chisel3] case class AggregateViewBinding(childMap: Map[Data, Data]) exte
 }
 
 /** Binding for Data's returned from accessing an Instance/Definition members, if not readable/writable port */
-@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
 private[chisel3] case object CrossModuleBinding extends TopBinding {
   def location = None
 }
 
+@deprecated(deprecatedPublicAPIMsg, "Chisel 6.0")
 sealed trait LitBinding extends UnconstrainedBinding with ReadOnlyBinding
 // Literal binding attached to a element that is not part of a Bundle.
-@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
-case class ElementLitBinding(litArg: LitArg) extends LitBinding
+private[chisel3] case class ElementLitBinding(litArg: LitArg) extends LitBinding
 // Literal binding attached to the root of a Bundle, containing literal values of its children.
-@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
-case class BundleLitBinding(litMap: Map[Data, LitArg]) extends LitBinding
+private[chisel3] case class BundleLitBinding(litMap: Map[Data, LitArg]) extends LitBinding
 // Literal binding attached to the root of a Vec, containing literal values of its children.
-@deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
-case class VecLitBinding(litMap: VectorMap[Data, LitArg]) extends LitBinding
+private[chisel3] case class VecLitBinding(litMap: VectorMap[Data, LitArg]) extends LitBinding
 // Literal binding attached to a Property.
 private[chisel3] case object PropertyValueBinding extends UnconstrainedBinding with ReadOnlyBinding
