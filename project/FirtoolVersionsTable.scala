@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
+import sbt.util.Logger
+
 import Version.SemanticVersion
 
 object FirtoolVersionsTable extends App {
@@ -33,11 +35,10 @@ object FirtoolVersionsTable extends App {
 
   def firtoolGithubLink(version: String): String = s"https://github.com/llvm/circt/releases/tag/firtool-$version"
 
-  def generateTable: String = {
-    val releases = Releases.releases()
+  def generateTable(logger: Logger): String = {
+    val releases = Releases.releases(logger)
 
-    val parsed = releases.map(SemanticVersion.parse(_))
-    val filtered = parsed.filter(_ >= min)
+    val filtered = releases.filter(_ >= min)
     val unknown = {
       val isKnownVersion = knownVersions.map(_._1).toSet
       filtered.filterNot(isKnownVersion)
