@@ -42,15 +42,10 @@ object v {
     "2.12.17",
     "2.13.10"
   )
-<<<<<<< HEAD
   val osLib = ivy"com.lihaoyi::os-lib:0.8.1"
   val upickle = ivy"com.lihaoyi::upickle:2.0.0"
   val macroParadise = ivy"org.scalamacros:::paradise:2.1.1"
-=======
-  val osLib = ivy"com.lihaoyi::os-lib:0.9.1"
-  val upickle = ivy"com.lihaoyi::upickle:3.1.0"
-  val firtoolResolver = ivy"org.chipsalliance::firtool-resolver:1.0.0"
->>>>>>> 3938a465e (Switch to firtool-resolver (#3458))
+  val firtoolResolver = ivy"org.chipsalliance::firtool-resolver:1.3.0"
   val scalatest = ivy"org.scalatest::scalatest:3.2.14"
   val scalacheck = ivy"org.scalatestplus::scalacheck-1-14:3.2.2.0"
   val json4s = ivy"org.json4s::json4s-native:4.0.6"

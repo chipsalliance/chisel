@@ -204,13 +204,8 @@ class LoadMemoryFromFileSpec extends AnyFreeSpec with Matchers {
     val file = new File(dir, s"memory_combMem_init.sv")
     file should exist
 
-<<<<<<< HEAD
-    val fileText = io.Source.fromFile(file).getLines().mkString("\n")
-    fileText should include(s"""$$readmemb("./mem", memory_combMem.Memory);""")
-=======
     val fileText = scala.io.Source.fromFile(file).getLines().mkString("\n")
-    fileText should include(s"""$$readmemb("./mem", memory_8x16.Memory);""")
->>>>>>> 3938a465e (Switch to firtool-resolver (#3458))
+    fileText should include(s"""$$readmemb("./mem", memory_combMem.Memory);""")
   }
 
   "Module with more than one hex memory inline should work" in {

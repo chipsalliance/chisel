@@ -206,9 +206,6 @@ class CIRCT extends Phase {
 
     val circtAnnotationFilename = "circt.anno.json"
 
-<<<<<<< HEAD
-    val binary = "firtool"
-=======
     val binary = circtOptions.firtoolBinaryPath.getOrElse {
       // .get is safe, firtoolVersion is an Option for backwards compatibility
       val version = firtoolVersion.get
@@ -220,7 +217,6 @@ class CIRCT extends Phase {
           bin.path.toString
       }
     }
->>>>>>> 3938a465e (Switch to firtool-resolver (#3458))
 
     val cmd = // Only 1 of input or firFile will be Some
       Seq(binary, input.fold(_ => "-format=fir", _.toString)) ++
