@@ -39,3 +39,7 @@ libraryDependencies += "com.47deg" %% "github4s" % "0.32.1"
 // For firtool version
 libraryDependencies += "com.lihaoyi" %% "os-lib" % "0.9.2"
 libraryDependencies += "com.lihaoyi" %% "upickle" % "3.1.3"
+
+// This is an older version due to other things depending on older versions of
+// scala-xml
+libraryDependencies += "io.get-coursier" %% "coursier" % "2.0.16"
