@@ -65,7 +65,7 @@ object SpecifiedDirection {
     val prevId = Builder.idGen.value
     val data = source // evaluate source once (passed by name)
     requireIsChiselType(data)
-    val out = if (!data.mustClone(prevId)) data else data.cloneType.asInstanceOf[T]
+    val out = if (!data.mustClone(prevId)) data else data.cloneTypeFull.asInstanceOf[T]
     out.specifiedDirection = dir(data) // Must use original data, specified direction of clone is cleared
     out
   }

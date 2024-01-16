@@ -550,4 +550,13 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
       )
     )
   }
+
+  property("Probe and const are preserved by Output()") {
+    class MyModule extends RawModule {
+      val tpe = probe.Probe(Const(Bool()))
+      val test = IO(Output(tpe))
+    }
+    val emitted: String = ChiselStage.emitCHIRRTL(new MyModule)
+    assert(emitted.contains("Probe<const UInt<1>>"))
+  }
 }
