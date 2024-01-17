@@ -54,7 +54,8 @@ $(latest_scaladoc_dir):
 $(latest_scaladoc_dir)/index.html: $(latest_version) | $(latest_scaladoc_dir)
 	$(eval VER := $(shell cat $(latest_version)))
 	$(eval URL := https://repo1.maven.org/maven2/org/chipsalliance/chisel_2.13/$(VER)/chisel_2.13-$(VER)-javadoc.jar)
-	cd $(latest_scaladoc_dir) && \
+	rm -rf $(latest_scaladoc_dir)/* && \
+	  cd $(latest_scaladoc_dir) && \
 	  wget -q -O temp.jar $(URL) && \
 	  unzip -q temp.jar && \
 	  rm -rf temp.jar

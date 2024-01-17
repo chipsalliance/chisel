@@ -1,7 +1,3 @@
----
-sidebar_position: 2
----
-
 # Explanations
 
 Explanation documentation gives background and context.
