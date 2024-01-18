@@ -3,16 +3,17 @@
 package chiselTests
 
 import chisel3._
+import chisel3.probe.{define, Probe, ProbeValue}
 import chiselTests.{ChiselFlatSpec, MatchesAndOmits, Utils}
 import _root_.circt.stage.ChiselStage
 
 class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
 
-  "Layers" should "allow for creation of a layer and nested layers" in {
+  object A extends layer.Layer(layer.Convention.Bind) {
+    object B extends layer.Layer(layer.Convention.Bind)
+  }
 
-    object A extends layer.Layer(layer.Convention.Bind) {
-      object B extends layer.Layer(layer.Convention.Bind)
-    }
+  "Layers" should "allow for creation of a layer and nested layers" in {
 
     class Foo extends RawModule {
       val a = IO(Input(Bool()))
@@ -45,11 +46,27 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
     )()
   }
 
-  "Layers error checking" should "require that a nested layer definition matches its declaration nesting" in {
+  it should "allow for defines in a layer to drive layer-colored probes" in {
 
-    object A extends layer.Layer(layer.Convention.Bind) {
-      object B extends layer.Layer(layer.Convention.Bind)
+    class Foo extends RawModule {
+      val in = IO(Input(Bool()))
+      val a = IO(Output(Probe(Bool(), A)))
+      val b = IO(Output(Probe(Bool(), A.B)))
+      layer.block(A) {
+        define(a, ProbeValue(in))
+        layer.block(A.B) {
+          define(b, ProbeValue(in))
+        }
+      }
     }
+
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Foo))(
+      "define a = probe(in)",
+      "define b = probe(in)"
+    )()
+  }
+
+  "Layers error checking" should "require that a nested layer definition matches its declaration nesting" in {
 
     class Foo extends RawModule {
       layer.block(A.B) {
@@ -61,6 +78,31 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
       "nested layer 'B' must be wrapped in parent layer 'A'"
     )
 
+  }
+
+  it should "check that a define to a layer-colored probe must be inside a layerblock" in {
+
+    class Foo extends RawModule {
+      val a = IO(Output(Probe(Bool(), A)))
+      val b = Wire(Bool())
+      define(a, ProbeValue(b))
+    }
+
+    intercept[ChiselException] { ChiselStage.emitCHIRRTL(new Foo, Array("--throw-on-first-error")) }
+      .getMessage() should include("Cannot define 'Foo.a: IO[Bool]' from outside a layerblock")
+
+  }
+
+  it should "check that a define from inside a layerblock is to a legal layer-colored probe" in {
+    class Foo extends RawModule {
+      val a = IO(Output(Probe(Bool(), A.B)))
+      layer.block(A) {
+        val b = Wire(Bool())
+        define(a, ProbeValue(b))
+      }
+    }
+    intercept[ChiselException] { ChiselStage.emitCHIRRTL(new Foo, Array("--throw-on-first-error")) }
+      .getMessage() should include("Cannot define 'Foo.a: IO[Bool]' from a layerblock associated with layer A")
   }
 
 }

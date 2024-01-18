@@ -3,12 +3,14 @@
 package chiselTests
 
 import chisel3._
+import chisel3.layer.{Convention, Layer}
 import chisel3.probe._
 import chisel3.util.Counter
 import chisel3.testers.{BasicTester, TesterDriver}
+import chiselTests.MatchesAndOmits
 import circt.stage.ChiselStage
 
-class ProbeSpec extends ChiselFlatSpec with Utils {
+class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
   // Strip SourceInfos and split into lines
   private def processChirrtl(chirrtl: String): Array[String] =
     chirrtl.split('\n').map(line => line.takeWhile(_ != '@').trim())
@@ -667,5 +669,19 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
       define(a, w_probe)
     }
     ChiselStage.emitSystemVerilog(new TestMod)
+  }
+
+  "Layer colored probes" should "emit correct FIRRTL" in {
+    object LayerA extends Layer(Convention.Bind) {
+      object LayerB extends Layer(Convention.Bind)
+    }
+    class Foo extends RawModule {
+      val a = IO(Output(Probe.apply(UInt(1.W), LayerA)))
+      val b = IO(Output(Probe.apply(UInt(2.W), LayerA.LayerB)))
+    }
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Foo))(
+      "output a : Probe<UInt<1>, LayerA>",
+      "output b : Probe<UInt<2>, LayerA.LayerB>"
+    )()
   }
 }
