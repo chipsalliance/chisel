@@ -25,6 +25,7 @@ import scala.collection.mutable
 import scala.annotation.tailrec
 import java.io.File
 import scala.util.control.NonFatal
+import chisel3.ChiselException
 
 private[chisel3] class Namespace(keywords: Set[String], separator: Char = '_') {
   // This HashMap is compressed, not every name in the namespace is present here.
@@ -794,10 +795,11 @@ private[chisel3] object Builder extends LazyLogging {
   def currentWhen: Option[WhenContext] = dynamicContext.whenStack.headOption
 
   // Helper for reasonable errors when clock or reset value not yet initialized
-  private def getDelayed[A](field: String, dc: Delayed[A])(implicit info: SourceInfo): A = {
+  private def getDelayed[A](field: String, dc: Delayed[A]): A = {
     val result = dc.value
     if (result == null) {
-      Builder.exception(
+      // TODO add SourceInfo and change to Builder.exception
+      throwException(
         s"The implicit $field is null which means its definition probably has not yet been initialized."
       )
     }
@@ -805,7 +807,7 @@ private[chisel3] object Builder extends LazyLogging {
   }
 
   /** Safely get the current Clock for use */
-  def currentClock(implicit info: SourceInfo): Option[Clock] =
+  def currentClock: Option[Clock] =
     dynamicContext.currentClock.map(d => getDelayed("clock", d))
 
   /** Get the underlying box around current Clock, only used for saving the value */
@@ -815,7 +817,7 @@ private[chisel3] object Builder extends LazyLogging {
   }
 
   /** Safely get the current Reset for use */
-  def currentReset(implicit info: SourceInfo): Option[Reset] =
+  def currentReset: Option[Reset] =
     dynamicContext.currentReset.map(d => getDelayed("reset", d))
 
   /** Get the underlying box around current Reset, only used for saving the value */
@@ -840,10 +842,12 @@ private[chisel3] object Builder extends LazyLogging {
       .getOrElse(false)
   }
 
-  def forcedClock(implicit info: SourceInfo): Clock = currentClock.getOrElse(
+  def forcedClock: Clock = currentClock.getOrElse(
+    // TODO add implicit clock change to Builder.exception
     throwException("Error: No implicit clock.")
   )
-  def forcedReset(implicit info: SourceInfo): Reset = currentReset.getOrElse(
+  def forcedReset: Reset = currentReset.getOrElse(
+    // TODO add implicit clock change to Builder.exception
     throwException("Error: No implicit reset.")
   )
 

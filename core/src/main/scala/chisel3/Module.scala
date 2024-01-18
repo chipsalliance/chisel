@@ -116,16 +116,16 @@ object Module extends SourceInfoDoc {
   }
 
   /** Returns the implicit Clock */
-  def clock(implicit info: SourceInfo): Clock = Builder.forcedClock
+  def clock: Clock = Builder.forcedClock
 
   /** Returns the implicit Clock, if it is defined */
-  def clockOption(implicit info: SourceInfo): Option[Clock] = Builder.currentClock
+  def clockOption: Option[Clock] = Builder.currentClock
 
   /** Returns the implicit Reset */
-  def reset(implicit info: SourceInfo): Reset = Builder.forcedReset
+  def reset: Reset = Builder.forcedReset
 
   /** Returns the implicit Reset, if it is defined */
-  def resetOption(implicit info: SourceInfo): Option[Reset] = Builder.currentReset
+  def resetOption: Option[Reset] = Builder.currentReset
 
   /** Returns the implicit Disable
     *
@@ -240,6 +240,23 @@ abstract class Module extends RawModule with ImplicitClock with ImplicitReset {
   override protected def implicitClock: Clock = clock
   override protected def implicitReset: Reset = reset
 
+  // TODO Delete these
+  private var _override_clock: Option[Clock] = None
+  private var _override_reset: Option[Bool] = None
+  @deprecated("Use withClock at Module instantiation", "Chisel 3.5")
+  protected def override_clock: Option[Clock] = _override_clock
+  @deprecated("Use withClock at Module instantiation", "Chisel 3.5")
+  protected def override_reset: Option[Bool] = _override_reset
+  @deprecated("Use withClock at Module instantiation", "Chisel 3.5")
+  protected def override_clock_=(rhs: Option[Clock]): Unit = {
+    _override_clock = rhs
+  }
+  @deprecated("Use withClock at Module instantiation", "Chisel 3.5")
+  protected def override_reset_=(rhs: Option[Bool]): Unit = {
+    _override_reset = rhs
+  }
+  // End TODO Delete
+
   private[chisel3] def mkReset: Reset = {
     // Top module and compatibility mode use Bool for reset
     // Note that a Definition elaboration will lack a parent, but still not be a Top module
@@ -261,8 +278,8 @@ abstract class Module extends RawModule with ImplicitClock with ImplicitReset {
     implicit val sourceInfo = UnlocatableSourceInfo
 
     super.initializeInParent()
-    clock := Builder.forcedClock
-    reset := Builder.forcedReset
+    clock := _override_clock.getOrElse(Builder.forcedClock)
+    reset := _override_reset.getOrElse(Builder.forcedReset)
   }
 }
 

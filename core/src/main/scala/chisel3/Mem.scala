@@ -61,7 +61,7 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt, sourceInf
 
   // if the memory is created in a scope with an implicit clock (-> clockInst is defined), we will perform checks that
   // ensure memory ports are created with the same clock unless explicitly specified to use a different clock
-  private val clockInst: Option[Clock] = Builder.currentClock(sourceInfo)
+  private val clockInst: Option[Clock] = Builder.currentClock
 
   protected def clockWarning(sourceInfo: Option[SourceInfo], dir: MemPortDirection): Unit = {
     // Turn into pretty String if possible, if not, Builder.deprecated will find one via stack trace
