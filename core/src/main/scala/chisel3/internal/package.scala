@@ -11,6 +11,7 @@ import chisel3.internal.Builder.Prefix
 import scala.util.Try
 import scala.annotation.implicitNotFound
 import scala.collection.mutable
+import chisel3.ChiselException
 
 package object internal {
 
@@ -156,6 +157,14 @@ package object internal {
       }
       (zz, result.reverse)
     }
+  }
+
+  // This is similar to cats.Eval.later but we don't depend on Cats
+  private[chisel3] class Delayed[A](a: => A) {
+    lazy val value: A = a
+  }
+  private[chisel3] object Delayed {
+    def apply[A](a: => A): Delayed[A] = new Delayed(a)
   }
 
   /** The list of banned type alias words which will cause generation of bad FIRRTL. These are usually

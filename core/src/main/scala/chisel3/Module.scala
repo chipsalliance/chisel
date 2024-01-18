@@ -74,7 +74,7 @@ object Module extends SourceInfoDoc {
     // Save then clear clock and reset to prevent leaking scope, must be set again in the Module
     // Note that Disable is a function of whatever the current reset is, so it does not need a port
     //   and thus does not change when we cross module boundaries
-    val (saveClock, saveReset) = (Builder.currentClock, Builder.currentReset)
+    val (saveClock, saveReset) = (Builder.currentClockDelayed, Builder.currentResetDelayed)
     val savePrefix = Builder.getPrefix
     Builder.clearPrefix()
     Builder.currentClock = None
@@ -116,16 +116,16 @@ object Module extends SourceInfoDoc {
   }
 
   /** Returns the implicit Clock */
-  def clock: Clock = Builder.forcedClock
+  def clock(implicit info: SourceInfo): Clock = Builder.forcedClock
 
   /** Returns the implicit Clock, if it is defined */
-  def clockOption: Option[Clock] = Builder.currentClock
+  def clockOption(implicit info: SourceInfo): Option[Clock] = Builder.currentClock
 
   /** Returns the implicit Reset */
-  def reset: Reset = Builder.forcedReset
+  def reset(implicit info: SourceInfo): Reset = Builder.forcedReset
 
   /** Returns the implicit Reset, if it is defined */
-  def resetOption: Option[Reset] = Builder.currentReset
+  def resetOption(implicit info: SourceInfo): Option[Reset] = Builder.currentReset
 
   /** Returns the implicit Disable
     *
@@ -227,7 +227,7 @@ object Module extends SourceInfoDoc {
   *
   * @note Module instantiations must be wrapped in a Module() call.
   */
-abstract class Module extends RawModule {
+abstract class Module extends RawModule with ImplicitClock with ImplicitReset {
 
   /** Override this to explicitly set the type of reset you want on this module , before any reset inference */
   def resetType: Module.ResetType.Type = Module.ResetType.Default
@@ -236,6 +236,9 @@ abstract class Module extends RawModule {
   final val clock: Clock = IO(Input(Clock()))(this._sourceInfo).suggestName("clock")
   final val reset: Reset = IO(Input(mkReset))(this._sourceInfo).suggestName("reset")
   // TODO add a way to memoize hasBeenReset iff it is used
+
+  override def implicitClock: Clock = clock
+  override def implicitReset: Reset = reset
 
   private[chisel3] def mkReset: Reset = {
     // Top module and compatibility mode use Bool for reset
@@ -251,14 +254,6 @@ abstract class Module extends RawModule {
     }
   }
 
-  // Overridden by OverrideClock
-  private[chisel3] def _implicitClock: Clock = clock
-  // Overridden by OverrideReset
-  private[chisel3] def _implicitReset: Reset = reset
-
-  // Setup ClockAndReset
-  Builder.currentClock = Some(_implicitClock)
-  Builder.currentReset = Some(_implicitReset)
   // Note that we do no such setup for disable, it will default to hasBeenReset of the currentReset
   Builder.clearPrefix()
 
@@ -271,54 +266,58 @@ abstract class Module extends RawModule {
   }
 }
 
-/** Enables overriding of the implicit reset used _within_ the module
+/** Provides an implicit Clock for use _within_ the [[RawModule]]
   *
-  * @example {{{
-  * class MyModule extends Module with OverrideReset {
-  *   val gate = IO(Input(Bool()))
-  *   // It it useful to name this signal
-  *   val myReset = reset.asBool || gate
-  *   internalReset := myReset
+  * Be careful to define the Clock value before trying to use it.
+  * Due to Scala initialization order, the actual val defining the Clock must occur before any
+  * uses of the implicit Clock.
+  *
+  * @example
+  * {{{
+  * class MyModule extends RawModule with ImplicitClock {
+  *   // Define a Clock value, it need not be called "implicitClock"
+  *   val clk = IO(Input(Clock()))
+  *   // Implement the virtual method to tell Chisel about this Clock value
+  *   override def implicitClock = clk
+  *   // Now we have a Clock to use in this RawModule
+  *   val reg = Reg(UInt(8.W))
   * }
   * }}}
   */
-trait OverrideReset { self: Module =>
-  // This is a lazy val because the constructor of Module runs before this constructor
-  // A val would not yet be initialized
-  private lazy val _internalReset: Reset = Wire(self.mkReset)(self._sourceInfo).suggestName("_internalReset")
+trait ImplicitClock { self: RawModule =>
 
-  /** Implicit reset used within this Module, must be driven by the user
-    *
-    * @note The name of this wire will have a leading `_`, the user should drive it with a named signal
-    */
-  final def internalReset: Reset = _internalReset
+  /** Method that should point to the user-defined Clock */
+  def implicitClock: Clock
 
-  override private[chisel3] def _implicitReset = internalReset
+  Builder.currentClock = Some(Delayed(implicitClock))
 }
 
-/** Enables overriding of the implicit clock used _within_ the module
+/** Provides an implicit Reset for use _within_ the [[RawModule]]
   *
-  * @example {{{
-  * class MyModule extends Module with OverrideClock {
-  *   val gate = IO(Input(Bool()))
-  *   // It it useful to name this signal
-  *   val gatedClock = (clock.asBool || gate).asClock
-  *   internalClock := gatedClock
+  * Be careful to define the Reset value before trying to use it.
+  * Due to Scala initialization order, the actual val defining the Reset must occur before any
+  * uses of the implicit Reset.
+  *
+  * @example
+  * {{{
+  * class MyModule extends RawModule with ImplicitReset {
+  *   // Define a Reset value, it need not be called "implicitReset"
+  *   val rst = IO(Input(AsyncReset()))
+  *   // Implement the virtual method to tell Chisel about this Reset value
+  *   override def implicitReset = clk
+  *   // Now we have a Reset to use in this RawModule
+  *   // Registers also require a clock
+  *   val clock = IO(Input(Clock()))
+  *   val reg = withClock(clock)(RegInit(0.U)) // Combine with ImplicitClock to get rid of this withClock
   * }
   * }}}
   */
-trait OverrideClock { self: Module =>
-  // This is a lazy val because the constructor of Module runs before this constructor
-  // A val would not yet be initialized
-  private lazy val _internalClock: Clock = Wire(Clock())(self._sourceInfo).suggestName("_internalClock")
+trait ImplicitReset { self: RawModule =>
 
-  /** Implicit reset used within this Module, must be driven by the user
-    *
-    * @note The name of this wire will have a leading `_`, the user should drive it with a named signal
-    */
-  final def internalClock: Clock = _internalClock
+  /** Method that should point to the user-defined Reset */
+  def implicitReset: Reset
 
-  override private[chisel3] def _implicitClock = internalClock
+  Builder.currentReset = Some(Delayed(implicitReset))
 }
 
 package internal {

@@ -35,18 +35,48 @@ class ClockSpec extends ChiselPropSpec {
   }
 
   property("Should be able to override the value of the implicit clock") {
-    val verilog = ChiselStage.emitSystemVerilog(new Module with OverrideClock {
+    val verilog = ChiselStage.emitSystemVerilog(new Module {
       val gate = IO(Input(Bool()))
       val in = IO(Input(UInt(8.W)))
       val out = IO(Output(UInt(8.W)))
       val gatedClock = (clock.asBool || gate).asClock
-      internalClock := gatedClock
+      override def implicitClock = gatedClock
+
       val r = Reg(UInt(8.W))
       out := r
       r := in
     })
-    // Signal name really should be gatedClock, hopefully fixed in future version of firtool
-    verilog should include("_gatedClock_T_2 = clock | gate;")
-    verilog should include("always @(posedge _gatedClock_T_2)")
+    verilog should include("gatedClock = clock | gate;")
+    verilog should include("always @(posedge gatedClock)")
+  }
+
+  property("Should be able to add an implicit clock to a RawModule") {
+    val verilog = ChiselStage.emitSystemVerilog(new RawModule with ImplicitClock {
+      val foo = IO(Input(Bool()))
+      val in = IO(Input(UInt(8.W)))
+      val out = IO(Output(UInt(8.W)))
+      override val implicitClock = (!foo).asClock
+
+      val r = Reg(UInt(8.W))
+      out := r
+      r := in
+    })
+    verilog should include("always @(posedge implicitClock)")
+  }
+
+  property("Chisel should give a decent error message if you try to use a clock before defining it") {
+    val e = the[ChiselException] thrownBy (
+      ChiselStage.emitCHIRRTL(
+        new RawModule with ImplicitClock {
+          val r = Reg(UInt(8.W))
+          val foo = IO(Input(Clock()))
+          override def implicitClock = foo
+        },
+        args = Array("--throw-on-first-error")
+      )
+    )
+    e.getMessage should include(
+      "The implicit clock is null which means its definition probably has not yet been initialized"
+    )
   }
 }
