@@ -14,7 +14,13 @@ import scala.language.experimental.macros
   */
 private[chisel3] sealed trait ProbeBase {
 
-  protected def apply[T <: Data](source: => T, writable: Boolean)(implicit sourceInfo: SourceInfo): T = {
+  protected def apply[T <: Data](
+    source:   => T,
+    writable: Boolean,
+    color:    Option[layer.Layer] = None
+  )(
+    implicit sourceInfo: SourceInfo
+  ): T = {
     val prevId = Builder.idGen.value
     // call Output() to coerce passivity
     val data = Output(source) // should only evaluate source once
@@ -29,7 +35,7 @@ private[chisel3] sealed trait ProbeBase {
     // https://github.com/chipsalliance/chisel/issues/3609
 
     val ret: T = if (!data.mustClone(prevId)) data else data.cloneType.asInstanceOf[T]
-    setProbeModifier(ret, Some(ProbeInfo(writable)))
+    setProbeModifier(ret, Some(ProbeInfo(writable, color)))
     ret
   }
 }
@@ -40,8 +46,12 @@ object Probe extends ProbeBase with SourceInfoDoc {
     */
   def apply[T <: Data](source: => T): T = macro chisel3.internal.sourceinfo.ProbeTransform.sourceApply[T]
 
+  def apply[T <: Data](source: => T, color: layer.Layer): T =
+    macro chisel3.internal.sourceinfo.ProbeTransform.sourceApplyWithColor[T]
+
   /** @group SourceInfoTransformMacro */
-  def do_apply[T <: Data](source: => T)(implicit sourceInfo: SourceInfo): T = super.apply(source, false)
+  def do_apply[T <: Data](source: => T, color: Option[layer.Layer] = None)(implicit sourceInfo: SourceInfo): T =
+    super.apply(source, false, color)
 }
 
 object RWProbe extends ProbeBase with SourceInfoDoc {

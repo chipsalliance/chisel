@@ -375,9 +375,15 @@ private[chisel3] object Converter {
     // extract underlying type for probe
     case t: Data if (checkProbe && t.probeInfo.nonEmpty) =>
       if (t.probeInfo.get.writable) {
-        fir.RWProbeType(extractType(t, clearDir, info, false, checkConst, typeAliases))
+        fir.RWProbeType(
+          extractType(t, clearDir, info, false, checkConst, typeAliases),
+          t.probeInfo.get.color.map(_.fullName)
+        )
       } else {
-        fir.ProbeType(extractType(t, clearDir, info, false, checkConst, typeAliases))
+        fir.ProbeType(
+          extractType(t, clearDir, info, false, checkConst, typeAliases),
+          t.probeInfo.get.color.map(_.fullName)
+        )
       }
     // extract underlying type for const
     case t: Data if (checkConst && t.isConst) =>

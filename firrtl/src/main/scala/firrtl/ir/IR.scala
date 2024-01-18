@@ -539,8 +539,8 @@ object GroundType {
 }
 abstract class AggregateType extends Type
 
-case class ProbeType(underlying: Type) extends Type with UseSerializer
-case class RWProbeType(underlying: Type) extends Type with UseSerializer
+case class ProbeType(underlying: Type, color: Option[String] = None) extends Type with UseSerializer
+case class RWProbeType(underlying: Type, color: Option[String] = None) extends Type with UseSerializer
 
 case class ConstType(underlying: Type) extends Type with UseSerializer
 

@@ -387,8 +387,16 @@ object Serializer {
 
   private def s(node: Type, lastEmittedConst: Boolean)(implicit b: StringBuilder, indent: Int): Unit = node match {
     // Types
-    case ProbeType(underlying: Type) => b ++= "Probe<"; s(underlying); b += '>'
-    case RWProbeType(underlying: Type) => b ++= "RWProbe<"; s(underlying); b += '>'
+    case ProbeType(underlying: Type, color: Option[String]) =>
+      b ++= "Probe<"
+      s(underlying)
+      color.foreach { layer => b ++= s", $layer" }
+      b += '>'
+    case RWProbeType(underlying: Type, color: Option[String]) =>
+      b ++= "RWProbe<"
+      s(underlying)
+      color.foreach { layer => b ++= s", $layer" }
+      b += '>'
     case ConstType(underlying: Type) => {
       // Avoid emitting multiple consecurive 'const', which can otherwise occur for const vectors of const elements
       if (!lastEmittedConst) {
