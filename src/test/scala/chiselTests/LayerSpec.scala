@@ -3,16 +3,17 @@
 package chiselTests
 
 import chisel3._
+import chisel3.probe.{Probe, ProbeValue, define}
 import chiselTests.{ChiselFlatSpec, MatchesAndOmits, Utils}
 import _root_.circt.stage.ChiselStage
 
 class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
 
-  "Layers" should "allow for creation of a layer and nested layers" in {
-
     object A extends layer.Layer(layer.Convention.Bind) {
       object B extends layer.Layer(layer.Convention.Bind)
     }
+
+  "Layers" should "allow for creation of a layer and nested layers" in {
 
     class Foo extends RawModule {
       val a = IO(Input(Bool()))
@@ -42,6 +43,26 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
       "group B :",
       "wire x : UInt<1>",
       "wire y : UInt<1>"
+    )()
+  }
+
+  it should "allow for defines in a layer to drive layer-colored probes" in {
+
+    class Foo extends RawModule {
+      val in = IO(Input(Bool()))
+      val a = IO(Output(Probe(Bool(), A)))
+      val b = IO(Output(Probe(Bool(), A.B)))
+      layer.block(A) {
+        define(a, ProbeValue(in))
+        layer.block(A.B) {
+          define(b, ProbeValue(in))
+        }
+      }
+    }
+
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Foo))(
+      "define a = probe(in)",
+      "define b = probe(in)"
     )()
   }
 
