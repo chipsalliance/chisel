@@ -237,8 +237,8 @@ abstract class Module extends RawModule with ImplicitClock with ImplicitReset {
   final val reset: Reset = IO(Input(mkReset))(this._sourceInfo).suggestName("reset")
   // TODO add a way to memoize hasBeenReset iff it is used
 
-  override def implicitClock: Clock = clock
-  override def implicitReset: Reset = reset
+  override protected def implicitClock: Clock = clock
+  override protected def implicitReset: Reset = reset
 
   private[chisel3] def mkReset: Reset = {
     // Top module and compatibility mode use Bool for reset
@@ -278,7 +278,7 @@ abstract class Module extends RawModule with ImplicitClock with ImplicitReset {
   *   // Define a Clock value, it need not be called "implicitClock"
   *   val clk = IO(Input(Clock()))
   *   // Implement the virtual method to tell Chisel about this Clock value
-  *   override def implicitClock = clk
+  *   override protected def implicitClock = clk
   *   // Now we have a Clock to use in this RawModule
   *   val reg = Reg(UInt(8.W))
   * }
@@ -287,7 +287,7 @@ abstract class Module extends RawModule with ImplicitClock with ImplicitReset {
 trait ImplicitClock { self: RawModule =>
 
   /** Method that should point to the user-defined Clock */
-  def implicitClock: Clock
+  protected def implicitClock: Clock
 
   Builder.currentClock = Some(Delayed(implicitClock))
 }
@@ -304,7 +304,7 @@ trait ImplicitClock { self: RawModule =>
   *   // Define a Reset value, it need not be called "implicitReset"
   *   val rst = IO(Input(AsyncReset()))
   *   // Implement the virtual method to tell Chisel about this Reset value
-  *   override def implicitReset = clk
+  *   override protected def implicitReset = clk
   *   // Now we have a Reset to use in this RawModule
   *   // Registers also require a clock
   *   val clock = IO(Input(Clock()))
@@ -315,7 +315,7 @@ trait ImplicitClock { self: RawModule =>
 trait ImplicitReset { self: RawModule =>
 
   /** Method that should point to the user-defined Reset */
-  def implicitReset: Reset
+  protected def implicitReset: Reset
 
   Builder.currentReset = Some(Delayed(implicitReset))
 }

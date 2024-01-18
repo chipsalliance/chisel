@@ -40,7 +40,7 @@ class ClockSpec extends ChiselPropSpec {
       val in = IO(Input(UInt(8.W)))
       val out = IO(Output(UInt(8.W)))
       val gatedClock = (clock.asBool || gate).asClock
-      override def implicitClock = gatedClock
+      override protected def implicitClock = gatedClock
 
       val r = Reg(UInt(8.W))
       out := r
@@ -55,7 +55,7 @@ class ClockSpec extends ChiselPropSpec {
       val foo = IO(Input(Bool()))
       val in = IO(Input(UInt(8.W)))
       val out = IO(Output(UInt(8.W)))
-      override val implicitClock = (!foo).asClock
+      override protected val implicitClock = (!foo).asClock
 
       val r = Reg(UInt(8.W))
       out := r
@@ -70,7 +70,7 @@ class ClockSpec extends ChiselPropSpec {
         new RawModule with ImplicitClock {
           val r = Reg(UInt(8.W))
           val foo = IO(Input(Clock()))
-          override def implicitClock = foo
+          override protected def implicitClock = foo
         },
         args = Array("--throw-on-first-error")
       )

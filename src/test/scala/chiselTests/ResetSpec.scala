@@ -108,7 +108,7 @@ class ResetSpec extends ChiselFlatSpec with Utils {
       val gate = IO(Input(Bool()))
       val in = IO(Input(UInt(8.W)))
       val out = IO(Output(UInt(8.W)))
-      override val implicitReset = reset.asBool || gate
+      override protected val implicitReset = reset.asBool || gate
       val r = RegInit(0.U)
       out := r
       r := in
@@ -121,7 +121,7 @@ class ResetSpec extends ChiselFlatSpec with Utils {
       val foo = IO(Input(Bool()))
       val in = IO(Input(UInt(8.W)))
       val out = IO(Output(UInt(8.W)))
-      override val implicitReset = !foo
+      override protected val implicitReset = !foo
 
       val clk = IO(Input(Clock()))
       val r = withClock(clk)(RegInit(0.U))
@@ -160,7 +160,7 @@ class ResetSpec extends ChiselFlatSpec with Utils {
         new RawModule with ImplicitReset {
           val r = Module.reset
           val foo = IO(Input(AsyncReset()))
-          override def implicitReset = foo
+          override protected def implicitReset = foo
         },
         args = Array("--throw-on-first-error")
       )
