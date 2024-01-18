@@ -43,6 +43,12 @@ object layer {
     private[chisel3] def sourceInfo: SourceInfo = _sourceInfo
 
     private[chisel3] def name: String = simpleClassName(this.getClass())
+
+    private[chisel3] val fullName: String = parent match {
+      case null       => "<root>"
+      case Layer.Root => name
+      case _          => s"${parent.fullName}.$name"
+    }
   }
 
   object Layer {
