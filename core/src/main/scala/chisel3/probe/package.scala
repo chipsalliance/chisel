@@ -38,6 +38,11 @@ package object probe extends SourceInfoDoc {
     }
     requireHasProbeTypeModifier(sink, "Expected sink to be a probe.")
     requireHasProbeTypeModifier(probeExpr, "Expected source to be a probe expression.")
+    requireCompatibleDestinationProbeColor(
+      sink,
+      if (Builder.layerStack.head == layer.Layer.Root) s"Cannot define '$sink' from outside a layerblock"
+      else s"Cannot define '$sink' from a layerblock associated with layer ${Builder.layerStack.head.fullName}"
+    )
     if (sink.probeInfo.get.writable) {
       requireHasWritableProbeTypeModifier(
         probeExpr,

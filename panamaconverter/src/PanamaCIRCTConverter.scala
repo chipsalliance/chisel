@@ -141,8 +141,8 @@ class PanamaCIRCTConverter {
         case fir.UIntType(width)                                => getWidthOrSentinel(width)
         case fir.SIntType(width)                                => getWidthOrSentinel(width)
         case fir.AnalogType(width)                              => getWidthOrSentinel(width)
-        case fir.ProbeType(underlying)                          => getWidthOrSentinel(underlying)
-        case fir.RWProbeType(underlying)                        => getWidthOrSentinel(underlying)
+        case fir.ProbeType(underlying, _)                       => getWidthOrSentinel(underlying)
+        case fir.RWProbeType(underlying, _)                     => getWidthOrSentinel(underlying)
         case _: fir.BundleType | _: fir.VectorType => -2
         case unhandled => throw new Exception(s"unhandled: $unhandled")
       }
@@ -170,15 +170,15 @@ class PanamaCIRCTConverter {
               )
             )
           )
-        case fir.ProbeType(underlying)   => circt.firrtlTypeGetRef(convert(underlying), false)
-        case fir.RWProbeType(underlying) => circt.firrtlTypeGetRef(convert(underlying), true)
-        case fir.AnyRefPropertyType      => circt.firrtlTypeGetAnyRef()
-        case fir.IntegerPropertyType     => circt.firrtlTypeGetInteger()
-        case fir.DoublePropertyType      => circt.firrtlTypeGetDouble()
-        case fir.StringPropertyType      => circt.firrtlTypeGetString()
-        case fir.BooleanPropertyType     => circt.firrtlTypeGetBoolean()
-        case fir.PathPropertyType        => circt.firrtlTypeGetPath()
-        case t: fir.SequencePropertyType => circt.firrtlTypeGetList(convert(t.tpe))
+        case fir.ProbeType(underlying, _)   => circt.firrtlTypeGetRef(convert(underlying), false)
+        case fir.RWProbeType(underlying, _) => circt.firrtlTypeGetRef(convert(underlying), true)
+        case fir.AnyRefPropertyType         => circt.firrtlTypeGetAnyRef()
+        case fir.IntegerPropertyType        => circt.firrtlTypeGetInteger()
+        case fir.DoublePropertyType         => circt.firrtlTypeGetDouble()
+        case fir.StringPropertyType         => circt.firrtlTypeGetString()
+        case fir.BooleanPropertyType        => circt.firrtlTypeGetBoolean()
+        case fir.PathPropertyType           => circt.firrtlTypeGetPath()
+        case t: fir.SequencePropertyType    => circt.firrtlTypeGetList(convert(t.tpe))
         case t: fir.ClassPropertyType =>
           circt.firrtlTypeGetClass(
             circt.mlirFlatSymbolRefAttrGet(t.name),

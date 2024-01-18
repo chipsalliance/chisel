@@ -40,6 +40,10 @@ class ProbeTransform(val c: Context) extends SourceInfoTransformMacro {
     val tpe = weakTypeOf[T]
     q"$thisObj.do_apply[$tpe]($source)($implicitSourceInfo)"
   }
+  def sourceApplyWithColor[T: c.WeakTypeTag](source: c.Tree, color: c.Tree): c.Tree = {
+    val tpe = weakTypeOf[T]
+    q"$thisObj.do_apply[$tpe]($source, Some($color))($implicitSourceInfo)"
+  }
   def sourceRead[T: c.WeakTypeTag](source: c.Tree): c.Tree = {
     val tpe = weakTypeOf[T]
     q"$thisObj.do_read[$tpe]($source)($implicitSourceInfo)"

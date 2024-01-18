@@ -131,6 +131,21 @@ package object internal {
     case leaf => leaf.probeInfo.nonEmpty
   }
 
+  private[chisel3] def requireCompatibleDestinationProbeColor(
+    dest:         Data,
+    errorMessage: => String = ""
+  )(
+    implicit sourceInfo: SourceInfo
+  ): Unit = {
+    val destLayer = dest.probeInfo match {
+      case Some(Data.ProbeInfo(_, Some(color))) =>
+        color
+      case _ => return
+    }
+    if (!Builder.layerStack.exists(_ == destLayer))
+      Builder.error(errorMessage)
+  }
+
   // TODO this exists in cats.Traverse, should we just use that?
   private[chisel3] implicit class ListSyntax[A](xs: List[A]) {
     def mapAccumulate[B, C](z: B)(f: (B, A) => (B, C)): (B, List[C]) = {

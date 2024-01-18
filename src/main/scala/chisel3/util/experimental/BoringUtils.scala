@@ -313,7 +313,9 @@ object BoringUtils {
     * Returns a probe Data type.
     */
   def tap[A <: Data](source: A)(implicit si: SourceInfo): A = {
-    val tapIntermediate = skipPrefix { boreOrTap(source, createProbe = Some(ProbeInfo(writable = false))) }
+    val tapIntermediate = skipPrefix {
+      boreOrTap(source, createProbe = Some(ProbeInfo(writable = false, color = None)))
+    }
     if (tapIntermediate.probeInfo.nonEmpty) {
       tapIntermediate
     } else {
@@ -328,7 +330,7 @@ object BoringUtils {
     * Returns a probe Data type.
     */
   def rwTap[A <: Data](source: A)(implicit si: SourceInfo): A = {
-    val tapIntermediate = skipPrefix { boreOrTap(source, createProbe = Some(ProbeInfo(writable = true))) }
+    val tapIntermediate = skipPrefix { boreOrTap(source, createProbe = Some(ProbeInfo(writable = true, color = None))) }
     if (tapIntermediate.probeInfo.nonEmpty) {
       tapIntermediate
     } else {
@@ -343,7 +345,9 @@ object BoringUtils {
     * Returns a non-probe Data type.
     */
   def tapAndRead[A <: Data](source: A)(implicit si: SourceInfo): A = {
-    val tapIntermediate = skipPrefix { boreOrTap(source, createProbe = Some(ProbeInfo(writable = false))) }
+    val tapIntermediate = skipPrefix {
+      boreOrTap(source, createProbe = Some(ProbeInfo(writable = false, color = None)))
+    }
     if (tapIntermediate.probeInfo.nonEmpty) {
       probe.read(tapIntermediate)
     } else {

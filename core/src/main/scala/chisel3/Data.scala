@@ -804,7 +804,7 @@ object Data {
   // Needed for the `implicit def toConnectableDefault`
   import scala.language.implicitConversions
 
-  private[chisel3] case class ProbeInfo(val writable: Boolean)
+  private[chisel3] case class ProbeInfo(val writable: Boolean, color: Option[layer.Layer])
 
   /** Provides :<=, :>=, :<>=, and :#= between consumer and producer of the same T <: Data */
   implicit class ConnectableDefault[T <: Data](consumer: T) extends connectable.ConnectableOperators[T](consumer)
