@@ -71,7 +71,7 @@ class DataEqualitySpec extends ChiselFlatSpec with Utils {
     val b: Bundle = gen
   }
   class MaybeEmptyBundle(x: Boolean) extends Bundle {
-    val a = Option.when(x)(UInt(8.W))
+    val a = if (x) Some(UInt(8.W)) else None
   }
 
   behavior.of("UInt === UInt")
