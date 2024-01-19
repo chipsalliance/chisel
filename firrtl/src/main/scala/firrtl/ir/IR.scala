@@ -539,22 +539,48 @@ object GroundType {
 }
 abstract class AggregateType extends Type
 
-@data class ProbeType(underlying: Type, @since("Chisel 7") color: Option[String] = None)
+// TODO switch back to case class when we make this private
+class ProbeType(val underlying: Type, val color: Option[String])
     extends Type
-    with UseSerializer {
+    with UseSerializer
+    with Product
+    with Serializable {
+  def this(underlying: Type) = this(underlying, None)
   def copy(underlying: Type = underlying): ProbeType = ProbeType(underlying, color)
+  def canEqual(that:   Any):               Boolean = that.isInstanceOf[ProbeType]
+  def productArity: Int = 2
+  def productElement(n: Int): Any = n match {
+    case 0 => this.underlying
+    case 1 => this.color
+    case x => throw new IndexOutOfBoundsException(x)
+  }
 }
-object ProbeType {
-  def unapply(a: ProbeType): Some[(Type)] = Some((a.underlying))
+object ProbeType extends scala.runtime.AbstractFunction1[Type, ProbeType] {
+  def unapply(a:        ProbeType): Option[Type] = Some((a.underlying))
+  def apply(underlying: Type): ProbeType = new ProbeType(underlying)
+  def apply(underlying: Type, color: Option[String]): ProbeType = new ProbeType(underlying, color)
 }
 
-@data class RWProbeType(underlying: Type, @since("Chisel 7") color: Option[String] = None)
+// TODO switch back to case class when we make this private
+class RWProbeType(val underlying: Type, val color: Option[String])
     extends Type
-    with UseSerializer {
+    with UseSerializer
+    with Product
+    with Serializable {
+  def this(underlying: Type) = this(underlying, None)
   def copy(underlying: Type = underlying): RWProbeType = RWProbeType(underlying, color)
+  def canEqual(that:   Any):               Boolean = that.isInstanceOf[RWProbeType]
+  def productArity: Int = 2
+  def productElement(n: Int): Any = n match {
+    case 0 => this.underlying
+    case 1 => this.color
+    case x => throw new IndexOutOfBoundsException(x)
+  }
 }
-object RWProbeType {
-  def unapply(a: RWProbeType): Some[(Type)] = Some((a.underlying))
+object RWProbeType extends scala.runtime.AbstractFunction1[Type, RWProbeType] {
+  def unapply(a:        RWProbeType): Option[Type] = Some(a.underlying)
+  def apply(underlying: Type): RWProbeType = new RWProbeType(underlying)
+  def apply(underlying: Type, color: Option[String]): RWProbeType = new RWProbeType(underlying, color)
 }
 
 case class ConstType(underlying: Type) extends Type with UseSerializer
