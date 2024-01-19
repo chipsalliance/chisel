@@ -552,7 +552,7 @@ class ProbeType(val underlying: Type, val color: Option[String])
   def productElement(n: Int): Any = n match {
     case 0 => this.underlying
     case 1 => this.color
-    case x => throw new IndexOutOfBoundsException(x)
+    case x => throw new IndexOutOfBoundsException(x.toString)
   }
 }
 object ProbeType extends scala.runtime.AbstractFunction1[Type, ProbeType] {
@@ -574,7 +574,7 @@ class RWProbeType(val underlying: Type, val color: Option[String])
   def productElement(n: Int): Any = n match {
     case 0 => this.underlying
     case 1 => this.color
-    case x => throw new IndexOutOfBoundsException(x)
+    case x => throw new IndexOutOfBoundsException(x.toString)
   }
 }
 object RWProbeType extends scala.runtime.AbstractFunction1[Type, RWProbeType] {
