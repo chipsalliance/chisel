@@ -70,6 +70,9 @@ class DataEqualitySpec extends ChiselFlatSpec with Utils {
     val a = UInt(8.W)
     val b: Bundle = gen
   }
+  class MaybeEmptyBundle(x: Boolean) extends Bundle {
+    val a = Option.when(x)(UInt(8.W))
+  }
 
   behavior.of("UInt === UInt")
   it should "pass with equal values" in {
@@ -140,6 +143,14 @@ class DataEqualitySpec extends ChiselFlatSpec with Utils {
       )
     }
   }
+  it should "support empty Vecs" in {
+    assertTesterPasses {
+      new EqualityTester(
+        Wire(Vec(0, UInt(8.W))),
+        Wire(Vec(0, UInt(8.W)))
+      )
+    }
+  }
   it should "fail with equal sizes, differing values" in {
     assertTesterFails {
       new EqualityTester(
@@ -165,6 +176,14 @@ class DataEqualitySpec extends ChiselFlatSpec with Utils {
       new EqualityTester(
         (new MyBundle).Lit(_.a -> 42.U, _.b -> false.B, _.c -> MyEnum.sB),
         (new MyBundle).Lit(_.a -> 42.U, _.b -> false.B, _.c -> MyEnum.sB)
+      )
+    }
+  }
+  it should "support empty Bundles" in {
+    assertTesterPasses {
+      new EqualityTester(
+        (new MaybeEmptyBundle(false)).Lit(),
+        (new MaybeEmptyBundle(false)).Lit()
       )
     }
   }
