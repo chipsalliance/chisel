@@ -89,12 +89,13 @@ object Releases {
    * Will pick a non-prerelease if one is available, the newest prerelease if not
    */
   def getLatestForEachMajorVersion(releases: List[SemanticVersion]): List[SemanticVersion] = {
+    val filtered = releases.filter(_ > oldestVersion)
     // Get major version but cognizant of pre-5.0 versioning
     def getMajorVersion(v: SemanticVersion): String = {
       if (v.major == 3) s"${v.major}.${v.minor}"
       else v.major.toString
     }
-    val grouped = releases.groupBy(getMajorVersion).map { case (_, values) => values.max }
+    val grouped = filtered.groupBy(getMajorVersion).map { case (_, values) => values.max }
     grouped.toList.sorted
   }
 
