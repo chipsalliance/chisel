@@ -50,7 +50,11 @@ object Probe extends ProbeBase with SourceInfoDoc {
     macro chisel3.internal.sourceinfo.ProbeTransform.sourceApplyWithColor[T]
 
   /** @group SourceInfoTransformMacro */
-  def do_apply[T <: Data](source: => T, color: Option[layer.Layer] = None)(implicit sourceInfo: SourceInfo): T =
+  def do_apply[T <: Data](source: => T)(implicit sourceInfo: SourceInfo): T =
+    super.apply(source, false, None)
+
+  /** @group SourceInfoTransformMacro */
+  def do_apply[T <: Data](source: => T, color: Option[layer.Layer])(implicit sourceInfo: SourceInfo): T =
     super.apply(source, false, color)
 }
 
