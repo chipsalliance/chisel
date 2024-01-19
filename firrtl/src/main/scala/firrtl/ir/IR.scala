@@ -539,8 +539,23 @@ object GroundType {
 }
 abstract class AggregateType extends Type
 
-case class ProbeType(underlying: Type, color: Option[String] = None) extends Type with UseSerializer
-case class RWProbeType(underlying: Type, color: Option[String] = None) extends Type with UseSerializer
+@data class ProbeType(underlying: Type, @since("Chisel 7") color: Option[String] = None)
+    extends Type
+    with UseSerializer {
+  def copy(underlying: Type = underlying): ProbeType = ProbeType(underlying, color)
+}
+object ProbeType {
+  def unapply(a: ProbeType): Some[(Type)] = Some((a.underlying))
+}
+
+@data class RWProbeType(underlying: Type, @since("Chisel 7") color: Option[String] = None)
+    extends Type
+    with UseSerializer {
+  def copy(underlying: Type = underlying): RWProbeType = RWProbeType(underlying, color)
+}
+object RWProbeType {
+  def unapply(a: RWProbeType): Some[(Type)] = Some((a.underlying))
+}
 
 case class ConstType(underlying: Type) extends Type with UseSerializer
 

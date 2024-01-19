@@ -17,7 +17,7 @@ private[chisel3] sealed trait ProbeBase {
   protected def apply[T <: Data](
     source:   => T,
     writable: Boolean,
-    color:    Option[layer.Layer] = None
+    color:    Option[layer.Layer]
   )(
     implicit sourceInfo: SourceInfo
   ): T = {
@@ -37,6 +37,15 @@ private[chisel3] sealed trait ProbeBase {
     val ret: T = if (!data.mustClone(prevId)) data else data.cloneType.asInstanceOf[T]
     setProbeModifier(ret, Some(ProbeInfo(writable, color)))
     ret
+  }
+
+  protected def apply[T <: Data](
+    source:   => T,
+    writable: Boolean
+  )(
+    implicit sourceInfo: SourceInfo
+  ): T = {
+    apply(source, writable, None)
   }
 }
 
