@@ -227,8 +227,8 @@ If you insist on setting up your own project from scratch, your project needs to
 For example, in SBT this could be expressed as:
 ```scala
 // build.sbt
-scalaVersion := "2.13.10"
-val chiselVersion = "5.1.0"
+scalaVersion := "2.13.12"
+val chiselVersion = "6.0.0"
 addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full)
 libraryDependencies += "org.chipsalliance" %% "chisel" % chiselVersion
 ```
@@ -261,9 +261,8 @@ These simulation-based verification tools are available for Chisel:
 * [**Cheat Sheet**](https://github.com/freechipsproject/chisel-cheatsheet/releases/latest/download/chisel_cheatsheet.pdf), a 2-page reference of the base Chisel syntax and libraries
 * [**ScalaDoc (latest)**](https://www.chisel-lang.org/api/latest/index.html), a listing, description, and examples of the functionality exposed by Chisel, [older versions](https://www.chisel-lang.org/api/) are also available
 * [**Gitter**](https://gitter.im/freechipsproject/chisel3), where you can ask questions or discuss anything Chisel
-* [**Website (3.6 and earlier)**](https://www.chisel-lang.org) ([source](https://github.com/freechipsproject/www.chisel-lang.org/))
-* [**Website (main)**](https://chipsalliance.github.io/chisel) ([source](website)) (Note that this will replace the above after the Chisel 5 release)
-* [**Scastie (v5.1.0)**](https://scastie.scala-lang.org/FfHRZUF4QuiD7PHTQoWINQ) - cannot generate Verilog (firtool does not work in Scastie)
+* [**Website**](https://www.chisel-lang.org) ([source](website))
+* [**Scastie (v6.0.0)**](https://scastie.scala-lang.org/CsDO7Q3TQHmBWJfKEB85Tw) - cannot generate Verilog (firtool does not work in Scastie)
 * [**Scastie (v3.6.0)**](https://scastie.scala-lang.org/1XICrlaZQs6ZvxpuKdFdDw) - generates Verilog with legacy Scala FIRRTL Compiler
 * [**asic-world**](http://www.asic-world.com/verilog/veritut.html) If you aren't familiar with verilog, this is a good tutorial.
 
@@ -304,7 +303,6 @@ sbt compile
 ```
 
 In order to run the following unit tests, you will need several tools on your `PATH`, namely
-[firtool](https://github.com/llvm/circt/releases/tag/firtool-1.43.0),
 [verilator](https://www.veripool.org/verilator/),
 [yosys](https://yosyshq.net/yosys/),
 and [espresso](https://github.com/chipsalliance/espresso).
@@ -320,7 +318,7 @@ sbt test
 
 To use the development version of Chisel (`master` branch), you will need to build from source and publish locally.
 The repository version can be found by running `sbt version`.
-As of the time of writing it was: `6.0.0-M3+131-ca74d07e-SNAPSHOT`.
+As of the time of writing it was: `6.0.0+1-8d92842c-SNAPSHOT`.
 
 To publish your version of Chisel to the local Ivy (sbt's dependency manager) repository, run:
 
@@ -334,7 +332,7 @@ If you need to un-publish your local copy of Chisel, remove the directory genera
 In order to have your projects use this version of Chisel, you should update the `libraryDependencies` setting in your project's build.sbt file to use the current version, for example:
 
 ```scala
-val chiselVersion = "6.0.0-M3+131-ca74d07e-SNAPSHOT"
+val chiselVersion = "6.0.0+1-8d92842c-SNAPSHOT"
 addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full)
 libraryDependencies += "org.chipsalliance" %% "chisel" % chiselVersion
 ```
