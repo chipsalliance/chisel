@@ -58,6 +58,11 @@
         "target": ""
       },
       {
+        "pattern": "\n\\s*\n",
+        "flags": "gu",
+        "target": "\n"
+      },
+      {
         "pattern": "\n",
         "flags": "gu",
         "target": "\n  "
