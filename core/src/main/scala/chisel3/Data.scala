@@ -939,7 +939,8 @@ object Data {
             thiz.elementsIterator
               .zip(that.elementsIterator)
               .map { case (thisData, thatData) => thisData === thatData }
-              .reduce(_ && _)
+              .reduceOption(_ && _) // forall but that isn't defined for Bool on Seq
+              .getOrElse(true.B)
           }
         case (thiz: Record, that: Record) =>
           if (thiz.elements.size != that.elements.size) {
@@ -963,7 +964,8 @@ object Data {
                     )
                 }
             }
-              .reduce(_ && _)
+              .reduceOption(_ && _) // forall but that isn't defined for Bool on Seq
+              .getOrElse(true.B)
           }
         // This should be matching to (DontCare, DontCare) but the compiler wasn't happy with that
         case (_: DontCare.type, _: DontCare.type) => true.B
