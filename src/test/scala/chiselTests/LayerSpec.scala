@@ -3,15 +3,15 @@
 package chiselTests
 
 import chisel3._
-import chisel3.probe.{Probe, ProbeValue, define}
+import chisel3.probe.{define, Probe, ProbeValue}
 import chiselTests.{ChiselFlatSpec, MatchesAndOmits, Utils}
 import _root_.circt.stage.ChiselStage
 
 class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
 
-    object A extends layer.Layer(layer.Convention.Bind) {
-      object B extends layer.Layer(layer.Convention.Bind)
-    }
+  object A extends layer.Layer(layer.Convention.Bind) {
+    object B extends layer.Layer(layer.Convention.Bind)
+  }
 
   "Layers" should "allow for creation of a layer and nested layers" in {
 
