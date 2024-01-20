@@ -11,17 +11,28 @@ import chisel3.util.DecoupledIO
 object DataMirrorSpec {
   import org.scalatest.matchers.should.Matchers._
   class GrandChild(parent: RawModule) extends Module {
+    val internal = WireInit(false.B)
     DataMirror.getParent(this) should be(Some(parent))
+    DataMirror.isVisible(internal) should be(true)
   }
   class Child(parent: RawModule) extends Module {
     val inst = Module(new GrandChild(this))
+    val io = IO(Input(Bool()))
+    val internal = WireInit(false.B)
     DataMirror.getParent(inst) should be(Some(this))
     DataMirror.getParent(this) should be(Some(parent))
+    DataMirror.isVisible(io) should be(true)
+    DataMirror.isVisible(internal) should be(true)
+    DataMirror.isVisible(inst.internal) should be(false)
   }
   class Parent extends Module {
     val inst = Module(new Child(this))
+    inst.io := false.B
     DataMirror.getParent(inst) should be(Some(this))
     DataMirror.getParent(this) should be(None)
+    DataMirror.isVisible(inst.io) should be(true)
+    DataMirror.isVisible(inst.internal) should be(false)
+    DataMirror.isVisible(inst.inst.internal) should be(false)
   }
 }
 
