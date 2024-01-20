@@ -183,6 +183,7 @@ package object chisel3 {
     def W: Width = Width(int)
   }
 
+  @deprecate("use WireDefault instead", "Chisel 3.5") 
   val WireInit = WireDefault
 
   object Vec extends VecFactory
