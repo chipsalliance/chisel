@@ -582,18 +582,25 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     rec(leftType, rightType)
   }
 
-  private[chisel3] def requireVisible(): Unit = {
+  private[chisel3] def isVisible: Boolean = isVisibleFromModule && isVisibleFromWhen
+  private[chisel3] def isVisibleFromModule: Boolean = {
     val mod = topBindingOpt.flatMap(_.location)
     topBindingOpt match {
-      case Some(tb: TopBinding) if (mod == Builder.currentModule) =>
+      case Some(tb: TopBinding) if (mod == Builder.currentModule) => true
       case Some(pb: PortBinding)
-          if (mod.flatMap(Builder.retrieveParent(_, Builder.currentModule.get)) == Builder.currentModule) =>
-      case Some(pb: SecretPortBinding) => // Ignore secret to not require visibility
-      case Some(_: UnconstrainedBinding) =>
-      case _ =>
-        throwException(s"operand '$this' is not visible from the current module ${Builder.currentModule.get.name}")
+          if mod.flatMap(Builder.retrieveParent(_, Builder.currentModule.get)) == Builder.currentModule =>
+        true
+      case Some(pb: SecretPortBinding) => true // Ignore secret to not require visibility
+      case Some(_: UnconstrainedBinding) => true
+      case _ => false
     }
-    if (!MonoConnect.checkWhenVisibility(this)) {
+  }
+  private[chisel3] def isVisibleFromWhen: Boolean = MonoConnect.checkWhenVisibility(this)
+  private[chisel3] def requireVisible(): Unit = {
+    if (!isVisibleFromModule) {
+      throwException(s"operand '$this' is not visible from the current module ${Builder.currentModule.get.name}")
+    }
+    if (!isVisibleFromWhen) {
       throwException(s"operand has escaped the scope of the when in which it was constructed")
     }
   }

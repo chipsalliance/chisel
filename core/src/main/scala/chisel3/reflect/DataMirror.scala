@@ -475,4 +475,10 @@ object DataMirror {
       (modulePath(left, Some(lca)) ++ Seq(lca), modulePath(right, Some(lca)) ++ Seq(lca))
     }
   }
+
+  /** Check if a given `Data` is visible from the current context
+    * @param x the `Data` to check
+    * @return `true` if x is visible, `false` otherwise
+    */
+  def isVisible(target: Data): Boolean = target.isVisible
 }
