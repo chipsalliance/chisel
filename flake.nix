@@ -18,6 +18,9 @@
             mill
             circt
             jextract
+            lit
+            llvm
+            scala-cli
           ];
         in
         {

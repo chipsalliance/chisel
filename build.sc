@@ -1,11 +1,11 @@
 import mill._
 import mill.scalalib._
-import mill.scalalib.TestModule._
 import mill.scalalib.publish._
 import mill.scalalib.scalafmt._
-import coursier.maven.MavenRepository
+import mill.define.Cross
 import mill.scalalib.api.ZincWorkerUtil.matchingVersions
 import $file.common
+import $file.tests
 
 object v {
   val pluginScalaCrossVersions = Seq(
@@ -65,7 +65,7 @@ trait Svsim
 object firrtlut extends Cross[FirrtlUnitTest](v.scalaCrossVersions)
 
 trait FirrtlUnitTest
-  extends common.FirrtlUnitTestModule
+  extends tests.FirrtlUnitTestModule
     with CrossModuleBase
     with ScalafmtModule {
   override def millSourcePath = firrtl(crossScalaVersion).millSourcePath
@@ -185,7 +185,7 @@ trait Chisel
 object chiselut extends Cross[ChiselUnitTest](v.scalaCrossVersions)
 
 trait ChiselUnitTest
-  extends common.ChiselUnitTestModule
+  extends tests.ChiselUnitTestModule
     with CrossModuleBase
     with ScalafmtModule {
   override def millSourcePath = chisel(crossScalaVersion).millSourcePath
@@ -256,7 +256,7 @@ trait CIRCTPanamaBinder
 object bindertest extends Cross[CIRCTPanamaBinderModuleTest](v.scalaCrossVersions)
 
 trait CIRCTPanamaBinderModuleTest
-  extends common.CIRCTPanamaBinderModuleTestModule
+  extends tests.CIRCTPanamaBinderModuleTestModule
     with CrossModuleBase
     with ScalafmtModule {
   override def millSourcePath = circtpanamabinder(crossScalaVersion).millSourcePath
@@ -270,4 +270,28 @@ trait CIRCTPanamaBinderModuleTest
   override def sources = T.sources {
     Seq(PathRef(millSourcePath / "src" / "test"))
   }
+}
+
+object litutility extends Cross[LitUtility](v.scalaCrossVersions)
+
+trait LitUtility
+  extends tests.LitUtilityModule
+    with CrossModuleBase
+    with ScalafmtModule {
+  def millSourcePath = super.millSourcePath / os.up / "lit" / "utility"
+  def circtPanamaBinderModule = circtpanamabinder(crossScalaVersion)
+}
+
+object lit extends Cross[Lit](v.scalaCrossVersions)
+
+trait Lit
+  extends tests.LitModule
+    with Cross.Module[String] {
+  def scalaVersion: T[String] = crossValue
+  def runClasspath: T[Seq[os.Path]] = T(litutility(crossValue).runClasspath().map(_.path))
+  def pluginJars: T[Seq[os.Path]] = T(Seq(litutility(crossValue).circtPanamaBinderModule.pluginModule.jar().path))
+  def javaLibraryPath: T[Seq[os.Path]] = T(litutility(crossValue).circtPanamaBinderModule.libraryPaths().map(_.path))
+  def javaHome: T[os.Path] = T(os.Path(sys.props("java.home")))
+  def chiselLitDir: T[os.Path] = T(millSourcePath)
+  def litConfigIn: T[PathRef] = T.source(millSourcePath / "tests" / "lit.site.cfg.py.in")
 }

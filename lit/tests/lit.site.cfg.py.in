@@ -1,0 +1,9 @@
+import sys
+config.scala_version = "@SCALA_VERSION@"
+config.run_classpath = "@RUN_CLASSPATH@".split(",")
+config.scala_plugin_jars = "@SCALA_PLUGIN_JARS@".split(",")
+config.java_home = "@JAVA_HOME@"
+config.java_library_path = "@JAVA_LIBRARY_PATH@".split(",")
+config.chisel_lit_dir = "@CHISEL_LIT_DIR@".split(",")
+config.test_exec_root = os.path.dirname(__file__)
+lit_config.load_config(config, "@CHISEL_LIT_DIR@/tests/lit.cfg.py")
