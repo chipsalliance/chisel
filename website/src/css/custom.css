@@ -45,6 +45,15 @@
   display: flex;
 }
 
+/* Make links more obvious */
+a {
+  color: blue;
+}
+a:hover {
+  color: blue;
+}
+
+
 /* All header-github-link stuff borrowed with love from the docusaurus website (MIT License) configuration:
  * https://github.com/facebook/docusaurus/blob/6e8292da4cbb7a33bf4dfe21c50c02dc82514842/website/src/css/custom.css#L74
  */
