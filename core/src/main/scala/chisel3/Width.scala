@@ -13,7 +13,7 @@ sealed abstract class Width {
   def max(that:              Width): Width = this.op(that, _ max _)
   def +(that:                Width): Width = this.op(that, _ + _)
   def +(that:                Int):   Width = this.op(this, (a, b) => a + that)
-  def shiftRight(that:       Int): Width = this.op(this, (a, b) => 0.max(a - that))
+  def shiftRight(that:       Int): Width = this.op(this, (a, b) => 1.max(a - that))
   def dynamicShiftLeft(that: Width): Width =
     this.op(that, (a, b) => a + (1 << b) - 1)
 
