@@ -184,10 +184,8 @@ trait HasJextractGeneratedSources
   override def javacOptions = T(super.javacOptions() ++ Seq("--enable-preview", "--release", "21"))
 }
 
-trait CIRCTPanamaBinderModule
-  extends ScalaModule
-    with HasJextractGeneratedSources
-    with HasChisel {
+trait CIRCTPanamaBindingModule
+  extends HasJextractGeneratedSources {
 
   def includeConstants = T.input(os.read.lines(millSourcePath / "includeConstants.txt").filter(s => s.nonEmpty && !s.startsWith("#")))
   def includeFunctions = T.input(os.read.lines(millSourcePath / "includeFunctions.txt").filter(s => s.nonEmpty && !s.startsWith("#")))
@@ -197,28 +195,42 @@ trait CIRCTPanamaBinderModule
   def includeVars = T.input(os.read.lines(millSourcePath / "includeVars.txt").filter(s => s.nonEmpty && !s.startsWith("#")))
   def linkLibraries = T.input(os.read.lines(millSourcePath / "linkLibraries.txt").filter(s => s.nonEmpty && !s.startsWith("#")))
 
-  def target: T[String] = T("org.llvm.circt")
-  def headerClassName: T[String] = T("CAPI")
+  def target = T("org.llvm.circt")
+  def headerClassName = T("CAPI")
 }
 
-trait HasCIRCTPanamaBinderModule
-  extends ScalaModule
-    with HasChisel {
-  def circtPanamaBinderModule: CIRCTPanamaBinderModule
+trait HasCIRCTPanamaBindingModule
+  extends JavaModule {
+  def circtPanamaBindingModule: CIRCTPanamaBindingModule
 
-  override def chiselModule = circtPanamaBinderModule.chiselModule
+  override def moduleDeps = super.moduleDeps ++ Some(circtPanamaBindingModule)
 
-  override def pluginModule = circtPanamaBinderModule.pluginModule
-
-  override def moduleDeps = super.moduleDeps ++ Some(circtPanamaBinderModule)
-
-  override def javacOptions = T(super.javacOptions() ++ Seq("--enable-preview", "--release", "20"))
+  override def javacOptions = T(super.javacOptions() ++ Seq("--enable-preview", "--release", "21"))
 
   override def forkArgs: T[Seq[String]] = T(
     super.forkArgs() ++ Seq("--enable-native-access=ALL-UNNAMED", "--enable-preview")
-      ++ circtPanamaBinderModule
+      ++ circtPanamaBindingModule
       .libraryPaths()
       .map(p => s"-Djava.library.path=${p.path}")
   )
 }
 
+trait PanamaConverterModule
+  extends ScalaModule
+    with HasCIRCTPanamaBindingModule
+    with HasChisel
+
+trait HasPanamaConverterModule
+  extends ScalaModule
+    with HasCIRCTPanamaBindingModule
+    with HasChisel {
+  def panamaConverterModule: PanamaConverterModule
+
+  def circtPanamaBindingModule = panamaConverterModule.circtPanamaBindingModule
+
+  override def chiselModule = panamaConverterModule.chiselModule
+
+  override def pluginModule = panamaConverterModule.pluginModule
+
+  override def moduleDeps = super.moduleDeps ++ Some(panamaConverterModule)
+}
