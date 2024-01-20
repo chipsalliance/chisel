@@ -25,6 +25,23 @@ class EqualityTester(lhsGen: => Data, rhsGen: => Data) extends BasicTester {
   stop()
 }
 
+class InequalityModule[T <: Data](lhsGen: => T, rhsGen: => T) extends Module {
+  val out = IO(Output(Bool()))
+
+  val lhs = lhsGen
+  val rhs = rhsGen
+
+  out := lhs =/= rhs
+}
+
+class InequalityTester[T <: Data](lhsGen: => T, rhsGen: => T) extends BasicTester {
+  val inequalityModule = Module(new InequalityModule(lhsGen, rhsGen))
+
+  assert(inequalityModule.out)
+
+  stop()
+}
+
 class AnalogBundle extends Bundle {
   val analog = Analog(32.W)
 }
@@ -83,6 +100,18 @@ class DataEqualitySpec extends ChiselFlatSpec with Utils {
     }
   }
 
+  behavior.of("UInt =/= UInt")
+  it should "fail with equal values" in {
+    assertTesterFails {
+      new InequalityTester(0.U, 0.U)
+    }
+  }
+  it should "pass with differing values" in {
+    assertTesterPasses {
+      new InequalityTester(0.U, 1.U)
+    }
+  }
+
   behavior.of("SInt === SInt")
   it should "pass with equal values" in {
     assertTesterPasses {
@@ -95,6 +124,18 @@ class DataEqualitySpec extends ChiselFlatSpec with Utils {
     }
   }
 
+  behavior.of("SInt =/= SInt")
+  it should "fail with equal values" in {
+    assertTesterFails {
+      new InequalityTester(0.S, 0.S)
+    }
+  }
+  it should "pass with differing values" in {
+    assertTesterPasses {
+      new InequalityTester(0.S, 1.S)
+    }
+  }
+
   behavior.of("Reset === Reset")
   it should "pass with equal values" in {
     assertTesterPasses {
@@ -104,6 +145,18 @@ class DataEqualitySpec extends ChiselFlatSpec with Utils {
   it should "fail with differing values" in {
     assertTesterFails {
       new EqualityTester(true.B, false.B)
+    }
+  }
+
+  behavior.of("Reset =/= Reset")
+  it should "fail with equal values" in {
+    assertTesterFails {
+      new InequalityTester(true.B, true.B)
+    }
+  }
+  it should "pass with differing values" in {
+    assertTesterPasses {
+      new InequalityTester(true.B, false.B)
     }
   }
 

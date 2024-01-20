@@ -943,6 +943,14 @@ object Data {
         case (thiz, that) => throwException(s"Cannot compare $thiz and $that: Runtime types differ")
       }
     }
+
+    /** Dynamic recursive inequality operator for generic [[Data]]
+      *
+      * @param rhs a hardware [[Data]] to compare `lhs` to
+      * @return a hardware [[Bool]] asserted if `lhs` is NOT equal to `rhs`
+      * @throws ChiselException when `lhs` and `rhs` are different types during elaboration time
+      */
+    def =/=(rhs: T): Bool = !(lhs === rhs)
   }
 }
 
