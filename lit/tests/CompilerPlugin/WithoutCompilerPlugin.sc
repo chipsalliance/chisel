@@ -1,4 +1,4 @@
-// RUN: not scala-cli --server=false --java-home=%JAVAHOME --extra-jars=%RUNCLASSPATH --scala-version=%SCALAVERSION --java-opt="--enable-native-access=ALL-UNNAMED --enable-preview -Djava.library.path=%JAVALIBRARYPATH" %s 2>&1 | FileCheck %s
+// RUN: not scala-cli --server=false --java-home=%JAVAHOME --extra-jars=%RUNCLASSPATH --scala-version=%SCALAVERSION %s 2>&1 | FileCheck %s
 
 import chisel3._
 import circt.stage.ChiselStage
