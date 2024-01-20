@@ -6,6 +6,11 @@ import chisel3._
 import chisel3.util.Decoupled
 import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
+<<<<<<< HEAD
+=======
+import chisel3.experimental.BundleLiterals._
+import circt.stage.ChiselStage
+>>>>>>> 07097ed6c (Fix paper cut: bad message on calling litValue on BundleLit containing DontCare (#3043))
 
 trait BundleSpecUtils {
   class BundleFooBar extends Bundle {
@@ -171,6 +176,27 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
         }
       }
     }
+  }
+
+  "Calling litValue on Bundle containing DontCare" should "make a decent error message" in {
+    class MyBundle extends Bundle {
+      val a = UInt(8.W)
+      val b = Bool()
+      val c = UInt(4.W)
+    }
+
+    class Example extends RawModule {
+      val out = IO(Output(UInt()))
+      val lit = (new MyBundle).Lit(_.a -> 8.U, _.b -> true.B)
+      out := lit.litValue.U
+    }
+
+    val x = intercept[ChiselException] {
+      ChiselStage.elaborate(new Example, Array("--throw-on-first-error"))
+    }
+    x.getMessage should include(
+      "Called litValue on aggregate MyBundle$1(a=UInt<8>(8), b=Bool(true), c=UInt<4>(DontCare)) contains DontCare"
+    )
   }
 
   // This tests the interaction of override def cloneType and the plugin.
