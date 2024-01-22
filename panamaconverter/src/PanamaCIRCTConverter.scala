@@ -1,16 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chisel3.internal.panama.circt
+package chisel3.panamaconverter
 
 import java.io.OutputStream
 import geny.Writable
+import chisel3.panamalib._
 
 import scala.collection.mutable
 import scala.math._
 import firrtl.{ir => fir}
-import firrtl.annotations.NoTargetAnnotation
 import chisel3.{Data => ChiselData, _}
-import chisel3.properties.PropertyType
 import chisel3.experimental._
 import chisel3.internal._
 import chisel3.internal.firrtl.ir._
@@ -18,6 +17,7 @@ import chisel3.internal.firrtl.Converter
 import chisel3.assert.{Assert => VerifAssert}
 import chisel3.assume.{Assume => VerifAssume}
 import chisel3.cover.{Cover => VerifCover}
+import chisel3.panamaom.PanamaCIRCTOM
 import chisel3.printf.{Printf => VerifPrintf}
 import chisel3.stop.{Stop => VerifStop}
 
@@ -120,7 +120,6 @@ class FirContext {
   def rootWhen:           Option[WhenContext] = Option.when(whenStack.nonEmpty)(whenStack.last)
 }
 
-case class PanamaCIRCTConverterAnnotation(converter: PanamaCIRCTConverter) extends NoTargetAnnotation
 class PanamaCIRCTConverter {
   val circt = new PanamaCIRCT
   val firCtx = new FirContext
@@ -1509,7 +1508,7 @@ class PanamaCIRCTConverter {
   }
 }
 
-private[chisel3] object PanamaCIRCTConverter {
+private[panamaconverter] object PanamaCIRCTConverter {
   def convert(circuit: Circuit): PanamaCIRCTConverter = {
     implicit val cvt = new PanamaCIRCTConverter
     visitCircuit(circuit)

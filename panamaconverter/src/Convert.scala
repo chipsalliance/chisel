@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chisel3.internal.panama
+package chisel3.panamaconverter.stage
 
-import chisel3.internal.panama.circt.{PanamaCIRCTConverter, PanamaCIRCTConverterAnnotation}
+import chisel3.panamaconverter.PanamaCIRCTConverter
 import chisel3.stage.ChiselCircuitAnnotation
 import chisel3.stage.phases.Elaborate
 import firrtl.AnnotationSeq
+import firrtl.annotations.NoTargetAnnotation
 import firrtl.options.{Dependency, Phase}
+
+case class PanamaCIRCTConverterAnnotation(converter: PanamaCIRCTConverter) extends NoTargetAnnotation
 
 object Convert extends Phase {
   override def prerequisites = Seq(Dependency[Elaborate])

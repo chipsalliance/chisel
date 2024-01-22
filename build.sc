@@ -246,6 +246,26 @@ trait CIRCTPanamaBinding
   def libraryPaths = T(Seq(PathRef(circtInstallPath() / "lib")))
 }
 
+object panamalib extends Cross[PanamaLib](v.scalaCrossVersions)
+
+trait PanamaLib
+  extends common.PanamaLibModule
+    with CrossModuleBase
+    with ChiselPublishModule
+    with ScalafmtModule {
+  def circtPanamaBindingModule = circtpanamabinding
+}
+
+object panamaom extends Cross[PanamaOM](v.scalaCrossVersions)
+
+trait PanamaOM
+  extends common.PanamaOMModule
+    with CrossModuleBase
+    with ChiselPublishModule
+    with ScalafmtModule {
+  def panamaLibModule = panamalib(crossScalaVersion)
+}
+
 object panamaconverter extends Cross[PanamaConverter](v.scalaCrossVersions)
 
 trait PanamaConverter
@@ -253,7 +273,7 @@ trait PanamaConverter
     with CrossModuleBase
     with ChiselPublishModule
     with ScalafmtModule {
-  def circtPanamaBindingModule = circtpanamabinding
+  def panamaOMModule = panamaom(crossScalaVersion)
 
   def chiselModule = chisel(crossScalaVersion)
 
@@ -268,6 +288,7 @@ trait LitUtility
     with ScalafmtModule {
   def millSourcePath = super.millSourcePath / os.up / "lit" / "utility"
   def panamaConverterModule = panamaconverter(crossScalaVersion)
+  def panamaOMModule = panamaom(crossScalaVersion)
 }
 
 object lit extends Cross[Lit](v.scalaCrossVersions)

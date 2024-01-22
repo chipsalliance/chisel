@@ -184,6 +184,8 @@ trait HasJextractGeneratedSources
   override def javacOptions = T(super.javacOptions() ++ Seq("--enable-preview", "--release", "21"))
 }
 
+// Java Codegen for all declared functions.
+// All of these functions are not private API which is subject to change.
 trait CIRCTPanamaBindingModule
   extends HasJextractGeneratedSources {
 
@@ -215,9 +217,38 @@ trait HasCIRCTPanamaBindingModule
   )
 }
 
-trait PanamaConverterModule
+// The Scala API for PanamaBinding, API here is experimentally public to all developers
+trait PanamaLibModule
   extends ScalaModule
     with HasCIRCTPanamaBindingModule
+
+trait HasPanamaLibModule
+  extends ScalaModule
+    with HasCIRCTPanamaBindingModule {
+  def panamaLibModule: PanamaLibModule
+
+  def circtPanamaBindingModule = panamaLibModule.circtPanamaBindingModule
+
+  override def moduleDeps = super.moduleDeps ++ Some(panamaLibModule)
+}
+
+trait PanamaOMModule
+  extends ScalaModule
+    with HasPanamaLibModule
+
+trait HasPanamaOMModule
+  extends ScalaModule
+    with HasCIRCTPanamaBindingModule {
+  def panamaOMModule: PanamaOMModule
+
+  def circtPanamaBindingModule = panamaOMModule.circtPanamaBindingModule
+
+  override def moduleDeps = super.moduleDeps ++ Some(panamaOMModule)
+}
+
+trait PanamaConverterModule
+  extends ScalaModule
+    with HasPanamaOMModule
     with HasChisel
 
 trait HasPanamaConverterModule
@@ -234,3 +265,4 @@ trait HasPanamaConverterModule
 
   override def moduleDeps = super.moduleDeps ++ Some(panamaConverterModule)
 }
+

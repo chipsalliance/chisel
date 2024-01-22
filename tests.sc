@@ -68,7 +68,10 @@ trait ChiselUnitTestModule
 trait LitUtilityModule
   extends ScalaModule
     with common.HasPanamaConverterModule
-    with common.HasMacroAnnotations
+    with common.HasPanamaOMModule
+    with common.HasMacroAnnotations {
+  override def circtPanamaBindingModule = panamaConverterModule.circtPanamaBindingModule
+}
 
 trait LitModule
   extends Module {
