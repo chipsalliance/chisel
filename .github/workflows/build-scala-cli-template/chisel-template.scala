@@ -1,11 +1,19 @@
+<<<<<<< HEAD
 //> using repository "sonatype:snapshots"
 //> using scala "2.13.10"
 //> using lib "edu.berkeley.cs::chisel3::@VERSION@"
 //> using plugin "edu.berkeley.cs:::chisel3-plugin::@VERSION@"
+=======
+//> using repository "sonatype-s01:snapshots"
+//> using scala "2.13.12"
+//> using dep "org.chipsalliance::chisel::@VERSION@"
+//> using plugin "org.chipsalliance:::chisel-plugin::@VERSION@"
+>>>>>>> 589f10672 (Update Scala CLI Template (#3757))
 //> using options "-unchecked", "-deprecation", "-language:reflectiveCalls", "-feature", "-Xcheckinit", "-Xfatal-warnings", "-Ywarn-dead-code", "-Ywarn-unused", "-Ymacro-annotations"
 
 import chisel3._
-import circt.stage.ChiselStage
+// _root_ disambiguates from package chisel3.util.circt if user imports chisel3.util._
+import _root_.circt.stage.ChiselStage
 
 class Foo extends Module {
   val a, b, c = IO(Input(Bool()))
