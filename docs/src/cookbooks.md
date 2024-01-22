@@ -1,7 +1,3 @@
----
-sidebar_position: 1
----
-
 # Cookbooks
 
 Welcome to the Chisel Cookbooks, where we capture frequently-used design patterns or troubleshooting questions.

@@ -1,7 +1,3 @@
----
-sidebar_position: 3
----
-
 # Appendix
 
 This section covers some less-common Chisel topics.
