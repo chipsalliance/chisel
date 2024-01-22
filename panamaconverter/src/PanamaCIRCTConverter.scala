@@ -1,16 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chisel3.internal.panama.circt
+package chisel3.panamaconverter
 
 import java.io.OutputStream
 import geny.Writable
+import chisel3.panamalib._
 
 import scala.collection.mutable
 import scala.math._
 import firrtl.{ir => fir}
-import firrtl.annotations.NoTargetAnnotation
 import chisel3.{Data => ChiselData, _}
-import chisel3.properties.PropertyType
 import chisel3.experimental._
 import chisel3.internal._
 import chisel3.internal.firrtl.ir._
@@ -18,9 +17,9 @@ import chisel3.internal.firrtl.Converter
 import chisel3.assert.{Assert => VerifAssert}
 import chisel3.assume.{Assume => VerifAssume}
 import chisel3.cover.{Cover => VerifCover}
+import chisel3.panamaom.PanamaCIRCTOM
 import chisel3.printf.{Printf => VerifPrintf}
 import chisel3.stop.{Stop => VerifStop}
-import chisel3.internal.CIRCTConverter
 
 case class Region(region: MlirRegion, blocks: Seq[MlirBlock]) {
   def get(): MlirRegion = region
@@ -121,8 +120,7 @@ class FirContext {
   def rootWhen:           Option[WhenContext] = Option.when(whenStack.nonEmpty)(whenStack.last)
 }
 
-case class PanamaCIRCTConverterAnnotation(converter: PanamaCIRCTConverter) extends NoTargetAnnotation
-class PanamaCIRCTConverter extends CIRCTConverter {
+class PanamaCIRCTConverter {
   val circt = new PanamaCIRCT
   val firCtx = new FirContext
   val mlirRootModule = circt.mlirModuleCreateEmpty(circt.unkLoc)
@@ -770,8 +768,8 @@ class PanamaCIRCTConverter extends CIRCTConverter {
     assertResult(circt.mlirPassManagerRunOnOp(pm, circt.mlirModuleGetOperation(mlirRootModule)))
   }
 
-  def passManager(): CIRCTPassManager = new PanamaCIRCTPassManager(circt, mlirRootModule)
-  def om():          CIRCTOM = new PanamaCIRCTOM(circt, mlirRootModule)
+  def passManager(): PanamaCIRCTPassManager = new PanamaCIRCTPassManager(circt, mlirRootModule)
+  def om():          PanamaCIRCTOM = new PanamaCIRCTOM(circt, mlirRootModule)
 
   def visitCircuit(name: String): Unit = {
     val firCircuit = util
@@ -1510,14 +1508,14 @@ class PanamaCIRCTConverter extends CIRCTConverter {
   }
 }
 
-private[chisel3] object PanamaCIRCTConverter {
+private[panamaconverter] object PanamaCIRCTConverter {
   def convert(circuit: Circuit): PanamaCIRCTConverter = {
     implicit val cvt = new PanamaCIRCTConverter
     visitCircuit(circuit)
     cvt
   }
 
-  def visitCircuit(circuit: Circuit)(implicit cvt: CIRCTConverter): Unit = {
+  def visitCircuit(circuit: Circuit)(implicit cvt: PanamaCIRCTConverter): Unit = {
     cvt.visitCircuit(circuit.name)
     circuit.components.foreach {
       case defBlackBox:        DefBlackBox        => visitDefBlackBox(defBlackBox)
@@ -1525,10 +1523,10 @@ private[chisel3] object PanamaCIRCTConverter {
       case defIntrinsicModule: DefIntrinsicModule => visitDefIntrinsicModule(defIntrinsicModule)
     }
   }
-  def visitDefBlackBox(defBlackBox: DefBlackBox)(implicit cvt: CIRCTConverter): Unit = {
+  def visitDefBlackBox(defBlackBox: DefBlackBox)(implicit cvt: PanamaCIRCTConverter): Unit = {
     cvt.visitDefBlackBox(defBlackBox)
   }
-  def visitDefModule(defModule: DefModule)(implicit cvt: CIRCTConverter): Unit = {
+  def visitDefModule(defModule: DefModule)(implicit cvt: PanamaCIRCTConverter): Unit = {
     cvt.visitDefModule(defModule)
     val commands = defModule.commands ++ defModule.secretCommands
     // Workaround for https://github.com/chipsalliance/chisel/issues/3435, peeking the next command
@@ -1572,32 +1570,32 @@ private[chisel3] object PanamaCIRCTConverter {
         }
     }
   }
-  def visitDefIntrinsicModule(defIntrinsicModule: DefIntrinsicModule)(implicit cvt: CIRCTConverter): Unit = {
+  def visitDefIntrinsicModule(defIntrinsicModule: DefIntrinsicModule)(implicit cvt: PanamaCIRCTConverter): Unit = {
     cvt.visitDefIntrinsicModule(defIntrinsicModule)
   }
-  def visitAltBegin(altBegin: AltBegin)(implicit cvt: CIRCTConverter): Unit = {
+  def visitAltBegin(altBegin: AltBegin)(implicit cvt: PanamaCIRCTConverter): Unit = {
     cvt.visitAltBegin(altBegin)
   }
-  def visitAttach(attach: Attach)(implicit cvt: CIRCTConverter): Unit = {
+  def visitAttach(attach: Attach)(implicit cvt: PanamaCIRCTConverter): Unit = {
     cvt.visitAttach(attach)
   }
-  def visitConnect(connect: Connect)(implicit cvt: CIRCTConverter): Unit = {
+  def visitConnect(connect: Connect)(implicit cvt: PanamaCIRCTConverter): Unit = {
     cvt.visitConnect(connect)
   }
-  def visitConnectInit(connectInit: ConnectInit)(implicit cvt: CIRCTConverter): Unit = {
+  def visitConnectInit(connectInit: ConnectInit)(implicit cvt: PanamaCIRCTConverter): Unit = {
     // Not used anywhere
     throw new Exception("unimplemented")
   }
-  def visitDefInvalid(defInvalid: DefInvalid)(implicit cvt: CIRCTConverter): Unit = {
+  def visitDefInvalid(defInvalid: DefInvalid)(implicit cvt: PanamaCIRCTConverter): Unit = {
     cvt.visitDefInvalid(defInvalid)
   }
-  def visitOtherwiseEnd(otherwiseEnd: OtherwiseEnd)(implicit cvt: CIRCTConverter): Unit = {
+  def visitOtherwiseEnd(otherwiseEnd: OtherwiseEnd)(implicit cvt: PanamaCIRCTConverter): Unit = {
     cvt.visitOtherwiseEnd(otherwiseEnd)
   }
-  def visitWhenBegin(whenBegin: WhenBegin)(implicit cvt: CIRCTConverter): Unit = {
+  def visitWhenBegin(whenBegin: WhenBegin)(implicit cvt: PanamaCIRCTConverter): Unit = {
     cvt.visitWhenBegin(whenBegin)
   }
-  def visitWhenEnd(whenEnd: WhenEnd, next: Option[Command])(implicit cvt: CIRCTConverter): Unit = {
+  def visitWhenEnd(whenEnd: WhenEnd, next: Option[Command])(implicit cvt: PanamaCIRCTConverter): Unit = {
     // FIXME: workaround https://github.com/chipsalliance/chisel/issues/3435
     val hasAlt = next match {
       case Some(_: AltBegin) => true
@@ -1606,61 +1604,61 @@ private[chisel3] object PanamaCIRCTConverter {
     val whenEndPatched = WhenEnd(whenEnd.sourceInfo, whenEnd.firrtlDepth, hasAlt)
     cvt.visitWhenEnd(whenEndPatched)
   }
-  def visitDefInstance(defInstance: DefInstance)(implicit cvt: CIRCTConverter): Unit = {
+  def visitDefInstance(defInstance: DefInstance)(implicit cvt: PanamaCIRCTConverter): Unit = {
     cvt.visitDefInstance(defInstance)
   }
-  def visitDefMemPort[T <: ChiselData](defMemPort: DefMemPort[T])(implicit cvt: CIRCTConverter): Unit = {
+  def visitDefMemPort[T <: ChiselData](defMemPort: DefMemPort[T])(implicit cvt: PanamaCIRCTConverter): Unit = {
     cvt.visitDefMemPort(defMemPort)
   }
-  def visitDefMemory(defMemory: DefMemory)(implicit cvt: CIRCTConverter): Unit = {
+  def visitDefMemory(defMemory: DefMemory)(implicit cvt: PanamaCIRCTConverter): Unit = {
     cvt.visitDefMemory(defMemory)
   }
-  def visitDefPrim[T <: ChiselData](defPrim: DefPrim[T])(implicit cvt: CIRCTConverter): Unit = {
+  def visitDefPrim[T <: ChiselData](defPrim: DefPrim[T])(implicit cvt: PanamaCIRCTConverter): Unit = {
     cvt.visitDefPrim(defPrim)
   }
-  def visitDefReg(defReg: DefReg)(implicit cvt: CIRCTConverter): Unit = {
+  def visitDefReg(defReg: DefReg)(implicit cvt: PanamaCIRCTConverter): Unit = {
     cvt.visitDefReg(defReg)
   }
-  def visitDefRegInit(defRegInit: DefRegInit)(implicit cvt: CIRCTConverter): Unit = {
+  def visitDefRegInit(defRegInit: DefRegInit)(implicit cvt: PanamaCIRCTConverter): Unit = {
     cvt.visitDefRegInit(defRegInit)
   }
-  def visitDefSeqMemory(defSeqMemory: DefSeqMemory)(implicit cvt: CIRCTConverter): Unit = {
+  def visitDefSeqMemory(defSeqMemory: DefSeqMemory)(implicit cvt: PanamaCIRCTConverter): Unit = {
     cvt.visitDefSeqMemory(defSeqMemory)
   }
-  def visitDefWire(defWire: DefWire)(implicit cvt: CIRCTConverter): Unit = {
+  def visitDefWire(defWire: DefWire)(implicit cvt: PanamaCIRCTConverter): Unit = {
     cvt.visitDefWire(defWire)
   }
-  def visitPrintf(parent: Component, printf: Printf)(implicit cvt: CIRCTConverter): Unit = {
+  def visitPrintf(parent: Component, printf: Printf)(implicit cvt: PanamaCIRCTConverter): Unit = {
     cvt.visitPrintf(parent, printf)
   }
-  def visitStop(stop: Stop)(implicit cvt: CIRCTConverter): Unit = {
+  def visitStop(stop: Stop)(implicit cvt: PanamaCIRCTConverter): Unit = {
     cvt.visitStop(stop)
   }
-  def visitVerfiAssert(assert: Verification[VerifAssert])(implicit cvt: CIRCTConverter): Unit = {
+  def visitVerfiAssert(assert: Verification[VerifAssert])(implicit cvt: PanamaCIRCTConverter): Unit = {
     cvt.visitAssert(assert)
   }
-  def visitVerfiAssume(assume: Verification[VerifAssume])(implicit cvt: CIRCTConverter): Unit = {
+  def visitVerfiAssume(assume: Verification[VerifAssume])(implicit cvt: PanamaCIRCTConverter): Unit = {
     cvt.visitAssume(assume)
   }
-  def visitVerfiCover(cover: Verification[VerifCover])(implicit cvt: CIRCTConverter): Unit = {
+  def visitVerfiCover(cover: Verification[VerifCover])(implicit cvt: PanamaCIRCTConverter): Unit = {
     cvt.visitCover(cover)
   }
-  def visitVerfiPrintf(printf: Verification[VerifPrintf])(implicit cvt: CIRCTConverter): Unit = {
+  def visitVerfiPrintf(printf: Verification[VerifPrintf])(implicit cvt: PanamaCIRCTConverter): Unit = {
     // TODO: Not used anywhere?
     throw new Exception("unimplemented")
   }
-  def visitVerfiStop(stop: Verification[VerifStop])(implicit cvt: CIRCTConverter): Unit = {
+  def visitVerfiStop(stop: Verification[VerifStop])(implicit cvt: PanamaCIRCTConverter): Unit = {
     // TODO: Not used anywhere?
     throw new Exception("unimplemented")
   }
-  def visitProbeDefine(parent: Component, probeDefine: ProbeDefine)(implicit cvt: CIRCTConverter): Unit = {
+  def visitProbeDefine(parent: Component, probeDefine: ProbeDefine)(implicit cvt: PanamaCIRCTConverter): Unit = {
     cvt.visitProbeDefine(parent, probeDefine)
   }
   def visitProbeForceInitial(
     parent:            Component,
     probeForceInitial: ProbeForceInitial
   )(
-    implicit cvt: CIRCTConverter
+    implicit cvt: PanamaCIRCTConverter
   ): Unit = {
     cvt.visitProbeForceInitial(parent, probeForceInitial)
   }
@@ -1668,7 +1666,7 @@ private[chisel3] object PanamaCIRCTConverter {
     parent:              Component,
     probeReleaseInitial: ProbeReleaseInitial
   )(
-    implicit cvt: CIRCTConverter
+    implicit cvt: PanamaCIRCTConverter
   ): Unit = {
     cvt.visitProbeReleaseInitial(parent, probeReleaseInitial)
   }
@@ -1676,7 +1674,7 @@ private[chisel3] object PanamaCIRCTConverter {
     parent:     Component,
     probeForce: ProbeForce
   )(
-    implicit cvt: CIRCTConverter
+    implicit cvt: PanamaCIRCTConverter
   ): Unit = {
     cvt.visitProbeForce(parent, probeForce)
   }
@@ -1684,11 +1682,11 @@ private[chisel3] object PanamaCIRCTConverter {
     parent:       Component,
     probeRelease: ProbeRelease
   )(
-    implicit cvt: CIRCTConverter
+    implicit cvt: PanamaCIRCTConverter
   ): Unit = {
     cvt.visitProbeRelease(parent, probeRelease)
   }
-  def visitPropAssign(parent: Component, propAssign: PropAssign)(implicit cvt: CIRCTConverter): Unit = {
+  def visitPropAssign(parent: Component, propAssign: PropAssign)(implicit cvt: PanamaCIRCTConverter): Unit = {
     cvt.visitPropAssign(parent, propAssign)
   }
 }

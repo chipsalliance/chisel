@@ -65,28 +65,13 @@ trait ChiselUnitTestModule
   )
 }
 
-trait CIRCTPanamaBinderModuleTestModule
-  extends TestModule
-    with ScalaModule
-    with common.HasCIRCTPanamaBinderModule
-    with common.HasMacroAnnotations
-    with TestModule.ScalaTest {
-  def scalatestIvy: Dep
-
-  def scalacheckIvy: Dep
-
-  override def defaultCommandName() = "test"
-
-  override def ivyDeps = super.ivyDeps() ++ Agg(
-    scalatestIvy,
-    scalacheckIvy
-  )
-}
-
 trait LitUtilityModule
   extends ScalaModule
-    with common.HasCIRCTPanamaBinderModule
-    with common.HasMacroAnnotations
+    with common.HasPanamaConverterModule
+    with common.HasPanamaOMModule
+    with common.HasMacroAnnotations {
+  override def circtPanamaBindingModule = panamaConverterModule.circtPanamaBindingModule
+}
 
 trait LitModule
   extends Module {

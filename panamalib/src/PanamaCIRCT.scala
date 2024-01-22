@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chisel3.internal.panama.circt
+package chisel3.panamalib
 
 import java.lang.foreign._
 import java.lang.foreign.MemorySegment.NULL
@@ -566,101 +566,101 @@ class PanamaCIRCT {
 //
 
 trait ForeignType[T] {
-  private[circt] def get: T
-  private[circt] val sizeof: Int
+  private[panamalib] def get: T
+  private[panamalib] val sizeof: Int
 }
 
 final case class MlirAttribute(ptr: MemorySegment) extends ForeignType[MemorySegment] {
-  private[circt] def get = ptr
-  private[circt] val sizeof = circt.MlirAttribute.sizeof().toInt
+  private[panamalib] def get = ptr
+  private[panamalib] val sizeof = circt.MlirAttribute.sizeof().toInt
 }
 object MlirAttribute {
-  private[circt] def apply(ptr: MemorySegment) = new MlirAttribute(ptr)
+  private[panamalib] def apply(ptr: MemorySegment) = new MlirAttribute(ptr)
 }
 
 final case class MlirNamedAttribute(ptr: MemorySegment) extends ForeignType[MemorySegment] {
-  private[circt] def get = ptr
-  private[circt] val sizeof = circt.MlirNamedAttribute.sizeof().toInt
+  private[panamalib] def get = ptr
+  private[panamalib] val sizeof = circt.MlirNamedAttribute.sizeof().toInt
 }
 object MlirNamedAttribute {
-  private[circt] def apply(ptr: MemorySegment) = new MlirNamedAttribute(ptr)
+  private[panamalib] def apply(ptr: MemorySegment) = new MlirNamedAttribute(ptr)
 }
 
 final case class MlirBlock(ptr: MemorySegment) extends ForeignType[MemorySegment] {
-  private[circt] def get = ptr
-  private[circt] val sizeof = circt.MlirBlock.sizeof().toInt
+  private[panamalib] def get = ptr
+  private[panamalib] val sizeof = circt.MlirBlock.sizeof().toInt
 }
 object MlirBlock {
-  private[circt] def apply(ptr: MemorySegment) = new MlirBlock(ptr)
+  private[panamalib] def apply(ptr: MemorySegment) = new MlirBlock(ptr)
 }
 
 final case class MlirRegion(ptr: MemorySegment) extends ForeignType[MemorySegment] {
-  private[circt] def get = ptr
-  private[circt] val sizeof = circt.MlirRegion.sizeof().toInt
+  private[panamalib] def get = ptr
+  private[panamalib] val sizeof = circt.MlirRegion.sizeof().toInt
 }
 object MlirRegion {
-  private[circt] def apply(ptr: MemorySegment) = new MlirRegion(ptr)
+  private[panamalib] def apply(ptr: MemorySegment) = new MlirRegion(ptr)
 }
 
 final case class MlirIdentifier(ptr: MemorySegment) extends ForeignType[MemorySegment] {
-  private[circt] def get = ptr
-  private[circt] val sizeof = circt.MlirIdentifier.sizeof().toInt
+  private[panamalib] def get = ptr
+  private[panamalib] val sizeof = circt.MlirIdentifier.sizeof().toInt
 }
 object MlirIdentifier {
-  private[circt] def apply(ptr: MemorySegment) = new MlirIdentifier(ptr)
+  private[panamalib] def apply(ptr: MemorySegment) = new MlirIdentifier(ptr)
 }
 
 final case class MlirLocation(ptr: MemorySegment) extends ForeignType[MemorySegment] {
-  private[circt] def get = ptr
-  private[circt] val sizeof = circt.MlirLocation.sizeof().toInt
+  private[panamalib] def get = ptr
+  private[panamalib] val sizeof = circt.MlirLocation.sizeof().toInt
 }
 object MlirLocation {
-  private[circt] def apply(ptr: MemorySegment) = new MlirLocation(ptr)
+  private[panamalib] def apply(ptr: MemorySegment) = new MlirLocation(ptr)
 }
 
 final case class MlirModule(ptr: MemorySegment) extends ForeignType[MemorySegment] {
-  private[circt] def get = ptr
-  private[circt] val sizeof = circt.MlirModule.sizeof().toInt
+  private[panamalib] def get = ptr
+  private[panamalib] val sizeof = circt.MlirModule.sizeof().toInt
 }
 object MlirModule {
-  private[circt] def apply(ptr: MemorySegment) = new MlirModule(ptr)
+  private[panamalib] def apply(ptr: MemorySegment) = new MlirModule(ptr)
 }
 
 final case class MlirOperation(ptr: MemorySegment) extends ForeignType[MemorySegment] {
-  private[circt] def get = ptr
-  private[circt] val sizeof = circt.MlirOperation.sizeof().toInt
+  private[panamalib] def get = ptr
+  private[panamalib] val sizeof = circt.MlirOperation.sizeof().toInt
 }
 object MlirOperation {
-  private[circt] def apply(ptr: MemorySegment) = new MlirOperation(ptr)
+  private[panamalib] def apply(ptr: MemorySegment) = new MlirOperation(ptr)
 }
 
 final case class MlirOperationState(ptr: MemorySegment) extends ForeignType[MemorySegment] {
-  private[circt] def get = ptr
-  private[circt] val sizeof = circt.MlirOperationState.sizeof().toInt
+  private[panamalib] def get = ptr
+  private[panamalib] val sizeof = circt.MlirOperationState.sizeof().toInt
 }
 object MlirOperationState {
-  private[circt] def apply(ptr: MemorySegment) = new MlirOperationState(ptr)
+  private[panamalib] def apply(ptr: MemorySegment) = new MlirOperationState(ptr)
 }
 
 final case class MlirType(ptr: MemorySegment) extends ForeignType[MemorySegment] {
-  private[circt] def get = ptr
-  private[circt] val sizeof = circt.MlirType.sizeof().toInt
+  private[panamalib] def get = ptr
+  private[panamalib] val sizeof = circt.MlirType.sizeof().toInt
 }
 object MlirType {
-  private[circt] def apply(ptr: MemorySegment) = new MlirType(ptr)
+  private[panamalib] def apply(ptr: MemorySegment) = new MlirType(ptr)
 }
 
 final case class MlirValue(ptr: MemorySegment) extends ForeignType[MemorySegment] {
-  private[circt] def get = ptr
-  private[circt] val sizeof = circt.MlirValue.sizeof().toInt
+  private[panamalib] def get = ptr
+  private[panamalib] val sizeof = circt.MlirValue.sizeof().toInt
 }
 object MlirValue {
-  private[circt] def apply(ptr: MemorySegment) = new MlirValue(ptr)
+  private[panamalib] def apply(ptr: MemorySegment) = new MlirValue(ptr)
 }
 
 final case class MlirStringRef(ptr: MemorySegment) extends ForeignType[MemorySegment] {
-  private[circt] def get = ptr
-  private[circt] val sizeof = circt.MlirStringRef.sizeof().toInt
+  private[panamalib] def get = ptr
+  private[panamalib] val sizeof = circt.MlirStringRef.sizeof().toInt
 
   override def toString: String = {
     var slice = circt.MlirStringRef.data$get(ptr).asSlice(0, circt.MlirStringRef.length$get(ptr))
@@ -668,47 +668,47 @@ final case class MlirStringRef(ptr: MemorySegment) extends ForeignType[MemorySeg
   }
 }
 object MlirStringRef {
-  private[circt] def apply(ptr: MemorySegment) = new MlirStringRef(ptr)
+  private[panamalib] def apply(ptr: MemorySegment) = new MlirStringRef(ptr)
 }
 
 final case class MlirLogicalResult(ptr: MemorySegment) extends ForeignType[MemorySegment] {
-  private[circt] def get = ptr
-  private[circt] val sizeof = circt.MlirLogicalResult.sizeof().toInt
+  private[panamalib] def get = ptr
+  private[panamalib] val sizeof = circt.MlirLogicalResult.sizeof().toInt
 }
 object MlirLogicalResult {
-  private[circt] def apply(ptr: MemorySegment) = new MlirLogicalResult(ptr)
+  private[panamalib] def apply(ptr: MemorySegment) = new MlirLogicalResult(ptr)
 }
 
 final case class MlirStringCallback(ptr: MemorySegment) extends ForeignType[MemorySegment] {
-  private[circt] def get = ptr
-  private[circt] val sizeof = CAPI.C_POINTER.byteSize().toInt
+  private[panamalib] def get = ptr
+  private[panamalib] val sizeof = CAPI.C_POINTER.byteSize().toInt
 }
 object MlirStringCallback {
-  private[circt] def apply(ptr: MemorySegment) = new MlirStringCallback(ptr)
+  private[panamalib] def apply(ptr: MemorySegment) = new MlirStringCallback(ptr)
 }
 
 final case class MlirPassManager(ptr: MemorySegment) extends ForeignType[MemorySegment] {
-  private[circt] def get = ptr
-  private[circt] val sizeof = circt.MlirPassManager.sizeof().toInt
+  private[panamalib] def get = ptr
+  private[panamalib] val sizeof = circt.MlirPassManager.sizeof().toInt
 }
 object MlirPassManager {
-  private[circt] def apply(ptr: MemorySegment) = new MlirPassManager(ptr)
+  private[panamalib] def apply(ptr: MemorySegment) = new MlirPassManager(ptr)
 }
 
 final case class MlirOpPassManager(ptr: MemorySegment) extends ForeignType[MemorySegment] {
-  private[circt] def get = ptr
-  private[circt] val sizeof = circt.MlirOpPassManager.sizeof().toInt
+  private[panamalib] def get = ptr
+  private[panamalib] val sizeof = circt.MlirOpPassManager.sizeof().toInt
 }
 object MlirOpPassManager {
-  private[circt] def apply(ptr: MemorySegment) = new MlirOpPassManager(ptr)
+  private[panamalib] def apply(ptr: MemorySegment) = new MlirOpPassManager(ptr)
 }
 
 final case class MlirPass(ptr: MemorySegment) extends ForeignType[MemorySegment] {
-  private[circt] def get = ptr
-  private[circt] val sizeof = circt.MlirPass.sizeof().toInt
+  private[panamalib] def get = ptr
+  private[panamalib] val sizeof = circt.MlirPass.sizeof().toInt
 }
 object MlirPass {
-  private[circt] def apply(ptr: MemorySegment) = new MlirPass(ptr)
+  private[panamalib] def apply(ptr: MemorySegment) = new MlirPass(ptr)
 }
 
 final case class FIRRTLBundleField(name: String, isFlip: Boolean, tpe: MlirType)
@@ -716,27 +716,27 @@ final case class FIRRTLBundleField(name: String, isFlip: Boolean, tpe: MlirType)
 final case class FIRRTLClassElement(name: String, tpe: MlirType, direction: FIRRTLDirection)
 
 final case class CirctFirtoolFirtoolOptions(ptr: MemorySegment) extends ForeignType[MemorySegment] {
-  private[circt] def get = ptr
-  private[circt] val sizeof = circt.CirctFirtoolFirtoolOptions.sizeof().toInt
+  private[panamalib] def get = ptr
+  private[panamalib] val sizeof = circt.CirctFirtoolFirtoolOptions.sizeof().toInt
 }
 object CirctFirtoolFirtoolOptions {
-  private[circt] def apply(ptr: MemorySegment) = new CirctFirtoolFirtoolOptions(ptr)
+  private[panamalib] def apply(ptr: MemorySegment) = new CirctFirtoolFirtoolOptions(ptr)
 }
 
 final case class OMEvaluator(ptr: MemorySegment) extends ForeignType[MemorySegment] {
-  private[circt] def get = ptr
-  private[circt] val sizeof = circt.OMEvaluator.sizeof().toInt
+  private[panamalib] def get = ptr
+  private[panamalib] val sizeof = circt.OMEvaluator.sizeof().toInt
 }
 object OMEvaluator {
-  private[circt] def apply(ptr: MemorySegment) = new OMEvaluator(ptr)
+  private[panamalib] def apply(ptr: MemorySegment) = new OMEvaluator(ptr)
 }
 
 final case class OMEvaluatorValue(ptr: MemorySegment) extends ForeignType[MemorySegment] {
-  private[circt] def get = ptr
-  private[circt] val sizeof = circt.OMEvaluatorValue.sizeof().toInt
+  private[panamalib] def get = ptr
+  private[panamalib] val sizeof = circt.OMEvaluatorValue.sizeof().toInt
 }
 object OMEvaluatorValue {
-  private[circt] def apply(ptr: MemorySegment) = new OMEvaluatorValue(ptr)
+  private[panamalib] def apply(ptr: MemorySegment) = new OMEvaluatorValue(ptr)
 }
 
 //
@@ -744,8 +744,8 @@ object OMEvaluatorValue {
 //
 
 sealed abstract class FIRRTLConvention(val value: Int) extends ForeignType[Int] {
-  private[circt] def get = value
-  private[circt] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
+  private[panamalib] def get = value
+  private[panamalib] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
 }
 object FIRRTLConvention {
   final case object Internal extends FIRRTLConvention(value = CAPI.FIRRTL_CONVENTION_INTERNAL())
@@ -753,8 +753,8 @@ object FIRRTLConvention {
 }
 
 sealed abstract class FIRRTLNameKind(val value: Int) extends ForeignType[Int] {
-  private[circt] def get = value
-  private[circt] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
+  private[panamalib] def get = value
+  private[panamalib] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
 }
 object FIRRTLNameKind {
   final case object DroppableName extends FIRRTLNameKind(value = CAPI.FIRRTL_NAME_KIND_DROPPABLE_NAME())
@@ -762,8 +762,8 @@ object FIRRTLNameKind {
 }
 
 sealed abstract class FIRRTLDirection(val value: Int) extends ForeignType[Int] {
-  private[circt] def get = value
-  private[circt] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
+  private[panamalib] def get = value
+  private[panamalib] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
 }
 object FIRRTLDirection {
   final case object In extends FIRRTLDirection(value = CAPI.FIRRTL_DIRECTION_IN())
@@ -771,8 +771,8 @@ object FIRRTLDirection {
 }
 
 sealed abstract class firrtlAttrGetRUW(val value: Int) extends ForeignType[Int] {
-  private[circt] def get = value
-  private[circt] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
+  private[panamalib] def get = value
+  private[panamalib] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
 }
 object firrtlAttrGetRUW {
   final case object Undefined extends firrtlAttrGetRUW(value = CAPI.FIRRTL_RUW_UNDEFINED())
@@ -781,8 +781,8 @@ object firrtlAttrGetRUW {
 }
 
 sealed abstract class FIRRTLMemDir(val value: Int) extends ForeignType[Int] {
-  private[circt] def get = value
-  private[circt] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
+  private[panamalib] def get = value
+  private[panamalib] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
 }
 object FIRRTLMemDir {
   final case object Infer extends FIRRTLMemDir(value = CAPI.FIRRTL_MEM_DIR_INFER())
@@ -792,8 +792,8 @@ object FIRRTLMemDir {
 }
 
 sealed class CirctFirtoolPreserveAggregateMode(val value: Int) extends ForeignType[Int] {
-  private[circt] def get = value
-  private[circt] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
+  private[panamalib] def get = value
+  private[panamalib] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
 }
 object CirctFirtoolPreserveAggregateMode {
   final case object None
@@ -807,8 +807,8 @@ object CirctFirtoolPreserveAggregateMode {
 }
 
 sealed class CirctFirtoolPreserveValuesMode(val value: Int) extends ForeignType[Int] {
-  private[circt] def get = value
-  private[circt] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
+  private[panamalib] def get = value
+  private[panamalib] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
 }
 object CirctFirtoolPreserveValuesMode {
   final case object Strip
@@ -820,8 +820,8 @@ object CirctFirtoolPreserveValuesMode {
 }
 
 sealed class CirctFirtoolBuildMode(val value: Int) extends ForeignType[Int] {
-  private[circt] def get = value
-  private[circt] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
+  private[panamalib] def get = value
+  private[panamalib] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
 }
 object CirctFirtoolBuildMode {
   final case object Default extends CirctFirtoolBuildMode(value = CAPI.CIRCT_FIRTOOL_BUILD_MODE_DEFAULT())
@@ -830,8 +830,8 @@ object CirctFirtoolBuildMode {
 }
 
 sealed class CirctFirtoolRandomKind(val value: Int) extends ForeignType[Int] {
-  private[circt] def get = value
-  private[circt] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
+  private[panamalib] def get = value
+  private[panamalib] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
 }
 object CirctFirtoolRandomKind {
   final case object None extends CirctFirtoolRandomKind(value = CAPI.CIRCT_FIRTOOL_RANDOM_KIND_NONE())
@@ -841,8 +841,8 @@ object CirctFirtoolRandomKind {
 }
 
 sealed class CirctFirtoolCompanionMode(val value: Int) extends ForeignType[Int] {
-  private[circt] def get = value
-  private[circt] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
+  private[panamalib] def get = value
+  private[panamalib] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
 }
 object CirctFirtoolCompanionMode {
   final case object Bind extends CirctFirtoolCompanionMode(value = CAPI.CIRCT_FIRTOOL_COMPANION_MODE_BIND())

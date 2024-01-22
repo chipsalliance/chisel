@@ -1,20 +1,20 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chisel3.internal.panama.circt
+package chisel3.panamaom
 
-import chisel3.internal._
+import chisel3.panamalib._
 
-class PanamaCIRCTOM private[chisel3] (circt: PanamaCIRCT, mlirModule: MlirModule) extends CIRCTOM {
-  def evaluator(): CIRCTOMEvaluator = new PanamaCIRCTOMEvaluator(circt, mlirModule)
+class PanamaCIRCTOM private[chisel3] (circt: PanamaCIRCT, mlirModule: MlirModule) {
+  def evaluator(): PanamaCIRCTOMEvaluator = new PanamaCIRCTOMEvaluator(circt, mlirModule)
 
-  def newBasePathEmpty(): CIRCTOMEvaluatorValue =
+  def newBasePathEmpty(): PanamaCIRCTOMEvaluatorValueBasePath =
     new PanamaCIRCTOMEvaluatorValueBasePath(circt, circt.omEvaluatorBasePathGetEmpty())
 }
 
-class PanamaCIRCTOMEvaluator private[chisel3] (circt: PanamaCIRCT, mlirModule: MlirModule) extends CIRCTOMEvaluator {
+class PanamaCIRCTOMEvaluator private[chisel3] (circt: PanamaCIRCT, mlirModule: MlirModule) {
   val evaluator = circt.omEvaluatorNew(mlirModule)
 
-  def instantiate(className: String, actualParams: Seq[CIRCTOMEvaluatorValue]): CIRCTOMObject = {
+  def instantiate(className: String, actualParams: Seq[PanamaCIRCTOMEvaluatorValue]): PanamaCIRCTOMObject = {
     val params = actualParams.map(_.asInstanceOf[PanamaCIRCTOMEvaluatorValue].value)
 
     val value = circt.omEvaluatorInstantiate(evaluator, className, params)
@@ -23,7 +23,7 @@ class PanamaCIRCTOMEvaluator private[chisel3] (circt: PanamaCIRCT, mlirModule: M
   }
 }
 
-abstract class PanamaCIRCTOMEvaluatorValue extends CIRCTOMEvaluatorValue {
+abstract class PanamaCIRCTOMEvaluatorValue {
   val value: OMEvaluatorValue
 }
 object PanamaCIRCTOMEvaluatorValue {
@@ -83,7 +83,7 @@ class PanamaCIRCTOMEvaluatorValuePrimitive private[chisel3] (circt: PanamaCIRCT,
   val primitive: MlirAttribute = circt.omEvaluatorValueGetPrimitive(value)
 }
 
-class PanamaCIRCTOMObject private[chisel3] (circt: PanamaCIRCT, value: OMEvaluatorValue) extends CIRCTOMObject {
-  def field(name: String): CIRCTOMEvaluatorValue =
+class PanamaCIRCTOMObject private[chisel3] (circt: PanamaCIRCT, value: OMEvaluatorValue) {
+  def field(name: String): PanamaCIRCTOMEvaluatorValue =
     PanamaCIRCTOMEvaluatorValue.newValue(circt, circt.omEvaluatorObjectGetField(value, name))
 }

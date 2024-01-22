@@ -9,6 +9,7 @@ import chisel3.assume.Assume
 import chisel3.cover.Cover
 import chisel3.internal.firrtl.ir._
 
+@deprecated("There no CIRCTConverter anymore, use circtpanamaconverter directly", "Chisel 6.0")
 abstract class CIRCTConverter {
   val mlirStream:    Writable
   val firrtlStream:  Writable

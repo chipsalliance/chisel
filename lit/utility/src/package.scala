@@ -1,23 +1,26 @@
 import chisel3._
+import chisel3.panamaconverter.PanamaCIRCTConverter
 
-package object utility {
-  object binding {
-    def streamString(module: => RawModule, stream: chisel3.internal.CIRCTConverter => geny.Writable): String = Seq(
-      new chisel3.stage.phases.Elaborate,
-      chisel3.internal.panama.Convert
-    ).foldLeft(
+package object lit {
+  object utility {
+    object panamaconverter {
+      def streamString(module: => RawModule, stream: PanamaCIRCTConverter => geny.Writable): String = Seq(
+        new chisel3.stage.phases.Elaborate,
+        chisel3.panamaconverter.stage.Convert
+      ).foldLeft(
         firrtl.AnnotationSeq(Seq(chisel3.stage.ChiselGeneratorAnnotation(() => module)))
       ) { case (annos, phase) => phase.transform(annos) }
-      .collectFirst {
-        case chisel3.internal.panama.circt.PanamaCIRCTConverterAnnotation(converter) =>
-          val string = new java.io.ByteArrayOutputStream
-          stream(converter).writeBytesTo(string)
-          new String(string.toByteArray)
-      }
-      .get
+        .collectFirst {
+          case chisel3.panamaconverter.stage.PanamaCIRCTConverterAnnotation(converter) =>
+            val string = new java.io.ByteArrayOutputStream
+            stream(converter).writeBytesTo(string)
+            new String(string.toByteArray)
+        }
+        .get
 
-    def firrtlString(module: => RawModule): String = streamString(module, _.firrtlStream)
+      def firrtlString(module: => RawModule): String = streamString(module, _.firrtlStream)
 
-    def verilogString(module: => RawModule): String = streamString(module, _.verilogStream)
+      def verilogString(module: => RawModule): String = streamString(module, _.verilogStream)
+    }
   }
 }

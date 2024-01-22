@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chisel3.internal.panama.circt
+package chisel3.panamaconverter
 
-import chisel3.internal._
+import chisel3.panamalib._
 
-class PanamaCIRCTPassManager private[chisel3] (circt: PanamaCIRCT, mlirModule: MlirModule) extends CIRCTPassManager {
+private[panamaconverter] class PanamaCIRCTPassManager (circt: PanamaCIRCT, mlirModule: MlirModule) {
   val pm = circt.mlirPassManagerCreate()
   val options = circt.circtFirtoolOptionsCreateDefault() // TODO: Make it configurable from CIRCTPassManager
 

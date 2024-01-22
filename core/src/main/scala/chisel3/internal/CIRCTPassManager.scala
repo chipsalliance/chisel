@@ -2,6 +2,7 @@
 
 package chisel3.internal
 
+@deprecated("There no CIRCTPassManager anymore, use circtpanamaconverter directly", "Chisel 6.0")
 abstract class CIRCTPassManager {
   def populatePreprocessTransforms(): Boolean
   def populateCHIRRTLToLowFIRRTL():   Boolean
