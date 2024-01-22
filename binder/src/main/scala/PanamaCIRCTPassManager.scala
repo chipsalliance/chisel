@@ -2,9 +2,7 @@
 
 package chisel3.internal.panama.circt
 
-import chisel3.internal._
-
-class PanamaCIRCTPassManager private[chisel3] (circt: PanamaCIRCT, mlirModule: MlirModule) extends CIRCTPassManager {
+class PanamaCIRCTPassManager private[chisel3] (circt: PanamaCIRCT, mlirModule: MlirModule) {
   val pm = circt.mlirPassManagerCreate()
   val options = circt.circtFirtoolOptionsCreateDefault() // TODO: Make it configurable from CIRCTPassManager
 
