@@ -1,11 +1,6 @@
 //> using repository "sonatype-s01:snapshots"
-<<<<<<< HEAD
 //> using scala "2.13.10"
-//> using lib "org.chipsalliance::chisel::@VERSION@"
-=======
-//> using scala "2.13.12"
 //> using dep "org.chipsalliance::chisel::@VERSION@"
->>>>>>> 589f10672 (Update Scala CLI Template (#3757))
 //> using plugin "org.chipsalliance:::chisel-plugin::@VERSION@"
 //> using options "-unchecked", "-deprecation", "-language:reflectiveCalls", "-feature", "-Xcheckinit", "-Xfatal-warnings", "-Ywarn-dead-code", "-Ywarn-unused", "-Ymacro-annotations"
 
