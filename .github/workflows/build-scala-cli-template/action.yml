@@ -8,9 +8,9 @@ runs:
     - name: Cache Scala-CLI
       uses: coursier/cache-action@v6
     - name: Setup Scala-CLI
-      uses: VirtusLab/scala-cli-setup@v0.2.1
+      uses: VirtusLab/scala-cli-setup@v1
       with:
-        jvm: adoptium:1.17
+        jvm: adoptium:17
         apps: sbt
     - name: Generate Scala CLI Template
       shell: bash
