@@ -157,17 +157,23 @@ Using [MacPorts](https://www.macports.org):
 ```sh
 sudo port install sbt
 ```
-or with [Homebrew](https://brew.sh/)
+
+Using [Homebrew](https://brew.sh/):
 
 ```sh
 brew install sbt
 ```
 
-Note that `brew` installs the latest version of Java (21) as a dependency of `sbt`. However, that version is broken. To revert to an older Java version installed (not with `brew`), remove the `brew` version of Java with:
+::: warning
+
+Note that `brew` installs the latest version of Java as a dependency of `sbt` even though that version of Java is not actually supported by SBT.
+Users are advised to remove the `brew` version of Java with the following command:
 
 ```sh
-uninstall --ignore-dependencies java
+brew uninstall --ignore-dependencies java
 ```
+
+:::
 
 ##### Windows
 
