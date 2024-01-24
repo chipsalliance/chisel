@@ -1,5 +1,6 @@
 ---
 description: How to install and run Chisel
+toc_max_heading_level: 4
 ---
 
 # Installation
