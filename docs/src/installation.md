@@ -164,7 +164,7 @@ Using [Homebrew](https://brew.sh/):
 brew install sbt
 ```
 
-::: warning
+:::warning
 
 Note that `brew` installs the latest version of Java as a dependency of `sbt` even though that version of Java is not actually supported by SBT.
 Users are advised to remove the `brew` version of Java with the following command:
