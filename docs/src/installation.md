@@ -163,6 +163,12 @@ or with [Homebrew](https://brew.sh/)
 brew install sbt
 ```
 
+Note that `brew` installs the latest version of Java (21) as a dependency of `sbt`. However, that version is broken. To revert to an older Java version installed (not with `brew`), remove the `brew` version of Java with:
+
+```sh
+uninstall --ignore-dependencies java
+```
+
 ##### Windows
 
 Using [Scoop](https://scoop.sh):
