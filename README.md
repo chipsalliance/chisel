@@ -132,7 +132,7 @@ Then you can open the generated HTML and copy-paste
 
 Consider an FIR filter that implements a convolution operation, as depicted in this block diagram:
 
-<img src="https://raw.githubusercontent.com/chipsalliance/chisel/master/docs/src/images/fir_filter.svg?sanitize=true" width="512" />
+<img src="https://raw.githubusercontent.com/chipsalliance/chisel/main/docs/src/images/fir_filter.svg?sanitize=true" width="512" />
 
 While Chisel provides similar base primitives as synthesizable Verilog, and *could* be used as such:
 
@@ -218,7 +218,7 @@ If you like a textbook to learn Chisel and also a bit of digital design in gener
 
 ### Build Your Own Chisel Projects
 
-See [the setup instructions](SETUP.md) for how to set up your environment to build Chisel locally.
+Please see [the Installation page](https://www.chisel-lang.org/docs/installation) of the Chisel website for information about how to use Chisel locally.
 
 When you're ready to build your own circuits in Chisel, **we recommend starting from the [Chisel Template](https://github.com/freechipsproject/chisel-template) repository**, which provides a pre-configured project, example design, and testbench.
 Follow the [chisel-template README](https://github.com/freechipsproject/chisel-template) to get started.
@@ -245,7 +245,7 @@ libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % "0.6.0" % "test"
 
 ### Guide For New Contributors
 
-If you are trying to make a contribution to this project, please read [CONTRIBUTING.md](https://github.com/chipsalliance/chisel/blob/master/CONTRIBUTING.md)
+If you are trying to make a contribution to this project, please read [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ### Design Verification
 
@@ -278,7 +278,7 @@ Call-in info and meeting notes are available [here](https://docs.google.com/docu
 
 These are the base data types for defining circuit components:
 
-![Image](https://raw.githubusercontent.com/chipsalliance/chisel/master/docs/src/images/type_hierarchy.svg?sanitize=true)
+![Image](https://raw.githubusercontent.com/chipsalliance/chisel/main/docs/src/images/type_hierarchy.svg?sanitize=true)
 
 ## Contributor Documentation
 
@@ -316,7 +316,7 @@ sbt test
 
 ### Running Projects Against Local Chisel
 
-To use the development version of Chisel (`master` branch), you will need to build from source and publish locally.
+To use the development version of Chisel (`main` branch), you will need to build from source and publish locally.
 The repository version can be found by running `sbt version`.
 As of the time of writing it was: `6.0.0+1-8d92842c-SNAPSHOT`.
 
@@ -381,4 +381,4 @@ You are encouraged to do your development against the latest SNAPSHOT, but note 
 
 ### Roadmap
 
-See [Roadmap](https://github.com/chipsalliance/chisel3/blob/master/ROADMAP.md).
+See [Roadmap](ROADMAP.md).
