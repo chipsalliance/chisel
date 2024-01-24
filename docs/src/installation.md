@@ -133,8 +133,8 @@ Download `millw.bat`: https://raw.githubusercontent.com/lefou/millw/0.4.11/millw
 
 #### SBT
 
-[SBT](https://www.scala-sbt.org) is the more traditional Scala build tool that has many resources and examples.
-It is most productively used with its own REPL rather than on the command-line.
+[SBT](https://www.scala-sbt.org) is the more traditional Scala build tool with many resources and examples.
+It is most productively used with its REPL rather than on the command line.
 
 ##### Linux
 
@@ -145,7 +145,7 @@ Note that MacOS and Windows users can also do a manual install.
 curl -s -L https://github.com/sbt/sbt/releases/download/v1.9.8/sbt-1.9.8.tgz | tar xvz
 ```
 
-Then copy the `sbt` bootstrap script into a global install location
+Then copy the `sbt` bootstrap script into a global install location.
 
 ```sh
 sudo mv sbt/bin/sbt /usr/local/bin/
@@ -158,6 +158,23 @@ Using [MacPorts](https://www.macports.org):
 sudo port install sbt
 ```
 
+Using [Homebrew](https://brew.sh/):
+
+```sh
+brew install sbt
+```
+
+::: warning
+
+Note that `brew` installs the latest version of Java as a dependency of `sbt` even though that version of Java is not actually supported by SBT.
+Users are advised to remove the `brew` version of Java with the following command:
+
+```sh
+brew uninstall --ignore-dependencies java
+```
+
+:::
+
 ##### Windows
 
 Using [Scoop](https://scoop.sh):
@@ -168,7 +185,7 @@ scoop install sbt
 ### Firtool
 
 Beginning with version 6.0, Chisel will manage the version of firtool on most systems.
-However, it may be necessary to build from source on some systems (eg. older Linux distributions).
+However, it may be necessary to build from source on some systems (e.g. older Linux distributions).
 If you need to build firtool from source, please see the [Github repository](https://github.com/llvm/circt).
 
 To see what version of firtool should be used for a given version of Chisel, see [Versioning](appendix/versioning#firtool-version).
