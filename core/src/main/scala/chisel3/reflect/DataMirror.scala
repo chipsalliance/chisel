@@ -61,9 +61,8 @@ object DataMirror {
     * @param x the `Data` to examine
     * @return a `Some[Layer]` if the data has a layer color, `None` otherwise
     */
-  def getLayerColor(x: Data): Option[layer.Layer] = x.probeInfo match {
-    case None                           => None
-    case Some(Data.ProbeInfo(_, color)) => color
+  def getLayerColor(x: Data): Option[layer.Layer] = x.probeInfo.collect {
+    case Data.ProbeInfo(_, Some(color)) => color
   }
 
   /** Get an early guess for the name of this [[Data]]
