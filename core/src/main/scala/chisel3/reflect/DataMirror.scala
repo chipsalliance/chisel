@@ -57,6 +57,14 @@ object DataMirror {
     */
   def hasProbeTypeModifier(x: Data): Boolean = x.probeInfo.nonEmpty
 
+  /** Return the optional layer color of a `Data`.
+    * @param x the `Data` to examine
+    * @return a `Some[Layer]` if the data has a layer color, `None` otherwise
+    */
+  def getLayerColor(x: Data): Option[layer.Layer] = x.probeInfo.collect {
+    case Data.ProbeInfo(_, Some(color)) => color
+  }
+
   /** Get an early guess for the name of this [[Data]]
     *
     * '''Warning: it is not guaranteed that this name will end up in the output FIRRTL or Verilog.'''

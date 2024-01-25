@@ -3,6 +3,7 @@
 package chiselTests.reflect
 
 import chisel3._
+import chisel3.probe.Probe
 import chisel3.reflect.DataMirror
 import chiselTests.ChiselFlatSpec
 import circt.stage.ChiselStage
@@ -176,6 +177,26 @@ class DataMirrorSpec extends ChiselFlatSpec {
 
     // Check ground type.
     assert(DataMirror.isFullyAligned(UInt(8.W)))
+  }
+
+  "getLayerColor" should "return a layer color if one exists" in {
+    object A extends layer.Layer(layer.Convention.Bind)
+    class Foo extends Bundle {
+      val a = Bool()
+      val b = Probe(Bool())
+      val c = Probe(Bool(), A)
+    }
+
+    val foo = new Foo
+
+    info("a non-probe returns None")
+    DataMirror.getLayerColor(foo.a) should be(None)
+
+    info("an uncolored probe returns None")
+    DataMirror.getLayerColor(foo.b) should be(None)
+
+    info("a probe colored with A returns Some(A)")
+    DataMirror.getLayerColor(foo.c) should be(Some(A))
   }
 
 }
