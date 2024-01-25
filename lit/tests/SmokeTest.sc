@@ -37,12 +37,12 @@ class FooModule extends Module {
 
 args.head match {
   case "chirrtl" => {
-    print(circt.stage.ChiselStage.emitCHIRRTL(new FooModule))
+    println(circt.stage.ChiselStage.emitCHIRRTL(new FooModule))
   }
   case "panama-firrtl" => {
-    print(lit.utility.panamaconverter.firrtlString(new FooModule))
+    println(lit.utility.panamaconverter.firrtlString(new FooModule))
   }
   case "panama-verilog" => {
-    print(lit.utility.panamaconverter.verilogString(new FooModule))
+    println(lit.utility.panamaconverter.verilogString(new FooModule))
   }
 }
