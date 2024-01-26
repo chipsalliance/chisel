@@ -219,7 +219,9 @@ object BoringUtils {
 
   private def boreOrTap[A <: Data](source: A, createProbe: Option[ProbeInfo] = None)(implicit si: SourceInfo): A = {
     import reflect.DataMirror
-    def parent(d: Data): BaseModule = d.topBinding.location.get
+    def parent(d: Data): BaseModule = {
+      d.topBinding.location.get
+    }
     def purePortTypeBase = if (createProbe.nonEmpty) Output(chiselTypeOf(source))
     else if (DataMirror.hasOuterFlip(source)) Flipped(chiselTypeOf(source))
     else chiselTypeOf(source)
@@ -244,6 +246,7 @@ object BoringUtils {
         case (rhs, (module, conLoc)) if (module.isFullyClosed) => boringError(module); DontCare.asInstanceOf[A]
         case (rhs, (module, _))
             if (up && module == path(0) && isPort(rhs) && (!createProbe.nonEmpty || !createProbe.get.writable)) => {
+          // TODO: if outputting and input property port is an issue, fix it here with !DataMirror.isProperty
           // When drilling from the original source, if it's already a port just return it.
           // As an exception, insist rwTaps are done from within the module and exported out.
           rhs
@@ -288,7 +291,10 @@ object BoringUtils {
     val lcaSource = drill(source, upPath.dropRight(1), upPath.dropRight(1), true)
     val sink = drill(lcaSource, downPath.reverse.tail, downPath.reverse, false)
 
-    if (createProbe.nonEmpty || DataMirror.hasProbeTypeModifier(purePortTypeBase)) {
+    if (
+      createProbe.nonEmpty || DataMirror.hasProbeTypeModifier(purePortTypeBase) ||
+      DataMirror.isProperty(purePortTypeBase)
+    ) {
       sink
     } else {
       // Creating a wire to assign the result to.  We will return this.

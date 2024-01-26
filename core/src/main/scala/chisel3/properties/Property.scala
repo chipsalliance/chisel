@@ -246,6 +246,12 @@ sealed trait Property[T] extends Element { self =>
   }
 
   override def litOption: Option[BigInt] = None
+
+  override def isLit: Boolean = topBindingOpt match {
+    case Some(PropertyValueBinding) => true
+    case _                          => false
+  }
+
   def toPrintable: Printable = {
     throwException(s"Properties do not support hardware printing" + this._errorContext)
   }

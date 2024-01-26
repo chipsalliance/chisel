@@ -732,6 +732,7 @@ package experimental {
     // Must have separate createSecretIO from addSecretIO to get plugin to name it
     private[chisel3] def addSecretIO[A <: Data](iodef: A)(implicit sourceInfo: SourceInfo): A = {
       val name = iodef._computeName(None).getOrElse("secret")
+      // TODO: the ref needs to be to the DynamicObject, not the Class.
       iodef.setRef(ModuleIO(this, _namespace.name(name)))
       val newPort = new Port(iodef, iodef.specifiedDirection, sourceInfo)
       if (_closed) {

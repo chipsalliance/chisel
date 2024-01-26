@@ -7,7 +7,7 @@ import scala.language.experimental.macros
 import chisel3.experimental.{BaseModule, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal._
 import chisel3.experimental.hierarchy.{InstanceClone, ModuleClone}
-import chisel3.properties.{DynamicObject, StaticObject}
+import chisel3.properties.{DynamicObject, Property, StaticObject}
 import chisel3.internal.Builder._
 import chisel3.internal.firrtl.ir._
 import _root_.firrtl.annotations.{IsModule, ModuleTarget}
@@ -130,8 +130,10 @@ abstract class RawModule extends BaseModule {
     case id: DynamicObject => {
       // Force name of the DynamicObject, and set its Property[ClassType] type's ref to the DynamicObject.
       // The type's ref can't be set upon instantiation, because the DynamicObject hasn't been named yet.
+      // This also updates the source Class ref to the DynamicObject ref now that it's named.
       id.forceName(default = "_object", _namespace)
       id.getReference.setRef(id.getRef)
+      id.getSourceClass.foreach(_.setRef(id.getRef, true))
     }
     case id: StaticObject => {
       // Set the StaticObject's ref and Property[ClassType] type's ref to the BaseModule for the Class.
@@ -205,7 +207,11 @@ abstract class RawModule extends BaseModule {
       case (true, false) if left.probeInfo.get.writable => ProbeDefine(si, left.lref, RWProbeExpr(Node(right)))
       case (true, false)                                => ProbeDefine(si, left.lref, ProbeExpr(Node(right)))
       case (false, true)                                => Connect(si, left.lref, ProbeRead(Node(right)))
-      case (false, false)                               => Connect(si, left.lref, Node(right))
+      case (false, false) =>
+        (left, right) match {
+          case (_: Property[_], _: Property[_]) => PropAssign(si, left.lref, Node(right))
+          case (_, _) => Connect(si, left.lref, Node(right))
+        }
     }
     val secretCommands = if (_closed) {
       _component.get.asInstanceOf[DefModule].secretCommands
