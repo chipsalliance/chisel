@@ -94,6 +94,8 @@ class PanamaCIRCT {
     }
   }
 
+  def mlirAttributeDump(attr: MlirAttribute) = CAPI.mlirAttributeDump(attr.get)
+
   def mlirOperationStateAddOperands(state: MlirOperationState, operands: Seq[MlirValue]) = {
     if (operands.nonEmpty) {
       val (ptr, length) = seqToArray(operands)
@@ -172,6 +174,12 @@ class PanamaCIRCT {
     MlirAttribute(CAPI.mlirArrayAttrGet(arena, mlirCtx, length, ptr))
   }
 
+  def mlirArrayAttrGetNumElements(attr: MlirAttribute): Long = CAPI.mlirArrayAttrGetNumElements(attr.get)
+
+  def mlirArrayAttrGetElement(attr: MlirAttribute, pos: Long): MlirAttribute = MlirAttribute(
+    CAPI.mlirArrayAttrGetElement(arena, attr.get, pos)
+  )
+
   def mlirTypeAttrGet(tpe: MlirType) = MlirAttribute(CAPI.mlirTypeAttrGet(arena, tpe.get))
 
   def mlirBoolAttrGet(value: Boolean) = MlirAttribute(CAPI.mlirBoolAttrGet(arena, mlirCtx, if (value) 1 else 0))
@@ -183,7 +191,15 @@ class PanamaCIRCT {
     MlirStringRef(string).toString
   }
 
+  def mlirAttributeIsAInteger(attr: MlirAttribute): Boolean = CAPI.mlirAttributeIsAInteger(attr.get)
+
   def mlirIntegerAttrGet(tpe: MlirType, value: Long) = MlirAttribute(CAPI.mlirIntegerAttrGet(arena, tpe.get, value))
+
+  def mlirIntegerAttrGetValueInt(attr: MlirAttribute): Long = CAPI.mlirIntegerAttrGetValueInt(attr.get)
+
+  def mlirIntegerAttrGetValueSInt(attr: MlirAttribute): Long = CAPI.mlirIntegerAttrGetValueSInt(attr.get)
+
+  def mlirIntegerAttrGetValueUInt(attr: MlirAttribute): Long = CAPI.mlirIntegerAttrGetValueUInt(attr.get)
 
   def mlirFloatAttrDoubleGet(tpe: MlirType, value: Double) = MlirAttribute(
     CAPI.mlirFloatAttrDoubleGet(arena, mlirCtx, tpe.get, value)

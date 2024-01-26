@@ -14,7 +14,7 @@ class PropertyTest extends RawModule {
   val a = IO(Output(Property[Seq[Seq[Property[Int]]]]()))
   val b = IO(Output(Property[Seq[Property[Seq[Int]]]]()))
   a := Property(Seq[Seq[Int]](Seq(123)))
-  b := Property(Seq[Seq[Int]](Seq(123)))
+  b := Property(Seq[Seq[Int]](Seq(456)))
 }
 
 args.head match {
@@ -30,6 +30,12 @@ args.head match {
     val om = converter.om()
     val evaluator = om.evaluator()
     val obj = evaluator.instantiate("PropertyTest_Class", Seq(om.newBasePathEmpty))
+
     // CHECK: OMReferenceTarget:~PropertyTest|PropertyTest>i
-    print(obj.field("p").asInstanceOf[PanamaCIRCTOMEvaluatorValuePath].asString)
+    println(obj.field("p").asInstanceOf[PanamaCIRCTOMEvaluatorValuePath].asString)
+
+    // CHECK:      .a => { [ [ prim{omInteger{123}} ] ] }
+    // CHECK-NEXT: .b => { [ [ prim{omInteger{456}} ] ] }
+    // CHECK-NEXT: .p => { path{OMReferenceTarget:~PropertyTest|PropertyTest>i} }
+    obj.foreachField((name, value) => println(s".$name => { ${value.display} }"))
 }
