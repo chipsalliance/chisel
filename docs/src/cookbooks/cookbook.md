@@ -29,6 +29,7 @@ Please note that these examples make use of [Chisel's scala-style printing](../e
 * [How do I do subword assignment (assign to some bits in a UInt)?](#how-do-i-do-subword-assignment-assign-to-some-bits-in-a-uint)
 * [How do I create an optional I/O?](#how-do-i-create-an-optional-io)
 * [How do I create I/O without a prefix?](#how-do-i-create-io-without-a-prefix)
+* [How do I override the implicit clock or reset within a Module?](#how-do-i-override-the-implicit-clock-or-reset-within-a-module)
 * [How do I minimize the number of bits used in an output vector](#how-do-i-minimize-the-number-of-bits-used-in-an-output-vector)
 * [How do I resolve "Dynamic index ... is too wide/narrow for extractee ..."?](#dynamic-index-too-wide-narrow)
 * Predictable Naming
@@ -745,6 +746,51 @@ Note that `io_` is nowhere to be seen!
 ```scala mdoc:verilog
 getVerilogString(new MyModule)
 ```
+
+### How do I override the implicit clock or reset within a Module?
+
+To change the clock or reset for a region of code, use `withClock`, `withReset`, or `withClockAndReset`.
+See [Multiple Clock Domains](../explanations/multi-clock) for examples and details.
+
+To override the clock or reset for the entire scope of the `Module`, you can mixin the `ImplicitClock` and `ImplicitReset` traits.
+
+For example, you could "gate" the default implicit clock as follows:
+
+```scala mdoc:silent:reset
+import chisel3._
+class MyModule extends Module with ImplicitClock {
+  val gate = IO(Input(Bool()))
+  val in = IO(Input(UInt(8.W)))
+  val out = IO(Output(UInt(8.W)))
+  // We could just assign this to val implicitClock, but this allows us to give it a custom name
+  val gatedClock = (clock.asBool || gate).asClock
+  // The trait requires us to implement this method referring to the clock
+  // Note that this is a def, but the actual clock value must be assigned to a val
+  override protected def implicitClock = gatedClock
+
+  val r = Reg(UInt(8.W))
+  out := r
+  r := in
+}
+```
+
+This gives the following Verilog:
+
+```scala mdoc:verilog
+def func(): String = {
+  // This example uses a Reg to we need to disable randomization
+  val prettyArgs = Array("--disable-all-randomization", "--strip-debug-info")
+  circt.stage.ChiselStage.emitSystemVerilog(new MyModule, firtoolOpts = prettyArgs)
+}
+func()
+```
+
+If you do not care about the name of the overriden clock, you can just assign it to `val implicitClock`:
+```scala
+override protected val implicitClock = (clock.asBool || gate).asClock
+```
+
+`ImplicitReset` works analogously to `ImplicitClock`.
 
 ### How do I minimize the number of bits used in an output vector?
 
