@@ -33,7 +33,7 @@ final class Analog private (private[chisel3] val width: Width) extends Element {
 
   override def litOption: Option[BigInt] = None
 
-  def cloneType: this.type = new Analog(width).asInstanceOf[this.type]
+  override protected def _cloneType: Data = new Analog(width)
 
   // Used to enforce single bulk connect of Analog types, multi-attach is still okay
   // Note that this really means 1 bulk connect per Module because a port can

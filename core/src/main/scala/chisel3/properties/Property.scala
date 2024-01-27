@@ -264,18 +264,8 @@ sealed trait Property[T] extends Element { self =>
 
   /** Clone type by simply constructing a new Property[T].
     */
-  override def cloneType: this.type = new Property[T] {
+  override protected def _cloneType: Data = new Property[T] {
     val tpe = self.tpe
-  }.asInstanceOf[this.type]
-
-  /** Clone type with extra information preserved.
-    *
-    * The only extra information present on a Property type is directionality.
-    */
-  private[chisel3] override def cloneTypeFull: this.type = {
-    val clone = this.cloneType
-    clone.specifiedDirection = specifiedDirection
-    clone
   }
 
   /** Get the IR PropertyType for this Property.

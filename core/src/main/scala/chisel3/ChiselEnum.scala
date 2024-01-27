@@ -41,7 +41,7 @@ abstract class EnumType(private[chisel3] val factory: ChiselEnum, selfAnnotating
     }
   }
 
-  override def cloneType: this.type = factory().asInstanceOf[this.type]
+  override protected def _cloneType: Data = factory()
 
   private[chisel3] def compop(sourceInfo: SourceInfo, op: PrimOp, other: EnumType): Bool = {
     requireIsHardware(this, "bits operated on")
@@ -386,7 +386,8 @@ private[chisel3] object EnumMacros {
 // This is an enum type that can be connected directly to UInts. It is used as a "glue" to cast non-literal UInts
 // to enums.
 private[chisel3] class UnsafeEnum(override val width: Width) extends EnumType(UnsafeEnum, selfAnnotating = false) {
-  override def cloneType: this.type = new UnsafeEnum(width).asInstanceOf[this.type]
+
+  override protected def _cloneType: Data = new UnsafeEnum(width)
 }
 private object UnsafeEnum extends ChiselEnum
 

@@ -114,7 +114,8 @@ package object experimental {
   object BundleLiterals {
     implicit class AddBundleLiteralConstructor[T <: Record](x: T) {
       def Lit(elems: (T => (Data, Data))*)(implicit sourceInfo: SourceInfo): T = {
-        x._makeLit(elems: _*)
+        val fs = elems.map(_.asInstanceOf[Data => (Data, Data)])
+        x._makeLit(fs: _*).asInstanceOf[T]
       }
     }
   }

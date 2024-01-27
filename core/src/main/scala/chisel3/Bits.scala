@@ -48,9 +48,9 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
   // Arguments against: generates down to a FIRRTL UInt anyways
 
   // Only used for in a few cases, hopefully to be removed
-  private[chisel3] def cloneTypeWidth(width: Width): this.type
+  private[chisel3] def cloneTypeWidth(width: Width): Bits
 
-  def cloneType: this.type = cloneTypeWidth(width)
+  override protected def _cloneType: Data = cloneTypeWidth(width)
 
   /** A non-ambiguous name of this `Bits` instance for use in generated Verilog names
     * Inserts the width directly after the typeName, e.g. UInt4, SInt1
@@ -291,13 +291,10 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     * @note For [[SInt]]s only, this will do sign extension.
     * @group Bitwise
     */
-  final def pad(that: Int): this.type = macro SourceInfoTransform.thatArg
+  final def pad(that: Int): Bits = macro SourceInfoWhiteboxTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_pad(that: Int)(implicit sourceInfo: SourceInfo): this.type = this.width match {
-    case KnownWidth(w) if w >= that => this
-    case _                          => binop(sourceInfo, cloneTypeWidth(this.width.max(Width(that))), PadOp, that)
-  }
+  def do_pad(that: Int)(implicit sourceInfo: SourceInfo): Bits
 
   /** Bitwise inversion operator
     *
@@ -316,8 +313,6 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     * $sumWidthInt
     * @group Bitwise
     */
-  // REVIEW TODO: redundant
-  // REVIEW TODO: should these return this.type or Bits?
   final def <<(that: BigInt): Bits = macro SourceInfoWhiteboxTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
@@ -450,8 +445,7 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
     }
   }
 
-  private[chisel3] override def cloneTypeWidth(w: Width): this.type =
-    new UInt(w).asInstanceOf[this.type]
+  private[chisel3] override def cloneTypeWidth(w: Width): UInt = new UInt(w)
 
   // TODO: refactor to share documentation with Num or add independent scaladoc
   /** Unary negation (expanding width)
@@ -591,6 +585,12 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
   /** @group SourceInfoTransformMacro */
   def do_^(that: UInt)(implicit sourceInfo: SourceInfo): UInt =
     binop(sourceInfo, UInt(this.width.max(that.width)), BitXorOp, that)
+
+  /** @group SourceInfoTransformMacro */
+  def do_pad(that: Int)(implicit sourceInfo: SourceInfo): UInt = this.width match {
+    case KnownWidth(w) if w >= that => this
+    case _                          => binop(sourceInfo, cloneTypeWidth(this.width.max(Width(that))), PadOp, that)
+  }
 
   /** @group SourceInfoTransformMacro */
   def do_unary_~(implicit sourceInfo: SourceInfo): UInt =
@@ -793,8 +793,7 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
     }
   }
 
-  private[chisel3] override def cloneTypeWidth(w: Width): this.type =
-    new SInt(w).asInstanceOf[this.type]
+  private[chisel3] override def cloneTypeWidth(w: Width): SInt = new SInt(w)
 
   /** Unary negation (constant width)
     *
@@ -941,6 +940,12 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
     binop(sourceInfo, UInt(this.width.max(that.width)), BitXorOp, that).asSInt
 
   /** @group SourceInfoTransformMacro */
+  def do_pad(that: Int)(implicit sourceInfo: SourceInfo): SInt = this.width match {
+    case KnownWidth(w) if w >= that => this
+    case _                          => binop(sourceInfo, cloneTypeWidth(this.width.max(Width(that))), PadOp, that)
+  }
+
+  /** @group SourceInfoTransformMacro */
   def do_unary_~(implicit sourceInfo: SourceInfo): SInt =
     unop(sourceInfo, UInt(width = width), BitNotOp).asSInt
 
@@ -1037,7 +1042,7 @@ object Reset {
 final class ResetType(private[chisel3] val width: Width = Width(1)) extends Element with Reset {
   override def toString: String = stringAccessor("Reset")
 
-  def cloneType: this.type = Reset().asInstanceOf[this.type]
+  override protected def _cloneType: Data = Reset()
 
   override def litOption = None
 
@@ -1081,7 +1086,7 @@ object AsyncReset {
 sealed class AsyncReset(private[chisel3] val width: Width = Width(1)) extends Element with Reset {
   override def toString: String = stringAccessor("AsyncReset")
 
-  def cloneType: this.type = AsyncReset().asInstanceOf[this.type]
+  override protected def _cloneType: Data = AsyncReset()
 
   override def litOption = None
 
@@ -1134,9 +1139,9 @@ sealed class Bool() extends UInt(1.W) with Reset {
     }
   }
 
-  private[chisel3] override def cloneTypeWidth(w: Width): this.type = {
+  private[chisel3] override def cloneTypeWidth(w: Width): Bool = {
     require(!w.known || w.get == 1)
-    new Bool().asInstanceOf[this.type]
+    new Bool()
   }
 
   /** Convert to a [[scala.Option]] of [[scala.Boolean]] */
