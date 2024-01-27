@@ -25,6 +25,7 @@ import scala.collection.mutable
 import scala.annotation.tailrec
 import java.io.File
 import scala.util.control.NonFatal
+import chisel3.ChiselException
 
 private[chisel3] class Namespace(keywords: Set[String], separator: Char = '_') {
   // This HashMap is compressed, not every name in the namespace is present here.
@@ -523,10 +524,12 @@ private[chisel3] class DynamicContext(
   // Used to distinguish between no Module() wrapping, multiple wrappings, and rewrapping
   var readyForModuleConstr: Boolean = false
   var whenStack:            List[WhenContext] = Nil
-  var currentClock:         Option[Clock] = None
-  var currentReset:         Option[Reset] = None
-  var currentDisable:       Disable.Type = Disable.BeforeReset
-  var layerStack:           List[layer.Layer] = layer.Layer.root :: Nil
+  // Clock and Reset are "Delayed" because ImplicitClock and ImplicitReset need to set these values,
+  // But the clock or reset defined by the user won't yet be initialized
+  var currentClock:   Option[Delayed[Clock]] = None
+  var currentReset:   Option[Delayed[Reset]] = None
+  var currentDisable: Disable.Type = Disable.BeforeReset
+  var layerStack:     List[layer.Layer] = layer.Layer.root :: Nil
   val errors = new ErrorLog(warningFilters, sourceRoots, throwOnFirstError)
   val namingStack = new NamingStack
 
@@ -791,13 +794,35 @@ private[chisel3] object Builder extends LazyLogging {
 
   def currentWhen: Option[WhenContext] = dynamicContext.whenStack.headOption
 
-  def currentClock: Option[Clock] = dynamicContext.currentClock
-  def currentClock_=(newClock: Option[Clock]): Unit = {
+  // Helper for reasonable errors when clock or reset value not yet initialized
+  private def getDelayed[A](field: String, dc: Delayed[A]): A = {
+    val result = dc.value
+    if (result == null) {
+      // TODO add SourceInfo and change to Builder.exception
+      throwException(
+        s"The implicit $field is null which means the code that sets its definition has not yet executed."
+      )
+    }
+    result
+  }
+
+  /** Safely get the current Clock for use */
+  def currentClock: Option[Clock] =
+    dynamicContext.currentClock.map(d => getDelayed("clock", d))
+
+  /** Get the underlying box around current Clock, only used for saving the value */
+  def currentClockDelayed: Option[Delayed[Clock]] = dynamicContext.currentClock
+  def currentClock_=(newClock: Option[Delayed[Clock]]): Unit = {
     dynamicContext.currentClock = newClock
   }
 
-  def currentReset: Option[Reset] = dynamicContext.currentReset
-  def currentReset_=(newReset: Option[Reset]): Unit = {
+  /** Safely get the current Reset for use */
+  def currentReset: Option[Reset] =
+    dynamicContext.currentReset.map(d => getDelayed("reset", d))
+
+  /** Get the underlying box around current Reset, only used for saving the value */
+  def currentResetDelayed: Option[Delayed[Reset]] = dynamicContext.currentReset
+  def currentReset_=(newReset: Option[Delayed[Reset]]): Unit = {
     dynamicContext.currentReset = newReset
   }
 
@@ -818,9 +843,11 @@ private[chisel3] object Builder extends LazyLogging {
   }
 
   def forcedClock: Clock = currentClock.getOrElse(
+    // TODO add implicit clock change to Builder.exception
     throwException("Error: No implicit clock.")
   )
   def forcedReset: Reset = currentReset.getOrElse(
+    // TODO add implicit clock change to Builder.exception
     throwException("Error: No implicit reset.")
   )
 
