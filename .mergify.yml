@@ -3,6 +3,8 @@ queue_rules:
 - name: default
   conditions:
   - status-success=all tests passed
+  update_bot_account: chiselbot
+  merge_bot_account: chiselbot
 pull_request_rules:
 - name: automatic squash-and-merge on CI success and review
   conditions:
