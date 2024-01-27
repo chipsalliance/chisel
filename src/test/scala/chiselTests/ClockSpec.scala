@@ -76,7 +76,7 @@ class ClockSpec extends ChiselPropSpec {
       )
     )
     e.getMessage should include(
-      "The implicit clock is null which means its definition probably has not yet been initialized"
+      "The implicit clock is null which means the code that sets its definition has not yet executed."
     )
   }
 }

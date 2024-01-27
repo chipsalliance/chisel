@@ -166,7 +166,7 @@ class ResetSpec extends ChiselFlatSpec with Utils {
       )
     )
     e.getMessage should include(
-      "The implicit reset is null which means its definition probably has not yet been initialized"
+      "The implicit reset is null which means the code that sets its definition has not yet executed."
     )
   }
 }
