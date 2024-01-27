@@ -26,11 +26,11 @@ object withClockAndReset {
     */
   def apply[T](clock: Option[Clock], reset: Option[Reset])(block: => T): T = {
     // Save parentScope
-    val parentClock = Builder.currentClock
-    val parentReset = Builder.currentReset
+    val parentClock = Builder.currentClockDelayed
+    val parentReset = Builder.currentResetDelayed
 
-    Builder.currentClock = clock
-    Builder.currentReset = reset
+    Builder.currentClock = clock.map(Delayed(_))
+    Builder.currentReset = reset.map(Delayed(_))
 
     val res = block // execute block
 
@@ -59,8 +59,8 @@ object withClock {
     */
   def apply[T](clock: Option[Clock])(block: => T): T = {
     // Save parentScope
-    val parentClock = Builder.currentClock
-    Builder.currentClock = clock
+    val parentClock = Builder.currentClockDelayed
+    Builder.currentClock = clock.map(Delayed(_))
     val res = block // execute block
     // Return to old scope
     Builder.currentClock = parentClock
@@ -86,8 +86,8 @@ object withReset {
     */
   def apply[T](reset: Option[Reset])(block: => T): T = {
     // Save parentScope
-    val parentReset = Builder.currentReset
-    Builder.currentReset = reset
+    val parentReset = Builder.currentResetDelayed
+    Builder.currentReset = reset.map(Delayed(_))
     val res = block // execute block
     // Return to old scope
     Builder.currentReset = parentReset
