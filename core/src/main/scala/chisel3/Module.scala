@@ -295,6 +295,7 @@ abstract class Module extends RawModule with ImplicitClock with ImplicitReset {
   *   // Define a Clock value, it need not be called "implicitClock"
   *   val clk = IO(Input(Clock()))
   *   // Implement the virtual method to tell Chisel about this Clock value
+  *   // Note that though this is a def, the actual Clock is assigned to a val (clk above)
   *   override protected def implicitClock = clk
   *   // Now we have a Clock to use in this RawModule
   *   val reg = Reg(UInt(8.W))
@@ -312,7 +313,7 @@ trait ImplicitClock { self: RawModule =>
 /** Provides an implicit Reset for use _within_ the [[RawModule]]
   *
   * Be careful to define the Reset value before trying to use it.
-  * Due to Scala initialization order, the actual val defining the Reset must occur before any
+  * Due to Scala initialization order, the actual val defining the Reset object must occur before any
   * uses of the implicit Reset.
   *
   * @example
@@ -321,6 +322,7 @@ trait ImplicitClock { self: RawModule =>
   *   // Define a Reset value, it need not be called "implicitReset"
   *   val rst = IO(Input(AsyncReset()))
   *   // Implement the virtual method to tell Chisel about this Reset value
+  *   // Note that though this is a def, the actual Reset is assigned to a val (rst above)
   *   override protected def implicitReset = clk
   *   // Now we have a Reset to use in this RawModule
   *   // Registers also require a clock

@@ -800,7 +800,7 @@ private[chisel3] object Builder extends LazyLogging {
     if (result == null) {
       // TODO add SourceInfo and change to Builder.exception
       throwException(
-        s"The implicit $field is null which means its definition probably has not yet been initialized."
+        s"The implicit $field is null which means the code that sets its definition has not yet executed."
       )
     }
     result

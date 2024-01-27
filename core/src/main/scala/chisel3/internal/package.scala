@@ -159,7 +159,10 @@ package object internal {
     }
   }
 
-  // This is similar to cats.Eval.later but we don't depend on Cats
+  /** This is effectively a "LazyVal" box type, we can create the object but delay executing the argument
+    *
+    * @note This is similar to cats.Eval.later but we don't depend on Cats
+    */
   private[chisel3] class Delayed[A](a: => A) {
     lazy val value: A = a
   }
