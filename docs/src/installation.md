@@ -13,7 +13,7 @@ The easiest way to install Chisel is to [install Scala CLI](https://scala-cli.vi
 
 ```bash
 curl -O -L https://github.com/chipsalliance/chisel/releases/latest/download/chisel-template.scala
-scala-cli chisel-template.scala
+./scala-cli chisel-template.scala
 ```
 
 The Chisel template is a simple, single-file example of Chisel that emits Verilog to the screen.
