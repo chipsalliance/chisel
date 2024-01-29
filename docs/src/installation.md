@@ -20,7 +20,7 @@ This is easiest on the command-line (works on Linux, MacOS, and Windows Subsyste
 curl -O -L https://github.com/chipsalliance/chisel/releases/latest/download/chisel-template.scala
 ```
 
-Or alternatively you can download the template directly from [this link](https://github.com/chipsalliance/chisel/releases/latest/download/chisel-template.scala).
+Alternatively you can download the template directly from [this link](https://github.com/chipsalliance/chisel/releases/latest/download/chisel-template.scala).
 
 3. Finally, use Scala CLI to compile and run the template:
 ```bash
