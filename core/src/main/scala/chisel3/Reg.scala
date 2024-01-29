@@ -40,7 +40,7 @@ object Reg {
     val t = source // evaluate once (passed by name)
     requireIsChiselType(t, "reg type")
     val reg = if (!t.mustClone(prevId)) t else t.cloneTypeFull
-    val clock = Node(Builder.forcedClock)
+    val clock = Builder.forcedClock.ref
 
     reg.bind(RegBinding(Builder.forcedUserModule, Builder.currentWhen))
     pushCommand(DefReg(sourceInfo, reg, clock))
