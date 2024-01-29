@@ -11,7 +11,7 @@ Chisel is a [Scala](https://www.scala-lang.org/) library and compiler plugin.
 
 The easiest way to use Chisel is to:
 
- 1. First, [install Scala CLI](https://scala-cli.virtuslab.org/install).
+1. First, [install Scala CLI](https://scala-cli.virtuslab.org/install).
 
 2. Then, download the Chisel template.
 
