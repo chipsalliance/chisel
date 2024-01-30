@@ -1,43 +1,14 @@
 ---
-layout: docs
-title:  "General Cookbook"
-section: "chisel3"
+sidebar_position: 0
 ---
 
 # General Cookbook
 
-
 Please note that these examples make use of [Chisel's scala-style printing](../explanations/printing#scala-style).
 
-* Type Conversions
-  * [How do I create a UInt from an instance of a Bundle?](#how-do-i-create-a-uint-from-an-instance-of-a-bundle)
-  * [How do I create a Bundle from a UInt?](#how-do-i-create-a-bundle-from-a-uint)
-  * [How can I tieoff a Bundle/Vec to 0?](#how-can-i-tieoff-a-bundlevec-to-0)
-  * [How do I create a Vec of Bools from a UInt?](#how-do-i-create-a-vec-of-bools-from-a-uint)
-  * [How do I create a UInt from a Vec of Bool?](#how-do-i-create-a-uint-from-a-vec-of-bool)
-  * [How do I connect a subset of Bundle fields?](#how-do-i-connect-a-subset-of-bundle-fields)
-* Vectors and Registers
-  * [Can I make a 2D or 3D Vector?](#can-i-make-a-2D-or-3D-Vector)
-  * [How do I create a Vector of Registers?](#how-do-i-create-a-vector-of-registers)
-  * [How do I create a Reg of type Vec?](#how-do-i-create-a-reg-of-type-vec)
-  * [How do I partially reset an Aggregate Reg?](#how-do-i-partially-reset-an-aggregate-reg)
-* Bundles
-  * [How do I deal with aliased Bundle fields?](#aliased-bundle-fields)
-  * [How do I deal with the "unable to clone" error?](#bundle-unable-to-clone)
-* [How do I create a finite state machine?](#how-do-i-create-a-finite-state-machine-fsm)
-* [How do I unpack a value ("reverse concatenation") like in Verilog?](#how-do-i-unpack-a-value-reverse-concatenation-like-in-verilog)
-* [How do I do subword assignment (assign to some bits in a UInt)?](#how-do-i-do-subword-assignment-assign-to-some-bits-in-a-uint)
-* [How do I create an optional I/O?](#how-do-i-create-an-optional-io)
-* [How do I create I/O without a prefix?](#how-do-i-create-io-without-a-prefix)
-* [How do I override the implicit clock or reset within a Module?](#how-do-i-override-the-implicit-clock-or-reset-within-a-module)
-* [How do I minimize the number of bits used in an output vector](#how-do-i-minimize-the-number-of-bits-used-in-an-output-vector)
-* [How do I resolve "Dynamic index ... is too wide/narrow for extractee ..."?](#dynamic-index-too-wide-narrow)
-* Predictable Naming
-  * [How do I get Chisel to name signals properly in blocks like when/withClockAndReset?](#how-do-i-get-chisel-to-name-signals-properly-in-blocks-like-whenwithclockandreset)
-  * [How do I get Chisel to name the results of vector reads properly?](#how-do-i-get-chisel-to-name-the-results-of-vector-reads-properly)
-  * [How can I dynamically set/parametrize the name of a module?](#how-can-i-dynamically-setparametrize-the-name-of-a-module)
-* Directionality
-  * [How do I strip directions from a bidirectional Bundle (or other Data)?](#how-do-i-strip-directions-from-a-bidirectional-bundle-or-other-data)
+import TOCInline from '@theme/TOCInline';
+
+<TOCInline toc={toc} />
 
 ## Type Conversions
 
@@ -507,7 +478,7 @@ class CustomBundleFixed(elts: (String, Data)*) extends Record {
 }
 ```
 
-### How do I create a finite state machine (FSM)?
+## How do I create a finite state machine (FSM)?
 
 The advised way is to use `ChiselEnum` to construct enumerated types representing the state of the FSM.
 State transitions are then handled with `switch`/`is` and `when`/`.elsewhen`/`.otherwise`.
@@ -567,7 +538,7 @@ getVerilogString(new DetectTwoOnes)
 
 Note: the `is` statement can take multiple conditions e.g. `is (sTwo1s, sOne1) { ... }`.
 
-### How do I unpack a value ("reverse concatenation") like in Verilog?
+## How do I unpack a value ("reverse concatenation") like in Verilog?
 
 In Verilog, you can do something like the following which will unpack a the value `z`:
 
@@ -612,7 +583,7 @@ getVerilogString(new Foo)
 
 If you **really** need to do this for a one-off case (Think thrice! It is likely you can better structure the code using bundles), then rocket-chip has a [Split utility](https://github.com/freechipsproject/rocket-chip/blob/723af5e6b69e07b5f94c46269a208a8d65e9d73b/src/main/scala/util/Misc.scala#L140) which can accomplish this.
 
-### How do I do subword assignment (assign to some bits in a UInt)?
+## How do I do subword assignment (assign to some bits in a UInt)?
 
 You may try to do something like the following where you want to assign only some bits of a Chisel type.
 Below, the left-hand side connection to `io.out(0)` is not allowed.
@@ -660,7 +631,7 @@ class Foo extends Module {
 getVerilogString(new Foo)
 ```
 
-### How do I create an optional I/O?
+## How do I create an optional I/O?
 
 The following example is a module which includes the optional port `out2` only if the given parameter is `true`.
 
@@ -704,7 +675,7 @@ class ModuleWithOptionalIO(flag: Boolean) extends Module {
 getVerilogString(new ModuleWithOptionalIO(true))
 ```
 
-### How do I create I/O without a prefix?
+## How do I create I/O without a prefix?
 
 In most cases, you can simply call `IO` multiple times:
 
@@ -747,7 +718,7 @@ Note that `io_` is nowhere to be seen!
 getVerilogString(new MyModule)
 ```
 
-### How do I override the implicit clock or reset within a Module?
+## How do I override the implicit clock or reset within a Module?
 
 To change the clock or reset for a region of code, use `withClock`, `withReset`, or `withClockAndReset`.
 See [Multiple Clock Domains](../explanations/multi-clock) for examples and details.
@@ -792,7 +763,7 @@ override protected val implicitClock = (clock.asBool || gate).asClock
 
 `ImplicitReset` works analogously to `ImplicitClock`.
 
-### How do I minimize the number of bits used in an output vector?
+## How do I minimize the number of bits used in an output vector?
 
 Use inferred width and a `Seq` instead of a `Vec`:
 
@@ -823,7 +794,7 @@ circt.stage.ChiselStage.emitSystemVerilog(new CountBits(4))
   .head + ");\n"
 ```
 
-### <a id="dynamic-index-too-wide-narrow" /> How do I resolve "Dynamic index ... is too wide/narrow for extractee ..."?
+## <a id="dynamic-index-too-wide-narrow" /> How do I resolve "Dynamic index ... is too wide/narrow for extractee ..."?
 
 
 Chisel will warn if a dynamic index is not the correctly-sized width for indexing a Vec or UInt.

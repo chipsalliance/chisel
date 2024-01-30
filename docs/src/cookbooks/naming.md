@@ -1,7 +1,5 @@
 ---
-layout: docs
-title:  "Naming Cookbook"
-section: "chisel3"
+sidebar_position: 1
 ---
 
 ```scala mdoc:invisible
@@ -13,6 +11,10 @@ def emitSystemVerilog(gen: => RawModule): String = {
 }
 ```
 # Naming Cookbook
+
+import TOCInline from '@theme/TOCInline';
+
+<TOCInline toc={toc} />
 
 ### I still have _T signals, can this be fixed?
 
