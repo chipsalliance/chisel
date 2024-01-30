@@ -3,11 +3,7 @@
 package chiselTests.reflect
 
 import chisel3._
-<<<<<<< HEAD
-=======
-import chisel3.probe.Probe
 import chisel3.properties.Property
->>>>>>> 3b27dcdb2 (Support isProperty query in DataMirror. (#3783))
 import chisel3.reflect.DataMirror
 import chiselTests.ChiselFlatSpec
 import circt.stage.ChiselStage
