@@ -483,7 +483,7 @@ private[chisel3] object Converter {
       fir.DefClass(
         convert(id._getSourceLocator),
         name,
-        ports.map(p => convert(p, typeAliases)),
+        (ports ++ ctx.secretPorts).map(p => convert(p, typeAliases)),
         convert(cmds, ctx, typeAliases)
       )
   }
