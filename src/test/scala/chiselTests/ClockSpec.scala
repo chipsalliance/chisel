@@ -67,7 +67,7 @@ class ClockSpec extends ChiselPropSpec {
       )
     )
     e.getMessage should include(
-      "operand 'Child.clock: Wire[Clock]' is not visible from the current module Parent"
+      "operand 'Child.clock: Wire[Clock]' is not visible from the current module"
     )
   }
 
