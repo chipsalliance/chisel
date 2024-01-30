@@ -3,6 +3,11 @@
 package chiselTests.reflect
 
 import chisel3._
+<<<<<<< HEAD
+=======
+import chisel3.probe.Probe
+import chisel3.properties.Property
+>>>>>>> 3b27dcdb2 (Support isProperty query in DataMirror. (#3783))
 import chisel3.reflect.DataMirror
 import chiselTests.ChiselFlatSpec
 import circt.stage.ChiselStage
@@ -122,6 +127,16 @@ class DataMirrorSpec extends ChiselFlatSpec {
 
   it should "not support name guesses for non-hardware" in {
     an[ExpectedHardwareException] should be thrownBy DataMirror.queryNameGuess(UInt(8.W))
+  }
+
+  it should "support querying if a Data is a Property" in {
+    ChiselStage.emitCHIRRTL(new RawModule {
+      val notProperty = IO(Input(Bool()))
+      val property = IO(Input(Property[Int]()))
+
+      DataMirror.isProperty(notProperty) shouldBe false
+      DataMirror.isProperty(property) shouldBe true
+    })
   }
 
   "chiselTypeClone" should "preserve Scala type information" in {
