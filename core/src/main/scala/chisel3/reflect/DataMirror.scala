@@ -6,6 +6,7 @@ import chisel3._
 import chisel3.internal._
 import chisel3.internal.firrtl.ir._
 import chisel3.experimental.{requireIsHardware, BaseModule, SourceInfo}
+import chisel3.properties.Property
 import scala.reflect.ClassTag
 
 object DataMirror {
@@ -50,6 +51,15 @@ object DataMirror {
     * @return `true` if x is a Reg, `false` otherwise
     */
   def isReg(x: Data): Boolean = hasBinding[RegBinding](x)
+
+  /** Check if a given `Data` is a Property
+    * @param x the `Data` to check
+    * @return `true` if x is a Property, `false` otherwise
+    */
+  def isProperty(x: Data): Boolean = x match {
+    case _: Property[_] => true
+    case _ => false
+  }
 
   /** Check if a given `Data` is a Probe
     * @param x the `Data` to check
