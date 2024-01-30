@@ -607,4 +607,14 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
       "propassign flatModule.prop.int, Integer(1)"
     )()
   }
+
+  it should "support isLit" in {
+    ChiselStage.emitCHIRRTL(new RawModule {
+      val port = IO(Input(Property[Int]()))
+      val lit = Property(1)
+
+      port.isLit shouldBe false
+      lit.isLit shouldBe true
+    })
+  }
 }
