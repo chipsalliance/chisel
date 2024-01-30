@@ -5,8 +5,30 @@ import chisel3.properties._
 import chisel3.panamaom._
 import chisel3.panamaconverter._
 
-class PropertyTest extends RawModule {
+class PropertyTest extends Module {
   val i = IO(Input(UInt(8.W)))
+  val o = IO(Output(UInt(8.W)))
+
+  val m = Module(new Module {
+    val i = IO(Input(UInt(8.W)))
+    val r = RegNext(i)
+    val o = IO(Output(UInt(8.W)))
+    val p = IO(Output(Property[Int]()))
+    p := Property(789)
+    o := r
+    val nested = Module(new Module {
+      val i = IO(Input(UInt(8.W)))
+      val r = RegNext(i)
+      val o = IO(Output(UInt(8.W)))
+      val p = IO(Output(Property[Int]()))
+      p := Property(789)
+      o := r
+    })
+    nested.i := i
+    o := nested.o
+  })
+  m.i := i
+  o := m.o
 
   val p = IO(Output(Property[Path]()))
   p := Property(Path(i))
@@ -38,4 +60,9 @@ args.head match {
     // CHECK-NEXT: .b => { [ [ prim{omInteger{456}} ] ] }
     // CHECK-NEXT: .p => { path{OMReferenceTarget:~PropertyTest|PropertyTest>i} }
     obj.foreachField((name, value) => println(s".$name => { ${value.display} }"))
+
+    // CHECK:      module{_1_Anon}
+    // CHECK-NEXT: module{PropertyTest_Anon}
+    // CHECK-NEXT: module{PropertyTest}
+    converter.foreachHwModule(name => println(s"module{$name}"))
 }
