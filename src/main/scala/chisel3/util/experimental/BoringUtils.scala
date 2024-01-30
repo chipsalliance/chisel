@@ -288,7 +288,10 @@ object BoringUtils {
     val lcaSource = drill(source, upPath.dropRight(1), upPath.dropRight(1), true)
     val sink = drill(lcaSource, downPath.reverse.tail, downPath.reverse, false)
 
-    if (createProbe.nonEmpty || DataMirror.hasProbeTypeModifier(purePortTypeBase)) {
+    if (
+      createProbe.nonEmpty || DataMirror.hasProbeTypeModifier(purePortTypeBase) ||
+      DataMirror.isProperty(purePortTypeBase)
+    ) {
       sink
     } else {
       // Creating a wire to assign the result to.  We will return this.
