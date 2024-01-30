@@ -7,6 +7,7 @@ import chisel3.util.Counter
 import chisel3.testers._
 import chisel3.experimental.{BaseModule, ChiselAnnotation}
 import chisel3.probe._
+import chisel3.properties.Property
 import chisel3.util.experimental.BoringUtils
 import firrtl.annotations.Annotation
 import firrtl.transforms.DontTouchAnnotation
@@ -348,5 +349,31 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
     matchesAndOmits(chirrtl)()(
       "connect a_bore, a"
     )
+  }
+
+  it should "bore from a Property" in {
+    class Baz extends RawModule {
+      val a = IO(Output(Property[Int]()))
+    }
+
+    class Bar extends RawModule {
+      val baz = Module(new Baz)
+    }
+
+    class Foo extends RawModule {
+      val a = IO(Output(Property[Int]()))
+
+      val bar = Module(new Bar)
+
+      a := BoringUtils.bore(bar.baz.a)
+    }
+
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Foo)
+
+    matchesAndOmits(chirrtl)(
+      "output a_bore : Integer",
+      "propassign a_bore, baz.a",
+      "propassign a, bar.a_bore"
+    )()
   }
 }
