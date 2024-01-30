@@ -79,4 +79,53 @@ class ClockSpec extends ChiselPropSpec {
       "The implicit clock is null which means the code that sets its definition has not yet executed."
     )
   }
+
+  property("Chisel should give a decent error message if you use an unbound Clock") {
+    val e = the[ChiselException] thrownBy (
+      ChiselStage.emitCHIRRTL(
+        new RawModule {
+          withClock(Clock()) {
+            val r = Reg(UInt(8.W))
+          }
+        },
+        args = Array("--throw-on-first-error")
+      )
+    )
+    e.getMessage should include(
+      "'Clock' must be hardware, not a bare Chisel type. Perhaps you forgot to wrap it in Wire(_) or IO(_)?"
+    )
+  }
+
+  property("Chisel should give a decent error message if you use a Clock from another scope") {
+    val e = the[ChiselException] thrownBy (
+      ChiselStage.emitCHIRRTL(
+        new RawModule {
+          override def desiredName = "Parent"
+          val child = Module(new RawModule {
+            override def desiredName = "Child"
+            val clock = Wire(Clock())
+          })
+          withClock(child.clock) {
+            val r = Reg(UInt(8.W))
+          }
+        },
+        args = Array("--throw-on-first-error")
+      )
+    )
+    e.getMessage should include(
+      "operand 'Child.clock: Wire[Clock]' is not visible from the current module Parent"
+    )
+  }
+
+  property("Chisel should support Clocks from views") {
+    import chisel3.experimental.dataview._
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val clock = IO(Clock())
+      val view = clock.viewAs[Clock]
+      withClock(view) {
+        val r = Reg(UInt(8.W))
+      }
+    })
+    chirrtl should include("reg r : UInt<8>, clock")
+  }
 }
