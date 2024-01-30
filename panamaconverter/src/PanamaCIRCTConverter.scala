@@ -883,6 +883,21 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions]) 
   def passManager(): PanamaCIRCTPassManager = new PanamaCIRCTPassManager(circt, mlirRootModule, fos)
   def om():          PanamaCIRCTOM = new PanamaCIRCTOM(circt, mlirRootModule)
 
+  def foreachHwModule(callback: String => Unit) = {
+    val instanceGraph = circt.hwInstanceGraphGet(circt.mlirModuleGetOperation(mlirRootModule))
+    val topLevelNode = circt.hwInstanceGraphGetTopLevelNode(instanceGraph)
+    circt.hwInstanceGraphForEachNode(
+      instanceGraph,
+      node => {
+        if (!circt.hwInstanceGraphNodeEqual(node, topLevelNode)) {
+          val moduleOp = circt.hwInstanceGraphNodeGetModuleOp(node)
+          val moduleName = circt.mlirStringAttrGetValue(circt.mlirOperationGetAttributeByName(moduleOp, "sym_name"))
+          callback(moduleName)
+        }
+      }
+    )
+  }
+
   def visitCircuit(name: String): Unit = {
     val firCircuit = util
       .OpBuilder("firrtl.circuit", circt.mlirModuleGetBody(mlirRootModule), circt.unkLoc)

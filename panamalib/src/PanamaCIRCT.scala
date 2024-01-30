@@ -126,6 +126,10 @@ class PanamaCIRCT {
     CAPI.mlirOperationGetResult(arena, operation.get, pos)
   )
 
+  def mlirOperationGetAttributeByName(op: MlirOperation, name: String) = MlirAttribute(
+    CAPI.mlirOperationGetAttributeByName(arena, op.get, newString(name).get)
+  )
+
   def mlirOperationSetInherentAttributeByName(op: MlirOperation, name: String, attr: MlirAttribute): Unit =
     CAPI.mlirOperationSetInherentAttributeByName(op.get, newString(name).get, attr.get)
 
@@ -480,6 +484,33 @@ class PanamaCIRCT {
   def hwInnerSymAttrGet(symName: String) =
     MlirAttribute(CAPI.hwInnerSymAttrGet(arena, mlirStringAttrGet(symName).get))
 
+  def hwInstanceGraphGet(operation: MlirOperation) = HWInstanceGraph(CAPI.hwInstanceGraphGet(arena, operation.get))
+
+  def hwInstanceGraphGetTopLevelNode(instanceGraph: HWInstanceGraph) = HWInstanceGraphNode(
+    CAPI.hwInstanceGraphGetTopLevelNode(arena, instanceGraph.get)
+  )
+
+  def hwInstanceGraphForEachNode(instaceGraph: HWInstanceGraph, callback: HWInstanceGraphNode => Unit) = {
+    val cb = HWInstanceGraphNodeCallback(
+      circt.HWInstanceGraphNodeCallback.allocate(
+        new circt.HWInstanceGraphNodeCallback {
+          def apply(node: MemorySegment, userData: MemorySegment) = {
+            callback(HWInstanceGraphNode(node))
+          }
+        },
+        arena
+      )
+    )
+    CAPI.hwInstanceGraphForEachNode(instaceGraph.get, cb.get, NULL)
+  }
+
+  def hwInstanceGraphNodeEqual(lhs: HWInstanceGraphNode, rhs: HWInstanceGraphNode) =
+    CAPI.hwInstanceGraphNodeEqual(lhs.get, rhs.get)
+
+  def hwInstanceGraphNodeGetModuleOp(node: HWInstanceGraphNode) = MlirOperation(
+    CAPI.hwInstanceGraphNodeGetModuleOp(arena, node.get)
+  )
+
   //
   // OM C-API
   //
@@ -755,6 +786,30 @@ final case class OMEvaluatorValue(ptr: MemorySegment) extends ForeignType[Memory
 }
 object OMEvaluatorValue {
   private[panamalib] def apply(ptr: MemorySegment) = new OMEvaluatorValue(ptr)
+}
+
+final case class HWInstanceGraph(ptr: MemorySegment) extends ForeignType[MemorySegment] {
+  private[panamalib] def get = ptr
+  private[panamalib] val sizeof = circt.HWInstanceGraph.sizeof().toInt
+}
+object HWInstanceGraph {
+  private[panamalib] def apply(ptr: MemorySegment) = new HWInstanceGraph(ptr)
+}
+
+final case class HWInstanceGraphNode(ptr: MemorySegment) extends ForeignType[MemorySegment] {
+  private[panamalib] def get = ptr
+  private[panamalib] val sizeof = circt.HWInstanceGraphNode.sizeof().toInt
+}
+object HWInstanceGraphNode {
+  private[panamalib] def apply(ptr: MemorySegment) = new HWInstanceGraphNode(ptr)
+}
+
+final case class HWInstanceGraphNodeCallback(ptr: MemorySegment) extends ForeignType[MemorySegment] {
+  private[panamalib] def get = ptr
+  private[panamalib] val sizeof = CAPI.C_POINTER.byteSize().toInt
+}
+object HWInstanceGraphNodeCallback {
+  private[panamalib] def apply(ptr: MemorySegment) = new HWInstanceGraphNodeCallback(ptr)
 }
 
 //

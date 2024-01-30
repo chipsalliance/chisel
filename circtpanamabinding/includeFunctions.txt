@@ -47,6 +47,7 @@ mlirOperationStateAddResults
 mlirOperationStateAddAttributes
 mlirOperationStateEnableResultTypeInference
 mlirOperationGetResult
+mlirOperationGetAttributeByName
 mlirOperationSetInherentAttributeByName
 mlirRegionCreate
 mlirOperationCreate
@@ -107,6 +108,12 @@ chirrtlTypeGetCMemoryPort
 # HW Attribute
 hwInnerRefAttrGet
 hwInnerSymAttrGet
+
+hwInstanceGraphGet
+hwInstanceGraphGetTopLevelNode
+hwInstanceGraphForEachNode
+hwInstanceGraphNodeEqual
+hwInstanceGraphNodeGetModuleOp
 
 # circtFirtoolOptions
 circtFirtoolOptionsCreateDefault
