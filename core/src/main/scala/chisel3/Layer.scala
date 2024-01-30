@@ -49,6 +49,7 @@ object layer {
       case Layer.Root => name
       case _          => s"${parent.fullName}.$name"
     }
+
   }
 
   object Layer {
@@ -93,6 +94,12 @@ object layer {
     thunk
     Builder.pushCommand(LayerBlockEnd(sourceInfo))
     Builder.layerStack = Builder.layerStack.tail
+  }
+
+  /** Call this function from within a `Module` body to enable this layer globally for that module. */
+  final def enable(layer: Layer): Unit = layer match {
+    case Layer.Root =>
+    case _          => Builder.enabledLayers = layer :: Builder.enabledLayers
   }
 
 }

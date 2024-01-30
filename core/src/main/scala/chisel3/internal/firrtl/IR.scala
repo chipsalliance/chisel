@@ -358,7 +358,13 @@ private[chisel3] object ir {
 
   case class DefTypeAlias(sourceInfo: SourceInfo, underlying: fir.Type, val name: String)
 
-  case class DefModule(id: RawModule, name: String, ports: Seq[Port], commands: Seq[Command]) extends Component {
+  case class DefModule(
+    id:       RawModule,
+    name:     String,
+    layers:   Seq[chisel3.layer.Layer],
+    ports:    Seq[Port],
+    commands: Seq[Command])
+      extends Component {
     val secretCommands: mutable.ArrayBuffer[Command] = mutable.ArrayBuffer[Command]()
   }
 
