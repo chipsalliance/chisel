@@ -36,8 +36,10 @@ class Class extends BaseModule {
         case id: DynamicObject => {
           // Force name of the Object, and set its Property[ClassType] type's ref to the Object.
           // The type's ref can't be set within instantiate, because the Object hasn't been named yet.
+          // This also updates the source Class ref to the DynamicObject ref now that it's named.
           id.forceName(default = "_object", _namespace)
           id.getReference.setRef(id.getRef)
+          id.getSourceClass.foreach(_.setRef(id.getRef, true))
         }
         case id: StaticObject => {
           // Set the StaticObject's ref and Property[ClassType] type's ref to the BaseModule for the Class.
