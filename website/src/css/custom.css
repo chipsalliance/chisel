@@ -64,7 +64,7 @@ div[class^='tableOfContentsInline'] ul {
 div[class^='tableOfContentsInline'] li {
   margin: revert;
 }
-div[class^='tableOfContentsInline'] li + li {
+div[class^='tableOfContentsInline'] li:not(:first-child) {
   margin-top: var(--ifm-list-item-margin);
 }
 
