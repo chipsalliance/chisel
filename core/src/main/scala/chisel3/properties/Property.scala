@@ -246,6 +246,16 @@ sealed trait Property[T] extends Element { self =>
   }
 
   override def litOption: Option[BigInt] = None
+
+  /** Return whether this Property is a literal.
+    *
+    * Since we override litOption to always be None, we need to override this method to check the Binding.
+    */
+  override def isLit: Boolean = topBindingOpt match {
+    case Some(PropertyValueBinding) => true
+    case _                          => false
+  }
+
   def toPrintable: Printable = {
     throwException(s"Properties do not support hardware printing" + this._errorContext)
   }
