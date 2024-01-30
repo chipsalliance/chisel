@@ -3,8 +3,9 @@
 package chiselTests.properties
 
 import chisel3._
-import chisel3.properties.{Class, Property}
+import chisel3.properties.{Class, DynamicObject, Property}
 import chisel3.experimental.hierarchy.{Definition, Instance}
+import chisel3.util.experimental.BoringUtils
 import chiselTests.{ChiselFlatSpec, MatchesAndOmits}
 import circt.stage.ChiselStage
 
@@ -92,6 +93,46 @@ class ObjectSpec extends ChiselFlatSpec with MatchesAndOmits {
     matchesAndOmits(chirrtl)(
       "object obj1 of Test",
       "propassign obj1.in, in"
+    )()
+  }
+
+  it should "support creating DynamicObject from a Class with DynamicObject.apply" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val out = IO(Output(Property[Int]()))
+
+      val obj = DynamicObject(new Class {
+        override def desiredName = "Test"
+        val in = IO(Input(Property[Int]()))
+        val out = IO(Output(Property[Int]()))
+      })
+
+      obj.getField[Int]("in") := Property(1)
+
+      out := obj.getField[Int]("out")
+    })
+
+    matchesAndOmits(chirrtl)(
+      "object obj of Test",
+      "propassign obj.in, Integer(1)",
+      "propassign out, obj.out"
+    )()
+  }
+
+  it should "support boring ports through a Class created with DynamicObject.apply" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val in = IO(Input(Property[Int]()))
+
+      val obj = DynamicObject(new Class {
+        override def desiredName = "Test"
+        val out = IO(Output(Property[Int]()))
+        out := BoringUtils.bore(in)
+      })
+    })
+
+    matchesAndOmits(chirrtl)(
+      "input out_bore : Integer",
+      "propassign out, out_bore",
+      "propassign obj.out_bore, in"
     )()
   }
 
