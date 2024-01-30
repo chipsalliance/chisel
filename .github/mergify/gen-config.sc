@@ -26,6 +26,7 @@ import io.circe.yaml.syntax._ // for .asYaml
 def mergeQueue(conditions: List[String]) = Json.obj(
   "name" -> "default".asJson,
   "conditions" -> conditions.asJson,
+  "draft_bot_account" -> "chiselbot".asJson,
   "update_bot_account" -> "chiselbot".asJson,
   "merge_bot_account" -> "chiselbot".asJson
 )
