@@ -1,18 +1,12 @@
 ---
-layout: docs
-title:  "DataView Cookbook"
-section: "chisel3"
+sidebar_position: 3
 ---
 
 # DataView Cookbook
 
-* [How do I view a Data as a UInt or vice versa?](#how-do-i-view-a-data-as-a-uint-or-vice-versa)
-* [How do I create a DataView for a Bundle has a type parameter?](#how-do-i-create-a-dataview-for-a-bundle-has-a-type-parameter)
-* [How do I create a DataView for a Bundle with optional fields?](#how-do-i-create-a-dataview-for-a-bundle-with-optional-fields)
-* [How do I connect a subset of Bundle fields?](#how-do-i-connect-a-subset-of-bundle-fields)
-    * [How do I view a Bundle as a parent type (superclass)?](#how-do-i-view-a-bundle-as-a-parent-type-superclass)
-    * [How do I view a Bundle as a parent type when the parent type is abstract (like a trait)?](#how-do-i-view-a-bundle-as-a-parent-type-when-the-parent-type-is-abstract-like-a-trait)
-    * [How can I use `.viewAs` instead of `.viewAsSupertype(type)`?](#how-can-i-use-viewas-instead-of-viewassupertypetype)
+import TOCInline from '@theme/TOCInline';
+
+<TOCInline toc={toc} />
 
 ## How do I view a Data as a UInt or vice versa?
 

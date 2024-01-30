@@ -1,13 +1,12 @@
 ---
-layout: docs
-title:  "Serialization Cookbook"
-section: "chisel3"
+sidebar_position: 4
 ---
 
 # Serialization Cookbook
 
-* [Why do I need to serialize Modules](#why-do-i-need-to-serialize-modules)
-* [How do I serialize Modules with SerializableModuleGenerator](#how-do-i-seerialize-modules-with-serializablemodulegenerator)
+import TOCInline from '@theme/TOCInline';
+
+<TOCInline toc={toc} />
 
 ## Why do I need to serialize Modules
 Chisel provides a very flexible hardware design experience. However, it sometimes becomes too flexible to design a relative big designs, since parameters of module might come from: 1. Global variables; 2. Outer class; 3. Entropies(time, random). It becomes really hard or impossible to describe "how to reproduce this single module?". This forbids doing unit-test for a module generator, and introduces issues in post-synthesis when doing ECO: a change to Module A might lead to change in Module B.
