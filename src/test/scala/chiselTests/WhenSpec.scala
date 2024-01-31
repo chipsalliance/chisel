@@ -6,6 +6,7 @@ import circt.stage.ChiselStage
 import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util._
+import chisel3.experimental.{SourceInfo, SourceLine}
 
 class WhenTester() extends BasicTester {
   val cnt = Counter(4)
@@ -164,5 +165,43 @@ class WhenSpec extends ChiselFlatSpec with Utils {
       })
     }
     e.getMessage should include("Cannot exit from a when() block with a \"return\"")
+  }
+
+  "Using a value that has escaped from a when scope in a connection" should "give a reasonable error message" in {
+    implicit val info: SourceInfo = SourceLine("Foo.scala", 12, 3)
+    val e = the[ChiselException] thrownBy {
+      ChiselStage.emitCHIRRTL(new Module {
+        override def desiredName = "Top"
+        val foo, bar = IO(Output(UInt(8.W)))
+        val a = IO(Input(Bool()))
+        lazy val w = Wire(UInt(8.W))
+        when(a) {
+          foo := w
+        }
+        bar := w
+      })
+    }
+    val msg =
+      "Source foo_w in Top has escaped the scope of the when (@[Foo.scala 12:3]) in which it was constructed."
+    e.getMessage should include(msg)
+  }
+
+  "Using a value that has escaped from a when scope in an operation" should "give a reasonable error message" in {
+    implicit val info: SourceInfo = SourceLine("Foo.scala", 12, 3)
+    val e = the[ChiselException] thrownBy {
+      ChiselStage.emitCHIRRTL(new Module {
+        override def desiredName = "Top"
+        val foo, bar = IO(Output(UInt(8.W)))
+        val a = IO(Input(Bool()))
+        lazy val w = Wire(UInt(8.W))
+        when(a) {
+          foo := w
+        }
+        bar := w + 1.U
+      })
+    }
+    val msg =
+      "operand 'Top.foo_w: Wire[UInt<8>]' has escaped the scope of the when (@[Foo.scala 12:3]) in which it was constructed."
+    e.getMessage should include(msg)
   }
 }
