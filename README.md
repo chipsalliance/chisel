@@ -292,7 +292,7 @@ The [Useful Resources](#useful-resources) for users are also helpful for contrib
 
 ### Compiling and Testing Chisel
 
-You must first install required dependencies to build Chisel locally, please see [the setup instructions](SETUP.md).
+You must first install required dependencies to build Chisel locally, please see [the installation instructions](https://www.chisel-lang.org/docs/installation).
 
 Clone and build the Chisel library:
 

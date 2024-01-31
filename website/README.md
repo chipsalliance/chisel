@@ -9,7 +9,7 @@ If things are not behaving as expected, make sure to run `make clean` or `make m
 
 ## Dependencies
 
-Building the website requires the usual [Chisel Setup](../SETUP.md), in addition to Node.js and npm.
+Building the website requires the usual [Chisel installation](https://www.chisel-lang.org/docs/installation), in addition to Node.js and npm.
 
 Please follow the [official npm instructions](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm) for installing Node.js and npm.
 
