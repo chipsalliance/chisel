@@ -13,6 +13,8 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
     object B extends layer.Layer(layer.Convention.Bind)
   }
 
+  object C extends layer.Layer(layer.Convention.Bind)
+
   "Layers" should "allow for creation of a layer and nested layers" in {
 
     class Foo extends RawModule {
@@ -64,6 +66,21 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
       "define a = probe(in)",
       "define b = probe(in)"
     )()
+  }
+
+  they should "be enabled with a trait" in {
+
+    class Foo extends RawModule {
+      layer.enable(A.B)
+      layer.enable(C)
+      // This should be a no-op.
+      layer.enable(layer.Layer.root)
+    }
+
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Foo))(
+      "module Foo enablelayer A.B enablelayer C :"
+    )()
+
   }
 
   "Layers error checking" should "require that a nested layer definition matches its declaration nesting" in {

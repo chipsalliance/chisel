@@ -20,6 +20,7 @@ class AddImplicitOutputFileSpec extends AnyFlatSpec with Matchers {
         ir.NoInfo,
         "foo",
         Seq.empty,
+        Seq.empty,
         ir.Block(
           ir.DefNode(
             ir.NoInfo,

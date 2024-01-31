@@ -3,7 +3,7 @@
 package chisel3
 
 import scala.collection.immutable.ListMap
-import scala.collection.mutable.{ArrayBuffer, HashMap}
+import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashSet}
 import scala.language.experimental.macros
 
 import chisel3.internal._
@@ -80,6 +80,10 @@ object Module extends SourceInfoDoc {
     Builder.currentClock = None
     Builder.currentReset = None
 
+    // Save the currently enabled layer.  Clear any enabled layers.
+    val saveEnabledLayers = Builder.enabledLayers
+    Builder.enabledLayers = LinkedHashSet.empty
+
     // Execute the module, this has the following side effects:
     //   - set currentModule
     //   - unset readyForModuleConstr
@@ -111,6 +115,7 @@ object Module extends SourceInfoDoc {
     Builder.currentClock = saveClock // Back to clock and reset scope
     Builder.currentReset = saveReset
     Builder.setPrefix(savePrefix)
+    Builder.enabledLayers = saveEnabledLayers
 
     module
   }
