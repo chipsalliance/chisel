@@ -436,6 +436,7 @@ object Formal extends Enumeration {
   pred: Expression,
   en:   Expression,
   msg:  StringLit,
+  args: Seq[Expression],
   @since("FIRRTL 1.5")
   name: String = "")
     extends Statement
@@ -448,14 +449,17 @@ object Formal extends Enumeration {
     clk:  Expression = clk,
     pred: Expression = pred,
     en:   Expression = en,
-    msg:  StringLit = msg
+    msg:  StringLit = msg,
+    args: Seq[Expression] = args
   ): Verification = {
-    Verification(op, info, clk, pred, en, msg, name)
+    Verification(op, info, clk, pred, en, msg, args, name)
   }
 }
 object Verification {
-  def unapply(s: Verification): Some[(Formal.Value, Info, Expression, Expression, Expression, StringLit)] = {
-    Some((s.op, s.info, s.clk, s.pred, s.en, s.msg))
+  def unapply(
+    s: Verification
+  ): Some[(Formal.Value, Info, Expression, Expression, Expression, StringLit, Seq[Expression])] = {
+    Some((s.op, s.info, s.clk, s.pred, s.en, s.msg, s.args))
   }
 }
 // end formal

@@ -219,7 +219,11 @@ private[chisel3] object Converter {
           convert(probe, ctx, sourceInfo)
         )
       )
-    case e @ Verification(_, op, info, clk, pred, msg) =>
+    case e @ Verification(_, op, info, clk, pred, pable) =>
+      val (fmt, args) = unpack(pable, ctx)
+      if (op == Formal.Cover && args.nonEmpty) {
+        throwException("cover message cannot be used as a format string")
+      }
       val firOp = op match {
         case Formal.Assert => fir.Formal.Assert
         case Formal.Assume => fir.Formal.Assume
@@ -232,7 +236,8 @@ private[chisel3] object Converter {
           convert(clk, ctx, info),
           convert(pred, ctx, info),
           firrtl.Utils.one,
-          fir.StringLit(msg),
+          fir.StringLit(fmt),
+          args.map(a => convert(a, ctx, info)),
           e.name
         )
       )

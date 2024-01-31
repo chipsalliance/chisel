@@ -379,9 +379,10 @@ class SerializerSpec extends AnyFlatSpec with Matchers {
         Reference("42_clock"),
         Reference("42_predicate"),
         Reference("42_enable"),
-        StringLit("message"),
+        StringLit("message %d"),
+        Seq(Reference("42_arg")),
         "42_label"
       )
-    ) should include("""assert(`42_clock`, `42_predicate`, `42_enable`, "message") : `42_label`""")
+    ) should include("""assert(`42_clock`, `42_predicate`, `42_enable`, "message %d", `42_arg`) : `42_label`""")
   }
 }

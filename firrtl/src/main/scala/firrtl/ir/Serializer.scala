@@ -329,8 +329,9 @@ object Serializer {
     case Attach(info, exprs) =>
       // exprs should never be empty since the attach statement takes *at least* two signals according to the spec
       b ++= "attach ("; s(exprs, ", "); b += ')'; s(info)
-    case veri @ Verification(op, info, clk, pred, en, msg) =>
+    case veri @ Verification(op, info, clk, pred, en, msg, args) =>
       b ++= op.toString; b += '('; s(List(clk, pred, en), ", ", false); b ++= msg.escape
+      if (args.nonEmpty) b ++= ", "; s(args, ", ");
       b += ')'; sStmtName(veri.name); s(info)
 
     // WIR
