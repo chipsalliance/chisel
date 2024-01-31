@@ -15,7 +15,7 @@ object Serializer {
   val Indent = "  "
 
   // The version supported by the serializer.
-  val version = Version(3, 3, 0)
+  val version = Version(4, 0, 0)
 
   /** Converts a `FirrtlNode` into its string representation with
     * default indentation.
@@ -230,7 +230,7 @@ object Serializer {
             indent -= 1
           case LayerBlockBegin(info, layer) =>
             doIndent()
-            b ++= s"group $layer :"; s(info)
+            b ++= s"layerblock $layer :"; s(info)
             indent += 1
           case LayerBlockEnd =>
             indent -= 1
@@ -527,7 +527,7 @@ object Serializer {
     val layers = if (circuit.layers.nonEmpty) {
       implicit val b = new StringBuilder
       def layerIt(layer: Layer)(implicit indent: Int): Unit = {
-        b ++= s"${NewLine}"; doIndent(); b ++= s"declgroup ${layer.name}, ${layer.convention} :"
+        b ++= s"${NewLine}"; doIndent(); b ++= s"layer ${layer.name}, ${layer.convention} :"
         s(layer.info)
         layer.body.foreach(layerIt(_)(indent + 1))
       }

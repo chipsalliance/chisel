@@ -38,11 +38,11 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
     info("CHIRRTL emission looks coorect")
     // TODO: Switch to FileCheck for this testing.  This is going to miss all sorts of ordering issues.
     matchesAndOmits(chirrtl)(
-      "declgroup A, bind :",
-      "declgroup B, bind :",
-      "group A :",
+      "layer A, bind :",
+      "layer B, bind :",
+      "layerblock A :",
       "wire w : UInt<1>",
-      "group B :",
+      "layerblock B :",
       "wire x : UInt<1>",
       "wire y : UInt<1>"
     )()
