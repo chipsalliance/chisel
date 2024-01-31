@@ -460,7 +460,7 @@ private[chisel3] object Converter {
       fir.Module(
         convert(id._getSourceLocator),
         name,
-        layers.map(_.fullName).reverse.distinct,
+        layers.map(_.fullName),
         (ports ++ ctx.secretPorts).map(p => convert(p, typeAliases)),
         convert(cmds ++ ctx.secretCommands, ctx, typeAliases)
       )

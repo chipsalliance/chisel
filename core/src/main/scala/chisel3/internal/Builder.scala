@@ -529,7 +529,7 @@ private[chisel3] class DynamicContext(
   var currentClock:   Option[Delayed[Clock]] = None
   var currentReset:   Option[Delayed[Reset]] = None
   var currentDisable: Disable.Type = Disable.BeforeReset
-  var enabledLayers:  List[layer.Layer] = Nil
+  var enabledLayers:  mutable.LinkedHashSet[layer.Layer] = mutable.LinkedHashSet.empty
   var layerStack:     List[layer.Layer] = layer.Layer.root :: Nil
   val errors = new ErrorLog(warningFilters, sourceRoots, throwOnFirstError)
   val namingStack = new NamingStack
@@ -832,8 +832,8 @@ private[chisel3] object Builder extends LazyLogging {
     dynamicContext.currentDisable = newDisable
   }
 
-  def enabledLayers: List[layer.Layer] = dynamicContext.enabledLayers
-  def enabledLayers_=(s: List[layer.Layer]): Unit = {
+  def enabledLayers: mutable.LinkedHashSet[layer.Layer] = dynamicContext.enabledLayers
+  def enabledLayers_=(s: mutable.LinkedHashSet[layer.Layer]): Unit = {
     dynamicContext.enabledLayers = s
   }
 
