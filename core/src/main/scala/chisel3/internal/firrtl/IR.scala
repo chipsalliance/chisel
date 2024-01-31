@@ -346,7 +346,7 @@ private[chisel3] object ir {
     sourceInfo: SourceInfo,
     clock:      Arg,
     predicate:  Arg,
-    message:    Printable)
+    pable:      Printable)
       extends Definition
 
   abstract class Component extends Arg {
