@@ -49,7 +49,6 @@ object layer {
       case Layer.Root => name
       case _          => s"${parent.fullName}.$name"
     }
-
   }
 
   object Layer {
