@@ -5,9 +5,9 @@ package chisel3
 import chisel3._
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
-import chisel3.internal.firrtl._
+import chisel3.internal.firrtl.ir._
 import chisel3.Data.ProbeInfo
-import chisel3.experimental.SourceInfo
+import chisel3.experimental.{requireIsHardware, SourceInfo}
 import chisel3.reflect.DataMirror.{checkTypeEquivalence, collectAllMembers, hasProbeTypeModifier}
 
 import scala.language.experimental.macros
@@ -38,6 +38,11 @@ package object probe extends SourceInfoDoc {
     }
     requireHasProbeTypeModifier(sink, "Expected sink to be a probe.")
     requireHasProbeTypeModifier(probeExpr, "Expected source to be a probe expression.")
+    requireCompatibleDestinationProbeColor(
+      sink,
+      if (Builder.layerStack.head == layer.Layer.Root) s"Cannot define '$sink' from outside a layerblock"
+      else s"Cannot define '$sink' from a layerblock associated with layer ${Builder.layerStack.head.fullName}"
+    )
     if (sink.probeInfo.get.writable) {
       requireHasWritableProbeTypeModifier(
         probeExpr,

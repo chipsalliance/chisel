@@ -43,46 +43,6 @@ trait SvsimModule
   extends ScalaModule {
 }
 
-trait SvsimUnitTestModule
-  extends TestModule
-    with ScalaModule
-    with TestModule.ScalaTest {
-  def svsimModule: SvsimModule
-
-  def scalatestIvy: Dep
-
-  def scalacheckIvy: Dep
-
-  override def moduleDeps = Seq(svsimModule)
-
-  override def defaultCommandName() = "test"
-
-  override def ivyDeps = super.ivyDeps() ++ Agg(
-    scalatestIvy,
-    scalacheckIvy
-  )
-}
-
-trait FirrtlUnitTestModule
-  extends TestModule
-    with ScalaModule
-    with TestModule.ScalaTest {
-  def firrtlModule: FirrtlModule
-
-  def scalatestIvy: Dep
-
-  def scalacheckIvy: Dep
-
-  override def moduleDeps = Seq(firrtlModule)
-
-  override def defaultCommandName() = "test"
-
-  override def ivyDeps = super.ivyDeps() ++ Agg(
-    scalatestIvy,
-    scalacheckIvy
-  )
-}
-
 trait CoreModule
   extends ScalaModule
     with HasMacroAnnotations {
@@ -158,24 +118,6 @@ trait HasChisel
   override def moduleDeps = super.moduleDeps ++ Some(chiselModule)
 }
 
-trait ChiselUnitTestModule
-  extends TestModule
-    with ScalaModule
-    with HasChisel
-    with HasMacroAnnotations
-    with TestModule.ScalaTest {
-  def scalatestIvy: Dep
-
-  def scalacheckIvy: Dep
-
-  override def defaultCommandName() = "test"
-
-  override def ivyDeps = super.ivyDeps() ++ Agg(
-    scalatestIvy,
-    scalacheckIvy
-  )
-}
-
 trait HasJextractGeneratedSources
   extends JavaModule {
   def includePaths: T[Seq[PathRef]]
@@ -242,10 +184,10 @@ trait HasJextractGeneratedSources
   override def javacOptions = T(super.javacOptions() ++ Seq("--enable-preview", "--release", "21"))
 }
 
-trait CIRCTPanamaBinderModule
-  extends ScalaModule
-    with HasJextractGeneratedSources
-    with HasChisel {
+// Java Codegen for all declared functions.
+// All of these functions are not private API which is subject to change.
+trait CIRCTPanamaBindingModule
+  extends HasJextractGeneratedSources {
 
   def includeConstants = T.input(os.read.lines(millSourcePath / "includeConstants.txt").filter(s => s.nonEmpty && !s.startsWith("#")))
   def includeFunctions = T.input(os.read.lines(millSourcePath / "includeFunctions.txt").filter(s => s.nonEmpty && !s.startsWith("#")))
@@ -255,45 +197,72 @@ trait CIRCTPanamaBinderModule
   def includeVars = T.input(os.read.lines(millSourcePath / "includeVars.txt").filter(s => s.nonEmpty && !s.startsWith("#")))
   def linkLibraries = T.input(os.read.lines(millSourcePath / "linkLibraries.txt").filter(s => s.nonEmpty && !s.startsWith("#")))
 
-  def target: T[String] = T("org.llvm.circt")
-  def headerClassName: T[String] = T("CAPI")
+  def target = T("org.llvm.circt")
+  def headerClassName = T("CAPI")
 }
 
-trait HasCIRCTPanamaBinderModule
-  extends ScalaModule
-    with HasChisel {
-  def circtPanamaBinderModule: CIRCTPanamaBinderModule
+trait HasCIRCTPanamaBindingModule
+  extends JavaModule {
+  def circtPanamaBindingModule: CIRCTPanamaBindingModule
 
-  override def chiselModule = circtPanamaBinderModule.chiselModule
+  override def moduleDeps = super.moduleDeps ++ Some(circtPanamaBindingModule)
 
-  override def pluginModule = circtPanamaBinderModule.pluginModule
-
-  override def moduleDeps = super.moduleDeps ++ Some(circtPanamaBinderModule)
-
-  override def javacOptions = T(super.javacOptions() ++ Seq("--enable-preview", "--release", "20"))
+  override def javacOptions = T(super.javacOptions() ++ Seq("--enable-preview", "--release", "21"))
 
   override def forkArgs: T[Seq[String]] = T(
     super.forkArgs() ++ Seq("--enable-native-access=ALL-UNNAMED", "--enable-preview")
-      ++ circtPanamaBinderModule
+      ++ circtPanamaBindingModule
       .libraryPaths()
       .map(p => s"-Djava.library.path=${p.path}")
   )
 }
 
-trait CIRCTPanamaBinderModuleTestModule
-  extends TestModule
-    with ScalaModule
-    with HasCIRCTPanamaBinderModule
-    with HasMacroAnnotations
-    with TestModule.ScalaTest {
-  def scalatestIvy: Dep
+// The Scala API for PanamaBinding, API here is experimentally public to all developers
+trait PanamaLibModule
+  extends ScalaModule
+    with HasCIRCTPanamaBindingModule
 
-  def scalacheckIvy: Dep
+trait HasPanamaLibModule
+  extends ScalaModule
+    with HasCIRCTPanamaBindingModule {
+  def panamaLibModule: PanamaLibModule
 
-  override def defaultCommandName() = "test"
+  def circtPanamaBindingModule = panamaLibModule.circtPanamaBindingModule
 
-  override def ivyDeps = super.ivyDeps() ++ Agg(
-    scalatestIvy,
-    scalacheckIvy
-  )
+  override def moduleDeps = super.moduleDeps ++ Some(panamaLibModule)
 }
+
+trait PanamaOMModule
+  extends ScalaModule
+    with HasPanamaLibModule
+
+trait HasPanamaOMModule
+  extends ScalaModule
+    with HasCIRCTPanamaBindingModule {
+  def panamaOMModule: PanamaOMModule
+
+  def circtPanamaBindingModule = panamaOMModule.circtPanamaBindingModule
+
+  override def moduleDeps = super.moduleDeps ++ Some(panamaOMModule)
+}
+
+trait PanamaConverterModule
+  extends ScalaModule
+    with HasPanamaOMModule
+    with HasChisel
+
+trait HasPanamaConverterModule
+  extends ScalaModule
+    with HasCIRCTPanamaBindingModule
+    with HasChisel {
+  def panamaConverterModule: PanamaConverterModule
+
+  def circtPanamaBindingModule = panamaConverterModule.circtPanamaBindingModule
+
+  override def chiselModule = panamaConverterModule.chiselModule
+
+  override def pluginModule = panamaConverterModule.pluginModule
+
+  override def moduleDeps = super.moduleDeps ++ Some(panamaConverterModule)
+}
+

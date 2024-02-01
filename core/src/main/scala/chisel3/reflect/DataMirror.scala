@@ -4,8 +4,9 @@ package chisel3.reflect
 
 import chisel3._
 import chisel3.internal._
-import chisel3.internal.firrtl._
-import chisel3.experimental.{BaseModule, SourceInfo}
+import chisel3.internal.firrtl.ir._
+import chisel3.experimental.{requireIsHardware, BaseModule, SourceInfo}
+import chisel3.properties.Property
 import scala.reflect.ClassTag
 
 object DataMirror {
@@ -51,11 +52,28 @@ object DataMirror {
     */
   def isReg(x: Data): Boolean = hasBinding[RegBinding](x)
 
+  /** Check if a given `Data` is a Property
+    * @param x the `Data` to check
+    * @return `true` if x is a Property, `false` otherwise
+    */
+  def isProperty(x: Data): Boolean = x match {
+    case _: Property[_] => true
+    case _ => false
+  }
+
   /** Check if a given `Data` is a Probe
     * @param x the `Data` to check
     * @return `true` if x is a Probe, `false` otherwise
     */
   def hasProbeTypeModifier(x: Data): Boolean = x.probeInfo.nonEmpty
+
+  /** Return the optional layer color of a `Data`.
+    * @param x the `Data` to examine
+    * @return a `Some[Layer]` if the data has a layer color, `None` otherwise
+    */
+  def getLayerColor(x: Data): Option[layer.Layer] = x.probeInfo.collect {
+    case Data.ProbeInfo(_, Some(color)) => color
+  }
 
   /** Get an early guess for the name of this [[Data]]
     *
@@ -475,4 +493,10 @@ object DataMirror {
       (modulePath(left, Some(lca)) ++ Seq(lca), modulePath(right, Some(lca)) ++ Seq(lca))
     }
   }
+
+  /** Check if a given `Data` is visible from the current context
+    * @param x the `Data` to check
+    * @return `true` if x is visible, `false` otherwise
+    */
+  def isVisible(target: Data): Boolean = target.isVisible
 }

@@ -1,9 +1,3 @@
----
-layout: docs
-title:  "Resources and References"
-section: "chisel3"
----
-
 # Chisel Resources
 
 The *best resource* to learn about Chisel is the [**online Chisel Bootcamp**](https://mybinder.org/v2/gh/freechipsproject/chisel-bootcamp/master). This runs in your browser and assumes no prior Scala knowledge. (You may also run this locally via the [backing chisel-bootcamp GitHub repository](https://github.com/freechipsproject/chisel-bootcamp).)

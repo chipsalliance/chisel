@@ -9,10 +9,10 @@ import scala.collection.immutable.{SeqMap, VectorMap}
 import scala.collection.mutable.{HashSet, LinkedHashMap}
 import scala.language.experimental.macros
 import chisel3.experimental.{BaseModule, BundleLiteralException, HasTypeAlias, OpaqueType, VecLiteralException}
-import chisel3.experimental.{SourceInfo, UnlocatableSourceInfo}
+import chisel3.experimental.{requireIsChiselType, requireIsHardware, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
-import chisel3.internal.firrtl._
+import chisel3.internal.firrtl.ir._
 import chisel3.internal.sourceinfo.{SourceInfoTransform, VecTransform}
 import chisel3.reflect.DataMirror
 import _root_.firrtl.{ir => fir}
@@ -1324,16 +1324,6 @@ package experimental {
   class BundleLiteralException(message: String) extends chisel3.ChiselException(message)
   class VecLiteralException(message: String) extends chisel3.ChiselException(message)
 
-  /** Indicates that the compiler plugin should generate [[cloneType]] for this type
-    *
-    * All user-defined [[Record]]s should mix this trait in as it will be required for upgrading to Chisel 3.6.
-    */
-  @deprecated("AutoCloneType is now always enabled, no need to mix it in", "Chisel 3.6")
-  trait AutoCloneType { self: Record =>
-
-    override def cloneType: this.type = _cloneTypeImpl.asInstanceOf[this.type]
-
-  }
 }
 
 /** Base class for data types defined as a bundle of other data types.

@@ -4,7 +4,7 @@ package chisel3.probe
 
 import chisel3.{Data, SourceInfoDoc}
 import chisel3.internal.{Builder, OpBinding}
-import chisel3.internal.firrtl.{ProbeExpr, RWProbeExpr}
+import chisel3.internal.firrtl.ir.{ProbeExpr, RWProbeExpr}
 import chisel3.experimental.{requireIsHardware, SourceInfo}
 
 import scala.language.experimental.macros

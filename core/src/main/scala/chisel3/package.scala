@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import firrtl.annotations.{IsMember, Named}
-import chisel3.internal.ExceptionHelpers
+import firrtl.annotations.{IsMember, Named, ReferenceTarget}
+import chisel3.internal.{ExceptionHelpers, NamedComponent}
+import chisel3.experimental.BaseModule
 
 import java.util.{MissingFormatArgumentException, UnknownFormatConversionException}
 import scala.collection.mutable
@@ -12,7 +13,7 @@ import scala.annotation.{nowarn, tailrec}
 package object chisel3 {
   import internal.chiselRuntimeDeprecated
   import experimental.{DeprecatedSourceInfo, UnlocatableSourceInfo}
-  import internal.firrtl.{Port, Width}
+  import internal.firrtl.ir.Port
   import internal.Builder
 
   import scala.language.implicitConversions
@@ -412,4 +413,25 @@ package object chisel3 {
     "this feature will not be supported as part of the migration to the MLIR-based FIRRTL Compiler (MFC). For more information about this migration, please see the Chisel ROADMAP.md."
 
   final val deprecatedPublicAPIMsg = "APIs in chisel3.internal are not intended to be public"
+
+  /** Contains universal methods for target accesses.
+    */
+  sealed trait HasTarget {
+    def toTarget:         ReferenceTarget
+    def toAbsoluteTarget: ReferenceTarget
+    def toRelativeTarget(root: Option[BaseModule]): ReferenceTarget
+  }
+
+  object HasTarget {
+
+    /** This wrapping hides the actual object, ensuring users only have access
+      * to the target methods (instead of the type of the underlying object).
+      */
+    private[chisel3] def apply(t: NamedComponent): HasTarget = new HasTarget {
+      def toTarget = t.toTarget
+      def toAbsoluteTarget = t.toAbsoluteTarget
+      def toRelativeTarget(root: Option[BaseModule]) = t.toRelativeTarget(root)
+    }
+
+  }
 }

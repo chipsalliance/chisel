@@ -1,17 +1,12 @@
 ---
-layout: docs
-title:  "Hierarchy Cookbook"
-section: "chisel3"
+sidebar_position: 2
 ---
 
 # Hierarchy Cookbook
 
-* [How do I instantiate multiple instances with the same module parameterization, but avoid re-elaboration?](#how-do-i-instantiate-multiple-instances-with-the-same-module-parameterization)
-* [How do I access internal fields of an instance?](#how-do-i-access-internal-fields-of-an-instance)
-* [How do I make my parameters accessable from an instance?](#how-do-i-make-my-parameters-accessable-from-an-instance)
-* [How do I reuse a previously elaborated module, if my new module has the same parameterization?](#how-do-i-reuse-a-previously-elaborated-module-if-my-new-module-has-the-same-parameterization)
-* [How do I parameterize a module by its children instances?](#how-do-I-parameterize-a-module-by-its-children-instances)
-* [How do I use the new hierarchy-specific Select functions?](#how-do-I-use-the-new-hierarchy-specific-Select-functions)
+import TOCInline from '@theme/TOCInline';
+
+<TOCInline toc={toc} />
 
 ## How do I instantiate multiple instances with the same module parameterization?
 

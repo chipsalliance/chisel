@@ -11,7 +11,6 @@ import chisel3.testers.BasicTester
 import chisel3.experimental.OpaqueType
 import chisel3.reflect.DataMirror
 
-import scala.annotation.nowarn
 import circt.stage.ChiselStage
 import scala.collection.immutable.SeqMap
 

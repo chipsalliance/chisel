@@ -4,7 +4,7 @@ package chisel3
 
 import chisel3.experimental.{SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal.{Builder, HasId}
-import chisel3.internal.firrtl.{LayerBlockBegin, LayerBlockEnd, Node}
+import chisel3.internal.firrtl.ir.{LayerBlockBegin, LayerBlockEnd, Node}
 import chisel3.util.simpleClassName
 import scala.collection.mutable.LinkedHashSet
 
@@ -43,6 +43,12 @@ object layer {
     private[chisel3] def sourceInfo: SourceInfo = _sourceInfo
 
     private[chisel3] def name: String = simpleClassName(this.getClass())
+
+    private[chisel3] val fullName: String = parent match {
+      case null       => "<root>"
+      case Layer.Root => name
+      case _          => s"${parent.fullName}.$name"
+    }
   }
 
   object Layer {
@@ -87,6 +93,12 @@ object layer {
     thunk
     Builder.pushCommand(LayerBlockEnd(sourceInfo))
     Builder.layerStack = Builder.layerStack.tail
+  }
+
+  /** Call this function from within a `Module` body to enable this layer globally for that module. */
+  final def enable(layer: Layer): Unit = layer match {
+    case Layer.Root =>
+    case _          => Builder.enabledLayers += layer
   }
 
 }

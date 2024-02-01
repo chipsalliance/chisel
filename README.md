@@ -132,7 +132,7 @@ Then you can open the generated HTML and copy-paste
 
 Consider an FIR filter that implements a convolution operation, as depicted in this block diagram:
 
-<img src="https://raw.githubusercontent.com/chipsalliance/chisel/master/docs/src/images/fir_filter.svg?sanitize=true" width="512" />
+<img src="https://raw.githubusercontent.com/chipsalliance/chisel/main/docs/src/images/fir_filter.svg?sanitize=true" width="512" />
 
 While Chisel provides similar base primitives as synthesizable Verilog, and *could* be used as such:
 
@@ -218,7 +218,7 @@ If you like a textbook to learn Chisel and also a bit of digital design in gener
 
 ### Build Your Own Chisel Projects
 
-See [the setup instructions](SETUP.md) for how to set up your environment to build Chisel locally.
+Please see [the Installation page](https://www.chisel-lang.org/docs/installation) of the Chisel website for information about how to use Chisel locally.
 
 When you're ready to build your own circuits in Chisel, **we recommend starting from the [Chisel Template](https://github.com/freechipsproject/chisel-template) repository**, which provides a pre-configured project, example design, and testbench.
 Follow the [chisel-template README](https://github.com/freechipsproject/chisel-template) to get started.
@@ -227,8 +227,8 @@ If you insist on setting up your own project from scratch, your project needs to
 For example, in SBT this could be expressed as:
 ```scala
 // build.sbt
-scalaVersion := "2.13.10"
-val chiselVersion = "5.1.0"
+scalaVersion := "2.13.12"
+val chiselVersion = "6.0.0"
 addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full)
 libraryDependencies += "org.chipsalliance" %% "chisel" % chiselVersion
 ```
@@ -245,7 +245,7 @@ libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % "0.6.0" % "test"
 
 ### Guide For New Contributors
 
-If you are trying to make a contribution to this project, please read [CONTRIBUTING.md](https://github.com/chipsalliance/chisel/blob/master/CONTRIBUTING.md)
+If you are trying to make a contribution to this project, please read [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ### Design Verification
 
@@ -261,9 +261,8 @@ These simulation-based verification tools are available for Chisel:
 * [**Cheat Sheet**](https://github.com/freechipsproject/chisel-cheatsheet/releases/latest/download/chisel_cheatsheet.pdf), a 2-page reference of the base Chisel syntax and libraries
 * [**ScalaDoc (latest)**](https://www.chisel-lang.org/api/latest/index.html), a listing, description, and examples of the functionality exposed by Chisel, [older versions](https://www.chisel-lang.org/api/) are also available
 * [**Gitter**](https://gitter.im/freechipsproject/chisel3), where you can ask questions or discuss anything Chisel
-* [**Website (3.6 and earlier)**](https://www.chisel-lang.org) ([source](https://github.com/freechipsproject/www.chisel-lang.org/))
-* [**Website (main)**](https://chipsalliance.github.io/chisel) ([source](website)) (Note that this will replace the above after the Chisel 5 release)
-* [**Scastie (v5.1.0)**](https://scastie.scala-lang.org/FfHRZUF4QuiD7PHTQoWINQ) - cannot generate Verilog (firtool does not work in Scastie)
+* [**Website**](https://www.chisel-lang.org) ([source](website))
+* [**Scastie (v6.0.0)**](https://scastie.scala-lang.org/CsDO7Q3TQHmBWJfKEB85Tw) - cannot generate Verilog (firtool does not work in Scastie)
 * [**Scastie (v3.6.0)**](https://scastie.scala-lang.org/1XICrlaZQs6ZvxpuKdFdDw) - generates Verilog with legacy Scala FIRRTL Compiler
 * [**asic-world**](http://www.asic-world.com/verilog/veritut.html) If you aren't familiar with verilog, this is a good tutorial.
 
@@ -279,7 +278,7 @@ Call-in info and meeting notes are available [here](https://docs.google.com/docu
 
 These are the base data types for defining circuit components:
 
-![Image](https://raw.githubusercontent.com/chipsalliance/chisel/master/docs/src/images/type_hierarchy.svg?sanitize=true)
+![Image](https://raw.githubusercontent.com/chipsalliance/chisel/main/docs/src/images/type_hierarchy.svg?sanitize=true)
 
 ## Contributor Documentation
 
@@ -293,7 +292,7 @@ The [Useful Resources](#useful-resources) for users are also helpful for contrib
 
 ### Compiling and Testing Chisel
 
-You must first install required dependencies to build Chisel locally, please see [the setup instructions](SETUP.md).
+You must first install required dependencies to build Chisel locally, please see [the installation instructions](https://www.chisel-lang.org/docs/installation).
 
 Clone and build the Chisel library:
 
@@ -304,7 +303,6 @@ sbt compile
 ```
 
 In order to run the following unit tests, you will need several tools on your `PATH`, namely
-[firtool](https://github.com/llvm/circt/releases/tag/firtool-1.43.0),
 [verilator](https://www.veripool.org/verilator/),
 [yosys](https://yosyshq.net/yosys/),
 and [espresso](https://github.com/chipsalliance/espresso).
@@ -318,9 +316,9 @@ sbt test
 
 ### Running Projects Against Local Chisel
 
-To use the development version of Chisel (`master` branch), you will need to build from source and publish locally.
+To use the development version of Chisel (`main` branch), you will need to build from source and publish locally.
 The repository version can be found by running `sbt version`.
-As of the time of writing it was: `6.0.0-M3+131-ca74d07e-SNAPSHOT`.
+As of the time of writing it was: `6.0.0+1-8d92842c-SNAPSHOT`.
 
 To publish your version of Chisel to the local Ivy (sbt's dependency manager) repository, run:
 
@@ -334,7 +332,7 @@ If you need to un-publish your local copy of Chisel, remove the directory genera
 In order to have your projects use this version of Chisel, you should update the `libraryDependencies` setting in your project's build.sbt file to use the current version, for example:
 
 ```scala
-val chiselVersion = "6.0.0-M3+131-ca74d07e-SNAPSHOT"
+val chiselVersion = "6.0.0+1-8d92842c-SNAPSHOT"
 addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full)
 libraryDependencies += "org.chipsalliance" %% "chisel" % chiselVersion
 ```
@@ -383,4 +381,4 @@ You are encouraged to do your development against the latest SNAPSHOT, but note 
 
 ### Roadmap
 
-See [Roadmap](https://github.com/chipsalliance/chisel3/blob/master/ROADMAP.md).
+See [Roadmap](ROADMAP.md).

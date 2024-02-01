@@ -45,6 +45,29 @@
   display: flex;
 }
 
+/* Make links more obvious */
+a {
+  color: blue;
+}
+a:hover {
+  color: blue;
+}
+
+/* Styling for the result of TOCInline
+ * The goal of this is to make the generated list look at similar to a Markdown list as possible
+ */
+div[class^='tableOfContentsInline'] ul {
+  padding-left: var(--ifm-list-left-padding);
+  list-style-type: revert;
+}
+
+div[class^='tableOfContentsInline'] li {
+  margin: revert;
+}
+div[class^='tableOfContentsInline'] li:not(:first-child) {
+  margin-top: var(--ifm-list-item-margin);
+}
+
 /* All header-github-link stuff borrowed with love from the docusaurus website (MIT License) configuration:
  * https://github.com/facebook/docusaurus/blob/6e8292da4cbb7a33bf4dfe21c50c02dc82514842/website/src/css/custom.css#L74
  */

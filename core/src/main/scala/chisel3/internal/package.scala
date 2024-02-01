@@ -5,25 +5,15 @@ package chisel3
 import firrtl.annotations.{IsModule, ModuleTarget}
 import chisel3.experimental.{BaseModule, SourceInfo, UnlocatableSourceInfo}
 import chisel3.reflect.DataMirror.hasProbeTypeModifier
-import chisel3.internal.firrtl.{Component, DefModule}
+import chisel3.internal.firrtl.ir.{Component, DefModule}
 import chisel3.internal.Builder.Prefix
 
 import scala.util.Try
-import scala.annotation.{implicitNotFound, nowarn}
+import scala.annotation.implicitNotFound
 import scala.collection.mutable
+import chisel3.ChiselException
 
 package object internal {
-
-  @deprecated("This function has moved to chisel3.experimental", "Chisel 3.6")
-  val prefix = chisel3.experimental.prefix
-  @deprecated("This function has moved to chisel3.experimental", "Chisel 3.6")
-  val noPrefix = chisel3.experimental.noPrefix
-
-  @deprecated("This type has moved to chisel3", "Chisel 3.6")
-  type ChiselException = chisel3.ChiselException
-
-  @deprecated("This type has moved to chisel3", "Chisel 3.6")
-  type InstanceId = chisel3.InstanceId
 
   @implicitNotFound("You are trying to access a macro-only API. Please use the @public annotation instead.")
   trait MacroGenerated
@@ -94,7 +84,7 @@ package object internal {
     // Sigil to mark views, starts with '_' to make it a legal FIRRTL target
     override def desiredName = "_$$View$$_"
 
-    private[chisel3] val fakeComponent: Component = DefModule(this, desiredName, Nil, Nil)
+    private[chisel3] val fakeComponent: Component = DefModule(this, desiredName, Nil, Nil, Nil)
   }
 
   /** Special internal object representing the parent of all views
@@ -142,6 +132,21 @@ package object internal {
     case leaf => leaf.probeInfo.nonEmpty
   }
 
+  private[chisel3] def requireCompatibleDestinationProbeColor(
+    dest:         Data,
+    errorMessage: => String = ""
+  )(
+    implicit sourceInfo: SourceInfo
+  ): Unit = {
+    val destLayer = dest.probeInfo match {
+      case Some(Data.ProbeInfo(_, Some(color))) =>
+        color
+      case _ => return
+    }
+    if (!Builder.layerStack.exists(_ == destLayer))
+      Builder.error(errorMessage)
+  }
+
   // TODO this exists in cats.Traverse, should we just use that?
   private[chisel3] implicit class ListSyntax[A](xs: List[A]) {
     def mapAccumulate[B, C](z: B)(f: (B, A) => (B, C)): (B, List[C]) = {
@@ -152,6 +157,17 @@ package object internal {
       }
       (zz, result.reverse)
     }
+  }
+
+  /** This is effectively a "LazyVal" box type, we can create the object but delay executing the argument
+    *
+    * @note This is similar to cats.Eval.later but we don't depend on Cats
+    */
+  private[chisel3] class Delayed[A](a: => A) {
+    lazy val value: A = a
+  }
+  private[chisel3] object Delayed {
+    def apply[A](a: => A): Delayed[A] = new Delayed(a)
   }
 
   /** The list of banned type alias words which will cause generation of bad FIRRTL. These are usually

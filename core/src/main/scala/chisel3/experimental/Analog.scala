@@ -2,9 +2,8 @@
 
 package chisel3.experimental
 
-import chisel3.internal.firrtl.Width
 import chisel3.internal._
-import chisel3.{ActualDirection, Bits, Data, Element, PString, Printable, RawModule, SpecifiedDirection, UInt}
+import chisel3.{ActualDirection, Bits, Data, Element, PString, Printable, RawModule, SpecifiedDirection, UInt, Width}
 
 import scala.collection.mutable
 

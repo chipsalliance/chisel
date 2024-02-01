@@ -5,13 +5,13 @@ package chisel3
 import chisel3.experimental.dataview.reify
 
 import scala.language.experimental.macros
-import chisel3.experimental.{Analog, BaseModule}
+import chisel3.experimental.{requireIsChiselType, requireIsHardware, Analog, BaseModule}
 import chisel3.experimental.{prefix, SourceInfo, UnlocatableSourceInfo}
 import chisel3.experimental.dataview.reifySingleData
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal._
 import chisel3.internal.sourceinfo._
-import chisel3.internal.firrtl._
+import chisel3.internal.firrtl.ir._
 import chisel3.properties.Property
 import chisel3.reflect.DataMirror
 import chisel3.util.simpleClassName
@@ -65,7 +65,7 @@ object SpecifiedDirection {
     val prevId = Builder.idGen.value
     val data = source // evaluate source once (passed by name)
     requireIsChiselType(data)
-    val out = if (!data.mustClone(prevId)) data else data.cloneType.asInstanceOf[T]
+    val out = if (!data.mustClone(prevId)) data else data.cloneTypeFull.asInstanceOf[T]
     out.specifiedDirection = dir(data) // Must use original data, specified direction of clone is cleared
     out
   }
@@ -582,18 +582,25 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     rec(leftType, rightType)
   }
 
-  private[chisel3] def requireVisible(): Unit = {
+  private[chisel3] def isVisible: Boolean = isVisibleFromModule && isVisibleFromWhen
+  private[chisel3] def isVisibleFromModule: Boolean = {
     val mod = topBindingOpt.flatMap(_.location)
     topBindingOpt match {
-      case Some(tb: TopBinding) if (mod == Builder.currentModule) =>
+      case Some(tb: TopBinding) if (mod == Builder.currentModule) => true
       case Some(pb: PortBinding)
-          if (mod.flatMap(Builder.retrieveParent(_, Builder.currentModule.get)) == Builder.currentModule) =>
-      case Some(pb: SecretPortBinding) => // Ignore secret to not require visibility
-      case Some(_: UnconstrainedBinding) =>
-      case _ =>
-        throwException(s"operand '$this' is not visible from the current module ${Builder.currentModule.get.name}")
+          if mod.flatMap(Builder.retrieveParent(_, Builder.currentModule.get)) == Builder.currentModule =>
+        true
+      case Some(pb: SecretPortBinding) => true // Ignore secret to not require visibility
+      case Some(_: UnconstrainedBinding) => true
+      case _ => false
     }
-    if (!MonoConnect.checkWhenVisibility(this)) {
+  }
+  private[chisel3] def isVisibleFromWhen: Boolean = MonoConnect.checkWhenVisibility(this)
+  private[chisel3] def requireVisible(): Unit = {
+    if (!isVisibleFromModule) {
+      throwException(s"operand '$this' is not visible from the current module ${Builder.currentModule.get.name}")
+    }
+    if (!isVisibleFromWhen) {
       throwException(s"operand has escaped the scope of the when in which it was constructed")
     }
   }
@@ -797,7 +804,7 @@ object Data {
   // Needed for the `implicit def toConnectableDefault`
   import scala.language.implicitConversions
 
-  private[chisel3] case class ProbeInfo(val writable: Boolean)
+  private[chisel3] case class ProbeInfo(val writable: Boolean, color: Option[layer.Layer])
 
   /** Provides :<=, :>=, :<>=, and :#= between consumer and producer of the same T <: Data */
   implicit class ConnectableDefault[T <: Data](consumer: T) extends connectable.ConnectableOperators[T](consumer)
@@ -908,7 +915,8 @@ object Data {
             thiz.elementsIterator
               .zip(that.elementsIterator)
               .map { case (thisData, thatData) => thisData === thatData }
-              .reduce(_ && _)
+              .reduceOption(_ && _) // forall but that isn't defined for Bool on Seq
+              .getOrElse(true.B)
           }
         case (thiz: Record, that: Record) =>
           if (thiz._elements.size != that._elements.size) {
@@ -932,7 +940,8 @@ object Data {
                     )
                 }
             }
-              .reduce(_ && _)
+              .reduceOption(_ && _) // forall but that isn't defined for Bool on Seq
+              .getOrElse(true.B)
           }
         // This should be matching to (DontCare, DontCare) but the compiler wasn't happy with that
         case (_: DontCare.type, _: DontCare.type) => true.B

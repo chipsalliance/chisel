@@ -3,7 +3,6 @@
 package chiselTests.properties
 
 import chisel3._
-import chisel3.experimental.FlatIO
 import chisel3.properties.{Class, Path, Property, PropertyType}
 import chiselTests.{ChiselFlatSpec, MatchesAndOmits}
 import circt.stage.ChiselStage
@@ -607,5 +606,15 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
     matchesAndOmits(chirrtl)(
       "propassign flatModule.prop.int, Integer(1)"
     )()
+  }
+
+  it should "support isLit" in {
+    ChiselStage.emitCHIRRTL(new RawModule {
+      val port = IO(Input(Property[Int]()))
+      val lit = Property(1)
+
+      port.isLit shouldBe false
+      lit.isLit shouldBe true
+    })
   }
 }

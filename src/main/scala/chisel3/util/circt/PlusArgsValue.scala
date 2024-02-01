@@ -5,7 +5,7 @@ package chisel3.util.circt
 import scala.language.reflectiveCalls
 
 import chisel3._
-import chisel3.experimental.{FlatIO, IntrinsicModule}
+import chisel3.experimental.IntrinsicModule
 import chisel3.internal.Builder
 
 import circt.Intrinsic

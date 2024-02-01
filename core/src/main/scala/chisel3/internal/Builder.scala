@@ -6,9 +6,10 @@ import scala.util.DynamicVariable
 import scala.collection.mutable.ArrayBuffer
 import chisel3._
 import chisel3.experimental._
-import chisel3.experimental.hierarchy.core.{Clone, ImportDefinitionAnnotation, Instance}
+import chisel3.experimental.hierarchy.core.{Clone, Definition, ImportDefinitionAnnotation, Instance}
 import chisel3.properties.Class
-import chisel3.internal.firrtl._
+import chisel3.internal.firrtl.ir._
+import chisel3.internal.firrtl.Converter
 import chisel3.internal.naming._
 import _root_.firrtl.annotations.{CircuitName, ComponentName, IsMember, ModuleName, Named, ReferenceTarget}
 import _root_.firrtl.annotations.AnnotationUtils.validComponentName
@@ -24,6 +25,7 @@ import scala.collection.mutable
 import scala.annotation.tailrec
 import java.io.File
 import scala.util.control.NonFatal
+import chisel3.ChiselException
 
 private[chisel3] class Namespace(keywords: Set[String], separator: Char = '_') {
   // This HashMap is compressed, not every name in the namespace is present here.
@@ -342,8 +344,7 @@ private[chisel3] trait HasId extends chisel3.InstanceId {
     case Some(p)          => p.name
     case None             => throwException(s"$instanceName doesn't have a parent")
   }
-  // TODO Should this be public?
-  protected def circuitName: String = _parent match {
+  def circuitName: String = _parent match {
     case None =>
       _circuit match {
         case None    => instanceName
@@ -449,7 +450,9 @@ private[chisel3] class DynamicContext(
   val throwOnFirstError: Boolean,
   val warningFilters:    Seq[WarningFilter],
   val sourceRoots:       Seq[File],
-  val defaultNamespace:  Option[Namespace] = None) {
+  val defaultNamespace:  Option[Namespace],
+  // Definitions from other scopes in the same elaboration, use allDefinitions below
+  val outerScopeDefinitions: List[Iterable[Definition[_]]]) {
   val importedDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
 
   // Map from proto module name to ext-module name
@@ -500,6 +503,7 @@ private[chisel3] class DynamicContext(
   }
 
   val components = ArrayBuffer[Component]()
+  val definitions = ArrayBuffer[Definition[_]]()
   val annotations = ArrayBuffer[ChiselAnnotation]()
   val newAnnotations = ArrayBuffer[ChiselMultiAnnotation]()
   val layers = mutable.LinkedHashSet[layer.Layer]()
@@ -520,10 +524,13 @@ private[chisel3] class DynamicContext(
   // Used to distinguish between no Module() wrapping, multiple wrappings, and rewrapping
   var readyForModuleConstr: Boolean = false
   var whenStack:            List[WhenContext] = Nil
-  var currentClock:         Option[Clock] = None
-  var currentReset:         Option[Reset] = None
-  var currentDisable:       Disable.Type = Disable.BeforeReset
-  var layerStack:           List[layer.Layer] = layer.Layer.root :: Nil
+  // Clock and Reset are "Delayed" because ImplicitClock and ImplicitReset need to set these values,
+  // But the clock or reset defined by the user won't yet be initialized
+  var currentClock:   Option[Delayed[Clock]] = None
+  var currentReset:   Option[Delayed[Reset]] = None
+  var currentDisable: Disable.Type = Disable.BeforeReset
+  var enabledLayers:  mutable.LinkedHashSet[layer.Layer] = mutable.LinkedHashSet.empty
+  var layerStack:     List[layer.Layer] = layer.Layer.root :: Nil
   val errors = new ErrorLog(warningFilters, sourceRoots, throwOnFirstError)
   val namingStack = new NamingStack
 
@@ -542,6 +549,9 @@ private[chisel3] object Builder extends LazyLogging {
     require(dynamicContextVar.value.isDefined, "must be inside Builder context")
     dynamicContextVar.value.get
   }
+
+  /** Check if we are in a Builder context */
+  def inContext: Boolean = dynamicContextVar.value.isDefined
 
   // Used to suppress warnings when casting from a UInt to an Enum
   var suppressEnumCastWarning: Boolean = false
@@ -581,6 +591,11 @@ private[chisel3] object Builder extends LazyLogging {
     dynamicContext.aliasMap
 
   def components:  ArrayBuffer[Component] = dynamicContext.components
+  def definitions: ArrayBuffer[Definition[_]] = dynamicContext.definitions
+
+  /** All definitions from current elaboration, including Definitions passed as an argument to this one */
+  def allDefinitions: List[Iterable[Definition[_]]] = definitions :: dynamicContext.outerScopeDefinitions
+
   def annotations: ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
 
   def layers:  mutable.LinkedHashSet[layer.Layer] = dynamicContext.layers
@@ -780,19 +795,46 @@ private[chisel3] object Builder extends LazyLogging {
 
   def currentWhen: Option[WhenContext] = dynamicContext.whenStack.headOption
 
-  def currentClock: Option[Clock] = dynamicContext.currentClock
-  def currentClock_=(newClock: Option[Clock]): Unit = {
+  // Helper for reasonable errors when clock or reset value not yet initialized
+  private def getDelayed[A](field: String, dc: Delayed[A]): A = {
+    val result = dc.value
+    if (result == null) {
+      // TODO add SourceInfo and change to Builder.exception
+      throwException(
+        s"The implicit $field is null which means the code that sets its definition has not yet executed."
+      )
+    }
+    result
+  }
+
+  /** Safely get the current Clock for use */
+  def currentClock: Option[Clock] =
+    dynamicContext.currentClock.map(d => getDelayed("clock", d))
+
+  /** Get the underlying box around current Clock, only used for saving the value */
+  def currentClockDelayed: Option[Delayed[Clock]] = dynamicContext.currentClock
+  def currentClock_=(newClock: Option[Delayed[Clock]]): Unit = {
     dynamicContext.currentClock = newClock
   }
 
-  def currentReset: Option[Reset] = dynamicContext.currentReset
-  def currentReset_=(newReset: Option[Reset]): Unit = {
+  /** Safely get the current Reset for use */
+  def currentReset: Option[Reset] =
+    dynamicContext.currentReset.map(d => getDelayed("reset", d))
+
+  /** Get the underlying box around current Reset, only used for saving the value */
+  def currentResetDelayed: Option[Delayed[Reset]] = dynamicContext.currentReset
+  def currentReset_=(newReset: Option[Delayed[Reset]]): Unit = {
     dynamicContext.currentReset = newReset
   }
 
   def currentDisable: Disable.Type = dynamicContext.currentDisable
   def currentDisable_=(newDisable: Disable.Type): Unit = {
     dynamicContext.currentDisable = newDisable
+  }
+
+  def enabledLayers: mutable.LinkedHashSet[layer.Layer] = dynamicContext.enabledLayers
+  def enabledLayers_=(s: mutable.LinkedHashSet[layer.Layer]): Unit = {
+    dynamicContext.enabledLayers = s
   }
 
   def layerStack: List[layer.Layer] = dynamicContext.layerStack
@@ -807,9 +849,11 @@ private[chisel3] object Builder extends LazyLogging {
   }
 
   def forcedClock: Clock = currentClock.getOrElse(
+    // TODO add implicit clock change to Builder.exception
     throwException("Error: No implicit clock.")
   )
   def forcedReset: Reset = currentReset.getOrElse(
+    // TODO add implicit clock change to Builder.exception
     throwException("Error: No implicit reset.")
   )
 

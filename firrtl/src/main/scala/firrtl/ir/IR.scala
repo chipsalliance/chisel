@@ -539,8 +539,9 @@ object GroundType {
 }
 abstract class AggregateType extends Type
 
-case class ProbeType(underlying: Type) extends Type with UseSerializer
-case class RWProbeType(underlying: Type) extends Type with UseSerializer
+final case class ProbeType(underlying: Type, color: Option[String] = None) extends Type with UseSerializer
+
+final case class RWProbeType(underlying: Type, color: Option[String] = None) extends Type with UseSerializer
 
 case class ConstType(underlying: Type) extends Type with UseSerializer
 
@@ -633,7 +634,9 @@ abstract class DefModule extends FirrtlNode with IsDeclaration {
   *
   * An instantiable hardware block
   */
-case class Module(info: Info, name: String, ports: Seq[Port], body: Statement) extends DefModule with UseSerializer
+case class Module(info: Info, name: String, layers: Seq[String], ports: Seq[Port], body: Statement)
+    extends DefModule
+    with UseSerializer
 
 /** External Module
   *

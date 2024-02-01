@@ -4,13 +4,12 @@ package chisel3
 
 import scala.util.Try
 import scala.language.experimental.macros
-import scala.annotation.nowarn
 import chisel3.experimental.{BaseModule, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal._
 import chisel3.experimental.hierarchy.{InstanceClone, ModuleClone}
-import chisel3.properties.{DynamicObject, StaticObject}
+import chisel3.properties.{DynamicObject, Property, StaticObject}
 import chisel3.internal.Builder._
-import chisel3.internal.firrtl._
+import chisel3.internal.firrtl.ir._
 import _root_.firrtl.annotations.{IsModule, ModuleTarget}
 import scala.collection.immutable.VectorBuilder
 import scala.collection.mutable.ArrayBuffer
@@ -19,7 +18,6 @@ import scala.collection.mutable.ArrayBuffer
   * This abstract base class is a user-defined module which does not include implicit clock and reset and supports
   * multiple IO() declarations.
   */
-@nowarn("msg=class Port") // delete when Port becomes private
 abstract class RawModule extends BaseModule {
 
   /** Hook to invoke hardware generators after the rest of the Module is constructed.
@@ -102,7 +100,7 @@ abstract class RawModule extends BaseModule {
   //
   // Other Internal Functions
   //
-  private var _firrtlPorts: Option[Seq[firrtl.Port]] = None
+  private var _firrtlPorts: Option[Seq[Port]] = None
 
   private[chisel3] def checkPorts(): Unit = {
     for ((port, source) <- getModulePortsAndLocators) {
@@ -132,8 +130,10 @@ abstract class RawModule extends BaseModule {
     case id: DynamicObject => {
       // Force name of the DynamicObject, and set its Property[ClassType] type's ref to the DynamicObject.
       // The type's ref can't be set upon instantiation, because the DynamicObject hasn't been named yet.
+      // This also updates the source Class ref to the DynamicObject ref now that it's named.
       id.forceName(default = "_object", _namespace)
       id.getReference.setRef(id.getRef)
+      id.setSourceClassRef()
     }
     case id: StaticObject => {
       // Set the StaticObject's ref and Property[ClassType] type's ref to the BaseModule for the Class.
@@ -192,7 +192,7 @@ abstract class RawModule extends BaseModule {
 
     // Generate IO invalidation commands to initialize outputs as unused,
     //  unless the client wants explicit control over their generation.
-    val component = DefModule(this, name, firrtlPorts, _commands.result())
+    val component = DefModule(this, name, Builder.enabledLayers.toSeq, firrtlPorts, _commands.result())
 
     // Secret connections can be staged if user bored into children modules
     component.secretCommands ++= stagedSecretCommands
@@ -207,7 +207,11 @@ abstract class RawModule extends BaseModule {
       case (true, false) if left.probeInfo.get.writable => ProbeDefine(si, left.lref, RWProbeExpr(Node(right)))
       case (true, false)                                => ProbeDefine(si, left.lref, ProbeExpr(Node(right)))
       case (false, true)                                => Connect(si, left.lref, ProbeRead(Node(right)))
-      case (false, false)                               => Connect(si, left.lref, Node(right))
+      case (false, false) =>
+        (left, right) match {
+          case (_: Property[_], _: Property[_]) => PropAssign(si, left.lref, Node(right))
+          case (_, _) => Connect(si, left.lref, Node(right))
+        }
     }
     val secretCommands = if (_closed) {
       _component.get.asInstanceOf[DefModule].secretCommands

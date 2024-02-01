@@ -6,8 +6,8 @@ import scala.language.experimental.macros
 
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
-import chisel3.internal.firrtl._
-import chisel3.experimental.SourceInfo
+import chisel3.internal.firrtl.ir._
+import chisel3.experimental.{requireIsChiselType, requireIsHardware, SourceInfo}
 import chisel3.internal.sourceinfo.SourceInfoTransform
 
 /** Utility for constructing hardware registers
@@ -42,7 +42,7 @@ object Reg {
     if (t.isConst) Builder.error("Cannot create register with constant value.")(sourceInfo)
     requireNoProbeTypeModifier(t, "Cannot make a register of a Chisel type with a probe modifier.")
     val reg = if (!t.mustClone(prevId)) t else t.cloneTypeFull
-    val clock = Node(Builder.forcedClock)
+    val clock = Builder.forcedClock.ref
 
     reg.bind(RegBinding(Builder.forcedUserModule, Builder.currentWhen))
     pushCommand(DefReg(sourceInfo, reg, clock))

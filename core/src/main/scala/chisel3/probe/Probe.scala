@@ -4,8 +4,8 @@ package chisel3.probe
 
 import chisel3._
 import chisel3.Data.ProbeInfo
-import chisel3.experimental.SourceInfo
-import chisel3.internal.{containsProbe, requireIsChiselType, requireNoProbeTypeModifier, Builder}
+import chisel3.experimental.{requireIsChiselType, SourceInfo}
+import chisel3.internal.{containsProbe, requireNoProbeTypeModifier, Builder}
 
 import scala.language.experimental.macros
 
@@ -14,7 +14,13 @@ import scala.language.experimental.macros
   */
 private[chisel3] sealed trait ProbeBase {
 
-  protected def apply[T <: Data](source: => T, writable: Boolean)(implicit sourceInfo: SourceInfo): T = {
+  protected def apply[T <: Data](
+    source:   => T,
+    writable: Boolean,
+    color:    Option[layer.Layer]
+  )(
+    implicit sourceInfo: SourceInfo
+  ): T = {
     val prevId = Builder.idGen.value
     // call Output() to coerce passivity
     val data = Output(source) // should only evaluate source once
@@ -29,8 +35,17 @@ private[chisel3] sealed trait ProbeBase {
     // https://github.com/chipsalliance/chisel/issues/3609
 
     val ret: T = if (!data.mustClone(prevId)) data else data.cloneType.asInstanceOf[T]
-    setProbeModifier(ret, Some(ProbeInfo(writable)))
+    setProbeModifier(ret, Some(ProbeInfo(writable, color)))
     ret
+  }
+
+  protected def apply[T <: Data](
+    source:   => T,
+    writable: Boolean
+  )(
+    implicit sourceInfo: SourceInfo
+  ): T = {
+    apply(source, writable, None)
   }
 }
 
@@ -40,8 +55,16 @@ object Probe extends ProbeBase with SourceInfoDoc {
     */
   def apply[T <: Data](source: => T): T = macro chisel3.internal.sourceinfo.ProbeTransform.sourceApply[T]
 
+  def apply[T <: Data](source: => T, color: layer.Layer): T =
+    macro chisel3.internal.sourceinfo.ProbeTransform.sourceApplyWithColor[T]
+
   /** @group SourceInfoTransformMacro */
-  def do_apply[T <: Data](source: => T)(implicit sourceInfo: SourceInfo): T = super.apply(source, false)
+  def do_apply[T <: Data](source: => T)(implicit sourceInfo: SourceInfo): T =
+    super.apply(source, false, None)
+
+  /** @group SourceInfoTransformMacro */
+  def do_apply[T <: Data](source: => T, color: Option[layer.Layer])(implicit sourceInfo: SourceInfo): T =
+    super.apply(source, false, color)
 }
 
 object RWProbe extends ProbeBase with SourceInfoDoc {

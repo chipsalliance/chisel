@@ -1,11 +1,11 @@
 import mill._
 import mill.scalalib._
-import mill.scalalib.TestModule._
 import mill.scalalib.publish._
 import mill.scalalib.scalafmt._
-import coursier.maven.MavenRepository
+import mill.define.Cross
 import mill.scalalib.api.ZincWorkerUtil.matchingVersions
 import $file.common
+import $file.tests
 
 object v {
   val pluginScalaCrossVersions = Seq(
@@ -65,7 +65,7 @@ trait Svsim
 object firrtlut extends Cross[FirrtlUnitTest](v.scalaCrossVersions)
 
 trait FirrtlUnitTest
-  extends common.FirrtlUnitTestModule
+  extends tests.FirrtlUnitTestModule
     with CrossModuleBase
     with ScalafmtModule {
   override def millSourcePath = firrtl(crossScalaVersion).millSourcePath
@@ -185,7 +185,7 @@ trait Chisel
 object chiselut extends Cross[ChiselUnitTest](v.scalaCrossVersions)
 
 trait ChiselUnitTest
-  extends common.ChiselUnitTestModule
+  extends tests.ChiselUnitTestModule
     with CrossModuleBase
     with ScalafmtModule {
   override def millSourcePath = chisel(crossScalaVersion).millSourcePath
@@ -231,43 +231,76 @@ trait ChiselPublishModule extends PublishModule {
   def publishVersion = "5.0-SNAPSHOT"
 }
 
-object circtpanamabinder extends Cross[CIRCTPanamaBinder](v.scalaCrossVersions)
+object circtpanamabinding extends CIRCTPanamaBinding
 
-trait CIRCTPanamaBinder
-  extends common.CIRCTPanamaBinderModule
-    with ChiselPublishModule
-    with CrossSbtModule
-    with ScalafmtModule {
-  def millSourcePath = super.millSourcePath / os.up / "binder"
+trait CIRCTPanamaBinding
+  extends common.CIRCTPanamaBindingModule
+    with ChiselPublishModule {
 
   def header = T(PathRef(millSourcePath / "jextract-headers.h"))
 
-  def circtInstallPath = T.input(os.Path(T.ctx.env.get("CIRCT_INSTALL_PATH").getOrElse("/usr/local")))
+  def circtInstallPath = T.input(os.Path(T.ctx().env.get("CIRCT_INSTALL_PATH").getOrElse("/usr/local")))
 
   def includePaths = T(Seq(PathRef(circtInstallPath() / "include")))
 
   def libraryPaths = T(Seq(PathRef(circtInstallPath() / "lib")))
+}
+
+object panamalib extends Cross[PanamaLib](v.scalaCrossVersions)
+
+trait PanamaLib
+  extends common.PanamaLibModule
+    with CrossModuleBase
+    with ChiselPublishModule
+    with ScalafmtModule {
+  def circtPanamaBindingModule = circtpanamabinding
+}
+
+object panamaom extends Cross[PanamaOM](v.scalaCrossVersions)
+
+trait PanamaOM
+  extends common.PanamaOMModule
+    with CrossModuleBase
+    with ChiselPublishModule
+    with ScalafmtModule {
+  def panamaLibModule = panamalib(crossScalaVersion)
+}
+
+object panamaconverter extends Cross[PanamaConverter](v.scalaCrossVersions)
+
+trait PanamaConverter
+  extends common.PanamaConverterModule
+    with CrossModuleBase
+    with ChiselPublishModule
+    with ScalafmtModule {
+  def panamaOMModule = panamaom(crossScalaVersion)
 
   def chiselModule = chisel(crossScalaVersion)
 
   def pluginModule = plugin(crossScalaVersion)
 }
 
-object bindertest extends Cross[CIRCTPanamaBinderModuleTest](v.scalaCrossVersions)
+object litutility extends Cross[LitUtility](v.scalaCrossVersions)
 
-trait CIRCTPanamaBinderModuleTest
-  extends common.CIRCTPanamaBinderModuleTestModule
+trait LitUtility
+  extends tests.LitUtilityModule
     with CrossModuleBase
     with ScalafmtModule {
-  override def millSourcePath = circtpanamabinder(crossScalaVersion).millSourcePath
+  def millSourcePath = super.millSourcePath / os.up / "lit" / "utility"
+  def panamaConverterModule = panamaconverter(crossScalaVersion)
+  def panamaOMModule = panamaom(crossScalaVersion)
+}
 
-  def circtPanamaBinderModule = circtpanamabinder(crossScalaVersion)
+object lit extends Cross[Lit](v.scalaCrossVersions)
 
-  def scalatestIvy = v.scalatest
-
-  def scalacheckIvy = v.scalacheck
-
-  override def sources = T.sources {
-    Seq(PathRef(millSourcePath / "src" / "test"))
-  }
+trait Lit
+  extends tests.LitModule
+    with Cross.Module[String] {
+  def scalaVersion: T[String] = crossValue
+  def runClasspath: T[Seq[os.Path]] = T(litutility(crossValue).runClasspath().map(_.path))
+  def pluginJars: T[Seq[os.Path]] = T(Seq(litutility(crossValue).panamaConverterModule.pluginModule.jar().path))
+  def javaLibraryPath: T[Seq[os.Path]] = T(litutility(crossValue).panamaConverterModule.circtPanamaBindingModule.libraryPaths().map(_.path))
+  def javaHome: T[os.Path] = T(os.Path(sys.props("java.home")))
+  def chiselLitDir: T[os.Path] = T(millSourcePath)
+  def litConfigIn: T[PathRef] = T.source(millSourcePath / "tests" / "lit.site.cfg.py.in")
 }

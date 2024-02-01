@@ -15,7 +15,7 @@ object Serializer {
   val Indent = "  "
 
   // The version supported by the serializer.
-  val version = Version(3, 3, 0)
+  val version = Version(4, 0, 0)
 
   /** Converts a `FirrtlNode` into its string representation with
     * default indentation.
@@ -230,7 +230,7 @@ object Serializer {
             indent -= 1
           case LayerBlockBegin(info, layer) =>
             doIndent()
-            b ++= s"group $layer :"; s(info)
+            b ++= s"layerblock $layer :"; s(info)
             indent += 1
           case LayerBlockEnd =>
             indent -= 1
@@ -387,8 +387,16 @@ object Serializer {
 
   private def s(node: Type, lastEmittedConst: Boolean)(implicit b: StringBuilder, indent: Int): Unit = node match {
     // Types
-    case ProbeType(underlying: Type) => b ++= "Probe<"; s(underlying); b += '>'
-    case RWProbeType(underlying: Type) => b ++= "RWProbe<"; s(underlying); b += '>'
+    case a: ProbeType =>
+      b ++= "Probe<"
+      s(a.underlying)
+      a.color.foreach { layer => b ++= s", $layer" }
+      b += '>'
+    case a: RWProbeType =>
+      b ++= "RWProbe<"
+      s(a.underlying)
+      a.color.foreach { layer => b ++= s", $layer" }
+      b += '>'
     case ConstType(underlying: Type) => {
       // Avoid emitting multiple consecurive 'const', which can otherwise occur for const vectors of const elements
       if (!lastEmittedConst) {
@@ -439,10 +447,12 @@ object Serializer {
   }
 
   private def sIt(node: DefModule)(implicit indent: Int): Iterator[String] = node match {
-    case Module(info, name, ports, body) =>
+    case Module(info, name, layers, ports, body) =>
       val start = {
         implicit val b = new StringBuilder
-        doIndent(0); b ++= "module "; b ++= legalize(name); b ++= " :"; s(info)
+        doIndent(0); b ++= "module "; b ++= legalize(name);
+        layers.foreach(l => b ++= s" enablelayer $l")
+        b ++= " :"; s(info)
         ports.foreach { p => newLineAndIndent(1); s(p) }
         newLineNoIndent() // add a blank line between port declaration and body
         newLineNoIndent() // newline for body, sIt will indent
@@ -517,7 +527,7 @@ object Serializer {
     val layers = if (circuit.layers.nonEmpty) {
       implicit val b = new StringBuilder
       def layerIt(layer: Layer)(implicit indent: Int): Unit = {
-        b ++= s"${NewLine}"; doIndent(); b ++= s"declgroup ${layer.name}, ${layer.convention} :"
+        b ++= s"${NewLine}"; doIndent(); b ++= s"layer ${layer.name}, ${layer.convention} :"
         s(layer.info)
         layer.body.foreach(layerIt(_)(indent + 1))
       }

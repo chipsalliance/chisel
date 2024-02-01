@@ -21,6 +21,7 @@ class FirrtlOptionsViewSpec extends AnyFlatSpec with Matchers {
         ir.NoInfo,
         main,
         Seq.empty,
+        Seq.empty,
         ir.Block(
           ir.DefNode(
             ir.NoInfo,

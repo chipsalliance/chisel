@@ -15,7 +15,7 @@ on:
 jobs:
   cd-circt:
     name: 'Check Version, Create PR'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: 'circt/update-circt'
         uses: circt/update-circt@v1.0.0

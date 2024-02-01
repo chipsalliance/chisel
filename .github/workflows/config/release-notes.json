@@ -56,6 +56,16 @@
         "pattern": "<!--.*-->",
         "flags": "gus",
         "target": ""
+      },
+      {
+        "pattern": "\n\\s*\n",
+        "flags": "gu",
+        "target": "\n"
+      },
+      {
+        "pattern": "\n",
+        "flags": "gu",
+        "target": "\n  "
       }
     ],
     "custom_placeholders": [
@@ -65,12 +75,12 @@
         "transformer": {
           "pattern": ".*#### Release Notes(?:[\n\\s]|(?:<!--.*?-->))*((?:\\S(?!!--)).*?)[\n\\s]*\n#.*",
           "flags": "gus",
-          "target": "\n  $1"
+          "target": "\n$1"
         }
       }
     ],
     "trim_values": false,
     "max_tags_to_fetch": 200,
-    "max_pull_requests": 500,
+    "max_pull_requests": 1000,
     "max_back_track_time_days": 365
 }

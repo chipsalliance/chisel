@@ -1,7 +1,3 @@
----
-sidebar_position: 4
----
-
 # Developer Documentation
 
 Tips and tricks for Chisel developers:

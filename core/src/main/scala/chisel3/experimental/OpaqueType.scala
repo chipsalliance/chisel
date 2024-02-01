@@ -4,7 +4,7 @@ package chisel3.experimental
 
 import chisel3._
 import chisel3.internal.{Builder, ChildBinding}
-import chisel3.internal.firrtl.Arg
+import chisel3.internal.firrtl.ir.Arg
 
 /** Indicates if this Record represents an "Opaque Type"
   *

@@ -5,7 +5,7 @@ package chisel3.aop
 import chisel3._
 import chisel3.internal.{HasId, PseudoModule}
 import chisel3.experimental.BaseModule
-import chisel3.internal.firrtl.{Definition => DefinitionIR, _}
+import chisel3.internal.firrtl.ir.{Definition => DefinitionIR, _}
 import chisel3.experimental.hierarchy.core._
 import chisel3.experimental.hierarchy.ModuleClone
 import chisel3.reflect.DataMirror
@@ -436,7 +436,7 @@ object Select {
       module,
       (cmd: Command, preds: Seq[Predicate]) => {
         cmd match {
-          case chisel3.internal.firrtl.Stop(_, _, clock, ret) =>
+          case chisel3.internal.firrtl.ir.Stop(_, _, clock, ret) =>
             stops += Stop(preds, ret, getId(clock).asInstanceOf[Clock])
           case other =>
         }
@@ -455,7 +455,7 @@ object Select {
       module,
       (cmd: Command, preds: Seq[Predicate]) => {
         cmd match {
-          case chisel3.internal.firrtl.Printf(id, _, clock, pable) =>
+          case chisel3.internal.firrtl.ir.Printf(id, _, clock, pable) =>
             printfs += Printf(id, preds, pable, getId(clock).asInstanceOf[Clock])
           case other =>
         }

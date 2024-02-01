@@ -18,14 +18,14 @@ on:
 jobs:
   generate_release_notes:
     name: Generate Release Notes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Build Release Notes
         id: release-notes
-        uses: mikepenz/release-changelog-builder-action@v3.7.0
+        uses: mikepenz/release-changelog-builder-action@v4.1.1
         with:
           configuration: .github/workflows/config/release-notes.json
           failOnError: true

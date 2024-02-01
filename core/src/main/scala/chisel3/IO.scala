@@ -1,9 +1,9 @@
 package chisel3
 
-import chisel3.internal.requireIsChiselType // Fix ambiguous import
 import chisel3.internal.{throwException, Builder}
-import chisel3.experimental.SourceInfo
+import chisel3.experimental.{noPrefix, requireIsChiselType, SourceInfo}
 import chisel3.properties.{Class, Property}
+import chisel3.reflect.DataMirror.internal.chiselTypeClone
 
 object IO {
 
@@ -60,5 +60,57 @@ object IO {
         }
     module.bindIoInPlace(iodefClone)
     iodefClone
+  }
+}
+
+/** The same as [[IO]] except there is no prefix when given a [[Record]] or
+  * [[Bundle]].  For [[Element]] ([[UInt]], etc.) or [[Vec]] types, this is
+  * the same as [[IO]].
+  *
+  * @example {{{
+  * class MyBundle extends Bundle {
+  *   val foo = Input(UInt(8.W))
+  *   val bar = Output(UInt(8.W))
+  * }
+  * class MyModule extends Module {
+  *   val io = FlatIO(new MyBundle)
+  *   // input  [7:0] foo,
+  *   // output [7:0] bar
+  * }
+  * }}}
+  */
+object FlatIO {
+  def apply[T <: Data](gen: => T)(implicit sourceInfo: SourceInfo): T = noPrefix {
+    import chisel3.experimental.dataview._
+    def coerceDirection(d: Data) = {
+      import chisel3.{SpecifiedDirection => SD}
+      chisel3.reflect.DataMirror.specifiedDirectionOf(gen) match {
+        case SD.Flip   => Flipped(d)
+        case SD.Input  => Input(d)
+        case SD.Output => Output(d)
+        case _         => d
+      }
+    }
+
+    type R = T with Record
+    gen match {
+      case _:      Element => IO(gen)
+      case _:      Vec[_] => IO(gen)
+      case record: R =>
+        val ports: Seq[Data] =
+          record._elements.toSeq.reverse.map {
+            case (name, data) =>
+              val p = chisel3.IO(coerceDirection(chiselTypeClone(data).asInstanceOf[Data]))
+              p.suggestName(name)
+              p
+
+          }
+
+        implicit val dv: DataView[Seq[Data], R] = DataView.mapping(
+          _ => chiselTypeClone(gen).asInstanceOf[R],
+          (seq, rec) => seq.zip(rec._elements.toSeq.reverse).map { case (port, (_, field)) => port -> field }
+        )
+        ports.viewAs[R]
+    }
   }
 }

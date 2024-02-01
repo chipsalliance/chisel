@@ -17,7 +17,8 @@ import firrtl.options.Viewer.view
 import chisel3.{deprecatedMFCMessage, ChiselException, Module}
 import chisel3.RawModule
 import chisel3.internal.{Builder, WarningFilter}
-import chisel3.internal.firrtl.{Circuit, Converter}
+import chisel3.internal.firrtl.ir.Circuit
+import chisel3.internal.firrtl.Converter
 import firrtl.AnnotationSeq
 import firrtl.ir.{CircuitWithAnnos, Serializer}
 import scala.util.control.NonFatal

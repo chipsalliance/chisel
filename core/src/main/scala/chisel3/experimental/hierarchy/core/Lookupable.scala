@@ -9,7 +9,7 @@ import scala.annotation.implicitNotFound
 import scala.collection.mutable.HashMap
 import chisel3._
 import chisel3.experimental.dataview.{isView, reify, reifySingleData}
-import chisel3.internal.firrtl.{Arg, ILit, Index, ModuleIO, Slot, ULit}
+import chisel3.internal.firrtl.ir.{Arg, ILit, Index, ModuleIO, Slot, ULit}
 import chisel3.internal.{throwException, AggregateViewBinding, Builder, ChildBinding, ViewBinding, ViewParent}
 
 /** Represents lookup typeclass to determine how a value accessed from an original IsInstantiable
@@ -61,7 +61,7 @@ object Lookupable {
   )(
     implicit sourceInfo: SourceInfo
   ): T = {
-    internal.requireIsHardware(data, "cross module reference type")
+    experimental.requireIsHardware(data, "cross module reference type")
     data._parent match {
       case None => data
       case Some(parent) =>

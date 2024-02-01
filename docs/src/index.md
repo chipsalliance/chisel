@@ -1,8 +1,4 @@
----
-sidebar_position: 0
----
-
-# An Introduction to Chisel
+# Introduction
 
 _Chisel_ (Constructing
 Hardware In a Scala Embedded Language) is a hardware
@@ -17,8 +13,12 @@ reusable, you will find it important to leverage the underlying power
 of the Scala language. We recommend you consult one of the excellent
 Scala books to become more expert in Scala programming.
 
-For a tutorial covering both Chisel and Scala, see the
-[**online Chisel Bootcamp**](https://mybinder.org/v2/gh/freechipsproject/chisel-bootcamp/master).
+:::tip
+
+Use **[Scala CLI](installation.md#quickstart-with-scala-cli)** to experiment with Chisel in seconds!
+
+:::
+
 
 For quick reference "How-To" guides see the [Cookbooks](docs/cookbooks).
 

@@ -3,6 +3,8 @@
 package chiselTests.reflect
 
 import chisel3._
+import chisel3.probe.Probe
+import chisel3.properties.Property
 import chisel3.reflect.DataMirror
 import chiselTests.ChiselFlatSpec
 import circt.stage.ChiselStage
@@ -11,17 +13,28 @@ import chisel3.util.DecoupledIO
 object DataMirrorSpec {
   import org.scalatest.matchers.should.Matchers._
   class GrandChild(parent: RawModule) extends Module {
+    val internal = WireInit(false.B)
     DataMirror.getParent(this) should be(Some(parent))
+    DataMirror.isVisible(internal) should be(true)
   }
   class Child(parent: RawModule) extends Module {
     val inst = Module(new GrandChild(this))
+    val io = IO(Input(Bool()))
+    val internal = WireInit(false.B)
     DataMirror.getParent(inst) should be(Some(this))
     DataMirror.getParent(this) should be(Some(parent))
+    DataMirror.isVisible(io) should be(true)
+    DataMirror.isVisible(internal) should be(true)
+    DataMirror.isVisible(inst.internal) should be(false)
   }
   class Parent extends Module {
     val inst = Module(new Child(this))
+    inst.io := false.B
     DataMirror.getParent(inst) should be(Some(this))
     DataMirror.getParent(this) should be(None)
+    DataMirror.isVisible(inst.io) should be(true)
+    DataMirror.isVisible(inst.internal) should be(false)
+    DataMirror.isVisible(inst.inst.internal) should be(false)
   }
 }
 
@@ -113,6 +126,16 @@ class DataMirrorSpec extends ChiselFlatSpec {
     an[ExpectedHardwareException] should be thrownBy DataMirror.queryNameGuess(UInt(8.W))
   }
 
+  it should "support querying if a Data is a Property" in {
+    ChiselStage.emitCHIRRTL(new RawModule {
+      val notProperty = IO(Input(Bool()))
+      val property = IO(Input(Property[Int]()))
+
+      DataMirror.isProperty(notProperty) shouldBe false
+      DataMirror.isProperty(property) shouldBe true
+    })
+  }
+
   "chiselTypeClone" should "preserve Scala type information" in {
     class MyModule extends Module {
       val in = IO(Input(UInt(8.W)))
@@ -165,6 +188,26 @@ class DataMirrorSpec extends ChiselFlatSpec {
 
     // Check ground type.
     assert(DataMirror.isFullyAligned(UInt(8.W)))
+  }
+
+  "getLayerColor" should "return a layer color if one exists" in {
+    object A extends layer.Layer(layer.Convention.Bind)
+    class Foo extends Bundle {
+      val a = Bool()
+      val b = Probe(Bool())
+      val c = Probe(Bool(), A)
+    }
+
+    val foo = new Foo
+
+    info("a non-probe returns None")
+    DataMirror.getLayerColor(foo.a) should be(None)
+
+    info("an uncolored probe returns None")
+    DataMirror.getLayerColor(foo.b) should be(None)
+
+    info("a probe colored with A returns Some(A)")
+    DataMirror.getLayerColor(foo.c) should be(Some(A))
   }
 
 }

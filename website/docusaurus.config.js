@@ -155,6 +155,7 @@ const config = {
         theme: prismThemes.github,
         darkTheme: prismThemes.dracula,
         additionalLanguages: [
+          'bash',
           // The Scala grammar extends the java one
           // prism requires manually loading java first
           'java',

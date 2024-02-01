@@ -288,7 +288,10 @@ object BoringUtils {
     val lcaSource = drill(source, upPath.dropRight(1), upPath.dropRight(1), true)
     val sink = drill(lcaSource, downPath.reverse.tail, downPath.reverse, false)
 
-    if (createProbe.nonEmpty || DataMirror.hasProbeTypeModifier(purePortTypeBase)) {
+    if (
+      createProbe.nonEmpty || DataMirror.hasProbeTypeModifier(purePortTypeBase) ||
+      DataMirror.isProperty(purePortTypeBase)
+    ) {
       sink
     } else {
       // Creating a wire to assign the result to.  We will return this.
@@ -313,7 +316,9 @@ object BoringUtils {
     * Returns a probe Data type.
     */
   def tap[A <: Data](source: A)(implicit si: SourceInfo): A = {
-    val tapIntermediate = skipPrefix { boreOrTap(source, createProbe = Some(ProbeInfo(writable = false))) }
+    val tapIntermediate = skipPrefix {
+      boreOrTap(source, createProbe = Some(ProbeInfo(writable = false, color = None)))
+    }
     if (tapIntermediate.probeInfo.nonEmpty) {
       tapIntermediate
     } else {
@@ -328,7 +333,7 @@ object BoringUtils {
     * Returns a probe Data type.
     */
   def rwTap[A <: Data](source: A)(implicit si: SourceInfo): A = {
-    val tapIntermediate = skipPrefix { boreOrTap(source, createProbe = Some(ProbeInfo(writable = true))) }
+    val tapIntermediate = skipPrefix { boreOrTap(source, createProbe = Some(ProbeInfo(writable = true, color = None))) }
     if (tapIntermediate.probeInfo.nonEmpty) {
       tapIntermediate
     } else {
@@ -343,7 +348,9 @@ object BoringUtils {
     * Returns a non-probe Data type.
     */
   def tapAndRead[A <: Data](source: A)(implicit si: SourceInfo): A = {
-    val tapIntermediate = skipPrefix { boreOrTap(source, createProbe = Some(ProbeInfo(writable = false))) }
+    val tapIntermediate = skipPrefix {
+      boreOrTap(source, createProbe = Some(ProbeInfo(writable = false, color = None)))
+    }
     if (tapIntermediate.probeInfo.nonEmpty) {
       probe.read(tapIntermediate)
     } else {

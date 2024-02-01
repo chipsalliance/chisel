@@ -8,11 +8,11 @@ import chisel3.experimental.{NoSourceInfo, SourceInfo, SourceLine, UnlocatableSo
 import chisel3.properties.Property
 import firrtl.{ir => fir}
 import chisel3.internal.{castToInt, throwException, HasId}
+import chisel3.internal.firrtl.ir._
 import chisel3.EnumType
-import scala.annotation.{nowarn, tailrec}
+import scala.annotation.tailrec
 import scala.collection.immutable.{Queue, VectorBuilder}
 
-@nowarn("msg=class Port") // delete when Port becomes private
 private[chisel3] object Converter {
   // TODO modeled on unpack method on Printable, refactor?
   def unpack(pable: Printable, ctx: Component): (String, Seq[Arg]) = pable match {
@@ -375,9 +375,15 @@ private[chisel3] object Converter {
     // extract underlying type for probe
     case t: Data if (checkProbe && t.probeInfo.nonEmpty) =>
       if (t.probeInfo.get.writable) {
-        fir.RWProbeType(extractType(t, clearDir, info, false, checkConst, typeAliases))
+        fir.RWProbeType(
+          extractType(t, clearDir, info, false, checkConst, typeAliases),
+          t.probeInfo.get.color.map(_.fullName)
+        )
       } else {
-        fir.ProbeType(extractType(t, clearDir, info, false, checkConst, typeAliases))
+        fir.ProbeType(
+          extractType(t, clearDir, info, false, checkConst, typeAliases),
+          t.probeInfo.get.color.map(_.fullName)
+        )
       }
     // extract underlying type for const
     case t: Data if (checkConst && t.isConst) =>
@@ -450,10 +456,11 @@ private[chisel3] object Converter {
   }
 
   def convert(component: Component, typeAliases: Seq[String]): fir.DefModule = component match {
-    case ctx @ DefModule(id, name, ports, cmds) =>
+    case ctx @ DefModule(id, name, layers, ports, cmds) =>
       fir.Module(
         convert(id._getSourceLocator),
         name,
+        layers.map(_.fullName),
         (ports ++ ctx.secretPorts).map(p => convert(p, typeAliases)),
         convert(cmds ++ ctx.secretCommands, ctx, typeAliases)
       )
@@ -477,7 +484,7 @@ private[chisel3] object Converter {
       fir.DefClass(
         convert(id._getSourceLocator),
         name,
-        ports.map(p => convert(p, typeAliases)),
+        (ports ++ ctx.secretPorts).map(p => convert(p, typeAliases)),
         convert(cmds, ctx, typeAliases)
       )
   }

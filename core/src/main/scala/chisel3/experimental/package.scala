@@ -21,13 +21,6 @@ package object experimental {
   implicit def fromDoubleToDoubleParam(x: Double): DoubleParam = DoubleParam(x)
   implicit def fromStringToStringParam(x: String): StringParam = StringParam(x)
 
-  @deprecated("This type has moved to chisel3", "Chisel 3.5")
-  type ChiselEnum = chisel3.ChiselEnum
-  @deprecated("This type has moved to chisel3", "Chisel 3.5")
-  type EnumType = chisel3.EnumType
-  @deprecated("This type has moved to chisel3", "Chisel 3.5")
-  val suppressEnumCastWarning = chisel3.suppressEnumCastWarning
-
   // Rocket Chip-style clonemodule
 
   /** A record containing the results of CloneModuleAsRecord
@@ -81,43 +74,8 @@ package object experimental {
   type Direction = ActualDirection
   val Direction = ActualDirection
 
-  /** The same as [[IO]] except there is no prefix when given a [[Record]] or
-    * [[Bundle]].  For [[Element]] ([[UInt]], etc.) or [[Vec]] types, this is
-    * the same as [[IO]].
-    */
-  def FlatIO[T <: Data](gen: => T)(implicit sourceInfo: SourceInfo): T = noPrefix {
-    import dataview._
-    def coerceDirection(d: Data) = {
-      import chisel3.{SpecifiedDirection => SD}
-      chisel3.reflect.DataMirror.specifiedDirectionOf(gen) match {
-        case SD.Flip   => Flipped(d)
-        case SD.Input  => Input(d)
-        case SD.Output => Output(d)
-        case _         => d
-      }
-    }
-
-    type R = T with Record
-    gen match {
-      case _:      Element => IO(gen)
-      case _:      Vec[_] => IO(gen)
-      case record: R =>
-        val ports: Seq[Data] =
-          record._elements.toSeq.reverse.map {
-            case (name, data) =>
-              val p = chisel3.IO(coerceDirection(chiselTypeClone(data).asInstanceOf[Data]))
-              p.suggestName(name)
-              p
-
-          }
-
-        implicit val dv: DataView[Seq[Data], R] = DataView.mapping(
-          _ => chiselTypeClone(gen).asInstanceOf[R],
-          (seq, rec) => seq.zip(rec._elements.toSeq.reverse).map { case (port, (_, field)) => port -> field }
-        )
-        ports.viewAs[R]
-    }
-  }
+  @deprecated("FlatIO has moved to package chisel3", "Chisel 6.0")
+  val FlatIO = chisel3.FlatIO
 
   class dump extends chisel3.internal.naming.dump
   class treedump extends chisel3.internal.naming.treedump
@@ -523,7 +481,4 @@ package object experimental {
       "_10" -> _10
     )
   }
-
-  @deprecated("This value has moved to chisel3.reflect", "Chisel 3.6")
-  val DataMirror = chisel3.reflect.DataMirror
 }

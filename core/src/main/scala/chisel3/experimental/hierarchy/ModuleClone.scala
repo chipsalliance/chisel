@@ -4,7 +4,7 @@ package chisel3.experimental.hierarchy
 
 import chisel3.experimental.{BaseModule, SourceInfo}
 import chisel3.internal.{HasId, PseudoModule}
-import chisel3.internal.firrtl.{Component, ModuleCloneIO, Ref}
+import chisel3.internal.firrtl.ir.{Component, ModuleCloneIO, Ref}
 import chisel3.internal.{throwException, Namespace}
 import chisel3._
 
@@ -70,5 +70,11 @@ private[chisel3] class ModuleClone[T <: BaseModule](val getProto: T)(implicit si
     }
 
     this.setRef(Ref(instName))
+  }
+
+  override def suggestName(seed: => String): this.type = {
+    // Forward the suggestName to the underlying _portsRecord
+    _portsRecord.suggestName(seed)
+    this
   }
 }

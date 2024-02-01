@@ -5,7 +5,7 @@ package chisel3
 import firrtl._
 import firrtl.options.OptionsView
 
-import chisel3.internal.firrtl.{Circuit => ChiselCircuit}
+import chisel3.internal.firrtl.ir.{Circuit => ChiselCircuit}
 import chisel3.stage.CircuitSerializationAnnotation.FirrtlFileFormat
 
 import scala.annotation.nowarn

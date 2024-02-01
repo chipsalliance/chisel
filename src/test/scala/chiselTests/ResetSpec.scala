@@ -103,6 +103,34 @@ class ResetSpec extends ChiselFlatSpec with Utils {
     fir should include("input reset : AsyncReset")
   }
 
+  they should "be able to override the value of the implicit reset" in {
+    val verilog = ChiselStage.emitSystemVerilog(new Module {
+      val gate = IO(Input(Bool()))
+      val in = IO(Input(UInt(8.W)))
+      val out = IO(Output(UInt(8.W)))
+      override protected val implicitReset = reset.asBool || gate
+      val r = RegInit(0.U)
+      out := r
+      r := in
+    })
+    verilog should include("if (reset | gate)")
+  }
+
+  they should "be able to add an implicit clock to a RawModule" in {
+    val verilog = ChiselStage.emitSystemVerilog(new RawModule with ImplicitReset {
+      val foo = IO(Input(Bool()))
+      val in = IO(Input(UInt(8.W)))
+      val out = IO(Output(UInt(8.W)))
+      override protected val implicitReset = !foo
+
+      val clk = IO(Input(Clock()))
+      val r = withClock(clk)(RegInit(0.U))
+      out := r
+      r := in
+    })
+    verilog should include("if (~foo)")
+  }
+
   they should "be able to have parameterized top level reset type" in {
     class MyModule(hasAsyncNotSyncReset: Boolean) extends Module {
       override def resetType = if (hasAsyncNotSyncReset) Module.ResetType.Asynchronous else Module.ResetType.Synchronous
@@ -124,5 +152,21 @@ class ResetSpec extends ChiselFlatSpec with Utils {
         val mod = Module(new Module with RequireSyncReset)
       })
     }
+  }
+
+  it should "give a decent error message if you try to use a reset before defining it" in {
+    val e = the[ChiselException] thrownBy (
+      ChiselStage.emitCHIRRTL(
+        new RawModule with ImplicitReset {
+          val r = Module.reset
+          val foo = IO(Input(AsyncReset()))
+          override protected def implicitReset = foo
+        },
+        args = Array("--throw-on-first-error")
+      )
+    )
+    e.getMessage should include(
+      "The implicit reset is null which means the code that sets its definition has not yet executed."
+    )
   }
 }

@@ -3,7 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental._
+import chisel3.experimental.ExtModule
 import circt.stage.ChiselStage
 import chisel3.testers.{BasicTester, TesterDriver}
 import chisel3.reflect.DataMirror
@@ -11,8 +11,6 @@ import chisel3.reflect.DataMirror
 // Avoid collisions with regular BlackBox tests by putting ExtModule blackboxes
 // in their own scope.
 package extmoduletests {
-
-  import chisel3.experimental.ExtModule
 
   class BlackBoxInverter extends ExtModule {
     val in = IO(Input(Bool()))

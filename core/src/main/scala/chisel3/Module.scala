@@ -3,13 +3,13 @@
 package chisel3
 
 import scala.collection.immutable.ListMap
-import scala.collection.mutable.{ArrayBuffer, HashMap}
+import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashSet}
 import scala.language.experimental.macros
 
 import chisel3.internal._
 import chisel3.internal.Builder._
-import chisel3.internal.firrtl._
-import chisel3.experimental.{BaseModule, SourceInfo, UnlocatableSourceInfo}
+import chisel3.internal.firrtl.ir._
+import chisel3.experimental.{requireIsChiselType, BaseModule, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal.sourceinfo.{InstTransform}
 import chisel3.properties.{Class, Property}
 import chisel3.reflect.DataMirror
@@ -19,8 +19,6 @@ import chisel3.internal.plugin.autoNameRecursively
 import chisel3.util.simpleClassName
 
 object Module extends SourceInfoDoc {
-
-  import scala.annotation.nowarn
 
   /** A wrapper method that all Module instantiations must be wrapped in
     * (necessary to help Chisel track internal state).
@@ -32,7 +30,6 @@ object Module extends SourceInfoDoc {
   def apply[T <: BaseModule](bc: => T): T = macro InstTransform.apply[T]
 
   /** @group SourceInfoTransformMacro */
-  @nowarn("msg=class Port") // delete when Port becomes private
   def do_apply[T <: BaseModule](bc: => T)(implicit sourceInfo: SourceInfo): T = {
     // Instantiate the module definition.
     val module = evaluate[T](bc)
@@ -77,11 +74,15 @@ object Module extends SourceInfoDoc {
     // Save then clear clock and reset to prevent leaking scope, must be set again in the Module
     // Note that Disable is a function of whatever the current reset is, so it does not need a port
     //   and thus does not change when we cross module boundaries
-    val (saveClock, saveReset) = (Builder.currentClock, Builder.currentReset)
+    val (saveClock, saveReset) = (Builder.currentClockDelayed, Builder.currentResetDelayed)
     val savePrefix = Builder.getPrefix
     Builder.clearPrefix()
     Builder.currentClock = None
     Builder.currentReset = None
+
+    // Save the currently enabled layer.  Clear any enabled layers.
+    val saveEnabledLayers = Builder.enabledLayers
+    Builder.enabledLayers = LinkedHashSet.empty
 
     // Execute the module, this has the following side effects:
     //   - set currentModule
@@ -114,6 +115,7 @@ object Module extends SourceInfoDoc {
     Builder.currentClock = saveClock // Back to clock and reset scope
     Builder.currentReset = saveReset
     Builder.setPrefix(savePrefix)
+    Builder.enabledLayers = saveEnabledLayers
 
     module
   }
@@ -230,18 +232,20 @@ object Module extends SourceInfoDoc {
   *
   * @note Module instantiations must be wrapped in a Module() call.
   */
-abstract class Module extends RawModule {
+abstract class Module extends RawModule with ImplicitClock with ImplicitReset {
 
   /** Override this to explicitly set the type of reset you want on this module , before any reset inference */
   def resetType: Module.ResetType.Type = Module.ResetType.Default
 
   // Implicit clock and reset pins
-  final val clock: Clock = IO(Input(Clock()))(UnlocatableSourceInfo).suggestName("clock")
-  final val reset: Reset = IO(Input(mkReset))(UnlocatableSourceInfo).suggestName("reset")
+  final val clock: Clock = IO(Input(Clock()))(this._sourceInfo).suggestName("clock")
+  final val reset: Reset = IO(Input(mkReset))(this._sourceInfo).suggestName("reset")
   // TODO add a way to memoize hasBeenReset iff it is used
 
-  // TODO It's hard to remove these deprecated override methods because they're used by
-  //   Chisel.QueueCompatibility which extends chisel3.Queue which extends chisel3.Module
+  override protected def implicitClock: Clock = clock
+  override protected def implicitReset: Reset = reset
+
+  // TODO Delete these
   private var _override_clock: Option[Clock] = None
   private var _override_reset: Option[Bool] = None
   @deprecated("Use withClock at Module instantiation", "Chisel 3.5")
@@ -256,6 +260,7 @@ abstract class Module extends RawModule {
   protected def override_reset_=(rhs: Option[Bool]): Unit = {
     _override_reset = rhs
   }
+  // End TODO Delete
 
   private[chisel3] def mkReset: Reset = {
     // Top module and compatibility mode use Bool for reset
@@ -271,9 +276,6 @@ abstract class Module extends RawModule {
     }
   }
 
-  // Setup ClockAndReset
-  Builder.currentClock = Some(clock)
-  Builder.currentReset = Some(reset)
   // Note that we do no such setup for disable, it will default to hasBeenReset of the currentReset
   Builder.clearPrefix()
 
@@ -284,6 +286,62 @@ abstract class Module extends RawModule {
     clock := _override_clock.getOrElse(Builder.forcedClock)
     reset := _override_reset.getOrElse(Builder.forcedReset)
   }
+}
+
+/** Provides an implicit Clock for use _within_ the [[RawModule]]
+  *
+  * Be careful to define the Clock value before trying to use it.
+  * Due to Scala initialization order, the actual val defining the Clock must occur before any
+  * uses of the implicit Clock.
+  *
+  * @example
+  * {{{
+  * class MyModule extends RawModule with ImplicitClock {
+  *   // Define a Clock value, it need not be called "implicitClock"
+  *   val clk = IO(Input(Clock()))
+  *   // Implement the virtual method to tell Chisel about this Clock value
+  *   // Note that though this is a def, the actual Clock is assigned to a val (clk above)
+  *   override protected def implicitClock = clk
+  *   // Now we have a Clock to use in this RawModule
+  *   val reg = Reg(UInt(8.W))
+  * }
+  * }}}
+  */
+trait ImplicitClock { self: RawModule =>
+
+  /** Method that should point to the user-defined Clock */
+  protected def implicitClock: Clock
+
+  Builder.currentClock = Some(Delayed(implicitClock))
+}
+
+/** Provides an implicit Reset for use _within_ the [[RawModule]]
+  *
+  * Be careful to define the Reset value before trying to use it.
+  * Due to Scala initialization order, the actual val defining the Reset object must occur before any
+  * uses of the implicit Reset.
+  *
+  * @example
+  * {{{
+  * class MyModule extends RawModule with ImplicitReset {
+  *   // Define a Reset value, it need not be called "implicitReset"
+  *   val rst = IO(Input(AsyncReset()))
+  *   // Implement the virtual method to tell Chisel about this Reset value
+  *   // Note that though this is a def, the actual Reset is assigned to a val (rst above)
+  *   override protected def implicitReset = clk
+  *   // Now we have a Reset to use in this RawModule
+  *   // Registers also require a clock
+  *   val clock = IO(Input(Clock()))
+  *   val reg = withClock(clock)(RegInit(0.U)) // Combine with ImplicitClock to get rid of this withClock
+  * }
+  * }}}
+  */
+trait ImplicitReset { self: RawModule =>
+
+  /** Method that should point to the user-defined Reset */
+  protected def implicitReset: Reset
+
+  Builder.currentReset = Some(Delayed(implicitReset))
 }
 
 package internal {
@@ -345,15 +403,19 @@ package internal {
 package experimental {
 
   import chisel3.experimental.hierarchy.core.{IsInstantiable, Proto}
-  import scala.annotation.nowarn
 
   object BaseModule {
     implicit class BaseModuleExtensions[T <: BaseModule](b: T)(implicit si: SourceInfo) {
       import chisel3.experimental.hierarchy.core.{Definition, Instance}
       def toInstance: Instance[T] = new Instance(Proto(b))
       def toDefinition: Definition[T] = {
+        val result = new Definition(Proto(b))
+        // .toDefinition is sometimes called in Select APIs outside of Chisel elaboration
+        if (Builder.inContext) {
+          Builder.definitions += result
+        }
         b.toDefinitionCalled = Some(si)
-        new Definition(Proto(b))
+        result
       }
     }
   }
@@ -361,7 +423,6 @@ package experimental {
   /** Abstract base class for Modules, an instantiable organizational unit for RTL.
     */
   // TODO: seal this?
-  @nowarn("msg=class Port") // delete when Port becomes private
   abstract class BaseModule extends HasId with IsInstantiable {
     _parent.foreach(_.addId(this))
 
@@ -719,7 +780,7 @@ package experimental {
     // data must be a fresh Chisel type
     private[chisel3] def createSecretIO[A <: Data](data: => A)(implicit sourceInfo: SourceInfo): A = {
       val iodef = data
-      internal.requireIsChiselType(iodef, "io type")
+      requireIsChiselType(iodef, "io type")
       require(!isFullyClosed, "Cannot create secret ports if module is fully closed")
 
       Module.assignCompatDir(iodef)

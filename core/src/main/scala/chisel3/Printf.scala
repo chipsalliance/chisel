@@ -162,7 +162,7 @@ object printf {
 
     Printable.checkScope(pable)
 
-    pushCommand(chisel3.internal.firrtl.Printf(printfId, sourceInfo, clock.ref, pable))
+    pushCommand(chisel3.internal.firrtl.ir.Printf(printfId, sourceInfo, clock.ref, pable))
     printfId
   }
   private[chisel3] def printfWithoutReset(
