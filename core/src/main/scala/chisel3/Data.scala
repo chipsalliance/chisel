@@ -604,8 +604,12 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       case _ =>
         throwException(s"operand '$this' is not visible from the current module")
     }
-    if (!MonoConnect.checkWhenVisibility(this)) {
-      throwException(s"operand has escaped the scope of the when in which it was constructed")
+    MonoConnect.checkWhenVisibility(this) match {
+      case Some(sourceInfo) =>
+        throwException(
+          s"operand '$this' has escaped the scope of the when (${sourceInfo.makeMessage(x => x)}) in which it was constructed."
+        )
+      case None => ()
     }
   }
 
