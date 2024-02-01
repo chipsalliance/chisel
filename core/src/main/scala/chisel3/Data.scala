@@ -601,12 +601,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     rec(leftType, rightType)
   }
 
-<<<<<<< HEAD
   private[chisel3] def requireVisible(): Unit = {
-=======
-  private[chisel3] def isVisible: Boolean = isVisibleFromModule && visibleFromWhen.isEmpty
-  private[chisel3] def isVisibleFromModule: Boolean = {
->>>>>>> d21a66358 (Report source locator in when scoping error messages (#3804))
     val mod = topBindingOpt.flatMap(_.location)
     topBindingOpt match {
       case Some(tb: TopBinding) if (mod == Builder.currentModule) =>
@@ -616,23 +611,12 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       case _ =>
         throwException(s"operand '$this' is not visible from the current module")
     }
-<<<<<<< HEAD
-    if (!MonoConnect.checkWhenVisibility(this)) {
-      throwException(s"operand has escaped the scope of the when in which it was constructed")
-=======
-  }
-  private[chisel3] def visibleFromWhen: Option[SourceInfo] = MonoConnect.checkWhenVisibility(this)
-  private[chisel3] def requireVisible(): Unit = {
-    if (!isVisibleFromModule) {
-      throwException(s"operand '$this' is not visible from the current module ${Builder.currentModule.get.name}")
-    }
-    visibleFromWhen match {
+    MonoConnect.checkWhenVisibility(this) match {
       case Some(sourceInfo) =>
         throwException(
           s"operand '$this' has escaped the scope of the when (${sourceInfo.makeMessage(x => x)}) in which it was constructed."
         )
       case None => ()
->>>>>>> d21a66358 (Report source locator in when scoping error messages (#3804))
     }
   }
 
