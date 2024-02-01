@@ -582,7 +582,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     rec(leftType, rightType)
   }
 
-  private[chisel3] def isVisible: Boolean = isVisibleFromModule && isVisibleFromWhen
+  private[chisel3] def isVisible: Boolean = isVisibleFromModule && visibleFromWhen.isEmpty
   private[chisel3] def isVisibleFromModule: Boolean = {
     val mod = topBindingOpt.flatMap(_.location)
     topBindingOpt match {
@@ -595,13 +595,17 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       case _ => false
     }
   }
-  private[chisel3] def isVisibleFromWhen: Boolean = MonoConnect.checkWhenVisibility(this)
+  private[chisel3] def visibleFromWhen: Option[SourceInfo] = MonoConnect.checkWhenVisibility(this)
   private[chisel3] def requireVisible(): Unit = {
     if (!isVisibleFromModule) {
       throwException(s"operand '$this' is not visible from the current module ${Builder.currentModule.get.name}")
     }
-    if (!isVisibleFromWhen) {
-      throwException(s"operand has escaped the scope of the when in which it was constructed")
+    visibleFromWhen match {
+      case Some(sourceInfo) =>
+        throwException(
+          s"operand '$this' has escaped the scope of the when (${sourceInfo.makeMessage(x => x)}) in which it was constructed."
+        )
+      case None => ()
     }
   }
 
