@@ -73,7 +73,7 @@ object when {
   *  added by preprocessing the command queue.
   */
 final class WhenContext private[chisel3] (
-  sourceInfo:  SourceInfo,
+  _sourceInfo: SourceInfo,
   cond:        Option[() => Bool],
   block:       => Any,
   firrtlDepth: Int,
@@ -81,6 +81,8 @@ final class WhenContext private[chisel3] (
   altConds: List[() => Bool]) {
 
   private var scopeOpen = false
+
+  private[chisel3] def sourceInfo: SourceInfo = _sourceInfo
 
   /** Returns the local condition, inverted for an otherwise */
   private[chisel3] def localCond: Bool = {
