@@ -617,4 +617,44 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
       lit.isLit shouldBe true
     })
   }
+
+  behavior.of("PropertyArithmeticOps")
+
+  it should "support expressions in temporaries, wires, and ports" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val a = IO(Input(Property[Int]()))
+      val b = IO(Input(Property[Int]()))
+      val c = IO(Output(Property[Int]()))
+      val d = IO(Output(Property[Int]()))
+      val e = IO(Output(Property[Int]()))
+
+      val t = a + b
+
+      val w = WireInit(t)
+
+      c := t
+      d := t + a
+      e := w + (a + b)
+    })
+
+    matchesAndOmits(chirrtl)(
+      "propassign w, integer_add(a, b)",
+      "propassign c, integer_add(a, b)",
+      "propassign d, integer_add(integer_add(a, b), a)",
+      "propassign e, integer_add(w, integer_add(a, b))"
+    )()
+  }
+
+  it should "support addition" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val a = IO(Input(Property[BigInt]()))
+      val b = IO(Input(Property[BigInt]()))
+      val c = IO(Output(Property[BigInt]()))
+      c := a + b
+    })
+
+    matchesAndOmits(chirrtl)(
+      "propassign c, integer_add(a, b)"
+    )()
+  }
 }
