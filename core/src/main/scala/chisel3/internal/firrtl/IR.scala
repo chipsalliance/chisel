@@ -186,6 +186,15 @@ private[chisel3] object ir {
     }
   }
 
+  /** Property expressions.
+    *
+    * Property expressions are conceptually similar to Nodes, but only exist as a tree of Args in-memory.
+    */
+  case class PropExpr(sourceInfo: SourceInfo, tpe: firrtlir.PropertyType, op: firrtlir.PropPrimOp, args: Arg*)
+      extends Arg {
+    def name: String = throwException("Internal Error! PropExpr has no name")
+  }
+
   case class Ref(name: String) extends Arg
 
   /** Arg for ports of Modules
