@@ -17,6 +17,7 @@ import chisel3.internal.firrtl.Converter
 import chisel3.assert.{Assert => VerifAssert}
 import chisel3.assume.{Assume => VerifAssume}
 import chisel3.cover.{Cover => VerifCover}
+import chisel3.panamalib.option.FirtoolOptions
 import chisel3.panamaom.PanamaCIRCTOM
 import chisel3.printf.{Printf => VerifPrintf}
 import chisel3.stop.{Stop => VerifStop}
@@ -120,8 +121,7 @@ class FirContext {
   def rootWhen:           Option[WhenContext] = Option.when(whenStack.nonEmpty)(whenStack.last)
 }
 
-class PanamaCIRCTConverter {
-  val circt = new PanamaCIRCT
+class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions]) {
   val firCtx = new FirContext
   val mlirRootModule = circt.mlirModuleCreateEmpty(circt.unkLoc)
 
@@ -880,7 +880,7 @@ class PanamaCIRCTConverter {
     assertResult(circt.mlirPassManagerRunOnOp(pm, circt.mlirModuleGetOperation(mlirRootModule)))
   }
 
-  def passManager(): PanamaCIRCTPassManager = new PanamaCIRCTPassManager(circt, mlirRootModule)
+  def passManager(): PanamaCIRCTPassManager = new PanamaCIRCTPassManager(circt, mlirRootModule, fos)
   def om():          PanamaCIRCTOM = new PanamaCIRCTOM(circt, mlirRootModule)
 
   def visitCircuit(name: String): Unit = {
@@ -1617,8 +1617,11 @@ class PanamaCIRCTConverter {
 }
 
 private[panamaconverter] object PanamaCIRCTConverter {
-  def convert(circuit: Circuit): PanamaCIRCTConverter = {
-    implicit val cvt = new PanamaCIRCTConverter
+  def convert(circuit: Circuit, firtoolOptions: Option[FirtoolOptions]): PanamaCIRCTConverter = {
+    // TODO: In the future, we need to split PanamaCIRCT creation into a different public API.
+    //       It provides a possibility for parsing mlirbc(OM requries it).
+    val circt = new PanamaCIRCT
+    implicit val cvt = new PanamaCIRCTConverter(circt, firtoolOptions)
     visitCircuit(circuit)
     cvt
   }
