@@ -3,9 +3,11 @@
 package chisel3.internal
 
 import chisel3._
-import chisel3.experimental.BaseModule
-import chisel3.internal.firrtl.ir.{LitArg, PropertyLit}
+import chisel3.experimental.{BaseModule, SourceInfo}
+import chisel3.internal.firrtl.ir.{Arg, LitArg, PropertyLit}
 import chisel3.properties.Class
+
+import _root_.firrtl.ir.{PropPrimOp, PropertyType}
 
 import scala.collection.immutable.VectorMap
 
@@ -176,3 +178,16 @@ private[chisel3] case class BundleLitBinding(litMap: Map[Data, LitArg]) extends 
 private[chisel3] case class VecLitBinding(litMap: VectorMap[Data, LitArg]) extends LitBinding
 // Literal binding attached to a Property.
 private[chisel3] case object PropertyValueBinding extends UnconstrainedBinding with ReadOnlyBinding
+
+/** Binding for Property expressions.
+  *
+  * This binding is a little different, because Property expressions don't emit Nodes, so we sore all the information we
+  * need to create an in-memory Arg that captures the operation and operands.
+  *
+  * @param sourceInfo Source location where the expression was created
+  * @param enclosure BaseModule where the expression was created
+  * @param op Primitive operation for this expression
+  * @param args Arguments to this expression
+  */
+private[chisel3] case class PropExprBinding(sourceInfo: SourceInfo, enclosure: BaseModule, op: PropPrimOp, args: Arg*)
+    extends ConstrainedBinding

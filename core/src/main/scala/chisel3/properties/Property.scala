@@ -7,6 +7,7 @@ import firrtl.{ir => fir}
 import firrtl.annotations.{InstanceTarget, IsMember, ModuleTarget, ReferenceTarget, Target}
 import chisel3.internal._
 import chisel3.internal.firrtl.{ir, Converter}
+import chisel3.internal.sourceinfo.SourceInfoTransform
 import chisel3.experimental.{prefix, requireIsHardware, Analog, SourceInfo}
 import chisel3.experimental.hierarchy.Instance
 import scala.reflect.runtime.universe.{typeOf, TypeTag}
@@ -315,6 +316,9 @@ sealed trait Property[T] extends Element { self =>
     requireIsHardware(this)
     requireVisible()
     topBindingOpt match {
+      case Some(PropExprBinding(sourceInfo, _, op, lhs, rhs)) =>
+        // For Property expressions, we create a special kind of Arg that builds in-memory trees without creating nodes.
+        ir.PropExpr(sourceInfo, tpe.getPropertyType(), op, lhs, rhs)
       case Some(binding: TopBinding) => ir.Node(this)
       case opt => throwException(s"internal error: unknown binding $opt in generating RHS ref")
     }
@@ -332,6 +336,27 @@ private[chisel3] object ClassTypeProvider {
   }
   def apply[A](_classType: fir.PropertyType) = new ClassTypeProvider[A] {
     val classType = _classType
+  }
+}
+
+/** Typeclass for Property arithmetic.
+  */
+trait PropertyArithmeticOps[T] {}
+
+object PropertyArithmeticOps {
+  // Helper function to create Property expression bindings.
+  private def binOp[T: PropertyType](
+    sourceInfo: SourceInfo,
+    op:         fir.PropPrimOp,
+    lhs:        Property[T],
+    rhs:        Property[T]
+  ): Property[T] = {
+    val result = Property[T]()
+    val enclosure = Builder.referenceUserContainer
+    result.bind(
+      PropExprBinding(sourceInfo, enclosure, op, lhs.ref, rhs.ref)
+    )
+    result.asInstanceOf[Property[T]]
   }
 }
 

@@ -257,6 +257,25 @@ case class PathPropertyLiteral(value: String) extends Expression with UseSeriali
 
 case class SequencePropertyValue(tpe: Type, values: Seq[Expression]) extends Expression with UseSerializer
 
+/** Property primitive operations.
+  */
+sealed trait PropPrimOp
+object PropPrimOp {}
+
+/** Property expressions.
+  *
+  * Unlike other primitives, Property expressions serialize as a tree directly in their rvalue context.
+  */
+case class PropExpr(info: Info, tpe: Type, op: PropPrimOp, args: Seq[Expression])
+    extends Expression
+    with UseSerializer {
+  override def serialize: String = {
+    val serializedOp = op.toString()
+    val serializedArgs = args.map(_.serialize).mkString("(", ", ", ")")
+    serializedOp + serializedArgs
+  }
+}
+
 case class DoPrim(op: PrimOp, args: Seq[Expression], consts: Seq[BigInt], tpe: Type)
     extends Expression
     with UseSerializer
