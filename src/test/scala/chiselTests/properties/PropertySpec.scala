@@ -670,4 +670,17 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
       "propassign c, integer_mul(a, b)"
     )()
   }
+
+  it should "support shift right" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val a = IO(Input(Property[Int]()))
+      val b = IO(Input(Property[Int]()))
+      val c = IO(Output(Property[Int]()))
+      c := a >> b
+    })
+
+    matchesAndOmits(chirrtl)(
+      "propassign c, integer_shr(a, b)"
+    )()
+  }
 }

@@ -267,6 +267,9 @@ object PropPrimOp {
   case object MulOp extends PropPrimOp {
     override def toString(): String = "integer_mul"
   }
+  case object ShrOp extends PropPrimOp {
+    override def toString(): String = "integer_shr"
+  }
 }
 
 /** Property expressions.

@@ -329,6 +329,14 @@ sealed trait Property[T] extends Element { self =>
 
   final def *(that: Property[T])(implicit ev: PropertyArithmeticOps[Property[T]], sourceInfo: SourceInfo): Property[T] =
     ev.mul(this, that)
+
+  final def >>(
+    that: Property[T]
+  )(
+    implicit ev: PropertyArithmeticOps[Property[T]],
+    sourceInfo:  SourceInfo
+  ): Property[T] =
+    ev.shr(this, that)
 }
 
 private[chisel3] sealed trait ClassTypeProvider[A] {
@@ -349,6 +357,7 @@ private[chisel3] object ClassTypeProvider {
 trait PropertyArithmeticOps[T] {
   def add(lhs: T, rhs: T)(implicit sourceInfo: SourceInfo): T
   def mul(lhs: T, rhs: T)(implicit sourceInfo: SourceInfo): T
+  def shr(lhs: T, rhs: T)(implicit sourceInfo: SourceInfo): T
 }
 
 object PropertyArithmeticOps {
@@ -359,6 +368,8 @@ object PropertyArithmeticOps {
         binOp(sourceInfo, fir.PropPrimOp.AddOp, lhs, rhs)
       def mul(lhs: Property[Int], rhs: Property[Int])(implicit sourceInfo: SourceInfo) =
         binOp(sourceInfo, fir.PropPrimOp.MulOp, lhs, rhs)
+      def shr(lhs: Property[Int], rhs: Property[Int])(implicit sourceInfo: SourceInfo) =
+        binOp(sourceInfo, fir.PropPrimOp.ShrOp, lhs, rhs)
     }
 
   implicit val longArithmeticOps: PropertyArithmeticOps[Property[Long]] =
@@ -367,6 +378,8 @@ object PropertyArithmeticOps {
         binOp(sourceInfo, fir.PropPrimOp.AddOp, lhs, rhs)
       def mul(lhs: Property[Long], rhs: Property[Long])(implicit sourceInfo: SourceInfo) =
         binOp(sourceInfo, fir.PropPrimOp.MulOp, lhs, rhs)
+      def shr(lhs: Property[Long], rhs: Property[Long])(implicit sourceInfo: SourceInfo) =
+        binOp(sourceInfo, fir.PropPrimOp.ShrOp, lhs, rhs)
     }
 
   implicit val bigIntArithmeticOps: PropertyArithmeticOps[Property[BigInt]] =
@@ -375,6 +388,8 @@ object PropertyArithmeticOps {
         binOp(sourceInfo, fir.PropPrimOp.AddOp, lhs, rhs)
       def mul(lhs: Property[BigInt], rhs: Property[BigInt])(implicit sourceInfo: SourceInfo) =
         binOp(sourceInfo, fir.PropPrimOp.MulOp, lhs, rhs)
+      def shr(lhs: Property[BigInt], rhs: Property[BigInt])(implicit sourceInfo: SourceInfo) =
+        binOp(sourceInfo, fir.PropPrimOp.ShrOp, lhs, rhs)
     }
 
   // Helper function to create Property expression bindings.
