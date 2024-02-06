@@ -399,12 +399,17 @@ object PropertyArithmeticOps {
     lhs:        Property[T],
     rhs:        Property[T]
   ): Property[T] = {
+    implicit val info = sourceInfo
+
     val result = Property[T]()
     val enclosure = Builder.referenceUserContainer
     result.bind(
       PropExprBinding(sourceInfo, enclosure, op, lhs.ref, rhs.ref)
     )
-    result.asInstanceOf[Property[T]]
+
+    val _wire = Wire(chiselTypeOf(result))
+    _wire := result
+    _wire.asInstanceOf[Property[T]]
   }
 }
 

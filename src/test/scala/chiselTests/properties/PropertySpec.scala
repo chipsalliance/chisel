@@ -8,6 +8,7 @@ import chiselTests.{ChiselFlatSpec, MatchesAndOmits}
 import circt.stage.ChiselStage
 import chisel3.properties.ClassType
 import chisel3.properties.AnyClassType
+import chisel3.util.experimental.BoringUtils
 
 class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
   behavior.of("Property")
@@ -638,10 +639,45 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
     })
 
     matchesAndOmits(chirrtl)(
-      "propassign w, integer_add(a, b)",
+      "wire t : Integer",
+      "propassign t, integer_add(a, b)",
+      "wire w : Integer",
+      "propassign w, t",
+      "propassign c, t",
+      "wire _d_WIRE : Integer",
+      "propassign _d_WIRE, integer_add(t, a)",
+      "propassign d, _d_WIRE",
+      "wire _e_WIRE",
+      "propassign _e_WIRE, integer_add(a, b)",
+      "wire _e_WIRE_1",
+      "propassign _e_WIRE_1, integer_add(w, _e_WIRE)",
+      "propassign e, _e_WIRE_1"
+    )()
+  }
+
+  it should "support boring from expressions" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val child = Module(new RawModule {
+        val a = IO(Input(Property[Int]()))
+        val b = IO(Input(Property[Int]()))
+        val c = a + b
+      })
+
+      val a = IO(Input(Property[Int]()))
+      val b = IO(Input(Property[Int]()))
+      val c = IO(Output(Property[Int]()))
+
+      child.a := a
+      child.b := a
+      c := BoringUtils.bore(child.c)
+    })
+
+    matchesAndOmits(chirrtl)(
+      "output c_bore : Integer",
+      "wire c : Integer",
       "propassign c, integer_add(a, b)",
-      "propassign d, integer_add(integer_add(a, b), a)",
-      "propassign e, integer_add(w, integer_add(a, b))"
+      "propassign c_bore, c",
+      "propassign c, child.c_bore"
     )()
   }
 
@@ -654,7 +690,9 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
     })
 
     matchesAndOmits(chirrtl)(
-      "propassign c, integer_add(a, b)"
+      "wire _c_WIRE : Integer",
+      "propassign _c_WIRE, integer_add(a, b)",
+      "propassign c, _c_WIRE"
     )()
   }
 
@@ -667,7 +705,9 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
     })
 
     matchesAndOmits(chirrtl)(
-      "propassign c, integer_mul(a, b)"
+      "wire _c_WIRE : Integer",
+      "propassign _c_WIRE, integer_mul(a, b)",
+      "propassign c, _c_WIRE"
     )()
   }
 
@@ -680,7 +720,9 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
     })
 
     matchesAndOmits(chirrtl)(
-      "propassign c, integer_shr(a, b)"
+      "wire _c_WIRE : Integer",
+      "propassign _c_WIRE, integer_shr(a, b)",
+      "propassign c, _c_WIRE"
     )()
   }
 }
