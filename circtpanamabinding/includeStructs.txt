@@ -21,3 +21,5 @@ FIRRTLClassElement
 CirctFirtoolFirtoolOptions
 OMEvaluator
 OMEvaluatorValue
+HWInstanceGraph
+HWInstanceGraphNode
