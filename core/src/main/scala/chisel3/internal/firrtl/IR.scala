@@ -361,6 +361,7 @@ private[chisel3] object ir {
   case class DefModule(
     id:       RawModule,
     name:     String,
+    isPublic: Boolean,
     layers:   Seq[chisel3.layer.Layer],
     ports:    Seq[Port],
     commands: Seq[Command])

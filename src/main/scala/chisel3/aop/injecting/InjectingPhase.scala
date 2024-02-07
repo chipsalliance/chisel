@@ -38,7 +38,7 @@ class InjectingPhase extends Phase {
               m.copy(body = ir.Block(m.body +: addStmtMap(m.name)))
             case m: _root_.firrtl.ir.ExtModule if addStmtMap.contains(m.name) =>
               logger.debug(s"Injecting to ${m.name} with statement: \n${ir.Block(addStmtMap(m.name)).serialize}")
-              ir.Module(m.info, m.name, Nil, m.ports, ir.Block(addStmtMap(m.name)))
+              ir.Module(m.info, m.name, false, Nil, m.ports, ir.Block(addStmtMap(m.name)))
             case other: ir.DefModule => other
           }
         }

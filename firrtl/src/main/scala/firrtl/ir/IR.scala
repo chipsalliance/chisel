@@ -634,7 +634,7 @@ abstract class DefModule extends FirrtlNode with IsDeclaration {
   *
   * An instantiable hardware block
   */
-case class Module(info: Info, name: String, layers: Seq[String], ports: Seq[Port], body: Statement)
+case class Module(info: Info, name: String, public: Boolean, layers: Seq[String], ports: Seq[Port], body: Statement)
     extends DefModule
     with UseSerializer
 

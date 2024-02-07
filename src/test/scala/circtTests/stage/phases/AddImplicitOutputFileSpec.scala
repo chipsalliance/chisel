@@ -19,6 +19,7 @@ class AddImplicitOutputFileSpec extends AnyFlatSpec with Matchers {
       ir.Module(
         ir.NoInfo,
         "foo",
+        false,
         Seq.empty,
         Seq.empty,
         ir.Block(

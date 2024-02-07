@@ -447,10 +447,13 @@ object Serializer {
   }
 
   private def sIt(node: DefModule)(implicit indent: Int): Iterator[String] = node match {
-    case Module(info, name, layers, ports, body) =>
+    case Module(info, name, public, layers, ports, body) =>
       val start = {
         implicit val b = new StringBuilder
-        doIndent(0); b ++= "module "; b ++= legalize(name);
+        doIndent(0);
+        if (public)
+          b ++= "public "
+        b ++= "module "; b ++= legalize(name);
         layers.foreach(l => b ++= s" enablelayer $l")
         b ++= " :"; s(info)
         ports.foreach { p => newLineAndIndent(1); s(p) }
