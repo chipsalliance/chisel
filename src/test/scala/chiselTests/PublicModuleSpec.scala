@@ -3,7 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.probe.{Probe, ProbeValue, define}
+import chisel3.probe.{define, Probe, ProbeValue}
 import circt.stage.ChiselStage
 
 class PublicModuleSpec extends ChiselFlatSpec with MatchesAndOmits {
