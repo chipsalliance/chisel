@@ -114,7 +114,7 @@ abstract class RawModule extends BaseModule {
   }
 
   /** Private variable that tracks if a module is public. */
-  private[chisel3] var isPublic: Boolean = false
+  private[chisel3] def _isPublic: Boolean = false
 
   /** Finalize name for an id created during this RawModule's constructor.
     *
@@ -196,7 +196,7 @@ abstract class RawModule extends BaseModule {
     // Generate IO invalidation commands to initialize outputs as unused,
     //  unless the client wants explicit control over their generation.
     val component =
-      DefModule(this, name, isPublic, Builder.enabledLayers.toSeq, firrtlPorts, _commands.result())
+      DefModule(this, name, _isPublic, Builder.enabledLayers.toSeq, firrtlPorts, _commands.result())
 
     // Secret connections can be staged if user bored into children modules
     component.secretCommands ++= stagedSecretCommands
