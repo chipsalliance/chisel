@@ -22,18 +22,24 @@ class PublicModuleSpec extends ChiselFlatSpec with MatchesAndOmits {
     val bar = Module(new Bar)
   }
 
-  "The main module" should "be marked public" in {
+  val chirrtl = ChiselStage.emitCHIRRTL(new Foo)
 
-    matchesAndOmits(ChiselStage.emitCHIRRTL(new Foo))(
-      "module Qux",
-      "module Baz",
-      "public module Bar",
-      "public module Foo"
-    )(
-      "public module Qux",
-      "public module Baz"
-    )
+  "the main module" should "be implicitly public" in {
+    chirrtl should include("public module Foo")
+  }
 
+  "non-main modules" should "be implicitly private" in {
+    matchesAndOmits(chirrtl)("module Qux")("public module Qux")
+  }
+
+  behavior.of("the Public trait")
+
+  it should "cause a module that mixes it in to be public" in {
+    chirrtl should include("public module Bar")
+  }
+
+  it should "allow making a module that mixes it in private via an override" in {
+    matchesAndOmits(chirrtl)("module Baz")("public module Baz")
   }
 
 }
