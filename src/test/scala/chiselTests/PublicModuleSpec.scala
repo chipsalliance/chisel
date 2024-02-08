@@ -3,36 +3,34 @@
 package chiselTests
 
 import chisel3._
-import chisel3.probe.{define, Probe, ProbeValue}
 import circt.stage.ChiselStage
 
 class PublicModuleSpec extends ChiselFlatSpec with MatchesAndOmits {
 
-  class Baz extends RawModule
+  class Qux extends RawModule
+
+  class Baz extends RawModule with Public {
+    val qux = Module(new Qux)
+    override def isPublic = false
+  }
 
   class Bar extends RawModule with Public {
-    val a = IO(Output(Probe(Bool())))
     val baz = Module(new Baz)
-
-    val b = WireInit(Bool(), true.B)
-    dontTouch(b)
-
-    define(a, ProbeValue(b))
   }
 
   class Foo extends RawModule {
-    val a = IO(Output(Probe(Bool())))
     val bar = Module(new Bar)
-    define(a, bar.a)
   }
 
   "The main module" should "be marked public" in {
 
     matchesAndOmits(ChiselStage.emitCHIRRTL(new Foo))(
+      "module Qux",
       "module Baz",
       "public module Bar",
       "public module Foo"
     )(
+      "public module Qux",
       "public module Baz"
     )
 
