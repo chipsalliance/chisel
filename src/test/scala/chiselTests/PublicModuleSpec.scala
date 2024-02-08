@@ -34,10 +34,9 @@ class PublicModuleSpec extends ChiselFlatSpec with MatchesAndOmits {
     matchesAndOmits(ChiselStage.emitCHIRRTL(new Foo))(
       "module Baz",
       "public module Bar",
-      "module Foo"
-    )(
-      "public module Baz",
       "public module Foo"
+    )(
+      "public module Baz"
     )
 
   }

@@ -1065,6 +1065,12 @@ private[chisel3] object Builder extends LazyLogging {
           )
       }
 
+      // Make the main module (the last component) public.
+      components.last match {
+        case module: DefModule => components.update(components.size - 1, module.copy(isPublic = true))
+        case _ =>
+      }
+
       (
         Circuit(
           components.last.name,
