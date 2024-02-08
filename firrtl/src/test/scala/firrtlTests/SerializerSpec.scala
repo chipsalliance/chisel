@@ -43,6 +43,7 @@ object SerializerSpec {
     Module(
       NoInfo,
       "test",
+      false,
       Seq.empty,
       Seq(Port(NoInfo, "in", Input, UIntType(IntWidth(8))), Port(NoInfo, "out", Output, UIntType(IntWidth(8)))),
       Block(
@@ -100,6 +101,7 @@ object SMemTestCircuit {
         Module(
           NoInfo,
           "Example",
+          false,
           Seq.empty,
           Seq.empty,
           Block(
@@ -290,7 +292,7 @@ class SerializerSpec extends AnyFlatSpec with Matchers {
     Serializer.serialize(Circuit(NoInfo, Seq.empty[DefModule], "42_Circuit")) should include("circuit `42_Circuit`")
 
     info("modules okay!")
-    Serializer.serialize(Module(NoInfo, "42_module", Seq.empty, Seq.empty, Block(Seq.empty))) should include(
+    Serializer.serialize(Module(NoInfo, "42_module", false, Seq.empty, Seq.empty, Block(Seq.empty))) should include(
       "module `42_module`"
     )
     // TODO: an external module with a numeric defname should probably be rejected

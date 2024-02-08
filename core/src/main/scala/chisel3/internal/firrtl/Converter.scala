@@ -456,10 +456,11 @@ private[chisel3] object Converter {
   }
 
   def convert(component: Component, typeAliases: Seq[String]): fir.DefModule = component match {
-    case ctx @ DefModule(id, name, layers, ports, cmds) =>
+    case ctx @ DefModule(id, name, public, layers, ports, cmds) =>
       fir.Module(
         convert(id._getSourceLocator),
         name,
+        public,
         layers.map(_.fullName),
         (ports ++ ctx.secretPorts).map(p => convert(p, typeAliases)),
         convert(cmds ++ ctx.secretCommands, ctx, typeAliases)
