@@ -1067,7 +1067,14 @@ private[chisel3] object Builder extends LazyLogging {
 
       // Make the main module (the last component) public.
       components.last match {
-        case module: DefModule => components.update(components.size - 1, module.copy(isPublic = true))
+        case module: DefModule =>
+          components.update(
+            components.size - 1, {
+              val newModule = module.copy(isPublic = true)
+              newModule.secretCommands ++= module.secretCommands
+              newModule
+            }
+          )
         case _ =>
       }
 
