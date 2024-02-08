@@ -2,6 +2,6 @@
 
 Tips and tricks for Chisel developers:
 
-* [Embedding Chisel as an sbt subproject](developers/sbt-subproject)
+* [ScalaDoc](developers/scaladoc)
 * [Test Coverage](developers/test-coverage)
 * [Developers Style Guide](developers/style)
