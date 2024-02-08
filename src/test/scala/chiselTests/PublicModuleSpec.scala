@@ -28,9 +28,6 @@ class PublicModuleSpec extends ChiselFlatSpec with MatchesAndOmits {
 
   "The main module" should "be marked public" in {
 
-    println(ChiselStage.emitCHIRRTL(new Foo))
-    println(ChiselStage.emitSystemVerilog(new Foo))
-
     matchesAndOmits(ChiselStage.emitCHIRRTL(new Foo))(
       "module Baz",
       "public module Bar",
