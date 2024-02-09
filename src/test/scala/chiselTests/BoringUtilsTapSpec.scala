@@ -341,8 +341,8 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       ".v_0_out (", // rwprobe target.
       ".v_1_in  (inputs_1)", // rwprobe target.
       // Ref ABI.  Names of internal signals are subject to change.
-      "`define ref_Foo_Foo_outV_0_out child.v_0_out",
-      "`define ref_Foo_Foo_outV_1_in child.v_1_in"
+      "`define ref_Foo_outV_0_out child.v_0_out",
+      "`define ref_Foo_outV_1_in child.v_1_in"
     )("v_1_out")
   }
 
