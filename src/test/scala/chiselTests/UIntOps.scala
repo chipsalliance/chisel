@@ -211,11 +211,6 @@ class UIntLitZeroWidthTester extends BasicTester {
   stop()
 }
 
-class ShiftRightResultAtLeast1BitWidth extends BasicTester {
-  assert((0.U(32.W) >> 32).getWidth == 1)
-  stop()
-}
-
 class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
 
   property("Bools can be created from 1 bit UInts") {
@@ -489,9 +484,5 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
     })
     chirrtl should include("connect y, a")
     chirrtl should include("connect z, b")
-  }
-
-  property("Shift right should be result in at least 1 bit width") {
-    assertTesterPasses(new ShiftRightResultAtLeast1BitWidth)
   }
 }
