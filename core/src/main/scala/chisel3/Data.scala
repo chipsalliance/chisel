@@ -584,12 +584,15 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 
   private[chisel3] def isVisible: Boolean = isVisibleFromModule && visibleFromWhen.isEmpty
   private[chisel3] def isVisibleFromModule: Boolean = {
+    val topBindingOpt = this.topBindingOpt // Only call the function once
     val mod = topBindingOpt.flatMap(_.location)
     topBindingOpt match {
       case Some(tb: TopBinding) if (mod == Builder.currentModule) => true
       case Some(pb: PortBinding)
           if mod.flatMap(Builder.retrieveParent(_, Builder.currentModule.get)) == Builder.currentModule =>
         true
+      case Some(ViewBinding(target))           => target.isVisibleFromModule
+      case Some(AggregateViewBinding(mapping)) => mapping.values.forall(_.isVisibleFromModule)
       case Some(pb: SecretPortBinding) => true // Ignore secret to not require visibility
       case Some(_: UnconstrainedBinding) => true
       case _ => false
