@@ -124,7 +124,13 @@ private[chisel3] case class MemTypeBinding[T <: Data](parent: MemBase[T]) extend
 private[chisel3] case class DontCareBinding() extends UnconstrainedBinding
 
 // Views currently only support 1:1 Element-level mappings
-private[chisel3] case class ViewBinding(target: Element) extends UnconstrainedBinding
+private[chisel3] case class ViewBinding(target: Element) extends Binding with ConditionalDeclarable {
+  def location: Option[BaseModule] = target.binding.flatMap(_.location)
+  def visibility: Option[WhenContext] = target.binding.flatMap {
+    case c: ConditionalDeclarable => c.visibility
+    case _ => None
+  }
+}
 
 /** Binding for Aggregate Views
   * @param childMap Mapping from children of this view to their respective targets
@@ -133,9 +139,26 @@ private[chisel3] case class ViewBinding(target: Element) extends UnconstrainedBi
   * @note The types of key and value need not match for the top Data in a total view of type
   *       Aggregate
   */
-private[chisel3] case class AggregateViewBinding(childMap: Map[Data, Data]) extends UnconstrainedBinding {
+private[chisel3] case class AggregateViewBinding(childMap: Map[Data, Data]) extends Binding with ConditionalDeclarable {
   // Helper lookup function since types of Elements always match
   def lookup(key: Element): Option[Element] = childMap.get(key).map(_.asInstanceOf[Element])
+
+  // FIXME Technically an AggregateViewBinding can have multiple locations and visibilities
+  // Fixing this requires an overhaul to this code so for now we just do the best we can
+  // Return a location if there is a unique one for all targets, None otherwise
+  lazy val location: Option[BaseModule] = {
+    val locations = childMap.values.view.flatMap(_.binding.toSeq.flatMap(_.location)).toVector.distinct
+    if (locations.size == 1) Some(locations.head)
+    else None
+  }
+  lazy val visibility: Option[WhenContext] = {
+    val contexts = childMap.values.view
+      .flatMap(_.binding.toSeq.collect { case c: ConditionalDeclarable => c.visibility }.flatten)
+      .toVector
+      .distinct
+    if (contexts.size == 1) Some(contexts.head)
+    else None
+  }
 }
 
 /** Binding for Data's returned from accessing an Instance/Definition members, if not readable/writable port */
