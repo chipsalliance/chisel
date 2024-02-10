@@ -594,15 +594,88 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     */
   private[chisel3] def typeEquivalent(that: Data): Boolean
 
+<<<<<<< HEAD
   private[chisel3] def requireVisible(): Unit = {
+=======
+  /** Find and report any type mismatches
+    *
+    * @param that Data being compared to this
+    * @param strictTypes Does class of Bundles or Records need to match? Inverse of "structural".
+    * @param strictWidths do widths need to match?
+    * @return None if types are equivalent, Some String reporting the first mismatch if not
+    */
+  private[chisel3] final def findFirstTypeMismatch(
+    that:         Data,
+    strictTypes:  Boolean,
+    strictWidths: Boolean
+  ): Option[String] = {
+    def rec(left: Data, right: Data): Option[String] =
+      (left, right) match {
+        // Careful, EnumTypes are Element and if we don't implement this, then they are all always equal
+        case (e1: EnumType, e2: EnumType) =>
+          // TODO, should we implement a form of structural equality for enums?
+          if (e1.factory == e2.factory) None
+          else Some(s": Left ($e1) and Right ($e2) have different types.")
+        // Properties should be considered equal when getPropertyType is equal, not when getClass is equal.
+        case (p1: Property[_], p2: Property[_]) =>
+          if (p1.getPropertyType != p2.getPropertyType) {
+            Some(s": Left ($p1) and Right ($p2) have different types")
+          } else {
+            None
+          }
+        case (e1: Element, e2: Element) if e1.getClass == e2.getClass =>
+          if (strictWidths && e1.width != e2.width) {
+            Some(s": Left ($e1) and Right ($e2) have different widths.")
+          } else {
+            None
+          }
+        case (r1: Record, r2: Record) if !strictTypes || r1.getClass == r2.getClass =>
+          val (larger, smaller, msg) =
+            if (r1._elements.size >= r2._elements.size) (r1, r2, "Left") else (r2, r1, "Right")
+          larger._elements.collectFirst {
+            case (name, data) =>
+              val recurse = smaller._elements.get(name) match {
+                case None        => Some(s": Dangling field on $msg")
+                case Some(data2) => rec(data, data2)
+              }
+              recurse.map("." + name + _)
+          }.flatten
+        case (v1: Vec[_], v2: Vec[_]) =>
+          if (v1.size != v2.size) {
+            Some(s": Left (size ${v1.size}) and Right (size ${v2.size}) have different lengths.")
+          } else {
+            val recurse = rec(v1.sample_element, v2.sample_element)
+            recurse.map("[_]" + _)
+          }
+        case _ => Some(s": Left ($left) and Right ($right) have different types.")
+      }
+    val leftType = if (this.hasBinding) this.cloneType else this
+    val rightType = if (that.hasBinding) that.cloneType else that
+    rec(leftType, rightType)
+  }
+
+  private[chisel3] def isVisible: Boolean = isVisibleFromModule && visibleFromWhen.isEmpty
+  private[chisel3] def isVisibleFromModule: Boolean = {
+    val topBindingOpt = this.topBindingOpt // Only call the function once
+>>>>>>> 84a21f8a7 (Fix visibility for views (#3818))
     val mod = topBindingOpt.flatMap(_.location)
     topBindingOpt match {
       case Some(tb: TopBinding) if (mod == Builder.currentModule) =>
       case Some(pb: PortBinding)
+<<<<<<< HEAD
           if (mod.flatMap(Builder.retrieveParent(_, Builder.currentModule.get)) == Builder.currentModule) =>
       case Some(_: UnconstrainedBinding) =>
       case _ =>
         throwException(s"operand '$this' is not visible from the current module")
+=======
+          if mod.flatMap(Builder.retrieveParent(_, Builder.currentModule.get)) == Builder.currentModule =>
+        true
+      case Some(ViewBinding(target))           => target.isVisibleFromModule
+      case Some(AggregateViewBinding(mapping)) => mapping.values.forall(_.isVisibleFromModule)
+      case Some(pb: SecretPortBinding) => true // Ignore secret to not require visibility
+      case Some(_: UnconstrainedBinding) => true
+      case _ => false
+>>>>>>> 84a21f8a7 (Fix visibility for views (#3818))
     }
     MonoConnect.checkWhenVisibility(this) match {
       case Some(sourceInfo) =>
