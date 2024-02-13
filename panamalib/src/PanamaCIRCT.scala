@@ -228,6 +228,16 @@ class PanamaCIRCT {
   def mlirOperationPrint(op: MlirOperation, callback: String => Unit) =
     CAPI.mlirOperationPrint(op.get, newStringCallback(callback).get, NULL)
 
+  def mlirOperationWriteBytecode(op: MlirOperation, callback: Array[Byte] => Unit) = {
+    val cb = new circt.MlirStringCallback {
+      def apply(message: MemorySegment, userData: MemorySegment) = {
+        callback(MlirStringRef(message).toBytes)
+      }
+    }
+    val mlirCallback = MlirStringCallback(circt.MlirStringCallback.allocate(cb, arena))
+    CAPI.mlirOperationWriteBytecode(op.get, mlirCallback.get, NULL)
+  }
+
   def mlirExportFIRRTL(module: MlirModule, callback: String => Unit) = {
     CAPI.mlirExportFIRRTL(arena, module.get, newStringCallback(callback).get, NULL)
   }
@@ -711,10 +721,12 @@ final case class MlirStringRef(ptr: MemorySegment) extends ForeignType[MemorySeg
   private[panamalib] def get = ptr
   private[panamalib] val sizeof = circt.MlirStringRef.sizeof().toInt
 
-  override def toString: String = {
+  def toBytes: Array[Byte] = {
     var slice = circt.MlirStringRef.data$get(ptr).asSlice(0, circt.MlirStringRef.length$get(ptr))
-    new String(slice.toArray(JAVA_BYTE))
+    slice.toArray(JAVA_BYTE)
   }
+
+  override def toString: String = new String(toBytes)
 }
 object MlirStringRef {
   private[panamalib] def apply(ptr: MemorySegment) = new MlirStringRef(ptr)
