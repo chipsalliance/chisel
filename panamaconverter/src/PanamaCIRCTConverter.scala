@@ -865,6 +865,16 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions]) 
     }
   }
 
+  val mlirBytecodeStream = new Writable {
+    def writeBytesTo(out: OutputStream): Unit = {
+      circt.mlirOperationWriteBytecode(
+        circt.mlirModuleGetOperation(mlirRootModule),
+        bytecode => out.write(bytecode)
+      )
+      out.flush()
+    }
+  }
+
   def exportSplitVerilog(directory: os.Path): Unit = {
     def assertResult(result: MlirLogicalResult): Unit = {
       assert(circt.mlirLogicalResultIsSuccess(result))

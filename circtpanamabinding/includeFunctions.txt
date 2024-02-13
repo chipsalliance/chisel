@@ -59,6 +59,7 @@ mlirBlockInsertOwnedOperationBefore
 mlirRegionAppendOwnedBlock
 mlirOperationStateAddOwnedRegions
 mlirOperationPrint
+mlirOperationWriteBytecode
 mlirExportFIRRTL
 # mlirPassManager
 mlirPassManagerCreate
