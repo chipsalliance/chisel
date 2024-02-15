@@ -245,4 +245,63 @@ class SIntOpsSpec extends ChiselPropSpec with Utils {
       w >> 0
     }
   }
+
+  property("Static right-shift should have width of 0 in Chisel and 1 in FIRRTL with --legacy-shift-right-width") {
+    val args = Array("--legacy-shift-right-width")
+    assertKnownWidth(4, args) {
+      val in = IO(Input(SInt(8.W)))
+      in >> 4
+    }
+    assertKnownWidth(0, args) {
+      val in = IO(Input(SInt(8.W)))
+      in >> 8
+    }
+    assertKnownWidth(0, args) {
+      val in = IO(Input(SInt(8.W)))
+      in >> 16
+    }
+    assertKnownWidth(0, args) {
+      val in = IO(Input(SInt(0.W)))
+      in >> 8
+    }
+    assertKnownWidth(0, args) {
+      val in = IO(Input(SInt(0.W)))
+      in >> 0
+    }
+    assertInferredWidth(4, args) {
+      val in = IO(Input(SInt(8.W)))
+      val w = WireInit(SInt(), in)
+      w >> 4
+    }
+    assertInferredWidth(1, args) {
+      val in = IO(Input(SInt(8.W)))
+      val w = WireInit(SInt(), in)
+      w >> 8
+    }
+    assertInferredWidth(1, args) {
+      val in = IO(Input(SInt(8.W)))
+      val w = WireInit(SInt(), in)
+      w >> 16
+    }
+    assertInferredWidth(1, args) {
+      val in = IO(Input(SInt(0.W)))
+      val w = WireInit(SInt(), in)
+      w >> 8
+    }
+    assertInferredWidth(1, args) {
+      val in = IO(Input(SInt(0.W)))
+      val w = WireInit(SInt(), in)
+      w >> 0
+    }
+    // Focused test to show the mismatch
+    class TestModule extends Module {
+      val in = IO(Input(SInt(8.W)))
+      val out = IO(Output(SInt()))
+      val shifted = in >> 8
+      shifted.getWidth should be(0)
+      out := shifted
+    }
+    val verilog = ChiselStage.emitSystemVerilog(new TestModule, args)
+    verilog should include("assign out = in[7];")
+  }
 }

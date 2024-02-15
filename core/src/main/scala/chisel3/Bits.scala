@@ -17,6 +17,7 @@ import chisel3.internal.firrtl.ir.PrimOp._
 import _root_.firrtl.{ir => firrtlir}
 import chisel3.internal.{castToInt, Builder, Warning, WarningID}
 import chisel3.util.simpleClassName
+import scala.annotation.nowarn
 
 /** Exists to unify common interfaces of [[Bits]] and [[Reset]].
   *
@@ -676,8 +677,26 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
     this << castToInt(that, "Shift amount")
   override def do_<<(that: UInt)(implicit sourceInfo: SourceInfo): UInt =
     binop(sourceInfo, UInt(this.width.dynamicShiftLeft(that.width)), DynamicShiftLeftOp, that)
-  override def do_>>(that: Int)(implicit sourceInfo: SourceInfo): UInt =
-    binop(sourceInfo, UInt(this.width.unsignedShiftRight(that)), ShiftRightOp, validateShiftAmount(that))
+
+  // Implement legacy [buggy] UInt shr behavior for both Chisel and FIRRTL
+  @nowarn("msg=method shiftRight in class Width is deprecated")
+  private def legacyShiftRight(that: Int)(implicit sourceInfo: SourceInfo): UInt = {
+    val resultWidth = this.width.shiftRight(that)
+    val op = binop(sourceInfo, UInt(resultWidth), ShiftRightOp, validateShiftAmount(that))
+    resultWidth match {
+      // If result width is known and 0, wrap in pad(_, 1) to emulate old FIRRTL behavior,
+      //   but lie and say width = 0 to emulate old Chisel behavior.
+      case w @ KnownWidth(0) => op.binop(sourceInfo, UInt(w), PadOp, 1)
+      // If result width is unknown, still wrap in pad(_, 1) to emulate old FIRRTL behavior.
+      case UnknownWidth() => op.binop(sourceInfo, UInt(UnknownWidth()), PadOp, 1)
+      case _              => op
+    }
+  }
+
+  override def do_>>(that: Int)(implicit sourceInfo: SourceInfo): UInt = {
+    if (Builder.legacyShiftRightWidth) legacyShiftRight(that)
+    else binop(sourceInfo, UInt(this.width.unsignedShiftRight(that)), ShiftRightOp, validateShiftAmount(that))
+  }
   override def do_>>(that: BigInt)(implicit sourceInfo: SourceInfo): UInt =
     this >> castToInt(that, "Shift amount")
   override def do_>>(that: UInt)(implicit sourceInfo: SourceInfo): UInt =
@@ -989,8 +1008,14 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
     this << castToInt(that, "Shift amount")
   override def do_<<(that: UInt)(implicit sourceInfo: SourceInfo): SInt =
     binop(sourceInfo, SInt(this.width.dynamicShiftLeft(that.width)), DynamicShiftLeftOp, that)
-  override def do_>>(that: Int)(implicit sourceInfo: SourceInfo): SInt =
-    binop(sourceInfo, SInt(this.width.signedShiftRight(that)), ShiftRightOp, validateShiftAmount(that))
+
+  @nowarn("msg=method shiftRight in class Width is deprecated")
+  override def do_>>(that: Int)(implicit sourceInfo: SourceInfo): SInt = {
+    // We don't need to pad to emulate old behavior for SInt, just emulate old Chisel behavior with reported width,
+    // FIRRTL will give a minimum of 1 bit for SInt
+    val newWidth = if (Builder.legacyShiftRightWidth) this.width.shiftRight(that) else this.width.signedShiftRight(that)
+    binop(sourceInfo, SInt(newWidth), ShiftRightOp, validateShiftAmount(that))
+  }
   override def do_>>(that: BigInt)(implicit sourceInfo: SourceInfo): SInt =
     this >> castToInt(that, "Shift amount")
   override def do_>>(that: UInt)(implicit sourceInfo: SourceInfo): SInt =

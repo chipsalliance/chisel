@@ -23,6 +23,7 @@ import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.propspec.AnyPropSpec
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
+import org.scalactic.source.Position
 
 import java.io.{ByteArrayOutputStream, PrintStream}
 import java.security.Permission
@@ -125,7 +126,7 @@ trait ChiselRunners extends Assertions {
     assert(!runTester(t, additionalVResources, annotations))
   }
 
-  def assertKnownWidth(expected: Int)(gen: => Data): Unit = {
+  def assertKnownWidth(expected: Int, args: Iterable[String] = Nil)(gen: => Data)(implicit pos: Position): Unit = {
     class TestModule extends Module {
       val testPoint = gen
       assert(testPoint.getWidth === expected)
@@ -138,7 +139,7 @@ trait ChiselRunners extends Assertions {
       out := zero
       out := testPoint
     }
-    val verilog = ChiselStage.emitSystemVerilog(new TestModule, Array.empty, Array("-disable-all-randomization"))
+    val verilog = ChiselStage.emitSystemVerilog(new TestModule, args.toArray, Array("-disable-all-randomization"))
     expected match {
       case 0 => assert(!verilog.contains("out"))
       case 1 =>
@@ -148,7 +149,7 @@ trait ChiselRunners extends Assertions {
     }
   }
 
-  def assertInferredWidth(expected: Int)(gen: => Data): Unit = {
+  def assertInferredWidth(expected: Int, args: Iterable[String] = Nil)(gen: => Data)(implicit pos: Position): Unit = {
     class TestModule extends Module {
       val testPoint = gen
       assert(!testPoint.isWidthKnown, s"Asserting that width should be inferred yet width is known to Chisel!")
@@ -162,7 +163,7 @@ trait ChiselRunners extends Assertions {
       out := testPoint
     }
     val verilog =
-      ChiselStage.emitSystemVerilog(new TestModule, Array.empty, Array("-disable-all-randomization"))
+      ChiselStage.emitSystemVerilog(new TestModule, args.toArray :+ "--dump-fir", Array("-disable-all-randomization"))
     expected match {
       case 0 => assert(!verilog.contains("out"))
       case 1 =>

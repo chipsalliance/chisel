@@ -10,6 +10,7 @@ import chisel3.stage.{
   PrintFullStackTraceAnnotation,
   SourceRootAnnotation,
   ThrowOnFirstErrorAnnotation,
+  UseLegacyShiftRightWidthBehavior,
   WarningConfigurationAnnotation,
   WarningConfigurationFileAnnotation,
   WarningsAsErrorsAnnotation
@@ -37,6 +38,7 @@ trait CLI { this: BareShell =>
     ChiselGeneratorAnnotation,
     PrintFullStackTraceAnnotation,
     ThrowOnFirstErrorAnnotation,
+    UseLegacyShiftRightWidthBehavior,
     WarningsAsErrorsAnnotation,
     WarningConfigurationAnnotation,
     WarningConfigurationFileAnnotation,
