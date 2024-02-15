@@ -485,4 +485,52 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
     chirrtl should include("connect y, a")
     chirrtl should include("connect z, b")
   }
+
+  property("Static right-shift should have a minimum width of 0") {
+    assertKnownWidth(4) {
+      val in = IO(Input(UInt(8.W)))
+      in >> 4
+    }
+    assertKnownWidth(0) {
+      val in = IO(Input(UInt(8.W)))
+      in >> 8
+    }
+    assertKnownWidth(0) {
+      val in = IO(Input(UInt(8.W)))
+      in >> 16
+    }
+    assertKnownWidth(0) {
+      val in = IO(Input(UInt(0.W)))
+      in >> 8
+    }
+    assertKnownWidth(0) {
+      val in = IO(Input(UInt(0.W)))
+      in >> 0
+    }
+    assertInferredWidth(4) {
+      val in = IO(Input(UInt(8.W)))
+      val w = WireInit(UInt(), in)
+      w >> 4
+    }
+    assertInferredWidth(0) {
+      val in = IO(Input(UInt(8.W)))
+      val w = WireInit(UInt(), in)
+      w >> 8
+    }
+    assertInferredWidth(0) {
+      val in = IO(Input(UInt(8.W)))
+      val w = WireInit(UInt(), in)
+      w >> 16
+    }
+    assertInferredWidth(0) {
+      val in = IO(Input(UInt(0.W)))
+      val w = WireInit(UInt(), in)
+      w >> 8
+    }
+    assertInferredWidth(0) {
+      val in = IO(Input(UInt(0.W)))
+      val w = WireInit(UInt(), in)
+      w >> 0
+    }
+  }
 }

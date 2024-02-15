@@ -29,6 +29,7 @@ import java.security.Permission
 import scala.reflect.ClassTag
 import java.text.SimpleDateFormat
 import java.util.Calendar
+import chisel3.reflect.DataMirror
 
 /** Common utility functions for Chisel unit tests. */
 trait ChiselRunners extends Assertions {
@@ -128,17 +129,22 @@ trait ChiselRunners extends Assertions {
     class TestModule extends Module {
       val testPoint = gen
       assert(testPoint.getWidth === expected)
+      val out = IO(Output(chiselTypeOf(testPoint)))
       // Sanity check that firrtl doesn't change the width
-      testPoint := 0.U(0.W).asTypeOf(chiselTypeOf(testPoint))
-      dontTouch(testPoint)
+      val zero = 0.U(0.W).asTypeOf(chiselTypeOf(testPoint))
+      if (DataMirror.isWire(testPoint)) {
+        testPoint := zero
+      }
+      out := zero
+      out := testPoint
     }
     val verilog = ChiselStage.emitSystemVerilog(new TestModule, Array.empty, Array("-disable-all-randomization"))
     expected match {
-      case 0 => assert(!verilog.contains("testPoint"))
+      case 0 => assert(!verilog.contains("out"))
       case 1 =>
-        assert(verilog.contains(s"testPoint"))
-        assert(!verilog.contains(s"0] testPoint"))
-      case _ => assert(verilog.contains(s"[${expected - 1}:0] testPoint"))
+        assert(verilog.contains(s"out"))
+        assert(!verilog.contains(s"0] out"))
+      case _ => assert(verilog.contains(s"[${expected - 1}:0] out"))
     }
   }
 
@@ -146,16 +152,23 @@ trait ChiselRunners extends Assertions {
     class TestModule extends Module {
       val testPoint = gen
       assert(!testPoint.isWidthKnown, s"Asserting that width should be inferred yet width is known to Chisel!")
-      testPoint := 0.U(0.W).asTypeOf(chiselTypeOf(testPoint))
-      dontTouch(testPoint)
+      // Sanity check that firrtl doesn't change the width
+      val out = IO(Output(chiselTypeOf(testPoint)))
+      val zero = 0.U(0.W).asTypeOf(chiselTypeOf(testPoint))
+      if (DataMirror.isWire(testPoint)) {
+        testPoint := zero
+      }
+      out := zero
+      out := testPoint
     }
-    val verilog = ChiselStage.emitSystemVerilog(new TestModule, Array.empty, Array("-disable-all-randomization"))
+    val verilog =
+      ChiselStage.emitSystemVerilog(new TestModule, Array.empty, Array("-disable-all-randomization"))
     expected match {
-      case 0 => assert(!verilog.contains("testPoint"))
+      case 0 => assert(!verilog.contains("out"))
       case 1 =>
-        assert(verilog.contains(s"testPoint"))
-        assert(!verilog.contains(s"0] testPoint"))
-      case _ => assert(verilog.contains(s"[${expected - 1}:0] testPoint"))
+        assert(verilog.contains(s"out"))
+        assert(!verilog.contains(s"0] out"))
+      case _ => assert(verilog.contains(s"[${expected - 1}:0] out"))
     }
   }
 

@@ -677,7 +677,7 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
   override def do_<<(that: UInt)(implicit sourceInfo: SourceInfo): UInt =
     binop(sourceInfo, UInt(this.width.dynamicShiftLeft(that.width)), DynamicShiftLeftOp, that)
   override def do_>>(that: Int)(implicit sourceInfo: SourceInfo): UInt =
-    binop(sourceInfo, UInt(this.width.shiftRight(that)), ShiftRightOp, validateShiftAmount(that))
+    binop(sourceInfo, UInt(this.width.unsignedShiftRight(that)), ShiftRightOp, validateShiftAmount(that))
   override def do_>>(that: BigInt)(implicit sourceInfo: SourceInfo): UInt =
     this >> castToInt(that, "Shift amount")
   override def do_>>(that: UInt)(implicit sourceInfo: SourceInfo): UInt =
@@ -990,7 +990,7 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
   override def do_<<(that: UInt)(implicit sourceInfo: SourceInfo): SInt =
     binop(sourceInfo, SInt(this.width.dynamicShiftLeft(that.width)), DynamicShiftLeftOp, that)
   override def do_>>(that: Int)(implicit sourceInfo: SourceInfo): SInt =
-    binop(sourceInfo, SInt(this.width.shiftRight(that)), ShiftRightOp, validateShiftAmount(that))
+    binop(sourceInfo, SInt(this.width.signedShiftRight(that)), ShiftRightOp, validateShiftAmount(that))
   override def do_>>(that: BigInt)(implicit sourceInfo: SourceInfo): SInt =
     this >> castToInt(that, "Shift amount")
   override def do_>>(that: UInt)(implicit sourceInfo: SourceInfo): SInt =

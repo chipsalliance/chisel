@@ -9,12 +9,18 @@ object Width {
 
 sealed abstract class Width {
   type W = Int
-  def min(that:              Width): Width = this.op(that, _ min _)
-  def max(that:              Width): Width = this.op(that, _ max _)
-  def +(that:                Width): Width = this.op(that, _ + _)
-  def +(that:                Int):   Width = this.op(this, (a, b) => a + that)
-  def shiftRight(that:       Int): Width = this.op(this, (a, b) => 0.max(a - that))
-  def dynamicShiftLeft(that: Width): Width =
+  def min(that: Width): Width = this.op(that, _ min _)
+  def max(that: Width): Width = this.op(that, _ max _)
+  def +(that:   Width): Width = this.op(that, _ + _)
+  def +(that:   Int):   Width = this.op(this, (a, b) => a + that)
+  @deprecated(
+    "The width of shift-right now differs by type, use unsignedShiftRight and signedShiftRight",
+    "Chisel 7.0.0"
+  )
+  def shiftRight(that:         Int): Width = this.op(this, (a, b) => 0.max(a - that))
+  def unsignedShiftRight(that: Int): Width = this.op(this, (a, b) => 0.max(a - that))
+  def signedShiftRight(that:   Int): Width = this.op(this, (a, b) => 1.max(a - that))
+  def dynamicShiftLeft(that:   Width): Width =
     this.op(that, (a, b) => a + (1 << b) - 1)
 
   def known: Boolean
