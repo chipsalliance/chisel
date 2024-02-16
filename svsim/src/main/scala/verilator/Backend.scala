@@ -3,7 +3,8 @@
 package svsim.verilator
 
 import svsim._
-import java.io.{BufferedReader, InputStreamReader}
+import scala.sys.process._
+import scala.collection.mutable
 
 object Backend {
   object CompilationSettings {
@@ -21,10 +22,12 @@ object Backend {
     disableFatalExitOnWarnings: Boolean = false)
 
   def initializeFromProcessEnvironment() = {
-    val process = Runtime.getRuntime().exec(Array("which", "verilator"))
-    val outputReader = new BufferedReader(new InputStreamReader(process.getInputStream()))
-    val executablePath = outputReader.lines().findFirst().get()
-    process.waitFor()
+    val output = mutable.ArrayBuffer.empty[String]
+    val exitCode = List("which", "verilator").!(ProcessLogger(output += _))
+    if (exitCode != 0) {
+      throw new Exception(s"verilator not found on the PATH!\n${output.mkString("\n")}")
+    }
+    val executablePath = output.head.trim
     new Backend(executablePath = executablePath)
   }
 }
