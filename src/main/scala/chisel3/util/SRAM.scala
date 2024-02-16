@@ -82,12 +82,12 @@ class MemoryReadWritePort[T <: Data](tpe: T, addrWidth: Int, masked: Boolean) ex
   * @param masked Whether the memory is write masked
   */
 class SRAMInterface[T <: Data](
-  memSize:           BigInt,
-  tpe:               T,
-  numReadPorts:      Int,
-  numWritePorts:     Int,
-  numReadwritePorts: Int,
-  masked:            Boolean = false)
+  val memSize:           BigInt,
+  val tpe:               T,
+  val numReadPorts:      Int,
+  val numWritePorts:     Int,
+  val numReadwritePorts: Int,
+  val masked:            Boolean = false)
     extends Bundle {
   if (masked) {
     require(
