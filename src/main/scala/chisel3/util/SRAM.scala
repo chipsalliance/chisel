@@ -81,13 +81,18 @@ class MemoryReadWritePort[T <: Data] private[chisel3] (tpe: T, addrWidth: Int, m
   * @param numReadwritePorts The number of read/write ports
   */
 class SRAMInterface[T <: Data](
-  memSize:           BigInt,
-  tpe:               T,
-  numReadPorts:      Int,
-  numWritePorts:     Int,
-  numReadwritePorts: Int,
-  masked:            Boolean = false)
+  val memSize: BigInt,
+  // tpe can't be directly made public as it will become a Bundle field
+  tpe:                   T,
+  val numReadPorts:      Int,
+  val numWritePorts:     Int,
+  val numReadwritePorts: Int,
+  val masked:            Boolean = false)
     extends Bundle {
+
+  /** Public accessor for data type of this interface. */
+  def dataType: T = tpe
+
   if (masked) {
     require(
       tpe.isInstanceOf[Vec[_]],
