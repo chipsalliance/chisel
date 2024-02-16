@@ -82,13 +82,18 @@ class MemoryReadWritePort[T <: Data](tpe: T, addrWidth: Int, masked: Boolean) ex
   * @param masked Whether the memory is write masked
   */
 class SRAMInterface[T <: Data](
-  val memSize:           BigInt,
-  val tpe:               T,
+  val memSize: BigInt,
+  // tpe can't be directly made public as it will become a Bundle field
+  tpe:                   T,
   val numReadPorts:      Int,
   val numWritePorts:     Int,
   val numReadwritePorts: Int,
   val masked:            Boolean = false)
     extends Bundle {
+
+  /** Public accessor for data type of this interface. */
+  def dataType: T = tpe
+
   if (masked) {
     require(
       tpe.isInstanceOf[Vec[_]],
