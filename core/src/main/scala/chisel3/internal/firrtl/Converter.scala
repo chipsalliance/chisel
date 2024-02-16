@@ -221,9 +221,6 @@ private[chisel3] object Converter {
       )
     case e @ Verification(_, op, info, clk, pred, pable) =>
       val (fmt, args) = unpack(pable, ctx)
-      if (op == Formal.Cover && args.nonEmpty) {
-        throwException("cover message cannot be used as a format string")
-      }
       val firOp = op match {
         case Formal.Assert => fir.Formal.Assert
         case Formal.Assume => fir.Formal.Assume

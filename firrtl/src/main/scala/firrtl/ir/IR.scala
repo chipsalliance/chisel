@@ -454,6 +454,7 @@ object Formal extends Enumeration {
   ): Verification = {
     Verification(op, info, clk, pred, en, msg, args, name)
   }
+  require(op != Formal.Cover || args.isEmpty, "cover message cannot be used as a format string")
 }
 object Verification {
   def unapply(
