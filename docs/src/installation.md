@@ -197,7 +197,15 @@ scoop install sbt
 ### Firtool
 
 Beginning with version 6.0, Chisel will manage the version of firtool on most systems.
-However, it may be necessary to build from source on some systems (e.g. older Linux distributions).
+However, some systems (e.g. NixOS or older Linux distributions like CentOS 6) may need to build firtool from source.
 If you need to build firtool from source, please see the [Github repository](https://github.com/llvm/circt).
 
-To see what version of firtool should be used for a given version of Chisel, see [Versioning](appendix/versioning#firtool-version).
+To override the Chisel-managed version of firtool, set environment variable `CHISEL_FIRTOOL_PATH` to point to the directory containing your firtool binary.
+
+To see what version of firtool is recommended for a given version of Chisel, see [Versioning](appendix/versioning#firtool-version).
+You can also query this information programmatically in Scala via [`chisel3.BuildInfo.firtoolVersion`](https://javadoc.io/doc/org.chipsalliance/chisel_2.13/latest/chisel3/BuildInfo$.html).
+For example, you can use Scala CLI to compile a tiny program on the command-line to print out this value:
+
+```bash
+scala-cli -S 2.13 -e 'println(chisel3.BuildInfo.firtoolVersion)' --dep org.chipsalliance::chisel:6.0.0
+```
