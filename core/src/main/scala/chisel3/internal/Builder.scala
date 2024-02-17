@@ -1007,8 +1007,7 @@ private[chisel3] object Builder extends LazyLogging {
 
   private[chisel3] def build[T <: BaseModule](
     f:              => T,
-    dynamicContext: DynamicContext,
-    forceModName:   Boolean = true
+    dynamicContext: DynamicContext
   ): (Circuit, T) = {
     dynamicContextVar.withValue(Some(dynamicContext)) {
       ViewParent: Unit // Must initialize the singleton in a Builder context or weird things can happen
@@ -1017,7 +1016,7 @@ private[chisel3] object Builder extends LazyLogging {
       val mod =
         try {
           val m = f
-          if (forceModName) { // This avoids definition name index skipping with D/I
+          if (!inDefinition) { // This avoids definition name index skipping with D/I
             m.forceName(m.name, globalNamespace)
           }
           m
