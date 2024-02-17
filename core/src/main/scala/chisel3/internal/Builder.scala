@@ -1067,9 +1067,10 @@ private[chisel3] object Builder extends LazyLogging {
           )
       }
 
-      // Make the main module (the last component) public.
+      // Make the main module (the last component) public if this is not a
+      // Circuit created from a Definition.
       components.last match {
-        case module: DefModule =>
+        case module: DefModule if !inDefinition =>
           components.update(
             components.size - 1, {
               val newModule = module.copy(isPublic = true)
