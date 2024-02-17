@@ -361,3 +361,29 @@ object ChiselOutputFileAnnotation extends HasShellOptions {
   * @tparam DUT Type of the top-level Chisel design
   */
 case class DesignAnnotation[DUT <: RawModule](design: DUT) extends NoTargetAnnotation with Unserializable
+
+/** Use legacy Chisel shift-right behavior
+  *
+  * '''This should only be used for checking for unexpected semantic changes when bumping to Chisel 7.0.0'''
+  *
+  * Use as CLI option `--legacy-shift-right-width`.
+  *
+  * This behavior is inconsistent between Chisel and FIRRTL
+  * - Chisel will report the width of a UInt or SInt shifted right by a number >= its width as a 0-bit value
+  * - FIRRTL will implement the width for these UInts and SInts as 1-bit
+  */
+case object UseLegacyShiftRightWidthBehavior
+    extends NoTargetAnnotation
+    with ChiselOption
+    with HasShellOptions
+    with Unserializable {
+
+  val options = Seq(
+    new ShellOption[Unit](
+      longOption = "legacy-shift-right-width",
+      toAnnotationSeq = _ => Seq(UseLegacyShiftRightWidthBehavior),
+      helpText = "Use legacy (buggy) shift right width behavior (pre Chisel 7.0.0)"
+    )
+  )
+
+}

@@ -104,6 +104,7 @@ object Definition extends SourceInfoDoc {
       new DynamicContext(
         Nil,
         context.throwOnFirstError,
+        context.legacyShiftRightWidth,
         context.warningFilters,
         context.sourceRoots,
         Some(context.globalNamespace),
