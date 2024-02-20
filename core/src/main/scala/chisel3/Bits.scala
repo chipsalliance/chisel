@@ -684,12 +684,14 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
     val resultWidth = this.width.shiftRight(that)
     val op = binop(sourceInfo, UInt(resultWidth), ShiftRightOp, validateShiftAmount(that))
     resultWidth match {
-      // If result width is known and 0, wrap in pad(_, 1) to emulate old FIRRTL behavior,
-      //   but lie and say width = 0 to emulate old Chisel behavior.
-      case w @ KnownWidth(0) => op.binop(sourceInfo, UInt(w), PadOp, 1)
-      // If result width is unknown, still wrap in pad(_, 1) to emulate old FIRRTL behavior.
-      case UnknownWidth() => op.binop(sourceInfo, UInt(UnknownWidth()), PadOp, 1)
-      case _              => op
+      // To emulate old FIRRTL behavior where minimum width is 1, we need to insert pad(_, 1) whenever
+      // the width is or could be 0. Thus we check if it is known to be 0 or is unknown.
+      case w @ (KnownWidth(0) | UnknownWidth()) =>
+        // Because we are inserting an extra op but we want stable emission (so the user can diff the output),
+        // we need to seed a name to avoid name collisions.
+        op.autoSeed("_shrLegacyWidthFixup")
+        op.binop(sourceInfo, UInt(w), PadOp, 1)
+      case _ => op
     }
   }
 
@@ -1011,8 +1013,8 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
 
   @nowarn("msg=method shiftRight in class Width is deprecated")
   override def do_>>(that: Int)(implicit sourceInfo: SourceInfo): SInt = {
-    // We don't need to pad to emulate old behavior for SInt, just emulate old Chisel behavior with reported width,
-    // FIRRTL will give a minimum of 1 bit for SInt
+    // We don't need to pad to emulate old behavior for SInt, just emulate old Chisel behavior with reported width.
+    // FIRRTL will give a minimum of 1 bit for SInt.
     val newWidth = if (Builder.legacyShiftRightWidth) this.width.shiftRight(that) else this.width.signedShiftRight(that)
     binop(sourceInfo, SInt(newWidth), ShiftRightOp, validateShiftAmount(that))
   }

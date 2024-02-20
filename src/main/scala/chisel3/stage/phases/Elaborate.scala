@@ -33,7 +33,7 @@ class Elaborate extends Phase {
           new DynamicContext(
             annotations,
             chiselOptions.throwOnFirstError,
-            chiselOptions.legacyShiftRightWidth,
+            chiselOptions.useLegacyShiftRightWidth,
             chiselOptions.warningFilters,
             chiselOptions.sourceRoots,
             None,
