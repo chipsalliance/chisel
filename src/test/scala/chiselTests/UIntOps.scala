@@ -211,7 +211,69 @@ class UIntLitZeroWidthTester extends BasicTester {
   stop()
 }
 
-class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
+trait ShiftRightWidthBehavior { self: ChiselRunners =>
+  // The UInt and SInt objects don't share a type, so make one up that they can conform to structurally
+  type BitsFactory[T <: Bits] = {
+    def apply(): T
+    def apply(w: Width): T
+  }
+
+  def testShiftRightWidthBehavior[T <: Bits](
+    factory:        BitsFactory[T]
+  )(chiselMinWidth: Int,
+    firrtlMinWidth: Int,
+    args:           Iterable[String] = Nil
+  ): Unit = {
+    assertKnownWidth(4, args) {
+      val in = IO(Input(factory(8.W)))
+      in >> 4
+    }
+    assertKnownWidth(chiselMinWidth, args) {
+      val in = IO(Input(factory(8.W)))
+      in >> 8
+    }
+    assertKnownWidth(chiselMinWidth, args) {
+      val in = IO(Input(factory(8.W)))
+      in >> 16
+    }
+    assertKnownWidth(chiselMinWidth, args) {
+      val in = IO(Input(factory(0.W)))
+      in >> 8
+    }
+    assertKnownWidth(chiselMinWidth, args) {
+      val in = IO(Input(factory(0.W)))
+      in >> 0
+    }
+    assertInferredWidth(4, args) {
+      val in = IO(Input(factory(8.W)))
+      val w = WireInit(factory(), in)
+      w >> 4
+    }
+    assertInferredWidth(firrtlMinWidth, args) {
+      val in = IO(Input(factory(8.W)))
+      val w = WireInit(factory(), in)
+      w >> 8
+    }
+    assertInferredWidth(firrtlMinWidth, args) {
+      val in = IO(Input(factory(8.W)))
+      val w = WireInit(factory(), in)
+      w >> 16
+    }
+    assertInferredWidth(firrtlMinWidth, args) {
+      val in = IO(Input(factory(0.W)))
+      val w = WireInit(factory(), in)
+      w >> 8
+    }
+    assertInferredWidth(firrtlMinWidth, args) {
+      val in = IO(Input(factory(0.W)))
+      val w = WireInit(factory(), in)
+      w >> 0
+    }
+  }
+
+}
+
+class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils with ShiftRightWidthBehavior {
 
   property("Bools can be created from 1 bit UInts") {
     ChiselStage.emitCHIRRTL(new GoodBoolConversion)
@@ -487,100 +549,14 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
   }
 
   property("Static right-shift should have a minimum width of 0") {
-    assertKnownWidth(4) {
-      val in = IO(Input(UInt(8.W)))
-      in >> 4
-    }
-    assertKnownWidth(0) {
-      val in = IO(Input(UInt(8.W)))
-      in >> 8
-    }
-    assertKnownWidth(0) {
-      val in = IO(Input(UInt(8.W)))
-      in >> 16
-    }
-    assertKnownWidth(0) {
-      val in = IO(Input(UInt(0.W)))
-      in >> 8
-    }
-    assertKnownWidth(0) {
-      val in = IO(Input(UInt(0.W)))
-      in >> 0
-    }
-    assertInferredWidth(4) {
-      val in = IO(Input(UInt(8.W)))
-      val w = WireInit(UInt(), in)
-      w >> 4
-    }
-    assertInferredWidth(0) {
-      val in = IO(Input(UInt(8.W)))
-      val w = WireInit(UInt(), in)
-      w >> 8
-    }
-    assertInferredWidth(0) {
-      val in = IO(Input(UInt(8.W)))
-      val w = WireInit(UInt(), in)
-      w >> 16
-    }
-    assertInferredWidth(0) {
-      val in = IO(Input(UInt(0.W)))
-      val w = WireInit(UInt(), in)
-      w >> 8
-    }
-    assertInferredWidth(0) {
-      val in = IO(Input(UInt(0.W)))
-      val w = WireInit(UInt(), in)
-      w >> 0
-    }
+    testShiftRightWidthBehavior(UInt)(chiselMinWidth = 0, firrtlMinWidth = 0)
   }
 
-  property("Static right-shift should have width of 0 in Chisel and 1 in FIRRTL with --legacy-shift-right-width") {
-    val args = Array("--legacy-shift-right-width")
-    assertKnownWidth(4, args) {
-      val in = IO(Input(UInt(8.W)))
-      in >> 4
-    }
-    assertKnownWidth(0, args) {
-      val in = IO(Input(UInt(8.W)))
-      in >> 8
-    }
-    assertKnownWidth(0, args) {
-      val in = IO(Input(UInt(8.W)))
-      in >> 16
-    }
-    assertKnownWidth(0, args) {
-      val in = IO(Input(UInt(0.W)))
-      in >> 8
-    }
-    assertKnownWidth(0, args) {
-      val in = IO(Input(UInt(0.W)))
-      in >> 0
-    }
-    assertInferredWidth(1, args) {
-      val in = IO(Input(UInt(8.W)))
-      val w = WireInit(UInt(), in)
-      w >> 8
-    }
-    assertInferredWidth(4, args) {
-      val in = IO(Input(UInt(8.W)))
-      val w = WireInit(UInt(), in)
-      w >> 4
-    }
-    assertInferredWidth(1, args) {
-      val in = IO(Input(UInt(8.W)))
-      val w = WireInit(UInt(), in)
-      w >> 16
-    }
-    assertInferredWidth(1, args) {
-      val in = IO(Input(UInt(0.W)))
-      val w = WireInit(UInt(), in)
-      w >> 8
-    }
-    assertInferredWidth(1, args) {
-      val in = IO(Input(UInt(0.W)))
-      val w = WireInit(UInt(), in)
-      w >> 0
-    }
+  property("Static right-shift should have width of 0 in Chisel and 1 in FIRRTL with --use-legacy-shift-right-width") {
+    val args = Array("--use-legacy-shift-right-width")
+
+    testShiftRightWidthBehavior(UInt)(chiselMinWidth = 0, firrtlMinWidth = 1, args = args)
+
     // Focused test to show the mismatch
     class TestModule extends Module {
       val in = IO(Input(UInt(8.W)))
@@ -591,5 +567,37 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
     }
     val verilog = ChiselStage.emitSystemVerilog(new TestModule, args)
     verilog should include("assign out = 1'h0;")
+  }
+
+  property("--use-legacy-shift-right-width should have a minimal impact on emission") {
+    class TestModule extends Module {
+      val a, b, c = IO(Input(UInt(8.W)))
+      val out = IO(Output(UInt()))
+
+      val w = WireInit(a)
+      out := (w >> 3) + b - c
+    }
+    val defaultFirrtl = ChiselStage.emitCHIRRTL(new TestModule)
+    val withOptFirrtl = ChiselStage.emitCHIRRTL(new TestModule, Array("--use-legacy-shift-right-width"))
+    // We should see the fixup
+    val defaultOnly = Seq("node _out_T = shr(w, 3)")
+    val withOptOnly = Seq(
+      "node _out_shrLegacyWidthFixup = shr(w, 3)",
+      "node _out_T = pad(_out_shrLegacyWidthFixup, 1)"
+    )
+    // Everything downstream of the shr or pad should be unchanged
+    val common = Seq(
+      "node _out_T_1 = add(_out_T, b)",
+      "node _out_T_2 = tail(_out_T_1, 1)",
+      "node _out_T_3 = sub(_out_T_2, c)",
+      "node _out_T_4 = tail(_out_T_3, 1)",
+      "connect out, _out_T_4"
+    )
+    for (line <- (defaultOnly ++ common)) {
+      defaultFirrtl should include(line)
+    }
+    for (line <- (withOptOnly ++ common)) {
+      withOptFirrtl should include(line)
+    }
   }
 }
