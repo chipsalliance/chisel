@@ -35,7 +35,7 @@ class SRAMSpec extends ChiselFlatSpec {
     chirrtl should include("module Top :")
     chirrtl should include("smem sram_mem : UInt<8> [32]")
     chirrtl should include(
-      "wire sram : { readPorts : { flip address : UInt<6>, flip enable : UInt<1>, data : UInt<8>}[0], writePorts : { flip address : UInt<6>, flip enable : UInt<1>, flip data : UInt<8>}[0], readwritePorts : { flip address : UInt<6>, flip enable : UInt<1>, flip isWrite : UInt<1>, readData : UInt<8>, flip writeData : UInt<8>}[1]}"
+      "wire sram : { readPorts : { flip address : UInt<5>, flip enable : UInt<1>, data : UInt<8>}[0], writePorts : { flip address : UInt<5>, flip enable : UInt<1>, flip data : UInt<8>}[0], readwritePorts : { flip address : UInt<5>, flip enable : UInt<1>, flip isWrite : UInt<1>, readData : UInt<8>, flip writeData : UInt<8>}[1]}"
     )
 
     val dummyAnno = annos.collectFirst { case DummyAnno(t) => (t.toString) }
