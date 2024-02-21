@@ -22,9 +22,18 @@ object Convert extends Phase {
   def transform(annotations: AnnotationSeq): AnnotationSeq =
     annotations.flatMap {
       case c @ ChiselCircuitAnnotation(circuit) =>
-        Seq(c, PanamaCIRCTConverterAnnotation(PanamaCIRCTConverter.convert(circuit, annotations.collectFirst {
-          case FirtoolOptionsAnnotation(firtoolOptions) => firtoolOptions
-        })))
+        Seq(
+          c,
+          PanamaCIRCTConverterAnnotation(
+            PanamaCIRCTConverter.convert(
+              circuit,
+              annotations.collectFirst {
+                case FirtoolOptionsAnnotation(firtoolOptions) => firtoolOptions
+              },
+              firrtl.annotations.JsonProtocol.serialize(circuit.firrtlAnnotations.toSeq)
+            )
+          )
+        )
       case a => Seq(a)
     }
 }
