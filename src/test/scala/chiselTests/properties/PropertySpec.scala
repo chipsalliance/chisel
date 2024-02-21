@@ -3,7 +3,7 @@
 package chiselTests.properties
 
 import chisel3._
-import chisel3.properties.{Class, Path, Property, PropertyType}
+import chisel3.properties.{Class, DynamicObject, Path, Property, PropertyType}
 import chiselTests.{ChiselFlatSpec, MatchesAndOmits}
 import circt.stage.ChiselStage
 import chisel3.properties.ClassType
@@ -707,6 +707,21 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
       val b = Property[String]()
       a + b
     """)
+  }
+
+  it should "not support expressions in Classes, and give a nice error" in {
+    val e = the[ChiselException] thrownBy (ChiselStage.emitCHIRRTL(new RawModule {
+      DynamicObject(new Class {
+        val a = IO(Input(Property[BigInt]()))
+        val b = IO(Input(Property[BigInt]()))
+        val c = IO(Output(Property[BigInt]()))
+        c := a + b
+      })
+    }))
+
+    e.getMessage should include(
+      "Property arithmetic is currently only supported in RawModules @[src/test/scala/chiselTests/properties/PropertySpec.scala"
+    )
   }
 
   it should "support addition" in {
