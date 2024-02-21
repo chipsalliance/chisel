@@ -379,7 +379,7 @@ object PropertyArithmeticOps {
       case cls: Class     => result.bind(ClassBinding(cls))
       case _ => throwException("Internal Error! Property expression can only occur within RawModule or Class.")
     }
-    result.setRef(ir.PropExpr(sourceInfo, result.tpe.getPropertyType(), op, lhs.ref, rhs.ref))
+    result.setRef(ir.PropExpr(sourceInfo, result.tpe.getPropertyType(), op, List(lhs.ref, rhs.ref)))
 
     val _wire = Wire(chiselTypeOf(result))
     _wire := result
