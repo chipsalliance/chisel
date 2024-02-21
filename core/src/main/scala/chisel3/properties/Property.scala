@@ -365,7 +365,7 @@ object PropertyArithmeticOps {
         binOp(sourceInfo, fir.PropPrimOp.AddOp, lhs, rhs)
     }
 
-  // Helper function to create Property expression bindings.
+  // Helper function to create Property expression IR.
   private def binOp[T: PropertyType](
     sourceInfo: SourceInfo,
     op:         fir.PropPrimOp,
@@ -374,16 +374,26 @@ object PropertyArithmeticOps {
   ): Property[T] = {
     implicit val info = sourceInfo
 
-    val result = Property[T]()
-    Builder.referenceUserContainer match {
-      case mod: RawModule => result.bind(OpBinding(mod, Builder.currentWhen))
-      case cls: Class     => result.bind(ClassBinding(cls))
-      case _ => throwException("Internal Error! Property expression can only occur within RawModule or Class.")
+    // Get the containing RawModule, or throw an error. We can only use the temporary Wire approach in RawModule, so at
+    // least give a decent error explaining this current shortcoming.
+    val currentModule = Builder.referenceUserContainer match {
+      case mod: RawModule => mod
+      case other =>
+        throwException(
+          sourceInfo.makeMessage(s => s"Property arithmetic is currently only supported in RawModules ${s}")
+        )
     }
-    result.setRef(ir.PropExpr(sourceInfo, result.tpe.getPropertyType(), op, List(lhs.ref, rhs.ref)))
 
-    val _wire = Wire(chiselTypeOf(result))
-    _wire := result
+    // Create a temporary Wire to assign the expression to. We currently don't support Nodes for Property types.
+    val _wire = Wire(chiselTypeOf(lhs))
+
+    // Create a PropExpr with the correct type, operation, and operands.
+    val propExpr = ir.PropExpr(sourceInfo, lhs.tpe.getPropertyType(), op, List(lhs.ref, rhs.ref))
+
+    // Directly add a PropAssign command assigning the PropExpr to the Wire.
+    currentModule.addCommand(ir.PropAssign(sourceInfo, _wire.lref, propExpr))
+
+    // Return the temporary Wire as the result.
     _wire.asInstanceOf[Property[T]]
   }
 }
