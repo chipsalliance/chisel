@@ -229,7 +229,7 @@ sealed trait Property[T] extends Element { self =>
       }
   }
 
-  protected val tpe: PropertyType[_]
+  protected[properties] val tpe: PropertyType[_]
 
   private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): chisel3.UInt = {
     Builder.error(s"${this._localErrorContext} does not support .asUInt.")
@@ -316,9 +316,6 @@ sealed trait Property[T] extends Element { self =>
     requireIsHardware(this)
     requireVisible()
     topBindingOpt match {
-      case Some(PropExprBinding(sourceInfo, _, op, lhs, rhs)) =>
-        // For Property expressions, we create a special kind of Arg that builds in-memory trees without creating nodes.
-        ir.PropExpr(sourceInfo, tpe.getPropertyType(), op, lhs, rhs)
       case Some(binding: TopBinding) => ir.Node(this)
       case opt => throwException(s"internal error: unknown binding $opt in generating RHS ref")
     }
@@ -377,10 +374,12 @@ object PropertyArithmeticOps {
     implicit val info = sourceInfo
 
     val result = Property[T]()
-    val enclosure = Builder.referenceUserContainer
-    result.bind(
-      PropExprBinding(sourceInfo, enclosure, op, lhs.ref, rhs.ref)
-    )
+    Builder.referenceUserContainer match {
+      case mod: RawModule => result.bind(OpBinding(mod, Builder.currentWhen))
+      case cls: Class     => result.bind(ClassBinding(cls))
+      case _ => throwException("Internal Error! Property expression can only occur within RawModule or Class.")
+    }
+    result.setRef(ir.PropExpr(sourceInfo, result.tpe.getPropertyType(), op, lhs.ref, rhs.ref))
 
     val _wire = Wire(chiselTypeOf(result))
     _wire := result
