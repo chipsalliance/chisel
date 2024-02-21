@@ -681,6 +681,34 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
     )()
   }
 
+  it should "support targeting the result of expressions" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      override def desiredName = "Top"
+
+      val mod = Module(new RawModule {
+        override def desiredName = "Foo"
+        val a = IO(Input(Property[Int]()))
+        val b = IO(Input(Property[Int]()))
+        val c = a + b
+      })
+
+      mod.c.toTarget.toString should equal("~Top|Foo>c")
+    })
+
+    matchesAndOmits(chirrtl)(
+      "wire c : Integer",
+      "propassign c, integer_add(a, b)"
+    )()
+  }
+
+  it should "not support expressions involving Property types that don't provide a typeclass instance" in {
+    assertTypeError("""
+      val a = Property[String]()
+      val b = Property[String]()
+      a + b
+    """)
+  }
+
   it should "support addition" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
       val a = IO(Input(Property[BigInt]()))

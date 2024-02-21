@@ -340,6 +340,7 @@ private[chisel3] object ClassTypeProvider {
 
 /** Typeclass for Property arithmetic.
   */
+@implicitNotFound("arithmetic operations are not supported on Property type ${T}")
 trait PropertyArithmeticOps[T] {
   def add(lhs: T, rhs: T)(implicit sourceInfo: SourceInfo): T
 }
