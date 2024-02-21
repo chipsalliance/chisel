@@ -121,7 +121,7 @@ class FirContext {
   def rootWhen:           Option[WhenContext] = Option.when(whenStack.nonEmpty)(whenStack.last)
 }
 
-class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions]) {
+class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], annotationsJSON: String) {
   val firCtx = new FirContext
   val mlirRootModule = circt.mlirModuleCreateEmpty(circt.unkLoc)
 
@@ -913,6 +913,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions]) 
       .OpBuilder("firrtl.circuit", circt.mlirModuleGetBody(mlirRootModule), circt.unkLoc)
       .withRegion(Seq((Seq.empty, Seq.empty)))
       .withNamedAttr("name", circt.mlirStringAttrGet(name))
+      .withNamedAttr("rawAnnotations", circt.firrtlImportAnnotationsFromJSONRaw(annotationsJSON).get)
       .withNamedAttr("annotations", circt.emptyArrayAttr)
       .build()
 
@@ -1644,11 +1645,15 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions]) 
 }
 
 private[panamaconverter] object PanamaCIRCTConverter {
-  def convert(circuit: Circuit, firtoolOptions: Option[FirtoolOptions]): PanamaCIRCTConverter = {
+  def convert(
+    circuit:         Circuit,
+    firtoolOptions:  Option[FirtoolOptions],
+    annotationsJSON: String
+  ): PanamaCIRCTConverter = {
     // TODO: In the future, we need to split PanamaCIRCT creation into a different public API.
     //       It provides a possibility for parsing mlirbc(OM requries it).
     val circt = new PanamaCIRCT
-    implicit val cvt = new PanamaCIRCTConverter(circt, firtoolOptions)
+    implicit val cvt = new PanamaCIRCTConverter(circt, firtoolOptions, annotationsJSON)
     visitCircuit(circuit)
     cvt
   }
