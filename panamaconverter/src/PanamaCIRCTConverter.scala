@@ -1530,14 +1530,15 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions]) 
   }
 
   def visitVerification[T <: VerificationStatement](
+    parent: Component,
     verifi: Verification[T],
-    opName: String,
-    args:   Seq[Arg]
+    opName: String
   ): Unit = {
     val loc = util.convert(verifi.sourceInfo)
+    val (fmt, args) = Converter.unpack(verifi.pable, parent)
     util
       .OpBuilder(opName, firCtx.currentBlock, loc)
-      .withNamedAttr("message", circt.mlirStringAttrGet(verifi.message))
+      .withNamedAttr("message", circt.mlirStringAttrGet(fmt))
       .withNamedAttr("name", circt.mlirStringAttrGet(Converter.getRef(verifi.id, verifi.sourceInfo).name))
       .withOperand( /* clock */ util.referTo(verifi.clock, verifi.sourceInfo).value)
       .withOperand( /* predicate */ util.referTo(verifi.predicate, verifi.sourceInfo).value)
@@ -1548,18 +1549,18 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions]) 
       .build()
   }
 
-  def visitAssert(assert: Verification[VerifAssert]): Unit = {
-    visitVerification(assert, "firrtl.assert", Seq.empty)
+  def visitAssert(parent: Component, assert: Verification[VerifAssert]): Unit = {
+    visitVerification(parent, assert, "firrtl.assert")
   }
 
-  def visitAssume(assume: Verification[VerifAssume]): Unit = {
+  def visitAssume(parent: Component, assume: Verification[VerifAssume]): Unit = {
     // TODO: CIRCT emits `assert` for this, is it expected?
-    visitVerification(assume, "firrtl.assume", Seq.empty)
+    visitVerification(parent, assume, "firrtl.assume")
   }
 
-  def visitCover(cover: Verification[VerifCover]): Unit = {
+  def visitCover(parent: Component, cover: Verification[VerifCover]): Unit = {
     // TODO: CIRCT emits `assert` for this, is it expected?
-    visitVerification(cover, "firrtl.cover", Seq.empty)
+    visitVerification(parent, cover, "firrtl.cover")
   }
 
   def visitProbeDefine(parent: Component, probeDefine: ProbeDefine): Unit = {
@@ -1691,9 +1692,9 @@ private[panamaconverter] object PanamaCIRCTConverter {
           case defWire:             DefWire                   => visitDefWire(defWire)
           case printf:              Printf                    => visitPrintf(defModule, printf)
           case stop:                Stop                      => visitStop(stop)
-          case assert:              Verification[VerifAssert] => visitVerfiAssert(assert)
-          case assume:              Verification[VerifAssume] => visitVerfiAssume(assume)
-          case cover:               Verification[VerifCover]  => visitVerfiCover(cover)
+          case assert:              Verification[VerifAssert] => visitVerfiAssert(defModule, assert)
+          case assume:              Verification[VerifAssume] => visitVerfiAssume(defModule, assume)
+          case cover:               Verification[VerifCover]  => visitVerfiCover(defModule, cover)
           case printf:              Verification[VerifPrintf] => visitVerfiPrintf(printf)
           case stop:                Verification[VerifStop]   => visitVerfiStop(stop)
           case probeDefine:         ProbeDefine               => visitProbeDefine(defModule, probeDefine)
@@ -1770,14 +1771,24 @@ private[panamaconverter] object PanamaCIRCTConverter {
   def visitStop(stop: Stop)(implicit cvt: PanamaCIRCTConverter): Unit = {
     cvt.visitStop(stop)
   }
-  def visitVerfiAssert(assert: Verification[VerifAssert])(implicit cvt: PanamaCIRCTConverter): Unit = {
-    cvt.visitAssert(assert)
+  def visitVerfiAssert(
+    parent: Component,
+    assert: Verification[VerifAssert]
+  )(
+    implicit cvt: PanamaCIRCTConverter
+  ): Unit = {
+    cvt.visitAssert(parent, assert)
   }
-  def visitVerfiAssume(assume: Verification[VerifAssume])(implicit cvt: PanamaCIRCTConverter): Unit = {
-    cvt.visitAssume(assume)
+  def visitVerfiAssume(
+    parent: Component,
+    assume: Verification[VerifAssume]
+  )(
+    implicit cvt: PanamaCIRCTConverter
+  ): Unit = {
+    cvt.visitAssume(parent, assume)
   }
-  def visitVerfiCover(cover: Verification[VerifCover])(implicit cvt: PanamaCIRCTConverter): Unit = {
-    cvt.visitCover(cover)
+  def visitVerfiCover(parent: Component, cover: Verification[VerifCover])(implicit cvt: PanamaCIRCTConverter): Unit = {
+    cvt.visitCover(parent, cover)
   }
   def visitVerfiPrintf(printf: Verification[VerifPrintf])(implicit cvt: PanamaCIRCTConverter): Unit = {
     // TODO: Not used anywhere?

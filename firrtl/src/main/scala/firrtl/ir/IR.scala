@@ -451,34 +451,20 @@ object Formal extends Enumeration {
   val Cover = Value("cover")
 }
 
-@data class Verification(
+case class Verification(
   op:   Formal.Value,
   info: Info,
   clk:  Expression,
   pred: Expression,
   en:   Expression,
   msg:  StringLit,
-  @since("FIRRTL 1.5")
+  args: Seq[Expression],
   name: String = "")
     extends Statement
     with HasInfo
     with IsDeclaration
     with UseSerializer {
-  def copy(
-    op:   Formal.Value = op,
-    info: Info = info,
-    clk:  Expression = clk,
-    pred: Expression = pred,
-    en:   Expression = en,
-    msg:  StringLit = msg
-  ): Verification = {
-    Verification(op, info, clk, pred, en, msg, name)
-  }
-}
-object Verification {
-  def unapply(s: Verification): Some[(Formal.Value, Info, Expression, Expression, Expression, StringLit)] = {
-    Some((s.op, s.info, s.clk, s.pred, s.en, s.msg))
-  }
+  require(op != Formal.Cover || args.isEmpty, "cover message cannot be used as a format string")
 }
 // end formal
 

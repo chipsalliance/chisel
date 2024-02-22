@@ -329,10 +329,10 @@ object Serializer {
     case Attach(info, exprs) =>
       // exprs should never be empty since the attach statement takes *at least* two signals according to the spec
       b ++= "attach ("; s(exprs, ", "); b += ')'; s(info)
-    case veri @ Verification(op, info, clk, pred, en, msg) =>
+    case Verification(op, info, clk, pred, en, msg, args, name) =>
       b ++= op.toString; b += '('; s(List(clk, pred, en), ", ", false); b ++= msg.escape
-      b += ')'; sStmtName(veri.name); s(info)
-
+      if (args.nonEmpty) b ++= ", "; s(args, ", ");
+      b += ')'; sStmtName(name); s(info)
     // WIR
     case firrtl.CDefMemory(info, name, tpe, size, seq, readUnderWrite) =>
       if (seq) b ++= "smem " else b ++= "cmem "
