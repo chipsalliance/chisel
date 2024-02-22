@@ -321,9 +321,13 @@ sealed trait Property[T] extends Element { self =>
     }
   }
 
+  /** Perform addition as defined by FIRRTL spec section Integer Add Operation.
+    */
   final def +(that: Property[T])(implicit ev: PropertyArithmeticOps[Property[T]], sourceInfo: SourceInfo): Property[T] =
     ev.add(this, that)
 
+  /** Perform multiplication as defined by FIRRTL spec section Integer Multiply Operation.
+    */
   final def *(that: Property[T])(implicit ev: PropertyArithmeticOps[Property[T]], sourceInfo: SourceInfo): Property[T] =
     ev.mul(this, that)
 }
