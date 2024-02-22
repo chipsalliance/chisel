@@ -323,6 +323,9 @@ sealed trait Property[T] extends Element { self =>
 
   final def +(that: Property[T])(implicit ev: PropertyArithmeticOps[Property[T]], sourceInfo: SourceInfo): Property[T] =
     ev.add(this, that)
+
+  final def *(that: Property[T])(implicit ev: PropertyArithmeticOps[Property[T]], sourceInfo: SourceInfo): Property[T] =
+    ev.mul(this, that)
 }
 
 private[chisel3] sealed trait ClassTypeProvider[A] {
@@ -343,6 +346,7 @@ private[chisel3] object ClassTypeProvider {
 @implicitNotFound("arithmetic operations are not supported on Property type ${T}")
 sealed trait PropertyArithmeticOps[T] {
   def add(lhs: T, rhs: T)(implicit sourceInfo: SourceInfo): T
+  def mul(lhs: T, rhs: T)(implicit sourceInfo: SourceInfo): T
 }
 
 object PropertyArithmeticOps {
@@ -351,18 +355,24 @@ object PropertyArithmeticOps {
     new PropertyArithmeticOps[Property[Int]] {
       def add(lhs: Property[Int], rhs: Property[Int])(implicit sourceInfo: SourceInfo) =
         binOp(sourceInfo, fir.IntegerAddOp, lhs, rhs)
+      def mul(lhs: Property[Int], rhs: Property[Int])(implicit sourceInfo: SourceInfo) =
+        binOp(sourceInfo, fir.IntegerMulOp, lhs, rhs)
     }
 
   implicit val longArithmeticOps: PropertyArithmeticOps[Property[Long]] =
     new PropertyArithmeticOps[Property[Long]] {
       def add(lhs: Property[Long], rhs: Property[Long])(implicit sourceInfo: SourceInfo) =
         binOp(sourceInfo, fir.IntegerAddOp, lhs, rhs)
+      def mul(lhs: Property[Long], rhs: Property[Long])(implicit sourceInfo: SourceInfo) =
+        binOp(sourceInfo, fir.IntegerMulOp, lhs, rhs)
     }
 
   implicit val bigIntArithmeticOps: PropertyArithmeticOps[Property[BigInt]] =
     new PropertyArithmeticOps[Property[BigInt]] {
       def add(lhs: Property[BigInt], rhs: Property[BigInt])(implicit sourceInfo: SourceInfo) =
         binOp(sourceInfo, fir.IntegerAddOp, lhs, rhs)
+      def mul(lhs: Property[BigInt], rhs: Property[BigInt])(implicit sourceInfo: SourceInfo) =
+        binOp(sourceInfo, fir.IntegerMulOp, lhs, rhs)
     }
 
   // Helper function to create Property expression IR.
