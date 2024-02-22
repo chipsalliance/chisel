@@ -263,6 +263,7 @@ sealed abstract class PropPrimOp(name: String) {
   override def toString: String = name
 }
 case object IntegerAddOp extends PropPrimOp("integer_add")
+case object IntegerMulOp extends PropPrimOp("integer_mul")
 
 /** Property expressions.
   *
