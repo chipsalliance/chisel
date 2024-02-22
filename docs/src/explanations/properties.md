@@ -114,3 +114,35 @@ class SequenceExample extends RawModule {
   outPort2 := Property(Seq(inPort, Property(789)))
 }
 ```
+
+### Property Expressions
+
+Expressions can be built out of `Property` values for certain `Property` types.
+This is useful for expressing design intent that is parameterized by input
+`Property` values.
+
+#### Integer Arithmetic
+
+The integral `Property` types, like `Property[Int]`, `Property[Long]` and 
+`Property[BigInt]`, can be used to build arithmetic expressions in terms of
+`Property` values.
+
+In the following example, an output `address` port of `Property[Int]` type is
+computed as the addition of an `offset` `Property[Int]` value relative to an 
+input `base` `Property[Int]` value.
+
+```scala mdoc:silent
+class IntegerArithmeticExample extends RawModule {
+  val base = IO(Input(Property[Int]()))
+  val address = IO(Output(Property[Int]()))
+  val offset = Property(1024)
+  address := base + offset
+}
+```
+
+The following table lists the possible arithmetic operators that are supported
+on integral `Property` typed values.
+
+| Operation | Description                                                |
+| --------- | -----------                                                |
+| `+`       | Perform addition as defined by FIRRTL spec section 25.1.1. |
