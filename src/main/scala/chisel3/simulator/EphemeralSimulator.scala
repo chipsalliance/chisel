@@ -22,13 +22,7 @@ object EphemeralSimulator extends PeekPokeAPI {
     module: => T
   )(body:   (T) => Unit
   ): Unit = {
-<<<<<<< HEAD
-    synchronized {
-      simulator.simulate(module)({ (_, dut) => body(dut) }).result
-    }
-=======
-    makeSimulator.simulate(module)({ module => body(module.wrapped) }).result
->>>>>>> 1ff43c939 ([svsim] Make EphemeralSimulator multi-processing friendly (#3847))
+    makeSimulator.simulate(module)({ (_, dut) => body(dut) }).result
   }
 
   private class DefaultSimulator(val workspacePath: String) extends SingleBackendSimulator[verilator.Backend] {
