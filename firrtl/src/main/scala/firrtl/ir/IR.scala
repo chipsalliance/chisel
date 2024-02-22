@@ -264,6 +264,7 @@ sealed abstract class PropPrimOp(name: String) {
 }
 case object IntegerAddOp extends PropPrimOp("integer_add")
 case object IntegerMulOp extends PropPrimOp("integer_mul")
+case object IntegerShrOp extends PropPrimOp("integer_shr")
 
 /** Property expressions.
   *
