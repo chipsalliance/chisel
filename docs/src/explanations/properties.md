@@ -143,6 +143,7 @@ class IntegerArithmeticExample extends RawModule {
 The following table lists the possible arithmetic operators that are supported
 on integral `Property` typed values.
 
-| Operation | Description                                                |
-| --------- | -----------                                                |
-| `+`       | Perform addition as defined by FIRRTL spec section 25.1.1. |
+| Operation | Description                                                                         |
+| --------- | -----------                                                                         |
+| `+`       | Perform addition as defined by FIRRTL spec section Integer Add Operation            |
+| `*`       | Perform multiplication as defined by FIRRTL spec section Integer Multiply Operation |
