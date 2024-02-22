@@ -100,6 +100,8 @@ private[chisel3] object Converter {
       fir.RWProbeExpr(convert(probe, ctx, info))
     case e @ ProbeRead(probe) =>
       fir.ProbeRead(convert(probe, ctx, info))
+    case PropExpr(info, tpe, op, args) =>
+      fir.PropExpr(convert(info), tpe, op, args.map(convert(_, ctx, info)))
     case other =>
       throw new InternalErrorException(s"Unexpected type in convert $other")
   }

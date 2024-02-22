@@ -3,11 +3,12 @@
 package chiselTests.properties
 
 import chisel3._
-import chisel3.properties.{Class, Path, Property, PropertyType}
+import chisel3.properties.{Class, DynamicObject, Path, Property, PropertyType}
 import chiselTests.{ChiselFlatSpec, MatchesAndOmits}
 import circt.stage.ChiselStage
 import chisel3.properties.ClassType
 import chisel3.properties.AnyClassType
+import chisel3.util.experimental.BoringUtils
 
 class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
   behavior.of("Property")
@@ -616,5 +617,125 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
       port.isLit shouldBe false
       lit.isLit shouldBe true
     })
+  }
+
+  behavior.of("PropertyArithmeticOps")
+
+  it should "support expressions in temporaries, wires, and ports" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val a = IO(Input(Property[Int]()))
+      val b = IO(Input(Property[Int]()))
+      val c = IO(Output(Property[Int]()))
+      val d = IO(Output(Property[Int]()))
+      val e = IO(Output(Property[Int]()))
+
+      val t = a + b
+
+      val w = WireInit(t)
+
+      c := t
+      d := t + a
+      e := w + (a + b)
+    })
+
+    matchesAndOmits(chirrtl)(
+      "wire t : Integer",
+      "propassign t, integer_add(a, b)",
+      "wire w : Integer",
+      "propassign w, t",
+      "propassign c, t",
+      "wire _d_propExpr : Integer",
+      "propassign _d_propExpr, integer_add(t, a)",
+      "propassign d, _d_propExpr",
+      "wire _e_propExpr",
+      "propassign _e_propExpr, integer_add(a, b)",
+      "wire _e_propExpr_1",
+      "propassign _e_propExpr_1, integer_add(w, _e_propExpr)",
+      "propassign e, _e_propExpr_1"
+    )()
+  }
+
+  it should "support boring from expressions" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val child = Module(new RawModule {
+        val a = IO(Input(Property[Int]()))
+        val b = IO(Input(Property[Int]()))
+        val c = a + b
+      })
+
+      val a = IO(Input(Property[Int]()))
+      val b = IO(Input(Property[Int]()))
+      val c = IO(Output(Property[Int]()))
+
+      child.a := a
+      child.b := a
+      c := BoringUtils.bore(child.c)
+    })
+
+    matchesAndOmits(chirrtl)(
+      "output c_bore : Integer",
+      "wire c : Integer",
+      "propassign c, integer_add(a, b)",
+      "propassign c_bore, c",
+      "propassign c, child.c_bore"
+    )()
+  }
+
+  it should "support targeting the result of expressions" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      override def desiredName = "Top"
+
+      val mod = Module(new RawModule {
+        override def desiredName = "Foo"
+        val a = IO(Input(Property[Int]()))
+        val b = IO(Input(Property[Int]()))
+        val c = a + b
+      })
+
+      mod.c.toTarget.toString should equal("~Top|Foo>c")
+    })
+
+    matchesAndOmits(chirrtl)(
+      "wire c : Integer",
+      "propassign c, integer_add(a, b)"
+    )()
+  }
+
+  it should "not support expressions involving Property types that don't provide a typeclass instance" in {
+    assertTypeError("""
+      val a = Property[String]()
+      val b = Property[String]()
+      a + b
+    """)
+  }
+
+  it should "not support expressions in Classes, and give a nice error" in {
+    val e = the[ChiselException] thrownBy (ChiselStage.emitCHIRRTL(new RawModule {
+      DynamicObject(new Class {
+        val a = IO(Input(Property[BigInt]()))
+        val b = IO(Input(Property[BigInt]()))
+        val c = IO(Output(Property[BigInt]()))
+        c := a + b
+      })
+    }))
+
+    e.getMessage should include(
+      "Property arithmetic is currently only supported in RawModules @[src/test/scala/chiselTests/properties/PropertySpec.scala"
+    )
+  }
+
+  it should "support addition" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val a = IO(Input(Property[BigInt]()))
+      val b = IO(Input(Property[BigInt]()))
+      val c = IO(Output(Property[BigInt]()))
+      c := a + b
+    })
+
+    matchesAndOmits(chirrtl)(
+      "wire _c_propExpr : Integer",
+      "propassign _c_propExpr, integer_add(a, b)",
+      "propassign c, _c_propExpr"
+    )()
   }
 }
