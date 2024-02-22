@@ -259,12 +259,10 @@ case class SequencePropertyValue(tpe: Type, values: Seq[Expression]) extends Exp
 
 /** Property primitive operations.
   */
-sealed trait PropPrimOp
-object PropPrimOp {
-  case object AddOp extends PropPrimOp {
-    override def toString(): String = "integer_add"
-  }
+sealed abstract class PropPrimOp(name: String) {
+  override def toString: String = name
 }
+case object IntegerAddOp extends PropPrimOp("integer_add")
 
 /** Property expressions.
   *

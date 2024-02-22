@@ -341,7 +341,7 @@ private[chisel3] object ClassTypeProvider {
 /** Typeclass for Property arithmetic.
   */
 @implicitNotFound("arithmetic operations are not supported on Property type ${T}")
-trait PropertyArithmeticOps[T] {
+sealed trait PropertyArithmeticOps[T] {
   def add(lhs: T, rhs: T)(implicit sourceInfo: SourceInfo): T
 }
 
@@ -350,19 +350,19 @@ object PropertyArithmeticOps {
   implicit val intArithmeticOps: PropertyArithmeticOps[Property[Int]] =
     new PropertyArithmeticOps[Property[Int]] {
       def add(lhs: Property[Int], rhs: Property[Int])(implicit sourceInfo: SourceInfo) =
-        binOp(sourceInfo, fir.PropPrimOp.AddOp, lhs, rhs)
+        binOp(sourceInfo, fir.IntegerAddOp, lhs, rhs)
     }
 
   implicit val longArithmeticOps: PropertyArithmeticOps[Property[Long]] =
     new PropertyArithmeticOps[Property[Long]] {
       def add(lhs: Property[Long], rhs: Property[Long])(implicit sourceInfo: SourceInfo) =
-        binOp(sourceInfo, fir.PropPrimOp.AddOp, lhs, rhs)
+        binOp(sourceInfo, fir.IntegerAddOp, lhs, rhs)
     }
 
   implicit val bigIntArithmeticOps: PropertyArithmeticOps[Property[BigInt]] =
     new PropertyArithmeticOps[Property[BigInt]] {
       def add(lhs: Property[BigInt], rhs: Property[BigInt])(implicit sourceInfo: SourceInfo) =
-        binOp(sourceInfo, fir.PropPrimOp.AddOp, lhs, rhs)
+        binOp(sourceInfo, fir.IntegerAddOp, lhs, rhs)
     }
 
   // Helper function to create Property expression IR.
@@ -385,16 +385,17 @@ object PropertyArithmeticOps {
     }
 
     // Create a temporary Wire to assign the expression to. We currently don't support Nodes for Property types.
-    val _wire = Wire(chiselTypeOf(lhs))
+    val wire = Wire(chiselTypeOf(lhs))
+    wire.autoSeed("_propExpr")
 
     // Create a PropExpr with the correct type, operation, and operands.
     val propExpr = ir.PropExpr(sourceInfo, lhs.tpe.getPropertyType(), op, List(lhs.ref, rhs.ref))
 
     // Directly add a PropAssign command assigning the PropExpr to the Wire.
-    currentModule.addCommand(ir.PropAssign(sourceInfo, _wire.lref, propExpr))
+    currentModule.addCommand(ir.PropAssign(sourceInfo, wire.lref, propExpr))
 
     // Return the temporary Wire as the result.
-    _wire.asInstanceOf[Property[T]]
+    wire.asInstanceOf[Property[T]]
   }
 }
 

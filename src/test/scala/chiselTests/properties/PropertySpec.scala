@@ -644,14 +644,14 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
       "wire w : Integer",
       "propassign w, t",
       "propassign c, t",
-      "wire _d_WIRE : Integer",
-      "propassign _d_WIRE, integer_add(t, a)",
-      "propassign d, _d_WIRE",
-      "wire _e_WIRE",
-      "propassign _e_WIRE, integer_add(a, b)",
-      "wire _e_WIRE_1",
-      "propassign _e_WIRE_1, integer_add(w, _e_WIRE)",
-      "propassign e, _e_WIRE_1"
+      "wire _d_propExpr : Integer",
+      "propassign _d_propExpr, integer_add(t, a)",
+      "propassign d, _d_propExpr",
+      "wire _e_propExpr",
+      "propassign _e_propExpr, integer_add(a, b)",
+      "wire _e_propExpr_1",
+      "propassign _e_propExpr_1, integer_add(w, _e_propExpr)",
+      "propassign e, _e_propExpr_1"
     )()
   }
 
@@ -733,9 +733,9 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
     })
 
     matchesAndOmits(chirrtl)(
-      "wire _c_WIRE : Integer",
-      "propassign _c_WIRE, integer_add(a, b)",
-      "propassign c, _c_WIRE"
+      "wire _c_propExpr : Integer",
+      "propassign _c_propExpr, integer_add(a, b)",
+      "propassign c, _c_propExpr"
     )()
   }
 }
