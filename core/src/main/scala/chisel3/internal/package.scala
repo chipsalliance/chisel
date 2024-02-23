@@ -143,8 +143,11 @@ package object internal {
         color
       case _ => return
     }
-    if (!Builder.layerStack.exists(_ == destLayer))
-      Builder.error(errorMessage)
+    val enabledLayers = Builder.enabledLayers ++= Builder.layerStack.headOption
+    if (enabledLayers.exists(_.canWriteTo(destLayer))) {
+      return
+    }
+    Builder.error(errorMessage)
   }
 
   // TODO this exists in cats.Traverse, should we just use that?
