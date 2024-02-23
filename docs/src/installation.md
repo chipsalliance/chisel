@@ -154,7 +154,7 @@ The easiest way to install SBT is manually from the release tarball.
 Note that MacOS and Windows users can also do a manual install.
 
 ```sh
-curl -s -L https://github.com/sbt/sbt/releases/download/v1.9.8/sbt-1.9.8.tgz | tar xvz
+curl -s -L https://github.com/sbt/sbt/releases/download/v1.9.7/sbt-1.9.7.tgz | tar xvz
 ```
 
 Then copy the `sbt` bootstrap script into a global install location.
