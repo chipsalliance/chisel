@@ -472,9 +472,16 @@ lazy val docs = project // new documentation project
       // Only write the file if an input has changed
       if (!file.exists || firtoolVersionsTableTask.inputFileChanges.hasChanges) {
         // Escaping newlines makes it easier to generate the file
-        val table = FirtoolVersionsTable.generateTable(logger).replaceAll("\n", "\\\\n")
+        val releaseTable = FirtoolVersionsTable.generateTable(true, logger).replaceAll("\n", "\\\\n")
+        val prereleaseTable = FirtoolVersionsTable.generateTable(false, logger).replaceAll("\n", "\\\\n")
         logger.info(s"Writing $file...")
-        IO.write(file, s"""object FirtoolVersionsTable { def table = "$table" }""")
+        IO.write(
+          file,
+          s"""|object FirtoolVersionsTable {
+              |  def releaseTable = "$releaseTable"
+              |  def prereleaseTable = "$prereleaseTable"
+              |}""".stripMargin
+        )
       }
       Seq(file)
     },
