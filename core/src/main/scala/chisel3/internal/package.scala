@@ -143,7 +143,7 @@ package object internal {
         color
       case _ => return
     }
-    val enabledLayers = Builder.enabledLayers ++ Builder.layerStack.headOption
+    val enabledLayers = Builder.enabledLayers.view ++ Builder.layerStack.headOption
     if (enabledLayers.exists(_.canWriteTo(destLayer))) {
       return
     }
