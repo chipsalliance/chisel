@@ -35,20 +35,25 @@ object FirtoolVersionsTable extends App {
 
   def firtoolGithubLink(version: String): String = s"https://github.com/llvm/circt/releases/tag/firtool-$version"
 
-  def generateTable(logger: Logger): String = {
+  // release == true only includes releases
+  // release == false only includes pre-releases
+  def generateTable(release: Boolean, logger: Logger): String = {
     val releases = Releases.releases(logger)
 
-    val filtered = releases.filter(_ >= min)
+    val hasfirtool = releases.filter(_ >= min)
     val unknown = {
       val isKnownVersion = knownVersions.map(_._1).toSet
-      filtered.filterNot(isKnownVersion)
+      hasfirtool.filterNot(isKnownVersion)
     }
 
     val lookedUp = unknown.map(v => v -> lookupFirtoolVersion(v))
     val allVersions = (lookedUp ++ knownVersions).sortBy(_._1).reverse // descending
 
+    // Finally apply a filter for releases vs. pre-releases
+    val result = allVersions.filter { case (v, _) => v.prerelease ^ release }
+
     val header = Vector("| Chisel Version | Firtool Version |", "| --- | --- |")
-    val table = (header ++ allVersions.map {
+    val table = (header ++ result.map {
       case (sv, fv) => s"| ${sv.serialize} | [$fv](${firtoolGithubLink(fv)}) |"
     }).mkString("\n")
     table
