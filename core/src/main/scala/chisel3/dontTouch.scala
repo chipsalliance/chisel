@@ -2,10 +2,11 @@
 
 package chisel3
 
-import chisel3.experimental.{annotate, requireIsHardware, ChiselAnnotation}
+import chisel3.experimental.{annotate, requireIsHardware, BaseModule, ChiselAnnotation, ChiselMultiAnnotation}
 import chisel3.properties.Property
 import chisel3.reflect.DataMirror
 import firrtl.transforms.DontTouchAnnotation
+import firrtl.annotations.Annotation
 
 /** Marks that a signal's leaves are an optimization barrier to Chisel and the
   * FIRRTL compiler. This has the effect of guaranteeing that a signal will not
@@ -49,28 +50,15 @@ object dontTouch {
   /** Mark a module so that its ports will not get optimized away.
     *
     * @param module whose ports shouldl not get optimized away
-  def modulePorts(module: BaseModule)(implicit si: SourceInfo): BaseModule = {
+    */
+  def modulePorts(module: BaseModule): BaseModule = {
 
     annotate(new ChiselMultiAnnotation {
-      def toFirrtl = DataMirror.fullModulePorts(module).map {
-        case (_, data) => dontTouch(data)
-      }
+      def toFirrtl: Seq[Annotation] = (DataMirror.fullModulePorts(module).map {
+        case (_, data) => DontTouchAnnotation(data.toNamed)
+      })
     })
-
     module
   }
-
-  private def annotate[T <: Data](data: T): Seq[ChiselAnnotation] = {
-    requireIsHardware(data, "Data marked dontTouch")
-    val annos = data match {
-      case d if DataMirror.hasProbeTypeModifier(d) => ()
-      case _:   Property[_] => ()
-      case agg: Aggregate => agg.getElements.foreach(annotate)
-      case _:   Element =>
-        annotate(new ChiselAnnotation { def toFirrtl = DontTouchAnnotation(data.toNamed) })
-      case _ => throw new ChiselException("Non-hardware dontTouch")
-    }
-  }
-    */
 
 }
