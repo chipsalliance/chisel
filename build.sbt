@@ -225,7 +225,7 @@ lazy val chiselSettings = Seq(
     "org.scalatest" %% "scalatest" % "3.2.15" % "test",
     "org.scalatestplus" %% "scalacheck-1-14" % "3.2.2.0" % "test",
     "com.lihaoyi" %% "upickle" % "2.0.0",
-    "org.chipsalliance" %% "firtool-resolver" % "1.3.0"
+    "org.chipsalliance" %% "firtool-resolver" % "1.3.0+4-a9f3ff-SNAPSHOT"
   )
 ) ++ (
   // Tests from other projects may still run concurrently

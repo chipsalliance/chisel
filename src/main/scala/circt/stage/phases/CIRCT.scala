@@ -24,7 +24,7 @@ import firrtl.options.{
 import firrtl.options.phases.WriteOutputAnnotations
 import firrtl.options.Viewer.view
 import firrtl.stage.FirrtlOptions
-import _root_.logger.LogLevel
+import _root_.logger.{Logger, LogLevel}
 import chisel3.InternalErrorException
 
 import scala.util.control.NoStackTrace
@@ -66,6 +66,14 @@ private object Helpers {
       case false => JsonProtocol.deserialize(filtered, false)
       case true  => Seq.empty
     }
+  }
+
+  class LoggerShim(logger: Logger) extends firtoolresolver.Logger {
+    def error(msg: String): Unit = logger.error(msg)
+    def warn(msg: String): Unit = logger.warn(msg)
+    def info(msg: String): Unit = logger.info(msg)
+    def debug(msg: String): Unit = logger.debug(msg)
+    def trace(msg: String): Unit = logger.trace(msg)
   }
 }
 
@@ -206,10 +214,10 @@ class CIRCT extends Phase {
 
     val circtAnnotationFilename = "circt.anno.json"
 
-    val binary = circtOptions.firtoolBinaryPath.getOrElse {
+    val binary = {
       // .get is safe, firtoolVersion is an Option for backwards compatibility
       val version = firtoolVersion.get
-      val resolved = firtoolresolver.Resolve(loggerToScribe(logger), version)
+      val resolved = firtoolresolver.Resolve(new LoggerShim(logger), version)
       resolved match {
         case Left(msg) =>
           throw new Exceptions.FirtoolNotFound(msg)
