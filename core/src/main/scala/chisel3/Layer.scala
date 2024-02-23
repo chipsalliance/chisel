@@ -6,6 +6,7 @@ import chisel3.experimental.{SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal.{Builder, HasId}
 import chisel3.internal.firrtl.ir.{LayerBlockBegin, LayerBlockEnd, Node}
 import chisel3.util.simpleClassName
+import scala.annotation.tailrec
 import scala.collection.mutable.LinkedHashSet
 
 /** This object contains Chisel language features for creating layers.  Layers
@@ -48,6 +49,13 @@ object layer {
       case null       => "<root>"
       case Layer.Root => name
       case _          => s"${parent.fullName}.$name"
+    }
+
+    @tailrec
+    final private[chisel3] def canWriteTo(that: Layer): Boolean = that match {
+      case null              => false
+      case _ if this == that => true
+      case _                 => this.canWriteTo(that.parent)
     }
   }
 
