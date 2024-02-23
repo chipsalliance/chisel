@@ -46,4 +46,31 @@ object dontTouch {
     data
   }
 
+  /** Mark a module so that its ports will not get optimized away.
+    *
+    * @param module whose ports shouldl not get optimized away
+  def modulePorts(module: BaseModule)(implicit si: SourceInfo): BaseModule = {
+
+    annotate(new ChiselMultiAnnotation {
+      def toFirrtl = DataMirror.fullModulePorts(module).map {
+        case (_, data) => dontTouch(data)
+      }
+    })
+
+    module
+  }
+
+  private def annotate[T <: Data](data: T): Seq[ChiselAnnotation] = {
+    requireIsHardware(data, "Data marked dontTouch")
+    val annos = data match {
+      case d if DataMirror.hasProbeTypeModifier(d) => ()
+      case _:   Property[_] => ()
+      case agg: Aggregate => agg.getElements.foreach(annotate)
+      case _:   Element =>
+        annotate(new ChiselAnnotation { def toFirrtl = DontTouchAnnotation(data.toNamed) })
+      case _ => throw new ChiselException("Non-hardware dontTouch")
+    }
+  }
+    */
+
 }
