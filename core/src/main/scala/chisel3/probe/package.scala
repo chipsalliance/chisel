@@ -40,8 +40,9 @@ package object probe extends SourceInfoDoc {
     requireHasProbeTypeModifier(probeExpr, "Expected source to be a probe expression.")
     requireCompatibleDestinationProbeColor(
       sink,
-      if (Builder.layerStack.head == layer.Layer.Root) s"Cannot define '$sink' from outside a layerblock"
-      else s"Cannot define '$sink' from a layerblock associated with layer ${Builder.layerStack.head.fullName}"
+      s"""Cannot define '$sink' from colors ${(Builder.enabledLayers.view ++ Builder.layerStack.headOption)
+        .map(a => s"'${a.fullName}'")
+        .mkString("{", ", ", "}")} since at least one of these is NOT enabled when '$sink' is enabled"""
     )
     if (sink.probeInfo.get.writable) {
       requireHasWritableProbeTypeModifier(

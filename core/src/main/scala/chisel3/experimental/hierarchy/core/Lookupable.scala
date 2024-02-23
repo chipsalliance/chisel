@@ -514,6 +514,7 @@ object Lookupable {
   implicit val lookupShort:   SimpleLookupable[Short] = new SimpleLookupable[Short]()
   implicit val lookupLong:    SimpleLookupable[Long] = new SimpleLookupable[Long]()
   implicit val lookupFloat:   SimpleLookupable[Float] = new SimpleLookupable[Float]()
+  implicit val lookupDouble:  SimpleLookupable[Double] = new SimpleLookupable[Double]()
   implicit val lookupChar:    SimpleLookupable[Char] = new SimpleLookupable[Char]()
   implicit val lookupString:  SimpleLookupable[String] = new SimpleLookupable[String]()
   implicit val lookupBoolean: SimpleLookupable[Boolean] = new SimpleLookupable[Boolean]()
