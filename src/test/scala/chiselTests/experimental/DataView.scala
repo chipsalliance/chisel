@@ -552,6 +552,45 @@ class DataViewSpec extends ChiselFlatSpec {
     verilog should include("assign z = sel ? b : d;")
   }
 
+  it should "support primitive types in the view target" in {
+    class MyBundle(val name: String) extends Bundle {
+      val x = UInt(8.W)
+    }
+    implicit val view: DataView[(UInt, Char, String, Int, Byte, Short, Long, BigInt, Float, Double), MyBundle] =
+      DataView(
+        tup => new MyBundle(tup.productIterator.toList.tail.mkString("_")),
+        _._1 -> _.x
+      )
+    class MyModule extends Module {
+      val in = IO(Input(UInt(8.W)))
+      val bun = (in, 'a', "b", 0, 1.toByte, 2.toShort, 3L, BigInt(4), 5.0f, 6.0).viewAs[MyBundle]
+      val out = IO(Output(chiselTypeOf(bun)))
+      out := bun
+      bun.name should be("a_b_0_1_2_3_4_5.0_6.0")
+    }
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
+    chirrtl should include("connect out.x, in")
+  }
+
+  it should "support views of Options" in {
+    class MyBundle(w: Option[Int]) extends Bundle {
+      val x = w.map(v => UInt(v.W))
+    }
+    implicit val view: DataView[Option[UInt], MyBundle] = DataView.mapping(
+      opt => new MyBundle(opt.map(_.getWidth)),
+      { case (opt, bun) => opt.zip(bun.x).map { case (o, b) => o -> b } }
+    )
+    class MyModule extends Module {
+      val in = IO(Input(UInt(8.W)))
+      val out1 = IO(Output(new MyBundle(Some(8))))
+      val out2 = IO(Output(new MyBundle(None)))
+      out1 := Option(in).viewAs[MyBundle]
+      out2 := Option.empty[UInt].viewAs[MyBundle]
+    }
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
+    chirrtl should include("connect out1.x, in")
+  }
+
   // This example should be turned into a built-in feature
   it should "enable viewing Seqs as Vecs" in {
 
