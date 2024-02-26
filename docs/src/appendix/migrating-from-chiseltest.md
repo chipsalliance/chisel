@@ -12,11 +12,11 @@ This change in underlying compiler technology has been a crucial piece in enabli
 Unfortunately, Chisel 3's testing library, [ChiselTest](https://github.com/ucb-bar/chiseltest), is built around the SFC, making it difficult to support ChiselTest in Chisel 5 and beyond.
 
 This is not a fundamental problem, it is one of engineering resources.
-This page is intended to serve as a living document to help Chisel 3 users migrate from ChiselTest to Chisel's native simulation library, ChiselSim.
+This page is intended to serve as a living document to help Chisel users migrate from ChiselTest to Chisel's native simulation library, ChiselSim.
 
 ## Getting Started
 
-The developer's of ChiselTest have maintained some amount of compatibility between ChiselTest and newer versions of Chisel.
+The developers of ChiselTest have maintained some amount of compatibility between ChiselTest and newer versions of Chisel.
 This relies on a forked version of the old SFC so there may be compatibility issues, but it does provide some versions of feature overlap for users to migrate their code.
 
 We recommend using the latest minor version of Chisel 5 and ChiselTest 5 for migrating. At the time of writing this is Chisel v5.1.0 and ChiselTest v5.0.2, but please check for later versions.
@@ -41,7 +41,7 @@ class MyModule extends Module {
 }
 ```
 
-The canonical way to test this would be with a `ChiselScalatestTester` in `src/test/scala`:
+The legacy ChiselTest way to test this would be with a `ChiselScalatestTester` in `src/test/scala`:
 
 <!-- This cannot be mdoc because we do not compile against chiseltest -->
 ```scala
