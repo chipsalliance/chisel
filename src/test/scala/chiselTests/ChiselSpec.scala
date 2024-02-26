@@ -130,7 +130,7 @@ trait ChiselRunners extends Assertions {
     class TestModule extends Module {
       val testPoint = gen
       assert(testPoint.getWidth === expected)
-      val out = IO(Output(chiselTypeOf(testPoint)))
+      val out = IO(chiselTypeOf(testPoint))
       // Sanity check that firrtl doesn't change the width
       val zero = 0.U(0.W).asTypeOf(chiselTypeOf(testPoint))
       if (DataMirror.isWire(testPoint)) {
@@ -154,7 +154,7 @@ trait ChiselRunners extends Assertions {
       val testPoint = gen
       assert(!testPoint.isWidthKnown, s"Asserting that width should be inferred yet width is known to Chisel!")
       // Sanity check that firrtl doesn't change the width
-      val widthcheck = Wire(Output(chiselTypeOf(testPoint)))
+      val widthcheck = Wire(chiselTypeOf(testPoint))
       dontTouch(widthcheck)
       val zero = 0.U(0.W).asTypeOf(chiselTypeOf(testPoint))
       if (DataMirror.isWire(testPoint)) {
