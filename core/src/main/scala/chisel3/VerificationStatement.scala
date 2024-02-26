@@ -308,8 +308,8 @@ object assume extends VerifPrintMacrosDoc {
   ): Assume = {
     val id = new Assume()
     when(!Module.reset.asBool) {
-      failureMessage("Assumption", line, cond, message.map(Printable.pack(_, data: _*)))
-      Builder.pushCommand(Verification(id, Formal.Assume, sourceInfo, Module.clock.ref, cond.ref, ""))
+      val formattedMsg = formatFailureMessage("Assumption", line, cond, message.map(Printable.pack(_, data: _*)))
+      Builder.pushCommand(Verification(id, Formal.Assume, sourceInfo, Module.clock.ref, cond.ref, formattedMsg))
     }
     id
   }
@@ -325,8 +325,8 @@ object assume extends VerifPrintMacrosDoc {
     val id = new Assume()
     message.foreach(Printable.checkScope(_))
     when(!Module.reset.asBool) {
-      failureMessage("Assumption", line, cond, message)
-      Builder.pushCommand(Verification(id, Formal.Assume, sourceInfo, Module.clock.ref, cond.ref, ""))
+      val formattedMsg = formatFailureMessage("Assumption", line, cond, message)
+      Builder.pushCommand(Verification(id, Formal.Assume, sourceInfo, Module.clock.ref, cond.ref, formattedMsg)) 
     }
     id
   }
@@ -432,6 +432,23 @@ private object VerificationStatement {
     (p.source.file.name, p.line, p.lineContent.trim): @nowarn // suppress, there's no clear replacement
   }
 
+  def formatFailureMessage(
+    kind:     String,
+    lineInfo: SourceLineInfo,
+    cond:     Bool,
+    message:  Option[Printable]
+  )(
+    implicit sourceInfo: SourceInfo
+  ): Printable = {
+    val (filename, line, content) = lineInfo
+    val lineMsg = s"$filename:$line $content".replaceAll("%", "%%")
+    message match {
+      case Some(msg) =>
+        p"$kind failed: $msg\n    at $lineMsg\n"
+      case None => p"$kind failed\n    at $lineMsg\n"
+    }
+  }
+
   def failureMessage(
     kind:     String,
     lineInfo: SourceLineInfo,
@@ -440,15 +457,8 @@ private object VerificationStatement {
   )(
     implicit sourceInfo: SourceInfo
   ): Unit = {
-    val (filename, line, content) = lineInfo
-    val lineMsg = s"$filename:$line $content".replaceAll("%", "%%")
-    val fmt = message match {
-      case Some(msg) =>
-        p"$kind failed: $msg\n    at $lineMsg\n"
-      case None => p"$kind failed\n    at $lineMsg\n"
-    }
     when(!cond) {
-      printf.printfWithoutReset(fmt)
+      printf.printfWithoutReset(formatFailureMessage(kind, lineInfo, cond, message))
     }
   }
 }
