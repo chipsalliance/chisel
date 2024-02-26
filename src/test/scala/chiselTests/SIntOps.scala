@@ -210,12 +210,13 @@ class SIntOpsSpec extends ChiselPropSpec with Utils with ShiftRightWidthBehavior
     // Focused test to show the mismatch
     class TestModule extends Module {
       val in = IO(Input(SInt(8.W)))
-      val out = IO(Output(SInt()))
+      val widthcheck = Wire(SInt())
       val shifted = in >> 8
       shifted.getWidth should be(0)
-      out := shifted
+      widthcheck := shifted
+      dontTouch(widthcheck)
     }
     val verilog = ChiselStage.emitSystemVerilog(new TestModule, args)
-    verilog should include("assign out = in[7];")
+    verilog should include(" widthcheck = in[7];")
   }
 }
