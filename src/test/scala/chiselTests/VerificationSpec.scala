@@ -36,11 +36,10 @@ class VerificationSpec extends ChiselPropSpec with Matchers {
     assertContains(lines, "when _T_1 : ")
     assertContains(lines, "cover(clock, _T, UInt<1>(0h1), \"\")")
 
-    assertContains(lines, "when _T_5 : ")
-    assertContains(lines, "assume(clock, _T_3, UInt<1>(0h1), \"\")")
+    assertContains(lines, "assume(clock, _T_3, UInt<1>(0h1), \"Assumption failed")
 
-    assertContains(lines, "when _T_8 : ")
-    assertContains(lines, "assert(clock, _T_6, UInt<1>(0h1), \"\")")
+    assertContains(lines, "when _T_7 : ")
+    assertContains(lines, "assert(clock, _T_5, UInt<1>(0h1), \"\")")
   }
 
   property("annotation of verification constructs should work") {
@@ -68,6 +67,8 @@ class VerificationSpec extends ChiselPropSpec with Matchers {
 
     // check that verification appear in verilog output
     exactly(1, svLines) should include("cover__cov: cov")
-    exactly(1, svLines) should include("assume__assm: assume")
+    exactly(1, svLines) should include("assume__assm:")
+    exactly(1, svLines) should include("assume(io_in != 8'h2)")
+    exactly(1, svLines) should include("$error(\"Assumption failed")
   }
 }
