@@ -209,3 +209,45 @@ For example, you can use Scala CLI to compile a tiny program on the command-line
 ```bash
 scala-cli -S 2.13 -e 'println(chisel3.BuildInfo.firtoolVersion)' --dep org.chipsalliance::chisel:6.0.0
 ```
+
+### Verilog Simulation
+
+#### Verilator
+
+[Verilator](https://www.veripool.org/verilator/) is a high-performance, open-source Verilog simulator.
+It is not a simulator in the traditional sense, but rather it works by transpiling your Verilog code to C++ which you then compile into a binary.
+This results in Verilator itself having additional requirements, like a C++ compiler supporting at least C++14, and Make.
+
+Please see [Verilator's install page](https://veripool.org/guide/latest/install.html) for more detailed instructions.
+
+##### Linux
+
+Most Linux package managers include Verilator, for example:
+
+```sh
+apt install -y verilator
+```
+
+Note that the default version is likely to be old, especially on older Linux distributions.
+Users are encouraged to build Verilator from source, please see [the instructions on the Verilator website](https://veripool.org/guide/latest/install.html#git-quick-install).
+
+##### MacOS
+
+Using [MacPorts](https://www.macports.org):
+```sh
+sudo port install verilator
+```
+
+Using [Homebrew](https://brew.sh/):
+```sh
+brew install verilator
+```
+
+##### Windows
+
+As mentioned above, Verilator is not a "single-executable" solution; it requires a C++ compiler and also uses quite a bit of Perl scripts.
+We recommend using the Yosys OSS CAD Suite build for Windows, see [the install instructions](https://github.com/YosysHQ/oss-cad-suite-build?tab=readme-ov-file#installation).
+Note that the Yosys OSS CAD Suite requires [MinGW (Minimalist GNU for Windows)](https://sourceforge.net/projects/mingw/).
+
+Any Windows users who would like to help improve this usability of Chisel on Windows are encouraged to reach out.
+See how to get in contact on the [Chisel community page](/community).
