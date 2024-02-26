@@ -560,38 +560,40 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils with ShiftRigh
     // Focused test to show the mismatch
     class TestModule extends Module {
       val in = IO(Input(UInt(8.W)))
-      val out = IO(Output(UInt()))
+      val widthcheck = Wire(UInt())
       val shifted = in >> 8
       shifted.getWidth should be(0)
-      out := shifted
+      widthcheck := shifted
+      dontTouch(widthcheck)
     }
     val verilog = ChiselStage.emitSystemVerilog(new TestModule, args)
-    verilog should include("assign out = 1'h0;")
+    verilog should include(" widthcheck = 1'h0;")
   }
 
   property("--use-legacy-shift-right-width should have a minimal impact on emission") {
     class TestModule extends Module {
       val a, b, c = IO(Input(UInt(8.W)))
-      val out = IO(Output(UInt()))
+      val widthcheck = Wire(UInt())
+      dontTouch(widthcheck)
 
       val w = WireInit(a)
-      out := (w >> 3) + b - c
+      widthcheck := (w >> 3) + b - c
     }
     val defaultFirrtl = ChiselStage.emitCHIRRTL(new TestModule)
     val withOptFirrtl = ChiselStage.emitCHIRRTL(new TestModule, Array("--use-legacy-shift-right-width"))
     // We should see the fixup
-    val defaultOnly = Seq("node _out_T = shr(w, 3)")
+    val defaultOnly = Seq("node _widthcheck_T = shr(w, 3)")
     val withOptOnly = Seq(
-      "node _out_shrLegacyWidthFixup = shr(w, 3)",
-      "node _out_T = pad(_out_shrLegacyWidthFixup, 1)"
+      "node _widthcheck_shrLegacyWidthFixup = shr(w, 3)",
+      "node _widthcheck_T = pad(_widthcheck_shrLegacyWidthFixup, 1)"
     )
     // Everything downstream of the shr or pad should be unchanged
     val common = Seq(
-      "node _out_T_1 = add(_out_T, b)",
-      "node _out_T_2 = tail(_out_T_1, 1)",
-      "node _out_T_3 = sub(_out_T_2, c)",
-      "node _out_T_4 = tail(_out_T_3, 1)",
-      "connect out, _out_T_4"
+      "node _widthcheck_T_1 = add(_widthcheck_T, b)",
+      "node _widthcheck_T_2 = tail(_widthcheck_T_1, 1)",
+      "node _widthcheck_T_3 = sub(_widthcheck_T_2, c)",
+      "node _widthcheck_T_4 = tail(_widthcheck_T_3, 1)",
+      "connect widthcheck, _widthcheck_T_4"
     )
     for (line <- (defaultOnly ++ common)) {
       defaultFirrtl should include(line)

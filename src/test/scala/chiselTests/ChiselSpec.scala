@@ -130,7 +130,7 @@ trait ChiselRunners extends Assertions {
     class TestModule extends Module {
       val testPoint = gen
       assert(testPoint.getWidth === expected)
-      val out = IO(Output(chiselTypeOf(testPoint)))
+      val out = IO(chiselTypeOf(testPoint))
       // Sanity check that firrtl doesn't change the width
       val zero = 0.U(0.W).asTypeOf(chiselTypeOf(testPoint))
       if (DataMirror.isWire(testPoint)) {
@@ -154,22 +154,23 @@ trait ChiselRunners extends Assertions {
       val testPoint = gen
       assert(!testPoint.isWidthKnown, s"Asserting that width should be inferred yet width is known to Chisel!")
       // Sanity check that firrtl doesn't change the width
-      val out = IO(Output(chiselTypeOf(testPoint)))
+      val widthcheck = Wire(chiselTypeOf(testPoint))
+      dontTouch(widthcheck)
       val zero = 0.U(0.W).asTypeOf(chiselTypeOf(testPoint))
       if (DataMirror.isWire(testPoint)) {
         testPoint := zero
       }
-      out := zero
-      out := testPoint
+      widthcheck := zero
+      widthcheck := testPoint
     }
     val verilog =
       ChiselStage.emitSystemVerilog(new TestModule, args.toArray :+ "--dump-fir", Array("-disable-all-randomization"))
     expected match {
-      case 0 => assert(!verilog.contains("out"))
+      case 0 => assert(!verilog.contains("widthcheck"))
       case 1 =>
-        assert(verilog.contains(s"out"))
-        assert(!verilog.contains(s"0] out"))
-      case _ => assert(verilog.contains(s"[${expected - 1}:0] out"))
+        assert(verilog.contains(s"widthcheck"))
+        assert(!verilog.contains(s"0] widthcheck"))
+      case _ => assert(verilog.contains(s"[${expected - 1}:0] widthcheck"))
     }
   }
 
