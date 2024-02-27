@@ -414,14 +414,20 @@ package object chisel3 {
 
   final val deprecatedPublicAPIMsg = "APIs in chisel3.internal are not intended to be public"
 
-  /** Contains universal methods for target accesses.
+  /** Exposes target information and [[suggestName]] functionality of a
+    * [[NamedComponent]].
     */
   sealed trait HasTarget {
     def toTarget:         ReferenceTarget
     def toAbsoluteTarget: ReferenceTarget
     def toRelativeTarget(root: Option[BaseModule]): ReferenceTarget
 
-    def suggestName(name: String): Unit
+    /** Exposes the [[suggestName]] method of the [[NamedComponent]] so users
+      * may provide a seed to influence the name generation of this component.
+      *
+      * @param seed seed for the name of this component
+      */
+    def suggestName(seed: String): Unit
   }
 
   object HasTarget {
@@ -434,7 +440,7 @@ package object chisel3 {
       def toAbsoluteTarget = t.toAbsoluteTarget
       def toRelativeTarget(root: Option[BaseModule]) = t.toRelativeTarget(root)
 
-      def suggestName(name: String): Unit = t.suggestName(name)
+      def suggestName(seed: String): Unit = t.suggestName(seed)
     }
 
   }
