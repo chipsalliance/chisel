@@ -169,7 +169,7 @@ created in their body--from the outside, the inputs must be supplied and only
 the outputs may be accessed.
 
 The graphs represented by `Class` declarations and `Object` instantiations
-coexist within the hardware graph instance graph. `Object` instances can exist
+coexist within the hardware instance graph. `Object` instances can exist
 within hardware modules, providing domain-specific information, but hardware
 instances cannot exist within `Class` declarations.
 
