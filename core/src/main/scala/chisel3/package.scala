@@ -422,8 +422,8 @@ package object chisel3 {
     def toAbsoluteTarget: ReferenceTarget
     def toRelativeTarget(root: Option[BaseModule]): ReferenceTarget
 
-    /** Exposes the [[suggestName]] method of the [[NamedComponent]] so users
-      * may provide a seed to influence the name generation of this component.
+    /** Exposes the suggestName method of the NamedComponent so users can
+      * provide a seed to influence the name generation of this component.
       *
       * @param seed seed for the name of this component
       */
