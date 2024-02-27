@@ -7,17 +7,22 @@ sidebar_position: 0
 
 ## Background
 
-With the release of Chisel 5, Chisel moved off of the legacy [Scala FIRRTL Compiler](https://github.com/chipsalliance/firrtl) to the MLIR FIRRTL Compiler (part of the [llvm/circt](https://github.com/llvm/circt) project).
+With the release of Chisel 5, Chisel moved off of the legacy [Scala FIRRTL Compiler (SFC)](https://github.com/chipsalliance/firrtl) to the MLIR FIRRTL Compiler (MFC), part of the [llvm/circt](https://github.com/llvm/circt) project.
+After this release, the Scala FIRRTL Compiler was no longer maintained.
 This change in underlying compiler technology has been a crucial piece in enabling the addition of many new features to Chisel, including linear-temporal logic (LTL) properties, Probes, and Layers.
 Unfortunately, Chisel 3's testing library, [ChiselTest](https://github.com/ucb-bar/chiseltest), is built around the SFC, making it difficult to support ChiselTest in Chisel 5 and beyond.
+_ChiselTest is not used or maintained by the core Chisel development team or their employers._
 
-This is not a fundamental problem, it is one of engineering resources.
-This page is intended to serve as a living document to help Chisel users migrate from ChiselTest to Chisel's native simulation library, ChiselSim.
+ChiselSim is the approved replacement for ChiselTest in Chisel 5 and beyond.
+ChiselSim is maintained and used by the core Chisel development team.
+This page describes how to migrate from ChiselTest to ChiselSim.
 
 ## Getting Started
 
 The developers of ChiselTest have maintained some amount of compatibility between ChiselTest and newer versions of Chisel.
-This relies on a forked version of the old SFC so there may be compatibility issues, but it does provide some versions of feature overlap for users to migrate their code.
+This relies on a forked version of the SFC.
+Use of ChiselTest with Chisel 6 or later will prevent the usage of new Chisel 6 features.
+It is not expected that new versions of Chisel will be compatible with the SFC.
 
 We recommend using the latest minor version of Chisel 5 and ChiselTest 5 for migrating. At the time of writing this is Chisel v5.1.0 and ChiselTest v5.0.2, but please check for later versions.
 
