@@ -420,6 +420,8 @@ package object chisel3 {
     def toTarget:         ReferenceTarget
     def toAbsoluteTarget: ReferenceTarget
     def toRelativeTarget(root: Option[BaseModule]): ReferenceTarget
+
+    def suggestName(name: String): Unit
   }
 
   object HasTarget {
@@ -431,6 +433,8 @@ package object chisel3 {
       def toTarget = t.toTarget
       def toAbsoluteTarget = t.toAbsoluteTarget
       def toRelativeTarget(root: Option[BaseModule]) = t.toRelativeTarget(root)
+
+      def suggestName(name: String): Unit = t.suggestName(name)
     }
 
   }
