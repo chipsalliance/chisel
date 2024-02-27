@@ -326,7 +326,7 @@ object assume extends VerifPrintMacrosDoc {
     message.foreach(Printable.checkScope(_))
     when(!Module.reset.asBool) {
       val formattedMsg = formatFailureMessage("Assumption", line, cond, message)
-      Builder.pushCommand(Verification(id, Formal.Assume, sourceInfo, Module.clock.ref, cond.ref, formattedMsg)) 
+      Builder.pushCommand(Verification(id, Formal.Assume, sourceInfo, Module.clock.ref, cond.ref, formattedMsg))
     }
     id
   }
