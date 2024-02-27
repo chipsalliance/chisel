@@ -208,6 +208,8 @@ jobs:
           ref: ${{ inputs.ref }}
           # Need full history to correctly determine SNAPSHOT version
           fetch-depth: 0
+      - name: Install Tabby OSS Cad Suite
+        uses: ./.github/workflows/setup-oss-cad-suite
       - name: Cache Scala
         uses: coursier/cache-action@v6
       - name: Setup Scala
