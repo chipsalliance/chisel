@@ -155,9 +155,9 @@ Classes and Objects are to `Property` types what modules and instances are to
 hardware types. That is, they provide a means to declare hierarchies through
 which `Property` typed values flow. `Class` declares a hierarchical container
 with input and output `Property` ports, and a body that contains `Property`
-connections and `Object`s. `Object`s instantiate a `Class`, which requires any
-input `Property` ports to be assigned, and allows any output `Property` ports to
-be read.
+connections and `Object`s. `Object`s represent the instantiation of a `Class`,
+which requires any input `Property` ports to be assigned, and allows any output
+`Property` ports to be read.
 
 This allows domain-specific data models to be built using the basic primitives
 of an object-oriented programming language, and embedded directly in the
