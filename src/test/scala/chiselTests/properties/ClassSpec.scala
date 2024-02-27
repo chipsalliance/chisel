@@ -181,4 +181,14 @@ class ClassSpec extends ChiselFlatSpec with MatchesAndOmits {
       "propassign obj2.in, obj1.out"
     )()
   }
+
+  it should "support getting a ClassType from a Class Definition" in {
+    class Test extends Class {}
+
+    ChiselStage.emitCHIRRTL(new RawModule {
+      val definition = Definition(new Test)
+      val classType = definition.getClassType
+      classType.name should equal("Test")
+    })
+  }
 }
