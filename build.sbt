@@ -447,6 +447,7 @@ lazy val docs = project // new documentation project
   .settings(usePluginSettings: _*)
   .settings(commonSettings)
   .settings(
+    libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.14",
     scalacOptions ++= Seq(
       "-language:reflectiveCalls",
       "-language:implicitConversions",
