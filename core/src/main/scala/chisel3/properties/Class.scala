@@ -206,6 +206,22 @@ object Class {
       val classType = ClassType.unsafeGetClassTypeByName(baseModule.name)
       Property[classType.Type]()
     }
+
+    /** Get a ClassType type from a Definition[Class].
+      *
+      * This is useful when a ClassType type is needed for other Property types.
+      *
+      * This method is safe, and should be used over unsafeGetClassTypeByName when possible.
+      */
+    def getClassType: ClassType = {
+      // Get the BaseModule for the Class this is a definition of.
+      val baseModule = definition.getInnerDataContext.getOrElse(
+        throwException("Internal Error! Class instance did not have an associated BaseModule.")
+      )
+
+      // Get a ClassType from the Class name.
+      ClassType.unsafeGetClassTypeByName(baseModule.name)
+    }
   }
 
   implicit class ClassInstanceOps[T <: Class](instance: Instance[T]) {
