@@ -95,9 +95,25 @@ class MyModuleSpec extends AnyFlatSpec {
 For both ChiselTest and ChiselSim, you will typically run this with `sbt test` or some way of running tests.
 The output from ChiselSim will look something like the following:
 
-```scala mdoc
+<!-- KEEP THE CODE BLOCKS BELOW IN SYNC -->
+```scala mdoc:silent
 // This is how one can run a ScalaTest Spec manually, typically one would use "sbt test"
 org.scalatest.nocolor.run(new MyModuleSpec)
 ```
+
+```scala mdoc:passthrough
+// It does not seem that ScalaTest has a way to run Suites that throw exceptions or otherwise report failure
+// Also, for some reason "Last output value : 42" isn't captured by the Console.withOut
+println("`"*3)
+val stdout = new java.io.ByteArrayOutputStream()
+Console.withOut(stdout) {
+  org.scalatest.nocolor.run(new MyModuleSpec)
+}
+val result = stdout.toString
+assert(result.nonEmpty && !result.toLowerCase.contains("failed"), result)
+println(result)
+println("`"*3)
+```
+<!-- KEEP THE CODE BLOCKS ABOVE IN SYNC -->
 
 ChiselSim also does not currently have any support for `fork`-`join`, so any tests using those constructs will need to be rewritten in a single-threaded manner.
