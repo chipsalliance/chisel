@@ -199,7 +199,9 @@ object Class {
     def getPropertyType: Property[ClassType] = {
       // Get the BaseModule for the Class this is a definition of.
       val baseModule = definition.getInnerDataContext.getOrElse(
-        throwException("Internal Error! Class instance did not have an associated BaseModule.")
+        throwException(
+          s"Internal Error! Class instance did not have an associated BaseModule for definition ${definition}."
+        )
       )
 
       // Get a Property[ClassType] type from the Class name.
@@ -216,7 +218,9 @@ object Class {
     def getClassType: ClassType = {
       // Get the BaseModule for the Class this is a definition of.
       val baseModule = definition.getInnerDataContext.getOrElse(
-        throwException("Internal Error! Class instance did not have an associated BaseModule.")
+        throwException(
+          s"Internal Error! Class instance did not have an associated BaseModule for definition ${definition}."
+        )
       )
 
       // Get a ClassType from the Class name.
@@ -234,7 +238,9 @@ object Class {
     def getPropertyReference: Property[ClassType] = {
       // Get the BaseModule from the Instance.
       val baseModule = instance.getInnerDataContext.getOrElse(
-        throwException("Internal Error! Class instance did not have an associated BaseModule.")
+        throwException(
+          s"Internal Error! Class instance did not have an associated BaseModule for instance ${instance}."
+        )
       )
 
       // Get a StaticObject for bookkeeping.
