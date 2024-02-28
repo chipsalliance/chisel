@@ -42,4 +42,32 @@ class SRAMSpec extends ChiselFlatSpec {
     dummyAnno should be(Some("~Top|Top>sram_mem"))
   }
 
+  it should "Get emitted with a custom name when one is suggested" in {
+
+    class Top extends Module {
+      val sramInterface = SRAM(
+        size = 32,
+        tpe = UInt(8.W),
+        numReadPorts = 0,
+        numWritePorts = 0,
+        numReadwritePorts = 1
+      )
+      require(sramInterface.underlying.nonEmpty)
+      sramInterface.underlying.get.suggestName("carrot")
+      annotate(new ChiselAnnotation {
+        override def toFirrtl: Annotation = DummyAnno(sramInterface.underlying.get.toTarget)
+      })
+    }
+    val (chirrtlCircuit, annos) = getFirrtlAndAnnos(new Top)
+    val chirrtl = chirrtlCircuit.serialize
+    chirrtl should include("module Top :")
+    chirrtl should include("smem carrot : UInt<8> [32]")
+    chirrtl should include(
+      "wire sramInterface : { readPorts : { flip address : UInt<5>, flip enable : UInt<1>, data : UInt<8>}[0], writePorts : { flip address : UInt<5>, flip enable : UInt<1>, flip data : UInt<8>}[0], readwritePorts : { flip address : UInt<5>, flip enable : UInt<1>, flip isWrite : UInt<1>, readData : UInt<8>, flip writeData : UInt<8>}[1]}"
+    )
+
+    val dummyAnno = annos.collectFirst { case DummyAnno(t) => (t.toString) }
+    dummyAnno should be(Some("~Top|Top>carrot"))
+  }
+
 }
