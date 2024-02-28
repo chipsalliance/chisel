@@ -304,7 +304,7 @@ import chisel3.experimental.noPrefix
 
 class ExampleNoPrefix extends Module {
   val in = IO(Input(UInt(2.W)))
-  val out = IO(Output(UInt()))
+  val out = IO(Output(UInt(5.W)))
 
   val add = noPrefix {
     // foo will not get a prefix
