@@ -201,7 +201,7 @@ class Example7 extends Module {
   val in = IO(Input(UInt(2.W)))
   val out = IO(Output(UInt(4.W)))
 
-  val add = noPrefix { 
+  val add = noPrefix {
     val sum = RegNext(in + 1.U)
     sum + 1.U
   }

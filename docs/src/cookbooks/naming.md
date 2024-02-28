@@ -84,7 +84,7 @@ renaming these signals with more context-dependent names, but it is a work in pr
 
 This is an example of the module instability problem, which results from several modules all sharing the exact same name. To fix this, you must add more specificity to your `Module`'s name to avoid these name collisions.
 
-This can be done by leveraging the `desiredName` and `typeName` APIs. 
+This can be done by leveraging the `desiredName` and `typeName` APIs.
 `desiredName` is for indicating the names of `Modules` (e.g. influenced by the parameters passed in), and `typeName` is useful for modules which are type-parameterized by subclasses of `Data`. Overriding `desiredName` can reduce or even eliminate name collisions. For instance, suppose your module looks like the following:
 
 ```scala mdoc:silent
@@ -201,7 +201,7 @@ Yes, using the `HasTypeAlias` trait. FIRRTL has a construct to alias a bundle ty
 ```
 circuit Top :
   type MyBundle = { foo : UInt<8>, bar : UInt<1>}
-  
+
   module Top :
     //...
 ```
