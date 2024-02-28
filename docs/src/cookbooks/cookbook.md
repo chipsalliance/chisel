@@ -775,20 +775,30 @@ import chisel3._
 // Count the number of set bits up to and including each bit position
 class CountBits(width: Int) extends Module {
   val bits = IO(Input(UInt(width.W)))
-  val countSequence = Seq.tabulate(width)(i => IO(Output(UInt())))
   val countVector = IO(Output(Vec(width, UInt())))
+
+  private val countSequence = Seq.tabulate(width)(i => Wire(UInt()))
   countSequence.zipWithIndex.foreach { case (port, i) =>
     port := util.PopCount(bits(i, 0))
   }
   countVector := countSequence
 }
+
+class Top(width: Int) extends Module {
+  val countBits = Module(new CountBits(width))
+  countBits.bits :<>= DontCare
+  dontTouch(countBits.bits)
+  dontTouch(countBits.countVector)
+}
 ```
+
+Note that top modules or public modules cannot have unknown widths.
 
 Unlike `Vecs` which represent a singular Chisel type and must have the same width for every element,
 `Seq` is a purely Scala construct, so their elements are independent from the perspective of Chisel and can have different widths.
 
 ```scala mdoc:verilog
-circt.stage.ChiselStage.emitSystemVerilog(new CountBits(4))
+circt.stage.ChiselStage.emitSystemVerilog(new Top(4))
   // remove the body of the module by removing everything after ');'
   .split("\\);")
   .head + ");\n"

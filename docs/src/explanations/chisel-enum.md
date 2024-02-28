@@ -115,7 +115,7 @@ You can cast an enum to a `UInt` using `.asUInt`:
 ```scala mdoc
 class ToUInt extends RawModule {
   val in = IO(Input(Opcode()))
-  val out = IO(Output(UInt()))
+  val out = IO(Output(UInt(in.getWidth.W)))
   out := in.asUInt
 }
 ```

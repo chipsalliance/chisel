@@ -133,8 +133,8 @@ class Example3 extends Module {
   val in = IO(Input(UInt(2.W)))
   // val in = autoNameRecursively("in")(prefix("in")(IO(Input(UInt(2.W)))))
 
-  val out = IO(Output(UInt()))
-  // val out = autoNameRecursively("out")(prefix("out")(IO(Output(UInt()))))
+  val out = IO(Output(UInt(4.W)))
+  // val out = autoNameRecursively("out")(prefix("out")(IO(Output(UInt(4.W)))))
 
   def func() = {
     val delay = RegNext(in)
@@ -155,7 +155,7 @@ emitSystemVerilog(new Example3)
 There is also a slight variant (`autoNameRecursivelyProduct`) for naming hardware with names provided by an unapply:
 ```scala mdoc
 class UnapplyExample extends Module {
-  def mkIO() = (IO(Input(UInt(2.W))), IO(Output(UInt())))
+  def mkIO() = (IO(Input(UInt(2.W))), IO(Output(UInt(2.W))))
   val (in, out) = mkIO()
   // val (in, out) = autoNameRecursivelyProduct(List(Some("in"), Some("out")))(mkIO())
 
@@ -179,7 +179,7 @@ Also note that the prefixes append to each other (including the prefix generated
 ```scala mdoc
 class Example6 extends Module {
   val in = IO(Input(UInt(2.W)))
-  val out = IO(Output(UInt()))
+  val out = IO(Output(UInt(4.W)))
 
   val add = prefix("foo") {
     val sum = RegNext(in + 1.U)
@@ -199,7 +199,7 @@ don't want the prefixing behavior. In this case, you can call `noPrefix`:
 ```scala mdoc
 class Example7 extends Module {
   val in = IO(Input(UInt(2.W)))
-  val out = IO(Output(UInt()))
+  val out = IO(Output(UInt(4.W)))
 
   val add = noPrefix { 
     val sum = RegNext(in + 1.U)
@@ -221,7 +221,7 @@ name will still be prefixed (including by the plugin). You can always use the `n
 ```scala mdoc
 class Example8 extends Module {
   val in = IO(Input(UInt(2.W)))
-  val out = IO(Output(UInt()))
+  val out = IO(Output(UInt(4.W)))
 
   val add = {
     val sum = RegNext(in + 1.U).suggestName("foo")
@@ -244,7 +244,7 @@ class ConnectionPrefixExample extends Module {
   val in1 = IO(Input(UInt(2.W)))
 
   val out0 = {
-    val port = IO(Output(UInt()))
+    val port = IO(Output(UInt(5.W)))
     // Even though this suggestName is before mul, the prefix used in this scope
     // is derived from `val out0`, so this does not affect the name of mul
     port.suggestName("foo")
@@ -254,8 +254,8 @@ class ConnectionPrefixExample extends Module {
     port
   }
 
-  val out1 = IO(Output(UInt()))
-  val out2 = IO(Output(UInt()))
+  val out1 = IO(Output(UInt(4.W)))
+  val out2 = IO(Output(UInt(4.W)))
 
   out1 := {
     // out1_sum
@@ -294,9 +294,9 @@ class TemporaryExample extends Module {
 
   val out = {
     // We need 2 ports so firtool will maintain the common subexpression
-    val port0 = IO(Output(UInt()))
+    val port0 = IO(Output(UInt(4.W)))
     // out_port1
-    val port1 = IO(Output(UInt()))
+    val port1 = IO(Output(UInt(4.W)))
     val _sum = in0 + in1
     port0 := _sum + 1.U
     port1 := _sum - 1.U
@@ -316,8 +316,8 @@ If an unnamed signal is itself used to generate a prefix, the leading `_` will b
 class TemporaryPrefixExample extends Module {
   val in0 = IO(Input(UInt(2.W)))
   val in1 = IO(Input(UInt(2.W)))
-  val out0 = IO(Output(UInt()))
-  val out1 = IO(Output(UInt()))
+  val out0 = IO(Output(UInt(3.W)))
+  val out1 = IO(Output(UInt(4.W)))
 
   val _sum = {
     val x = in0 + in1
@@ -342,7 +342,7 @@ names more stable and is highly recommended to do.
 class Example9(width: Int) extends Module {
   override val desiredName = s"EXAMPLE9WITHWIDTH$width"
   val in = IO(Input(UInt(width.W)))
-  val out = IO(Output(UInt()))
+  val out = IO(Output(UInt((width + 2).W)))
 
   val add = (in + (in + in).suggestName("foo"))
 
