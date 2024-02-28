@@ -1,0 +1,2 @@
+# chisel3.HasTarget is sealed
+ProblemFilters.exclude[ReversedMissingMethodProblem]("chisel3.package#HasTarget.suggestName")
