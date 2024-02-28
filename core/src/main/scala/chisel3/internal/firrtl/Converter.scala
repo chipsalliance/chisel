@@ -11,7 +11,7 @@ import chisel3.internal.{castToInt, throwException, HasId}
 import chisel3.internal.firrtl.ir._
 import chisel3.EnumType
 import scala.annotation.tailrec
-import scala.collection.immutable.{Queue, VectorBuilder}
+import scala.collection.immutable.{Queue, VectorBuilder, VectorMap}
 
 private[chisel3] object Converter {
   // TODO modeled on unpack method on Printable, refactor?
@@ -44,6 +44,10 @@ private[chisel3] object Converter {
     val loc = sourceInfo.makeMessage(" " + _)
     reportInternalError(s"Trying to convert a cloned IO of $mod inside of $mod itself$loc!")
   }
+
+  // Create a map from base module to the component.
+  def getIdToComponent(components: Seq[Component]): VectorMap[BaseModule, Component] =
+    VectorMap[BaseModule, Component](components.map(c => c.id -> c): _*)
 
   def convert(info: SourceInfo): fir.Info = info match {
     case _:  NoSourceInfo => fir.NoInfo
@@ -427,11 +431,16 @@ private[chisel3] object Converter {
     case t: Property[_] => t.getPropertyType
   }
 
-  def convert(name: String, param: Param): fir.Param = param match {
+  def convert(name: String, param: Param, idToComponent: VectorMap[BaseModule, Component]): fir.Param = param match {
     case IntParam(value)    => fir.IntParam(name, value)
     case DoubleParam(value) => fir.DoubleParam(name, value)
     case StringParam(value) => fir.StringParam(name, fir.StringLit(value))
-    case RawParam(value)    => fir.RawStringParam(name, value)
+    case PrintableParam(value, id) => {
+      val ctx = idToComponent.get(id).get
+      val (fmt, _) = unpack(value, ctx)
+      fir.StringParam(name, fir.StringLit(fmt))
+    }
+    case RawParam(value) => fir.RawStringParam(name, value)
   }
 
   // TODO: Modify Panama CIRCT to account for type aliasing information. This is a temporary hack to
@@ -459,7 +468,11 @@ private[chisel3] object Converter {
     fir.Port(convert(port.sourceInfo), getRef(port.id, port.sourceInfo).name, dir, tpe)
   }
 
-  def convert(component: Component, typeAliases: Seq[String]): fir.DefModule = component match {
+  def convert(
+    component:     Component,
+    typeAliases:   Seq[String],
+    idToComponent: VectorMap[BaseModule, Component]
+  ): fir.DefModule = component match {
     case ctx @ DefModule(id, name, public, layers, ports, cmds) =>
       fir.Module(
         convert(id._getSourceLocator),
@@ -475,7 +488,7 @@ private[chisel3] object Converter {
         name,
         (ports ++ ctx.secretPorts).map(p => convert(p, typeAliases, topDir)),
         id.desiredName,
-        params.keys.toList.sorted.map { name => convert(name, params(name)) }
+        params.keys.toList.sorted.map { name => convert(name, params(name), idToComponent) }
       )
     case ctx @ DefIntrinsicModule(id, name, ports, topDir, params) =>
       fir.IntModule(
@@ -483,7 +496,7 @@ private[chisel3] object Converter {
         name,
         (ports ++ ctx.secretPorts).map(p => convert(p, typeAliases, topDir)),
         id.intrinsic,
-        params.keys.toList.sorted.map { name => convert(name, params(name)) }
+        params.keys.toList.sorted.map { name => convert(name, params(name), idToComponent) }
       )
     case ctx @ DefClass(id, name, ports, cmds) =>
       fir.DefClass(
@@ -511,9 +524,10 @@ private[chisel3] object Converter {
 
   def convert(circuit: Circuit): fir.Circuit = {
     val typeAliases: Seq[String] = circuit.typeAliases.map(_.name)
+    val idToComponet = getIdToComponent(circuit.components)
     fir.Circuit(
       fir.NoInfo,
-      circuit.components.map(c => convert(c, typeAliases)),
+      circuit.components.map(c => convert(c, typeAliases, idToComponet)),
       circuit.name,
       circuit.typeAliases.map(ta => fir.DefTypeAlias(convert(ta.sourceInfo), ta.name, ta.underlying)),
       circuit.layers.map(convertLayer),
@@ -525,9 +539,10 @@ private[chisel3] object Converter {
   def convertLazily(circuit: Circuit): fir.Circuit = {
     val lazyModules = LazyList() ++ circuit.components
     val typeAliases: Seq[String] = circuit.typeAliases.map(_.name)
+    val idToComponet = getIdToComponent(circuit.components)
     fir.Circuit(
       fir.NoInfo,
-      lazyModules.map(lm => convert(lm, typeAliases)),
+      lazyModules.map(lm => convert(lm, typeAliases, idToComponet)),
       circuit.name,
       circuit.typeAliases.map(ta => {
         // To generate the correct FIRRTL type alias we need to always emit a BundleType.
