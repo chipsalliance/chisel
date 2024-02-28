@@ -414,8 +414,7 @@ package object chisel3 {
 
   final val deprecatedPublicAPIMsg = "APIs in chisel3.internal are not intended to be public"
 
-  /** Exposes target information and [[suggestName]] functionality of a
-    * [[NamedComponent]].
+  /** Exposes target information and suggestName functionality of a NamedComponent.
     */
   sealed trait HasTarget {
     def toTarget:         ReferenceTarget
