@@ -425,40 +425,36 @@ abstract class VerificationStatement extends NamedComponent {
 /** Helper functions for common functionality required by stop, assert, assume or cover */
 private object VerificationStatement {
 
-  type SourceLineInfo = (String, Int, String)
-
-  def getLine(c: blackbox.Context): SourceLineInfo = {
-    val p = c.enclosingPosition
-    (p.source.file.name, p.line, p.lineContent.trim): @nowarn // suppress, there's no clear replacement
-  }
-
   def formatFailureMessage(
-    kind:     String,
-    lineInfo: SourceLineInfo,
-    cond:     Bool,
-    message:  Option[Printable]
+    kind:    String,
+    cond:    Bool,
+    message: Option[Printable]
   )(
     implicit sourceInfo: SourceInfo
   ): Printable = {
-    val (filename, line, content) = lineInfo
-    val lineMsg = s"$filename:$line $content".replaceAll("%", "%%")
+    val loc = sourceInfo.serialize
+    val lineMsg =
+      if (loc.nonEmpty) {
+        s"\n    at ${loc.replaceAll("%", "%%")}"
+      } else {
+        ""
+      }
     message match {
       case Some(msg) =>
-        p"$kind failed: $msg\n    at $lineMsg\n"
-      case None => p"$kind failed\n    at $lineMsg\n"
+        p"$kind failed: ${msg}$lineMsg\n"
+      case None => p"$kind failed$lineMsg\n"
     }
   }
 
   def failureMessage(
-    kind:     String,
-    lineInfo: SourceLineInfo,
-    cond:     Bool,
-    message:  Option[Printable]
+    kind:    String,
+    cond:    Bool,
+    message: Option[Printable]
   )(
     implicit sourceInfo: SourceInfo
   ): Unit = {
     when(!cond) {
-      printf.printfWithoutReset(formatFailureMessage(kind, lineInfo, cond, message))
+      printf.printfWithoutReset(formatFailureMessage(kind, cond, message))
     }
   }
 }

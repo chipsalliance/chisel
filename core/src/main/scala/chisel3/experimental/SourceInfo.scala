@@ -30,11 +30,16 @@ sealed trait SourceInfo {
 
   /** The filename for the originating source file, if known */
   def filenameOption: Option[String]
+
+  /** Convert to String for FIRRTL emission */
+  def serialize: String
 }
 
 sealed trait NoSourceInfo extends SourceInfo {
   def makeMessage(f: String => String): String = ""
   def filenameOption: Option[String] = None
+
+  def serialize: String = ""
 }
 
 /** For when source info can't be generated because of a technical limitation, like for Reg because
