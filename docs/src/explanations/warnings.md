@@ -61,9 +61,6 @@ The supported actions are:
 The following example issues a warning when elaborated normally
 
 ```scala mdoc:invisible:reset
-// Some other test is clobbering the global Logger which breaks the warnings below
-// Setting the output stream to the Console fixes the issue
-logger.Logger.setConsole()
 // Helper to throw away return value so it doesn't show up in mdoc
 def compile(gen: => chisel3.RawModule, args: Array[String] = Array()): Unit = {
   circt.stage.ChiselStage.emitCHIRRTL(gen, args = args)
