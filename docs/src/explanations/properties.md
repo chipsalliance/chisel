@@ -292,6 +292,11 @@ The `Top` module represents the entrypoint. It creates the `Definition` of the
 references, collects them into a list, and outputs the list so it will be
 exposed to the outside.
 
+While it is not required to use the `Definition` API to define a `Class`, this
+is the "safe" API, with support in Chisel for working with `Definition`s and
+`Instance`s of a `Class`. There is also an "unsafe" API. See `DynamicObject` for
+more information.
+
 To illustrate what this example generates, here is a listing of the FIRRTL:
 
 ```
@@ -354,7 +359,7 @@ circuit Top :
 To understand the `Object` graph that is constructed, we will consider an
 entrypoint to elaboration, and then show a hypothetical JSON representation of
 the `Object` graph. The details of how we go from IR to an `Object` graph are
-outside the scope of this document, and implemented by external tools.
+outside the scope of this document, and implemented by related tools.
 
 If we elaborate `Top`, the `descriptions` output `Property` is our entrypoint to
 the `Object` graph. Within it, there are two `Object`s, the `CSRDescription`s of
