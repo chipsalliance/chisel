@@ -401,20 +401,34 @@ object cover extends VerifPrintMacrosDoc {
 
 object stop {
 
-  /** Terminate execution, indicating success.
+  /** Terminate execution, indicating success and printing a message.
     *
-    * @param message a string describing why the simulation was stopped
+    * @param message a message describing why simulation was stopped
     */
-  def apply(message: String = "")(implicit sourceInfo: SourceInfo): Stop = {
-    val stp = new Stop()
-    when(!Module.reset.asBool) {
-      pushCommand(Stop(stp, sourceInfo, Builder.forcedClock.ref, 0))
-    }
-    stp
-  }
+  def apply(message: String)(implicit sourceInfo: SourceInfo): Stop = buildStopCommand(Some(PString(message)))
+
+  /** Terminate execution, indicating success and printing a message.
+    *
+    * @param message a printable describing why simulation was stopped
+    */
+  def apply(message: Printable)(implicit sourceInfo: SourceInfo): Stop = buildStopCommand(Some(message))
+
+  /** Terminate execution, indicating success.
+    */
+  def apply()(implicit sourceInfo: SourceInfo): Stop = buildStopCommand(None)
 
   /** Named class for [[stop]]s. */
   final class Stop private[chisel3] () extends VerificationStatement
+
+  private def buildStopCommand(message: Option[Printable])(implicit sourceInfo: SourceInfo): Stop = {
+    val stopId = new Stop()
+    message.foreach(Printable.checkScope(_))
+    when(!Module.reset.asBool) {
+      message.foreach(printf.printfWithoutReset(_))
+      pushCommand(Stop(stopId, sourceInfo, Builder.forcedClock.ref, 0))
+    }
+    stopId
+  }
 }
 
 /** Base class for all verification statements: Assert, Assume, Cover, Stop and Printf. */
