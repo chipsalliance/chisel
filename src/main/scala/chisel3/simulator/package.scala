@@ -36,24 +36,37 @@ package object simulator {
         )
       )
 
-      // Move the relevant files over to primary-sources
-      val filelist =
-        new java.io.BufferedReader(new java.io.FileReader(s"${workspace.supportArtifactsPath}/filelist.f"))
-      try {
-        filelist.lines().forEach { immutableFilename =>
-          var filename = immutableFilename
-          /// Some files are provided as absolute paths
-          if (filename.startsWith(workspace.supportArtifactsPath)) {
-            filename = filename.substring(workspace.supportArtifactsPath.length + 1)
+      // Move the files indicated by a filelist.
+      def moveFiles(filename: String) = {
+        val filelist = new java.io.BufferedReader(new java.io.FileReader(filename))
+        try {
+          filelist.lines().forEach { immutableFilename =>
+            var filename = immutableFilename
+            /// Some files are provided as absolute paths
+            if (filename.startsWith(workspace.supportArtifactsPath)) {
+              filename = filename.substring(workspace.supportArtifactsPath.length + 1)
+            }
+            java.nio.file.Files.move(
+              java.nio.file.Paths.get(s"${workspace.supportArtifactsPath}/$filename"),
+              java.nio.file.Paths.get(s"${workspace.primarySourcesPath}/$filename")
+            )
           }
-          java.nio.file.Files.move(
-            java.nio.file.Paths.get(s"${workspace.supportArtifactsPath}/$filename"),
-            java.nio.file.Paths.get(s"${workspace.primarySourcesPath}/$filename")
-          )
+        } finally {
+          filelist.close()
         }
-      } finally {
-        filelist.close()
       }
+
+      // Move a file in a filelist which may not exist.
+      def maybeMoveFiles(filename: String) = try {
+        moveFiles(filename)
+      } catch {
+        case _ @(_: java.nio.file.NoSuchFileException | _: java.io.FileNotFoundException) =>
+      }
+
+      // Move files indicated by 'filelist.f' (which must exist).  Move files
+      // indicated by a black box filelist (which may exist).
+      moveFiles(s"${workspace.supportArtifactsPath}/filelist.f")
+      maybeMoveFiles(s"${workspace.supportArtifactsPath}/firrtl_black_box_resource_files.f")
 
       // Initialize Module Info
       val dut = someDut.get
