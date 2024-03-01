@@ -104,7 +104,7 @@ class BlackBoxRealAdd extends BlackBox with HasBlackBoxResource {
 
 The verilog snippet above gets put into a resource file names `real_math.v`.  What is a resource file? It comes from
  a java convention of keeping files in a project that are automatically included in library distributions. In a typical
- chisel3 project, see [chisel-template](https://github.com/ucb-bar/chisel-template), this would be a directory in the
+ Chisel project, see [chisel-template](https://github.com/chipsalliance/chisel-template), this would be a directory in the
  source hierarchy: `src/main/resources/real_math.v`.
 
 ### Blackboxes with In-line Verilog

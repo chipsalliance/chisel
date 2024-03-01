@@ -85,6 +85,3 @@ You may see an error that says somethign like "value out is not a member of chis
 ```
 This can be worked around by adding `-Xsource:2.11` to your `scalacOptions`.
 This is most commonly set in your `build.sbt`.
-For an example, see the [chisel-template's build.sbt](https://github.com/freechipsproject/chisel-template/blob/11f6ca470120908d167cb8dc3241953eb31d0acb/build.sbt#L10).
-
-

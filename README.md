@@ -220,8 +220,8 @@ If you like a textbook to learn Chisel and also a bit of digital design in gener
 
 Please see [the Installation page](https://www.chisel-lang.org/docs/installation) of the Chisel website for information about how to use Chisel locally.
 
-When you're ready to build your own circuits in Chisel, **we recommend starting from the [Chisel Template](https://github.com/freechipsproject/chisel-template) repository**, which provides a pre-configured project, example design, and testbench.
-Follow the [chisel-template README](https://github.com/freechipsproject/chisel-template) to get started.
+When you're ready to build your own circuits in Chisel, **we recommend starting from the [Chisel Template](https://github.com/chipsalliance/chisel-template) repository**, which provides a pre-configured project, example design, and testbench.
+Follow the [chisel-template README](https://github.com/chipsalliance/chisel-template) to get started.
 
 If you insist on setting up your own project from scratch, your project needs to depend on both the chisel-plugin (Scalac plugin) and the chisel library.
 For example, in SBT this could be expressed as:
@@ -367,7 +367,7 @@ Code that touches lots of APIs that are private to the `chisel3` package should 
 ### Which version should I use?
 
 We encourage Chisel users (as opposed to Chisel developers), to use the latest release version of Chisel.
-This [chisel-template](https://github.com/freechipsproject/chisel-template) repository is kept up-to-date, depending on the most recent version of Chisel.
+This [chisel-template](https://github.com/chipsalliance/chisel-template) repository is kept up-to-date, depending on the most recent version of Chisel.
 The recommended version is also captured near the top of this README, and in the [Github releases](https://github.com/chipsalliance/chisel/releases) section of this repo.
 If you encounter an issue with a released version of Chisel, please file an issue on GitHub mentioning the Chisel version and provide a simple test case (if possible).
 Try to reproduce the issue with the associated latest minor release (to verify that the issue hasn't been addressed).
