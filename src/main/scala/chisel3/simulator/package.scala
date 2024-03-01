@@ -2,6 +2,8 @@ package chisel3
 
 import svsim._
 import chisel3.reflect.DataMirror
+import scala.collection.mutable
+import java.nio.file.{Files, Path, Paths}
 
 package object simulator {
   implicit class SimulationController(controller: Simulation.Controller) {
@@ -36,37 +38,46 @@ package object simulator {
         )
       )
 
-      // Move the files indicated by a filelist.
-      def moveFiles(filename: String) = {
-        val filelist = new java.io.BufferedReader(new java.io.FileReader(filename))
-        try {
-          filelist.lines().forEach { immutableFilename =>
-            var filename = immutableFilename
-            /// Some files are provided as absolute paths
-            if (filename.startsWith(workspace.supportArtifactsPath)) {
-              filename = filename.substring(workspace.supportArtifactsPath.length + 1)
-            }
-            java.nio.file.Files.move(
-              java.nio.file.Paths.get(s"${workspace.supportArtifactsPath}/$filename"),
-              java.nio.file.Paths.get(s"${workspace.primarySourcesPath}/$filename")
-            )
+      // Move the files indicated by a filelist.  No-op if the file has already
+      // been moved.
+      val movedFiles = mutable.HashSet.empty[Path]
+      val supportArtifactsPath = Paths.get(workspace.supportArtifactsPath)
+      def moveFiles(filelist: Path) =
+        // Extract all lines (files) from the filelist.
+        Files
+          .lines(filelist)
+          .map(Paths.get(_))
+          // Convert the files to an absolute version and a relative version.
+          .map {
+            case file if file.startsWith(supportArtifactsPath) =>
+              (file, file.subpath(supportArtifactsPath.getNameCount(), -1))
+            case file => (supportArtifactsPath.resolve(file), file)
           }
-        } finally {
-          filelist.close()
-        }
-      }
+          // Normalize the absolute path so it can be checked if it has already
+          // been moved.
+          .map { case (abs, rel) => (abs.normalize(), rel) }
+          // Move the file into primarySourcesPath if it has not already been moved.
+          .forEach {
+            case (abs, _) if movedFiles.contains(abs) =>
+            case (abs, rel) =>
+              Files.move(
+                abs,
+                Paths.get(workspace.primarySourcesPath).resolve(rel)
+              )
+              movedFiles += abs
+          }
 
-      // Move a file in a filelist which may not exist.
-      def maybeMoveFiles(filename: String) = try {
-        moveFiles(filename)
-      } catch {
-        case _ @(_: java.nio.file.NoSuchFileException | _: java.io.FileNotFoundException) =>
+      // Move a file in a filelist which may not exist.  Do nothing if the
+      // filelist does not exist.
+      def maybeMoveFiles(filelist: Path): Unit = filelist match {
+        case _ if Files.exists(filelist) => moveFiles(filelist)
+        case _                           =>
       }
 
       // Move files indicated by 'filelist.f' (which must exist).  Move files
       // indicated by a black box filelist (which may exist).
-      moveFiles(s"${workspace.supportArtifactsPath}/filelist.f")
-      maybeMoveFiles(s"${workspace.supportArtifactsPath}/firrtl_black_box_resource_files.f")
+      moveFiles(supportArtifactsPath.resolve("filelist.f"))
+      maybeMoveFiles(supportArtifactsPath.resolve("firrtl_black_box_resource_files.f"))
 
       // Initialize Module Info
       val dut = someDut.get
