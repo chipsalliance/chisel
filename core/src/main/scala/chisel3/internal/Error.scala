@@ -184,7 +184,7 @@ private[chisel3] object WarningFilter {
           if (id.nonEmpty) return Left(idx -> s"Cannot have duplicates of the same category.")
           val warningId =
             for {
-              value <- remainder.toIntOption
+              value <- Try(remainder.toInt).toOption
               // Check for all digits because we don't want leading + or -
               if remainder.forall(_.isDigit)
               // Notably, maxId is 1 larger than the actual max id.

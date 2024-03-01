@@ -15,19 +15,11 @@ import firrtl.options.{
 import firrtl.options.Viewer.view
 import chisel3.{deprecatedMFCMessage, ChiselException, Module}
 import chisel3.RawModule
-<<<<<<< HEAD
-import chisel3.internal.Builder
+import chisel3.internal.{Builder, WarningFilter}
 import chisel3.internal.firrtl.{Circuit, Emitter => OldEmitter}
 import firrtl.AnnotationSeq
-import java.io.File
-=======
-import chisel3.internal.{Builder, WarningFilter}
-import chisel3.internal.firrtl.{Circuit, Converter}
-import firrtl.AnnotationSeq
-import firrtl.ir.{CircuitWithAnnos, Serializer}
 import scala.util.control.NonFatal
-import java.io.{BufferedWriter, File, FileWriter}
->>>>>>> 8e33a68b6 (Add support for configurable warnings (#3414))
+import java.io.File
 import java.lang.reflect.InvocationTargetException
 
 /** Mixin that indicates that this is an [[firrtl.annotations.Annotation]] used to generate a [[ChiselOptions]] view.
@@ -168,7 +160,7 @@ case class WarningConfigurationFileAnnotation(value: File)
       case (contents, lineNo) =>
         // Strip line comments (denoted with #)
         val str = contents.takeWhile(_ != '#')
-        Option.when(str.nonEmpty) {
+        if (str.nonEmpty) Some {
           WarningFilter.parse(str) match {
             case Right(wf) => wf
             case Left((idx, msg)) =>
@@ -180,6 +172,7 @@ case class WarningConfigurationFileAnnotation(value: File)
               )
           }
         }
+        else None
     }.toVector
   }
 }

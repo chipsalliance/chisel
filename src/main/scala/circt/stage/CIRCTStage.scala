@@ -8,6 +8,8 @@ import chisel3.stage.{
   PrintFullStackTraceAnnotation,
   SourceRootAnnotation,
   ThrowOnFirstErrorAnnotation,
+  WarningConfigurationAnnotation,
+  WarningConfigurationFileAnnotation,
   WarningsAsErrorsAnnotation
 }
 
@@ -24,6 +26,8 @@ trait CLI { this: Shell =>
     PrintFullStackTraceAnnotation,
     ThrowOnFirstErrorAnnotation,
     WarningsAsErrorsAnnotation,
+    WarningConfigurationAnnotation,
+    WarningConfigurationFileAnnotation,
     SourceRootAnnotation,
     SplitVerilog
   ).foreach(_.addOptions(parser))

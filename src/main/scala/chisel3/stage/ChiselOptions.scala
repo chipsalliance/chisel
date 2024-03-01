@@ -15,6 +15,9 @@ class ChiselOptions private[stage] (
   val sourceRoots:         Vector[File] = Vector.empty,
   val warningFilters:      Vector[WarningFilter] = Vector.empty) {
 
+  // Maintaining binary compatibility
+  def warningsAsErrors: Boolean = warningFilters.contains(WarningsAsErrorsAnnotation.asFilter)
+
   private[stage] def copy(
     runFirrtlCompiler:   Boolean = runFirrtlCompiler,
     printFullStackTrace: Boolean = printFullStackTrace,

@@ -278,7 +278,7 @@ class WarningConfigurationSpec extends AnyFunSpec with Matchers with chiselTests
       val carat2 = "     ^"
       val badAction2 = makeFile("bad_action2.conf")(
         s"""|# How about a comment?
-            |id=4&src=**.scala:s
+            |id=3&src=**.scala:s
             |$badln2
             |any:w""".stripMargin
       )
@@ -334,24 +334,6 @@ class WarningConfigurationSpec extends AnyFunSpec with Matchers with chiselTests
       val args = Array("--warn-conf", "id=3:e,any:s", "--throw-on-first-error")
       val e = the[Exception] thrownBy ChiselStage.emitCHIRRTL(new DynamicBitSelectTooNarrow, args)
       e.getMessage should include("[W003] Dynamic index with width 2 is too small for extractee of width 8")
-    }
-
-    it("should number DynamicIndexTooWide as 4") {
-      val args = Array("--warn-conf", "id=4:e,any:s", "--throw-on-first-error")
-      val e = the[Exception] thrownBy ChiselStage.emitCHIRRTL(new DynamicIndexTooWide, args)
-      e.getMessage should include("[W004] Dynamic index with width 3 is too wide for Vec of size 4")
-    }
-
-    it("should number DynamicIndexTooNarrow as 5") {
-      val args = Array("--warn-conf", "id=5:e,any:s", "--throw-on-first-error")
-      val e = the[Exception] thrownBy ChiselStage.emitCHIRRTL(new DynamicIndexTooNarrow, args)
-      e.getMessage should include("[W005] Dynamic index with width 2 is too narrow for Vec of size 8")
-    }
-
-    it("should number ExtractFromVecSizeZero as 6") {
-      val args = Array("--warn-conf", "id=6:e,any:s", "--throw-on-first-error")
-      val e = the[Exception] thrownBy ChiselStage.emitCHIRRTL(new ExtractFromVecSizeZero, args)
-      e.getMessage should include("[W006] Cannot extra from Vec of size 0")
     }
   }
 }

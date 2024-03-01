@@ -16,9 +16,6 @@ private[chisel3] object WarningID extends Enumeration {
   val UnsafeUIntCastToEnum = Value(1)
   val DynamicBitSelectTooWide = Value(2)
   val DynamicBitSelectTooNarrow = Value(3)
-  val DynamicIndexTooWide = Value(4)
-  val DynamicIndexTooNarrow = Value(5)
-  val ExtractFromVecSizeZero = Value(6)
 }
 import WarningID.WarningID
 

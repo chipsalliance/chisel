@@ -15,12 +15,8 @@ import chisel3.internal.sourceinfo.{
 }
 import chisel3.internal.firrtl.PrimOp._
 import _root_.firrtl.{ir => firrtlir}
-<<<<<<< HEAD
 import _root_.firrtl.{constraint => firrtlconstraint}
-import chisel3.internal.{castToInt, Builder}
-=======
 import chisel3.internal.{castToInt, Builder, Warning, WarningID}
->>>>>>> 8e33a68b6 (Add support for configurable warnings (#3414))
 
 /** Exists to unify common interfaces of [[Bits]] and [[Reset]].
   *
