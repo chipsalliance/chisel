@@ -13,14 +13,18 @@ import chisel3.stage.{
   ThrowOnFirstErrorAnnotation
 }
 import firrtl.AnnotationSeq
-import firrtl.options.Phase
+import firrtl.options.{Dependency, Phase}
 import firrtl.options.Viewer.view
+import logger.LoggerOptions
 
 /** Elaborate all [[chisel3.stage.ChiselGeneratorAnnotation]]s into [[chisel3.stage.ChiselCircuitAnnotation]]s.
   */
 class Elaborate extends Phase {
 
-  override def prerequisites = Seq.empty
+  override def prerequisites: Seq[Dependency[Phase]] = Seq(
+    Dependency[chisel3.stage.phases.Checks],
+    Dependency(_root_.logger.phases.Checks)
+  )
   override def optionalPrerequisites = Seq.empty
   override def optionalPrerequisiteOf = Seq.empty
   override def invalidates(a: Phase) = false
@@ -28,6 +32,7 @@ class Elaborate extends Phase {
   def transform(annotations: AnnotationSeq): AnnotationSeq = annotations.flatMap {
     case ChiselGeneratorAnnotation(gen) =>
       val chiselOptions = view[ChiselOptions](annotations)
+      val loggerOptions = view[LoggerOptions](annotations)
       try {
         val context =
           new DynamicContext(
@@ -37,7 +42,8 @@ class Elaborate extends Phase {
             chiselOptions.warningFilters,
             chiselOptions.sourceRoots,
             None,
-            Nil
+            Nil,
+            loggerOptions
           )
         val (circuit, dut) =
           Builder.build(Module(gen()), context)

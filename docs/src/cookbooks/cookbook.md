@@ -813,9 +813,6 @@ If the indexee is a non-power-of-2 size, use the ceiling of the log2 result.
 
 ```scala mdoc:invisible:reset
 import chisel3._
-// Some other test is clobbering the global Logger which breaks the warnings below
-// Setting the output stream to the Console fixes the issue
-logger.Logger.setConsole()
 // Helper to throw away return value so it doesn't show up in mdoc
 def compile(gen: => chisel3.RawModule): Unit = {
   circt.stage.ChiselStage.emitCHIRRTL(gen)
