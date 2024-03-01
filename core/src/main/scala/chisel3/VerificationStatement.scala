@@ -405,17 +405,15 @@ object stop {
     *
     * @param message a message describing why simulation was stopped
     */
-  def apply(message: String)(implicit sourceInfo: SourceInfo): Stop = buildStopCommand(Some(PString(message)))
+  def apply(message: String = "")(implicit sourceInfo: SourceInfo): Stop = buildStopCommand(
+    Option.when(message.nonEmpty)(PString(message))
+  )
 
   /** Terminate execution, indicating success and printing a message.
     *
     * @param message a printable describing why simulation was stopped
     */
   def apply(message: Printable)(implicit sourceInfo: SourceInfo): Stop = buildStopCommand(Some(message))
-
-  /** Terminate execution, indicating success.
-    */
-  def apply()(implicit sourceInfo: SourceInfo): Stop = buildStopCommand(None)
 
   /** Named class for [[stop]]s. */
   final class Stop private[chisel3] () extends VerificationStatement
