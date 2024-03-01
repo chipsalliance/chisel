@@ -282,6 +282,85 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
         file should exist
       }
     }
+<<<<<<< HEAD
+=======
+
+    it("should emit Annotations inline in emitted CHIRRTL") {
+      val targetDir = os.pwd / "ChiselStageSpec" / "should-inline-Annotations-in-emitted-CHIRRTL"
+
+      val args: Array[String] = Array(
+        "--target",
+        "chirrtl",
+        "--target-dir",
+        targetDir.toString
+      )
+
+      (new ChiselStage)
+        .execute(
+          args,
+          Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.Foo(hasDontTouch = true)))
+        )
+
+      info("output file included an Annotation")
+      os.read(targetDir / "Foo.fir") should include("firrtl.transforms.DontTouchAnnotation")
+    }
+
+    it("should NOT emit Unserializable Annotations inline in emitted CHIRRTL") {
+      val targetDir = baseDir / "should-not-inline-Unserializable-Annotations-in-emitted-CHIRRTL"
+
+      val args: Array[String] = Array(
+        "--target",
+        "chirrtl",
+        "--target-dir",
+        targetDir.toString
+      )
+
+      (new ChiselStage)
+        .execute(
+          args,
+          Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.HasUnserializableAnnotation))
+        )
+
+      os.read(targetDir / "HasUnserializableAnnotation.fir") shouldNot include("DummyAnnotation")
+    }
+
+    it("should forward firtool-resolver logging under log-level debug") {
+      val targetDir = baseDir / "should-forward-firtool-resolver-logging-under-log-level-debug"
+
+      val args: Array[String] = Array(
+        "--target",
+        "systemverilog",
+        "--target-dir",
+        targetDir.toString
+      )
+      val annos = Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.Foo))
+      val msg = "Checking CHISEL_FIRTOOL_PATH for firtool"
+      // By default it should NOT show anything
+      val (log1, _) = grabLog {
+        (new ChiselStage).execute(args, annos)
+      }
+      log1 shouldNot include(msg)
+
+      val (log2, _) = grabLog {
+        (new ChiselStage).execute(args ++ Array("--log-level", "debug"), annos)
+      }
+      log2 should include(msg)
+    }
+
+    it("should support --log-level") {
+      def args(level: String): Array[String] = Array("--target", "chirrtl", "--log-level", level)
+      val annos = Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.Foo))
+      val (log1, _) = grabLog {
+        (new ChiselStage).execute(args("info"), annos)
+      }
+      log1 should include("Done elaborating.")
+
+      val (log2, _) = grabLog {
+        (new ChiselStage).execute(args("warn"), annos)
+      }
+      log2 shouldNot include("Done elaborating.")
+    }
+>>>>>>> 88d147d90 (Fix ChiselStage and Builder handling of logging (#3895))
   }
 
   describe("ChiselStage exception handling") {
@@ -965,6 +1044,47 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
       info(s"'$expectedOutput' exists")
     }
 
+<<<<<<< HEAD
+=======
+    it("""should error if give a "--target-directory" option""") {
+
+      val exception = intercept[firrtl.options.OptionsException] {
+        ChiselStage.emitCHIRRTL(new ChiselStageSpec.Foo, Array("--target-directory")) should include("circuit Foo")
+      }
+
+      val message = exception.getMessage
+      info("""The exception includes "Unknown option"""")
+      message should include("Unknown option --target-directory")
+
+    }
+
+    it("should forward firtool-resolver logging under log-level debug") {
+      // By default it should NOT show anything
+      val (log1, _) = grabLog {
+        ChiselStage.emitSystemVerilog(new ChiselStageSpec.Foo)
+      }
+      log1 shouldNot include("Checking CHISEL_FIRTOOL_PATH for firtool")
+
+      // circt.stage.ChiselStage does not currently accept --log-level so we have to use testing
+      // APIs to set the level
+      val (log2, _) = grabLog {
+        ChiselStage.emitSystemVerilog(new ChiselStageSpec.Foo, args = Array("--log-level", "debug"))
+      }
+      log2 should include("Checking CHISEL_FIRTOOL_PATH for firtool")
+    }
+
+    it("should support --log-level") {
+      val (log1, _) = grabLog {
+        ChiselStage.emitCHIRRTL(new ChiselStageSpec.Foo, Array("--log-level", "info"))
+      }
+      log1 should include("Done elaborating.")
+
+      val (log2, _) = grabLog {
+        ChiselStage.emitCHIRRTL(new ChiselStageSpec.Foo, Array("--log-level", "warn"))
+      }
+      log2 shouldNot include("Done elaborating.")
+    }
+>>>>>>> 88d147d90 (Fix ChiselStage and Builder handling of logging (#3895))
   }
 
   describe("ChiselStage$ exception handling") {
