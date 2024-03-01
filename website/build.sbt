@@ -95,12 +95,12 @@ lazy val contributors =
           // Even though we no longer host all these projects,
           // we still honor their contributions
           Seq( GitHubRepository("chipsalliance", "chisel"),
+               GitHubRepository("chipsalliance", "chisel-template"),
                GitHubRepository("chipsalliance", "firrtl"),
                GitHubRepository("chipsalliance", "treadle"),
                GitHubRepository("ucb-bar", "chiseltest"),
                GitHubRepository("ucb-bar", "chisel2-deprecated"),
                GitHubRepository("freechipsproject", "chisel-bootcamp"),
-               GitHubRepository("freechipsproject", "chisel-template"),
                GitHubRepository("freechipsproject", "chisel-testers"),
                GitHubRepository("freechipsproject", "diagrammer"),
                GitHubRepository("freechipsproject", "firrtl-interpreter"),
