@@ -1,7 +1,9 @@
 package chiselTests.simulator
 
 import chisel3._
+import chisel3.experimental.ExtModule
 import chisel3.simulator._
+import chisel3.util.HasExtModuleInline
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.must.Matchers
 import svsim._
@@ -66,6 +68,34 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
         }
         .result
       assert(result === 12)
+    }
+
+    it("runs a design that includes an external module") {
+      class Bar extends ExtModule with HasExtModuleInline {
+        val a = IO(Output(Bool()))
+        setInline(
+          "Bar.sv",
+          """|module Bar(
+             |  output a
+             |);
+             | assign a = 1'b1;
+             |endmodule
+             |""".stripMargin
+        )
+      }
+
+      class Foo extends RawModule {
+        val a = IO(Output(Bool()))
+        a :<= Module(new Bar).a
+      }
+
+      new VerilatorSimulator("test_run_dir/simulator/extmodule")
+        .simulate(new Foo) { module =>
+          import PeekPokeAPI._
+          val foo = module.wrapped
+          foo.a.expect(1)
+        }
+        .result
     }
   }
 }
