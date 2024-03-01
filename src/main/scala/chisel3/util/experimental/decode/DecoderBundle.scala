@@ -23,11 +23,15 @@ trait DecodeField[T <: DecodePattern, D <: Data] {
 
   def chiselType: D
 
+  def default: BitPat = dc
+
   final def width: Int = chiselType.getWidth
 
   def dc: BitPat = BitPat.dontCare(width)
 
   def genTable(op: T): BitPat
+
+  require(width == default.width)
 }
 
 /**
@@ -47,9 +51,9 @@ trait BoolDecodeField[T <: DecodePattern] extends DecodeField[T, Bool] {
   * Output of DecoderTable
   * @param fields all fields to be decoded
   */
-class DecodeBundle(fields: Seq[DecodeField[_, _]]) extends Record {
+class DecodeBundle(fields: Seq[DecodeField[_, _ <: Data]]) extends Record {
   require(fields.map(_.name).distinct.size == fields.size, "Field names must be unique")
-  val elements: SeqMap[String, Data] = SeqMap(fields.map(k => k.name -> UInt(k.width.W)): _*)
+  val elements: SeqMap[String, Data] = SeqMap(fields.map(k => k.name -> k.chiselType): _*)
 
   /**
     * Get result of each field in decoding result
@@ -58,7 +62,7 @@ class DecodeBundle(fields: Seq[DecodeField[_, _]]) extends Record {
     * @tparam D type of field
     * @return hardware value of decoded output
     */
-  def apply[D <: Data](field: DecodeField[_, D]): D = elements(field.name).asTypeOf(field.chiselType)
+  def apply[D <: Data](field: DecodeField[_, D]): D = elements(field.name).asInstanceOf[D]
 }
 
 /**
@@ -71,15 +75,15 @@ class DecodeBundle(fields: Seq[DecodeField[_, _]]) extends Record {
   * @param fields   all fields as decoded output
   * @tparam I concrete type of input patterns trait
   */
-class DecodeTable[I <: DecodePattern](patterns: Seq[I], fields: Seq[DecodeField[I, _]]) {
+class DecodeTable[I <: DecodePattern](patterns: Seq[I], fields: Seq[DecodeField[I, _ <: Data]]) {
   require(patterns.map(_.bitPat.getWidth).distinct.size == 1, "All instructions must have the same width")
 
   def bundle: DecodeBundle = new DecodeBundle(fields)
 
-  private val _table = patterns.map { op =>
-    op.bitPat -> fields.reverse.map(field => field.genTable(op)).reduce(_ ## _)
-  }
-  val table: TruthTable = TruthTable(_table, BitPat.dontCare(_table.head._2.getWidth))
+  val table: TruthTable = TruthTable(
+    patterns.map { op => op.bitPat -> fields.reverse.map(field => field.genTable(op)).reduce(_ ## _) },
+    fields.reverse.map(_.default).reduce(_ ## _)
+  )
 
   def decode(input: UInt): DecodeBundle = chisel3.util.experimental.decode.decoder(input, table).asTypeOf(bundle)
 }

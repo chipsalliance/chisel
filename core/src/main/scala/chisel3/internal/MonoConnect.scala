@@ -49,10 +49,14 @@ private[chisel3] object MonoConnect {
     MonoConnectException(
       s"""${formatName(sink)} cannot be written from module ${source.parentNameOpt.getOrElse("(unknown)")}."""
     )
-  def SourceEscapedWhenScopeException(source: Data) =
-    MonoConnectException(s"Source ${formatName(source)} has escaped the scope of the when in which it was constructed.")
-  def SinkEscapedWhenScopeException(sink: Data) =
-    MonoConnectException(s"Sink ${formatName(sink)} has escaped the scope of the when in which it was constructed.")
+  def SourceEscapedWhenScopeException(source: Data, whenInfo: SourceInfo) =
+    MonoConnectException(
+      s"Source ${formatName(source)} has escaped the scope of the when (${whenInfo.makeMessage(x => x)}) in which it was constructed."
+    )
+  def SinkEscapedWhenScopeException(sink: Data, whenInfo: SourceInfo) =
+    MonoConnectException(
+      s"Sink ${formatName(sink)} has escaped the scope of the when (${whenInfo.makeMessage(x => x)}) in which it was constructed."
+    )
   def UnknownRelationException =
     MonoConnectException("Sink or source unavailable to current module.")
   // These are when recursing down aggregate types
@@ -75,12 +79,18 @@ private[chisel3] object MonoConnect {
       s"Source ${formatName(source)} and sink ${formatName(sink)} of type Analog cannot participate in a mono connection (:=)"
     )
 
-  def checkWhenVisibility(x: Data): Boolean = {
+  /** Check if the argument is visible from current when scope
+    *
+    * Returns source locator of original when declaration if not visible (for error reporting)
+    *
+    * @return None if visible, Some(location of original when declaration)
+    */
+  def checkWhenVisibility(x: Data): Option[SourceInfo] = {
     x.topBinding match {
       case mp: MemoryPortBinding =>
-        true // TODO (albert-magyar): remove this "bridge" for odd enable logic of current CHIRRTL memories
-      case cd: ConditionalDeclarable => cd.visibility.map(_.active).getOrElse(true)
-      case _ => true
+        None // TODO (albert-magyar): remove this "bridge" for odd enable logic of current CHIRRTL memories
+      case cd: ConditionalDeclarable => cd.visibility.collect { case wc: WhenContext if !wc.active => wc.sourceInfo }
+      case _ => None
     }
   }
 
@@ -256,12 +266,14 @@ private[chisel3] object MonoConnect {
       case _              => false
     }
 
-    if (!checkWhenVisibility(sink)) {
-      throw SinkEscapedWhenScopeException(sink)
+    checkWhenVisibility(sink) match {
+      case Some(whenInfo) => throw SinkEscapedWhenScopeException(sink, whenInfo)
+      case None           => ()
     }
 
-    if (!checkWhenVisibility(source)) {
-      throw SourceEscapedWhenScopeException(source)
+    checkWhenVisibility(source) match {
+      case Some(whenInfo) => throw SourceEscapedWhenScopeException(source, whenInfo)
+      case None           => ()
     }
 
     // CASE: Context is same module that both sink node and source node are in
@@ -411,12 +423,14 @@ private[chisel3] object MonoConnect {
     val sink_direction = BindingDirection.from(sink.topBinding, sink.direction)
     val source_direction = BindingDirection.from(source.topBinding, source.direction)
 
-    if (!checkWhenVisibility(sink)) {
-      throw SinkEscapedWhenScopeException(sink)
+    checkWhenVisibility(sink) match {
+      case Some(whenInfo) => throw SinkEscapedWhenScopeException(sink, whenInfo)
+      case None           => ()
     }
 
-    if (!checkWhenVisibility(source)) {
-      throw SourceEscapedWhenScopeException(source)
+    checkWhenVisibility(source) match {
+      case Some(whenInfo) => throw SourceEscapedWhenScopeException(source, whenInfo)
+      case None           => ()
     }
 
     // CASE: Context is same module that both left node and right node are in
