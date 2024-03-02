@@ -1047,6 +1047,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions]) 
       .withNamedAttr("portNames", circt.mlirArrayAttrGet(ports.nameAttrs))
       .withNamedAttr("portAnnotations", circt.mlirArrayAttrGet(ports.annotationAttrs))
       .withNamedAttr("annotations", circt.emptyArrayAttr)
+      .withNamedAttr("layers", circt.emptyArrayAttr)
       .withResults(ports.types)
       .build()
     val results = op.results
