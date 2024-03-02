@@ -1133,6 +1133,12 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
       }
       log2 shouldNot include("Done elaborating.")
     }
+
+    it("should not emit logger annotations") {
+      import chisel3.RawModule
+      (ChiselStage.emitCHIRRTL(new RawModule {}) should not).include("LogLevelAnnotation")
+      (ChiselStage.emitCHIRRTL(new RawModule {}, Array("-ll", "info")) should not).include("LogLevelAnnotation")
+    }
   }
 
   describe("ChiselStage$ exception handling") {
