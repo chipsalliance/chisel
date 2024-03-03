@@ -100,7 +100,10 @@ firrtlAttrGetNameKind
 firrtlAttrGetRUW
 firrtlAttrGetMemoryInit
 firrtlAttrGetMemDir
+
+# Utility API
 firrtlValueFoldFlow
+firrtlImportAnnotationsFromJSONRaw
 
 # CHIRRTL Attribute
 chirrtlTypeGetCMemory

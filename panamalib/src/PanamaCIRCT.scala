@@ -482,6 +482,16 @@ class PanamaCIRCT {
 
   def firrtlValueFoldFlow(value: MlirValue, flow: Int): Int = CAPI.firrtlValueFoldFlow(value.get, flow)
 
+  def firrtlImportAnnotationsFromJSONRaw(annotationsStr: String): Option[MlirAttribute] = {
+    val attr = circt.MlirAttribute.allocate(arena)
+    val result = CAPI.firrtlImportAnnotationsFromJSONRaw(mlirCtx, newString(annotationsStr).get, attr)
+    if (result) {
+      Some(MlirAttribute(attr))
+    } else {
+      None
+    }
+  }
+
   def chirrtlTypeGetCMemory(elementType: MlirType, numElements: Long) = MlirType(
     CAPI.chirrtlTypeGetCMemory(arena, mlirCtx, elementType.get, numElements)
   )
