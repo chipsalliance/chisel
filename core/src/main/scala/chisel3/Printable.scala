@@ -51,7 +51,7 @@ sealed abstract class Printable {
     */
   def unpack(ctx: Component): (String, Iterable[String])
 
-  /** Unpack into a List of captured Bits arguments
+  /** Unpack into a Seq of captured Bits arguments
     */
   def unpack_args(): Seq[Bits]
 
@@ -168,7 +168,7 @@ case class PString(str: String) extends Printable {
   final def unpack(ctx: Component): (String, Iterable[String]) =
     (str.replaceAll("%", "%%"), List.empty)
 
-  final def unpack_args(): Seq[Bits] = List.empty
+  final def unpack_args(): Seq[Bits] = Seq.empty
 }
 
 /** Superclass for Firrtl format specifiers for Bits */
