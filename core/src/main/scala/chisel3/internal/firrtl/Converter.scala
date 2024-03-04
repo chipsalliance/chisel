@@ -464,10 +464,7 @@ private[chisel3] object Converter {
     fir.Port(convert(port.sourceInfo), getRef(port.id, port.sourceInfo).name, dir, tpe)
   }
 
-  def convert(
-    component:   Component,
-    typeAliases: Seq[String]
-  ): fir.DefModule = component match {
+  def convert(component: Component, typeAliases: Seq[String]): fir.DefModule = component match {
     case ctx @ DefModule(id, name, public, layers, ports, cmds) =>
       fir.Module(
         convert(id._getSourceLocator),

@@ -144,16 +144,9 @@ object assert extends VerifPrintMacrosDoc {
   )(
     implicit sourceInfo: SourceInfo
   ): Assert = {
-    // Return a list of arguments captured in the printable.
-    def extract_args(pable: Printable): Seq[Bits] = pable match {
-      case Printables(pables) =>
-        val args = pables.map(p => extract_args(p))
-        args.flatten.toSeq
-      case PString(_) | Name(_) | FullName(_) | Percent => List.empty
-      case format: FirrtlFormat => List(format.bits)
-    }
+
     val id = Builder.forcedUserModule // It should be safe since we push commands anyway.
-    val data = extract_args(format)
+    val data = format.unpack_args()
     val inst = Module(new IfElseFatalIntrinsic()(sourceInfo, id, format, data))
     inst.clock := clock
     inst.predicate := predicate
