@@ -45,10 +45,6 @@ private[chisel3] object Converter {
     reportInternalError(s"Trying to convert a cloned IO of $mod inside of $mod itself$loc!")
   }
 
-  // Create a map from base module to the component.
-  def getIdToComponent(components: Seq[Component]): VectorMap[BaseModule, Component] =
-    VectorMap[BaseModule, Component](components.map(c => c.id -> c): _*)
-
   def convert(info: SourceInfo): fir.Info = info match {
     case _:  NoSourceInfo => fir.NoInfo
     case sl: SourceLine   => fir.FileInfo.fromUnescaped(sl.serialize)
@@ -431,12 +427,12 @@ private[chisel3] object Converter {
     case t: Property[_] => t.getPropertyType
   }
 
-  def convert(name: String, param: Param, idToComponent: VectorMap[BaseModule, Component]): fir.Param = param match {
+  def convert(name: String, param: Param): fir.Param = param match {
     case IntParam(value)    => fir.IntParam(name, value)
     case DoubleParam(value) => fir.DoubleParam(name, value)
     case StringParam(value) => fir.StringParam(name, fir.StringLit(value))
     case PrintableParam(value, id) => {
-      val ctx = idToComponent.get(id).get
+      val ctx = id._component.get
       val (fmt, _) = unpack(value, ctx)
       fir.StringParam(name, fir.StringLit(fmt))
     }
@@ -469,9 +465,8 @@ private[chisel3] object Converter {
   }
 
   def convert(
-    component:     Component,
-    typeAliases:   Seq[String],
-    idToComponent: VectorMap[BaseModule, Component]
+    component:   Component,
+    typeAliases: Seq[String]
   ): fir.DefModule = component match {
     case ctx @ DefModule(id, name, public, layers, ports, cmds) =>
       fir.Module(
@@ -488,7 +483,7 @@ private[chisel3] object Converter {
         name,
         (ports ++ ctx.secretPorts).map(p => convert(p, typeAliases, topDir)),
         id.desiredName,
-        params.keys.toList.sorted.map { name => convert(name, params(name), idToComponent) }
+        params.keys.toList.sorted.map { name => convert(name, params(name)) }
       )
     case ctx @ DefIntrinsicModule(id, name, ports, topDir, params) =>
       fir.IntModule(
@@ -496,7 +491,7 @@ private[chisel3] object Converter {
         name,
         (ports ++ ctx.secretPorts).map(p => convert(p, typeAliases, topDir)),
         id.intrinsic,
-        params.keys.toList.sorted.map { name => convert(name, params(name), idToComponent) }
+        params.keys.toList.sorted.map { name => convert(name, params(name)) }
       )
     case ctx @ DefClass(id, name, ports, cmds) =>
       fir.DefClass(
@@ -524,10 +519,9 @@ private[chisel3] object Converter {
 
   def convert(circuit: Circuit): fir.Circuit = {
     val typeAliases: Seq[String] = circuit.typeAliases.map(_.name)
-    val idToComponet = getIdToComponent(circuit.components)
     fir.Circuit(
       fir.NoInfo,
-      circuit.components.map(c => convert(c, typeAliases, idToComponet)),
+      circuit.components.map(c => convert(c, typeAliases)),
       circuit.name,
       circuit.typeAliases.map(ta => fir.DefTypeAlias(convert(ta.sourceInfo), ta.name, ta.underlying)),
       circuit.layers.map(convertLayer),
@@ -539,10 +533,9 @@ private[chisel3] object Converter {
   def convertLazily(circuit: Circuit): fir.Circuit = {
     val lazyModules = LazyList() ++ circuit.components
     val typeAliases: Seq[String] = circuit.typeAliases.map(_.name)
-    val idToComponet = getIdToComponent(circuit.components)
     fir.Circuit(
       fir.NoInfo,
-      lazyModules.map(lm => convert(lm, typeAliases, idToComponet)),
+      lazyModules.map(lm => convert(lm, typeAliases)),
       circuit.name,
       circuit.typeAliases.map(ta => {
         // To generate the correct FIRRTL type alias we need to always emit a BundleType.

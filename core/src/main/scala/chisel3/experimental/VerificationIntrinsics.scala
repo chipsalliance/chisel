@@ -15,6 +15,7 @@ private[chisel3] class IfElseFatalIntrinsic[T <: Data](
       "circt_chisel_ifelsefatal",
       Map("format" -> chisel3.experimental.PrintableParam(format, id))
     ) {
+  // Because this code is in core, the Chisel compiler plugin does not run on it so we must .suggestName
   val clock = IO(Input(Clock())).suggestName("clock")
   val predicate = IO(Input(Bool())).suggestName("predicate")
   val enable = IO(Input(Bool())).suggestName("enable")

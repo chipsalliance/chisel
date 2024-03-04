@@ -17,15 +17,13 @@ import firrtl.options.Viewer.view
 import chisel3.{deprecatedMFCMessage, ChiselException, Module}
 import chisel3.RawModule
 import chisel3.internal.{Builder, WarningFilter}
-import chisel3.internal.firrtl.ir.{Circuit, Component}
+import chisel3.internal.firrtl.ir.Circuit
 import chisel3.internal.firrtl.Converter
-import chisel3.experimental.BaseModule
 import firrtl.AnnotationSeq
 import firrtl.ir.{CircuitWithAnnos, Serializer}
 import scala.util.control.NonFatal
 import java.io.{BufferedWriter, File, FileWriter}
 import java.lang.reflect.InvocationTargetException
-import scala.collection.immutable.VectorMap
 
 /** Mixin that indicates that this is an [[firrtl.annotations.Annotation]] used to generate a [[ChiselOptions]] view.
   */
@@ -331,9 +329,7 @@ case class CircuitSerializationAnnotation(circuit: Circuit, filename: String, fo
       Serializer.lazily(withAnnos)
     }
     val typeAliases: Seq[String] = circuit.typeAliases.map(_.name)
-    val idToComponent = Converter.getIdToComponent(circuit.components)
-
-    val modules = circuit.components.iterator.map(c => Converter.convert(c, typeAliases, idToComponent))
+    val modules = circuit.components.iterator.map(c => Converter.convert(c, typeAliases))
     val moduleStrings = modules.flatMap { m =>
       Serializer.lazily(m, 1) ++ Seq("\n\n")
     }
