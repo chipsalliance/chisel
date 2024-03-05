@@ -75,7 +75,7 @@ args.head match {
     // CHECK:      .a => { [ [ prim{omInteger{123}} ] ] }
     // CHECK-NEXT: .b => { [ [ prim{omInteger{456}} ] ] }
     // CHECK-NEXT: .p => { path{OMReferenceTarget:~PropertyTest|PropertyTest>i} }
-    obj.foreachField((name, value) => println(s".$name => { ${value.display} }"))
+    obj.foreachField((name, value) => println(s".$name => { ${value.toString} }"))
 
     // CHECK:      module{_1_Anon}
     // CHECK-NEXT: module{PropertyTest_Anon}

@@ -123,7 +123,7 @@ class FirContext {
 
 class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], annotationsJSON: String) {
   val firCtx = new FirContext
-  val mlirRootModule = circt.mlirModuleCreateEmpty(circt.unkLoc)
+  var mlirRootModule = circt.mlirModuleCreateEmpty(circt.unkLoc)
 
   object util {
     def getWidthOrSentinel(width: fir.Width): BigInt = width match {
@@ -1644,7 +1644,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
   }
 }
 
-private[panamaconverter] object PanamaCIRCTConverter {
+object PanamaCIRCTConverter {
   def convert(
     circuit:         Circuit,
     firtoolOptions:  Option[FirtoolOptions],
@@ -1655,6 +1655,14 @@ private[panamaconverter] object PanamaCIRCTConverter {
     val circt = new PanamaCIRCT
     implicit val cvt = new PanamaCIRCTConverter(circt, firtoolOptions, annotationsJSON)
     visitCircuit(circuit)
+    cvt
+  }
+
+  // TODO: Refactor the files structures later, move these functions to a separated file
+  def newWithMlir(mlir: String): PanamaCIRCTConverter = {
+    val circt = new PanamaCIRCT
+    implicit val cvt = new PanamaCIRCTConverter(circt, None, "")
+    cvt.mlirRootModule = circt.mlirModuleCreateParse(mlir)
     cvt
   }
 

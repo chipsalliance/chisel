@@ -32,8 +32,8 @@ package object lit {
         new String(string.toByteArray)
       }
 
+      def mlirString(module: => RawModule, firtoolOptions: FirtoolOptions = FirtoolOptions(Set.empty)): String = streamString(module, firtoolOptions, _.mlirStream)
       def firrtlString(module: => RawModule, firtoolOptions: FirtoolOptions = FirtoolOptions(Set.empty)): String = streamString(module, firtoolOptions, _.firrtlStream)
-
       def verilogString(module: => RawModule, firtoolOptions: FirtoolOptions = FirtoolOptions(Set.empty)): String = streamString(module, firtoolOptions, _.verilogStream)
     }
   }
