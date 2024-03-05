@@ -80,4 +80,24 @@ class JsonProtocolSpec extends AnyFlatSpec {
     val deserAnno = JsonProtocol.deserialize(serializedAnno).head
     assert(anno == deserAnno)
   }
+
+  "JsonProtocol" should "support serializing directly to a Java Writer" in {
+    val anno = SimpleAnnotation("hello")
+    class NaiveWriter extends java.io.Writer {
+      private var contents: String = ""
+      def value:            String = contents
+      def close():          Unit = contents = ""
+      def flush():          Unit = contents = ""
+      def write(cbuff: Array[Char], off: Int, len: Int): Unit = {
+        for (i <- off until off + len) {
+          contents += cbuff(i)
+        }
+      }
+    }
+    val w = new NaiveWriter
+    JsonProtocol.serializeTry(Seq(anno), w)
+    val ser1 = w.value
+    val ser2 = JsonProtocol.serialize(Seq(anno))
+    assert(ser1 == ser2)
+  }
 }
