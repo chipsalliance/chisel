@@ -495,4 +495,21 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
     val verilog = circt.stage.ChiselStage.emitSystemVerilog(new Foo)
   }
 
+  it should "allow tapping a probe" in {
+    class Bar extends RawModule {
+      val a = IO(probe.Probe(Bool()))
+    }
+    class Foo extends RawModule {
+      val b = IO(probe.Probe(Bool()))
+      val bar = Module(new Bar)
+      probe.define(b, BoringUtils.tap(bar.a))
+    }
+
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Foo)
+
+    matchesAndOmits(chirrtl)(
+      "define b = bar.a"
+    )()
+  }
+
 }
