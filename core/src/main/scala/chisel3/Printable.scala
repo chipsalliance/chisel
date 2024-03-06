@@ -53,7 +53,7 @@ sealed abstract class Printable {
 
   /** Unpack into a Seq of captured Bits arguments
     */
-  def unpack_args(): Seq[Bits]
+  def unpackArgs: Seq[Bits]
 
   /** Allow for appending Printables like Strings */
   final def +(that: Printable): Printables = Printables(List(this, that))
@@ -160,7 +160,7 @@ case class Printables(pables: Iterable[Printable]) extends Printable {
     (fmts.mkString, args.flatten)
   }
 
-  final def unpack_args(): Seq[Bits] = pables.map(_.unpack_args()).flatten.toSeq
+  final def unpackArgs: Seq[Bits] = pables.view.flatMap(_.unpackArgs).toList
 }
 
 /** Wrapper for printing Scala Strings */
@@ -178,7 +178,7 @@ sealed abstract class FirrtlFormat(private[chisel3] val specifier: Char) extends
     (s"%$specifier", List(bits.ref.fullName(ctx)))
   }
 
-  def unpack_args(): Seq[Bits] = Seq(bits)
+  def unpackArgs(): Seq[Bits] = List(bits)
 }
 object FirrtlFormat {
   final val legalSpecifiers = List('d', 'x', 'b', 'c')
