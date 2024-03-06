@@ -46,6 +46,12 @@ class PanamaCIRCT {
     MlirStringRef(CAPI.mlirStringRefCreateFromCString(arena, buffer))
   }
 
+  private def stringRefFromBytes(bytes: Array[Byte]): MlirStringRef = {
+    val buffer = arena.allocate(bytes.length)
+    buffer.copyFrom(MemorySegment.ofArray(bytes))
+    MlirStringRef(CAPI.mlirStringRefCreateFromCString(arena, buffer))
+  }
+
   private def newStringCallback(callback: String => Unit): MlirStringCallback = {
     val cb = new circt.MlirStringCallback {
       def apply(message: MemorySegment, userData: MemorySegment) = {
@@ -78,6 +84,11 @@ class PanamaCIRCT {
   //
 
   def mlirModuleCreateEmpty(location: MlirLocation) = MlirModule(CAPI.mlirModuleCreateEmpty(arena, location.get))
+
+  def mlirModuleCreateParse(module: String) = MlirModule(CAPI.mlirModuleCreateParse(arena, mlirCtx, newString(module).get))
+  def mlirModuleCreateParseBytes(module: Array[Byte]) = MlirModule(CAPI.mlirModuleCreateParse(arena, mlirCtx, stringRefFromBytes(module).get))
+
+  def mlirModuleFromOperation(op: MlirOperation) = MlirModule(CAPI.mlirModuleFromOperation(arena, op.get))
 
   def mlirModuleGetBody(module: MlirModule) = MlirBlock(CAPI.mlirModuleGetBody(arena, module.get))
 
@@ -141,6 +152,8 @@ class PanamaCIRCT {
 
   def mlirBlockGetArgument(block: MlirBlock, pos: Long) = MlirValue(CAPI.mlirBlockGetArgument(arena, block.get, pos))
 
+  def mlirBlockGetFirstOperation(block: MlirBlock) = MlirOperation(CAPI.mlirBlockGetFirstOperation(arena, block.get))
+
   def mlirBlockAppendOwnedOperation(block: MlirBlock, operation: MlirOperation) = {
     CAPI.mlirBlockAppendOwnedOperation(block.get, operation.get)
   }
@@ -196,6 +209,8 @@ class PanamaCIRCT {
   }
 
   def mlirAttributeIsAInteger(attr: MlirAttribute): Boolean = CAPI.mlirAttributeIsAInteger(attr.get)
+
+  def mlirAttributeIsAString(attr: MlirAttribute): Boolean = CAPI.mlirAttributeIsAString(attr.get)
 
   def mlirIntegerAttrGet(tpe: MlirType, value: Long) = MlirAttribute(CAPI.mlirIntegerAttrGet(arena, tpe.get, value))
 

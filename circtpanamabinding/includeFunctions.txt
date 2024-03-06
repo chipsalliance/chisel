@@ -12,12 +12,15 @@ mlirLocationGetAttribute
 mlirLocationUnknownGet
 mlirLocationFileLineColGet
 mlirModuleCreateEmpty
+mlirModuleCreateParse
+mlirModuleFromOperation
 mlirModuleDestroy
 mlirModuleGetBody
 mlirModuleGetOperation
 mlirOperationStateGet
 mlirNamedAttributeGet
 mlirAttributeIsAInteger
+mlirAttributeIsAString
 mlirIntegerAttrGet
 mlirIntegerAttrGetValueInt
 mlirIntegerAttrGetValueSInt
@@ -53,6 +56,7 @@ mlirRegionCreate
 mlirOperationCreate
 mlirBlockCreate
 mlirBlockGetArgument
+mlirBlockGetFirstOperation
 mlirBlockAppendOwnedOperation
 mlirBlockInsertOwnedOperationAfter
 mlirBlockInsertOwnedOperationBefore
