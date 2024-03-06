@@ -497,7 +497,7 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
 
   it should "allow tapping a probe" in {
     class Bar extends RawModule {
-      val a = Wire(probe.Probe(Bool()))
+      val a = IO(probe.Probe(Bool()))
     }
     class Foo extends RawModule {
       val b = IO(probe.Probe(Bool()))
@@ -508,8 +508,7 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
     val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Foo)
 
     matchesAndOmits(chirrtl)(
-      "define bore = a",
-      "define b = bar.bore"
+      "define b = bar.a"
     )()
   }
 
