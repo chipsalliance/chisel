@@ -146,7 +146,7 @@ object assert extends VerifPrintMacrosDoc {
   ): Assert = {
 
     val id = Builder.forcedUserModule // It should be safe since we push commands anyway.
-    val data = format.unpack_args()
+    val data = format.unpackArgs
     val inst = Module(new IfElseFatalIntrinsic()(sourceInfo, id, format, data))
     inst.clock := clock
     inst.predicate := predicate

@@ -168,7 +168,7 @@ case class PString(str: String) extends Printable {
   final def unpack(ctx: Component): (String, Iterable[String]) =
     (str.replaceAll("%", "%%"), List.empty)
 
-  final def unpack_args(): Seq[Bits] = Seq.empty
+  final def unpackArgs: Seq[Bits] = List.empty
 }
 
 /** Superclass for Firrtl format specifiers for Bits */
@@ -178,7 +178,7 @@ sealed abstract class FirrtlFormat(private[chisel3] val specifier: Char) extends
     (s"%$specifier", List(bits.ref.fullName(ctx)))
   }
 
-  def unpackArgs(): Seq[Bits] = List(bits)
+  def unpackArgs: Seq[Bits] = List(bits)
 }
 object FirrtlFormat {
   final val legalSpecifiers = List('d', 'x', 'b', 'c')
@@ -219,17 +219,17 @@ case class Character(bits: Bits) extends FirrtlFormat('c')
 /** Put innermost name (eg. field of bundle) */
 case class Name(data: Data) extends Printable {
   final def unpack(ctx: Component): (String, Iterable[String]) = (data.ref.name, List.empty)
-  final def unpack_args(): Seq[Bits] = Seq.empty
+  final def unpackArgs: Seq[Bits] = List.empty
 }
 
 /** Put full name within parent namespace (eg. bundleName.field) */
 case class FullName(data: Data) extends Printable {
   final def unpack(ctx: Component): (String, Iterable[String]) = (data.ref.fullName(ctx), List.empty)
-  final def unpack_args(): Seq[Bits] = Seq.empty
+  final def unpackArgs: Seq[Bits] = List.empty
 }
 
 /** Represents escaped percents */
 case object Percent extends Printable {
   final def unpack(ctx: Component): (String, Iterable[String]) = ("%%", List.empty)
-  final def unpack_args(): Seq[Bits] = Seq.empty
+  final def unpackArgs: Seq[Bits] = List.empty
 }
