@@ -83,8 +83,6 @@ jobs:
         with:
           jvm: adopt:8
           apps: sbt
-      - name: Setup GPG (for Publish)
-        uses: olafurpg/setup-gpg@v3
       - name: Publish
         run: sbt ci-release
         env:
