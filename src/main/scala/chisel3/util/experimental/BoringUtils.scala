@@ -224,9 +224,14 @@ object BoringUtils {
     else if (DataMirror.hasOuterFlip(source)) Flipped(chiselTypeOf(source))
     else chiselTypeOf(source)
     def purePortType = createProbe match {
-      case Some(pi) if pi.writable => RWProbe(purePortTypeBase)
-      case Some(pi)                => Probe(purePortTypeBase)
-      case None                    => purePortTypeBase
+      case Some(pi) =>
+        // If the source is already a probe, don't double wrap it in a probe.
+        purePortTypeBase.probeInfo match {
+          case Some(_)             => purePortTypeBase
+          case None if pi.writable => RWProbe(purePortTypeBase)
+          case None                => Probe(purePortTypeBase)
+        }
+      case None => purePortTypeBase
     }
     def isPort(d: Data): Boolean = d.topBindingOpt match {
       case Some(PortBinding(_)) => true
