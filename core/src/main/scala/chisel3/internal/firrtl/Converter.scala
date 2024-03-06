@@ -11,7 +11,7 @@ import chisel3.internal.{castToInt, throwException, HasId}
 import chisel3.internal.firrtl.ir._
 import chisel3.EnumType
 import scala.annotation.tailrec
-import scala.collection.immutable.{Queue, VectorBuilder}
+import scala.collection.immutable.{Queue, VectorBuilder, VectorMap}
 
 private[chisel3] object Converter {
   // TODO modeled on unpack method on Printable, refactor?
@@ -431,7 +431,12 @@ private[chisel3] object Converter {
     case IntParam(value)    => fir.IntParam(name, value)
     case DoubleParam(value) => fir.DoubleParam(name, value)
     case StringParam(value) => fir.StringParam(name, fir.StringLit(value))
-    case RawParam(value)    => fir.RawStringParam(name, value)
+    case PrintableParam(value, id) => {
+      val ctx = id._component.get
+      val (fmt, _) = unpack(value, ctx)
+      fir.StringParam(name, fir.StringLit(fmt))
+    }
+    case RawParam(value) => fir.RawStringParam(name, value)
   }
 
   // TODO: Modify Panama CIRCT to account for type aliasing information. This is a temporary hack to
