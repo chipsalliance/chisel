@@ -138,6 +138,28 @@ object Module extends SourceInfoDoc {
         }
     }
   }
+<<<<<<< HEAD
+=======
+
+  /** Allowed values for the types of Module.reset */
+  object ResetType {
+
+    /** Allowed values for the types of Module.reset */
+    sealed trait Type
+
+    /** The default reset type. This is Uninferred, unless it is the top Module, in which case it is Bool */
+    case object Default extends Type
+
+    /** Explicitly Uninferred Reset, even if this is the top Module */
+    case object Uninferred extends Type
+
+    /** Explicitly Bool (Synchronous) Reset */
+    case object Synchronous extends Type
+
+    /** Explicitly Asynchronous Reset */
+    case object Asynchronous extends Type
+  }
+>>>>>>> 5406b4d58 (Add Top-level parameterized reset type (#3276))
 }
 
 /** Abstract base class for Modules, which behave much like Verilog modules.
@@ -147,7 +169,15 @@ object Module extends SourceInfoDoc {
   *
   * @note Module instantiations must be wrapped in a Module() call.
   */
+<<<<<<< HEAD
 abstract class Module(implicit moduleCompileOptions: CompileOptions) extends RawModule {
+=======
+abstract class Module extends RawModule {
+
+  /** Override this to explicitly set the type of reset you want on this module , before any reset inference */
+  def resetType: Module.ResetType.Type = Module.ResetType.Default
+
+>>>>>>> 5406b4d58 (Add Top-level parameterized reset type (#3276))
   // Implicit clock and reset pins
   final val clock: Clock = IO(Input(Clock()))(UnlocatableSourceInfo, moduleCompileOptions).suggestName("clock")
   final val reset: Reset = IO(Input(mkReset))(UnlocatableSourceInfo, moduleCompileOptions).suggestName("reset")
@@ -172,6 +202,7 @@ abstract class Module(implicit moduleCompileOptions: CompileOptions) extends Raw
   private[chisel3] def mkReset: Reset = {
     // Top module and compatibility mode use Bool for reset
     // Note that a Definition elaboration will lack a parent, but still not be a Top module
+<<<<<<< HEAD
     val inferReset = (_parent.isDefined || Builder.inDefinition) && moduleCompileOptions.inferModuleReset
     if (moduleCompileOptions.migrateInferModuleReset && !moduleCompileOptions.inferModuleReset) {
       this match {
@@ -183,6 +214,17 @@ abstract class Module(implicit moduleCompileOptions: CompileOptions) extends Raw
       }
     }
     if (inferReset) Reset() else Bool()
+=======
+    resetType match {
+      case Module.ResetType.Default => {
+        val inferReset = (_parent.isDefined || Builder.inDefinition)
+        if (inferReset) Reset() else Bool()
+      }
+      case Module.ResetType.Uninferred   => Reset()
+      case Module.ResetType.Synchronous  => Bool()
+      case Module.ResetType.Asynchronous => AsyncReset()
+    }
+>>>>>>> 5406b4d58 (Add Top-level parameterized reset type (#3276))
   }
 
   // Setup ClockAndReset
