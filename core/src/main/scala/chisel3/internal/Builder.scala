@@ -1005,13 +1005,14 @@ private[chisel3] object Builder extends LazyLogging {
   ): (Circuit, T) = {
     // Logger has its own context separate from Chisel's dynamic context
     _root_.logger.Logger.makeScope(dynamicContext.loggerOptions) {
-      buildImpl(f, dynamicContext)
+      buildImpl(f, dynamicContext, forceModName)
     }
   }
 
   private def buildImpl[T <: BaseModule](
     f:              => T,
-    dynamicContext: DynamicContext
+    dynamicContext: DynamicContext,
+    forceModName:   Boolean
   ): (Circuit, T) = {
     dynamicContextVar.withValue(Some(dynamicContext)) {
       ViewParent: Unit // Must initialize the singleton in a Builder context or weird things can happen
