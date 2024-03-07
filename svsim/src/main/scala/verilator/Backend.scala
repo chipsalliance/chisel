@@ -120,7 +120,7 @@ final class Backend(
                 case OptimizationStyle.OptimizeForCompilationSpeed => Seq("-O1")
               },
 
-              Seq("-std=c++11"),
+              Seq("-std=c++14"),
                 
               additionalHeaderPaths.map { path => s"-I${path}" },
               
