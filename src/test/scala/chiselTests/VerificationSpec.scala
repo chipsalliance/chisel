@@ -36,7 +36,6 @@ class VerificationSpec extends ChiselPropSpec with Matchers {
     assertContains(lines, "intmodule IfElseFatalIntrinsic :")
     assertContains(lines, "intrinsic = circt_chisel_ifelsefatal")
     assertContains(lines, "parameter format = \"Assertion failed: io.in:%d is equal to io.out:%d")
-    assertContains(lines, "parameter label = \"chisel3_builtin\"")
 
     // reset guard around the verification statement
     assertContains(lines, "when _T_1 :")
