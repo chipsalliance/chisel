@@ -13,26 +13,26 @@ The easiest way to use Chisel is to:
 
 1. First, [install Scala CLI](https://scala-cli.virtuslab.org/install).
 
-2. Then, download the Chisel template.
+2. Then, download the Chisel Scala CLI example.
 
 This is easiest on the command-line (works on Linux, MacOS, and Windows Subsystem for Linux (WSL)):
 ```bash
-curl -O -L https://github.com/chipsalliance/chisel/releases/latest/download/chisel-template.scala
+curl -O -L https://github.com/chipsalliance/chisel/releases/latest/download/chisel-example.scala
 ```
 
-Alternatively you can download the template directly from [this link](https://github.com/chipsalliance/chisel/releases/latest/download/chisel-template.scala).
+Alternatively you can download the example directly from [this link](https://github.com/chipsalliance/chisel/releases/latest/download/chisel-example.scala).
 
-3. Finally, use Scala CLI to compile and run the template:
+3. Finally, use Scala CLI to compile and run the example:
 ```bash
-scala-cli chisel-template.scala
+scala-cli chisel-example.scala
 ```
 
-The Chisel template is a simple, single-file example of Chisel that emits Verilog to the screen.
+The Chisel Scala CLI example is a simple, single-file example of Chisel that emits Verilog to the screen.
 
 :::tip
 
 While more complex projects often use a build tool like SBT or Mill as described below,
-we still highly recommend using Scala CLI with the template for experimentation and
+we still highly recommend using Scala CLI with the example linked above for experimentation and
 writing small snippets to share with others.
 
 :::
