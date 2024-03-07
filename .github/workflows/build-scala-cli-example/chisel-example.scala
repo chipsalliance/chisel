@@ -1,7 +1,7 @@
 //> using repository "sonatype:snapshots"
 //> using scala "2.13.10"
-//> using dep "edu.berkeley.cs::chisel3::@VERSION@"
-//> using plugin "edu.berkeley.cs:::chisel3-plugin::@VERSION@"
+//> using dep "edu.berkeley.cs::chisel3:@VERSION@"
+//> using plugin "edu.berkeley.cs:::chisel3-plugin:@VERSION@"
 //> using options "-unchecked", "-deprecation", "-language:reflectiveCalls", "-feature", "-Xcheckinit", "-Xfatal-warnings", "-Ywarn-dead-code", "-Ywarn-unused", "-Ymacro-annotations"
 
 import chisel3._
