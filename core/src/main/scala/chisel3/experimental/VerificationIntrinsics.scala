@@ -10,10 +10,11 @@ private[chisel3] class IfElseFatalIntrinsic[T <: Data](
   implicit sourceInfo: SourceInfo,
   id:                  BaseModule,
   format:              Printable,
+  label:               String,
   data:                Seq[T])
     extends IntrinsicModule(
       "circt_chisel_ifelsefatal",
-      Map("format" -> chisel3.experimental.PrintableParam(format, id))
+      Map("format" -> chisel3.experimental.PrintableParam(format, id), "label" -> label)
     ) {
   // Because this code is in core, the Chisel compiler plugin does not run on it so we must .suggestName
   val clock = IO(Input(Clock())).suggestName("clock")
