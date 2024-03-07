@@ -106,13 +106,8 @@ object Definition extends SourceInfoDoc {
         context.throwOnFirstError,
         context.warningFilters,
         context.sourceRoots,
-<<<<<<< HEAD
-        Builder.allDefinitions
-=======
-        Some(context.globalNamespace),
         Builder.allDefinitions,
         context.loggerOptions
->>>>>>> 88d147d90 (Fix ChiselStage and Builder handling of logging (#3895))
       )
     }
     Builder.globalNamespace.copyTo(dynamicContext.globalNamespace)

@@ -40,13 +40,8 @@ class Elaborate extends Phase {
             chiselOptions.throwOnFirstError,
             chiselOptions.warningFilters,
             chiselOptions.sourceRoots,
-<<<<<<< HEAD
-            Nil
-=======
-            None,
             Nil,
             loggerOptions
->>>>>>> 88d147d90 (Fix ChiselStage and Builder handling of logging (#3895))
           )
         val (circuit, dut) =
           Builder.build(Module(gen()), context)

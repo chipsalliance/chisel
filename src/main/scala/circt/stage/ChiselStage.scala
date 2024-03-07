@@ -3,46 +3,12 @@
 package circt.stage
 
 import chisel3.RawModule
-<<<<<<< HEAD
-import chisel3.stage.{
-  ChiselCircuitAnnotation,
-  ChiselGeneratorAnnotation,
-  CircuitSerializationAnnotation,
-  PrintFullStackTraceAnnotation,
-  SourceRootAnnotation,
-  ThrowOnFirstErrorAnnotation,
-  WarningConfigurationAnnotation,
-  WarningConfigurationFileAnnotation,
-  WarningsAsErrorsAnnotation
-}
-=======
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation, CircuitSerializationAnnotation}
->>>>>>> 88d147d90 (Fix ChiselStage and Builder handling of logging (#3895))
 import chisel3.stage.CircuitSerializationAnnotation.FirrtlFileFormat
 import firrtl.{AnnotationSeq, EmittedVerilogCircuitAnnotation}
 import firrtl.options.{CustomFileEmission, Dependency, Phase, PhaseManager, Stage, StageMain, Unserializable}
 import firrtl.stage.FirrtlCircuitAnnotation
-<<<<<<< HEAD
-
-trait CLI { this: BareShell =>
-  parser.note("CIRCT (MLIR FIRRTL Compiler) options")
-  Seq(
-    CIRCTTargetAnnotation,
-    PreserveAggregate,
-    ChiselGeneratorAnnotation,
-    PrintFullStackTraceAnnotation,
-    ThrowOnFirstErrorAnnotation,
-    WarningsAsErrorsAnnotation,
-    WarningConfigurationAnnotation,
-    WarningConfigurationFileAnnotation,
-    SourceRootAnnotation,
-    SplitVerilog,
-    DumpFir
-  ).foreach(_.addOptions(parser))
-}
-=======
 import logger.LogLevelAnnotation
->>>>>>> 88d147d90 (Fix ChiselStage and Builder handling of logging (#3895))
 
 /** Entry point for running Chisel with the CIRCT compiler.
   *
@@ -239,7 +205,7 @@ object ChiselStage {
     val annos = Seq(
       ChiselGeneratorAnnotation(() => gen),
       CIRCTTargetAnnotation(CIRCTTarget.CHIRRTL)
-    ) ++ (new BareShell("circt") with CLI).parse(args)
+    ) ++ (new Shell("circt") with CLI).parse(args)
 
     phase
       .transform(annos)

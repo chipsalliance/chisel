@@ -784,86 +784,8 @@ If the index is too narrow you can use `.pad` to increase the width.
 ```scala mdoc:silent
 import chisel3.util.log2Up
 
-<<<<<<< HEAD
 class TooNarrow(extracteeWidth: Int, indexWidth: Int) {
   val extractee = Wire(UInt(extracteeWidth.W))
-=======
-Chisel will warn if a dynamic index is not the correctly-sized width for indexing a Vec or UInt.
-"Correctly-sized" means that the width of the index should be the log2 of the size of the indexee.
-If the indexee is a non-power-of-2 size, use the ceiling of the log2 result.
-
-```scala mdoc:invisible:reset
-import chisel3._
-// Helper to throw away return value so it doesn't show up in mdoc
-def compile(gen: => chisel3.RawModule): Unit = {
-  circt.stage.ChiselStage.emitCHIRRTL(gen)
-}
-```
-
-When the index does not have enough bits to address all entries or bits in the extractee, you can `.pad` the index to increase the width.
-
-```scala mdoc
-class TooNarrow extends RawModule {
-  val extractee = Wire(UInt(7.W))
-  val index = Wire(UInt(2.W))
-  extractee(index)
-}
-compile(new TooNarrow)
-```
-
-This can be fixed with `pad`:
-
-```scala mdoc
-class TooNarrowFixed extends RawModule {
-  val extractee = Wire(UInt(7.W))
-  val index = Wire(UInt(2.W))
-  extractee(index.pad(3))
-}
-compile(new TooNarrowFixed)
-```
-
-#### Use bit extraction when the index is too wide
-
-```scala mdoc
-class TooWide extends RawModule {
-  val extractee = Wire(Vec(8, UInt(32.W)))
-  val index = Wire(UInt(4.W))
-  extractee(index)
-}
-compile(new TooWide)
-```
-
-This can be fixed with bit extraction:
-
-```scala mdoc
-class TooWideFixed extends RawModule {
-  val extractee = Wire(Vec(8, UInt(32.W)))
-  val index = Wire(UInt(4.W))
-  extractee(index(2, 0))
-}
-compile(new TooWideFixed)
-```
-
-Note that size 1 `Vecs` and `UInts` should be indexed by a zero-width `UInt`:
-
-```scala mdoc
-class SizeOneVec extends RawModule {
-  val extractee = Wire(Vec(1, UInt(32.W)))
-  val index = Wire(UInt(0.W))
-  extractee(index)
-}
-compile(new SizeOneVec)
-```
-
-Because `pad` only pads if the desired width is less than the current width of the argument,
-you can use `pad` in conjunction with bit extraction when the widths may be too wide or too
-narrow under different circumstances
-
-```scala mdoc
-import chisel3.util.log2Ceil
-class TooWideOrNarrow(extracteeSize: Int, indexWidth: Int) extends Module {
-  val extractee = Wire(Vec(extracteeSize, UInt(8.W)))
->>>>>>> 88d147d90 (Fix ChiselStage and Builder handling of logging (#3895))
   val index = Wire(UInt(indexWidth.W))
   extractee(index.pad(log2Up(extracteeWidth)))
 }

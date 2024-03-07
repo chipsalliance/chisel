@@ -22,11 +22,7 @@ import scala.collection.mutable
 import scala.annotation.tailrec
 import java.io.File
 import scala.util.control.NonFatal
-<<<<<<< HEAD
-=======
-import chisel3.ChiselException
 import logger.LoggerOptions
->>>>>>> 88d147d90 (Fix ChiselStage and Builder handling of logging (#3895))
 
 private[chisel3] class Namespace(keywords: Set[String], separator: Char = '_') {
   // This HashMap is compressed, not every name in the namespace is present here.
@@ -851,13 +847,14 @@ private[chisel3] object Builder extends LazyLogging {
   ): (Circuit, T) = {
     // Logger has its own context separate from Chisel's dynamic context
     _root_.logger.Logger.makeScope(dynamicContext.loggerOptions) {
-      buildImpl(f, dynamicContext)
+      buildImpl(f, dynamicContext, forceModName)
     }
   }
 
   private def buildImpl[T <: BaseModule](
     f:              => T,
-    dynamicContext: DynamicContext
+    dynamicContext: DynamicContext,
+    forceModName:   Boolean
   ): (Circuit, T) = {
     dynamicContextVar.withValue(Some(dynamicContext)) {
       ViewParent: Unit // Must initialize the singleton in a Builder context or weird things can happen
