@@ -106,7 +106,8 @@ object Definition extends SourceInfoDoc {
         context.throwOnFirstError,
         context.warningFilters,
         context.sourceRoots,
-        Builder.allDefinitions
+        Builder.allDefinitions,
+        context.loggerOptions
       )
     }
     Builder.globalNamespace.copyTo(dynamicContext.globalNamespace)
