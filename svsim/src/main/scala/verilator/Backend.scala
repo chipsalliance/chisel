@@ -73,78 +73,12 @@ final class Backend(
           case None => Seq()
         },
 
-<<<<<<< HEAD
         backendSpecificSettings.traceStyle match {
           case Some(TraceStyle.Vcd(traceUnderscore)) => 
             if (traceUnderscore) {
               Seq("--trace", "--trace-underscore")
             } else {
               Seq("--trace")
-=======
-          backendSpecificSettings.traceStyle match {
-            case Some(TraceStyle.Vcd(traceUnderscore)) => 
-              if (traceUnderscore) {
-                Seq("--trace", "--trace-underscore")
-              } else {
-                Seq("--trace")
-              }
-            case None => Seq()
-          },
-
-          Seq(
-            ("-Wno-fatal", backendSpecificSettings.disableFatalExitOnWarnings),
-            ("--assert", backendSpecificSettings.enableAllAssertions),
-          ).collect {
-            case (flag, true) => flag
-          },
-        
-          backendSpecificSettings.disabledWarnings.map("-Wno-" + _),
-
-          commonSettings.optimizationStyle match {
-            case OptimizationStyle.Default => Seq()
-            case OptimizationStyle.OptimizeForCompilationSpeed => Seq("-O1")
-          },
-
-          Seq[(String, Option[String])](
-            ("--output-split", backendSpecificSettings.outputSplit.map(_.toString())), // "Split .cpp files into pieces"
-            ("--output-split-cfuncs", backendSpecificSettings.outputSplitCFuncs.map(_.toString())), // "Split model functions"
-          ).collect {
-            /// Only include flags that have a value
-            case (flag, Some(value)) => Seq(flag, value)
-          }.flatten,
-
-          Seq(
-            ("-MAKEFLAGS", Seq(
-              commonSettings.availableParallelism match {
-                case AvailableParallelism.Default => Seq()
-                case AvailableParallelism.UpTo(value) => Seq("-j", value.toString())
-              },
-            ).flatten),
-            ("-CFLAGS", Seq(
-              commonSettings.optimizationStyle match {
-                case OptimizationStyle.Default => Seq()
-                case OptimizationStyle.OptimizeForCompilationSpeed => Seq("-O1")
-              },
-
-              Seq("-std=c++14"),
-                
-              additionalHeaderPaths.map { path => s"-I${path}" },
-              
-              Seq(
-                // Use verilator support
-                s"-D${svsim.Backend.HarnessCompilationFlags.enableVerilatorSupport}",
-              ),
-
-              backendSpecificSettings.traceStyle match {
-                case Some(_) => Seq(s"-D${svsim.Backend.HarnessCompilationFlags.enableVerilatorTrace}")
-                case None => Seq()
-              },
-            ).flatten)
-          ).collect {
-            /// Only include flags that have one or more values
-            case (flag, value) if !value.isEmpty => {
-              Seq(flag, value.mkString(" "))
->>>>>>> 622915533 (Use c++14 to pass the verilator check (#3876))
             }
           case None => Seq()
         },
@@ -182,7 +116,7 @@ final class Backend(
               case OptimizationStyle.OptimizeForCompilationSpeed => Seq("-O1")
             },
 
-            Seq("-std=c++11"),
+            Seq("-std=c++14"),
               
             additionalHeaderPaths.map { path => s"-I${path}" },
             
