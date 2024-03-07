@@ -245,8 +245,8 @@ jobs:
           name: website
           path: website.tar.gz
 
-  scala-cli-template:
-    name: Test Scala-CLI Template
-    uses: ./.github/workflows/build-scala-cli-template.yml
+  scala-cli-example:
+    name: Test Scala-CLI Example
+    uses: ./.github/workflows/build-scala-cli-example.yml
     with:
       circt: ${{ inputs.circt }}
