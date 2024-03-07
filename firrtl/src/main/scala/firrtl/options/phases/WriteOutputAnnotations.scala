@@ -126,7 +126,7 @@ class WriteOutputAnnotations extends Phase {
           case None =>
           case Some(file) =>
             val pw = new PrintWriter(sopts.getBuildFileName(file, Some(".anno.json")))
-            pw.write(JsonProtocol.serialize(serializable))
+            JsonProtocol.serializeTry(serializable, pw).get // .get to throw any exceptions
             pw.close()
         }
     }
