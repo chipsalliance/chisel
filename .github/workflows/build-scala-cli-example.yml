@@ -1,4 +1,4 @@
-name: Build and Test Scala-CLI Template
+name: Build and Test Chisel Scala-CLI Example
 
 on:
   workflow_call:
@@ -8,7 +8,7 @@ on:
         type: string
 
 jobs:
-  build_template:
+  build_example:
     name: Build and Test
     runs-on: ubuntu-22.04
 
@@ -38,27 +38,27 @@ jobs:
         with:
           jvm: adoptium:17
           apps: sbt
-      - name: Generate Scala CLI Template
+      - name: Generate Chisel Scala CLI Example
         shell: bash
         run: |
-          # Determine the version and insert it into the template
+          # Determine the version and insert it into the example
           sbt emitVersion
           VERSION=$(cat version.txt)
-          sed "s/@VERSION@/$VERSION/g" .github/workflows/build-scala-cli-template/chisel-template.scala > chisel-template.scala
+          sed "s/@VERSION@/$VERSION/g" .github/workflows/build-scala-cli-example/chisel-example.scala > chisel-example.scala
           # If the version does NOT contain SNAPSHOT, remove line including snapshots repo
           if ! grep -qi 'snapshot' <<< $VERSION; then
-            sed -i '1d' chisel-template.scala
+            sed -i '1d' chisel-example.scala
           fi
-      # Need to publishLocal to test the template
+      # Need to publishLocal to test the example
       - name: Publish Local
         shell: bash
         run: sbt "unipublish / publishLocal"
-      - name: Test Scala CLI Template
+      - name: Test Scala CLI Example
         shell: bash
-        run: scala-cli chisel-template.scala
-      - name: Upload Template
+        run: scala-cli chisel-example.scala
+      - name: Upload Example
         uses: actions/upload-artifact@v3
         with:
-          name: chisel-template.scala
-          path: chisel-template.scala
+          name: chisel-example.scala
+          path: chisel-example.scala
           retention-days: 7
