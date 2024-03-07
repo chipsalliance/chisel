@@ -162,9 +162,8 @@ jobs:
           name: website
           path: website.tar.gz
 
-<<<<<<< HEAD
-  scala-cli-template:
-    name: Test Scala-CLI Template
+  scala-cli-example:
+    name: Test Chisel Scala-CLI Example
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -172,8 +171,8 @@ jobs:
         # Need to fetch full history for deriving version
         with:
           fetch-depth: 0
-      - name: Build and Test Scala-CLI Template
-        uses: ./.github/workflows/build-scala-cli-template
+      - name: Build and Test Chisel Scala-CLI Example
+        uses: ./.github/workflows/build-scala-cli-example
 
   # Sentinel job to simplify how we specify which checks need to pass in branch
   # protection and in Mergify. This job checks that all jobs were successful.
@@ -181,7 +180,7 @@ jobs:
   # When adding new jobs, please add them to `needs` below
   check-tests:
     name: "check tests"
-    needs: [mill, ci, std, integration, doc, website, scala-cli-template]
+    needs: [mill, ci, std, integration, doc, website, scala-cli-example]
     runs-on: ubuntu-20.04
     if: success() # only run if all tests have passed
     outputs:
@@ -265,10 +264,3 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH: gh-pages
           FOLDER: website/docs/target/site
-=======
-  scala-cli-example:
-    name: Test Scala-CLI Example
-    uses: ./.github/workflows/build-scala-cli-example.yml
-    with:
-      circt: ${{ inputs.circt }}
->>>>>>> bb3c6406f (Rename Scala CLI template to example (#3917))
