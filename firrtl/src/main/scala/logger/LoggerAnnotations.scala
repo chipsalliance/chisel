@@ -3,7 +3,7 @@
 package logger
 
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
-import firrtl.options.{HasShellOptions, ShellOption}
+import firrtl.options.{HasShellOptions, ShellOption, Unserializable}
 
 /** An annotation associated with a Logger command line option */
 sealed trait LoggerOption { this: Annotation => }
@@ -16,6 +16,7 @@ sealed trait LoggerOption { this: Annotation => }
 case class LogLevelAnnotation(globalLogLevel: LogLevel.Value = LogLevel.None)
     extends NoTargetAnnotation
     with LoggerOption
+    with Unserializable
 
 object LogLevelAnnotation extends HasShellOptions {
 
@@ -39,6 +40,7 @@ object LogLevelAnnotation extends HasShellOptions {
 case class ClassLogLevelAnnotation(className: String, level: LogLevel.Value)
     extends NoTargetAnnotation
     with LoggerOption
+    with Unserializable
 
 object ClassLogLevelAnnotation extends HasShellOptions {
 
@@ -63,7 +65,7 @@ object ClassLogLevelAnnotation extends HasShellOptions {
   *  - maps to [[LoggerOptions.logFileName]]
   *  - enabled with `--log-file`
   */
-case class LogFileAnnotation(file: Option[String]) extends NoTargetAnnotation with LoggerOption
+case class LogFileAnnotation(file: Option[String]) extends NoTargetAnnotation with LoggerOption with Unserializable
 
 object LogFileAnnotation extends HasShellOptions {
 
@@ -81,7 +83,11 @@ object LogFileAnnotation extends HasShellOptions {
 /** Enables class names in log output
   *  - enabled with `-lcn/--log-class-names`
   */
-case object LogClassNamesAnnotation extends NoTargetAnnotation with LoggerOption with HasShellOptions {
+case object LogClassNamesAnnotation
+    extends NoTargetAnnotation
+    with LoggerOption
+    with HasShellOptions
+    with Unserializable {
 
   val options = Seq(
     new ShellOption[Unit](

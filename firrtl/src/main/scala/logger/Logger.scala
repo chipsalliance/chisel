@@ -121,7 +121,18 @@ object Logger {
     * @tparam A return type of the code block
     * @return the original return of the code block
     */
-  def makeScope[A](options: AnnotationSeq = Seq.empty)(codeBlock: => A): A = {
+  def makeScope[A](options: AnnotationSeq = Seq.empty)(codeBlock: => A): A =
+    makeScope(() => setOptions(options))(codeBlock)
+
+  /** Set a scope for this logger based on available annotations
+    * @param options LoggerOptions to use
+    * @param codeBlock some Scala code over which to define this scope
+    * @tparam A return type of the code block
+    * @return the original return of the code block
+    */
+  def makeScope[A](options: LoggerOptions)(codeBlock: => A): A = makeScope(() => setOptions(options))(codeBlock)
+
+  private def makeScope[A](doSetOptions: () => Unit)(codeBlock: => A): A = {
     val runState: LoggerState = {
       val newRunState = updatableLoggerState.value.getOrElse(new LoggerState)
       if (newRunState.fromInvoke) {
@@ -133,7 +144,7 @@ object Logger {
       }
     }
     updatableLoggerState.withValue(Some(runState)) {
-      setOptions(options)
+      doSetOptions()
       codeBlock
     }
   }
@@ -326,20 +337,26 @@ object Logger {
       Seq(new AddDefaults, Checks)
         .foldLeft(inputAnnotations)((a, p) => p.transform(a))
 
-    val lopts = view[LoggerOptions](annotations)
-    state.globalLevel = (state.globalLevel, lopts.globalLogLevel) match {
+    setOptions(view[LoggerOptions](annotations))
+  }
+
+  /** Set logger options
+    * @param options options to set
+    */
+  def setOptions(options: LoggerOptions): Unit = {
+    state.globalLevel = (state.globalLevel, options.globalLogLevel) match {
       case (LogLevel.None, LogLevel.None) => LogLevel.None
       case (x, LogLevel.None)             => x
       case (LogLevel.None, x)             => x
       case (_, x)                         => x
     }
-    setClassLogLevels(lopts.classLogLevels)
+    setClassLogLevels(options.classLogLevels)
 
-    if (lopts.logFileName.nonEmpty) {
-      setOutput(lopts.logFileName.get)
+    if (options.logFileName.nonEmpty) {
+      setOutput(options.logFileName.get)
     }
 
-    state.logClassNames = lopts.logClassNames
+    state.logClassNames = options.logClassNames
   }
 }
 

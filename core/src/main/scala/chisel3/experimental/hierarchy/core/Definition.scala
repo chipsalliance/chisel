@@ -107,7 +107,8 @@ object Definition extends SourceInfoDoc {
         context.warningFilters,
         context.sourceRoots,
         Some(context.globalNamespace),
-        Builder.allDefinitions
+        Builder.allDefinitions,
+        context.loggerOptions
       )
     }
     dynamicContext.inDefinition = true
