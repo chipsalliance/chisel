@@ -51,10 +51,6 @@ sealed abstract class Printable {
     */
   def unpack(ctx: Component): (String, Iterable[String])
 
-  /** Unpack into a Seq of captured Bits arguments
-    */
-  def unpackArgs: Seq[Bits]
-
   /** Allow for appending Printables like Strings */
   final def +(that: Printable): Printables = Printables(List(this, that))
 
@@ -159,16 +155,12 @@ case class Printables(pables: Iterable[Printable]) extends Printable {
     val (fmts, args) = pables.map(_.unpack(ctx)).unzip
     (fmts.mkString, args.flatten)
   }
-
-  final def unpackArgs: Seq[Bits] = pables.view.flatMap(_.unpackArgs).toList
 }
 
 /** Wrapper for printing Scala Strings */
 case class PString(str: String) extends Printable {
   final def unpack(ctx: Component): (String, Iterable[String]) =
     (str.replaceAll("%", "%%"), List.empty)
-
-  final def unpackArgs: Seq[Bits] = List.empty
 }
 
 /** Superclass for Firrtl format specifiers for Bits */
@@ -177,8 +169,6 @@ sealed abstract class FirrtlFormat(private[chisel3] val specifier: Char) extends
   def unpack(ctx: Component): (String, Iterable[String]) = {
     (s"%$specifier", List(bits.ref.fullName(ctx)))
   }
-
-  def unpackArgs: Seq[Bits] = List(bits)
 }
 object FirrtlFormat {
   final val legalSpecifiers = List('d', 'x', 'b', 'c')
@@ -219,17 +209,14 @@ case class Character(bits: Bits) extends FirrtlFormat('c')
 /** Put innermost name (eg. field of bundle) */
 case class Name(data: Data) extends Printable {
   final def unpack(ctx: Component): (String, Iterable[String]) = (data.ref.name, List.empty)
-  final def unpackArgs: Seq[Bits] = List.empty
 }
 
 /** Put full name within parent namespace (eg. bundleName.field) */
 case class FullName(data: Data) extends Printable {
   final def unpack(ctx: Component): (String, Iterable[String]) = (data.ref.fullName(ctx), List.empty)
-  final def unpackArgs: Seq[Bits] = List.empty
 }
 
 /** Represents escaped percents */
 case object Percent extends Printable {
   final def unpack(ctx: Component): (String, Iterable[String]) = ("%%", List.empty)
-  final def unpackArgs: Seq[Bits] = List.empty
 }
