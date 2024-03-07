@@ -162,6 +162,7 @@ jobs:
           name: website
           path: website.tar.gz
 
+<<<<<<< HEAD
   scala-cli-template:
     name: Test Scala-CLI Template
     runs-on: ubuntu-latest
@@ -264,3 +265,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH: gh-pages
           FOLDER: website/docs/target/site
+=======
+  scala-cli-example:
+    name: Test Scala-CLI Example
+    uses: ./.github/workflows/build-scala-cli-example.yml
+    with:
+      circt: ${{ inputs.circt }}
+>>>>>>> bb3c6406f (Rename Scala CLI template to example (#3917))

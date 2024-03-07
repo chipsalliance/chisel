@@ -1,0 +1,32 @@
+name: Generate Chisel Scala CLI Example
+
+on:
+  release:
+    types: [created]
+  workflow_dispatch:
+
+jobs:
+  generate_scala_cli_example:
+    name: Generate Scala CLI Example
+    uses: ./.github/workflows/build-scala-cli-example.yml
+
+  publish_example:
+    name: Generate Chisel Scala CLI Example
+    needs: [generate_scala_cli_example]
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Download Generated CLI Example
+        uses: actions/download-artifact@v3
+        with:
+          name: chisel-example.scala
+      - name: Display Example
+        run: |
+          echo '```scala' >> $GITHUB_STEP_SUMMARY
+          cat chisel-example.scala >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+      - name: Upload To Release Page
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v0.1.15
+        with:
+          files: chisel-example.scala
