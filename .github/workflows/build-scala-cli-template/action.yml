@@ -3,8 +3,6 @@ name: Build and Test Scala-CLI Template
 runs:
   using: composite
   steps:
-    - name: Install CIRCT
-      uses: ./.github/workflows/install-circt
     - name: Cache Scala-CLI
       uses: coursier/cache-action@v6
     - name: Setup Scala-CLI

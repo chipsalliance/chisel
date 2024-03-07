@@ -45,6 +45,7 @@ object v {
   val osLib = ivy"com.lihaoyi::os-lib:0.8.1"
   val upickle = ivy"com.lihaoyi::upickle:2.0.0"
   val macroParadise = ivy"org.scalamacros:::paradise:2.1.1"
+  val firtoolResolver = ivy"org.chipsalliance::firtool-resolver:1.3.0"
   val scalatest = ivy"org.scalatest::scalatest:3.2.14"
   val scalacheck = ivy"org.scalatestplus::scalacheck-1-14:3.2.2.0"
   val json4s = ivy"org.json4s::json4s-native:4.0.6"
@@ -147,25 +148,19 @@ trait Core
 
   def upickleModuleIvy = v.upickle
 
+  def firtoolResolverModuleIvy = v.firtoolResolver
+
   def firtoolVersion = T {
-    import scala.sys.process._
-    val Version = """^CIRCT firtool-(\S+)$""".r
-    try {
-      val lines = Process(Seq("firtool", "--version")).lineStream
-      lines.collectFirst {
-        case Version(v) => Some(v)
-        case _ => None
-      }.get
-    } catch {
-      case e: java.io.IOException => None
-    }
+    val contents = os.read(os.pwd / "etc" / "circt.json")
+    val read = upickle.default.read[Map[String, String]](contents)
+    read("version").stripPrefix("firtool-")
   }
 
   def buildVersion = T("build-from-source")
 
   private def generateBuildInfo = T {
     val outputFile = T.dest / "chisel3" / "BuildInfo.scala"
-    val firtoolVersionString = firtoolVersion().map("Some(" + _ + ")").getOrElse("None")
+    val firtoolVersionString = "Some(\"" + firtoolVersion() + "\")"
     val contents =
       s"""
          |package chisel3

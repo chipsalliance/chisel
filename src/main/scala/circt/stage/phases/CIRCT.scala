@@ -104,19 +104,19 @@ private[this] object Exceptions {
       )
       with NoStackTrace
 
-  /** Indicates that the firtool binary was not found.  This likely indicates that the user didn't install
-    * CIRCT/firtool.
+  /** Indicates that the firtool binary was not found. This likely indicates something is wrong with
+    *  their firtool installation.
     *
-    * @param binary the path to the firtool binary
+    * @param msg the error message
     */
-  class FirtoolNotFound(binary: String)
+  class FirtoolNotFound(msg: String)
       extends RuntimeException(
         dramaticError(
-          header = s"$binary not found",
-          body = """|Chisel requires that firtool, the MLIR-based FIRRTL Compiler (MFC), is installed
-                    |and available on your $PATH.  (Did you forget to install it?)  You can download
-                    |a binary release of firtool from the CIRCT releases webpage:
-                    |  https://github.com/llvm/circt/releases""".stripMargin
+          header = s"Error resolving firtool",
+          body = s"""|Chisel requires firtool, the MLIR-based FIRRTL Compiler (MFC), to generate Verilog.
+                     |Something is wrong with your firtool installation, please see the following logging
+                     |information.
+                     |$msg""".stripMargin
         )
       )
       with NoStackTrace
@@ -206,7 +206,17 @@ class CIRCT extends Phase {
 
     val circtAnnotationFilename = "circt.anno.json"
 
-    val binary = "firtool"
+    val binary = circtOptions.firtoolBinaryPath.getOrElse {
+      // .get is safe, firtoolVersion is an Option for backwards compatibility
+      val version = firtoolVersion.get
+      val resolved = firtoolresolver.Resolve(loggerToScribe(logger), version)
+      resolved match {
+        case Left(msg) =>
+          throw new Exceptions.FirtoolNotFound(msg)
+        case Right(bin) =>
+          bin.path.toString
+      }
+    }
 
     val cmd = // Only 1 of input or firFile will be Some
       Seq(binary, input.fold(_ => "-format=fir", _.toString)) ++
@@ -262,7 +272,7 @@ class CIRCT extends Phase {
         os.proc(cmd).call(check = false, stdin = stdin, stdout = stdout, stderr = stderr).exitCode
       } catch {
         case a: java.io.IOException if a.getMessage().startsWith("Cannot run program") =>
-          throw new Exceptions.FirtoolNotFound(binary)
+          throw new Exceptions.FirtoolNotFound(a.getMessage())
       }
     stdoutWriter.close()
     stderrWriter.close()
