@@ -5,6 +5,7 @@ package chisel3
 import chisel3.internal.sourceinfo.SourceInfoTransform
 
 import scala.language.experimental.macros
+import scala.math.BigDecimal.RoundingMode._
 import chisel3.experimental.SourceInfo
 
 // REVIEW TODO: Further discussion needed on what Num actually is.
@@ -205,9 +206,9 @@ trait NumObject {
     * @param binaryPoint a binaryPoint that you would like to use
     * @return
     */
-  def toBigInt(x: BigDecimal, binaryPoint: Int): BigInt = {
+  def toBigInt(x: BigDecimal, binaryPoint: Int, roundingMode: RoundingMode = HALF_UP): BigInt = {
     val multiplier = math.pow(2, binaryPoint)
-    val result = (x * multiplier).rounded.toBigInt
+    val result = (x * multiplier).setScale(0, roundingMode).toBigInt
     result
   }
 
