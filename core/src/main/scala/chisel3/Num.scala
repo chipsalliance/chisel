@@ -5,7 +5,7 @@ package chisel3
 import chisel3.internal.sourceinfo.SourceInfoTransform
 
 import scala.language.experimental.macros
-import scala.math.BigDecimal.RoundingMode._
+import scala.math.BigDecimal.RoundingMode.{HALF_UP, RoundingMode}
 import chisel3.experimental.SourceInfo
 
 // REVIEW TODO: Further discussion needed on what Num actually is.
