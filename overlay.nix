@@ -9,21 +9,6 @@ final: prev:
   })).override {
     jre = final.openjdk21;
   };
-
-  jextract = (prev.jextract.overrideAttrs (oldAttrs: rec {
-    src = final.fetchFromGitHub {
-      owner = "openjdk";
-      repo = "jextract";
-      rev = "jdk21";
-      hash = "sha256-jkUCh4oSgilszvvU7RpozFATIghaA9rJRAdUIl5jTHM=";
-    };
-
-    env = {
-      ORG_GRADLE_PROJECT_llvm_home = final.llvmPackages.libclang.lib;
-      ORG_GRADLE_PROJECT_jdk21_home = final.jdk21;
-    };
-  }));
-
 #  This script can be used for override circt for debuging.
 #  circt = prev.circt.overrideAttrs (old: rec {
 #    version = "nightly";
