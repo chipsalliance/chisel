@@ -200,13 +200,22 @@ trait NumObject {
     result
   }
 
-  /**
-    * How to create a bigint from a big decimal with a specific binaryPoint (int)
-    * @param x           a BigDecimal value
-    * @param binaryPoint a binaryPoint that you would like to use
+  /** Create a bigint from a big decimal with a specific binaryPoint (Int)
+    *
+    * @param x           the BigDecimal value
+    * @param binaryPoint the binaryPoint to use
     * @return
     */
-  def toBigInt(x: BigDecimal, binaryPoint: Int, roundingMode: RoundingMode = HALF_UP): BigInt = {
+  def toBigInt(x: BigDecimal, binaryPoint: Int): BigInt = toBigInt(x, binaryPoint, HALF_UP)
+
+  /** Create a bigint from a big decimal with a specific binaryPoint (Int)
+    *
+    * @param x           the BigDecimal value
+    * @param binaryPoint the binaryPoint to use
+    * @param roundingMode the RoundingMode to use
+    * @return
+    */
+  def toBigInt(x: BigDecimal, binaryPoint: Int, roundingMode: RoundingMode): BigInt = {
     val multiplier = math.pow(2, binaryPoint)
     val result = (x * multiplier).setScale(0, roundingMode).toBigInt
     result
