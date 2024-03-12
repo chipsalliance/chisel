@@ -579,14 +579,14 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
         case (r1: Record, r2: Record) if !strictTypes || r1.getClass == r2.getClass =>
           val (larger, smaller, msg) =
             if (r1._elements.size >= r2._elements.size) (r1, r2, "Left") else (r2, r1, "Right")
-          larger._elements.collectFirst {
+          larger._elements.flatMap {
             case (name, data) =>
               val recurse = smaller._elements.get(name) match {
                 case None        => Some(s": Dangling field on $msg")
                 case Some(data2) => rec(data, data2)
               }
               recurse.map("." + name + _)
-          }.flatten
+          }.headOption
         case (v1: Vec[_], v2: Vec[_]) =>
           if (v1.size != v2.size) {
             Some(s": Left (size ${v1.size}) and Right (size ${v2.size}) have different lengths.")
