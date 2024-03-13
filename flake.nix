@@ -19,6 +19,7 @@
             circt
             jextract
             lit
+            scala-cli
             llvm
           ];
         in
