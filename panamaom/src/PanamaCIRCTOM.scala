@@ -33,7 +33,7 @@ abstract class PanamaCIRCTOMEvaluatorValue {
   // Incomplete. currently for debugging purposes only
   override def toString: String = {
     this match {
-      case v: PanamaCIRCTOMEvaluatorValuePath      => s"path{${v.toString}}"
+      case v: PanamaCIRCTOMEvaluatorValuePath      => s"path{${v.asString}}"
       case v: PanamaCIRCTOMEvaluatorValueList      => s"[ ${v.elements.map(_.toString).mkString(", ")} ]"
       case v: PanamaCIRCTOMEvaluatorValuePrimitive => s"prim{${v.toString}}"
       case v: PanamaCIRCTOMEvaluatorValueObject    =>
