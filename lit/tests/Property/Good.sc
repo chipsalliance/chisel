@@ -1,5 +1,6 @@
 // RUN: scala-cli --server=false --java-home=%JAVAHOME --extra-jars=%RUNCLASSPATH --scala-version=%SCALAVERSION --scala-option="-Xplugin:%SCALAPLUGINJARS" %s -- chirrtl | FileCheck %s -check-prefix=SFC-FIRRTL
-// RUN: scala-cli --server=false --java-home=%JAVAHOME --extra-jars=%RUNCLASSPATH --scala-version=%SCALAVERSION --scala-option="-Xplugin:%SCALAPLUGINJARS" --java-opt="--enable-native-access=ALL-UNNAMED" --java-opt="--enable-preview" --java-opt="-Djava.library.path=%JAVALIBRARYPATH" %s -- panama-om | FileCheck %s -check-prefix=MFC-OM
+// RUN: scala-cli --server=false --java-home=%JAVAHOME --extra-jars=%RUNCLASSPATH --scala-version=%SCALAVERSION --scala-option="-Xplugin:%SCALAPLUGINJARS" --java-opt="--enable-native-access=ALL-UNNAMED" --java-opt="--enable-preview" --java-opt="-Djava.library.path=%JAVALIBRARYPATH" %s -- panama-om | FileCheck %s -check-prefix=SFC-FIRRTL
+// RUN: scala-cli --server=false --java-home=%JAVAHOME --extra-jars=%RUNCLASSPATH --scala-version=%SCALAVERSION --scala-option="-Xplugin:%SCALAPLUGINJARS" --java-opt="--enable-native-access=ALL-UNNAMED" --java-opt="--enable-preview" --java-opt="-Djava.library.path=%JAVALIBRARYPATH" %s -- property | FileCheck %s -check-prefix=CHECK
 
 import chisel3._
 import chisel3.properties._
@@ -9,10 +10,6 @@ import lit.utility._
 // SFC-FIRRTL-LABEL: circuit IntPropTest :
 // SFC-FIRRTL-NEXT: module IntPropTest :
 // SFC-FIRRTL-NEXT: output intProp : Integer
-
-// MFC-OM-LABEL: circuit IntPropTest :
-// MFC-OM-NEXT: module IntPropTest :
-// MFC-OM-NEXT: output intProp : Integer
 class IntPropTest extends RawModule {
   val intProp = IO(Output(Property[Int]()))
   intProp := Property(1)
@@ -26,6 +23,7 @@ args.head match {
   case _ =>
 }
 
+// SFC-FIRRTL-LABEL: circuit PropertyTest :
 class PropertyTest extends Module {
   val i = IO(Input(UInt(8.W)))
   val o = IO(Output(UInt(8.W)))
@@ -51,17 +49,23 @@ class PropertyTest extends Module {
   m.i := i
   o := m.o
 
+  // SFC-FIRRTL: output p : Path
   val p = IO(Output(Property[Path]()))
   p := Property(Path(i))
 
+  // SFC-FIRRTL-NEXT: output a : List<List<Integer>>
+  // SFC-FIRRTL-NEXT: output b : List<List<Integer>>
   val a = IO(Output(Property[Seq[Seq[Property[Int]]]]()))
   val b = IO(Output(Property[Seq[Property[Seq[Int]]]]()))
+  // SFT-FIRRTL:      propassign p, path("OMReferenceTarget:~PropertyTest|PropertyTest>i")
+  // SFT-FIRRTL-NEXT: propassign a, List<List<Integer>>(List<Integer>(Integer(123)))
+  // SFT-FIRRTL-NEXT: propassign b, List<List<Integer>>(List<Integer>(Integer(456)))
   a := Property(Seq[Seq[Int]](Seq(123)))
   b := Property(Seq[Seq[Int]](Seq(456)))
 }
 
 args.head match {
-  case "panama-om" =>
+  case "property" =>
     val converter = lit.utility.panamaconverter.getConverter(new PropertyTest)
     lit.utility.panamaconverter.runAllPass(converter)
 
@@ -69,16 +73,21 @@ args.head match {
     val evaluator = om.evaluator()
     val obj = evaluator.instantiate("PropertyTest_Class", Seq(om.newBasePathEmpty))
 
-    // CHECK: OMReferenceTarget:~PropertyTest|PropertyTest>i
+    // CHECK-LABEL: OMReferenceTarget:~PropertyTest|PropertyTest>i
     println(obj.field("p").asInstanceOf[PanamaCIRCTOMEvaluatorValuePath].asString)
 
-    // CHECK:      .a => { [ [ prim{omInteger{123}} ] ] }
-    // CHECK-NEXT: .b => { [ [ prim{omInteger{456}} ] ] }
+    // CHECK-NEXT: .a => { [ [ omInteger{123} ] ] }
+    // CHECK-NEXT: .b => { [ [ omInteger{456} ] ] }
     // CHECK-NEXT: .p => { path{OMReferenceTarget:~PropertyTest|PropertyTest>i} }
     obj.foreachField((name, value) => println(s".$name => { ${value.toString} }"))
 
-    // CHECK:      module{_1_Anon}
+    // CHECK-NEXT: module{_1_Anon}
     // CHECK-NEXT: module{PropertyTest_Anon}
     // CHECK-NEXT: module{PropertyTest}
     converter.foreachHwModule(name => println(s"module{$name}"))
+  case "chirrtl" =>
+    println(circt.stage.ChiselStage.emitCHIRRTL(new PropertyTest))
+  case "panama-om" =>
+    println(lit.utility.panamaconverter.firrtlString(new PropertyTest))
+  case _ =>
 }
