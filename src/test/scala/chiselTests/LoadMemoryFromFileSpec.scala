@@ -135,7 +135,7 @@ class LoadMemoryFromFileSpec extends AnyFreeSpec with Matchers {
     file should exist
     mem.foreach(m => {
       info(s"Memory $m is referenced in $file")
-      val found = io.Source.fromFile(file).getLines().exists { _.contains(s"""readmemh("$m"""") }
+      val found = scala.io.Source.fromFile(file).getLines().exists { _.contains(s"""readmemh("$m"""") }
       found should be(true)
     })
   }
@@ -204,8 +204,13 @@ class LoadMemoryFromFileSpec extends AnyFreeSpec with Matchers {
     val file = new File(dir, s"memory_combMem_init.sv")
     file should exist
 
+<<<<<<< HEAD
     val fileText = io.Source.fromFile(file).getLines().mkString("\n")
     fileText should include(s"""$$readmemb("./mem", memory_combMem.Memory);""")
+=======
+    val fileText = scala.io.Source.fromFile(file).getLines().mkString("\n")
+    fileText should include(s"""$$readmemb("./mem", memory_8x16.Memory);""")
+>>>>>>> 3938a465e (Switch to firtool-resolver (#3458))
   }
 
   "Module with more than one hex memory inline should work" in {
@@ -220,7 +225,7 @@ class LoadMemoryFromFileSpec extends AnyFreeSpec with Matchers {
     val file = new File(dir, s"UsesThreeMemsInline.sv")
     file should exist
 
-    val fileText = io.Source.fromFile(file).getLines().mkString("\n")
+    val fileText = scala.io.Source.fromFile(file).getLines().mkString("\n")
     fileText should include(s"""$$readmemh("./testmem.h", Memory);""")
   }
 
@@ -236,7 +241,7 @@ class LoadMemoryFromFileSpec extends AnyFreeSpec with Matchers {
     val file = new File(dir, s"UsesThreeMemsInline.sv")
     file should exist
 
-    val fileText = io.Source.fromFile(file).getLines().mkString("\n")
+    val fileText = scala.io.Source.fromFile(file).getLines().mkString("\n")
     fileText should include(s"""$$readmemb("testmem.bin", Memory);""")
   }
 }

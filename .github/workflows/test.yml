@@ -1,6 +1,7 @@
 name: Continuous Integration
 
 on:
+<<<<<<< HEAD
   pull_request:
   push:
     branches:
@@ -10,6 +11,39 @@ on:
       - 3.4.x
       - 3.3.x
       - 3.2.x
+=======
+  workflow_call:
+    inputs:
+      system:
+        description: 'The GitHub runner to use'
+        default: 'ubuntu-20.04'
+        required: true
+        type: string
+      jvm:
+        description: 'The Java version to use'
+        default: 8
+        required: true
+        type: number
+      scala:
+        description: 'The Scala version to use'
+        default: '2.13.12'
+        required: true
+        type: string
+      espresso:
+        description: 'The espresso version to use'
+        default: '2.4'
+        required: true
+        type: string
+      circt:
+        description: 'The CIRCT version to use (must be a valid release tag, "nightly", or "version-file").
+                      Leave off (or empty) to let Chisel manage the CIRCT version'
+        type: string
+      ref:
+        description: 'The branch, tag, or git hash to checkout'
+        default: ''
+        required: false
+        type: string
+>>>>>>> 3938a465e (Switch to firtool-resolver (#3458))
 
 jobs:
   ci:
@@ -39,13 +73,81 @@ jobs:
           java-version: ${{ matrix.jvm }}
           cache: 'sbt'
       - name: Install CIRCT
+<<<<<<< HEAD
         uses: ./.github/workflows/install-circt
         with:
           version: ${{ matrix.circt }}
+=======
+        id: install-circt
+        if: ${{ inputs.circt }}
+        uses: circt/install-circt@v1.1.1
+        with:
+          version: ${{ inputs.circt }}
+          github-token: ${{ github.token }}
+      # TODO have install-circt do this
+      - name: Set FIRTOOL_PATH
+        if: steps.install-circt.outcome == 'success'
+        run: |
+          dir=$(dirname $(which firtool))
+          echo "FIRTOOL_PATH=$dir" >> "$GITHUB_ENV"
+      - name: Print firtool version
+        if: steps.install-circt.outcome == 'success'
+        run: |
+          echo "The CIRCT version used is:" >> $GITHUB_STEP_SUMMARY
+          echo \`\`\` >> $GITHUB_STEP_SUMMARY
+          $FIRTOOL_PATH/firtool -version >> $GITHUB_STEP_SUMMARY
+          echo \`\`\` >> $GITHUB_STEP_SUMMARY
+>>>>>>> 3938a465e (Switch to firtool-resolver (#3458))
       - name: Test
         run: sbt ++${{ matrix.scala }} test
       - name: Binary compatibility
+<<<<<<< HEAD
         run: sbt ++${{ matrix.scala }} mimaReportBinaryIssues
+=======
+        # TODO either make this also check the plugin or decide that we don't
+        #      support binary compatibility for the plugin
+        run: sbt ++${{ inputs.scala }} unipublish/mimaReportBinaryIssues
+
+  mill:
+    name: compile project with mill
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.ref }}
+      # FIXME: installling jextract before installing mill to workaround `os.proc` can't find jextract in the outdated PATH env from mill server
+      - name: Install Jextract
+        uses: ./.github/workflows/install-jextract
+      - name: Setup Scala
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'adopt'
+          java-version: '21'
+          cache: 'sbt'
+      - name: Install Mill
+        uses: jodersky/setup-mill@v0.3.0
+        with:
+          mill-version: 0.11.5
+      # Mill needs firtool to compile with bindings, cannot use firtool-resolver at runtime
+      - name: Pick CIRCT version
+        id: circt-version
+        run: |
+          if [[ -z "${{ inputs.circt }}" ]]; then
+            echo "version=version-file" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=${{ inputs.circt }}" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Install CIRCT
+        uses: circt/install-circt@v1.1.1
+        with:
+          version: ${{ steps.circt-version.outputs.version }}
+          github-token: ${{ github.token }}
+      - name: Compile Mill
+        run: |
+          export CIRCT_INSTALL_PATH="$(pwd)/circt"
+          mill __.compile
+>>>>>>> 3938a465e (Switch to firtool-resolver (#3458))
 
   doc:
     name: Formatting
@@ -59,8 +161,11 @@ jobs:
           distribution: 'adopt'
           java-version: '11'
           cache: 'sbt'
+<<<<<<< HEAD
       - name: Install CIRCT
         uses: ./.github/workflows/install-circt
+=======
+>>>>>>> 3938a465e (Switch to firtool-resolver (#3458))
       - name: Check Formatting
         run: sbt fmtCheck
 
@@ -82,6 +187,22 @@ jobs:
           distribution: 'adopt'
           java-version: '11'
           cache: 'sbt'
+<<<<<<< HEAD
+=======
+      - name: Install CIRCT
+        id: install-circt
+        if: ${{ inputs.circt }}
+        uses: circt/install-circt@v1.1.1
+        with:
+          version: ${{ inputs.circt }}
+          github-token: ${{ github.token }}
+      # TODO have install-circt do this
+      - name: Set FIRTOOL_PATH
+        if: steps.install-circt.outcome == 'success'
+        run: |
+          dir=$(dirname $(which firtool))
+          echo "FIRTOOL_PATH=$dir" >> "$GITHUB_ENV"
+>>>>>>> 3938a465e (Switch to firtool-resolver (#3458))
       - name: Integration Tests
         # This is here instead of on the whole job because, if a job is skipped, so are dependent jobs.
         # If this job were skipped, all_tests_passed would be skipped too.
@@ -133,12 +254,30 @@ jobs:
           gem install jekyll -v 4.2.0
           gem install jekyll-redirect-from
       - name: Install CIRCT
+<<<<<<< HEAD
         uses: ./.github/workflows/install-circt
         #TODO: make the microsite building include building ScalaDoc
       - name: Build the docs
         run: sbt doc
       - name: Build the microsite
         run: make -C website
+=======
+        id: install-circt
+        if: ${{ inputs.circt }}
+        uses: circt/install-circt@v1.1.1
+        with:
+          version: ${{ inputs.circt }}
+          github-token: ${{ github.token }}
+      # TODO have install-circt do this
+      - name: Set FIRTOOL_PATH
+        if: steps.install-circt.outcome == 'success'
+        run: |
+          dir=$(dirname $(which firtool))
+          echo "FIRTOOL_PATH=$dir" >> "$GITHUB_ENV"
+        # TODO: make the website building include building ScalaDoc
+      - name: Build the website
+        run: make -C website build
+>>>>>>> 3938a465e (Switch to firtool-resolver (#3458))
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Tar built website
