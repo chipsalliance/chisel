@@ -10,6 +10,12 @@ import firrtl.ir.{PathPropertyLiteral}
 /** Represent a Path type for referencing a hardware instance or member in a Property[Path]
   */
 sealed abstract class Path {
+  private[chisel3] def convert(): PathPropertyLiteral
+}
+
+/** Represent a Path type with a known target.
+  */
+private[properties] sealed abstract class TargetPath extends Path {
   private[chisel3] def toTarget():   IsMember
   private[chisel3] def isMemberPath: Boolean
 
@@ -32,6 +38,12 @@ sealed abstract class Path {
   }
 }
 
+/** Represent a Path type for a target that no longer exists.
+  */
+private[properties] object DeletedPath extends Path {
+  private[chisel3] def convert(): PathPropertyLiteral = PathPropertyLiteral("OMDeleted:")
+}
+
 object Path {
 
   /** Construct a Path that refers to a Module
@@ -39,7 +51,7 @@ object Path {
   def apply(module: BaseModule): Path = apply(module, false)
   def apply(module: BaseModule, isMemberPath: Boolean): Path = {
     val _isMemberPath = isMemberPath // avoid name shadowing below
-    new Path {
+    new TargetPath {
       def toTarget():   IsMember = module.toAbsoluteTarget
       def isMemberPath: Boolean = _isMemberPath
     }
@@ -50,7 +62,7 @@ object Path {
   def apply(data: Data): Path = apply(data, false)
   def apply(data: Data, isMemberPath: Boolean): Path = {
     val _isMemberPath = isMemberPath // avoid name shadowing below
-    new Path {
+    new TargetPath {
       def toTarget():   IsMember = data.toAbsoluteTarget
       def isMemberPath: Boolean = _isMemberPath
     }
@@ -61,7 +73,7 @@ object Path {
   def apply(mem: MemBase[_]): Path = apply(mem, false)
   def apply(mem: MemBase[_], isMemberPath: Boolean): Path = {
     val _isMemberPath = isMemberPath // avoid name shadowing below
-    new Path {
+    new TargetPath {
       def toTarget():   IsMember = mem.toAbsoluteTarget
       def isMemberPath: Boolean = _isMemberPath
     }
@@ -72,9 +84,13 @@ object Path {
   def apply(target: IsMember): Path = apply(target, false)
   def apply(target: IsMember, isMemberPath: Boolean): Path = {
     val _isMemberPath = isMemberPath // avoid name shadowing below
-    new Path {
+    new TargetPath {
       def toTarget():   IsMember = target
       def isMemberPath: Boolean = _isMemberPath
     }
   }
+
+  /** Construct a Path for a target that no longer exists.
+    */
+  def deleted: Path = DeletedPath
 }

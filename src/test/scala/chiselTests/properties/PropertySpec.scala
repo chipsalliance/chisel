@@ -212,6 +212,17 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
     )()
   }
 
+  it should "support deleted paths when requested" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val propOut = IO(Output(Property[Path]()))
+      propOut := Property(Path.deleted)
+    })
+
+    matchesAndOmits(chirrtl)(
+      """propassign propOut, path("OMDeleted:")"""
+    )()
+  }
+
   it should "support Properties on an ExtModule" in {
     // See: https://github.com/chipsalliance/chisel/issues/3509
     class Bar extends experimental.ExtModule {
