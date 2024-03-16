@@ -98,7 +98,7 @@ class PanamaCIRCTOMEvaluatorValueBasePath private[chisel3] (val circt: PanamaCIR
 
 class PanamaCIRCTOMEvaluatorValuePath private[chisel3] (val circt: PanamaCIRCT, val value: OMEvaluatorValue)
     extends PanamaCIRCTOMEvaluatorValue {
-  def asString(): String = circt.omEvaluatorPathGetAsString(value)
+  override def toString: String = circt.omEvaluatorPathGetAsString(value)
 }
 
 class PanamaCIRCTOMEvaluatorValuePrimitive private[chisel3] (val circt: PanamaCIRCT, val value: OMEvaluatorValue)
