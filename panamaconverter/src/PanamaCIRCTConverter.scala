@@ -1665,6 +1665,12 @@ object PanamaCIRCTConverter {
     cvt.mlirRootModule = circt.mlirModuleCreateParse(mlir)
     cvt
   }
+  def newWithMlirBc(mlirbc: Array[Byte]): PanamaCIRCTConverter = {
+    val circt = new PanamaCIRCT
+    implicit val cvt = new PanamaCIRCTConverter(circt, None, "")
+    cvt.mlirRootModule = circt.mlirModuleCreateParseBytes(mlirbc)
+    cvt
+  }
 
   def visitCircuit(circuit: Circuit)(implicit cvt: PanamaCIRCTConverter): Unit = {
     cvt.visitCircuit(circuit.name)
