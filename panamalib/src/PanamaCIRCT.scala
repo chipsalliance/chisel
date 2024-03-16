@@ -49,7 +49,12 @@ class PanamaCIRCT {
   private def stringRefFromBytes(bytes: Array[Byte]): MlirStringRef = {
     val buffer = arena.allocate(bytes.length)
     buffer.copyFrom(MemorySegment.ofArray(bytes))
-    MlirStringRef(CAPI.mlirStringRefCreateFromCString(arena, buffer))
+
+    val stringRef = circt.MlirStringRef.allocate(arena)
+    circt.MlirStringRef.data$set(stringRef, buffer)
+    circt.MlirStringRef.length$set(stringRef, bytes.length)
+
+    MlirStringRef(stringRef)
   }
 
   private def newStringCallback(callback: String => Unit): MlirStringCallback = {
