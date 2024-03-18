@@ -74,7 +74,7 @@ args.head match {
     val obj = evaluator.instantiate("PropertyTest_Class", Seq(om.newBasePathEmpty))
 
     // CHECK-LABEL: OMReferenceTarget:~PropertyTest|PropertyTest>i
-    println(obj.field("p").asInstanceOf[PanamaCIRCTOMEvaluatorValuePath].asString)
+    println(obj.field("p").asInstanceOf[PanamaCIRCTOMEvaluatorValuePath].toString)
 
     // CHECK-NEXT: .a => { [ [ omInteger{123} ] ] }
     // CHECK-NEXT: .b => { [ [ omInteger{456} ] ] }
