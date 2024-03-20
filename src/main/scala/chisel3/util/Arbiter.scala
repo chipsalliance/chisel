@@ -6,6 +6,7 @@
 package chisel3.util
 
 import chisel3._
+import chisel3.experimental.hierarchy._
 
 /** IO bundle definition for an Arbiter, which takes some number of ready-valid inputs and outputs
   * (selects) at most one.
@@ -130,6 +131,7 @@ class RRArbiter[T <: Data](val gen: T, val n: Int) extends LockingRRArbiter[T](g
   * consumer.io.in <> arb.io.out
   * }}}
   */
+@instantiable
 class Arbiter[T <: Data](val gen: T, val n: Int) extends Module {
 
   /** Give this Arbiter a default, stable desired name using the supplied `Data`
@@ -137,6 +139,7 @@ class Arbiter[T <: Data](val gen: T, val n: Int) extends Module {
     */
   override def desiredName = s"Arbiter${n}_${gen.typeName}"
 
+  @public
   val io = IO(new ArbiterIO(gen, n))
 
   io.chosen := (n - 1).asUInt
@@ -152,4 +155,26 @@ class Arbiter[T <: Data](val gen: T, val n: Int) extends Module {
   for ((in, g) <- io.in.zip(grant))
     in.ready := g && io.out.ready
   io.out.valid := !grant.last || io.in.last.valid
+
+  test {
+    val clock = Wire(Clock())
+    val reset = Wire(Bool())
+    withClockAndReset(clock, reset) {
+      val dut = Instance(this.toDefinition)
+      dut.io <> DontCare
+      printf(f"Magic test for ${gen.getClass()}")
+    }
+  }
+}
+
+object InterestingArbiterTest extends chisel3.test.RootTest {
+  Definition(new Arbiter(UInt(19.W), 2))
+  Definition(new Arbiter(UInt(19.W), 1))
+  Definition(new Arbiter(Clock(), 4))
+  Definition(new Arbiter(new MyComplicatedCustomBundleType(), 1))
+}
+
+class MyComplicatedCustomBundleType extends Bundle {
+  val foo = UInt(17.W)
+  val bar = Flipped(UInt(1337.W))
 }

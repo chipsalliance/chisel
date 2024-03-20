@@ -80,6 +80,26 @@ abstract class RawModule extends BaseModule {
   }
   private val _atModuleBodyEnd = new ArrayBuffer[() => Unit]
 
+  /** Hook to invoke a closure after the module has been closed. This is useful
+   * for describing unit tests inside a module directly, to allow for the tests
+   * to be generated (and instantiate the parent module) immediately after a
+   * module is closed. */
+  protected def afterModuleClosure(gen: => Unit): Unit = {
+    _afterModuleClosure += { () => gen }
+  }
+  private val _afterModuleClosure = new ArrayBuffer[() => Unit]
+
+  /** Create a unit test. */
+  protected def test(gen: => Unit)(implicit si: SourceInfo): Unit = {
+    import chisel3.experimental.hierarchy.core.Definition
+    val parent = this
+    class UnitTest extends RawModule with Public {
+      override def desiredName = f"${parent.desiredName}_InlineTest"
+      gen
+    }
+    afterModuleClosure { Definition(new UnitTest) }
+  }
+
   //
   // RTL construction internals
   //
@@ -203,6 +223,13 @@ abstract class RawModule extends BaseModule {
     // Secret connections can be staged if user bored into children modules
     component.secretCommands ++= stagedSecretCommands
     _component = Some(component)
+
+
+    // Evaluate any afterModuleClosure generators.
+    _afterModuleClosure.foreach { gen =>
+      gen()
+    }
+
     _component
   }
   private[chisel3] val stagedSecretCommands = collection.mutable.ArrayBuffer[Command]()
