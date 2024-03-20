@@ -6,8 +6,6 @@ import chisel3._
 import chisel3.experimental.{IntParam, IntrinsicModule, Param, StringParam}
 import chisel3.experimental.hierarchy.{instantiable, public}
 
-import circt.Intrinsic
-
 private object Utils {
   private[chisel3] def withoutNone(params: Map[String, Option[Param]]): Map[String, Param] =
     params.collect { case (name, Some(param)) => (name, param) }
