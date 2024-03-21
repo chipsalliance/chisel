@@ -18,6 +18,9 @@ package object chisel3 {
 
   import scala.language.implicitConversions
 
+  private val boolTrue = Bool.Lit(true)
+  private val boolFalse = Bool.Lit(false)
+
   /**
     * These implicit classes allow one to convert [[scala.Int]] or [[scala.BigInt]] to
     * Chisel.UInt|Chisel.SInt by calling .asUInt|.asSInt on them, respectively.
@@ -40,8 +43,8 @@ package object chisel3 {
     /** Int to Bool conversion, allowing compact syntax like 1.B and 0.B
       */
     def B: Bool = bigint match {
-      case bigint if bigint == 0 => Bool.Lit(false)
-      case bigint if bigint == 1 => Bool.Lit(true)
+      case bigint if bigint == 0 => boolFalse
+      case bigint if bigint == 1 => boolTrue
       case bigint =>
         Builder.error(s"Cannot convert $bigint to Bool, must be 0 or 1")(UnlocatableSourceInfo)
         Bool.Lit(false)
