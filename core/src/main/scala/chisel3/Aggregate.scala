@@ -491,7 +491,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
               if (m < n) Some(index -> lit) else None
             case (KnownWidth(_), _) =>
               None
-            case (UnknownWidth(), _) =>
+            case (UnknownWidth, _) =>
               None
             case _ =>
               Some(index -> lit)

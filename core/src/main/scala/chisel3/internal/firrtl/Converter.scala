@@ -81,7 +81,7 @@ private[chisel3] object Converter {
     case ModuleCloneIO(mod, name) =>
       if (mod eq ctx.id) clonedModuleIOError(mod, name, info)
       else fir.Reference(name)
-    case u @ ULit(n, UnknownWidth()) =>
+    case u @ ULit(n, UnknownWidth) =>
       fir.UIntLiteral(n, fir.IntWidth(u.minWidth))
     case ULit(n, w) =>
       fir.UIntLiteral(n, convert(w))
@@ -353,7 +353,7 @@ private[chisel3] object Converter {
   }
 
   def convert(width: Width): fir.Width = width match {
-    case UnknownWidth()    => fir.UnknownWidth
+    case UnknownWidth    => fir.UnknownWidth
     case KnownWidth(value) => fir.IntWidth(value)
   }
 

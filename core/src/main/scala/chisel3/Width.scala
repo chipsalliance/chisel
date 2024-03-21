@@ -4,7 +4,7 @@ package chisel3
 
 object Width {
   def apply(x: Int): Width = KnownWidth(x)
-  def apply(): Width = UnknownWidth()
+  def apply(): Width = UnknownWidth
 }
 
 sealed abstract class Width {
@@ -28,14 +28,14 @@ sealed abstract class Width {
   protected def op(that: Width, f: (W, W) => W): Width
 }
 
-sealed case class UnknownWidth() extends Width {
+case object UnknownWidth extends Width {
   def known: Boolean = false
   def get:   Int = None.get
   def op(that: Width, f: (W, W) => W): Width = this
   override def toString: String = ""
 }
 
-sealed case class KnownWidth(value: Int) extends Width {
+sealed case class KnownWidth private (value: Int) extends Width {
   require(value >= 0)
   def known: Boolean = true
   def get:   Int = value
@@ -44,4 +44,18 @@ sealed case class KnownWidth(value: Int) extends Width {
     case _             => that
   }
   override def toString: String = s"<${value.toString}>"
+}
+object KnownWidth {
+  private val maxCached = 1024
+  private val cache = new Array[KnownWidth](maxCached + 1)
+  def apply(value: Int): KnownWidth = {
+    if (0 <= value && value <= maxCached) {
+      var w = cache(value)
+      if (w eq null) {
+        w = new KnownWidth(value)
+        cache(value) = w
+      }
+      w
+    } else new KnownWidth(value)
+  }
 }
