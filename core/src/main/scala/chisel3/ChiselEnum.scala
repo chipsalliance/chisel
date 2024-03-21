@@ -275,7 +275,7 @@ abstract class ChiselEnum {
     val result = new Type
 
     // We have to use UnknownWidth here, because we don't actually know what the final width will be
-    result.bindToLiteral(id, UnknownWidth())
+    result.bindToLiteral(id, UnknownWidth)
 
     enumRecords.append(EnumRecord(result, name))
 

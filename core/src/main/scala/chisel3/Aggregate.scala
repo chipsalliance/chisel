@@ -514,7 +514,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
               if (m < n) Some(index -> lit) else None
             case (KnownWidth(_), _) =>
               None
-            case (UnknownWidth(), _) =>
+            case (UnknownWidth, _) =>
               None
             case _ =>
               Some(index -> lit)
@@ -1226,7 +1226,7 @@ abstract class Record extends Aggregate {
       case (field, value) =>
         field.width match {
           // If width is unknown, then it is set by the literal value.
-          case UnknownWidth() => field -> value
+          case UnknownWidth => field -> value
           case width @ KnownWidth(widthValue) =>
             val valuex = if (widthValue < value.width.get) {
               // For legacy reasons, 0.U is 1-bit, don't warn when it comes up as a literal value for 0-bit Bundle lit field.

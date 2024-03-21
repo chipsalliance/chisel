@@ -489,7 +489,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
     ): Reference.Value = {
       def referToNewConstant(n: BigInt, w: Width, isSigned: Boolean): Reference.Value = {
         val (firWidth, valWidth) = w match {
-          case _: UnknownWidth =>
+          case UnknownWidth =>
             // We need to keep the most significant sign bit for signed literals
             val bitLen = if (!isSigned) max(n.bitLength, 1) else n.bitLength + 1
             (fir.IntWidth(bitLen), bitLen)
