@@ -4,7 +4,7 @@ package chisel3
 
 import scala.util.Try
 import scala.language.experimental.macros
-import chisel3.experimental.{BaseModule, SourceInfo, UnlocatableSourceInfo}
+import chisel3.experimental.{BaseModule, HasMemoized, HasMemoizedImpl, Memoize, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal._
 import chisel3.experimental.hierarchy.{InstanceClone, ModuleClone}
 import chisel3.properties.{DynamicObject, Property, StaticObject}
@@ -18,7 +18,9 @@ import scala.collection.mutable.ArrayBuffer
   * This abstract base class is a user-defined module which does not include implicit clock and reset and supports
   * multiple IO() declarations.
   */
-abstract class RawModule extends BaseModule {
+abstract class RawModule extends BaseModule with HasMemoizedImpl {
+
+  final protected implicit def hasMemoized: HasMemoized = this
 
   /** Hook to invoke hardware generators after the rest of the Module is constructed.
     *
@@ -226,6 +228,10 @@ abstract class RawModule extends BaseModule {
   }
 
   private[chisel3] def initializeInParent(): Unit = {}
+
+  private[chisel3] override def attach(memoize: Memoize[_]): Unit = {
+    ???
+  }
 }
 
 /** Enforce that the Module.reset be Asynchronous (AsyncReset) */

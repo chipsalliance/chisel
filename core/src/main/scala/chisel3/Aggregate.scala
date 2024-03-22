@@ -8,7 +8,16 @@ import chisel3.experimental.dataview.{isView, reifySingleData, InvalidViewExcept
 import scala.collection.immutable.{SeqMap, VectorMap}
 import scala.collection.mutable.{HashSet, LinkedHashMap}
 import scala.language.experimental.macros
-import chisel3.experimental.{BaseModule, BundleLiteralException, HasTypeAlias, OpaqueType, VecLiteralException}
+import chisel3.experimental.{
+  BaseModule,
+  BundleLiteralException,
+  HasMemoized,
+  HasMemoizedImpl,
+  HasTypeAlias,
+  Memoize,
+  OpaqueType,
+  VecLiteralException
+}
 import chisel3.experimental.{requireIsChiselType, requireIsHardware, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
@@ -949,7 +958,9 @@ trait VecLike[T <: Data] extends IndexedSeq[T] with HasId with SourceInfoDoc {
   * Record should only be extended by libraries and fairly sophisticated generators.
   * RTL writers should use [[Bundle]].  See [[Record#elements]] for an example.
   */
-abstract class Record extends Aggregate {
+abstract class Record extends Aggregate with HasMemoizedImpl {
+
+  final protected implicit def hasMemoized: HasMemoized = this
 
   /** The list of parameter accessors used in the constructor of this [[chisel3.Record]].
     *
@@ -1299,6 +1310,10 @@ abstract class Record extends Aggregate {
 
   override private[chisel3] lazy val _minId: Long = {
     this.elementsIterator.map(_._minId).foldLeft(this._id)(_ min _)
+  }
+
+  private[chisel3] override def attach(memoize: Memoize[_]): Unit = {
+    ???
   }
 }
 
