@@ -85,10 +85,10 @@ abstract class RawModule extends BaseModule {
   //
   // Perhaps this should be an ArrayBuffer (or ArrayBuilder), but DefModule is public and has Seq[Command]
   // so our best option is to share a single Seq datastructure with that
-  private val _commands = new VectorBuilder[Command]()
+  private[chisel3] var _currentScope = new Scope(this._sourceInfo, isLazy = false)
   private[chisel3] def addCommand(c: Command): Unit = {
     require(!_closed, "Can't write to module after module close")
-    _commands += c
+    _currentScope.addCommand(c)
   }
   protected def getCommands: Seq[Command] = {
     require(_closed, "Can't get commands before module close")
@@ -196,7 +196,7 @@ abstract class RawModule extends BaseModule {
     // Generate IO invalidation commands to initialize outputs as unused,
     //  unless the client wants explicit control over their generation.
     val component =
-      DefModule(this, name, _isPublic, Builder.enabledLayers.toSeq, firrtlPorts, _commands.result())
+      DefModule(this, name, _isPublic, Builder.enabledLayers.toSeq, firrtlPorts, _currentScope.commands)
 
     // Secret connections can be staged if user bored into children modules
     component.secretCommands ++= stagedSecretCommands

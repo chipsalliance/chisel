@@ -12,6 +12,7 @@ import scala.util.Try
 import scala.annotation.implicitNotFound
 import scala.collection.mutable
 import chisel3.ChiselException
+import chisel3.internal.firrtl.ir
 
 package object internal {
 

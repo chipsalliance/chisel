@@ -15,6 +15,8 @@ import scala.collection.immutable.NumericRange
 import scala.math.BigDecimal.RoundingMode
 import scala.annotation.nowarn
 import scala.collection.mutable
+import scala.collection.immutable.VectorBuilder
+import scala.collection.View
 
 // This object exists so that it can be package private and we don't have to individually mark every class
 private[chisel3] object ir {
@@ -360,6 +362,39 @@ private[chisel3] object ir {
     predicate:  Arg,
     pable:      Printable)
       extends Definition
+
+  // Scopes can be lazy which means they may or may not actually be used in the design
+  // (and thus included in emission)
+  class Scope(val sourceInfo: SourceInfo, isLazy: Boolean) extends Command {
+    private val _commands = new VectorBuilder[Command]()
+    // We need to enforce no adding after .result() is called because it is undefined
+    private var closed: Boolean = false
+    private lazy val result = {
+      closed = true
+      val res = _commands.result()
+      _commands.clear() // reclaim memory
+      res
+    }
+    private var _used: Boolean = !isLazy
+    def markUsed(): Unit = {
+      _used = true
+    }
+
+    /** Is the Scope actually used in the design? */
+    def used: Boolean = _used
+
+    def commands: Vector[Command] = lazyCommands.toVector
+
+    protected def lazyCommands: View[Command] = result.view.flatMap {
+      case scope: Scope => if (scope.used) scope.lazyCommands else Seq.empty
+      case other => Seq(other)
+    }
+
+    def addCommand(c: Command): Unit = {
+      require(!closed, "Can't write to module after module close")
+      _commands += c
+    }
+  }
 
   abstract class Component extends Arg {
     def id:    BaseModule
