@@ -6,8 +6,6 @@ import chisel3._
 import chisel3.experimental.IntrinsicModule
 import chisel3.internal.Builder
 
-import circt.Intrinsic
-
 /** Create a module with a parameterized type which calls the verilog function
   * \$test\$plusargs to test for the existence of the string str in the
   * simulator command line.

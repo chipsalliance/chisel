@@ -6,8 +6,6 @@ import chisel3._
 import chisel3.experimental.IntrinsicModule
 import chisel3.internal.Builder
 
-import circt.Intrinsic
-
 /** A clock gate intrinsic.
   */
 private class ClockGateIntrinsic extends IntrinsicModule("circt_clock_gate") {

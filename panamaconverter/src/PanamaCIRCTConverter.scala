@@ -197,7 +197,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
     def convert(name: String, parameter: Param): MlirAttribute = {
       val (tpe, value) = parameter match {
         case IntParam(value) =>
-          val tpe = circt.mlirIntegerTypeGet(max(bitLength(value), 32))
+          val tpe = circt.mlirIntegerTypeGet(max(value.bitLength, 32))
           (tpe, circt.mlirIntegerAttrGet(tpe, value.toLong))
         case DoubleParam(value) =>
           val tpe = circt.mlirF64TypeGet()
@@ -239,8 +239,6 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
         .withNamedAttr("portSyms", circt.mlirArrayAttrGet(ports.symAttrs))
         .withNamedAttr("portLocations", circt.mlirArrayAttrGet(ports.locAttrs))
     }
-
-    def bitLength(n: BigInt): Int = max(n.bitLength, 1)
 
     def widthShl(lhs: fir.Width, rhs: fir.Width): fir.Width = (lhs, rhs) match {
       case (l: fir.IntWidth, r: fir.IntWidth) => fir.IntWidth(l.width << r.width.toInt)
@@ -486,7 +484,8 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
       def referToNewConstant(n: BigInt, w: Width, isSigned: Boolean): Reference.Value = {
         val (firWidth, valWidth) = w match {
           case _: UnknownWidth =>
-            val bitLen = util.bitLength(n)
+            // We need to keep the most significant sign bit for signed literals
+            val bitLen = if (!isSigned) max(n.bitLength, 1) else n.bitLength + 1
             (fir.IntWidth(bitLen), bitLen)
           case w: KnownWidth => (fir.IntWidth(w.get), w.get)
         }
@@ -503,7 +502,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
               val attrs = Seq(
                 (
                   "value",
-                  circt.mlirIntegerAttrGet(circt.mlirIntegerTypeSignedGet(util.bitLength(value) + 1), value.toLong)
+                  circt.mlirIntegerAttrGet(circt.mlirIntegerTypeSignedGet(max(value.bitLength, 1) + 1), value.toLong)
                 )
               )
               ("integer", attrs, Seq.empty)

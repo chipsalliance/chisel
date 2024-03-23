@@ -6,8 +6,6 @@ import chisel3._
 import chisel3.experimental.{requireIsHardware, IntrinsicModule}
 import chisel3.internal.Builder
 
-import circt.Intrinsic
-
 /** A 2-to-1 mux cell intrinsic.
   */
 private class Mux2CellIntrinsic[T <: Data](gen: T) extends IntrinsicModule("circt_mux2cell") {
