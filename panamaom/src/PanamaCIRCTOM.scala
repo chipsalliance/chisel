@@ -49,8 +49,6 @@ object PanamaCIRCTOMEvaluatorValue {
   def newValue(circt: PanamaCIRCT, value: OMEvaluatorValue): PanamaCIRCTOMEvaluatorValue = {
     if (circt.omEvaluatorValueIsAObject(value)) {
       new PanamaCIRCTOMEvaluatorValueObject(circt, value)
-    } else if (circt.omEvaluatorValueIsAPrimitive(value)) {
-      new PanamaCIRCTOMEvaluatorValuePrimitive(circt, value)
     } else if (circt.omEvaluatorValueIsAList(value)) {
       new PanamaCIRCTOMEvaluatorValueList(circt, value)
     } else if (circt.omEvaluatorValueIsATuple(value)) {
@@ -61,6 +59,12 @@ object PanamaCIRCTOMEvaluatorValue {
       new PanamaCIRCTOMEvaluatorValueBasePath(circt, value)
     } else if (circt.omEvaluatorValueIsAPath(value)) {
       new PanamaCIRCTOMEvaluatorValuePath(circt, value)
+    } else if (circt.omEvaluatorValueIsAReference(value)) {
+      newValue(circt, circt.omEvaluatorValueGetReferenceValue(value))
+    } else if (circt.omEvaluatorValueIsAPrimitive(value)) {
+      new PanamaCIRCTOMEvaluatorValuePrimitive(circt, value)
+    } else if (circt.omEvaluatorValueIsNull(value)) {
+      throw new Exception("unable to get field")
     } else {
       throw new Exception("unknown OMEvaluatorValue type")
     }

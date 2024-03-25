@@ -224,6 +224,8 @@ omEvaluatorValueIsABasePath
 omEvaluatorBasePathGetEmpty
 omEvaluatorValueIsAPath
 omEvaluatorPathGetAsString
+omEvaluatorValueIsAReference
+omEvaluatorValueGetReferenceValue
 # ReferenceAttr API
 omAttrIsAReferenceAttr
 omReferenceAttrGetInnerRef
