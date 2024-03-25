@@ -2,6 +2,7 @@
 this_dir := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 chisel_dir := $(realpath $(this_dir)/..)
 relative_to_this_dir := $(notdir $(this_dir))
+PORT ?= 8000
 
 mdoc_out := $(chisel_dir)/docs/generated
 
@@ -90,7 +91,7 @@ build: $(build_timestamp)
 # Use python to serve the actual build directory instead of using npm run serve
 # This is needed in order for the serving of the ScalaDoc to work correctly
 serve: build
-	cd $(this_dir)/build && python3 -m http.server
+	cd $(this_dir)/build && python3 -m http.server ${PORT}
 
 clean:
 	rm -rf $(this_dir)/docs $(this_dir)/build $(this_dir)/src/pages/generated $(chisel_dir)/docs/generated
