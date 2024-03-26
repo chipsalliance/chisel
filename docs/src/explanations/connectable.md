@@ -21,7 +21,7 @@ section: "chisel3"
    * [Connecting Records](#connecting-records)
    * [Defaults with waived connections](#defaults-with-waived-connections)
    * [Connecting types with optional members](#connecting-types-with-optional-members)
-   * [Always ignore extra members (partial connection operator)](#always-ignore-extra-members-partial-connection-operator)
+   * [Always ignore extra members (partial connection operator)](#always-ignore-errors-caused-by-extra-members-partial-connection-operator)
    * [Connecting components with different widths](#connecting-components-with-different-widths)
  * [Techniques for connecting structurally inequivalent Chisel types](#techniques-for-connecting-structurally-inequivalent-chisel-types)
    * [Connecting different sub-types of the same super-type, with colliding names](#connecting-different-sub-types-of-the-same-super-type-with-colliding-names)
