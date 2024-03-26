@@ -265,8 +265,8 @@ getVerilogString(new Foo)
 
 ### How do I partially reset an Aggregate Reg?
 
-The easiest way is to use a partially-specified [Bundle Literal](#../appendix/experimental-features#bundle-literals)
-or [Vec Literal](#../appendix/experimental-features#vec-literals) to match the type of the Reg.
+The easiest way is to use a partially-specified [Bundle Literal](../appendix/experimental-features#bundle-literals)
+or [Vec Literal](../appendix/experimental-features#vec-literals) to match the type of the Reg.
 
 ```scala mdoc:silent:reset
 import chisel3._
@@ -309,7 +309,7 @@ getVerilogString(new MyModule2)
 
 ## Bundles
 
-### <a name="aliased-bundle-fields"></a> How do I deal with aliased Bundle fields?
+### How do I deal with aliased Bundle fields?
 
 ```scala mdoc:invisible:reset
 import chisel3._
@@ -377,7 +377,9 @@ Note that this also means you must pass `gen` as a function, for example:
 getVerilogString(new Top(new UsingAFunctionBundle(() => UInt(8.W))))
 ```
 
-<a name="aliased-warning"></a> **Warning**: you must ensure that `gen` creates fresh objects rather than capturing an already constructed value:
+##### Aliased Warning
+
+**Warning**: you must ensure that `gen` creates fresh objects rather than capturing an already constructed value:
 
 ```scala mdoc:crash
 class MisusedFunctionArguments extends Module {
@@ -823,7 +825,11 @@ circt.stage.ChiselStage.emitSystemVerilog(new CountBits(4))
   .head + ");\n"
 ```
 
+<<<<<<< HEAD
 ### <a id="dynamic-index-too-wide-narrow" /> How do I resolve "Dynamic index ... is too wide/narrow for extractee ..."?
+=======
+## How do I resolve "Dynamic index ... is too wide/narrow for extractee ..."?
+>>>>>>> 946392f5d ([website] Bump Docusaurus to 3.1.1 and fix broken anchors (#3948))
 
 
 Chisel will warn if a dynamic index is not the correctly-sized width for indexing a Vec or UInt.
