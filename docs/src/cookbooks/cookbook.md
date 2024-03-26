@@ -825,12 +825,7 @@ circt.stage.ChiselStage.emitSystemVerilog(new CountBits(4))
   .head + ");\n"
 ```
 
-<<<<<<< HEAD
-### <a id="dynamic-index-too-wide-narrow" /> How do I resolve "Dynamic index ... is too wide/narrow for extractee ..."?
-=======
-## How do I resolve "Dynamic index ... is too wide/narrow for extractee ..."?
->>>>>>> 946392f5d ([website] Bump Docusaurus to 3.1.1 and fix broken anchors (#3948))
-
+### How do I resolve "Dynamic index ... is too wide/narrow for extractee ..."?
 
 Chisel will warn if a dynamic index is not the correctly-sized width for indexing a Vec or UInt.
 "Correctly-sized" means that the width of the index should be the log2 of the size of the indexee.
