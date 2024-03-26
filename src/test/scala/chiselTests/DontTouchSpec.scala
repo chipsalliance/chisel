@@ -123,4 +123,66 @@ class DontTouchSpec extends ChiselFlatSpec with Utils {
     // Ensure can compile the result.
     compile(new HasProbesAndProperties())
   }
+
+  "dontTouch.modulePorts" should "mark all ports of a module" in {
+    class ModuleWithPorts extends Module {
+      val io = IO(new Bundle {
+        val a = Output(UInt(32.W))
+        val b = Input(new Bundle {
+          val x = Bool()
+          val y = new Bundle {
+            val foo = UInt(4.W)
+          }
+        })
+      })
+      io.a := DontCare
+    }
+    class DummyWrapper extends Module {
+      val dut = Module(new ModuleWithPorts)
+      dontTouch.modulePorts(dut)
+    }
+
+    val (_, annos) = getFirrtlAndAnnos(new DummyWrapper)
+    (annos should contain).allOf(
+      DontTouchAnnotation("~DummyWrapper|ModuleWithPorts>clock".rt),
+      DontTouchAnnotation("~DummyWrapper|ModuleWithPorts>reset".rt),
+      DontTouchAnnotation("~DummyWrapper|ModuleWithPorts>io".rt),
+      DontTouchAnnotation("~DummyWrapper|ModuleWithPorts>io.b".rt),
+      DontTouchAnnotation("~DummyWrapper|ModuleWithPorts>io.b.y".rt),
+      DontTouchAnnotation("~DummyWrapper|ModuleWithPorts>io.b.y.foo".rt),
+      DontTouchAnnotation("~DummyWrapper|ModuleWithPorts>io.b.x".rt),
+      DontTouchAnnotation("~DummyWrapper|ModuleWithPorts>io.a".rt)
+    )
+  }
+
+  "dontTouch.modulePorts" should "mark bored ports" in {
+    class ModuleToBore extends Module {
+      val io = IO(new Bundle {
+        val a = Output(UInt(32.W))
+        val b = Input(Bool())
+      })
+      io.a := DontCare
+
+      val boreMe = Wire(UInt(4.W))
+      boreMe := DontCare
+    }
+    class BoreModule extends Module {
+      val boreOut = IO(Output(UInt(4.W)))
+      val dut = Module(new ModuleToBore)
+
+      boreOut := chisel3.util.experimental.BoringUtils.bore(dut.boreMe)
+      dontTouch.modulePorts(dut)
+    }
+
+    val (_, annos) = getFirrtlAndAnnos(new BoreModule)
+    (annos should contain).allOf(
+      DontTouchAnnotation("~BoreModule|ModuleToBore>clock".rt),
+      DontTouchAnnotation("~BoreModule|ModuleToBore>reset".rt),
+      DontTouchAnnotation("~BoreModule|ModuleToBore>io".rt),
+      DontTouchAnnotation("~BoreModule|ModuleToBore>io.b".rt),
+      DontTouchAnnotation("~BoreModule|ModuleToBore>io.a".rt),
+      DontTouchAnnotation("~BoreModule|BoreModule>dut.boreOut_bore".rt)
+    )
+  }
+
 }
