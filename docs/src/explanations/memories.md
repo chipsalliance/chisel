@@ -198,7 +198,7 @@ class MaskedRWSmem extends Module {
 
 Chisel memories can be initialized from an external `binary` or `hex` file emitting proper Verilog for synthesis or simulation. There are multiple modes of initialization.
 
-For more information, check the experimental docs on [Loading Memories](../appendix/experimental-features#loading-memories) feature.
+For more information, check the experimental docs on [Loading Memories](../appendix/experimental-features#loading-memories-for-simulation-or-fpga-initialization) feature.
 
 ## SRAM
 
