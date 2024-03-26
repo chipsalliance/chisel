@@ -92,10 +92,12 @@ package object simulator {
 
   implicit class ChiselWorkspace(workspace: Workspace) {
     def elaborateGeneratedModule[T <: RawModule](
-      generateModule: () => T
+      generateModule:        () => T,
+      firtoolArgs: Seq[String] = Seq()
     ): ElaboratedModule[T] = {
       // Use CIRCT to generate SystemVerilog sources, and potentially additional artifacts
       var someDut: Option[T] = None
+      val firtoolOptions = firtoolArgs.map(circt.stage.FirtoolOption)
       val outputAnnotations = (new circt.stage.ChiselStage).execute(
         Array("--target", "systemverilog", "--split-verilog"),
         Seq(
@@ -106,7 +108,7 @@ package object simulator {
           },
           circt.stage.FirtoolOption("-disable-annotation-unknown"),
           firrtl.options.TargetDirAnnotation(workspace.supportArtifactsPath)
-        )
+        ) ++ firtoolOptions
       )
 
       // Move the files indicated by a filelist.  No-op if the file has already
