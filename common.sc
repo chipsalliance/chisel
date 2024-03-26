@@ -118,6 +118,20 @@ trait HasChisel
   override def moduleDeps = super.moduleDeps ++ Some(chiselModule)
 }
 
+trait CirctModule
+  extends JavaModule {
+  def circtJextractModule: CirctJextractModule
+
+  def circtInstallPath = T.input(os.Path(T.ctx().env.get("CIRCT_INSTALL_PATH").getOrElse("/usr/local")))
+  
+  override def moduleDeps = super.moduleDeps ++ Some(circtJextractModule)
+}
+
+trait HasCirct
+  extends JavaModule {
+  def circtModule: CirctModule
+}
+
 trait HasJextractGeneratedSources
   extends JavaModule {
   def includePaths: T[Seq[PathRef]]
@@ -184,10 +198,10 @@ trait HasJextractGeneratedSources
   override def javacOptions = T(super.javacOptions() ++ Seq("--enable-preview", "--release", "21"))
 }
 
-// Java Codegen for all declared functions.
-// All of these functions are not private API which is subject to change.
-trait CIRCTPanamaBindingModule
-  extends HasJextractGeneratedSources {
+// Java Codegen for all declared items.
+trait CirctJextractModule
+  extends HasJextractGeneratedSources
+    with HasCirct {
 
   def includeConstants = T.input(os.read.lines(millSourcePath / "includeConstants.txt").filter(s => s.nonEmpty && !s.startsWith("#")))
   def includeFunctions = T.input(os.read.lines(millSourcePath / "includeFunctions.txt").filter(s => s.nonEmpty && !s.startsWith("#")))
@@ -201,9 +215,9 @@ trait CIRCTPanamaBindingModule
   def headerClassName = T("CAPI")
 }
 
-trait HasCIRCTPanamaBindingModule
+trait HasCirctJextractModule
   extends JavaModule {
-  def circtPanamaBindingModule: CIRCTPanamaBindingModule
+  def circtPanamaBindingModule: CirctJextractModule
 
   override def moduleDeps = super.moduleDeps ++ Some(circtPanamaBindingModule)
 
@@ -220,11 +234,11 @@ trait HasCIRCTPanamaBindingModule
 // The Scala API for PanamaBinding, API here is experimentally public to all developers
 trait PanamaLibModule
   extends ScalaModule
-    with HasCIRCTPanamaBindingModule
+    with HasCirctJextractModule
 
 trait HasPanamaLibModule
   extends ScalaModule
-    with HasCIRCTPanamaBindingModule {
+    with HasCirctJextractModule {
   def panamaLibModule: PanamaLibModule
 
   def circtPanamaBindingModule = panamaLibModule.circtPanamaBindingModule
@@ -238,7 +252,7 @@ trait PanamaOMModule
 
 trait HasPanamaOMModule
   extends ScalaModule
-    with HasCIRCTPanamaBindingModule {
+    with HasCirctJextractModule {
   def panamaOMModule: PanamaOMModule
 
   def circtPanamaBindingModule = panamaOMModule.circtPanamaBindingModule
@@ -253,7 +267,7 @@ trait PanamaConverterModule
 
 trait HasPanamaConverterModule
   extends ScalaModule
-    with HasCIRCTPanamaBindingModule
+    with HasCirctJextractModule
     with HasChisel {
   def panamaConverterModule: PanamaConverterModule
 
