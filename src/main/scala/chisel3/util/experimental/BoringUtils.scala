@@ -217,6 +217,23 @@ object BoringUtils {
     genName
   }
 
+  /** Connect a source to one sink
+    *
+    * @param source a source component
+    * @param sink  one sink components
+    * @return the name of the signal used to connect the source to the
+    *         sinks
+    * @note the returned name will be based on the name of the source
+    *       component
+    */
+  @deprecated(
+    "Please use the new Boring API instead (BoringUtils.bore(source)). This will be removed in Chisel 7.0",
+    "Chisel 6.0"
+  )
+  def bore(source: Data, sink: Data): String = {
+    bore(source, Seq(sink))
+  }
+
   private def boreOrTap[A <: Data](source: A, createProbe: Option[ProbeInfo] = None)(implicit si: SourceInfo): A = {
     import reflect.DataMirror
     def parent(d: Data): BaseModule = d.topBinding.location.get
