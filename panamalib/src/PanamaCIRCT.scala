@@ -627,6 +627,10 @@ class PanamaCIRCT {
   def omEvaluatorPathGetAsString(evaluatorValue: OMEvaluatorValue): String = mlirStringAttrGetValue(
     MlirAttribute(CAPI.omEvaluatorPathGetAsString(arena, evaluatorValue.get))
   )
+  def omEvaluatorValueIsAReference(evaluatorValue: OMEvaluatorValue): Boolean =
+    CAPI.omEvaluatorValueIsAReference(evaluatorValue.get)
+  def omEvaluatorValueGetReferenceValue(evaluatorValue: OMEvaluatorValue): OMEvaluatorValue =
+    OMEvaluatorValue(CAPI.omEvaluatorValueGetReferenceValue(arena, evaluatorValue.get))
   def omAttrIsAReferenceAttr(attr:     MlirAttribute): Boolean = CAPI.omAttrIsAReferenceAttr(attr.get)
   def omReferenceAttrGetInnerRef(attr: MlirAttribute) = MlirAttribute(CAPI.omReferenceAttrGetInnerRef(arena, attr.get))
   def omAttrIsAIntegerAttr(attr:       MlirAttribute): Boolean = CAPI.omAttrIsAIntegerAttr(attr.get)

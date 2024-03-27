@@ -13,6 +13,12 @@ Building the website requires the usual [Chisel installation](https://www.chisel
 
 Please follow the [official npm instructions](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm) for installing Node.js and npm.
 
+You will also need to authenticate with Github as several of the build steps use the Github API.
+The easiest way to do this is to install the [Github CLI](https://cli.github.com), run `gh auth login` and follow the prompts.
+Unless you are an enterprise user, you will be logging into a `Github.com` account.
+If you already have [SSH enabled for your Github account](https://docs.github.com/en/authentication/connecting-to-github-with-ssh), use SSH as your protocol, otherwise use HTTPS.
+It is also usually easiest to login with a web browser.
+
 In the likely event that these instructions become out-of-date, please see the [Github Actions workflows](../.github/workflows) for how the website is tested and deployed in CI.
 
 ## Installation

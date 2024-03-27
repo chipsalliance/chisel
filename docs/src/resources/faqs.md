@@ -8,7 +8,7 @@ section: "chisel3"
 
 * [Where should I start if I want to learn Chisel?](#where-should-i-start-if-i-want-to-learn-chisel)
 * [How do I ... in Chisel?](#how-do-i-do--eg-like-that-in-verilog-in-chisel)
-* [What versions of the various projects work together?](#what-versions)
+* [What versions of the various projects work together?](#what-versions-of-the-various-projects-work-together)
 * [How can I contribute to Chisel?](#how-can-i-contribute-to-chisel)
 * [Why DecoupledIO instead of ReadyValidIO?](#why-decoupledio-instead-of-readyvalidio)
 * [Why do I have to wrap module instantiations in `Module(...)`?](#why-do-i-have-to-wrap-module-instantiations-in-module)
@@ -28,7 +28,7 @@ We recommend the [Chisel Bootcamp](https://github.com/freechipsproject/chisel-bo
 
 See the [cookbooks](../cookbooks/cookbook).
 
-### What versions of the various projects work together? <a name="what-versions"></a>
+### What versions of the various projects work together?
 
 See [Chisel Project Versioning](../appendix/versioning).
 
