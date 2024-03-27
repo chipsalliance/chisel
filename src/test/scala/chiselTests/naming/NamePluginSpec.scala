@@ -267,7 +267,7 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
     }
   }
 
-  "Unapply assignments" should "name (but not prefix) local vals on the RHS" in {
+  "Unapply assignments" should "name and prefix local vals on the RHS" in {
     class Test extends Module {
       {
         val (a, b) = {
@@ -279,7 +279,7 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
     }
 
     aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(List("a", "b", "sum"))
+      Select.wires(top).map(_.instanceName) should be(List("a", "b", "a_b_sum"))
     }
   }
 
@@ -324,7 +324,7 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
     }
 
     aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(List("w", "a", "_WIRE"))
+      Select.wires(top).map(_.instanceName) should be(List("w", "a", "_a_c_WIRE"))
     }
   }
 
