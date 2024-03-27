@@ -149,6 +149,7 @@ package object chisel3 {
   // (UInt|SInt)\(([_a-zA-Z][_0-9a-zA-Z]*),\s*(?:width\s*=)?\s*(\d+|[_a-zA-Z][_0-9a-zA-Z]*)\)
   //  => $2.as$1($3.W)
 
+  @deprecated("Bits() returning UInt is not type-safe; to be removed in 3.5", "Chisel 3.5")
   object Bits extends UIntFactory
   object UInt extends UIntFactory
   object SInt extends SIntFactory
