@@ -92,8 +92,8 @@ package object simulator {
 
   implicit class ChiselWorkspace(workspace: Workspace) {
     def elaborateGeneratedModule[T <: RawModule](
-      generateModule:        () => T,
-      firtoolArgs: Seq[String] = Seq()
+      generateModule: () => T,
+      firtoolArgs:    Seq[String] = Seq()
     ): ElaboratedModule[T] = {
       // Use CIRCT to generate SystemVerilog sources, and potentially additional artifacts
       var someDut: Option[T] = None
