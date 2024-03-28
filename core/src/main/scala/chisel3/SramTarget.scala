@@ -4,6 +4,6 @@ import chisel3.internal.NamedComponent
 
 /** Provides an underlying target-able class for SRAM.
   */
-private[chisel3] final class SramTarget() extends NamedComponent {
+private[chisel3] final class SramTarget extends NamedComponent {
   _parent.foreach(_.addId(this))
 }

@@ -3,13 +3,11 @@
 package chiselTests.util
 
 import chisel3._
-import chisel3.util.SRAM
+import chisel3.util.{MemoryReadWritePort, SRAM}
 import chisel3.experimental.{annotate, ChiselAnnotation}
 import chiselTests.ChiselFlatSpec
-import _root_.circt.stage.ChiselStage.emitCHIRRTL
-import _root_.circt.stage.ChiselStage.emitSystemVerilog
+import _root_.circt.stage.ChiselStage.{emitCHIRRTL, emitSystemVerilog}
 import firrtl.annotations.{Annotation, ReferenceTarget, SingleTargetAnnotation}
-import chisel3.util.MemoryReadWritePort
 
 class SRAMSpec extends ChiselFlatSpec {
   case class DummyAnno(target: ReferenceTarget) extends SingleTargetAnnotation[ReferenceTarget] {
@@ -38,22 +36,22 @@ class SRAMSpec extends ChiselFlatSpec {
     chirrtl should include(
       "wire sram : { readPorts : { flip address : UInt<5>, flip enable : UInt<1>, data : UInt<8>}[0], writePorts : { flip address : UInt<5>, flip enable : UInt<1>, flip data : UInt<8>}[0], readwritePorts : { flip address : UInt<5>, flip enable : UInt<1>, flip isWrite : UInt<1>, readData : UInt<8>, flip writeData : UInt<8>}[1]}"
     )
-    chirrtl should include("mem _sram_MEM")
+    chirrtl should include("mem sram_sram")
     chirrtl should include("data-type => UInt<8>")
     chirrtl should include("depth => 32")
     chirrtl should include("read-latency => 1")
     chirrtl should include("write-latency => 1")
     chirrtl should include("readwriter => RW0")
     chirrtl should include("read-under-write => undefined")
-    chirrtl should include("connect _sram_MEM.RW0.addr, sram.readwritePorts[0].address")
-    chirrtl should include("connect _sram_MEM.RW0.clk, clock")
-    chirrtl should include("connect _sram_MEM.RW0.en, sram.readwritePorts[0].enable")
-    chirrtl should include("connect sram.readwritePorts[0].readData, _sram_MEM.RW0.rdata")
-    chirrtl should include("connect _sram_MEM.RW0.wdata, sram.readwritePorts[0].writeData")
-    chirrtl should include("connect _sram_MEM.RW0.wmode, _sram_MEM.RW0.wmode")
+    chirrtl should include("connect sram_sram.RW0.addr, sram.readwritePorts[0].address")
+    chirrtl should include("connect sram_sram.RW0.clk, clock")
+    chirrtl should include("connect sram_sram.RW0.en, sram.readwritePorts[0].enable")
+    chirrtl should include("connect sram.readwritePorts[0].readData, sram_sram.RW0.rdata")
+    chirrtl should include("connect sram_sram.RW0.wdata, sram.readwritePorts[0].writeData")
+    chirrtl should include("connect sram_sram.RW0.wmode, sram_sram.RW0.wmode")
 
     val dummyAnno = annos.collectFirst { case DummyAnno(t) => (t.toString) }
-    dummyAnno should be(Some("~Top|Top>_sram_MEM"))
+    dummyAnno should be(Some("~Top|Top>_sram_sram"))
   }
 
   it should "Get emitted with a custom name when one is suggested" in {
@@ -94,10 +92,10 @@ class SRAMSpec extends ChiselFlatSpec {
         numReadwritePorts = 0
       )
       val fooIo = IO(foo.cloneType)
-      fooIo <> foo
+      fooIo :<>= foo
     }
     val chirrtl = emitCHIRRTL(new Top, Array("--full-stacktrace"))
-    chirrtl should include("connect _foo_MEM.W0.mask, UInt<1>(0h1)")
+    chirrtl should include("connect foo_sram.W0.mask, UInt<1>(0h1)")
 
     // check CIRCT can compile the output
     val sv = emitSystemVerilog(new Top, Array("--full-stacktrace"))
@@ -113,7 +111,7 @@ class SRAMSpec extends ChiselFlatSpec {
         numReadwritePorts = 1
       )
       val maskedVecMemIo = IO(maskedVecMem.cloneType)
-      maskedVecMemIo <> maskedVecMem
+      maskedVecMemIo :<>= maskedVecMem
 
       val unmaskedVecMem = SRAM(
         size = 64,
@@ -123,7 +121,7 @@ class SRAMSpec extends ChiselFlatSpec {
         numReadwritePorts = 0
       )
       val unmaskedVecMemIo = IO(unmaskedVecMem.cloneType)
-      unmaskedVecMemIo <> unmaskedVecMem
+      unmaskedVecMemIo :<>= unmaskedVecMem
 
       val maskedVecRecordMem = SRAM.masked(
         size = 64,
@@ -139,34 +137,34 @@ class SRAMSpec extends ChiselFlatSpec {
         numReadwritePorts = 0
       )
       val maskedVecRecordMemIo = IO(maskedVecRecordMem.cloneType)
-      maskedVecRecordMemIo <> maskedVecRecordMem
+      maskedVecRecordMemIo :<>= maskedVecRecordMem
     }
     val chirrtl = emitCHIRRTL(new Top, Array("--full-stacktrace"))
-    chirrtl should include("connect _maskedVecMem_MEM.RW0.wmask[0], maskedVecMem.readwritePorts[0].mask[0]")
-    chirrtl should include("connect _maskedVecMem_MEM.RW0.wmask[1], maskedVecMem.readwritePorts[0].mask[1]")
+    chirrtl should include("connect maskedVecMem_sram.RW0.wmask[0], maskedVecMem.readwritePorts[0].mask[0]")
+    chirrtl should include("connect maskedVecMem_sram.RW0.wmask[1], maskedVecMem.readwritePorts[0].mask[1]")
     chirrtl should include("connect _unmaskedVecMem_WIRE[0], UInt<1>(0h1)")
     chirrtl should include("connect _unmaskedVecMem_WIRE[1], UInt<1>(0h1)")
     chirrtl should include("connect _unmaskedVecMem_WIRE[2], UInt<1>(0h1)")
     chirrtl should include("connect _unmaskedVecMem_WIRE[3], UInt<1>(0h1)")
-    chirrtl should include("connect _unmaskedVecMem_MEM.W0.mask[0], _unmaskedVecMem_WIRE[0]")
-    chirrtl should include("connect _unmaskedVecMem_MEM.W0.mask[1], _unmaskedVecMem_WIRE[1]")
-    chirrtl should include("connect _unmaskedVecMem_MEM.W0.mask[2], _unmaskedVecMem_WIRE[2]")
-    chirrtl should include("connect _unmaskedVecMem_MEM.W0.mask[3], _unmaskedVecMem_WIRE[3]")
-    chirrtl should include("connect _maskedVecRecordMem_MEM.W0.mask[0].y[0], maskedVecRecordMem.writePorts[0].mask[0]")
-    chirrtl should include("connect _maskedVecRecordMem_MEM.W0.mask[0].y[1], maskedVecRecordMem.writePorts[0].mask[0]")
-    chirrtl should include("connect _maskedVecRecordMem_MEM.W0.mask[0].y[2], maskedVecRecordMem.writePorts[0].mask[0]")
-    chirrtl should include("connect _maskedVecRecordMem_MEM.W0.mask[0].y[3], maskedVecRecordMem.writePorts[0].mask[0]")
-    chirrtl should include("connect _maskedVecRecordMem_MEM.W0.mask[0].x, maskedVecRecordMem.writePorts[0].mask[0]")
-    chirrtl should include("connect _maskedVecRecordMem_MEM.W0.mask[1].y[0], maskedVecRecordMem.writePorts[0].mask[1]")
-    chirrtl should include("connect _maskedVecRecordMem_MEM.W0.mask[1].y[1], maskedVecRecordMem.writePorts[0].mask[1]")
-    chirrtl should include("connect _maskedVecRecordMem_MEM.W0.mask[1].y[2], maskedVecRecordMem.writePorts[0].mask[1]")
-    chirrtl should include("connect _maskedVecRecordMem_MEM.W0.mask[1].y[3], maskedVecRecordMem.writePorts[0].mask[1]")
-    chirrtl should include("connect _maskedVecRecordMem_MEM.W0.mask[1].x, maskedVecRecordMem.writePorts[0].mask[1]")
-    chirrtl should include("connect _maskedVecRecordMem_MEM.W0.mask[2].y[0], maskedVecRecordMem.writePorts[0].mask[2]")
-    chirrtl should include("connect _maskedVecRecordMem_MEM.W0.mask[2].y[1], maskedVecRecordMem.writePorts[0].mask[2]")
-    chirrtl should include("connect _maskedVecRecordMem_MEM.W0.mask[2].y[2], maskedVecRecordMem.writePorts[0].mask[2]")
-    chirrtl should include("connect _maskedVecRecordMem_MEM.W0.mask[2].y[3], maskedVecRecordMem.writePorts[0].mask[2]")
-    chirrtl should include("connect _maskedVecRecordMem_MEM.W0.mask[2].x, maskedVecRecordMem.writePorts[0].mask[2]")
+    chirrtl should include("connect unmaskedVecMem_sram.W0.mask[0], _unmaskedVecMem_WIRE[0]")
+    chirrtl should include("connect unmaskedVecMem_sram.W0.mask[1], _unmaskedVecMem_WIRE[1]")
+    chirrtl should include("connect unmaskedVecMem_sram.W0.mask[2], _unmaskedVecMem_WIRE[2]")
+    chirrtl should include("connect unmaskedVecMem_sram.W0.mask[3], _unmaskedVecMem_WIRE[3]")
+    chirrtl should include("connect maskedVecRecordMem_sram.W0.mask[0].y[0], maskedVecRecordMem.writePorts[0].mask[0]")
+    chirrtl should include("connect maskedVecRecordMem_sram.W0.mask[0].y[1], maskedVecRecordMem.writePorts[0].mask[0]")
+    chirrtl should include("connect maskedVecRecordMem_sram.W0.mask[0].y[2], maskedVecRecordMem.writePorts[0].mask[0]")
+    chirrtl should include("connect maskedVecRecordMem_sram.W0.mask[0].y[3], maskedVecRecordMem.writePorts[0].mask[0]")
+    chirrtl should include("connect maskedVecRecordMem_sram.W0.mask[0].x, maskedVecRecordMem.writePorts[0].mask[0]")
+    chirrtl should include("connect maskedVecRecordMem_sram.W0.mask[1].y[0], maskedVecRecordMem.writePorts[0].mask[1]")
+    chirrtl should include("connect maskedVecRecordMem_sram.W0.mask[1].y[1], maskedVecRecordMem.writePorts[0].mask[1]")
+    chirrtl should include("connect maskedVecRecordMem_sram.W0.mask[1].y[2], maskedVecRecordMem.writePorts[0].mask[1]")
+    chirrtl should include("connect maskedVecRecordMem_sram.W0.mask[1].y[3], maskedVecRecordMem.writePorts[0].mask[1]")
+    chirrtl should include("connect maskedVecRecordMem_sram.W0.mask[1].x, maskedVecRecordMem.writePorts[0].mask[1]")
+    chirrtl should include("connect maskedVecRecordMem_sram.W0.mask[2].y[0], maskedVecRecordMem.writePorts[0].mask[2]")
+    chirrtl should include("connect maskedVecRecordMem_sram.W0.mask[2].y[1], maskedVecRecordMem.writePorts[0].mask[2]")
+    chirrtl should include("connect maskedVecRecordMem_sram.W0.mask[2].y[2], maskedVecRecordMem.writePorts[0].mask[2]")
+    chirrtl should include("connect maskedVecRecordMem_sram.W0.mask[2].y[3], maskedVecRecordMem.writePorts[0].mask[2]")
+    chirrtl should include("connect maskedVecRecordMem_sram.W0.mask[2].x, maskedVecRecordMem.writePorts[0].mask[2]")
 
     // check CIRCT can compile the output
     val sv = emitSystemVerilog(new Top, Array("--full-stacktrace"))
@@ -186,14 +184,14 @@ class SRAMSpec extends ChiselFlatSpec {
         numReadwritePorts = 1
       )
       val unmaskedRecordMemIo = IO(unmaskedRecordMem.cloneType)
-      unmaskedRecordMemIo <> unmaskedRecordMem
+      unmaskedRecordMemIo :<>= unmaskedRecordMem
     }
     val chirrtl = emitCHIRRTL(new Top, Array("--full-stacktrace"))
-    chirrtl should include("connect _unmaskedRecordMem_MEM.RW0.wmask.y[0], UInt<1>(0h1)")
-    chirrtl should include("connect _unmaskedRecordMem_MEM.RW0.wmask.y[1], UInt<1>(0h1)")
-    chirrtl should include("connect _unmaskedRecordMem_MEM.RW0.wmask.y[2], UInt<1>(0h1)")
-    chirrtl should include("connect _unmaskedRecordMem_MEM.RW0.wmask.y[3], UInt<1>(0h1)")
-    chirrtl should include("connect _unmaskedRecordMem_MEM.RW0.wmask.x, UInt<1>(0h1)")
+    chirrtl should include("connect unmaskedRecordMem_sram.RW0.wmask.y[0], UInt<1>(0h1)")
+    chirrtl should include("connect unmaskedRecordMem_sram.RW0.wmask.y[1], UInt<1>(0h1)")
+    chirrtl should include("connect unmaskedRecordMem_sram.RW0.wmask.y[2], UInt<1>(0h1)")
+    chirrtl should include("connect unmaskedRecordMem_sram.RW0.wmask.y[3], UInt<1>(0h1)")
+    chirrtl should include("connect unmaskedRecordMem_sram.RW0.wmask.x, UInt<1>(0h1)")
 
     // check CIRCT can compile the output
     val sv = emitSystemVerilog(new Top, Array("--full-stacktrace"))

@@ -162,7 +162,7 @@ abstract class RawModule extends BaseModule {
         }
       }
     case m: SramTarget =>
-      id.forceName(default = "_MEM", _namespace)
+      id.forceName(default = "MEM", _namespace)
   }
 
   private[chisel3] override def generateComponent(): Option[Component] = {

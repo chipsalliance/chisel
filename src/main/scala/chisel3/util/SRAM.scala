@@ -3,6 +3,7 @@ package chisel3.util
 import chisel3._
 
 import chisel3.internal.{Builder, FirrtlMemTypeBinding, NamedComponent, SramPortBinding}
+import chisel3.internal.plugin.autoNameRecursively
 import chisel3.experimental.SourceInfo
 import chisel3.internal.sourceinfo.{MemTransform, SourceInfoTransform}
 import chisel3.internal.firrtl.ir.{Arg, FirrtlMemory, ILit, Index, Node, Ref, Slot}
@@ -473,7 +474,7 @@ object SRAM {
     }
 
     // underlying target
-    val mem = new SramTarget()
+    val mem = autoNameRecursively("sram")(new SramTarget)
 
     // user-facing interface into the SRAM
     val sramIntfType = new SRAMInterface(size, tpe, numReadPorts, numWritePorts, numReadwritePorts, isVecMem)
@@ -487,24 +488,18 @@ object SRAM {
       sramIntfType.readwritePorts.map(new FirrtlMemoryReadwriter(_))
 
     // set references to firrtl memory ports
-    val firrtlReadPortNames: Seq[String] = firrtlReadPorts.zipWithIndex.map {
-      case (p, idx) =>
-        val name = s"R$idx"
-        p.setRef(Slot(Node(mem), name))
-        name
+    def nameAndSetRef(ports: Seq[Data], namePrefix: String): Seq[String] = {
+      ports.zipWithIndex.map {
+        case (p, idx) =>
+          val name = namePrefix + idx
+          p.setRef(Slot(Node(mem), name))
+          name
+      }
     }
-    val firrtlWritePortNames: Seq[String] = firrtlWritePorts.zipWithIndex.map {
-      case (p, idx) =>
-        val name = s"W$idx"
-        p.setRef(Slot(Node(mem), name))
-        name
-    }
-    val firrtlReadwritePortNames: Seq[String] = firrtlReadwritePorts.zipWithIndex.map {
-      case (p, idx) =>
-        val name = s"RW$idx"
-        p.setRef(Slot(Node(mem), name))
-        name
-    }
+
+    val firrtlReadPortNames = nameAndSetRef(firrtlReadPorts, "R")
+    val firrtlWritePortNames = nameAndSetRef(firrtlWritePorts, "W")
+    val firrtlReadwritePortNames = nameAndSetRef(firrtlReadwritePorts, "RW")
 
     // set bindings of firrtl memory ports
     firrtlReadPorts.foreach(_.bind(SramPortBinding(Builder.forcedUserModule, Builder.currentWhen)))
@@ -529,30 +524,27 @@ object SRAM {
     )
 
     // connect firrtl memory ports to user-facing interface
-    _out.readPorts.zip(firrtlReadPorts).foreach {
-      case (memReadPort, firrtlReadPort) =>
-        firrtlReadPort.addr := memReadPort.address
-        firrtlReadPort.clk := Module.clock
-        memReadPort.data := firrtlReadPort.data.asInstanceOf[Data]
-        firrtlReadPort.en := memReadPort.enable
+    for ((memReadPort, firrtlReadPort) <- _out.readPorts.zip(firrtlReadPorts)) {
+      firrtlReadPort.addr := memReadPort.address
+      firrtlReadPort.clk := Module.clock
+      memReadPort.data := firrtlReadPort.data.asInstanceOf[Data]
+      firrtlReadPort.en := memReadPort.enable
     }
-    _out.writePorts.zip(firrtlWritePorts).foreach {
-      case (memWritePort, firrtlWritePort) =>
-        firrtlWritePort.addr := memWritePort.address
-        firrtlWritePort.clk := Module.clock
-        firrtlWritePort.data.asInstanceOf[Data] := memWritePort.data
-        firrtlWritePort.en := memWritePort.enable
-        assignMask(memWritePort.data, memWritePort.mask, firrtlWritePort.getRef, "mask")
+    for ((memWritePort, firrtlWritePort) <- _out.writePorts.zip(firrtlWritePorts)) {
+      firrtlWritePort.addr := memWritePort.address
+      firrtlWritePort.clk := Module.clock
+      firrtlWritePort.data.asInstanceOf[Data] := memWritePort.data
+      firrtlWritePort.en := memWritePort.enable
+      assignMask(memWritePort.data, memWritePort.mask, firrtlWritePort.getRef, "mask")
     }
-    _out.readwritePorts.zip(firrtlReadwritePorts).foreach {
-      case (memReadwritePort, firrtlReadwritePort) =>
-        firrtlReadwritePort.addr := memReadwritePort.address
-        firrtlReadwritePort.clk := Module.clock
-        firrtlReadwritePort.en := memReadwritePort.enable
-        memReadwritePort.readData := firrtlReadwritePort.rdata.asInstanceOf[Data]
-        firrtlReadwritePort.wdata.asInstanceOf[Data] := memReadwritePort.writeData
-        firrtlReadwritePort.wmode := memReadwritePort.isWrite
-        assignMask(memReadwritePort.writeData, memReadwritePort.mask, firrtlReadwritePort.getRef, "wmask")
+    for ((memReadwritePort, firrtlReadwritePort) <- _out.readwritePorts.zip(firrtlReadwritePorts)) {
+      firrtlReadwritePort.addr := memReadwritePort.address
+      firrtlReadwritePort.clk := Module.clock
+      firrtlReadwritePort.en := memReadwritePort.enable
+      memReadwritePort.readData := firrtlReadwritePort.rdata.asInstanceOf[Data]
+      firrtlReadwritePort.wdata.asInstanceOf[Data] := memReadwritePort.writeData
+      firrtlReadwritePort.wmode := memReadwritePort.isWrite
+      assignMask(memReadwritePort.writeData, memReadwritePort.mask, firrtlReadwritePort.getRef, "wmask")
     }
 
     _out
@@ -619,9 +611,13 @@ object SRAM {
   }
 }
 
-/** Contains fields that map to a FIRRTL memory read port.
+/** Contains fields that map from the user-facing [[MemoryReadPort]] to a
+  * FIRRTL memory read port.
   *
   * @param readPort used to parameterize this class
+  *
+  * @note This is private because users should not directly use this bundle to
+  * interact with [[SRAM]].
   */
 private[chisel3] final class FirrtlMemoryReader[T <: Data](readPort: MemoryReadPort[T]) extends Bundle {
   val addr = readPort.address.cloneType
@@ -630,10 +626,14 @@ private[chisel3] final class FirrtlMemoryReader[T <: Data](readPort: MemoryReadP
   val data = Flipped(readPort.data.cloneType)
 }
 
-/** Contains fields that map to a FIRRTL memory write port, excluding the mask,
-  * which is calculated an assigned explicitly.
+/** Contains fields that map from the user-facing [[MemoryWritePort]] to a
+  * FIRRTL memory write port, excluding the mask, which is calculated and
+  * assigned explicitly.
   *
   * @param writePort used to parameterize this class
+  *
+  * @note This is private because users should not directly use this bundle to
+  * interact with [[SRAM]].
   */
 private[chisel3] final class FirrtlMemoryWriter[T <: Data](writePort: MemoryWritePort[T]) extends Bundle {
   val addr = writePort.address.cloneType
@@ -642,10 +642,14 @@ private[chisel3] final class FirrtlMemoryWriter[T <: Data](writePort: MemoryWrit
   val data = writePort.data.cloneType
 }
 
-/** Contains fields that map to a FIRRTL memory read/write port, excluding the
-  * mask, which is calculated an assigned explicitly.
+/** Contains fields that map from the user-facing [[MemoryReadwritePort]] to a
+  * FIRRTL memory read/write port, excluding the mask, which is calculated and
+  * assigned explicitly.
   *
   * @param readwritePort used to parameterize this class
+  *
+  * @note This is private because users should not directly use this bundle to
+  * interact with [[SRAM]].
   */
 private[chisel3] final class FirrtlMemoryReadwriter[T <: Data](readwritePort: MemoryReadWritePort[T]) extends Bundle {
   val addr = readwritePort.address.cloneType
