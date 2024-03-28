@@ -985,7 +985,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
   }
 
   def visitConnect(connect: Connect): Unit = {
-    val dest = util.referTo(connect.loc.id, connect.sourceInfo)
+    val dest = util.referTo(connect.loc, connect.sourceInfo)
     var src = util.referTo(connect.exp, connect.sourceInfo)
     util.emitConnect(dest, src, util.convert(connect.sourceInfo))
   }
