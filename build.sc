@@ -231,19 +231,30 @@ trait ChiselPublishModule extends PublishModule {
   def publishVersion = "5.0-SNAPSHOT"
 }
 
-object circtpanamabinding extends CIRCTPanamaBinding
+object circt extends Circt
 
-trait CIRCTPanamaBinding
-  extends common.CIRCTPanamaBindingModule
+trait Circt
+  extends common.CirctModule
     with ChiselPublishModule {
+  def circtJextractModule = circtjextract
+
+  def millSourcePath = super.millSourcePath / os.up / "circt"
+}
+
+object circtjextract extends CirctJextract
+
+trait CirctJextract
+  extends common.CirctJextractModule
+    with ChiselPublishModule {
+  def circtModule = circt
+
+  def millSourcePath = circtModule.millSourcePath / "jextract"
 
   def header = T(PathRef(millSourcePath / "jextract-headers.h"))
 
-  def circtInstallPath = T.input(os.Path(T.ctx().env.get("CIRCT_INSTALL_PATH").getOrElse("/usr/local")))
+  def includePaths = T(Seq(PathRef(circtModule.circtInstallPath() / "include")))
 
-  def includePaths = T(Seq(PathRef(circtInstallPath() / "include")))
-
-  def libraryPaths = T(Seq(PathRef(circtInstallPath() / "lib")))
+  def libraryPaths = T(Seq(PathRef(circtModule.circtInstallPath() / "lib")))
 }
 
 object panamalib extends Cross[PanamaLib](v.scalaCrossVersions)
@@ -253,7 +264,7 @@ trait PanamaLib
     with CrossModuleBase
     with ChiselPublishModule
     with ScalafmtModule {
-  def circtPanamaBindingModule = circtpanamabinding
+  def circtPanamaBindingModule = circtjextract
 }
 
 object panamaom extends Cross[PanamaOM](v.scalaCrossVersions)
