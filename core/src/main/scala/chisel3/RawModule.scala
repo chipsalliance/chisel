@@ -160,7 +160,9 @@ abstract class RawModule extends BaseModule {
           // probes have their refs set eagerly
           case _ => // don't name literals
         }
-      } // else, don't name unbound types
+      }
+    case m: SramTarget =>
+      id.forceName(default = "_MEM", _namespace)
   }
 
   private[chisel3] override def generateComponent(): Option[Component] = {

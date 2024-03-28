@@ -148,6 +148,20 @@ private[chisel3] object Converter {
       Some(firrtl.CDefMemory(convert(info), e.name, extractType(t, info, typeAliases), size, false))
     case e @ DefSeqMemory(info, id, t, size, ruw) =>
       Some(firrtl.CDefMemory(convert(info), e.name, extractType(t, info, typeAliases), size, true, ruw))
+    case e @ FirrtlMemory(info, id, t, size, readPortNames, writePortNames, readwritePortNames) =>
+      Some(
+        fir.DefMemory(
+          convert(info),
+          e.name,
+          extractType(t, info, typeAliases),
+          size,
+          1,
+          1,
+          readPortNames,
+          writePortNames,
+          readwritePortNames
+        )
+      )
     case e: DefMemPort[_] =>
       val info = e.sourceInfo
       Some(
