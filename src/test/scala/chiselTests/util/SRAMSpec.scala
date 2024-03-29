@@ -48,10 +48,10 @@ class SRAMSpec extends ChiselFlatSpec {
     chirrtl should include("connect sram_sram.RW0.en, sram.readwritePorts[0].enable")
     chirrtl should include("connect sram.readwritePorts[0].readData, sram_sram.RW0.rdata")
     chirrtl should include("connect sram_sram.RW0.wdata, sram.readwritePorts[0].writeData")
-    chirrtl should include("connect sram_sram.RW0.wmode, sram_sram.RW0.wmode")
+    chirrtl should include("connect sram_sram.RW0.wmode, sram.readwritePorts[0].isWrite")
 
     val dummyAnno = annos.collectFirst { case DummyAnno(t) => (t.toString) }
-    dummyAnno should be(Some("~Top|Top>_sram_sram"))
+    dummyAnno should be(Some("~Top|Top>sram_sram"))
   }
 
   it should "Get emitted with a custom name when one is suggested" in {

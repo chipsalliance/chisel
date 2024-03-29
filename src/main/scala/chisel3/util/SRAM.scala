@@ -524,22 +524,25 @@ object SRAM {
     )
 
     // connect firrtl memory ports to user-facing interface
-    for ((memReadPort, firrtlReadPort) <- _out.readPorts.zip(firrtlReadPorts)) {
+    for (((memReadPort, firrtlReadPort), readClock) <- _out.readPorts.zip(firrtlReadPorts).zip(readPortClocks)) {
       firrtlReadPort.addr := memReadPort.address
-      firrtlReadPort.clk := Module.clock
+      firrtlReadPort.clk := readClock
       memReadPort.data := firrtlReadPort.data.asInstanceOf[Data]
       firrtlReadPort.en := memReadPort.enable
     }
-    for ((memWritePort, firrtlWritePort) <- _out.writePorts.zip(firrtlWritePorts)) {
+    for (((memWritePort, firrtlWritePort), writeClock) <- _out.writePorts.zip(firrtlWritePorts).zip(writePortClocks)) {
       firrtlWritePort.addr := memWritePort.address
-      firrtlWritePort.clk := Module.clock
+      firrtlWritePort.clk := writeClock
       firrtlWritePort.data.asInstanceOf[Data] := memWritePort.data
       firrtlWritePort.en := memWritePort.enable
       assignMask(memWritePort.data, memWritePort.mask, firrtlWritePort.getRef, "mask")
     }
-    for ((memReadwritePort, firrtlReadwritePort) <- _out.readwritePorts.zip(firrtlReadwritePorts)) {
+    for (
+      ((memReadwritePort, firrtlReadwritePort), readwriteClock) <-
+        _out.readwritePorts.zip(firrtlReadwritePorts).zip(readwritePortClocks)
+    ) {
       firrtlReadwritePort.addr := memReadwritePort.address
-      firrtlReadwritePort.clk := Module.clock
+      firrtlReadwritePort.clk := readwriteClock
       firrtlReadwritePort.en := memReadwritePort.enable
       memReadwritePort.readData := firrtlReadwritePort.rdata.asInstanceOf[Data]
       firrtlReadwritePort.wdata.asInstanceOf[Data] := memReadwritePort.writeData
