@@ -58,4 +58,4 @@ Another ```Mux``` utility is the one-hot mux, ```Mux1H```. It takes a sequence o
     io.selector(4) -> 11.U,
   ))
 ```
-```Mux1H``` whenever possible generates *Firrtl* that is readily optimizable as low depth and/or tree.  This optimization is not possible when the values are of type ```FixedPoint``` or an aggregate type that contains ```FixedPoint```s and results instead as a simple ```Mux``` tree.  This behavior could be sub-optimal.  As ```FixedPoint``` is still *experimental* this behavior may change in the future.
+`Mux1H` whenever possible generates *Firrtl* that is readily optimizable as low depth and/or tree.
