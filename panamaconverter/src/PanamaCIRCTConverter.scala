@@ -930,7 +930,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
       .withNamedAttr("sym_visibility", circt.mlirStringAttrGet("private"))
       .withNamedAttr("defname", nameAttr)
       .withNamedAttr("parameters", circt.mlirArrayAttrGet(defBlackBox.params.map(p => util.convert(p._1, p._2)).toSeq))
-      .withNamedAttr("convention", circt.firrtlAttrGetConvention(FIRRTLConvention.Internal)) // TODO: handle it corretly
+      .withNamedAttr("convention", circt.firrtlAttrGetConvention(FIRRTLConvention.Scalarized)) // TODO: Make an option `scalarizeExtModules` for it
       .withNamedAttr("annotations", circt.emptyArrayAttr)
     val firModule = util.moduleBuilderInsertPorts(builder, ports).build()
 
@@ -966,7 +966,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
       .withRegion(Seq((ports.types, ports.locs)))
       .withNamedAttr("sym_name", circt.mlirStringAttrGet(defModule.name))
       .withNamedAttr("sym_visibility", circt.mlirStringAttrGet(if (isMainModule) "public" else "private"))
-      .withNamedAttr("convention", circt.firrtlAttrGetConvention(FIRRTLConvention.Internal)) // TODO: handle it corretly
+      .withNamedAttr("convention", circt.firrtlAttrGetConvention(if (isMainModule) FIRRTLConvention.Scalarized else FIRRTLConvention.Internal)) // TODO: Make an option `scalarizePublicModules` for it
       .withNamedAttr("annotations", circt.emptyArrayAttr)
     val firModule = util.moduleBuilderInsertPorts(builder, ports).build()
 
