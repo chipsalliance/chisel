@@ -922,15 +922,16 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
   def visitDefBlackBox(defBlackBox: DefBlackBox): Unit = {
     val ports = util.convert(defBlackBox.ports ++ defBlackBox.id.secretPorts, defBlackBox.topDir)
     val nameAttr = circt.mlirStringAttrGet(defBlackBox.name)
+    val desiredNameAttr = circt.mlirStringAttrGet(defBlackBox.id.desiredName)
 
     val builder = util
       .OpBuilder("firrtl.extmodule", firCtx.circuitBlock, circt.unkLoc)
       .withRegionNoBlock()
       .withNamedAttr("sym_name", nameAttr)
       .withNamedAttr("sym_visibility", circt.mlirStringAttrGet("private"))
-      .withNamedAttr("defname", nameAttr)
+      .withNamedAttr("defname", desiredNameAttr)
       .withNamedAttr("parameters", circt.mlirArrayAttrGet(defBlackBox.params.map(p => util.convert(p._1, p._2)).toSeq))
-      .withNamedAttr("convention", circt.firrtlAttrGetConvention(FIRRTLConvention.Internal)) // TODO: handle it corretly
+      .withNamedAttr("convention", circt.firrtlAttrGetConvention(FIRRTLConvention.Scalarized)) // TODO: Make an option `scalarizeExtModules` for it
       .withNamedAttr("annotations", circt.emptyArrayAttr)
     val firModule = util.moduleBuilderInsertPorts(builder, ports).build()
 
@@ -966,7 +967,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
       .withRegion(Seq((ports.types, ports.locs)))
       .withNamedAttr("sym_name", circt.mlirStringAttrGet(defModule.name))
       .withNamedAttr("sym_visibility", circt.mlirStringAttrGet(if (isMainModule) "public" else "private"))
-      .withNamedAttr("convention", circt.firrtlAttrGetConvention(FIRRTLConvention.Internal)) // TODO: handle it corretly
+      .withNamedAttr("convention", circt.firrtlAttrGetConvention(if (isMainModule) FIRRTLConvention.Scalarized else FIRRTLConvention.Internal)) // TODO: Make an option `scalarizePublicModules` for it
       .withNamedAttr("annotations", circt.emptyArrayAttr)
     val firModule = util.moduleBuilderInsertPorts(builder, ports).build()
 
