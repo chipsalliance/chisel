@@ -94,11 +94,11 @@ class SRAMSpec extends ChiselFlatSpec {
       val fooIo = IO(foo.cloneType)
       fooIo :<>= foo
     }
-    val chirrtl = emitCHIRRTL(new Top, Array("--full-stacktrace"))
+    val chirrtl = emitCHIRRTL(new Top)
     chirrtl should include("connect foo_sram.W0.mask, UInt<1>(0h1)")
 
     // check CIRCT can compile the output
-    val sv = emitSystemVerilog(new Top, Array("--full-stacktrace"))
+    val sv = emitSystemVerilog(new Top)
   }
 
   it should "emit proper masks for Vec memories" in {
@@ -139,7 +139,7 @@ class SRAMSpec extends ChiselFlatSpec {
       val maskedVecRecordMemIo = IO(maskedVecRecordMem.cloneType)
       maskedVecRecordMemIo :<>= maskedVecRecordMem
     }
-    val chirrtl = emitCHIRRTL(new Top, Array("--full-stacktrace"))
+    val chirrtl = emitCHIRRTL(new Top)
     chirrtl should include("connect maskedVecMem_sram.RW0.wmask[0], maskedVecMem.readwritePorts[0].mask[0]")
     chirrtl should include("connect maskedVecMem_sram.RW0.wmask[1], maskedVecMem.readwritePorts[0].mask[1]")
     chirrtl should include("connect _unmaskedVecMem_WIRE[0], UInt<1>(0h1)")
@@ -167,7 +167,7 @@ class SRAMSpec extends ChiselFlatSpec {
     chirrtl should include("connect maskedVecRecordMem_sram.W0.mask[2].x, maskedVecRecordMem.writePorts[0].mask[2]")
 
     // check CIRCT can compile the output
-    val sv = emitSystemVerilog(new Top, Array("--full-stacktrace"))
+    val sv = emitSystemVerilog(new Top)
   }
 
   it should "emit proper masks for Record memories" in {
@@ -186,7 +186,7 @@ class SRAMSpec extends ChiselFlatSpec {
       val unmaskedRecordMemIo = IO(unmaskedRecordMem.cloneType)
       unmaskedRecordMemIo :<>= unmaskedRecordMem
     }
-    val chirrtl = emitCHIRRTL(new Top, Array("--full-stacktrace"))
+    val chirrtl = emitCHIRRTL(new Top)
     chirrtl should include("connect unmaskedRecordMem_sram.RW0.wmask.y[0], UInt<1>(0h1)")
     chirrtl should include("connect unmaskedRecordMem_sram.RW0.wmask.y[1], UInt<1>(0h1)")
     chirrtl should include("connect unmaskedRecordMem_sram.RW0.wmask.y[2], UInt<1>(0h1)")
@@ -194,7 +194,6 @@ class SRAMSpec extends ChiselFlatSpec {
     chirrtl should include("connect unmaskedRecordMem_sram.RW0.wmask.x, UInt<1>(0h1)")
 
     // check CIRCT can compile the output
-    val sv = emitSystemVerilog(new Top, Array("--full-stacktrace"))
+    val sv = emitSystemVerilog(new Top)
   }
-
 }

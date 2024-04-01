@@ -380,8 +380,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     case ChildBinding(parent) => parent.topBindingOpt
     case bindingVal: TopBinding => Some(bindingVal)
     case SampleElementBinding(parent) => parent.topBindingOpt
-    case _: MemTypeBinding[_]    => None
-    case _: FirrtlMemTypeBinding => None
+    case (_: MemTypeBinding[_] | _: FirrtlMemTypeBinding) => None
   }
 
   private[chisel3] def topBinding: TopBinding = topBindingOpt.get
