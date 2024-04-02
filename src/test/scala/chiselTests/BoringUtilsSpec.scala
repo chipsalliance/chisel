@@ -407,7 +407,7 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
       BoringUtils.drive(foo.a) := 1.B
     }
 
-    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Bar, Array("--full-stacktrace"))
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Bar)
 
     matchesAndOmits(chirrtl)(
       "input bore",
@@ -429,7 +429,7 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
       BoringUtils.drive(foo.a) := Property(1)
     }
 
-    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Bar, Array("--full-stacktrace"))
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Bar)
 
     matchesAndOmits(chirrtl)(
       "input bore",
