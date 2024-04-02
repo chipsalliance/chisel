@@ -300,8 +300,8 @@ object BoringUtils {
       Builder.error(s"Cannot bore from $source to ${thisModule.name}, as they do not share a least common ancestor")
     }
     val (upPath, downPath) = lcaResult.get
-    val lcaSource = drill(source, upPath.dropRight(1), upPath.dropRight(1), true && !isDrive)
-    val sink = drill(lcaSource, downPath.reverse.tail, downPath.reverse, false || isDrive)
+    val lcaSource = drill(source, upPath.dropRight(1), upPath.dropRight(1), up = !isDrive)
+    val sink = drill(lcaSource, downPath.reverse.tail, downPath.reverse, up = isDrive)
 
     if (
       createProbe.nonEmpty || DataMirror.hasProbeTypeModifier(purePortTypeBase) ||
