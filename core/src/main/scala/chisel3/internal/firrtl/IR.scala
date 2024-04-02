@@ -219,7 +219,7 @@ private[chisel3] object ir {
       // NOTE: mod eq ctx.id only occurs in Target and Named-related APIs
       if (mod eq ctx.id) localName else name
   }
-  case class Slot(imm: Node, name: String) extends Arg {
+  case class Slot(imm: Arg, name: String) extends Arg {
     override def contextualName(ctx: Component): String = {
       val immName = imm.contextualName(ctx)
       if (immName.isEmpty) name else s"$immName.$name"
@@ -288,6 +288,16 @@ private[chisel3] object ir {
     readUnderWrite: fir.ReadUnderWrite.Value)
       extends Definition
 
+  case class FirrtlMemory(
+    sourceInfo:         SourceInfo,
+    id:                 HasId,
+    t:                  Data,
+    size:               BigInt,
+    readPortNames:      Seq[String],
+    writePortNames:     Seq[String],
+    readwritePortNames: Seq[String])
+      extends Definition
+
   case class DefMemPort[T <: Data](
     sourceInfo: SourceInfo,
     id:         T,
@@ -310,7 +320,7 @@ private[chisel3] object ir {
   case class WhenEnd(sourceInfo: SourceInfo, firrtlDepth: Int, hasAlt: Boolean = false) extends Command
   case class AltBegin(sourceInfo: SourceInfo) extends Command
   case class OtherwiseEnd(sourceInfo: SourceInfo, firrtlDepth: Int) extends Command
-  case class Connect(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
+  case class Connect(sourceInfo: SourceInfo, loc: Arg, exp: Arg) extends Command
   case class PropAssign(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
   case class Attach(sourceInfo: SourceInfo, locs: Seq[Node]) extends Command
   case class ConnectInit(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command

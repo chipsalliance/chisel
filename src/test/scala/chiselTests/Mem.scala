@@ -490,25 +490,26 @@ class SRAMSpec extends ChiselFunSpec {
           // Check that the chirrtl ports actually exist and the signals
           // are properly connected
           for (rd <- 0 until numRD) {
-            val rdPortName = s"mem_out_readPorts_${rd}_data_MPORT"
-            chirrtl should include(s"when mem.readPorts[$rd].enable")
-            chirrtl should include(s"read mport $rdPortName")
-            chirrtl should include(s"connect mem.readPorts[$rd].data, $rdPortName")
+            chirrtl should include(s"connect mem_sram.R$rd.addr, mem.readPorts[$rd].address")
+            chirrtl should include(s"connect mem.readPorts[$rd].data, mem_sram.R$rd.data")
+            chirrtl should include(s"connect mem_sram.R$rd.en, mem.readPorts[$rd].enable")
           }
 
           for (wr <- 0 until numWR) {
-            val wrPortName = s"mem_MPORT${if (wr == 0) "" else s"_$wr"}"
-            chirrtl should include(s"when mem.writePorts[$wr].enable")
-            chirrtl should include(s"write mport $wrPortName")
-            chirrtl should include(s"connect $wrPortName, mem.writePorts[$wr].data")
+            chirrtl should include(s"connect mem_sram.W$wr.addr, mem.writePorts[$wr].address")
+            chirrtl should include(s"connect mem_sram.W$wr.data, mem.writePorts[$wr].data")
+            chirrtl should include(s"connect mem_sram.W$wr.en, mem.writePorts[$wr].enable")
+            chirrtl should include(s"connect mem_sram.W$wr.mask, UInt<1>(0h1)")
           }
 
           for (rw <- 0 until numRW) {
-            val rwPortName = s"mem_out_readwritePorts_${rw}_readData_MPORT"
-            chirrtl should include(s"when mem.readwritePorts[$rw].enable")
-            chirrtl should include(s"rdwr mport $rwPortName")
-            chirrtl should include(s"when mem.readwritePorts[$rw].isWrite")
-            chirrtl should include(s"connect $rwPortName, mem.readwritePorts[$rw].writeData")
+            chirrtl should include(s"connect mem_sram.RW$rw.addr, mem.readwritePorts[$rw].address")
+            chirrtl should include(s"connect mem_sram.RW$rw.en, mem.readwritePorts[$rw].enable")
+            chirrtl should include(s"connect mem.readwritePorts[$rw].readData, mem_sram.RW$rw.rdata")
+            chirrtl should include(s"connect mem_sram.RW$rw.wdata, mem.readwritePorts[$rw].writeData")
+            chirrtl should include(s"connect mem_sram.RW$rw.wmode, mem.readwritePorts[$rw].isWrite")
+            chirrtl should include(s"connect mem_sram.RW$rw.wmask, UInt<1>(0h1)")
+
           }
         }
     }
@@ -536,13 +537,8 @@ class SRAMSpec extends ChiselFunSpec {
       )
 
       for (i <- 0 until 3) {
-        chirrtl should include(s"when mem.writePorts[0].mask[$i]")
-        chirrtl should include(s"connect mem_MPORT[$i], mem.writePorts[0].data[$i]")
-
-        chirrtl should include(s"when mem.readwritePorts[0].mask[$i]")
-        chirrtl should include(
-          s"connect mem_out_readwritePorts_0_readData_MPORT[$i], mem.readwritePorts[0].writeData[$i]"
-        )
+        chirrtl should include(s"connect mem_sram.W0.mask[$i], mem.writePorts[0].mask[$i]")
+        chirrtl should include(s"connect mem_sram.RW0.wmask[$i], mem.readwritePorts[0].mask[$i]")
       }
     }
 
@@ -573,16 +569,14 @@ class SRAMSpec extends ChiselFunSpec {
       val chirrtl = ChiselStage.emitCHIRRTL(new TestModule, args = Array("--full-stacktrace"))
 
       for (i <- 0 until 3) {
-        val wrIndexSuffix = if (i == 0) "" else s"_$i"
-
         chirrtl should include(
-          s"read mport mem_out_readPorts_${i}_data_MPORT = mem_mem[_mem_out_readPorts_${i}_data_WIRE], readClocks[${i}]"
+          s"connect mem_sram.R$i.clk, readClocks[$i]"
         )
         chirrtl should include(
-          s"write mport mem_MPORT${wrIndexSuffix} = mem_mem[mem.writePorts[${i}].address], writeClocks[${i}]"
+          s"connect mem_sram.W$i.clk, writeClocks[$i]"
         )
         chirrtl should include(
-          s"rdwr mport mem_out_readwritePorts_${i}_readData_MPORT = mem_mem[_mem_out_readwritePorts_${i}_readData_WIRE], readwriteClocks[${i}]"
+          s"connect mem_sram.RW$i.clk, readwriteClocks[$i]"
         )
       }
     }
