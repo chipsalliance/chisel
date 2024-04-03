@@ -2,7 +2,7 @@
 
 package circt.stage
 
-import firrtl.AnnotationSeq
+import firrtl.{seqToAnnoSeq, AnnotationSeq}
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.options.{CustomFileEmission, HasShellOptions, OptionsException, ShellOption, Unserializable}
 import firrtl.options.Viewer.view

@@ -8,7 +8,7 @@ import chisel3.reflect.DataMirror
 import chisel3.util.{log2Up, BitPat, Mux1H, PriorityMux}
 import chisel3.util.experimental.decode.{decoder, TruthTable}
 import chisel3.util.experimental.InlineInstance
-import scala.collection.immutable.VectorMap
+import scala.collection.immutable.{SeqMap, VectorMap}
 import scala.collection.mutable.HashSet
 
 import SparseVec.{DefaultValueBehavior, Lookup, OutOfBoundsBehavior}
@@ -80,7 +80,7 @@ class SparseVec[A <: Data](
   // Populate the elements while simultaneously checking if the provided indices
   // is not unique Additionally, check and error if the same index is specified
   // twice.
-  override final val elements = {
+  override final val elements: SeqMap[String, A] = {
     var nonUniqueIndices: List[Int] = Nil // List is cheap in common case, no allocation
     val duplicates:       HashSet[Int] = HashSet.empty[Int]
     val result = indices.view.map {

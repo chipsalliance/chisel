@@ -43,7 +43,8 @@ lazy val commonSettings = minimalSettings ++ Seq(
   autoAPIMappings := true,
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   // Macros paradise is integrated into 2.13 but requires a scalacOption
-  scalacOptions += "-Ymacro-annotations"
+  scalacOptions += "-Ymacro-annotations",
+  scalacOptions += "-Xsource:3"
 )
 
 lazy val fatalWarningsSettings = Seq(
@@ -67,7 +68,15 @@ lazy val warningSuppression = Seq(
     // This is deprecated for external users but not internal use
     "cat=deprecation&origin=firrtl\\.options\\.internal\\.WriteableCircuitAnnotation:s",
     "cat=deprecation&origin=chisel3\\.util\\.experimental\\.BoringUtils.*:s",
-    "cat=deprecation&origin=chisel3\\.experimental\\.IntrinsicModule:s"
+    "cat=deprecation&origin=chisel3\\.experimental\\.IntrinsicModule:s",
+    // -Xsource:3 options
+    // this is better behavior anyway (but list affected)
+    "msg=constructor modifiers are assumed:s",
+    // this is better behavior anyway (but list affected)
+    "msg=access modifiers for `copy` method are copied from the case class constructor:s",
+    // this is better behavior anyway (but list affected)
+    "msg=access modifiers for `apply` method are copied from the case class constructor:s",
+    "msg=package object inheritance is deprecated:s", // extends SourceInfoDoc, fixed by using ???
   ).mkString(",")
 )
 

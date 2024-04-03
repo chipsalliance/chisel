@@ -37,12 +37,12 @@ class NewAnnotationsSpec extends AnyFreeSpec with Matchers {
     io.out := mod3.io.out
 
     // Give two annotations as single element of the seq - ensures previous API works by wrapping into a seq.
-    annotate(new ChiselMultiAnnotation { def toFirrtl = Seq(new NoDedupAnnotation(mod2.toNamed)) })
-    annotate(new ChiselMultiAnnotation { def toFirrtl = Seq(new NoDedupAnnotation(mod3.toNamed)) })
+    annotate(new ChiselMultiAnnotation { def toFirrtl: Annotation = Seq(new NoDedupAnnotation(mod2.toNamed)) })
+    annotate(new ChiselMultiAnnotation { def toFirrtl: Annotation = Seq(new NoDedupAnnotation(mod3.toNamed)) })
 
     // Pass multiple annotations in the same seq - should get emitted out correctly.
     annotate(new ChiselMultiAnnotation {
-      def toFirrtl =
+      def toFirrtl: Annotation =
         Seq(new DontTouchAnnotation(mod1.io.in.toNamed), new DontTouchAnnotation(mod1.io.out.toNamed))
     })
   }

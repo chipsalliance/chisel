@@ -255,7 +255,7 @@ import chisel3.experimental.hierarchy.{Definition, Instance, Hierarchy, instanti
 import firrtl.annotations.{IsModule, NoTargetAnnotation}
 case object EmptyAnnotation extends NoTargetAnnotation
 case class MyChiselAnnotation(m: Hierarchy[RawModule], tag: String) extends experimental.ChiselAnnotation {
-  def toFirrtl = {
+  def toFirrtl: Annotation = {
     println(tag + ": " + m.toTarget)
     EmptyAnnotation
   }
@@ -294,7 +294,7 @@ You can also use `Select.ios` on either a `Definition` or an `Instance` to annot
 
 ```scala mdoc
 case class MyIOAnnotation(m: Data, tag: String) extends experimental.ChiselAnnotation {
-  def toFirrtl = {
+  def toFirrtl: Annotation = {
     println(tag + ": " + m.toTarget)
     EmptyAnnotation
   }

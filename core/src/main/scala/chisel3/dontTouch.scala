@@ -6,6 +6,7 @@ import chisel3.experimental.{annotate, requireIsAnnotatable, ChiselAnnotation}
 import chisel3.properties.Property
 import chisel3.reflect.DataMirror
 import firrtl.transforms.DontTouchAnnotation
+import firrtl.annotations.Annotation
 
 /** Marks that a signal's leaves are an optimization barrier to Chisel and the
   * FIRRTL compiler. This has the effect of guaranteeing that a signal will not
@@ -40,7 +41,7 @@ object dontTouch {
       case _:   Property[_] => ()
       case agg: Aggregate => agg.getElements.foreach(dontTouch.apply)
       case _:   Element =>
-        annotate(new ChiselAnnotation { def toFirrtl = DontTouchAnnotation(data.toNamed) })
+        annotate(new ChiselAnnotation { def toFirrtl: Annotation = DontTouchAnnotation(data.toNamed) })
       case _ => throw new ChiselException("Non-hardware dontTouch")
     }
     data

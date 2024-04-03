@@ -11,7 +11,7 @@ import chisel3.internal.{Builder, BuilderContextCache, NamedComponent, Namespace
 import chisel3.internal.binding.{CrossModuleBinding, PortBinding}
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
 import firrtl.passes.wiring.{SinkAnnotation, SourceAnnotation}
-import firrtl.annotations.{ComponentName, ModuleName}
+import firrtl.annotations.{Annotation, ComponentName, ModuleName}
 
 /** An exception related to BoringUtils
   * @param message the exception message
@@ -144,14 +144,14 @@ object BoringUtils {
     val id = if (uniqueName) { newName(name) }
     else { name }
     val maybeDedup =
-      if (disableDedup) { Seq(new ChiselAnnotation { def toFirrtl = NoDedupAnnotation(component.toNamed.module) }) }
+      if (disableDedup) { Seq(new ChiselAnnotation { def toFirrtl: Annotation = NoDedupAnnotation(component.toNamed.module) }) }
       else { Seq[ChiselAnnotation]() }
     val annotations =
       Seq(
         new ChiselAnnotation {
-          def toFirrtl = SourceAnnotation(component.toNamed, id)
+          def toFirrtl: Annotation = SourceAnnotation(component.toNamed, id)
         },
-        new ChiselAnnotation { def toFirrtl = DontTouchAnnotation(component.toNamed) }
+        new ChiselAnnotation { def toFirrtl: Annotation = DontTouchAnnotation(component.toNamed) }
       ) ++ maybeDedup
 
     annotations.foreach(annotate(_))
@@ -186,11 +186,11 @@ object BoringUtils {
       case _ => throw new ChiselException("Can only add a Module or Component sink", null)
     }
     val maybeDedup =
-      if (disableDedup) { Seq(new ChiselAnnotation { def toFirrtl = NoDedupAnnotation(moduleName) }) }
+      if (disableDedup) { Seq(new ChiselAnnotation { def toFirrtl: Annotation = NoDedupAnnotation(moduleName) }) }
       else { Seq[ChiselAnnotation]() }
     val annotations =
       Seq(new ChiselAnnotation {
-        def toFirrtl = SinkAnnotation(component.toNamed, name)
+        def toFirrtl: Annotation = SinkAnnotation(component.toNamed, name)
       }) ++ maybeDedup
     annotations.foreach(annotate(_))
   }

@@ -75,7 +75,7 @@ object ChiselStageSpec {
     val b = IO(Output(Bool()))
     b := a
     chisel3.experimental.annotate(new chisel3.experimental.ChiselAnnotation {
-      def toFirrtl = DummyAnnotation
+      def toFirrtl: Annotation = DummyAnnotation
     })
   }
 

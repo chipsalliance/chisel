@@ -68,7 +68,7 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
       }
 
       // Return function so that it captures the cache
-      { q: Type =>
+      { (q: Type) =>
         cache.getOrElseUpdate(
           q, {
             // First check if a match, then check early exit, then recurse

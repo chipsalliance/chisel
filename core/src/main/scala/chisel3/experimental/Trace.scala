@@ -58,7 +58,7 @@ object Trace {
   /** Get all traced signal/module for `annos`
     * This API can be used to gather all final reference to the signal or module which is marked by `traceName`
     */
-  def finalTargetMap(annos: AnnotationSeq): Map[CompleteTarget, Seq[CompleteTarget]] = annos.collect {
+  def finalTargetMap(annos: AnnotationSeq): Map[CompleteTarget, Seq[CompleteTarget]] = annos.toSeq.collect {
     case TraceAnnotation(t, chiselTarget) => chiselTarget -> t
   }.groupBy(_._1).map { case (k, v) => k -> v.map(_._2) }
 }

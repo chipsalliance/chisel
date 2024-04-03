@@ -33,7 +33,7 @@ case class ConventionAnnotation(target: ModuleTarget, convention: String) extend
 object convention {
   private def apply[T <: BaseModule](data: T, convention: String): Unit =
     annotate(new ChiselAnnotation {
-      def toFirrtl = ConventionAnnotation(data.toTarget, convention)
+      def toFirrtl: Annotation = ConventionAnnotation(data.toTarget, convention)
     })
 
   /** Annotate a module as having the "scalarized" port convention.

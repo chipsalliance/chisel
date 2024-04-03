@@ -16,7 +16,7 @@ abstract class Aspect[T <: RawModule] extends Annotation with Unserializable wit
   /** variable to save [[AnnotationSeq]] from [[chisel3.stage.phases.AspectPhase]]
     * to be used at [[chisel3.aop.injecting.InjectorAspect]], exposes annotations to [[chisel3.internal.DynamicContext]]
     */
-  private[aop] var annotationsInAspect: AnnotationSeq = Seq()
+  private[aop] var annotationsInAspect: AnnotationSeq = AnnotationSeq(Nil)
 
   /** Convert this Aspect to a seq of FIRRTL annotation
     * @param top

@@ -16,7 +16,7 @@ object forceName {
     */
   def apply(instance: chisel3.experimental.BaseModule, name: String): Unit = {
     annotate(new ChiselAnnotation {
-      def toFirrtl = {
+      def toFirrtl: Annotation = {
         val t = instance.toAbsoluteTarget
         ForceNameAnnotation(t, name)
       }
@@ -30,7 +30,7 @@ object forceName {
     */
   def apply(instance: chisel3.experimental.BaseModule): Unit = {
     annotate(new ChiselAnnotation {
-      def toFirrtl = {
+      def toFirrtl: Annotation = {
         val t = instance.toAbsoluteTarget
         ForceNameAnnotation(t, instance.instanceName)
       }

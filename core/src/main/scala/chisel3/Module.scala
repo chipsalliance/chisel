@@ -2,7 +2,7 @@
 
 package chisel3
 
-import scala.collection.immutable.ListMap
+import scala.collection.immutable.{ListMap, SeqMap}
 import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashSet}
 import scala.language.experimental.macros
 
@@ -356,7 +356,7 @@ package internal {
       * FIRRTL yet its elements *do*) so have some very specialized behavior.
       */
     private[chisel3] class ClonePorts(elts: (String, Data)*) extends Record {
-      val elements = ListMap(elts.map { case (name, d) => name -> d.cloneTypeFull }: _*)
+      val elements: SeqMap[String, Data] = ListMap(elts.map { case (name, d) => name -> d.cloneTypeFull }: _*)
       def apply(field: String) = elements(field)
       override def cloneType = (new ClonePorts(elts: _*)).asInstanceOf[this.type]
     }

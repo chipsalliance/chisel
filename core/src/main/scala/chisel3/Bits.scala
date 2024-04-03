@@ -1109,7 +1109,7 @@ final class ResetType(private[chisel3] val width: Width = Width(1)) extends Elem
 
   def cloneType: this.type = Reset().asInstanceOf[this.type]
 
-  override def litOption = None
+  override def litOption: Option[BigInt] = None
 
   /** Not really supported */
   def toPrintable: Printable = PString("Reset")
@@ -1153,7 +1153,7 @@ sealed class AsyncReset(private[chisel3] val width: Width = Width(1)) extends El
 
   def cloneType: this.type = AsyncReset().asInstanceOf[this.type]
 
-  override def litOption = None
+  override def litOption: Option[BigInt] = None
 
   /** Not really supported */
   def toPrintable: Printable = PString("AsyncReset")

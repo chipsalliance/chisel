@@ -5,7 +5,7 @@ package chisel3.util
 import chisel3._
 import chisel3.experimental.ChiselAnnotation
 import firrtl.transforms.{BlackBoxInlineAnno, BlackBoxNotFoundException, BlackBoxPathAnno}
-import firrtl.annotations.ModuleName
+import firrtl.annotations.{Annotation, ModuleName}
 import logger.LazyLogging
 
 private[util] object BlackBoxHelpers {
@@ -46,7 +46,7 @@ trait HasBlackBoxResource extends BlackBox {
     */
   def addResource(blackBoxResource: String): Unit = {
     val anno = new ChiselAnnotation {
-      def toFirrtl = BlackBoxInlineAnno.fromResource(blackBoxResource, self.toNamed)
+      def toFirrtl: Annotation = BlackBoxInlineAnno.fromResource(blackBoxResource, self.toNamed)
     }
     chisel3.experimental.annotate(anno)
   }
@@ -62,7 +62,7 @@ trait HasBlackBoxInline extends BlackBox {
     */
   def setInline(blackBoxName: String, blackBoxInline: String): Unit = {
     val anno = new ChiselAnnotation {
-      def toFirrtl = BlackBoxInlineAnno(self.toNamed, blackBoxName, blackBoxInline)
+      def toFirrtl: Annotation = BlackBoxInlineAnno(self.toNamed, blackBoxName, blackBoxInline)
     }
     chisel3.experimental.annotate(anno)
   }
@@ -79,7 +79,7 @@ trait HasBlackBoxPath extends BlackBox {
     */
   def addPath(blackBoxPath: String): Unit = {
     val anno = new ChiselAnnotation {
-      def toFirrtl = BlackBoxPathAnno(self.toNamed, blackBoxPath)
+      def toFirrtl: Annotation = BlackBoxPathAnno(self.toNamed, blackBoxPath)
     }
     chisel3.experimental.annotate(anno)
   }

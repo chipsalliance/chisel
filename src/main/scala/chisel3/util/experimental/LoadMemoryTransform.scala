@@ -4,7 +4,7 @@ package chisel3.util.experimental
 
 import chisel3._
 import chisel3.experimental.{annotate, ChiselAnnotation}
-import firrtl.annotations.{ComponentName, LoadMemoryAnnotation, MemoryFileInlineAnnotation, MemoryLoadFileType}
+import firrtl.annotations.{Annotation, ComponentName, LoadMemoryAnnotation, MemoryFileInlineAnnotation, MemoryLoadFileType}
 
 import scala.collection.mutable
 
@@ -178,7 +178,7 @@ object loadMemoryFromFileInline {
     hexOrBinary: MemoryLoadFileType.FileType = MemoryLoadFileType.Hex
   ): Unit = {
     annotate(new ChiselAnnotation {
-      override def toFirrtl = MemoryFileInlineAnnotation(memory.toTarget, fileName, hexOrBinary)
+      override def toFirrtl: Annotation = MemoryFileInlineAnnotation(memory.toTarget, fileName, hexOrBinary)
     })
   }
 }

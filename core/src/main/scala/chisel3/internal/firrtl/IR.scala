@@ -329,7 +329,7 @@ private[chisel3] object ir {
   case class DefObject(sourceInfo: SourceInfo, id: HasId, className: String) extends Definition
 
   class Region extends Command {
-    override val sourceInfo = UnlocatableSourceInfo
+    override val sourceInfo: SourceInfo = UnlocatableSourceInfo
     val region = new VectorBuilder[Command]
   }
 

@@ -5,7 +5,7 @@ package chisel3.util
 import chisel3._
 import chisel3.experimental.requireIsChiselType
 
-import scala.collection.immutable.ListMap
+import scala.collection.immutable.{ListMap, SeqMap}
 
 /**
   * Create a MixedVec wire with default values as specified, and type of each element inferred from
@@ -122,7 +122,7 @@ final class MixedVec[T <: Data](private val eltsIn: Seq[T]) extends Record with 
     */
   def length: Int = elts.length
 
-  override val elements = ListMap(elts.zipWithIndex.map { case (element, index) => (index.toString, element) }: _*)
+  override val elements: SeqMap[String, T] = ListMap(elts.zipWithIndex.map { case (element, index) => (index.toString, element) }: _*)
 
   // IndexedSeq has its own hashCode/equals that we must not use
   override def hashCode: Int = super[Record].hashCode

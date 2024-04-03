@@ -482,7 +482,7 @@ private[chisel3] class DynamicContext(
   val loggerOptions: LoggerOptions,
   val definitions:   ArrayBuffer[Definition[_]],
   val contextCache:  BuilderContextCache) {
-  val importedDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
+  val importedDefinitionAnnos = annotationSeq.toSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
 
   // Map from proto module name to ext-module name
   // Pick the definition name by default in case not overridden

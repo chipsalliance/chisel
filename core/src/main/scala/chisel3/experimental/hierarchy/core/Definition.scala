@@ -10,6 +10,7 @@ import chisel3.internal.{Builder, DynamicContext}
 import chisel3.internal.sourceinfo.{DefinitionTransform, DefinitionWrapTransform}
 import chisel3.experimental.{BaseModule, SourceInfo}
 import firrtl.annotations.{IsModule, ModuleTarget, NoTargetAnnotation}
+import firrtl.AnnotationSeq
 
 import scala.annotation.nowarn
 
@@ -114,7 +115,7 @@ object Definition extends SourceInfoDoc {
     val dynamicContext = {
       val context = Builder.captureContext()
       new DynamicContext(
-        Nil,
+        AnnotationSeq(Nil),
         context.throwOnFirstError,
         context.legacyShiftRightWidth,
         context.warningFilters,

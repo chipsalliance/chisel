@@ -412,12 +412,12 @@ object Lookupable {
     type C = F[lookupable.C]
     def definitionLookup[A](that: A => F[B], definition: Definition[A]): C = {
       val ret = that(definition.proto).asInstanceOf[Iterable[B]]
-      ret.map { x: B => lookupable.definitionLookup[A](_ => x, definition) }.asInstanceOf[C]
+      ret.map { (x: B) => lookupable.definitionLookup[A](_ => x, definition) }.asInstanceOf[C]
     }
     def instanceLookup[A](that: A => F[B], instance: Instance[A]): C = {
       import instance._
       val ret = that(proto).asInstanceOf[Iterable[B]]
-      ret.map { x: B => lookupable.instanceLookup[A](_ => x, instance) }.asInstanceOf[C]
+      ret.map { (x: B) => lookupable.instanceLookup[A](_ => x, instance) }.asInstanceOf[C]
     }
   }
   implicit def lookupOption[B](
@@ -427,12 +427,12 @@ object Lookupable {
     type C = Option[lookupable.C]
     def definitionLookup[A](that: A => Option[B], definition: Definition[A]): C = {
       val ret = that(definition.proto)
-      ret.map { x: B => lookupable.definitionLookup[A](_ => x, definition) }
+      ret.map { (x: B) => lookupable.definitionLookup[A](_ => x, definition) }
     }
     def instanceLookup[A](that: A => Option[B], instance: Instance[A]): C = {
       import instance._
       val ret = that(proto)
-      ret.map { x: B => lookupable.instanceLookup[A](_ => x, instance) }
+      ret.map { (x: B) => lookupable.instanceLookup[A](_ => x, instance) }
     }
   }
   implicit def lookupEither[L, R](
@@ -443,14 +443,14 @@ object Lookupable {
     type C = Either[lookupableL.C, lookupableR.C]
     def definitionLookup[A](that: A => Either[L, R], definition: Definition[A]): C = {
       val ret = that(definition.proto)
-      ret.map { x: R => lookupableR.definitionLookup[A](_ => x, definition) }.left.map { x: L =>
+      ret.map { (x: R) => lookupableR.definitionLookup[A](_ => x, definition) }.left.map { (x: L) =>
         lookupableL.definitionLookup[A](_ => x, definition)
       }
     }
     def instanceLookup[A](that: A => Either[L, R], instance: Instance[A]): C = {
       import instance._
       val ret = that(proto)
-      ret.map { x: R => lookupableR.instanceLookup[A](_ => x, instance) }.left.map { x: L =>
+      ret.map { (x: R) => lookupableR.instanceLookup[A](_ => x, instance) }.left.map { (x: L) =>
         lookupableL.instanceLookup[A](_ => x, instance)
       }
     }
@@ -484,7 +484,7 @@ object Lookupable {
       val ret = that(definition.proto)
       val underlying = new InstantiableClone[B] {
         val getProto = ret
-        lazy val _innerContext = definition
+        lazy val _innerContext: Hierarchy[A] = definition
       }
       new Instance(Clone(underlying))
     }
@@ -492,7 +492,7 @@ object Lookupable {
       val ret = that(instance.proto)
       val underlying = new InstantiableClone[B] {
         val getProto = ret
-        lazy val _innerContext = instance
+        lazy val _innerContext: Hierarchy[A] = instance
       }
       new Instance(Clone(underlying))
     }
