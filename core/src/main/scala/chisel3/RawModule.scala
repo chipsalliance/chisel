@@ -213,10 +213,11 @@ abstract class RawModule extends BaseModule {
       case (true, false) if left.probeInfo.get.writable => ProbeDefine(si, left.lref, RWProbeExpr(Node(right)))
       case (true, false)                                => ProbeDefine(si, left.lref, ProbeExpr(Node(right)))
       case (false, true)                                => Connect(si, left.lref, ProbeRead(Node(right)))
-      case (false, false) =>
+      case (false, false)                               =>
+        // For non-probe, directly create Nodes for lhs, skipping visibility check to support BoringUtils.drive.
         (left, right) match {
-          case (_: Property[_], _: Property[_]) => PropAssign(si, left.lref, Node(right))
-          case (_, _) => Connect(si, left.lref, Node(right))
+          case (_: Property[_], _: Property[_]) => PropAssign(si, Node(left), Node(right))
+          case (_, _) => Connect(si, Node(left), Node(right))
         }
     }
     val secretCommands = if (_closed) {

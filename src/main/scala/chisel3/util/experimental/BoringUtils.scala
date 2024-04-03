@@ -4,6 +4,7 @@ package chisel3.util.experimental
 
 import chisel3._
 import chisel3.probe.{Probe, RWProbe}
+import chisel3.reflect.DataMirror
 import chisel3.Data.ProbeInfo
 import chisel3.experimental.{annotate, requireIsHardware, skipPrefix, BaseModule, ChiselAnnotation, SourceInfo}
 import chisel3.internal.{Builder, BuilderContextCache, NamedComponent, Namespace, PortBinding}
@@ -217,8 +218,13 @@ object BoringUtils {
     genName
   }
 
-  private def boreOrTap[A <: Data](source: A, createProbe: Option[ProbeInfo] = None)(implicit si: SourceInfo): A = {
-    import reflect.DataMirror
+  private def boreOrTap[A <: Data](
+    source:      A,
+    createProbe: Option[ProbeInfo] = None,
+    isDrive:     Boolean = false
+  )(
+    implicit si: SourceInfo
+  ): A = {
     def parent(d: Data): BaseModule = d.topBinding.location.get
     def purePortTypeBase = if (createProbe.nonEmpty) Output(chiselTypeOf(source))
     else if (DataMirror.hasOuterFlip(source)) Flipped(chiselTypeOf(source))
@@ -263,7 +269,11 @@ object BoringUtils {
             // if drilling down, don't drill Probe types
             val bore = if (up) module.createSecretIO(purePortType) else module.createSecretIO(Flipped(purePortTypeBase))
             module.addSecretIO(bore)
-            conLoc.asInstanceOf[RawModule].secretConnection(bore, rhs)
+            if (isDrive) {
+              conLoc.asInstanceOf[RawModule].secretConnection(rhs, bore)
+            } else {
+              conLoc.asInstanceOf[RawModule].secretConnection(bore, rhs)
+            }
             bore
           }
       }
@@ -290,8 +300,8 @@ object BoringUtils {
       Builder.error(s"Cannot bore from $source to ${thisModule.name}, as they do not share a least common ancestor")
     }
     val (upPath, downPath) = lcaResult.get
-    val lcaSource = drill(source, upPath.dropRight(1), upPath.dropRight(1), true)
-    val sink = drill(lcaSource, downPath.reverse.tail, downPath.reverse, false)
+    val lcaSource = drill(source, upPath.dropRight(1), upPath.dropRight(1), up = !isDrive)
+    val sink = drill(lcaSource, downPath.reverse.tail, downPath.reverse, up = isDrive)
 
     if (
       createProbe.nonEmpty || DataMirror.hasProbeTypeModifier(purePortTypeBase) ||
@@ -301,7 +311,11 @@ object BoringUtils {
     } else {
       // Creating a wire to assign the result to.  We will return this.
       val bore = Wire(purePortTypeBase)
-      thisModule.asInstanceOf[RawModule].secretConnection(bore, sink)
+      if (isDrive) {
+        thisModule.asInstanceOf[RawModule].secretConnection(sink, bore)
+      } else {
+        thisModule.asInstanceOf[RawModule].secretConnection(bore, sink)
+      }
       bore
     }
   }
@@ -312,6 +326,17 @@ object BoringUtils {
     */
   def bore[A <: Data](source: A)(implicit si: SourceInfo): A = {
     boreOrTap(source, createProbe = None)
+  }
+
+  /** Access a sink [[Data]] for driving that may or may not be in the current module.
+    *
+    * If the sink is in a child module, than create input ports to allow driving the requested sink.
+    *
+    * Note that the sink may not be a probe, and [[rwTap]] should be used instead.
+    */
+  def drive[A <: Data](sink: A)(implicit si: SourceInfo): A = {
+    require(!DataMirror.hasProbeTypeModifier(sink), "cannot drive a probe from BoringUtils.drive")
+    boreOrTap(sink, createProbe = None, isDrive = true)
   }
 
   /** Access a source [[Data]] that may or may not be in the current module.  If
