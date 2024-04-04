@@ -3,7 +3,7 @@
 package chisel3
 
 import chisel3.experimental.VecLiterals.AddVecLiteralConstructor
-import chisel3.experimental.dataview.{isView, reifySingleData, InvalidViewException}
+import chisel3.experimental.dataview.{isView, reify, reifySingleData, InvalidViewException}
 
 import scala.collection.immutable.{SeqMap, VectorMap}
 import scala.collection.mutable.{HashSet, LinkedHashMap}
@@ -27,7 +27,7 @@ sealed abstract class Aggregate extends Data {
 
   private def checkingLitOption(checkForDontCares: Boolean): Option[BigInt] = {
     // Shift the accumulated value by our width and add in our component, masked by our width.
-    def shiftAdd(accumulator: Option[BigInt], elt: Data): Option[BigInt] = {
+    def shiftAdd(elt: Data, accumulator: Option[BigInt]): Option[BigInt] = {
       (accumulator, elt.litOption) match {
         case (Some(accumulator), Some(eltLit)) =>
           val width = elt.width.get
@@ -42,24 +42,32 @@ sealed abstract class Aggregate extends Data {
     }
 
     topBindingOpt match {
-      case Some(BundleLitBinding(_)) | Some(VecLitBinding(_)) =>
-        getElements.reverse
-          .foldLeft[Option[BigInt]](Some(BigInt(0)))(shiftAdd)
+      case Some(_: BundleLitBinding | _: VecLitBinding | _: AggregateViewBinding) =>
+        // Records store elements in reverse order and higher indices are more significant in Vecs
+        this.getElements.foldRight(Option(BigInt(0)))(shiftAdd)
       case _ => None
     }
   }
 
   /** Return an Aggregate's literal value if it is a literal, None otherwise.
-    * If any element of the aggregate is not a literal with a defined width, the result isn't a literal.
+    * If any element of the aggregate is not a literal (or DontCare), the result isn't a literal.
     *
-    * @return an Aggregate's literal value if it is a literal.
+    * @note [[DontCare]] is allowed and will be replaced with 0. Use [[litValue]] to disallow DontCare.
+    * @return an Aggregate's literal value if it is a literal, None otherwise.
     */
   override def litOption: Option[BigInt] = {
     checkingLitOption(checkForDontCares = false)
   }
 
+  /** Return an Aggregate's literal value if it is a literal, otherwise an exception is thrown.
+    * If any element of the aggregate is not a literal with a defined width, the result isn't a literal.
+    *
+    * @return an Aggregate's literal value if it is a literal, exception otherwise.
+    */
   override def litValue: BigInt = {
-    checkingLitOption(checkForDontCares = true).get
+    checkingLitOption(checkForDontCares = true).getOrElse(
+      throw new ChiselException(s"Cannot ask for litValue of $this as it is not a literal.")
+    )
   }
 
   /** Returns a Seq of the immediate contents of this Aggregate, in order.

@@ -928,6 +928,113 @@ class DataViewSpec extends ChiselFlatSpec {
     e.getMessage should include("View mapping must only contain Elements within the View")
   }
 
+<<<<<<< HEAD
+=======
+  it should "use the target in error messages involving the view" in {
+    val e1 = the[ChiselException] thrownBy (
+      ChiselStage.emitCHIRRTL(
+        new RawModule {
+          override def desiredName = "Top"
+          val in = IO(Input(UInt(8.W)))
+          val out = IO(Output(SInt(8.W)))
+          out.viewAs[SInt] := in
+        },
+        Array("--throw-on-first-error")
+      )
+    )
+    e1.getMessage should include(
+      "Connection between sink (Top.out: IO[SInt<8>]) and source (Top.in: IO[UInt<8>]) failed"
+    )
+
+    val e2 = the[ChiselException] thrownBy (
+      ChiselStage.emitCHIRRTL(
+        new RawModule {
+          override def desiredName = "Top"
+          val foo, bar = IO(Input(UInt(8.W)))
+          val fizz, buzz = IO(Output(SInt(8.W)))
+          // Unfortunately, := does a bad job when the view doesn't map to a single Data, but at least connectables do a good job
+          ((fizz, buzz).viewAs: Data) :#= ((foo, bar).viewAs: Data)
+        },
+        Array("--throw-on-first-error")
+      )
+    )
+    e2.getMessage should include(
+      "Connection between sink (Top.buzz: IO[SInt<8>]) and source (Top.bar: IO[UInt<8>]) failed"
+    )
+  }
+
+  it should "preserve literal values for Elements" in {
+    class MyModule extends Module {
+      val x = 123.U
+      val xv = x.viewAs[UInt]
+      xv.litOption should be(x.litOption)
+      xv.litValue should be(x.litValue)
+      val y = -23.S
+      val yv = y.viewAs[SInt]
+      yv.litOption should be(y.litOption)
+      yv.litValue should be(y.litValue)
+    }
+    ChiselStage.emitCHIRRTL(new MyModule)
+  }
+
+  it should "preserve literal values for BundleLiterals" in {
+    import chisel3.experimental.BundleLiterals._
+    class BundleA extends Bundle {
+      val foo = UInt(4.W)
+      val bar = UInt(4.W)
+    }
+    class BundleB extends Bundle {
+      val a = UInt(4.W)
+      val b = UInt(4.W)
+      val c = UInt(4.W)
+    }
+    implicit val dv =
+      DataView[BundleA, BundleB](_ => new BundleB, _.foo -> _.c, _.bar -> _.a, (_, b) => 6.U(4.W) -> b.b)
+    class MyModule extends Module {
+      val bunA = (new BundleA).Lit(_.foo -> 0xa.U, _.bar -> 0xd.U)
+      val bunAView = bunA.viewAs[BundleA]
+      bunA.litValue should be(0xad)
+      bunA.litOption should be(Some(0xad))
+      bunAView.litValue should be(0xad)
+      bunAView.litOption should be(Some(0xad))
+
+      val bunBView = bunA.viewAs[BundleB]
+      bunBView.litValue should be(0xd6a)
+      bunBView.litOption should be(Some(0xd6a))
+    }
+    ChiselStage.emitCHIRRTL(new MyModule)
+  }
+
+  it should "preserve literal values for VecLiterals (viewed as nested Bundles)" in {
+    import chisel3.experimental.VecLiterals._
+    case class Box(value: UInt) extends Bundle
+    class MyBundle extends Bundle {
+      val foo = Vec(2, UInt(4.W))
+      val bar = Vec(2, Box(UInt(4.W)))
+    }
+    implicit val dv = DataView[Vec[UInt], MyBundle](
+      _ => new MyBundle,
+      _(0) -> _.foo(0),
+      _(1) -> _.bar(1).value,
+      _(2) -> _.bar(0).value,
+      _(3) -> _.foo(1)
+    )
+    class MyModule extends Module {
+      val vec = Vec.Lit(0xa.U, 0xb.U, 0xc.U, 0xd.U)
+      val vecView = vec.viewAs[Vec[UInt]]
+      vec.litValue should be(0xdcba)
+      vec.litOption should be(Some(0xdcba))
+      vecView.litValue should be(0xdcba)
+      vecView.litOption should be(Some(0xdcba))
+
+      val bunView = vec.viewAs[MyBundle]
+      bunView.litValue should be(0xdabc)
+      bunView.litOption should be(Some(0xdabc))
+    }
+    ChiselStage.emitCHIRRTL(new MyModule)
+  }
+
+>>>>>>> ce05462c2 (Support literals in DataView (#3964))
   behavior.of("PartialDataView")
 
   it should "still error if the mapping is non-total in the view" in {
