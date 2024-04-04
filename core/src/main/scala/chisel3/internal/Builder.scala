@@ -822,12 +822,12 @@ private[chisel3] object Builder extends LazyLogging {
       val localTarget = view.toTarget
       val absTarget = view.toAbsoluteTarget
       val elts = getRecursiveFields.lazily(view, "").collect { case (elt: Element, _) => elt }
-      for (elt <- elts if !elt.isLit) {
+      for (elt <- elts) {
         // This is a hack to not crash when .viewAs is called on non-hardware
         // It can be removed in Chisel 6.0.0 when it becomes illegal to call .viewAs on non-hardware
         val targetOfViewOpt =
           try {
-            Some(reify(elt))
+            Some(reify(elt)).filterNot(_.isLit)
           } catch {
             case _: NoSuchElementException => None
           }

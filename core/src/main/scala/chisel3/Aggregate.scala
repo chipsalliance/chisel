@@ -66,7 +66,7 @@ sealed abstract class Aggregate extends Data {
     */
   override def litValue: BigInt = {
     checkingLitOption(checkForDontCares = true).getOrElse(
-      throw new ChiselException(s"Cannot ask for litValue of $this as it is not a literal.")
+      throw new chisel3.ChiselException(s"Cannot ask for litValue of $this as it is not a literal.")
     )
   }
 
