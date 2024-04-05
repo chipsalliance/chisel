@@ -2,13 +2,7 @@
 
 package chisel3
 
-<<<<<<< HEAD
-import chisel3.experimental.{annotate, requireIsHardware, ChiselAnnotation}
-=======
 import chisel3.experimental.{annotate, requireIsAnnotatable, ChiselAnnotation}
-import chisel3.properties.Property
-import chisel3.reflect.DataMirror
->>>>>>> 4be3b6fbb (Add requireIsAnnotatable for better errors when annotating literals (#3968))
 import firrtl.transforms.DontTouchAnnotation
 
 /** Marks that a signal is an optimization barrier to Chisel and the FIRRTL compiler. This has the effect of
@@ -37,20 +31,8 @@ object dontTouch {
     * @return Unmodified signal `data`
     */
   def apply[T <: Data](data: T): T = {
-<<<<<<< HEAD
-    requireIsHardware(data, "Data marked dontTouch")
-    annotate(new ChiselAnnotation { def toFirrtl = DontTouchAnnotation(data.toNamed) })
-=======
     requireIsAnnotatable(data, "Data marked dontTouch")
-    data match {
-      case d if DataMirror.hasProbeTypeModifier(d) => ()
-      case _:   Property[_] => ()
-      case agg: Aggregate => agg.getElements.foreach(dontTouch.apply)
-      case _:   Element =>
-        annotate(new ChiselAnnotation { def toFirrtl = DontTouchAnnotation(data.toNamed) })
-      case _ => throw new ChiselException("Non-hardware dontTouch")
-    }
->>>>>>> 4be3b6fbb (Add requireIsAnnotatable for better errors when annotating literals (#3968))
+    annotate(new ChiselAnnotation { def toFirrtl = DontTouchAnnotation(data.toNamed) })
     data
   }
 }

@@ -58,8 +58,6 @@ class DontTouchSpec extends ChiselFlatSpec with Utils {
       })
     }
   }
-<<<<<<< HEAD
-=======
   it should "not work on literals" in {
     val e = the[chisel3.ExpectedAnnotatableException] thrownBy {
       ChiselStage.emitCHIRRTL(new Module {
@@ -68,22 +66,4 @@ class DontTouchSpec extends ChiselFlatSpec with Utils {
     }
     e.getMessage should include("must not be a literal")
   }
-
-  "fields" should "be marked don't touch by default" in {
-    val (_, annos) = getFirrtlAndAnnos(new HasDeadCodeLeaves())
-    annos should contain(DontTouchAnnotation("~HasDeadCodeLeaves|HasDeadCodeChildLeaves>io.a.a1".rt))
-    annos should not contain (DontTouchAnnotation("~HasDeadCodeLeaves|HasDeadCodeChildLeaves>io.a".rt))
-  }
-
-  "probes and properties" should "NOT be marked dontTouch" in {
-    val (_, annos) = getFirrtlAndAnnos(new HasProbesAndProperties())
-    // Check for DontTouch on io.a but not on the probe or property leaves.
-    annos should contain(DontTouchAnnotation("~HasProbesAndProperties|HasProbesAndProperties>io.a".rt))
-    annos should not contain (DontTouchAnnotation("~HasProbesAndProperties|HasProbesAndProperties>io.probe".rt))
-    annos should not contain (DontTouchAnnotation("~HasProbesAndProperties|HasProbesAndProperties>io.prop".rt))
-
-    // Ensure can compile the result.
-    compile(new HasProbesAndProperties())
-  }
->>>>>>> 4be3b6fbb (Add requireIsAnnotatable for better errors when annotating literals (#3968))
 }
