@@ -3,7 +3,7 @@
 package chisel3.util.experimental.decode
 
 import chisel3._
-import chisel3.experimental.{annotate, ChiselAnnotation}
+import chisel3.experimental.{annotate, requireIsAnnotatable, ChiselAnnotation}
 import chisel3.util.{pla, BitPat}
 import chisel3.util.experimental.{getAnnotations, BitSet}
 import firrtl.annotations.Annotation
@@ -30,7 +30,7 @@ object decoder extends LazyLogging {
       val (plaInput, plaOutput) =
         pla(minimizedTable.table.toSeq, BitPat(minimizedTable.default.value.U(minimizedTable.default.getWidth.W)))
 
-      assert(plaOutput.isSynthesizable, s"Using DecodeTableAnnotation on non-hardware value $plaOutput")
+      requireIsAnnotatable(plaOutput, "DecodeTableAnnotation target")
       annotate(new ChiselAnnotation {
         override def toFirrtl: Annotation =
           DecodeTableAnnotation(plaOutput.toTarget, truthTable.toString, minimizedTable.toString)

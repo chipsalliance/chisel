@@ -2,7 +2,7 @@
 
 package chisel3
 
-import chisel3.experimental.{annotate, requireIsHardware, ChiselAnnotation}
+import chisel3.experimental.{annotate, requireIsAnnotatable, ChiselAnnotation}
 import firrtl.transforms.DontTouchAnnotation
 
 /** Marks that a signal is an optimization barrier to Chisel and the FIRRTL compiler. This has the effect of
@@ -31,7 +31,7 @@ object dontTouch {
     * @return Unmodified signal `data`
     */
   def apply[T <: Data](data: T): T = {
-    requireIsHardware(data, "Data marked dontTouch")
+    requireIsAnnotatable(data, "Data marked dontTouch")
     annotate(new ChiselAnnotation { def toFirrtl = DontTouchAnnotation(data.toNamed) })
     data
   }

@@ -69,6 +69,20 @@ package object experimental {
     }
   }
 
+  /** Require that a Data can be annotated. It must be non-literal hardware.
+    */
+  object requireIsAnnotatable {
+    def apply(node: Data, msg: String = ""): Unit = {
+      requireIsHardware(node, msg)
+      if (node.isLit) {
+        val prefix = if (msg.nonEmpty) s"$msg " else ""
+        throw ExpectedAnnotatableException(
+          s"$prefix'$node' must not be a literal."
+        )
+      }
+    }
+  }
+
   /** Requires that a node is a chisel type (not hardware, "unbound")
     */
   object requireIsChiselType {
