@@ -2,7 +2,7 @@
 
 package chisel3
 
-import chisel3.experimental.{annotate, requireIsHardware, ChiselAnnotation}
+import chisel3.experimental.{annotate, requireIsAnnotatable, ChiselAnnotation}
 import chisel3.properties.Property
 import chisel3.reflect.DataMirror
 import firrtl.transforms.DontTouchAnnotation
@@ -34,7 +34,7 @@ object dontTouch {
     * @return Unmodified signal `data`
     */
   def apply[T <: Data](data: T): T = {
-    requireIsHardware(data, "Data marked dontTouch")
+    requireIsAnnotatable(data, "Data marked dontTouch")
     data match {
       case d if DataMirror.hasProbeTypeModifier(d) => ()
       case _:   Property[_] => ()

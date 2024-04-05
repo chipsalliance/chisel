@@ -106,6 +106,14 @@ class DontTouchSpec extends ChiselFlatSpec with Utils {
       })
     }
   }
+  it should "not work on literals" in {
+    val e = the[chisel3.ExpectedAnnotatableException] thrownBy {
+      ChiselStage.emitCHIRRTL(new Module {
+        dontTouch(123.U)
+      })
+    }
+    e.getMessage should include("must not be a literal")
+  }
 
   "fields" should "be marked don't touch by default" in {
     val (_, annos) = getFirrtlAndAnnos(new HasDeadCodeLeaves())

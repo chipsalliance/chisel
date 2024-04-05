@@ -398,6 +398,10 @@ package object chisel3 {
     */
   case class ExpectedHardwareException(message: String) extends BindingException(message)
 
+  /** A function expected annotatable hardware
+    */
+  case class ExpectedAnnotatableException(message: String) extends BindingException(message)
+
   /** An aggregate had a mix of specified and unspecified directionality children
     */
   case class MixedDirectionAggregateException(message: String) extends BindingException(message)
