@@ -24,7 +24,7 @@ case class DisableAnnotationsClassless(value: Boolean) extends FirtoolOption
 case class DisableOptimization(value: Boolean) extends FirtoolOption
 case class DisableRandom(value: RandomKindEnum) extends FirtoolOption
 case class DisableUnknownAnnotations(value: Boolean) extends FirtoolOption
-case class EmitChiselAssertsAsSVA(value: Boolean) extends FirtoolOption
+case class VerificationFlavor(value: VerificationFlavorEnum) extends FirtoolOption
 case class EmitOmir(value: Boolean) extends FirtoolOption
 case class EmitSeparateAlwaysBlocks(value: Boolean) extends FirtoolOption
 case class EnableAnnotationWarning(value: Boolean) extends FirtoolOption
@@ -77,5 +77,11 @@ case object PreserveValuesModeStrip extends PreserveValuesModeEnum
 case object PreserveValuesModeNone extends PreserveValuesModeEnum
 case object PreserveValuesModeNamed extends PreserveValuesModeEnum
 case object PreserveValuesModeAll extends PreserveValuesModeEnum
+
+sealed trait VerificationFlavorEnum
+case object VerificationFlavorNone extends VerificationFlavorEnum
+case object VerificationFlavorIfElseFatal extends VerificationFlavorEnum
+case object VerificationFlavorImmediate extends VerificationFlavorEnum
+case object VerificationFlavorSva extends VerificationFlavorEnum
 
 case class FirtoolOptions(options: Set[FirtoolOption])
