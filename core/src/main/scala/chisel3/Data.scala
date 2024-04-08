@@ -805,6 +805,39 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 
   /** A non-ambiguous name of this `Data` for use in generated Verilog names */
   def typeName: String = simpleClassName(this.getClass)
+
+  /** Extension point to customize [[Connectable]] waive behavior for this [[Data]].
+    *
+    * This method will be called on each recursive [[Data]] within this [[Data]], including itself, any nested
+    * aggregates, and leaf elements. If it returns true for a given [[Data]], that [[Data]] will be waived.
+    *
+    * See the `waiveSelection` parameter on [[connectable.Connectable.apply]] for more information.
+    *
+    * @param d The [[Data]] to select for waiving
+    */
+  protected def connectableWaiveSelection(d: Data): Boolean = false
+
+  /** Extension point to customize [[Connectable]] squeeze behavior for this [[Data]].
+    *
+    * This method will be called on each recursive [[Data]] within this [[Data]], including itself, any nested
+    * aggregates, and leaf elements. If it returns true for a given [[Data]], that [[Data]] will be squeezed.
+    *
+    * See the `squeezeSelection` parameter on [[connectable.Connectable.apply]] for more information.
+    *
+    * @param d The [[Data]] to select for squeezing
+    */
+  protected def connectableSqueezeSelection(d: Data): Boolean = false
+
+  /** Extension point to customize [[Connectable]] exclude behavior for this [[Data]].
+    *
+    * This method will be called on each recursive [[Data]] within this [[Data]], including itself, any nested
+    * aggregates, and leaf elements. If it returns true for a given [[Data]], that [[Data]] will be excluded.
+    *
+    * See the `excludeSelection` parameter on [[connectable.Connectable.apply]] for more information.
+    *
+    * @param d The [[Data]] to select for excluding
+    */
+  protected def connectableExcludeSelection(d: Data): Boolean = false
 }
 
 object Data {
@@ -826,7 +859,12 @@ object Data {
     *  add to Data we also want on Connectable, so an implicit conversion makes the most sense
     *  so the ScalaDoc can be shared.
     */
-  implicit def toConnectableDefault[T <: Data](d: T): Connectable[T] = Connectable.apply(d)
+  implicit def toConnectableDefault[T <: Data](d: T): Connectable[T] = Connectable.apply(
+    d,
+    d.connectableWaiveSelection,
+    d.connectableSqueezeSelection,
+    d.connectableExcludeSelection
+  )
 
   /** Typeclass implementation of HasMatchingZipOfChildren for Data
     *
