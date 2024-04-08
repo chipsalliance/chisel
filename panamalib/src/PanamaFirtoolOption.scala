@@ -24,7 +24,7 @@ object PanamaFirtoolOption {
       case DisableOptimization(value: Boolean) => panamaCIRCT.circtFirtoolOptionsSetDisableOptimization(options, value)
       case DisableRandom(value: RandomKindEnum) => panamaCIRCT.circtFirtoolOptionsSetDisableRandom(options, value)
       case DisableUnknownAnnotations(value: Boolean) => panamaCIRCT.circtFirtoolOptionsSetDisableUnknownAnnotations(options, value)
-      case EmitChiselAssertsAsSVA(value: Boolean) => panamaCIRCT.circtFirtoolOptionsSetEmitChiselAssertsAsSVA(options, value)
+      case VerificationFlavor(value: VerificationFlavorEnum) => panamaCIRCT.circtFirtoolOptionsSetVerificationFlavor(options, value)
       case EmitOmir(value: Boolean) => panamaCIRCT.circtFirtoolOptionsSetEmitOmir(options, value)
       case EmitSeparateAlwaysBlocks(value: Boolean) => panamaCIRCT.circtFirtoolOptionsSetEmitSeparateAlwaysBlocks(options, value)
       case EnableAnnotationWarning(value: Boolean) => panamaCIRCT.circtFirtoolOptionsSetEnableAnnotationWarning(options, value)
@@ -87,5 +87,11 @@ object PanamaFirtoolOption {
     case PreserveValuesModeNone  => CirctFirtoolPreserveValuesMode.None
     case PreserveValuesModeNamed => CirctFirtoolPreserveValuesMode.Named
     case PreserveValuesModeAll   => CirctFirtoolPreserveValuesMode.All
+  }
+  implicit def verificationFlavor(e: VerificationFlavorEnum): CirctFirtoolVerificationFlavor = e match {
+    case VerificationFlavorNone => CirctFirtoolVerificationFlavor.None
+    case VerificationFlavorIfElseFatal  => CirctFirtoolVerificationFlavor.IfElseFatal
+    case VerificationFlavorImmediate => CirctFirtoolVerificationFlavor.Immediate
+    case VerificationFlavorSva   => CirctFirtoolVerificationFlavor.Sva
   }
 }
