@@ -340,8 +340,8 @@ class PanamaCIRCT {
     CAPI.circtFirtoolOptionsSetEnableAnnotationWarning(options.get, value)
   def circtFirtoolOptionsSetAddMuxPragmas(options: CirctFirtoolFirtoolOptions, value: Boolean) =
     CAPI.circtFirtoolOptionsSetAddMuxPragmas(options.get, value)
-  def circtFirtoolOptionsSetEmitChiselAssertsAsSVA(options: CirctFirtoolFirtoolOptions, value: Boolean) =
-    CAPI.circtFirtoolOptionsSetEmitChiselAssertsAsSVA(options.get, value)
+  def circtFirtoolOptionsSetVerificationFlavor(options: CirctFirtoolFirtoolOptions, value: CirctFirtoolVerificationFlavor) =
+    CAPI.circtFirtoolOptionsSetVerificationFlavor(options.get, value.get)
   def circtFirtoolOptionsSetEmitSeparateAlwaysBlocks(options: CirctFirtoolFirtoolOptions, value: Boolean) =
     CAPI.circtFirtoolOptionsSetEmitSeparateAlwaysBlocks(options.get, value)
   def circtFirtoolOptionsSetEtcDisableInstanceExtraction(options: CirctFirtoolFirtoolOptions, value: Boolean) =
@@ -968,4 +968,15 @@ object CirctFirtoolCompanionMode {
   final case object Instantiate
       extends CirctFirtoolCompanionMode(value = CAPI.CIRCT_FIRTOOL_COMPANION_MODE_INSTANTIATE())
   final case object Drop extends CirctFirtoolCompanionMode(value = CAPI.CIRCT_FIRTOOL_COMPANION_MODE_DROP())
+}
+
+sealed class CirctFirtoolVerificationFlavor(val value: Int) extends ForeignType[Int] {
+  private[panamalib] def get = value
+  private[panamalib] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
+}
+object CirctFirtoolVerificationFlavor {
+  final case object None extends CirctFirtoolVerificationFlavor(value = CAPI.CIRCT_FIRTOOL_VERIFICATION_FLAVOR_NONE())
+  final case object IfElseFatal extends CirctFirtoolVerificationFlavor(value = CAPI.CIRCT_FIRTOOL_VERIFICATION_FLAVOR_IF_ELSE_FATAL())
+  final case object Immediate extends CirctFirtoolVerificationFlavor(value = CAPI.CIRCT_FIRTOOL_VERIFICATION_FLAVOR_IMMEDIATE())
+  final case object Sva extends CirctFirtoolVerificationFlavor(value = CAPI.CIRCT_FIRTOOL_VERIFICATION_FLAVOR_SVA())
 }
