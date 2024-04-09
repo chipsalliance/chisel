@@ -907,9 +907,13 @@ object Data {
         case (thiz: UInt, that: UInt) => thiz === that
         case (thiz: SInt, that: SInt) => thiz === that
         case (thiz: AsyncReset, that: AsyncReset) => thiz.asBool === that.asBool
+<<<<<<< HEAD
         case (thiz: Reset, that: Reset) => thiz === that
         case (thiz: Interval, that: Interval) => thiz === that
         case (thiz: FixedPoint, that: FixedPoint) => thiz === that
+=======
+        case (thiz: Reset, that: Reset) => thiz.asBool === that.asBool
+>>>>>>> ea2d10365 (Fix === for abstract Reset types (#3979))
         case (thiz: EnumType, that: EnumType) => thiz === that
         case (thiz: Clock, that: Clock) => thiz.asUInt === that.asUInt
         case (thiz: Vec[_], that: Vec[_]) =>

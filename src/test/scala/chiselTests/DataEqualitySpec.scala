@@ -109,6 +109,11 @@ class DataEqualitySpec extends ChiselFlatSpec with Utils {
       new EqualityTester(true.B, false.B)
     }
   }
+  it should "support abstract reset wires" in {
+    assertTesterPasses {
+      new EqualityTester(WireDefault(Reset(), true.B), WireDefault(Reset(), true.B))
+    }
+  }
 
   behavior.of("AsyncReset === AsyncReset")
   it should "pass with equal values" in {
