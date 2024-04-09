@@ -907,7 +907,7 @@ object Data {
         case (thiz: UInt, that: UInt) => thiz === that
         case (thiz: SInt, that: SInt) => thiz === that
         case (thiz: AsyncReset, that: AsyncReset) => thiz.asBool === that.asBool
-        case (thiz: Reset, that: Reset) => thiz === that
+        case (thiz: Reset, that: Reset) => thiz.asBool === that.asBool
         case (thiz: Interval, that: Interval) => thiz === that
         case (thiz: FixedPoint, that: FixedPoint) => thiz === that
         case (thiz: EnumType, that: EnumType) => thiz === that
