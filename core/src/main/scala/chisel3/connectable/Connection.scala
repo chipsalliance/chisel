@@ -2,12 +2,13 @@
 
 package chisel3.connectable
 
-import chisel3.{Aggregate, BiConnectException, Data, DontCare, InternalErrorException, RawModule}
+import chisel3.{Aggregate, BiConnectException, Data, DontCare, HasCustomConnectable, InternalErrorException, RawModule}
 import chisel3.internal.{BiConnect, Builder}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.ir.DefInvalid
 import chisel3.experimental.{prefix, SourceInfo, UnlocatableSourceInfo}
 import chisel3.experimental.{attach, Analog}
+import chisel3.reflect.DataMirror
 import chisel3.reflect.DataMirror.hasProbeTypeModifier
 import ConnectableAlignment.matchingZipOfChildren
 
@@ -232,8 +233,23 @@ private[chisel3] object Connection {
       }
     }
 
+    // If user's customized their Connectable, apply their changes here.
+    val consumerReal = DataMirror
+      .collectMembers(consumer.base) {
+        case hasCustom: HasCustomConnectable =>
+          hasCustom
+      }
+      .foldLeft(consumer)((connectable, hasCustom) => hasCustom.customConnectable(connectable))
+
+    val producerReal = DataMirror
+      .collectMembers(producer.base) {
+        case hasCustom: HasCustomConnectable =>
+          hasCustom
+      }
+      .foldLeft(producer)((connectable, hasCustom) => hasCustom.customConnectable(connectable))
+
     // Start recursive connection
-    doConnection(ConnectableAlignment(consumer, true), ConnectableAlignment(producer, false))
+    doConnection(ConnectableAlignment(consumerReal, true), ConnectableAlignment(producerReal, false))
 
     // If any errors are collected, error.
     if (errors.nonEmpty) {
