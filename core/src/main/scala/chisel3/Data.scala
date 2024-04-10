@@ -826,7 +826,15 @@ object Data {
     *  add to Data we also want on Connectable, so an implicit conversion makes the most sense
     *  so the ScalaDoc can be shared.
     */
-  implicit def toConnectableDefault[T <: Data](d: T): Connectable[T] = Connectable.apply(d)
+  implicit def toConnectableDefault[T <: Data](d: T): Connectable[T] = {
+    val base = Connectable.apply(d)
+    DataMirror
+      .collectMembers(d) {
+        case hasCustom: HasCustomConnectable =>
+          hasCustom
+      }
+      .foldLeft(base)((connectable, hasCustom) => hasCustom.customConnectable(connectable))
+  }
 
   /** Typeclass implementation of HasMatchingZipOfChildren for Data
     *

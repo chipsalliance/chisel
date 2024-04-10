@@ -233,23 +233,8 @@ private[chisel3] object Connection {
       }
     }
 
-    // If user's customized their Connectable, apply their changes here.
-    val consumerReal = DataMirror
-      .collectMembers(consumer.base) {
-        case hasCustom: HasCustomConnectable =>
-          hasCustom
-      }
-      .foldLeft(consumer)((connectable, hasCustom) => hasCustom.customConnectable(connectable))
-
-    val producerReal = DataMirror
-      .collectMembers(producer.base) {
-        case hasCustom: HasCustomConnectable =>
-          hasCustom
-      }
-      .foldLeft(producer)((connectable, hasCustom) => hasCustom.customConnectable(connectable))
-
     // Start recursive connection
-    doConnection(ConnectableAlignment(consumerReal, true), ConnectableAlignment(producerReal, false))
+    doConnection(ConnectableAlignment(consumer, true), ConnectableAlignment(producer, false))
 
     // If any errors are collected, error.
     if (errors.nonEmpty) {
