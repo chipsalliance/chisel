@@ -437,11 +437,11 @@ object Serializer {
   }
 
   private def s(node: Param)(implicit b: StringBuilder, indent: Int): Unit = node match {
-    case IntParam(name, value)    => b ++= "parameter "; b ++= name; b ++= " = "; b ++= value.toString
-    case DoubleParam(name, value) => b ++= "parameter "; b ++= name; b ++= " = "; b ++= value.toString
-    case StringParam(name, value) => b ++= "parameter "; b ++= name; b ++= " = "; b ++= value.escape
+    case IntParam(name, value)    => b ++= name; b ++= " = "; b ++= value.toString
+    case DoubleParam(name, value) => b ++= name; b ++= " = "; b ++= value.toString
+    case StringParam(name, value) => b ++= name; b ++= " = "; b ++= value.escape
     case RawStringParam(name, value) =>
-      b ++= "parameter "; b ++= name; b ++= " = "
+      b ++= name; b ++= " = "
       b += '\''; b ++= value.replace("'", "\\'"); b += '\''
     case other => b ++= other.serialize // Handle user-defined nodes
   }
@@ -467,14 +467,14 @@ object Serializer {
       doIndent(0); b ++= "extmodule "; b ++= legalize(name); b ++= " :"; s(info)
       ports.foreach { p => newLineAndIndent(1); s(p) }
       newLineAndIndent(1); b ++= "defname = "; b ++= defname
-      params.foreach { p => newLineAndIndent(1); s(p) }
+      params.foreach { p => newLineAndIndent(1); b ++= "parameter "; s(p) }
       Iterator(b.toString)
     case IntModule(info, name, ports, intrinsic, params) =>
       implicit val b = new StringBuilder
       doIndent(0); b ++= "intmodule "; b ++= legalize(name); b ++= " :"; s(info)
       ports.foreach { p => newLineAndIndent(1); s(p) }
       newLineAndIndent(1); b ++= "intrinsic = "; b ++= intrinsic
-      params.foreach { p => newLineAndIndent(1); s(p) }
+      params.foreach { p => newLineAndIndent(1); b ++= "parameter "; s(p) }
       Iterator(b.toString)
     case DefClass(info, name, ports, body) =>
       val start = {
