@@ -78,10 +78,11 @@ package object simulator {
       elaboratedModule:              ElaboratedModule[T],
       conservativeCommandResolution: Boolean = false,
       verbose:                       Boolean = false,
+      traceEnabled:                  Boolean = false,
       executionScriptLimit:          Option[Int] = None
     )(body:                          SimulatedModule[T] => U
     ): U = {
-      simulation.run(conservativeCommandResolution, verbose, executionScriptLimit) { controller =>
+      simulation.run(conservativeCommandResolution, verbose, traceEnabled, executionScriptLimit) { controller =>
         val module = new SimulatedModule(elaboratedModule, controller)
         AnySimulatedModule.withValue(module) {
           body(module)
