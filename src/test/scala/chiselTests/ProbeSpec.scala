@@ -680,6 +680,7 @@ class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
       val b = IO(Output(Probe.apply(UInt(2.W), LayerA.LayerB)))
     }
     matchesAndOmits(ChiselStage.emitCHIRRTL(new Foo))(
+      "layer LayerA",
       "output a : Probe<UInt<1>, LayerA>",
       "output b : Probe<UInt<2>, LayerA.LayerB>"
     )()

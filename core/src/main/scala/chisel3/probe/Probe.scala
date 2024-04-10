@@ -35,6 +35,10 @@ private[chisel3] sealed trait ProbeBase {
     // https://github.com/chipsalliance/chisel/issues/3609
 
     val ret: T = if (!data.mustClone(prevId)) data else data.cloneType.asInstanceOf[T]
+    // Record the layer in the builder if we are in a builder context.
+    if (Builder.inContext && color.isDefined) {
+      layer.addLayer(color.get)
+    }
     setProbeModifier(ret, Some(ProbeInfo(writable, color)))
     ret
   }
