@@ -84,6 +84,7 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
     }
 
     matchesAndOmits(ChiselStage.emitCHIRRTL(new Foo))(
+      "layer A, bind",
       "module Foo enablelayer A.B enablelayer C :"
     )()
 
