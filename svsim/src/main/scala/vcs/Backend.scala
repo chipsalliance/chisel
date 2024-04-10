@@ -162,6 +162,7 @@ final class Backend(
               commonSettings.optimizationStyle match {
                 case OptimizationStyle.Default => Seq()
                 case OptimizationStyle.OptimizeForCompilationSpeed => Seq("-O0")
+                case OptimizationStyle.OptimizeForSimulationSpeed=> Seq("-O3")
               },
               
               additionalHeaderPaths.map { path => s"-I${path}" },
