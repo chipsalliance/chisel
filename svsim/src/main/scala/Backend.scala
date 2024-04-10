@@ -36,6 +36,10 @@ object CommonCompilationSettings {
     /** Optimize for compilation speed, which generally means disabling as many optimizations as possible.
       */
     object OptimizeForCompilationSpeed extends OptimizationStyle
+
+    /** Optimize for execution speed, which generally means enabling as many optimizations as possible.
+      */
+    object OptimizeForSimulationSpeed extends OptimizationStyle
   }
 
   sealed trait AvailableParallelism
