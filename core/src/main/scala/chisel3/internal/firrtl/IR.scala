@@ -407,6 +407,17 @@ private[chisel3] object ir {
     params: Map[String, Param])
       extends Component
 
+  case class DefIntrinsicExpr[T <: Data](
+    sourceInfo: SourceInfo,
+    intrinsic:  String,
+    id:         T,
+    args:       Seq[Arg],
+    params:     Map[String, Param])
+      extends Definition
+
+  case class DefIntrinsic(sourceInfo: SourceInfo, intrinsic: String, args: Seq[Arg], params: Map[String, Param])
+      extends Command
+
   case class DefClass(id: Class, name: String, ports: Seq[Port], commands: Seq[Command]) extends Component
 
   case class Circuit(

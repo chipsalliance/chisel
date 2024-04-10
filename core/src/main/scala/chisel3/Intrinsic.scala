@@ -1,0 +1,91 @@
+// SPDX-License-Identifier: Apache-2.0
+
+package chisel3
+
+import chisel3._
+import chisel3.experimental.{requireIsChiselType, Param, SourceInfo}
+import chisel3.internal.firrtl.ir._
+import chisel3.internal.{Builder, OpBinding}
+import chisel3.internal.Builder.pushCommand
+
+object Intrinsic {
+
+  /**
+    * Create an intrinsic statement.
+    *
+    * @param intrinsic name of the intrinsic
+    * @param params parameters, if any
+    * @param data inputs
+    *
+    * @example {{{
+    * Intrinsic("test", Map("Foo" -> 5))(f, g)
+    * }}}
+    */
+  def apply(intrinsic: String, params: Map[String, Param])(data: Data*)(implicit sourceInfo: SourceInfo): Unit = {
+    pushCommand(DefIntrinsic(sourceInfo, intrinsic, data.map(_.ref), params))
+  }
+
+  /**
+    * Create an intrinsic statement.
+    *
+    * @param intrinsic name of the intrinsic
+    * @param data inputs
+    *
+    * @example {{{
+    * Intrinsic("test")(f, g)
+    * }}}
+    */
+  def apply(intrinsic: String)(data: Data*)(implicit sourceInfo: SourceInfo): Unit = {
+    apply(intrinsic, Map.empty[String, Param])(data: _*)
+  }
+}
+
+object IntrinsicExpr {
+
+  /**
+    * Create an intrinsic expression.
+    *
+    * @param intrinsic name of the intrinsic
+    * @param params parameters, if any
+    * @param ret return type of the expression
+    * @param data inputs
+    * @return intrinsic expression that returns the specified return type
+    *
+    * @example {{{
+    * val test = IntrinsicExpr("test", UInt(32.W), Map("Foo" -> 5))(f, g) + 3.U
+    * }}}
+    */
+  def apply[T <: Data](
+    intrinsic: String,
+    params:    Map[String, Param],
+    ret:       => T
+  )(data:      Data*
+  )(
+    implicit sourceInfo: SourceInfo
+  ): T = {
+    val prevId = Builder.idGen.value
+    val t = ret // evaluate once (passed by name)
+    requireIsChiselType(t, "intrinsic type")
+    val int = if (!t.mustClone(prevId)) t else t.cloneTypeFull
+
+    int.bind(OpBinding(Builder.forcedUserModule, Builder.currentWhen))
+    pushCommand(DefIntrinsicExpr(sourceInfo, intrinsic, int, data.map(_.ref), params))
+    int
+  }
+
+  /**
+    * Create an intrinsic expression.
+    *
+    * @param intrinsic name of the intrinsic
+    * @param ret return type of the expression
+    * @param data inputs
+    * @return intrinsic expression that returns the specified return type
+    *
+    * @example {{{
+    * val test = IntrinsicExpr("test", UInt(32.W))(f, g) + 3.U
+    * }}}
+    */
+  def apply[T <: Data](intrinsic: String, ret: => T)(data: Data*)(implicit sourceInfo: SourceInfo): T = {
+    apply(intrinsic, Map.empty[String, Param], ret)(data: _*)
+  }
+}

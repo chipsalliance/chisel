@@ -127,10 +127,11 @@ object Serializer {
           if (idx != lastIdx) b ++= ", "
       }
       b += ')'
-    case ProbeExpr(expr, _)   => b ++= "probe("; s(expr); b += ')'
-    case RWProbeExpr(expr, _) => b ++= "rwprobe("; s(expr); b += ')'
-    case ProbeRead(expr, _)   => b ++= "read("; s(expr); b += ')'
-    case other                => b ++= other.serialize // Handle user-defined nodes
+    case ProbeExpr(expr, _)                          => b ++= "probe("; s(expr); b += ')'
+    case RWProbeExpr(expr, _)                        => b ++= "rwprobe("; s(expr); b += ')'
+    case ProbeRead(expr, _)                          => b ++= "read("; s(expr); b += ')'
+    case IntrinsicExpr(intrinsic, args, params, tpe) => sIntrinsic(None, intrinsic, args, params, Some(tpe))
+    case other                                       => b ++= other.serialize // Handle user-defined nodes
   }
 
   // Helper for some not-real Statements that only exist for Serialization
@@ -354,11 +355,47 @@ object Serializer {
       b ++= "force("; s(clock); b ++= ", "; s(cond); b ++= ", "; s(probe); b ++= ", "; s(value); b += ')'; s(info)
     case ProbeRelease(info, clock, cond, probe) =>
       b ++= "release("; s(clock); b ++= ", "; s(cond); b ++= ", "; s(probe); b += ')'; s(info)
-    case other => b ++= other.serialize // Handle user-defined nodes
+    case IntrinsicStmt(info, intrinsic, args, params, tpe) => sIntrinsic(Some(info), intrinsic, args, params, tpe)
+    case other                                             => b ++= other.serialize // Handle user-defined nodes
   }
 
   private def sStmtName(lbl: String)(implicit b: StringBuilder): Unit = {
     if (lbl.nonEmpty) { b ++= s" : ${legalize(lbl)}" }
+  }
+
+  private def sIntrinsic(
+    info:      Option[Info],
+    intrinsic: String,
+    args:      Seq[Expression],
+    params:    Seq[Param],
+    tpe:       Option[Type]
+  )(
+    implicit b: StringBuilder,
+    indent:     Int
+  ): Unit = {
+    b ++= "intrinsic("
+    b ++= intrinsic
+    if (params.nonEmpty) {
+      b += '<';
+      val lastIdx = params.size - 1
+      params.zipWithIndex.foreach {
+        case (param, idx) =>
+          s(param)
+          if (idx != lastIdx) b ++= ", "
+      }
+      b += '>'
+    }
+    if (tpe.nonEmpty) {
+      b ++= " : "
+      s(tpe.get)
+    }
+    if (args.nonEmpty) {
+      b ++= ", "
+      s(args, ", ")
+    }
+    b += ')'
+    if (info.nonEmpty)
+      s(info.get)
   }
 
   private def s(node: Width)(implicit b: StringBuilder, indent: Int): Unit = node match {

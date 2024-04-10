@@ -254,6 +254,24 @@ private[chisel3] object Converter {
           e.name
         )
       )
+    case i @ DefIntrinsic(info, intrinsic, args, params) =>
+      Some(
+        fir.IntrinsicStmt(
+          convert(info),
+          intrinsic,
+          args.map(a => convert(a, ctx, info)),
+          params.keys.toList.sorted.map { name => convert(name, params(name)) }
+        )
+      )
+    case i @ DefIntrinsicExpr(info, intrinsic, id, args, params) =>
+      val tpe = extractType(id, info, typeAliases)
+      val expr = fir.IntrinsicExpr(
+        intrinsic,
+        args.map(a => convert(a, ctx, info)),
+        params.keys.toList.sorted.map { name => convert(name, params(name)) },
+        tpe
+      )
+      Some(fir.DefNode(convert(info), i.name, expr))
     case _ => None
   }
 
