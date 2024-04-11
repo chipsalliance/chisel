@@ -7,6 +7,8 @@ import circt.stage.ChiselStage
 
 import chisel3._
 
+import scala.collection.SeqMap
+
 class IntrinsicSpec extends ChiselFlatSpec with MatchesAndOmits {
   behavior.of("Intrinsics")
 
@@ -31,7 +33,7 @@ class IntrinsicSpec extends ChiselFlatSpec with MatchesAndOmits {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
       val f = IO(UInt(3.W))
       val g = IO(UInt(5.W))
-      Intrinsic("test", Map("Foo" -> 5))(f, g)
+      Intrinsic("test", SeqMap("Foo" -> 5))(f, g)
     })
 
     matchesAndOmits(chirrtl)("intrinsic(test<Foo = 5>, f, g)")()
@@ -51,7 +53,7 @@ class IntrinsicSpec extends ChiselFlatSpec with MatchesAndOmits {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
       val f = IO(UInt(3.W))
       val g = IO(UInt(5.W))
-      val test = IntrinsicExpr("test", Map("foo" -> "bar", "x" -> 5), UInt(32.W))(f, g) + 3.U
+      val test = IntrinsicExpr("test", SeqMap("foo" -> "bar", "x" -> 5), UInt(32.W))(f, g) + 3.U
     })
 
     matchesAndOmits(chirrtl)(" = intrinsic(test<foo = \"bar\", x = 5> : UInt<32>, f, g)")()

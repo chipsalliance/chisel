@@ -260,7 +260,7 @@ private[chisel3] object Converter {
           convert(info),
           intrinsic,
           args.map(a => convert(a, ctx, info)),
-          params.keys.toList.sorted.map { name => convert(name, params(name)) }
+          (params.map { case (k, v) => convert(k, v) }).toSeq
         )
       )
     case i @ DefIntrinsicExpr(info, intrinsic, id, args, params) =>
@@ -268,7 +268,7 @@ private[chisel3] object Converter {
       val expr = fir.IntrinsicExpr(
         intrinsic,
         args.map(a => convert(a, ctx, info)),
-        params.keys.toList.sorted.map { name => convert(name, params(name)) },
+        (params.map { case (k, v) => convert(k, v) }).toSeq,
         tpe
       )
       Some(fir.DefNode(convert(info), i.name, expr))

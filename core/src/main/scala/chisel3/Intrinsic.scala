@@ -8,6 +8,8 @@ import chisel3.internal.firrtl.ir._
 import chisel3.internal.{Builder, OpBinding}
 import chisel3.internal.Builder.pushCommand
 
+import scala.collection.SeqMap
+
 object Intrinsic {
 
   /** Create an intrinsic statement.
@@ -20,7 +22,7 @@ object Intrinsic {
     * Intrinsic("test", Map("Foo" -> 5))(f, g)
     * }}}
     */
-  def apply(intrinsic: String, params: Map[String, Param])(data: Data*)(implicit sourceInfo: SourceInfo): Unit = {
+  def apply(intrinsic: String, params: SeqMap[String, Param])(data: Data*)(implicit sourceInfo: SourceInfo): Unit = {
     pushCommand(DefIntrinsic(sourceInfo, intrinsic, data.map(_.ref), params))
   }
 
@@ -34,7 +36,7 @@ object Intrinsic {
     * }}}
     */
   def apply(intrinsic: String)(data: Data*)(implicit sourceInfo: SourceInfo): Unit = {
-    apply(intrinsic, Map.empty[String, Param])(data: _*)
+    apply(intrinsic, SeqMap.empty[String, Param])(data: _*)
   }
 }
 
@@ -54,7 +56,7 @@ object IntrinsicExpr {
     */
   def apply[T <: Data](
     intrinsic: String,
-    params:    Map[String, Param],
+    params:    SeqMap[String, Param],
     ret:       => T
   )(data:      Data*
   )(
@@ -82,6 +84,6 @@ object IntrinsicExpr {
     * }}}
     */
   def apply[T <: Data](intrinsic: String, ret: => T)(data: Data*)(implicit sourceInfo: SourceInfo): T = {
-    apply(intrinsic, Map.empty[String, Param], ret)(data: _*)
+    apply(intrinsic, SeqMap.empty[String, Param], ret)(data: _*)
   }
 }

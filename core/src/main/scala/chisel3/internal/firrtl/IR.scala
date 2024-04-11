@@ -15,6 +15,7 @@ import scala.collection.immutable.NumericRange
 import scala.math.BigDecimal.RoundingMode
 import scala.annotation.nowarn
 import scala.collection.mutable
+import scala.collection.SeqMap
 
 // This object exists so that it can be package private and we don't have to individually mark every class
 private[chisel3] object ir {
@@ -412,10 +413,10 @@ private[chisel3] object ir {
     intrinsic:  String,
     id:         T,
     args:       Seq[Arg],
-    params:     Map[String, Param])
+    params:     SeqMap[String, Param])
       extends Definition
 
-  case class DefIntrinsic(sourceInfo: SourceInfo, intrinsic: String, args: Seq[Arg], params: Map[String, Param])
+  case class DefIntrinsic(sourceInfo: SourceInfo, intrinsic: String, args: Seq[Arg], params: SeqMap[String, Param])
       extends Command
 
   case class DefClass(id: Class, name: String, ports: Seq[Port], commands: Seq[Command]) extends Component
