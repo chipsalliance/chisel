@@ -91,11 +91,19 @@ abstract class RawModule extends BaseModule {
 
   /** Create a unit test. */
   protected def test(gen: => Unit)(implicit si: SourceInfo): Unit = {
+    import _root_.firrtl.transforms.BlackBoxInlineAnno
     import chisel3.experimental.hierarchy.core.Definition
+    import chisel3.experimental.hierarchy.Instantiate
+    import chisel3.experimental.{ChiselAnnotation, annotate}
+
     val parent = this
     class UnitTest extends RawModule with Public {
       override def desiredName = f"${parent.desiredName}_InlineTest"
       gen
+      // HACK: This should probably be an annotation with a little bit of CIRCT support.
+      Module(new TestMarker(f"// TEST: simulate"))
+      // val self = this
+      // annotate(new ChiselAnnotation { def toFirrtl = TestAnnotation(self.toNamed) })
     }
     afterModuleClosure { Definition(new UnitTest) }
   }
@@ -266,4 +274,32 @@ trait RequireAsyncReset extends Module {
 /** Enforce that the Module.reset be Synchronous (Bool) */
 trait RequireSyncReset extends Module {
   override final def resetType = Module.ResetType.Synchronous
+}
+
+import _root_.firrtl.annotations.SingleTargetAnnotation
+case class TestAnnotation(target: ModuleTarget) extends SingleTargetAnnotation[ModuleTarget] {
+  def duplicate(n: ModuleTarget): TestAnnotation = TestAnnotation(n)
+}
+
+// class TestMarker(marker: String) extends BlackBox(Map("M" -> marker)) { self =>
+//   override def desiredName = "TestMarker"
+//   import scala.collection.immutable.SeqMap
+//   val io = IO(new EmptyBundle)
+//   // annotate(new ChiselAnnotation {
+//   //   def toFirrtl = BlackBoxInlineAnno(
+//   //     self.toNamed,
+//   //     "TestMarker",
+//   //     "module TestMarker #(parameter string M); endmodule"
+//   //   )
+//   // })
+// }
+
+@instantiable
+class TestMarker(marker: String) extends chisel3.experimental.ExtModule(Map("M" -> marker)) {
+  // private[chisel3] override def generateComponent(): Option[Component] = {
+  //   val component = DefBlackBox(this, name, Seq(), SpecifiedDirection.Unspecified, Map("M" -> marker))
+  //   _component = Some(component)
+  //   _component
+  // }
+  // private[chisel3] def initializeInParent(): Unit = {}
 }

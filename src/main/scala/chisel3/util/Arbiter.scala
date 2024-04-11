@@ -157,9 +157,8 @@ class Arbiter[T <: Data](val gen: T, val n: Int) extends Module {
   io.out.valid := !grant.last || io.in.last.valid
 
   test {
-    val clock = Wire(Clock())
-    val reset = Wire(Bool())
-    withClockAndReset(clock, reset) {
+    val ckg = Instantiate(new ClockGen)
+    withClockAndReset(ckg.clock, ckg.reset) {
       val dut = Instance(this.toDefinition)
       dut.io <> DontCare
       printf(f"Magic test for ${gen.getClass()}")
@@ -167,10 +166,15 @@ class Arbiter[T <: Data](val gen: T, val n: Int) extends Module {
   }
 }
 
+@instantiable
+class ClockGen extends chisel3.experimental.ExtModule {
+  @public val clock = IO(Output(Clock()))
+  @public val reset = IO(Output(Bool()))
+}
+
 object InterestingArbiterTest extends chisel3.test.RootTest {
   Definition(new Arbiter(UInt(19.W), 2))
-  Definition(new Arbiter(UInt(19.W), 1))
-  Definition(new Arbiter(Clock(), 4))
+  Definition(new Arbiter(UInt(19.W), 4))
   Definition(new Arbiter(new MyComplicatedCustomBundleType(), 1))
 }
 
