@@ -10,8 +10,7 @@ import chisel3.internal.Builder.pushCommand
 
 object Intrinsic {
 
-  /**
-    * Create an intrinsic statement.
+  /** Create an intrinsic statement.
     *
     * @param intrinsic name of the intrinsic
     * @param params parameters, if any
@@ -25,8 +24,7 @@ object Intrinsic {
     pushCommand(DefIntrinsic(sourceInfo, intrinsic, data.map(_.ref), params))
   }
 
-  /**
-    * Create an intrinsic statement.
+  /** Create an intrinsic statement.
     *
     * @param intrinsic name of the intrinsic
     * @param data inputs
@@ -42,8 +40,7 @@ object Intrinsic {
 
 object IntrinsicExpr {
 
-  /**
-    * Create an intrinsic expression.
+  /** Create an intrinsic expression.
     *
     * @param intrinsic name of the intrinsic
     * @param params parameters, if any
@@ -73,8 +70,7 @@ object IntrinsicExpr {
     int
   }
 
-  /**
-    * Create an intrinsic expression.
+  /** Create an intrinsic expression.
     *
     * @param intrinsic name of the intrinsic
     * @param ret return type of the expression
