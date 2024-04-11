@@ -2,13 +2,12 @@
 
 package chisel3.connectable
 
-import chisel3.{Aggregate, BiConnectException, Data, DontCare, HasCustomConnectable, InternalErrorException, RawModule}
+import chisel3.{Aggregate, BiConnectException, Data, DontCare, InternalErrorException, RawModule}
 import chisel3.internal.{BiConnect, Builder}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.ir.DefInvalid
 import chisel3.experimental.{prefix, SourceInfo, UnlocatableSourceInfo}
 import chisel3.experimental.{attach, Analog}
-import chisel3.reflect.DataMirror
 import chisel3.reflect.DataMirror.hasProbeTypeModifier
 import ConnectableAlignment.matchingZipOfChildren
 
