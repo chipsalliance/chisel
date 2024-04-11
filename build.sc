@@ -4,6 +4,8 @@ import mill.scalalib.publish._
 import mill.scalalib.scalafmt._
 import mill.define.Cross
 import mill.scalalib.api.ZincWorkerUtil.matchingVersions
+import $ivy.`com.lihaoyi::mill-contrib-jmh:`
+import mill.contrib.jmh.JmhModule
 import $file.common
 import $file.tests
 
@@ -15,6 +17,8 @@ object v {
   val scalaCrossVersions = Seq(
     "2.13.12"
   )
+  val scalaVersion = scalaCrossVersions.head
+  val jmhVersion = "1.37"
   val osLib = ivy"com.lihaoyi::os-lib:0.9.1"
   val upickle = ivy"com.lihaoyi::upickle:3.1.0"
   val firtoolResolver = ivy"org.chipsalliance::firtool-resolver:2.0.0"
@@ -303,4 +307,11 @@ trait Lit
   def javaHome: T[os.Path] = T(os.Path(sys.props("java.home")))
   def chiselLitDir: T[os.Path] = T(millSourcePath)
   def litConfigIn: T[PathRef] = T.source(millSourcePath / "tests" / "lit.site.cfg.py.in")
+}
+
+object benchmark extends ScalaModule with JmhModule {
+  def scalaVersion = v.scalaVersion
+  def jmhCoreVersion = v.jmhVersion
+
+  override def moduleDeps = Seq(chisel(v.scalaVersion))
 }
