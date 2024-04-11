@@ -33,10 +33,10 @@ abstract class PanamaCIRCTOMEvaluatorValue {
   // Incomplete. currently for debugging purposes only
   override def toString: String = {
     this match {
-      case v: PanamaCIRCTOMEvaluatorValuePath      => s"path{${v.toString}}"
-      case v: PanamaCIRCTOMEvaluatorValueList      => s"[ ${v.elements.map(_.toString).mkString(", ")} ]"
+      case v: PanamaCIRCTOMEvaluatorValuePath => s"path{${v.toString}}"
+      case v: PanamaCIRCTOMEvaluatorValueList => s"[ ${v.elements.map(_.toString).mkString(", ")} ]"
       case v: PanamaCIRCTOMEvaluatorValuePrimitive => s"prim{${v.toString}}"
-      case v: PanamaCIRCTOMEvaluatorValueObject    =>
+      case v: PanamaCIRCTOMEvaluatorValueObject =>
         val subfields = v.fieldNames
           .map(name => (name, v.field(name)))
           .map { case (name, value) => s".$name => { ${value.toString} }" }
@@ -117,7 +117,7 @@ class PanamaCIRCTOMEvaluatorValuePrimitive private[chisel3] (val circt: PanamaCI
       s"omInteger{$integer}"
     } else if (circt.mlirAttributeIsAString(primitive)) {
       val mlirString = circt.mlirStringAttrGetValue(primitive)
-      s"mlirString{\"$mlirString\"}"
+      s"""mlirString{"$mlirString"}"""
     } else {
       circt.mlirAttributeDump(primitive)
       throw new Exception("unhandled primitive type dumped")
