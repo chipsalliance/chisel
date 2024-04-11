@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chiselTests.util
+package chisel3.util
 
 import chisel3._
 import chisel3.util.BitPat
