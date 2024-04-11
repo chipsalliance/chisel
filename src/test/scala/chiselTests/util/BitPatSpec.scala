@@ -2,6 +2,7 @@
 
 package chiselTests.util
 
+import chisel3._
 import chisel3.util.BitPat
 import _root_.circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
@@ -48,5 +49,14 @@ class BitPatSpec extends AnyFlatSpec with Matchers {
     b(2, 0) should be(BitPat("b???"))
     b(4, 3) should be(BitPat("b01"))
     b(6, 6) should be(BitPat("b1"))
+  }
+
+  it should "parse UInt literals correctly" in {
+    BitPat(0.U) should be(new BitPat(0, 1, 1))
+    // Note that this parses as 1-bit width, there are other APIs that don't support zero-width UInts correctly
+    BitPat(0.U(0.W)) should be(new BitPat(0, 1, 1))
+    BitPat(1.U) should be(new BitPat(1, 1, 1))
+    BitPat(2.U) should be(new BitPat(2, 3, 2))
+    BitPat(0xdeadbeefL.U) should be(new BitPat(BigInt("deadbeef", 16), BigInt("ffffffff", 16), 32))
   }
 }
