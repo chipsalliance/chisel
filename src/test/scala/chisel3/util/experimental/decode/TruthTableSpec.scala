@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chiselTests.util.experimental
+package chisel3.util.experimental.decode
 
 import chisel3._
 import chisel3.util.BitPat
@@ -9,7 +9,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 class TruthTableSpec extends AnyFlatSpec {
   val table = TruthTable(
-    Map(
+    Seq(
       // BitPat("b000") -> BitPat("b0"),
       BitPat("b001") -> BitPat("b?"),
       BitPat("b010") -> BitPat("b?"),
@@ -122,5 +122,24 @@ class TruthTableSpec extends AnyFlatSpec {
                                 |?
                                 |""".stripMargin)
     )
+  }
+
+  behavior.of("TruthTable.split")
+
+  it should "not change the TruthTable when the default only uses a single value" in {
+    val result = TruthTable.split(table)
+    assert(result == Seq(table -> Seq(0)))
+    // As an optimization, it should return the same literal object
+    assert(result.head._1 eq table)
+  }
+
+  behavior.of("TruthTable.merge")
+
+  it should "not change the TruthTable when merging a single one" in {
+    val tables = Seq(table -> Seq(0))
+    val result = TruthTable.merge(tables)
+    assert(result == table)
+    // As an optimization, it should return the same literal object
+    assert(result eq table)
   }
 }
