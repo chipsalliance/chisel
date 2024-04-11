@@ -130,7 +130,7 @@ object Serializer {
     case ProbeExpr(expr, _)                          => b ++= "probe("; s(expr); b += ')'
     case RWProbeExpr(expr, _)                        => b ++= "rwprobe("; s(expr); b += ')'
     case ProbeRead(expr, _)                          => b ++= "read("; s(expr); b += ')'
-    case IntrinsicExpr(intrinsic, args, params, tpe) => sIntrinsic(None, intrinsic, args, params, Some(tpe))
+    case IntrinsicExpr(intrinsic, args, params, tpe) => sIntrinsic(NoInfo, intrinsic, args, params, Some(tpe))
     case other                                       => b ++= other.serialize // Handle user-defined nodes
   }
 
@@ -355,7 +355,7 @@ object Serializer {
       b ++= "force("; s(clock); b ++= ", "; s(cond); b ++= ", "; s(probe); b ++= ", "; s(value); b += ')'; s(info)
     case ProbeRelease(info, clock, cond, probe) =>
       b ++= "release("; s(clock); b ++= ", "; s(cond); b ++= ", "; s(probe); b += ')'; s(info)
-    case IntrinsicStmt(info, intrinsic, args, params, tpe) => sIntrinsic(Some(info), intrinsic, args, params, tpe)
+    case IntrinsicStmt(info, intrinsic, args, params, tpe) => sIntrinsic(info, intrinsic, args, params, tpe)
     case other                                             => b ++= other.serialize // Handle user-defined nodes
   }
 
@@ -364,7 +364,7 @@ object Serializer {
   }
 
   private def sIntrinsic(
-    info:      Option[Info],
+    info:      Info,
     intrinsic: String,
     args:      Seq[Expression],
     params:    Seq[Param],
@@ -394,8 +394,7 @@ object Serializer {
       s(args, ", ")
     }
     b += ')'
-    if (info.nonEmpty)
-      s(info.get)
+    s(info)
   }
 
   private def s(node: Width)(implicit b: StringBuilder, indent: Int): Unit = node match {
