@@ -173,6 +173,28 @@ jobs:
       - name: Integration Tests
         run: sbt integrationTests/test
 
+  # Currently just a sanity check that the benchmarking flow works
+  benchmark:
+    name: Benchmarking Sanity Check
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.ref }}
+      - name: Setup Scala
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'sbt'
+      - name: Install Mill
+        uses: jodersky/setup-mill@v0.3.0
+        with:
+          mill-version: 0.11.5
+      - name: JMH
+        run: mill benchmark.runJmh
+
   std:
     name: Standard Library Tests
     runs-on: ubuntu-22.04
