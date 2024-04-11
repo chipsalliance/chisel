@@ -59,4 +59,63 @@ class BitPatSpec extends AnyFlatSpec with Matchers {
     BitPat(2.U) should be(new BitPat(2, 3, 2))
     BitPat(0xdeadbeefL.U) should be(new BitPat(BigInt("deadbeef", 16), BigInt("ffffffff", 16), 32))
   }
+
+  it should "support .hasDontCares" in {
+    BitPat("b?").hasDontCares should be(true)
+    BitPat("b??").hasDontCares should be(true)
+    BitPat("b0?").hasDontCares should be(true)
+    BitPat("b?1").hasDontCares should be(true)
+    BitPat("b0").hasDontCares should be(false)
+    BitPat("b10").hasDontCares should be(false)
+    BitPat("b01").hasDontCares should be(false)
+    BitPat(0xdeadbeefL.U).hasDontCares should be(false)
+    // Zero-width not supported yet
+    intercept[IllegalArgumentException] { BitPat("b").hasDontCares should be(false) }
+  }
+
+  it should "support .allZeros" in {
+    BitPat("b?").allZeros should be(false)
+    BitPat("b??").allZeros should be(false)
+    BitPat("b0?").allZeros should be(false)
+    BitPat("b?1").allZeros should be(false)
+    BitPat("b0").allZeros should be(true)
+    BitPat("b10").allZeros should be(false)
+    BitPat("b01").allZeros should be(false)
+    BitPat(0.U(128.W)).allZeros should be(true)
+    BitPat.N(23).allZeros should be(true)
+    BitPat(0xdeadbeefL.U).allZeros should be(false)
+    // Zero-width not supported yet
+    intercept[IllegalArgumentException] { BitPat("b").allZeros should be(true) }
+  }
+
+  it should "support .allOnes" in {
+    BitPat("b?").allOnes should be(false)
+    BitPat("b??").allOnes should be(false)
+    BitPat("b0?").allOnes should be(false)
+    BitPat("b?1").allOnes should be(false)
+    BitPat("b0").allOnes should be(false)
+    BitPat("b10").allOnes should be(false)
+    BitPat("b01").allOnes should be(false)
+    BitPat("b1").allOnes should be(true)
+    BitPat("b" + ("1" * 128)).allOnes should be(true)
+    BitPat.Y(23).allOnes should be(true)
+    BitPat(0xdeadbeefL.U).allOnes should be(false)
+    // Zero-width not supported yet
+    intercept[IllegalArgumentException] { BitPat("b").allOnes should be(true) }
+  }
+
+  it should "support .allDontCares" in {
+    BitPat("b?").allDontCares should be(true)
+    BitPat("b??").allDontCares should be(true)
+    BitPat("b0?").allDontCares should be(false)
+    BitPat("b?1").allDontCares should be(false)
+    BitPat("b0").allDontCares should be(false)
+    BitPat("b10").allDontCares should be(false)
+    BitPat("b1").allDontCares should be(false)
+    BitPat("b" + ("1" * 128)).allDontCares should be(false)
+    BitPat.dontCare(23).allDontCares should be(true)
+    BitPat(0xdeadbeefL.U).allDontCares should be(false)
+    // Zero-width not supported yet
+    intercept[IllegalArgumentException] { BitPat("b").allDontCares should be(true) }
+  }
 }
