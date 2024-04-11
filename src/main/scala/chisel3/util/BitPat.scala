@@ -98,8 +98,9 @@ object BitPat {
     */
   def apply(x: UInt): BitPat = {
     require(x.isLit, s"$x is not a literal, BitPat.apply(x: UInt) only accepts literals")
-    val len = if (x.isWidthKnown) x.getWidth else 0
-    apply("b" + x.litValue.toString(2).reverse.padTo(len, "0").reverse.mkString)
+    val width = x.getWidth.max(1) // BitPat doesn't support zero-width
+    val mask = (BigInt(1) << width) - 1
+    new BitPat(x.litValue, mask, width)
   }
 
   implicit class fromUIntToBitPatComparable(x: UInt) extends SourceInfoDoc {
