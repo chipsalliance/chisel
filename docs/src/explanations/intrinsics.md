@@ -36,7 +36,7 @@ import chisel3._
 
 ```scala mdoc:compile-only
 class Foo extends RawModule {
- val myresult = IntrinsicExpr("MyIntrinsic", Map("STRING" -> "test"), UInt(32.W))(3.U, 5.U)
+ val myresult = IntrinsicExpr("MyIntrinsic", UInt(32.W), "STRING" -> "test")(3.U, 5.U)
 }
 ```
 
