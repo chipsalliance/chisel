@@ -828,6 +828,14 @@ object Data {
     */
   implicit def toConnectableDefault[T <: Data](d: T): Connectable[T] = makeConnectableDefault(d)
 
+  /** Create the default [[Connectable]] used for all instances of a [[Data]] of type T.
+    *
+    * This uses the default [[connectable.Connectable.apply]] as a starting point.
+    *
+    * Users can extend the [[HasCustomConnectable]] trait on any [[Data]] to further customize the [[Connectable]]. This
+    * is checked for in any potentially nested [[Data]] and any customizations are applied on top of the default
+    * [[Connectable]].
+    */
   private[chisel3] def makeConnectableDefault[T <: Data](d: T): Connectable[T] = {
     val base = Connectable.apply(d)
     DataMirror
@@ -1171,6 +1179,23 @@ final case object DontCare extends Element with connectable.ConnectableDocs {
     this.asInstanceOf[Data] :>= producer.asInstanceOf[Data]
 }
 
+/** Trait to indicate that a subclass of [[Data]] has a custom [[Connectable]].
+  *
+  * Users can implement the [[customConnectable]] method, which receives a default [[Connectable]], and is expected to
+  * use the methods on [[Connectable]] to customize it. For example, a [[Bundle]] could define this by using
+  * [[connectable.Connectable.exclude(members*]] to always exlude a specific member:
+  *
+  *  {{{
+  *    class MyBundle extends Bundle with HasCustomConnectable {
+  *      val foo = Bool()
+  *      val bar = Bool()
+  *
+  *      override def customConnectable[T <: Data](base: Connectable[T]): Connectable[T] = {
+  *        base.exclude(_ => bar)
+  *      }
+  *    }
+  *  }}}
+  */
 trait HasCustomConnectable { this: Data =>
   def customConnectable[T <: Data](base: Connectable[T]): Connectable[T]
 }
