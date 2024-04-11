@@ -1839,4 +1839,244 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       }
     }
   }
+  describe("(9): HasCustomConnectable") {
+    describe("(9.a) customizing waive behavior") {
+
+      class MyBundle(includeFoo: Boolean) extends Bundle with HasCustomConnectable {
+        val foo = Option.when(includeFoo)(Bool())
+        val bar = Bool()
+
+        override def customConnectable[T <: Data](base: Connectable[T]): Connectable[T] = {
+          if (includeFoo) {
+            base.waive(_ => foo.get)
+          } else {
+            base
+          }
+        }
+      }
+
+      class OuterBundle(includeFoo: Boolean) extends Bundle {
+        val bundle = new MyBundle(includeFoo)
+      }
+
+      it("(9.a.1) allows the user to customize the waive behavior of the Connectable for their class as producer") {
+
+        class MyModule extends RawModule {
+          val in = IO(Input(new MyBundle(true)))
+          val out = IO(Output(new MyBundle(false)))
+
+          out :<>= in
+        }
+
+        testCheck(
+          ChiselStage.emitCHIRRTL(new MyModule()),
+          Seq(
+            "connect out.bar, in.bar"
+          ),
+          Seq(
+            "connect out.foo, in.foo"
+          )
+        )
+      }
+
+      it("(9.a.2) allows the user to customize the waive behavior of the Connectable for their class as consumer") {
+
+        class MyModule extends RawModule {
+          val in = IO(Input(new MyBundle(false)))
+          val out = IO(Output(new MyBundle(true)))
+
+          out :<>= in
+        }
+
+        testCheck(
+          ChiselStage.emitCHIRRTL(new MyModule()),
+          Seq(
+            "connect out.bar, in.bar"
+          ),
+          Seq(
+            "connect out.foo, in.foo"
+          )
+        )
+      }
+
+      it(
+        "(9.a.3) allows the user to customize the waive behavior of the Connectable for their class nested in other Connectables"
+      ) {
+
+        class MyModule extends RawModule {
+          val in = IO(Input(new OuterBundle(true)))
+          val out = IO(Output(new OuterBundle(false)))
+
+          out :<>= in
+        }
+
+        testCheck(
+          ChiselStage.emitCHIRRTL(new MyModule()),
+          Seq(
+            "connect out.bundle.bar, in.bundle.bar"
+          ),
+          Seq(
+            "connect out.bundle.foo, in.bundle.foo"
+          )
+        )
+      }
+    }
+
+    describe("(9.b) customizing squeeze behavior") {
+
+      class MyBundle(fooWidth: Int) extends Bundle with HasCustomConnectable {
+        val foo = UInt(fooWidth.W)
+        val bar = Bool()
+
+        override def customConnectable[T <: Data](base: Connectable[T]): Connectable[T] = {
+          base.squeeze(_ => foo)
+        }
+      }
+
+      class OuterBundle(fooWidth: Int) extends Bundle {
+        val bundle = new MyBundle(fooWidth)
+      }
+
+      it("(9.b.1) allows the user to customize the squeeze behavior of the Connectable for their class as producer") {
+
+        class MyModule extends RawModule {
+          val in = IO(Input(new MyBundle(2)))
+          val out = IO(Output(new MyBundle(1)))
+
+          out :<>= in
+        }
+
+        testCheck(
+          ChiselStage.emitCHIRRTL(new MyModule()),
+          Seq(
+            "connect out.bar, in.bar",
+            "connect out.foo, in.foo"
+          ),
+          Nil
+        )
+      }
+
+      it("(9.b.2) allows the user to customize the squeeze behavior of the Connectable for their class as consumer") {
+
+        class MyModule extends RawModule {
+          val in = IO(Input(new MyBundle(1)))
+          val out = IO(Output(new MyBundle(2)))
+
+          out :<>= in
+        }
+
+        testCheck(
+          ChiselStage.emitCHIRRTL(new MyModule()),
+          Seq(
+            "connect out.bar, in.bar",
+            "connect out.foo, in.foo"
+          ),
+          Nil
+        )
+      }
+
+      it(
+        "(9.b.3) allows the user to customize the squeeze behavior of the Connectable for their class nested in other Connectables"
+      ) {
+
+        class MyModule extends RawModule {
+          val in = IO(Input(new OuterBundle(2)))
+          val out = IO(Output(new OuterBundle(1)))
+
+          out :<>= in
+        }
+
+        testCheck(
+          ChiselStage.emitCHIRRTL(new MyModule()),
+          Seq(
+            "connect out.bundle.bar, in.bundle.bar",
+            "connect out.bundle.foo, in.bundle.foo"
+          ),
+          Nil
+        )
+      }
+    }
+
+    describe("(9.c) connectableExcludeSelection") {
+
+      class MyBundle(includeFoo: Boolean) extends Bundle with HasCustomConnectable {
+        val foo = Option.when(includeFoo)(Bool())
+        val bar = Bool()
+
+        override def customConnectable[T <: Data](base: Connectable[T]): Connectable[T] = {
+          if (includeFoo) {
+            base.exclude(_ => foo.get)
+          } else {
+            base
+          }
+        }
+      }
+
+      class OuterBundle(includeFoo: Boolean) extends Bundle {
+        val bundle = new MyBundle(includeFoo)
+      }
+
+      it("(9.c.1) allows the user to customize the exclude behavior of the Connectable for their class as producer") {
+
+        class MyModule extends RawModule {
+          val in = IO(Input(new MyBundle(true)))
+          val out = IO(Output(new MyBundle(false)))
+
+          out :<>= in
+        }
+
+        testCheck(
+          ChiselStage.emitCHIRRTL(new MyModule()),
+          Seq(
+            "connect out.bar, in.bar"
+          ),
+          Seq(
+            "connect out.foo, in.foo"
+          )
+        )
+      }
+
+      it("(9.c.2) allows the user to customize the exclude behavior of the Connectable for their class as consumer") {
+
+        class MyModule extends RawModule {
+          val in = IO(Input(new MyBundle(false)))
+          val out = IO(Output(new MyBundle(true)))
+
+          out :<>= in
+        }
+
+        testCheck(
+          ChiselStage.emitCHIRRTL(new MyModule()),
+          Seq(
+            "connect out.bar, in.bar"
+          ),
+          Seq(
+            "connect out.foo, in.foo"
+          )
+        )
+      }
+
+      it(
+        "(9.c.3) allows the user to customize the exclude behavior of the Connectable for their class nested in other Connectables"
+      ) {
+
+        class MyModule extends RawModule {
+          val in = IO(Input(new OuterBundle(true)))
+          val out = IO(Output(new OuterBundle(false)))
+
+          out :<>= in
+        }
+
+        testCheck(
+          ChiselStage.emitCHIRRTL(new MyModule()),
+          Seq(
+            "connect out.bundle.bar, in.bundle.bar"
+          ),
+          Seq(
+            "connect out.bundle.foo, in.bundle.foo"
+          )
+        )
+      }
+    }
+  }
 }
