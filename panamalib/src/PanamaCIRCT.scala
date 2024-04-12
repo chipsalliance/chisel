@@ -90,8 +90,12 @@ class PanamaCIRCT {
 
   def mlirModuleCreateEmpty(location: MlirLocation) = MlirModule(CAPI.mlirModuleCreateEmpty(arena, location.get))
 
-  def mlirModuleCreateParse(module: String) = MlirModule(CAPI.mlirModuleCreateParse(arena, mlirCtx, newString(module).get))
-  def mlirModuleCreateParseBytes(module: Array[Byte]) = MlirModule(CAPI.mlirModuleCreateParse(arena, mlirCtx, stringRefFromBytes(module).get))
+  def mlirModuleCreateParse(module: String) = MlirModule(
+    CAPI.mlirModuleCreateParse(arena, mlirCtx, newString(module).get)
+  )
+  def mlirModuleCreateParseBytes(module: Array[Byte]) = MlirModule(
+    CAPI.mlirModuleCreateParse(arena, mlirCtx, stringRefFromBytes(module).get)
+  )
 
   def mlirModuleFromOperation(op: MlirOperation) = MlirModule(CAPI.mlirModuleFromOperation(arena, op.get))
 
@@ -340,7 +344,10 @@ class PanamaCIRCT {
     CAPI.circtFirtoolOptionsSetEnableAnnotationWarning(options.get, value)
   def circtFirtoolOptionsSetAddMuxPragmas(options: CirctFirtoolFirtoolOptions, value: Boolean) =
     CAPI.circtFirtoolOptionsSetAddMuxPragmas(options.get, value)
-  def circtFirtoolOptionsSetVerificationFlavor(options: CirctFirtoolFirtoolOptions, value: CirctFirtoolVerificationFlavor) =
+  def circtFirtoolOptionsSetVerificationFlavor(
+    options: CirctFirtoolFirtoolOptions,
+    value:   CirctFirtoolVerificationFlavor
+  ) =
     CAPI.circtFirtoolOptionsSetVerificationFlavor(options.get, value.get)
   def circtFirtoolOptionsSetEmitSeparateAlwaysBlocks(options: CirctFirtoolFirtoolOptions, value: Boolean) =
     CAPI.circtFirtoolOptionsSetEmitSeparateAlwaysBlocks(options.get, value)
@@ -976,7 +983,9 @@ sealed class CirctFirtoolVerificationFlavor(val value: Int) extends ForeignType[
 }
 object CirctFirtoolVerificationFlavor {
   final case object None extends CirctFirtoolVerificationFlavor(value = CAPI.CIRCT_FIRTOOL_VERIFICATION_FLAVOR_NONE())
-  final case object IfElseFatal extends CirctFirtoolVerificationFlavor(value = CAPI.CIRCT_FIRTOOL_VERIFICATION_FLAVOR_IF_ELSE_FATAL())
-  final case object Immediate extends CirctFirtoolVerificationFlavor(value = CAPI.CIRCT_FIRTOOL_VERIFICATION_FLAVOR_IMMEDIATE())
+  final case object IfElseFatal
+      extends CirctFirtoolVerificationFlavor(value = CAPI.CIRCT_FIRTOOL_VERIFICATION_FLAVOR_IF_ELSE_FATAL())
+  final case object Immediate
+      extends CirctFirtoolVerificationFlavor(value = CAPI.CIRCT_FIRTOOL_VERIFICATION_FLAVOR_IMMEDIATE())
   final case object Sva extends CirctFirtoolVerificationFlavor(value = CAPI.CIRCT_FIRTOOL_VERIFICATION_FLAVOR_SVA())
 }
