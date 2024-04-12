@@ -1,5 +1,6 @@
 import $ivy.`com.lihaoyi::mill-contrib-versionfile:`
 import $ivy.`com.lihaoyi::mill-contrib-jmh:`
+import $ivy.`com.github.lolgab::mill-mima::0.0.24`
 
 import mill._
 import mill.scalalib._
@@ -8,6 +9,7 @@ import mill.scalalib.scalafmt._
 import mill.define.Cross
 import mill.scalalib.api.ZincWorkerUtil.matchingVersions
 import mill.contrib.versionfile.VersionFileModule
+import com.github.lolgab.mill.mima.Mima
 import mill.contrib.jmh.JmhModule
 
 import $file.common
@@ -153,7 +155,7 @@ trait Plugin extends common.PluginModule with ChiselPublishModule with CrossSbtM
 
 object chisel extends Cross[Chisel](v.scalaCrossVersions)
 
-trait Chisel extends common.ChiselModule with ChiselPublishModule with CrossSbtModule with ScalafmtModule {
+trait Chisel extends common.ChiselModule with ChiselPublishModule with CrossSbtModule with ScalafmtModule with MimaModule {
   override def millSourcePath = super.millSourcePath / os.up
 
   def svsimModule = svsim(crossScalaVersion)
@@ -205,6 +207,10 @@ trait ChiselPublishModule extends PublishModule {
   )
 
   def publishVersion = T(v.releaseVersion().asRelease.toString())
+}
+
+trait MimaModule extends Mima {
+  def mimaPreviousVersions = T(Seq("7.0.0-M1"))
 }
 
 object circtpanamabinding extends CIRCTPanamaBinding
