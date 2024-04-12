@@ -437,6 +437,18 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, val width: Int)
     }
   }
 
+  /** Are any bits of this BitPat `?` */
+  private[chisel3] def hasDontCares: Boolean = width > 0 && mask != ((BigInt(1) << width) - 1)
+
+  /** Are all bits of this BitPat `0` */
+  private[chisel3] def allZeros: Boolean = value == 0 && !hasDontCares
+
+  /** Are all bits of this BitPat `1` */
+  private[chisel3] def allOnes: Boolean = !hasDontCares && value == mask
+
+  /** Are all bits of this BitPat `?` */
+  private[chisel3] def allDontCares: Boolean = mask == 0
+
   override def isEmpty: Boolean = false
 
   /** Generate raw string of a `BitPat`. */
