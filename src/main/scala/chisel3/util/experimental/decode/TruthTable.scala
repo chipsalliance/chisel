@@ -162,7 +162,13 @@ object TruthTable {
     def index(bitPat: BitPat, bpType: Char): Seq[Int] =
       bitPat.rawString.zipWithIndex.filter(_._1 == bpType).map(_._2)
 
-    Seq('1', '0', '?').flatMap(t => tableFilter(index(table.default, t)))
+    // We need to split if the default has a mix of values (no need to split if all ones, all zeros, or all ?)
+    val needToSplit = !(table.default.allDontCares || table.default.allZeros || table.default.allOnes)
+    if (needToSplit) {
+      Seq('1', '0', '?').flatMap(t => tableFilter(index(table.default, t)))
+    } else {
+      Seq(table -> (0 until table.default.width))
+    }
   }
 
   /** consume tables, merge it into single table with different default bits.
@@ -185,13 +191,18 @@ object TruthTable {
       .sortBy(_._2)
       .map(_._1)
       .mkString}")
-    TruthTable(
-      tables
-        .flatMap(_._1.table.map(_._1))
-        .map { key =>
-          key -> bitPat(tables.flatMap { case (table, indexes) => reIndex(key, table, indexes) })
-        },
-      bitPat(tables.flatMap { case (table, indexes) => table.default.rawString.zip(indexes) })
-    )
+    val needToMerge = tables.size > 1
+    if (needToMerge) {
+      TruthTable(
+        tables
+          .flatMap(_._1.table.map(_._1))
+          .map { key =>
+            key -> bitPat(tables.flatMap { case (table, indexes) => reIndex(key, table, indexes) })
+          },
+        bitPat(tables.flatMap { case (table, indexes) => table.default.rawString.zip(indexes) })
+      )
+    } else {
+      tables.head._1
+    }
   }
 }
