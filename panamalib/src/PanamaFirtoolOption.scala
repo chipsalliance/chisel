@@ -89,9 +89,9 @@ object PanamaFirtoolOption {
     case PreserveValuesModeAll   => CirctFirtoolPreserveValuesMode.All
   }
   implicit def verificationFlavor(e: VerificationFlavorEnum): CirctFirtoolVerificationFlavor = e match {
-    case VerificationFlavorNone => CirctFirtoolVerificationFlavor.None
-    case VerificationFlavorIfElseFatal  => CirctFirtoolVerificationFlavor.IfElseFatal
-    case VerificationFlavorImmediate => CirctFirtoolVerificationFlavor.Immediate
-    case VerificationFlavorSva   => CirctFirtoolVerificationFlavor.Sva
+    case VerificationFlavorNone        => CirctFirtoolVerificationFlavor.None
+    case VerificationFlavorIfElseFatal => CirctFirtoolVerificationFlavor.IfElseFatal
+    case VerificationFlavorImmediate   => CirctFirtoolVerificationFlavor.Immediate
+    case VerificationFlavorSva         => CirctFirtoolVerificationFlavor.Sva
   }
 }

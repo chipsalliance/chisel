@@ -178,7 +178,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
         case fir.StringPropertyType         => circt.firrtlTypeGetString()
         case fir.BooleanPropertyType        => circt.firrtlTypeGetBoolean()
         case fir.PathPropertyType           => circt.firrtlTypeGetPath()
-        case t: fir.SequencePropertyType    => circt.firrtlTypeGetList(convert(t.tpe))
+        case t: fir.SequencePropertyType => circt.firrtlTypeGetList(convert(t.tpe))
         case t: fir.ClassPropertyType =>
           circt.firrtlTypeGetClass(
             circt.mlirFlatSymbolRefAttrGet(t.name),
@@ -931,7 +931,10 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
       .withNamedAttr("sym_visibility", circt.mlirStringAttrGet("private"))
       .withNamedAttr("defname", desiredNameAttr)
       .withNamedAttr("parameters", circt.mlirArrayAttrGet(defBlackBox.params.map(p => util.convert(p._1, p._2)).toSeq))
-      .withNamedAttr("convention", circt.firrtlAttrGetConvention(FIRRTLConvention.Scalarized)) // TODO: Make an option `scalarizeExtModules` for it
+      .withNamedAttr(
+        "convention",
+        circt.firrtlAttrGetConvention(FIRRTLConvention.Scalarized)
+      ) // TODO: Make an option `scalarizeExtModules` for it
       .withNamedAttr("annotations", circt.emptyArrayAttr)
     val firModule = util.moduleBuilderInsertPorts(builder, ports).build()
 
@@ -967,7 +970,10 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
       .withRegion(Seq((ports.types, ports.locs)))
       .withNamedAttr("sym_name", circt.mlirStringAttrGet(defModule.name))
       .withNamedAttr("sym_visibility", circt.mlirStringAttrGet(if (isMainModule) "public" else "private"))
-      .withNamedAttr("convention", circt.firrtlAttrGetConvention(if (isMainModule) FIRRTLConvention.Scalarized else FIRRTLConvention.Internal)) // TODO: Make an option `scalarizePublicModules` for it
+      .withNamedAttr(
+        "convention",
+        circt.firrtlAttrGetConvention(if (isMainModule) FIRRTLConvention.Scalarized else FIRRTLConvention.Internal)
+      ) // TODO: Make an option `scalarizePublicModules` for it
       .withNamedAttr("annotations", circt.emptyArrayAttr)
     val firModule = util.moduleBuilderInsertPorts(builder, ports).build()
 
