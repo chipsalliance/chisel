@@ -243,6 +243,9 @@ object BoringUtils {
       case Some(PortBinding(_)) => true
       case _                    => false
     }
+    def isDriveDone(d: Data): Boolean = {
+      isDrive && isPort(d) && DataMirror.directionOf(d) == ActualDirection.Input
+    }
     def boringError(module: BaseModule): Unit = {
       (module.fullyClosedErrorMessages ++ Seq(
         (si, s"Can only bore into modules that are not fully closed: ${module.name} was fully closed")
@@ -254,8 +257,9 @@ object BoringUtils {
       path.zip(connectionLocation).foldLeft(source) {
         case (rhs, (module, conLoc)) if (module.isFullyClosed) => boringError(module); DontCare.asInstanceOf[A]
         case (rhs, (module, _))
-            if (up && module == path(0) && isPort(rhs) && (!createProbe.nonEmpty || !createProbe.get.writable)) => {
-          // When drilling from the original source, if it's already a port just return it.
+            if ((up || isDriveDone(rhs)) && module == path(0) && isPort(rhs) &&
+              (!createProbe.nonEmpty || !createProbe.get.writable)) => {
+          // When drilling from the original source, or driving to the sink, if it's already a port just return it.
           // As an exception, insist rwTaps are done from within the module and exported out.
           rhs
         }
