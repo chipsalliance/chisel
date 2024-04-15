@@ -437,4 +437,53 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
       "propassign foo.bore, Integer(1)"
     )()
   }
+
+  it should "bore to the final instance, but not into it, for inputs" in {
+    class Foo extends RawModule {
+      val a = IO(Input(Property[Int]()))
+    }
+
+    class Bar extends RawModule {
+      val foo = Module(new Foo)
+    }
+
+    class Baz extends RawModule {
+      val bar = Module(new Bar)
+
+      BoringUtils.drive(bar.foo.a) := Property(1)
+    }
+
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Baz)
+
+    matchesAndOmits(chirrtl)(
+      "input bore",
+      "propassign foo.a, bore",
+      "propassign bar.bore, Integer(1)"
+    )()
+  }
+
+  it should "bore into the final instance for outputs" in {
+    class Foo extends RawModule {
+      val a = IO(Output(Property[Int]()))
+    }
+
+    class Bar extends RawModule {
+      val foo = Module(new Foo)
+    }
+
+    class Baz extends RawModule {
+      val bar = Module(new Bar)
+
+      BoringUtils.drive(bar.foo.a) := Property(1)
+    }
+
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Baz)
+
+    matchesAndOmits(chirrtl)(
+      "input bore",
+      "propassign a, bore",
+      "propassign foo.bore, bore",
+      "propassign bar.bore, Integer(1)"
+    )()
+  }
 }
