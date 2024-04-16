@@ -108,13 +108,14 @@ package object simulator {
   implicit class ChiselWorkspace(workspace: Workspace) {
     def elaborateGeneratedModule[T <: RawModule](
       generateModule: () => T,
+      chiselArgs:     Seq[String] = Seq(),
       firtoolArgs:    Seq[String] = Seq()
     ): ElaboratedModule[T] = {
       // Use CIRCT to generate SystemVerilog sources, and potentially additional artifacts
       var someDut: Option[T] = None
       val firtoolOptions = firtoolArgs.map(circt.stage.FirtoolOption(_))
       val outputAnnotations = (new circt.stage.ChiselStage).execute(
-        Array("--target", "systemverilog", "--split-verilog"),
+        Array("--target", "systemverilog", "--split-verilog") ++ chiselArgs,
         Seq(
           chisel3.stage.ChiselGeneratorAnnotation { () =>
             val dut = generateModule()
