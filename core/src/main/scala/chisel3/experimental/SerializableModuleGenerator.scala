@@ -1,5 +1,7 @@
 package chisel3.experimental
 
+import chisel3.experimental.hierarchy.{Definition, Instance}
+import chisel3.internal.{instantiable, Builder, BuilderContextCache}
 import upickle.default._
 
 import scala.reflect.runtime.universe
@@ -17,6 +19,7 @@ trait SerializableModuleParameter
   * }}}
   * 3. user should guarantee the module is reproducible on their own.
   */
+@instantiable
 trait SerializableModule[T <: SerializableModuleParameter] { this: BaseModule =>
   val parameter: T
 }
@@ -42,6 +45,13 @@ object SerializableModuleGenerator {
       )
     }
   )
+
+  /** cache instance of a generator. */
+  private case class CacheKey[P <: SerializableModuleParameter, M <: SerializableModule[P]](
+    parameter: P,
+    mTypeTag:  universe.TypeTag[M])
+      extends BuilderContextCache.Key[Definition[M with BaseModule]]
+
 }
 
 /** the serializable module generator:
@@ -54,7 +64,7 @@ case class SerializableModuleGenerator[M <: SerializableModule[P], P <: Serializ
 )(
   implicit val pTag: universe.TypeTag[P],
   implicit val mTag: universe.TypeTag[M]) {
-  private[chisel3] def construct: M = {
+  private[chisel3] def construct: M with BaseModule = {
     require(
       generator.getConstructors.length == 1,
       s"""only allow constructing SerializableModule from SerializableModuleParameter via class Module(val parameter: Parameter),
@@ -75,9 +85,22 @@ case class SerializableModuleGenerator[M <: SerializableModule[P], P <: Serializ
          |${generator.getConstructors.head.getParameterTypes.mkString("\n")}
          |""".stripMargin
     )
-    generator.getConstructors.head.newInstance(parameter).asInstanceOf[M]
+    generator.getConstructors.head.newInstance(parameter).asInstanceOf[M with BaseModule]
   }
 
   /** elaborate a module from this generator. */
-  def module(): M = construct
+  def module(): M with BaseModule = construct
+
+  /** get the definition from this generator. */
+  def definition(): Definition[M with BaseModule] = Builder.contextCache
+    .getOrElseUpdate(
+      SerializableModuleGenerator.CacheKey(
+        parameter,
+        implicitly[universe.TypeTag[M]]
+      ),
+      Definition.do_apply(construct)(UnlocatableSourceInfo)
+    )
+
+  /** get an instance of from this generator. */
+  def instance(): Instance[M with BaseModule] = Instance.do_apply(definition())(UnlocatableSourceInfo)
 }
