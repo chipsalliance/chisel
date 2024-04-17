@@ -22,12 +22,9 @@ private class ClockGateTop extends RawModule {
 class ClockGateSpec extends AnyFlatSpec with Matchers {
   it should "gate clocks" in {
     val fir = ChiselStage.emitCHIRRTL(new ClockGateTop)
-    (fir.split('\n').map(_.trim.takeWhile(_ != '@')) should contain).allOf(
-      "intmodule ClockGateIntrinsic : ",
-      "input in : Clock",
-      "input en : UInt<1>",
-      "output out : Clock",
-      "intrinsic = circt_clock_gate"
+    fir.split('\n').map(_.takeWhile(_ != '@').trim) should contain(
+      "node _gatedClock_T = intrinsic(circt_clock_gate : Clock, clock, enable)"
     )
+    ChiselStage.emitSystemVerilog(new ClockGateTop)
   }
 }

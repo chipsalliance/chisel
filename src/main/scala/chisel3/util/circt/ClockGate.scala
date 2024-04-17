@@ -3,16 +3,7 @@
 package chisel3.util.circt
 
 import chisel3._
-import chisel3.experimental.IntrinsicModule
 import chisel3.internal.Builder
-
-/** A clock gate intrinsic.
-  */
-private class ClockGateIntrinsic extends IntrinsicModule("circt_clock_gate") {
-  val in = IO(Input(Clock()))
-  val en = IO(Input(Bool()))
-  val out = IO(Output(Clock()))
-}
 
 object ClockGate {
 
@@ -26,9 +17,6 @@ object ClockGate {
     * }}}
     */
   def apply(input: Clock, enable: Bool): Clock = {
-    val inst = Module(new ClockGateIntrinsic)
-    inst.in := input
-    inst.en := enable
-    inst.out
+    IntrinsicExpr("circt_clock_gate", Clock())(input, enable)
   }
 }
