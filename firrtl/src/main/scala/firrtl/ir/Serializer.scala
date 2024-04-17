@@ -127,10 +127,11 @@ object Serializer {
           if (idx != lastIdx) b ++= ", "
       }
       b += ')'
-    case ProbeExpr(expr, _)   => b ++= "probe("; s(expr); b += ')'
-    case RWProbeExpr(expr, _) => b ++= "rwprobe("; s(expr); b += ')'
-    case ProbeRead(expr, _)   => b ++= "read("; s(expr); b += ')'
-    case other                => b ++= other.serialize // Handle user-defined nodes
+    case ProbeExpr(expr, _)                          => b ++= "probe("; s(expr); b += ')'
+    case RWProbeExpr(expr, _)                        => b ++= "rwprobe("; s(expr); b += ')'
+    case ProbeRead(expr, _)                          => b ++= "read("; s(expr); b += ')'
+    case IntrinsicExpr(intrinsic, args, params, tpe) => sIntrinsic(NoInfo, intrinsic, args, params, Some(tpe))
+    case other                                       => b ++= other.serialize // Handle user-defined nodes
   }
 
   // Helper for some not-real Statements that only exist for Serialization
@@ -354,11 +355,46 @@ object Serializer {
       b ++= "force("; s(clock); b ++= ", "; s(cond); b ++= ", "; s(probe); b ++= ", "; s(value); b += ')'; s(info)
     case ProbeRelease(info, clock, cond, probe) =>
       b ++= "release("; s(clock); b ++= ", "; s(cond); b ++= ", "; s(probe); b += ')'; s(info)
-    case other => b ++= other.serialize // Handle user-defined nodes
+    case IntrinsicStmt(info, intrinsic, args, params, tpe) => sIntrinsic(info, intrinsic, args, params, tpe)
+    case other                                             => b ++= other.serialize // Handle user-defined nodes
   }
 
   private def sStmtName(lbl: String)(implicit b: StringBuilder): Unit = {
     if (lbl.nonEmpty) { b ++= s" : ${legalize(lbl)}" }
+  }
+
+  private def sIntrinsic(
+    info:      Info,
+    intrinsic: String,
+    args:      Seq[Expression],
+    params:    Seq[Param],
+    tpe:       Option[Type]
+  )(
+    implicit b: StringBuilder,
+    indent:     Int
+  ): Unit = {
+    b ++= "intrinsic("
+    b ++= intrinsic
+    if (params.nonEmpty) {
+      b += '<';
+      val lastIdx = params.size - 1
+      params.zipWithIndex.foreach {
+        case (param, idx) =>
+          s(param)
+          if (idx != lastIdx) b ++= ", "
+      }
+      b += '>'
+    }
+    if (tpe.nonEmpty) {
+      b ++= " : "
+      s(tpe.get)
+    }
+    if (args.nonEmpty) {
+      b ++= ", "
+      s(args, ", ")
+    }
+    b += ')'
+    s(info)
   }
 
   private def s(node: Width)(implicit b: StringBuilder, indent: Int): Unit = node match {
@@ -437,11 +473,11 @@ object Serializer {
   }
 
   private def s(node: Param)(implicit b: StringBuilder, indent: Int): Unit = node match {
-    case IntParam(name, value)    => b ++= "parameter "; b ++= name; b ++= " = "; b ++= value.toString
-    case DoubleParam(name, value) => b ++= "parameter "; b ++= name; b ++= " = "; b ++= value.toString
-    case StringParam(name, value) => b ++= "parameter "; b ++= name; b ++= " = "; b ++= value.escape
+    case IntParam(name, value)    => b ++= name; b ++= " = "; b ++= value.toString
+    case DoubleParam(name, value) => b ++= name; b ++= " = "; b ++= value.toString
+    case StringParam(name, value) => b ++= name; b ++= " = "; b ++= value.escape
     case RawStringParam(name, value) =>
-      b ++= "parameter "; b ++= name; b ++= " = "
+      b ++= name; b ++= " = "
       b += '\''; b ++= value.replace("'", "\\'"); b += '\''
     case other => b ++= other.serialize // Handle user-defined nodes
   }
@@ -467,14 +503,14 @@ object Serializer {
       doIndent(0); b ++= "extmodule "; b ++= legalize(name); b ++= " :"; s(info)
       ports.foreach { p => newLineAndIndent(1); s(p) }
       newLineAndIndent(1); b ++= "defname = "; b ++= defname
-      params.foreach { p => newLineAndIndent(1); s(p) }
+      params.foreach { p => newLineAndIndent(1); b ++= "parameter "; s(p) }
       Iterator(b.toString)
     case IntModule(info, name, ports, intrinsic, params) =>
       implicit val b = new StringBuilder
       doIndent(0); b ++= "intmodule "; b ++= legalize(name); b ++= " :"; s(info)
       ports.foreach { p => newLineAndIndent(1); s(p) }
       newLineAndIndent(1); b ++= "intrinsic = "; b ++= intrinsic
-      params.foreach { p => newLineAndIndent(1); s(p) }
+      params.foreach { p => newLineAndIndent(1); b ++= "parameter "; s(p) }
       Iterator(b.toString)
     case DefClass(info, name, ports, body) =>
       val start = {
