@@ -23,8 +23,8 @@ class PlusArgsTestSpec extends AnyFlatSpec with Matchers {
   it should "generate expected FIRRTL" in {
     val fir = ChiselStage.emitCHIRRTL(new PlusArgsTestTop)
     (fir.split('\n').map(_.takeWhile(_ != '@').trim) should contain).allOf(
-      "node _w_T = intrinsic(circt_plusargs_test<FORMAT = \"FOO\"> : UInt<1>)",
-      "node _x_T = intrinsic(circt_plusargs_test<FORMAT = \"BAR\"> : UInt<1>)"
+      """node _w_T = intrinsic(circt_plusargs_test<FORMAT = "FOO"> : UInt<1>)""",
+      """node _x_T = intrinsic(circt_plusargs_test<FORMAT = "BAR"> : UInt<1>)"""
     )
   }
   it should "compile to SV" in {
