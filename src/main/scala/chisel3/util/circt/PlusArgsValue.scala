@@ -5,21 +5,12 @@ package chisel3.util.circt
 import scala.language.reflectiveCalls
 
 import chisel3._
-import chisel3.experimental.IntrinsicModule
 import chisel3.internal.Builder
 
-/** Create a module which generates a verilog \$value\$plusargs.  This returns a
+/** Create an intrinsic which generates a verilog \$value\$plusargs.  This returns a
   * value as indicated by the format string and a flag for whether the value
   * was found.
   */
-private class PlusArgsValueIntrinsic[T <: Data](gen: T, str: String)
-    extends IntrinsicModule("circt_plusargs_value", Map("FORMAT" -> str)) {
-  val io = FlatIO(new Bundle {
-    val found = Output(Bool())
-    val result = Output(gen)
-  })
-}
-
 object PlusArgsValue {
 
   /** Creates an intrinsic which calls \$value\$plusargs.
@@ -31,11 +22,12 @@ object PlusArgsValue {
     * }}}
     */
   def apply[T <: Data](gen: T, str: String) = {
-    Module(if (gen.isSynthesizable) {
-      new PlusArgsValueIntrinsic(chiselTypeOf(gen), str)
-    } else {
-      new PlusArgsValueIntrinsic(gen, str)
-    }).io
+    val ty = if (gen.isSynthesizable) chiselTypeOf(gen) else gen
+    class PlusArgsRetBundle extends Bundle {
+      val found = Output(Bool())
+      val result = Output(ty)
+    }
+    IntrinsicExpr("circt_plusargs_value", new PlusArgsRetBundle, "FORMAT" -> str)()
   }
 
   /** Creates an intrinsic which calls \$value\$plusargs and returns a default

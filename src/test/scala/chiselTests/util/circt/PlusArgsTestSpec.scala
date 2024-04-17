@@ -15,20 +15,19 @@ import scala.io.Source
 private class PlusArgsTestTop extends Module {
   val w = IO(Output(UInt(1.W)))
   val x = IO(Output(UInt(1.W)))
-  val z = IO(Input(UInt(32.W)))
-  w := PlusArgsTest(UInt(32.W), "FOO")
-  x := PlusArgsTest(z, "BAR")
+  w := PlusArgsTest("FOO")
+  x := PlusArgsTest("BAR")
 }
 
 class PlusArgsTestSpec extends AnyFlatSpec with Matchers {
-  it should "work for types" in {
+  it should "generate expected FIRRTL" in {
     val fir = ChiselStage.emitCHIRRTL(new PlusArgsTestTop)
-    (fir.split('\n').map(_.trim.takeWhile(_ != '@')) should contain).allOf(
-      "intmodule PlusArgsTestIntrinsic : ",
-      "output found : UInt<1>",
-      "intrinsic = circt_plusargs_test",
-      "parameter FORMAT = \"FOO\"",
-      "parameter FORMAT = \"BAR\""
+    (fir.split('\n').map(_.takeWhile(_ != '@').trim) should contain).allOf(
+      """node _w_T = intrinsic(circt_plusargs_test<FORMAT = "FOO"> : UInt<1>)""",
+      """node _x_T = intrinsic(circt_plusargs_test<FORMAT = "BAR"> : UInt<1>)"""
     )
+  }
+  it should "compile to SV" in {
+    ChiselStage.emitSystemVerilog(new PlusArgsTestTop)
   }
 }
