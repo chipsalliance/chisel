@@ -485,67 +485,9 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
     chirrtl should include("connect y, a")
     chirrtl should include("connect z, b")
   }
-<<<<<<< HEAD
-=======
-
-  property("Static right-shift should have a minimum width of 0") {
-    testShiftRightWidthBehavior(UInt)(chiselMinWidth = 0, firrtlMinWidth = 0)
-  }
-
-  property("Static right-shift should have width of 0 in Chisel and 1 in FIRRTL with --use-legacy-shift-right-width") {
-    val args = Array("--use-legacy-shift-right-width")
-
-    testShiftRightWidthBehavior(UInt)(chiselMinWidth = 0, firrtlMinWidth = 1, args = args)
-
-    // Focused test to show the mismatch
-    class TestModule extends Module {
-      val in = IO(Input(UInt(8.W)))
-      val widthcheck = Wire(UInt())
-      val shifted = in >> 8
-      shifted.getWidth should be(0)
-      widthcheck := shifted
-      dontTouch(widthcheck)
-    }
-    val verilog = ChiselStage.emitSystemVerilog(new TestModule, args)
-    verilog should include(" widthcheck = 1'h0;")
-  }
-
-  property("--use-legacy-shift-right-width should have a minimal impact on emission") {
-    class TestModule extends Module {
-      val a, b, c = IO(Input(UInt(8.W)))
-      val widthcheck = Wire(UInt())
-      dontTouch(widthcheck)
-
-      val w = WireInit(a)
-      widthcheck := (w >> 3) + b - c
-    }
-    val defaultFirrtl = ChiselStage.emitCHIRRTL(new TestModule)
-    val withOptFirrtl = ChiselStage.emitCHIRRTL(new TestModule, Array("--use-legacy-shift-right-width"))
-    // We should see the fixup
-    val defaultOnly = Seq("node _widthcheck_T = shr(w, 3)")
-    val withOptOnly = Seq(
-      "node _widthcheck_shrLegacyWidthFixup = shr(w, 3)",
-      "node _widthcheck_T = pad(_widthcheck_shrLegacyWidthFixup, 1)"
-    )
-    // Everything downstream of the shr or pad should be unchanged
-    val common = Seq(
-      "node _widthcheck_T_1 = add(_widthcheck_T, b)",
-      "node _widthcheck_T_2 = tail(_widthcheck_T_1, 1)",
-      "node _widthcheck_T_3 = sub(_widthcheck_T_2, c)",
-      "node _widthcheck_T_4 = tail(_widthcheck_T_3, 1)",
-      "connect widthcheck, _widthcheck_T_4"
-    )
-    for (line <- (defaultOnly ++ common)) {
-      defaultFirrtl should include(line)
-    }
-    for (line <- (withOptOnly ++ common)) {
-      withOptFirrtl should include(line)
-    }
-  }
 
   property("UInts with negative widths should have a decent error message") {
     val e = the[IllegalArgumentException] thrownBy (UInt(-8.W))
     e.getMessage should include("Widths must be non-negative, got -8")
   }
->>>>>>> 751a4cf80 (Provide require message for negative widths (#4008))
 }
