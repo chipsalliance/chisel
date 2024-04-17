@@ -326,10 +326,16 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
       def buildBefore(ref: Op): Op = buildImpl(circt.mlirBlockInsertOwnedOperationBefore(parent, ref.op, _))
     }
 
-    def newConstantValue(resultType: fir.Type, valueType: MlirType, value: BigInt, loc: MlirLocation): MlirValue = {
+    def newConstantValue(
+      resultType: fir.Type,
+      valueType:  MlirType,
+      bitLen:     Int,
+      value:      BigInt,
+      loc:        MlirLocation
+    ): MlirValue = {
       util
         .OpBuilder("firrtl.constant", firCtx.currentBlock, loc)
-        .withNamedAttr("value", circt.mlirIntegerAttrGet(valueType, value.toLong))
+        .withNamedAttr("value", circt.firrtlAttrGetIntegerFromString(valueType, bitLen, value.toString, 10))
         .withResult(util.convert(resultType))
         .build()
         .results(0)
@@ -492,7 +498,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
         val resultType = if (isSigned) fir.SIntType(firWidth) else fir.UIntType(firWidth)
         val valueType =
           if (isSigned) circt.mlirIntegerTypeSignedGet(valWidth) else circt.mlirIntegerTypeUnsignedGet(valWidth)
-        Reference.Value(util.newConstantValue(resultType, valueType, n, util.convert(srcInfo)), resultType)
+        Reference.Value(util.newConstantValue(resultType, valueType, valWidth, n, util.convert(srcInfo)), resultType)
       }
 
       def referToNewProperty[T, U](propLit: PropertyLit[T, U]): Reference.Value = {
@@ -1518,7 +1524,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
       .withNamedAttr("name", circt.mlirStringAttrGet(Converter.getRef(printf.id, printf.sourceInfo).name))
       .withOperand( /* clock */ util.referTo(printf.clock, printf.sourceInfo).value)
       .withOperand(
-        /* cond */ util.newConstantValue(fir.UIntType(fir.IntWidth(1)), circt.mlirIntegerTypeUnsignedGet(1), 1, loc)
+        /* cond */ util.newConstantValue(fir.UIntType(fir.IntWidth(1)), circt.mlirIntegerTypeUnsignedGet(1), 1, 1, loc)
       )
       .withOperands( /* substitutions */ args.map(util.referTo(_, printf.sourceInfo).value))
       .build()
@@ -1532,7 +1538,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
       .withNamedAttr("name", circt.mlirStringAttrGet(Converter.getRef(stop.id, stop.sourceInfo).name))
       .withOperand( /* clock */ util.referTo(stop.clock, stop.sourceInfo).value)
       .withOperand(
-        /* cond */ util.newConstantValue(fir.UIntType(fir.IntWidth(1)), circt.mlirIntegerTypeUnsignedGet(1), 1, loc)
+        /* cond */ util.newConstantValue(fir.UIntType(fir.IntWidth(1)), circt.mlirIntegerTypeUnsignedGet(1), 1, 1, loc)
       )
       .build()
   }
@@ -1551,7 +1557,8 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
       .withOperand( /* clock */ util.referTo(verifi.clock, verifi.sourceInfo).value)
       .withOperand( /* predicate */ util.referTo(verifi.predicate, verifi.sourceInfo).value)
       .withOperand(
-        /* enable */ util.newConstantValue(fir.UIntType(fir.IntWidth(1)), circt.mlirIntegerTypeUnsignedGet(1), 1, loc)
+        /* enable */ util
+          .newConstantValue(fir.UIntType(fir.IntWidth(1)), circt.mlirIntegerTypeUnsignedGet(1), 1, 1, loc)
       )
       .withOperands( /* substitutions */ args.map(util.referTo(_, verifi.sourceInfo).value))
       .build()
@@ -1585,7 +1592,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
       .OpBuilder("firrtl.ref.force_initial", firCtx.currentBlock, loc)
       .withOperand(
         /* predicate */ util
-          .newConstantValue(fir.UIntType(fir.IntWidth(1)), circt.mlirIntegerTypeUnsignedGet(1), 1, loc)
+          .newConstantValue(fir.UIntType(fir.IntWidth(1)), circt.mlirIntegerTypeUnsignedGet(1), 1, 1, loc)
       )
       .withOperand( /* dest */ util.referTo(probeForceInitial.probe, probeForceInitial.sourceInfo, Some(parent)).value)
       .withOperand( /* src */ util.referTo(probeForceInitial.value, probeForceInitial.sourceInfo, Some(parent)).value)
@@ -1598,7 +1605,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
       .OpBuilder("firrtl.ref.release_initial", firCtx.currentBlock, loc)
       .withOperand(
         /* predicate */ util
-          .newConstantValue(fir.UIntType(fir.IntWidth(1)), circt.mlirIntegerTypeUnsignedGet(1), 1, loc)
+          .newConstantValue(fir.UIntType(fir.IntWidth(1)), circt.mlirIntegerTypeUnsignedGet(1), 1, 1, loc)
       )
       .withOperand(
         /* dest */ util.referTo(probeReleaseInitial.probe, probeReleaseInitial.sourceInfo, Some(parent)).value
