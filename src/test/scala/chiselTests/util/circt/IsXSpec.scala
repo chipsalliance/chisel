@@ -31,7 +31,7 @@ private class IsXTop extends Module {
 }
 
 class IsXSpec extends AnyFlatSpec with Matchers {
-  it should "work for types" in {
+  it should "generate expected FIRRTL" in {
     val fir = ChiselStage.emitCHIRRTL(new IsXTop)
     (fir.split('\n').map(_.takeWhile(_ != '@').trim) should contain).allOf(
       "node _outw_T = intrinsic(circt_isX : UInt<1>, w)",

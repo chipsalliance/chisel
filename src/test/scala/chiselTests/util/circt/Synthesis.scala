@@ -21,11 +21,13 @@ private class Mux2CellTop extends Module {
 }
 
 class Mux2CellSpec extends AnyFlatSpec with Matchers {
-  it should "work for types" in {
+  it should "generic expected FIRRTL" in {
     val fir = ChiselStage.emitCHIRRTL(new Mux2CellTop)
     fir.split('\n').map(_.takeWhile(_ != '@').trim) should contain(
       "node _out_T = intrinsic(circt_mux2cell : UInt<32>, sel, high, low)"
     )
+  }
+  it should "compile to SV" in {
     ChiselStage.emitSystemVerilog(new Mux2CellTop)
   }
 }
@@ -41,11 +43,13 @@ private class Mux4CellTop extends Module {
 }
 
 class Mux4CellSpec extends AnyFlatSpec with Matchers {
-  it should "work for types" in {
+  it should "generic expected FIRRTL" in {
     val fir = ChiselStage.emitCHIRRTL(new Mux4CellTop)
     fir.split('\n').map(_.takeWhile(_ != '@').trim) should contain(
       "node _out_T = intrinsic(circt_mux4cell : UInt<32>, sel, v3, v2, v1, v0)"
     )
+  }
+  it should "compile to SV" in {
     ChiselStage.emitSystemVerilog(new Mux4CellTop)
   }
 }

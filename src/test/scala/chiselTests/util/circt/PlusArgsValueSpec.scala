@@ -28,7 +28,7 @@ private class PlusArgsValueTop extends Module {
 }
 
 class PlusArgsValueSpec extends AnyFlatSpec with Matchers {
-  it should "work for types" in {
+  it should "generate expected FIRRTL" in {
     val fir = ChiselStage.emitCHIRRTL(new PlusArgsValueTop)
     (fir.split('\n').map(_.takeWhile(_ != '@').trim) should contain).inOrder(
       "node tmpw = intrinsic(circt_plusargs_value<FORMAT = \"FOO=%d\"> : { found : UInt<1>, result : UInt<32>})",
@@ -36,6 +36,8 @@ class PlusArgsValueSpec extends AnyFlatSpec with Matchers {
       "node zv_result = intrinsic(circt_plusargs_value<FORMAT = \"BAR=%d\"> : { found : UInt<1>, result : UInt<32>})",
       "node _zv_T = mux(zv_result.found, zv_result.result, UInt<6>(0h2a))"
     )
+  }
+  it should "compile to SV" in {
     ChiselStage.emitSystemVerilog(new PlusArgsValueTop)
   }
 }
