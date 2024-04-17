@@ -104,6 +104,7 @@ firrtlAttrGetNameKind
 firrtlAttrGetRUW
 firrtlAttrGetMemoryInit
 firrtlAttrGetMemDir
+firrtlAttrGetIntegerFromString
 
 # Utility API
 firrtlValueFoldFlow
