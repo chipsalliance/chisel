@@ -485,4 +485,9 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
     chirrtl should include("connect y, a")
     chirrtl should include("connect z, b")
   }
+
+  property("UInts with negative widths should have a decent error message") {
+    val e = the[IllegalArgumentException] thrownBy (UInt(-8.W))
+    e.getMessage should include("Widths must be non-negative, got -8")
+  }
 }
