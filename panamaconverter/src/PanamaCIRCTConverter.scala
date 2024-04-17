@@ -326,7 +326,13 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
       def buildBefore(ref: Op): Op = buildImpl(circt.mlirBlockInsertOwnedOperationBefore(parent, ref.op, _))
     }
 
-    def newConstantValue(resultType: fir.Type, valueType: MlirType, bitLen: Int, value: BigInt, loc: MlirLocation): MlirValue = {
+    def newConstantValue(
+      resultType: fir.Type,
+      valueType:  MlirType,
+      bitLen:     Int,
+      value:      BigInt,
+      loc:        MlirLocation
+    ): MlirValue = {
       util
         .OpBuilder("firrtl.constant", firCtx.currentBlock, loc)
         .withNamedAttr("value", circt.firrtlAttrGetIntegerFromString(valueType, bitLen, value.toString, 10))
@@ -1551,7 +1557,8 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
       .withOperand( /* clock */ util.referTo(verifi.clock, verifi.sourceInfo).value)
       .withOperand( /* predicate */ util.referTo(verifi.predicate, verifi.sourceInfo).value)
       .withOperand(
-        /* enable */ util.newConstantValue(fir.UIntType(fir.IntWidth(1)), circt.mlirIntegerTypeUnsignedGet(1), 1, 1, loc)
+        /* enable */ util
+          .newConstantValue(fir.UIntType(fir.IntWidth(1)), circt.mlirIntegerTypeUnsignedGet(1), 1, 1, loc)
       )
       .withOperands( /* substitutions */ args.map(util.referTo(_, verifi.sourceInfo).value))
       .build()

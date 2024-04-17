@@ -507,7 +507,9 @@ class PanamaCIRCT {
 
   def firrtlAttrGetMemDir(dir: FIRRTLMemDir) = MlirAttribute(CAPI.firrtlAttrGetMemDir(arena, mlirCtx, dir.value))
 
-  def firrtlAttrGetIntegerFromString(tpe: MlirType, numBits: Int, str: String, radix: Byte) = MlirAttribute(CAPI.firrtlAttrGetIntegerFromString(arena, tpe.get, numBits, newString(str).get, radix))
+  def firrtlAttrGetIntegerFromString(tpe: MlirType, numBits: Int, str: String, radix: Byte) = MlirAttribute(
+    CAPI.firrtlAttrGetIntegerFromString(arena, tpe.get, numBits, newString(str).get, radix)
+  )
 
   def firrtlValueFoldFlow(value: MlirValue, flow: Int): Int = CAPI.firrtlValueFoldFlow(value.get, flow)
 
