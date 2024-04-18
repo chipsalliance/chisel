@@ -113,7 +113,7 @@ object DataProduct extends LowPriorityDataProduct {
   }
 
   /** [[DataProduct]] implementation for any `Iterable[A]` where `A` has an implementation of `DataProduct`. */
-  implicit def iterableDataProduct[A: DataProduct, F[A] <: IterableOnce[A]]: DataProduct[F[A]] = new DataProduct[F[A]] {
+  implicit def iterableDataProduct[A: DataProduct, F[A] <: Iterable[A]]: DataProduct[F[A]] = new DataProduct[F[A]] {
     def dataIterator(a: F[A], path: String): Iterator[(Data, String)] = {
       val dpa = implicitly[DataProduct[A]]
       a.iterator.zipWithIndex.flatMap {

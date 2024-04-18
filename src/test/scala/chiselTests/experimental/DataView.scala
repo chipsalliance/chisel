@@ -575,7 +575,7 @@ class DataViewSpec extends ChiselFlatSpec {
     class MyBundle(w: Option[Int]) extends Bundle {
       val x = w.map(v => UInt(v.W))
     }
-    implicit val view: DataView[Option[UInt], MyBundle] = DataView.mapping(
+    implicit val view: DataView[Option[UInt], MyBundle] = DataView.mapping[Option[UInt], MyBundle](
       opt => new MyBundle(opt.map(_.getWidth)),
       { case (opt, bun) => opt.zip(bun.x).map { case (o, b) => o -> b } }
     )

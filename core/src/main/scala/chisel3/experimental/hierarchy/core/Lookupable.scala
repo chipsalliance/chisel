@@ -501,17 +501,6 @@ object Lookupable {
   implicit def lookupIsLookupable[B <: IsLookupable](implicit sourceInfo: SourceInfo) =
     new SimpleLookupable[B]()
 
-<<<<<<< HEAD
-  implicit val lookupInt = new SimpleLookupable[Int]()
-  implicit val lookupByte = new SimpleLookupable[Byte]()
-  implicit val lookupShort = new SimpleLookupable[Short]()
-  implicit val lookupLong = new SimpleLookupable[Long]()
-  implicit val lookupFloat = new SimpleLookupable[Float]()
-  implicit val lookupChar = new SimpleLookupable[Char]()
-  implicit val lookupString = new SimpleLookupable[String]()
-  implicit val lookupBoolean = new SimpleLookupable[Boolean]()
-  implicit val lookupBigInt = new SimpleLookupable[BigInt]()
-=======
   implicit val lookupInt:     SimpleLookupable[Int] = new SimpleLookupable[Int]()
   implicit val lookupByte:    SimpleLookupable[Byte] = new SimpleLookupable[Byte]()
   implicit val lookupShort:   SimpleLookupable[Short] = new SimpleLookupable[Short]()
@@ -522,5 +511,4 @@ object Lookupable {
   implicit val lookupString:  SimpleLookupable[String] = new SimpleLookupable[String]()
   implicit val lookupBoolean: SimpleLookupable[Boolean] = new SimpleLookupable[Boolean]()
   implicit val lookupBigInt:  SimpleLookupable[BigInt] = new SimpleLookupable[BigInt]()
->>>>>>> a0ac3fd2c (Add DataProduct for Iterables and primitive types (#3856))
 }
