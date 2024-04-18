@@ -52,7 +52,11 @@ If you want to add your project to the list, let us know on the [Chisel users ma
 | [RISCVAssembler](https://github.com/carlosedp/riscvassembler)                                                                                | A RISC-V assembler library for Scala/Chisel projects            | [`@carlosedp`](https://github.com/carlosedp)                                     | [Site](https://index.scala-lang.org/carlosedp/riscvassembler), [Demo Site](https://carlosedp.github.io/rvasmweb/)) |
 | [SoC-Now](https://github.com/merledu/SoC-Now-Generator)                                                                                | A plug and play supported RISC-V System-on-Chip Generator, 5-stage RISC-V Microprocessor            | [`@merledu`](https://github.com/merledu)                                     | [Site](https://github.com/merledu/SoC-Now-Generator), [Poster](https://woset-workshop.github.io/WOSET2022.html#article-6), [Video](https://woset-workshop.github.io/Videos/2022/6-Shahzaib.mp4) |
 
+### Tooling
 
+| Project                                                    | Destription                           | Author                                     | Links                                                                                                                                                    |
+| ---------------------------------------------------------- | ------------------------------------- | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Tywaves](https://github.com/rameloni/tywaves-chisel-demo) (demo) | Type-based waveform viewer for Chisel | [`@rameloni`](https://github.com/rameloni) | [Chisel backend](https://github.com/rameloni/tywaves-chisel-demo), [Surfer-Tywaves fork](https://gitlab.com/rameloni/surfer-tywaves-demo/-/tree/tywaves) |
 
 ### FIRRTL
 
