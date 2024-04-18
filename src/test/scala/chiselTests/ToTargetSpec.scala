@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.experimental.hierarchy.{instantiable, public, Instantiate}
 import chisel3.properties.{Path, Property}
 import circt.stage.ChiselStage
 
@@ -79,6 +80,46 @@ class RelativeSiblingsModule extends RawModule {
 
   atModuleBodyEnd {
     val reference = middle1.inner.wire.toRelativeTarget(Some(middle2))
+  }
+}
+
+@instantiable
+class RelativeDefinitionGrandChildModule(relativeRoot: RawModule) extends RawModule {
+  @public val grandChildWire = Wire(Bool())
+}
+
+@instantiable
+class RelativeDefinitionChildModule(relativeRoot: RawModule) extends RawModule {
+  val inProgressChild = IO(Output(Property[Path]()))
+  val inProgressGrandChild = IO(Output(Property[Path]()))
+
+  @public val childWire = Wire(Bool())
+
+  @public val grandChild = Module(new RelativeDefinitionGrandChildModule(relativeRoot))
+
+  atModuleBodyEnd {
+    // Check relative targets created from an in-progress Definition.
+    val childReference = childWire.toRelativeTarget(Some(relativeRoot))
+    inProgressChild := Property(Path(childReference))
+
+    val grandChildReference = grandChild.grandChildWire.toRelativeTarget(Some(relativeRoot))
+    inProgressGrandChild := Property(Path(grandChildReference))
+  }
+}
+
+class RelativeDefinitionParentModule extends RawModule {
+  val completedChild = IO(Output(Property[Path]()))
+  val completedGrandChild = IO(Output(Property[Path]()))
+
+  val child = Instantiate(new RelativeDefinitionChildModule(this))
+
+  atModuleBodyEnd {
+    // Check relative targets created from a completed Definition.
+    val childReference = child.childWire.toRelativeTarget(Some(this))
+    completedChild := Property(Path(childReference))
+
+    val grandChildReference = child.grandChild.grandChildWire.toRelativeTarget(Some(this))
+    completedGrandChild := Property(Path(grandChildReference))
   }
 }
 
@@ -173,6 +214,23 @@ class ToTargetSpec extends ChiselFlatSpec with Utils {
 
     chirrtl should include(
       "~RelativeDefaultModule|RelativeDefaultModule/middle:RelativeMiddleModule/inner:RelativeInnerModule>wire"
+    )
+  }
+
+  it should "treat any Definition as the relative root rather than throwing an exception" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RelativeDefinitionParentModule)
+
+    chirrtl should include(
+      """propassign inProgressChild, path("OMReferenceTarget:~RelativeDefinitionChildModule|RelativeDefinitionChildModule>childWire")"""
+    )
+    chirrtl should include(
+      """propassign inProgressGrandChild, path("OMReferenceTarget:~RelativeDefinitionChildModule|RelativeDefinitionChildModule/grandChild:RelativeDefinitionGrandChildModule>grandChildWire")"""
+    )
+    chirrtl should include(
+      """propassign completedChild, path("OMReferenceTarget:~RelativeDefinitionParentModule|RelativeDefinitionParentModule/child:RelativeDefinitionChildModule>childWire")"""
+    )
+    chirrtl should include(
+      """propassign completedGrandChild, path("OMReferenceTarget:~RelativeDefinitionParentModule|RelativeDefinitionParentModule/child:RelativeDefinitionChildModule/grandChild:RelativeDefinitionGrandChildModule>grandChildWire")"""
     )
   }
 

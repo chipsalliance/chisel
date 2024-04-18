@@ -730,9 +730,15 @@ package experimental {
         (root, _parent) match {
           // If root was defined, and we are not there yet, recurse up.
           case (_, Some(parent)) => parent.toRelativeTarget(root).instOf(this.instanceName, name)
-          // If root was defined, and there is no parent, the root was not an ancestor.
+          // If root was defined, and there is no parent, the root was not an ancestor, or we're in a Definition.
           case (Some(definedRoot), None) =>
-            throwException(s"Requested .toRelativeTarget relative to ${definedRoot.name}, but it is not an ancestor")
+            if (Builder.inDefinition || toDefinitionCalled.isDefined) {
+              // If we are a Definition, the path must be relative to the Defintion.
+              getTarget
+            } else {
+              // Otherwise, this is an error.
+              throwException(s"Requested .toRelativeTarget relative to ${definedRoot.name}, but it is not an ancestor")
+            }
           // If root was not defined, and there is no parent, return this.
           case (None, None) => getTarget
         }
