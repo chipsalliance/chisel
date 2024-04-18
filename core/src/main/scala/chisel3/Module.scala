@@ -158,10 +158,8 @@ object Module extends SourceInfoDoc {
     // TODO memoize this
     (Builder.currentClock, Builder.currentReset) match {
       case (Some(clock), Some(reset)) =>
-        val hasBeenReset = Module(new HasBeenResetIntrinsic)
-        hasBeenReset.clock := clock
-        hasBeenReset.reset := reset
-        Some(new Disable(hasBeenReset.out))
+        val has_been_reset = IntrinsicExpr("circt_has_been_reset", Bool())(clock, reset).suggestName("has_been_reset")
+        Some(new Disable(has_been_reset))
       case _ => None
     }
   }
