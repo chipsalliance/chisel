@@ -34,16 +34,9 @@ class DisableSpec extends AnyFlatSpec with Matchers {
       override def desiredName = "Top"
       val doDisable = Module.disableOption
     })
-    chirrtl should include("intmodule HasBeenResetIntrinsic :")
-    chirrtl should include("input clock : Clock")
-    chirrtl should include("input reset : Reset")
-    chirrtl should include("output out : UInt<1>")
-    chirrtl should include("intrinsic = circt_has_been_reset")
     chirrtl should include("module Top :")
-    chirrtl should include("inst HasBeenResetIntrinsic of HasBeenResetIntrinsic")
-    chirrtl should include("connect HasBeenResetIntrinsic.clock, clock")
-    chirrtl should include("connect HasBeenResetIntrinsic.reset, reset")
-    chirrtl should include("node doDisable = eq(HasBeenResetIntrinsic.out, UInt<1>(0h0))")
+    chirrtl should include("node doDisable_has_been_reset = intrinsic(circt_has_been_reset : UInt<1>, clock, reset)")
+    chirrtl should include("node doDisable = eq(doDisable_has_been_reset, UInt<1>(0h0))")
   }
 
   it should "be None when there is a clock but no reset" in {
@@ -117,7 +110,7 @@ class DisableSpec extends AnyFlatSpec with Matchers {
     val chirrtl = ChiselStage.emitCHIRRTL(new Module {
       Module.disableOption // No name given
     })
-    chirrtl should include("node disable = eq(HasBeenResetIntrinsic.out, UInt<1>(0h0))")
+    chirrtl should include("node disable = eq(has_been_reset, UInt<1>(0h0))")
   }
 
   it should "be impacted by prefix" in {
@@ -126,6 +119,6 @@ class DisableSpec extends AnyFlatSpec with Matchers {
         Module.disableOption // No name given
       }
     })
-    chirrtl should include("node foo_disable = eq(HasBeenResetIntrinsic.out, UInt<1>(0h0))")
+    chirrtl should include("node foo_disable = eq(foo_has_been_reset, UInt<1>(0h0))")
   }
 }

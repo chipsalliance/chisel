@@ -3,7 +3,7 @@
 package chisel3
 
 import chisel3.internal._
-import chisel3.experimental.{IntrinsicModule, OpaqueType, SourceInfo}
+import chisel3.experimental.{OpaqueType, SourceInfo}
 import chisel3.internal.sourceinfo.SourceInfoTransform
 
 import scala.language.experimental.macros
@@ -73,16 +73,4 @@ object withDisable {
     * @return the result of the block
     */
   def apply[T](disable: Disable.Type)(block: => T): T = Disable.withDisable(disable)(block)
-}
-
-/**
-  */
-// Note because this uses abstract reset, it cannot be instantiable until we have the ability to
-// create both sync and sync reset instances from the same Definition
-private[chisel3] class HasBeenResetIntrinsic(implicit sourceInfo: SourceInfo)
-    extends IntrinsicModule(f"circt_has_been_reset") {
-  // Compiler plugin does not run on core so we have to suggest names
-  val clock = IO(Input(Clock())).suggestName("clock")
-  val reset = IO(Input(Reset())).suggestName("reset")
-  val out = IO(Output(Bool())).suggestName("out")
 }
