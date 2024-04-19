@@ -455,7 +455,9 @@ private[chisel3] class DynamicContext(
   val defaultNamespace:      Option[Namespace],
   // Definitions from other scopes in the same elaboration, use allDefinitions below
   val outerScopeDefinitions: List[Iterable[Definition[_]]],
-  val loggerOptions:         LoggerOptions) {
+  val loggerOptions:         LoggerOptions,
+  val definitions:           ArrayBuffer[Definition[_]],
+  val contextCache:          BuilderContextCache) {
   val importedDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
 
   // Map from proto module name to ext-module name
@@ -506,7 +508,6 @@ private[chisel3] class DynamicContext(
   }
 
   val components = ArrayBuffer[Component]()
-  val definitions = ArrayBuffer[Definition[_]]()
   val annotations = ArrayBuffer[ChiselAnnotation]()
   val newAnnotations = ArrayBuffer[ChiselMultiAnnotation]()
   val layers = mutable.LinkedHashSet[layer.Layer]()
@@ -520,8 +521,6 @@ private[chisel3] class DynamicContext(
 
   // Views that do not correspond to a single ReferenceTarget and thus require renaming
   val unnamedViews: ArrayBuffer[Data] = ArrayBuffer.empty
-
-  val contextCache: BuilderContextCache = BuilderContextCache.empty
 
   // Set by object Module.apply before calling class Module constructor
   // Used to distinguish between no Module() wrapping, multiple wrappings, and rewrapping
