@@ -10,6 +10,8 @@ import org.scalatest.exceptions.TestFailedException
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 
+import TywavesAnnotationCircuits._
+
 object TywavesAnnotationSpec {
   import chisel3._
 
@@ -87,8 +89,6 @@ class TywavesAnnotationSpec extends AnyFunSpec with Matchers with chiselTests.Ut
     val args: Array[String] = Array("--target", "chirrtl", "--target-dir", targetDir.toString)
 
     it("should annotate a circuit") {
-      class TopCircuit extends RawModule
-
       (new ChiselStage(true)).execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuit)))
       os.read(targetDir / "TopCircuit.fir") should include("TywavesAnnotation").and(
         include("\"target\":\"~TopCircuit|TopCircuit\"").and(
@@ -98,9 +98,6 @@ class TywavesAnnotationSpec extends AnyFunSpec with Matchers with chiselTests.Ut
     }
 
     it("should annotate a module in a circuit") {
-      class MyModule extends RawModule
-      class TopCircuitSubModule extends RawModule { val mod = Module(new MyModule) }
-
       (new ChiselStage(true)).execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitSubModule)))
       os.read(targetDir / "TopCircuitSubModule.fir") should include("TywavesAnnotation").and(
         include("\"target\":\"~TopCircuitSubModule|MyModule\"").and(include("\"typeName\":\"MyModule\""))
@@ -108,14 +105,6 @@ class TywavesAnnotationSpec extends AnyFunSpec with Matchers with chiselTests.Ut
     }
 
     it("should annotate a module in a circuit multiple times") {
-      class MyModule extends RawModule
-      class TopCircuitMultiModule extends RawModule {
-        // 4 times MyModule in total
-        val mod1 = Module(new MyModule)
-        val mod2 = Module(new MyModule)
-        val mods = Seq.fill(2)(Module(new MyModule))
-      }
-
       (new ChiselStage(true)).execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitMultiModule)))
       // The file should include it
       val string = os.read(targetDir / "TopCircuitMultiModule.fir")
@@ -124,12 +113,6 @@ class TywavesAnnotationSpec extends AnyFunSpec with Matchers with chiselTests.Ut
     }
 
     it("should annotate variants of Parametrized module in a circuit") {
-      class MyModule(n: Int) extends RawModule
-      class TopCircuitWithParams extends RawModule {
-        val mod1: MyModule = Module(new MyModule(8))
-        val mod2: MyModule = Module(new MyModule(16))
-        val mod3: MyModule = Module(new MyModule(32))
-      }
       (new ChiselStage(true)).execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitWithParams)))
       // The file should include it
       val string = os.read(targetDir / "TopCircuitWithParams.fir")
@@ -142,12 +125,7 @@ class TywavesAnnotationSpec extends AnyFunSpec with Matchers with chiselTests.Ut
     }
 
     it("should annotate black boxes") {
-      class TopCircuitBlackBox extends RawModule {
-        class MyBlackBox extends BlackBox(Map("PARAM1" -> "TRUE", "PARAM2" -> "DEFAULT")) { val io = IO(new Bundle {}) }
-        val myBlackBox1:  MyBlackBox = Module(new MyBlackBox)
-        val myBlackBox2:  MyBlackBox = Module(new MyBlackBox)
-        val myBlackBoxes: Seq[MyBlackBox] = Seq.fill(2)(Module(new MyBlackBox))
-      }
+
       (new ChiselStage(true)).execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitBlackBox)))
       val string = os.read(targetDir / "TopCircuitBlackBox.fir")
       countSubstringOccurrences(string, "\"class\":\"chisel3.tywaves.TywavesAnnotation\"") should be(5)
@@ -169,21 +147,6 @@ class TywavesAnnotationSpec extends AnyFunSpec with Matchers with chiselTests.Ut
     }
 
     it("should annotate classes modules") {
-      import chisel3.properties._
-      import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance}
-
-      // An abstract description of a CSR, represented as a Class.
-      @instantiable
-      class CSRDescription extends Class
-      class CSRModule(csrDescDef: Definition[CSRDescription]) extends RawModule {
-        val csrDescription = Instance(csrDescDef)
-      }
-      class TopCircuitClasses extends RawModule {
-        val csrDescDef = Definition(new CSRDescription)
-        val csrModule1: CSRModule = Module(new CSRModule(csrDescDef))
-        val csrModule2: CSRModule = Module(new CSRModule(csrDescDef))
-        val csrModules: Seq[CSRModule] = Seq.fill(2)(Module(new CSRModule(csrDescDef)))
-      }
       (new ChiselStage(true)).execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitClasses)))
       val string = os.read(targetDir / "TopCircuitClasses.fir")
       countSubstringOccurrences(string, "\"typeName\":\"CSRModule\"") should be(4)
@@ -224,6 +187,115 @@ class TywavesAnnotationSpec extends AnyFunSpec with Matchers with chiselTests.Ut
     }
   }
 
+  def typeTests(args: Array[String], targetDir: os.Path, b: BindingChoice): Unit = {
+    def addClockReset(nameTop: String, nameInst: Option[String] = None) = if (b == RegBinding)
+      Seq(
+        (createExpected(s"~$nameTop\\|${nameInst.getOrElse(nameTop)}>clock", "Clock", "IO"), 1),
+        (createExpected(s"~$nameTop\\|${nameInst.getOrElse(nameTop)}>reset", "Reset", "IO"), 1)
+      )
+    else Seq.empty
+    it("should annotate ground types") {
+      (new ChiselStage(true)).execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitGroundTypes(b))))
+      val string = os.read(targetDir / "TopCircuitGroundTypes.fir")
+      val analog =
+        if (b != RegBinding)
+          Seq((createExpected("~TopCircuitGroundTypes\\|TopCircuitGroundTypes>analog", "Analog<1>", b.toString), 1))
+        else Seq.empty
+      val expectedMatches = Seq(
+        (createExpected("~TopCircuitGroundTypes\\|TopCircuitGroundTypes>uint", "UInt<8>", b.toString), 1),
+        (createExpected("~TopCircuitGroundTypes\\|TopCircuitGroundTypes>sint", "SInt<8>", b.toString), 1),
+        (createExpected("~TopCircuitGroundTypes\\|TopCircuitGroundTypes>bool", "Bool", b.toString), 1),
+        // TODO: there's no distinction between Bits and UInt since internally Bits.apply() returns UInt
+        (createExpected("~TopCircuitGroundTypes\\|TopCircuitGroundTypes>bits", "UInt<8>", b.toString), 1)
+      ) ++ addClockReset("TopCircuitGroundTypes") ++ analog
+      checkAnno(expectedMatches, string)
+    }
+
+    it("should annotate bundles") {
+      new ChiselStage(true).execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitBundles(b))))
+      val string = os.read(targetDir / "TopCircuitBundles.fir")
+
+      val expectedMatches = Seq(
+        (createExpected("~TopCircuitBundles\\|TopCircuitBundles>a", "AnonymousBundle", b.toString), 1),
+        (createExpected("~TopCircuitBundles\\|TopCircuitBundles>b", "MyEmptyBundle", b.toString), 1),
+        (createExpected("~TopCircuitBundles\\|TopCircuitBundles>c", "MyBundle", b.toString), 1),
+        (createExpected("~TopCircuitBundles\\|TopCircuitBundles>c.a", "UInt<8>", b.toString), 1),
+        (createExpected("~TopCircuitBundles\\|TopCircuitBundles>c.b", "SInt<8>", b.toString), 1),
+        (createExpected("~TopCircuitBundles\\|TopCircuitBundles>c.c", "Bool", b.toString), 1)
+      ) ++ addClockReset("TopCircuitBundles")
+      checkAnno(expectedMatches, string)
+    }
+
+    it("should annotate nested bundles") {
+      new ChiselStage(true)
+        .execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitBundlesNested(b))))
+      val string = os.read(targetDir / "TopCircuitBundlesNested.fir")
+      val expectedMatches = Seq(
+        (createExpected("~TopCircuitBundlesNested\\|TopCircuitBundlesNested>a", "MyNestedBundle", b.toString), 1),
+        (createExpected("~TopCircuitBundlesNested\\|TopCircuitBundlesNested>a.a", "Bool", b.toString), 1),
+        (createExpected("~TopCircuitBundlesNested\\|TopCircuitBundlesNested>a.b", "MyBundle", b.toString), 1),
+        (createExpected("~TopCircuitBundlesNested\\|TopCircuitBundlesNested>a.b.a", "UInt<8>", b.toString), 1),
+        (createExpected("~TopCircuitBundlesNested\\|TopCircuitBundlesNested>a.b.b", "SInt<8>", b.toString), 1),
+        (createExpected("~TopCircuitBundlesNested\\|TopCircuitBundlesNested>a.b.c", "Bool", b.toString), 1),
+        (createExpected("~TopCircuitBundlesNested\\|TopCircuitBundlesNested>a.c", "MyBundle", b.toString), 1),
+        (createExpected("~TopCircuitBundlesNested\\|TopCircuitBundlesNested>a.c.a", "UInt<8>", b.toString), 1),
+        (createExpected("~TopCircuitBundlesNested\\|TopCircuitBundlesNested>a.c.b", "SInt<8>", b.toString), 1),
+        (createExpected("~TopCircuitBundlesNested\\|TopCircuitBundlesNested>a.c.c", "Bool", b.toString), 1)
+      ) ++ addClockReset("TopCircuitBundlesNested")
+      checkAnno(expectedMatches, string)
+    }
+
+    it("should annotate vecs") {
+      new ChiselStage(true).execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitVecs(b))))
+      val string = os.read(targetDir / "TopCircuitVecs.fir")
+
+      val expectedMatches = Seq(
+        (createExpected("~TopCircuitVecs\\|TopCircuitVecs>a", "SInt<23>\\[5\\]", b.toString), 1),
+        (createExpected("~TopCircuitVecs\\|TopCircuitVecs>a\\[0\\]", "SInt<23>", b.toString), 1),
+        (createExpected("~TopCircuitVecs\\|TopCircuitVecs>b", "SInt<23>\\[3\\]\\[5\\]", b.toString), 1),
+        (createExpected("~TopCircuitVecs\\|TopCircuitVecs>b\\[0\\]", "SInt<23>\\[3\\]", b.toString), 1),
+        (createExpected("~TopCircuitVecs\\|TopCircuitVecs>b\\[0\\]\\[0\\]", "SInt<23>", b.toString), 1),
+        (createExpected("~TopCircuitVecs\\|TopCircuitVecs>c", "AnonymousBundle\\[5\\]", b.toString), 1),
+        (createExpected("~TopCircuitVecs\\|TopCircuitVecs>c\\[0\\]", "AnonymousBundle", b.toString), 1),
+        (createExpected("~TopCircuitVecs\\|TopCircuitVecs>c\\[0\\].x", "UInt<8>", b.toString), 1),
+        // TODO: finish this test
+        (createExpected("~TopCircuitVecs\\|TopCircuitVecs>d", "MixedVec", b.toString), 1),
+        (createExpected("~TopCircuitVecs\\|TopCircuitVecs>d.0", "UInt<3>", b.toString), 1),
+        (createExpected("~TopCircuitVecs\\|TopCircuitVecs>d.1", "SInt<10>", b.toString), 1)
+      ) ++ addClockReset("TopCircuitVecs")
+      checkAnno(expectedMatches, string)
+    }
+
+    it("should annotate bundle with vec") {
+      new ChiselStage(true).execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitBundleWithVec(b))))
+      val string = os.read(targetDir / "TopCircuitBundleWithVec.fir")
+      val expectedMatches = Seq(
+        (createExpected("~TopCircuitBundleWithVec\\|TopCircuitBundleWithVec>a", "AnonymousBundle", b.toString), 1),
+        (createExpected("~TopCircuitBundleWithVec\\|TopCircuitBundleWithVec>a.vec", "UInt<8>\\[5\\]", b.toString), 1),
+        (createExpected("~TopCircuitBundleWithVec\\|TopCircuitBundleWithVec>a.vec\\[0\\]", "UInt<8>", b.toString), 1)
+      ) ++ addClockReset("TopCircuitBundleWithVec")
+      checkAnno(expectedMatches, string)
+    }
+
+    it("should annotate submodule types") {
+      new ChiselStage(true)
+        .execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitTypeInSubmodule(b))))
+      val string = os.read(targetDir / "TopCircuitTypeInSubmodule.fir")
+      val analog =
+        if (b != RegBinding)
+          Seq((createExpected("~TopCircuitTypeInSubmodule\\|TopCircuitGroundTypes>analog", "Analog<1>", b.toString), 1))
+        else Seq.empty
+      val expectedMatches = Seq(
+        (createExpected("~TopCircuitTypeInSubmodule\\|TopCircuitGroundTypes>uint", "UInt<8>", b.toString), 1),
+        (createExpected("~TopCircuitTypeInSubmodule\\|TopCircuitGroundTypes>sint", "SInt<8>", b.toString), 1),
+        (createExpected("~TopCircuitTypeInSubmodule\\|TopCircuitGroundTypes>bool", "Bool", b.toString), 1),
+        (createExpected("~TopCircuitTypeInSubmodule\\|TopCircuitGroundTypes>bits", "UInt<8>", b.toString), 1),
+        (""""target":"~TopCircuitTypeInSubmodule\|TopCircuitGroundTypes",\s+"typeName":"TopCircuitGroundTypes"""", 1)
+      ) ++ addClockReset("TopCircuitTypeInSubmodule", Some("TopCircuitGroundTypes")) ++ analog
+      checkAnno(expectedMatches, string)
+    }
+  }
+
   describe("Port Annotations") {
     val targetDir = os.pwd / "test_run_dir" / "TywavesAnnotationSpec" / "Port Annotations"
     val args: Array[String] = Array("--target", "chirrtl", "--target-dir", targetDir.toString)
@@ -237,14 +309,8 @@ class TywavesAnnotationSpec extends AnyFunSpec with Matchers with chiselTests.Ut
       )
       assertThrows[TestFailedException] { checkAnno(expectedMatches, string) }
     }
+
     it("should annotate clock and reset") {
-      class TopCircuitClockReset extends RawModule {
-        val clock: Clock = IO(Input(Clock()))
-        // Types od reset https://www.chisel-lang.org/docs/explanations/reset
-        val syncReset:  Bool = IO(Input(Bool()))
-        val reset:      Reset = IO(Input(Reset()))
-        val asyncReset: AsyncReset = IO(Input(AsyncReset()))
-      }
       (new ChiselStage(true)).execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitClockReset)))
       val string = os.read(targetDir / "TopCircuitClockReset.fir")
       val expectedMatches = Seq(
@@ -258,7 +324,6 @@ class TywavesAnnotationSpec extends AnyFunSpec with Matchers with chiselTests.Ut
     }
 
     it("should annotate implicit clock and reset") {
-      class TopCircuitImplicitClockReset extends Module
       (new ChiselStage(true)).execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitImplicitClockReset)))
       val string = os.read(targetDir / "TopCircuitImplicitClockReset.fir")
       val expectedMatches = Seq(
@@ -269,142 +334,18 @@ class TywavesAnnotationSpec extends AnyFunSpec with Matchers with chiselTests.Ut
 
     }
 
-    it("should annotate ground type ports") {
-      // TODO: add the other ground types
-      class TopCircuitGroundPorts extends RawModule {
-        val uint:   UInt = IO(Input(UInt(8.W)))
-        val sint:   SInt = IO(Input(SInt(8.W)))
-        val bool:   Bool = IO(Input(Bool()))
-        val analog: Analog = IO(Analog(1.W))
-//        val fixedPoint: FixedPoint TODO: does fixed point still exist?
-//        val interval: Interval = IO(Input(Interval())) TODO: does interval still exist?
-        val bits: UInt = IO(Input(Bits(8.W)))
-      }
-
-      (new ChiselStage(true)).execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitGroundPorts)))
-      val string = os.read(targetDir / "TopCircuitGroundPorts.fir")
-      val expectedMatches = Seq(
-        (createExpected("~TopCircuitGroundPorts\\|TopCircuitGroundPorts>uint", "UInt<8>", "IO"), 1),
-        (createExpected("~TopCircuitGroundPorts\\|TopCircuitGroundPorts>sint", "SInt<8>", "IO"), 1),
-        (createExpected("~TopCircuitGroundPorts\\|TopCircuitGroundPorts>bool", "Bool", "IO"), 1),
-        (createExpected("~TopCircuitGroundPorts\\|TopCircuitGroundPorts>analog", "Analog<1>", "IO"), 1),
-        // TODO: there's no distinction between Bits and UInt since internally Bits.apply() returns UInt
-        (createExpected("~TopCircuitGroundPorts\\|TopCircuitGroundPorts>bits", "UInt<8>", "IO"), 1)
-      )
-      checkAnno(expectedMatches, string)
-
-    }
-
-    it("should annotate bundles") {
-      class TopCircuitBundles extends RawModule {
-        class MyEmptyBundle extends Bundle
-
-        class MyBundle extends Bundle {
-          val a: UInt = Input(UInt(8.W))
-          val b: SInt = Input(SInt(8.W))
-          val c: Bool = Input(Bool())
-        }
-
-        val a: Bundle = IO(Input(new Bundle {}))
-        val b: MyEmptyBundle = IO(Input(new MyEmptyBundle))
-        val c: MyBundle = IO(Input(new MyBundle))
-      }
-
-      (new ChiselStage(true)).execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitBundles)))
-      val string = os.read(targetDir / "TopCircuitBundles.fir")
-
-      val expectedMatches = Seq(
-        (createExpected("~TopCircuitBundles\\|TopCircuitBundles>a", "AnonymousBundle", "IO"), 1),
-        (createExpected("~TopCircuitBundles\\|TopCircuitBundles>b", "MyEmptyBundle", "IO"), 1),
-        (createExpected("~TopCircuitBundles\\|TopCircuitBundles>c", "MyBundle", "IO"), 1),
-        (createExpected("~TopCircuitBundles\\|TopCircuitBundles>c.a", "UInt<8>", "IO"), 1),
-        (createExpected("~TopCircuitBundles\\|TopCircuitBundles>c.b", "SInt<8>", "IO"), 1),
-        (createExpected("~TopCircuitBundles\\|TopCircuitBundles>c.c", "Bool", "IO"), 1)
-      )
-      checkAnno(expectedMatches, string)
-    }
-
-    it("should annotate nested bundles") {
-      class TopCircuitBundlesNested extends RawModule {
-        class MyBundle extends Bundle {
-          val a: UInt = Input(UInt(8.W))
-          val b: SInt = Input(SInt(8.W))
-          val c: Bool = Input(Bool())
-        }
-
-        class MyNestedBundle extends Bundle {
-          val a: Bool = Input(Bool())
-          val b: MyBundle = new MyBundle
-          val c: MyBundle = Flipped(new MyBundle)
-        }
-
-        val a: MyNestedBundle = IO(Input(new MyNestedBundle))
-      }
-      (new ChiselStage(true)).execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitBundlesNested)))
-      val string = os.read(targetDir / "TopCircuitBundlesNested.fir")
-      val expectedMatches = Seq(
-        (createExpected("~TopCircuitBundlesNested\\|TopCircuitBundlesNested>a", "MyNestedBundle", "IO"), 1),
-        (createExpected("~TopCircuitBundlesNested\\|TopCircuitBundlesNested>a.a", "Bool", "IO"), 1),
-        (createExpected("~TopCircuitBundlesNested\\|TopCircuitBundlesNested>a.b", "MyBundle", "IO"), 1),
-        (createExpected("~TopCircuitBundlesNested\\|TopCircuitBundlesNested>a.b.a", "UInt<8>", "IO"), 1),
-        (createExpected("~TopCircuitBundlesNested\\|TopCircuitBundlesNested>a.b.b", "SInt<8>", "IO"), 1),
-        (createExpected("~TopCircuitBundlesNested\\|TopCircuitBundlesNested>a.b.c", "Bool", "IO"), 1),
-        (createExpected("~TopCircuitBundlesNested\\|TopCircuitBundlesNested>a.c", "MyBundle", "IO"), 1),
-        (createExpected("~TopCircuitBundlesNested\\|TopCircuitBundlesNested>a.c.a", "UInt<8>", "IO"), 1),
-        (createExpected("~TopCircuitBundlesNested\\|TopCircuitBundlesNested>a.c.b", "SInt<8>", "IO"), 1),
-        (createExpected("~TopCircuitBundlesNested\\|TopCircuitBundlesNested>a.c.c", "Bool", "IO"), 1)
-      )
-      checkAnno(expectedMatches, string)
-    }
-
-    it("should annotate vecs") {
-      class TopCircuitVecs extends RawModule {
-        val a: Vec[SInt] = IO(Input(Vec(5, SInt(23.W))))
-        val b: Vec[Vec[SInt]] = IO(Input(Vec(5, Vec(3, SInt(23.W)))))
-        val c = IO(Input(Vec(5, new Bundle { val x: UInt = UInt(8.W) })))
-        val d = {
-          IO(
-            Input(MixedVec(UInt(3.W), SInt(10.W)))
-          ) // TODO: check if this should have a better representation, now its type is represented as other Records
-        }
-        print(d.toString())
-      }
-
-      (new ChiselStage(true)).execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitVecs)))
-      val string = os.read(targetDir / "TopCircuitVecs.fir")
-
-      val expectedMatches = Seq(
-        (createExpected("~TopCircuitVecs\\|TopCircuitVecs>a", "SInt<23>\\[5\\]", "IO"), 1),
-        (createExpected("~TopCircuitVecs\\|TopCircuitVecs>a\\[0\\]", "SInt<23>", "IO"), 1),
-        (createExpected("~TopCircuitVecs\\|TopCircuitVecs>b", "SInt<23>\\[3\\]\\[5\\]", "IO"), 1),
-        (createExpected("~TopCircuitVecs\\|TopCircuitVecs>b\\[0\\]", "SInt<23>\\[3\\]", "IO"), 1),
-        (createExpected("~TopCircuitVecs\\|TopCircuitVecs>b\\[0\\]\\[0\\]", "SInt<23>", "IO"), 1),
-        (createExpected("~TopCircuitVecs\\|TopCircuitVecs>c", "AnonymousBundle\\[5\\]", "IO"), 1),
-        (createExpected("~TopCircuitVecs\\|TopCircuitVecs>c\\[0\\]", "AnonymousBundle", "IO"), 1),
-        (createExpected("~TopCircuitVecs\\|TopCircuitVecs>c\\[0\\].x", "UInt<8>", "IO"), 1),
-        // TODO: finish this test
-        (createExpected("~TopCircuitVecs\\|TopCircuitVecs>d", "MixedVec", "IO"), 1),
-        (createExpected("~TopCircuitVecs\\|TopCircuitVecs>d.0", "UInt<3>", "IO"), 1),
-        (createExpected("~TopCircuitVecs\\|TopCircuitVecs>d.1", "SInt<10>", "IO"), 1)
-      )
-      checkAnno(expectedMatches, string)
-    }
-
-    it("should annotate bundle with vec") {
-      class TopCircuitBundleWithVec extends RawModule {
-        val a = IO(Input(new Bundle {
-          val vec = Vec(5, UInt(8.W))
-        }))
-      }
-      new ChiselStage(true).execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitBundleWithVec)))
-      val string = os.read(targetDir / "TopCircuitBundleWithVec.fir")
-      val expectedMatches = Seq(
-        (createExpected("~TopCircuitBundleWithVec\\|TopCircuitBundleWithVec>a", "AnonymousBundle", "IO"), 1),
-        (createExpected("~TopCircuitBundleWithVec\\|TopCircuitBundleWithVec>a.vec", "UInt<8>\\[5\\]", "IO"), 1),
-        (createExpected("~TopCircuitBundleWithVec\\|TopCircuitBundleWithVec>a.vec\\[0\\]", "UInt<8>", "IO"), 1)
-      )
-      checkAnno(expectedMatches, string)
-    }
+    typeTests(args, targetDir, PortBinding)
   }
 
+  describe("Wire Annotations") {
+    val targetDir = os.pwd / "test_run_dir" / "TywavesAnnotationSpec" / "Wire Annotations"
+    val args: Array[String] = Array("--target", "chirrtl", "--target-dir", targetDir.toString)
+    typeTests(args, targetDir, WireBinding)
+  }
+
+  describe("Reg Annotations") {
+    val targetDir = os.pwd / "test_run_dir" / "TywavesAnnotationSpec" / "Reg Annotations"
+    val args: Array[String] = Array("--target", "chirrtl", "--target-dir", targetDir.toString)
+    typeTests(args, targetDir, RegBinding)
+  }
 }

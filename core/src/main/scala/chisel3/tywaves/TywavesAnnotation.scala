@@ -60,10 +60,36 @@ object TywavesChiselAnnotation {
   // TODO: Add tywaves annotation
   def generate(port: Port, typeAliases: Seq[String]): Seq[ChiselAnnotation] = createAnno(port.id)
 
-  def generate(command: Command, strings: Seq[String]): Seq[ChiselAnnotation] = {
+  def generate(command: Command, typeAliases: Seq[String]): Seq[ChiselAnnotation] = {
 
+    command match {
+      case e: DefPrim[_] => ???
+      case e @ DefWire(info, id)                                                                  => createAnno(id)
+      case e @ DefReg(info, id, clock)                                                            => createAnno(id)
+      case e @ DefRegInit(info, id, clock, reset, init)                                           => createAnno(id)
+      case e @ DefMemory(info, id, t, size)                                                       => ???
+      case e @ DefSeqMemory(info, id, t, size, ruw)                                               => ???
+      case e @ FirrtlMemory(info, id, t, size, readPortNames, writePortNames, readwritePortNames) => ???
+      case e: DefMemPort[_] => ???
+      case Connect(info, loc, exp)                                  => println(s"Connect: $info, $loc, $exp"); Seq.empty
+      case PropAssign(info, loc, exp)                               => ???
+      case Attach(info, locs)                                       => ???
+      case DefInvalid(info, arg)                                    => ???
+      case e @ DefInstance(info, id, _)                             => Seq.empty // Seq(createAnno(id))
+      case e @ DefInstanceChoice(info, _, default, option, choices) => ???
+      case e @ DefObject(info, _, className)                        => println(s"DefObject: $info, $className"); Seq.empty
+      case e @ Stop(_, info, clock, ret)                            => ???
+      case e @ Printf(_, info, clock, pable)                        => ???
+      case e @ ProbeDefine(sourceInfo, sink, probeExpr)             => ???
+      case e @ ProbeForceInitial(sourceInfo, probe, value)          => ???
+      case e @ ProbeReleaseInitial(sourceInfo, probe)               => ???
+      case e @ ProbeForce(sourceInfo, clock, cond, probe, value)    => ???
+      case e @ ProbeRelease(sourceInfo, clock, cond, probe)         => ???
+      case e @ Verification(_, op, info, clk, pred, pable)          => ???
+      case _                                                        => Seq.empty
+    }
     // TODO: Add tywaves annotation
-    Seq.empty
+
 //    ???
   }
 
