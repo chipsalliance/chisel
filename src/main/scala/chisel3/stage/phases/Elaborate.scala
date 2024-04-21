@@ -45,7 +45,6 @@ class Elaborate extends Phase {
             chiselOptions.warningFilters,
             chiselOptions.sourceRoots,
             None,
-            Nil,
             loggerOptions,
             ArrayBuffer[Definition[_]](),
             BuilderContextCache.empty

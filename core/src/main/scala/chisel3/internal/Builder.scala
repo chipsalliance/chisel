@@ -454,10 +454,9 @@ private[chisel3] class DynamicContext(
   val sourceRoots:           Seq[File],
   val defaultNamespace:      Option[Namespace],
   // Definitions from other scopes in the same elaboration, use allDefinitions below
-  val outerScopeDefinitions: List[Iterable[Definition[_]]],
-  val loggerOptions:         LoggerOptions,
-  val definitions:           ArrayBuffer[Definition[_]],
-  val contextCache:          BuilderContextCache) {
+  val loggerOptions: LoggerOptions,
+  val definitions:   ArrayBuffer[Definition[_]],
+  val contextCache:  BuilderContextCache) {
   val importedDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
 
   // Map from proto module name to ext-module name
@@ -594,9 +593,6 @@ private[chisel3] object Builder extends LazyLogging {
 
   def components:  ArrayBuffer[Component] = dynamicContext.components
   def definitions: ArrayBuffer[Definition[_]] = dynamicContext.definitions
-
-  /** All definitions from current elaboration, including Definitions passed as an argument to this one */
-  def allDefinitions: List[Iterable[Definition[_]]] = definitions :: dynamicContext.outerScopeDefinitions
 
   def annotations: ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
 

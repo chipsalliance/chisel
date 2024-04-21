@@ -108,7 +108,6 @@ object Definition extends SourceInfoDoc {
         context.warningFilters,
         context.sourceRoots,
         Some(context.globalNamespace),
-        Builder.allDefinitions,
         context.loggerOptions,
         context.definitions,
         context.contextCache

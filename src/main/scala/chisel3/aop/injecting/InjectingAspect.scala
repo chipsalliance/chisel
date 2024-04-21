@@ -70,7 +70,6 @@ abstract class InjectorAspect[T <: RawModule, M <: RawModule](
           chiselOptions.warningFilters,
           chiselOptions.sourceRoots,
           None,
-          Nil, // FIXME this maybe should somehow grab definitions from earlier elaboration
           loggerOptions,
           ArrayBuffer[Definition[_]](),
           BuilderContextCache.empty
