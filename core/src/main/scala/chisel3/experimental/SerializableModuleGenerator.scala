@@ -20,7 +20,7 @@ trait SerializableModuleParameter
   * 3. user should guarantee the module is reproducible on their own.
   */
 @instantiable
-trait SerializableModule[T <: SerializableModuleParameter] { this: BaseModule =>
+trait SerializableModule[T <: SerializableModuleParameter] extends BaseModule {
   val parameter: T
 }
 object SerializableModuleGenerator {
@@ -50,21 +50,12 @@ object SerializableModuleGenerator {
   private case class CacheKey[P <: SerializableModuleParameter, M <: SerializableModule[P]](
     parameter: P,
     mTypeTag:  universe.TypeTag[M])
-      extends BuilderContextCache.Key[Definition[M with BaseModule]]
+      extends BuilderContextCache.Key[Definition[M]]
 
-}
-
-/** the serializable module generator:
-  * @param generator a non-inner class of module, which should be a subclass of [[SerializableModule]]
-  * @param parameter the parameter of `generator`
-  */
-case class SerializableModuleGenerator[M <: SerializableModule[P], P <: SerializableModuleParameter](
-  generator: Class[M],
-  parameter: P
-)(
-  implicit val pTag: universe.TypeTag[P],
-  implicit val mTag: universe.TypeTag[M]) {
-  private[chisel3] def construct: M with BaseModule = {
+  private[chisel3] def construct[M <: SerializableModule[P], P <: SerializableModuleParameter](
+    generator: Class[M],
+    parameter: P
+  ): M = {
     require(
       generator.getConstructors.length == 1,
       s"""only allow constructing SerializableModule from SerializableModuleParameter via class Module(val parameter: Parameter),
@@ -88,19 +79,45 @@ case class SerializableModuleGenerator[M <: SerializableModule[P], P <: Serializ
     generator.getConstructors.head.newInstance(parameter).asInstanceOf[M with BaseModule]
   }
 
+}
+
+/** the serializable module generator:
+  * @param generator a non-inner class of module, which should be a subclass of [[SerializableModule]]
+  * @param parameter the parameter of `generator`
+  */
+case class SerializableModuleGenerator[M <: SerializableModule[P], P <: SerializableModuleParameter](
+  generator: Class[M],
+  parameter: P
+)(
+  implicit moduleTypeTag: universe.TypeTag[M])
+    extends Generator[M] {
+
   /** elaborate a module from this generator. */
-  def module(): M with BaseModule = construct
+  def module(): M = SerializableModuleGenerator.construct(generator, parameter)
 
   /** get the definition from this generator. */
-  def definition(): Definition[M with BaseModule] = Builder.contextCache
+  def definition(): Definition[M] = Builder.contextCache
     .getOrElseUpdate(
       SerializableModuleGenerator.CacheKey(
         parameter,
-        implicitly[universe.TypeTag[M]]
+        moduleTypeTag
       ),
-      Definition.do_apply(construct)(UnlocatableSourceInfo)
+      Definition.do_apply(SerializableModuleGenerator.construct(generator, parameter))(UnlocatableSourceInfo)
     )
 
   /** get an instance of from this generator. */
-  def instance(): Instance[M with BaseModule] = Instance.do_apply(definition())(UnlocatableSourceInfo)
+  def instance(): Instance[M] = Instance.do_apply(definition())(UnlocatableSourceInfo)
+}
+
+/** a container for arbitrary generator. */
+private[chisel3] trait Generator[M <: BaseModule] {
+
+  /** elaborate a module from this generator. */
+  def module(): M
+
+  /** get the definition from this generator. */
+  def definition(): Definition[M]
+
+  /** get an instance of from this generator. */
+  def instance(): Instance[M]
 }
