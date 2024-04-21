@@ -1,0 +1,273 @@
+package circtTests.tywavesTests.memTests
+
+import chisel3._
+import chisel3.stage.ChiselGeneratorAnnotation
+import circt.stage.ChiselStage
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
+
+class TypeAnnotationMemSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
+  import circtTests.tywavesTests.TywavesAnnotationCircuits.MemCircuits._
+  import circtTests.tywavesTests.TestUtils._
+
+  def createExpectedSRAMs(
+    target:            String,
+    size:              BigInt,
+    tpe:               String,
+    numReadPorts:      Int,
+    numWritePorts:     Int,
+    numReadwritePorts: Int
+  ): Seq[(String, Int)] = {
+    import scala.math._
+    val addrWidth = if (size > 1) ceil(log(size.toInt) / log(2)).toInt else 1
+    def generatePorts(rw: String, _n: Int, portType: String) = {
+      var ports = Seq[(String, Int)]()
+      val n = if (_n == 0) 0 else 1
+      for (i <- 0 until n) { // TODO: I am annotating now only the first element, since the size is known ant the memory has homogeneous type, it's useless to annotate every element
+        ports ++= Seq(
+          (createExpected(s"$target.$rw\\[$i\\]", s"$portType", "Wire"), 1),
+          (createExpected(s"$target.$rw\\[$i\\].address", s"UInt<$addrWidth>", "Wire"), 1),
+          (createExpected(s"$target.$rw\\[$i\\].enable", "Bool", "Wire"), 1)
+        ) ++ (if (rw == "readwritePorts")
+                Seq(
+                  (createExpected(s"$target.$rw\\[$i\\].readData", tpe, "Wire"), 1),
+                  (createExpected(s"$target.$rw\\[$i\\].writeData", tpe, "Wire"), 1),
+                  (createExpected(s"$target.$rw\\[$i\\].isWrite", "Bool", "Wire"), 1)
+                )
+              else Seq((createExpected(s"$target.$rw\\[$i\\].data", tpe, "Wire"), 1)))
+      }
+      ports
+    }
+    Seq(
+      (createExpected(s"$target", "SRAMInterface", "Wire"), 1),
+      (createExpected(s"$target.readPorts", s"MemoryReadPort\\[$numReadPorts\\]", "Wire"), 1),
+      (createExpected(s"$target.writePorts", s"MemoryWritePort\\[$numWritePorts\\]", "Wire"), 1),
+      (createExpected(s"$target.readwritePorts", s"MemoryReadWritePort\\[$numReadwritePorts\\]", "Wire"), 1)
+    ) ++ generatePorts("readPorts", numReadPorts, "MemoryReadPort") ++
+      generatePorts("writePorts", numWritePorts, "MemoryWritePort") ++
+      generatePorts("readwritePorts", numReadwritePorts, "MemoryReadWritePort")
+
+  }
+
+  describe("Memory Annotations") {
+    val targetDir = os.pwd / "test_run_dir" / "TywavesAnnotationSpec" / "Memories Annotations"
+    val args: Array[String] = Array("--target", "chirrtl", "--target-dir", targetDir.toString)
+
+    it("should annotate a ROM") {
+      new ChiselStage(true).execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitROM)))
+      val expectedMatches = Seq(
+        (createExpected("~TopCircuitROM\\|TopCircuitROM>romFromVec", "UInt<8>\\[4\\]", "Wire"), 1),
+        (createExpected("~TopCircuitROM\\|TopCircuitROM>romFromVec\\[0\\]", "UInt<8>", "Wire"), 1),
+        (createExpected("~TopCircuitROM\\|TopCircuitROM>romFromVecInit", "UInt<4>\\[4\\]", "Wire"), 1), //Inferred width
+        (createExpected("~TopCircuitROM\\|TopCircuitROM>romFromVecInit\\[0\\]", "UInt<4>", "Wire"), 1),
+        (createExpected("~TopCircuitROM\\|TopCircuitROM>romOfBundles", "AnonymousBundle\\[4\\]", "Wire"), 1),
+        (createExpected("~TopCircuitROM\\|TopCircuitROM>romOfBundles\\[0\\]", "AnonymousBundle", "Wire"), 1),
+        (createExpected("~TopCircuitROM\\|TopCircuitROM>romOfBundles\\[0\\].a", "UInt<8>", "Wire"), 1)
+      )
+      checkAnno(expectedMatches, os.read(targetDir / "TopCircuitROM.fir"))
+    }
+
+    it("should annotate a SyncMem") {
+      new ChiselStage(true).execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitSyncMem(UInt(8.W), false))))
+      val expectedMatches = Seq(
+        (createExpected("~TopCircuitSyncMem\\|TopCircuitSyncMem>mem", "UInt<8>\\[4\\]", "SyncReadMem"), 1),
+        (createExpected("~TopCircuitSyncMem\\|TopCircuitSyncMem>clock", "Clock", "IO"), 1),
+        (createExpected("~TopCircuitSyncMem\\|TopCircuitSyncMem>reset", "Bool", "IO"), 1)
+      )
+      checkAnno(expectedMatches, os.read(targetDir / "TopCircuitSyncMem.fir"))
+    }
+
+    it("should annotate a Mem") {
+      new ChiselStage(true).execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitMem(UInt(8.W), false))))
+      val expectedMatches = Seq(
+        (createExpected("~TopCircuitMem\\|TopCircuitMem>mem", "UInt<8>\\[4\\]", "Mem"), 1),
+        (createExpected("~TopCircuitMem\\|TopCircuitMem>clock", "Clock", "IO"), 1),
+        (createExpected("~TopCircuitMem\\|TopCircuitMem>reset", "Bool", "IO"), 1)
+      )
+      checkAnno(expectedMatches, os.read(targetDir / "TopCircuitMem.fir"))
+    }
+
+    it("should annotate an SRAM") {
+      new ChiselStage(true)
+        .execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitSRAM(UInt(8.W), 1, 1, 1, 1))))
+      val expectedMatches = Seq(
+        (createExpected("~TopCircuitSRAM\\|TopCircuitSRAM>mem_sram", "UInt<8>\\[1\\]", "SramTarget"), 1),
+        (createExpected("~TopCircuitSRAM\\|TopCircuitSRAM>clock", "Clock", "IO"), 1),
+        (createExpected("~TopCircuitSRAM\\|TopCircuitSRAM>reset", "Bool", "IO"), 1)
+      ) ++ createExpectedSRAMs("~TopCircuitSRAM\\|TopCircuitSRAM>mem", 1, "UInt<8>", 1, 1, 1)
+      checkAnno(expectedMatches, os.read(targetDir / "TopCircuitSRAM.fir"))
+    }
+
+    it("should annotate an SRAM different dimensions and ports number") {
+      val targetDir = os.pwd / "test_run_dir" / "TywavesAnnotationSpec" / "Memories Annotations" / "Multi ports number"
+      val args = Array("--target", "chirrtl", "--target-dir", targetDir.toString())
+      new ChiselStage(true)
+        .execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitSRAM(UInt(8.W), 4, 2, 3, 4))))
+      val expectedMatches = Seq(
+        (createExpected("~TopCircuitSRAM\\|TopCircuitSRAM>mem_sram", "UInt<8>\\[4\\]", "SramTarget"), 1),
+        (createExpected("~TopCircuitSRAM\\|TopCircuitSRAM>clock", "Clock", "IO"), 1),
+        (createExpected("~TopCircuitSRAM\\|TopCircuitSRAM>reset", "Bool", "IO"), 1)
+      ) ++ createExpectedSRAMs("~TopCircuitSRAM\\|TopCircuitSRAM>mem", size = 4, "UInt<8>", 2, 3, 4)
+      checkAnno(expectedMatches, os.read(targetDir / "TopCircuitSRAM.fir"))
+    }
+
+  }
+
+  describe("Memory Annotations of complex types") {
+    import circtTests.tywavesTests.TywavesAnnotationCircuits.DataTypesCircuits.{MyBundle, MyNestedBundle}
+
+    val targetDir = os.pwd / "test_run_dir" / "TywavesAnnotationSpec" / "Memories Annotations of complex types"
+    val args: Array[String] = Array("--target", "chirrtl", "--target-dir", targetDir.toString)
+
+    it("should annotate the top SyncMem, not its child elements") {
+      new ChiselStage(true)
+        .execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitSyncMem(new MyBundle, false))))
+      val expectedMatches = Seq(
+        (createExpected("~TopCircuitSyncMem\\|TopCircuitSyncMem>mem", "MyBundle\\[4\\]", "SyncReadMem"), 1),
+        (createExpected("~TopCircuitSyncMem\\|TopCircuitSyncMem>clock", "Clock", "IO"), 1),
+        (createExpected("~TopCircuitSyncMem\\|TopCircuitSyncMem>reset", "Bool", "IO"), 1)
+      )
+      checkAnno(expectedMatches, os.read(targetDir / "TopCircuitSyncMem.fir"))
+    }
+
+    it("should annotate only the top Mem, not its elements") {
+      /* When only the mem is instantiated, its "child" elements are not annotated. This is because they cannot be targets.
+          cmem mem : {
+            a : UInt<1>,
+            b : { a : UInt<8>, b : SInt<8>, c : UInt<1>},
+            flip c : { a : UInt<8>, b : SInt<8>, c : UInt<1>}
+          } [4]
+       */
+      new ChiselStage(true)
+        .execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitMem(new MyNestedBundle, false))))
+      val expectedMatches = Seq(
+        (createExpected("~TopCircuitMem\\|TopCircuitMem>mem", "MyNestedBundle\\[4\\]", "Mem"), 1),
+        (createExpected("~TopCircuitMem\\|TopCircuitMem>clock", "Clock", "IO"), 1),
+        (createExpected("~TopCircuitMem\\|TopCircuitMem>reset", "Bool", "IO"), 1)
+      )
+      checkAnno(expectedMatches, os.read(targetDir / "TopCircuitMem.fir"))
+    }
+
+    it("should annotate an SRAM") {
+      new ChiselStage(true)
+        .execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitSRAM(new MyBundle, 1, 1, 1, 0))))
+      val expectedMatches = Seq(
+        (createExpected("~TopCircuitSRAM\\|TopCircuitSRAM>mem_sram", "MyBundle\\[1\\]", "SramTarget"), 1),
+        (createExpected("~TopCircuitSRAM\\|TopCircuitSRAM>clock", "Clock", "IO"), 1),
+        (createExpected("~TopCircuitSRAM\\|TopCircuitSRAM>reset", "Bool", "IO"), 1),
+        (createExpected("~TopCircuitSRAM\\|TopCircuitSRAM>mem.readPorts\\[0\\].data.a", "UInt<8>", "Wire"), 1),
+        (createExpected("~TopCircuitSRAM\\|TopCircuitSRAM>mem.readPorts\\[0\\].data.b", "SInt<8>", "Wire"), 1),
+        (createExpected("~TopCircuitSRAM\\|TopCircuitSRAM>mem.readPorts\\[0\\].data.c", "Bool", "Wire"), 1),
+        (createExpected("~TopCircuitSRAM\\|TopCircuitSRAM>mem.writePorts\\[0\\].data.a", "UInt<8>", "Wire"), 1),
+        (createExpected("~TopCircuitSRAM\\|TopCircuitSRAM>mem.writePorts\\[0\\].data.b", "SInt<8>", "Wire"), 1),
+        (createExpected("~TopCircuitSRAM\\|TopCircuitSRAM>mem.writePorts\\[0\\].data.c", "Bool", "Wire"), 1)
+      ) ++ createExpectedSRAMs("~TopCircuitSRAM\\|TopCircuitSRAM>mem", 1, "MyBundle", 1, 1, 0)
+      checkAnno(expectedMatches, os.read(targetDir / "TopCircuitSRAM.fir"))
+    }
+  }
+
+  describe("Memory annotations with MPORT connections") {
+
+    val targetDir = os.pwd / "test_run_dir" / "TywavesAnnotationSpec" / "Memories Annotations with MPORT connections"
+    val args: Array[String] = Array("--target", "chirrtl", "--target-dir", targetDir.toString)
+
+    it("should annotate a SyncMem with MPORT connections of ground type") {
+      new ChiselStage(true)
+        .execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitSyncMem(UInt(8.W), withConnection = true))))
+      val expectedMatches = Seq(
+        (createExpected("~TopCircuitSyncMem\\|TopCircuitSyncMem>mem", "UInt<8>\\[4\\]", "SyncReadMem"), 1),
+        (createExpected("~TopCircuitSyncMem\\|TopCircuitSyncMem>idx", "UInt<2>", "IO"), 1),
+        (createExpected("~TopCircuitSyncMem\\|TopCircuitSyncMem>in", "UInt<8>", "IO"), 1),
+        (createExpected("~TopCircuitSyncMem\\|TopCircuitSyncMem>out", "UInt<8>", "IO"), 1),
+        (createExpected("~TopCircuitSyncMem\\|TopCircuitSyncMem>_out_WIRE", "UInt<2>", "Wire"), 1),
+        (createExpected("~TopCircuitSyncMem\\|TopCircuitSyncMem>MPORT", "UInt<8>", "MemPort"), 1),
+        (createExpected("~TopCircuitSyncMem\\|TopCircuitSyncMem>out_MPORT", "UInt<8>", "MemPort"), 1),
+        (createExpected("~TopCircuitSyncMem\\|TopCircuitSyncMem>clock", "Clock", "IO"), 1),
+        (createExpected("~TopCircuitSyncMem\\|TopCircuitSyncMem>reset", "Bool", "IO"), 1)
+      )
+      checkAnno(expectedMatches, os.read(targetDir / "TopCircuitSyncMem.fir"))
+    }
+
+    it("should annotate a Mem with MPORT connections of ground type") {
+      new ChiselStage(true)
+        .execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitMem(UInt(8.W), withConnection = true))))
+      val expectedMatches = Seq(
+        (createExpected("~TopCircuitMem\\|TopCircuitMem>mem", "UInt<8>\\[4\\]", "Mem"), 1),
+        (createExpected("~TopCircuitMem\\|TopCircuitMem>idx", "UInt<2>", "IO"), 1),
+        (createExpected("~TopCircuitMem\\|TopCircuitMem>in", "UInt<8>", "IO"), 1),
+        (createExpected("~TopCircuitMem\\|TopCircuitMem>out", "UInt<8>", "IO"), 1),
+        (createExpected("~TopCircuitMem\\|TopCircuitMem>MPORT", "UInt<8>", "MemPort"), 1),
+        (createExpected("~TopCircuitMem\\|TopCircuitMem>out_MPORT", "UInt<8>", "MemPort"), 1),
+        (createExpected("~TopCircuitMem\\|TopCircuitMem>clock", "Clock", "IO"), 1),
+        (createExpected("~TopCircuitMem\\|TopCircuitMem>reset", "Bool", "IO"), 1)
+      )
+      checkAnno(expectedMatches, os.read(targetDir / "TopCircuitMem.fir"))
+    }
+  }
+
+  describe("Memory annotations with MPORT connections of complex types") {
+    import circtTests.tywavesTests.TywavesAnnotationCircuits.DataTypesCircuits.MyBundle
+
+    val targetDir =
+      os.pwd / "test_run_dir" / "TywavesAnnotationSpec" / "Memories Annotations with MPORT connections" / "Complex type"
+    val args: Array[String] = Array("--target", "chirrtl", "--target-dir", targetDir.toString)
+    it("should annotate a SyncMem with MPORT connections of complex type") {
+
+      new ChiselStage(true)
+        .execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitSyncMem(new MyBundle, withConnection = true))))
+      val expectedMatches = Seq(
+        (createExpected("~TopCircuitSyncMem\\|TopCircuitSyncMem>mem", "MyBundle\\[4\\]", "SyncReadMem"), 1),
+        (createExpected("~TopCircuitSyncMem\\|TopCircuitSyncMem>idx", "UInt<2>", "IO"), 1),
+        (createExpected("~TopCircuitSyncMem\\|TopCircuitSyncMem>in", "MyBundle", "IO"), 1),
+        (createExpected("~TopCircuitSyncMem\\|TopCircuitSyncMem>in.a", "UInt<8>", "IO"), 1),
+        (createExpected("~TopCircuitSyncMem\\|TopCircuitSyncMem>in.b", "SInt<8>", "IO"), 1),
+        (createExpected("~TopCircuitSyncMem\\|TopCircuitSyncMem>in.c", "Bool", "IO"), 1),
+        (createExpected("~TopCircuitSyncMem\\|TopCircuitSyncMem>out", "MyBundle", "IO"), 1),
+        (createExpected("~TopCircuitSyncMem\\|TopCircuitSyncMem>out.a", "UInt<8>", "IO"), 1),
+        (createExpected("~TopCircuitSyncMem\\|TopCircuitSyncMem>out.b", "SInt<8>", "IO"), 1),
+        (createExpected("~TopCircuitSyncMem\\|TopCircuitSyncMem>out.c", "Bool", "IO"), 1),
+        // Tmp wire generated in syncreadmem
+        (createExpected("~TopCircuitSyncMem\\|TopCircuitSyncMem>_out_WIRE", "UInt<2>", "Wire"), 1),
+        (createExpected("~TopCircuitSyncMem\\|TopCircuitSyncMem>MPORT", "MyBundle", "MemPort"), 1),
+        (createExpected("~TopCircuitSyncMem\\|TopCircuitSyncMem>MPORT.a", "UInt<8>", "MemPort"), 1),
+        (createExpected("~TopCircuitSyncMem\\|TopCircuitSyncMem>MPORT.b", "SInt<8>", "MemPort"), 1),
+        (createExpected("~TopCircuitSyncMem\\|TopCircuitSyncMem>MPORT.c", "Bool", "MemPort"), 1),
+        (createExpected("~TopCircuitSyncMem\\|TopCircuitSyncMem>out_MPORT", "MyBundle", "MemPort"), 1),
+        (createExpected("~TopCircuitSyncMem\\|TopCircuitSyncMem>out_MPORT.a", "UInt<8>", "MemPort"), 1),
+        (createExpected("~TopCircuitSyncMem\\|TopCircuitSyncMem>out_MPORT.b", "SInt<8>", "MemPort"), 1),
+        (createExpected("~TopCircuitSyncMem\\|TopCircuitSyncMem>out_MPORT.c", "Bool", "MemPort"), 1),
+        (createExpected("~TopCircuitSyncMem\\|TopCircuitSyncMem>clock", "Clock", "IO"), 1),
+        (createExpected("~TopCircuitSyncMem\\|TopCircuitSyncMem>reset", "Bool", "IO"), 1)
+      )
+      checkAnno(expectedMatches, os.read(targetDir / "TopCircuitSyncMem.fir"))
+    }
+
+    it("should annotate a Mem with MPORT connections of complex type") {
+      new ChiselStage(true)
+        .execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitMem(new MyBundle, withConnection = true))))
+      val expectedMatches = Seq(
+        (createExpected("~TopCircuitMem\\|TopCircuitMem>mem", "MyBundle\\[4\\]", "Mem"), 1),
+        (createExpected("~TopCircuitMem\\|TopCircuitMem>idx", "UInt<2>", "IO"), 1),
+        (createExpected("~TopCircuitMem\\|TopCircuitMem>in", "MyBundle", "IO"), 1),
+        (createExpected("~TopCircuitMem\\|TopCircuitMem>in.a", "UInt<8>", "IO"), 1),
+        (createExpected("~TopCircuitMem\\|TopCircuitMem>in.b", "SInt<8>", "IO"), 1),
+        (createExpected("~TopCircuitMem\\|TopCircuitMem>in.c", "Bool", "IO"), 1),
+        (createExpected("~TopCircuitMem\\|TopCircuitMem>out", "MyBundle", "IO"), 1),
+        (createExpected("~TopCircuitMem\\|TopCircuitMem>out.a", "UInt<8>", "IO"), 1),
+        (createExpected("~TopCircuitMem\\|TopCircuitMem>out.b", "SInt<8>", "IO"), 1),
+        (createExpected("~TopCircuitMem\\|TopCircuitMem>out.c", "Bool", "IO"), 1),
+        (createExpected("~TopCircuitMem\\|TopCircuitMem>MPORT", "MyBundle", "MemPort"), 1),
+        (createExpected("~TopCircuitMem\\|TopCircuitMem>MPORT.a", "UInt<8>", "MemPort"), 1),
+        (createExpected("~TopCircuitMem\\|TopCircuitMem>MPORT.b", "SInt<8>", "MemPort"), 1),
+        (createExpected("~TopCircuitMem\\|TopCircuitMem>MPORT.c", "Bool", "MemPort"), 1),
+        (createExpected("~TopCircuitMem\\|TopCircuitMem>out_MPORT", "MyBundle", "MemPort"), 1),
+        (createExpected("~TopCircuitMem\\|TopCircuitMem>out_MPORT.a", "UInt<8>", "MemPort"), 1),
+        (createExpected("~TopCircuitMem\\|TopCircuitMem>out_MPORT.b", "SInt<8>", "MemPort"), 1),
+        (createExpected("~TopCircuitMem\\|TopCircuitMem>out_MPORT.c", "Bool", "MemPort"), 1),
+        (createExpected("~TopCircuitMem\\|TopCircuitMem>clock", "Clock", "IO"), 1),
+        (createExpected("~TopCircuitMem\\|TopCircuitMem>reset", "Bool", "IO"), 1)
+      )
+      checkAnno(expectedMatches, os.read(targetDir / "TopCircuitMem.fir"))
+    }
+  }
+}

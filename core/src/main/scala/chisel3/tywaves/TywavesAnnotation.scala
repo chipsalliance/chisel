@@ -2,6 +2,7 @@ package chisel3.tywaves
 
 import chisel3.{Aggregate, Bits, Bundle, Data, Record, Vec, VecLike}
 import chisel3.experimental.{annotate, BaseModule, ChiselAnnotation}
+import chisel3.internal.HasId
 import chisel3.internal.firrtl.Converter.convert
 import chisel3.internal.firrtl.ir._
 import firrtl.annotations.{Annotation, IsMember, ReferenceTarget, SingleTargetAnnotation}
@@ -61,23 +62,32 @@ object TywavesChiselAnnotation {
   def generate(port: Port, typeAliases: Seq[String]): Seq[ChiselAnnotation] = createAnno(port.id)
 
   def generate(command: Command, typeAliases: Seq[String]): Seq[ChiselAnnotation] = {
+    def createAnnoMem(target: HasId, binding: String, size: BigInt, innerType: Data): Seq[ChiselAnnotation] = {
+      val name = s"$binding[${innerType.typeName}[$size]]"
+      // TODO: what if innerType is a Vec or a Bundle?
+
+      Seq(new ChiselAnnotation {
+        override def toFirrtl: Annotation = TywavesAnnotation(target.toTarget, name)
+      }) //++ createAnno(chisel3.Wire(innerType))
+    }
 
     command match {
       case e: DefPrim[_] => ???
-      case e @ DefWire(info, id)                                                                  => createAnno(id)
-      case e @ DefReg(info, id, clock)                                                            => createAnno(id)
-      case e @ DefRegInit(info, id, clock, reset, init)                                           => createAnno(id)
-      case e @ DefMemory(info, id, t, size)                                                       => ???
-      case e @ DefSeqMemory(info, id, t, size, ruw)                                               => ???
-      case e @ FirrtlMemory(info, id, t, size, readPortNames, writePortNames, readwritePortNames) => ???
-      case e: DefMemPort[_] => ???
-      case Connect(info, loc, exp)                                  => println(s"Connect: $info, $loc, $exp"); Seq.empty
+      case e @ DefWire(info, id)                        => createAnno(id)
+      case e @ DefReg(info, id, clock)                  => createAnno(id)
+      case e @ DefRegInit(info, id, clock, reset, init) => createAnno(id)
+      case e @ DefMemory(info, id, t, size)             => createAnnoMem(id, id.getClass.getSimpleName, size, t)
+      case e @ DefSeqMemory(info, id, t, size, ruw)     => createAnnoMem(id, id.getClass.getSimpleName, size, t)
+      case e @ FirrtlMemory(info, id, t, size, readPortNames, writePortNames, readwritePortNames) =>
+        createAnnoMem(id, id.getClass.getSimpleName, size, t)
+      case e @ DefMemPort(info, id, source, dir, idx, clock)        => createAnno(id)
+      case Connect(info, loc, exp)                                  => Seq.empty // TODO: check connect
       case PropAssign(info, loc, exp)                               => ???
       case Attach(info, locs)                                       => ???
-      case DefInvalid(info, arg)                                    => ???
-      case e @ DefInstance(info, id, _)                             => Seq.empty // Seq(createAnno(id))
+      case DefInvalid(info, arg)                                    => Seq.empty // TODO: check invalid
+      case e @ DefInstance(info, id, _)                             => Seq.empty // TODO: check instance
       case e @ DefInstanceChoice(info, _, default, option, choices) => ???
-      case e @ DefObject(info, _, className)                        => println(s"DefObject: $info, $className"); Seq.empty
+      case e @ DefObject(info, _, className)                        => Seq.empty // TODO: check object
       case e @ Stop(_, info, clock, ret)                            => ???
       case e @ Printf(_, info, clock, pable)                        => ???
       case e @ ProbeDefine(sourceInfo, sink, probeExpr)             => ???
@@ -86,11 +96,12 @@ object TywavesChiselAnnotation {
       case e @ ProbeForce(sourceInfo, clock, cond, probe, value)    => ???
       case e @ ProbeRelease(sourceInfo, clock, cond, probe)         => ???
       case e @ Verification(_, op, info, clk, pred, pable)          => ???
-      case _                                                        => Seq.empty
+      case e =>
+        println(s"Unknown command: $e") // TODO: replace with logger
+        Seq.empty
     }
     // TODO: Add tywaves annotation
 
-//    ???
   }
 
   /**

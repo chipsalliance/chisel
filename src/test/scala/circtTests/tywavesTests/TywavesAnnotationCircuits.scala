@@ -224,4 +224,54 @@ object TywavesAnnotationCircuits {
     }
   }
 
+  object MemCircuits {
+    // Test memory ROM: https://www.chisel-lang.org/docs/explanations/memories#rom
+    class ROMs {
+
+      import chisel3.experimental.BundleLiterals._
+
+      val romFromVec:     Vec[UInt] = Wire(Vec(4, UInt(8.W)))
+      val romFromVecInit: Vec[UInt] = VecInit(1.U, 2.U, 4.U, 8.U)
+      for (i <- 0 until 4) {
+        romFromVec(i) := romFromVecInit(i)
+      }
+      val bundle = new Bundle {
+        val a: UInt = UInt(8.W)
+      }
+      val romOfBundles =
+        VecInit(bundle.Lit(_.a -> 1.U), bundle.Lit(_.a -> 2.U), bundle.Lit(_.a -> 4.U), bundle.Lit(_.a -> 8.U))
+    }
+
+    // TODO: having children in the roms object does not imply the same hierarchy in firrtl (roms is pure scala)
+    class TopCircuitROM extends RawModule {
+      val roms = new ROMs
+    }
+
+    class TopCircuitSyncMem[T <: Data](gen: T, withConnection: Boolean /* If true connect memPort */ ) extends Module {
+      val mem = SyncReadMem(4, gen)
+      if (withConnection) {
+        val idx = IO(Input(UInt(2.W)))
+        val in = IO(Input(gen))
+        val out = IO(Output(gen))
+        mem.write(idx, in)
+        out := mem.read(idx)
+      }
+    }
+
+    class TopCircuitMem[T <: Data](gen: T, withConnection: Boolean) extends Module {
+      val mem = Mem(4, gen)
+      if (withConnection) {
+        val idx = IO(Input(UInt(2.W)))
+        val in = IO(Input(gen))
+        val out = IO(Output(gen))
+        mem(idx) := in
+        out := mem(idx)
+      }
+    }
+
+    class TopCircuitSRAM[T <: Data](gen: T, size: Int, numReadPorts: Int, numWritePorts: Int, numReadwritePorts: Int)
+        extends Module {
+      val mem = SRAM(size, gen, numReadPorts, numWritePorts, numReadwritePorts)
+    }
+  }
 }
