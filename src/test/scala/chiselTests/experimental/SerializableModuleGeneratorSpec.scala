@@ -47,12 +47,18 @@ class SerializableModuleGeneratorSpec extends ChiselFlatSpec with Utils {
     GCDSerializableModuleParameter(32)
   )
 
+  val g0 = SerializableModuleGenerator[GCDSerializableModule, GCDSerializableModuleParameter](GCDSerializableModuleParameter(32))
+
   "SerializableModuleGenerator" should "be serialized and deserialized" in {
     assert(
       g == upickle.default.read[SerializableModuleGenerator[GCDSerializableModule, GCDSerializableModuleParameter]](
         upickle.default.write(g)
       )
     )
+  }
+
+  "SerializableModuleGenerator[M,P](p: P) and SerializableModuleGenerator(classOf[M], p: P)" should "be equal" in {
+    assert(g == g0)
   }
 
   "SerializableModuleGenerator" should "be able to elaborate" in {

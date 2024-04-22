@@ -1,10 +1,12 @@
 package chisel3.experimental
 
 import chisel3.experimental.hierarchy.{Definition, Instance}
-import chisel3.internal.{instantiable, Builder, BuilderContextCache}
+import chisel3.internal.{Builder, BuilderContextCache, instantiable}
 import upickle.default._
 
+import scala.reflect.{ClassTag, classTag}
 import scala.reflect.runtime.universe
+import scala.reflect.runtime.universe.{runtimeMirror, typeOf}
 
 /** Parameter for SerializableModule, it should be serializable via upickle API.
   * For more information, please refer to [[https://com-lihaoyi.github.io/upickle/]]
@@ -79,6 +81,8 @@ object SerializableModuleGenerator {
     generator.getConstructors.head.newInstance(parameter).asInstanceOf[M with BaseModule]
   }
 
+  def apply[M <: SerializableModule[P]: universe.TypeTag, P <: SerializableModuleParameter](parameter: P): SerializableModuleGenerator[M, P] =
+    new SerializableModuleGenerator(runtimeMirror(getClass.getClassLoader).runtimeClass(typeOf[M].typeSymbol.asClass).asInstanceOf[Class[M]], parameter)
 }
 
 /** the serializable module generator:
