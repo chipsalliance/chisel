@@ -166,7 +166,7 @@ class TypeAnnotationMemSpec extends AnyFunSpec with Matchers with chiselTests.Ut
     }
   }
 
-  describe("Memory annotations with MPORT connections") {
+  describe("Memory Annotations with MPORT connections") {
 
     val targetDir = os.pwd / "test_run_dir" / "TywavesAnnotationSpec" / "Memories Annotations with MPORT connections"
     val args: Array[String] = Array("--target", "chirrtl", "--target-dir", targetDir.toString)
@@ -205,7 +205,7 @@ class TypeAnnotationMemSpec extends AnyFunSpec with Matchers with chiselTests.Ut
     }
   }
 
-  describe("Memory annotations with MPORT connections of complex types") {
+  describe("Memory Annotations with MPORT connections of complex types") {
     import circtTests.tywavesTests.TywavesAnnotationCircuits.DataTypesCircuits.MyBundle
 
     val targetDir =
@@ -268,6 +268,102 @@ class TypeAnnotationMemSpec extends AnyFunSpec with Matchers with chiselTests.Ut
         (createExpected("~TopCircuitMem\\|TopCircuitMem>reset", "Bool", "IO"), 1)
       )
       checkAnno(expectedMatches, os.read(targetDir / "TopCircuitMem.fir"))
+    }
+  }
+
+  describe("Masked Memories Annotations") {
+    val targetDir =
+      os.pwd / "test_run_dir" / "TywavesAnnotationSpec" / "Masked Memories Annotations"
+    val args: Array[String] = Array("--target", "chirrtl", "--target-dir", targetDir.toString)
+
+    it("should annotate a SyncMem with mask") {
+      val mSize = 100
+      new ChiselStage(true)
+        .execute(
+          args,
+          Seq(ChiselGeneratorAnnotation(() => new TopCircuitMemWithMask(SInt(7.W), classOf[SyncReadMem[SInt]], mSize)))
+        )
+      val expectedMatches = Seq(
+        (
+          createExpected(
+            "~TopCircuitMemWithMask\\|TopCircuitMemWithMask>mem",
+            s"SInt<7>\\[$mSize\\]\\[4\\]",
+            "SyncReadMem"
+          ),
+          1
+        ),
+        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>mask", s"Bool\\[$mSize\\]", "Wire"), 1),
+        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>mask\\[0\\]", "Bool", "Wire"), 1),
+        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>idx", "UInt<2>", "IO"), 1),
+        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>in", s"SInt<7>\\[$mSize\\]", "IO"), 1),
+        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>in\\[0\\]", "SInt<7>", "IO"), 1),
+        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>out", s"SInt<7>\\[$mSize\\]", "IO"), 1),
+        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>out\\[0\\]", "SInt<7>", "IO"), 1),
+        // tmp wire generated in syncreadmem
+        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>_WIRE", "UInt<2>", "Wire"), 1),
+        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>MPORT", s"SInt<7>\\[$mSize\\]", "MemPort"), 1),
+        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>MPORT\\[0\\]", "SInt<7>", "MemPort"), 1),
+        (
+          createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>MPORT_1", s"SInt<7>\\[$mSize\\]", "MemPort"),
+          1
+        ),
+        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>MPORT_1\\[0\\]", "SInt<7>", "MemPort"), 1),
+        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>clock", "Clock", "IO"), 1),
+        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>reset", "Bool", "IO"), 1)
+      )
+      checkAnno(expectedMatches, os.read(targetDir / "TopCircuitMemWithMask.fir"))
+    }
+
+    it("should annotate a Mem with mask") {
+      val mSize = 100
+      new ChiselStage(true)
+        .execute(
+          args,
+          Seq(ChiselGeneratorAnnotation(() => new TopCircuitMemWithMask(SInt(7.W), classOf[Mem[SInt]], mSize)))
+        )
+      val expectedMatches = Seq(
+        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>mem", s"SInt<7>\\[$mSize\\]\\[4\\]", "Mem"), 1),
+        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>mask", s"Bool\\[$mSize\\]", "Wire"), 1),
+        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>mask\\[0\\]", "Bool", "Wire"), 1),
+        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>idx", "UInt<2>", "IO"), 1),
+        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>in", s"SInt<7>\\[$mSize\\]", "IO"), 1),
+        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>in\\[0\\]", "SInt<7>", "IO"), 1),
+        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>out", s"SInt<7>\\[$mSize\\]", "IO"), 1),
+        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>out\\[0\\]", "SInt<7>", "IO"), 1),
+        // tmp wire generated in syncreadmem
+        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>MPORT", s"SInt<7>\\[$mSize\\]", "MemPort"), 1),
+        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>MPORT\\[0\\]", "SInt<7>", "MemPort"), 1),
+        (
+          createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>MPORT_1", s"SInt<7>\\[$mSize\\]", "MemPort"),
+          1
+        ),
+        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>MPORT_1\\[0\\]", "SInt<7>", "MemPort"), 1),
+        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>clock", "Clock", "IO"), 1),
+        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>reset", "Bool", "IO"), 1)
+      )
+      checkAnno(expectedMatches, os.read(targetDir / "TopCircuitMemWithMask.fir"))
+    }
+
+    it("should annotate an SRAM with mask") {
+      val cName = "TopCircuitSRAMWithMask"
+      new ChiselStage(true)
+        .execute(
+          args,
+          Seq(ChiselGeneratorAnnotation(() => new TopCircuitSRAMWithMask(SInt(7.W))))
+        )
+      val expectedMatches = Seq(
+        (createExpected(s"~$cName\\|$cName>mem_sram", "SInt<7>\\[2\\]\\[4\\]", "SramTarget"), 1),
+        (createExpected(s"~$cName\\|$cName>mem.writePorts\\[0\\].mask", s"Bool\\[2\\]", "Wire"), 1),
+        (createExpected(s"~$cName\\|$cName>mem.writePorts\\[0\\].mask\\[0\\]", "Bool", "Wire"), 1),
+        // Since the inner type is a vector
+        (createExpected(s"~$cName\\|$cName>mem.readPorts\\[0\\].data\\[0\\]", "SInt<7>", "Wire"), 1),
+        (createExpected(s"~$cName\\|$cName>mem.writePorts\\[0\\].data\\[0\\]", "SInt<7>", "Wire"), 1),
+        (createExpected(s"~$cName\\|$cName>clock", "Clock", "IO"), 1),
+        (createExpected(s"~$cName\\|$cName>reset", "Bool", "IO"), 1)
+      ) ++ createExpectedSRAMs(s"~$cName\\|$cName>mem", 4, "SInt<7>\\[2\\]", 1, 1, 0)
+
+      checkAnno(expectedMatches, os.read(targetDir / s"$cName.fir"))
+
     }
   }
 }

@@ -63,7 +63,7 @@ object TywavesChiselAnnotation {
 
   def generate(command: Command, typeAliases: Seq[String]): Seq[ChiselAnnotation] = {
     def createAnnoMem(target: HasId, binding: String, size: BigInt, innerType: Data): Seq[ChiselAnnotation] = {
-      val name = s"$binding[${innerType.typeName}[$size]]"
+      val name = s"$binding[${dataToTypeName(innerType)}[$size]]"
       // TODO: what if innerType is a Vec or a Bundle?
 
       Seq(new ChiselAnnotation {
@@ -104,37 +104,40 @@ object TywavesChiselAnnotation {
 
   }
 
+  /** Return a fancy typeName for a given input [[Data]] */
+  private def dataToTypeName(data: Data) = data match {
+    //      case t: Bundle =>
+    //        // t.className
+    //        t.toString.split(" ").last
+    case t: Vec[?] =>
+      t.toString.split(" ").last
+    // This is a workaround to pretty print anonymous bundles and other records
+    case t: Record =>
+      // t.prettyPrint
+      t.topBindingOpt match {
+        case Some(binding) =>
+          s"${t._bindingToString(binding)}[${t.className}]" // t._bindingToString(binding) + "[" + t.className + "]"
+        case None => t.className
+      }
+    //      case t: Bits =>
+    //        // t.typeName
+    //        t.topBindingOpt match {
+    //          case Some(binding) =>
+    //            s"${t._bindingToString(binding)}[Bits${t.width.toString}]" // t._bindingToString(binding) + "[" + t.className + "]"
+    //          case None => s"Bits${t.width.toString}"
+    //        }
+    case t =>
+      // t.typeName
+      t.toString.split(" ").last
+  }
+
   /**
     * Create the annotation
     * @param target
     */
   private def createAnno(target: Data): Seq[ChiselAnnotation] = {
 //    val name = target.toString
-    val name = target match {
-//      case t: Bundle =>
-      //        // t.className
-      //        t.toString.split(" ").last
-      case t: Vec[?] =>
-        t.toString.split(" ").last
-      // This is a workaround to pretty print anonymous bundles and other records
-      case t: Record =>
-        // t.prettyPrint
-        t.topBindingOpt match {
-          case Some(binding) =>
-            s"${t._bindingToString(binding)}[${t.className}]" // t._bindingToString(binding) + "[" + t.className + "]"
-          case None => t.className
-        }
-//      case t: Bits =>
-//        // t.typeName
-//        t.topBindingOpt match {
-//          case Some(binding) =>
-//            s"${t._bindingToString(binding)}[Bits${t.width.toString}]" // t._bindingToString(binding) + "[" + t.className + "]"
-//          case None => s"Bits${t.width.toString}"
-//        }
-      case t =>
-        // t.typeName
-        target.toString.split(" ").last
-    }
+    val name = dataToTypeName(target)
 
     var annotations: Seq[ChiselAnnotation] = Seq.empty
     target match {

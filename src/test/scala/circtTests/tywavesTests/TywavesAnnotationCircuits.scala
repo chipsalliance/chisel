@@ -3,7 +3,6 @@ package circtTests.tywavesTests
 import chisel3._
 import chisel3.experimental.{Analog, IntrinsicModule}
 import chisel3.experimental.hierarchy.{instantiable, Definition, Instance}
-import chisel3.properties.Class
 import chisel3.stage.ChiselGeneratorAnnotation
 import chisel3.util.{MixedVec, SRAM, SRAMInterface}
 import circt.stage.ChiselStage
@@ -119,7 +118,7 @@ object TywavesAnnotationCircuits {
 
     // An abstract description of a CSR, represented as a Class.
     @instantiable
-    class CSRDescription extends Class
+    class CSRDescription extends chisel3.properties.Class
 
     class CSRModule(csrDescDef: Definition[CSRDescription]) extends RawModule {
       val csrDescription = Instance(csrDescDef)
@@ -272,6 +271,31 @@ object TywavesAnnotationCircuits {
     class TopCircuitSRAM[T <: Data](gen: T, size: Int, numReadPorts: Int, numWritePorts: Int, numReadwritePorts: Int)
         extends Module {
       val mem = SRAM(size, gen, numReadPorts, numWritePorts, numReadwritePorts)
+    }
+
+    class TopCircuitMemWithMask[T <: Data, M <: MemBase[T]](_gen: T, _mem: Class[M], maskSize: Int) extends Module {
+
+      val gen = Vec(maskSize, _gen)
+      val mem = {
+        if (classOf[SyncReadMem[T]].isAssignableFrom(_mem)) SyncReadMem(4, gen)
+        else if (classOf[Mem[T]].isAssignableFrom(_mem)) Mem(4, gen)
+        else throw new Exception("Unknown memory type")
+      }
+
+      val mask = Wire(Vec(maskSize, Bool()))
+
+      val idx = IO(Input(UInt(2.W)))
+      val in = IO(Input(gen))
+      val out = IO(Output(gen))
+
+      mem.write(idx, in, mask)
+      out := mem.read(idx)
+    }
+
+    class TopCircuitSRAMWithMask[T <: Data](_gen: T) extends Module {
+      val maskSize = 2
+      val gen = Vec(maskSize, _gen)
+      val mem = SRAM.masked(4, gen, 1, 1, 0)
     }
   }
 }
