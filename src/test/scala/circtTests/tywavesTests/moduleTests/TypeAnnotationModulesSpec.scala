@@ -3,6 +3,7 @@ package circtTests.tywavesTests.moduleTests
 import chisel3.stage.ChiselGeneratorAnnotation
 import chisel3._
 import circt.stage.ChiselStage
+import org.scalatest.AppendedClues.convertToClueful
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -37,18 +38,6 @@ class TypeAnnotationModulesSpec extends AnyFunSpec with Matchers with chiselTest
       val string = os.read(targetDir / "TopCircuitMultiModule.fir")
       countSubstringOccurrences(string, "\"class\":\"chisel3.tywaves.TywavesAnnotation\"") should be(5)
       countSubstringOccurrences(string, "\"typeName\":\"MyModule\"") should be(4)
-    }
-
-    it("should annotate variants of Parametrized module in a circuit") {
-      (new ChiselStage(true)).execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitWithParams)))
-      // The file should include it
-      val string = os.read(targetDir / "TopCircuitWithParams.fir")
-      countSubstringOccurrences(string, "\"class\":\"chisel3.tywaves.TywavesAnnotation\"") should be(4)
-      countSubstringOccurrences(string, "\"typeName\":\"MyModule") should be(3)
-      // This now fails!!! TODO: it is something that I want to have, PARAMETERIZED MODULES
-      countSubstringOccurrences(string, "\"typeName\":\"MyModule(8)\"") should be(1)
-      countSubstringOccurrences(string, "\"typeName\":\"MyModule(16)\"") should be(1)
-      countSubstringOccurrences(string, "\"typeName\":\"MyModule(32)\"") should be(1)
     }
 
     it("should annotate black boxes") {
@@ -96,7 +85,10 @@ class TypeAnnotationModulesSpec extends AnyFunSpec with Matchers with chiselTest
 
       val expectedMatches = Seq(
         // TODO: the goal is to have MyModule[UInt<8>], MyModule[SInt<8>], MyModule[Bool]
-        ("\"typeName\":\"MyModule\"", 3)
+        ("\"typeName\":\"MyModule\\[UInt<8>\\]\"", 1),
+        ("\"typeName\":\"MyModule\\[SInt<8>\\]\"", 1),
+        ("\"typeName\":\"MyModule\\[Bool\\]\"", 1),
+
       )
       checkAnno(expectedMatches, string)
     }

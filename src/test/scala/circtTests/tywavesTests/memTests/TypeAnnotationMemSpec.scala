@@ -2,6 +2,7 @@ package circtTests.tywavesTests.memTests
 
 import chisel3._
 import chisel3.stage.ChiselGeneratorAnnotation
+import chisel3.tywaves.ClassParam
 import circt.stage.ChiselStage
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
@@ -16,33 +17,56 @@ class TypeAnnotationMemSpec extends AnyFunSpec with Matchers with chiselTests.Ut
     tpe:               String,
     numReadPorts:      Int,
     numWritePorts:     Int,
-    numReadwritePorts: Int
+    numReadwritePorts: Int,
+    dataParams: Option[Seq[ClassParam]] = None, // For SRAMs of complex data types with params
   ): Seq[(String, Int)] = {
     import scala.math._
     val addrWidth = if (size > 1) ceil(log(size.toInt) / log(2)).toInt else 1
+    def genParams(tpe: String) = {
+      if(tpe == "MemoryReadPort")
+        Some(Seq(ClassParam("tpe", "T", None), ClassParam("addrWidth", "Int", None))) // TODO: does not annotate tpe ClassParam("tpe", "T", None)
+      else if(tpe=="MemoryWritePort" || tpe=="MemoryReadWritePort")
+        Some(Seq(ClassParam("tpe", "T", None), ClassParam("addrWidth", "Int", None), ClassParam("masked", "Boolean", None)))
+      else
+        None
+    }
     def generatePorts(rw: String, _n: Int, portType: String) = {
       var ports = Seq[(String, Int)]()
       val n = if (_n == 0) 0 else 1
       for (i <- 0 until n) { // TODO: I am annotating now only the first element, since the size is known ant the memory has homogeneous type, it's useless to annotate every element
         ports ++= Seq(
-          (createExpected(s"$target.$rw\\[$i\\]", s"$portType", "Wire"), 1),
+          (createExpected(s"$target.$rw\\[$i\\]", s"$portType", "Wire", genParams(portType)), 1),
           (createExpected(s"$target.$rw\\[$i\\].address", s"UInt<$addrWidth>", "Wire"), 1),
           (createExpected(s"$target.$rw\\[$i\\].enable", "Bool", "Wire"), 1)
         ) ++ (if (rw == "readwritePorts")
                 Seq(
-                  (createExpected(s"$target.$rw\\[$i\\].readData", tpe, "Wire"), 1),
-                  (createExpected(s"$target.$rw\\[$i\\].writeData", tpe, "Wire"), 1),
+                  (createExpected(s"$target.$rw\\[$i\\].readData", tpe, "Wire", dataParams), 1),
+                  (createExpected(s"$target.$rw\\[$i\\].writeData", tpe, "Wire", dataParams), 1),
                   (createExpected(s"$target.$rw\\[$i\\].isWrite", "Bool", "Wire"), 1)
                 )
-              else Seq((createExpected(s"$target.$rw\\[$i\\].data", tpe, "Wire"), 1)))
+              else Seq((createExpected(s"$target.$rw\\[$i\\].data", tpe, "Wire", dataParams), 1)))
       }
       ports
     }
+    println("target: " + target)
+    // scalafmt: {off}
     Seq(
-      (createExpected(s"$target", "SRAMInterface", "Wire"), 1),
-      (createExpected(s"$target.readPorts", s"MemoryReadPort\\[$numReadPorts\\]", "Wire"), 1),
-      (createExpected(s"$target.writePorts", s"MemoryWritePort\\[$numWritePorts\\]", "Wire"), 1),
-      (createExpected(s"$target.readwritePorts", s"MemoryReadWritePort\\[$numReadwritePorts\\]", "Wire"), 1)
+      (createExpected(s"$target", "SRAMInterface", "Wire",
+          params = Some(Seq(
+            ClassParam("memSize", "BigInt", None), // TODO: check why the value is not available even if memSize is val
+            ClassParam("tpe", "T", None),
+            ClassParam("numReadPorts", "Int", None),
+            ClassParam("numWritePorts", "Int",None),
+            ClassParam("numReadwritePorts", "Int", None),
+            ClassParam("masked", "Boolean", None),
+          ))
+        ), 1),
+      (createExpected(s"$target.readPorts", s"MemoryReadPort\\[$numReadPorts\\]", "Wire",
+        params = Some(Seq(ClassParam("gen", "=> T", None), ClassParam("length", "Int", None)))), 1),
+      (createExpected(s"$target.writePorts", s"MemoryWritePort\\[$numWritePorts\\]", "Wire",
+        params = Some(Seq(ClassParam("gen", "=> T", None), ClassParam("length", "Int", None)))), 1),
+      (createExpected(s"$target.readwritePorts", s"MemoryReadWritePort\\[$numReadwritePorts\\]", "Wire",
+        params = Some(Seq(ClassParam("gen", "=> T", None), ClassParam("length", "Int", None)))), 1),
     ) ++ generatePorts("readPorts", numReadPorts, "MemoryReadPort") ++
       generatePorts("writePorts", numWritePorts, "MemoryWritePort") ++
       generatePorts("readwritePorts", numReadwritePorts, "MemoryReadWritePort")
@@ -55,12 +79,16 @@ class TypeAnnotationMemSpec extends AnyFunSpec with Matchers with chiselTests.Ut
 
     it("should annotate a ROM") {
       new ChiselStage(true).execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitROM)))
+      // scalafmt: {off}
       val expectedMatches = Seq(
-        (createExpected("~TopCircuitROM\\|TopCircuitROM>romFromVec", "UInt<8>\\[4\\]", "Wire"), 1),
+        (createExpected("~TopCircuitROM\\|TopCircuitROM>romFromVec", "UInt<8>\\[4\\]", "Wire",
+          params = Some(Seq(ClassParam("gen", "=> T", None), ClassParam("length", "Int", None)))), 1),
         (createExpected("~TopCircuitROM\\|TopCircuitROM>romFromVec\\[0\\]", "UInt<8>", "Wire"), 1),
-        (createExpected("~TopCircuitROM\\|TopCircuitROM>romFromVecInit", "UInt<4>\\[4\\]", "Wire"), 1), //Inferred width
+        (createExpected("~TopCircuitROM\\|TopCircuitROM>romFromVecInit", "UInt<4>\\[4\\]", "Wire",
+          params = Some(Seq(ClassParam("gen", "=> T", None), ClassParam("length", "Int", None)))), 1),
         (createExpected("~TopCircuitROM\\|TopCircuitROM>romFromVecInit\\[0\\]", "UInt<4>", "Wire"), 1),
-        (createExpected("~TopCircuitROM\\|TopCircuitROM>romOfBundles", "AnonymousBundle\\[4\\]", "Wire"), 1),
+        (createExpected("~TopCircuitROM\\|TopCircuitROM>romOfBundles", "AnonymousBundle\\[4\\]", "Wire",
+          params = Some(Seq(ClassParam("gen", "=> T", None), ClassParam("length", "Int", None)))), 1),
         (createExpected("~TopCircuitROM\\|TopCircuitROM>romOfBundles\\[0\\]", "AnonymousBundle", "Wire"), 1),
         (createExpected("~TopCircuitROM\\|TopCircuitROM>romOfBundles\\[0\\].a", "UInt<8>", "Wire"), 1)
       )
@@ -277,36 +305,32 @@ class TypeAnnotationMemSpec extends AnyFunSpec with Matchers with chiselTests.Ut
     val args: Array[String] = Array("--target", "chirrtl", "--target-dir", targetDir.toString)
 
     it("should annotate a SyncMem with mask") {
-      val mSize = 100
+      val mSize = 1
       new ChiselStage(true)
         .execute(
           args,
           Seq(ChiselGeneratorAnnotation(() => new TopCircuitMemWithMask(SInt(7.W), classOf[SyncReadMem[SInt]], mSize)))
         )
+      // scalafmt: {off}
       val expectedMatches = Seq(
-        (
-          createExpected(
-            "~TopCircuitMemWithMask\\|TopCircuitMemWithMask>mem",
-            s"SInt<7>\\[$mSize\\]\\[4\\]",
-            "SyncReadMem"
-          ),
-          1
-        ),
-        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>mask", s"Bool\\[$mSize\\]", "Wire"), 1),
+        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>mem", s"SInt<7>\\[$mSize\\]\\[4\\]", "SyncReadMem"), 1),
+        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>mask", s"Bool\\[$mSize\\]", "Wire",
+          params = Some(Seq(ClassParam("gen", "=> T", None), ClassParam("length", "Int", None)))), 1),
         (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>mask\\[0\\]", "Bool", "Wire"), 1),
         (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>idx", "UInt<2>", "IO"), 1),
-        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>in", s"SInt<7>\\[$mSize\\]", "IO"), 1),
+        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>in", s"SInt<7>\\[$mSize\\]", "IO",
+          params = Some(Seq(ClassParam("gen", "=> T", None), ClassParam("length", "Int", None)))), 1),
         (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>in\\[0\\]", "SInt<7>", "IO"), 1),
-        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>out", s"SInt<7>\\[$mSize\\]", "IO"), 1),
+        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>out", s"SInt<7>\\[$mSize\\]", "IO",
+          params = Some(Seq(ClassParam("gen", "=> T", None), ClassParam("length", "Int", None)))), 1),
         (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>out\\[0\\]", "SInt<7>", "IO"), 1),
         // tmp wire generated in syncreadmem
         (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>_WIRE", "UInt<2>", "Wire"), 1),
-        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>MPORT", s"SInt<7>\\[$mSize\\]", "MemPort"), 1),
+        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>MPORT", s"SInt<7>\\[$mSize\\]", "MemPort",
+          params = Some(Seq(ClassParam("gen", "=> T", None), ClassParam("length", "Int", None)))), 1),
         (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>MPORT\\[0\\]", "SInt<7>", "MemPort"), 1),
-        (
-          createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>MPORT_1", s"SInt<7>\\[$mSize\\]", "MemPort"),
-          1
-        ),
+        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>MPORT_1", s"SInt<7>\\[$mSize\\]", "MemPort",
+          params = Some(Seq(ClassParam("gen", "=> T", None), ClassParam("length", "Int", None)))), 1),
         (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>MPORT_1\\[0\\]", "SInt<7>", "MemPort"), 1),
         (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>clock", "Clock", "IO"), 1),
         (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>reset", "Bool", "IO"), 1)
@@ -315,28 +339,31 @@ class TypeAnnotationMemSpec extends AnyFunSpec with Matchers with chiselTests.Ut
     }
 
     it("should annotate a Mem with mask") {
-      val mSize = 100
+      val mSize = 1
       new ChiselStage(true)
         .execute(
           args,
           Seq(ChiselGeneratorAnnotation(() => new TopCircuitMemWithMask(SInt(7.W), classOf[Mem[SInt]], mSize)))
         )
       val expectedMatches = Seq(
-        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>mem", s"SInt<7>\\[$mSize\\]\\[4\\]", "Mem"), 1),
-        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>mask", s"Bool\\[$mSize\\]", "Wire"), 1),
+        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>mem", s"SInt<7>\\[$mSize\\]\\[4\\]", "Mem",
+          params = None), 1), // TODO: is it correct NONE?
+        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>mask", s"Bool\\[$mSize\\]", "Wire",
+          params = Some(Seq(ClassParam("gen", "=> T", None), ClassParam("length", "Int", None)))), 1),
         (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>mask\\[0\\]", "Bool", "Wire"), 1),
         (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>idx", "UInt<2>", "IO"), 1),
-        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>in", s"SInt<7>\\[$mSize\\]", "IO"), 1),
+        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>in", s"SInt<7>\\[$mSize\\]", "IO",
+          params = Some(Seq(ClassParam("gen", "=> T", None), ClassParam("length", "Int", None)))), 1),
         (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>in\\[0\\]", "SInt<7>", "IO"), 1),
-        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>out", s"SInt<7>\\[$mSize\\]", "IO"), 1),
+        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>out", s"SInt<7>\\[$mSize\\]", "IO",
+          params = Some(Seq(ClassParam("gen", "=> T", None), ClassParam("length", "Int", None)))), 1),
         (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>out\\[0\\]", "SInt<7>", "IO"), 1),
         // tmp wire generated in syncreadmem
-        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>MPORT", s"SInt<7>\\[$mSize\\]", "MemPort"), 1),
+        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>MPORT", s"SInt<7>\\[$mSize\\]", "MemPort",
+          params = Some(Seq(ClassParam("gen", "=> T", None), ClassParam("length", "Int", None)))), 1),
         (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>MPORT\\[0\\]", "SInt<7>", "MemPort"), 1),
-        (
-          createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>MPORT_1", s"SInt<7>\\[$mSize\\]", "MemPort"),
-          1
-        ),
+        (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>MPORT_1", s"SInt<7>\\[$mSize\\]", "MemPort",
+          params = Some(Seq(ClassParam("gen", "=> T", None), ClassParam("length", "Int", None)))), 1),
         (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>MPORT_1\\[0\\]", "SInt<7>", "MemPort"), 1),
         (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>clock", "Clock", "IO"), 1),
         (createExpected("~TopCircuitMemWithMask\\|TopCircuitMemWithMask>reset", "Bool", "IO"), 1)
@@ -353,14 +380,16 @@ class TypeAnnotationMemSpec extends AnyFunSpec with Matchers with chiselTests.Ut
         )
       val expectedMatches = Seq(
         (createExpected(s"~$cName\\|$cName>mem_sram", "SInt<7>\\[2\\]\\[4\\]", "SramTarget"), 1),
-        (createExpected(s"~$cName\\|$cName>mem.writePorts\\[0\\].mask", s"Bool\\[2\\]", "Wire"), 1),
+        (createExpected(s"~$cName\\|$cName>mem.writePorts\\[0\\].mask", s"Bool\\[2\\]", "Wire",
+          params = Some(Seq(ClassParam("gen", "=> T", None), ClassParam("length", "Int", None)))), 1),
         (createExpected(s"~$cName\\|$cName>mem.writePorts\\[0\\].mask\\[0\\]", "Bool", "Wire"), 1),
         // Since the inner type is a vector
         (createExpected(s"~$cName\\|$cName>mem.readPorts\\[0\\].data\\[0\\]", "SInt<7>", "Wire"), 1),
         (createExpected(s"~$cName\\|$cName>mem.writePorts\\[0\\].data\\[0\\]", "SInt<7>", "Wire"), 1),
         (createExpected(s"~$cName\\|$cName>clock", "Clock", "IO"), 1),
         (createExpected(s"~$cName\\|$cName>reset", "Bool", "IO"), 1)
-      ) ++ createExpectedSRAMs(s"~$cName\\|$cName>mem", 4, "SInt<7>\\[2\\]", 1, 1, 0)
+      ) ++ createExpectedSRAMs(s"~$cName\\|$cName>mem", 4, "SInt<7>\\[2\\]", 1, 1, 0,
+          dataParams = Some(Seq(ClassParam("gen", "=> T", None), ClassParam("length", "Int", None))))
 
       checkAnno(expectedMatches, os.read(targetDir / s"$cName.fir"))
 

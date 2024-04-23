@@ -1,16 +1,30 @@
 package chisel3.tywaves
 
-import chisel3.{Aggregate, Bits, Bundle, Data, Record, Vec, VecLike}
-import chisel3.experimental.{annotate, BaseModule, ChiselAnnotation}
+import chisel3.{Data, Record, Vec, VecLike}
+import chisel3.experimental.{BaseModule, ChiselAnnotation}
 import chisel3.internal.HasId
-import chisel3.internal.firrtl.Converter.convert
 import chisel3.internal.firrtl.ir._
-import firrtl.annotations.{Annotation, IsMember, ReferenceTarget, SingleTargetAnnotation}
+import firrtl.annotations.{Annotation, IsMember, SingleTargetAnnotation}
 
 // TODO: if the code touches a lot of Chisel internals, it might be better to put it into
 //    - core
 //  otherwise:
 //    - src
+
+/** Represent the parameters of a class constructor:
+  *  {{{
+  *   class A(
+  *        a: Int,                  // parameter without val
+  *        val b: String,           // parameter with val
+  *        protected val c: Char,   // parameter with protected val
+  *        private val d: Boolean,  // parameter with private val
+  *        val o: OtherClass        // parameter with complex type (another class)
+  *       )
+  *  }}}
+  *
+  *  The ClassParam stores for each parameter the name, the type and optionally the value of it.
+  */
+case class ClassParam(name: String, typeName: String, value: Option[String])
 
 /**
   * TywavesAnnotation is a custom annotation that is used to store Chisel high-level information in the FIRRTL for the
@@ -21,7 +35,11 @@ import firrtl.annotations.{Annotation, IsMember, ReferenceTarget, SingleTargetAn
   * @param target  The target of the annotation
   * @param typeName
   */
-private[chisel3] case class TywavesAnnotation[T <: IsMember](target: T, typeName: String)
+private[chisel3] case class TywavesAnnotation[T <: IsMember](
+  target:   T,
+  typeName: String,
+  // encode params as an option so if the class has no parameters, there is no field in the FIRRTL
+  params: Option[Seq[ClassParam]])
     extends SingleTargetAnnotation[T] {
   def duplicate(n: T) = this.copy(n)
 }
@@ -67,7 +85,7 @@ object TywavesChiselAnnotation {
       // TODO: what if innerType is a Vec or a Bundle?
 
       Seq(new ChiselAnnotation {
-        override def toFirrtl: Annotation = TywavesAnnotation(target.toTarget, name)
+        override def toFirrtl: Annotation = TywavesAnnotation(target.toTarget, name, None)
       }) //++ createAnno(chisel3.Wire(innerType))
     }
 
@@ -131,6 +149,132 @@ object TywavesChiselAnnotation {
       t.toString.split(" ").last
   }
 
+  /** Get the parameters ([[ClassParam]]) in the constructor of a given scala class.
+    *
+    * @param target The instance of the class. It can be any class instance.
+    * @return A list of [[ClassParam]] that contains the name, type and value* of the parameters in the constructor.
+    *         The name and the type are always returned for any class and any kind of parameter.
+    *         An actual value of the parameter instead is returned only for `case classes` and for `val`/`var`
+    *         parameters (actual fields of a class, i.e. `class A(val a: Int)` and `case class A(a: Int)`.
+    *         None is returned for simply parameters (i.e. `class A(a: Int)`).
+    *
+    *         It ignores fields in the body of the class (i.e. `class A(a: Int) { val b = 10 }`). It is something
+    *         certainly possible but it is not implemented since we assume the "type" of a [[chisel3.Module]] and
+    *         [[chisel3.Data]] is given by its constructor.
+    *
+    *         For parameters of complex types (i.e. other classes), the value of the instance class is a string
+    *         including recursively the values of the parameters of the nested class.
+    * @example {{{
+    * class BaseClass (val a: Int)
+    * class OtherClass(val a: Int, val b: BaseClass)
+    * // Example of nested class in parameters
+    * class TopClass  (a: Int, val b: String, protected val c: Char, private val d: Boolean, val o: OtherClass)
+    *
+    * case class CaseClassExample(a: Int, o: OtherClass)
+    *
+    * val baseClass = new BaseClass(1)
+    * val otherClass = new OtherClass(1, baseClass)
+    * val topClass = new TopClass(1, "hello", 'c', true, otherClass)
+    * val caseClass = new CaseClassExample(1, otherClass)
+    *
+    * getConstructorParams(baseClass)  // List(ClassParam("a", "Int", Some(1)))
+    * getConstructorParams(otherClass) // List(ClassParam("a", "Int", Some(1)),
+    *                                  //      ClassParam("b", "BaseClass", Some("BaseClass(a: 1)")))
+    * getConstructorParams(topClass)   // List(ClassParam("a", "Int", None),
+    *                                  //      ClassParam("b", "String", Some("hello")),
+    *                                  //      ClassParam("c", "Char", Some('c')),
+    *                                  //      ClassParam("d", "Boolean", Some(true)),
+    *                                  //      ClassParam("o", "OtherClass", Some("OtherClass(a: 1, b: BaseClass(a: 1))"))
+    * getConstructorParams(caseClass)  // List(ClassParam("a", "Int", Some(1)),
+    *                                  //      ClassParam("o", "OtherClass", Some("OtherClass(a: 1, b: BaseClass(a: 1))"))
+    *
+    * }}}
+    */
+  def getConstructorParams(target: Any): Seq[ClassParam] = {
+    import scala.reflect.runtime.universe._
+    import scala.reflect.api.{Mirror, TypeCreator, Universe}
+    def getTypeTag[T](target: T) = {
+      val c = target.getClass
+      val mirror = runtimeMirror(c.getClassLoader) // obtain runtime mirror
+      val sym = mirror.staticClass(c.getName) // obtain class symbol for `c`
+      val tpe = sym.selfType // obtain type object for `c`
+      // create a type tag which contains above type object
+      TypeTag(
+        mirror,
+        new TypeCreator {
+          def apply[U <: Universe with Singleton](m: Mirror[U]) =
+            if (m eq mirror) tpe.asInstanceOf[U#Type]
+            else
+              throw new IllegalArgumentException(s"Type tag defined in $mirror cannot be migrated to other mirrors.")
+        }
+      )
+    }
+    val tt = getTypeTag(target)
+
+    def hasParams(target: Any): Boolean = {
+      val tt = getTypeTag(target)
+      val im = runtimeMirror(target.getClass.getClassLoader).reflect(target)
+      tt.tpe.members.collect {
+        case m: MethodSymbol if m.isPrimaryConstructor => m
+      } // Get the primary constructor
+        .flatMap(_.paramLists.flatten)
+        .exists { a =>
+          try {
+            im.reflectField(a.asTerm).get // if it can be reflected it has fields
+            true
+          } catch { case e: Exception => false } // Otherwise, it does not have fields: complex type
+        }
+    }
+
+    // Get the instance mirror
+    val im = runtimeMirror(target.getClass.getClassLoader).reflect(target)
+
+    // Collect all the parameters in the primary constructor
+    // 1. Get all the members of this type
+    // 2. Filter the method symbol that is the primary constructor
+    // 3. Get the list of params in this method
+
+    val l = tt.tpe.members.collect {
+      case m: MethodSymbol if m.isConstructor =>
+        m.paramLists.flatten.collect {
+          case a if !a.name.toString.contains("$outer") =>
+            // Filter the object itself?
+            val t = a.info.toString.split("\\$")
+            val typeName = if (t.length > 1) t(1) else t(0) // Remove the package name
+            val paramName = a.name.toString // Get the name of the parameter
+            val value =
+              try {
+                val valueTerm = im.reflectField(a.asTerm).get // Try to extract the value of the parameter
+                val finalValueTerm =
+                  if (!hasParams(valueTerm)) // If it does not have params, return the term itself
+                    valueTerm
+                  else { // Otherwise, get the params nested inside the class
+                    val params =
+                      getConstructorParams(valueTerm).map { p =>
+                        p.value match {
+                          case Some(v) => s"${p.name}: $v"
+                          case None    => p.name
+                        }
+                      }.mkString(", ")
+                    // Format the parameters in this way: Type(param1: value1, param2: value2, ...)
+                    s"$typeName($params)"
+                  }
+                Some(finalValueTerm.toString)
+              } catch { case e: Exception => None }
+            ClassParam(paramName, typeName, value)
+        }
+    }.toList.flatten
+    l
+  }
+
+  /** Get (optionally) the parameters ([[ClassParam]]) in the constructor of a given scala class.
+    * For examples and explanation see: [[getConstructorParams]].
+    */
+  private def getConstructorParamsOpt(target: Any): Option[Seq[ClassParam]] = {
+    val params = getConstructorParams(target)
+    if (params.nonEmpty) Some(params) else None
+  }
+
   /**
     * Create the annotation
     * @param target
@@ -152,16 +296,24 @@ object TywavesChiselAnnotation {
         }
       case _ => ()
     }
+
+    // Skip the paramsOpt when the target is a Bits (skip width) TODO: check if it is something that I want or not
+    val paramsOpt = target match {
+      case _: chisel3.Bits | _: chisel3.Clock | _: chisel3.Reset | _: chisel3.experimental.Analog => None
+      case _ => getConstructorParamsOpt(target)
+    }
+
     annotations :+ new ChiselAnnotation {
-      override def toFirrtl: Annotation = TywavesAnnotation(target.toTarget, name)
+      override def toFirrtl: Annotation = TywavesAnnotation(target.toTarget, name, paramsOpt)
     }
   }
 
   private def createAnno(target: BaseModule): ChiselAnnotation = {
     val name = target.desiredName
+    val paramsOpt = getConstructorParamsOpt(target)
     //    val name = target.getClass.getTypeName
     new ChiselAnnotation {
-      override def toFirrtl: Annotation = TywavesAnnotation(target.toTarget, name)
+      override def toFirrtl: Annotation = TywavesAnnotation(target.toTarget, name, paramsOpt)
     }
   }
 

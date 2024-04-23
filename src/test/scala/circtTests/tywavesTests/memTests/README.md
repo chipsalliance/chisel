@@ -204,14 +204,58 @@ circuit TopCircuitSRAM :%[[
   {
     "class":"chisel3.tywaves.TywavesAnnotation",
     "target":"~TopCircuitSRAM|TopCircuitSRAM",
-    "typeName":"TopCircuitSRAM"
+    "typeName":"TopCircuitSRAM",
+    "params":[
+      {
+        "name":"size",
+        "typeName":"Int",
+        "value":"1"
+      },
+      {
+        "name":"numReadPorts",
+        "typeName":"Int",
+        "value":"1"
+      },
+      {
+        "name":"numWritePorts",
+        "typeName":"Int",
+        "value":"1"
+      },
+      {
+        "name":"numReadwritePorts",
+        "typeName":"Int",
+        "value":"0"
+      }
+    ]
   },
   ; .. clock and reset anno
   ; ..  read, write and readwrite ports annotations
   {
     "class":"chisel3.tywaves.TywavesAnnotation",
     "target":"~TopCircuitSRAM|TopCircuitSRAM>mem",
-    "typeName":"Wire[SRAMInterface]"
+    "typeName":"Wire[SRAMInterface]",
+    "params":[
+      {
+        "name":"tpe",
+        "typeName":"T"
+      },
+      {
+        "name":"numReadPorts",
+        "typeName":"Int"
+      },
+      {
+        "name":"numWritePorts",
+        "typeName":"Int"
+      },
+      {
+        "name":"numReadwritePorts",
+        "typeName":"Int"
+      },
+      {
+        "name":"masked",
+        "typeName":"Boolean"
+      }
+    ]
   },
   {
     "class":"chisel3.tywaves.TywavesAnnotation",
@@ -291,13 +335,30 @@ circuit TopCircuitSRAM :%[[
   {
     "class":"chisel3.tywaves.TywavesAnnotation",
     "target":"~TopCircuitSRAM|TopCircuitSRAM>mem",
-    "typeName":"Wire[SRAMInterface]"
+    "typeName":"Wire[SRAMInterface]",
+    "params":[
+      {
+        "name":"tpe",
+        "typeName":"T"
+      },
+      {
+        "name":"numReadPorts",
+        "typeName":"Int"
+      },
+      {
+        "name":"numWritePorts",
+        "typeName":"Int"
+      },
+      {
+        "name":"numReadwritePorts",
+        "typeName":"Int"
+      },
+      {
+        "name":"masked",
+        "typeName":"Boolean"
+      }
+    ]
   },
-  {
-    "class":"chisel3.tywaves.TywavesAnnotation",
-    "target":"~TopCircuitSRAM|TopCircuitSRAM>mem_sram",
-    "typeName":"SramTarget[MyBundle[1]]"
-  }
 ]]
   public module TopCircuitSRAM : @[src/test/scala/circtTests/tywavesTests/TywavesAnnotationCircuits.scala 272:11]
     input clock : Clock @[src/test/scala/circtTests/tywavesTests/TywavesAnnotationCircuits.scala 272:11]

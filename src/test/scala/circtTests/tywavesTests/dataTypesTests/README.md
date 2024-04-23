@@ -92,7 +92,7 @@ class TopCircuitGroundTypes extends RawModule {
   val uint  : UInt   = IO(Output(UInt(8.W)))
   val sint  : SInt   = IO(Output(SInt(8.W)))
   val bool  : Bool   = IO(Output(Bool()))
-  val analog: Analog = bindingChoice(Analog(1.W))
+  val analog: Analog = IO(Output(Analog(1.W)))
   // val fixedPoint: FixedPoint TODO: does fixed point still exist?
   // val interval: Interval =  IO(Output(Interval()))) TODO: does interval still exist?
   val bits  : UInt   = IO(Output(Bits(8.W)))
@@ -327,7 +327,13 @@ circuit TopCircuitVecs :%[[
   {
     "class":"chisel3.tywaves.TywavesAnnotation",
     "target":"~TopCircuitVecs|TopCircuitVecs>a",
-    "typeName":"IO[SInt<23>[5]]"
+    "typeName":"IO[SInt<23>[5]]",
+    "params":[
+      {
+        "name":"length",
+        "typeName":"Int"
+      }
+    ]
   },
   {
     "class":"chisel3.tywaves.TywavesAnnotation",
@@ -337,12 +343,24 @@ circuit TopCircuitVecs :%[[
   {
     "class":"chisel3.tywaves.TywavesAnnotation",
     "target":"~TopCircuitVecs|TopCircuitVecs>b[0]",
-    "typeName":"IO[SInt<23>[3]]"
+    "typeName":"IO[SInt<23>[3]]",
+    "params":[
+      {
+        "name":"length",
+        "typeName":"Int"
+      }
+    ]
   },
   {
     "class":"chisel3.tywaves.TywavesAnnotation",
     "target":"~TopCircuitVecs|TopCircuitVecs>b",
-    "typeName":"IO[SInt<23>[3][5]]"
+    "typeName":"IO[SInt<23>[3][5]]",
+    "params":[
+      {
+        "name":"length",
+        "typeName":"Int"
+      }
+    ]
   },
   {
     "class":"chisel3.tywaves.TywavesAnnotation",
@@ -357,7 +375,13 @@ circuit TopCircuitVecs :%[[
   {
     "class":"chisel3.tywaves.TywavesAnnotation",
     "target":"~TopCircuitVecs|TopCircuitVecs>c",
-    "typeName":"IO[AnonymousBundle[5]]"
+    "typeName":"IO[AnonymousBundle[5]]",
+    "params":[
+      {
+        "name":"length",
+        "typeName":"Int"
+      }
+    ]
   },
   {
     "class":"chisel3.tywaves.TywavesAnnotation",
@@ -411,7 +435,13 @@ circuit TopCircuitBundleWithVec :%[[
   {
     "class":"chisel3.tywaves.TywavesAnnotation",
     "target":"~TopCircuitBundleWithVec|TopCircuitBundleWithVec>a.vec",
-    "typeName":"IO[UInt<8>[5]]"
+    "typeName":"IO[UInt<8>[5]]",
+    "params":[
+      {
+        "name":"length",
+        "typeName":"Int"
+      }
+    ]
   },
   {
     "class":"chisel3.tywaves.TywavesAnnotation",

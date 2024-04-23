@@ -2,6 +2,7 @@ package circtTests.tywavesTests.dataTypesTests
 
 import chisel3._
 import chisel3.stage.ChiselGeneratorAnnotation
+import chisel3.tywaves.ClassParam
 import circt.stage.ChiselStage
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
@@ -73,18 +74,23 @@ class TypeAnnotationDataTypesSpec extends AnyFunSpec with Matchers with chiselTe
     it("should annotate vecs") {
       new ChiselStage(true).execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitVecs(b))))
       val string = os.read(targetDir / "TopCircuitVecs.fir")
-
+      // scalafmt: {off}
       val expectedMatches = Seq(
-        (createExpected("~TopCircuitVecs\\|TopCircuitVecs>a", "SInt<23>\\[5\\]", b.toString), 1),
+        (createExpected("~TopCircuitVecs\\|TopCircuitVecs>a", "SInt<23>\\[5\\]", b.toString,
+          params = Some(Seq(ClassParam("gen", "=> T", None), ClassParam("length", "Int", None)))), 1),
         (createExpected("~TopCircuitVecs\\|TopCircuitVecs>a\\[0\\]", "SInt<23>", b.toString), 1),
-        (createExpected("~TopCircuitVecs\\|TopCircuitVecs>b", "SInt<23>\\[3\\]\\[5\\]", b.toString), 1),
-        (createExpected("~TopCircuitVecs\\|TopCircuitVecs>b\\[0\\]", "SInt<23>\\[3\\]", b.toString), 1),
+        (createExpected("~TopCircuitVecs\\|TopCircuitVecs>b", "SInt<23>\\[3\\]\\[5\\]", b.toString,
+          params = Some(Seq(ClassParam("gen", "=> T", None), ClassParam("length", "Int", None)))), 1),
+        (createExpected("~TopCircuitVecs\\|TopCircuitVecs>b\\[0\\]", "SInt<23>\\[3\\]", b.toString,
+          params = Some(Seq(ClassParam("gen", "=> T", None), ClassParam("length", "Int", None)))), 1),
         (createExpected("~TopCircuitVecs\\|TopCircuitVecs>b\\[0\\]\\[0\\]", "SInt<23>", b.toString), 1),
-        (createExpected("~TopCircuitVecs\\|TopCircuitVecs>c", "AnonymousBundle\\[5\\]", b.toString), 1),
+        (createExpected("~TopCircuitVecs\\|TopCircuitVecs>c", "AnonymousBundle\\[5\\]", b.toString,
+          params = Some(Seq(ClassParam("gen", "=> T", None), ClassParam("length", "Int", None)))), 1),
         (createExpected("~TopCircuitVecs\\|TopCircuitVecs>c\\[0\\]", "AnonymousBundle", b.toString), 1),
         (createExpected("~TopCircuitVecs\\|TopCircuitVecs>c\\[0\\].x", "UInt<8>", b.toString), 1),
         // TODO: finish this test
-        (createExpected("~TopCircuitVecs\\|TopCircuitVecs>d", "MixedVec", b.toString), 1),
+        (createExpected("~TopCircuitVecs\\|TopCircuitVecs>d", "MixedVec", b.toString,
+          params = Some(Seq(ClassParam("eltsIn", "Seq\\[T\\]", None)))), 1),
         (createExpected("~TopCircuitVecs\\|TopCircuitVecs>d.0", "UInt<3>", b.toString), 1),
         (createExpected("~TopCircuitVecs\\|TopCircuitVecs>d.1", "SInt<10>", b.toString), 1)
       ) ++ addClockReset("TopCircuitVecs")
@@ -94,9 +100,11 @@ class TypeAnnotationDataTypesSpec extends AnyFunSpec with Matchers with chiselTe
     it("should annotate bundle with vec") {
       new ChiselStage(true).execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitBundleWithVec(b))))
       val string = os.read(targetDir / "TopCircuitBundleWithVec.fir")
+      // scalafmt: {off}
       val expectedMatches = Seq(
         (createExpected("~TopCircuitBundleWithVec\\|TopCircuitBundleWithVec>a", "AnonymousBundle", b.toString), 1),
-        (createExpected("~TopCircuitBundleWithVec\\|TopCircuitBundleWithVec>a.vec", "UInt<8>\\[5\\]", b.toString), 1),
+        (createExpected("~TopCircuitBundleWithVec\\|TopCircuitBundleWithVec>a.vec", "UInt<8>\\[5\\]", b.toString,
+          params = Some(Seq(ClassParam("gen", "=> T", None), ClassParam("length", "Int", None)))), 1),
         (createExpected("~TopCircuitBundleWithVec\\|TopCircuitBundleWithVec>a.vec\\[0\\]", "UInt<8>", b.toString), 1)
       ) ++ addClockReset("TopCircuitBundleWithVec")
       checkAnno(expectedMatches, string)

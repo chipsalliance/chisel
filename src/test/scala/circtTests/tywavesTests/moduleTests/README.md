@@ -152,17 +152,38 @@ circuit TopCircuitWithParams :%[[
   {
     "class":"chisel3.tywaves.TywavesAnnotation",
     "target":"~TopCircuitWithParams|MyModule",
-    "typeName":"MyModule"
+    "typeName":"MyModule",
+    "params":[
+      {
+        "name":"width",
+        "typeName":"Int",
+        "value":"8"
+      }
+    ]
   },
   {
     "class":"chisel3.tywaves.TywavesAnnotation",
     "target":"~TopCircuitWithParams|MyModule_1",
-    "typeName":"MyModule"
+    "typeName":"MyModule",
+    "params":[
+      {
+        "name":"width",
+        "typeName":"Int",
+        "value":"16"
+      }
+    ]
   },
   {
     "class":"chisel3.tywaves.TywavesAnnotation",
     "target":"~TopCircuitWithParams|MyModule_2",
-    "typeName":"MyModule"
+    "typeName":"MyModule",
+    "params":[
+      {
+        "name":"width",
+        "typeName":"Int",
+        "value":"32"
+      }
+    ]
   },
   {
     "class":"chisel3.tywaves.TywavesAnnotation",

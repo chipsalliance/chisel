@@ -4,6 +4,7 @@ import chisel3._
 import chisel3.experimental.{Analog, IntrinsicModule}
 import chisel3.experimental.hierarchy.{instantiable, Definition, Instance}
 import chisel3.stage.ChiselGeneratorAnnotation
+import chisel3.tywaves.ClassParam
 import chisel3.util.{MixedVec, SRAM, SRAMInterface}
 import circt.stage.ChiselStage
 import org.scalatest.AppendedClues.convertToClueful
@@ -17,16 +18,34 @@ object TestUtils extends Matchers {
     pattern.findAllMatchIn(mainString).length
   }
 
-  def createExpected(target: String, typeName: String, binding: String = ""): String = {
+  def createExpected(
+    target:   String,
+    typeName: String,
+    binding:  String = "",
+    params:   Option[Seq[ClassParam]] = None
+  ): String = {
     val realTypeName = binding match {
       case "" => typeName
       case _  => s"$binding\\[$typeName\\]"
     }
-    s"""\"target\":\"$target\",\\s+\"typeName\":\"$realTypeName\"""".stripMargin
+    val realParams = params match {
+      case Some(p) => s""",\\s+"params":\\s*\\[\\s+${
+        p.map { p => {
+          val value = p.value match {
+            case Some(v) => s",\\s*\"value\":\"$v\""
+            case None    => ""
+          }
+          "\\{\\s+" + Seq(s"\"name\":\"${p.name}\"", s"\"typeName\":\"${p.typeName}\"\\s*$value").mkString(",\\s+") + "\\s*\\}"
+        }
+        }.mkString(",\\s+")
+      }\\s+\\]"""
+      case None    => ""
+    }
+    s"""\"target\":\"$target\",\\s+\"typeName\":\"$realTypeName\"$realParams\\s*}""".stripMargin
   }
 
-  def checkAnno(expectedMatches: Seq[(String, Int)], refString: String): Unit = {
-    def totalAnnoCheck(n: Int): (String, Int) = (""""class":"chisel3.tywaves.TywavesAnnotation"""", n + 1)
+  def checkAnno(expectedMatches: Seq[(String, Int)], refString: String, includeConstructor: Boolean=false): Unit = {
+    def totalAnnoCheck(n: Int): (String, Int) = (""""class":"chisel3.tywaves.TywavesAnnotation"""", if(includeConstructor) n  else n+1)
 
     (expectedMatches :+ totalAnnoCheck(expectedMatches.map(_._2).sum)).foreach {
       case (pattern, count) =>
@@ -87,15 +106,7 @@ object TywavesAnnotationCircuits {
       val mods = Seq.fill(2)(Module(new MyModule))
     }
 
-    // Circuit with submodule and submodule with submodule
-    class TopCircuitWithParams extends RawModule {
-      class MyModule(val width: Int) extends RawModule
-
-      val mod1: MyModule = Module(new MyModule(8))
-      val mod2: MyModule = Module(new MyModule(16))
-      val mod3: MyModule = Module(new MyModule(32))
-    }
-
+   
     // Circuit with submodule and submodule with submodule
     class TopCircuitBlackBox extends RawModule {
       class MyBlackBox extends BlackBox(Map("PARAM1" -> "TRUE", "PARAM2" -> "DEFAULT")) {
