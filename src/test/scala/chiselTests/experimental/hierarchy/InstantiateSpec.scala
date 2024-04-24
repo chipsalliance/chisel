@@ -499,4 +499,13 @@ class InstantiateSpec extends ChiselFunSpec with Utils {
     }
     assert(convert(new MyTop).modules.map(_.name).sorted == Seq("Bar", "Bar_1", "Baz", "Foo", "Foo_1", "Top").sorted)
   }
+
+  it("Instantiate.definition should work") {
+    class MyTop extends Top {
+      val def0 = Instantiate.definition(new Foo(1))
+      val inst0 = def0.toInstance
+      val inst1 = Instantiate(new Foo(1))
+    }
+    assert(convert(new MyTop).modules.map(_.name).sorted == Seq("Bar", "Bar_1", "Baz", "Foo", "Top").sorted)
+  }
 }
