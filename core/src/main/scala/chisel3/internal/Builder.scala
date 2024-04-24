@@ -425,11 +425,25 @@ private[chisel3] class ChiselContext() {
 }
 
 private[chisel3] class DynamicContext(
+<<<<<<< HEAD
   val annotationSeq:     AnnotationSeq,
   val throwOnFirstError: Boolean,
   val warningsAsErrors:  Boolean,
   val sourceRoots:       Seq[File]) {
   val importDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
+=======
+  val annotationSeq:         AnnotationSeq,
+  val throwOnFirstError:     Boolean,
+  val legacyShiftRightWidth: Boolean,
+  val warningFilters:        Seq[WarningFilter],
+  val sourceRoots:           Seq[File],
+  val defaultNamespace:      Option[Namespace],
+  // Definitions from other scopes in the same elaboration, use allDefinitions below
+  val loggerOptions: LoggerOptions,
+  val definitions:   ArrayBuffer[Definition[_]],
+  val contextCache:  BuilderContextCache) {
+  val importedDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
+>>>>>>> 02b01e8b6 (Fix Nested Instantiate (#4018))
 
   // Map holding the actual names of extModules
   // Pick the definition name by default in case not passed through annotation.
@@ -478,8 +492,6 @@ private[chisel3] class DynamicContext(
 
   // Views that do not correspond to a single ReferenceTarget and thus require renaming
   val unnamedViews: ArrayBuffer[Data] = ArrayBuffer.empty
-
-  val contextCache: BuilderContextCache = BuilderContextCache.empty
 
   // Set by object Module.apply before calling class Module constructor
   // Used to distinguish between no Module() wrapping, multiple wrappings, and rewrapping
@@ -537,9 +549,25 @@ private[chisel3] object Builder extends LazyLogging {
 
   def idGen: IdGen = chiselContext.get.idGen
 
+<<<<<<< HEAD
   def globalNamespace: Namespace = dynamicContext.globalNamespace
   def components:      ArrayBuffer[Component] = dynamicContext.components
   def annotations:     ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
+=======
+  def globalNamespace:           Namespace = dynamicContext.globalNamespace
+  def globalIdentifierNamespace: Namespace = dynamicContext.globalIdentifierNamespace
+
+  def aliasMap: mutable.LinkedHashMap[String, (fir.Type, SourceInfo)] =
+    dynamicContext.aliasMap
+
+  def components:  ArrayBuffer[Component] = dynamicContext.components
+  def definitions: ArrayBuffer[Definition[_]] = dynamicContext.definitions
+
+  def annotations: ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
+
+  def layers:  mutable.LinkedHashSet[layer.Layer] = dynamicContext.layers
+  def options: mutable.LinkedHashSet[choice.Case] = dynamicContext.options
+>>>>>>> 02b01e8b6 (Fix Nested Instantiate (#4018))
 
   def contextCache: BuilderContextCache = dynamicContext.contextCache
 

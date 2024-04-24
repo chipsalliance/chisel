@@ -121,11 +121,21 @@ object Instance extends SourceInfoDoc {
     compileOptions:      CompileOptions
   ): Instance[T] = {
     // Check to see if the module is already defined internally or externally
+<<<<<<< HEAD
     val existingMod = Builder.components.map {
       case c: DefModule if c.id == definition.proto          => Some(c)
       case c: DefBlackBox if c.name == definition.proto.name => Some(c)
       case _ => None
     }.flatten
+=======
+    val existingMod = Builder.definitions.view.map(_.proto).exists {
+      case c: Class               => c == definition.proto
+      case c: RawModule           => c == definition.proto
+      case c: BaseBlackBox        => c.name == definition.proto.name
+      case c: BaseIntrinsicModule => c.name == definition.proto.name
+      case _ => false
+    }
+>>>>>>> 02b01e8b6 (Fix Nested Instantiate (#4018))
 
     if (existingMod.isEmpty) {
       // Add a Definition that will get emitted as an ExtModule so that FIRRTL

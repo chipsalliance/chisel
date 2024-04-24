@@ -5,6 +5,7 @@ package experimental.hierarchy
 
 import chisel3._
 import chisel3.util.Valid
+import chisel3.properties._
 import chisel3.experimental.hierarchy._
 import circt.stage.ChiselStage.convert
 
@@ -142,9 +143,51 @@ object InstantiateSpec {
     @public val out = param.map(w => IO(Output(UInt(w.W))))
     out.zip(in).foreach { case (o, i) => o := i }
   }
+<<<<<<< HEAD
+=======
+
+  @instantiable
+  class InstantiableBlackBox extends BlackBox {
+    @public val io = IO(new Bundle {
+      val in = Input(UInt(8.W))
+      val out = Output(UInt(8.W))
+    })
+  }
+
+  @instantiable
+  class InstantiableExtModule extends ExtModule {
+    @public val in = IO(Input(UInt(8.W)))
+    @public val out = IO(Output(UInt(8.W)))
+  }
+
+  @instantiable
+  class InstantiableIntrinsic extends IntrinsicModule("MyIntrinsic", Map()) {
+    @public val in = IO(Input(UInt(8.W)))
+    @public val out = IO(Output(UInt(8.W)))
+  }
+
+  @instantiable
+  class Baz extends Module
+
+  @instantiable
+  class Bar(i: Int) extends Module {
+    val baz = Instantiate(new Baz)
+  }
+  @instantiable
+  class Foo(i: Int) extends Module {
+    val bar0 = Instantiate(new Bar(0))
+    val bar1 = Instantiate(new Bar(1))
+    val bar11 = Instantiate(new Bar(1))
+  }
+}
+
+class ParameterizedReset(hasAsyncNotSyncReset: Boolean) extends Module {
+  override def resetType = if (hasAsyncNotSyncReset) Module.ResetType.Asynchronous else Module.ResetType.Synchronous
+>>>>>>> 02b01e8b6 (Fix Nested Instantiate (#4018))
 }
 
 class InstantiateSpec extends ChiselFunSpec with Utils {
+
   import InstantiateSpec._
 
   describe("Module classes that take no arguments") {
@@ -411,4 +454,43 @@ class InstantiateSpec extends ChiselFunSpec with Utils {
       """ shouldNot compile
     }
   }
+<<<<<<< HEAD
+=======
+
+  it("Should make different Modules with reset type as a parameter") {
+    class MyTop extends Top {
+      withReset(reset.asAsyncReset) {
+        val inst0 = Instantiate(new ParameterizedReset(true))
+        val inst1 = Instantiate(new ParameterizedReset(true))
+      }
+      val inst2 = Instantiate(new ParameterizedReset(false))
+      val inst3 = Instantiate(new ParameterizedReset(false))
+
+      a[ChiselException] should be thrownBy {
+        val inst4 = Instantiate(new ParameterizedReset(true))
+      }
+      a[ChiselException] should be thrownBy {
+        withReset(reset.asAsyncReset) {
+          val inst5 = Instantiate(new ParameterizedReset(false))
+        }
+      }
+    }
+    val modules = convert(new MyTop).modules.map(_.name)
+    assert(
+      modules == Seq(
+        "ParameterizedReset",
+        "ParameterizedReset_1",
+        "Top"
+      )
+    )
+  }
+
+  it("Nested Instantiate should work") {
+    class MyTop extends Top {
+      val inst0 = Instantiate(new Foo(0))
+      val inst1 = Instantiate(new Foo(1))
+    }
+    assert(convert(new MyTop).modules.map(_.name).sorted == Seq("Bar", "Bar_1", "Baz", "Foo", "Foo_1", "Top").sorted)
+  }
+>>>>>>> 02b01e8b6 (Fix Nested Instantiate (#4018))
 }
