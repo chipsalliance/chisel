@@ -122,7 +122,7 @@ object Instance extends SourceInfoDoc {
     implicit sourceInfo: SourceInfo
   ): Instance[T] = {
     // Check to see if the module is already defined internally or externally
-    val existingMod = Builder.allDefinitions.view.flatten.map(_.proto).exists {
+    val existingMod = Builder.definitions.view.map(_.proto).exists {
       case c: Class               => c == definition.proto
       case c: RawModule           => c == definition.proto
       case c: BaseBlackBox        => c.name == definition.proto.name
