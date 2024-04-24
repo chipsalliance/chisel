@@ -421,8 +421,9 @@ private[chisel3] class DynamicContext(
   val warningFilters:    Seq[WarningFilter],
   val sourceRoots:       Seq[File],
   // Definitions from other scopes in the same elaboration, use allDefinitions below
-  val outerScopeDefinitions: List[Iterable[Definition[_]]],
-  val loggerOptions:         LoggerOptions) {
+  val loggerOptions: LoggerOptions,
+  val definitions:   ArrayBuffer[Definition[_]],
+  val contextCache:  BuilderContextCache) {
   val importedDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
 
   // Map from proto module name to ext-module name
@@ -466,7 +467,6 @@ private[chisel3] class DynamicContext(
   }
 
   val components = ArrayBuffer[Component]()
-  val definitions = ArrayBuffer[Definition[_]]()
   val annotations = ArrayBuffer[ChiselAnnotation]()
   val newAnnotations = ArrayBuffer[ChiselMultiAnnotation]()
   var currentModule: Option[BaseModule] = None
@@ -478,8 +478,6 @@ private[chisel3] class DynamicContext(
 
   // Views that do not correspond to a single ReferenceTarget and thus require renaming
   val unnamedViews: ArrayBuffer[Data] = ArrayBuffer.empty
-
-  val contextCache: BuilderContextCache = BuilderContextCache.empty
 
   // Set by object Module.apply before calling class Module constructor
   // Used to distinguish between no Module() wrapping, multiple wrappings, and rewrapping
@@ -546,8 +544,15 @@ private[chisel3] object Builder extends LazyLogging {
   def annotations:               ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
   def definitions:               ArrayBuffer[Definition[_]] = dynamicContext.definitions
 
+<<<<<<< HEAD
   /** All definitions from current elaboration, including Definitions passed as an argument to this one */
   def allDefinitions: List[Iterable[Definition[_]]] = definitions :: dynamicContext.outerScopeDefinitions
+=======
+  def annotations: ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
+
+  def layers:  mutable.LinkedHashSet[layer.Layer] = dynamicContext.layers
+  def options: mutable.LinkedHashSet[choice.Case] = dynamicContext.options
+>>>>>>> 02b01e8b6 (Fix Nested Instantiate (#4018))
 
   def contextCache: BuilderContextCache = dynamicContext.contextCache
 
