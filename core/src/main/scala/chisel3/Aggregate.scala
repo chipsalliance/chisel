@@ -322,6 +322,25 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
       case _                         => // Fall through to control flow below
     }
 
+<<<<<<< HEAD
+=======
+    if (length == 0) {
+      Builder.warning(Warning(WarningID.ExtractFromVecSizeZero, s"Cannot extract from Vec of size 0."))
+    } else {
+      p.widthOption.foreach { pWidth =>
+        val correctWidth = BigInt(length - 1).bitLength
+        def mkMsg(msg: String): String =
+          s"Dynamic index with width $pWidth is too $msg for Vec of size $length (expected index width $correctWidth)."
+
+        if (pWidth > correctWidth) {
+          Builder.warning(Warning(WarningID.DynamicIndexTooWide, mkMsg("wide")))
+        } else if (pWidth < correctWidth) {
+          Builder.warning(Warning(WarningID.DynamicIndexTooNarrow, mkMsg("narrow")))
+        }
+      }
+    }
+
+>>>>>>> 1e0a9e94a (Fix Typo in ExtractFromVecSizeZero warning message (#4029))
     // Special handling for views
     if (isView(this)) {
       reifySingleData(this) match {

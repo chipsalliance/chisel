@@ -336,5 +336,25 @@ class WarningConfigurationSpec extends AnyFunSpec with Matchers with chiselTests
       e.getMessage should include("[W003] Dynamic index with width 2 is too small for extractee of width 8")
     }
 
+<<<<<<< HEAD
+=======
+    it("should number DynamicIndexTooWide as 4") {
+      val args = Array("--warn-conf", "id=4:e,any:s", "--throw-on-first-error")
+      val e = the[Exception] thrownBy ChiselStage.emitCHIRRTL(new DynamicIndexTooWide, args)
+      e.getMessage should include("[W004] Dynamic index with width 3 is too wide for Vec of size 4")
+    }
+
+    it("should number DynamicIndexTooNarrow as 5") {
+      val args = Array("--warn-conf", "id=5:e,any:s", "--throw-on-first-error")
+      val e = the[Exception] thrownBy ChiselStage.emitCHIRRTL(new DynamicIndexTooNarrow, args)
+      e.getMessage should include("[W005] Dynamic index with width 2 is too narrow for Vec of size 8")
+    }
+
+    it("should number ExtractFromVecSizeZero as 6") {
+      val args = Array("--warn-conf", "id=6:e,any:s", "--throw-on-first-error")
+      val e = the[Exception] thrownBy ChiselStage.emitCHIRRTL(new ExtractFromVecSizeZero, args)
+      e.getMessage should include("[W006] Cannot extract from Vec of size 0")
+    }
+>>>>>>> 1e0a9e94a (Fix Typo in ExtractFromVecSizeZero warning message (#4029))
   }
 }
