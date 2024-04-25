@@ -1,7 +1,8 @@
 package circtTests.tywavesTests.scalaReflectionTests
 
 import chisel3.tywaves.{ClassParam, TywavesChiselAnnotation}
-import chisel3.util.{SRAM, SRAMInterface}
+import circtTests.tywavesTests.TestUtils.countSubstringOccurrences
+import org.scalatest.AppendedClues.convertToClueful
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -145,7 +146,131 @@ class ParametersAnnotationSpec extends AnyFunSpec with Matchers with chiselTests
       val expectB = Seq(ClassParam("aClass", "A", Some("A(a: 1, x: ciao, base: Base(a: 3, c: 1.1))")))
       TywavesChiselAnnotation.getConstructorParams(b) should be(expectB)
     }
+  }
 
+  describe("Parameters with Chisel constructs") {
+    import circt.stage.ChiselStage
+    import chisel3.stage.ChiselGeneratorAnnotation
+    import circtTests.tywavesTests.TywavesAnnotationCircuits.ParamCircuits._
+    import circtTests.tywavesTests.TestUtils.{checkAnno, createExpected}
+
+    val targetDir = os.pwd / "test_run_dir" / "TywavesAnnotationSpec" / "Chisel Constructs with Parameters Annotations"
+    val args: Array[String] = Array("--target", "chirrtl", "--target-dir", targetDir.toString)
+
+    it("should annotate a circuit with parameters") {
+      (new ChiselStage(true)).execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitWithParams(8, 16))))
+      // The file should include it
+      val string = os.read(targetDir / "TopCircuitWithParams.fir")
+      val expectedMatches = Seq(
+        (createExpected("~TopCircuitWithParams\\|TopCircuitWithParams>uint", "UInt<8>", "IO"), 1),
+        (createExpected("~TopCircuitWithParams\\|TopCircuitWithParams>sint", "SInt<16>", "IO"), 1),
+        (createExpected("~TopCircuitWithParams\\|TopCircuitWithParams>bool", "Bool", "IO"), 1),
+        (createExpected("~TopCircuitWithParams\\|TopCircuitWithParams>bits", "UInt<24>", "IO"), 1),
+        (
+          createExpected(
+            "~TopCircuitWithParams\\|TopCircuitWithParams",
+            "TopCircuitWithParams",
+            params = Some(Seq(ClassParam("width1", "Int", Some("8")), ClassParam("width2", "Int", Some("16"))))
+          ),
+          1
+        )
+      )
+      checkAnno(expectedMatches, string, includeConstructor = true)
+    }
+
+    it("should annotate variants of Parametrized module in a circuit") {
+      (new ChiselStage(true)).execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitWithParamModules)))
+      // The file should include it
+      val string = os.read(targetDir / "TopCircuitWithParamModules.fir")
+      countSubstringOccurrences(string, "\"class\":\"chisel3.tywaves.TywavesAnnotation\"") should be(4)
+      countSubstringOccurrences(string, "\"typeName\":\"MyModule") should be(3)
+
+      val expected1 = "\"typeName\":\"MyModule\"," + "\\s*\"params\":\\[\\s*\\{\\s*" +
+        "\"name\":\"width\",\\s*\"typeName\":\"Int\",\\s*\"value\":\"8\"" +
+        "\\s*\\}\\s*\\]\\s*\\}"
+      (countSubstringOccurrences(string, expected1) should be(1)).withClue("Expected: " + expected1)
+      val expected2 = "\"typeName\":\"MyModule\"," + "\\s*\"params\":\\[\\s*\\{\\s*" +
+        "\"name\":\"width\",\\s*\"typeName\":\"Int\",\\s*\"value\":\"16\"" +
+        "\\s*\\}\\s*\\]\\s*\\}"
+      (countSubstringOccurrences(string, expected2) should be(1)).withClue("Expected: " + expected2)
+      val expected3 = "\"typeName\":\"MyModule\"," + "\\s*\"params\":\\[\\s*\\{\\s*" +
+        "\"name\":\"width\",\\s*\"typeName\":\"Int\",\\s*\"value\":\"32\"" +
+        "\\s*\\}\\s*\\]\\s*\\}"
+      (countSubstringOccurrences(string, expected3) should be(1)).withClue("Expected: " + expected3)
+    }
+
+    it("should annotate Parametrized bundles") {
+      new ChiselStage(true).execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitWithParamBundle)))
+      // The file should include it
+      val string = os.read(targetDir / "TopCircuitWithParamBundle.fir")
+      // format: off
+      val expectedMatches = Seq(
+        (createExpected("~TopCircuitWithParamBundle\\|TopCircuitWithParamBundle>baseBundle", "BaseBundle", "IO",
+          params = Some(Seq(ClassParam("n", "Int", Some(1.toString))))), 1),
+        (createExpected("~TopCircuitWithParamBundle\\|TopCircuitWithParamBundle>baseBundle.b", "UInt<1>", "IO"), 1),
+        (createExpected("~TopCircuitWithParamBundle\\|TopCircuitWithParamBundle>otherBundle", "OtherBundle", "IO",
+          params = Some(Seq(
+            ClassParam("a", "UInt", Some("IO\\[UInt<1>\\]")),
+            ClassParam("b", "BaseBundle", Some("BaseBundle\\(n: 1\\)"))))), 1),
+        (createExpected("~TopCircuitWithParamBundle\\|TopCircuitWithParamBundle>otherBundle.a", "UInt<1>", "IO"), 1),
+        (createExpected("~TopCircuitWithParamBundle\\|TopCircuitWithParamBundle>otherBundle.b", "BaseBundle", "IO",
+          params = Some(Seq(ClassParam("n", "Int", Some(1.toString))))), 1),
+        (createExpected("~TopCircuitWithParamBundle\\|TopCircuitWithParamBundle>otherBundle.b.b", "UInt<1>", "IO"), 1),
+
+        (createExpected("~TopCircuitWithParamBundle\\|TopCircuitWithParamBundle>topBundle", "TopBundle", "IO",
+          params = Some(Seq(
+            ClassParam("a", "Bool", Some("IO\\[Bool\\]")),
+            ClassParam("b", "String", Some("hello")),
+            ClassParam("c", "Char", Some("c")),
+            ClassParam("d", "Boolean", Some("true")),
+            ClassParam("o", "OtherBundle", Some("OtherBundle\\(a: IO\\[UInt<1>\\], b: BaseBundle\\(n: 1\\)\\)"))  ))), 1),
+        (createExpected("~TopCircuitWithParamBundle\\|TopCircuitWithParamBundle>topBundle.inner_a", "Bool", "IO"), 1),
+        (createExpected("~TopCircuitWithParamBundle\\|TopCircuitWithParamBundle>topBundle.o", "OtherBundle", "IO",
+            params = Some(Seq(ClassParam("a", "UInt", Some("IO\\[UInt<1>\\]")),
+            ClassParam("b", "BaseBundle", Some("BaseBundle\\(n: 1\\)"))))), 1),
+        (createExpected("~TopCircuitWithParamBundle\\|TopCircuitWithParamBundle>topBundle.o.a", "UInt<1>", "IO"), 1),
+        (createExpected("~TopCircuitWithParamBundle\\|TopCircuitWithParamBundle>topBundle.o.b", "BaseBundle", "IO",
+          params = Some(Seq(ClassParam("n", "Int", Some(1.toString))))), 1),
+        (createExpected("~TopCircuitWithParamBundle\\|TopCircuitWithParamBundle>topBundle.o.b.b", "UInt<1>", "IO"), 1),
+
+        (createExpected("~TopCircuitWithParamBundle\\|TopCircuitWithParamBundle>caseClassBundle", "CaseClassExample", "IO",
+          params = Some(Seq(
+            ClassParam("a", "Int", Some("1")),
+            ClassParam("o", "OtherBundle", Some("OtherBundle\\(a: IO\\[UInt<2>\\], b: BaseBundle\\(n: 1\\)\\)"))
+          ))), 1),
+        (createExpected("~TopCircuitWithParamBundle\\|TopCircuitWithParamBundle>caseClassBundle.o", "OtherBundle", "IO",
+          params = Some(Seq(
+            ClassParam("a", "UInt", Some("IO\\[UInt<2>\\]")),
+            ClassParam("b", "BaseBundle", Some("BaseBundle\\(n: 1\\)"))))), 1),
+        (createExpected("~TopCircuitWithParamBundle\\|TopCircuitWithParamBundle>caseClassBundle.o.a", "UInt<2>", "IO"), 1),
+        (createExpected("~TopCircuitWithParamBundle\\|TopCircuitWithParamBundle>caseClassBundle.o.b", "BaseBundle", "IO",
+          params = Some(Seq(ClassParam("n", "Int", Some(1.toString))))), 1),
+        (createExpected("~TopCircuitWithParamBundle\\|TopCircuitWithParamBundle>caseClassBundle.o.b.b", "UInt<1>", "IO"), 1),
+      )
+      // format: on
+      checkAnno(expectedMatches, string)
+    }
+
+    it("should annotate Parametrized modules and bundles with scala classes as params") {
+      new ChiselStage(true).execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitWithParamScalaClasses)))
+      // The file should include it
+      val string = os.read(targetDir / "TopCircuitWithParamScalaClasses.fir")
+      // format: off
+      val expectedMatches = Seq(
+        (createExpected("~TopCircuitWithParamScalaClasses\\|MyModule", "MyModule",
+          params = Some(Seq(
+            ClassParam("a", "MyScalaClass", Some("MyScalaClass\\(a: 1, b\\)")),
+            ClassParam("b", "MyScalaCaseClass", Some("MyScalaCaseClass\\(a: 2, b: world\\)"))
+          ))), 1),
+        (createExpected("~TopCircuitWithParamScalaClasses\\|TopCircuitWithParamScalaClasses>bundle", "MyBundle", "IO",
+          params = Some(Seq(
+            ClassParam("a", "MyScalaClass", Some("MyScalaClass\\(a: 1, b\\)")),
+            ClassParam("b", "MyScalaCaseClass", Some("MyScalaCaseClass\\(a: 2, b: world\\)"))
+          ))), 1),
+      )
+      // format: on
+      checkAnno(expectedMatches, string)
+    }
   }
 
 }

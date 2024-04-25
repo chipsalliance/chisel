@@ -66,8 +66,10 @@ class TypeAnnotationModulesSpec extends AnyFunSpec with Matchers with chiselTest
       (new ChiselStage(true)).execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitClasses)))
       val string = os.read(targetDir / "TopCircuitClasses.fir")
       countSubstringOccurrences(string, "\"typeName\":\"CSRModule\"") should be(4)
-      // TODO: this fails, I don't know why it has twice the same class in the components
-      countSubstringOccurrences(string, "\"typeName\":\"CSRDescription") should be(1)
+      countSubstringOccurrences(
+        string,
+        "\"target\":\"~TopCircuitClasses\\|CSRDescription\",\\s*\"typeName\":\"CSRDescription"
+      ) should be(1)
       countSubstringOccurrences(string, "\"class\":\"chisel3.tywaves.TywavesAnnotation\"") should be(6)
     }
 
@@ -84,11 +86,9 @@ class TypeAnnotationModulesSpec extends AnyFunSpec with Matchers with chiselTest
       val string = os.read(targetDir / "TopCircuitParametric.fir")
 
       val expectedMatches = Seq(
-        // TODO: the goal is to have MyModule[UInt<8>], MyModule[SInt<8>], MyModule[Bool]
         ("\"typeName\":\"MyModule\\[UInt<8>\\]\"", 1),
         ("\"typeName\":\"MyModule\\[SInt<8>\\]\"", 1),
-        ("\"typeName\":\"MyModule\\[Bool\\]\"", 1),
-
+        ("\"typeName\":\"MyModule\\[Bool\\]\"", 1)
       )
       checkAnno(expectedMatches, string)
     }

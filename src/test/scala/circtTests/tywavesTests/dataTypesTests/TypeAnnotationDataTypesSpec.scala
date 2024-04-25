@@ -74,7 +74,7 @@ class TypeAnnotationDataTypesSpec extends AnyFunSpec with Matchers with chiselTe
     it("should annotate vecs") {
       new ChiselStage(true).execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitVecs(b))))
       val string = os.read(targetDir / "TopCircuitVecs.fir")
-      // scalafmt: {off}
+      // format: off
       val expectedMatches = Seq(
         (createExpected("~TopCircuitVecs\\|TopCircuitVecs>a", "SInt<23>\\[5\\]", b.toString,
           params = Some(Seq(ClassParam("gen", "=> T", None), ClassParam("length", "Int", None)))), 1),
@@ -88,25 +88,27 @@ class TypeAnnotationDataTypesSpec extends AnyFunSpec with Matchers with chiselTe
           params = Some(Seq(ClassParam("gen", "=> T", None), ClassParam("length", "Int", None)))), 1),
         (createExpected("~TopCircuitVecs\\|TopCircuitVecs>c\\[0\\]", "AnonymousBundle", b.toString), 1),
         (createExpected("~TopCircuitVecs\\|TopCircuitVecs>c\\[0\\].x", "UInt<8>", b.toString), 1),
-        // TODO: finish this test
+
         (createExpected("~TopCircuitVecs\\|TopCircuitVecs>d", "MixedVec", b.toString,
           params = Some(Seq(ClassParam("eltsIn", "Seq\\[T\\]", None)))), 1),
         (createExpected("~TopCircuitVecs\\|TopCircuitVecs>d.0", "UInt<3>", b.toString), 1),
         (createExpected("~TopCircuitVecs\\|TopCircuitVecs>d.1", "SInt<10>", b.toString), 1)
       ) ++ addClockReset("TopCircuitVecs")
+      // format: on
       checkAnno(expectedMatches, string)
     }
 
     it("should annotate bundle with vec") {
       new ChiselStage(true).execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitBundleWithVec(b))))
       val string = os.read(targetDir / "TopCircuitBundleWithVec.fir")
-      // scalafmt: {off}
+      // format: off
       val expectedMatches = Seq(
         (createExpected("~TopCircuitBundleWithVec\\|TopCircuitBundleWithVec>a", "AnonymousBundle", b.toString), 1),
         (createExpected("~TopCircuitBundleWithVec\\|TopCircuitBundleWithVec>a.vec", "UInt<8>\\[5\\]", b.toString,
           params = Some(Seq(ClassParam("gen", "=> T", None), ClassParam("length", "Int", None)))), 1),
         (createExpected("~TopCircuitBundleWithVec\\|TopCircuitBundleWithVec>a.vec\\[0\\]", "UInt<8>", b.toString), 1)
       ) ++ addClockReset("TopCircuitBundleWithVec")
+      // format: on
       checkAnno(expectedMatches, string)
     }
 
@@ -150,7 +152,6 @@ class TypeAnnotationDataTypesSpec extends AnyFunSpec with Matchers with chiselTe
       val expectedMatches = Seq(
         (createExpected("~TopCircuitClockReset\\|TopCircuitClockReset>clock", "Clock", "IO"), 1),
         (createExpected("~TopCircuitClockReset\\|TopCircuitClockReset>syncReset", "Bool", "IO"), 1),
-        // TODO: check if this should be Reset or ResetType (the actual type is ResetType)
         (createExpected("~TopCircuitClockReset\\|TopCircuitClockReset>reset", "Reset", "IO"), 1),
         (createExpected("~TopCircuitClockReset\\|TopCircuitClockReset>asyncReset", "AsyncReset", "IO"), 1)
       )

@@ -215,8 +215,8 @@ object TywavesChiselAnnotation {
       val tt = getTypeTag(target)
       val im = runtimeMirror(target.getClass.getClassLoader).reflect(target)
       tt.tpe.members.collect {
-        case m: MethodSymbol if m.isPrimaryConstructor => m
-      } // Get the primary constructor
+        case m: MethodSymbol if m.isConstructor => m
+      } // Get the constructor
         .flatMap(_.paramLists.flatten)
         .exists { a =>
           try {
@@ -237,29 +237,38 @@ object TywavesChiselAnnotation {
     val l = tt.tpe.members.collect {
       case m: MethodSymbol if m.isConstructor =>
         m.paramLists.flatten.collect {
+          // Filter the object itself??
           case a if !a.name.toString.contains("$outer") =>
-            // Filter the object itself?
             val t = a.info.toString.split("\\$")
-            val typeName = if (t.length > 1) t(1) else t(0) // Remove the package name
+            val typeName = (if (t.length > 1) t(1) else t(0)).split("\\.").last // Remove the package name
             val paramName = a.name.toString // Get the name of the parameter
             val value =
               try {
-                val valueTerm = im.reflectField(a.asTerm).get // Try to extract the value of the parameter
+                // Try to extract the value of the parameter
+                val valueTerm = im.reflectField(a.asTerm).get
+
                 val finalValueTerm =
-                  if (!hasParams(valueTerm)) // If it does not have params, return the term itself
-                    valueTerm
-                  else { // Otherwise, get the params nested inside the class
-                    val params =
-                      getConstructorParams(valueTerm).map { p =>
-                        p.value match {
-                          case Some(v) => s"${p.name}: $v"
-                          case None    => p.name
-                        }
-                      }.mkString(", ")
-                    // Format the parameters in this way: Type(param1: value1, param2: value2, ...)
-                    s"$typeName($params)"
+                  // Recursive base case
+                  if (!hasParams(valueTerm)) {
+                    // If the the parameter is a Data
+                    //    class Top(val param1: UInt) extends Bundle
+                    // then simplify the value of the parameter itself.
+                    // This prevents from having something like "Top.param1: IO[UInt<8>]"
+                    // and instead it will be simply "IO[UInt<8>]" (the value of the parameter)
+                    valueTerm match {
+                      case v: Data => dataToTypeName(v)
+                      case _ => valueTerm.toString
+                    }
                   }
-                Some(finalValueTerm.toString)
+                  // Recursive call
+                  else {
+                    val params = getConstructorParams(valueTerm).map { p =>
+                      p.value.fold(p.name)(v => s"${p.name}: $v")
+                    }
+                    // Format the parameters in this way: Type(param1: value1, param2: value2, ...)
+                    s"$typeName(${params.mkString(", ")})"
+                  }
+                Some(finalValueTerm)
               } catch { case e: Exception => None }
             ClassParam(paramName, typeName, value)
         }

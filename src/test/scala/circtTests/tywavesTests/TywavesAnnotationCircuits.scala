@@ -4,7 +4,7 @@ import chisel3._
 import chisel3.experimental.{Analog, IntrinsicModule}
 import chisel3.experimental.hierarchy.{instantiable, Definition, Instance}
 import chisel3.stage.ChiselGeneratorAnnotation
-import chisel3.tywaves.ClassParam
+import chisel3.tywaves.{ClassParam, TywavesChiselAnnotation}
 import chisel3.util.{MixedVec, SRAM, SRAMInterface}
 import circt.stage.ChiselStage
 import org.scalatest.AppendedClues.convertToClueful
@@ -29,23 +29,26 @@ object TestUtils extends Matchers {
       case _  => s"$binding\\[$typeName\\]"
     }
     val realParams = params match {
-      case Some(p) => s""",\\s+"params":\\s*\\[\\s+${
-        p.map { p => {
-          val value = p.value match {
-            case Some(v) => s",\\s*\"value\":\"$v\""
-            case None    => ""
+      case Some(p) =>
+        s""",\\s+"params":\\s*\\[\\s+${p.map { p =>
+          {
+            val value = p.value match {
+              case Some(v) => s""",\\s*\"value\":\"$v\""""
+              case None    => ""
+            }
+            "\\{\\s+" + Seq(s"""\"name\":\"${p.name}\"""", s"""\"typeName\":\"${p.typeName}\"\\s*$value""").mkString(
+              ",\\s+"
+            ) + "\\s*\\}"
           }
-          "\\{\\s+" + Seq(s"\"name\":\"${p.name}\"", s"\"typeName\":\"${p.typeName}\"\\s*$value").mkString(",\\s+") + "\\s*\\}"
-        }
-        }.mkString(",\\s+")
-      }\\s+\\]"""
-      case None    => ""
+        }.mkString(",\\s+")}\\s+\\]"""
+      case None => ""
     }
     s"""\"target\":\"$target\",\\s+\"typeName\":\"$realTypeName\"$realParams\\s*}""".stripMargin
   }
 
-  def checkAnno(expectedMatches: Seq[(String, Int)], refString: String, includeConstructor: Boolean=false): Unit = {
-    def totalAnnoCheck(n: Int): (String, Int) = (""""class":"chisel3.tywaves.TywavesAnnotation"""", if(includeConstructor) n  else n+1)
+  def checkAnno(expectedMatches: Seq[(String, Int)], refString: String, includeConstructor: Boolean = false): Unit = {
+    def totalAnnoCheck(n: Int): (String, Int) =
+      (""""class":"chisel3.tywaves.TywavesAnnotation"""", if (includeConstructor) n else n + 1)
 
     (expectedMatches :+ totalAnnoCheck(expectedMatches.map(_._2).sum)).foreach {
       case (pattern, count) =>
@@ -106,7 +109,6 @@ object TywavesAnnotationCircuits {
       val mods = Seq.fill(2)(Module(new MyModule))
     }
 
-   
     // Circuit with submodule and submodule with submodule
     class TopCircuitBlackBox extends RawModule {
       class MyBlackBox extends BlackBox(Map("PARAM1" -> "TRUE", "PARAM2" -> "DEFAULT")) {
@@ -307,6 +309,61 @@ object TywavesAnnotationCircuits {
       val maskSize = 2
       val gen = Vec(maskSize, _gen)
       val mem = SRAM.masked(4, gen, 1, 1, 0)
+    }
+  }
+
+  object ParamCircuits {
+
+    // Circuit with params
+    class TopCircuitWithParams(val width1: Int, width2: Int) extends RawModule {
+      val width3 = width1 + width2
+      val uint: UInt = IO(Input(UInt(width1.W)))
+      val sint: SInt = IO(Input(SInt(width2.W)))
+      val bool: Bool = IO(Input(Bool()))
+      val bits: Bits = IO(Input(Bits(width3.W)))
+    }
+
+    // Circuit with submodule and submodule with submodule
+    class TopCircuitWithParamModules extends RawModule {
+      class MyModule(val width: Int) extends RawModule
+
+      val mod1: MyModule = Module(new MyModule(8))
+      val mod2: MyModule = Module(new MyModule(16))
+      val mod3: MyModule = Module(new MyModule(32))
+    }
+
+    // Bundle with parameters
+    class TopCircuitWithParamBundle extends RawModule {
+      class BaseBundle(val n: Int) extends Bundle {
+        val b: UInt = UInt(n.W)
+      }
+      class OtherBundle(val a: UInt, val b: BaseBundle) extends Bundle {} // Example of nested class in parameters
+
+      class TopBundle(a: Bool, val b: String, protected val c: Char, private val d: Boolean, val o: OtherBundle)
+          extends Bundle {
+        val inner_a = a
+      }
+      case class CaseClassExample(a: Int, o: OtherBundle) extends Bundle
+
+      val baseBundle = IO(Input(new BaseBundle(1)))
+      val otherBundle = IO(Input(new OtherBundle(UInt(baseBundle.n.W), baseBundle.cloneType)))
+      val topBundle = IO(Input(new TopBundle(Bool(), "hello", 'c', true, otherBundle.cloneType)))
+
+      val caseClassBundle = IO(Input(CaseClassExample(1, new OtherBundle(UInt(2.W), baseBundle.cloneType))))
+
+    }
+
+    // A circuit where parameters are pure scala classes/case classes
+    class TopCircuitWithParamScalaClasses extends RawModule {
+      class MyScalaClass(val a: Int, b: String)
+      case class MyScalaCaseClass(a: Int, b: String)
+
+      class MyModule(val a: MyScalaClass, b: MyScalaCaseClass) extends RawModule
+      class MyBundle(val a: MyScalaClass, b: MyScalaCaseClass) extends Bundle
+
+      val mod:    MyModule = Module(new MyModule(new MyScalaClass(1, "hello"), MyScalaCaseClass(2, "world")))
+      val bundle: MyBundle = IO(Input(new MyBundle(new MyScalaClass(1, "hello"), MyScalaCaseClass(2, "world"))))
+
     }
   }
 }
