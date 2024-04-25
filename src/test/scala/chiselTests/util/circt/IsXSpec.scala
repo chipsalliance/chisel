@@ -4,6 +4,7 @@ package chiselTests.util.circt
 
 import chisel3._
 import chisel3.stage.ChiselGeneratorAnnotation
+import chisel3.experimental.{SourceInfo, SourceLine}
 import chisel3.testers.BasicTester
 import chisel3.util.circt.IsX
 import circt.stage.ChiselStage
@@ -37,6 +38,17 @@ class IsXSpec extends AnyFlatSpec with Matchers {
       "node _outw_T = intrinsic(circt_isX : UInt<1>, w)",
       "node _outx_T = intrinsic(circt_isX : UInt<1>, x)",
       "node _outy_T = intrinsic(circt_isX : UInt<1>, y)"
+    )
+  }
+  it should "generate source locator for user code" in {
+    val fir = ChiselStage.emitCHIRRTL(new Module {
+      val in = IO(Input(UInt(65.W)))
+      val out = IO(Output(UInt(1.W)))
+      implicit val info = SourceLine("Foo.scala", 1, 2)
+      out := IsX(in)
+    })
+    fir.split('\n').map(_.trim) should contain(
+      "node _out_T = intrinsic(circt_isX : UInt<1>, in) @[Foo.scala 1:2]"
     )
   }
 }

@@ -3,6 +3,7 @@
 package chisel3.util.circt
 
 import chisel3._
+import chisel3.experimental.SourceInfo
 import chisel3.internal.Builder
 
 object IsX {
@@ -13,7 +14,7 @@ object IsX {
     * b := IsX(a)
     * }}}
     */
-  def apply[T <: Data](gen: T): Bool = {
+  def apply[T <: Data](gen: T)(implicit sourceInfo: SourceInfo): Bool = {
     IntrinsicExpr("circt_isX", Bool())(gen)
   }
 }

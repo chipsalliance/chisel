@@ -3,6 +3,8 @@
 package chisel3.util.circt
 
 import chisel3._
+import chisel3.experimental.SourceInfo
+
 object SizeOf {
 
   /** Creates an intrinsic which returns the size of a type.  The returned size
@@ -14,7 +16,7 @@ object SizeOf {
     * a := 1 << (SizeOf(a) - 1)
     * }}}
     */
-  def apply[T <: Data](gen: T): Data = {
+  def apply[T <: Data](gen: T)(implicit sourceInfo: SourceInfo): Data = {
     IntrinsicExpr("circt_sizeof", UInt(32.W))(gen)
   }
 }

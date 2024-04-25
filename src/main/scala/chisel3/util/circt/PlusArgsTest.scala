@@ -3,6 +3,7 @@
 package chisel3.util.circt
 
 import chisel3._
+import chisel3.experimental.SourceInfo
 import chisel3.internal.Builder
 
 object PlusArgsTest {
@@ -13,10 +14,10 @@ object PlusArgsTest {
     * b := PlusArgsTest("FOO")
     * }}}
     */
-  def apply(str: String): Bool = {
+  def apply(str: String)(implicit sourceInfo: SourceInfo): Bool = {
     IntrinsicExpr("circt_plusargs_test", Bool(), "FORMAT" -> str)()
   }
 
   @deprecated("use PlusArgsTest(str) instead")
-  def apply[T <: Data](gen: T, str: String): Bool = apply(str)
+  def apply[T <: Data](gen: T, str: String)(implicit sourceInfo: SourceInfo): Bool = apply(str)
 }

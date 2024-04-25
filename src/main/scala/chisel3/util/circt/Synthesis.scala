@@ -3,7 +3,7 @@
 package chisel3.util.circt
 
 import chisel3._
-import chisel3.experimental.requireIsHardware
+import chisel3.experimental.{requireIsHardware, SourceInfo}
 import chisel3.internal.Builder
 
 /** Utility for constructing 2-to-1 MUX cell intrinsic. This intrinsic is lowered into verilog
@@ -22,7 +22,7 @@ object Mux2Cell {
     * val muxOut = Mux2Cell(data_in === 3.U, 3.U(4.W), 0.U(4.W))
     * }}}
     */
-  def apply[T <: Data](cond: UInt, con: T, alt: T): T = {
+  def apply[T <: Data](cond: UInt, con: T, alt: T)(implicit sourceInfo: SourceInfo): T = {
     requireIsHardware(cond, "MUX2 cell selector")
     requireIsHardware(con, "MUX2 cell true value")
     requireIsHardware(alt, "MUX2 cell false value")
@@ -47,7 +47,7 @@ object Mux4Cell {
     * v := Mux4Cell(sel, v3, v2, v1, v0)
     * }}}
     */
-  def apply[T <: Data](sel: UInt, v3: T, v2: T, v1: T, v0: T): T = {
+  def apply[T <: Data](sel: UInt, v3: T, v2: T, v1: T, v0: T)(implicit sourceInfo: SourceInfo): T = {
     requireIsHardware(sel, "4-to-1 mux selector")
     requireIsHardware(v3, "MUX4 cell input value when selector == 3")
     requireIsHardware(v2, "MUX4 cell input value when selector == 2")

@@ -3,6 +3,7 @@
 package chisel3.util.circt
 
 import chisel3._
+import chisel3.experimental.SourceInfo
 import chisel3.internal.Builder
 
 object ClockGate {
@@ -16,7 +17,7 @@ object ClockGate {
     * gateClock := ClockGate(clock, enable)
     * }}}
     */
-  def apply(input: Clock, enable: Bool): Clock = {
+  def apply(input: Clock, enable: Bool)(implicit sourceInfo: SourceInfo): Clock = {
     IntrinsicExpr("circt_clock_gate", Clock())(input, enable)
   }
 }

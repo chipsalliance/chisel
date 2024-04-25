@@ -5,6 +5,7 @@ package chisel3.util.circt
 import scala.language.reflectiveCalls
 
 import chisel3._
+import chisel3.experimental.SourceInfo
 import chisel3.internal.Builder
 
 /** Create an intrinsic which generates a verilog \$value\$plusargs.  This returns a
@@ -21,7 +22,7 @@ object PlusArgsValue {
     * b.value
     * }}}
     */
-  def apply[T <: Data](gen: T, str: String) = {
+  def apply[T <: Data](gen: T, str: String)(implicit sourceInfo: SourceInfo) = {
     val ty = if (gen.isSynthesizable) chiselTypeOf(gen) else gen
     class PlusArgsRetBundle extends Bundle {
       val found = Output(Bool())
@@ -37,7 +38,7 @@ object PlusArgsValue {
     * v := PlusArgsValue(UInt(32.W), "FOO=%d", 42.U)
     * }}}
     */
-  def apply[T <: Data](gen: T, str: String, default: T): T = {
+  def apply[T <: Data](gen: T, str: String, default: T)(implicit sourceInfo: SourceInfo): T = {
     val result = apply(gen, str)
     Mux(result.found, result.result, default)
   }
