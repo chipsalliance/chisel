@@ -320,7 +320,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
     }
 
     if (length == 0) {
-      Builder.warning(Warning(WarningID.ExtractFromVecSizeZero, s"Cannot extra from Vec of size 0."))
+      Builder.warning(Warning(WarningID.ExtractFromVecSizeZero, s"Cannot extract from Vec of size 0."))
     } else {
       p.widthOption.foreach { pWidth =>
         val correctWidth = BigInt(length - 1).bitLength

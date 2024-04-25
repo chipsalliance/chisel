@@ -369,7 +369,7 @@ class WarningConfigurationSpec extends AnyFunSpec with Matchers with chiselTests
     it("should number ExtractFromVecSizeZero as 6") {
       val args = Array("--warn-conf", "id=6:e,any:s", "--throw-on-first-error")
       val e = the[Exception] thrownBy ChiselStage.emitCHIRRTL(new ExtractFromVecSizeZero, args)
-      e.getMessage should include("[W006] Cannot extra from Vec of size 0")
+      e.getMessage should include("[W006] Cannot extract from Vec of size 0")
     }
   }
 }
