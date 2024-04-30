@@ -7,10 +7,12 @@ import upickle.default._
 import scala.reflect.{ClassTag, classTag}
 import scala.reflect.runtime.universe
 import scala.reflect.runtime.universe.{runtimeMirror, typeOf}
+import mainargs._
 
 /** Parameter for SerializableModule, it should be serializable via upickle API.
   * For more information, please refer to [[https://com-lihaoyi.github.io/upickle/]]
   */
+@main
 trait SerializableModuleParameter
 
 /** Mixin this trait to let chisel auto serialize module, it has these constraints:
