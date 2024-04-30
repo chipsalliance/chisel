@@ -45,6 +45,8 @@ trait CoreModule extends ScalaModule with HasMacroAnnotations {
 
   def upickleModuleIvy: Dep
 
+  def mainargsModuleIvy: Dep
+
   def firtoolResolverModuleIvy: Dep
 
   override def moduleDeps = super.moduleDeps ++ Seq(macrosModule, firrtlModule)
@@ -52,6 +54,7 @@ trait CoreModule extends ScalaModule with HasMacroAnnotations {
   override def ivyDeps = super.ivyDeps() ++ Agg(
     osLibModuleIvy,
     upickleModuleIvy,
+    mainargsModuleIvy,
     firtoolResolverModuleIvy
   )
 }
