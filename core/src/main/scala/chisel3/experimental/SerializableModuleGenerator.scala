@@ -1,16 +1,29 @@
 package chisel3.experimental
 
 import chisel3.experimental.hierarchy.{Definition, Instance}
-import chisel3.internal.{Builder, BuilderContextCache, instantiable}
+import chisel3.internal.firrtl.Converter
+import chisel3.internal.{Builder, BuilderContextCache, DynamicContext, instantiable}
+import firrtl.annotations.JsonProtocol
+import firrtl.ir.Circuit
+import firrtl.options.Unserializable
+import logger.LogLevelAnnotation
+import mainargs._
 import upickle.default._
 
-import scala.reflect.{ClassTag, classTag}
+import scala.collection.mutable.ArrayBuffer
 import scala.reflect.runtime.universe
 import scala.reflect.runtime.universe.{runtimeMirror, typeOf}
-import mainargs._
 
 /** Parameter for SerializableModule, it should be serializable via upickle API.
   * For more information, please refer to [[https://com-lihaoyi.github.io/upickle/]]
+  *
+  * user should define their own rw to `FooSerializableModuleParameter.rw`, otherwise compiler plugin will do this:
+  * {{{
+  *   object FooSerializableModuleParameter {
+  *     implicit val rw: upickle.default.RW[SerializableModuleParameter] = macroRW
+  *   }
+  * }}}
+  * But if `upickle.default.RW[SerializableModuleParameter]` doesn't compile, scalac would complain.
   */
 @main
 trait SerializableModuleParameter
@@ -126,4 +139,94 @@ private[chisel3] trait Generator[M <: BaseModule] {
 
   /** get an instance of from this generator. */
   def instance(): Instance[M]
+}
+
+/** Mix-in this trait to create a main function generating the mlirbc file.
+  *
+  * @note from jiuyang
+  *   - don't want to depend on the Stage API! just directly convert it.
+  *   - w/o directly emit Verilog, it generate mlirbc instead, delegate later process to `firtool`.
+  *     - only one concern is circt version should be aligned for parsing and using.
+  *   - user can use @arg() API to add documentation to parameter fields and expose them in the command line.
+  */
+trait SerializableModuleMain[P <: SerializableModuleParameter, M <: SerializableModule[P]] {
+  // In the future, we will use plugin to fill these three options.
+  /** fill it with: `implicit val pRW: upickle.default.ReadWriter[P] = P.rw`
+    * In the future, P.rw must be implemented, and guarded by the compiler Plugin.
+    */
+  implicit val pRW: upickle.default.ReadWriter[P]
+  // Traits cannot have type parameters with context bounds
+  /** fill it with: `implicit val mTypeTag: universe.TypeTag[M] = implicitly[universe.TypeTag[M]]` */
+  implicit val mTypeTag: universe.TypeTag[M]
+  /** fill it with: `implicit val pTypeTag: universe.TypeTag[M] = implicitly[universe.TypeTag[P]]` */
+  implicit val pTypeTag: universe.TypeTag[P]
+
+  private implicit val gRW: upickle.default.ReadWriter[SerializableModuleGenerator[M, P]] = SerializableModuleGenerator.rw[P,M]
+
+  implicit object PathRead extends TokensReader.Simple[os.Path]{
+    def shortName = "path"
+    def read(strs: Seq[String]) = Right(os.Path(strs.head, os.pwd))
+  }
+
+  // This is the example about how do we add user command-line APIs.
+  // Annotation are not friendly to users! let's purge it!!!
+  @main
+  private[chisel3] case class Context(
+                     throwOnFirstError: Boolean = false,
+                     legacyShiftRightWidth: Boolean = false,
+                     firtoolBinary: Option[os.Path] = None,
+                     outPutDirectory: os.Path = os.pwd
+                     // TODO: source roots,
+                     // TODO: warning filter.
+                     // TODO: Log Level
+                    )
+
+  private def build(module: => M, context: Context): Unit = {
+    // TODO: in the far future, we can think about refactor Builder talking to CIRCT.
+    val cir = Builder.build(
+      module,
+      // TODO: expose Builder options to cmdline via mainargs
+      new DynamicContext(
+        Nil,
+        context.throwOnFirstError,
+        context.legacyShiftRightWidth,
+        Nil,
+        Nil,
+        None,
+        logger.LoggerOptionsView.view(Seq(LogLevelAnnotation())),
+        ArrayBuffer.empty,
+        BuilderContextCache.empty
+      )
+    )._1
+
+    // TODO: use scala reflect to optionally select panama backend.
+    val fir: Circuit = Converter.convert(cir)
+    val annotations = cir.annotations.map(_.toFirrtl).flatMap {
+      case _: Unserializable          => None
+      case a => Some(a)
+    }
+
+    os.proc(
+      context.firtoolBinary.map(_.toString).getOrElse("firtool"),
+      os.temp(fir.serialize).toString,
+      "--annotation-file", os.temp(fir.serialize).toString,
+      "--parse-only", os.temp(JsonProtocol.serialize(annotations)),
+      "--emit-bytecode",
+      "-o", (context.outPutDirectory / s"${fir.main}.mlirbc").toString
+    ).call()
+
+  }
+  /** get the MLIRBC file from parameter. */
+  @main
+  def mlirbc(parameter: P, context: Context): Unit = {
+    build(SerializableModuleGenerator[M, P](parameter).module(), context)
+  }
+
+  /** get the MLIRBC file from a json file. */
+  @main
+  def mlirbc(parameterFile: os.Path, context: Context): Unit = {
+    build(SerializableModuleGenerator[M, P](upickle.default.read(os.read(parameterFile))).module(), context)
+  }
+
+  def main(args: Array[String]): Unit = ParserForMethods(this).runOrExit(args)
 }
