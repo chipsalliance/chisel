@@ -1,16 +1,33 @@
 package chisel3.experimental
 
+import chisel3.Module
 import chisel3.experimental.hierarchy.{Definition, Instance}
-import chisel3.internal.{Builder, BuilderContextCache, instantiable}
+import chisel3.internal.firrtl.Converter
+import chisel3.internal.{Builder, BuilderContextCache, DynamicContext, instantiable}
+import firrtl.annotations.JsonProtocol
+import firrtl.ir.Circuit
+import firrtl.options.Unserializable
+import logger.LogLevelAnnotation
+import mainargs._
 import upickle.default._
 
-import scala.reflect.{ClassTag, classTag}
+import scala.collection.mutable.ArrayBuffer
+import scala.reflect.api.{Mirror, TypeCreator, Universe}
 import scala.reflect.runtime.universe
 import scala.reflect.runtime.universe.{runtimeMirror, typeOf}
 
 /** Parameter for SerializableModule, it should be serializable via upickle API.
   * For more information, please refer to [[https://com-lihaoyi.github.io/upickle/]]
+  *
+  * user should define their own rw to `FooSerializableModuleParameter.rw`, otherwise compiler plugin will do this:
+  * {{{
+  *   object FooSerializableModuleParameter {
+  *     implicit val rw: upickle.default.RW[SerializableModuleParameter] = macroRW
+  *   }
+  * }}}
+  * But if `upickle.default.RW[SerializableModuleParameter]` doesn't compile, scalac would complain.
   */
+@main
 trait SerializableModuleParameter
 
 /** Mixin this trait to let chisel auto serialize module, it has these constraints:
@@ -124,4 +141,113 @@ private[chisel3] trait Generator[M <: BaseModule] {
 
   /** get an instance of from this generator. */
   def instance(): Instance[M]
+}
+
+/** Mix-in this trait to create a main function generating the mlirbc file.
+  *
+  * @note from jiuyang
+  *   - don't want to depend on the Stage API! just directly convert it.
+  *   - w/o directly emit Verilog, it generate mlirbc instead, delegate later process to `firtool`.
+  *     - only one concern is circt version should be aligned for parsing and using.
+  *   - user can use @arg() API to add documentation to parameter fields and expose them in the command line.
+  *   - If user provide a `ParserForClass[P]`, can we automatically expose the ParserForClass to command line, and all parameter is coming from command line?
+  */
+trait SerializableModuleMainFromJsonFile[P <: SerializableModuleParameter, M <: SerializableModule[P]] {
+  /** fill it with: `implicit val pRW: upickle.default.ReadWriter[P] = P.rw`
+    * In the future, P.rw must be implemented, and guarded by the compiler Plugin.
+    */
+  val pRW: upickle.default.ReadWriter[P]
+  // Traits cannot have type parameters with context bounds
+  /** fill it with: `implicit val mTypeTag: universe.TypeTag[M] = implicitly[universe.TypeTag[M]]` */
+  val mTypeTag: universe.TypeTag[M]
+  /** fill it with: `implicit val pTypeTag: universe.TypeTag[M] = implicitly[universe.TypeTag[P]]` */
+  val pTypeTag: universe.TypeTag[P]
+  val classOfM: Class[M]
+
+  private implicit def gRW: upickle.default.ReadWriter[SerializableModuleGenerator[M, P]] = SerializableModuleGenerator.rw[P,M](pRW, pTypeTag, mTypeTag)
+
+  implicit object PathRead extends TokensReader.Simple[os.Path]{
+    def shortName = "path"
+    def read(strs: Seq[String]) = Right(os.Path(strs.head, os.pwd))
+  }
+
+  // TODO: maybe the better way is using [[ParserForClass]], I'll do it in the future PR, not included for now.
+  // TODO: add source roots, warning filter, Log Level
+  /** get the MLIRBC file from a json file. */
+  @main
+  def mlirbc(parameterFile: os.Path,
+             throwOnFirstError: Boolean = false,
+             legacyShiftRightWidth: Boolean = false,
+             firtoolBinary: Option[os.Path] = None,
+             outPutDirectory: os.Path = os.pwd
+             ): Unit = {
+    elaborate(
+      Module(SerializableModuleGenerator[M, P](classOfM, upickle.default.read[P](os.read(parameterFile))(pRW))(mTypeTag).module()),
+      throwOnFirstError,
+      legacyShiftRightWidth,
+      firtoolBinary,
+      outPutDirectory)
+  }
+
+  @main
+  def verilog(parameterFile: os.Path,
+              throwOnFirstError: Boolean = false,
+              legacyShiftRightWidth: Boolean = false,
+              firtoolBinary: Option[os.Path] = None,
+              outPutDirectory: os.Path = os.pwd
+             ): Unit = {
+    val mlirbcFile = elaborate(
+      Module(SerializableModuleGenerator[M, P](classOfM, upickle.default.read[P](os.read(parameterFile))(pRW))(mTypeTag).module()),
+      throwOnFirstError,
+      legacyShiftRightWidth,
+      firtoolBinary,
+      os.temp.dir()
+    )
+    val verilogFile = os.pwd / s"${mlirbcFile.baseName}.sv"
+    os.proc(
+      firtoolBinary.map(_.toString).getOrElse("firtool"): String,
+      mlirbcFile,
+      "-o", verilogFile
+    ).call()
+  }
+
+  // get the mlirbc
+  private def elaborate(module: => M, throwOnFirstError: Boolean, legacyShiftRightWidth: Boolean, firtoolBinary: Option[os.Path], mlirbcPath: os.Path): os.Path = {
+    // TODO: in the far future, we can think about refactor Builder talking to CIRCT.
+    val cir = Builder.build(
+      module,
+      // TODO: expose Builder options to cmdline via mainargs
+      new DynamicContext(
+        Nil,
+        throwOnFirstError,
+        legacyShiftRightWidth,
+        Nil,
+        Nil,
+        None,
+        logger.LoggerOptionsView.view(Seq(LogLevelAnnotation())),
+        ArrayBuffer.empty,
+        BuilderContextCache.empty
+      )
+    )._1
+
+    // TODO: use scala reflect to optionally select panama backend.
+    val fir: Circuit = Converter.convert(cir)
+    val annotations = cir.annotations.map(_.toFirrtl).flatMap {
+      case _: Unserializable          => None
+      case a => Some(a)
+    }
+
+    val mlirbcFile = mlirbcPath / s"${fir.main}.mlirbc"
+    os.proc(
+      firtoolBinary.map(_.toString).getOrElse("firtool"): String,
+      os.temp(fir.serialize).toString,
+      "--format=fir",
+      "--annotation-file", os.temp(JsonProtocol.serialize(annotations)),
+      "-o", mlirbcFile,
+      "--parse-only",
+      "--emit-bytecode"
+    ).call()
+    mlirbcFile
+  }
+  def main(args: Array[String]): Unit = ParserForMethods(this).runOrExit(args)
 }
