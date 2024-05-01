@@ -577,16 +577,7 @@ package experimental {
     /** Get IOs that are currently bound to this module.
       */
     private[chisel3] def getIOs: Seq[Data] = {
-      _ids.flatMap { id =>
-        id match {
-          case (data: Data) if data.isSynthesizable =>
-            data.topBinding match {
-              case PortBinding(_) => Some(data)
-              case _              => None
-            }
-          case _ => None
-        }
-      }.toSeq
+      _ports.map(_._1).toSeq
     }
 
     // These methods allow checking some properties of ports before the module is closed,
