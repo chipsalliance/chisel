@@ -368,7 +368,7 @@ sealed abstract class AssertPropertyLike {
     * This avoids having to import Sequence on the user side to get the implicit conversion.
     */
   def apply(
-    prop:    Bool
+    prop: Bool
   ): Unit = {
     apply(Sequence.BoolSequence(prop))
   }
@@ -380,10 +380,10 @@ sealed abstract class AssertPropertyLike {
     * overloads that have default parameters.
     */
   def apply(
-    prop:    Bool,
-    label:   Option[String]
+    prop:  Bool,
+    label: Option[String]
   ): Unit = {
-    apply(Sequence.BoolSequence(prop), label=label)
+    apply(Sequence.BoolSequence(prop), label = label)
   }
 
   def createIntrinsic(label: Option[String]): Instance[VerifAssertLikeIntrinsic]
