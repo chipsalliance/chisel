@@ -574,6 +574,12 @@ package experimental {
       _ports.toSeq
     }
 
+    /** Get IOs that are currently bound to this module.
+      */
+    private[chisel3] def getIOs: Seq[Data] = {
+      _ports.map(_._1).toSeq
+    }
+
     // These methods allow checking some properties of ports before the module is closed,
     // mainly for compatibility purposes.
     protected def portsContains(elem: Data): Boolean = {

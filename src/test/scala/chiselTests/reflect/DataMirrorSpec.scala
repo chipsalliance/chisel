@@ -245,4 +245,24 @@ class DataMirrorSpec extends ChiselFlatSpec {
     DataMirror.getLayerColor(foo.c) should be(Some(A))
   }
 
+  "moduleIOs" should "return an in-progress module's IOs" in {
+    class Foo extends RawModule {
+      val in = IO(Input(Bool()))
+      val out = IO(Output(Bool()))
+      val wire = Wire(Bool())
+      val child = Module(new RawModule {})
+
+      val ports0 = DataMirror.internal.currentModulePorts(this)
+
+      val other = IO(Input(Bool()))
+
+      val ports1 = DataMirror.internal.currentModulePorts(this)
+    }
+
+    ChiselStage.emitCHIRRTL(new RawModule {
+      val foo = Module(new Foo)
+      foo.ports0 should be(Seq(foo.in, foo.out))
+      foo.ports1 should be(Seq(foo.in, foo.out, foo.other))
+    })
+  }
 }

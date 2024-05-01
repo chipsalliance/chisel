@@ -28,6 +28,9 @@ package experimental {
   case class DoubleParam(value: Double) extends Param
   case class StringParam(value: String) extends Param
 
+  /** Creates a parameter from the Printable's resulting format String */
+  case class PrintableParam(value: chisel3.Printable, context: BaseModule) extends Param
+
   /** Unquoted String */
   case class RawParam(value: String) extends Param
 

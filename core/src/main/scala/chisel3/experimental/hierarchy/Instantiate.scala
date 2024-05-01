@@ -45,7 +45,9 @@ object Instantiate {
     * @param con module construction, must be actual call to constructor (`new MyModule(...)`)
     * @return constructed module `Instance`
     */
-  def apply[A <: BaseModule](con: => A): Instance[A] = macro internal.impl[A]
+  def apply[A <: BaseModule](con: => A): Instance[A] = macro internal.instance[A]
+
+  def definition[A <: BaseModule](con: => A): Definition[A] = macro internal.definition[A]
 
   // Data uses referential equality by default, but for looking up Data in the cache, we need to use
   // structural equality for Data unbound types and literal values
@@ -106,35 +108,89 @@ object Instantiate {
   }
 
   import chisel3.internal.BuilderContextCache
+  // Include type of module in key since different modules could have the same arguments
   private case class CacheKey[A <: BaseModule](args: Any, tt: ru.WeakTypeTag[A])
       extends BuilderContextCache.Key[Definition[A]]
 
-  /** This is not part of the public API, do not call directly! */
-  def _impl[K, A <: BaseModule: ru.WeakTypeTag](
+  def _instance[K, A <: BaseModule: ru.WeakTypeTag](
     args: K,
     f:    K => A
   )(
     implicit sourceInfo: SourceInfo
-  ): Instance[A] = {
-    val tag = implicitly[ru.WeakTypeTag[A]]
-    // Include type of module in key since different modules could have the same arguments
-    val key = CacheKey(boxAllData(args), tag)
-    val defn = Builder.contextCache
+  ): Instance[A] = Instance.do_apply(_defination(args, f))(sourceInfo)
+
+  /** This is not part of the public API, do not call directly! */
+  def _defination[K, A <: BaseModule: ru.WeakTypeTag](
+    args: K,
+    f:    K => A
+  ): Definition[A] = {
+    Builder.contextCache
       .getOrElseUpdate(
-        key, {
+        CacheKey(boxAllData(args), implicitly[ru.WeakTypeTag[A]]), {
           // The definition needs to have no source locator because otherwise it will be unstably
           // derived from the first invocation of Instantiate for the particular Module
           Definition.do_apply(f(args))(UnlocatableSourceInfo)
         }
       )
       .asInstanceOf[Definition[A]]
-    Instance(defn)
   }
 
   private object internal {
-    // impl cannot be private, but it can be inside of a private object which hides it from the public
+
+    def instance[A <: BaseModule: c.WeakTypeTag](c: Context)(con: c.Tree): c.Tree = {
+      import c.universe._
+
+      def matchStructure(proto: List[List[Tree]], args: List[Tree]): List[List[Tree]] = {
+        val it = args.iterator
+        proto.map(_.map(_ => it.next()))
+      }
+
+      def untupleFuncArgsToConArgs(argss: List[List[Tree]], args: List[Tree], funcArg: Ident): List[List[Tree]] = {
+        var n = 0
+        argss.map { inner =>
+          inner.map { _ =>
+            n += 1
+            val term = TermName(s"_$n")
+            q"$funcArg.$term"
+          }
+        }
+      }
+
+      con match {
+        case q"new $tpname[..$tparams](...$argss)" =>
+          // We first flatten the [potentially] multiple parameter lists into a single tuple (size 0 and 1 are special)
+          val args = argss.flatten
+          val nargs = args.size
+
+          val funcArg = Ident(TermName("arg"))
+
+          // 0 and 1 arguments to the constructor are special (ie. there isn't a tuple)
+          val conArgs: List[List[Tree]] = nargs match {
+            case 0 => Nil
+            // Must match structure for case of only 1 implicit argument (ie. ()(arg))
+            case 1 => matchStructure(argss, List(funcArg))
+            case _ => untupleFuncArgsToConArgs(argss, args, funcArg)
+          }
+
+          // We can't quasi-quote this too early, needs to be splatted in the later context
+          // widen turns singleton type into nearest non-singleton type, eg. Int(3) => Int
+          val funcArgTypes = args.map(_.asInstanceOf[Tree].tpe.widen)
+          val constructor = q"(($funcArg: (..$funcArgTypes)) => new $tpname[..$tparams](...$conArgs))"
+          val tup = q"(..$args)"
+          q"chisel3.experimental.hierarchy.Instantiate._instance[(..$funcArgTypes), $tpname]($tup, $constructor)"
+
+        case _ =>
+          val msg =
+            s"Argument to Instantiate(...) must be of form 'new <T <: chisel3.Module>(<arguments...>)'.\n" +
+              "Note that named arguments are currently not supported.\n" +
+              s"Got: '$con'"
+          c.error(con.pos, msg)
+          con
+      }
+    }
+    // definition cannot be private, but it can be inside of a private object which hides it from the public
     // API and ScalaDoc
-    def impl[A <: BaseModule: c.WeakTypeTag](c: Context)(con: c.Tree): c.Tree = {
+    def definition[A <: BaseModule: c.WeakTypeTag](c: Context)(con: c.Tree): c.Tree = {
       import c.universe._
 
       def matchStructure(proto: List[List[Tree]], args: List[Tree]): List[List[Tree]] = {
@@ -177,11 +233,11 @@ object Instantiate {
           val funcArgTypes = args.map(_.asInstanceOf[Tree].tpe.widen)
           val constructor = q"(($funcArg: (..$funcArgTypes)) => new $tpname[..$tparams](...$conArgs))"
           val tup = q"(..$args)"
-          q"chisel3.experimental.hierarchy.Instantiate._impl[(..$funcArgTypes), $tpname]($tup, $constructor)"
+          q"chisel3.experimental.hierarchy.Instantiate._defination[(..$funcArgTypes), $tpname]($tup, $constructor)"
 
         case _ =>
           val msg =
-            s"Argument to Instantiate(...) must be of form 'new <T <: chisel3.Module>(<arguments...>)'.\n" +
+            s"Argument to Instantiate.defination(...) must be of form 'new <T <: chisel3.Module>(<arguments...>)'.\n" +
               "Note that named arguments are currently not supported.\n" +
               s"Got: '$con'"
           c.error(con.pos, msg)
