@@ -338,7 +338,7 @@ object Property {
   */
 sealed abstract class AssertPropertyLike {
 
-  /** @brief Assert, assume, or cover that a property holds.
+  /** Assert, assume, or cover that a property holds.
     *
     * @param prop: parameter can be a `Property`, `Sequence`, or simple `Bool`.
     * @param clock [optional]: specifies a clock with respect to which all cycle
@@ -363,8 +363,7 @@ sealed abstract class AssertPropertyLike {
     verif.property := clocked.inner
   }
 
-  /**
-    * @brief Assert, assume, or cover that a boolean predicate holds.
+  /** Assert, assume, or cover that a boolean predicate holds.
     * @param cond: a boolean predicate that should be checked.
     * This will generate a boolean property that is clocked using the implicit clock
     * and disabled in the case where the design has not yet been reset.
@@ -375,8 +374,7 @@ sealed abstract class AssertPropertyLike {
     apply(Sequence.BoolSequence(cond))
   }
 
-  /**
-    * @brief Assert, assume, or cover that a boolean predicate holds.
+  /** Assert, assume, or cover that a boolean predicate holds.
     * @param cond: a boolean predicate that should be checked.
     * @param label: is used to assign a name to the assert, assume, or
     *   cover construct in the output language. In SystemVerilog, this is
@@ -391,8 +389,7 @@ sealed abstract class AssertPropertyLike {
     apply(Sequence.BoolSequence(cond), label = Some(label))
   }
 
-  /**
-    * @brief Assert, assume, or cover that a boolean predicate holds.
+  /** Assert, assume, or cover that a boolean predicate holds.
     * @param cond: a boolean predicate that should be checked.
     * @param clock: specifies a clock with respect to which all cycle
     *   delays in the property are expressed. This is a shorthand for
