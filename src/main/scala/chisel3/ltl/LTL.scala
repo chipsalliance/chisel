@@ -363,6 +363,29 @@ sealed abstract class AssertPropertyLike {
     verif.property := clocked.inner
   }
 
+  /**
+    * Overloads the apply method to allow for Bool expressions to be used in AssertProperty.
+    * This avoids having to import Sequence on the user side to get the implicit conversion.
+    */
+  def apply(
+    prop:    Bool
+  ): Unit = {
+    apply(Sequence.BoolSequence(prop))
+  }
+
+  /**
+    * Overloads the apply method to allow for Bool expressions to be used in AssertProperty.
+    * This avoids having to import Sequence on the user side to get the implicit conversion.
+    * This version allows for a label. This is necessary because Scala disallows mutliple
+    * overloads that have default parameters.
+    */
+  def apply(
+    prop:    Bool,
+    label:   Option[String]
+  ): Unit = {
+    apply(Sequence.BoolSequence(prop), label=label)
+  }
+
   def createIntrinsic(label: Option[String]): Instance[VerifAssertLikeIntrinsic]
 }
 
