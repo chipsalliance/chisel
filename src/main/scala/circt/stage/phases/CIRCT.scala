@@ -244,6 +244,7 @@ class CIRCT extends Phase {
           case (Some(CIRCTTarget.Verilog), false)       => None
           case (Some(CIRCTTarget.SystemVerilog), true)  => Seq("--split-verilog", s"-o=${stageOptions.targetDir}")
           case (Some(CIRCTTarget.SystemVerilog), false) => None
+          case (Some(CIRCTTarget.Btor2), false)         => Seq("--btor2")
           case (None, _) =>
             throw new Exception(
               "No 'circtOptions.target' specified. This should be impossible if dependencies are satisfied!"
