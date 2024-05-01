@@ -261,15 +261,8 @@ class DataMirrorSpec extends ChiselFlatSpec {
 
     ChiselStage.emitCHIRRTL(new RawModule {
       val foo = Module(new Foo)
-
-      foo.ports0.size should be(2)
-      foo.ports0(0).toNamed.name should be("in")
-      foo.ports0(1).toNamed.name should be("out")
-
-      foo.ports1.size should be(3)
-      foo.ports1(0).toNamed.name should be("in")
-      foo.ports1(1).toNamed.name should be("out")
-      foo.ports1(2).toNamed.name should be("other")
+      foo.ports0 should be(Seq(foo.in, foo.out))
+      foo.ports1 should be(Seq(foo.in, foo.out, foo.other))
     })
   }
 }
