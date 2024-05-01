@@ -252,14 +252,24 @@ class DataMirrorSpec extends ChiselFlatSpec {
       val wire = Wire(Bool())
       val child = Module(new RawModule {})
 
-      val ports = DataMirror.internal.moduleIOs(this)
+      val ports0 = DataMirror.internal.currentModulePorts(this)
+
+      val other = IO(Input(Bool()))
+
+      val ports1 = DataMirror.internal.currentModulePorts(this)
     }
 
     ChiselStage.emitCHIRRTL(new RawModule {
       val foo = Module(new Foo)
-      foo.ports.size should be(2)
-      foo.ports(0).toNamed.name should be("in")
-      foo.ports(1).toNamed.name should be("out")
+
+      foo.ports0.size should be(2)
+      foo.ports0(0).toNamed.name should be("in")
+      foo.ports0(1).toNamed.name should be("out")
+
+      foo.ports1.size should be(3)
+      foo.ports1(0).toNamed.name should be("in")
+      foo.ports1(1).toNamed.name should be("out")
+      foo.ports1(2).toNamed.name should be("other")
     })
   }
 }
