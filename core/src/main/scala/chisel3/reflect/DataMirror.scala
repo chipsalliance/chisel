@@ -212,6 +212,17 @@ object DataMirror {
     def chiselTypeClone[T <: Data](target: T): T = {
       target.cloneTypeFull
     }
+
+    /** Returns the current ports of an in-progress module.
+      *
+      * This method does not necessarily return the final ports of the target module. It consults Chisel's internal data
+      * structures to extract the module's IOs. For this reason, it is generally not safe, and users should prefer
+      * [[DataMirror.modulePorts]], but this method may be used for certain use cases that want the current list of
+      * ports before the module is closed.
+      *
+      * @param target BaseModule to get IOs from
+      */
+    def currentModulePorts(target: BaseModule): Seq[Data] = target.getIOs
   }
 
   // Old definition of collectLeafMembers
