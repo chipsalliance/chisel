@@ -21,6 +21,7 @@ object v {
   val jmhVersion = "1.37"
   val osLib = ivy"com.lihaoyi::os-lib:0.9.1"
   val upickle = ivy"com.lihaoyi::upickle:3.1.0"
+  val mainargs = ivy"com.lihaoyi::mainargs:0.7.0"
   val firtoolResolver = ivy"org.chipsalliance::firtool-resolver:2.0.0"
   val scalatest = ivy"org.scalatest::scalatest:3.2.14"
   val scalacheck = ivy"org.scalatestplus::scalacheck-1-15:3.2.11.0"
@@ -95,6 +96,8 @@ trait Core extends common.CoreModule with ChiselPublishModule with CrossSbtModul
   def osLibModuleIvy = v.osLib
 
   def upickleModuleIvy = v.upickle
+
+  def mainargsModuleIvy = v.mainargs
 
   def firtoolResolverModuleIvy = v.firtoolResolver
 
