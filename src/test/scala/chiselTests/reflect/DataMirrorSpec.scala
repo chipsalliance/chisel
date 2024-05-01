@@ -245,7 +245,7 @@ class DataMirrorSpec extends ChiselFlatSpec {
     DataMirror.getLayerColor(foo.c) should be(Some(A))
   }
 
-  "moduleIOs" should "return an in-progress module's IOs" in {
+  "currentModulePorts" should "return an in-progress module's IOs" in {
     class Foo extends RawModule {
       val in = IO(Input(Bool()))
       val out = IO(Output(Bool()))
