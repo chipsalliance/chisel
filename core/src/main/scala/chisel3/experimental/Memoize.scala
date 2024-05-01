@@ -25,7 +25,7 @@ final class Memoize[A] private (thunk: () => A)(implicit parent: HasMemoized, so
     scope
   }
 
-  lazy val value: A = {
+  private lazy val _value: A = {
     _scope.markUsed()
 
     val module = Builder.forcedUserModule
@@ -38,6 +38,8 @@ final class Memoize[A] private (thunk: () => A)(implicit parent: HasMemoized, so
     module._currentScope = oldScope
     result
   }
+
+  def value(implicit sourceInfo: SourceInfo): A = _value
 }
 
 object Memoize {
