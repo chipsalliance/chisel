@@ -9,6 +9,7 @@ import firrtl.{AnnotationSeq, EmittedVerilogCircuitAnnotation}
 import firrtl.options.{CustomFileEmission, Dependency, Phase, PhaseManager, Stage, StageMain, Unserializable}
 import firrtl.stage.FirrtlCircuitAnnotation
 import logger.LogLevelAnnotation
+import firrtl.EmittedBtor2CircuitAnnotation
 
 /** Entry point for running Chisel with the CIRCT compiler.
   *
@@ -210,7 +211,7 @@ object ChiselStage {
     phase
       .transform(annos)
       .collectFirst {
-        case EmittedVerilogCircuitAnnotation(a) => a
+        case EmittedBtor2CircuitAnnotation(a) => a
       }
       .get
       .value

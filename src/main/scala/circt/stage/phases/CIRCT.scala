@@ -18,6 +18,8 @@ import firrtl.{AnnotationSeq, EmittedVerilogCircuit, EmittedVerilogCircuitAnnota
 import java.io.File
 import scala.collection.mutable
 import scala.util.control.NoStackTrace
+import firrtl.EmittedBtor2CircuitAnnotation
+import firrtl.EmittedBtor2Circuit
 
 private object Helpers {
   implicit class LogLevelHelpers(logLevel: LogLevel.Value) {
@@ -303,6 +305,8 @@ class CIRCT extends Phase {
           Seq(EmittedMLIR(outputFileName, result, Some(".hw.mlir")))
         case Some(CIRCTTarget.Verilog) =>
           Seq(EmittedVerilogCircuitAnnotation(EmittedVerilogCircuit(outputFileName, result, ".v")))
+        case Some(CIRCTTarget.Btor2) =>
+          Seq(EmittedBtor2CircuitAnnotation(EmittedBtor2Circuit(outputFileName, result, ".btor2")))
         case Some(CIRCTTarget.SystemVerilog) =>
           Seq(EmittedVerilogCircuitAnnotation(EmittedVerilogCircuit(outputFileName, result, ".sv")))
         case None =>
