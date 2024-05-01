@@ -1106,7 +1106,6 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
         AssertProperty((count <= 42.U))
       }
 
-      //val chirrtl = ChiselStage.emitCHIRRTL(new Counter)
       val btor2 = ChiselStage.emitBtor2(new Counter)
       btor2 should include("""1 sort bitvec 1
                              |2 input 1 reset
