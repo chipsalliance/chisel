@@ -338,16 +338,16 @@ object Property {
   */
 sealed abstract class AssertPropertyLike {
 
-  /** Assert, assume, or cover that a property holds.
+  /** @brief Assert, assume, or cover that a property holds.
     *
-    * - The `prop` parameter can be a `Property`, `Sequence`, or simple `Bool`.
-    * - The optional `clock` specifies a clock with respect to which all cycle
+    * @param prop: parameter can be a `Property`, `Sequence`, or simple `Bool`.
+    * @param clock [optional]: specifies a clock with respect to which all cycle
     *   delays in the property are expressed. This is a shorthand for
     *   `prop.clock(clock)`.
-    * - The optional `disable` specifies a condition under which the evaluation
+    * @param disable [optional]: specifies a condition under which the evaluation
     *   of the property is disabled. This is a shorthand for
     *   `prop.disable(disable)`.
-    * - The optional `label` is used to assign a name to the assert, assume, or
+    * @param label [optional]: is used to assign a name to the assert, assume, or
     *   cover construct in the output language. In SystemVerilog, this is
     *   emitted as `label: assert(...)`.
     */
@@ -364,26 +364,55 @@ sealed abstract class AssertPropertyLike {
   }
 
   /**
-    * Overloads the apply method to allow for Bool expressions to be used in AssertProperty.
-    * This avoids having to import Sequence on the user side to get the implicit conversion.
+    * @brief Assert, assume, or cover that a boolean predicate holds.
+    * @param cond: a boolean predicate that should be checked.
+    * This will generate a boolean property that is clocked using the implicit clock
+    * and disabled in the case where the design has not yet been reset.
     */
   def apply(
-    prop: Bool
+    cond: Bool
   ): Unit = {
-    apply(Sequence.BoolSequence(prop))
+    apply(Sequence.BoolSequence(cond))
   }
 
   /**
-    * Overloads the apply method to allow for Bool expressions to be used in AssertProperty.
-    * This avoids having to import Sequence on the user side to get the implicit conversion.
-    * This version allows for a label. This is necessary because Scala disallows mutliple
-    * overloads that have default parameters.
+    * @brief Assert, assume, or cover that a boolean predicate holds.
+    * @param cond: a boolean predicate that should be checked.
+    * @param label: is used to assign a name to the assert, assume, or
+    *   cover construct in the output language. In SystemVerilog, this is
+    *   emitted as `label: assert(...)`.
+    * This will generate a boolean property that is clocked using the implicit clock
+    * and disabled in the case where the design has not yet been reset.
     */
   def apply(
-    prop:  Bool,
-    label: Option[String]
+    cond:  Bool,
+    label: String
   ): Unit = {
-    apply(Sequence.BoolSequence(prop), label = label)
+    apply(Sequence.BoolSequence(cond), label = Some(label))
+  }
+
+  /**
+    * @brief Assert, assume, or cover that a boolean predicate holds.
+    * @param cond: a boolean predicate that should be checked.
+    * @param clock: specifies a clock with respect to which all cycle
+    *   delays in the property are expressed. This is a shorthand for
+    *   `prop.clock(clock)`.
+    * @param disable: specifies a condition under which the evaluation
+    *   of the property is disabled. This is a shorthand for
+    *   `prop.disable(disable)`.
+    * @param label: is used to assign a name to the assert, assume, or
+    *   cover construct in the output language. In SystemVerilog, this is
+    *   emitted as `label: assert(...)`.
+    * This will generate a boolean property that is clocked using the implicit clock
+    * and disabled in the case where the design has not yet been reset.
+    */
+  def apply(
+    cond:    Bool,
+    clock:   Clock,
+    disable: Disable,
+    label:   String
+  ): Unit = {
+    apply(Sequence.BoolSequence(cond), Some(clock), Some(disable), Some(label))
   }
 
   def createIntrinsic(label: Option[String]): Instance[VerifAssertLikeIntrinsic]
