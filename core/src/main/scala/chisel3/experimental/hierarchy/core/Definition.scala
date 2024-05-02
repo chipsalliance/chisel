@@ -5,7 +5,7 @@ package chisel3.experimental.hierarchy.core
 import scala.language.experimental.macros
 import chisel3._
 
-import scala.collection.mutable.HashMap
+import scala.collection.mutable.{ArrayBuffer, HashMap}
 import chisel3.internal.{Builder, DynamicContext}
 import chisel3.internal.sourceinfo.{DefinitionTransform, DefinitionWrapTransform}
 import chisel3.experimental.{BaseModule, SourceInfo}
@@ -106,8 +106,9 @@ object Definition extends SourceInfoDoc {
         context.throwOnFirstError,
         context.warningFilters,
         context.sourceRoots,
-        Builder.allDefinitions,
-        context.loggerOptions
+        context.loggerOptions,
+        context.definitions,
+        context.contextCache
       )
     }
     Builder.globalNamespace.copyTo(dynamicContext.globalNamespace)

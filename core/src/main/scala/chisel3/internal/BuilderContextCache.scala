@@ -9,7 +9,7 @@ private[chisel3] object BuilderContextCache {
   /** Users of the [[BuilderContextCache]] must use a subclass of this type as a map key */
   abstract class Key[A]
 
-  private[internal] def empty = new BuilderContextCache
+  def empty = new BuilderContextCache
 }
 
 import BuilderContextCache.Key

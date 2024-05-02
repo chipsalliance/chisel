@@ -163,6 +163,20 @@ object InstantiateSpec {
     @public val in = IO(Input(UInt(8.W)))
     @public val out = IO(Output(UInt(8.W)))
   }
+
+  @instantiable
+  class Baz extends Module
+
+  @instantiable
+  class Bar(i: Int) extends Module {
+    val baz = Instantiate(new Baz)
+  }
+  @instantiable
+  class Foo(i: Int) extends Module {
+    val bar0 = Instantiate(new Bar(0))
+    val bar1 = Instantiate(new Bar(1))
+    val bar11 = Instantiate(new Bar(1))
+  }
 }
 
 class ParameterizedReset(hasAsyncNotSyncReset: Boolean) extends Module {
@@ -170,6 +184,7 @@ class ParameterizedReset(hasAsyncNotSyncReset: Boolean) extends Module {
 }
 
 class InstantiateSpec extends ChiselFunSpec with Utils {
+
   import InstantiateSpec._
 
   describe("Module classes that take no arguments") {
@@ -474,5 +489,13 @@ class InstantiateSpec extends ChiselFunSpec with Utils {
         "Top"
       )
     )
+  }
+
+  it("Nested Instantiate should work") {
+    class MyTop extends Top {
+      val inst0 = Instantiate(new Foo(0))
+      val inst1 = Instantiate(new Foo(1))
+    }
+    assert(convert(new MyTop).modules.map(_.name).sorted == Seq("Bar", "Bar_1", "Baz", "Foo", "Foo_1", "Top").sorted)
   }
 }
