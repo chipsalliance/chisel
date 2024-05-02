@@ -15,7 +15,7 @@ on:
         type: number
       scala:
         description: 'The Scala version to use'
-        default: '2.13.12'
+        default: '2.13.14'
         required: true
         type: string
       espresso:
@@ -203,7 +203,7 @@ jobs:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        scala: ["2.13.12"]
+        scala: ["2.13.14"]
     steps:
       - name: Checkout
         uses: actions/checkout@v3
