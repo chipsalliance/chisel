@@ -106,15 +106,9 @@ object Definition extends SourceInfoDoc {
         context.throwOnFirstError,
         context.warningFilters,
         context.sourceRoots,
-<<<<<<< HEAD
-        Builder.allDefinitions,
-        context.loggerOptions
-=======
-        Some(context.globalNamespace),
         context.loggerOptions,
         context.definitions,
         context.contextCache
->>>>>>> 02b01e8b6 (Fix Nested Instantiate (#4018))
       )
     }
     Builder.globalNamespace.copyTo(dynamicContext.globalNamespace)

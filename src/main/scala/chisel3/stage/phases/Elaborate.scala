@@ -43,15 +43,9 @@ class Elaborate extends Phase {
             chiselOptions.throwOnFirstError,
             chiselOptions.warningFilters,
             chiselOptions.sourceRoots,
-<<<<<<< HEAD
-            Nil,
-            loggerOptions
-=======
-            None,
             loggerOptions,
             ArrayBuffer[Definition[_]](),
             BuilderContextCache.empty
->>>>>>> 02b01e8b6 (Fix Nested Instantiate (#4018))
           )
         val (circuit, dut) =
           Builder.build(Module(gen()), context)

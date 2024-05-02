@@ -4,14 +4,9 @@ package chisel3.aop.injecting
 
 import chisel3.{withClockAndReset, Module, ModuleAspect, RawModule}
 import chisel3.aop._
-<<<<<<< HEAD
-import chisel3.internal.{Builder, DynamicContext}
-import chisel3.internal.firrtl.DefModule
-=======
 import chisel3.experimental.hierarchy.core.Definition
 import chisel3.internal.{Builder, BuilderContextCache, DynamicContext}
-import chisel3.internal.firrtl.ir.DefModule
->>>>>>> 02b01e8b6 (Fix Nested Instantiate (#4018))
+import chisel3.internal.firrtl.DefModule
 import chisel3.stage.{ChiselOptions, DesignAnnotation}
 import firrtl.annotations.{Annotation, ModuleTarget}
 import firrtl.options.Viewer.view
@@ -73,15 +68,9 @@ abstract class InjectorAspect[T <: RawModule, M <: RawModule](
           chiselOptions.throwOnFirstError,
           chiselOptions.warningFilters,
           chiselOptions.sourceRoots,
-<<<<<<< HEAD
-          Nil, // FIXME this maybe should somehow grab definitions from earlier elaboration
-          loggerOptions
-=======
-          None,
           loggerOptions,
           ArrayBuffer[Definition[_]](),
           BuilderContextCache.empty
->>>>>>> 02b01e8b6 (Fix Nested Instantiate (#4018))
         )
       // Add existing module names into the namespace. If injection logic instantiates new modules
       //  which would share the same name, they will get uniquified accordingly

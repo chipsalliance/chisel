@@ -5,7 +5,6 @@ package experimental.hierarchy
 
 import chisel3._
 import chisel3.util.Valid
-import chisel3.properties._
 import chisel3.experimental.hierarchy._
 import circt.stage.ChiselStage.convert
 import chisel3.experimental.{ExtModule, IntrinsicModule}
