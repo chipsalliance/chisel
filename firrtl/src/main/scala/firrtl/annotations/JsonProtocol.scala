@@ -15,6 +15,7 @@ import org.json4s.native.Serialization
 import org.json4s.native.Serialization.{read, write, writePretty}
 
 import scala.collection.mutable
+import java.io.{StringWriter, Writer}
 
 trait HasSerializationHints {
   // For serialization of complicated constructor arguments, let the annotation
@@ -167,13 +168,21 @@ object JsonProtocol extends LazyLogging {
       })
       .distinct
 
-  def serializeTry(annos: Seq[Annotation]): Try[String] = {
-    val tags = getTags(annos)
+  def serializeTry(annos: Seq[Annotation]): Try[String] = serializeTry(annos, new StringWriter).map(_.toString)
+
+  /** Serialize annotations to a [[java.io.Writer]]
+    *
+    * @param annos Annotations to serialize
+    * @param out Writer to which the serialized annotations will be written
+    * @return
+    */
+  def serializeTry[W <: Writer](annos: Iterable[Annotation], out: W): Try[W] = {
+    val tags = getTags(annos.toSeq)
 
     implicit val formats = jsonFormat(tags)
-    Try(writePretty(annos)).recoverWith {
+    Try(writePretty(annos, out)).recoverWith {
       case e: org.json4s.MappingException =>
-        val badAnnos = findUnserializeableAnnos(annos)
+        val badAnnos = findUnserializeableAnnos(annos.toSeq)
         Failure(if (badAnnos.isEmpty) e else UnserializableAnnotationException(badAnnos))
     }
   }

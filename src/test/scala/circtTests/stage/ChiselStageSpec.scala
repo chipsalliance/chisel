@@ -1060,7 +1060,6 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
       message should include("Unknown option --target-directory")
 
     }
-
   }
 
   describe("ChiselStage$ exception handling") {

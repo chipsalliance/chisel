@@ -529,10 +529,10 @@ class SRAMSpec extends ChiselFunSpec {
       val chirrtl = ChiselStage.emitCHIRRTL(new TestModule(1, 1), args = Array("--full-stacktrace"))
 
       chirrtl should include(
-        "writePorts : { flip address : UInt<6>, flip enable : UInt<1>, flip data : UInt<8>[3], flip mask : UInt<1>[3]}[1]"
+        "writePorts : { flip address : UInt<5>, flip enable : UInt<1>, flip data : UInt<8>[3], flip mask : UInt<1>[3]}[1]"
       )
       chirrtl should include(
-        "readwritePorts : { flip address : UInt<6>, flip enable : UInt<1>, flip isWrite : UInt<1>, readData : UInt<8>[3], flip writeData : UInt<8>[3], flip mask : UInt<1>[3]}[1]"
+        "readwritePorts : { flip address : UInt<5>, flip enable : UInt<1>, flip isWrite : UInt<1>, readData : UInt<8>[3], flip writeData : UInt<8>[3], flip mask : UInt<1>[3]}[1]"
       )
 
       for (i <- 0 until 3) {
@@ -576,13 +576,13 @@ class SRAMSpec extends ChiselFunSpec {
         val wrIndexSuffix = if (i == 0) "" else s"_$i"
 
         chirrtl should include(
-          s"read mport mem_out_readPorts_${i}_data_MPORT = mem_mem[_mem_out_readPorts_${i}_data_T], readClocks[${i}]"
+          s"read mport mem_out_readPorts_${i}_data_MPORT = mem_mem[_mem_out_readPorts_${i}_data_WIRE], readClocks[${i}]"
         )
         chirrtl should include(
-          s"write mport mem_MPORT${wrIndexSuffix} = mem_mem[_mem_T${wrIndexSuffix}], writeClocks[${i}]"
+          s"write mport mem_MPORT${wrIndexSuffix} = mem_mem[mem.writePorts[${i}].address], writeClocks[${i}]"
         )
         chirrtl should include(
-          s"rdwr mport mem_out_readwritePorts_${i}_readData_MPORT = mem_mem[_mem_out_readwritePorts_${i}_readData_T], readwriteClocks[${i}]"
+          s"rdwr mport mem_out_readwritePorts_${i}_readData_MPORT = mem_mem[_mem_out_readwritePorts_${i}_readData_WIRE], readwriteClocks[${i}]"
         )
       }
     }

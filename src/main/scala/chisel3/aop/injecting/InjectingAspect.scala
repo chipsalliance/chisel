@@ -12,6 +12,7 @@ import firrtl.options.Viewer.view
 import firrtl.{ir, _}
 
 import scala.collection.mutable
+import logger.LoggerOptions
 
 /** Aspect to inject Chisel code into a module of type M
   *
@@ -57,13 +58,15 @@ abstract class InjectorAspect[T <: RawModule, M <: RawModule](
   final def toAnnotation(modules: Iterable[M], circuit: String, moduleNames: Seq[String]): AnnotationSeq = {
     modules.map { module =>
       val chiselOptions = view[ChiselOptions](annotationsInAspect)
+      val loggerOptions = view[LoggerOptions](annotationsInAspect)
       val dynamicContext =
         new DynamicContext(
           annotationsInAspect,
           chiselOptions.throwOnFirstError,
           chiselOptions.warningFilters,
           chiselOptions.sourceRoots,
-          Nil // FIXME this maybe should somehow grab definitions from earlier elaboration
+          Nil, // FIXME this maybe should somehow grab definitions from earlier elaboration
+          loggerOptions
         )
       // Add existing module names into the namespace. If injection logic instantiates new modules
       //  which would share the same name, they will get uniquified accordingly

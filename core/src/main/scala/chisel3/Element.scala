@@ -5,6 +5,7 @@ package chisel3
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.experimental.SourceInfo
+import chisel3.experimental.dataview.reify
 import chisel3.internal._
 
 /** Element is a leaf data type: it cannot contain other [[Data]] objects. Example uses are for representing primitive
@@ -51,7 +52,9 @@ abstract class Element extends Data {
 
   private[chisel3] def litArgOption: Option[LitArg] = topBindingOpt match {
     case Some(ElementLitBinding(litArg)) => Some(litArg)
-    case _                               => None
+    case Some(_: ViewBinding) =>
+      reify(this).litArgOption
+    case _ => None
   }
 
   override def litOption:                Option[BigInt] = litArgOption.map(_.num)
