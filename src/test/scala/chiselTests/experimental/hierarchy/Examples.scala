@@ -93,6 +93,16 @@ object Examples {
     val out = IO(Output(UInt(width.W)))
     val addOnes = makeParameterizedOnes(width)
   }
+  @instantiable
+  class AddTwoDefinitionArgument(definition: Definition[AddOne]) extends Module {
+    @public val in = IO(Input(UInt(32.W)))
+    @public val out = IO(Output(UInt(32.W)))
+    @public val i0: Instance[AddOne] = Instance(definition)
+    @public val i1: Instance[AddOne] = Instance(definition)
+    i0.in := in
+    i1.in := i0.out
+    out := i1.out
+  }
 
   @instantiable
   class AddFour extends Module {
