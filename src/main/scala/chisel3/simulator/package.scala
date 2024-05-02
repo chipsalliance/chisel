@@ -44,18 +44,19 @@ package object simulator {
       val supportArtifactsPath = Paths.get(workspace.supportArtifactsPath)
       def moveFiles(filelist: Path) =
         // Extract all lines (files) from the filelist.
+        // Type annotations needed to help Scala 2.12 compiler
         Files
           .lines(filelist)
-          .map(Paths.get(_))
+          .map[Path](Paths.get(_))
           // Convert the files to an absolute version and a relative version.
-          .map {
+          .map[(Path, Path)] {
             case file if file.startsWith(supportArtifactsPath) =>
               (file, file.subpath(supportArtifactsPath.getNameCount(), -1))
             case file => (supportArtifactsPath.resolve(file), file)
           }
           // Normalize the absolute path so it can be checked if it has already
           // been moved.
-          .map { case (abs, rel) => (abs.normalize(), rel) }
+          .map[(Path, Path)] { case (abs, rel) => (abs.normalize(), rel) }
           // Move the file into primarySourcesPath if it has not already been moved.
           .forEach {
             case (abs, _) if movedFiles.contains(abs) =>
