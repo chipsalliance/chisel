@@ -95,7 +95,7 @@ class SRAMInterface[T <: Data](
     )
   }
 
-  val addrWidth = log2Up(memSize + 1)
+  val addrWidth = log2Up(memSize)
 
   val readPorts:  Vec[MemoryReadPort[T]] = Vec(numReadPorts, new MemoryReadPort(tpe, addrWidth))
   val writePorts: Vec[MemoryWritePort[T]] = Vec(numWritePorts, new MemoryWritePort(tpe, addrWidth, masked))
