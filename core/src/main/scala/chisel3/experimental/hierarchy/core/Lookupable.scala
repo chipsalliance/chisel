@@ -501,13 +501,14 @@ object Lookupable {
   implicit def lookupIsLookupable[B <: IsLookupable](implicit sourceInfo: SourceInfo) =
     new SimpleLookupable[B]()
 
-  implicit val lookupInt = new SimpleLookupable[Int]()
-  implicit val lookupByte = new SimpleLookupable[Byte]()
-  implicit val lookupShort = new SimpleLookupable[Short]()
-  implicit val lookupLong = new SimpleLookupable[Long]()
-  implicit val lookupFloat = new SimpleLookupable[Float]()
-  implicit val lookupChar = new SimpleLookupable[Char]()
-  implicit val lookupString = new SimpleLookupable[String]()
-  implicit val lookupBoolean = new SimpleLookupable[Boolean]()
-  implicit val lookupBigInt = new SimpleLookupable[BigInt]()
+  implicit val lookupInt:     SimpleLookupable[Int] = new SimpleLookupable[Int]()
+  implicit val lookupByte:    SimpleLookupable[Byte] = new SimpleLookupable[Byte]()
+  implicit val lookupShort:   SimpleLookupable[Short] = new SimpleLookupable[Short]()
+  implicit val lookupLong:    SimpleLookupable[Long] = new SimpleLookupable[Long]()
+  implicit val lookupFloat:   SimpleLookupable[Float] = new SimpleLookupable[Float]()
+  implicit val lookupDouble:  SimpleLookupable[Double] = new SimpleLookupable[Double]()
+  implicit val lookupChar:    SimpleLookupable[Char] = new SimpleLookupable[Char]()
+  implicit val lookupString:  SimpleLookupable[String] = new SimpleLookupable[String]()
+  implicit val lookupBoolean: SimpleLookupable[Boolean] = new SimpleLookupable[Boolean]()
+  implicit val lookupBigInt:  SimpleLookupable[BigInt] = new SimpleLookupable[BigInt]()
 }

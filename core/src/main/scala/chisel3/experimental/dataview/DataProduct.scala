@@ -46,7 +46,7 @@ trait DataProduct[-A] {
 
 /** Low priority built-in implementations of [[DataProduct]]
   *
-  * @note This trait exists so that `dataDataProduct` can be lower priority than `seqDataProduct` to resolve ambiguity
+  * @note This trait exists so that `dataDataProduct` can be lower priority than `iterableDataProduct` to resolve ambiguity
   */
 sealed trait LowPriorityDataProduct {
 
@@ -62,6 +62,25 @@ sealed trait LowPriorityDataProduct {
   * @note DataProduct implementations provided in this object are available in the implicit scope
   */
 object DataProduct extends LowPriorityDataProduct {
+
+  /** Factory method for constructing [[DataProduct]]s */
+  def apply[A](f: (A, String) => Iterator[(Data, String)]): DataProduct[A] = new DataProduct[A] {
+    def dataIterator(a: A, path: String): Iterator[(Data, String)] = f(a, path)
+  }
+
+  /** Factory for constructing [[DataProduct]] for types that do not contain any [[Data]] */
+  def empty[A]: DataProduct[A] = apply[A] { case _ => Iterator.empty }
+
+  // DataProducts for simple primitive types
+  implicit val charDataProduct:   DataProduct[Char] = empty
+  implicit val stringDataProduct: DataProduct[String] = empty
+  implicit val intDataProduct:    DataProduct[Int] = empty
+  implicit val byteDataProduct:   DataProduct[Byte] = empty
+  implicit val shortDataProduct:  DataProduct[Short] = empty
+  implicit val longDataProduct:   DataProduct[Long] = empty
+  implicit val bigIntDataProduct: DataProduct[BigInt] = empty
+  implicit val floatDataProduct:  DataProduct[Float] = empty
+  implicit val doubleDataProduct: DataProduct[Double] = empty
 
   /** [[DataProduct]] implementation for [[BaseModule]] */
   implicit val userModuleDataProduct: DataProduct[BaseModule] = new DataProduct[BaseModule] {
@@ -82,8 +101,20 @@ object DataProduct extends LowPriorityDataProduct {
   }
 
   /** [[DataProduct]] implementation for any `Seq[A]` where `A` has an implementation of `DataProduct`. */
-  implicit def seqDataProduct[A: DataProduct]: DataProduct[Seq[A]] = new DataProduct[Seq[A]] {
+  @deprecated("Use iterableDataProduct instead", "Chisel 7.0")
+  def seqDataProduct[A: DataProduct]: DataProduct[Seq[A]] = new DataProduct[Seq[A]] {
     def dataIterator(a: Seq[A], path: String): Iterator[(Data, String)] = {
+      val dpa = implicitly[DataProduct[A]]
+      a.iterator.zipWithIndex.flatMap {
+        case (elt, idx) =>
+          dpa.dataIterator(elt, s"$path[$idx]")
+      }
+    }
+  }
+
+  /** [[DataProduct]] implementation for any `Iterable[A]` where `A` has an implementation of `DataProduct`. */
+  implicit def iterableDataProduct[A: DataProduct, F[A] <: Iterable[A]]: DataProduct[F[A]] = new DataProduct[F[A]] {
+    def dataIterator(a: F[A], path: String): Iterator[(Data, String)] = {
       val dpa = implicitly[DataProduct[A]]
       a.iterator.zipWithIndex.flatMap {
         case (elt, idx) =>
