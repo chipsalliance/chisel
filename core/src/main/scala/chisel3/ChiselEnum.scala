@@ -44,11 +44,6 @@ abstract class EnumType(private[chisel3] val factory: ChiselEnum, selfAnnotating
     pushOp(DefPrim(sourceInfo, Bool(), op, this.ref, other.ref))
   }
 
-  private[chisel3] override def typeEquivalent(that: Data): Boolean = {
-    this.getClass == that.getClass &&
-    this.factory == that.asInstanceOf[EnumType].factory
-  }
-
   private[chisel3] override def connectFromBits(
     that: Bits
   )(
