@@ -3,7 +3,7 @@ package chisel3.experimental
 import chisel3.Module
 import chisel3.experimental.hierarchy.{Definition, Instance}
 import chisel3.internal.firrtl.Converter
-import chisel3.internal.{Builder, BuilderContextCache, DynamicContext, instantiable}
+import chisel3.internal.{instantiable, Builder, BuilderContextCache, DynamicContext}
 import firrtl.annotations.JsonProtocol
 import firrtl.ir.Circuit
 import firrtl.options.Unserializable
@@ -98,8 +98,13 @@ object SerializableModuleGenerator {
     generator.getConstructors.head.newInstance(parameter).asInstanceOf[M with BaseModule]
   }
 
-  def apply[M <: SerializableModule[P]: universe.TypeTag, P <: SerializableModuleParameter](parameter: P): SerializableModuleGenerator[M, P] =
-    new SerializableModuleGenerator(runtimeMirror(getClass.getClassLoader).runtimeClass(typeOf[M].typeSymbol.asClass).asInstanceOf[Class[M]], parameter)
+  def apply[M <: SerializableModule[P]: universe.TypeTag, P <: SerializableModuleParameter](
+    parameter: P
+  ): SerializableModuleGenerator[M, P] =
+    new SerializableModuleGenerator(
+      runtimeMirror(getClass.getClassLoader).runtimeClass(typeOf[M].typeSymbol.asClass).asInstanceOf[Class[M]],
+      parameter
+    )
 }
 
 /** the serializable module generator:
@@ -153,6 +158,7 @@ private[chisel3] trait Generator[M <: BaseModule] {
   *   - If user provide a `ParserForClass[P]`, can we automatically expose the ParserForClass to command line, and all parameter is coming from command line?
   */
 trait SerializableModuleMainFromJsonFile[P <: SerializableModuleParameter, M <: SerializableModule[P]] {
+
   /** fill it with: `implicit val pRW: upickle.default.ReadWriter[P] = P.rw`
     * In the future, P.rw must be implemented, and guarded by the compiler Plugin.
     */
@@ -160,13 +166,15 @@ trait SerializableModuleMainFromJsonFile[P <: SerializableModuleParameter, M <: 
   // Traits cannot have type parameters with context bounds
   /** fill it with: `implicit val mTypeTag: universe.TypeTag[M] = implicitly[universe.TypeTag[M]]` */
   val mTypeTag: universe.TypeTag[M]
+
   /** fill it with: `implicit val pTypeTag: universe.TypeTag[M] = implicitly[universe.TypeTag[P]]` */
   val pTypeTag: universe.TypeTag[P]
   val classOfM: Class[M]
 
-  private implicit def gRW: upickle.default.ReadWriter[SerializableModuleGenerator[M, P]] = SerializableModuleGenerator.rw[P,M](pRW, pTypeTag, mTypeTag)
+  private implicit def gRW: upickle.default.ReadWriter[SerializableModuleGenerator[M, P]] =
+    SerializableModuleGenerator.rw[P, M](pRW, pTypeTag, mTypeTag)
 
-  implicit object PathRead extends TokensReader.Simple[os.Path]{
+  implicit object PathRead extends TokensReader.Simple[os.Path] {
     def shortName = "path"
     def read(strs: Seq[String]) = Right(os.Path(strs.head, os.pwd))
   }
@@ -175,29 +183,38 @@ trait SerializableModuleMainFromJsonFile[P <: SerializableModuleParameter, M <: 
   // TODO: add source roots, warning filter, Log Level
   /** get the MLIRBC file from a json file. */
   @main
-  def mlirbc(parameterFile: os.Path,
-             throwOnFirstError: Boolean = false,
-             legacyShiftRightWidth: Boolean = false,
-             firtoolBinary: Option[os.Path] = None,
-             outPutDirectory: os.Path = os.pwd
-             ): Unit = {
+  def mlirbc(
+    parameterFile:         os.Path,
+    throwOnFirstError:     Boolean = false,
+    legacyShiftRightWidth: Boolean = false,
+    firtoolBinary:         Option[os.Path] = None,
+    outPutDirectory:       os.Path = os.pwd
+  ): Unit = {
     elaborate(
-      Module(SerializableModuleGenerator[M, P](classOfM, upickle.default.read[P](os.read(parameterFile))(pRW))(mTypeTag).module()),
+      Module(
+        SerializableModuleGenerator[M, P](classOfM, upickle.default.read[P](os.read(parameterFile))(pRW))(mTypeTag)
+          .module()
+      ),
       throwOnFirstError,
       legacyShiftRightWidth,
       firtoolBinary,
-      outPutDirectory)
+      outPutDirectory
+    )
   }
 
   @main
-  def verilog(parameterFile: os.Path,
-              throwOnFirstError: Boolean = false,
-              legacyShiftRightWidth: Boolean = false,
-              firtoolBinary: Option[os.Path] = None,
-              outPutDirectory: os.Path = os.pwd
-             ): Unit = {
+  def verilog(
+    parameterFile:         os.Path,
+    throwOnFirstError:     Boolean = false,
+    legacyShiftRightWidth: Boolean = false,
+    firtoolBinary:         Option[os.Path] = None,
+    outPutDirectory:       os.Path = os.pwd
+  ): Unit = {
     val mlirbcFile = elaborate(
-      Module(SerializableModuleGenerator[M, P](classOfM, upickle.default.read[P](os.read(parameterFile))(pRW))(mTypeTag).module()),
+      Module(
+        SerializableModuleGenerator[M, P](classOfM, upickle.default.read[P](os.read(parameterFile))(pRW))(mTypeTag)
+          .module()
+      ),
       throwOnFirstError,
       legacyShiftRightWidth,
       firtoolBinary,
@@ -207,33 +224,42 @@ trait SerializableModuleMainFromJsonFile[P <: SerializableModuleParameter, M <: 
     os.proc(
       firtoolBinary.map(_.toString).getOrElse("firtool"): String,
       mlirbcFile,
-      "-o", verilogFile
+      "-o",
+      verilogFile
     ).call()
   }
 
   // get the mlirbc
-  private def elaborate(module: => M, throwOnFirstError: Boolean, legacyShiftRightWidth: Boolean, firtoolBinary: Option[os.Path], mlirbcPath: os.Path): os.Path = {
+  private def elaborate(
+    module:                => M,
+    throwOnFirstError:     Boolean,
+    legacyShiftRightWidth: Boolean,
+    firtoolBinary:         Option[os.Path],
+    mlirbcPath:            os.Path
+  ): os.Path = {
     // TODO: in the far future, we can think about refactor Builder talking to CIRCT.
-    val cir = Builder.build(
-      module,
-      // TODO: expose Builder options to cmdline via mainargs
-      new DynamicContext(
-        Nil,
-        throwOnFirstError,
-        legacyShiftRightWidth,
-        Nil,
-        Nil,
-        None,
-        logger.LoggerOptionsView.view(Seq(LogLevelAnnotation())),
-        ArrayBuffer.empty,
-        BuilderContextCache.empty
+    val cir = Builder
+      .build(
+        module,
+        // TODO: expose Builder options to cmdline via mainargs
+        new DynamicContext(
+          Nil,
+          throwOnFirstError,
+          legacyShiftRightWidth,
+          Nil,
+          Nil,
+          None,
+          logger.LoggerOptionsView.view(Seq(LogLevelAnnotation())),
+          ArrayBuffer.empty,
+          BuilderContextCache.empty
+        )
       )
-    )._1
+      ._1
 
     // TODO: use scala reflect to optionally select panama backend.
     val fir: Circuit = Converter.convert(cir)
     val annotations = cir.annotations.map(_.toFirrtl).flatMap {
-      case _: Unserializable          => None
+      case _: Unserializable => None
       case a => Some(a)
     }
 
@@ -242,8 +268,10 @@ trait SerializableModuleMainFromJsonFile[P <: SerializableModuleParameter, M <: 
       firtoolBinary.map(_.toString).getOrElse("firtool"): String,
       os.temp(fir.serialize).toString,
       "--format=fir",
-      "--annotation-file", os.temp(JsonProtocol.serialize(annotations)),
-      "-o", mlirbcFile,
+      "--annotation-file",
+      os.temp(JsonProtocol.serialize(annotations)),
+      "-o",
+      mlirbcFile,
       "--parse-only",
       "--emit-bytecode"
     ).call()

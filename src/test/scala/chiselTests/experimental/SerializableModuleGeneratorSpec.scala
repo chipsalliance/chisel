@@ -3,7 +3,12 @@
 package chiselTests
 package experimental
 import chisel3._
-import chisel3.experimental.{SerializableModule, SerializableModuleGenerator, SerializableModuleMainFromJsonFile, SerializableModuleParameter}
+import chisel3.experimental.{
+  SerializableModule,
+  SerializableModuleGenerator,
+  SerializableModuleMainFromJsonFile,
+  SerializableModuleParameter
+}
 import mainargs.ParserForMethods
 import upickle.default
 import upickle.default._
@@ -53,7 +58,9 @@ class SerializableModuleGeneratorSpec extends ChiselFlatSpec with Utils {
     GCDSerializableModuleParameter(32)
   )
 
-  val g0 = SerializableModuleGenerator[GCDSerializableModule, GCDSerializableModuleParameter](GCDSerializableModuleParameter(32))
+  val g0 = SerializableModuleGenerator[GCDSerializableModule, GCDSerializableModuleParameter](
+    GCDSerializableModuleParameter(32)
+  )
 
   "SerializableModuleGenerator" should "be serialized and deserialized" in {
     assert(
@@ -109,9 +116,10 @@ class SerializableModuleGeneratorSpec extends ChiselFlatSpec with Utils {
   }
 }
 
-object GCDSerializableModuleMain extends SerializableModuleMainFromJsonFile[GCDSerializableModuleParameter, GCDSerializableModule] {
+object GCDSerializableModuleMain
+    extends SerializableModuleMainFromJsonFile[GCDSerializableModuleParameter, GCDSerializableModule] {
   import scala.reflect.runtime.universe._
-  val pRW: default.ReadWriter[GCDSerializableModuleParameter] = GCDSerializableModuleParameter.rw
+  val pRW:      default.ReadWriter[GCDSerializableModuleParameter] = GCDSerializableModuleParameter.rw
   val mTypeTag: universe.TypeTag[GCDSerializableModule] = typeTag[GCDSerializableModule]
   val pTypeTag: universe.TypeTag[GCDSerializableModuleParameter] = typeTag[GCDSerializableModuleParameter]
   val classOfM: Class[GCDSerializableModule] = classOf[GCDSerializableModule]
