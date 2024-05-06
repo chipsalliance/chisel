@@ -18,10 +18,13 @@ import chisel3.experimental.SourceInfo
 private[chisel3] object BaseIntrinsic {
   def apply[T <: Data](
     intrinsicName: String,
-    ret: => T,
+    ret:           => T,
     maybeParams:   Seq[(String, Param)] = Seq()
-  )(data: Data*)(implicit sourceInfo: SourceInfo) : T = {
-    IntrinsicExpr(f"circt_$intrinsicName", ret, maybeParams:_*)(data:_*)
+  )(data:          Data*
+  )(
+    implicit sourceInfo: SourceInfo
+  ): T = {
+    IntrinsicExpr(f"circt_$intrinsicName", ret, maybeParams: _*)(data: _*)
   }
 }
 
@@ -29,8 +32,11 @@ private[chisel3] object BaseIntrinsic {
 private[chisel3] object UnaryLTLIntrinsic {
   def apply(
     intrinsicName: String,
-    params:   Seq[(String, Param)] = Seq()
-  )(_in: Bool)(implicit sourceInfo: SourceInfo) : Bool = 
+    params:        Seq[(String, Param)] = Seq()
+  )(_in:           Bool
+  )(
+    implicit sourceInfo: SourceInfo
+  ): Bool =
     BaseIntrinsic(f"ltl_$intrinsicName", Bool(), params)(_in)
 }
 
@@ -38,29 +44,33 @@ private[chisel3] object UnaryLTLIntrinsic {
 private[chisel3] object BinaryLTLIntrinsic {
   def apply(
     intrinsicName: String,
-    params:   Seq[(String, Param)] = Seq()
-  )(lhs: Bool, rhs: Bool)(implicit sourceInfo: SourceInfo) : Bool = 
+    params:        Seq[(String, Param)] = Seq()
+  )(lhs:           Bool,
+    rhs:           Bool
+  )(
+    implicit sourceInfo: SourceInfo
+  ): Bool =
     BaseIntrinsic(f"ltl_$intrinsicName", Bool(), params)(lhs, rhs)
 }
 
 /** A wrapper intrinsic for the CIRCT `ltl.and` operation. */
 private[chisel3] object LTLAndIntrinsic {
-  def apply(lhs: Bool, rhs: Bool)(implicit sourceInfo: SourceInfo) = 
+  def apply(lhs: Bool, rhs: Bool)(implicit sourceInfo: SourceInfo) =
     BinaryLTLIntrinsic("and")(lhs, rhs)
 }
 
 /** A wrapper intrinsic for the CIRCT `ltl.or` operation. */
 private[chisel3] object LTLOrIntrinsic {
-  def apply(lhs: Bool, rhs: Bool)(implicit sourceInfo: SourceInfo) = 
+  def apply(lhs: Bool, rhs: Bool)(implicit sourceInfo: SourceInfo) =
     BinaryLTLIntrinsic("or")(lhs, rhs)
 }
 
 /** A wrapper intrinsic for the CIRCT `ltl.delay` operation. */
 private[chisel3] object LTLDelayIntrinsic {
-  
+
   def apply(delay: Int, length: Option[Int])(_in: Bool)(implicit sourceInfo: SourceInfo) = {
     val params = length match {
-      case None => Seq("delay" -> IntParam(delay))
+      case None    => Seq("delay" -> IntParam(delay))
       case Some(l) => Seq("delay" -> IntParam(delay), "length" -> IntParam(l))
     }
     UnaryLTLIntrinsic("delay", params)(_in)
@@ -69,31 +79,31 @@ private[chisel3] object LTLDelayIntrinsic {
 
 /** A wrapper intrinsic for the CIRCT `ltl.concat` operation. */
 private[chisel3] object LTLConcatIntrinsic {
-  def apply(lhs: Bool, rhs: Bool)(implicit sourceInfo: SourceInfo) = 
+  def apply(lhs: Bool, rhs: Bool)(implicit sourceInfo: SourceInfo) =
     BinaryLTLIntrinsic("concat")(lhs, rhs)
 }
 
 /** A wrapper intrinsic for the CIRCT `ltl.not` operation. */
 private[chisel3] object LTLNotIntrinsic {
-  def apply(prop: Bool)(implicit sourceInfo: SourceInfo) = 
+  def apply(prop: Bool)(implicit sourceInfo: SourceInfo) =
     UnaryLTLIntrinsic("not")(prop)
 }
 
 /** A wrapper intrinsic for the CIRCT `ltl.implication` operation. */
 private[chisel3] object LTLImplicationIntrinsic {
-  def apply(antecedent: Bool, consequent: Bool)(implicit sourceInfo: SourceInfo) = 
+  def apply(antecedent: Bool, consequent: Bool)(implicit sourceInfo: SourceInfo) =
     BinaryLTLIntrinsic("implication")(antecedent, consequent)
 }
 
 /** A wrapper intrinsic for the CIRCT `ltl.eventually` operation. */
 private[chisel3] object LTLEventuallyIntrinsic {
-  def apply(prop: Bool)(implicit sourceInfo: SourceInfo) = 
+  def apply(prop: Bool)(implicit sourceInfo: SourceInfo) =
     UnaryLTLIntrinsic("eventually")(prop)
 }
 
 /** A wrapper intrinsic for the CIRCT `ltl.clock` operation. */
 private[chisel3] object LTLClockIntrinsic {
-  def apply(in: Bool, clock: Clock)(implicit sourceInfo: SourceInfo) = 
+  def apply(in: Bool, clock: Clock)(implicit sourceInfo: SourceInfo) =
     BaseIntrinsic("ltl_clock", Bool())(in, clock)
 }
 
@@ -105,11 +115,11 @@ private[chisel3] object LTLDisableIntrinsic {
 
 /** Base class for assert, assume, and cover intrinsics. */
 private[chisel3] object VerifAssertLikeIntrinsic {
-  def apply(intrinsicName: String, label: Option[String])(prop: Bool)(implicit sourceInfo: SourceInfo) : Unit = {
+  def apply(intrinsicName: String, label: Option[String])(prop: Bool)(implicit sourceInfo: SourceInfo): Unit = {
     val name = f"verif_$intrinsicName"
 
     label match {
-      case None => BaseIntrinsic(name, Bool())(prop)
+      case None    => BaseIntrinsic(name, Bool())(prop)
       case Some(l) => BaseIntrinsic(name, Bool(), Seq("label" -> StringParam(l)))(prop)
     }
   }
@@ -117,7 +127,7 @@ private[chisel3] object VerifAssertLikeIntrinsic {
 
 /** A wrapper intrinsic for the CIRCT `verif.assert` operation. */
 private[chisel3] object VerifAssertIntrinsic {
-  def apply(label: Option[String] = None)(prop: Bool)(implicit sourceInfo: SourceInfo) = 
+  def apply(label: Option[String] = None)(prop: Bool)(implicit sourceInfo: SourceInfo) =
     VerifAssertLikeIntrinsic("assert", label)(prop)
 }
 
@@ -129,8 +139,6 @@ private[chisel3] object VerifAssumeIntrinsic {
 
 /** A wrapper intrinsic for the CIRCT `verif.cover` operation. */
 private[chisel3] object VerifCoverIntrinsic {
-  def apply(label: Option[String] = None)(prop: Bool)(implicit sourceInfo: SourceInfo) = 
+  def apply(label: Option[String] = None)(prop: Bool)(implicit sourceInfo: SourceInfo) =
     VerifAssertLikeIntrinsic("cover", label)(prop)
 }
-
-

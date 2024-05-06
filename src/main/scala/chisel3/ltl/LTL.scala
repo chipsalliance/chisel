@@ -107,7 +107,7 @@ object Sequence {
   /** Delay a sequence by a fixed number of cycles. Equivalent to `##delay` in
     * SVA.
     */
-  def delay(seq: Sequence, delay: Int = 1): Sequence = 
+  def delay(seq: Sequence, delay: Int = 1): Sequence =
     OpaqueSequence(LTLDelayIntrinsic(delay, Some(0))(seq.inner))
 
   /** Delay a sequence by a bounded range of cycles. Equivalent to `##[min:max]`
@@ -121,16 +121,15 @@ object Sequence {
   /** Delay a sequence by an unbounded range of cycles. Equivalent to
     * `##[delay:$]` in SVA.
     */
-  def delayAtLeast(seq: Sequence, delay: Int): Sequence = 
+  def delayAtLeast(seq: Sequence, delay: Int): Sequence =
     OpaqueSequence(LTLDelayIntrinsic(delay, None)(seq.inner))
-  
 
   /** Concatenate multiple sequences. Equivalent to
     * `arg0 ##0 arg1 ##0 ... ##0 argN` in SVA.
     */
   def concat(arg0: Sequence, argN: Sequence*): Sequence = {
     var lhs = arg0
-    for (rhs <- argN) 
+    for (rhs <- argN)
       lhs = OpaqueSequence(LTLConcatIntrinsic(lhs.inner, rhs.inner))
     lhs
   }
@@ -140,7 +139,7 @@ object Sequence {
     */
   def and(arg0: Sequence, argN: Sequence*): Sequence = {
     var lhs = arg0
-    for (rhs <- argN) 
+    for (rhs <- argN)
       lhs = OpaqueSequence(LTLAndIntrinsic(lhs.inner, rhs.inner))
     lhs
   }
@@ -150,7 +149,7 @@ object Sequence {
     */
   def or(arg0: Sequence, argN: Sequence*): Sequence = {
     var lhs = arg0
-    for (rhs <- argN) 
+    for (rhs <- argN)
       lhs = OpaqueSequence(LTLOrIntrinsic(lhs.inner, rhs.inner))
     lhs
   }
@@ -158,9 +157,8 @@ object Sequence {
   /** Specify a `clock` relative to which all cycle delays within `seq` are
     * specified. Equivalent to `@(posedge clock) seq` in SVA.
     */
-  def clock(seq: Sequence, clock: Clock): Sequence = 
+  def clock(seq: Sequence, clock: Clock): Sequence =
     OpaqueSequence(LTLClockIntrinsic(seq.inner, clock))
-  
 
   /** Convenience constructor for sequences. Allows for the following syntax:
     *
@@ -221,14 +219,14 @@ sealed trait Property {
 object Property {
 
   /** Negate a property. Equivalent to `not prop` in SVA. */
-  def not(prop: Property): Property = 
+  def not(prop: Property): Property =
     OpaqueProperty(LTLNotIntrinsic(prop.inner))
 
   /** Precondition the checking of a property (the consequent) on a sequence
     * (the antecedent). Equivalent to the overlapping implication `seq |-> prop`
     * in SVA.
     */
-  def implication(seq: Sequence, prop: Property): Property = 
+  def implication(seq: Sequence, prop: Property): Property =
     OpaqueProperty(LTLImplicationIntrinsic(seq.inner, prop.inner))
 
   /** Non-overlapping variant of `Property.implication`. Equivalent to
@@ -246,7 +244,7 @@ object Property {
     *
     * Equivalent to `s_eventually prop` in SVA.
     */
-  def eventually(prop: Property): Property = 
+  def eventually(prop: Property): Property =
     OpaqueProperty(LTLEventuallyIntrinsic(prop.inner))
 
   /** Form the conjunction of two properties. Equivalent to
@@ -254,7 +252,7 @@ object Property {
     */
   def and(arg0: Property, argN: Property*): Property = {
     var lhs = arg0
-    for (rhs <- argN) 
+    for (rhs <- argN)
       lhs = OpaqueProperty(LTLAndIntrinsic(lhs.inner, rhs.inner))
     lhs
   }
@@ -264,7 +262,7 @@ object Property {
     */
   def or(arg0: Property, argN: Property*): Property = {
     var lhs = arg0
-    for (rhs <- argN) 
+    for (rhs <- argN)
       lhs = OpaqueProperty(LTLOrIntrinsic(lhs.inner, rhs.inner))
     lhs
   }
@@ -272,14 +270,14 @@ object Property {
   /** Specify a `clock` relative to which all cycle delays within `prop` are
     * specified. Equivalent to `@(posedge clock) prop` in SVA.
     */
-  def clock(prop: Property, clock: Clock): Property = 
+  def clock(prop: Property, clock: Clock): Property =
     OpaqueProperty(LTLClockIntrinsic(prop.inner, clock))
 
   /** Disable the checking of a property if a condition is true. If the
     * condition is true at any time during the evaluation of the property, the
     * evaluation is aborted. Equivalent to `disable iff (cond) prop` in SVA.
     */
-  def disable(prop: Property, cond: Disable): Property = 
+  def disable(prop: Property, cond: Disable): Property =
     OpaqueProperty(LTLDisableIntrinsic(prop.inner, cond.value))
 }
 
