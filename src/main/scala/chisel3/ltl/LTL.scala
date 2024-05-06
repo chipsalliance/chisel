@@ -82,7 +82,7 @@ sealed trait Sequence extends Property {
   /** Equivalent to `|=>` in SVA. */
   def |=>(prop: Property): Property = this.implicationNonOverlapping(prop)
 
-  /** Equivalent to `a ## b` in SVA. */
+  /** Equivalent to `a ##1 b` in SVA. */
   def ###(other: Sequence): Sequence = this.concat(other.delay())
 
   /** Equivalent to `a ##[*] b` in SVA. */
