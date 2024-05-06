@@ -17,12 +17,15 @@ class PanamaCIRCTOMEvaluator private[chisel3] (circt: PanamaCIRCT, mlirModule: M
   def instantiate(
     className:    String,
     actualParams: Seq[PanamaCIRCTOMEvaluatorValue]
-  ): PanamaCIRCTOMEvaluatorValueObject = {
+  ): Option[PanamaCIRCTOMEvaluatorValueObject] = {
     val params = actualParams.map(_.asInstanceOf[PanamaCIRCTOMEvaluatorValue].value)
 
     val value = circt.omEvaluatorInstantiate(evaluator, className, params)
-    assert(!circt.omEvaluatorObjectIsNull(value))
-    new PanamaCIRCTOMEvaluatorValueObject(circt, value)
+    if (!circt.omEvaluatorObjectIsNull(value)) {
+      Some(new PanamaCIRCTOMEvaluatorValueObject(circt, value))
+    } else {
+      None
+    }
   }
 }
 
