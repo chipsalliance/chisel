@@ -6,8 +6,6 @@ import chisel3._
 import chisel3.util.circt._
 import chisel3.experimental.hierarchy.{Instance, Instantiate}
 
-import chisel3.util.circt.LTLIntrinsicInstanceMethodsInternalWorkaround._
-
 /** An opaque sequence returned by an intrinsic.
   *
   * Due to the lack of opaque user-defined types in FIRRTL, the Linear Temporal
@@ -84,7 +82,7 @@ sealed trait Sequence extends Property {
   /** Equivalent to `|=>` in SVA. */
   def |=>(prop: Property): Property = this.implicationNonOverlapping(prop)
 
-  /** Equivalent to `a ## b` in SVA. */
+  /** Equivalent to `a ##1 b` in SVA. */
   def ###(other: Sequence): Sequence = this.concat(other.delay())
 
   /** Equivalent to `a ##[*] b` in SVA. */
@@ -109,30 +107,22 @@ object Sequence {
   /** Delay a sequence by a fixed number of cycles. Equivalent to `##delay` in
     * SVA.
     */
-  def delay(seq: Sequence, delay: Int = 1): Sequence = {
-    val ltl_delay = Instantiate(new LTLDelayIntrinsic(delay, Some(0)))
-    ltl_delay.in := seq.inner
-    OpaqueSequence(ltl_delay.out)
-  }
+  def delay(seq: Sequence, delay: Int = 1): Sequence =
+    OpaqueSequence(LTLDelayIntrinsic(delay, Some(0))(seq.inner))
 
   /** Delay a sequence by a bounded range of cycles. Equivalent to `##[min:max]`
     * in SVA.
     */
   def delayRange(seq: Sequence, min: Int, max: Int): Sequence = {
     require(min <= max)
-    val ltl_delay = Instantiate(new LTLDelayIntrinsic(min, Some(max - min)))
-    ltl_delay.in := seq.inner
-    OpaqueSequence(ltl_delay.out)
+    OpaqueSequence(LTLDelayIntrinsic(min, Some(max - min))(seq.inner))
   }
 
   /** Delay a sequence by an unbounded range of cycles. Equivalent to
     * `##[delay:$]` in SVA.
     */
-  def delayAtLeast(seq: Sequence, delay: Int): Sequence = {
-    val ltl_delay = Instantiate(new LTLDelayIntrinsic(delay, None))
-    ltl_delay.in := seq.inner
-    OpaqueSequence(ltl_delay.out)
-  }
+  def delayAtLeast(seq: Sequence, delay: Int): Sequence =
+    OpaqueSequence(LTLDelayIntrinsic(delay, None)(seq.inner))
 
   /** Concatenate multiple sequences. Equivalent to
     * `arg0 ##0 arg1 ##0 ... ##0 argN` in SVA.
@@ -140,10 +130,7 @@ object Sequence {
   def concat(arg0: Sequence, argN: Sequence*): Sequence = {
     var lhs = arg0
     for (rhs <- argN) {
-      val ltl_concat = Instantiate(new LTLConcatIntrinsic)
-      ltl_concat.lhs := lhs.inner
-      ltl_concat.rhs := rhs.inner
-      lhs = OpaqueSequence(ltl_concat.out)
+      lhs = OpaqueSequence(LTLConcatIntrinsic(lhs.inner, rhs.inner))
     }
     lhs
   }
@@ -154,10 +141,7 @@ object Sequence {
   def and(arg0: Sequence, argN: Sequence*): Sequence = {
     var lhs = arg0
     for (rhs <- argN) {
-      val ltl_and = Instantiate(new LTLAndIntrinsic)
-      ltl_and.lhs := lhs.inner
-      ltl_and.rhs := rhs.inner
-      lhs = OpaqueSequence(ltl_and.out)
+      lhs = OpaqueSequence(LTLAndIntrinsic(lhs.inner, rhs.inner))
     }
     lhs
   }
@@ -168,10 +152,7 @@ object Sequence {
   def or(arg0: Sequence, argN: Sequence*): Sequence = {
     var lhs = arg0
     for (rhs <- argN) {
-      val ltl_or = Instantiate(new LTLOrIntrinsic)
-      ltl_or.lhs := lhs.inner
-      ltl_or.rhs := rhs.inner
-      lhs = OpaqueSequence(ltl_or.out)
+      lhs = OpaqueSequence(LTLOrIntrinsic(lhs.inner, rhs.inner))
     }
     lhs
   }
@@ -179,12 +160,8 @@ object Sequence {
   /** Specify a `clock` relative to which all cycle delays within `seq` are
     * specified. Equivalent to `@(posedge clock) seq` in SVA.
     */
-  def clock(seq: Sequence, clock: Clock): Sequence = {
-    val ltl_clock = Instantiate(new LTLClockIntrinsic)
-    ltl_clock.in := seq.inner
-    ltl_clock.clock := clock
-    OpaqueSequence(ltl_clock.out)
-  }
+  def clock(seq: Sequence, clock: Clock): Sequence =
+    OpaqueSequence(LTLClockIntrinsic(seq.inner, clock))
 
   /** Convenience constructor for sequences. Allows for the following syntax:
     *
@@ -245,22 +222,15 @@ sealed trait Property {
 object Property {
 
   /** Negate a property. Equivalent to `not prop` in SVA. */
-  def not(prop: Property): Property = {
-    val ltl_not = Instantiate(new LTLNotIntrinsic)
-    ltl_not.in := prop.inner
-    OpaqueProperty(ltl_not.out)
-  }
+  def not(prop: Property): Property =
+    OpaqueProperty(LTLNotIntrinsic(prop.inner))
 
   /** Precondition the checking of a property (the consequent) on a sequence
     * (the antecedent). Equivalent to the overlapping implication `seq |-> prop`
     * in SVA.
     */
-  def implication(seq: Sequence, prop: Property): Property = {
-    val ltl_implication = Instantiate(new LTLImplicationIntrinsic)
-    ltl_implication.lhs := seq.inner
-    ltl_implication.rhs := prop.inner
-    OpaqueProperty(ltl_implication.out)
-  }
+  def implication(seq: Sequence, prop: Property): Property =
+    OpaqueProperty(LTLImplicationIntrinsic(seq.inner, prop.inner))
 
   /** Non-overlapping variant of `Property.implication`. Equivalent to
     * `seq ##1 true |-> prop` and `seq |=> prop` in SVA.
@@ -277,11 +247,8 @@ object Property {
     *
     * Equivalent to `s_eventually prop` in SVA.
     */
-  def eventually(prop: Property): Property = {
-    val ltl_eventually = Instantiate(new LTLEventuallyIntrinsic)
-    ltl_eventually.in := prop.inner
-    OpaqueProperty(ltl_eventually.out)
-  }
+  def eventually(prop: Property): Property =
+    OpaqueProperty(LTLEventuallyIntrinsic(prop.inner))
 
   /** Form the conjunction of two properties. Equivalent to
     * `arg0 and arg1 and ... and argN` in SVA.
@@ -289,10 +256,7 @@ object Property {
   def and(arg0: Property, argN: Property*): Property = {
     var lhs = arg0
     for (rhs <- argN) {
-      val ltl_and = Instantiate(new LTLAndIntrinsic)
-      ltl_and.lhs := lhs.inner
-      ltl_and.rhs := rhs.inner
-      lhs = OpaqueProperty(ltl_and.out)
+      lhs = OpaqueProperty(LTLAndIntrinsic(lhs.inner, rhs.inner))
     }
     lhs
   }
@@ -303,10 +267,7 @@ object Property {
   def or(arg0: Property, argN: Property*): Property = {
     var lhs = arg0
     for (rhs <- argN) {
-      val ltl_or = Instantiate(new LTLOrIntrinsic)
-      ltl_or.lhs := lhs.inner
-      ltl_or.rhs := rhs.inner
-      lhs = OpaqueProperty(ltl_or.out)
+      lhs = OpaqueProperty(LTLOrIntrinsic(lhs.inner, rhs.inner))
     }
     lhs
   }
@@ -314,23 +275,15 @@ object Property {
   /** Specify a `clock` relative to which all cycle delays within `prop` are
     * specified. Equivalent to `@(posedge clock) prop` in SVA.
     */
-  def clock(prop: Property, clock: Clock): Property = {
-    val ltl_clock = Instantiate(new LTLClockIntrinsic)
-    ltl_clock.in := prop.inner
-    ltl_clock.clock := clock
-    OpaqueProperty(ltl_clock.out)
-  }
+  def clock(prop: Property, clock: Clock): Property =
+    OpaqueProperty(LTLClockIntrinsic(prop.inner, clock))
 
   /** Disable the checking of a property if a condition is true. If the
     * condition is true at any time during the evaluation of the property, the
     * evaluation is aborted. Equivalent to `disable iff (cond) prop` in SVA.
     */
-  def disable(prop: Property, cond: Disable): Property = {
-    val ltl_disable = Instantiate(new LTLDisableIntrinsic)
-    ltl_disable.in := prop.inner
-    ltl_disable.condition := cond.value
-    OpaqueProperty(ltl_disable.out)
-  }
+  def disable(prop: Property, cond: Disable): Property =
+    OpaqueProperty(LTLDisableIntrinsic(prop.inner, cond.value))
 }
 
 /** The base class for the `AssertProperty`, `AssumeProperty`, and
@@ -359,8 +312,7 @@ sealed abstract class AssertPropertyLike {
   ): Unit = {
     val disabled = disable.fold(prop)(prop.disable(_))
     val clocked = clock.fold(disabled)(disabled.clock(_))
-    val verif = createIntrinsic(label)
-    verif.property := clocked.inner
+    createIntrinsic(label)(clocked.inner)
   }
 
   /** Assert, assume, or cover that a boolean predicate holds.
@@ -412,7 +364,7 @@ sealed abstract class AssertPropertyLike {
     apply(Sequence.BoolSequence(cond), Some(clock), Some(disable), Some(label))
   }
 
-  def createIntrinsic(label: Option[String]): Instance[VerifAssertLikeIntrinsic]
+  def createIntrinsic(label: Option[String]): (Bool) => Unit
 }
 
 /** Assert that a property holds.
@@ -421,7 +373,7 @@ sealed abstract class AssertPropertyLike {
   * clock, disable_iff, and label parameters.
   */
 object AssertProperty extends AssertPropertyLike {
-  def createIntrinsic(label: Option[String]) = Instantiate(new VerifAssertIntrinsic(label))
+  def createIntrinsic(label: Option[String]) = VerifAssertIntrinsic(label)
 }
 
 /** Assume that a property holds.
@@ -430,7 +382,7 @@ object AssertProperty extends AssertPropertyLike {
   * clock, disable_iff, and label parameters.
   */
 object AssumeProperty extends AssertPropertyLike {
-  def createIntrinsic(label: Option[String]) = Instantiate(new VerifAssumeIntrinsic(label))
+  def createIntrinsic(label: Option[String]) = VerifAssumeIntrinsic(label)
 }
 
 /** Cover that a property holds.
@@ -439,5 +391,5 @@ object AssumeProperty extends AssertPropertyLike {
   * clock, disable_iff, and label parameters.
   */
 object CoverProperty extends AssertPropertyLike {
-  def createIntrinsic(label: Option[String]) = Instantiate(new VerifCoverIntrinsic(label))
+  def createIntrinsic(label: Option[String]) = VerifCoverIntrinsic(label)
 }
