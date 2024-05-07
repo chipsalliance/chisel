@@ -8,6 +8,8 @@ import chisel3.experimental.hierarchy.{Instance, Instantiate}
 
 import chisel3.util.circt.LTLIntrinsicInstanceMethodsInternalWorkaround._
 
+import scala.annotation.nowarn
+
 /** An opaque sequence returned by an intrinsic.
   *
   * Due to the lack of opaque user-defined types in FIRRTL, the Linear Temporal
@@ -336,6 +338,7 @@ object Property {
 /** The base class for the `AssertProperty`, `AssumeProperty`, and
   * `CoverProperty` verification constructs.
   */
+@nowarn("cat=deprecation&msg=method createIntrinsic")
 sealed abstract class AssertPropertyLike {
 
   /** Assert, assume, or cover that a property holds.
@@ -412,6 +415,7 @@ sealed abstract class AssertPropertyLike {
     apply(Sequence.BoolSequence(cond), Some(clock), Some(disable), Some(label))
   }
 
+  @deprecated("This API should never have been public", "Chisel 6.4")
   def createIntrinsic(label: Option[String]): Instance[VerifAssertLikeIntrinsic]
 }
 
@@ -421,6 +425,7 @@ sealed abstract class AssertPropertyLike {
   * clock, disable_iff, and label parameters.
   */
 object AssertProperty extends AssertPropertyLike {
+  @deprecated("This API should never have been public", "Chisel 6.4")
   def createIntrinsic(label: Option[String]) = Instantiate(new VerifAssertIntrinsic(label))
 }
 
@@ -430,6 +435,7 @@ object AssertProperty extends AssertPropertyLike {
   * clock, disable_iff, and label parameters.
   */
 object AssumeProperty extends AssertPropertyLike {
+  @deprecated("This API should never have been public", "Chisel 6.4")
   def createIntrinsic(label: Option[String]) = Instantiate(new VerifAssumeIntrinsic(label))
 }
 
@@ -439,5 +445,6 @@ object AssumeProperty extends AssertPropertyLike {
   * clock, disable_iff, and label parameters.
   */
 object CoverProperty extends AssertPropertyLike {
+  @deprecated("This API should never have been public", "Chisel 6.4")
   def createIntrinsic(label: Option[String]) = Instantiate(new VerifCoverIntrinsic(label))
 }
