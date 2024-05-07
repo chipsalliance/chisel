@@ -32,17 +32,18 @@ class LTLSpec extends AnyFlatSpec with Matchers {
     chirrtl should include("intrinsic(circt_ltl_eventually : UInt<1>, a)")
   }
 
+  class DelaysMod extends RawModule {
+    val a, b, c = IO(Input(Bool()))
+    implicit val info = SourceLine("Foo.scala", 1, 2)
+    val s0: Sequence = a.delay(1)
+    val s1: Sequence = b.delayRange(2, 4)
+    val s2: Sequence = c.delayAtLeast(5)
+    val s3: Sequence = a ### b
+    val s4: Sequence = a ##* b
+    val s5: Sequence = a ##+ b
+  }
   it should "support sequence delay operations" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val a, b, c = IO(Input(Bool()))
-      implicit val info = SourceLine("Foo.scala", 1, 2)
-      val s0: Sequence = a.delay(1)
-      val s1: Sequence = b.delayRange(2, 4)
-      val s2: Sequence = c.delayAtLeast(5)
-      val s3: Sequence = a ### b
-      val s4: Sequence = a ##* b
-      val s5: Sequence = a ##+ b
-    })
+    val chirrtl = ChiselStage.emitCHIRRTL(new DelaysMod)
     val sourceLoc = "@[Foo.scala 1:2]"
     chirrtl should include("input a : UInt<1>")
     chirrtl should include("input b : UInt<1>")
@@ -57,14 +58,18 @@ class LTLSpec extends AnyFlatSpec with Matchers {
     chirrtl should include(f"node delay_5 = intrinsic(circt_ltl_delay<delay = 1> : UInt<1>, b) $sourceLoc")
     chirrtl should include(f"node concat_2 = intrinsic(circt_ltl_concat : UInt<1>, a, delay_5) $sourceLoc")
   }
+  it should "compile sequence delay operations" in {
+    ChiselStage.emitSystemVerilog(new DelaysMod)
+  }
 
+  class ConcatMod extends RawModule {
+    val a, b, c, d, e = IO(Input(Bool()))
+    implicit val info = SourceLine("Foo.scala", 1, 2)
+    val s0: Sequence = a.concat(b)
+    val s1: Sequence = Sequence.concat(c, d, e) // (c concat d) concat e
+  }
   it should "support sequence concat operations" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val a, b, c, d, e = IO(Input(Bool()))
-      implicit val info = SourceLine("Foo.scala", 1, 2)
-      val s0: Sequence = a.concat(b)
-      val s1: Sequence = Sequence.concat(c, d, e) // (c concat d) concat e
-    })
+    val chirrtl = ChiselStage.emitCHIRRTL(new ConcatMod)
     val sourceLoc = "@[Foo.scala 1:2]"
     chirrtl should include("input a : UInt<1>")
     chirrtl should include("input b : UInt<1>")
@@ -76,20 +81,25 @@ class LTLSpec extends AnyFlatSpec with Matchers {
     chirrtl should include(f"intrinsic(circt_ltl_concat : UInt<1>, concat_1, e) $sourceLoc")
   }
 
+  it should "compile sequence concat operations" in {
+    ChiselStage.emitSystemVerilog(new ConcatMod)
+  }
+
+  class AndOrClockMod extends RawModule {
+    val a, b = IO(Input(Bool()))
+    val clock = IO(Input(Clock()))
+    implicit val info = SourceLine("Foo.scala", 1, 2)
+    val s0: Sequence = a.delay()
+    val s1: Sequence = s0.and(b)
+    val s2: Sequence = s0.or(b)
+    val s3: Sequence = s0.clock(clock)
+    val p0: Property = a.eventually
+    val p1: Property = p0.and(b)
+    val p2: Property = p0.or(b)
+    val p3: Property = p0.clock(clock)
+  }
   it should "support and, or, and clock operations" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val a, b = IO(Input(Bool()))
-      val clock = IO(Input(Clock()))
-      implicit val info = SourceLine("Foo.scala", 1, 2)
-      val s0: Sequence = a.delay()
-      val s1: Sequence = s0.and(b)
-      val s2: Sequence = s0.or(b)
-      val s3: Sequence = s0.clock(clock)
-      val p0: Property = a.eventually
-      val p1: Property = p0.and(b)
-      val p2: Property = p0.or(b)
-      val p3: Property = p0.clock(clock)
-    })
+    val chirrtl = ChiselStage.emitCHIRRTL(new AndOrClockMod)
     val sourceLoc = "@[Foo.scala 1:2]"
 
     // Sequences
@@ -105,25 +115,35 @@ class LTLSpec extends AnyFlatSpec with Matchers {
     chirrtl should include(f"node clock_2 = intrinsic(circt_ltl_clock : UInt<1>, eventually, clock) $sourceLoc")
   }
 
+  it should "compile and, or, and clock operations" in {
+    ChiselStage.emitSystemVerilog(new AndOrClockMod)
+  }
+
+  class NotMod extends RawModule {
+    val a = IO(Input(Bool()))
+    implicit val info = SourceLine("Foo.scala", 1, 2)
+    val p0: Property = Property.not(a)
+  }
   it should "support property not operation" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val a = IO(Input(Bool()))
-      implicit val info = SourceLine("Foo.scala", 1, 2)
-      val p0: Property = Property.not(a)
-    })
+    val chirrtl = ChiselStage.emitCHIRRTL(new NotMod)
     val sourceLoc = "@[Foo.scala 1:2]"
     chirrtl should include(f"intrinsic(circt_ltl_not : UInt<1>, a) $sourceLoc")
   }
 
+  it should "compile property not operation" in {
+    ChiselStage.emitSystemVerilog(new NotMod)
+  }
+
+  class PropImplicationMod extends RawModule {
+    val a, b = IO(Input(Bool()))
+    implicit val info = SourceLine("Foo.scala", 1, 2)
+    val p0: Property = Property.implication(a, b)
+    val p1: Property = a |-> b
+    val p2: Property = Property.implicationNonOverlapping(a, b)
+    val p3: Property = a |=> b
+  }
   it should "support property implication operation" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val a, b = IO(Input(Bool()))
-      implicit val info = SourceLine("Foo.scala", 1, 2)
-      val p0: Property = Property.implication(a, b)
-      val p1: Property = a |-> b
-      val p2: Property = Property.implicationNonOverlapping(a, b)
-      val p3: Property = a |=> b
-    })
+    val chirrtl = ChiselStage.emitCHIRRTL(new PropImplicationMod)
     val sourceLoc = "@[Foo.scala 1:2]"
 
     // Overlapping
@@ -143,38 +163,56 @@ class LTLSpec extends AnyFlatSpec with Matchers {
     chirrtl should include(f"node implication_3 = intrinsic(circt_ltl_implication : UInt<1>, concat_1, b) $sourceLoc")
   }
 
+  it should "compile property implication operation" in {
+    ChiselStage.emitSystemVerilog(new PropImplicationMod)
+  }
+
+  class EventuallyMod extends RawModule {
+    val a = IO(Input(Bool()))
+    implicit val info = SourceLine("Foo.scala", 1, 2)
+    val p0: Property = a.eventually
+  }
   it should "support property eventually operation" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val a = IO(Input(Bool()))
-      implicit val info = SourceLine("Foo.scala", 1, 2)
-      val p0: Property = a.eventually
-    })
+    val chirrtl = ChiselStage.emitCHIRRTL(new EventuallyMod)
     val sourceLoc = "@[Foo.scala 1:2]"
     chirrtl should include(f"intrinsic(circt_ltl_eventually : UInt<1>, a) $sourceLoc")
   }
 
+  it should "compile property eventually operation" in {
+    ChiselStage.emitSystemVerilog(new EventuallyMod)
+  }
+
+  class DisableMod extends RawModule {
+    val a, b = IO(Input(Bool()))
+    implicit val info = SourceLine("Foo.scala", 1, 2)
+    val p0: Property = a.disable(b.asDisable)
+  }
   it should "support property disable operation" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val a, b = IO(Input(Bool()))
-      implicit val info = SourceLine("Foo.scala", 1, 2)
-      val p0: Property = a.disable(b.asDisable)
-    })
+    val chirrtl = ChiselStage.emitCHIRRTL(new DisableMod)
     val sourceLoc = "@[Foo.scala 1:2]"
     chirrtl should include(f"intrinsic(circt_ltl_disable : UInt<1>, a, b) $sourceLoc")
   }
 
+  it should "compile property disable operation" in {
+    ChiselStage.emitSystemVerilog(new DisableMod)
+  }
+
+  class BasicVerifMod extends RawModule {
+    val a = IO(Input(Bool()))
+    implicit val info = SourceLine("Foo.scala", 1, 2)
+    AssertProperty(a)
+    AssumeProperty(a)
+    CoverProperty(a)
+  }
   it should "support simple property asserts/assumes/covers" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val a = IO(Input(Bool()))
-      implicit val info = SourceLine("Foo.scala", 1, 2)
-      AssertProperty(a)
-      AssumeProperty(a)
-      CoverProperty(a)
-    })
+    val chirrtl = ChiselStage.emitCHIRRTL(new BasicVerifMod)
     val sourceLoc = "@[Foo.scala 1:2]"
     chirrtl should include(f"intrinsic(circt_verif_assert, a) $sourceLoc")
     chirrtl should include(f"intrinsic(circt_verif_assume, a) $sourceLoc")
     chirrtl should include(f"intrinsic(circt_verif_cover, a) $sourceLoc")
+  }
+  it should "compile simple property asserts/assumes/covers" in {
+    ChiselStage.emitSystemVerilog(new BasicVerifMod)
   }
 
   it should "use clock and disable by default for properties" in {
@@ -200,16 +238,21 @@ class LTLSpec extends AnyFlatSpec with Matchers {
     }
   }
 
+  class LabeledVerifMod extends RawModule {
+    val a = IO(Input(Bool()))
+    AssertProperty(a, label = Some("foo0"))
+    AssumeProperty(a, label = Some("foo1"))
+    CoverProperty(a, label = Some("foo2"))
+  }
   it should "support labeled property asserts/assumes/covers" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val a = IO(Input(Bool()))
-      AssertProperty(a, label = Some("foo0"))
-      AssumeProperty(a, label = Some("foo1"))
-      CoverProperty(a, label = Some("foo2"))
-    })
+    val chirrtl = ChiselStage.emitCHIRRTL(new LabeledVerifMod)
     chirrtl should include("intrinsic(circt_verif_assert<label = \"foo0\">, a)")
     chirrtl should include("intrinsic(circt_verif_assume<label = \"foo1\">, a")
     chirrtl should include("intrinsic(circt_verif_cover<label = \"foo2\">, a)")
+  }
+
+  it should "compile labeled property asserts/assumes/covers" in {
+    ChiselStage.emitSystemVerilog(new LabeledVerifMod)
   }
 
   it should "support assert shorthands with clock and disable" in {
@@ -235,17 +278,18 @@ class LTLSpec extends AnyFlatSpec with Matchers {
     chirrtl should include("intrinsic(circt_verif_assert, clock_1)")
   }
 
+  class SequenceConvMod extends RawModule {
+    val a, b = IO(Input(Bool()))
+    AssertProperty(Sequence(a))
+    AssertProperty(Sequence(a, b))
+    AssertProperty(Sequence(Delay(), a))
+    AssertProperty(Sequence(a, Delay(), b))
+    AssertProperty(Sequence(a, Delay(2), b))
+    AssertProperty(Sequence(a, Delay(42, 1337), b))
+    AssertProperty(Sequence(a, Delay(9001, None), b))
+  }
   it should "support Sequence(...) convenience constructor" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val a, b = IO(Input(Bool()))
-      AssertProperty(Sequence(a))
-      AssertProperty(Sequence(a, b))
-      AssertProperty(Sequence(Delay(), a))
-      AssertProperty(Sequence(a, Delay(), b))
-      AssertProperty(Sequence(a, Delay(2), b))
-      AssertProperty(Sequence(a, Delay(42, 1337), b))
-      AssertProperty(Sequence(a, Delay(9001, None), b))
-    })
+    val chirrtl = ChiselStage.emitCHIRRTL(new SequenceConvMod)
     // a
     chirrtl should include("intrinsic(circt_verif_assert, a)")
 
@@ -276,5 +320,9 @@ class LTLSpec extends AnyFlatSpec with Matchers {
     chirrtl should include("node delay_4 = intrinsic(circt_ltl_delay<delay = 9001> : UInt<1>, b)")
     chirrtl should include("node concat_4 = intrinsic(circt_ltl_concat : UInt<1>, a, delay_4)")
     chirrtl should include("intrinsic(circt_verif_assert, concat_4)")
+  }
+
+  it should "compile Sequence(...) convenience constructor" in {
+    ChiselStage.emitSystemVerilog(new SequenceConvMod)
   }
 }
