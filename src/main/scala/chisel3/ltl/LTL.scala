@@ -5,6 +5,7 @@ package chisel3.ltl
 import chisel3._
 import chisel3.util.circt._
 import chisel3.experimental.hierarchy.{Instance, Instantiate}
+import chisel3.experimental.SourceInfo
 
 /** An opaque sequence returned by an intrinsic.
   *
@@ -48,48 +49,49 @@ object Delay {
 sealed trait Sequence extends Property {
 
   /** See `Sequence.delay`. */
-  def delay(delay: Int = 1): Sequence = Sequence.delay(this, delay)
+  def delay(delay: Int = 1)(implicit sourceInfo: SourceInfo): Sequence = Sequence.delay(this, delay)
 
   /** See `Sequence.delayRange`. */
-  def delayRange(min: Int, max: Int): Sequence = Sequence.delayRange(this, min, max)
+  def delayRange(min: Int, max: Int)(implicit sourceInfo: SourceInfo): Sequence = Sequence.delayRange(this, min, max)
 
   /** See `Sequence.delayAtLeast`. */
-  def delayAtLeast(delay: Int): Sequence = Sequence.delayAtLeast(this, delay)
+  def delayAtLeast(delay: Int)(implicit sourceInfo: SourceInfo): Sequence = Sequence.delayAtLeast(this, delay)
 
   /** See `Sequence.concat`. */
-  def concat(other: Sequence): Sequence = Sequence.concat(this, other)
+  def concat(other: Sequence)(implicit sourceInfo: SourceInfo): Sequence = Sequence.concat(this, other)
 
   /** See `Sequence.and`. */
-  def and(other: Sequence): Sequence = Sequence.and(this, other)
+  def and(other: Sequence)(implicit sourceInfo: SourceInfo): Sequence = Sequence.and(this, other)
 
   /** See `Sequence.or`. */
-  def or(other: Sequence): Sequence = Sequence.or(this, other)
+  def or(other: Sequence)(implicit sourceInfo: SourceInfo): Sequence = Sequence.or(this, other)
 
   /** See `Sequence.clock`. */
-  override def clock(clock: Clock): Sequence = Sequence.clock(this, clock)
+  override def clock(clock: Clock)(implicit sourceInfo: SourceInfo): Sequence = Sequence.clock(this, clock)
 
   /** See `Property.implication`. */
-  def implication(prop: Property): Property = Property.implication(this, prop)
+  def implication(prop: Property)(implicit sourceInfo: SourceInfo): Property = Property.implication(this, prop)
 
   /** See `Property.implication`. */
-  def implicationNonOverlapping(prop: Property): Property = Property.implicationNonOverlapping(this, prop)
+  def implicationNonOverlapping(prop: Property)(implicit sourceInfo: SourceInfo): Property =
+    Property.implicationNonOverlapping(this, prop)
 
   // Convenience operators.
 
   /** Equivalent to `|->` in SVA. */
-  def |->(prop: Property): Property = this.implication(prop)
+  def |->(prop: Property)(implicit sourceInfo: SourceInfo): Property = this.implication(prop)
 
   /** Equivalent to `|=>` in SVA. */
-  def |=>(prop: Property): Property = this.implicationNonOverlapping(prop)
+  def |=>(prop: Property)(implicit sourceInfo: SourceInfo): Property = this.implicationNonOverlapping(prop)
 
   /** Equivalent to `a ##1 b` in SVA. */
-  def ###(other: Sequence): Sequence = this.concat(other.delay())
+  def ###(other: Sequence)(implicit sourceInfo: SourceInfo): Sequence = this.concat(other.delay())
 
   /** Equivalent to `a ##[*] b` in SVA. */
-  def ##*(other: Sequence): Sequence = this.concat(other.delayAtLeast(0))
+  def ##*(other: Sequence)(implicit sourceInfo: SourceInfo): Sequence = this.concat(other.delayAtLeast(0))
 
   /** Equivalent to `a ##[+] b` in SVA. */
-  def ##+(other: Sequence): Sequence = this.concat(other.delayAtLeast(1))
+  def ##+(other: Sequence)(implicit sourceInfo: SourceInfo): Sequence = this.concat(other.delayAtLeast(1))
 }
 
 /** Prefix-style utilities to work with sequences.
@@ -107,13 +109,13 @@ object Sequence {
   /** Delay a sequence by a fixed number of cycles. Equivalent to `##delay` in
     * SVA.
     */
-  def delay(seq: Sequence, delay: Int = 1): Sequence =
+  def delay(seq: Sequence, delay: Int = 1)(implicit sourceInfo: SourceInfo): Sequence =
     OpaqueSequence(LTLDelayIntrinsic(delay, Some(0))(seq.inner))
 
   /** Delay a sequence by a bounded range of cycles. Equivalent to `##[min:max]`
     * in SVA.
     */
-  def delayRange(seq: Sequence, min: Int, max: Int): Sequence = {
+  def delayRange(seq: Sequence, min: Int, max: Int)(implicit sourceInfo: SourceInfo): Sequence = {
     require(min <= max)
     OpaqueSequence(LTLDelayIntrinsic(min, Some(max - min))(seq.inner))
   }
@@ -121,13 +123,13 @@ object Sequence {
   /** Delay a sequence by an unbounded range of cycles. Equivalent to
     * `##[delay:$]` in SVA.
     */
-  def delayAtLeast(seq: Sequence, delay: Int): Sequence =
+  def delayAtLeast(seq: Sequence, delay: Int)(implicit sourceInfo: SourceInfo): Sequence =
     OpaqueSequence(LTLDelayIntrinsic(delay, None)(seq.inner))
 
   /** Concatenate multiple sequences. Equivalent to
     * `arg0 ##0 arg1 ##0 ... ##0 argN` in SVA.
     */
-  def concat(arg0: Sequence, argN: Sequence*): Sequence = {
+  def concat(arg0: Sequence, argN: Sequence*)(implicit sourceInfo: SourceInfo): Sequence = {
     var lhs = arg0
     for (rhs <- argN) {
       lhs = OpaqueSequence(LTLConcatIntrinsic(lhs.inner, rhs.inner))
@@ -138,7 +140,7 @@ object Sequence {
   /** Form the conjunction of two sequences. Equivalent to
     * `arg0 and arg1 and ... and argN` in SVA.
     */
-  def and(arg0: Sequence, argN: Sequence*): Sequence = {
+  def and(arg0: Sequence, argN: Sequence*)(implicit sourceInfo: SourceInfo): Sequence = {
     var lhs = arg0
     for (rhs <- argN) {
       lhs = OpaqueSequence(LTLAndIntrinsic(lhs.inner, rhs.inner))
@@ -149,7 +151,7 @@ object Sequence {
   /** Form the disjunction of two sequences. Equivalent to
     * `arg0 or arg1 or ... or argN` in SVA.
     */
-  def or(arg0: Sequence, argN: Sequence*): Sequence = {
+  def or(arg0: Sequence, argN: Sequence*)(implicit sourceInfo: SourceInfo): Sequence = {
     var lhs = arg0
     for (rhs <- argN) {
       lhs = OpaqueSequence(LTLOrIntrinsic(lhs.inner, rhs.inner))
@@ -160,7 +162,7 @@ object Sequence {
   /** Specify a `clock` relative to which all cycle delays within `seq` are
     * specified. Equivalent to `@(posedge clock) seq` in SVA.
     */
-  def clock(seq: Sequence, clock: Clock): Sequence =
+  def clock(seq: Sequence, clock: Clock)(implicit sourceInfo: SourceInfo): Sequence =
     OpaqueSequence(LTLClockIntrinsic(seq.inner, clock))
 
   /** Convenience constructor for sequences. Allows for the following syntax:
@@ -196,22 +198,22 @@ sealed trait Property {
   private[ltl] def inner: Bool
 
   /** See `Property.not`. */
-  def not: Property = Property.not(this)
+  def not(implicit sourceInfo: SourceInfo): Property = Property.not(this)
 
   /** See `Property.eventually`. */
-  def eventually: Property = Property.eventually(this)
+  def eventually(implicit sourceInfo: SourceInfo): Property = Property.eventually(this)
 
   /** See `Property.and`. */
-  def and(other: Property): Property = Property.and(this, other)
+  def and(other: Property)(implicit sourceInfo: SourceInfo): Property = Property.and(this, other)
 
   /** See `Property.or`. */
-  def or(other: Property): Property = Property.or(this, other)
+  def or(other: Property)(implicit sourceInfo: SourceInfo): Property = Property.or(this, other)
 
   /** See `Property.clock`. */
-  def clock(clock: Clock): Property = Property.clock(this, clock)
+  def clock(clock: Clock)(implicit sourceInfo: SourceInfo): Property = Property.clock(this, clock)
 
   /** See `Property.disable`. */
-  def disable(cond: Disable): Property = Property.disable(this, cond)
+  def disable(cond: Disable)(implicit sourceInfo: SourceInfo): Property = Property.disable(this, cond)
 }
 
 /** Prefix-style utilities to work with properties.
@@ -222,20 +224,20 @@ sealed trait Property {
 object Property {
 
   /** Negate a property. Equivalent to `not prop` in SVA. */
-  def not(prop: Property): Property =
+  def not(prop: Property)(implicit sourceInfo: SourceInfo): Property =
     OpaqueProperty(LTLNotIntrinsic(prop.inner))
 
   /** Precondition the checking of a property (the consequent) on a sequence
     * (the antecedent). Equivalent to the overlapping implication `seq |-> prop`
     * in SVA.
     */
-  def implication(seq: Sequence, prop: Property): Property =
+  def implication(seq: Sequence, prop: Property)(implicit sourceInfo: SourceInfo): Property =
     OpaqueProperty(LTLImplicationIntrinsic(seq.inner, prop.inner))
 
   /** Non-overlapping variant of `Property.implication`. Equivalent to
     * `seq ##1 true |-> prop` and `seq |=> prop` in SVA.
     */
-  def implicationNonOverlapping(seq: Sequence, prop: Property): Property = {
+  def implicationNonOverlapping(seq: Sequence, prop: Property)(implicit sourceInfo: SourceInfo): Property = {
     import Sequence.BoolSequence
     Property.implication(seq.concat(true.B.delay(1)), prop)
   }
@@ -247,13 +249,13 @@ object Property {
     *
     * Equivalent to `s_eventually prop` in SVA.
     */
-  def eventually(prop: Property): Property =
+  def eventually(prop: Property)(implicit sourceInfo: SourceInfo): Property =
     OpaqueProperty(LTLEventuallyIntrinsic(prop.inner))
 
   /** Form the conjunction of two properties. Equivalent to
     * `arg0 and arg1 and ... and argN` in SVA.
     */
-  def and(arg0: Property, argN: Property*): Property = {
+  def and(arg0: Property, argN: Property*)(implicit sourceInfo: SourceInfo): Property = {
     var lhs = arg0
     for (rhs <- argN) {
       lhs = OpaqueProperty(LTLAndIntrinsic(lhs.inner, rhs.inner))
@@ -264,7 +266,7 @@ object Property {
   /** Form the disjunction of two properties. Equivalent to
     * `arg0 or arg1 or ... or argN` in SVA.
     */
-  def or(arg0: Property, argN: Property*): Property = {
+  def or(arg0: Property, argN: Property*)(implicit sourceInfo: SourceInfo): Property = {
     var lhs = arg0
     for (rhs <- argN) {
       lhs = OpaqueProperty(LTLOrIntrinsic(lhs.inner, rhs.inner))
@@ -275,14 +277,14 @@ object Property {
   /** Specify a `clock` relative to which all cycle delays within `prop` are
     * specified. Equivalent to `@(posedge clock) prop` in SVA.
     */
-  def clock(prop: Property, clock: Clock): Property =
+  def clock(prop: Property, clock: Clock)(implicit sourceInfo: SourceInfo): Property =
     OpaqueProperty(LTLClockIntrinsic(prop.inner, clock))
 
   /** Disable the checking of a property if a condition is true. If the
     * condition is true at any time during the evaluation of the property, the
     * evaluation is aborted. Equivalent to `disable iff (cond) prop` in SVA.
     */
-  def disable(prop: Property, cond: Disable): Property =
+  def disable(prop: Property, cond: Disable)(implicit sourceInfo: SourceInfo): Property =
     OpaqueProperty(LTLDisableIntrinsic(prop.inner, cond.value))
 }
 
@@ -309,10 +311,12 @@ sealed abstract class AssertPropertyLike {
     clock:   Option[Clock] = Module.clockOption,
     disable: Option[Disable] = Module.disableOption,
     label:   Option[String] = None
+  )(
+    implicit sourceInfo: SourceInfo
   ): Unit = {
     val disabled = disable.fold(prop)(prop.disable(_))
     val clocked = clock.fold(disabled)(disabled.clock(_))
-    createIntrinsic(label)(clocked.inner)
+    createIntrinsic(label)(sourceInfo)(clocked.inner)
   }
 
   /** Assert, assume, or cover that a boolean predicate holds.
@@ -322,6 +326,8 @@ sealed abstract class AssertPropertyLike {
     */
   def apply(
     cond: Bool
+  )(
+    implicit sourceInfo: SourceInfo
   ): Unit = {
     apply(Sequence.BoolSequence(cond))
   }
@@ -337,6 +343,8 @@ sealed abstract class AssertPropertyLike {
   def apply(
     cond:  Bool,
     label: String
+  )(
+    implicit sourceInfo: SourceInfo
   ): Unit = {
     apply(Sequence.BoolSequence(cond), label = Some(label))
   }
@@ -360,11 +368,13 @@ sealed abstract class AssertPropertyLike {
     clock:   Clock,
     disable: Disable,
     label:   String
+  )(
+    implicit sourceInfo: SourceInfo
   ): Unit = {
     apply(Sequence.BoolSequence(cond), Some(clock), Some(disable), Some(label))
   }
 
-  def createIntrinsic(label: Option[String]): (Bool) => Unit
+  def createIntrinsic(label: Option[String])(implicit sourceInfo: SourceInfo): (Bool) => Unit
 }
 
 /** Assert that a property holds.
@@ -373,7 +383,7 @@ sealed abstract class AssertPropertyLike {
   * clock, disable_iff, and label parameters.
   */
 object AssertProperty extends AssertPropertyLike {
-  def createIntrinsic(label: Option[String]) = VerifAssertIntrinsic(label)
+  def createIntrinsic(label: Option[String])(implicit sourceInfo: SourceInfo) = VerifAssertIntrinsic(label)
 }
 
 /** Assume that a property holds.
@@ -382,7 +392,7 @@ object AssertProperty extends AssertPropertyLike {
   * clock, disable_iff, and label parameters.
   */
 object AssumeProperty extends AssertPropertyLike {
-  def createIntrinsic(label: Option[String]) = VerifAssumeIntrinsic(label)
+  def createIntrinsic(label: Option[String])(implicit sourceInfo: SourceInfo) = VerifAssumeIntrinsic(label)
 }
 
 /** Cover that a property holds.
@@ -391,5 +401,5 @@ object AssumeProperty extends AssertPropertyLike {
   * clock, disable_iff, and label parameters.
   */
 object CoverProperty extends AssertPropertyLike {
-  def createIntrinsic(label: Option[String]) = VerifCoverIntrinsic(label)
+  def createIntrinsic(label: Option[String])(implicit sourceInfo: SourceInfo) = VerifCoverIntrinsic(label)
 }
