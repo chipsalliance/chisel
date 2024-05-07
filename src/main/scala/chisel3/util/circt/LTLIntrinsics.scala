@@ -30,27 +30,27 @@ private[chisel3] object BaseIntrinsic {
 
 /** Base intrinsic for all unary intrinsics with `in` and `out` ports. */
 private[chisel3] object UnaryLTLIntrinsic {
-  def apply(
+  def apply[T <: Data](
     intrinsicName: String,
     params:        Seq[(String, Param)] = Seq()
-  )(_in:           Bool
+  )(_in:           T
   )(
     implicit sourceInfo: SourceInfo
   ): Bool =
-    BaseIntrinsic(f"ltl_$intrinsicName", Bool(), params)(_in)
+    BaseIntrinsic(f"ltl_$intrinsicName", Bool(), params)(_in).suggestName(intrinsicName)
 }
 
 /** Base instrinsic for all binary intrinsics with `lhs`, `rhs`, and `out` ports. */
 private[chisel3] object BinaryLTLIntrinsic {
-  def apply(
+  def apply[T <: Data, U <: Data](
     intrinsicName: String,
     params:        Seq[(String, Param)] = Seq()
-  )(lhs:           Bool,
-    rhs:           Bool
+  )(lhs:           T,
+    rhs:           U
   )(
     implicit sourceInfo: SourceInfo
   ): Bool =
-    BaseIntrinsic(f"ltl_$intrinsicName", Bool(), params)(lhs, rhs)
+    BaseIntrinsic(f"ltl_$intrinsicName", Bool(), params)(lhs, rhs).suggestName(intrinsicName)
 }
 
 /** A wrapper intrinsic for the CIRCT `ltl.and` operation. */
@@ -104,13 +104,13 @@ private[chisel3] object LTLEventuallyIntrinsic {
 /** A wrapper intrinsic for the CIRCT `ltl.clock` operation. */
 private[chisel3] object LTLClockIntrinsic {
   def apply(in: Bool, clock: Clock)(implicit sourceInfo: SourceInfo) =
-    BaseIntrinsic("ltl_clock", Bool())(in, clock)
+    BinaryLTLIntrinsic("clock")(in, clock)
 }
 
 /** A wrapper intrinsic for the CIRCT `ltl.disable` operation. */
 private[chisel3] object LTLDisableIntrinsic {
   def apply(in: Bool, cond: Bool)(implicit sourceInfo: SourceInfo) =
-    BaseIntrinsic("ltl_disable", Bool())(in, cond)
+    BinaryLTLIntrinsic("disable")(in, cond)
 }
 
 /** Base class for assert, assume, and cover intrinsics. */
@@ -119,8 +119,8 @@ private[chisel3] object VerifAssertLikeIntrinsic {
     val name = f"verif_$intrinsicName"
 
     label match {
-      case None    => BaseIntrinsic(name, Bool())(prop)
-      case Some(l) => BaseIntrinsic(name, Bool(), Seq("label" -> StringParam(l)))(prop)
+      case None    => BaseIntrinsic(name, Bool())(prop).suggestName(intrinsicName)
+      case Some(l) => BaseIntrinsic(name, Bool(), Seq("label" -> StringParam(l)))(prop).suggestName(intrinsicName)
     }
   }
 }

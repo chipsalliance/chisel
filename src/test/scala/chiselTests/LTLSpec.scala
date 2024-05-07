@@ -44,15 +44,15 @@ class LTLSpec extends AnyFlatSpec with Matchers {
     chirrtl should include("input a : UInt<1>")
     chirrtl should include("input b : UInt<1>")
     chirrtl should include("input c : UInt<1>")
-    chirrtl should include("node _T = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, a)")
-    chirrtl should include("node _T_1 = intrinsic(circt_ltl_delay<delay = 2, length = 2> : UInt<1>, b)")
-    chirrtl should include("node _T_2 = intrinsic(circt_ltl_delay<delay = 5> : UInt<1>, c)")
-    chirrtl should include("node _T_3 = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, b)")
-    chirrtl should include("node _T_4 = intrinsic(circt_ltl_concat : UInt<1>, a, _T_3")
-    chirrtl should include("node _T_5 = intrinsic(circt_ltl_delay<delay = 0> : UInt<1>, b)")
-    chirrtl should include("node _T_6 = intrinsic(circt_ltl_concat : UInt<1>, a, _T_5")
-    chirrtl should include("node _T_7 = intrinsic(circt_ltl_delay<delay = 1> : UInt<1>, b)")
-    chirrtl should include("node _T_8 = intrinsic(circt_ltl_concat : UInt<1>, a, _T_7")
+    chirrtl should include("node delay = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, a)")
+    chirrtl should include("node delay_1 = intrinsic(circt_ltl_delay<delay = 2, length = 2> : UInt<1>, b)")
+    chirrtl should include("node delay_2 = intrinsic(circt_ltl_delay<delay = 5> : UInt<1>, c)")
+    chirrtl should include("node delay_3 = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, b)")
+    chirrtl should include("node concat = intrinsic(circt_ltl_concat : UInt<1>, a, delay_3")
+    chirrtl should include("node delay_4 = intrinsic(circt_ltl_delay<delay = 0> : UInt<1>, b)")
+    chirrtl should include("node concat_1 = intrinsic(circt_ltl_concat : UInt<1>, a, delay_4")
+    chirrtl should include("node delay_5 = intrinsic(circt_ltl_delay<delay = 1> : UInt<1>, b)")
+    chirrtl should include("node concat_2 = intrinsic(circt_ltl_concat : UInt<1>, a, delay_5")
   }
 
   it should "support sequence concat operations" in {
@@ -66,9 +66,9 @@ class LTLSpec extends AnyFlatSpec with Matchers {
     chirrtl should include("input c : UInt<1>")
     chirrtl should include("input d : UInt<1>")
     chirrtl should include("input e : UInt<1>")
-    chirrtl should include("node _T = intrinsic(circt_ltl_concat : UInt<1>, a, b")
-    chirrtl should include("node _T_1 = intrinsic(circt_ltl_concat : UInt<1>, c, d")
-    chirrtl should include("node _T_2 = intrinsic(circt_ltl_concat : UInt<1>, _T_1, e")
+    chirrtl should include("intrinsic(circt_ltl_concat : UInt<1>, a, b")
+    chirrtl should include("node concat_1 = intrinsic(circt_ltl_concat : UInt<1>, c, d")
+    chirrtl should include("intrinsic(circt_ltl_concat : UInt<1>, concat_1, e")
   }
 
   it should "support and, or, and clock operations" in {
@@ -85,16 +85,16 @@ class LTLSpec extends AnyFlatSpec with Matchers {
       val p3: Property = p0.clock(clock)
     })
     // Sequences
-    chirrtl should include("node _T = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, a)")
-    chirrtl should include("node _T_1 = intrinsic(circt_ltl_and : UInt<1>, _T, b)")
-    chirrtl should include("node _T_2 = intrinsic(circt_ltl_or : UInt<1>, _T, b)")
-    chirrtl should include("node _T_3 = intrinsic(circt_ltl_clock : UInt<1>, _T, clock)")
+    chirrtl should include("node delay = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, a)")
+    chirrtl should include("node and = intrinsic(circt_ltl_and : UInt<1>, delay, b)")
+    chirrtl should include("node or = intrinsic(circt_ltl_or : UInt<1>, delay, b)")
+    chirrtl should include("node clock_1 = intrinsic(circt_ltl_clock : UInt<1>, delay, clock)")
 
     // Properties
-    chirrtl should include("node _T_4 = intrinsic(circt_ltl_eventually : UInt<1>, a)")
-    chirrtl should include("node _T_5 = intrinsic(circt_ltl_and : UInt<1>, _T_4, b)")
-    chirrtl should include("node _T_6 = intrinsic(circt_ltl_or : UInt<1>, _T_4, b)")
-    chirrtl should include("node _T_7 = intrinsic(circt_ltl_clock : UInt<1>, _T_4, clock)")
+    chirrtl should include("node eventually = intrinsic(circt_ltl_eventually : UInt<1>, a)")
+    chirrtl should include("node and_1 = intrinsic(circt_ltl_and : UInt<1>, eventually, b)")
+    chirrtl should include("node or_1 = intrinsic(circt_ltl_or : UInt<1>, eventually, b)")
+    chirrtl should include("node clock_2 = intrinsic(circt_ltl_clock : UInt<1>, eventually, clock)")
   }
 
   it should "support property not operation" in {
@@ -115,16 +115,16 @@ class LTLSpec extends AnyFlatSpec with Matchers {
     })
 
     // Overlapping
-    chirrtl should include("node _T = intrinsic(circt_ltl_implication : UInt<1>, a, b)")
-    chirrtl should include("node _T_1 = intrinsic(circt_ltl_implication : UInt<1>, a, b)")
+    chirrtl should include("intrinsic(circt_ltl_implication : UInt<1>, a, b)")
+    chirrtl should include("intrinsic(circt_ltl_implication : UInt<1>, a, b)")
 
     // Non-overlapping (emitted as `a ## true |-> b`)
-    chirrtl should include("node _T_2 = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, UInt<1>(0h1))")
-    chirrtl should include("node _T_3 = intrinsic(circt_ltl_concat : UInt<1>, a, _T_2)")
-    chirrtl should include("node _T_4 = intrinsic(circt_ltl_implication : UInt<1>, _T_3, b)")
-    chirrtl should include("node _T_5 = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, UInt<1>(0h1))")
-    chirrtl should include("node _T_6 = intrinsic(circt_ltl_concat : UInt<1>, a, _T_5)")
-    chirrtl should include("node _T_7 = intrinsic(circt_ltl_implication : UInt<1>, _T_6, b)")
+    chirrtl should include("node delay = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, UInt<1>(0h1))")
+    chirrtl should include("node concat = intrinsic(circt_ltl_concat : UInt<1>, a, delay)")
+    chirrtl should include("node implication_2 = intrinsic(circt_ltl_implication : UInt<1>, concat, b)")
+    chirrtl should include("node delay_1 = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, UInt<1>(0h1))")
+    chirrtl should include("node concat_1 = intrinsic(circt_ltl_concat : UInt<1>, a, delay_1)")
+    chirrtl should include("node implication_3 = intrinsic(circt_ltl_implication : UInt<1>, concat_1, b)")
   }
 
   it should "support property eventually operation" in {
@@ -170,9 +170,9 @@ class LTLSpec extends AnyFlatSpec with Matchers {
       })
       chirrtl should include("node has_been_reset = intrinsic(circt_has_been_reset : UInt<1>, clock, reset)")
       chirrtl should include("node disable = eq(has_been_reset, UInt<1>(0h0))")
-      chirrtl should include("node _T = intrinsic(circt_ltl_disable : UInt<1>, a, disable)")
-      chirrtl should include("node _T_1 = intrinsic(circt_ltl_clock : UInt<1>, _T, clock)")
-      chirrtl should include(f"node _T_2 = intrinsic(circt_verif_$op : UInt<1>, _T_1)")
+      chirrtl should include("node disable_1 = intrinsic(circt_ltl_disable : UInt<1>, a, disable)")
+      chirrtl should include("node clock_1 = intrinsic(circt_ltl_clock : UInt<1>, disable_1, clock)")
+      chirrtl should include(f"node $op = intrinsic(circt_verif_$op : UInt<1>, clock_1)")
     }
   }
 
@@ -198,17 +198,17 @@ class LTLSpec extends AnyFlatSpec with Matchers {
     })
 
     // with clock; emitted as `assert(clock(a, c))`
-    chirrtl should include("node _T = intrinsic(circt_ltl_clock : UInt<1>, a, c)")
-    chirrtl should include("node _T_1 = intrinsic(circt_verif_assert : UInt<1>, _T)")
+    chirrtl should include("node clock = intrinsic(circt_ltl_clock : UInt<1>, a, c)")
+    chirrtl should include("node assert = intrinsic(circt_verif_assert : UInt<1>, clock)")
 
     // with disable; emitted as `assert(disable(a, b))`
-    chirrtl should include("node _T_2 = intrinsic(circt_ltl_disable : UInt<1>, a, b)")
-    chirrtl should include("node _T_3 = intrinsic(circt_verif_assert : UInt<1>, _T_2)")
+    chirrtl should include("node disable = intrinsic(circt_ltl_disable : UInt<1>, a, b)")
+    chirrtl should include("node assert_1 = intrinsic(circt_verif_assert : UInt<1>, disable)")
 
     // with clock and disable; emitted as `assert(clock(disable(a, b), c))`
-    chirrtl should include("node _T_4 = intrinsic(circt_ltl_disable : UInt<1>, a, b)")
-    chirrtl should include("node _T_5 = intrinsic(circt_ltl_clock : UInt<1>, _T_4, c)")
-    chirrtl should include("node _T_6 = intrinsic(circt_verif_assert : UInt<1>, _T_5)")
+    chirrtl should include("node disable_1 = intrinsic(circt_ltl_disable : UInt<1>, a, b)")
+    chirrtl should include("node clock_1 = intrinsic(circt_ltl_clock : UInt<1>, disable_1, c)")
+    chirrtl should include("node assert_2 = intrinsic(circt_verif_assert : UInt<1>, clock_1)")
   }
 
   it should "support Sequence(...) convenience constructor" in {
@@ -226,31 +226,31 @@ class LTLSpec extends AnyFlatSpec with Matchers {
     chirrtl should include("intrinsic(circt_verif_assert : UInt<1>, a)")
 
     // a b
-    chirrtl should include("node _T_1 = intrinsic(circt_ltl_concat : UInt<1>, a, b)")
-    chirrtl should include("intrinsic(circt_verif_assert : UInt<1>, _T_1)")
+    chirrtl should include("node concat = intrinsic(circt_ltl_concat : UInt<1>, a, b)")
+    chirrtl should include("intrinsic(circt_verif_assert : UInt<1>, concat)")
 
     // Delay() a
-    chirrtl should include("node _T_3 = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, a)")
-    chirrtl should include("intrinsic(circt_verif_assert : UInt<1>, _T_3)")
+    chirrtl should include("node delay = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, a)")
+    chirrtl should include("intrinsic(circt_verif_assert : UInt<1>, delay)")
 
     // a Delay() b
-    chirrtl should include("node _T_5 = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, b)")
-    chirrtl should include("node _T_6 = intrinsic(circt_ltl_concat : UInt<1>, a, _T_5)")
-    chirrtl should include("intrinsic(circt_verif_assert : UInt<1>, _T_6)")
+    chirrtl should include("node delay_1 = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, b)")
+    chirrtl should include("node concat_1 = intrinsic(circt_ltl_concat : UInt<1>, a, delay_1)")
+    chirrtl should include("intrinsic(circt_verif_assert : UInt<1>, concat_1)")
 
     // a Delay(2) b
-    chirrtl should include("node _T_8 = intrinsic(circt_ltl_delay<delay = 2, length = 0> : UInt<1>, b)")
-    chirrtl should include("node _T_9 = intrinsic(circt_ltl_concat : UInt<1>, a, _T_8)")
-    chirrtl should include("intrinsic(circt_verif_assert : UInt<1>, _T_9)")
+    chirrtl should include("node delay_2 = intrinsic(circt_ltl_delay<delay = 2, length = 0> : UInt<1>, b)")
+    chirrtl should include("node concat_2 = intrinsic(circt_ltl_concat : UInt<1>, a, delay_2)")
+    chirrtl should include("intrinsic(circt_verif_assert : UInt<1>, concat_2)")
 
     // a Delay(42, 1337) b
-    chirrtl should include("node _T_11 = intrinsic(circt_ltl_delay<delay = 42, length = 1295> : UInt<1>, b)")
-    chirrtl should include("node _T_12 = intrinsic(circt_ltl_concat : UInt<1>, a, _T_11)")
-    chirrtl should include("intrinsic(circt_verif_assert : UInt<1>, _T_12)")
+    chirrtl should include("node delay_3 = intrinsic(circt_ltl_delay<delay = 42, length = 1295> : UInt<1>, b)")
+    chirrtl should include("node concat_3 = intrinsic(circt_ltl_concat : UInt<1>, a, delay_3)")
+    chirrtl should include("intrinsic(circt_verif_assert : UInt<1>, concat_3)")
 
     // a Delay(9001, None) b
-    chirrtl should include("node _T_14 = intrinsic(circt_ltl_delay<delay = 9001> : UInt<1>, b)")
-    chirrtl should include("node _T_15 = intrinsic(circt_ltl_concat : UInt<1>, a, _T_14)")
-    chirrtl should include("intrinsic(circt_verif_assert : UInt<1>, _T_15)")
+    chirrtl should include("node delay_4 = intrinsic(circt_ltl_delay<delay = 9001> : UInt<1>, b)")
+    chirrtl should include("node concat_4 = intrinsic(circt_ltl_concat : UInt<1>, a, delay_4)")
+    chirrtl should include("intrinsic(circt_verif_assert : UInt<1>, concat_4)")
   }
 }
