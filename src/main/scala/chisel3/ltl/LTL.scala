@@ -316,7 +316,7 @@ sealed abstract class AssertPropertyLike {
   ): Unit = {
     val disabled = disable.fold(prop)(prop.disable(_))
     val clocked = clock.fold(disabled)(disabled.clock(_))
-    createIntrinsic(label)(clocked.inner)
+    createIntrinsic(label)(sourceInfo)(clocked.inner)
   }
 
   /** Assert, assume, or cover that a boolean predicate holds.
@@ -374,7 +374,7 @@ sealed abstract class AssertPropertyLike {
     apply(Sequence.BoolSequence(cond), Some(clock), Some(disable), Some(label))
   }
 
-  def createIntrinsic(label: Option[String]): (Bool) => Unit
+  def createIntrinsic(label: Option[String])(implicit sourceInfo: SourceInfo): (Bool) => Unit
 }
 
 /** Assert that a property holds.
@@ -383,7 +383,7 @@ sealed abstract class AssertPropertyLike {
   * clock, disable_iff, and label parameters.
   */
 object AssertProperty extends AssertPropertyLike {
-  def createIntrinsic(label: Option[String]) = VerifAssertIntrinsic(label)
+  def createIntrinsic(label: Option[String])(implicit sourceInfo: SourceInfo) = VerifAssertIntrinsic(label)
 }
 
 /** Assume that a property holds.
@@ -392,7 +392,7 @@ object AssertProperty extends AssertPropertyLike {
   * clock, disable_iff, and label parameters.
   */
 object AssumeProperty extends AssertPropertyLike {
-  def createIntrinsic(label: Option[String]) = VerifAssumeIntrinsic(label)
+  def createIntrinsic(label: Option[String])(implicit sourceInfo: SourceInfo) = VerifAssumeIntrinsic(label)
 }
 
 /** Cover that a property holds.
@@ -401,5 +401,5 @@ object AssumeProperty extends AssertPropertyLike {
   * clock, disable_iff, and label parameters.
   */
 object CoverProperty extends AssertPropertyLike {
-  def createIntrinsic(label: Option[String]) = VerifCoverIntrinsic(label)
+  def createIntrinsic(label: Option[String])(implicit sourceInfo: SourceInfo) = VerifCoverIntrinsic(label)
 }

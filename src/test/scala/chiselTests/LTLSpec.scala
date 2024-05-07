@@ -166,13 +166,15 @@ class LTLSpec extends AnyFlatSpec with Matchers {
   it should "support simple property asserts/assumes/covers" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
       val a = IO(Input(Bool()))
+      implicit val info = SourceLine("Foo.scala", 1, 2)
       AssertProperty(a)
       AssumeProperty(a)
       CoverProperty(a)
     })
-    chirrtl should include("intrinsic(circt_verif_assert : UInt<1>, a)")
-    chirrtl should include("intrinsic(circt_verif_assume : UInt<1>, a)")
-    chirrtl should include("intrinsic(circt_verif_cover : UInt<1>, a)")
+    val sourceLoc = "@[Foo.scala 1:2]"
+    chirrtl should include(f"intrinsic(circt_verif_assert : UInt<1>, a) $sourceLoc")
+    chirrtl should include(f"intrinsic(circt_verif_assume : UInt<1>, a) $sourceLoc")
+    chirrtl should include(f"intrinsic(circt_verif_cover : UInt<1>, a) $sourceLoc")
   }
 
   it should "use clock and disable by default for properties" in {
@@ -194,7 +196,7 @@ class LTLSpec extends AnyFlatSpec with Matchers {
       chirrtl should include("node disable = eq(has_been_reset, UInt<1>(0h0))")
       chirrtl should include(f"node disable_1 = intrinsic(circt_ltl_disable : UInt<1>, a, disable) $sourceLoc")
       chirrtl should include(f"node clock_1 = intrinsic(circt_ltl_clock : UInt<1>, disable_1, clock) $sourceLoc")
-      chirrtl should include(f"node $op = intrinsic(circt_verif_$op : UInt<1>, clock_1)")
+      chirrtl should include(f"node $op = intrinsic(circt_verif_$op : UInt<1>, clock_1) $sourceLoc")
     }
   }
 
