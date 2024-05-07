@@ -80,7 +80,6 @@ class LTLSpec extends AnyFlatSpec with Matchers {
     chirrtl should include(f"node concat_1 = intrinsic(circt_ltl_concat : UInt<1>, c, d) $sourceLoc")
     chirrtl should include(f"intrinsic(circt_ltl_concat : UInt<1>, concat_1, e) $sourceLoc")
   }
-
   it should "compile sequence concat operations" in {
     ChiselStage.emitSystemVerilog(new ConcatMod)
   }
@@ -114,7 +113,6 @@ class LTLSpec extends AnyFlatSpec with Matchers {
     chirrtl should include(f"node or_1 = intrinsic(circt_ltl_or : UInt<1>, eventually, b) $sourceLoc")
     chirrtl should include(f"node clock_2 = intrinsic(circt_ltl_clock : UInt<1>, eventually, clock) $sourceLoc")
   }
-
   it should "compile and, or, and clock operations" in {
     ChiselStage.emitSystemVerilog(new AndOrClockMod)
   }
@@ -129,7 +127,6 @@ class LTLSpec extends AnyFlatSpec with Matchers {
     val sourceLoc = "@[Foo.scala 1:2]"
     chirrtl should include(f"intrinsic(circt_ltl_not : UInt<1>, a) $sourceLoc")
   }
-
   it should "compile property not operation" in {
     ChiselStage.emitSystemVerilog(new NotMod)
   }
@@ -162,7 +159,6 @@ class LTLSpec extends AnyFlatSpec with Matchers {
     chirrtl should include(f"node concat_1 = intrinsic(circt_ltl_concat : UInt<1>, a, delay_1) $sourceLoc")
     chirrtl should include(f"node implication_3 = intrinsic(circt_ltl_implication : UInt<1>, concat_1, b) $sourceLoc")
   }
-
   it should "compile property implication operation" in {
     ChiselStage.emitSystemVerilog(new PropImplicationMod)
   }
@@ -177,7 +173,6 @@ class LTLSpec extends AnyFlatSpec with Matchers {
     val sourceLoc = "@[Foo.scala 1:2]"
     chirrtl should include(f"intrinsic(circt_ltl_eventually : UInt<1>, a) $sourceLoc")
   }
-
   it should "compile property eventually operation" in {
     ChiselStage.emitSystemVerilog(new EventuallyMod)
   }
@@ -192,7 +187,6 @@ class LTLSpec extends AnyFlatSpec with Matchers {
     val sourceLoc = "@[Foo.scala 1:2]"
     chirrtl should include(f"intrinsic(circt_ltl_disable : UInt<1>, a, b) $sourceLoc")
   }
-
   it should "compile property disable operation" in {
     ChiselStage.emitSystemVerilog(new DisableMod)
   }
@@ -250,7 +244,6 @@ class LTLSpec extends AnyFlatSpec with Matchers {
     chirrtl should include("intrinsic(circt_verif_assume<label = \"foo1\">, a")
     chirrtl should include("intrinsic(circt_verif_cover<label = \"foo2\">, a)")
   }
-
   it should "compile labeled property asserts/assumes/covers" in {
     ChiselStage.emitSystemVerilog(new LabeledVerifMod)
   }
@@ -321,7 +314,6 @@ class LTLSpec extends AnyFlatSpec with Matchers {
     chirrtl should include("node concat_4 = intrinsic(circt_ltl_concat : UInt<1>, a, delay_4)")
     chirrtl should include("intrinsic(circt_verif_assert, concat_4)")
   }
-
   it should "compile Sequence(...) convenience constructor" in {
     ChiselStage.emitSystemVerilog(new SequenceConvMod)
   }
