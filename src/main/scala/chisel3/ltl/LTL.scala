@@ -129,8 +129,9 @@ object Sequence {
     */
   def concat(arg0: Sequence, argN: Sequence*): Sequence = {
     var lhs = arg0
-    for (rhs <- argN)
+    for (rhs <- argN) {
       lhs = OpaqueSequence(LTLConcatIntrinsic(lhs.inner, rhs.inner))
+    }
     lhs
   }
 
@@ -139,8 +140,9 @@ object Sequence {
     */
   def and(arg0: Sequence, argN: Sequence*): Sequence = {
     var lhs = arg0
-    for (rhs <- argN)
+    for (rhs <- argN) {
       lhs = OpaqueSequence(LTLAndIntrinsic(lhs.inner, rhs.inner))
+    }
     lhs
   }
 
@@ -149,8 +151,9 @@ object Sequence {
     */
   def or(arg0: Sequence, argN: Sequence*): Sequence = {
     var lhs = arg0
-    for (rhs <- argN)
+    for (rhs <- argN) {
       lhs = OpaqueSequence(LTLOrIntrinsic(lhs.inner, rhs.inner))
+    }
     lhs
   }
 
@@ -252,8 +255,9 @@ object Property {
     */
   def and(arg0: Property, argN: Property*): Property = {
     var lhs = arg0
-    for (rhs <- argN)
+    for (rhs <- argN) {
       lhs = OpaqueProperty(LTLAndIntrinsic(lhs.inner, rhs.inner))
+    }
     lhs
   }
 
@@ -262,8 +266,9 @@ object Property {
     */
   def or(arg0: Property, argN: Property*): Property = {
     var lhs = arg0
-    for (rhs <- argN)
+    for (rhs <- argN) {
       lhs = OpaqueProperty(LTLOrIntrinsic(lhs.inner, rhs.inner))
+    }
     lhs
   }
 
