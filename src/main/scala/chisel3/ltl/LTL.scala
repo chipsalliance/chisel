@@ -374,7 +374,7 @@ sealed abstract class AssertPropertyLike {
     apply(Sequence.BoolSequence(cond), Some(clock), Some(disable), Some(label))
   }
 
-  def createIntrinsic(label: Option[String])(implicit sourceInfo: SourceInfo): (Bool) => Unit
+  protected def createIntrinsic(label: Option[String])(implicit sourceInfo: SourceInfo): (Bool) => Unit
 }
 
 /** Assert that a property holds.
@@ -383,7 +383,7 @@ sealed abstract class AssertPropertyLike {
   * clock, disable_iff, and label parameters.
   */
 object AssertProperty extends AssertPropertyLike {
-  def createIntrinsic(label: Option[String])(implicit sourceInfo: SourceInfo) = VerifAssertIntrinsic(label)
+  protected def createIntrinsic(label: Option[String])(implicit sourceInfo: SourceInfo) = VerifAssertIntrinsic(label)
 }
 
 /** Assume that a property holds.
@@ -392,7 +392,7 @@ object AssertProperty extends AssertPropertyLike {
   * clock, disable_iff, and label parameters.
   */
 object AssumeProperty extends AssertPropertyLike {
-  def createIntrinsic(label: Option[String])(implicit sourceInfo: SourceInfo) = VerifAssumeIntrinsic(label)
+  protected def createIntrinsic(label: Option[String])(implicit sourceInfo: SourceInfo) = VerifAssumeIntrinsic(label)
 }
 
 /** Cover that a property holds.
@@ -401,5 +401,5 @@ object AssumeProperty extends AssertPropertyLike {
   * clock, disable_iff, and label parameters.
   */
 object CoverProperty extends AssertPropertyLike {
-  def createIntrinsic(label: Option[String])(implicit sourceInfo: SourceInfo) = VerifCoverIntrinsic(label)
+  protected def createIntrinsic(label: Option[String])(implicit sourceInfo: SourceInfo) = VerifCoverIntrinsic(label)
 }
