@@ -172,9 +172,9 @@ class LTLSpec extends AnyFlatSpec with Matchers {
       CoverProperty(a)
     })
     val sourceLoc = "@[Foo.scala 1:2]"
-    chirrtl should include(f"intrinsic(circt_verif_assert : UInt<1>, a) $sourceLoc")
-    chirrtl should include(f"intrinsic(circt_verif_assume : UInt<1>, a) $sourceLoc")
-    chirrtl should include(f"intrinsic(circt_verif_cover : UInt<1>, a) $sourceLoc")
+    chirrtl should include(f"intrinsic(circt_verif_assert, a) $sourceLoc")
+    chirrtl should include(f"intrinsic(circt_verif_assume, a) $sourceLoc")
+    chirrtl should include(f"intrinsic(circt_verif_cover, a) $sourceLoc")
   }
 
   it should "use clock and disable by default for properties" in {
@@ -196,7 +196,7 @@ class LTLSpec extends AnyFlatSpec with Matchers {
       chirrtl should include("node disable = eq(has_been_reset, UInt<1>(0h0))")
       chirrtl should include(f"node disable_1 = intrinsic(circt_ltl_disable : UInt<1>, a, disable) $sourceLoc")
       chirrtl should include(f"node clock_1 = intrinsic(circt_ltl_clock : UInt<1>, disable_1, clock) $sourceLoc")
-      chirrtl should include(f"node $op = intrinsic(circt_verif_$op : UInt<1>, clock_1) $sourceLoc")
+      chirrtl should include(f"intrinsic(circt_verif_$op, clock_1) $sourceLoc")
     }
   }
 
@@ -207,9 +207,9 @@ class LTLSpec extends AnyFlatSpec with Matchers {
       AssumeProperty(a, label = Some("foo1"))
       CoverProperty(a, label = Some("foo2"))
     })
-    chirrtl should include("intrinsic(circt_verif_assert<label = \"foo0\"> : UInt<1>, a)")
-    chirrtl should include("intrinsic(circt_verif_assume<label = \"foo1\"> : UInt<1>, a")
-    chirrtl should include("intrinsic(circt_verif_cover<label = \"foo2\"> : UInt<1>, a)")
+    chirrtl should include("intrinsic(circt_verif_assert<label = \"foo0\">, a)")
+    chirrtl should include("intrinsic(circt_verif_assume<label = \"foo1\">, a")
+    chirrtl should include("intrinsic(circt_verif_cover<label = \"foo2\">, a)")
   }
 
   it should "support assert shorthands with clock and disable" in {
@@ -223,16 +223,16 @@ class LTLSpec extends AnyFlatSpec with Matchers {
 
     // with clock; emitted as `assert(clock(a, c))`
     chirrtl should include("node clock = intrinsic(circt_ltl_clock : UInt<1>, a, c)")
-    chirrtl should include("node assert = intrinsic(circt_verif_assert : UInt<1>, clock)")
+    chirrtl should include("intrinsic(circt_verif_assert, clock)")
 
     // with disable; emitted as `assert(disable(a, b))`
     chirrtl should include("node disable = intrinsic(circt_ltl_disable : UInt<1>, a, b)")
-    chirrtl should include("node assert_1 = intrinsic(circt_verif_assert : UInt<1>, disable)")
+    chirrtl should include("intrinsic(circt_verif_assert, disable)")
 
     // with clock and disable; emitted as `assert(clock(disable(a, b), c))`
     chirrtl should include("node disable_1 = intrinsic(circt_ltl_disable : UInt<1>, a, b)")
     chirrtl should include("node clock_1 = intrinsic(circt_ltl_clock : UInt<1>, disable_1, c)")
-    chirrtl should include("node assert_2 = intrinsic(circt_verif_assert : UInt<1>, clock_1)")
+    chirrtl should include("intrinsic(circt_verif_assert, clock_1)")
   }
 
   it should "support Sequence(...) convenience constructor" in {
@@ -247,34 +247,34 @@ class LTLSpec extends AnyFlatSpec with Matchers {
       AssertProperty(Sequence(a, Delay(9001, None), b))
     })
     // a
-    chirrtl should include("intrinsic(circt_verif_assert : UInt<1>, a)")
+    chirrtl should include("intrinsic(circt_verif_assert, a)")
 
     // a b
     chirrtl should include("node concat = intrinsic(circt_ltl_concat : UInt<1>, a, b)")
-    chirrtl should include("intrinsic(circt_verif_assert : UInt<1>, concat)")
+    chirrtl should include("intrinsic(circt_verif_assert, concat)")
 
     // Delay() a
     chirrtl should include("node delay = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, a)")
-    chirrtl should include("intrinsic(circt_verif_assert : UInt<1>, delay)")
+    chirrtl should include("intrinsic(circt_verif_assert, delay)")
 
     // a Delay() b
     chirrtl should include("node delay_1 = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, b)")
     chirrtl should include("node concat_1 = intrinsic(circt_ltl_concat : UInt<1>, a, delay_1)")
-    chirrtl should include("intrinsic(circt_verif_assert : UInt<1>, concat_1)")
+    chirrtl should include("intrinsic(circt_verif_assert, concat_1)")
 
     // a Delay(2) b
     chirrtl should include("node delay_2 = intrinsic(circt_ltl_delay<delay = 2, length = 0> : UInt<1>, b)")
     chirrtl should include("node concat_2 = intrinsic(circt_ltl_concat : UInt<1>, a, delay_2)")
-    chirrtl should include("intrinsic(circt_verif_assert : UInt<1>, concat_2)")
+    chirrtl should include("intrinsic(circt_verif_assert, concat_2)")
 
     // a Delay(42, 1337) b
     chirrtl should include("node delay_3 = intrinsic(circt_ltl_delay<delay = 42, length = 1295> : UInt<1>, b)")
     chirrtl should include("node concat_3 = intrinsic(circt_ltl_concat : UInt<1>, a, delay_3)")
-    chirrtl should include("intrinsic(circt_verif_assert : UInt<1>, concat_3)")
+    chirrtl should include("intrinsic(circt_verif_assert, concat_3)")
 
     // a Delay(9001, None) b
     chirrtl should include("node delay_4 = intrinsic(circt_ltl_delay<delay = 9001> : UInt<1>, b)")
     chirrtl should include("node concat_4 = intrinsic(circt_ltl_concat : UInt<1>, a, delay_4)")
-    chirrtl should include("intrinsic(circt_verif_assert : UInt<1>, concat_4)")
+    chirrtl should include("intrinsic(circt_verif_assert, concat_4)")
   }
 }
