@@ -380,4 +380,12 @@ class TypeEquivalenceSpec extends AnyFlatSpec {
     )
   }
 
+  it should "detect differences in probe within a Vector" in {
+    Vec(3, Probe(Bool())).findFirstTypeMismatch(Vec(3, Bool()), true, true, true) should be(
+      Some(
+        "[_]: Left (Bool with probeInfo: Some(writeable=false, color=None)) and Right (Bool with probeInfo: None) have different probeInfo."
+      )
+    )
+  }
+
 }
