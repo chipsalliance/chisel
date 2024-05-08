@@ -296,7 +296,7 @@ class TypeEquivalenceSpec extends AnyFlatSpec {
   it should "detect differences between Probe and Not-Probe" in {
     Probe(Bool()).findFirstTypeMismatch(Bool(), true, true, true) should be(
       Some(
-        ": Left (Bool with probeInfo: Some(writeable=false, color=None)) and Right (Bool with probeInfo: (None) have different probeInfo."
+        ": Left (Bool with probeInfo: Some(writeable=false, color=None)) and Right (Bool with probeInfo: (None)) have different probeInfo."
       )
     )
   }
