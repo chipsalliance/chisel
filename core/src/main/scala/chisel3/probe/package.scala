@@ -33,7 +33,7 @@ package object probe extends SourceInfoDoc {
     * @param probeExpr value to initialize the sink to
     */
   def define[T <: Data](sink: T, probeExpr: T)(implicit sourceInfo: SourceInfo): Unit = {
-    if (!checkTypeEquivalence(sink, probeExpr)) {
+    if (!sink.typeEquivalent(probeExpr, false /* we will check more more detailed probe info below */ )) {
       Builder.error("Cannot define a probe on a non-equivalent type.")
     }
     requireHasProbeTypeModifier(sink, "Expected sink to be a probe.")
