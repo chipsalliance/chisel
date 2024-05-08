@@ -121,7 +121,10 @@ object TywavesAnnotationCircuits {
     }
 
     // Circuit using intrinsics
-    class ExampleIntrinsicModule(str: String) extends IntrinsicModule("OtherIntrinsic", Map("STRING" -> str)) {}
+    class ExampleIntrinsicModule(str: String) extends IntrinsicModule("OtherIntrinsic", Map("STRING" -> str)) {
+      val b = IO(Input(Bool()))
+      val bout = IO(Output(Bool()))
+    }
 
     class TopCircuitIntrinsic extends RawModule {
       val myIntrinsicModule1: ExampleIntrinsicModule = Module(new ExampleIntrinsicModule("Hello"))
@@ -350,6 +353,7 @@ object TywavesAnnotationCircuits {
       val topBundle = IO(Input(new TopBundle(Bool(), "hello", 'c', true, otherBundle.cloneType)))
 
       val caseClassBundle = IO(Input(CaseClassExample(1, new OtherBundle(UInt(2.W), baseBundle.cloneType))))
+      val anonBundle = IO(Input(new Bundle {}))
 
     }
 
