@@ -50,15 +50,10 @@ class TypeAnnotationModulesSpec extends AnyFunSpec with Matchers with chiselTest
 
     it("should annotate intrinsic modules") {
       import chisel3.experimental.IntrinsicModule
-      class ExampleIntrinsicModule(str: String) extends IntrinsicModule("OtherIntrinsic", Map("STRING" -> str)) {}
-      class TopCircuitIntrinsic extends RawModule {
-        val myIntrinsicModule1: ExampleIntrinsicModule = Module(new ExampleIntrinsicModule("Hello"))
-        val myIntrinsicModule2: ExampleIntrinsicModule = Module(new ExampleIntrinsicModule("World"))
-        val myIntrinsicModules: Seq[ExampleIntrinsicModule] = Seq.fill(2)(Module(new ExampleIntrinsicModule("Hello")))
-      }
+
       (new ChiselStage(true)).execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitIntrinsic)))
       val string = os.read(targetDir / "TopCircuitIntrinsic.fir")
-      countSubstringOccurrences(string, "\"class\":\"chisel3.tywaves.TywavesAnnotation\"") should be(5)
+      countSubstringOccurrences(string, "\"class\":\"chisel3.tywaves.TywavesAnnotation\"") should be(13)
       countSubstringOccurrences(string, "\"typeName\":\"ExampleIntrinsicModule") should be(4)
     }
 

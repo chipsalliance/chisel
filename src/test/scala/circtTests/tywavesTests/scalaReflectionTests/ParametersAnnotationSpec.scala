@@ -246,6 +246,7 @@ class ParametersAnnotationSpec extends AnyFunSpec with Matchers with chiselTests
         (createExpected("~TopCircuitWithParamBundle\\|TopCircuitWithParamBundle>caseClassBundle.o.b", "BaseBundle", "IO",
           params = Some(Seq(ClassParam("n", "Int", Some(1.toString))))), 1),
         (createExpected("~TopCircuitWithParamBundle\\|TopCircuitWithParamBundle>caseClassBundle.o.b.b", "UInt<1>", "IO"), 1),
+        (createExpected("~TopCircuitWithParamBundle\\|TopCircuitWithParamBundle>anonBundle", "AnonymousBundle", "IO"), 1),
       )
       // format: on
       checkAnno(expectedMatches, string)

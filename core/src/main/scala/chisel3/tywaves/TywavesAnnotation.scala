@@ -90,7 +90,7 @@ object TywavesChiselAnnotation {
     }
 
     command match {
-      case e: DefPrim[_] => ???
+      case e: DefPrim[_] => Seq.empty // TODO: check prim
       case e @ DefWire(info, id)                        => createAnno(id)
       case e @ DefReg(info, id, clock)                  => createAnno(id)
       case e @ DefRegInit(info, id, clock, reset, init) => createAnno(id)
@@ -245,7 +245,10 @@ object TywavesChiselAnnotation {
             val value =
               try {
                 // Try to extract the value of the parameter
-                val valueTerm = im.reflectField(a.asTerm).get
+                val term =
+                  try { tt.tpe.decl(a.name).asTerm.accessed.asTerm }
+                  catch { case _: Throwable => a.asTerm }
+                val valueTerm = im.reflectField(term).get
 
                 val finalValueTerm =
                   // Recursive base case
@@ -269,7 +272,9 @@ object TywavesChiselAnnotation {
                     s"$typeName(${params.mkString(", ")})"
                   }
                 Some(finalValueTerm)
-              } catch { case e: Exception => None }
+              } catch {
+                case _: Throwable => None // Ignore the exception if the value cannot be extracted (not included)
+              }
             ClassParam(paramName, typeName, value)
         }
     }.toList.flatten

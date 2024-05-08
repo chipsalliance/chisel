@@ -77,20 +77,21 @@ class TypeAnnotationDataTypesSpec extends AnyFunSpec with Matchers with chiselTe
       // format: off
       val expectedMatches = Seq(
         (createExpected("~TopCircuitVecs\\|TopCircuitVecs>a", "SInt<23>\\[5\\]", b.toString,
-          params = Some(Seq(ClassParam("gen", "=> T", None), ClassParam("length", "Int", None)))), 1),
+          params = Some(Seq(ClassParam("gen", "=> T", None), ClassParam("length", "Int", Some("5"))))), 1),
         (createExpected("~TopCircuitVecs\\|TopCircuitVecs>a\\[0\\]", "SInt<23>", b.toString), 1),
         (createExpected("~TopCircuitVecs\\|TopCircuitVecs>b", "SInt<23>\\[3\\]\\[5\\]", b.toString,
-          params = Some(Seq(ClassParam("gen", "=> T", None), ClassParam("length", "Int", None)))), 1),
+          params = Some(Seq(ClassParam("gen", "=> T", None), ClassParam("length", "Int", Some("5"))))), 1),
         (createExpected("~TopCircuitVecs\\|TopCircuitVecs>b\\[0\\]", "SInt<23>\\[3\\]", b.toString,
-          params = Some(Seq(ClassParam("gen", "=> T", None), ClassParam("length", "Int", None)))), 1),
+          params = Some(Seq(ClassParam("gen", "=> T", None), ClassParam("length", "Int", Some("3"))))), 1),
         (createExpected("~TopCircuitVecs\\|TopCircuitVecs>b\\[0\\]\\[0\\]", "SInt<23>", b.toString), 1),
         (createExpected("~TopCircuitVecs\\|TopCircuitVecs>c", "AnonymousBundle\\[5\\]", b.toString,
-          params = Some(Seq(ClassParam("gen", "=> T", None), ClassParam("length", "Int", None)))), 1),
+          params = Some(Seq(ClassParam("gen", "=> T", None), ClassParam("length", "Int", Some("5"))))), 1),
         (createExpected("~TopCircuitVecs\\|TopCircuitVecs>c\\[0\\]", "AnonymousBundle", b.toString), 1),
         (createExpected("~TopCircuitVecs\\|TopCircuitVecs>c\\[0\\].x", "UInt<8>", b.toString), 1),
 
         (createExpected("~TopCircuitVecs\\|TopCircuitVecs>d", "MixedVec", b.toString,
-          params = Some(Seq(ClassParam("eltsIn", "Seq\\[T\\]", None)))), 1),
+          // TODO: check for MixedVec what the value of the parameter should be
+          params = Some(Seq(ClassParam("eltsIn", "Seq\\[T\\]", Some("Seq\\[T\\]\\(unsafeArray(.*?)\\)"))))), 1),
         (createExpected("~TopCircuitVecs\\|TopCircuitVecs>d.0", "UInt<3>", b.toString), 1),
         (createExpected("~TopCircuitVecs\\|TopCircuitVecs>d.1", "SInt<10>", b.toString), 1)
       ) ++ addClockReset("TopCircuitVecs")
@@ -105,7 +106,7 @@ class TypeAnnotationDataTypesSpec extends AnyFunSpec with Matchers with chiselTe
       val expectedMatches = Seq(
         (createExpected("~TopCircuitBundleWithVec\\|TopCircuitBundleWithVec>a", "AnonymousBundle", b.toString), 1),
         (createExpected("~TopCircuitBundleWithVec\\|TopCircuitBundleWithVec>a.vec", "UInt<8>\\[5\\]", b.toString,
-          params = Some(Seq(ClassParam("gen", "=> T", None), ClassParam("length", "Int", None)))), 1),
+          params = Some(Seq(ClassParam("gen", "=> T", None), ClassParam("length", "Int", Some("5"))))), 1),
         (createExpected("~TopCircuitBundleWithVec\\|TopCircuitBundleWithVec>a.vec\\[0\\]", "UInt<8>", b.toString), 1)
       ) ++ addClockReset("TopCircuitBundleWithVec")
       // format: on
