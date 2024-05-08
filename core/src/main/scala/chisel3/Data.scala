@@ -549,7 +549,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
         def probeInfoStr(info: Option[ProbeInfo]) = info.map { info =>
           s"Some(writeable=${info.writable}, color=${info.color})"
         }.getOrElse("None")
-        s": Left ($left with probeInfo: ${probeInfoStr(left.probeInfo)}) and Right ($right with probeInfo: (${probeInfoStr(right.probeInfo)})) have different probeInfo."
+        s": Left ($left with probeInfo: ${probeInfoStr(left.probeInfo)}) and Right ($right with probeInfo: ${probeInfoStr(right.probeInfo)}) have different probeInfo."
       }
 
     def rec(left: Data, right: Data): Option[String] =
