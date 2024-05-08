@@ -27,7 +27,7 @@ abstract class inside another declaration.
 The following example declares four layers:
 
 ```scala mdoc:silent
-import chisel3.layer.{Convention, Layer}
+}
 
 object A extends Layer(Convention.Bind) {
   object B extends Layer(Convention.Bind) {
