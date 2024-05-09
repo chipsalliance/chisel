@@ -29,7 +29,7 @@ class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
     processChirrtl(chirrtl) should contain("define a = rwprobe(w)")
   }
 
-  "U-Turn example" should "emit FIRRTL probe statements and expressions" in {
+  "modified U-Turn example" should "emit FIRRTL probe statements and expressions" in {
     val chirrtl = ChiselStage.emitCHIRRTL(
       new Module {
 
@@ -40,19 +40,17 @@ class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
 
         class UTurn() extends RawModule {
           val io = IO(new Bundle {
-            val in = Input(RWProbe(Bool()))
+            val in = Input(Bool())
             val out = Output(RWProbe(Bool()))
           })
-          define(io.out, io.in)
+          define(io.out, RWProbeValue(io.in))
         }
 
         val u1 = Module(new UTurn())
         val u2 = Module(new UTurn())
 
-        val n = RWProbeValue(io.x)
-
-        define(u1.io.in, n)
-        define(u2.io.in, u1.io.out)
+        u1.io.in := io.x
+        u2.io.in := probe.read(u1.io.out)
 
         io.y := read(u2.io.out)
 
@@ -60,19 +58,19 @@ class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
 
         releaseInitial(u1.io.out)
 
-        when(io.x) { force(u2.io.out, u1.io.out) }
+        when(io.x) { force(u2.io.out, probe.read(u1.io.out)) }
         when(io.y) { release(u2.io.out) }
       },
       Array("--full-stacktrace")
     )
     (processChirrtl(chirrtl) should contain).allOf(
-      "output io : { flip in : RWProbe<UInt<1>>, out : RWProbe<UInt<1>>}",
-      "define u1.io.in = rwprobe(io.x)",
-      "define u2.io.in = u1.io.out",
+      "define io.out = rwprobe(io.in)",
+      "output io : { flip in : UInt<1>, out : RWProbe<UInt<1>>}",
+      "connect u2.io.in, read(u1.io.out)",
       "connect io.y, read(u2.io.out)",
       "force_initial(u1.io.out, UInt<1>(0h0))",
       "release_initial(u1.io.out)",
-      "force(clock, _T, u2.io.out, u1.io.out)",
+      "force(clock, _T, u2.io.out, read(u1.io.out))",
       "release(clock, _T_1, u2.io.out)"
     )
   }
