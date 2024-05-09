@@ -160,7 +160,7 @@ class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
           val qux = Flipped(Probe(UInt(4.W)))
           val fizz = Flipped(Bool())
         }
-        val io = IO(new Bundle {
+        val io = Wire(new Bundle {
           val in = Flipped(new FooBundle())
           val a = new FooBundle()
           val b = new FooBundle()
@@ -194,14 +194,21 @@ class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
           val baz = UInt(4.W)
         }
         val io = IO(new Bundle {
-          val in = Input(new FooBundle)
           val out = Output(new FooBundle)
         })
-        io.out :<>= io.in
+        val child = Module(new RawModule {
+          val io = IO(new Bundle {
+            val out = Output(new FooBundle)
+          })
+          io.out.baz := 3.U
+          io.out.bar := probe.ProbeValue(io.out.baz)
+        })
+
+        io.out :<>= child.io.out
       }
     )
-    processChirrtl(chirrtl) should contain("define io.out.bar = io.in.bar")
-    processChirrtl(chirrtl) should contain("connect io.out.baz, io.in.baz")
+    processChirrtl(chirrtl) should contain("define io.out.bar = child.io.out.bar")
+    processChirrtl(chirrtl) should contain("connect io.out.baz, child.io.out.baz")
   }
 
   ":<>= connector with probes of aggregates" should "work" in {
@@ -211,13 +218,13 @@ class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
           val baz = UInt(4.W)
         }
         val io = IO(new Bundle {
-          val in = Input(Probe(new FooBundle))
+          val in = Input(new FooBundle)
           val out = Output(Probe(new FooBundle))
         })
-        io.out :<>= io.in
+        io.out :<>= probe.ProbeValue(io.in)
       }
     )
-    processChirrtl(chirrtl) should contain("define io.out = io.in")
+    processChirrtl(chirrtl) should contain("define io.out = probe(io.in)")
     processChirrtl(chirrtl) should not contain ("out.baz")
   }
 
@@ -261,30 +268,34 @@ class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
     val chirrtl = ChiselStage.emitCHIRRTL(
       new RawModule {
         val io = IO(new Bundle {
-          val in = Input(Probe(Bool()))
+          val in = Input(Bool())
           val out = Output(Probe(Bool()))
         })
-        io.out := io.in
+        io.out := probe.ProbeValue(io.in)
       }
     )
-    processChirrtl(chirrtl) should contain("define io.out = io.in")
+    processChirrtl(chirrtl) should contain("define io.out = probe(io.in)")
   }
 
   ":= connector with probes but in wrong direction" should "fail" in {
     val exc = intercept[chisel3.ChiselException] {
       val chirrtl = ChiselStage.emitCHIRRTL(
         new RawModule {
-          val io = IO(new Bundle {
-            val in = Input(Probe(Bool()))
-            val out = Output(Probe(Bool()))
-          })
-          io.in := io.out
+          val out = IO(Output(Probe(Bool())))
+
+          class OutProbe extends RawModule {
+            val p = IO(Output(Probe(Bool())))
+            val n = true.B
+            probe.define(p, probe.ProbeValue(n))
+          }
+          val child = Module(new OutProbe())
+          child.p := out
         },
         Array("--throw-on-first-error")
       )
     }
     exc.getMessage should include(
-      "Connection between sink (ProbeSpec_Anon.io.in: IO[Bool]) and source (ProbeSpec_Anon.io.out: IO[Bool]) failed @: io.in in ProbeSpec_Anon cannot be written from module ProbeSpec_Anon"
+      "Connection between sink (OutProbe.p: IO[Bool]) and source (ProbeSpec_Anon.out: IO[Bool]) failed @: p in OutProbe cannot be written from module ProbeSpec_Anon."
     )
   }
 
@@ -311,16 +322,25 @@ class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
       ChiselStage.emitCHIRRTL(
         new RawModule {
           val io = IO(new Bundle {
-            val in = Input(Vec(2, Probe(Bool())))
             val out = Output(Vec(2, Probe(Bool())))
           })
-          io.out <> io.in
+
+          class OutProbe extends RawModule {
+            val vec_of_probes = IO(Output(Vec(2, Probe(Bool()))))
+            val t = true.B
+            val f = false.B
+            probe.define(vec_of_probes(0), probe.ProbeValue(t))
+            probe.define(vec_of_probes(1), probe.ProbeValue(f))
+          }
+          val child = Module(new OutProbe())
+
+          io.out <> child.vec_of_probes
         },
         Array("--throw-on-first-error")
       )
     }
     exc.getMessage should be(
-      "Connection between left (ProbeSpec_Anon.io.out: IO[Bool[2]]) and source (ProbeSpec_Anon.io.in: IO[Bool[2]]) failed @Left of Probed type cannot participate in a bi connection (<>)"
+      "Connection between left (ProbeSpec_Anon.io.out: IO[Bool[2]]) and source (OutProbe.vec_of_probes: IO[Bool[2]]) failed @Left of Probed type cannot participate in a bi connection (<>)"
     )
   }
 
@@ -328,14 +348,23 @@ class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
     val chirrtl = ChiselStage.emitCHIRRTL(
       new RawModule {
         val io = IO(new Bundle {
-          val in = Input(Vec(2, Probe(Bool())))
           val out = Output(Vec(2, Probe(Bool())))
         })
-        io.out := io.in
+
+        class OutProbe extends RawModule {
+          val vec_of_probes = IO(Output(Vec(2, Probe(Bool()))))
+          val t = true.B
+          val f = false.B
+          probe.define(vec_of_probes(0), probe.ProbeValue(t))
+          probe.define(vec_of_probes(1), probe.ProbeValue(f))
+        }
+        val child = Module(new OutProbe())
+
+        io.out := child.vec_of_probes
       }
     )
-    processChirrtl(chirrtl) should contain("define io.out[0] = io.in[0]")
-    processChirrtl(chirrtl) should contain("define io.out[1] = io.in[1]")
+    processChirrtl(chirrtl) should contain("define io.out[0] = child.vec_of_probes[0]")
+    processChirrtl(chirrtl) should contain("define io.out[1] = child.vec_of_probes[1]")
   }
 
   "Probe define between non-connectable data types" should "fail" in {
