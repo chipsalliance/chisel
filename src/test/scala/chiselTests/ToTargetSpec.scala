@@ -5,13 +5,16 @@ package chiselTests
 import chisel3._
 import chisel3.properties.{Path, Property}
 import circt.stage.ChiselStage
+import chisel3.experimental.hierarchy.{public, instantiable, Instance, Definition}
 
+@instantiable 
 class RelativeInnerModule extends RawModule {
-  val wire = Wire(Bool())
+  @public val wire = Wire(Bool())
 }
 
+@instantiable 
 class RelativeMiddleModule extends RawModule {
-  val inner = Module(new RelativeInnerModule())
+  @public val inner = Module(new RelativeInnerModule())
 }
 
 class RelativeOuterRootModule extends RawModule {
@@ -79,6 +82,34 @@ class RelativeSiblingsModule extends RawModule {
 
   atModuleBodyEnd {
     val reference = middle1.inner.wire.toRelativeTarget(Some(middle2))
+  }
+}
+
+class RelativeSiblingsInstancesModule extends RawModule {
+  val middle = Definition(new RelativeMiddleModule())
+  val middle1 = Instance(middle)
+  val middle2 = Instance(middle)
+}
+
+class RelativeSiblingsInstancesParent extends RawModule {
+  val outer = Module(new RelativeSiblingsInstancesModule())
+
+    atModuleBodyEnd {
+    val referenceInstanceAbsolute = outer.middle1.toRelativeTargetToHierarchy(None)
+    val referenceInstanceAbsoluteOut = IO(Output(Property[Path]()))
+    referenceInstanceAbsoluteOut := Property(Path(referenceInstanceAbsolute))
+
+    val referenceInstance = outer.middle1.inner.toRelativeTargetToHierarchy(Some(outer.middle1))
+    val referenceInstanceOut = IO(Output(Property[Path]()))
+    referenceInstanceOut := Property(Path(referenceInstance))
+
+    val referenceInstanceWire = outer.middle2.inner.wire.toRelativeTargetToHierarchy(Some(outer.middle2))
+    val referenceInstanceWireOut = IO(Output(Property[Path]()))
+    referenceInstanceWireOut := Property(Path(referenceInstanceWire))
+
+    val referenceDefinitionWire = outer.middle.inner.wire.toRelativeTargetToHierarchy(Some(outer.middle))
+    val referenceDefinitionWireOut = IO(Output(Property[Path]()))
+    referenceDefinitionWireOut := Property(Path(referenceDefinitionWire))
   }
 }
 
@@ -183,4 +214,17 @@ class ToTargetSpec extends ChiselFlatSpec with Utils {
 
     (e.getMessage should include).regex("Requested .toRelativeTarget relative to .+, but it is not an ancestor")
   }
+
+  it should "work to get relative targets to an instance of an Instance" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RelativeSiblingsInstancesParent)
+
+    chirrtl should include("~RelativeSiblingsInstancesParent|Foo>inner")
+  }
+
+  it should "work to get relative targets to a wire in an Instance" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RelativeSiblingsInstancesParent)
+
+    chirrtl should include("~RelativeSiblingsInstancesParent|Foo>wire")
+  }
+
 }

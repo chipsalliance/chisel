@@ -17,6 +17,7 @@ import _root_.firrtl.annotations.{IsModule, ModuleName, ModuleTarget}
 import _root_.firrtl.AnnotationSeq
 import chisel3.internal.plugin.autoNameRecursively
 import chisel3.util.simpleClassName
+import chisel3.experimental.hierarchy.Hierarchy
 
 object Module extends SourceInfoDoc {
 
@@ -738,10 +739,45 @@ package experimental {
           case (_, Some(parent)) => parent.toRelativeTarget(root).instOf(this.instanceName, name)
           // If root was defined, and there is no parent, the root was not an ancestor.
           case (Some(definedRoot), None) =>
-            throwException(s"Requested .toRelativeTarget relative to ${definedRoot.name}, but it is not an ancestor")
+            throwException(
+              s"Requested .toRelativeTarget relative to ${definedRoot.name}, but it is not an ancestor of $this"
+            )
           // If root was not defined, and there is no parent, return this.
           case (None, None) => getTarget
         }
+    }
+
+    /** Returns a FIRRTL ModuleTarget that references this object, relative to an optional root.
+      *
+      * If `root` is defined, the target is a hierarchical path starting from `root`.
+      *
+      * If `root` is not defined, the target is a hierarchical path equivalent to `toAbsoluteTarget`.
+      *
+      * @note If `root` is defined, and has not finished elaboration, this must be called within `atModuleBodyEnd`.
+      * @note The BaseModule must be a descendant of `root`, if it is defined.
+      * @note This doesn't have special handling for Views.
+      */
+    final def toRelativeTargetToHierarchy(root: Option[Hierarchy[BaseModule]]): IsModule = {
+      // If root was defined, and we are it, return this.
+      if (root.map(_.proto).contains(this)) getTarget
+      // If we are a ViewParent, use its absolute target.
+      else {
+        println(s"root.map(_.proto) ${root.map(_.proto)} does not contain $this")
+        if (this == ViewParent) ViewParent.absoluteTarget
+        // Otherwise check if root and _parent are defined.
+        else
+          (root, _parent) match {
+            // If root was defined, and we are not there yet, recurse up.
+            case (_, Some(parent)) => parent.toRelativeTargetToHierarchy(root).instOf(this.instanceName, name)
+            // If root was defined, and there is no parent, the root was not an ancestor.
+            case (Some(definedRoot), None) =>
+              throwException(
+                s"Requested .toRelativeTargetToHierarchy relative to ${definedRoot}, but it is not an ancestor of $this"
+              )
+            // If root was not defined, and there is no parent, return this.
+            case (None, None) => getTarget
+          }
+      }
     }
 
     /**
