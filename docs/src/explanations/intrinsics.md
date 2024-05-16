@@ -16,11 +16,6 @@ available is documented by an implementation.
 The `Intrinsic` and `IntrinsicExpr` can be used to create intrinsic statements
 and expressions.
 
-Modules defined as an `IntrinsicModule` will be instantiated as normal modules, 
-but the intrinsic field communicates to the compiler what functionality to use to 
-implement the module.  Implementations may not be actual modules, the module 
-nature of intrinsics is merely for instantiation purposes.
-
 ### Parameterization
 
 Parameters can be passed as an argument to the IntModule constructor.
@@ -36,28 +31,6 @@ import chisel3._
 
 ```scala mdoc:compile-only
 class Foo extends RawModule {
- val myresult = IntrinsicExpr("MyIntrinsic", UInt(32.W), "STRING" -> "test")(3.U, 5.U)
-}
-```
-
-### IntrinsicModule Example
-
-This following creates an intrinsic module for the intrinsic named
-"OtherIntrinsic".  It takes a parameter named "STRING" and has one bundle port.
-
-```scala mdoc:invisible
-import chisel3._
-```
-
-```scala mdoc:compile-only
-import chisel3.experimental.IntrinsicModule
-
-class ExampleIntrinsicModule(str: String) extends IntrinsicModule(
-  "OtherIntrinsic",
-  Map("STRING" -> str)) {
-  val foo = IO(new Bundle() {
-    val in = Input(UInt())
-    val out = Output(UInt(32.W))
-  })
+  val myresult = IntrinsicExpr("MyIntrinsic", UInt(32.W), "STRING" -> "test")(3.U, 5.U)
 }
 ```

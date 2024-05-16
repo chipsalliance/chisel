@@ -101,7 +101,10 @@ object DataMirror {
     * Likewise, Records check that both Records have the same
     * elements with the same types.
     *
-    * Equivalent to being structural, alignment, and width type equivalent
+    * elements must be the same 'probe-ness' (RWProbe and Probe vs no Probe are not)
+    * and the same color.
+    *
+    * Equivalent to being structural, alignment, width, probe, color type equivalent
     *
     * @param x First Chisel type
     * @param y Second Chisel type
