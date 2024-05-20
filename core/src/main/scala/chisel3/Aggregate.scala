@@ -476,7 +476,6 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
             s"are less than zero or greater or equal to than Vec length"
         )
       }
-      cloneSupertype(elementInitializers.map(_._2), s"Vec.Lit(...)")
 
       // look for literals of this vec that are wider than the vec's type
       val badLits = elementInitializers.flatMap {

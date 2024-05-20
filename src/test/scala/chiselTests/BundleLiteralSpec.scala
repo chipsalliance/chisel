@@ -352,4 +352,22 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
       }
     }
   }
+<<<<<<< HEAD
+=======
+
+  "bundle literals" should "materialize const wires" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new Module {
+      val r = RegInit((new MyBundle).Lit(_.a -> 42.U, _.b -> true.B, _.c -> MyEnum.sB))
+    })
+    val wire = """wire.*: const \{ a : UInt<8>, b : UInt<1>, c : UInt<1>\}""".r
+    (chirrtl should include).regex(wire)
+  }
+
+  "Empty bundle literals" should "be supported" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val lit = (new Bundle {}).Lit()
+      lit.litOption should equal(Some(0))
+    })
+  }
+>>>>>>> 86082b1ab (Add support for Vec literals of empty Vecs (#4070))
 }
