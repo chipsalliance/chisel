@@ -506,16 +506,6 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
     vec.getWidth should be(16 * 2)
     vec.litValue should be(BigInt("bbbb000a", 16))
   }
-<<<<<<< HEAD
-=======
-
-  "vec literals should materialize const wires" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new Module {
-      val r = RegInit(Vec(2, UInt(4.W)).Lit(0 -> 1.U, 1 -> 2.U))
-    })
-    val wire = """wire.*: const UInt<4>\[2\]""".r
-    (chirrtl should include).regex(wire)
-  }
 
   "Empty vec literals should be supported" in {
     ChiselStage.emitCHIRRTL(new RawModule {
@@ -532,5 +522,4 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
       lit.litOption should equal(Some(0))
     })
   }
->>>>>>> 86082b1ab (Add support for Vec literals of empty Vecs (#4070))
 }
