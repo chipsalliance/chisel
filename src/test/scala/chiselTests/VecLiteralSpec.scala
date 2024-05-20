@@ -115,7 +115,6 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
   }
 
   "Vec literals should only init specified fields when used to partially initialize a reg of vec" in {
-    println(ChiselStage.emitCHIRRTL(new ResetRegWithPartialVecLiteral))
     assertTesterPasses(new BasicTester {
       val m = Module(new ResetRegWithPartialVecLiteral)
       val (counter, wrapped) = Counter(true.B, 8)
@@ -514,5 +513,21 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
     })
     val wire = """wire.*: const UInt<4>\[2\]""".r
     (chirrtl should include).regex(wire)
+  }
+
+  "Empty vec literals should be supported" in {
+    ChiselStage.emitCHIRRTL(new RawModule {
+      val lit = Vec(0, UInt(8.W)).Lit()
+      lit.litOption should equal(Some(0))
+    })
+    // It should also work when the element type is a Bundle
+    class MyBundle extends Bundle {
+      val a = UInt(8.W)
+      val b = UInt(8.W)
+    }
+    ChiselStage.emitCHIRRTL(new RawModule {
+      val lit = Vec(0, new MyBundle).Lit()
+      lit.litOption should equal(Some(0))
+    })
   }
 }
