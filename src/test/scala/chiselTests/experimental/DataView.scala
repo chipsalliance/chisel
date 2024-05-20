@@ -6,6 +6,8 @@ import chisel3._
 import chisel3.experimental.conversions._
 import chisel3.experimental.dataview._
 import chisel3.experimental.{Analog, HWTuple2}
+import chisel3.experimental.BundleLiterals._
+import chisel3.experimental.VecLiterals._
 import chisel3.probe._
 import chisel3.reflect.DataMirror.internal.chiselTypeClone
 import chisel3.util.{Decoupled, DecoupledIO, Valid, ValidIO}
@@ -1117,6 +1119,38 @@ class DataViewSpec extends ChiselFlatSpec {
       val bunView = vec.viewAs[MyBundle]
       bunView.litValue should be(0xdabc)
       bunView.litOption should be(Some(0xdabc))
+    }
+    ChiselStage.emitCHIRRTL(new MyModule)
+  }
+
+  it should "NOT invent literal values for views of empty Aggregates" in {
+    class MyModule extends Module {
+      val emptyBundle = IO(Output(new Bundle {}))
+      val emptyVec = IO(Output(Vec(0, UInt(8.W))))
+
+      val bundleView = emptyBundle.viewAs[Bundle]
+      val vecView = emptyVec.viewAs[Vec[UInt]]
+
+      emptyBundle.litOption should be(None)
+      bundleView.litOption should be(None)
+      emptyVec.litOption should be(None)
+      vecView.litOption should be(None)
+    }
+    ChiselStage.emitCHIRRTL(new MyModule)
+  }
+
+  it should "support literal values for views of empty Aggregates" in {
+    class MyModule extends Module {
+      val emptyBundle = (new Bundle {}).Lit()
+      val emptyVec = Vec(0, UInt(8.W)).Lit()
+
+      val bundleView = emptyBundle.viewAs[Bundle]
+      val vecView = emptyVec.viewAs[Vec[UInt]]
+
+      emptyBundle.litOption should be(Some(0))
+      bundleView.litOption should be(Some(0))
+      emptyVec.litOption should be(Some(0))
+      vecView.litOption should be(Some(0))
     }
     ChiselStage.emitCHIRRTL(new MyModule)
   }
