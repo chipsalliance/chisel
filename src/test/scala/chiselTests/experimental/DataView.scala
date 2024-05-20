@@ -6,12 +6,8 @@ import chisel3._
 import chisel3.experimental.conversions._
 import chisel3.experimental.dataview._
 import chisel3.experimental.{Analog, HWTuple2}
-<<<<<<< HEAD
-=======
 import chisel3.experimental.BundleLiterals._
 import chisel3.experimental.VecLiterals._
-import chisel3.probe._
->>>>>>> 11c3f51c6 (Fix literal handling for views of empty Aggregates (#4071))
 import chisel3.reflect.DataMirror.internal.chiselTypeClone
 import chisel3.util.{Decoupled, DecoupledIO, Valid, ValidIO}
 import chiselTests.ChiselFlatSpec
