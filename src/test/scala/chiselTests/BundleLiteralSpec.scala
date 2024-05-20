@@ -352,4 +352,11 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
       }
     }
   }
+
+  "Empty bundle literals" should "be supported" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val lit = (new Bundle {}).Lit()
+      lit.litOption should equal(Some(0))
+    })
+  }
 }
