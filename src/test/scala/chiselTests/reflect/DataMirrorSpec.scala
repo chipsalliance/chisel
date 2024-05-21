@@ -267,15 +267,14 @@ class DataMirrorSpec extends ChiselFlatSpec {
   }
 
   "modulePorts and fullModulePorts" should "return an Instance of a module's IOs" in {
-    import chiselTests.experimental.hierarchy.Examples.AddOne
     @instantiable
     class Bar extends Module {
       @public val io = IO(new Bundle {
         val vec = Vec(2, Bool())
         val x = UInt(4.W)
       })
-      dontTouch(io)
     }
+
     class Foo extends Module {
       val definition = Definition(new Bar)
       val instA = Instance(definition)
@@ -287,14 +286,17 @@ class DataMirrorSpec extends ChiselFlatSpec {
 
     ChiselStage.emitCHIRRTL(new Module {
       val foo = Module(new Foo)
-      foo.portsA.map(_._1) should contain("io")
-      foo.portsA.map(_._1) should not contain ("io_x")
-      (foo.portsB.map(_._1) should contain).allOf(
-        "io",
-        "io_x",
-        "io_vec",
-        "io_vec_0",
-        "io_vec_1"
+      foo.portsA.map(_._1) should be(Seq("clock", "reset", "io"))
+      foo.portsB.map(_._1) should be(
+        Seq(
+          "clock",
+          "reset",
+          "io",
+          "io_x",
+          "io_vec",
+          "io_vec_0",
+          "io_vec_1"
+        )
       )
     })
   }
