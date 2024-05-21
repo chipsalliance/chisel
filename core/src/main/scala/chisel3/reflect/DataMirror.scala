@@ -155,7 +155,7 @@ object DataMirror {
     case (name, port: Data) => (name, port)
   }
 
-  /** Returns the ports of a [[chisel3.experimental.hierarchy.Instance]] of a module
+  /** Returns the ports of an Instance of a module
     */
   def modulePorts[T <: BaseModule](inst: Instance[T])(implicit si: SourceInfo): Seq[(String, Data)] = {
     // This prevents users from using the _lookup API
@@ -210,8 +210,7 @@ object DataMirror {
     }
   }
 
-  /** Returns a recursive representation of an [[chisel3.experimental.hierarchy.Instance]] of a
-    * module's ports with underscore-qualified names.
+  /** Returns a recursive representation of an Instance of a module's ports with underscore-qualified names.
     *
     * @note The returned ports are redundant. An [[Aggregate]] port will be present along with all
     *       of its children.
