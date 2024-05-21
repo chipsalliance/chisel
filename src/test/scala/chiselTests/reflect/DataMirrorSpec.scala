@@ -266,6 +266,24 @@ class DataMirrorSpec extends ChiselFlatSpec {
     })
   }
 
+  "modulePorts" should "return an Instance of a module's IOs" in {
+    import chiselTests.experimental.hierarchy.Examples.AddOne
+    class Foo extends Module {
+      val definition = Definition(new AddOne)
+      val instA = Instance(definition)
+      val portsA = DataMirror.modulePorts(instA)
+
+      val instB = (Module(new AddOne)).toInstance
+      val portsB = DataMirror.modulePorts(instB)
+    }
+
+    ChiselStage.emitCHIRRTL(new Module {
+      val foo = Module(new Foo)
+      (foo.portsA.map(_._2) should contain).allOf(foo.instA.in, foo.instA.out)
+      (foo.portsB.map(_._2) should contain).allOf(foo.instB.in, foo.instB.out)
+    })
+  }
+
   "fullModulePorts" should "return an Instance of a module's IOs" in {
     import chiselTests.experimental.hierarchy.Examples.AddOne
     class Foo extends Module {
@@ -279,7 +297,6 @@ class DataMirrorSpec extends ChiselFlatSpec {
 
     ChiselStage.emitCHIRRTL(new Module {
       val foo = Module(new Foo)
-      // println(foo.ports)
       (foo.portsA.map(_._2) should contain).allOf(foo.instA.in, foo.instA.out)
       (foo.portsB.map(_._2) should contain).allOf(foo.instB.in, foo.instB.out)
     })

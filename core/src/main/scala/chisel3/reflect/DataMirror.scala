@@ -155,6 +155,15 @@ object DataMirror {
     case (name, port: Data) => (name, port)
   }
 
+  /** Returns the ports of a [[chisel3.experimental.hierarchy.Instance]] of a module
+    */
+  def modulePorts[T <: BaseModule](inst: Instance[T])(implicit si: SourceInfo): Seq[(String, Data)] = {
+    // This prevents users from using the _lookup API
+    implicit val mg = new chisel3.internal.MacroGenerated {}
+
+    inst._lookup { proto: T => modulePorts(proto) }
+  }
+
   /** Returns a recursive representation of a module's ports with underscore-qualified names
     * {{{
     * class MyModule extends Module {
