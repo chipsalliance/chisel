@@ -266,39 +266,36 @@ class DataMirrorSpec extends ChiselFlatSpec {
     })
   }
 
-  "modulePorts" should "return an Instance of a module's IOs" in {
+  "modulePorts and fullModulePorts" should "return an Instance of a module's IOs" in {
     import chiselTests.experimental.hierarchy.Examples.AddOne
+    @instantiable
+    class Bar extends Module {
+      @public val io = IO(new Bundle {
+        val vec = Vec(2, Bool())
+        val x = UInt(4.W)
+      })
+      dontTouch(io)
+    }
     class Foo extends Module {
-      val definition = Definition(new AddOne)
+      val definition = Definition(new Bar)
       val instA = Instance(definition)
       val portsA = DataMirror.modulePorts(instA)
 
-      val instB = (Module(new AddOne)).toInstance
-      val portsB = DataMirror.modulePorts(instB)
-    }
-
-    ChiselStage.emitCHIRRTL(new Module {
-      val foo = Module(new Foo)
-      (foo.portsA.map(_._2) should contain).allOf(foo.instA.in, foo.instA.out)
-      (foo.portsB.map(_._2) should contain).allOf(foo.instB.in, foo.instB.out)
-    })
-  }
-
-  "fullModulePorts" should "return an Instance of a module's IOs" in {
-    import chiselTests.experimental.hierarchy.Examples.AddOne
-    class Foo extends Module {
-      val definition = Definition(new AddOne)
-      val instA = Instance(definition)
-      val portsA = DataMirror.fullModulePorts(instA)
-
-      val instB = (Module(new AddOne)).toInstance
+      val instB = (Module(new Bar)).toInstance
       val portsB = DataMirror.fullModulePorts(instB)
     }
 
     ChiselStage.emitCHIRRTL(new Module {
       val foo = Module(new Foo)
-      (foo.portsA.map(_._2) should contain).allOf(foo.instA.in, foo.instA.out)
-      (foo.portsB.map(_._2) should contain).allOf(foo.instB.in, foo.instB.out)
+      foo.portsA.map(_._1) should contain("io")
+      foo.portsA.map(_._1) should not contain ("io_x")
+      (foo.portsB.map(_._1) should contain).allOf(
+        "io",
+        "io_x",
+        "io_vec",
+        "io_vec_0",
+        "io_vec_1"
+      )
     })
   }
 }
