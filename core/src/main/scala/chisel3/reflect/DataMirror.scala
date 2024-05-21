@@ -6,6 +6,7 @@ import chisel3._
 import chisel3.internal._
 import chisel3.internal.firrtl.ir._
 import chisel3.experimental.{requireIsHardware, BaseModule, SourceInfo}
+import chisel3.experimental.hierarchy.Instance
 import chisel3.properties.Property
 import scala.reflect.ClassTag
 
@@ -198,6 +199,20 @@ object DataMirror {
       case (name, data) =>
         getPortNames(name, data).toList
     }
+  }
+
+  /** Returns a recursive representation of an [[Instance]] of a module's ports
+    * with underscore-qualified names.
+    *
+    * @note The returned ports are redundant. An [[Aggregate]] port will be present along with all
+    *       of its children.
+    * @see [[DataMirror.modulePorts]] for a non-recursive representation of the ports.
+    */
+  def fullModulePorts[T <: BaseModule](inst: Instance[T])(implicit si: SourceInfo): Seq[(String, Data)] = {
+    // This prevents users from using the _lookup API
+    implicit val mg = new chisel3.internal.MacroGenerated {}
+
+    inst._lookup { proto: T => fullModulePorts(proto) }
   }
 
   /** Returns the parent module within which a module instance is instantiated
