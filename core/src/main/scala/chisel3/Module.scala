@@ -13,7 +13,7 @@ import chisel3.experimental.{requireIsChiselType, BaseModule, SourceInfo, Unloca
 import chisel3.internal.sourceinfo.{InstTransform}
 import chisel3.properties.{Class, Property}
 import chisel3.reflect.DataMirror
-import _root_.firrtl.annotations.{IsModule, ModuleName, ModuleTarget}
+import _root_.firrtl.annotations.{IsModule, ModuleName, ModuleTarget, InstanceTarget}
 import _root_.firrtl.AnnotationSeq
 import chisel3.internal.plugin.autoNameRecursively
 import chisel3.util.simpleClassName
@@ -758,25 +758,29 @@ package experimental {
       * @note This doesn't have special handling for Views.
       */
     final def toRelativeTargetToHierarchy(root: Option[Hierarchy[BaseModule]]): IsModule = {
+      def fail() = throwException(s"No common ancestor between\n  ${this.toAbsoluteTarget} and\n  ${root.get.toAbsoluteTarget}")
+      
+      def recurse(thisRelative: IsModule, rootRelative: IsModule): IsModule = {
+          (thisRelative, rootRelative) match {
+            case (t: IsModule, r: ModuleTarget) => {
+              if (t.module == r.module) t else fail()
+            }
+            case (t: ModuleTarget, r: InstanceTarget) => fail()
+            case (t: InstanceTarget, r: InstanceTarget) => {
+              if ((t.module == r.module) && (r.asPath.head == t.asPath.head)) 
+                recurse(t.stripHierarchy(1), r.stripHierarchy(1))
+             else fail()
+            }
+      }}
+      
       // If root was defined, and we are it, return this.
-      if (root.map(_.proto).contains(this)) getTarget
-      // If we are a ViewParent, use its absolute target.
+      if (root.isEmpty)(this.toAbsoluteTarget)
+      // Not yet handling DataView
       else {
-        println(s"root.map(_.proto) ${root.map(_.proto)} does not contain $this")
-        if (this == ViewParent) ViewParent.absoluteTarget
-        // Otherwise check if root and _parent are defined.
-        else
-          (root, _parent) match {
-            // If root was defined, and we are not there yet, recurse up.
-            case (_, Some(parent)) => parent.toRelativeTargetToHierarchy(root).instOf(this.instanceName, name)
-            // If root was defined, and there is no parent, the root was not an ancestor.
-            case (Some(definedRoot), None) =>
-              throwException(
-                s"Requested .toRelativeTargetToHierarchy relative to ${definedRoot}, but it is not an ancestor of $this"
-              )
-            // If root was not defined, and there is no parent, return this.
-            case (None, None) => getTarget
-          }
+          var thisRelative = this.toAbsoluteTarget
+          var rootRelative = root.get.toAbsoluteTarget
+          if (thisRelative.circuit != rootRelative.circuit) fail()
+          recurse(thisRelative, rootRelative)
       }
     }
 

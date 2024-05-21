@@ -89,7 +89,39 @@ class RelativeSiblingsInstancesModule extends RawModule {
   val middle = Definition(new RelativeMiddleModule())
   val middle1 = Instance(middle)
   val middle2 = Instance(middle)
+
+  val middle3 = Module(new RelativeMiddleModule())
+  val middle4 = Instance(middle3.toDefinition)
 }
+
+class RelativeSiblingsInstancesBadModule extends RelativeSiblingsInstancesModule {
+  val noCommonAncestorOut = IO(Output(Property[Path]()))
+
+  atModuleBodyEnd {
+    val noCommonAncestor = middle1.inner.wire.toRelativeTargetToHierarchy(Some(middle2))
+    noCommonAncestorOut := Property(Path(noCommonAncestor))
+  }
+}
+
+class RelativeSiblingsDefinitionBadModule1 extends RelativeSiblingsInstancesModule {
+  val noCommonAncestorOut = IO(Output(Property[Path]()))
+
+  atModuleBodyEnd {
+    val noCommonAncestor = middle1.inner.wire.toRelativeTargetToHierarchy(Some(middle))
+    noCommonAncestorOut := Property(Path(noCommonAncestor))
+  }
+}
+
+class RelativeSiblingsDefinitionBadModule2 extends RelativeSiblingsInstancesModule {
+  val noCommonAncestorOut = IO(Output(Property[Path]()))
+
+  atModuleBodyEnd {
+    val noCommonAncestor = middle.inner.wire.toRelativeTargetToHierarchy(Some(middle1))
+    noCommonAncestorOut := Property(Path(noCommonAncestor))
+  }
+}
+
+
 
 class RelativeSiblingsInstancesParent extends RawModule {
   val outer = Module(new RelativeSiblingsInstancesModule())
@@ -110,6 +142,10 @@ class RelativeSiblingsInstancesParent extends RawModule {
     val referenceDefinitionWire = outer.middle.inner.wire.toRelativeTargetToHierarchy(Some(outer.middle))
     val referenceDefinitionWireOut = IO(Output(Property[Path]()))
     referenceDefinitionWireOut := Property(Path(referenceDefinitionWire))
+
+    val referenceDefinitionInstance = outer.middle.inner.toRelativeTargetToHierarchy(Some(outer.middle))
+    val referenceDefinitionInstanceOut = IO(Output(Property[Path]()))
+    referenceDefinitionInstanceOut := Property(Path(referenceDefinitionInstance))
   }
 }
 
@@ -218,13 +254,32 @@ class ToTargetSpec extends ChiselFlatSpec with Utils {
   it should "work to get relative targets to an instance of an Instance" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RelativeSiblingsInstancesParent)
 
-    chirrtl should include("~RelativeSiblingsInstancesParent|Foo>inner")
+    chirrtl should include("propassign referenceInstanceOut, path(\"OMInstanceTarget:~RelativeSiblingsInstancesParent|RelativeMiddleModule/inner:RelativeInnerModule")
   }
 
   it should "work to get relative targets to a wire in an Instance" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RelativeSiblingsInstancesParent)
 
-    chirrtl should include("~RelativeSiblingsInstancesParent|Foo>wire")
+    chirrtl should include("propassign referenceInstanceWireOut, path(\"OMReferenceTarget:~RelativeSiblingsInstancesParent|RelativeMiddleModule/inner:RelativeInnerModule>wire")
+  }
+
+  it should "work to get relative targets to a wire in a Definition" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RelativeSiblingsInstancesParent)
+
+    chirrtl should include("propassign referenceDefinitionWireOut, path(\"OMReferenceTarget:~RelativeSiblingsInstancesParent|RelativeMiddleModule/inner:RelativeInnerModule>wire")
+  }
+
+  it should "raise an exception when the requested root is an Instance but is not an ancestor" in {
+    val e = the[ChiselException] thrownBy {
+      ChiselStage.emitCHIRRTL(new RelativeSiblingsInstancesBadModule)
+    }
+    e.getMessage should include("No common ancestor between")
+  }
+  it should "raise an exception when the requested root is a Definition but is not an ancestor" in {
+    val e = the[ChiselException] thrownBy {
+      ChiselStage.emitCHIRRTL(new RelativeSiblingsInstancesBadModule)
+    }
+    e.getMessage should include("No common ancestor between")
   }
 
 }

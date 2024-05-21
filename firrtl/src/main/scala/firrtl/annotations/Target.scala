@@ -606,6 +606,7 @@ case class ModuleTarget(circuit: String, module: String) extends IsModule {
   override def toNamed: ModuleName = ModuleName(module, CircuitName(circuit))
 
   override def leafModule: String = module
+
 }
 
 /** Target pointing to a declared named component in a [[firrtl.ir.DefModule]]
