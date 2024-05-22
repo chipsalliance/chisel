@@ -566,7 +566,13 @@ object Serializer {
     val layers = if (circuit.layers.nonEmpty) {
       implicit val b = new StringBuilder
       def layerIt(layer: Layer)(implicit indent: Int): Unit = {
-        b ++= s"${NewLine}"; doIndent(); b ++= s"layer ${layer.name}, ${layer.convention} :"
+        b ++= s"${NewLine}"
+        doIndent()
+        b ++= s"layer ${layer.name}, ${layer.convention}"
+        for (d <- layer.outputDir) {
+          b ++= ", \"" ++ d ++ "\""
+        }
+        b ++= " :"
         s(layer.info)
         layer.body.foreach(layerIt(_)(indent + 1))
       }

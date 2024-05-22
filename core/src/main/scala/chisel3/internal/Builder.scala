@@ -1104,7 +1104,7 @@ private[chisel3] object Builder extends LazyLogging {
           case layer.Convention.Bind => LayerConvention.Bind
           case _                     => ???
         }
-        Layer(l.sourceInfo, l.name, convention, children.map(foldLayers).toSeq)
+        Layer(l.sourceInfo, l.name, convention, l.outputDir.map(_.toString), children.map(foldLayers).toSeq)
       }
 
       val optionDefs = groupByIntoSeq(options)(opt => opt.group).map {

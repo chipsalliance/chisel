@@ -493,7 +493,7 @@ private[chisel3] object Converter {
     val convention = layer.convention match {
       case LayerConvention.Bind => fir.LayerConvention.Bind
     }
-    fir.Layer(convert(layer.sourceInfo), layer.name, convention, layer.children.map(convertLayer))
+    fir.Layer(convert(layer.sourceInfo), layer.name, convention, layer.outputDir, layer.children.map(convertLayer))
   }
 
   def convertOption(option: DefOption): fir.DefOption = {
