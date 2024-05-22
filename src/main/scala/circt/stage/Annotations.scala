@@ -57,6 +57,8 @@ object CIRCTTarget {
   /** The SystemVerilog language */
   case object SystemVerilog extends Type
 
+  /* The btor2 format for bounded model checking */
+  case object Btor2 extends Type
 }
 
 /** Annotation that tells [[circt.stage.phases.CIRCT CIRCT]] what target to compile to */
@@ -73,10 +75,11 @@ object CIRCTTargetAnnotation extends HasShellOptions {
         case "hw"            => Seq(CIRCTTargetAnnotation(CIRCTTarget.HW))
         case "verilog"       => Seq(CIRCTTargetAnnotation(CIRCTTarget.Verilog))
         case "systemverilog" => Seq(CIRCTTargetAnnotation(CIRCTTarget.SystemVerilog))
+        case "btor2"         => Seq(CIRCTTargetAnnotation(CIRCTTarget.Btor2))
         case a               => throw new OptionsException(s"Unknown target name '$a'! (Did you misspell it?)")
       },
       helpText = "The CIRCT",
-      helpValueName = Some("{chirrtl|firrtl|hw|verilog|systemverilog}")
+      helpValueName = Some("{chirrtl|firrtl|hw|verilog|systemverilog|btor2}")
     )
   )
 
