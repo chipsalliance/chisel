@@ -762,6 +762,9 @@ package experimental {
         s"No common ancestor between\n  ${this.toAbsoluteTarget} and\n  ${root.get.toAbsoluteTarget}"
       )
 
+      // Algorithm starts from the top of both absolute paths
+      // and walks down them checking for equality,
+      // and terminates once the root is just a ModuleTarget
       def recurse(thisRelative: IsModule, rootRelative: IsModule): IsModule = {
         (thisRelative, rootRelative) match {
           case (t: IsModule, r: ModuleTarget) => {
@@ -776,14 +779,13 @@ package experimental {
         }
       }
 
-      // If root was defined, and we are it, return this.
       if (root.isEmpty) (this.toAbsoluteTarget)
-      // Not yet handling DataView
+      else if (this == ViewParent) ViewParent.absoluteTarget
       else {
-        var thisRelative = this.toAbsoluteTarget
-        var rootRelative = root.get.toAbsoluteTarget
-        if (thisRelative.circuit != rootRelative.circuit) fail()
-        recurse(thisRelative, rootRelative)
+        val thisAbsolute = this.toAbsoluteTarget
+        val rootAbsolute = root.get.toAbsoluteTarget
+        if (thisAbsolute.circuit != thisAbsolute.circuit) fail()
+        recurse(thisAbsolute, rootAbsolute)
       }
     }
 
