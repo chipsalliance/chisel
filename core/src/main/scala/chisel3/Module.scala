@@ -13,7 +13,7 @@ import chisel3.experimental.{requireIsChiselType, BaseModule, SourceInfo, Unloca
 import chisel3.internal.sourceinfo.{InstTransform}
 import chisel3.properties.{Class, Property}
 import chisel3.reflect.DataMirror
-import _root_.firrtl.annotations.{IsModule, ModuleName, ModuleTarget, InstanceTarget}
+import _root_.firrtl.annotations.{InstanceTarget, IsModule, ModuleName, ModuleTarget}
 import _root_.firrtl.AnnotationSeq
 import chisel3.internal.plugin.autoNameRecursively
 import chisel3.util.simpleClassName
@@ -758,29 +758,32 @@ package experimental {
       * @note This doesn't have special handling for Views.
       */
     final def toRelativeTargetToHierarchy(root: Option[Hierarchy[BaseModule]]): IsModule = {
-      def fail() = throwException(s"No common ancestor between\n  ${this.toAbsoluteTarget} and\n  ${root.get.toAbsoluteTarget}")
-      
+      def fail() = throwException(
+        s"No common ancestor between\n  ${this.toAbsoluteTarget} and\n  ${root.get.toAbsoluteTarget}"
+      )
+
       def recurse(thisRelative: IsModule, rootRelative: IsModule): IsModule = {
-          (thisRelative, rootRelative) match {
-            case (t: IsModule, r: ModuleTarget) => {
-              if (t.module == r.module) t else fail()
-            }
-            case (t: ModuleTarget, r: InstanceTarget) => fail()
-            case (t: InstanceTarget, r: InstanceTarget) => {
-              if ((t.module == r.module) && (r.asPath.head == t.asPath.head)) 
-                recurse(t.stripHierarchy(1), r.stripHierarchy(1))
-             else fail()
-            }
-      }}
-      
+        (thisRelative, rootRelative) match {
+          case (t: IsModule, r: ModuleTarget) => {
+            if (t.module == r.module) t else fail()
+          }
+          case (t: ModuleTarget, r: InstanceTarget) => fail()
+          case (t: InstanceTarget, r: InstanceTarget) => {
+            if ((t.module == r.module) && (r.asPath.head == t.asPath.head))
+              recurse(t.stripHierarchy(1), r.stripHierarchy(1))
+            else fail()
+          }
+        }
+      }
+
       // If root was defined, and we are it, return this.
-      if (root.isEmpty)(this.toAbsoluteTarget)
+      if (root.isEmpty) (this.toAbsoluteTarget)
       // Not yet handling DataView
       else {
-          var thisRelative = this.toAbsoluteTarget
-          var rootRelative = root.get.toAbsoluteTarget
-          if (thisRelative.circuit != rootRelative.circuit) fail()
-          recurse(thisRelative, rootRelative)
+        var thisRelative = this.toAbsoluteTarget
+        var rootRelative = root.get.toAbsoluteTarget
+        if (thisRelative.circuit != rootRelative.circuit) fail()
+        recurse(thisRelative, rootRelative)
       }
     }
 

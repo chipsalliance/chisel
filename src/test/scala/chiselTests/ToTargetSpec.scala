@@ -5,14 +5,14 @@ package chiselTests
 import chisel3._
 import chisel3.properties.{Path, Property}
 import circt.stage.ChiselStage
-import chisel3.experimental.hierarchy.{public, instantiable, Instance, Definition}
+import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance}
 
-@instantiable 
+@instantiable
 class RelativeInnerModule extends RawModule {
   @public val wire = Wire(Bool())
 }
 
-@instantiable 
+@instantiable
 class RelativeMiddleModule extends RawModule {
   @public val inner = Module(new RelativeInnerModule())
 }
@@ -89,9 +89,6 @@ class RelativeSiblingsInstancesModule extends RawModule {
   val middle = Definition(new RelativeMiddleModule())
   val middle1 = Instance(middle)
   val middle2 = Instance(middle)
-
-  val middle3 = Module(new RelativeMiddleModule())
-  val middle4 = Instance(middle3.toDefinition)
 }
 
 class RelativeSiblingsInstancesBadModule extends RelativeSiblingsInstancesModule {
@@ -121,12 +118,10 @@ class RelativeSiblingsDefinitionBadModule2 extends RelativeSiblingsInstancesModu
   }
 }
 
-
-
 class RelativeSiblingsInstancesParent extends RawModule {
   val outer = Module(new RelativeSiblingsInstancesModule())
 
-    atModuleBodyEnd {
+  atModuleBodyEnd {
     val referenceInstanceAbsolute = outer.middle1.toRelativeTargetToHierarchy(None)
     val referenceInstanceAbsoluteOut = IO(Output(Property[Path]()))
     referenceInstanceAbsoluteOut := Property(Path(referenceInstanceAbsolute))
@@ -251,22 +246,29 @@ class ToTargetSpec extends ChiselFlatSpec with Utils {
     (e.getMessage should include).regex("Requested .toRelativeTarget relative to .+, but it is not an ancestor")
   }
 
+  behavior.of(".toRelativeTargetToHierarchy")
+
   it should "work to get relative targets to an instance of an Instance" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RelativeSiblingsInstancesParent)
 
-    chirrtl should include("propassign referenceInstanceOut, path(\"OMInstanceTarget:~RelativeSiblingsInstancesParent|RelativeMiddleModule/inner:RelativeInnerModule")
+    chirrtl should include(
+      "propassign referenceInstanceOut, path(\"OMInstanceTarget:~RelativeSiblingsInstancesParent|RelativeMiddleModule/inner:RelativeInnerModule"
+    )
   }
-
   it should "work to get relative targets to a wire in an Instance" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RelativeSiblingsInstancesParent)
 
-    chirrtl should include("propassign referenceInstanceWireOut, path(\"OMReferenceTarget:~RelativeSiblingsInstancesParent|RelativeMiddleModule/inner:RelativeInnerModule>wire")
+    chirrtl should include(
+      "propassign referenceInstanceWireOut, path(\"OMReferenceTarget:~RelativeSiblingsInstancesParent|RelativeMiddleModule/inner:RelativeInnerModule>wire"
+    )
   }
 
   it should "work to get relative targets to a wire in a Definition" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RelativeSiblingsInstancesParent)
 
-    chirrtl should include("propassign referenceDefinitionWireOut, path(\"OMReferenceTarget:~RelativeSiblingsInstancesParent|RelativeMiddleModule/inner:RelativeInnerModule>wire")
+    chirrtl should include(
+      "propassign referenceDefinitionWireOut, path(\"OMReferenceTarget:~RelativeSiblingsInstancesParent|RelativeMiddleModule/inner:RelativeInnerModule>wire"
+    )
   }
 
   it should "raise an exception when the requested root is an Instance but is not an ancestor" in {
@@ -277,7 +279,13 @@ class ToTargetSpec extends ChiselFlatSpec with Utils {
   }
   it should "raise an exception when the requested root is a Definition but is not an ancestor" in {
     val e = the[ChiselException] thrownBy {
-      ChiselStage.emitCHIRRTL(new RelativeSiblingsInstancesBadModule)
+      ChiselStage.emitCHIRRTL(new RelativeSiblingsDefinitionBadModule1)
+    }
+    e.getMessage should include("No common ancestor between")
+  }
+  it should "raise an exception when the request is from a wire in a Definition that is not the root" in {
+    val e = the[ChiselException] thrownBy {
+      ChiselStage.emitCHIRRTL(new RelativeSiblingsDefinitionBadModule2)
     }
     e.getMessage should include("No common ancestor between")
   }
