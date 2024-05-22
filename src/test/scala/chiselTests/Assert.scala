@@ -79,7 +79,7 @@ class PrintableAssumeTester extends Module {
 
   val w = Wire(UInt(8.W))
   w := 255.U
-  assume(w === 255.U, cf"Assumption failed, Wire w =/= $w%x")
+  assume(w === 255.U, cf"wire w =/= $w%x")
 
   out := in
 }
@@ -180,7 +180,7 @@ class AssertSpec extends ChiselFlatSpec with Utils {
   they should "allow printf-style format strings in Assumes" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new PrintableAssumeTester)
     chirrtl should include(
-      """assume(w === 255.U, cf\"Assumption failed, Wire w =/= $w%%%%x\")\n", w)"""
+      """"Assumption failed: wire w =/= %x\n", w"""
     )
   }
   they should "not allow unescaped % in the message" in {
