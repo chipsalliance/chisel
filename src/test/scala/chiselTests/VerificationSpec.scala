@@ -41,7 +41,7 @@ class VerificationSpec extends ChiselPropSpec with Matchers {
     assertContains(lines, "node _T_6 = eq(reset, UInt<1>(0h0))")
     assertContains(
       lines,
-      """intrinsic(circt_chisel_ifelsefatal<format = "Assertion failed: io.in:%d is equal to io.out:%d\n    at VerificationSpec.scala:20 assert(io.out === io.in, p\"${FullName(io.in)}:${io.in} is equal to ${FullName(io.out)}:${io.out}\")\n", label = "chisel3_builtin">, clock, _T_5, _T_6, io.in, io.out)"""
+      """intrinsic(circt_chisel_ifelsefatal<format = "Assertion failed: io.in:%d is equal to io.out:%d\n", label = "chisel3_builtin">, clock, _T_5, _T_6, io.in, io.out)"""
     )
   }
 
