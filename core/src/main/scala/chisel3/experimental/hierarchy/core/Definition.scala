@@ -78,6 +78,18 @@ object Definition extends SourceInfoDoc {
       * @return absoluteTarget of this instance
       */
     def toAbsoluteTarget: IsModule = d.proto.toAbsoluteTarget
+
+    /** If this is an instance of a Module, returns the toAbsoluteTarget of this instance
+      * @return absoluteTarget of this instance
+      */
+    def toRelativeTarget(root: Option[BaseModule]): IsModule = d.proto.toRelativeTarget(root)
+
+    /** If this is an instance of a Module, returns the toAbsoluteTarget of this instance
+      * @return absoluteTarget of this instance
+      */
+    def toRelativeTargetToHierarchy(root: Option[Hierarchy[BaseModule]]): IsModule =
+      d.proto.toRelativeTargetToHierarchy(root)
+
   }
 
   /** A construction method to build a Definition of a Module

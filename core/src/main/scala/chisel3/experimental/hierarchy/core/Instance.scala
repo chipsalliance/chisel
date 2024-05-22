@@ -96,6 +96,28 @@ object Instance extends SourceInfoDoc {
       case _ => throw new InternalErrorException("Match error: i.underlying=${i.underlying}")
     }
 
+    /** Returns a FIRRTL ReferenceTarget that references this object, relative to an optional root.
+      *
+      * If `root` is defined, the target is a hierarchical path starting from `root`.
+      *
+      * If `root` is not defined, the target is a hierarchical path equivalent to `toAbsoluteTarget`.
+      *
+      * @note If `root` is defined, and has not finished elaboration, this must be called within `atModuleBodyEnd`.
+      * @note The NamedComponent must be a descendant of `root`, if it is defined.
+      * @note This doesn't have special handling for Views.
+      */
+    def toRelativeTarget(root: Option[BaseModule]): IsModule = i.underlying match {
+      case Proto(x) => x.toRelativeTarget(root)
+      case Clone(x: IsClone[_] with BaseModule) => x.toRelativeTarget(root)
+      case _ => throw new InternalErrorException("Match error: i.underlying=${i.underlying}")
+    }
+
+    def toRelativeTargetToHierarchy(root: Option[Hierarchy[BaseModule]]): IsModule = i.underlying match {
+      case Proto(x) => x.toRelativeTargetToHierarchy(root)
+      case Clone(x: IsClone[_] with BaseModule) => x.toRelativeTargetToHierarchy(root)
+      case _ => throw new InternalErrorException("Match error: i.underlying=${i.underlying}")
+    }
+
     def suggestName(name: String): Unit = i.underlying match {
       case Clone(m: BaseModule) => m.suggestName(name)
       case Proto(m) => m.suggestName(name)
