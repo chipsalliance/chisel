@@ -224,4 +224,82 @@ class DataMirrorSpec extends ChiselFlatSpec {
     assert(DataMirror.isFullyAligned(UInt(8.W)))
   }
 
+<<<<<<< HEAD
+=======
+  "getLayerColor" should "return a layer color if one exists" in {
+    object A extends layer.Layer(layer.Convention.Bind)
+    class Foo extends Bundle {
+      val a = Bool()
+      val b = Probe(Bool())
+      val c = Probe(Bool(), A)
+    }
+
+    val foo = new Foo
+
+    info("a non-probe returns None")
+    DataMirror.getLayerColor(foo.a) should be(None)
+
+    info("an uncolored probe returns None")
+    DataMirror.getLayerColor(foo.b) should be(None)
+
+    info("a probe colored with A returns Some(A)")
+    DataMirror.getLayerColor(foo.c) should be(Some(A))
+  }
+
+  "currentModulePorts" should "return an in-progress module's IOs" in {
+    class Foo extends RawModule {
+      val in = IO(Input(Bool()))
+      val out = IO(Output(Bool()))
+      val wire = Wire(Bool())
+      val child = Module(new RawModule {})
+
+      val ports0 = DataMirror.internal.currentModulePorts(this)
+
+      val other = IO(Input(Bool()))
+
+      val ports1 = DataMirror.internal.currentModulePorts(this)
+    }
+
+    ChiselStage.emitCHIRRTL(new RawModule {
+      val foo = Module(new Foo)
+      foo.ports0 should be(Seq(foo.in, foo.out))
+      foo.ports1 should be(Seq(foo.in, foo.out, foo.other))
+    })
+  }
+
+  "modulePorts and fullModulePorts" should "return an Instance of a module's IOs" in {
+    @instantiable
+    class Bar extends Module {
+      @public val io = IO(new Bundle {
+        val vec = Vec(2, Bool())
+        val x = UInt(4.W)
+      })
+    }
+
+    class Foo extends Module {
+      val definition = Definition(new Bar)
+      val instA = Instance(definition)
+      val portsA = DataMirror.modulePorts(instA)
+
+      val instB = (Module(new Bar)).toInstance
+      val portsB = DataMirror.fullModulePorts(instB)
+    }
+
+    ChiselStage.emitCHIRRTL(new Module {
+      val foo = Module(new Foo)
+      foo.portsA.map(_._1) should be(Seq("clock", "reset", "io"))
+      foo.portsB.map(_._1) should be(
+        Seq(
+          "clock",
+          "reset",
+          "io",
+          "io_x",
+          "io_vec",
+          "io_vec_0",
+          "io_vec_1"
+        )
+      )
+    })
+  }
+>>>>>>> 62bbad55b (Add modulePorts and fullModulePorts in DataMirror for Instance (#4076))
 }
