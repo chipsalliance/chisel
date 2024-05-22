@@ -265,4 +265,39 @@ class DataMirrorSpec extends ChiselFlatSpec {
       foo.ports1 should be(Seq(foo.in, foo.out, foo.other))
     })
   }
+
+  "modulePorts and fullModulePorts" should "return an Instance of a module's IOs" in {
+    @instantiable
+    class Bar extends Module {
+      @public val io = IO(new Bundle {
+        val vec = Vec(2, Bool())
+        val x = UInt(4.W)
+      })
+    }
+
+    class Foo extends Module {
+      val definition = Definition(new Bar)
+      val instA = Instance(definition)
+      val portsA = DataMirror.modulePorts(instA)
+
+      val instB = (Module(new Bar)).toInstance
+      val portsB = DataMirror.fullModulePorts(instB)
+    }
+
+    ChiselStage.emitCHIRRTL(new Module {
+      val foo = Module(new Foo)
+      foo.portsA.map(_._1) should be(Seq("clock", "reset", "io"))
+      foo.portsB.map(_._1) should be(
+        Seq(
+          "clock",
+          "reset",
+          "io",
+          "io_x",
+          "io_vec",
+          "io_vec_0",
+          "io_vec_1"
+        )
+      )
+    })
+  }
 }

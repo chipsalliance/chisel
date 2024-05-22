@@ -1095,6 +1095,47 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
       info(s"'$expectedOutput' exists")
     }
 
+    it("should emit btor2 to string") {
+      import chisel3._
+      import chisel3.ltl._
+
+      class Counter extends Module {
+        val count = RegInit(0.U(32.W))
+        when(count === 42.U) { count := 0.U }.otherwise { count := count + 1.U }
+
+        AssertProperty((count <= 42.U))
+      }
+
+      val btor2 = ChiselStage.emitBtor2(new Counter)
+      btor2 should include("""1 sort bitvec 1
+                             |2 input 1 reset
+                             |3 sort bitvec 32
+                             |4 state 3 count
+                             |5 constd 1 0
+                             |6 state 1 hbr
+                             |7 init 1 6 5
+                             |8 constd 3 43
+                             |9 constd 3 1
+                             |10 constd 3 42
+                             |11 constd 1 -1
+                             |12 constd 3 0
+                             |13 eq 1 4 10
+                             |14 add 3 4 9
+                             |15 ite 3 13 12 14
+                             |16 ult 1 4 8
+                             |17 constd 1 -1
+                             |18 or 1 2 6
+                             |19 xor 1 2 17
+                             |20 and 1 6 19
+                             |21 xor 1 20 11
+                             |22 or 1 21 16
+                             |23 not 1 22
+                             |24 bad 23
+                             |25 ite 3 2 12 15
+                             |26 next 3 4 25
+                             |28 next 1 6 27""".stripMargin)
+    }
+
     it("""should error if give a "--target-directory" option""") {
 
       val exception = intercept[firrtl.options.OptionsException] {
