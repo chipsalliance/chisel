@@ -354,7 +354,7 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
       val lit = (new SimpleBundle).Lit(_.a -> 0xde.U, _.b -> 0xad.U)
       val x = lit.asUInt
     })
-    chirrtl should include("node x = cat(UInt<4>(0he), UInt<4>(0hd))")
+    chirrtl should include("""node x = cat(UInt<4>("he"), UInt<4>("hd"))""")
   }
 
   "partial bundle literals" should "fail to pack" in {
@@ -364,23 +364,6 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
         bundleLit.litOption should equal(None)
       }
     }
-  }
-<<<<<<< HEAD
-=======
-
-  "bundle literals" should "materialize const wires" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new Module {
-      val r = RegInit((new MyBundle).Lit(_.a -> 42.U, _.b -> true.B, _.c -> MyEnum.sB))
-    })
-    val wire = """wire.*: const \{ a : UInt<8>, b : UInt<1>, c : UInt<1>\}""".r
-    (chirrtl should include).regex(wire)
-  }
-
-  "Empty bundle literals" should "be supported" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val lit = (new Bundle {}).Lit()
-      lit.litOption should equal(Some(0))
-    })
   }
 
   "bundle literals" should "use the widths of the Bundle fields rather than the widths of the literals" in {
@@ -395,7 +378,6 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
       lit.b.getWidth should be(4)
       val cat = lit.asUInt
     })
-    chirrtl should include("node cat = cat(UInt<4>(0h3), UInt<4>(0h3))")
+    chirrtl should include("""node cat = cat(UInt<4>("h3"), UInt<4>("h3"))""")
   }
->>>>>>> 3939e570d (Fix widths for literal values in Bundle literals (#4082))
 }

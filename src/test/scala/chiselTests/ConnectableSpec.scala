@@ -1057,17 +1057,10 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       testCheck(
         ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq(
-<<<<<<< HEAD
           "out.valid <= in.valid",
           "in.ready <= out.ready",
           "out.data.b <= in.data.b",
-          "out.data.c <= UInt<1>(\"h1\")"
-=======
-          "connect out.valid, in.valid",
-          "connect in.ready, out.ready",
-          "connect out.data.b, in.data.b",
-          "connect out.data.c, UInt<2>(0h1)"
->>>>>>> 3939e570d (Fix widths for literal values in Bundle literals (#4082))
+          "out.data.c <= UInt<2>(\"h1\")"
         ),
         Nil
       )
@@ -1524,21 +1517,12 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         out,
         Seq(
           """wire w0 : { foo : UInt<3>, flip bar : UInt<3>}""",
-<<<<<<< HEAD
-          """w0.bar <= UInt<1>("h1")""",
-          """w0.foo <= UInt<1>("h0")""",
+          """w0.bar <= UInt<3>("h1")""",
+          """w0.foo <= UInt<3>("h0")""",
           """wire w1 : { foo : UInt<3>, flip bar : UInt<3>}""",
-          """w1.bar <= UInt<1>("h1")""",
-          """w1.foo <= UInt<1>("h0")""",
+          """w1.bar <= UInt<3>("h1")""",
+          """w1.foo <= UInt<3>("h0")""",
           """w1 <= w0"""
-=======
-          """connect w0.bar, UInt<3>(0h1)""",
-          """connect w0.foo, UInt<3>(0h0)""",
-          """wire w1 : { foo : UInt<3>, flip bar : UInt<3>}""",
-          """connect w1.bar, UInt<3>(0h1)""",
-          """connect w1.foo, UInt<3>(0h0)""",
-          """connect w1, w0"""
->>>>>>> 3939e570d (Fix widths for literal values in Bundle literals (#4082))
         ),
         Nil
       )
@@ -1623,15 +1607,9 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       testCheck(
         out,
         Seq(
-<<<<<<< HEAD
-          """out.data <= UInt<1>("h0")""",
+          """out.data <= UInt<32>("h0")""",
           """in.ready <= out.ready""",
           """out.valid <= in.valid"""
-=======
-          """connect out.data, UInt<32>(0h0)""",
-          """connect in.ready, out.ready""",
-          """connect out.valid, in.valid"""
->>>>>>> 3939e570d (Fix widths for literal values in Bundle literals (#4082))
         ),
         Nil
       )

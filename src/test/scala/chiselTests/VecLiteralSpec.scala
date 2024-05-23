@@ -447,17 +447,10 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
 
   "vec literals can contain bundles and should not be bulk connected" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new VecExample)
-<<<<<<< HEAD
-    chirrtl should include("""out[0].bar <= UInt<5>("h16")""")
-    chirrtl should include("""out[0].foo <= UInt<6>("h2a")""")
-    chirrtl should include("""out[1].bar <= UInt<2>("h3")""")
-    chirrtl should include("""out[1].foo <= UInt<3>("h7")""")
-=======
-    chirrtl should include("""connect out[0].bar, UInt<4>(0h6)""")
-    chirrtl should include("""connect out[0].foo, UInt<8>(0h2a)""")
-    chirrtl should include("""connect out[1].bar, UInt<4>(0h3)""")
-    chirrtl should include("""connect out[1].foo, UInt<8>(0h7)""")
->>>>>>> 3939e570d (Fix widths for literal values in Bundle literals (#4082))
+    chirrtl should include("""out[0].bar <= UInt<4>("h6")""")
+    chirrtl should include("""out[0].foo <= UInt<8>("h2a")""")
+    chirrtl should include("""out[1].bar <= UInt<4>("h3")""")
+    chirrtl should include("""out[1].foo <= UInt<8>("h7")""")
   }
 
   "vec literals can have bundle children" in {
@@ -515,32 +508,6 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
     vec.getWidth should be(16 * 2)
     vec.litValue should be(BigInt("bbbb000a", 16))
   }
-<<<<<<< HEAD
-=======
-
-  "vec literals should materialize const wires" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new Module {
-      val r = RegInit(Vec(2, UInt(4.W)).Lit(0 -> 1.U, 1 -> 2.U))
-    })
-    val wire = """wire.*: const UInt<4>\[2\]""".r
-    (chirrtl should include).regex(wire)
-  }
-
-  "Empty vec literals should be supported" in {
-    ChiselStage.emitCHIRRTL(new RawModule {
-      val lit = Vec(0, UInt(8.W)).Lit()
-      lit.litOption should equal(Some(0))
-    })
-    // It should also work when the element type is a Bundle
-    class MyBundle extends Bundle {
-      val a = UInt(8.W)
-      val b = UInt(8.W)
-    }
-    ChiselStage.emitCHIRRTL(new RawModule {
-      val lit = Vec(0, new MyBundle).Lit()
-      lit.litOption should equal(Some(0))
-    })
-  }
 
   "Vec literals should use the width of the Vec element rather than the widths of the literals" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
@@ -554,8 +521,7 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
       lit1(1).getWidth should be(4)
       val uint1 = lit1.asUInt
     })
-    chirrtl should include("node uint0 = cat(UInt<4>(0h2), UInt<4>(0h3))")
-    chirrtl should include("node uint1 = cat(UInt<4>(0h2), UInt<4>(0h3))")
+    chirrtl should include("""node uint0 = cat(UInt<4>("h2"), UInt<4>("h3"))""")
+    chirrtl should include("""node uint1 = cat(UInt<4>("h2"), UInt<4>("h3"))""")
   }
->>>>>>> 3939e570d (Fix widths for literal values in Bundle literals (#4082))
 }
