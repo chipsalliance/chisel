@@ -122,7 +122,6 @@ private[chisel3] object ir {
     }
 
     /** Provides a mechanism that LitArgs can have their width adjusted
-      * to match other members of a VecLiteral
       *
       * @param newWidth the new width for this
       * @return

@@ -344,6 +344,15 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
     exc.getMessage should include(".c")
   }
 
+  "bundle literals with too-wide literal values" should "fail" in {
+    val e = the[BundleLiteralException] thrownBy {
+      ChiselStage.emitCHIRRTL(new RawModule {
+        (new MyBundle).Lit(_.a -> 0.U(32.W))
+      })
+    }
+    e.getMessage should include("Literal value ULit(0,<32>) is too wide for field _.a with width 8")
+  }
+
   "partial bundle literals" should "fail to pack" in {
     ChiselStage.emitCHIRRTL {
       new RawModule {
@@ -366,5 +375,20 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
       val lit = (new Bundle {}).Lit()
       lit.litOption should equal(Some(0))
     })
+  }
+
+  "bundle literals" should "use the widths of the Bundle fields rather than the widths of the literals" in {
+    class SimpleBundle extends Bundle {
+      val a = UInt(4.W)
+      val b = UInt(4.W)
+    }
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      // Whether the user specifies a width or not
+      val lit = (new SimpleBundle).Lit(_.a -> 0x3.U, _.b -> 0x3.U(3.W))
+      lit.a.getWidth should be(4)
+      lit.b.getWidth should be(4)
+      val cat = lit.asUInt
+    })
+    chirrtl should include("node cat = cat(UInt<4>(0h3), UInt<4>(0h3))")
   }
 }

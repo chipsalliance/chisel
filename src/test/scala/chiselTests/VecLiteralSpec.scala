@@ -530,4 +530,20 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
       lit.litOption should equal(Some(0))
     })
   }
+
+  "Vec literals should use the width of the Vec element rather than the widths of the literals" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      // Whether the user specifies a width or not
+      val lit0 = (Vec(2, UInt(4.W))).Lit(0 -> 0x3.U, 1 -> 0x2.U(3.W))
+      lit0(0).getWidth should be(4)
+      lit0(1).getWidth should be(4)
+      val uint0 = lit0.asUInt
+      val lit1 = Vec.Lit(0x3.U, 0x2.U(4.W))
+      lit1(0).getWidth should be(4)
+      lit1(1).getWidth should be(4)
+      val uint1 = lit1.asUInt
+    })
+    chirrtl should include("node uint0 = cat(UInt<4>(0h2), UInt<4>(0h3))")
+    chirrtl should include("node uint1 = cat(UInt<4>(0h2), UInt<4>(0h3))")
+  }
 }
