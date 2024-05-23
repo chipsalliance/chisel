@@ -59,6 +59,7 @@ final class Backend(
             "-o", s"../$outputBinaryName", // "Name of final executable"
             "--top-module", topModuleName, // "Name of top-level input module"
             "--Mdir", "verilated-sources",  // "Name of output object directory"
+            "--assert", // Enable assertions 
           ),
 
           commonSettings.libraryExtensions match {
