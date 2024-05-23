@@ -495,6 +495,29 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
     val verilog = circt.stage.ChiselStage.emitSystemVerilog(new Foo)
   }
 
+  it should "work with DecoupledIO locally" in {
+    import chisel3.util.{Decoupled, DecoupledIO}
+    class Foo extends RawModule {
+      val a = WireInit(DecoupledIO(Bool()), DontCare)
+      val b = BoringUtils.tapAndRead(a)
+      assert(chisel3.reflect.DataMirror.isFullyAligned(b), "tapAndRead should always return passive data")
+    }
+
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Foo, Array("--full-stacktrace"))
+
+    matchesAndOmits(chirrtl)(
+      "module Foo :",
+      "wire a : { flip ready : UInt<1>, valid : UInt<1>, bits : UInt<1>}",
+      "wire b : { ready : UInt<1>, valid : UInt<1>, bits : UInt<1>}",
+      "connect b.bits, a.bits",
+      "connect b.valid, a.valid",
+      "connect b.ready, a.ready"
+    )()
+
+    // Check that firtool also passes
+    val verilog = circt.stage.ChiselStage.emitSystemVerilog(new Foo)
+  }
+
   it should "allow tapping a probe" in {
     class Bar extends RawModule {
       val a = IO(probe.Probe(Bool()))
