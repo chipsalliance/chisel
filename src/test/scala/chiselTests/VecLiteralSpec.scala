@@ -436,9 +436,8 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
 
   class VecExample extends RawModule {
     val out = IO(Output(Vec(2, new SubBundle)))
-    // Note that 22.U is too wide for bar so gets truncated below.
     val bundle = Vec(2, new SubBundle).Lit(
-      0 -> (new SubBundle).Lit(_.foo -> 42.U, _.bar -> 22.U),
+      0 -> (new SubBundle).Lit(_.foo -> 42.U, _.bar -> 0xd.U),
       1 -> (new SubBundle).Lit(_.foo -> 7.U, _.bar -> 3.U)
     )
     out := bundle
@@ -446,7 +445,7 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
 
   "vec literals can contain bundles and should not be bulk connected" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new VecExample)
-    chirrtl should include("""connect out[0].bar, UInt<4>(0h6)""")
+    chirrtl should include("""connect out[0].bar, UInt<4>(0hd)""")
     chirrtl should include("""connect out[0].foo, UInt<8>(0h2a)""")
     chirrtl should include("""connect out[1].bar, UInt<4>(0h3)""")
     chirrtl should include("""connect out[1].foo, UInt<8>(0h7)""")
