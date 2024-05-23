@@ -7,13 +7,18 @@ import chisel3.ltl._
 import chisel3.testers.BasicTester
 import chisel3.experimental.SourceLine
 import _root_.circt.stage.ChiselStage
+import chisel3.testers._
+import circt.stage.{CIRCTTarget, CIRCTTargetAnnotation, ChiselStage}
+import chisel3.simulator._
+import svsim._
+import chiselTests.ChiselRunners
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 import Sequence._
 
-class LTLSpec extends AnyFlatSpec with Matchers {
+class LTLSpec extends AnyFlatSpec with Matchers with ChiselRunners {
   it should "allow booleans to be used as sequences" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
       val a = IO(Input(Bool()))
@@ -316,5 +321,13 @@ class LTLSpec extends AnyFlatSpec with Matchers {
   }
   it should "compile Sequence(...) convenience constructor" in {
     ChiselStage.emitSystemVerilog(new SequenceConvMod)
+  }
+
+  it should "fail correctly in verilator simulation" in {
+    assertTesterFails(new BasicTester {
+      withClockAndReset(clock, reset) {
+        AssertProperty(0.U === 1.U)
+      }
+    })
   }
 }
