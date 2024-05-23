@@ -353,7 +353,7 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
       val lit = (new SimpleBundle).Lit(_.a -> 0xde.U, _.b -> 0xad.U)
       val x = lit.asUInt
     })
-    chirrtl should include("node x = cat(UInt<4>(0he), UInt<4>(0hd))")
+    chirrtl should include("""node x = cat(UInt<4>("he"), UInt<4>("hd"))""")
   }
 
   "partial bundle literals" should "fail to pack" in {
@@ -384,6 +384,6 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
       lit.b.getWidth should be(4)
       val cat = lit.asUInt
     })
-    chirrtl should include("node cat = cat(UInt<4>(0h3), UInt<4>(0h3))")
+    chirrtl should include("""node cat = cat(UInt<4>("h3"), UInt<4>("h3"))""")
   }
 }

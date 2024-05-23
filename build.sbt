@@ -1,5 +1,7 @@
 // See LICENSE for license details.
 
+import com.typesafe.tools.mima.core._
+
 enablePlugins(SiteScaladocPlugin)
 
 addCommandAlias("fmt", "; scalafmtAll ; scalafmtSbt")
@@ -19,8 +21,7 @@ ThisBuild / firtoolVersion := {
 
 // Previous versions are read from project/previous-versions.txt
 // If this file is empty or does not exist, no binary compatibility checking will be done
-// Add waivers to the directory defined by key `mimaFiltersDirectory` in files named: <since version>.backwards.excludes
-//   eg. unipublish/src/main/mima-filters/5.0.0.backwards.excludes
+// Add waivers to mimaBinaryIssueFilters below.
 val previousVersions = settingKey[Set[String]]("Previous versions for binary compatibility checking")
 ThisBuild / previousVersions := {
   val file = new java.io.File("project", "previous-versions.txt")
@@ -427,6 +428,22 @@ lazy val unipublish =
       },
       // This is a pseudo-project with no class files, use the package jar instead
       mimaCurrentClassfiles := (Compile / packageBin).value,
+      // MiMa waivers
+      mimaBinaryIssueFilters ++= Seq(
+        ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.experimental.dataview.package.BundleUpcastable"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.experimental.dataview.package.BundleUpcastable"),
+        ProblemFilters.exclude[MissingClassProblem]("chisel3.experimental.dataview.package$BundleUpcastable"),
+        ProblemFilters.exclude[FinalClassProblem]("svsim.Simulation$Controller"),
+// SourceInfo is sealed
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("chisel3.experimental.SourceInfo.filenameOption"),
+// ErrorEntry is private
+        ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.internal.ErrorEntry.serialize"),
+// Constructor is package private
+        ProblemFilters.exclude[IncompatibleMethTypeProblem]("chisel3.stage.ChiselOptions.this"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("circt.stage.CIRCTOptions.this"),
+// Technically users could extend LitArg but its in an internal package and there is no reason to.
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("chisel3.internal.firrtl.LitArg.cloneWithValue")
+      ),
       // Forward doc command to unidoc
       Compile / doc := (ScalaUnidoc / doc).value,
       // Include unidoc as the ScalaDoc for publishing
