@@ -1,2 +1,0 @@
-# chisel3.properties.Path is sealed
-ProblemFilters.exclude[ReversedAbstractMethodProblem]("chisel3.properties.Path.convert")

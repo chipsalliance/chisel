@@ -1,5 +1,7 @@
 // See LICENSE for license details.
 
+import com.typesafe.tools.mima.core._
+
 enablePlugins(SiteScaladocPlugin)
 
 addCommandAlias("fmt", "; scalafmtAll ; scalafmtSbt")
@@ -7,8 +9,7 @@ addCommandAlias("fmtCheck", "; scalafmtCheckAll ; scalafmtSbtCheck")
 
 // Previous versions are read from project/previous-versions.txt
 // If this file is empty or does not exist, no binary compatibility checking will be done
-// Add waivers to the directory defined by key `mimaFiltersDirectory` in files named: <since version>.backwards.excludes
-//   eg. unipublish/src/main/mima-filters/5.0.0.backwards.excludes
+// Add waivers to mimaBinaryIssueFilters below.
 val previousVersions = settingKey[Set[String]]("Previous versions for binary compatibility checking")
 ThisBuild / previousVersions := {
   val file = new java.io.File("project", "previous-versions.txt")
@@ -378,6 +379,15 @@ lazy val unipublish =
       },
       // This is a pseudo-project with no class files, use the package jar instead
       mimaCurrentClassfiles := (Compile / packageBin).value,
+      // MiMa waivers
+      mimaBinaryIssueFilters ++= Seq(
+        // chisel3.properties.Path is sealed
+        ProblemFilters.exclude[ReversedAbstractMethodProblem]("chisel3.properties.Path.convert"),
+        // chisel3.HasTarget is sealed
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("chisel3.package#HasTarget.suggestName"),
+        // chisel3.internal.firrtl.ir.LitArg is package private
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("chisel3.internal.firrtl.ir#LitArg.cloneWithValue")
+      ),
       // Forward doc command to unidoc
       Compile / doc := (ScalaUnidoc / doc).value,
       // Include unidoc as the ScalaDoc for publishing
