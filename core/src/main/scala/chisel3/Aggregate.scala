@@ -1084,10 +1084,10 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
 
     requireIsChiselType(this, "bundle literal constructor model")
     val clone = cloneType
-    val cloneFields = getRecursiveFields(clone, "(bundle root)").toMap
+    val cloneFields = getRecursiveFields(clone, "_").toMap
 
     // Create the Bundle literal binding from litargs of arguments
-    val bundleLitMap = elems.map { fn => fn(clone) }.flatMap {
+    val bundleLitMapping = elems.map { fn => fn(clone) }.flatMap {
       case (field, value) =>
         val fieldName = cloneFields.getOrElse(
           field,
@@ -1169,12 +1169,31 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     }
 
     // don't convert to a Map yet to preserve duplicate keys
-    val duplicates = bundleLitMap.map(_._1).groupBy(identity).collect { case (x, elts) if elts.size > 1 => x }
+    val duplicates = bundleLitMapping.map(_._1).groupBy(identity).collect { case (x, elts) if elts.size > 1 => x }
     if (!duplicates.isEmpty) {
       val duplicateNames = duplicates.map(cloneFields(_)).mkString(", ")
       throw new BundleLiteralException(s"duplicate fields $duplicateNames in Bundle literal constructor")
     }
-    clone.bind(BundleLitBinding(bundleLitMap.toMap))
+    // Check widths and sign extend as appropriate.
+    val bundleLitMap = bundleLitMapping.view.map {
+      case (field, value) =>
+        field.width match {
+          // If width is unknown, then it is set by the literal value.
+          case UnknownWidth()                 => field -> value
+          case width @ KnownWidth(widthValue) =>
+            // TODO make this a warning then an error, but for older versions, just truncate.
+            val valuex = if (widthValue < value.width.get) {
+              // Mask the value to the width of the field.
+              val mask = (BigInt(1) << widthValue) - 1
+              value.cloneWithValue(value.num & mask).cloneWithWidth(width)
+            } else if (widthValue > value.width.get) value.cloneWithWidth(width)
+            // Otherwise, ensure width is same as that of the field.
+            else value
+
+            field -> valuex
+        }
+    }.toMap
+    clone.bind(BundleLitBinding(bundleLitMap))
     clone
   }
 
