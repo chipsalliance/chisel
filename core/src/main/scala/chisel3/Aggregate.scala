@@ -1217,15 +1217,17 @@ abstract class Record extends Aggregate {
       case (field, value) =>
         field.width match {
           // If width is unknown, then it is set by the literal value
-          case UnknownWidth() => field -> value
+          case UnknownWidth()                 => field -> value
           case width @ KnownWidth(widthValue) =>
-            if (widthValue < value.width.get) {
-              throw new BundleLiteralException(
-                s"Literal value $value is too wide for field ${cloneFields(field)} with width $widthValue"
-              )
-            }
+            // TODO make this a warning then an error, but for older versions, just truncate
+            val valuex = if (widthValue < value.width.get) {
+              // Mask the value to the width of the field
+              val mask = (BigInt(1) << widthValue) - 1
+              value.cloneWithValue(value.num & mask).cloneWithWidth(width)
+            } else if (widthValue > value.width.get) value.cloneWithWidth(width)
             // Otherwise, ensure width is same as that of the field
-            val valuex = if (widthValue > value.width.get) value.cloneWithWidth(width) else value
+            else value
+
             field -> valuex
         }
     }.toMap

@@ -1060,7 +1060,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
           "connect out.valid, in.valid",
           "connect in.ready, out.ready",
           "connect out.data.b, in.data.b",
-          "connect out.data.c, UInt<1>(0h1)"
+          "connect out.data.c, UInt<2>(0h1)"
         ),
         Nil
       )
@@ -1535,11 +1535,11 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         out,
         Seq(
           """wire w0 : { foo : UInt<3>, flip bar : UInt<3>}""",
-          """connect w0.bar, UInt<1>(0h1)""",
-          """connect w0.foo, UInt<1>(0h0)""",
+          """connect w0.bar, UInt<3>(0h1)""",
+          """connect w0.foo, UInt<3>(0h0)""",
           """wire w1 : { foo : UInt<3>, flip bar : UInt<3>}""",
-          """connect w1.bar, UInt<1>(0h1)""",
-          """connect w1.foo, UInt<1>(0h0)""",
+          """connect w1.bar, UInt<3>(0h1)""",
+          """connect w1.foo, UInt<3>(0h0)""",
           """connect w1, w0"""
         ),
         Nil
@@ -1625,7 +1625,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       testCheck(
         out,
         Seq(
-          """connect out.data, UInt<1>(0h0)""",
+          """connect out.data, UInt<32>(0h0)""",
           """connect in.ready, out.ready""",
           """connect out.valid, in.valid"""
         ),
