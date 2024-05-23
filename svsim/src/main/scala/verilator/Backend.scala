@@ -48,6 +48,7 @@ final class Backend(
     //format: off
     svsim.Backend.InvocationSettings(
       compilerPath = executablePath,
+<<<<<<< HEAD
       compilerArguments = Seq[Seq[String]](
         Seq( 
           "--cc", // "Create C++ output"
@@ -57,6 +58,20 @@ final class Backend(
           "--top-module", topModuleName, // "Name of top-level input module"
           "--Mdir", "verilated-sources",  // "Name of output object directory"
         ),
+=======
+      compilerInvocation = svsim.Backend.Parameters.Invocation(
+        arguments = Seq[Seq[String]](
+          Seq( 
+            "--cc", // "Create C++ output"
+            "--exe", // "Link to create executable"
+            "--build", // "Build model executable/library after Verilation"
+            "-j", "0", // Parallelism for --build-jobs/--verilate-jobs, when 0 uses all available cores
+            "-o", s"../$outputBinaryName", // "Name of final executable"
+            "--top-module", topModuleName, // "Name of top-level input module"
+            "--Mdir", "verilated-sources",  // "Name of output object directory"
+            "--assert", // Enable assertions 
+          ),
+>>>>>>> d3ab477e0 ([SVSim] Fixed non-firing AssertProperty in SVSim  (#4087))
 
         commonSettings.libraryExtensions match {
           case None => Seq()
