@@ -553,6 +553,105 @@ class DataViewSpec extends ChiselFlatSpec {
     verilog should include("assign z = sel ? b : d;")
   }
 
+<<<<<<< HEAD
+=======
+  it should "support muxing between views of Bundles" in {
+    import SimpleBundleDataView._
+    class MyModule extends Module {
+      val cond = IO(Input(Bool()))
+      val in1 = IO(Input(new BundleA(8)))
+      val in2 = IO(Input(new BundleA(8)))
+      val out = IO(Output(new BundleB(8)))
+
+      out := Mux(cond, in1.viewAs[BundleB], in2.viewAs[BundleB])
+    }
+    val firrtl = ChiselStage.emitCHIRRTL(new MyModule)
+    val lines = Seq(
+      "wire _out_WIRE : { bar : UInt<8>}",
+      "connect _out_WIRE.bar, in1.foo",
+      "wire _out_WIRE_1 : { bar : UInt<8>}",
+      "connect _out_WIRE_1.bar, in2.foo",
+      "node _out_T = mux(cond, _out_WIRE, _out_WIRE_1)"
+    )
+    for (line <- lines) {
+      firrtl should include(line)
+    }
+  }
+
+  it should "not generate extra wires when muxing between identity views of Bundles" in {
+    import SimpleBundleDataView._
+    class MyModule extends Module {
+      val cond = IO(Input(Bool()))
+      val in1 = IO(Input(new BundleA(8)))
+      val in2 = IO(Input(new BundleA(8)))
+      val out = IO(Output(new BundleA(8)))
+
+      out := Mux(cond, in1.viewAs[BundleA], in2.viewAs[BundleA])
+    }
+    val firrtl = ChiselStage.emitCHIRRTL(new MyModule)
+    firrtl should include("node _out_T = mux(cond, in1, in2)")
+    firrtl shouldNot include("wire")
+  }
+
+  it should "handle Probe of a view of a Bundle" in {
+    import SimpleBundleDataView._
+    class MyModule extends Module {
+      val in = IO(Input(new BundleA(8)))
+      val out_probe = IO(Output(Probe(new BundleB(8))))
+      val view = in.viewAs[BundleB]
+      define(out_probe, ProbeValue(view))
+    }
+    val firrtl = ChiselStage.emitCHIRRTL(new MyModule)
+    val lines = Seq(
+      "wire _WIRE : { bar : UInt<8>}",
+      "connect _WIRE.bar, in.foo",
+      "define out_probe = probe(_WIRE)"
+    )
+    for (line <- lines) {
+      firrtl should include(line)
+    }
+  }
+
+  it should "support primitive types in the view target" in {
+    class MyBundle(val name: String) extends Bundle {
+      val x = UInt(8.W)
+    }
+    implicit val view: DataView[(UInt, Char, String, Int, Byte, Short, Long, BigInt, Float, Double), MyBundle] =
+      DataView(
+        tup => new MyBundle(tup.productIterator.toList.tail.mkString("_")),
+        _._1 -> _.x
+      )
+    class MyModule extends Module {
+      val in = IO(Input(UInt(8.W)))
+      val bun = (in, 'a', "b", 0, 1.toByte, 2.toShort, 3L, BigInt(4), 5.0f, 6.0).viewAs[MyBundle]
+      val out = IO(Output(chiselTypeOf(bun)))
+      out := bun
+      bun.name should be("a_b_0_1_2_3_4_5.0_6.0")
+    }
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
+    chirrtl should include("connect out.x, in")
+  }
+
+  it should "support views of Options" in {
+    class MyBundle(w: Option[Int]) extends Bundle {
+      val x = w.map(v => UInt(v.W))
+    }
+    implicit val view: DataView[Option[UInt], MyBundle] = DataView.mapping(
+      opt => new MyBundle(opt.map(_.getWidth)),
+      { case (opt, bun) => opt.zip(bun.x).map { case (o, b) => o -> b } }
+    )
+    class MyModule extends Module {
+      val in = IO(Input(UInt(8.W)))
+      val out1 = IO(Output(new MyBundle(Some(8))))
+      val out2 = IO(Output(new MyBundle(None)))
+      out1 := Option(in).viewAs[MyBundle]
+      out2 := Option.empty[UInt].viewAs[MyBundle]
+    }
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
+    chirrtl should include("connect out1.x, in")
+  }
+
+>>>>>>> 5af27e5d8 (Materialize wires for .ref of Aggregate views (#4080))
   // This example should be turned into a built-in feature
   it should "enable viewing Seqs as Vecs" in {
 
