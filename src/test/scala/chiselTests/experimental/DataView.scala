@@ -554,6 +554,63 @@ class DataViewSpec extends ChiselFlatSpec {
     verilog should include("assign z = sel ? b : d;")
   }
 
+  it should "support muxing between views of Bundles" in {
+    import SimpleBundleDataView._
+    class MyModule extends Module {
+      val cond = IO(Input(Bool()))
+      val in1 = IO(Input(new BundleA(8)))
+      val in2 = IO(Input(new BundleA(8)))
+      val out = IO(Output(new BundleB(8)))
+
+      out := Mux(cond, in1.viewAs[BundleB], in2.viewAs[BundleB])
+    }
+    val firrtl = ChiselStage.emitCHIRRTL(new MyModule)
+    val lines = Seq(
+      "wire _out_WIRE : { bar : UInt<8>}",
+      "connect _out_WIRE.bar, in1.foo",
+      "wire _out_WIRE_1 : { bar : UInt<8>}",
+      "connect _out_WIRE_1.bar, in2.foo",
+      "node _out_T = mux(cond, _out_WIRE, _out_WIRE_1)"
+    )
+    for (line <- lines) {
+      firrtl should include(line)
+    }
+  }
+
+  it should "not generate extra wires when muxing between identity views of Bundles" in {
+    import SimpleBundleDataView._
+    class MyModule extends Module {
+      val cond = IO(Input(Bool()))
+      val in1 = IO(Input(new BundleA(8)))
+      val in2 = IO(Input(new BundleA(8)))
+      val out = IO(Output(new BundleA(8)))
+
+      out := Mux(cond, in1.viewAs[BundleA], in2.viewAs[BundleA])
+    }
+    val firrtl = ChiselStage.emitCHIRRTL(new MyModule)
+    firrtl should include("node _out_T = mux(cond, in1, in2)")
+    firrtl shouldNot include("wire")
+  }
+
+  it should "handle Probe of a view of a Bundle" in {
+    import SimpleBundleDataView._
+    class MyModule extends Module {
+      val in = IO(Input(new BundleA(8)))
+      val out_probe = IO(Output(Probe(new BundleB(8))))
+      val view = in.viewAs[BundleB]
+      define(out_probe, ProbeValue(view))
+    }
+    val firrtl = ChiselStage.emitCHIRRTL(new MyModule)
+    val lines = Seq(
+      "wire _WIRE : { bar : UInt<8>}",
+      "connect _WIRE.bar, in.foo",
+      "define out_probe = probe(_WIRE)"
+    )
+    for (line <- lines) {
+      firrtl should include(line)
+    }
+  }
+
   it should "support primitive types in the view target" in {
     class MyBundle(val name: String) extends Bundle {
       val x = UInt(8.W)

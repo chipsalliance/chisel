@@ -640,11 +640,12 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     topBindingOpt match {
       // DataView
       case Some(ViewBinding(target)) => reify(target).ref
-      case Some(AggregateViewBinding(viewMap)) =>
-        viewMap.get(this) match {
-          case None => materializeWire() // FIXME FIRRTL doesn't have Aggregate Init expressions
-          // This should not be possible because Element does the lookup in .topBindingOpt
-          case x: Some[_] => throwException(s"Internal Error: In .ref for $this got '$topBindingOpt' and '$x'")
+      case Some(_: AggregateViewBinding) =>
+        reifySingleData(this) match {
+          // If this is an identity view (a view of something of the same type), return ref of target
+          case Some(target) if this.typeEquivalent(target) => target.ref
+          // Otherwise, we need to materialize hardware of the correct type
+          case _ => materializeWire()
         }
       // Literals
       case Some(ElementLitBinding(litArg)) => litArg
