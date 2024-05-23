@@ -296,6 +296,12 @@ object BoringUtils {
     }
     if (parent(source) == thisModule) {
       // No boring to do
+      if (createProbe.nonEmpty && !DataMirror.isFullyAligned(source)) {
+        // Create aligned wire if source isn't aligned.  This ensures result has same type regardless of origin.
+        val bore = Wire(purePortTypeBase)
+        bore :#= source
+        return bore
+      }
       return source
     }
 
