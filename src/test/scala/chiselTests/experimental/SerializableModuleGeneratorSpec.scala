@@ -59,6 +59,22 @@ class SerializableModuleGeneratorSpec extends ChiselFlatSpec with Utils {
     circt.stage.ChiselStage.emitCHIRRTL(g.module())
   }
 
+  "SerializableModuleGenerator" should "be able to elaborate with D/I" in {
+    val cir = circt.stage.ChiselStage.emitCHIRRTL(
+      new Module {
+        val i32 =
+          SerializableModuleGenerator(classOf[GCDSerializableModule], GCDSerializableModuleParameter(32)).instance()
+        val i16 =
+          SerializableModuleGenerator(classOf[GCDSerializableModule], GCDSerializableModuleParameter(16)).instance()
+        val ii32 =
+          SerializableModuleGenerator(classOf[GCDSerializableModule], GCDSerializableModuleParameter(32)).instance()
+      }
+    )
+    cir should include("inst i32 of GCDSerializableModule")
+    cir should include("inst i16 of GCDSerializableModule_1")
+    cir should include("inst ii32 of GCDSerializableModule")
+  }
+
   case class FooParameter() extends SerializableModuleParameter
 
   class InnerFoo(val parameter: FooParameter) extends RawModule with SerializableModule[FooParameter]

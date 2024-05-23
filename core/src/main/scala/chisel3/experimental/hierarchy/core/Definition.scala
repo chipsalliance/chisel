@@ -5,7 +5,7 @@ package chisel3.experimental.hierarchy.core
 import scala.language.experimental.macros
 import chisel3._
 
-import scala.collection.mutable.HashMap
+import scala.collection.mutable.{ArrayBuffer, HashMap}
 import chisel3.internal.{Builder, DynamicContext}
 import chisel3.internal.sourceinfo.{DefinitionTransform, DefinitionWrapTransform}
 import chisel3.experimental.{BaseModule, SourceInfo}
@@ -78,6 +78,18 @@ object Definition extends SourceInfoDoc {
       * @return absoluteTarget of this instance
       */
     def toAbsoluteTarget: IsModule = d.proto.toAbsoluteTarget
+
+    /** If this is an instance of a Module, returns the toAbsoluteTarget of this instance
+      * @return absoluteTarget of this instance
+      */
+    def toRelativeTarget(root: Option[BaseModule]): IsModule = d.proto.toRelativeTarget(root)
+
+    /** If this is an instance of a Module, returns the toAbsoluteTarget of this instance
+      * @return absoluteTarget of this instance
+      */
+    def toRelativeTargetToHierarchy(root: Option[Hierarchy[BaseModule]]): IsModule =
+      d.proto.toRelativeTargetToHierarchy(root)
+
   }
 
   /** A construction method to build a Definition of a Module
@@ -108,8 +120,9 @@ object Definition extends SourceInfoDoc {
         context.warningFilters,
         context.sourceRoots,
         Some(context.globalNamespace),
-        Builder.allDefinitions,
-        context.loggerOptions
+        context.loggerOptions,
+        context.definitions,
+        context.contextCache
       )
     }
     dynamicContext.inDefinition = true

@@ -460,17 +460,15 @@ class PrefixSpec extends ChiselPropSpec with Utils {
 
       {
         val x5 = {
-          val x1 = chisel3.assert(1.U === 1.U)
           val x2 = cover(foo =/= bar)
           val x3 = chisel3.assume(foo =/= 123.U)
           val x4 = printf("foo = %d\n", foo)
-          x1
+          x2
         }
       }
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new Test)
-    (chirrtl should include).regex("assert.*: x5")
-    (chirrtl should include).regex("cover.*: x5_x2")
+    (chirrtl should include).regex("cover.*: x5")
     (chirrtl should include).regex("assume.*: x5_x3")
     (chirrtl should include).regex("printf.*: x5_x4")
   }

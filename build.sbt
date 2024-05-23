@@ -34,7 +34,7 @@ emitLatestVersion := {
 lazy val minimalSettings = Seq(
   organization := "org.chipsalliance",
   scalacOptions := Seq("-deprecation", "-feature"),
-  scalaVersion := "2.13.12"
+  scalaVersion := "2.13.14"
 )
 
 lazy val commonSettings = minimalSettings ++ Seq(
@@ -66,7 +66,8 @@ lazy val warningSuppression = Seq(
     "msg=undefined in comment for method cf in class PrintableHelper:s",
     // This is deprecated for external users but not internal use
     "cat=deprecation&origin=firrtl\\.options\\.internal\\.WriteableCircuitAnnotation:s",
-    "cat=deprecation&origin=chisel3\\.util\\.experimental\\.BoringUtils.*:s"
+    "cat=deprecation&origin=chisel3\\.util\\.experimental\\.BoringUtils.*:s",
+    "cat=deprecation&origin=chisel3\\.experimental\\.IntrinsicModule:s"
   ).mkString(",")
 )
 
@@ -125,14 +126,13 @@ lazy val firrtlSettings = Seq(
   javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
   libraryDependencies ++= Seq(
     "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-    "org.scalatest" %% "scalatest" % "3.2.14" % "test",
-    "org.scalatestplus" %% "scalacheck-1-16" % "3.2.14.0" % "test",
+    "org.scalatest" %% "scalatest" % "3.2.18" % "test",
+    "org.scalatestplus" %% "scalacheck-1-18" % "3.2.18.0" % "test",
     "com.github.scopt" %% "scopt" % "4.1.0",
-    "net.jcazevedo" %% "moultingyaml" % "0.4.2",
-    "org.json4s" %% "json4s-native" % "4.0.6",
-    "org.apache.commons" % "commons-text" % "1.10.0",
+    "org.json4s" %% "json4s-native" % "4.0.7",
+    "org.apache.commons" % "commons-text" % "1.12.0",
     "io.github.alexarchambault" %% "data-class" % "0.2.6",
-    "com.lihaoyi" %% "os-lib" % "0.9.1"
+    "com.lihaoyi" %% "os-lib" % "0.10.0"
   ),
   scalacOptions += "-Ymacro-annotations",
   // starting with scala 2.13 the parallel collections are separate from the standard library
@@ -163,8 +163,8 @@ lazy val svsim = (project in file("svsim"))
     // Published as part of unipublish
     publish / skip := true,
     libraryDependencies ++= Seq(
-      "org.scalatest" %% "scalatest" % "3.2.16" % "test",
-      "org.scalatestplus" %% "scalacheck-1-16" % "3.2.14.0" % "test"
+      "org.scalatest" %% "scalatest" % "3.2.18" % "test",
+      "org.scalatestplus" %% "scalacheck-1-18" % "3.2.18.0" % "test"
     )
   )
 
@@ -195,9 +195,9 @@ lazy val firrtl = (project in file("firrtl"))
 lazy val chiselSettings = Seq(
   name := "chisel",
   libraryDependencies ++= Seq(
-    "org.scalatest" %% "scalatest" % "3.2.16" % "test",
-    "org.scalatestplus" %% "scalacheck-1-16" % "3.2.14.0" % "test",
-    "com.lihaoyi" %% "upickle" % "3.1.0",
+    "org.scalatest" %% "scalatest" % "3.2.18" % "test",
+    "org.scalatestplus" %% "scalacheck-1-18" % "3.2.18.0" % "test",
+    "com.lihaoyi" %% "upickle" % "3.3.0",
     "org.chipsalliance" %% "firtool-resolver" % "2.0.0"
   )
 ) ++ (
@@ -229,7 +229,8 @@ lazy val pluginScalaVersions = Seq(
   "2.13.10",
   "2.13.11",
   "2.13.12",
-  "2.13.13"
+  "2.13.13",
+  "2.13.14"
 )
 
 lazy val plugin = (project in file("plugin"))
@@ -293,8 +294,8 @@ lazy val core = (project in file("core"))
   .settings(
     name := "chisel-core",
     libraryDependencies ++= Seq(
-      "com.lihaoyi" %% "upickle" % "3.1.0",
-      "com.lihaoyi" %% "os-lib" % "0.9.1"
+      "com.lihaoyi" %% "upickle" % "3.3.0",
+      "com.lihaoyi" %% "os-lib" % "0.10.0"
     ),
     scalacOptions := scalacOptions.value ++ Seq(
       "-explaintypes",

@@ -44,6 +44,15 @@ sealed abstract class Aggregate extends Data {
     }
 
     topBindingOpt match {
+      // Don't accidentally invent a literal value for a view that is empty
+      case Some(_: AggregateViewBinding) if this.getElements.isEmpty =>
+        reifySingleData(this) match {
+          case Some(target: Aggregate) => target.checkingLitOption(checkForDontCares)
+          case _ =>
+            val msg =
+              s"It should not be possible to have an empty Aggregate view that doesn't reify to a single target, but got $this"
+            Builder.exception(msg)(UnlocatableSourceInfo)
+        }
       case Some(_: BundleLitBinding | _: VecLitBinding | _: AggregateViewBinding) =>
         // Records store elements in reverse order and higher indices are more significant in Vecs
         this.getElements.foldRight(Option(BigInt(0)))(shiftAdd)
@@ -320,7 +329,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
     }
 
     if (length == 0) {
-      Builder.warning(Warning(WarningID.ExtractFromVecSizeZero, s"Cannot extra from Vec of size 0."))
+      Builder.warning(Warning(WarningID.ExtractFromVecSizeZero, s"Cannot extract from Vec of size 0."))
     } else {
       p.widthOption.foreach { pWidth =>
         val correctWidth = BigInt(length - 1).bitLength
@@ -489,7 +498,6 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
             s"are less than zero or greater or equal to than Vec length"
         )
       }
-      cloneSupertype(elementInitializers.map(_._2), s"Vec.Lit(...)")
 
       // look for literals of this vec that are wider than the vec's type
       val badLits = elementInitializers.flatMap {

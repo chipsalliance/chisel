@@ -17,12 +17,15 @@ class PanamaCIRCTOMEvaluator private[chisel3] (circt: PanamaCIRCT, mlirModule: M
   def instantiate(
     className:    String,
     actualParams: Seq[PanamaCIRCTOMEvaluatorValue]
-  ): PanamaCIRCTOMEvaluatorValueObject = {
+  ): Option[PanamaCIRCTOMEvaluatorValueObject] = {
     val params = actualParams.map(_.asInstanceOf[PanamaCIRCTOMEvaluatorValue].value)
 
     val value = circt.omEvaluatorInstantiate(evaluator, className, params)
-    assert(!circt.omEvaluatorObjectIsNull(value))
-    new PanamaCIRCTOMEvaluatorValueObject(circt, value)
+    if (!circt.omEvaluatorObjectIsNull(value)) {
+      Some(new PanamaCIRCTOMEvaluatorValueObject(circt, value))
+    } else {
+      None
+    }
   }
 }
 
@@ -62,7 +65,7 @@ object PanamaCIRCTOMEvaluatorValue {
     } else if (circt.omEvaluatorValueIsAReference(value)) {
       newValue(circt, circt.omEvaluatorValueGetReferenceValue(value))
     } else if (circt.omEvaluatorValueIsAPrimitive(value)) {
-      new PanamaCIRCTOMEvaluatorValuePrimitive(circt, value)
+      PanamaCIRCTOMEvaluatorValuePrimitive.newPrimitive(circt, value)
     } else if (circt.omEvaluatorValueIsNull(value)) {
       throw new Exception("unable to get field")
     } else {
@@ -105,24 +108,42 @@ class PanamaCIRCTOMEvaluatorValuePath private[chisel3] (val circt: PanamaCIRCT, 
   override def toString: String = circt.omEvaluatorPathGetAsString(value)
 }
 
-class PanamaCIRCTOMEvaluatorValuePrimitive private[chisel3] (val circt: PanamaCIRCT, val value: OMEvaluatorValue)
-    extends PanamaCIRCTOMEvaluatorValue {
-  val primitive: MlirAttribute = circt.omEvaluatorValueGetPrimitive(value)
+object PanamaCIRCTOMEvaluatorValuePrimitive {
+  def newPrimitive(circt: PanamaCIRCT, value: OMEvaluatorValue): PanamaCIRCTOMEvaluatorValuePrimitive = {
+    val primitive: MlirAttribute = circt.omEvaluatorValueGetPrimitive(value)
 
-  // Incomplete. currently for debugging purposes only
-  override def toString: String = {
     if (circt.omAttrIsAIntegerAttr(primitive)) {
-      val mlirInteger = circt.omIntegerAttrGetInt(primitive)
-      val integer = circt.mlirIntegerAttrGetValueSInt(mlirInteger)
-      s"omInteger{$integer}"
+      new PanamaCIRCTOMEvaluatorValuePrimitiveInteger(circt, value, circt.omIntegerAttrGetInt(primitive))
     } else if (circt.mlirAttributeIsAString(primitive)) {
-      val mlirString = circt.mlirStringAttrGetValue(primitive)
-      s"""mlirString{"$mlirString"}"""
+      new PanamaCIRCTOMEvaluatorValuePrimitiveString(circt, value, primitive)
     } else {
       circt.mlirAttributeDump(primitive)
-      throw new Exception("unhandled primitive type dumped")
+      throw new Exception("unknown OMEvaluatorValuePrimitive attribute, dumped")
     }
   }
+}
+abstract class PanamaCIRCTOMEvaluatorValuePrimitive extends PanamaCIRCTOMEvaluatorValue {
+  override def toString: String = this match {
+    case v: PanamaCIRCTOMEvaluatorValuePrimitiveInteger => v.toString
+    case v: PanamaCIRCTOMEvaluatorValuePrimitiveString  => v.toString
+  }
+}
+
+class PanamaCIRCTOMEvaluatorValuePrimitiveInteger private[chisel3] (
+  val circt:     PanamaCIRCT,
+  val value:     OMEvaluatorValue,
+  val primitive: MlirAttribute)
+    extends PanamaCIRCTOMEvaluatorValuePrimitive {
+  val integer:           Long = circt.mlirIntegerAttrGetValueSInt(primitive)
+  override def toString: String = integer.toString
+}
+
+class PanamaCIRCTOMEvaluatorValuePrimitiveString private[chisel3] (
+  val circt:     PanamaCIRCT,
+  val value:     OMEvaluatorValue,
+  val primitive: MlirAttribute)
+    extends PanamaCIRCTOMEvaluatorValuePrimitive {
+  override def toString: String = circt.mlirStringAttrGetValue(primitive)
 }
 
 class PanamaCIRCTOMEvaluatorValueObject private[chisel3] (val circt: PanamaCIRCT, val value: OMEvaluatorValue)

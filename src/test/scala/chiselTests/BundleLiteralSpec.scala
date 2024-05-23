@@ -360,4 +360,11 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
     val wire = """wire.*: const \{ a : UInt<8>, b : UInt<1>, c : UInt<1>\}""".r
     (chirrtl should include).regex(wire)
   }
+
+  "Empty bundle literals" should "be supported" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val lit = (new Bundle {}).Lit()
+      lit.litOption should equal(Some(0))
+    })
+  }
 }

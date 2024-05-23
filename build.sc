@@ -12,22 +12,24 @@ import $file.tests
 object v {
   val pluginScalaCrossVersions = Seq(
     "2.13.11",
-    "2.13.12"
+    "2.13.12",
+    "2.13.13",
+    "2.13.14"
   )
   val scalaCrossVersions = Seq(
-    "2.13.12"
+    "2.13.14"
   )
   val scalaVersion = scalaCrossVersions.head
   val jmhVersion = "1.37"
-  val osLib = ivy"com.lihaoyi::os-lib:0.9.1"
-  val upickle = ivy"com.lihaoyi::upickle:3.1.0"
+  val osLib = ivy"com.lihaoyi::os-lib:0.10.0"
+  val upickle = ivy"com.lihaoyi::upickle:3.3.0"
   val firtoolResolver = ivy"org.chipsalliance::firtool-resolver:2.0.0"
-  val scalatest = ivy"org.scalatest::scalatest:3.2.14"
-  val scalacheck = ivy"org.scalatestplus::scalacheck-1-15:3.2.11.0"
-  val json4s = ivy"org.json4s::json4s-native:4.0.6"
-  val dataclass = ivy"io.github.alexarchambault::data-class:0.2.5"
-  val commonText = ivy"org.apache.commons:commons-text:1.10.0"
-  val scopt = ivy"com.github.scopt::scopt:3.7.1"
+  val scalatest = ivy"org.scalatest::scalatest:3.2.18"
+  val scalacheck = ivy"org.scalatestplus::scalacheck-1-18:3.2.18.0"
+  val json4s = ivy"org.json4s::json4s-native:4.0.7"
+  val dataclass = ivy"io.github.alexarchambault::data-class:0.2.6"
+  val commonText = ivy"org.apache.commons:commons-text:1.12.0"
+  val scopt = ivy"com.github.scopt::scopt:4.1.0"
 
   def scalaReflect(scalaVersion: String) = ivy"org.scala-lang:scala-reflect:$scalaVersion"
 

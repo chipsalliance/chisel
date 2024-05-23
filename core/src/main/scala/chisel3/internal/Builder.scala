@@ -6,7 +6,7 @@ import scala.util.DynamicVariable
 import scala.collection.mutable.ArrayBuffer
 import chisel3._
 import chisel3.experimental._
-import chisel3.experimental.hierarchy.core.{Clone, Definition, ImportDefinitionAnnotation, Instance}
+import chisel3.experimental.hierarchy.core.{Clone, Definition, Hierarchy, ImportDefinitionAnnotation, Instance}
 import chisel3.properties.Class
 import chisel3.internal.firrtl.ir._
 import chisel3.internal.firrtl.Converter
@@ -417,6 +417,27 @@ private[chisel3] trait NamedComponent extends HasId {
     }
   }
 
+  /** Returns a FIRRTL ReferenceTarget that references this object, relative to an optional root.
+    *
+    * If `root` is defined, the target is a hierarchical path starting from `root`.
+    *
+    * If `root` is not defined, the target is a hierarchical path equivalent to `toAbsoluteTarget`.
+    *
+    * @note If `root` is defined, and has not finished elaboration, this must be called within `atModuleBodyEnd`.
+    * @note The NamedComponent must be a descendant of `root`, if it is defined.
+    * @note This doesn't have special handling for Views.
+    */
+  final def toRelativeTargetToHierarchy(root: Option[Hierarchy[BaseModule]]): ReferenceTarget = {
+    val localTarget = toTarget
+    def makeTarget(p: BaseModule) =
+      p.toRelativeTargetToHierarchy(root).ref(localTarget.ref).copy(component = localTarget.component)
+    _parent match {
+      case Some(ViewParent) => makeTarget(reifyParent)
+      case Some(parent)     => makeTarget(parent)
+      case None             => localTarget
+    }
+  }
+
   private def assertValidTarget(): Unit = {
     val isVecSubaccess = getOptionRef.map {
       case Index(_, _: ULit) => true // Vec literal indexing
@@ -454,8 +475,9 @@ private[chisel3] class DynamicContext(
   val sourceRoots:           Seq[File],
   val defaultNamespace:      Option[Namespace],
   // Definitions from other scopes in the same elaboration, use allDefinitions below
-  val outerScopeDefinitions: List[Iterable[Definition[_]]],
-  val loggerOptions:         LoggerOptions) {
+  val loggerOptions: LoggerOptions,
+  val definitions:   ArrayBuffer[Definition[_]],
+  val contextCache:  BuilderContextCache) {
   val importedDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
 
   // Map from proto module name to ext-module name
@@ -506,7 +528,6 @@ private[chisel3] class DynamicContext(
   }
 
   val components = ArrayBuffer[Component]()
-  val definitions = ArrayBuffer[Definition[_]]()
   val annotations = ArrayBuffer[ChiselAnnotation]()
   val newAnnotations = ArrayBuffer[ChiselMultiAnnotation]()
   val layers = mutable.LinkedHashSet[layer.Layer]()
@@ -520,8 +541,6 @@ private[chisel3] class DynamicContext(
 
   // Views that do not correspond to a single ReferenceTarget and thus require renaming
   val unnamedViews: ArrayBuffer[Data] = ArrayBuffer.empty
-
-  val contextCache: BuilderContextCache = BuilderContextCache.empty
 
   // Set by object Module.apply before calling class Module constructor
   // Used to distinguish between no Module() wrapping, multiple wrappings, and rewrapping
@@ -595,9 +614,6 @@ private[chisel3] object Builder extends LazyLogging {
 
   def components:  ArrayBuffer[Component] = dynamicContext.components
   def definitions: ArrayBuffer[Definition[_]] = dynamicContext.definitions
-
-  /** All definitions from current elaboration, including Definitions passed as an argument to this one */
-  def allDefinitions: List[Iterable[Definition[_]]] = definitions :: dynamicContext.outerScopeDefinitions
 
   def annotations: ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
 
