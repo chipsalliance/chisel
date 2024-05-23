@@ -6,13 +6,14 @@ import chisel3._
 import chisel3.ltl._
 import chisel3.testers.BasicTester
 import _root_.circt.stage.ChiselStage
+import chiselTests.ChiselRunners
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 import Sequence._
 
-class LTLSpec extends AnyFlatSpec with Matchers {
+class LTLSpec extends AnyFlatSpec with Matchers with ChiselRunners {
   it should "allow booleans to be used as sequences" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
       val a = IO(Input(Bool()))
@@ -335,5 +336,13 @@ class LTLSpec extends AnyFlatSpec with Matchers {
     chirrtl should include("connect ltl_concat_4.lhs, a")
     chirrtl should include("connect ltl_concat_4.rhs, ltl_delay_4")
     chirrtl should include("connect verif_6.property, ltl_concat_4.out")
+  }
+
+  it should "fail correctly in verilator simulation" in {
+    assertTesterFails(new BasicTester {
+      withClockAndReset(clock, reset) {
+        AssertProperty(0.U === 1.U)
+      }
+    })
   }
 }
