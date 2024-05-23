@@ -2,7 +2,7 @@
 
 package chisel3
 
-import chisel3.experimental.dataview.reify
+import chisel3.experimental.dataview.{reify, reifySingleData}
 
 import scala.language.experimental.macros
 import chisel3.experimental.{Analog, BaseModule}
