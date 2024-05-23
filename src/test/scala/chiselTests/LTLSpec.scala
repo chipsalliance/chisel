@@ -7,10 +7,6 @@ import chisel3.ltl._
 import chisel3.testers.BasicTester
 import chisel3.experimental.SourceLine
 import _root_.circt.stage.ChiselStage
-import chisel3.testers._
-import circt.stage.{CIRCTTarget, CIRCTTargetAnnotation, ChiselStage}
-import chisel3.simulator._
-import svsim._
 import chiselTests.ChiselRunners
 
 import org.scalatest.flatspec.AnyFlatSpec
