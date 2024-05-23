@@ -386,7 +386,7 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
       val b = UInt(4.W)
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      // Whether the user specifies a width or not
+      // Whether the user specifies a width or not.
       val lit = (new SimpleBundle).Lit(_.a -> 0x3.U, _.b -> 0x3.U(3.W))
       lit.a.getWidth should be(4)
       lit.b.getWidth should be(4)

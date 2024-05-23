@@ -436,7 +436,7 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
 
   class VecExample extends RawModule {
     val out = IO(Output(Vec(2, new SubBundle)))
-    // Note that 22.U is too wide for bar so gets truncated below
+    // Note that 22.U is too wide for bar so gets truncated below.
     val bundle = Vec(2, new SubBundle).Lit(
       0 -> (new SubBundle).Lit(_.foo -> 42.U, _.bar -> 22.U),
       1 -> (new SubBundle).Lit(_.foo -> 7.U, _.bar -> 3.U)
@@ -534,7 +534,7 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
 
   "Vec literals should use the width of the Vec element rather than the widths of the literals" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      // Whether the user specifies a width or not
+      // Whether the user specifies a width or not.
       val lit0 = (Vec(2, UInt(4.W))).Lit(0 -> 0x3.U, 1 -> 0x2.U(3.W))
       lit0(0).getWidth should be(4)
       lit0(1).getWidth should be(4)

@@ -128,7 +128,7 @@ private[chisel3] object ir {
       */
     def cloneWithWidth(newWidth: Width): this.type
 
-    /** Provides a mechanism that LitArgs can have their value adjusted
+    /** Provides a mechanism that LitArgs can have their value adjusted.
       *
       * @param newWidth the new width for this
       * @return
