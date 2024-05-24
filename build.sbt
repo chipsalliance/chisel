@@ -1,5 +1,7 @@
 // See LICENSE for license details.
 
+import com.typesafe.tools.mima.core._
+
 enablePlugins(SiteScaladocPlugin)
 
 addCommandAlias("fmt", "; scalafmtAll ; scalafmtSbt")
@@ -19,8 +21,7 @@ ThisBuild / firtoolVersion := {
 
 // Previous versions are read from project/previous-versions.txt
 // If this file is empty or does not exist, no binary compatibility checking will be done
-// Add waivers to the directory defined by key `mimaFiltersDirectory` in files named: <since version>.backwards.excludes
-//   eg. unipublish/src/main/mima-filters/5.0.0.backwards.excludes
+// Add waivers to mimaBinaryIssueFilters in the correct project below.
 val previousVersions = settingKey[Set[String]]("Previous versions for binary compatibility checking")
 ThisBuild / previousVersions := {
   val file = new java.io.File("project", "previous-versions.txt")
@@ -253,7 +254,12 @@ lazy val core = (project in file("core"))
   .settings(
     mimaPreviousArtifacts := previousVersions.value.map { version =>
       organization.value %% name.value % version
-    }
+    },
+    // MiMa waivers
+    mimaBinaryIssueFilters ++= Seq(
+      // Technically users could extend LitArg but its in an internal package and there is no reason to.
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("chisel3.internal.firrtl.LitArg.cloneWithValue")
+    )
   )
   .settings(warningSuppression: _*)
   .settings(fatalWarningsSettings: _*)
