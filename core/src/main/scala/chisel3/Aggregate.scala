@@ -1118,7 +1118,7 @@ abstract class Record extends Aggregate {
     * )
     * }}}
     */
-  private[chisel3] def _makeLit(elems: (this.type => (Data, Data))*): this.type = {
+  private[chisel3] def _makeLit(elems: (this.type => (Data, Data))*)(implicit sourceInfo: SourceInfo): this.type = {
 
     requireIsChiselType(this, "bundle literal constructor model")
     val clone = cloneType
@@ -1222,6 +1222,8 @@ abstract class Record extends Aggregate {
             // TODO make this a warning then an error, but for older versions, just truncate.
             val valuex = if (widthValue < value.width.get) {
               // Mask the value to the width of the field.
+              val msg = s"Literal value $value is too wide for field ${cloneFields(field)} with width $widthValue"
+              Builder.warning(Warning(WarningID.BundleLiteralValueTooWide, msg))
               val mask = (BigInt(1) << widthValue) - 1
               value.cloneWithValue(value.num & mask).cloneWithWidth(width)
             } else if (widthValue > value.width.get) value.cloneWithWidth(width)

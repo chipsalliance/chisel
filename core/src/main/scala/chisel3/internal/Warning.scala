@@ -19,6 +19,7 @@ private[chisel3] object WarningID extends Enumeration {
   val DynamicIndexTooWide = Value(4)
   val DynamicIndexTooNarrow = Value(5)
   val ExtractFromVecSizeZero = Value(6)
+  val BundleLiteralValueTooWide = Value(7)
 }
 import WarningID.WarningID
 
