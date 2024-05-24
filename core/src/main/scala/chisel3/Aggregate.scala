@@ -1217,13 +1217,16 @@ abstract class Record extends Aggregate {
       case (field, value) =>
         field.width match {
           // If width is unknown, then it is set by the literal value.
-          case UnknownWidth()                 => field -> value
+          case UnknownWidth() => field -> value
           case width @ KnownWidth(widthValue) =>
-            // TODO make this a warning then an error, but for older versions, just truncate.
             val valuex = if (widthValue < value.width.get) {
+              // For legacy reasons, 0.U is 1-bit, don't warn when it comes up as a literal value for 0-bit Bundle lit field.
+              val dontWarnOnZeroDotU = widthValue == 0 && value.num == 0 && value.width.get == 1
+              if (!dontWarnOnZeroDotU) {
+                val msg = s"Literal value $value is too wide for field ${cloneFields(field)} with width $widthValue"
+                Builder.warning(Warning(WarningID.BundleLiteralValueTooWide, msg))
+              }
               // Mask the value to the width of the field.
-              val msg = s"Literal value $value is too wide for field ${cloneFields(field)} with width $widthValue"
-              Builder.warning(Warning(WarningID.BundleLiteralValueTooWide, msg))
               val mask = (BigInt(1) << widthValue) - 1
               value.cloneWithValue(value.num & mask).cloneWithWidth(width)
             } else if (widthValue > value.width.get) value.cloneWithWidth(width)
