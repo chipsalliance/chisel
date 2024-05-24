@@ -143,3 +143,10 @@ It can be fixed as described in the [Cookbook](../cookbooks/cookbook#how-do-i-re
 
 This warning occurs when indexing a `Vec` with no elements.
 It can be fixed by removing the indexing operation for the size zero `Vec` (perhaps via guarding with an `if-else` or `Option.when`).
+
+### [W007] Bundle literal value too wide
+
+This warning occurs when creating a [Bundle Literal](../appendix/experimental-features#bundle-literals) where the literal value for a
+field is wider than the Bundle field's width.
+It can be fixed by reducing the width of the literal (perhaps choosing a different value if it is impossible to encode the value in the
+field's width).
