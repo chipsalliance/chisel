@@ -358,6 +358,21 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
     chirrtl should include("node x = cat(UInt<4>(0he), UInt<4>(0hd))")
   }
 
+  "bundle literals with zero-width fields" should "not warn for 0.U" in {
+    class SimpleBundle extends Bundle {
+      val a = UInt(4.W)
+      val b = UInt(0.W)
+    }
+    val chirrtl = ChiselStage.emitCHIRRTL(
+      new RawModule {
+        val lit = (new SimpleBundle).Lit(_.a -> 5.U, _.b -> 0.U)
+        val x = lit.asUInt
+      },
+      args = Array("--warnings-as-errors")
+    )
+    chirrtl should include("node x = cat(UInt<4>(0h5), UInt<0>(0h0))")
+  }
+
   "partial bundle literals" should "fail to pack" in {
     ChiselStage.emitCHIRRTL {
       new RawModule {
