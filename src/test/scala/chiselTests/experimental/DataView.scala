@@ -553,6 +553,44 @@ class DataViewSpec extends ChiselFlatSpec {
     verilog should include("assign z = sel ? b : d;")
   }
 
+  it should "support muxing between views of Bundles" in {
+    import SimpleBundleDataView._
+    class MyModule extends Module {
+      val cond = IO(Input(Bool()))
+      val in1 = IO(Input(new BundleA(8)))
+      val in2 = IO(Input(new BundleA(8)))
+      val out = IO(Output(new BundleB(8)))
+
+      out := Mux(cond, in1.viewAs[BundleB], in2.viewAs[BundleB])
+    }
+    val firrtl = ChiselStage.emitCHIRRTL(new MyModule)
+    val lines = Seq(
+      "wire _out_WIRE : { bar : UInt<8>}",
+      "_out_WIRE.bar <= in1.foo",
+      "wire _out_WIRE_1 : { bar : UInt<8>}",
+      "_out_WIRE_1.bar <= in2.foo",
+      "node _out_T = mux(cond, _out_WIRE, _out_WIRE_1)"
+    )
+    for (line <- lines) {
+      firrtl should include(line)
+    }
+  }
+
+  it should "not generate extra wires when muxing between identity views of Bundles" in {
+    import SimpleBundleDataView._
+    class MyModule extends Module {
+      val cond = IO(Input(Bool()))
+      val in1 = IO(Input(new BundleA(8)))
+      val in2 = IO(Input(new BundleA(8)))
+      val out = IO(Output(new BundleA(8)))
+
+      out := Mux(cond, in1.viewAs[BundleA], in2.viewAs[BundleA])
+    }
+    val firrtl = ChiselStage.emitCHIRRTL(new MyModule)
+    firrtl should include("node _out_T = mux(cond, in1, in2)")
+    firrtl shouldNot include("wire")
+  }
+
   // This example should be turned into a built-in feature
   it should "enable viewing Seqs as Vecs" in {
 
