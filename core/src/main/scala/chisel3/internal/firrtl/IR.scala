@@ -117,12 +117,18 @@ abstract class LitArg(val num: BigInt, widthArg: Width) extends Arg {
   }
 
   /** Provides a mechanism that LitArgs can have their width adjusted
-    * to match other members of a VecLiteral
     *
     * @param newWidth the new width for this
     * @return
     */
   def cloneWithWidth(newWidth: Width): this.type
+
+  /** Provides a mechanism that LitArgs can have their value adjusted.
+    *
+    * @param newWidth the new width for this
+    * @return
+    */
+  def cloneWithValue(newValue: BigInt): this.type
 
   protected def minWidth: Int
   if (forcedWidth) {
@@ -147,6 +153,8 @@ case class ULit(n: BigInt, w: Width) extends LitArg(n, w) {
     ULit(n, newWidth).asInstanceOf[this.type]
   }
 
+  def cloneWithValue(newValue: BigInt): this.type = ULit(newValue, w).asInstanceOf[this.type]
+
   require(n >= 0, s"UInt literal ${n} is negative")
 }
 
@@ -161,6 +169,8 @@ case class SLit(n: BigInt, w: Width) extends LitArg(n, w) {
   def cloneWithWidth(newWidth: Width): this.type = {
     SLit(n, newWidth).asInstanceOf[this.type]
   }
+
+  def cloneWithValue(newValue: BigInt): this.type = SLit(newValue, w).asInstanceOf[this.type]
 }
 
 @deprecated(deprecatedPublicAPIMsg, "Chisel 3.6")
