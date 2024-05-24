@@ -10,6 +10,7 @@ import chisel3.experimental.hierarchy.{InstanceClone, ModuleClone}
 import chisel3.properties.{DynamicObject, Property, StaticObject}
 import chisel3.internal.Builder._
 import chisel3.internal.firrtl.ir._
+import chisel3.reflect.DataMirror
 import _root_.firrtl.annotations.{IsModule, ModuleTarget}
 import scala.collection.immutable.VectorBuilder
 import scala.collection.mutable.ArrayBuffer
@@ -209,8 +210,19 @@ abstract class RawModule extends BaseModule {
       case (false, true)                                => Connect(si, left.lref, ProbeRead(Node(right)))
       case (false, false) =>
         (left, right) match {
+<<<<<<< HEAD
           case (_: Property[_], _: Property[_]) => PropAssign(si, left.lref, Node(right))
           case (_, _) => Connect(si, left.lref, Node(right))
+=======
+          case (_: Property[_], _: Property[_]) => PropAssign(si, Node(left), Node(right))
+          // Use `connect lhs, read(probe(rhs))` if lhs is passive version of rhs.
+          // This provides solution for this: https://github.com/chipsalliance/chisel/issues/3557
+          case (_, _)
+              if !DataMirror.checkAlignmentTypeEquivalence(left, right) &&
+                DataMirror.checkAlignmentTypeEquivalence(left, Output(chiselTypeOf(right))) =>
+            Connect(si, Node(left), ProbeRead(ProbeExpr(Node(right))))
+          case (_, _) => Connect(si, Node(left), Node(right))
+>>>>>>> 0dbedc315 (Fix boring tap of non-passive source from parent. (#4083))
         }
     }
     val secretCommands = if (_closed) {
