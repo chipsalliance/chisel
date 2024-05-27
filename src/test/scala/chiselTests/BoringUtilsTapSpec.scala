@@ -470,13 +470,7 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
 
     class Foo extends RawModule {
       val a = WireInit(DecoupledIO(Bool()), DontCare)
-      val dummyA = Wire(Output(chiselTypeOf(a)))
-      // FIXME we shouldn't need this intermediate wire
-      // https://github.com/chipsalliance/chisel/issues/3557
-      dummyA :#= a
-      dontTouch(a)
-
-      val bar = Module(new Bar(dummyA))
+      val bar = Module(new Bar(a))
     }
 
     val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Foo, Array("--full-stacktrace"))
@@ -486,9 +480,7 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       "input bore : { ready : UInt<1>, valid : UInt<1>, bits : UInt<1>}",
       "module Foo :",
       "wire a : { flip ready : UInt<1>, valid : UInt<1>, bits : UInt<1>}",
-      // FIXME shouldn't need intermediate wire
-      "wire dummyA : { ready : UInt<1>, valid : UInt<1>, bits : UInt<1>}",
-      "connect bar.bore, dummyA"
+      "connect bar.bore, read(probe(a))"
     )()
 
     // Check that firtool also passes
