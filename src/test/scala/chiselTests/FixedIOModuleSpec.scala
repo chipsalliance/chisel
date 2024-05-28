@@ -93,107 +93,120 @@ class FixedIOModuleSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
     )()
   }
 
-  "User defined FixedIORaw/ExtModules" should "be able to have Probes in their IOs" in {
+  class Agg extends Bundle {
+    val foo = Bool()
+    val bar = Bool()
+  }
 
-    /* Unused -- we can't yet have a Probed Aggregate in a FixedIO___Module
-    class Agg extends Bundle {
-      val foo = Bool()
-      val bar = Bool()
-    }
-     */
+  class Nested extends Bundle {
+    val foo = Probe(Bool())
+    val bar = Probe(Bool())
+  }
 
-    /*Unused -- we can't yet have an Aggregate of Probes in a FixedIO__Module
-    class Nested extends Bundle {
-      val foo = Probe(Bool())
-      val bar = Probe(Bool())
-    }
-     */
+  class FixedIO(probeAgg: Boolean, aggProbe: Boolean) extends Bundle {
+    val elem = Probe(Bool())
+    val agg = Option.when(probeAgg)(Probe(new Agg()))
+    val nested = Option.when(aggProbe)(new Nested())
+  }
 
-    class FixedIO extends Bundle {
-      val elem = Probe(Bool())
-      // Doesn't work yet
-      // val agg = Probe(new Agg())
-      // val nested = new Nested()
-    }
+  class ExampleRaw(probeAgg: Boolean, aggProbe: Boolean)
+      extends FixedIORawModule[FixedIO](new FixedIO(probeAgg, aggProbe)) {
 
-    class ExampleRaw extends FixedIORawModule[FixedIO](new FixedIO()) {
+    val elemWire = Wire(Bool())
+    elemWire := false.B
+    probe.define(io.elem, probe.ProbeValue(elemWire))
 
-      val elemWire = Wire(Bool())
-      elemWire := false.B
-      probe.define(io.elem, probe.ProbeValue(elemWire))
-
-      /* Doesn't work yet
+    if (probeAgg) {
       val aggWire = Wire(new Agg())
       aggWire := DontCare
-      probe.define(io.agg, probe.ProbeValue(aggWire))
-       */
+      probe.define(io.agg.get, probe.ProbeValue(aggWire))
+    }
 
-      /* Doesn't work yet
+    if (aggProbe) {
       val nestedWire = Wire(new Nested())
       val nestedFoo = WireInit(false.B)
       val nestedBar = WireInit(false.B)
       probe.define(nestedWire.foo, probe.ProbeValue(nestedFoo))
       probe.define(nestedWire.bar, probe.ProbeValue(nestedBar))
-      io.nested :<>= nestedWire
-       */
+      io.nested.get :<>= nestedWire
+    }
+  }
+
+  class ExampleExt(probeAgg: Boolean, aggProbe: Boolean)
+      extends FixedIOExtModule[FixedIO](new FixedIO(probeAgg, aggProbe))
+
+  class Parent(probeAgg: Boolean, aggProbe: Boolean) extends Module {
+    val childRaw = Module(new ExampleRaw(probeAgg, aggProbe))
+    val childExt = Module(new ExampleExt(probeAgg, aggProbe))
+
+    // Check Probe(Element)
+    val outElemRaw = IO(Bool())
+    val probeElemWireRaw = Wire(Probe(Bool()))
+    outElemRaw := probe.read(probeElemWireRaw)
+    probeElemWireRaw :<>= childRaw.io.elem
+
+    val probeElemWireExt = Wire(Probe(Bool()))
+    val outElemExt = IO(Bool())
+    outElemExt := probe.read(probeElemWireExt)
+    probeElemWireExt :<>= childExt.io.elem
+
+    if (probeAgg) {
+      val outAggRaw = IO(new Agg())
+      val probeAggWireRaw = Wire(Probe(new Agg()))
+      outAggRaw := probe.read(probeAggWireRaw)
+      probeAggWireRaw :<>= childRaw.io.agg.get
+      val probeAggWireExt = Wire(Probe(new Agg()))
+      val outAggExt = IO(new Agg())
+      outAggExt := probe.read(probeAggWireExt)
+      probeAggWireExt :<>= childExt.io.agg.get
     }
 
-    class ExampleExt extends FixedIOExtModule[FixedIO](new FixedIO())
-
-    class Parent extends Module {
-      val childRaw = Module(new ExampleRaw())
-      val childExt = Module(new ExampleExt())
-
-      // Check Probe(Element)
-      val outElemRaw = IO(Bool())
-      val probeElemWireRaw = Wire(Probe(Bool()))
-      outElemRaw := probe.read(probeElemWireRaw)
-      probeElemWireRaw :<>= childRaw.io.elem
-
-      val probeElemWireExt = Wire(Probe(Bool()))
-      val outElemExt = IO(Bool())
-      outElemExt := probe.read(probeElemWireExt)
-      probeElemWireExt :<>= childExt.io.elem
-
-      // Check Probe(Aggregate)
-      /** Doesn't work yet
-        *      val outAggRaw = IO(new Agg())
-        *      val probeAggWireRaw = Wire(Probe(new Agg()))
-        *      outAggRaw := probe.read(probeAggWireRaw)
-        *      probeAggWireRaw :<>= childRaw.io.agg
-        *
-        *      val probeAggWireExt = Wire(Probe(new Agg()))
-        *      val outAggExt = IO(new Agg())
-        *      outAggExt := probe.read(probeAggWireExt)
-        *      probeAggWireExt :<>= childExt.io.agg
-        */
-
-      // Check Aggregate(Probes)
-      /* Doesn't work yet
+    if (aggProbe) {
       val probeNestedWireRaw = Wire(new Nested())
       val outNestedRawFoo = IO(Bool())
       val outNestedRawBar = IO(Bool())
       outNestedRawFoo := probe.read(probeNestedWireRaw.foo)
       outNestedRawBar := probe.read(probeNestedWireRaw.bar)
-      probeNestedWireRaw :<>= childRaw.io.nested
+      probeNestedWireRaw :<>= childRaw.io.nested.get
 
       val probeNestedWireExt = Wire(new Nested())
       val outNestedExtFoo = IO(Bool())
       val outNestedExtBar = IO(Bool())
       outNestedExtFoo := probe.read(probeNestedWireExt.foo)
       outNestedExtBar := probe.read(probeNestedWireExt.bar)
-      probeNestedWireExt :<>= childExt.io.nested
-       */
-
+      probeNestedWireExt :<>= childExt.io.nested.get
     }
 
-    println(ChiselStage.emitCHIRRTL(new Parent, Array("--full-stacktrace")))
-    matchesAndOmits(ChiselStage.emitCHIRRTL(new Parent))(
+  }
+
+  "User defined FixedIORaw/ExtModules" should "be able to have Probes of Elements in their IOs" in {
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Parent(false, false)))(
       "output elem : Probe<UInt<1>>",
       "output elem : Probe<UInt<1>>",
       "define probeElemWireRaw = childRaw.elem",
       "define probeElemWireExt = childExt.elem"
     )()
-
   }
+
+  "User defined FixedIORaw/ExtModules" should "be able to have Probes of Aggregates in their IOs" in {
+
+    println(ChiselStage.emitCHIRRTL(new Parent(true, false), Array("--full-stacktrace")))
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Parent(true, false)))(
+      "cow"
+    )()
+  }
+
+  "User defined FixedIORaw/ExtModules" should "be able to have Aggregates with Probes in their IOs" in {
+
+    println(ChiselStage.emitCHIRRTL(new Parent(false, true), Array("--full-stacktrace")))
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Parent(false, true)))(
+      "output nested : { foo : Probe<UInt<1>>, bar : Probe<UInt<1>>}",
+      "output nested : { foo : Probe<UInt<1>>, bar : Probe<UInt<1>>}",
+      "define probeNestedWireRaw.bar = childRaw.nested.bar",
+      "define probeNestedWireRaw.foo = childRaw.nested.foo",
+      "define probeNestedWireExt.bar = childExt.nested.bar",
+      "define probeNestedWireExt.foo = childExt.nested.foo",
+    )()
+  }
+
 }

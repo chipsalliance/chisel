@@ -603,8 +603,8 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
         }
       }
 
-    val leftType = if (this.hasBinding) this.cloneType else this
-    val rightType = if (that.hasBinding) that.cloneType else that
+    val leftType = this.cloneTypeFull //if (this.hasBinding) this.cloneType else this
+    val rightType = that.cloneTypeFull //if (that.hasBinding) that.cloneType else that
     rec(leftType, rightType)
   }
 
