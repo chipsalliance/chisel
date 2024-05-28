@@ -95,10 +95,12 @@ class FixedIOModuleSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
 
   "User defined FixedIORaw/ExtModules" should "be able to have Probes in their IOs" in {
 
-    class Agg extends Bundle {
-      val foo = Bool()
-      val bar = Bool()
-    }
+    /** Unused -- we can't yet have a Probed Aggregate in a FixedIO___Module
+      *    class Agg extends Bundle {
+      *      val foo = Bool()
+      *      val bar = Bool()
+      *    }
+      */
 
     class FixedIO extends Bundle {
       val elem = Probe(Bool())
@@ -141,8 +143,12 @@ class FixedIOModuleSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
   probeAggWireExt :<>= childExt.io.agg
        */
     }
-
-    print(circt.stage.ChiselStage.emitCHIRRTL(new Parent))
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Parent))(
+      "output elem : Probe<UInt<1>>",
+      "output elem : Probe<UInt<1>>",
+      "define probeElemWireRaw = childRaw.elem",
+      "define probeElemWireExt = childExt.elem"
+    )()
 
   }
 }
