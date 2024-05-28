@@ -95,16 +95,25 @@ class FixedIOModuleSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
 
   "User defined FixedIORaw/ExtModules" should "be able to have Probes in their IOs" in {
 
-    /** Unused -- we can't yet have a Probed Aggregate in a FixedIO___Module
-      *    class Agg extends Bundle {
-      *      val foo = Bool()
-      *      val bar = Bool()
-      *    }
-      */
+    /* Unused -- we can't yet have a Probed Aggregate in a FixedIO___Module
+    class Agg extends Bundle {
+      val foo = Bool()
+      val bar = Bool()
+    }
+     */
+
+    /*Unused -- we can't yet have an Aggregate of Probes in a FixedIO__Module
+    class Nested extends Bundle {
+      val foo = Probe(Bool())
+      val bar = Probe(Bool())
+    }
+     */
 
     class FixedIO extends Bundle {
       val elem = Probe(Bool())
+      // Doesn't work yet
       // val agg = Probe(new Agg())
+      // val nested = new Nested()
     }
 
     class ExampleRaw extends FixedIORawModule[FixedIO](new FixedIO()) {
@@ -113,9 +122,20 @@ class FixedIOModuleSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
       elemWire := false.B
       probe.define(io.elem, probe.ProbeValue(elemWire))
 
-      //val aggWire = Wire(new Agg())
-      //aggWire := DontCare
-      // probe.define(io.agg, probe.ProbeValue(aggWire))
+      /* Doesn't work yet
+      val aggWire = Wire(new Agg())
+      aggWire := DontCare
+      probe.define(io.agg, probe.ProbeValue(aggWire))
+       */
+
+      /* Doesn't work yet
+      val nestedWire = Wire(new Nested())
+      val nestedFoo = WireInit(false.B)
+      val nestedBar = WireInit(false.B)
+      probe.define(nestedWire.foo, probe.ProbeValue(nestedFoo))
+      probe.define(nestedWire.bar, probe.ProbeValue(nestedBar))
+      io.nested :<>= nestedWire
+       */
     }
 
     class ExampleExt extends FixedIOExtModule[FixedIO](new FixedIO())
@@ -123,26 +143,51 @@ class FixedIOModuleSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
     class Parent extends Module {
       val childRaw = Module(new ExampleRaw())
       val childExt = Module(new ExampleExt())
+
+      // Check Probe(Element)
       val outElemRaw = IO(Bool())
       val probeElemWireRaw = Wire(Probe(Bool()))
       outElemRaw := probe.read(probeElemWireRaw)
       probeElemWireRaw :<>= childRaw.io.elem
+
       val probeElemWireExt = Wire(Probe(Bool()))
       val outElemExt = IO(Bool())
       outElemExt := probe.read(probeElemWireExt)
       probeElemWireExt :<>= childExt.io.elem
 
+      // Check Probe(Aggregate)
+      /** Doesn't work yet
+        *      val outAggRaw = IO(new Agg())
+        *      val probeAggWireRaw = Wire(Probe(new Agg()))
+        *      outAggRaw := probe.read(probeAggWireRaw)
+        *      probeAggWireRaw :<>= childRaw.io.agg
+        *
+        *      val probeAggWireExt = Wire(Probe(new Agg()))
+        *      val outAggExt = IO(new Agg())
+        *      outAggExt := probe.read(probeAggWireExt)
+        *      probeAggWireExt :<>= childExt.io.agg
+        */
+
+      // Check Aggregate(Probes)
       /* Doesn't work yet
-  val outAggRaw = IO(new Agg())
-  val probeAggWireRaw = Wire(Probe(new Agg()))
-  outAggRaw := probe.read(probeAggWireRaw)
-  probeAggWireRaw :<>= childRaw.io.agg
-  val probeAggWireExt = Wire(Probe(new Agg()))
-  val outAggExt = IO(new Agg())
-  outAggExt := probe.read(probeAggWireExt)
-  probeAggWireExt :<>= childExt.io.agg
+      val probeNestedWireRaw = Wire(new Nested())
+      val outNestedRawFoo = IO(Bool())
+      val outNestedRawBar = IO(Bool())
+      outNestedRawFoo := probe.read(probeNestedWireRaw.foo)
+      outNestedRawBar := probe.read(probeNestedWireRaw.bar)
+      probeNestedWireRaw :<>= childRaw.io.nested
+
+      val probeNestedWireExt = Wire(new Nested())
+      val outNestedExtFoo = IO(Bool())
+      val outNestedExtBar = IO(Bool())
+      outNestedExtFoo := probe.read(probeNestedWireExt.foo)
+      outNestedExtBar := probe.read(probeNestedWireExt.bar)
+      probeNestedWireExt :<>= childExt.io.nested
        */
+
     }
+
+    println(ChiselStage.emitCHIRRTL(new Parent, Array("--full-stacktrace")))
     matchesAndOmits(ChiselStage.emitCHIRRTL(new Parent))(
       "output elem : Probe<UInt<1>>",
       "output elem : Probe<UInt<1>>",

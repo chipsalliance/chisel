@@ -214,7 +214,15 @@ private[chisel3] object getRecursiveFields {
 private[chisel3] object getMatchedFields {
   def apply(x: Data, y: Data): Seq[(Data, Data)] = (x, y) match {
     case (x: Element, y: Element) =>
-      require(x.typeEquivalent(y))
+      require(
+        x.typeEquivalent(y), {
+          val reason = x
+            .findFirstTypeMismatch(y, strictTypes = true, strictWidths = true, strictProbeInfo = true)
+            .map(s => s"\nbecause: $s")
+            .getOrElse("")
+          s"$x is not typeEquivalent to $y $reason"
+        }
+      )
       Seq(x -> y)
     case (x: Record, y: Record) =>
       (x._elements
