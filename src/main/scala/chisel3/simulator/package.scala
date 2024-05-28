@@ -172,11 +172,16 @@ package object simulator {
               }
             }
             case element: Element =>
-              DataMirror.directionOf(element) match {
-                case ActualDirection.Input =>
-                  Seq((element, ModuleInfo.Port(name, isGettable = true, isSettable = true)))
-                case ActualDirection.Output => Seq((element, ModuleInfo.Port(name, isGettable = true)))
-                case _                      => Seq()
+              // Return the port only if the width is positive (firtool will optimized it out from the *.sv primary source)
+              if (element.widthKnown && element.getWidth > 0) {
+                DataMirror.directionOf(element) match {
+                  case ActualDirection.Input =>
+                    Seq((element, ModuleInfo.Port(name, isGettable = true, isSettable = true)))
+                  case ActualDirection.Output => Seq((element, ModuleInfo.Port(name, isGettable = true)))
+                  case _                      => Seq()
+                }
+              } else {
+                Seq()
               }
           }
         }
