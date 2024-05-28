@@ -154,7 +154,10 @@ package object dataview {
       case (aa: Aggregate, ba: Aggregate) =>
         if (!ba.typeEquivalent(aa)) {
           val fieldName = viewFieldLookup(ba)
-          throw InvalidViewException(s"field $fieldName specified as view of non-type-equivalent value $aa")
+          val result = ba.findFirstTypeMismatch(aa, strictTypes = true, strictWidths = true, strictProbeInfo = true)
+          throw InvalidViewException(
+            s"field $fieldName specified as view of non-type-equivalent value $aa due to $result"
+          )
         }
         getMatchedFields(aa, ba).foreach {
           case (aelt: Element, belt: Element) => onElt(aelt, belt)

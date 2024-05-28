@@ -4,6 +4,10 @@ package chiselTests
 
 import chisel3._
 import circt.stage.ChiselStage
+import scala.collection.immutable.ListMap
+import chisel3.reflect.DataMirror.internal.chiselTypeClone
+import chisel3.experimental.SourceInfo
+import chisel3.probe.Probe
 
 class FixedIOModuleSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
 
@@ -87,5 +91,58 @@ class FixedIOModuleSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
       "output out : UInt<1>",
       "input end : UInt<1>"
     )()
+  }
+
+  "User defined FixedIORaw/ExtModules" should "be able to have Probes in their IOs" in {
+
+    class Agg extends Bundle {
+      val foo = Bool()
+      val bar = Bool()
+    }
+
+    class FixedIO extends Bundle {
+      val elem = Probe(Bool())
+      // val agg = Probe(new Agg())
+    }
+
+    class ExampleRaw extends FixedIORawModule[FixedIO](new FixedIO()) {
+
+      val elemWire = Wire(Bool())
+      elemWire := false.B
+      probe.define(io.elem, probe.ProbeValue(elemWire))
+
+      //val aggWire = Wire(new Agg())
+      //aggWire := DontCare
+      // probe.define(io.agg, probe.ProbeValue(aggWire))
+    }
+
+    class ExampleExt extends FixedIOExtModule[FixedIO](new FixedIO())
+
+    class Parent extends Module {
+      val childRaw = Module(new ExampleRaw())
+      val childExt = Module(new ExampleExt())
+      val outElemRaw = IO(Bool())
+      val probeElemWireRaw = Wire(Probe(Bool()))
+      outElemRaw := probe.read(probeElemWireRaw)
+      probeElemWireRaw :<>= childRaw.io.elem
+      val probeElemWireExt = Wire(Probe(Bool()))
+      val outElemExt = IO(Bool())
+      outElemExt := probe.read(probeElemWireExt)
+      probeElemWireExt :<>= childExt.io.elem
+
+      /* Doesn't work yet
+  val outAggRaw = IO(new Agg())
+  val probeAggWireRaw = Wire(Probe(new Agg()))
+  outAggRaw := probe.read(probeAggWireRaw)
+  probeAggWireRaw :<>= childRaw.io.agg
+  val probeAggWireExt = Wire(Probe(new Agg()))
+  val outAggExt = IO(new Agg())
+  outAggExt := probe.read(probeAggWireExt)
+  probeAggWireExt :<>= childExt.io.agg
+       */
+    }
+
+    print(circt.stage.ChiselStage.emitCHIRRTL(new Parent))
+
   }
 }
