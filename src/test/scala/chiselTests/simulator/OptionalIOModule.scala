@@ -20,6 +20,4 @@ class OptionalIOModule(n: Int) extends Module {
   when(d && e && f) {
     myReg := bar
   }
-
-  printf(p"$a, $b, $c, $foo, $out\n")
 }

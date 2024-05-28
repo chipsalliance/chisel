@@ -168,8 +168,6 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
         .simulate(new OptionalIOModule(n = width)) { module =>
           import PeekPokeAPI._
           val dut = module.wrapped
-          println("a, b, c, foo, out")
-          println("=================")
           dut.clock.step(2)
           dut.clock.step(10)
         }
@@ -206,8 +204,6 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
         .simulate(new OptionalIOModule(n = width)) { module =>
           import PeekPokeAPI._
           val dut = module.wrapped
-          println("a, b, c, foo, out")
-          println("=================")
           dut.clock.step(2)
           dut.clock.step(10)
         }
