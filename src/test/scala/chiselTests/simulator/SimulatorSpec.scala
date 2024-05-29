@@ -6,6 +6,7 @@ import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 import svsim._
+import scala.io.Source
 
 class VerilatorSimulator(val workspacePath: String) extends SingleBackendSimulator[verilator.Backend] {
   val backend = verilator.Backend.initializeFromProcessEnvironment()
@@ -68,103 +69,11 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
         .result
       assert(result === 12)
     }
-<<<<<<< HEAD
-=======
-
-    it("runs a design that includes an external module") {
-      class Bar extends ExtModule with HasExtModuleInline {
-        val a = IO(Output(Bool()))
-        setInline(
-          "Bar.sv",
-          """|module Bar(
-             |  output a
-             |);
-             | assign a = 1'b1;
-             |endmodule
-             |""".stripMargin
-        )
-      }
-
-      class Baz extends ExtModule with HasExtModuleResource {
-        val a = IO(Output(Bool()))
-        addResource("/chisel3/simulator/Baz.sv")
-      }
-
-      class Qux extends ExtModule with HasExtModulePath {
-        val a = IO(Output(Bool()))
-        addPath("src/test/resources/chisel3/simulator/Qux.sv")
-      }
-
-      class Foo extends RawModule {
-        val a, b, c = IO(Output(Bool()))
-        a :<= Module(new Bar).a
-        b :<= Module(new Baz).a
-        c :<= Module(new Qux).a
-      }
-
-      new VerilatorSimulator("test_run_dir/simulator/extmodule")
-        .simulate(new Foo) { module =>
-          import PeekPokeAPI._
-          val foo = module.wrapped
-          foo.a.expect(1)
-          foo.b.expect(1)
-          foo.c.expect(1)
-        }
-        .result
-    }
-
-    it("runs a design with debug mode (-g) and --strip-debug-info") {
-      import circt.stage.ChiselStage
-
-      class Bar extends Module {
-        val a = IO(Input(Bool()))
-        val b = IO(Input(Bool()))
-        val out = IO(Output(Bool()))
-
-        out := a & b
-      }
-
-      // Check now the debug info is stripped
-      val expectedSV = ChiselStage.emitSystemVerilog(new Bar, firtoolOpts = Array("--strip-debug-info", "-g"))
-
-      new VerilatorSimulator("test_run_dir/simulator/bar_debug_mode") {
-        override val firtoolArgs = Seq("--strip-debug-info", "-g")
-      }
-        .simulate(new Bar) { module =>
-          import PeekPokeAPI._
-          val bar = module.wrapped
-
-          bar.a.poke(false.B)
-          bar.b.poke(false.B)
-          bar.out.expect(false.B)
-          bar.clock.step()
-
-          bar.a.poke(true.B)
-          bar.b.poke(false.B)
-          bar.out.expect(false.B)
-          bar.clock.step()
-
-          bar.a.poke(true.B)
-          bar.b.poke(true.B)
-          bar.out.expect(true.B)
-          bar.clock.step()
-        }
-        .result
-
-      // Check the expected SV and the generated SV are the same
-      val source = io.Source.fromFile("test_run_dir/simulator/bar_debug_mode/primary-sources/Bar.sv")
-      val actualSV = source.mkString
-      assert(actualSV === expectedSV)
-      source.close()
-
-    }
 
     it("simulate a circuit with zero-width ports") {
       val width = 0
       // Run a simulation with zero width foo
-      new VerilatorSimulator("test_run_dir/simulator/foo_zero_width") {
-        override val firtoolArgs = Seq("--strip-debug-info", "-g")
-      }
+      new VerilatorSimulator("test_run_dir/simulator/foo_zero_width")
         .simulate(new OptionalIOModule(n = width)) { module =>
           import PeekPokeAPI._
           val dut = module.wrapped
@@ -174,7 +83,7 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
         .result
 
       // Check the testbench sv does not contain dut.foo and dut.out
-      val tbSource = io.Source.fromFile("test_run_dir/simulator/foo_zero_width/generated-sources/testbench.sv")
+      val tbSource = Source.fromFile("test_run_dir/simulator/foo_zero_width/generated-sources/testbench.sv")
       val tbSV = tbSource.mkString
       tbSource.close()
       // Check IO ports
@@ -184,7 +93,7 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
       (tbSV should not).include("dut.emptyBundle")
       (tbSV should not).include("dut.bundle_x")
 
-      val source = io.Source.fromFile("test_run_dir/simulator/foo_zero_width/primary-sources/OptionalIOModule.sv")
+      val source = Source.fromFile("test_run_dir/simulator/foo_zero_width/primary-sources/OptionalIOModule.sv")
       val actualSV = source.mkString
       source.close()
       (actualSV should not).include("foo")
@@ -198,9 +107,7 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
     it("simulate a circuit with non zero-width ports") {
       val width = 8
       // Run a simulation with zero width foo
-      new VerilatorSimulator("test_run_dir/simulator/foo_non_zero_width") {
-        override val firtoolArgs = Seq("--strip-debug-info", "-g")
-      }
+      new VerilatorSimulator("test_run_dir/simulator/foo_non_zero_width")
         .simulate(new OptionalIOModule(n = width)) { module =>
           import PeekPokeAPI._
           val dut = module.wrapped
@@ -210,7 +117,7 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
         .result
 
       // Check the testbench sv does not contain dut.foo and dut.out
-      val tbSource = io.Source.fromFile("test_run_dir/simulator/foo_non_zero_width/generated-sources/testbench.sv")
+      val tbSource = Source.fromFile("test_run_dir/simulator/foo_non_zero_width/generated-sources/testbench.sv")
       val tbSV = tbSource.mkString
       tbSource.close()
       // Check IO ports
@@ -220,7 +127,7 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
       (tbSV should not).include("emptyBundle")
       tbSV should include("[$bits(dut.bundle_x)-1:0] bundle_x")
 
-      val source = io.Source.fromFile("test_run_dir/simulator/foo_non_zero_width/primary-sources/OptionalIOModule.sv")
+      val source = Source.fromFile("test_run_dir/simulator/foo_non_zero_width/primary-sources/OptionalIOModule.sv")
       val actualSV = source.mkString
       source.close()
       actualSV should include("foo")
@@ -230,6 +137,5 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
       (actualSV should not).include("emptyBundle")
       actualSV should include("bundle_x")
     }
->>>>>>> 2f9faa28c (Fix 0 width signals chiselsim (#4100))
   }
 }
