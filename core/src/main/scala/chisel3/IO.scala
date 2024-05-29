@@ -66,7 +66,7 @@ object IO {
 
 /** The same as [[IO]] except there is no prefix when given a [[Record]] or
   * [[Bundle]].  For [[Element]] ([[UInt]], etc.) or [[Vec]] types, this is
-  * the same as [[IO]].
+  * the same as [[IO]]. It is also the same as [[IO]] for [[Probe]] types.
   *
   * @example {{{
   * class MyBundle extends Bundle {
