@@ -2,15 +2,83 @@ package chisel3
 
 import svsim._
 import chisel3.reflect.DataMirror
+import chisel3.experimental.dataview.reifySingleData
 import scala.collection.mutable
 import java.nio.file.{Files, Path, Paths}
 
 package object simulator {
   implicit class SimulationController(controller: Simulation.Controller) {
     def port(data: Data): Simulation.Port = {
+<<<<<<< HEAD
       val context = Simulator.dynamicSimulationContext.value.get
       assert(context.controller == controller)
       context.simulationPorts(data)
+=======
+      // TODO, we can support non 1-1 views, but it will require changing this API to return a Seq[Port]
+      // and packing/unpacking the BigInt literal representation.
+      val reified = reifySingleData(data).getOrElse {
+        val url = "https://github.com/chipsalliance/chisel/issues/new/choose"
+        throw new Exception(
+          s"Cannot poke $data as is a view that does not map to a single Data. " +
+            s"Please file an issue at $url requesting support for this use case."
+        )
+      }
+      simulationPorts(reified)
+    }
+
+    // -- Peek/Poke API Support
+
+    // When using the low-level API, the user must explicitly call `controller.completeInFlightCommands()` to ensure that all commands are executed. When using a higher-level API like peek/poke, we handle this automatically.
+    private var shouldCompleteInFlightCommands: Boolean = false
+    private[simulator] def completeSimulation() = {
+      if (shouldCompleteInFlightCommands) {
+        shouldCompleteInFlightCommands = false
+        controller.completeInFlightCommands()
+      }
+    }
+
+    // The peek/poke API implicitly evaluates on the first peek after one or more pokes. This is _only_ for peek/poke and using `controller` directly will not provide this behavior.
+    private var evaluateBeforeNextPeek: Boolean = false
+    private[simulator] def willEvaluate() = {
+      evaluateBeforeNextPeek = false
+    }
+    private[simulator] def willPoke() = {
+      shouldCompleteInFlightCommands = true
+      evaluateBeforeNextPeek = true
+    }
+    private[simulator] def willPeek() = {
+      shouldCompleteInFlightCommands = true
+      if (evaluateBeforeNextPeek) {
+        willEvaluate()
+        controller.run(0)
+      }
+    }
+  }
+  private[simulator] object AnySimulatedModule {
+    private val dynamicVariable = new scala.util.DynamicVariable[Option[AnySimulatedModule]](None)
+    def withValue[T](module: AnySimulatedModule)(body: => T): T = {
+      require(dynamicVariable.value.isEmpty, "Nested simulations are not supported.")
+      dynamicVariable.withValue(Some(module))(body)
+    }
+    def current: AnySimulatedModule = dynamicVariable.value.get
+  }
+
+  implicit class ChiselSimulation(simulation: Simulation) {
+    def runElaboratedModule[T, U](
+      elaboratedModule:              ElaboratedModule[T],
+      conservativeCommandResolution: Boolean = false,
+      verbose:                       Boolean = false,
+      traceEnabled:                  Boolean = false,
+      executionScriptLimit:          Option[Int] = None
+    )(body:                          SimulatedModule[T] => U
+    ): U = {
+      simulation.run(conservativeCommandResolution, verbose, traceEnabled, executionScriptLimit) { controller =>
+        val module = new SimulatedModule(elaboratedModule, controller)
+        AnySimulatedModule.withValue(module) {
+          body(module)
+        }
+      }
+>>>>>>> ca49d5779 (Support views of ports in ChiselSim (#4107))
     }
   }
 
