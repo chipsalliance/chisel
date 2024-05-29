@@ -230,5 +230,28 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
       (actualSV should not).include("emptyBundle")
       actualSV should include("bundle_x")
     }
+
+    it("support peeking and poking FlatIO ports and other views of ports") {
+      import chisel3.experimental.dataview._
+      class SimpleModule extends Module {
+        val io = FlatIO(new Bundle {
+          val in = Input(UInt(8.W))
+          val out = Output(UInt(8.W))
+        })
+        val viewOfClock = clock.viewAs[Clock]
+        val delay = RegNext(io.in)
+        io.out := delay
+      }
+      new VerilatorSimulator("test_run_dir/simulator/flat_io_ports")
+        .simulate(new SimpleModule) { module =>
+          import PeekPokeAPI._
+          val dut = module.wrapped
+          dut.io.in.poke(12.U)
+          dut.viewOfClock.step(1)
+          dut.io.out.peek()
+          dut.io.out.expect(12)
+        }
+        .result
+    }
   }
 }
