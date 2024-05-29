@@ -6,6 +6,7 @@ import chisel3.simulator._
 import chisel3.util.{HasExtModuleInline, HasExtModulePath, HasExtModuleResource}
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.must.Matchers
+import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 import svsim._
 
 class VerilatorSimulator(val workspacePath: String) extends SingleBackendSimulator[verilator.Backend] {
@@ -158,5 +159,99 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
 
     }
 
+    it("simulate a circuit with zero-width ports") {
+      val width = 0
+      // Run a simulation with zero width foo
+      new VerilatorSimulator("test_run_dir/simulator/foo_zero_width") {
+        override val firtoolArgs = Seq("--strip-debug-info", "-g")
+      }
+        .simulate(new OptionalIOModule(n = width)) { module =>
+          import PeekPokeAPI._
+          val dut = module.wrapped
+          dut.clock.step(2)
+          dut.clock.step(10)
+        }
+        .result
+
+      // Check the testbench sv does not contain dut.foo and dut.out
+      val tbSource = io.Source.fromFile("test_run_dir/simulator/foo_zero_width/generated-sources/testbench.sv")
+      val tbSV = tbSource.mkString
+      tbSource.close()
+      // Check IO ports
+      (tbSV should not).include("dut.foo")
+      (tbSV should not).include("dut.bar")
+      (tbSV should not).include("dut.out")
+      (tbSV should not).include("dut.emptyBundle")
+      (tbSV should not).include("dut.bundle_x")
+
+      val source = io.Source.fromFile("test_run_dir/simulator/foo_zero_width/primary-sources/OptionalIOModule.sv")
+      val actualSV = source.mkString
+      source.close()
+      (actualSV should not).include("foo")
+      (actualSV should not).include("bar")
+      (actualSV should not).include("myReg")
+      (actualSV should not).include("output [7:0] out")
+      (actualSV should not).include("emptyBundle")
+      (actualSV should not).include("bundle_x")
+    }
+
+    it("simulate a circuit with non zero-width ports") {
+      val width = 8
+      // Run a simulation with zero width foo
+      new VerilatorSimulator("test_run_dir/simulator/foo_non_zero_width") {
+        override val firtoolArgs = Seq("--strip-debug-info", "-g")
+      }
+        .simulate(new OptionalIOModule(n = width)) { module =>
+          import PeekPokeAPI._
+          val dut = module.wrapped
+          dut.clock.step(2)
+          dut.clock.step(10)
+        }
+        .result
+
+      // Check the testbench sv does not contain dut.foo and dut.out
+      val tbSource = io.Source.fromFile("test_run_dir/simulator/foo_non_zero_width/generated-sources/testbench.sv")
+      val tbSV = tbSource.mkString
+      tbSource.close()
+      // Check IO ports
+      tbSV should include("[$bits(dut.foo)-1:0] foo")
+      tbSV should include("[$bits(dut.bar)-1:0] bar")
+      tbSV should include("[$bits(dut.out)-1:0] out")
+      (tbSV should not).include("emptyBundle")
+      tbSV should include("[$bits(dut.bundle_x)-1:0] bundle_x")
+
+      val source = io.Source.fromFile("test_run_dir/simulator/foo_non_zero_width/primary-sources/OptionalIOModule.sv")
+      val actualSV = source.mkString
+      source.close()
+      actualSV should include("foo")
+      actualSV should include("bar")
+      actualSV should include("myReg")
+      actualSV should include("output [7:0] out")
+      (actualSV should not).include("emptyBundle")
+      actualSV should include("bundle_x")
+    }
+
+    it("support peeking and poking FlatIO ports and other views of ports") {
+      import chisel3.experimental.dataview._
+      class SimpleModule extends Module {
+        val io = FlatIO(new Bundle {
+          val in = Input(UInt(8.W))
+          val out = Output(UInt(8.W))
+        })
+        val viewOfClock = clock.viewAs[Clock]
+        val delay = RegNext(io.in)
+        io.out := delay
+      }
+      new VerilatorSimulator("test_run_dir/simulator/flat_io_ports")
+        .simulate(new SimpleModule) { module =>
+          import PeekPokeAPI._
+          val dut = module.wrapped
+          dut.io.in.poke(12.U)
+          dut.viewOfClock.step(1)
+          dut.io.out.peek()
+          dut.io.out.expect(12)
+        }
+        .result
+    }
   }
 }
