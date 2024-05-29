@@ -1,6 +1,7 @@
 package chisel3
 
 import chisel3.internal.{throwException, Builder}
+import chisel3.probe.Probe
 import chisel3.experimental.{noPrefix, requireIsChiselType, SourceInfo}
 import chisel3.properties.{Class, Property}
 import chisel3.reflect.DataMirror.internal.chiselTypeClone
