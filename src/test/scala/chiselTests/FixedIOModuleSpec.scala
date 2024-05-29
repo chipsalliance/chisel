@@ -179,7 +179,7 @@ class FixedIOModuleSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
 
   }
 
-  "User defined FixedIORaw/ExtModules" should "be able to have Probes of Elements in their IOs" in {
+  "FixedIORaw/ExtModules" should "be able to have a Record with Probes of Elements in their IOs" in {
     matchesAndOmits(ChiselStage.emitCHIRRTL(new Parent(false, false)))(
       "output elem : Probe<UInt<1>>",
       "output elem : Probe<UInt<1>>",
@@ -188,24 +188,68 @@ class FixedIOModuleSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
     )()
   }
 
-  "User defined FixedIORaw/ExtModules" should "be able to have Probes of Aggregates in their IOs" in {
-
-    println(ChiselStage.emitCHIRRTL(new Parent(true, false), Array("--full-stacktrace")))
+  "FixedIORaw/ExtModules" should "be able to have a Record with Probes of Aggregates in their IOs" in {
     matchesAndOmits(ChiselStage.emitCHIRRTL(new Parent(true, false)))(
-      "cow"
+      "output agg : Probe<{ foo : UInt<1>, bar : UInt<1>}>",
+      "output agg : Probe<{ foo : UInt<1>, bar : UInt<1>}>",
+      "define probeAggWireRaw = childRaw.agg",
+      "define probeAggWireExt = childExt.agg"
     )()
   }
 
-  "User defined FixedIORaw/ExtModules" should "be able to have Aggregates with Probes in their IOs" in {
-
-    println(ChiselStage.emitCHIRRTL(new Parent(false, true), Array("--full-stacktrace")))
+  "FixedIORaw/ExtModules" should "be able to have a Record with Aggregates with Probes in their IOs" in {
     matchesAndOmits(ChiselStage.emitCHIRRTL(new Parent(false, true)))(
       "output nested : { foo : Probe<UInt<1>>, bar : Probe<UInt<1>>}",
       "output nested : { foo : Probe<UInt<1>>, bar : Probe<UInt<1>>}",
       "define probeNestedWireRaw.bar = childRaw.nested.bar",
       "define probeNestedWireRaw.foo = childRaw.nested.foo",
       "define probeNestedWireExt.bar = childExt.nested.bar",
-      "define probeNestedWireExt.foo = childExt.nested.foo",
+      "define probeNestedWireExt.foo = childExt.nested.foo"
+    )()
+  }
+  "FixedIOExtModules" should "be able to have a Probe(Element) as its FixedIO" in {
+    class ProbeElemExt extends FixedIOExtModule(Probe(Bool()))
+    class Parent extends RawModule {
+      val child = Module(new ProbeElemExt)
+      val ioElem = IO(Output(Bool()))
+      val wireElem = Wire(Probe(Bool()))
+      wireElem :<>= child.io
+      ioElem := probe.read(wireElem)
+    }
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Parent()))(
+      "output io : Probe<UInt<1>>",
+      "define wireElem = child.io"
+    )()
+  }
+  "FixedIOExtModules" should "be able to have a Probe(Agg) as its FixedIO" in {
+    class ProbeAggExt extends FixedIOExtModule(Probe(new Agg()))
+    class Parent extends RawModule {
+      val child = Module(new ProbeAggExt)
+      val ioAgg = IO(Output(new Agg()))
+      val wireAgg = Wire(Probe(new Agg()))
+      wireAgg :<>= child.io
+      ioAgg := probe.read(wireAgg)
+    }
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Parent()))(
+      "output io : Probe<{ foo : UInt<1>, bar : UInt<1>}>",
+      "define wireAgg = child.io"
+    )()
+  }
+
+  "FixedIOExtModules" should "be able to have an Aggregate with Probes as its FixedIO" in {
+    class ProbeNestedExt extends FixedIOExtModule(new Nested())
+    class Parent extends RawModule {
+      val child = Module(new ProbeNestedExt)
+      val ioBar = IO(Output(new Bool()))
+      val wireNested = Wire(new Nested())
+      wireNested :<>= child.io
+      ioBar := probe.read(wireNested.bar)
+    }
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Parent()))(
+      "output foo : Probe<UInt<1>>",
+      "output bar : Probe<UInt<1>>",
+      "define wireNested.bar = child.bar",
+      "define wireNested.foo = child.foo"
     )()
   }
 

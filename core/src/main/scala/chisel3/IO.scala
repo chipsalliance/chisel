@@ -59,7 +59,6 @@ object IO {
             data
         }
     module.bindIoInPlace(iodefClone)
-    println(s"iodefClone is $iodefClone with probeTypeModifier ${iodefClone.probeInfo}")
     iodefClone
   }
 }
@@ -84,35 +83,26 @@ object FlatIO {
   def apply[T <: Data](gen: => T)(implicit sourceInfo: SourceInfo): T = noPrefix {
     import chisel3.experimental.dataview._
 
-        def coerceProbe(d: Data): Data = {
-      if (chisel3.reflect.DataMirror.hasProbeTypeModifier(gen))
-       probe.Probe(d)
-        else d
-    }
-
-
-    def coerceDirectionAndProbe(d: Data): Data = {
+    def coerceDirection(d: Data): Data = {
       import chisel3.{SpecifiedDirection => SD}
       chisel3.reflect.DataMirror.specifiedDirectionOf(gen) match {
-        case SD.Flip   => coerceProbe(Flipped(d))
-        case SD.Input  => coerceProbe(Input(d))
-        case SD.Output => coerceProbe(Output(d))
-        case _         => coerceProbe(d)
+        case SD.Flip   => Flipped(d)
+        case SD.Input  => Input(d)
+        case SD.Output => Output(d)
+        case _         => d
       }
     }
-    
-
-
 
     type R = T with Record
     gen match {
+      case d if chisel3.reflect.DataMirror.hasProbeTypeModifier(d) => IO(d)
       case _:      Element => IO(gen)
       case _:      Vec[_] => IO(gen)
       case record: R =>
         val ports: Seq[Data] =
           record._elements.toSeq.reverse.map {
             case (name, data) =>
-              val p = chisel3.IO(coerceDirectionAndProbe(chiselTypeClone(data).asInstanceOf[Data]))
+              val p = chisel3.IO(coerceDirection(data).asInstanceOf[Data])
               val ctcd = chiselTypeClone(data)
               assert(
                 p.typeEquivalent(data), {
@@ -120,11 +110,11 @@ object FlatIO {
                     .findFirstTypeMismatch(data, strictTypes = true, strictWidths = true, strictProbeInfo = true)
                     .map(s => s"\nbecause: $s")
                     .getOrElse("")
-                  s"$p is supposed to be type equivalent to $data, but is not$reason" + 
-                  s"\nNote that chiselTypeClone(data) is ${ctcd} with ${ctcd.probeInfo}"
+                  s"$p is supposed to be type equivalent to $data, but is not$reason" +
+                    s"\nNote that chiselTypeClone(data) is ${ctcd} with ${ctcd.probeInfo}"
                 }
               )
-              
+
               p.suggestName(name)
               p
 
