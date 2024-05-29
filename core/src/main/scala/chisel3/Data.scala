@@ -214,10 +214,10 @@ private[chisel3] object getRecursiveFields {
 private[chisel3] object getMatchedFields {
   def apply(x: Data, y: Data): Seq[(Data, Data)] = (x, y) match {
     case (x: Element, y: Element) =>
-      requireTypeEquivalent(x, y)
+      x.requireTypeEquivalent(y)
       Seq(x -> y)
     case (_, _) if DataMirror.hasProbeTypeModifier(x) || DataMirror.hasProbeTypeModifier(y) => {
-      requireTypeEquivalent(x, y)
+      x.requireTypeEquivalent(y)
       Seq(x -> y)
     }
     case (x: Record, y: Record) =>
