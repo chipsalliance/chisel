@@ -445,23 +445,16 @@ private[chisel3] object MonoConnect {
     context:     BaseModule
   ): Unit = {
 
-    // Reify sink and source if they're views
-    val sink = if (isView(sinkProbe)) {
-      reifySingleData(sinkProbe).getOrElse(
-        throwException(
-          s"If a DataView contains a Probe, it must resolve to one Data. $sinkProbe does not meet this criteria."
-        )
+    val sink = reifySingleData(sinkProbe).getOrElse(
+      throwException(
+        s"If a DataView contains a Probe, it must resolve to one Data. $sinkProbe does not meet this criteria."
       )
-    } else sinkProbe
-
-    val source = if (isView(sourceProbe)) {
-      reifySingleData(sourceProbe).getOrElse(
-        throwException(
-          s"If a DataView contains a Probe, it must resolve to one Data. $sourceProbe does not meet this criteria."
-        )
+    )
+    val source = reifySingleData(sourceProbe).getOrElse(
+      throwException(
+        s"If a DataView contains a Probe, it must resolve to one Data. $sourceProbe does not meet this criteria."
       )
-    } else sourceProbe
-
+    )
     checkConnect.checkConnection(sourceInfo, sink, source, context)
     context match {
       case rm: RawModule => rm.addCommand(ProbeDefine(sourceInfo, sink.lref, source.ref))

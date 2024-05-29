@@ -4,6 +4,7 @@ import chisel3.internal.{throwException, Builder}
 import chisel3.experimental.{noPrefix, requireIsChiselType, SourceInfo}
 import chisel3.properties.{Class, Property}
 import chisel3.reflect.DataMirror.internal.chiselTypeClone
+import chisel3.reflect.DataMirror.{hasProbeTypeModifier, specifiedDirectionOf}
 
 object IO {
 
@@ -85,7 +86,7 @@ object FlatIO {
 
     def coerceDirection(d: Data): Data = {
       import chisel3.{SpecifiedDirection => SD}
-      chisel3.reflect.DataMirror.specifiedDirectionOf(gen) match {
+      specifiedDirectionOf(gen) match {
         case SD.Flip   => Flipped(d)
         case SD.Input  => Input(d)
         case SD.Output => Output(d)
@@ -95,26 +96,14 @@ object FlatIO {
 
     type R = T with Record
     gen match {
-      case d if chisel3.reflect.DataMirror.hasProbeTypeModifier(d) => IO(d)
+      case d if hasProbeTypeModifier(d) => IO(d)
       case _:      Element => IO(gen)
       case _:      Vec[_] => IO(gen)
       case record: R =>
         val ports: Seq[Data] =
           record._elements.toSeq.reverse.map {
             case (name, data) =>
-              val p = chisel3.IO(coerceDirection(data).asInstanceOf[Data])
-              val ctcd = chiselTypeClone(data)
-              assert(
-                p.typeEquivalent(data), {
-                  val reason = p
-                    .findFirstTypeMismatch(data, strictTypes = true, strictWidths = true, strictProbeInfo = true)
-                    .map(s => s"\nbecause: $s")
-                    .getOrElse("")
-                  s"$p is supposed to be type equivalent to $data, but is not$reason" +
-                    s"\nNote that chiselTypeClone(data) is ${ctcd} with ${ctcd.probeInfo}"
-                }
-              )
-
+              val p = IO(coerceDirection(data).asInstanceOf[Data])
               p.suggestName(name)
               p
 

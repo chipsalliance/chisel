@@ -150,6 +150,7 @@ class FixedIOModuleSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
     outElemExt := probe.read(probeElemWireExt)
     probeElemWireExt :<>= childExt.io.elem
 
+    // Check Probe(Aggregate)
     if (probeAgg) {
       val outAggRaw = IO(new Agg())
       val probeAggWireRaw = Wire(Probe(new Agg()))
@@ -161,6 +162,7 @@ class FixedIOModuleSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
       probeAggWireExt :<>= childExt.io.agg.get
     }
 
+    // Check Aggregate(Probe)
     if (aggProbe) {
       val probeNestedWireRaw = Wire(new AggWithProbes())
       val outNestedRawFoo = IO(Bool())
@@ -221,7 +223,7 @@ class FixedIOModuleSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
       "define wireElem = child.io"
     )()
   }
-  "FixedIOExtModules" should "be able to have a Probe(Agg) as its FixedIO" in {
+  "FixedIOExtModules" should "be able to have a Probe(Aggregate) as its FixedIO" in {
     class ProbeAggExt extends FixedIOExtModule(Probe(new Agg()))
     class Parent extends RawModule {
       val child = Module(new ProbeAggExt)

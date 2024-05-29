@@ -156,10 +156,10 @@ package object dataview {
           val fieldName = viewFieldLookup(ba)
           val reason = ba
             .findFirstTypeMismatch(aa, strictTypes = true, strictWidths = true, strictProbeInfo = true)
-            .map(s => s"\nbecause: $s")
+            .map(s => s"\nbecause $s")
             .getOrElse("")
           throw InvalidViewException(
-            s"Field $fieldName specified as view of non-type-equivalent value $aa $reason"
+            s"Field $fieldName specified as view of non-type-equivalent value $aa$reason"
           )
         }
         getMatchedFields(aa, ba).foreach {
