@@ -10,7 +10,7 @@ import chisel3._
 import chisel3.util.BitPat
 
 // Run with:
-// mill benchmark.runJmh
+// ./mill benchmark.runJmh
 class ChiselBenchmark {
 
   // This is just an example, copy-paste and modify as appropriate
