@@ -93,9 +93,7 @@ class FlatIOSpec extends ChiselFlatSpec with MatchesAndOmits {
     }
 
     matchesAndOmits(
-      ChiselStage.emitSystemVerilog(
-        new MyModule
-      )
+      ChiselStage.emitSystemVerilog(new MyModule)
     )("io_foo,")("io_bar,")
 
     matchesAndOmits(
