@@ -112,9 +112,7 @@ class FlatIOSpec extends ChiselFlatSpec with MatchesAndOmits {
       val io = FlatIO(Input(new MyRecord))
     }
     matchesAndOmits(
-      ChiselStage.emitSystemVerilog(
-        new MyModule
-      )
+      ChiselStage.emitSystemVerilog(new MyModule)
     )("io_bar,")("io_foo,")
     matchesAndOmits(
       ChiselStage.emitSystemVerilog(new MyFlatIOModule)
