@@ -40,7 +40,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref }}
       - name: Install Tabby OSS Cad Suite
@@ -87,7 +87,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref }}
       # FIXME: installling jextract before installing mill to workaround `os.proc` can't find jextract in the outdated PATH env from mill server
@@ -127,7 +127,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref }}
       - name: Setup Scala
@@ -144,7 +144,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref }}
       - name: Install Tabby OSS Cad Suite
@@ -173,6 +173,30 @@ jobs:
       - name: Integration Tests
         run: sbt integrationTests/test
 
+<<<<<<< HEAD
+=======
+  # Currently just a sanity check that the benchmarking flow works
+  benchmark:
+    name: Benchmarking Sanity Check
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'adopt'
+          java-version: '21'
+      - name: Install Mill
+        uses: jodersky/setup-mill@v0.3.0
+        with:
+          mill-version: 0.11.5
+      - name: JMH
+        run: mill benchmark.runJmh
+
+>>>>>>> 99aa9f1e4 (Bump versions of Github actions to versions using Node 20 (#4116))
   std:
     name: Standard Library Tests
     runs-on: ubuntu-22.04
@@ -181,7 +205,7 @@ jobs:
         scala: ["2.13.12"]
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref }}
       - name: Install Tabby OSS Cad Suite
@@ -203,7 +227,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref }}
           # Need full history to correctly determine SNAPSHOT version
@@ -240,7 +264,7 @@ jobs:
       - name: Tar built website
         run: tar zcf website.tar.gz website/build
       - name: Share Built Website
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: website
           path: website.tar.gz
