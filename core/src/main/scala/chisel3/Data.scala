@@ -581,11 +581,6 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
           }
         case _ => Some(s": Left ($left) and Right ($right) have different types.")
       }
-<<<<<<< HEAD
-    val leftType = if (this.hasBinding) this.cloneType else this
-    val rightType = if (that.hasBinding) that.cloneType else that
-    rec(leftType, rightType)
-=======
 
     rec(this, that)
   }
@@ -603,7 +598,6 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
         s"$this is not typeEquivalent to $that$reason"
       }
     )
->>>>>>> 0553b6943 (FixedIO__Modules with various kinds of probe ports  (#4105))
   }
 
   private[chisel3] def isVisible: Boolean = isVisibleFromModule && visibleFromWhen.isEmpty
