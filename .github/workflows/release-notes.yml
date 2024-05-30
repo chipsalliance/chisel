@@ -41,7 +41,7 @@ jobs:
         run: echo "$CHANGELOG" >> $GITHUB_STEP_SUMMARY
       - name: Upload Release Notes (on release)
         if: github.event_name == 'release'
-        uses: softprops/action-gh-release@v0.1.15
+        uses: softprops/action-gh-release@v2.0.5
         with:
           body: ${{ steps.release-notes.outputs.changelog }}
       - name: Error on uncategorized PRs

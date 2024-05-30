@@ -10,7 +10,7 @@ runs:
   using: composite
   steps:
     - id: cache-oss-cad-suite
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: oss-cad-suite
         key: oss-cad-suite-${{ runner.os }}-${{ inputs.version }}

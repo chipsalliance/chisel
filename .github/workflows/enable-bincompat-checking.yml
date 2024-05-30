@@ -37,7 +37,7 @@ jobs:
       branches: ${{ steps.determine-branches.outputs.branches }}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Check Valid
@@ -70,14 +70,14 @@ jobs:
         branch: ${{ fromJson(needs.determine_branches.outputs.branches) }}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Create file
         run: |
           VERSION=${{ needs.determine_version.outputs.version }}
           VERSION_NO_V=${VERSION#v}
           echo $VERSION_NO_V >> project/previous-versions.txt
       - name: Open PR
-        uses: peter-evans/create-pull-request@v5
+        uses: peter-evans/create-pull-request@v6
         with:
           base: ${{ matrix.branch }}
           branch: bincompat/${{ matrix.branch }}/${{ needs.determine_version.outputs.version }}
