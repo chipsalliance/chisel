@@ -43,11 +43,6 @@ object TypeEquivalenceSpec {
   object Green extends Layer(layer.Convention.Bind) {
     override def toString = "Green"
   }
-
-  class BundleWithAColor(layer: Option[Layer]) extends Bundle {
-    val logic = Bool()
-    val probe = layer.map { l => Probe(Bool(), l) }.getOrElse(Probe(Bool()))
-  }
 }
 
 import TypeEquivalenceSpec._
@@ -306,7 +301,7 @@ class TypeEquivalenceSpec extends AnyFlatSpec {
   it should "detect differences between Probe and Not-Probe" in {
     Probe(Bool()).findFirstTypeMismatch(Bool(), true, true, true) should be(
       Some(
-        ": Left (Bool with probeInfo: Some(writeable=false, color=None)) and Right (Bool with probeInfo: None) have different probeInfo."
+        ": Left (Bool with probeInfo: Some(writeable=false)) and Right (Bool with probeInfo: None) have different probeInfo."
       )
     )
   }
@@ -318,7 +313,7 @@ class TypeEquivalenceSpec extends AnyFlatSpec {
   it should "detect differences between Probe and Not-Probe within a Bundle" in {
     new BundleWithProbe(true).findFirstTypeMismatch(new BundleWithProbe(false), true, true, true) should be(
       Some(
-        ".maybeProbe: Left (Bool with probeInfo: Some(writeable=false, color=None)) and Right (Bool with probeInfo: None) have different probeInfo."
+        ".maybeProbe: Left (Bool with probeInfo: Some(writeable=false)) and Right (Bool with probeInfo: None) have different probeInfo."
       )
     )
   }
@@ -326,7 +321,7 @@ class TypeEquivalenceSpec extends AnyFlatSpec {
   it should "detect differences between probe types" in {
     RWProbe(Bool()).findFirstTypeMismatch(Probe(Bool()), true, true, true) should be(
       Some(
-        ": Left (Bool with probeInfo: Some(writeable=true, color=None)) and Right (Bool with probeInfo: Some(writeable=false, color=None)) have different probeInfo."
+        ": Left (Bool with probeInfo: Some(writeable=true)) and Right (Bool with probeInfo: Some(writeable=false)) have different probeInfo."
       )
     )
   }
@@ -337,53 +332,10 @@ class TypeEquivalenceSpec extends AnyFlatSpec {
     )
   }
 
-  it should "detect differences in presence of probe colors" in {
-    Probe(Bool()).findFirstTypeMismatch(Probe(Bool(), Green), true, true, true) should be(
-      Some(
-        ": Left (Bool with probeInfo: Some(writeable=false, color=None)) and Right (Bool with probeInfo: Some(writeable=false, color=Some(Green))) have different probeInfo."
-      )
-    )
-  }
-
-  it should "detect differences in probe colors" in {
-    Probe(Bool(), Red).findFirstTypeMismatch(Probe(Bool(), Green), true, true, true) should be(
-      Some(
-        ": Left (Bool with probeInfo: Some(writeable=false, color=Some(Red))) and Right (Bool with probeInfo: Some(writeable=false, color=Some(Green))) have different probeInfo."
-      )
-    )
-  }
-
-  it should "work with probes within a Bundle" in {
-    new BundleWithAColor(Some(Red)).findFirstTypeMismatch(new BundleWithAColor(Some(Red)), true, true, true) should be(
-      None
-    )
-  }
-
-  it should "detect differences in probe colors within a Bundle" in {
-    new BundleWithAColor(Some(Red)).findFirstTypeMismatch(
-      new BundleWithAColor(Some(Green)),
-      true,
-      true,
-      true
-    ) should be(
-      Some(
-        ".probe: Left (Bool with probeInfo: Some(writeable=false, color=Some(Red))) and Right (Bool with probeInfo: Some(writeable=false, color=Some(Green))) have different probeInfo."
-      )
-    )
-  }
-
-  it should "detect differences in probe color presence within a Bundle" in {
-    new BundleWithAColor(Some(Red)).findFirstTypeMismatch(new BundleWithAColor(None), true, true, true) should be(
-      Some(
-        ".probe: Left (Bool with probeInfo: Some(writeable=false, color=Some(Red))) and Right (Bool with probeInfo: Some(writeable=false, color=None)) have different probeInfo."
-      )
-    )
-  }
-
   it should "detect differences in probe within a Vector" in {
     Vec(3, Probe(Bool())).findFirstTypeMismatch(Vec(3, Bool()), true, true, true) should be(
       Some(
-        "[_]: Left (Bool with probeInfo: Some(writeable=false, color=None)) and Right (Bool with probeInfo: None) have different probeInfo."
+        "[_]: Left (Bool with probeInfo: Some(writeable=false)) and Right (Bool with probeInfo: None) have different probeInfo."
       )
     )
   }
