@@ -11,20 +11,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-<<<<<<< HEAD
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         # Need to fetch full history for deriving version
         with:
           fetch-depth: 0
       - name: Build and Test Scala-CLI Example
         uses: ./.github/workflows/build-scala-cli-example
       - name: Upload Example
-        uses: actions/upload-artifact@v3
-=======
-      - name: Download Generated CLI Example
-        uses: actions/download-artifact@v4
->>>>>>> 99aa9f1e4 (Bump versions of Github actions to versions using Node 20 (#4116))
+        uses: actions/upload-artifact@v4
         with:
           name: chisel-example.scala
           path: chisel-example.scala
