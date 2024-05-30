@@ -4,10 +4,11 @@ import chisel3.internal.{throwException, Builder}
 import chisel3.experimental.{noPrefix, requireIsChiselType, SourceInfo}
 import chisel3.properties.{Class, Property}
 import chisel3.reflect.DataMirror.internal.chiselTypeClone
+import chisel3.reflect.DataMirror.{hasProbeTypeModifier, specifiedDirectionOf}
 
 object IO {
 
-  /** Constructs a port for the current Module
+  /** Constructs a port for the current Module.
     *
     * This must wrap the datatype used to set the io field of any Module.
     * i.e. All concrete modules must have defined io in this form:
@@ -19,7 +20,6 @@ object IO {
     *
     * Also registers a Data as a port, also performing bindings. Cannot be called once ports are
     * requested (so that all calls to ports will return the same information).
-    * Internal API.
     */
   def apply[T <: Data](iodef: => T)(implicit sourceInfo: SourceInfo): T = {
     val module = Module.currentModule.get // Impossible to fail
@@ -65,7 +65,7 @@ object IO {
 
 /** The same as [[IO]] except there is no prefix when given a [[Record]] or
   * [[Bundle]].  For [[Element]] ([[UInt]], etc.) or [[Vec]] types, this is
-  * the same as [[IO]].
+  * the same as [[IO]]. It is also the same as [[IO]] for [[chisel3.probe.Probe]] types.
   *
   * @example {{{
   * class MyBundle extends Bundle {
@@ -82,9 +82,10 @@ object IO {
 object FlatIO {
   def apply[T <: Data](gen: => T)(implicit sourceInfo: SourceInfo): T = noPrefix {
     import chisel3.experimental.dataview._
-    def coerceDirection(d: Data) = {
+
+    def coerceDirection(d: Data): Data = {
       import chisel3.{SpecifiedDirection => SD}
-      chisel3.reflect.DataMirror.specifiedDirectionOf(gen) match {
+      specifiedDirectionOf(gen) match {
         case SD.Flip   => Flipped(d)
         case SD.Input  => Input(d)
         case SD.Output => Output(d)
@@ -94,13 +95,14 @@ object FlatIO {
 
     type R = T with Record
     gen match {
+      case d if hasProbeTypeModifier(d) => IO(d)
       case _:      Element => IO(gen)
       case _:      Vec[_] => IO(gen)
       case record: R =>
         val ports: Seq[Data] =
           record._elements.toSeq.reverse.map {
             case (name, data) =>
-              val p = chisel3.IO(coerceDirection(chiselTypeClone(data).asInstanceOf[Data]))
+              val p = IO(coerceDirection(data).asInstanceOf[Data])
               p.suggestName(name)
               p
 

@@ -214,8 +214,12 @@ private[chisel3] object getRecursiveFields {
 private[chisel3] object getMatchedFields {
   def apply(x: Data, y: Data): Seq[(Data, Data)] = (x, y) match {
     case (x: Element, y: Element) =>
-      require(x.typeEquivalent(y))
+      x.requireTypeEquivalent(y)
       Seq(x -> y)
+    case (_, _) if DataMirror.hasProbeTypeModifier(x) || DataMirror.hasProbeTypeModifier(y) => {
+      x.requireTypeEquivalent(y)
+      Seq(x -> y)
+    }
     case (x: Record, y: Record) =>
       (x._elements
         .zip(y._elements))
@@ -577,9 +581,29 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
           }
         case _ => Some(s": Left ($left) and Right ($right) have different types.")
       }
+<<<<<<< HEAD
     val leftType = if (this.hasBinding) this.cloneType else this
     val rightType = if (that.hasBinding) that.cloneType else that
     rec(leftType, rightType)
+=======
+
+    rec(this, that)
+  }
+
+  /** Require that two things are type equivalent, and if they are not, print a helpful error message as
+    * to why not.
+    */
+  private[chisel3] def requireTypeEquivalent(that: Data): Unit = {
+    require(
+      this.typeEquivalent(that), {
+        val reason = this
+          .findFirstTypeMismatch(that, strictTypes = true, strictWidths = true, strictProbeInfo = true)
+          .map(s => s"\nbecause $s")
+          .getOrElse("")
+        s"$this is not typeEquivalent to $that$reason"
+      }
+    )
+>>>>>>> 0553b6943 (FixedIO__Modules with various kinds of probe ports  (#4105))
   }
 
   private[chisel3] def isVisible: Boolean = isVisibleFromModule && visibleFromWhen.isEmpty
