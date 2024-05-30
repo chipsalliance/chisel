@@ -1,3 +1,8 @@
+package chiselTests
+
+import circt.stage.ChiselStage
+import chisel3.test.UnitTests
+
 import chisel3._
 import chisel3.test.RootTest
 import chisel3.util.HasBlackBoxInline
@@ -171,4 +176,12 @@ object MyRootTest1 extends RootTest {
 class MyRootTest2 extends RootTest {
   Definition(new Foo(13, FooConfig()))
   Definition(new Foo(14, FooConfig()))
+}
+
+class UnitTestSpec extends ChiselFlatSpec {
+
+  "Inline Unit Tests" should "work" in {
+    println(ChiselStage.emitCHIRRTL(new Top))
+  }
+
 }
