@@ -73,7 +73,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Cache Scala
@@ -105,13 +105,13 @@ jobs:
     if: (github.event_name == 'push') && (github.ref_name == 'main')
     steps:
       - name: Download built website
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: website
       - name: Untar built website
         run: tar zxf website.tar.gz
       - name: Deploy Website to GitHub Pages (From Main Branch)
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: website/build
