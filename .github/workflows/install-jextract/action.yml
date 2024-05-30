@@ -10,7 +10,7 @@ runs:
   using: composite
   steps:
     - id: cache-jextract
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: jextract
         key: jextract-${{ runner.os }}-${{ inputs.file-name }}
