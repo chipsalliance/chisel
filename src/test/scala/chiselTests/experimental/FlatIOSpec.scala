@@ -5,16 +5,11 @@ package chiselTests.experimental
 import chisel3._
 import chisel3.util.Valid
 import circt.stage.ChiselStage.emitCHIRRTL
-<<<<<<< HEAD
 import chisel3.experimental.{Analog, FlatIO}
-import chiselTests.ChiselFlatSpec
-=======
-import chisel3.experimental.Analog
 import chiselTests.{ChiselFlatSpec, MatchesAndOmits}
 import chisel3.reflect.DataMirror
 import scala.collection.immutable.SeqMap
 import circt.stage.ChiselStage
->>>>>>> c3c997939 (Add test for FlatIO port ordering (#4113))
 
 class FlatIOSpec extends ChiselFlatSpec with MatchesAndOmits {
   behavior.of("FlatIO")
@@ -73,19 +68,6 @@ class FlatIOSpec extends ChiselFlatSpec with MatchesAndOmits {
     chirrtl should include("out.foo <= in.foo")
     chirrtl should include("attach (out.bar, in.bar)")
   }
-<<<<<<< HEAD
-=======
-
-  it should "be an `IO` for elements and vectors" in {
-
-    class Foo extends RawModule {
-      val a = FlatIO(UInt(1.W))
-      val b = FlatIO(Vec(2, UInt(2.W)))
-    }
-    val chirrtl = emitCHIRRTL(new Foo)
-    chirrtl should include("output a : UInt<1>")
-    chirrtl should include("output b : UInt<2>[2]")
-  }
 
   it should "maintain port order for Bundles" in {
     class MyBundle extends Bundle {
@@ -125,6 +107,4 @@ class FlatIOSpec extends ChiselFlatSpec with MatchesAndOmits {
       ChiselStage.emitSystemVerilog(new MyFlatIOModule)
     )("bar,")("foo,")
   }
-
->>>>>>> c3c997939 (Add test for FlatIO port ordering (#4113))
 }
