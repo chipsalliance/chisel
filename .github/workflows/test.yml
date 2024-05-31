@@ -98,14 +98,7 @@ jobs:
         with:
           distribution: 'adopt'
           java-version: '21'
-<<<<<<< HEAD
           cache: 'sbt'
-      - name: Install Mill
-        uses: jodersky/setup-mill@v0.3.0
-        with:
-          mill-version: 0.11.5
-=======
->>>>>>> 0f2efb52a (Add and use Mill wrapper script (#4119))
       # Mill needs firtool to compile with bindings, cannot use firtool-resolver at runtime
       - name: Pick CIRCT version
         id: circt-version
@@ -137,18 +130,10 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'adopt'
-<<<<<<< HEAD
           java-version: '11'
           cache: 'sbt'
       - name: Check Formatting
         run: sbt fmtCheck
-=======
-          java-version: '21'
-      - name: Check Build Script Formatting
-        run: ./mill --meta-level 1 mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll sources
-      - name: Check Source File Format
-        run: ./mill __.checkFormat
->>>>>>> 0f2efb52a (Add and use Mill wrapper script (#4119))
 
   integration:
     name: Integration Tests
@@ -184,26 +169,6 @@ jobs:
       - name: Integration Tests
         run: sbt integrationTests/test
 
-<<<<<<< HEAD
-=======
-  # Currently just a sanity check that the benchmarking flow works
-  benchmark:
-    name: Benchmarking Sanity Check
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.ref }}
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'adopt'
-          java-version: '21'
-      - name: JMH
-        run: ./mill benchmark.runJmh
-
->>>>>>> 0f2efb52a (Add and use Mill wrapper script (#4119))
   std:
     name: Standard Library Tests
     runs-on: ubuntu-22.04
