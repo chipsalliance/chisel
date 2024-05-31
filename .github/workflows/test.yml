@@ -98,10 +98,6 @@ jobs:
         with:
           distribution: 'adopt'
           java-version: '21'
-      - name: Install Mill
-        uses: jodersky/setup-mill@v0.3.0
-        with:
-          mill-version: 0.11.5
       # Mill needs firtool to compile with bindings, cannot use firtool-resolver at runtime
       - name: Pick CIRCT version
         id: circt-version
@@ -119,7 +115,7 @@ jobs:
       - name: Compile Mill
         run: |
           export CIRCT_INSTALL_PATH="$(pwd)/circt"
-          mill __.compile
+          ./mill __.compile
 
   doc:
     name: Formatting
@@ -134,14 +130,10 @@ jobs:
         with:
           distribution: 'adopt'
           java-version: '21'
-      - name: Install Mill
-        uses: jodersky/setup-mill@v0.3.0
-        with:
-          mill-version: 0.11.5
       - name: Check Build Script Formatting
-        run: mill --meta-level 1 mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll sources
+        run: ./mill --meta-level 1 mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll sources
       - name: Check Source File Format
-        run: mill __.checkFormat
+        run: ./mill __.checkFormat
 
   integration:
     name: Integration Tests
@@ -191,12 +183,8 @@ jobs:
         with:
           distribution: 'adopt'
           java-version: '21'
-      - name: Install Mill
-        uses: jodersky/setup-mill@v0.3.0
-        with:
-          mill-version: 0.11.5
       - name: JMH
-        run: mill benchmark.runJmh
+        run: ./mill benchmark.runJmh
 
   std:
     name: Standard Library Tests
