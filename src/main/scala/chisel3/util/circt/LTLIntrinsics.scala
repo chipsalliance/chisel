@@ -83,6 +83,18 @@ private[chisel3] object LTLDelayIntrinsic {
   }
 }
 
+/** A wrapper intrinsic for the CIRCT `ltl.repeat` operation. */
+private[chisel3] object LTLRepeatIntrinsic {
+
+  def apply(base: Int, more: Option[Int])(_in: Bool)(implicit sourceInfo: SourceInfo) = {
+    val params = more match {
+      case None    => Seq("base" -> IntParam(base))
+      case Some(l) => Seq("base" -> IntParam(base), "more" -> IntParam(l))
+    }
+    UnaryLTLIntrinsic("repeat", params)(_in)
+  }
+}
+
 /** A wrapper intrinsic for the CIRCT `ltl.concat` operation. */
 private[chisel3] object LTLConcatIntrinsic {
   def apply(lhs: Bool, rhs: Bool)(implicit sourceInfo: SourceInfo) =

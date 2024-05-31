@@ -85,6 +85,27 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselRunners {
     ChiselStage.emitSystemVerilog(new ConcatMod)
   }
 
+  class RepeatMod extends RawModule {
+    val a, b, c = IO(Input(Bool()))
+    implicit val info = SourceLine("Foo.scala", 1, 2)
+    val s0: Sequence = a.repeat(1)
+    val s1: Sequence = b.repeatRange(2, 4)
+    val s2: Sequence = c.repeatAtLeast(5)
+  }
+  it should "support sequence repeat operations" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RepeatMod)
+    val sourceLoc = "@[Foo.scala 1:2]"
+    chirrtl should include("input a : UInt<1>")
+    chirrtl should include("input b : UInt<1>")
+    chirrtl should include("input c : UInt<1>")
+    chirrtl should include(f"node repeat = intrinsic(circt_ltl_repeat<base = 1, more = 0> : UInt<1>, a) $sourceLoc")
+    chirrtl should include(f"node repeat_1 = intrinsic(circt_ltl_repeat<base = 2, more = 2> : UInt<1>, b) $sourceLoc")
+    chirrtl should include(f"node repeat_2 = intrinsic(circt_ltl_repeat<base = 5> : UInt<1>, c) $sourceLoc")
+  }
+  it should "compile sequence repeat operations" in {
+    ChiselStage.emitSystemVerilog(new RepeatMod)
+  }
+
   class AndOrClockMod extends RawModule {
     val a, b = IO(Input(Bool()))
     val clock = IO(Input(Clock()))

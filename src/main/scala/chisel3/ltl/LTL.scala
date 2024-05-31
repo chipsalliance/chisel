@@ -61,6 +61,15 @@ sealed trait Sequence extends Property {
   /** See `Sequence.concat`. */
   def concat(other: Sequence)(implicit sourceInfo: SourceInfo): Sequence = Sequence.concat(this, other)
 
+  /** See `Sequence.repeat`. */
+  def repeat(n: Int = 1)(implicit sourceInfo: SourceInfo): Sequence = Sequence.repeat(this, n)
+
+  /** See `Sequence.repeatRange`. */
+  def repeatRange(min: Int, max: Int)(implicit sourceInfo: SourceInfo): Sequence = Sequence.repeatRange(this, min, max)
+
+  /** See `Sequence.repeatAtLeast`. */
+  def repeatAtLeast(n: Int)(implicit sourceInfo: SourceInfo): Sequence = Sequence.repeatAtLeast(this, n)
+
   /** See `Sequence.and`. */
   def and(other: Sequence)(implicit sourceInfo: SourceInfo): Sequence = Sequence.and(this, other)
 
@@ -139,6 +148,30 @@ object Sequence {
       lhs = OpaqueSequence(LTLConcatIntrinsic(lhs.inner, rhs.inner))
     }
     lhs
+  }
+
+  /** Repeat a sequence a fixed number of consecutive times. Equivalent to `s[n]` in
+    * SVA.
+    */
+  def repeat(seq: Sequence, n: Int = 1)(implicit sourceInfo: SourceInfo): Sequence = {
+    require(0 < n)
+    OpaqueSequence(LTLRepeatIntrinsic(n, Some(0))(seq.inner))
+  }
+
+  /** Repeat a sequence by a bounded range of consecutive times. Equivalent to `s[min:max]`
+    * in SVA.
+    */
+  def repeatRange(seq: Sequence, min: Int, max: Int)(implicit sourceInfo: SourceInfo): Sequence = {
+    require(min <= max)
+    OpaqueSequence(LTLRepeatIntrinsic(min, Some(max - min))(seq.inner))
+  }
+
+  /** Repeat a sequence by an unbounded range of consecutive times. Equivalent to
+    * `s[n:$]` in SVA.
+    */
+  def repeatAtLeast(seq: Sequence, n: Int)(implicit sourceInfo: SourceInfo): Sequence = {
+    require(0 < n)
+    OpaqueSequence(LTLRepeatIntrinsic(n, None)(seq.inner))
   }
 
   /** Form the conjunction of two sequences. Equivalent to
