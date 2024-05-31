@@ -25,6 +25,15 @@
 
 From the Chisel3 root directory, run:
 
+<<<<<<< HEAD
+=======
+```sh
+# Reformat normal source files
+./mill __.reformat
+
+# Reformat mill build files
+./mill --meta-level 1 mill.scalalib.scalafmt.ScalafmtModule/reformatAll sources
+>>>>>>> 0f2efb52a (Add and use Mill wrapper script (#4119))
 ```
 sbt scalafmtAll
 ```
