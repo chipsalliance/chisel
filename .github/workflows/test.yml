@@ -54,42 +54,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-<<<<<<< HEAD
-      - name: Install Mill
-        uses: jodersky/setup-mill@v0.3.0
-        with:
-          mill-version: 0.11.0
-=======
-        with:
-          ref: ${{ inputs.ref }}
-      # FIXME: installling jextract before installing mill to workaround `os.proc` can't find jextract in the outdated PATH env from mill server
-      - name: Install Jextract
-        uses: ./.github/workflows/install-jextract
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'adopt'
-          java-version: '21'
-      # Mill needs firtool to compile with bindings, cannot use firtool-resolver at runtime
-      - name: Pick CIRCT version
-        id: circt-version
-        run: |
-          if [[ -z "${{ inputs.circt }}" ]]; then
-            echo "version=version-file" >> "$GITHUB_OUTPUT"
-          else
-            echo "version=${{ inputs.circt }}" >> "$GITHUB_OUTPUT"
-          fi
->>>>>>> 0f2efb52a (Add and use Mill wrapper script (#4119))
       - name: Install CIRCT
         uses: ./.github/workflows/install-circt
       - name: Compile Mill
-<<<<<<< HEAD
-        run: mill __.compile
-=======
-        run: |
-          export CIRCT_INSTALL_PATH="$(pwd)/circt"
-          ./mill __.compile
->>>>>>> 0f2efb52a (Add and use Mill wrapper script (#4119))
+        run: ./mill __.compile
 
   doc:
     name: Formatting
@@ -101,20 +69,12 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'adopt'
-<<<<<<< HEAD
           java-version: '11'
           cache: 'sbt'
       - name: Install CIRCT
         uses: ./.github/workflows/install-circt
       - name: Check Formatting
         run: sbt fmtCheck
-=======
-          java-version: '21'
-      - name: Check Build Script Formatting
-        run: ./mill --meta-level 1 mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll sources
-      - name: Check Source File Format
-        run: ./mill __.checkFormat
->>>>>>> 0f2efb52a (Add and use Mill wrapper script (#4119))
 
   integration:
     name: Integration Tests
@@ -137,26 +97,6 @@ jobs:
       - name: Integration Tests
         run: sbt integrationTests/test
 
-<<<<<<< HEAD
-=======
-  # Currently just a sanity check that the benchmarking flow works
-  benchmark:
-    name: Benchmarking Sanity Check
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.ref }}
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'adopt'
-          java-version: '21'
-      - name: JMH
-        run: ./mill benchmark.runJmh
-
->>>>>>> 0f2efb52a (Add and use Mill wrapper script (#4119))
   std:
     name: Standard Library Tests
     runs-on: ubuntu-20.04
