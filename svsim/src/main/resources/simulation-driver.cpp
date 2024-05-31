@@ -436,7 +436,7 @@ static uint8_t *scanHexBits(const char **scanCursor, const char *scanEnd,
   }
 
   int byteCount = (bitCount + 7) / 8;
-  uint8_t *bytes = (uint8_t *)calloc(sizeof(uint8_t), byteCount);
+  uint8_t *bytes = (uint8_t *)calloc(byteCount, sizeof(uint8_t));
   assert(bytes != NULL);
 
   const char *firstCharacterOfValue = *scanCursor;
@@ -642,7 +642,7 @@ static void processCommand() {
     resolveGettablePort(id, &port, "resolving port for GET_BITS command");
 
     int byteCount = (port.bitWidth + 7) / 8;
-    uint8_t *bytes = (uint8_t *)calloc(sizeof(uint8_t), byteCount);
+    uint8_t *bytes = (uint8_t *)calloc( byteCount, sizeof(uint8_t));
     assert(bytes != NULL);
     (*port.getter)(bytes);
     sendBits(bytes, port.bitWidth, isSigned);
@@ -720,7 +720,7 @@ static void processCommand() {
 
       sentinelPortByteCount = (sentinelPort.bitWidth + 7) / 8;
       sentinelPortValue =
-          (uint8_t *)calloc(sizeof(uint8_t), sentinelPortByteCount);
+          (uint8_t *)calloc(sentinelPortByteCount, sizeof(uint8_t));
       assert(sentinelPortValue != NULL);
     }
 
