@@ -54,14 +54,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Install Mill
-        uses: jodersky/setup-mill@v0.3.0
-        with:
-          mill-version: 0.11.0
       - name: Install CIRCT
         uses: ./.github/workflows/install-circt
       - name: Compile Mill
-        run: mill __.compile
+        run: ./mill __.compile
 
   doc:
     name: Formatting
