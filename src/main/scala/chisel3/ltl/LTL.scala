@@ -70,6 +70,13 @@ sealed trait Sequence extends Property {
   /** See `Sequence.repeatAtLeast`. */
   def repeatAtLeast(n: Int)(implicit sourceInfo: SourceInfo): Sequence = Sequence.repeatAtLeast(this, n)
 
+  /** See `Sequence.gotoRepeat`. */
+  def gotoRepeat(min: Int, max: Int)(implicit sourceInfo: SourceInfo): Sequence = Sequence.gotoRepeat(this, min, max)
+
+  /** See `Sequence.nonConsecutiveRepeat`. */
+  def nonConsecutiveRepeat(min: Int, max: Int)(implicit sourceInfo: SourceInfo): Sequence = 
+    Sequence.nonConsecutiveRepeat(this, min, max)
+
   /** See `Sequence.and`. */
   def and(other: Sequence)(implicit sourceInfo: SourceInfo): Sequence = Sequence.and(this, other)
 
@@ -174,6 +181,27 @@ object Sequence {
     OpaqueSequence(LTLRepeatIntrinsic(n, None)(seq.inner))
   }
 
+  /** GoTo-style repitition of a sequence a fixed number of non-consecutive times,
+    * where the final evaluation of the sequence must hold, e.g. 
+    * a !b b b !b !b b c represents a matching observation of `gotoRepeat(b, 1, 3)`,
+    * but a !b b b !b !b b !b c does not. Equivalent to `s[->min:max]` in SVA.
+    */
+  def gotoRepeat(seq: Sequence, min: Int, max: Int)(implicit sourceInfo: SourceInfo): Sequence = {
+    require(0 <= min && min <= max)
+    OpaqueSequence(LTLGoToRepeatIntrinsic(min, max - min)(seq.inner))
+  }
+
+  /** Repeat a sequence a fixed number of non-consecutive times,
+    * where the final evaluation of the sequence does not have to hold, e.g. 
+    * both a !b b b !b !b b c and a !b b b !b !b b !b c represent matching 
+    * observations of `nonConsecutiveRepeat(b, 1, 3)`. Equivalent to `s[=min:max]` in SVA.
+    */
+  def nonConsecutiveRepeat(seq: Sequence, min: Int, max: Int)(implicit sourceInfo: SourceInfo): Sequence = {
+    require(0 <= min && min <= max)
+    OpaqueSequence(LTLNonConsecutiveRepeatIntrinsic(min, max - min)(seq.inner))
+  }
+
+
   /** Form the conjunction of two sequences. Equivalent to
     * `arg0 and arg1 and ... and argN` in SVA.
     */
@@ -197,9 +225,9 @@ object Sequence {
   }
 
   /** Form the conjunction of two sequences, where the start and end 
-   * times of both sequences must be identical. Equivalent to
-   * `arg0 intersect arg1 intersect ... intersect argN` in SVA.
-   */
+    * times of both sequences must be identical. Equivalent to
+    * `arg0 intersect arg1 intersect ... intersect argN` in SVA.
+    */
   def intersect(arg0: Sequence, argN: Sequence*)(implicit sourceInfo: SourceInfo): Sequence = {
     var lhs = arg0
     for (rhs <- argN) {

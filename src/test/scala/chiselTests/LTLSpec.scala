@@ -86,11 +86,13 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselRunners {
   }
 
   class RepeatMod extends RawModule {
-    val a, b, c = IO(Input(Bool()))
+    val a, b, c, d, e = IO(Input(Bool()))
     implicit val info = SourceLine("Foo.scala", 1, 2)
     val s0: Sequence = a.repeat(1)
     val s1: Sequence = b.repeatRange(2, 4)
     val s2: Sequence = c.repeatAtLeast(5)
+    val s3: Sequence = d.gotoRepeat(1, 3)
+    val s4: Sequence = e.nonConsecutiveRepeat(1, 3)
   }
   it should "support sequence repeat operations" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RepeatMod)
@@ -98,9 +100,13 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselRunners {
     chirrtl should include("input a : UInt<1>")
     chirrtl should include("input b : UInt<1>")
     chirrtl should include("input c : UInt<1>")
+    chirrtl should include("input d : UInt<1>")
+    chirrtl should include("input e : UInt<1>")
     chirrtl should include(f"node repeat = intrinsic(circt_ltl_repeat<base = 1, more = 0> : UInt<1>, a) $sourceLoc")
     chirrtl should include(f"node repeat_1 = intrinsic(circt_ltl_repeat<base = 2, more = 2> : UInt<1>, b) $sourceLoc")
     chirrtl should include(f"node repeat_2 = intrinsic(circt_ltl_repeat<base = 5> : UInt<1>, c) $sourceLoc")
+    chirrtl should include(f"node goto_repeat = intrinsic(circt_ltl_goto_repeat<base = 1, more = 2> : UInt<1>, d) $sourceLoc")
+    chirrtl should include(f"node non_consecutive_repeat = intrinsic(circt_ltl_non_consecutive_repeat<base = 1, more = 2> : UInt<1>, e) $sourceLoc")
   }
   it should "compile sequence repeat operations" in {
     ChiselStage.emitSystemVerilog(new RepeatMod)
