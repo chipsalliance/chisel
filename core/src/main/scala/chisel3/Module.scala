@@ -13,10 +13,11 @@ import chisel3.experimental.{requireIsChiselType, BaseModule, SourceInfo, Unloca
 import chisel3.internal.sourceinfo.{InstTransform}
 import chisel3.properties.{Class, Property}
 import chisel3.reflect.DataMirror
-import _root_.firrtl.annotations.{IsModule, ModuleName, ModuleTarget}
+import _root_.firrtl.annotations.{InstanceTarget, IsModule, ModuleName, ModuleTarget}
 import _root_.firrtl.AnnotationSeq
 import chisel3.internal.plugin.autoNameRecursively
 import chisel3.util.simpleClassName
+import chisel3.experimental.hierarchy.Hierarchy
 
 object Module extends SourceInfoDoc {
 
@@ -158,10 +159,8 @@ object Module extends SourceInfoDoc {
     // TODO memoize this
     (Builder.currentClock, Builder.currentReset) match {
       case (Some(clock), Some(reset)) =>
-        val hasBeenReset = Module(new HasBeenResetIntrinsic)
-        hasBeenReset.clock := clock
-        hasBeenReset.reset := reset
-        Some(new Disable(hasBeenReset.out))
+        val has_been_reset = IntrinsicExpr("circt_has_been_reset", Bool())(clock, reset).suggestName("has_been_reset")
+        Some(new Disable(has_been_reset))
       case _ => None
     }
   }
@@ -576,6 +575,12 @@ package experimental {
       _ports.toSeq
     }
 
+    /** Get IOs that are currently bound to this module.
+      */
+    private[chisel3] def getIOs: Seq[Data] = {
+      _ports.map(_._1).toSeq
+    }
+
     // These methods allow checking some properties of ports before the module is closed,
     // mainly for compatibility purposes.
     protected def portsContains(elem: Data): Boolean = {
@@ -734,10 +739,54 @@ package experimental {
           case (_, Some(parent)) => parent.toRelativeTarget(root).instOf(this.instanceName, name)
           // If root was defined, and there is no parent, the root was not an ancestor.
           case (Some(definedRoot), None) =>
-            throwException(s"Requested .toRelativeTarget relative to ${definedRoot.name}, but it is not an ancestor")
+            throwException(
+              s"Requested .toRelativeTarget relative to ${definedRoot.name}, but it is not an ancestor of $this"
+            )
           // If root was not defined, and there is no parent, return this.
           case (None, None) => getTarget
         }
+    }
+
+    /** Returns a FIRRTL ModuleTarget that references this object, relative to an optional root.
+      *
+      * If `root` is defined, the target is a hierarchical path starting from `root`.
+      *
+      * If `root` is not defined, the target is a hierarchical path equivalent to `toAbsoluteTarget`.
+      *
+      * @note If `root` is defined, and has not finished elaboration, this must be called within `atModuleBodyEnd`.
+      * @note The BaseModule must be a descendant of `root`, if it is defined.
+      * @note This doesn't have special handling for Views.
+      */
+    final def toRelativeTargetToHierarchy(root: Option[Hierarchy[BaseModule]]): IsModule = {
+      def fail() = throwException(
+        s"No common ancestor between\n  ${this.toAbsoluteTarget} and\n  ${root.get.toAbsoluteTarget}"
+      )
+
+      // Algorithm starts from the top of both absolute paths
+      // and walks down them checking for equality,
+      // and terminates once the root is just a ModuleTarget
+      def recurse(thisRelative: IsModule, rootRelative: IsModule): IsModule = {
+        (thisRelative, rootRelative) match {
+          case (t: IsModule, r: ModuleTarget) => {
+            if (t.module == r.module) t else fail()
+          }
+          case (t: ModuleTarget, r: InstanceTarget) => fail()
+          case (t: InstanceTarget, r: InstanceTarget) => {
+            if ((t.module == r.module) && (r.asPath.head == t.asPath.head))
+              recurse(t.stripHierarchy(1), r.stripHierarchy(1))
+            else fail()
+          }
+        }
+      }
+
+      if (root.isEmpty) (this.toAbsoluteTarget)
+      else if (this == ViewParent) ViewParent.absoluteTarget
+      else {
+        val thisAbsolute = this.toAbsoluteTarget
+        val rootAbsolute = root.get.toAbsoluteTarget
+        if (thisAbsolute.circuit != thisAbsolute.circuit) fail()
+        recurse(thisAbsolute, rootAbsolute)
+      }
     }
 
     /**

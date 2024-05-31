@@ -6,6 +6,8 @@ import chisel3._
 import chisel3.experimental.conversions._
 import chisel3.experimental.dataview._
 import chisel3.experimental.{Analog, HWTuple2}
+import chisel3.experimental.BundleLiterals._
+import chisel3.experimental.VecLiterals._
 import chisel3.probe._
 import chisel3.reflect.DataMirror.internal.chiselTypeClone
 import chisel3.util.{Decoupled, DecoupledIO, Valid, ValidIO}
@@ -552,6 +554,63 @@ class DataViewSpec extends ChiselFlatSpec {
     verilog should include("assign z = sel ? b : d;")
   }
 
+  it should "support muxing between views of Bundles" in {
+    import SimpleBundleDataView._
+    class MyModule extends Module {
+      val cond = IO(Input(Bool()))
+      val in1 = IO(Input(new BundleA(8)))
+      val in2 = IO(Input(new BundleA(8)))
+      val out = IO(Output(new BundleB(8)))
+
+      out := Mux(cond, in1.viewAs[BundleB], in2.viewAs[BundleB])
+    }
+    val firrtl = ChiselStage.emitCHIRRTL(new MyModule)
+    val lines = Seq(
+      "wire _out_WIRE : { bar : UInt<8>}",
+      "connect _out_WIRE.bar, in1.foo",
+      "wire _out_WIRE_1 : { bar : UInt<8>}",
+      "connect _out_WIRE_1.bar, in2.foo",
+      "node _out_T = mux(cond, _out_WIRE, _out_WIRE_1)"
+    )
+    for (line <- lines) {
+      firrtl should include(line)
+    }
+  }
+
+  it should "not generate extra wires when muxing between identity views of Bundles" in {
+    import SimpleBundleDataView._
+    class MyModule extends Module {
+      val cond = IO(Input(Bool()))
+      val in1 = IO(Input(new BundleA(8)))
+      val in2 = IO(Input(new BundleA(8)))
+      val out = IO(Output(new BundleA(8)))
+
+      out := Mux(cond, in1.viewAs[BundleA], in2.viewAs[BundleA])
+    }
+    val firrtl = ChiselStage.emitCHIRRTL(new MyModule)
+    firrtl should include("node _out_T = mux(cond, in1, in2)")
+    firrtl shouldNot include("wire")
+  }
+
+  it should "handle Probe of a view of a Bundle" in {
+    import SimpleBundleDataView._
+    class MyModule extends Module {
+      val in = IO(Input(new BundleA(8)))
+      val out_probe = IO(Output(Probe(new BundleB(8))))
+      val view = in.viewAs[BundleB]
+      define(out_probe, ProbeValue(view))
+    }
+    val firrtl = ChiselStage.emitCHIRRTL(new MyModule)
+    val lines = Seq(
+      "wire _WIRE : { bar : UInt<8>}",
+      "connect _WIRE.bar, in.foo",
+      "define out_probe = probe(_WIRE)"
+    )
+    for (line <- lines) {
+      firrtl should include(line)
+    }
+  }
+
   it should "support primitive types in the view target" in {
     class MyBundle(val name: String) extends Bundle {
       val x = UInt(8.W)
@@ -1048,6 +1107,109 @@ class DataViewSpec extends ChiselFlatSpec {
     e2.getMessage should include(
       "Connection between sink (Top.buzz: IO[SInt<8>]) and source (Top.bar: IO[UInt<8>]) failed"
     )
+  }
+
+  it should "preserve literal values for Elements" in {
+    class MyModule extends Module {
+      val x = 123.U
+      val xv = x.viewAs[UInt]
+      xv.litOption should be(x.litOption)
+      xv.litValue should be(x.litValue)
+      val y = -23.S
+      val yv = y.viewAs[SInt]
+      yv.litOption should be(y.litOption)
+      yv.litValue should be(y.litValue)
+    }
+    ChiselStage.emitCHIRRTL(new MyModule)
+  }
+
+  it should "preserve literal values for BundleLiterals" in {
+    import chisel3.experimental.BundleLiterals._
+    class BundleA extends Bundle {
+      val foo = UInt(4.W)
+      val bar = UInt(4.W)
+    }
+    class BundleB extends Bundle {
+      val a = UInt(4.W)
+      val b = UInt(4.W)
+      val c = UInt(4.W)
+    }
+    implicit val dv =
+      DataView[BundleA, BundleB](_ => new BundleB, _.foo -> _.c, _.bar -> _.a, (_, b) => 6.U(4.W) -> b.b)
+    class MyModule extends Module {
+      val bunA = (new BundleA).Lit(_.foo -> 0xa.U, _.bar -> 0xd.U)
+      val bunAView = bunA.viewAs[BundleA]
+      bunA.litValue should be(0xad)
+      bunA.litOption should be(Some(0xad))
+      bunAView.litValue should be(0xad)
+      bunAView.litOption should be(Some(0xad))
+
+      val bunBView = bunA.viewAs[BundleB]
+      bunBView.litValue should be(0xd6a)
+      bunBView.litOption should be(Some(0xd6a))
+    }
+    ChiselStage.emitCHIRRTL(new MyModule)
+  }
+
+  it should "preserve literal values for VecLiterals (viewed as nested Bundles)" in {
+    import chisel3.experimental.VecLiterals._
+    case class Box(value: UInt) extends Bundle
+    class MyBundle extends Bundle {
+      val foo = Vec(2, UInt(4.W))
+      val bar = Vec(2, Box(UInt(4.W)))
+    }
+    implicit val dv = DataView[Vec[UInt], MyBundle](
+      _ => new MyBundle,
+      _(0) -> _.foo(0),
+      _(1) -> _.bar(1).value,
+      _(2) -> _.bar(0).value,
+      _(3) -> _.foo(1)
+    )
+    class MyModule extends Module {
+      val vec = Vec.Lit(0xa.U, 0xb.U, 0xc.U, 0xd.U)
+      val vecView = vec.viewAs[Vec[UInt]]
+      vec.litValue should be(0xdcba)
+      vec.litOption should be(Some(0xdcba))
+      vecView.litValue should be(0xdcba)
+      vecView.litOption should be(Some(0xdcba))
+
+      val bunView = vec.viewAs[MyBundle]
+      bunView.litValue should be(0xdabc)
+      bunView.litOption should be(Some(0xdabc))
+    }
+    ChiselStage.emitCHIRRTL(new MyModule)
+  }
+
+  it should "NOT invent literal values for views of empty Aggregates" in {
+    class MyModule extends Module {
+      val emptyBundle = IO(Output(new Bundle {}))
+      val emptyVec = IO(Output(Vec(0, UInt(8.W))))
+
+      val bundleView = emptyBundle.viewAs[Bundle]
+      val vecView = emptyVec.viewAs[Vec[UInt]]
+
+      emptyBundle.litOption should be(None)
+      bundleView.litOption should be(None)
+      emptyVec.litOption should be(None)
+      vecView.litOption should be(None)
+    }
+    ChiselStage.emitCHIRRTL(new MyModule)
+  }
+
+  it should "support literal values for views of empty Aggregates" in {
+    class MyModule extends Module {
+      val emptyBundle = (new Bundle {}).Lit()
+      val emptyVec = Vec(0, UInt(8.W)).Lit()
+
+      val bundleView = emptyBundle.viewAs[Bundle]
+      val vecView = emptyVec.viewAs[Vec[UInt]]
+
+      emptyBundle.litOption should be(Some(0))
+      bundleView.litOption should be(Some(0))
+      emptyVec.litOption should be(Some(0))
+      vecView.litOption should be(Some(0))
+    }
+    ChiselStage.emitCHIRRTL(new MyModule)
   }
 
   behavior.of("PartialDataView")

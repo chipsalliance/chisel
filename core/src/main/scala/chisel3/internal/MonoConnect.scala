@@ -9,7 +9,7 @@ import chisel3.internal.containsProbe
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.ir.{Connect, DefInvalid, ProbeDefine, PropAssign}
 import chisel3.internal.firrtl.Converter
-import chisel3.experimental.dataview.{isView, reify, reifyToAggregate}
+import chisel3.experimental.dataview.{isView, reify, reifySingleData, reifyToAggregate}
 import chisel3.properties.{Class, Property}
 import chisel3.reflect.DataMirror
 
@@ -439,11 +439,22 @@ private[chisel3] object MonoConnect {
   }
 
   def probeDefine(
-    sourceInfo: SourceInfo,
-    sink:       Data,
-    source:     Data,
-    context:    BaseModule
+    sourceInfo:  SourceInfo,
+    sinkProbe:   Data,
+    sourceProbe: Data,
+    context:     BaseModule
   ): Unit = {
+
+    val sink = reifySingleData(sinkProbe).getOrElse(
+      throwException(
+        s"If a DataView contains a Probe, it must resolve to one Data. $sinkProbe does not meet this criteria."
+      )
+    )
+    val source = reifySingleData(sourceProbe).getOrElse(
+      throwException(
+        s"If a DataView contains a Probe, it must resolve to one Data. $sourceProbe does not meet this criteria."
+      )
+    )
     checkConnect.checkConnection(sourceInfo, sink, source, context)
     context match {
       case rm: RawModule => rm.addCommand(ProbeDefine(sourceInfo, sink.lref, source.ref))

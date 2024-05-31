@@ -4,7 +4,8 @@ package chisel3.aop.injecting
 
 import chisel3.{withClockAndReset, Module, ModuleAspect, RawModule}
 import chisel3.aop._
-import chisel3.internal.{Builder, DynamicContext}
+import chisel3.experimental.hierarchy.core.Definition
+import chisel3.internal.{Builder, BuilderContextCache, DynamicContext}
 import chisel3.internal.firrtl.ir.DefModule
 import chisel3.stage.{ChiselOptions, DesignAnnotation}
 import firrtl.annotations.{Annotation, ModuleTarget}
@@ -13,6 +14,8 @@ import firrtl.{ir, _}
 
 import scala.collection.mutable
 import logger.LoggerOptions
+
+import scala.collection.mutable.ArrayBuffer
 
 /** Aspect to inject Chisel code into a module of type M
   *
@@ -67,8 +70,9 @@ abstract class InjectorAspect[T <: RawModule, M <: RawModule](
           chiselOptions.warningFilters,
           chiselOptions.sourceRoots,
           None,
-          Nil, // FIXME this maybe should somehow grab definitions from earlier elaboration
-          loggerOptions
+          loggerOptions,
+          ArrayBuffer[Definition[_]](),
+          BuilderContextCache.empty
         )
       // Add existing module names into the namespace. If injection logic instantiates new modules
       //  which would share the same name, they will get uniquified accordingly

@@ -1,25 +1,20 @@
 import mill._
 import mill.scalalib._
 
-trait HasMacroAnnotations
-  extends ScalaModule {
+trait HasMacroAnnotations extends ScalaModule {
 
   override def scalacOptions = T {
     super.scalacOptions() ++ Agg("-Ymacro-annotations")
   }
 }
 
-trait MacrosModule
-  extends ScalaModule
-    with HasMacroAnnotations {
+trait MacrosModule extends ScalaModule with HasMacroAnnotations {
   def scalaReflectIvy: Dep
 
   override def ivyDeps = super.ivyDeps() ++ Some(scalaReflectIvy)
 }
 
-trait FirrtlModule
-  extends ScalaModule
-    with HasMacroAnnotations {
+trait FirrtlModule extends ScalaModule with HasMacroAnnotations {
   def osLibModuleIvy: Dep
 
   def json4sIvy: Dep
@@ -39,13 +34,9 @@ trait FirrtlModule
   )
 }
 
-trait SvsimModule
-  extends ScalaModule {
-}
+trait SvsimModule extends ScalaModule {}
 
-trait CoreModule
-  extends ScalaModule
-    with HasMacroAnnotations {
+trait CoreModule extends ScalaModule with HasMacroAnnotations {
   def firrtlModule: FirrtlModule
 
   def macrosModule: MacrosModule
@@ -65,8 +56,7 @@ trait CoreModule
   )
 }
 
-trait PluginModule
-  extends ScalaModule {
+trait PluginModule extends ScalaModule {
   def scalaLibraryIvy: Dep
 
   def scalaReflectIvy: Dep
@@ -76,8 +66,7 @@ trait PluginModule
   override def ivyDeps = super.ivyDeps() ++ Agg(scalaLibraryIvy, scalaReflectIvy, scalaCompilerIvy)
 }
 
-trait HasChiselPlugin
-  extends ScalaModule {
+trait HasChiselPlugin extends ScalaModule {
   def pluginModule: PluginModule
 
   override def scalacOptions = T {
@@ -91,14 +80,9 @@ trait HasChiselPlugin
   }
 }
 
-trait StdLibModule
-  extends ScalaModule
-    with HasChisel
+trait StdLibModule extends ScalaModule with HasChisel
 
-trait ChiselModule
-  extends ScalaModule
-    with HasChiselPlugin
-    with HasMacroAnnotations {
+trait ChiselModule extends ScalaModule with HasChiselPlugin with HasMacroAnnotations {
   def macrosModule: MacrosModule
 
   def svsimModule: SvsimModule
@@ -110,16 +94,13 @@ trait ChiselModule
   override def moduleDeps = super.moduleDeps ++ Seq(macrosModule, coreModule, svsimModule)
 }
 
-trait HasChisel
-  extends ScalaModule
-    with HasChiselPlugin {
+trait HasChisel extends ScalaModule with HasChiselPlugin {
   def chiselModule: ChiselModule
 
   override def moduleDeps = super.moduleDeps ++ Some(chiselModule)
 }
 
-trait HasJextractGeneratedSources
-  extends JavaModule {
+trait HasJextractGeneratedSources extends JavaModule {
   def includePaths: T[Seq[PathRef]]
 
   def libraryPaths: T[Seq[PathRef]]
@@ -186,23 +167,28 @@ trait HasJextractGeneratedSources
 
 // Java Codegen for all declared functions.
 // All of these functions are not private API which is subject to change.
-trait CIRCTPanamaBindingModule
-  extends HasJextractGeneratedSources {
+trait CIRCTPanamaBindingModule extends HasJextractGeneratedSources {
 
-  def includeConstants = T.input(os.read.lines(millSourcePath / "includeConstants.txt").filter(s => s.nonEmpty && !s.startsWith("#")))
-  def includeFunctions = T.input(os.read.lines(millSourcePath / "includeFunctions.txt").filter(s => s.nonEmpty && !s.startsWith("#")))
-  def includeStructs = T.input(os.read.lines(millSourcePath / "includeStructs.txt").filter(s => s.nonEmpty && !s.startsWith("#")))
-  def includeTypedefs = T.input(os.read.lines(millSourcePath / "includeTypedefs.txt").filter(s => s.nonEmpty && !s.startsWith("#")))
-  def includeUnions = T.input(os.read.lines(millSourcePath / "includeUnions.txt").filter(s => s.nonEmpty && !s.startsWith("#")))
-  def includeVars = T.input(os.read.lines(millSourcePath / "includeVars.txt").filter(s => s.nonEmpty && !s.startsWith("#")))
-  def linkLibraries = T.input(os.read.lines(millSourcePath / "linkLibraries.txt").filter(s => s.nonEmpty && !s.startsWith("#")))
+  def includeConstants =
+    T.input(os.read.lines(millSourcePath / "includeConstants.txt").filter(s => s.nonEmpty && !s.startsWith("#")))
+  def includeFunctions =
+    T.input(os.read.lines(millSourcePath / "includeFunctions.txt").filter(s => s.nonEmpty && !s.startsWith("#")))
+  def includeStructs =
+    T.input(os.read.lines(millSourcePath / "includeStructs.txt").filter(s => s.nonEmpty && !s.startsWith("#")))
+  def includeTypedefs =
+    T.input(os.read.lines(millSourcePath / "includeTypedefs.txt").filter(s => s.nonEmpty && !s.startsWith("#")))
+  def includeUnions =
+    T.input(os.read.lines(millSourcePath / "includeUnions.txt").filter(s => s.nonEmpty && !s.startsWith("#")))
+  def includeVars =
+    T.input(os.read.lines(millSourcePath / "includeVars.txt").filter(s => s.nonEmpty && !s.startsWith("#")))
+  def linkLibraries =
+    T.input(os.read.lines(millSourcePath / "linkLibraries.txt").filter(s => s.nonEmpty && !s.startsWith("#")))
 
   def target = T("org.llvm.circt")
   def headerClassName = T("CAPI")
 }
 
-trait HasCIRCTPanamaBindingModule
-  extends JavaModule {
+trait HasCIRCTPanamaBindingModule extends JavaModule {
   def circtPanamaBindingModule: CIRCTPanamaBindingModule
 
   override def moduleDeps = super.moduleDeps ++ Some(circtPanamaBindingModule)
@@ -212,19 +198,15 @@ trait HasCIRCTPanamaBindingModule
   override def forkArgs: T[Seq[String]] = T(
     super.forkArgs() ++ Seq("--enable-native-access=ALL-UNNAMED", "--enable-preview")
       ++ circtPanamaBindingModule
-      .libraryPaths()
-      .map(p => s"-Djava.library.path=${p.path}")
+        .libraryPaths()
+        .map(p => s"-Djava.library.path=${p.path}")
   )
 }
 
 // The Scala API for PanamaBinding, API here is experimentally public to all developers
-trait PanamaLibModule
-  extends ScalaModule
-    with HasCIRCTPanamaBindingModule
+trait PanamaLibModule extends ScalaModule with HasCIRCTPanamaBindingModule
 
-trait HasPanamaLibModule
-  extends ScalaModule
-    with HasCIRCTPanamaBindingModule {
+trait HasPanamaLibModule extends ScalaModule with HasCIRCTPanamaBindingModule {
   def panamaLibModule: PanamaLibModule
 
   def circtPanamaBindingModule = panamaLibModule.circtPanamaBindingModule
@@ -232,13 +214,9 @@ trait HasPanamaLibModule
   override def moduleDeps = super.moduleDeps ++ Some(panamaLibModule)
 }
 
-trait PanamaOMModule
-  extends ScalaModule
-    with HasPanamaLibModule
+trait PanamaOMModule extends ScalaModule with HasPanamaLibModule
 
-trait HasPanamaOMModule
-  extends ScalaModule
-    with HasCIRCTPanamaBindingModule {
+trait HasPanamaOMModule extends ScalaModule with HasCIRCTPanamaBindingModule {
   def panamaOMModule: PanamaOMModule
 
   def circtPanamaBindingModule = panamaOMModule.circtPanamaBindingModule
@@ -246,15 +224,9 @@ trait HasPanamaOMModule
   override def moduleDeps = super.moduleDeps ++ Some(panamaOMModule)
 }
 
-trait PanamaConverterModule
-  extends ScalaModule
-    with HasPanamaOMModule
-    with HasChisel
+trait PanamaConverterModule extends ScalaModule with HasPanamaOMModule with HasChisel
 
-trait HasPanamaConverterModule
-  extends ScalaModule
-    with HasCIRCTPanamaBindingModule
-    with HasChisel {
+trait HasPanamaConverterModule extends ScalaModule with HasCIRCTPanamaBindingModule with HasChisel {
   def panamaConverterModule: PanamaConverterModule
 
   def circtPanamaBindingModule = panamaConverterModule.circtPanamaBindingModule
@@ -265,4 +237,3 @@ trait HasPanamaConverterModule
 
   override def moduleDeps = super.moduleDeps ++ Some(panamaConverterModule)
 }
-

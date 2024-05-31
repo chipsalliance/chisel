@@ -14,7 +14,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         # Need to fetch full history for deriving version
         with:
           fetch-depth: 0
@@ -57,7 +57,7 @@ jobs:
         shell: bash
         run: scala-cli chisel-example.scala
       - name: Upload Example
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: chisel-example.scala
           path: chisel-example.scala

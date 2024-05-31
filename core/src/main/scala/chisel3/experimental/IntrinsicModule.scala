@@ -11,6 +11,7 @@ private[chisel3] abstract class BaseIntrinsicModule(intrinsicName: String) exten
   val intrinsic = intrinsicName
 }
 
+@deprecated("use Intrinsic and IntrinsicExpr instead, intrinsic modules are deprecated", "Chisel 7.0.0")
 abstract class IntrinsicModule(intrinsicName: String, val params: Map[String, Param] = Map.empty[String, Param])
     extends BaseIntrinsicModule(intrinsicName) {
   private[chisel3] override def generateComponent(): Option[Component] = {

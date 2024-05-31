@@ -214,8 +214,12 @@ private[chisel3] object getRecursiveFields {
 private[chisel3] object getMatchedFields {
   def apply(x: Data, y: Data): Seq[(Data, Data)] = (x, y) match {
     case (x: Element, y: Element) =>
-      require(x.typeEquivalent(y))
+      x.requireTypeEquivalent(y)
       Seq(x -> y)
+    case (_, _) if DataMirror.hasProbeTypeModifier(x) || DataMirror.hasProbeTypeModifier(y) => {
+      x.requireTypeEquivalent(y)
+      Seq(x -> y)
+    }
     case (x: Record, y: Record) =>
       (x._elements
         .zip(y._elements))
@@ -373,14 +377,14 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   private[chisel3] final def isSynthesizable: Boolean = _binding.map {
     case ChildBinding(parent) => parent.isSynthesizable
     case _: TopBinding => true
-    case (_: SampleElementBinding[_] | _: MemTypeBinding[_]) => false
+    case (_: SampleElementBinding[_] | _: MemTypeBinding[_] | _: FirrtlMemTypeBinding) => false
   }.getOrElse(false)
 
   private[chisel3] def topBindingOpt: Option[TopBinding] = _binding.flatMap {
     case ChildBinding(parent) => parent.topBindingOpt
     case bindingVal: TopBinding => Some(bindingVal)
     case SampleElementBinding(parent) => parent.topBindingOpt
-    case _: MemTypeBinding[_] => None
+    case (_: MemTypeBinding[_] | _: FirrtlMemTypeBinding) => None
   }
 
   private[chisel3] def topBinding: TopBinding = topBindingOpt.get
@@ -520,66 +524,97 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 
   /** Whether this Data has the same model ("data type") as that Data.
     * Data subtypes should overload this with checks against their own type.
+    * @param that the Data to check for type equivalence against.
+    * @param strictProbeInfo whether probe info (including its RW-ness and Color) must match
     */
   private[chisel3] final def typeEquivalent(
-    that: Data
-  ): Boolean = findFirstTypeMismatch(that, strictTypes = true, strictWidths = true).isEmpty
+    that:            Data,
+    strictProbeInfo: Boolean = true
+  ): Boolean =
+    findFirstTypeMismatch(that, strictTypes = true, strictWidths = true, strictProbeInfo = strictProbeInfo).isEmpty
 
   /** Find and report any type mismatches
     *
     * @param that Data being compared to this
     * @param strictTypes Does class of Bundles or Records need to match? Inverse of "structural".
     * @param strictWidths do widths need to match?
+    * @param strictProbeInfo does probe info need to match (includes RW and Color)
     * @return None if types are equivalent, Some String reporting the first mismatch if not
     */
   private[chisel3] final def findFirstTypeMismatch(
-    that:         Data,
-    strictTypes:  Boolean,
-    strictWidths: Boolean
+    that:            Data,
+    strictTypes:     Boolean,
+    strictWidths:    Boolean,
+    strictProbeInfo: Boolean
   ): Option[String] = {
-    def rec(left: Data, right: Data): Option[String] =
-      (left, right) match {
-        // Careful, EnumTypes are Element and if we don't implement this, then they are all always equal
-        case (e1: EnumType, e2: EnumType) =>
-          // TODO, should we implement a form of structural equality for enums?
-          if (e1.factory == e2.factory) None
-          else Some(s": Left ($e1) and Right ($e2) have different types.")
-        // Properties should be considered equal when getPropertyType is equal, not when getClass is equal.
-        case (p1: Property[_], p2: Property[_]) =>
-          if (p1.getPropertyType != p2.getPropertyType) {
-            Some(s": Left ($p1) and Right ($p2) have different types")
-          } else {
-            None
-          }
-        case (e1: Element, e2: Element) if e1.getClass == e2.getClass =>
-          if (strictWidths && e1.width != e2.width) {
-            Some(s": Left ($e1) and Right ($e2) have different widths.")
-          } else {
-            None
-          }
-        case (r1: Record, r2: Record) if !strictTypes || r1.getClass == r2.getClass =>
-          val (larger, smaller, msg) =
-            if (r1._elements.size >= r2._elements.size) (r1, r2, "Left") else (r2, r1, "Right")
-          larger._elements.flatMap {
-            case (name, data) =>
-              val recurse = smaller._elements.get(name) match {
-                case None        => Some(s": Dangling field on $msg")
-                case Some(data2) => rec(data, data2)
-              }
-              recurse.map("." + name + _)
-          }.headOption
-        case (v1: Vec[_], v2: Vec[_]) =>
-          if (v1.size != v2.size) {
-            Some(s": Left (size ${v1.size}) and Right (size ${v2.size}) have different lengths.")
-          } else {
-            val recurse = rec(v1.sample_element, v2.sample_element)
-            recurse.map("[_]" + _)
-          }
-        case _ => Some(s": Left ($left) and Right ($right) have different types.")
+
+    def checkProbeInfo(left: Data, right: Data): Option[String] =
+      Option.when(strictProbeInfo && (left.probeInfo != right.probeInfo)) {
+        def probeInfoStr(info: Option[ProbeInfo]) = info.map { info =>
+          s"Some(writeable=${info.writable}, color=${info.color})"
+        }.getOrElse("None")
+        s": Left ($left with probeInfo: ${probeInfoStr(left.probeInfo)}) and Right ($right with probeInfo: ${probeInfoStr(right.probeInfo)}) have different probeInfo."
       }
-    val leftType = if (this.hasBinding) this.cloneType else this
-    val rightType = if (that.hasBinding) that.cloneType else that
-    rec(leftType, rightType)
+
+    def rec(left: Data, right: Data): Option[String] =
+      checkProbeInfo(left, right).orElse {
+        (left, right) match {
+          // Careful, EnumTypes are Element and if we don't implement this, then they are all always equal
+          case (e1: EnumType, e2: EnumType) =>
+            // TODO, should we implement a form of structural equality for enums?
+            if (e1.factory == e2.factory) None
+            else Some(s": Left ($e1) and Right ($e2) have different types.")
+          // Properties should be considered equal when getPropertyType is equal, not when getClass is equal.
+          case (p1: Property[_], p2: Property[_]) =>
+            if (p1.getPropertyType != p2.getPropertyType) {
+              Some(s": Left ($p1) and Right ($p2) have different types")
+            } else {
+              None
+            }
+          case (e1: Element, e2: Element) if e1.getClass == e2.getClass =>
+            if (strictWidths && e1.width != e2.width) {
+              Some(s": Left ($e1) and Right ($e2) have different widths.")
+            } else {
+              None
+            }
+          case (r1: Record, r2: Record) if !strictTypes || r1.getClass == r2.getClass =>
+            val (larger, smaller, msg) =
+              if (r1._elements.size >= r2._elements.size) (r1, r2, "Left") else (r2, r1, "Right")
+            larger._elements.flatMap {
+              case (name, data) =>
+                val recurse = smaller._elements.get(name) match {
+                  case None        => Some(s": Dangling field on $msg")
+                  case Some(data2) => rec(data, data2)
+                }
+                recurse.map("." + name + _)
+            }.headOption
+          case (v1: Vec[_], v2: Vec[_]) =>
+            if (v1.size != v2.size) {
+              Some(s": Left (size ${v1.size}) and Right (size ${v2.size}) have different lengths.")
+            } else {
+              val recurse = rec(v1.sample_element, v2.sample_element)
+              recurse.map("[_]" + _)
+            }
+          case _ => Some(s": Left ($left) and Right ($right) have different types.")
+        }
+      }
+
+    rec(this, that)
+  }
+
+  /** Require that two things are type equivalent, and if they are not, print a helpful error message as
+    * to why not.
+    */
+  private[chisel3] def requireTypeEquivalent(that: Data): Unit = {
+    require(
+      this.typeEquivalent(that), {
+        val reason = this
+          .findFirstTypeMismatch(that, strictTypes = true, strictWidths = true, strictProbeInfo = true)
+          .map(s => s"\nbecause $s")
+          .getOrElse("")
+        s"$this is not typeEquivalent to $that$reason"
+      }
+    )
   }
 
   private[chisel3] def isVisible: Boolean = isVisibleFromModule && visibleFromWhen.isEmpty
@@ -640,11 +675,12 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     topBindingOpt match {
       // DataView
       case Some(ViewBinding(target)) => reify(target).ref
-      case Some(AggregateViewBinding(viewMap)) =>
-        viewMap.get(this) match {
-          case None => materializeWire() // FIXME FIRRTL doesn't have Aggregate Init expressions
-          // This should not be possible because Element does the lookup in .topBindingOpt
-          case x: Some[_] => throwException(s"Internal Error: In .ref for $this got '$topBindingOpt' and '$x'")
+      case Some(_: AggregateViewBinding) =>
+        reifySingleData(this) match {
+          // If this is an identity view (a view of something of the same type), return ref of target
+          case Some(target) if this.typeEquivalent(target) => target.ref
+          // Otherwise, we need to materialize hardware of the correct type
+          case _ => materializeWire()
         }
       // Literals
       case Some(ElementLitBinding(litArg)) => litArg
@@ -826,7 +862,25 @@ object Data {
     *  add to Data we also want on Connectable, so an implicit conversion makes the most sense
     *  so the ScalaDoc can be shared.
     */
-  implicit def toConnectableDefault[T <: Data](d: T): Connectable[T] = Connectable.apply(d)
+  implicit def toConnectableDefault[T <: Data](d: T): Connectable[T] = makeConnectableDefault(d)
+
+  /** Create the default [[Connectable]] used for all instances of a [[Data]] of type T.
+    *
+    * This uses the default [[connectable.Connectable.apply]] as a starting point.
+    *
+    * Users can extend the [[HasCustomConnectable]] trait on any [[Data]] to further customize the [[Connectable]]. This
+    * is checked for in any potentially nested [[Data]] and any customizations are applied on top of the default
+    * [[Connectable]].
+    */
+  private[chisel3] def makeConnectableDefault[T <: Data](d: T): Connectable[T] = {
+    val base = Connectable.apply(d)
+    DataMirror
+      .collectMembers(d) {
+        case hasCustom: HasCustomConnectable =>
+          hasCustom
+      }
+      .foldLeft(base)((connectable, hasCustom) => hasCustom.customConnectable(connectable))
+  }
 
   /** Typeclass implementation of HasMatchingZipOfChildren for Data
     *
@@ -912,7 +966,7 @@ object Data {
         case (thiz: UInt, that: UInt) => thiz === that
         case (thiz: SInt, that: SInt) => thiz === that
         case (thiz: AsyncReset, that: AsyncReset) => thiz.asBool === that.asBool
-        case (thiz: Reset, that: Reset) => thiz === that
+        case (thiz: Reset, that: Reset) => thiz.asBool === that.asBool
         case (thiz: EnumType, that: EnumType) => thiz === that
         case (thiz: Clock, that: Clock) => thiz.asUInt === that.asUInt
         case (thiz: Vec[_], that: Vec[_]) =>
@@ -1159,4 +1213,25 @@ final case object DontCare extends Element with connectable.ConnectableDocs {
     */
   final def :>=[T <: Data](producer: => T)(implicit sourceInfo: SourceInfo): Unit =
     this.asInstanceOf[Data] :>= producer.asInstanceOf[Data]
+}
+
+/** Trait to indicate that a subclass of [[Data]] has a custom [[Connectable]].
+  *
+  * Users can implement the [[customConnectable]] method, which receives a default [[Connectable]], and is expected to
+  * use the methods on [[Connectable]] to customize it. For example, a [[Bundle]] could define this by using
+  * [[connectable.Connectable.exclude(members*]] to always exlude a specific member:
+  *
+  *  {{{
+  *    class MyBundle extends Bundle with HasCustomConnectable {
+  *      val foo = Bool()
+  *      val bar = Bool()
+  *
+  *      override def customConnectable[T <: Data](base: Connectable[T]): Connectable[T] = {
+  *        base.exclude(_ => bar)
+  *      }
+  *    }
+  *  }}}
+  */
+trait HasCustomConnectable { this: Data =>
+  def customConnectable[T <: Data](base: Connectable[T]): Connectable[T]
 }

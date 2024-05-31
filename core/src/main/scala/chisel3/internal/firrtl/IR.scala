@@ -121,13 +121,19 @@ private[chisel3] object ir {
       elem
     }
 
-    /** Provides a mechanism that LitArgs can have their width adjusted
-      * to match other members of a VecLiteral
+    /** Provides a mechanism that LitArgs can have their width adjusted.
       *
       * @param newWidth the new width for this
       * @return
       */
     def cloneWithWidth(newWidth: Width): this.type
+
+    /** Provides a mechanism that LitArgs can have their value adjusted.
+      *
+      * @param newWidth the new width for this
+      * @return
+      */
+    def cloneWithValue(newValue: BigInt): this.type
 
     protected def minWidth: Int
     if (forcedWidth) {
@@ -150,6 +156,8 @@ private[chisel3] object ir {
       ULit(n, newWidth).asInstanceOf[this.type]
     }
 
+    def cloneWithValue(newValue: BigInt): this.type = ULit(newValue, w).asInstanceOf[this.type]
+
     require(n >= 0, s"UInt literal ${n} is negative")
   }
 
@@ -163,6 +171,8 @@ private[chisel3] object ir {
     def cloneWithWidth(newWidth: Width): this.type = {
       SLit(n, newWidth).asInstanceOf[this.type]
     }
+
+    def cloneWithValue(newValue: BigInt): this.type = SLit(newValue, w).asInstanceOf[this.type]
   }
 
   /** Literal property value.
@@ -219,7 +229,7 @@ private[chisel3] object ir {
       // NOTE: mod eq ctx.id only occurs in Target and Named-related APIs
       if (mod eq ctx.id) localName else name
   }
-  case class Slot(imm: Node, name: String) extends Arg {
+  case class Slot(imm: Arg, name: String) extends Arg {
     override def contextualName(ctx: Component): String = {
       val immName = imm.contextualName(ctx)
       if (immName.isEmpty) name else s"$immName.$name"
@@ -288,6 +298,16 @@ private[chisel3] object ir {
     readUnderWrite: fir.ReadUnderWrite.Value)
       extends Definition
 
+  case class FirrtlMemory(
+    sourceInfo:         SourceInfo,
+    id:                 HasId,
+    t:                  Data,
+    size:               BigInt,
+    readPortNames:      Seq[String],
+    writePortNames:     Seq[String],
+    readwritePortNames: Seq[String])
+      extends Definition
+
   case class DefMemPort[T <: Data](
     sourceInfo: SourceInfo,
     id:         T,
@@ -310,7 +330,7 @@ private[chisel3] object ir {
   case class WhenEnd(sourceInfo: SourceInfo, firrtlDepth: Int, hasAlt: Boolean = false) extends Command
   case class AltBegin(sourceInfo: SourceInfo) extends Command
   case class OtherwiseEnd(sourceInfo: SourceInfo, firrtlDepth: Int) extends Command
-  case class Connect(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
+  case class Connect(sourceInfo: SourceInfo, loc: Arg, exp: Arg) extends Command
   case class PropAssign(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
   case class Attach(sourceInfo: SourceInfo, locs: Seq[Node]) extends Command
   case class ConnectInit(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
@@ -396,6 +416,17 @@ private[chisel3] object ir {
     topDir: SpecifiedDirection,
     params: Map[String, Param])
       extends Component
+
+  case class DefIntrinsicExpr[T <: Data](
+    sourceInfo: SourceInfo,
+    intrinsic:  String,
+    id:         T,
+    args:       Seq[Arg],
+    params:     Seq[(String, Param)])
+      extends Definition
+
+  case class DefIntrinsic(sourceInfo: SourceInfo, intrinsic: String, args: Seq[Arg], params: Seq[(String, Param)])
+      extends Command
 
   case class DefClass(id: Class, name: String, ports: Seq[Port], commands: Seq[Command]) extends Component
 

@@ -1060,7 +1060,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
           "connect out.valid, in.valid",
           "connect in.ready, out.ready",
           "connect out.data.b, in.data.b",
-          "connect out.data.c, UInt<1>(0h1)"
+          "connect out.data.c, UInt<2>(0h1)"
         ),
         Nil
       )
@@ -1535,11 +1535,11 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         out,
         Seq(
           """wire w0 : { foo : UInt<3>, flip bar : UInt<3>}""",
-          """connect w0.bar, UInt<1>(0h1)""",
-          """connect w0.foo, UInt<1>(0h0)""",
+          """connect w0.bar, UInt<3>(0h1)""",
+          """connect w0.foo, UInt<3>(0h0)""",
           """wire w1 : { foo : UInt<3>, flip bar : UInt<3>}""",
-          """connect w1.bar, UInt<1>(0h1)""",
-          """connect w1.foo, UInt<1>(0h0)""",
+          """connect w1.bar, UInt<3>(0h1)""",
+          """connect w1.foo, UInt<3>(0h0)""",
           """connect w1, w0"""
         ),
         Nil
@@ -1625,7 +1625,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       testCheck(
         out,
         Seq(
-          """connect out.data, UInt<1>(0h0)""",
+          """connect out.data, UInt<32>(0h0)""",
           """connect in.ready, out.ready""",
           """connect out.valid, in.valid"""
         ),
@@ -1836,6 +1836,246 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       // Still catches error at the end
       intercept[Exception] {
         ChiselStage.emitCHIRRTL({ new MyModule() })
+      }
+    }
+  }
+  describe("(9): HasCustomConnectable") {
+    describe("(9.a) customizing waive behavior") {
+
+      class MyBundle(includeFoo: Boolean) extends Bundle with HasCustomConnectable {
+        val foo = Option.when(includeFoo)(Bool())
+        val bar = Bool()
+
+        override def customConnectable[T <: Data](base: Connectable[T]): Connectable[T] = {
+          if (includeFoo) {
+            base.waive(_ => foo.get)
+          } else {
+            base
+          }
+        }
+      }
+
+      class OuterBundle(includeFoo: Boolean) extends Bundle {
+        val bundle = new MyBundle(includeFoo)
+      }
+
+      it("(9.a.1) allows the user to customize the waive behavior of the Connectable for their class as producer") {
+
+        class MyModule extends RawModule {
+          val in = IO(Input(new MyBundle(true)))
+          val out = IO(Output(new MyBundle(false)))
+
+          out :<>= in
+        }
+
+        testCheck(
+          ChiselStage.emitCHIRRTL(new MyModule()),
+          Seq(
+            "connect out.bar, in.bar"
+          ),
+          Seq(
+            "connect out.foo, in.foo"
+          )
+        )
+      }
+
+      it("(9.a.2) allows the user to customize the waive behavior of the Connectable for their class as consumer") {
+
+        class MyModule extends RawModule {
+          val in = IO(Input(new MyBundle(false)))
+          val out = IO(Output(new MyBundle(true)))
+
+          out :<>= in
+        }
+
+        testCheck(
+          ChiselStage.emitCHIRRTL(new MyModule()),
+          Seq(
+            "connect out.bar, in.bar"
+          ),
+          Seq(
+            "connect out.foo, in.foo"
+          )
+        )
+      }
+
+      it(
+        "(9.a.3) allows the user to customize the waive behavior of the Connectable for their class nested in other Connectables"
+      ) {
+
+        class MyModule extends RawModule {
+          val in = IO(Input(new OuterBundle(true)))
+          val out = IO(Output(new OuterBundle(false)))
+
+          out :<>= in
+        }
+
+        testCheck(
+          ChiselStage.emitCHIRRTL(new MyModule()),
+          Seq(
+            "connect out.bundle.bar, in.bundle.bar"
+          ),
+          Seq(
+            "connect out.bundle.foo, in.bundle.foo"
+          )
+        )
+      }
+    }
+
+    describe("(9.b) customizing squeeze behavior") {
+
+      class MyBundle(fooWidth: Int) extends Bundle with HasCustomConnectable {
+        val foo = UInt(fooWidth.W)
+        val bar = Bool()
+
+        override def customConnectable[T <: Data](base: Connectable[T]): Connectable[T] = {
+          base.squeeze(_ => foo)
+        }
+      }
+
+      class OuterBundle(fooWidth: Int) extends Bundle {
+        val bundle = new MyBundle(fooWidth)
+      }
+
+      it("(9.b.1) allows the user to customize the squeeze behavior of the Connectable for their class as producer") {
+
+        class MyModule extends RawModule {
+          val in = IO(Input(new MyBundle(2)))
+          val out = IO(Output(new MyBundle(1)))
+
+          out :<>= in
+        }
+
+        testCheck(
+          ChiselStage.emitCHIRRTL(new MyModule()),
+          Seq(
+            "connect out.bar, in.bar",
+            "connect out.foo, in.foo"
+          ),
+          Nil
+        )
+      }
+
+      it("(9.b.2) allows the user to customize the squeeze behavior of the Connectable for their class as consumer") {
+
+        class MyModule extends RawModule {
+          val in = IO(Input(new MyBundle(1)))
+          val out = IO(Output(new MyBundle(2)))
+
+          out :<>= in
+        }
+
+        testCheck(
+          ChiselStage.emitCHIRRTL(new MyModule()),
+          Seq(
+            "connect out.bar, in.bar",
+            "connect out.foo, in.foo"
+          ),
+          Nil
+        )
+      }
+
+      it(
+        "(9.b.3) allows the user to customize the squeeze behavior of the Connectable for their class nested in other Connectables"
+      ) {
+
+        class MyModule extends RawModule {
+          val in = IO(Input(new OuterBundle(2)))
+          val out = IO(Output(new OuterBundle(1)))
+
+          out :<>= in
+        }
+
+        testCheck(
+          ChiselStage.emitCHIRRTL(new MyModule()),
+          Seq(
+            "connect out.bundle.bar, in.bundle.bar",
+            "connect out.bundle.foo, in.bundle.foo"
+          ),
+          Nil
+        )
+      }
+    }
+
+    describe("(9.c) connectableExcludeSelection") {
+
+      class MyBundle(includeFoo: Boolean) extends Bundle with HasCustomConnectable {
+        val foo = Option.when(includeFoo)(Bool())
+        val bar = Bool()
+
+        override def customConnectable[T <: Data](base: Connectable[T]): Connectable[T] = {
+          if (includeFoo) {
+            base.exclude(_ => foo.get)
+          } else {
+            base
+          }
+        }
+      }
+
+      class OuterBundle(includeFoo: Boolean) extends Bundle {
+        val bundle = new MyBundle(includeFoo)
+      }
+
+      it("(9.c.1) allows the user to customize the exclude behavior of the Connectable for their class as producer") {
+
+        class MyModule extends RawModule {
+          val in = IO(Input(new MyBundle(true)))
+          val out = IO(Output(new MyBundle(false)))
+
+          out :<>= in
+        }
+
+        testCheck(
+          ChiselStage.emitCHIRRTL(new MyModule()),
+          Seq(
+            "connect out.bar, in.bar"
+          ),
+          Seq(
+            "connect out.foo, in.foo"
+          )
+        )
+      }
+
+      it("(9.c.2) allows the user to customize the exclude behavior of the Connectable for their class as consumer") {
+
+        class MyModule extends RawModule {
+          val in = IO(Input(new MyBundle(false)))
+          val out = IO(Output(new MyBundle(true)))
+
+          out :<>= in
+        }
+
+        testCheck(
+          ChiselStage.emitCHIRRTL(new MyModule()),
+          Seq(
+            "connect out.bar, in.bar"
+          ),
+          Seq(
+            "connect out.foo, in.foo"
+          )
+        )
+      }
+
+      it(
+        "(9.c.3) allows the user to customize the exclude behavior of the Connectable for their class nested in other Connectables"
+      ) {
+
+        class MyModule extends RawModule {
+          val in = IO(Input(new OuterBundle(true)))
+          val out = IO(Output(new OuterBundle(false)))
+
+          out :<>= in
+        }
+
+        testCheck(
+          ChiselStage.emitCHIRRTL(new MyModule()),
+          Seq(
+            "connect out.bundle.bar, in.bundle.bar"
+          ),
+          Seq(
+            "connect out.bundle.foo, in.bundle.foo"
+          )
+        )
       }
     }
   }

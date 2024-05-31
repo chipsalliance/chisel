@@ -445,6 +445,23 @@ case class LayerBlock(info: Info, layer: String, body: Statement) extends Statem
 case class DefOption(info: Info, name: String, cases: Seq[DefOptionCase])
 case class DefOptionCase(info: Info, name: String)
 
+case class IntrinsicExpr(
+  intrinsic: String,
+  args:      Seq[Expression],
+  params:    Seq[Param],
+  tpe:       Type)
+    extends Expression
+    with UseSerializer
+
+case class IntrinsicStmt(
+  info:      Info,
+  intrinsic: String,
+  args:      Seq[Expression],
+  params:    Seq[Param],
+  tpe:       Option[Type] = None)
+    extends Statement
+    with UseSerializer
+
 // formal
 object Formal extends Enumeration {
   val Assert = Value("assert")

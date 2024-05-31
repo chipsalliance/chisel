@@ -18,6 +18,8 @@ import firrtl.{AnnotationSeq, EmittedVerilogCircuit, EmittedVerilogCircuitAnnota
 import java.io.File
 import scala.collection.mutable
 import scala.util.control.NoStackTrace
+import firrtl.EmittedBtor2CircuitAnnotation
+import firrtl.EmittedBtor2Circuit
 
 private object Helpers {
   implicit class LogLevelHelpers(logLevel: LogLevel.Value) {
@@ -244,6 +246,7 @@ class CIRCT extends Phase {
           case (Some(CIRCTTarget.Verilog), false)       => None
           case (Some(CIRCTTarget.SystemVerilog), true)  => Seq("--split-verilog", s"-o=${stageOptions.targetDir}")
           case (Some(CIRCTTarget.SystemVerilog), false) => None
+          case (Some(CIRCTTarget.Btor2), false)         => Seq("--btor2")
           case (None, _) =>
             throw new Exception(
               "No 'circtOptions.target' specified. This should be impossible if dependencies are satisfied!"
@@ -302,6 +305,8 @@ class CIRCT extends Phase {
           Seq(EmittedMLIR(outputFileName, result, Some(".hw.mlir")))
         case Some(CIRCTTarget.Verilog) =>
           Seq(EmittedVerilogCircuitAnnotation(EmittedVerilogCircuit(outputFileName, result, ".v")))
+        case Some(CIRCTTarget.Btor2) =>
+          Seq(EmittedBtor2CircuitAnnotation(EmittedBtor2Circuit(outputFileName, result, ".btor2")))
         case Some(CIRCTTarget.SystemVerilog) =>
           Seq(EmittedVerilogCircuitAnnotation(EmittedVerilogCircuit(outputFileName, result, ".sv")))
         case None =>

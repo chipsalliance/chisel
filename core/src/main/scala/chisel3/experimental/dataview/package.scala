@@ -154,7 +154,13 @@ package object dataview {
       case (aa: Aggregate, ba: Aggregate) =>
         if (!ba.typeEquivalent(aa)) {
           val fieldName = viewFieldLookup(ba)
-          throw InvalidViewException(s"field $fieldName specified as view of non-type-equivalent value $aa")
+          val reason = ba
+            .findFirstTypeMismatch(aa, strictTypes = true, strictWidths = true, strictProbeInfo = true)
+            .map(s => s"\nbecause $s")
+            .getOrElse("")
+          throw InvalidViewException(
+            s"Field $fieldName specified as view of non-type-equivalent value $aa$reason"
+          )
         }
         getMatchedFields(aa, ba).foreach {
           case (aelt: Element, belt: Element) => onElt(aelt, belt)
@@ -258,6 +264,7 @@ package object dataview {
     * @note An Aggregate may be a view of unrelated [[Data]] (eg. like a Seq or tuple) and thus this
     *       there is no single Data representing the Target and this function will return None
     * @return The single Data target of this view or None if a single Data doesn't exist
+    * @note Returns Some(_) of the argument if it is not a view
     */
   private[chisel3] def reifySingleData(data: Data): Option[Data] = {
     val candidate: Option[Data] =
@@ -265,7 +272,7 @@ package object dataview {
         case None                               => None
         case Some(ViewBinding(target))          => Some(target)
         case Some(AggregateViewBinding(lookup)) => lookup.get(data)
-        case Some(_)                            => None
+        case Some(_)                            => Some(data)
       }
     candidate.flatMap { d =>
       // Candidate may itself be a view, keep tracing in those cases

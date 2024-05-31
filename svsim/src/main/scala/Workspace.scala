@@ -278,10 +278,18 @@ final class Workspace(
       .flatMap(_.listFiles())
       .map { file => workingDirectory.toPath().relativize(file.toPath()).toString() }
 
+    val traceFileStem = (backendSpecificSettings match {
+      case s: verilator.Backend.CompilationSettings =>
+        s.traceStyle.collectFirst {
+          case verilator.Backend.CompilationSettings.TraceStyle.Vcd(_, filename: String) if filename.nonEmpty =>
+            filename.stripSuffix(".vcd")
+        }
+      case _ => None
+    }).getOrElse(s"$workingDirectoryPath/trace")
     val simulationEnvironment = Seq(
       "SVSIM_SIMULATION_LOG" -> s"$workingDirectoryPath/simulation-log.txt",
       // The simulation driver appends the appropriate extension to the file path
-      "SVSIM_SIMULATION_TRACE" -> s"$workingDirectoryPath/trace"
+      "SVSIM_SIMULATION_TRACE" -> traceFileStem
     ) ++ parameters.simulationInvocation.environment
 
     // Emit Makefile for debugging (will be emitted even if compile fails)

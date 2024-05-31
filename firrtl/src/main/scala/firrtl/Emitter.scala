@@ -38,6 +38,11 @@ case class EmittedFirrtlCircuitAnnotation(value: EmittedFirrtlCircuit)
 
 final case class EmittedFirrtlCircuit(name: String, value: String, outputSuffix: String) extends EmittedCircuit
 
+final case class EmittedBtor2Circuit(name: String, value: String, outputSuffix: String) extends EmittedCircuit
+
+case class EmittedBtor2CircuitAnnotation(value: EmittedBtor2Circuit)
+    extends EmittedCircuitAnnotation[EmittedBtor2Circuit]
+
 final case class EmittedVerilogCircuit(name: String, value: String, outputSuffix: String) extends EmittedCircuit
 case class EmittedVerilogCircuitAnnotation(value: EmittedVerilogCircuit)
     extends EmittedCircuitAnnotation[EmittedVerilogCircuit]

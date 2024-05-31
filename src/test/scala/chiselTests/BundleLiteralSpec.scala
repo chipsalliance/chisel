@@ -344,6 +344,35 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
     exc.getMessage should include(".c")
   }
 
+  "bundle literals with too-wide of literal values" should "warn and truncate" in {
+    class SimpleBundle extends Bundle {
+      val a = UInt(4.W)
+      val b = UInt(4.W)
+    }
+    val (stdout, _, chirrtl) = grabStdOutErr(ChiselStage.emitCHIRRTL(new RawModule {
+      val lit = (new SimpleBundle).Lit(_.a -> 0xde.U, _.b -> 0xad.U)
+      val x = lit.asUInt
+    }))
+    stdout should include("[W007] Literal value ULit(222,) is too wide for field _.a with width 4")
+    stdout should include("[W007] Literal value ULit(173,) is too wide for field _.b with width 4")
+    chirrtl should include("node x = cat(UInt<4>(0he), UInt<4>(0hd))")
+  }
+
+  "bundle literals with zero-width fields" should "not warn for 0.U" in {
+    class SimpleBundle extends Bundle {
+      val a = UInt(4.W)
+      val b = UInt(0.W)
+    }
+    val chirrtl = ChiselStage.emitCHIRRTL(
+      new RawModule {
+        val lit = (new SimpleBundle).Lit(_.a -> 5.U, _.b -> 0.U)
+        val x = lit.asUInt
+      },
+      args = Array("--warnings-as-errors")
+    )
+    chirrtl should include("node x = cat(UInt<4>(0h5), UInt<0>(0h0))")
+  }
+
   "partial bundle literals" should "fail to pack" in {
     ChiselStage.emitCHIRRTL {
       new RawModule {
@@ -359,5 +388,27 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
     })
     val wire = """wire.*: const \{ a : UInt<8>, b : UInt<1>, c : UInt<1>\}""".r
     (chirrtl should include).regex(wire)
+  }
+
+  "Empty bundle literals" should "be supported" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val lit = (new Bundle {}).Lit()
+      lit.litOption should equal(Some(0))
+    })
+  }
+
+  "bundle literals" should "use the widths of the Bundle fields rather than the widths of the literals" in {
+    class SimpleBundle extends Bundle {
+      val a = UInt(4.W)
+      val b = UInt(4.W)
+    }
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      // Whether the user specifies a width or not.
+      val lit = (new SimpleBundle).Lit(_.a -> 0x3.U, _.b -> 0x3.U(3.W))
+      lit.a.getWidth should be(4)
+      lit.b.getWidth should be(4)
+      val cat = lit.asUInt
+    })
+    chirrtl should include("node cat = cat(UInt<4>(0h3), UInt<4>(0h3))")
   }
 }

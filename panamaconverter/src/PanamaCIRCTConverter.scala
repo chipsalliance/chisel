@@ -178,7 +178,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
         case fir.StringPropertyType         => circt.firrtlTypeGetString()
         case fir.BooleanPropertyType        => circt.firrtlTypeGetBoolean()
         case fir.PathPropertyType           => circt.firrtlTypeGetPath()
-        case t: fir.SequencePropertyType    => circt.firrtlTypeGetList(convert(t.tpe))
+        case t: fir.SequencePropertyType => circt.firrtlTypeGetList(convert(t.tpe))
         case t: fir.ClassPropertyType =>
           circt.firrtlTypeGetClass(
             circt.mlirFlatSymbolRefAttrGet(t.name),
@@ -197,7 +197,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
     def convert(name: String, parameter: Param): MlirAttribute = {
       val (tpe, value) = parameter match {
         case IntParam(value) =>
-          val tpe = circt.mlirIntegerTypeGet(max(bitLength(value), 32))
+          val tpe = circt.mlirIntegerTypeGet(max(value.bitLength, 32))
           (tpe, circt.mlirIntegerAttrGet(tpe, value.toLong))
         case DoubleParam(value) =>
           val tpe = circt.mlirF64TypeGet()
@@ -239,8 +239,6 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
         .withNamedAttr("portSyms", circt.mlirArrayAttrGet(ports.symAttrs))
         .withNamedAttr("portLocations", circt.mlirArrayAttrGet(ports.locAttrs))
     }
-
-    def bitLength(n: BigInt): Int = max(n.bitLength, 1)
 
     def widthShl(lhs: fir.Width, rhs: fir.Width): fir.Width = (lhs, rhs) match {
       case (l: fir.IntWidth, r: fir.IntWidth) => fir.IntWidth(l.width << r.width.toInt)
@@ -328,10 +326,16 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
       def buildBefore(ref: Op): Op = buildImpl(circt.mlirBlockInsertOwnedOperationBefore(parent, ref.op, _))
     }
 
-    def newConstantValue(resultType: fir.Type, valueType: MlirType, value: BigInt, loc: MlirLocation): MlirValue = {
+    def newConstantValue(
+      resultType: fir.Type,
+      valueType:  MlirType,
+      bitLen:     Int,
+      value:      BigInt,
+      loc:        MlirLocation
+    ): MlirValue = {
       util
         .OpBuilder("firrtl.constant", firCtx.currentBlock, loc)
-        .withNamedAttr("value", circt.mlirIntegerAttrGet(valueType, value.toLong))
+        .withNamedAttr("value", circt.firrtlAttrGetIntegerFromString(valueType, bitLen, value.toString, 10))
         .withResult(util.convert(resultType))
         .build()
         .results(0)
@@ -486,14 +490,15 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
       def referToNewConstant(n: BigInt, w: Width, isSigned: Boolean): Reference.Value = {
         val (firWidth, valWidth) = w match {
           case _: UnknownWidth =>
-            val bitLen = util.bitLength(n)
+            // We need to keep the most significant sign bit for signed literals
+            val bitLen = if (!isSigned) max(n.bitLength, 1) else n.bitLength + 1
             (fir.IntWidth(bitLen), bitLen)
           case w: KnownWidth => (fir.IntWidth(w.get), w.get)
         }
         val resultType = if (isSigned) fir.SIntType(firWidth) else fir.UIntType(firWidth)
         val valueType =
           if (isSigned) circt.mlirIntegerTypeSignedGet(valWidth) else circt.mlirIntegerTypeUnsignedGet(valWidth)
-        Reference.Value(util.newConstantValue(resultType, valueType, n, util.convert(srcInfo)), resultType)
+        Reference.Value(util.newConstantValue(resultType, valueType, valWidth, n, util.convert(srcInfo)), resultType)
       }
 
       def referToNewProperty[T, U](propLit: PropertyLit[T, U]): Reference.Value = {
@@ -503,7 +508,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
               val attrs = Seq(
                 (
                   "value",
-                  circt.mlirIntegerAttrGet(circt.mlirIntegerTypeSignedGet(util.bitLength(value) + 1), value.toLong)
+                  circt.mlirIntegerAttrGet(circt.mlirIntegerTypeSignedGet(max(value.bitLength, 1) + 1), value.toLong)
                 )
               )
               ("integer", attrs, Seq.empty)
@@ -923,15 +928,19 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
   def visitDefBlackBox(defBlackBox: DefBlackBox): Unit = {
     val ports = util.convert(defBlackBox.ports ++ defBlackBox.id.secretPorts, defBlackBox.topDir)
     val nameAttr = circt.mlirStringAttrGet(defBlackBox.name)
+    val desiredNameAttr = circt.mlirStringAttrGet(defBlackBox.id.desiredName)
 
     val builder = util
       .OpBuilder("firrtl.extmodule", firCtx.circuitBlock, circt.unkLoc)
       .withRegionNoBlock()
       .withNamedAttr("sym_name", nameAttr)
       .withNamedAttr("sym_visibility", circt.mlirStringAttrGet("private"))
-      .withNamedAttr("defname", nameAttr)
+      .withNamedAttr("defname", desiredNameAttr)
       .withNamedAttr("parameters", circt.mlirArrayAttrGet(defBlackBox.params.map(p => util.convert(p._1, p._2)).toSeq))
-      .withNamedAttr("convention", circt.firrtlAttrGetConvention(FIRRTLConvention.Internal)) // TODO: handle it corretly
+      .withNamedAttr(
+        "convention",
+        circt.firrtlAttrGetConvention(FIRRTLConvention.Scalarized)
+      ) // TODO: Make an option `scalarizeExtModules` for it
       .withNamedAttr("annotations", circt.emptyArrayAttr)
     val firModule = util.moduleBuilderInsertPorts(builder, ports).build()
 
@@ -967,7 +976,10 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
       .withRegion(Seq((ports.types, ports.locs)))
       .withNamedAttr("sym_name", circt.mlirStringAttrGet(defModule.name))
       .withNamedAttr("sym_visibility", circt.mlirStringAttrGet(if (isMainModule) "public" else "private"))
-      .withNamedAttr("convention", circt.firrtlAttrGetConvention(FIRRTLConvention.Internal)) // TODO: handle it corretly
+      .withNamedAttr(
+        "convention",
+        circt.firrtlAttrGetConvention(if (isMainModule) FIRRTLConvention.Scalarized else FIRRTLConvention.Internal)
+      ) // TODO: Make an option `scalarizePublicModules` for it
       .withNamedAttr("annotations", circt.emptyArrayAttr)
     val firModule = util.moduleBuilderInsertPorts(builder, ports).build()
 
@@ -986,7 +998,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
   }
 
   def visitConnect(connect: Connect): Unit = {
-    val dest = util.referTo(connect.loc.id, connect.sourceInfo)
+    val dest = util.referTo(connect.loc, connect.sourceInfo)
     var src = util.referTo(connect.exp, connect.sourceInfo)
     util.emitConnect(dest, src, util.convert(connect.sourceInfo))
   }
@@ -1512,7 +1524,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
       .withNamedAttr("name", circt.mlirStringAttrGet(Converter.getRef(printf.id, printf.sourceInfo).name))
       .withOperand( /* clock */ util.referTo(printf.clock, printf.sourceInfo).value)
       .withOperand(
-        /* cond */ util.newConstantValue(fir.UIntType(fir.IntWidth(1)), circt.mlirIntegerTypeUnsignedGet(1), 1, loc)
+        /* cond */ util.newConstantValue(fir.UIntType(fir.IntWidth(1)), circt.mlirIntegerTypeUnsignedGet(1), 1, 1, loc)
       )
       .withOperands( /* substitutions */ args.map(util.referTo(_, printf.sourceInfo).value))
       .build()
@@ -1526,7 +1538,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
       .withNamedAttr("name", circt.mlirStringAttrGet(Converter.getRef(stop.id, stop.sourceInfo).name))
       .withOperand( /* clock */ util.referTo(stop.clock, stop.sourceInfo).value)
       .withOperand(
-        /* cond */ util.newConstantValue(fir.UIntType(fir.IntWidth(1)), circt.mlirIntegerTypeUnsignedGet(1), 1, loc)
+        /* cond */ util.newConstantValue(fir.UIntType(fir.IntWidth(1)), circt.mlirIntegerTypeUnsignedGet(1), 1, 1, loc)
       )
       .build()
   }
@@ -1545,7 +1557,8 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
       .withOperand( /* clock */ util.referTo(verifi.clock, verifi.sourceInfo).value)
       .withOperand( /* predicate */ util.referTo(verifi.predicate, verifi.sourceInfo).value)
       .withOperand(
-        /* enable */ util.newConstantValue(fir.UIntType(fir.IntWidth(1)), circt.mlirIntegerTypeUnsignedGet(1), 1, loc)
+        /* enable */ util
+          .newConstantValue(fir.UIntType(fir.IntWidth(1)), circt.mlirIntegerTypeUnsignedGet(1), 1, 1, loc)
       )
       .withOperands( /* substitutions */ args.map(util.referTo(_, verifi.sourceInfo).value))
       .build()
@@ -1579,7 +1592,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
       .OpBuilder("firrtl.ref.force_initial", firCtx.currentBlock, loc)
       .withOperand(
         /* predicate */ util
-          .newConstantValue(fir.UIntType(fir.IntWidth(1)), circt.mlirIntegerTypeUnsignedGet(1), 1, loc)
+          .newConstantValue(fir.UIntType(fir.IntWidth(1)), circt.mlirIntegerTypeUnsignedGet(1), 1, 1, loc)
       )
       .withOperand( /* dest */ util.referTo(probeForceInitial.probe, probeForceInitial.sourceInfo, Some(parent)).value)
       .withOperand( /* src */ util.referTo(probeForceInitial.value, probeForceInitial.sourceInfo, Some(parent)).value)
@@ -1592,7 +1605,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
       .OpBuilder("firrtl.ref.release_initial", firCtx.currentBlock, loc)
       .withOperand(
         /* predicate */ util
-          .newConstantValue(fir.UIntType(fir.IntWidth(1)), circt.mlirIntegerTypeUnsignedGet(1), 1, loc)
+          .newConstantValue(fir.UIntType(fir.IntWidth(1)), circt.mlirIntegerTypeUnsignedGet(1), 1, 1, loc)
       )
       .withOperand(
         /* dest */ util.referTo(probeReleaseInitial.probe, probeReleaseInitial.sourceInfo, Some(parent)).value

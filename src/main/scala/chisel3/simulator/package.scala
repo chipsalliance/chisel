@@ -2,6 +2,7 @@ package chisel3
 
 import svsim._
 import chisel3.reflect.DataMirror
+import chisel3.experimental.dataview.reifySingleData
 import scala.collection.mutable
 import java.nio.file.{Files, Path, Paths}
 
@@ -33,7 +34,16 @@ package object simulator {
       case (data, port) => data -> controller.port(port.name)
     }.toMap
     def port(data: Data): Simulation.Port = {
-      simulationPorts(data)
+      // TODO, we can support non 1-1 views, but it will require changing this API to return a Seq[Port]
+      // and packing/unpacking the BigInt literal representation.
+      val reified = reifySingleData(data).getOrElse {
+        val url = "https://github.com/chipsalliance/chisel/issues/new/choose"
+        throw new Exception(
+          s"Cannot poke $data as is a view that does not map to a single Data. " +
+            s"Please file an issue at $url requesting support for this use case."
+        )
+      }
+      simulationPorts(reified)
     }
 
     // -- Peek/Poke API Support
@@ -78,10 +88,11 @@ package object simulator {
       elaboratedModule:              ElaboratedModule[T],
       conservativeCommandResolution: Boolean = false,
       verbose:                       Boolean = false,
+      traceEnabled:                  Boolean = false,
       executionScriptLimit:          Option[Int] = None
     )(body:                          SimulatedModule[T] => U
     ): U = {
-      simulation.run(conservativeCommandResolution, verbose, executionScriptLimit) { controller =>
+      simulation.run(conservativeCommandResolution, verbose, traceEnabled, executionScriptLimit) { controller =>
         val module = new SimulatedModule(elaboratedModule, controller)
         AnySimulatedModule.withValue(module) {
           body(module)
@@ -92,10 +103,12 @@ package object simulator {
 
   implicit class ChiselWorkspace(workspace: Workspace) {
     def elaborateGeneratedModule[T <: RawModule](
-      generateModule: () => T
+      generateModule: () => T,
+      firtoolArgs:    Seq[String] = Seq()
     ): ElaboratedModule[T] = {
       // Use CIRCT to generate SystemVerilog sources, and potentially additional artifacts
       var someDut: Option[T] = None
+      val firtoolOptions = firtoolArgs.map(circt.stage.FirtoolOption)
       val outputAnnotations = (new circt.stage.ChiselStage).execute(
         Array("--target", "systemverilog", "--split-verilog"),
         Seq(
@@ -106,7 +119,7 @@ package object simulator {
           },
           circt.stage.FirtoolOption("-disable-annotation-unknown"),
           firrtl.options.TargetDirAnnotation(workspace.supportArtifactsPath)
-        )
+        ) ++ firtoolOptions
       )
 
       // Move the files indicated by a filelist.  No-op if the file has already
@@ -172,11 +185,16 @@ package object simulator {
               }
             }
             case element: Element =>
-              DataMirror.directionOf(element) match {
-                case ActualDirection.Input =>
-                  Seq((element, ModuleInfo.Port(name, isGettable = true, isSettable = true)))
-                case ActualDirection.Output => Seq((element, ModuleInfo.Port(name, isGettable = true)))
-                case _                      => Seq()
+              // Return the port only if the width is positive (firtool will optimized it out from the *.sv primary source)
+              if (element.widthKnown && element.getWidth > 0) {
+                DataMirror.directionOf(element) match {
+                  case ActualDirection.Input =>
+                    Seq((element, ModuleInfo.Port(name, isGettable = true, isSettable = true)))
+                  case ActualDirection.Output => Seq((element, ModuleInfo.Port(name, isGettable = true)))
+                  case _                      => Seq()
+                }
+              } else {
+                Seq()
               }
           }
         }

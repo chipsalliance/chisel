@@ -4,26 +4,32 @@ import mill.scalalib.publish._
 import mill.scalalib.scalafmt._
 import mill.define.Cross
 import mill.scalalib.api.ZincWorkerUtil.matchingVersions
+import $ivy.`com.lihaoyi::mill-contrib-jmh:`
+import mill.contrib.jmh.JmhModule
 import $file.common
 import $file.tests
 
 object v {
   val pluginScalaCrossVersions = Seq(
     "2.13.11",
-    "2.13.12"
+    "2.13.12",
+    "2.13.13",
+    "2.13.14"
   )
   val scalaCrossVersions = Seq(
-    "2.13.12"
+    "2.13.14"
   )
-  val osLib = ivy"com.lihaoyi::os-lib:0.9.1"
-  val upickle = ivy"com.lihaoyi::upickle:3.1.0"
+  val scalaVersion = scalaCrossVersions.head
+  val jmhVersion = "1.37"
+  val osLib = ivy"com.lihaoyi::os-lib:0.10.0"
+  val upickle = ivy"com.lihaoyi::upickle:3.3.0"
   val firtoolResolver = ivy"org.chipsalliance::firtool-resolver:2.0.0"
-  val scalatest = ivy"org.scalatest::scalatest:3.2.14"
-  val scalacheck = ivy"org.scalatestplus::scalacheck-1-15:3.2.11.0"
-  val json4s = ivy"org.json4s::json4s-native:4.0.6"
-  val dataclass = ivy"io.github.alexarchambault::data-class:0.2.5"
-  val commonText = ivy"org.apache.commons:commons-text:1.10.0"
-  val scopt = ivy"com.github.scopt::scopt:3.7.1"
+  val scalatest = ivy"org.scalatest::scalatest:3.2.18"
+  val scalacheck = ivy"org.scalatestplus::scalacheck-1-18:3.2.18.0"
+  val json4s = ivy"org.json4s::json4s-native:4.0.7"
+  val dataclass = ivy"io.github.alexarchambault::data-class:0.2.6"
+  val commonText = ivy"org.apache.commons:commons-text:1.12.0"
+  val scopt = ivy"com.github.scopt::scopt:4.1.0"
 
   def scalaReflect(scalaVersion: String) = ivy"org.scala-lang:scala-reflect:$scalaVersion"
 
@@ -34,11 +40,7 @@ object v {
 
 object firrtl extends Cross[Firrtl](v.scalaCrossVersions)
 
-trait Firrtl
-  extends common.FirrtlModule
-    with ChiselPublishModule
-    with CrossSbtModule
-    with ScalafmtModule {
+trait Firrtl extends common.FirrtlModule with ChiselPublishModule with CrossSbtModule with ScalafmtModule {
   def millSourcePath = super.millSourcePath / os.up / "firrtl"
 
   def osLibModuleIvy = v.osLib
@@ -54,20 +56,13 @@ trait Firrtl
 
 object svsim extends Cross[Svsim](v.scalaCrossVersions)
 
-trait Svsim
-  extends common.SvsimModule
-    with ChiselPublishModule
-    with CrossSbtModule
-    with ScalafmtModule {
+trait Svsim extends common.SvsimModule with ChiselPublishModule with CrossSbtModule with ScalafmtModule {
   def millSourcePath = super.millSourcePath / os.up / "svsim"
 }
 
 object firrtlut extends Cross[FirrtlUnitTest](v.scalaCrossVersions)
 
-trait FirrtlUnitTest
-  extends tests.FirrtlUnitTestModule
-    with CrossModuleBase
-    with ScalafmtModule {
+trait FirrtlUnitTest extends tests.FirrtlUnitTestModule with CrossModuleBase with ScalafmtModule {
   override def millSourcePath = firrtl(crossScalaVersion).millSourcePath
 
   def firrtlModule = firrtl(crossScalaVersion)
@@ -84,11 +79,7 @@ trait FirrtlUnitTest
 
 object macros extends Cross[Macros](v.scalaCrossVersions)
 
-trait Macros
-  extends common.MacrosModule
-    with ChiselPublishModule
-    with CrossSbtModule
-    with ScalafmtModule {
+trait Macros extends common.MacrosModule with ChiselPublishModule with CrossSbtModule with ScalafmtModule {
   def millSourcePath = super.millSourcePath / os.up / "macros"
 
   def scalaReflectIvy = v.scalaReflect(crossScalaVersion)
@@ -96,11 +87,7 @@ trait Macros
 
 object core extends Cross[Core](v.scalaCrossVersions)
 
-trait Core
-  extends common.CoreModule
-    with ChiselPublishModule
-    with CrossSbtModule
-    with ScalafmtModule {
+trait Core extends common.CoreModule with ChiselPublishModule with CrossSbtModule with ScalafmtModule {
   def millSourcePath = super.millSourcePath / os.up / "core"
 
   def firrtlModule = firrtl(crossScalaVersion)
@@ -150,11 +137,7 @@ trait Core
 
 object plugin extends Cross[Plugin](v.pluginScalaCrossVersions)
 
-trait Plugin
-  extends common.PluginModule
-    with ChiselPublishModule
-    with CrossSbtModule
-    with ScalafmtModule {
+trait Plugin extends common.PluginModule with ChiselPublishModule with CrossSbtModule with ScalafmtModule {
   def millSourcePath = super.millSourcePath / os.up / "plugin"
 
   def scalaLibraryIvy = v.scalaLibrary(crossScalaVersion)
@@ -166,11 +149,7 @@ trait Plugin
 
 object chisel extends Cross[Chisel](v.scalaCrossVersions)
 
-trait Chisel
-  extends common.ChiselModule
-    with ChiselPublishModule
-    with CrossSbtModule
-    with ScalafmtModule {
+trait Chisel extends common.ChiselModule with ChiselPublishModule with CrossSbtModule with ScalafmtModule {
   override def millSourcePath = super.millSourcePath / os.up
 
   def svsimModule = svsim(crossScalaVersion)
@@ -184,10 +163,7 @@ trait Chisel
 
 object chiselut extends Cross[ChiselUnitTest](v.scalaCrossVersions)
 
-trait ChiselUnitTest
-  extends tests.ChiselUnitTestModule
-    with CrossModuleBase
-    with ScalafmtModule {
+trait ChiselUnitTest extends tests.ChiselUnitTestModule with CrossModuleBase with ScalafmtModule {
   override def millSourcePath = chisel(crossScalaVersion).millSourcePath
 
   def chiselModule = chisel(crossScalaVersion)
@@ -206,11 +182,7 @@ trait ChiselUnitTest
 
 object stdlib extends Cross[Stdlib](v.scalaCrossVersions)
 
-trait Stdlib
-  extends common.StdLibModule
-    with ChiselPublishModule
-    with CrossSbtModule
-    with ScalafmtModule {
+trait Stdlib extends common.StdLibModule with ChiselPublishModule with CrossSbtModule with ScalafmtModule {
   def millSourcePath = super.millSourcePath / os.up / "stdlib"
 
   def chiselModule = chisel(crossScalaVersion)
@@ -233,9 +205,7 @@ trait ChiselPublishModule extends PublishModule {
 
 object circtpanamabinding extends CIRCTPanamaBinding
 
-trait CIRCTPanamaBinding
-  extends common.CIRCTPanamaBindingModule
-    with ChiselPublishModule {
+trait CIRCTPanamaBinding extends common.CIRCTPanamaBindingModule with ChiselPublishModule {
 
   def header = T(PathRef(millSourcePath / "jextract-headers.h"))
 
@@ -248,28 +218,20 @@ trait CIRCTPanamaBinding
 
 object panamalib extends Cross[PanamaLib](v.scalaCrossVersions)
 
-trait PanamaLib
-  extends common.PanamaLibModule
-    with CrossModuleBase
-    with ChiselPublishModule
-    with ScalafmtModule {
+trait PanamaLib extends common.PanamaLibModule with CrossModuleBase with ChiselPublishModule with ScalafmtModule {
   def circtPanamaBindingModule = circtpanamabinding
 }
 
 object panamaom extends Cross[PanamaOM](v.scalaCrossVersions)
 
-trait PanamaOM
-  extends common.PanamaOMModule
-    with CrossModuleBase
-    with ChiselPublishModule
-    with ScalafmtModule {
+trait PanamaOM extends common.PanamaOMModule with CrossModuleBase with ChiselPublishModule with ScalafmtModule {
   def panamaLibModule = panamalib(crossScalaVersion)
 }
 
 object panamaconverter extends Cross[PanamaConverter](v.scalaCrossVersions)
 
 trait PanamaConverter
-  extends common.PanamaConverterModule
+    extends common.PanamaConverterModule
     with CrossModuleBase
     with ChiselPublishModule
     with ScalafmtModule {
@@ -282,10 +244,7 @@ trait PanamaConverter
 
 object litutility extends Cross[LitUtility](v.scalaCrossVersions)
 
-trait LitUtility
-  extends tests.LitUtilityModule
-    with CrossModuleBase
-    with ScalafmtModule {
+trait LitUtility extends tests.LitUtilityModule with CrossModuleBase with ScalafmtModule {
   def millSourcePath = super.millSourcePath / os.up / "lit" / "utility"
   def panamaConverterModule = panamaconverter(crossScalaVersion)
   def panamaOMModule = panamaom(crossScalaVersion)
@@ -293,14 +252,21 @@ trait LitUtility
 
 object lit extends Cross[Lit](v.scalaCrossVersions)
 
-trait Lit
-  extends tests.LitModule
-    with Cross.Module[String] {
+trait Lit extends tests.LitModule with Cross.Module[String] {
   def scalaVersion: T[String] = crossValue
   def runClasspath: T[Seq[os.Path]] = T(litutility(crossValue).runClasspath().map(_.path))
-  def pluginJars: T[Seq[os.Path]] = T(Seq(litutility(crossValue).panamaConverterModule.pluginModule.jar().path))
-  def javaLibraryPath: T[Seq[os.Path]] = T(litutility(crossValue).panamaConverterModule.circtPanamaBindingModule.libraryPaths().map(_.path))
-  def javaHome: T[os.Path] = T(os.Path(sys.props("java.home")))
+  def pluginJars:   T[Seq[os.Path]] = T(Seq(litutility(crossValue).panamaConverterModule.pluginModule.jar().path))
+  def javaLibraryPath: T[Seq[os.Path]] = T(
+    litutility(crossValue).panamaConverterModule.circtPanamaBindingModule.libraryPaths().map(_.path)
+  )
+  def javaHome:     T[os.Path] = T(os.Path(sys.props("java.home")))
   def chiselLitDir: T[os.Path] = T(millSourcePath)
-  def litConfigIn: T[PathRef] = T.source(millSourcePath / "tests" / "lit.site.cfg.py.in")
+  def litConfigIn:  T[PathRef] = T.source(millSourcePath / "tests" / "lit.site.cfg.py.in")
+}
+
+object benchmark extends ScalaModule with JmhModule with ScalafmtModule {
+  def scalaVersion = v.scalaVersion
+  def jmhCoreVersion = v.jmhVersion
+
+  override def moduleDeps = Seq(chisel(v.scalaVersion))
 }

@@ -15,7 +15,7 @@ on:
         type: number
       scala:
         description: 'The Scala version to use'
-        default: '2.13.12'
+        default: '2.13.14'
         required: true
         type: string
       espresso:
@@ -40,7 +40,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref }}
       - name: Install Tabby OSS Cad Suite
@@ -49,8 +49,8 @@ jobs:
         uses: ./.github/workflows/install-espresso
         with:
           version: ${{ inputs.espresso }}
-      - name: Setup Scala
-        uses: actions/setup-java@v3
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
           distribution: 'adopt'
           java-version: ${{ inputs.jvm }}
@@ -87,18 +87,17 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref }}
       # FIXME: installling jextract before installing mill to workaround `os.proc` can't find jextract in the outdated PATH env from mill server
       - name: Install Jextract
         uses: ./.github/workflows/install-jextract
-      - name: Setup Scala
-        uses: actions/setup-java@v3
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
           distribution: 'adopt'
           java-version: '21'
-          cache: 'sbt'
       - name: Install Mill
         uses: jodersky/setup-mill@v0.3.0
         with:
@@ -127,32 +126,37 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref }}
-      - name: Setup Scala
-        uses: actions/setup-java@v3
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
           distribution: 'adopt'
-          java-version: '11'
-          cache: 'sbt'
-      - name: Check Formatting
-        run: sbt fmtCheck
+          java-version: '21'
+      - name: Install Mill
+        uses: jodersky/setup-mill@v0.3.0
+        with:
+          mill-version: 0.11.5
+      - name: Check Build Script Formatting
+        run: mill --meta-level 1 mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll sources
+      - name: Check Source File Format
+        run: mill __.checkFormat
 
   integration:
     name: Integration Tests
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref }}
       - name: Install Tabby OSS Cad Suite
         uses: ./.github/workflows/setup-oss-cad-suite
       - name: Install Espresso
         uses: ./.github/workflows/install-espresso
-      - name: Setup Scala
-        uses: actions/setup-java@v3
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
           distribution: 'adopt'
           java-version: '11'
@@ -173,27 +177,46 @@ jobs:
       - name: Integration Tests
         run: sbt integrationTests/test
 
+  # Currently just a sanity check that the benchmarking flow works
+  benchmark:
+    name: Benchmarking Sanity Check
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'adopt'
+          java-version: '21'
+      - name: Install Mill
+        uses: jodersky/setup-mill@v0.3.0
+        with:
+          mill-version: 0.11.5
+      - name: JMH
+        run: mill benchmark.runJmh
+
   std:
     name: Standard Library Tests
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        scala: ["2.13.12"]
+        scala: ["2.13.14"]
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref }}
       - name: Install Tabby OSS Cad Suite
         uses: ./.github/workflows/setup-oss-cad-suite
-      - name: Setup Scala
-        uses: actions/setup-java@v3
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
           distribution: 'adopt'
           java-version: '11'
           cache: 'sbt'
-      - name: Check Formatting
-        run: sbt ++${{ inputs.scala }} standardLibrary/scalafmtCheckAll
       - name: Unit Tests
         run: sbt ++${{ inputs.scala }} standardLibrary/test
 
@@ -203,7 +226,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref }}
           # Need full history to correctly determine SNAPSHOT version
@@ -242,7 +265,7 @@ jobs:
       - name: Tar built website
         run: tar zcf website.tar.gz website/build
       - name: Share Built Website
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: website
           path: website.tar.gz

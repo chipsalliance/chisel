@@ -5,6 +5,7 @@ mlirGetDialectHandle__firrtl__
 mlirGetDialectHandle__chirrtl__
 mlirGetDialectHandle__sv__
 mlirGetDialectHandle__seq__
+mlirGetDialectHandle__emit__
 mlirDialectHandleLoadDialect
 #mlirStringRefCreate inline function cannot be generated
 mlirStringRefCreateFromCString
@@ -104,6 +105,7 @@ firrtlAttrGetNameKind
 firrtlAttrGetRUW
 firrtlAttrGetMemoryInit
 firrtlAttrGetMemDir
+firrtlAttrGetIntegerFromString
 
 # Utility API
 firrtlValueFoldFlow
@@ -152,7 +154,7 @@ circtFirtoolOptionsSetDisableRandom
 circtFirtoolOptionsSetOutputAnnotationFilename
 circtFirtoolOptionsSetEnableAnnotationWarning
 circtFirtoolOptionsSetAddMuxPragmas
-circtFirtoolOptionsSetEmitChiselAssertsAsSVA
+circtFirtoolOptionsSetVerificationFlavor
 circtFirtoolOptionsSetEmitSeparateAlwaysBlocks
 circtFirtoolOptionsSetEtcDisableInstanceExtraction
 circtFirtoolOptionsSetEtcDisableRegisterExtraction
@@ -224,6 +226,8 @@ omEvaluatorValueIsABasePath
 omEvaluatorBasePathGetEmpty
 omEvaluatorValueIsAPath
 omEvaluatorPathGetAsString
+omEvaluatorValueIsAReference
+omEvaluatorValueGetReferenceValue
 # ReferenceAttr API
 omAttrIsAReferenceAttr
 omReferenceAttrGetInnerRef

@@ -10,7 +10,7 @@ object Backend {
   object CompilationSettings {
     sealed trait TraceStyle
     object TraceStyle {
-      case class Vcd(traceUnderscore: Boolean = false) extends TraceStyle
+      case class Vcd(traceUnderscore: Boolean = false, filename: String = "") extends TraceStyle
     }
   }
 
@@ -55,9 +55,11 @@ final class Backend(
             "--cc", // "Create C++ output"
             "--exe", // "Link to create executable"
             "--build", // "Build model executable/library after Verilation"
+            "-j", "0", // Parallelism for --build-jobs/--verilate-jobs, when 0 uses all available cores
             "-o", s"../$outputBinaryName", // "Name of final executable"
             "--top-module", topModuleName, // "Name of top-level input module"
             "--Mdir", "verilated-sources",  // "Name of output object directory"
+            "--assert", // Enable assertions 
           ),
 
           commonSettings.libraryExtensions match {
@@ -76,7 +78,7 @@ final class Backend(
           },
 
           backendSpecificSettings.traceStyle match {
-            case Some(TraceStyle.Vcd(traceUnderscore)) => 
+            case Some(TraceStyle.Vcd(traceUnderscore, _)) =>
               if (traceUnderscore) {
                 Seq("--trace", "--trace-underscore")
               } else {
@@ -97,6 +99,8 @@ final class Backend(
           commonSettings.optimizationStyle match {
             case OptimizationStyle.Default => Seq()
             case OptimizationStyle.OptimizeForCompilationSpeed => Seq("-O1")
+            case OptimizationStyle.OptimizeForSimulationSpeed =>
+              Seq("-O3", "--x-assign", "fast", "--x-initial", "fast")
           },
 
           Seq[(String, Option[String])](
@@ -118,6 +122,8 @@ final class Backend(
               commonSettings.optimizationStyle match {
                 case OptimizationStyle.Default => Seq()
                 case OptimizationStyle.OptimizeForCompilationSpeed => Seq("-O1")
+                case OptimizationStyle.OptimizeForSimulationSpeed =>
+                  Seq("-O3", "-march=native", "-mtune=native")
               },
 
               Seq("-std=c++14"),

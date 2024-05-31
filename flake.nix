@@ -17,8 +17,9 @@
           deps = with pkgs; [
             mill
             circt
-            jextract
+            jextract-21
             lit
+            scala-cli
             llvm
           ];
         in

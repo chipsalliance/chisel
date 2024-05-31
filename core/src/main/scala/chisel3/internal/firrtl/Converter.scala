@@ -11,7 +11,7 @@ import chisel3.internal.{castToInt, throwException, HasId}
 import chisel3.internal.firrtl.ir._
 import chisel3.EnumType
 import scala.annotation.tailrec
-import scala.collection.immutable.{Queue, VectorBuilder}
+import scala.collection.immutable.{Queue, VectorBuilder, VectorMap}
 
 private[chisel3] object Converter {
   // TODO modeled on unpack method on Printable, refactor?
@@ -148,6 +148,20 @@ private[chisel3] object Converter {
       Some(firrtl.CDefMemory(convert(info), e.name, extractType(t, info, typeAliases), size, false))
     case e @ DefSeqMemory(info, id, t, size, ruw) =>
       Some(firrtl.CDefMemory(convert(info), e.name, extractType(t, info, typeAliases), size, true, ruw))
+    case e @ FirrtlMemory(info, id, t, size, readPortNames, writePortNames, readwritePortNames) =>
+      Some(
+        fir.DefMemory(
+          convert(info),
+          e.name,
+          extractType(t, info, typeAliases),
+          size,
+          1,
+          1,
+          readPortNames,
+          writePortNames,
+          readwritePortNames
+        )
+      )
     case e: DefMemPort[_] =>
       val info = e.sourceInfo
       Some(
@@ -240,6 +254,24 @@ private[chisel3] object Converter {
           e.name
         )
       )
+    case i @ DefIntrinsic(info, intrinsic, args, params) =>
+      Some(
+        fir.IntrinsicStmt(
+          convert(info),
+          intrinsic,
+          args.map(a => convert(a, ctx, info)),
+          params.map { case (k, v) => convert(k, v) }
+        )
+      )
+    case i @ DefIntrinsicExpr(info, intrinsic, id, args, params) =>
+      val tpe = extractType(id, info, typeAliases)
+      val expr = fir.IntrinsicExpr(
+        intrinsic,
+        args.map(a => convert(a, ctx, info)),
+        params.map { case (k, v) => convert(k, v) },
+        tpe
+      )
+      Some(fir.DefNode(convert(info), i.name, expr))
     case _ => None
   }
 
@@ -431,7 +463,12 @@ private[chisel3] object Converter {
     case IntParam(value)    => fir.IntParam(name, value)
     case DoubleParam(value) => fir.DoubleParam(name, value)
     case StringParam(value) => fir.StringParam(name, fir.StringLit(value))
-    case RawParam(value)    => fir.RawStringParam(name, value)
+    case PrintableParam(value, id) => {
+      val ctx = id._component.get
+      val (fmt, _) = unpack(value, ctx)
+      fir.StringParam(name, fir.StringLit(fmt))
+    }
+    case RawParam(value) => fir.RawStringParam(name, value)
   }
 
   // TODO: Modify Panama CIRCT to account for type aliasing information. This is a temporary hack to

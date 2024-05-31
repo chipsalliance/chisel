@@ -7,19 +7,12 @@ section: "chisel3"
 
 Chisel has a number of new features that are worth checking out.  This page is an informal list of these features and projects.
 
-- [FixedPoint](#fixed-point)
 - [Module Variants](#module-variants)
 - [Bundle Literals](#bundle-literals)
 - [Vec Literals](#vec-literals)
-- [Loading Memories for simulation or FPGA initialization](#loading-memories)
+- [Loading-Memories-for-simulation-or-FPGA-initialization](#loading-memories-for-simulation-or-fpga-initialization)
 
-
-### FixedPoint  <a name="fixed-point"></a>
-FixedPoint numbers are basic *Data* type along side of UInt, SInt, etc.  Most common math and logic operations
-are supported. Chisel allows both the width and binary point to be inferred by the Firrtl compiler which can simplify
-circuit descriptions. See [FixedPointSpec](https://github.com/freechipsproject/chisel3/tree/master/src/test/scala/chiselTests/FixedPointSpec.scala)
-
-### Module Variants <a name="module-variants"></a>
+## Module Variants
 The standard Chisel *Module* requires a `val io = IO(...)`, the experimental package introduces several
 new ways of defining Modules
 - BaseModule: no contents, instantiable
@@ -29,7 +22,7 @@ new ways of defining Modules
 - RawModule: will be the user-facing version of UserDefinedModule
 - Module: type-aliases to ImplicitModule, the user-facing version of ImplicitModule.
 
-### Bundle Literals <a name="bundle-literals"></a>
+## Bundle Literals
 
 Bundle literals can be constructed via an experimental import:
 
@@ -90,7 +83,7 @@ class Example3 extends RawModule {
 circt.stage.ChiselStage.emitSystemVerilog(new Example3)
 ```
 
-### Vec Literals
+## Vec Literals
 
 Vec literals are very similar to Bundle literals and can be constructed via an experimental import.
 They can be constructed in two forms, with type and length inferred as in:
@@ -173,6 +166,8 @@ class VecExample5 extends RawModule {
 circt.stage.ChiselStage.emitSystemVerilog(new VecExample5)
 ```
 
+## Loading Memories for simulation or FPGA initialization
+
 ### Inline initialization with external file
 
 Memories can be initialized by generating inline `readmemh` or `readmemb` statements in the output Verilog.
@@ -210,7 +205,7 @@ class InitMemInline(memoryFile: String = "") extends Module {
 The default is to use `$readmemh` (which assumes all numbers in the file are in ascii hex),
 but to use ascii binary there is an optional `hexOrBinary` argument which can be set to `MemoryLoadFileType.Hex` or `MemoryLoadFileType.Binary`. You will need to add an additional import.
 
-#### SystemVerilog Bind Initialization
+### SystemVerilog Bind Initialization
 
 Chisel can also initialize memories by generating a SV bind module with `readmemh` or `readmemb` statements by using the function `loadMemoryFromFile` from `chisel3.util.experimental`.
 

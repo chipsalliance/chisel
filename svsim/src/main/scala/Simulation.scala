@@ -17,6 +17,7 @@ final class Simulation private[svsim] (
   def run[T](
     conservativeCommandResolution: Boolean = false,
     verbose:                       Boolean = false,
+    traceEnabled:                  Boolean = false,
     executionScriptLimit:          Option[Int] = None
   )(body:                          Simulation.Controller => T
   ): T = {
@@ -40,6 +41,10 @@ final class Simulation private[svsim] (
       processBuilder.environment().put(pair._1, pair._2)
     }
     val process = processBuilder.start()
+    sys.addShutdownHook {
+      if (process.isAlive())
+        process.destroyForcibly()
+    }
     val controller = new Simulation.Controller(
       new BufferedWriter(new OutputStreamWriter(process.getOutputStream())),
       new BufferedReader(new InputStreamReader(process.getInputStream())),
@@ -47,6 +52,9 @@ final class Simulation private[svsim] (
       conservativeCommandResolution = conservativeCommandResolution,
       logMessagesAndCommands = verbose
     )
+    if (traceEnabled) {
+      controller.setTraceEnabled(true)
+    }
     val bodyOutcome = Try {
       val result = body(controller)
       // Exceptions thrown from commands still in the queue when `body` returns should supercede returning `result`

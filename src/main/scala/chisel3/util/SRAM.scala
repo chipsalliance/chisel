@@ -2,13 +2,16 @@ package chisel3.util
 
 import chisel3._
 
-import chisel3.internal.Builder
+import chisel3.internal.{Builder, FirrtlMemTypeBinding, NamedComponent, SramPortBinding}
+import chisel3.internal.plugin.autoNameRecursively
 import chisel3.experimental.SourceInfo
 import chisel3.internal.sourceinfo.{MemTransform, SourceInfoTransform}
+import chisel3.internal.firrtl.ir.{Arg, FirrtlMemory, ILit, Index, Node, Ref, Slot}
 import chisel3.util.experimental.loadMemoryFromFileInline
 import firrtl.annotations.MemoryLoadFileType
 import scala.language.reflectiveCalls
 import scala.language.experimental.macros
+import chisel3.internal.firrtl.ir
 
 /** A bundle of signals representing a memory read port.
   *
@@ -71,7 +74,7 @@ class MemoryReadWritePort[T <: Data](tpe: T, addrWidth: Int, masked: Boolean) ex
   }
 }
 
-/** A IO bundle of signals connecting to the ports of a wrapped `SyncReadMem`, as requested by
+/** A IO bundle of signals connecting to the ports of a memory, as requested by
   * `SRAMInterface.apply`.
   *
   * @param memSize The size of the memory, used to calculate the address width
@@ -128,14 +131,14 @@ sealed abstract class MemoryFile(private[chisel3] val fileType: MemoryLoadFileTy
 }
 
 /** A binary memory file to preload an [[SRAM]] with, represented by a filesystem path. This will annotate
-  * the inner [[SyncReadMem]] with `loadMemoryFromFile` using `MemoryLoadFileType.Binary` as the file type.
+  * the inner memory with `loadMemoryFromFile` using `MemoryLoadFileType.Binary` as the file type.
   *
   * @param path The path to the binary file
   */
 case class BinaryMemoryFile(path: String) extends MemoryFile(MemoryLoadFileType.Binary)
 
 /** A hex memory file to preload an [[SRAM]] with, represented by a filesystem path. This will annotate
-  * the inner [[SyncReadMem]] with `loadMemoryFromFile` using `MemoryLoadFileType.Hex` as the file type.
+  * the inner memory with `loadMemoryFromFile` using `MemoryLoadFileType.Hex` as the file type.
   *
   * @param path The path to the hex file
   */
@@ -143,7 +146,7 @@ case class HexMemoryFile(path: String) extends MemoryFile(MemoryLoadFileType.Hex
 
 object SRAM {
 
-  /** Generates a [[SyncReadMem]] within the current module, connected to an explicit number
+  /** Generates a memory within the current module, connected to an explicit number
     * of read, write, and read/write ports. This SRAM abstraction has both read and write capabilities: that is,
     * it contains at least one read accessor (a read-only or read-write port), and at least one write accessor
     * (a write-only or read-write port).
@@ -180,7 +183,7 @@ object SRAM {
     )
   }
 
-  /** Generates a [[SyncReadMem]] within the current module, connected to an explicit number
+  /** Generates a memory within the current module, connected to an explicit number
     * of read, write, and read/write ports. This SRAM abstraction has both read and write capabilities: that is,
     * it contains at least one read accessor (a read-only or read-write port), and at least one write accessor
     * (a write-only or read-write port).
@@ -219,7 +222,7 @@ object SRAM {
     )
   }
 
-  /** Generates a [[SyncReadMem]] within the current module, connected to an explicit number
+  /** Generates a memory within the current module, connected to an explicit number
     * of read, write, and read/write ports. This SRAM abstraction has both read and write capabilities: that is,
     * it contains at least one read accessor (a read-only or read-write port), and at least one write accessor
     * (a write-only or read-write port).
@@ -254,7 +257,7 @@ object SRAM {
       sourceInfo
     )
 
-  /** Generates a [[SyncReadMem]] within the current module, connected to an explicit number
+  /** Generates a memory within the current module, connected to an explicit number
     * of read, write, and read/write ports. This SRAM abstraction has both read and write capabilities: that is,
     * it contains at least one read accessor (a read-only or read-write port), and at least one write accessor
     * (a write-only or read-write port).
@@ -291,7 +294,7 @@ object SRAM {
       sourceInfo
     )
 
-  /** Generates a [[SyncReadMem]] within the current module, connected to an explicit number
+  /** Generates a memory within the current module, connected to an explicit number
     * of read, write, and read/write ports, with masking capability on all write and read/write ports.
     * This SRAM abstraction has both read and write capabilities: that is, it contains at least one read
     * accessor (a read-only or read-write port), and at least one write accessor (a write-only or read-write port).
@@ -329,7 +332,7 @@ object SRAM {
     )
   }
 
-  /** Generates a [[SyncReadMem]] within the current module, connected to an explicit number
+  /** Generates a memory within the current module, connected to an explicit number
     * of read, write, and read/write ports, with masking capability on all write and read/write ports.
     * This SRAM abstraction has both read and write capabilities: that is, it contains at least one read
     * accessor (a read-only or read-write port), and at least one write accessor (a write-only or read-write port).
@@ -369,7 +372,7 @@ object SRAM {
     )
   }
 
-  /** Generates a [[SyncReadMem]] within the current module, connected to an explicit number
+  /** Generates a memory within the current module, connected to an explicit number
     * of read, write, and read/write ports, with masking capability on all write and read/write ports.
     * Each port is clocked with its own explicit `Clock`, rather than being given the implicit clock.
     *
@@ -405,7 +408,7 @@ object SRAM {
       sourceInfo
     )
 
-  /** Generates a [[SyncReadMem]] within the current module, connected to an explicit number
+  /** Generates a memory within the current module, connected to an explicit number
     * of read, write, and read/write ports, with masking capability on all write and read/write ports.
     * Each port is clocked with its own explicit `Clock`, rather than being given the implicit clock.
     *
@@ -470,54 +473,134 @@ object SRAM {
       )
     }
 
-    val mem = SyncReadMem(size, tpe)
-    val _out = Wire(new SRAMInterface(size, tpe, numReadPorts, numWritePorts, numReadwritePorts, isVecMem))
+    // underlying target
+    val mem = autoNameRecursively("sram")(new SramTarget)
+
+    // user-facing interface into the SRAM
+    val sramIntfType = new SRAMInterface(size, tpe, numReadPorts, numWritePorts, numReadwritePorts, isVecMem)
+    val _out = Wire(sramIntfType)
     _out._underlying = Some(HasTarget(mem))
 
-    for ((clock, port) <- readPortClocks.zip(_out.readPorts)) {
-      port.data := mem.read(port.address, port.enable, clock)
-    }
+    // create actual ports into firrtl memory
+    val firrtlReadPorts:  Seq[FirrtlMemoryReader[_]] = sramIntfType.readPorts.map(new FirrtlMemoryReader(_))
+    val firrtlWritePorts: Seq[FirrtlMemoryWriter[_]] = sramIntfType.writePorts.map(new FirrtlMemoryWriter(_))
+    val firrtlReadwritePorts: Seq[FirrtlMemoryReadwriter[_]] =
+      sramIntfType.readwritePorts.map(new FirrtlMemoryReadwriter(_))
 
-    for ((clock, port) <- writePortClocks.zip(_out.writePorts)) {
-      when(port.enable) {
-        if (isVecMem) {
-          mem.write(
-            port.address,
-            port.data,
-            port.mask.get,
-            clock
-          )(evidenceOpt.get)
-        } else {
-          mem.write(port.address, port.data, clock)
-        }
+    // set references to firrtl memory ports
+    def nameAndSetRef(ports: Seq[Data], namePrefix: String): Seq[String] = {
+      ports.zipWithIndex.map {
+        case (p, idx) =>
+          val name = namePrefix + idx
+          p.setRef(Slot(Node(mem), name))
+          name
       }
     }
 
-    for ((clock, port) <- readwritePortClocks.zip(_out.readwritePorts)) {
-      if (isVecMem) {
-        port.readData := mem.readWrite(
-          port.address,
-          port.writeData,
-          port.mask.get,
-          port.enable,
-          port.isWrite,
-          clock
-        )(evidenceOpt.get)
-      } else {
-        port.readData := mem.readWrite(
-          port.address,
-          port.writeData,
-          port.enable,
-          port.isWrite,
-          clock
-        )
-      }
-    }
+    val firrtlReadPortNames = nameAndSetRef(firrtlReadPorts, "R")
+    val firrtlWritePortNames = nameAndSetRef(firrtlWritePorts, "W")
+    val firrtlReadwritePortNames = nameAndSetRef(firrtlReadwritePorts, "RW")
 
-    // Emit Verilog for preloading the memory from a file if requested
-    memoryFile.foreach { file: MemoryFile => loadMemoryFromFileInline(mem, file.path, file.fileType) }
+    // set bindings of firrtl memory ports
+    firrtlReadPorts.foreach(_.bind(SramPortBinding(Builder.forcedUserModule, Builder.currentWhen)))
+    firrtlWritePorts.foreach(_.bind(SramPortBinding(Builder.forcedUserModule, Builder.currentWhen)))
+    firrtlReadwritePorts.foreach(_.bind(SramPortBinding(Builder.forcedUserModule, Builder.currentWhen)))
+
+    // bind type so that memory type can get converted to FIRRTL
+    val boundType = tpe.cloneTypeFull
+    boundType.bind(FirrtlMemTypeBinding(mem))
+
+    // create FIRRTL memory
+    Builder.pushCommand(
+      FirrtlMemory(
+        sourceInfo,
+        mem,
+        boundType,
+        size,
+        firrtlReadPortNames,
+        firrtlWritePortNames,
+        firrtlReadwritePortNames
+      )
+    )
+
+    // connect firrtl memory ports to user-facing interface
+    for (((memReadPort, firrtlReadPort), readClock) <- _out.readPorts.zip(firrtlReadPorts).zip(readPortClocks)) {
+      firrtlReadPort.addr := memReadPort.address
+      firrtlReadPort.clk := readClock
+      memReadPort.data := firrtlReadPort.data.asInstanceOf[Data]
+      firrtlReadPort.en := memReadPort.enable
+    }
+    for (((memWritePort, firrtlWritePort), writeClock) <- _out.writePorts.zip(firrtlWritePorts).zip(writePortClocks)) {
+      firrtlWritePort.addr := memWritePort.address
+      firrtlWritePort.clk := writeClock
+      firrtlWritePort.data.asInstanceOf[Data] := memWritePort.data
+      firrtlWritePort.en := memWritePort.enable
+      assignMask(memWritePort.data, memWritePort.mask, firrtlWritePort.getRef, "mask")
+    }
+    for (
+      ((memReadwritePort, firrtlReadwritePort), readwriteClock) <-
+        _out.readwritePorts.zip(firrtlReadwritePorts).zip(readwritePortClocks)
+    ) {
+      firrtlReadwritePort.addr := memReadwritePort.address
+      firrtlReadwritePort.clk := readwriteClock
+      firrtlReadwritePort.en := memReadwritePort.enable
+      memReadwritePort.readData := firrtlReadwritePort.rdata.asInstanceOf[Data]
+      firrtlReadwritePort.wdata.asInstanceOf[Data] := memReadwritePort.writeData
+      firrtlReadwritePort.wmode := memReadwritePort.isWrite
+      assignMask(memReadwritePort.writeData, memReadwritePort.mask, firrtlReadwritePort.getRef, "wmask")
+    }
 
     _out
+  }
+
+  /** Assigns a given SRAM-style mask to a FIRRTL memory port mask. The FIRRTL
+    * memory port mask is tied to 1 for unmasked SRAMs.
+    *
+    * @param memWriteDataTpe write data type to get masked
+    * @param writeMaskOpt write mask to assign
+    * @param firrtlMemPortRef reference to the FIRRTL memory port
+    * @param maskName name of the mask in the FIRRTL memory port
+    */
+  private def assignMask(
+    memWriteDataTpe:  Data,
+    writeMaskOpt:     Option[Vec[Bool]],
+    firrtlMemPortRef: Arg,
+    maskName:         String
+  ): Unit = {
+    memWriteDataTpe match {
+      case v: Vec[_] =>
+        writeMaskOpt match {
+          case Some(m) => assignVecMask(v, m, Slot(firrtlMemPortRef, maskName))
+          case None    => assignVecMask(v, VecInit.fill(v.length)(true.B), Slot(firrtlMemPortRef, maskName))
+        }
+      case e => assignElementMask(e, true.B, Slot(firrtlMemPortRef, maskName))
+    }
+
+    def assignElementMask(writeData: Data, writeMask: Bool, arg: Arg)(implicit sourceInfo: SourceInfo): Unit = {
+      writeData match {
+        case e: Element => Builder.pushCommand(ir.Connect(sourceInfo, arg, writeMask.ref))
+        case r: Record =>
+          r.elements.foreach { case (name, data) => assignElementMask(data, writeMask, Slot(arg, name)) }
+        case v: Vec[_] =>
+          v.elementsIterator.zipWithIndex.foreach {
+            case (data, idx) =>
+              assignElementMask(data, writeMask, Index(arg, ILit(idx)))
+          }
+      }
+    }
+
+    def assignVecMask[T <: Data](
+      writeData: Vec[T],
+      writeMask: Vec[Bool],
+      arg:       Arg
+    )(
+      implicit sourceInfo: SourceInfo
+    ): Unit = {
+      writeData.zip(writeMask).zipWithIndex.foreach {
+        case ((elem, mask), idx) =>
+          assignElementMask(elem, mask, Index(arg, ILit(idx)))
+      }
+    }
   }
 
   // Helper util to generate portedness descriptors based on the input parameters
@@ -529,4 +612,53 @@ object SRAM {
 
     s"$rdPorts$wrPorts$rwPorts"
   }
+}
+
+/** Contains fields that map from the user-facing [[MemoryReadPort]] to a
+  * FIRRTL memory read port.
+  *
+  * @param readPort used to parameterize this class
+  *
+  * @note This is private because users should not directly use this bundle to
+  * interact with [[SRAM]].
+  */
+private[chisel3] final class FirrtlMemoryReader[T <: Data](readPort: MemoryReadPort[T]) extends Bundle {
+  val addr = readPort.address.cloneType
+  val en = Bool()
+  val clk = Clock()
+  val data = Flipped(readPort.data.cloneType)
+}
+
+/** Contains fields that map from the user-facing [[MemoryWritePort]] to a
+  * FIRRTL memory write port, excluding the mask, which is calculated and
+  * assigned explicitly.
+  *
+  * @param writePort used to parameterize this class
+  *
+  * @note This is private because users should not directly use this bundle to
+  * interact with [[SRAM]].
+  */
+private[chisel3] final class FirrtlMemoryWriter[T <: Data](writePort: MemoryWritePort[T]) extends Bundle {
+  val addr = writePort.address.cloneType
+  val en = Bool()
+  val clk = Clock()
+  val data = writePort.data.cloneType
+}
+
+/** Contains fields that map from the user-facing [[MemoryReadwritePort]] to a
+  * FIRRTL memory read/write port, excluding the mask, which is calculated and
+  * assigned explicitly.
+  *
+  * @param readwritePort used to parameterize this class
+  *
+  * @note This is private because users should not directly use this bundle to
+  * interact with [[SRAM]].
+  */
+private[chisel3] final class FirrtlMemoryReadwriter[T <: Data](readwritePort: MemoryReadWritePort[T]) extends Bundle {
+  val addr = readwritePort.address.cloneType
+  val en = Bool()
+  val clk = Clock()
+  val rdata = Flipped(readwritePort.readData.cloneType)
+  val wmode = Bool()
+  val wdata = readwritePort.writeData.cloneType
 }

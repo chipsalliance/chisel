@@ -95,6 +95,9 @@ private[chisel3] case class OpBinding(enclosure: RawModule, visibility: Option[W
 private[chisel3] case class MemoryPortBinding(enclosure: RawModule, visibility: Option[WhenContext])
     extends ConstrainedBinding
     with ConditionalDeclarable
+private[chisel3] case class SramPortBinding(enclosure: RawModule, visibility: Option[WhenContext])
+    extends ConstrainedBinding
+    with ConditionalDeclarable
 private[chisel3] case class RegBinding(enclosure: RawModule, visibility: Option[WhenContext])
     extends ConstrainedBinding
     with ConditionalDeclarable
@@ -119,6 +122,12 @@ private[chisel3] case class SampleElementBinding[T <: Data](parent: Vec[T]) exte
 private[chisel3] case class MemTypeBinding[T <: Data](parent: MemBase[T]) extends Binding {
   def location: Option[BaseModule] = parent._parent
 }
+
+/** Special binding for Firrtl memory (SRAM) types */
+private[chisel3] case class FirrtlMemTypeBinding(parent: SramTarget) extends Binding {
+  def location: Option[BaseModule] = parent._parent
+}
+
 // A DontCare element has a specific Binding, somewhat like a literal.
 // It is a source (RHS). It may only be connected/applied to sinks.
 private[chisel3] case class DontCareBinding() extends UnconstrainedBinding

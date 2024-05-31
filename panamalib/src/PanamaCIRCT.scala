@@ -23,7 +23,8 @@ class PanamaCIRCT {
       CAPI.mlirGetDialectHandle__firrtl__(arena),
       CAPI.mlirGetDialectHandle__chirrtl__(arena),
       CAPI.mlirGetDialectHandle__sv__(arena),
-      CAPI.mlirGetDialectHandle__seq__(arena)
+      CAPI.mlirGetDialectHandle__seq__(arena),
+      CAPI.mlirGetDialectHandle__emit__(arena)
     ).foreach(CAPI.mlirDialectHandleLoadDialect(arena, _, mlirCtx))
 
     mlirCtx
@@ -90,8 +91,12 @@ class PanamaCIRCT {
 
   def mlirModuleCreateEmpty(location: MlirLocation) = MlirModule(CAPI.mlirModuleCreateEmpty(arena, location.get))
 
-  def mlirModuleCreateParse(module: String) = MlirModule(CAPI.mlirModuleCreateParse(arena, mlirCtx, newString(module).get))
-  def mlirModuleCreateParseBytes(module: Array[Byte]) = MlirModule(CAPI.mlirModuleCreateParse(arena, mlirCtx, stringRefFromBytes(module).get))
+  def mlirModuleCreateParse(module: String) = MlirModule(
+    CAPI.mlirModuleCreateParse(arena, mlirCtx, newString(module).get)
+  )
+  def mlirModuleCreateParseBytes(module: Array[Byte]) = MlirModule(
+    CAPI.mlirModuleCreateParse(arena, mlirCtx, stringRefFromBytes(module).get)
+  )
 
   def mlirModuleFromOperation(op: MlirOperation) = MlirModule(CAPI.mlirModuleFromOperation(arena, op.get))
 
@@ -340,8 +345,11 @@ class PanamaCIRCT {
     CAPI.circtFirtoolOptionsSetEnableAnnotationWarning(options.get, value)
   def circtFirtoolOptionsSetAddMuxPragmas(options: CirctFirtoolFirtoolOptions, value: Boolean) =
     CAPI.circtFirtoolOptionsSetAddMuxPragmas(options.get, value)
-  def circtFirtoolOptionsSetEmitChiselAssertsAsSVA(options: CirctFirtoolFirtoolOptions, value: Boolean) =
-    CAPI.circtFirtoolOptionsSetEmitChiselAssertsAsSVA(options.get, value)
+  def circtFirtoolOptionsSetVerificationFlavor(
+    options: CirctFirtoolFirtoolOptions,
+    value:   CirctFirtoolVerificationFlavor
+  ) =
+    CAPI.circtFirtoolOptionsSetVerificationFlavor(options.get, value.get)
   def circtFirtoolOptionsSetEmitSeparateAlwaysBlocks(options: CirctFirtoolFirtoolOptions, value: Boolean) =
     CAPI.circtFirtoolOptionsSetEmitSeparateAlwaysBlocks(options.get, value)
   def circtFirtoolOptionsSetEtcDisableInstanceExtraction(options: CirctFirtoolFirtoolOptions, value: Boolean) =
@@ -500,6 +508,10 @@ class PanamaCIRCT {
 
   def firrtlAttrGetMemDir(dir: FIRRTLMemDir) = MlirAttribute(CAPI.firrtlAttrGetMemDir(arena, mlirCtx, dir.value))
 
+  def firrtlAttrGetIntegerFromString(tpe: MlirType, numBits: Int, str: String, radix: Byte) = MlirAttribute(
+    CAPI.firrtlAttrGetIntegerFromString(arena, tpe.get, numBits, newString(str).get, radix)
+  )
+
   def firrtlValueFoldFlow(value: MlirValue, flow: Int): Int = CAPI.firrtlValueFoldFlow(value.get, flow)
 
   def firrtlImportAnnotationsFromJSONRaw(annotationsStr: String): Option[MlirAttribute] = {
@@ -627,6 +639,10 @@ class PanamaCIRCT {
   def omEvaluatorPathGetAsString(evaluatorValue: OMEvaluatorValue): String = mlirStringAttrGetValue(
     MlirAttribute(CAPI.omEvaluatorPathGetAsString(arena, evaluatorValue.get))
   )
+  def omEvaluatorValueIsAReference(evaluatorValue: OMEvaluatorValue): Boolean =
+    CAPI.omEvaluatorValueIsAReference(evaluatorValue.get)
+  def omEvaluatorValueGetReferenceValue(evaluatorValue: OMEvaluatorValue): OMEvaluatorValue =
+    OMEvaluatorValue(CAPI.omEvaluatorValueGetReferenceValue(arena, evaluatorValue.get))
   def omAttrIsAReferenceAttr(attr:     MlirAttribute): Boolean = CAPI.omAttrIsAReferenceAttr(attr.get)
   def omReferenceAttrGetInnerRef(attr: MlirAttribute) = MlirAttribute(CAPI.omReferenceAttrGetInnerRef(arena, attr.get))
   def omAttrIsAIntegerAttr(attr:       MlirAttribute): Boolean = CAPI.omAttrIsAIntegerAttr(attr.get)
@@ -964,4 +980,17 @@ object CirctFirtoolCompanionMode {
   final case object Instantiate
       extends CirctFirtoolCompanionMode(value = CAPI.CIRCT_FIRTOOL_COMPANION_MODE_INSTANTIATE())
   final case object Drop extends CirctFirtoolCompanionMode(value = CAPI.CIRCT_FIRTOOL_COMPANION_MODE_DROP())
+}
+
+sealed class CirctFirtoolVerificationFlavor(val value: Int) extends ForeignType[Int] {
+  private[panamalib] def get = value
+  private[panamalib] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
+}
+object CirctFirtoolVerificationFlavor {
+  final case object None extends CirctFirtoolVerificationFlavor(value = CAPI.CIRCT_FIRTOOL_VERIFICATION_FLAVOR_NONE())
+  final case object IfElseFatal
+      extends CirctFirtoolVerificationFlavor(value = CAPI.CIRCT_FIRTOOL_VERIFICATION_FLAVOR_IF_ELSE_FATAL())
+  final case object Immediate
+      extends CirctFirtoolVerificationFlavor(value = CAPI.CIRCT_FIRTOOL_VERIFICATION_FLAVOR_IMMEDIATE())
+  final case object Sva extends CirctFirtoolVerificationFlavor(value = CAPI.CIRCT_FIRTOOL_VERIFICATION_FLAVOR_SVA())
 }

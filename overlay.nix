@@ -35,5 +35,4 @@ final: prev:
       circt.llvm.lib
     ];
   };
-  scala-cli = prev.callPackage ./nix/scala-cli.nix { };
 }

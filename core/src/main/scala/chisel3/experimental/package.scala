@@ -62,6 +62,20 @@ package object experimental {
     }
   }
 
+  /** Require that a Data can be annotated. It must be non-literal hardware.
+    */
+  object requireIsAnnotatable {
+    def apply(node: Data, msg: String = ""): Unit = {
+      requireIsHardware(node, msg)
+      if (node.isLit) {
+        val prefix = if (msg.nonEmpty) s"$msg " else ""
+        throw ExpectedAnnotatableException(
+          s"$prefix'$node' must not be a literal."
+        )
+      }
+    }
+  }
+
   /** Requires that a node is a chisel type (not hardware, "unbound")
     */
   object requireIsChiselType {
@@ -141,11 +155,9 @@ package object experimental {
         * object `Vec` as in `Vec.Lit(1.U, 2.U)`
         */
       def Lit[T <: Data](elems: T*)(implicit sourceInfo: SourceInfo): Vec[T] = {
-        require(elems.nonEmpty, s"Lit.Vec(...) must have at least one element")
-        val indexElements = elems.zipWithIndex.map { case (element, index) => (index, element) }
-        val widestElement = elems.maxBy(_.getWidth)
-        val vec: Vec[T] = Vec.apply(indexElements.length, chiselTypeOf(widestElement))
-        vec.Lit(indexElements: _*)
+        val sampleElement = cloneSupertype(elems, s"Vec.Lit(...)")
+        val vec: Vec[T] = Vec.apply(elems.length, sampleElement)
+        vec.Lit(elems.zipWithIndex.map(_.swap): _*)
       }
     }
   }
