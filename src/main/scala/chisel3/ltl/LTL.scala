@@ -6,6 +6,7 @@ import chisel3._
 import chisel3.util.circt._
 import chisel3.experimental.hierarchy.{Instance, Instantiate}
 import chisel3.experimental.SourceInfo
+import firtoolresolver.shaded.coursier.ivy.PropertiesPattern.ChunkOrProperty.Prop
 
 /** An opaque sequence returned by an intrinsic.
   *
@@ -65,6 +66,9 @@ sealed trait Sequence extends Property {
 
   /** See `Sequence.or`. */
   def or(other: Sequence)(implicit sourceInfo: SourceInfo): Sequence = Sequence.or(this, other)
+
+  /** See `Sequence.intersect`. */
+  def intersect(other: Sequence)(implicit sourceInfo: SourceInfo): Sequence = Sequence.intersect(this, other)
 
   /** See `Sequence.clock`. */
   override def clock(clock: Clock)(implicit sourceInfo: SourceInfo): Sequence = Sequence.clock(this, clock)
@@ -159,6 +163,18 @@ object Sequence {
     lhs
   }
 
+  /** Form the conjunction of two sequences, where the start and end 
+   * times of both sequences must be identical. Equivalent to
+   * `arg0 intersect arg1 intersect ... intersect argN` in SVA.
+   */
+  def intersect(arg0: Sequence, argN: Sequence*)(implicit sourceInfo: SourceInfo): Sequence = {
+    var lhs = arg0
+    for (rhs <- argN) {
+      lhs = OpaqueSequence(LTLIntersectIntrinsic(lhs.inner, rhs.inner))
+    }
+    lhs
+  }
+
   /** Specify a `clock` relative to which all cycle delays within `seq` are
     * specified. Equivalent to `@(posedge clock) seq` in SVA.
     */
@@ -208,6 +224,9 @@ sealed trait Property {
 
   /** See `Property.or`. */
   def or(other: Property)(implicit sourceInfo: SourceInfo): Property = Property.or(this, other)
+
+  /** See `Property.intersect`. */
+  def intersect(other: Property)(implicit sourceInfo: SourceInfo): Property = Property.intersect(this, other)
 
   /** See `Property.clock`. */
   def clock(clock: Clock)(implicit sourceInfo: SourceInfo): Property = Property.clock(this, clock)
@@ -270,6 +289,18 @@ object Property {
     var lhs = arg0
     for (rhs <- argN) {
       lhs = OpaqueProperty(LTLOrIntrinsic(lhs.inner, rhs.inner))
+    }
+    lhs
+  }
+
+  /** Form the conjunction of two properties, where the start and end 
+   * times of both sequences must be identical. Equivalent to
+   * `arg0 intersect arg1 intersect ... intersect argN` in SVA.
+   */
+  def intersect(arg0: Property, argN: Property*)(implicit sourceInfo: SourceInfo): Property = {
+    var lhs = arg0
+    for (rhs <- argN) {
+      lhs = OpaqueProperty(LTLIntersectIntrinsic(lhs.inner, rhs.inner))
     }
     lhs
   }

@@ -92,13 +92,15 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselRunners {
     val s0: Sequence = a.delay()
     val s1: Sequence = s0.and(b)
     val s2: Sequence = s0.or(b)
+    val si: Sequence = s0.intersect(b)
     val s3: Sequence = s0.clock(clock)
     val p0: Property = a.eventually
     val p1: Property = p0.and(b)
     val p2: Property = p0.or(b)
+    val pi: Property = p0.intersect(b)
     val p3: Property = p0.clock(clock)
   }
-  it should "support and, or, and clock operations" in {
+  it should "support and, or, intersect, and clock operations" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new AndOrClockMod)
     val sourceLoc = "@[Foo.scala 1:2]"
 
@@ -106,15 +108,17 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselRunners {
     chirrtl should include(f"node delay = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, a) $sourceLoc")
     chirrtl should include(f"node and = intrinsic(circt_ltl_and : UInt<1>, delay, b) $sourceLoc")
     chirrtl should include(f"node or = intrinsic(circt_ltl_or : UInt<1>, delay, b) $sourceLoc")
+    chirrtl should include(f"node intersect = intrinsic(circt_ltl_intersect : UInt<1>, delay, b) $sourceLoc")
     chirrtl should include(f"node clock_1 = intrinsic(circt_ltl_clock : UInt<1>, delay, clock) $sourceLoc")
 
     // Properties
     chirrtl should include(f"node eventually = intrinsic(circt_ltl_eventually : UInt<1>, a) $sourceLoc")
     chirrtl should include(f"node and_1 = intrinsic(circt_ltl_and : UInt<1>, eventually, b) $sourceLoc")
     chirrtl should include(f"node or_1 = intrinsic(circt_ltl_or : UInt<1>, eventually, b) $sourceLoc")
+    chirrtl should include(f"node intersect_1 = intrinsic(circt_ltl_intersect : UInt<1>, eventually, b) $sourceLoc")
     chirrtl should include(f"node clock_2 = intrinsic(circt_ltl_clock : UInt<1>, eventually, clock) $sourceLoc")
   }
-  it should "compile and, or, and clock operations" in {
+  it should "compile and, or, intersect, and clock operations" in {
     ChiselStage.emitSystemVerilog(new AndOrClockMod)
   }
 

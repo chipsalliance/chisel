@@ -65,6 +65,12 @@ private[chisel3] object LTLOrIntrinsic {
     BinaryLTLIntrinsic("or")(lhs, rhs)
 }
 
+/** A wrapper intrinsic for the CIRCT `ltl.intersect` operation. */
+private[chisel3] object LTLIntersectIntrinsic {
+  def apply(lhs: Bool, rhs: Bool)(implicit sourceInfo: SourceInfo) =
+    BinaryLTLIntrinsic("intersect")(lhs, rhs)
+}
+
 /** A wrapper intrinsic for the CIRCT `ltl.delay` operation. */
 private[chisel3] object LTLDelayIntrinsic {
 
