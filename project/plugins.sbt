@@ -18,7 +18,7 @@ addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.12.1")
 
 addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "3.0.2")
 
-addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.3.7")
+addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.3.8")
 
 addSbtPlugin("com.eed3si9n" % "sbt-sriracha" % "0.1.0")
 
