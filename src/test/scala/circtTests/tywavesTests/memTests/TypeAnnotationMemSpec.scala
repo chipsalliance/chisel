@@ -18,7 +18,7 @@ class TypeAnnotationMemSpec extends AnyFunSpec with Matchers with chiselTests.Ut
     numReadPorts:      Int,
     numWritePorts:     Int,
     numReadwritePorts: Int,
-    masked: Boolean = false,
+    masked:            Boolean = false,
     dataParams:        Option[Seq[ClassParam]] = None // For SRAMs of complex data types with params
   ): Seq[(String, Int)] = {
     import scala.math._
