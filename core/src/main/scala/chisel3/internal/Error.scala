@@ -54,32 +54,32 @@ object ExceptionHelpers {
         packageTrimlist.contains(packageName)
       }
 
-      // Step 1: Remove elements from the top in the package trimlist
       val trimStackTrace =
-        ((a: Array[StackTraceElement]) => a.dropWhile(inTrimlist))
-          // Step 2: Optionally remove elements from the bottom until the anchor
-          .andThen(_.reverse)
-          .andThen(a =>
-            anchor match {
-              case Some(b) => a.dropWhile(ste => !ste.getClassName.startsWith(b))
-              case None    => a
-            }
-          )
-          // Step 3: Remove elements from the bottom in the package trimlist
-          .andThen(_.dropWhile(inTrimlist))
-          // Step 4: Reverse back to the original order
-          .andThen(_.reverse.toArray)
+        (a: Array[StackTraceElement]) => {
+          // Step 1: Remove elements from the top in the package trimlist
+          //         Only include ellipsis at top if something is dropped from top
+          val droppedFromTop = inTrimlist(a.head)
+          val trimmed =
+            a.dropWhile(inTrimlist)
+              // Step 2: Optionally remove elements from the bottom until the anchor
+              .reverse
+              .dropWhile(ste => anchor.map(b => !ste.getClassName.startsWith(b)).getOrElse(false))
+              // Step 3: Remove elements from the bottom in the package trimlist
+              .dropWhile(inTrimlist)
+              // Step 4: Reverse back to the original order
+              .reverse
+              .toArray
           // Step 5: Add ellipsis stack trace elements and "--full-stacktrace" info
-          .andThen(a =>
-            ellipsis() +:
-              a :+
+          val withEllipses =
+            Option.when(droppedFromTop)(ellipsis()) ++:
+              trimmed :+
               ellipsis() :+
               ellipsis(
                 Some("Stack trace trimmed to user code only. Rerun with --full-stacktrace to see the full stack trace")
               )
-          )
-          // Step 5: Mutate the stack trace in this exception
-          .andThen(throwable.setStackTrace(_))
+          // Step 6: Mutate the stack trace in this exception
+          throwable.setStackTrace(withEllipses)
+        }
 
       val stackTrace = throwable.getStackTrace
       if (stackTrace.nonEmpty) {
