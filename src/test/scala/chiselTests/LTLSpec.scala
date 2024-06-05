@@ -105,8 +105,12 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselRunners {
     chirrtl should include(f"node repeat = intrinsic(circt_ltl_repeat<base = 1, more = 0> : UInt<1>, a) $sourceLoc")
     chirrtl should include(f"node repeat_1 = intrinsic(circt_ltl_repeat<base = 2, more = 2> : UInt<1>, b) $sourceLoc")
     chirrtl should include(f"node repeat_2 = intrinsic(circt_ltl_repeat<base = 5> : UInt<1>, c) $sourceLoc")
-    chirrtl should include(f"node goto_repeat = intrinsic(circt_ltl_goto_repeat<base = 1, more = 2> : UInt<1>, d) $sourceLoc")
-    chirrtl should include(f"node non_consecutive_repeat = intrinsic(circt_ltl_non_consecutive_repeat<base = 1, more = 2> : UInt<1>, e) $sourceLoc")
+    chirrtl should include(
+      f"node goto_repeat = intrinsic(circt_ltl_goto_repeat<base = 1, more = 2> : UInt<1>, d) $sourceLoc"
+    )
+    chirrtl should include(
+      f"node non_consecutive_repeat = intrinsic(circt_ltl_non_consecutive_repeat<base = 1, more = 2> : UInt<1>, e) $sourceLoc"
+    )
   }
   it should "compile sequence repeat operations" in {
     ChiselStage.emitSystemVerilog(new RepeatMod)
