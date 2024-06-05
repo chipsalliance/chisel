@@ -73,7 +73,7 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
 
     it("reports failed expects correctly") {
       val simulator = new VerilatorSimulator("test_run_dir/simulator/GCDSimulator")
-      a[PeekPokeAPI.FailedExpectationException[_]] must be thrownBy {
+      val thrown = the[PeekPokeAPI.FailedExpectationException[_]] thrownBy {
         simulator
           .simulate(new GCD()) { module =>
             import PeekPokeAPI._
@@ -88,6 +88,13 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
           }
           .result
       }
+      (thrown.getMessage must include).regex("Observed value '12' != 5\\.")
+      (thrown.getMessage must include).regex(
+        " @\\[src/test/scala/chiselTests/simulator/SimulatorSpec\\.scala \\d+:\\d+\\]"
+      )
+      (thrown.getMessage must include).regex("gcd\\.io\\.result\\.expect\\(5\\)")
+      // Not actually anchoring this so it's not extremely brittle, only somewhat.
+      (thrown.getMessage must include).regex("                    \\^")
     }
 
     it("runs a design that includes an external module") {

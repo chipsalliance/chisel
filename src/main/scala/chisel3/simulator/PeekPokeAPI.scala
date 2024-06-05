@@ -3,14 +3,22 @@ package chisel3.simulator
 import svsim._
 import chisel3._
 
-import chisel3.experimental.SourceInfo
+import chisel3.experimental.{SourceInfo, SourceLine}
+import chisel3.internal.ExceptionHelpers
 
 object PeekPokeAPI extends PeekPokeAPI
 
 trait PeekPokeAPI {
-  case class FailedExpectationException[T](sourceInfo: SourceInfo, observed: T, expected: T, message: String)
+  case class FailedExpectationException[T](
+    sourceInfo:   SourceInfo,
+    extraContext: Seq[String],
+    observed:     T,
+    expected:     T,
+    message:      String)
       extends Exception(
-        s"Failed Expectation: Observed value '$observed' != $expected. $message ${sourceInfo.makeMessage(x => x)}"
+        s"Failed Expectation: Observed value '$observed' != $expected. " +
+          s"$message ${sourceInfo.makeMessage(x => x)}" +
+          (if (extraContext.nonEmpty) s"\n${extraContext.mkString("\n")}" else "")
       )
 
   implicit class testableClock(clock: Clock) {
@@ -136,10 +144,25 @@ trait PeekPokeAPI {
       val module = AnySimulatedModule.current
       module.willPeek()
       val simulationPort = module.port(data)
+
       simulationPort.check(isSigned = isSigned) { observedValue =>
         val observed = encode(observedValue)
-        if (observed != expected)
-          throw FailedExpectationException(sourceInfo, observed, expected, buildMessage(observed, expected))
+        if (observed != expected) {
+          val extraContext =
+            sourceInfo match {
+              case sl: SourceLine =>
+                ExceptionHelpers.getErrorLineInFile(Seq(), sl)
+              case _ =>
+                Seq()
+            }
+          throw FailedExpectationException(
+            sourceInfo,
+            extraContext,
+            observed,
+            expected,
+            buildMessage(observed, expected)
+          )
+        }
       }
     }
   }
