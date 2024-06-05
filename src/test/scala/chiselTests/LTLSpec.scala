@@ -126,6 +126,8 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselRunners {
     val p2: Property = p0.or(b)
     val pi: Property = p0.intersect(b)
     val p3: Property = p0.clock(clock)
+    val u1: Sequence = s0.until(b)
+    val u2: Property = p0.until(b)
   }
   it should "support and, or, intersect, and clock operations" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new AndOrClockMod)
@@ -144,6 +146,10 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselRunners {
     chirrtl should include(f"node or_1 = intrinsic(circt_ltl_or : UInt<1>, eventually, b) $sourceLoc")
     chirrtl should include(f"node intersect_1 = intrinsic(circt_ltl_intersect : UInt<1>, eventually, b) $sourceLoc")
     chirrtl should include(f"node clock_2 = intrinsic(circt_ltl_clock : UInt<1>, eventually, clock) $sourceLoc")
+
+    // Until
+    chirrtl should include(f"node until = intrinsic(circt_ltl_until : UInt<1>, delay, b) $sourceLoc")
+    chirrtl should include(f"node until_1 = intrinsic(circt_ltl_until : UInt<1>, eventually, b) $sourceLoc")
   }
   it should "compile and, or, intersect, and clock operations" in {
     ChiselStage.emitSystemVerilog(new AndOrClockMod)

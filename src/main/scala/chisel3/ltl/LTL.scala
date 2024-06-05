@@ -86,6 +86,9 @@ sealed trait Sequence extends Property {
   /** See `Sequence.intersect`. */
   def intersect(other: Sequence)(implicit sourceInfo: SourceInfo): Sequence = Sequence.intersect(this, other)
 
+  /** See `Sequence.until`. */
+  def until(other: Sequence)(implicit sourceInfo: SourceInfo): Sequence = Sequence.until(this, other)
+
   /** See `Sequence.clock`. */
   override def clock(clock: Clock)(implicit sourceInfo: SourceInfo): Sequence = Sequence.clock(this, clock)
 
@@ -236,6 +239,13 @@ object Sequence {
     lhs
   }
 
+  /** Check that a sequence holds untile another sequence holds.
+   * This operator is weak: the property will hold even if $input always 
+   * holds and $condition never holds.
+   */
+  def until(arg0: Sequence, arg1: Sequence)(implicit sourceInfo: SourceInfo): Sequence = 
+    OpaqueSequence(LTLUntilIntrinsic(arg0.inner, arg1.inner))
+
   /** Specify a `clock` relative to which all cycle delays within `seq` are
     * specified. Equivalent to `@(posedge clock) seq` in SVA.
     */
@@ -288,6 +298,9 @@ sealed trait Property {
 
   /** See `Property.intersect`. */
   def intersect(other: Property)(implicit sourceInfo: SourceInfo): Property = Property.intersect(this, other)
+
+  /** See `Property.until`. */
+  def until(other: Property)(implicit sourceInfo: SourceInfo): Property = Property.until(this, other)
 
   /** See `Property.clock`. */
   def clock(clock: Clock)(implicit sourceInfo: SourceInfo): Property = Property.clock(this, clock)
@@ -365,6 +378,13 @@ object Property {
     }
     lhs
   }
+
+  /** Check that a property holds untile another property holds.
+   * This operator is weak: the property will hold even if $input always 
+   * holds and $condition never holds.
+   */
+  def until(arg0: Property, arg1: Property)(implicit sourceInfo: SourceInfo): Property = 
+    OpaqueProperty(LTLUntilIntrinsic(arg0.inner, arg1.inner))
 
   /** Specify a `clock` relative to which all cycle delays within `prop` are
     * specified. Equivalent to `@(posedge clock) prop` in SVA.
