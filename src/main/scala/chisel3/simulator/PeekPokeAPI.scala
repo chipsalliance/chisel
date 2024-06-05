@@ -3,11 +3,15 @@ package chisel3.simulator
 import svsim._
 import chisel3._
 
+import chisel3.experimental.SourceInfo
+
 object PeekPokeAPI extends PeekPokeAPI
 
 trait PeekPokeAPI {
-  case class FailedExpectationException[T](observed: T, expected: T, message: String)
-      extends Exception(s"Failed Expectation: Observed value '$observed' != $expected. $message")
+  case class FailedExpectationException[T](sourceInfo: SourceInfo, observed: T, expected: T, message: String)
+      extends Exception(
+        s"Failed Expectation: Observed value '$observed' != $expected. $message ${sourceInfo.makeMessage(x => x)}"
+      )
 
   implicit class testableClock(clock: Clock) {
     def step(cycles: Int = 1): Unit = {
@@ -56,24 +60,24 @@ trait PeekPokeAPI {
     }
 
     final def peek(): T = encode(data.peekValue())
-    final def expect(expected: T): Unit = {
+    final def expect(expected: T)(implicit sourceInfo: SourceInfo): Unit = {
       data.expect(
         expected.litValue,
         encode(_).litValue,
         (observed: BigInt, expected: BigInt) => s"Expectation failed: observed value $observed != $expected"
       )
     }
-    final def expect(expected: T, message: String): Unit = {
+    final def expect(expected: T, message: String)(implicit sourceInfo: SourceInfo): Unit = {
       data.expect(expected.litValue, encode(_).litValue, (_: BigInt, _: BigInt) => message)
     }
-    final def expect(expected: BigInt): Unit = {
+    final def expect(expected: BigInt)(implicit sourceInfo: SourceInfo): Unit = {
       data.expect(
         expected,
         _.asBigInt,
         (observed: BigInt, expected: BigInt) => s"Expectation failed: observed value $observed != $expected"
       )
     }
-    final def expect(expected: BigInt, message: String): Unit = {
+    final def expect(expected: BigInt, message: String)(implicit sourceInfo: SourceInfo): Unit = {
       data.expect(expected, _.asBigInt, (_: BigInt, _: BigInt) => message)
     }
 
@@ -126,13 +130,16 @@ trait PeekPokeAPI {
       expected:     T,
       encode:       (Simulation.Value) => T,
       buildMessage: (T, T) => String
+    )(
+      implicit sourceInfo: SourceInfo
     ): Unit = {
       val module = AnySimulatedModule.current
       module.willPeek()
       val simulationPort = module.port(data)
       simulationPort.check(isSigned = isSigned) { observedValue =>
         val observed = encode(observedValue)
-        if (observed != expected) throw FailedExpectationException(observed, expected, buildMessage(observed, expected))
+        if (observed != expected)
+          throw FailedExpectationException(sourceInfo, observed, expected, buildMessage(observed, expected))
       }
     }
   }
