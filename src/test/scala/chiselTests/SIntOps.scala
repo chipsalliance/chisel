@@ -219,4 +219,32 @@ class SIntOpsSpec extends ChiselPropSpec with Utils with ShiftRightWidthBehavior
     val verilog = ChiselStage.emitSystemVerilog(new TestModule, args)
     verilog should include(" widthcheck = in[7];")
   }
+
+  property("Calling .asUInt on an SInt literal should maintain the literal value") {
+    val s0 = 3.S
+    val u0 = s0.asUInt
+    u0.litValue should be(3)
+
+    val s1 = -3.S
+    val u1 = s1.asUInt
+    u1.litValue should be(5)
+
+    val s2 = -3.S(8.W)
+    val u2 = s2.asUInt
+    u2.litValue should be(0xfd)
+
+    assertTesterPasses {
+      new BasicTester {
+        // Check that it gives the same value as the generated hardware
+        val wire0 = WireInit(s0).asUInt
+        chisel3.assert(u0.litValue.U === wire0)
+        val wire1 = WireInit(s1).asUInt
+        chisel3.assert(u1.litValue.U === wire1)
+        val wire2 = WireInit(s2).asUInt
+        chisel3.assert(u2.litValue.U === wire2)
+
+        stop()
+      }
+    }
+  }
 }
