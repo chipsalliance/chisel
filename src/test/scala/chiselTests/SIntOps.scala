@@ -247,4 +247,9 @@ class SIntOpsSpec extends ChiselPropSpec with Utils with ShiftRightWidthBehavior
       }
     }
   }
+
+  property("Calling .asSInt on a SInt literal should maintain the literal value") {
+    3.S.asSInt.litValue should be(3)
+    -5.S.asSInt.litValue should be(-5)
+  }
 }
