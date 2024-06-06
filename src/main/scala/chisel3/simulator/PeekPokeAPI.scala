@@ -3,11 +3,27 @@ package chisel3.simulator
 import svsim._
 import chisel3._
 
+import chisel3.experimental.{SourceInfo, SourceLine, UnlocatableSourceInfo}
+import chisel3.internal.ExceptionHelpers
+
 object PeekPokeAPI extends PeekPokeAPI
 
 trait PeekPokeAPI {
   case class FailedExpectationException[T](observed: T, expected: T, message: String)
       extends Exception(s"Failed Expectation: Observed value '$observed' != $expected. $message")
+  object FailedExpectationException {
+    def apply[T](
+      observed:     T,
+      expected:     T,
+      message:      String,
+      sourceInfo:   SourceInfo,
+      extraContext: Seq[String]
+    ): FailedExpectationException[T] = {
+      val fullMessage = s"$message ${sourceInfo.makeMessage(x => x)}" +
+        (if (extraContext.nonEmpty) s"\n${extraContext.mkString("\n")}" else "")
+      new FailedExpectationException(observed, expected, fullMessage)
+    }
+  }
 
   implicit class testableClock(clock: Clock) {
     def step(cycles: Int = 1): Unit = {
@@ -56,25 +72,47 @@ trait PeekPokeAPI {
     }
 
     final def peek(): T = encode(data.peekValue())
-    final def expect(expected: T): Unit = {
+    // Added for binary compatibility, not callable directly but can be called if compiled against old Chisel
+    private[simulator] final def expect(expected: T): Unit = _expect(expected, UnlocatableSourceInfo)
+    final def expect(expected:                    T)(implicit sourceInfo: SourceInfo): Unit = _expect(expected, sourceInfo)
+    // Added to avoid ambiguity errors when using binary compatibility shim
+    private def _expect(expected: T, sourceInfo: SourceInfo): Unit = {
       data.expect(
         expected.litValue,
         encode(_).litValue,
-        (observed: BigInt, expected: BigInt) => s"Expectation failed: observed value $observed != $expected"
+        (observed: BigInt, expected: BigInt) => s"Expectation failed: observed value $observed != $expected",
+        sourceInfo
       )
     }
-    final def expect(expected: T, message: String): Unit = {
-      data.expect(expected.litValue, encode(_).litValue, (_: BigInt, _: BigInt) => message)
+    // Added for binary compatibility, not callable directly but can be called if compiled against old Chisel
+    private[simulator] def expect(expected: T, message: String): Unit =
+      _expect(expected, message, UnlocatableSourceInfo)
+    final def expect(expected: T, message: String)(implicit sourceInfo: SourceInfo): Unit =
+      _expect(expected, message, sourceInfo)
+    // Added to avoid ambiguity errors when using binary compatibility shim
+    private def _expect(expected: T, message: String, sourceInfo: SourceInfo): Unit = {
+      data.expect(expected.litValue, encode(_).litValue, (_: BigInt, _: BigInt) => message, sourceInfo)
     }
-    final def expect(expected: BigInt): Unit = {
+    // Added for binary compatibility, not callable directly but can be called if compiled against old Chisel
+    private[simulator] def expect(expected: BigInt): Unit = _expect(expected, UnlocatableSourceInfo)
+    final def expect(expected:              BigInt)(implicit sourceInfo: SourceInfo): Unit = _expect(expected, sourceInfo)
+    // Added to avoid ambiguity errors when using binary compatibility shim
+    private def _expect(expected: BigInt, sourceInfo: SourceInfo): Unit = {
       data.expect(
         expected,
         _.asBigInt,
-        (observed: BigInt, expected: BigInt) => s"Expectation failed: observed value $observed != $expected"
+        (observed: BigInt, expected: BigInt) => s"Expectation failed: observed value $observed != $expected",
+        sourceInfo
       )
     }
-    final def expect(expected: BigInt, message: String): Unit = {
-      data.expect(expected, _.asBigInt, (_: BigInt, _: BigInt) => message)
+    // Added for binary compatibility, not callable directly but can be called if compiled against old Chisel
+    private[simulator] def expect(expected: BigInt, message: String): Unit =
+      _expect(expected, message, UnlocatableSourceInfo)
+    final def expect(expected: BigInt, message: String)(implicit sourceInfo: SourceInfo): Unit =
+      _expect(expected, message, sourceInfo)
+    // Added to avoid ambiguity errors when using binary compatibility shim
+    private def _expect(expected: BigInt, message: String, sourceInfo: SourceInfo): Unit = {
+      data.expect(expected, _.asBigInt, (_: BigInt, _: BigInt) => message, sourceInfo)
     }
 
   }
@@ -122,17 +160,40 @@ trait PeekPokeAPI {
       val simulationPort = module.port(data)
       simulationPort.get(isSigned = isSigned)
     }
+    @deprecated("Use version that takes a SourceInfo", "Chisel 6.5.0")
     def expect[T](
       expected:     T,
       encode:       (Simulation.Value) => T,
       buildMessage: (T, T) => String
+    ): Unit = expect(expected, encode, buildMessage)
+    def expect[T](
+      expected:     T,
+      encode:       (Simulation.Value) => T,
+      buildMessage: (T, T) => String,
+      sourceInfo:   SourceInfo
     ): Unit = {
       val module = AnySimulatedModule.current
       module.willPeek()
       val simulationPort = module.port(data)
+
       simulationPort.check(isSigned = isSigned) { observedValue =>
         val observed = encode(observedValue)
-        if (observed != expected) throw FailedExpectationException(observed, expected, buildMessage(observed, expected))
+        if (observed != expected) {
+          val extraContext =
+            sourceInfo match {
+              case sl: SourceLine =>
+                ExceptionHelpers.getErrorLineInFile(Seq(), sl)
+              case _ =>
+                Seq()
+            }
+          throw FailedExpectationException(
+            observed,
+            expected,
+            buildMessage(observed, expected),
+            sourceInfo,
+            extraContext
+          )
+        }
       }
     }
   }
