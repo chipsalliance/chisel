@@ -153,7 +153,9 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselRunners {
     chirrtl should include(f"node and_1 = intrinsic(circt_ltl_and : UInt<1>, eventually, b) $sourceLoc")
     chirrtl should include(f"node or_1 = intrinsic(circt_ltl_or : UInt<1>, eventually, b) $sourceLoc")
     chirrtl should include(f"node intersect_3 = intrinsic(circt_ltl_intersect : UInt<1>, eventually, b) $sourceLoc")
-    chirrtl should include(f"node intersect_4 = intrinsic(circt_ltl_intersect : UInt<1>, intersect_3, and_1) $sourceLoc")
+    chirrtl should include(
+      f"node intersect_4 = intrinsic(circt_ltl_intersect : UInt<1>, intersect_3, and_1) $sourceLoc"
+    )
     chirrtl should include(f"node intersect_5 = intrinsic(circt_ltl_intersect : UInt<1>, intersect_4, or_1) $sourceLoc")
     chirrtl should include(f"node clock_2 = intrinsic(circt_ltl_clock : UInt<1>, eventually, clock) $sourceLoc")
 
