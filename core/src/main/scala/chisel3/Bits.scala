@@ -996,9 +996,22 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
   override def do_>>(that: UInt)(implicit sourceInfo: SourceInfo): SInt =
     binop(sourceInfo, SInt(this.width), DynamicShiftRightOp, that)
 
-  override private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): UInt = pushOp(
-    DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref)
-  )
+  override private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): UInt =
+    this.litOption match {
+      case Some(value) =>
+        // This is a reinterpretation of raw bits
+        val posValue =
+          if (value.signum == -1) {
+            (BigInt(1) << this.width.get) + value
+          } else {
+            value
+          }
+        // Using UInt.Lit instead of .U so we can use Width argument which may be Unknown
+        UInt.Lit(posValue, this.width)
+      case None =>
+        pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref))
+    }
+
   override def do_asSInt(implicit sourceInfo: SourceInfo): SInt = this
 
   private[chisel3] override def connectFromBits(

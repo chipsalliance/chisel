@@ -490,4 +490,8 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
     val e = the[IllegalArgumentException] thrownBy (UInt(-8.W))
     e.getMessage should include("Widths must be non-negative, got -8")
   }
+
+  property("Calling .asUInt on a UInt literal should maintain the literal value") {
+    3.U.asUInt.litValue should be(3)
+  }
 }

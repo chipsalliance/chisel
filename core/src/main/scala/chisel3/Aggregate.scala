@@ -105,8 +105,14 @@ sealed abstract class Aggregate extends Data {
   // This means we need the `first` argument so that we can preserve this behavior of Aggregates while still allowing subclasses
   // to override .asUInt behavior
   override private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): UInt = {
-    val elts = this.getElements.map(_._asUIntImpl(false))
-    if (elts.isEmpty && !first) 0.U(0.W) else SeqUtils.do_asUInt(elts)
+    checkingLitOption(checkForDontCares = false) match {
+      case Some(value) =>
+        // Using UInt.Lit instead of .U so we can use Width argument which may be Unknown
+        UInt.Lit(value, this.width)
+      case None =>
+        val elts = this.getElements.map(_._asUIntImpl(false))
+        if (elts.isEmpty && !first) 0.U(0.W) else SeqUtils.do_asUInt(elts)
+    }
   }
 
   private[chisel3] override def connectFromBits(
