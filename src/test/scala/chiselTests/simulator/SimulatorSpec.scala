@@ -71,6 +71,31 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
       assert(result === 12)
     }
 
+    it("reports failed expects correctly") {
+      val simulator = new VerilatorSimulator("test_run_dir/simulator/GCDSimulator")
+      val thrown = the[PeekPokeAPI.FailedExpectationException[_]] thrownBy {
+        simulator
+          .simulate(new GCD()) { module =>
+            import PeekPokeAPI._
+            val gcd = module.wrapped
+            gcd.io.a.poke(24.U)
+            gcd.io.b.poke(36.U)
+            gcd.io.loadValues.poke(1.B)
+            gcd.clock.step()
+            gcd.io.loadValues.poke(0.B)
+            gcd.clock.step(10)
+            gcd.io.result.expect(5)
+          }
+          .result
+      }
+      thrown.getMessage must include("Observed value '12' != 5.")
+      (thrown.getMessage must include).regex(
+        """ @\[src/test/scala/chiselTests/simulator/SimulatorSpec\.scala \d+:\d+\]"""
+      )
+      thrown.getMessage must include("gcd.io.result.expect(5)")
+      thrown.getMessage must include("                    ^")
+    }
+
     it("runs a design that includes an external module") {
       class Bar extends ExtModule with HasExtModuleInline {
         val a = IO(Output(Bool()))

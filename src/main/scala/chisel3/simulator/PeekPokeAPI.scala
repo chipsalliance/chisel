@@ -3,11 +3,27 @@ package chisel3.simulator
 import svsim._
 import chisel3._
 
+import chisel3.experimental.{SourceInfo, SourceLine}
+import chisel3.internal.ExceptionHelpers
+
 object PeekPokeAPI extends PeekPokeAPI
 
 trait PeekPokeAPI {
   case class FailedExpectationException[T](observed: T, expected: T, message: String)
       extends Exception(s"Failed Expectation: Observed value '$observed' != $expected. $message")
+  object FailedExpectationException {
+    def apply[T](
+      observed:     T,
+      expected:     T,
+      message:      String,
+      sourceInfo:   SourceInfo,
+      extraContext: Seq[String]
+    ): FailedExpectationException[T] = {
+      val fullMessage = s"$message ${sourceInfo.makeMessage(x => x)}" +
+        (if (extraContext.nonEmpty) s"\n${extraContext.mkString("\n")}" else "")
+      new FailedExpectationException(observed, expected, fullMessage)
+    }
+  }
 
   implicit class testableClock(clock: Clock) {
     def step(cycles: Int = 1): Unit = {
@@ -56,25 +72,27 @@ trait PeekPokeAPI {
     }
 
     final def peek(): T = encode(data.peekValue())
-    final def expect(expected: T): Unit = {
+    final def expect(expected: T)(implicit sourceInfo: SourceInfo): Unit = {
       data.expect(
         expected.litValue,
         encode(_).litValue,
-        (observed: BigInt, expected: BigInt) => s"Expectation failed: observed value $observed != $expected"
+        (observed: BigInt, expected: BigInt) => s"Expectation failed: observed value $observed != $expected",
+        sourceInfo
       )
     }
-    final def expect(expected: T, message: String): Unit = {
-      data.expect(expected.litValue, encode(_).litValue, (_: BigInt, _: BigInt) => message)
+    final def expect(expected: T, message: String)(implicit sourceInfo: SourceInfo): Unit = {
+      data.expect(expected.litValue, encode(_).litValue, (_: BigInt, _: BigInt) => message, sourceInfo)
     }
-    final def expect(expected: BigInt): Unit = {
+    final def expect(expected: BigInt)(implicit sourceInfo: SourceInfo): Unit = {
       data.expect(
         expected,
         _.asBigInt,
-        (observed: BigInt, expected: BigInt) => s"Expectation failed: observed value $observed != $expected"
+        (observed: BigInt, expected: BigInt) => s"Expectation failed: observed value $observed != $expected",
+        sourceInfo
       )
     }
-    final def expect(expected: BigInt, message: String): Unit = {
-      data.expect(expected, _.asBigInt, (_: BigInt, _: BigInt) => message)
+    final def expect(expected: BigInt, message: String)(implicit sourceInfo: SourceInfo): Unit = {
+      data.expect(expected, _.asBigInt, (_: BigInt, _: BigInt) => message, sourceInfo)
     }
 
   }
@@ -125,14 +143,31 @@ trait PeekPokeAPI {
     def expect[T](
       expected:     T,
       encode:       (Simulation.Value) => T,
-      buildMessage: (T, T) => String
+      buildMessage: (T, T) => String,
+      sourceInfo:   SourceInfo
     ): Unit = {
       val module = AnySimulatedModule.current
       module.willPeek()
       val simulationPort = module.port(data)
+
       simulationPort.check(isSigned = isSigned) { observedValue =>
         val observed = encode(observedValue)
-        if (observed != expected) throw FailedExpectationException(observed, expected, buildMessage(observed, expected))
+        if (observed != expected) {
+          val extraContext =
+            sourceInfo match {
+              case sl: SourceLine =>
+                ExceptionHelpers.getErrorLineInFile(Seq(), sl)
+              case _ =>
+                Seq()
+            }
+          throw FailedExpectationException(
+            observed,
+            expected,
+            buildMessage(observed, expected),
+            sourceInfo,
+            extraContext
+          )
+        }
       }
     }
   }
