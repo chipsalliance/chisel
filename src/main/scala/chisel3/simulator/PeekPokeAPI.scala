@@ -72,21 +72,23 @@ trait PeekPokeAPI {
       data.expect(
         expected.litValue,
         encode(_).litValue,
-        (observed: BigInt, expected: BigInt) => s"Expectation failed: observed value $observed != $expected"
+        (observed: BigInt, expected: BigInt) => s"Expectation failed: observed value $observed != $expected",
+        sourceInfo
       )
     }
     final def expect(expected: T, message: String)(implicit sourceInfo: SourceInfo): Unit = {
-      data.expect(expected.litValue, encode(_).litValue, (_: BigInt, _: BigInt) => message)
+      data.expect(expected.litValue, encode(_).litValue, (_: BigInt, _: BigInt) => message, sourceInfo)
     }
     final def expect(expected: BigInt)(implicit sourceInfo: SourceInfo): Unit = {
       data.expect(
         expected,
         _.asBigInt,
-        (observed: BigInt, expected: BigInt) => s"Expectation failed: observed value $observed != $expected"
+        (observed: BigInt, expected: BigInt) => s"Expectation failed: observed value $observed != $expected",
+        sourceInfo
       )
     }
     final def expect(expected: BigInt, message: String)(implicit sourceInfo: SourceInfo): Unit = {
-      data.expect(expected, _.asBigInt, (_: BigInt, _: BigInt) => message)
+      data.expect(expected, _.asBigInt, (_: BigInt, _: BigInt) => message, sourceInfo)
     }
 
   }
@@ -137,9 +139,8 @@ trait PeekPokeAPI {
     def expect[T](
       expected:     T,
       encode:       (Simulation.Value) => T,
-      buildMessage: (T, T) => String
-    )(
-      implicit sourceInfo: SourceInfo
+      buildMessage: (T, T) => String,
+      sourceInfo:   SourceInfo
     ): Unit = {
       val module = AnySimulatedModule.current
       module.willPeek()
