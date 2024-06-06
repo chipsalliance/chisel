@@ -198,4 +198,56 @@ class SIntOpsSpec extends ChiselPropSpec with Utils {
     )
   }
 
+<<<<<<< HEAD
+=======
+  property("Static right-shift should have a minimum width of 1") {
+    testShiftRightWidthBehavior(SInt)(chiselMinWidth = 1, firrtlMinWidth = 1)
+  }
+
+  property("Static right-shift should have width of 0 in Chisel and 1 in FIRRTL with --use-legacy-shift-right-width") {
+    val args = Array("--use-legacy-shift-right-width")
+
+    testShiftRightWidthBehavior(SInt)(chiselMinWidth = 0, firrtlMinWidth = 1, args = args)
+
+    // Focused test to show the mismatch
+    class TestModule extends Module {
+      val in = IO(Input(SInt(8.W)))
+      val widthcheck = Wire(SInt())
+      val shifted = in >> 8
+      shifted.getWidth should be(0)
+      widthcheck := shifted
+      dontTouch(widthcheck)
+    }
+    val verilog = ChiselStage.emitSystemVerilog(new TestModule, args)
+    verilog should include(" widthcheck = in[7];")
+  }
+
+  property("Calling .asUInt on an SInt literal should maintain the literal value") {
+    val s0 = 3.S
+    val u0 = s0.asUInt
+    u0.litValue should be(3)
+
+    val s1 = -3.S
+    val u1 = s1.asUInt
+    u1.litValue should be(5)
+
+    val s2 = -3.S(8.W)
+    val u2 = s2.asUInt
+    u2.litValue should be(0xfd)
+
+    assertTesterPasses {
+      new BasicTester {
+        // Check that it gives the same value as the generated hardware
+        val wire0 = WireInit(s0).asUInt
+        chisel3.assert(u0.litValue.U === wire0)
+        val wire1 = WireInit(s1).asUInt
+        chisel3.assert(u1.litValue.U === wire1)
+        val wire2 = WireInit(s2).asUInt
+        chisel3.assert(u2.litValue.U === wire2)
+
+        stop()
+      }
+    }
+  }
+>>>>>>> d35daa264 (Preserve literals across .asUInt (#4148))
 }

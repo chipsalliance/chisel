@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.util.Cat
 import chisel3.experimental.BundleLiterals.AddBundleLiteralConstructor
 import chisel3.experimental.VecLiterals._
 import chisel3.experimental.VecLiteralException
@@ -537,13 +538,43 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
       val lit0 = (Vec(2, UInt(4.W))).Lit(0 -> 0x3.U, 1 -> 0x2.U(3.W))
       lit0(0).getWidth should be(4)
       lit0(1).getWidth should be(4)
-      val uint0 = lit0.asUInt
+      val uint0 = Cat(lit0(1), lit0(0))
       val lit1 = Vec.Lit(0x3.U, 0x2.U(4.W))
       lit1(0).getWidth should be(4)
       lit1(1).getWidth should be(4)
-      val uint1 = lit1.asUInt
+      val uint1 = Cat(lit1(1), lit1(0))
     })
     chirrtl should include("node uint0 = cat(UInt<4>(0h2), UInt<4>(0h3))")
     chirrtl should include("node uint1 = cat(UInt<4>(0h2), UInt<4>(0h3))")
+  }
+
+  "Calling .asUInt on a Vec literal should return a UInt literal and work outside of elaboration" in {
+    val vlit0 = Vec(2, UInt(4.W)).Lit(0 -> 0x3.U, 1 -> 0x2.U(3.W))
+    val ulit0 = vlit0.asUInt
+    ulit0.litOption should be(Some(0x23))
+
+    val vlit1 = Vec.Lit(0x3.U, 0x2.U(4.W))
+    val ulit1 = vlit1.asUInt
+    ulit1.litOption should be(Some(0x23))
+
+    assertTesterPasses {
+      new BasicTester {
+        // Check that it gives the same value as the generated hardware
+        val wire0 = WireInit(vlit0).asUInt
+        chisel3.assert(ulit0.litValue.U === wire0)
+        val wire1 = WireInit(vlit1).asUInt
+        chisel3.assert(ulit1.litValue.U === wire1)
+
+        stop()
+      }
+    }
+  }
+
+  "Calling .asUInt on a Vec literal with DontCare fields should NOT return a UInt literal" in {
+    ChiselStage.emitCHIRRTL(new RawModule {
+      val vlit = Vec(2, UInt(4.W)).Lit(1 -> 0x2.U(3.W))
+      val ulit = vlit.asUInt
+      ulit.litOption should be(None)
+    })
   }
 }

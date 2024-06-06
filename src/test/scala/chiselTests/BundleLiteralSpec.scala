@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.util.Cat
 import circt.stage.ChiselStage
 import chisel3.testers.BasicTester
 import chisel3.experimental.BundleLiterals._
@@ -26,6 +27,15 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
     val a = UInt(48.W)
     val b = SInt(32.W)
     val c = UInt(16.W)
+  }
+
+  class ChildBundle extends Bundle {
+    val foo = UInt(4.W)
+  }
+  class ComplexBundle(w: Int) extends Bundle {
+    val a = Vec(2, new ChildBundle)
+    val b = UInt(w.W)
+    val c = UInt(4.W)
   }
 
   "bundle literals" should "pack" in {
@@ -351,7 +361,7 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
     }
     val (stdout, _, chirrtl) = grabStdOutErr(ChiselStage.emitCHIRRTL(new RawModule {
       val lit = (new SimpleBundle).Lit(_.a -> 0xde.U, _.b -> 0xad.U)
-      val x = lit.asUInt
+      val x = Cat(lit.a, lit.b)
     }))
     stdout should include("[W007] Literal value ULit(222,) is too wide for field _.a with width 4")
     stdout should include("[W007] Literal value ULit(173,) is too wide for field _.b with width 4")
@@ -366,7 +376,7 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
     val chirrtl = ChiselStage.emitCHIRRTL(
       new RawModule {
         val lit = (new SimpleBundle).Lit(_.a -> 5.U, _.b -> 0.U)
-        val x = lit.asUInt
+        val x = Cat(lit.a, lit.b)
       },
       args = Array("--warnings-as-errors")
     )
@@ -407,8 +417,50 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
       val lit = (new SimpleBundle).Lit(_.a -> 0x3.U, _.b -> 0x3.U(3.W))
       lit.a.getWidth should be(4)
       lit.b.getWidth should be(4)
-      val cat = lit.asUInt
+      val cat = Cat(lit.a, lit.b)
     })
     chirrtl should include("node cat = cat(UInt<4>(0h3), UInt<4>(0h3))")
   }
+
+  "Calling .asUInt on a Bundle literal" should "return a UInt literal and work outside of elaboration" in {
+    val blit = (new MyBundle).Lit(_.a -> 42.U, _.b -> true.B, _.c -> MyEnum.sB)
+    val ulit = blit.asUInt
+    ulit.litOption should be(Some(171))
+
+    assertTesterPasses {
+      new BasicTester {
+        // Check that it gives the same value as the generated hardware
+        val wire = WireInit(blit).asUInt
+        chisel3.assert(ulit.litValue.U === wire)
+        stop()
+      }
+    }
+  }
+
+  "Calling .asUInt on a Bundle literal with DontCare fields" should "NOT return a UInt literal" in {
+    ChiselStage.emitCHIRRTL(new RawModule {
+      val blit = (new MyBundle).Lit(_.a -> 42.U, _.c -> MyEnum.sB)
+      val ulit = blit.asUInt
+      ulit.litOption should be(None)
+    })
+  }
+
+  "Calling .asUInt on a Bundle literal with zero-width fields" should "return a UInt literal and work outside of elaboration" in {
+    import chisel3.experimental.VecLiterals._
+
+    val vlit = Vec.Lit((new ChildBundle).Lit(_.foo -> 0xa.U), (new ChildBundle).Lit(_.foo -> 0xb.U))
+    val blit = (new ComplexBundle(0)).Lit(_.a -> vlit, _.b -> 0.U(0.W), _.c -> 0xc.U)
+    val ulit = blit.asUInt
+    ulit.litOption should be(Some(0xbac))
+
+    assertTesterPasses {
+      new BasicTester {
+        // Check that it gives the same value as the generated hardware
+        val wire = WireInit(blit).asUInt
+        chisel3.assert(ulit.litValue.U === wire)
+        stop()
+      }
+    }
+  }
+
 }
