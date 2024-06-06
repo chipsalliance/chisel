@@ -6,7 +6,6 @@ import chisel3._
 import chisel3.util.circt._
 import chisel3.experimental.hierarchy.{Instance, Instantiate}
 import chisel3.experimental.SourceInfo
-import firtoolresolver.shaded.coursier.ivy.PropertiesPattern.ChunkOrProperty.Prop
 
 /** An opaque sequence returned by an intrinsic.
   *
