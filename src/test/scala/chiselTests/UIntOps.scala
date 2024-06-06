@@ -494,4 +494,22 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
   property("Calling .asUInt on a UInt literal should maintain the literal value") {
     3.U.asUInt.litValue should be(3)
   }
+
+  property("Calling .asSInt on a UInt literal should reinterpret the literal value") {
+    5.U.asSInt.litValue should be(-3)
+    5.U(8.W).asSInt.litValue should be(5)
+    0.U.asSInt.litValue should be(0)
+    0.U.asSInt.widthOption should be(Some(1))
+    // There are no zero-width SInt literals
+    0.U(0.W).asSInt.widthOption should be(Some(1))
+  }
+
+  property("Calling .zext on a UInt literal should maintain the literal value") {
+    5.U.zext.litValue should be(5)
+    5.U.zext.getWidth should be(4)
+    5.U(8.W).zext.litValue should be(5)
+    0.U.zext.litValue should be(0)
+    0.U.zext.widthOption should be(Some(2))
+    0.U(0.W).zext.widthOption should be(Some(1))
+  }
 }
