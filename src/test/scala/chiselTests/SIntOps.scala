@@ -198,30 +198,6 @@ class SIntOpsSpec extends ChiselPropSpec with Utils {
     )
   }
 
-<<<<<<< HEAD
-=======
-  property("Static right-shift should have a minimum width of 1") {
-    testShiftRightWidthBehavior(SInt)(chiselMinWidth = 1, firrtlMinWidth = 1)
-  }
-
-  property("Static right-shift should have width of 0 in Chisel and 1 in FIRRTL with --use-legacy-shift-right-width") {
-    val args = Array("--use-legacy-shift-right-width")
-
-    testShiftRightWidthBehavior(SInt)(chiselMinWidth = 0, firrtlMinWidth = 1, args = args)
-
-    // Focused test to show the mismatch
-    class TestModule extends Module {
-      val in = IO(Input(SInt(8.W)))
-      val widthcheck = Wire(SInt())
-      val shifted = in >> 8
-      shifted.getWidth should be(0)
-      widthcheck := shifted
-      dontTouch(widthcheck)
-    }
-    val verilog = ChiselStage.emitSystemVerilog(new TestModule, args)
-    verilog should include(" widthcheck = in[7];")
-  }
-
   property("Calling .asUInt on an SInt literal should maintain the literal value") {
     val s0 = 3.S
     val u0 = s0.asUInt
@@ -249,5 +225,4 @@ class SIntOpsSpec extends ChiselPropSpec with Utils {
       }
     }
   }
->>>>>>> d35daa264 (Preserve literals across .asUInt (#4148))
 }
