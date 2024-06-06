@@ -239,8 +239,8 @@ object Sequence {
   }
 
   /** Check that a sequence holds untile another sequence holds.
-    * This operator is weak: the property will hold even if $input always
-    * holds and $condition never holds.
+    * This operator is weak: the property will hold even if input always
+    * holds and condition never holds.
     */
   def until(arg0: Sequence, arg1: Sequence)(implicit sourceInfo: SourceInfo): Sequence =
     OpaqueSequence(LTLUntilIntrinsic(arg0.inner, arg1.inner))
@@ -379,8 +379,8 @@ object Property {
   }
 
   /** Check that a property holds untile another property holds.
-    * This operator is weak: the property will hold even if $input always
-    * holds and $condition never holds.
+    * This operator is weak: the property will hold even if input always
+    * holds and condition never holds.
     */
   def until(arg0: Property, arg1: Property)(implicit sourceInfo: SourceInfo): Property =
     OpaqueProperty(LTLUntilIntrinsic(arg0.inner, arg1.inner))
