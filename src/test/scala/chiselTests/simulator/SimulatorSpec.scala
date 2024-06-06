@@ -88,13 +88,12 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
           }
           .result
       }
-      (thrown.getMessage must include).regex("Observed value '12' != 5\\.")
+      thrown.getMessage must include("Observed value '12' != 5.")
       (thrown.getMessage must include).regex(
-        " @\\[src/test/scala/chiselTests/simulator/SimulatorSpec\\.scala \\d+:\\d+\\]"
+        """ @\[src/test/scala/chiselTests/simulator/SimulatorSpec\.scala \d+:\d+\]"""
       )
-      (thrown.getMessage must include).regex("gcd\\.io\\.result\\.expect\\(5\\)")
-      // Not actually anchoring this so it's not extremely brittle, only somewhat.
-      (thrown.getMessage must include).regex("                    \\^")
+      thrown.getMessage must include("gcd.io.result.expect(5)")
+      thrown.getMessage must include("                    ^")
     }
 
     it("runs a design that includes an external module") {
