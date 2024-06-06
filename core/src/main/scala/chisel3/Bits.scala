@@ -757,11 +757,27 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
   final def zext: SInt = macro SourceInfoTransform.noArg
 
   /** @group SourceInfoTransformMacro */
-  def do_zext(implicit sourceInfo: SourceInfo): SInt =
-    pushOp(DefPrim(sourceInfo, SInt(width + 1), ConvertOp, ref))
+  def do_zext(implicit sourceInfo: SourceInfo): SInt = this.litOption match {
+    case Some(value) => SInt.Lit(value, this.width + 1)
+    case None        => pushOp(DefPrim(sourceInfo, SInt(width + 1), ConvertOp, ref))
+  }
 
-  override def do_asSInt(implicit sourceInfo: SourceInfo): SInt =
-    pushOp(DefPrim(sourceInfo, SInt(width), AsSIntOp, ref))
+  override def do_asSInt(implicit sourceInfo: SourceInfo): SInt = this.litOption match {
+    case Some(value) =>
+      val w = this.width.get // Literals always have a known width, will be minimum legal width if not set
+      val signedValue =
+        // If width is 0, just return value (which will be 0).
+        if (w > 0 && value.testBit(w - 1)) {
+          // If the most significant bit is set, the SInt is negative and we need to adjust the value.
+          value - (BigInt(1) << w)
+        } else {
+          value
+        }
+      // Using SInt.Lit instead of .S so we can use Width argument which may be Unknown
+      SInt.Lit(signedValue, this.width.max(Width(1))) // SInt literal has width >= 1
+    case None =>
+      pushOp(DefPrim(sourceInfo, SInt(width), AsSIntOp, ref))
+  }
 
   override private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): UInt = this
 
