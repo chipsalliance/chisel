@@ -85,6 +85,37 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselRunners {
     ChiselStage.emitSystemVerilog(new ConcatMod)
   }
 
+  class RepeatMod extends RawModule {
+    val a, b, c, d, e = IO(Input(Bool()))
+    implicit val info = SourceLine("Foo.scala", 1, 2)
+    val s0: Sequence = a.repeat(1)
+    val s1: Sequence = b.repeatRange(2, 4)
+    val s2: Sequence = c.repeatAtLeast(5)
+    val s3: Sequence = d.gotoRepeat(1, 3)
+    val s4: Sequence = e.nonConsecutiveRepeat(1, 3)
+  }
+  it should "support sequence repeat operations" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RepeatMod)
+    val sourceLoc = "@[Foo.scala 1:2]"
+    chirrtl should include("input a : UInt<1>")
+    chirrtl should include("input b : UInt<1>")
+    chirrtl should include("input c : UInt<1>")
+    chirrtl should include("input d : UInt<1>")
+    chirrtl should include("input e : UInt<1>")
+    chirrtl should include(f"node repeat = intrinsic(circt_ltl_repeat<base = 1, more = 0> : UInt<1>, a) $sourceLoc")
+    chirrtl should include(f"node repeat_1 = intrinsic(circt_ltl_repeat<base = 2, more = 2> : UInt<1>, b) $sourceLoc")
+    chirrtl should include(f"node repeat_2 = intrinsic(circt_ltl_repeat<base = 5> : UInt<1>, c) $sourceLoc")
+    chirrtl should include(
+      f"node goto_repeat = intrinsic(circt_ltl_goto_repeat<base = 1, more = 2> : UInt<1>, d) $sourceLoc"
+    )
+    chirrtl should include(
+      f"node non_consecutive_repeat = intrinsic(circt_ltl_non_consecutive_repeat<base = 1, more = 2> : UInt<1>, e) $sourceLoc"
+    )
+  }
+  it should "compile sequence repeat operations" in {
+    ChiselStage.emitSystemVerilog(new RepeatMod)
+  }
+
   class AndOrClockMod extends RawModule {
     val a, b = IO(Input(Bool()))
     val clock = IO(Input(Clock()))
@@ -92,13 +123,19 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselRunners {
     val s0: Sequence = a.delay()
     val s1: Sequence = s0.and(b)
     val s2: Sequence = s0.or(b)
+    val si: Sequence = s0.intersect(b)
+    val sn: Sequence = Sequence.intersect(si, s1, s2)
     val s3: Sequence = s0.clock(clock)
     val p0: Property = a.eventually
     val p1: Property = p0.and(b)
     val p2: Property = p0.or(b)
+    val pi: Property = p0.intersect(b)
+    val pn: Property = Property.intersect(pi, p1, p2)
     val p3: Property = p0.clock(clock)
+    val u1: Sequence = s0.until(b)
+    val u2: Property = p0.until(b)
   }
-  it should "support and, or, and clock operations" in {
+  it should "support and, or, intersect, and clock operations" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new AndOrClockMod)
     val sourceLoc = "@[Foo.scala 1:2]"
 
@@ -106,15 +143,27 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselRunners {
     chirrtl should include(f"node delay = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, a) $sourceLoc")
     chirrtl should include(f"node and = intrinsic(circt_ltl_and : UInt<1>, delay, b) $sourceLoc")
     chirrtl should include(f"node or = intrinsic(circt_ltl_or : UInt<1>, delay, b) $sourceLoc")
+    chirrtl should include(f"node intersect = intrinsic(circt_ltl_intersect : UInt<1>, delay, b) $sourceLoc")
+    chirrtl should include(f"node intersect_1 = intrinsic(circt_ltl_intersect : UInt<1>, intersect, and) $sourceLoc")
+    chirrtl should include(f"node intersect_2 = intrinsic(circt_ltl_intersect : UInt<1>, intersect_1, or) $sourceLoc")
     chirrtl should include(f"node clock_1 = intrinsic(circt_ltl_clock : UInt<1>, delay, clock) $sourceLoc")
 
     // Properties
     chirrtl should include(f"node eventually = intrinsic(circt_ltl_eventually : UInt<1>, a) $sourceLoc")
     chirrtl should include(f"node and_1 = intrinsic(circt_ltl_and : UInt<1>, eventually, b) $sourceLoc")
     chirrtl should include(f"node or_1 = intrinsic(circt_ltl_or : UInt<1>, eventually, b) $sourceLoc")
+    chirrtl should include(f"node intersect_3 = intrinsic(circt_ltl_intersect : UInt<1>, eventually, b) $sourceLoc")
+    chirrtl should include(
+      f"node intersect_4 = intrinsic(circt_ltl_intersect : UInt<1>, intersect_3, and_1) $sourceLoc"
+    )
+    chirrtl should include(f"node intersect_5 = intrinsic(circt_ltl_intersect : UInt<1>, intersect_4, or_1) $sourceLoc")
     chirrtl should include(f"node clock_2 = intrinsic(circt_ltl_clock : UInt<1>, eventually, clock) $sourceLoc")
+
+    // Until
+    chirrtl should include(f"node until = intrinsic(circt_ltl_until : UInt<1>, delay, b) $sourceLoc")
+    chirrtl should include(f"node until_1 = intrinsic(circt_ltl_until : UInt<1>, eventually, b) $sourceLoc")
   }
-  it should "compile and, or, and clock operations" in {
+  it should "compile and, or, intersect, and clock operations" in {
     ChiselStage.emitSystemVerilog(new AndOrClockMod)
   }
 

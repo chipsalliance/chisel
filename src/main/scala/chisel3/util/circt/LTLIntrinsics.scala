@@ -65,16 +65,46 @@ private[chisel3] object LTLOrIntrinsic {
     BinaryLTLIntrinsic("or")(lhs, rhs)
 }
 
+/** A wrapper intrinsic for the CIRCT `ltl.intersect` operation. */
+private[chisel3] object LTLIntersectIntrinsic {
+  def apply(lhs: Bool, rhs: Bool)(implicit sourceInfo: SourceInfo) =
+    BinaryLTLIntrinsic("intersect")(lhs, rhs)
+}
+
+/** A wrapper intrinsic for the CIRCT `ltl.until` operation. */
+private[chisel3] object LTLUntilIntrinsic {
+  def apply(lhs: Bool, rhs: Bool)(implicit sourceInfo: SourceInfo) =
+    BinaryLTLIntrinsic("until")(lhs, rhs)
+}
+
 /** A wrapper intrinsic for the CIRCT `ltl.delay` operation. */
 private[chisel3] object LTLDelayIntrinsic {
 
   def apply(delay: Int, length: Option[Int])(_in: Bool)(implicit sourceInfo: SourceInfo) = {
-    val params = length match {
-      case None    => Seq("delay" -> IntParam(delay))
-      case Some(l) => Seq("delay" -> IntParam(delay), "length" -> IntParam(l))
-    }
+    val params = Seq("delay" -> IntParam(delay)) ++ length.map("length" -> IntParam(_))
     UnaryLTLIntrinsic("delay", params)(_in)
   }
+}
+
+/** A wrapper intrinsic for the CIRCT `ltl.repeat` operation. */
+private[chisel3] object LTLRepeatIntrinsic {
+
+  def apply(base: Int, more: Option[Int])(_in: Bool)(implicit sourceInfo: SourceInfo) = {
+    val params = Seq("base" -> IntParam(base)) ++ more.map("more" -> IntParam(_))
+    UnaryLTLIntrinsic("repeat", params)(_in)
+  }
+}
+
+/** A wrapper intrinsic for the CIRCT `ltl.goto_repeat` operation. */
+private[chisel3] object LTLGoToRepeatIntrinsic {
+  def apply(base: Int, more: Int)(_in: Bool)(implicit sourceInfo: SourceInfo) =
+    UnaryLTLIntrinsic("goto_repeat", Seq("base" -> IntParam(base), "more" -> IntParam(more)))(_in)
+}
+
+/** A wrapper intrinsic for the CIRCT `ltl.non_consecutive_repeat` operation. */
+private[chisel3] object LTLNonConsecutiveRepeatIntrinsic {
+  def apply(base: Int, more: Int)(_in: Bool)(implicit sourceInfo: SourceInfo) =
+    UnaryLTLIntrinsic("non_consecutive_repeat", Seq("base" -> IntParam(base), "more" -> IntParam(more)))(_in)
 }
 
 /** A wrapper intrinsic for the CIRCT `ltl.concat` operation. */

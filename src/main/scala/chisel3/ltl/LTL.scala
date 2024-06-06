@@ -60,11 +60,33 @@ sealed trait Sequence extends Property {
   /** See `Sequence.concat`. */
   def concat(other: Sequence)(implicit sourceInfo: SourceInfo): Sequence = Sequence.concat(this, other)
 
+  /** See `Sequence.repeat`. */
+  def repeat(n: Int = 1)(implicit sourceInfo: SourceInfo): Sequence = Sequence.repeat(this, n)
+
+  /** See `Sequence.repeatRange`. */
+  def repeatRange(min: Int, max: Int)(implicit sourceInfo: SourceInfo): Sequence = Sequence.repeatRange(this, min, max)
+
+  /** See `Sequence.repeatAtLeast`. */
+  def repeatAtLeast(n: Int)(implicit sourceInfo: SourceInfo): Sequence = Sequence.repeatAtLeast(this, n)
+
+  /** See `Sequence.gotoRepeat`. */
+  def gotoRepeat(min: Int, max: Int)(implicit sourceInfo: SourceInfo): Sequence = Sequence.gotoRepeat(this, min, max)
+
+  /** See `Sequence.nonConsecutiveRepeat`. */
+  def nonConsecutiveRepeat(min: Int, max: Int)(implicit sourceInfo: SourceInfo): Sequence =
+    Sequence.nonConsecutiveRepeat(this, min, max)
+
   /** See `Sequence.and`. */
   def and(other: Sequence)(implicit sourceInfo: SourceInfo): Sequence = Sequence.and(this, other)
 
   /** See `Sequence.or`. */
   def or(other: Sequence)(implicit sourceInfo: SourceInfo): Sequence = Sequence.or(this, other)
+
+  /** See `Sequence.intersect`. */
+  def intersect(other: Sequence)(implicit sourceInfo: SourceInfo): Sequence = Sequence.intersect(this, other)
+
+  /** See `Sequence.until`. */
+  def until(other: Sequence)(implicit sourceInfo: SourceInfo): Sequence = Sequence.until(this, other)
 
   /** See `Sequence.clock`. */
   override def clock(clock: Clock)(implicit sourceInfo: SourceInfo): Sequence = Sequence.clock(this, clock)
@@ -137,6 +159,50 @@ object Sequence {
     lhs
   }
 
+  /** Repeat a sequence a fixed number of consecutive times. Equivalent to `s[n]` in
+    * SVA.
+    */
+  def repeat(seq: Sequence, n: Int = 1)(implicit sourceInfo: SourceInfo): Sequence = {
+    require(0 < n)
+    OpaqueSequence(LTLRepeatIntrinsic(n, Some(0))(seq.inner))
+  }
+
+  /** Repeat a sequence by a bounded range of consecutive times. Equivalent to `s[min:max]`
+    * in SVA.
+    */
+  def repeatRange(seq: Sequence, min: Int, max: Int)(implicit sourceInfo: SourceInfo): Sequence = {
+    require(min <= max)
+    OpaqueSequence(LTLRepeatIntrinsic(min, Some(max - min))(seq.inner))
+  }
+
+  /** Repeat a sequence by an unbounded range of consecutive times. Equivalent to
+    * `s[n:$]` in SVA.
+    */
+  def repeatAtLeast(seq: Sequence, n: Int)(implicit sourceInfo: SourceInfo): Sequence = {
+    require(0 < n)
+    OpaqueSequence(LTLRepeatIntrinsic(n, None)(seq.inner))
+  }
+
+  /** GoTo-style repitition of a sequence a fixed number of non-consecutive times,
+    * where the final evaluation of the sequence must hold, e.g.
+    * a !b b b !b !b b c represents a matching observation of `gotoRepeat(b, 1, 3)`,
+    * but a !b b b !b !b b !b c does not. Equivalent to `s[->min:max]` in SVA.
+    */
+  def gotoRepeat(seq: Sequence, min: Int, max: Int)(implicit sourceInfo: SourceInfo): Sequence = {
+    require(0 <= min && min <= max)
+    OpaqueSequence(LTLGoToRepeatIntrinsic(min, max - min)(seq.inner))
+  }
+
+  /** Repeat a sequence a fixed number of non-consecutive times,
+    * where the final evaluation of the sequence does not have to hold, e.g.
+    * both a !b b b !b !b b c and a !b b b !b !b b !b c represent matching
+    * observations of `nonConsecutiveRepeat(b, 1, 3)`. Equivalent to `s[=min:max]` in SVA.
+    */
+  def nonConsecutiveRepeat(seq: Sequence, min: Int, max: Int)(implicit sourceInfo: SourceInfo): Sequence = {
+    require(0 <= min && min <= max)
+    OpaqueSequence(LTLNonConsecutiveRepeatIntrinsic(min, max - min)(seq.inner))
+  }
+
   /** Form the conjunction of two sequences. Equivalent to
     * `arg0 and arg1 and ... and argN` in SVA.
     */
@@ -158,6 +224,25 @@ object Sequence {
     }
     lhs
   }
+
+  /** Form the conjunction of two sequences, where the start and end
+    * times of both sequences must be identical. Equivalent to
+    * `arg0 intersect arg1 intersect ... intersect argN` in SVA.
+    */
+  def intersect(arg0: Sequence, argN: Sequence*)(implicit sourceInfo: SourceInfo): Sequence = {
+    var lhs = arg0
+    for (rhs <- argN) {
+      lhs = OpaqueSequence(LTLIntersectIntrinsic(lhs.inner, rhs.inner))
+    }
+    lhs
+  }
+
+  /** Check that a sequence holds untile another sequence holds.
+    * This operator is weak: the property will hold even if input always
+    * holds and condition never holds.
+    */
+  def until(arg0: Sequence, arg1: Sequence)(implicit sourceInfo: SourceInfo): Sequence =
+    OpaqueSequence(LTLUntilIntrinsic(arg0.inner, arg1.inner))
 
   /** Specify a `clock` relative to which all cycle delays within `seq` are
     * specified. Equivalent to `@(posedge clock) seq` in SVA.
@@ -208,6 +293,12 @@ sealed trait Property {
 
   /** See `Property.or`. */
   def or(other: Property)(implicit sourceInfo: SourceInfo): Property = Property.or(this, other)
+
+  /** See `Property.intersect`. */
+  def intersect(other: Property)(implicit sourceInfo: SourceInfo): Property = Property.intersect(this, other)
+
+  /** See `Property.until`. */
+  def until(other: Property)(implicit sourceInfo: SourceInfo): Property = Property.until(this, other)
 
   /** See `Property.clock`. */
   def clock(clock: Clock)(implicit sourceInfo: SourceInfo): Property = Property.clock(this, clock)
@@ -273,6 +364,25 @@ object Property {
     }
     lhs
   }
+
+  /** Form the conjunction of two properties, where the start and end
+    * times of both sequences must be identical. Equivalent to
+    * `arg0 intersect arg1 intersect ... intersect argN` in SVA.
+    */
+  def intersect(arg0: Property, argN: Property*)(implicit sourceInfo: SourceInfo): Property = {
+    var lhs = arg0
+    for (rhs <- argN) {
+      lhs = OpaqueProperty(LTLIntersectIntrinsic(lhs.inner, rhs.inner))
+    }
+    lhs
+  }
+
+  /** Check that a property holds untile another property holds.
+    * This operator is weak: the property will hold even if input always
+    * holds and condition never holds.
+    */
+  def until(arg0: Property, arg1: Property)(implicit sourceInfo: SourceInfo): Property =
+    OpaqueProperty(LTLUntilIntrinsic(arg0.inner, arg1.inner))
 
   /** Specify a `clock` relative to which all cycle delays within `prop` are
     * specified. Equivalent to `@(posedge clock) prop` in SVA.
