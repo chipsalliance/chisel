@@ -9,17 +9,21 @@ import chisel3.internal.ExceptionHelpers
 object PeekPokeAPI extends PeekPokeAPI
 
 trait PeekPokeAPI {
-  case class FailedExpectationException[T](
-    sourceInfo:   SourceInfo,
-    extraContext: Seq[String],
-    observed:     T,
-    expected:     T,
-    message:      String)
-      extends Exception(
-        s"Failed Expectation: Observed value '$observed' != $expected. " +
-          s"$message ${sourceInfo.makeMessage(x => x)}" +
-          (if (extraContext.nonEmpty) s"\n${extraContext.mkString("\n")}" else "")
-      )
+  case class FailedExpectationException[T](observed: T, expected: T, message: String)
+      extends Exception(s"Failed Expectation: Observed value '$observed' != $expected. $message")
+  object FailedExpectationException {
+    def apply[T](
+      observed:     T,
+      expected:     T,
+      message:      String,
+      sourceInfo:   SourceInfo,
+      extraContext: Seq[String]
+    ): FailedExpectationException[T] = {
+      val fullMessage = s"$message ${sourceInfo.makeMessage(x => x)}" +
+        (if (extraContext.nonEmpty) s"\n${extraContext.mkString("\n")}" else "")
+      new FailedExpectationException(observed, expected, fullMessage)
+    }
+  }
 
   implicit class testableClock(clock: Clock) {
     def step(cycles: Int = 1): Unit = {
@@ -157,11 +161,11 @@ trait PeekPokeAPI {
                 Seq()
             }
           throw FailedExpectationException(
-            sourceInfo,
-            extraContext,
             observed,
             expected,
-            buildMessage(observed, expected)
+            buildMessage(observed, expected),
+            sourceInfo,
+            extraContext
           )
         }
       }
