@@ -81,10 +81,7 @@ private[chisel3] object LTLUntilIntrinsic {
 private[chisel3] object LTLDelayIntrinsic {
 
   def apply(delay: Int, length: Option[Int])(_in: Bool)(implicit sourceInfo: SourceInfo) = {
-    val params = length match {
-      case None    => Seq("delay" -> IntParam(delay))
-      case Some(l) => Seq("delay" -> IntParam(delay), "length" -> IntParam(l))
-    }
+    val params = Seq("delay" -> IntParam(delay)) ++ length.map("length" -> IntParam(_))
     UnaryLTLIntrinsic("delay", params)(_in)
   }
 }
@@ -93,10 +90,7 @@ private[chisel3] object LTLDelayIntrinsic {
 private[chisel3] object LTLRepeatIntrinsic {
 
   def apply(base: Int, more: Option[Int])(_in: Bool)(implicit sourceInfo: SourceInfo) = {
-    val params = more match {
-      case None    => Seq("base" -> IntParam(base))
-      case Some(l) => Seq("base" -> IntParam(base), "more" -> IntParam(l))
-    }
+    val params = Seq("base" -> IntParam(base)) ++ more.map("more" -> IntParam(_))
     UnaryLTLIntrinsic("repeat", params)(_in)
   }
 }
