@@ -424,7 +424,9 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 
   private[chisel3] def stringAccessor(chiselType: String): String = {
     // Trace views to give better error messages
-    val thiz = reifySingleData(this).getOrElse(this)
+    // Reifying involves checking against ViewParent which requires being in a Builder context
+    // Since we're just printing a String, suppress such errors and use this object
+    val thiz = Try(reifySingleData(this)).toOption.flatten.getOrElse(this)
     thiz.topBindingOpt match {
       case None => chiselType
       // Handle DontCares specially as they are "literal-like" but not actually literals
