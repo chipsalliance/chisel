@@ -114,24 +114,51 @@ sealed abstract class Aggregate extends Data {
     }
   }
 
-  private[chisel3] override def connectFromBits(
-    that: Bits
-  )(
-    implicit sourceInfo: SourceInfo
-  ): Unit = {
-    var i = 0
-    val bits = if (that.isLit) that else WireDefault(UInt(this.width), that) // handles width padding
-    for (x <- flatten) {
-      val fieldWidth = x.getWidth
-      if (fieldWidth > 0) {
-        x.connectFromBits(bits(i + fieldWidth - 1, i))
-        i += fieldWidth
-      } else {
-        // There's a zero-width field in this bundle.
-        // Zero-width fields can't really be assigned to, but the frontend complains if there are uninitialized fields,
-        // so we assign it to DontCare. We can't use connectFromBits() on DontCare, so use := instead.
-        x := DontCare
+  // Return a literal of the same type from a Seq of literals for each leaf
+  private[chisel3] final def _makeLitFromLeaves(elems: Seq[Element])(implicit sourceInfo: SourceInfo): Data = {
+    // We could use virtual methods instead of matching on concrete subtypes,
+    // but the difference for Record vs Vec is so small, it doesn't seem worth it
+    val clone: Aggregate = this.cloneTypeFull
+    val mapping = clone.flatten.view
+      .zip(elems)
+      .map {
+        case (thisElt, litElt) =>
+          val litArg = litElt.topBindingOpt match {
+            case Some(ElementLitBinding(value)) => value
+            case _                              => throwException(s"Internal Error! For field $thisElt, given non-literal $litElt!")
+          }
+          thisElt -> litArg
       }
+    val binding = clone match {
+      case r: Record => BundleLitBinding(mapping.to(Map))
+      case v: Vec[_] => VecLitBinding(mapping.to(VectorMap))
+    }
+    clone.bind(binding)
+    clone
+  }
+
+  override private[chisel3] def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): Data = {
+    val _asUInt = _resizeToWidth(that, this.widthOption)(identity)
+    // If that is a literal and all constituent Elements can be represented as literals, return a literal
+    val ((_, allLit), rvalues) = {
+      this.flatten.toList.mapAccumulate((0, _asUInt.isLit)) {
+        case ((lo, literal), elt) =>
+          val hi = lo + elt.getWidth
+          // Chisel only supports zero width extraction if hi = -1 and lo = 0, so do it manually
+          val _extracted = if (elt.getWidth == 0) 0.U(0.W) else _asUInt(hi - 1, lo)
+          // _fromUInt returns Data but we know that it is an Element
+          val rhs = elt._fromUInt(_extracted).asInstanceOf[Element]
+          ((hi, literal && rhs.isLit), rhs)
+      }
+    }
+    if (allLit) {
+      this._makeLitFromLeaves(rvalues)
+    } else {
+      val _wire = Wire(this.cloneTypeFull)
+      for ((l, r) <- _wire.flatten.zip(rvalues)) {
+        l := r
+      }
+      _wire
     }
   }
 }
