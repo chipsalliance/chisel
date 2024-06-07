@@ -394,7 +394,6 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
     }
 
     val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Foo)
-    println(chirrtl)
     matchesAndOmits(chirrtl)(
     )()
   }
@@ -411,11 +410,9 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
     }
 
     val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Foo, args = Array("--full-stacktrace"))
-    println(chirrtl)
     matchesAndOmits(chirrtl)(
       "output io : Integer",
-      "propassign a, baz.io",
-      "propassign a, bar.a_bore"
+      "propassign a, baz.io"
     )()
   }
 
@@ -434,7 +431,6 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
     }
 
     val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Foo, args = Array("--full-stacktrace"))
-    println(chirrtl)
     matchesAndOmits(chirrtl)(
       "output a_bore : Integer",
       "propassign a_bore, baz.io",
@@ -460,6 +456,76 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
     println(chirrtl)
     matchesAndOmits(chirrtl)(
     )()
+  }
+
+  it should "bore from a Data for a FixedIOExtModule with an aggregate with Data in it" in {
+    class BundleWithData extends Bundle {
+      val vec = Vec(3, Bool())
+    }
+    class Baz extends FixedIOExtModule[BundleWithData](new BundleWithData)
+
+    class Foo extends RawModule {
+      val a = IO(Output(Bool()))
+
+      val baz = Module(new Baz)
+
+      a :#= BoringUtils.bore(baz.io.vec.head)
+    }
+
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Foo, args = Array("--full-stacktrace"))
+    println(chirrtl)
+    matchesAndOmits(chirrtl)(
+    )()
+  }
+
+  it should "bore from a Data for a Module with an aggregate with Data in it" in {
+    class BundleWithData extends Bundle {
+      val vec = Vec(3, Bool())
+    }
+    class Baz extends RawModule {
+      val io = IO(Output(new BundleWithData))
+    }
+
+    class Foo extends RawModule {
+      val a = IO(Output(Bool()))
+
+      val baz = Module(new Baz)
+
+      a :#= BoringUtils.bore(baz.io.vec.head)
+    }
+
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Foo, args = Array("--full-stacktrace"))
+    matchesAndOmits(chirrtl)(
+      "output io : { vec : UInt<1>[3]}",
+      "wire a_bore : UInt<1>",
+      "connect a, a_bore",
+      "connect a_bore, baz.io.vec[0]"
+    )(
+      "output a_bore : UInt<1>"
+    )
+  }
+
+  it should "bore from a Data for a FixedIOModule with an aggregate with Data in it" in {
+    class BundleWithData extends Bundle {
+      val vec = Vec(3, Bool())
+    }
+    class Baz extends FixedIORawModule[BundleWithData](new BundleWithData)
+
+    class Foo extends RawModule {
+      val a = IO(Output(Bool()))
+
+      val baz = Module(new Baz)
+
+      a :#= BoringUtils.bore(baz.io.vec.head)
+    }
+
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Foo, args = Array("--full-stacktrace"))
+    println(chirrtl)
+    matchesAndOmits(chirrtl)(
+      "output vec: UInt<1>[3]"
+    )(
+      "output a_bore : UInt<1>"
+    )
   }
 
   behavior.of("BoringUtils.drive")
