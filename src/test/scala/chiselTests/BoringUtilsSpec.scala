@@ -5,7 +5,7 @@ package chiselTests
 import chisel3._
 import chisel3.util.Counter
 import chisel3.testers._
-import chisel3.experimental.{BaseModule, ChiselAnnotation}
+import chisel3.experimental.{BaseModule, ChiselAnnotation, ExtModule}
 import chisel3.probe._
 import chisel3.properties.Property
 import chisel3.util.experimental.BoringUtils
@@ -377,6 +377,92 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
     )()
   }
 
+
+  it should "bore from a Property on an ExtModule" in {
+    class BundleWithProperty extends Bundle {
+      val propVec = Vec(3, Property[Seq[Int]]())
+    }
+    class Baz extends ExtModule {
+      val a = IO(new BundleWithProperty)
+    }
+
+    class Foo extends RawModule {
+      val a = IO(Output(Property[Seq[Int]]()))
+
+      val baz = Module(new Baz)
+
+      a :#= BoringUtils.bore(baz.a.propVec.head)
+    }
+
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Foo)
+    println(chirrtl)
+    matchesAndOmits(chirrtl)(
+    )()
+  }
+
+  it should "bore from a Property for a FixedIOExtModule with an elemental property IO" in {
+    class Baz extends FixedIOExtModule[Property[Int]](Property[Int]())
+
+    class Foo extends RawModule {
+      val a = IO(Output(Property[Int]()))
+
+      val baz = Module(new Baz)
+
+      a :#= BoringUtils.bore(baz.io)
+    }
+
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Foo, args = Array("--full-stacktrace"))
+    println(chirrtl)
+    matchesAndOmits(chirrtl)(
+      "output io : Integer",
+      "propassign a, baz.io",
+      "propassign a, bar.a_bore"
+    )()
+  }
+
+    it should "bore from a Property for a FixedIOExtModule with an elemental property IO through a layer of hierarchy" in {
+    class Baz extends FixedIOExtModule[Property[Int]](Property[Int]())
+    class Bar extends RawModule{
+      val baz = Module(new Baz)
+    }
+
+    class Foo extends RawModule {
+      val a = IO(Output(Property[Int]()))
+
+      val bar = Module(new Bar)
+
+      a :#= BoringUtils.bore(bar.baz.io)
+    }
+
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Foo, args = Array("--full-stacktrace"))
+    println(chirrtl)
+    matchesAndOmits(chirrtl)(
+      "output a_bore : Integer",
+      "propassign a_bore, baz.io",
+      "propassign a, bar.a_bore"
+    )()
+  }
+
+ it should "bore from a Property for a FixedIOExtModule with an aggregate with properties in it" in {
+    class BundleWithProperty extends Bundle {
+      val propVec = Vec(3, Property[Seq[Int]]())
+    }
+    class Baz extends FixedIOExtModule[BundleWithProperty](new BundleWithProperty)
+
+    class Foo extends RawModule {
+      val a = IO(Output(Property[Seq[Int]]()))
+
+      val baz = Module(new Baz)
+
+      a :#= BoringUtils.bore(baz.io.propVec.head)
+    }
+
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Foo, args = Array("--full-stacktrace"))
+    println(chirrtl)
+    matchesAndOmits(chirrtl)(
+    )()
+  }
+
   behavior.of("BoringUtils.drive")
 
   it should "fail on probes" in {
@@ -486,4 +572,7 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
       "propassign bar.bore, Integer(1)"
     )()
   }
+
+
+
 }
