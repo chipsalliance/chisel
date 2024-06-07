@@ -293,9 +293,13 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     */
   final def pad(that: Int): this.type = macro SourceInfoTransform.thatArg
 
+  // Pad literal to that width
+  protected def _padLit(that: Int): this.type
+
   /** @group SourceInfoTransformMacro */
   def do_pad(that: Int)(implicit sourceInfo: SourceInfo): this.type = this.width match {
     case KnownWidth(w) if w >= that => this
+    case _ if this.isLit            => this._padLit(that)
     case _                          => binop(sourceInfo, cloneTypeWidth(this.width.max(Width(that))), PadOp, that)
   }
 
@@ -452,6 +456,11 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
 
   private[chisel3] override def cloneTypeWidth(w: Width): this.type =
     new UInt(w).asInstanceOf[this.type]
+
+  override protected def _padLit(that: Int): this.type = {
+    val value = this.litValue
+    UInt.Lit(value, this.width.max(Width(that))).asInstanceOf[this.type]
+  }
 
   // TODO: refactor to share documentation with Num or add independent scaladoc
   /** Unary negation (expanding width)
@@ -811,6 +820,11 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
 
   private[chisel3] override def cloneTypeWidth(w: Width): this.type =
     new SInt(w).asInstanceOf[this.type]
+
+  override protected def _padLit(that: Int): this.type = {
+    val value = this.litValue
+    SInt.Lit(value, this.width.max(Width(that))).asInstanceOf[this.type]
+  }
 
   /** Unary negation (constant width)
     *
