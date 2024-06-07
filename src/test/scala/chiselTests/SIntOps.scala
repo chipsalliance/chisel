@@ -230,4 +230,22 @@ class SIntOpsSpec extends ChiselPropSpec with Utils {
     3.S.asSInt.litValue should be(3)
     -5.S.asSInt.litValue should be(-5)
   }
+
+  property("Calling .pad on a SInt literal should maintain the literal value") {
+    -5.S.getWidth should be(4)
+    -5.S.pad(2).litValue should be(-5)
+    -5.S.pad(2).getWidth should be(4)
+    -5.S.pad(4).litValue should be(-5)
+    -5.S.pad(4).getWidth should be(4)
+    -5.S.pad(6).litValue should be(-5)
+    -5.S.pad(6).getWidth should be(6)
+
+    -5.S(8.W).getWidth should be(8)
+    -5.S(8.W).pad(2).litValue should be(-5)
+    -5.S(8.W).pad(2).getWidth should be(8)
+    -5.S(8.W).pad(8).litValue should be(-5)
+    -5.S(8.W).pad(8).getWidth should be(8)
+    -5.S(8.W).pad(16).litValue should be(-5)
+    -5.S(8.W).pad(16).getWidth should be(16)
+  }
 }

@@ -386,7 +386,9 @@ lazy val unipublish =
         // chisel3.HasTarget is sealed
         ProblemFilters.exclude[ReversedMissingMethodProblem]("chisel3.package#HasTarget.suggestName"),
         // chisel3.internal.firrtl.ir.LitArg is package private
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("chisel3.internal.firrtl.ir#LitArg.cloneWithValue")
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("chisel3.internal.firrtl.ir#LitArg.cloneWithValue"),
+        // chisel3.Bits is sealed
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("chisel3.Bits._padLit")
       ),
       // Forward doc command to unidoc
       Compile / doc := (ScalaUnidoc / doc).value,

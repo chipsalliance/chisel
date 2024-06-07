@@ -512,4 +512,22 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
     0.U.zext.widthOption should be(Some(2))
     0.U(0.W).zext.widthOption should be(Some(1))
   }
+
+  property("Calling .pad on a UInt literl should maintain the literal value") {
+    5.U.getWidth should be(3)
+    5.U.pad(2).litValue should be(5)
+    5.U.pad(2).getWidth should be(3)
+    5.U.pad(3).litValue should be(5)
+    5.U.pad(3).getWidth should be(3)
+    5.U.pad(4).litValue should be(5)
+    5.U.pad(4).getWidth should be(4)
+
+    5.U(8.W).getWidth should be(8)
+    5.U(8.W).pad(2).litValue should be(5)
+    5.U(8.W).pad(2).getWidth should be(8)
+    5.U(8.W).pad(8).litValue should be(5)
+    5.U(8.W).pad(8).getWidth should be(8)
+    5.U(8.W).pad(16).litValue should be(5)
+    5.U(8.W).pad(16).getWidth should be(16)
+  }
 }
