@@ -377,8 +377,7 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
     )()
   }
 
-
-  it should "bore from a Property on an ExtModule" in {
+  it should "bore from an output Property on an ExtModule" in {
     class BundleWithProperty extends Bundle {
       val propVec = Vec(3, Property[Seq[Int]]())
     }
@@ -420,9 +419,9 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
     )()
   }
 
-    it should "bore from a Property for a FixedIOExtModule with an elemental property IO through a layer of hierarchy" in {
+  it should "bore from a Property for a FixedIOExtModule with an elemental property IO through a layer of hierarchy" in {
     class Baz extends FixedIOExtModule[Property[Int]](Property[Int]())
-    class Bar extends RawModule{
+    class Bar extends RawModule {
       val baz = Module(new Baz)
     }
 
@@ -443,7 +442,7 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
     )()
   }
 
- it should "bore from a Property for a FixedIOExtModule with an aggregate with properties in it" in {
+  it should "bore from a Property for a FixedIOExtModule with an aggregate with properties in it" in {
     class BundleWithProperty extends Bundle {
       val propVec = Vec(3, Property[Seq[Int]]())
     }
@@ -572,7 +571,5 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
       "propassign bar.bore, Integer(1)"
     )()
   }
-
-
 
 }
