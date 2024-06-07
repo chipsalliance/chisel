@@ -4,7 +4,7 @@ package chisel3
 
 import scala.language.experimental.macros
 import chisel3.experimental.{requireIsHardware, SourceInfo}
-import chisel3.internal.{throwException, BaseModule}
+import chisel3.internal.{_resizeToWidth, throwException, BaseModule}
 import chisel3.internal.Builder.pushOp
 import chisel3.internal.firrtl.ir._
 import chisel3.internal.sourceinfo.{
@@ -811,12 +811,8 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
 
   override private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): UInt = this
 
-  private[chisel3] override def connectFromBits(
-    that: Bits
-  )(
-    implicit sourceInfo: SourceInfo
-  ): Unit = {
-    this := that.asUInt
+  override private[chisel3] def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): this.type = {
+    _resizeToWidth(that, this.widthOption)(identity).asInstanceOf[this.type]
   }
 
   private def subtractAsSInt(that: UInt)(implicit sourceInfo: SourceInfo): SInt =
@@ -1071,13 +1067,8 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
 
   override def do_asSInt(implicit sourceInfo: SourceInfo): SInt = this
 
-  private[chisel3] override def connectFromBits(
-    that: Bits
-  )(
-    implicit sourceInfo: SourceInfo
-  ): Unit = {
-    this := that.asSInt
-  }
+  override private[chisel3] def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): this.type =
+    _resizeToWidth(that.asSInt, this.widthOption)(_.asSInt).asInstanceOf[this.type]
 }
 
 sealed trait Reset extends Element with ToBoolable {
@@ -1118,12 +1109,10 @@ final class ResetType(private[chisel3] val width: Width = Width(1)) extends Elem
     DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref)
   )
 
-  private[chisel3] override def connectFromBits(
-    that: Bits
-  )(
-    implicit sourceInfo: SourceInfo
-  ): Unit = {
-    this := that
+  override private[chisel3] def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): Data = {
+    val _wire = Wire(this.cloneTypeFull)
+    _wire := that
+    _wire
   }
 
   /** @group SourceInfoTransformMacro */
@@ -1162,14 +1151,7 @@ sealed class AsyncReset(private[chisel3] val width: Width = Width(1)) extends El
     DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref)
   )
 
-  // TODO Is this right?
-  private[chisel3] override def connectFromBits(
-    that: Bits
-  )(
-    implicit sourceInfo: SourceInfo
-  ): Unit = {
-    this := that.asBool.asAsyncReset
-  }
+  override private[chisel3] def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): Data = that.asBool.asAsyncReset
 
   /** @group SourceInfoTransformMacro */
   def do_asAsyncReset(implicit sourceInfo: SourceInfo): AsyncReset = this
@@ -1299,4 +1281,8 @@ sealed class Bool() extends UInt(1.W) with Reset {
   /** @group SourceInfoTransformMacro */
   def do_asAsyncReset(implicit sourceInfo: SourceInfo): AsyncReset =
     pushOp(DefPrim(sourceInfo, AsyncReset(), AsAsyncResetOp, ref))
+
+  override private[chisel3] def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): this.type = {
+    _resizeToWidth(that, this.widthOption)(identity).asBool.asInstanceOf[this.type]
+  }
 }

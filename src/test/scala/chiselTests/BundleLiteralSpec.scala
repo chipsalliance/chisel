@@ -463,4 +463,38 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
     }
   }
 
+  "Casting a Bundle literal to a complex Bundle type" should "maintain the literal value" in {
+    class OtherBundle extends Bundle {
+      val a = UInt(2.W)
+      val b = Vec(
+        2,
+        new Bundle {
+          val foo = UInt(1.W)
+          val bar = SInt(3.W)
+        }
+      )
+    }
+    val blit = (new MyBundle).Lit(_.a -> 43.U, _.b -> true.B, _.c -> MyEnum.sB)
+    val olit = blit.asTypeOf(new OtherBundle)
+    olit.litOption should be(Some(0xaf))
+    olit.a.litValue should be(0)
+    olit.b.litValue should be(0xaf)
+    olit.b(0).litValue should be(0xf)
+    olit.b(0).foo.litValue should be(1)
+    olit.b(0).bar.litValue should be(-1)
+    olit.b(1).litValue should be(0xa)
+    olit.b(1).foo.litValue should be(1)
+    olit.b(1).bar.litValue should be(2)
+
+    assertTesterPasses {
+      new BasicTester {
+        // Check that it gives the same value as the generated hardware.
+        val wire = WireInit(blit).asTypeOf(new OtherBundle)
+        // ScalaTest has its own multiversal === which overrules extension method.
+        // Manually instantiate extension method to get around it.
+        chisel3.assert(new Data.DataEquality(olit).===(wire))
+        stop()
+      }
+    }
+  }
 }

@@ -477,12 +477,15 @@ class AsTypeOfSpec extends ChiselFunSpec {
   describe("Analogs") {
     describe("as the target type") {
       they("should error") {
-        val e = the[ChiselException] thrownBy ChiselStage.emitSystemVerilog(new RawModule {
-          val in = IO(Input(UInt(8.W)))
-          val out = IO(Analog(8.W))
-          out := in.asTypeOf(out)
-        })
-        e.getMessage should include("Analog does not support connectFromBits")
+        val e = the[ChiselException] thrownBy ChiselStage.emitSystemVerilog(
+          new RawModule {
+            val in = IO(Input(UInt(8.W)))
+            val out = IO(Analog(8.W))
+            out := in.asTypeOf(out)
+          },
+          Array("--throw-on-first-error")
+        )
+        e.getMessage should include("Analog does not support fromUInt")
       }
     }
     describe("as the source type") {

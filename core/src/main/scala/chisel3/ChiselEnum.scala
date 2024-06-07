@@ -45,13 +45,8 @@ abstract class EnumType(private[chisel3] val factory: ChiselEnum, selfAnnotating
     pushOp(DefPrim(sourceInfo, Bool(), op, this.ref, other.ref))
   }
 
-  private[chisel3] override def connectFromBits(
-    that: Bits
-  )(
-    implicit sourceInfo: SourceInfo
-  ): Unit = {
-    this := factory.apply(that.asUInt)
-  }
+  override private[chisel3] def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): Data =
+    factory.apply(that.asUInt)
 
   final def ===(that: EnumType): Bool = macro SourceInfoTransform.thatArg
   final def =/=(that: EnumType): Bool = macro SourceInfoTransform.thatArg
@@ -72,6 +67,28 @@ abstract class EnumType(private[chisel3] val factory: ChiselEnum, selfAnnotating
     compop(sourceInfo, LessEqOp, that)
   def do_>=(that: EnumType)(implicit sourceInfo: SourceInfo): Bool =
     compop(sourceInfo, GreaterEqOp, that)
+
+  // This preserves the _workaround_ for https://github.com/chipsalliance/chisel/issues/4159
+  // Note that #4159 is due to _asUIntImpl below not actually padding the UInt
+  // This override just ensures that if `that` has a known width, the result actually has that width
+  // Put another way, this is preserving a case where #4159 does **not** occur
+  // This can be deleted when Builder.useLegacyWidth is removed.
+  override def do_asTypeOf[T <: Data](that: T)(implicit sourceInfo: SourceInfo): T = {
+    that.widthOption match {
+      // Note that default case will handle literals just fine
+      case Some(w) =>
+        val _padded = this.litOption match {
+          case Some(value) =>
+            value.U(w.W)
+          case None =>
+            val _wire = Wire(UInt(w.W))
+            _wire := this.asUInt
+            _wire
+        }
+        _padded.do_asTypeOf(that)
+      case None => super.do_asTypeOf(that)
+    }
+  }
 
   override private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): UInt = {
     this.litOption match {
