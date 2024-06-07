@@ -11,6 +11,7 @@ import chisel3.internal.{Builder, BuilderContextCache, NamedComponent, Namespace
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
 import firrtl.passes.wiring.{SinkAnnotation, SourceAnnotation}
 import firrtl.annotations.{ComponentName, ModuleName}
+import chisel3.experimental.dataview.reifySingleData
 
 /** An exception related to BoringUtils
   * @param message the exception message
@@ -256,6 +257,17 @@ object BoringUtils {
     def drill(source: A, path: Seq[BaseModule], connectionLocation: Seq[BaseModule], up: Boolean): A = {
       path.zip(connectionLocation).foldLeft(source) {
         case (rhs, (module, conLoc)) if (module.isFullyClosed) => boringError(module); DontCare.asInstanceOf[A]
+        case (rhs: Element, (module, _))
+            if ((up || isDriveDone(reifySingleData(rhs).get)) && module == path(0) && isPort(
+              reifySingleData(rhs).get
+            ) &&
+              (!createProbe.nonEmpty || !createProbe.get.writable)) => {
+          // So far we can handle ports that are views of single elements only.
+          reifySingleData(rhs).get.asInstanceOf[A]
+        }
+        // TODO: What if rhs is a Property in a View?
+        // TODO: detect the case if we are a view but we need to collect from different locations.
+        //       who makes the View / Wire in that case?
         case (rhs, (module, _))
             if ((up || isDriveDone(rhs)) && module == path(0) && isPort(rhs) &&
               (!createProbe.nonEmpty || !createProbe.get.writable)) => {

@@ -453,8 +453,9 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
     }
 
     val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Foo, args = Array("--full-stacktrace"))
-    println(chirrtl)
     matchesAndOmits(chirrtl)(
+      "output propVec : List<Integer>[3]",
+      "propassign a, baz.propVec[0]"
     )()
   }
 
@@ -473,8 +474,11 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
     }
 
     val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Foo, args = Array("--full-stacktrace"))
-    println(chirrtl)
     matchesAndOmits(chirrtl)(
+      "output vec : UInt<1>[3]",
+      "wire a_bore : UInt<1>",
+      "connect a, a_bore",
+      "connect a_bore, baz.vec[0]"
     )()
   }
 
@@ -520,9 +524,10 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
     }
 
     val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Foo, args = Array("--full-stacktrace"))
-    println(chirrtl)
     matchesAndOmits(chirrtl)(
-      "output vec: UInt<1>[3]"
+      "output vec : UInt<1>[3]",
+      "connect a, a_bore",
+      "connect a_bore, baz.vec[0]"
     )(
       "output a_bore : UInt<1>"
     )
