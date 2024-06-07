@@ -246,6 +246,7 @@ final class Workspace(
     }
   
     copyResource(this.getClass, "/simulation-driver.cpp", generatedSourcesPath)
+    copyResource(this.getClass, "/dpi.cpp", generatedSourcesPath)
   }
   //format: on
 
