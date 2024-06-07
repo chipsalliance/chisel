@@ -89,23 +89,19 @@ class DataPrintSpec extends ChiselFlatSpec with Matchers {
   }
 
   "Literals" should "have a meaningful string representation" in {
-    ChiselStage.emitCHIRRTL {
-      new RawModule {
-        3.U.toString should be("UInt<2>(3)")
-        3.U(5.W).toString should be("UInt<5>(3)")
-        -1.S.toString should be("SInt<1>(-1)")
-        false.B.toString should be("Bool(false)")
-        true.B.toString should be("Bool(true)")
-        Vec(3, UInt(4.W)).toString should be("UInt<4>[3]")
-        EnumTest.sNone.toString should be("EnumTest(0=sNone)")
-        EnumTest.sTwo.toString should be("EnumTest(2=sTwo)")
-        EnumTest(1.U).toString should be("EnumTest(1=sOne)")
-        (new BundleTest).Lit(_.a -> 2.U, _.b -> false.B).toString should be("BundleTest(a=UInt<8>(2), b=Bool(false))")
-        (new PartialBundleTest).Lit().toString should be(
-          "PartialBundleTest(a=UInt<8>(DontCare), b=Bool(DontCare), c=SInt<8>(DontCare), f=EnumTest(DontCare))"
-        )
-        DontCare.toString should be("DontCare()")
-      }
-    }
+    3.U.toString should be("UInt<2>(3)")
+    3.U(5.W).toString should be("UInt<5>(3)")
+    -1.S.toString should be("SInt<1>(-1)")
+    false.B.toString should be("Bool(false)")
+    true.B.toString should be("Bool(true)")
+    Vec(3, UInt(4.W)).toString should be("UInt<4>[3]")
+    EnumTest.sNone.toString should be("EnumTest(0=sNone)")
+    EnumTest.sTwo.toString should be("EnumTest(2=sTwo)")
+    EnumTest(1.U).toString should be("EnumTest(1=sOne)")
+    (new BundleTest).Lit(_.a -> 2.U, _.b -> false.B).toString should be("BundleTest(a=UInt<8>(2), b=Bool(false))")
+    (new PartialBundleTest).Lit().toString should be(
+      "PartialBundleTest(a=UInt<8>(DontCare), b=Bool(DontCare), c=SInt<8>(DontCare), f=EnumTest(DontCare))"
+    )
+    DontCare.toString should be("DontCare()")
   }
 }
