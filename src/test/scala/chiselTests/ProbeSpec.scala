@@ -566,10 +566,9 @@ class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
       Array("--full-stacktrace")
     )
     (processChirrtl(chirrtl) should contain).allOf(
-      "node _T = pad(UInt<7>(0h7b), 16)",
-      "force_initial(p, _T)",
-      "node _T_2 = pad(in, 16)",
-      "force(clock, _T_1, p, _T_2)"
+      "force_initial(p, UInt<16>(0h7b))",
+      "node _T_1 = pad(in, 16)",
+      "force(clock, _T, p, _T_1)"
     )
   }
 
