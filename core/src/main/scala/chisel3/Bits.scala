@@ -1299,4 +1299,14 @@ sealed class Bool() extends UInt(1.W) with Reset {
   /** @group SourceInfoTransformMacro */
   def do_asAsyncReset(implicit sourceInfo: SourceInfo): AsyncReset =
     pushOp(DefPrim(sourceInfo, AsyncReset(), AsAsyncResetOp, ref))
+
+  /** Implication operator
+   *
+   * @param that a boolean signal
+   * @return [[!this || that]]
+   */
+  def |-> (that: Bool): Bool = macro SourceInfoTransform.thatArg
+
+  /** @group SourceInfoTransformMacro */
+  def do_|-> (that: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = (!this) | that
 }
