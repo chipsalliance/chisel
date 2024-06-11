@@ -401,8 +401,8 @@ class ChiselEnumSpec extends ChiselFlatSpec with Utils {
     assertTesterPasses(new CastToUIntTester)
   }
 
-  // This is a bug but fixing it may break user code
-  // See https://github.com/chipsalliance/chisel/issues/4159
+  // This is a bug, but fixing it may break user code.
+  // See: https://github.com/chipsalliance/chisel/issues/4159
   it should "preserve legacy width behavior" in {
     val verilog = ChiselStage.emitSystemVerilog(new RawModule {
       val out1, out2, out3 = IO(Output(UInt(8.W)))
