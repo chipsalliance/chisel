@@ -2,9 +2,11 @@
 
 package chiselTests
 
+import circt.stage.ChiselStage
 import chisel3._
 import chisel3.reflect.DataMirror
 import chisel3.testers.BasicTester
+import chisel3.experimental.Analog
 
 class AsTypeOfBundleTester extends BasicTester {
   class MultiTypeBundle extends Bundle {
@@ -120,34 +122,555 @@ class AsChiselEnumTester extends BasicTester {
   stop()
 }
 
-class AsTypeOfSpec extends ChiselFlatSpec {
-  behavior.of("asTypeOf")
-
-  it should "work with Bundles containing Bits Types" in {
-    assertTesterPasses { new AsTypeOfBundleTester }
+object AsTypeOfSpec {
+  class MyBundle extends Bundle {
+    val a = UInt(4.W)
+    val b = UInt(4.W)
+  }
+  class MyBundleUnknownWidth(w: Int) extends Bundle {
+    val a = UInt(w.W)
+    val b = UInt()
+  }
+  object MyEnum extends ChiselEnum {
+    val a, b = Value
+    val c = Value(10.U)
   }
 
-  it should "work with Bundles that have fields of zero width" in {
-    assertTesterPasses { new AsTypeOfBundleZeroWidthTester }
+  class SimpleAsTypeOf[A <: Data, B <: Data](gen1: A, gen2: B) extends RawModule {
+    val in = IO(Input(gen1))
+    // Out is a wire so we can use inferred widths
+    val out = dontTouch(Wire(gen2))
+    out :#= in.asTypeOf(out)
+  }
+  class WireSourceAsTypeOf[A <: Data, B <: Data](gen1: A, gen2: B)(driveIn: A => Unit) extends RawModule {
+    // Called in so that tests can check for same Verilog from this and SimpleAsTypeOf
+    val in = dontTouch(Wire(gen1))
+    driveIn(in)
+    val out = dontTouch(Wire(gen2))
+    out := in.asTypeOf(out)
+  }
+}
+
+class AsTypeOfSpec extends ChiselFunSpec {
+  import AsTypeOfSpec._
+
+  describe("asTypeOf") {
+
+    it("should work with Bundles containing Bits Types") {
+      assertTesterPasses { new AsTypeOfBundleTester }
+    }
+
+    it("should work with Bundles that have fields of zero width") {
+      assertTesterPasses { new AsTypeOfBundleZeroWidthTester }
+    }
+
+    it("should work with Vecs containing Bits Types") {
+      assertTesterPasses { new AsTypeOfVecTester }
+    }
+
+    it("should expand and truncate UInts of different width") {
+      assertTesterPasses { new AsTypeOfTruncationTester }
+    }
+
+    it("should work for casting implicit Reset to Bool") {
+      assertTesterPasses { new ResetAsTypeOfBoolTester }
+    }
+
+    it("should work for casting to and from ChiselEnums") {
+      assertTesterPasses(new AsChiselEnumTester)
+    }
+
+    it("should work for casting to and from Clock") {
+      assertTesterPasses(new AsTypeOfClockTester)
+    }
   }
 
-  it should "work with Vecs containing Bits Types" in {
-    assertTesterPasses { new AsTypeOfVecTester }
+  describe("Bundles") {
+    describe("as the target type") {
+      it("should error if the Bundle has unknown width") {
+        val e = the[ChiselException] thrownBy {
+          ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(UInt(16.W), new MyBundleUnknownWidth(8)))
+        }
+        (e.getMessage should include).regex("Width of.*is unknown")
+      }
+      they("should expand narrower inputs") {
+        val tests = List(
+          () => new SimpleAsTypeOf(UInt(6.W), new MyBundle),
+          () => new WireSourceAsTypeOf(UInt(), new MyBundle)(_ := 0.U(6.W))
+        )
+        for (test <- tests) {
+          val verilog = ChiselStage.emitSystemVerilog(test())
+          verilog should include("wire [3:0] out_a = {2'h0, in[5:4]};")
+          verilog should include("wire [3:0] out_b = in[3:0];")
+        }
+      }
+      they("should truncate wider inputs") {
+        val tests = List(
+          () => new SimpleAsTypeOf(UInt(10.W), new MyBundle),
+          () => new WireSourceAsTypeOf(UInt(), new MyBundle)(_ := 0.U(10.W))
+        )
+        for (test <- tests) {
+          val verilog = ChiselStage.emitSystemVerilog(test())
+          verilog should include("wire [3:0] out_a = in[7:4];")
+          verilog should include("wire [3:0] out_b = in[3:0];")
+        }
+      }
+      they("should match for matched width inputs") {
+        val tests = List(
+          () => new SimpleAsTypeOf(UInt(8.W), new MyBundle),
+          () => new WireSourceAsTypeOf(UInt(), new MyBundle)(_ := 0.U(8.W))
+        )
+        for (test <- tests) {
+          val verilog = ChiselStage.emitSystemVerilog(test())
+          verilog should include("wire [3:0] out_a = in[7:4];")
+          verilog should include("wire [3:0] out_b = in[3:0];")
+        }
+      }
+    }
+    describe("as the source type") {
+      they("should expand narrower inputs") {
+        val verilog = ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(new MyBundle, UInt(10.W)))
+        verilog should include("wire [9:0] out = {2'h0, in_a, in_b};")
+      }
+      they("should truncate wider inputs") {
+        val verilog = ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(new MyBundle, UInt(6.W)))
+        verilog should include("wire [5:0] out = {in_a[1:0], in_b};")
+      }
+      they("should match for matched width inputs") {
+        val verilog = ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(new MyBundle, UInt(8.W)))
+        verilog should include("wire [7:0] out = {in_a, in_b};")
+      }
+      they("should work for inferred width outputs") {
+        val verilog = ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(new MyBundle, UInt()))
+        verilog should include("wire [7:0] out = {in_a, in_b};")
+      }
+      they("should work if the source Bundle has unknown width") {
+        val verilog =
+          ChiselStage.emitSystemVerilog(new WireSourceAsTypeOf(new MyBundleUnknownWidth(4), UInt(8.W))({ in =>
+            in.a := 0.U(4.W)
+            in.b := 0.U(4.W)
+          }))
+        verilog should include("wire [7:0] out = {in_a, in_b};")
+      }
+    }
   }
 
-  it should "expand and truncate UInts of different width" in {
-    assertTesterPasses { new AsTypeOfTruncationTester }
+  describe("Vecs") {
+    describe("as the target type") {
+      it("should error if the Vec has unknown width") {
+        val e = the[ChiselException] thrownBy {
+          ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(UInt(16.W), Vec(2, UInt())))
+        }
+        (e.getMessage should include).regex("Width of.*is unknown")
+      }
+      they("should expand narrower inputs") {
+        val tests = List(
+          () => new SimpleAsTypeOf(UInt(6.W), Vec(2, UInt(4.W))),
+          () => new WireSourceAsTypeOf(UInt(), Vec(2, UInt(4.W)))(_ := 0.U(6.W))
+        )
+        for (test <- tests) {
+          val verilog = ChiselStage.emitSystemVerilog(test())
+          verilog should include("wire [3:0] out_0 = in[3:0];")
+          verilog should include("wire [3:0] out_1 = {2'h0, in[5:4]};")
+        }
+      }
+      they("should truncate wider inputs") {
+        val tests = List(
+          () => new SimpleAsTypeOf(UInt(10.W), Vec(2, UInt(4.W))),
+          () => new WireSourceAsTypeOf(UInt(), Vec(2, UInt(4.W)))(_ := 0.U(10.W))
+        )
+        for (test <- tests) {
+          val verilog = ChiselStage.emitSystemVerilog(test())
+          verilog should include("wire [3:0] out_0 = in[3:0];")
+          verilog should include("wire [3:0] out_1 = in[7:4];")
+        }
+      }
+      they("should match for matched width inputs") {
+        val tests = List(
+          () => new SimpleAsTypeOf(UInt(8.W), Vec(2, UInt(4.W))),
+          () => new WireSourceAsTypeOf(UInt(), Vec(2, UInt(4.W)))(_ := 0.U(8.W))
+        )
+        for (test <- tests) {
+          val verilog = ChiselStage.emitSystemVerilog(test())
+          verilog should include("wire [3:0] out_0 = in[3:0];")
+          verilog should include("wire [3:0] out_1 = in[7:4];")
+        }
+      }
+    }
+    describe("as the source type") {
+      they("should expand narrower inputs") {
+        val verilog = ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(Vec(2, UInt(4.W)), UInt(10.W)))
+        verilog should include("wire [9:0] out = {2'h0, in_1, in_0};")
+      }
+      they("should truncate wider inputs") {
+        val verilog = ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(Vec(2, UInt(4.W)), UInt(6.W)))
+        verilog should include("wire [5:0] out = {in_1[1:0], in_0};")
+      }
+      they("should match for matched width inputs") {
+        val verilog = ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(Vec(2, UInt(4.W)), UInt(8.W)))
+        verilog should include("wire [7:0] out = {in_1, in_0};")
+      }
+      they("should work for inferred width outputs") {
+        val verilog = ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(Vec(2, UInt(4.W)), UInt()))
+        verilog should include("wire [7:0] out = {in_1, in_0};")
+      }
+      they("should work if the source Vec has unknown width") {
+        val verilog =
+          ChiselStage.emitSystemVerilog(new WireSourceAsTypeOf(Vec(2, UInt()), UInt(8.W))({ w =>
+            w(0) := 0.U(4.W)
+            w(1) := 0.U(4.W)
+          }))
+        verilog should include("wire [7:0] out = {in_1, in_0};")
+      }
+    }
   }
 
-  it should "work for casting implicit Reset to Bool" in {
-    assertTesterPasses { new ResetAsTypeOfBoolTester }
+  describe("ChiselEnums") {
+    describe("as the target type") {
+      they("should expand narrower inputs") {
+        val verilog = ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(UInt(2.W), MyEnum()))
+        verilog should include("wire [3:0] out = {2'h0, in};")
+      }
+      they("should error on wider inputs") {
+        val e = the[ChiselException] thrownBy ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(UInt(8.W), MyEnum()))
+        e.getMessage should include(
+          "The UInt being cast to chiselTests.AsTypeOfSpec$MyEnum is wider than chiselTests.AsTypeOfSpec$MyEnum's width (4)"
+        )
+      }
+      they("should match for matched width inputs") {
+        val verilog = ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(UInt(4.W), MyEnum()))
+        verilog should include("wire [3:0] out = in;")
+      }
+      they("should error on unknown width inputs") {
+        val e = the[ChiselException] thrownBy ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(UInt(), MyEnum()))
+        e.getMessage should include(
+          "Non-literal UInts being cast to chiselTests.AsTypeOfSpec$MyEnum must have a defined width"
+        )
+      }
+    }
+    describe("as the source type") {
+      they("should expand narrower inputs") {
+        val verilog = ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(MyEnum(), UInt(8.W)))
+        verilog should include("wire [7:0] out = {4'h0, in};")
+      }
+      they("should truncate wider inputs") {
+        val verilog = ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(MyEnum(), UInt(3.W)))
+        verilog should include("wire [2:0] out = in[2:0];")
+      }
+      they("should match for matched width inputs") {
+        val verilog = ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(MyEnum(), UInt(4.W)))
+        verilog should include("wire [3:0] out = in;")
+      }
+      they("should work for unknown width outputs") {
+        val verilog = ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(MyEnum(), UInt()))
+        verilog should include("wire [3:0] out = in;")
+      }
+    }
   }
 
-  it should "work for casting to and from ChiselEnums" in {
-    assertTesterPasses(new AsChiselEnumTester)
+  describe("SInts") {
+    describe("as the target type") {
+      they("should expand narrower inputs") {
+        val tests = List(
+          () => new SimpleAsTypeOf(UInt(6.W), SInt(8.W)),
+          () => new WireSourceAsTypeOf(UInt(), SInt(8.W))(_ := 0.U(6.W))
+        )
+        for (test <- tests) {
+          val verilog = ChiselStage.emitSystemVerilog(test())
+          verilog should include("wire [7:0] out = {{2{in[5]}}, in};")
+        }
+      }
+      they("should truncate wider inputs") {
+        val tests = List(
+          () => new SimpleAsTypeOf(UInt(10.W), SInt(8.W)),
+          () => new WireSourceAsTypeOf(UInt(), SInt(8.W))(_ := 0.U(10.W))
+        )
+        for (test <- tests) {
+          val verilog = ChiselStage.emitSystemVerilog(test())
+          verilog should include("wire [7:0] out = in[7:0];")
+        }
+      }
+      they("should match for matched width inputs") {
+        val tests = List(
+          () => new SimpleAsTypeOf(UInt(8.W), SInt(8.W)),
+          () => new WireSourceAsTypeOf(UInt(), SInt(8.W))(_ := 0.U(8.W))
+        )
+        for (test <- tests) {
+          val verilog = ChiselStage.emitSystemVerilog(test())
+          verilog should include("wire [7:0] out = in;")
+        }
+      }
+    }
+    describe("as the source type") {
+      they("should expand narrower inputs") {
+        val verilog = ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(SInt(8.W), UInt(10.W)))
+        verilog should include("wire [9:0] out = {2'h0, in};")
+      }
+      they("should truncate wider inputs") {
+        val verilog = ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(SInt(8.W), UInt(6.W)))
+        verilog should include("wire [5:0] out = in[5:0];")
+      }
+      they("should match for matched width inputs") {
+        val verilog = ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(SInt(8.W), UInt(8.W)))
+        verilog should include("wire [7:0] out = in;")
+      }
+      they("should work for unknown width outputs") {
+        val verilog = ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(SInt(8.W), UInt()))
+        verilog should include("wire [7:0] out = in;")
+      }
+    }
   }
 
-  it should "work for casting to and from Clock" in {
-    assertTesterPasses(new AsTypeOfClockTester)
+  describe("UInts") {
+    describe("as the target type") {
+      they("should expand narrower inputs") {
+        val tests = List(
+          () => new SimpleAsTypeOf(UInt(6.W), UInt(8.W)),
+          () => new WireSourceAsTypeOf(UInt(), UInt(8.W))(_ := 0.U(6.W))
+        )
+        for (test <- tests) {
+          val verilog = ChiselStage.emitSystemVerilog(test())
+          verilog should include("wire [7:0] out = {2'h0, in};")
+        }
+      }
+      they("should truncate wider inputs") {
+        val tests = List(
+          () => new SimpleAsTypeOf(UInt(10.W), UInt(8.W)),
+          () => new WireSourceAsTypeOf(UInt(), UInt(8.W))(_ := 0.U(10.W))
+        )
+        for (test <- tests) {
+          val verilog = ChiselStage.emitSystemVerilog(test())
+          verilog should include("wire [7:0] out = in[7:0];")
+        }
+      }
+      they("should match for matched width inputs") {
+        val tests = List(
+          () => new SimpleAsTypeOf(UInt(8.W), UInt(8.W)),
+          () => new WireSourceAsTypeOf(UInt(), UInt(8.W))(_ := 0.U(8.W))
+        )
+        for (test <- tests) {
+          val verilog = ChiselStage.emitSystemVerilog(test())
+          verilog should include("wire [7:0] out = in;")
+        }
+      }
+    }
+    describe("as the source type") {
+      they("should expand narrower inputs") {
+        val verilog = ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(UInt(8.W), UInt(10.W)))
+        verilog should include("wire [9:0] out = {2'h0, in};")
+      }
+      they("should truncate wider inputs") {
+        val verilog = ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(UInt(8.W), UInt(6.W)))
+        verilog should include("wire [5:0] out = in[5:0];")
+      }
+      they("should match for matched width inputs") {
+        val verilog = ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(UInt(8.W), UInt(8.W)))
+        verilog should include("wire [7:0] out = in;")
+      }
+      they("should work for inferred width outputs") {
+        val verilog = ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(UInt(8.W), UInt()))
+        verilog should include("wire [7:0] out = in;")
+      }
+    }
   }
+
+  describe("Analogs") {
+    describe("as the target type") {
+      they("should error") {
+        val e = the[ChiselException] thrownBy ChiselStage.emitSystemVerilog(new RawModule {
+          val in = IO(Input(UInt(8.W)))
+          val out = IO(Analog(8.W))
+          out := in.asTypeOf(out)
+        })
+        e.getMessage should include("Analog does not support connectFromBits")
+      }
+    }
+    describe("as the source type") {
+      they("should error") {
+        val e = the[ChiselException] thrownBy ChiselStage.emitSystemVerilog(new RawModule {
+          val in = IO(Analog(8.W))
+          val out = IO(Output(UInt(8.W)))
+          out := in.asTypeOf(out)
+        })
+        e.getMessage should include("Analog does not support asUInt")
+      }
+    }
+  }
+
+  describe("Bools") {
+    describe("as the target type") {
+      they("should expand narrower inputs") {
+        val tests = List(
+          () => new SimpleAsTypeOf(UInt(0.W), Bool()),
+          () => new WireSourceAsTypeOf(UInt(), Bool())(_ := 0.U(0.W))
+        )
+        for (test <- tests) {
+          val verilog = ChiselStage.emitSystemVerilog(test())
+          verilog should include("wire out = 1'h0;")
+        }
+      }
+      they("should truncate wider inputs") {
+        val tests = List(
+          () => new SimpleAsTypeOf(UInt(8.W), Bool()),
+          () => new WireSourceAsTypeOf(UInt(), Bool())(_ := 0.U(8.W))
+        )
+        for (test <- tests) {
+          val verilog = ChiselStage.emitSystemVerilog(test())
+          // 8-bit wire for inferred test puts several spaces between wire and out
+          (verilog should include).regex("""wire +out = in\[0\];""")
+        }
+      }
+      they("should match for matched width inputs") {
+        val tests = List(
+          () => new SimpleAsTypeOf(UInt(1.W), Bool()),
+          () => new WireSourceAsTypeOf(UInt(), Bool())(_ := 0.U(1.W))
+        )
+        for (test <- tests) {
+          val verilog = ChiselStage.emitSystemVerilog(test())
+          verilog should include("wire out = in;")
+        }
+      }
+    }
+    describe("as the source type") {
+      they("should expand narrower inputs") {
+        val verilog = ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(Bool(), UInt(8.W)))
+        verilog should include("wire [7:0] out = {7'h0, in};")
+      }
+      they("should truncate wider inputs") {
+        val verilog = ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(Bool(), UInt(0.W)))
+        verilog shouldNot include("assign")
+      }
+      they("should match for matched width inputs") {
+        val verilog = ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(Bool(), UInt(1.W)))
+        verilog should include("wire out = in;")
+      }
+      they("should work for inferred width outputs") {
+        val verilog = ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(Bool(), UInt()))
+        verilog should include("wire out = in;")
+      }
+    }
+  }
+
+  describe("AsyncReset") {
+    describe("as the target type") {
+      they("should error on narrower inputs") {
+        val e = the[ChiselException] thrownBy ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(UInt(0.W), AsyncReset()))
+        e.getMessage should include("can't covert UInt<0> to Bool")
+      }
+      they("should error on wider inputs") {
+        val e = the[ChiselException] thrownBy ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(UInt(8.W), AsyncReset()))
+        e.getMessage should include("can't covert UInt<8> to Bool")
+      }
+      they("should match for matched width inputs") {
+        val verilog = ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(UInt(1.W), AsyncReset()))
+        verilog should include("wire out = in;")
+      }
+      they("should error on inferred width inputs") {
+        val e = the[ChiselException] thrownBy ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(UInt(), AsyncReset()))
+        e.getMessage should include("can't covert UInt to Bool")
+      }
+    }
+    describe("as the source type") {
+      they("should expand narrower inputs") {
+        val verilog = ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(AsyncReset(), UInt(8.W)))
+        verilog should include("wire [7:0] out = {7'h0, in};")
+      }
+      they("should truncate wider inputs") {
+        val verilog = ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(AsyncReset(), UInt(0.W)))
+        verilog shouldNot include("assign")
+      }
+      they("should match for matched width inputs") {
+        val verilog = ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(AsyncReset(), UInt(1.W)))
+        verilog should include("wire out = in;")
+      }
+      they("should work for inferred width outputs") {
+        val verilog = ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(AsyncReset(), UInt()))
+        verilog should include("wire out = in;")
+      }
+    }
+  }
+
+  describe("Clock") {
+    describe("as the target type") {
+      they("should error on narrower inputs") {
+        val e = the[ChiselException] thrownBy ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(UInt(0.W), Clock()))
+        e.getMessage should include("can't covert UInt<0> to Bool")
+      }
+      they("should error on wider inputs") {
+        val e = the[ChiselException] thrownBy ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(UInt(8.W), Clock()))
+        e.getMessage should include("can't covert UInt<8> to Bool")
+      }
+      they("should match for matched width inputs") {
+        val verilog = ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(UInt(1.W), Clock()))
+        verilog should include("wire out = in;")
+      }
+      they("should error on inferred width inputs") {
+        val e = the[ChiselException] thrownBy ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(UInt(), Clock()))
+        e.getMessage should include("can't covert UInt to Bool")
+      }
+    }
+    describe("as the source type") {
+      they("should expand narrower inputs") {
+        val verilog = ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(Clock(), UInt(8.W)))
+        verilog should include("wire [7:0] out = {7'h0, in};")
+      }
+      they("should truncate wider inputs") {
+        val verilog = ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(Clock(), UInt(0.W)))
+        verilog shouldNot include("assign")
+      }
+      they("should match for matched width inputs") {
+        val verilog = ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(Clock(), UInt(1.W)))
+        verilog should include("wire out = in;")
+      }
+      they("should work for inferred width outputs") {
+        val verilog = ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(Clock(), UInt()))
+        verilog should include("wire out = in;")
+      }
+    }
+  }
+
+  describe("Reset") {
+    describe("as the target type") {
+      // It feels a little weird that these errors are inconsistent with those of Clock and AsyncReset,
+      // but reset inference works via how abstract Reset is driven, so it can't be driven with other types
+      // We could possibly make it work with Bool, AsyncReset, and Reset as source types, but users should
+      // just elide the .asTypeOf in those cases
+      they("should error on narrower inputs") {
+        val e = the[ChiselException] thrownBy ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(UInt(0.W), Reset()))
+        e.getMessage should include("Sink (Reset) and Source (UInt<0>) have different types")
+      }
+      they("should error on wider inputs") {
+        val e = the[ChiselException] thrownBy ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(UInt(8.W), Reset()))
+        e.getMessage should include("Sink (Reset) and Source (UInt<8>) have different types")
+      }
+      they("should error on for matched width inputs") {
+        val e = the[ChiselException] thrownBy ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(UInt(1.W), Reset()))
+        e.getMessage should include("Sink (Reset) and Source (UInt<1>) have different types")
+      }
+      they("should error on inferred width inputs") {
+        val e = the[ChiselException] thrownBy ChiselStage.emitSystemVerilog(new SimpleAsTypeOf(UInt(), Reset()))
+        e.getMessage should include("Sink (Reset) and Source (UInt) have different types")
+      }
+    }
+    describe("as the source type") {
+      // Have to use trampoline wire because inferred reset cannot be top-level ports
+      they("should expand narrower inputs") {
+        val verilog = ChiselStage.emitSystemVerilog(new WireSourceAsTypeOf(Reset(), UInt(8.W))(_ := false.B))
+        verilog should include("wire [7:0] out = {7'h0, in};")
+      }
+      they("should truncate wider inputs") {
+        val verilog = ChiselStage.emitSystemVerilog(new WireSourceAsTypeOf(Reset(), UInt(0.W))(_ := false.B))
+        verilog shouldNot include("assign")
+      }
+      they("should match for matched width inputs") {
+        val verilog = ChiselStage.emitSystemVerilog(new WireSourceAsTypeOf(Reset(), UInt(1.W))(_ := false.B))
+        verilog should include("wire out = in;")
+      }
+      they("should work for inferred width outputs") {
+        val verilog = ChiselStage.emitSystemVerilog(new WireSourceAsTypeOf(Reset(), UInt())(_ := false.B))
+        verilog should include("wire out = in;")
+      }
+    }
+  }
+
 }
