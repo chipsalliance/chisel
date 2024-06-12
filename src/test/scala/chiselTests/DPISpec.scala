@@ -22,9 +22,9 @@ class DPITest extends Module {
                    |    std::cout << "hello from c++\\n";
                    |}
                    |
-                   |extern "C" void add(uint32_t* lhs, uint32_t* rhs, uint32_t *result)
+                   |extern "C" void add(int lhs, int rhs, int* result)
                    |{
-                   |    *result = *lhs + *rhs;
+                   |    *result = lhs + rhs;
                    |}
                    |
                    |struct CounterState
@@ -38,9 +38,9 @@ class DPITest extends Module {
                    |    *result = new CounterState;
                    |}
                    |
-                   | extern "C" void increment_counter(CounterState** state, uint32_t *result)
+                   |extern "C" void increment_counter(CounterState* state, int* result)
                    |{
-                   |    *result = (*state)->counter++;
+                   |    *result = state->counter++;
                    |}
   """.stripMargin
 
