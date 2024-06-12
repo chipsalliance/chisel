@@ -11,7 +11,7 @@ import chisel3._
 import chisel3.experimental.dataview.{isView, reify, reifyIdentityView}
 import chisel3.internal.firrtl.ir.{Arg, ILit, Index, ModuleIO, Slot, ULit}
 import chisel3.internal.{throwException, Builder, ViewParent}
-import chisel3.internal.binding.{AggregateViewBinding, ChildBinding, CrossModuleBinding, ViewBinding}
+import chisel3.internal.binding.{AggregateViewBinding, ChildBinding, CrossModuleBinding, ViewBinding, ViewWriteability}
 
 /** Represents lookup typeclass to determine how a value accessed from an original IsInstantiable
   *   should be tweaked to return the Instance's version
@@ -176,19 +176,25 @@ object Lookupable {
 
     // We have to lookup the target(s) of the view since they may need to be underlying into the current context
     val newBinding = data.topBinding match {
-      case ViewBinding(target) => ViewBinding(lookupData(reify(target)))
-      case avb @ AggregateViewBinding(map) =>
+      case ViewBinding(target, writable1) =>
+        val (reified, writable2) = reify(target)
+        ViewBinding(lookupData(reified), writable1.combine(writable2))
+      case avb @ AggregateViewBinding(map, _) =>
         data match {
-          case e: Element   => ViewBinding(lookupData(reify(avb.lookup(e).get)))
+          case e: Element =>
+            val (reified, writable) = reify(avb.lookup(e).get)
+            ViewBinding(lookupData(reified), avb.lookupWritability(e).combine(writable))
           case _: Aggregate =>
             // We could just call reifyIdentityView, but since we already have avb, it is
             // faster to just use it but then call reifyIdentityView in case the target is itself a view
-            def reifyOpt(data: Data): Option[Data] = map.get(data).flatMap(reifyIdentityView(_))
+            def reifyOpt(data: Data): Option[(Data, ViewWriteability)] = map.get(data).flatMap(reifyIdentityView(_))
             // Just remap each Data present in the map
-            val newMap = coiterate(result, data).flatMap {
-              case (res, from) => reifyOpt(from).map(res -> lookupData(_))
-            }.toMap
-            AggregateViewBinding(newMap)
+            val mapping = coiterate(result, data).flatMap {
+              case (res, from) => reifyOpt(from).map { case (t, w) => (res, lookupData(t), w) }
+            }
+            val newMap = mapping.map { case (from, to, _) => from -> to }.toMap
+            val wrMap = mapping.flatMap { case (from, _, wr) => Option.when(wr.isReadOnly)(from -> wr) }.toMap
+            AggregateViewBinding(newMap, Option.when(wrMap.nonEmpty)(wrMap))
         }
       case _ => throw new InternalErrorException("Match error: data.topBinding=${data.topBinding}")
     }
@@ -197,7 +203,7 @@ object Lookupable {
     // We must also mark any non-identity Aggregates as unnammed
     newBinding match {
       case _: ViewBinding => // Do nothing
-      case AggregateViewBinding(childMap) =>
+      case AggregateViewBinding(childMap, _) =>
         // TODO we could do reifySingleTarget instead of just marking non-identity mappings
         getRecursiveFields.lazily(result, "_").foreach {
           case (agg: Aggregate, _) if !childMap.contains(agg) =>

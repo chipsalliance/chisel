@@ -39,9 +39,12 @@ abstract class Element extends Data {
         case _            => Some(DontCareBinding())
       }
     // TODO Do we even need this? Looking up things in the AggregateViewBinding is fine
-    case Some(b @ AggregateViewBinding(viewMap)) =>
+    case Some(b @ AggregateViewBinding(viewMap, _)) =>
       viewMap.get(this) match {
-        case Some(elt: Element) => Some(ViewBinding(elt))
+        case Some(elt: Element) =>
+          // Very important to use this instead of elt as "this" is the key to the viewMap
+          val wr = b.lookupWritability(this)
+          Some(ViewBinding(elt, wr))
         // Children of Probes won't be in viewMap, just return the binding
         case _ => Some(b)
       }
@@ -51,7 +54,7 @@ abstract class Element extends Data {
   private[chisel3] def litArgOption: Option[LitArg] = topBindingOpt match {
     case Some(ElementLitBinding(litArg)) => Some(litArg)
     case Some(_: ViewBinding) =>
-      reify(this).litArgOption
+      reify(this)._1.litArgOption
     case _ => None
   }
 

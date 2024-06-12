@@ -102,6 +102,11 @@ private[chisel3] object MonoConnect {
     }
   }
 
+  private[chisel3] def reportIfReadOnly[T <: Data](x: (T, ViewWriteability))(implicit info: SourceInfo): T = {
+    val (data, writable) = x
+    writable.reportIfReadOnly(data)(WireInit(data))
+  }
+
   /** This function is what recursively tries to connect a sink and source together
     *
     * There is some cleverness in the use of internal try-catch to catch exceptions
@@ -157,9 +162,9 @@ private[chisel3] object MonoConnect {
         if (sink_v.length != source_v.length) { throw MismatchedVecException }
 
         val sinkReified: Option[Vec[Data @unchecked]] =
-          if (isView(sink_v)) reifyIdentityView(sink_v) else Some(sink_v)
+          if (isView(sink_v)) reifyIdentityView(sink_v).map(reportIfReadOnly(_)(sourceInfo)) else Some(sink_v)
         val sourceReified: Option[Vec[Data @unchecked]] =
-          if (isView(source_v)) reifyIdentityView(source_v) else Some(source_v)
+          if (isView(source_v)) reifyIdentityView(source_v).map(_._1) else Some(source_v)
 
         if (
           sinkReified.nonEmpty && sourceReified.nonEmpty && canFirrtlConnectData(
@@ -169,7 +174,7 @@ private[chisel3] object MonoConnect {
             context_mod
           )
         ) {
-          pushCommand(Connect(sourceInfo, sinkReified.get.lref, sourceReified.get.ref))
+          pushCommand(Connect(sourceInfo, sinkReified.get.lref(sourceInfo), sourceReified.get.ref))
         } else {
           for (idx <- 0 until sink_v.length) {
             try {
@@ -191,8 +196,10 @@ private[chisel3] object MonoConnect {
 
       // Handle Record case
       case (sink_r: Record, source_r: Record) =>
-        val sinkReified:   Option[Record] = if (isView(sink_r)) reifyIdentityView(sink_r) else Some(sink_r)
-        val sourceReified: Option[Record] = if (isView(source_r)) reifyIdentityView(source_r) else Some(source_r)
+        val sinkReified: Option[Record] =
+          if (isView(sink_r)) reifyIdentityView(sink_r).map(reportIfReadOnly(_)(sourceInfo)) else Some(sink_r)
+        val sourceReified: Option[Record] =
+          if (isView(source_r)) reifyIdentityView(source_r).map(_._1) else Some(source_r)
 
         if (
           sinkReified.nonEmpty && sourceReified.nonEmpty && canFirrtlConnectData(
@@ -202,7 +209,7 @@ private[chisel3] object MonoConnect {
             context_mod
           )
         ) {
-          pushCommand(Connect(sourceInfo, sinkReified.get.lref, sourceReified.get.ref))
+          pushCommand(Connect(sourceInfo, sinkReified.get.lref(sourceInfo), sourceReified.get.ref))
         } else {
           // For each field, descend with right
           for ((field, sink_sub) <- sink_r._elements) {
@@ -229,8 +236,11 @@ private[chisel3] object MonoConnect {
 
       // Source is DontCare - it may be connected to anything. It generates a defInvalid for the sink.
       case (_sink: Element, DontCare) =>
-        val sink = reify(_sink) // Handle views
-        pushCommand(DefInvalid(sourceInfo, sink.lref))
+        val (sink, writable) = reify(_sink) // Handle views
+        writable.reportIfReadOnlyUnit {
+          pushCommand(DefInvalid(sourceInfo, sink.lref(sourceInfo))): Unit
+        }(sourceInfo) // Nothing to push if an error
+
       // DontCare as a sink is illegal.
       case (DontCare, _) => throw DontCareCantBeSink
       // Analog is illegal in mono connections.
@@ -414,11 +424,11 @@ private[chisel3] object MonoConnect {
     context_mod:         BaseModule
   ): Unit = {
     // Reify sink and source if they're views.
-    val sink = reify(_sink)
-    val source = reify(_source)
+    val (sink, writable) = reify(_sink)
+    val (source, _) = reify(_source)
 
     checkConnect(sourceInfo, sink, source, context_mod)
-    issueConnect(sink, source)
+    writable.reportIfReadOnlyUnit(issueConnect(sink, source))
   }
 
   def propConnect(
@@ -428,14 +438,20 @@ private[chisel3] object MonoConnect {
     context:    BaseModule
   ): Unit = {
     // Reify sink and source if they're views.
-    val sink = reify(sinkProp)
-    val source = reify(sourceProp)
+    val (sink, writable) = reify(sinkProp)
+    val (source, _) = reify(sourceProp)
 
     checkConnect(sourceInfo, sink, source, context)
     // Add the PropAssign command directly onto the correct BaseModule subclass.
     context match {
-      case rm:  RawModule => rm.addCommand(PropAssign(sourceInfo, sink.lref, source.ref))
-      case cls: Class     => cls.addCommand(PropAssign(sourceInfo, sink.lref, source.ref))
+      case rm: RawModule =>
+        writable.reportIfReadOnlyUnit {
+          rm.addCommand(PropAssign(sourceInfo, sink.lref(sourceInfo), source.ref))
+        }(sourceInfo)
+      case cls: Class =>
+        writable.reportIfReadOnlyUnit {
+          cls.addCommand(PropAssign(sourceInfo, sink.lref(sourceInfo), source.ref))
+        }(sourceInfo)
       case _ => throwException("Internal Error! Property connection can only occur within RawModule or Class.")
     }
   }
@@ -447,19 +463,22 @@ private[chisel3] object MonoConnect {
     context:     BaseModule
   ): Unit = {
 
-    val sink = reifyIdentityView(sinkProbe).getOrElse(
+    val (sink, writable) = reifyIdentityView(sinkProbe).getOrElse(
       throwException(
         s"If a DataView contains a Probe, it must resolve to one Data. $sinkProbe does not meet this criteria."
       )
     )
-    val source = reifyIdentityView(sourceProbe).getOrElse(
+    val (source, _) = reifyIdentityView(sourceProbe).getOrElse(
       throwException(
         s"If a DataView contains a Probe, it must resolve to one Data. $sourceProbe does not meet this criteria."
       )
     )
     checkConnect.checkConnection(sourceInfo, sink, source, context)
     context match {
-      case rm: RawModule => rm.addCommand(ProbeDefine(sourceInfo, sink.lref, source.ref))
+      case rm: RawModule =>
+        writable.reportIfReadOnlyUnit {
+          rm.addCommand(ProbeDefine(sourceInfo, sink.lref(sourceInfo), source.ref))
+        }(sourceInfo) // Nothing to push if an error
       case _ => throwException("Internal Error! Probe connection can only occur within RawModule.")
     }
   }

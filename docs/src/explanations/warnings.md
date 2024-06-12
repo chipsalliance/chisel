@@ -150,3 +150,28 @@ This warning occurs when creating a [Bundle Literal](../appendix/experimental-fe
 field is wider than the Bundle field's width.
 It can be fixed by reducing the width of the literal (perhaps choosing a different value if it is impossible to encode the value in the
 field's width).
+
+### [W008] Return values of asTypeOf will soon be read-only
+
+This warning indicates that the result of a call to `.asTypeOf(_)` is being used as the destination for a connection.
+It can be fixed by instantiating a wire.
+
+For example, given the following:
+```scala mdoc:compile-only:reset
+class MyBundle extends Bundle {
+  val foo = UInt(8.W)
+  val bar = UInt(8.W)
+}
+val x = 0.U.asTypeOf(new MyBundle)
+x.bar := 123.U
+```
+
+The warning can be fixed by inserting a wire:
+```scala mdoc:compile-only:reset
+class MyBundle extends Bundle {
+  val foo = UInt(8.W)
+  val bar = UInt(8.W)
+}
+val x = WireInit(0.U.asTypeOf(new MyBundle))
+x.bar := 123.U
+```
