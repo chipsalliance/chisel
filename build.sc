@@ -1,15 +1,19 @@
+import $ivy.`com.lihaoyi::mill-contrib-versionfile:`
+import $ivy.`com.lihaoyi::mill-contrib-jmh:`
+
 import mill._
 import mill.scalalib._
 import mill.scalalib.publish._
 import mill.scalalib.scalafmt._
 import mill.define.Cross
 import mill.scalalib.api.ZincWorkerUtil.matchingVersions
-import $ivy.`com.lihaoyi::mill-contrib-jmh:`
+import mill.contrib.versionfile.VersionFileModule
 import mill.contrib.jmh.JmhModule
+
 import $file.common
 import $file.tests
 
-object v {
+object v extends VersionFileModule {
   val pluginScalaCrossVersions = Seq(
     "2.13.11",
     "2.13.12",
@@ -36,6 +40,8 @@ object v {
   def scalaCompiler(scalaVersion: String) = ivy"org.scala-lang:scala-compiler:$scalaVersion"
 
   def scalaLibrary(scalaVersion: String) = ivy"org.scala-lang:scala-library:$scalaVersion"
+
+  override def versionFile: T[PathRef] = T.source(super.millSourcePath / os.up / "version" / "chisel")
 }
 
 object firrtl extends Cross[Firrtl](v.scalaCrossVersions)
@@ -200,7 +206,7 @@ trait ChiselPublishModule extends PublishModule {
     developers = Seq()
   )
 
-  def publishVersion = "5.0-SNAPSHOT"
+  def publishVersion = T(v.releaseVersion().asRelease.toString())
 }
 
 object circtpanamabinding extends CIRCTPanamaBinding
