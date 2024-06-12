@@ -301,7 +301,10 @@ private[chisel3] trait HasId extends chisel3.InstanceId {
     nameGuess + parentGuess
   }
 
-  // Helper for reifying views if they map to a single Target
+  /** Helper for reifying views if they map to a single Target.
+    *
+    * This ignores writability, use chisel3.experimental.dataview.reify for non-Target use cases.
+    */
   private[chisel3] def reifyTarget: Option[Data] = this match {
     case d: Data => reifySingleTarget(d) // Only Data can be views
     case bad => throwException(s"This shouldn't be possible - got $bad with ${_parent}")
@@ -967,7 +970,7 @@ private[chisel3] object Builder extends LazyLogging {
             // It can be removed in Chisel 6.0.0 when it becomes illegal to call .viewAs on non-hardware
             val targetOfViewOpt =
               try {
-                Some(reify(elt))
+                Some(reify(elt)._1) // Writability is irrelevant here
               } catch {
                 case _: NoSuchElementException => None
               }
