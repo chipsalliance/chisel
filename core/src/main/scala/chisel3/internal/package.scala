@@ -132,6 +132,44 @@ package object internal {
     case leaf => leaf.probeInfo.nonEmpty
   }
 
+<<<<<<< HEAD
+=======
+  private[chisel3] def requireCompatibleDestinationProbeColor(
+    dest:         Data,
+    errorMessage: => String = ""
+  )(
+    implicit sourceInfo: SourceInfo
+  ): Unit = {
+    val destLayer = dest.probeInfo match {
+      case Some(Data.ProbeInfo(_, Some(color))) =>
+        color
+      case _ => return
+    }
+    val enabledLayers = Builder.enabledLayers.view ++ Builder.layerStack.headOption
+    if (enabledLayers.exists(_.canWriteTo(destLayer))) {
+      return
+    }
+    Builder.error(errorMessage)
+  }
+
+  private[chisel3] def requireNotChildOfProbe(
+    probe:        Data,
+    errorMessage: => String = ""
+  )(
+    implicit sourceInfo: SourceInfo
+  ): Unit = {
+    probe.binding match {
+      case Some(ChildBinding(parent)) =>
+        if (parent.probeInfo.nonEmpty) {
+          val providedMsg = errorMessage // only evaluate by-name argument once
+          val msg = if (providedMsg.isEmpty) "Expected a root of a probe." else providedMsg
+          Builder.error(msg)
+        }
+      case _ => ()
+    }
+  }
+
+>>>>>>> 4de35818c (Error when calling define targeting a child of a probe (#4175))
   // TODO this exists in cats.Traverse, should we just use that?
   private[chisel3] implicit class ListSyntax[A](xs: List[A]) {
     def mapAccumulate[B, C](z: B)(f: (B, A) => (B, C)): (B, List[C]) = {
