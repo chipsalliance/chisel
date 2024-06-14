@@ -150,6 +150,23 @@ package object internal {
     Builder.error(errorMessage)
   }
 
+  private[chisel3] def requireNotChildOfProbe(
+    probe:        Data,
+    errorMessage: => String = ""
+  )(
+    implicit sourceInfo: SourceInfo
+  ): Unit = {
+    probe.binding match {
+      case Some(ChildBinding(parent)) =>
+        if (parent.probeInfo.nonEmpty) {
+          val providedMsg = errorMessage // only evaluate by-name argument once
+          val msg = if (providedMsg.isEmpty) "Expected a root of a probe." else providedMsg
+          Builder.error(msg)
+        }
+      case _ => ()
+    }
+  }
+
   // TODO this exists in cats.Traverse, should we just use that?
   private[chisel3] implicit class ListSyntax[A](xs: List[A]) {
     def mapAccumulate[B, C](z: B)(f: (B, A) => (B, C)): (B, List[C]) = {

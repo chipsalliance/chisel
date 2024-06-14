@@ -613,6 +613,22 @@ class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
     exc.getMessage should include("Probe width unknown.")
   }
 
+  it should "error trying to define a child of an Aggregate probe" in {
+    val exc = intercept[chisel3.ChiselException] {
+      ChiselStage.emitSystemVerilog(
+        new RawModule {
+          val in = IO(Input(UInt(16.W)))
+          val p = IO(Output(Probe(new Bundle {
+            val a = UInt(16.W)
+          })))
+          define(p.a, ProbeValue(in))
+        },
+        Array("--throw-on-first-error")
+      )
+    }
+    exc.getMessage should include("Expected sink to be the root of a probe.")
+  }
+
   "Probe force/release reg example" should "work in simulator" in {
     // Simple example forcing a register and checking basic behavior.
 
