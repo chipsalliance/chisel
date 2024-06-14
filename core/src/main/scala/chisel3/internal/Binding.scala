@@ -43,22 +43,23 @@ private[chisel3] object binding {
   }
 
   // Location refers to 'where' in the Module hierarchy this lives
-  sealed trait Binding {
+  sealed trait Binding
+
+  // Top-level binding representing hardware, not a pointer to another binding (like ChildBinding)
+  sealed trait TopBinding extends Binding {
     def location: Option[BaseModule]
   }
-  // Top-level binding representing hardware, not a pointer to another binding (like ChildBinding)
-  sealed trait TopBinding extends Binding
 
   // Constrained-ness refers to whether 'bound by Module boundaries'
   // An unconstrained binding, like a literal, can be read by everyone
   sealed trait UnconstrainedBinding extends TopBinding {
-    def location: Option[BaseModule] = None
+    override def location: Option[BaseModule] = None
   }
   // A constrained binding can only be read/written by specific modules
   // Location will track where this Module is, and the bound object can be referenced in FIRRTL
   sealed trait ConstrainedBinding extends TopBinding {
     def enclosure: BaseModule
-    def location: Option[BaseModule] = {
+    override def location: Option[BaseModule] = {
       // If an aspect is present, return the aspect module. Otherwise, return the enclosure module
       // This allows aspect modules to pretend to be enclosed modules for connectivity checking,
       // inside vs outside instance checking, etc.
@@ -105,32 +106,24 @@ private[chisel3] object binding {
 
   case class ObjectFieldBinding(enclosure: BaseModule) extends ConstrainedBinding
 
-  case class ChildBinding(parent: Data) extends Binding {
-    def location: Option[BaseModule] = parent.topBinding.location
-  }
+  case class ChildBinding(parent: Data) extends Binding
 
   /** Special binding for Vec.sample_element */
-  case class SampleElementBinding[T <: Data](parent: Vec[T]) extends Binding {
-    def location = parent.topBinding.location
-  }
+  case class SampleElementBinding[T <: Data](parent: Vec[T]) extends Binding
 
   /** Special binding for Mem types */
-  case class MemTypeBinding[T <: Data](parent: MemBase[T]) extends Binding {
-    def location: Option[BaseModule] = parent._parent
-  }
+  case class MemTypeBinding[T <: Data](parent: MemBase[T]) extends Binding
 
   /** Special binding for Firrtl memory (SRAM) types */
-  case class FirrtlMemTypeBinding(parent: SramTarget) extends Binding {
-    def location: Option[BaseModule] = parent._parent
-  }
+  case class FirrtlMemTypeBinding(parent: SramTarget) extends Binding
 
   // A DontCare element has a specific Binding, somewhat like a literal.
   // It is a source (RHS). It may only be connected/applied to sinks.
   case class DontCareBinding() extends UnconstrainedBinding
 
   // Views currently only support 1:1 Element-level mappings
-  case class ViewBinding(target: Element) extends Binding with ConditionalDeclarable {
-    def location: Option[BaseModule] = target.binding.flatMap(_.location)
+  case class ViewBinding(target: Element) extends TopBinding with ConditionalDeclarable {
+    override def location: Option[BaseModule] = target.topBindingOpt.flatMap(_.location)
     def visibility: Option[WhenContext] = target.binding.flatMap {
       case c: ConditionalDeclarable => c.visibility
       case _ => None
@@ -144,15 +137,15 @@ private[chisel3] object binding {
     * @note The types of key and value need not match for the top Data in a total view of type
     *       Aggregate
     */
-  case class AggregateViewBinding(childMap: Map[Data, Data]) extends Binding with ConditionalDeclarable {
+  case class AggregateViewBinding(childMap: Map[Data, Data]) extends TopBinding with ConditionalDeclarable {
     // Helper lookup function since types of Elements always match
     def lookup(key: Element): Option[Element] = childMap.get(key).map(_.asInstanceOf[Element])
 
     // FIXME Technically an AggregateViewBinding can have multiple locations and visibilities
     // Fixing this requires an overhaul to this code so for now we just do the best we can
     // Return a location if there is a unique one for all targets, None otherwise
-    lazy val location: Option[BaseModule] = {
-      val locations = childMap.values.view.flatMap(_.binding.toSeq.flatMap(_.location)).toVector.distinct
+    override lazy val location: Option[BaseModule] = {
+      val locations = childMap.values.view.flatMap(_.topBindingOpt.toSeq.flatMap(_.location)).toVector.distinct
       if (locations.size == 1) Some(locations.head)
       else None
     }
@@ -168,7 +161,7 @@ private[chisel3] object binding {
 
   /** Binding for Data's returned from accessing an Instance/Definition members, if not readable/writable port */
   case object CrossModuleBinding extends TopBinding {
-    def location = None
+    override def location = None
   }
 
   sealed trait LitBinding extends UnconstrainedBinding with ReadOnlyBinding
