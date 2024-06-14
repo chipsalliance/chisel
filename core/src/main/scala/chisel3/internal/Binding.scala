@@ -12,8 +12,8 @@ import scala.collection.immutable.VectorMap
 private[chisel3] object binding {
 
   // Element only direction used for the Binding system only.
-  private[chisel3] sealed abstract class BindingDirection
-  private[chisel3] object BindingDirection {
+  sealed abstract class BindingDirection
+  object BindingDirection {
 
     /** Internal type or wire
       */
@@ -43,23 +43,19 @@ private[chisel3] object binding {
   }
 
   // Location refers to 'where' in the Module hierarchy this lives
-  @deprecated(deprecatedPublicAPIMsg, "Chisel 6.0")
   sealed trait Binding {
     def location: Option[BaseModule]
   }
   // Top-level binding representing hardware, not a pointer to another binding (like ChildBinding)
-  @deprecated(deprecatedPublicAPIMsg, "Chisel 6.0")
   sealed trait TopBinding extends Binding
 
   // Constrained-ness refers to whether 'bound by Module boundaries'
   // An unconstrained binding, like a literal, can be read by everyone
-  @deprecated(deprecatedPublicAPIMsg, "Chisel 6.0")
   sealed trait UnconstrainedBinding extends TopBinding {
     def location: Option[BaseModule] = None
   }
   // A constrained binding can only be read/written by specific modules
   // Location will track where this Module is, and the bound object can be referenced in FIRRTL
-  @deprecated(deprecatedPublicAPIMsg, "Chisel 6.0")
   sealed trait ConstrainedBinding extends TopBinding {
     def enclosure: BaseModule
     def location: Option[BaseModule] = {
@@ -74,68 +70,66 @@ private[chisel3] object binding {
   }
 
   // A binding representing a data that cannot be (re)assigned to.
-  @deprecated(deprecatedPublicAPIMsg, "Chisel 6.0")
   sealed trait ReadOnlyBinding extends TopBinding
 
   // A component that can potentially be declared inside a 'when'
-  @deprecated(deprecatedPublicAPIMsg, "Chisel 6.0")
   sealed trait ConditionalDeclarable extends TopBinding {
     def visibility: Option[WhenContext]
   }
 
   // TODO(twigg): Ops between unenclosed nodes can also be unenclosed
   // However, Chisel currently binds all op results to a module
-  private[chisel3] case class PortBinding(enclosure: BaseModule) extends ConstrainedBinding
+  case class PortBinding(enclosure: BaseModule) extends ConstrainedBinding
 
   // Added to handle BoringUtils in Chisel
-  private[chisel3] case class SecretPortBinding(enclosure: BaseModule) extends ConstrainedBinding
+  case class SecretPortBinding(enclosure: BaseModule) extends ConstrainedBinding
 
-  private[chisel3] case class OpBinding(enclosure: RawModule, visibility: Option[WhenContext])
+  case class OpBinding(enclosure: RawModule, visibility: Option[WhenContext])
       extends ConstrainedBinding
       with ReadOnlyBinding
       with ConditionalDeclarable
-  private[chisel3] case class MemoryPortBinding(enclosure: RawModule, visibility: Option[WhenContext])
+  case class MemoryPortBinding(enclosure: RawModule, visibility: Option[WhenContext])
       extends ConstrainedBinding
       with ConditionalDeclarable
-  private[chisel3] case class SramPortBinding(enclosure: RawModule, visibility: Option[WhenContext])
+  case class SramPortBinding(enclosure: RawModule, visibility: Option[WhenContext])
       extends ConstrainedBinding
       with ConditionalDeclarable
-  private[chisel3] case class RegBinding(enclosure: RawModule, visibility: Option[WhenContext])
+  case class RegBinding(enclosure: RawModule, visibility: Option[WhenContext])
       extends ConstrainedBinding
       with ConditionalDeclarable
-  private[chisel3] case class WireBinding(enclosure: RawModule, visibility: Option[WhenContext])
+  case class WireBinding(enclosure: RawModule, visibility: Option[WhenContext])
       extends ConstrainedBinding
       with ConditionalDeclarable
 
-  private[chisel3] case class ClassBinding(enclosure: Class) extends ConstrainedBinding with ReadOnlyBinding
+  case class ClassBinding(enclosure: Class) extends ConstrainedBinding with ReadOnlyBinding
 
-  private[chisel3] case class ObjectFieldBinding(enclosure: BaseModule) extends ConstrainedBinding
+  case class ObjectFieldBinding(enclosure: BaseModule) extends ConstrainedBinding
 
-  private[chisel3] case class ChildBinding(parent: Data) extends Binding {
+  case class ChildBinding(parent: Data) extends Binding {
     def location: Option[BaseModule] = parent.topBinding.location
   }
 
   /** Special binding for Vec.sample_element */
-  private[chisel3] case class SampleElementBinding[T <: Data](parent: Vec[T]) extends Binding {
+  case class SampleElementBinding[T <: Data](parent: Vec[T]) extends Binding {
     def location = parent.topBinding.location
   }
 
   /** Special binding for Mem types */
-  private[chisel3] case class MemTypeBinding[T <: Data](parent: MemBase[T]) extends Binding {
+  case class MemTypeBinding[T <: Data](parent: MemBase[T]) extends Binding {
     def location: Option[BaseModule] = parent._parent
   }
 
   /** Special binding for Firrtl memory (SRAM) types */
-  private[chisel3] case class FirrtlMemTypeBinding(parent: SramTarget) extends Binding {
+  case class FirrtlMemTypeBinding(parent: SramTarget) extends Binding {
     def location: Option[BaseModule] = parent._parent
   }
 
   // A DontCare element has a specific Binding, somewhat like a literal.
   // It is a source (RHS). It may only be connected/applied to sinks.
-  private[chisel3] case class DontCareBinding() extends UnconstrainedBinding
+  case class DontCareBinding() extends UnconstrainedBinding
 
   // Views currently only support 1:1 Element-level mappings
-  private[chisel3] case class ViewBinding(target: Element) extends Binding with ConditionalDeclarable {
+  case class ViewBinding(target: Element) extends Binding with ConditionalDeclarable {
     def location: Option[BaseModule] = target.binding.flatMap(_.location)
     def visibility: Option[WhenContext] = target.binding.flatMap {
       case c: ConditionalDeclarable => c.visibility
@@ -150,9 +144,7 @@ private[chisel3] object binding {
     * @note The types of key and value need not match for the top Data in a total view of type
     *       Aggregate
     */
-  private[chisel3] case class AggregateViewBinding(childMap: Map[Data, Data])
-      extends Binding
-      with ConditionalDeclarable {
+  case class AggregateViewBinding(childMap: Map[Data, Data]) extends Binding with ConditionalDeclarable {
     // Helper lookup function since types of Elements always match
     def lookup(key: Element): Option[Element] = childMap.get(key).map(_.asInstanceOf[Element])
 
@@ -175,18 +167,17 @@ private[chisel3] object binding {
   }
 
   /** Binding for Data's returned from accessing an Instance/Definition members, if not readable/writable port */
-  private[chisel3] case object CrossModuleBinding extends TopBinding {
+  case object CrossModuleBinding extends TopBinding {
     def location = None
   }
 
-  @deprecated(deprecatedPublicAPIMsg, "Chisel 6.0")
   sealed trait LitBinding extends UnconstrainedBinding with ReadOnlyBinding
   // Literal binding attached to a element that is not part of a Bundle.
-  private[chisel3] case class ElementLitBinding(litArg: LitArg) extends LitBinding
+  case class ElementLitBinding(litArg: LitArg) extends LitBinding
   // Literal binding attached to the root of a Bundle, containing literal values of its children.
-  private[chisel3] case class BundleLitBinding(litMap: Map[Data, LitArg]) extends LitBinding
+  case class BundleLitBinding(litMap: Map[Data, LitArg]) extends LitBinding
   // Literal binding attached to the root of a Vec, containing literal values of its children.
-  private[chisel3] case class VecLitBinding(litMap: VectorMap[Data, LitArg]) extends LitBinding
+  case class VecLitBinding(litMap: VectorMap[Data, LitArg]) extends LitBinding
   // Literal binding attached to a Property.
-  private[chisel3] case object PropertyValueBinding extends UnconstrainedBinding with ReadOnlyBinding
+  case object PropertyValueBinding extends UnconstrainedBinding with ReadOnlyBinding
 }
