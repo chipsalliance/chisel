@@ -10,7 +10,8 @@ import scala.collection.mutable.HashMap
 import chisel3._
 import chisel3.experimental.dataview.{isView, reify, reifySingleData}
 import chisel3.internal.firrtl.ir.{Arg, ILit, Index, ModuleIO, Slot, ULit}
-import chisel3.internal.{throwException, AggregateViewBinding, Builder, ChildBinding, ViewBinding, ViewParent}
+import chisel3.internal.{throwException, Builder, ViewParent}
+import chisel3.internal.binding.{AggregateViewBinding, ChildBinding, CrossModuleBinding, ViewBinding}
 
 /** Represents lookup typeclass to determine how a value accessed from an original IsInstantiable
   *   should be tweaked to return the Instance's version
@@ -71,7 +72,7 @@ object Lookupable {
           case Clone(m: BaseModule) =>
             val newChild = data.cloneTypeFull
             newChild.setRef(data.getRef, true)
-            newChild.bind(internal.CrossModuleBinding)
+            newChild.bind(CrossModuleBinding)
             newChild.setAllParents(Some(m))
             newChild
           case _ => throw new InternalErrorException("Match error: newParent=$newParent")

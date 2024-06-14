@@ -11,17 +11,8 @@ import chisel3.internal.Builder.pushOp
 import chisel3.internal.firrtl.ir.PrimOp._
 import chisel3.internal.firrtl.ir._
 import chisel3.internal.sourceinfo._
-import chisel3.internal.{
-  containsProbe,
-  throwException,
-  Binding,
-  Builder,
-  BuilderContextCache,
-  ChildBinding,
-  ConstrainedBinding,
-  Warning,
-  WarningID
-}
+import chisel3.internal.{containsProbe, throwException, Builder, BuilderContextCache, Warning, WarningID}
+import chisel3.internal.binding.{Binding, ChildBinding, ConstrainedBinding}
 
 import chisel3.experimental.EnumAnnotations._
 

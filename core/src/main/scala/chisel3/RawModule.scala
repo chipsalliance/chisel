@@ -6,6 +6,7 @@ import scala.util.Try
 import scala.language.experimental.macros
 import chisel3.experimental.{BaseModule, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal._
+import chisel3.internal.binding._
 import chisel3.experimental.hierarchy.{InstanceClone, ModuleClone}
 import chisel3.properties.{DynamicObject, Property, StaticObject}
 import chisel3.internal.Builder._

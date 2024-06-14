@@ -5,7 +5,7 @@ package chisel3.connectable
 import chisel3.{Aggregate, Data, DontCare, SpecifiedDirection}
 import chisel3.experimental.Analog
 import chisel3.reflect.DataMirror
-import chisel3.internal.{ChildBinding, TopBinding}
+import chisel3.internal.binding.{ChildBinding, TopBinding}
 
 // Represent aligned or flipped relative to an original root.
 // Used for walking types and their alignment, accounting for coercion.
