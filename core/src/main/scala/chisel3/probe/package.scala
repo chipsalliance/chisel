@@ -37,6 +37,7 @@ package object probe extends SourceInfoDoc {
       Builder.error("Cannot define a probe on a non-equivalent type.")
     }
     requireHasProbeTypeModifier(sink, "Expected sink to be a probe.")
+    requireNotChildOfProbe(sink, "Expected sink to be the root of a probe.")
     requireHasProbeTypeModifier(probeExpr, "Expected source to be a probe expression.")
     if (sink.probeInfo.get.writable) {
       requireHasWritableProbeTypeModifier(
