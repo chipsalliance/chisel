@@ -8,6 +8,7 @@ import chisel3._
 import chisel3.experimental._
 import chisel3.experimental.hierarchy.core.{Clone, Definition, Hierarchy, ImportDefinitionAnnotation, Instance}
 import chisel3.properties.Class
+import chisel3.internal.binding._
 import chisel3.internal.firrtl.ir._
 import chisel3.internal.firrtl.Converter
 import chisel3.internal.naming._
