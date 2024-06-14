@@ -9,6 +9,8 @@ import chisel3.properties.Property
 
 import scala.annotation.{implicitNotFound, tailrec}
 import scala.collection.mutable
+import chisel3.reflect.DataMirror
+import chisel3.experimental.ClonePorts
 
 package object dataview {
   case class InvalidViewException(message: String) extends chisel3.ChiselException(message)
@@ -203,23 +205,22 @@ package object dataview {
     }
 
     view match {
-      case elt: Element   => view.bind(ViewBinding(elementResult(elt)))
+      case elt: Element => view.bind(ViewBinding(elementResult(elt)))
       case agg: Aggregate =>
-        // Don't forget the potential mapping of the view to the target!
-        target match {
-          case d: Data if total =>
-            aggregateMappings += (agg -> d)
-          case _ =>
-        }
-
         val fullResult = elementResult ++ aggregateMappings
 
-        // We need to record any Aggregates that don't have a 1-1 mapping (including the view
-        // itself)
-        getRecursiveFields.lazily(view, "_").foreach {
-          case (unnamed: Aggregate, _) if !fullResult.contains(unnamed) =>
-            Builder.unnamedViews += unnamed
-          case _ => // Do nothing
+        // We need to record any Aggregates that don't have a single-target mapping.
+        // Technically, this adds any Aggregate that is not an identity mapping,
+        // but we don't have a cheap way to check for single-target.
+        // The Builder context check is a hack to allow calling .viewAs outside of elaboration
+        // on views that are not identity but still single-target.
+        // FIXME we really just need to get rid of the need for unnammed view renaming.
+        if (Builder.inContext) {
+          getRecursiveFields.lazily(view, "_").foreach {
+            case (unnamed: Aggregate, _) if !fullResult.contains(unnamed) =>
+              Builder.unnamedViews += unnamed
+            case _ => // Do nothing
+          }
         }
         agg.bind(AggregateViewBinding(fullResult))
     }
@@ -260,14 +261,15 @@ package object dataview {
       case _                   => elt
     }
 
-  /** Determine the target of a View if it is a single Target
+  /** Determine the target of a View if the view is an identity mapping.
     *
-    * @note An Aggregate may be a view of unrelated [[Data]] (eg. like a Seq or tuple) and thus this
-    *       there is no single Data representing the Target and this function will return None
-    * @return The single Data target of this view or None if a single Data doesn't exist
-    * @note Returns Some(_) of the argument if it is not a view
+    * This is only true if the target of the view is of the same type and fields correspond 1:1.
+    * For example, it would *not* be an identity view to view a Vec as a Vec with its elements in reverse order.
+    *
+    * @return The identity target of this view or None if not an identity view.
+    * @note Returns Some(_) of the argument if it is not a view.
     */
-  private[chisel3] def reifySingleData(data: Data): Option[Data] = {
+  private[chisel3] def reifyIdentityView[T <: Data](data: T): Option[T] = {
     val candidate: Option[Data] =
       data.topBindingOpt match {
         case None                               => None
@@ -276,19 +278,61 @@ package object dataview {
         case Some(_)                            => Some(data)
       }
     candidate.flatMap { d =>
+      // This cast is safe by construction, we only put Data in the view mapping if it is an identity mapping
+      val cast = d.asInstanceOf[T]
       // Candidate may itself be a view, keep tracing in those cases
-      if (isView(d)) reifySingleData(d) else Some(d)
+      if (isView(d)) reifyIdentityView(cast) else Some(cast)
     }
   }
 
-  /** Determine the target of a View if it is a single Target
+  // Return all parents of a Data, including itself
+  private def allParents(d: Data): List[Data] = d.binding match {
+    case Some(ChildBinding(parent)) => d :: allParents(parent)
+    case _                          => List(d)
+  }
+
+  /** Determine the target of a View if the view maps to a single `Data`.
     *
-    * @note An Aggregate may be a view of unrelated [[Data]] (eg. like a Seq or tuple) and thus this
-    *       there is no single Data representing the Target and this function will return None
-    * @return The single Data target of this view or None if a single Data doesn't exist
+    * An Aggregate may be a view of `non-Data` (like a `Seq` or tuple) and thus
+    * there is no single Data representing the Target and this function will return None.
+    *
+    * @return The single Data target of this view or None if a single Data doesn't exist.
+    * @note Returns Some(_) of the argument if it is not a view.
     */
-  private[chisel3] def reifyToAggregate(data: Data): Option[Aggregate] = reifySingleData(data) match {
-    case Some(a: Aggregate) => Some(a)
-    case other => None
+  private[chisel3] def reifySingleTarget(data: Data): Option[Data] = {
+    def err(msg: String) = throwException(s"Internal Error! $msg reifySingleTarget($data)")
+    // Identity views are obviously single targets.
+    reifyIdentityView(data).orElse {
+      // Otherwise, all children of data need to map to all of the children of another Data.
+      // This is really expensive, is there a better way?
+      data.topBindingOpt.flatMap {
+        case AggregateViewBinding(mapping) =>
+          // Take every single leaf and map to its target
+          val leaves = DataMirror.collectLeafMembers(data)
+          val targets = leaves.map { l =>
+            // All leaves are stored in the mapping.
+            val oneLevel = mapping(l)
+            // This .get is safe because collectLeafMembers returns leaves.
+            // It is of type Data (not Element) because of Probes, but Probes are atomic.
+            reifySingleTarget(oneLevel).get
+          }
+          // Now, if there are any targets, check if all of the targets share a common parent,
+          // and if that parent is exclusively composed of these targets.
+          val tset = targets.toSet
+          targets.headOption.flatMap { head =>
+            allParents(head).find {
+              // This is kind of a hack but ClonePorts is itself a hack.
+              // We must ignore ClonePorts because it isn't a real Data, so it cannot be the "Single Target" to which we map.
+              case _: ClonePorts => false
+              case p =>
+                val pset = DataMirror.collectLeafMembers(p).toSet
+                pset == tset
+            }
+          }
+        // Anything else should've been handled by reifyIdentityView
+        case bad => err(s"This should not be reachable. Got binding = $bad in")
+
+      }
+    }
   }
 }
