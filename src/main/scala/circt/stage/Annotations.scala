@@ -123,3 +123,17 @@ private[circt] case object SplitVerilog extends NoTargetAnnotation with CIRCTOpt
   )
 
 }
+
+/** Write the intermediate `.fir` file in [[circt.stage.ChiselStage]]
+  */
+private[circt] case object DumpFir extends NoTargetAnnotation with CIRCTOption with HasShellOptions {
+  override def options = Seq(
+    new ShellOption[Unit](
+      longOption = "dump-fir",
+      toAnnotationSeq = _ => Seq(this),
+      helpText = "Write the intermediate .fir file",
+      helpValueName = None
+    )
+  )
+
+}
