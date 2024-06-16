@@ -341,7 +341,7 @@ final class Workspace(
       l()
       l("sourcefiles = \\")
       for ((sourceFile, index) <- sourceFiles.zipWithIndex) {
-      l("\t'", sourceFile, "'", if (index != sourceFiles.length - 1) " \\" else "")
+      l("\t'", if (sourceFile.endsWith(".a")) "../" else "", sourceFile, "'", if (index != sourceFiles.length - 1) " \\" else "")
       }
       l()
       l("compilerEnvironment = \\")
