@@ -11,7 +11,7 @@ import _root_.firrtl.{ir => firrtlir}
 import _root_.firrtl.{PrimOps, RenameMap}
 import _root_.firrtl.annotations.Annotation
 
-import scala.collection.immutable.NumericRange
+import scala.collection.immutable.{NumericRange, VectorBuilder}
 import scala.math.BigDecimal.RoundingMode
 import scala.annotation.nowarn
 import scala.collection.mutable
@@ -326,10 +326,14 @@ private[chisel3] object ir {
     choices:    Seq[(String, BaseModule)])
       extends Definition
   case class DefObject(sourceInfo: SourceInfo, id: HasId, className: String) extends Definition
-  case class WhenBegin(sourceInfo: SourceInfo, pred: Arg) extends Command
-  case class WhenEnd(sourceInfo: SourceInfo, firrtlDepth: Int, hasAlt: Boolean = false) extends Command
-  case class AltBegin(sourceInfo: SourceInfo) extends Command
-  case class OtherwiseEnd(sourceInfo: SourceInfo, firrtlDepth: Int) extends Command
+
+  case class When(
+    sourceInfo: SourceInfo,
+    pred:       Arg,
+    ifRegion:   VectorBuilder[Command],
+    elseRegion: VectorBuilder[Command])
+      extends Command
+
   case class Connect(sourceInfo: SourceInfo, loc: Arg, exp: Arg) extends Command
   case class PropAssign(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
   case class Attach(sourceInfo: SourceInfo, locs: Seq[Node]) extends Command
