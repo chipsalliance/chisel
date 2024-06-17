@@ -164,12 +164,8 @@ final class WhenContext private[chisel3] (
   Builder.pushWhen(this)
   scope = Some(Scope.If)
   try {
-    Builder.currentModule match {
-      case Some(module: RawModule) =>
-        module.withRegion(ifRegion) {
-          block
-        }
-      case _ => ???
+    Builder.forcedUserModule.withRegion(ifRegion) {
+      block
     }
   } catch {
     case _: scala.runtime.NonLocalReturnControl[_] =>
