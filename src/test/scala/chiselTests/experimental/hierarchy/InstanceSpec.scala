@@ -8,6 +8,7 @@ import chisel3._
 import chisel3.experimental.BaseModule
 import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance}
 import chisel3.util.{DecoupledIO, Valid}
+import chisel3.experimental.{attach, Analog}
 
 // TODO/Notes
 // - In backport, clock/reset are not automatically assigned. I think this is fixed in 3.5
@@ -188,6 +189,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
     }
     it("(1.k): should work for targets on definition to have correct circuit name") {
       class Top extends Module {
+
         val definition = Definition(new AddOneWithAnnotation)
         val i0 = Instance(definition)
       }
@@ -206,6 +208,20 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       annos.collect { case c: MarkAnnotation => c } should contain(
         MarkAnnotation("~Top|Top/i0:HasTypeParams>blah".rt, "blah")
       )
+    }
+    it("(1.m): should work on Analog wires") {
+      class Top extends Module {
+        val port = IO(Analog(8.W))
+        val definition = Definition(new HasAnalogWire)
+        val i0 = Instance(definition)
+        attach(port, i0.port)
+        mark(i0.wire, "blah")
+      }
+      val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
+      annos.collect { case c: MarkAnnotation => c } should contain(
+        MarkAnnotation("~Top|Top/i0:HasAnalogWire>wire".rt, "blah")
+      )
+      chirrtl.serialize should include("attach (port, i0.port)")
     }
   }
   describe("(2) Annotations on designs not in the same chisel compilation") {
