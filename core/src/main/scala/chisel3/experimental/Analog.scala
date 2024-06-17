@@ -58,7 +58,12 @@ final class Analog private (private[chisel3] val width: Width) extends Element {
     }
 
     targetTopBinding match {
+<<<<<<< HEAD
       case _: WireBinding | _: PortBinding | _: ViewBinding | _: AggregateViewBinding =>
+=======
+      case _: WireBinding | _: PortBinding | _: SecretPortBinding | _: ViewBinding | _: AggregateViewBinding |
+          CrossModuleBinding =>
+>>>>>>> 9ec0fa27f (Support XMRs to Analog in D/I (#4181))
         direction = ActualDirection.Bidirectional(ActualDirection.Default)
       case x => throwException(s"Analog can only be Ports and Wires, not '$x'")
     }
