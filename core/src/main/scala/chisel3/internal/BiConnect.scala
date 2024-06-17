@@ -6,6 +6,7 @@ import chisel3._
 import chisel3.experimental.dataview.{isView, reify, reifyToAggregate}
 import chisel3.experimental.{attach, Analog, BaseModule, SourceInfo}
 import chisel3.properties.Property
+import chisel3.internal.binding._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.ir.{Connect, DefInvalid}
 import chisel3.internal.firrtl.Converter

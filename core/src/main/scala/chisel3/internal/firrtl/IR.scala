@@ -5,6 +5,7 @@ package chisel3.internal.firrtl
 import firrtl.{ir => fir}
 import chisel3._
 import chisel3.internal._
+import chisel3.internal.binding._
 import chisel3.experimental._
 import chisel3.properties.{Property, PropertyType => PropertyTypeclass, Class, DynamicObject}
 import _root_.firrtl.{ir => firrtlir}

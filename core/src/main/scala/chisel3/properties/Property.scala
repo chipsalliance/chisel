@@ -6,6 +6,7 @@ package properties
 import firrtl.{ir => fir}
 import firrtl.annotations.{InstanceTarget, IsMember, ModuleTarget, ReferenceTarget, Target}
 import chisel3.internal._
+import chisel3.internal.binding._
 import chisel3.internal.firrtl.{ir, Converter}
 import chisel3.internal.sourceinfo.SourceInfoTransform
 import chisel3.experimental.{prefix, requireIsHardware, Analog, SourceInfo}

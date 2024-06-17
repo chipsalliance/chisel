@@ -7,6 +7,7 @@ import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashSet}
 import scala.language.experimental.macros
 
 import chisel3.internal._
+import chisel3.internal.binding._
 import chisel3.internal.Builder._
 import chisel3.internal.firrtl.ir._
 import chisel3.experimental.{requireIsChiselType, BaseModule, SourceInfo, UnlocatableSourceInfo}
@@ -833,7 +834,7 @@ package experimental {
       require(!isFullyClosed, "Cannot create secret ports if module is fully closed")
 
       Module.assignCompatDir(iodef)
-      iodef.bind(internal.SecretPortBinding(this), iodef.specifiedDirection)
+      iodef.bind(SecretPortBinding(this), iodef.specifiedDirection)
       iodef
     }
 

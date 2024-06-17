@@ -8,7 +8,8 @@ import chisel3.{Module, RawModule, SpecifiedDirection}
 import chisel3.experimental.{BaseModule, SourceInfo}
 import chisel3.internal.firrtl.ir.{DefClass, DefObject}
 import chisel3.internal.sourceinfo.InstTransform
-import chisel3.internal.{throwException, Builder, HasId, NamedComponent, ObjectFieldBinding}
+import chisel3.internal.{throwException, Builder, HasId, NamedComponent}
+import chisel3.internal.binding.ObjectFieldBinding
 
 import scala.collection.immutable.HashMap
 import scala.language.existentials
