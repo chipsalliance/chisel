@@ -93,12 +93,6 @@ final class WhenContext private[chisel3] (
   // For capturing conditions from prior whens or elsewhens
   altConds: List[() => Bool]) {
 
-  /** Commands that occur under the "if" leg of this when statement. */
-  val ifRegion = new VectorBuilder[Command]()
-
-  /** Commands that occurr under the "else" leg of this when statement. */
-  val elseRegion = new VectorBuilder[Command]()
-
   /** Indicate if the `WhenContext` is "closed" (`None`) or if this is writing to
     * the "if" or "else" region.
     */
@@ -131,7 +125,7 @@ final class WhenContext private[chisel3] (
   )(
     implicit sourceInfo: SourceInfo
   ): WhenContext = {
-    Builder.forcedUserModule.withRegion(elseRegion) {
+    Builder.forcedUserModule.withRegion(whenCommand.elseRegion) {
       new WhenContext(sourceInfo, () => elseCond, block, firrtlDepth + 1, cond :: altConds)
     }
   }
@@ -146,25 +140,24 @@ final class WhenContext private[chisel3] (
   def otherwise(block: => Any)(implicit sourceInfo: SourceInfo): Unit = {
     Builder.pushWhen(this)
     scope = Some(Scope.Else)
-    Builder.forcedUserModule.withRegion(elseRegion) {
+    Builder.forcedUserModule.withRegion(whenCommand.elseRegion) {
       block
     }
     scope = None
     Builder.popWhen()
   }
 
+  /** Return true if this `WhenContext` is currently constructing operations. */
   def active: Boolean = scope.isDefined
 
-  /*
-   *
-   */
-  // if (firrtlDepth > 0) { pushCommand(AltBegin(sourceInfo)) }
-  // cond.foreach(c => pushCommand(WhenBegin(sourceInfo, c().ref)))
-  pushCommand(When(sourceInfo, cond().ref, ifRegion, elseRegion))
+  // Create the `When` operation and run the `block` thunk inside the
+  // `ifRegion`.  Any commands that this thunk creates will be put inside this
+  // block.
+  private val whenCommand = pushCommand(When(sourceInfo, cond().ref))
   Builder.pushWhen(this)
   scope = Some(Scope.If)
   try {
-    Builder.forcedUserModule.withRegion(ifRegion) {
+    Builder.forcedUserModule.withRegion(whenCommand.ifRegion) {
       block
     }
   } catch {
@@ -176,6 +169,4 @@ final class WhenContext private[chisel3] (
   }
   scope = None
   Builder.popWhen()
-  // cond.foreach(_ => pushCommand(WhenEnd(sourceInfo, firrtlDepth)))
-  // if (cond.isEmpty) { pushCommand(OtherwiseEnd(sourceInfo, firrtlDepth)) }
 }

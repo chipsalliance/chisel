@@ -330,8 +330,8 @@ private[chisel3] object ir {
   case class When(
     sourceInfo: SourceInfo,
     pred:       Arg,
-    ifRegion:   VectorBuilder[Command],
-    elseRegion: VectorBuilder[Command])
+    ifRegion:   VectorBuilder[Command] = new VectorBuilder[Command],
+    elseRegion: VectorBuilder[Command] = new VectorBuilder[Command])
       extends Command
 
   case class Connect(sourceInfo: SourceInfo, loc: Arg, exp: Arg) extends Command
