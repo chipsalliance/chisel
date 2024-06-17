@@ -42,7 +42,7 @@ object Select {
             Seq(f(cmd))
           else
             Seq.empty
-        head ++ collect(ifRegion.result())(f) ++ collect(elseRegion.result())(f)
+        head ++ collect(ifRegion)(f) ++ collect(elseRegion)(f)
       case cmd if f.isDefinedAt(cmd) => Some(f(cmd))
       case _                         => None
     }
@@ -539,8 +539,8 @@ object Select {
           case l: LitArg if l.num == BigInt(0) => When(false.B)
           case _ => ???
         }
-        searchCommands(ifRegion.result(), pred +: preds, processCommand)
-        searchCommands(elseRegion.result(), pred.not +: preds, processCommand)
+        searchCommands(ifRegion, pred +: preds, processCommand)
+        searchCommands(elseRegion, pred.not +: preds, processCommand)
       case cmd => processCommand(cmd, preds)
     }
 

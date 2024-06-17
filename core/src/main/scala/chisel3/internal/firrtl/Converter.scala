@@ -277,8 +277,8 @@ private[chisel3] object Converter {
         fir.Conditionally(
           convert(info),
           convert(pred, ctx, info),
-          convert(ifRegion.result(), ctx, typeAliases),
-          convert(elseRegion.result(), ctx, typeAliases)
+          convert(ifRegion, ctx, typeAliases),
+          convert(elseRegion, ctx, typeAliases)
         )
       )
     case _ => None

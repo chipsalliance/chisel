@@ -3,7 +3,6 @@
 package chisel3
 
 import scala.language.experimental.macros
-import scala.collection.immutable.VectorBuilder
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.ir._
@@ -153,7 +152,7 @@ final class WhenContext private[chisel3] (
   // Create the `When` operation and run the `block` thunk inside the
   // `ifRegion`.  Any commands that this thunk creates will be put inside this
   // block.
-  private val whenCommand = pushCommand(When(sourceInfo, cond().ref))
+  private val whenCommand = pushCommand(new When(sourceInfo, cond().ref))
   Builder.pushWhen(this)
   scope = Some(Scope.If)
   try {

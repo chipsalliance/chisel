@@ -327,12 +327,24 @@ private[chisel3] object ir {
       extends Definition
   case class DefObject(sourceInfo: SourceInfo, id: HasId, className: String) extends Definition
 
-  case class When(
-    sourceInfo: SourceInfo,
-    pred:       Arg,
-    ifRegion:   VectorBuilder[Command] = new VectorBuilder[Command],
-    elseRegion: VectorBuilder[Command] = new VectorBuilder[Command])
-      extends Command
+  class When(val sourceInfo: SourceInfo, val pred: Arg) extends Command {
+    val ifRegion = new VectorBuilder[Command]
+    private var _elseRegion: Option[VectorBuilder[Command]] = None
+    def elseRegion: VectorBuilder[Command] = {
+      if (_elseRegion.isEmpty) {
+        _elseRegion = Some(new VectorBuilder[Command])
+      }
+      _elseRegion.get
+    }
+  }
+
+  object When {
+    def unapply(when: When): Option[(SourceInfo, Arg, Seq[Command], Seq[Command])] = {
+      Some(
+        (when.sourceInfo, when.pred, when.ifRegion.result(), when._elseRegion.map(_.result()).getOrElse(Seq.empty))
+      )
+    }
+  }
 
   case class Connect(sourceInfo: SourceInfo, loc: Arg, exp: Arg) extends Command
   case class PropAssign(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
