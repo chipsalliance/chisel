@@ -8,7 +8,7 @@ import chisel3.experimental.hierarchy.{InstanceClone, InstantiableClone, ModuleC
 import scala.annotation.implicitNotFound
 import scala.collection.mutable.HashMap
 import chisel3._
-import chisel3.experimental.dataview.{isView, reify, reifySingleData}
+import chisel3.experimental.dataview.{isView, reify, reifyIdentityView}
 import chisel3.internal.firrtl.ir.{Arg, ILit, Index, ModuleIO, Slot, ULit}
 import chisel3.internal.{throwException, AggregateViewBinding, Builder, ChildBinding, ViewBinding, ViewParent}
 
@@ -103,11 +103,11 @@ object Lookupable {
     }
   }
 
-  // Helper for co-iterating on Elements of aggregates, they must be the same type but that is unchecked
-  private def coiterate(a: Data, b: Data): Iterable[(Element, Element)] = {
+  // Helper for co-iterating on all Elements of aggregates, they must be the same type but that is unchecked
+  private def coiterate(a: Data, b: Data): Iterable[(Data, Data)] = {
     val as = getRecursiveFields.lazily(a, "_")
     val bs = getRecursiveFields.lazily(b, "_")
-    as.zip(bs).collect { case ((ae: Element, _), (be: Element, _)) => (ae, be) }
+    as.zip(bs).collect { case ((ae: Data, _), (be: Data, _)) => (ae, be) }
   }
 
   /** Given a Data, find the root of its binding, apply a function to the root to get a "new root",
@@ -180,43 +180,28 @@ object Lookupable {
         data match {
           case e: Element   => ViewBinding(lookupData(reify(avb.lookup(e).get)))
           case _: Aggregate =>
-            // Provide a 1:1 mapping if possible
-            val singleTargetOpt = map.get(data).filter(_ => avb == data.binding.get).flatMap(reifySingleData)
-            singleTargetOpt match {
-              case Some(singleTarget) => // It is 1:1!
-                // This is a little tricky because the values in newMap need to point to Elements of newTarget
-                val newTarget = lookupData(singleTarget)
-                val newMap = coiterate(result, data).map {
-                  case (res, from) =>
-                    (res: Data) -> mapRootAndExtractSubField(map(from), _ => newTarget)
-                }.toMap
-                AggregateViewBinding(newMap + (result -> newTarget))
-
-              case None => // No 1:1 mapping so we have to do a flat binding
-                // Just remap each Element of this aggregate
-                val newMap = coiterate(result, data).map {
-                  // Upcast res to Data since Maps are invariant in the Key type parameter
-                  case (res, from) => (res: Data) -> lookupData(reify(avb.lookup(from).get))
-                }.toMap
-                AggregateViewBinding(newMap)
-            }
+            // We could just call reifyIdentityView, but since we already have avb, it is
+            // faster to just use it but then call reifyIdentityView in case the target is itself a view
+            def reifyOpt(data: Data): Option[Data] = map.get(data).flatMap(reifyIdentityView(_))
+            // Just remap each Data present in the map
+            val newMap = coiterate(result, data).flatMap {
+              case (res, from) => reifyOpt(from).map(res -> lookupData(_))
+            }.toMap
+            AggregateViewBinding(newMap)
         }
       case _ => throw new InternalErrorException("Match error: data.topBinding=${data.topBinding}")
     }
 
     // TODO Unify the following with `.viewAs`
-    // We must also mark non-1:1 and child Aggregates in the view for renaming
+    // We must also mark any non-identity Aggregates as unnammed
     newBinding match {
       case _: ViewBinding => // Do nothing
       case AggregateViewBinding(childMap) =>
-        if (!childMap.contains(result)) {
-          Builder.unnamedViews += result
-        }
-        // Binding does not capture 1:1 for child aggregates views
+        // TODO we could do reifySingleTarget instead of just marking non-identity mappings
         getRecursiveFields.lazily(result, "_").foreach {
-          case (agg: Aggregate, _) if agg != result =>
+          case (agg: Aggregate, _) if !childMap.contains(agg) =>
             Builder.unnamedViews += agg
-          case _ => // Do nothing
+          case _ => ()
         }
       case _ => throw new InternalErrorException("Match error: newBinding=$newBinding")
     }

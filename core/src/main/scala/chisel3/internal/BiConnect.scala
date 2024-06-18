@@ -3,7 +3,7 @@
 package chisel3.internal
 
 import chisel3._
-import chisel3.experimental.dataview.{isView, reify, reifyToAggregate}
+import chisel3.experimental.dataview.{isView, reify, reifyIdentityView}
 import chisel3.experimental.{attach, Analog, BaseModule, SourceInfo}
 import chisel3.properties.Property
 import chisel3.internal.Builder.pushCommand
@@ -120,8 +120,10 @@ private[chisel3] object BiConnect {
           throw MismatchedVecException
         }
 
-        val leftReified:  Option[Aggregate] = if (isView(left_v)) reifyToAggregate(left_v) else Some(left_v)
-        val rightReified: Option[Aggregate] = if (isView(right_v)) reifyToAggregate(right_v) else Some(right_v)
+        val leftReified: Option[Vec[Data @unchecked]] =
+          if (isView(left_v)) reifyIdentityView(left_v) else Some(left_v)
+        val rightReified: Option[Vec[Data @unchecked]] =
+          if (isView(right_v)) reifyIdentityView(right_v) else Some(right_v)
 
         if (
           leftReified.nonEmpty && rightReified.nonEmpty && canFirrtlConnectData(
@@ -170,8 +172,8 @@ private[chisel3] object BiConnect {
           !MonoConnect.canBeSink(left_r, context_mod) || !MonoConnect.canBeSource(right_r, context_mod)
         val (newLeft, newRight) = if (flipConnection) (right_r, left_r) else (left_r, right_r)
 
-        val leftReified:  Option[Aggregate] = if (isView(newLeft)) reifyToAggregate(newLeft) else Some(newLeft)
-        val rightReified: Option[Aggregate] = if (isView(newRight)) reifyToAggregate(newRight) else Some(newRight)
+        val leftReified:  Option[Record] = if (isView(newLeft)) reifyIdentityView(newLeft) else Some(newLeft)
+        val rightReified: Option[Record] = if (isView(newRight)) reifyIdentityView(newRight) else Some(newRight)
 
         if (
           leftReified.nonEmpty && rightReified.nonEmpty && canFirrtlConnectData(
