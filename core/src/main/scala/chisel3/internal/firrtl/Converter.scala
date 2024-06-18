@@ -281,6 +281,12 @@ private[chisel3] object Converter {
           convert(elseRegion, ctx, typeAliases)
         )
       )
+    case Region(info, region) =>
+      if (region.isEmpty) {
+        None
+      } else {
+        Some(fir.Block(convert(region, ctx, typeAliases)))
+      }
     case _ => None
   }
 

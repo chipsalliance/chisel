@@ -328,6 +328,17 @@ private[chisel3] object ir {
       extends Definition
   case class DefObject(sourceInfo: SourceInfo, id: HasId, className: String) extends Definition
 
+  class Region extends Command {
+    override val sourceInfo = UnlocatableSourceInfo
+    val region = new VectorBuilder[Command]
+  }
+
+  object Region {
+    def unapply(region: Region): Option[(SourceInfo, Seq[Command])] = {
+      Some((region.sourceInfo, region.region.result()))
+    }
+  }
+
   class When(val sourceInfo: SourceInfo, val pred: Arg) extends Command {
     val ifRegion = new VectorBuilder[Command]
     private var _elseRegion: VectorBuilder[Command] = null
