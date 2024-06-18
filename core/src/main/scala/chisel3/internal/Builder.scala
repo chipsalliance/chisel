@@ -18,7 +18,7 @@ import _root_.firrtl.AnnotationSeq
 import _root_.firrtl.renamemap.MutableRenameMap
 import _root_.firrtl.util.BackendCompilationUtilities._
 import _root_.firrtl.{ir => fir}
-import chisel3.experimental.dataview.{reify, reifySingleData}
+import chisel3.experimental.dataview.{reify, reifySingleTarget}
 import chisel3.internal.Builder.Prefix
 import logger.{LazyLogging, LoggerOption}
 
@@ -303,7 +303,7 @@ private[chisel3] trait HasId extends chisel3.InstanceId {
 
   // Helper for reifying views if they map to a single Target
   private[chisel3] def reifyTarget: Option[Data] = this match {
-    case d: Data => reifySingleData(d) // Only Data can be views
+    case d: Data => reifySingleTarget(d) // Only Data can be views
     case bad => throwException(s"This shouldn't be possible - got $bad with ${_parent}")
   }
 
@@ -953,23 +953,32 @@ private[chisel3] object Builder extends LazyLogging {
   // RenameMap can split into the constituent parts
   private[chisel3] def makeViewRenameMap: MutableRenameMap = {
     val renames = MutableRenameMap()
-    for (view <- unnamedViews) {
-      val localTarget = view.toTarget
-      val absTarget = view.toAbsoluteTarget
-      val elts = getRecursiveFields.lazily(view, "").collect { case (elt: Element, _) => elt }
-      for (elt <- elts if !elt.isLit) {
-        // This is a hack to not crash when .viewAs is called on non-hardware
-        // It can be removed in Chisel 6.0.0 when it becomes illegal to call .viewAs on non-hardware
-        val targetOfViewOpt =
-          try {
-            Some(reify(elt))
-          } catch {
-            case _: NoSuchElementException => None
+    for (view <- unnamedViews if !view.isLit) { // Aggregates can be literals too!
+      reifySingleTarget(view) match {
+        // If the target reifies to a single target, we don't need to rename.
+        // This is ludicrously expensive though, find a way to make this code unnecessary.
+        case Some(_) => ()
+        case None =>
+          val localTarget = view.toTarget
+          val absTarget = view.toAbsoluteTarget
+          val elts = getRecursiveFields.lazily(view, "").collect { case (elt: Element, _) => elt }
+          for (elt <- elts if !elt.isLit) {
+            // This is a hack to not crash when .viewAs is called on non-hardware
+            // It can be removed in Chisel 6.0.0 when it becomes illegal to call .viewAs on non-hardware
+            val targetOfViewOpt =
+              try {
+                Some(reify(elt))
+              } catch {
+                case _: NoSuchElementException => None
+              }
+            // It is legal to target DontCare, but we obviously cannot rename to DontCare
+            targetOfViewOpt
+              .filterNot(_.binding.contains(DontCareBinding()))
+              .foreach { targetOfView =>
+                renames.record(localTarget, targetOfView.toTarget)
+                renames.record(absTarget, targetOfView.toAbsoluteTarget)
+              }
           }
-        targetOfViewOpt.foreach { targetOfView =>
-          renames.record(localTarget, targetOfView.toTarget)
-          renames.record(absTarget, targetOfView.toAbsoluteTarget)
-        }
       }
     }
     renames

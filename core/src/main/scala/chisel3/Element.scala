@@ -42,11 +42,8 @@ abstract class Element extends Data {
     case Some(b @ AggregateViewBinding(viewMap)) =>
       viewMap.get(this) match {
         case Some(elt: Element) => Some(ViewBinding(elt))
-        // TODO We could generate a reduced AggregateViewBinding, but is there a point?
-        // Generating the new object would be somewhat slow, it's not clear if we should do this
-        //   matching anyway
-        case Some(data: Aggregate) => Some(b)
-        case _ => throwException(s"Internal Error! $this missing from topBinding $b")
+        // Children of Probes won't be in viewMap, just return the binding
+        case _ => Some(b)
       }
     case topBindingOpt => topBindingOpt
   }

@@ -7,7 +7,7 @@ import chisel3.experimental.dataview.reify
 import scala.language.experimental.macros
 import chisel3.experimental.{requireIsChiselType, requireIsHardware, Analog, BaseModule}
 import chisel3.experimental.{prefix, SourceInfo, UnlocatableSourceInfo}
-import chisel3.experimental.dataview.reifySingleData
+import chisel3.experimental.dataview.{reifyIdentityView, reifySingleTarget}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal._
 import chisel3.internal.binding._
@@ -427,7 +427,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     // Trace views to give better error messages
     // Reifying involves checking against ViewParent which requires being in a Builder context
     // Since we're just printing a String, suppress such errors and use this object
-    val thiz = Try(reifySingleData(this)).toOption.flatten.getOrElse(this)
+    val thiz = Try(reifySingleTarget(this)).toOption.flatten.getOrElse(this)
     thiz.topBindingOpt match {
       case None => chiselType
       // Handle DontCares specially as they are "literal-like" but not actually literals
@@ -679,9 +679,9 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       // DataView
       case Some(ViewBinding(target)) => reify(target).ref
       case Some(_: AggregateViewBinding) =>
-        reifySingleData(this) match {
+        reifyIdentityView(this) match {
           // If this is an identity view (a view of something of the same type), return ref of target
-          case Some(target) if this.typeEquivalent(target) => target.ref
+          case Some(target) => target.ref
           // Otherwise, we need to materialize hardware of the correct type
           case _ => materializeWire()
         }
