@@ -108,7 +108,7 @@ class FirContext {
   }
 
   def enterWhen(whenOp: Op): Unit = whenStack.push(WhenContext(whenOp, currentBlock, false))
-  def enterAlt(): Unit = whenStack.top.inAlt = true
+  def enterAlt():  Unit = whenStack.top.inAlt = true
   def leaveWhen(): Unit = whenStack.pop
 
   def circuitBlock: MlirBlock = opCircuit.region(0).block(0)
@@ -1684,11 +1684,17 @@ object PanamaCIRCTConverter {
 
   private def visitCommand(parent: Component, cmd: Command)(implicit cvt: PanamaCIRCTConverter): Unit = {
     cmd match {
-      case attach:              Attach                    => visitAttach(attach)
-      case connect:             Connect                   => visitConnect(connect)
-      case connectInit:         ConnectInit               => visitConnectInit(connectInit)
-      case defInvalid:          DefInvalid                => visitDefInvalid(defInvalid)
-      case when:                When                      => visitWhen(when, () => visitCommands(parent, when.ifRegion.result), if (when.elseRegion.nonEmpty) { Some(() => visitCommands(parent, when.elseRegion.result)) } else { None })
+      case attach:      Attach      => visitAttach(attach)
+      case connect:     Connect     => visitConnect(connect)
+      case connectInit: ConnectInit => visitConnectInit(connectInit)
+      case defInvalid:  DefInvalid => visitDefInvalid(defInvalid)
+      case when:        When =>
+        visitWhen(
+          when,
+          () => visitCommands(parent, when.ifRegion.result),
+          if (when.elseRegion.nonEmpty) { Some(() => visitCommands(parent, when.elseRegion.result)) }
+          else { None }
+        )
       case defInstance:         DefInstance               => visitDefInstance(defInstance)
       case defMemPort:          DefMemPort[ChiselData]    => visitDefMemPort(defMemPort)
       case defMemory:           DefMemory                 => visitDefMemory(defMemory)
@@ -1746,7 +1752,13 @@ object PanamaCIRCTConverter {
   def visitDefInvalid(defInvalid: DefInvalid)(implicit cvt: PanamaCIRCTConverter): Unit = {
     cvt.visitDefInvalid(defInvalid)
   }
-  def visitWhen(when: When, visitIfRegion: () => Unit, visitElseRegion: Option[() => Unit])(implicit cvt: PanamaCIRCTConverter): Unit = {
+  def visitWhen(
+    when:            When,
+    visitIfRegion:   () => Unit,
+    visitElseRegion: Option[() => Unit]
+  )(
+    implicit cvt: PanamaCIRCTConverter
+  ): Unit = {
     cvt.visitWhen(when, visitIfRegion, visitElseRegion)
   }
   def visitDefInstance(defInstance: DefInstance)(implicit cvt: PanamaCIRCTConverter): Unit = {
