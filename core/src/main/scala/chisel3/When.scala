@@ -68,7 +68,7 @@ private object Scope {
     override def toString: String = "if"
   }
 
-  /** Indicatest that the `WhenContext` is in the "else" clause. */
+  /** Indicates that the `WhenContext` is in the "else" clause. */
   object Else extends Type {
     override def toString: String = "else"
   }
