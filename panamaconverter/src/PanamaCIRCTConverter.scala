@@ -1692,12 +1692,12 @@ object PanamaCIRCTConverter {
       case (cmd, nextCmd) =>
         cmd match {
           // Command
-          case attach:   Attach   => visitAttach(attach)
-          case connect:  Connect  => visitConnect(connect)
+          case attach:  Attach  => visitAttach(attach)
+          case connect: Connect => visitConnect(connect)
           // case partialConnect: PartialConnect => {} // TODO
-          case connectInit:  ConnectInit  => visitConnectInit(connectInit)
-          case defInvalid:   DefInvalid   => visitDefInvalid(defInvalid)
-          case when:         When         => visitWhen(when)
+          case connectInit: ConnectInit => visitConnectInit(connectInit)
+          case defInvalid:  DefInvalid  => visitDefInvalid(defInvalid)
+          case when:        When        => visitWhen(when)
 
           // Definition
           case defInstance:         DefInstance               => visitDefInstance(defInstance)
