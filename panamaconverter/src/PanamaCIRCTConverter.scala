@@ -986,10 +986,6 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
     firCtx.enterNewModule(defModule.name, firModule)
   }
 
-  def visitAltBegin(altBegin: AltBegin): Unit = {
-    firCtx.enterAlt()
-  }
-
   def visitAttach(attach: Attach): Unit = {
     util
       .OpBuilder("firrtl.attach", firCtx.currentBlock, util.convert(attach.sourceInfo))
@@ -1024,13 +1020,9 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
     util.emitInvalidate(dest, loc)
   }
 
-  def visitOtherwiseEnd(otherwiseEnd: OtherwiseEnd): Unit = {
-    firCtx.leaveOtherwise(otherwiseEnd.firrtlDepth)
-  }
-
-  def visitWhenBegin(whenBegin: WhenBegin): Unit = {
-    val loc = util.convert(whenBegin.sourceInfo)
-    val cond = util.referTo(whenBegin.pred, whenBegin.sourceInfo)
+  def visitWhen(when: When): Unit = {
+    val loc = util.convert(when.sourceInfo)
+    val cond = util.referTo(when.pred, when.sourceInfo)
 
     val op = util
       .OpBuilder("firrtl.when", firCtx.currentBlock, loc)
@@ -1039,11 +1031,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
       .withOperand( /* condition */ cond.value)
       .build()
 
-    firCtx.enterWhen(op)
-  }
-
-  def visitWhenEnd(whenEnd: WhenEnd): Unit = {
-    firCtx.leaveWhen(whenEnd.firrtlDepth, whenEnd.hasAlt)
+    ???
   }
 
   def visitDefInstance(defInstance: DefInstance): Unit = {
@@ -1704,15 +1692,12 @@ object PanamaCIRCTConverter {
       case (cmd, nextCmd) =>
         cmd match {
           // Command
-          case altBegin: AltBegin => visitAltBegin(altBegin)
           case attach:   Attach   => visitAttach(attach)
           case connect:  Connect  => visitConnect(connect)
           // case partialConnect: PartialConnect => {} // TODO
           case connectInit:  ConnectInit  => visitConnectInit(connectInit)
           case defInvalid:   DefInvalid   => visitDefInvalid(defInvalid)
-          case otherwiseEnd: OtherwiseEnd => visitOtherwiseEnd(otherwiseEnd)
-          case whenBegin:    WhenBegin    => visitWhenBegin(whenBegin)
-          case whenEnd:      WhenEnd      => visitWhenEnd(whenEnd, nextCmd)
+          case when:         When         => visitWhen(when)
 
           // Definition
           case defInstance:         DefInstance               => visitDefInstance(defInstance)
@@ -1743,9 +1728,6 @@ object PanamaCIRCTConverter {
   def visitDefIntrinsicModule(defIntrinsicModule: DefIntrinsicModule)(implicit cvt: PanamaCIRCTConverter): Unit = {
     cvt.visitDefIntrinsicModule(defIntrinsicModule)
   }
-  def visitAltBegin(altBegin: AltBegin)(implicit cvt: PanamaCIRCTConverter): Unit = {
-    cvt.visitAltBegin(altBegin)
-  }
   def visitAttach(attach: Attach)(implicit cvt: PanamaCIRCTConverter): Unit = {
     cvt.visitAttach(attach)
   }
@@ -1759,20 +1741,8 @@ object PanamaCIRCTConverter {
   def visitDefInvalid(defInvalid: DefInvalid)(implicit cvt: PanamaCIRCTConverter): Unit = {
     cvt.visitDefInvalid(defInvalid)
   }
-  def visitOtherwiseEnd(otherwiseEnd: OtherwiseEnd)(implicit cvt: PanamaCIRCTConverter): Unit = {
-    cvt.visitOtherwiseEnd(otherwiseEnd)
-  }
-  def visitWhenBegin(whenBegin: WhenBegin)(implicit cvt: PanamaCIRCTConverter): Unit = {
-    cvt.visitWhenBegin(whenBegin)
-  }
-  def visitWhenEnd(whenEnd: WhenEnd, next: Option[Command])(implicit cvt: PanamaCIRCTConverter): Unit = {
-    // FIXME: workaround https://github.com/chipsalliance/chisel/issues/3435
-    val hasAlt = next match {
-      case Some(_: AltBegin) => true
-      case _ => false
-    }
-    val whenEndPatched = WhenEnd(whenEnd.sourceInfo, whenEnd.firrtlDepth, hasAlt)
-    cvt.visitWhenEnd(whenEndPatched)
+  def visitWhen(when: When)(implicit cvt: PanamaCIRCTConverter): Unit = {
+    cvt.visitWhen(when)
   }
   def visitDefInstance(defInstance: DefInstance)(implicit cvt: PanamaCIRCTConverter): Unit = {
     cvt.visitDefInstance(defInstance)
