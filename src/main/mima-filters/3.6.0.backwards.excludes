@@ -1,0 +1,2 @@
+# Constructor is package private
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("chisel3.stage.ChiselOptions.this")

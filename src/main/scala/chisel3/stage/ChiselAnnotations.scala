@@ -15,9 +15,10 @@ import firrtl.options.{
 import firrtl.options.Viewer.view
 import chisel3.{deprecatedMFCMessage, ChiselException, Module}
 import chisel3.RawModule
-import chisel3.internal.Builder
+import chisel3.internal.{Builder, WarningFilter}
 import chisel3.internal.firrtl.{Circuit, Emitter => OldEmitter}
 import firrtl.AnnotationSeq
+import scala.util.control.NonFatal
 import java.io.File
 import java.lang.reflect.InvocationTargetException
 
@@ -97,6 +98,100 @@ case object WarningsAsErrorsAnnotation
     )
   )
 
+  private[chisel3] def asFilter: WarningFilter = WarningFilter(None, None, WarningFilter.Error)
+}
+
+// TODO shoud this be Unserializable or should it be propagated to MFC? Perhaps in a different form?
+case class WarningConfigurationAnnotation(value: String)
+    extends NoTargetAnnotation
+    with Unserializable
+    with ChiselOption {
+
+  // This is eager so that the validity of the value String can be checked right away
+  private[chisel3] val filters: Seq[WarningFilter] = {
+    import chisel3.internal.ListSyntax
+    val filters = value.split(",")
+    filters.toList
+      // Add accumulating index to each filter for error reporting
+      .mapAccumulate(0) { case (idx, s) => (idx + 1 + s.length, (idx, s)) } // + 1 for removed ','
+      ._2 // Discard accumulator
+      .map {
+        case (idx, s) =>
+          WarningFilter.parse(s) match {
+            case Right(wf) => wf
+            case Left((jdx, msg)) =>
+              val carat = (" " * (idx + jdx)) + "^"
+              // Note tab before value and carat
+              throw new Exception(s"Failed to parse configuration: $msg\n  $value\n  $carat")
+          }
+      }
+  }
+}
+
+object WarningConfigurationAnnotation extends HasShellOptions {
+  val options = Seq(
+    new ShellOption[String](
+      longOption = "warn-conf",
+      toAnnotationSeq = { value =>
+        try {
+          Seq(WarningConfigurationAnnotation(value))
+        } catch {
+          case NonFatal(e) => throw new OptionsException(e.getMessage)
+        }
+      },
+      helpText = "Warning configuration",
+      helpValueName = Some("<value>")
+    )
+  )
+}
+
+// TODO shoud this be Unserializable or should it be propagated to MFC? Perhaps in a different form?
+case class WarningConfigurationFileAnnotation(value: File)
+    extends NoTargetAnnotation
+    with Unserializable
+    with ChiselOption {
+
+  // This is eager so that the validity of the value String can be checked right away
+  private[chisel3] val filters: Seq[WarningFilter] = {
+    require(value.exists, s"Warning configuration file '$value' must exist!")
+    require(value.isFile && value.canRead, s"Warning configuration file '$value' must be a readable file!")
+    val lines = scala.io.Source.fromFile(value).getLines()
+    lines.zipWithIndex.flatMap {
+      case (contents, lineNo) =>
+        // Strip line comments (denoted with #)
+        val str = contents.takeWhile(_ != '#')
+        if (str.nonEmpty) Some {
+          WarningFilter.parse(str) match {
+            case Right(wf) => wf
+            case Left((idx, msg)) =>
+              val carat = (" " * idx) + "^"
+              val info = s"$value:${lineNo + 1}:$idx" // +1 to lineNo because we start at 0 but files start with 1
+              // Note tab before value and carat
+              throw new Exception(
+                s"Failed to parse configuration at $info: $msg\n  $contents\n  $carat"
+              )
+          }
+        }
+        else None
+    }.toVector
+  }
+}
+
+object WarningConfigurationFileAnnotation extends HasShellOptions {
+  val options = Seq(
+    new ShellOption[File](
+      longOption = "warn-conf-file",
+      toAnnotationSeq = { value =>
+        try {
+          Seq(WarningConfigurationFileAnnotation(value))
+        } catch {
+          case NonFatal(e) => throw new OptionsException(e.getMessage)
+        }
+      },
+      helpText = "Warning configuration",
+      helpValueName = Some("<value>")
+    )
+  )
 }
 
 /** A root directory for source files, used for enhanced error reporting
