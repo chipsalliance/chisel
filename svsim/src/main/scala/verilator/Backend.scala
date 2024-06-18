@@ -11,6 +11,7 @@ object Backend {
     sealed trait TraceStyle
     object TraceStyle {
       case class Vcd(traceUnderscore: Boolean = false, filename: String = "") extends TraceStyle
+      case class Fst(traceUnderscore: Boolean = false, filename: String = "") extends TraceStyle
     }
   }
 
@@ -59,7 +60,6 @@ final class Backend(
             "-o", s"../$outputBinaryName", // "Name of final executable"
             "--top-module", topModuleName, // "Name of top-level input module"
             "--Mdir", "verilated-sources",  // "Name of output object directory"
-            "--assert", // Enable assertions
           ),
 
           commonSettings.libraryExtensions match {
@@ -89,8 +89,17 @@ final class Backend(
               } else {
                 Seq("--trace")
               }
+            case Some(TraceStyle.Fst(traceUnderscore, _)) =>
+              if (traceUnderscore) {
+                Seq("--trace-fst", "--trace-underscore")
+              } else {
+                Seq("--trace-fst")
+              }
             case None => Seq()
           },
+          Option.when(backendSpecificSettings.traceStyle.nonEmpty)(
+            Seq( "--trace-max-array", "2048", "--trace-max-width", "2048")
+          ).toSeq.flatten,
 
           Seq(
             ("-Wno-fatal", backendSpecificSettings.disableFatalExitOnWarnings),
@@ -116,6 +125,8 @@ final class Backend(
             case (flag, Some(value)) => Seq(flag, value)
           }.flatten,
 
+          additionalHeaderPaths.map { path => s"-I${path}" },
+
           Seq(
             ("-MAKEFLAGS", Seq(
               commonSettings.availableParallelism match {
@@ -123,6 +134,7 @@ final class Backend(
                 case AvailableParallelism.UpTo(value) => Seq("-j", value.toString())
               },
             ).flatten),
+
             ("-CFLAGS", Seq(
               commonSettings.optimizationStyle match {
                 case OptimizationStyle.Default => Seq()
@@ -156,8 +168,11 @@ final class Backend(
             commonSettings.verilogPreprocessorDefines,
             backendSpecificSettings.traceStyle match {
               case None => Seq()
-              case Some(value) => Seq(
+              case Some(TraceStyle.Vcd(_, _)) => Seq(
                 VerilogPreprocessorDefine(svsim.Backend.HarnessCompilationFlags.enableVcdTracingSupport)
+              )
+              case Some(TraceStyle.Fst(_, _)) => Seq(
+                VerilogPreprocessorDefine(svsim.Backend.HarnessCompilationFlags.enableFstTracingSupport)
               )
             },
           ).flatten.map(_.toCommandlineArgument(this)),

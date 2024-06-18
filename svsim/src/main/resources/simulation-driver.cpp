@@ -338,10 +338,10 @@ static void readCommand(const char **start, const char **end) {
       executionScriptCommandCount += 1;
     }
     if (executionScriptCommandCount == executionScriptLimit + 1) {
-      fprintf(executionScript,
-              "# Execution script limited to %d commands (not counting "
-              "implicit 'Done').\n",
-              executionScriptLimit);
+      // fprintf(executionScript,
+      //         "# Execution script limited to %d commands (not counting "
+      //         "implicit 'Done').\n",
+      //         executionScriptLimit);
       fprintf(executionScript, "%d> D\n", executionScriptCommandCount);
     }
     fflush(executionScript);
@@ -908,6 +908,8 @@ void simulation_main(int argc, char const **argv) {
   testbench->eval();
 
   testbench->final();
+
+  simulation_disableTrace();
 
   delete testbench;
   delete context;

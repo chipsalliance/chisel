@@ -42,7 +42,7 @@ package object simulator {
       // TODO implement support for read-only.
       val (reified, _) = reifyIdentityView(data).getOrElse {
         val url = "https://github.com/chipsalliance/chisel/issues/new/choose"
-        throw new Exception(
+        throw new RuntimeException(
           s"Cannot poke $data as is a view that does not map to a single Data. " +
             s"Please file an issue at $url requesting support for this use case."
         )

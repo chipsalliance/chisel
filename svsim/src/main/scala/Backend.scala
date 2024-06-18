@@ -118,6 +118,7 @@ final object Backend {
       * Note: These flags do not cause tracing to occur, they simply support for these tracing mechanisms in the harness.
       */
     val enableVcdTracingSupport = "SVSIM_ENABLE_VCD_TRACING_SUPPORT"
+    val enableFstTracingSupport = "SVSIM_ENABLE_FST_TRACING_SUPPORT"
     val enableVpdTracingSupport = "SVSIM_ENABLE_VPD_TRACING_SUPPORT"
     val enableFsdbTracingSupport = "SVSIM_ENABLE_FSDB_TRACING_SUPPORT"
 

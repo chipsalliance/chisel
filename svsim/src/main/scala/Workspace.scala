@@ -143,6 +143,7 @@ final class Workspace(
       l("  import \"DPI-C\" context task simulation_body();")
       l("  initial begin")
       l("    simulation_body();")
+      l("    $finish;")
       l("  end")
       l("  `ifdef ", Backend.HarnessCompilationFlags.supportsDelayInPublicFunctions)
       l("  export \"DPI-C\" task run_simulation;")
@@ -163,6 +164,10 @@ final class Workspace(
       l("      $dumpfile({traceFilePath,\".vcd\"});")
       l("      $dumpvars(0, ", dut.instanceName,");")
       l("    `endif")
+      l("    `ifdef SVSIM_ENABLE_FST_TRACING_SUPPORT")
+      l("      $dumpfile({traceFilePath,\".fst\"});")
+      l("      $dumpvars(0, ", dut.instanceName,");")
+      l("    `endif")
       l("    `ifdef SVSIM_ENABLE_VPD_TRACING_SUPPORT")
       l("      $vcdplusfile({traceFilePath,\".vpd\"});")
       l("      $dumpvars(0, ", dut.instanceName,");")
@@ -177,6 +182,8 @@ final class Workspace(
       l("  function void simulation_enableTrace;")
       l("    `ifdef SVSIM_ENABLE_VCD_TRACING_SUPPORT")
       l("    $dumpon;")
+      l("    `elsif SVSIM_ENABLE_FST_TRACING_SUPPORT")
+      l("    $dumpon;")
       l("    `elsif SVSIM_ENABLE_VPD_TRACING_SUPPORT")
       l("    $dumpon;")
       l("    `endif")
@@ -187,7 +194,12 @@ final class Workspace(
       l("  export \"DPI-C\" function simulation_disableTrace;")
       l("  function void simulation_disableTrace;")
       l("    `ifdef SVSIM_ENABLE_VCD_TRACING_SUPPORT")
+      l("    $dumpflush;")
       l("    $dumpoff;")
+      l("    `elsif SVSIM_ENABLE_FST_TRACING_SUPPORT")
+      l("    $dumpflush;")
+      l("    $dumpoff;")
+      l("    $dumpflush;")
       l("    `elsif SVSIM_ENABLE_VPD_TRACING_SUPPORT")
       l("    $dumpoff;")
       l("    `endif")
@@ -310,7 +322,7 @@ final class Workspace(
     val parameters = backend.generateParameters(
       outputBinaryName = "simulation",
       topModuleName = Workspace.testbenchModuleName,
-      additionalHeaderPaths = Seq(workingDirectoryPath),
+      additionalHeaderPaths = Seq(workingDirectoryPath, primarySourcesPath, supportArtifactsPath),
       commonSettings = commonSettings,
       backendSpecificSettings = backendSpecificSettings
     )
@@ -326,6 +338,8 @@ final class Workspace(
         s.traceStyle.collectFirst {
           case verilator.Backend.CompilationSettings.TraceStyle.Vcd(_, filename: String) if filename.nonEmpty =>
             filename.stripSuffix(".vcd")
+          case verilator.Backend.CompilationSettings.TraceStyle.Fst(_, filename: String) if filename.nonEmpty =>
+            filename.stripSuffix(".fst")
         }
       case _ => None
     }).getOrElse(s"$workingDirectoryPath/trace")

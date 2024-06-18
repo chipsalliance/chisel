@@ -10,7 +10,7 @@ object PeekPokeAPI extends PeekPokeAPI
 
 trait PeekPokeAPI {
   case class FailedExpectationException[T](observed: T, expected: T, message: String)
-      extends Exception(s"Failed Expectation: Observed value '$observed' != $expected. $message")
+      extends RuntimeException(s"Failed Expectation: Observed value '$observed' != $expected. $message")
   object FailedExpectationException {
     def apply[T](
       observed:     T,
@@ -111,10 +111,10 @@ trait PeekPokeAPI {
         value.byteValue match {
           case 0 => false.B
           case 1 => true.B
-          case x => throw new Exception(s"peeked Bool with value $x, not 0 or 1")
+          case x => throw new RuntimeException(s"peeked Bool with value $x, not 0 or 1")
         }
       } else {
-        throw new Exception(s"peeked Bool with value $value, not 0 or 1")
+        throw new RuntimeException(s"peeked Bool with value $value, not 0 or 1")
       }
     }
   }
