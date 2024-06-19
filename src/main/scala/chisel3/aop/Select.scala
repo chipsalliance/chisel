@@ -537,7 +537,7 @@ object Select {
           case Node(pred: Bool) => When(pred)
           case l: LitArg if l.num == BigInt(1) => When(true.B)
           case l: LitArg if l.num == BigInt(0) => When(false.B)
-          case _ => ???
+          case _ => sys.error(s"Something went horribly wrong! I was expecting $cond to be a lit or a bool!")
         }
         searchCommands(ifRegion, pred +: preds, processCommand)
         searchCommands(elseRegion, pred.not +: preds, processCommand)
