@@ -28,8 +28,6 @@ abstract class CIRCTConverter {
 
   def visitDefIntrinsicModule(defIntrinsicModule: DefIntrinsicModule): Unit
 
-  def visitAltBegin(altBegin: AltBegin): Unit
-
   def visitAttach(attach: Attach): Unit
 
   def visitConnect(connect: Connect): Unit
@@ -38,11 +36,7 @@ abstract class CIRCTConverter {
 
   def visitDefInvalid(defInvalid: DefInvalid): Unit
 
-  def visitOtherwiseEnd(otherwiseEnd: OtherwiseEnd): Unit
-
-  def visitWhenBegin(whenBegin: WhenBegin): Unit
-
-  def visitWhenEnd(whenEnd: WhenEnd): Unit
+  def visitWhen(when: When): Unit
 
   def visitDefSeqMemory(defSeqMemory: DefSeqMemory): Unit
 

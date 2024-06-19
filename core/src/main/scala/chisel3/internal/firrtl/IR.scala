@@ -12,7 +12,7 @@ import _root_.firrtl.{ir => firrtlir}
 import _root_.firrtl.{PrimOps, RenameMap}
 import _root_.firrtl.annotations.Annotation
 
-import scala.collection.immutable.NumericRange
+import scala.collection.immutable.{NumericRange, VectorBuilder}
 import scala.math.BigDecimal.RoundingMode
 import scala.annotation.nowarn
 import scala.collection.mutable
@@ -327,10 +327,31 @@ private[chisel3] object ir {
     choices:    Seq[(String, BaseModule)])
       extends Definition
   case class DefObject(sourceInfo: SourceInfo, id: HasId, className: String) extends Definition
-  case class WhenBegin(sourceInfo: SourceInfo, pred: Arg) extends Command
-  case class WhenEnd(sourceInfo: SourceInfo, firrtlDepth: Int, hasAlt: Boolean = false) extends Command
-  case class AltBegin(sourceInfo: SourceInfo) extends Command
-  case class OtherwiseEnd(sourceInfo: SourceInfo, firrtlDepth: Int) extends Command
+
+  class When(val sourceInfo: SourceInfo, val pred: Arg) extends Command {
+    val ifRegion = new VectorBuilder[Command]
+    private var _elseRegion: VectorBuilder[Command] = null
+    def elseRegion: VectorBuilder[Command] = {
+      if (_elseRegion == null) {
+        _elseRegion = new VectorBuilder[Command]
+      }
+      _elseRegion
+    }
+  }
+
+  object When {
+    def unapply(when: When): Option[(SourceInfo, Arg, Seq[Command], Seq[Command])] = {
+      Some(
+        (
+          when.sourceInfo,
+          when.pred,
+          when.ifRegion.result(),
+          Option(when._elseRegion).fold(Seq.empty[Command])(_.result())
+        )
+      )
+    }
+  }
+
   case class Connect(sourceInfo: SourceInfo, loc: Arg, exp: Arg) extends Command
   case class PropAssign(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
   case class Attach(sourceInfo: SourceInfo, locs: Seq[Node]) extends Command

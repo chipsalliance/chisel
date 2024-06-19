@@ -88,9 +88,25 @@ abstract class RawModule extends BaseModule {
   // Perhaps this should be an ArrayBuffer (or ArrayBuilder), but DefModule is public and has Seq[Command]
   // so our best option is to share a single Seq datastructure with that
   private val _commands = new VectorBuilder[Command]()
+
+  /** The current region to which commands will be added. */
+  private var _currentRegion = _commands
+
+  private[chisel3] def changeRegion(newRegion: VectorBuilder[Command]): Unit = {
+    _currentRegion = newRegion
+  }
+
+  private[chisel3] def withRegion[A](newRegion: VectorBuilder[Command])(thunk: => A): A = {
+    var oldRegion = _currentRegion
+    changeRegion(newRegion)
+    val result = thunk
+    changeRegion(oldRegion)
+    result
+  }
+
   private[chisel3] def addCommand(c: Command): Unit = {
     require(!_closed, "Can't write to module after module close")
-    _commands += c
+    _currentRegion += c
   }
   protected def getCommands: Seq[Command] = {
     require(_closed, "Can't get commands before module close")

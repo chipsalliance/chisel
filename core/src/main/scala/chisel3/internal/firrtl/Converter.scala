@@ -272,25 +272,20 @@ private[chisel3] object Converter {
         tpe
       )
       Some(fir.DefNode(convert(info), i.name, expr))
+    case When(info, pred, ifRegion, elseRegion) =>
+      Some(
+        fir.Conditionally(
+          convert(info),
+          convert(pred, ctx, info),
+          convert(ifRegion, ctx, typeAliases),
+          convert(elseRegion, ctx, typeAliases)
+        )
+      )
     case _ => None
   }
 
   /** Trait used for tracking when or layer regions. */
   private sealed trait RegionFrame
-
-  /** Internal datastructure to help translate Chisel's flat Command structure to FIRRTL's AST
-    *
-    * In particular, when scoping is translated from flat with begin end to a nested datastructure
-    *
-    * @param when Current when Statement, holds info, condition, and consequence as they are
-    *        available
-    * @param outer Already converted Statements that precede the current when block in the scope in
-    *        which the when is defined (ie. 1 level up from the scope inside the when)
-    * @param alt Indicates if currently processing commands in the alternate (else) of the when scope
-    */
-  // TODO we should probably have a different structure in the IR to close elses
-  private case class WhenFrame(when: fir.Conditionally, outer: VectorBuilder[fir.Statement], alt: Boolean)
-      extends RegionFrame
 
   /** Internal datastructure to help convert layer blocks to FIRRTL. */
   private case class LayerBlockFrame(layer: fir.LayerBlock, outer: VectorBuilder[fir.Statement]) extends RegionFrame
@@ -327,45 +322,6 @@ private[chisel3] object Converter {
         // Please see WhenFrame for more details
         case None =>
           cmd match {
-            case WhenBegin(info, pred) =>
-              val when = fir.Conditionally(convert(info), convert(pred, ctx, info), fir.EmptyStmt, fir.EmptyStmt)
-              val frame = WhenFrame(when, stmts, false)
-              stmts = new VectorBuilder[fir.Statement]
-              scope = frame :: scope
-            case WhenEnd(info, depth, _) =>
-              val frame = scope.head.asInstanceOf[WhenFrame]
-              val when =
-                if (frame.alt) frame.when.copy(alt = fir.Block(stmts.result()))
-                else frame.when.copy(conseq = fir.Block(stmts.result()))
-              // Check if this when has an else
-              cmdsIt.headOption match {
-                case Some(AltBegin(_)) =>
-                  assert(!frame.alt, "Internal Error! Unexpected when structure!") // Only 1 else per when
-                  scope = frame.copy(when = when, alt = true) :: scope.tail
-                  cmdsIt.next() // Consume the AltBegin
-                  stmts = new VectorBuilder[fir.Statement]
-                case _ => // Not followed by otherwise
-                  // If depth > 0 then we need to close multiple When scopes so we add a new WhenEnd
-                  // If we're nested we need to add more WhenEnds to ensure each When scope gets
-                  // properly closed
-                  if (depth > 0) {
-                    nextCmd = WhenEnd(info, depth - 1, false)
-                  }
-                  stmts = frame.outer
-                  stmts += when
-                  scope = scope.tail
-              }
-            case OtherwiseEnd(info, depth) =>
-              val frame = scope.head.asInstanceOf[WhenFrame]
-              val when = frame.when.copy(alt = fir.Block(stmts.result()))
-              // TODO For some reason depth == 1 indicates the last closing otherwise whereas
-              //  depth == 0 indicates last closing when
-              if (depth > 1) {
-                nextCmd = OtherwiseEnd(info, depth - 1)
-              }
-              stmts = frame.outer
-              stmts += when
-              scope = scope.tail
             case LayerBlockBegin(info, layer) =>
               val block = fir.LayerBlock(convert(info), layer.name, fir.EmptyStmt)
               val frame = LayerBlockFrame(block, stmts)

@@ -34,7 +34,7 @@ object when {
   )(
     implicit sourceInfo: SourceInfo
   ): WhenContext = {
-    new WhenContext(sourceInfo, Some(() => cond), block, 0, Nil)
+    new WhenContext(sourceInfo, () => cond, block, 0, Nil)
   }
 
   /** Returns the current `when` condition
@@ -60,6 +60,20 @@ object when {
   }
 }
 
+private object Scope {
+  sealed trait Type
+
+  /** Indicates that the `WhenContext` is in the "if" clause. */
+  object If extends Type {
+    override def toString: String = "if"
+  }
+
+  /** Indicates that the `WhenContext` is in the "else" clause. */
+  object Else extends Type {
+    override def toString: String = "else"
+  }
+}
+
 /**  A WhenContext may represent a when, and elsewhen, or an
   *  otherwise. Since FIRRTL does not have an "elsif" statement,
   *  alternatives must be mapped to nested if-else statements inside
@@ -72,13 +86,16 @@ object when {
   */
 final class WhenContext private[chisel3] (
   _sourceInfo: SourceInfo,
-  cond:        Option[() => Bool],
+  cond:        () => Bool,
   block:       => Any,
   firrtlDepth: Int,
   // For capturing conditions from prior whens or elsewhens
   altConds: List[() => Bool]) {
 
-  private var scopeOpen = false
+  /** Indicate if the `WhenContext` is "closed" (`None`) or if this is writing to
+    * the "if" or "else" region.
+    */
+  private var scope: Option[Scope.Type] = None
 
   private[chisel3] def sourceInfo: SourceInfo = _sourceInfo
 
@@ -88,9 +105,11 @@ final class WhenContext private[chisel3] (
     val alt = altConds.foldRight(true.B) {
       case (c, acc) => acc & !c()
     }
-    cond
-      .map(alt && _())
-      .getOrElse(alt)
+    scope match {
+      case Some(Scope.If)   => alt && cond()
+      case Some(Scope.Else) => alt && !cond()
+      case None             => alt
+    }
   }
 
   /** This block of logic gets executed if above conditions have been
@@ -105,7 +124,9 @@ final class WhenContext private[chisel3] (
   )(
     implicit sourceInfo: SourceInfo
   ): WhenContext = {
-    new WhenContext(sourceInfo, Some(() => elseCond), block, firrtlDepth + 1, cond ++: altConds)
+    Builder.forcedUserModule.withRegion(whenCommand.elseRegion) {
+      new WhenContext(sourceInfo, () => elseCond, block, firrtlDepth + 1, cond :: altConds)
+    }
   }
 
   /** This block of logic gets executed only if the above conditions
@@ -115,20 +136,29 @@ final class WhenContext private[chisel3] (
     * assignment of the Bool node of the predicate in the correct
     * place.
     */
-  def otherwise(block: => Any)(implicit sourceInfo: SourceInfo): Unit =
-    new WhenContext(sourceInfo, None, block, firrtlDepth + 1, cond ++: altConds)
+  def otherwise(block: => Any)(implicit sourceInfo: SourceInfo): Unit = {
+    Builder.pushWhen(this)
+    scope = Some(Scope.Else)
+    Builder.forcedUserModule.withRegion(whenCommand.elseRegion) {
+      block
+    }
+    scope = None
+    Builder.popWhen()
+  }
 
-  def active: Boolean = scopeOpen
+  /** Return true if this `WhenContext` is currently constructing operations. */
+  def active: Boolean = scope.isDefined
 
-  /*
-   *
-   */
-  if (firrtlDepth > 0) { pushCommand(AltBegin(sourceInfo)) }
-  cond.foreach(c => pushCommand(WhenBegin(sourceInfo, c().ref)))
+  // Create the `When` operation and run the `block` thunk inside the
+  // `ifRegion`.  Any commands that this thunk creates will be put inside this
+  // block.
+  private val whenCommand = pushCommand(new When(sourceInfo, cond().ref))
   Builder.pushWhen(this)
+  scope = Some(Scope.If)
   try {
-    scopeOpen = true
-    block
+    Builder.forcedUserModule.withRegion(whenCommand.ifRegion) {
+      block
+    }
   } catch {
     case _: scala.runtime.NonLocalReturnControl[_] =>
       throwException(
@@ -136,8 +166,6 @@ final class WhenContext private[chisel3] (
           " Perhaps you meant to use Mux or a Wire as a return value?"
       )
   }
-  scopeOpen = false
+  scope = None
   Builder.popWhen()
-  cond.foreach(_ => pushCommand(WhenEnd(sourceInfo, firrtlDepth)))
-  if (cond.isEmpty) { pushCommand(OtherwiseEnd(sourceInfo, firrtlDepth)) }
 }
