@@ -1685,10 +1685,10 @@ object PanamaCIRCTConverter {
 
   private def visitCommand(parent: Component, cmd: Command)(implicit cvt: PanamaCIRCTConverter): Unit = {
     cmd match {
-      case attach:      Attach      => visitAttach(attach)
-      case connect:     Connect     => visitConnect(connect)
-      case defInvalid:  DefInvalid => visitDefInvalid(defInvalid)
-      case when:        When =>
+      case attach:     Attach  => visitAttach(attach)
+      case connect:    Connect => visitConnect(connect)
+      case defInvalid: DefInvalid => visitDefInvalid(defInvalid)
+      case when:       When =>
         visitWhen(
           when,
           () => visitCommands(parent, when.ifRegion.result),
