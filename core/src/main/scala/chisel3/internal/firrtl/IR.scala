@@ -329,19 +329,24 @@ private[chisel3] object ir {
 
   class When(val sourceInfo: SourceInfo, val pred: Arg) extends Command {
     val ifRegion = new VectorBuilder[Command]
-    private var _elseRegion: Option[VectorBuilder[Command]] = None
+    private var _elseRegion: VectorBuilder[Command] = null
     def elseRegion: VectorBuilder[Command] = {
-      if (_elseRegion.isEmpty) {
-        _elseRegion = Some(new VectorBuilder[Command])
+      if (_elseRegion == null) {
+        _elseRegion = new VectorBuilder[Command]
       }
-      _elseRegion.get
+      _elseRegion
     }
   }
 
   object When {
     def unapply(when: When): Option[(SourceInfo, Arg, Seq[Command], Seq[Command])] = {
       Some(
-        (when.sourceInfo, when.pred, when.ifRegion.result(), when._elseRegion.map(_.result()).getOrElse(Seq.empty))
+        (
+          when.sourceInfo,
+          when.pred,
+          when.ifRegion.result(),
+          Option(when._elseRegion).fold(Seq.empty[Command])(_.result())
+        )
       )
     }
   }
