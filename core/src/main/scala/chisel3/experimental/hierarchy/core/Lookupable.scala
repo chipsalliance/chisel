@@ -10,12 +10,15 @@ import scala.collection.mutable.HashMap
 import chisel3._
 import chisel3.experimental.dataview.{isView, reify, reifyIdentityView}
 import chisel3.internal.firrtl.ir.{Arg, ILit, Index, ModuleIO, Slot, ULit}
-<<<<<<< HEAD
-import chisel3.internal.{throwException, AggregateViewBinding, Builder, ChildBinding, ViewBinding, ViewParent}
-=======
-import chisel3.internal.{throwException, Builder, ViewParent}
-import chisel3.internal.binding.{AggregateViewBinding, ChildBinding, CrossModuleBinding, ViewBinding, ViewWriteability}
->>>>>>> 7be42430a (Add support for marking things as readOnly (#4190))
+import chisel3.internal.{
+  throwException,
+  AggregateViewBinding,
+  Builder,
+  ChildBinding,
+  ViewBinding,
+  ViewParent,
+  ViewWriteability
+}
 
 /** Represents lookup typeclass to determine how a value accessed from an original IsInstantiable
   *   should be tweaked to return the Instance's version
