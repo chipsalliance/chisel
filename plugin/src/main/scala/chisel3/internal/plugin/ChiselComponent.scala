@@ -214,13 +214,8 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
 
           treeCopy.ValDef(dd, mods, name, tpt, localTyper.typed(named))
         }
-        // If an instance, just get a name but no prefix
-        else if (shouldMatchModule(tpe)) {
-          val str = stringFromTermName(name)
-          val newRHS = transform(rhs)
-          val named = q"chisel3.internal.plugin.autoNameRecursively($str)($newRHS)"
-          treeCopy.ValDef(dd, mods, name, tpt, localTyper.typed(named))
-        } else if (shouldMatchInstance(tpe)) {
+        // If an instance or module, just get a name but no prefix
+        else if (shouldMatchModule(tpe) || shouldMatchInstance(tpe)) {
           val str = stringFromTermName(name)
           val newRHS = transform(rhs)
           val named = q"chisel3.internal.plugin.autoNameRecursively($str)($newRHS)"
