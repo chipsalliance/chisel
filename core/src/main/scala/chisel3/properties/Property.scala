@@ -299,7 +299,7 @@ sealed trait Property[T] extends Element { self =>
 
   /** Internal API: returns a ref that can be assigned to, if consistent with the binding.
     */
-  private[chisel3] override def lref: ir.Node = {
+  private[chisel3] override def lref(implicit info: SourceInfo): ir.Node = {
     requireIsHardware(this)
     requireVisible()
     topBindingOpt match {
