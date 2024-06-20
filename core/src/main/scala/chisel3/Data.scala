@@ -814,7 +814,9 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   def do_asTypeOf[T <: Data](that: T)(implicit sourceInfo: SourceInfo): T = {
     val thatCloned = Wire(that.cloneTypeFull)
     thatCloned.connectFromBits(this.asUInt)
-    thatCloned
+    thatCloned.viewAsReadOnlyDeprecated(siteInfo =>
+      Warning(WarningID.AsTypeOfReadOnly, s"Return values of asTypeOf will soon be read-only")(siteInfo)
+    )
   }
 
   /** Assigns this node from Bits type. Internal implementation for asTypeOf.
