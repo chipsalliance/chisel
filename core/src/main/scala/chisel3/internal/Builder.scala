@@ -1048,8 +1048,12 @@ private[chisel3] object Builder extends LazyLogging {
     dynamicContext: DynamicContext
   ): (Circuit, T) = {
     dynamicContextVar.withValue(Some(dynamicContext)) {
-      ViewParent: Unit // Must initialize the singleton in a Builder context or weird things can happen
-      // in tiny designs/testcases that never access anything in chisel3.internal
+      // Must initialize the singleton in a Builder context or weird things can happen
+      // in tiny designs/testcases that never access anything in chisel3.internal.
+      ViewParent: Unit
+      // Must initialize the singleton or OutOfMemoryErrors and StackOverflowErrors will instead report as
+      // "java.lang.NoClassDefFoundError: Could not initialize class scala.util.control.NonFatal$".
+      scala.util.control.NonFatal: Unit
       logger.info("Elaborating design...")
       val mod =
         try {
