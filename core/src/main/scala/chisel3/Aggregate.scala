@@ -47,7 +47,7 @@ sealed abstract class Aggregate extends Data {
       // Don't accidentally invent a literal value for a view that is empty
       case Some(_: AggregateViewBinding) if this.getElements.isEmpty =>
         reifyIdentityView(this) match {
-          case Some(target: Aggregate) => target.checkingLitOption(checkForDontCares)
+          case Some((target: Aggregate, _)) => target.checkingLitOption(checkForDontCares)
           // This can occur with empty Vecs or Bundles
           case _ => None
         }
@@ -354,7 +354,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
         // Views complicate things a bit, but views that correspond exactly to an identical Vec can just forward the
         // dynamic indexing to the target Vec
         // In theory, we could still do this forwarding if the sample element were different by deriving a DataView
-        case Some(target: Vec[T @unchecked])
+        case Some((target: Vec[T @unchecked], _))
             if this.length == target.length &&
               this.sample_element.typeEquivalent(target.sample_element) =>
           return target.apply(p)

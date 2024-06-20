@@ -45,7 +45,7 @@ package object probe extends SourceInfoDoc {
         "Cannot use a non-writable probe expression to define a writable probe."
       )
     }
-    pushCommand(ProbeDefine(sourceInfo, sink.ref, probeExpr.ref))
+    pushCommand(ProbeDefine(sourceInfo, sink.lref, probeExpr.ref))
   }
 
   /** Access the value of a probe.

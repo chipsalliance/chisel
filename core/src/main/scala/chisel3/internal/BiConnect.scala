@@ -9,6 +9,7 @@ import chisel3.properties.Property
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.ir.{Connect, DefInvalid}
 import chisel3.internal.firrtl.Converter
+import chisel3.internal.MonoConnect.reportIfReadOnly
 
 import scala.language.experimental.macros
 import _root_.firrtl.passes.CheckTypes
@@ -64,6 +65,10 @@ private[chisel3] object BiConnect {
   def RightProbeBiConnectionException(right: Data) =
     BiConnectException(s"Right of Probed type cannot participate in a bi connection (<>)")
 
+  private def collectNotReadOnly[T <: Data](x: Option[(T, ViewWriteability)]): Option[T] = {
+    x.collect { case (z, ViewWriteability.Default) => z }
+  }
+
   /** This function is what recursively tries to connect a left and right together
     *
     * There is some cleverness in the use of internal try-catch to catch exceptions
@@ -108,7 +113,7 @@ private[chisel3] object BiConnect {
         } catch { // convert attach exceptions to BiConnectExceptions
           case attach.AttachException(message) => throw BiConnectException(message)
         }
-        pushCommand(DefInvalid(sourceInfo, left_a.lref))
+        pushCommand(DefInvalid(sourceInfo, left_a.lref(sourceInfo)))
       case (DontCare, right_a: Analog) => connect(sourceInfo, right, left, context_mod)
       case (left_e: Element, right_e: Element) => {
         elemConnect(sourceInfo, left_e, right_e, context_mod)
@@ -120,10 +125,11 @@ private[chisel3] object BiConnect {
           throw MismatchedVecException
         }
 
+        // Filter out read-only because we don't know if it's actually an error until we inspect the elements.
         val leftReified: Option[Vec[Data @unchecked]] =
-          if (isView(left_v)) reifyIdentityView(left_v) else Some(left_v)
+          if (isView(left_v)) collectNotReadOnly(reifyIdentityView(left_v)) else Some(left_v)
         val rightReified: Option[Vec[Data @unchecked]] =
-          if (isView(right_v)) reifyIdentityView(right_v) else Some(right_v)
+          if (isView(right_v)) collectNotReadOnly(reifyIdentityView(right_v)) else Some(right_v)
 
         if (
           leftReified.nonEmpty && rightReified.nonEmpty && canFirrtlConnectData(
@@ -133,7 +139,7 @@ private[chisel3] object BiConnect {
             context_mod
           )
         ) {
-          pushCommand(Connect(sourceInfo, leftReified.get.lref, rightReified.get.lref))
+          pushCommand(Connect(sourceInfo, leftReified.get.lref(sourceInfo), rightReified.get.lref(sourceInfo)))
         } else {
           for (idx <- 0 until left_v.length) {
             try {
@@ -172,8 +178,11 @@ private[chisel3] object BiConnect {
           !MonoConnect.canBeSink(left_r, context_mod) || !MonoConnect.canBeSource(right_r, context_mod)
         val (newLeft, newRight) = if (flipConnection) (right_r, left_r) else (left_r, right_r)
 
-        val leftReified:  Option[Record] = if (isView(newLeft)) reifyIdentityView(newLeft) else Some(newLeft)
-        val rightReified: Option[Record] = if (isView(newRight)) reifyIdentityView(newRight) else Some(newRight)
+        // Filter out read-only because we don't know if it's actually an error until we inspect the elements.
+        val leftReified: Option[Record] =
+          if (isView(newLeft)) collectNotReadOnly(reifyIdentityView(newLeft)) else Some(newLeft)
+        val rightReified: Option[Record] =
+          if (isView(newRight)) collectNotReadOnly(reifyIdentityView(newRight)) else Some(newRight)
 
         if (
           leftReified.nonEmpty && rightReified.nonEmpty && canFirrtlConnectData(
@@ -183,7 +192,7 @@ private[chisel3] object BiConnect {
             context_mod
           )
         ) {
-          pushCommand(Connect(sourceInfo, leftReified.get.lref, rightReified.get.lref))
+          pushCommand(Connect(sourceInfo, leftReified.get.lref(sourceInfo), rightReified.get.lref(sourceInfo)))
         } else {
           recordConnect(sourceInfo, left_r, right_r, context_mod)
         }
@@ -309,25 +318,57 @@ private[chisel3] object BiConnect {
 
   // These functions (finally) issue the connection operation
   // Issue with right as sink, left as source
-  private def issueConnectL2R(left: Element, right: Element)(implicit sourceInfo: SourceInfo): Unit = {
+  private def issueConnectL2R(
+    left:    Element,
+    leftWr:  ViewWriteability,
+    right:   Element,
+    rightWr: ViewWriteability
+  )(
+    implicit sourceInfo: SourceInfo
+  ): Unit = {
     // Source and sink are ambiguous in the case of a Bi/Bulk Connect (<>).
     // If either is a DontCareBinding, just issue a DefInvalid for the other,
     //  otherwise, issue a Connect.
     (left.topBinding, right.topBinding) match {
-      case (lb: DontCareBinding, _) => pushCommand(DefInvalid(sourceInfo, right.lref))
-      case (_, rb: DontCareBinding) => pushCommand(DefInvalid(sourceInfo, left.lref))
-      case (_, _) => pushCommand(Connect(sourceInfo, right.lref, left.ref))
+      case (lb: DontCareBinding, _) =>
+        rightWr.reportIfReadOnlyUnit {
+          pushCommand(DefInvalid(sourceInfo, right.lref))
+        }
+      case (_, rb: DontCareBinding) =>
+        leftWr.reportIfReadOnlyUnit {
+          pushCommand(DefInvalid(sourceInfo, left.lref))
+        }
+      case (_, _) =>
+        rightWr.reportIfReadOnlyUnit {
+          pushCommand(Connect(sourceInfo, right.lref, left.ref))
+        }
     }
   }
   // Issue with left as sink, right as source
-  private def issueConnectR2L(left: Element, right: Element)(implicit sourceInfo: SourceInfo): Unit = {
+  private def issueConnectR2L(
+    left:    Element,
+    leftWr:  ViewWriteability,
+    right:   Element,
+    rightWr: ViewWriteability
+  )(
+    implicit sourceInfo: SourceInfo
+  ): Unit = {
     // Source and sink are ambiguous in the case of a Bi/Bulk Connect (<>).
     // If either is a DontCareBinding, just issue a DefInvalid for the other,
     //  otherwise, issue a Connect.
     (left.topBinding, right.topBinding) match {
-      case (lb: DontCareBinding, _) => pushCommand(DefInvalid(sourceInfo, right.lref))
-      case (_, rb: DontCareBinding) => pushCommand(DefInvalid(sourceInfo, left.lref))
-      case (_, _) => pushCommand(Connect(sourceInfo, left.lref, right.ref))
+      case (lb: DontCareBinding, _) =>
+        rightWr.reportIfReadOnlyUnit {
+          pushCommand(DefInvalid(sourceInfo, right.lref))
+        }
+      case (_, rb: DontCareBinding) =>
+        leftWr.reportIfReadOnlyUnit {
+          pushCommand(DefInvalid(sourceInfo, left.lref))
+        }
+      case (_, _) =>
+        leftWr.reportIfReadOnlyUnit {
+          pushCommand(Connect(sourceInfo, left.lref, right.ref))
+        }
     }
   }
 
@@ -340,8 +381,8 @@ private[chisel3] object BiConnect {
     context_mod:         RawModule
   ): Unit = {
     import BindingDirection.{Input, Internal, Output} // Using extensively so import these
-    val left = reify(_left)
-    val right = reify(_right)
+    val (left, lwr) = reify(_left)
+    val (right, rwr) = reify(_right)
     // If left or right have no location, assume in context module
     // This can occur if one of them is a literal, unbound will error previously
     val left_mod:  BaseModule = left.topBinding.location.getOrElse(context_mod)
@@ -359,11 +400,11 @@ private[chisel3] object BiConnect {
       // Thus, right node better be a port node and thus have a direction hint
       ((left_direction, right_direction): @unchecked) match {
         //    CURRENT MOD   CHILD MOD
-        case (Input, Input)    => issueConnectL2R(left, right)
-        case (Internal, Input) => issueConnectL2R(left, right)
+        case (Input, Input)    => issueConnectL2R(left, lwr, right, rwr)
+        case (Internal, Input) => issueConnectL2R(left, lwr, right, rwr)
 
-        case (Output, Output)   => issueConnectR2L(left, right)
-        case (Internal, Output) => issueConnectR2L(left, right)
+        case (Output, Output)   => issueConnectR2L(left, lwr, right, rwr)
+        case (Internal, Output) => issueConnectR2L(left, lwr, right, rwr)
 
         case (Input, Output) => throw BothDriversException
         case (Output, Input) => throw NeitherDriverException
@@ -376,11 +417,11 @@ private[chisel3] object BiConnect {
       // Thus, left node better be a port node and thus have a direction hint
       ((left_direction, right_direction): @unchecked) match {
         //    CHILD MOD     CURRENT MOD
-        case (Input, Input)    => issueConnectR2L(left, right)
-        case (Input, Internal) => issueConnectR2L(left, right)
+        case (Input, Input)    => issueConnectR2L(left, lwr, right, rwr)
+        case (Input, Internal) => issueConnectR2L(left, lwr, right, rwr)
 
-        case (Output, Output)   => issueConnectL2R(left, right)
-        case (Output, Internal) => issueConnectL2R(left, right)
+        case (Output, Output)   => issueConnectL2R(left, lwr, right, rwr)
+        case (Output, Internal) => issueConnectL2R(left, lwr, right, rwr)
 
         case (Input, Output) => throw NeitherDriverException
         case (Output, Input) => throw BothDriversException
@@ -392,13 +433,13 @@ private[chisel3] object BiConnect {
     else if ((context_mod == left_mod) && (context_mod == right_mod)) {
       ((left_direction, right_direction): @unchecked) match {
         //    CURRENT MOD   CURRENT MOD
-        case (Input, Output)    => issueConnectL2R(left, right)
-        case (Input, Internal)  => issueConnectL2R(left, right)
-        case (Internal, Output) => issueConnectL2R(left, right)
+        case (Input, Output)    => issueConnectL2R(left, lwr, right, rwr)
+        case (Input, Internal)  => issueConnectL2R(left, lwr, right, rwr)
+        case (Internal, Output) => issueConnectL2R(left, lwr, right, rwr)
 
-        case (Output, Input)    => issueConnectR2L(left, right)
-        case (Output, Internal) => issueConnectR2L(left, right)
-        case (Internal, Input)  => issueConnectR2L(left, right)
+        case (Output, Input)    => issueConnectR2L(left, lwr, right, rwr)
+        case (Output, Internal) => issueConnectR2L(left, lwr, right, rwr)
+        case (Internal, Input)  => issueConnectR2L(left, lwr, right, rwr)
 
         case (Input, Input)       => throw BothDriversException
         case (Output, Output)     => throw BothDriversException
@@ -413,8 +454,8 @@ private[chisel3] object BiConnect {
       // Thus both nodes must be ports and have a direction hint
       ((left_direction, right_direction): @unchecked) match {
         //    CHILD MOD     CHILD MOD
-        case (Input, Output) => issueConnectR2L(left, right)
-        case (Output, Input) => issueConnectL2R(left, right)
+        case (Input, Output) => issueConnectR2L(left, lwr, right, rwr)
+        case (Output, Input) => issueConnectL2R(left, lwr, right, rwr)
 
         case (Input, Input)   => throw NeitherDriverException
         case (Output, Output) => throw BothDriversException
