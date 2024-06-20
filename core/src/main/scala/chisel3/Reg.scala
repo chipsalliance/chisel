@@ -47,6 +47,10 @@ object Reg {
 
     reg.bind(RegBinding(Builder.forcedUserModule, Builder.currentWhen))
     pushCommand(DefReg(sourceInfo, reg, clock))
+    // Record the when depth where this register was declared.  This is used
+    // later to determine what whens need to be generated for any connects to
+    // this register.
+    Builder.forcedUserModule.regToWhenDepth(reg) = Builder.whenDepth
     reg
   }
 }

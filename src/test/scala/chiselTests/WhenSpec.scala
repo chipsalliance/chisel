@@ -145,6 +145,29 @@ class WhenSpec extends ChiselFlatSpec with Utils {
     assertTesterPasses(new WhenCondTester)
   }
 
+  "Declarations inside a when block" should "be moved outside the when block" in {
+    import chisel3.layer.{block, Convention, Layer}
+
+    val chirrtl = ChiselStage.emitCHIRRTL(
+      {
+        object Verification extends Layer(Convention.Bind)
+        new Module {
+          val cond_1, cond_2, cond_3 = IO(Input(Bool()))
+          when(cond_1) {
+            val a = Reg(Bool())
+            when(cond_2) {
+              when(cond_3) {
+                a := true.B
+              }
+            }
+          }
+        }
+      },
+      Array("--full-stacktrace")
+    )
+    println(chirrtl)
+  }
+
   "Returning in a when scope" should "give a reasonable error message" in {
     val e = the[ChiselException] thrownBy extractCause[ChiselException] {
       ChiselStage.emitCHIRRTL(new Module {

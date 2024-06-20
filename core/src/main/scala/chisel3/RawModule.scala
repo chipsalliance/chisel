@@ -14,7 +14,7 @@ import chisel3.internal.firrtl.ir._
 import chisel3.reflect.DataMirror
 import _root_.firrtl.annotations.{IsModule, ModuleTarget}
 import scala.collection.immutable.VectorBuilder
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.{ArrayBuffer, HashMap}
 
 /** Abstract base class for Modules that contain Chisel RTL.
   * This abstract base class is a user-defined module which does not include implicit clock and reset and supports
@@ -92,6 +92,12 @@ abstract class RawModule extends BaseModule {
   /** The current region to which commands will be added. */
   private var _currentRegion = _commands
 
+  /** If we have opened a scope, this is an insertion point just before the
+    * `_currentRegion`.  This is intended to be used as a location where
+    * definitions and operations can be spilled if needed.
+    */
+  private var _spillRegion: Option[VectorBuilder[Command]] = None
+
   private[chisel3] def changeRegion(newRegion: VectorBuilder[Command]): Unit = {
     _currentRegion = newRegion
   }
@@ -104,9 +110,73 @@ abstract class RawModule extends BaseModule {
     result
   }
 
+  /** A mapping of registers to the when depth in which they were declared. */
+  private[chisel3] val regToWhenDepth = HashMap.empty[Data, Int].withDefaultValue(0)
+
+  private[chisel3] def withRegionAndSpill[A](
+    newRegion:   VectorBuilder[Command],
+    spillRegion: VectorBuilder[Command]
+  )(thunk:       => A
+  ): A = {
+    val oldSpillRegion = _spillRegion
+    _spillRegion = Some(spillRegion)
+
+    val result = withRegion(newRegion) {
+      thunk
+    }
+
+    _spillRegion = oldSpillRegion
+
+    result
+  }
+
   private[chisel3] def addCommand(c: Command): Unit = {
     require(!_closed, "Can't write to module after module close")
-    _currentRegion += c
+    // Determine where a command should go based on whether or not we are in a
+    // when context.  At a high level, this moves everything other than a few
+    // statements before the when block.
+    val region = c match {
+      case _ if _spillRegion.isEmpty => _currentRegion
+      // If there is a register declared inside a when block, then any connects
+      // to it should not include any outer conditions.  This transforms:
+      //
+      //     when (cond_1) {
+      //       reg a = Reg(Bool())
+      //       when (cond_2) {
+      //         a :<= b
+      //       }
+      //     }
+      //
+      // Into:
+      //
+      //     reg a = Reg(Bool())
+      //     when (cond_2) {
+      //       a :<= b
+      //     }
+      //     when (cond_1) {
+      //     }
+      //
+      case Connect(_, Node(reg: Data), _) =>
+        reg.binding match {
+          case Some(_: RegBinding) => regToWhenDepth(reg) match {
+            case 0 => _currentRegion
+            case d => {
+              val newSpill = pushCommand(new Region).region
+              Builder.whenStack.dropRight(d).foldRight(_spillRegion.get) { case (when, region) =>
+                withRegionAndSpill(region, newSpill) {
+                  pushCommand(new When(UnlocatableSourceInfo, when.localCond.ref)).ifRegion
+                }
+              }
+            }
+          }
+          case _ => _currentRegion
+        }
+      // Sepcial commands which should be put into the current region.
+      case _: Connect | _: When | _: Verification[_] | _: DefIntrinsic => _currentRegion
+      case _ => _spillRegion.get
+    }
+
+    region += c
   }
   protected def getCommands: Seq[Command] = {
     require(_closed, "Can't get commands before module close")

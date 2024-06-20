@@ -2,6 +2,7 @@
 
 package chisel3
 
+import scala.collection.immutable.VectorBuilder
 import scala.language.experimental.macros
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
@@ -90,7 +91,8 @@ final class WhenContext private[chisel3] (
   block:       => Any,
   firrtlDepth: Int,
   // For capturing conditions from prior whens or elsewhens
-  altConds: List[() => Bool]) {
+  altConds:    List[() => Bool],
+  spillRegion: VectorBuilder[Command] = pushCommand(new Region).region) {
 
   /** Indicate if the `WhenContext` is "closed" (`None`) or if this is writing to
     * the "if" or "else" region.
@@ -124,8 +126,8 @@ final class WhenContext private[chisel3] (
   )(
     implicit sourceInfo: SourceInfo
   ): WhenContext = {
-    Builder.forcedUserModule.withRegion(whenCommand.elseRegion) {
-      new WhenContext(sourceInfo, () => elseCond, block, firrtlDepth + 1, cond :: altConds)
+    Builder.forcedUserModule.withRegionAndSpill(whenCommand.elseRegion, spillRegion) {
+      new WhenContext(sourceInfo, () => elseCond, block, firrtlDepth + 1, cond :: altConds, spillRegion)
     }
   }
 
@@ -139,7 +141,7 @@ final class WhenContext private[chisel3] (
   def otherwise(block: => Any)(implicit sourceInfo: SourceInfo): Unit = {
     Builder.pushWhen(this)
     scope = Some(Scope.Else)
-    Builder.forcedUserModule.withRegion(whenCommand.elseRegion) {
+    Builder.forcedUserModule.withRegionAndSpill(whenCommand.elseRegion, spillRegion) {
       block
     }
     scope = None
@@ -156,7 +158,7 @@ final class WhenContext private[chisel3] (
   Builder.pushWhen(this)
   scope = Some(Scope.If)
   try {
-    Builder.forcedUserModule.withRegion(whenCommand.ifRegion) {
+    Builder.forcedUserModule.withRegionAndSpill(whenCommand.ifRegion, spillRegion) {
       block
     }
   } catch {
