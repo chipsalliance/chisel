@@ -36,7 +36,8 @@ package object simulator {
     def port(data: Data): Simulation.Port = {
       // TODO, we can support non identity views, but it will require changing this API to return a Seq[Port]
       // and packing/unpacking the BigInt literal representation.
-      val reified = reifyIdentityView(data).getOrElse {
+      // TODO implement support for read-only.
+      val (reified, _) = reifyIdentityView(data).getOrElse {
         val url = "https://github.com/chipsalliance/chisel/issues/new/choose"
         throw new Exception(
           s"Cannot poke $data as is a view that does not map to a single Data. " +
