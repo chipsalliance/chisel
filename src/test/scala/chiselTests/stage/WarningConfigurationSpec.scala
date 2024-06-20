@@ -56,6 +56,14 @@ object WarningConfigurationSpec {
     val idx = IO(Input(UInt(8.W)))
     in(idx)
   }
+  class MyBundle extends Bundle {
+    val foo = UInt(8.W)
+  }
+  class AsTypeOfReadOnly extends RawModule {
+    val in = IO(Input(UInt(8.W)))
+    val bundle = in.asTypeOf(new MyBundle)
+    bundle.foo := 0.U
+  }
 }
 
 class WarningConfigurationSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
@@ -370,6 +378,12 @@ class WarningConfigurationSpec extends AnyFunSpec with Matchers with chiselTests
       val args = Array("--warn-conf", "id=6:e,any:s", "--throw-on-first-error")
       val e = the[Exception] thrownBy ChiselStage.emitCHIRRTL(new ExtractFromVecSizeZero, args)
       e.getMessage should include("[W006] Cannot extract from Vec of size 0")
+    }
+
+    it("should number AsTypeOfReadOnly as 8") {
+      val args = Array("--warn-conf", "id=8:e,any:s", "--throw-on-first-error")
+      val e = the[Exception] thrownBy ChiselStage.emitCHIRRTL(new AsTypeOfReadOnly, args)
+      e.getMessage should include("[W008] Return values of asTypeOf will soon be read-only")
     }
   }
 }
