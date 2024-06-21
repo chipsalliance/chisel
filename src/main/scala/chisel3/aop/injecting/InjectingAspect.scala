@@ -66,7 +66,7 @@ abstract class InjectorAspect[T <: RawModule, M <: RawModule](
         new DynamicContext(
           annotationsInAspect,
           chiselOptions.throwOnFirstError,
-          chiselOptions.useLegacyShiftRightWidth,
+          chiselOptions.useLegacyWidth,
           chiselOptions.warningFilters,
           chiselOptions.sourceRoots,
           None,

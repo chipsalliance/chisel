@@ -362,17 +362,27 @@ object ChiselOutputFileAnnotation extends HasShellOptions {
   */
 case class DesignAnnotation[DUT <: RawModule](design: DUT) extends NoTargetAnnotation with Unserializable
 
-/** Use legacy Chisel shift-right behavior
+/** Use legacy Chisel width behavior.
   *
   * '''This should only be used for checking for unexpected semantic changes when bumping to Chisel 7.0.0'''
   *
-  * Use as CLI option `--use-legacy-shift-right-width`.
+  * Use as CLI option `--use-legacy-width`.
   *
-  * This behavior is inconsistent between Chisel and FIRRTL
-  * - Chisel will report the width of a UInt or SInt shifted right by a number >= its width as a 0-bit value
-  * - FIRRTL will implement the width for these UInts and SInts as 1-bit
+  * There are two width bugs fixed in Chisel 7.0 that could affect the semantics of user code.
+  *
+  * 1. The width of shift-right when shift amount is >= the width of the argument
+  *
+  * This behavior is inconsistent between Chisel and FIRRTL.
+  * - Chisel will report the width of a UInt or SInt shifted right by a number >= its width as a 0-bit value.
+  * - FIRRTL will implement the width for these UInts and SInts as 1-bit.
+  *
+  * 2. The width of `ChiselEnum` values
+  *
+  * This behavior is inconsistent between the width reported by Chisel and the FIRRTL emitted by Chisel.
+  * - Calling .getWidth of a ChiselEnum value will give the width needed to encode the enum.
+  * - The resulting FIRRTL will have the minimum width needed to encode the literal value for that enum value.
   */
-case object UseLegacyShiftRightWidthBehavior
+case object UseLegacyWidthBehavior
     extends NoTargetAnnotation
     with ChiselOption
     with HasShellOptions
@@ -380,10 +390,9 @@ case object UseLegacyShiftRightWidthBehavior
 
   val options = Seq(
     new ShellOption[Unit](
-      longOption = "use-legacy-shift-right-width",
-      toAnnotationSeq = _ => Seq(UseLegacyShiftRightWidthBehavior),
-      helpText = "Use legacy (buggy) shift right width behavior (pre Chisel 7.0.0)"
+      longOption = "use-legacy-width",
+      toAnnotationSeq = _ => Seq(UseLegacyWidthBehavior),
+      helpText = "Use legacy (buggy) width behavior (pre Chisel 7.0.0)"
     )
   )
-
 }

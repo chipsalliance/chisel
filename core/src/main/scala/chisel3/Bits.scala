@@ -705,7 +705,7 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
   }
 
   override def do_>>(that: Int)(implicit sourceInfo: SourceInfo): UInt = {
-    if (Builder.legacyShiftRightWidth) legacyShiftRight(that)
+    if (Builder.useLegacyWidth) legacyShiftRight(that)
     else binop(sourceInfo, UInt(this.width.unsignedShiftRight(that)), ShiftRightOp, validateShiftAmount(that))
   }
   override def do_>>(that: BigInt)(implicit sourceInfo: SourceInfo): UInt =
@@ -1045,7 +1045,7 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
   override def do_>>(that: Int)(implicit sourceInfo: SourceInfo): SInt = {
     // We don't need to pad to emulate old behavior for SInt, just emulate old Chisel behavior with reported width.
     // FIRRTL will give a minimum of 1 bit for SInt.
-    val newWidth = if (Builder.legacyShiftRightWidth) this.width.shiftRight(that) else this.width.signedShiftRight(that)
+    val newWidth = if (Builder.useLegacyWidth) this.width.shiftRight(that) else this.width.signedShiftRight(that)
     binop(sourceInfo, SInt(newWidth), ShiftRightOp, validateShiftAmount(that))
   }
   override def do_>>(that: BigInt)(implicit sourceInfo: SourceInfo): SInt =
