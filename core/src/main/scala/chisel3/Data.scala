@@ -331,7 +331,7 @@ object Flipped {
   * @groupdesc Connect Utilities for connecting hardware components
   * @define coll data
   */
-abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
+abstract class Data extends HasId with NamedComponent with SourceInfoDoc with Serializable {
   import Data.ProbeInfo
 
   // This is a bad API that punches through object boundaries.
