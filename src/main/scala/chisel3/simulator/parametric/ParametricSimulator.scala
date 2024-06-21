@@ -14,7 +14,7 @@ import java.time.{format, LocalDateTime}
   */
 object ParametricSimulator extends PeekPokeAPI {
 
-  private var simulator = new ParametricSimulator
+//  private var simulator = new ParametricSimulator
 
   /** If true, the simulator will be reset before running each simulation */
   private var _resetSimulationBeforeRun = false
@@ -26,9 +26,12 @@ object ParametricSimulator extends PeekPokeAPI {
     simName:  String = "defaultSimulation"
   )(body:     T => Unit
   ): Unit = {
-    if (_resetSimulationBeforeRun)
-      reset()
-    simulator.simulate(module, settings, simName)(body)
+    //    if (_resetSimulationBeforeRun)
+    //      reset()
+    //    simulator.simulate(module, settings, simName)(body)
+
+    // TODO: check if the simulation should be reset for every run
+    (new ParametricSimulator).simulate(module, settings, simName)(body)
   }
 
   /**
@@ -166,6 +169,7 @@ class ParametricSimulator {
   private def setControllerSettings(controller: Simulation.Controller, settings: Seq[SimulatorSettings]): Unit =
     settings.foreach {
       case _: TraceSetting => controller.setTraceEnabled(true)
+      case _ => // Ignore other settings
     }
 
   /** Default ParametricSimulator */
