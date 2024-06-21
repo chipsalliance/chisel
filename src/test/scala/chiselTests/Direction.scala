@@ -493,6 +493,45 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
     assert(emitted.contains("connect io.monitor.valid, io.driver.valid"))
     assert(emitted.contains("connect io.monitor.ready, io.driver.ready"))
   }
+
+  property("Output mixed with unspecified directions should report Output") {
+    class MyBundle extends Bundle {
+      val foo = UInt(8.W)
+      val bar = Output(UInt(8.W))
+    }
+    class MyModule extends RawModule {
+      val w = Wire(new MyBundle)
+      assert(DataMirror.specifiedDirectionOf(w) == SpecifiedDirection.Unspecified)
+      assert(DataMirror.specifiedDirectionOf(w.foo) == SpecifiedDirection.Unspecified)
+      assert(DataMirror.specifiedDirectionOf(w.bar) == SpecifiedDirection.Output)
+      assert(DataMirror.directionOf(w) == Direction.Output)
+      assert(DataMirror.directionOf(w.foo) == Direction.Output)
+      assert(DataMirror.directionOf(w.bar) == Direction.Output)
+
+    }
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
+    assert(chirrtl.contains("wire w : { foo : UInt<8>, bar : UInt<8>}"))
+  }
+
+  property("Input mixed with Flipped directions should report Input") {
+    class MyBundle extends Bundle {
+      val foo = Flipped(UInt(8.W))
+      val bar = Input(UInt(8.W))
+    }
+    class MyModule extends RawModule {
+      val w = Wire(new MyBundle)
+      assert(DataMirror.specifiedDirectionOf(w) == SpecifiedDirection.Unspecified)
+      assert(DataMirror.specifiedDirectionOf(w.foo) == SpecifiedDirection.Flip)
+      assert(DataMirror.specifiedDirectionOf(w.bar) == SpecifiedDirection.Input)
+      assert(DataMirror.directionOf(w) == Direction.Input)
+      assert(DataMirror.directionOf(w.foo) == Direction.Input)
+      assert(DataMirror.directionOf(w.bar) == Direction.Input)
+
+    }
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
+    assert(chirrtl.contains("wire w : { flip foo : UInt<8>, flip bar : UInt<8>}"))
+  }
+
   property("Bugfix: marking Vec fields with mixed directionality as Output/Input clears inner directions") {
     class Decoupled extends Bundle {
       val bits = UInt(3.W)
@@ -559,4 +598,5 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
     val emitted: String = ChiselStage.emitCHIRRTL(new MyModule)
     assert(emitted.contains("Probe<const UInt<1>>"))
   }
+
 }
