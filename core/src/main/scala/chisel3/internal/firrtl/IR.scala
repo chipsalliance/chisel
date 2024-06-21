@@ -69,7 +69,7 @@ private[chisel3] object ir {
     val AsAsyncResetOp = PrimOp("asAsyncReset")
   }
 
-  sealed abstract class Arg {
+  sealed abstract class Arg extends Serializable {
     def localName: String = name
     def contextualName(ctx: Component): String = name
     def fullName(ctx:       Component): String = contextualName(ctx)

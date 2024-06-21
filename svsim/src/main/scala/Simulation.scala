@@ -18,7 +18,8 @@ final class Simulation private[svsim] (
     conservativeCommandResolution: Boolean = false,
     verbose:                       Boolean = false,
     traceEnabled:                  Boolean = false,
-    executionScriptLimit:          Option[Int] = None
+    executionScriptLimit:          Option[Int] = None,
+    executionScriptEnabled:        Boolean = false
   )(body:                          Simulation.Controller => T
   ): T = {
     val cwd = settings.customWorkingDirectory match {
@@ -34,7 +35,7 @@ final class Simulation private[svsim] (
     processBuilder.directory(new File(cwd))
     processBuilder.redirectError(ProcessBuilder.Redirect.INHERIT)
     val environment = settings.environment ++ Seq(
-      Option.when(executionScriptLimit.map(_ >= 0).getOrElse(true))("SVSIM_EXECUTION_SCRIPT" -> executionScriptPath),
+      Option.when(executionScriptEnabled)("SVSIM_EXECUTION_SCRIPT" -> executionScriptPath),
       executionScriptLimit.map("SVSIM_EXECUTION_SCRIPT_LIMIT" -> _.toString)
     ).flatten
     environment.foreach { (pair) =>
