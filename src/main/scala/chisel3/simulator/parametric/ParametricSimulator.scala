@@ -14,7 +14,7 @@ import java.time.{format, LocalDateTime}
   */
 object ParametricSimulator extends PeekPokeAPI {
 
-//  private var simulator = new ParametricSimulator
+  // private var simulator = new ParametricSimulator
 
   /** If true, the simulator will be reset before running each simulation */
   private var _resetSimulationBeforeRun = false
@@ -38,8 +38,8 @@ object ParametricSimulator extends PeekPokeAPI {
     * Use this method to manually reset the simulator and run multiple
     * independent simulations
     */
-  def reset(): Unit =
-    simulator = new ParametricSimulator
+  //  def reset(): Unit =
+  //    simulator = new ParametricSimulator
 
   def resetBeforeEachRun(): Unit =
     _resetSimulationBeforeRun = true
