@@ -330,7 +330,8 @@ trait ChiselSimAPI extends PeekPokeAPI {
             conservativeCommandResolution = settings.conservativeCommandResolution,
             verbose = settings.verboseRun,
             traceEnabled = settings.traceStyle.isEnabled,
-            executionScriptLimit = settings.executionScriptLimit
+            executionScriptLimit = settings.executionScriptLimit,
+            executionScriptEnabled = settings.executionScriptEnabled
           ) { module =>
             val dut = module.wrapped
             val clock = dut match {
