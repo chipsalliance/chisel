@@ -1,0 +1,135 @@
+package chiselTests.simulator
+
+import chisel3._
+import chisel3.util._
+import chisel3.simulator._
+
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.must.Matchers
+
+class ThreadedChiselSimSpec extends AnyFlatSpec with ChiselSimTester {
+
+  val rand = scala.util.Random
+
+  val debug = false
+  val numTests = 13
+
+  val w = 16
+  val fifoDepth = 7
+
+  behavior.of("ThreadedChiselSim")
+
+  it should "work for a FIFO" in {
+
+    test(
+      new Queue(UInt(w.W), fifoDepth),
+      ChiselSimSettings.verilatorBackend(resetWorkspace = true, traceStyle = TraceStyle.Vcd())
+    ) { dut =>
+      for (testCase <- 1 to numTests) {
+
+        val inputs = Seq.fill(rand.between(0, 11 * dut.entries))(BigInt(w, rand))
+        val expected = inputs
+
+        // println(s"testCase #${testCase}/${numTests}")
+
+        dut.io.deq.valid.expect(false.B)
+        dut.io.enq.ready.expect(true.B)
+
+        val maxCycles = 12
+
+        fork {
+          dut.io.enq.enqueueSeq(inputs.map(_.U))
+          for (_ <- 0 until rand.between(0, 7)) {
+            dut.io.enq.ready.expect(true.B)
+            dut.clock.step()
+          }
+        }.fork {
+          dut.io.deq.expectDequeueSeq(expected.map(_.U))
+          for (_ <- 0 until rand.between(0, 11)) {
+            dut.io.deq.valid.expect(false.B)
+            dut.io.count.expect(0)
+            dut.clock.step()
+          }
+        }.joinAndStep()
+
+      }
+    }
+  }
+
+  // it should "work for threads with different number of cycles" in {
+
+  //   class StreamingGcdModule extends Module {
+  //     val io = IO(new Bundle {
+  //       val a = Input(UInt(16.W))
+  //       val b = Input(UInt(16.W))
+  //       val e = Input(Bool())
+  //       val z = Output(UInt(16.W))
+  //       val v = Output(Bool())
+  //     })
+
+  //     val gcd = Module(new GCD)
+  //   }
+
+  //   test(
+  //     new Queue(UInt(w.W), fifoDepth),
+  //     ChiselSimSettings.verilatorBackend(resetWorkspace = true)
+  //   ) { dut =>
+  //     for (testCase <- 1 to numTests) {
+
+  //       val inputs = Seq.fill(dut.entries * 137)(BigInt(w, rand))
+  //       val expected = inputs
+
+  //       println(s"testCase #${testCase}/${numTests}")
+
+  //       dut.io.deq.valid.expect(false.B)
+  //       dut.io.enq.ready.expect(true.B)
+
+  //       val maxCycles = 12
+
+  //       fork {
+  //         dut.io.enq.enqueueSeq(inputs.map(_.U))
+  //       }.fork {
+  //         dut.io.deq.expectDequeueSeq(expected.map(_.U))
+  //       }.joinAndStep()
+
+  //       dut.io.deq.valid.expect(false.B)
+  //       dut.io.enq.ready.expect(true.B)
+  //       dut.io.count.expect(0)
+
+  //     }
+  //   }
+  // }
+
+  // it should "work for multiple dequeue threads" in {
+
+  //   test(
+  //     new Queue(UInt(w.W), fifoDepth),
+  //     ChiselSimSettings.verilatorBackend(resetWorkspace = true)
+  //   ) { dut =>
+  //     for (testCase <- 1 to numTests) {
+
+  //       val inputs = Seq.fill(dut.entries * 137)(BigInt(w, rand))
+  //       val expected = inputs
+
+  //       println(s"testCase #${testCase}/${numTests}")
+
+  //       dut.io.deq.valid.expect(false.B)
+  //       dut.io.enq.ready.expect(true.B)
+
+  //       val maxCycles = 12
+
+  //       fork {
+  //         dut.io.enq.enqueueSeq(inputs.map(_.U))
+  //       }.fork {
+  //         dut.io.deq.expectDequeueSeq(expected.map(_.U))
+  //       }.joinAndStep()
+
+  //       dut.io.deq.valid.expect(false.B)
+  //       dut.io.enq.ready.expect(true.B)
+  //       dut.io.count.expect(0)
+
+  //     }
+  //   }
+  // }
+}
