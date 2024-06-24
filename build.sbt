@@ -127,7 +127,7 @@ lazy val firrtlSettings = Seq(
   libraryDependencies ++= Seq(
     "org.scala-lang" % "scala-reflect" % scalaVersion.value,
     "org.scalatest" %% "scalatest" % "3.2.19" % "test",
-    "org.scalatestplus" %% "scalacheck-1-18" % "3.2.18.0" % "test",
+    "org.scalatestplus" %% "scalacheck-1-18" % "3.2.19.0" % "test",
     "com.github.scopt" %% "scopt" % "4.1.0",
     "org.json4s" %% "json4s-native" % "4.0.7",
     "org.apache.commons" % "commons-text" % "1.12.0",
@@ -164,7 +164,7 @@ lazy val svsim = (project in file("svsim"))
     publish / skip := true,
     libraryDependencies ++= Seq(
       "org.scalatest" %% "scalatest" % "3.2.19" % "test",
-      "org.scalatestplus" %% "scalacheck-1-18" % "3.2.18.0" % "test"
+      "org.scalatestplus" %% "scalacheck-1-18" % "3.2.19.0" % "test"
     )
   )
 
@@ -196,7 +196,7 @@ lazy val chiselSettings = Seq(
   name := "chisel",
   libraryDependencies ++= Seq(
     "org.scalatest" %% "scalatest" % "3.2.19" % "test",
-    "org.scalatestplus" %% "scalacheck-1-18" % "3.2.18.0" % "test",
+    "org.scalatestplus" %% "scalacheck-1-18" % "3.2.19.0" % "test",
     "com.lihaoyi" %% "upickle" % "3.3.0",
     "org.chipsalliance" %% "firtool-resolver" % "2.0.0"
   )
