@@ -12,21 +12,21 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         # Need to fetch full history for deriving version
         with:
           fetch-depth: 0
       - name: Build and Test Scala-CLI Example
         uses: ./.github/workflows/build-scala-cli-example
       - name: Upload Example
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: chisel-example.scala
           path: chisel-example.scala
           retention-days: 7
       - name: Upload To Release Page
         if: github.event_name == 'release'
-        uses: softprops/action-gh-release@v0.1.15
+        uses: softprops/action-gh-release@v2.0.5
         with:
           files: chisel-example.scala
 
