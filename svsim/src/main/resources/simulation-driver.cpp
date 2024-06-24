@@ -904,6 +904,8 @@ void simulation_main(int argc, char const **argv) {
 
   testbench->final();
 
+  simulation_disableTrace();
+
   delete testbench;
   delete context;
 }

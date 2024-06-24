@@ -92,6 +92,7 @@ trait Simulator {
   def workingDirectoryPrefix = "workdir"
   def customSimulationWorkingDirectory: Option[String] = None
   def verbose:                          Boolean = false
+  def chiselArgs:                       Seq[String] = Seq()
   def firtoolArgs:                      Seq[String] = Seq()
 
   private[simulator] def processBackends(processor: Simulator.BackendProcessor): Unit
@@ -101,7 +102,7 @@ trait Simulator {
   ): Seq[Simulator.BackendInvocationDigest[U]] = {
     val workspace = new Workspace(path = workspacePath, workingDirectoryPrefix = workingDirectoryPrefix)
     workspace.reset()
-    val elaboratedModule = workspace.elaborateGeneratedModule({ () => module }, firtoolArgs)
+    val elaboratedModule = workspace.elaborateGeneratedModule({ () => module }, chiselArgs, firtoolArgs)
     workspace.generateAdditionalSources()
     val compiler = new Simulator.WorkspaceCompiler(
       elaboratedModule,

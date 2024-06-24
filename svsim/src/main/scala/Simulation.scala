@@ -18,7 +18,8 @@ final class Simulation private[svsim] (
     conservativeCommandResolution: Boolean = false,
     verbose:                       Boolean = false,
     traceEnabled:                  Boolean = false,
-    executionScriptLimit:          Option[Int] = None
+    executionScriptLimit:          Option[Int] = None,
+    executionScriptEnabled:        Boolean = false
   )(body:                          Simulation.Controller => T
   ): T = {
     val cwd = settings.customWorkingDirectory match {
@@ -34,7 +35,7 @@ final class Simulation private[svsim] (
     processBuilder.directory(new File(cwd))
     processBuilder.redirectError(ProcessBuilder.Redirect.INHERIT)
     val environment = settings.environment ++ Seq(
-      Some("SVSIM_EXECUTION_SCRIPT" -> executionScriptPath),
+      Option.when(executionScriptEnabled)("SVSIM_EXECUTION_SCRIPT" -> executionScriptPath),
       executionScriptLimit.map("SVSIM_EXECUTION_SCRIPT_LIMIT" -> _.toString)
     ).flatten
     environment.foreach { (pair) =>
@@ -56,10 +57,14 @@ final class Simulation private[svsim] (
       controller.setTraceEnabled(true)
     }
     val bodyOutcome = Try {
-      val result = body(controller)
+      body(controller)
+    }
+    val completionOutcome = Try {
+      if (traceEnabled) {
+        controller.setTraceEnabled(false)
+      }
       // Exceptions thrown from commands still in the queue when `body` returns should supercede returning `result`
       controller.completeInFlightCommands()
-      result
     }
 
     // Always attempt graceful shutdown, even if `body` failed.
@@ -83,6 +88,7 @@ final class Simulation private[svsim] (
       throw new Exception(s"Nonzero exit status: ${process.exitValue()}")
     }
 
+    completionOutcome.get
     // Issues during graceful shutdown are considered test failures
     gracefulShutdownOutcome.get
 

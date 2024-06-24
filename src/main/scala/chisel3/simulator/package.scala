@@ -39,7 +39,7 @@ package object simulator {
       // TODO implement support for read-only.
       val (reified, _) = reifyIdentityView(data).getOrElse {
         val url = "https://github.com/chipsalliance/chisel/issues/new/choose"
-        throw new Exception(
+        throw new RuntimeException(
           s"Cannot poke $data as is a view that does not map to a single Data. " +
             s"Please file an issue at $url requesting support for this use case."
         )
@@ -90,10 +90,17 @@ package object simulator {
       conservativeCommandResolution: Boolean = false,
       verbose:                       Boolean = false,
       traceEnabled:                  Boolean = false,
-      executionScriptLimit:          Option[Int] = None
+      executionScriptLimit:          Option[Int] = None,
+      executionScriptEnabled:        Boolean = false
     )(body:                          SimulatedModule[T] => U
     ): U = {
-      simulation.run(conservativeCommandResolution, verbose, traceEnabled, executionScriptLimit) { controller =>
+      simulation.run(
+        conservativeCommandResolution,
+        verbose,
+        traceEnabled,
+        executionScriptLimit,
+        executionScriptEnabled
+      ) { controller =>
         val module = new SimulatedModule(elaboratedModule, controller)
         AnySimulatedModule.withValue(module) {
           body(module)
@@ -105,13 +112,14 @@ package object simulator {
   implicit class ChiselWorkspace(workspace: Workspace) {
     def elaborateGeneratedModule[T <: RawModule](
       generateModule: () => T,
+      chiselArgs:     Seq[String] = Seq(),
       firtoolArgs:    Seq[String] = Seq()
     ): ElaboratedModule[T] = {
       // Use CIRCT to generate SystemVerilog sources, and potentially additional artifacts
       var someDut: Option[T] = None
       val firtoolOptions = firtoolArgs.map(circt.stage.FirtoolOption)
       val outputAnnotations = (new circt.stage.ChiselStage).execute(
-        Array("--target", "systemverilog", "--split-verilog"),
+        Array("--target", "systemverilog", "--split-verilog") ++ chiselArgs,
         Seq(
           chisel3.stage.ChiselGeneratorAnnotation { () =>
             val dut = generateModule()

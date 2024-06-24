@@ -5,14 +5,15 @@ import chisel3._
 
 import chisel3.experimental.{SourceInfo, SourceLine}
 import chisel3.internal.ExceptionHelpers
+import chisel3.fromBigIntToLiteral
 
 object PeekPokeAPI extends PeekPokeAPI
 
 trait PeekPokeAPI {
-  case class FailedExpectationException[T](observed: T, expected: T, message: String)
+  final class FailedExpectationException[T <: Serializable](val observed: T, expected: T, val message: String)
       extends Exception(s"Failed Expectation: Observed value '$observed' != $expected. $message")
   object FailedExpectationException {
-    def apply[T](
+    def apply[T <: Serializable](
       observed:     T,
       expected:     T,
       message:      String,
@@ -22,6 +23,13 @@ trait PeekPokeAPI {
       val fullMessage = s"$message ${sourceInfo.makeMessage(x => x)}" +
         (if (extraContext.nonEmpty) s"\n${extraContext.mkString("\n")}" else "")
       new FailedExpectationException(observed, expected, fullMessage)
+    }
+    def apply[T <: Serializable](
+      observed: T,
+      expected: T,
+      message:  String
+    ): FailedExpectationException[T] = {
+      new FailedExpectationException(observed, expected, message)
     }
   }
 
@@ -105,6 +113,11 @@ trait PeekPokeAPI {
     override def encode(width: Int, value: BigInt) = value.asUInt(width.W)
   }
 
+  implicit final class testableEnum[E <: EnumType](val data: E) extends SimulationData[E] {
+    override def encode(width: Int, value: BigInt) =
+      data.factory(value.asUInt(width.W)).asInstanceOf[E]
+  }
+
   implicit final class testableBool(val data: Bool) extends SimulationData[Bool] {
     override def encode(width: Int, value: BigInt): Bool = {
       if (value.isValidByte) {
@@ -140,7 +153,7 @@ trait PeekPokeAPI {
       val simulationPort = module.port(data)
       simulationPort.get(isSigned = isSigned)
     }
-    def expect[T](
+    def expect[T <: Serializable](
       expected:     T,
       encode:       (Simulation.Value) => T,
       buildMessage: (T, T) => String,
