@@ -7,6 +7,7 @@ import chisel3.simulator._
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.must.Matchers
 
+
 class ChiselSimTesterSpec extends AnyFunSpec with ChiselSimTester with Matchers {
   describe("ChiselSimTester") {
     it("runs GCD correctly") {
