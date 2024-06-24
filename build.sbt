@@ -289,7 +289,7 @@ lazy val integrationTests = (project in file("integration-tests"))
   .settings(usePluginSettings: _*)
   .settings(
     Seq(
-      libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % "0.6.2" % "test"
+      libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % "0.6.1" % "test"
     )
   )
 
