@@ -53,7 +53,7 @@ trait ChiselSimAPI extends PeekPokeAPI {
 
   def testClassName: Option[String] = Some(this.getClass.getName)
 
-  private def peekHierValueRec[B <: Data](signal: B): HierarchicalValue = {
+  private def peekHierValueRec[B <: Data](signal: B)(implicit sourceInfo: SourceInfo): HierarchicalValue = {
     signal match {
       case v: Vec[_] =>
         VecValue(v, v.map(peekHierValueRec))
@@ -66,11 +66,22 @@ trait ChiselSimAPI extends PeekPokeAPI {
     }
   }
 
-  implicit final class testableRecord[T <: Record](sig: T)(implicit sourceInfo: SourceInfo) {
-    def peekHierValue(): HierarchicalValue = peekHierValueRec(sig)
+  trait testableAggregate[T <: Aggregate] {
+    protected val sig: T
+    def peekHierValue()(implicit sourceInfo: SourceInfo): HierarchicalValue = peekHierValueRec(sig)
   }
 
-  sealed trait testableX {
+  implicit final class testableRecord[T <: Record](protected val sig: T)(implicit sourceInfo: SourceInfo)
+      extends testableAggregate[T]
+
+  implicit final class testableVec[U <: Data, T <: Vec[U]](protected val sig: T)(implicit sourceInfo: SourceInfo)
+      extends testableAggregate[T]
+
+  implicit final class testableChiselEnum[T <: ChiselEnum](protected val sig: T)(implicit sourceInfo: SourceInfo) {
+
+  }
+
+  sealed trait clockedInterface {
     protected def clock = DutContext.current.clock.get // TODO: handle clock not being present
     protected def maxWaitCycles = DutContext.current.maxWaitCycles
 
@@ -152,7 +163,8 @@ trait ChiselSimAPI extends PeekPokeAPI {
     }
   }
 
-  implicit final class testableValidIO[T <: Data](sig: ValidIO[T])(implicit sourceInfo: SourceInfo) extends testableX {
+  implicit final class testableValidIO[T <: Data](sig: ValidIO[T])(implicit sourceInfo: SourceInfo)
+      extends clockedInterface {
 
     def enqueue(data: T) = {
       require(data.isLit, "enqueued data must be literal!")
@@ -206,7 +218,7 @@ trait ChiselSimAPI extends PeekPokeAPI {
   }
 
   implicit final class testableDecoupledIO[T <: Data](sig: DecoupledIO[T])(implicit sourceInfo: SourceInfo)
-      extends testableX {
+      extends clockedInterface {
 
     def enqueue(data: T) = {
       require(data.isLit, "enqueued data must be literal!")

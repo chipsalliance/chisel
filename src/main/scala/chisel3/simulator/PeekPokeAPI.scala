@@ -5,6 +5,7 @@ import chisel3._
 
 import chisel3.experimental.{SourceInfo, SourceLine}
 import chisel3.internal.ExceptionHelpers
+import chisel3.fromBigIntToLiteral
 
 object PeekPokeAPI extends PeekPokeAPI
 
@@ -110,6 +111,11 @@ trait PeekPokeAPI {
 
   implicit final class testableUInt(val data: UInt) extends SimulationData[UInt] {
     override def encode(width: Int, value: BigInt) = value.asUInt(width.W)
+  }
+
+  implicit final class testableEnum[E <: EnumType](val data: E) extends SimulationData[E] {
+    override def encode(width: Int, value: BigInt) =
+      data.factory(value.asUInt(width.W)).asInstanceOf[E]
   }
 
   implicit final class testableBool(val data: Bool) extends SimulationData[Bool] {
