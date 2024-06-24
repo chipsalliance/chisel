@@ -45,7 +45,7 @@ class PeekPokeAPISpec extends AnyFunSpec with ChiselSimTester with Matchers {
   val rand = scala.util.Random
 
   describe("testableEnum") {
-    it("testableEnum") {
+    it("should peek and poke ChiselEnums correctly") {
       val numTests = 100
       test(new TestPeekPokeEnum()) { dut =>
         val truncationMask = (BigInt(1) << dut.io.c.getWidth) - 1
