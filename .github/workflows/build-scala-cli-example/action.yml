@@ -26,7 +26,7 @@ runs:
     # Need to publishLocal to test the example
     - name: Publish Local
       shell: bash
-      run: sbt publishLocal
+      run: sbt "unipublish / publishLocal"
     - name: Test Scala CLI Example
       shell: bash
       run: scala-cli chisel-example.scala
