@@ -24,7 +24,7 @@ object v {
   val osLib = ivy"com.lihaoyi::os-lib:0.10.0"
   val upickle = ivy"com.lihaoyi::upickle:3.3.0"
   val firtoolResolver = ivy"org.chipsalliance::firtool-resolver:2.0.0"
-  val scalatest = ivy"org.scalatest::scalatest:3.2.18"
+  val scalatest = ivy"org.scalatest::scalatest:3.2.19"
   val scalacheck = ivy"org.scalatestplus::scalacheck-1-18:3.2.18.0"
   val json4s = ivy"org.json4s::json4s-native:4.0.7"
   val dataclass = ivy"io.github.alexarchambault::data-class:0.2.6"
