@@ -225,7 +225,12 @@ abstract class RawModule extends BaseModule {
   }
   private[chisel3] val stagedSecretCommands = collection.mutable.ArrayBuffer[Command]()
 
-  private[chisel3] def secretConnection(left: Data, right: Data)(implicit si: SourceInfo): Unit = {
+  private[chisel3] def secretConnection(left: Data, _right: Data)(implicit si: SourceInfo): Unit = {
+    val (right: Data, _) = chisel3.experimental.dataview
+      .reifyIdentityView(_right)
+      .getOrElse(
+        throwException(s"BoringUtils currently only support identity views, ${_right} has multiple targets.")
+      )
     val rhs = (left.probeInfo.nonEmpty, right.probeInfo.nonEmpty) match {
       case (true, true)                                 => ProbeDefine(si, left.lref, Node(right))
       case (true, false) if left.probeInfo.get.writable => ProbeDefine(si, left.lref, RWProbeExpr(Node(right)))
