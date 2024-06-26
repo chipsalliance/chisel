@@ -165,6 +165,60 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
     )()
   }
 
+  it should "work for identity views" in {
+    import chisel3.experimental.dataview._
+    class Foo extends RawModule {
+      private val internalWire = Wire(Bool())
+      val view = internalWire.viewAs[Bool]
+    }
+    class Top extends RawModule {
+      val foo = Module(new Foo)
+      val outProbe = IO(probe.Probe(Bool()))
+      val out = IO(Bool())
+      probe.define(outProbe, BoringUtils.tap(foo.view))
+      out := BoringUtils.tapAndRead(foo.view)
+    }
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
+    matchesAndOmits(chirrtl)(
+      "module Foo :",
+      "output bore : Probe<UInt<1>>",
+      "output out_bore : Probe<UInt<1>>",
+      "define bore = probe(internalWire)",
+      "define out_bore = probe(internalWire)",
+      "module Top :",
+      "define outProbe = foo.bore",
+      "connect out, read(foo.out_bore)"
+    )()
+  }
+
+  it should "NOT work [yet] for non-identity views" in {
+    import chisel3.experimental.dataview._
+    class MyBundle extends Bundle {
+      val a = Bool()
+      val b = Bool()
+    }
+    object MyBundle {
+      implicit val view: DataView[(Bool, Bool), MyBundle] = DataView(
+        _ => new MyBundle,
+        _._1 -> _.a,
+        _._2 -> _.b
+      )
+    }
+    class Foo extends RawModule {
+      private val w1, w2 = Wire(Bool())
+      val view = (w1, w2).viewAs[MyBundle]
+    }
+    class Top extends RawModule {
+      val foo = Module(new Foo)
+      val out = IO(new MyBundle)
+      val outProbe = IO(probe.Probe(new MyBundle))
+      probe.define(outProbe, BoringUtils.tap(foo.view))
+      out := BoringUtils.tapAndRead(foo.view)
+    }
+    val e = the[ChiselException] thrownBy circt.stage.ChiselStage.emitCHIRRTL(new Top)
+    e.getMessage should include("BoringUtils currently only support identity views")
+  }
+
   "Writable tap" should "work downwards from grandparent to grandchild" in {
     class Bar extends RawModule {
       val internalWire = Wire(Bool())
@@ -527,4 +581,62 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
     )()
   }
 
+  it should "work for identity views" in {
+    import chisel3.experimental.dataview._
+    class Bar extends RawModule {
+      private val internalWire = Wire(Bool())
+      val view = internalWire.viewAs[Bool]
+    }
+    class Foo extends RawModule {
+      val bar = Module(new Bar)
+    }
+    class Top extends RawModule {
+      val foo = Module(new Foo)
+      val out = IO(Bool())
+      out := probe.read(BoringUtils.rwTap(foo.bar.view))
+      probe.forceInitial(BoringUtils.rwTap(foo.bar.view), false.B)
+    }
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
+    matchesAndOmits(chirrtl)(
+      "module Bar :",
+      "output out_bore : RWProbe<UInt<1>>",
+      "define out_bore = rwprobe(internalWire)",
+      "module Foo :",
+      "output out_bore : RWProbe<UInt<1>>",
+      "define out_bore = bar.out_bore",
+      "module Top :",
+      "connect out, read(foo.out_bore)",
+      "force_initial(foo.bore, UInt<1>(0h0))"
+    )()
+  }
+
+  it should "NOT work [yet] for non-identity views" in {
+    import chisel3.experimental.dataview._
+    class MyBundle extends Bundle {
+      val a = Bool()
+      val b = Bool()
+    }
+    object MyBundle {
+      implicit val view: DataView[(Bool, Bool), MyBundle] = DataView(
+        _ => new MyBundle,
+        _._1 -> _.a,
+        _._2 -> _.b
+      )
+    }
+    class Bar extends RawModule {
+      private val w1, w2 = Wire(Bool())
+      val view = (w1, w2).viewAs[MyBundle]
+    }
+    class Foo extends RawModule {
+      val bar = Module(new Bar)
+    }
+    class Top extends RawModule {
+      val foo = Module(new Foo)
+      val out = IO(Bool())
+      out := probe.read(BoringUtils.rwTap(foo.bar.view))
+      probe.forceInitial(BoringUtils.rwTap(foo.bar.view), false.B)
+    }
+    val e = the[ChiselException] thrownBy circt.stage.ChiselStage.emitCHIRRTL(new Top)
+    e.getMessage should include("BoringUtils currently only support identity views")
+  }
 }
