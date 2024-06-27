@@ -319,9 +319,9 @@ class VecSpec extends ChiselPropSpec with Utils {
 
     })
     chirrtl should include("output io : { foo : UInt<1>, bar : UInt<1>[0]}")
-    chirrtl should include("wire _zero_WIRE : { foo : UInt<1>, bar : UInt<1>[0]}")
-    chirrtl should include("connect _zero_WIRE.foo, UInt<1>(0h0)")
-    chirrtl should include("connect io, _zero_WIRE")
+    chirrtl should include("wire zero : { foo : UInt<1>, bar : UInt<1>[0]}")
+    chirrtl should include("connect zero.foo, UInt<1>(0h0)")
+    chirrtl should include("connect io, zero")
     chirrtl should include("wire w : UInt<1>[0]")
     chirrtl should include("connect w, m.io.bar")
   }
