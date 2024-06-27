@@ -22,7 +22,7 @@ trait ThreadedChiselSimAPI extends ChiselSimAPI {
 
   object fork {
 
-    private def clockStep(cycles: Int = 1): Unit = {
+    private def stepClock(cycles: Int = 1): Unit = {
       val module = AnySimulatedModule.current
       val clock = DutContext.current.clock.get
       module.willEvaluate()
@@ -40,7 +40,7 @@ trait ThreadedChiselSimAPI extends ChiselSimAPI {
     }
 
     def apply(runnable: => Unit): ForkBuilder =
-      new ForkBuilder(new Scheduler(() => clockStep())).fork(runnable)
+      new ForkBuilder(new Scheduler(() => stepClock())).fork(runnable)
   }
 
   implicit class threadedTestableClock(clock: Clock) extends testableClock(clock) {

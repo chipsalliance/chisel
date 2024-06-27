@@ -47,8 +47,6 @@ object DutContext {
 trait ChiselSimAPI extends PeekPokeAPI {
   import ChiselSimAPI._
 
-  protected var dutContext = new DynamicVariable[Option[DutContext]](None)
-
   def testName: Option[String]
 
   def testClassName: Option[String] = Some(this.getClass.getName)
@@ -324,97 +322,103 @@ trait ChiselSimAPI extends PeekPokeAPI {
 
   val simulationLogFileName = "simulation-log.txt"
 
+  def simulate[T <: RawModule, B <: Backend, U](modGen: => T, settings: ChiselSimSettings[B])(body: T => U): String =
+    _simulate(() => modGen, settings)(body)
+
+  private def _simulate[T <: RawModule, B <: Backend, U](modGen: () => T, settings: ChiselSimSettings[B])(body: T => U): String = {
+    val workspace = new svsim.Workspace(
+      path = workspacePath(settings.testRunDir).toString,
+      workingDirectoryPrefix = settings.workingDirectoryPrefix
+    )
+
+    if (settings.resetWorkspace) {
+      workspace.reset()
+    } else {
+      prunePath(workspace.primarySourcesPath)
+      prunePath(workspace.generatedSourcesPath)
+    }
+
+    val elaboratedModule = workspace.elaborateGeneratedModule(modGen, settings.chiselArgs, settings.firtoolArgs)
+    workspace.generateAdditionalSources()
+
+    val supportArtifactsPath = os.FilePath(workspace.supportArtifactsPath).resolveFrom(os.pwd)
+    val primarySourcesPath = os.FilePath(workspace.primarySourcesPath).resolveFrom(os.pwd)
+
+    val layerSvFiles = os
+      .list(supportArtifactsPath)
+      .filter(p => os.isFile(p) && p.baseName.startsWith("layers_") && p.ext == "sv")
+    layerSvFiles.foreach(p => os.move(p, primarySourcesPath / p.last, replaceExisting = true))
+
+    val simulation = workspace.compile(settings.backend)(
+      settings.backendName,
+      settings.commonSettings,
+      settings.backendSettings,
+      customSimulationWorkingDirectory = settings.customSimulationWorkingDirectory,
+      verbose = settings.verboseCompile
+    )
+
+    val simulationOutcome = Try {
+      simulation
+        .runElaboratedModule(
+          elaboratedModule = elaboratedModule,
+          conservativeCommandResolution = settings.conservativeCommandResolution,
+          verbose = settings.verboseRun,
+          traceEnabled = settings.traceStyle.isEnabled,
+          executionScriptLimit = settings.executionScriptLimit,
+          executionScriptEnabled = settings.executionScriptEnabled
+        ) { module =>
+          val dut = module.wrapped
+          val clock = dut match {
+            case m: Module =>
+              val clock = module.port(m.clock)
+              val reset = module.port(m.reset)
+              reset.set(1)
+              clock.tick(
+                timestepsPerPhase = 1,
+                maxCycles = 1,
+                inPhaseValue = 0,
+                outOfPhaseValue = 1,
+                sentinel = None
+              )
+              reset.set(0)
+              Some(m.clock)
+            case _ => None
+          }
+          DutContext.withValue(DutContext(clock, Seq.empty)) { body(module.wrapped) }
+        }
+      simulation.workingDirectoryPath
+    }.recoverWith {
+      // TODO: a more robust way for detecting assertions
+      // FIXME: Ensure graceful simulation ending. Currently a test failure leaves a malformed FST trace in Verilator.
+      //   VCD files seem to be still parsable by waveform viewers, but that's probably only due to their simpler textual structure.
+      case svsim.Simulation.UnexpectedEndOfMessages =>
+        val logFile = os.FilePath(simulation.workingDirectoryPath).resolveFrom(os.pwd) / simulationLogFileName
+        val logLines = os.read.lines(logFile)
+        // FIXME only implemented for Verilator
+        logLines.zipWithIndex.collectFirst {
+          case (line, _) if line.contains("Verilog $finish") =>
+            // Simulation does not immediately exit on $finish, so we need to ignore assertions that happen after a call to $finish
+            Success(simulation.workingDirectoryPath)
+          case (line, lineNum) if line.contains("Assertion failed") =>
+            val message = (logLines.drop(lineNum).filterNot(_.contains("Verilog $stop"))).mkString("\n")
+            Failure(SVAssertionFailure(message))
+        }
+          .getOrElse(Failure(svsim.Simulation.UnexpectedEndOfMessages))
+    }
+    simulationOutcome.get
+
+  }
+
   case class TestBuilder[T <: RawModule, B <: Backend](
     modGen:   () => T,
-    backend:  B,
     settings: ChiselSimSettings[B]) {
 
     def withTrace(traceStyle: TraceStyle): TestBuilder[T, B] = copy(
       settings = settings.copy(traceStyle = traceStyle)
     )
 
-    def apply[U](body: (T) => U): String = {
-      val workspace = new svsim.Workspace(
-        path = workspacePath(settings.testRunDir).toString,
-        workingDirectoryPrefix = settings.workingDirectoryPrefix
-      )
-
-      if (settings.resetWorkspace) {
-        workspace.reset()
-      } else {
-        prunePath(workspace.primarySourcesPath)
-        prunePath(workspace.generatedSourcesPath)
-      }
-
-      val elaboratedModule = workspace.elaborateGeneratedModule(modGen, settings.chiselArgs, settings.firtoolArgs)
-      workspace.generateAdditionalSources()
-
-      val supportArtifactsPath = os.FilePath(workspace.supportArtifactsPath).resolveFrom(os.pwd)
-      val primarySourcesPath = os.FilePath(workspace.primarySourcesPath).resolveFrom(os.pwd)
-
-      val layerSvFiles = os
-        .list(supportArtifactsPath)
-        .filter(p => os.isFile(p) && p.baseName.startsWith("layers_") && p.ext == "sv")
-      layerSvFiles.foreach(p => os.move(p, primarySourcesPath / p.last, replaceExisting = true))
-
-      val simulation = workspace.compile(settings.backend)(
-        settings.backendName,
-        settings.commonSettings,
-        settings.backendSettings,
-        customSimulationWorkingDirectory = settings.customSimulationWorkingDirectory,
-        verbose = settings.verboseCompile
-      )
-
-      val simulationOutcome = Try {
-        simulation
-          .runElaboratedModule(
-            elaboratedModule = elaboratedModule,
-            conservativeCommandResolution = settings.conservativeCommandResolution,
-            verbose = settings.verboseRun,
-            traceEnabled = settings.traceStyle.isEnabled,
-            executionScriptLimit = settings.executionScriptLimit,
-            executionScriptEnabled = settings.executionScriptEnabled
-          ) { module =>
-            val dut = module.wrapped
-            val clock = dut match {
-              case m: Module =>
-                val clock = module.port(m.clock)
-                val reset = module.port(m.reset)
-                reset.set(1)
-                clock.tick(
-                  timestepsPerPhase = 1,
-                  maxCycles = 1,
-                  inPhaseValue = 0,
-                  outOfPhaseValue = 1,
-                  sentinel = None
-                )
-                reset.set(0)
-                Some(m.clock)
-              case _ => None
-            }
-            DutContext.withValue(DutContext(clock, Seq.empty)) { body(module.wrapped) }
-          }
-        simulation.workingDirectoryPath
-      }.recoverWith {
-        // TODO: a more robust way for detecting assertions
-        // FIXME: Ensure graceful simulation ending. Currently a test failure leaves a malformed FST trace in Verilator.
-        //   VCD files seem to be still parsable by waveform viewers, but that's probably only due to their simpler textual structure.
-        case svsim.Simulation.UnexpectedEndOfMessages =>
-          val logFile = os.FilePath(simulation.workingDirectoryPath).resolveFrom(os.pwd) / simulationLogFileName
-          val logLines = os.read.lines(logFile)
-          // FIXME only implemented for Verilator
-          logLines.zipWithIndex.collectFirst {
-            case (line, _) if line.contains("Verilog $finish") =>
-              // Simulation does not immediately exit on $finish, so we need to ignore assertions that happen after a call to $finish
-              Success(simulation.workingDirectoryPath)
-            case (line, lineNum) if line.contains("Assertion failed") =>
-              val message = (logLines.drop(lineNum).filterNot(_.contains("Verilog $stop"))).mkString("\n")
-              Failure(SVAssertionFailure(message))
-          }
-            .getOrElse(Failure(svsim.Simulation.UnexpectedEndOfMessages))
-      }
-      simulationOutcome.get
-
+    def apply[U](body: T => U): String = {
+      _simulate(modGen, settings)(body)
     }
   }
 
@@ -422,23 +426,23 @@ trait ChiselSimAPI extends PeekPokeAPI {
     module:  => T,
     backend: B = verilator.Backend.initializeFromProcessEnvironment()
   ): TestBuilder[T, B] =
-    new TestBuilder[T, B](() => module, backend, ChiselSimSettings(backend))
+    new TestBuilder[T, B](() => module, ChiselSimSettings(backend))
 
   def test[T <: Module, B <: Backend](
     module:   => T,
     settings: ChiselSimSettings[B]
   ): TestBuilder[T, B] =
-    new TestBuilder[T, B](() => module, settings.backend, settings)
+    new TestBuilder[T, B](() => module, settings)
 }
 
 object ChiselSimAPI {
-  def sanitizeFileName(name: String): String = {
+  private def sanitizeFileName(name: String): String = {
     name.replaceAll(" ", "_").replaceAll("[^\\w\\.\\-]+", "")
   }
 
-  def prunePath(dirPath: String): Unit = pruneDir(os.FilePath(dirPath))
+  private def prunePath(dirPath: String): Unit = pruneDir(os.FilePath(dirPath))
 
-  def pruneDir(dirPath: os.FilePath): Unit = {
+  private def pruneDir(dirPath: os.FilePath): Unit = {
     val dir = dirPath.resolveFrom(os.pwd)
     if (!os.exists(dir)) {
       os.makeDir.all(dir)
@@ -447,4 +451,8 @@ object ChiselSimAPI {
         os.remove.all(fileOrDir)
     }
   }
+}
+
+object ChiselSim extends ChiselSimAPI {
+  val testName = None
 }
