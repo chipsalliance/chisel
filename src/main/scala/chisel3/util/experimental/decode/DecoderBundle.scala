@@ -80,7 +80,7 @@ class DecodeTable[I <: DecodePattern](patterns: Seq[I], fields: Seq[DecodeField[
 
   def bundle: DecodeBundle = new DecodeBundle(fields)
 
-  val table: TruthTable = TruthTable(
+  lazy val table: TruthTable = TruthTable(
     patterns.map { op => op.bitPat -> fields.reverse.map(field => field.genTable(op)).reduce(_ ## _) },
     fields.reverse.map(_.default).reduce(_ ## _)
   )

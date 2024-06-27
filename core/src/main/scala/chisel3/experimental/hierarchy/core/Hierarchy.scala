@@ -116,5 +116,24 @@ object Hierarchy {
       case i: Instance[T]   => new Instance.InstanceBaseModuleExtensions(i).toAbsoluteTarget
       case _ => throw new InternalErrorException("Match error: toAbsoluteTarget i=$i")
     }
+
+    /** Returns the toRelativeTarget of this hierarchy
+      * @return relativeTarget of this Hierarchy
+      */
+    def toRelativeTarget(root: Option[BaseModule]): IsModule = i match {
+      case d: Definition[T] => new Definition.DefinitionBaseModuleExtensions(d).toRelativeTarget(root)
+      case i: Instance[T]   => new Instance.InstanceBaseModuleExtensions(i).toRelativeTarget(root)
+      case _ => throw new InternalErrorException("Match error: toAbsoluteTarget i=$i")
+    }
+
+    /** Returns the toRelativeTarget of this hierarchy
+      * @return relativeTarget of this Hierarchy
+      */
+    def toRelativeTargetToHierarchy(root: Option[Hierarchy[BaseModule]]): IsModule = i match {
+      case d: Definition[T] => new Definition.DefinitionBaseModuleExtensions(d).toRelativeTargetToHierarchy(root)
+      case i: Instance[T]   => new Instance.InstanceBaseModuleExtensions(i).toRelativeTargetToHierarchy(root)
+      case _ => throw new InternalErrorException("Match error: toAbsoluteTarget i=$i")
+    }
+
   }
 }

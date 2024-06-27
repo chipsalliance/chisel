@@ -94,7 +94,7 @@ args.head match {
     val om = converter.om()
     val evaluator = om.evaluator()
 
-    val top = evaluator.instantiate("Top_Class", Seq(om.newBasePathEmpty))
+    val top = evaluator.instantiate("Top_Class", Seq(om.newBasePathEmpty)).get
 
     // CHECK: .descriptions => { [ obj{.description => { mlirString{"Machine cycle counter."} }, .identifier => { mlirString{"mcycle"} }, .width => { omInteger{64} }}, obj{.description => { mlirString{"Machine instructions-retired counter."} }, .identifier => { mlirString{"minstret"} }, .width => { omInteger{64} }} ] }
     top.foreachField((name, value) => println(s".$name => { ${value.toString} }"))

@@ -24,11 +24,12 @@ object FirtoolVersionsTable extends App {
 
   def lookupFirtoolVersion(chiselVersion: SemanticVersion): String = {
     val version = chiselVersion.serialize
+    val artifact = if (chiselVersion.major == 3) "edu.berkeley.cs::chisel3" else "org.chipsalliance::chisel"
     // echo "println(chisel3.BuildInfo.firtoolVersion.get)" | scala-cli -S 2.13 --dep org.chipsalliance::chisel:6.0.0-RC1 -
     val cmd = "println(chisel3.BuildInfo.firtoolVersion.get)"
     // --server=false makes it a little slower but avoids hangs in CI
     val proc = os
-      .proc("scala-cli", "--server=false", "-S", "2.13", "--dep", s"org.chipsalliance::chisel:$version", "-")
+      .proc("scala-cli", "--server=false", "-S", "2.13", "--dep", s"$artifact:$version", "-")
       .call(stdin = cmd, stdout = os.Pipe, stderr = os.Pipe)
     proc.out.trim
   }

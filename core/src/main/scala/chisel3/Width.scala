@@ -36,7 +36,7 @@ sealed case class UnknownWidth() extends Width {
 }
 
 sealed case class KnownWidth(value: Int) extends Width {
-  require(value >= 0)
+  require(value >= 0, s"Widths must be non-negative, got $value")
   def known: Boolean = true
   def get:   Int = value
   def op(that: Width, f: (W, W) => W): Width = that match {

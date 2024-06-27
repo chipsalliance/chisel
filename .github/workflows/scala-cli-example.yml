@@ -17,7 +17,7 @@ jobs:
 
     steps:
       - name: Download Generated CLI Example
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: chisel-example.scala
       - name: Display Example
@@ -27,6 +27,6 @@ jobs:
           echo '```' >> $GITHUB_STEP_SUMMARY
       - name: Upload To Release Page
         if: github.event_name == 'release'
-        uses: softprops/action-gh-release@v0.1.15
+        uses: softprops/action-gh-release@v2.0.5
         with:
           files: chisel-example.scala

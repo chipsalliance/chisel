@@ -6,7 +6,8 @@ import firrtl.{ir => fir}
 import chisel3.{Data, RawModule, SpecifiedDirection}
 import chisel3.experimental.{BaseModule, SourceInfo}
 import chisel3.experimental.hierarchy.{Definition, Instance, ModuleClone}
-import chisel3.internal.{throwException, Builder, ClassBinding, OpBinding}
+import chisel3.internal.{throwException, Builder}
+import chisel3.internal.binding.{ClassBinding, OpBinding}
 import chisel3.internal.firrtl.ir.{Arg, Command, Component, DefClass, DefObject, ModuleIO, Port, PropAssign}
 import chisel3.internal.firrtl.Converter
 

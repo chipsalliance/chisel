@@ -2,7 +2,8 @@ package chisel3.util
 
 import chisel3._
 
-import chisel3.internal.{Builder, FirrtlMemTypeBinding, NamedComponent, SramPortBinding}
+import chisel3.internal.{Builder, NamedComponent}
+import chisel3.internal.binding.{FirrtlMemTypeBinding, SramPortBinding}
 import chisel3.internal.plugin.autoNameRecursively
 import chisel3.experimental.SourceInfo
 import chisel3.internal.sourceinfo.{MemTransform, SourceInfoTransform}

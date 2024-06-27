@@ -294,9 +294,13 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     */
   final def pad(that: Int): this.type = macro SourceInfoTransform.thatArg
 
+  // Pad literal to that width
+  protected def _padLit(that: Int): this.type
+
   /** @group SourceInfoTransformMacro */
   def do_pad(that: Int)(implicit sourceInfo: SourceInfo): this.type = this.width match {
     case KnownWidth(w) if w >= that => this
+    case _ if this.isLit            => this._padLit(that)
     case _                          => binop(sourceInfo, cloneTypeWidth(this.width.max(Width(that))), PadOp, that)
   }
 
@@ -453,6 +457,11 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
 
   private[chisel3] override def cloneTypeWidth(w: Width): this.type =
     new UInt(w).asInstanceOf[this.type]
+
+  override protected def _padLit(that: Int): this.type = {
+    val value = this.litValue
+    UInt.Lit(value, this.width.max(Width(that))).asInstanceOf[this.type]
+  }
 
   // TODO: refactor to share documentation with Num or add independent scaladoc
   /** Unary negation (expanding width)
@@ -778,11 +787,27 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
   final def zext: SInt = macro SourceInfoTransform.noArg
 
   /** @group SourceInfoTransformMacro */
-  def do_zext(implicit sourceInfo: SourceInfo): SInt =
-    pushOp(DefPrim(sourceInfo, SInt(width + 1), ConvertOp, ref))
+  def do_zext(implicit sourceInfo: SourceInfo): SInt = this.litOption match {
+    case Some(value) => SInt.Lit(value, this.width + 1)
+    case None        => pushOp(DefPrim(sourceInfo, SInt(width + 1), ConvertOp, ref))
+  }
 
-  override def do_asSInt(implicit sourceInfo: SourceInfo): SInt =
-    pushOp(DefPrim(sourceInfo, SInt(width), AsSIntOp, ref))
+  override def do_asSInt(implicit sourceInfo: SourceInfo): SInt = this.litOption match {
+    case Some(value) =>
+      val w = this.width.get // Literals always have a known width, will be minimum legal width if not set
+      val signedValue =
+        // If width is 0, just return value (which will be 0).
+        if (w > 0 && value.testBit(w - 1)) {
+          // If the most significant bit is set, the SInt is negative and we need to adjust the value.
+          value - (BigInt(1) << w)
+        } else {
+          value
+        }
+      // Using SInt.Lit instead of .S so we can use Width argument which may be Unknown
+      SInt.Lit(signedValue, this.width.max(Width(1))) // SInt literal has width >= 1
+    case None =>
+      pushOp(DefPrim(sourceInfo, SInt(width), AsSIntOp, ref))
+  }
 
   override private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): UInt = this
 
@@ -816,6 +841,11 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
 
   private[chisel3] override def cloneTypeWidth(w: Width): this.type =
     new SInt(w).asInstanceOf[this.type]
+
+  override protected def _padLit(that: Int): this.type = {
+    val value = this.litValue
+    SInt.Lit(value, this.width.max(Width(that))).asInstanceOf[this.type]
+  }
 
   /** Unary negation (constant width)
     *
@@ -1023,9 +1053,22 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
   override def do_>>(that: UInt)(implicit sourceInfo: SourceInfo): SInt =
     binop(sourceInfo, SInt(this.width), DynamicShiftRightOp, that)
 
-  override private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): UInt = pushOp(
-    DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref)
-  )
+  override private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): UInt =
+    this.litOption match {
+      case Some(value) =>
+        // This is a reinterpretation of raw bits
+        val posValue =
+          if (value.signum == -1) {
+            (BigInt(1) << this.width.get) + value
+          } else {
+            value
+          }
+        // Using UInt.Lit instead of .U so we can use Width argument which may be Unknown
+        UInt.Lit(posValue, this.width)
+      case None =>
+        pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref))
+    }
+
   override def do_asSInt(implicit sourceInfo: SourceInfo): SInt = this
 
   private[chisel3] override def connectFromBits(

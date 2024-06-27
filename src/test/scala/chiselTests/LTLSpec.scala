@@ -5,29 +5,23 @@ package chiselTests
 import chisel3._
 import chisel3.ltl._
 import chisel3.testers.BasicTester
+import chisel3.experimental.SourceLine
 import _root_.circt.stage.ChiselStage
+import chiselTests.ChiselRunners
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 import Sequence._
 
-class LTLSpec extends AnyFlatSpec with Matchers {
+class LTLSpec extends AnyFlatSpec with Matchers with ChiselRunners {
   it should "allow booleans to be used as sequences" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
       val a = IO(Input(Bool()))
       Sequence.delay(a, 42)
     })
-    chirrtl should include("intmodule LTLDelayIntrinsic_42_0 :")
-    chirrtl should include("input in : UInt<1>")
-    chirrtl should include("output out : UInt<1>")
-    chirrtl should include("intrinsic = circt_ltl_delay")
-    chirrtl should include("parameter delay = 42")
-    chirrtl should include("parameter length = 0")
-
-    chirrtl should include("inst ltl_delay of LTLDelayIntrinsic_42_0")
     chirrtl should include("input a : UInt<1>")
-    chirrtl should include("connect ltl_delay.in, a")
+    chirrtl should include("intrinsic(circt_ltl_delay<delay = 42, length = 0> : UInt<1>, a)")
   }
 
   it should "allow booleans to be used as properties" in {
@@ -35,219 +29,273 @@ class LTLSpec extends AnyFlatSpec with Matchers {
       val a = IO(Input(Bool()))
       Property.eventually(a)
     })
-    chirrtl should include("intmodule LTLEventuallyIntrinsic :")
-    chirrtl should include("input in : UInt<1>")
-    chirrtl should include("output out : UInt<1>")
-    chirrtl should include("intrinsic = circt_ltl_eventually")
-
-    chirrtl should include("inst ltl_eventually of LTLEventuallyIntrinsic")
     chirrtl should include("input a : UInt<1>")
-    chirrtl should include("connect ltl_eventually.in, a")
+    chirrtl should include("intrinsic(circt_ltl_eventually : UInt<1>, a)")
   }
 
+  class DelaysMod extends RawModule {
+    val a, b, c = IO(Input(Bool()))
+    implicit val info = SourceLine("Foo.scala", 1, 2)
+    val s0: Sequence = a.delay(1)
+    val s1: Sequence = b.delayRange(2, 4)
+    val s2: Sequence = c.delayAtLeast(5)
+    val s3: Sequence = a ### b
+    val s4: Sequence = a ##* b
+    val s5: Sequence = a ##+ b
+  }
   it should "support sequence delay operations" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val a, b, c = IO(Input(Bool()))
-      val s0: Sequence = a.delay(1)
-      val s1: Sequence = b.delayRange(2, 4)
-      val s2: Sequence = c.delayAtLeast(5)
-      val s3: Sequence = a ### b
-      val s4: Sequence = a ##* b
-      val s5: Sequence = a ##+ b
-    })
-    chirrtl should include("inst ltl_delay of LTLDelayIntrinsic_1_0")
-    chirrtl should include("inst ltl_delay_1 of LTLDelayIntrinsic_2_2")
-    chirrtl should include("inst ltl_delay_2 of LTLDelayIntrinsic_5")
-    chirrtl should include("inst ltl_delay_3 of LTLDelayIntrinsic_1_0")
-    chirrtl should include("inst ltl_delay_4 of LTLDelayIntrinsic_0")
-    chirrtl should include("inst ltl_delay_5 of LTLDelayIntrinsic_1")
-    chirrtl should include("connect ltl_delay.in, a")
-    chirrtl should include("connect ltl_delay_1.in, b")
-    chirrtl should include("connect ltl_delay_2.in, c")
+    val chirrtl = ChiselStage.emitCHIRRTL(new DelaysMod)
+    val sourceLoc = "@[Foo.scala 1:2]"
+    chirrtl should include("input a : UInt<1>")
+    chirrtl should include("input b : UInt<1>")
+    chirrtl should include("input c : UInt<1>")
+    chirrtl should include(f"node delay = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, a) $sourceLoc")
+    chirrtl should include(f"node delay_1 = intrinsic(circt_ltl_delay<delay = 2, length = 2> : UInt<1>, b) $sourceLoc")
+    chirrtl should include(f"node delay_2 = intrinsic(circt_ltl_delay<delay = 5> : UInt<1>, c) $sourceLoc")
+    chirrtl should include(f"node delay_3 = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, b) $sourceLoc")
+    chirrtl should include(f"node concat = intrinsic(circt_ltl_concat : UInt<1>, a, delay_3) $sourceLoc")
+    chirrtl should include(f"node delay_4 = intrinsic(circt_ltl_delay<delay = 0> : UInt<1>, b) $sourceLoc")
+    chirrtl should include(f"node concat_1 = intrinsic(circt_ltl_concat : UInt<1>, a, delay_4) $sourceLoc")
+    chirrtl should include(f"node delay_5 = intrinsic(circt_ltl_delay<delay = 1> : UInt<1>, b) $sourceLoc")
+    chirrtl should include(f"node concat_2 = intrinsic(circt_ltl_concat : UInt<1>, a, delay_5) $sourceLoc")
+  }
+  it should "compile sequence delay operations" in {
+    ChiselStage.emitSystemVerilog(new DelaysMod)
   }
 
+  class ConcatMod extends RawModule {
+    val a, b, c, d, e = IO(Input(Bool()))
+    implicit val info = SourceLine("Foo.scala", 1, 2)
+    val s0: Sequence = a.concat(b)
+    val s1: Sequence = Sequence.concat(c, d, e) // (c concat d) concat e
+  }
   it should "support sequence concat operations" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val a, b, c, d, e = IO(Input(Bool()))
-      val s0: Sequence = a.concat(b)
-      val s1: Sequence = Sequence.concat(c, d, e) // (c concat d) concat e
-    })
-    chirrtl should include("inst ltl_concat of LTLConcatIntrinsic")
-    chirrtl should include("connect ltl_concat.lhs, a")
-    chirrtl should include("connect ltl_concat.rhs, b")
-    chirrtl should include("inst ltl_concat_1 of LTLConcatIntrinsic")
-    chirrtl should include("connect ltl_concat_1.lhs, c")
-    chirrtl should include("connect ltl_concat_1.rhs, d")
-    chirrtl should include("inst ltl_concat_2 of LTLConcatIntrinsic")
-    chirrtl should include("connect ltl_concat_2.lhs, ltl_concat_1.out")
-    chirrtl should include("connect ltl_concat_2.rhs, e")
+    val chirrtl = ChiselStage.emitCHIRRTL(new ConcatMod)
+    val sourceLoc = "@[Foo.scala 1:2]"
+    chirrtl should include("input a : UInt<1>")
+    chirrtl should include("input b : UInt<1>")
+    chirrtl should include("input c : UInt<1>")
+    chirrtl should include("input d : UInt<1>")
+    chirrtl should include("input e : UInt<1>")
+    chirrtl should include(f"intrinsic(circt_ltl_concat : UInt<1>, a, b) $sourceLoc")
+    chirrtl should include(f"node concat_1 = intrinsic(circt_ltl_concat : UInt<1>, c, d) $sourceLoc")
+    chirrtl should include(f"intrinsic(circt_ltl_concat : UInt<1>, concat_1, e) $sourceLoc")
+  }
+  it should "compile sequence concat operations" in {
+    ChiselStage.emitSystemVerilog(new ConcatMod)
   }
 
-  it should "support and, or, and clock operations" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val a, b = IO(Input(Bool()))
-      val clock = IO(Input(Clock()))
-      val s0: Sequence = a.delay()
-      val s1: Sequence = s0.and(b)
-      val s2: Sequence = s0.or(b)
-      val s3: Sequence = s0.clock(clock)
-      val p0: Property = a.eventually
-      val p1: Property = p0.and(b)
-      val p2: Property = p0.or(b)
-      val p3: Property = p0.clock(clock)
-    })
+  class RepeatMod extends RawModule {
+    val a, b, c, d, e = IO(Input(Bool()))
+    implicit val info = SourceLine("Foo.scala", 1, 2)
+    val s0: Sequence = a.repeat(1)
+    val s1: Sequence = b.repeatRange(2, 4)
+    val s2: Sequence = c.repeatAtLeast(5)
+    val s3: Sequence = d.gotoRepeat(1, 3)
+    val s4: Sequence = e.nonConsecutiveRepeat(1, 3)
+  }
+  it should "support sequence repeat operations" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RepeatMod)
+    val sourceLoc = "@[Foo.scala 1:2]"
+    chirrtl should include("input a : UInt<1>")
+    chirrtl should include("input b : UInt<1>")
+    chirrtl should include("input c : UInt<1>")
+    chirrtl should include("input d : UInt<1>")
+    chirrtl should include("input e : UInt<1>")
+    chirrtl should include(f"node repeat = intrinsic(circt_ltl_repeat<base = 1, more = 0> : UInt<1>, a) $sourceLoc")
+    chirrtl should include(f"node repeat_1 = intrinsic(circt_ltl_repeat<base = 2, more = 2> : UInt<1>, b) $sourceLoc")
+    chirrtl should include(f"node repeat_2 = intrinsic(circt_ltl_repeat<base = 5> : UInt<1>, c) $sourceLoc")
+    chirrtl should include(
+      f"node goto_repeat = intrinsic(circt_ltl_goto_repeat<base = 1, more = 2> : UInt<1>, d) $sourceLoc"
+    )
+    chirrtl should include(
+      f"node non_consecutive_repeat = intrinsic(circt_ltl_non_consecutive_repeat<base = 1, more = 2> : UInt<1>, e) $sourceLoc"
+    )
+  }
+  it should "compile sequence repeat operations" in {
+    ChiselStage.emitSystemVerilog(new RepeatMod)
+  }
+
+  class AndOrClockMod extends RawModule {
+    val a, b = IO(Input(Bool()))
+    val clock = IO(Input(Clock()))
+    implicit val info = SourceLine("Foo.scala", 1, 2)
+    val s0: Sequence = a.delay()
+    val s1: Sequence = s0.and(b)
+    val s2: Sequence = s0.or(b)
+    val si: Sequence = s0.intersect(b)
+    val sn: Sequence = Sequence.intersect(si, s1, s2)
+    val s3: Sequence = s0.clock(clock)
+    val p0: Property = a.eventually
+    val p1: Property = p0.and(b)
+    val p2: Property = p0.or(b)
+    val pi: Property = p0.intersect(b)
+    val pn: Property = Property.intersect(pi, p1, p2)
+    val p3: Property = p0.clock(clock)
+    val u1: Sequence = s0.until(b)
+    val u2: Property = p0.until(b)
+  }
+  it should "support and, or, intersect, and clock operations" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new AndOrClockMod)
+    val sourceLoc = "@[Foo.scala 1:2]"
 
     // Sequences
-    chirrtl should include("inst ltl_and of LTLAndIntrinsic")
-    chirrtl should include("connect ltl_and.lhs, ltl_delay.out")
-    chirrtl should include("connect ltl_and.rhs, b")
-
-    chirrtl should include("inst ltl_or of LTLOrIntrinsic")
-    chirrtl should include("connect ltl_or.lhs, ltl_delay.out")
-    chirrtl should include("connect ltl_or.rhs, b")
-
-    chirrtl should include("inst ltl_clock of LTLClockIntrinsic")
-    chirrtl should include("connect ltl_clock.in, ltl_delay.out")
-    chirrtl should include("connect ltl_clock.clock, clock")
+    chirrtl should include(f"node delay = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, a) $sourceLoc")
+    chirrtl should include(f"node and = intrinsic(circt_ltl_and : UInt<1>, delay, b) $sourceLoc")
+    chirrtl should include(f"node or = intrinsic(circt_ltl_or : UInt<1>, delay, b) $sourceLoc")
+    chirrtl should include(f"node intersect = intrinsic(circt_ltl_intersect : UInt<1>, delay, b) $sourceLoc")
+    chirrtl should include(f"node intersect_1 = intrinsic(circt_ltl_intersect : UInt<1>, intersect, and) $sourceLoc")
+    chirrtl should include(f"node intersect_2 = intrinsic(circt_ltl_intersect : UInt<1>, intersect_1, or) $sourceLoc")
+    chirrtl should include(f"node clock_1 = intrinsic(circt_ltl_clock : UInt<1>, delay, clock) $sourceLoc")
 
     // Properties
-    chirrtl should include("inst ltl_and_1 of LTLAndIntrinsic")
-    chirrtl should include("connect ltl_and_1.lhs, ltl_eventually.out")
-    chirrtl should include("connect ltl_and_1.rhs, b")
+    chirrtl should include(f"node eventually = intrinsic(circt_ltl_eventually : UInt<1>, a) $sourceLoc")
+    chirrtl should include(f"node and_1 = intrinsic(circt_ltl_and : UInt<1>, eventually, b) $sourceLoc")
+    chirrtl should include(f"node or_1 = intrinsic(circt_ltl_or : UInt<1>, eventually, b) $sourceLoc")
+    chirrtl should include(f"node intersect_3 = intrinsic(circt_ltl_intersect : UInt<1>, eventually, b) $sourceLoc")
+    chirrtl should include(
+      f"node intersect_4 = intrinsic(circt_ltl_intersect : UInt<1>, intersect_3, and_1) $sourceLoc"
+    )
+    chirrtl should include(f"node intersect_5 = intrinsic(circt_ltl_intersect : UInt<1>, intersect_4, or_1) $sourceLoc")
+    chirrtl should include(f"node clock_2 = intrinsic(circt_ltl_clock : UInt<1>, eventually, clock) $sourceLoc")
 
-    chirrtl should include("inst ltl_or_1 of LTLOrIntrinsic")
-    chirrtl should include("connect ltl_or_1.lhs, ltl_eventually.out")
-    chirrtl should include("connect ltl_or_1.rhs, b")
-
-    chirrtl should include("inst ltl_clock_1 of LTLClockIntrinsic")
-    chirrtl should include("connect ltl_clock_1.in, ltl_eventually.out")
-    chirrtl should include("connect ltl_clock_1.clock, clock")
+    // Until
+    chirrtl should include(f"node until = intrinsic(circt_ltl_until : UInt<1>, delay, b) $sourceLoc")
+    chirrtl should include(f"node until_1 = intrinsic(circt_ltl_until : UInt<1>, eventually, b) $sourceLoc")
+  }
+  it should "compile and, or, intersect, and clock operations" in {
+    ChiselStage.emitSystemVerilog(new AndOrClockMod)
   }
 
+  class NotMod extends RawModule {
+    val a = IO(Input(Bool()))
+    implicit val info = SourceLine("Foo.scala", 1, 2)
+    val p0: Property = Property.not(a)
+  }
   it should "support property not operation" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val a = IO(Input(Bool()))
-      val p0: Property = Property.not(a)
-    })
-    chirrtl should include("inst ltl_not of LTLNotIntrinsic")
-    chirrtl should include("connect ltl_not.in, a")
+    val chirrtl = ChiselStage.emitCHIRRTL(new NotMod)
+    val sourceLoc = "@[Foo.scala 1:2]"
+    chirrtl should include(f"intrinsic(circt_ltl_not : UInt<1>, a) $sourceLoc")
+  }
+  it should "compile property not operation" in {
+    ChiselStage.emitSystemVerilog(new NotMod)
   }
 
+  class PropImplicationMod extends RawModule {
+    val a, b = IO(Input(Bool()))
+    implicit val info = SourceLine("Foo.scala", 1, 2)
+    val p0: Property = Property.implication(a, b)
+    val p1: Property = a |-> b
+    val p2: Property = Property.implicationNonOverlapping(a, b)
+    val p3: Property = a |=> b
+  }
   it should "support property implication operation" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val a, b = IO(Input(Bool()))
-      val p0: Property = Property.implication(a, b)
-      val p1: Property = a |-> b
-      val p2: Property = Property.implicationNonOverlapping(a, b)
-      val p3: Property = a |=> b
-    })
+    val chirrtl = ChiselStage.emitCHIRRTL(new PropImplicationMod)
+    val sourceLoc = "@[Foo.scala 1:2]"
 
     // Overlapping
-    chirrtl should include("inst ltl_implication of LTLImplicationIntrinsic")
-    chirrtl should include("connect ltl_implication.lhs, a")
-    chirrtl should include("connect ltl_implication.rhs, b")
-
-    chirrtl should include("inst ltl_implication_1 of LTLImplicationIntrinsic")
-    chirrtl should include("connect ltl_implication_1.lhs, a")
-    chirrtl should include("connect ltl_implication_1.rhs, b")
+    chirrtl should include(f"intrinsic(circt_ltl_implication : UInt<1>, a, b) $sourceLoc")
+    chirrtl should include(f"intrinsic(circt_ltl_implication : UInt<1>, a, b) $sourceLoc")
 
     // Non-overlapping (emitted as `a ## true |-> b`)
-    chirrtl should include("inst ltl_delay of LTLDelayIntrinsic_1_0")
-    chirrtl should include("connect ltl_delay.in, UInt<1>(0h1)")
-    chirrtl should include("inst ltl_concat of LTLConcatIntrinsic")
-    chirrtl should include("connect ltl_concat.lhs, a")
-    chirrtl should include("connect ltl_concat.rhs, ltl_delay.out")
-    chirrtl should include("inst ltl_implication_2 of LTLImplicationIntrinsic")
-    chirrtl should include("connect ltl_implication_2.lhs, ltl_concat.out")
-    chirrtl should include("connect ltl_implication_2.rhs, b")
-
-    chirrtl should include("inst ltl_delay_1 of LTLDelayIntrinsic_1_0")
-    chirrtl should include("connect ltl_delay_1.in, UInt<1>(0h1)")
-    chirrtl should include("inst ltl_concat_1 of LTLConcatIntrinsic")
-    chirrtl should include("connect ltl_concat_1.lhs, a")
-    chirrtl should include("connect ltl_concat_1.rhs, ltl_delay_1.out")
-    chirrtl should include("inst ltl_implication_3 of LTLImplicationIntrinsic")
-    chirrtl should include("connect ltl_implication_3.lhs, ltl_concat_1.out")
-    chirrtl should include("connect ltl_implication_3.rhs, b")
+    chirrtl should include(
+      f"node delay = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, UInt<1>(0h1)) $sourceLoc"
+    )
+    chirrtl should include(f"node concat = intrinsic(circt_ltl_concat : UInt<1>, a, delay) $sourceLoc")
+    chirrtl should include(f"node implication_2 = intrinsic(circt_ltl_implication : UInt<1>, concat, b) $sourceLoc")
+    chirrtl should include(
+      f"node delay_1 = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, UInt<1>(0h1)) $sourceLoc"
+    )
+    chirrtl should include(f"node concat_1 = intrinsic(circt_ltl_concat : UInt<1>, a, delay_1) $sourceLoc")
+    chirrtl should include(f"node implication_3 = intrinsic(circt_ltl_implication : UInt<1>, concat_1, b) $sourceLoc")
+  }
+  it should "compile property implication operation" in {
+    ChiselStage.emitSystemVerilog(new PropImplicationMod)
   }
 
+  class EventuallyMod extends RawModule {
+    val a = IO(Input(Bool()))
+    implicit val info = SourceLine("Foo.scala", 1, 2)
+    val p0: Property = a.eventually
+  }
   it should "support property eventually operation" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val a = IO(Input(Bool()))
-      val p0: Property = a.eventually
-    })
-    chirrtl should include("inst ltl_eventually of LTLEventuallyIntrinsic")
-    chirrtl should include("connect ltl_eventually.in, a")
+    val chirrtl = ChiselStage.emitCHIRRTL(new EventuallyMod)
+    val sourceLoc = "@[Foo.scala 1:2]"
+    chirrtl should include(f"intrinsic(circt_ltl_eventually : UInt<1>, a) $sourceLoc")
+  }
+  it should "compile property eventually operation" in {
+    ChiselStage.emitSystemVerilog(new EventuallyMod)
   }
 
+  class DisableMod extends RawModule {
+    val a, b = IO(Input(Bool()))
+    implicit val info = SourceLine("Foo.scala", 1, 2)
+    val p0: Property = a.disable(b.asDisable)
+  }
   it should "support property disable operation" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val a, b = IO(Input(Bool()))
-      val p0: Property = a.disable(b.asDisable)
-    })
-    chirrtl should include("inst ltl_disable of LTLDisableIntrinsic")
-    chirrtl should include("connect ltl_disable.in, a")
-    chirrtl should include("connect ltl_disable.condition, b")
+    val chirrtl = ChiselStage.emitCHIRRTL(new DisableMod)
+    val sourceLoc = "@[Foo.scala 1:2]"
+    chirrtl should include(f"intrinsic(circt_ltl_disable : UInt<1>, a, b) $sourceLoc")
+  }
+  it should "compile property disable operation" in {
+    ChiselStage.emitSystemVerilog(new DisableMod)
   }
 
+  class BasicVerifMod extends RawModule {
+    val a = IO(Input(Bool()))
+    implicit val info = SourceLine("Foo.scala", 1, 2)
+    AssertProperty(a)
+    AssumeProperty(a)
+    CoverProperty(a)
+  }
   it should "support simple property asserts/assumes/covers" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val a = IO(Input(Bool()))
-      AssertProperty(a)
-      AssumeProperty(a)
-      CoverProperty(a)
-    })
-    (chirrtl should not).include("parameter label")
-    chirrtl should include("inst verif of VerifAssertIntrinsic")
-    chirrtl should include("inst verif_1 of VerifAssumeIntrinsic")
-    chirrtl should include("inst verif_2 of VerifCoverIntrinsic")
-    chirrtl should include("connect verif.property, a")
-    chirrtl should include("connect verif_1.property, a")
-    chirrtl should include("connect verif_2.property, a")
+    val chirrtl = ChiselStage.emitCHIRRTL(new BasicVerifMod)
+    val sourceLoc = "@[Foo.scala 1:2]"
+    chirrtl should include(f"intrinsic(circt_verif_assert, a) $sourceLoc")
+    chirrtl should include(f"intrinsic(circt_verif_assume, a) $sourceLoc")
+    chirrtl should include(f"intrinsic(circt_verif_cover, a) $sourceLoc")
+  }
+  it should "compile simple property asserts/assumes/covers" in {
+    ChiselStage.emitSystemVerilog(new BasicVerifMod)
   }
 
   it should "use clock and disable by default for properties" in {
 
     val properties = Seq(
-      AssertProperty -> "VerifAssertIntrinsic",
-      AssumeProperty -> "VerifAssumeIntrinsic",
-      CoverProperty -> "VerifCoverIntrinsic"
+      AssertProperty -> ("VerifAssertIntrinsic", "assert"),
+      AssumeProperty -> ("VerifAssumeIntrinsic", "assume"),
+      CoverProperty -> ("VerifCoverIntrinsic", "cover")
     )
 
-    for ((prop, intrinsic) <- properties) {
+    for ((prop, (intrinsic, op)) <- properties) {
       val chirrtl = ChiselStage.emitCHIRRTL(new Module {
         val a = IO(Input(Bool()))
+        implicit val info = SourceLine("Foo.scala", 1, 2)
         prop(a)
       })
-      chirrtl should include("inst HasBeenResetIntrinsic of HasBeenResetIntrinsic")
-      chirrtl should include("node disable = eq(HasBeenResetIntrinsic.out, UInt<1>(0h0))")
-      chirrtl should include("inst ltl_disable of LTLDisableIntrinsic")
-      chirrtl should include("connect ltl_disable.in, a")
-      chirrtl should include("connect ltl_disable.condition, disable")
-      chirrtl should include("inst ltl_clock of LTLClockIntrinsic")
-      chirrtl should include("connect ltl_clock.in, ltl_disable.out")
-      chirrtl should include("connect ltl_clock.clock, clock")
-      chirrtl should include(s"inst verif of $intrinsic")
-      chirrtl should include("connect verif.property, ltl_clock.out")
+      val sourceLoc = "@[Foo.scala 1:2]"
+      chirrtl should include("node has_been_reset = intrinsic(circt_has_been_reset : UInt<1>, clock, reset)")
+      chirrtl should include("node disable = eq(has_been_reset, UInt<1>(0h0))")
+      chirrtl should include(f"node disable_1 = intrinsic(circt_ltl_disable : UInt<1>, a, disable) $sourceLoc")
+      chirrtl should include(f"node clock_1 = intrinsic(circt_ltl_clock : UInt<1>, disable_1, clock) $sourceLoc")
+      chirrtl should include(f"intrinsic(circt_verif_$op, clock_1) $sourceLoc")
     }
   }
 
+  class LabeledVerifMod extends RawModule {
+    val a = IO(Input(Bool()))
+    AssertProperty(a, label = Some("foo0"))
+    AssumeProperty(a, label = Some("foo1"))
+    CoverProperty(a, label = Some("foo2"))
+  }
   it should "support labeled property asserts/assumes/covers" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val a = IO(Input(Bool()))
-      AssertProperty(a, label = Some("foo0"))
-      AssumeProperty(a, label = Some("foo1"))
-      CoverProperty(a, label = Some("foo2"))
-    })
-    chirrtl should include("parameter label = \"foo0\"")
-    chirrtl should include("parameter label = \"foo1\"")
-    chirrtl should include("parameter label = \"foo2\"")
-    chirrtl should include("inst verif of VerifAssertIntrinsic_foo0")
-    chirrtl should include("inst verif_1 of VerifAssumeIntrinsic_foo1")
-    chirrtl should include("inst verif_2 of VerifCoverIntrinsic_foo2")
-    chirrtl should include("connect verif.property, a")
-    chirrtl should include("connect verif_1.property, a")
-    chirrtl should include("connect verif_2.property, a")
+    val chirrtl = ChiselStage.emitCHIRRTL(new LabeledVerifMod)
+    chirrtl should include("intrinsic(circt_verif_assert<label = \"foo0\">, a)")
+    chirrtl should include("intrinsic(circt_verif_assume<label = \"foo1\">, a")
+    chirrtl should include("intrinsic(circt_verif_cover<label = \"foo2\">, a)")
+  }
+  it should "compile labeled property asserts/assumes/covers" in {
+    ChiselStage.emitSystemVerilog(new LabeledVerifMod)
   }
 
   it should "support assert shorthands with clock and disable" in {
@@ -260,80 +308,71 @@ class LTLSpec extends AnyFlatSpec with Matchers {
     })
 
     // with clock; emitted as `assert(clock(a, c))`
-    chirrtl should include("inst ltl_clock of LTLClockIntrinsic")
-    chirrtl should include("connect ltl_clock.in, a")
-    chirrtl should include("connect ltl_clock.clock, c")
-    chirrtl should include("inst verif of VerifAssertIntrinsic")
-    chirrtl should include("connect verif.property, ltl_clock.out")
+    chirrtl should include("node clock = intrinsic(circt_ltl_clock : UInt<1>, a, c)")
+    chirrtl should include("intrinsic(circt_verif_assert, clock)")
 
     // with disable; emitted as `assert(disable(a, b))`
-    chirrtl should include("inst ltl_disable of LTLDisableIntrinsic")
-    chirrtl should include("connect ltl_disable.in, a")
-    chirrtl should include("connect ltl_disable.condition, b")
-    chirrtl should include("inst verif_1 of VerifAssertIntrinsic")
-    chirrtl should include("connect verif_1.property, ltl_disable.out")
+    chirrtl should include("node disable = intrinsic(circt_ltl_disable : UInt<1>, a, b)")
+    chirrtl should include("intrinsic(circt_verif_assert, disable)")
 
     // with clock and disable; emitted as `assert(clock(disable(a, b), c))`
-    chirrtl should include("inst ltl_disable_1 of LTLDisableIntrinsic")
-    chirrtl should include("connect ltl_disable_1.in, a")
-    chirrtl should include("connect ltl_disable_1.condition, b")
-    chirrtl should include("inst ltl_clock_1 of LTLClockIntrinsic")
-    chirrtl should include("connect ltl_clock_1.in, ltl_disable_1.out")
-    chirrtl should include("connect ltl_clock_1.clock, c")
-    chirrtl should include("inst verif_2 of VerifAssertIntrinsic")
-    chirrtl should include("connect verif_2.property, ltl_clock_1.out")
+    chirrtl should include("node disable_1 = intrinsic(circt_ltl_disable : UInt<1>, a, b)")
+    chirrtl should include("node clock_1 = intrinsic(circt_ltl_clock : UInt<1>, disable_1, c)")
+    chirrtl should include("intrinsic(circt_verif_assert, clock_1)")
   }
 
+  class SequenceConvMod extends RawModule {
+    val a, b = IO(Input(Bool()))
+    AssertProperty(Sequence(a))
+    AssertProperty(Sequence(a, b))
+    AssertProperty(Sequence(Delay(), a))
+    AssertProperty(Sequence(a, Delay(), b))
+    AssertProperty(Sequence(a, Delay(2), b))
+    AssertProperty(Sequence(a, Delay(42, 1337), b))
+    AssertProperty(Sequence(a, Delay(9001, None), b))
+  }
   it should "support Sequence(...) convenience constructor" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val a, b = IO(Input(Bool()))
-      AssertProperty(Sequence(a))
-      AssertProperty(Sequence(a, b))
-      AssertProperty(Sequence(Delay(), a))
-      AssertProperty(Sequence(a, Delay(), b))
-      AssertProperty(Sequence(a, Delay(2), b))
-      AssertProperty(Sequence(a, Delay(42, 1337), b))
-      AssertProperty(Sequence(a, Delay(9001, None), b))
-    })
+    val chirrtl = ChiselStage.emitCHIRRTL(new SequenceConvMod)
     // a
-    chirrtl should include("connect verif.property, a")
+    chirrtl should include("intrinsic(circt_verif_assert, a)")
 
     // a b
-    chirrtl should include("connect ltl_concat.lhs, a")
-    chirrtl should include("connect ltl_concat.rhs, b")
-    chirrtl should include("connect verif_1.property, ltl_concat.out")
+    chirrtl should include("node concat = intrinsic(circt_ltl_concat : UInt<1>, a, b)")
+    chirrtl should include("intrinsic(circt_verif_assert, concat)")
 
     // Delay() a
-    chirrtl should include("inst ltl_delay of LTLDelayIntrinsic_1_0")
-    chirrtl should include("connect ltl_delay.in, a")
-    chirrtl should include("connect verif_2.property, ltl_delay.out")
+    chirrtl should include("node delay = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, a)")
+    chirrtl should include("intrinsic(circt_verif_assert, delay)")
 
     // a Delay() b
-    chirrtl should include("inst ltl_delay_1 of LTLDelayIntrinsic_1_0")
-    chirrtl should include("connect ltl_delay_1.in, b")
-    chirrtl should include("connect ltl_concat_1.lhs, a")
-    chirrtl should include("connect ltl_concat_1.rhs, ltl_delay_1")
-    chirrtl should include("connect verif_3.property, ltl_concat_1.out")
+    chirrtl should include("node delay_1 = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, b)")
+    chirrtl should include("node concat_1 = intrinsic(circt_ltl_concat : UInt<1>, a, delay_1)")
+    chirrtl should include("intrinsic(circt_verif_assert, concat_1)")
 
     // a Delay(2) b
-    chirrtl should include("inst ltl_delay_2 of LTLDelayIntrinsic_2_0")
-    chirrtl should include("connect ltl_delay_2.in, b")
-    chirrtl should include("connect ltl_concat_2.lhs, a")
-    chirrtl should include("connect ltl_concat_2.rhs, ltl_delay_2")
-    chirrtl should include("connect verif_4.property, ltl_concat_2.out")
+    chirrtl should include("node delay_2 = intrinsic(circt_ltl_delay<delay = 2, length = 0> : UInt<1>, b)")
+    chirrtl should include("node concat_2 = intrinsic(circt_ltl_concat : UInt<1>, a, delay_2)")
+    chirrtl should include("intrinsic(circt_verif_assert, concat_2)")
 
     // a Delay(42, 1337) b
-    chirrtl should include("inst ltl_delay_3 of LTLDelayIntrinsic_42_1295")
-    chirrtl should include("connect ltl_delay_3.in, b")
-    chirrtl should include("connect ltl_concat_3.lhs, a")
-    chirrtl should include("connect ltl_concat_3.rhs, ltl_delay_3")
-    chirrtl should include("connect verif_5.property, ltl_concat_3.out")
+    chirrtl should include("node delay_3 = intrinsic(circt_ltl_delay<delay = 42, length = 1295> : UInt<1>, b)")
+    chirrtl should include("node concat_3 = intrinsic(circt_ltl_concat : UInt<1>, a, delay_3)")
+    chirrtl should include("intrinsic(circt_verif_assert, concat_3)")
 
     // a Delay(9001, None) b
-    chirrtl should include("inst ltl_delay_4 of LTLDelayIntrinsic_9001")
-    chirrtl should include("connect ltl_delay_4.in, b")
-    chirrtl should include("connect ltl_concat_4.lhs, a")
-    chirrtl should include("connect ltl_concat_4.rhs, ltl_delay_4")
-    chirrtl should include("connect verif_6.property, ltl_concat_4.out")
+    chirrtl should include("node delay_4 = intrinsic(circt_ltl_delay<delay = 9001> : UInt<1>, b)")
+    chirrtl should include("node concat_4 = intrinsic(circt_ltl_concat : UInt<1>, a, delay_4)")
+    chirrtl should include("intrinsic(circt_verif_assert, concat_4)")
+  }
+  it should "compile Sequence(...) convenience constructor" in {
+    ChiselStage.emitSystemVerilog(new SequenceConvMod)
+  }
+
+  it should "fail correctly in verilator simulation" in {
+    assertTesterFails(new BasicTester {
+      withClockAndReset(clock, reset) {
+        AssertProperty(0.U === 1.U)
+      }
+    })
   }
 }

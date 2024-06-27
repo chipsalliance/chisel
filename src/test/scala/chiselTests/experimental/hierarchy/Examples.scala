@@ -5,7 +5,7 @@ package chiselTests.experimental.hierarchy
 import chisel3._
 import chisel3.util.Valid
 import chisel3.experimental.hierarchy._
-import chisel3.experimental.BaseModule
+import chisel3.experimental.{attach, Analog, BaseModule}
 
 object Examples {
   import Annotations._
@@ -316,6 +316,13 @@ object Examples {
     out := in
   }
 
+  @instantiable
+  class HasAnalogWire extends RawModule {
+    @public val port = IO(Analog(8.W))
+    @public val wire = Wire(Analog(32.W))
+    attach(port, wire)
+  }
+
   class AddTwoNestedInstantiableData(width: Int) extends Module {
     val in = IO(Input(UInt(width.W)))
     val out = IO(Output(UInt(width.W)))
@@ -357,5 +364,4 @@ object Examples {
     out := copy.out
 
   }
-
 }

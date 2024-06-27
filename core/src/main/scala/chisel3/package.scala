@@ -3,6 +3,7 @@
 import firrtl.annotations.{IsMember, Named, ReferenceTarget}
 import chisel3.internal.{ExceptionHelpers, NamedComponent}
 import chisel3.experimental.BaseModule
+import chisel3.experimental.hierarchy.Hierarchy
 
 import java.util.{MissingFormatArgumentException, UnknownFormatConversionException}
 import scala.collection.mutable
@@ -423,7 +424,8 @@ package object chisel3 {
   sealed trait HasTarget {
     def toTarget:         ReferenceTarget
     def toAbsoluteTarget: ReferenceTarget
-    def toRelativeTarget(root: Option[BaseModule]): ReferenceTarget
+    def toRelativeTarget(root:            Option[BaseModule]):            ReferenceTarget
+    def toRelativeTargetToHierarchy(root: Option[Hierarchy[BaseModule]]): ReferenceTarget
 
     /** Exposes the suggestName method of the NamedComponent so users can
       * provide a seed to influence the name generation of this component.
@@ -441,7 +443,8 @@ package object chisel3 {
     private[chisel3] def apply(t: NamedComponent): HasTarget = new HasTarget {
       def toTarget = t.toTarget
       def toAbsoluteTarget = t.toAbsoluteTarget
-      def toRelativeTarget(root: Option[BaseModule]) = t.toRelativeTarget(root)
+      def toRelativeTarget(root:            Option[BaseModule]) = t.toRelativeTarget(root)
+      def toRelativeTargetToHierarchy(root: Option[Hierarchy[BaseModule]]) = t.toRelativeTargetToHierarchy(root)
 
       def suggestName(seed: String): Unit = t.suggestName(seed)
     }

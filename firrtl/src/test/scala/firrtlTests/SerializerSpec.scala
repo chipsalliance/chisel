@@ -253,6 +253,22 @@ class SerializerSpec extends AnyFlatSpec with Matchers {
     Serializer.serialize(probeRelease) should be("release(clock, cond, outProbe)")
   }
 
+  it should "support emitting intrinsic expressions and statements" in {
+    val intrinsicNode =
+      DefNode(NoInfo, "foo", IntrinsicExpr("test", Seq(Reference("arg")), Seq(), UIntType(IntWidth(1))))
+    Serializer.serialize(intrinsicNode) should be("node foo = intrinsic(test : UInt<1>, arg)")
+
+    val paramsNode =
+      DefNode(NoInfo, "bar", IntrinsicExpr("test", Seq(), Seq(IntParam("foo", 5)), UIntType(IntWidth(1))))
+    Serializer.serialize(paramsNode) should be("node bar = intrinsic(test<foo = 5> : UInt<1>)")
+
+    val intrinsicStmt = IntrinsicStmt(NoInfo, "stmt", Seq(), Seq(IntParam("foo", 5)))
+    Serializer.serialize(intrinsicStmt) should be("intrinsic(stmt<foo = 5>)")
+
+    val intrinsicStmtTpe = IntrinsicStmt(NoInfo, "expr", Seq(), Seq(), Some(UIntType(IntWidth(2))))
+    Serializer.serialize(intrinsicStmtTpe) should be("intrinsic(expr : UInt<2>)")
+  }
+
   it should "support lazy serialization" in {
     var stmtSerialized = false
     case class HackStmt(stmt: Statement) extends Statement {

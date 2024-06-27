@@ -5,13 +5,14 @@ package chisel3.internal.firrtl
 import firrtl.{ir => fir}
 import chisel3._
 import chisel3.internal._
+import chisel3.internal.binding._
 import chisel3.experimental._
 import chisel3.properties.{Property, PropertyType => PropertyTypeclass, Class, DynamicObject}
 import _root_.firrtl.{ir => firrtlir}
 import _root_.firrtl.{PrimOps, RenameMap}
 import _root_.firrtl.annotations.Annotation
 
-import scala.collection.immutable.NumericRange
+import scala.collection.immutable.{NumericRange, VectorBuilder}
 import scala.math.BigDecimal.RoundingMode
 import scala.annotation.nowarn
 import scala.collection.mutable
@@ -121,13 +122,19 @@ private[chisel3] object ir {
       elem
     }
 
-    /** Provides a mechanism that LitArgs can have their width adjusted
-      * to match other members of a VecLiteral
+    /** Provides a mechanism that LitArgs can have their width adjusted.
       *
       * @param newWidth the new width for this
       * @return
       */
     def cloneWithWidth(newWidth: Width): this.type
+
+    /** Provides a mechanism that LitArgs can have their value adjusted.
+      *
+      * @param newWidth the new width for this
+      * @return
+      */
+    def cloneWithValue(newValue: BigInt): this.type
 
     protected def minWidth: Int
     if (forcedWidth) {
@@ -150,6 +157,8 @@ private[chisel3] object ir {
       ULit(n, newWidth).asInstanceOf[this.type]
     }
 
+    def cloneWithValue(newValue: BigInt): this.type = ULit(newValue, w).asInstanceOf[this.type]
+
     require(n >= 0, s"UInt literal ${n} is negative")
   }
 
@@ -163,6 +172,8 @@ private[chisel3] object ir {
     def cloneWithWidth(newWidth: Width): this.type = {
       SLit(n, newWidth).asInstanceOf[this.type]
     }
+
+    def cloneWithValue(newValue: BigInt): this.type = SLit(newValue, w).asInstanceOf[this.type]
   }
 
   /** Literal property value.
@@ -316,14 +327,45 @@ private[chisel3] object ir {
     choices:    Seq[(String, BaseModule)])
       extends Definition
   case class DefObject(sourceInfo: SourceInfo, id: HasId, className: String) extends Definition
-  case class WhenBegin(sourceInfo: SourceInfo, pred: Arg) extends Command
-  case class WhenEnd(sourceInfo: SourceInfo, firrtlDepth: Int, hasAlt: Boolean = false) extends Command
-  case class AltBegin(sourceInfo: SourceInfo) extends Command
-  case class OtherwiseEnd(sourceInfo: SourceInfo, firrtlDepth: Int) extends Command
+
+  class Region extends Command {
+    override val sourceInfo = UnlocatableSourceInfo
+    val region = new VectorBuilder[Command]
+  }
+
+  object Region {
+    def unapply(region: Region): Option[(SourceInfo, Seq[Command])] = {
+      Some((region.sourceInfo, region.region.result()))
+    }
+  }
+
+  class When(val sourceInfo: SourceInfo, val pred: Arg) extends Command {
+    val ifRegion = new VectorBuilder[Command]
+    private var _elseRegion: VectorBuilder[Command] = null
+    def elseRegion: VectorBuilder[Command] = {
+      if (_elseRegion == null) {
+        _elseRegion = new VectorBuilder[Command]
+      }
+      _elseRegion
+    }
+  }
+
+  object When {
+    def unapply(when: When): Option[(SourceInfo, Arg, Seq[Command], Seq[Command])] = {
+      Some(
+        (
+          when.sourceInfo,
+          when.pred,
+          when.ifRegion.result(),
+          Option(when._elseRegion).fold(Seq.empty[Command])(_.result())
+        )
+      )
+    }
+  }
+
   case class Connect(sourceInfo: SourceInfo, loc: Arg, exp: Arg) extends Command
   case class PropAssign(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
   case class Attach(sourceInfo: SourceInfo, locs: Seq[Node]) extends Command
-  case class ConnectInit(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
   case class Stop(id: stop.Stop, sourceInfo: SourceInfo, clock: Arg, ret: Int) extends Definition
 
   object LayerConvention {
@@ -406,6 +448,17 @@ private[chisel3] object ir {
     topDir: SpecifiedDirection,
     params: Map[String, Param])
       extends Component
+
+  case class DefIntrinsicExpr[T <: Data](
+    sourceInfo: SourceInfo,
+    intrinsic:  String,
+    id:         T,
+    args:       Seq[Arg],
+    params:     Seq[(String, Param)])
+      extends Definition
+
+  case class DefIntrinsic(sourceInfo: SourceInfo, intrinsic: String, args: Seq[Arg], params: Seq[(String, Param)])
+      extends Command
 
   case class DefClass(id: Class, name: String, ports: Seq[Port], commands: Seq[Command]) extends Component
 

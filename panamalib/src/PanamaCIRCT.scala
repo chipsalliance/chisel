@@ -23,7 +23,8 @@ class PanamaCIRCT {
       CAPI.mlirGetDialectHandle__firrtl__(arena),
       CAPI.mlirGetDialectHandle__chirrtl__(arena),
       CAPI.mlirGetDialectHandle__sv__(arena),
-      CAPI.mlirGetDialectHandle__seq__(arena)
+      CAPI.mlirGetDialectHandle__seq__(arena),
+      CAPI.mlirGetDialectHandle__emit__(arena)
     ).foreach(CAPI.mlirDialectHandleLoadDialect(arena, _, mlirCtx))
 
     mlirCtx
@@ -506,6 +507,10 @@ class PanamaCIRCT {
   def firrtlAttrGetRUW(ruw: firrtlAttrGetRUW) = MlirAttribute(CAPI.firrtlAttrGetRUW(arena, mlirCtx, ruw.value))
 
   def firrtlAttrGetMemDir(dir: FIRRTLMemDir) = MlirAttribute(CAPI.firrtlAttrGetMemDir(arena, mlirCtx, dir.value))
+
+  def firrtlAttrGetIntegerFromString(tpe: MlirType, numBits: Int, str: String, radix: Byte) = MlirAttribute(
+    CAPI.firrtlAttrGetIntegerFromString(arena, tpe.get, numBits, newString(str).get, radix)
+  )
 
   def firrtlValueFoldFlow(value: MlirValue, flow: Int): Int = CAPI.firrtlValueFoldFlow(value.get, flow)
 

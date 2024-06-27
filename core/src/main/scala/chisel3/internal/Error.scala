@@ -29,6 +29,28 @@ object ExceptionHelpers {
   def ellipsis(message: Option[String] = None): StackTraceElement =
     new StackTraceElement("..", " ", message.getOrElse(""), -1)
 
+  private[chisel3] def getErrorLineInFile(sourceRoots: Seq[File], sl: SourceLine): List[String] = {
+    def tryFileInSourceRoot(sourceRoot: File): Option[List[String]] = {
+      try {
+        val file = new File(sourceRoot, sl.filename)
+        val lines = Source.fromFile(file).getLines()
+        var i = 0
+        while (i < (sl.line - 1) && lines.hasNext) {
+          lines.next()
+          i += 1
+        }
+        val line = lines.next()
+        val caretLine = (" " * (sl.col - 1)) + "^"
+        Some(line :: caretLine :: Nil)
+      } catch {
+        case scala.util.control.NonFatal(_) => None
+      }
+    }
+    val sourceRootsWithDefault = if (sourceRoots.nonEmpty) sourceRoots else Seq(new File("."))
+    // View allows us to search the directories one at a time and early out
+    sourceRootsWithDefault.view.map(tryFileInSourceRoot(_)).collectFirst { case Some(value) => value }.getOrElse(Nil)
+  }
+
   /** Utility methods that can be added to exceptions.
     */
   implicit class ThrowableHelpers(throwable: Throwable) {
@@ -54,32 +76,32 @@ object ExceptionHelpers {
         packageTrimlist.contains(packageName)
       }
 
-      // Step 1: Remove elements from the top in the package trimlist
       val trimStackTrace =
-        ((a: Array[StackTraceElement]) => a.dropWhile(inTrimlist))
-          // Step 2: Optionally remove elements from the bottom until the anchor
-          .andThen(_.reverse)
-          .andThen(a =>
-            anchor match {
-              case Some(b) => a.dropWhile(ste => !ste.getClassName.startsWith(b))
-              case None    => a
-            }
-          )
-          // Step 3: Remove elements from the bottom in the package trimlist
-          .andThen(_.dropWhile(inTrimlist))
-          // Step 4: Reverse back to the original order
-          .andThen(_.reverse.toArray)
+        (a: Array[StackTraceElement]) => {
+          // Step 1: Remove elements from the top in the package trimlist
+          //         Only include ellipsis at top if something is dropped from top
+          val droppedFromTop = inTrimlist(a.head)
+          val trimmed =
+            a.dropWhile(inTrimlist)
+              // Step 2: Optionally remove elements from the bottom until the anchor
+              .reverse
+              .dropWhile(ste => anchor.map(b => !ste.getClassName.startsWith(b)).getOrElse(false))
+              // Step 3: Remove elements from the bottom in the package trimlist
+              .dropWhile(inTrimlist)
+              // Step 4: Reverse back to the original order
+              .reverse
+              .toArray
           // Step 5: Add ellipsis stack trace elements and "--full-stacktrace" info
-          .andThen(a =>
-            ellipsis() +:
-              a :+
+          val withEllipses =
+            Option.when(droppedFromTop)(ellipsis()) ++:
+              trimmed :+
               ellipsis() :+
               ellipsis(
                 Some("Stack trace trimmed to user code only. Rerun with --full-stacktrace to see the full stack trace")
               )
-          )
-          // Step 5: Mutate the stack trace in this exception
-          .andThen(throwable.setStackTrace(_))
+          // Step 6: Mutate the stack trace in this exception
+          throwable.setStackTrace(withEllipses)
+        }
 
       val stackTrace = throwable.getStackTrace
       if (stackTrace.nonEmpty) {
@@ -254,28 +276,6 @@ private[chisel3] class ErrorLog(
   throwOnFirstError: Boolean) {
   import ErrorLog.withColor
 
-  private def getErrorLineInFile(sl: SourceLine): List[String] = {
-    def tryFileInSourceRoot(sourceRoot: File): Option[List[String]] = {
-      try {
-        val file = new File(sourceRoot, sl.filename)
-        val lines = Source.fromFile(file).getLines()
-        var i = 0
-        while (i < (sl.line - 1) && lines.hasNext) {
-          lines.next()
-          i += 1
-        }
-        val line = lines.next()
-        val caretLine = (" " * (sl.col - 1)) + "^"
-        Some(line :: caretLine :: Nil)
-      } catch {
-        case scala.util.control.NonFatal(_) => None
-      }
-    }
-    val sourceRootsWithDefault = if (sourceRoots.nonEmpty) sourceRoots else Seq(new File("."))
-    // View allows us to search the directories one at a time and early out
-    sourceRootsWithDefault.view.map(tryFileInSourceRoot(_)).collectFirst { case Some(value) => value }.getOrElse(Nil)
-  }
-
   /** Returns an appropriate location string for the provided source info.
     * If the source info is of `NoSourceInfo` type, the source location is looked up via stack trace.
     * If the source info is `None`, an empty string is returned.
@@ -292,7 +292,8 @@ private[chisel3] class ErrorLog(
   // id is optional because it has only been applied to warnings, TODO apply to errors
   private def logWarningOrError(msg: String, si: Option[SourceInfo], isFatal: Boolean): Unit = {
     val location = errorLocationString(si)
-    val sourceLineAndCaret = si.collect { case sl: SourceLine => getErrorLineInFile(sl) }.getOrElse(Nil)
+    val sourceLineAndCaret =
+      si.collect { case sl: SourceLine => ExceptionHelpers.getErrorLineInFile(sourceRoots, sl) }.getOrElse(Nil)
     val fullMessage = if (location.isEmpty) msg else s"$location: $msg"
     val errorLines = fullMessage :: sourceLineAndCaret
     val entry = ErrorEntry(errorLines, isFatal)

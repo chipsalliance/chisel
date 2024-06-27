@@ -79,8 +79,12 @@ object ChiselStageSpec {
     })
   }
 
+  class UserAssertionModule extends RawModule {
+    assert(false, "User had an assertion")
+  }
+
   class UserExceptionModule extends RawModule {
-    assert(false, "User threw an exception")
+    throw new Exception("User threw an exception")
   }
 
   class UserExceptionNoStackTrace extends RawModule {
@@ -410,7 +414,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
         (new ChiselStage)
           .execute(
             Array("--target", "chirrtl"),
-            Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.UserExceptionModule))
+            Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.UserAssertionModule))
           )
       }
 
@@ -418,14 +422,39 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
 
       val message = exception.getMessage
       info("The exception includes the user's message")
-      message should include("User threw an exception")
+      message should include("User had an assertion")
 
-      val stackTrace = exception.getStackTrace.mkString("\n")
-      info("The stack trace is trimmed")
-      (stackTrace should not).include("java")
+      val stackTrace = exception.getStackTrace
+      info("The stack trace is trimmed at the top")
+      stackTrace.head.toString should include("...")
+
+      info("The stack trace is trimmed at the bottom")
+      stackTrace.last.toString should include("...")
 
       info("The stack trace include information about running --full-stacktrace")
-      stackTrace should include("--full-stacktrace")
+      stackTrace.last.toString should include("--full-stacktrace")
+    }
+
+    it("should NOT truncate the top of the stack trace if it points to user code") {
+      info("The user's Exception was thrown")
+      val exception = intercept[Exception] {
+        (new ChiselStage)
+          .execute(
+            Array("--target", "chirrtl"),
+            Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.UserExceptionModule))
+          )
+      }
+
+      val message = exception.getMessage
+      info("The exception includes the user's message")
+      message should include("User threw an exception")
+
+      val stackTrace = exception.getStackTrace
+      info("The stack trace is NOT trimmed at the top")
+      stackTrace.head.toString shouldNot include("...")
+
+      info("The stack trace is trimmed at the bottom")
+      stackTrace.last.toString should include("...")
     }
 
     it("""should not truncate a user exception with "--full-stacktrace"""") {
@@ -433,7 +462,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
       val exception = intercept[java.lang.AssertionError] {
         (new ChiselStage).execute(
           Array("--target", "chirrtl", "--full-stacktrace"),
-          Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.UserExceptionModule))
+          Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.UserAssertionModule))
         )
       }
 
@@ -441,7 +470,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
 
       val message = exception.getMessage
       info("The exception includes the user's message")
-      message should include("User threw an exception")
+      message should include("User had an assertion")
 
       info("The stack trace is not trimmed")
       exception.getStackTrace.mkString("\n") should include("java")
@@ -527,7 +556,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
       val lines = stdout.split("\n")
       // Fuzzy includes aren't ideal but there is ANSI color in these strings that is hard to match
       lines(0) should include(
-        "src/test/scala/circtTests/stage/ChiselStageSpec.scala 91:9: Negative shift amounts are illegal (got -1)"
+        "src/test/scala/circtTests/stage/ChiselStageSpec.scala 95:9: Negative shift amounts are illegal (got -1)"
       )
       lines(1) should include("    3.U >> -1")
       lines(2) should include("        ^")
@@ -548,7 +577,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
       // Fuzzy includes aren't ideal but there is ANSI color in these strings that is hard to match
       lines.size should equal(2)
       lines(0) should include(
-        "src/test/scala/circtTests/stage/ChiselStageSpec.scala 91:9: Negative shift amounts are illegal (got -1)"
+        "src/test/scala/circtTests/stage/ChiselStageSpec.scala 95:9: Negative shift amounts are illegal (got -1)"
       )
       (lines(1) should not).include("3.U >> -1")
     }
@@ -1095,6 +1124,47 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
       info(s"'$expectedOutput' exists")
     }
 
+    it("should emit btor2 to string") {
+      import chisel3._
+      import chisel3.ltl._
+
+      class Counter extends Module {
+        val count = RegInit(0.U(32.W))
+        when(count === 42.U) { count := 0.U }.otherwise { count := count + 1.U }
+
+        AssertProperty((count <= 42.U))
+      }
+
+      val btor2 = ChiselStage.emitBtor2(new Counter)
+      btor2 should include("""1 sort bitvec 1
+                             |2 input 1 reset
+                             |3 sort bitvec 32
+                             |4 state 3 count
+                             |5 constd 1 0
+                             |6 state 1 hbr
+                             |7 init 1 6 5
+                             |8 constd 3 43
+                             |9 constd 3 1
+                             |10 constd 3 42
+                             |11 constd 1 -1
+                             |12 constd 3 0
+                             |13 eq 1 4 10
+                             |14 add 3 4 9
+                             |15 ite 3 13 12 14
+                             |16 ult 1 4 8
+                             |17 constd 1 -1
+                             |18 or 1 2 6
+                             |19 xor 1 2 17
+                             |20 and 1 6 19
+                             |21 xor 1 20 11
+                             |22 or 1 21 16
+                             |23 not 1 22
+                             |24 bad 23
+                             |25 ite 3 2 12 15
+                             |26 next 3 4 25
+                             |28 next 1 6 27""".stripMargin)
+    }
+
     it("""should error if give a "--target-directory" option""") {
 
       val exception = intercept[firrtl.options.OptionsException] {
@@ -1146,6 +1216,27 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
     it("should truncate a user exception") {
       info("The user's java.lang.AssertionError was thrown")
       val exception = intercept[java.lang.AssertionError] {
+        ChiselStage.emitCHIRRTL(new ChiselStageSpec.UserAssertionModule)
+      }
+
+      val message = exception.getMessage
+      info("The exception includes the user's message")
+      message should include("User had an assertion")
+
+      val stackTrace = exception.getStackTrace
+      info("The stack trace is trimmed at the top")
+      stackTrace.head.toString should include("...")
+
+      info("The stack trace is trimmed at the bottom")
+      stackTrace.last.toString should include("...")
+
+      info("The stack trace include information about running --full-stacktrace")
+      stackTrace.last.toString should include("--full-stacktrace")
+    }
+
+    it("should NOT truncate the top of the stack trace if it points to user code") {
+      info("The user's Exception was thrown")
+      val exception = intercept[Exception] {
         ChiselStage.emitCHIRRTL(new ChiselStageSpec.UserExceptionModule)
       }
 
@@ -1153,8 +1244,12 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
       info("The exception includes the user's message")
       message should include("User threw an exception")
 
-      info("The stack trace is trimmed")
-      (exception.getStackTrace.mkString("\n") should not).include("java")
+      val stackTrace = exception.getStackTrace
+      info("The stack trace is NOT trimmed at the top")
+      stackTrace.head.toString shouldNot include("...")
+
+      info("The stack trace is trimmed at the bottom")
+      stackTrace.last.toString should include("...")
     }
 
     it("should NOT add a stack trace to an exception with no stack trace") {

@@ -7,7 +7,8 @@ import chisel3.probe.{Probe, RWProbe}
 import chisel3.reflect.DataMirror
 import chisel3.Data.ProbeInfo
 import chisel3.experimental.{annotate, requireIsHardware, skipPrefix, BaseModule, ChiselAnnotation, SourceInfo}
-import chisel3.internal.{Builder, BuilderContextCache, NamedComponent, Namespace, PortBinding}
+import chisel3.internal.{Builder, BuilderContextCache, NamedComponent, Namespace}
+import chisel3.internal.binding.{CrossModuleBinding, PortBinding}
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
 import firrtl.passes.wiring.{SinkAnnotation, SourceAnnotation}
 import firrtl.annotations.{ComponentName, ModuleName}
@@ -288,7 +289,7 @@ object BoringUtils {
     source.topBindingOpt match {
       case None =>
         Builder.error(s"Cannot bore from ${source._errorContext}")
-      case Some(internal.CrossModuleBinding) =>
+      case Some(CrossModuleBinding) =>
         Builder.error(
           s"Cannot bore across a Definition/Instance boundary:${thisModule._errorContext} cannot access ${source}"
         )
@@ -296,6 +297,12 @@ object BoringUtils {
     }
     if (parent(source) == thisModule) {
       // No boring to do
+      if (createProbe.nonEmpty && !DataMirror.isFullyAligned(source)) {
+        // Create aligned wire if source isn't aligned.  This ensures result has same type regardless of origin.
+        val bore = Wire(purePortTypeBase)
+        bore :#= source
+        return bore
+      }
       return source
     }
 

@@ -3,131 +3,171 @@
 package chisel3.util.circt
 
 import chisel3._
+import chisel3.ltl.Property
 import chisel3.experimental.{IntParam, IntrinsicModule, Param, StringParam}
 import chisel3.experimental.hierarchy.{instantiable, public}
+import chisel3.experimental.SourceInfo
 
-private object Utils {
-  private[chisel3] def withoutNone(params: Map[String, Option[Param]]): Map[String, Param] =
-    params.collect { case (name, Some(param)) => (name, param) }
+/** Base instrinsic for circt related intrinsics
+  * @param intrinsicName name of the intrinsic
+  * @param ret return type of the expression
+  * @param params parameter name/value pairs, if any.  Parameter names must be unique.
+  * @param sourceInfo where the data is from
+  * @return intrinsic expression that returns the specified return type
+  */
+private[chisel3] object BaseIntrinsic {
+  def apply[T <: Data](
+    intrinsicName: String,
+    ret:           => T,
+    maybeParams:   Seq[(String, Param)] = Seq()
+  )(data:          Data*
+  )(
+    implicit sourceInfo: SourceInfo
+  ): T = {
+    IntrinsicExpr(f"circt_$intrinsicName", ret, maybeParams: _*)(data: _*)
+  }
 }
 
-@instantiable
-private[chisel3] class BaseIntrinsic(
-  intrinsicName: String,
-  maybeParams:   Map[String, Option[Param]] = Map.empty[String, Option[Param]])
-    extends IntrinsicModule(f"circt_$intrinsicName", Utils.withoutNone(maybeParams)) {
-  private val paramValues = params.values.map(_ match {
-    case IntParam(x)    => x.toString
-    case StringParam(x) => x.toString
-    case x              => x.toString
-  })
-  override def desiredName = paramValues.fold(this.getClass.getSimpleName) { (a, b) => a + "_" + b }
+/** Base intrinsic for all unary intrinsics with `in` and `out` ports. */
+private[chisel3] object UnaryLTLIntrinsic {
+  def apply[T <: Data](
+    intrinsicName: String,
+    params:        Seq[(String, Param)] = Seq()
+  )(_in:           T
+  )(
+    implicit sourceInfo: SourceInfo
+  ): Bool =
+    BaseIntrinsic(f"ltl_$intrinsicName", Bool(), params)(_in).suggestName(intrinsicName)
 }
 
-/** Base class for all unary intrinsics with `in` and `out` ports. */
-@instantiable
-private[chisel3] class UnaryLTLIntrinsic(
-  intrinsicName: String,
-  params:        Map[String, Option[Param]] = Map.empty[String, Option[Param]])
-    extends BaseIntrinsic(f"ltl_$intrinsicName", params) {
-  @public val in = IO(Input(Bool()))
-  @public val out = IO(Output(Bool()))
-}
-
-/** Base class for all binary intrinsics with `lhs`, `rhs`, and `out` ports. */
-@instantiable
-private[chisel3] class BinaryLTLIntrinsic(
-  intrinsicName: String,
-  params:        Map[String, Option[Param]] = Map.empty[String, Option[Param]])
-    extends BaseIntrinsic(f"ltl_$intrinsicName", params) {
-  @public val lhs = IO(Input(Bool()))
-  @public val rhs = IO(Input(Bool()))
-  @public val out = IO(Output(Bool()))
+/** Base instrinsic for all binary intrinsics with `lhs`, `rhs`, and `out` ports. */
+private[chisel3] object BinaryLTLIntrinsic {
+  def apply[T <: Data, U <: Data](
+    intrinsicName: String,
+    params:        Seq[(String, Param)] = Seq()
+  )(lhs:           T,
+    rhs:           U
+  )(
+    implicit sourceInfo: SourceInfo
+  ): Bool =
+    BaseIntrinsic(f"ltl_$intrinsicName", Bool(), params)(lhs, rhs).suggestName(intrinsicName)
 }
 
 /** A wrapper intrinsic for the CIRCT `ltl.and` operation. */
-private[chisel3] class LTLAndIntrinsic extends BinaryLTLIntrinsic("and")
+private[chisel3] object LTLAndIntrinsic {
+  def apply(lhs: Bool, rhs: Bool)(implicit sourceInfo: SourceInfo) =
+    BinaryLTLIntrinsic("and")(lhs, rhs)
+}
 
 /** A wrapper intrinsic for the CIRCT `ltl.or` operation. */
-private[chisel3] class LTLOrIntrinsic extends BinaryLTLIntrinsic("or")
+private[chisel3] object LTLOrIntrinsic {
+  def apply(lhs: Bool, rhs: Bool)(implicit sourceInfo: SourceInfo) =
+    BinaryLTLIntrinsic("or")(lhs, rhs)
+}
+
+/** A wrapper intrinsic for the CIRCT `ltl.intersect` operation. */
+private[chisel3] object LTLIntersectIntrinsic {
+  def apply(lhs: Bool, rhs: Bool)(implicit sourceInfo: SourceInfo) =
+    BinaryLTLIntrinsic("intersect")(lhs, rhs)
+}
+
+/** A wrapper intrinsic for the CIRCT `ltl.until` operation. */
+private[chisel3] object LTLUntilIntrinsic {
+  def apply(lhs: Bool, rhs: Bool)(implicit sourceInfo: SourceInfo) =
+    BinaryLTLIntrinsic("until")(lhs, rhs)
+}
 
 /** A wrapper intrinsic for the CIRCT `ltl.delay` operation. */
-private[chisel3] class LTLDelayIntrinsic(delay: Int, length: Option[Int])
-    extends UnaryLTLIntrinsic("delay", Map("delay" -> Some(IntParam(delay)), "length" -> length.map(IntParam(_))))
+private[chisel3] object LTLDelayIntrinsic {
+
+  def apply(delay: Int, length: Option[Int])(_in: Bool)(implicit sourceInfo: SourceInfo) = {
+    val params = Seq("delay" -> IntParam(delay)) ++ length.map("length" -> IntParam(_))
+    UnaryLTLIntrinsic("delay", params)(_in)
+  }
+}
+
+/** A wrapper intrinsic for the CIRCT `ltl.repeat` operation. */
+private[chisel3] object LTLRepeatIntrinsic {
+
+  def apply(base: Int, more: Option[Int])(_in: Bool)(implicit sourceInfo: SourceInfo) = {
+    val params = Seq("base" -> IntParam(base)) ++ more.map("more" -> IntParam(_))
+    UnaryLTLIntrinsic("repeat", params)(_in)
+  }
+}
+
+/** A wrapper intrinsic for the CIRCT `ltl.goto_repeat` operation. */
+private[chisel3] object LTLGoToRepeatIntrinsic {
+  def apply(base: Int, more: Int)(_in: Bool)(implicit sourceInfo: SourceInfo) =
+    UnaryLTLIntrinsic("goto_repeat", Seq("base" -> IntParam(base), "more" -> IntParam(more)))(_in)
+}
+
+/** A wrapper intrinsic for the CIRCT `ltl.non_consecutive_repeat` operation. */
+private[chisel3] object LTLNonConsecutiveRepeatIntrinsic {
+  def apply(base: Int, more: Int)(_in: Bool)(implicit sourceInfo: SourceInfo) =
+    UnaryLTLIntrinsic("non_consecutive_repeat", Seq("base" -> IntParam(base), "more" -> IntParam(more)))(_in)
+}
 
 /** A wrapper intrinsic for the CIRCT `ltl.concat` operation. */
-private[chisel3] class LTLConcatIntrinsic extends BinaryLTLIntrinsic("concat")
+private[chisel3] object LTLConcatIntrinsic {
+  def apply(lhs: Bool, rhs: Bool)(implicit sourceInfo: SourceInfo) =
+    BinaryLTLIntrinsic("concat")(lhs, rhs)
+}
 
 /** A wrapper intrinsic for the CIRCT `ltl.not` operation. */
-private[chisel3] class LTLNotIntrinsic extends UnaryLTLIntrinsic("not")
+private[chisel3] object LTLNotIntrinsic {
+  def apply(prop: Bool)(implicit sourceInfo: SourceInfo) =
+    UnaryLTLIntrinsic("not")(prop)
+}
 
 /** A wrapper intrinsic for the CIRCT `ltl.implication` operation. */
-private[chisel3] class LTLImplicationIntrinsic extends BinaryLTLIntrinsic("implication")
+private[chisel3] object LTLImplicationIntrinsic {
+  def apply(antecedent: Bool, consequent: Bool)(implicit sourceInfo: SourceInfo) =
+    BinaryLTLIntrinsic("implication")(antecedent, consequent)
+}
 
 /** A wrapper intrinsic for the CIRCT `ltl.eventually` operation. */
-private[chisel3] class LTLEventuallyIntrinsic extends UnaryLTLIntrinsic("eventually")
+private[chisel3] object LTLEventuallyIntrinsic {
+  def apply(prop: Bool)(implicit sourceInfo: SourceInfo) =
+    UnaryLTLIntrinsic("eventually")(prop)
+}
 
 /** A wrapper intrinsic for the CIRCT `ltl.clock` operation. */
-@instantiable
-private[chisel3] class LTLClockIntrinsic extends BaseIntrinsic("ltl_clock") {
-  @public val in = IO(Input(Bool()))
-  @public val clock = IO(Input(Clock()))
-  @public val out = IO(Output(Bool()))
+private[chisel3] object LTLClockIntrinsic {
+  def apply(in: Bool, clock: Clock)(implicit sourceInfo: SourceInfo) =
+    BinaryLTLIntrinsic("clock")(in, clock)
 }
 
 /** A wrapper intrinsic for the CIRCT `ltl.disable` operation. */
-@instantiable
-private[chisel3] class LTLDisableIntrinsic extends BaseIntrinsic("ltl_disable") {
-  @public val in = IO(Input(Bool()))
-  @public val condition = IO(Input(Bool()))
-  @public val out = IO(Output(Bool()))
+private[chisel3] object LTLDisableIntrinsic {
+  def apply(in: Bool, cond: Bool)(implicit sourceInfo: SourceInfo) =
+    BinaryLTLIntrinsic("disable")(in, cond)
 }
 
 /** Base class for assert, assume, and cover intrinsics. */
-@instantiable
-private[chisel3] class VerifAssertLikeIntrinsic(intrinsicName: String, label: Option[String])
-    extends BaseIntrinsic(f"verif_$intrinsicName", Map("label" -> label.map(StringParam(_)))) {
-  @public val property = IO(Input(Bool()))
+private[chisel3] object VerifAssertLikeIntrinsic {
+  def apply(intrinsicName: String, label: Option[String])(prop: Bool)(implicit sourceInfo: SourceInfo): Unit = {
+    val name = f"circt_verif_$intrinsicName"
+    if (label.isEmpty)
+      Intrinsic(name)(prop)
+    else
+      Intrinsic(name, "label" -> label.get)(prop)
+  }
 }
 
 /** A wrapper intrinsic for the CIRCT `verif.assert` operation. */
-private[chisel3] class VerifAssertIntrinsic(label: Option[String]) extends VerifAssertLikeIntrinsic("assert", label)
+private[chisel3] object VerifAssertIntrinsic {
+  def apply(label: Option[String] = None)(prop: Bool)(implicit sourceInfo: SourceInfo) =
+    VerifAssertLikeIntrinsic("assert", label)(prop)
+}
 
 /** A wrapper intrinsic for the CIRCT `verif.assume` operation. */
-private[chisel3] class VerifAssumeIntrinsic(label: Option[String]) extends VerifAssertLikeIntrinsic("assume", label)
+private[chisel3] object VerifAssumeIntrinsic {
+  def apply(label: Option[String] = None)(prop: Bool)(implicit sourceInfo: SourceInfo) =
+    VerifAssertLikeIntrinsic("assume", label)(prop)
+}
 
 /** A wrapper intrinsic for the CIRCT `verif.cover` operation. */
-private[chisel3] class VerifCoverIntrinsic(label: Option[String]) extends VerifAssertLikeIntrinsic("cover", label)
-
-// There appears to be a bug in ScalaDoc where you cannot use macro-generated methods in the same
-// compilation unit as the macro-generated type. This means that any use of Definition[_] or
-// Instance[_] of the above classes within this compilation unit breaks ScalaDoc generation. This
-// issue appears to be similar to https://stackoverflow.com/questions/42684101 but applying the
-// specific mitigation did not seem to work.  As a workaround, we simply write the extension methods
-// that are generated by the @instantiable macro so that we can use them here.
-private[chisel3] object LTLIntrinsicInstanceMethodsInternalWorkaround {
-  import chisel3.experimental.hierarchy.Instance
-  implicit val mg: chisel3.internal.MacroGenerated = new chisel3.internal.MacroGenerated {}
-  implicit class UnaryLTLIntrinsicInstanceMethods(underlying: Instance[UnaryLTLIntrinsic]) {
-    def in = underlying._lookup(_.in)
-    def out = underlying._lookup(_.out)
-  }
-  implicit class BinaryLTLIntrinsicInstanceMethods(underlying: Instance[BinaryLTLIntrinsic]) {
-    def lhs = underlying._lookup(_.lhs)
-    def rhs = underlying._lookup(_.rhs)
-    def out = underlying._lookup(_.out)
-  }
-  implicit class LTLClockIntrinsicInstanceMethods(underlying: Instance[LTLClockIntrinsic]) {
-    def in = underlying._lookup(_.in)
-    def clock = underlying._lookup(_.clock)
-    def out = underlying._lookup(_.out)
-  }
-  implicit class LTLDisableIntrinsicInstanceMethods(underlying: Instance[LTLDisableIntrinsic]) {
-    def in = underlying._lookup(_.in)
-    def condition = underlying._lookup(_.condition)
-    def out = underlying._lookup(_.out)
-  }
-  implicit class VerifAssertLikeIntrinsicInstanceMethods(underlying: Instance[VerifAssertLikeIntrinsic]) {
-    def property = underlying._lookup(_.property)
-  }
+private[chisel3] object VerifCoverIntrinsic {
+  def apply(label: Option[String] = None)(prop: Bool)(implicit sourceInfo: SourceInfo) =
+    VerifAssertLikeIntrinsic("cover", label)(prop)
 }

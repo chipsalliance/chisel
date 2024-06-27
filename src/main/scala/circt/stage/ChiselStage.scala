@@ -9,6 +9,7 @@ import firrtl.{AnnotationSeq, EmittedVerilogCircuitAnnotation}
 import firrtl.options.{CustomFileEmission, Dependency, Phase, PhaseManager, Stage, StageMain, Unserializable}
 import firrtl.stage.FirrtlCircuitAnnotation
 import logger.LogLevelAnnotation
+import firrtl.EmittedBtor2CircuitAnnotation
 
 /** Entry point for running Chisel with the CIRCT compiler.
   *
@@ -196,6 +197,31 @@ object ChiselStage {
       Array("--target", "systemverilog") ++ args,
       Seq(ChiselGeneratorAnnotation(() => gen)) ++ firtoolOpts.map(FirtoolOption(_))
     )
+
+  /** Compile a Chisel circuit to btor2
+    *
+    * @param gen         a call-by-name Chisel module
+    * @param args        additional command line arguments to pass to Chisel
+    * @param firtoolOpts additional command line options to pass to firtool
+    * @return a string containing the btor2 output
+    */
+  def emitBtor2(
+    gen:         => RawModule,
+    args:        Array[String] = Array.empty,
+    firtoolOpts: Array[String] = Array.empty
+  ): String = {
+    val annos = Seq(
+      ChiselGeneratorAnnotation(() => gen),
+      CIRCTTargetAnnotation(CIRCTTarget.Btor2)
+    ) ++ (new Shell("circt")).parse(args) ++ firtoolOpts.map(FirtoolOption(_))
+    phase
+      .transform(annos)
+      .collectFirst {
+        case EmittedBtor2CircuitAnnotation(a) => a
+      }
+      .get
+      .value
+  }
 }
 
 /** Command line entry point to [[ChiselStage]] */

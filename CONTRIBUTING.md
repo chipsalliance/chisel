@@ -27,8 +27,8 @@ From the Chisel root directory, run:
 
 ```sh
 # Reformat normal source files
-mill __.reformat
+./mill __.reformat
 
 # Reformat mill build files
-mill --meta-level 1 mill.scalalib.scalafmt.ScalafmtModule/reformatAll sources
+./mill --meta-level 1 mill.scalalib.scalafmt.ScalafmtModule/reformatAll sources
 ```

@@ -165,6 +165,60 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
     )()
   }
 
+  it should "work for identity views" in {
+    import chisel3.experimental.dataview._
+    class Foo extends RawModule {
+      private val internalWire = Wire(Bool())
+      val view = internalWire.viewAs[Bool]
+    }
+    class Top extends RawModule {
+      val foo = Module(new Foo)
+      val outProbe = IO(probe.Probe(Bool()))
+      val out = IO(Bool())
+      probe.define(outProbe, BoringUtils.tap(foo.view))
+      out := BoringUtils.tapAndRead(foo.view)
+    }
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
+    matchesAndOmits(chirrtl)(
+      "module Foo :",
+      "output bore : Probe<UInt<1>>",
+      "output out_bore : Probe<UInt<1>>",
+      "define bore = probe(internalWire)",
+      "define out_bore = probe(internalWire)",
+      "module Top :",
+      "define outProbe = foo.bore",
+      "connect out, read(foo.out_bore)"
+    )()
+  }
+
+  it should "NOT work [yet] for non-identity views" in {
+    import chisel3.experimental.dataview._
+    class MyBundle extends Bundle {
+      val a = Bool()
+      val b = Bool()
+    }
+    object MyBundle {
+      implicit val view: DataView[(Bool, Bool), MyBundle] = DataView(
+        _ => new MyBundle,
+        _._1 -> _.a,
+        _._2 -> _.b
+      )
+    }
+    class Foo extends RawModule {
+      private val w1, w2 = Wire(Bool())
+      val view = (w1, w2).viewAs[MyBundle]
+    }
+    class Top extends RawModule {
+      val foo = Module(new Foo)
+      val out = IO(new MyBundle)
+      val outProbe = IO(probe.Probe(new MyBundle))
+      probe.define(outProbe, BoringUtils.tap(foo.view))
+      out := BoringUtils.tapAndRead(foo.view)
+    }
+    val e = the[ChiselException] thrownBy circt.stage.ChiselStage.emitCHIRRTL(new Top)
+    e.getMessage should include("BoringUtils currently only support identity views")
+  }
+
   "Writable tap" should "work downwards from grandparent to grandchild" in {
     class Bar extends RawModule {
       val internalWire = Wire(Bool())
@@ -470,13 +524,7 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
 
     class Foo extends RawModule {
       val a = WireInit(DecoupledIO(Bool()), DontCare)
-      val dummyA = Wire(Output(chiselTypeOf(a)))
-      // FIXME we shouldn't need this intermediate wire
-      // https://github.com/chipsalliance/chisel/issues/3557
-      dummyA :#= a
-      dontTouch(a)
-
-      val bar = Module(new Bar(dummyA))
+      val bar = Module(new Bar(a))
     }
 
     val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Foo, Array("--full-stacktrace"))
@@ -486,9 +534,30 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       "input bore : { ready : UInt<1>, valid : UInt<1>, bits : UInt<1>}",
       "module Foo :",
       "wire a : { flip ready : UInt<1>, valid : UInt<1>, bits : UInt<1>}",
-      // FIXME shouldn't need intermediate wire
-      "wire dummyA : { ready : UInt<1>, valid : UInt<1>, bits : UInt<1>}",
-      "connect bar.bore, dummyA"
+      "connect bar.bore, read(probe(a))"
+    )()
+
+    // Check that firtool also passes
+    val verilog = circt.stage.ChiselStage.emitSystemVerilog(new Foo)
+  }
+
+  it should "work with DecoupledIO locally" in {
+    import chisel3.util.{Decoupled, DecoupledIO}
+    class Foo extends RawModule {
+      val a = WireInit(DecoupledIO(Bool()), DontCare)
+      val b = BoringUtils.tapAndRead(a)
+      assert(chisel3.reflect.DataMirror.isFullyAligned(b), "tapAndRead should always return passive data")
+    }
+
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Foo, Array("--full-stacktrace"))
+
+    matchesAndOmits(chirrtl)(
+      "module Foo :",
+      "wire a : { flip ready : UInt<1>, valid : UInt<1>, bits : UInt<1>}",
+      "wire b : { ready : UInt<1>, valid : UInt<1>, bits : UInt<1>}",
+      "connect b.bits, a.bits",
+      "connect b.valid, a.valid",
+      "connect b.ready, a.ready"
     )()
 
     // Check that firtool also passes
@@ -512,4 +581,62 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
     )()
   }
 
+  it should "work for identity views" in {
+    import chisel3.experimental.dataview._
+    class Bar extends RawModule {
+      private val internalWire = Wire(Bool())
+      val view = internalWire.viewAs[Bool]
+    }
+    class Foo extends RawModule {
+      val bar = Module(new Bar)
+    }
+    class Top extends RawModule {
+      val foo = Module(new Foo)
+      val out = IO(Bool())
+      out := probe.read(BoringUtils.rwTap(foo.bar.view))
+      probe.forceInitial(BoringUtils.rwTap(foo.bar.view), false.B)
+    }
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
+    matchesAndOmits(chirrtl)(
+      "module Bar :",
+      "output out_bore : RWProbe<UInt<1>>",
+      "define out_bore = rwprobe(internalWire)",
+      "module Foo :",
+      "output out_bore : RWProbe<UInt<1>>",
+      "define out_bore = bar.out_bore",
+      "module Top :",
+      "connect out, read(foo.out_bore)",
+      "force_initial(foo.bore, UInt<1>(0h0))"
+    )()
+  }
+
+  it should "NOT work [yet] for non-identity views" in {
+    import chisel3.experimental.dataview._
+    class MyBundle extends Bundle {
+      val a = Bool()
+      val b = Bool()
+    }
+    object MyBundle {
+      implicit val view: DataView[(Bool, Bool), MyBundle] = DataView(
+        _ => new MyBundle,
+        _._1 -> _.a,
+        _._2 -> _.b
+      )
+    }
+    class Bar extends RawModule {
+      private val w1, w2 = Wire(Bool())
+      val view = (w1, w2).viewAs[MyBundle]
+    }
+    class Foo extends RawModule {
+      val bar = Module(new Bar)
+    }
+    class Top extends RawModule {
+      val foo = Module(new Foo)
+      val out = IO(Bool())
+      out := probe.read(BoringUtils.rwTap(foo.bar.view))
+      probe.forceInitial(BoringUtils.rwTap(foo.bar.view), false.B)
+    }
+    val e = the[ChiselException] thrownBy circt.stage.ChiselStage.emitCHIRRTL(new Top)
+    e.getMessage should include("BoringUtils currently only support identity views")
+  }
 }

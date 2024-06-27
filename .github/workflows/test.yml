@@ -15,7 +15,7 @@ on:
         type: number
       scala:
         description: 'The Scala version to use'
-        default: '2.13.12'
+        default: '2.13.14'
         required: true
         type: string
       espresso:
@@ -40,7 +40,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref }}
       - name: Install Tabby OSS Cad Suite
@@ -87,7 +87,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref }}
       # FIXME: installling jextract before installing mill to workaround `os.proc` can't find jextract in the outdated PATH env from mill server
@@ -98,10 +98,6 @@ jobs:
         with:
           distribution: 'adopt'
           java-version: '21'
-      - name: Install Mill
-        uses: jodersky/setup-mill@v0.3.0
-        with:
-          mill-version: 0.11.5
       # Mill needs firtool to compile with bindings, cannot use firtool-resolver at runtime
       - name: Pick CIRCT version
         id: circt-version
@@ -119,14 +115,14 @@ jobs:
       - name: Compile Mill
         run: |
           export CIRCT_INSTALL_PATH="$(pwd)/circt"
-          mill __.compile
+          ./mill __.compile
 
   doc:
     name: Formatting
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref }}
       - name: Setup Java
@@ -134,21 +130,17 @@ jobs:
         with:
           distribution: 'adopt'
           java-version: '21'
-      - name: Install Mill
-        uses: jodersky/setup-mill@v0.3.0
-        with:
-          mill-version: 0.11.5
       - name: Check Build Script Formatting
-        run: mill --meta-level 1 mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll sources
+        run: ./mill --meta-level 1 mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll sources
       - name: Check Source File Format
-        run: mill __.checkFormat
+        run: ./mill __.checkFormat
 
   integration:
     name: Integration Tests
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref }}
       - name: Install Tabby OSS Cad Suite
@@ -183,7 +175,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref }}
       - name: Setup Java
@@ -191,22 +183,18 @@ jobs:
         with:
           distribution: 'adopt'
           java-version: '21'
-      - name: Install Mill
-        uses: jodersky/setup-mill@v0.3.0
-        with:
-          mill-version: 0.11.5
       - name: JMH
-        run: mill benchmark.runJmh
+        run: ./mill benchmark.runJmh
 
   std:
     name: Standard Library Tests
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        scala: ["2.13.12"]
+        scala: ["2.13.14"]
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref }}
       - name: Install Tabby OSS Cad Suite
@@ -226,7 +214,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref }}
           # Need full history to correctly determine SNAPSHOT version
@@ -265,7 +253,7 @@ jobs:
       - name: Tar built website
         run: tar zcf website.tar.gz website/build
       - name: Share Built Website
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: website
           path: website.tar.gz

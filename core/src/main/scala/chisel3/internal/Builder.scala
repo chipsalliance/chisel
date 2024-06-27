@@ -6,8 +6,9 @@ import scala.util.DynamicVariable
 import scala.collection.mutable.ArrayBuffer
 import chisel3._
 import chisel3.experimental._
-import chisel3.experimental.hierarchy.core.{Clone, Definition, ImportDefinitionAnnotation, Instance}
+import chisel3.experimental.hierarchy.core.{Clone, Definition, Hierarchy, ImportDefinitionAnnotation, Instance}
 import chisel3.properties.Class
+import chisel3.internal.binding._
 import chisel3.internal.firrtl.ir._
 import chisel3.internal.firrtl.Converter
 import chisel3.internal.naming._
@@ -17,7 +18,7 @@ import _root_.firrtl.AnnotationSeq
 import _root_.firrtl.renamemap.MutableRenameMap
 import _root_.firrtl.util.BackendCompilationUtilities._
 import _root_.firrtl.{ir => fir}
-import chisel3.experimental.dataview.{reify, reifySingleData}
+import chisel3.experimental.dataview.{reify, reifySingleTarget}
 import chisel3.internal.Builder.Prefix
 import logger.{LazyLogging, LoggerOption}
 
@@ -300,9 +301,12 @@ private[chisel3] trait HasId extends chisel3.InstanceId {
     nameGuess + parentGuess
   }
 
-  // Helper for reifying views if they map to a single Target
+  /** Helper for reifying views if they map to a single Target.
+    *
+    * This ignores writability, use chisel3.experimental.dataview.reify for non-Target use cases.
+    */
   private[chisel3] def reifyTarget: Option[Data] = this match {
-    case d: Data => reifySingleData(d) // Only Data can be views
+    case d: Data => reifySingleTarget(d) // Only Data can be views
     case bad => throwException(s"This shouldn't be possible - got $bad with ${_parent}")
   }
 
@@ -417,6 +421,27 @@ private[chisel3] trait NamedComponent extends HasId {
     }
   }
 
+  /** Returns a FIRRTL ReferenceTarget that references this object, relative to an optional root.
+    *
+    * If `root` is defined, the target is a hierarchical path starting from `root`.
+    *
+    * If `root` is not defined, the target is a hierarchical path equivalent to `toAbsoluteTarget`.
+    *
+    * @note If `root` is defined, and has not finished elaboration, this must be called within `atModuleBodyEnd`.
+    * @note The NamedComponent must be a descendant of `root`, if it is defined.
+    * @note This doesn't have special handling for Views.
+    */
+  final def toRelativeTargetToHierarchy(root: Option[Hierarchy[BaseModule]]): ReferenceTarget = {
+    val localTarget = toTarget
+    def makeTarget(p: BaseModule) =
+      p.toRelativeTargetToHierarchy(root).ref(localTarget.ref).copy(component = localTarget.component)
+    _parent match {
+      case Some(ViewParent) => makeTarget(reifyParent)
+      case Some(parent)     => makeTarget(parent)
+      case None             => localTarget
+    }
+  }
+
   private def assertValidTarget(): Unit = {
     val isVecSubaccess = getOptionRef.map {
       case Index(_, _: ULit) => true // Vec literal indexing
@@ -454,8 +479,9 @@ private[chisel3] class DynamicContext(
   val sourceRoots:           Seq[File],
   val defaultNamespace:      Option[Namespace],
   // Definitions from other scopes in the same elaboration, use allDefinitions below
-  val outerScopeDefinitions: List[Iterable[Definition[_]]],
-  val loggerOptions:         LoggerOptions) {
+  val loggerOptions: LoggerOptions,
+  val definitions:   ArrayBuffer[Definition[_]],
+  val contextCache:  BuilderContextCache) {
   val importedDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
 
   // Map from proto module name to ext-module name
@@ -506,7 +532,6 @@ private[chisel3] class DynamicContext(
   }
 
   val components = ArrayBuffer[Component]()
-  val definitions = ArrayBuffer[Definition[_]]()
   val annotations = ArrayBuffer[ChiselAnnotation]()
   val newAnnotations = ArrayBuffer[ChiselMultiAnnotation]()
   val layers = mutable.LinkedHashSet[layer.Layer]()
@@ -520,8 +545,6 @@ private[chisel3] class DynamicContext(
 
   // Views that do not correspond to a single ReferenceTarget and thus require renaming
   val unnamedViews: ArrayBuffer[Data] = ArrayBuffer.empty
-
-  val contextCache: BuilderContextCache = BuilderContextCache.empty
 
   // Set by object Module.apply before calling class Module constructor
   // Used to distinguish between no Module() wrapping, multiple wrappings, and rewrapping
@@ -595,9 +618,6 @@ private[chisel3] object Builder extends LazyLogging {
 
   def components:  ArrayBuffer[Component] = dynamicContext.components
   def definitions: ArrayBuffer[Definition[_]] = dynamicContext.definitions
-
-  /** All definitions from current elaboration, including Definitions passed as an argument to this one */
-  def allDefinitions: List[Iterable[Definition[_]]] = definitions :: dynamicContext.outerScopeDefinitions
 
   def annotations: ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
 
@@ -936,23 +956,32 @@ private[chisel3] object Builder extends LazyLogging {
   // RenameMap can split into the constituent parts
   private[chisel3] def makeViewRenameMap: MutableRenameMap = {
     val renames = MutableRenameMap()
-    for (view <- unnamedViews) {
-      val localTarget = view.toTarget
-      val absTarget = view.toAbsoluteTarget
-      val elts = getRecursiveFields.lazily(view, "").collect { case (elt: Element, _) => elt }
-      for (elt <- elts if !elt.isLit) {
-        // This is a hack to not crash when .viewAs is called on non-hardware
-        // It can be removed in Chisel 6.0.0 when it becomes illegal to call .viewAs on non-hardware
-        val targetOfViewOpt =
-          try {
-            Some(reify(elt))
-          } catch {
-            case _: NoSuchElementException => None
+    for (view <- unnamedViews if !view.isLit) { // Aggregates can be literals too!
+      reifySingleTarget(view) match {
+        // If the target reifies to a single target, we don't need to rename.
+        // This is ludicrously expensive though, find a way to make this code unnecessary.
+        case Some(_) => ()
+        case None =>
+          val localTarget = view.toTarget
+          val absTarget = view.toAbsoluteTarget
+          val elts = getRecursiveFields.lazily(view, "").collect { case (elt: Element, _) => elt }
+          for (elt <- elts if !elt.isLit) {
+            // This is a hack to not crash when .viewAs is called on non-hardware
+            // It can be removed in Chisel 6.0.0 when it becomes illegal to call .viewAs on non-hardware
+            val targetOfViewOpt =
+              try {
+                Some(reify(elt)._1) // Writability is irrelevant here
+              } catch {
+                case _: NoSuchElementException => None
+              }
+            // It is legal to target DontCare, but we obviously cannot rename to DontCare
+            targetOfViewOpt
+              .filterNot(_.binding.contains(DontCareBinding()))
+              .foreach { targetOfView =>
+                renames.record(localTarget, targetOfView.toTarget)
+                renames.record(absTarget, targetOfView.toAbsoluteTarget)
+              }
           }
-        targetOfViewOpt.foreach { targetOfView =>
-          renames.record(localTarget, targetOfView.toTarget)
-          renames.record(absTarget, targetOfView.toAbsoluteTarget)
-        }
       }
     }
     renames
@@ -1022,8 +1051,12 @@ private[chisel3] object Builder extends LazyLogging {
     dynamicContext: DynamicContext
   ): (Circuit, T) = {
     dynamicContextVar.withValue(Some(dynamicContext)) {
-      ViewParent: Unit // Must initialize the singleton in a Builder context or weird things can happen
-      // in tiny designs/testcases that never access anything in chisel3.internal
+      // Must initialize the singleton in a Builder context or weird things can happen
+      // in tiny designs/testcases that never access anything in chisel3.internal.
+      ViewParent: Unit
+      // Must initialize the singleton or OutOfMemoryErrors and StackOverflowErrors will instead report as
+      // "java.lang.NoClassDefFoundError: Could not initialize class scala.util.control.NonFatal$".
+      scala.util.control.NonFatal: Unit
       logger.info("Elaborating design...")
       val mod =
         try {

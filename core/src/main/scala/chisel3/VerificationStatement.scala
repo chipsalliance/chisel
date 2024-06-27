@@ -7,7 +7,8 @@ import scala.language.experimental.macros
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.ir._
-import chisel3.experimental.SourceInfo
+import chisel3.experimental.{BaseModule, SourceInfo}
+import chisel3.util.circt.IfElseFatalIntrinsic
 
 import scala.annotation.nowarn
 import scala.reflect.macros.blackbox
@@ -55,10 +56,6 @@ object assert extends VerifPrintMacrosDoc {
     *
     * Does not fire when in reset (defined as the current implicit reset, e.g. as set by
     * the enclosing `withReset` or Module.reset.
-    *
-    * May be called outside of a Module (like defined in a function), so
-    * functions using assert make the standard Module assumptions (single clock
-    * and single reset).
     *
     * @param cond condition, assertion fires (simulation fails) on a rising clock edge when false and reset is not asserted
     * @param message optional chisel Printable type message
@@ -139,6 +136,19 @@ object assert extends VerifPrintMacrosDoc {
     q"$apply_impl_do($cond, ${getLine(c)}, _root_.scala.None)($sourceInfo)"
   }
 
+  private def emitIfElseFatalIntrinsic(
+    clock:     Clock,
+    predicate: Bool,
+    enable:    Bool,
+    format:    Printable
+  )(
+    implicit sourceInfo: SourceInfo
+  ): Assert = {
+    val id = Builder.forcedUserModule // It should be safe since we push commands anyway.
+    IfElseFatalIntrinsic(id, format, "chisel3_builtin", clock, predicate, enable, format.unpackArgs: _*)(sourceInfo)
+    new Assert()
+  }
+
   /** This will be removed in Chisel 3.6 in favor of the Printable version
     *
     * @group VerifPrintMacros
@@ -151,12 +161,8 @@ object assert extends VerifPrintMacrosDoc {
   )(
     implicit sourceInfo: SourceInfo
   ): Assert = {
-    val id = new Assert()
-    when(!Module.reset.asBool) {
-      failureMessage("Assertion", line, cond, message.map(Printable.pack(_, data: _*)))
-      Builder.pushCommand(Verification(id, Formal.Assert, sourceInfo, Module.clock.ref, cond.ref, ""))
-    }
-    id
+    val pable = formatFailureMessage("Assertion", line, cond, message.map(Printable.pack(_, data: _*)))
+    emitIfElseFatalIntrinsic(Module.clock, cond, !Module.reset.asBool, pable)
   }
 
   /** @group VerifPrintMacros */
@@ -167,13 +173,9 @@ object assert extends VerifPrintMacrosDoc {
   )(
     implicit sourceInfo: SourceInfo
   ): Assert = {
-    val id = new Assert()
     message.foreach(Printable.checkScope(_))
-    when(!Module.reset.asBool) {
-      failureMessage("Assertion", line, cond, message)
-      Builder.pushCommand(Verification(id, Formal.Assert, sourceInfo, Module.clock.ref, cond.ref, ""))
-    }
-    id
+    val pable = formatFailureMessage("Assertion", line, cond, message)
+    emitIfElseFatalIntrinsic(Module.clock, cond, !Module.reset.asBool, pable)
   }
 }
 
@@ -213,10 +215,6 @@ object assume extends VerifPrintMacrosDoc {
     * Does not fire when in reset (defined as the encapsulating Module's
     * reset). If your definition of reset is not the encapsulating Module's
     * reset, you will need to gate this externally.
-    *
-    * May be called outside of a Module (like defined in a function), so
-    * functions using assert make the standard Module assumptions (single clock
-    * and single reset).
     *
     * @param cond condition, assertion fires (simulation fails) when false
     * @param message optional Printable type message when the assertion fires
@@ -342,10 +340,6 @@ object cover extends VerifPrintMacrosDoc {
     * reset). If your definition of reset is not the encapsulating Module's
     * reset, you will need to gate this externally.
     *
-    * May be called outside of a Module (like defined in a function), so
-    * functions using assert make the standard Module assumptions (single clock
-    * and single reset).
-    *
     * @param cond condition that will be sampled on every clock tick
     * @param message a string describing the cover event
     */
@@ -439,11 +433,11 @@ abstract class VerificationStatement extends NamedComponent {
 /** Helper functions for common functionality required by stop, assert, assume or cover */
 private object VerificationStatement {
 
-  type SourceLineInfo = (String, Int, String)
+  type SourceLineInfo = (String, Int)
 
   def getLine(c: blackbox.Context): SourceLineInfo = {
     val p = c.enclosingPosition
-    (p.source.file.name, p.line, p.lineContent.trim): @nowarn // suppress, there's no clear replacement
+    (p.source.file.name, p.line): @nowarn // suppress, there's no clear replacement
   }
 
   def formatFailureMessage(
@@ -454,25 +448,12 @@ private object VerificationStatement {
   )(
     implicit sourceInfo: SourceInfo
   ): Printable = {
-    val (filename, line, content) = lineInfo
-    val lineMsg = s"$filename:$line $content".replaceAll("%", "%%")
+    val (filename, line) = lineInfo
+    val lineMsg = s"$filename:$line".replaceAll("%", "%%")
     message match {
       case Some(msg) =>
-        p"$kind failed: $msg\n    at $lineMsg\n"
-      case None => p"$kind failed\n    at $lineMsg\n"
-    }
-  }
-
-  def failureMessage(
-    kind:     String,
-    lineInfo: SourceLineInfo,
-    cond:     Bool,
-    message:  Option[Printable]
-  )(
-    implicit sourceInfo: SourceInfo
-  ): Unit = {
-    when(!cond) {
-      printf.printfWithoutReset(formatFailureMessage(kind, lineInfo, cond, message))
+        p"$kind failed: $msg\n"
+      case None => p"$kind failed at $lineMsg\n"
     }
   }
 }

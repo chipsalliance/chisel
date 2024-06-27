@@ -7,6 +7,7 @@ import chisel3.internal.firrtl.ir._
 import chisel3.experimental.SourceInfo
 import chisel3.experimental.dataview.reify
 import chisel3.internal._
+import chisel3.internal.binding._
 
 /** Element is a leaf data type: it cannot contain other [[Data]] objects. Example uses are for representing primitive
   * data types, like integers and bits.
@@ -38,14 +39,14 @@ abstract class Element extends Data {
         case _            => Some(DontCareBinding())
       }
     // TODO Do we even need this? Looking up things in the AggregateViewBinding is fine
-    case Some(b @ AggregateViewBinding(viewMap)) =>
+    case Some(b @ AggregateViewBinding(viewMap, _)) =>
       viewMap.get(this) match {
-        case Some(elt: Element) => Some(ViewBinding(elt))
-        // TODO We could generate a reduced AggregateViewBinding, but is there a point?
-        // Generating the new object would be somewhat slow, it's not clear if we should do this
-        //   matching anyway
-        case Some(data: Aggregate) => Some(b)
-        case _ => throwException(s"Internal Error! $this missing from topBinding $b")
+        case Some(elt: Element) =>
+          // Very important to use this instead of elt as "this" is the key to the viewMap.
+          val wr = b.lookupWritability(this)
+          Some(ViewBinding(elt, wr))
+        // Children of Probes won't be in viewMap, just return the binding
+        case _ => Some(b)
       }
     case topBindingOpt => topBindingOpt
   }
@@ -53,7 +54,7 @@ abstract class Element extends Data {
   private[chisel3] def litArgOption: Option[LitArg] = topBindingOpt match {
     case Some(ElementLitBinding(litArg)) => Some(litArg)
     case Some(_: ViewBinding) =>
-      reify(this).litArgOption
+      reify(this)._1.litArgOption
     case _ => None
   }
 

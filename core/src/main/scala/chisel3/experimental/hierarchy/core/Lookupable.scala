@@ -8,9 +8,10 @@ import chisel3.experimental.hierarchy.{InstanceClone, InstantiableClone, ModuleC
 import scala.annotation.implicitNotFound
 import scala.collection.mutable.HashMap
 import chisel3._
-import chisel3.experimental.dataview.{isView, reify, reifySingleData}
+import chisel3.experimental.dataview.{isView, reify, reifyIdentityView}
 import chisel3.internal.firrtl.ir.{Arg, ILit, Index, ModuleIO, Slot, ULit}
-import chisel3.internal.{throwException, AggregateViewBinding, Builder, ChildBinding, ViewBinding, ViewParent}
+import chisel3.internal.{throwException, Builder, ViewParent}
+import chisel3.internal.binding.{AggregateViewBinding, ChildBinding, CrossModuleBinding, ViewBinding, ViewWriteability}
 
 /** Represents lookup typeclass to determine how a value accessed from an original IsInstantiable
   *   should be tweaked to return the Instance's version
@@ -71,7 +72,7 @@ object Lookupable {
           case Clone(m: BaseModule) =>
             val newChild = data.cloneTypeFull
             newChild.setRef(data.getRef, true)
-            newChild.bind(internal.CrossModuleBinding)
+            newChild.bind(CrossModuleBinding)
             newChild.setAllParents(Some(m))
             newChild
           case _ => throw new InternalErrorException("Match error: newParent=$newParent")
@@ -103,11 +104,11 @@ object Lookupable {
     }
   }
 
-  // Helper for co-iterating on Elements of aggregates, they must be the same type but that is unchecked
-  private def coiterate(a: Data, b: Data): Iterable[(Element, Element)] = {
+  // Helper for co-iterating on all Elements of aggregates, they must be the same type but that is unchecked
+  private def coiterate(a: Data, b: Data): Iterable[(Data, Data)] = {
     val as = getRecursiveFields.lazily(a, "_")
     val bs = getRecursiveFields.lazily(b, "_")
-    as.zip(bs).collect { case ((ae: Element, _), (be: Element, _)) => (ae, be) }
+    as.zip(bs).collect { case ((ae: Data, _), (be: Data, _)) => (ae, be) }
   }
 
   /** Given a Data, find the root of its binding, apply a function to the root to get a "new root",
@@ -175,48 +176,39 @@ object Lookupable {
 
     // We have to lookup the target(s) of the view since they may need to be underlying into the current context
     val newBinding = data.topBinding match {
-      case ViewBinding(target) => ViewBinding(lookupData(reify(target)))
-      case avb @ AggregateViewBinding(map) =>
+      case ViewBinding(target, writable1) =>
+        val (reified, writable2) = reify(target)
+        ViewBinding(lookupData(reified), writable1.combine(writable2))
+      case avb @ AggregateViewBinding(map, _) =>
         data match {
-          case e: Element   => ViewBinding(lookupData(reify(avb.lookup(e).get)))
+          case e: Element =>
+            val (reified, writable) = reify(avb.lookup(e).get)
+            ViewBinding(lookupData(reified), avb.lookupWritability(e).combine(writable))
           case _: Aggregate =>
-            // Provide a 1:1 mapping if possible
-            val singleTargetOpt = map.get(data).filter(_ => avb == data.binding.get).flatMap(reifySingleData)
-            singleTargetOpt match {
-              case Some(singleTarget) => // It is 1:1!
-                // This is a little tricky because the values in newMap need to point to Elements of newTarget
-                val newTarget = lookupData(singleTarget)
-                val newMap = coiterate(result, data).map {
-                  case (res, from) =>
-                    (res: Data) -> mapRootAndExtractSubField(map(from), _ => newTarget)
-                }.toMap
-                AggregateViewBinding(newMap + (result -> newTarget))
-
-              case None => // No 1:1 mapping so we have to do a flat binding
-                // Just remap each Element of this aggregate
-                val newMap = coiterate(result, data).map {
-                  // Upcast res to Data since Maps are invariant in the Key type parameter
-                  case (res, from) => (res: Data) -> lookupData(reify(avb.lookup(from).get))
-                }.toMap
-                AggregateViewBinding(newMap)
+            // We could just call reifyIdentityView, but since we already have avb, it is
+            // faster to just use it but then call reifyIdentityView in case the target is itself a view
+            def reifyOpt(data: Data): Option[(Data, ViewWriteability)] = map.get(data).flatMap(reifyIdentityView(_))
+            // Just remap each Data present in the map
+            val mapping = coiterate(result, data).flatMap {
+              case (res, from) => reifyOpt(from).map { case (t, w) => (res, lookupData(t), w) }
             }
+            val newMap = mapping.map { case (from, to, _) => from -> to }.toMap
+            val wrMap = mapping.flatMap { case (from, _, wr) => Option.when(wr.isReadOnly)(from -> wr) }.toMap
+            AggregateViewBinding(newMap, Option.when(wrMap.nonEmpty)(wrMap))
         }
       case _ => throw new InternalErrorException("Match error: data.topBinding=${data.topBinding}")
     }
 
     // TODO Unify the following with `.viewAs`
-    // We must also mark non-1:1 and child Aggregates in the view for renaming
+    // We must also mark any non-identity Aggregates as unnammed
     newBinding match {
       case _: ViewBinding => // Do nothing
-      case AggregateViewBinding(childMap) =>
-        if (!childMap.contains(result)) {
-          Builder.unnamedViews += result
-        }
-        // Binding does not capture 1:1 for child aggregates views
+      case AggregateViewBinding(childMap, _) =>
+        // TODO we could do reifySingleTarget instead of just marking non-identity mappings
         getRecursiveFields.lazily(result, "_").foreach {
-          case (agg: Aggregate, _) if agg != result =>
+          case (agg: Aggregate, _) if !childMap.contains(agg) =>
             Builder.unnamedViews += agg
-          case _ => // Do nothing
+          case _ => ()
         }
       case _ => throw new InternalErrorException("Match error: newBinding=$newBinding")
     }

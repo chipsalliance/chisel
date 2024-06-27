@@ -71,7 +71,7 @@ args.head match {
 
     val om = converter.om()
     val evaluator = om.evaluator()
-    val obj = evaluator.instantiate("PropertyTest_Class", Seq(om.newBasePathEmpty))
+    val obj = evaluator.instantiate("PropertyTest_Class", Seq(om.newBasePathEmpty)).get
 
     // CHECK-LABEL: OMReferenceTarget:~PropertyTest|PropertyTest>i
     println(obj.field("p").asInstanceOf[PanamaCIRCTOMEvaluatorValuePath].toString)

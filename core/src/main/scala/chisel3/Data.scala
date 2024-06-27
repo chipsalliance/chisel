@@ -7,9 +7,10 @@ import chisel3.experimental.dataview.reify
 import scala.language.experimental.macros
 import chisel3.experimental.{requireIsChiselType, requireIsHardware, Analog, BaseModule}
 import chisel3.experimental.{prefix, SourceInfo, UnlocatableSourceInfo}
-import chisel3.experimental.dataview.reifySingleData
+import chisel3.experimental.dataview.{reifyIdentityView, reifySingleTarget, DataViewable}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal._
+import chisel3.internal.binding._
 import chisel3.internal.sourceinfo._
 import chisel3.internal.firrtl.ir._
 import chisel3.properties.Property
@@ -214,8 +215,12 @@ private[chisel3] object getRecursiveFields {
 private[chisel3] object getMatchedFields {
   def apply(x: Data, y: Data): Seq[(Data, Data)] = (x, y) match {
     case (x: Element, y: Element) =>
-      require(x.typeEquivalent(y))
+      x.requireTypeEquivalent(y)
       Seq(x -> y)
+    case (_, _) if DataMirror.hasProbeTypeModifier(x) || DataMirror.hasProbeTypeModifier(y) => {
+      x.requireTypeEquivalent(y)
+      Seq(x -> y)
+    }
     case (x: Record, y: Record) =>
       (x._elements
         .zip(y._elements))
@@ -420,7 +425,9 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 
   private[chisel3] def stringAccessor(chiselType: String): String = {
     // Trace views to give better error messages
-    val thiz = reifySingleData(this).getOrElse(this)
+    // Reifying involves checking against ViewParent which requires being in a Builder context
+    // Since we're just printing a String, suppress such errors and use this object
+    val thiz = Try(reifySingleTarget(this)).toOption.flatten.getOrElse(this)
     thiz.topBindingOpt match {
       case None => chiselType
       // Handle DontCares specially as they are "literal-like" but not actually literals
@@ -520,66 +527,97 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 
   /** Whether this Data has the same model ("data type") as that Data.
     * Data subtypes should overload this with checks against their own type.
+    * @param that the Data to check for type equivalence against.
+    * @param strictProbeInfo whether probe info (including its RW-ness and Color) must match
     */
   private[chisel3] final def typeEquivalent(
-    that: Data
-  ): Boolean = findFirstTypeMismatch(that, strictTypes = true, strictWidths = true).isEmpty
+    that:            Data,
+    strictProbeInfo: Boolean = true
+  ): Boolean =
+    findFirstTypeMismatch(that, strictTypes = true, strictWidths = true, strictProbeInfo = strictProbeInfo).isEmpty
 
   /** Find and report any type mismatches
     *
     * @param that Data being compared to this
     * @param strictTypes Does class of Bundles or Records need to match? Inverse of "structural".
     * @param strictWidths do widths need to match?
+    * @param strictProbeInfo does probe info need to match (includes RW and Color)
     * @return None if types are equivalent, Some String reporting the first mismatch if not
     */
   private[chisel3] final def findFirstTypeMismatch(
-    that:         Data,
-    strictTypes:  Boolean,
-    strictWidths: Boolean
+    that:            Data,
+    strictTypes:     Boolean,
+    strictWidths:    Boolean,
+    strictProbeInfo: Boolean
   ): Option[String] = {
-    def rec(left: Data, right: Data): Option[String] =
-      (left, right) match {
-        // Careful, EnumTypes are Element and if we don't implement this, then they are all always equal
-        case (e1: EnumType, e2: EnumType) =>
-          // TODO, should we implement a form of structural equality for enums?
-          if (e1.factory == e2.factory) None
-          else Some(s": Left ($e1) and Right ($e2) have different types.")
-        // Properties should be considered equal when getPropertyType is equal, not when getClass is equal.
-        case (p1: Property[_], p2: Property[_]) =>
-          if (p1.getPropertyType != p2.getPropertyType) {
-            Some(s": Left ($p1) and Right ($p2) have different types")
-          } else {
-            None
-          }
-        case (e1: Element, e2: Element) if e1.getClass == e2.getClass =>
-          if (strictWidths && e1.width != e2.width) {
-            Some(s": Left ($e1) and Right ($e2) have different widths.")
-          } else {
-            None
-          }
-        case (r1: Record, r2: Record) if !strictTypes || r1.getClass == r2.getClass =>
-          val (larger, smaller, msg) =
-            if (r1._elements.size >= r2._elements.size) (r1, r2, "Left") else (r2, r1, "Right")
-          larger._elements.flatMap {
-            case (name, data) =>
-              val recurse = smaller._elements.get(name) match {
-                case None        => Some(s": Dangling field on $msg")
-                case Some(data2) => rec(data, data2)
-              }
-              recurse.map("." + name + _)
-          }.headOption
-        case (v1: Vec[_], v2: Vec[_]) =>
-          if (v1.size != v2.size) {
-            Some(s": Left (size ${v1.size}) and Right (size ${v2.size}) have different lengths.")
-          } else {
-            val recurse = rec(v1.sample_element, v2.sample_element)
-            recurse.map("[_]" + _)
-          }
-        case _ => Some(s": Left ($left) and Right ($right) have different types.")
+
+    def checkProbeInfo(left: Data, right: Data): Option[String] =
+      Option.when(strictProbeInfo && (left.probeInfo != right.probeInfo)) {
+        def probeInfoStr(info: Option[ProbeInfo]) = info.map { info =>
+          s"Some(writeable=${info.writable}, color=${info.color})"
+        }.getOrElse("None")
+        s": Left ($left with probeInfo: ${probeInfoStr(left.probeInfo)}) and Right ($right with probeInfo: ${probeInfoStr(right.probeInfo)}) have different probeInfo."
       }
-    val leftType = if (this.hasBinding) this.cloneType else this
-    val rightType = if (that.hasBinding) that.cloneType else that
-    rec(leftType, rightType)
+
+    def rec(left: Data, right: Data): Option[String] =
+      checkProbeInfo(left, right).orElse {
+        (left, right) match {
+          // Careful, EnumTypes are Element and if we don't implement this, then they are all always equal
+          case (e1: EnumType, e2: EnumType) =>
+            // TODO, should we implement a form of structural equality for enums?
+            if (e1.factory == e2.factory) None
+            else Some(s": Left ($e1) and Right ($e2) have different types.")
+          // Properties should be considered equal when getPropertyType is equal, not when getClass is equal.
+          case (p1: Property[_], p2: Property[_]) =>
+            if (p1.getPropertyType != p2.getPropertyType) {
+              Some(s": Left ($p1) and Right ($p2) have different types")
+            } else {
+              None
+            }
+          case (e1: Element, e2: Element) if e1.getClass == e2.getClass =>
+            if (strictWidths && e1.width != e2.width) {
+              Some(s": Left ($e1) and Right ($e2) have different widths.")
+            } else {
+              None
+            }
+          case (r1: Record, r2: Record) if !strictTypes || r1.getClass == r2.getClass =>
+            val (larger, smaller, msg) =
+              if (r1._elements.size >= r2._elements.size) (r1, r2, "Left") else (r2, r1, "Right")
+            larger._elements.flatMap {
+              case (name, data) =>
+                val recurse = smaller._elements.get(name) match {
+                  case None        => Some(s": Dangling field on $msg")
+                  case Some(data2) => rec(data, data2)
+                }
+                recurse.map("." + name + _)
+            }.headOption
+          case (v1: Vec[_], v2: Vec[_]) =>
+            if (v1.size != v2.size) {
+              Some(s": Left (size ${v1.size}) and Right (size ${v2.size}) have different lengths.")
+            } else {
+              val recurse = rec(v1.sample_element, v2.sample_element)
+              recurse.map("[_]" + _)
+            }
+          case _ => Some(s": Left ($left) and Right ($right) have different types.")
+        }
+      }
+
+    rec(this, that)
+  }
+
+  /** Require that two things are type equivalent, and if they are not, print a helpful error message as
+    * to why not.
+    */
+  private[chisel3] def requireTypeEquivalent(that: Data): Unit = {
+    require(
+      this.typeEquivalent(that), {
+        val reason = this
+          .findFirstTypeMismatch(that, strictTypes = true, strictWidths = true, strictProbeInfo = true)
+          .map(s => s"\nbecause $s")
+          .getOrElse("")
+        s"$this is not typeEquivalent to $that$reason"
+      }
+    )
   }
 
   private[chisel3] def isVisible: Boolean = isVisibleFromModule && visibleFromWhen.isEmpty
@@ -591,8 +629,8 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       case Some(pb: PortBinding)
           if mod.flatMap(Builder.retrieveParent(_, Builder.currentModule.get)) == Builder.currentModule =>
         true
-      case Some(ViewBinding(target))           => target.isVisibleFromModule
-      case Some(AggregateViewBinding(mapping)) => mapping.values.forall(_.isVisibleFromModule)
+      case Some(ViewBinding(target, _))           => target.isVisibleFromModule
+      case Some(AggregateViewBinding(mapping, _)) => mapping.values.forall(_.isVisibleFromModule)
       case Some(pb: SecretPortBinding) => true // Ignore secret to not require visibility
       case Some(_: UnconstrainedBinding) => true
       case _ => false
@@ -613,13 +651,16 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   }
 
   // Internal API: returns a ref that can be assigned to, if consistent with the binding
-  private[chisel3] def lref: Node = {
+  private[chisel3] def lref(implicit info: SourceInfo): Node = {
     requireIsHardware(this)
     requireVisible()
     topBindingOpt match {
       case Some(binding: ReadOnlyBinding) =>
         throwException(s"internal error: attempted to generate LHS ref to ReadOnlyBinding $binding")
-      case Some(ViewBinding(target)) => reify(target).lref
+      case Some(ViewBinding(target1, wr1)) =>
+        val (target2, wr2) = reify(target1)
+        val writability = wr1.combine(wr2)
+        writability.reportIfReadOnly(target2.lref)(Wire(chiselTypeOf(target2)).lref)
       case Some(binding: TopBinding) => Node(this)
       case opt => throwException(s"internal error: unknown binding $opt in generating LHS ref")
     }
@@ -639,12 +680,13 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     requireIsHardware(this)
     topBindingOpt match {
       // DataView
-      case Some(ViewBinding(target)) => reify(target).ref
-      case Some(AggregateViewBinding(viewMap)) =>
-        viewMap.get(this) match {
-          case None => materializeWire() // FIXME FIRRTL doesn't have Aggregate Init expressions
-          // This should not be possible because Element does the lookup in .topBindingOpt
-          case x: Some[_] => throwException(s"Internal Error: In .ref for $this got '$topBindingOpt' and '$x'")
+      case Some(ViewBinding(target, _)) => reify(target)._1.ref
+      case Some(_: AggregateViewBinding) =>
+        reifyIdentityView(this) match {
+          // If this is an identity view (a view of something of the same type), return ref of target
+          case Some((target, _)) => target.ref
+          // Otherwise, we need to materialize hardware of the correct type
+          case _ => materializeWire()
         }
       // Literals
       case Some(ElementLitBinding(litArg)) => litArg
@@ -773,7 +815,9 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   def do_asTypeOf[T <: Data](that: T)(implicit sourceInfo: SourceInfo): T = {
     val thatCloned = Wire(that.cloneTypeFull)
     thatCloned.connectFromBits(this.asUInt)
-    thatCloned
+    thatCloned.viewAsReadOnlyDeprecated(siteInfo =>
+      Warning(WarningID.AsTypeOfReadOnly, s"Return values of asTypeOf will soon be read-only")(siteInfo)
+    )
   }
 
   /** Assigns this node from Bits type. Internal implementation for asTypeOf.
@@ -976,6 +1020,18 @@ object Data {
         // Runtime types are different
         case (thiz, that) => throwException(s"Cannot compare $thiz and $that: Runtime types differ")
       }
+    }
+  }
+
+  implicit class AsReadOnly[T <: Data](self: T) {
+
+    /** Returns a read-only view of this Data
+      *
+      * It is illegal to connect to the return value of this method.
+      * This Data this method is called on must be a hardware type.
+      */
+    def readOnly(implicit sourceInfo: SourceInfo): T = {
+      self.viewAsReadOnly(_ => "Cannot connect to read-only value")
     }
   }
 }

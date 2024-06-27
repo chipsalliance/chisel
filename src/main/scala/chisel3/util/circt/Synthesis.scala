@@ -3,17 +3,8 @@
 package chisel3.util.circt
 
 import chisel3._
-import chisel3.experimental.{requireIsHardware, IntrinsicModule}
+import chisel3.experimental.requireIsHardware
 import chisel3.internal.Builder
-
-/** A 2-to-1 mux cell intrinsic.
-  */
-private class Mux2CellIntrinsic[T <: Data](gen: T) extends IntrinsicModule("circt_mux2cell") {
-  val sel = IO(Input(UInt(1.W)))
-  val high = IO(Input(gen))
-  val low = IO(Input(gen))
-  val out = IO(Output(gen))
-}
 
 /** Utility for constructing 2-to-1 MUX cell intrinsic. This intrinsic is lowered into verilog
   * with vendor specic pragmas that guarantee utilization of 2-to-1 MUX cell in the synthesis process.
@@ -36,23 +27,8 @@ object Mux2Cell {
     requireIsHardware(con, "MUX2 cell true value")
     requireIsHardware(alt, "MUX2 cell false value")
     val d = cloneSupertype(Seq(con, alt), "Mux2Cell")
-    val inst = Module(new Mux2CellIntrinsic(d))
-    inst.sel := cond
-    inst.high := con
-    inst.low := alt
-    inst.out
+    IntrinsicExpr("circt_mux2cell", d)(cond, con, alt)
   }
-}
-
-/** A 4-to-1 mux cell intrinsic.
-  */
-private class Mux4CellIntrinsic[T <: Data](gen: T) extends IntrinsicModule("circt_mux4cell") {
-  val sel = IO(Input(UInt(2.W)))
-  val v3 = IO(Input(gen))
-  val v2 = IO(Input(gen))
-  val v1 = IO(Input(gen))
-  val v0 = IO(Input(gen))
-  val out = IO(Output(gen))
 }
 
 /** Utility for constructing 4-to-1 MUX cell intrinsic. This intrinsic is lowered into verilog
@@ -78,12 +54,6 @@ object Mux4Cell {
     requireIsHardware(v1, "MUX4 cell input value when selector == 1")
     requireIsHardware(v0, "MUX4 cell input value when selector == 0")
     val d = cloneSupertype(Seq(v3, v2, v1, v0), "Mux4Cell")
-    val inst = Module(new Mux4CellIntrinsic(d))
-    inst.sel := sel
-    inst.v3 := v3
-    inst.v2 := v2
-    inst.v1 := v1
-    inst.v0 := v0
-    inst.out
+    IntrinsicExpr("circt_mux4cell", d)(sel, v3, v2, v1, v0)
   }
 }

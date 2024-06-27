@@ -6,6 +6,7 @@ package properties
 import firrtl.{ir => fir}
 import firrtl.annotations.{InstanceTarget, IsMember, ModuleTarget, ReferenceTarget, Target}
 import chisel3.internal._
+import chisel3.internal.binding._
 import chisel3.internal.firrtl.{ir, Converter}
 import chisel3.internal.sourceinfo.SourceInfoTransform
 import chisel3.experimental.{prefix, requireIsHardware, Analog, SourceInfo}
@@ -299,7 +300,7 @@ sealed trait Property[T] extends Element { self =>
 
   /** Internal API: returns a ref that can be assigned to, if consistent with the binding.
     */
-  private[chisel3] override def lref: ir.Node = {
+  private[chisel3] override def lref(implicit info: SourceInfo): ir.Node = {
     requireIsHardware(this)
     requireVisible()
     topBindingOpt match {

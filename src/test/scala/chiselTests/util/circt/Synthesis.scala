@@ -15,23 +15,20 @@ import scala.io.Source
 private class Mux2CellTop extends Module {
   val sel = IO(Input(UInt(1.W)))
   val high = IO(Input(UInt(32.W)))
-  val low = IO(Input(UInt(32.W)))
+  val low = IO(Input(UInt(30.W)))
   val out = IO(Output(UInt(32.W)))
   out := Mux2Cell(sel, high, low)
 }
 
 class Mux2CellSpec extends AnyFlatSpec with Matchers {
-  it should "work for types" in {
+  it should "generic expected FIRRTL" in {
     val fir = ChiselStage.emitCHIRRTL(new Mux2CellTop)
-    (fir.split('\n').map(_.trim.takeWhile(_ != '@')) should contain)
-      .allOf(
-        "intmodule Mux2CellIntrinsic : ",
-        "input sel : UInt<1>",
-        "input high : UInt<32>",
-        "input low : UInt<32>",
-        "output out : UInt<32>",
-        "intrinsic = circt_mux2cell"
-      )
+    fir.split('\n').map(_.takeWhile(_ != '@').trim) should contain(
+      "node _out_T = intrinsic(circt_mux2cell : UInt<32>, sel, high, low)"
+    )
+  }
+  it should "compile to SV" in {
+    ChiselStage.emitSystemVerilog(new Mux2CellTop)
   }
 }
 
@@ -40,24 +37,19 @@ private class Mux4CellTop extends Module {
   val v3 = IO(Input(UInt(32.W)))
   val v2 = IO(Input(UInt(32.W)))
   val v1 = IO(Input(UInt(32.W)))
-  val v0 = IO(Input(UInt(32.W)))
+  val v0 = IO(Input(UInt(1.W)))
   val out = IO(Output(UInt(32.W)))
   out := Mux4Cell(sel, v3, v2, v1, v0)
 }
 
 class Mux4CellSpec extends AnyFlatSpec with Matchers {
-  it should "work for types" in {
+  it should "generic expected FIRRTL" in {
     val fir = ChiselStage.emitCHIRRTL(new Mux4CellTop)
-    (fir.split('\n').map(_.trim.takeWhile(_ != '@')) should contain)
-      .allOf(
-        "intmodule Mux4CellIntrinsic : ",
-        "input sel : UInt<2>",
-        "input v3 : UInt<32>",
-        "input v2 : UInt<32>",
-        "input v1 : UInt<32>",
-        "input v0 : UInt<32>",
-        "output out : UInt<32>",
-        "intrinsic = circt_mux4cell"
-      )
+    fir.split('\n').map(_.takeWhile(_ != '@').trim) should contain(
+      "node _out_T = intrinsic(circt_mux4cell : UInt<32>, sel, v3, v2, v1, v0)"
+    )
+  }
+  it should "compile to SV" in {
+    ChiselStage.emitSystemVerilog(new Mux4CellTop)
   }
 }

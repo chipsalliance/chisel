@@ -5,6 +5,7 @@ mlirGetDialectHandle__firrtl__
 mlirGetDialectHandle__chirrtl__
 mlirGetDialectHandle__sv__
 mlirGetDialectHandle__seq__
+mlirGetDialectHandle__emit__
 mlirDialectHandleLoadDialect
 #mlirStringRefCreate inline function cannot be generated
 mlirStringRefCreateFromCString
@@ -104,6 +105,7 @@ firrtlAttrGetNameKind
 firrtlAttrGetRUW
 firrtlAttrGetMemoryInit
 firrtlAttrGetMemDir
+firrtlAttrGetIntegerFromString
 
 # Utility API
 firrtlValueFoldFlow

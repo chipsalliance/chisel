@@ -6,10 +6,12 @@ import scala.util.Try
 import scala.language.experimental.macros
 import chisel3.experimental.{BaseModule, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal._
+import chisel3.internal.binding._
 import chisel3.experimental.hierarchy.{InstanceClone, ModuleClone}
 import chisel3.properties.{DynamicObject, Property, StaticObject}
 import chisel3.internal.Builder._
 import chisel3.internal.firrtl.ir._
+import chisel3.reflect.DataMirror
 import _root_.firrtl.annotations.{IsModule, ModuleTarget}
 import scala.collection.immutable.VectorBuilder
 import scala.collection.mutable.ArrayBuffer
@@ -86,9 +88,25 @@ abstract class RawModule extends BaseModule {
   // Perhaps this should be an ArrayBuffer (or ArrayBuilder), but DefModule is public and has Seq[Command]
   // so our best option is to share a single Seq datastructure with that
   private val _commands = new VectorBuilder[Command]()
+
+  /** The current region to which commands will be added. */
+  private var _currentRegion = _commands
+
+  private[chisel3] def changeRegion(newRegion: VectorBuilder[Command]): Unit = {
+    _currentRegion = newRegion
+  }
+
+  private[chisel3] def withRegion[A](newRegion: VectorBuilder[Command])(thunk: => A): A = {
+    var oldRegion = _currentRegion
+    changeRegion(newRegion)
+    val result = thunk
+    changeRegion(oldRegion)
+    result
+  }
+
   private[chisel3] def addCommand(c: Command): Unit = {
     require(!_closed, "Can't write to module after module close")
-    _commands += c
+    _currentRegion += c
   }
   protected def getCommands: Seq[Command] = {
     require(_closed, "Can't get commands before module close")
@@ -207,7 +225,12 @@ abstract class RawModule extends BaseModule {
   }
   private[chisel3] val stagedSecretCommands = collection.mutable.ArrayBuffer[Command]()
 
-  private[chisel3] def secretConnection(left: Data, right: Data)(implicit si: SourceInfo): Unit = {
+  private[chisel3] def secretConnection(left: Data, _right: Data)(implicit si: SourceInfo): Unit = {
+    val (right: Data, _) = chisel3.experimental.dataview
+      .reifyIdentityView(_right)
+      .getOrElse(
+        throwException(s"BoringUtils currently only support identity views, ${_right} has multiple targets.")
+      )
     val rhs = (left.probeInfo.nonEmpty, right.probeInfo.nonEmpty) match {
       case (true, true)                                 => ProbeDefine(si, left.lref, Node(right))
       case (true, false) if left.probeInfo.get.writable => ProbeDefine(si, left.lref, RWProbeExpr(Node(right)))
@@ -217,6 +240,12 @@ abstract class RawModule extends BaseModule {
         // For non-probe, directly create Nodes for lhs, skipping visibility check to support BoringUtils.drive.
         (left, right) match {
           case (_: Property[_], _: Property[_]) => PropAssign(si, Node(left), Node(right))
+          // Use `connect lhs, read(probe(rhs))` if lhs is passive version of rhs.
+          // This provides solution for this: https://github.com/chipsalliance/chisel/issues/3557
+          case (_, _)
+              if !DataMirror.checkAlignmentTypeEquivalence(left, right) &&
+                DataMirror.checkAlignmentTypeEquivalence(left, Output(chiselTypeOf(right))) =>
+            Connect(si, Node(left), ProbeRead(ProbeExpr(Node(right))))
           case (_, _) => Connect(si, Node(left), Node(right))
         }
     }

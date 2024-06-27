@@ -6,9 +6,12 @@ import chisel3._
 import chisel3.util.Valid
 import circt.stage.ChiselStage.emitCHIRRTL
 import chisel3.experimental.Analog
-import chiselTests.ChiselFlatSpec
+import chiselTests.{ChiselFlatSpec, MatchesAndOmits}
+import chisel3.reflect.DataMirror
+import scala.collection.immutable.SeqMap
+import circt.stage.ChiselStage
 
-class FlatIOSpec extends ChiselFlatSpec {
+class FlatIOSpec extends ChiselFlatSpec with MatchesAndOmits {
   behavior.of("FlatIO")
 
   it should "create ports without a prefix" in {
@@ -36,7 +39,7 @@ class FlatIOSpec extends ChiselFlatSpec {
     chirrtl should include("connect out.valid, valid")
   }
 
-  it should "dynamically indexing Vecs inside of FlatIOs" in {
+  it should "support dynamically indexing Vecs inside of FlatIOs" in {
     class MyModule extends RawModule {
       val io = FlatIO(new Bundle {
         val addr = Input(UInt(2.W))
@@ -76,4 +79,44 @@ class FlatIOSpec extends ChiselFlatSpec {
     chirrtl should include("output a : UInt<1>")
     chirrtl should include("output b : UInt<2>[2]")
   }
+
+  it should "maintain port order for Bundles" in {
+    class MyBundle extends Bundle {
+      val foo = Bool()
+      val bar = Bool()
+    }
+    class MyModule extends Module {
+      val io = IO(Input(new MyBundle))
+    }
+    class MyFlatIOModule extends Module {
+      val io = FlatIO(Input(new MyBundle))
+    }
+
+    matchesAndOmits(
+      ChiselStage.emitSystemVerilog(new MyModule)
+    )("io_foo,")("io_bar,")
+
+    matchesAndOmits(
+      ChiselStage.emitSystemVerilog(new MyFlatIOModule)
+    )("foo,")("bar,")
+  }
+
+  it should "maintain port order for Records" in {
+    class MyRecord extends Record {
+      val elements = SeqMap("foo" -> Bool(), "bar" -> Bool())
+    }
+    class MyModule extends Module {
+      val io = IO(Input(new MyRecord))
+    }
+    class MyFlatIOModule extends Module {
+      val io = FlatIO(Input(new MyRecord))
+    }
+    matchesAndOmits(
+      ChiselStage.emitSystemVerilog(new MyModule)
+    )("io_bar,")("io_foo,")
+    matchesAndOmits(
+      ChiselStage.emitSystemVerilog(new MyFlatIOModule)
+    )("bar,")("foo,")
+  }
+
 }
