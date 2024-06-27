@@ -410,7 +410,7 @@ private[chisel3] object Converter {
           fir.Field(getRef(elt, info).name, fir.Flip, extractType(elt, false, info, checkProbe, true, typeAliases))
       }
       if (!t._isOpaqueType)
-        fir.BundleType(t._elements.toIndexedSeq.reverse.map { case (_, e) => eltField(e) })
+        fir.BundleType(t._elements.toIndexedSeq.map { case (_, e) => eltField(e) })
       else
         extractType(t._elements.head._2, childClearDir, info, checkProbe, true, typeAliases)
     }
