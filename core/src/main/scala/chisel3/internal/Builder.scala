@@ -904,9 +904,9 @@ private[chisel3] object Builder extends LazyLogging {
         case _ =>
       }
     case (d: Data) =>
-      // Views are often returned in lieu of the original, so name the original (as appropriate)
-      // If a view but not identity, return the view and name it since it shows up in .toString and error messages
-      // TODO recurse on targets of non-identity views, perhaps with additional prefix from the view
+      // Views are often returned in lieu of the target, so name the target (as appropriate).
+      // If a view but not identity, return the view and name it since it shows up in .toString and error messages.
+      // TODO recurse on targets of non-identity views, perhaps with additional prefix from the view.
       val reified = reifyIdentityView(d).fold(d)(_._1)
       namer(reified, prefix)
     case (id: HasId) => namer(id, prefix)
