@@ -17,7 +17,7 @@ import _root_.firrtl.AnnotationSeq
 import _root_.firrtl.renamemap.MutableRenameMap
 import _root_.firrtl.util.BackendCompilationUtilities._
 import _root_.firrtl.{ir => fir}
-import chisel3.experimental.dataview.{reify, reifySingleTarget}
+import chisel3.experimental.dataview.{reify, reifyIdentityView, reifySingleTarget}
 import chisel3.internal.Builder.Prefix
 import logger.{LazyLogging, LoggerOption}
 
@@ -874,6 +874,12 @@ private[chisel3] object Builder extends LazyLogging {
         case Clone(m: experimental.hierarchy.ModuleClone[_]) => namer(m.getPorts, prefix)
         case _ =>
       }
+    case (d: Data) =>
+      // Views are often returned in lieu of the target, so name the target (as appropriate).
+      // If a view but not identity, return the view and name it since it shows up in .toString and error messages.
+      // TODO recurse on targets of non-identity views, perhaps with additional prefix from the view.
+      val reified = reifyIdentityView(d).fold(d)(_._1)
+      namer(reified, prefix)
     case (id: HasId) => namer(id, prefix)
     case Some(elt) => nameRecursively(prefix, elt, namer)
     case (iter: Iterable[_]) if iter.hasDefiniteSize =>
