@@ -7,7 +7,6 @@ import chisel3.simulator._
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.must.Matchers
 
-
 class ChiselSimTesterSpec extends AnyFunSpec with ChiselSimTester with Matchers {
   describe("ChiselSimTester") {
     it("runs GCD correctly") {
@@ -41,6 +40,7 @@ class ChiselSimTesterSpec extends AnyFunSpec with ChiselSimTester with Matchers 
       }
 
       val generatedVcd = os.FilePath(workdir).resolveFrom(os.pwd) / traceFileName
+      println(s"generatedVcd: $generatedVcd")
       assert(os.exists(generatedVcd), s"File not found: $generatedVcd")
     }
 

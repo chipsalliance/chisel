@@ -6,7 +6,7 @@ import svsim._
 /**
   * Wrapper for unifying compilation and runtime options for different backends
   *
-  * @param backend                      the selected [[Backend]]
+  * @param backend                      selected [[svsim.Backend]]
   * @param verilogPreprocessorDefines   SystemVerilog defines as a map of `MACRO`->definition
   * @param optimizationStyle
   * @param availableParallelism
@@ -153,6 +153,8 @@ object ChiselSimSettings {
     randomlyInitializeRegisters: Boolean = true,
     enableAllAssertions:         Boolean = true,
     executionScriptEnabled:      Boolean = false,
+    verboseRun:                  Boolean = false,
+    verboseCompile:              Boolean = false,
     verilogPreprocessorDefines:  Seq[(String, Any)] = Seq()
   ): ChiselSimSettings[verilator.Backend] =
     ChiselSimSettings(
@@ -162,7 +164,9 @@ object ChiselSimSettings {
       randomlyInitializeRegisters = randomlyInitializeRegisters,
       enableAllAssertions = enableAllAssertions,
       executionScriptEnabled = executionScriptEnabled,
-      verilogPreprocessorDefines = verilogPreprocessorDefines
+      verilogPreprocessorDefines = verilogPreprocessorDefines,
+      verboseRun = verboseRun,
+      verboseCompile = verboseCompile,
     )
 
   def defaultVcsSettings: ChiselSimSettings[vcs.Backend] =

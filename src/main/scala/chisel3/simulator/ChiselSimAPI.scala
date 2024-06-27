@@ -38,7 +38,7 @@ case class DutContext(clock: Option[Clock], ports: Seq[(Data, ModuleInfo.Port)],
 object DutContext {
   private val dynamicVariable = new scala.util.DynamicVariable[Option[DutContext]](None)
   def withValue[T](dut: DutContext)(body: => T): T = {
-    require(dynamicVariable.value.isEmpty, "Nested simulations are not supported.")
+    require(dynamicVariable.value.isEmpty, "Nested test contexts are not supported.")
     dynamicVariable.withValue(Some(dut))(body)
   }
   def current: DutContext = dynamicVariable.value.get
@@ -77,13 +77,18 @@ trait ChiselSimAPI extends PeekPokeAPI {
   implicit final class testableVec[U <: Data, T <: Vec[U]](protected val sig: T)(implicit sourceInfo: SourceInfo)
       extends testableAggregate[T]
 
-  implicit final class testableChiselEnum[T <: ChiselEnum](protected val sig: T)(implicit sourceInfo: SourceInfo) {
+  implicit final class testableChiselEnum[T <: ChiselEnum](protected val sig: T)(implicit sourceInfo: SourceInfo) {}
 
+  protected def getDutClock: testableClock = {
+    // TODO: handle clock not being present
+    testableClock(
+      DutContext.current.clock.get
+    )
   }
 
   sealed trait clockedInterface {
-    protected def clock = DutContext.current.clock.get // TODO: handle clock not being present
     protected def maxWaitCycles = DutContext.current.maxWaitCycles
+    protected def clock = getDutClock
 
     def pokeRec[B <: Data](signal: B, data: B)(implicit sourceInfo: SourceInfo): Unit = {
       (signal, data) match {
@@ -181,9 +186,16 @@ trait ChiselSimAPI extends PeekPokeAPI {
     }
 
     def waitForValid() = {
-      clock.stepUntil(sig.valid, 1, maxWaitCycles)
-      val timeout = sig.valid.peekValue().asBigInt == 0
-      chisel3.assert(!timeout, s"Timeout after $maxWaitCycles cycles waiting for valid")
+      // println("wait for valid")
+      // clock.stepUntil(sig.valid, 1, maxWaitCycles)
+      // val timeout = sig.valid.peekValue().asBigInt == 0
+      // chisel3.assert(!timeout, s"Timeout after $maxWaitCycles cycles waiting for valid")
+      var cycles = 0
+      while (!sig.valid.peek().litToBoolean) {
+        clock.step()
+        Predef.assert(cycles < maxWaitCycles, "Timeout after ${maxWaitCycles} cycles waiting for valid")
+        cycles += 1
+      }
     }
 
     def dequeue(): HierarchicalValue = {
@@ -224,8 +236,7 @@ trait ChiselSimAPI extends PeekPokeAPI {
       require(data.isLit, "enqueued data must be literal!")
       sig.valid.poke(true)
       pokeRec(sig.bits, data)
-      clock.stepUntil(sig.ready, 1, maxWaitCycles)
-      assert(sig.ready.peekValue().asBigInt == 1, s"Timeout after $maxWaitCycles cycles waiting for ready")
+      waitForReady()
       clock.step()
       sig.valid.poke(false)
     }
@@ -237,9 +248,28 @@ trait ChiselSimAPI extends PeekPokeAPI {
     }
 
     def waitForValid() = {
-      clock.stepUntil(sig.valid, 1, maxWaitCycles)
-      val timeout = sig.valid.peekValue().asBigInt == 0
-      assert(!timeout, s"Timeout after $maxWaitCycles cycles waiting for valid")
+      // println("wait for valid")
+      // clock.stepUntil(sig.valid, 1, maxWaitCycles)
+      // val timeout = sig.valid.peekValue().asBigInt == 0
+      // chisel3.assert(!timeout, s"Timeout after $maxWaitCycles cycles waiting for valid")
+      var cycles = 0
+      while (!sig.valid.peek().litToBoolean) {
+        clock.step()
+        Predef.assert(cycles < maxWaitCycles, s"Timeout after ${maxWaitCycles} cycles waiting for valid")
+        cycles += 1
+      }
+    }
+
+    def waitForReady() = {
+      // println("wait for ready")
+      // clock.stepUntil(sig.ready, 1, maxWaitCycles)
+      // assert(sig.ready.peekValue().asBigInt == 1, s"Timeout after $maxWaitCycles cycles waiting for ready")
+      var cycles = 0
+      while (!sig.ready.peek().litToBoolean) {
+        clock.step()
+        Predef.assert(cycles < maxWaitCycles, s"Timeout after ${maxWaitCycles} cycles waiting for ready")
+        cycles += 1
+      }
     }
 
     def dequeue(): HierarchicalValue = {
@@ -387,6 +417,18 @@ trait ChiselSimAPI extends PeekPokeAPI {
 
     }
   }
+
+  def test[T <: Module, B <: Backend](
+    module:  => T,
+    backend: B = verilator.Backend.initializeFromProcessEnvironment()
+  ): TestBuilder[T, B] =
+    new TestBuilder[T, B](() => module, backend, ChiselSimSettings(backend))
+
+  def test[T <: Module, B <: Backend](
+    module:   => T,
+    settings: ChiselSimSettings[B]
+  ): TestBuilder[T, B] =
+    new TestBuilder[T, B](() => module, settings.backend, settings)
 }
 
 object ChiselSimAPI {
