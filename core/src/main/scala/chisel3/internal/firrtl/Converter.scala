@@ -278,7 +278,7 @@ private[chisel3] object Converter {
           convert(info),
           convert(pred, ctx, info),
           convert(ifRegion, ctx, typeAliases),
-          convert(elseRegion, ctx, typeAliases)
+          if (elseRegion.nonEmpty) convert(elseRegion, ctx, typeAliases) else fir.EmptyStmt
         )
       )
     case Region(info, region) =>
