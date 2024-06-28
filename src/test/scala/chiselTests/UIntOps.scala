@@ -213,6 +213,11 @@ class UIntLitZeroWidthTester extends BasicTester {
 
 class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
 
+  // This is intentionally a val outside of any ScalaTest constructs to check that it is legal
+  // to create a literal outside of a Chisel context and *before* any Chisel contexts have been created
+  // in this thread.
+  val five = 5.U
+
   property("Bools can be created from 1 bit UInts") {
     ChiselStage.emitCHIRRTL(new GoodBoolConversion)
   }

@@ -272,7 +272,7 @@ package object dataview {
   }
 
   // Safe for all Data
-  private[chisel3] def isView(d: Data): Boolean = d._parent.contains(ViewParent)
+  private[chisel3] def isView(d: Data): Boolean = d._parent.exists(_ == ViewParent)
 
   /** Turn any [[Element]] that could be a View into a concrete Element
     *
