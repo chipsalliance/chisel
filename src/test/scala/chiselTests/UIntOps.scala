@@ -276,7 +276,7 @@ trait ShiftRightWidthBehavior { self: ChiselRunners =>
 class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils with ShiftRightWidthBehavior {
 
   // This is intentionally a val outside of any ScalaTest constructs to check that it is legal
-  // to create a literal outside of a Chisel context and *before* and Chisel contexts have been created
+  // to create a literal outside of a Chisel context and *before* any Chisel contexts have been created
   // in this thread.
   val five = 5.U
 
