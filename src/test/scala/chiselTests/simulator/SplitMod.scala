@@ -10,7 +10,7 @@ class SplitMod(val n: Int, w: Int) extends Module {
     val out = Vec(n, Decoupled(UInt(w.W)))
   })
 
-  val inQ = Queue(io.in, 5, pipe = true)
+  val inQ = Queue(io.in, 3, pipe = true)
 
   inQ.ready := io.out.zipWithIndex.map {
     case (out, i) =>
@@ -23,7 +23,46 @@ class SplitMod(val n: Int, w: Int) extends Module {
           in.bits % n.U === i.U
       }
       in.valid := inQ.valid && isMod
-      out :<>= Queue(in, 3 + i, pipe = true)
+      out :<>= Queue(in, 3, pipe = true)
       in.ready && isMod
   }.reduce(_ || _)
+}
+
+// combine input streams into a single output stream by adding odd inputs
+class OddsSum(val n: Int, w: Int) extends Module {
+  val io = IO(new Bundle {
+    val in = Vec(n, Flipped(Decoupled(UInt(w.W))))
+    val out = Decoupled(UInt(w.W))
+  })
+
+  io.in.zipWithIndex.foreach {
+    case (in, i) =>
+      val othersValid = io.in.zipWithIndex.filterNot(_._2 == i).map(_._1.valid).reduce(_ && _)
+      in.ready := othersValid && io.out.ready
+  }
+
+  io.out.bits :#= io.in.map(in => Mux(in.bits(0), in.bits, 0.U)).reduce(_ + _)
+  io.out.valid := io.in.map(_.valid).reduce(_ && _)
+}
+
+// combine input streams into a single output stream by adding them up
+class Adder(val n: Int, w: Int) extends Module {
+  val io = IO(new Bundle {
+    val in = Vec(n, Flipped(Decoupled(UInt(w.W))))
+    val out = Decoupled(UInt(w.W))
+  })
+
+  val out = Wire(io.out.cloneType)
+
+  io.in.zipWithIndex.foreach {
+    case (in, i) =>
+      val othersValid = io.in.zipWithIndex.filterNot(_._2 == i).map(_._1.valid).reduce(_ && _)
+      in.ready := othersValid && out.ready
+  }
+
+  out.bits :#= io.in.map(_.bits).reduce(_ + _)
+  out.valid := io.in.map(_.valid).reduce(_ && _)
+
+  // io.out :<>= Queue(out, 0, pipe = true)
+  io.out :<>= out
 }

@@ -2,7 +2,6 @@
 
 package svsim
 
-import scala.collection.mutable.Queue
 import scala.util.Try
 import java.io.{BufferedReader, BufferedWriter, File, InputStreamReader, OutputStreamWriter}
 
@@ -60,9 +59,6 @@ final class Simulation private[svsim] (
       body(controller)
     }
     val completionOutcome = Try {
-      if (traceEnabled) {
-        controller.setTraceEnabled(false)
-      }
       // Exceptions thrown from commands still in the queue when `body` returns should supercede returning `result`
       controller.completeInFlightCommands()
     }
@@ -197,9 +193,9 @@ object Simulation {
       message
     }
 
-    private val expectations: Queue[PartialFunction[Simulation.Message, Unit]] = Queue.empty
+    private val expectations: SyncQueue[PartialFunction[Simulation.Message, Unit]] = SyncQueue.empty
 
-    def completeInFlightCommands() = {
+    def completeInFlightCommands() = synchronized {
       commandWriter.flush()
 
       expectations.foreach { f =>
@@ -216,41 +212,27 @@ object Simulation {
     private[Simulation] def sendCommandAndExpectNextMessage(
       command: Simulation.Command
     )(f:       => PartialFunction[Simulation.Message, Unit]
-    ) = {
-      synchronized {
-        sendCommand(command)
-        expectNextMessage(f)
-      }
+    ) = synchronized {
+      sendCommand(command)
+      expectNextMessage(f)
     }
 
     private[Simulation] def sendCommandAndProcessNextMessage[A](
       command: Simulation.Command
     )(f:       => PartialFunction[Simulation.Message, A]
-    ) = {
-      synchronized {
-        sendCommand(command)
-        processNextMessage(f)
-      }
+    ) = synchronized {
+      sendCommand(command)
+      processNextMessage(f)
     }
 
-    private[Simulation] def sendCommandAndReadNextMessage(command: Simulation.Command): Message = {
-      synchronized {
-        sendCommand(command)
-        completeInFlightCommands()
-        readNextAvailableMessage()
-      }
-    }
-
-    private[Simulation] def sendDone(): Unit = {
-      synchronized {
-        sendCommand(Simulation.Command.Done)
-        completeInFlightCommands()
-      }
+    private[Simulation] def sendDone(): Unit = synchronized {
+      sendCommand(Simulation.Command.Done)
+      completeInFlightCommands()
     }
 
     private def processNextMessage[A](f: PartialFunction[Simulation.Message, A]): A = {
-      val message = synchronized {
-        completeInFlightCommands()
+      completeInFlightCommands()
+      val message = {
         readNextAvailableMessage()
       }
 
@@ -262,7 +244,7 @@ object Simulation {
     }
 
     private def expectNextMessage(f: PartialFunction[Simulation.Message, Unit]) = {
-      if (conservativeCommandResolution) {
+      if (true || conservativeCommandResolution) {
         processNextMessage(f)
       } else {
         expectations.enqueue(f)
@@ -281,13 +263,13 @@ object Simulation {
         val Trace = 'W'
       };
 
-      sentCommandCount += 1
-      if (logMessagesAndCommands) {
-        // NOTE: Commands are 1-indexed, but messages are 0-indexed since we read the first message (READY) before we send any commands.
-        println(s"Sending command ${sentCommandCount}: ${command}")
-      }
-
       synchronized {
+        sentCommandCount += 1
+        if (logMessagesAndCommands) {
+          // NOTE: Commands are 1-indexed, but messages are 0-indexed since we read the first message (READY) before we send any commands.
+          println(s"Sending command ${sentCommandCount}: ${command}")
+        }
+
         import Simulation.Command._
         // For specific command formats, consult `simulation-driver.cpp`
         command match {
@@ -427,7 +409,7 @@ object Simulation {
       }
     }
 
-    def tick(timestepsPerPhase: Int, cycles: Int, inPhaseValue: BigInt, outOfPhaseValue: BigInt) = synchronized {
+    def tick(timestepsPerPhase: Int, cycles: Int, inPhaseValue: BigInt, outOfPhaseValue: BigInt) = {
       controller.sendCommandAndExpectNextMessage(
         Simulation.Command.Tick(id, inPhaseValue, outOfPhaseValue, timestepsPerPhase, cycles, None)
       ) {
@@ -441,7 +423,7 @@ object Simulation {
       inPhaseValue:      BigInt,
       outOfPhaseValue:   BigInt,
       sentinel:          Option[(Port, BigInt)]
-    ): BigInt = synchronized {
+    ): BigInt = {
       controller.sendCommandAndProcessNextMessage(
         Simulation.Command.Tick(id, inPhaseValue, outOfPhaseValue, timestepsPerPhase, maxCycles, sentinel)
       ) {
@@ -457,7 +439,7 @@ object Simulation {
       outOfPhaseValue:        BigInt,
       sentinel:               Option[(Port, BigInt)],
       checkElapsedCycleCount: (BigInt) => Unit
-    ) = synchronized {
+    ) = {
       controller.sendCommandAndExpectNextMessage(
         Simulation.Command.Tick(id, inPhaseValue, outOfPhaseValue, timestepsPerPhase, maxCycles, sentinel)
       ) {
@@ -468,11 +450,9 @@ object Simulation {
 
     def check(f: Value => Unit): Unit = check()(f)
     def check(isSigned: Boolean = false)(f: Value => Unit): Unit = {
-      synchronized {
-        controller.sendCommandAndExpectNextMessage(Simulation.Command.GetBits(id, isSigned)) {
-          case Simulation.Message.Bits(bitCount, value) =>
-            f(Value(bitCount, value))
-        }
+      controller.sendCommandAndExpectNextMessage(Simulation.Command.GetBits(id, isSigned)) {
+        case Simulation.Message.Bits(bitCount, value) =>
+          f(Value(bitCount, value))
       }
     }
   }

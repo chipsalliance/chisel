@@ -1,21 +1,14 @@
+// SPDX-License-Identifier: Apache-2.0
+
 package chisel3
 package simulator
 
 import chisel3.util._
 import chisel3.reflect.DataMirror
 import chisel3.experimental.SourceInfo
-import chisel3.simulator.Simulator._
 import svsim._
 
-import scala.util.DynamicVariable
 import scala.util.{Failure, Success, Try}
-
-trait SimFailureException extends Exception {
-  val message:    String
-  val sourceInfo: SourceInfo
-}
-
-case class SVAssertionFailure(message: String)(implicit val sourceInfo: SourceInfo) extends SimFailureException
 
 trait TraceStyle {
   def isEnabled: Boolean = true
@@ -33,17 +26,6 @@ object TraceStyle {
   case class Fst(filename: String = "trace.fst", traceUnderscore: Boolean = false) extends TraceStyle
 }
 
-case class DutContext(clock: Option[Clock], ports: Seq[(Data, ModuleInfo.Port)], maxWaitCycles: Int = 1000)
-
-object DutContext {
-  private val dynamicVariable = new scala.util.DynamicVariable[Option[DutContext]](None)
-  def withValue[T](dut: DutContext)(body: => T): T = {
-    require(dynamicVariable.value.isEmpty, "Nested test contexts are not supported.")
-    dynamicVariable.withValue(Some(dut))(body)
-  }
-  def current: DutContext = dynamicVariable.value.get
-}
-
 trait ChiselSimAPI extends PeekPokeAPI {
   import ChiselSimAPI._
 
@@ -51,44 +33,73 @@ trait ChiselSimAPI extends PeekPokeAPI {
 
   def testClassName: Option[String] = Some(this.getClass.getName)
 
-  private def peekHierValueRec[B <: Data](signal: B)(implicit sourceInfo: SourceInfo): HierarchicalValue = {
+  private def peekHierValueRec[B <: Data](signal: B)(implicit sourceInfo: SourceInfo): SimValue = {
     signal match {
       case v: Vec[_] =>
-        VecValue(v, v.map(peekHierValueRec))
+        VecValue(v.map(peekHierValueRec))
 
       case b: Record =>
-        BundleValue(b, b.elements.map { case (name, field) => name -> peekHierValueRec(field) }.toMap)
+        BundleValue(b.elements.map { case (name, field) => name -> peekHierValueRec(field) }.toMap)
 
       case sig: Element =>
-        LeafValue(sig, sig.peekValue())
+        LeafValue.fromSimulationValue(sig.peekValue())
     }
   }
 
   trait testableAggregate[T <: Aggregate] {
     protected val sig: T
-    def peekHierValue()(implicit sourceInfo: SourceInfo): HierarchicalValue = peekHierValueRec(sig)
   }
 
-  implicit final class testableRecord[T <: Record](protected val sig: T)(implicit sourceInfo: SourceInfo)
+  implicit final class testableRecord[T <: Record](protected val sig: T)(implicit val sourceInfo: SourceInfo)
       extends testableAggregate[T]
 
-  implicit final class testableVec[U <: Data, T <: Vec[U]](protected val sig: T)(implicit sourceInfo: SourceInfo)
+  implicit final class testableVec[U <: Data, T <: Vec[U]](protected val sig: T)(implicit val sourceInfo: SourceInfo)
       extends testableAggregate[T]
 
-  implicit final class testableChiselEnum[T <: ChiselEnum](protected val sig: T)(implicit sourceInfo: SourceInfo) {}
+  implicit final class testableChiselEnum[T <: ChiselEnum](protected val sig: T)(implicit val sourceInfo: SourceInfo) {}
 
-  protected def getDutClock: testableClock = {
-    // TODO: handle clock not being present
-    testableClock(
-      DutContext.current.clock.get
-    )
-  }
+  protected def currentClock: Option[testableClock] =
+    DutContext.current.clock.map(testableClock)
 
   sealed trait clockedInterface {
-    protected def maxWaitCycles = DutContext.current.maxWaitCycles
-    protected def clock = getDutClock
+    protected val maxWaitCycles: Int = DutContext.current.maxWaitCycles
+    protected val clock:         testableClock = currentClock.get
+    protected def stepClock():   Unit = clock.step()
 
-    def pokeRec[B <: Data](signal: B, data: B)(implicit sourceInfo: SourceInfo): Unit = {
+    protected def waitForSignal[D <: Data](
+      signal:        D,
+      expectedValue: BigInt = 1,
+      maxCycles:     Option[Int] = None
+    )(
+      implicit sourceInfo: SourceInfo
+    ) = {
+      val maximumWaitCycles = maxCycles.getOrElse(maxWaitCycles)
+      val isSigned = signal.isInstanceOf[SInt]
+      val module = AnySimulatedModule.current
+      val simulationPort = module.port(signal)
+
+      module.willPeek()
+      def getValue = {
+        println(s"--- Waiting for signal ${signal.pathName} to be $expectedValue")
+        simulationPort.get(isSigned = isSigned).asBigInt
+      }
+
+      // clock.stepUntil(signal, expectedValue, maximumWaitCycles)
+      // if (signal.peekValue().asBigInt != expectedValue)
+      //   throw TimedOutWaiting(maximumWaitCycles, signal.pathName)
+      var cycles = 0
+      while (getValue != expectedValue) {
+        println(s"---    signal ${signal.pathName} is $getValue")
+        if (cycles == maximumWaitCycles)
+          throw TimedOutWaiting(cycles, signal.pathName)
+        stepClock()
+        cycles += 1
+      }
+      println(s"---    signal ${signal.pathName} is $expectedValue")
+
+    }
+
+    protected def pokeRec[B <: Data](signal: B, data: B)(implicit sourceInfo: SourceInfo): Unit = {
       (signal, data) match {
         case (s: Vec[_], d: Vec[_]) =>
           require(s.length == d.length, s"input is of length ${s.length} while data ia of size ${d.length}")
@@ -148,7 +159,7 @@ trait ChiselSimAPI extends PeekPokeAPI {
                 message.orElse(
                   Some(
                     s"\n${DataMirror.queryNameGuess(sigEl)} (=${peekHierValueRec(sigEl)}) =/= ${DataMirror
-                      .queryNameGuess(value)} (=${HierarchicalValue(value)})"
+                      .queryNameGuess(value)} (=${value})"
                   )
                 )
               )
@@ -169,57 +180,81 @@ trait ChiselSimAPI extends PeekPokeAPI {
   implicit final class testableValidIO[T <: Data](sig: ValidIO[T])(implicit sourceInfo: SourceInfo)
       extends clockedInterface {
 
-    def enqueue(data: T) = {
+    private def valid = sig.valid
+
+    def enqueue(
+      data: T
+    )(
+      implicit sourceInfo: SourceInfo
+    ) = {
       require(data.isLit, "enqueued data must be literal!")
-      sig.valid.poke(true)
       pokeRec(sig.bits, data)
-      clock.step()
-      sig.valid.poke(false)
+      valid.poke(1)
+      stepClock()
+      valid.poke(0)
     }
 
-    def enqueueSeq(dataSeq: Seq[T]) = {
+    def enqueueSeq(
+      dataSeq: Seq[T]
+    )(
+      implicit sourceInfo: SourceInfo
+    ) = {
       for (data <- dataSeq) {
         enqueue(data)
       }
     }
 
-    def waitForValid() = {
-      // println("wait for valid")
-      // clock.stepUntil(sig.valid, 1, maxWaitCycles)
-      // val timeout = sig.valid.peekValue().asBigInt == 0
-      // chisel3.assert(!timeout, s"Timeout after $maxWaitCycles cycles waiting for valid")
-      var cycles = 0
-      while (!sig.valid.peek().litToBoolean) {
-        clock.step()
-        Predef.assert(cycles < maxWaitCycles, "Timeout after ${maxWaitCycles} cycles waiting for valid")
-        cycles += 1
-      }
-    }
+    def waitForValid(
+    )(
+      implicit sourceInfo: SourceInfo
+    ) = waitForSignal(valid)
 
-    def dequeue(): HierarchicalValue = {
+    def dequeue(
+    )(
+      implicit sourceInfo: SourceInfo
+    ): SimValue = {
       waitForValid()
       val value = peekHierValueRec(sig)
-      clock.step()
+      stepClock()
       value
     }
 
-    def expectDequeue(expected: T, message: String): Unit =
+    def expectDequeue(
+      expected: T,
+      message:  String
+    )(
+      implicit sourceInfo: SourceInfo
+    ): Unit =
       expectDequeue(expected, Some(message))
 
-    def expectDequeue(expected: T, message: Option[String] = None): Unit = {
+    def expectDequeue(
+      expected: T,
+      message:  Option[String] = None
+    )(
+      implicit sourceInfo: SourceInfo
+    ): Unit = {
       require(expected.isLit, "expected value must be a literal!")
       waitForValid()
       expectRec(sig.bits, expected, message)
-      clock.step()
+      stepClock()
     }
 
-    def expectDequeueSeq(dataSeq: Seq[T], message: String): Unit = {
+    def expectDequeueSeq(
+      dataSeq: Seq[T],
+      message: String
+    )(
+      implicit sourceInfo: SourceInfo
+    ): Unit = {
       for ((data, i) <- dataSeq.zipWithIndex) {
         expectDequeue(data, message)
       }
     }
 
-    def expectDequeueSeq(dataSeq: Seq[T]): Unit = {
+    def expectDequeueSeq(
+      dataSeq: Seq[T]
+    )(
+      implicit sourceInfo: SourceInfo
+    ): Unit = {
       for ((exp, i) <- dataSeq.zipWithIndex) {
         expectDequeue(exp, s"Element $i was different from expected value: $exp!")
       }
@@ -229,75 +264,97 @@ trait ChiselSimAPI extends PeekPokeAPI {
 
   implicit final class testableDecoupledIO[T <: Data](sig: DecoupledIO[T])(implicit sourceInfo: SourceInfo)
       extends clockedInterface {
+    private def valid = sig.valid
+    private def ready = sig.ready
 
-    def enqueue(data: T) = {
+    def enqueue(
+      data: T
+    )(
+      implicit sourceInfo: SourceInfo
+    ) = {
       require(data.isLit, "enqueued data must be literal!")
-      sig.valid.poke(true)
+      println(s">>> [enqueue] ${data.litValue}")
       pokeRec(sig.bits, data)
+      println(s">>> [enqueue] valid.poke(1)")
+      valid.poke(1)
+      println(s">>> [enqueue] waitForReady")
       waitForReady()
-      clock.step()
-      sig.valid.poke(false)
+      println(s">>> [enqueue] step")
+      stepClock()
+      println(s">>> [enqueue] valid.poke(0)")
+      valid.poke(0)
     }
 
-    def enqueueSeq(dataSeq: Seq[T]) = {
+    def enqueueSeq(
+      dataSeq: Seq[T]
+    )(
+      implicit sourceInfo: SourceInfo
+    ) = {
       for (data <- dataSeq) {
         enqueue(data)
       }
     }
 
-    def waitForValid() = {
-      // println("wait for valid")
-      // clock.stepUntil(sig.valid, 1, maxWaitCycles)
-      // val timeout = sig.valid.peekValue().asBigInt == 0
-      // chisel3.assert(!timeout, s"Timeout after $maxWaitCycles cycles waiting for valid")
-      var cycles = 0
-      while (!sig.valid.peek().litToBoolean) {
-        clock.step()
-        Predef.assert(cycles < maxWaitCycles, s"Timeout after ${maxWaitCycles} cycles waiting for valid")
-        cycles += 1
-      }
-    }
+    def waitForValid(
+    )(
+      implicit sourceInfo: SourceInfo
+    ) = waitForSignal(valid)
 
-    def waitForReady() = {
-      // println("wait for ready")
-      // clock.stepUntil(sig.ready, 1, maxWaitCycles)
-      // assert(sig.ready.peekValue().asBigInt == 1, s"Timeout after $maxWaitCycles cycles waiting for ready")
-      var cycles = 0
-      while (!sig.ready.peek().litToBoolean) {
-        clock.step()
-        Predef.assert(cycles < maxWaitCycles, s"Timeout after ${maxWaitCycles} cycles waiting for ready")
-        cycles += 1
-      }
-    }
+    def waitForReady(
+    )(
+      implicit sourceInfo: SourceInfo
+    ) = waitForSignal(ready)
 
-    def dequeue(): HierarchicalValue = {
-      sig.ready.poke(true)
+    def dequeue(
+    )(
+      implicit sourceInfo: SourceInfo
+    ): SimValue = {
+      ready.poke(1)
       waitForValid()
       val value = peekHierValueRec(sig)
-      clock.step()
-      sig.ready.poke(false)
+      stepClock()
+      ready.poke(0)
       value
     }
 
-    def expectDequeue(expected: T, message: String): Unit =
+    def expectDequeue(
+      expected: T,
+      message:  String
+    )(
+      implicit sourceInfo: SourceInfo
+    ): Unit =
       expectDequeue(expected, Some(message))
 
-    def expectDequeue(expected: T, message: Option[String] = None): Unit = {
+    def expectDequeue(
+      expected: T,
+      message:  Option[String] = None
+    )(
+      implicit sourceInfo: SourceInfo
+    ): Unit = {
       require(expected.isLit, "expected value must be a literal!")
-      sig.ready.poke(true)
+      ready.poke(1)
       waitForValid()
       expectRec(sig.bits, expected, message)
-      clock.step()
-      sig.ready.poke(false)
+      stepClock()
+      ready.poke(0)
     }
 
-    def expectDequeueSeq(dataSeq: Seq[T], message: String): Unit = {
+    def expectDequeueSeq(
+      dataSeq: Seq[T],
+      message: String
+    )(
+      implicit sourceInfo: SourceInfo
+    ): Unit = {
       for ((data, i) <- dataSeq.zipWithIndex) {
         expectDequeue(data, message)
       }
     }
 
-    def expectDequeueSeq(dataSeq: Seq[T]): Unit = {
+    def expectDequeueSeq(
+      dataSeq: Seq[T]
+    )(
+      implicit sourceInfo: SourceInfo
+    ): Unit = {
       for ((exp, i) <- dataSeq.zipWithIndex) {
         expectDequeue(exp, s"Element $i was different from expected value: $exp!")
       }
@@ -308,7 +365,7 @@ trait ChiselSimAPI extends PeekPokeAPI {
     * @param rootTestRunDir
     * @return workspace
     */
-  def workspacePath(rootTestRunDir: Option[String]): os.Path = {
+  protected def workspacePath(rootTestRunDir: Option[String]): os.Path = {
     val rootPath = rootTestRunDir.map(os.FilePath(_).resolveFrom(os.pwd)).getOrElse(os.pwd)
     (testClassName.toSeq ++ testName)
       .map(sanitizeFileName)
@@ -325,7 +382,11 @@ trait ChiselSimAPI extends PeekPokeAPI {
   def simulate[T <: RawModule, B <: Backend, U](modGen: => T, settings: ChiselSimSettings[B])(body: T => U): String =
     _simulate(() => modGen, settings)(body)
 
-  private def _simulate[T <: RawModule, B <: Backend, U](modGen: () => T, settings: ChiselSimSettings[B])(body: T => U): String = {
+  private def _simulate[T <: RawModule, B <: Backend, U](
+    modGen:   () => T,
+    settings: ChiselSimSettings[B]
+  )(body:     T => U
+  ): String = {
     val workspace = new svsim.Workspace(
       path = workspacePath(settings.testRunDir).toString,
       workingDirectoryPrefix = settings.workingDirectoryPrefix
@@ -375,10 +436,9 @@ trait ChiselSimAPI extends PeekPokeAPI {
               reset.set(1)
               clock.tick(
                 timestepsPerPhase = 1,
-                maxCycles = 1,
+                cycles = 1,
                 inPhaseValue = 0,
-                outOfPhaseValue = 1,
-                sentinel = None
+                outOfPhaseValue = 1
               )
               reset.set(0)
               Some(m.clock)
@@ -453,6 +513,6 @@ object ChiselSimAPI {
   }
 }
 
-object ChiselSim extends ChiselSimAPI {
+object ChiselSim extends ThreadedChiselSimAPI {
   val testName = None
 }
