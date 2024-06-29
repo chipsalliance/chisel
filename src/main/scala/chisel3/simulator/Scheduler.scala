@@ -1,84 +1,79 @@
+// SPDX-License-Identifier: Apache-2.0
+
 package chisel3
 package simulator
 
 import scala.concurrent._
-import scala.util.DynamicVariable
 
 import java.util.concurrent.ForkJoinPool
+import java.util.concurrent.Executor
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.ExecutionException
 
-case class Task(runnable: () => Unit, id: Int)
+private[simulator] final case class Task(runnable: () => Unit, id: Int)
 
-// If needed we can use fancier Executors, e.g. ThreadPoolExecutor
-class ExecutorWithDynamicVariable[T](dynamicVariable: DynamicVariable[T]) extends ForkJoinPool {
-  override def execute(task: Runnable): Unit = {
-    val copiedValue = dynamicVariable.value
-    super.execute(new Runnable {
-      override def run = {
-        dynamicVariable.value = copiedValue
-        task.run
-      }
-    })
+private[simulator] final class FutureFactory(executor: Executor, stepBarrier: StepBarrier) {
+  private val execContext = ExecutionContext.fromExecutor(executor)
+
+  def runTask(task: Task): Future[Unit] = Future {
+    try {
+      task.runnable()
+    } finally {
+      stepBarrier.deRegister()
+    }
+  }(execContext)
+
+  def runTasks(tasks: Seq[Task]): Future[IterableOnce[Unit]] = {
+    val workerFutures = tasks.map(runTask)
+    implicit val ec = execContext
+    Future.sequence(workerFutures)
   }
 }
 
-object SynchContext {
-  private val dynamicVariable = new DynamicVariable[Option[StepBarrier]](None)
-  def withSynchBarrier[T](body: => T): T = {
-    dynamicVariable.withValue(Some(new StepBarrier()))(body)
+private[simulator] final class Scheduler(val stepClock: () => Unit, enableDebugPrint: Boolean = false) {
+  def debug(x: => Any): Unit = {
+    if (enableDebugPrint) println(s"[Thr:${Thread.currentThread().threadId()}] $x")
   }
-
-  def currentOption: Option[StepBarrier] = dynamicVariable.value
-
-  implicit val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.fromExecutor(
-    new ExecutorWithDynamicVariable(dynamicVariable)
-  )
-}
-
-private[simulator] final class Scheduler(val stepClock: () => Unit) {
 
   def run(tasks: Seq[Task]) = {
-    SynchContext.withSynchBarrier {
-      val stepBarrier = synchronized { SynchContext.currentOption.get }
-      import SynchContext.executionContext
-
-      def worker(task: Task): Future[Unit] = Future {
-        try {
-          task.runnable()
-        } finally {
-          stepBarrier.deRegister()
-        }
-      }
+    val stepBarrier = new StepBarrier()
+    StepBarrier.withValue(stepBarrier) {
+      // Start a fresh thread pool for each run to avoid DynamicVariable and other ThreadLocal issues
+      // The overhead should be negligible compared to simulation times
+      val executor = new ForkJoinPool()
+      val factory = new FutureFactory(executor, stepBarrier)
 
       try {
+        // +1 for the current (scheduler) thread
         stepBarrier.bulkRegister(tasks.length + 1)
 
-        val workerFutures = tasks.map(worker)
+        // Only run tasks after all tasks are registered
+        val allTasksFuture = factory.runTasks(tasks)
 
         try {
           while (!stepBarrier.isDone) {
             stepBarrier.await()
+            debug("--------tick---------")
             stepClock()
             stepBarrier.completeStep()
           }
-          stepBarrier.forceTermination()
-        } catch {
-          case e: java.util.concurrent.ExecutionException =>
-            val cause = e.getCause()
-            if (cause != null)
-              throw cause
-            else
-              throw e
         } finally {
           stepBarrier.deRegister()
           stepBarrier.forceTermination()
-          Await.result(Future.sequence(workerFutures), duration.Duration.Inf)
+          Await.result(allTasksFuture, duration.Duration.Inf)
         }
       } catch {
-        case e: Throwable =>
-          stepBarrier.forceTermination()
-          throw e
+        case e: ExecutionException =>
+          val cause = e.getCause()
+          if (cause != null)
+            throw cause
+          else
+            throw e
+      } finally {
+        executor.shutdown();
+        executor.awaitTermination(5, TimeUnit.SECONDS);
+        executor.shutdownNow()
       }
     }
   }
-
 }

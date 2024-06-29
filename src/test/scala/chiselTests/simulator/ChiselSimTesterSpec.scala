@@ -101,10 +101,10 @@ class ChiselSimTesterSpec extends AnyFunSpec with ChiselSimTester with Matchers 
 
       val thrown = the[PeekPokeAPI.FailedExpectationException[_]] thrownBy {
         test(new Queue(UInt(32.W), 64), settings) { dut =>
-          val inputs = Seq.fill(15)(BigInt(dut.gen.getWidth, rand).U)
-          dut.io.enq.enqueueSeq(inputs)
+          val inputs = Seq.fill(15)(BigInt(dut.gen.getWidth, rand))
+          dut.io.enq.enqueueSeq(inputs.map(_.U))
 
-          dut.io.deq.expectDequeueSeq(inputs.reverse)
+          dut.io.deq.expectDequeueSeq(inputs.map(i => (i + 1).U))
         }
       }
 
@@ -112,7 +112,7 @@ class ChiselSimTesterSpec extends AnyFunSpec with ChiselSimTester with Matchers 
       (thrown.getMessage must include).regex(
         """ @\[src/test/scala/chiselTests/simulator/ChiselSimTesterSpec\.scala \d+:\d+\]"""
       )
-      thrown.getMessage must include("dut.io.deq.expectDequeueSeq(inputs.reverse)")
+      thrown.getMessage must include("dut.io.deq.expectDequeueSeq(")
 
       val generatedTrace = guessWorkDir(settings) / traceFileName
 

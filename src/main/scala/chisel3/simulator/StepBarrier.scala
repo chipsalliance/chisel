@@ -1,20 +1,18 @@
+// SPDX-License-Identifier: Apache-2.0
+
 package chisel3
 package simulator
 
-import chisel3.util._
-
 import scala.concurrent._
+import scala.util.DynamicVariable
 import java.util.concurrent.Phaser
 
-private[simulator] final class StepBarrier() {
+private[simulator] final class StepBarrier(debug: Boolean = true) {
   final val preStep:  Phaser = new Phaser(0)
   final val postStep: Phaser = new Phaser(0)
 
-  def register(): Int = synchronized {
-    assert(!preStep.isTerminated())
-    preStep.register()
-    assert(!postStep.isTerminated())
-    postStep.register()
+  def debugPrintln(x: => Any): Unit = {
+    if (debug) println(s"[Thr:${Thread.currentThread().threadId()}] $x")
   }
 
   def bulkRegister(n: Int): Int = {
@@ -35,20 +33,32 @@ private[simulator] final class StepBarrier() {
   }
 
   def step(): Unit = {
+    debugPrintln("step")
     preStep.arriveAndAwaitAdvance()
-    postStep.arriveAndAwaitAdvance()
-  }
-
-  def completeStep(): Unit = {
     postStep.arriveAndAwaitAdvance()
   }
 
   def await(): Unit = {
+    debugPrintln("--await--")
     preStep.arriveAndAwaitAdvance()
+  }
+
+  def completeStep(): Unit = {
+    postStep.arriveAndAwaitAdvance()
+    debugPrintln("---completeStep---\n")
   }
 
   def forceTermination(): Unit = {
     preStep.forceTermination()
     postStep.forceTermination()
   }
+}
+
+private[simulator] object StepBarrier {
+  private val dynamicVariable = new DynamicVariable[Option[StepBarrier]](None)
+
+  def withValue[T](stepBarrier: => StepBarrier)(body: => T): T =
+    dynamicVariable.withValue(Some(stepBarrier))(body)
+
+  def currentOption: Option[StepBarrier] = dynamicVariable.value
 }
