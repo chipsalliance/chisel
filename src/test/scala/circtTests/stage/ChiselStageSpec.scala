@@ -2,7 +2,7 @@
 
 package circtTests.stage
 
-import chisel3.stage.ChiselGeneratorAnnotation
+import chisel3.stage.{ChiselGeneratorAnnotation, CircuitSerializationAnnotation}
 import chisel3.experimental.SourceLine
 
 import circt.stage.{ChiselStage, FirtoolOption, PreserveAggregate}
@@ -1058,6 +1058,30 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
       info("found a circuit")
       text should include("circuit Foo")
 
+    }
+
+    it("should emit CHIRRTL files") {
+      val targetDir = new File("test_run_dir/ChiselStageSpec/emitCHIRRTLFile")
+
+      val args: Array[String] = Array(
+        "--target-dir",
+        targetDir.toString
+      )
+
+      // Should we be returning the CircuitSerializationAnnotation? It's consistent with emitSystemVerilogFile to do so.
+      ChiselStage
+        .emitCHIRRTLFile(
+          new ChiselStageSpec.Bar,
+          args
+        )
+        .collectFirst {
+          case CircuitSerializationAnnotation(_, filename, _) => filename
+        }
+        .get should be("Bar")
+
+      val expectedOutput = new File(targetDir, "Bar.fir")
+      expectedOutput should (exist)
+      info(s"'$expectedOutput' exists")
     }
 
     it("should emit FIRRTL dialect") {
