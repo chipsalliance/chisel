@@ -557,8 +557,8 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils with ShiftRigh
     testShiftRightWidthBehavior(UInt)(chiselMinWidth = 0, firrtlMinWidth = 0)
   }
 
-  property("Static right-shift should have width of 0 in Chisel and 1 in FIRRTL with --use-legacy-shift-right-width") {
-    val args = Array("--use-legacy-shift-right-width")
+  property("Static right-shift should have width of 0 in Chisel and 1 in FIRRTL with --use-legacy-width") {
+    val args = Array("--use-legacy-width")
 
     testShiftRightWidthBehavior(UInt)(chiselMinWidth = 0, firrtlMinWidth = 1, args = args)
 
@@ -575,7 +575,7 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils with ShiftRigh
     verilog should include(" widthcheck = 1'h0;")
   }
 
-  property("--use-legacy-shift-right-width should have a minimal impact on emission") {
+  property("--use-legacy-width should have a minimal impact on emission") {
     class TestModule extends Module {
       val a, b, c = IO(Input(UInt(8.W)))
       val widthcheck = Wire(UInt())
@@ -585,7 +585,7 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils with ShiftRigh
       widthcheck := (w >> 3) + b - c
     }
     val defaultFirrtl = ChiselStage.emitCHIRRTL(new TestModule)
-    val withOptFirrtl = ChiselStage.emitCHIRRTL(new TestModule, Array("--use-legacy-shift-right-width"))
+    val withOptFirrtl = ChiselStage.emitCHIRRTL(new TestModule, Array("--use-legacy-width"))
     // We should see the fixup
     val defaultOnly = Seq("node _widthcheck_T = shr(w, 3)")
     val withOptOnly = Seq(
