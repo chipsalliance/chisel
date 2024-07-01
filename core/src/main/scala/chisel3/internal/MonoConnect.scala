@@ -296,7 +296,7 @@ private[chisel3] object MonoConnect {
 
     // CASE: Context is same module that both sink node and source node are in
     if ((context_mod == sink_mod) && (context_mod == source_mod)) {
-      sink.direction != Input
+      !sink_is_port || sink.direction != Input
     }
 
     // CASE: Context is same module as sink node and source node is in a child module
