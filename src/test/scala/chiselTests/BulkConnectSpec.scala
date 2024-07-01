@@ -112,4 +112,15 @@ class BulkConnectSpec extends ChiselPropSpec {
     chirrtl should include("connect out1[0], in1[1]")
     chirrtl should include("connect out1[1], in1[0]")
   }
+
+  property("Chisel should emit FIRRTL bulk connect for \"input\" wires") {
+    class MyBundle extends Bundle {
+      val foo = Input(UInt(8.W))
+    }
+    val chirrtl = ChiselStage.emitCHIRRTL(new Module {
+      val w1, w2 = Wire(new MyBundle)
+      w2 <> w1
+    })
+    chirrtl should include("connect w2, w1")
+  }
 }
