@@ -91,6 +91,21 @@ object ChiselStage {
     circuitAnno.get.emitLazily(inFileAnnos).mkString
   }
 
+  /** Elaborates a Chisel circuit and emits it to a file
+    *
+    * @param gen  a call-by-name Chisel module
+    * @param args additional command line arguments to pass to Chisel
+    */
+  def emitCHIRRTLFile(
+    gen:  => RawModule,
+    args: Array[String] = Array.empty
+  ): AnnotationSeq = {
+    (new circt.stage.ChiselStage).execute(
+      Array("--target", "chirrtl") ++ args,
+      Seq(ChiselGeneratorAnnotation(() => gen))
+    )
+  }
+
   /** Return a CHIRRTL circuit for a Chisel module
     *
     * @param gen a call-by-name Chisel module
@@ -186,7 +201,7 @@ object ChiselStage {
     gen:         => RawModule,
     args:        Array[String] = Array.empty,
     firtoolOpts: Array[String] = Array.empty
-  ) =
+  ): AnnotationSeq =
     (new circt.stage.ChiselStage).execute(
       Array("--target", "systemverilog") ++ args,
       Seq(ChiselGeneratorAnnotation(() => gen)) ++ firtoolOpts.map(FirtoolOption(_))
