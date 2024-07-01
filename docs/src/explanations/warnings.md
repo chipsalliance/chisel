@@ -153,6 +153,12 @@ field's width).
 
 ### [W008] Return values of asTypeOf will soon be read-only
 
+:::warning
+
+As of Chisel 7.0.0, this is now an error
+
+:::
+
 This warning indicates that the result of a call to `.asTypeOf(_)` is being used as the destination for a connection.
 It can be fixed by instantiating a wire.
 

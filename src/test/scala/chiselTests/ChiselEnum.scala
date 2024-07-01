@@ -416,7 +416,7 @@ class ChiselEnumSpec extends ChiselFlatSpec with Utils {
       // The bug is that the width of x is 7 but the value of out1 is 3
       x.getWidth should be(7)
       x.getWidth should be(EnumExample.getWidth)
-      y.widthOption should be(None)
+      y.getWidth should be(7)
       z.getWidth should be(7)
     })
     // The bug is that all of these should be the same as out3, or the widths above are wrong

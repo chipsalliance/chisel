@@ -270,4 +270,15 @@ class SIntOpsSpec extends ChiselPropSpec with Utils with ShiftRightWidthBehavior
     -5.S(8.W).pad(16).litValue should be(-5)
     -5.S(8.W).pad(16).getWidth should be(16)
   }
+
+  property("Casting a SInt literal to a Bundle should maintain the literal value") {
+    class SimpleBundle extends Bundle {
+      val x = UInt(4.W)
+      val y = UInt(4.W)
+    }
+    val blit = -23.S.asTypeOf(new SimpleBundle)
+    blit.litOption should be(Some(0x29))
+    blit.x.litOption should be(Some(2))
+    blit.y.litOption should be(Some(9))
+  }
 }

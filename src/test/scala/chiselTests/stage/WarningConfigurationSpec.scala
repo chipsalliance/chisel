@@ -380,10 +380,10 @@ class WarningConfigurationSpec extends AnyFunSpec with Matchers with chiselTests
       e.getMessage should include("[W006] Cannot extract from Vec of size 0")
     }
 
-    it("should number AsTypeOfReadOnly as 8") {
-      val args = Array("--warn-conf", "id=8:e,any:s", "--throw-on-first-error")
+    it("should now error on AsTypeOfReadOnly") {
+      val args = Array("--throw-on-first-error")
       val e = the[Exception] thrownBy ChiselStage.emitCHIRRTL(new AsTypeOfReadOnly, args)
-      e.getMessage should include("[W008] Return values of asTypeOf will soon be read-only")
+      e.getMessage should include("Return values of asTypeOf are now read-only")
     }
   }
 }
