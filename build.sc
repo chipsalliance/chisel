@@ -264,9 +264,11 @@ trait Lit extends tests.LitModule with Cross.Module[String] {
   def litConfigIn:  T[PathRef] = T.source(millSourcePath / "tests" / "lit.site.cfg.py.in")
 }
 
-object benchmark extends ScalaModule with JmhModule with ScalafmtModule {
+object benchmark extends ScalaModule with JmhModule with ScalafmtModule with common.HasChiselPlugin {
   def scalaVersion = v.scalaVersion
   def jmhCoreVersion = v.jmhVersion
+
+  override def pluginModule = chisel(v.scalaVersion).pluginModule
 
   override def moduleDeps = Seq(chisel(v.scalaVersion))
 }
