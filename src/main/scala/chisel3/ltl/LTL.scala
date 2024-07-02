@@ -304,6 +304,7 @@ sealed trait Property {
   def clock(clock: Clock)(implicit sourceInfo: SourceInfo): Property = Property.clock(this, clock)
 
   /** See `Property.disable`. */
+  @deprecated
   def disable(cond: Disable)(implicit sourceInfo: SourceInfo): Property = Property.disable(this, cond)
 }
 
@@ -424,9 +425,8 @@ sealed abstract class AssertPropertyLike {
   )(
     implicit sourceInfo: SourceInfo
   ): Unit = {
-    val disabled = disable.fold(prop)(prop.disable(_))
-    val clocked = clock.fold(disabled)(disabled.clock(_))
-    createIntrinsic(label)(sourceInfo)(clocked.inner)
+    val clocked = clock.fold(prop)(prop.clock(_))
+    createIntrinsic(label)(sourceInfo)(clocked.inner, disable.map(!_.value))
   }
 
   /** Assert, assume, or cover that a boolean predicate holds.
@@ -484,7 +484,7 @@ sealed abstract class AssertPropertyLike {
     apply(Sequence.BoolSequence(cond), Some(clock), Some(disable), Some(label))
   }
 
-  protected def createIntrinsic(label: Option[String])(implicit sourceInfo: SourceInfo): (Bool) => Unit
+  protected def createIntrinsic(label: Option[String])(implicit sourceInfo: SourceInfo): (Bool, Option[Bool]) => Unit
 }
 
 /** Assert that a property holds.

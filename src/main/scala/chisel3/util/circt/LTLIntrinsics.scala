@@ -145,29 +145,26 @@ private[chisel3] object LTLDisableIntrinsic {
 
 /** Base class for assert, assume, and cover intrinsics. */
 private[chisel3] object VerifAssertLikeIntrinsic {
-  def apply(intrinsicName: String, label: Option[String])(prop: Bool)(implicit sourceInfo: SourceInfo): Unit = {
+  def apply(intrinsicName: String, label: Option[String])(prop: Bool, enable: Option[Bool])(implicit sourceInfo: SourceInfo): Unit = {
     val name = f"circt_verif_$intrinsicName"
-    if (label.isEmpty)
-      Intrinsic(name)(prop)
-    else
-      Intrinsic(name, "label" -> label.get)(prop)
+    Intrinsic(name, (label.map("label" -> StringParam(_)).toSeq):_*)((Seq(prop) ++ enable.toSeq):_*)
   }
 }
 
 /** A wrapper intrinsic for the CIRCT `verif.assert` operation. */
 private[chisel3] object VerifAssertIntrinsic {
-  def apply(label: Option[String] = None)(prop: Bool)(implicit sourceInfo: SourceInfo) =
-    VerifAssertLikeIntrinsic("assert", label)(prop)
+  def apply(label: Option[String] = None)(prop: Bool, enable: Option[Bool])(implicit sourceInfo: SourceInfo) =
+    VerifAssertLikeIntrinsic("assert", label)(prop, enable)
 }
 
 /** A wrapper intrinsic for the CIRCT `verif.assume` operation. */
 private[chisel3] object VerifAssumeIntrinsic {
-  def apply(label: Option[String] = None)(prop: Bool)(implicit sourceInfo: SourceInfo) =
-    VerifAssertLikeIntrinsic("assume", label)(prop)
+  def apply(label: Option[String] = None)(prop: Bool, enable: Option[Bool])(implicit sourceInfo: SourceInfo) =
+    VerifAssertLikeIntrinsic("assume", label)(prop, enable)
 }
 
 /** A wrapper intrinsic for the CIRCT `verif.cover` operation. */
 private[chisel3] object VerifCoverIntrinsic {
-  def apply(label: Option[String] = None)(prop: Bool)(implicit sourceInfo: SourceInfo) =
-    VerifAssertLikeIntrinsic("cover", label)(prop)
+  def apply(label: Option[String] = None)(prop: Bool, enable: Option[Bool])(implicit sourceInfo: SourceInfo) =
+    VerifAssertLikeIntrinsic("cover", label)(prop, enable)
 }
