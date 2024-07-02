@@ -1493,8 +1493,6 @@ abstract class Bundle extends Record {
       case (name, Some(data: Data)) =>
         Some(name -> data)
       case _ => None
-    }.sortWith {
-      case ((an, a), (bn, b)) => (a._id > b._id) || ((a eq b) && (an > bn))
     }: _*)
   }
 
@@ -1521,9 +1519,7 @@ abstract class Bundle extends Record {
   /** Default "pretty-print" implementation
     * Analogous to printing a Map
     * Results in "`Bundle(elt0.name -> elt0.value, ...)`"
-    * @note The order is reversed from the order of elements in order to print
-    *   the fields in the order they were defined
     */
-  override def toPrintable: Printable = toPrintableHelper(_elements.toList.reverse)
+  override def toPrintable: Printable = toPrintableHelper(_elements.toList)
 
 }
