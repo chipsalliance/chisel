@@ -1161,32 +1161,30 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
 
       val btor2 = ChiselStage.emitBtor2(new Counter)
       btor2 should include("""1 sort bitvec 1
-                             |2 input 1 reset
-                             |3 sort bitvec 32
-                             |4 state 3 count
-                             |5 constd 1 0
-                             |6 state 1 hbr
-                             |7 init 1 6 5
-                             |8 constd 3 43
-                             |9 constd 3 1
-                             |10 constd 3 42
-                             |11 constd 1 -1
-                             |12 constd 3 0
-                             |13 eq 1 4 10
-                             |14 add 3 4 9
-                             |15 ite 3 13 12 14
-                             |16 ult 1 4 8
-                             |17 constd 1 -1
-                             |18 or 1 2 6
-                             |19 xor 1 2 17
-                             |20 and 1 6 19
-                             |21 xor 1 20 11
-                             |22 or 1 21 16
-                             |23 not 1 22
-                             |24 bad 23
-                             |25 ite 3 2 12 15
-                             |26 next 3 4 25
-                             |28 next 1 6 27""".stripMargin)
+                              |2 input 1 reset
+                              |3 sort bitvec 32
+                              |4 state 3 count
+                              |5 state 1 hbr
+                              |6 constd 1 0
+                              |7 init 1 5 6
+                              |8 constd 3 43
+                              |9 constd 3 1
+                              |10 constd 3 42
+                              |11 constd 3 0
+                              |12 eq 1 4 10
+                              |13 add 3 4 9
+                              |14 ite 3 12 11 13
+                              |15 ult 1 4 8
+                              |16 constd 1 -1
+                              |17 or 1 2 5
+                              |18 xor 1 2 16
+                              |19 and 1 5 18
+                              |20 implies 1 19 15
+                              |21 not 1 20
+                              |22 bad 21
+                              |23 ite 3 2 11 14
+                              |24 next 3 4 23
+                              |25 next 1 5 17""".stripMargin)
     }
 
     it("""should error if give a "--target-directory" option""") {
