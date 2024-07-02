@@ -227,20 +227,6 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselRunners {
     ChiselStage.emitSystemVerilog(new EventuallyMod)
   }
 
-  class DisableMod extends RawModule {
-    val a, b = IO(Input(Bool()))
-    implicit val info = SourceLine("Foo.scala", 1, 2)
-    val p0: Property = a.disable(b.asDisable)
-  }
-  it should "support property disable operation" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new DisableMod)
-    val sourceLoc = "@[Foo.scala 1:2]"
-    chirrtl should include(f"intrinsic(circt_ltl_disable : UInt<1>, a, b) $sourceLoc")
-  }
-  it should "compile property disable operation" in {
-    ChiselStage.emitSystemVerilog(new DisableMod)
-  }
-
   class BasicVerifMod extends RawModule {
     val a = IO(Input(Bool()))
     implicit val info = SourceLine("Foo.scala", 1, 2)
@@ -276,9 +262,9 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselRunners {
       val sourceLoc = "@[Foo.scala 1:2]"
       chirrtl should include("node has_been_reset = intrinsic(circt_has_been_reset : UInt<1>, clock, reset)")
       chirrtl should include("node disable = eq(has_been_reset, UInt<1>(0h0))")
-      chirrtl should include(f"node disable_1 = intrinsic(circt_ltl_disable : UInt<1>, a, disable) $sourceLoc")
-      chirrtl should include(f"node clock_1 = intrinsic(circt_ltl_clock : UInt<1>, disable_1, clock) $sourceLoc")
-      chirrtl should include(f"intrinsic(circt_verif_$op, clock_1) $sourceLoc")
+      chirrtl should include(f"node clock_1 = intrinsic(circt_ltl_clock : UInt<1>, a, clock) $sourceLoc")
+      chirrtl should include(f"node _T = eq(disable, UInt<1>(0h0)) $sourceLoc")
+      chirrtl should include(f"intrinsic(circt_verif_$op, clock_1, _T) $sourceLoc")
     }
   }
 
@@ -306,19 +292,19 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselRunners {
       AssertProperty(a, disable = Some(b.asDisable))
       AssertProperty(a, clock = Some(c), disable = Some(b.asDisable))
     })
-
+    println(chirrtl)
     // with clock; emitted as `assert(clock(a, c))`
     chirrtl should include("node clock = intrinsic(circt_ltl_clock : UInt<1>, a, c)")
     chirrtl should include("intrinsic(circt_verif_assert, clock)")
 
-    // with disable; emitted as `assert(disable(a, b))`
-    chirrtl should include("node disable = intrinsic(circt_ltl_disable : UInt<1>, a, b)")
-    chirrtl should include("intrinsic(circt_verif_assert, disable)")
+    // with disable; emitted as `assert(a, disable)`
+    chirrtl should include("node _T = eq(b, UInt<1>(0h0))")
+    chirrtl should include("intrinsic(circt_verif_assert, a, _T)")
 
     // with clock and disable; emitted as `assert(clock(disable(a, b), c))`
-    chirrtl should include("node disable_1 = intrinsic(circt_ltl_disable : UInt<1>, a, b)")
-    chirrtl should include("node clock_1 = intrinsic(circt_ltl_clock : UInt<1>, disable_1, c)")
-    chirrtl should include("intrinsic(circt_verif_assert, clock_1)")
+    chirrtl should include("node clock_1 = intrinsic(circt_ltl_clock : UInt<1>, a, c)")
+    chirrtl should include("node _T_1 = eq(b, UInt<1>(0h0))")
+    chirrtl should include("intrinsic(circt_verif_assert, clock_1, _T_1)")
   }
 
   class SequenceConvMod extends RawModule {
