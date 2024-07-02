@@ -292,7 +292,6 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselRunners {
       AssertProperty(a, disable = Some(b.asDisable))
       AssertProperty(a, clock = Some(c), disable = Some(b.asDisable))
     })
-    println(chirrtl)
     // with clock; emitted as `assert(clock(a, c))`
     chirrtl should include("node clock = intrinsic(circt_ltl_clock : UInt<1>, a, c)")
     chirrtl should include("intrinsic(circt_verif_assert, clock)")
