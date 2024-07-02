@@ -145,9 +145,16 @@ private[chisel3] object LTLDisableIntrinsic {
 
 /** Base class for assert, assume, and cover intrinsics. */
 private[chisel3] object VerifAssertLikeIntrinsic {
-  def apply(intrinsicName: String, label: Option[String])(prop: Bool, enable: Option[Bool])(implicit sourceInfo: SourceInfo): Unit = {
+  def apply(
+    intrinsicName: String,
+    label:         Option[String]
+  )(prop:          Bool,
+    enable:        Option[Bool]
+  )(
+    implicit sourceInfo: SourceInfo
+  ): Unit = {
     val name = f"circt_verif_$intrinsicName"
-    Intrinsic(name, (label.map("label" -> StringParam(_)).toSeq):_*)((Seq(prop) ++ enable.toSeq):_*)
+    Intrinsic(name, (label.map("label" -> StringParam(_)).toSeq): _*)((Seq(prop) ++ enable.toSeq): _*)
   }
 }
 
