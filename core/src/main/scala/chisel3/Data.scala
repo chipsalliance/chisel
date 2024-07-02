@@ -103,10 +103,13 @@ object ActualDirection {
 
   case class Bidirectional(dir: BidirectionalDirection) extends ActualDirection
 
+  /** Converts a `SpecifiedDirection` to an `ActualDirection`
+    *
+    * Implements the Chisel convention that Flip is Input and unspecified is Output.
+    */
   def fromSpecified(direction: SpecifiedDirection): ActualDirection = direction match {
-    case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip => ActualDirection.Unspecified
-    case SpecifiedDirection.Output                                => ActualDirection.Output
-    case SpecifiedDirection.Input                                 => ActualDirection.Input
+    case SpecifiedDirection.Output | SpecifiedDirection.Unspecified => ActualDirection.Output
+    case SpecifiedDirection.Input | SpecifiedDirection.Flip         => ActualDirection.Input
   }
 
   /** Determine the actual binding of a container given directions of its children.
