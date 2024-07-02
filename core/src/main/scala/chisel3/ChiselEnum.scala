@@ -11,17 +11,8 @@ import chisel3.internal.Builder.pushOp
 import chisel3.internal.firrtl.ir.PrimOp._
 import chisel3.internal.firrtl.ir._
 import chisel3.internal.sourceinfo._
-import chisel3.internal.{
-  containsProbe,
-  throwException,
-  Binding,
-  Builder,
-  BuilderContextCache,
-  ChildBinding,
-  ConstrainedBinding,
-  Warning,
-  WarningID
-}
+import chisel3.internal.{containsProbe, throwException, Builder, BuilderContextCache, Warning, WarningID}
+import chisel3.internal.binding.{Binding, ChildBinding, ConstrainedBinding}
 
 import chisel3.experimental.EnumAnnotations._
 
@@ -82,8 +73,16 @@ abstract class EnumType(private[chisel3] val factory: ChiselEnum, selfAnnotating
   def do_>=(that: EnumType)(implicit sourceInfo: SourceInfo): Bool =
     compop(sourceInfo, GreaterEqOp, that)
 
-  override private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): UInt =
-    pushOp(DefPrim(sourceInfo, UInt(width), AsUIntOp, ref))
+  override private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): UInt = {
+    this.litOption match {
+      // This fixes an old bug that changes widths and thus silently changes behavior.
+      // See https://github.com/chipsalliance/chisel/issues/4159.
+      case Some(value) if !Builder.useLegacyWidth =>
+        value.U(width)
+      case _ =>
+        pushOp(DefPrim(sourceInfo, UInt(width), AsUIntOp, ref))
+    }
+  }
 
   protected[chisel3] override def width: Width = factory.width
 

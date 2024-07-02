@@ -7,9 +7,10 @@ import chisel3.experimental.dataview.reify
 import scala.language.experimental.macros
 import chisel3.experimental.{requireIsChiselType, requireIsHardware, Analog, BaseModule}
 import chisel3.experimental.{prefix, SourceInfo, UnlocatableSourceInfo}
-import chisel3.experimental.dataview.reifySingleData
+import chisel3.experimental.dataview.{reifyIdentityView, reifySingleTarget, DataViewable}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal._
+import chisel3.internal.binding._
 import chisel3.internal.sourceinfo._
 import chisel3.internal.firrtl.ir._
 import chisel3.properties.Property
@@ -426,7 +427,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     // Trace views to give better error messages
     // Reifying involves checking against ViewParent which requires being in a Builder context
     // Since we're just printing a String, suppress such errors and use this object
-    val thiz = Try(reifySingleData(this)).toOption.flatten.getOrElse(this)
+    val thiz = Try(reifySingleTarget(this)).toOption.flatten.getOrElse(this)
     thiz.topBindingOpt match {
       case None => chiselType
       // Handle DontCares specially as they are "literal-like" but not actually literals
@@ -628,8 +629,8 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       case Some(pb: PortBinding)
           if mod.flatMap(Builder.retrieveParent(_, Builder.currentModule.get)) == Builder.currentModule =>
         true
-      case Some(ViewBinding(target))           => target.isVisibleFromModule
-      case Some(AggregateViewBinding(mapping)) => mapping.values.forall(_.isVisibleFromModule)
+      case Some(ViewBinding(target, _))           => target.isVisibleFromModule
+      case Some(AggregateViewBinding(mapping, _)) => mapping.values.forall(_.isVisibleFromModule)
       case Some(pb: SecretPortBinding) => true // Ignore secret to not require visibility
       case Some(_: UnconstrainedBinding) => true
       case _ => false
@@ -650,13 +651,16 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   }
 
   // Internal API: returns a ref that can be assigned to, if consistent with the binding
-  private[chisel3] def lref: Node = {
+  private[chisel3] def lref(implicit info: SourceInfo): Node = {
     requireIsHardware(this)
     requireVisible()
     topBindingOpt match {
       case Some(binding: ReadOnlyBinding) =>
         throwException(s"internal error: attempted to generate LHS ref to ReadOnlyBinding $binding")
-      case Some(ViewBinding(target)) => reify(target).lref
+      case Some(ViewBinding(target1, wr1)) =>
+        val (target2, wr2) = reify(target1)
+        val writability = wr1.combine(wr2)
+        writability.reportIfReadOnly(target2.lref)(Wire(chiselTypeOf(target2)).lref)
       case Some(binding: TopBinding) => Node(this)
       case opt => throwException(s"internal error: unknown binding $opt in generating LHS ref")
     }
@@ -676,11 +680,11 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     requireIsHardware(this)
     topBindingOpt match {
       // DataView
-      case Some(ViewBinding(target)) => reify(target).ref
+      case Some(ViewBinding(target, _)) => reify(target)._1.ref
       case Some(_: AggregateViewBinding) =>
-        reifySingleData(this) match {
+        reifyIdentityView(this) match {
           // If this is an identity view (a view of something of the same type), return ref of target
-          case Some(target) if this.typeEquivalent(target) => target.ref
+          case Some((target, _)) => target.ref
           // Otherwise, we need to materialize hardware of the correct type
           case _ => materializeWire()
         }
@@ -811,7 +815,9 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   def do_asTypeOf[T <: Data](that: T)(implicit sourceInfo: SourceInfo): T = {
     val thatCloned = Wire(that.cloneTypeFull)
     thatCloned.connectFromBits(this.asUInt)
-    thatCloned
+    thatCloned.viewAsReadOnlyDeprecated(siteInfo =>
+      Warning(WarningID.AsTypeOfReadOnly, s"Return values of asTypeOf will soon be read-only")(siteInfo)
+    )
   }
 
   /** Assigns this node from Bits type. Internal implementation for asTypeOf.
@@ -1014,6 +1020,18 @@ object Data {
         // Runtime types are different
         case (thiz, that) => throwException(s"Cannot compare $thiz and $that: Runtime types differ")
       }
+    }
+  }
+
+  implicit class AsReadOnly[T <: Data](self: T) {
+
+    /** Returns a read-only view of this Data
+      *
+      * It is illegal to connect to the return value of this method.
+      * This Data this method is called on must be a hardware type.
+      */
+    def readOnly(implicit sourceInfo: SourceInfo): T = {
+      self.viewAsReadOnly(_ => "Cannot connect to read-only value")
     }
   }
 }

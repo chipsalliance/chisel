@@ -92,4 +92,35 @@ class BulkConnectSpec extends ChiselPropSpec {
     })
     chirrtl should include("connect w2, w1")
   }
+
+  property("Chisel connects should not emit a FIRRTL bulk connect for single target but non-identity views") {
+    import chisel3.experimental.dataview._
+    type ReversedVec[T <: Data] = Vec[T]
+    implicit def reversedVecView[T <: Data]: DataView[Vec[T], ReversedVec[T]] =
+      DataView.mapping[Vec[T], ReversedVec[T]](v => v.cloneType, { case (a, b) => a.reverse.zip(b) })
+    val chirrtl = ChiselStage.emitCHIRRTL(new Module {
+      val in0, in1 = IO(Input(Vec(2, UInt(8.W))))
+      val out0, out1 = IO(Output(Vec(2, UInt(8.W))))
+
+      out0 := in0.viewAs[ReversedVec[UInt]]
+      out1 <> in1.viewAs[ReversedVec[UInt]]
+    })
+    chirrtl shouldNot include("connect out0, in0")
+    chirrtl should include("connect out0[0], in0[1]")
+    chirrtl should include("connect out0[1], in0[0]")
+    chirrtl shouldNot include("connect out1, in1")
+    chirrtl should include("connect out1[0], in1[1]")
+    chirrtl should include("connect out1[1], in1[0]")
+  }
+
+  property("Chisel should emit FIRRTL bulk connect for \"input\" wires") {
+    class MyBundle extends Bundle {
+      val foo = Input(UInt(8.W))
+    }
+    val chirrtl = ChiselStage.emitCHIRRTL(new Module {
+      val w1, w2 = Wire(new MyBundle)
+      w2 <> w1
+    })
+    chirrtl should include("connect w2, w1")
+  }
 }

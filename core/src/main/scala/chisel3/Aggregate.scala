@@ -3,7 +3,7 @@
 package chisel3
 
 import chisel3.experimental.VecLiterals.AddVecLiteralConstructor
-import chisel3.experimental.dataview.{isView, reify, reifySingleData, InvalidViewException}
+import chisel3.experimental.dataview.{isView, reify, reifyIdentityView, InvalidViewException}
 
 import scala.collection.immutable.{SeqMap, VectorMap}
 import scala.collection.mutable.{HashSet, LinkedHashMap}
@@ -11,6 +11,7 @@ import scala.language.experimental.macros
 import chisel3.experimental.{BaseModule, BundleLiteralException, HasTypeAlias, OpaqueType, VecLiteralException}
 import chisel3.experimental.{requireIsChiselType, requireIsHardware, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal._
+import chisel3.internal.binding._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.ir._
 import chisel3.internal.sourceinfo.{SourceInfoTransform, VecTransform}
@@ -46,12 +47,10 @@ sealed abstract class Aggregate extends Data {
     topBindingOpt match {
       // Don't accidentally invent a literal value for a view that is empty
       case Some(_: AggregateViewBinding) if this.getElements.isEmpty =>
-        reifySingleData(this) match {
-          case Some(target: Aggregate) => target.checkingLitOption(checkForDontCares)
-          case _ =>
-            val msg =
-              s"It should not be possible to have an empty Aggregate view that doesn't reify to a single target, but got $this"
-            Builder.exception(msg)(UnlocatableSourceInfo)
+        reifyIdentityView(this) match {
+          case Some((target: Aggregate, _)) => target.checkingLitOption(checkForDontCares)
+          // This can occur with empty Vecs or Bundles
+          case _ => None
         }
       case Some(_: BundleLitBinding | _: VecLitBinding | _: AggregateViewBinding) =>
         // Records store elements in reverse order and higher indices are more significant in Vecs
@@ -352,11 +351,11 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
 
     // Special handling for views
     if (isView(this)) {
-      reifySingleData(this) match {
+      reifyIdentityView(this) match {
         // Views complicate things a bit, but views that correspond exactly to an identical Vec can just forward the
         // dynamic indexing to the target Vec
         // In theory, we could still do this forwarding if the sample element were different by deriving a DataView
-        case Some(target: Vec[T @unchecked])
+        case Some((target: Vec[T @unchecked], _))
             if this.length == target.length &&
               this.sample_element.typeEquivalent(target.sample_element) =>
           return target.apply(p)

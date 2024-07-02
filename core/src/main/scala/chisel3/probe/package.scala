@@ -4,6 +4,7 @@ package chisel3
 
 import chisel3._
 import chisel3.internal._
+import chisel3.internal.binding.OpBinding
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.ir._
 import chisel3.Data.ProbeInfo
@@ -37,6 +38,7 @@ package object probe extends SourceInfoDoc {
       Builder.error("Cannot define a probe on a non-equivalent type.")
     }
     requireHasProbeTypeModifier(sink, "Expected sink to be a probe.")
+    requireNotChildOfProbe(sink, "Expected sink to be the root of a probe.")
     requireHasProbeTypeModifier(probeExpr, "Expected source to be a probe expression.")
     requireCompatibleDestinationProbeColor(
       sink,
@@ -50,7 +52,7 @@ package object probe extends SourceInfoDoc {
         "Cannot use a non-writable probe expression to define a writable probe."
       )
     }
-    pushCommand(ProbeDefine(sourceInfo, sink.ref, probeExpr.ref))
+    pushCommand(ProbeDefine(sourceInfo, sink.lref, probeExpr.ref))
   }
 
   /** Access the value of a probe.

@@ -5,7 +5,8 @@ package chisel3
 import chisel3._
 import chisel3.experimental.{requireIsChiselType, Param, SourceInfo}
 import chisel3.internal.firrtl.ir._
-import chisel3.internal.{Builder, OpBinding}
+import chisel3.internal.Builder
+import chisel3.internal.binding.OpBinding
 import chisel3.internal.Builder.pushCommand
 
 object Intrinsic {

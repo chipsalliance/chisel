@@ -4,10 +4,13 @@ package chisel3.experimental
 
 import chisel3._
 import chisel3.internal._
+import chisel3.internal.binding._
 import chisel3.properties.Property
 
 import scala.annotation.{implicitNotFound, tailrec}
 import scala.collection.mutable
+import chisel3.reflect.DataMirror
+import chisel3.experimental.ClonePorts
 
 package object dataview {
   case class InvalidViewException(message: String) extends chisel3.ChiselException(message)
@@ -17,7 +20,13 @@ package object dataview {
     * Calling `viewAs` also requires an implementation of [[DataView]] for the target type
     */
   implicit class DataViewable[T](target: T) {
-    def viewAs[V <: Data](implicit dataproduct: DataProduct[T], dataView: DataView[T, V], sourceInfo: SourceInfo): V = {
+    private def _viewAsImpl[V <: Data](
+      writability: ViewWriteability
+    )(
+      implicit dataproduct: DataProduct[T],
+      dataView:             DataView[T, V],
+      sourceInfo:           SourceInfo
+    ): V = {
       // TODO put a try catch here for ExpectedHardwareException and perhaps others
       // It's likely users will accidentally use chiselTypeOf or something that may error,
       // The right thing to use is DataMirror...chiselTypeClone because of composition with DataView.andThen
@@ -25,7 +34,7 @@ package object dataview {
       val result: V = dataView.mkView(target)
       requireIsChiselType(result, "viewAs")
 
-      doBind(target, result, dataView)
+      doBind(target, result, dataView, writability)
 
       // Setting the parent marks these Data as Views
       result.setAllParents(Some(ViewParent))
@@ -35,6 +44,28 @@ package object dataview {
       result.forceName("view", Builder.viewNamespace)
       result
     }
+
+    def viewAs[V <: Data](
+      implicit dataproduct: DataProduct[T],
+      dataView:             DataView[T, V],
+      sourceInfo:           SourceInfo
+    ): V = _viewAsImpl(ViewWriteability.Default)
+
+    private[chisel3] def viewAsReadOnlyDeprecated[V <: Data](
+      getWarning: SourceInfo => Warning
+    )(
+      implicit dataproduct: DataProduct[T],
+      dataView:             DataView[T, V],
+      sourceInfo:           SourceInfo
+    ): V = _viewAsImpl(ViewWriteability.ReadOnlyDeprecated(getWarning))
+
+    private[chisel3] def viewAsReadOnly[V <: Data](
+      getError: SourceInfo => String
+    )(
+      implicit dataproduct: DataProduct[T],
+      dataView:             DataView[T, V],
+      sourceInfo:           SourceInfo
+    ): V = _viewAsImpl(ViewWriteability.ReadOnly(getError))
   }
 
   /** Provides `viewAsSupertype` for subclasses of [[Record]] */
@@ -72,9 +103,10 @@ package object dataview {
 
   // TODO should this be moved to class Aggregate / can it be unified with Aggregate.bind?
   private def doBind[T: DataProduct, V <: Data](
-    target:   T,
-    view:     V,
-    dataView: DataView[T, V]
+    target:      T,
+    view:        V,
+    dataView:    DataView[T, V],
+    writability: ViewWriteability
   )(
     implicit sourceInfo: SourceInfo
   ): Unit = {
@@ -202,33 +234,36 @@ package object dataview {
     }
 
     view match {
-      case elt: Element   => view.bind(ViewBinding(elementResult(elt)))
+      case elt: Element => view.bind(ViewBinding(elementResult(elt), writability))
       case agg: Aggregate =>
-        // Don't forget the potential mapping of the view to the target!
-        target match {
-          case d: Data if total =>
-            aggregateMappings += (agg -> d)
-          case _ =>
-        }
-
         val fullResult = elementResult ++ aggregateMappings
 
-        // We need to record any Aggregates that don't have a 1-1 mapping (including the view
-        // itself)
-        getRecursiveFields.lazily(view, "_").foreach {
-          case (unnamed: Aggregate, _) if !fullResult.contains(unnamed) =>
-            Builder.unnamedViews += unnamed
-          case _ => // Do nothing
+        // We need to record any Aggregates that don't have a single-target mapping.
+        // Technically, this adds any Aggregate that is not an identity mapping,
+        // but we don't have a cheap way to check for single-target.
+        // The Builder context check is a hack to allow calling .viewAs outside of elaboration
+        // on views that are not identity but still single-target.
+        // FIXME we really just need to get rid of the need for unnammed view renaming.
+        if (Builder.inContext) {
+          getRecursiveFields.lazily(view, "_").foreach {
+            case (unnamed: Aggregate, _) if !fullResult.contains(unnamed) =>
+              Builder.unnamedViews += unnamed
+            case _ => // Do nothing
+          }
         }
-        agg.bind(AggregateViewBinding(fullResult))
+        val aggWritability = Option.when(writability.isReadOnly)(
+          Map((agg: Data) -> writability)
+        )
+        agg.bind(AggregateViewBinding(fullResult, aggWritability))
     }
   }
 
   // Traces an Element that may (or may not) be a view until it no longer maps
   // Inclusive of the argument
+  // Note that this does *not* include writability so do not use this in place of reify.
   private def unfoldView(elt: Element): LazyList[Element] = {
     def rec(e: Element): LazyList[Element] = e.topBindingOpt match {
-      case Some(ViewBinding(target)) => target #:: rec(target)
+      case Some(ViewBinding(target, _)) => target #:: rec(target)
       case Some(avb: AggregateViewBinding) =>
         val target = avb.lookup(e).get
         target #:: rec(target)
@@ -238,56 +273,112 @@ package object dataview {
   }
 
   // Safe for all Data
-  private[chisel3] def isView(d: Data): Boolean = d._parent.contains(ViewParent)
+  private[chisel3] def isView(d: Data): Boolean = d._parent.exists(_ == ViewParent)
 
   /** Turn any [[Element]] that could be a View into a concrete Element
     *
     * This is the fundamental "unwrapping" or "tracing" primitive operation for handling Views within
     * Chisel.
     */
-  private[chisel3] def reify(elt: Element): Element =
-    reify(elt, elt.topBinding)
+  private[chisel3] def reify(elt: Element): (Element, ViewWriteability) =
+    reify(elt, elt.topBinding, ViewWriteability.Default)
 
   /** Turn any [[Element]] that could be a View into a concrete Element
     *
     * This is the fundamental "unwrapping" or "tracing" primitive operation for handling Views within
     * Chisel.
     */
-  @tailrec private[chisel3] def reify(elt: Element, topBinding: TopBinding): Element =
+  @tailrec private[chisel3] def reify(
+    elt:        Element,
+    topBinding: TopBinding,
+    wrAcc:      ViewWriteability
+  ): (Element, ViewWriteability) = {
     topBinding match {
-      case ViewBinding(target) => reify(target, target.topBinding)
-      case _                   => elt
-    }
-
-  /** Determine the target of a View if it is a single Target
-    *
-    * @note An Aggregate may be a view of unrelated [[Data]] (eg. like a Seq or tuple) and thus this
-    *       there is no single Data representing the Target and this function will return None
-    * @return The single Data target of this view or None if a single Data doesn't exist
-    * @note Returns Some(_) of the argument if it is not a view
-    */
-  private[chisel3] def reifySingleData(data: Data): Option[Data] = {
-    val candidate: Option[Data] =
-      data.topBindingOpt match {
-        case None                               => None
-        case Some(ViewBinding(target))          => Some(target)
-        case Some(AggregateViewBinding(lookup)) => lookup.get(data)
-        case Some(_)                            => Some(data)
-      }
-    candidate.flatMap { d =>
-      // Candidate may itself be a view, keep tracing in those cases
-      if (isView(d)) reifySingleData(d) else Some(d)
+      case ViewBinding(target, writeability) =>
+        reify(target, target.topBinding, wrAcc.combine(writeability))
+      case _ => (elt, wrAcc)
     }
   }
 
-  /** Determine the target of a View if it is a single Target
+  /** Determine the target of a View if the view is an identity mapping.
     *
-    * @note An Aggregate may be a view of unrelated [[Data]] (eg. like a Seq or tuple) and thus this
-    *       there is no single Data representing the Target and this function will return None
-    * @return The single Data target of this view or None if a single Data doesn't exist
+    * This is only true if the target of the view is of the same type and fields correspond 1:1.
+    * For example, it would *not* be an identity view to view a Vec as a Vec with its elements in reverse order.
+    *
+    * @return The identity target of this view or None if not an identity view.
+    * @note Returns Some(_) of the argument if it is not a view.
     */
-  private[chisel3] def reifyToAggregate(data: Data): Option[Aggregate] = reifySingleData(data) match {
-    case Some(a: Aggregate) => Some(a)
-    case other => None
+  private[chisel3] def reifyIdentityView[T <: Data](
+    data:  T,
+    wrAcc: ViewWriteability = ViewWriteability.Default
+  ): Option[(T, ViewWriteability)] = {
+    val candidate: Option[(Data, ViewWriteability)] =
+      data.topBindingOpt match {
+        case None                                       => None
+        case Some(ViewBinding(target, wr))              => Some(target -> wr)
+        case Some(vb @ AggregateViewBinding(lookup, _)) => lookup.get(data).map(_ -> vb.lookupWritability(data))
+        case Some(_)                                    => Some(data -> ViewWriteability.Default)
+      }
+    candidate.flatMap {
+      case (d, wr) =>
+        val wrx = wrAcc.combine(wr)
+        // This cast is safe by construction, we only put Data in the view mapping if it is an identity mapping.
+        val cast = d.asInstanceOf[T]
+        // Candidate may itself be a view, keep tracing in those cases.
+        if (isView(d)) reifyIdentityView(cast, wrx) else Some(cast -> wrx)
+    }
+  }
+
+  // Return all parents of a Data, including itself
+  private def allParents(d: Data): List[Data] = d.binding match {
+    case Some(ChildBinding(parent)) => d :: allParents(parent)
+    case _                          => List(d)
+  }
+
+  /** Determine the target of a View if the view maps to a single `Data`.
+    *
+    * An Aggregate may be a view of `non-Data` (like a `Seq` or tuple) and thus
+    * there is no single Data representing the Target and this function will return None.
+    *
+    * @return The single Data target of this view or None if a single Data doesn't exist.
+    * @note Returns Some(_) of the argument if it is not a view.
+    * @note You should never attempt to write the result of this function.
+    */
+  private[chisel3] def reifySingleTarget(data: Data): Option[Data] = {
+    def err(msg: String) = throwException(s"Internal Error! $msg reifySingleTarget($data)")
+    // Identity views are obviously single targets.
+    // We ignore writability because the return of this function should never be written.
+    reifyIdentityView(data).map(_._1).orElse {
+      // Otherwise, all children of data need to map to all of the children of another Data.
+      // This is really expensive, is there a better way?
+      data.topBindingOpt.flatMap {
+        case AggregateViewBinding(mapping, _) =>
+          // Take every single leaf and map to its target
+          val leaves = DataMirror.collectLeafMembers(data)
+          val targets = leaves.map { l =>
+            // All leaves are stored in the mapping.
+            val oneLevel = mapping(l)
+            // This .get is safe because collectLeafMembers returns leaves.
+            // It is of type Data (not Element) because of Probes, but Probes are atomic.
+            reifySingleTarget(oneLevel).get
+          }
+          // Now, if there are any targets, check if all of the targets share a common parent,
+          // and if that parent is exclusively composed of these targets.
+          val tset = targets.toSet
+          targets.headOption.flatMap { head =>
+            allParents(head).find {
+              // This is kind of a hack but ClonePorts is itself a hack.
+              // We must ignore ClonePorts because it isn't a real Data, so it cannot be the "Single Target" to which we map.
+              case _: ClonePorts => false
+              case p =>
+                val pset = DataMirror.collectLeafMembers(p).toSet
+                pset == tset
+            }
+          }
+        // Anything else should've been handled by reifyIdentityView
+        case bad => err(s"This should not be reachable. Got binding = $bad in")
+
+      }
+    }
   }
 }

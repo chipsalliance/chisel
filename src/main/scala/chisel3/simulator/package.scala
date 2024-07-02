@@ -2,7 +2,7 @@ package chisel3
 
 import svsim._
 import chisel3.reflect.DataMirror
-import chisel3.experimental.dataview.reifySingleData
+import chisel3.experimental.dataview.reifyIdentityView
 import scala.collection.mutable
 import java.nio.file.{Files, Path, Paths}
 
@@ -34,9 +34,10 @@ package object simulator {
       case (data, port) => data -> controller.port(port.name)
     }.toMap
     def port(data: Data): Simulation.Port = {
-      // TODO, we can support non 1-1 views, but it will require changing this API to return a Seq[Port]
+      // TODO, we can support non identity views, but it will require changing this API to return a Seq[Port]
       // and packing/unpacking the BigInt literal representation.
-      val reified = reifySingleData(data).getOrElse {
+      // TODO implement support for read-only.
+      val (reified, _) = reifyIdentityView(data).getOrElse {
         val url = "https://github.com/chipsalliance/chisel/issues/new/choose"
         throw new Exception(
           s"Cannot poke $data as is a view that does not map to a single Data. " +

@@ -3,6 +3,7 @@
 package chisel3.experimental
 
 import chisel3.internal._
+import chisel3.internal.binding._
 import chisel3.{ActualDirection, Bits, Data, Element, PString, Printable, RawModule, SpecifiedDirection, UInt, Width}
 
 import scala.collection.mutable
@@ -58,7 +59,8 @@ final class Analog private (private[chisel3] val width: Width) extends Element {
     }
 
     targetTopBinding match {
-      case _: WireBinding | _: PortBinding | _: SecretPortBinding | _: ViewBinding | _: AggregateViewBinding =>
+      case _: WireBinding | _: PortBinding | _: SecretPortBinding | _: ViewBinding | _: AggregateViewBinding |
+          CrossModuleBinding =>
         direction = ActualDirection.Bidirectional(ActualDirection.Default)
       case x => throwException(s"Analog can only be Ports and Wires, not '$x'")
     }

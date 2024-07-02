@@ -202,8 +202,8 @@ class SIntOpsSpec extends ChiselPropSpec with Utils with ShiftRightWidthBehavior
     testShiftRightWidthBehavior(SInt)(chiselMinWidth = 1, firrtlMinWidth = 1)
   }
 
-  property("Static right-shift should have width of 0 in Chisel and 1 in FIRRTL with --use-legacy-shift-right-width") {
-    val args = Array("--use-legacy-shift-right-width")
+  property("Static right-shift should have width of 0 in Chisel and 1 in FIRRTL with --use-legacy-width") {
+    val args = Array("--use-legacy-width")
 
     testShiftRightWidthBehavior(SInt)(chiselMinWidth = 0, firrtlMinWidth = 1, args = args)
 

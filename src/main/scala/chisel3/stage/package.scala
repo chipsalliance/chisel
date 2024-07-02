@@ -29,7 +29,7 @@ package object stage {
           case SourceRootAnnotation(s)       => c.copy(sourceRoots = c.sourceRoots :+ s)
           case a: WarningConfigurationAnnotation     => c.copy(warningFilters = c.warningFilters ++ a.filters)
           case a: WarningConfigurationFileAnnotation => c.copy(warningFilters = c.warningFilters ++ a.filters)
-          case UseLegacyShiftRightWidthBehavior => c.copy(useLegacyShiftRightWidth = true)
+          case UseLegacyWidthBehavior => c.copy(useLegacyWidth = true)
         }
       }
 

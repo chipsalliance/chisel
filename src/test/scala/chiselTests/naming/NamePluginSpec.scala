@@ -435,4 +435,22 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
       Select.wires(top).map(_.instanceName) should be(List())
     }
   }
+
+  "identity views" should "forward names to their targets" in {
+    import chisel3.experimental.dataview._
+    class Test extends Module {
+      val x = {
+        val _w = Wire(UInt(3.W))
+        _w.viewAs[UInt]
+      }
+      val y = Wire(UInt(3.W)).readOnly // readOnly is implemented with views
+
+      val z = Wire(UInt(3.W))
+      val zz = z.viewAs[UInt] // But don't accidentally override names
+    }
+
+    aspectTest(() => new Test) { top: Test =>
+      Select.wires(top).map(_.instanceName) should be(List("x", "y", "z"))
+    }
+  }
 }

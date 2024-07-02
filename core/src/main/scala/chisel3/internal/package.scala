@@ -5,6 +5,7 @@ package chisel3
 import firrtl.annotations.{IsModule, ModuleTarget}
 import chisel3.experimental.{BaseModule, SourceInfo, UnlocatableSourceInfo}
 import chisel3.reflect.DataMirror.hasProbeTypeModifier
+import chisel3.internal.binding._
 import chisel3.internal.firrtl.ir.{Component, DefModule}
 import chisel3.internal.Builder.Prefix
 
@@ -148,6 +149,23 @@ package object internal {
       return
     }
     Builder.error(errorMessage)
+  }
+
+  private[chisel3] def requireNotChildOfProbe(
+    probe:        Data,
+    errorMessage: => String = ""
+  )(
+    implicit sourceInfo: SourceInfo
+  ): Unit = {
+    probe.binding match {
+      case Some(ChildBinding(parent)) =>
+        if (parent.probeInfo.nonEmpty) {
+          val providedMsg = errorMessage // only evaluate by-name argument once
+          val msg = if (providedMsg.isEmpty) "Expected a root of a probe." else providedMsg
+          Builder.error(msg)
+        }
+      case _ => ()
+    }
   }
 
   // TODO this exists in cats.Traverse, should we just use that?

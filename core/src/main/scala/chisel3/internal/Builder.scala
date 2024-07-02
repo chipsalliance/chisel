@@ -8,6 +8,7 @@ import chisel3._
 import chisel3.experimental._
 import chisel3.experimental.hierarchy.core.{Clone, Definition, Hierarchy, ImportDefinitionAnnotation, Instance}
 import chisel3.properties.Class
+import chisel3.internal.binding._
 import chisel3.internal.firrtl.ir._
 import chisel3.internal.firrtl.Converter
 import chisel3.internal.naming._
@@ -17,7 +18,7 @@ import _root_.firrtl.AnnotationSeq
 import _root_.firrtl.renamemap.MutableRenameMap
 import _root_.firrtl.util.BackendCompilationUtilities._
 import _root_.firrtl.{ir => fir}
-import chisel3.experimental.dataview.{reify, reifySingleData}
+import chisel3.experimental.dataview.{reify, reifyIdentityView, reifySingleTarget}
 import chisel3.internal.Builder.Prefix
 import logger.{LazyLogging, LoggerOption}
 
@@ -300,9 +301,12 @@ private[chisel3] trait HasId extends chisel3.InstanceId {
     nameGuess + parentGuess
   }
 
-  // Helper for reifying views if they map to a single Target
+  /** Helper for reifying views if they map to a single Target.
+    *
+    * This ignores writability, use chisel3.experimental.dataview.reify for non-Target use cases.
+    */
   private[chisel3] def reifyTarget: Option[Data] = this match {
-    case d: Data => reifySingleData(d) // Only Data can be views
+    case d: Data => reifySingleTarget(d) // Only Data can be views
     case bad => throwException(s"This shouldn't be possible - got $bad with ${_parent}")
   }
 
@@ -468,12 +472,12 @@ private[chisel3] class ChiselContext() {
 }
 
 private[chisel3] class DynamicContext(
-  val annotationSeq:         AnnotationSeq,
-  val throwOnFirstError:     Boolean,
-  val legacyShiftRightWidth: Boolean,
-  val warningFilters:        Seq[WarningFilter],
-  val sourceRoots:           Seq[File],
-  val defaultNamespace:      Option[Namespace],
+  val annotationSeq:     AnnotationSeq,
+  val throwOnFirstError: Boolean,
+  val useLegacyWidth:    Boolean,
+  val warningFilters:    Seq[WarningFilter],
+  val sourceRoots:       Seq[File],
+  val defaultNamespace:  Option[Namespace],
   // Definitions from other scopes in the same elaboration, use allDefinitions below
   val loggerOptions: LoggerOptions,
   val definitions:   ArrayBuffer[Definition[_]],
@@ -899,6 +903,12 @@ private[chisel3] object Builder extends LazyLogging {
         case Clone(m: experimental.hierarchy.ModuleClone[_]) => namer(m.getPorts, prefix)
         case _ =>
       }
+    case (d: Data) =>
+      // Views are often returned in lieu of the target, so name the target (as appropriate).
+      // If a view but not identity, return the view and name it since it shows up in .toString and error messages.
+      // TODO recurse on targets of non-identity views, perhaps with additional prefix from the view.
+      val reified = reifyIdentityView(d).fold(d)(_._1)
+      namer(reified, prefix)
     case (id: HasId) => namer(id, prefix)
     case Some(elt) => nameRecursively(prefix, elt, namer)
     case (iter: Iterable[_]) if iter.hasDefiniteSize =>
@@ -945,30 +955,39 @@ private[chisel3] object Builder extends LazyLogging {
     major.toInt
   }
 
-  def legacyShiftRightWidth: Boolean = dynamicContextVar.value.map(_.legacyShiftRightWidth).getOrElse(false)
+  def useLegacyWidth: Boolean = dynamicContextVar.value.map(_.useLegacyWidth).getOrElse(false)
 
   // Builds a RenameMap for all Views that do not correspond to a single Data
   // These Data give a fake ReferenceTarget for .toTarget and .toReferenceTarget that the returned
   // RenameMap can split into the constituent parts
   private[chisel3] def makeViewRenameMap: MutableRenameMap = {
     val renames = MutableRenameMap()
-    for (view <- unnamedViews) {
-      val localTarget = view.toTarget
-      val absTarget = view.toAbsoluteTarget
-      val elts = getRecursiveFields.lazily(view, "").collect { case (elt: Element, _) => elt }
-      for (elt <- elts if !elt.isLit) {
-        // This is a hack to not crash when .viewAs is called on non-hardware
-        // It can be removed in Chisel 6.0.0 when it becomes illegal to call .viewAs on non-hardware
-        val targetOfViewOpt =
-          try {
-            Some(reify(elt))
-          } catch {
-            case _: NoSuchElementException => None
+    for (view <- unnamedViews if !view.isLit) { // Aggregates can be literals too!
+      reifySingleTarget(view) match {
+        // If the target reifies to a single target, we don't need to rename.
+        // This is ludicrously expensive though, find a way to make this code unnecessary.
+        case Some(_) => ()
+        case None =>
+          val localTarget = view.toTarget
+          val absTarget = view.toAbsoluteTarget
+          val elts = getRecursiveFields.lazily(view, "").collect { case (elt: Element, _) => elt }
+          for (elt <- elts if !elt.isLit) {
+            // This is a hack to not crash when .viewAs is called on non-hardware
+            // It can be removed in Chisel 6.0.0 when it becomes illegal to call .viewAs on non-hardware
+            val targetOfViewOpt =
+              try {
+                Some(reify(elt)._1) // Writability is irrelevant here
+              } catch {
+                case _: NoSuchElementException => None
+              }
+            // It is legal to target DontCare, but we obviously cannot rename to DontCare
+            targetOfViewOpt
+              .filterNot(_.binding.contains(DontCareBinding()))
+              .foreach { targetOfView =>
+                renames.record(localTarget, targetOfView.toTarget)
+                renames.record(absTarget, targetOfView.toAbsoluteTarget)
+              }
           }
-        targetOfViewOpt.foreach { targetOfView =>
-          renames.record(localTarget, targetOfView.toTarget)
-          renames.record(absTarget, targetOfView.toAbsoluteTarget)
-        }
       }
     }
     renames
@@ -1038,8 +1057,12 @@ private[chisel3] object Builder extends LazyLogging {
     dynamicContext: DynamicContext
   ): (Circuit, T) = {
     dynamicContextVar.withValue(Some(dynamicContext)) {
-      ViewParent: Unit // Must initialize the singleton in a Builder context or weird things can happen
-      // in tiny designs/testcases that never access anything in chisel3.internal
+      // Must initialize the singleton in a Builder context or weird things can happen
+      // in tiny designs/testcases that never access anything in chisel3.internal.
+      ViewParent: Unit
+      // Must initialize the singleton or OutOfMemoryErrors and StackOverflowErrors will instead report as
+      // "java.lang.NoClassDefFoundError: Could not initialize class scala.util.control.NonFatal$".
+      scala.util.control.NonFatal: Unit
       logger.info("Elaborating design...")
       val mod =
         try {

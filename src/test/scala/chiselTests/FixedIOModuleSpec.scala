@@ -7,6 +7,7 @@ import circt.stage.ChiselStage
 import scala.collection.immutable.ListMap
 import chisel3.reflect.DataMirror.internal.chiselTypeClone
 import chisel3.experimental.SourceInfo
+import chisel3.experimental.hierarchy.{instantiable, Definition, Instance, Instantiate}
 import chisel3.probe.Probe
 
 class FixedIOModuleSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
@@ -253,6 +254,23 @@ class FixedIOModuleSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
       "define wireNested.bar = child.bar",
       "define wireNested.foo = child.foo"
     )()
+  }
+
+  "FixedIOModule" should "work with D/I API" in {
+
+    class Foo(width: Int) extends FixedIORawModule[UInt](UInt(width.W)) {
+      io :<>= DontCare
+    }
+
+    class Bar extends RawModule {
+      val fooDef = Definition(new Foo(8))
+      val foo1 = Instance(fooDef)
+      val foo2 = Instance(fooDef)
+      foo1.io :<>= DontCare
+      foo2.io :<>= DontCare
+    }
+
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Bar))("module Foo :")()
   }
 
 }
