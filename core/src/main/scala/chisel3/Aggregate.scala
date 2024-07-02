@@ -215,8 +215,10 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
 
     val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
     sample_element.bind(SampleElementBinding(this), resolvedDirection)
+    // Share same object for binding of all children.
+    val childBinding = ChildBinding(this)
     for (child <- elementsIterator) { // assume that all children are the same
-      child.bind(ChildBinding(this), resolvedDirection)
+      child.bind(childBinding, resolvedDirection)
     }
 
     // Since all children are the same, we can just use the sample_element rather than all children
@@ -1066,18 +1068,20 @@ abstract class Record extends Aggregate {
 
     checkForAndReportDuplicates()
 
-    // This check is for making sure that elements always returns the
-    // same object, which will not be the case if the user makes it a
-    // def inside the Record. Checking elementsIterator against itself
-    // is not useful for this check because it's a lazy val which will
-    // always return the same thing.
+    // Share same object for binding of all children.
+    val childBinding = ChildBinding(this)
     for (((_, child), sameChild) <- this.elements.iterator.zip(this.elementsIterator)) {
+      // This check is for making sure that elements always returns the
+      // same object, which will not be the case if the user makes it a
+      // def inside the Record. Checking elementsIterator against itself
+      // is not useful for this check because it's a lazy val which will
+      // always return the same thing.
       if (child != sameChild) {
         throwException(
           s"${this.className} does not return the same objects when calling .elements multiple times. Did you make it a def by mistake?"
         )
       }
-      child.bind(ChildBinding(this), resolvedDirection)
+      child.bind(childBinding, resolvedDirection)
 
       // Update the flipped tracker based on the flipped-ness of this specific child element
       _containsAFlipped |= child.containsAFlipped
