@@ -664,7 +664,8 @@ private[chisel3] object Builder extends LazyLogging {
       // If the binding is None, this is an illegal connection and later logic will error
       def recData(data: Data): Option[String] = data.binding.flatMap {
         case (_: WireBinding | _: RegBinding | _: MemoryPortBinding | _: OpBinding) => data.seedOpt
-        case ChildBinding(parent) =>
+        case ChildBinding =>
+          val parent = ChildBinding.getParent(data)
           recData(parent).map { p =>
             // And name of the field if we have one, we don't for dynamic indexing of Vecs
             getSubName(data).map(p + "_" + _).getOrElse(p)

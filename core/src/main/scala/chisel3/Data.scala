@@ -376,13 +376,13 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   // Similar to topBindingOpt except it explicitly excludes SampleElements which are bound but not
   // hardware
   private[chisel3] final def isSynthesizable: Boolean = _binding.map {
-    case ChildBinding(parent) => parent.isSynthesizable
+    case ChildBinding => ChildBinding.getParent(this).isSynthesizable
     case _: TopBinding => true
     case (_: SampleElementBinding[_] | _: MemTypeBinding[_] | _: FirrtlMemTypeBinding) => false
   }.getOrElse(false)
 
   private[chisel3] def topBindingOpt: Option[TopBinding] = _binding.flatMap {
-    case ChildBinding(parent) => parent.topBindingOpt
+    case ChildBinding => ChildBinding.getParent(this).topBindingOpt
     case bindingVal: TopBinding => Some(bindingVal)
     case SampleElementBinding(parent) => parent.topBindingOpt
     case (_: MemTypeBinding[_] | _: FirrtlMemTypeBinding) => None
@@ -465,7 +465,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 
   /** Useful information for recoverable errors that will allow the error to deduplicate */
   private[chisel3] def _localErrorContext: String = {
-    if (this.binding.exists(_.isInstanceOf[ChildBinding])) {
+    if (this.binding.contains(ChildBinding)) {
       val n = Arg.earlyLocalName(this, includeRoot = false)
       s"Field '$n' of type ${this.typeName}"
     } else {

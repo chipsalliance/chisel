@@ -165,7 +165,8 @@ abstract class EnumType(private[chisel3] val factory: ChiselEnum, selfAnnotating
     }
 
     d.binding match {
-      case Some(ChildBinding(parent)) =>
+      case Some(ChildBinding) =>
+        val parent = ChildBinding.getParent(d)
         outerMostVec(parent) match {
           case outer @ Some(_) => outer
           case None            => currentVecOpt

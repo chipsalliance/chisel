@@ -372,7 +372,9 @@ private[chisel3] object MonoConnect {
     val flipped = sdir == SpecifiedDirection.Flip
     val traceFlipped = ((flipped ^ currentlyFlipped) || coercedFlip) && (!coercedAlign)
     data.binding.get match {
-      case ChildBinding(parent) => traceFlow(wantToBeSink, traceFlipped, parent, context_mod)
+      case ChildBinding =>
+        val parent = ChildBinding.getParent(data)
+        traceFlow(wantToBeSink, traceFlipped, parent, context_mod)
       case PortBinding(enclosure) =>
         val childPort = enclosure != context_mod
         wantToBeSink ^ childPort ^ traceFlipped

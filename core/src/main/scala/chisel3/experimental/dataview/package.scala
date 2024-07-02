@@ -331,8 +331,8 @@ package object dataview {
 
   // Return all parents of a Data, including itself
   private def allParents(d: Data): List[Data] = d.binding match {
-    case Some(ChildBinding(parent)) => d :: allParents(parent)
-    case _                          => List(d)
+    case Some(ChildBinding) => d :: allParents(ChildBinding.getParent(d))
+    case _                  => List(d)
   }
 
   /** Determine the target of a View if the view maps to a single `Data`.

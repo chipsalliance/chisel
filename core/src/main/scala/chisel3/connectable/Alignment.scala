@@ -90,8 +90,8 @@ object Alignment {
       case _ if isLocallyCoercing(x) => true
       case None                      => false
       case Some(t: TopBinding) => false
-      case Some(ChildBinding(p)) => recUp(p)
-      case other                 => throw new Exception(s"Unexpected $other! $x, $member")
+      case Some(ChildBinding) => recUp(ChildBinding.getParent(x))
+      case other              => throw new Exception(s"Unexpected $other! $x, $member")
     }
     def isLocallyCoercing(d: Data): Boolean = {
       val s = DataMirror.specifiedDirectionOf(d)

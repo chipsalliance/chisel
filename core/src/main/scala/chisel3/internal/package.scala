@@ -158,7 +158,8 @@ package object internal {
     implicit sourceInfo: SourceInfo
   ): Unit = {
     probe.binding match {
-      case Some(ChildBinding(parent)) =>
+      case Some(ChildBinding) =>
+        val parent = ChildBinding.getParent(probe)
         if (parent.probeInfo.nonEmpty) {
           val providedMsg = errorMessage // only evaluate by-name argument once
           val msg = if (providedMsg.isEmpty) "Expected a root of a probe." else providedMsg

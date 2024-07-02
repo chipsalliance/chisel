@@ -216,7 +216,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
     val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
     sample_element.bind(SampleElementBinding(this), resolvedDirection)
     for (child <- elementsIterator) { // assume that all children are the same
-      child.bind(ChildBinding(this), resolvedDirection)
+      child.bind(ChildBinding, resolvedDirection)
     }
 
     // Since all children are the same, we can just use the sample_element rather than all children
@@ -378,7 +378,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
     // TODO port technically isn't directly child of this data structure, but the result of some
     // muxes / demuxes. However, this does make access consistent with the top-level bindings.
     // Perhaps there's a cleaner way of accomplishing this...
-    port.bind(ChildBinding(this), reconstructedResolvedDirection)
+    port.bind(ChildBinding, reconstructedResolvedDirection)
 
     val i = Vec.truncateIndex(p, length)(UnlocatableSourceInfo)
     port.setRef(this, i)
@@ -1077,7 +1077,7 @@ abstract class Record extends Aggregate {
           s"${this.className} does not return the same objects when calling .elements multiple times. Did you make it a def by mistake?"
         )
       }
-      child.bind(ChildBinding(this), resolvedDirection)
+      child.bind(ChildBinding, resolvedDirection)
 
       // Update the flipped tracker based on the flipped-ness of this specific child element
       _containsAFlipped |= child.containsAFlipped

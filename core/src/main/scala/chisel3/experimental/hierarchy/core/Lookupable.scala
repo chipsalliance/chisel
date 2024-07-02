@@ -99,8 +99,8 @@ object Lookupable {
         ret
     }
     data.binding match {
-      case Some(_: ChildBinding) => mapRootAndExtractSubField(data, impl)
-      case _ => impl(data)
+      case Some(ChildBinding) => mapRootAndExtractSubField(data, impl)
+      case _                  => impl(data)
     }
   }
 
@@ -126,7 +126,8 @@ object Lookupable {
   private def mapRootAndExtractSubField[A <: Data](arg: A, f: Data => Data): A = {
     def err(msg:               String) = throwException(s"Internal Error! $msg")
     def unrollCoordinates(res: List[Arg], d: Data): (List[Arg], Data) = d.binding.get match {
-      case ChildBinding(parent) =>
+      case ChildBinding =>
+        val parent = ChildBinding.getParent(d)
         d.getRef match {
           case arg @ (_: Slot | _: Index | _: ModuleIO) => unrollCoordinates(arg :: res, parent)
           case other => err(s"unrollCoordinates failed for '$arg'! Unexpected arg '$other'")

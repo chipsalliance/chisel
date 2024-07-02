@@ -51,7 +51,7 @@ final class Analog private (private[chisel3] val width: Width) extends Element {
     }
     val targetTopBinding = target match {
       case target: TopBinding => target
-      case ChildBinding(parent) => parent.topBinding
+      case ChildBinding => ??? // FIXME what do we do here
       // See https://github.com/freechipsproject/chisel3/pull/946
       case SampleElementBinding(parent) => parent.topBinding
       case a: MemTypeBinding[_]    => a

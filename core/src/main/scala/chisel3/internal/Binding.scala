@@ -4,7 +4,7 @@ package chisel3.internal
 
 import chisel3._
 import chisel3.experimental.{BaseModule, SourceInfo}
-import chisel3.internal.firrtl.ir.{LitArg, PropertyLit}
+import chisel3.internal.firrtl.ir.{Arg, Index, LitArg, Node, OpaqueSlot, PropertyLit, Slot}
 import chisel3.properties.Class
 
 import scala.collection.immutable.VectorMap
@@ -105,8 +105,16 @@ private[chisel3] object binding {
 
   case class ObjectFieldBinding(enclosure: BaseModule) extends ConstrainedBinding
 
-  case class ChildBinding(parent: Data) extends Binding {
-    def location: Option[BaseModule] = parent.topBinding.location
+  case object ChildBinding extends Binding {
+    // This is also sketchy
+    def location: Option[BaseModule] = None
+    // Yes this is sketchy but it works and saves 16-bytes per child of Aggregates
+    def getParent(child: Data): Data = child.getRef match {
+      case Slot(Node(parent: Data), _) => parent
+      case Index(Node(parent: Data), _) => parent
+      case OpaqueSlot(Node(parent: Data)) => parent
+      case other => throw new RuntimeException(s"Asked for parent of Data with unexpected ref: '$other'")
+    }
   }
 
   /** Special binding for Vec.sample_element */
@@ -209,8 +217,8 @@ private[chisel3] object binding {
         map.getOrElse(
           key, {
             key.binding match {
-              case Some(ChildBinding(parent)) => rec(map, parent)
-              case _                          => throwException(s"Internal error! $key not found in AggregateViewBinding writabilityMap!")
+              case Some(ChildBinding) => rec(map, ChildBinding.getParent(key))
+              case _                  => throwException(s"Internal error! $key not found in AggregateViewBinding writabilityMap!")
             }
           }
         )
