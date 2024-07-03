@@ -813,20 +813,14 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 
   /** @group SourceInfoTransformMacro */
   def do_asTypeOf[T <: Data](that: T)(implicit sourceInfo: SourceInfo): T = {
-    val thatCloned = Wire(that.cloneTypeFull)
-    thatCloned.connectFromBits(this.asUInt)
-    thatCloned.viewAsReadOnlyDeprecated(siteInfo =>
-      Warning(WarningID.AsTypeOfReadOnly, s"Return values of asTypeOf will soon be read-only")(siteInfo)
-    )
+    that._fromUInt(this.asUInt).asInstanceOf[T].viewAsReadOnly { _ =>
+      "Return values of asTypeOf are now read-only"
+    }
   }
 
-  /** Assigns this node from Bits type. Internal implementation for asTypeOf.
+  /** Return a value of this type from a UInt type. Internal implementation for asTypeOf.
     */
-  private[chisel3] def connectFromBits(
-    that: Bits
-  )(
-    implicit sourceInfo: SourceInfo
-  ): Unit
+  private[chisel3] def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): Data
 
   /** Reinterpret cast to UInt.
     *
@@ -1213,12 +1207,9 @@ final case object DontCare extends Element with connectable.ConnectableDocs {
 
   def toPrintable: Printable = PString("DONTCARE")
 
-  private[chisel3] def connectFromBits(
-    that: Bits
-  )(
-    implicit sourceInfo: SourceInfo
-  ): Unit = {
-    Builder.error("connectFromBits: DontCare cannot be a connection sink (LHS)")
+  private[chisel3] def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): Data = {
+    Builder.error("DontCare cannot be a connection sink (LHS)")
+    this
   }
 
   override private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): UInt = {

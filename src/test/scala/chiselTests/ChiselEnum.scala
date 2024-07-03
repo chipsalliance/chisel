@@ -414,7 +414,7 @@ class ChiselEnumSpec extends ChiselFlatSpec with Utils {
       out3 := Cat(1.U, z)
       x.getWidth should be(7)
       x.getWidth should be(EnumExample.getWidth)
-      y.widthOption should be(None)
+      y.getWidth should be(7)
       z.getWidth should be(7)
     })
     verilog should include("assign out1 = 8'h81;")
@@ -438,7 +438,7 @@ class ChiselEnumSpec extends ChiselFlatSpec with Utils {
         // The bug is that the width of x is 7 but the value of out1 is 3
         x.getWidth should be(7)
         x.getWidth should be(EnumExample.getWidth)
-        y.widthOption should be(None)
+        y.getWidth should be(7)
         z.getWidth should be(7)
       },
       args = Array("--use-legacy-width")
