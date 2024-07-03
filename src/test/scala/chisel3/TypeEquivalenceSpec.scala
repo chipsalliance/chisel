@@ -388,4 +388,13 @@ class TypeEquivalenceSpec extends AnyFlatSpec {
     )
   }
 
+  behavior.of("Data.requireTypeEquivalent")
+
+  it should "have a good user message if it fails" in {
+    val result = the[IllegalArgumentException] thrownBy {
+      Bool().requireTypeEquivalent(UInt(1.W), "This test should fail, because: ")
+    }
+    result.getMessage should include("This test should fail, because: Bool is not typeEquivalent to UInt<1>")
+  }
+
 }
