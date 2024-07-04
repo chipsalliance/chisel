@@ -370,12 +370,29 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   private[chisel3] def isConst: Boolean = _isConst
   private[chisel3] def isConst_=(isConst: Boolean) = _isConst = isConst
 
+  // Both _direction and _resolvedUserDirection are saved versions of computed variables (for
+  // efficiency, avoid expensive recomputation of frequent operations).
+  // Both are only valid after binding is set.
+
   // User-specified direction, local at this node only.
   // Note that the actual direction of this node can differ from child and parent specifiedDirection.
   private var _specifiedDirection:         Byte = SpecifiedDirection.Unspecified.value
   private[chisel3] def specifiedDirection: SpecifiedDirection = SpecifiedDirection.fromByte(_specifiedDirection)
   private[chisel3] def specifiedDirection_=(direction: SpecifiedDirection) = {
     _specifiedDirection = direction.value
+  }
+
+  // Direction of this node, accounting for parents (force Input / Output) and children.
+  private var _directionVar: Byte = ActualDirection.Empty.value // using nullable var for better memory usage
+  private def _direction: Option[ActualDirection] =
+    Option.when(_directionVar != ActualDirection.Empty.value)(ActualDirection.fromByte(_directionVar))
+
+  private[chisel3] def direction: ActualDirection = _direction.get
+  private[chisel3] def direction_=(actualDirection: ActualDirection): Unit = {
+    if (_direction.isDefined) {
+      throw RebindingException(s"Attempted reassignment of resolved direction to $this")
+    }
+    _directionVar = actualDirection.value
   }
 
   /** This overwrites a relative SpecifiedDirection with an explicit one, and is used to implement
@@ -439,23 +456,6 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       case c: ConstrainedBinding => _parent.foreach(_.addId(this))
       case _ =>
     }
-  }
-
-  // Both _direction and _resolvedUserDirection are saved versions of computed variables (for
-  // efficiency, avoid expensive recomputation of frequent operations).
-  // Both are only valid after binding is set.
-
-  // Direction of this node, accounting for parents (force Input / Output) and children.
-  private var _directionVar: Byte = ActualDirection.Empty.value // using nullable var for better memory usage
-  private def _direction: Option[ActualDirection] =
-    Option.when(_directionVar != ActualDirection.Empty.value)(ActualDirection.fromByte(_directionVar))
-
-  private[chisel3] def direction: ActualDirection = _direction.get
-  private[chisel3] def direction_=(actualDirection: ActualDirection): Unit = {
-    if (_direction.isDefined) {
-      throw RebindingException(s"Attempted reassignment of resolved direction to $this")
-    }
-    _directionVar = actualDirection.value
   }
 
   private[chisel3] def stringAccessor(chiselType: String): String = {
