@@ -22,24 +22,32 @@ import scala.util.Try
 
 /** User-specified directions.
   */
-sealed abstract class SpecifiedDirection
+sealed abstract class SpecifiedDirection(private[chisel3] val value: Byte)
 object SpecifiedDirection {
 
   /** Default user direction, also meaning 'not-flipped'
     */
-  case object Unspecified extends SpecifiedDirection
+  case object Unspecified extends SpecifiedDirection(0)
 
   /** Node and its children are forced as output
     */
-  case object Output extends SpecifiedDirection
+  case object Output extends SpecifiedDirection(1)
 
   /** Node and its children are forced as inputs
     */
-  case object Input extends SpecifiedDirection
+  case object Input extends SpecifiedDirection(2)
 
   /** Mainly for containers, children are flipped.
     */
-  case object Flip extends SpecifiedDirection
+  case object Flip extends SpecifiedDirection(3)
+
+  private[chisel3] def fromByte(b: Byte): SpecifiedDirection = b match {
+    case Unspecified.value => Unspecified
+    case Output.value      => Output
+    case Input.value       => Input
+    case Flip.value        => Flip
+    case _                 => throw new RuntimeException(s"Unexpected SpecifiedDirection value $b")
+  }
 
   def flip(dir: SpecifiedDirection): SpecifiedDirection = dir match {
     case Unspecified => Flip
@@ -338,10 +346,10 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 
   // User-specified direction, local at this node only.
   // Note that the actual direction of this node can differ from child and parent specifiedDirection.
-  private var _specifiedDirection:         SpecifiedDirection = SpecifiedDirection.Unspecified
-  private[chisel3] def specifiedDirection: SpecifiedDirection = _specifiedDirection
+  private var _specifiedDirection:         Byte = SpecifiedDirection.Unspecified.value
+  private[chisel3] def specifiedDirection: SpecifiedDirection = SpecifiedDirection.fromByte(_specifiedDirection)
   private[chisel3] def specifiedDirection_=(direction: SpecifiedDirection) = {
-    _specifiedDirection = direction
+    _specifiedDirection = direction.value
   }
 
   /** This overwrites a relative SpecifiedDirection with an explicit one, and is used to implement
@@ -349,10 +357,10 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     * DO NOT USE OUTSIDE THIS PURPOSE. THIS OPERATION IS DANGEROUS!
     */
   private[chisel3] def _assignCompatibilityExplicitDirection: Unit = {
-    (this, _specifiedDirection) match {
+    (this, specifiedDirection) match {
       case (_: Analog, _) => // nothing to do
-      case (_, SpecifiedDirection.Unspecified)                       => _specifiedDirection = SpecifiedDirection.Output
-      case (_, SpecifiedDirection.Flip)                              => _specifiedDirection = SpecifiedDirection.Input
+      case (_, SpecifiedDirection.Unspecified)                       => specifiedDirection = SpecifiedDirection.Output
+      case (_, SpecifiedDirection.Flip)                              => specifiedDirection = SpecifiedDirection.Input
       case (_, SpecifiedDirection.Input | SpecifiedDirection.Output) => // nothing to do
     }
   }
