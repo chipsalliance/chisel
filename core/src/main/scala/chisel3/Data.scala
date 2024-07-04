@@ -85,31 +85,57 @@ object SpecifiedDirection {
   * a node is bound (since higher-level specifications like Input and Output
   * can override directions).
   */
-sealed abstract class ActualDirection
+sealed abstract class ActualDirection(private[chisel3] val value: Byte)
 
 object ActualDirection {
 
   /** The object does not exist / is empty and hence has no direction
     */
-  case object Empty extends ActualDirection
+  case object Empty extends ActualDirection(0)
 
   /** Undirectioned, struct-like
     */
-  case object Unspecified extends ActualDirection
+  case object Unspecified extends ActualDirection(1)
 
   /** Output element, or container with all outputs (even if forced)
     */
-  case object Output extends ActualDirection
+  case object Output extends ActualDirection(2)
 
   /** Input element, or container with all inputs (even if forced)
     */
-  case object Input extends ActualDirection
+  case object Input extends ActualDirection(3)
 
-  sealed abstract class BidirectionalDirection
-  case object Default extends BidirectionalDirection
-  case object Flipped extends BidirectionalDirection
+  sealed abstract class BidirectionalDirection(private[chisel3] val value: Byte)
+  case object Default extends BidirectionalDirection(4)
+  case object Flipped extends BidirectionalDirection(5)
 
-  case class Bidirectional(dir: BidirectionalDirection) extends ActualDirection
+  // This constructor has 2 arguments (which need to be in sync) only to distinguish it from the other constructor
+  // Once that one is removed, delete _value
+  case class Bidirectional private[chisel3] (dir: BidirectionalDirection, _value: Byte)
+      extends ActualDirection(_value) {
+    @deprecated("Use companion object factory apply method", "Chisel 6.5")
+    def this(dir: BidirectionalDirection) = this(dir, dir.value)
+  }
+  object Bidirectional {
+    val Default = new Bidirectional(ActualDirection.Default, ActualDirection.Default.value)
+    val Flipped = new Bidirectional(ActualDirection.Flipped, ActualDirection.Flipped.value)
+    def apply(dir: BidirectionalDirection): ActualDirection = dir match {
+      case ActualDirection.Default => Default
+      case ActualDirection.Flipped => Flipped
+    }
+    @deprecated("Match on Bidirectional.Default and Bidirectional.Flipped directly instead", "Chisel 6.5")
+    def unapply(dir: Bidirectional): Option[BidirectionalDirection] = Some(dir.dir)
+  }
+
+  private[chisel3] def fromByte(b: Byte): ActualDirection = b match {
+    case Empty.value                 => Empty
+    case Unspecified.value           => Unspecified
+    case Output.value                => Output
+    case Input.value                 => Input
+    case Bidirectional.Default.value => Bidirectional.Default
+    case Bidirectional.Flipped.value => Bidirectional.Flipped
+    case _                           => throwException(s"Unexpected ActualDirection value $b")
+  }
 
   def fromSpecified(direction: SpecifiedDirection): ActualDirection = direction match {
     case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip => ActualDirection.Unspecified
@@ -420,15 +446,16 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   // Both are only valid after binding is set.
 
   // Direction of this node, accounting for parents (force Input / Output) and children.
-  private var _directionVar: ActualDirection = null // using nullable var for better memory usage
-  private def _direction:    Option[ActualDirection] = Option(_directionVar)
+  private var _directionVar: Byte = ActualDirection.Empty.value // using nullable var for better memory usage
+  private def _direction: Option[ActualDirection] =
+    Option.when(_directionVar != ActualDirection.Empty.value)(ActualDirection.fromByte(_directionVar))
 
   private[chisel3] def direction: ActualDirection = _direction.get
   private[chisel3] def direction_=(actualDirection: ActualDirection): Unit = {
     if (_direction.isDefined) {
       throw RebindingException(s"Attempted reassignment of resolved direction to $this")
     }
-    _directionVar = actualDirection
+    _directionVar = actualDirection.value
   }
 
   private[chisel3] def stringAccessor(chiselType: String): String = {
