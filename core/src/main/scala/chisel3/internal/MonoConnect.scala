@@ -305,9 +305,9 @@ private[chisel3] object MonoConnect {
       // See: https://github.com/freechipsproject/firrtl/issues/1703
       // Original behavior should just check if the sink direction is an Input
       val sinkCanBeInput = sink.direction match {
-        case Input            => true
-        case Bidirectional(_) => true
-        case _                => false
+        case Input => true
+        case _: Bidirectional => true
+        case _ => false
       }
       // Thus, right node better be a port node and thus have a direction
       if (!source_is_port) { false }
@@ -323,9 +323,9 @@ private[chisel3] object MonoConnect {
       // See: https://github.com/freechipsproject/firrtl/issues/1703
       // Original behavior should just check if the sink direction is an Input
       sink.direction match {
-        case Input            => true
-        case Bidirectional(_) => true
-        case _                => false
+        case Input => true
+        case _: Bidirectional => true
+        case _ => false
       }
     }
 
@@ -340,9 +340,9 @@ private[chisel3] object MonoConnect {
         // See: https://github.com/freechipsproject/firrtl/issues/1703
         // Original behavior should just check if the sink direction is an Input
         sink.direction match {
-          case Input            => true
-          case Bidirectional(_) => true // NOTE: Workaround for non-agnostified ports
-          case _                => false
+          case Input => true
+          case _: Bidirectional => true // NOTE: Workaround for non-agnostified ports
+          case _ => false
         }
       } else { false }
     }
