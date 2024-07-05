@@ -611,7 +611,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     * @param that the Data to compare to for type equivalence
     * @param message if they are not type equivalent, contextual message to add to the exception thrown
     */
-  def requireTypeEquivalent(that: Data, message: String = ""): Unit = {
+  private[chisel3] def requireTypeEquivalent(that: Data, message: String = ""): Unit = {
     require(
       this.typeEquivalent(that), {
         val reason = this
