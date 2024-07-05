@@ -3,31 +3,89 @@
 package chisel3.util.circt.dpi
 
 import chisel3._
+
+import chisel3.experimental.{IntParam, IntrinsicModule, Param, StringParam}
+
+private object GetDPIParams {
+  def apply(
+    functionName: String,
+    isClocked:    Boolean,
+    inputNames:   Option[Seq[String]],
+    outputName:   Option[String] = None
+  ): Seq[(String, Param)] = {
+    val inputNamesParam =
+      inputNames.map(_.mkString(";")).map(x => Seq("inputNames" -> StringParam(x))).getOrElse(Seq())
+    val outputNameParam = outputName.map(x => Seq("outputName" -> StringParam(x))).getOrElse(Seq())
+    Seq[(String, Param)](
+      "functionName" -> functionName,
+      "isClocked" -> (if (isClocked) 1 else 0)
+    ) ++ inputNamesParam ++ outputNameParam
+  }
+}
+
 object RawClockedNonVoidFunctionCall {
 
   /** Creates an intrinsic that calls non-void DPI function at its clock posedge.
+    * The result values behave like registers and the DPI function is used as a state
+    * transfer function of them.
     *
+    * `enable` operand is used to conditionally call the DPI since DPI call could be quite
+    * more expensive than native constructs.
+    *
+    * When an `enable` is false, it means the state transfer function is not called. Hence
+    * their values will not be modified in that clock.
+    *
+    * Please refer https://github.com/llvm/circt/blob/main/docs/Dialects/FIRRTL/FIRRTLIntrinsics.md#dpi-intrinsic-abi for DPI function ABI.
     * @example {{{
     * val a = RawClockedNonVoidFunctionCall("dpi_func_foo", UInt(1.W), clock, enable, b, c)
     * }}}
     */
-  def apply[T <: Data](functionName: String, ret: => T)(clock: Clock, enable: Bool, data: Data*): Data = {
-    IntrinsicExpr("circt_dpi_call", ret, "functionName" -> functionName, "isClocked" -> 1)(
+  def apply[T <: Data](
+    functionName: String,
+    ret:          => T,
+    inputNames:   Option[Seq[String]] = None,
+    outputName:   Option[String] = None
+  )(clock:        Clock,
+    enable:       Bool,
+    data:         Data*
+  ): T = {
+    IntrinsicExpr(
+      "circt_dpi_call",
+      ret,
+      GetDPIParams(functionName, true, inputNames, outputName): _*
+    )(
       (Seq(clock, enable) ++ data): _*
     )
   }
 }
 
-object RawUnlockedNonVoidFunctionCall {
+object RawUnclockedNonVoidFunctionCall {
 
-  /** Creates an intrinsic that calls non-void DPI function when input values are changed.
+  /** Creates an intrinsic that calls non-void DPI function for its input value changes.
+    * The DPI call is considered as a combinational logic.
     *
+    * `enable` operand is used to conditionally call the DPI since DPI call could be quite
+    * more expensive than native constructs.
+    * When `enable` is false, results of unclocked calls are undefined and evaluated into X.
+    *
+    * Please refer https://github.com/llvm/circt/blob/main/docs/Dialects/FIRRTL/FIRRTLIntrinsics.md#dpi-intrinsic-abi for DPI function ABI.
     * @example {{{
-    * val a = RawUnlockedNonVoidFunctionCall("dpi_func_foo", UInt(1.W), enable, b, c)
+    * val a = RawUnclockedNonVoidFunctionCall("dpi_func_foo", UInt(1.W), enable, b, c)
     * }}}
     */
-  def apply[T <: Data](functionName: String, ret: => T)(enable: Bool, data: Data*): Data = {
-    IntrinsicExpr("circt_dpi_call", ret, "functionName" -> functionName, "isClocked" -> 0)(
+  def apply[T <: Data](
+    functionName: String,
+    ret:          => T,
+    inputNames:   Option[Seq[String]] = None,
+    outputName:   Option[String] = None
+  )(enable:       Bool,
+    data:         Data*
+  ): T = {
+    IntrinsicExpr(
+      "circt_dpi_call",
+      ret,
+      GetDPIParams(functionName, false, inputNames, outputName): _*
+    )(
       (Seq(enable) ++ data): _*
     )
   }
@@ -37,12 +95,19 @@ object RawClockedVoidFunctionCall {
 
   /** Creates an intrinsic that calls void DPI function at its clock posedge.
     *
+    * Please refer https://github.com/llvm/circt/blob/main/docs/Dialects/FIRRTL/FIRRTLIntrinsics.md#dpi-intrinsic-abi for DPI function ABI.
     * @example {{{
     * RawClockedVoidFunctionCall("dpi_func_foo", UInt(1.W), clock, enable, b, c)
     * }}}
     */
-  def apply(functionName: String)(clock: Clock, enable: Bool, data: Data*) = {
-    Intrinsic("circt_dpi_call", "functionName" -> functionName, "isClocked" -> 1)(
+  def apply(
+    functionName: String,
+    inputNames:   Option[Seq[String]] = None
+  )(clock:        Clock,
+    enable:       Bool,
+    data:         Data*
+  ): Unit = {
+    Intrinsic("circt_dpi_call", GetDPIParams(functionName, true, inputNames): _*)(
       (Seq(clock, enable) ++ data): _*
     )
   }
