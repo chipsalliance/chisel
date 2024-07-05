@@ -311,7 +311,7 @@ class VecSpec extends ChiselPropSpec with Utils {
 
       val m = Module(new Module {
         val io = IO(Output(bundleWithZeroEntryVec))
-        val zero = 0.U.asTypeOf(bundleWithZeroEntryVec)
+        val zero = WireInit(0.U.asTypeOf(bundleWithZeroEntryVec))
         require(zero.getWidth == 1)
         io := zero
       })

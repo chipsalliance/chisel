@@ -652,4 +652,15 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils with ShiftRigh
     5.U(8.W).pad(16).litValue should be(5)
     5.U(8.W).pad(16).getWidth should be(16)
   }
+
+  property("Casting a UInt literal to a Bundle should maintain the literal value") {
+    class SimpleBundle extends Bundle {
+      val x = UInt(4.W)
+      val y = UInt(4.W)
+    }
+    val blit = 0xab.U.asTypeOf(new SimpleBundle)
+    blit.litOption should be(Some(0xab))
+    blit.x.litOption should be(Some(0xa))
+    blit.y.litOption should be(Some(0xb))
+  }
 }
