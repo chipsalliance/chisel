@@ -32,7 +32,7 @@ private[simulator] final class FutureFactory(executor: Executor, stepBarrier: St
 
 private[simulator] final class Scheduler(val stepClock: () => Unit, enableDebugPrint: Boolean = false) {
   def debug(x: => Any): Unit = {
-    if (enableDebugPrint) println(s"[Thr:${Thread.currentThread().threadId()}] $x")
+    if (enableDebugPrint) println(s"[Thr:${Thread.currentThread().getId()}] $x")
   }
 
   def run(tasks: Seq[Task]) = {
