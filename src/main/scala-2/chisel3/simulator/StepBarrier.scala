@@ -12,7 +12,7 @@ private[simulator] final class StepBarrier(debug: Boolean = true) {
   final val postStep: Phaser = new Phaser(0)
 
   def debugPrintln(x: => Any): Unit = {
-    if (debug) println(s"[Thr:${Thread.currentThread().threadId()}] $x")
+    if (debug) println(s"[Thr:${Thread.currentThread().getId()}] $x")
   }
 
   def bulkRegister(n: Int): Int = {
