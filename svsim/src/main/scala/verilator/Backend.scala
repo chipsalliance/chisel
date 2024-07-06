@@ -114,7 +114,7 @@ final class Backend(
             case OptimizationStyle.Default => Seq()
             case OptimizationStyle.OptimizeForCompilationSpeed => Seq("-O1")
             case OptimizationStyle.OptimizeForSimulationSpeed =>
-              Seq("-O3", "--x-assign", "fast", "--x-initial", "fast")
+              Seq("-O3", "--x-assign", "fast")
           },
 
           Seq[(String, Option[String])](
@@ -140,11 +140,11 @@ final class Backend(
                 case OptimizationStyle.Default => Seq()
                 case OptimizationStyle.OptimizeForCompilationSpeed => Seq("-O1")
                 case OptimizationStyle.OptimizeForSimulationSpeed =>
-                  Seq("-O3", "-march=native", "-mtune=native")
+                  Seq("-march=native", "-mtune=native")
               },
 
-              Seq("-std=c++14"),
-
+              Seq("-std=c++17"),
+                
               additionalHeaderPaths.map { path => s"-I${path}" },
 
               Seq(
