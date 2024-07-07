@@ -10,6 +10,8 @@ import TOCInline from '@theme/TOCInline';
 
 ## How do I instantiate multiple instances with the same module parameterization?
 
+NOTE: This feature requires the experimental Scala `-Ymacro-annotations` option in build.sbt.
+
 Prior to this package, Chisel users relied on deduplication in a FIRRTL compiler to combine
 structurally equivalent modules into one module (aka "deduplication").
 This package introduces the following new APIs to enable multiply-instantiated modules directly in Chisel.
