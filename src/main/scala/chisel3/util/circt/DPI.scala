@@ -112,3 +112,30 @@ object RawClockedVoidFunctionCall {
     )
   }
 }
+
+// A common trait for DPI functions.
+trait DPIFunctionImport {
+  val functionName: String
+  val inputNames: Option[Seq[String]] = None
+}
+
+// Base trait for a non-void function that returns `T`.
+trait DPINonVoidFunctionImport[T <: Data] extends DPIFunctionImport {
+  val ret:     T
+  val clocked: Boolean
+  val outputName: Option[String] = None
+  def callWithEnable(enable: Bool, data: Data*): T =
+    if (clocked) {
+      RawClockedNonVoidFunctionCall(functionName, ret, inputNames, outputName)(Module.clock, enable, data: _*)
+    } else {
+      RawUnclockedNonVoidFunctionCall(functionName, ret, inputNames, outputName)(enable, data: _*)
+    }
+  def call(data: Data*): T = callWithEnable(true.B, data: _*)
+}
+
+// Base trait for a clocked void function.
+trait DPIClockedVoidFunctionImport extends DPIFunctionImport {
+  def callWithEnable(enable: Bool, data: Data*): Unit =
+    RawClockedVoidFunctionCall(functionName, inputNames)(Module.clock, enable, data: _*)
+  def call(data: Data*): Unit = callWithEnable(true.B, data: _*)
+}
