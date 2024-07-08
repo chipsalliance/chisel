@@ -644,7 +644,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     visibleFromWhen match {
       case Some(sourceInfo) =>
         throwException(
-          s"operand '$this' has escaped the scope of the when (${sourceInfo.makeMessage(x => x)}) in which it was constructed."
+          s"operand '$this' has escaped the scope of the when (${sourceInfo.makeMessage()}) in which it was constructed."
         )
       case None => ()
     }

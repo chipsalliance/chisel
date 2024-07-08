@@ -412,7 +412,7 @@ class InstantiateSpec extends ChiselFunSpec with Utils {
       val chirrtl = convert(new Top {
         val inst = Instantiate(new OneArg(3))
       }).serialize
-      chirrtl should include(s"inst inst of OneArg ${info.makeMessage(x => x)}")
+      chirrtl should include(s"inst inst of OneArg ${info.makeMessage()}")
     }
 
     it("should support BlackBoxes") {

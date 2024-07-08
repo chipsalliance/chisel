@@ -125,7 +125,7 @@ abstract class RawModule extends BaseModule {
       if (port._computeName(None).isEmpty) {
         Builder.error(
           s"Unable to name port $port in $this, " +
-            s"try making it a public field of the Module ${source.makeMessage(x => x)}"
+            s"try making it a public field of the Module ${source.makeMessage()}"
         )(UnlocatableSourceInfo)
       }
     }

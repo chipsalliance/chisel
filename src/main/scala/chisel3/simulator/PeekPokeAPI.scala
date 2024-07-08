@@ -19,7 +19,7 @@ trait PeekPokeAPI {
       sourceInfo:   SourceInfo,
       extraContext: Seq[String]
     ): FailedExpectationException[T] = {
-      val fullMessage = s"$message ${sourceInfo.makeMessage(x => x)}" +
+      val fullMessage = s"$message ${sourceInfo.makeMessage()}" +
         (if (extraContext.nonEmpty) s"\n${extraContext.mkString("\n")}" else "")
       new FailedExpectationException(observed, expected, fullMessage)
     }
