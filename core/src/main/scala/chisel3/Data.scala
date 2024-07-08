@@ -1199,7 +1199,7 @@ final case object DontCare extends Element with connectable.ConnectableDocs {
   //  otherwise this "Chisel" object will end up on the UserModule's id list.
   // We make it private to chisel3 so it has to be accessed through the package object.
 
-  private[chisel3] override val width: Width = UnknownWidth()
+  private[chisel3] override val width: Width = UnknownWidth
 
   bind(DontCareBinding(), SpecifiedDirection.Output)
   override def cloneType: this.type = DontCare

@@ -80,7 +80,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
       case KnownWidth(x) =>
         require(x >= n, s"Can't tail($n) for width $x < $n")
         Width(x - n)
-      case UnknownWidth() => Width()
+      case UnknownWidth => Width()
     }
     binop(sourceInfo, UInt(width = w), TailOp, n)
   }
@@ -88,8 +88,8 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
   /** @group SourceInfoTransformMacro */
   def do_head(n: Int)(implicit sourceInfo: SourceInfo): UInt = {
     width match {
-      case KnownWidth(x)  => require(x >= n, s"Can't head($n) for width $x < $n")
-      case UnknownWidth() =>
+      case KnownWidth(x) => require(x >= n, s"Can't head($n) for width $x < $n")
+      case UnknownWidth  => ()
     }
     binop(sourceInfo, UInt(Width(n)), HeadOp, n)
   }
@@ -695,7 +695,7 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
     resultWidth match {
       // To emulate old FIRRTL behavior where minimum width is 1, we need to insert pad(_, 1) whenever
       // the width is or could be 0. Thus we check if it is known to be 0 or is unknown.
-      case w @ (KnownWidth(0) | UnknownWidth()) =>
+      case w @ (KnownWidth(0) | UnknownWidth) =>
         // Because we are inserting an extra op but we want stable emission (so the user can diff the output),
         // we need to seed a name to avoid name collisions.
         op.autoSeed("_shrLegacyWidthFixup")

@@ -262,7 +262,7 @@ sealed trait Property[T] extends Element { self =>
   def toPrintable: Printable = {
     throwException(s"Properties do not support hardware printing" + this._errorContext)
   }
-  private[chisel3] def width: Width = UnknownWidth()
+  private[chisel3] def width: Width = UnknownWidth
 
   override def typeName: String = s"Property[${tpe.getPropertyType().serialize}]"
 

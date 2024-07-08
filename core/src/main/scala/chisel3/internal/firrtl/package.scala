@@ -9,7 +9,7 @@ package object firrtl {
   val Width = chisel3.Width
 
   @deprecated("This type has moved to package chisel3", "Chisel 6.0")
-  type UnknownWidth = chisel3.UnknownWidth
+  type UnknownWidth = chisel3.UnknownWidth.type
   @deprecated("This type has moved to package chisel3", "Chisel 6.0")
   val UnknownWidth = chisel3.UnknownWidth
 
