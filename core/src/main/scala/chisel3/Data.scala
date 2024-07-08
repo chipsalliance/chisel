@@ -607,15 +607,18 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 
   /** Require that two things are type equivalent, and if they are not, print a helpful error message as
     * to why not.
+    *
+    * @param that the Data to compare to for type equivalence
+    * @param message if they are not type equivalent, contextual message to add to the exception thrown
     */
-  private[chisel3] def requireTypeEquivalent(that: Data): Unit = {
+  private[chisel3] def requireTypeEquivalent(that: Data, message: String = ""): Unit = {
     require(
       this.typeEquivalent(that), {
         val reason = this
           .findFirstTypeMismatch(that, strictTypes = true, strictWidths = true, strictProbeInfo = true)
           .map(s => s"\nbecause $s")
           .getOrElse("")
-        s"$this is not typeEquivalent to $that$reason"
+        s"$message$this is not typeEquivalent to $that$reason"
       }
     )
   }
