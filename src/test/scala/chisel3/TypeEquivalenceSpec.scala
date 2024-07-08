@@ -17,6 +17,14 @@ object TypeEquivalenceSpec {
     val c = if (hasC) Some(UInt(8.W)) else None
   }
 
+  class FooParent(hasC: Boolean) extends Bundle {
+    val foo = new Foo(hasC)
+  }
+
+  class FooGrandparent(hasC: Boolean) extends Bundle {
+    val bar = new FooParent(hasC)
+  }
+
   class Bar(bWidth: Int = 8) extends Bundle {
     val a = UInt(8.W)
     val b = UInt(bWidth.W)
@@ -338,6 +346,24 @@ class TypeEquivalenceSpec extends AnyFlatSpec {
         "[_]: Left (Bool with probeInfo: Some(writeable=false)) and Right (Bool with probeInfo: None) have different probeInfo."
       )
     )
+  }
+
+  behavior.of("Data.requireTypeEquivalent")
+
+  it should "have a good user message if it fails for wrong scala type" in {
+    val result = the[IllegalArgumentException] thrownBy {
+      Bool().requireTypeEquivalent(UInt(1.W), "This test should fail, because: ")
+    }
+    result.getMessage should include("This test should fail, because: Bool is not typeEquivalent to UInt<1>")
+  }
+
+  it should "have a good user message if it fails for mismatched bundles" in {
+    val result = the[IllegalArgumentException] thrownBy {
+      (new FooGrandparent(true)).requireTypeEquivalent(new FooGrandparent(false), "This test should fail, because: ")
+    }
+    result.getMessage should include("This test should fail, because:")
+    // Also says 'FooGrandparent$1 is not typeEquivalent to FooGrandparent$1' which isn't terribly interesting to match on
+    result.getMessage should include(".bar.foo.c: Dangling field on Left")
   }
 
 }
