@@ -57,6 +57,7 @@ case class SourceLine(filename: String, line: Int, col: Int) extends SourceInfo 
   def prettyPrint: String = {
     if (col == 0) s"$filename:$line" else s"$filename:$line:$col"
   }
+
   /** Convert to String for FIRRTL emission */
   def serialize: String = {
     if (col == 0) s"$filename $line" else s"$filename $line:$col"
