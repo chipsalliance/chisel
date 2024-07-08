@@ -285,6 +285,21 @@ class VecSpec extends ChiselPropSpec with Utils {
     }
   }
 
+  property("VecInit should work for Bundle that mixes Output and unspecified UInts") {
+    class MyBundle extends Bundle {
+      val a = Output(UInt(8.W))
+      val b = UInt(8.W)
+    }
+    val chirrtl = emitCHIRRTL(new RawModule {
+      val w = VecInit(Seq.fill(2)(0.U.asTypeOf(new MyBundle)))
+    })
+    chirrtl should include("wire w : { a : UInt<8>, b : UInt<8>}[2]")
+    chirrtl should include("connect w[0].b, UInt<8>(0h0)")
+    chirrtl should include("connect w[0].a, UInt<8>(0h0)")
+    chirrtl should include("connect w[1].b, UInt<8>(0h0)")
+    chirrtl should include("connect w[1].a, UInt<8>(0h0)")
+  }
+
   property("Infering widths on huge Vecs should not cause a stack overflow") {
     ChiselStage.emitSystemVerilog(new HugeVecTester(10000))
   }
