@@ -20,7 +20,7 @@ class TypeAnnotationMemSpec extends AnyFunSpec with Matchers with chiselTests.Ut
     numReadwritePorts: Int,
     masked:            Boolean = false,
     dataParams:        Option[Seq[ClassParam]] = None // For SRAMs of complex data types with params
-  ): Seq[(String, Int)] = {
+  ): Seq[((String, String), Int)] = {
     import scala.math._
     val addrWidth = if (size > 1) ceil(log(size.toInt) / log(2)).toInt else 1
     def genParams(tpe: String) = {
@@ -36,7 +36,7 @@ class TypeAnnotationMemSpec extends AnyFunSpec with Matchers with chiselTests.Ut
         None
     }
     def generatePorts(rw: String, _n: Int, portType: String) = {
-      var ports = Seq[(String, Int)]()
+      var ports = Seq[((String, String), Int)]()
       val n = if (_n == 0) 0 else 1
       for (i <- 0 until n) { // TODO: I am annotating now only the first element, since the size is known ant the memory has homogeneous type, it's useless to annotate every element
         ports ++= Seq(
@@ -51,8 +51,29 @@ class TypeAnnotationMemSpec extends AnyFunSpec with Matchers with chiselTests.Ut
                 )
               else Seq((createExpected(s"$target.$rw\\[$i\\].data", tpe, "Wire", dataParams), 1)))
       }
+      for (i <- n until _n) {
+        ports ++= Seq(
+          (createExpected(s"$target.$rw\\[$i\\].address", s"UInt<$addrWidth>", "Wire"), 1),
+          (createExpected(s"$target.$rw\\[$i\\].enable", "Bool", "Wire"), 1)
+        ) ++
+          (if (rw == "readwritePorts")
+             Seq(
+               (createExpected(s"$target.$rw\\[$i\\].writeData", tpe, "Wire", dataParams), 1),
+               (createExpected(s"$target.$rw\\[$i\\].isWrite", "Bool", "Wire"), 1)
+             )
+           else if (rw == "writePorts") Seq((createExpected(s"$target.$rw\\[$i\\].data", tpe, "Wire", dataParams), 1))
+           else Seq.empty)
+      }
       ports
     }
+    def generateSramNodes(rw: String, data: String, n: Int) = {
+      var nodes = Seq[((String, String), Int)]()
+      for (i <- 0 until n) {
+        nodes +:= (createExpected(s"${target}_sram.$rw$i.$data", s"\\[$tpe\\]", ""), 1)
+      }
+      nodes
+    }
+
     println("target: " + target)
     // format: off
     Seq(
@@ -74,7 +95,9 @@ class TypeAnnotationMemSpec extends AnyFunSpec with Matchers with chiselTests.Ut
         params = Some(Seq(ClassParam("gen", "=> T", None), ClassParam("length", "Int", Some(s"$numReadwritePorts"))))), 1),
     ) ++ generatePorts("readPorts", numReadPorts, "MemoryReadPort") ++
       generatePorts("writePorts", numWritePorts, "MemoryWritePort") ++
-      generatePorts("readwritePorts", numReadwritePorts, "MemoryReadWritePort")
+      generatePorts("readwritePorts", numReadwritePorts, "MemoryReadWritePort") ++
+      generateSramNodes("R", "data", numReadPorts) ++
+      generateSramNodes("RW", "rdata", numReadwritePorts)
       // format: on
   }
 
@@ -92,6 +115,9 @@ class TypeAnnotationMemSpec extends AnyFunSpec with Matchers with chiselTests.Ut
         (createExpected("~TopCircuitROM\\|TopCircuitROM>romFromVecInit", "UInt<4>\\[4\\]", "Wire",
           params = Some(Seq(ClassParam("gen", "=> T", None), ClassParam("length", "Int", Some("4"))))), 1),
         (createExpected("~TopCircuitROM\\|TopCircuitROM>romFromVecInit\\[0\\]", "UInt<4>", "Wire"), 1),
+        (createExpected("~TopCircuitROM\\|TopCircuitROM>romFromVecInit\\[1\\]", "UInt<4>", "Wire"), 1),
+        (createExpected("~TopCircuitROM\\|TopCircuitROM>romFromVecInit\\[2\\]", "UInt<4>", "Wire"), 1),
+        (createExpected("~TopCircuitROM\\|TopCircuitROM>romFromVecInit\\[3\\]", "UInt<4>", "Wire"), 1),
         (createExpected("~TopCircuitROM\\|TopCircuitROM>romOfBundles", "AnonymousBundle\\[4\\]", "Wire",
           params = Some(Seq(ClassParam("gen", "=> T", None), ClassParam("length", "Int", Some("4"))))), 1),
         (createExpected("~TopCircuitROM\\|TopCircuitROM>romOfBundles\\[0\\]", "AnonymousBundle", "Wire"), 1),
@@ -194,7 +220,10 @@ class TypeAnnotationMemSpec extends AnyFunSpec with Matchers with chiselTests.Ut
         (createExpected("~TopCircuitSRAM\\|TopCircuitSRAM>mem.readPorts\\[0\\].data.c", "Bool", "Wire"), 1),
         (createExpected("~TopCircuitSRAM\\|TopCircuitSRAM>mem.writePorts\\[0\\].data.a", "UInt<8>", "Wire"), 1),
         (createExpected("~TopCircuitSRAM\\|TopCircuitSRAM>mem.writePorts\\[0\\].data.b", "SInt<8>", "Wire"), 1),
-        (createExpected("~TopCircuitSRAM\\|TopCircuitSRAM>mem.writePorts\\[0\\].data.c", "Bool", "Wire"), 1)
+        (createExpected("~TopCircuitSRAM\\|TopCircuitSRAM>mem.writePorts\\[0\\].data.c", "Bool", "Wire"), 1),
+        (createExpected("~TopCircuitSRAM\\|TopCircuitSRAM>mem_sram.R0.data.a", "\\[UInt<8>\\]", ""), 1),
+        (createExpected("~TopCircuitSRAM\\|TopCircuitSRAM>mem_sram.R0.data.b", "\\[SInt<8>\\]", ""), 1),
+        (createExpected("~TopCircuitSRAM\\|TopCircuitSRAM>mem_sram.R0.data.c", "\\[Bool\\]", ""), 1)
       ) ++ createExpectedSRAMs("~TopCircuitSRAM\\|TopCircuitSRAM>mem", 1, "MyBundle", 1, 1, 0)
       checkAnno(expectedMatches, os.read(targetDir / "TopCircuitSRAM.fir"))
     }
@@ -402,6 +431,8 @@ class TypeAnnotationMemSpec extends AnyFunSpec with Matchers with chiselTests.Ut
         // Since the inner type is a vector
         (createExpected(s"~$cName\\|$cName>mem.readPorts\\[0\\].data\\[0\\]", "SInt<7>", "Wire"), 1),
         (createExpected(s"~$cName\\|$cName>mem.writePorts\\[0\\].data\\[0\\]", "SInt<7>", "Wire"), 1),
+        (createExpected(s"~$cName\\|$cName>mem.writePorts\\[0\\].mask\\[1\\]", "Bool", "Wire"), 1),
+        (createExpected(s"~$cName\\|$cName>mem_sram.R0.data\\[0\\]", "\\[SInt<7>\\]", ""), 1),
         (createExpected(s"~$cName\\|$cName>clock", "Clock", "IO"), 1),
         (createExpected(s"~$cName\\|$cName>reset", "Bool", "IO"), 1)
       ) ++ createExpectedSRAMs(

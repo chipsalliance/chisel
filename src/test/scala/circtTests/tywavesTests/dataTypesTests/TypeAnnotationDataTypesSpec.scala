@@ -126,7 +126,13 @@ class TypeAnnotationDataTypesSpec extends AnyFunSpec with Matchers with chiselTe
         (createExpected("~TopCircuitTypeInSubmodule\\|TopCircuitGroundTypes>sint", "SInt<8>", b.toString), 1),
         (createExpected("~TopCircuitTypeInSubmodule\\|TopCircuitGroundTypes>bool", "Bool", b.toString), 1),
         (createExpected("~TopCircuitTypeInSubmodule\\|TopCircuitGroundTypes>bits", "UInt<8>", b.toString), 1),
-        (""""target":"~TopCircuitTypeInSubmodule\|TopCircuitGroundTypes",\s+"typeName":"TopCircuitGroundTypes"""", 1)
+        (
+          (
+            """~TopCircuitTypeInSubmodule\|TopCircuitGroundTypes""",
+            """"target":"~TopCircuitTypeInSubmodule\|TopCircuitGroundTypes",\s+"typeName":"TopCircuitGroundTypes""""
+          ),
+          1
+        )
       ) ++ addClockReset("TopCircuitTypeInSubmodule", Some("TopCircuitGroundTypes")) ++ analog
       checkAnno(expectedMatches, string)
     }
@@ -185,4 +191,26 @@ class TypeAnnotationDataTypesSpec extends AnyFunSpec with Matchers with chiselTe
     typeTests(args, targetDir, RegBinding)
   }
 
+  describe("Tmp Values Annotations") {
+    val targetDir = os.pwd / "test_run_dir" / "TywavesAnnotationSpec" / "Tmp Values Annotations"
+    val args: Array[String] = Array("--target", "chirrtl", "--target-dir", targetDir.toString)
+    // format: off
+    it("should annotate tmp value in when") {
+      (new ChiselStage(true)).execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitWhenElse)))
+      val string = os.read(targetDir / "TopCircuitWhenElse.fir")
+      val expectedMatches = Seq(
+        (createExpected("~TopCircuitWhenElse\\|TopCircuitWhenElse>inSeq", "UInt<8>\\[8\\]", "IO",
+          params = Some(Seq(ClassParam("gen", "=> T", None), ClassParam("length", "Int", Some("8"))))), 1),
+        (createExpected("~TopCircuitWhenElse\\|TopCircuitWhenElse>inSeq\\[0\\]", "UInt<8>", "IO"), 1),
+        (createExpected("~TopCircuitWhenElse\\|TopCircuitWhenElse>out", "UInt<8>", "IO"), 1),
+        (createExpected("~TopCircuitWhenElse\\|TopCircuitWhenElse>sel", "UInt<3>", "IO"), 1),
+        // Tmp
+        (createExpected("~TopCircuitWhenElse\\|TopCircuitWhenElse>evenSel", "UInt<8>", "OpResult"), 1),
+        (createExpected("~TopCircuitWhenElse\\|TopCircuitWhenElse>oddSel", "UInt<8>", "OpResult"), 1),
+        (createExpected("~TopCircuitWhenElse\\|TopCircuitWhenElse>selIsOne", "UInt<8>", "OpResult"), 1)
+      )
+      checkAnno(expectedMatches, string)
+      // format: on
+    }
+  }
 }

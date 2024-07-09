@@ -1,10 +1,13 @@
 package chisel3.tywavesinternal
 
-import chisel3.{Data, Record, Vec, VecLike}
+import chisel3.{Data, MemBase, Record, Vec, VecLike}
 import chisel3.experimental.{BaseModule, ChiselAnnotation}
-import chisel3.internal.HasId
+import chisel3.internal.{HasId, NamedComponent}
 import chisel3.internal.firrtl.ir._
+import chisel3.properties.{DynamicObject, StaticObject}
 import firrtl.annotations.{Annotation, IsMember, SingleTargetAnnotation}
+
+import scala.collection.mutable
 
 // TODO: if the code touches a lot of Chisel internals, it might be better to put it into
 //    - core
@@ -45,11 +48,31 @@ private[chisel3] case class TywavesAnnotation[T <: IsMember](
 }
 
 object TywavesChiselAnnotation {
+
+  private val annoCreated = new mutable.HashSet[IsMember]()
+  private def createTywavesChiselAnno[T <: IsMember](
+    target:    T,
+    name:      String,
+    paramsOpt: Option[Seq[ClassParam]]
+  ): Option[ChiselAnnotation] = {
+
+    if (annoCreated.contains(target)) {
+      None
+    } else {
+      annoCreated.add(target)
+      Some(new ChiselAnnotation {
+        override def toFirrtl: Annotation = TywavesAnnotation(target, name, paramsOpt)
+      })
+    }
+  }
+
   def generate(circuit: Circuit): Seq[ChiselAnnotation] = {
     // TODO: iterate over a circuit and generate TywavesAnnotation
     val typeAliases: Seq[String] = circuit.typeAliases.map(_.name)
 
-    circuit.components.flatMap(c => generate(c, typeAliases))
+    val result = circuit.components.flatMap(c => generate(c, typeAliases))
+    annoCreated.clear()
+    result
     //    circuit.layers
     //    circuit.options
 
@@ -59,18 +82,18 @@ object TywavesChiselAnnotation {
   def generate(component: Component, typeAliases: Seq[String]): Seq[ChiselAnnotation] = component match {
     case ctx @ DefModule(id, name, public, layers, ports, cmds) =>
       // TODO: Add tywaves annotation: components, ports, commands, layers
-      Seq(createAnno(id)) ++ (ports ++ ctx.secretPorts).flatMap(p =>
+      createAnno(id) ++ (ports ++ ctx.secretPorts).flatMap(p =>
         generate(p, typeAliases)
       ) ++ (cmds ++ ctx.secretCommands).flatMap(c => generate(c, typeAliases))
     case ctx @ DefBlackBox(id, name, ports, topDir, params) =>
       // TODO: Add tywaves annotation, ports, ?params?
-      Seq(createAnno(id)) ++ (ports ++ ctx.secretPorts).flatMap(p => generate(p, typeAliases))
+      createAnno(id) ++ (ports ++ ctx.secretPorts).flatMap(p => generate(p, typeAliases))
     case ctx @ DefIntrinsicModule(id, name, ports, topDir, params) =>
       // TODO: Add tywaves annotation: ports, ?params?
-      Seq(createAnno(id)) ++ (ports ++ ctx.secretPorts).flatMap(p => generate(p, typeAliases))
+      createAnno(id) ++ (ports ++ ctx.secretPorts).flatMap(p => generate(p, typeAliases))
     case ctx @ DefClass(id, name, ports, cmds) =>
       // TODO: Add tywaves annotation: ports, commands
-      Seq(createAnno(id)) ++ (ports ++ ctx.secretPorts).flatMap(p => generate(p, typeAliases)) ++ cmds.flatMap(c =>
+      createAnno(id) ++ (ports ++ ctx.secretPorts).flatMap(p => generate(p, typeAliases)) ++ cmds.flatMap(c =>
         generate(c, typeAliases)
       )
     case ctx => throw new Exception(s"Failed to generate TywavesAnnotation. Unknown component type: $ctx")
@@ -84,9 +107,10 @@ object TywavesChiselAnnotation {
       val name = s"$binding[${dataToTypeName(innerType)}[$size]]"
       // TODO: what if innerType is a Vec or a Bundle?
 
-      Seq(new ChiselAnnotation {
-        override def toFirrtl: Annotation = TywavesAnnotation(target.toTarget, name, None)
-      }) //++ createAnno(chisel3.Wire(innerType))
+      createTywavesChiselAnno(target.toTarget, name, None).toSeq
+      //      Seq(new ChiselAnnotation {
+      //        override def toFirrtl: Annotation = TywavesAnnotation(target.toTarget, name, None)
+      //      }) //++ createAnno(chisel3.Wire(innerType))
     }
     command match {
       case e: DefPrim[_] => Seq.empty // TODO: check prim
@@ -98,7 +122,7 @@ object TywavesChiselAnnotation {
       case e @ FirrtlMemory(info, id, t, size, readPortNames, writePortNames, readwritePortNames) =>
         createAnnoMem(id, id.getClass.getSimpleName, size, t)
       case e @ DefMemPort(info, id, source, dir, idx, clock)        => createAnno(id)
-      case Connect(info, loc, exp)                                  => Seq.empty // TODO: check connect
+      case Connect(info, loc, exp)                                  => createAnno(exp)
       case PropAssign(info, loc, exp)                               => ???
       case Attach(info, locs)                                       => ???
       case DefInvalid(info, arg)                                    => Seq.empty // TODO: check invalid
@@ -113,6 +137,11 @@ object TywavesChiselAnnotation {
       case e @ ProbeForce(sourceInfo, clock, cond, probe, value)    => ???
       case e @ ProbeRelease(sourceInfo, clock, cond, probe)         => ???
       case e @ Verification(_, op, info, clk, pred, pable)          => ???
+      case e @ When(info, arg, ifRegion, elseRegion) =>
+        println(s"$ifRegion")
+        println(s"$elseRegion")
+        ifRegion.flatMap(generate(_, typeAliases)) ++ elseRegion
+          .flatMap(generate(_, typeAliases))
       case e =>
         println(s"Unknown command: $e") // TODO: replace with logger
         Seq.empty
@@ -316,18 +345,59 @@ object TywavesChiselAnnotation {
       case _ => getConstructorParamsOpt(target)
     }
 
-    annotations :+ new ChiselAnnotation {
-      override def toFirrtl: Annotation = TywavesAnnotation(target.toTarget, name, paramsOpt)
-    }
+    annotations ++
+      createTywavesChiselAnno(target.toTarget, name, paramsOpt).toSeq
+//    new ChiselAnnotation {
+//      override def toFirrtl: Annotation = TywavesAnnotation(target.toTarget, name, paramsOpt)
+//    }
   }
 
-  private def createAnno(target: BaseModule): ChiselAnnotation = {
+  private def createAnno(target: BaseModule): Seq[ChiselAnnotation] = {
     val name = target.desiredName
     val paramsOpt = getConstructorParamsOpt(target)
     //    val name = target.getClass.getTypeName
-    new ChiselAnnotation {
-      override def toFirrtl: Annotation = TywavesAnnotation(target.toTarget, name, paramsOpt)
+    createTywavesChiselAnno(target.toTarget, name, paramsOpt).toSeq
+
+//    new ChiselAnnotation {
+//      override def toFirrtl: Annotation = TywavesAnnotation(target.toTarget, name, paramsOpt)
+//    }
+  }
+
+  // TODO: replace ??? with a nice logger to avoid unexpected crashes
+  private def createAnno(target: HasId): Seq[ChiselAnnotation] = {
+    target match {
+      case t: Data           => createAnno(t)
+      case t: BaseModule     => createAnno(t)
+      case t: MemBase[_]     => ???
+      case t: NamedComponent => ???
+      case t: VecLike[_]     => ???
+      case t if t.isInstanceOf[DynamicObject] => ???
+      case t if t.isInstanceOf[StaticObject]  => ???
     }
+  }
+  // TODO: check all the cases for Arg
+  private def createAnno(target: Arg): Seq[ChiselAnnotation] = {
+    target match {
+      case t @ Node(id)                            => createAnno(id)
+      case t @ ModuleIO(mod, name)                 => ???
+      case t @ ILit(n)                             => ???
+      case t @ Ref(name)                           => ???
+      case t @ PropertyLit(propertyType, lit)      => ???
+      case t @ PropExpr(sourceInfo, tpe, op, args) => ???
+      case t @ Slot(imm, name)                     => ???
+      case t @ ProbeExpr(probe)                    => ???
+      case t @ ProbeRead(probe)                    => ???
+      case t @ RWProbeExpr(probe)                  => ???
+      case t @ Index(imm, value)                   => ???
+      case t @ ModuleCloneIO(mod, name)            => ???
+      case t @ OpaqueSlot(imm)                     => ???
+      case t: Component => ???
+      case t: LitArg    => Seq.empty // Ignore
+      case t =>
+        println(s"Unknown Arg type: $t")
+        Seq.empty
+    }
+
   }
 
 }

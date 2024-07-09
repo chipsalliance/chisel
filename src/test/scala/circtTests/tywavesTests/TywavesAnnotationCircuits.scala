@@ -13,17 +13,60 @@ import org.scalatest.matchers.should.Matchers
 /** Utility functions for testing [[chisel3.tywavesinternal.TywavesAnnotation]] */
 object TestUtils extends Matchers {
 
+  def getSubOccurency(mainString: String, subString: String): List[String] = { // Split the text T into lines
+    val lines = mainString.split("\n").toList
+
+    // Compile a regex pattern to find the string X
+    val pattern = (".*" + subString + ".*").r
+
+    // Find the index of the line that matches the pattern
+    val matchIndex = lines.indexWhere(line => pattern.matches(line))
+
+    // If a match is found, return the line and the immediate next line
+    if (matchIndex >= 0) {
+      lines.slice(matchIndex, matchIndex + 2)
+    } else {
+      List() // Return an empty list if no match is found
+    }
+  }
+
+  def getMissingSubOccurency(mainString: String, subString: String, expectedMatches: Seq[String]): String = {
+    // Split the text into lines
+    val lines = mainString.split("\n").toSeq
+
+    // Compile a regex pattern to find the string X
+    val pattern = (".*" + subString + ".*").r
+
+    // Filter lines that match the pattern and get also the next line
+    val matchingIndexes = lines.indices.filter(i => pattern.findFirstIn(lines(i)).isDefined)
+
+    // Get the lines at these indexes and the next line
+    val linesWithNext = matchingIndexes.flatMap { idx =>
+      if (idx < lines.length - 1) List(lines(idx), lines(idx + 1))
+      else List(lines(idx)) // Handle edge case where last line matches
+    }.distinct // Remove duplicates in case same line is matched more than once
+
+    val expectedRegex = expectedMatches.map(_.r)
+    // Filter out lines that are in expectedMatches
+    val missingLines = linesWithNext.filterNot { line =>
+      expectedRegex.exists(_.findFirstIn(line).isDefined)
+    }
+    missingLines.mkString("\n")
+
+  }
+
   def countSubstringOccurrences(mainString: String, subString: String): Int = {
     val pattern = subString.r
     pattern.findAllMatchIn(mainString).length
   }
 
+  // Return target and expected regex string
   def createExpected(
     target:   String,
     typeName: String,
     binding:  String = "",
     params:   Option[Seq[ClassParam]] = None
-  ): String = {
+  ): (String, String) = {
     val realTypeName = binding match {
       case "" => typeName
       case _  => s"$binding\\[$typeName\\]"
@@ -43,16 +86,25 @@ object TestUtils extends Matchers {
         }.mkString(",\\s+")}\\s+\\]"""
       case None => ""
     }
-    s"""\"target\":\"$target\",\\s+\"typeName\":\"$realTypeName\"$realParams\\s*}""".stripMargin
+    (target, s"""\"target\":\"$target\",\\s+\"typeName\":\"$realTypeName\"$realParams\\s*""".stripMargin)
   }
 
-  def checkAnno(expectedMatches: Seq[(String, Int)], refString: String, includeConstructor: Boolean = false): Unit = {
+  def checkAnno(
+    expectedMatches:    Seq[((String, String), Int)],
+    refString:          String,
+    includeConstructor: Boolean = false
+  ): Unit = {
     def totalAnnoCheck(n: Int): (String, Int) =
       (""""class":"chisel3.tywavesinternal.TywavesAnnotation"""", if (includeConstructor) n else n + 1)
-
-    (expectedMatches :+ totalAnnoCheck(expectedMatches.map(_._2).sum)).foreach {
+    val targetStrings = expectedMatches.map(p => {
+      val s = p._1._1
+      "\"target\":\"" + s + "\""
+    })
+    (expectedMatches.map(p => (p._1._2, p._2)) :+ totalAnnoCheck(expectedMatches.map(_._2).sum)).foreach {
       case (pattern, count) =>
-        (countSubstringOccurrences(refString, pattern) should be(count)).withClue(s"Pattern: $pattern")
+        (countSubstringOccurrences(refString, pattern) should be(count)).withClue(
+          s"Pattern: $pattern: ${getMissingSubOccurency(refString, pattern, targetStrings)}"
+        )
     }
   }
 }
@@ -236,6 +288,29 @@ object TywavesAnnotationCircuits {
     // Test signals in submodules
     class TopCircuitTypeInSubmodule(bindingChoice: BindingChoice) extends RawModule {
       val mod = Module(new TopCircuitGroundTypes(bindingChoice))
+    }
+
+    // Test temporary values declared inside when and otherwise blocks
+    class TopCircuitWhenElse extends RawModule {
+      // Internally implement a MUX
+      val inSeq = IO(Input(Vec(8, UInt(8.W))))
+      val out = IO(Output(UInt(8.W)))
+      val sel = IO(Input(UInt(math.sqrt(8).ceil.toInt.W)))
+
+      when(sel % 2.U === 0.U) {
+        val outTmp = inSeq(sel)
+        val evenSel = outTmp + 1.U
+        out := evenSel
+      }.elsewhen(sel === 1.U) {
+        val outTmp = inSeq(sel)
+        val selIsOne = outTmp + 1.U
+        out := selIsOne
+      }.otherwise {
+        val outTmp = inSeq(sel)
+        val oddSel = outTmp + 1.U
+        out := oddSel
+      }
+
     }
   }
 
