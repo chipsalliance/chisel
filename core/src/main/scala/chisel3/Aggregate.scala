@@ -633,26 +633,6 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
 
 object VecInit extends SourceInfoDoc {
 
-  /** Gets the correct connect operation (directed hardware assign or bulk connect) for element in Vec.
-    */
-  private def getConnectOpFromDirectionality[T <: Data](
-    proto: T
-  )(
-    implicit sourceInfo: SourceInfo
-  ): (T, T) => Unit = proto.direction match {
-    case ActualDirection.Input | ActualDirection.Output | ActualDirection.Unspecified =>
-      // When internal wires are involved, driver / sink must be specified explicitly, otherwise
-      // the system is unable to infer which is driver / sink
-      (x, y) => x := y
-    case ActualDirection.Bidirectional(_) =>
-      // For bidirectional, must issue a bulk connect so subelements are resolved correctly.
-      // Bulk connecting two wires may not succeed because Chisel frontend does not infer
-      // directions.
-      (x, y) => x <> y
-    case ActualDirection.Empty =>
-      (x, y) => x <> y
-  }
-
   /** Creates a new [[Vec]] composed of elements of the input Seq of [[Data]]
     * nodes.
     *
@@ -678,10 +658,9 @@ object VecInit extends SourceInfoDoc {
     elts.foreach(requireIsHardware(_, "vec element"))
 
     val vec = Wire(Vec(elts.length, cloneSupertype(elts, "Vec")))
-    val op = getConnectOpFromDirectionality(vec.head)
 
-    (vec.zip(elts)).foreach { x =>
-      op(x._1, x._2)
+    for ((lhs, rhs) <- vec.zip(elts)) {
+      lhs :<>= rhs
     }
     vec
   }
@@ -747,12 +726,11 @@ object VecInit extends SourceInfoDoc {
 
     val tpe = cloneSupertype(flatElts, "Vec.tabulate")
     val myVec = Wire(Vec(n, Vec(m, tpe)))
-    val op = getConnectOpFromDirectionality(myVec.head.head)
     for {
       (xs1D, ys1D) <- myVec.zip(elts)
-      (x, y) <- xs1D.zip(ys1D)
+      (lhs, rhs) <- xs1D.zip(ys1D)
     } {
-      op(x, y)
+      lhs :<>= rhs
     }
     myVec
   }
@@ -787,14 +765,13 @@ object VecInit extends SourceInfoDoc {
 
     val tpe = cloneSupertype(flatElts, "Vec.tabulate")
     val myVec = Wire(Vec(n, Vec(m, Vec(p, tpe))))
-    val op = getConnectOpFromDirectionality(myVec.head.head.head)
 
     for {
       (xs2D, ys2D) <- myVec.zip(elts)
       (xs1D, ys1D) <- xs2D.zip(ys2D)
-      (x, y) <- xs1D.zip(ys1D)
+      (lhs, rhs) <- xs1D.zip(ys1D)
     } {
-      op(x, y)
+      lhs :<>= rhs
     }
 
     myVec
