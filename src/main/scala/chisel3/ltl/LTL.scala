@@ -302,10 +302,6 @@ sealed trait Property {
 
   /** See `Property.clock`. */
   def clock(clock: Clock)(implicit sourceInfo: SourceInfo): Property = Property.clock(this, clock)
-
-  /** See `Property.disable`. */
-  @deprecated("Use withDisable", "Chisel 6.5")
-  def disable(cond: Disable)(implicit sourceInfo: SourceInfo): Property = Property.disable(this, cond)
 }
 
 /** Prefix-style utilities to work with properties.
@@ -390,14 +386,6 @@ object Property {
     */
   def clock(prop: Property, clock: Clock)(implicit sourceInfo: SourceInfo): Property =
     OpaqueProperty(LTLClockIntrinsic(prop.inner, clock))
-
-  /** Disable the checking of a property if a condition is true. If the
-    * condition is true at any time during the evaluation of the property, the
-    * evaluation is aborted. Equivalent to `disable iff (cond) prop` in SVA.
-    */
-  @deprecated("Use withDisable", "Chisel 6.5")
-  def disable(prop: Property, cond: Disable)(implicit sourceInfo: SourceInfo): Property =
-    OpaqueProperty(LTLDisableIntrinsic(prop.inner, cond.value))
 }
 
 /** The base class for the `AssertProperty`, `AssumeProperty`, and
