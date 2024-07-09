@@ -236,12 +236,8 @@ sealed trait Property {
   def clock(clock: Clock): Property = Property.clock(this, clock)
 
   /** See `Property.disable`. */
-<<<<<<< HEAD
-  def disable(cond: Disable): Property = Property.disable(this, cond)
-=======
   @deprecated("Use withDisable", "Chisel 6.5")
-  def disable(cond: Disable)(implicit sourceInfo: SourceInfo): Property = Property.disable(this, cond)
->>>>>>> 9c61fdccc ([LTL] Deprecate disable intrinsic (#4237))
+  def disable(cond: Disable): Property = Property.disable(this, cond)
 }
 
 /** Prefix-style utilities to work with properties.
@@ -332,18 +328,13 @@ object Property {
     * condition is true at any time during the evaluation of the property, the
     * evaluation is aborted. Equivalent to `disable iff (cond) prop` in SVA.
     */
-<<<<<<< HEAD
+  @deprecated("Use withDisable", "Chisel 6.5")
   def disable(prop: Property, cond: Disable): Property = {
     val ltl_disable = Instantiate(new LTLDisableIntrinsic)
     ltl_disable.in := prop.inner
     ltl_disable.condition := cond.value
     OpaqueProperty(ltl_disable.out)
   }
-=======
-  @deprecated("Use withDisable", "Chisel 6.5")
-  def disable(prop: Property, cond: Disable)(implicit sourceInfo: SourceInfo): Property =
-    OpaqueProperty(LTLDisableIntrinsic(prop.inner, cond.value))
->>>>>>> 9c61fdccc ([LTL] Deprecate disable intrinsic (#4237))
 }
 
 /** The base class for the `AssertProperty`, `AssumeProperty`, and

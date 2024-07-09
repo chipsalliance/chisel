@@ -67,13 +67,8 @@ lazy val warningSuppression = Seq(
     "msg=undefined in comment for method cf in class PrintableHelper:s",
     // This is deprecated for external users but not internal use
     "cat=deprecation&origin=firrtl\\.options\\.internal\\.WriteableCircuitAnnotation:s",
-<<<<<<< HEAD
-    "cat=deprecation&origin=chisel3\\.util\\.experimental\\.BoringUtils.*:s"
-=======
     "cat=deprecation&origin=chisel3\\.util\\.experimental\\.BoringUtils.*:s",
-    "cat=deprecation&origin=chisel3\\.experimental\\.IntrinsicModule:s",
     "cat=deprecation&origin=chisel3\\.ltl.*:s"
->>>>>>> 9c61fdccc ([LTL] Deprecate disable intrinsic (#4237))
   ).mkString(",")
 )
 
