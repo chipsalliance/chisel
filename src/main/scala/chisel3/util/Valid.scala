@@ -52,7 +52,7 @@ class Valid[+T <: Data](gen: T) extends Bundle {
     val _map = Wire(Valid(chiselTypeOf(_map_bits)))
     _map.bits := _map_bits
     _map.valid := valid
-    _map
+    _map.readOnly
   }
 }
 
