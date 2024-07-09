@@ -8,7 +8,7 @@ import chisel3.util.Valid
 import chisel3.properties._
 import chisel3.experimental.hierarchy._
 import circt.stage.ChiselStage.convert
-import chisel3.experimental.{ExtModule, IntrinsicModule}
+import chisel3.experimental.{ExtModule, IntrinsicModule, SourceLine}
 
 // Note, the instantiable classes must not be inner classes because the materialized WeakTypeTags
 // will be different and they will not give the same hashCode when looking up the Definition in the
@@ -412,7 +412,7 @@ class InstantiateSpec extends ChiselFunSpec with Utils {
       val chirrtl = convert(new Top {
         val inst = Instantiate(new OneArg(3))
       }).serialize
-      chirrtl should include(s"inst inst of OneArg ${info.makeMessage(x => x)}")
+      chirrtl should include(s"inst inst of OneArg @[${info.asInstanceOf[SourceLine].serialize}]")
     }
 
     it("should support BlackBoxes") {

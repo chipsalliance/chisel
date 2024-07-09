@@ -55,11 +55,11 @@ private[chisel3] object MonoConnect {
     )
   def SourceEscapedWhenScopeException(source: Data, whenInfo: SourceInfo) =
     MonoConnectException(
-      s"Source ${formatName(source)} has escaped the scope of the when (${whenInfo.makeMessage(x => x)}) in which it was constructed."
+      s"Source ${formatName(source)} has escaped the scope of the when (${whenInfo.makeMessage()}) in which it was constructed."
     )
   def SinkEscapedWhenScopeException(sink: Data, whenInfo: SourceInfo) =
     MonoConnectException(
-      s"Sink ${formatName(sink)} has escaped the scope of the when (${whenInfo.makeMessage(x => x)}) in which it was constructed."
+      s"Sink ${formatName(sink)} has escaped the scope of the when (${whenInfo.makeMessage()}) in which it was constructed."
     )
   def UnknownRelationException =
     MonoConnectException("Sink or source unavailable to current module.")

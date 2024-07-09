@@ -26,14 +26,14 @@ sealed trait SourceInfo {
     *
     * Make a useful message if SourceInfo is available, nothing otherwise
     */
-  def makeMessage(f: String => String): String
+  def makeMessage(f: String => String = x => x): String
 
   /** The filename for the originating source file, if known */
   def filenameOption: Option[String]
 }
 
 sealed trait NoSourceInfo extends SourceInfo {
-  def makeMessage(f: String => String): String = ""
+  def makeMessage(f: String => String = x => x): String = ""
   def filenameOption: Option[String] = None
 }
 
@@ -51,8 +51,12 @@ case object DeprecatedSourceInfo extends NoSourceInfo
   * @note A column == 0 indicates no column
   */
 case class SourceLine(filename: String, line: Int, col: Int) extends SourceInfo {
-  def makeMessage(f: String => String): String = f(s"@[${this.serialize}]")
+  def makeMessage(f: String => String = x => x): String = f(s"@[${this.prettyPrint}]")
   def filenameOption: Option[String] = Some(filename)
+
+  private def prettyPrint: String = {
+    if (col == 0) s"$filename:$line" else s"$filename:$line:$col"
+  }
 
   /** Convert to String for FIRRTL emission */
   def serialize: String = {

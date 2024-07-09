@@ -57,7 +57,7 @@ sealed class DataView[T: DataProduct, V <: Data] private[chisel3] (
   def total: Boolean = _total
 
   override def toString: String = {
-    val base = sourceInfo.makeMessage(x => x)
+    val base = sourceInfo.makeMessage()
     val loc = if (base.nonEmpty) base else "@unknown"
     val name = if (total) "DataView" else "PartialDataView"
     s"$name(defined $loc)"

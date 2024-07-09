@@ -182,7 +182,7 @@ class WhenSpec extends ChiselFlatSpec with Utils {
       })
     }
     val msg =
-      "Source foo_w in Top has escaped the scope of the when (@[Foo.scala 12:3]) in which it was constructed."
+      "Source foo_w in Top has escaped the scope of the when (@[Foo.scala:12:3]) in which it was constructed."
     e.getMessage should include(msg)
   }
 
@@ -201,7 +201,7 @@ class WhenSpec extends ChiselFlatSpec with Utils {
       })
     }
     val msg =
-      "operand 'Top.foo_w: Wire[UInt<8>]' has escaped the scope of the when (@[Foo.scala 12:3]) in which it was constructed."
+      "operand 'Top.foo_w: Wire[UInt<8>]' has escaped the scope of the when (@[Foo.scala:12:3]) in which it was constructed."
     e.getMessage should include(msg)
   }
 

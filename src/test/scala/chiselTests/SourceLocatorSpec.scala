@@ -4,7 +4,7 @@ package chiselTests
 
 import circt.stage.ChiselStage.emitCHIRRTL
 import chisel3._
-import chisel3.experimental.{BaseModule, ExtModule, SourceLine}
+import chisel3.experimental.{BaseModule, ExtModule, SourceInfo, SourceLine}
 import chisel3.experimental.hierarchy.Definition
 import firrtl.ir.FileInfo
 
@@ -107,6 +107,15 @@ class SourceLocatorSpec extends ChiselFunSpec with Utils {
     it("(2.h): Definitions should have a source locator") {
       val chirrtl = emitCHIRRTL(new RawModuleChild)
       chirrtl should include(s"module RawModuleChild : @[$thisFile 14:9]")
+    }
+  }
+
+  describe("(3) SourceLocator.makeMessage()") {
+    it("(3.a) Should have click-to-source functionality") {
+      val locator = SourceInfo.materialize
+      // This click-to-source works in VSCode terminal, uncomment to manually test
+      // println(s"Try clicking to this source locator! ${locator.makeMessage()}")
+      locator.makeMessage() should include(s"$thisFile:115:32")
     }
   }
 }
