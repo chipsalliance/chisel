@@ -285,6 +285,21 @@ class VecSpec extends ChiselPropSpec with Utils {
     }
   }
 
+  property("VecInit should work for Bundle that mixes Output and unspecified UInts") {
+    class MyBundle extends Bundle {
+      val a = Output(UInt(8.W))
+      val b = UInt(8.W)
+    }
+    val chirrtl = emitCHIRRTL(new RawModule {
+      val w = VecInit(Seq.fill(2)(0.U.asTypeOf(new MyBundle)))
+    })
+    chirrtl should include("wire w : { a : UInt<8>, b : UInt<8>}[2]")
+    chirrtl should include("connect w[0].b, UInt<8>(0h0)")
+    chirrtl should include("connect w[0].a, UInt<8>(0h0)")
+    chirrtl should include("connect w[1].b, UInt<8>(0h0)")
+    chirrtl should include("connect w[1].a, UInt<8>(0h0)")
+  }
+
   property("Infering widths on huge Vecs should not cause a stack overflow") {
     ChiselStage.emitSystemVerilog(new HugeVecTester(10000))
   }
@@ -311,7 +326,7 @@ class VecSpec extends ChiselPropSpec with Utils {
 
       val m = Module(new Module {
         val io = IO(Output(bundleWithZeroEntryVec))
-        val zero = 0.U.asTypeOf(bundleWithZeroEntryVec)
+        val zero = WireInit(0.U.asTypeOf(bundleWithZeroEntryVec))
         require(zero.getWidth == 1)
         io := zero
       })
@@ -319,9 +334,9 @@ class VecSpec extends ChiselPropSpec with Utils {
 
     })
     chirrtl should include("output io : { foo : UInt<1>, bar : UInt<1>[0]}")
-    chirrtl should include("wire _zero_WIRE : { foo : UInt<1>, bar : UInt<1>[0]}")
-    chirrtl should include("connect _zero_WIRE.foo, UInt<1>(0h0)")
-    chirrtl should include("connect io, _zero_WIRE")
+    chirrtl should include("wire zero : { foo : UInt<1>, bar : UInt<1>[0]}")
+    chirrtl should include("connect zero.foo, UInt<1>(0h0)")
+    chirrtl should include("connect io, zero")
     chirrtl should include("wire w : UInt<1>[0]")
     chirrtl should include("connect w, m.io.bar")
   }

@@ -114,6 +114,20 @@ object DataMirror {
     */
   def checkTypeEquivalence(x: Data, y: Data): Boolean = x.typeEquivalent(y)
 
+  /** Require that two things are type equivalent
+    *
+    * If they are not, print a helpful error message as
+    * to why not.
+    *
+    * Requires structural, alignment, width, probe, color type equivalent
+    * @param x First Chisel type
+    * @param y Second chisel type
+    * @param message if they are not type equivalent, contextual message to add to the exception thrown
+    */
+  def requireTypeEquivalent(x: Data, y: Data, message: String = ""): Unit = {
+    x.requireTypeEquivalent(y, message)
+  }
+
   /** Check if two Chisel types have the same alignments for all matching members
     *
     * This means that for matching members in Aggregates, they must have matching member alignments relative to the parent type

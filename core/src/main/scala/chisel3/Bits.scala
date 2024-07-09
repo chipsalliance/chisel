@@ -4,7 +4,7 @@ package chisel3
 
 import scala.language.experimental.macros
 import chisel3.experimental.{requireIsHardware, SourceInfo}
-import chisel3.internal.{throwException, BaseModule}
+import chisel3.internal.{_resizeToWidth, throwException, BaseModule}
 import chisel3.internal.Builder.pushOp
 import chisel3.internal.firrtl.ir._
 import chisel3.internal.sourceinfo.{
@@ -80,7 +80,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
       case KnownWidth(x) =>
         require(x >= n, s"Can't tail($n) for width $x < $n")
         Width(x - n)
-      case UnknownWidth() => Width()
+      case UnknownWidth => Width()
     }
     binop(sourceInfo, UInt(width = w), TailOp, n)
   }
@@ -88,8 +88,8 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
   /** @group SourceInfoTransformMacro */
   def do_head(n: Int)(implicit sourceInfo: SourceInfo): UInt = {
     width match {
-      case KnownWidth(x)  => require(x >= n, s"Can't head($n) for width $x < $n")
-      case UnknownWidth() =>
+      case KnownWidth(x) => require(x >= n, s"Can't head($n) for width $x < $n")
+      case UnknownWidth  => ()
     }
     binop(sourceInfo, UInt(Width(n)), HeadOp, n)
   }
@@ -695,7 +695,7 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
     resultWidth match {
       // To emulate old FIRRTL behavior where minimum width is 1, we need to insert pad(_, 1) whenever
       // the width is or could be 0. Thus we check if it is known to be 0 or is unknown.
-      case w @ (KnownWidth(0) | UnknownWidth()) =>
+      case w @ (KnownWidth(0) | UnknownWidth) =>
         // Because we are inserting an extra op but we want stable emission (so the user can diff the output),
         // we need to seed a name to avoid name collisions.
         op.autoSeed("_shrLegacyWidthFixup")
@@ -705,7 +705,7 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
   }
 
   override def do_>>(that: Int)(implicit sourceInfo: SourceInfo): UInt = {
-    if (Builder.legacyShiftRightWidth) legacyShiftRight(that)
+    if (Builder.useLegacyWidth) legacyShiftRight(that)
     else binop(sourceInfo, UInt(this.width.unsignedShiftRight(that)), ShiftRightOp, validateShiftAmount(that))
   }
   override def do_>>(that: BigInt)(implicit sourceInfo: SourceInfo): UInt =
@@ -811,12 +811,8 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
 
   override private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): UInt = this
 
-  private[chisel3] override def connectFromBits(
-    that: Bits
-  )(
-    implicit sourceInfo: SourceInfo
-  ): Unit = {
-    this := that.asUInt
+  override private[chisel3] def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): this.type = {
+    _resizeToWidth(that, this.widthOption)(identity).asInstanceOf[this.type]
   }
 
   private def subtractAsSInt(that: UInt)(implicit sourceInfo: SourceInfo): SInt =
@@ -1045,7 +1041,7 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
   override def do_>>(that: Int)(implicit sourceInfo: SourceInfo): SInt = {
     // We don't need to pad to emulate old behavior for SInt, just emulate old Chisel behavior with reported width.
     // FIRRTL will give a minimum of 1 bit for SInt.
-    val newWidth = if (Builder.legacyShiftRightWidth) this.width.shiftRight(that) else this.width.signedShiftRight(that)
+    val newWidth = if (Builder.useLegacyWidth) this.width.shiftRight(that) else this.width.signedShiftRight(that)
     binop(sourceInfo, SInt(newWidth), ShiftRightOp, validateShiftAmount(that))
   }
   override def do_>>(that: BigInt)(implicit sourceInfo: SourceInfo): SInt =
@@ -1071,13 +1067,8 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
 
   override def do_asSInt(implicit sourceInfo: SourceInfo): SInt = this
 
-  private[chisel3] override def connectFromBits(
-    that: Bits
-  )(
-    implicit sourceInfo: SourceInfo
-  ): Unit = {
-    this := that.asSInt
-  }
+  override private[chisel3] def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): this.type =
+    _resizeToWidth(that.asSInt, this.widthOption)(_.asSInt).asInstanceOf[this.type]
 }
 
 sealed trait Reset extends Element with ToBoolable {
@@ -1118,12 +1109,10 @@ final class ResetType(private[chisel3] val width: Width = Width(1)) extends Elem
     DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref)
   )
 
-  private[chisel3] override def connectFromBits(
-    that: Bits
-  )(
-    implicit sourceInfo: SourceInfo
-  ): Unit = {
-    this := that
+  override private[chisel3] def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): Data = {
+    val _wire = Wire(this.cloneTypeFull)
+    _wire := that
+    _wire
   }
 
   /** @group SourceInfoTransformMacro */
@@ -1162,14 +1151,7 @@ sealed class AsyncReset(private[chisel3] val width: Width = Width(1)) extends El
     DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref)
   )
 
-  // TODO Is this right?
-  private[chisel3] override def connectFromBits(
-    that: Bits
-  )(
-    implicit sourceInfo: SourceInfo
-  ): Unit = {
-    this := that.asBool.asAsyncReset
-  }
+  override private[chisel3] def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): Data = that.asBool.asAsyncReset
 
   /** @group SourceInfoTransformMacro */
   def do_asAsyncReset(implicit sourceInfo: SourceInfo): AsyncReset = this
@@ -1299,4 +1281,8 @@ sealed class Bool() extends UInt(1.W) with Reset {
   /** @group SourceInfoTransformMacro */
   def do_asAsyncReset(implicit sourceInfo: SourceInfo): AsyncReset =
     pushOp(DefPrim(sourceInfo, AsyncReset(), AsAsyncResetOp, ref))
+
+  override private[chisel3] def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): this.type = {
+    _resizeToWidth(that, this.widthOption)(identity).asBool.asInstanceOf[this.type]
+  }
 }

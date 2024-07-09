@@ -577,4 +577,37 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
       ulit.litOption should be(None)
     })
   }
+
+  "Casting a Vec literal to a complex type should maintain the literal value" in {
+    class MyBundle extends Bundle {
+      val foo = UInt(1.W)
+      val bar = SInt(3.W)
+    }
+    val vlit = Vec.Lit(0xab.U, 0xcd.U)
+    val olit = vlit.asTypeOf(Vec(4, new MyBundle))
+    olit.litOption should be(Some(0xcdab))
+    olit(0).litValue should be(0xb)
+    olit(0).foo.litValue should be(1)
+    olit(0).bar.litValue should be(3)
+    olit(1).litValue should be(0xa)
+    olit(1).foo.litValue should be(1)
+    olit(1).bar.litValue should be(2)
+    olit(2).litValue should be(0xd)
+    olit(2).foo.litValue should be(1)
+    olit(2).bar.litValue should be(-3)
+    olit(3).litValue should be(0xc)
+    olit(3).foo.litValue should be(1)
+    olit(3).bar.litValue should be(-4)
+
+    assertTesterPasses {
+      new BasicTester {
+        // Check that it gives the same value as the generated hardware.
+        val wire = WireInit(vlit).asTypeOf(Vec(4, new MyBundle))
+        // ScalaTest has its own multiversal === which overrules extension method.
+        // Manually instantiate extension method to get around it.
+        chisel3.assert(new Data.DataEquality(olit).===(wire))
+        stop()
+      }
+    }
+  }
 }

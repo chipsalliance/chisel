@@ -607,15 +607,18 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 
   /** Require that two things are type equivalent, and if they are not, print a helpful error message as
     * to why not.
+    *
+    * @param that the Data to compare to for type equivalence
+    * @param message if they are not type equivalent, contextual message to add to the exception thrown
     */
-  private[chisel3] def requireTypeEquivalent(that: Data): Unit = {
+  private[chisel3] def requireTypeEquivalent(that: Data, message: String = ""): Unit = {
     require(
       this.typeEquivalent(that), {
         val reason = this
           .findFirstTypeMismatch(that, strictTypes = true, strictWidths = true, strictProbeInfo = true)
           .map(s => s"\nbecause $s")
           .getOrElse("")
-        s"$this is not typeEquivalent to $that$reason"
+        s"$message$this is not typeEquivalent to $that$reason"
       }
     )
   }
@@ -813,20 +816,14 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 
   /** @group SourceInfoTransformMacro */
   def do_asTypeOf[T <: Data](that: T)(implicit sourceInfo: SourceInfo): T = {
-    val thatCloned = Wire(that.cloneTypeFull)
-    thatCloned.connectFromBits(this.asUInt)
-    thatCloned.viewAsReadOnlyDeprecated(siteInfo =>
-      Warning(WarningID.AsTypeOfReadOnly, s"Return values of asTypeOf will soon be read-only")(siteInfo)
-    )
+    that._fromUInt(this.asUInt).asInstanceOf[T].viewAsReadOnly { _ =>
+      "Return values of asTypeOf are now read-only"
+    }
   }
 
-  /** Assigns this node from Bits type. Internal implementation for asTypeOf.
+  /** Return a value of this type from a UInt type. Internal implementation for asTypeOf.
     */
-  private[chisel3] def connectFromBits(
-    that: Bits
-  )(
-    implicit sourceInfo: SourceInfo
-  ): Unit
+  private[chisel3] def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): Data
 
   /** Reinterpret cast to UInt.
     *
@@ -1202,7 +1199,7 @@ final case object DontCare extends Element with connectable.ConnectableDocs {
   //  otherwise this "Chisel" object will end up on the UserModule's id list.
   // We make it private to chisel3 so it has to be accessed through the package object.
 
-  private[chisel3] override val width: Width = UnknownWidth()
+  private[chisel3] override val width: Width = UnknownWidth
 
   bind(DontCareBinding(), SpecifiedDirection.Output)
   override def cloneType: this.type = DontCare
@@ -1213,12 +1210,9 @@ final case object DontCare extends Element with connectable.ConnectableDocs {
 
   def toPrintable: Printable = PString("DONTCARE")
 
-  private[chisel3] def connectFromBits(
-    that: Bits
-  )(
-    implicit sourceInfo: SourceInfo
-  ): Unit = {
-    Builder.error("connectFromBits: DontCare cannot be a connection sink (LHS)")
+  private[chisel3] def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): Data = {
+    Builder.error("DontCare cannot be a connection sink (LHS)")
+    this
   }
 
   override private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): UInt = {

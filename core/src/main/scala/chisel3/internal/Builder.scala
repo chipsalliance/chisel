@@ -18,7 +18,7 @@ import _root_.firrtl.AnnotationSeq
 import _root_.firrtl.renamemap.MutableRenameMap
 import _root_.firrtl.util.BackendCompilationUtilities._
 import _root_.firrtl.{ir => fir}
-import chisel3.experimental.dataview.{reify, reifySingleTarget}
+import chisel3.experimental.dataview.{reify, reifyIdentityView, reifySingleTarget}
 import chisel3.internal.Builder.Prefix
 import logger.{LazyLogging, LoggerOption}
 
@@ -472,12 +472,12 @@ private[chisel3] class ChiselContext() {
 }
 
 private[chisel3] class DynamicContext(
-  val annotationSeq:         AnnotationSeq,
-  val throwOnFirstError:     Boolean,
-  val legacyShiftRightWidth: Boolean,
-  val warningFilters:        Seq[WarningFilter],
-  val sourceRoots:           Seq[File],
-  val defaultNamespace:      Option[Namespace],
+  val annotationSeq:     AnnotationSeq,
+  val throwOnFirstError: Boolean,
+  val useLegacyWidth:    Boolean,
+  val warningFilters:    Seq[WarningFilter],
+  val sourceRoots:       Seq[File],
+  val defaultNamespace:  Option[Namespace],
   // Definitions from other scopes in the same elaboration, use allDefinitions below
   val loggerOptions: LoggerOptions,
   val definitions:   ArrayBuffer[Definition[_]],
@@ -903,6 +903,12 @@ private[chisel3] object Builder extends LazyLogging {
         case Clone(m: experimental.hierarchy.ModuleClone[_]) => namer(m.getPorts, prefix)
         case _ =>
       }
+    case (d: Data) =>
+      // Views are often returned in lieu of the target, so name the target (as appropriate).
+      // If a view but not identity, return the view and name it since it shows up in .toString and error messages.
+      // TODO recurse on targets of non-identity views, perhaps with additional prefix from the view.
+      val reified = reifyIdentityView(d).fold(d)(_._1)
+      namer(reified, prefix)
     case (id: HasId) => namer(id, prefix)
     case Some(elt) => nameRecursively(prefix, elt, namer)
     case (iter: Iterable[_]) if iter.hasDefiniteSize =>
@@ -949,7 +955,7 @@ private[chisel3] object Builder extends LazyLogging {
     major.toInt
   }
 
-  def legacyShiftRightWidth: Boolean = dynamicContextVar.value.map(_.legacyShiftRightWidth).getOrElse(false)
+  def useLegacyWidth: Boolean = dynamicContextVar.value.map(_.useLegacyWidth).getOrElse(false)
 
   // Builds a RenameMap for all Views that do not correspond to a single Data
   // These Data give a fake ReferenceTarget for .toTarget and .toReferenceTarget that the returned

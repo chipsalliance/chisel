@@ -86,7 +86,7 @@ class SafeCastFromNonLit extends Module {
 }
 
 class CastFromNonLitWidth(w: Option[Int] = None) extends Module {
-  val width = if (w.isDefined) w.get.W else UnknownWidth()
+  val width = if (w.isDefined) w.get.W else UnknownWidth
 
   val io = IO(new Bundle {
     val in = Input(UInt(width))
@@ -401,9 +401,8 @@ class ChiselEnumSpec extends ChiselFlatSpec with Utils {
     assertTesterPasses(new CastToUIntTester)
   }
 
-  // This is a bug, but fixing it may break user code.
   // See: https://github.com/chipsalliance/chisel/issues/4159
-  it should "preserve legacy width behavior" in {
+  it should "give the correct width for Chisel Enum values" in {
     val verilog = ChiselStage.emitSystemVerilog(new RawModule {
       val out1, out2, out3 = IO(Output(UInt(8.W)))
       val e = EnumExample.e1
@@ -413,12 +412,37 @@ class ChiselEnumSpec extends ChiselFlatSpec with Utils {
       out1 := Cat(1.U, x)
       out2 := Cat(1.U, y)
       out3 := Cat(1.U, z)
-      // The bug is that the width of x is 7 but the value of out1 is 3
       x.getWidth should be(7)
       x.getWidth should be(EnumExample.getWidth)
-      y.widthOption should be(None)
+      y.getWidth should be(7)
       z.getWidth should be(7)
     })
+    verilog should include("assign out1 = 8'h81;")
+    verilog should include("assign out2 = 8'h81;")
+    verilog should include("assign out3 = 8'h81;")
+  }
+
+  // This is a bug, but fixing it may break user code.
+  // See: https://github.com/chipsalliance/chisel/issues/4159
+  it should "preserve legacy width behavior with --use-legacy-width" in {
+    val verilog = ChiselStage.emitSystemVerilog(
+      new RawModule {
+        val out1, out2, out3 = IO(Output(UInt(8.W)))
+        val e = EnumExample.e1
+        val x = e.asUInt
+        val y = e.asTypeOf(UInt())
+        val z = e.asTypeOf(UInt(e.getWidth.W))
+        out1 := Cat(1.U, x)
+        out2 := Cat(1.U, y)
+        out3 := Cat(1.U, z)
+        // The bug is that the width of x is 7 but the value of out1 is 3
+        x.getWidth should be(7)
+        x.getWidth should be(EnumExample.getWidth)
+        y.getWidth should be(7)
+        z.getWidth should be(7)
+      },
+      args = Array("--use-legacy-width")
+    )
     // The bug is that all of these should be the same as out3, or the widths above are wrong
     verilog should include("assign out1 = 8'h3;")
     verilog should include("assign out2 = 8'h3;")

@@ -204,4 +204,17 @@ class WhenSpec extends ChiselFlatSpec with Utils {
       "operand 'Top.foo_w: Wire[UInt<8>]' has escaped the scope of the when (@[Foo.scala 12:3]) in which it was constructed."
     e.getMessage should include(msg)
   }
+
+  "Whens with empty else clauses" should "not emit the else clause" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new Module {
+      val cond = IO(Input(Bool()))
+      val out = IO(Output(UInt(8.W)))
+      when(cond) {
+        out := 1.U
+      }
+    })
+    chirrtl should include("when")
+    chirrtl shouldNot include("else")
+    chirrtl shouldNot include("skip")
+  }
 }

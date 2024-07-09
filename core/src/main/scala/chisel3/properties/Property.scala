@@ -236,9 +236,10 @@ sealed trait Property[T] extends Element { self =>
     Builder.error(s"${this._localErrorContext} does not support .asUInt.")
     0.U
   }
-  private[chisel3] def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo): Unit = {
-    Builder.error(s"${this._localErrorContext} cannot be driven by Bits")
+  override private[chisel3] def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): Data = {
+    Builder.exception(s"${this._localErrorContext} cannot be driven by UInt")
   }
+
   override private[chisel3] def firrtlConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
     that match {
       case pthat: Property[_] => MonoConnect.propConnect(sourceInfo, this, pthat, Builder.forcedUserModule)
@@ -261,7 +262,7 @@ sealed trait Property[T] extends Element { self =>
   def toPrintable: Printable = {
     throwException(s"Properties do not support hardware printing" + this._errorContext)
   }
-  private[chisel3] def width: Width = UnknownWidth()
+  private[chisel3] def width: Width = UnknownWidth
 
   override def typeName: String = s"Property[${tpe.getPropertyType().serialize}]"
 

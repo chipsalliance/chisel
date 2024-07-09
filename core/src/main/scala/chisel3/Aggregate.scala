@@ -114,24 +114,51 @@ sealed abstract class Aggregate extends Data {
     }
   }
 
-  private[chisel3] override def connectFromBits(
-    that: Bits
-  )(
-    implicit sourceInfo: SourceInfo
-  ): Unit = {
-    var i = 0
-    val bits = if (that.isLit) that else WireDefault(UInt(this.width), that) // handles width padding
-    for (x <- flatten) {
-      val fieldWidth = x.getWidth
-      if (fieldWidth > 0) {
-        x.connectFromBits(bits(i + fieldWidth - 1, i))
-        i += fieldWidth
-      } else {
-        // There's a zero-width field in this bundle.
-        // Zero-width fields can't really be assigned to, but the frontend complains if there are uninitialized fields,
-        // so we assign it to DontCare. We can't use connectFromBits() on DontCare, so use := instead.
-        x := DontCare
+  // Return a literal of the same type from a Seq of literals for each leaf
+  private[chisel3] final def _makeLitFromLeaves(elems: Seq[Element])(implicit sourceInfo: SourceInfo): Data = {
+    // We could use virtual methods instead of matching on concrete subtypes,
+    // but the difference for Record vs Vec is so small, it doesn't seem worth it
+    val clone: Aggregate = this.cloneTypeFull
+    val mapping = clone.flatten.view
+      .zip(elems)
+      .map {
+        case (thisElt, litElt) =>
+          val litArg = litElt.topBindingOpt match {
+            case Some(ElementLitBinding(value)) => value
+            case _                              => throwException(s"Internal Error! For field $thisElt, given non-literal $litElt!")
+          }
+          thisElt -> litArg
       }
+    val binding = clone match {
+      case r: Record => BundleLitBinding(mapping.to(Map))
+      case v: Vec[_] => VecLitBinding(mapping.to(VectorMap))
+    }
+    clone.bind(binding)
+    clone
+  }
+
+  override private[chisel3] def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): Data = {
+    val _asUInt = _resizeToWidth(that, this.widthOption)(identity)
+    // If that is a literal and all constituent Elements can be represented as literals, return a literal
+    val ((_, allLit), rvalues) = {
+      this.flatten.toList.mapAccumulate((0, _asUInt.isLit)) {
+        case ((lo, literal), elt) =>
+          val hi = lo + elt.getWidth
+          // Chisel only supports zero width extraction if hi = -1 and lo = 0, so do it manually
+          val _extracted = if (elt.getWidth == 0) 0.U(0.W) else _asUInt(hi - 1, lo)
+          // _fromUInt returns Data but we know that it is an Element
+          val rhs = elt._fromUInt(_extracted).asInstanceOf[Element]
+          ((hi, literal && rhs.isLit), rhs)
+      }
+    }
+    if (allLit) {
+      this._makeLitFromLeaves(rvalues)
+    } else {
+      val _wire = Wire(this.cloneTypeFull)
+      for ((l, r) <- _wire.flatten.zip(rvalues)) {
+        l := r
+      }
+      _wire
     }
   }
 }
@@ -215,8 +242,10 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
 
     val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
     sample_element.bind(SampleElementBinding(this), resolvedDirection)
+    // Share same object for binding of all children.
+    val childBinding = ChildBinding(this)
     for (child <- elementsIterator) { // assume that all children are the same
-      child.bind(ChildBinding(this), resolvedDirection)
+      child.bind(childBinding, resolvedDirection)
     }
 
     // Since all children are the same, we can just use the sample_element rather than all children
@@ -512,7 +541,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
               if (m < n) Some(index -> lit) else None
             case (KnownWidth(_), _) =>
               None
-            case (UnknownWidth(), _) =>
+            case (UnknownWidth, _) =>
               None
             case _ =>
               Some(index -> lit)
@@ -632,26 +661,6 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
 
 object VecInit extends SourceInfoDoc {
 
-  /** Gets the correct connect operation (directed hardware assign or bulk connect) for element in Vec.
-    */
-  private def getConnectOpFromDirectionality[T <: Data](
-    proto: T
-  )(
-    implicit sourceInfo: SourceInfo
-  ): (T, T) => Unit = proto.direction match {
-    case ActualDirection.Input | ActualDirection.Output | ActualDirection.Unspecified =>
-      // When internal wires are involved, driver / sink must be specified explicitly, otherwise
-      // the system is unable to infer which is driver / sink
-      (x, y) => x := y
-    case ActualDirection.Bidirectional(_) =>
-      // For bidirectional, must issue a bulk connect so subelements are resolved correctly.
-      // Bulk connecting two wires may not succeed because Chisel frontend does not infer
-      // directions.
-      (x, y) => x <> y
-    case ActualDirection.Empty =>
-      (x, y) => x <> y
-  }
-
   /** Creates a new [[Vec]] composed of elements of the input Seq of [[Data]]
     * nodes.
     *
@@ -677,10 +686,9 @@ object VecInit extends SourceInfoDoc {
     elts.foreach(requireIsHardware(_, "vec element"))
 
     val vec = Wire(Vec(elts.length, cloneSupertype(elts, "Vec")))
-    val op = getConnectOpFromDirectionality(vec.head)
 
-    (vec.zip(elts)).foreach { x =>
-      op(x._1, x._2)
+    for ((lhs, rhs) <- vec.zip(elts)) {
+      lhs :<>= rhs
     }
     vec
   }
@@ -746,12 +754,11 @@ object VecInit extends SourceInfoDoc {
 
     val tpe = cloneSupertype(flatElts, "Vec.tabulate")
     val myVec = Wire(Vec(n, Vec(m, tpe)))
-    val op = getConnectOpFromDirectionality(myVec.head.head)
     for {
       (xs1D, ys1D) <- myVec.zip(elts)
-      (x, y) <- xs1D.zip(ys1D)
+      (lhs, rhs) <- xs1D.zip(ys1D)
     } {
-      op(x, y)
+      lhs :<>= rhs
     }
     myVec
   }
@@ -786,14 +793,13 @@ object VecInit extends SourceInfoDoc {
 
     val tpe = cloneSupertype(flatElts, "Vec.tabulate")
     val myVec = Wire(Vec(n, Vec(m, Vec(p, tpe))))
-    val op = getConnectOpFromDirectionality(myVec.head.head.head)
 
     for {
       (xs2D, ys2D) <- myVec.zip(elts)
       (xs1D, ys1D) <- xs2D.zip(ys2D)
-      (x, y) <- xs1D.zip(ys1D)
+      (lhs, rhs) <- xs1D.zip(ys1D)
     } {
-      op(x, y)
+      lhs :<>= rhs
     }
 
     myVec
@@ -1066,18 +1072,20 @@ abstract class Record extends Aggregate {
 
     checkForAndReportDuplicates()
 
-    // This check is for making sure that elements always returns the
-    // same object, which will not be the case if the user makes it a
-    // def inside the Record. Checking elementsIterator against itself
-    // is not useful for this check because it's a lazy val which will
-    // always return the same thing.
+    // Share same object for binding of all children.
+    val childBinding = ChildBinding(this)
     for (((_, child), sameChild) <- this.elements.iterator.zip(this.elementsIterator)) {
+      // This check is for making sure that elements always returns the
+      // same object, which will not be the case if the user makes it a
+      // def inside the Record. Checking elementsIterator against itself
+      // is not useful for this check because it's a lazy val which will
+      // always return the same thing.
       if (child != sameChild) {
         throwException(
           s"${this.className} does not return the same objects when calling .elements multiple times. Did you make it a def by mistake?"
         )
       }
-      child.bind(ChildBinding(this), resolvedDirection)
+      child.bind(childBinding, resolvedDirection)
 
       // Update the flipped tracker based on the flipped-ness of this specific child element
       _containsAFlipped |= child.containsAFlipped
@@ -1222,7 +1230,7 @@ abstract class Record extends Aggregate {
       case (field, value) =>
         field.width match {
           // If width is unknown, then it is set by the literal value.
-          case UnknownWidth() => field -> value
+          case UnknownWidth => field -> value
           case width @ KnownWidth(widthValue) =>
             val valuex = if (widthValue < value.width.get) {
               // For legacy reasons, 0.U is 1-bit, don't warn when it comes up as a literal value for 0-bit Bundle lit field.
