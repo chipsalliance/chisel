@@ -1,4 +1,4 @@
-package chisel3.tywaves
+package chisel3.tywavesinternal
 
 import chisel3.{Data, Record, Vec, VecLike}
 import chisel3.experimental.{BaseModule, ChiselAnnotation}
@@ -88,7 +88,6 @@ object TywavesChiselAnnotation {
         override def toFirrtl: Annotation = TywavesAnnotation(target.toTarget, name, None)
       }) //++ createAnno(chisel3.Wire(innerType))
     }
-
     command match {
       case e: DefPrim[_] => Seq.empty // TODO: check prim
       case e @ DefWire(info, id)                        => createAnno(id)

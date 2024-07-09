@@ -2,7 +2,7 @@ package circtTests.tywavesTests.dataTypesTests
 
 import chisel3._
 import chisel3.stage.ChiselGeneratorAnnotation
-import chisel3.tywaves.ClassParam
+import chisel3.tywavesinternal.ClassParam
 import circt.stage.ChiselStage
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers

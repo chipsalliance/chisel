@@ -20,7 +20,7 @@ class TopCircuitWithParams(val width1: Int, width2: Int) extends RawModule {
 ```fir
 circuit TopCircuitWithParams :%[[
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitWithParams|TopCircuitWithParams",
     "typeName":"TopCircuitWithParams",
     "params":[
@@ -36,7 +36,7 @@ circuit TopCircuitWithParams :%[[
       }
     ]
   },
-  ; Other tywaves annotations
+  ; Other tywavesinternal annotations
 ]]
   public module TopCircuitWithParams : @[src/test/scala/circtTests/tywavesTests/TywavesAnnotationCircuits.scala 318:11]
     input uint : UInt<8> @[src/test/scala/circtTests/tywavesTests/TywavesAnnotationCircuits.scala 320:26]
@@ -62,7 +62,7 @@ class TopCircuitWithParamModules extends RawModule {
 ```fir
 circuit TopCircuitWithParamModules :%[[
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitWithParamModules|MyModule",
     "typeName":"MyModule",
     "params":[
@@ -74,7 +74,7 @@ circuit TopCircuitWithParamModules :%[[
     ]
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitWithParamModules|MyModule_1",
     "typeName":"MyModule",
     "params":[
@@ -86,7 +86,7 @@ circuit TopCircuitWithParamModules :%[[
     ]
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitWithParamModules|MyModule_2",
     "typeName":"MyModule",
     "params":[
@@ -98,7 +98,7 @@ circuit TopCircuitWithParamModules :%[[
     ]
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitWithParamModules|TopCircuitWithParamModules",
     "typeName":"TopCircuitWithParamModules"
   }
@@ -145,9 +145,9 @@ class TopCircuitWithParamBundle extends RawModule {
 
 ```fir
 circuit TopCircuitWithParamBundle :%[[
-  ; other tywaves annotations
+  ; other tywavesinternal annotations
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitWithParamBundle|TopCircuitWithParamBundle>baseBundle",
     "typeName":"IO[BaseBundle]",
     "params":[
@@ -159,7 +159,7 @@ circuit TopCircuitWithParamBundle :%[[
     ]
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitWithParamBundle|TopCircuitWithParamBundle>otherBundle.b",
     "typeName":"IO[BaseBundle]",
     "params":[
@@ -171,7 +171,7 @@ circuit TopCircuitWithParamBundle :%[[
     ]
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitWithParamBundle|TopCircuitWithParamBundle>otherBundle",
     "typeName":"IO[OtherBundle]",
     "params":[
@@ -188,12 +188,12 @@ circuit TopCircuitWithParamBundle :%[[
     ]
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitWithParamBundle|TopCircuitWithParamBundle>topBundle.o.b.b",
     "typeName":"IO[UInt<1>]"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitWithParamBundle|TopCircuitWithParamBundle>topBundle.o.b",
     "typeName":"IO[BaseBundle]",
     "params":[
@@ -205,7 +205,7 @@ circuit TopCircuitWithParamBundle :%[[
     ]
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitWithParamBundle|TopCircuitWithParamBundle>topBundle.o",
     "typeName":"IO[OtherBundle]",
     "params":[
@@ -222,7 +222,7 @@ circuit TopCircuitWithParamBundle :%[[
     ]
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitWithParamBundle|TopCircuitWithParamBundle>topBundle",
     "typeName":"IO[TopBundle]",
     "params":[
@@ -254,7 +254,7 @@ circuit TopCircuitWithParamBundle :%[[
     ]
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitWithParamBundle|TopCircuitWithParamBundle>caseClassBundle.o.b",
     "typeName":"IO[BaseBundle]",
     "params":[
@@ -266,7 +266,7 @@ circuit TopCircuitWithParamBundle :%[[
     ]
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitWithParamBundle|TopCircuitWithParamBundle>caseClassBundle.o",
     "typeName":"IO[OtherBundle]",
     "params":[
@@ -283,7 +283,7 @@ circuit TopCircuitWithParamBundle :%[[
     ]
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitWithParamBundle|TopCircuitWithParamBundle>caseClassBundle",
     "typeName":"IO[CaseClassExample]",
     "params":[
@@ -334,9 +334,9 @@ class TopCircuitWithParamScalaClasses extends RawModule {
 
 ```fir
 circuit TopCircuitWithParamScalaClasses :%[[
-  ; other tywaves annotations
+  ; other tywavesinternal annotations
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitWithParamScalaClasses|MyModule",
     "typeName":"MyModule",
     "params":[
@@ -353,7 +353,7 @@ circuit TopCircuitWithParamScalaClasses :%[[
     ]
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitWithParamScalaClasses|TopCircuitWithParamScalaClasses>bundle",
     "typeName":"IO[MyBundle]",
     "params":[

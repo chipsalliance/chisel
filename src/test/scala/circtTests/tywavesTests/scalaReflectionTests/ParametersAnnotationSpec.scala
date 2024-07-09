@@ -1,6 +1,6 @@
 package circtTests.tywavesTests.scalaReflectionTests
 
-import chisel3.tywaves.{ClassParam, TywavesChiselAnnotation}
+import chisel3.tywavesinternal.{ClassParam, TywavesChiselAnnotation}
 import circtTests.tywavesTests.TestUtils.countSubstringOccurrences
 import org.scalatest.AppendedClues.convertToClueful
 import org.scalatest.funspec.AnyFunSpec
@@ -182,7 +182,7 @@ class ParametersAnnotationSpec extends AnyFunSpec with Matchers with chiselTests
       (new ChiselStage(true)).execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitWithParamModules)))
       // The file should include it
       val string = os.read(targetDir / "TopCircuitWithParamModules.fir")
-      countSubstringOccurrences(string, "\"class\":\"chisel3.tywaves.TywavesAnnotation\"") should be(4)
+      countSubstringOccurrences(string, "\"class\":\"chisel3.tywavesinternal.TywavesAnnotation\"") should be(4)
       countSubstringOccurrences(string, "\"typeName\":\"MyModule") should be(3)
 
       val expected1 = "\"typeName\":\"MyModule\"," + "\\s*\"params\":\\[\\s*\\{\\s*" +

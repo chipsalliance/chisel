@@ -38,13 +38,13 @@ class TopCircuitSyncMem[T <: Data](gen: T) extends Module {
 ```fir
 circuit TopCircuitSyncMem :%[[
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitSyncMem|TopCircuitSyncMem",
     "typeName":"TopCircuitSyncMem"
   },
   ; .. clock and reset anno
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitSyncMem|TopCircuitSyncMem>mem",
     "typeName":"SyncReadMem[UInt<8>[4]]"
   }
@@ -93,34 +93,34 @@ Output when gen is a Bundle:
 ```fir
 circuit TopCircuitSyncMem :%[[
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitSyncMem|TopCircuitSyncMem",
     "typeName":"TopCircuitSyncMem"
   },
   ; .. clock and reset
   ; .. other signals declared in the circuit: idx, in and out 
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitSyncMem|TopCircuitSyncMem>mem",
     "typeName":"SyncReadMem[MyBundle[4]]"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitSyncMem|TopCircuitSyncMem>MPORT.c",
     "typeName":"MemPort[Bool]"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitSyncMem|TopCircuitSyncMem>MPORT.b",
     "typeName":"MemPort[SInt<8>]"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitSyncMem|TopCircuitSyncMem>MPORT.a",
     "typeName":"MemPort[UInt<8>]"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitSyncMem|TopCircuitSyncMem>MPORT",
     "typeName":"MemPort[MyBundle]"
   },
@@ -160,13 +160,13 @@ class TopCircuitMem[T <: Data](gen: T) extends Module {
 circuit TopCircuitMem :%[[
  
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitMem|TopCircuitMem",
     "typeName":"TopCircuitMem"
   },
   ; .. clock and reset anno
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitMem|TopCircuitMem>mem",
     "typeName":"Mem[UInt<8>[4]]"
   }
@@ -202,7 +202,7 @@ class TopCircuitSRAM(size: Int, numReadPorts: Int, numWritePorts: Int, numReadwr
 ```fir
 circuit TopCircuitSRAM :%[[
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitSRAM|TopCircuitSRAM",
     "typeName":"TopCircuitSRAM",
     "params":[
@@ -231,7 +231,7 @@ circuit TopCircuitSRAM :%[[
   ; .. clock and reset anno
   ; ..  read, write and readwrite ports annotations
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitSRAM|TopCircuitSRAM>mem",
     "typeName":"Wire[SRAMInterface]",
     "params":[
@@ -258,7 +258,7 @@ circuit TopCircuitSRAM :%[[
     ]
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitSRAM|TopCircuitSRAM>mem_sram",
     "typeName":"SramTarget[UInt<8>[1]]"
   }
@@ -312,28 +312,28 @@ circuit TopCircuitSRAM :%[[
   ; .. clock and reset annotations
   ; .. other control signals (same as ground types)
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitSRAM|TopCircuitSRAM>mem.writePorts[0].data.c",
     "typeName":"Wire[Bool]"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitSRAM|TopCircuitSRAM>mem.writePorts[0].data.b",
     "typeName":"Wire[SInt<8>]"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitSRAM|TopCircuitSRAM>mem.writePorts[0].data.a",
     "typeName":"Wire[UInt<8>]"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitSRAM|TopCircuitSRAM>mem.writePorts[0].data",
     "typeName":"Wire[MyBundle]"
   },
   ; .. other ports (same as ground above)
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitSRAM|TopCircuitSRAM>mem",
     "typeName":"Wire[SRAMInterface]",
     "params":[

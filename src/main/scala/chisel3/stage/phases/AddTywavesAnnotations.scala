@@ -1,7 +1,7 @@
 package chisel3.stage.phases
 
 import chisel3.stage.ChiselCircuitAnnotation
-import chisel3.tywaves.TywavesChiselAnnotation
+import chisel3.tywavesinternal.TywavesChiselAnnotation
 import firrtl.AnnotationSeq
 import firrtl.options.{Dependency, Phase}
 

@@ -20,27 +20,27 @@ class TopCircuitClockReset extends RawModule {
 FIRRTL version 4.0.0
 circuit TopCircuitClockReset :%[[
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitClockReset|TopCircuitClockReset",
     "typeName":"TopCircuitClockReset"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitClockReset|TopCircuitClockReset>clock",
     "typeName":"IO[Clock]"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitClockReset|TopCircuitClockReset>syncReset",
     "typeName":"IO[Bool]"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitClockReset|TopCircuitClockReset>reset",
     "typeName":"IO[Reset]"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitClockReset|TopCircuitClockReset>asyncReset",
     "typeName":"IO[AsyncReset]"
   }
@@ -64,17 +64,17 @@ class TopCircuitImplicitClockReset extends Module
 FIRRTL version 4.0.0
 circuit TopCircuitImplicitClockReset :%[[
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitImplicitClockReset|TopCircuitImplicitClockReset",
     "typeName":"TopCircuitImplicitClockReset"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitImplicitClockReset|TopCircuitImplicitClockReset>clock",
     "typeName":"IO[Clock]"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitImplicitClockReset|TopCircuitImplicitClockReset>reset",
     "typeName":"IO[Bool]"
   }
@@ -103,32 +103,32 @@ class TopCircuitGroundTypes extends RawModule {
 ```fir
 circuit TopCircuitGroundTypes :%[[
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitGroundTypes|TopCircuitGroundTypes",
     "typeName":"TopCircuitGroundTypes"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitGroundTypes|TopCircuitGroundTypes>uint",
     "typeName":"IO[UInt<8>]"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitGroundTypes|TopCircuitGroundTypes>sint",
     "typeName":"IO[SInt<8>]"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitGroundTypes|TopCircuitGroundTypes>bool",
     "typeName":"IO[Bool]"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitGroundTypes|TopCircuitGroundTypes>analog",
     "typeName":"IO[Analog<1>]"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitGroundTypes|TopCircuitGroundTypes>bits",
     "typeName":"IO[UInt<8>]"
   }
@@ -165,37 +165,37 @@ class TopCircuitBundles extends RawModule {
 ```fir
 circuit TopCircuitBundles :%[[
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitBundles|TopCircuitBundles",
     "typeName":"TopCircuitBundles"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitBundles|TopCircuitBundles>a",
     "typeName":"IO[AnonymousBundle]"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitBundles|TopCircuitBundles>b",
     "typeName":"IO[MyEmptyBundle]"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitBundles|TopCircuitBundles>c.c",
     "typeName":"IO[Bool]"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitBundles|TopCircuitBundles>c.b",
     "typeName":"IO[SInt<8>]"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitBundles|TopCircuitBundles>c.a",
     "typeName":"IO[UInt<8>]"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitBundles|TopCircuitBundles>c",
     "typeName":"IO[MyBundle]"
   }
@@ -226,57 +226,57 @@ class TopCircuitBundlesNested extends RawModule {
 FIRRTL version 4.0.0
 circuit TopCircuitBundlesNested :%[[
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitBundlesNested|TopCircuitBundlesNested",
     "typeName":"TopCircuitBundlesNested"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitBundlesNested|TopCircuitBundlesNested>a.c.c",
     "typeName":"IO[Bool]"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitBundlesNested|TopCircuitBundlesNested>a.c.b",
     "typeName":"IO[SInt<8>]"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitBundlesNested|TopCircuitBundlesNested>a.c.a",
     "typeName":"IO[UInt<8>]"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitBundlesNested|TopCircuitBundlesNested>a.c",
     "typeName":"IO[MyBundle]"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitBundlesNested|TopCircuitBundlesNested>a.b.c",
     "typeName":"IO[Bool]"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitBundlesNested|TopCircuitBundlesNested>a.b.b",
     "typeName":"IO[SInt<8>]"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitBundlesNested|TopCircuitBundlesNested>a.b.a",
     "typeName":"IO[UInt<8>]"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitBundlesNested|TopCircuitBundlesNested>a.b",
     "typeName":"IO[MyBundle]"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitBundlesNested|TopCircuitBundlesNested>a.a",
     "typeName":"IO[Bool]"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitBundlesNested|TopCircuitBundlesNested>a",
     "typeName":"IO[MyNestedBundle]"
   }
@@ -315,17 +315,17 @@ class TopCircuitVecs(bindingChoice: BindingChoice) extends TywavesTestModule(bin
 FIRRTL version 4.0.0
 circuit TopCircuitVecs :%[[
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitVecs|TopCircuitVecs",
     "typeName":"TopCircuitVecs"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitVecs|TopCircuitVecs>a[0]",
     "typeName":"IO[SInt<23>]"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitVecs|TopCircuitVecs>a",
     "typeName":"IO[SInt<23>[5]]",
     "params":[
@@ -336,12 +336,12 @@ circuit TopCircuitVecs :%[[
     ]
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitVecs|TopCircuitVecs>b[0][0]",
     "typeName":"IO[SInt<23>]"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitVecs|TopCircuitVecs>b[0]",
     "typeName":"IO[SInt<23>[3]]",
     "params":[
@@ -352,7 +352,7 @@ circuit TopCircuitVecs :%[[
     ]
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitVecs|TopCircuitVecs>b",
     "typeName":"IO[SInt<23>[3][5]]",
     "params":[
@@ -363,17 +363,17 @@ circuit TopCircuitVecs :%[[
     ]
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitVecs|TopCircuitVecs>c[0].x",
     "typeName":"IO[UInt<8>]"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitVecs|TopCircuitVecs>c[0]",
     "typeName":"IO[AnonymousBundle]"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitVecs|TopCircuitVecs>c",
     "typeName":"IO[AnonymousBundle[5]]",
     "params":[
@@ -384,17 +384,17 @@ circuit TopCircuitVecs :%[[
     ]
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitVecs|TopCircuitVecs>d.0",
     "typeName":"IO[UInt<3>]"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitVecs|TopCircuitVecs>d.1",
     "typeName":"IO[SInt<10>]"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitVecs|TopCircuitVecs>d",
     "typeName":"IO[MixedVec]"
   }
@@ -423,17 +423,17 @@ class TopCircuitBundleWithVec extends RawModule {
 ```fir
 circuit TopCircuitBundleWithVec :%[[
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitBundleWithVec|TopCircuitBundleWithVec",
     "typeName":"TopCircuitBundleWithVec"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitBundleWithVec|TopCircuitBundleWithVec>a.vec[0]",
     "typeName":"IO[UInt<8>]"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitBundleWithVec|TopCircuitBundleWithVec>a.vec",
     "typeName":"IO[UInt<8>[5]]",
     "params":[
@@ -444,7 +444,7 @@ circuit TopCircuitBundleWithVec :%[[
     ]
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitBundleWithVec|TopCircuitBundleWithVec>a",
     "typeName":"IO[AnonymousBundle]"
   }

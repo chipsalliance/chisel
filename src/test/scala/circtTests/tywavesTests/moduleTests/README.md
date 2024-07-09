@@ -14,7 +14,7 @@ class TopCircuit extends RawModule
 ```fir
 circuit TopCircuit :%[[
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuit|TopCircuit",
     "typeName":"TopCircuit"
   }]]
@@ -43,12 +43,12 @@ class TopCircuitSubModule extends RawModule {
 ```fir
 circuit TopCircuitSubModule :%[[
     {
-        "class": "chisel3.tywaves.TywavesAnnotation",
+        "class": "chisel3.tywavesinternal.TywavesAnnotation",
         "target": "~TopCircuitSubModule|MyModule",
         "typeName": "MyModule"
     },
     {
-        "class": "chisel3.tywaves.TywavesAnnotation",
+        "class": "chisel3.tywavesinternal.TywavesAnnotation",
         "target": "~TopCircuitSubModule|TopCircuitSubModule",
         "typeName": "TopCircuitSubModule"
     }]]
@@ -82,27 +82,27 @@ class TopCircuitMultiModule extends RawModule {
 ```fir
 circuit TopCircuitMultiModule :%[[
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitMultiModule|MyModule",
     "typeName":"MyModule"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitMultiModule|MyModule_1",
     "typeName":"MyModule"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitMultiModule|MyModule_2",
     "typeName":"MyModule"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitMultiModule|MyModule_3",
     "typeName":"MyModule"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitMultiModule|TopCircuitMultiModule",
     "typeName":"TopCircuitMultiModule"
   }
@@ -150,7 +150,7 @@ class TopCircuitWithParams extends RawModule {
 ```fir
 circuit TopCircuitWithParams :%[[
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitWithParams|MyModule",
     "typeName":"MyModule",
     "params":[
@@ -162,7 +162,7 @@ circuit TopCircuitWithParams :%[[
     ]
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitWithParams|MyModule_1",
     "typeName":"MyModule",
     "params":[
@@ -174,7 +174,7 @@ circuit TopCircuitWithParams :%[[
     ]
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitWithParams|MyModule_2",
     "typeName":"MyModule",
     "params":[
@@ -186,7 +186,7 @@ circuit TopCircuitWithParams :%[[
     ]
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitWithParams|TopCircuitWithParams",
     "typeName":"TopCircuitWithParams"
   }
@@ -225,27 +225,27 @@ class TopCircuitBlackBox extends RawModule {
 ```fir
 circuit TopCircuitBlackBox :%[[
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitBlackBox|MyBlackBox",
     "typeName":"MyBlackBox"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitBlackBox|MyBlackBox_1",
     "typeName":"MyBlackBox"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitBlackBox|MyBlackBox_2",
     "typeName":"MyBlackBox"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitBlackBox|MyBlackBox_3",
     "typeName":"MyBlackBox"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitBlackBox|TopCircuitBlackBox",
     "typeName":"TopCircuitBlackBox"
   }
@@ -292,27 +292,27 @@ class TopCircuitIntrinsic extends RawModule {
 ```fir
 circuit TopCircuitIntrinsic :%[[
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitIntrinsic|ExampleIntrinsicModule",
     "typeName":"ExampleIntrinsicModule"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitIntrinsic|ExampleIntrinsicModule_1",
     "typeName":"ExampleIntrinsicModule"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitIntrinsic|ExampleIntrinsicModule_2",
     "typeName":"ExampleIntrinsicModule"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitIntrinsic|ExampleIntrinsicModule_3",
     "typeName":"ExampleIntrinsicModule"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitIntrinsic|TopCircuitIntrinsic",
     "typeName":"TopCircuitIntrinsic"
   }
@@ -360,32 +360,32 @@ class TopCircuitClasses extends RawModule {
 ```fir
 circuit TopCircuitClasses :%[[
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitClasses|CSRDescription",
     "typeName":"CSRDescription"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitClasses|CSRModule",
     "typeName":"CSRModule"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitClasses|CSRModule_1",
     "typeName":"CSRModule"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitClasses|CSRModule_2",
     "typeName":"CSRModule"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitClasses|CSRModule_3",
     "typeName":"CSRModule"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitClasses|TopCircuitClasses",
     "typeName":"TopCircuitClasses"
   }
@@ -433,22 +433,22 @@ class TopCircuitParametric extends RawModule {
 ```fir
 circuit TopCircuitParametric :%[[
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitParametric|MyModule",
     "typeName":"MyModule"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitParametric|MyModule_1",
     "typeName":"MyModule"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitParametric|MyModule_2",
     "typeName":"MyModule"
   },
   {
-    "class":"chisel3.tywaves.TywavesAnnotation",
+    "class":"chisel3.tywavesinternal.TywavesAnnotation",
     "target":"~TopCircuitParametric|TopCircuitParametric",
     "typeName":"TopCircuitParametric"
   }

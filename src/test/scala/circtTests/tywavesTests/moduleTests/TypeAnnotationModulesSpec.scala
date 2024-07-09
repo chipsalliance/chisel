@@ -36,7 +36,7 @@ class TypeAnnotationModulesSpec extends AnyFunSpec with Matchers with chiselTest
       (new ChiselStage(true)).execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitMultiModule)))
       // The file should include it
       val string = os.read(targetDir / "TopCircuitMultiModule.fir")
-      countSubstringOccurrences(string, "\"class\":\"chisel3.tywaves.TywavesAnnotation\"") should be(5)
+      countSubstringOccurrences(string, "\"class\":\"chisel3.tywavesinternal.TywavesAnnotation\"") should be(5)
       countSubstringOccurrences(string, "\"typeName\":\"MyModule\"") should be(4)
     }
 
@@ -44,7 +44,7 @@ class TypeAnnotationModulesSpec extends AnyFunSpec with Matchers with chiselTest
 
       (new ChiselStage(true)).execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitBlackBox)))
       val string = os.read(targetDir / "TopCircuitBlackBox.fir")
-      countSubstringOccurrences(string, "\"class\":\"chisel3.tywaves.TywavesAnnotation\"") should be(5)
+      countSubstringOccurrences(string, "\"class\":\"chisel3.tywavesinternal.TywavesAnnotation\"") should be(5)
       countSubstringOccurrences(string, "\"typeName\":\"MyBlackBox") should be(4)
     }
 
@@ -53,7 +53,7 @@ class TypeAnnotationModulesSpec extends AnyFunSpec with Matchers with chiselTest
 
       (new ChiselStage(true)).execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitIntrinsic)))
       val string = os.read(targetDir / "TopCircuitIntrinsic.fir")
-      countSubstringOccurrences(string, "\"class\":\"chisel3.tywaves.TywavesAnnotation\"") should be(13)
+      countSubstringOccurrences(string, "\"class\":\"chisel3.tywavesinternal.TywavesAnnotation\"") should be(13)
       countSubstringOccurrences(string, "\"typeName\":\"ExampleIntrinsicModule") should be(4)
     }
 
@@ -65,7 +65,7 @@ class TypeAnnotationModulesSpec extends AnyFunSpec with Matchers with chiselTest
         string,
         "\"target\":\"~TopCircuitClasses\\|CSRDescription\",\\s*\"typeName\":\"CSRDescription"
       ) should be(1)
-      countSubstringOccurrences(string, "\"class\":\"chisel3.tywaves.TywavesAnnotation\"") should be(6)
+      countSubstringOccurrences(string, "\"class\":\"chisel3.tywavesinternal.TywavesAnnotation\"") should be(6)
     }
 
     it("should annotate parametric module") {

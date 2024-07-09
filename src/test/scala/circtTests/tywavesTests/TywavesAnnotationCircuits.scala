@@ -4,13 +4,13 @@ import chisel3._
 import chisel3.experimental.{Analog, IntrinsicModule}
 import chisel3.experimental.hierarchy.{instantiable, Definition, Instance}
 import chisel3.stage.ChiselGeneratorAnnotation
-import chisel3.tywaves.{ClassParam, TywavesChiselAnnotation}
+import chisel3.tywavesinternal.{ClassParam, TywavesChiselAnnotation}
 import chisel3.util.{MixedVec, SRAM, SRAMInterface}
 import circt.stage.ChiselStage
 import org.scalatest.AppendedClues.convertToClueful
 import org.scalatest.matchers.should.Matchers
 
-/** Utility functions for testing [[chisel3.tywaves.TywavesAnnotation]] */
+/** Utility functions for testing [[chisel3.tywavesinternal.TywavesAnnotation]] */
 object TestUtils extends Matchers {
 
   def countSubstringOccurrences(mainString: String, subString: String): Int = {
@@ -48,7 +48,7 @@ object TestUtils extends Matchers {
 
   def checkAnno(expectedMatches: Seq[(String, Int)], refString: String, includeConstructor: Boolean = false): Unit = {
     def totalAnnoCheck(n: Int): (String, Int) =
-      (""""class":"chisel3.tywaves.TywavesAnnotation"""", if (includeConstructor) n else n + 1)
+      (""""class":"chisel3.tywavesinternal.TywavesAnnotation"""", if (includeConstructor) n else n + 1)
 
     (expectedMatches :+ totalAnnoCheck(expectedMatches.map(_._2).sum)).foreach {
       case (pattern, count) =>
