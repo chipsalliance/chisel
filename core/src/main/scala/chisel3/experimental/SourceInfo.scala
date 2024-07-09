@@ -54,7 +54,7 @@ case class SourceLine(filename: String, line: Int, col: Int) extends SourceInfo 
   def makeMessage(f: String => String = x => x): String = f(s"@[${this.prettyPrint}]")
   def filenameOption: Option[String] = Some(filename)
 
-  def prettyPrint: String = {
+  private def prettyPrint: String = {
     if (col == 0) s"$filename:$line" else s"$filename:$line:$col"
   }
 
