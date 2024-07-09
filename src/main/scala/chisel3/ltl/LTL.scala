@@ -104,7 +104,7 @@ sealed trait Sequence extends Property {
 object Sequence {
 
   /** Implicitly wraps a `Bool` and allows it to be used as a sequence or
-    * property. Use via `import chisel3.util.ltl.Sequence.BoolSequence`.
+    * property. Use via `import chisel3.ltl.Sequence.BoolSequence`.
     */
   implicit class BoolSequence(val inner: Bool) extends Sequence with SequenceAtom
 
