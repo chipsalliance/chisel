@@ -104,7 +104,7 @@ sealed trait Sequence extends Property {
 object Sequence {
 
   /** Implicitly wraps a `Bool` and allows it to be used as a sequence or
-    * property. Use via `import chisel3.util.ltl.Sequence.BoolSequence`.
+    * property. Use via `import chisel3.ltl.Sequence.BoolSequence`.
     */
   implicit class BoolSequence(val inner: Bool) extends Sequence with SequenceAtom
 
@@ -236,6 +236,7 @@ sealed trait Property {
   def clock(clock: Clock): Property = Property.clock(this, clock)
 
   /** See `Property.disable`. */
+  @deprecated("Use withDisable", "Chisel 6.5")
   def disable(cond: Disable): Property = Property.disable(this, cond)
 }
 
@@ -327,6 +328,7 @@ object Property {
     * condition is true at any time during the evaluation of the property, the
     * evaluation is aborted. Equivalent to `disable iff (cond) prop` in SVA.
     */
+  @deprecated("Use withDisable", "Chisel 6.5")
   def disable(prop: Property, cond: Disable): Property = {
     val ltl_disable = Instantiate(new LTLDisableIntrinsic)
     ltl_disable.in := prop.inner
