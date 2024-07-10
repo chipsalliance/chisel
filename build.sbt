@@ -389,7 +389,9 @@ lazy val unipublish =
         // chisel3.internal.firrtl.ir.LitArg is package private
         ProblemFilters.exclude[ReversedMissingMethodProblem]("chisel3.internal.firrtl.ir#LitArg.cloneWithValue"),
         // chisel3.Bits is sealed
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("chisel3.Bits._padLit")
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("chisel3.Bits._padLit"),
+        // hasAutoSeed was package private
+        ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.*.hasAutoSeed")
       ),
       // Forward doc command to unidoc
       Compile / doc := (ScalaUnidoc / doc).value,
