@@ -390,6 +390,8 @@ lazy val unipublish =
         ProblemFilters.exclude[ReversedMissingMethodProblem]("chisel3.internal.firrtl.ir#LitArg.cloneWithValue"),
         // chisel3.Bits is sealed
         ProblemFilters.exclude[ReversedMissingMethodProblem]("chisel3.Bits._padLit"),
+        // hasAutoSeed was package private
+        ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.*.hasAutoSeed"),
         // _circuit was package private
         ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.*._circuit"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.*._circuit_=")
