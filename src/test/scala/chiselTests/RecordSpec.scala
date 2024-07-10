@@ -9,7 +9,7 @@ import chisel3.testers.BasicTester
 import chisel3.util.{Counter, Queue}
 import circt.stage.ChiselStage
 
-import scala.collection.immutable.{ListMap, SeqMap}
+import scala.collection.immutable.{ListMap, SeqMap, VectorMap}
 
 object RecordSpec {
   class MyBundle extends Bundle {
@@ -162,6 +162,16 @@ class RecordSpec extends ChiselFlatSpec with Utils {
 
   they should "support digits as names of fields" in {
     assertTesterPasses { new RecordDigitTester }
+  }
+
+  they should "sanitize the user-provided names" in {
+    class MyRecord extends Record {
+      lazy val elements = VectorMap("sanitize me" -> UInt(8.W))
+    }
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val out = IO(Output(new MyRecord))
+    })
+    chirrtl should include("output out : { sanitizeme : UInt<8>}")
   }
 
   "Bulk connect on Record" should "check that the fields match" in {

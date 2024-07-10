@@ -1288,7 +1288,12 @@ abstract class Record extends Aggregate {
   // without having to recurse over all elements after the Record is
   // constructed. Laziness of _elements means that this check will
   // occur (only) at the first instance _elements is referenced.
-  // Also used to sanitize names and convert to more optimized VectorMap datastructure
+  // Also used to sanitize names and convert to more optimized VectorMap datastructure (if necessary)
+  // TODO We should figure out how to combine this with elements
+  // The main trick there is storing the sanitized names and making sure every Chisel API uses them
+  // Strawman proposal is to put sanitized name in the Slot refs of the children, and then replace
+  // _elements and elements with a single Array and deprecate elements as a public API
+  // This would also give an opportunity to stop storing elements in reverse order
   private[chisel3] lazy val _elements: VectorMap[String, Data] = {
     // Since elements is a map, it is impossible for two elements to have the same
     // identifier; however, Namespace sanitizes identifiers to make them legal for Firrtl/Verilog
@@ -1296,17 +1301,33 @@ abstract class Record extends Aggregate {
     // Note that OpaqueTypes cannot have sanitization (the name of the element needs to stay empty)
     //   Use an empty Namespace to indicate OpaqueType
     val namespace = Option.when(!this._isOpaqueType)(Namespace.empty)
-    elements.view.map {
-      case (name, field) =>
-        if (field.binding.isDefined) {
-          throw RebindingException(
-            s"Cannot create Record ${this.className}; element ${field} of Record must be a Chisel type, not hardware."
-          )
-        }
-        // namespace.name also sanitizes for firrtl, leave name alone for OpaqueTypes
-        val sanitizedName = namespace.map(_.name(name, leadingDigitOk = true)).getOrElse(name)
-        sanitizedName -> field
-    }.to(VectorMap) // VectorMap has O(1) lookup whereas ListMap is O(n)
+    val originalElements = elements
+    // Don't create a new map unless necessary, this is much more memory efficient in common case
+    // This is true if elements is not a VectorMap or if any names need sanitization
+    var needNewMap = !originalElements.isInstanceOf[VectorMap[_, _]]
+    val newNames =
+      elements.view.map {
+        case (name, field) =>
+          if (field.binding.isDefined) {
+            throw RebindingException(
+              s"Cannot create Record ${this.className}; element ${field} of Record must be a Chisel type, not hardware."
+            )
+          }
+          // namespace.name also sanitizes for firrtl, leave name alone for OpaqueTypes
+          val sanitizedName = namespace.map(_.name(name, leadingDigitOk = true)).getOrElse(name)
+          if (sanitizedName != name) {
+            needNewMap = true
+          }
+          sanitizedName
+      }.toArray // It's very important we eagerly evaluate this sequence.
+    if (needNewMap) {
+      newNames.view
+        .zip(originalElements)
+        .map { case (name, (_, data)) => name -> data }
+        .to(VectorMap) // VectorMap has O(1) lookup whereas ListMap is O(n)
+    } else {
+      originalElements.asInstanceOf[VectorMap[String, Data]]
+    }
   }
 
   /** Name for Pretty Printing */
