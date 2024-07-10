@@ -34,8 +34,14 @@ package object probe extends SourceInfoDoc {
     * @param probeExpr value to initialize the sink to
     */
   def define[T <: Data](sink: T, probeExpr: T)(implicit sourceInfo: SourceInfo): Unit = {
-    if (!sink.typeEquivalent(probeExpr, false /* we will check more more detailed probe info below */ )) {
-      Builder.error("Cannot define a probe on a non-equivalent type.")
+    val typeCheckResult = sink.findFirstTypeMismatch(
+      probeExpr,
+      strictTypes = true,
+      strictWidths = true,
+      strictProbeInfo = false /* we will check more more detailed probe info below */
+    )
+    typeCheckResult.foreach { msg =>
+      Builder.error(s"Cannot define a probe on a non-equivalent type.\n$msg")
     }
     requireHasProbeTypeModifier(sink, "Expected sink to be a probe.")
     requireNotChildOfProbe(sink, "Expected sink to be the root of a probe.")
