@@ -421,6 +421,13 @@ package experimental {
   abstract class BaseModule extends HasId with IsInstantiable {
     _parent.foreach(_.addId(this))
 
+    // Set if the returned top-level module of a nested call to the Chisel Builder, see Definition.apply
+    private var _circuitVar:       BaseModule = null // using nullable var for better memory usage
+    private[chisel3] def _circuit: Option[BaseModule] = Option(_circuitVar)
+    private[chisel3] def _circuit_=(target: Option[BaseModule]): Unit = {
+      _circuitVar = target.getOrElse(null)
+    }
+
     // Protected so it can be overridden by the compiler plugin
     protected def _sourceInfo: SourceInfo = UnlocatableSourceInfo
 
