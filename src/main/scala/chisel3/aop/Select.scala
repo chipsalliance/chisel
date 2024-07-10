@@ -489,8 +489,9 @@ object Select {
   private def getEffected(a: Arg): Seq[Data] = a match {
     case Node(id: Data) => DataMirror.collectAllMembers(id)
     case Slot(imm: Node, name) => Seq(imm.id.asInstanceOf[Record].elements(name))
-    case Index(imm, _) => getEffected(imm)
-    case _             => throw new InternalErrorException("Match error: a=$a")
+    case Index(imm, _)    => getEffected(imm)
+    case LitIndex(imm, _) => getEffected(imm)
+    case _                => throw new InternalErrorException("Match error: a=$a")
   }
 
   // Given an arg, return the corresponding id. Don't use on a loc of a connect.

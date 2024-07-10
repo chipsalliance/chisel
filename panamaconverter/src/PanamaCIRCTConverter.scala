@@ -370,6 +370,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
               binding.parent match {
                 case vec: Vec[_] =>
                   data.getRef match {
+                    case LitIndex(_, index)    => Reference.SubIndex(index, tpe)
                     case Index(_, ILit(index)) => Reference.SubIndex(index.toInt, tpe)
                     case Index(_, dynamicIndex) =>
                       val index = referTo(dynamicIndex, srcInfo)
