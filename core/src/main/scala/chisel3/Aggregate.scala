@@ -399,10 +399,11 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
     val reconstructedResolvedDirection = direction match {
       case ActualDirection.Input  => SpecifiedDirection.Input
       case ActualDirection.Output => SpecifiedDirection.Output
-      case ActualDirection.Bidirectional(ActualDirection.Default) | ActualDirection.Unspecified =>
+      case ActualDirection.Bidirectional.Default | ActualDirection.Unspecified =>
         SpecifiedDirection.Unspecified
-      case ActualDirection.Bidirectional(ActualDirection.Flipped) => SpecifiedDirection.Flip
-      case ActualDirection.Empty                                  => SpecifiedDirection.Unspecified
+      case ActualDirection.Bidirectional.Flipped => SpecifiedDirection.Flip
+      case ActualDirection.Empty                 => SpecifiedDirection.Unspecified
+      case dir                                   => throwException("Unexpected directionality: $dir")
     }
     // TODO port technically isn't directly child of this data structure, but the result of some
     // muxes / demuxes. However, this does make access consistent with the top-level bindings.

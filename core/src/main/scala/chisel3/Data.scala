@@ -22,24 +22,32 @@ import scala.util.Try
 
 /** User-specified directions.
   */
-sealed abstract class SpecifiedDirection
+sealed abstract class SpecifiedDirection(private[chisel3] val value: Byte)
 object SpecifiedDirection {
 
   /** Default user direction, also meaning 'not-flipped'
     */
-  case object Unspecified extends SpecifiedDirection
+  case object Unspecified extends SpecifiedDirection(0)
 
   /** Node and its children are forced as output
     */
-  case object Output extends SpecifiedDirection
+  case object Output extends SpecifiedDirection(1)
 
   /** Node and its children are forced as inputs
     */
-  case object Input extends SpecifiedDirection
+  case object Input extends SpecifiedDirection(2)
 
   /** Mainly for containers, children are flipped.
     */
-  case object Flip extends SpecifiedDirection
+  case object Flip extends SpecifiedDirection(3)
+
+  private[chisel3] def fromByte(b: Byte): SpecifiedDirection = b match {
+    case Unspecified.value => Unspecified
+    case Output.value      => Output
+    case Input.value       => Input
+    case Flip.value        => Flip
+    case _                 => throw new RuntimeException(s"Unexpected SpecifiedDirection value $b")
+  }
 
   def flip(dir: SpecifiedDirection): SpecifiedDirection = dir match {
     case Unspecified => Flip
@@ -77,31 +85,63 @@ object SpecifiedDirection {
   * a node is bound (since higher-level specifications like Input and Output
   * can override directions).
   */
-sealed abstract class ActualDirection
+sealed abstract class ActualDirection(private[chisel3] val value: Byte)
 
 object ActualDirection {
 
+  // 0 is reserved for unset, no case object added because that would be an unnecessary API breakage.
+  private[chisel3] val Unset: Byte = 0
+
   /** The object does not exist / is empty and hence has no direction
     */
-  case object Empty extends ActualDirection
+  case object Empty extends ActualDirection(1)
 
   /** Undirectioned, struct-like
     */
-  case object Unspecified extends ActualDirection
+  case object Unspecified extends ActualDirection(2)
 
   /** Output element, or container with all outputs (even if forced)
     */
-  case object Output extends ActualDirection
+  case object Output extends ActualDirection(3)
 
   /** Input element, or container with all inputs (even if forced)
     */
-  case object Input extends ActualDirection
+  case object Input extends ActualDirection(4)
 
-  sealed abstract class BidirectionalDirection
-  case object Default extends BidirectionalDirection
-  case object Flipped extends BidirectionalDirection
+  // BidirectionalDirection is effectively an extension of ActualDirection, see its use in Bidirectional below.
+  // Thus, the numbering here is a continuation of the numbering in ActualDirection.
+  // Bidirectional.Default and Bidirectional.Flipped wrap these objects.
+  sealed abstract class BidirectionalDirection(private[chisel3] val value: Byte)
+  case object Default extends BidirectionalDirection(5)
+  case object Flipped extends BidirectionalDirection(6)
 
-  case class Bidirectional(dir: BidirectionalDirection) extends ActualDirection
+  // This constructor has 2 arguments (which need to be in sync) only to distinguish it from the other constructor
+  // Once that one is removed, delete _value
+  case class Bidirectional private[chisel3] (dir: BidirectionalDirection, _value: Byte)
+      extends ActualDirection(_value) {
+    @deprecated("Use companion object factory apply method", "Chisel 6.5")
+    def this(dir: BidirectionalDirection) = this(dir, dir.value)
+  }
+  object Bidirectional {
+    val Default = new Bidirectional(ActualDirection.Default, ActualDirection.Default.value)
+    val Flipped = new Bidirectional(ActualDirection.Flipped, ActualDirection.Flipped.value)
+    def apply(dir: BidirectionalDirection): ActualDirection = dir match {
+      case ActualDirection.Default => Default
+      case ActualDirection.Flipped => Flipped
+    }
+    @deprecated("Match on Bidirectional.Default and Bidirectional.Flipped directly instead", "Chisel 6.5")
+    def unapply(dir: Bidirectional): Option[BidirectionalDirection] = Some(dir.dir)
+  }
+
+  private[chisel3] def fromByte(b: Byte): ActualDirection = b match {
+    case Empty.value                 => Empty
+    case Unspecified.value           => Unspecified
+    case Output.value                => Output
+    case Input.value                 => Input
+    case Bidirectional.Default.value => Bidirectional.Default
+    case Bidirectional.Flipped.value => Bidirectional.Flipped
+    case _                           => throwException(s"Unexpected ActualDirection value $b")
+  }
 
   def fromSpecified(direction: SpecifiedDirection): ActualDirection = direction match {
     case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip => ActualDirection.Unspecified
@@ -336,12 +376,29 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   private[chisel3] def isConst: Boolean = _isConst
   private[chisel3] def isConst_=(isConst: Boolean) = _isConst = isConst
 
+  // Both _direction and _resolvedUserDirection are saved versions of computed variables (for
+  // efficiency, avoid expensive recomputation of frequent operations).
+  // Both are only valid after binding is set.
+
   // User-specified direction, local at this node only.
   // Note that the actual direction of this node can differ from child and parent specifiedDirection.
-  private var _specifiedDirection:         SpecifiedDirection = SpecifiedDirection.Unspecified
-  private[chisel3] def specifiedDirection: SpecifiedDirection = _specifiedDirection
+  private var _specifiedDirection:         Byte = SpecifiedDirection.Unspecified.value
+  private[chisel3] def specifiedDirection: SpecifiedDirection = SpecifiedDirection.fromByte(_specifiedDirection)
   private[chisel3] def specifiedDirection_=(direction: SpecifiedDirection) = {
-    _specifiedDirection = direction
+    _specifiedDirection = direction.value
+  }
+
+  // Direction of this node, accounting for parents (force Input / Output) and children.
+  private var _directionVar: Byte = ActualDirection.Unset
+  private def _direction: Option[ActualDirection] =
+    Option.when(_directionVar != ActualDirection.Unset)(ActualDirection.fromByte(_directionVar))
+
+  private[chisel3] def direction: ActualDirection = _direction.get
+  private[chisel3] def direction_=(actualDirection: ActualDirection): Unit = {
+    if (_direction.isDefined) {
+      throw RebindingException(s"Attempted reassignment of resolved direction to $this")
+    }
+    _directionVar = actualDirection.value
   }
 
   /** This overwrites a relative SpecifiedDirection with an explicit one, and is used to implement
@@ -349,10 +406,10 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     * DO NOT USE OUTSIDE THIS PURPOSE. THIS OPERATION IS DANGEROUS!
     */
   private[chisel3] def _assignCompatibilityExplicitDirection: Unit = {
-    (this, _specifiedDirection) match {
+    (this, specifiedDirection) match {
       case (_: Analog, _) => // nothing to do
-      case (_, SpecifiedDirection.Unspecified)                       => _specifiedDirection = SpecifiedDirection.Output
-      case (_, SpecifiedDirection.Flip)                              => _specifiedDirection = SpecifiedDirection.Input
+      case (_, SpecifiedDirection.Unspecified)                       => specifiedDirection = SpecifiedDirection.Output
+      case (_, SpecifiedDirection.Flip)                              => specifiedDirection = SpecifiedDirection.Input
       case (_, SpecifiedDirection.Input | SpecifiedDirection.Output) => // nothing to do
     }
   }
@@ -405,22 +462,6 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       case c: ConstrainedBinding => _parent.foreach(_.addId(this))
       case _ =>
     }
-  }
-
-  // Both _direction and _resolvedUserDirection are saved versions of computed variables (for
-  // efficiency, avoid expensive recomputation of frequent operations).
-  // Both are only valid after binding is set.
-
-  // Direction of this node, accounting for parents (force Input / Output) and children.
-  private var _directionVar: ActualDirection = null // using nullable var for better memory usage
-  private def _direction:    Option[ActualDirection] = Option(_directionVar)
-
-  private[chisel3] def direction: ActualDirection = _direction.get
-  private[chisel3] def direction_=(actualDirection: ActualDirection): Unit = {
-    if (_direction.isDefined) {
-      throw RebindingException(s"Attempted reassignment of resolved direction to $this")
-    }
-    _directionVar = actualDirection
   }
 
   private[chisel3] def stringAccessor(chiselType: String): String = {
