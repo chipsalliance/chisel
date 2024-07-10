@@ -353,6 +353,10 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
       )
     }
     exc.getMessage should include("Cannot define a probe on a non-equivalent type.")
+    exc.getMessage should include(
+      "Left (ProbeSpec_Anon.p: IO[UInt<4>]) and Right (ProbeSpec_Anon.Node(ProbeSpec_Anon.w: Wire[Bool]): OpResult[Bool]) have different types"
+    )
+
   }
 
   "Probe of a probe type" should "fail" in {
