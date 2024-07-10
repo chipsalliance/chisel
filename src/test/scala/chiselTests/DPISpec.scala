@@ -63,14 +63,14 @@ class DPIIntrinsicTest extends Module {
 }
 
 object Hello extends DPIClockedVoidFunctionImport {
-  val functionName = "hello"
+  override val functionName = "hello"
   final def apply() = super.call()
 }
 
 object AddClocked extends DPINonVoidFunctionImport[UInt] {
   override val functionName = "add"
-  val ret = UInt(32.W)
-  val clocked = true
+  override val ret = UInt(32.W)
+  override val clocked = true
   override val inputNames = Some(Seq("lhs", "rhs"))
   override val outputName = Some("result")
   final def apply(lhs: UInt, rhs: UInt): UInt = super.call(lhs, rhs)
@@ -78,8 +78,8 @@ object AddClocked extends DPINonVoidFunctionImport[UInt] {
 
 object AddUnclocked extends DPINonVoidFunctionImport[UInt] {
   override val functionName = "add"
-  val ret = UInt(32.W)
-  val clocked = false
+  override val ret = UInt(32.W)
+  override val clocked = false
   override val inputNames = Some(Seq("lhs", "rhs"))
   override val outputName = Some("result")
   final def apply(lhs: UInt, rhs: UInt): UInt = super.call(lhs, rhs)
