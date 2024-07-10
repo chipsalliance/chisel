@@ -1069,7 +1069,12 @@ object Data {
       * This Data this method is called on must be a hardware type.
       */
     def readOnly(implicit sourceInfo: SourceInfo): T = {
-      self.viewAsReadOnly(_ => "Cannot connect to read-only value")
+      val alreadyReadOnly = self.isLit || self.topBindingOpt.exists(_.isInstanceOf[ReadOnlyBinding])
+      if (alreadyReadOnly) {
+        self
+      } else {
+        self.viewAsReadOnly(_ => "Cannot connect to read-only value")
+      }
     }
   }
 }
