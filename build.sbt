@@ -391,7 +391,10 @@ lazy val unipublish =
         // chisel3.Bits is sealed
         ProblemFilters.exclude[ReversedMissingMethodProblem]("chisel3.Bits._padLit"),
         // hasAutoSeed was package private
-        ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.*.hasAutoSeed")
+        ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.*.hasAutoSeed"),
+        // _circuit was package private
+        ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.*._circuit"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.*._circuit_=")
       ),
       // Forward doc command to unidoc
       Compile / doc := (ScalaUnidoc / doc).value,
