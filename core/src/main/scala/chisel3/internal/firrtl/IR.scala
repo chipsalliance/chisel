@@ -95,7 +95,7 @@ private[chisel3] object ir {
 
     def earlyLocalName(id: HasId, includeRoot: Boolean): String = id.getOptionRef match {
       case Some(Index(Node(imm), Node(value))) =>
-        s"${earlyLocalName(imm, includeRoot)}[${earlyLocalName(imm, includeRoot)}]"
+        s"${earlyLocalName(imm, includeRoot)}[${earlyLocalName(value, includeRoot)}]"
       case Some(Index(Node(imm), arg)) => s"${earlyLocalName(imm, includeRoot)}[${arg.localName}]"
       case Some(Slot(Node(imm), name)) => s"${earlyLocalName(imm, includeRoot)}.$name"
       case Some(OpaqueSlot(Node(imm))) => s"${earlyLocalName(imm, includeRoot)}"
