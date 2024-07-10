@@ -435,7 +435,12 @@ object LayerConvention {
   }
 }
 
-case class Layer(info: Info, name: String, convention: LayerConvention.Type, body: Seq[Layer])
+case class Layer(
+  info:       Info,
+  name:       String,
+  convention: LayerConvention.Type,
+  outputDir:  Option[String],
+  body:       Seq[Layer])
     extends FirrtlNode
     with IsDeclaration
     with UseSerializer
