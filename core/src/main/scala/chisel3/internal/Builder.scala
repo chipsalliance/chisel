@@ -121,13 +121,6 @@ private[chisel3] trait HasId extends chisel3.InstanceId {
     _parentVar = target.getOrElse(null)
   }
 
-  // Set if the returned top-level module of a nested call to the Chisel Builder, see Definition.apply
-  private var _circuitVar:       BaseModule = null // using nullable var for better memory usage
-  private[chisel3] def _circuit: Option[BaseModule] = Option(_circuitVar)
-  private[chisel3] def _circuit_=(target: Option[BaseModule]): Unit = {
-    _circuitVar = target.getOrElse(null)
-  }
-
   private[chisel3] val _id: Long = Builder.idGen.next
 
   // TODO: remove this, but its removal seems to cause a nasty Scala compiler crash.
@@ -350,9 +343,14 @@ private[chisel3] trait HasId extends chisel3.InstanceId {
   }
   def circuitName: String = _parent match {
     case None =>
-      _circuit match {
-        case None    => instanceName
-        case Some(o) => o.circuitName
+      // Only modules have circuits
+      this match {
+        case b: BaseModule =>
+          b._circuit match {
+            case Some(c) => c.circuitName
+            case None    => instanceName
+          }
+        case _ => instanceName
       }
     case Some(ViewParent) => reifyParent.circuitName
     case Some(p)          => p.circuitName
