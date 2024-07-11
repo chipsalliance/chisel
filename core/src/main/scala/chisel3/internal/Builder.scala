@@ -265,8 +265,11 @@ private[chisel3] trait HasId extends chisel3.InstanceId {
     else setRef(OpaqueSlot(parent))
   }
 
-  private[chisel3] def setRef(parent: Node, index: Int):  Unit = setRef(Index(parent, ILit(index)))
-  private[chisel3] def setRef(parent: Node, index: UInt): Unit = setRef(Index(parent, index.ref))
+  private[chisel3] def setRef(parent: Node, index: Int): Unit = setRef(LitIndex(parent, index))
+  private[chisel3] def setRef(parent: Node, index: UInt): Unit = index.litOption match {
+    case Some(lit) if lit.isValidInt => setRef(LitIndex(parent, lit.intValue))
+    case _                           => setRef(Index(parent, index.ref))
+  }
   private[chisel3] def getRef:       Arg = _ref.get
   private[chisel3] def getOptionRef: Option[Arg] = _ref
 
@@ -651,6 +654,7 @@ private[chisel3] object Builder extends LazyLogging {
         case Slot(_, field)       => Some(field) // Record
         case OpaqueSlot(_)        => None // OpaqueSlots don't contribute to the name
         case Index(_, ILit(n))    => Some(n.toString) // Vec static indexing
+        case LitIndex(_, n)       => Some(n.toString) // Vec static indexing
         case Index(_, ULit(n, _)) => Some(n.toString) // Vec lit indexing
         case Index(_, _: Node) => None // Vec dynamic indexing
         case ModuleIO(_, n) => Some(n) // BlackBox port

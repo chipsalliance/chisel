@@ -7,7 +7,7 @@ import chisel3.internal.binding.{FirrtlMemTypeBinding, SramPortBinding}
 import chisel3.internal.plugin.autoNameRecursively
 import chisel3.experimental.SourceInfo
 import chisel3.internal.sourceinfo.{MemTransform, SourceInfoTransform}
-import chisel3.internal.firrtl.ir.{Arg, FirrtlMemory, ILit, Index, Node, Ref, Slot}
+import chisel3.internal.firrtl.ir.{Arg, FirrtlMemory, LitIndex, Node, Ref, Slot}
 import chisel3.util.experimental.loadMemoryFromFileInline
 import firrtl.annotations.MemoryLoadFileType
 import scala.language.reflectiveCalls
@@ -585,7 +585,7 @@ object SRAM {
         case v: Vec[_] =>
           v.elementsIterator.zipWithIndex.foreach {
             case (data, idx) =>
-              assignElementMask(data, writeMask, Index(arg, ILit(idx)))
+              assignElementMask(data, writeMask, LitIndex(arg, idx))
           }
       }
     }
@@ -599,7 +599,7 @@ object SRAM {
     ): Unit = {
       writeData.zip(writeMask).zipWithIndex.foreach {
         case ((elem, mask), idx) =>
-          assignElementMask(elem, mask, Index(arg, ILit(idx)))
+          assignElementMask(elem, mask, LitIndex(arg, idx))
       }
     }
   }

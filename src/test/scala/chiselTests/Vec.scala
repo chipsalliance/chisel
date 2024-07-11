@@ -425,7 +425,7 @@ class VecSpec extends ChiselPropSpec with Utils {
       val out = IO(Output(UInt(8.W)))
       out := vec(10.U)
     }))
-    chirrtl should include("""connect out, vec[UInt<2>(0h2)]""")
+    chirrtl should include("""connect out, vec[2]""")
     log should include("Dynamic index with width 4 is too wide for Vec of size 4 (expected index width 2)")
   }
 
