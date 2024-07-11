@@ -96,10 +96,11 @@ private[chisel3] object ir {
     def earlyLocalName(id: HasId, includeRoot: Boolean): String = id.getOptionRef match {
       case Some(Index(Node(imm), Node(value))) =>
         s"${earlyLocalName(imm, includeRoot)}[${earlyLocalName(value, includeRoot)}]"
-      case Some(Index(Node(imm), arg)) => s"${earlyLocalName(imm, includeRoot)}[${arg.localName}]"
-      case Some(Slot(Node(imm), name)) => s"${earlyLocalName(imm, includeRoot)}.$name"
-      case Some(OpaqueSlot(Node(imm))) => s"${earlyLocalName(imm, includeRoot)}"
-      case Some(arg) if includeRoot    => arg.name
+      case Some(LitIndex(Node(imm), idx)) => s"${earlyLocalName(imm, includeRoot)}[$idx]"
+      case Some(Index(Node(imm), arg))    => s"${earlyLocalName(imm, includeRoot)}[${arg.localName}]"
+      case Some(Slot(Node(imm), name))    => s"${earlyLocalName(imm, includeRoot)}.$name"
+      case Some(OpaqueSlot(Node(imm)))    => s"${earlyLocalName(imm, includeRoot)}"
+      case Some(arg) if includeRoot       => arg.name
       case None if includeRoot =>
         id match {
           case data: Data          => data._computeName(Some("?")).get
@@ -249,6 +250,13 @@ private[chisel3] object ir {
     def name: String = s"[$value]"
     override def contextualName(ctx: Component): String = s"${imm.contextualName(ctx)}[${value.contextualName(ctx)}]"
     override def localName: String = s"${imm.localName}[${value.localName}]"
+  }
+
+  // Like index above, except the index is a literal, used for elements of Vecs
+  case class LitIndex(imm: Arg, value: Int) extends Arg {
+    def name: String = s"[$value]"
+    override def contextualName(ctx: Component): String = s"${imm.contextualName(ctx)}[$value]"
+    override def localName: String = s"${imm.localName}[$value]"
   }
 
   sealed trait ProbeDetails { this: Arg =>
