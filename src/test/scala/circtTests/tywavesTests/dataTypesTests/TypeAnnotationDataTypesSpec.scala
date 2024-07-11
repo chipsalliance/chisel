@@ -222,4 +222,15 @@ class TypeAnnotationDataTypesSpec extends AnyFunSpec with Matchers with chiselTe
       // format: on
     }
   }
+
+  describe("Chisel enum Annotations") {
+    val targetDir = os.pwd / "test_run_dir" / "TywavesAnnotationSpec" / "Enum Values Annotations"
+    val args: Array[String] = Array("--target", "chirrtl", "--target-dir", targetDir.toString)
+    // format: off
+    it("should annotate chiselEnum") {
+      // ChiselEnums are already annotated, so simply emit a .fir file for firtool tests
+      new ChiselStage(true).execute(args, Seq(ChiselGeneratorAnnotation(() => new TopCircuitChiselEnum)))
+      // format: on
+    }
+  }
 }

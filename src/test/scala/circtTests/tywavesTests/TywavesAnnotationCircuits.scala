@@ -313,6 +313,52 @@ object TywavesAnnotationCircuits {
       }
 
     }
+
+    // Test enumeration
+    class TopCircuitChiselEnum extends RawModule {
+      object MyEnum extends ChiselEnum {
+        val A, B, C = Value
+      }
+
+      object MyEnum2 extends ChiselEnum {
+        val D, E, F = Value
+      }
+
+      object ScopeEnum {
+        object MyEnum2 extends ChiselEnum {
+          val D, E = Value
+        }
+      }
+
+      val inputEnum = IO(Input(MyEnum()))
+
+      val io = IO(Input(new Bundle {
+        val a = MyEnum()
+        val b = MyEnum2()
+        val c = Bool()
+      }))
+
+      // So the enumVecAnnotation will have fields
+      val i = IO(Input(new Bundle {
+        val e = MyEnum()
+        val b = new Bundle {
+          val inner_e = ScopeEnum.MyEnum2()
+          val NOENUM = Bool()
+          val inner_ee = MyEnum()
+          val inner_b = new Bundle {
+            val inner_inner_e = MyEnum()
+            val inner_NOENUM = Bool()
+            val inner_ee = MyEnum2()
+          }
+          val v = Vec(3, MyEnum())
+        }
+        val v = Vec(3, MyEnum())
+      }))
+
+      val vBundle = VecInit(i)
+      val v = IO(Input(Vec(3, MyEnum())))
+      val vv = IO(Input(Vec(2, Vec(2, MyEnum()))))
+    }
   }
 
   object MemCircuits {
