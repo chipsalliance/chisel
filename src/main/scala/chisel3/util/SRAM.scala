@@ -5,6 +5,10 @@ import chisel3._
 import chisel3.internal.Builder
 import chisel3.experimental.SourceInfo
 import chisel3.internal.sourceinfo.{MemTransform, SourceInfoTransform}
+<<<<<<< HEAD
+=======
+import chisel3.internal.firrtl.ir.{Arg, FirrtlMemory, LitIndex, Node, Ref, Slot}
+>>>>>>> c107e313d (Specialize Index for literal indices with LitIndex (#4268))
 import chisel3.util.experimental.loadMemoryFromFileInline
 import firrtl.annotations.MemoryLoadFileType
 import scala.language.reflectiveCalls
@@ -520,6 +524,59 @@ object SRAM {
     _out
   }
 
+<<<<<<< HEAD
+=======
+  /** Assigns a given SRAM-style mask to a FIRRTL memory port mask. The FIRRTL
+    * memory port mask is tied to 1 for unmasked SRAMs.
+    *
+    * @param memWriteDataTpe write data type to get masked
+    * @param writeMaskOpt write mask to assign
+    * @param firrtlMemPortRef reference to the FIRRTL memory port
+    * @param maskName name of the mask in the FIRRTL memory port
+    */
+  private def assignMask(
+    memWriteDataTpe:  Data,
+    writeMaskOpt:     Option[Vec[Bool]],
+    firrtlMemPortRef: Arg,
+    maskName:         String
+  ): Unit = {
+    memWriteDataTpe match {
+      case v: Vec[_] =>
+        writeMaskOpt match {
+          case Some(m) => assignVecMask(v, m, Slot(firrtlMemPortRef, maskName))
+          case None    => assignVecMask(v, VecInit.fill(v.length)(true.B), Slot(firrtlMemPortRef, maskName))
+        }
+      case e => assignElementMask(e, true.B, Slot(firrtlMemPortRef, maskName))
+    }
+
+    def assignElementMask(writeData: Data, writeMask: Bool, arg: Arg)(implicit sourceInfo: SourceInfo): Unit = {
+      writeData match {
+        case e: Element => Builder.pushCommand(ir.Connect(sourceInfo, arg, writeMask.ref))
+        case r: Record =>
+          r.elements.foreach { case (name, data) => assignElementMask(data, writeMask, Slot(arg, name)) }
+        case v: Vec[_] =>
+          v.elementsIterator.zipWithIndex.foreach {
+            case (data, idx) =>
+              assignElementMask(data, writeMask, LitIndex(arg, idx))
+          }
+      }
+    }
+
+    def assignVecMask[T <: Data](
+      writeData: Vec[T],
+      writeMask: Vec[Bool],
+      arg:       Arg
+    )(
+      implicit sourceInfo: SourceInfo
+    ): Unit = {
+      writeData.zip(writeMask).zipWithIndex.foreach {
+        case ((elem, mask), idx) =>
+          assignElementMask(elem, mask, LitIndex(arg, idx))
+      }
+    }
+  }
+
+>>>>>>> c107e313d (Specialize Index for literal indices with LitIndex (#4268))
   // Helper util to generate portedness descriptors based on the input parameters
   // supplied to SRAM.apply
   private[chisel3] def portedness(rd: Int, wr: Int, rw: Int): String = {

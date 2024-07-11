@@ -9,6 +9,7 @@ import scala.annotation.implicitNotFound
 import scala.collection.mutable.HashMap
 import chisel3._
 import chisel3.experimental.dataview.{isView, reify, reifyIdentityView}
+<<<<<<< HEAD
 import chisel3.internal.firrtl.ir.{Arg, ILit, Index, ModuleIO, Slot, ULit}
 import chisel3.internal.{
   throwException,
@@ -19,6 +20,11 @@ import chisel3.internal.{
   ViewParent,
   ViewWriteability
 }
+=======
+import chisel3.internal.firrtl.ir.{Arg, ILit, Index, LitIndex, ModuleIO, Slot, ULit}
+import chisel3.internal.{throwException, Builder, ViewParent}
+import chisel3.internal.binding.{AggregateViewBinding, ChildBinding, CrossModuleBinding, ViewBinding, ViewWriteability}
+>>>>>>> c107e313d (Specialize Index for literal indices with LitIndex (#4268))
 
 /** Represents lookup typeclass to determine how a value accessed from an original IsInstantiable
   *   should be tweaked to return the Instance's version
@@ -135,7 +141,7 @@ object Lookupable {
     def unrollCoordinates(res: List[Arg], d: Data): (List[Arg], Data) = d.binding.get match {
       case ChildBinding(parent) =>
         d.getRef match {
-          case arg @ (_: Slot | _: Index | _: ModuleIO) => unrollCoordinates(arg :: res, parent)
+          case arg @ (_: Slot | _: Index | _: LitIndex | _: ModuleIO) => unrollCoordinates(arg :: res, parent)
           case other => err(s"unrollCoordinates failed for '$arg'! Unexpected arg '$other'")
         }
       case _ => (res, d)
@@ -146,6 +152,7 @@ object Lookupable {
         else {
           val next = (coor.head, d) match {
             case (Slot(_, name), rec: Record) => rec._elements(name)
+            case (LitIndex(_, n), vec: Vec[_]) => vec.apply(n)
             case (Index(_, ILit(n)), vec: Vec[_]) => vec.apply(n.toInt)
             case (ModuleIO(_, name), rec: Record) => rec._elements(name)
             case (arg, _) => err(s"Unexpected Arg '$arg' applied to '$d'! Root was '$start'.")

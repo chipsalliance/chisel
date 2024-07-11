@@ -62,6 +62,7 @@ class DataPrintSpec extends ChiselFlatSpec with Matchers {
     }))
     port.vec(idx).toString should be("BoundDataModule.port.vec[idx]: IO[UInt<8>]")
     port.vec(jdx.value).toString should be("BoundDataModule.port.vec[jdx.value]: IO[UInt<8>]")
+    port.vec(3.U).toString should be("BoundDataModule.port.vec[3]: IO[UInt<8>]")
 
     class InnerModule extends Module {
       val io = IO(Output(new Bundle {
