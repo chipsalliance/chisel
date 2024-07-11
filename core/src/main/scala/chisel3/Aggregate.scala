@@ -258,8 +258,9 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
   // simpler.
   private lazy val self: Seq[T] = {
     val _self = Vector.fill(length)(gen)
+    val thisNode = Node(this) // Share the same Node for all elements.
     for ((elt, i) <- _self.zipWithIndex)
-      elt.setRef(this, i)
+      elt.setRef(thisNode, i)
     _self
   }
 
@@ -411,7 +412,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
     port.bind(ChildBinding(this), reconstructedResolvedDirection)
 
     val i = Vec.truncateIndex(p, length)(UnlocatableSourceInfo)
-    port.setRef(this, i)
+    port.setRef(Node(this), i)
 
     port
   }
@@ -1021,9 +1022,10 @@ abstract class Record extends Aggregate {
       !opaqueType || (_elements.size == 1 && _elements.head._1 == ""),
       s"Opaque types must have exactly one element with an empty name, not ${_elements.size}: ${elements.keys.mkString(", ")}"
     )
+    val thisNode = Node(this) // Share the same Node for all elements.
     // Names of _elements have already been namespaced (and therefore sanitized)
     for ((name, elt) <- _elements) {
-      elt.setRef(this, name, opaque = opaqueType)
+      elt.setRef(thisNode, name, opaque = opaqueType)
     }
   }
 

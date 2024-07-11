@@ -6,7 +6,7 @@ import scala.language.experimental.macros
 
 import chisel3.{Module, RawModule, SpecifiedDirection}
 import chisel3.experimental.{BaseModule, SourceInfo}
-import chisel3.internal.firrtl.ir.{DefClass, DefObject}
+import chisel3.internal.firrtl.ir.{DefClass, DefObject, Node}
 import chisel3.internal.sourceinfo.InstTransform
 import chisel3.internal.{throwException, Builder, HasId, NamedComponent}
 import chisel3.internal.binding.ObjectFieldBinding
@@ -66,14 +66,14 @@ class DynamicObject private[chisel3] (val className: ClassType) extends HasId wi
     */
   def getField[T](name: String)(implicit tpe: PropertyType[T]): Property[tpe.Type] = {
     val field = Property[T]()
-    field.setRef(this, name)
+    field.setRef(Node(this), name)
     field.bind(ObjectFieldBinding(_parent.get), SpecifiedDirection.Unspecified)
     field
   }
 
   def getField[T](name: String, property: Property[T]): Property[T] = {
     val field = property.cloneType
-    field.setRef(this, name)
+    field.setRef(Node(this), name)
     field.bind(ObjectFieldBinding(_parent.get), SpecifiedDirection.Unspecified)
     field
   }
