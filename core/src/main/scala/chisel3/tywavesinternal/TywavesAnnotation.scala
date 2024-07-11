@@ -121,7 +121,7 @@ object TywavesChiselAnnotation {
       case e @ DefSeqMemory(info, id, t, size, ruw)     => createAnnoMem(id, id.getClass.getSimpleName, size, t)
       case e @ FirrtlMemory(info, id, t, size, readPortNames, writePortNames, readwritePortNames) =>
         createAnnoMem(id, id.getClass.getSimpleName, size, t)
-      case e @ DefMemPort(info, id, source, dir, idx, clock)        => createAnno(id)
+      case e @ DefMemPort(info, id, source, dir, idx, clock)        => Seq.empty //createAnno(id)
       case Connect(info, loc, exp)                                  => createAnno(exp)
       case PropAssign(info, loc, exp)                               => ???
       case Attach(info, locs)                                       => ???
