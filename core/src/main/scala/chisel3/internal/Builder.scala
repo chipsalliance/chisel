@@ -259,13 +259,13 @@ private[chisel3] trait HasId extends chisel3.InstanceId {
       _refVar = imm
     }
   }
-  private[chisel3] def setRef(parent: HasId, name: String, opaque: Boolean = false): Unit = {
-    if (!opaque) setRef(Slot(Node(parent), name))
-    else setRef(OpaqueSlot(Node(parent)))
+  private[chisel3] def setRef(parent: Node, name: String, opaque: Boolean = false): Unit = {
+    if (!opaque) setRef(Slot(parent, name))
+    else setRef(OpaqueSlot(parent))
   }
 
-  private[chisel3] def setRef(parent: HasId, index: Int):  Unit = setRef(Index(Node(parent), ILit(index)))
-  private[chisel3] def setRef(parent: HasId, index: UInt): Unit = setRef(Index(Node(parent), index.ref))
+  private[chisel3] def setRef(parent: Node, index: Int):  Unit = setRef(Index(parent, ILit(index)))
+  private[chisel3] def setRef(parent: Node, index: UInt): Unit = setRef(Index(parent, index.ref))
   private[chisel3] def getRef:       Arg = _ref.get
   private[chisel3] def getOptionRef: Option[Arg] = _ref
 
