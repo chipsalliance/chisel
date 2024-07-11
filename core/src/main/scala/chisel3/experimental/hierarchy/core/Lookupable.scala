@@ -9,8 +9,7 @@ import scala.annotation.implicitNotFound
 import scala.collection.mutable.HashMap
 import chisel3._
 import chisel3.experimental.dataview.{isView, reify, reifyIdentityView}
-<<<<<<< HEAD
-import chisel3.internal.firrtl.ir.{Arg, ILit, Index, ModuleIO, Slot, ULit}
+import chisel3.internal.firrtl.ir.{Arg, ILit, Index, LitIndex, ModuleIO, Slot, ULit}
 import chisel3.internal.{
   throwException,
   AggregateViewBinding,
@@ -20,11 +19,6 @@ import chisel3.internal.{
   ViewParent,
   ViewWriteability
 }
-=======
-import chisel3.internal.firrtl.ir.{Arg, ILit, Index, LitIndex, ModuleIO, Slot, ULit}
-import chisel3.internal.{throwException, Builder, ViewParent}
-import chisel3.internal.binding.{AggregateViewBinding, ChildBinding, CrossModuleBinding, ViewBinding, ViewWriteability}
->>>>>>> c107e313d (Specialize Index for literal indices with LitIndex (#4268))
 
 /** Represents lookup typeclass to determine how a value accessed from an original IsInstantiable
   *   should be tweaked to return the Instance's version
