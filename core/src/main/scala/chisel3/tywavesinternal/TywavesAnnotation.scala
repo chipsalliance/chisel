@@ -141,7 +141,7 @@ object TywavesChiselAnnotation {
       //      }) //++ createAnno(chisel3.Wire(innerType))
     }
     command match {
-      case e: DefPrim[_] => Seq.empty // TODO: check prim
+      case e: DefPrim[_] => createAnno(e.id)
       case e @ DefWire(info, id)                        => createAnno(id)
       case e @ DefReg(info, id, clock)                  => createAnno(id)
       case e @ DefRegInit(info, id, clock, reset, init) => createAnno(id)
@@ -149,8 +149,10 @@ object TywavesChiselAnnotation {
       case e @ DefSeqMemory(info, id, t, size, ruw)     => createAnnoMem(id, id.getClass.getSimpleName, size, t)
       case e @ FirrtlMemory(info, id, t, size, readPortNames, writePortNames, readwritePortNames) =>
         createAnnoMem(id, id.getClass.getSimpleName, size, t)
-      case e @ DefMemPort(info, id, source, dir, idx, clock)        => Seq.empty //createAnno(id)
-      case Connect(info, loc, exp)                                  => createAnno(exp)
+      // Annotating DefMemPort causes errors in firtool, firtool does not support annotating DefMemPort
+      case e @ DefMemPort(info, id, source, dir, idx, clock) => Seq.empty //createAnno(id)
+      // Connect should not be annotated. I used, it would annotate also tmp expressions that are not declared
+      case Connect(info, loc, exp)                                  => Seq.empty
       case PropAssign(info, loc, exp)                               => Seq.empty
       case Attach(info, locs)                                       => Seq.empty
       case DefInvalid(info, arg)                                    => Seq.empty // TODO: check invalid
