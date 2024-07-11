@@ -206,8 +206,17 @@ class TypeAnnotationDataTypesSpec extends AnyFunSpec with Matchers with chiselTe
         (createExpected("~TopCircuitWhenElse\\|TopCircuitWhenElse>sel", "UInt<3>", "IO"), 1),
         // Tmp
         (createExpected("~TopCircuitWhenElse\\|TopCircuitWhenElse>evenSel", "UInt<8>", "OpResult"), 1),
+        (createExpected("~TopCircuitWhenElse\\|TopCircuitWhenElse>_evenSel_T", "UInt<9>", "OpResult"), 1),
         (createExpected("~TopCircuitWhenElse\\|TopCircuitWhenElse>oddSel", "UInt<8>", "OpResult"), 1),
-        (createExpected("~TopCircuitWhenElse\\|TopCircuitWhenElse>selIsOne", "UInt<8>", "OpResult"), 1)
+        (createExpected("~TopCircuitWhenElse\\|TopCircuitWhenElse>_oddSel_T", "UInt<9>", "OpResult"), 1),
+        (createExpected("~TopCircuitWhenElse\\|TopCircuitWhenElse>selIsOne", "UInt<8>", "OpResult"), 1),
+        (createExpected("~TopCircuitWhenElse\\|TopCircuitWhenElse>_selIsOne_T", "UInt<9>", "OpResult"), 1),
+        (createExpected("~TopCircuitWhenElse\\|TopCircuitWhenElse>tmp", "UInt<3>", "OpResult"), 1),
+        (createExpected("~TopCircuitWhenElse\\|TopCircuitWhenElse>_tmp_T", "UInt<4>", "OpResult"), 1),
+        (createExpected("~TopCircuitWhenElse\\|TopCircuitWhenElse>_T", "UInt<2>", "OpResult"), 1),
+        (createExpected("~TopCircuitWhenElse\\|TopCircuitWhenElse>_T_1", "Bool", "OpResult"), 1),
+        (createExpected("~TopCircuitWhenElse\\|TopCircuitWhenElse>_T_2", "Bool", "OpResult"), 1),
+
       )
       checkAnno(expectedMatches, string)
       // format: on

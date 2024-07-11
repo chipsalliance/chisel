@@ -297,6 +297,7 @@ object TywavesAnnotationCircuits {
       val out = IO(Output(UInt(8.W)))
       val sel = IO(Input(UInt(math.sqrt(8).ceil.toInt.W)))
 
+      val tmp = sel + 1.U
       when(sel % 2.U === 0.U) {
         val outTmp = inSeq(sel)
         val evenSel = outTmp + 1.U
