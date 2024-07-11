@@ -9,6 +9,8 @@ import chisel3.probe._
 import chisel3.properties._
 import chisel3.experimental.SourceInfo
 import chisel3.experimental.dataview._
+import chisel3.experimental.BundleLiterals._
+import chisel3.experimental.VecLiterals._
 
 import org.scalactic.source.Position
 
@@ -363,5 +365,32 @@ class ReadOnlySpec extends ChiselFlatSpec with Utils {
         op(x, w)
       })
     }
+  }
+
+  it should "NOT create a view for literals" in {
+    ChiselStage.emitCHIRRTL(new RawModule {
+      val a = 123.U
+      val b = -27.S
+      val c = (new BiggerBundle).Lit(_.fizz -> 123.U, _.buzz -> 456.U)
+      val d = Vec.Lit(0.U, 23.U)
+      // Use referential equality to check they are the same objects (no view introduced)
+      assert(a.readOnly eq a)
+      assert(b.readOnly eq b)
+      assert(c.readOnly eq c)
+      assert(d.readOnly eq d)
+    })
+  }
+
+  it should "NOT create a view for op results" in {
+    ChiselStage.emitCHIRRTL(new RawModule {
+      val a = IO(Input(UInt(8.W)))
+      val b = IO(Input(new BiggerBundle))
+
+      val x = a + 1.U
+      val y = b.asUInt
+      // Use referential equality to check they are the same objects (no view introduced)
+      assert(x.readOnly eq x)
+      assert(y.readOnly eq y)
+    })
   }
 }
