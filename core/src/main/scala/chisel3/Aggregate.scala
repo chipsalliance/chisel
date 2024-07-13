@@ -182,7 +182,8 @@ trait VecFactory extends SourceInfoDoc {
     implicit sourceInfo: SourceInfo
   ): UInt = {
     val w = (n - 1).bitLength
-    if (n <= 1) 0.U
+    if (n <= 1) WireInit(0.U) // Need the Wire otherwise we emit vec[0] which is illegal FIRRTL.
+    // Other cases do not need a Wire because the literal is truncated to fit.
     else if (idx.width.known && idx.width.get <= w) idx
     else if (idx.width.known) idx(w - 1, 0)
     else (idx | 0.U(w.W))(w - 1, 0)
