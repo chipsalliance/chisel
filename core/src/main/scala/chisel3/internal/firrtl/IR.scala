@@ -385,6 +385,7 @@ private[chisel3] object ir {
     sourceInfo: SourceInfo,
     name:       String,
     convention: LayerConvention.Type,
+    outputDir:  Option[String],
     children:   Seq[Layer])
 
   case class LayerBlockBegin(sourceInfo: SourceInfo, layer: chisel3.layer.Layer) extends Command

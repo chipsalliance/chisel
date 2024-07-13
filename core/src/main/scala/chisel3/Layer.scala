@@ -6,6 +6,7 @@ import chisel3.experimental.{SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal.{Builder, HasId}
 import chisel3.internal.firrtl.ir.{LayerBlockBegin, LayerBlockEnd, Node}
 import chisel3.util.simpleClassName
+import java.nio.file.{Path, Paths}
 import scala.annotation.tailrec
 import scala.collection.mutable.LinkedHashSet
 
@@ -28,12 +29,23 @@ object layer {
     case object Bind extends Type
   }
 
+  sealed trait OutputDirBehavior
+  final case object DefaultOutputDir extends OutputDirBehavior
+  final case object NoOutputDir extends OutputDirBehavior
+  final case class CustomOutputDir(path: Path) extends OutputDirBehavior
+
   /** A layer declaration.
     *
     * @param convention how this layer should be lowered
+    * @param outputDirBehavior an optional user-provided output directory for this layer
     * @param _parent the parent layer, if any
     */
-  abstract class Layer(val convention: Convention.Type)(implicit _parent: Layer, _sourceInfo: SourceInfo) {
+  abstract class Layer(
+    val convention:        Convention.Type,
+    val outputDirBehavior: OutputDirBehavior = DefaultOutputDir
+  )(
+    implicit _parent: Layer,
+    _sourceInfo:      SourceInfo) {
     self: Singleton =>
 
     /** This establishes a new implicit val for any nested layers. */
@@ -49,6 +61,30 @@ object layer {
       case null       => "<root>"
       case Layer.Root => name
       case _          => s"${parent.fullName}.$name"
+    }
+
+    /** The output directory of this layer.
+      *
+      * The output directory of a layer serves as a hint to the toolchain,
+      * specifying where files related to the layer (such as a bindfile, in
+      * verilog) should be output. If a layer has no output directory, then files
+      * related to this layer will be placed in the default output directory.
+      *
+      * Unless overridden, the outputDir's name matches the name of the layer,
+      * and is located under the parent layer's directory.
+      */
+    private[chisel3] final def outputDir: Option[Path] = outputDirBehavior match {
+      case NoOutputDir          => None
+      case CustomOutputDir(dir) => Some(dir)
+      case DefaultOutputDir =>
+        parent match {
+          case Layer.Root => Some(Paths.get(name))
+          case _ =>
+            parent.outputDir match {
+              case None      => Some(Paths.get(name))
+              case Some(dir) => Some(dir.resolve(name))
+            }
+        }
     }
 
     @tailrec
