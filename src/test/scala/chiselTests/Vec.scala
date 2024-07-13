@@ -466,4 +466,18 @@ class VecSpec extends ChiselPropSpec with Utils {
     }))
     log should be("")
   }
+
+  property("Indexing a size 0 Vec should warn but also emit legal FIRRTL") {
+    val (log, chirrtl) = grabLog(emitCHIRRTL(new RawModule {
+      val vec = IO(Input(Vec(0, UInt(8.W))))
+      val idx = IO(Input(UInt(2.W)))
+      val out = IO(Output(UInt(8.W)))
+      out := vec(idx)
+    }))
+    log should include("Cannot extract from Vec of size 0.")
+    chirrtl should include("input vec : UInt<8>[0]")
+    chirrtl should include("wire _out_WIRE : UInt")
+    chirrtl should include("connect _out_WIRE, UInt<1>(0h0)")
+    chirrtl should include("connect out, vec[_out_WIRE]")
+  }
 }
