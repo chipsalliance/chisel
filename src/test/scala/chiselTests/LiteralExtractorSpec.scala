@@ -67,6 +67,7 @@ class LiteralExtractorSpec extends ChiselFlatSpec {
     bigIntFromDouble should be(bigInt53)
   }
 
+<<<<<<< HEAD
   "encoding and decoding of Intervals" should "round trip" in {
     val rangeMin = BigDecimal(-31.5)
     val rangeMax = BigDecimal(32.5)
@@ -82,6 +83,20 @@ class LiteralExtractorSpec extends ChiselFlatSpec {
         literal.litValue.toDouble / 4.0 should be(value)
       }
     }
+=======
+  "doubles and big decimals" should "be rounded identically" in {
+
+    for (double <- Seq(1.0, 1.1, 1.5, 1.6, 2.5)) {
+
+      val bigDecimal = BigDecimal(double)
+
+      val bigIntFromDouble = Num.toBigInt(double, 0)
+      val bigIntFromBigDecimal = Num.toBigInt(bigDecimal, 0)
+
+      bigIntFromDouble should be(bigIntFromBigDecimal)
+    }
+
+>>>>>>> b9f57032b (toBigInt should round identically for Double and BigDecimal (#3921))
   }
 
   "literals declared outside a builder context" should "compare with those inside builder context" in {
