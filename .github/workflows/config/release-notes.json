@@ -51,6 +51,12 @@
     "template": "${{CHANGELOG}}\n\n**Full Changelog:** ${{RELEASE_DIFF}}\n",
     "pr_template": "- ${{TITLE}} (by @${{AUTHOR}} in ${{URL}})${{RELEASE_NOTES}}",
     "empty_template": "- no changes",
+    "reference": {
+      "pattern": "This is an automatic backport of pull request #(\d+)",
+      "on_property": "body",
+      "method": "replace",
+      "target": "$1"
+    },
     "transformers": [
       {
         "pattern": "<!--.*-->",

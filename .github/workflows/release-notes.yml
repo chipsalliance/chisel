@@ -25,7 +25,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Build Release Notes
         id: release-notes
-        uses: mikepenz/release-changelog-builder-action@v4.1.1
+        uses: mikepenz/release-changelog-builder-action@v4.2.2
         with:
           configuration: .github/workflows/config/release-notes.json
           failOnError: true
