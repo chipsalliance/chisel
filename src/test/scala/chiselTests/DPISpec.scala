@@ -172,7 +172,7 @@ class DPISpec extends AnyFunSpec with Matchers {
         new DPIIntrinsicTest(),
         firtoolOpts = Array("--lowering-options=locationInfoStyle=none,disallowPortDeclSharing")
       )
-      verilog should include("import \"DPI-C\" function void add(")
+      verilog should include("import \"DPI-C\" context function void add(")
       verilog should include("input  int lhs,")
       verilog should include("input  int rhs,")
       verilog should include("output int result")
