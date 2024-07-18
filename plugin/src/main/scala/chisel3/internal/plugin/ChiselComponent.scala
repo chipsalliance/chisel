@@ -93,7 +93,8 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
         tq"chisel3.MemBase[_]",
         tq"chisel3.VerificationStatement",
         tq"chisel3.properties.DynamicObject",
-        tq"chisel3.Disable"
+        tq"chisel3.Disable",
+        tq"chisel3.experimental.AffectsChiselName"
       )
     private val shouldMatchModule:   Type => Boolean = shouldMatchGen(tq"chisel3.experimental.BaseModule")
     private val shouldMatchInstance: Type => Boolean = shouldMatchGen(tq"chisel3.experimental.hierarchy.Instance[_]")
