@@ -125,8 +125,7 @@ package object experimental {
     */
   trait AffectsChiselPrefix
 
-  /** If mixed in with a user-defined type, Chisel will attempt to name
-    * the thing using the naming plugin
+  /** If mixed in with a user-defined type, Chisel will attempt to name instances of the type
     */
   trait AffectsChiselName
 

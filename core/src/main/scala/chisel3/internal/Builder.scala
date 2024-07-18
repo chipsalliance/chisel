@@ -921,7 +921,7 @@ private[chisel3] object Builder extends LazyLogging {
       product.productIterator.zip(product.productElementNames).foreach {
         case (elt, fullName) =>
           val name = fullName.stripPrefix("_")
-          val prefixedName = if (name != "") s"${prefix}_${name}" else prefix
+          val prefixedName = if (name.nonEmpty) s"${prefix}_${name}" else prefix
           nameRecursively(prefixedName, elt, namer)
       }
     case disable: Disable => nameRecursively(prefix, disable.value, namer)
