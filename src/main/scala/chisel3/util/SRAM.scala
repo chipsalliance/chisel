@@ -580,6 +580,9 @@ object SRAM {
     def assignElementMask(writeData: Data, writeMask: Bool, arg: Arg)(implicit sourceInfo: SourceInfo): Unit = {
       writeData match {
         case e: Element => Builder.pushCommand(ir.Connect(sourceInfo, arg, writeMask.ref))
+        case r: Record if r._isOpaqueType =>
+          val ("", elt) = r.elements.head
+          assignElementMask(elt, writeMask, arg)
         case r: Record =>
           r.elements.foreach { case (name, data) => assignElementMask(data, writeMask, Slot(arg, name)) }
         case v: Vec[_] =>
