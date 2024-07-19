@@ -9,7 +9,7 @@ section: "chisel3"
 Chisel follows [Semantic Versioning 2.0.0](https://semver.org).
 Project versions are of the form `MAJOR.MINOR.PATCH`.
 An incremented `MAJOR` version means there may be backwards incompatible changes (typically after an appropriate deprecation schedule).
-An incrementaled `MINOR` version means there are changes in functionality (new APIs) in a backwards compatible manner.
+An incremented `MINOR` version means there are changes in functionality (new APIs) in a backwards compatible manner.
 Importantly, Chisel maintains _binary compatibility_ between minor versions of the same major version.
 For example, a project compiled against Chisel 5.0.0 can be used with future Chisel versions 5.1.0 or 5.100.2.
 An incremented `PATCH` version means there are backwards compatible bug fixes.
@@ -45,7 +45,7 @@ println(FirtoolVersionsTable.prereleaseTable)
 
 **As of Chisel 5.0.0, this and following sections no longer apply.**
 
-Prior to the relese of Chisel 5.0.0, Chisel and related projects followed a versioning scheme similar to [PVP](https://pvp.haskell.org/).
+Prior to the release of Chisel 5.0.0, Chisel and related projects followed a versioning scheme similar to [PVP](https://pvp.haskell.org/).
 Project versions were of the form `A.B.C` where `A.B` specifies the _Major_ version and `C` specifies the _Minor_ version.
 Projects maintain _binary compatibility_ between minor versions of the same major version.
 
