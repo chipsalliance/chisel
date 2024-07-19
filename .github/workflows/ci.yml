@@ -102,6 +102,8 @@ jobs:
   deploy_website:
     name: Deploy Website
     runs-on: ubuntu-22.04
+    permissions:
+      contents: write
     needs: [all_tests_passed]
     # Only Deploy website on pushes to main, may change to a stable branch
     if: (github.event_name == 'push') && (github.ref_name == 'main')
