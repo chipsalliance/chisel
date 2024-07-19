@@ -125,6 +125,10 @@ package object experimental {
     */
   trait AffectsChiselPrefix
 
+  /** If mixed in with a user-defined type, Chisel will attempt to name instances of the type
+    */
+  trait AffectsChiselName
+
   object BundleLiterals {
     implicit class AddBundleLiteralConstructor[T <: Record](x: T) {
       def Lit(elems: (T => (Data, Data))*)(implicit sourceInfo: SourceInfo): T = {

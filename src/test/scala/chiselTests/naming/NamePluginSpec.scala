@@ -5,6 +5,7 @@ package chiselTests.naming
 import chisel3._
 import chisel3.aop.Select
 import chisel3.experimental.prefix
+import chisel3.experimental.AffectsChiselName
 import chiselTests.{ChiselFlatSpec, Utils}
 import circt.stage.ChiselStage
 
@@ -451,6 +452,28 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
 
     aspectTest(() => new Test) { top: Test =>
       Select.wires(top).map(_.instanceName) should be(List("x", "y", "z"))
+    }
+  }
+
+  "AffectsChiselName" should "name the user-defined type" in {
+    case class SomeClass(d: UInt) extends AffectsChiselName
+    class Test extends Module {
+      val x = SomeClass(Wire(UInt(8.W)))
+    }
+    aspectTest(() => new Test) { top: Test =>
+      Select.wires(top).map(_.instanceName) should be(List("x_d"))
+    }
+  }
+
+  "AffectsChiselName with a user-defined Product" should "give an empty name" in {
+    case class SomeClass(d: UInt) extends AffectsChiselName {
+      override def productElementName(n: Int): String = ""
+    }
+    class Test extends Module {
+      val x = SomeClass(Wire(UInt(8.W)))
+    }
+    aspectTest(() => new Test) { top: Test =>
+      Select.wires(top).map(_.instanceName) should be(List("x"))
     }
   }
 }

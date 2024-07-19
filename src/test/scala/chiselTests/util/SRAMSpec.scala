@@ -4,10 +4,12 @@ package chiselTests.util
 
 import chisel3._
 import chisel3.util.{MemoryReadWritePort, SRAM}
-import chisel3.experimental.{annotate, ChiselAnnotation}
+import chisel3.experimental.{annotate, ChiselAnnotation, OpaqueType}
 import chiselTests.ChiselFlatSpec
 import _root_.circt.stage.ChiselStage.{emitCHIRRTL, emitSystemVerilog}
 import firrtl.annotations.{Annotation, ReferenceTarget, SingleTargetAnnotation}
+
+import scala.collection.immutable.SeqMap
 
 class SRAMSpec extends ChiselFlatSpec {
   case class DummyAnno(target: ReferenceTarget) extends SingleTargetAnnotation[ReferenceTarget] {
@@ -179,6 +181,37 @@ class SRAMSpec extends ChiselFlatSpec {
           val x = UInt(3.W)
           val y = Vec(4, Bool())
         },
+        numReadPorts = 0,
+        numWritePorts = 0,
+        numReadwritePorts = 1
+      )
+      val unmaskedRecordMemIo = IO(unmaskedRecordMem.cloneType)
+      unmaskedRecordMemIo :<>= unmaskedRecordMem
+    }
+    val chirrtl = emitCHIRRTL(new Top)
+    chirrtl should include("connect unmaskedRecordMem_sram.RW0.wmask.y[0], UInt<1>(0h1)")
+    chirrtl should include("connect unmaskedRecordMem_sram.RW0.wmask.y[1], UInt<1>(0h1)")
+    chirrtl should include("connect unmaskedRecordMem_sram.RW0.wmask.y[2], UInt<1>(0h1)")
+    chirrtl should include("connect unmaskedRecordMem_sram.RW0.wmask.y[3], UInt<1>(0h1)")
+    chirrtl should include("connect unmaskedRecordMem_sram.RW0.wmask.x, UInt<1>(0h1)")
+
+    // check CIRCT can compile the output
+    val sv = emitSystemVerilog(new Top)
+  }
+
+  it should "emit proper masks for OpaqueTypes memories" in {
+    class Box[T <: Data](gen: T) extends Record with OpaqueType {
+      val underlying = gen.cloneType
+      val elements = SeqMap("" -> gen)
+    }
+    class Top extends Module {
+      // SRAM does not currently support masked Records
+      val unmaskedRecordMem = SRAM(
+        size = 64,
+        tpe = new Box(new Bundle {
+          val x = new Box(UInt(3.W))
+          val y = new Box(Vec(4, Bool()))
+        }),
         numReadPorts = 0,
         numWritePorts = 0,
         numReadwritePorts = 1
