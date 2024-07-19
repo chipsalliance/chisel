@@ -58,7 +58,7 @@ extern "C" {
 extern int port_getter(int id, int *bitWidth, void (**getter)(uint8_t *));
 extern int port_setter(int id, int *bitWidth, void (**setter)(const uint8_t *));
 
-/// SV scope setter for port_setter/port_setter.
+/// SV scope setter for port_getter and port_setter
 svScope testbenchScope;
 svScope setScopeToTestBench() { return svSetScope(testbenchScope); }
 void initTestBenchScope() { testbenchScope = svGetScope(); }
