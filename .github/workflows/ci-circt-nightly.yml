@@ -1,5 +1,8 @@
 name: Nightly CIRCT
 
+permissions:
+  contents: write
+
 env:
   # This is the name of the branch containing accumulated patches that need to
   # be applied in order for the latest CIRCT to work with Chisel.
