@@ -112,23 +112,26 @@ final class Workspace(
       }
       l(");")
       l()
+      l("  import \"DPI-C\" context function void initTestBenchScope;")
+      l("  initial")
+      l("    initTestBenchScope();")
       for ((port, index) <- ports) {
       l("  // Port ", index.toHexString, ": ", port.name)
-      l("  export \"DPI-C\" function getBitWidth_", port.name, ";")
-      l("  function void getBitWidth_", port.name, ";")
+      l("  export \"DPI-C\" function getBitWidthImpl_", port.name, ";")
+      l("  function void getBitWidthImpl_", port.name, ";")
       l("    output int value;")
       l("    value", " = $bits(", dut.instanceName, ".",  port.name, ");")
       l("  endfunction")
         if (port.isSettable) {
-      l("  export \"DPI-C\" function setBits_", port.name, ";")
-      l("  function void setBits_", port.name, ";")
+      l("  export \"DPI-C\" function setBitsImpl_", port.name, ";")
+      l("  function void setBitsImpl_", port.name, ";")
       l("    input bit [$bits(", dut.instanceName, ".",  port.name, ")-1:0] value_", port.name, ";")
       l("    ", port.name, " = value_", port.name, ";")
       l("  endfunction")
         }
         if (port.isGettable) {
-      l("  export \"DPI-C\" function getBits_", port.name, ";")
-      l("  function void getBits_", port.name, ";")
+      l("  export \"DPI-C\" function getBitsImpl_", port.name, ";")
+      l("  function void getBitsImpl_", port.name, ";")
       l("    output bit [$bits(", dut.instanceName, ".",  port.name, ")-1:0] value_", port.name, ";")
       l("    value_", port.name, " = ", port.name, ";")
       l("  endfunction")
@@ -197,6 +200,33 @@ final class Workspace(
       // `BufferedWriter` closes the underlying `FileWriter` when closed.
       systemVerilogTestbenchWriter.close()
     }
+    
+    // This object creates a wrapper function for exported DPI functions to
+    // properly set the scope to testbench top before calling DPI functions.
+    object CreateFunctionForPort {
+      def createGetBits(portName: String): String = {
+        f"""void getBits_$portName(svBitVecVal* result) {
+           svScope prev = setScopeToTestBench();
+           getBitsImpl_$portName(result);
+           svSetScope(prev);
+        }"""
+      }
+
+      def createGetBitWidth(portName: String): String = {
+        f"""void getBitWidth_$portName(int* result) {
+           svScope prev = setScopeToTestBench();
+           getBitWidthImpl_$portName(result);
+           svSetScope(prev);
+        }"""
+      }
+      def createSetBits(portName: String): String = {
+        f"""void setBits_$portName(const svBitVecVal* data) {
+           svScope prev = setScopeToTestBench();
+           setBitsImpl_$portName(data);
+           svSetScope(prev);
+        }"""
+      }
+    }
 
     val cDPIBridgeWriter = new LineWriter(s"$generatedSourcesPath/c-dpi-bridge.cpp")
     try {
@@ -211,6 +241,11 @@ final class Workspace(
       l("#endif")
       l()
       l("extern \"C\" {")
+      l(" svScope setScopeToTestBench();")
+      for ((port, index) <- ports.filter(_._1.isGettable)) {
+      l(CreateFunctionForPort.createGetBits(port.name))
+      l(CreateFunctionForPort.createGetBitWidth(port.name))
+      }
       l()
       l("int port_getter(int id, int *bitWidth, void (**getter)(uint8_t*)) {")
       l("  switch (id) {")
@@ -224,6 +259,10 @@ final class Workspace(
       l("      return -1;")
       l("  }")
       l("}")
+      l()
+      for ((port, index) <- ports.filter(_._1.isSettable)) {
+      l(CreateFunctionForPort.createSetBits(port.name))
+      }
       l()
       l("int port_setter(int id, int *bitWidth, void (**setter)(const uint8_t*)) {")
       l("  switch (id) {")
