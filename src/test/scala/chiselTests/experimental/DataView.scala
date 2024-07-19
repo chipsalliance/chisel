@@ -8,11 +8,14 @@ import chisel3.experimental.dataview._
 import chisel3.experimental.{Analog, HWTuple2}
 import chisel3.experimental.BundleLiterals._
 import chisel3.experimental.VecLiterals._
+import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance, Instantiate}
 import chisel3.probe._
+import chisel3.properties.{AnyClassType, Property}
 import chisel3.reflect.DataMirror.internal.chiselTypeClone
 import chisel3.util.{Decoupled, DecoupledIO, Valid, ValidIO}
 import chiselTests.ChiselFlatSpec
 import circt.stage.ChiselStage
+
 import scala.collection.immutable.SeqMap
 
 object SimpleBundleDataView {
@@ -1236,4 +1239,71 @@ class DataViewSpec extends ChiselFlatSpec {
     val verilog = ChiselStage.emitSystemVerilog(new MyModule)
     verilog should include("assign out = b;")
   }
+
+  it should "NOT error in FlatIO with Probe and Property" in {
+    class Baz extends Bundle {
+      val ele = Bool()
+    }
+    @instantiable
+    class FooOM extends properties.Class {
+      @public
+      val bar = IO(Output(Property[Seq[AnyClassType]]()))
+      @public
+      val barIn = IO(Input(Property[Seq[AnyClassType]]()))
+      bar := barIn
+    }
+    class FooIO extends Bundle {
+      val probeA = Output(Vec(2, Probe(new Baz)))
+      val outputA = Output(Vec(2, new Baz))
+      val om = Output(Property[AnyClassType]())
+    }
+    @instantiable
+    class Foo extends RawModule {
+      @public
+      val io = FlatIO(new FooIO)
+      val bars = Seq.fill(2)(chisel3.experimental.hierarchy.Instantiate(new Bar))
+      val fooOM: Instance[FooOM] = Instantiate(new FooOM)
+      fooOM.barIn := Property(bars.map(_.io.om.asAnyClassType))
+      bars.zipWithIndex.foreach {
+        case (bar, idx) =>
+          define(io.probeA(idx), bar.io.probeA)
+          io.outputA(idx) := bar.io.outputA
+      }
+      io.om := fooOM.getPropertyReference.asAnyClassType
+    }
+    @instantiable
+    class BarOM extends properties.Class {
+      @public
+      val i = IO(Input(Property[BigInt]()))
+      @public
+      val o = IO(Output(Property[BigInt]()))
+      o := i
+    }
+
+    class BarIO extends Bundle {
+      val probeA = Output(Probe(new Baz))
+      val outputA = Output(new Baz)
+      val om = Output(Property[AnyClassType]())
+    }
+    @instantiable
+    class Bar extends RawModule {
+      @public
+      val io = FlatIO(new BarIO)
+      val bazWire = 0.U.asTypeOf(new Baz)
+
+      define(io.probeA, ProbeValue(bazWire))
+      io.outputA := bazWire
+      val barOM: Instance[BarOM] = Instantiate(new BarOM)
+      barOM.i := Property(1)
+      io.om := barOM.getPropertyReference.asAnyClassType
+    }
+    val chirrtl = ChiselStage.emitCHIRRTL(new Foo)
+    chirrtl should include("define probeA = probe(lit_probe_val)")
+    chirrtl should include("define probeA[0] = bars_0.probeA")
+    chirrtl should include("define probeA[1] = bars_1.probeA")
+    chirrtl should include("propassign fooOM.barIn, List<AnyRef>(bars_0.om, bars_1.om)")
+    // Instantiate cacheable check
+    (chirrtl should not).include("BarOM_1")
+  }
+
 }
