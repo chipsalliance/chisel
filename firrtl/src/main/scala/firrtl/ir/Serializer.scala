@@ -339,7 +339,7 @@ object Serializer {
       if (seq) b ++= "smem " else b ++= "cmem "
       b ++= legalize(name); b ++= " : "; s(tpe); b ++= " ["; b ++= size.toString(); b += ']'
       if (readUnderWrite != ReadUnderWrite.Undefined) { // undefined is the default
-        b += ' '; b ++= readUnderWrite.toString
+        b ++= ", "; b ++= readUnderWrite.toString
       }
       s(info)
     case firrtl.CDefMPort(info, name, _, mem, exps, direction) =>

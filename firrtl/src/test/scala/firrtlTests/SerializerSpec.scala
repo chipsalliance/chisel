@@ -207,8 +207,10 @@ class SerializerSpec extends AnyFlatSpec with Matchers {
 
   it should "serialize read-under-write behavior for smems correctly" in {
     (SMemTestCircuit.circuit(ReadUnderWrite.Undefined).serialize should not).include("undefined")
-    SMemTestCircuit.circuit(ReadUnderWrite.New).serialize should include("new")
-    SMemTestCircuit.circuit(ReadUnderWrite.Old).serialize should include("old")
+    val smemNew = SMemTestCircuit.circuit(ReadUnderWrite.New).serialize
+    smemNew should include(", new")
+    val smemOld = SMemTestCircuit.circuit(ReadUnderWrite.Old).serialize
+    smemOld should include(", old")
   }
 
   it should "support emitting Probe/RWProbe types and related expressions/statements" in {
