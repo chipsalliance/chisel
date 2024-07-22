@@ -285,6 +285,8 @@ private[chisel3] object Converter {
       )
     case Region(info, region) =>
       Some(fir.Block(convert(region, ctx, typeAliases)))
+    case LayerBlock(info, layer, region) =>
+      Some(fir.LayerBlock(convert(info), layer, convert(region, ctx, typeAliases)))
     case _ => None
   }
 
@@ -324,20 +326,7 @@ private[chisel3] object Converter {
           stmts += stmt
         // When scoping logic does not map 1:1 and requires pushing/popping WhenFrames
         // Please see WhenFrame for more details
-        case None =>
-          cmd match {
-            case LayerBlockBegin(info, layer) =>
-              val block = fir.LayerBlock(convert(info), layer.name, fir.EmptyStmt)
-              val frame = LayerBlockFrame(block, stmts)
-              stmts = new VectorBuilder[fir.Statement]
-              scope = frame :: scope
-            case LayerBlockEnd(info) =>
-              val frame = scope.head.asInstanceOf[LayerBlockFrame]
-              val block = frame.layer.copy(body = fir.Block(stmts.result()))
-              stmts = frame.outer
-              stmts += block
-              scope = scope.tail
-          }
+        case None => ???
       }
     }
     assert(scope.isEmpty)
