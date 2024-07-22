@@ -109,7 +109,7 @@ private[chisel3] object Converter {
   }
 
   /** Convert Commands that map 1:1 to Statements */
-  def convertSimpleCommand(cmd: Command, ctx: Component, typeAliases: Seq[String]): fir.Statement = cmd match {
+  def convertCommand(cmd: Command, ctx: Component, typeAliases: Seq[String]): fir.Statement = cmd match {
     case e: DefPrim[_] =>
       val consts = e.args.collect { case ILit(i) => i }
       val args = e.args.flatMap {
@@ -285,7 +285,7 @@ private[chisel3] object Converter {
   def convert(cmds: Seq[Command], ctx: Component, typeAliases: Seq[String]): fir.Statement = {
     var stmts = new VectorBuilder[fir.Statement]()
     for (cmd <- cmds)
-      stmts += convertSimpleCommand(cmd, ctx, typeAliases)
+      stmts += convertCommand(cmd, ctx, typeAliases)
     fir.Block(stmts.result())
   }
 
