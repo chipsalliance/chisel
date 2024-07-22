@@ -3,6 +3,7 @@
 package chisel3.ltl
 
 import chisel3._
+import chisel3.layer.{block, Layer}
 import chisel3.util.circt._
 import chisel3.experimental.hierarchy.{Instance, Instantiate}
 import chisel3.experimental.SourceInfo
@@ -391,7 +392,7 @@ object Property {
 /** The base class for the `AssertProperty`, `AssumeProperty`, and
   * `CoverProperty` verification constructs.
   */
-sealed abstract class AssertPropertyLike {
+sealed abstract class AssertPropertyLike(defaultLayer: Layer) {
 
   /** Assert, assume, or cover that a property holds.
     *
@@ -413,7 +414,7 @@ sealed abstract class AssertPropertyLike {
     label:   Option[String] = None
   )(
     implicit sourceInfo: SourceInfo
-  ): Unit = {
+  ): Unit = block(defaultLayer, skipIfAlreadyInBlock = true, skipIfLayersEnabled = true) {
     val clocked = clock.fold(prop)(prop.clock(_))
     createIntrinsic(label)(sourceInfo)(clocked.inner, disable.map(!_.value))
   }
@@ -481,7 +482,7 @@ sealed abstract class AssertPropertyLike {
   * Use like `AssertProperty(p)`. See `AssertPropertyLike.apply` for optional
   * clock, disable_iff, and label parameters.
   */
-object AssertProperty extends AssertPropertyLike {
+object AssertProperty extends AssertPropertyLike(defaultLayer = layers.Verification.Assert) {
   protected def createIntrinsic(label: Option[String])(implicit sourceInfo: SourceInfo) = VerifAssertIntrinsic(label)
 }
 
@@ -490,7 +491,7 @@ object AssertProperty extends AssertPropertyLike {
   * Use like `AssumeProperty(p)`. See `AssertPropertyLike.apply` for optional
   * clock, disable_iff, and label parameters.
   */
-object AssumeProperty extends AssertPropertyLike {
+object AssumeProperty extends AssertPropertyLike(defaultLayer = layers.Verification.Assume) {
   protected def createIntrinsic(label: Option[String])(implicit sourceInfo: SourceInfo) = VerifAssumeIntrinsic(label)
 }
 
@@ -499,6 +500,6 @@ object AssumeProperty extends AssertPropertyLike {
   * Use like `CoverProperty(p)`. See `AssertPropertyLike.apply` for optional
   * clock, disable_iff, and label parameters.
   */
-object CoverProperty extends AssertPropertyLike {
+object CoverProperty extends AssertPropertyLike(defaultLayer = layers.Verification.Cover) {
   protected def createIntrinsic(label: Option[String])(implicit sourceInfo: SourceInfo) = VerifCoverIntrinsic(label)
 }
