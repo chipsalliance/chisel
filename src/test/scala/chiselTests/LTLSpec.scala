@@ -234,15 +234,33 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselRunners {
     AssumeProperty(a)
     CoverProperty(a)
   }
-  it should "support simple property asserts/assumes/covers" in {
+  it should "support simple property asserts/assumes/covers and put them in layer blocks" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new BasicVerifMod)
     val sourceLoc = "@[Foo.scala 1:2]"
+    chirrtl should include("layerblock Verification")
+    chirrtl should include("layerblock Assert")
     chirrtl should include(f"intrinsic(circt_verif_assert, a) $sourceLoc")
+    chirrtl should include("layerblock Verification")
+    chirrtl should include("layerblock Assume")
     chirrtl should include(f"intrinsic(circt_verif_assume, a) $sourceLoc")
+    chirrtl should include("layerblock Verification")
+    chirrtl should include("layerblock Cover")
     chirrtl should include(f"intrinsic(circt_verif_cover, a) $sourceLoc")
   }
   it should "compile simple property asserts/assumes/covers" in {
     ChiselStage.emitSystemVerilog(new BasicVerifMod)
+  }
+  it should "not create layer blocks if already in a layer block" in {
+    class Foo extends RawModule {
+      val a = IO(Input(Bool()))
+      layer.block(layers.Verification.Cover) {
+        AssertProperty(a)
+      }
+    }
+    val chirrtl = ChiselStage.emitCHIRRTL(new Foo)
+    chirrtl should include("layerblock Verification")
+    chirrtl should include("layerblock Cover")
+    (chirrtl should not).include("layerblock Assert")
   }
 
   it should "use clock and disable by default for properties" in {
