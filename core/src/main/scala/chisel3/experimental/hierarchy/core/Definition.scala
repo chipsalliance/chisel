@@ -7,6 +7,7 @@ import chisel3._
 
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 import chisel3.internal.{Builder, DynamicContext}
+import chisel3.internal.firrtl.Converter
 import chisel3.internal.sourceinfo.{DefinitionTransform, DefinitionWrapTransform}
 import chisel3.experimental.{BaseModule, SourceInfo}
 import firrtl.annotations.{IsModule, ModuleTarget, NoTargetAnnotation}
@@ -129,6 +130,7 @@ object Definition extends SourceInfoDoc {
     val (ir, module) = Builder.build(Module(proto), dynamicContext)
     Builder.components ++= ir.components
     Builder.annotations ++= ir.annotations: @nowarn // this will go away when firrtl is merged
+    Builder.layers ++= dynamicContext.layers
     module._circuit = Builder.currentModule
     module.toDefinition
   }

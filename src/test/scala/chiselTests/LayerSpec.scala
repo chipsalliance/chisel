@@ -3,6 +3,8 @@
 package chiselTests
 
 import chisel3._
+import chisel3.experimental.hierarchy.core.{Definition, Instance}
+import chisel3.experimental.hierarchy.instantiable
 import chisel3.probe.{define, Probe, ProbeValue}
 import chiselTests.{ChiselFlatSpec, MatchesAndOmits, Utils}
 import java.nio.file.{FileSystems, Paths}
@@ -107,6 +109,22 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
     }
 
     ChiselStage.convert(new Foo)
+  }
+
+  they should "work correctly with Definition/Instance" in {
+
+    @instantiable
+    class Bar extends Module {
+      layer.block(A) {
+      }
+    }
+
+    class Foo extends Module {
+      private val bar = Instance(Definition(new Bar))
+    }
+
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Foo)
+    matchesAndOmits(chirrtl)("layer A")()
   }
 
   "Layers error checking" should "require that a nested layer definition matches its declaration nesting" in {
