@@ -252,7 +252,7 @@ If you are trying to make a contribution to this project, please read [CONTRIBUT
 These simulation-based verification tools are available for Chisel:
 
 * [**svsim**](svsim) is the lightweight testing library for Chisel, included in this repository.
-* [**chiseltest (Chisel 5.0 and before)**](https://github.com/ucb-bar/chiseltest) is the batteries-included testing and formal verification library for Chisel-based RTL designs and a replacement for the former PeekPokeTester, providing the same base constructs but with a streamlined interface and concurrency support with `fork` and `join` with internal and Verilator integration for simulations.
+* [**chiseltest (Chisel 6.0 and before)**](https://github.com/ucb-bar/chiseltest) is the batteries-included testing and formal verification library for Chisel-based RTL designs and a replacement for the former PeekPokeTester, providing the same base constructs but with a streamlined interface and concurrency support with `fork` and `join` with internal and Verilator integration for simulations.
 
 ## Documentation
 
