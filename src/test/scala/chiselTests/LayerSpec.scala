@@ -53,7 +53,7 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
     )()
   }
 
-  it should "allow for defines to layer-colored probes" in {
+  they should "allow for defines to layer-colored probes" in {
 
     class Foo extends RawModule {
       val a, b, c, d, e = IO(Input(Bool()))
@@ -126,35 +126,7 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
     matchesAndOmits(chirrtl)("layer A")()
   }
 
-  "Layers error checking" should "require that a nested layer definition matches its declaration nesting" in {
-
-    class Foo extends RawModule {
-      layer.block(A.B) {
-        val a = Wire(Bool())
-      }
-    }
-
-    intercept[IllegalArgumentException] { ChiselStage.emitCHIRRTL(new Foo) }.getMessage() should include(
-      "nested layer 'B' must be wrapped in parent layer 'A'"
-    )
-
-  }
-
-  it should "check that a define from inside a layerblock is to a legal layer-colored probe" in {
-    class Foo extends RawModule {
-      val a = IO(Output(Probe(Bool(), A)))
-      layer.block(C) {
-        val b = Wire(Bool())
-        define(a, ProbeValue(b))
-      }
-    }
-    intercept[ChiselException] { ChiselStage.emitCHIRRTL(new Foo, Array("--throw-on-first-error")) }
-      .getMessage() should include(
-      "Cannot define 'Foo.a: IO[Bool]' from colors {'C'} since at least one of these is NOT enabled when 'Foo.a: IO[Bool]' is enabled"
-    )
-  }
-
-  "Layers" should "emit the output directory when present" in {
+  they should "emit the output directory when present" in {
     object LayerWithDefaultOutputDir extends layer.Layer(layer.Convention.Bind) {
       object SublayerWithDefaultOutputDir extends layer.Layer(layer.Convention.Bind) {}
       object SublayerWithCustomOutputDir
@@ -218,4 +190,33 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
       decl("SublayerWithNoOutputDir", List())
     )()
   }
+
+  "Layers error checking" should "require that a nested layer definition matches its declaration nesting" in {
+
+    class Foo extends RawModule {
+      layer.block(A.B) {
+        val a = Wire(Bool())
+      }
+    }
+
+    intercept[IllegalArgumentException] { ChiselStage.emitCHIRRTL(new Foo) }.getMessage() should include(
+      "nested layer 'B' must be wrapped in parent layer 'A'"
+    )
+
+  }
+
+  it should "check that a define from inside a layerblock is to a legal layer-colored probe" in {
+    class Foo extends RawModule {
+      val a = IO(Output(Probe(Bool(), A)))
+      layer.block(C) {
+        val b = Wire(Bool())
+        define(a, ProbeValue(b))
+      }
+    }
+    intercept[ChiselException] { ChiselStage.emitCHIRRTL(new Foo, Array("--throw-on-first-error")) }
+      .getMessage() should include(
+      "Cannot define 'Foo.a: IO[Bool]' from colors {'C'} since at least one of these is NOT enabled when 'Foo.a: IO[Bool]' is enabled"
+    )
+  }
+
 }
