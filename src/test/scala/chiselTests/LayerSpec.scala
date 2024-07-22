@@ -115,8 +115,7 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
 
     @instantiable
     class Bar extends Module {
-      layer.block(A) {
-      }
+      layer.block(A) {}
     }
 
     class Foo extends Module {
