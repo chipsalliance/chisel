@@ -53,6 +53,22 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
     )()
   }
 
+  they should "create parent layer blocks automatically" in {
+
+    class Foo extends RawModule {
+      layer.block(A.B) {}
+      layer.block(C) {
+        layer.block(C) {}
+      }
+    }
+
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Foo))(
+      "layerblock A :",
+      "layerblock B :",
+      "layerblock C :"
+    )()
+  }
+
   they should "allow for defines to layer-colored probes" in {
 
     class Foo extends RawModule {
@@ -191,16 +207,18 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
     )()
   }
 
-  "Layers error checking" should "require that a nested layer definition matches its declaration nesting" in {
+  "Layers error checking" should "require that the current layer is an ancestor of the desired layer" in {
 
     class Foo extends RawModule {
       layer.block(A.B) {
-        val a = Wire(Bool())
+        layer.block(C) {
+          val a = Wire(Bool())
+        }
       }
     }
 
     intercept[IllegalArgumentException] { ChiselStage.emitCHIRRTL(new Foo) }.getMessage() should include(
-      "nested layer 'B' must be wrapped in parent layer 'A'"
+      "a layerblock associated with layer 'C' cannot be created under a layerblock of non-ancestor layer 'A.B'"
     )
 
   }
