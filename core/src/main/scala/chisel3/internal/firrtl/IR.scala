@@ -388,8 +388,15 @@ private[chisel3] object ir {
     outputDir:  Option[String],
     children:   Seq[Layer])
 
-  case class LayerBlockBegin(sourceInfo: SourceInfo, layer: chisel3.layer.Layer) extends Command
-  case class LayerBlockEnd(sourceInfo: SourceInfo) extends Command
+  class LayerBlock(val sourceInfo: SourceInfo, val layer: chisel3.layer.Layer) extends Command {
+    val region = new VectorBuilder[Command]
+  }
+
+  object LayerBlock {
+    def unapply(layerBlock: LayerBlock): Option[(SourceInfo, String, Seq[Command])] = {
+      Some((layerBlock.sourceInfo, layerBlock.layer.name, layerBlock.region.result()))
+    }
+  }
 
   case class DefOption(
     sourceInfo: SourceInfo,

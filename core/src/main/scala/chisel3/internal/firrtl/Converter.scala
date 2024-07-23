@@ -109,7 +109,7 @@ private[chisel3] object Converter {
   }
 
   /** Convert Commands that map 1:1 to Statements */
-  def convertSimpleCommand(cmd: Command, ctx: Component, typeAliases: Seq[String]): Option[fir.Statement] = cmd match {
+  def convertCommand(cmd: Command, ctx: Component, typeAliases: Seq[String]): fir.Statement = cmd match {
     case e: DefPrim[_] =>
       val consts = e.args.collect { case ILit(i) => i }
       val args = e.args.flatMap {
@@ -123,119 +123,103 @@ private[chisel3] object Converter {
         case _ =>
           fir.DoPrim(convert(e.op), args, consts, fir.UnknownType)
       }
-      Some(fir.DefNode(convert(e.sourceInfo), e.name, expr))
+      fir.DefNode(convert(e.sourceInfo), e.name, expr)
     case e @ DefWire(info, id) =>
-      Some(fir.DefWire(convert(info), e.name, extractType(id, info, typeAliases)))
+      fir.DefWire(convert(info), e.name, extractType(id, info, typeAliases))
     case e @ DefReg(info, id, clock) =>
-      Some(
-        fir.DefRegister(
-          convert(info),
-          e.name,
-          extractType(id, info, typeAliases),
-          convert(clock, ctx, info)
-        )
+      fir.DefRegister(
+        convert(info),
+        e.name,
+        extractType(id, info, typeAliases),
+        convert(clock, ctx, info)
       )
     case e @ DefRegInit(info, id, clock, reset, init) =>
-      Some(
-        fir.DefRegisterWithReset(
-          convert(info),
-          e.name,
-          extractType(id, info, typeAliases),
-          convert(clock, ctx, info),
-          convert(reset, ctx, info),
-          convert(init, ctx, info)
-        )
+      fir.DefRegisterWithReset(
+        convert(info),
+        e.name,
+        extractType(id, info, typeAliases),
+        convert(clock, ctx, info),
+        convert(reset, ctx, info),
+        convert(init, ctx, info)
       )
     case e @ DefMemory(info, id, t, size) =>
-      Some(firrtl.CDefMemory(convert(info), e.name, extractType(t, info, typeAliases), size, false))
+      firrtl.CDefMemory(convert(info), e.name, extractType(t, info, typeAliases), size, false)
     case e @ DefSeqMemory(info, id, t, size, ruw) =>
-      Some(firrtl.CDefMemory(convert(info), e.name, extractType(t, info, typeAliases), size, true, ruw))
+      firrtl.CDefMemory(convert(info), e.name, extractType(t, info, typeAliases), size, true, ruw)
     case e @ FirrtlMemory(info, id, t, size, readPortNames, writePortNames, readwritePortNames) =>
-      Some(
-        fir.DefMemory(
-          convert(info),
-          e.name,
-          extractType(t, info, typeAliases),
-          size,
-          1,
-          1,
-          readPortNames,
-          writePortNames,
-          readwritePortNames
-        )
+      fir.DefMemory(
+        convert(info),
+        e.name,
+        extractType(t, info, typeAliases),
+        size,
+        1,
+        1,
+        readPortNames,
+        writePortNames,
+        readwritePortNames
       )
     case e: DefMemPort[_] =>
       val info = e.sourceInfo
-      Some(
-        firrtl.CDefMPort(
-          convert(e.sourceInfo),
-          e.name,
-          fir.UnknownType,
-          e.source.fullName(ctx),
-          Seq(convert(e.index, ctx, info), convert(e.clock, ctx, info)),
-          convert(e.dir)
-        )
+      firrtl.CDefMPort(
+        convert(e.sourceInfo),
+        e.name,
+        fir.UnknownType,
+        e.source.fullName(ctx),
+        Seq(convert(e.index, ctx, info), convert(e.clock, ctx, info)),
+        convert(e.dir)
       )
     case Connect(info, loc, exp) =>
-      Some(fir.Connect(convert(info), convert(loc, ctx, info), convert(exp, ctx, info)))
+      fir.Connect(convert(info), convert(loc, ctx, info), convert(exp, ctx, info))
     case PropAssign(info, loc, exp) =>
-      Some(fir.PropAssign(convert(info), convert(loc, ctx, info), convert(exp, ctx, info)))
+      fir.PropAssign(convert(info), convert(loc, ctx, info), convert(exp, ctx, info))
     case Attach(info, locs) =>
-      Some(fir.Attach(convert(info), locs.map(l => convert(l, ctx, info))))
+      fir.Attach(convert(info), locs.map(l => convert(l, ctx, info)))
     case DefInvalid(info, arg) =>
-      Some(fir.IsInvalid(convert(info), convert(arg, ctx, info)))
+      fir.IsInvalid(convert(info), convert(arg, ctx, info))
     case e @ DefInstance(info, id, _) =>
-      Some(fir.DefInstance(convert(info), e.name, id.name))
+      fir.DefInstance(convert(info), e.name, id.name)
     case e @ DefInstanceChoice(info, _, default, option, choices) =>
-      Some(
-        fir.DefInstanceChoice(
-          convert(info),
-          e.name,
-          default.name,
-          option,
-          choices.map { case (opt, mod) => (opt, mod.name) }
-        )
+      fir.DefInstanceChoice(
+        convert(info),
+        e.name,
+        default.name,
+        option,
+        choices.map { case (opt, mod) => (opt, mod.name) }
       )
     case e @ DefObject(info, _, className) =>
-      Some(fir.DefObject(convert(info), e.name, className))
+      fir.DefObject(convert(info), e.name, className)
     case e @ Stop(_, info, clock, ret) =>
-      Some(fir.Stop(convert(info), ret, convert(clock, ctx, info), firrtl.Utils.one, e.name))
+      fir.Stop(convert(info), ret, convert(clock, ctx, info), firrtl.Utils.one, e.name)
     case e @ Printf(_, info, clock, pable) =>
       val (fmt, args) = unpack(pable, ctx)
-      Some(
-        fir.Print(
-          convert(info),
-          fir.StringLit(fmt),
-          args.map(a => convert(a, ctx, info)),
-          convert(clock, ctx, info),
-          firrtl.Utils.one,
-          e.name
-        )
+      fir.Print(
+        convert(info),
+        fir.StringLit(fmt),
+        args.map(a => convert(a, ctx, info)),
+        convert(clock, ctx, info),
+        firrtl.Utils.one,
+        e.name
       )
     case e @ ProbeDefine(sourceInfo, sink, probeExpr) =>
-      Some(fir.ProbeDefine(convert(sourceInfo), convert(sink, ctx, sourceInfo), convert(probeExpr, ctx, sourceInfo)))
+      fir.ProbeDefine(convert(sourceInfo), convert(sink, ctx, sourceInfo), convert(probeExpr, ctx, sourceInfo))
     case e @ ProbeForceInitial(sourceInfo, probe, value) =>
-      Some(fir.ProbeForceInitial(convert(sourceInfo), convert(probe, ctx, sourceInfo), convert(value, ctx, sourceInfo)))
+      fir.ProbeForceInitial(convert(sourceInfo), convert(probe, ctx, sourceInfo), convert(value, ctx, sourceInfo))
     case e @ ProbeReleaseInitial(sourceInfo, probe) =>
-      Some(fir.ProbeReleaseInitial(convert(sourceInfo), convert(probe, ctx, sourceInfo)))
+      fir.ProbeReleaseInitial(convert(sourceInfo), convert(probe, ctx, sourceInfo))
     case e @ ProbeForce(sourceInfo, clock, cond, probe, value) =>
-      Some(
-        fir.ProbeForce(
-          convert(sourceInfo),
-          convert(clock, ctx, sourceInfo),
-          convert(cond, ctx, sourceInfo),
-          convert(probe, ctx, sourceInfo),
-          convert(value, ctx, sourceInfo)
-        )
+      fir.ProbeForce(
+        convert(sourceInfo),
+        convert(clock, ctx, sourceInfo),
+        convert(cond, ctx, sourceInfo),
+        convert(probe, ctx, sourceInfo),
+        convert(value, ctx, sourceInfo)
       )
     case e @ ProbeRelease(sourceInfo, clock, cond, probe) =>
-      Some(
-        fir.ProbeRelease(
-          convert(sourceInfo),
-          convert(clock, ctx, sourceInfo),
-          convert(cond, ctx, sourceInfo),
-          convert(probe, ctx, sourceInfo)
-        )
+      fir.ProbeRelease(
+        convert(sourceInfo),
+        convert(clock, ctx, sourceInfo),
+        convert(cond, ctx, sourceInfo),
+        convert(probe, ctx, sourceInfo)
       )
     case e @ Verification(_, op, info, clk, pred, pable) =>
       val (fmt, args) = unpack(pable, ctx)
@@ -244,26 +228,22 @@ private[chisel3] object Converter {
         case Formal.Assume => fir.Formal.Assume
         case Formal.Cover  => fir.Formal.Cover
       }
-      Some(
-        fir.Verification(
-          firOp,
-          convert(info),
-          convert(clk, ctx, info),
-          convert(pred, ctx, info),
-          firrtl.Utils.one,
-          fir.StringLit(fmt),
-          args.map(a => convert(a, ctx, info)),
-          e.name
-        )
+      fir.Verification(
+        firOp,
+        convert(info),
+        convert(clk, ctx, info),
+        convert(pred, ctx, info),
+        firrtl.Utils.one,
+        fir.StringLit(fmt),
+        args.map(a => convert(a, ctx, info)),
+        e.name
       )
     case i @ DefIntrinsic(info, intrinsic, args, params) =>
-      Some(
-        fir.IntrinsicStmt(
-          convert(info),
-          intrinsic,
-          args.map(a => convert(a, ctx, info)),
-          params.map { case (k, v) => convert(k, v) }
-        )
+      fir.IntrinsicStmt(
+        convert(info),
+        intrinsic,
+        args.map(a => convert(a, ctx, info)),
+        params.map { case (k, v) => convert(k, v) }
       )
     case i @ DefIntrinsicExpr(info, intrinsic, id, args, params) =>
       val tpe = extractType(id, info, typeAliases)
@@ -273,19 +253,18 @@ private[chisel3] object Converter {
         params.map { case (k, v) => convert(k, v) },
         tpe
       )
-      Some(fir.DefNode(convert(info), i.name, expr))
+      fir.DefNode(convert(info), i.name, expr)
     case When(info, pred, ifRegion, elseRegion) =>
-      Some(
-        fir.Conditionally(
-          convert(info),
-          convert(pred, ctx, info),
-          convert(ifRegion, ctx, typeAliases),
-          if (elseRegion.nonEmpty) convert(elseRegion, ctx, typeAliases) else fir.EmptyStmt
-        )
+      fir.Conditionally(
+        convert(info),
+        convert(pred, ctx, info),
+        convert(ifRegion, ctx, typeAliases),
+        if (elseRegion.nonEmpty) convert(elseRegion, ctx, typeAliases) else fir.EmptyStmt
       )
     case Region(info, region) =>
-      Some(fir.Block(convert(region, ctx, typeAliases)))
-    case _ => None
+      fir.Block(convert(region, ctx, typeAliases))
+    case LayerBlock(info, layer, region) =>
+      fir.LayerBlock(convert(info), layer, convert(region, ctx, typeAliases))
   }
 
   /** Trait used for tracking when or layer regions. */
@@ -305,42 +284,8 @@ private[chisel3] object Converter {
     */
   def convert(cmds: Seq[Command], ctx: Component, typeAliases: Seq[String]): fir.Statement = {
     var stmts = new VectorBuilder[fir.Statement]()
-    var scope: List[RegionFrame] = Nil
-    var cmdsIt = cmds.iterator.buffered
-    // Extra var because sometimes we want to push a Command to the head of cmdsIt
-    // This is more efficient than changing the iterator
-    var nextCmd: Command = null
-    while (nextCmd != null || cmdsIt.hasNext) {
-      val cmd = if (nextCmd != null) {
-        val _nextCmd = nextCmd
-        nextCmd = null
-        _nextCmd
-      } else {
-        cmdsIt.next()
-      }
-      convertSimpleCommand(cmd, ctx, typeAliases) match {
-        // Most Commands map 1:1
-        case Some(stmt) =>
-          stmts += stmt
-        // When scoping logic does not map 1:1 and requires pushing/popping WhenFrames
-        // Please see WhenFrame for more details
-        case None =>
-          cmd match {
-            case LayerBlockBegin(info, layer) =>
-              val block = fir.LayerBlock(convert(info), layer.name, fir.EmptyStmt)
-              val frame = LayerBlockFrame(block, stmts)
-              stmts = new VectorBuilder[fir.Statement]
-              scope = frame :: scope
-            case LayerBlockEnd(info) =>
-              val frame = scope.head.asInstanceOf[LayerBlockFrame]
-              val block = frame.layer.copy(body = fir.Block(stmts.result()))
-              stmts = frame.outer
-              stmts += block
-              scope = scope.tail
-          }
-      }
-    }
-    assert(scope.isEmpty)
+    for (cmd <- cmds)
+      stmts += convertCommand(cmd, ctx, typeAliases)
     fir.Block(stmts.result())
   }
 

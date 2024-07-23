@@ -4,7 +4,7 @@ package chisel3
 
 import chisel3.experimental.{SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal.{Builder, HasId}
-import chisel3.internal.firrtl.ir.{LayerBlockBegin, LayerBlockEnd, Node}
+import chisel3.internal.firrtl.ir.{LayerBlock, Node}
 import chisel3.util.simpleClassName
 import java.nio.file.{Path, Paths}
 import scala.annotation.tailrec
@@ -127,15 +127,15 @@ object layer {
   )(
     implicit sourceInfo: SourceInfo
   ): Unit = {
-    Builder.pushCommand(LayerBlockBegin(sourceInfo, layer))
     addLayer(layer)
+    val layerBlock = new LayerBlock(sourceInfo, layer)
+    Builder.pushCommand(layerBlock)
     require(
       Builder.layerStack.head == layer.parent,
       s"nested layer '${layer.name}' must be wrapped in parent layer '${layer.parent.name}'"
     )
     Builder.layerStack = layer :: Builder.layerStack
-    thunk
-    Builder.pushCommand(LayerBlockEnd(sourceInfo))
+    Builder.forcedUserModule.withRegion(layerBlock.region)(thunk)
     Builder.layerStack = Builder.layerStack.tail
   }
 
