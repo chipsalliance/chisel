@@ -125,8 +125,8 @@ object layer {
     * @param layer the layer this block is associated with
     * @param thunk the Chisel code that goes into the layer block
     * @param sourceInfo a source locator
-    * @throws IllegalArgumentException if the layer of the currnet layerblock is
-    * not an ancestor of the desired layer
+    * @throws java.lang.IllegalArgumentException if the layer of the currnet
+    * layerblock is not an ancestor of the desired layer
     */
   def block[A](
     layer: Layer
