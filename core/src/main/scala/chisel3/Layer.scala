@@ -117,9 +117,16 @@ object layer {
   /** Create a new layer block.  This is hardware that will be enabled
     * collectively when the layer is enabled.
     *
+    * This function automatically creates parent layers as the layer of the
+    * current layerblock is an ancestor of the desired layer.  The ancestor may
+    * be the current layer which causes no layer block to be created.  (This is
+    * not a _proper_ ancestor requirement.)
+    *
     * @param layer the layer this block is associated with
     * @param thunk the Chisel code that goes into the layer block
     * @param sourceInfo a source locator
+    * @throws java.lang.IllegalArgumentException if the layer of the currnet
+    * layerblock is not an ancestor of the desired layer
     */
   def block[A](
     layer: Layer
@@ -127,16 +134,31 @@ object layer {
   )(
     implicit sourceInfo: SourceInfo
   ): Unit = {
-    addLayer(layer)
-    val layerBlock = new LayerBlock(sourceInfo, layer)
-    Builder.pushCommand(layerBlock)
+    var layersToCreate = List.empty[Layer]
+    var currentLayer = layer
+    while (currentLayer != Builder.layerStack.head && currentLayer != Layer.Root) {
+      layersToCreate = currentLayer :: layersToCreate
+      currentLayer = currentLayer.parent
+    }
     require(
-      Builder.layerStack.head == layer.parent,
-      s"nested layer '${layer.name}' must be wrapped in parent layer '${layer.parent.name}'"
+      currentLayer != Layer.Root || Builder.layerStack.head == Layer.Root,
+      s"a layerblock associated with layer '${layer.fullName}' cannot be created under a layerblock of non-ancestor layer '${Builder.layerStack.head.fullName}'"
     )
-    Builder.layerStack = layer :: Builder.layerStack
-    Builder.forcedUserModule.withRegion(layerBlock.region)(thunk)
-    Builder.layerStack = Builder.layerStack.tail
+
+    addLayer(layer)
+
+    def createLayers(layers: List[Layer])(thunk: => A): A = layers match {
+      case Nil => thunk
+      case head :: tail =>
+        val layerBlock = new LayerBlock(sourceInfo, head)
+        Builder.pushCommand(layerBlock)
+        Builder.layerStack = head :: Builder.layerStack
+        val result = Builder.forcedUserModule.withRegion(layerBlock.region)(createLayers(tail)(thunk))
+        Builder.layerStack = Builder.layerStack.tail
+        result
+    }
+
+    createLayers(layersToCreate)(thunk)
   }
 
   /** Call this function from within a `Module` body to enable this layer globally for that module. */
