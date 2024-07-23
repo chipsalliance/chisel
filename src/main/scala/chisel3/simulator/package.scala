@@ -127,30 +127,33 @@ package object simulator {
       // been moved.
       val movedFiles = mutable.HashSet.empty[Path]
       val supportArtifactsPath = Paths.get(workspace.supportArtifactsPath)
+      def moveFile(file: Path): Unit = {
+        // Convert the files to an absolute version and a relative version.
+        val (_abs, rel) = file match {
+          case file if file.startsWith(supportArtifactsPath) =>
+            (file, file.subpath(supportArtifactsPath.getNameCount(), -1))
+          case file => (supportArtifactsPath.resolve(file), file)
+        }
+        // Normalize the absolute path so it can be checked if it has already
+        // been moved.
+        val abs = _abs.normalize()
+        // Move the file into primarySourcesPath if it has not already been moved.
+        (abs, rel) match {
+          case (abs, _) if movedFiles.contains(abs) =>
+          case (abs, rel) =>
+            Files.move(
+              abs,
+              Paths.get(workspace.primarySourcesPath).resolve(rel)
+            )
+            movedFiles += abs
+        }
+      }
       def moveFiles(filelist: Path) =
         // Extract all lines (files) from the filelist.
         Files
           .lines(filelist)
           .map(Paths.get(_))
-          // Convert the files to an absolute version and a relative version.
-          .map {
-            case file if file.startsWith(supportArtifactsPath) =>
-              (file, file.subpath(supportArtifactsPath.getNameCount(), -1))
-            case file => (supportArtifactsPath.resolve(file), file)
-          }
-          // Normalize the absolute path so it can be checked if it has already
-          // been moved.
-          .map { case (abs, rel) => (abs.normalize(), rel) }
-          // Move the file into primarySourcesPath if it has not already been moved.
-          .forEach {
-            case (abs, _) if movedFiles.contains(abs) =>
-            case (abs, rel) =>
-              Files.move(
-                abs,
-                Paths.get(workspace.primarySourcesPath).resolve(rel)
-              )
-              movedFiles += abs
-          }
+          .forEach(moveFile)
 
       // Move a file in a filelist which may not exist.  Do nothing if the
       // filelist does not exist.
