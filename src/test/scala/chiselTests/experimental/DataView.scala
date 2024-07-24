@@ -938,7 +938,24 @@ class DataViewSpec extends ChiselFlatSpec {
     chirrtl should include("define a = rwprobe(w)")
   }
 
-  it should "error if attempting to define a viewed a Probe as a RWProbe" in {
+  it should "support defining identity views of Probes" in {
+    class InnerBundle extends Bundle {
+      val a = Bool()
+    }
+    class OuterBundle extends Bundle {
+      val a = Probe(new InnerBundle)
+    }
+    class MyModule extends Module {
+      val p = Wire(new OuterBundle)
+      val view = p.viewAs[OuterBundle]
+      val w = Wire(new InnerBundle)
+      define(view.a, ProbeValue(w))
+    }
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
+    chirrtl should include("define p.a = probe(w)")
+  }
+
+  it should "error if attempting to define a Probe viewed as a RWProbe" in {
     class MyModule extends Module {
       val a = IO(Output(RWProbe(Bool())))
       val w = WireInit(Bool(), false.B)
