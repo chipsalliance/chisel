@@ -141,9 +141,11 @@ package object simulator {
         (abs, rel) match {
           case (abs, _) if movedFiles.contains(abs) =>
           case (abs, rel) =>
+            val dest = Paths.get(workspace.primarySourcesPath).resolve(rel)
+            dest.getParent.toFile.mkdirs
             Files.move(
               abs,
-              Paths.get(workspace.primarySourcesPath).resolve(rel)
+              dest
             )
             movedFiles += abs
         }
