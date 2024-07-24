@@ -1,9 +1,10 @@
 package svsim
 
 import java.io.{BufferedReader, BufferedWriter, File, FileWriter, InputStreamReader, PrintWriter}
-import java.nio.file.Paths
+import java.nio.file.{Files, Paths}
 import java.lang.ProcessBuilder.Redirect
 import scala.annotation.meta.param
+import scala.jdk.CollectionConverters._
 
 case class ModuleInfo(
   name:  String,
@@ -313,8 +314,9 @@ final class Workspace(
       backendSpecificSettings = backendSpecificSettings
     )
     val sourceFiles = Seq(primarySourcesPath, generatedSourcesPath)
-      .map(new File(_))
-      .flatMap(_.listFiles())
+      .flatMap(p => Files.walk(Paths.get(p)).iterator().asScala.toSeq)
+      .map(_.toFile)
+      .filter(_.isFile)
       .map { file => workingDirectory.toPath().relativize(file.toPath()).toString() }
 
     val traceFileStem = (backendSpecificSettings match {
@@ -410,7 +412,6 @@ final class Workspace(
     )
     def readLogLines() = {
       val sourceLocationRegex = "[\\./]*generated-sources/".r
-      import scala.collection.JavaConverters._
       new BufferedReader(new InputStreamReader(process.getInputStream()))
         .lines()
         .map(sourceLocationRegex.replaceFirstIn(_, ""))

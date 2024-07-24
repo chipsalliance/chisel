@@ -61,7 +61,8 @@ trait ChiselRunners extends Assertions {
             VerilogPreprocessorDefine("ASSERT_VERBOSE_COND", s"!${Workspace.testbenchModuleName}.reset"),
             VerilogPreprocessorDefine("PRINTF_COND", s"!${Workspace.testbenchModuleName}.reset"),
             VerilogPreprocessorDefine("STOP_COND", s"!${Workspace.testbenchModuleName}.reset")
-          )
+          ),
+          includeDirs = Some(Seq(workspace.primarySourcesPath))
         )
       },
       verilator.Backend
