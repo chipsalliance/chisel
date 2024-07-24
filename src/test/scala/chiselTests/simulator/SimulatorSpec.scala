@@ -2,6 +2,7 @@ package chiselTests.simulator
 
 import chisel3._
 import chisel3.experimental.ExtModule
+import chisel3.layer.{block, Convention, Layer}
 import chisel3.simulator._
 import chisel3.util.{HasExtModuleInline, HasExtModulePath, HasExtModuleResource}
 import org.scalatest.funspec.AnyFunSpec
@@ -277,6 +278,26 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
           dut.io.out.expect(12)
         }
         .result
+    }
+
+    it("has layers enabled") {
+      object AssertLayer extends Layer(Convention.Bind)
+      class Foo extends Module {
+        val a = IO(Input(Bool()))
+        block(AssertLayer) {
+          chisel3.assert(a, "a must be true")
+        }
+      }
+      intercept[svsim.Simulation.UnexpectedEndOfMessages.type] {
+        new VerilatorSimulator("test_run_dir/simulator/has_layers_enabled")
+        .simulate(new Foo) { module =>
+          import PeekPokeAPI._
+          val dut = module.wrapped
+          dut.a.poke(false.B)
+          dut.clock.step(1)
+        }
+          .result
+      }
     }
   }
 }
