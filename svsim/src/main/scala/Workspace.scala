@@ -314,8 +314,9 @@ final class Workspace(
       backendSpecificSettings = backendSpecificSettings
     )
     val sourceFiles = Seq(primarySourcesPath, generatedSourcesPath)
-      .map(new File(_))
-      .flatMap(_.listFiles())
+      .flatMap(p => Files.walk(Paths.get(p)).iterator().asScala.toSeq)
+      .map(_.toFile)
+      .filter(_.isFile)
       .map { file => workingDirectory.toPath().relativize(file.toPath()).toString() }
 
     val traceFileStem = (backendSpecificSettings match {

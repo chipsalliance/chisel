@@ -167,6 +167,14 @@ package object simulator {
       moveFiles(supportArtifactsPath.resolve("filelist.f"))
       maybeMoveFiles(supportArtifactsPath.resolve("firrtl_black_box_resource_files.f"))
 
+      // Additionally, move other files which are not in the filelist, but are
+      // ABI-meaningful.
+      Files
+        .walk(supportArtifactsPath)
+        .filter(_.toFile.isFile)
+        .filter(_.getFileName.toString.startsWith("layers_"))
+        .forEach(moveFile)
+
       // Initialize Module Info
       val dut = someDut.get
       val ports = {
