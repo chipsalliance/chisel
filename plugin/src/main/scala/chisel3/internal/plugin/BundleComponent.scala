@@ -139,6 +139,7 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
         }
 
         val currentFields = bundleSymbol.info.members.flatMap {
+
           case member if member.isPublic =>
             if (isBundleField(member)) {
               // The params have spaces after them (Scalac implementation detail)
@@ -146,8 +147,9 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
             } else {
               None
             }
+
           case _ => None
-        }.toList.reverse
+        }.toList
 
         val allParentFields = bundleSymbol.parentSymbols.flatMap { parentSymbol =>
           val fieldsFromParent = if (depth < 1 && !isExactBundle(bundleSymbol)) {
