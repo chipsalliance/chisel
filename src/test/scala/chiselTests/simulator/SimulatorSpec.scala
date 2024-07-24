@@ -290,12 +290,12 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
       }
       intercept[svsim.Simulation.UnexpectedEndOfMessages.type] {
         new VerilatorSimulator("test_run_dir/simulator/has_layers_enabled")
-        .simulate(new Foo) { module =>
-          import PeekPokeAPI._
-          val dut = module.wrapped
-          dut.a.poke(false.B)
-          dut.clock.step(1)
-        }
+          .simulate(new Foo) { module =>
+            import PeekPokeAPI._
+            val dut = module.wrapped
+            dut.a.poke(false.B)
+            dut.clock.step(1)
+          }
           .result
       }
     }
