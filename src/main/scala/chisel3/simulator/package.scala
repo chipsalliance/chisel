@@ -143,10 +143,7 @@ package object simulator {
           case (abs, rel) =>
             val dest = Paths.get(workspace.primarySourcesPath).resolve(rel)
             dest.getParent.toFile.mkdirs
-            Files.move(
-              abs,
-              dest
-            )
+            Files.move(abs, dest)
             movedFiles += abs
         }
       }
