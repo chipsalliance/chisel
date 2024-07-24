@@ -100,10 +100,10 @@ class ExtModuleInvalidatedTester extends Module {
 
 class ExtModuleSpec extends ChiselFlatSpec {
   "A ExtModule inverter" should "work" in {
-    assertTesterPasses({ new ExtModuleTester }, Seq("/chisel3/BlackBoxTest.v"), TesterDriver.verilatorOnly)
+    assertTesterPasses({ new ExtModuleTester }, Seq("/chisel3/BlackBoxTest.v"))
   }
   "Multiple ExtModules" should "work" in {
-    assertTesterPasses({ new MultiExtModuleTester }, Seq("/chisel3/BlackBoxTest.v"), TesterDriver.verilatorOnly)
+    assertTesterPasses({ new MultiExtModuleTester }, Seq("/chisel3/BlackBoxTest.v"))
   }
   "DataMirror.modulePorts" should "work with ExtModule" in {
     ChiselStage.emitCHIRRTL(new Module {

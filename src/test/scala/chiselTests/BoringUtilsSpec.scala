@@ -38,8 +38,7 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
 
   it should "connect two wires within a module" in {
     runTester(
-      new ShouldntAssertTester { val dut = Module(new BoringInverter) },
-      annotations = TesterDriver.verilatorOnly
+      new ShouldntAssertTester { val dut = Module(new BoringInverter) }
     ) should be(true)
   }
 
@@ -98,7 +97,7 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
   behavior.of("BoringUtils.bore")
 
   it should "connect across modules using BoringUtils.bore" in {
-    runTester(new TopTester, annotations = TesterDriver.verilatorOnly) should be(true)
+    runTester(new TopTester) should be(true)
   }
 
   // TODO: this test is not really testing anything as MFC does boring during
@@ -107,7 +106,7 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
   // pre-deduplicated circuit).  This is likely better handled as a test in
   // CIRCT than in Chisel.
   it should "still work even with dedup off" in {
-    runTester(new TopTesterFail, annotations = Seq(TesterDriver.VerilatorBackend))
+    runTester(new TopTesterFail)
   }
 
   class InternalBore extends RawModule {
@@ -124,7 +123,7 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
   }
 
   it should "work for an internal (same module) BoringUtils.bore" in {
-    runTester(new InternalBoreTester, annotations = TesterDriver.verilatorOnly) should be(true)
+    runTester(new InternalBoreTester) should be(true)
   }
 
   it should "work using new API" in {

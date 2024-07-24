@@ -38,8 +38,7 @@ trait ChiselRunners extends Assertions {
   private val timeStampFormat = new SimpleDateFormat("yyyyMMddHHmmss")
   def runTester(
     t:                    => BasicTester,
-    additionalVResources: Seq[String] = Seq(),
-    annotations:          AnnotationSeq = Seq()
+    additionalVResources: Seq[String] = Seq()
   ): Boolean = {
     val workspacePath = Seq(
       "test_run_dir",
@@ -113,17 +112,15 @@ trait ChiselRunners extends Assertions {
   }
   def assertTesterPasses(
     t:                    => BasicTester,
-    additionalVResources: Seq[String] = Seq(),
-    annotations:          AnnotationSeq = Seq()
+    additionalVResources: Seq[String] = Seq()
   ): Unit = {
-    assert(runTester(t, additionalVResources, annotations))
+    assert(runTester(t, additionalVResources))
   }
   def assertTesterFails(
     t:                    => BasicTester,
-    additionalVResources: Seq[String] = Seq(),
-    annotations:          Seq[chisel3.aop.Aspect[_]] = Seq()
+    additionalVResources: Seq[String] = Seq()
   ): Unit = {
-    assert(!runTester(t, additionalVResources, annotations))
+    assert(!runTester(t, additionalVResources))
   }
 
   def assertKnownWidth(expected: Int, args: Iterable[String] = Nil)(gen: => Data)(implicit pos: Position): Unit = {

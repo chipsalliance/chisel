@@ -133,48 +133,43 @@ class InjectionSpec extends ChiselFlatSpec with Utils {
   }
   //TODO: SFC->MFC, this test is ignored because aspects yet fully supported by CIRCT/firtool
   "Test" should "pass if pass wrong values, but correct with aspect" ignore {
-    assertTesterPasses({ new AspectTester(Seq(9, 9, 9)) }, Nil, Seq(correctValueAspect) ++ TesterDriver.verilatorOnly)
+    assertTesterPasses({ new AspectTester(Seq(9, 9, 9)) }, Nil)
   }
   "Test" should "pass if pass wrong values, then wrong aspect, then correct aspect" ignore {
     assertTesterPasses(
       new AspectTester(Seq(9, 9, 9)),
-      Nil,
-      Seq(wrongValueAspect, correctValueAspect) ++ TesterDriver.verilatorOnly
+      Nil
     )
   }
   "Test" should "fail if pass wrong values, then correct aspect, then wrong aspect" in {
-    assertTesterFails({ new AspectTester(Seq(9, 9, 9)) }, Nil, Seq(correctValueAspect, wrongValueAspect))
+    assertTesterFails({ new AspectTester(Seq(9, 9, 9)) }, Nil)
   }
 
   "Test" should "pass if the submodules in SubmoduleManipulationTester can be manipulated by manipulateSubmoduleAspect" ignore {
     assertTesterPasses(
       { new SubmoduleManipulationTester },
-      Nil,
-      Seq(manipulateSubmoduleAspect) ++ TesterDriver.verilatorOnly
+      Nil
     )
   }
 
   "Module name collisions when adding a new module" should "be resolved" ignore {
     assertTesterPasses(
       { new SubmoduleManipulationTester },
-      Nil,
-      Seq(duplicateSubmoduleAspect) ++ TesterDriver.verilatorOnly
+      Nil
     )
   }
 
   "Adding external modules" should "work" ignore {
     assertTesterPasses(
       { new SubmoduleManipulationTester },
-      Nil,
-      Seq(addingExternalModules) ++ TesterDriver.verilatorOnly
+      Nil
     )
   }
 
   "Injection into multiple submodules of the same class" should "work" ignore {
     assertTesterPasses(
       { new MultiModuleInjectionTester },
-      Nil,
-      Seq(multiModuleInjectionAspect) ++ TesterDriver.verilatorOnly
+      Nil
     )
   }
 }
