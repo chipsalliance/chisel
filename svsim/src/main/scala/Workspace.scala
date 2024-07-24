@@ -1,9 +1,10 @@
 package svsim
 
 import java.io.{BufferedReader, BufferedWriter, File, FileWriter, InputStreamReader, PrintWriter}
-import java.nio.file.Paths
+import java.nio.file.{Files, Paths}
 import java.lang.ProcessBuilder.Redirect
 import scala.annotation.meta.param
+import scala.jdk.CollectionConverters._
 
 case class ModuleInfo(
   name:  String,
@@ -410,7 +411,6 @@ final class Workspace(
     )
     def readLogLines() = {
       val sourceLocationRegex = "[\\./]*generated-sources/".r
-      import scala.collection.JavaConverters._
       new BufferedReader(new InputStreamReader(process.getInputStream()))
         .lines()
         .map(sourceLocationRegex.replaceFirstIn(_, ""))

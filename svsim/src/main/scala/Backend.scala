@@ -11,7 +11,8 @@ case class CommonCompilationSettings(
     CommonCompilationSettings.AvailableParallelism.Default,
   defaultTimescale:  Option[CommonCompilationSettings.Timescale] = None,
   libraryExtensions: Option[Seq[String]] = None,
-  libraryPaths:      Option[Seq[String]] = None)
+  libraryPaths:      Option[Seq[String]] = None,
+  includeDirs:       Option[Seq[String]] = None)
 object CommonCompilationSettings {
   object VerilogPreprocessorDefine {
     def apply(name: String, value: String) = new VerilogPreprocessorDefine(name, Some(value))

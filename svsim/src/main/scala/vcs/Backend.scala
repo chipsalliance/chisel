@@ -151,6 +151,11 @@ final class Backend(
             case Some(paths) => paths.flatMap(Seq("-y", _))
           },
 
+          commonSettings.includeDirs match {
+            case None => Seq()
+            case Some(dirs) => dirs.map(dir => s"+incdir+$dir")
+          },
+
           backendSpecificSettings.xProp match {
             case None => Seq()
             case Some(XProp.XMerge) => Seq("-xprop=xmerge")

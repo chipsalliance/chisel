@@ -72,6 +72,11 @@ final class Backend(
             case Some(paths) => paths.flatMap(Seq("-y", _))
           },
 
+          commonSettings.includeDirs match {
+            case None => Seq()
+            case Some(dirs) => dirs.map(dir => s"+incdir+$dir")
+          },
+
           commonSettings.defaultTimescale match {
             case Some(Timescale.FromString(value)) => Seq("--timescale", value)
             case None => Seq()
