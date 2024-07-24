@@ -131,7 +131,7 @@ package object simulator {
         // Convert the files to an absolute version and a relative version.
         val (_abs, rel) = file match {
           case file if file.startsWith(supportArtifactsPath) =>
-            (file, file.subpath(supportArtifactsPath.getNameCount(), -1))
+            (file, file.subpath(supportArtifactsPath.getNameCount(), file.getNameCount()))
           case file => (supportArtifactsPath.resolve(file), file)
         }
         // Normalize the absolute path so it can be checked if it has already
