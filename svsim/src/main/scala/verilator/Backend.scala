@@ -51,7 +51,7 @@ final class Backend(
       compilerPath = executablePath,
       compilerInvocation = svsim.Backend.Parameters.Invocation(
         arguments = Seq[Seq[String]](
-          Seq( 
+          Seq(
             "--cc", // "Create C++ output"
             "--exe", // "Link to create executable"
             "--build", // "Build model executable/library after Verilation"
@@ -59,7 +59,7 @@ final class Backend(
             "-o", s"../$outputBinaryName", // "Name of final executable"
             "--top-module", topModuleName, // "Name of top-level input module"
             "--Mdir", "verilated-sources",  // "Name of output object directory"
-            "--assert", // Enable assertions 
+            "--assert", // Enable assertions
           ),
 
           commonSettings.libraryExtensions match {
@@ -93,7 +93,7 @@ final class Backend(
           ).collect {
             case (flag, true) => flag
           },
-        
+
           backendSpecificSettings.disabledWarnings.map("-Wno-" + _),
 
           commonSettings.optimizationStyle match {
@@ -127,9 +127,9 @@ final class Backend(
               },
 
               Seq("-std=c++14"),
-                
+
               additionalHeaderPaths.map { path => s"-I${path}" },
-              
+
               Seq(
                 // Use verilator support
                 s"-D${svsim.Backend.HarnessCompilationFlags.enableVerilatorSupport}",

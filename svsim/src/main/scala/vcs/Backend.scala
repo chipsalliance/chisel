@@ -119,7 +119,7 @@ final class Backend(
             "-sverilog", // Enable SystemVerilog
             "-nc", // Do not emit copyright notice
             // Specify resulting executable path
-            "-o", outputBinaryName, 
+            "-o", outputBinaryName,
             // Rename `main` so we use the `main` provided by `simulation-driver.cpp`
             "-e", "simulation_main",
           ),
@@ -140,7 +140,7 @@ final class Backend(
             case AvailableParallelism.Default => Seq()
             case AvailableParallelism.UpTo(value) => Seq(s"-j${value}")
           },
-          
+
           commonSettings.libraryExtensions match {
             case None => Seq()
             case Some(extensions) => Seq((Seq("+libext") ++ extensions).mkString("+"))
@@ -164,9 +164,9 @@ final class Backend(
                 case OptimizationStyle.OptimizeForCompilationSpeed => Seq("-O0")
                 case OptimizationStyle.OptimizeForSimulationSpeed=> Seq("-O3")
               },
-              
+
               additionalHeaderPaths.map { path => s"-I${path}" },
-              
+
               Seq(
                 // Enable VCS support
                 s"-D${svsim.Backend.HarnessCompilationFlags.enableVCSSupport}",
@@ -180,7 +180,7 @@ final class Backend(
           }.flatten,
 
           backendSpecificSettings.traceSettings.compileFlags,
-          
+
           Seq(
             commonSettings.verilogPreprocessorDefines,
             Seq(

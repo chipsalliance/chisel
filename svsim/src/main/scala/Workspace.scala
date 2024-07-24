@@ -200,7 +200,7 @@ final class Workspace(
       // `BufferedWriter` closes the underlying `FileWriter` when closed.
       systemVerilogTestbenchWriter.close()
     }
-    
+
     // This object creates a wrapper function for exported DPI functions to
     // properly set the scope to testbench top before calling DPI functions.
     object CreateFunctionForPort {
@@ -232,7 +232,7 @@ final class Workspace(
     try {
       val l = cDPIBridgeWriter
       l("#include <stdint.h>")
-      l()      
+      l()
       l("#ifdef SVSIM_ENABLE_VERILATOR_SUPPORT")
       l("#include \"verilated-sources/VsvsimTestbench__Dpi.h\"")
       l("#endif")
@@ -283,7 +283,7 @@ final class Workspace(
     } finally {
       cDPIBridgeWriter.close()
     }
-  
+
     copyResource(this.getClass, "/simulation-driver.cpp", generatedSourcesPath)
   }
   //format: on
