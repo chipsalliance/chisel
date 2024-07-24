@@ -120,7 +120,7 @@ class MultiClockSpec extends ChiselFlatSpec with Utils {
   }
 
   it should "scope ports of memories" in {
-    assertTesterPasses(new MultiClockMemTest, annotations = TesterDriver.verilatorOnly)
+    assertTesterPasses(new MultiClockMemTest)
   }
 
   it should "return like a normal Scala block" in {

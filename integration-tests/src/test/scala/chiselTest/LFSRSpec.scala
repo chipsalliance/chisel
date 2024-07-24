@@ -113,8 +113,7 @@ class LFSRSpec extends ChiselFlatSpec with Utils {
         LFSR.tapsMaxPeriod(width).foreach { taps =>
           info(s"""width $width okay using taps: ${taps.mkString(", ")}""")
           assertTesterPasses(
-            new LFSRMaxPeriod(PRNG(gen(width, taps, reduction))),
-            annotations = TesterDriver.verilatorOnly
+            new LFSRMaxPeriod(PRNG(gen(width, taps, reduction)))
           )
         }
       }

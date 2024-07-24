@@ -195,28 +195,27 @@ class BlackBoxWithParamsTester extends BasicTester {
 
 class BlackBoxSpec extends ChiselFlatSpec {
   "A BlackBoxed inverter" should "work" in {
-    assertTesterPasses({ new BlackBoxTester }, Seq("/chisel3/BlackBoxTest.v"), TesterDriver.verilatorOnly)
+    assertTesterPasses({ new BlackBoxTester }, Seq("/chisel3/BlackBoxTest.v"))
   }
   "A BlackBoxed with flipped IO" should "work" in {
-    assertTesterPasses({ new BlackBoxFlipTester }, Seq("/chisel3/BlackBoxTest.v"), TesterDriver.verilatorOnly)
+    assertTesterPasses({ new BlackBoxFlipTester }, Seq("/chisel3/BlackBoxTest.v"))
   }
   "Multiple BlackBoxes" should "work" in {
-    assertTesterPasses({ new MultiBlackBoxTester }, Seq("/chisel3/BlackBoxTest.v"), TesterDriver.verilatorOnly)
+    assertTesterPasses({ new MultiBlackBoxTester }, Seq("/chisel3/BlackBoxTest.v"))
   }
   "A BlackBoxed register" should "work" in {
-    assertTesterPasses({ new BlackBoxWithClockTester }, Seq("/chisel3/BlackBoxTest.v"), TesterDriver.verilatorOnly)
+    assertTesterPasses({ new BlackBoxWithClockTester }, Seq("/chisel3/BlackBoxTest.v"))
   }
   //TODO: SFC->MFC, this test is ignored because the parameters have undesired quotes around values in verilog in MFC
   "BlackBoxes with simpler parameters" should "work" ignore {
     assertTesterPasses(
       { new SimplerBlackBoxWithParamsTester },
-      Seq("/chisel3/BlackBoxTest.v"),
-      TesterDriver.verilatorOnly
+      Seq("/chisel3/BlackBoxTest.v")
     )
   }
   //TODO: SFC->MFC, this test is ignored because the parameters have undesired quotes around values in verilog in MFC
   "BlackBoxes with parameters" should "work" ignore {
-    assertTesterPasses({ new BlackBoxWithParamsTester }, Seq("/chisel3/BlackBoxTest.v"), TesterDriver.verilatorOnly)
+    assertTesterPasses({ new BlackBoxWithParamsTester }, Seq("/chisel3/BlackBoxTest.v"))
   }
   "DataMirror.modulePorts" should "work with BlackBox" in {
     ChiselStage.emitCHIRRTL(new Module {
@@ -226,7 +225,7 @@ class BlackBoxSpec extends ChiselFlatSpec {
     })
   }
   "A BlackBox using suggestName(\"io\")" should "work (but don't do this)" in {
-    assertTesterPasses({ new BlackBoxTesterSuggestName }, Seq("/chisel3/BlackBoxTest.v"), TesterDriver.verilatorOnly)
+    assertTesterPasses({ new BlackBoxTesterSuggestName }, Seq("/chisel3/BlackBoxTest.v"))
   }
 
   "A BlackBox with no 'val io'" should "give a reasonable error message" in {

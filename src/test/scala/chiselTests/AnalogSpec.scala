@@ -179,8 +179,7 @@ class AnalogSpec extends ChiselFlatSpec with Utils {
         mod.io.bus <> writer.io.bus
         check(mod)
       },
-      Seq("/chisel3/AnalogBlackBox.v"),
-      TesterDriver.verilatorOnly
+      Seq("/chisel3/AnalogBlackBox.v")
     )
   }
 
@@ -246,8 +245,7 @@ class AnalogSpec extends ChiselFlatSpec with Utils {
         attach(writer.io.bus, mods(0).io.bus, mods(1).io.bus)
         mods.foreach(check(_))
       },
-      Seq("/chisel3/AnalogBlackBox.v"),
-      TesterDriver.verilatorOnly
+      Seq("/chisel3/AnalogBlackBox.v")
     )
   }
 
@@ -261,8 +259,7 @@ class AnalogSpec extends ChiselFlatSpec with Utils {
         attach(mods(1).io.bus, busWire)
         mods.foreach(check(_))
       },
-      Seq("/chisel3/AnalogBlackBox.v"),
-      TesterDriver.verilatorOnly
+      Seq("/chisel3/AnalogBlackBox.v")
     )
   }
 
@@ -278,8 +275,7 @@ class AnalogSpec extends ChiselFlatSpec with Utils {
         attach(busWire(0), busWire(1))
         check(mod)
       },
-      Seq("/chisel3/AnalogBlackBox.v"),
-      TesterDriver.verilatorOnly
+      Seq("/chisel3/AnalogBlackBox.v")
     )
   }
 
@@ -291,8 +287,7 @@ class AnalogSpec extends ChiselFlatSpec with Utils {
         attach(writer.io.bus, mods(0).bus, mods(1).bus)
         mods.foreach(check(_))
       },
-      Seq("/chisel3/AnalogBlackBox.v"),
-      TesterDriver.verilatorOnly
+      Seq("/chisel3/AnalogBlackBox.v")
     )
   }
 
@@ -306,8 +301,7 @@ class AnalogSpec extends ChiselFlatSpec with Utils {
         reader.io.bus <> connector.io.bus2
         check(reader)
       },
-      Seq("/chisel3/AnalogBlackBox.v"),
-      TesterDriver.verilatorOnly
+      Seq("/chisel3/AnalogBlackBox.v")
     )
   }
 
@@ -333,8 +327,7 @@ class AnalogSpec extends ChiselFlatSpec with Utils {
         mod.bus <> writer.io.bus
         check(mod)
       },
-      Seq("/chisel3/AnalogBlackBox.v"),
-      TesterDriver.verilatorOnly
+      Seq("/chisel3/AnalogBlackBox.v")
     )
   }
 
@@ -345,8 +338,7 @@ class AnalogSpec extends ChiselFlatSpec with Utils {
         mod.bus <> writer.io.bus
         check(mod)
       },
-      Seq("/chisel3/AnalogBlackBox.v"),
-      TesterDriver.verilatorOnly
+      Seq("/chisel3/AnalogBlackBox.v")
     )
   }
 }
