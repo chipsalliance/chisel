@@ -9,6 +9,7 @@ import chisel3.experimental.{Analog, HWTuple2}
 import chisel3.experimental.BundleLiterals._
 import chisel3.experimental.VecLiterals._
 import chisel3.probe._
+import chisel3.properties.Property
 import chisel3.reflect.DataMirror.internal.chiselTypeClone
 import chisel3.util.{Decoupled, DecoupledIO, Valid, ValidIO}
 import chiselTests.ChiselFlatSpec
@@ -1210,6 +1211,23 @@ class DataViewSpec extends ChiselFlatSpec {
       vecView.litOption should be(Some(0))
     }
     ChiselStage.emitCHIRRTL(new MyModule)
+  }
+
+  it should "support view of Properties in a List[Property]" in {
+    class MyBundle extends Bundle {
+      val prop = Property[String]()
+    }
+    class ChildModule extends RawModule {
+      val io = IO(Output(new MyBundle))
+    }
+    class MyModule extends Module {
+      val out = IO(Output(Property[List[String]]()))
+      val child = Module(new ChildModule)
+      val view = child.io.viewAs[MyBundle]
+      out := Property(List(view.prop))
+    }
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
+    chirrtl should include("propassign out, List<String>(child.io.prop)")
   }
 
   behavior.of("PartialDataView")
