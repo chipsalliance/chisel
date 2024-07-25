@@ -266,6 +266,8 @@ sealed trait Property[T] extends Element { self =>
 
   override def typeName: String = s"Property[${tpe.getPropertyType().serialize}]"
 
+  override def toString: String = stringAccessor("Property")
+
   /** Bind this node to the in-memory graph.
     */
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
@@ -297,30 +299,6 @@ sealed trait Property[T] extends Element { self =>
     */
   private[chisel3] def getPropertyType: fir.PropertyType = {
     tpe.getPropertyType()
-  }
-
-  /** Internal API: returns a ref that can be assigned to, if consistent with the binding.
-    */
-  private[chisel3] override def lref(implicit info: SourceInfo): ir.Node = {
-    requireIsHardware(this)
-    requireVisible()
-    topBindingOpt match {
-      case Some(binding: ReadOnlyBinding) =>
-        throwException(s"internal error: attempted to generate LHS ref to ReadOnlyBinding $binding")
-      case Some(binding: TopBinding) => ir.Node(this)
-      case opt => throwException(s"internal error: unknown binding $opt in generating LHS ref")
-    }
-  }
-
-  /** Internal API: returns a ref, if bound.
-    */
-  private[chisel3] override def ref: ir.Arg = {
-    requireIsHardware(this)
-    requireVisible()
-    topBindingOpt match {
-      case Some(binding: TopBinding) => ir.Node(this)
-      case opt => throwException(s"internal error: unknown binding $opt in generating RHS ref")
-    }
   }
 
   /** Perform addition as defined by FIRRTL spec section Integer Add Operation.
