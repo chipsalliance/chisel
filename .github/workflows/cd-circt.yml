@@ -2,15 +2,9 @@ name: 'CD (firtool)'
 
 on:
   workflow_dispatch:
-  # Run every day at 0100 UTC which is:
-  #   - 1800 PDT / 1700 PST
-  #   - 2100 EDT / 2000 EST
-  # This time is chosen because it is after a likely time that a CIRCT release
-  # would have happened (during the North American workday), but is not too late
-  # that somebody is not available to immediately approve.  Running this in the
-  # middle of the night isn't advantageous like typical nightly runs.
+  # Run every 15 minutes.
   schedule:
-    - cron: '0 1 * * *'
+    - cron: '*/15 * * * *'
 
 jobs:
   cd-circt:
