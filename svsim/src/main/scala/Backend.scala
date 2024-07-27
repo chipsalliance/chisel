@@ -1,5 +1,7 @@
 package svsim
 
+import java.io.File
+
 // -- Compilation Settings
 
 /** Settings supported by all svsim backends.
@@ -12,7 +14,8 @@ case class CommonCompilationSettings(
   defaultTimescale:  Option[CommonCompilationSettings.Timescale] = None,
   libraryExtensions: Option[Seq[String]] = None,
   libraryPaths:      Option[Seq[String]] = None,
-  includeDirs:       Option[Seq[String]] = None)
+  includeDirs:       Option[Seq[String]] = None,
+  fileFilter:        File => Boolean = _ => true)
 object CommonCompilationSettings {
   object VerilogPreprocessorDefine {
     def apply(name: String, value: String) = new VerilogPreprocessorDefine(name, Some(value))
