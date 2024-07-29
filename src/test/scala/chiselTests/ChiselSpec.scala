@@ -38,7 +38,8 @@ trait ChiselRunners extends Assertions {
   private val timeStampFormat = new SimpleDateFormat("yyyyMMddHHmmss")
   def runTester(
     t:                    => BasicTester,
-    additionalVResources: Seq[String] = Seq()
+    additionalVResources: Seq[String] = Seq(),
+    layerControl:         LayerControl.Type = LayerControl.EnableAll
   ): Boolean = {
     val workspacePath = Seq(
       "test_run_dir",
@@ -62,7 +63,8 @@ trait ChiselRunners extends Assertions {
             VerilogPreprocessorDefine("PRINTF_COND", s"!${Workspace.testbenchModuleName}.reset"),
             VerilogPreprocessorDefine("STOP_COND", s"!${Workspace.testbenchModuleName}.reset")
           ),
-          includeDirs = Some(Seq(workspace.primarySourcesPath))
+          includeDirs = Some(Seq(workspace.primarySourcesPath)),
+          fileFilter = layerControl.filter
         )
       },
       verilator.Backend
@@ -113,15 +115,17 @@ trait ChiselRunners extends Assertions {
   }
   def assertTesterPasses(
     t:                    => BasicTester,
-    additionalVResources: Seq[String] = Seq()
+    additionalVResources: Seq[String] = Seq(),
+    layerControl:         LayerControl.Type = LayerControl.EnableAll
   ): Unit = {
-    assert(runTester(t, additionalVResources))
+    assert(runTester(t, additionalVResources, layerControl))
   }
   def assertTesterFails(
     t:                    => BasicTester,
-    additionalVResources: Seq[String] = Seq()
+    additionalVResources: Seq[String] = Seq(),
+    layerControl:         LayerControl.Type = LayerControl.EnableAll
   ): Unit = {
-    assert(!runTester(t, additionalVResources))
+    assert(!runTester(t, additionalVResources, layerControl))
   }
 
   def assertKnownWidth(expected: Int, args: Iterable[String] = Nil)(gen: => Data)(implicit pos: Position): Unit = {
