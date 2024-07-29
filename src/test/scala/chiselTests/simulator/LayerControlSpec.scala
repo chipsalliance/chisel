@@ -23,6 +23,12 @@ class LayerControlSpec extends AnyFunSpec with Matchers {
       layerControl.filter(new File("layers_foo_bar.sv")) should be(false)
     }
   }
+  describe("LayerControl.DisableAll") {
+    it("should return true for non-layers and false for layers") {
+      LayerControl.DisableAll.filter(new File("foo")) should be(true)
+      LayerControl.DisableAll.filter(new File("layers_foo_bar.sv")) should be(false)
+    }
+  }
   describe("LayerControl.Enable") {
     it("should return true for non-layers and filter layers properly") {
       object A extends Layer(Convention.Bind)

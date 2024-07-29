@@ -47,4 +47,8 @@ object LayerControl {
     }
     override protected def shouldEnable(filename: String) = _shouldEnable(filename)
   }
+
+  /** Disables all layers.  This is the same as `Enable()`. */
+  val DisableAll = Enable()
+
 }
