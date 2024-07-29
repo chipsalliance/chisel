@@ -44,8 +44,8 @@ class EphemeralSimulatorSpec extends AnyFunSpec with Matchers {
           }
         }
       }
-      it("should disable all layers when provided with DisableAll") {
-        simulate(new Foo, layerControl = LayerControl.DisableAll) { dut =>
+      it("should disable all layers when provided with Enable()") {
+        simulate(new Foo, layerControl = LayerControl.Enable()) { dut =>
           dut.clock.step()
         }
       }
