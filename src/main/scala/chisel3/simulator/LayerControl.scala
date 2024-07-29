@@ -29,11 +29,6 @@ object LayerControl {
     override protected def shouldEnable(layerFilename: String) = true
   }
 
-  /** Disable all layers */
-  case object DisableAll extends Type {
-    override protected def shouldEnable(filename: String) = false
-  }
-
   /** Enable only the specified layers
     *
     * Nested layers should use a `.` as a delimiter.
@@ -41,10 +36,15 @@ object LayerControl {
     * @param layers a variadic list of layer names
     */
   case class Enable(layers: Layer*) extends Type {
-    private val re = {
-      val layersRe = layers.map(_.fullName.split("\\.").mkString("_")).mkString("|")
-      s"^layers_\\w+_($layersRe)\\.sv$$".r
+    private val _shouldEnable: String => Boolean = {
+      layers match {
+        case Nil => _ => false
+        case _ =>
+          val layersRe = layers.map(_.fullName.split("\\.").mkString("_")).mkString("|")
+          val re = s"^layers_\\w+_($layersRe)\\.sv$$".r
+          re.matches(_)
+      }
     }
-    override protected def shouldEnable(filename: String) = re.matches(filename)
+    override protected def shouldEnable(filename: String) = _shouldEnable(filename)
   }
 }
