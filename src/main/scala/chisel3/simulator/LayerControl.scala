@@ -25,7 +25,7 @@ object LayerControl {
   }
 
   /** Enable all layers */
-  case object EnableAll extends Type {
+  final case object EnableAll extends Type {
     override protected def shouldEnable(layerFilename: String) = true
   }
 
@@ -35,7 +35,7 @@ object LayerControl {
     *
     * @param layers a variadic list of layer names
     */
-  case class Enable(layers: Layer*) extends Type {
+  final case class Enable(layers: Layer*) extends Type {
     private val _shouldEnable: String => Boolean = {
       layers match {
         case Nil => _ => false
