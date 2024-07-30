@@ -113,7 +113,7 @@ final class Workspace(
       }
       l(");")
       l()
-      l("  import \"DPI-C\" context function void initTestBenchScope;")
+      l("  import \"DPI-C\" context function void initTestBenchScope();")
       l("  initial")
       l("    initTestBenchScope();")
       for ((port, index) <- ports) {
@@ -243,9 +243,14 @@ final class Workspace(
       l()
       l("extern \"C\" {")
       l(" svScope setScopeToTestBench();")
-      for ((port, index) <- ports.filter(_._1.isGettable)) {
-      l(CreateFunctionForPort.createGetBits(port.name))
+      for ((port, index) <- ports) {
       l(CreateFunctionForPort.createGetBitWidth(port.name))
+        if (port.isGettable) {
+      l(CreateFunctionForPort.createGetBits(port.name))
+        }
+        if (port.isSettable) {
+      l(CreateFunctionForPort.createSetBits(port.name))
+        }
       }
       l()
       l("int port_getter(int id, int *bitWidth, void (**getter)(uint8_t*)) {")
@@ -260,10 +265,6 @@ final class Workspace(
       l("      return -1;")
       l("  }")
       l("}")
-      l()
-      for ((port, index) <- ports.filter(_._1.isSettable)) {
-      l(CreateFunctionForPort.createSetBits(port.name))
-      }
       l()
       l("int port_setter(int id, int *bitWidth, void (**setter)(const uint8_t*)) {")
       l("  switch (id) {")
