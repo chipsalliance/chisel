@@ -5,14 +5,17 @@ import chisel3._
 import chisel3.internal.{Builder, NamedComponent}
 import chisel3.internal.binding.{FirrtlMemTypeBinding, SramPortBinding}
 import chisel3.internal.plugin.autoNameRecursively
-import chisel3.experimental.SourceInfo
+import chisel3.experimental.{OpaqueType, SourceInfo}
 import chisel3.internal.sourceinfo.{MemTransform, SourceInfoTransform}
 import chisel3.internal.firrtl.ir.{Arg, FirrtlMemory, LitIndex, Node, Ref, Slot}
 import chisel3.util.experimental.loadMemoryFromFileInline
+import chisel3.reflect.DataMirror
 import firrtl.annotations.MemoryLoadFileType
 import scala.language.reflectiveCalls
 import scala.language.experimental.macros
 import chisel3.internal.firrtl.ir
+
+import scala.collection.immutable.{ListMap, VectorMap}
 
 /** A bundle of signals representing a memory read port.
   *
@@ -536,7 +539,7 @@ object SRAM {
       firrtlWritePort.clk := writeClock
       firrtlWritePort.data.asInstanceOf[Data] := memWritePort.data
       firrtlWritePort.en := memWritePort.enable
-      assignMask(memWritePort.data, memWritePort.mask, firrtlWritePort.getRef, "mask")
+      assignMask(firrtlWritePort.mask, memWritePort.mask)
     }
     for (
       ((memReadwritePort, firrtlReadwritePort), readwriteClock) <-
@@ -548,7 +551,7 @@ object SRAM {
       memReadwritePort.readData := firrtlReadwritePort.rdata.asInstanceOf[Data]
       firrtlReadwritePort.wdata.asInstanceOf[Data] := memReadwritePort.writeData
       firrtlReadwritePort.wmode := memReadwritePort.isWrite
-      assignMask(memReadwritePort.writeData, memReadwritePort.mask, firrtlReadwritePort.getRef, "wmask")
+      assignMask(firrtlReadwritePort.wmask, memReadwritePort.mask)
     }
 
     _out
@@ -559,51 +562,24 @@ object SRAM {
     *
     * @param memWriteDataTpe write data type to get masked
     * @param writeMaskOpt write mask to assign
-    * @param firrtlMemPortRef reference to the FIRRTL memory port
-    * @param maskName name of the mask in the FIRRTL memory port
     */
   private def assignMask(
-    memWriteDataTpe:  Data,
-    writeMaskOpt:     Option[Vec[Bool]],
-    firrtlMemPortRef: Arg,
-    maskName:         String
+    writeMask:  SramMask,
+    maskSource: Option[Vec[Bool]]
   ): Unit = {
-    memWriteDataTpe match {
-      case v: Vec[_] =>
-        writeMaskOpt match {
-          case Some(m) => assignVecMask(v, m, Slot(firrtlMemPortRef, maskName))
-          case None    => assignVecMask(v, VecInit.fill(v.length)(true.B), Slot(firrtlMemPortRef, maskName))
+    maskSource match {
+      case None =>
+        // Write all 1s, all leaves are Bools
+        for (mask <- DataMirror.collectMembers(writeMask) { case b: Bool => b }) {
+          mask := true.B
         }
-      case e => assignElementMask(e, true.B, Slot(firrtlMemPortRef, maskName))
-    }
-
-    def assignElementMask(writeData: Data, writeMask: Bool, arg: Arg)(implicit sourceInfo: SourceInfo): Unit = {
-      writeData match {
-        case e: Element => Builder.pushCommand(ir.Connect(sourceInfo, arg, writeMask.ref))
-        case r: Record if r._isOpaqueType =>
-          val ("", elt) = r.elements.head
-          assignElementMask(elt, writeMask, arg)
-        case r: Record =>
-          r.elements.foreach { case (name, data) => assignElementMask(data, writeMask, Slot(arg, name)) }
-        case v: Vec[_] =>
-          v.elementsIterator.zipWithIndex.foreach {
-            case (data, idx) =>
-              assignElementMask(data, writeMask, LitIndex(arg, idx))
+      case Some(source) =>
+        for ((maskElt, value) <- writeMask.vecElements.zip(source)) {
+          // All leaves are Bools, write the value from the maskOpt
+          for (leaf <- DataMirror.collectMembers(maskElt) { case b: Bool => b }) {
+            leaf := value
           }
-      }
-    }
-
-    def assignVecMask[T <: Data](
-      writeData: Vec[T],
-      writeMask: Vec[Bool],
-      arg:       Arg
-    )(
-      implicit sourceInfo: SourceInfo
-    ): Unit = {
-      writeData.zip(writeMask).zipWithIndex.foreach {
-        case ((elem, mask), idx) =>
-          assignElementMask(elem, mask, LitIndex(arg, idx))
-      }
+        }
     }
   }
 
@@ -615,6 +591,30 @@ object SRAM {
     val rwPorts: String = if (rw > 0) s"${rw}RW" else ""
 
     s"$rdPorts$wrPorts$rwPorts"
+  }
+}
+
+/** Type representing the mask of an SRAM
+  *
+  * This type shadows the data type. It matches the structure of Aggregates with all leaves replaced with Bools.
+  */
+private[chisel3] class SramMask(gen: Data) extends Record with OpaqueType {
+
+  override def opaqueType = gen match {
+    case r: Record => r._isOpaqueType
+    case _ => true
+  }
+
+  val elements = gen match {
+    case e: Element => ListMap("" -> Bool())
+    case v: Vec[_]  => ListMap("" -> Vec(v.length, new SramMask(v.sample_element)))
+    case r: Record  => r.elements.map { case (name, tpe) => name -> new SramMask(tpe) }
+  }
+
+  /** Used to assert that the SramMask and process its elements */
+  def vecElements: Vec[SramMask] = gen match {
+    case v: Vec[_] => elements.head._2.asInstanceOf[Vec[SramMask]]
+    case _ => Builder.exception(s"Internal Error! SramMask.vecElements called on non-Vec type $gen!")
   }
 }
 
@@ -647,6 +647,7 @@ private[chisel3] final class FirrtlMemoryWriter[T <: Data](writePort: MemoryWrit
   val en = Bool()
   val clk = Clock()
   val data = writePort.data.cloneType
+  val mask = new SramMask(data)
 }
 
 /** Contains fields that map from the user-facing [[MemoryReadwritePort]] to a
@@ -665,4 +666,5 @@ private[chisel3] final class FirrtlMemoryReadwriter[T <: Data](readwritePort: Me
   val rdata = Flipped(readwritePort.readData.cloneType)
   val wmode = Bool()
   val wdata = readwritePort.writeData.cloneType
+  val wmask = new SramMask(wdata)
 }
