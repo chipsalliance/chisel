@@ -26,6 +26,10 @@ class ChiselAnnotationsSpecQux extends ChiselAnnotationsSpecFoo {
 
 class ChiselAnnotation
 
+object ChiselAnnotationsSpec {
+  object A extends Layer(Convention.Bind)
+}
+
 class ChiselAnnotationsSpec extends AnyFlatSpec with Matchers {
 
   behavior.of("ChiselGeneratorAnnotation elaboration")
@@ -68,18 +72,18 @@ class ChiselAnnotationsSpec extends AnyFlatSpec with Matchers {
   behavior.of("RemapLayer")
 
   it should "construct an existing in-tree layer" in {
-    RemapLayer(layers.Verification.getClass.getName, layers.Verification.Assert.getClass.getName)
+    RemapLayer(ChiselAnnotationsSpec.A.getClass.getName, ChiselAnnotationsSpec.A.getClass.getName)
   }
 
   it should "throw an exception if the layer does not exist" in {
     intercept[OptionsException] {
-      RemapLayer("foo.bar.Verification$", layers.Verification.getClass.getName)
+      RemapLayer("foo.bar.Verification$", ChiselAnnotationsSpec.A.getClass.getName)
     }.getMessage should startWith("Unable to reflectively find layer 'foo.bar.Verification$'")
   }
 
   it should "throw an exception if the object is not a layer" in {
     intercept[OptionsException] {
-      RemapLayer("circt.stage.ChiselStage$", layers.Verification.getClass.getName)
+      RemapLayer("circt.stage.ChiselStage$", ChiselAnnotationsSpec.A.getClass.getName)
     }.getMessage should startWith("Object 'circt.stage.ChiselStage$' must be a `Layer`")
   }
 
