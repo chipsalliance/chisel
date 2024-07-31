@@ -1493,7 +1493,7 @@ abstract class Bundle extends Record {
       case (name, Some(data: Data)) =>
         Some(name -> data)
       case _ => None
-    }: _*)
+    }.reverse: _*)
   }
 
   /** This method is implemented by the compiler plugin

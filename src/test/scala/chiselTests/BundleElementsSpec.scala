@@ -125,8 +125,9 @@ class HasValParamsToBundle extends Module {
   val out3 = IO(Output(new BpipParamIsField1(UInt(10.W))))
   val out4 = IO(Output(new BpipParamIsField1(UInt(10.W))))
   out3 := DontCare
-  assertElementsMatchExpected(out3)("paramField0" -> _.paramField0, "paramField1" -> _.paramField1)
-  assertElementsMatchExpected(out4)("paramField0" -> _.paramField0, "paramField1" -> _.paramField1)
+
+  assertElementsMatchExpected(out3)("paramField1" -> _.paramField1, "paramField0" -> _.paramField0)
+  assertElementsMatchExpected(out4)("paramField1" -> _.paramField1, "paramField0" -> _.paramField0)
 }
 
 class HasGenParamsPassedToSuperclasses extends Module {
@@ -210,6 +211,39 @@ class UsesBundleWithGeneratorField extends Module {
   assertElementsMatchExpected(out)("superQux" -> _.superQux, "superFoo" -> _.superFoo)
 }
 
+case class GenericBundle[T <: Data, U <: Data](val a: T, val b: U) extends Bundle
+
+class SimpleBundleElemOrder extends Module {
+  val in1 = IO(Input(GenericBundle(a = Bool(), b = UInt(8.W))))
+  val in2 = IO(Input(GenericBundle(b = UInt(8.W), a = Bool())))
+  val out1 = IO(Output(UInt(in1.getWidth.W)))
+  val out2 = IO(Output(UInt(in2.getWidth.W)))
+  out1 := in1.asUInt
+  out2 := in2.asUInt
+}
+
+class BundleElemOrder1(gen: => UInt) extends Bundle {
+  val a = UInt(8.W)
+  val b = gen
+  val c = UInt(8.W)
+
+}
+class BundleElemOrder2(gen: UInt) extends Bundle {
+  val a = UInt(8.W)
+  val b = gen
+  val c = UInt(8.W)
+
+}
+
+class SimpleBundleElemOrderByName extends Module {
+  val in0 = IO(Input(new BundleElemOrder1(UInt(8.W))))
+  val in1 = IO(Input(new BundleElemOrder2(UInt(8.W))))
+  val out0 = IO(Output(UInt(24.W)))
+  val out1 = IO(Output(UInt(24.W)))
+  out0 := in0.asUInt
+  out1 := in1.asUInt
+}
+
 /* Testing whether gen fields superFoo and superQux can be found when they are
  * declared in a superclass
  *
@@ -274,11 +308,11 @@ class BundleElementsSpec extends AnyFreeSpec with Matchers {
       "animals" -> _.animals,
       "baz" -> _.baz,
       "bar" -> _.bar,
+      "foo" -> _.foo,
       "varmint" -> _.varmint,
       "fieldThree" -> _.fieldThree,
       "fieldTwo" -> _.fieldTwo,
-      "fieldOne" -> _.fieldOne,
-      "foo" -> _.foo
+      "fieldOne" -> _.fieldOne
     )
     assertElementsMatchExpected(out5)("fieldThree" -> _.fieldThree, "fieldTwo" -> _.fieldTwo, "fieldOne" -> _.fieldOne)
     assertElementsMatchExpected(out2)("notAbstract" -> _.notAbstract, "fromAbstractBundle" -> _.fromAbstractBundle)
@@ -469,14 +503,24 @@ class BundleElementsSpec extends AnyFreeSpec with Matchers {
 
       val io = IO(new BpipOptionBundle)
       assertElementsMatchExpected(io)(
-        "bpipUIntLazyVal" -> _.bpipUIntLazyVal,
         "bpipOptionUInt" -> _.bpipOptionUInt.get,
         "bpipUIntVar" -> _.bpipUIntVar,
+        "bpipUIntLazyVal" -> _.bpipUIntLazyVal,
         "bpipUIntVal" -> _.bpipUIntVal
       )
     }
 
     ChiselStage.emitCHIRRTL(new ALU(ALUConfig(10, mul = true, b = false)))
+  }
+
+  "Bundle elements should be ordered in order of declaration" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new SimpleBundleElemOrder)
+    chirrtl should include("input in1 : { a : UInt<1>, b : UInt<8>}")
+    chirrtl should include("input in2 : { a : UInt<1>, b : UInt<8>}")
+
+    val chirrtl2 = ChiselStage.emitCHIRRTL(new SimpleBundleElemOrderByName)
+    chirrtl2 should include("input in0 : { a : UInt<8>, b : UInt<8>, c : UInt<8>}")
+    chirrtl2 should include("input in1 : { a : UInt<8>, b : UInt<8>, c : UInt<8>}")
   }
 
   "TraceSpec test, different version found in TraceSpec.scala" in {

@@ -149,7 +149,7 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
             }
 
           case _ => None
-        }.toList
+        }.toList.reverse
 
         val allParentFields = bundleSymbol.parentSymbols.flatMap { parentSymbol =>
           val fieldsFromParent = if (depth < 1 && !isExactBundle(bundleSymbol)) {
