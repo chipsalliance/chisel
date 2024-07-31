@@ -3,7 +3,8 @@
 package chiselTests.stage
 
 import chisel3._
-import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation, DesignAnnotation}
+import chisel3.layer.{Convention, Layer}
+import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation, DesignAnnotation, RemapLayer}
 import firrtl.options.OptionsException
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -62,6 +63,24 @@ class ChiselAnnotationsSpec extends AnyFlatSpec with Matchers {
     intercept[OptionsException] { annotation.elaborate }.getMessage should startWith(
       s"Unable to create instance of module '$baz'"
     )
+  }
+
+  behavior.of("RemapLayer")
+
+  it should "construct an existing in-tree layer" in {
+    RemapLayer(layers.Verification.getClass.getName, layers.Verification.Assert.getClass.getName)
+  }
+
+  it should "throw an exception if the layer does not exist" in {
+    intercept[OptionsException] {
+      RemapLayer("foo.bar.Verification$", layers.Verification.getClass.getName)
+    }.getMessage should startWith("Unable to reflectively find layer 'foo.bar.Verification$'")
+  }
+
+  it should "throw an exception if the object is not a layer" in {
+    intercept[OptionsException] {
+      RemapLayer("circt.stage.ChiselStage$", layers.Verification.getClass.getName)
+    }.getMessage should startWith("Object 'circt.stage.ChiselStage$' must be a `Layer`")
   }
 
 }

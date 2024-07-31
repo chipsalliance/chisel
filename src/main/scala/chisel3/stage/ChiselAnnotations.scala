@@ -16,6 +16,7 @@ import firrtl.options.internal.WriteableCircuitAnnotation
 import firrtl.options.Viewer.view
 import chisel3.{deprecatedMFCMessage, ChiselException, Module}
 import chisel3.RawModule
+import chisel3.layer.Layer
 import chisel3.internal.{Builder, WarningFilter}
 import chisel3.internal.firrtl.ir.Circuit
 import chisel3.internal.firrtl.Converter
@@ -398,4 +399,55 @@ case object UseLegacyWidthBehavior
       helpText = "Use legacy (buggy) width behavior (pre-Chisel 7.0.0)"
     )
   )
+}
+
+/** This records a mapping from an old [[chisel3.layer.Layer]] to a new [[chisel3.layer.Layer]].
+  *
+  * This is intended to be used by a downstream Chisel project that is using an
+  * upstream Chisel project which has different layers and the user would like
+  * to align the upstream project with the downstream.
+  */
+case class RemapLayer(oldLayer: Layer, newLayer: Layer) extends NoTargetAnnotation with ChiselOption with Unserializable
+
+object RemapLayer extends HasShellOptions {
+
+  private val re = "([\\w\\$.]+),([\\w\\$.]+)".r
+
+  private def getLayer(name: String): Layer = try {
+    Class.forName(name).getField("MODULE$").get(null).asInstanceOf[Layer]
+  } catch {
+    case e: NoSuchFieldException =>
+      throw new OptionsException(
+        s"Layer '$name' exists, but is not a singleton object. (Is this wrapped in an outer class?)",
+        e
+      )
+    case e: ClassNotFoundException =>
+      throw new OptionsException(
+        s"Unable to reflectively find layer '$name'. (Did you misspell it?)",
+        e
+      )
+    case e: ClassCastException =>
+      throw new OptionsException(
+        s"Object '$name' must be a `Layer`, but could not be cast as one.",
+        e
+      )
+  }
+
+  def apply(oldLayerName: String, newLayerName: String): RemapLayer = {
+    RemapLayer(getLayer(oldLayerName), getLayer(newLayerName))
+  }
+
+  override val options = Seq(
+    new ShellOption[String](
+      longOption = "remap-layer",
+      toAnnotationSeq = (raw: String) =>
+        raw match {
+          case re(oldLayerName, newLayerName) => Seq(RemapLayer(oldLayerName, newLayerName))
+          case _                              => throw new OptionsException(s"Invalid layer remap format: '$raw'")
+        },
+      helpText = "Globally remap a layer to another layer",
+      helpValueName = Some("<oldLayer>,<newLayer>")
+    )
+  )
+
 }
