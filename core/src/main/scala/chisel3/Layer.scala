@@ -129,24 +129,24 @@ object layer {
     * layerblock is not an ancestor of the desired layer
     */
   def block[A](
-    _layer: Layer
-  )(thunk:  => A
+    layer: Layer
+  )(thunk: => A
   )(
     implicit sourceInfo: SourceInfo
   ): Unit = {
-    val layer = Builder.layerMap.getOrElse(_layer, _layer)
+    val _layer = Builder.layerMap.getOrElse(layer, layer)
     var layersToCreate = List.empty[Layer]
-    var currentLayer = layer
+    var currentLayer = _layer
     while (currentLayer != Builder.layerStack.head && currentLayer != Layer.Root) {
       layersToCreate = currentLayer :: layersToCreate
       currentLayer = currentLayer.parent
     }
     require(
       currentLayer != Layer.Root || Builder.layerStack.head == Layer.Root,
-      s"a layerblock associated with layer '${layer.fullName}' cannot be created under a layerblock of non-ancestor layer '${Builder.layerStack.head.fullName}'"
+      s"a layerblock associated with layer '${_layer.fullName}' cannot be created under a layerblock of non-ancestor layer '${Builder.layerStack.head.fullName}'"
     )
 
-    addLayer(layer)
+    addLayer(_layer)
 
     def createLayers(layers: List[Layer])(thunk: => A): A = layers match {
       case Nil => thunk
