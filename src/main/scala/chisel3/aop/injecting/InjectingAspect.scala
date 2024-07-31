@@ -72,7 +72,8 @@ abstract class InjectorAspect[T <: RawModule, M <: RawModule](
           None,
           loggerOptions,
           ArrayBuffer[Definition[_]](),
-          BuilderContextCache.empty
+          BuilderContextCache.empty,
+          chiselOptions.layerMap
         )
       // Add existing module names into the namespace. If injection logic instantiates new modules
       //  which would share the same name, they will get uniquified accordingly

@@ -2,6 +2,7 @@
 
 package circtTests.stage
 
+import chisel3.layer.{block, Convention, Layer}
 import chisel3.stage.{ChiselGeneratorAnnotation, CircuitSerializationAnnotation}
 import chisel3.experimental.SourceLine
 
@@ -103,6 +104,16 @@ object ChiselStageSpec {
   class ErrorCaughtByFirtool extends RawModule {
     implicit val info = SourceLine("Foo", 3, 10)
     val w = Wire(UInt(8.W))
+  }
+
+  object A extends Layer(Convention.Bind)
+
+  object B extends Layer(Convention.Bind)
+
+  class LayerRemappingTest extends RawModule {
+    block(A) {
+      val a = Wire(Bool())
+    }
   }
 }
 
@@ -1231,6 +1242,16 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
       (ChiselStage.emitCHIRRTL(new RawModule {}) should not).include("LogLevelAnnotation")
       (ChiselStage.emitCHIRRTL(new RawModule {}, Array("-ll", "info")) should not).include("LogLevelAnnotation")
     }
+
+    it("should allow remapping one layer to another") {
+      val chirrtl = ChiselStage.emitCHIRRTL(
+        new ChiselStageSpec.LayerRemappingTest,
+        Array("--remap-layer", "circtTests.stage.ChiselStageSpec$A$,circtTests.stage.ChiselStageSpec$B$")
+      )
+      chirrtl should include("layer B")
+      chirrtl should include("layerblock B")
+    }
+
   }
 
   describe("ChiselStage$ exception handling") {

@@ -129,11 +129,12 @@ object layer {
     * layerblock is not an ancestor of the desired layer
     */
   def block[A](
-    layer: Layer
-  )(thunk: => A
+    _layer: Layer
+  )(thunk:  => A
   )(
     implicit sourceInfo: SourceInfo
   ): Unit = {
+    val layer = Builder.layerMap.getOrElse(_layer, _layer)
     var layersToCreate = List.empty[Layer]
     var currentLayer = layer
     while (currentLayer != Builder.layerStack.head && currentLayer != Layer.Root) {
