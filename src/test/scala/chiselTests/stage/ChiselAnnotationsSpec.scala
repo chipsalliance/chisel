@@ -3,7 +3,7 @@
 package chiselTests.stage
 
 import chisel3._
-import chisel3.layer.{Convention, Layer}
+import chisel3.layer.{Layer, LayerConfig}
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation, DesignAnnotation, RemapLayer}
 import firrtl.options.OptionsException
 import org.scalatest.flatspec.AnyFlatSpec
@@ -27,7 +27,7 @@ class ChiselAnnotationsSpecQux extends ChiselAnnotationsSpecFoo {
 class ChiselAnnotation
 
 object ChiselAnnotationsSpec {
-  object A extends Layer(Convention.Bind)
+  object A extends Layer(LayerConfig.Extract())
 }
 
 class ChiselAnnotationsSpec extends AnyFlatSpec with Matchers {

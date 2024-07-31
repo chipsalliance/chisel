@@ -5,7 +5,7 @@ package chiselTests.simulator
 import java.io.File
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
-import chisel3.layer.{Convention, Layer}
+import chisel3.layer.{Layer, LayerConfig}
 import chisel3.simulator.LayerControl
 
 class LayerControlSpec extends AnyFunSpec with Matchers {
@@ -31,9 +31,9 @@ class LayerControlSpec extends AnyFunSpec with Matchers {
   }
   describe("LayerControl.Enable") {
     it("should return true for non-layers and filter layers properly") {
-      object A extends Layer(Convention.Bind)
-      object B extends Layer(Convention.Bind) {
-        object C extends Layer(Convention.Bind)
+      object A extends Layer(LayerConfig.Extract())
+      object B extends Layer(LayerConfig.Extract()) {
+        object C extends Layer(LayerConfig.Extract())
       }
       val layerControl = LayerControl.Enable(A, B.C)
       layerControl.filter(new File("foo")) should be(true)

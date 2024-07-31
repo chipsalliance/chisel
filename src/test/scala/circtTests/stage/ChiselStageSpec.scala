@@ -20,7 +20,7 @@ object ChiselStageSpec {
 
   import chisel3._
   import chisel3.probe.{define, Probe, ProbeValue}
-  import chisel3.layer.{block, Convention, Layer}
+  import chisel3.layer.{block, Layer, LayerConfig}
 
   class FooBundle extends Bundle {
     val a = Input(Bool())
@@ -107,9 +107,9 @@ object ChiselStageSpec {
     val w = Wire(UInt(8.W))
   }
 
-  object A extends Layer(Convention.Bind)
+  object A extends Layer(LayerConfig.Extract())
 
-  object B extends Layer(Convention.Bind)
+  object B extends Layer(LayerConfig.Extract())
 
   class LayerRemappingTest extends RawModule {
     val out = IO(Output(Probe(Bool(), A)))

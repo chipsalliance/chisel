@@ -437,10 +437,11 @@ private[chisel3] object Converter {
   }
 
   def convertLayer(layer: Layer): fir.Layer = {
-    val convention = layer.convention match {
-      case LayerConvention.Bind => fir.LayerConvention.Bind
+    val config = layer.config match {
+      case LayerConfig.Extract(outputDir) => fir.LayerConfig.Extract(outputDir)
+      case LayerConfig.Inline             => fir.LayerConfig.Inline
     }
-    fir.Layer(convert(layer.sourceInfo), layer.name, convention, layer.outputDir, layer.children.map(convertLayer))
+    fir.Layer(convert(layer.sourceInfo), layer.name, config, layer.children.map(convertLayer))
   }
 
   def convertOption(option: DefOption): fir.DefOption = {

@@ -4,7 +4,7 @@ import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.must.Matchers
 
 import chisel3._
-import chisel3.layer.{block, Convention, Layer}
+import chisel3.layer.{block, Layer, LayerConfig}
 import chisel3.ltl.AssertProperty
 import chisel3.simulator.LayerControl
 import chisel3.simulator.EphemeralSimulator._
@@ -24,7 +24,7 @@ class EphemeralSimulatorSpec extends AnyFunSpec with Matchers {
       }
     }
     describe("layer control functionality") {
-      object A extends Layer(Convention.Bind)
+      object A extends Layer(LayerConfig.Extract())
       class Foo extends Module {
         block(A) {
           chisel3.assert(false.B)

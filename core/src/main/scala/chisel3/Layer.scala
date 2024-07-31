@@ -19,20 +19,25 @@ object layer {
   /** Enumerations of different optional layer conventions.  A layer convention
     * says how a given layer should be lowered to Verilog.
     */
+  @deprecated("`Convention` is being removed in favor of `LayerConfig`", "Chisel 7.0.0")
   object Convention {
     sealed trait Type
 
-    /** Internal type used as the parent of all layers. */
-    private[chisel3] case object Root extends Type
-
     /** The layer should be lowered to a SystemVerilog `bind`. */
-    case object Bind extends Type
+    final case object Bind extends Type
   }
 
   sealed trait OutputDirBehavior
   final case object DefaultOutputDir extends OutputDirBehavior
   final case object NoOutputDir extends OutputDirBehavior
   final case class CustomOutputDir(path: Path) extends OutputDirBehavior
+
+  sealed trait LayerConfig
+  object LayerConfig {
+    final case class Extract(outputDirBehavior: OutputDirBehavior = DefaultOutputDir) extends LayerConfig
+    final case object Inline extends LayerConfig
+    private[chisel3] final case object Root extends LayerConfig
+  }
 
   /** A layer declaration.
     *
@@ -41,12 +46,20 @@ object layer {
     * @param _parent the parent layer, if any
     */
   abstract class Layer(
-    val convention:        Convention.Type,
-    val outputDirBehavior: OutputDirBehavior = DefaultOutputDir
+    val config: LayerConfig
   )(
     implicit _parent: Layer,
     _sourceInfo:      SourceInfo) {
     self: Singleton =>
+
+    @deprecated("`Convention` is being removed in favor of `LayerConfig`", "Chisel 7.0.0")
+    def this(
+      convention:        Convention.Type,
+      outputDirBehavior: OutputDirBehavior = DefaultOutputDir
+    )(
+      implicit _parent: Layer,
+      _sourceInfo:      SourceInfo
+    ) = this(LayerConfig.Extract(outputDirBehavior))
 
     /** This establishes a new implicit val for any nested layers. */
     protected final implicit val thiz: Layer = this
@@ -73,18 +86,32 @@ object layer {
       * Unless overridden, the outputDir's name matches the name of the layer,
       * and is located under the parent layer's directory.
       */
-    private[chisel3] final def outputDir: Option[Path] = outputDirBehavior match {
-      case NoOutputDir          => None
-      case CustomOutputDir(dir) => Some(dir)
-      case DefaultOutputDir =>
-        parent match {
-          case Layer.Root => Some(Paths.get(name))
-          case _ =>
-            parent.outputDir match {
-              case None      => Some(Paths.get(name))
-              case Some(dir) => Some(dir.resolve(name))
-            }
-        }
+    private[chisel3] final def outputDir: Option[Path] = {
+      config match {
+        case LayerConfig.Root   => None
+        case LayerConfig.Inline => None
+        case LayerConfig.Extract(outputDirBehavior) =>
+          outputDirBehavior match {
+            case NoOutputDir          => None
+            case CustomOutputDir(dir) => Some(dir)
+            case DefaultOutputDir     => Some(defaultOutputDir)
+          }
+      }
+    }
+
+    private final def defaultOutputDir: Path = parentOutputDir match {
+      case None      => Paths.get(name)
+      case Some(dir) => dir.resolve(name)
+    }
+
+    private final def parentOutputDir: Option[Path] = {
+      @tailrec
+      def outputDirOf(layer: Layer): Option[Path] = layer.config match {
+        case LayerConfig.Extract(_) => layer.outputDir
+        case LayerConfig.Inline     => outputDirOf(layer.parent)
+        case LayerConfig.Root       => None
+      }
+      outputDirOf(parent)
     }
 
     @tailrec
@@ -96,7 +123,7 @@ object layer {
   }
 
   object Layer {
-    private[chisel3] case object Root extends Layer(Convention.Root)(null, UnlocatableSourceInfo)
+    private[chisel3] final case object Root extends Layer(LayerConfig.Root)(null, UnlocatableSourceInfo)
     implicit val root: Layer = Root
   }
 

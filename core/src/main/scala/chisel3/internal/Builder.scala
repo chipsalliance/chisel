@@ -1108,11 +1108,12 @@ private[chisel3] object Builder extends LazyLogging {
         */
       def foldLayers(l: layer.Layer): Layer = {
         val children = layerAdjacencyList(l)
-        val convention = l.convention match {
-          case layer.Convention.Bind => LayerConvention.Bind
-          case _                     => ???
+        val config = l.config match {
+          case layer.LayerConfig.Extract(_) => LayerConfig.Extract(l.outputDir.map(_.toString))
+          case layer.LayerConfig.Inline     => LayerConfig.Inline
+          case layer.LayerConfig.Root       => ???
         }
-        Layer(l.sourceInfo, l.name, convention, l.outputDir.map(_.toString), children.map(foldLayers).toSeq)
+        Layer(l.sourceInfo, l.name, config, children.map(foldLayers).toSeq)
       }
 
       val optionDefs = groupByIntoSeq(options)(opt => opt.group).map {

@@ -381,11 +381,16 @@ private[chisel3] object ir {
     case object Bind extends Type
   }
 
-  case class Layer(
+  sealed abstract class LayerConfig
+  object LayerConfig {
+    final case class Extract(outputDir: Option[String]) extends LayerConfig
+    final case object Inline extends LayerConfig
+  }
+
+  final case class Layer(
     sourceInfo: SourceInfo,
     name:       String,
-    convention: LayerConvention.Type,
-    outputDir:  Option[String],
+    config:     LayerConfig,
     children:   Seq[Layer])
 
   class LayerBlock(val sourceInfo: SourceInfo, val layer: chisel3.layer.Layer) extends Command {

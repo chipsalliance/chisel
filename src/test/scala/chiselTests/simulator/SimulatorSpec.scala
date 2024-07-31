@@ -2,7 +2,7 @@ package chiselTests.simulator
 
 import chisel3._
 import chisel3.experimental.ExtModule
-import chisel3.layer.{block, Convention, Layer}
+import chisel3.layer.{block, Convention, Layer, LayerConfig}
 import chisel3.simulator._
 import chisel3.util.{HasExtModuleInline, HasExtModulePath, HasExtModuleResource}
 import org.scalatest.funspec.AnyFunSpec
@@ -281,7 +281,7 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
     }
 
     it("has layers enabled") {
-      object AssertLayer extends Layer(Convention.Bind)
+      object AssertLayer extends Layer(LayerConfig.Extract())
       class Foo extends Module {
         val a = IO(Input(Bool()))
         block(AssertLayer) {
