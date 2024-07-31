@@ -406,12 +406,12 @@ case object UseLegacyWidthBehavior
   * This is intended to be used by a downstream Chisel project that is using an
   * upstream Chisel project which has different layers and the user would like
   * to align the upstream project with the downstream.
+  * @param oldLayer the old layer that should be remapped
+  * @param newLayer the new layer that the old layer should be replaced with
   */
 case class RemapLayer(oldLayer: Layer, newLayer: Layer) extends NoTargetAnnotation with ChiselOption with Unserializable
 
 object RemapLayer extends HasShellOptions {
-
-  private val re = "([\\w\\$.]+),([\\w\\$.]+)".r
 
   private def getLayer(name: String): Layer = try {
     Class.forName(name).getField("MODULE$").get(null).asInstanceOf[Layer]
@@ -437,13 +437,16 @@ object RemapLayer extends HasShellOptions {
     RemapLayer(getLayer(oldLayerName), getLayer(newLayerName))
   }
 
+  // Match things like `foo.bar.LayerA$,baz.LayerB$`
+  private val layerMapRegex = "([\\w\\$.]+),([\\w\\$.]+)".r
+
   override val options = Seq(
     new ShellOption[String](
       longOption = "remap-layer",
       toAnnotationSeq = (raw: String) =>
         raw match {
-          case re(oldLayerName, newLayerName) => Seq(RemapLayer(oldLayerName, newLayerName))
-          case _                              => throw new OptionsException(s"Invalid layer remap format: '$raw'")
+          case layerMapRegex(oldLayerName, newLayerName) => Seq(RemapLayer(oldLayerName, newLayerName))
+          case _                                         => throw new OptionsException(s"Invalid layer remap format: '$raw'")
         },
       helpText = "Globally remap a layer to another layer",
       helpValueName = Some("<oldLayer>,<newLayer>")
