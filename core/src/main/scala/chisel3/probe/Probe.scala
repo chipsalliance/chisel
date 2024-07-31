@@ -17,7 +17,7 @@ private[chisel3] sealed trait ProbeBase {
   protected def apply[T <: Data](
     source:   => T,
     writable: Boolean,
-    _color:    Option[layer.Layer]
+    _color:   Option[layer.Layer]
   )(
     implicit sourceInfo: SourceInfo
   ): T = {

@@ -19,7 +19,7 @@ import org.scalatest.matchers.should.Matchers
 object ChiselStageSpec {
 
   import chisel3._
-  import chisel3.probe.{Probe, ProbeValue, define}
+  import chisel3.probe.{define, Probe, ProbeValue}
   import chisel3.layer.{block, Convention, Layer}
 
   class FooBundle extends Bundle {
