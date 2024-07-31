@@ -17,7 +17,7 @@ private[chisel3] sealed trait ProbeBase {
   protected def apply[T <: Data](
     source:   => T,
     writable: Boolean,
-    color:    Option[layer.Layer]
+    _color:   Option[layer.Layer]
   )(
     implicit sourceInfo: SourceInfo
   ): T = {
@@ -35,6 +35,13 @@ private[chisel3] sealed trait ProbeBase {
     // https://github.com/chipsalliance/chisel/issues/3609
 
     val ret: T = if (!data.mustClone(prevId)) data else data.cloneType.asInstanceOf[T]
+    // Remap the color if the user is using the ChiselStage --remap-layer option.
+    val color = _color.map(c =>
+      Builder.inContext match {
+        case false => c
+        case true  => Builder.layerMap.getOrElse(c, c)
+      }
+    )
     // Record the layer in the builder if we are in a builder context.
     if (Builder.inContext && color.isDefined) {
       layer.addLayer(color.get)
