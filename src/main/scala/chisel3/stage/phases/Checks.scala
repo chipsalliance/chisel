@@ -2,7 +2,8 @@
 
 package chisel3.stage.phases
 
-import chisel3.stage.{ChiselOutputFileAnnotation, PrintFullStackTraceAnnotation}
+import chisel3.layer.Layer
+import chisel3.stage.{ChiselOutputFileAnnotation, PrintFullStackTraceAnnotation, RemapLayer}
 
 import firrtl.AnnotationSeq
 import firrtl.annotations.Annotation
@@ -19,10 +20,11 @@ class Checks extends Phase {
   override def invalidates(a: Phase) = false
 
   def transform(annotations: AnnotationSeq): AnnotationSeq = {
-    val st, outF = collection.mutable.ListBuffer[Annotation]()
+    val st, outF, lm = collection.mutable.ListBuffer[Annotation]()
     annotations.foreach {
       case a: PrintFullStackTraceAnnotation.type => a +=: st
       case a: ChiselOutputFileAnnotation         => a +=: outF
+      case a: RemapLayer                         => a +=: lm
       case _ =>
     }
 
@@ -40,6 +42,16 @@ class Checks extends Phase {
             |    - option or annotation: --chisel-output-file, ChiselOutputFileAnnotation
             |""".stripMargin
       )
+    }
+
+    val lmMap = collection.mutable.HashMap[Layer, Layer]()
+    lm.foreach {
+      case RemapLayer(oldLayer, newLayer) if lmMap.contains(oldLayer) =>
+        throw new OptionsException(
+          s"""|The same old layer, '$oldLayer' is renamed multiple times: '${lmMap(oldLayer)}' and '$newLayer'
+              |""".stripMargin
+        )
+      case RemapLayer(oldLayer, newLayer) => lmMap += ((oldLayer, newLayer))
     }
 
     annotations
