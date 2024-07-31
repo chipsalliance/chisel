@@ -2,7 +2,6 @@
 
 package circtTests.stage
 
-import chisel3.layer.{block, Convention, Layer}
 import chisel3.stage.{ChiselGeneratorAnnotation, CircuitSerializationAnnotation}
 import chisel3.experimental.SourceLine
 
@@ -20,6 +19,8 @@ import org.scalatest.matchers.should.Matchers
 object ChiselStageSpec {
 
   import chisel3._
+  import chisel3.probe.{Probe, ProbeValue, define}
+  import chisel3.layer.{block, Convention, Layer}
 
   class FooBundle extends Bundle {
     val a = Input(Bool())
@@ -111,8 +112,10 @@ object ChiselStageSpec {
   object B extends Layer(Convention.Bind)
 
   class LayerRemappingTest extends RawModule {
+    val out = IO(Output(Probe(Bool(), A)))
     block(A) {
       val a = Wire(Bool())
+      define(out, ProbeValue(a))
     }
   }
 }
@@ -1248,6 +1251,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
         new ChiselStageSpec.LayerRemappingTest,
         Array("--remap-layer", "circtTests.stage.ChiselStageSpec$A$,circtTests.stage.ChiselStageSpec$B$")
       )
+      chirrtl should include("output out : Probe<UInt<1>, B>")
       chirrtl should include("layer B")
       chirrtl should include("layerblock B")
     }
