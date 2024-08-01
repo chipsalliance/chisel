@@ -123,17 +123,27 @@ object layer {
     * not a _proper_ ancestor requirement.)
     *
     * @param layer the layer this block is associated with
+    * @param skipIfAlreadyInBlock if true, then this will not create a layer
+    * block if already inside a layer block
     * @param thunk the Chisel code that goes into the layer block
     * @param sourceInfo a source locator
     * @throws java.lang.IllegalArgumentException if the layer of the currnet
     * layerblock is not an ancestor of the desired layer
     */
   def block[A](
-    layer: Layer
-  )(thunk: => A
+    layer:                Layer,
+    skipIfAlreadyInBlock: Boolean = false
+  )(thunk:                => A
   )(
     implicit sourceInfo: SourceInfo
   ): Unit = {
+    // Do nothing if we are already in a layer block and are not supposed to
+    // create new layer blocks.
+    if (skipIfAlreadyInBlock && Builder.layerStack.size > 1) {
+      thunk
+      return
+    }
+
     val _layer = Builder.layerMap.getOrElse(layer, layer)
     var layersToCreate = List.empty[Layer]
     var currentLayer = _layer
