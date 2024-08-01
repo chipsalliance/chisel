@@ -220,6 +220,12 @@ class SimpleBundleElemOrder extends Module {
   val out2 = IO(Output(UInt(in2.getWidth.W)))
   out1 := in1.asUInt
   out2 := in2.asUInt
+
+  val io = IO(new GenericBundle(UInt(8.W), UInt(8.W)))
+  assertElementsMatchExpected(io)(
+    "b" -> _.b,
+    "a" -> _.a
+  )
 }
 
 class BundleElemOrder1(gen: => UInt) extends Bundle {
@@ -242,6 +248,20 @@ class SimpleBundleElemOrderByName extends Module {
   val out1 = IO(Output(UInt(24.W)))
   out0 := in0.asUInt
   out1 := in1.asUInt
+
+  val io1 = IO(new BundleElemOrder1(UInt(8.W)))
+  assertElementsMatchExpected(io1)(
+    "c" -> _.c,
+    "b" -> _.b,
+    "a" -> _.a
+  )
+
+  val io2 = IO(new BundleElemOrder2(UInt(8.W)))
+  assertElementsMatchExpected(io2)(
+    "c" -> _.c,
+    "b" -> _.b,
+    "a" -> _.a
+  )
 }
 
 /* Testing whether gen fields superFoo and superQux can be found when they are
