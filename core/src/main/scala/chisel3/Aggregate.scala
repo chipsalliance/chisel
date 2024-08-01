@@ -1526,9 +1526,7 @@ abstract class Bundle extends Record {
       case (name, Some(data: Data)) =>
         Some(name -> data)
       case _ => None
-    }.sortWith {
-      case ((an, a), (bn, b)) => (a._id > b._id) || ((a eq b) && (an > bn))
-    }: _*)
+    }.reverse: _*)
   }
 
   /** This method is implemented by the compiler plugin
