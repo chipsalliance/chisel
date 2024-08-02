@@ -69,6 +69,19 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
     )()
   }
 
+  they should "respect the 'skipIfAlreadyInBlock' parameter" in {
+    class Foo extends RawModule {
+      layer.block(A, skipIfAlreadyInBlock = true) {
+        // This will fail to compile if `skipIfAlreadyInBlock=false`.
+        layer.block(C, skipIfAlreadyInBlock = true) {}
+      }
+    }
+
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Foo))(
+      "layerblock A"
+    )("layerblock C")
+  }
+
   they should "allow for defines to layer-colored probes" in {
 
     class Foo extends RawModule {
