@@ -47,7 +47,13 @@ package object simulator {
             s"Please file an issue at $url requesting support for this use case."
         )
       }
-      simulationPorts(reified)
+      simulationPorts.get(reified) match {
+        case Some(port) => port
+        case None =>
+          throw new RuntimeException(
+            s"Cannot find port for $data. Detected ports: ${simulationPorts.keys.mkString(", ")}."
+          )
+      }
     }
 
     // -- Peek/Poke API Support

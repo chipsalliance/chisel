@@ -5,7 +5,6 @@ import chisel3._
 
 import chisel3.experimental.{SourceInfo, SourceLine}
 import chisel3.internal.ExceptionHelpers
-import chisel3.fromBigIntToLiteral
 
 object PeekPokeAPI extends PeekPokeAPI
 

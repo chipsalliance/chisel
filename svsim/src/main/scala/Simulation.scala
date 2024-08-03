@@ -71,8 +71,7 @@ final class Simulation private[svsim] (
     val gracefulShutdownOutcome = Try[Unit] {
       // If the process is still running, give it an opportunity to shut down gracefully
       if (process.isAlive()) {
-        controller.sendCommand(Simulation.Command.Done)
-        controller.completeInFlightCommands()
+        controller.sendDone()
         process.waitFor()
       }
     }
@@ -214,10 +213,47 @@ object Simulation {
       expectations.clear()
     }
 
-    private[Simulation] def processNextMessage[A](f: PartialFunction[Simulation.Message, A]): A = {
-      completeInFlightCommands()
+    private[Simulation] def sendCommandAndExpectNextMessage(
+      command: Simulation.Command
+    )(f:       => PartialFunction[Simulation.Message, Unit]
+    ) = {
+      synchronized {
+        sendCommand(command)
+        expectNextMessage(f)
+      }
+    }
 
-      val message = readNextAvailableMessage()
+    private[Simulation] def sendCommandAndProcessNextMessage[A](
+      command: Simulation.Command
+    )(f:       => PartialFunction[Simulation.Message, A]
+    ) = {
+      synchronized {
+        sendCommand(command)
+        processNextMessage(f)
+      }
+    }
+
+    private[Simulation] def sendCommandAndReadNextMessage(command: Simulation.Command): Message = {
+      synchronized {
+        sendCommand(command)
+        completeInFlightCommands()
+        readNextAvailableMessage()
+      }
+    }
+
+    private[Simulation] def sendDone(): Unit = {
+      synchronized {
+        sendCommand(Simulation.Command.Done)
+        completeInFlightCommands()
+      }
+    }
+
+    private def processNextMessage[A](f: PartialFunction[Simulation.Message, A]): A = {
+      val message = synchronized {
+        completeInFlightCommands()
+        readNextAvailableMessage()
+      }
+
       if (f.isDefinedAt(message)) {
         f(message)
       } else {
@@ -225,7 +261,7 @@ object Simulation {
       }
     }
 
-    private[Simulation] def expectNextMessage(f: PartialFunction[Simulation.Message, Unit]) = {
+    private def expectNextMessage(f: PartialFunction[Simulation.Message, Unit]) = {
       if (conservativeCommandResolution) {
         processNextMessage(f)
       } else {
@@ -234,7 +270,7 @@ object Simulation {
     }
 
     private var sentCommandCount = 0
-    private[Simulation] def sendCommand(command: Simulation.Command) = {
+    private def sendCommand(command: Simulation.Command) = {
       object CommandCode extends Enumeration {
         val Done = 'D'
         val Log = 'L'
@@ -251,81 +287,84 @@ object Simulation {
         println(s"Sending command ${sentCommandCount}: ${command}")
       }
 
-      import Simulation.Command._
-      // For specific command formats, consult `simulation-driver.cpp`
-      command match {
-        case Done => {
-          commandWriter.write(CommandCode.Done)
-        }
-        case Log => {
-          commandWriter.write(CommandCode.Log)
-        }
-        case GetBits(id, isSigned) => {
-          commandWriter.write(CommandCode.GetBits)
-          commandWriter.write(" ")
-          commandWriter.write(if (isSigned) "s" else "u")
-          commandWriter.write(" ")
-          commandWriter.write(id)
-        }
-        case SetBits(id, value) => {
-          commandWriter.write(CommandCode.SetBits)
-          commandWriter.write(" ")
-          commandWriter.write(id)
-          commandWriter.write(" ")
-          commandWriter.write(value.toString(16))
-        }
-        case Run(timesteps) => {
-          commandWriter.write(CommandCode.Run)
-          commandWriter.write(" ")
-          commandWriter.write(timesteps.toHexString)
-        }
-        case Tick(id, inPhaseValue, outOfPhaseValue, timestepsPerPhase, maxCycles, sentinel) => {
-          commandWriter.write(CommandCode.Tick)
-          commandWriter.write(" ")
-          commandWriter.write(id)
-          commandWriter.write(" ")
-          commandWriter.write(inPhaseValue.toString(16))
-          commandWriter.write(",")
-          commandWriter.write(outOfPhaseValue.toString(16))
-          commandWriter.write("-")
-          commandWriter.write(timestepsPerPhase.toHexString)
-          commandWriter.write("*")
-          commandWriter.write(maxCycles.toHexString)
-          sentinel match {
-            case Some((port, value)) => {
-              commandWriter.write(" ")
-              commandWriter.write(port.id)
-              commandWriter.write("=")
-              commandWriter.write(value.toString(16))
+      synchronized {
+        import Simulation.Command._
+        // For specific command formats, consult `simulation-driver.cpp`
+        command match {
+          case Done => {
+            commandWriter.write(CommandCode.Done)
+          }
+          case Log => {
+            commandWriter.write(CommandCode.Log)
+          }
+          case GetBits(id, isSigned) => {
+            commandWriter.write(CommandCode.GetBits)
+            commandWriter.write(" ")
+            commandWriter.write(if (isSigned) "s" else "u")
+            commandWriter.write(" ")
+            commandWriter.write(id)
+          }
+          case SetBits(id, value) => {
+            commandWriter.write(CommandCode.SetBits)
+            commandWriter.write(" ")
+            commandWriter.write(id)
+            commandWriter.write(" ")
+            commandWriter.write(value.toString(16))
+          }
+          case Run(timesteps) => {
+            commandWriter.write(CommandCode.Run)
+            commandWriter.write(" ")
+            commandWriter.write(timesteps.toHexString)
+          }
+          case Tick(id, inPhaseValue, outOfPhaseValue, timestepsPerPhase, maxCycles, sentinel) => {
+            commandWriter.write(CommandCode.Tick)
+            commandWriter.write(" ")
+            commandWriter.write(id)
+            commandWriter.write(" ")
+            commandWriter.write(inPhaseValue.toString(16))
+            commandWriter.write(",")
+            commandWriter.write(outOfPhaseValue.toString(16))
+            commandWriter.write("-")
+            commandWriter.write(timestepsPerPhase.toHexString)
+            commandWriter.write("*")
+            commandWriter.write(maxCycles.toHexString)
+            sentinel match {
+              case Some((port, value)) => {
+                commandWriter.write(" ")
+                commandWriter.write(port.id)
+                commandWriter.write("=")
+                commandWriter.write(value.toString(16))
+              }
+              case None =>
             }
-            case None =>
+          }
+          case Trace(enable) => {
+            commandWriter.write(CommandCode.Trace)
+            commandWriter.write(" ")
+            commandWriter.write(if (enable) "1" else "0")
           }
         }
-        case Trace(enable) => {
-          commandWriter.write(CommandCode.Trace)
-          commandWriter.write(" ")
-          commandWriter.write(if (enable) "1" else "0")
-        }
+        commandWriter.newLine()
       }
-      commandWriter.newLine()
     }
 
     def readLog(): String = {
-      sendCommand(Simulation.Command.Log)
-      processNextMessage {
+      sendCommandAndProcessNextMessage(Simulation.Command.Log) {
         case Simulation.Message.Log(message) =>
           message
       }
     }
 
     def run(timesteps: Int) = {
-      sendCommand(Simulation.Command.Run(timesteps))
-      expectNextMessage { case Simulation.Message.Ack => }
+      sendCommandAndExpectNextMessage(Simulation.Command.Run(timesteps)) {
+        case Simulation.Message.Ack =>
+      }
     }
 
     def setTraceEnabled(enabled: Boolean): Unit = {
-      sendCommand(Simulation.Command.Trace(enabled))
-      expectNextMessage { case Simulation.Message.Ack => }
+      sendCommandAndExpectNextMessage(Simulation.Command.Trace(enabled)) {
+        case Simulation.Message.Ack =>
+      }
     }
 
     private val portInfos = moduleInfo.ports.zipWithIndex.map {
@@ -376,25 +415,22 @@ object Simulation {
   final case class Port private[Simulation] (controller: Simulation.Controller, id: String, info: ModuleInfo.Port) {
 
     def set(value: BigInt) = {
-      controller.sendCommand(Simulation.Command.SetBits(id, value))
-      controller.expectNextMessage {
+      controller.sendCommandAndExpectNextMessage(Simulation.Command.SetBits(id, value)) {
         case Simulation.Message.Ack =>
       }
     }
 
     def get(isSigned: Boolean = false): Value = {
-      controller.sendCommand(Simulation.Command.GetBits(id, isSigned))
-      controller.processNextMessage {
+      controller.sendCommandAndProcessNextMessage(Simulation.Command.GetBits(id, isSigned)) {
         case Simulation.Message.Bits(bitCount, value) =>
           Value(bitCount, value)
       }
     }
 
-    def tick(timestepsPerPhase: Int, cycles: Int, inPhaseValue: BigInt, outOfPhaseValue: BigInt) = {
-      controller.sendCommand(
+    def tick(timestepsPerPhase: Int, cycles: Int, inPhaseValue: BigInt, outOfPhaseValue: BigInt) = synchronized {
+      controller.sendCommandAndExpectNextMessage(
         Simulation.Command.Tick(id, inPhaseValue, outOfPhaseValue, timestepsPerPhase, cycles, None)
-      )
-      controller.expectNextMessage {
+      ) {
         case Simulation.Message.Bits(_, _) =>
       }
     }
@@ -405,11 +441,10 @@ object Simulation {
       inPhaseValue:      BigInt,
       outOfPhaseValue:   BigInt,
       sentinel:          Option[(Port, BigInt)]
-    ): BigInt = {
-      controller.sendCommand(
+    ): BigInt = synchronized {
+      controller.sendCommandAndProcessNextMessage(
         Simulation.Command.Tick(id, inPhaseValue, outOfPhaseValue, timestepsPerPhase, maxCycles, sentinel)
-      )
-      controller.processNextMessage {
+      ) {
         case Simulation.Message.Bits(_, cyclesElapsed) =>
           cyclesElapsed
       }
@@ -422,11 +457,10 @@ object Simulation {
       outOfPhaseValue:        BigInt,
       sentinel:               Option[(Port, BigInt)],
       checkElapsedCycleCount: (BigInt) => Unit
-    ) = {
-      controller.sendCommand(
+    ) = synchronized {
+      controller.sendCommandAndExpectNextMessage(
         Simulation.Command.Tick(id, inPhaseValue, outOfPhaseValue, timestepsPerPhase, maxCycles, sentinel)
-      )
-      controller.expectNextMessage {
+      ) {
         case Simulation.Message.Bits(_, cyclesElapsed) =>
           checkElapsedCycleCount(cyclesElapsed)
       }
@@ -434,10 +468,11 @@ object Simulation {
 
     def check(f: Value => Unit): Unit = check()(f)
     def check(isSigned: Boolean = false)(f: Value => Unit): Unit = {
-      controller.sendCommand(Simulation.Command.GetBits(id, isSigned))
-      controller.expectNextMessage {
-        case Simulation.Message.Bits(bitCount, value) =>
-          f(Value(bitCount, value))
+      synchronized {
+        controller.sendCommandAndExpectNextMessage(Simulation.Command.GetBits(id, isSigned)) {
+          case Simulation.Message.Bits(bitCount, value) =>
+            f(Value(bitCount, value))
+        }
       }
     }
   }
