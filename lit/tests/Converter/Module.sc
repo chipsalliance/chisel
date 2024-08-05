@@ -3,6 +3,7 @@
 
 import chisel3._
 import chisel3.experimental.{Analog, attach}
+import chisel3.util.SRAM
 
 // FIRRTL-LABEL: public module Attach :
 // FIRRTL-NEXT:   input clock : Clock
@@ -91,6 +92,8 @@ class Mem extends Module {
     // FIRRTL-NEXT: connect wrPort_1, w.data
     wrPort := w.data
   }
+
+  val sram = SRAM(1024, UInt(8.W), 1, 1, 1)
 }
 
 println(lit.utility.panamaconverter.firrtlString(new Mem))
