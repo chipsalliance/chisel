@@ -188,9 +188,11 @@ private[chisel3] object cloneSupertype {
           elt.getClass == filteredElts.head.getClass,
           s"can't create $createdType with heterogeneous types ${filteredElts.head.getClass} and ${elt.getClass}"
         )
+        val mismatch =
+          elt.findFirstTypeMismatch(filteredElts.head, strictTypes = true, strictWidths = true, strictProbeInfo = true)
         require(
-          elt.typeEquivalent(filteredElts.head),
-          s"can't create $createdType with non-equivalent types ${filteredElts.head} and ${elt}"
+          mismatch.isEmpty,
+          s"can't create $createdType with non-equivalent types _${mismatch.get}"
         )
       }
       filteredElts.head.cloneTypeFull
