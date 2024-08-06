@@ -19,6 +19,8 @@ import org.scalatest.matchers.should.Matchers
 object ChiselStageSpec {
 
   import chisel3._
+  import chisel3.probe.{define, Probe, ProbeValue}
+  import chisel3.layer.{block, Convention, Layer}
 
   class FooBundle extends Bundle {
     val a = Input(Bool())
@@ -103,6 +105,18 @@ object ChiselStageSpec {
   class ErrorCaughtByFirtool extends RawModule {
     implicit val info = SourceLine("Foo", 3, 10)
     val w = Wire(UInt(8.W))
+  }
+
+  object A extends Layer(Convention.Bind)
+
+  object B extends Layer(Convention.Bind)
+
+  class LayerRemappingTest extends RawModule {
+    val out = IO(Output(Probe(Bool(), A)))
+    block(A) {
+      val a = Wire(Bool())
+      define(out, ProbeValue(a))
+    }
   }
 }
 
@@ -556,7 +570,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
       val lines = stdout.split("\n")
       // Fuzzy includes aren't ideal but there is ANSI color in these strings that is hard to match
       lines(0) should include(
-        "src/test/scala/circtTests/stage/ChiselStageSpec.scala 95:9: Negative shift amounts are illegal (got -1)"
+        "src/test/scala/circtTests/stage/ChiselStageSpec.scala 97:9: Negative shift amounts are illegal (got -1)"
       )
       lines(1) should include("    3.U >> -1")
       lines(2) should include("        ^")
@@ -577,7 +591,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
       // Fuzzy includes aren't ideal but there is ANSI color in these strings that is hard to match
       lines.size should equal(2)
       lines(0) should include(
-        "src/test/scala/circtTests/stage/ChiselStageSpec.scala 95:9: Negative shift amounts are illegal (got -1)"
+        "src/test/scala/circtTests/stage/ChiselStageSpec.scala 97:9: Negative shift amounts are illegal (got -1)"
       )
       (lines(1) should not).include("3.U >> -1")
     }
@@ -1231,6 +1245,17 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
       (ChiselStage.emitCHIRRTL(new RawModule {}) should not).include("LogLevelAnnotation")
       (ChiselStage.emitCHIRRTL(new RawModule {}, Array("-ll", "info")) should not).include("LogLevelAnnotation")
     }
+
+    it("should allow remapping one layer to another") {
+      val chirrtl = ChiselStage.emitCHIRRTL(
+        new ChiselStageSpec.LayerRemappingTest,
+        Array("--remap-layer", "circtTests.stage.ChiselStageSpec$A$,circtTests.stage.ChiselStageSpec$B$")
+      )
+      chirrtl should include("output out : Probe<UInt<1>, B>")
+      chirrtl should include("layer B")
+      chirrtl should include("layerblock B")
+    }
+
   }
 
   describe("ChiselStage$ exception handling") {

@@ -4,6 +4,7 @@ package chisel3.stage
 
 import chisel3.internal.firrtl.ir.Circuit
 import chisel3.internal.WarningFilter
+import chisel3.layer.Layer
 import java.io.File
 
 class ChiselOptions private[stage] (
@@ -13,7 +14,8 @@ class ChiselOptions private[stage] (
   val chiselCircuit:       Option[Circuit] = None,
   val sourceRoots:         Vector[File] = Vector.empty,
   val warningFilters:      Vector[WarningFilter] = Vector.empty,
-  val useLegacyWidth:      Boolean = false) {
+  val useLegacyWidth:      Boolean = false,
+  val layerMap:            Map[Layer, Layer] = Map.empty) {
 
   private[stage] def copy(
     printFullStackTrace: Boolean = printFullStackTrace,
@@ -22,7 +24,8 @@ class ChiselOptions private[stage] (
     chiselCircuit:       Option[Circuit] = chiselCircuit,
     sourceRoots:         Vector[File] = sourceRoots,
     warningFilters:      Vector[WarningFilter] = warningFilters,
-    useLegacyWidth:      Boolean = useLegacyWidth
+    useLegacyWidth:      Boolean = useLegacyWidth,
+    layerMap:            Map[Layer, Layer] = layerMap
   ): ChiselOptions = {
 
     new ChiselOptions(
@@ -32,7 +35,8 @@ class ChiselOptions private[stage] (
       chiselCircuit = chiselCircuit,
       sourceRoots = sourceRoots,
       warningFilters = warningFilters,
-      useLegacyWidth = useLegacyWidth
+      useLegacyWidth = useLegacyWidth,
+      layerMap = layerMap
     )
 
   }

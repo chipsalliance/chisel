@@ -482,7 +482,8 @@ private[chisel3] class DynamicContext(
   // Definitions from other scopes in the same elaboration, use allDefinitions below
   val loggerOptions: LoggerOptions,
   val definitions:   ArrayBuffer[Definition[_]],
-  val contextCache:  BuilderContextCache) {
+  val contextCache:  BuilderContextCache,
+  val layerMap:      Map[layer.Layer, layer.Layer]) {
   val importedDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
 
   // Map from proto module name to ext-module name
@@ -866,6 +867,8 @@ private[chisel3] object Builder extends LazyLogging {
   def layerStack_=(s: List[layer.Layer]): Unit = {
     dynamicContext.layerStack = s
   }
+
+  def layerMap: Map[layer.Layer, layer.Layer] = dynamicContext.layerMap
 
   def inDefinition: Boolean = {
     dynamicContextVar.value

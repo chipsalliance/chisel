@@ -123,7 +123,8 @@ object Definition extends SourceInfoDoc {
         Some(context.globalNamespace),
         context.loggerOptions,
         context.definitions,
-        context.contextCache
+        context.contextCache,
+        context.layerMap
       )
     }
     dynamicContext.inDefinition = true
