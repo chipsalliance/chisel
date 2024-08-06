@@ -349,7 +349,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
             case enclosure: BlackBox => Reference.BlackBoxIO(enclosure)
             case enclosure =>
               val index = enclosure.getChiselPorts.indexWhere(_._2 == data)
-              assert(index >= 0, s"can't find port '$data' from '$enclosure' (${enclosure.getClass.getName})")
+              assert(index >= 0, s"can't find port '$data' (${data._id}) from '$enclosure' (${enclosure.getClass.getName})")
 
               val value = if (enclosure.name != firCtx.currentModuleName) {
                 // Reference to a port from instance
@@ -1193,6 +1193,8 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
       firrtlMemory.writePortNames.map(w => (w, util.getTypeForMemPort(firrtlMemory.size, dataType, util.PortKind.Write))) ++
       firrtlMemory.readwritePortNames.map(rw => (rw, util.getTypeForMemPort(firrtlMemory.size, dataType, util.PortKind.ReadWrite)))
 
+    println(s"readPortNames: ${firrtlMemory.readPortNames} storing: ${firrtlMemory.id._id}")
+
     val op = util
       .OpBuilder("firrtl.mem", firCtx.currentBlock, util.convert(firrtlMemory.sourceInfo))
       .withNamedAttr("readLatency", circt.mlirIntegerAttrGet(circt.mlirIntegerTypeGet(32), 1))
@@ -1767,6 +1769,7 @@ object PanamaCIRCTConverter {
       case defInstance:         DefInstance               => visitDefInstance(defInstance)
       case defMemPort:          DefMemPort[ChiselData]    => visitDefMemPort(defMemPort)
       case defMemory:           DefMemory                 => visitDefMemory(defMemory)
+      case firrtlMemory:        FirrtlMemory              => visitFirrtlMemory(firrtlMemory)
       case defPrim:             DefPrim[ChiselData]       => visitDefPrim(defPrim)
       case defReg:              DefReg                    => visitDefReg(defReg)
       case defRegInit:          DefRegInit                => visitDefRegInit(defRegInit)
