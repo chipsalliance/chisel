@@ -486,10 +486,10 @@ object SRAM {
     _out._underlying = Some(HasTarget(mem))
 
     // create actual ports into firrtl memory
-    val firrtlReadPorts:  Seq[FirrtlMemoryReader[_]] = sramIntfType.readPorts.map(new FirrtlMemoryReader(_))
-    val firrtlWritePorts: Seq[FirrtlMemoryWriter[_]] = sramIntfType.writePorts.map(new FirrtlMemoryWriter(_))
+    val firrtlReadPorts:  Seq[FirrtlMemoryReader[_]] = sramIntfType.readPorts.map(new FirrtlMemoryReader(_, mem))
+    val firrtlWritePorts: Seq[FirrtlMemoryWriter[_]] = sramIntfType.writePorts.map(new FirrtlMemoryWriter(_, mem))
     val firrtlReadwritePorts: Seq[FirrtlMemoryReadwriter[_]] =
-      sramIntfType.readwritePorts.map(new FirrtlMemoryReadwriter(_))
+      sramIntfType.readwritePorts.map(new FirrtlMemoryReadwriter(_, mem))
 
     // set references to firrtl memory ports
     def nameAndSetRef(ports: Seq[Data], namePrefix: String): Seq[String] = {
@@ -622,11 +622,12 @@ private[chisel3] class SramMask(gen: Data) extends Record with OpaqueType {
   * FIRRTL memory read port.
   *
   * @param readPort used to parameterize this class
+  * @param underlaying the [[SramTarget]] it target to
   *
   * @note This is private because users should not directly use this bundle to
   * interact with [[SRAM]].
   */
-private[chisel3] final class FirrtlMemoryReader[T <: Data](readPort: MemoryReadPort[T]) extends Bundle {
+private[chisel3] final class FirrtlMemoryReader[T <: Data](readPort: MemoryReadPort[T], underlaying: SramTarget) extends Bundle {
   val addr = readPort.address.cloneType
   val en = Bool()
   val clk = Clock()
@@ -638,11 +639,12 @@ private[chisel3] final class FirrtlMemoryReader[T <: Data](readPort: MemoryReadP
   * assigned explicitly.
   *
   * @param writePort used to parameterize this class
+  * @param underlaying the [[SramTarget]] it target to
   *
   * @note This is private because users should not directly use this bundle to
   * interact with [[SRAM]].
   */
-private[chisel3] final class FirrtlMemoryWriter[T <: Data](writePort: MemoryWritePort[T]) extends Bundle {
+private[chisel3] final class FirrtlMemoryWriter[T <: Data](writePort: MemoryWritePort[T], underlaying: SramTarget) extends Bundle {
   val addr = writePort.address.cloneType
   val en = Bool()
   val clk = Clock()
@@ -655,11 +657,12 @@ private[chisel3] final class FirrtlMemoryWriter[T <: Data](writePort: MemoryWrit
   * assigned explicitly.
   *
   * @param readwritePort used to parameterize this class
+  * @param underlaying the [[SramTarget]] it target to
   *
   * @note This is private because users should not directly use this bundle to
   * interact with [[SRAM]].
   */
-private[chisel3] final class FirrtlMemoryReadwriter[T <: Data](readwritePort: MemoryReadWritePort[T]) extends Bundle {
+private[chisel3] final class FirrtlMemoryReadwriter[T <: Data](readwritePort: MemoryReadWritePort[T], underlaying: SramTarget) extends Bundle {
   val addr = readwritePort.address.cloneType
   val en = Bool()
   val clk = Clock()
