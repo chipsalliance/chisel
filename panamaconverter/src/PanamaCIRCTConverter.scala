@@ -1014,6 +1014,44 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
     firCtx.newItem(defWire.id, op.results(0))
   }
 
+  def visitDefIntrinsicExpr[T <: ChiselData](defIntrinsicExpr: DefIntrinsicExpr[T]): Unit = {
+    val op = util
+      .OpBuilder("firrtl.int.generic", firCtx.currentBlock, util.convert(defIntrinsicExpr.sourceInfo))
+      .withNamedAttr("intrinsic", circt.mlirStringAttrGet(defIntrinsicExpr.intrinsic))
+      .withNamedAttr(
+        "parameters",
+        circt.mlirArrayAttrGet(defIntrinsicExpr.params.map(p => util.convert(p._1, p._2)).toSeq)
+      )
+      .withOperands(defIntrinsicExpr.args.map(arg => util.referTo(arg, defIntrinsicExpr.sourceInfo).value))
+      .withResult(util.convert(Converter.extractType(defIntrinsicExpr.id, defIntrinsicExpr.sourceInfo)))
+      .build()
+    firCtx.ops += ((defIntrinsicExpr.id._id, op.op))
+    firCtx.newItem(defIntrinsicExpr.id, op.results(0))
+  }
+
+  def visitDefIntrinsic(parent: Component, defIntrinsic: DefIntrinsic): Unit = {
+    var args = Seq.empty[Arg]
+    val params = defIntrinsic.params
+      .map(p => {
+        val param = p._2 match {
+          case pable: PrintableParam =>
+            val (fmt, fmtArgs) = Converter.unpack(pable.value, parent)
+            args = fmtArgs
+            StringParam(fmt)
+          case others => others
+        }
+        (p._1, param)
+      })
+      .toSeq
+    util
+      .OpBuilder("firrtl.int.generic", firCtx.currentBlock, util.convert(defIntrinsic.sourceInfo))
+      .withNamedAttr("intrinsic", circt.mlirStringAttrGet(defIntrinsic.intrinsic))
+      .withNamedAttr("parameters", circt.mlirArrayAttrGet(params.map(p => util.convert(p._1, p._2)).toSeq))
+      .withOperands(defIntrinsic.args.map(arg => util.referTo(arg, defIntrinsic.sourceInfo).value))
+      .withOperands(args.map(arg => util.referTo(arg, defIntrinsic.sourceInfo).value))
+      .build()
+  }
+
   def visitDefInvalid(defInvalid: DefInvalid): Unit = {
     val loc = util.convert(defInvalid.sourceInfo)
     val dest = util.referTo(defInvalid.arg, defInvalid.sourceInfo)
@@ -1696,27 +1734,29 @@ object PanamaCIRCTConverter {
           if (when.elseRegion.nonEmpty) { Some(() => visitCommands(parent, when.elseRegion.result)) }
           else { None }
         )
-      case defInstance:         DefInstance               => visitDefInstance(defInstance)
-      case defMemPort:          DefMemPort[ChiselData]    => visitDefMemPort(defMemPort)
-      case defMemory:           DefMemory                 => visitDefMemory(defMemory)
-      case defPrim:             DefPrim[ChiselData]       => visitDefPrim(defPrim)
-      case defReg:              DefReg                    => visitDefReg(defReg)
-      case defRegInit:          DefRegInit                => visitDefRegInit(defRegInit)
-      case defSeqMemory:        DefSeqMemory              => visitDefSeqMemory(defSeqMemory)
-      case defWire:             DefWire                   => visitDefWire(defWire)
-      case printf:              Printf                    => visitPrintf(parent, printf)
-      case stop:                Stop                      => visitStop(stop)
-      case assert:              Verification[VerifAssert] => visitVerfiAssert(parent, assert)
-      case assume:              Verification[VerifAssume] => visitVerfiAssume(parent, assume)
-      case cover:               Verification[VerifCover]  => visitVerfiCover(parent, cover)
-      case printf:              Verification[VerifPrintf] => visitVerfiPrintf(printf)
-      case stop:                Verification[VerifStop]   => visitVerfiStop(stop)
-      case probeDefine:         ProbeDefine               => visitProbeDefine(parent, probeDefine)
-      case probeForceInitial:   ProbeForceInitial         => visitProbeForceInitial(parent, probeForceInitial)
-      case probeReleaseInitial: ProbeReleaseInitial       => visitProbeReleaseInitial(parent, probeReleaseInitial)
-      case probeForce:          ProbeForce                => visitProbeForce(parent, probeForce)
-      case probeRelease:        ProbeRelease              => visitProbeRelease(parent, probeRelease)
-      case propAssign:          PropAssign                => visitPropAssign(parent, propAssign)
+      case defInstance:         DefInstance                  => visitDefInstance(defInstance)
+      case defMemPort:          DefMemPort[ChiselData]       => visitDefMemPort(defMemPort)
+      case defMemory:           DefMemory                    => visitDefMemory(defMemory)
+      case defPrim:             DefPrim[ChiselData]          => visitDefPrim(defPrim)
+      case defReg:              DefReg                       => visitDefReg(defReg)
+      case defRegInit:          DefRegInit                   => visitDefRegInit(defRegInit)
+      case defSeqMemory:        DefSeqMemory                 => visitDefSeqMemory(defSeqMemory)
+      case defWire:             DefWire                      => visitDefWire(defWire)
+      case defIntrinsicExpr:    DefIntrinsicExpr[ChiselData] => visitDefIntrinsicExpr(defIntrinsicExpr)
+      case defIntrinsic:        DefIntrinsic                 => visitDefIntrinsic(parent, defIntrinsic)
+      case printf:              Printf                       => visitPrintf(parent, printf)
+      case stop:                Stop                         => visitStop(stop)
+      case assert:              Verification[VerifAssert]    => visitVerfiAssert(parent, assert)
+      case assume:              Verification[VerifAssume]    => visitVerfiAssume(parent, assume)
+      case cover:               Verification[VerifCover]     => visitVerfiCover(parent, cover)
+      case printf:              Verification[VerifPrintf]    => visitVerfiPrintf(printf)
+      case stop:                Verification[VerifStop]      => visitVerfiStop(stop)
+      case probeDefine:         ProbeDefine                  => visitProbeDefine(parent, probeDefine)
+      case probeForceInitial:   ProbeForceInitial            => visitProbeForceInitial(parent, probeForceInitial)
+      case probeReleaseInitial: ProbeReleaseInitial          => visitProbeReleaseInitial(parent, probeReleaseInitial)
+      case probeForce:          ProbeForce                   => visitProbeForce(parent, probeForce)
+      case probeRelease:        ProbeRelease                 => visitProbeRelease(parent, probeRelease)
+      case propAssign:          PropAssign                   => visitPropAssign(parent, propAssign)
       case unhandled => throw new Exception(s"unhandled op: $unhandled")
     }
   }
@@ -1781,6 +1821,16 @@ object PanamaCIRCTConverter {
   }
   def visitDefWire(defWire: DefWire)(implicit cvt: PanamaCIRCTConverter): Unit = {
     cvt.visitDefWire(defWire)
+  }
+  def visitDefIntrinsicExpr[T <: ChiselData](
+    defIntrinsicExpr: DefIntrinsicExpr[T]
+  )(
+    implicit cvt: PanamaCIRCTConverter
+  ): Unit = {
+    cvt.visitDefIntrinsicExpr(defIntrinsicExpr)
+  }
+  def visitDefIntrinsic(parent: Component, defIntrinsic: DefIntrinsic)(implicit cvt: PanamaCIRCTConverter): Unit = {
+    cvt.visitDefIntrinsic(parent, defIntrinsic)
   }
   def visitPrintf(parent: Component, printf: Printf)(implicit cvt: PanamaCIRCTConverter): Unit = {
     cvt.visitPrintf(parent, printf)

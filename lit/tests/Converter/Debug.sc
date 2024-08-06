@@ -24,11 +24,12 @@ class Verf extends Module {
   val cov = chisel3.cover(i === 1.U)
   // FIRRTL: assume(clock, _assm_T,
   val assm = chisel3.assume(i =/= 8.U)
-  // FIRRTL: assert(clock, _asst_T,
+  // FIRRTL: intrinsic(circt_chisel_ifelsefatal<
+  // FIRRTL: clock, _asst_T, _asst_T_1
   val asst = chisel3.assert(o === i)
 }
 
-// NOTE: currently CIRCT emits cover, assume and assert but PanamaConverter does not
+// NOTE: currently CIRCT emits cover, assume but PanamaConverter does not
 println(lit.utility.panamaconverter.firrtlString(new Verf))
 
 // Following test ported from ProbeSpec.scala in chisel test suite

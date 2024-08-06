@@ -15,11 +15,6 @@ class FooBlackbox extends BlackBox {
   })
 }
 
-// FIRRTL: intmodule IsXIntrinsic :
-// FIRRTL-NEXT: input i : UInt<1>
-// FIRRTL-NEXT: output found : UInt<1>
-// FIRRTL-NEXT: intrinsic = circt_isX
-
 // FIRRTL: public module FooModule :
 // FIRRTL-NEXT: input clock : Clock
 // FIRRTL-NEXT: input reset : UInt<1>
@@ -30,9 +25,7 @@ class FooModule extends Module {
   // FIRRTL: inst bb of FooBlackbox
   val bb = Module(new FooBlackbox)
 
-  // FIRRTL: inst o_inst of IsXIntrinsic
-  // FIRRTL-NEXT: connect o_inst.i, bb.o
-  // FIRRTL-NEXT: connect o, o_inst.found
+  // FIRRTL-NEXT: connect o, intrinsic(circt_isX : UInt<1>, bb.o)
   o := IsX(bb.io.o)
 }
 
