@@ -22,10 +22,31 @@ class MuxTester extends BasicTester {
   stop()
 }
 
+class MuxBetween[A <: Data, B <: Data](genA: A, genB: B) extends RawModule {
+  val in0 = IO(Input(genA))
+  val in1 = IO(Input(genB))
+  val sel = IO(Input(Bool()))
+  val result = Mux(sel, in0, in1)
+}
+
 class MuxSpec extends ChiselFlatSpec {
   "Mux" should "pass basic checks" in {
     assertTesterPasses { new MuxTester }
   }
+
+  it should "give reasonable error messages for mismatched user-defined types" in {
+    class MyBundle(w: Int) extends Bundle {
+      val foo = UInt(w.W)
+      val bar = UInt(8.W)
+    }
+    val e = the[Exception] thrownBy {
+      ChiselStage.emitCHIRRTL(new MuxBetween(new MyBundle(8), new MyBundle(16)))
+    }
+    e.getMessage should include(
+      "can't create Mux with non-equivalent types _.foo: Left (MuxBetween.in1.foo: IO[UInt<16>]) and Right (MuxBetween.in0.foo: IO[UInt<8>]) have different widths."
+    )
+  }
+
 }
 
 class MuxLookupEnumTester extends BasicTester {
