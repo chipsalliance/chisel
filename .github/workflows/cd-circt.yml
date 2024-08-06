@@ -21,4 +21,5 @@ jobs:
           pr-reviewers: |
             seldridge
             jackkoenig
+          should-create-pr: '.github/scripts/check-maven-for-llvm-firtool-version.sh'
           github-token: ${{ secrets.CHISEL_BOT_TOKEN }}
