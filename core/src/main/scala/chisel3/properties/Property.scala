@@ -320,6 +320,17 @@ sealed trait Property[T] extends Element { self =>
     sourceInfo:  SourceInfo
   ): Property[T] =
     ev.shr(this, that)
+
+  /** Perform concatenation as defined by FIRRTL spec section List Concatenation Operation.
+    */
+  final def ++(
+    that: Property[T]
+  )(
+    implicit ev: PropertySequenceOps[Property[T]],
+    sourceInfo:  SourceInfo
+  ): Property[T] = {
+    ev.concat(this, that)
+  }
 }
 
 private[chisel3] sealed trait ClassTypeProvider[A] {
@@ -335,6 +346,43 @@ private[chisel3] object ClassTypeProvider {
   }
 }
 
+/** Helpers for building Property expressions.
+  */
+private object PropertyExpressionHelpers {
+  // Helper function to create Property expression IR.
+  def binOp[T](
+    sourceInfo: SourceInfo,
+    op:         fir.PropPrimOp,
+    lhs:        Property[T],
+    rhs:        Property[T]
+  ): Property[T] = {
+    implicit val info = sourceInfo
+
+    // Get the containing RawModule, or throw an error. We can only use the temporary Wire approach in RawModule, so at
+    // least give a decent error explaining this current shortcoming.
+    val currentModule = Builder.referenceUserContainer match {
+      case mod: RawModule => mod
+      case other =>
+        throwException(
+          sourceInfo.makeMessage(s => s"Property expressions are currently only supported in RawModules ${s}")
+        )
+    }
+
+    // Create a temporary Wire to assign the expression to. We currently don't support Nodes for Property types.
+    val wire = Wire(chiselTypeOf(lhs))
+    wire.autoSeed("_propExpr")
+
+    // Create a PropExpr with the correct type, operation, and operands.
+    val propExpr = ir.PropExpr(sourceInfo, lhs.tpe.getPropertyType(), op, List(lhs.ref, rhs.ref))
+
+    // Directly add a PropAssign command assigning the PropExpr to the Wire.
+    currentModule.addCommand(ir.PropAssign(sourceInfo, wire.lref, propExpr))
+
+    // Return the temporary Wire as the result.
+    wire.asInstanceOf[Property[T]]
+  }
+}
+
 /** Typeclass for Property arithmetic.
   */
 @implicitNotFound("arithmetic operations are not supported on Property type ${T}")
@@ -345,6 +393,8 @@ sealed trait PropertyArithmeticOps[T] {
 }
 
 object PropertyArithmeticOps {
+  import PropertyExpressionHelpers._
+
   // Type class instances for Property arithmetic.
   implicit val intArithmeticOps: PropertyArithmeticOps[Property[Int]] =
     new PropertyArithmeticOps[Property[Int]] {
@@ -375,39 +425,24 @@ object PropertyArithmeticOps {
       def shr(lhs: Property[BigInt], rhs: Property[BigInt])(implicit sourceInfo: SourceInfo) =
         binOp(sourceInfo, fir.IntegerShrOp, lhs, rhs)
     }
+}
 
-  // Helper function to create Property expression IR.
-  private def binOp[T: PropertyType](
-    sourceInfo: SourceInfo,
-    op:         fir.PropPrimOp,
-    lhs:        Property[T],
-    rhs:        Property[T]
-  ): Property[T] = {
-    implicit val info = sourceInfo
+/** Typeclass for Property sequence operations.
+  */
+@implicitNotFound("sequence operations are not supported on Property type ${T}")
+sealed trait PropertySequenceOps[T] {
+  def concat(lhs: T, rhs: T)(implicit sourceInfo: SourceInfo): T
+}
 
-    // Get the containing RawModule, or throw an error. We can only use the temporary Wire approach in RawModule, so at
-    // least give a decent error explaining this current shortcoming.
-    val currentModule = Builder.referenceUserContainer match {
-      case mod: RawModule => mod
-      case other =>
-        throwException(
-          sourceInfo.makeMessage(s => s"Property arithmetic is currently only supported in RawModules ${s}")
-        )
+object PropertySequenceOps {
+  import PropertyExpressionHelpers._
+
+  // Type class instances for Property sequence operations.
+  implicit def seqOps[U]: PropertySequenceOps[Property[Seq[U]]] =
+    new PropertySequenceOps[Property[Seq[U]]] {
+      def concat(lhs: Property[Seq[U]], rhs: Property[Seq[U]])(implicit sourceInfo: SourceInfo) =
+        binOp(sourceInfo, fir.ListConcatOp, lhs, rhs)
     }
-
-    // Create a temporary Wire to assign the expression to. We currently don't support Nodes for Property types.
-    val wire = Wire(chiselTypeOf(lhs))
-    wire.autoSeed("_propExpr")
-
-    // Create a PropExpr with the correct type, operation, and operands.
-    val propExpr = ir.PropExpr(sourceInfo, lhs.tpe.getPropertyType(), op, List(lhs.ref, rhs.ref))
-
-    // Directly add a PropAssign command assigning the PropExpr to the Wire.
-    currentModule.addCommand(ir.PropAssign(sourceInfo, wire.lref, propExpr))
-
-    // Return the temporary Wire as the result.
-    wire.asInstanceOf[Property[T]]
-  }
 }
 
 /** Companion object for Property.
