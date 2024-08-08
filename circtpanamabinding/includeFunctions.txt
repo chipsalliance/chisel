@@ -96,6 +96,7 @@ firrtlTypeGetBoolean
 firrtlTypeGetPath
 firrtlTypeGetList
 firrtlTypeGetClass
+firrtlTypeGetMaskType
 
 # FIRRTL Attribute
 firrtlAttrGetPortDirs
