@@ -17,6 +17,7 @@ private object EmitDPIImplementation {
     val dpiImpl = s"""
                      |#include <stdint.h>
                      |#include <iostream>
+                     |#include <svdpi.h>
                      |
                      |extern "C" void hello()
                      |{
@@ -26,6 +27,16 @@ private object EmitDPIImplementation {
                      |extern "C" void add(int lhs, int rhs, int* result)
                      |{
                      |    *result = lhs + rhs;
+                     |}
+                     |
+                     |extern "C" void sum(const svOpenArrayHandle array, int* result) {
+                     |  int size = svSize(array, 1);
+                     |  *result = 0;
+                     |  for(size_t i = 0; i < size; ++i) {
+                     |    svBitVecVal vec;
+                     |    svGetBitArrElemVecVal(&vec, array, i);
+                     |    *result += vec;
+                     |  }
                      |}
   """.stripMargin
 
@@ -62,8 +73,9 @@ class DPIIntrinsicTest extends Module {
   io.add_unclocked_result := result_unclocked
 }
 
-object Hello extends DPIClockedVoidFunctionImport {
+object Hello extends DPIVoidFunctionImport {
   override val functionName = "hello"
+  override val clocked = true
   final def apply() = super.call()
 }
 
@@ -85,22 +97,35 @@ object AddUnclocked extends DPINonVoidFunctionImport[UInt] {
   final def apply(lhs: UInt, rhs: UInt): UInt = super.call(lhs, rhs)
 }
 
+object Sum extends DPINonVoidFunctionImport[UInt] {
+  override val functionName = "sum"
+  override val ret = UInt(32.W)
+  override val clocked = false
+  override val inputNames = Some(Seq("array"))
+  override val outputName = Some("result")
+  final def apply(array: Vec[UInt]): UInt = super.call(array)
+}
+
 class DPIAPITest extends Module {
   val io = IO(new Bundle {
     val a = Input(UInt(32.W))
     val b = Input(UInt(32.W))
     val add_clocked_result = Output(UInt(32.W))
     val add_unclocked_result = Output(UInt(32.W))
+    val sum_result = Output(UInt(32.W))
   })
 
   EmitDPIImplementation()
 
   Hello()
+
   val result_clocked = AddClocked(io.a, io.b)
   val result_unclocked = AddUnclocked(io.a, io.b)
+  val result_sum = Sum(VecInit(Seq(io.a, io.b, io.a)))
 
   io.add_clocked_result := result_clocked
   io.add_unclocked_result := result_unclocked
+  io.sum_result := result_sum
 }
 
 class DPISpec extends AnyFunSpec with Matchers {
@@ -151,6 +176,8 @@ class DPISpec extends AnyFunSpec with Matchers {
           dpi.io.b.poke(36.U)
           dpi.io.add_unclocked_result.peek()
           dpi.io.add_unclocked_result.expect(60)
+          dpi.io.sum_result.peek()
+          dpi.io.sum_result.expect(84)
 
           dpi.clock.step()
           dpi.io.a.poke(24.U)
@@ -159,6 +186,8 @@ class DPISpec extends AnyFunSpec with Matchers {
           dpi.io.add_clocked_result.expect(60)
           dpi.io.add_unclocked_result.peek()
           dpi.io.add_unclocked_result.expect(36)
+          dpi.io.sum_result.peek()
+          dpi.io.sum_result.expect(60)
         }
         .result
 
