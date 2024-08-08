@@ -487,6 +487,8 @@ class PanamaCIRCT {
     MlirType(CAPI.firrtlTypeGetClass(arena, mlirCtx, name.get, elements.length, buffer))
   }
 
+  def firrtlTypeGetMaskType(tpe: MlirType) = MlirType(CAPI.firrtlTypeGetMaskType(arena, tpe.get))
+
   def firrtlAttrGetPortDirs(dirs: Seq[FIRRTLDirection]): MlirAttribute = {
     val (ptr, length) = seqToArray(dirs)
     MlirAttribute(CAPI.firrtlAttrGetPortDirs(arena, mlirCtx, length, ptr))
@@ -504,7 +506,7 @@ class PanamaCIRCT {
     CAPI.firrtlAttrGetNameKind(arena, mlirCtx, nameKind.value)
   )
 
-  def firrtlAttrGetRUW(ruw: firrtlAttrGetRUW) = MlirAttribute(CAPI.firrtlAttrGetRUW(arena, mlirCtx, ruw.value))
+  def firrtlAttrGetRUW(ruw: FIRRTLRUW) = MlirAttribute(CAPI.firrtlAttrGetRUW(arena, mlirCtx, ruw.value))
 
   def firrtlAttrGetMemDir(dir: FIRRTLMemDir) = MlirAttribute(CAPI.firrtlAttrGetMemDir(arena, mlirCtx, dir.value))
 
@@ -901,14 +903,14 @@ object FIRRTLDirection {
   final case object Out extends FIRRTLDirection(value = CAPI.FIRRTL_DIRECTION_OUT())
 }
 
-sealed abstract class firrtlAttrGetRUW(val value: Int) extends ForeignType[Int] {
+sealed abstract class FIRRTLRUW(val value: Int) extends ForeignType[Int] {
   private[panamalib] def get = value
   private[panamalib] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
 }
-object firrtlAttrGetRUW {
-  final case object Undefined extends firrtlAttrGetRUW(value = CAPI.FIRRTL_RUW_UNDEFINED())
-  final case object Old extends firrtlAttrGetRUW(value = CAPI.FIRRTL_RUW_OLD())
-  final case object New extends firrtlAttrGetRUW(value = CAPI.FIRRTL_RUW_NEW())
+object FIRRTLRUW {
+  final case object Undefined extends FIRRTLRUW(value = CAPI.FIRRTL_RUW_UNDEFINED())
+  final case object Old extends FIRRTLRUW(value = CAPI.FIRRTL_RUW_OLD())
+  final case object New extends FIRRTLRUW(value = CAPI.FIRRTL_RUW_NEW())
 }
 
 sealed abstract class FIRRTLMemDir(val value: Int) extends ForeignType[Int] {
