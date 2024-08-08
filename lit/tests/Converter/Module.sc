@@ -3,6 +3,7 @@
 
 import chisel3._
 import chisel3.experimental.{Analog, attach}
+import chisel3.util.SRAM
 
 // FIRRTL-LABEL: public module Attach :
 // FIRRTL-NEXT:   input clock : Clock
@@ -94,6 +95,92 @@ class Mem extends Module {
 }
 
 println(lit.utility.panamaconverter.firrtlString(new Mem))
+
+// FIRRTL-LABEL: public module Sram :
+// FIRRTL-NEXT:   input clock : Clock
+// FIRRTL-NEXT:   input reset : UInt<1>
+class Sram extends Module {
+  // FIRRTL:      wire mem
+  // FIRRTL:      mem mem_sram
+  // FIRRTL:      connect mem_sram.R0.addr, mem.readPorts[0].address
+  // FIRRTL-NEXT: connect mem_sram.R0.clk, clock
+  // FIRRTL-NEXT: connect mem.readPorts[0].data, mem_sram.R0.data
+  // FIRRTL-NEXT: connect mem_sram.R0.en, mem.readPorts[0].enable
+  // FIRRTL-NEXT: connect mem_sram.R1.addr, mem.readPorts[1].address
+  // FIRRTL-NEXT: connect mem_sram.R1.clk, clock
+  // FIRRTL-NEXT: connect mem.readPorts[1].data, mem_sram.R1.data
+  // FIRRTL-NEXT: connect mem_sram.R1.en, mem.readPorts[1].enable
+  // FIRRTL-NEXT: connect mem_sram.W0.addr, mem.writePorts[0].address
+  // FIRRTL-NEXT: connect mem_sram.W0.clk, clock
+  // FIRRTL-NEXT: connect mem_sram.W0.data, mem.writePorts[0].data
+  // FIRRTL-NEXT: connect mem_sram.W0.en, mem.writePorts[0].enable
+  // FIRRTL-NEXT: connect mem_sram.W0.mask, UInt<1>(1)
+  // FIRRTL-NEXT: connect mem_sram.W1.addr, mem.writePorts[1].address
+  // FIRRTL-NEXT: connect mem_sram.W1.clk, clock
+  // FIRRTL-NEXT: connect mem_sram.W1.data, mem.writePorts[1].data
+  // FIRRTL-NEXT: connect mem_sram.W1.en, mem.writePorts[1].enable
+  // FIRRTL-NEXT: connect mem_sram.W1.mask, UInt<1>(1)
+  // FIRRTL-NEXT: connect mem_sram.RW0.addr, mem.readwritePorts[0].address
+  // FIRRTL-NEXT: connect mem_sram.RW0.clk, clock
+  // FIRRTL-NEXT: connect mem_sram.RW0.en, mem.readwritePorts[0].enable
+  // FIRRTL-NEXT: connect mem.readwritePorts[0].readData, mem_sram.RW0.rdata
+  // FIRRTL-NEXT: connect mem_sram.RW0.wdata, mem.readwritePorts[0].writeData
+  // FIRRTL-NEXT: connect mem_sram.RW0.wmode, mem.readwritePorts[0].isWrite
+  // FIRRTL-NEXT: connect mem_sram.RW0.wmask, UInt<1>(1)
+  // FIRRTL-NEXT: connect mem_sram.RW1.addr, mem.readwritePorts[1].address
+  // FIRRTL-NEXT: connect mem_sram.RW1.clk, clock
+  // FIRRTL-NEXT: connect mem_sram.RW1.en, mem.readwritePorts[1].enable
+  // FIRRTL-NEXT: connect mem.readwritePorts[1].readData, mem_sram.RW1.rdata
+  // FIRRTL-NEXT: connect mem_sram.RW1.wdata, mem.readwritePorts[1].writeData
+  // FIRRTL-NEXT: connect mem_sram.RW1.wmode, mem.readwritePorts[1].isWrite
+  // FIRRTL-NEXT: connect mem_sram.RW1.wmask, UInt<1>(1)
+  // FIRRTL-NEXT: connect mem_sram.RW2.addr, mem.readwritePorts[2].address
+  // FIRRTL-NEXT: connect mem_sram.RW2.clk, clock
+  // FIRRTL-NEXT: connect mem_sram.RW2.en, mem.readwritePorts[2].enable
+  // FIRRTL-NEXT: connect mem.readwritePorts[2].readData, mem_sram.RW2.rdata
+  // FIRRTL-NEXT: connect mem_sram.RW2.wdata, mem.readwritePorts[2].writeData
+  // FIRRTL-NEXT: connect mem_sram.RW2.wmode, mem.readwritePorts[2].isWrite
+  // FIRRTL-NEXT: connect mem_sram.RW2.wmask, UInt<1>(1)
+  val mem = SRAM(1024, UInt(8.W), 2, 2, 3)
+
+  // FIRRTL-NEXT: connect mem.readPorts[0].address, pad(UInt<7>(100), 10)
+  // FIRRTL-NEXT: connect mem.readPorts[0].enable, UInt<1>(1)
+  mem.readPorts(0).address := 100.U
+  mem.readPorts(0).enable := true.B
+
+  // FIRRTL-NEXT: wire foo : UInt<8>
+  // FIRRTL-NEXT: connect foo, mem.readPorts[0].data
+  val foo = WireInit(UInt(8.W), mem.readPorts(0).data)
+
+  // FIRRTL-NEXT: connect mem.writePorts[1].address, pad(UInt<3>(5), 10)
+  // FIRRTL-NEXT: connect mem.writePorts[1].enable, UInt<1>(1)
+  // FIRRTL-NEXT: connect mem.writePorts[1].data, pad(UInt<4>(12), 8)
+  mem.writePorts(1).address := 5.U
+  mem.writePorts(1).enable := true.B
+  mem.writePorts(1).data := 12.U
+
+  // FIRRTL-NEXT: connect mem.readwritePorts[2].address, pad(UInt<3>(5), 10)
+  // FIRRTL-NEXT: connect mem.readwritePorts[2].enable, UInt<1>(1)
+  // FIRRTL-NEXT: connect mem.readwritePorts[2].isWrite, UInt<1>(1)
+  // FIRRTL-NEXT: connect mem.readwritePorts[2].writeData, pad(UInt<7>(100), 8)
+  mem.readwritePorts(2).address := 5.U
+  mem.readwritePorts(2).enable := true.B
+  mem.readwritePorts(2).isWrite := true.B
+  mem.readwritePorts(2).writeData := 100.U
+
+  // FIRRTL-NEXT: connect mem.readwritePorts[2].address, pad(UInt<3>(5), 10)
+  // FIRRTL-NEXT: connect mem.readwritePorts[2].enable, UInt<1>(1)
+  // FIRRTL-NEXT: connect mem.readwritePorts[2].isWrite, UInt<1>(0)
+  mem.readwritePorts(2).address := 5.U
+  mem.readwritePorts(2).enable := true.B
+  mem.readwritePorts(2).isWrite := false.B
+
+  // FIRRTL-NEXT: wire bar : UInt<8>
+  // FIRRTL-NEXT: connect bar, mem.readwritePorts[2].readData
+  val bar = WireInit(UInt(8.W), mem.readwritePorts(2).readData)
+}
+
+println(lit.utility.panamaconverter.firrtlString(new Sram))
 
 // FIRRTL-LABEL: public module WireAndReg :
 // FIRRTL-NEXT:   input clock : Clock
