@@ -6,7 +6,7 @@ import java.io.OutputStream
 import geny.Writable
 import chisel3.panamalib._
 
-import scala.collection.mutable
+import scala.collection.{immutable, mutable}
 import scala.math._
 import firrtl.{ir => fir}
 import chisel3.{Data => ChiselData, _}
@@ -78,33 +78,47 @@ case class WhenContext(op: Op, parent: MlirBlock, var inAlt: Boolean) {
   def block: MlirBlock = op.region(if (!inAlt) 0 else 1).block(0)
 }
 
+class ValueCache {
+  sealed abstract class Storage
+  object Storage {
+    final case class One(storage: MlirValue) extends Storage
+    final case class Seq(storage: immutable.Seq[MlirValue]) extends Storage
+    final case class Map(storage: immutable.Map[String, MlirValue]) extends Storage
+  }
+
+  private val stored = mutable.Map.empty[Long, Storage]
+
+  def clear(): Unit = stored.clear()
+
+  def setOne(id: HasId, value: MlirValue): Unit =
+    stored += ((id._id, Storage.One(value)))
+  def setSeq(id: HasId, value: Seq[MlirValue]): Unit =
+    stored += ((id._id, Storage.Seq(value)))
+  def setMap(id: HasId, value: Map[String, MlirValue]): Unit =
+    stored += ((id._id, Storage.Map(value)))
+
+  def getOne(id: HasId): Option[MlirValue] =
+    stored.get(id._id).map(_.asInstanceOf[Storage.One].storage)
+  def getSeq(id: HasId): Option[Seq[MlirValue]] =
+    stored.get(id._id).map(_.asInstanceOf[Storage.Seq].storage)
+  def getMap(id: HasId): Option[Map[String, MlirValue]] =
+    stored.get(id._id).map(_.asInstanceOf[Storage.Map].storage)
+}
+
 class FirContext {
   var opCircuit: Op = null
   var opModules: Seq[(String, Op)] = Seq.empty
   val whenStack = mutable.Stack.empty[WhenContext]
-
-  // TODO: It's a bit dirty, let's refactor it later
-  val items = mutable.Map.empty[Long, Seq[MlirValue]]
-  val ops = mutable.Map.empty[Long, MlirOperation]
-  def newItem(id:    HasId, value: MlirValue) = items += ((id._id, Seq(value)))
-  def newItemVec(id: HasId, value: Seq[MlirValue]) = items += ((id._id, value))
-  def getItem(id: HasId): Option[MlirValue] = {
-    items
-      .get(id._id)
-      .map(i => {
-        assert(i.length == 1, "item is a vector")
-        i(0)
-      })
-  }
-  def getItemVec(id: HasId): Option[Seq[MlirValue]] = items.get(id._id)
+  val valueCache = new ValueCache
+  val opCache = mutable.Map.empty[Long, MlirOperation]
 
   def enterNewCircuit(newCircuit: Op): Unit = {
-    items.clear()
+    valueCache.clear()
     opCircuit = newCircuit
   }
 
   def enterNewModule(name: String, newModule: Op): Unit = {
-    items.clear()
+    valueCache.clear()
     opModules = opModules :+ (name, newModule)
   }
 
@@ -353,7 +367,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
 
               val value = if (enclosure.name != firCtx.currentModuleName) {
                 // Reference to a port from instance
-                firCtx.getItemVec(enclosure).get(index)
+                firCtx.valueCache.getSeq(enclosure).get(index)
               } else {
                 // Reference to a port from current module
                 circt.mlirBlockGetArgument(firCtx.currentModuleBlock, index)
@@ -386,10 +400,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
         }
 
         def referToValue(data: ChiselData) = Reference.Value(
-          firCtx.getItem(data) match {
-            case Some(value) => value
-            case None        => throw new Exception(s"data $data not found")
-          },
+          firCtx.valueCache.getOne(data).getOrElse(throw new Exception(s"data $data not found")),
           data
         )
 
@@ -445,7 +456,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
                     .results(0)
                 case Reference.BlackBoxIO(enclosure) =>
                   // Look up the field under the instance
-                  firCtx.getItemVec(enclosure).map(_(index)).get
+                  firCtx.valueCache.getSeq(enclosure).map(_(index)).get
               }
               Reference.Value(value, tpe)
             case Reference.SubIndex(index, tpe) =>
@@ -549,7 +560,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
               .withOperand(referTo(probe, srcInfo).value)
           case RWProbeExpr(probe) =>
             circt.mlirOperationSetInherentAttributeByName(
-              firCtx.ops.get(probe.asInstanceOf[Node].id._id).get,
+              firCtx.opCache.get(probe.asInstanceOf[Node].id._id).get,
               "inner_sym",
               circt.hwInnerSymAttrGet(probe.localName)
             )
@@ -608,8 +619,8 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
         .withResult(resultType)
         // .withResult( /* ref */ )
         .build()
-      firCtx.ops += ((id._id, op.op))
-      firCtx.newItem(id, op.results(0))
+      firCtx.opCache += ((id._id, op.op))
+      firCtx.valueCache.setOne(id, op.results(0))
     }
 
     def emitConnect(dest: Reference.Value, srcVal: Reference.Value, loc: MlirLocation): Unit = {
@@ -1010,8 +1021,8 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
       .withResult(util.convert(Converter.extractType(defWire.id, defWire.sourceInfo)))
       // .withResult( /* ref */ )
       .build()
-    firCtx.ops += ((defWire.id._id, op.op))
-    firCtx.newItem(defWire.id, op.results(0))
+    firCtx.opCache += ((defWire.id._id, op.op))
+    firCtx.valueCache.setOne(defWire.id, op.results(0))
   }
 
   def visitDefIntrinsicExpr[T <: ChiselData](defIntrinsicExpr: DefIntrinsicExpr[T]): Unit = {
@@ -1025,8 +1036,8 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
       .withOperands(defIntrinsicExpr.args.map(arg => util.referTo(arg, defIntrinsicExpr.sourceInfo).value))
       .withResult(util.convert(Converter.extractType(defIntrinsicExpr.id, defIntrinsicExpr.sourceInfo)))
       .build()
-    firCtx.ops += ((defIntrinsicExpr.id._id, op.op))
-    firCtx.newItem(defIntrinsicExpr.id, op.results(0))
+    firCtx.opCache += ((defIntrinsicExpr.id._id, op.op))
+    firCtx.valueCache.setOne(defIntrinsicExpr.id, op.results(0))
   }
 
   def visitDefIntrinsic(parent: Component, defIntrinsic: DefIntrinsic): Unit = {
@@ -1097,8 +1108,8 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
       .withResults(ports.types)
       .build()
     val results = op.results
-    firCtx.ops += ((defInstance.id._id, op.op))
-    firCtx.newItemVec(defInstance.id, results)
+    firCtx.opCache += ((defInstance.id._id, op.op))
+    firCtx.valueCache.setSeq(defInstance.id, results)
   }
 
   def visitDefSeqMemory(defSeqMemory: DefSeqMemory): Unit = {
@@ -1124,7 +1135,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
         )
       )
       .build()
-    firCtx.newItem(defSeqMemory.t, op.results(0))
+    firCtx.valueCache.setOne(defSeqMemory.t, op.results(0))
   }
 
   def visitDefMemPort[T <: ChiselData](defMemPort: DefMemPort[T]): Unit = {
@@ -1162,7 +1173,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
       .withOperand( /* clock */ util.referTo(defMemPort.clock, defMemPort.sourceInfo).value)
       .build()
 
-    firCtx.newItem(defMemPort.id, op.results(0))
+    firCtx.valueCache.setOne(defMemPort.id, op.results(0))
   }
 
   def visitDefMemory(defMemory: DefMemory): Unit = {
@@ -1178,7 +1189,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
         )
       )
       .build()
-    firCtx.newItem(defMemory.t, op.results(0))
+    firCtx.valueCache.setOne(defMemory.t, op.results(0))
   }
 
   def visitDefPrim[T <: ChiselData](defPrim: DefPrim[T]): Unit = {
@@ -1528,8 +1539,8 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
       .withOperand( /* clockVal */ util.referTo(defReg.clock, defReg.sourceInfo).value)
       .withResult( /* result */ util.convert(Converter.extractType(defReg.id, defReg.sourceInfo)))
       .build()
-    firCtx.ops += ((defReg.id._id, op.op))
-    firCtx.newItem(defReg.id, op.results(0))
+    firCtx.opCache += ((defReg.id._id, op.op))
+    firCtx.valueCache.setOne(defReg.id, op.results(0))
   }
 
   def visitDefRegInit(defRegInit: DefRegInit): Unit = {
@@ -1544,8 +1555,8 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
       .withOperand( /* init */ util.referTo(defRegInit.init, defRegInit.sourceInfo).value)
       .withResult( /* result */ util.convert(Converter.extractType(defRegInit.id, defRegInit.sourceInfo)))
       .build()
-    firCtx.ops += ((defRegInit.id._id, op.op))
-    firCtx.newItem(defRegInit.id, op.results(0))
+    firCtx.opCache += ((defRegInit.id._id, op.op))
+    firCtx.valueCache.setOne(defRegInit.id, op.results(0))
   }
 
   def visitPrintf(parent: Component, printf: Printf): Unit = {
