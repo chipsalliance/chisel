@@ -4,7 +4,7 @@ package chisel3
 
 import scala.util.Try
 import scala.language.experimental.macros
-import chisel3.experimental.{BaseModule, SourceInfo, UnlocatableSourceInfo}
+import chisel3.experimental.{BaseModule, OpaqueType, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal._
 import chisel3.internal.binding._
 import chisel3.experimental.hierarchy.{InstanceClone, ModuleClone}
@@ -239,6 +239,10 @@ abstract class RawModule extends BaseModule {
       case (false, false)                               =>
         // For non-probe, directly create Nodes for lhs, skipping visibility check to support BoringUtils.drive.
         (left, right) match {
+          case (lhsOpaque: OpaqueType, rhsOpaque: OpaqueType)
+              if DataMirror
+                .isProperty(lhsOpaque.allElements.head) && DataMirror.isProperty(rhsOpaque.allElements.head) =>
+            PropAssign(si, Node(lhsOpaque.allElements.head), Node(rhsOpaque.allElements.head))
           case (_: Property[_], _: Property[_]) => PropAssign(si, Node(left), Node(right))
           // Use `connect lhs, read(probe(rhs))` if lhs is passive version of rhs.
           // This provides solution for this: https://github.com/chipsalliance/chisel/issues/3557
