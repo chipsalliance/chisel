@@ -22,6 +22,7 @@ import chisel3.panamalib.option.FirtoolOptions
 import chisel3.panamaom.PanamaCIRCTOM
 import chisel3.printf.{Printf => VerifPrintf}
 import chisel3.stop.{Stop => VerifStop}
+import chisel3.util._
 
 case class Region(region: MlirRegion, blocks: Seq[MlirBlock]) {
   def get(): MlirRegion = region
@@ -376,24 +377,28 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
           }
         }
 
-        def referToElement(data: ChiselData): Reference = {
+        def referToElement(data: ChiselData): (Reference, ChiselData /* parent */ ) = {
           val tpe = Converter.extractType(data, null)
 
           data.binding.getOrElse(throw new Exception("non-child data")) match {
-            case binding: ChildBinding =>
-              binding.parent match {
+            case ChildBinding(parent) =>
+              parent match {
                 case vec: Vec[_] =>
                   data.getRef match {
-                    case LitIndex(_, index)    => Reference.SubIndex(index, tpe)
-                    case Index(_, ILit(index)) => Reference.SubIndex(index.toInt, tpe)
+                    case LitIndex(_, index)    => (Reference.SubIndex(index, tpe), parent)
+                    case Index(_, ILit(index)) => (Reference.SubIndex(index.toInt, tpe), parent)
                     case Index(_, dynamicIndex) =>
                       val index = referTo(dynamicIndex, srcInfo)
-                      Reference.SubIndexDynamic(index.value, tpe)
+                      (Reference.SubIndexDynamic(index.value, tpe), parent)
                   }
                 case record: Record =>
-                  val index = record.elements.size - record.elements.values.iterator.indexOf(data) - 1
-                  assert(index >= 0, s"can't find field '$data'")
-                  Reference.SubField(index, tpe)
+                  if (!record._isOpaqueType) {
+                    val index = record.elements.size - record.elements.values.iterator.indexOf(data) - 1
+                    assert(index >= 0, s"can't find field '$data'")
+                    (Reference.SubField(index, tpe), parent)
+                  } else {
+                    referToElement(record)
+                  }
               }
             case _ => throw new Exception("non-child data")
           }
@@ -404,18 +409,30 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
           data
         )
 
+        def referToSramPort(data: ChiselData): Reference = {
+          val dataRef = data.getRef.asInstanceOf[Slot]
+          val sramTarget = dataRef.imm.asInstanceOf[Node].id
+          val value = firCtx.valueCache.getMap(sramTarget).get(dataRef.name)
+          Reference.Value(value, data)
+        }
+
         id match {
           case module: BaseModule => chain
           case data:   ChiselData =>
             data.binding.getOrElse(throw new Exception("unbound data")) match {
-              case PortBinding(enclosure)                   => rec(enclosure, chain :+ referToPort(data, enclosure))
-              case ChildBinding(parent)                     => rec(parent, chain :+ referToElement(data))
-              case SampleElementBinding(parent)             => rec(parent, chain :+ referToElement(data))
+              case PortBinding(enclosure) => rec(enclosure, chain :+ referToPort(data, enclosure))
+              case ChildBinding(_) =>
+                val (refered, parent) = referToElement(data)
+                rec(parent, chain :+ refered)
+              case SampleElementBinding(_) =>
+                val (refered, parent) = referToElement(data)
+                rec(parent, chain :+ refered)
               case MemoryPortBinding(enclosure, visibility) => rec(enclosure, chain :+ referToValue(data))
               case WireBinding(enclosure, visibility)       => rec(enclosure, chain :+ referToValue(data))
               case OpBinding(enclosure, visibility)         => rec(enclosure, chain :+ referToValue(data))
               case RegBinding(enclosure, visibility)        => rec(enclosure, chain :+ referToValue(data))
               case SecretPortBinding(enclosure)             => rec(enclosure, chain :+ referToPort(data, enclosure))
+              case SramPortBinding(enclosure, visibility)   => rec(enclosure, chain :+ referToSramPort(data))
               case unhandled                                => throw new Exception(s"unhandled binding $unhandled")
             }
           case mem:  Mem[ChiselData]         => chain :+ referToValue(mem.t)
@@ -848,6 +865,49 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
           }
       }
     }
+
+    sealed trait PortKind
+    object PortKind {
+      final case object Read extends PortKind
+      final case object Write extends PortKind
+      final case object ReadWrite extends PortKind
+    }
+
+    def getAddressWidth(depth: BigInt): Int = {
+      // A better solution for performance?
+      max(1, if (depth == 0) 64 else math.ceil(math.log(depth.toDouble) / math.log(2)).toInt)
+    }
+
+    def getTypeForMemPort(depth: BigInt, dataFirType: fir.Type, portKind: PortKind, maskBits: Int = 0): MlirType = {
+      val dataType = convert(dataFirType)
+      val maskType = if (maskBits == 0) {
+        circt.firrtlTypeGetMaskType(dataType)
+      } else {
+        circt.firrtlTypeGetUInt(maskBits)
+      }
+
+      val portFields = Seq(
+        new FIRRTLBundleField("addr", false, circt.firrtlTypeGetUInt(getAddressWidth(depth))),
+        new FIRRTLBundleField("en", false, circt.firrtlTypeGetUInt(1)),
+        new FIRRTLBundleField("clk", false, circt.firrtlTypeGetClock())
+      ) ++ (portKind match {
+        case PortKind.Read => Seq(new FIRRTLBundleField("data", true, dataType))
+        case PortKind.Write =>
+          Seq(
+            new FIRRTLBundleField("data", false, dataType),
+            new FIRRTLBundleField("mask", false, maskType)
+          )
+        case PortKind.ReadWrite =>
+          Seq(
+            new FIRRTLBundleField("rdata", true, dataType),
+            new FIRRTLBundleField("wmode", false, circt.firrtlTypeGetUInt(1)),
+            new FIRRTLBundleField("wdata", false, dataType),
+            new FIRRTLBundleField("wmask", false, maskType)
+          )
+      })
+
+      circt.firrtlTypeGetBundle(portFields)
+    }
   }
 
   val mlirStream = new Writable {
@@ -1120,9 +1180,9 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
       .withNamedAttr(
         "ruw",
         circt.firrtlAttrGetRUW(defSeqMemory.readUnderWrite match {
-          case fir.ReadUnderWrite.Undefined => firrtlAttrGetRUW.Undefined
-          case fir.ReadUnderWrite.Old       => firrtlAttrGetRUW.Old
-          case fir.ReadUnderWrite.New       => firrtlAttrGetRUW.New
+          case fir.ReadUnderWrite.Undefined => FIRRTLRUW.Undefined
+          case fir.ReadUnderWrite.Old       => FIRRTLRUW.Old
+          case fir.ReadUnderWrite.New       => FIRRTLRUW.New
         })
       )
       .withNamedAttr("name", circt.mlirStringAttrGet(name))
@@ -1190,6 +1250,36 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
       )
       .build()
     firCtx.valueCache.setOne(defMemory.t, op.results(0))
+  }
+
+  def visitFirrtlMemory(firrtlMemory: FirrtlMemory): Unit = {
+    val dataType = Converter.extractType(firrtlMemory.t, firrtlMemory.sourceInfo)
+    val ports = firrtlMemory.readPortNames.map(r =>
+      (r, util.getTypeForMemPort(firrtlMemory.size, dataType, util.PortKind.Read))
+    ) ++
+      firrtlMemory.writePortNames.map(w =>
+        (w, util.getTypeForMemPort(firrtlMemory.size, dataType, util.PortKind.Write))
+      ) ++
+      firrtlMemory.readwritePortNames.map(rw =>
+        (rw, util.getTypeForMemPort(firrtlMemory.size, dataType, util.PortKind.ReadWrite))
+      )
+
+    val op = util
+      .OpBuilder("firrtl.mem", firCtx.currentBlock, util.convert(firrtlMemory.sourceInfo))
+      .withNamedAttr("readLatency", circt.mlirIntegerAttrGet(circt.mlirIntegerTypeGet(32), 1))
+      .withNamedAttr("writeLatency", circt.mlirIntegerAttrGet(circt.mlirIntegerTypeGet(32), 1))
+      .withNamedAttr("depth", circt.mlirIntegerAttrGet(circt.mlirIntegerTypeGet(64), firrtlMemory.size.toLong))
+      .withNamedAttr("ruw", circt.firrtlAttrGetRUW(FIRRTLRUW.Undefined))
+      .withNamedAttr("portNames", circt.mlirArrayAttrGet(ports.map { case (name, _) => circt.mlirStringAttrGet(name) }))
+      .withNamedAttr("name", circt.mlirStringAttrGet(Converter.getRef(firrtlMemory.id, firrtlMemory.sourceInfo).name))
+      .withNamedAttr("nameKind", circt.firrtlAttrGetNameKind(FIRRTLNameKind.InterestingName))
+      .withNamedAttr("annotations", circt.emptyArrayAttr)
+      .withNamedAttr("portAnnotations", circt.emptyArrayAttr)
+      .withResults(ports.map { case (_, tpe) => tpe })
+      .build()
+    val results = ports.zip(op.results).map { case ((name, _), result) => name -> result }.toMap
+    firCtx.opCache += ((firrtlMemory.id._id, op.op))
+    firCtx.valueCache.setMap(firrtlMemory.id, results)
   }
 
   def visitDefPrim[T <: ChiselData](defPrim: DefPrim[T]): Unit = {
@@ -1748,6 +1838,7 @@ object PanamaCIRCTConverter {
       case defInstance:         DefInstance                  => visitDefInstance(defInstance)
       case defMemPort:          DefMemPort[ChiselData]       => visitDefMemPort(defMemPort)
       case defMemory:           DefMemory                    => visitDefMemory(defMemory)
+      case firrtlMemory:        FirrtlMemory                 => visitFirrtlMemory(firrtlMemory)
       case defPrim:             DefPrim[ChiselData]          => visitDefPrim(defPrim)
       case defReg:              DefReg                       => visitDefReg(defReg)
       case defRegInit:          DefRegInit                   => visitDefRegInit(defRegInit)
@@ -1817,6 +1908,9 @@ object PanamaCIRCTConverter {
   }
   def visitDefMemory(defMemory: DefMemory)(implicit cvt: PanamaCIRCTConverter): Unit = {
     cvt.visitDefMemory(defMemory)
+  }
+  def visitFirrtlMemory(firrtlMemory: FirrtlMemory)(implicit cvt: PanamaCIRCTConverter): Unit = {
+    cvt.visitFirrtlMemory(firrtlMemory)
   }
   def visitDefPrim[T <: ChiselData](defPrim: DefPrim[T])(implicit cvt: PanamaCIRCTConverter): Unit = {
     cvt.visitDefPrim(defPrim)
