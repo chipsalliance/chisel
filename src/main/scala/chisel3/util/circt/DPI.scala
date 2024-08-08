@@ -119,8 +119,24 @@ trait DPIFunctionImport {
   def inputNames: Option[Seq[String]] = None
 }
 
-// Base trait for a non-void function that returns `T`.
 trait DPINonVoidFunctionImport[T <: Data] extends DPIFunctionImport {
+  /**  Base trait for a non-void function that returns `T`.
+    *
+    * @tparam T Return type
+    * @see Please refer [[https://www.chisel-lang.org/docs/explanations/dpi]] for more detail.
+    * @example {{{
+    * object Add extends DPINonVoidFunctionImport[UInt] {
+    *   override val functionName = "add"
+    *   override val ret = UInt(32.W)
+    *   override val clocked = false
+    *   override val inputNames = Some(Seq("lhs", "rhs"))
+    *   override val outputName = Some("result")
+    *   final def apply(lhs: UInt, rhs: UInt): UInt = super.call(lhs, rhs)
+    * }
+    *
+    * Add(a, b) // call a native `add` function.
+    * }}}
+    */
   def ret:     T
   def clocked: Boolean
   def outputName: Option[String] = None
@@ -133,8 +149,21 @@ trait DPINonVoidFunctionImport[T <: Data] extends DPIFunctionImport {
   final def call(data: Data*): T = callWithEnable(true.B, data: _*)
 }
 
-// Base trait for a clocked void function.
-trait DPIClockedVoidFunctionImport extends DPIFunctionImport {
+trait DPIVoidFunctionImport extends DPIFunctionImport {
+  /**  Base trait for a void function.
+    *
+    * @see Please refer [[https://www.chisel-lang.org/docs/explanations/dpi]] for more detail.
+    * @example {{{
+    * object Hello extends DPIVoidFunctionImport {
+    *   override val functionName = "hello"
+    *   override val clocked = true
+    *   final def apply() = super.call()
+    * }
+    *
+    * Hello() // call a native `hello` function.
+    * }}}
+    */
+  def clocked: Boolean
   final def callWithEnable(enable: Bool, data: Data*): Unit =
     RawClockedVoidFunctionCall(functionName, inputNames)(Module.clock, enable, data: _*)
   final def call(data: Data*): Unit = callWithEnable(true.B, data: _*)
