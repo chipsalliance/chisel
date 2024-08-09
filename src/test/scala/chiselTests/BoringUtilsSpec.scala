@@ -408,6 +408,44 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
     )()
   }
 
+  it should "bore from nested opaque types that wrap a Property" in {
+    class MyOpaqueProperty extends Record with OpaqueType {
+      private val underlying = Property[Int]()
+      val elements = scala.collection.immutable.SeqMap("" -> underlying)
+      override protected def errorOnAsUInt = true
+    }
+
+    class MyOuterOpaque extends Record with OpaqueType {
+      private val underlying = new MyOpaqueProperty
+      val elements = scala.collection.immutable.SeqMap("" -> underlying)
+      override protected def errorOnAsUInt = true
+    }
+
+    class Baz extends RawModule {
+      val a = IO(Output(new MyOpaqueProperty))
+    }
+
+    class Bar extends RawModule {
+      val baz = Module(new Baz)
+    }
+
+    class Foo extends RawModule {
+      val a = IO(Output(new MyOpaqueProperty))
+
+      val bar = Module(new Bar)
+
+      a := BoringUtils.bore(bar.baz.a)
+    }
+
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Foo)
+
+    matchesAndOmits(chirrtl)(
+      "output a_bore : Integer",
+      "propassign a_bore, baz.a",
+      "propassign a_bore, bar.a_bore"
+    )()
+  }
+
   behavior.of("BoringUtils.drive")
 
   it should "fail on probes" in {
