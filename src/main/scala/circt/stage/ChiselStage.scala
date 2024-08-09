@@ -15,7 +15,7 @@ import firrtl.EmittedBtor2CircuitAnnotation
   *
   * @note The companion object, [[ChiselStage$]], has a cleaner API for compiling and returning a string.
   */
-class ChiselStage extends Stage {
+class ChiselStage(withDebug: Boolean = false) extends Stage {
 
   override def prerequisites = Seq.empty
   override def optionalPrerequisites = Seq.empty
@@ -29,18 +29,24 @@ class ChiselStage extends Stage {
 
   override def run(annotations: AnnotationSeq): AnnotationSeq = {
 
-    val pm = new PhaseManager(
-      targets = Seq(
-        Dependency[chisel3.stage.phases.AddImplicitOutputFile],
-        Dependency[chisel3.stage.phases.AddImplicitOutputAnnotationFile],
-        Dependency[chisel3.stage.phases.MaybeAspectPhase],
-        Dependency[chisel3.stage.phases.AddSerializationAnnotations],
+    val targets = Seq(
+      Dependency[chisel3.stage.phases.AddImplicitOutputFile],
+      Dependency[chisel3.stage.phases.AddImplicitOutputAnnotationFile],
+      Dependency[chisel3.stage.phases.MaybeAspectPhase],
+      Dependency[chisel3.stage.phases.AddSerializationAnnotations]
+    ) ++
+      // TODO: make this working only if Tywaves is enabled
+      (if (withDebug) Seq(Dependency[chisel3.stage.phases.AddTywavesAnnotations]) else Seq.empty) ++
+      Seq(
         Dependency[chisel3.stage.phases.Convert],
         Dependency[chisel3.stage.phases.AddDedupGroupAnnotations],
         Dependency[chisel3.stage.phases.MaybeInjectingPhase],
         Dependency[circt.stage.phases.AddImplicitOutputFile],
         Dependency[circt.stage.phases.CIRCT]
-      ),
+      )
+
+    val pm = new PhaseManager(
+      targets = targets,
       currentState = Seq(
         Dependency[firrtl.stage.phases.AddDefaults],
         Dependency[firrtl.stage.phases.Checks]
