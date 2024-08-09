@@ -9,6 +9,8 @@ import mill.contrib.jmh.JmhModule
 import $file.common
 import $file.tests
 
+import common.Platform
+
 object v {
   val pluginScalaCrossVersions = Seq(
     "2.13.11",
@@ -36,6 +38,14 @@ object v {
   def scalaCompiler(scalaVersion: String) = ivy"org.scala-lang:scala-compiler:$scalaVersion"
 
   def scalaLibrary(scalaVersion: String) = ivy"org.scala-lang:scala-library:$scalaVersion"
+}
+
+object utils extends Module {
+  def firtoolVersion = T {
+    val contents = os.read(millSourcePath / os.up / "etc" / "circt.json")
+    val read = upickle.default.read[Map[String, String]](contents)
+    read("version").stripPrefix("firtool-")
+  }
 }
 
 object firrtl extends Cross[Firrtl](v.scalaCrossVersions)
@@ -100,17 +110,11 @@ trait Core extends common.CoreModule with ChiselPublishModule with CrossSbtModul
 
   def firtoolResolverModuleIvy = v.firtoolResolver
 
-  def firtoolVersion = T {
-    val contents = os.read(millSourcePath / os.up / "etc" / "circt.json")
-    val read = upickle.default.read[Map[String, String]](contents)
-    read("version").stripPrefix("firtool-")
-  }
-
   def buildVersion = T("build-from-source")
 
   private def generateBuildInfo = T {
     val outputFile = T.dest / "chisel3" / "BuildInfo.scala"
-    val firtoolVersionString = "Some(\"" + firtoolVersion() + "\")"
+    val firtoolVersionString = "Some(\"" + utils.firtoolVersion() + "\")"
     val contents =
       s"""
          |package chisel3
@@ -203,13 +207,84 @@ trait ChiselPublishModule extends PublishModule {
   def publishVersion = "5.0-SNAPSHOT"
 }
 
-object circtpanamabinding extends CIRCTPanamaBinding
+object jextract extends Module {
+
+  def platformName = Platform.getPlatform() match {
+    case Platform.Linux => "linux"
+    case Platform.Macos => "macos"
+  }
+
+  def downloadUrl =
+    s"https://download.java.net/java/early_access/jextract/21/1/openjdk-21-jextract+1-2_$platformName-x64_bin.tar.gz"
+
+  def tarball: T[os.Path] = T {
+    def tarballName = "jextract.tar.gz"
+    def path = T.dest
+
+    val file = T.dest / tarballName
+    os.write(file, requests.get.stream(downloadUrl))
+    file
+  }
+
+  def extracted: T[os.Path] = T {
+    os.makeDir.all(T.dest)
+    os.proc("tar", "zxf", tarball(), "--strip-components=1")
+      .call(cwd = T.dest)
+    T.dest
+  }
+
+  def bin: T[os.Path] = T {
+    extracted() / "bin" / "jextract"
+  }
+}
+
+object circt extends Module {
+
+  def platformName = Platform.getPlatform() match {
+    case Platform.Linux => "linux"
+    case Platform.Macos => "macos"
+  }
+
+  def downloadUrl = T {
+    s"https://github.com/llvm/circt/releases/download/firtool-${utils.firtoolVersion()}/circt-full-shared-$platformName-x64.tar.gz"
+  }
+
+  def tarball: T[os.Path] = T {
+    def tarballName = "circt-full-shared.tar.gz"
+    def path = T.dest
+
+    val file = T.dest / tarballName
+    os.write(file, requests.get.stream(downloadUrl()))
+    file
+  }
+
+  def extracted: T[os.Path] = T {
+    os.makeDir.all(T.dest)
+    os.proc("tar", "zxf", tarball(), "--strip-components=1")
+      .call(cwd = T.dest)
+    T.dest
+  }
+}
+
+object circtpanamabinding extends CIRCTPanamaBinding {
+  def jextractBinary: T[String] = T.input {
+    T.ctx().env.get("JEXTRACT_BINARY") match {
+      case Some(bin) => bin
+      case None      => jextract.bin().toString
+    }
+  }
+}
 
 trait CIRCTPanamaBinding extends common.CIRCTPanamaBindingModule with ChiselPublishModule {
 
   def header = T(PathRef(millSourcePath / "jextract-headers.h"))
 
-  def circtInstallPath = T.input(os.Path(T.ctx().env.get("CIRCT_INSTALL_PATH").getOrElse("/usr/local")))
+  def circtInstallPath = T.input {
+    T.ctx().env.get("CIRCT_INSTALL_PATH") match {
+      case Some(dir) => os.Path(dir)
+      case None      => circt.extracted()
+    }
+  }
 
   def includePaths = T(Seq(PathRef(circtInstallPath() / "include")))
 

@@ -1,6 +1,20 @@
 import mill._
 import mill.scalalib._
 
+sealed trait Platform
+object Platform {
+  case object Linux extends Platform
+  case object Macos extends Platform
+
+  def getPlatform(): Platform = {
+    val osName = System.getProperty("os.name")
+    val name = osName.toLowerCase
+    if (name.startsWith("mac")) Macos
+    else if (name.startsWith("linux")) Linux
+    else throw new Exception(s"Unknown platform: $osName")
+  }
+}
+
 trait HasMacroAnnotations extends ScalaModule {
 
   override def scalacOptions = T {
@@ -101,6 +115,9 @@ trait HasChisel extends ScalaModule with HasChiselPlugin {
 }
 
 trait HasJextractGeneratedSources extends JavaModule {
+
+  def jextractBinary: T[String]
+
   def includePaths: T[Seq[PathRef]]
 
   def libraryPaths: T[Seq[PathRef]]
@@ -128,7 +145,7 @@ trait HasJextractGeneratedSources extends JavaModule {
   def dumpAllIncludes = T {
     val f = os.temp()
     os.proc(
-      Seq("jextract", header().path.toString)
+      Seq(jextractBinary(), header().path.toString)
         ++ includePaths().flatMap(p => Seq("-I", p.path.toString))
         ++ Seq("--dump-includes", f.toString)
     ).call()
@@ -139,7 +156,7 @@ trait HasJextractGeneratedSources extends JavaModule {
     super.generatedSources() ++ {
       // @formatter:off
       os.proc(
-        Seq("jextract", header().path.toString)
+        Seq(jextractBinary(), header().path.toString)
           ++ includePaths().flatMap(p => Seq("-I", p.path.toString))
           ++ Seq(
           "-t", target(),
