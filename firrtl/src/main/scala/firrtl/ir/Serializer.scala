@@ -526,6 +526,36 @@ object Serializer {
       Iterator(Indent * indent, other.serialize) // Handle user-defined nodes
   }
 
+  private def s(layer: Layer)(implicit b: StringBuilder, indent: Int): Unit = {
+    newLineAndIndent()
+    b ++= "layer "
+    b ++= layer.name
+    b ++= ", "
+    layer.config match {
+      case LayerConfig.Extract(outputDir) =>
+        b ++= "bind"
+        outputDir match {
+          case Some(d) =>
+            b ++= ", "
+            quote(d)
+          case None => ()
+        }
+      case LayerConfig.Inline =>
+        b ++= "inline"
+    }
+    b ++= " :"
+    s(layer.info)
+    layer.body.foreach(s(_)(b, indent + 1))
+  }
+
+  private def sIt(layers: Seq[Layer])(implicit indent: Int): Iterator[String] = {
+    if (layers.nonEmpty) {
+      implicit val b = new StringBuilder
+      layers.foreach(s)
+      Iterator(b.toString)
+    } else Iterator.empty
+  }
+
   private def sIt(node: Circuit)(implicit indent: Int): Iterator[String] =
     sIt(CircuitWithAnnos(node, Nil))
 
@@ -563,22 +593,7 @@ object Serializer {
       b ++= s"${NewLine}"
       Iterator(b.toString)
     } else Iterator.empty
-    val layers = if (circuit.layers.nonEmpty) {
-      implicit val b = new StringBuilder
-      def layerIt(layer: Layer)(implicit indent: Int): Unit = {
-        b ++= s"${NewLine}"
-        doIndent()
-        b ++= s"layer ${layer.name}, ${layer.convention}"
-        for (d <- layer.outputDir) {
-          b ++= ", \"" ++ d ++ "\""
-        }
-        b ++= " :"
-        s(layer.info)
-        layer.body.foreach(layerIt(_)(indent + 1))
-      }
-      circuit.layers.foreach(layerIt(_)(1))
-      Iterator(b.toString)
-    } else Iterator.empty
+    val layers = sIt(circuit.layers)(indent + 1)
     prelude ++
       options ++
       typeAliases ++
@@ -636,5 +651,12 @@ object Serializer {
       b ++= it.next().toString()
       if (it.hasNext) b ++= sep
     }
+  }
+
+  /** Serialize the given text as a "quoted" string. */
+  private def quote(text: String)(implicit b: StringBuilder): Unit = {
+    b ++= "\""
+    b ++= text
+    b ++= "\""
   }
 }

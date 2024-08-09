@@ -45,10 +45,10 @@ object TypeEquivalenceSpec {
     val maybeProbe = if (useProbe) Probe(Bool()) else Bool()
   }
 
-  object Red extends Layer(layer.Convention.Bind) {
+  object Red extends Layer(layer.LayerConfig.Extract()) {
     override def toString = "Red"
   }
-  object Green extends Layer(layer.Convention.Bind) {
+  object Green extends Layer(layer.LayerConfig.Extract()) {
     override def toString = "Green"
   }
 

@@ -428,22 +428,26 @@ case class ProbeRelease(info: Info, clock: Expression, cond: Expression, probe: 
     extends Statement
     with UseSerializer
 
-object LayerConvention {
-  sealed trait Type
-  case object Bind extends Type {
-    override def toString: String = "bind"
+sealed abstract class LayerConfig
+object LayerConfig {
+  final case class Extract(outputDir: Option[String]) extends LayerConfig
+  final case object Inline extends LayerConfig
+}
+
+final case class Layer(
+  info:   Info,
+  name:   String,
+  config: LayerConfig,
+  body:   Seq[Layer])
+    extends FirrtlNode
+    with IsDeclaration
+    with UseSerializer {
+  def outputDir: Option[String] = config match {
+    case LayerConfig.Extract(outputDir) => outputDir
+    case _                              => None
   }
 }
 
-case class Layer(
-  info:       Info,
-  name:       String,
-  convention: LayerConvention.Type,
-  outputDir:  Option[String],
-  body:       Seq[Layer])
-    extends FirrtlNode
-    with IsDeclaration
-    with UseSerializer
 case class LayerBlock(info: Info, layer: String, body: Statement) extends Statement with UseSerializer
 
 // option and case

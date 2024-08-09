@@ -6,7 +6,7 @@ section: "chisel3"
 
 # Layers
 
-Layers are used to describe optional functionality of a Chisel circuit that a
+Layers are used to describe functionality of a Chisel circuit or module that a
 user would like to _optionally_ include at Verilog elaboration time.  This
 feature is intended to be used to optionally include verification or debug logic
 that a user does not want to always have present.
@@ -16,24 +16,31 @@ Each layer is broken into two pieces:
 1. A layer _declaration_
 1. One or more _layer blocks_ inside modules in the circuit
 
-A layer indicates that optional functionality may exist in a Chisel circuit.
-Layers may be nested.  Layers specify the _convention_ that they use when
-lowering to Verilog.
+There are two kinds of layers, each kind is lowered to verilog under a different
+_convention_. The kinds of layers are:
 
-To declare a layer, extend the `chisel3.layer.Layer` abstract class and specify
-a convention.  To declare a nested layer, extend the `chisel3.layer.Layer`
-abstract class inside another declaration.
+1. "Extract" Layers: layers whose blocks are lowered to bound-in modules, and
+2. "Inline" Layers: layers whose blocks are lowered to ifdefs macros.
+
+To declare a layer, create a singleton `object` in scala that extends the
+
+extend the abstract class `chisel3.layer.Layer`, passing into the layer
+constructor either `chisel3.layer.LayerConfig.Extract()` for an "extract" layer,
+or `chisel3.layer.LayerConfig.Inline` for "inline" layers.
+
+Layers may be nested. To declare a nested layer, extend the
+`chisel3.layer.Layer` abstract class inside another declaration.
 
 The following example declares four layers:
 
 ```scala mdoc:silent
-import chisel3.layer.{Convention, Layer}
+import chisel3.layer.{Layer, LayerConfig}
 
-object A extends Layer(Convention.Bind) {
-  object B extends Layer(Convention.Bind) {
-    object C extends Layer(Convention.Bind)
+object A extends Layer(LayerConfig.Extract()) {
+  object B extends Layer(LayerConfig.Extract()) {
+    object C extends Layer(LayerConfig.Extract())
   }
-  object D extends Layer(Convention.Bind)
+  object D extends Layer(LayerConfig.Extract())
 }
 ```
 
@@ -104,13 +111,13 @@ One way to write this in Scala is the following:
 
 ```scala mdoc:reset:silent
 import chisel3._
-import chisel3.layer.{Convention, Layer, block}
+import chisel3.layer.{Layer, LayerConfig, block}
 
 // All layers are declared here.  The Assert and Debug layers are nested under
 // the Verification layer.
-object Verification extends Layer(Convention.Bind) {
-  object Assert extends Layer(Convention.Bind)
-  object Debug extends Layer(Convention.Bind)
+object Verification extends Layer(LayerConfig.Extract()) {
+  object Assert extends Layer(LayerConfig.Extract())
+  object Debug extends Layer(LayerConfig.Extract())
 }
 
 class Foo extends Module {

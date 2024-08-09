@@ -14,11 +14,20 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
 
   val sep: String = FileSystems.getDefault().getSeparator()
 
-  object A extends layer.Layer(layer.Convention.Bind) {
-    object B extends layer.Layer(layer.Convention.Bind)
+  def bindLayer(name: String, dirs: List[String]): String = {
+    val dirsStr = if (dirs.nonEmpty) s""", "${dirs.mkString(sep)}"""" else ""
+    s"layer $name, bind$dirsStr :"
   }
 
-  object C extends layer.Layer(layer.Convention.Bind)
+  def inlineLayer(name: String): String = {
+    s"layer $name, inline :"
+  }
+
+  object A extends layer.Layer(layer.LayerConfig.Extract()) {
+    object B extends layer.Layer(layer.LayerConfig.Extract())
+  }
+
+  object C extends layer.Layer(layer.LayerConfig.Extract())
 
   "Layers" should "allow for creation of a layer and nested layers" in {
 
@@ -156,26 +165,26 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
   }
 
   they should "emit the output directory when present" in {
-    object LayerWithDefaultOutputDir extends layer.Layer(layer.Convention.Bind) {
-      object SublayerWithDefaultOutputDir extends layer.Layer(layer.Convention.Bind) {}
+    object LayerWithDefaultOutputDir extends layer.Layer(layer.LayerConfig.Extract()) {
+      object SublayerWithDefaultOutputDir extends layer.Layer(layer.LayerConfig.Extract()) {}
       object SublayerWithCustomOutputDir
-          extends layer.Layer(layer.Convention.Bind, layer.CustomOutputDir(Paths.get("myOtherOutputDir"))) {}
-      object SublayerWithNoOutputDir extends layer.Layer(layer.Convention.Bind, layer.NoOutputDir) {}
+          extends layer.Layer(layer.LayerConfig.Extract(layer.CustomOutputDir(Paths.get("myOtherOutputDir")))) {}
+      object SublayerWithNoOutputDir extends layer.Layer(layer.LayerConfig.Extract(layer.NoOutputDir)) {}
     }
 
     object LayerWithCustomOutputDir
-        extends layer.Layer(layer.Convention.Bind, layer.CustomOutputDir(Paths.get("myOutputDir"))) {
-      object SublayerWithDefaultOutputDir extends layer.Layer(layer.Convention.Bind) {}
+        extends layer.Layer(layer.LayerConfig.Extract(layer.CustomOutputDir(Paths.get("myOutputDir")))) {
+      object SublayerWithDefaultOutputDir extends layer.Layer(layer.LayerConfig.Extract()) {}
       object SublayerWithCustomOutputDir
-          extends layer.Layer(layer.Convention.Bind, layer.CustomOutputDir(Paths.get("myOtherOutputDir"))) {}
-      object SublayerWithNoOutputDir extends layer.Layer(layer.Convention.Bind, layer.NoOutputDir) {}
+          extends layer.Layer(layer.LayerConfig.Extract(layer.CustomOutputDir(Paths.get("myOtherOutputDir")))) {}
+      object SublayerWithNoOutputDir extends layer.Layer(layer.LayerConfig.Extract(layer.NoOutputDir)) {}
     }
 
-    object LayerWithNoOutputDir extends layer.Layer(layer.Convention.Bind, layer.NoOutputDir) {
-      object SublayerWithDefaultOutputDir extends layer.Layer(layer.Convention.Bind) {}
+    object LayerWithNoOutputDir extends layer.Layer(layer.LayerConfig.Extract(layer.NoOutputDir)) {
+      object SublayerWithDefaultOutputDir extends layer.Layer(layer.LayerConfig.Extract()) {}
       object SublayerWithCustomOutputDir
-          extends layer.Layer(layer.Convention.Bind, layer.CustomOutputDir(Paths.get("myOtherOutputDir"))) {}
-      object SublayerWithNoOutputDir extends layer.Layer(layer.Convention.Bind, layer.NoOutputDir) {}
+          extends layer.Layer(layer.LayerConfig.Extract(layer.CustomOutputDir(Paths.get("myOtherOutputDir")))) {}
+      object SublayerWithNoOutputDir extends layer.Layer(layer.LayerConfig.Extract(layer.NoOutputDir)) {}
     }
 
     class Foo extends RawModule {
@@ -205,18 +214,18 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
 
     val text = ChiselStage.emitCHIRRTL(new Foo)
     matchesAndOmits(text)(
-      decl("LayerWithDefaultOutputDir", List("LayerWithDefaultOutputDir")),
-      decl("SublayerWithDefaultOutputDir", List("LayerWithDefaultOutputDir", "SublayerWithDefaultOutputDir")),
-      decl("SublayerWithCustomOutputDir", List("myOtherOutputDir")),
-      decl("SublayerWithNoOutputDir", List()),
-      decl("LayerWithCustomOutputDir", List("myOutputDir")),
-      decl("SublayerWithDefaultOutputDir", List("myOutputDir", "SublayerWithDefaultOutputDir")),
-      decl("SublayerWithCustomOutputDir", List("myOtherOutputDir")),
-      decl("SublayerWithNoOutputDir", List()),
-      decl("LayerWithNoOutputDir", List()),
-      decl("SublayerWithDefaultOutputDir", List("SublayerWithDefaultOutputDir")),
-      decl("SublayerWithCustomOutputDir", List("myOtherOutputDir")),
-      decl("SublayerWithNoOutputDir", List())
+      bindLayer("LayerWithDefaultOutputDir", List("LayerWithDefaultOutputDir")),
+      bindLayer("SublayerWithDefaultOutputDir", List("LayerWithDefaultOutputDir", "SublayerWithDefaultOutputDir")),
+      bindLayer("SublayerWithCustomOutputDir", List("myOtherOutputDir")),
+      bindLayer("SublayerWithNoOutputDir", List()),
+      bindLayer("LayerWithCustomOutputDir", List("myOutputDir")),
+      bindLayer("SublayerWithDefaultOutputDir", List("myOutputDir", "SublayerWithDefaultOutputDir")),
+      bindLayer("SublayerWithCustomOutputDir", List("myOtherOutputDir")),
+      bindLayer("SublayerWithNoOutputDir", List()),
+      bindLayer("LayerWithNoOutputDir", List()),
+      bindLayer("SublayerWithDefaultOutputDir", List("SublayerWithDefaultOutputDir")),
+      bindLayer("SublayerWithCustomOutputDir", List("myOtherOutputDir")),
+      bindLayer("SublayerWithNoOutputDir", List())
     )()
   }
 
@@ -250,4 +259,73 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
     )
   }
 
+  "Inline layers" should "generated expected FIRRTL" in {
+    object A extends layer.Layer(layer.LayerConfig.Inline) {
+      object B extends layer.Layer(layer.LayerConfig.Inline)
+    }
+
+    class Foo extends RawModule {
+      layer.block(A) {
+        layer.block(A.B) {}
+      }
+    }
+
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Foo))(
+      "layer A, inline :",
+      "layer B, inline :"
+    )()
+  }
+
+  "Inline layers" should "be ignored when choosing default output directories" in {
+    object LayerWithDefaultOutputDir extends layer.Layer(layer.LayerConfig.Extract()) {
+      object InlineSublayer extends layer.Layer(layer.LayerConfig.Inline) {
+        object SublayerWithDefaultOutputDir extends layer.Layer(layer.LayerConfig.Extract()) {}
+      }
+    }
+
+    object LayerWithCustomOutputDir
+        extends layer.Layer(layer.LayerConfig.Extract(layer.CustomOutputDir(Paths.get("myOutputDir")))) {
+      object InlineSublayer extends layer.Layer(layer.LayerConfig.Inline) {
+        object SublayerWithDefaultOutputDir extends layer.Layer(layer.LayerConfig.Extract()) {}
+      }
+    }
+
+    object LayerWithNoOutputDir extends layer.Layer(layer.LayerConfig.Extract(layer.NoOutputDir)) {
+      object InlineSublayer extends layer.Layer(layer.LayerConfig.Inline) {
+        object SublayerWithDefaultOutputDir extends layer.Layer(layer.LayerConfig.Extract()) {}
+      }
+    }
+
+    class Foo extends RawModule {
+      layer.block(LayerWithDefaultOutputDir) {
+        layer.block(LayerWithDefaultOutputDir.InlineSublayer) {
+          layer.block(LayerWithDefaultOutputDir.InlineSublayer.SublayerWithDefaultOutputDir) {}
+        }
+      }
+
+      layer.block(LayerWithCustomOutputDir) {
+        layer.block(LayerWithCustomOutputDir.InlineSublayer) {
+          layer.block(LayerWithCustomOutputDir.InlineSublayer.SublayerWithDefaultOutputDir) {}
+        }
+      }
+
+      layer.block(LayerWithNoOutputDir) {
+        layer.block(LayerWithNoOutputDir.InlineSublayer) {
+          layer.block(LayerWithNoOutputDir.InlineSublayer.SublayerWithDefaultOutputDir) {}
+        }
+      }
+    }
+
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Foo))(
+      bindLayer("LayerWithDefaultOutputDir", List("LayerWithDefaultOutputDir")),
+      inlineLayer("InlineSublayer"),
+      bindLayer("SublayerWithDefaultOutputDir", List("LayerWithDefaultOutputDir", "SublayerWithDefaultOutputDir")),
+      bindLayer("LayerWithCustomOutputDir", List("myOutputDir")),
+      inlineLayer("InlineSublayer"),
+      bindLayer("SublayerWithDefaultOutputDir", List("myOutputDir", "SublayerWithDefaultOutputDir")),
+      bindLayer("LayerWithNoOutputDir", List()),
+      inlineLayer("InlineSublayer"),
+      bindLayer("SublayerWithDefaultOutputDir", List("SublayerWithDefaultOutputDir"))
+    )()
+  }
 }

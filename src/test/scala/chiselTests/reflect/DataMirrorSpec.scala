@@ -226,7 +226,7 @@ class DataMirrorSpec extends ChiselFlatSpec {
   }
 
   "getLayerColor" should "return a layer color if one exists" in {
-    object A extends layer.Layer(layer.Convention.Bind)
+    object A extends layer.Layer(layer.LayerConfig.Extract())
     class Foo extends Bundle {
       val a = Bool()
       val b = Probe(Bool())

@@ -3,7 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.layer.{Convention, Layer}
+import chisel3.layer.{Layer, LayerConfig}
 import chisel3.probe._
 import chisel3.util.Counter
 import chisel3.testers.{BasicTester, TesterDriver}
@@ -718,8 +718,8 @@ class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
   }
 
   "Layer colored probes" should "emit correct FIRRTL" in {
-    object LayerA extends Layer(Convention.Bind) {
-      object LayerB extends Layer(Convention.Bind)
+    object LayerA extends Layer(LayerConfig.Extract()) {
+      object LayerB extends Layer(LayerConfig.Extract())
     }
     class Foo extends RawModule {
       val a = IO(Output(Probe.apply(UInt(1.W), LayerA)))
