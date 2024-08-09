@@ -232,7 +232,7 @@ abstract class RawModule extends BaseModule {
         throwException(s"BoringUtils currently only support identity views, ${_right} has multiple targets.")
       )
 
-    def computeConnection(left: Data, right: Data, si: SourceInfo): Command = {
+    def computeConnection(left: Data, right: Data): Command = {
       (left.probeInfo.nonEmpty, right.probeInfo.nonEmpty) match {
         case (true, true)                                 => ProbeDefine(si, left.lref, Node(right))
         case (true, false) if left.probeInfo.get.writable => ProbeDefine(si, left.lref, RWProbeExpr(Node(right)))
@@ -245,7 +245,7 @@ abstract class RawModule extends BaseModule {
                 if lhsOpaque._isOpaqueType && rhsOpaque._isOpaqueType && DataMirror.isProperty(
                   lhsOpaque.allElements.head
                 ) && DataMirror.isProperty(rhsOpaque.allElements.head) =>
-              computeConnection(lhsOpaque.allElements.head, rhsOpaque.allElements.head, si)
+              computeConnection(lhsOpaque.allElements.head, rhsOpaque.allElements.head)
             case (_: Property[_], _: Property[_]) => PropAssign(si, Node(left), Node(right))
             // Use `connect lhs, read(probe(rhs))` if lhs is passive version of rhs.
             // This provides solution for this: https://github.com/chipsalliance/chisel/issues/3557
@@ -258,7 +258,7 @@ abstract class RawModule extends BaseModule {
       }
     }
 
-    val rhs = computeConnection(left, right, si)
+    val rhs = computeConnection(left, right)
     val secretCommands = if (_closed) {
       _component.get.asInstanceOf[DefModule].secretCommands
     } else {
