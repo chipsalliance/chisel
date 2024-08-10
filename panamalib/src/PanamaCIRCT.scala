@@ -538,6 +538,8 @@ class PanamaCIRCT {
   def hwInnerSymAttrGet(symName: String) =
     MlirAttribute(CAPI.hwInnerSymAttrGet(arena, mlirStringAttrGet(symName).get))
 
+  def hwInnerSymAttrGetEmpty() = MlirAttribute(CAPI.hwInnerSymAttrGetEmpty(arena, mlirCtx))
+
   def hwInstanceGraphGet(operation: MlirOperation) = HWInstanceGraph(CAPI.hwInstanceGraphGet(arena, operation.get))
 
   def hwInstanceGraphGetTopLevelNode(instanceGraph: HWInstanceGraph) = HWInstanceGraphNode(

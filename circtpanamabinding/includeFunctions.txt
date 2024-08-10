@@ -119,6 +119,7 @@ chirrtlTypeGetCMemoryPort
 # HW Attribute
 hwInnerRefAttrGet
 hwInnerSymAttrGet
+hwInnerSymAttrGetEmpty
 
 hwInstanceGraphGet
 hwInstanceGraphGetTopLevelNode

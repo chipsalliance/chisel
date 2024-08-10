@@ -53,12 +53,12 @@ class Probe extends Module {
 
   val n = RWProbeValue(x)
 
-  // FIRRTL: define u1.in = rwprobe(io.x)
+  // FIRRTL: define u1.in = rwprobe(x)
   probe.define(u1.in, n)
   // FIRRTL: define u2.in = u1.out
   probe.define(u2.in, u1.out)
 
-  // FIRRTL: connect io.y = read(u2.out)
+  // FIRRTL: connect y, read(u2.out)
   y := read(u2.out)
   // FIRRTL: force_initial(u1.out, UInt<1>(0))
   probe.forceInitial(u1.out, false.B)
@@ -66,7 +66,7 @@ class Probe extends Module {
   probe.releaseInitial(u1.out)
 
   when(x) {
-    // FIRRTL: force(clock, _T, u2.out, u1.out)
+    // FIRRTL: force(clock, _T, u2.out, UInt<1>(0))
     probe.force(u2.out, false.B)
   }
   when(y) {
