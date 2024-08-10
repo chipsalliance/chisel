@@ -76,9 +76,9 @@ args.head match {
     // CHECK-LABEL: OMReferenceTarget:~PropertyTest|PropertyTest>i
     println(obj.field("p").asInstanceOf[PanamaCIRCTOMEvaluatorValuePath].toString)
 
-    // CHECK-NEXT: .a => { [ [ omInteger{123} ] ] }
-    // CHECK-NEXT: .b => { [ [ omInteger{456} ] ] }
-    // CHECK-NEXT: .p => { path{OMReferenceTarget:~PropertyTest|PropertyTest>i} }
+    // CHECK-NEXT: .a => { [ [ 123 ] ] }
+    // CHECK-NEXT: .b => { [ [ 456 ] ] }
+    // CHECK-NEXT: .p => { OMReferenceTarget:~PropertyTest|PropertyTest>i }
     obj.foreachField((name, value) => println(s".$name => { ${value.toString} }"))
 
     // CHECK-NEXT: module{_1_Anon}
