@@ -96,7 +96,7 @@ args.head match {
 
     val top = evaluator.instantiate("Top_Class", Seq(om.newBasePathEmpty)).get
 
-    // CHECK: .descriptions => { [ obj{.description => { mlirString{"Machine cycle counter."} }, .identifier => { mlirString{"mcycle"} }, .width => { omInteger{64} }}, obj{.description => { mlirString{"Machine instructions-retired counter."} }, .identifier => { mlirString{"minstret"} }, .width => { omInteger{64} }} ] }
+    // CHECK: .descriptions => { [ obj{.description => { Machine cycle counter. }, .identifier => { mcycle }, .width => { 64 }}, obj{.description => { Machine instructions-retired counter. }, .identifier => { minstret }, .width => { 64 }} ] }
     top.foreachField((name, value) => println(s".$name => { ${value.toString} }"))
   case _ =>
 }
