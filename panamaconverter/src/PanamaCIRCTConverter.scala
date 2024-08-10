@@ -106,20 +106,52 @@ class ValueCache {
     stored.get(id._id).map(_.asInstanceOf[Storage.Map].storage)
 }
 
+sealed abstract class InnerSymSlot
+object InnerSymSlot {
+  final case class Op(op: MlirOperation) extends InnerSymSlot
+  final case class Port(op: MlirOperation, index: Int) extends InnerSymSlot
+}
+
+class InnerSymCache {
+  val slots = mutable.Map.empty[Long, InnerSymSlot]
+  var portSyms = Seq.empty[Option[String]]
+
+  def clear(): Unit = slots.clear()
+
+  def setOpSlot(id: HasId, op: MlirOperation): Unit =
+    slots += ((id._id, InnerSymSlot.Op(op)))
+  def setPortSlots(op: MlirOperation, ports: Seq[Port]): Unit = {
+    portSyms = ports.map(_ => None)
+    ports.zipWithIndex.foreach {
+      case (port, i) =>
+        slots += ((port.id._id, InnerSymSlot.Port(op, i)))
+    }
+  }
+
+  def getSlot(id: HasId): Option[InnerSymSlot] =
+    slots.get(id._id)
+  def assignPortSym(index: Int, innerSym: String): Seq[Option[String]] = {
+    portSyms = portSyms.updated(index, Some(innerSym))
+    portSyms
+  }
+}
+
 class FirContext {
   var opCircuit: Op = null
   var opModules: Seq[(String, Op)] = Seq.empty
   val whenStack = mutable.Stack.empty[WhenContext]
   val valueCache = new ValueCache
-  val opCache = mutable.Map.empty[Long, MlirOperation]
+  val innerSymCache = new InnerSymCache
 
   def enterNewCircuit(newCircuit: Op): Unit = {
     valueCache.clear()
+    innerSymCache.clear()
     opCircuit = newCircuit
   }
 
   def enterNewModule(name: String, newModule: Op): Unit = {
     valueCache.clear()
+    innerSymCache.clear()
     opModules = opModules :+ (name, newModule)
   }
 
@@ -576,11 +608,25 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
               .OpBuilder(s"firrtl.ref.send", firCtx.currentBlock, util.convert(srcInfo))
               .withOperand(referTo(probe, srcInfo).value)
           case RWProbeExpr(probe) =>
-            circt.mlirOperationSetInherentAttributeByName(
-              firCtx.opCache.get(probe.asInstanceOf[Node].id._id).get,
-              "inner_sym",
-              circt.hwInnerSymAttrGet(probe.localName)
-            )
+            firCtx.innerSymCache
+              .getSlot(probe.asInstanceOf[Node].id)
+              .get match {
+              case InnerSymSlot.Op(op) =>
+                circt.mlirOperationSetInherentAttributeByName(
+                  op,
+                  "inner_sym",
+                  circt.hwInnerSymAttrGet(probe.localName)
+                )
+              case InnerSymSlot.Port(op, index) =>
+                val portSyms = firCtx.innerSymCache
+                  .assignPortSym(index, probe.localName)
+                  .map(_.map(circt.hwInnerSymAttrGet(_)).getOrElse(circt.hwInnerSymAttrGetEmpty()))
+                circt.mlirOperationSetInherentAttributeByName(
+                  op,
+                  "portSyms",
+                  circt.mlirArrayAttrGet(portSyms)
+                )
+            }
             util
               .OpBuilder("firrtl.ref.rwprobe", firCtx.currentBlock, util.convert(srcInfo))
               .withNamedAttr("target", circt.hwInnerRefAttrGet(parent.get.id.name, probe.localName))
@@ -636,7 +682,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
         .withResult(resultType)
         // .withResult( /* ref */ )
         .build()
-      firCtx.opCache += ((id._id, op.op))
+      firCtx.innerSymCache.setOpSlot(id, op.op)
       firCtx.valueCache.setOne(id, op.results(0))
     }
 
@@ -998,7 +1044,8 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
   }
 
   def visitDefBlackBox(defBlackBox: DefBlackBox): Unit = {
-    val ports = util.convert(defBlackBox.ports ++ defBlackBox.id.secretPorts, defBlackBox.topDir)
+    val defPorts = defBlackBox.ports ++ defBlackBox.id.secretPorts
+    val ports = util.convert(defPorts, defBlackBox.topDir)
     val nameAttr = circt.mlirStringAttrGet(defBlackBox.name)
     val desiredNameAttr = circt.mlirStringAttrGet(defBlackBox.id.desiredName)
 
@@ -1017,10 +1064,12 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
     val firModule = util.moduleBuilderInsertPorts(builder, ports).build()
 
     firCtx.enterNewModule(defBlackBox.name, firModule)
+    firCtx.innerSymCache.setPortSlots(firModule.op, defPorts)
   }
 
   def visitDefIntrinsicModule(defIntrinsicModule: DefIntrinsicModule): Unit = {
-    val ports = util.convert(defIntrinsicModule.ports ++ defIntrinsicModule.id.secretPorts, defIntrinsicModule.topDir)
+    val defPorts = defIntrinsicModule.ports ++ defIntrinsicModule.id.secretPorts
+    val ports = util.convert(defPorts, defIntrinsicModule.topDir)
 
     val builder = util
       .OpBuilder("firrtl.intmodule", firCtx.circuitBlock, circt.unkLoc)
@@ -1036,11 +1085,12 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
     val firModule = util.moduleBuilderInsertPorts(builder, ports).build()
 
     firCtx.enterNewModule(defIntrinsicModule.name, firModule)
+    firCtx.innerSymCache.setPortSlots(firModule.op, defPorts)
   }
 
   def visitDefModule(defModule: DefModule): Unit = {
-    val ports = util.convert(defModule.ports ++ defModule.id.secretPorts)
-
+    val defPorts = defModule.ports ++ defModule.id.secretPorts
+    val ports = util.convert(defPorts)
     val isMainModule = defModule.id.circuitName == defModule.name
 
     val builder = util
@@ -1056,6 +1106,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
     val firModule = util.moduleBuilderInsertPorts(builder, ports).build()
 
     firCtx.enterNewModule(defModule.name, firModule)
+    firCtx.innerSymCache.setPortSlots(firModule.op, defPorts)
   }
 
   def visitAttach(attach: Attach): Unit = {
@@ -1081,7 +1132,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
       .withResult(util.convert(Converter.extractType(defWire.id, defWire.sourceInfo)))
       // .withResult( /* ref */ )
       .build()
-    firCtx.opCache += ((defWire.id._id, op.op))
+    firCtx.innerSymCache.setOpSlot(defWire.id, op.op)
     firCtx.valueCache.setOne(defWire.id, op.results(0))
   }
 
@@ -1096,7 +1147,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
       .withOperands(defIntrinsicExpr.args.map(arg => util.referTo(arg, defIntrinsicExpr.sourceInfo).value))
       .withResult(util.convert(Converter.extractType(defIntrinsicExpr.id, defIntrinsicExpr.sourceInfo)))
       .build()
-    firCtx.opCache += ((defIntrinsicExpr.id._id, op.op))
+    firCtx.innerSymCache.setOpSlot(defIntrinsicExpr.id, op.op)
     firCtx.valueCache.setOne(defIntrinsicExpr.id, op.results(0))
   }
 
@@ -1168,7 +1219,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
       .withResults(ports.types)
       .build()
     val results = op.results
-    firCtx.opCache += ((defInstance.id._id, op.op))
+    firCtx.innerSymCache.setOpSlot(defInstance.id, op.op)
     firCtx.valueCache.setSeq(defInstance.id, results)
   }
 
@@ -1278,7 +1329,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
       .withResults(ports.map { case (_, tpe) => tpe })
       .build()
     val results = ports.zip(op.results).map { case ((name, _), result) => name -> result }.toMap
-    firCtx.opCache += ((firrtlMemory.id._id, op.op))
+    firCtx.innerSymCache.setOpSlot(firrtlMemory.id, op.op)
     firCtx.valueCache.setMap(firrtlMemory.id, results)
   }
 
@@ -1629,7 +1680,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
       .withOperand( /* clockVal */ util.referTo(defReg.clock, defReg.sourceInfo).value)
       .withResult( /* result */ util.convert(Converter.extractType(defReg.id, defReg.sourceInfo)))
       .build()
-    firCtx.opCache += ((defReg.id._id, op.op))
+    firCtx.innerSymCache.setOpSlot(defReg.id, op.op)
     firCtx.valueCache.setOne(defReg.id, op.results(0))
   }
 
@@ -1645,7 +1696,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
       .withOperand( /* init */ util.referTo(defRegInit.init, defRegInit.sourceInfo).value)
       .withResult( /* result */ util.convert(Converter.extractType(defRegInit.id, defRegInit.sourceInfo)))
       .build()
-    firCtx.opCache += ((defRegInit.id._id, op.op))
+    firCtx.innerSymCache.setOpSlot(defRegInit.id, op.op)
     firCtx.valueCache.setOne(defRegInit.id, op.results(0))
   }
 
