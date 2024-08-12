@@ -43,7 +43,7 @@ object Select {
           else
             Seq.empty
         head ++ collect(ifRegion)(f) ++ collect(elseRegion)(f)
-      case LayerBlock(_, _, region) => collect(region)(f)
+      case LayerBlock(_, _, region)  => collect(region)(f)
       case cmd if f.isDefinedAt(cmd) => Some(f(cmd))
       case _                         => None
     }
@@ -544,7 +544,7 @@ object Select {
         searchCommands(ifRegion, pred +: preds, processCommand)
         searchCommands(elseRegion, pred.not +: preds, processCommand)
       case LayerBlock(_, _, region) => searchCommands(region, preds, processCommand)
-      case cmd => processCommand(cmd, preds)
+      case cmd                      => processCommand(cmd, preds)
     }
 
     searchCommands(module._component.get.asInstanceOf[DefModule].commands, Seq.empty, processCommand)
