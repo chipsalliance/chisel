@@ -91,6 +91,15 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
     )("layerblock C")
   }
 
+  they should "respect the 'skipIfLayersEnabled' parameter" in {
+    class Foo extends RawModule {
+      layer.enable(A)
+      layer.block(A.B, skipIfLayersEnabled = true) {}
+    }
+
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Foo))()("layerblock")
+  }
+
   they should "allow for defines to layer-colored probes" in {
 
     class Foo extends RawModule {

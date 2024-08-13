@@ -150,8 +150,11 @@ object layer {
     * not a _proper_ ancestor requirement.)
     *
     * @param layer the layer this block is associated with
-    * @param skipIfAlreadyInBlock if true, then this will not create a layer
-    * block if already inside a layer block
+    * @param skipIfAlreadyInBlock if true, then this will not create a layer if
+    * this `block` is already inside another layerblock
+    * @param skipIfLayersEnabled if true, then this will not create a layer if
+    * any layers have been enabled for the current module block if already
+    * inside a layer block
     * @param thunk the Chisel code that goes into the layer block
     * @param sourceInfo a source locator
     * @throws java.lang.IllegalArgumentException if the layer of the currnet
@@ -159,14 +162,15 @@ object layer {
     */
   def block[A](
     layer:                Layer,
-    skipIfAlreadyInBlock: Boolean = false
+    skipIfAlreadyInBlock: Boolean = false,
+    skipIfLayersEnabled:  Boolean = false
   )(thunk:                => A
   )(
     implicit sourceInfo: SourceInfo
   ): Unit = {
     // Do nothing if we are already in a layer block and are not supposed to
     // create new layer blocks.
-    if (skipIfAlreadyInBlock && Builder.layerStack.size > 1) {
+    if (skipIfAlreadyInBlock && Builder.layerStack.size > 1 || skipIfLayersEnabled && Builder.enabledLayers.nonEmpty) {
       thunk
       return
     }
