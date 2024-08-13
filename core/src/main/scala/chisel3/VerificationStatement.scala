@@ -6,6 +6,8 @@ import chisel3.experimental.{BaseModule, SourceInfo}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal._
 import chisel3.internal.firrtl.ir._
+import chisel3.layer.block
+import chisel3.layers
 import chisel3.util.circt.IfElseFatalIntrinsic
 import scala.annotation.nowarn
 import scala.language.experimental.macros
@@ -143,8 +145,10 @@ object assert extends VerifPrintMacrosDoc {
   )(
     implicit sourceInfo: SourceInfo
   ): Assert = {
-    val id = Builder.forcedUserModule // It should be safe since we push commands anyway.
-    IfElseFatalIntrinsic(id, format, "chisel3_builtin", clock, predicate, enable, format.unpackArgs: _*)(sourceInfo)
+    block(layers.Verification.Assert, skipIfAlreadyInBlock = true, skipIfLayersEnabled = true) {
+      val id = Builder.forcedUserModule // It should be safe since we push commands anyway.
+      IfElseFatalIntrinsic(id, format, "chisel3_builtin", clock, predicate, enable, format.unpackArgs: _*)(sourceInfo)
+    }
     new Assert()
   }
 
@@ -304,9 +308,11 @@ object assume extends VerifPrintMacrosDoc {
     implicit sourceInfo: SourceInfo
   ): Assume = {
     val id = new Assume()
-    when(!Module.reset.asBool) {
-      val formattedMsg = formatFailureMessage("Assumption", line, cond, message.map(Printable.pack(_, data: _*)))
-      Builder.pushCommand(Verification(id, Formal.Assume, sourceInfo, Module.clock.ref, cond.ref, formattedMsg))
+    block(layers.Verification.Assume, skipIfAlreadyInBlock = true, skipIfLayersEnabled = true) {
+      when(!Module.reset.asBool) {
+        val formattedMsg = formatFailureMessage("Assumption", line, cond, message.map(Printable.pack(_, data: _*)))
+        Builder.pushCommand(Verification(id, Formal.Assume, sourceInfo, Module.clock.ref, cond.ref, formattedMsg))
+      }
     }
     id
   }
@@ -320,10 +326,12 @@ object assume extends VerifPrintMacrosDoc {
     implicit sourceInfo: SourceInfo
   ): Assume = {
     val id = new Assume()
-    message.foreach(Printable.checkScope(_))
-    when(!Module.reset.asBool) {
-      val formattedMsg = formatFailureMessage("Assumption", line, cond, message)
-      Builder.pushCommand(Verification(id, Formal.Assume, sourceInfo, Module.clock.ref, cond.ref, formattedMsg))
+    block(layers.Verification.Assume, skipIfAlreadyInBlock = true, skipIfLayersEnabled = true) {
+      message.foreach(Printable.checkScope(_))
+      when(!Module.reset.asBool) {
+        val formattedMsg = formatFailureMessage("Assumption", line, cond, message)
+        Builder.pushCommand(Verification(id, Formal.Assume, sourceInfo, Module.clock.ref, cond.ref, formattedMsg))
+      }
     }
     id
   }
@@ -385,8 +393,10 @@ object cover extends VerifPrintMacrosDoc {
     implicit sourceInfo: SourceInfo
   ): Cover = {
     val id = new Cover()
-    when(!Module.reset.asBool) {
-      Builder.pushCommand(Verification(id, Formal.Cover, sourceInfo, Module.clock.ref, cond.ref, ""))
+    block(layers.Verification.Cover, skipIfAlreadyInBlock = true, skipIfLayersEnabled = true) {
+      when(!Module.reset.asBool) {
+        Builder.pushCommand(Verification(id, Formal.Cover, sourceInfo, Module.clock.ref, cond.ref, ""))
+      }
     }
     id
   }
@@ -415,10 +425,12 @@ object stop {
 
   private def buildStopCommand(message: Option[Printable])(implicit sourceInfo: SourceInfo): Stop = {
     val stopId = new Stop()
-    message.foreach(Printable.checkScope(_))
-    when(!Module.reset.asBool) {
-      message.foreach(printf.printfWithoutReset(_))
-      pushCommand(Stop(stopId, sourceInfo, Builder.forcedClock.ref, 0))
+    block(layers.Verification, skipIfAlreadyInBlock = true, skipIfLayersEnabled = true) {
+      message.foreach(Printable.checkScope(_))
+      when(!Module.reset.asBool) {
+        message.foreach(printf.printfWithoutReset(_))
+        pushCommand(Stop(stopId, sourceInfo, Builder.forcedClock.ref, 0))
+      }
     }
     stopId
   }

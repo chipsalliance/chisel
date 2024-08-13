@@ -659,6 +659,8 @@ class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
       define(b.refs.reg, RWProbeValue(r))
     }
     runTester(new BasicTester {
+      layer.enable(layers.Verification)
+      layer.enable(layers.Verification.Assert)
       val dut = Module(new Top)
 
       val (cycle, done) = Counter(true.B, 20)

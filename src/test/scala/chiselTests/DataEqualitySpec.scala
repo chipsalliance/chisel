@@ -22,7 +22,9 @@ class EqualityTester(lhsGen: => Data, rhsGen: => Data) extends BasicTester {
 
   assert(equalityModule.out)
 
-  stop()
+  when(RegNext(next = true.B, init = false.B)) {
+    stop()
+  }
 }
 
 class AnalogBundle extends Bundle {
