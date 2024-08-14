@@ -29,19 +29,13 @@ private object EmitDPIImplementation {
                      |    *result = lhs + rhs;
                      |}
                      |
-                     |extern "C" void sumDPI(const svOpenArrayHandle array, int* result) {
-                        int* arrayPtr= (int *) svGetArrayPtr(array);
+                     |extern "C" void sum(const svOpenArrayHandle array, int* result) {
                      |  int size = svSize(array, 1);
-                     |  if (false&&svGetArrayPtr(array) == NULL) {
-                     |  printf("DPI-C: ERROR passed array argument that doesn't have C layout ");
-                     |  return;
-                     |}
                      |  *result = 0;
                      |  for(size_t i = 0; i < size; ++i) {
-                     |    svBitVecVal vec[1];
-                     |    svGetBitArrElemVecVal(vec, array, i);
-                     |   std::cout << vec[0] << std::endl;
-                     |    *result += vec[0];
+                     |    svBitVecVal vec;
+                     |    svGetBitArrElemVecVal(&vec, array, i);
+                     |    *result += vec;
                      |  }
                      |}
   """.stripMargin
