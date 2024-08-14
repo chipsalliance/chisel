@@ -170,7 +170,9 @@ object layer {
   ): Unit = {
     // Do nothing if we are already in a layer block and are not supposed to
     // create new layer blocks.
-    if (skipIfAlreadyInBlock && Builder.layerStack.size > 1 || skipIfLayersEnabled && Builder.enabledLayers.nonEmpty) {
+    if (
+      skipIfAlreadyInBlock && Builder.layerStack.size > 1 || skipIfLayersEnabled && Builder.enabledLayers.nonEmpty || Builder.elideLayerBlocks
+    ) {
       thunk
       return
     }
@@ -201,6 +203,23 @@ object layer {
     }
 
     createLayers(layersToCreate)(thunk)
+  }
+
+  /** API that will cause any calls to `block` in the `thunk` to not create new
+    * layer blocks.
+    *
+    * This is an advanced, library-writer's API that is not intended for broad
+    * use.  You may consider using this if you are writing an API which
+    * automatically puts code into layer blocks and you want to provide a way
+    * for a user to completely opt out of this.
+    *
+    * @param thunk the Chisel code that should not go into a layer block
+    */
+  def elideBlocks[A](thunk: => A): A = {
+    Builder.elideLayerBlocks = true
+    val result = thunk
+    Builder.elideLayerBlocks = false
+    return result
   }
 
   /** Call this function from within a `Module` body to enable this layer globally for that module. */

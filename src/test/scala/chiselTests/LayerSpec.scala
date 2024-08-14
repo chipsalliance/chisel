@@ -100,6 +100,16 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
     matchesAndOmits(ChiselStage.emitCHIRRTL(new Foo))()("layerblock")
   }
 
+  they should "create no layer blocks when wrapped in 'elideBlocks'" in {
+    class Foo extends RawModule {
+      layer.elideBlocks {
+        layer.block(A.B) {}
+      }
+    }
+
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Foo))()("layerblock")
+  }
+
   they should "allow for defines to layer-colored probes" in {
 
     class Foo extends RawModule {
