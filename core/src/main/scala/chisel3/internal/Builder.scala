@@ -554,11 +554,12 @@ private[chisel3] class DynamicContext(
   var whenStack:            List[WhenContext] = Nil
   // Clock and Reset are "Delayed" because ImplicitClock and ImplicitReset need to set these values,
   // But the clock or reset defined by the user won't yet be initialized
-  var currentClock:   Option[Delayed[Clock]] = None
-  var currentReset:   Option[Delayed[Reset]] = None
-  var currentDisable: Disable.Type = Disable.BeforeReset
-  var enabledLayers:  mutable.LinkedHashSet[layer.Layer] = mutable.LinkedHashSet.empty
-  var layerStack:     List[layer.Layer] = layer.Layer.root :: Nil
+  var currentClock:     Option[Delayed[Clock]] = None
+  var currentReset:     Option[Delayed[Reset]] = None
+  var currentDisable:   Disable.Type = Disable.BeforeReset
+  var enabledLayers:    mutable.LinkedHashSet[layer.Layer] = mutable.LinkedHashSet.empty
+  var layerStack:       List[layer.Layer] = layer.Layer.root :: Nil
+  var elideLayerBlocks: Boolean = false
   val errors = new ErrorLog(warningFilters, sourceRoots, throwOnFirstError)
   val namingStack = new NamingStack
 
@@ -866,6 +867,11 @@ private[chisel3] object Builder extends LazyLogging {
   def layerStack: List[layer.Layer] = dynamicContext.layerStack
   def layerStack_=(s: List[layer.Layer]): Unit = {
     dynamicContext.layerStack = s
+  }
+
+  def elideLayerBlocks: Boolean = dynamicContext.elideLayerBlocks
+  def elideLayerBlocks_=(a: Boolean): Unit = {
+    dynamicContext.elideLayerBlocks = a
   }
 
   def layerMap: Map[layer.Layer, layer.Layer] = dynamicContext.layerMap
