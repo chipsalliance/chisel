@@ -1090,6 +1090,8 @@ private[chisel3] object Builder extends LazyLogging {
             errors.checkpoint(logger)
             throw e
         }
+      // Register all layers.  This will ensure that the FIRRTL produce always includes these layers.
+      chisel3.layers.defaultLayers.foreach(layer.addLayer)
       errors.checkpoint(logger)
       logger.info("Done elaborating.")
 

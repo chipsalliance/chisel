@@ -87,6 +87,32 @@ illegal nested usage of `bind`.
 
 More conventions may be supported in the future.
 
+## Built-in Layers and User-defined Layers
+
+Chisel provides several built-in layers.  These are shown below with their full
+Scala paths:
+
+```
+`chisel3.layers.Verification`
+├── `chisel3.layers.Verification.Assert`
+├── `chisel3.layers.Verification.Assume`
+└── `chisel3.layers.Verification.Cover`
+```
+
+These built-in layers are dual purpose.  First, they are layers that match
+common use cases for sequestering verification code.  The `Verification` layer
+is for common verification collateral.  The `Assert`, `Assume`, and `Cover`
+layers are for, respectively, assertions, assumptions, and cover statements.
+Second, the Chisel standard library uses them for some of its APIs.
+
+For predictability of output, these layers will always be show up in the FIRRTL
+that Chisel emits.
+
+A user is free to define their own layers, as shown previously with layer `A`,
+`A.B`, etc.  User-defined layers are only emitted into FIRRTL if they have layer
+block users.  Layers can be unconditionally emitted using the
+`chisel3.layer.addLayer` API.
+
 ## Examples
 
 ### Design Verification Example
@@ -97,28 +123,29 @@ asserts and debug prints requires additional computation.  All of this code
 should not be included in the final Verilog.  The engineer can use three layers
 to do this.
 
-There are three layers that emerge from this example:
+There are four layers that emerge from this example.
 
-1. A common `Verification` layer
-1. An `Assert` layer nested under the `Verification` layer
-1. A `Debug` layer also nested under the `Verification` layer
+1. The built-in `Verification` layer
+1. The built-in `Assert` layer which is nested under the built-in `Verification`
+   layer
+1. The built-in `Cover` layer which is also nested under the built-in
+   `Verification` layer
+1. A user-defined `Debug` layer
 
 The `Verification` layer can be used to store common logic used by both the
-`Assert` and `Debug` layers.  The latter two layers allow for separation of,
-respectively, assertions from prints.
+`Assert` and `Cover` layers.  The `Assert` and `Cover` layers contain,
+respectively, assertions and cover statements.  The `Debug` layer contains
+debugging prints.
 
 One way to write this in Scala is the following:
 
 ```scala mdoc:reset:silent
 import chisel3._
 import chisel3.layer.{Layer, LayerConfig, block}
+import chisel3.layers.Verification
 
-// All layers are declared here.  The Assert and Debug layers are nested under
-// the Verification layer.
-object Verification extends Layer(LayerConfig.Extract()) {
-  object Assert extends Layer(LayerConfig.Extract())
-  object Debug extends Layer(LayerConfig.Extract())
-}
+// User-defined layers are declared here.  Built-in layers do not need to be declared.
+object Debug extends Layer(LayerConfig.Extract())
 
 class Foo extends Module {
   val a = IO(Input(UInt(32.W)))
@@ -138,10 +165,17 @@ class Foo extends Module {
       chisel3.assert(a >= a_d0, "a must always increment")
     }
 
-    // This adds a `Debug` layer block.
-    block(Verification.Debug) {
-      printf("a: %x, a_d0: %x", a, a_d0)
+    // This adds a `Cover` layer block.
+    block(Verification.Cover) {
+      chisel3.cover(a === 8.U, "a_ took a value of 8")
+      chisel3.cover(a_d0 === 8.U, "a_d0 took a value of 8")
     }
+
+  }
+
+  // This adds a `Debug` layer block.
+  block(Debug) {
+    printf("a: %x", a)
   }
 
 }
@@ -153,12 +187,13 @@ following filenames.  One file is created for each layer:
 
 1. `layers_Foo_Verification.sv`
 1. `layers_Foo_Verification_Assert.sv`
-1. `layers_Foo_Verification_Debug.sv`
+1. `layers_Foo_Verification_Cover.sv`
+1. `layers_Foo_Debug.sv`
 
 A user can then include any combination of these files in their design to
-include the optional functionality describe by the `Verification`, `Assert`, or
-`Debug` layers.  The `Assert` and `Debug` bind files automatically include the
-`Verification` bind file for the user.
+include the optional functionality describe by the `Verification`, `Assert`,
+`Cover`, or `Debug` layers.  The `Assert` and `Cover` bind files automatically
+include the `Verification` bind file for the user.
 
 #### Implementation Notes
 
@@ -173,17 +208,19 @@ circuit above (one for `Foo` and one for each layer block in module `Foo`):
 1. `Foo`
 1. `Foo_Verification`
 1. `Foo_Verification_Assert`
-1. `Foo_Verification_Debug`
+1. `Foo_Verification_Cover`
+1. `Foo_Debug`
 
 These will typically be created in separate files with names that match the
 modules, i.e., `Foo.sv`, `Foo_Verification.sv`, `Foo_Verification_Assert.sv`,
-and `Foo_Verification_Debug.sv`.
+`Foo_Verification_Cover.sv`, and `Foo_Debug.sv`.
 
 The ports of each module created from a layer block will be automatically
 determined based on what that layer block captured from outside the layer block.
 In the example above, the `Verification` layer block captured port `a`.  Both
-the `Assert` and `Debug` layer blocks captured `a` and `a_d0`.  Layer blocks may
-be optimized to remove/add ports or to move logic into a layer block.
+the `Assert` and `Cover` layer blocks captured `a` and `a_d0`.  The `Debug`
+layer only captured `a`.  Layer blocks may be optimized to remove/add ports or
+to move logic into a layer block.
 
 #### Verilog Output
 

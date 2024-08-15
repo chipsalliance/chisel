@@ -256,6 +256,19 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
     matchesAndOmits(ChiselStage.emitCHIRRTL(new Foo))("layer A")("layer block")
   }
 
+  "Default Layers" should "always be emitted in CHIRRTL (whereas non-default layers are optionally emitted)" in {
+    class Foo extends RawModule {}
+
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Foo))(
+      "layer Verification",
+      "layer Assert",
+      "layer Assume",
+      "layer Cover"
+    )(
+      "layer B"
+    )
+  }
+
   "Layers error checking" should "require that the current layer is an ancestor of the desired layer" in {
 
     class Foo extends RawModule {
