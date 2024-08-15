@@ -54,7 +54,13 @@ final object Simulator {
           val simulation = workspace
             .compile(backend)(
               tag,
-              commonCompilationSettings,
+              commonCompilationSettings.copy(
+                // Append to the include directorires based on what the
+                // workspace indicates is the path for primary sources.  This
+                // ensures that `` `include `` directives can be resolved.
+                includeDirs =
+                  Some(commonCompilationSettings.includeDirs.getOrElse(Seq.empty) :+ workspace.primarySourcesPath)
+              ),
               backendSpecificCompilationSettings,
               customSimulationWorkingDirectory,
               verbose
