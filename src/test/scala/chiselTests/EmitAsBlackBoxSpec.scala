@@ -14,9 +14,7 @@ class Root extends RawModule {
   val b0 = Module(new Branch)
   val b1 = Module(new Branch)
 }
-// TODO/Notes
-// - In backport, clock/reset are not automatically assigned. I think this is fixed in 3.5
-// - CircuitTarget for annotations on the definition are wrong - needs to be fixed.
+
 class EmitAsBlackBoxSpec extends ChiselFunSpec with Utils {
   describe("(0): Emit as black box") {
     it("(0.a): selecting intermediate module creates black box, and omits children modules") {

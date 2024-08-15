@@ -439,7 +439,7 @@ package experimental {
     // Hack to make it possible to run the AddDedupAnnotation
     // pass. Because of naming bugs in imported definitions in D/I, it
     // is not possible to properly name EmptyExtModule created from
-    // Defintions. See unit test SeparateElaborationSpec #4.a
+    // Definitions. See unit test SeparateElaborationSpec #4.a
     private[chisel3] def _isImportedDefinition: Boolean = false
 
     // Accessor for Chisels internals

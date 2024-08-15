@@ -461,9 +461,6 @@ object RemapLayer extends HasShellOptions {
   *
   * Use as CLI option `--emit-as-extmodule=<module name>`.
   *
-  * This behavior is inconsistent between Chisel and FIRRTL
-  * - Chisel will report the width of a UInt or SInt shifted right by a number >= its width as a 0-bit value
-  * - FIRRTL will implement the width for these UInts and SInts as 1-bit
   */
 case class EmitAsExtModule(moduleName: String)
     extends NoTargetAnnotation
