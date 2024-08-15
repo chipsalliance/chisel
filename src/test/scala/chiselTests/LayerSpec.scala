@@ -248,6 +248,14 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
     )()
   }
 
+  "addLayer API" should "add a layer to the output CHIRRTL even if no layer block references that layer" in {
+    class Foo extends RawModule {
+      layer.addLayer(A)
+    }
+
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Foo))("layer A")("layer block")
+  }
+
   "Layers error checking" should "require that the current layer is an ancestor of the desired layer" in {
 
     class Foo extends RawModule {

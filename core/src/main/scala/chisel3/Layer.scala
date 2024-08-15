@@ -127,10 +127,14 @@ object layer {
     implicit val root: Layer = Root
   }
 
-  /** Add a layer and all of its parents to the Builder.  This lets the Builder
-    * know that this layer was used and should be emitted in the FIRRTL.
+  /** Add a layer and all of its parents to the Builder.  This lets the Chisel
+    * know that this layer should be emitted into FIRRTL text.
+    *
+    * This API can be used to guarantee that a design will always have certain
+    * layers defined.  By default, layers are only included in the FIRRTL text
+    * if they have layer block users.
     */
-  private[chisel3] def addLayer(layer: Layer) = {
+  def addLayer(layer: Layer) = {
     var currentLayer: Layer = layer
     while (currentLayer != Layer.Root && !Builder.layers.contains(currentLayer)) {
       val layer = currentLayer
