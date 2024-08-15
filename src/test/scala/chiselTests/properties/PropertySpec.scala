@@ -731,7 +731,7 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
     }))
 
     e.getMessage should include(
-      "Property arithmetic is currently only supported in RawModules @[src/test/scala/chiselTests/properties/PropertySpec.scala"
+      "Property expressions are currently only supported in RawModules @[src/test/scala/chiselTests/properties/PropertySpec.scala"
     )
   }
 
@@ -776,6 +776,61 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
     matchesAndOmits(chirrtl)(
       "wire _c_propExpr : Integer",
       "propassign _c_propExpr, integer_shr(a, b)",
+      "propassign c, _c_propExpr"
+    )()
+  }
+
+  behavior.of("PropertySeqOps")
+
+  it should "not support expressions involving Property types that don't provide a typeclass instance" in {
+    assertTypeError("""
+      val a = Property[String]()
+      val b = Property[String]()
+      a ++ b
+    """)
+  }
+
+  it should "not support expressions in Classes, and give a nice error" in {
+    val e = the[ChiselException] thrownBy (ChiselStage.emitCHIRRTL(new RawModule {
+      DynamicObject(new Class {
+        val a = IO(Input(Property[Seq[Int]]()))
+        val b = IO(Input(Property[Seq[Int]]()))
+        val c = IO(Output(Property[Seq[Int]]()))
+        c := a ++ b
+      })
+    }))
+
+    e.getMessage should include(
+      "Property expressions are currently only supported in RawModules @[src/test/scala/chiselTests/properties/PropertySpec.scala"
+    )
+  }
+
+  it should "support concatenation for Property[Seq[Int]]" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val a = IO(Input(Property[Seq[Int]]()))
+      val b = IO(Input(Property[Seq[Int]]()))
+      val c = IO(Output(Property[Seq[Int]]()))
+      c := a ++ b
+    })
+
+    matchesAndOmits(chirrtl)(
+      "wire _c_propExpr : List<Integer>",
+      "propassign _c_propExpr, list_concat(a, b)",
+      "propassign c, _c_propExpr"
+    )()
+  }
+
+  it should "support concatenation for Property[Seq[ClassType]]" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val a = IO(Input(Property[Seq[AnyClassType]]()))
+      val b = IO(Input(Property[Seq[AnyClassType]]()))
+      val c = IO(Output(Property[Seq[AnyClassType]]()))
+      c := a ++ b
+    })
+
+    matchesAndOmits(chirrtl)(
+      "wire _c_propExpr : List<AnyRef>",
+      "propassign _c_propExpr, list_concat(a, b)",
       "propassign c, _c_propExpr"
     )()
   }

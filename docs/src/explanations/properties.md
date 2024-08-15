@@ -149,6 +149,31 @@ on integral `Property` typed values.
 | `*`       | Perform multiplication as defined by FIRRTL spec section Integer Multiply Operation |
 | `>>`      | Perform shift right as defined by FIRRTL spec section Integer Shift Right Operation |
 
+#### Sequence Operations
+
+The sequence `Property` types, like `Property[Seq[Int]]` support some basic
+operations to create new sequences from existing sequences.
+
+In the following example, and output `c` port of `Property[Seq[Int]]` type is
+computed as the concatenation of the `a` and `b` ports of `Property[Seq[Int]]`
+type.
+
+```scala mdoc:silent
+class SequenceOperationExample extends RawModule {
+  val a = IO(Input(Property[Seq[Int]]()))
+  val b = IO(Input(Property[Seq[Int]]()))
+  val c = IO(Output(Property[Seq[Int]]()))
+  c := a ++ b
+}
+```
+
+The following table lists the possible sequence operators that are supported on
+sequence `Property` typed values.
+
+| Operation | Description                                                                          |
+| --------- | -----------                                                                          |
+| `++`      | Perform concatenation as defined by FIRRTL spec section List Concatenation Operation |
+
 ### Classes and Objects
 
 Classes and Objects are to `Property` types what modules and instances are to
