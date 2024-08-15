@@ -483,7 +483,8 @@ private[chisel3] class DynamicContext(
   val loggerOptions: LoggerOptions,
   val definitions:   ArrayBuffer[Definition[_]],
   val contextCache:  BuilderContextCache,
-  val layerMap:      Map[layer.Layer, layer.Layer]) {
+  val layerMap:      Map[layer.Layer, layer.Layer],
+  val emitAsExtModule: Seq[String]) {
   val importedDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
 
   // Map from proto module name to ext-module name
@@ -1145,7 +1146,7 @@ private[chisel3] object Builder extends LazyLogging {
         case _ =>
       }
 
-      (
+      val circuit = 
         Circuit(
           components.last.name,
           components.toSeq,
@@ -1155,7 +1156,11 @@ private[chisel3] object Builder extends LazyLogging {
           typeAliases,
           layerAdjacencyList(layer.Layer.Root).map(foldLayers).toSeq,
           optionDefs
-        ),
+        )
+      val customizedEmissionCircuit = 
+        chisel3.internal.firrtl.Converter.customizeEmission(circuit, dynamicContext.emitAsExtModule)
+      (
+        customizedEmissionCircuit,
         mod
       )
     }

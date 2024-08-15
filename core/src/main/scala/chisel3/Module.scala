@@ -436,6 +436,12 @@ package experimental {
     // Protected so it can be overridden by the compiler plugin
     protected def _sourceInfo: SourceInfo = UnlocatableSourceInfo
 
+    // Hack to make it possible to run the AddDedupAnnotation
+    // pass. Because of naming bugs in imported definitions in D/I, it
+    // is not possible to properly name EmptyExtModule created from
+    // Defintions. See unit test SeparateElaborationSpec #4.a
+    private[chisel3] def _isImportedDefinition: Boolean = false
+
     // Accessor for Chisels internals
     private[chisel3] final def _getSourceLocator: SourceInfo = _sourceInfo
 

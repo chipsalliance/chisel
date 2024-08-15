@@ -48,7 +48,8 @@ class Elaborate extends Phase {
             loggerOptions,
             ArrayBuffer[Definition[_]](),
             BuilderContextCache.empty,
-            chiselOptions.layerMap
+            chiselOptions.layerMap,
+            chiselOptions.emitAsExtModule.toSeq,
           )
         val (circuit, dut) =
           Builder.build(Module(gen()), context)

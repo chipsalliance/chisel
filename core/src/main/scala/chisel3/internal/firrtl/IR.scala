@@ -455,7 +455,7 @@ private[chisel3] object ir {
   }
 
   case class DefBlackBox(
-    id:     BaseBlackBox,
+    id:     BaseModule,
     name:   String,
     ports:  Seq[Port],
     topDir: SpecifiedDirection,

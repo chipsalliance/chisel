@@ -286,6 +286,8 @@ object CircuitSerializationAnnotation {
 
 import CircuitSerializationAnnotation._
 
+case class EmissionOptions(emitAsExtModule: Vector[String])
+
 /** Wraps a `Circuit` for serialization via `CustomFileEmission`
   * @param circuit a Chisel Circuit
   * @param filename name of destination file (excludes file extension)
@@ -453,4 +455,33 @@ object RemapLayer extends HasShellOptions {
     )
   )
 
+}
+
+/** Emit module as extmodule
+  *
+  * Use as CLI option `--emit-as-extmodule=<module name>`.
+  *
+  * This behavior is inconsistent between Chisel and FIRRTL
+  * - Chisel will report the width of a UInt or SInt shifted right by a number >= its width as a 0-bit value
+  * - FIRRTL will implement the width for these UInts and SInts as 1-bit
+  */
+case class EmitAsExtModule(moduleName: String)
+    extends NoTargetAnnotation
+    with Unserializable
+    with ChiselOption
+object EmitAsExtModule extends HasShellOptions {
+  val options = Seq(
+    new ShellOption[String](
+      longOption = "emit-as-extmodule",
+      toAnnotationSeq = { value =>
+        try {
+          Seq(EmitAsExtModule(value))
+        } catch {
+          case NonFatal(e) => throw new OptionsException(e.getMessage)
+        }
+      },
+      helpText = "Emit as extmodule",
+      helpValueName = Some("<value>")
+    )
+  )
 }

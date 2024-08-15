@@ -485,4 +485,26 @@ private[chisel3] object Converter {
       })
     )
   }
+
+  def customizeEmission(circuit: Circuit, emitAsExtModule: Seq[String]): Circuit = {
+    val moduleToChildrenModule = circuit.components.foldLeft(Map.empty[String, Seq[String]]) {
+      case (map, component: DefModule) => map + (component.name -> component.commands.collect { case DefInstance(_, id, _) => id.name })
+      case (map, _) => map
+    }
+    val omitModules = scala.collection.mutable.HashSet.empty[String]
+    var modulesToVisit = emitAsExtModule.toSeq
+    while(modulesToVisit.nonEmpty) {
+      val active = modulesToVisit.head
+      modulesToVisit = modulesToVisit.tail
+      omitModules += active
+      modulesToVisit = moduleToChildrenModule(active) ++ modulesToVisit
+    }
+
+    val newComponents = circuit.components.flatMap {
+      case component: DefModule if emitAsExtModule.contains(component.name) => Seq(DefBlackBox(component.id, component.name, component.ports, SpecifiedDirection.Unspecified, Map.empty))
+      case component if omitModules.contains(component.name) => Nil
+      case other => Seq(other)
+    }
+    circuit.copy(components = newComponents)
+  }
 }

@@ -15,7 +15,8 @@ class ChiselOptions private[stage] (
   val sourceRoots:         Vector[File] = Vector.empty,
   val warningFilters:      Vector[WarningFilter] = Vector.empty,
   val useLegacyWidth:      Boolean = false,
-  val layerMap:            Map[Layer, Layer] = Map.empty) {
+  val layerMap:            Map[Layer, Layer] = Map.empty,
+  val emitAsExtModule:     Vector[String] = Vector.empty) {
 
   private[stage] def copy(
     printFullStackTrace: Boolean = printFullStackTrace,
@@ -25,7 +26,8 @@ class ChiselOptions private[stage] (
     sourceRoots:         Vector[File] = sourceRoots,
     warningFilters:      Vector[WarningFilter] = warningFilters,
     useLegacyWidth:      Boolean = useLegacyWidth,
-    layerMap:            Map[Layer, Layer] = layerMap
+    layerMap:            Map[Layer, Layer] = layerMap,
+    emitAsExtModule:     Vector[String] = emitAsExtModule,
   ): ChiselOptions = {
 
     new ChiselOptions(
@@ -36,7 +38,8 @@ class ChiselOptions private[stage] (
       sourceRoots = sourceRoots,
       warningFilters = warningFilters,
       useLegacyWidth = useLegacyWidth,
-      layerMap = layerMap
+      layerMap = layerMap,
+      emitAsExtModule = emitAsExtModule,
     )
 
   }

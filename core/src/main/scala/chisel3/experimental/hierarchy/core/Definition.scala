@@ -124,7 +124,8 @@ object Definition extends SourceInfoDoc {
         context.loggerOptions,
         context.definitions,
         context.contextCache,
-        context.layerMap
+        context.layerMap,
+        context.emitAsExtModule,
       )
     }
     dynamicContext.inDefinition = true
