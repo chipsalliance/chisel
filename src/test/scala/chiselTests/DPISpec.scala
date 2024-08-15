@@ -38,6 +38,14 @@ private object EmitDPIImplementation {
                      |    *result += vec;
                      |  }
                      |}
+                     |extern "C" void print_string(const svOpenArrayHandle array) {
+                     |  int size = svSize(array, 1);
+                     |  for(size_t i = 0; i < size; ++i) {
+                     |    svBitVecVal vec[1];
+                     |    svGetBitArrElemVecVal(vec, array, i);
+                     |    std::cout << vec[0];
+                     |  }
+                     |}
   """.stripMargin
 
     class DummyDPI extends BlackBox with HasBlackBoxInline {
@@ -97,12 +105,17 @@ object AddUnclocked extends DPINonVoidFunctionImport[UInt] {
 }
 
 object Sum extends DPINonVoidFunctionImport[UInt] {
-  override val functionName = "sumDPI"
+  override val functionName = "sum"
   override val ret = UInt(32.W)
   override val clocked = false
   override val inputNames = Some(Seq("array"))
   override val outputName = Some("result")
   final def apply(array: Vec[UInt]): UInt = super.call(array)
+}
+
+object PrintString extends DPIClockedVoidFunctionImport {
+  override val functionName = "print_string"
+  final def apply(array: Vec[UInt]) = super.call(array)
 }
 
 class DPIAPITest extends Module {
@@ -117,6 +130,9 @@ class DPIAPITest extends Module {
   EmitDPIImplementation()
 
   Hello()
+
+  val s = VecInit("string".getBytes().map(_.U(8.W)).toIndexedSeq)
+  PrintString(s)
   val result_clocked = AddClocked(io.a, io.b)
   val result_unclocked = AddUnclocked(io.a, io.b)
   val result_sum = Sum(VecInit(Seq(io.a, io.b, io.a)))
