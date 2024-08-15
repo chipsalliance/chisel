@@ -262,7 +262,7 @@ private[chisel3] object ir {
 
   sealed trait ProbeDetails { this: Arg =>
     val probe: Arg
-    override def name: String = s"$probe"
+    override def name: String = s"${probe.name}"
   }
   case class ProbeExpr(probe: Arg) extends Arg with ProbeDetails
   case class RWProbeExpr(probe: Arg) extends Arg with ProbeDetails
