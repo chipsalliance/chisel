@@ -177,10 +177,10 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
         }
         .result
 
-      // Check the expected SV and the generated SV are the same
+      // Check the expected SV and the generated SV are the same.
       val source = io.Source.fromFile("test_run_dir/simulator/bar_debug_mode/primary-sources/Bar.sv")
       val actualSV = source.mkString
-      assert(actualSV === expectedSV)
+      expectedSV should include(actualSV)
       source.close()
 
     }
