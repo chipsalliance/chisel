@@ -1175,7 +1175,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
 
       val btor2 = ChiselStage.emitBtor2(
         new Counter,
-        firtoolOpts = Array("-enable-layers=Verification,Verification::Assert")
+        firtoolOpts = Array("-enable-layers=Verification,Verification.Assert,Verification.Assume,Verification.Cover")
       )
       btor2 should include("""1 sort bitvec 1
                              |2 input 1 reset
