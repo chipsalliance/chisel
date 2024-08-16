@@ -248,6 +248,18 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
     )()
   }
 
+  they should "allow manually overriding the parent layer" in {
+
+    implicit val Parent = layers.Verification
+    object ExpensiveAsserts extends layer.Layer(layer.LayerConfig.Extract())
+
+    class Foo extends RawModule {
+      layer.addLayer(ExpensiveAsserts)
+    }
+
+    ChiselStage.emitCHIRRTL(new Foo) should include("""layer ExpensiveAsserts, bind, "Verification/ExpensiveAsserts"""")
+  }
+
   "addLayer API" should "add a layer to the output CHIRRTL even if no layer block references that layer" in {
     class Foo extends RawModule {
       layer.addLayer(A)
