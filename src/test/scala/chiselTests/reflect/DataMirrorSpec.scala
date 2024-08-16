@@ -266,6 +266,22 @@ class DataMirrorSpec extends ChiselFlatSpec {
     })
   }
 
+  "currentInstancePorts" should "return an Instance's IOs" in {
+    @instantiable
+    class Foo extends RawModule {
+      @public val in = IO(Input(Bool()))
+      @public val out = IO(Output(Bool()))
+    }
+
+    ChiselStage.emitCHIRRTL(new RawModule {
+      val foo = Instantiate(new Foo)
+
+      val ports = DataMirror.internal.currentInstancePorts(foo)
+
+      ports should be(Seq(foo.in, foo.out))
+    })
+  }
+
   "modulePorts and fullModulePorts" should "return an Instance of a module's IOs" in {
     @instantiable
     class Bar extends Module {

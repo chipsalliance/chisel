@@ -7,7 +7,8 @@ import chisel3.internal._
 import chisel3.internal.binding._
 import chisel3.internal.firrtl.ir._
 import chisel3.experimental.{requireIsHardware, BaseModule, SourceInfo}
-import chisel3.experimental.hierarchy.Instance
+import chisel3.experimental.hierarchy.{Instance, ModuleClone}
+import chisel3.experimental.hierarchy.core.Clone
 import chisel3.properties.Property
 import scala.reflect.ClassTag
 
@@ -265,6 +266,24 @@ object DataMirror {
       * @param target BaseModule to get IOs from
       */
     def currentModulePorts(target: BaseModule): Seq[Data] = target.getIOs
+
+    /** Returns the current ports of an Instance.
+      *
+      * This method does not necessarily return the final ports of the target Instance. It consults Chisel's internal
+      * data structures to extract the module's IOs. For this reason, it is generally not safe, and users should prefer
+      * `DataMirror.modulePorts`, but this method may be used for certain use cases that want the current list of
+      * ports before the module is closed.
+      *
+      * @param target Instance to get IOs from
+      */
+    def currentInstancePorts(target: Instance[BaseModule]): Seq[Data] = {
+      target.underlying match {
+        case Clone(clone: ModuleClone[_]) =>
+          clone.getPorts.elements.map(_._2).toSeq
+        case _ =>
+          currentModulePorts(target.proto)
+      }
+    }
   }
 
   // Old definition of collectLeafMembers
