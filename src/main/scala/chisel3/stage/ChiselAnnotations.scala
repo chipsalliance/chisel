@@ -226,6 +226,28 @@ case class ChiselGeneratorAnnotation(gen: () => RawModule) extends NoTargetAnnot
 
 object ChiselGeneratorAnnotation extends HasShellOptions {
 
+  /** Try to convert a string to a Scala type. */
+  private def stringToAny(str: String): Any = {
+
+    /* Something that looks like object creation, e.g., "Foo(42)" */
+    val classPattern = "([a-zA-Z0-9_$.]+)\\((.*)\\)".r
+
+    str match {
+      case boolean if boolean.toBooleanOption.isDefined => boolean.toBoolean
+      case integer if integer.toIntOption.isDefined     => integer.toInt
+      case float if float.toDoubleOption.isDefined      => float.toDouble
+      case classPattern(a, b) =>
+        val constructor = Class.forName(a).getConstructors()(0)
+        if (b.isEmpty) {
+          constructor.newInstance()
+        } else {
+          val arguments = b.split(',').map(stringToAny).toSeq
+          constructor.newInstance(arguments: _*)
+        }
+      case string => str
+    }
+  }
+
   /** Construct a [[ChiselGeneratorAnnotation]] with a generator function that will try to construct a Chisel Module
     * from using that Module's name. The Module must both exist in the class path and not take parameters.
     * @param name a module name
@@ -235,7 +257,7 @@ object ChiselGeneratorAnnotation extends HasShellOptions {
   def apply(name: String): ChiselGeneratorAnnotation = {
     val gen = () =>
       try {
-        Class.forName(name).asInstanceOf[Class[_ <: RawModule]].getDeclaredConstructor().newInstance()
+        stringToAny(name).asInstanceOf[RawModule]
       } catch {
         // The reflective instantiation will box any exceptions thrown, unbox them here.
         // Note that this does *not* need to chain with the catches below which are triggered by an
@@ -244,12 +266,21 @@ object ChiselGeneratorAnnotation extends HasShellOptions {
         case e: InvocationTargetException =>
           throw e.getCause
         case e: ClassNotFoundException =>
-          throw new OptionsException(s"Unable to locate module '$name'! (Did you misspell it?)", e)
-        case e: NoSuchMethodException =>
           throw new OptionsException(
-            s"Unable to create instance of module '$name'! (Does this class take parameters?)",
+            s"Unable to run module generator '$name' because it or one of its arguments could not be found. (Did you misspell it or them?)",
             e
           )
+        case e: IllegalArgumentException =>
+          throw new OptionsException(
+            s"Unable to run module generator '$name' because the arguments are invalid. (Did you pass the correct number and type of arguments?)",
+            e
+          )
+        case e: ClassCastException =>
+          throw new OptionsException(
+            s"Unable to run module generator '$name' because this is not a 'RawModule'. (Did you try to construct something that is not a 'RawModule' or did you forget to append '()' to indicate that this is not a string?)",
+            e
+          )
+
       }
     ChiselGeneratorAnnotation(gen)
   }
