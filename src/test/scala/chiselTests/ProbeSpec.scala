@@ -383,7 +383,7 @@ class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
     }
     exc.getMessage should include("Cannot define a probe on a non-equivalent type.")
     exc.getMessage should include(
-      "Left (ProbeSpec_Anon.p: IO[UInt<4>]) and Right (ProbeSpec_Anon.Node(ProbeSpec_Anon.w: Wire[Bool]): OpResult[Bool]) have different types"
+      "Left (ProbeSpec_Anon.p: IO[UInt<4>]) and Right (ProbeSpec_Anon.w: OpResult[Bool]) have different types"
     )
 
   }
@@ -732,5 +732,15 @@ class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
       "output a : Probe<UInt<1>, LayerA>",
       "output b : Probe<UInt<2>, LayerA.LayerB>"
     )()
+  }
+
+  "Probes" should "have valid names" in {
+    class TestMod extends RawModule {
+      val a = IO(Output(Probe(UInt(32.W))))
+      val w = WireInit(UInt(32.W), 0.U)
+      probe.define(a, ProbeValue(w))
+      require(reflect.DataMirror.queryNameGuess(a) == "a")
+    }
+    ChiselStage.emitCHIRRTL(new TestMod)
   }
 }
