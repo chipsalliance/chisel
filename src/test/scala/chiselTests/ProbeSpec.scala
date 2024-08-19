@@ -733,4 +733,13 @@ class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
       "output b : Probe<UInt<2>, LayerA.LayerB>"
     )()
   }
+
+  "Probes" should "have valid names" in {
+    class TestMod extends RawModule {
+      val a = IO(Output(Probe(UInt())))
+      val w = WireInit(UInt(32.W), 0.U)
+      a := w
+      require(reflect.DataMirror.queryNameGuess(a) == "a")
+    }
+  }
 }
