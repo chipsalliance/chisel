@@ -101,6 +101,9 @@ private[chisel3] object ir {
       case Some(Index(Node(imm), arg))    => s"${earlyLocalName(imm, includeRoot)}[${arg.localName}]"
       case Some(Slot(Node(imm), name))    => s"${earlyLocalName(imm, includeRoot)}.$name"
       case Some(OpaqueSlot(Node(imm)))    => s"${earlyLocalName(imm, includeRoot)}"
+      case Some(ProbeExpr(Node(ref)))     => s"probe(${earlyLocalName(ref, includeRoot)})"
+      case Some(RWProbeExpr(Node(ref)))   => s"rwprobe(${earlyLocalName(ref, includeRoot)})"
+      case Some(ProbeRead(Node(ref)))     => s"read(${earlyLocalName(ref, includeRoot)})"
       case Some(arg) if includeRoot       => arg.name
       case None if includeRoot =>
         id match {
