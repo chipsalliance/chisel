@@ -160,17 +160,17 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
   }
 
   property("Directions should be preserved through cloning and binding of Bundles") {
-    ChiselStage.emitCHIRRTL(new Module {
-      class MyBundle extends Bundle {
-        val foo = Input(UInt(8.W))
-        val bar = Output(UInt(8.W))
-      }
-      class MyOuterBundle extends Bundle {
-        val fizz = new MyBundle
-        val buzz = Flipped(new MyBundle)
-      }
+    class MyBundle extends Bundle {
+      val foo = Input(UInt(8.W))
+      val bar = Output(UInt(8.W))
+    }
+    class MyOuterBundle extends Bundle {
+      val fizz = new MyBundle
+      val buzz = Flipped(new MyBundle)
+    }
+    class Top(hwop: MyOuterBundle => MyOuterBundle) extends Module {
       val a = new MyOuterBundle
-      val b = IO(a)
+      val b = hwop(a)
       val specifiedDirs = Seq(
         a.fizz.foo -> SpecifiedDirection.Input,
         a.fizz.bar -> SpecifiedDirection.Output,
@@ -193,11 +193,15 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
       for ((data, dir) <- actualDirs) {
         DataMirror.directionOf(data) shouldBe (dir)
       }
-    }.asInstanceOf[Module]) // The cast works around weird reflection behavior (bug?)
+    }
+    val ops: Seq[MyOuterBundle => MyOuterBundle] = Seq(IO(_), Wire(_))
+    for (op <- ops) {
+      ChiselStage.emitCHIRRTL(new Top(op))
+    }
   }
 
   property("Directions should be preserved through cloning and binding of Vecs") {
-    ChiselStage.emitCHIRRTL(new Module {
+    class Top(hwop: Vec[Vec[UInt]] => Vec[Vec[UInt]]) extends Module {
       val a = Vec(1, Input(UInt(8.W)))
       val b = Vec(1, a)
       val c = Vec(1, Flipped(a))
@@ -226,7 +230,11 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
       for ((data, dir) <- actualDirs) {
         DataMirror.directionOf(data) shouldBe (dir)
       }
-    }.asInstanceOf[Module]) // The cast works around weird reflection behavior (bug?)
+    }
+    val ops: Seq[Vec[Vec[UInt]] => Vec[Vec[UInt]]] = Seq(IO(_), Wire(_))
+    for (op <- ops) {
+      ChiselStage.emitCHIRRTL(new Top(op))
+    }
   }
 
   property("Using Vec and Flipped together should calculate directions properly") {
