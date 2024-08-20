@@ -134,7 +134,8 @@ trait DPINonVoidFunctionImport[T <: Data] extends DPIFunctionImport {
 }
 
 // Base trait for a clocked void function.
-trait DPIClockedVoidFunctionImport extends DPIFunctionImport {
+trait DPIVoidFunctionImport extends DPIFunctionImport {
+  def clocked: Boolean = true
   final def callWithEnable(enable: Bool, data: Data*): Unit =
     RawClockedVoidFunctionCall(functionName, inputNames)(Module.clock, enable, data: _*)
   final def call(data: Data*): Unit = callWithEnable(true.B, data: _*)

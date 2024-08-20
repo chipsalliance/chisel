@@ -43,7 +43,7 @@ private object EmitDPIImplementation {
                      |  for(size_t i = 0; i < size; ++i) {
                      |    svBitVecVal vec[1];
                      |    svGetBitArrElemVecVal(vec, array, i);
-                     |    std::cout << vec[0];
+                     |    std::cout << vec[0]&&0xff;
                      |  }
                      |}
   """.stripMargin
@@ -81,7 +81,7 @@ class DPIIntrinsicTest extends Module {
   io.add_unclocked_result := result_unclocked
 }
 
-object Hello extends DPIClockedVoidFunctionImport {
+object Hello extends DPIVoidFunctionImport {
   override val functionName = "hello"
   final def apply() = super.call()
 }
@@ -113,7 +113,7 @@ object Sum extends DPINonVoidFunctionImport[UInt] {
   final def apply(array: Vec[UInt]): UInt = super.call(array)
 }
 
-object PrintString extends DPIClockedVoidFunctionImport {
+object PrintString extends DPIVoidFunctionImport {
   override val functionName = "print_string"
   final def apply(array: Vec[UInt]) = super.call(array)
 }
