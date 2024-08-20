@@ -32,9 +32,8 @@ Hello()
 raw DPI intrinsic but it's recommended to define `apply` function so the object looks exactly 
 scala functions. 
 
-## Type ABI
-System Verilog defines
-
+## Types
+System Verilog defines c-compatible types
 
 ## Non-void function
 If the function returns a value we must use `DPINonVoidFunctionImport[T]` where `T` is a return type. For example let's consider `Add` function that calculates sum 
@@ -54,7 +53,8 @@ object Add extends DPINonVoidFunctionImport[Unit] {
 
 
 ## Open Array 
-Chisel Vector is lowered into an open array.
+Chisel Vector is always lowered into an open array. 
+
 ```c++
 extern "C" void sum(const svOpenArrayHandle array, int* result) {
   // Get a length of the open array.
@@ -78,6 +78,14 @@ object Sum extends DPINonVoidFunctionImport[UInt] {
   override val outputName = Some("result")
   final def apply(array: Vec[UInt]): UInt = super.call(array)
 }
+
+val io = IO(new Bundle {
+  val a = Input(Vec(3, UInt(32.W)))
+  val b = Input(Vec(6, UInt(32.W)))
+})
+
+val sum_a = Sum(io.a)
+val sum_b = Sum(io.a)
 ``
 
 # FAQ
