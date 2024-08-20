@@ -160,17 +160,17 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
   }
 
   property("Directions should be preserved through cloning and binding of Bundles") {
-    ChiselStage.emitCHIRRTL(new Module {
-      class MyBundle extends Bundle {
-        val foo = Input(UInt(8.W))
-        val bar = Output(UInt(8.W))
-      }
-      class MyOuterBundle extends Bundle {
-        val fizz = new MyBundle
-        val buzz = Flipped(new MyBundle)
-      }
+    class MyBundle extends Bundle {
+      val foo = Input(UInt(8.W))
+      val bar = Output(UInt(8.W))
+    }
+    class MyOuterBundle extends Bundle {
+      val fizz = new MyBundle
+      val buzz = Flipped(new MyBundle)
+    }
+    class Top(hwop: MyOuterBundle => MyOuterBundle) extends Module {
       val a = new MyOuterBundle
-      val b = IO(a)
+      val b = hwop(a)
       val specifiedDirs = Seq(
         a.fizz.foo -> SpecifiedDirection.Input,
         a.fizz.bar -> SpecifiedDirection.Output,
@@ -193,11 +193,15 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
       for ((data, dir) <- actualDirs) {
         DataMirror.directionOf(data) shouldBe (dir)
       }
-    }.asInstanceOf[Module]) // The cast works around weird reflection behavior (bug?)
+    }
+    val ops: Seq[MyOuterBundle => MyOuterBundle] = Seq(IO(_), Wire(_))
+    for (op <- ops) {
+      ChiselStage.emitCHIRRTL(new Top(op))
+    }
   }
 
   property("Directions should be preserved through cloning and binding of Vecs") {
-    ChiselStage.emitCHIRRTL(new Module {
+    class Top(hwop: Vec[Vec[UInt]] => Vec[Vec[UInt]]) extends Module {
       val a = Vec(1, Input(UInt(8.W)))
       val b = Vec(1, a)
       val c = Vec(1, Flipped(a))
@@ -226,7 +230,11 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
       for ((data, dir) <- actualDirs) {
         DataMirror.directionOf(data) shouldBe (dir)
       }
-    }.asInstanceOf[Module]) // The cast works around weird reflection behavior (bug?)
+    }
+    val ops: Seq[Vec[Vec[UInt]] => Vec[Vec[UInt]]] = Seq(IO(_), Wire(_))
+    for (op <- ops) {
+      ChiselStage.emitCHIRRTL(new Top(op))
+    }
   }
 
   property("Using Vec and Flipped together should calculate directions properly") {
@@ -493,6 +501,45 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
     assert(emitted.contains("connect io.monitor.valid, io.driver.valid"))
     assert(emitted.contains("connect io.monitor.ready, io.driver.ready"))
   }
+
+  property("Output mixed with unspecified directions should report Output") {
+    class MyBundle extends Bundle {
+      val foo = UInt(8.W)
+      val bar = Output(UInt(8.W))
+    }
+    class MyModule extends RawModule {
+      val w = Wire(new MyBundle)
+      assert(DataMirror.specifiedDirectionOf(w) == SpecifiedDirection.Unspecified)
+      assert(DataMirror.specifiedDirectionOf(w.foo) == SpecifiedDirection.Unspecified)
+      assert(DataMirror.specifiedDirectionOf(w.bar) == SpecifiedDirection.Output)
+      assert(DataMirror.directionOf(w) == Direction.Output)
+      assert(DataMirror.directionOf(w.foo) == Direction.Output)
+      assert(DataMirror.directionOf(w.bar) == Direction.Output)
+
+    }
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
+    assert(chirrtl.contains("wire w : { foo : UInt<8>, bar : UInt<8>}"))
+  }
+
+  property("Input mixed with Flipped directions should report Input") {
+    class MyBundle extends Bundle {
+      val foo = Flipped(UInt(8.W))
+      val bar = Input(UInt(8.W))
+    }
+    class MyModule extends RawModule {
+      val w = Wire(new MyBundle)
+      assert(DataMirror.specifiedDirectionOf(w) == SpecifiedDirection.Unspecified)
+      assert(DataMirror.specifiedDirectionOf(w.foo) == SpecifiedDirection.Flip)
+      assert(DataMirror.specifiedDirectionOf(w.bar) == SpecifiedDirection.Input)
+      assert(DataMirror.directionOf(w) == Direction.Input)
+      assert(DataMirror.directionOf(w.foo) == Direction.Input)
+      assert(DataMirror.directionOf(w.bar) == Direction.Input)
+
+    }
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
+    assert(chirrtl.contains("wire w : { flip foo : UInt<8>, flip bar : UInt<8>}"))
+  }
+
   property("Bugfix: marking Vec fields with mixed directionality as Output/Input clears inner directions") {
     class Decoupled extends Bundle {
       val bits = UInt(3.W)
@@ -559,4 +606,5 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
     val emitted: String = ChiselStage.emitCHIRRTL(new MyModule)
     assert(emitted.contains("Probe<const UInt<1>>"))
   }
+
 }
