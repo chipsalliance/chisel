@@ -630,7 +630,7 @@ object Select {
     /** Selects all instances/modules that are currently directly instantiated within the BaseModule.
       */
     def currentInstancesIn(parent: BaseModule): Seq[Instance[BaseModule]] = {
-      parent._ids.collect {
+      parent._ids.view.collect {
         case clone: IsClone[_] =>
           new Instance(Clone(clone)).asInstanceOf[Instance[BaseModule]]
         case mod: BaseModule =>
@@ -642,7 +642,7 @@ object Select {
       */
     def currentInstancesIn(parent: Instance[BaseModule]): Seq[Instance[BaseModule]] = {
       implicit val mg = new chisel3.internal.MacroGenerated {}
-      parent.proto._ids.collect {
+      parent.proto._ids.view.collect {
         case clone: IsClone[_] =>
           parent._lookup { _ => new Instance(Clone(clone)).asInstanceOf[Instance[BaseModule]] }
         case mod: BaseModule =>
