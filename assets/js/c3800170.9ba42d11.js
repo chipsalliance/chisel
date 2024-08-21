@@ -1,1 +1,0 @@
-"use strict";(self.webpackChunkchisel_lang=self.webpackChunkchisel_lang||[]).push([[6709],{7888:t=>{t.exports=JSON.parse('{"title":"Getting Started","slug":"/category/getting-started","permalink":"/docs/category/getting-started","navigation":{"previous":{"title":"Introduction","permalink":"/docs/"},"next":{"title":"Installation","permalink":"/docs/installation"}}}')}}]);
