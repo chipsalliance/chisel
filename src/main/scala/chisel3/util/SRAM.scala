@@ -601,6 +601,19 @@ object SRAM {
       assignMask(firrtlReadwritePort.wmask, memReadwritePort.mask)
     }
 
+    // Hack to ScalaDoc Bug, see [[LTLIntrinsicInstanceMethodsInternalWorkaround]]
+    implicit class SRAMDescriptionInstanceMethods(underlying: Instance[SRAMDescription]) {
+      implicit val mg: internal.MacroGenerated = new chisel3.internal.MacroGenerated {}
+      def depthIn = underlying._lookup(_.depthIn)
+      def widthIn = underlying._lookup(_.widthIn)
+      def maskedIn = underlying._lookup(_.maskedIn)
+      def readIn = underlying._lookup(_.readIn)
+      def writeIn = underlying._lookup(_.writeIn)
+      def readwriteIn = underlying._lookup(_.readwriteIn)
+      def maskGranularityIn = underlying._lookup(_.maskGranularityIn)
+      def hierarchyIn = underlying._lookup(_.hierarchyIn)
+    }
+
     // Add metadata to the SRAM.
     val descriptionInstance: Instance[SRAMDescription] = Instantiate(new SRAMDescription)
     descriptionInstance.depthIn := Property(size)
