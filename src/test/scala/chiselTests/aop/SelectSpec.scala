@@ -252,41 +252,47 @@ class SelectSpec extends ChiselFlatSpec {
     }
 
     class MyWrapperModule extends RawModule {
+      implicit val mg = new chisel3.internal.MacroGenerated {}
+
       val definition = Definition(new MyIntermediateInstance)
+
       Module(new MyIntermediateModule)
+
       Instance(definition)
+
+      // Check instances thus far.
+      val myInstances0 = Select.unsafe.currentInstancesIn(this).map(_._lookup { m => m.name })
+
+      myInstances0 should be(Seq("MyIntermediateModule", "MyIntermediateInstance"))
+
       Module(new MyLeafExtModule)
 
-      atModuleBodyEnd {
-        implicit val mg = new chisel3.internal.MacroGenerated {}
+      // Check that the new instance is also returned.
+      val myInstances1 = Select.unsafe.currentInstancesIn(this).map(_._lookup { m => m.name })
 
-        val myInstances = Select.unsafe.currentInstancesIn(this).map(_._lookup { m => m.name })
-
-        myInstances should be(Seq("MyIntermediateModule", "MyIntermediateInstance", "MyLeafExtModule"))
-      }
+      myInstances1 should be(Seq("MyIntermediateModule", "MyIntermediateInstance", "MyLeafExtModule"))
     }
 
     class MyTopModule extends RawModule {
+      implicit val mg = new chisel3.internal.MacroGenerated {}
+
       Module(new MyWrapperModule)
 
-      atModuleBodyEnd {
-        implicit val mg = new chisel3.internal.MacroGenerated {}
+      // Check the recursive version goes all the way down.
+      val allInstances = Select.unsafe.allCurrentInstancesIn(this).map(_._lookup { m => m.name })
 
-        val allInstances = Select.unsafe.allCurrentInstancesIn(this).map(_._lookup { m => m.name })
-
-        allInstances should be(
-          Seq(
-            "MyWrapperModule",
-            "MyIntermediateModule",
-            "MyIntermediateInstance",
-            "MyLeafExtModule",
-            "MyLeafModule",
-            "MyLeafModule_1",
-            "MyLeafInstance",
-            "MyLeafInstance"
-          )
+      allInstances should be(
+        Seq(
+          "MyWrapperModule",
+          "MyIntermediateModule",
+          "MyIntermediateInstance",
+          "MyLeafExtModule",
+          "MyLeafModule",
+          "MyLeafModule_1",
+          "MyLeafInstance",
+          "MyLeafInstance"
         )
-      }
+      )
     }
 
     ChiselStage.emitCHIRRTL(new MyTopModule)
