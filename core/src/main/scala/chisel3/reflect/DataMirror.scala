@@ -279,7 +279,7 @@ object DataMirror {
     def currentInstancePorts(target: Instance[BaseModule]): Seq[Data] = {
       target.underlying match {
         case Clone(clone: ModuleClone[_]) =>
-          clone.getPorts.elements.map(_._2).toSeq
+          clone.getPorts.elementsIterator.toSeq
         case _ =>
           currentModulePorts(target.proto)
       }
