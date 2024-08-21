@@ -262,9 +262,7 @@ class SelectSpec extends ChiselFlatSpec {
 
         val myInstances = Select.unsafe.currentInstancesIn(this).map(_._lookup { m => m.name })
 
-        (myInstances should contain).theSameElementsInOrderAs(
-          Seq("MyIntermediateModule", "MyIntermediateInstance", "MyLeafExtModule")
-        )
+        myInstances should be(Seq("MyIntermediateModule", "MyIntermediateInstance", "MyLeafExtModule"))
       }
     }
 
@@ -276,7 +274,7 @@ class SelectSpec extends ChiselFlatSpec {
 
         val allInstances = Select.unsafe.allCurrentInstancesIn(this).map(_._lookup { m => m.name })
 
-        (allInstances should contain).theSameElementsInOrderAs(
+        allInstances should be(
           Seq(
             "MyWrapperModule",
             "MyIntermediateModule",
