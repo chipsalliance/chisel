@@ -618,4 +618,50 @@ object Select {
       s"printf when(${preds.map(_.serialize).mkString(" & ")}) on ${getName(clock)}: $pable"
     }
   }
+
+  /** Select.unsafe exposes useful, but unsafe APIs.
+    *
+    * These APIs operate on directly Chisel's internal data structures, which may be mutated as more hardware is
+    * generated. They can only offer a point in time view of the current state. The tradeoff is they do not require the
+    * modules being selected on to have finished construction.
+    */
+  object unsafe {
+
+    /** Selects all instances/modules that are currently directly instantiated within the BaseModule.
+      */
+    def currentInstancesIn(parent: BaseModule): Seq[Instance[BaseModule]] = {
+      parent._ids.view.collect {
+        case clone: IsClone[_] =>
+          new Instance(Clone(clone)).asInstanceOf[Instance[BaseModule]]
+        case mod: BaseModule =>
+          new Instance(Proto(mod))
+      }.toSeq
+    }
+
+    /** Selects all instances/modules that are currently directly instantiated within the Instance.
+      */
+    def currentInstancesIn(parent: Instance[BaseModule]): Seq[Instance[BaseModule]] = {
+      implicit val mg = new chisel3.internal.MacroGenerated {}
+      parent.proto._ids.view.collect {
+        case clone: IsClone[_] =>
+          parent._lookup { _ => new Instance(Clone(clone)).asInstanceOf[Instance[BaseModule]] }
+        case mod: BaseModule =>
+          parent._lookup { _ => mod }
+      }.toSeq
+    }
+
+    /** Selects all instances/modules that are currently directly and indirectly instantiated within the BaseModule.
+      */
+    def allCurrentInstancesIn(parent: BaseModule): Seq[Instance[BaseModule]] = {
+      val current = currentInstancesIn(parent)
+      current ++ current.flatMap(allCurrentInstancesIn(_))
+    }
+
+    /** Selects all instances/modules that are currently directly and indirectly instantiated within the Instance.
+      */
+    def allCurrentInstancesIn(parent: Instance[BaseModule]): Seq[Instance[BaseModule]] = {
+      val current = currentInstancesIn(parent)
+      current ++ current.flatMap(allCurrentInstancesIn(_))
+    }
+  }
 }

@@ -9,6 +9,7 @@ import chisel3.aop.Select.{PredicatedConnect, When, WhenNot}
 import chisel3.aop.{Aspect, Select}
 import chisel3.experimental.ExtModule
 import chisel3.stage.{ChiselGeneratorAnnotation, DesignAnnotation}
+import circt.stage.ChiselStage
 import firrtl.AnnotationSeq
 
 import scala.reflect.runtime.universe.TypeTag
@@ -228,4 +229,72 @@ class SelectSpec extends ChiselFlatSpec {
     intercept[Exception] { Select.instances(top) }
   }
 
+  "Select currentInstancesIn and allCurrentInstancesIn" should "support module, extmodule, and D/I" in {
+    import chisel3.experimental.hierarchy._
+
+    class MyLeafExtModule extends ExtModule {}
+
+    class MyLeafModule extends RawModule {}
+
+    class MyIntermediateModule extends RawModule {
+      Module(new MyLeafModule)
+      Module(new MyLeafModule)
+    }
+
+    @instantiable
+    class MyLeafInstance extends RawModule {}
+
+    @instantiable
+    class MyIntermediateInstance extends RawModule {
+      val definition = Definition(new MyLeafInstance)
+      Instance(definition)
+      Instance(definition)
+    }
+
+    class MyWrapperModule extends RawModule {
+      implicit val mg = new chisel3.internal.MacroGenerated {}
+
+      val definition = Definition(new MyIntermediateInstance)
+
+      Module(new MyIntermediateModule)
+
+      Instance(definition)
+
+      // Check instances thus far.
+      val myInstances0 = Select.unsafe.currentInstancesIn(this).map(_._lookup { m => m.name })
+
+      myInstances0 should be(Seq("MyIntermediateModule", "MyIntermediateInstance"))
+
+      Module(new MyLeafExtModule)
+
+      // Check that the new instance is also returned.
+      val myInstances1 = Select.unsafe.currentInstancesIn(this).map(_._lookup { m => m.name })
+
+      myInstances1 should be(Seq("MyIntermediateModule", "MyIntermediateInstance", "MyLeafExtModule"))
+    }
+
+    class MyTopModule extends RawModule {
+      implicit val mg = new chisel3.internal.MacroGenerated {}
+
+      Module(new MyWrapperModule)
+
+      // Check the recursive version goes all the way down.
+      val allInstances = Select.unsafe.allCurrentInstancesIn(this).map(_._lookup { m => m.name })
+
+      allInstances should be(
+        Seq(
+          "MyWrapperModule",
+          "MyIntermediateModule",
+          "MyIntermediateInstance",
+          "MyLeafExtModule",
+          "MyLeafModule",
+          "MyLeafModule_1",
+          "MyLeafInstance",
+          "MyLeafInstance"
+        )
+      )
+    }
+
+    ChiselStage.emitCHIRRTL(new MyTopModule)
+  }
 }
