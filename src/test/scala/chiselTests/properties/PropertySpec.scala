@@ -165,13 +165,13 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
   }
 
   it should "support path as a Property literal" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new Module {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
       val propOutA = IO(Output(Property[Path]()))
       val propOutB = IO(Output(Property[Path]()))
       val propOutC = IO(Output(Property[Path]()))
       val propOutD = IO(Output(Property[Path]()))
       override def desiredName = "Top"
-      val inst = Module(new Module {
+      val inst = Module(new RawModule {
         val data = WireInit(false.B)
         val mem = SyncReadMem(1, Bool())
         override def desiredName = "Foo"
