@@ -274,11 +274,28 @@ class DataMirrorSpec extends ChiselFlatSpec {
     }
 
     ChiselStage.emitCHIRRTL(new RawModule {
-      val foo = Instantiate(new Foo)
+      val io = IO(Output(Bool()))
 
-      val ports = DataMirror.internal.currentInstancePorts(foo)
+      // Check instantiate API.
+      val fooInst = Instantiate(new Foo)
 
-      ports should be(Seq(foo.in, foo.out))
+      val fooInstPorts = DataMirror.internal.currentInstancePorts(fooInst)
+
+      fooInstPorts should be(Seq(fooInst.in, fooInst.out))
+
+      // Check toInstance API.
+      val fooBoxed = Module(new Foo).toInstance
+
+      val fooBoxedPorts = DataMirror.internal.currentInstancePorts(fooBoxed)
+
+      fooBoxedPorts should be(Seq(fooBoxed.in, fooBoxed.out))
+
+      // Check toInstance API on an in-progress Module.
+      val thisInst = this.toInstance
+
+      val thisInstPorts = DataMirror.internal.currentInstancePorts(thisInst)
+
+      thisInstPorts should be(Seq(io))
     })
   }
 
