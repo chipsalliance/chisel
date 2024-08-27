@@ -85,7 +85,7 @@ class MemoryReadWritePort[T <: Data](tpe: T, addrWidth: Int, masked: Boolean) ex
   * User can access it via CIRCT API.
   */
 @instantiable
-private[chisel3] class SRAMDescription extends Class {
+final class SRAMDescription extends Class {
   val depth:           Property[BigInt] = IO(Output(Property[BigInt]()))
   val width:           Property[Int] = IO(Output(Property[Int]()))
   val masked:          Property[Boolean] = IO(Output(Property[Boolean]()))
@@ -120,6 +120,9 @@ private[chisel3] class SRAMDescription extends Class {
   readwrite := readwriteIn
   maskGranularity := maskGranularityIn
   hierarchy := hierarchyIn
+}
+object SRAMDescription {
+  val definition: Definition[SRAMDescription] = Instantiate.definition(new SRAMDescription)
 }
 
 /** A IO bundle of signals connecting to the ports of a memory, as requested by
@@ -165,10 +168,10 @@ class SRAMInterface[T <: Data](
   private[chisel3] var _underlying: Option[HasTarget] = None
 
   /** Target information for annotating the underlying SRAM if it is known. */
-  def underlying:                    Option[HasTarget] = _underlying
-  private val descriptionDefinition: Definition[SRAMDescription] = Instantiate.definition(new SRAMDescription)
-  private val descriptionType:       ClassType = descriptionDefinition.getClassType
-  val description:                   Property[ClassType] = Property[descriptionType.Type]()
+  def underlying: Option[HasTarget] = _underlying
+
+  /** SRAM Description */
+  val description: Property[ClassType] = SRAMDescription.definition.getPropertyType
 }
 
 /** A memory file with which to preload an [[SRAM]]

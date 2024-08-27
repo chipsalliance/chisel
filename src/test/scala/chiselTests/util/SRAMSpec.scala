@@ -3,6 +3,7 @@
 package chiselTests.util
 
 import chisel3._
+import chisel3.properties.{Path, Property}
 import chisel3.util.{MemoryReadWritePort, SRAM}
 import chisel3.experimental.{annotate, ChiselAnnotation, OpaqueType}
 import chiselTests.ChiselFlatSpec
@@ -229,5 +230,26 @@ class SRAMSpec extends ChiselFlatSpec {
 
     // check CIRCT can compile the output
     val sv = emitSystemVerilog(new Top)
+  }
+
+  it should "be possible to access SRAM description information" in {
+
+    class Top extends Module {
+      val sramPath = IO(Output(Property[Path]()))
+      val sram = SRAM(
+        size = 32,
+        tpe = UInt(8.W),
+        numReadPorts = 0,
+        numWritePorts = 0,
+        numReadwritePorts = 1
+      )
+      sramPath := sram.description.getField[Path]("hierarchy")
+      // or better yet
+      sramPath := sram.description.hierarchy
+    }
+    // TODO we need a way with ChiselSim to evaluate properties
+    val chirrtl = emitCHIRRTL(new Top)
+    chirrtl should include("propassign sramPath, sram_descriptionInstance.hierarchy")
+    println(chirrtl)
   }
 }
