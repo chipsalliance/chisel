@@ -169,23 +169,28 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
       val propOutB = IO(Output(Property[Path]()))
       val propOutC = IO(Output(Property[Path]()))
       val propOutD = IO(Output(Property[Path]()))
+      val propOutE = IO(Output(Property[Path]()))
       override def desiredName = "Top"
       val inst = Module(new RawModule {
+        val localPropOut = IO(Output(Property[Path]()))
         val data = WireInit(false.B)
         val mem = SyncReadMem(1, Bool())
+        localPropOut := Property(Path(data))
         override def desiredName = "Foo"
       })
       propOutA := Property(inst)
       propOutB := Property(inst.data)
       propOutC := Property(inst.mem)
       propOutD := Property(this)
+      propOutE := inst.localPropOut
     })
-
     matchesAndOmits(chirrtl)(
+      """propassign localPropOut, path("OMReferenceTarget:~Top|Foo>data")""",
       """propassign propOutA, path("OMInstanceTarget:~Top|Top/inst:Foo")""",
       """propassign propOutB, path("OMReferenceTarget:~Top|Top/inst:Foo>data")""",
       """propassign propOutC, path("OMReferenceTarget:~Top|Top/inst:Foo>mem")""",
-      """propassign propOutD, path("OMInstanceTarget:~Top|Top")"""
+      """propassign propOutD, path("OMInstanceTarget:~Top|Top")""",
+      """propassign propOutE, inst.localPropOut"""
     )()
   }
 
@@ -194,22 +199,51 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
       val propOutA = IO(Output(Property[Path]()))
       val propOutB = IO(Output(Property[Path]()))
       val propOutC = IO(Output(Property[Path]()))
+      val propOutD = IO(Output(Property[Path]()))
       override def desiredName = "Top"
       val inst = Module(new RawModule {
+        val localPropOut = IO(Output(Property[Path]()))
         val data = WireInit(false.B)
         val mem = SyncReadMem(1, Bool())
+        localPropOut := Property(Path(data, true))
         override def desiredName = "Foo"
       })
       propOutA := Property(Path(inst, true))
       propOutB := Property(Path(inst.data, true))
       propOutC := Property(Path(inst.mem, true))
+      propOutD := inst.localPropOut
     })
-
     matchesAndOmits(chirrtl)(
+      """propassign localPropOut, path("OMMemberReferenceTarget:~Top|Foo>data")""",
       """propassign propOutA, path("OMMemberInstanceTarget:~Top|Top/inst:Foo")""",
       """propassign propOutB, path("OMMemberReferenceTarget:~Top|Top/inst:Foo>data")""",
-      """propassign propOutC, path("OMMemberReferenceTarget:~Top|Top/inst:Foo>mem")"""
+      """propassign propOutC, path("OMMemberReferenceTarget:~Top|Top/inst:Foo>mem")""",
+      """propassign propOutD, inst.localPropOut"""
     )()
+  }
+
+  // These are rejected by firtool anyway
+  it should "reject Paths created in modules that are not direct ancestors of the referenced target" in {
+    def runTest[A](mkTarget: => A, mkPath: A => Path): Unit = {
+      val e = the[ChiselException] thrownBy {
+        ChiselStage.emitCHIRRTL(new RawModule {
+          val child1 = Module(new RawModule {
+            override def desiredName = "Child1"
+            val target = mkTarget
+          })
+          val captured = child1.target
+          val child2 = Module(new RawModule {
+            override def desiredName = "Child2"
+            val out = IO(Output(Property[Path]()))
+            out := Property(mkPath(captured))
+          })
+        })
+      }
+      e.getMessage should include("Requested .toRelativeTarget relative to Child2, but it is not an ancestor")
+    }
+    runTest[Data](WireInit(false.B), Path.apply)
+    runTest[RawModule](Module(new RawModule {}), Path.apply)
+    runTest[SyncReadMem[_]](SyncReadMem(1, Bool()), Path.apply)
   }
 
   it should "support deleted paths when requested" in {
