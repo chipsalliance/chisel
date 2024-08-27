@@ -2,10 +2,10 @@
 
 package chisel3.properties
 
-import chisel3.{Data, HasTarget, MemBase}
+import chisel3.{Data, HasTarget, MemBase, SramTarget}
 import chisel3.experimental.BaseModule
 import firrtl.annotations.{InstanceTarget, IsMember, ModuleTarget, ReferenceTarget}
-import firrtl.ir.{PathPropertyLiteral}
+import firrtl.ir.PathPropertyLiteral
 
 /** Represent a Path type for referencing a hardware instance or member in a Property[Path]
   */
@@ -79,6 +79,15 @@ object Path {
     }
   }
 
+  /** Construct a Path that refers to a SRAMInterface constructed memory
+    */
+  private[chisel3] def apply(mem: SramTarget): Path = {
+    new TargetPath {
+      def toTarget():   IsMember = mem.toAbsoluteTarget
+      def isMemberPath: Boolean = false
+    }
+  }
+
   /** Construct a Path from a target
     */
   def apply(target: IsMember): Path = apply(target, false)
@@ -86,17 +95,6 @@ object Path {
     val _isMemberPath = isMemberPath // avoid name shadowing below
     new TargetPath {
       def toTarget():   IsMember = target
-      def isMemberPath: Boolean = _isMemberPath
-    }
-  }
-
-  /** Construct a Path from a HasTarget
-    */
-  def apply(hasTarget: HasTarget): Path = apply(hasTarget, false)
-  def apply(hasTarget: HasTarget, isMemberPath: Boolean): Path = {
-    val _isMemberPath = isMemberPath // avoid name shadowing below
-    new TargetPath {
-      def toTarget():   IsMember = hasTarget.toAbsoluteTarget
       def isMemberPath: Boolean = _isMemberPath
     }
   }

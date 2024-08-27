@@ -3,6 +3,7 @@
 package chiselTests.util
 
 import chisel3._
+import chisel3.properties.{Path, Property}
 import chisel3.util.{MemoryReadWritePort, SRAM}
 import chisel3.experimental.{annotate, ChiselAnnotation, OpaqueType}
 import chiselTests.ChiselFlatSpec
@@ -36,7 +37,7 @@ class SRAMSpec extends ChiselFlatSpec {
     val chirrtl = chirrtlCircuit.serialize
     chirrtl should include("module Top :")
     chirrtl should include(
-      "wire sram : { readPorts : { flip address : UInt<5>, flip enable : UInt<1>, data : UInt<8>}[0], writePorts : { flip address : UInt<5>, flip enable : UInt<1>, flip data : UInt<8>}[0], readwritePorts : { flip address : UInt<5>, flip enable : UInt<1>, flip isWrite : UInt<1>, readData : UInt<8>, flip writeData : UInt<8>}[1]}"
+      "wire sram : { readPorts : { flip address : UInt<5>, flip enable : UInt<1>, data : UInt<8>}[0], writePorts : { flip address : UInt<5>, flip enable : UInt<1>, flip data : UInt<8>}[0], readwritePorts : { flip address : UInt<5>, flip enable : UInt<1>, flip isWrite : UInt<1>, readData : UInt<8>, flip writeData : UInt<8>}[1], description : { depth : Integer, dataWidth : Integer, masked : Bool, read : Integer, write : Integer, readwrite : Integer, maskGranularity : Integer, hierarchy : Path}"
     )
     chirrtl should include("mem sram_sram")
     chirrtl should include("data-type => UInt<8>")
@@ -51,6 +52,9 @@ class SRAMSpec extends ChiselFlatSpec {
     chirrtl should include("connect sram.readwritePorts[0].readData, sram_sram.RW0.rdata")
     chirrtl should include("connect sram_sram.RW0.wdata, sram.readwritePorts[0].writeData")
     chirrtl should include("connect sram_sram.RW0.wmode, sram.readwritePorts[0].isWrite")
+    chirrtl should include(
+      """propassign sram.description.hierarchy, path("OMReferenceTarget:~Top|Top>sram_sram")"""
+    )
 
     val dummyAnno = annos.collectFirst { case DummyAnno(t) => (t.toString) }
     dummyAnno should be(Some("~Top|Top>sram_sram"))
@@ -77,7 +81,7 @@ class SRAMSpec extends ChiselFlatSpec {
     chirrtl should include("module Top :")
     chirrtl should include("mem carrot :")
     chirrtl should include(
-      "wire sramInterface : { readPorts : { flip address : UInt<5>, flip enable : UInt<1>, data : UInt<8>}[0], writePorts : { flip address : UInt<5>, flip enable : UInt<1>, flip data : UInt<8>}[0], readwritePorts : { flip address : UInt<5>, flip enable : UInt<1>, flip isWrite : UInt<1>, readData : UInt<8>, flip writeData : UInt<8>}[1]}"
+      "wire sramInterface : { readPorts : { flip address : UInt<5>, flip enable : UInt<1>, data : UInt<8>}[0], writePorts : { flip address : UInt<5>, flip enable : UInt<1>, flip data : UInt<8>}[0], readwritePorts : { flip address : UInt<5>, flip enable : UInt<1>, flip isWrite : UInt<1>, readData : UInt<8>, flip writeData : UInt<8>}[1], description : { depth : Integer, dataWidth : Integer, masked : Bool, read : Integer, write : Integer, readwrite : Integer, maskGranularity : Integer, hierarchy : Path}"
     )
 
     val dummyAnno = annos.collectFirst { case DummyAnno(t) => (t.toString) }
@@ -225,5 +229,24 @@ class SRAMSpec extends ChiselFlatSpec {
 
     // check CIRCT can compile the output
     val sv = emitSystemVerilog(new Top)
+  }
+
+  it should "be possible to access SRAM description information" in {
+
+    class Top extends Module {
+      val sramPath = IO(Output(Property[Path]()))
+      val sram = SRAM(
+        size = 32,
+        tpe = UInt(8.W),
+        numReadPorts = 0,
+        numWritePorts = 0,
+        numReadwritePorts = 1
+      )
+      sramPath := sram.description.hierarchy
+    }
+    // TODO we need a way with ChiselSim to evaluate properties
+    val chirrtl = emitCHIRRTL(new Top)
+    chirrtl should include("output sramPath : Path")
+    chirrtl should include("propassign sramPath, sram.description.hierarchy")
   }
 }

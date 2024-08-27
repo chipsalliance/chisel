@@ -1,19 +1,22 @@
 package chisel3.util
 
 import chisel3._
-
 import chisel3.internal.{Builder, NamedComponent}
 import chisel3.internal.binding.{FirrtlMemTypeBinding, SramPortBinding}
 import chisel3.internal.plugin.autoNameRecursively
 import chisel3.experimental.{OpaqueType, SourceInfo}
+import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance, Instantiate}
 import chisel3.internal.sourceinfo.{MemTransform, SourceInfoTransform}
 import chisel3.internal.firrtl.ir.{Arg, FirrtlMemory, LitIndex, Node, Ref, Slot}
 import chisel3.util.experimental.loadMemoryFromFileInline
 import chisel3.reflect.DataMirror
-import firrtl.annotations.MemoryLoadFileType
+import firrtl.annotations.{IsMember, MemoryLoadFileType}
+
 import scala.language.reflectiveCalls
 import scala.language.experimental.macros
 import chisel3.internal.firrtl.ir
+import chisel3.properties.Class.ClassDefinitionOps
+import chisel3.properties.{Class, ClassType, Path, Property}
 
 import scala.collection.immutable.{ListMap, VectorMap}
 
@@ -78,6 +81,20 @@ class MemoryReadWritePort[T <: Data](tpe: T, addrWidth: Int, masked: Boolean) ex
   }
 }
 
+/** Description to the SRAM, encoded by the [[chisel3.properties]] API.
+  * User can access it via CIRCT API.
+  */
+final class SRAMDescription extends Bundle {
+  val depth:           Property[BigInt] = Property[BigInt]()
+  val dataWidth:       Property[Int] = Property[Int]()
+  val masked:          Property[Boolean] = Property[Boolean]()
+  val read:            Property[Int] = Property[Int]()
+  val write:           Property[Int] = Property[Int]()
+  val readwrite:       Property[Int] = Property[Int]()
+  val maskGranularity: Property[Int] = Property[Int]()
+  val hierarchy:       Property[Path] = Property[Path]()
+}
+
 /** A IO bundle of signals connecting to the ports of a memory, as requested by
   * `SRAMInterface.apply`.
   *
@@ -122,6 +139,9 @@ class SRAMInterface[T <: Data](
 
   /** Target information for annotating the underlying SRAM if it is known. */
   def underlying: Option[HasTarget] = _underlying
+
+  /** SRAM Description */
+  val description = new SRAMDescription
 }
 
 /** A memory file with which to preload an [[SRAM]]
@@ -553,6 +573,23 @@ object SRAM {
       firrtlReadwritePort.wmode := memReadwritePort.isWrite
       assignMask(firrtlReadwritePort.wmask, memReadwritePort.mask)
     }
+
+    // Add metadata to the SRAM.
+    val description = _out.description
+    description.depth := Property(size)
+    description.dataWidth := Property(tpe.getWidth)
+    description.masked := Property(isVecMem)
+    description.read := Property(numReadPorts)
+    description.write := Property(numWritePorts)
+    description.readwrite := Property(numReadwritePorts)
+    description.maskGranularity := Property(
+      Option
+        .when(isVecMem)(tpe match {
+          case t: Vec[_] => t.sample_element.getWidth
+        })
+        .getOrElse(0)
+    )
+    description.hierarchy := Property(Path(mem))
 
     _out
   }
