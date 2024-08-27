@@ -2,7 +2,7 @@
 
 package chisel3.properties
 
-import chisel3.{Data, HasTarget, MemBase}
+import chisel3.{Data, MemBase}
 import chisel3.experimental.BaseModule
 import firrtl.annotations.{InstanceTarget, IsMember, ModuleTarget, ReferenceTarget}
 import firrtl.ir.{PathPropertyLiteral}
@@ -86,17 +86,6 @@ object Path {
     val _isMemberPath = isMemberPath // avoid name shadowing below
     new TargetPath {
       def toTarget():   IsMember = target
-      def isMemberPath: Boolean = _isMemberPath
-    }
-  }
-
-  /** Construct a Path from a HasTarget
-    */
-  def apply(hasTarget: HasTarget): Path = apply(hasTarget, false)
-  def apply(hasTarget: HasTarget, isMemberPath: Boolean): Path = {
-    val _isMemberPath = isMemberPath // avoid name shadowing below
-    new TargetPath {
-      def toTarget():   IsMember = hasTarget.toAbsoluteTarget
       def isMemberPath: Boolean = _isMemberPath
     }
   }
