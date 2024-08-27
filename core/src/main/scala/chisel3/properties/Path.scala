@@ -2,7 +2,7 @@
 
 package chisel3.properties
 
-import chisel3.{Data, HasTarget, MemBase, SramTarget}
+import chisel3.{Data, HasTarget, MemBase, Module, SramTarget}
 import chisel3.experimental.BaseModule
 import firrtl.annotations.{InstanceTarget, IsMember, ModuleTarget, ReferenceTarget}
 import firrtl.ir.PathPropertyLiteral
@@ -52,7 +52,8 @@ object Path {
   def apply(module: BaseModule, isMemberPath: Boolean): Path = {
     val _isMemberPath = isMemberPath // avoid name shadowing below
     new TargetPath {
-      def toTarget():   IsMember = module.toAbsoluteTarget
+      private val scope = Module.currentModule
+      def toTarget():   IsMember = module.toRelativeTarget(scope)
       def isMemberPath: Boolean = _isMemberPath
     }
   }
@@ -63,7 +64,8 @@ object Path {
   def apply(data: Data, isMemberPath: Boolean): Path = {
     val _isMemberPath = isMemberPath // avoid name shadowing below
     new TargetPath {
-      def toTarget():   IsMember = data.toAbsoluteTarget
+      private val scope = Module.currentModule
+      def toTarget():   IsMember = data.toRelativeTarget(scope)
       def isMemberPath: Boolean = _isMemberPath
     }
   }
@@ -74,7 +76,8 @@ object Path {
   def apply(mem: MemBase[_], isMemberPath: Boolean): Path = {
     val _isMemberPath = isMemberPath // avoid name shadowing below
     new TargetPath {
-      def toTarget():   IsMember = mem.toAbsoluteTarget
+      private val scope = Module.currentModule
+      def toTarget():   IsMember = mem.toRelativeTarget(scope)
       def isMemberPath: Boolean = _isMemberPath
     }
   }
@@ -83,7 +86,8 @@ object Path {
     */
   private[chisel3] def apply(mem: SramTarget): Path = {
     new TargetPath {
-      def toTarget():   IsMember = mem.toAbsoluteTarget
+      private val scope = Module.currentModule
+      def toTarget():   IsMember = mem.toRelativeTarget(scope)
       def isMemberPath: Boolean = false
     }
   }
