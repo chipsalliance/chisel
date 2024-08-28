@@ -260,7 +260,6 @@ class SRAMSpec extends ChiselFlatSpec {
           numWritePorts = 0,
           numReadwritePorts = 1,
           masked = false,
-          hasDescription = true
         )
       )
       sramIntf := DontCare
