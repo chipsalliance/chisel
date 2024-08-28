@@ -577,20 +577,21 @@ object SRAM {
     }
 
     // Add metadata to the SRAM.
-    _out.description.get.depth := Property(size)
-    _out.description.get.dataWidth := Property(tpe.getWidth)
-    _out.description.get.masked := Property(isVecMem)
-    _out.description.get.read := Property(numReadPorts)
-    _out.description.get.write := Property(numWritePorts)
-    _out.description.get.readwrite := Property(numReadwritePorts)
-    _out.description.get.maskGranularity := Property(
+    val description = _out.description.get
+    description.depth := Property(size)
+    description.dataWidth := Property(tpe.getWidth)
+    description.masked := Property(isVecMem)
+    description.read := Property(numReadPorts)
+    description.write := Property(numWritePorts)
+    description.readwrite := Property(numReadwritePorts)
+    description.maskGranularity := Property(
       Option
         .when(isVecMem)(tpe match {
           case t: Vec[_] => t.sample_element.getWidth
         })
         .getOrElse(0)
     )
-    _out.description.get.hierarchy := Property(Path(mem))
+    description.hierarchy := Property(Path(mem))
 
     _out
   }

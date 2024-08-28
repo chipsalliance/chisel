@@ -100,7 +100,7 @@ class SRAMSpec extends ChiselFlatSpec {
       val fooIo = IO(foo.cloneType)
       fooIo :<>= foo
     }
-    val chirrtl = emitCHIRRTL(new Top, Array("--full-stacktrace"))
+    val chirrtl = emitCHIRRTL(new Top)
     chirrtl should include("connect foo_sram.W0.mask, UInt<1>(0h1)")
 
     // check CIRCT can compile the output
@@ -259,7 +259,8 @@ class SRAMSpec extends ChiselFlatSpec {
           numReadPorts = 0,
           numWritePorts = 0,
           numReadwritePorts = 1,
-          masked = false
+          masked = false,
+          hasDescription = true
         )
       )
       sramIntf := DontCare
