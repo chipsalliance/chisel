@@ -112,7 +112,8 @@ class SRAMInterface[T <: Data](
   val numReadPorts:      Int,
   val numWritePorts:     Int,
   val numReadwritePorts: Int,
-  val masked:            Boolean = false)
+  val masked:            Boolean = false,
+  val hasDescription:    Boolean = false)
     extends Bundle {
 
   /** Public accessor for data type of this interface. */
@@ -140,8 +141,8 @@ class SRAMInterface[T <: Data](
   /** Target information for annotating the underlying SRAM if it is known. */
   def underlying: Option[HasTarget] = _underlying
 
-  /** SRAM Description */
-  val description = new SRAMDescription
+  /** Optional SRAM description to hold metadata. */
+  val description = Option.when(hasDescription)(new SRAMDescription)
 }
 
 /** A memory file with which to preload an [[SRAM]]
@@ -501,7 +502,7 @@ object SRAM {
     val mem = autoNameRecursively("sram")(new SramTarget)
 
     // user-facing interface into the SRAM
-    val sramIntfType = new SRAMInterface(size, tpe, numReadPorts, numWritePorts, numReadwritePorts, isVecMem)
+    val sramIntfType = new SRAMInterface(size, tpe, numReadPorts, numWritePorts, numReadwritePorts, isVecMem, true)
     val _out = Wire(sramIntfType)
     _out._underlying = Some(HasTarget(mem))
 
@@ -575,21 +576,20 @@ object SRAM {
     }
 
     // Add metadata to the SRAM.
-    val description = _out.description
-    description.depth := Property(size)
-    description.dataWidth := Property(tpe.getWidth)
-    description.masked := Property(isVecMem)
-    description.read := Property(numReadPorts)
-    description.write := Property(numWritePorts)
-    description.readwrite := Property(numReadwritePorts)
-    description.maskGranularity := Property(
+    _out.description.get.depth := Property(size)
+    _out.description.get.dataWidth := Property(tpe.getWidth)
+    _out.description.get.masked := Property(isVecMem)
+    _out.description.get.read := Property(numReadPorts)
+    _out.description.get.write := Property(numWritePorts)
+    _out.description.get.readwrite := Property(numReadwritePorts)
+    _out.description.get.maskGranularity := Property(
       Option
         .when(isVecMem)(tpe match {
           case t: Vec[_] => t.sample_element.getWidth
         })
         .getOrElse(0)
     )
-    description.hierarchy := Property(Path(mem))
+    _out.description.get.hierarchy := Property(Path(mem))
 
     _out
   }
