@@ -29,10 +29,11 @@ Hello()
 ```
 
 `hello` is a nullary void function so we must choose `DPIVoidFunctionImport` as a base class of function object. `DPIVoidFunctionImport` has abstract member `functionName` which is a c-linkage name users must provide. `DPIVoidFunctionImport` has a `call` method which internally generates
-raw DPI intrinsic but it's recommended to define `apply` function so the object looks exactly 
-scala functions. 
+raw DPI intrinsic but it's recommended to define `apply` function so the object looks exactly scala functions. 
 
 ## Types
+
+Argument types are determined by operand types so operands must not contain uninfered width. Small integer types are lowered into c-compatible types.
 System Verilog defines c-compatible types
 
 ## Non-void function
@@ -50,10 +51,15 @@ object Add extends DPINonVoidFunctionImport[Unit] {
 ```
 
 ## Clocked vs unclocked function call
+"clocked" function call is evaluated at associated clock's posedge.
+Chisel API implicitly uses Module's clock so it's necessary to use `withClocked(clock) {..}` for custom clock. If the called function has a result, the result will be provided in the next clock like a register.
 
 
 ## Open Array 
-Chisel Vector is always lowered into an open array. 
+
+Chisel Vector is always lowered into a SV open array. The memory layout is
+simulator-dependent so it's recommended to use `svSize` and
+`svGetBitArrElemVecVal` to access array elements.
 
 ```c++
 extern "C" void sum(const svOpenArrayHandle array, int* result) {
@@ -93,7 +99,8 @@ val sum_b = Sum(io.a)
 ## Can we export functions?
 Not yet. Please use a blackbox at this point.
 
-## Can we call DPI function in initial block?
+## Can we call a DPI function in initial block?
 Not yet. Please use a blackbox at this point.
 
 ## Can we represent dependency between two DPI calls?
+Chisel currently cannot  
