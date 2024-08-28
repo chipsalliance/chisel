@@ -29,7 +29,7 @@ object Main extends App {
   println(
     ChiselStage.emitSystemVerilog(
       gen = new Foo,
-      firtoolOpts = Array("-disable-all-randomization", "-strip-debug-info")
+      firtoolOpts = Array("-disable-all-randomization", "-strip-debug-info", "-default-layer-specialization=enable")
     )
   )
 }
