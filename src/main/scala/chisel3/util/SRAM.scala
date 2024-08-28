@@ -104,6 +104,7 @@ final class SRAMDescription extends Bundle {
   * @param numWritePorts The number of write ports
   * @param numReadwritePorts The number of read/write ports
   * @param masked Whether the memory is write masked
+  * @param hasDescription Whether this interface contains an [[SRAMDescription]]
   */
 class SRAMInterface[T <: Data](
   val memSize: BigInt,
