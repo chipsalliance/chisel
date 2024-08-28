@@ -104,6 +104,7 @@ final class SRAMDescription extends Bundle {
   * @param numWritePorts The number of write ports
   * @param numReadwritePorts The number of read/write ports
   * @param masked Whether the memory is write masked
+  * @param hasDescription Whether this interface contains an [[SRAMDescription]]
   */
 class SRAMInterface[T <: Data](
   val memSize: BigInt,
@@ -112,7 +113,8 @@ class SRAMInterface[T <: Data](
   val numReadPorts:      Int,
   val numWritePorts:     Int,
   val numReadwritePorts: Int,
-  val masked:            Boolean = false)
+  val masked:            Boolean = false,
+  val hasDescription:    Boolean = false)
     extends Bundle {
 
   /** Public accessor for data type of this interface. */
@@ -140,8 +142,8 @@ class SRAMInterface[T <: Data](
   /** Target information for annotating the underlying SRAM if it is known. */
   def underlying: Option[HasTarget] = _underlying
 
-  /** SRAM Description */
-  val description = new SRAMDescription
+  /** Optional SRAM description to hold metadata. */
+  val description = Option.when(hasDescription)(new SRAMDescription)
 }
 
 /** A memory file with which to preload an [[SRAM]]
@@ -501,7 +503,7 @@ object SRAM {
     val mem = autoNameRecursively("sram")(new SramTarget)
 
     // user-facing interface into the SRAM
-    val sramIntfType = new SRAMInterface(size, tpe, numReadPorts, numWritePorts, numReadwritePorts, isVecMem)
+    val sramIntfType = new SRAMInterface(size, tpe, numReadPorts, numWritePorts, numReadwritePorts, isVecMem, true)
     val _out = Wire(sramIntfType)
     _out._underlying = Some(HasTarget(mem))
 
@@ -575,7 +577,7 @@ object SRAM {
     }
 
     // Add metadata to the SRAM.
-    val description = _out.description
+    val description = _out.description.get
     description.depth := Property(size)
     description.dataWidth := Property(tpe.getWidth)
     description.masked := Property(isVecMem)

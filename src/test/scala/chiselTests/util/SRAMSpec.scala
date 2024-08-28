@@ -4,7 +4,7 @@ package chiselTests.util
 
 import chisel3._
 import chisel3.properties.{Path, Property}
-import chisel3.util.{MemoryReadWritePort, SRAM}
+import chisel3.util.{MemoryReadWritePort, SRAM, SRAMInterface}
 import chisel3.experimental.{annotate, ChiselAnnotation, OpaqueType}
 import chiselTests.ChiselFlatSpec
 import _root_.circt.stage.ChiselStage.{emitCHIRRTL, emitSystemVerilog}
@@ -242,11 +242,29 @@ class SRAMSpec extends ChiselFlatSpec {
         numWritePorts = 0,
         numReadwritePorts = 1
       )
-      sramPath := sram.description.hierarchy
+      sramPath := sram.description.get.hierarchy
     }
     // TODO we need a way with ChiselSim to evaluate properties
     val chirrtl = emitCHIRRTL(new Top)
     chirrtl should include("output sramPath : Path")
     chirrtl should include("propassign sramPath, sram.description.hierarchy")
+  }
+
+  it should "be possible to create an SramInterface Wire" in {
+    class Top extends Module {
+      val sramIntf = Wire(
+        new SRAMInterface(
+          memSize = 32,
+          tpe = Vec(4, UInt(8.W)),
+          numReadPorts = 0,
+          numWritePorts = 0,
+          numReadwritePorts = 1,
+          masked = false
+        )
+      )
+      sramIntf := DontCare
+    }
+    // should not give uninitialized errors for description properties
+    emitSystemVerilog(new Top)
   }
 }
