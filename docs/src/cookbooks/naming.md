@@ -4,11 +4,7 @@ sidebar_position: 1
 
 ```scala mdoc:invisible
 import chisel3._
-import circt.stage.ChiselStage
-def emitSystemVerilog(gen: => RawModule): String = {
-  val prettyArgs = Array("--disable-all-randomization", "--strip-debug-info")
-  ChiselStage.emitSystemVerilog(gen, firtoolOpts = prettyArgs)
-}
+import chisel3.docs.emitSystemVerilog
 ```
 # Naming Cookbook
 
@@ -98,11 +94,7 @@ We can override `desiredName` of the module to include the type name of the `gen
 ```scala mdoc:invisible:reset
 import chisel3._
 import chisel3.util.Queue
-import circt.stage.ChiselStage
-def emitSystemVerilog(gen: => RawModule): String = {
-  val prettyArgs = Array("--disable-all-randomization", "--strip-debug-info")
-  ChiselStage.emitSystemVerilog(gen, firtoolOpts = prettyArgs)
-}
+import chisel3.docs.emitSystemVerilog
 ```
 
 ```scala mdoc
@@ -174,11 +166,7 @@ new MyBundle(UInt(8.W), 3).typeName
 
 ```scala mdoc:invisible:reset
 import chisel3._
-import circt.stage.ChiselStage
-def emitSystemVerilog(gen: => RawModule): String = {
-  val prettyArgs = Array("--disable-all-randomization", "--strip-debug-info")
-  ChiselStage.emitSystemVerilog(gen, firtoolOpts = prettyArgs)
-}
+import chisel3.docs.emitSystemVerilog
 ```
 
 Auto-generated `typeName`s take the form of `{Bundle Name}_{Parameter Value 1}_{Parameter Value 2}_{...}`, and so our `MyBundle` can be equivalently expressed with:
@@ -221,9 +209,7 @@ class AliasedBundle extends Bundle with HasTypeAlias {
 Let's see what happens when we generate FIRRTL using this `Bundle`:
 
 ```scala mdoc:invisible
-def emitFIRRTL(gen: => RawModule): String = {
-  ChiselStage.emitCHIRRTL(gen)
-}
+import circt.stage.ChiselStage.{emitCHIRRTL => emitFIRRTL}
 ```
 ```scala mdoc
 emitFIRRTL(new Module {

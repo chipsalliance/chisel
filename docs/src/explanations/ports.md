@@ -42,7 +42,6 @@ Here is an example of how to use this API:
 ```scala mdoc
 import chisel3.reflect.DataMirror
 import chisel3.stage.ChiselGeneratorAnnotation
-import circt.stage.ChiselStage
 
 class Adder extends Module {
   val a = IO(Input(UInt(8.W)))
@@ -63,6 +62,10 @@ class Test extends Module {
     println(s"Found port $name: $port")
   }}
 }
-
-ChiselStage.emitSystemVerilog(new Test)
+```
+This will print the following:
+```scala mdoc:passthrough
+println("```")
+chisel3.docs.emitSystemVerilog(new Test): Unit // suppress String output, just want to see stdout
+println("```")
 ```

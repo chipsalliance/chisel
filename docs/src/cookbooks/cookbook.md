@@ -38,7 +38,7 @@ class Foo extends Module {
 
 ```scala mdoc:invisible
 // Hidden but will make sure this actually compiles
-getVerilogString(new Foo)
+chisel3.docs.emitSystemVerilog(new Foo)
 ```
 
 ### How do I create a Bundle from a UInt?
@@ -67,7 +67,7 @@ class Foo extends Module {
 
 ```scala mdoc:invisible
 // Hidden but will make sure this actually compiles
-getVerilogString(new Foo)
+chisel3.docs.emitSystemVerilog(new Foo)
 ```
 
 ### How can I tieoff a Bundle/Vec to 0?
@@ -77,7 +77,6 @@ you are tying off, you can use `chiselTypeOf`:
 
 ```scala mdoc:silent:reset
 import chisel3._
-import circt.stage.ChiselStage
 
 class MyBundle extends Bundle {
   val foo = UInt(4.W)
@@ -96,8 +95,10 @@ class Foo(typ: MyBundle) extends Module {
   // but this will work no matter the type of bundleB:
   bundleB := 0.U.asTypeOf(chiselTypeOf(bundleB))
 }
-
-ChiselStage.emitSystemVerilog(new Foo(new MyBundle))
+```
+```scala mdoc:invisible
+// Hidden but will make sure this actually compiles
+chisel3.docs.emitSystemVerilog(new Foo(new MyBundle))
 ```
 ### How do I create a Vec of Bools from a UInt?
 
@@ -122,7 +123,7 @@ class Foo extends Module {
 
 ```scala mdoc:invisible
 // Hidden but will make sure this actually compiles
-getVerilogString(new Foo)
+chisel3.docs.emitSystemVerilog(new Foo)
 ```
 
 ### How do I create a UInt from a Vec of Bool?
@@ -147,7 +148,7 @@ class Foo extends Module {
 
 ```scala mdoc:invisible
 // Hidden but will make sure this actually compiles
-getVerilogString(new Foo)
+chisel3.docs.emitSystemVerilog(new Foo)
 ```
 
 ### How do I connect a subset of Bundle fields?
@@ -195,9 +196,7 @@ class Foo extends Module {
 ```
 ```scala mdoc:invisible
 // Hidden but will make sure this actually compiles
-import circt.stage.ChiselStage
-
-ChiselStage.emitSystemVerilog(new Foo)
+chisel3.docs.emitSystemVerilog(new Foo)
 ```
 
 
@@ -230,7 +229,7 @@ class Foo extends Module {
 ```
 ```scala mdoc:invisible
 // Hidden but will make sure this actually compiles
-getVerilogString(new Foo)
+chisel3.docs.emitSystemVerilog(new Foo)
 ```
 
 
@@ -273,8 +272,8 @@ class MyModule2 extends Module {
 
 ```scala mdoc:invisible
 // Hidden but will make sure this actually compiles
-getVerilogString(new MyModule)
-getVerilogString(new MyModule2)
+chisel3.docs.emitSystemVerilog(new MyModule)
+chisel3.docs.emitSystemVerilog(new MyModule2)
 ```
 
 
@@ -345,7 +344,7 @@ it becoming a hardware field of the `Bundle`.
 Note that this also means you must pass `gen` as a function, for example:
 
 ```scala mdoc:silent
-getVerilogString(new Top(new UsingAFunctionBundle(() => UInt(8.W))))
+chisel3.docs.emitSystemVerilog(new Top(new UsingAFunctionBundle(() => UInt(8.W))))
 ```
 
 ##### Aliased Warning
@@ -380,7 +379,7 @@ class UsingByNameParameters[T <: Data](gen: => T) extends Bundle {
 With this usage, you do not include `() =>` when passing the argument:
 
 ```scala mdoc:silent
-getVerilogString(new Top(new UsingByNameParameters(UInt(8.W))))
+chisel3.docs.emitSystemVerilog(new Top(new UsingByNameParameters(UInt(8.W))))
 ```
 
 Note that as this is just syntactic sugar over (1), the [same warning applies](#aliased-warning).
@@ -398,7 +397,7 @@ class DirectionedBundle[T <: Data](gen: T) extends Bundle {
 ```
 
 ```scala mdoc:invisible
-getVerilogString(new Top(new DirectionedBundle(UInt(8.W))))
+chisel3.docs.emitSystemVerilog(new Top(new DirectionedBundle(UInt(8.W))))
 ```
 
 This approach is admittedly a little ugly and may mislead others reading the code because it implies that this Bundle is intended to be used as an `Output`.
@@ -416,7 +415,7 @@ class UsingCloneTypeBundle[T <: Data](gen: T) extends Bundle {
 ```
 
 ```scala mdoc:invisible
-getVerilogString(new Top(new UsingCloneTypeBundle(UInt(8.W))))
+chisel3.docs.emitSystemVerilog(new Top(new UsingCloneTypeBundle(UInt(8.W))))
 ```
 
 ### <a name="bundle-unable-to-clone"></a> How do I deal with the "unable to clone" error?
@@ -535,7 +534,7 @@ class DetectTwoOnes extends Module {
 
 ```scala mdoc:invisible
 // Hidden but will make sure this actually compiles
-getVerilogString(new DetectTwoOnes)
+chisel3.docs.emitSystemVerilog(new DetectTwoOnes)
 ```
 
 Note: the `is` statement can take multiple conditions e.g. `is (sTwo1s, sOne1) { ... }`.
@@ -580,7 +579,7 @@ class Foo extends Module {
 
 ```scala mdoc:invisible
 // Hidden but will make sure this actually compiles
-getVerilogString(new Foo)
+chisel3.docs.emitSystemVerilog(new Foo)
 ```
 
 If you **really** need to do this for a one-off case (Think thrice! It is likely you can better structure the code using bundles), then rocket-chip has a [Split utility](https://github.com/freechipsproject/rocket-chip/blob/723af5e6b69e07b5f94c46269a208a8d65e9d73b/src/main/scala/util/Misc.scala#L140) which can accomplish this.
@@ -592,7 +591,6 @@ Below, the left-hand side connection to `io.out(0)` is not allowed.
 
 ```scala mdoc:silent:reset
 import chisel3._
-import circt.stage.ChiselStage
 
 class Foo extends Module {
   val io = IO(new Bundle {
@@ -630,7 +628,7 @@ class Foo extends Module {
 
 ```scala mdoc:invisible
 // Hidden but will make sure this actually compiles
-getVerilogString(new Foo)
+chisel3.docs.emitSystemVerilog(new Foo)
 ```
 
 ## How do I create an optional I/O?
@@ -656,7 +654,7 @@ class ModuleWithOptionalIOs(flag: Boolean) extends Module {
 
 ```scala mdoc:invisible
 // Hidden but will make sure this actually compiles
-getVerilogString(new ModuleWithOptionalIOs(true))
+chisel3.docs.emitSystemVerilog(new ModuleWithOptionalIOs(true))
 ```
 
 The following is an example where an entire `IO` is optional:
@@ -674,7 +672,7 @@ class ModuleWithOptionalIO(flag: Boolean) extends Module {
 
 ```scala mdoc:invisible
 // Hidden but will make sure this actually compiles
-getVerilogString(new ModuleWithOptionalIO(true))
+chisel3.docs.emitSystemVerilog(new ModuleWithOptionalIO(true))
 ```
 
 ## How do I create I/O without a prefix?
@@ -693,7 +691,7 @@ class MyModule extends Module {
 ```
 
 ```scala mdoc:verilog
-getVerilogString(new MyModule)
+chisel3.docs.emitSystemVerilog(new MyModule)
 ```
 
 If you have a `Bundle` from which you would like to create ports without the
@@ -717,7 +715,7 @@ class MyModule extends Module {
 Note that `io_` is nowhere to be seen!
 
 ```scala mdoc:verilog
-getVerilogString(new MyModule)
+chisel3.docs.emitSystemVerilog(new MyModule)
 ```
 
 ## How do I override the implicit clock or reset within a Module?
@@ -750,12 +748,7 @@ class MyModule extends Module with ImplicitClock {
 This gives the following Verilog:
 
 ```scala mdoc:verilog
-def func(): String = {
-  // This example uses a Reg to we need to disable randomization
-  val prettyArgs = Array("--disable-all-randomization", "--strip-debug-info")
-  circt.stage.ChiselStage.emitSystemVerilog(new MyModule, firtoolOpts = prettyArgs)
-}
-func()
+chisel3.docs.emitSystemVerilog(new MyModule)
 ```
 
 If you do not care about the name of the overriden clock, you can just assign it to `val implicitClock`:
@@ -800,7 +793,7 @@ Unlike `Vecs` which represent a singular Chisel type and must have the same widt
 `Seq` is a purely Scala construct, so their elements are independent from the perspective of Chisel and can have different widths.
 
 ```scala mdoc:verilog
-circt.stage.ChiselStage.emitSystemVerilog(new Top(4))
+chisel3.docs.emitSystemVerilog(new Top(4))
   // remove the body of the module by removing everything after ');'
   .split("\\);")
   .head + ");\n"
@@ -932,7 +925,7 @@ class Foo extends Module {
 The above code loses the `x` name, instead using `_GEN_3` (the other `_GEN_*` signals are expected).
 
 ```scala mdoc:verilog
-getVerilogString(new Foo)
+chisel3.docs.emitSystemVerilog(new Foo)
 ```
 
 This can be worked around by creating a wire and connecting the dynamic index to the wire:
@@ -957,7 +950,7 @@ class Foo2 extends Module {
 
 Which produces:
 ```scala mdoc:verilog
-getVerilogString(new Foo2)
+chisel3.docs.emitSystemVerilog(new Foo2)
 ```
 
 ### How can I dynamically set/parametrize the name of a module?
@@ -987,7 +980,7 @@ class Salt extends Module {
 Elaborating the Chisel module `Salt` yields our "desired names" for `Salt` and `Coffee` in the output Verilog:
 
 ```scala mdoc:verilog
-getVerilogString(new Salt)
+chisel3.docs.emitSystemVerilog(new Salt)
 ```
 
 ## Directionality
@@ -999,7 +992,6 @@ to a register:
 
 ```scala mdoc:silent:reset
 import chisel3._
-import circt.stage.ChiselStage
 import chisel3.util.Decoupled
 class BadRegConnect extends Module {
   val io = IO(new Bundle {
@@ -1012,7 +1004,7 @@ class BadRegConnect extends Module {
 ```
 
 ```scala mdoc:crash
-ChiselStage.emitSystemVerilog(new BadRegConnect)
+getVerilogString(new BadRegConnect)
 ```
 
 While there is no construct to "strip direction" in Chisel3, wrapping a type in `Output(...)`
@@ -1022,7 +1014,6 @@ This will have the desired result when used to construct a Register:
 
 ```scala mdoc:silent:reset
 import chisel3._
-import circt.stage.ChiselStage
 import chisel3.util.Decoupled
 class CoercedRegConnect extends Module {
   val io = IO(new Bundle {
@@ -1038,7 +1029,7 @@ class CoercedRegConnect extends Module {
 
 <!-- Just make sure it actually works -->
 ```scala mdoc:invisible
-ChiselStage.emitSystemVerilog(new CoercedRegConnect {
+chisel3.docs.emitSystemVerilog(new CoercedRegConnect {
   // Provide default connections that would just muddy the example
   io.enq.ready := true.B
   // dontTouch so that it shows up in the Verilog

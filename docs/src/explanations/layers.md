@@ -223,6 +223,7 @@ be optimized to remove/add ports or to move logic into a layer block.
 The complete Verilog output for this example is reproduced below:
 
 ```scala mdoc:verilog
+// Use ChiselStage instead of chisel3.docs.emitSystemVerilog because we want layers printed here (obviously)
 import circt.stage.ChiselStage
 ChiselStage.emitSystemVerilog(new Foo, firtoolOpts=Array("-strip-debug-info", "-disable-all-randomization"))
 ```

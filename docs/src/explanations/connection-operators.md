@@ -20,14 +20,12 @@ Chisel contains two connection operators, `:=` and `<>`. This document provides 
 // Imports used by the following examples
 import chisel3._
 import chisel3.util.DecoupledIO
-import circt.stage.ChiselStage
 ```
 
 The diagram for the experiment can be viewed [here](https://docs.google.com/document/d/14C918Hdahk2xOGSJJBT-ZVqAx99_hg3JQIq-vaaifQU/edit?usp=sharing).
 ![Experiment Image](https://raw.githubusercontent.com/chipsalliance/chisel3/master/docs/src/images/connection-operators-experiment.svg?sanitize=true)
 
 ```scala mdoc:silent
-
 class Wrapper extends Module{
   val io = IO(new Bundle {
   val in = Flipped(DecoupledIO(UInt(8.W)))
@@ -51,8 +49,8 @@ class PipelineStage extends Module{
 }
 ```
 Below we can see the resulting Verilog for this example:
-```scala mdoc
-ChiselStage.emitSystemVerilog(new Wrapper)
+```scala mdoc:verilog
+chisel3.docs.emitSystemVerilog(new Wrapper)
 ```
 ## Concept 1: `<>` is Commutative
 
@@ -69,7 +67,6 @@ Achieving this involves flipping the RHS and LHS of the `<>` operator and seeing
 ```scala mdoc:silent:reset
 import chisel3._
 import chisel3.util.DecoupledIO
-import circt.stage.ChiselStage
 
 class Wrapper extends Module{
   val io = IO(new Bundle {
@@ -94,8 +91,8 @@ class PipelineStage extends Module{
 }
 ```
 Below we can see the resulting Verilog for this example:
-```scala mdoc
-ChiselStage.emitSystemVerilog(new Wrapper)
+```scala mdoc:verilog
+chisel3.docs.emitSystemVerilog(new Wrapper)
 ```
 ### Conclusion:
 The Verilog remained the same without incurring errors, showing that the `<>` operator is commutative.
@@ -111,7 +108,6 @@ We replace all instances of `<>` with `:=` in the sample code above.
 ```scala mdoc:silent:reset
 import chisel3._
 import chisel3.util.DecoupledIO
-import circt.stage.ChiselStage
 
 class Wrapper extends Module{
   val io = IO(new Bundle {
@@ -137,7 +133,7 @@ class PipelineStage extends Module{
 ```
 Below we can see the resulting error message for this example:
 ```scala mdoc:crash
-ChiselStage.emitSystemVerilog(new Wrapper)
+circt.stage.ChiselStage.emitSystemVerilog(new Wrapper)
 ```
 ### Conclusion:
 The := operator goes field-by-field on the LHS and attempts to connect it to the same-named signal from the RHS. If something on the LHS is actually an Input, or the corresponding signal on the RHS is an Output, you will get an error as shown above.
@@ -150,7 +146,6 @@ We will find out using the sample codes below:
 ```scala mdoc:silent:reset
 import chisel3._
 import chisel3.util.DecoupledIO
-import circt.stage.ChiselStage
 
 class Wrapper extends Module{
   val io = IO(new Bundle {
@@ -179,8 +174,8 @@ class PipelineStage extends Module{
 }
 ```
 Below we can see the resulting Verilog for this example:
-```scala mdoc
-ChiselStage.emitSystemVerilog(new Wrapper)
+```scala mdoc:verilog
+chisel3.docs.emitSystemVerilog(new Wrapper)
 ```
 ### Conclusion:
 If `<>` were used to assign the unidrectioned wire `tmp` to DontCare, we would get an error. But in the example above, we used `:=` and no errors occurred.
@@ -197,7 +192,6 @@ We will find out using the sample codes below:
 ```scala mdoc:silent:reset
 import chisel3._
 import chisel3.util.DecoupledIO
-import circt.stage.ChiselStage
 
 class Wrapper extends Module{
   val io = IO(new Bundle {
@@ -226,8 +220,8 @@ class PipelineStage extends Module{
 }
 ```
 Below we can see the resulting Verilog for this example:
-```scala mdoc
-ChiselStage.emitSystemVerilog(new Wrapper)
+```scala mdoc:verilog
+chisel3.docs.emitSystemVerilog(new Wrapper)
 ```
 ### Conclusion:
 Both `<>` and `:=` can be used to assign directioned things (IOs) to DontCare as shown in `io.in` and `p.io.a` respectively. This is basically equivalent because in this case both `<>` and `:=` will determine the direction from the LHS.
@@ -241,7 +235,6 @@ If there is at least one known flow what will `<>` do? This will be shown using 
 ```scala mdoc:silent:reset
 import chisel3._
 import chisel3.util.DecoupledIO
-import circt.stage.ChiselStage
 
 class Wrapper extends Module{
   val io = IO(new Bundle {
@@ -272,7 +265,7 @@ class PipelineStage extends Module{
 ```
 Below we can see the resulting Verilog for this example:
 ```scala mdoc
-ChiselStage.emitSystemVerilog(new Wrapper)
+chisel3.docs.emitSystemVerilog(new Wrapper)
 ```
 ### Conclusion:
 The connection above went smoothly with no errors, this goes to show `<>` will work as long as there is at least one directioned thing (IO or submodule's IO) to "fix" the direction.
@@ -285,7 +278,6 @@ This experiment creates a MockDecoupledIO which has the same fields by name as a
 ```scala mdoc:silent:reset
 import chisel3._
 import chisel3.util.DecoupledIO
-import circt.stage.ChiselStage
 
 class MockDecoupledIO extends Bundle {
   val valid = Output(Bool())
@@ -315,8 +307,8 @@ class PipelineStage extends Module{
 }
 ```
 Below we can see the resulting Verilog for this example:
-```scala mdoc
-ChiselStage.emitSystemVerilog(new Wrapper)
+```scala mdoc:verilog
+chisel3.docs.emitSystemVerilog(new Wrapper)
 ```
 And here is another experiment, where we remove one of the fields of MockDecoupledIO:
 ( Scastie link for the experiment:https://scastie.scala-lang.org/ChtkhKCpS9CvJkjjqpdeIA)
@@ -324,7 +316,6 @@ And here is another experiment, where we remove one of the fields of MockDecoupl
 ```scala mdoc:silent:reset
 import chisel3._
 import chisel3.util.DecoupledIO
-import circt.stage.ChiselStage
 
 class MockDecoupledIO extends Bundle {
   val valid = Output(Bool())
@@ -355,7 +346,7 @@ class PipelineStage extends Module{
 ```
 Below we can see the resulting error for this example:
 ```scala mdoc:crash
-ChiselStage.emitSystemVerilog(new Wrapper)
+circt.stage.ChiselStage.emitSystemVerilog(new Wrapper)
 ```
 This one fails because there is a field `bits` missing.
 

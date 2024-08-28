@@ -13,7 +13,6 @@ In contrast with `Chisel.util.Enum`, `ChiselEnum` are subclasses of `Data`, whic
 
 ```scala mdoc
 // Imports used in the following examples
-import circt.stage.ChiselStage
 import chisel3._
 import chisel3.util._
 ```
@@ -75,7 +74,7 @@ class AluMux1File extends Module {
 ```
 
 ```scala mdoc:verilog
-ChiselStage.emitSystemVerilog(new AluMux1File)
+chisel3.docs.emitSystemVerilog(new AluMux1File)
 ```
 
 ChiselEnum also allows for the user to directly set the Values by passing an `UInt` to `Value(...)`
@@ -122,7 +121,7 @@ class ToUInt extends RawModule {
 
 ```scala mdoc:invisible
 // Always need to run Chisel to see if there are elaboration errors
-ChiselStage.emitSystemVerilog(new ToUInt)
+chisel3.docs.emitSystemVerilog(new ToUInt)
 ```
 
 You can cast from a `UInt` to an enum by passing the `UInt` to the apply method of the `ChiselEnum` object:
@@ -139,8 +138,9 @@ However, if you cast from a `UInt` to an Enum type when there are undefined stat
 that the `UInt` could hit, you will see a warning like the following:
 
 ```scala mdoc:passthrough
-val (log, _) = grabLog(ChiselStage.emitCHIRRTL(new FromUInt))
-println(s"```\n$log```")
+println("```")
+_root_.circt.stage.ChiselStage.emitCHIRRTL(new FromUInt): Unit // Suppress String output
+println("```")
 ```
 
 (Note that the name of the Enum is ugly as an artifact of our documentation generation flow, it will
@@ -162,8 +162,9 @@ class SafeFromUInt extends Module {
 Now there will be no warning:
 
 ```scala mdoc:passthrough
-val (log2, _) = grabLog(ChiselStage.emitCHIRRTL(new SafeFromUInt))
-println(s"```\n$log2```")
+println("```")
+_root_.circt.stage.ChiselStage.emitCHIRRTL(new SafeFromUInt): Unit // Suppress String output
+println("```")
 ```
 
 You can also suppress the warning by using `suppressEnumCastWarning`. This is
@@ -186,7 +187,7 @@ class SuppressedFromUInt extends Module {
 ```
 
 ```scala mdoc:invisible
-val (log3, _) = grabLog(ChiselStage.emitCHIRRTL(new SuppressedFromUInt))
+val (log3, _) = grabLog(_root_.circt.stage.ChiselStage.emitCHIRRTL(new SuppressedFromUInt))
 assert(log3.isEmpty)
 ```
 
@@ -221,7 +222,7 @@ class LoadStoreExample extends Module {
 
 ```scala mdoc:invisible
 // Always need to run Chisel to see if there are elaboration errors
-ChiselStage.emitSystemVerilog(new LoadStoreExample)
+chisel3.docs.emitSystemVerilog(new LoadStoreExample)
 ```
 
 Some additional useful methods defined on the `ChiselEnum` object are:
