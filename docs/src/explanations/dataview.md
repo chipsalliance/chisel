@@ -90,7 +90,7 @@ class MyModule extends RawModule {
 Of course, this would result in very different looking Verilog:
 
 ```scala mdoc:verilog
-getVerilogString(new MyModule {
+chisel3.docs.emitSystemVerilog(new MyModule {
   override def desiredName = "MyModule"
   axi := DontCare // Just to generate Verilog in this stub
 })
@@ -146,7 +146,7 @@ class AXIStub extends RawModule {
 This will generate Verilog that matches the standard naming convention:
 
 ```scala mdoc:verilog
-getVerilogString(new AXIStub)
+chisel3.docs.emitSystemVerilog(new AXIStub)
 ```
 
 Note that if both the _Target_ and the _View_ types are subtypes of `Data` (as they are in this example),
@@ -174,7 +174,7 @@ class ConnectionExample extends RawModule {
 This results in the corresponding fields being connected in the emitted Verilog:
 
 ```scala mdoc:verilog
-getVerilogString(new ConnectionExample)
+chisel3.docs.emitSystemVerilog(new ConnectionExample)
 ```
 
 ## Other Use Cases
@@ -247,7 +247,7 @@ class TupleExample extends RawModule {
 
 ```scala mdoc:invisible
 // Always emit Verilog to make sure it actually works
-getVerilogString(new TupleExample)
+chisel3.docs.emitSystemVerilog(new TupleExample)
 ```
 
 Note that this example ignored `DataProduct` which is another required piece (see [the documentation
@@ -305,7 +305,7 @@ class PartialDataViewModule extends Module {
 ```
 
 ```scala mdoc:verilog
-getVerilogString(new PartialDataViewModule)
+chisel3.docs.emitSystemVerilog(new PartialDataViewModule)
 ```
 
 While `PartialDataViews` need not be total for the _Target_, both `PartialDataViews` and `DataViews`
@@ -436,7 +436,7 @@ class FooToBar extends Module {
 ```
 
 ```scala mdoc:verilog
-getVerilogString(new FooToBar)
+chisel3.docs.emitSystemVerilog(new FooToBar)
 ```
 
 However, it's possible that some user of `Foo` and `Bar` wants different behavior,
@@ -456,7 +456,7 @@ class FooToBarSwizzled extends Module {
 ```
 
 ```scala mdoc:verilog
-getVerilogString(new FooToBarSwizzled)
+chisel3.docs.emitSystemVerilog(new FooToBarSwizzled)
 ```
 
 ### DataProduct

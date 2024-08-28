@@ -235,7 +235,7 @@ class Example0 extends RawModule {
 This generates the following Verilog, where each member of `incoming` drives every member of `outgoing`:
 
 ```scala mdoc:verilog
-getVerilogString(new Example0)
+chisel3.docs.emitSystemVerilog(new Example0)
 ```
 
 > You may be thinking "Wait, I'm confused! Isn't `incoming` flipped and `outgoing` aligned?" -- Noo! Whether `incoming` is aligned with `outgoing` makes no sense; remember, you only evaluate alignment between members of the same component or Chisel type.
@@ -274,7 +274,7 @@ class Example1 extends RawModule {
 This generates the following Verilog, where the aligned members are driven `incoming` to `outgoing` and flipped members are driven `outgoing` to `incoming`:
 
 ```scala mdoc:verilog
-getVerilogString(new Example1)
+chisel3.docs.emitSystemVerilog(new Example1)
 ```
 
 ### Port-Direction Computation versus Connection-Direction Computation
@@ -327,7 +327,7 @@ class Example2 extends RawModule {
 This generates the following Verilog, where the aligned members are driven `incoming` to `outgoing` and flipped members are ignored:
 
 ```scala mdoc:verilog
-getVerilogString(new Example2)
+chisel3.docs.emitSystemVerilog(new Example2)
 ```
 
 ### Flipped connection operator (`:>=`)
@@ -346,7 +346,7 @@ class Example3 extends RawModule {
 This generates the following Verilog, where the aligned members are ignored and the flipped members are driven `outgoing` to `incoming`:
 
 ```scala mdoc:verilog
-getVerilogString(new Example3)
+chisel3.docs.emitSystemVerilog(new Example3)
 ```
 
 > Note: Astute observers will realize that `c :<>= p` is semantically equivalent to `c :<= p` followed by `c :>= p`.
@@ -368,7 +368,7 @@ class Example4 extends RawModule {
 This generates the following Verilog, where all members are driven from the literal to `w`, regardless of alignment:
 
 ```scala mdoc:verilog
-getVerilogString(new Example4)
+chisel3.docs.emitSystemVerilog(new Example4)
 ```
 
 > Note: Astute observers will realize that `c :#= p` is semantically equivalent to `c :<= p` followed by `p :>= c` (note `p` and `c` switched places in the second connection).
@@ -389,7 +389,7 @@ class Example4b extends RawModule {
 This generates the following Verilog, where all members are driven from the literal to `w`, regardless of alignment:
 
 ```scala mdoc:verilog
-getVerilogString(new Example4b)
+chisel3.docs.emitSystemVerilog(new Example4b)
 ```
 ## Connectable
 
@@ -432,7 +432,7 @@ class Example9 extends RawModule {
 This generates the following Verilog, where `p.b` is driven from `c.b`:
 
 ```scala mdoc:verilog
-getVerilogString(new Example9)
+chisel3.docs.emitSystemVerilog(new Example9)
 ```
 
 ### Defaults with waived connections
@@ -464,7 +464,7 @@ class Example10 extends RawModule {
 This generates the following Verilog, where `p.b` is driven from `c.b`, and `p.a`, `c.b`, and `c.c` are initialized to default values:
 
 ```scala mdoc:verilog
-getVerilogString(new Example10)
+chisel3.docs.emitSystemVerilog(new Example10)
 ```
 
 ### Connecting types with optional members
@@ -487,7 +487,7 @@ class Example6 extends RawModule {
 This generates the following Verilog, where `ready` and `valid` are connected, and `bits` is ignored:
 
 ```scala mdoc:verilog
-getVerilogString(new Example6)
+chisel3.docs.emitSystemVerilog(new Example6)
 ```
 
 ### Always ignore errors caused by extra members (partial connection operator)
@@ -517,7 +517,7 @@ class Example11 extends RawModule {
 This generates the following Verilog, where nothing is connected:
 
 ```scala mdoc:verilog
-getVerilogString(new Example11)
+chisel3.docs.emitSystemVerilog(new Example11)
 ```
 
 ### Connecting components with different widths
@@ -541,7 +541,7 @@ class Example14 extends RawModule {
 This generates the following Verilog, where `p` is truncated prior to driving `c`:
 
 ```scala mdoc:verilog
-getVerilogString(new Example14)
+chisel3.docs.emitSystemVerilog(new Example14)
 ```
 
 ### Excluding members from any operator on a Connectable
@@ -570,7 +570,7 @@ class Example15 extends RawModule {
 This generates the following Verilog, where the `special` field is not connected:
 
 ```scala mdoc:verilog
-getVerilogString(new Example15)
+chisel3.docs.emitSystemVerilog(new Example15)
 ```
 
 ## Techniques for connecting structurally inequivalent Chisel types
@@ -625,7 +625,7 @@ class Example12 extends RawModule {
 Note that the `bits` fields are unconnected.
 
 ```scala mdoc:verilog
-getVerilogString(new Example12)
+chisel3.docs.emitSystemVerilog(new Example12)
 ```
 
 The second example will use a static cast and `.waive(_.bits)` to connect them as `MyReadyValid`.
@@ -651,7 +651,7 @@ Note that the `bits` fields ARE connected, even though they are waived, as `.wai
 To always omit the connection, use `.exclude` on one side and either `.exclude` or `.waive` on the other side.
 
 ```scala mdoc:verilog
-getVerilogString(new Example13)
+chisel3.docs.emitSystemVerilog(new Example13)
 ```
 
 ### Connecting sub-types to super-types by waiving extra members
@@ -678,7 +678,7 @@ class Example5 extends RawModule {
 This generates the following Verilog, where `ready` and `valid` are connected, and `bits` is ignored:
 
 ```scala mdoc:verilog
-getVerilogString(new Example5)
+chisel3.docs.emitSystemVerilog(new Example5)
 ```
 
 ### Connecting different sub-types
@@ -706,7 +706,7 @@ class Example7 extends RawModule {
 This generates the following Verilog, where `ready` and `valid` are connected, and `bits` and `echo` are ignored:
 
 ```scala mdoc:verilog
-getVerilogString(new Example7)
+chisel3.docs.emitSystemVerilog(new Example7)
 ```
 
 ## FAQ

@@ -24,11 +24,7 @@ import chisel3.experimental.{prefix, noPrefix}
 ```
 
 ```scala mdoc:invisible
-import circt.stage.ChiselStage
-def emitSystemVerilog(gen: => RawModule): String = {
-  val prettyArgs = Array("--disable-all-randomization", "--strip-debug-info")
-  ChiselStage.emitSystemVerilog(gen, firtoolOpts = prettyArgs)
-}
+import chisel3.docs.emitSystemVerilog
 ```
 
 Chisel users must also include the compiler plugin in their build settings.

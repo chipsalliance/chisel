@@ -274,12 +274,16 @@ It is commonly used to assign data to all-zeros, as described in [this cookbook 
 also be used (though not really recommended, as there is no checking on
 width matches) to convert one Chisel type to another:
 
+```scala mdoc:invisible
+import chisel3.docs.emitSystemVerilog
+```
+
 ```scala mdoc
 class SimilarToMyBundle(w: Int) extends Bundle{
   val foobar = UInt((2*w).W)
 }
 
-ChiselStage.emitSystemVerilog(new Module {
+emitSystemVerilog(new Module {
   val in = IO(Input(new MyBundle(3)))
   val out = IO(Output(new SimilarToMyBundle(3)))
 

@@ -40,7 +40,7 @@ class MyModule extends RawModule {
   val out = IO(Output(new Bar(UInt(8.W))))
   out := in.viewAs[Bar[UInt]]
 }
-circt.stage.ChiselStage.emitSystemVerilog(new MyModule)
+chisel3.docs.emitSystemVerilog(new MyModule)
 ```
 If you think about type parameterized classes as really being a family of different classes
 (one for each type parameter), you can think about the `implicit def` as a generator of `DataViews`
@@ -84,7 +84,7 @@ class MyModule extends RawModule {
   val out = IO(Output(new Bar(Some(8))))
   out := in.viewAs[Bar]
 }
-circt.stage.ChiselStage.emitSystemVerilog(new MyModule)
+chisel3.docs.emitSystemVerilog(new MyModule)
 ```
 
 ## How do I connect a subset of Bundle fields?
@@ -116,7 +116,7 @@ class MyModule extends Module {
 }
 ```
 ```scala mdoc:verilog
-circt.stage.ChiselStage.emitSystemVerilog(new MyModule)
+chisel3.docs.emitSystemVerilog(new MyModule)
 ```
 
 ### How do I view a Bundle as a parent type when the parent type is abstract (like a trait)?
@@ -204,5 +204,5 @@ class MyModule extends Module {
 }
 ```
 ```scala mdoc:verilog
-circt.stage.ChiselStage.emitSystemVerilog(new MyModule)
+chisel3.docs.emitSystemVerilog(new MyModule)
 ```

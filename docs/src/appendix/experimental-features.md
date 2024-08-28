@@ -42,7 +42,7 @@ class Example extends RawModule {
 ```
 
 ```scala mdoc:verilog
-circt.stage.ChiselStage.emitSystemVerilog(new Example)
+chisel3.docs.emitSystemVerilog(new Example)
 ```
 
 Partial specification is allowed, which results in "invalidated fields" as
@@ -58,7 +58,7 @@ class Example2 extends RawModule {
 ```
 
 ```scala mdoc:verilog
-circt.stage.ChiselStage.emitSystemVerilog(new Example2)
+chisel3.docs.emitSystemVerilog(new Example2)
 ```
 
 Bundle literals can also be nested arbitrarily.
@@ -80,7 +80,7 @@ class Example3 extends RawModule {
 ```
 
 ```scala mdoc:verilog
-circt.stage.ChiselStage.emitSystemVerilog(new Example3)
+chisel3.docs.emitSystemVerilog(new Example3)
 ```
 
 ## Vec Literals
@@ -98,7 +98,7 @@ class VecExample1 extends Module {
 }
 ```
 ```scala mdoc:verilog
-circt.stage.ChiselStage.emitSystemVerilog(new VecExample1)
+chisel3.docs.emitSystemVerilog(new VecExample1)
 ```
 
 or explicitly as in:
@@ -114,7 +114,7 @@ class VecExample1a extends Module {
 ```
 
 ```scala mdoc:verilog
-circt.stage.ChiselStage.emitSystemVerilog(new VecExample1a)
+chisel3.docs.emitSystemVerilog(new VecExample1a)
 ```
 
 The following examples all use the explicit form.
@@ -131,7 +131,7 @@ class VecExample2 extends RawModule {
 ```
 
 ```scala mdoc:verilog
-circt.stage.ChiselStage.emitSystemVerilog(new VecExample2)
+chisel3.docs.emitSystemVerilog(new VecExample2)
 ```
 
 Registers can be initialized from Vec literals
@@ -147,7 +147,7 @@ class VecExample3 extends Module {
 ```
 
 ```scala mdoc:verilog
-circt.stage.ChiselStage.emitSystemVerilog(new VecExample3)
+chisel3.docs.emitSystemVerilog(new VecExample3)
 ```
 
 Vec literals can also be nested arbitrarily.
@@ -163,7 +163,7 @@ class VecExample5 extends RawModule {
 ```
 
 ```scala mdoc:verilog
-circt.stage.ChiselStage.emitSystemVerilog(new VecExample5)
+chisel3.docs.emitSystemVerilog(new VecExample5)
 ```
 
 ## Loading Memories for simulation or FPGA initialization

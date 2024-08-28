@@ -58,7 +58,7 @@ class AddTwo(width: Int) extends Module {
 }
 ```
 ```scala mdoc:verilog
-circt.stage.ChiselStage.emitSystemVerilog(new AddTwo(10))
+chisel3.docs.emitSystemVerilog(new AddTwo(10))
 ```
 
 ### Using Instantiate
@@ -80,7 +80,7 @@ class AddTwoInstantiate(width: Int) extends Module {
 }
 ```
 ```scala mdoc:verilog
-circt.stage.ChiselStage.emitSystemVerilog(new AddTwoInstantiate(16))
+chisel3.docs.emitSystemVerilog(new AddTwoInstantiate(16))
 ```
 
 ## How do I access internal fields of an instance?
@@ -191,7 +191,7 @@ class Top extends Module {
 ```
 
 ```scala mdoc:verilog
-circt.stage.ChiselStage.emitSystemVerilog(new Top())
+chisel3.docs.emitSystemVerilog(new Top())
 ```
 
 ## How do I parameterize a module by its children instances?
@@ -231,7 +231,7 @@ class AddTwo(addOneDef: Definition[AddOne]) extends Module {
 }
 ```
 ```scala mdoc:verilog
-circt.stage.ChiselStage.emitSystemVerilog(new AddTwo(Definition(new AddOne(10))))
+chisel3.docs.emitSystemVerilog(new AddTwo(Definition(new AddOne(10))))
 ```
 
 ## How do I use the new hierarchy-specific Select functions?

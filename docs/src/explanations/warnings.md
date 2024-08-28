@@ -68,7 +68,6 @@ def compile(gen: => chisel3.RawModule, args: Array[String] = Array()): Unit = {
 ```
 
 ```scala mdoc
-import circt.stage.ChiselStage.emitSystemVerilog
 import chisel3._
 class TooWideIndexModule extends RawModule {
   val in = IO(Input(Vec(4, UInt(8.W))))
