@@ -14,7 +14,7 @@ object LayerControl {
       * @param file the file to check
       */
     final def filter(file: File): Boolean = file.getName match {
-      case nonLayer if !nonLayer.startsWith("layers_") => true
+      case nonLayer if !nonLayer.startsWith("layers-") => true
       case layer                                       => shouldEnable(layer)
     }
 
@@ -40,8 +40,8 @@ object LayerControl {
       layers match {
         case Nil => _ => false
         case _ =>
-          val layersRe = layers.map(_.fullName.split("\\.").mkString("_")).mkString("|")
-          val re = s"^layers_\\w+_($layersRe)\\.sv$$".r
+          val layersRe = layers.map(_.fullName.split("\\.").mkString("-")).mkString("|")
+          val re = s"^layers-\\w+-($layersRe)\\.sv$$".r
           re.matches(_)
       }
     }
