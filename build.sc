@@ -21,7 +21,7 @@ object v {
   )
   val scalaVersion = scalaCrossVersions.head
   val jmhVersion = "1.37"
-  val osLib = ivy"com.lihaoyi::os-lib:0.10.0"
+  val osLib = ivy"com.lihaoyi::os-lib:0.10.4"
   val upickle = ivy"com.lihaoyi::upickle:3.3.1"
   val firtoolResolver = ivy"org.chipsalliance::firtool-resolver:2.0.0"
   val scalatest = ivy"org.scalatest::scalatest:3.2.19"
