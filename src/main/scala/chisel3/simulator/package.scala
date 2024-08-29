@@ -171,7 +171,7 @@ package object simulator {
       Files
         .walk(supportArtifactsPath)
         .filter(_.toFile.isFile)
-        .filter(_.getFileName.toString.startsWith("layers_"))
+        .filter(_.getFileName.toString.startsWith("layers-"))
         .forEach(moveFile)
 
       // Initialize Module Info
