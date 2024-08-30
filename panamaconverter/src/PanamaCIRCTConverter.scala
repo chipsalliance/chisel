@@ -75,7 +75,7 @@ object Reference {
   final case class SubIndexDynamic(index: MlirValue, tpe: fir.Type) extends Reference
 }
 
-case class WhenContext(op: Op, parent: MlirBlock, var inAlt: Boolean) {
+case class BlockContext(op: Op, parent: MlirBlock, var inAlt: Boolean) {
   def block: MlirBlock = op.region(if (!inAlt) 0 else 1).block(0)
 }
 
@@ -139,7 +139,7 @@ class InnerSymCache {
 class FirContext {
   var opCircuit: Op = null
   var opModules: Seq[(String, Op)] = Seq.empty
-  val whenStack = mutable.Stack.empty[WhenContext]
+  val blockStack = mutable.Stack.empty[BlockContext]
   val valueCache = new ValueCache
   val innerSymCache = new InnerSymCache
 
@@ -155,17 +155,17 @@ class FirContext {
     opModules = opModules :+ (name, newModule)
   }
 
-  def enterWhen(whenOp: Op): Unit = whenStack.push(WhenContext(whenOp, currentBlock, false))
-  def enterAlt():  Unit = whenStack.top.inAlt = true
-  def leaveWhen(): Unit = whenStack.pop
+  def enterBlock(op: Op): Unit = blockStack.push(BlockContext(op, currentBlock, false))
+  def enterAlt():   Unit = blockStack.top.inAlt = true
+  def leaveBlock(): Unit = blockStack.pop
 
   def circuitBlock: MlirBlock = opCircuit.region(0).block(0)
   def findModuleBlock(name: String): MlirBlock = opModules.find(_._1 == name).get._2.region(0).block(0)
   def currentModuleName:  String = opModules.last._1
   def currentModuleBlock: MlirBlock = opModules.last._2.region(0).block(0)
-  def currentBlock:       MlirBlock = if (whenStack.nonEmpty) whenStack.top.block else currentModuleBlock
-  def currentWhen:        Option[WhenContext] = Option.when(whenStack.nonEmpty)(whenStack.top)
-  def rootWhen:           Option[WhenContext] = Option.when(whenStack.nonEmpty)(whenStack.last)
+  def currentBlock:       MlirBlock = if (blockStack.nonEmpty) blockStack.top.block else currentModuleBlock
+  def currentWhen:        Option[BlockContext] = Option.when(blockStack.nonEmpty)(blockStack.top)
+  def rootWhen:           Option[BlockContext] = Option.when(blockStack.nonEmpty)(blockStack.last)
 }
 
 class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], annotationsJSON: String) {
@@ -1192,13 +1192,27 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
       .withOperand( /* condition */ cond.value)
       .build()
 
-    firCtx.enterWhen(op)
+    firCtx.enterBlock(op)
     visitIfRegion()
     if (visitElseRegion.nonEmpty) {
       firCtx.enterAlt()
       visitElseRegion.get()
     }
-    firCtx.leaveWhen()
+    firCtx.leaveBlock()
+  }
+
+  def visitLayerBlock(layerBlock: LayerBlock, visitRegion: () => Unit): Unit = {
+    val loc = util.convert(layerBlock.sourceInfo)
+
+    val op = util
+      .OpBuilder("firrtl.layerblock", firCtx.currentBlock, loc)
+      .withNamedAttr("layerName", circt.mlirFlatSymbolRefAttrGet(layerBlock.layer.name))
+      .withRegion(Seq((Seq.empty, Seq.empty)))
+      .build()
+
+    firCtx.enterBlock(op)
+    visitRegion()
+    firCtx.leaveBlock()
   }
 
   def visitDefInstance(defInstance: DefInstance): Unit = {
@@ -1884,6 +1898,7 @@ object PanamaCIRCTConverter {
           if (when.elseRegion.nonEmpty) { Some(() => visitCommands(parent, when.elseRegion.result)) }
           else { None }
         )
+      case layerBlock:          LayerBlock                   => visitLayerBlock(layerBlock, () => visitCommands(parent, layerBlock.region.result))
       case defInstance:         DefInstance                  => visitDefInstance(defInstance)
       case defMemPort:          DefMemPort[ChiselData]       => visitDefMemPort(defMemPort)
       case defMemory:           DefMemory                    => visitDefMemory(defMemory)
@@ -1944,6 +1959,14 @@ object PanamaCIRCTConverter {
     implicit cvt: PanamaCIRCTConverter
   ): Unit = {
     cvt.visitWhen(when, visitIfRegion, visitElseRegion)
+  }
+  def visitLayerBlock(
+    layerBlock:  LayerBlock,
+    visitRegion: () => Unit
+  )(
+    implicit cvt: PanamaCIRCTConverter
+  ): Unit = {
+    cvt.visitLayerBlock(layerBlock, visitRegion)
   }
   def visitDefInstance(defInstance: DefInstance)(implicit cvt: PanamaCIRCTConverter): Unit = {
     cvt.visitDefInstance(defInstance)
