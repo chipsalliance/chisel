@@ -11,14 +11,18 @@ class FooBundle extends Bundle {
 }
 
 // SFC-FIRRTL-LABEL: circuit FooModule :
-// SFC-FIRRTL-NEXT:    module FooModule :
+// SFC-FIRRTL-NEXT:    layer Verification, bind, "Verification" :
+// SFC-FIRRTL-NEXT:      layer Assert, bind, "Verification/Assert" :
+// SFC-FIRRTL-NEXT:      layer Assume, bind, "Verification/Assume" :
+// SFC-FIRRTL-NEXT:      layer Cover, bind, "Verification/Cover" :
+// SFC-FIRRTL-NEXT:    public module FooModule :
 // SFC-FIRRTL-NEXT:      input clock : Clock
 // SFC-FIRRTL-NEXT:      input reset : UInt<1>
 // SFC-FIRRTL-NEXT:      output io : { flip foo : UInt<3>}
 // SFC-FIRRTL:           skip
 
 // MFC-FIRRTL-LABEL: circuit FooModule :
-// MFC-FIRRTL-NEXT:    module FooModule :
+// MFC-FIRRTL-NEXT:    public module FooModule :
 // MFC-FIRRTL-NEXT:      input clock : Clock
 // MFC-FIRRTL-NEXT:      input reset : UInt<1>
 // MFC-FIRRTL-NEXT:      output io : { flip foo : UInt<3> }

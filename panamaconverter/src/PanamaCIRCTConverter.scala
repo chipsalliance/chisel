@@ -1339,7 +1339,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
       .withNamedAttr("name", circt.mlirStringAttrGet(Converter.getRef(firrtlMemory.id, firrtlMemory.sourceInfo).name))
       .withNamedAttr("nameKind", circt.firrtlAttrGetNameKind(FIRRTLNameKind.InterestingName))
       .withNamedAttr("annotations", circt.emptyArrayAttr)
-      .withNamedAttr("portAnnotations", circt.emptyArrayAttr)
+      .withNamedAttr("portAnnotations", circt.mlirArrayAttrGet(ports.map(_ => circt.emptyArrayAttr)))
       .withResults(ports.map { case (_, tpe) => tpe })
       .build()
     val results = ports.zip(op.results).map { case ((name, _), result) => name -> result }.toMap

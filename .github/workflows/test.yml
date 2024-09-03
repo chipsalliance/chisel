@@ -112,10 +112,19 @@ jobs:
         with:
           version: ${{ steps.circt-version.outputs.version }}
           github-token: ${{ github.token }}
+      - name: Set CIRCT Path Env
+        run: echo "CIRCT_INSTALL_PATH=$(pwd)/circt" >> $GITHUB_ENV
+      - name: Install Lit
+        run: pip install lit
       - name: Compile Mill
+        run: ./mill __.compile
+      - name: Setup Scala-cli
         run: |
-          export CIRCT_INSTALL_PATH="$(pwd)/circt"
-          ./mill __.compile
+          curl -fL https://github.com/Virtuslab/scala-cli/releases/latest/download/scala-cli-x86_64-pc-linux.gz | gzip -d > scala-cli
+          chmod +x scala-cli
+          sudo mv scala-cli /usr/local/bin/scala-cli
+      - name: Run Lit Tests
+        run: ./mill -i lit[${{ inputs.scala }}].run
 
   doc:
     name: Formatting
