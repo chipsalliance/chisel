@@ -37,7 +37,7 @@ class SRAMSpec extends ChiselFlatSpec {
     val chirrtl = chirrtlCircuit.serialize
     chirrtl should include("module Top :")
     chirrtl should include(
-      "wire sram : { readPorts : { flip address : UInt<5>, flip enable : UInt<1>, data : UInt<8>}[0], writePorts : { flip address : UInt<5>, flip enable : UInt<1>, flip data : UInt<8>}[0], readwritePorts : { flip address : UInt<5>, flip enable : UInt<1>, flip isWrite : UInt<1>, readData : UInt<8>, flip writeData : UInt<8>}[1], description : { depth : Integer, dataWidth : Integer, masked : Bool, read : Integer, write : Integer, readwrite : Integer, maskGranularity : Integer, hierarchy : Path}"
+      "wire sram : { readPorts : { flip address : UInt<5>, flip enable : UInt<1>, data : UInt<8>}[0], writePorts : { flip address : UInt<5>, flip enable : UInt<1>, flip data : UInt<8>}[0], readwritePorts : { flip address : UInt<5>, flip enable : UInt<1>, flip isWrite : UInt<1>, readData : UInt<8>, flip writeData : UInt<8>}[1], description : { depth : Integer, dataWidth : Integer, masked : Bool, read : Integer, write : Integer, readwrite : Integer, maskGranularity : Integer}"
     )
     chirrtl should include("mem sram_sram")
     chirrtl should include("data-type => UInt<8>")
@@ -52,9 +52,6 @@ class SRAMSpec extends ChiselFlatSpec {
     chirrtl should include("connect sram.readwritePorts[0].readData, sram_sram.RW0.rdata")
     chirrtl should include("connect sram_sram.RW0.wdata, sram.readwritePorts[0].writeData")
     chirrtl should include("connect sram_sram.RW0.wmode, sram.readwritePorts[0].isWrite")
-    chirrtl should include(
-      """propassign sram.description.hierarchy, path("OMReferenceTarget:~Top|Top>sram_sram")"""
-    )
 
     val dummyAnno = annos.collectFirst { case DummyAnno(t) => (t.toString) }
     dummyAnno should be(Some("~Top|Top>sram_sram"))
@@ -81,7 +78,7 @@ class SRAMSpec extends ChiselFlatSpec {
     chirrtl should include("module Top :")
     chirrtl should include("mem carrot :")
     chirrtl should include(
-      "wire sramInterface : { readPorts : { flip address : UInt<5>, flip enable : UInt<1>, data : UInt<8>}[0], writePorts : { flip address : UInt<5>, flip enable : UInt<1>, flip data : UInt<8>}[0], readwritePorts : { flip address : UInt<5>, flip enable : UInt<1>, flip isWrite : UInt<1>, readData : UInt<8>, flip writeData : UInt<8>}[1], description : { depth : Integer, dataWidth : Integer, masked : Bool, read : Integer, write : Integer, readwrite : Integer, maskGranularity : Integer, hierarchy : Path}"
+      "wire sramInterface : { readPorts : { flip address : UInt<5>, flip enable : UInt<1>, data : UInt<8>}[0], writePorts : { flip address : UInt<5>, flip enable : UInt<1>, flip data : UInt<8>}[0], readwritePorts : { flip address : UInt<5>, flip enable : UInt<1>, flip isWrite : UInt<1>, readData : UInt<8>, flip writeData : UInt<8>}[1], description : { depth : Integer, dataWidth : Integer, masked : Bool, read : Integer, write : Integer, readwrite : Integer, maskGranularity : Integer}"
     )
 
     val dummyAnno = annos.collectFirst { case DummyAnno(t) => (t.toString) }
@@ -234,7 +231,7 @@ class SRAMSpec extends ChiselFlatSpec {
   it should "be possible to access SRAM description information" in {
 
     class Top extends Module {
-      val sramPath = IO(Output(Property[Path]()))
+      val size = IO(Output(Property[Int]()))
       val sram = SRAM(
         size = 32,
         tpe = UInt(8.W),
@@ -242,12 +239,12 @@ class SRAMSpec extends ChiselFlatSpec {
         numWritePorts = 0,
         numReadwritePorts = 1
       )
-      sramPath := sram.description.get.hierarchy
+      size := sram.description.get.depth
     }
     // TODO we need a way with ChiselSim to evaluate properties
     val chirrtl = emitCHIRRTL(new Top)
-    chirrtl should include("output sramPath : Path")
-    chirrtl should include("propassign sramPath, sram.description.hierarchy")
+    chirrtl should include("output size : Integer")
+    chirrtl should include("propassign size, sram.description.depth")
   }
 
   it should "be possible to create an SramInterface Wire" in {

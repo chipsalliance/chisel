@@ -92,7 +92,6 @@ final class SRAMDescription extends Bundle {
   val write:           Property[Int] = Property[Int]()
   val readwrite:       Property[Int] = Property[Int]()
   val maskGranularity: Property[Int] = Property[Int]()
-  val hierarchy:       Property[Path] = Property[Path]()
 }
 
 /** A IO bundle of signals connecting to the ports of a memory, as requested by
@@ -591,7 +590,6 @@ object SRAM {
         })
         .getOrElse(0)
     )
-    description.hierarchy := Property(Path(mem))
 
     _out
   }
