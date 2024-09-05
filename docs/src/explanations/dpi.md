@@ -8,7 +8,7 @@ section: "chisel3"
 
 ## DPI Basics
 
-DPI API allows you to integrate native code into your Chisel hardware designs. This enables you to leverage existing libraries or implement functionality that is difficult to express directly in Chisel.
+Chisel's DPI API allows you to integrate native code into your Chisel hardware designs. This enables you to leverage existing libraries or implement functionality that is difficult to express directly in Chisel.
 
 Here's a simple example that demonstrates printing a message from a C++ function:
 ```c++
@@ -20,22 +20,33 @@ extern "C" void hello()
 
 To call this function from Chisel, we need to define a corresponding DPI object.
 
-```scala
+```scala mdoc:silent
+import chisel3._
+import chisel3.util.circt.dpi._
+
 object Hello extends DPIVoidFunctionImport {
   override val functionName = "hello"
   override val clocked = true
   final def apply() = super.call()
 }
 
-Hello() // Print
+class HelloTest extends Module {
+  Hello() // Print
+}
+```
+
+Output Verilog:
+
+```scala mdoc:verilog
+chisel3.docs.emitSystemVerilog(new HelloTest)
 ```
 
 Explanation:
 
-* `Hello` inherits from `DPIVoidFunctionImport` because the C++ function doesn't return a value (void).
+* `Hello` inherits from `DPIVoidFunctionImport` which defines a DPI function with a void return type in C++.
 * `functionName` specifies the C-linkage name of the C++ function.
-* `clocked = true` indicates that its function call is invoked at clock's posedge.
-* We recommend defining the apply method for a more Scala-like syntax.
+* `clocked = true` indicates that its function call is invoked at the clock's posedge.
+* We define an `apply` method for a function-like syntax. This allows us to call the DPI function with `Hello()`
 
 ## Type ABI
 
@@ -44,9 +55,9 @@ Unlike normal Chisel compilation flow, we use a specific ABI for types to intera
 ### Argument Types
 
 * Operand and result types must be passive.
-* A vector is lowered to an *unpacked* *open* array type, e.g., `a: Vec<4, UInt>` to `byte a []`.
-* A bundle is lowered to a packed struct.
-* Integer types are lowered into 2-state types.
+* A `Vec` is lowered to an *unpacked* *open* array type, e.g., `a: Vec<4, UInt>` to `byte a []`.
+* A `Bundle` is lowered to a packed struct.
+* `Int`, `SInt`, `Clock`, `Reset` types are lowered into 2-state types.
 Small integer types (< 64 bit) must be compatible with C-types and arguments are passed by value. Users are required to use specific integer types for small integers shown in the table below. Large integers are lowered to bit and passed by reference.
 
 
@@ -80,18 +91,47 @@ extern "C" void add(int lhs, int rhs, int* result)
 }
 ```
 
-```scala
-object Add extends DPINonVoidFunctionImport[UInt] {
+```scala mdoc:silent
+trait AddBase extends DPINonVoidFunctionImport[UInt] {
   override val functionName = "add"
   override val ret = UInt(32.W)
-  override val clocked = false
   override val inputNames = Some(Seq("lhs", "rhs"))
   override val outputName = Some("result")
   final def apply(lhs: UInt, rhs: UInt): UInt = super.call(lhs, rhs)
 }
 
-val result = Add(2.U(32.W), 3.U(32.W))
+object AddClocked extends AddBase {
+  override val clocked = true
+}
+
+object AddUnclocked extends AddBase {
+  override val clocked = false
+}
+
+class AddTest extends Module {
+  val io = IO(new Bundle {
+    val a = Input(UInt(32.W))
+    val b = Input(UInt(32.W))
+    val c = Output(UInt(32.W))
+    val d = Output(UInt(32.W))
+    val en = Input(Bool())
+  })
+
+  // Call DPI only when `en` is true.
+  when (io.en) {
+    io.c := AddClocked(io.a, io.b)
+    io.d := AddUnclocked(io.a, io.b)
+  } .otherwise {
+    io.c := 0.U(32.W)
+    io.d := 0.U(32.W)
+  }
+}
 ```
+
+```scala mdoc:verilog
+chisel3.docs.emitSystemVerilog(new AddTest)
+```
+
 
 Explanation:
 
@@ -117,7 +157,8 @@ extern "C" void sum(const svOpenArrayHandle array, int* result) {
 }
 ```
 
-```scala
+```scala mdoc:silent
+
 object Sum extends DPINonVoidFunctionImport[UInt] {
   override val functionName = "sum"
   override val ret = UInt(32.W)
@@ -127,13 +168,18 @@ object Sum extends DPINonVoidFunctionImport[UInt] {
   final def apply(array: Vec[UInt]): UInt = super.call(array)
 }
 
-val io = IO(new Bundle {
-  val a = Input(Vec(3, UInt(32.W)))
-  val b = Input(Vec(6, UInt(32.W)))
-})
+class SumTest extends Module {
+  val io = IO(new Bundle {
+    val a = Input(Vec(3, UInt(32.W)))
+    val sum_a = Output(UInt(32.W))
+  })
 
-val sum_a = Sum(io.a) // compute a[0] + a[1] + a[2]
-val sum_b = Sum(io.b) // compute b[0] + ... + b[5]
+  io.sum_a := Sum(io.a) // compute a[0] + a[1] + a[2]
+}
+```
+
+```scala mdoc:verilog
+chisel3.docs.emitSystemVerilog(new SumTest)
 ```
 
 # FAQ
