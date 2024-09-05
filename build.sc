@@ -122,28 +122,19 @@ trait Firrtl extends common.FirrtlModule with ChiselPublishModule with CrossSbtM
   def commonTextIvy = v.commonText
 
   def scoptIvy = v.scopt
+
+  object test extends SbtModuleTests with TestModule.ScalaTest {
+    def ivyDeps = Agg(v.scalatest, v.scalacheck)
+  }
 }
 
 object svsim extends Cross[Svsim](v.scalaCrossVersions)
 
 trait Svsim extends common.SvsimModule with ChiselPublishModule with CrossSbtModule with ScalafmtModule {
   def millSourcePath = super.millSourcePath / os.up / "svsim"
-}
 
-object firrtlut extends Cross[FirrtlUnitTest](v.scalaCrossVersions)
-
-trait FirrtlUnitTest extends tests.FirrtlUnitTestModule with CrossModuleBase with ScalafmtModule {
-  override def millSourcePath = firrtl(crossScalaVersion).millSourcePath
-
-  def firrtlModule = firrtl(crossScalaVersion)
-
-  def scalatestIvy = v.scalatest
-
-  def scalacheckIvy = v.scalacheck
-
-  override def sources = T.sources {
-    Seq(PathRef(millSourcePath / "src" / "test")) ++
-      matchingVersions(crossScalaVersion).map(s => PathRef(millSourcePath / "src" / "test" / s"scala-$s"))
+  object test extends SbtModuleTests with TestModule.ScalaTest {
+    def ivyDeps = Agg(v.scalatest, v.scalacheck)
   }
 }
 
@@ -223,24 +214,23 @@ trait Chisel extends common.ChiselModule with ChiselPublishModule with CrossSbtM
   def coreModule = core(crossScalaVersion)
 
   def pluginModule = plugin(crossScalaVersion)
+
+  object test extends SbtModuleTests with TestModule.ScalaTest {
+    def ivyDeps = Agg(v.scalatest, v.scalacheck)
+  }
 }
 
-object chiselut extends Cross[ChiselUnitTest](v.scalaCrossVersions)
+object integrationTests extends Cross[IntegrationTests](v.scalaCrossVersions)
 
-trait ChiselUnitTest extends tests.ChiselUnitTestModule with CrossModuleBase with ScalafmtModule {
-  override def millSourcePath = chisel(crossScalaVersion).millSourcePath
+trait IntegrationTests extends CrossSbtModule with ScalafmtModule with common.HasChiselPlugin {
 
-  def chiselModule = chisel(crossScalaVersion)
+  def pluginModule = plugin()
 
-  def pluginModule = plugin(crossScalaVersion)
+  def millSourcePath = os.pwd / "integration-tests"
 
-  def scalatestIvy = v.scalatest
-
-  def scalacheckIvy = v.scalacheck
-
-  override def sources = T.sources {
-    Seq(PathRef(millSourcePath / "src" / "test")) ++
-      matchingVersions(crossScalaVersion).map(s => PathRef(millSourcePath / "src" / "test" / s"scala-$s"))
+  object test extends SbtModuleTests with TestModule.ScalaTest {
+    override def moduleDeps = super.moduleDeps :+ chisel().test
+    def ivyDeps = Agg(v.scalatest, v.scalacheck)
   }
 }
 
