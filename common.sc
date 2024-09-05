@@ -101,6 +101,9 @@ trait HasChisel extends ScalaModule with HasChiselPlugin {
 }
 
 trait HasJextractGeneratedSources extends JavaModule {
+
+  def jextractBinary: T[os.Path]
+
   def includePaths: T[Seq[PathRef]]
 
   def libraryPaths: T[Seq[PathRef]]
@@ -128,7 +131,7 @@ trait HasJextractGeneratedSources extends JavaModule {
   def dumpAllIncludes = T {
     val f = os.temp()
     os.proc(
-      Seq("jextract", header().path.toString)
+      Seq(jextractBinary().toString, header().path.toString)
         ++ includePaths().flatMap(p => Seq("-I", p.path.toString))
         ++ Seq("--dump-includes", f.toString)
     ).call()
@@ -139,7 +142,7 @@ trait HasJextractGeneratedSources extends JavaModule {
     super.generatedSources() ++ {
       // @formatter:off
       os.proc(
-        Seq("jextract", header().path.toString)
+        Seq(jextractBinary().toString, header().path.toString)
           ++ includePaths().flatMap(p => Seq("-I", p.path.toString))
           ++ Seq(
           "-t", target(),

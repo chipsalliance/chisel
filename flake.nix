@@ -29,6 +29,7 @@
             buildInputs = deps;
             env = {
               CIRCT_INSTALL_PATH = pkgs.circt-all;
+              JEXTRACT_INSTALL_PATH = pkgs.jextract-21;
             };
           };
         }
