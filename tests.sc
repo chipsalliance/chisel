@@ -89,7 +89,7 @@ trait LitModule extends Module {
     PathRef(T.dest)
   }
   def run(args: String*) = T.command(
-    os.proc("lit", litConfig().path)
+    os.proc("lit", litConfig().path, "-a")
       .call(T.dest, stdout = os.ProcessOutput.Readlines(line => T.ctx().log.info("[lit] " + line)))
   )
 }
