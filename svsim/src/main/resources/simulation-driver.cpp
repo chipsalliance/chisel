@@ -579,6 +579,7 @@ static void resolveGettablePort(int id, GettablePort *out,
 
 const char *simulationTraceFilepath = NULL;
 
+bool simulationFail = false;
 bool receivedDone = false;
 static void processCommand() {
   const char *lineCursor = NULL;
@@ -742,6 +743,9 @@ static void processCommand() {
           break;
         }
       }
+      if (simulationFail) {
+        break;
+      }
 
       (*tickingPort.setter)(inPhaseValue);
       run_simulation(timestepsPerPhase);
@@ -803,7 +807,7 @@ DPI_TASK_RETURN_TYPE simulation_body() {
   /// If we have made it to `simulation_body`, there were no errors on startup
   /// and the first thing we do is send a READY message.
   sendReady();
-  while (!receivedDone)
+  while (!receivedDone && !simulationFail)
     processCommand();
   return DPI_TASK_RETURN_VALUE;
 }
@@ -919,6 +923,15 @@ void run_simulation(int delay) {
 }
 
 } // extern "C"
+
+// Override Verilator definition so first $fatal ends simulation
+// Note: VL_USER_FATAL needs to be defined when compiling Verilator code
+void vl_fatal(const char* filename, int linenum, const char* hier,
+                     const char* msg) {
+  simulationFail = true;
+  writeMessage(MESSAGE_ERROR, "%s", msg);
+}
+
 
 #endif // SVSIM_ENABLE_VERILATOR_SUPPORT
 

@@ -138,6 +138,7 @@ final class Backend(
               Seq(
                 // Use verilator support
                 s"-D${svsim.Backend.HarnessCompilationFlags.enableVerilatorSupport}",
+                "-DVL_USER_FATAL", // Handle $fatal
               ),
 
               backendSpecificSettings.traceStyle match {

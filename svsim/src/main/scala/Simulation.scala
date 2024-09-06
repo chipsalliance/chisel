@@ -4,6 +4,7 @@ package svsim
 
 import scala.collection.mutable.Queue
 import scala.util.Try
+import scala.concurrent.{ExecutionContext, Future}
 import java.io.{BufferedReader, BufferedWriter, File, InputStreamReader, OutputStreamWriter}
 
 final class Simulation private[svsim] (
@@ -18,7 +19,8 @@ final class Simulation private[svsim] (
     conservativeCommandResolution: Boolean = false,
     verbose:                       Boolean = false,
     traceEnabled:                  Boolean = false,
-    executionScriptLimit:          Option[Int] = None
+    executionScriptLimit:          Option[Int] = None,
+    stderrStream:                  java.io.OutputStream = Console.err
   )(body:                          Simulation.Controller => T
   ): T = {
     val cwd = settings.customWorkingDirectory match {
@@ -32,7 +34,6 @@ final class Simulation private[svsim] (
     val command = Seq(s"$workingDirectoryPath/$executableName") ++ settings.arguments
     val processBuilder = new ProcessBuilder(command: _*)
     processBuilder.directory(new File(cwd))
-    processBuilder.redirectError(ProcessBuilder.Redirect.INHERIT)
     val environment = settings.environment ++ Seq(
       Some("SVSIM_EXECUTION_SCRIPT" -> executionScriptPath),
       executionScriptLimit.map("SVSIM_EXECUTION_SCRIPT_LIMIT" -> _.toString)
@@ -41,6 +42,22 @@ final class Simulation private[svsim] (
       processBuilder.environment().put(pair._1, pair._2)
     }
     val process = processBuilder.start()
+    // Fire and forget a thread that forwards the process's stderr.
+    // This thread will block on the processes error stream until it is closed, then the thread will complete.
+    implicit val e: ExecutionContext = ExecutionContext.global
+    Future {
+      // TODO use transferTo once we require Java 9 or newer.
+      val BufSize = 8192 // Taken from java.io.InputStream.DEFAULT_BUFFER_SIZE.
+      val err = process.getErrorStream()
+      val buffer = new Array[Byte](BufSize)
+      var read = 0
+      while ({
+        read = err.read(buffer, 0, BufSize)
+        read >= 0
+      }) {
+        stderrStream.write(buffer, 0, read)
+      }
+    }
     sys.addShutdownHook {
       if (process.isAlive())
         process.destroyForcibly()

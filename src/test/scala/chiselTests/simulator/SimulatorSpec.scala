@@ -9,6 +9,7 @@ import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 import svsim._
+import java.io.PrintStream
 
 class VerilatorSimulator(val workspacePath: String) extends SingleBackendSimulator[verilator.Backend] {
   val backend = verilator.Backend.initializeFromProcessEnvironment()
@@ -288,7 +289,7 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
           chisel3.assert(a, "a must be true")
         }
       }
-      intercept[svsim.Simulation.UnexpectedEndOfMessages.type] {
+      intercept[Simulation.Message.Error] {
         new VerilatorSimulator("test_run_dir/simulator/has_layers_enabled")
           .simulate(new Foo) { module =>
             import PeekPokeAPI._
@@ -298,6 +299,44 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
           }
           .result
       }
+    }
+
+    it("should handle Chisel assertion failures") {
+      class Top extends Module {
+        printf("This should only print once.\n")
+        chisel3.assert(false.B, "This should fail")
+      }
+      val stderr = new java.io.ByteArrayOutputStream
+      val simulator = new VerilatorSimulator("test_run_dir/simulator/assert_failure") {
+        override def stderrStream = stderr
+      }
+      val e =
+        the[Simulation.Message.Error] thrownBy {
+          simulator
+            .simulate(new Top) { module =>
+              val dut = module.wrapped
+              val clock = module.port(dut.clock)
+              val reset = module.port(dut.reset)
+              reset.set(1)
+              clock.tick(
+                inPhaseValue = 0,
+                outOfPhaseValue = 1,
+                timestepsPerPhase = 1,
+                cycles = 1
+              )
+              reset.set(0)
+              clock.tick(
+                inPhaseValue = 0,
+                outOfPhaseValue = 1,
+                timestepsPerPhase = 1,
+                cycles = 10 // The assert should interrupt this run
+              )
+            }
+            .result
+
+        }
+      e.message should be("Verilog $stop")
+      stderr.toString should be("This should only print once.\n")
     }
   }
 }
