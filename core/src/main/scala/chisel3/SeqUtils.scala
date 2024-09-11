@@ -60,6 +60,7 @@ private[chisel3] object SeqUtils {
   )(
     implicit sourceInfo: SourceInfo
   ): T = {
+    require(in.nonEmpty, "PriorityMux must have a non-empty argument")
     if (in.size == 1) {
       in.head._2
     } else {
@@ -83,6 +84,7 @@ private[chisel3] object SeqUtils {
   )(
     implicit sourceInfo: SourceInfo
   ): T = {
+    require(in.nonEmpty, "Mux1H must have a non-empty argument")
     if (in.tail.isEmpty) {
       in.head._2
     } else {
