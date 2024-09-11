@@ -56,4 +56,11 @@ class PriorityMuxSpec extends ChiselFlatSpec {
       out := PriorityMux(sel, in)
     })
   }
+
+  it should "give a decent error for empty Seqs" in {
+    val e = intercept[IllegalArgumentException] {
+      PriorityMux(0.U, Seq.empty[UInt])
+    }
+    e.getMessage should include("PriorityMux must have a non-empty argument")
+  }
 }
