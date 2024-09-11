@@ -25,6 +25,12 @@ class OneHotMuxSpec extends AnyFreeSpec with Matchers with ChiselRunners {
   "UIntToOH should accept width of zero" in {
     assertTesterPasses(new ZeroWidthOHTester)
   }
+  "Mux1H should give a decent error when given an empty Seq" in {
+    val e = intercept[IllegalArgumentException] {
+      Mux1H(Seq.empty[(Bool, UInt)])
+    }
+    e.getMessage should include("Mux1H must have a non-empty argument")
+  }
 
 }
 
