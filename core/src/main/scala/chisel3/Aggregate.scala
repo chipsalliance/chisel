@@ -110,7 +110,7 @@ sealed abstract class Aggregate extends Data {
         UInt.Lit(value, this.width)
       case None =>
         val elts = this.getElements.map(_._asUIntImpl(false))
-        if (elts.isEmpty && !first) 0.U(0.W) else SeqUtils.do_asUInt(elts)
+        if (elts.isEmpty && !first) 0.U(0.W) else SeqUtils.asUInt(elts)
     }
   }
 
