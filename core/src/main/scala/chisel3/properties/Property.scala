@@ -8,7 +8,6 @@ import firrtl.annotations.{InstanceTarget, IsMember, ModuleTarget, ReferenceTarg
 import chisel3.internal._
 import chisel3.internal.binding._
 import chisel3.internal.firrtl.{ir, Converter}
-import chisel3.internal.sourceinfo.SourceInfoTransform
 import chisel3.experimental.{prefix, requireIsHardware, Analog, SourceInfo}
 import chisel3.experimental.hierarchy.Instance
 import scala.reflect.runtime.universe.{typeOf, TypeTag}
