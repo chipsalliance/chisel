@@ -43,7 +43,9 @@ object Select {
           else
             Seq.empty
         head ++ collect(ifRegion)(f) ++ collect(elseRegion)(f)
-      case LayerBlock(_, _, region)  => collect(region)(f)
+      case cmd @ LayerBlock(_, _, region) =>
+        val head = f.lift(cmd).toSeq
+        head ++ collect(region)(f)
       case cmd if f.isDefinedAt(cmd) => Some(f(cmd))
       case _                         => None
     }
@@ -83,7 +85,7 @@ object Select {
     implicit val mg = new chisel3.internal.MacroGenerated {}
     parent.proto._component.get match {
       case d: DefModule =>
-        d.commands.flatMap {
+        collect(d.commands) {
           case d: DefInstance =>
             d.id match {
               case p: IsClone[_] =>
@@ -94,7 +96,7 @@ object Select {
                 if (i.isA[T]) Some(i.asInstanceOf[Instance[T]]) else None
             }
           case other => None
-        }
+        }.flatten
       case other => Nil
     }
   }
@@ -153,7 +155,7 @@ object Select {
     type DefType = Definition[T]
     val defs = parent.proto._component.get match {
       case d: DefModule =>
-        d.commands.flatMap {
+        collect(d.commands) {
           case d: DefInstance =>
             d.id match {
               case p: IsClone[_] =>
@@ -164,7 +166,7 @@ object Select {
                 if (d.isA[T]) Some(d.asInstanceOf[Definition[T]]) else None
             }
           case other => None
-        }
+        }.flatten
     }
     val (_, defList) = defs.foldLeft((Set.empty[DefType], List.empty[DefType])) {
       case ((set, list), definition: Definition[T]) =>
@@ -251,7 +253,7 @@ object Select {
     check(module)
     module._component.get match {
       case d: DefModule =>
-        d.commands.flatMap {
+        collect(d.commands) {
           case i: DefInstance =>
             i.id match {
               case m: ModuleClone[_] if !m._madeFromDefinition => None
@@ -262,7 +264,7 @@ object Select {
               case other => Some(other)
             }
           case _ => None
-        }
+        }.flatten
       case other => Nil
     }
   }
