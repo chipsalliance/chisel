@@ -44,11 +44,7 @@ object Select {
             Seq.empty
         head ++ collect(ifRegion)(f) ++ collect(elseRegion)(f)
       case cmd @ LayerBlock(_, _, region) =>
-        val head =
-          if (f.isDefinedAt(cmd))
-            Seq(f(cmd))
-          else
-            Seq.empty
+        val head = f.lift(cmd).toSeq
         head ++ collect(region)(f)
       case cmd if f.isDefinedAt(cmd) => Some(f(cmd))
       case _                         => None
