@@ -7,12 +7,10 @@ import chisel3.Data.ProbeInfo
 import chisel3.experimental.{requireIsChiselType, SourceInfo}
 import chisel3.internal.{containsProbe, requireNoProbeTypeModifier, Builder}
 
-import scala.language.experimental.macros
-
 /** Utilities for creating and working with Chisel types that have a probe or
   * writable probe modifier.
   */
-private[chisel3] sealed trait ProbeBase {
+private[chisel3] trait ProbeBase {
 
   protected def apply[T <: Data](
     source:   => T,
@@ -58,32 +56,4 @@ private[chisel3] sealed trait ProbeBase {
   ): T = {
     apply(source, writable, None)
   }
-}
-
-object Probe extends ProbeBase with SourceInfoDoc {
-
-  /** Mark a Chisel type as with a probe modifier.
-    */
-  def apply[T <: Data](source: => T): T = macro chisel3.internal.sourceinfo.ProbeTransform.sourceApply[T]
-
-  def apply[T <: Data](source: => T, color: layer.Layer): T =
-    macro chisel3.internal.sourceinfo.ProbeTransform.sourceApplyWithColor[T]
-
-  /** @group SourceInfoTransformMacro */
-  def do_apply[T <: Data](source: => T)(implicit sourceInfo: SourceInfo): T =
-    super.apply(source, false, None)
-
-  /** @group SourceInfoTransformMacro */
-  def do_apply[T <: Data](source: => T, color: Option[layer.Layer])(implicit sourceInfo: SourceInfo): T =
-    super.apply(source, false, color)
-}
-
-object RWProbe extends ProbeBase with SourceInfoDoc {
-
-  /** Mark a Chisel type with a writable probe modifier.
-    */
-  def apply[T <: Data](source: => T): T = macro chisel3.internal.sourceinfo.ProbeTransform.sourceApply[T]
-
-  /** @group SourceInfoTransformMacro */
-  def do_apply[T <: Data](source: => T)(implicit sourceInfo: SourceInfo): T = super.apply(source, true)
 }
