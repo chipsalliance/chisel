@@ -6,14 +6,13 @@ import chisel3.internal.binding.{FirrtlMemTypeBinding, SramPortBinding}
 import chisel3.internal.plugin.autoNameRecursively
 import chisel3.experimental.{OpaqueType, SourceInfo}
 import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance, Instantiate}
-import chisel3.internal.sourceinfo.{MemTransform, SourceInfoTransform}
+import chisel3.internal.sourceinfo.MemTransform
 import chisel3.internal.firrtl.ir.{Arg, FirrtlMemory, LitIndex, Node, Ref, Slot}
 import chisel3.util.experimental.loadMemoryFromFileInline
 import chisel3.reflect.DataMirror
 import firrtl.annotations.{IsMember, MemoryLoadFileType}
 
 import scala.language.reflectiveCalls
-import scala.language.experimental.macros
 import chisel3.internal.firrtl.ir
 import chisel3.properties.Class.ClassDefinitionOps
 import chisel3.properties.{Class, ClassType, Path, Property}
