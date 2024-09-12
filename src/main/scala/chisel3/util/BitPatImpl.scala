@@ -2,14 +2,12 @@
 
 package chisel3.util
 
-import scala.language.experimental.macros
 import chisel3._
 import chisel3.experimental.SourceInfo
-import chisel3.internal.sourceinfo.SourceInfoTransform
 import scala.collection.mutable
 import scala.util.hashing.MurmurHash3
 
-object BitPat {
+private[chisel3] trait ObjectBitPatImpl {
 
   private[chisel3] implicit val bitPatOrder: Ordering[BitPat] = new Ordering[BitPat] {
     import scala.math.Ordered.orderingToOrdered
@@ -101,20 +99,6 @@ object BitPat {
     val width = x.getWidth.max(1) // BitPat doesn't support zero-width
     val mask = (BigInt(1) << width) - 1
     new BitPat(x.litValue, mask, width)
-  }
-
-  implicit class fromUIntToBitPatComparable(x: UInt) extends SourceInfoDoc {
-
-    import scala.language.experimental.macros
-
-    final def ===(that: BitPat): Bool = macro SourceInfoTransform.thatArg
-    final def =/=(that: BitPat): Bool = macro SourceInfoTransform.thatArg
-
-    /** @group SourceInfoTransformMacro */
-    def do_===(that: BitPat)(implicit sourceInfo: SourceInfo): Bool = that === x
-
-    /** @group SourceInfoTransformMacro */
-    def do_=/=(that: BitPat)(implicit sourceInfo: SourceInfo): Bool = that =/= x
   }
 }
 
@@ -303,30 +287,17 @@ package experimental {
   }
 }
 
-/** Bit patterns are literals with masks, used to represent values with don't
-  * care bits. Equality comparisons will ignore don't care bits.
-  *
-  * @example {{{
-  * "b10101".U === BitPat("b101??") // evaluates to true.B
-  * "b10111".U === BitPat("b101??") // evaluates to true.B
-  * "b10001".U === BitPat("b101??") // evaluates to false.B
-  * }}}
-  */
-sealed class BitPat(val value: BigInt, val mask: BigInt, val width: Int)
-    extends util.experimental.BitSet
-    with SourceInfoDoc {
+private[chisel3] trait BitPatImpl extends util.experimental.BitSet {
   import chisel3.util.experimental.BitSet
-  def terms = Set(this)
+
+  def value: BigInt
+  def mask:  BigInt
+  def width: Int
 
   /**
     * Get specified width of said BitPat
     */
   override def getWidth: Int = width
-  def apply(x:  Int): BitPat = macro SourceInfoTransform.xArg
-  def apply(x:  Int, y: Int): BitPat = macro SourceInfoTransform.xyArg
-  def ===(that: UInt):   Bool = macro SourceInfoTransform.thatArg
-  def =/=(that: UInt):   Bool = macro SourceInfoTransform.thatArg
-  def ##(that:  BitPat): BitPat = macro SourceInfoTransform.thatArg
 
   override def equals(obj: Any): Boolean = {
     obj match {
@@ -339,30 +310,25 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, val width: Int)
   override def hashCode: Int =
     MurmurHash3.seqHash(Seq(this.value, this.mask, this.width))
 
-  /** @group SourceInfoTransformMacro */
-  def do_apply(x: Int)(implicit sourceInfo: SourceInfo): BitPat = {
-    do_apply(x, x)
+  protected def _applyImpl(x: Int)(implicit sourceInfo: SourceInfo): BitPat = {
+    _applyImpl(x, x)
   }
 
-  /** @group SourceInfoTransformMacro */
-  def do_apply(x: Int, y: Int)(implicit sourceInfo: SourceInfo): BitPat = {
+  protected def _applyImpl(x: Int, y: Int)(implicit sourceInfo: SourceInfo): BitPat = {
     require(width > x && y >= 0, s"Invalid bit range ($x, $y), index should be bounded by (${width - 1}, 0)")
     require(x >= y, s"Invalid bit range ($x, $y), x should be greater or equal to y.")
     BitPat(s"b${rawString.slice(width - x - 1, width - y)}")
   }
 
-  /** @group SourceInfoTransformMacro */
-  def do_===(that: UInt)(implicit sourceInfo: SourceInfo): Bool = {
+  protected def _impl_===(that: UInt)(implicit sourceInfo: SourceInfo): Bool = {
     value.asUInt === (that & mask.asUInt)
   }
 
-  /** @group SourceInfoTransformMacro */
-  def do_=/=(that: UInt)(implicit sourceInfo: SourceInfo): Bool = {
-    !(this === that)
+  protected def _impl_=/=(that: UInt)(implicit sourceInfo: SourceInfo): Bool = {
+    !(this._impl_===(that))
   }
 
-  /** @group SourceInfoTransformMacro */
-  def do_##(that: BitPat)(implicit sourceInfo: SourceInfo): BitPat = {
+  protected def _impl_##(that: BitPat)(implicit sourceInfo: SourceInfo): BitPat = {
     new BitPat((value << that.getWidth) + that.value, (mask << that.getWidth) + that.mask, this.width + that.getWidth)
   }
 
