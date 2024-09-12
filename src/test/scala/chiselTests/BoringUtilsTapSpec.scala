@@ -89,8 +89,8 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       "      define w_bore = bar.w_bore"
     )()
 
-    // Check is valid FIRRTL and builds to SV.
-    circt.stage.ChiselStage.emitSystemVerilog(new Top)
+    // Check is valid FIRRTL.
+    circt.stage.ChiselStage.emitFIRRTLDialect(new Top)
   }
 
   it should "work upwards from child to parent" in {
@@ -169,8 +169,8 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       "      connect bar.out_bore, out_bore"
     )()
 
-    // Check is valid FIRRTL and builds to SV.
-    circt.stage.ChiselStage.emitSystemVerilog(new Top)
+    // Check is valid FIRRTL.
+    circt.stage.ChiselStage.emitFIRRTLDialect(new Top)
   }
 
   it should "work upwards from grandchild to grandparent into layer" in {
