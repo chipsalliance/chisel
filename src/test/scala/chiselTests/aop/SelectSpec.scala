@@ -178,6 +178,35 @@ class SelectSpec extends ChiselFlatSpec {
     assert(bbs.size == 1)
   }
 
+  "collectDeep" should "should look in when regions" in {
+    class BB extends ExtModule {}
+    class Top extends RawModule {
+      when(true.B) {
+        val bb = Module(new BB)
+      }
+    }
+    val top = ChiselGeneratorAnnotation(() => {
+      new Top()
+    }).elaborate(1).asInstanceOf[DesignAnnotation[Top]].design
+    val bbs = Select.collectDeep(top) { case b: BB => b }
+    assert(bbs.size == 1)
+  }
+
+  "collectDeep" should "should look in layer regions" in {
+    object TestLayer extends layer.Layer(layer.LayerConfig.Extract())
+    class BB extends ExtModule {}
+    class Top extends RawModule {
+      layer.block(TestLayer) {
+        val bb = Module(new BB)
+      }
+    }
+    val top = ChiselGeneratorAnnotation(() => {
+      new Top()
+    }).elaborate(1).asInstanceOf[DesignAnnotation[Top]].design
+    val bbs = Select.collectDeep(top) { case b: BB => b }
+    assert(bbs.size == 1)
+  }
+
   "CloneModuleAsRecord" should "NOT show up in Select aspects" in {
     import chisel3.experimental.CloneModuleAsRecord
     class Child extends RawModule {
