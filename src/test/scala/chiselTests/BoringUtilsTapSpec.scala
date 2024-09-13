@@ -57,6 +57,42 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
     )()
   }
 
+  // This test requires ability to identify what region to add commands to,
+  // *after* building them.  This is not yet supported.
+  ignore should "work downwards from grandparent to grandchild through when" in {
+    class Bar extends RawModule {
+      val internalWire = Wire(Bool())
+    }
+    class Foo extends RawModule {
+      when(true.B) {
+        val bar = Module(new Bar)
+      }
+    }
+    class Top extends RawModule {
+      val foo = Module(new Foo)
+      val out = IO(Bool())
+      out := DontCare
+
+      when(true.B) {
+        val w = WireInit(
+          Bool(),
+          BoringUtils.tapAndRead((chisel3.aop.Select.collectDeep(foo) { case b: Bar => b }).head.internalWire)
+        )
+      }
+    }
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
+
+    // The define should be at the end of the when block.
+    matchesAndOmits(chirrtl)(
+      "    when UInt<1>(0h1) :",
+      "      inst bar of Bar",
+      "      define w_bore = bar.w_bore"
+    )()
+
+    // Check is valid FIRRTL.
+    circt.stage.ChiselStage.emitFIRRTLDialect(new Top)
+  }
+
   it should "work upwards from child to parent" in {
     class Foo(parentData: Data) extends RawModule {
       val outProbe = IO(probe.Probe(Bool()))
@@ -107,6 +143,63 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       "module Top :",
       "connect foo.out_bore, parentWire"
     )()
+  }
+
+  it should "work upwards from grandchild to grandparent through when" in {
+    class Bar(grandParentData: Data) extends RawModule {
+      val out = IO(Bool())
+      out := BoringUtils.tapAndRead(grandParentData)
+    }
+    class Foo(parentData: Data) extends RawModule {
+      when(true.B) {
+        val bar = Module(new Bar(parentData))
+      }
+    }
+    class Top extends RawModule {
+      val parentWire = Wire(Bool())
+      parentWire := DontCare
+      val foo = Module(new Foo(parentWire))
+    }
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
+
+    // The connect should be at the end of the when block.
+    matchesAndOmits(chirrtl)(
+      "    when UInt<1>(0h1) :",
+      "      inst bar of Bar",
+      "      connect bar.out_bore, out_bore"
+    )()
+
+    // Check is valid FIRRTL.
+    circt.stage.ChiselStage.emitFIRRTLDialect(new Top)
+  }
+
+  it should "work upwards from grandchild to grandparent into layer" in {
+    object TestLayer extends layer.Layer(layer.LayerConfig.Extract())
+    class Bar(grandParentData: Data) extends RawModule {
+      val out = IO(Bool())
+      out := BoringUtils.tapAndRead(grandParentData)
+    }
+    class Foo(parentData: Data) extends RawModule {
+      layer.block(TestLayer) {
+        val bar = Module(new Bar(parentData))
+      }
+    }
+    class Top extends RawModule {
+      val parentWire = Wire(Bool())
+      parentWire := DontCare
+      val foo = Module(new Foo(parentWire))
+    }
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
+
+    // The connect should be at the end of the layerblock.
+    matchesAndOmits(chirrtl)(
+      "    layerblock TestLayer :",
+      "      inst bar of Bar",
+      "      connect bar.out_bore, out_bore"
+    )()
+
+    // Check is valid FIRRTL and builds to SV.
+    circt.stage.ChiselStage.emitSystemVerilog(new Top)
   }
 
   it should "work from child to its sibling" in {
