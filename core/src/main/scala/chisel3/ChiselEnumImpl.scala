@@ -2,21 +2,19 @@
 
 package chisel3
 
-import scala.language.experimental.macros
 import scala.language.existentials
-import scala.reflect.macros.blackbox.Context
 import scala.collection.mutable
 import chisel3.experimental.{annotate, requireIsHardware, ChiselAnnotation, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal.Builder.pushOp
 import chisel3.internal.firrtl.ir.PrimOp._
 import chisel3.internal.firrtl.ir._
-import chisel3.internal.sourceinfo._
 import chisel3.internal.{containsProbe, throwException, Builder, BuilderContextCache, Warning, WarningID}
 import chisel3.internal.binding.{Binding, ChildBinding, ConstrainedBinding}
 
 import chisel3.experimental.EnumAnnotations._
 
-abstract class EnumType(private[chisel3] val factory: ChiselEnum, selfAnnotating: Boolean = true) extends Element {
+private[chisel3] abstract class EnumTypeImpl(private[chisel3] val factory: ChiselEnum, selfAnnotating: Boolean = true)
+    extends Element { self: EnumType =>
 
   // Use getSimpleName instead of enumTypeName because for debugging purposes
   //   the fully qualified name isn't necessary (compared to for the
@@ -48,25 +46,12 @@ abstract class EnumType(private[chisel3] val factory: ChiselEnum, selfAnnotating
   override private[chisel3] def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): Data =
     factory.apply(that.asUInt)
 
-  final def ===(that: EnumType): Bool = macro SourceInfoTransform.thatArg
-  final def =/=(that: EnumType): Bool = macro SourceInfoTransform.thatArg
-  final def <(that:   EnumType): Bool = macro SourceInfoTransform.thatArg
-  final def <=(that:  EnumType): Bool = macro SourceInfoTransform.thatArg
-  final def >(that:   EnumType): Bool = macro SourceInfoTransform.thatArg
-  final def >=(that:  EnumType): Bool = macro SourceInfoTransform.thatArg
-
-  def do_===(that: EnumType)(implicit sourceInfo: SourceInfo): Bool =
-    compop(sourceInfo, EqualOp, that)
-  def do_=/=(that: EnumType)(implicit sourceInfo: SourceInfo): Bool =
-    compop(sourceInfo, NotEqualOp, that)
-  def do_<(that: EnumType)(implicit sourceInfo: SourceInfo): Bool =
-    compop(sourceInfo, LessOp, that)
-  def do_>(that: EnumType)(implicit sourceInfo: SourceInfo): Bool =
-    compop(sourceInfo, GreaterOp, that)
-  def do_<=(that: EnumType)(implicit sourceInfo: SourceInfo): Bool =
-    compop(sourceInfo, LessEqOp, that)
-  def do_>=(that: EnumType)(implicit sourceInfo: SourceInfo): Bool =
-    compop(sourceInfo, GreaterEqOp, that)
+  protected def _impl_===(that: EnumType)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, EqualOp, that)
+  protected def _impl_=/=(that: EnumType)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, NotEqualOp, that)
+  protected def _impl_<(that:   EnumType)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, LessOp, that)
+  protected def _impl_>(that:   EnumType)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, GreaterOp, that)
+  protected def _impl_<=(that:  EnumType)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, LessEqOp, that)
+  protected def _impl_>=(that:  EnumType)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, GreaterEqOp, that)
 
   // This preserves the _workaround_ for https://github.com/chipsalliance/chisel/issues/4159
   // Note that #4159 is due to _asUIntImpl below not actually padding the UInt
@@ -207,7 +192,8 @@ abstract class EnumType(private[chisel3] val factory: ChiselEnum, selfAnnotating
 
     // Enum annotations are added every time a ChiselEnum is bound
     // To keep the number down, we keep them unique in the annotations
-    val enumAnnos = Builder.contextCache.getOrElseUpdate(ChiselEnum.CacheKey, mutable.HashSet.empty[ChiselAnnotation])
+    val enumAnnos =
+      Builder.contextCache.getOrElseUpdate(ChiselEnumImpl.CacheKey, mutable.HashSet.empty[ChiselAnnotation])
     if (!enumAnnos.contains(anno)) {
       enumAnnos += anno
       annotate(anno)
@@ -244,14 +230,14 @@ abstract class EnumType(private[chisel3] val factory: ChiselEnum, selfAnnotating
   }
 }
 
-private[chisel3] object ChiselEnum {
+private[chisel3] object ChiselEnumImpl {
   private[chisel3] case object CacheKey extends BuilderContextCache.Key[mutable.HashSet[ChiselAnnotation]]
 }
 
-abstract class ChiselEnum {
+private[chisel3] trait ChiselEnumImpl { self: ChiselEnum =>
   class Type extends EnumType(this)
   object Type {
-    def apply(): Type = ChiselEnum.this.apply()
+    def apply(): Type = ChiselEnumImpl.this.apply()
   }
 
   private var id:             BigInt = 0
@@ -284,9 +270,6 @@ abstract class ChiselEnum {
   private[chisel3] def nameOfValue(id: BigInt): Option[String] = {
     enumRecords.find(_.inst.litValue == id).map(_.name)
   }
-
-  protected def Value: Type = macro EnumMacros.ValImpl
-  protected def Value(id: UInt): Type = macro EnumMacros.ValCustomImpl
 
   protected def do_Value(name: String): Type = {
     val result = new Type
@@ -366,36 +349,6 @@ abstract class ChiselEnum {
   def safe(n: UInt)(implicit sourceInfo: SourceInfo): (Type, Bool) = {
     val t = castImpl(n, warn = false)
     (t, t.isValid)
-  }
-}
-
-private[chisel3] object EnumMacros {
-  def ValImpl(c: Context): c.Tree = {
-    import c.universe._
-
-    // Much thanks to michael_s for this solution:
-    // stackoverflow.com/questions/18450203/retrieve-the-name-of-the-value-a-scala-macro-invocation-will-be-assigned-to
-    val term = c.internal.enclosingOwner
-    val name = term.name.decodedName.toString.trim
-
-    if (name.contains(" ")) {
-      c.abort(c.enclosingPosition, "Value cannot be called without assigning to an enum")
-    }
-
-    q"""this.do_Value($name)"""
-  }
-
-  def ValCustomImpl(c: Context)(id: c.Expr[UInt]): c.universe.Tree = {
-    import c.universe._
-
-    val term = c.internal.enclosingOwner
-    val name = term.name.decodedName.toString.trim
-
-    if (name.contains(" ")) {
-      c.abort(c.enclosingPosition, "Value cannot be called without assigning to an enum")
-    }
-
-    q"""this.do_Value($name, $id)"""
   }
 }
 
