@@ -909,13 +909,18 @@ void simulation_main(int argc, char const **argv) {
 
   testbench->final();
 
+  simulation_disableTrace();
+
   delete testbench;
   delete context;
 }
 
 void run_simulation(int delay) {
-  testbench->eval();
-  context->timeInc(delay);
+  testbench->eval_step();
+  if (delay > 0) {
+    context->timeInc(delay);
+    testbench->eval_end_step();
+  }
 }
 
 } // extern "C"
