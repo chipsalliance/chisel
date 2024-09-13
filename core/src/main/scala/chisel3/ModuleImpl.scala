@@ -4,14 +4,12 @@ package chisel3
 
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashSet}
-import scala.language.experimental.macros
 
 import chisel3.internal._
 import chisel3.internal.binding._
 import chisel3.internal.Builder._
 import chisel3.internal.firrtl.ir._
 import chisel3.experimental.{requireIsChiselType, BaseModule, SourceInfo, UnlocatableSourceInfo}
-import chisel3.internal.sourceinfo.{InstTransform}
 import chisel3.properties.{Class, Property}
 import chisel3.reflect.DataMirror
 import _root_.firrtl.annotations.{InstanceTarget, IsModule, ModuleName, ModuleTarget}
@@ -20,19 +18,9 @@ import chisel3.internal.plugin.autoNameRecursively
 import chisel3.util.simpleClassName
 import chisel3.experimental.hierarchy.Hierarchy
 
-object Module extends SourceInfoDoc {
+private[chisel3] trait ObjectModuleImpl {
 
-  /** A wrapper method that all Module instantiations must be wrapped in
-    * (necessary to help Chisel track internal state).
-    *
-    * @param bc the Module being created
-    *
-    * @return the input module `m` with Chisel metadata properly set
-    */
-  def apply[T <: BaseModule](bc: => T): T = macro InstTransform.apply[T]
-
-  /** @group SourceInfoTransformMacro */
-  def do_apply[T <: BaseModule](bc: => T)(implicit sourceInfo: SourceInfo): T = {
+  protected def _applyImpl[T <: BaseModule](bc: => T)(implicit sourceInfo: SourceInfo): T = {
     // Instantiate the module definition.
     val module = evaluate[T](bc)
 
@@ -225,14 +213,7 @@ object Module extends SourceInfoDoc {
   }
 }
 
-/** Abstract base class for Modules, which behave much like Verilog modules.
-  * These may contain both logic and state which are written in the Module
-  * body (constructor).
-  * This abstract base class includes an implicit clock and reset.
-  *
-  * @note Module instantiations must be wrapped in a Module() call.
-  */
-abstract class Module extends RawModule with ImplicitClock with ImplicitReset {
+private[chisel3] trait ModuleImpl extends RawModule with ImplicitClock with ImplicitReset {
 
   /** Override this to explicitly set the type of reset you want on this module , before any reset inference */
   def resetType: Module.ResetType.Type = Module.ResetType.Default
