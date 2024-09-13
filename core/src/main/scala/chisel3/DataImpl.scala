@@ -4,14 +4,12 @@ package chisel3
 
 import chisel3.experimental.dataview.reify
 
-import scala.language.experimental.macros
 import chisel3.experimental.{requireIsChiselType, requireIsHardware, Analog, BaseModule}
 import chisel3.experimental.{prefix, SourceInfo, UnlocatableSourceInfo}
 import chisel3.experimental.dataview.{reifyIdentityView, reifySingleTarget, DataViewable}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal._
 import chisel3.internal.binding._
-import chisel3.internal.sourceinfo._
 import chisel3.internal.firrtl.ir._
 import chisel3.properties.Property
 import chisel3.reflect.DataMirror
@@ -334,7 +332,7 @@ object Flipped {
   * @groupdesc Connect Utilities for connecting hardware components
   * @define coll data
   */
-abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
+private[chisel3] trait DataImpl extends HasId with NamedComponent { self: Data =>
   import Data.ProbeInfo
 
   // This is a bad API that punches through object boundaries.
@@ -850,18 +848,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   /** Returns Some(width) if the width is known, else None. */
   final def widthOption: Option[Int] = if (isWidthKnown) Some(getWidth) else None
 
-  /** Does a reinterpret cast of the bits in this node into the format that provides.
-    * Returns a new Wire of that type. Does not modify existing nodes.
-    *
-    * x.asTypeOf(that) performs the inverse operation of x := that.toBits.
-    *
-    * @note bit widths are NOT checked, may pad or drop bits from input
-    * @note that should have known widths
-    */
-  def asTypeOf[T <: Data](that: T): T = macro SourceInfoTransform.thatArg
-
-  /** @group SourceInfoTransformMacro */
-  def do_asTypeOf[T <: Data](that: T)(implicit sourceInfo: SourceInfo): T = {
+  protected def _asTypeOfImpl[T <: Data](that: T)(implicit sourceInfo: SourceInfo): T = {
     that._fromUInt(this.asUInt).asInstanceOf[T].viewAsReadOnly { _ =>
       "Return values of asTypeOf are now read-only"
     }
@@ -871,21 +858,11 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     */
   private[chisel3] def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): Data
 
-  /** Reinterpret cast to UInt.
-    *
-    * @note value not guaranteed to be preserved: for example, a SInt of width
-    * 3 and value -1 (0b111) would become an UInt with value 7
-    * @note Aggregates are recursively packed with the first element appearing
-    * in the least-significant bits of the result.
-    */
-  final def asUInt: UInt = macro SourceInfoTransform.noArg
-
   // The actual implementation of do_asUInt
   // @param first exists because of awkward behavior in Aggregate that requires changing 0.U to be zero-width to fix
   private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): UInt
 
-  /** @group SourceInfoTransformMacro */
-  def do_asUInt(implicit sourceInfo: SourceInfo): UInt = this._asUIntImpl(true)
+  protected def _asUIntImpl(implicit sourceInfo: SourceInfo): UInt = this._asUIntImpl(true)
 
   /** Default pretty printing */
   def toPrintable: Printable
@@ -894,7 +871,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   def typeName: String = simpleClassName(this.getClass)
 }
 
-object Data {
+private[chisel3] trait ObjectDataImpl {
   // Needed for the `implicit def toConnectableDefault`
   import scala.language.implicitConversions
 
