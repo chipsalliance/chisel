@@ -4,8 +4,6 @@ package chisel3
 
 import chisel3.internal._
 
-import scala.language.experimental.macros
-
 object withClockAndReset {
 
   /** Creates a new Clock and Reset scope

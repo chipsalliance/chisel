@@ -3,7 +3,6 @@
 package chisel3
 
 import scala.util.Try
-import scala.language.experimental.macros
 import chisel3.experimental.{BaseModule, OpaqueType, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal._
 import chisel3.internal.binding._

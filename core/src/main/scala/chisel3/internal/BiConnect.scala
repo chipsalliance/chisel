@@ -12,7 +12,6 @@ import chisel3.internal.firrtl.ir.{Connect, DefInvalid}
 import chisel3.internal.firrtl.Converter
 import chisel3.internal.MonoConnect.reportIfReadOnly
 
-import scala.language.experimental.macros
 import _root_.firrtl.passes.CheckTypes
 
 /**

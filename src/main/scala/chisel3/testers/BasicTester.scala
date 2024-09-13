@@ -3,8 +3,6 @@
 package chisel3.testers
 import chisel3._
 
-import scala.language.experimental.macros
-
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.experimental.SourceInfo
