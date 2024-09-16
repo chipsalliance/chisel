@@ -11,7 +11,7 @@ import java.nio.file.StandardCopyOption.REPLACE_EXISTING
 
 class FileUtilsSpec extends AnyFlatSpec with Matchers {
 
-  private val sampleAnnotations:         String = "/annotations/SampleAnnotations.anno.json"
+  private val sampleAnnotations: String = "/annotations/SampleAnnotations.anno.json"
 
   def withSampleAnnotations(f: String => Unit): Unit = {
     val tempFile = Files.createTempFile("SampleAnnotations", ".anno.json")

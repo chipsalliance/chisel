@@ -4,7 +4,7 @@ package logger
 
 import java.io.{ByteArrayOutputStream, File, FileOutputStream, PrintStream}
 
-import firrtl.AnnotationSeq
+import firrtl.{seqToAnnoSeq, AnnotationSeq}
 import firrtl.options.Viewer.view
 import logger.phases.{AddDefaults, Checks}
 

@@ -6,6 +6,7 @@ import firrtl.annotations.NoTargetAnnotation
 import firrtl.options.Viewer.view
 import firrtl.options.CustomFileEmission
 import firrtl.stage.FirrtlOptions
+import firrtl.stage.FirrtlOptionsView
 
 // ***** Annotations for results of emission *****
 sealed abstract class EmittedComponent {

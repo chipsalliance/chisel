@@ -2,6 +2,7 @@
 
 package logger
 
+import firrtl.seqToAnnoSeq
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.options.{HasShellOptions, ShellOption, Unserializable}
 

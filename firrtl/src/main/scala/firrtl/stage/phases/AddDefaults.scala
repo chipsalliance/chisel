@@ -2,7 +2,7 @@
 
 package firrtl.stage.phases
 
-import firrtl.AnnotationSeq
+import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq}
 import firrtl.options.{Phase, TargetDirAnnotation}
 import firrtl.transforms.BlackBoxTargetDirAnno
 import firrtl.stage.{FirrtlOptions, InfoModeAnnotation}
