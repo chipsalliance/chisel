@@ -121,7 +121,9 @@ lazy val firrtlSettings = Seq(
     "-language:reflectiveCalls",
     "-language:existentials",
     "-language:implicitConversions",
-    "-Yrangepos" // required by SemanticDB compiler plugin
+    "-Yrangepos", // required by SemanticDB compiler plugin
+    "-Xsource:3",
+    "-Xsource-features:infer-override",
   ),
   // Always target Java8 for maximum compatibility
   javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
