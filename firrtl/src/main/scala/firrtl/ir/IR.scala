@@ -380,16 +380,8 @@ case class Stop(
     extends Statement
     with HasInfo
     with IsDeclaration
-    with UseSerializer {
-  def copy(info: Info = info, ret: Int = ret, clk: Expression = clk, en: Expression = en): Stop = {
-    new Stop(info, ret, clk, en, name)
-  }
-}
-object Stop {
-  def unapply(s: Stop): Some[(Info, Int, Expression, Expression)] = {
-    Some((s.info, s.ret, s.clk, s.en))
-  }
-}
+    with UseSerializer
+
 case class Print(
   val info:   Info,
   val string: StringLit,
@@ -400,22 +392,7 @@ case class Print(
     extends Statement
     with HasInfo
     with IsDeclaration
-    with UseSerializer {
-  def copy(
-    info:   Info = info,
-    string: StringLit = string,
-    args:   Seq[Expression] = args,
-    clk:    Expression = clk,
-    en:     Expression = en
-  ): Print = {
-    new Print(info, string, args, clk, en, name)
-  }
-}
-object Print {
-  def unapply(s: Print): Some[(Info, StringLit, Seq[Expression], Expression, Expression)] = {
-    Some((s.info, s.string, s.args, s.clk, s.en))
-  }
-}
+    with UseSerializer
 
 case class ProbeDefine(info: Info, sink: Expression, probeExpr: Expression) extends Statement with UseSerializer
 case class ProbeExpr(expr: Expression, tpe: Type = UnknownType) extends Expression with UseSerializer

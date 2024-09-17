@@ -276,10 +276,10 @@ object Serializer {
     case c: Conditionally => b ++= sIt(c).mkString
     case EmptyStmt => b ++= "skip"
     case bb: Block => b ++= sIt(bb).mkString
-    case stop @ Stop(info, ret, clk, en) =>
+    case stop @ Stop(info, ret, clk, en, _) =>
       b ++= "stop("; s(clk); b ++= ", "; s(en); b ++= ", "; b ++= ret.toString; b += ')'
       sStmtName(stop.name); s(info)
-    case print @ Print(info, string, args, clk, en) =>
+    case print @ Print(info, string, args, clk, en, _) =>
       b ++= "printf("; s(clk); b ++= ", "; s(en); b ++= ", "; b ++= string.escape
       if (args.nonEmpty) b ++= ", "; s(args, ", "); b += ')'
       sStmtName(print.name); s(info)
