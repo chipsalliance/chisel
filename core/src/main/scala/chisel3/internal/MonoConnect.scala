@@ -13,7 +13,6 @@ import chisel3.experimental.dataview.{isView, reify, reifyIdentityView}
 import chisel3.properties.{Class, Property}
 import chisel3.reflect.DataMirror
 
-import scala.language.experimental.macros
 import scala.annotation.tailrec
 
 /**
