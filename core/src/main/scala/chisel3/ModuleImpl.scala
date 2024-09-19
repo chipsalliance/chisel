@@ -60,6 +60,7 @@ private[chisel3] trait ObjectModuleImpl {
 
     val parent = Builder.currentModule
     val parentWhenStack = Builder.whenStack
+    val parentLayerStack = Builder.layerStack
 
     // Save then clear clock and reset to prevent leaking scope, must be set again in the Module
     // Note that Disable is a function of whatever the current reset is, so it does not need a port
@@ -78,6 +79,7 @@ private[chisel3] trait ObjectModuleImpl {
     //   - set currentModule
     //   - unset readyForModuleConstr
     //   - reset whenStack to be empty
+    //   - reset layerStack to be root :: nil
     //   - set currentClockAndReset
     val module: T = bc // bc is actually evaluated here
 
@@ -102,6 +104,7 @@ private[chisel3] trait ObjectModuleImpl {
     // scope of the current Module.
     Builder.currentModule = parent // Back to parent!
     Builder.whenStack = parentWhenStack
+    Builder.layerStack = parentLayerStack
     Builder.currentClock = saveClock // Back to clock and reset scope
     Builder.currentReset = saveReset
     Builder.setPrefix(savePrefix)
@@ -460,6 +463,7 @@ package experimental {
 
       Builder.currentModule = Some(this)
       Builder.whenStack = Nil
+      Builder.layerStack = layer.Layer.root :: Nil
     }
 
     //
