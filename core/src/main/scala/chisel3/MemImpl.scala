@@ -176,7 +176,7 @@ private[chisel3] trait MemBaseImpl[T <: Data] extends HasId with NamedComponent 
       DefMemPort(sourceInfo, t.cloneTypeFull, Node(this), dir, i.ref, clock.ref)
     ).id
     // Bind each element of port to being a MemoryPort
-    port.bind(MemoryPortBinding(Builder.forcedUserModule, Builder.currentWhen))
+    port.bind(MemoryPortBinding(Builder.forcedUserModule, Builder.currentBlock))
     port
   }
 }

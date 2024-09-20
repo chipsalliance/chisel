@@ -261,17 +261,9 @@ private[chisel3] object Converter {
         convert(ifRegion, ctx, typeAliases),
         if (elseRegion.nonEmpty) convert(elseRegion, ctx, typeAliases) else fir.EmptyStmt
       )
-    case Region(info, region) =>
-      fir.Block(convert(region, ctx, typeAliases))
     case LayerBlock(info, layer, region) =>
       fir.LayerBlock(convert(info), layer, convert(region, ctx, typeAliases))
   }
-
-  /** Trait used for tracking when or layer regions. */
-  private sealed trait RegionFrame
-
-  /** Internal datastructure to help convert layer blocks to FIRRTL. */
-  private case class LayerBlockFrame(layer: fir.LayerBlock, outer: VectorBuilder[fir.Statement]) extends RegionFrame
 
   /** Convert Chisel IR Commands into FIRRTL Statements
     *
@@ -402,14 +394,14 @@ private[chisel3] object Converter {
   }
 
   def convert(component: Component, typeAliases: Seq[String]): fir.DefModule = component match {
-    case ctx @ DefModule(id, name, public, layers, ports, cmds) =>
+    case ctx @ DefModule(id, name, public, layers, ports, block) =>
       fir.Module(
         convert(id._getSourceLocator),
         name,
         public,
         layers.map(_.fullName),
         (ports ++ ctx.secretPorts).map(p => convert(p, typeAliases)),
-        convert(cmds ++ ctx.secretCommands, ctx, typeAliases)
+        convert(block.getCommands(), ctx, typeAliases)
       )
     case ctx @ DefBlackBox(id, name, ports, topDir, params) =>
       fir.ExtModule(
@@ -427,12 +419,12 @@ private[chisel3] object Converter {
         id.intrinsic,
         params.keys.toList.sorted.map { name => convert(name, params(name)) }
       )
-    case ctx @ DefClass(id, name, ports, cmds) =>
+    case ctx @ DefClass(id, name, ports, block) =>
       fir.DefClass(
         convert(id._getSourceLocator),
         name,
         (ports ++ ctx.secretPorts).map(p => convert(p, typeAliases)),
-        convert(cmds, ctx, typeAliases)
+        convert(block.getCommands(), ctx, typeAliases)
       )
   }
 

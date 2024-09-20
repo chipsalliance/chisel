@@ -121,7 +121,7 @@ package object internal {
     // Sigil to mark views, starts with '_' to make it a legal FIRRTL target
     override def desiredName = "_$$View$$_"
 
-    private[chisel3] val fakeComponent: Component = DefModule(this, desiredName, false, Nil, Nil, Nil)
+    private[chisel3] val fakeComponent: Component = DefModule(this, desiredName, false, Nil, Nil, null)
   }
 
   /** Special internal object representing the parent of all views

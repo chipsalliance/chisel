@@ -1921,7 +1921,7 @@ object PanamaCIRCTConverter {
   }
   def visitDefModule(defModule: DefModule)(implicit cvt: PanamaCIRCTConverter): Unit = {
     cvt.visitDefModule(defModule)
-    val commands = defModule.commands ++ defModule.secretCommands
+    val commands = defModule.getCommands()
     commands.foreach(visitCommand(defModule, _))
   }
   def visitDefIntrinsicModule(defIntrinsicModule: DefIntrinsicModule)(implicit cvt: PanamaCIRCTConverter): Unit = {

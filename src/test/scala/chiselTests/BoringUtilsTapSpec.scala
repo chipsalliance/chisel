@@ -107,9 +107,9 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
 
   // This test requires ability to identify what region to add commands to,
   // *after* building them.  This is not yet supported.
-  ignore should "work downwards from grandparent to grandchild through when" in {
+  it should "work downwards from grandparent to grandchild through when" in {
     class Bar extends RawModule {
-      val internalWire = Wire(Bool())
+      val internalWire = WireInit(Bool(), true.B)
     }
     class Foo extends RawModule {
       when(true.B) {

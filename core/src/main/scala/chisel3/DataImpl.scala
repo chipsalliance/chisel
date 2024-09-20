@@ -1074,7 +1074,7 @@ trait WireFactory {
     val x = if (!t.mustClone(prevId)) t else t.cloneTypeFull
 
     // Bind each element of x to being a Wire
-    x.bind(WireBinding(Builder.forcedUserModule, Builder.currentWhen))
+    x.bind(WireBinding(Builder.forcedUserModule, Builder.currentBlock))
 
     pushCommand(DefWire(sourceInfo, x))
 

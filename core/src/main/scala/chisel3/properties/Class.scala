@@ -4,11 +4,11 @@ package chisel3.properties
 
 import firrtl.{ir => fir}
 import chisel3.{Data, RawModule, SpecifiedDirection}
-import chisel3.experimental.{BaseModule, SourceInfo}
+import chisel3.experimental.{BaseModule, SourceInfo, UnlocatableSourceInfo}
 import chisel3.experimental.hierarchy.{Definition, Instance, ModuleClone}
 import chisel3.internal.{throwException, Builder}
 import chisel3.internal.binding.{ClassBinding, OpBinding}
-import chisel3.internal.firrtl.ir.{Arg, Command, Component, DefClass, DefObject, ModuleIO, Port, PropAssign}
+import chisel3.internal.firrtl.ir.{Arg, Block, Command, Component, DefClass, DefObject, ModuleIO, Port, PropAssign}
 import chisel3.internal.firrtl.Converter
 
 import scala.collection.mutable.ArrayBuffer
@@ -67,7 +67,7 @@ class Class extends BaseModule {
     }
 
     // Save the Component.
-    _component = Some(DefClass(this, name, ports, _commands.toSeq))
+    _component = Some(DefClass(this, name, ports, _body))
 
     // Return the Component.
     _component
@@ -89,10 +89,14 @@ class Class extends BaseModule {
 
   /** Internal state and logic to maintain a buffer of commands.
     */
-  private val _commands = new ArrayBuffer[Command]()
+  private lazy val _body = new Block(UnlocatableSourceInfo, None /* class command not available */)
+
+  private[chisel3] override def getBody : Option[Block] = Some(_body)
+
   private def addCommandImpl(c: Command): Unit = {
     require(!_closed, "Can't write to Class after close")
-    _commands += c
+    require(Builder.currentBlock == Some(_body), "can't add commands to blocks that aren't the body")
+    _body.addCommand(c)
   }
 }
 
@@ -177,7 +181,7 @@ object Class {
     contextMod match {
       case rm: RawModule => {
         rm.addCommand(DefObject(sourceInfo, obj, obj.className.name))
-        classProp.bind(OpBinding(rm, Builder.currentWhen), SpecifiedDirection.Unspecified)
+        classProp.bind(OpBinding(rm, Builder.currentBlock), SpecifiedDirection.Unspecified)
       }
       case cls: Class => {
         cls.addCommand(DefObject(sourceInfo, obj, obj.className.name))
@@ -252,7 +256,7 @@ object Class {
       val contextMod = Builder.referenceUserContainer
       contextMod match {
         case rm: RawModule => {
-          ref.bind(OpBinding(rm, Builder.currentWhen), SpecifiedDirection.Unspecified)
+          ref.bind(OpBinding(rm, Builder.currentBlock), SpecifiedDirection.Unspecified)
         }
         case cls: Class => {
           ref.bind(ClassBinding(cls), SpecifiedDirection.Unspecified)

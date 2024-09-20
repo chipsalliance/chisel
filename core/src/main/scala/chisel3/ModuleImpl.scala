@@ -2,7 +2,7 @@
 
 package chisel3
 
-import scala.collection.immutable.ListMap
+import scala.collection.immutable.{ListMap, VectorBuilder}
 import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashSet}
 
 import chisel3.internal._
@@ -60,6 +60,7 @@ private[chisel3] trait ObjectModuleImpl {
 
     val parent = Builder.currentModule
     val parentWhenStack = Builder.whenStack
+    val parentBlockStack = Builder.blockStack
     val parentLayerStack = Builder.layerStack
 
     // Save then clear clock and reset to prevent leaking scope, must be set again in the Module
@@ -79,10 +80,12 @@ private[chisel3] trait ObjectModuleImpl {
     //   - set currentModule
     //   - unset readyForModuleConstr
     //   - reset whenStack to be empty
+    //   - reset blockStack to body or empty if none
     //   - reset layerStack to be root :: nil
     //   - set currentClockAndReset
     val module: T = bc // bc is actually evaluated here
 
+    require(Builder.blockDepth == module.getBody.size, "block leftover")
     if (Builder.whenDepth != 0) {
       throwException("Internal Error! when() scope depth is != 0, this should have been caught!")
     }
@@ -104,6 +107,7 @@ private[chisel3] trait ObjectModuleImpl {
     // scope of the current Module.
     Builder.currentModule = parent // Back to parent!
     Builder.whenStack = parentWhenStack
+    Builder.blockStack = parentBlockStack
     Builder.layerStack = parentLayerStack
     Builder.currentClock = saveClock // Back to clock and reset scope
     Builder.currentReset = saveReset
@@ -168,10 +172,12 @@ private[chisel3] trait ObjectModuleImpl {
     val parent = Builder.currentModule
     val whenStackOpt = Option.when(Builder.hasDynamicContext)(Builder.whenStack)
     val layerStackOpt = Option.when(Builder.hasDynamicContext)(Builder.layerStack)
+    val blockStackOpt = Option.when(Builder.hasDynamicContext)(Builder.blockStack)
     val module: T = bc // bc is actually evaluated here
     if (!parent.isEmpty) { Builder.currentModule = parent }
     whenStackOpt.foreach(Builder.whenStack = _)
     layerStackOpt.foreach(Builder.layerStack = _)
+    blockStackOpt.foreach(Builder.blockStack = _)
 
     module
   }
@@ -452,6 +458,23 @@ package experimental {
 
     /** Represents an eagerly-determined unique and descriptive identifier for this module */
     final val definitionIdentifier = _definitionIdentifier
+
+    // TODO: this weird re:evaluation/initialization ordering, revisit?
+    // Modules that contain bodies should override this.
+    private[chisel3] def getBody : Option[Block] = None
+
+    // Current block at point of creation.
+    private var _blockVar:       Block = Builder.currentBlock.getOrElse(null)
+    private[chisel3] def _block: Option[Block] = {
+      Option(_blockVar)
+    }
+    private[chisel3] def _block_=(target: Option[Block]): Unit = {
+      _blockVar = target.getOrElse(null)
+    }
+
+    // Return Block containing the instance of this module.
+    protected[chisel3] def getInstantiatingBlock : Option[Block] = _block
+
     //
     // Builder Internals - this tracks which Module RTL construction belongs to.
     //
@@ -467,6 +490,8 @@ package experimental {
 
       Builder.currentModule = Some(this)
       Builder.whenStack = Nil
+      Builder.blockStack = Nil
+      getBody.foreach(Builder.pushBlock(_))
       Builder.layerStack = layer.Layer.root :: Nil
     }
 

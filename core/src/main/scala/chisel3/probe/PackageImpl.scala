@@ -70,7 +70,7 @@ private[chisel3] trait ObjectProbeImpl {
     requireHasProbeTypeModifier(source)
     // construct clone to bind to ProbeRead
     val clone = source.cloneTypeFull
-    clone.bind(OpBinding(Builder.forcedUserModule, Builder.currentWhen))
+    clone.bind(OpBinding(Builder.forcedUserModule, Builder.currentBlock))
     clone.setRef(ProbeRead(source.ref))
     // return a non-probe type Data that can be used in Data connects
     clearProbeInfo(clone)

@@ -7,7 +7,7 @@ import chisel3._
 import chisel3.experimental.{Analog, BaseModule, SourceInfo}
 import chisel3.internal.binding._
 import chisel3.internal.Builder.pushCommand
-import chisel3.internal.firrtl.ir.{Connect, DefInvalid, ProbeDefine, PropAssign}
+import chisel3.internal.firrtl.ir.{Block, Connect, DefInvalid, ProbeDefine, PropAssign}
 import chisel3.internal.firrtl.Converter
 import chisel3.experimental.dataview.{isView, reify, reifyIdentityView}
 import chisel3.properties.{Class, Property}
@@ -93,10 +93,13 @@ private[chisel3] object MonoConnect {
     * @return None if visible, Some(location of original when declaration)
     */
   def checkWhenVisibility(x: Data): Option[SourceInfo] = {
+    // TODO: Checking block stack isn't quite right in situations where the stack of blocks
+    // doesn't reflect the generated structure (for example using withRegion to jump multiple levels).
+    def visible(b : Block) = Builder.hasDynamicContext && Builder.blockStack.contains(b)
     x.topBinding match {
       case mp: MemoryPortBinding =>
         None // TODO (albert-magyar): remove this "bridge" for odd enable logic of current CHIRRTL memories
-      case cd: ConditionalDeclarable => cd.visibility.collect { case wc: WhenContext if !wc.active => wc.sourceInfo }
+      case bb: BlockBinding => bb.parentBlock.collect { case b: Block if !visible(b) => b.sourceInfo }
       case _ => None
     }
   }

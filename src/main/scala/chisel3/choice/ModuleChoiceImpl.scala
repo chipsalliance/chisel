@@ -49,7 +49,7 @@ private[chisel3] trait ModuleChoiceImpl {
     val group = groupedChoices.head.name
 
     val binding = instDefaultModule.io.cloneTypeFull
-    binding.bind(WireBinding(Builder.forcedUserModule, Builder.currentWhen))
+    binding.bind(WireBinding(Builder.forcedUserModule, Builder.currentBlock))
 
     pushCommand(
       DefInstanceChoice(

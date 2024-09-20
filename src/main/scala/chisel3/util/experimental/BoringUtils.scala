@@ -8,8 +8,9 @@ import chisel3.reflect.DataMirror
 import chisel3.Data.ProbeInfo
 import chisel3.experimental.{annotate, requireIsHardware, skipPrefix, BaseModule, ChiselAnnotation, SourceInfo}
 import chisel3.internal.{Builder, BuilderContextCache, NamedComponent, Namespace}
-import chisel3.internal.binding.{CrossModuleBinding, PortBinding}
+import chisel3.internal.binding.{BlockBinding, CrossModuleBinding, PortBinding, SecretPortBinding}
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
+import chisel3.internal.firrtl.ir.Block
 import firrtl.passes.wiring.{SinkAnnotation, SourceAnnotation}
 import firrtl.annotations.{ComponentName, ModuleName}
 
@@ -270,11 +271,33 @@ object BoringUtils {
             // if drilling down, don't drill Probe types
             val bore = if (up) module.createSecretIO(purePortType) else module.createSecretIO(Flipped(purePortTypeBase))
             module.addSecretIO(bore)
-            if (isDrive) {
-              conLoc.asInstanceOf[RawModule].secretConnection(rhs, bore)
-            } else {
-              conLoc.asInstanceOf[RawModule].secretConnection(bore, rhs)
+
+            // TODO: Check for wiring non-probes not in same block, reject/diagnose.
+
+            // `module` contains the new port.
+            // `conLoc` is the module with the `rhs` value, and where we want to insert.
+            require(conLoc == module || Some(conLoc) == module._parent)
+            // Determine insertion block.  Best effort until more complete information is available.
+            // No block may exist that is valid regardless (need bounce wire),
+            // and some connections are illegal anyway.
+            val containingBlockOpt = (conLoc == module) match {
+              // If not in same module, insert in block containing instance of port (created above).
+              case false => module.getInstantiatingBlock
+              case true => rhs.topBindingOpt match {
+                // If binding records containing block, use that.
+                case Some(bb: BlockBinding) => bb.parentBlock
+                // Special handling to reach in and get instantiating block for ports.
+                case Some(pb: PortBinding) if pb.enclosure._parent == Some(conLoc) => pb.enclosure.getInstantiatingBlock
+                case Some(spb: SecretPortBinding) if spb.enclosure._parent == Some(conLoc) => spb.enclosure.getInstantiatingBlock
+                // Otherwise, default behavior.
+                case _ => None
+              }
             }
+            // Fallback behavior is append to body in specified `conLoc` module.
+            val block = containingBlockOpt.getOrElse(module.getBody.get)
+
+            val (dst, src) = if (isDrive) (rhs, bore) else (bore, rhs)
+            conLoc.asInstanceOf[RawModule].withRegion(block) { conLoc.asInstanceOf[RawModule].secretConnection(dst, src) }
             bore
           }
       }

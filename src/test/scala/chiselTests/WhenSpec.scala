@@ -217,4 +217,29 @@ class WhenSpec extends ChiselFlatSpec with Utils {
     chirrtl shouldNot include("else")
     chirrtl shouldNot include("skip")
   }
+
+  "Sibling when blocks" should "emit error for visibility check" in {
+    class Child extends Module {
+      val in = IO(Input(UInt(8.W)))
+      val out = IO(Output(UInt(8.W)))
+
+      out := in
+    }
+
+    class Foo extends Module {
+      val in = IO(Input(UInt(8.W)))
+      val out = IO(Output(UInt(8.W)))
+
+      var c: Bool = null
+      when (true.B) {
+        c = WireInit(Bool(), true.B)
+        out := c
+      } .otherwise {
+        c := false.B
+        out := c
+      }
+    }
+    val e = the[ChiselException] thrownBy ChiselStage.emitCHIRRTL(new Foo)
+    e.getMessage should include("has escaped the scope of the when")
+  }
 }

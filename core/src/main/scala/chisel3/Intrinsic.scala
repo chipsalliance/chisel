@@ -54,7 +54,7 @@ object IntrinsicExpr {
     requireIsChiselType(t, "intrinsic type")
     val int = if (!t.mustClone(prevId)) t else t.cloneTypeFull
 
-    int.bind(OpBinding(Builder.forcedUserModule, Builder.currentWhen))
+    int.bind(OpBinding(Builder.forcedUserModule, Builder.currentBlock))
     require(params.map(_._1).distinct.size == params.size, "parameter names must be unique")
     pushCommand(DefIntrinsicExpr(sourceInfo, intrinsic, int, data.map(_.ref), params))
     int

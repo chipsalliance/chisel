@@ -42,7 +42,7 @@ object Reg {
     val reg = if (!t.mustClone(prevId)) t else t.cloneTypeFull
     val clock = Builder.forcedClock.ref
 
-    reg.bind(RegBinding(Builder.forcedUserModule, Builder.currentWhen))
+    reg.bind(RegBinding(Builder.forcedUserModule, Builder.currentBlock))
     pushCommand(DefReg(sourceInfo, reg, clock))
     reg
   }
@@ -174,7 +174,7 @@ object RegInit {
     val clock = Builder.forcedClock
     val reset = Builder.forcedReset
 
-    reg.bind(RegBinding(Builder.forcedUserModule, Builder.currentWhen))
+    reg.bind(RegBinding(Builder.forcedUserModule, Builder.currentBlock))
     requireIsHardware(init, "reg initializer")
     requireNoProbeTypeModifier(t, "Cannot make a register of a Chisel type with a probe modifier.")
     pushCommand(DefRegInit(sourceInfo, reg, clock.ref, reset.ref, init.ref))

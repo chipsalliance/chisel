@@ -84,38 +84,26 @@ abstract class RawModule extends BaseModule {
   //
   // RTL construction internals
   //
-  // Perhaps this should be an ArrayBuffer (or ArrayBuilder), but DefModule is public and has Seq[Command]
-  // so our best option is to share a single Seq datastructure with that
-  private val _commands = new VectorBuilder[Command]()
+  private lazy val _body = new Block(UnlocatableSourceInfo, None /* module command not yet available */)
+  private[chisel3] override def getBody : Option[Block] = Some(_body)
 
-  /** The current region to which commands will be added. */
-  private var _currentRegion = _commands
 
-  private[chisel3] def changeRegion(newRegion: VectorBuilder[Command]): Unit = {
-    _currentRegion = newRegion
-  }
-
-  private[chisel3] def withRegion[A](newRegion: VectorBuilder[Command])(thunk: => A): A = {
-    _currentRegion ++= stagedSecretCommands
-    stagedSecretCommands.clear()
-    var oldRegion = _currentRegion
-    changeRegion(newRegion)
+  private[chisel3] def withRegion[A](newRegion: Block)(thunk: => A): A = {
+    Builder.pushBlock(newRegion)
     val result = thunk
-    _currentRegion ++= stagedSecretCommands
-    stagedSecretCommands.clear()
-    changeRegion(oldRegion)
+    require(Builder.currentBlock == Some(newRegion), "didn't return to same region")
+    Builder.popBlock()
     result
   }
 
   private[chisel3] def addCommand(c: Command): Unit = {
     require(!_closed, "Can't write to module after module close")
-    _currentRegion += c
+    require(Builder.currentBlock.isDefined, "must have block set")
+    Builder.currentBlock.get.addCommand(c)
   }
   protected def getCommands: Seq[Command] = {
     require(_closed, "Can't get commands before module close")
-    // Unsafe cast but we know that any RawModule uses a DefModule
-    // _component is defined as a var on BaseModule and we cannot override mutable vars
-    _component.get.asInstanceOf[DefModule].commands
+    _body.getCommands()
   }
 
   //
@@ -219,15 +207,12 @@ abstract class RawModule extends BaseModule {
     // Generate IO invalidation commands to initialize outputs as unused,
     //  unless the client wants explicit control over their generation.
     val component =
-      DefModule(this, name, _isPublic, Builder.enabledLayers.toSeq, firrtlPorts, _commands.result())
+      DefModule(this, name, _isPublic, Builder.enabledLayers.toSeq, firrtlPorts, _body)
 
     // Secret connections can be staged if user bored into children modules
-    component.secretCommands ++= stagedSecretCommands
-    stagedSecretCommands.clear()
     _component = Some(component)
     _component
   }
-  private[chisel3] val stagedSecretCommands = collection.mutable.ArrayBuffer[Command]()
 
   private[chisel3] def secretConnection(left: Data, _right: Data)(implicit si: SourceInfo): Unit = {
     val (right: Data, _) = chisel3.experimental.dataview
@@ -263,12 +248,7 @@ abstract class RawModule extends BaseModule {
     }
 
     val rhs = computeConnection(left, right)
-    val secretCommands = if (_closed) {
-      _component.get.asInstanceOf[DefModule].secretCommands
-    } else {
-      stagedSecretCommands
-    }
-    secretCommands += rhs
+    Builder.currentBlock.get.addStagedCommand(rhs)
   }
 
   private[chisel3] def initializeInParent(): Unit = {}

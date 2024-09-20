@@ -547,6 +547,7 @@ private[chisel3] class DynamicContext(
   // Used to distinguish between no Module() wrapping, multiple wrappings, and rewrapping
   var readyForModuleConstr: Boolean = false
   var whenStack:            List[WhenContext] = Nil
+  var blockStack:           List[Block] = Nil
   // Clock and Reset are "Delayed" because ImplicitClock and ImplicitReset need to set these values,
   // But the clock or reset defined by the user won't yet be initialized
   var currentClock:     Option[Delayed[Clock]] = None
@@ -789,6 +790,27 @@ private[chisel3] object Builder extends LazyLogging {
 
   def currentWhen: Option[WhenContext] = dynamicContext.whenStack.headOption
 
+  def blockStack : List[Block] = dynamicContext.blockStack
+  def blockStack_=(s: List[Block]): Unit = {
+    dynamicContext.blockStack = s
+  }
+
+  def blockDepth : Int = dynamicContext.blockStack.length
+  def pushBlock(b: Block): Unit = {
+    dynamicContext.blockStack = b :: dynamicContext.blockStack
+  }
+
+  def popBlock(): Block = {
+    val lastBlock = dynamicContext.blockStack.head
+    dynamicContext.blockStack = dynamicContext.blockStack.tail
+    lastBlock
+  }
+
+  def currentBlock: Option[Block] = dynamicContextVar.value match {
+    case Some(dc) => dc.blockStack.headOption
+    case _ => None
+  }
+
   // Helper for reasonable errors when clock or reset value not yet initialized
   private def getDelayed[A](field: String, dc: Delayed[A]): A = {
     val result = dc.value
@@ -866,7 +888,7 @@ private[chisel3] object Builder extends LazyLogging {
   }
   def pushOp[T <: Data](cmd: DefPrim[T]): T = {
     // Bind each element of the returned Data to being a Op
-    cmd.id.bind(OpBinding(forcedUserModule, currentWhen))
+    cmd.id.bind(OpBinding(forcedUserModule, currentBlock))
     pushCommand(cmd).id
   }
 
@@ -1107,7 +1129,6 @@ private[chisel3] object Builder extends LazyLogging {
           components.update(
             components.size - 1, {
               val newModule = module.copy(isPublic = true)
-              newModule.secretCommands ++= module.secretCommands
               newModule
             }
           )

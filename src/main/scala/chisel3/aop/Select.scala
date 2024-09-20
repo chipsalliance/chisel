@@ -58,7 +58,7 @@ object Select {
     implicit val mg = new chisel3.internal.MacroGenerated {}
     parent.proto._component.get match {
       case d: DefModule =>
-        collect(d.commands) {
+        collect(d.block.getCommands()) {
           case d: DefInstance =>
             d.id match {
               case p: IsClone[_] =>
@@ -83,7 +83,7 @@ object Select {
     implicit val mg = new chisel3.internal.MacroGenerated {}
     parent.proto._component.get match {
       case d: DefModule =>
-        collect(d.commands) {
+        collect(d.block.getCommands()) {
           case d: DefInstance =>
             d.id match {
               case p: IsClone[_] =>
@@ -122,7 +122,7 @@ object Select {
     check(parent)
     val defs = parent.proto._component.get match {
       case d: DefModule =>
-        collect(d.commands) {
+        collect(d.block.getCommands()) {
           case i: DefInstance =>
             i.id match {
               case p: IsClone[_] =>
@@ -153,7 +153,7 @@ object Select {
     type DefType = Definition[T]
     val defs = parent.proto._component.get match {
       case d: DefModule =>
-        collect(d.commands) {
+        collect(d.block.getCommands()) {
           case d: DefInstance =>
             d.id match {
               case p: IsClone[_] =>
@@ -251,7 +251,7 @@ object Select {
     check(module)
     module._component.get match {
       case d: DefModule =>
-        collect(d.commands) {
+        collect(d.block.getCommands()) {
           case i: DefInstance =>
             i.id match {
               case m: ModuleClone[_] if !m._madeFromDefinition => None
@@ -272,7 +272,7 @@ object Select {
     */
   def registers(module: BaseModule): Seq[Data] = {
     check(module)
-    collect(module._component.get.asInstanceOf[DefModule].commands) {
+    collect(module._component.get.asInstanceOf[DefModule].block.getCommands()) {
       case r: DefReg     => r.id
       case r: DefRegInit => r.id
     }
@@ -303,7 +303,7 @@ object Select {
     */
   def syncReadMems(module: BaseModule): Seq[SyncReadMem[_]] = {
     check(module)
-    collect(module._component.get.asInstanceOf[DefModule].commands) {
+    collect(module._component.get.asInstanceOf[DefModule].block.getCommands()) {
       case r: DefSeqMemory => r.id.asInstanceOf[SyncReadMem[_]]
     }
   }
@@ -313,7 +313,7 @@ object Select {
     */
   def mems(module: BaseModule): Seq[Mem[_]] = {
     check(module)
-    collect(module._component.get.asInstanceOf[DefModule].commands) {
+    collect(module._component.get.asInstanceOf[DefModule].block.getCommands()) {
       case r: DefMemory => r.id.asInstanceOf[Mem[_]]
     }
   }
@@ -323,7 +323,7 @@ object Select {
     */
   def ops(module: BaseModule): Seq[(String, Data)] = {
     check(module)
-    collect(module._component.get.asInstanceOf[DefModule].commands) {
+    collect(module._component.get.asInstanceOf[DefModule].block.getCommands()) {
       case d: DefPrim[_] => (d.op.name, d.id)
     }
   }
@@ -335,7 +335,7 @@ object Select {
     */
   def ops(opKind: String)(module: BaseModule): Seq[Data] = {
     check(module)
-    collect(module._component.get.asInstanceOf[DefModule].commands) {
+    collect(module._component.get.asInstanceOf[DefModule].block.getCommands()) {
       case d: DefPrim[_] if d.op.name == opKind => d.id
     }
   }
@@ -345,7 +345,7 @@ object Select {
     */
   def wires(module: BaseModule): Seq[Data] = {
     check(module)
-    collect(module._component.get.asInstanceOf[DefModule].commands) {
+    collect(module._component.get.asInstanceOf[DefModule].block.getCommands()) {
       case r: DefWire => r.id
     }
   }
@@ -355,7 +355,7 @@ object Select {
     */
   def memPorts(module: BaseModule): Seq[(Data, MemPortDirection, MemBase[_])] = {
     check(module)
-    collect(module._component.get.asInstanceOf[DefModule].commands) {
+    collect(module._component.get.asInstanceOf[DefModule].block.getCommands()) {
       case r: DefMemPort[_] => (r.id, r.dir, r.source.id.asInstanceOf[MemBase[_ <: Data]])
     }
   }
@@ -366,7 +366,7 @@ object Select {
     */
   def memPorts(dir: MemPortDirection)(module: BaseModule): Seq[(Data, MemBase[_])] = {
     check(module)
-    collect(module._component.get.asInstanceOf[DefModule].commands) {
+    collect(module._component.get.asInstanceOf[DefModule].block.getCommands()) {
       case r: DefMemPort[_] if r.dir == dir => (r.id, r.source.id.asInstanceOf[MemBase[_ <: Data]])
     }
   }
@@ -376,7 +376,7 @@ object Select {
     */
   def invalids(module: BaseModule): Seq[Data] = {
     check(module)
-    collect(module._component.get.asInstanceOf[DefModule].commands) {
+    collect(module._component.get.asInstanceOf[DefModule].block.getCommands()) {
       case DefInvalid(_, arg) => getData(arg)
     }
   }
@@ -389,7 +389,7 @@ object Select {
     collect(
       module._component.get
         .asInstanceOf[DefModule]
-        .commands
+        .block.getCommands()
     ) {
       case Attach(_, seq) if seq.contains(signal) => seq
     }.flatMap { seq => seq.map(_.id.asInstanceOf[Data]) }.toSet
@@ -547,7 +547,7 @@ object Select {
       case cmd                      => processCommand(cmd, preds)
     }
 
-    searchCommands(module._component.get.asInstanceOf[DefModule].commands, Seq.empty, processCommand)
+    searchCommands(module._component.get.asInstanceOf[DefModule].block.getCommands(), Seq.empty, processCommand)
   }
 
   trait Serializeable {
