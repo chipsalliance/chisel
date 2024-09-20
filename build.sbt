@@ -139,7 +139,10 @@ lazy val firrtlSettings = Seq(
   ),
   scalacOptions += "-Ymacro-annotations",
   // starting with scala 2.13 the parallel collections are separate from the standard library
-  libraryDependencies += "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4"
+  libraryDependencies += "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4",
+  Test / scalacOptions ++= Seq(
+    "-Xsource-features:package-prefix-implicits"
+  )
 )
 
 lazy val assemblySettings = Seq(
@@ -332,7 +335,7 @@ lazy val chisel = (project in file("."))
   .settings(
     // Suppress Scala 3 behavior requiring explicit types on implicit definitions
     // Note this must come before the -Wconf is warningSuppression
-    Test / scalacOptions += "-Wconf:cat=other-implicit-type:s"
+    Test / scalacOptions += "-Wconf:cat=other-implicit-type:s",
   )
   .settings(warningSuppression: _*)
   .settings(fatalWarningsSettings: _*)

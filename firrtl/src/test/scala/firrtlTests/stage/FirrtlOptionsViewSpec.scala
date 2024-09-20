@@ -4,6 +4,7 @@ package firrtlTests.stage
 
 import firrtl.stage._
 
+import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq}
 import firrtl.{ir, Parser}
 import firrtl.options.Viewer.view
 import firrtl.stage.{FirrtlOptions, FirrtlOptionsView}

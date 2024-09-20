@@ -3,7 +3,7 @@
 package firrtlTests.options
 
 import firrtl.options.OptionsView
-import firrtl.AnnotationSeq
+import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq}
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers

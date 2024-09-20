@@ -4,7 +4,7 @@ package firrtlTests.options.phases
 
 import java.io.File
 
-import firrtl.AnnotationSeq
+import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq}
 import firrtl.annotations.NoTargetAnnotation
 import firrtl.options.{
   BufferedCustomFileEmission,
@@ -15,6 +15,7 @@ import firrtl.options.{
   PhaseException,
   StageOption,
   StageOptions,
+  StageOptionsView,
   TargetDirAnnotation
 }
 import firrtl.options.Viewer.view

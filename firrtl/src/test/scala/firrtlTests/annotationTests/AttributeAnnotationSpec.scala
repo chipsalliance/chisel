@@ -6,6 +6,7 @@ import firrtl.AttributeAnnotation
 import firrtl.annotations._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import org.json4s.convertToJsonInput
 
 class AttributeAnnotationSpec extends AnyFreeSpec with Matchers {
   "AttributeAnnotation should be correctly parsed from a string" in {

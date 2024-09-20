@@ -2,7 +2,7 @@
 
 package firrtlTests.options
 
-import firrtl.AnnotationSeq
+import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq}
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.options.{DoNotTerminateOnExit, DuplicateHandling, ExceptOnError, OptionsException}
 

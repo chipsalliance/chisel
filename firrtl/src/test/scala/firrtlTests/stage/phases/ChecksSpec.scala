@@ -4,7 +4,7 @@ package firrtlTests.stage.phases
 
 import firrtl.stage._
 
-import firrtl.AnnotationSeq
+import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq}
 import firrtl.options.{OptionsException, OutputAnnotationFileAnnotation, Phase}
 import firrtl.stage.phases.Checks
 import org.scalatest.flatspec.AnyFlatSpec
