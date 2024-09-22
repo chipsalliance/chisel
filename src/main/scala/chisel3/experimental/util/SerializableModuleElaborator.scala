@@ -1,19 +1,14 @@
+// SPDX-License-Identifier: Apache-2.0
+
 package chisel3.experimental.util
+
+import geny.Readable
 
 import chisel3.RawModule
 import chisel3.experimental.{SerializableModule, SerializableModuleGenerator, SerializableModuleParameter}
 
 import scala.reflect.runtime.universe
 import scala.reflect.runtime.universe.{runtimeMirror, typeOf}
-
-/** The target design emitted by [[SerializableModuleElaborator]], which contains
-  * @param fir the firrtl circuit
-  * @param annos annotations which is serializable
-  */
-case class SerializableModuleDesign(fir: firrtl.ir.Circuit, annos: Seq[firrtl.annotations.Annotation]) {
-  def firFile = fir.serialize
-  def annosFile = firrtl.annotations.JsonProtocol.serializeRecover(annos)
-}
 
 /** Mixin this trait to produce elaborators for [[SerializableModule]]
   */
@@ -31,27 +26,27 @@ trait SerializableModuleElaborator {
     parameter: P
   )(
     implicit rwP: upickle.default.Writer[P]
-  ) = upickle.default.write(parameter)
+  ): Readable = upickle.default.write(parameter)
 
   /**
     * Implementation of a design API to elaborate [[SerializableModule]]
     *
-    * @return [[SerializableModuleDesign]]
+    * @return A tuple of Readable, where the first is the firrtl and the second is the serializable annotations
     * @example
     * {{{
     *  def design(parameter: os.Path) = {
-    *    val design = designImpl[MySerializableModule, MySerializableModuleParameter](os.read(parameter))
-    *    os.write.over(os.pwd / s"\${design.fir.main}.fir", design.firFile)
-    *    os.write.over(os.pwd / s"\${design.fir.main}.anno.json", design.annosFile)
+    *    val (firrtl, annos) = designImpl[MySerializableModule, MySerializableModuleParameter](os.read.stream(parameter))
+    *    os.write.over(os.pwd / "GCD.fir", firrtl)
+    *    os.write.over(os.pwd / "GCD.anno.json", annos)
     *  }
     * }}}
     */
   def designImpl[M <: SerializableModule[P]: universe.TypeTag, P <: SerializableModuleParameter: universe.TypeTag](
-    parameter: String
+    parameter: Readable
   )(
     implicit
     rwP: upickle.default.Reader[P]
-  ): SerializableModuleDesign = {
+  ): (Readable, Readable) = {
     var fir: firrtl.ir.Circuit = null
     val annos = Seq(
       new chisel3.stage.phases.Elaborate,
@@ -75,6 +70,8 @@ trait SerializableModuleElaborator {
         case _: firrtl.options.Unserializable => None
         case a => Some(a)
       }
-    SerializableModuleDesign(fir, annos)
+    val firrtlStream: Readable = fir.serialize
+    val annoStream:   Readable = firrtl.annotations.JsonProtocol.serializeRecover(annos)
+    (firrtlStream, annoStream)
   }
 }

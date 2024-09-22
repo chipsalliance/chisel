@@ -4,25 +4,40 @@ package experimental
 import chisel3._
 import chiselTests.experimental.GCDSerializableModule
 import chisel3.experimental.util.SerializableModuleElaborator
+import geny.Readable
+import upickle.default.read
 
 class GCDSerializableModuleElaborator extends SerializableModuleElaborator {
-  def config(parameter: GCDSerializableModuleParameter): String = configImpl(parameter)
+  val configPath = os.pwd / "config.json"
+  val firPath = os.pwd / "GCD.fir"
+  val annosPath = os.pwd / "GCD.anno.json"
 
-  def design(parameter: GCDSerializableModuleParameter) =
-    designImpl[GCDSerializableModule, GCDSerializableModuleParameter](config(parameter))
+  def config(parameter: GCDSerializableModuleParameter) =
+    os.write.over(configPath, configImpl(parameter))
+
+  def design() = {
+    val (firrtl, annos) =
+      designImpl[GCDSerializableModule, GCDSerializableModuleParameter](os.read.stream(configPath))
+    os.write.over(firPath, firrtl)
+    os.write.over(annosPath, annos)
+  }
 }
 
 class SerializableModuleElaboratorSpec extends ChiselFlatSpec {
   val elaborator = new GCDSerializableModuleElaborator
-  val design = elaborator.design(GCDSerializableModuleParameter(16))
+  elaborator.config(GCDSerializableModuleParameter(16))
+  elaborator.design()
+
+  val firFile = os.read(elaborator.firPath)
+  val annosFile = os.read(elaborator.annosPath)
 
   "SerializableModuleElaborator" should "elaborate firrtl" in {
-    design.firFile should include("module GCD")
+    firFile should include("module GCD")
   }
 
   "SerializableModuleElaborator" should "filter unserializable annotations" in {
-    (design.annosFile should not).include("UnserializeableAnnotation")
-    (design.annosFile should not).include("DesignAnnotation")
-    (design.annosFile should not).include("ChiselCircuitAnnotation")
+    (annosFile should not).include("UnserializeableAnnotation")
+    (annosFile should not).include("DesignAnnotation")
+    (annosFile should not).include("ChiselCircuitAnnotation")
   }
 }
