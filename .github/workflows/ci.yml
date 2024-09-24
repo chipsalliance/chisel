@@ -19,7 +19,7 @@ jobs:
       matrix:
         system: ["ubuntu-22.04"]
         jvm: [8]
-        scala: ["2.13.14"]
+        scala: ["2.13.15"]
         espresso: ["2.4"]
     uses: ./.github/workflows/test.yml
     with:

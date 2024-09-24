@@ -14,10 +14,11 @@ object v {
     "2.13.11",
     "2.13.12",
     "2.13.13",
-    "2.13.14"
+    "2.13.14",
+    "2.13.15"
   )
   val scalaCrossVersions = Seq(
-    "2.13.14"
+    "2.13.15"
   )
   val scalaVersion = scalaCrossVersions.head
   val jmhVersion = "1.37"
