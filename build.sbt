@@ -232,7 +232,8 @@ lazy val pluginScalaVersions = Seq(
   "2.13.11",
   "2.13.12",
   "2.13.13",
-  "2.13.14"
+  "2.13.14",
+  "2.13.15"
 )
 
 lazy val plugin = (project in file("plugin"))
