@@ -19,7 +19,7 @@ class Convert extends Phase {
 
   override def prerequisites = Seq(Dependency[Elaborate])
   override def optionalPrerequisites = Seq.empty
-  override def optionalPrerequisiteOf = Seq(Dependency[MaybeInjectingPhase])
+  override def optionalPrerequisiteOf = Seq.empty
   override def invalidates(a: Phase) = false
 
   @nowarn("msg=Do not use annotations val of Circuit directly")

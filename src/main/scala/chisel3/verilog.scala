@@ -10,7 +10,6 @@ object getVerilogString {
   final def phase = new PhaseManager(
     Seq(
       Dependency[chisel3.stage.phases.Checks],
-      Dependency[chisel3.aop.injecting.InjectingPhase],
       Dependency[chisel3.stage.phases.Elaborate],
       Dependency[chisel3.stage.phases.Convert],
       Dependency[circt.stage.phases.AddImplicitOutputFile],
