@@ -8,6 +8,7 @@ import firrtl.options.Phase
 
 /** Run `InjectingPhase` if a `InjectStatement` is present.
   */
+@deprecated("injecting aspects are being removed in Chisel 7", "6.6.0")
 class MaybeInjectingPhase extends Phase {
   override def prerequisites = Seq.empty
   override def optionalPrerequisites = Seq.empty
