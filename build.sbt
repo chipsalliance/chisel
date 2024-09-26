@@ -71,7 +71,8 @@ lazy val warningSuppression = Seq(
     "cat=deprecation&origin=chisel3\\.ltl.*:s",
     // This is deprecated and planned to be removed
     "cat=deprecation&origin=chisel3\\.aop\\.injecting.*:s",
-    "cat=deprecation&origin=chisel3\\.stage\\.phases\\.MaybeInjectingPhase:s"
+    "cat=deprecation&origin=chisel3\\.stage\\.phases\\.MaybeInjectingPhase:s",
+    "cat=deprecation&origin=chisel3\\.ModuleAspect:s"
   ).mkString(",")
 )
 
