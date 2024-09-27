@@ -14,6 +14,7 @@ import scala.collection.mutable
   *
   * Consumes the [[chisel3.stage.DesignAnnotation]] and converts every `Aspect` into their annotations prior to executing FIRRTL
   */
+@deprecated("aspects are being removed in Chisel 7", "6.6.0")
 class AspectPhase extends Phase {
   def transform(annotations: AnnotationSeq): AnnotationSeq = {
     var dut: Option[RawModule] = None

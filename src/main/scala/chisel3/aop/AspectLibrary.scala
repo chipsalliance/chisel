@@ -8,6 +8,7 @@ import firrtl.options.{OptionsException, RegisteredLibrary, ShellOption}
 /** Enables adding aspects to a design from the commandline, e.g.
   *  sbt> runMain chisel3.stage.ChiselMain --module <module> --with-aspect <aspect>
   */
+@deprecated("aspects are being removed in Chisel 7", "6.6.0")
 final class AspectLibrary() extends RegisteredLibrary {
   val name = "AspectLibrary"
 

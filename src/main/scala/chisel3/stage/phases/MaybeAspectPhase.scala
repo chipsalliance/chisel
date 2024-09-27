@@ -8,6 +8,7 @@ import firrtl.options.{Dependency, Phase}
 
 /** Run [[AspectPhase]] if a [[chisel3.aop.Aspect]] is present.
   */
+@deprecated("aspects are being removed in Chisel 7", "6.6.0")
 class MaybeAspectPhase extends Phase {
 
   override def prerequisites = Seq(Dependency[Elaborate])
