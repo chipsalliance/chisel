@@ -9,6 +9,7 @@ import chisel3.experimental.BaseModule
 import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance}
 import chisel3.util.{DecoupledIO, Valid}
 import chisel3.experimental.{attach, Analog}
+import chisel3.stage.{ChiselGeneratorAnnotation, DesignAnnotation}
 
 // TODO/Notes
 // - In backport, clock/reset are not automatically assigned. I think this is fixed in 3.5
@@ -981,252 +982,250 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       getFirrtlAndAnnos(new Top)
     }
   }
+
   describe("(10) Select APIs") {
     it("(10.a): instancesOf") {
-      val aspect = aop.inspecting.InspectingAspect({ m: AddTwoMixedModules =>
-        val targets = aop.Select.instancesOf[AddOne](m.toDefinition).map { i: Instance[AddOne] => i.toTarget }
-        targets should be(
-          Seq(
-            "~AddTwoMixedModules|AddTwoMixedModules/i0:AddOne".it,
-            "~AddTwoMixedModules|AddTwoMixedModules/i1:AddOne_1".it
-          )
+      val m = ChiselGeneratorAnnotation(() => {
+        new AddTwoMixedModules
+      }).elaborate(1).asInstanceOf[DesignAnnotation[AddTwoMixedModules]].design
+      aop.Select.instancesOf[AddOne](m.toDefinition).map { i: Instance[AddOne] => i.toTarget } should be(
+        Seq(
+          "~AddTwoMixedModules|AddTwoMixedModules/i0:AddOne".it,
+          "~AddTwoMixedModules|AddTwoMixedModules/i1:AddOne_1".it
         )
-      })
-      getFirrtlAndAnnos(new AddTwoMixedModules, Seq(aspect))
+      )
     }
     it("(10.b): instancesIn") {
-      val aspect = aop.inspecting.InspectingAspect({ m: AddTwoMixedModules =>
-        val insts = aop.Select.instancesIn(m.toDefinition)
-        val abs = insts.map { i: Instance[BaseModule] => i.toAbsoluteTarget }
-        val rel = insts.map { i: Instance[BaseModule] => i.toTarget }
-        abs should be(
-          Seq(
-            "~AddTwoMixedModules|AddTwoMixedModules/i0:AddOne".it,
-            "~AddTwoMixedModules|AddTwoMixedModules/i1:AddOne_1".it
-          )
+      val m = ChiselGeneratorAnnotation(() => {
+        new AddTwoMixedModules
+      }).elaborate(1).asInstanceOf[DesignAnnotation[AddTwoMixedModules]].design
+      val insts = aop.Select.instancesIn(m.toDefinition)
+      val abs = insts.map { i: Instance[BaseModule] => i.toAbsoluteTarget }
+      val rel = insts.map { i: Instance[BaseModule] => i.toTarget }
+      abs should be(
+        Seq(
+          "~AddTwoMixedModules|AddTwoMixedModules/i0:AddOne".it,
+          "~AddTwoMixedModules|AddTwoMixedModules/i1:AddOne_1".it
         )
-        rel should be(
-          Seq(
-            "~AddTwoMixedModules|AddTwoMixedModules/i0:AddOne".it,
-            "~AddTwoMixedModules|AddTwoMixedModules/i1:AddOne_1".it
-          )
+      )
+      rel should be(
+        Seq(
+          "~AddTwoMixedModules|AddTwoMixedModules/i0:AddOne".it,
+          "~AddTwoMixedModules|AddTwoMixedModules/i1:AddOne_1".it
         )
-      })
-      getFirrtlAndAnnos(new AddTwoMixedModules, Seq(aspect))
+      )
     }
     it("(10.c): allInstancesOf") {
-      val aspect = aop.inspecting.InspectingAspect({ m: AddFour =>
-        val insts = aop.Select.allInstancesOf[AddOne](m.toDefinition)
-        val abs = insts.map { i: Instance[AddOne] => i.in.toAbsoluteTarget }
-        val rel = insts.map { i: Instance[AddOne] => i.in.toTarget }
-        rel should be(
-          Seq(
-            "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>in".rt,
-            "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>in".rt,
-            "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>in".rt,
-            "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>in".rt
-          )
+      val m = ChiselGeneratorAnnotation(() => {
+        new AddFour
+      }).elaborate(1).asInstanceOf[DesignAnnotation[AddFour]].design
+      val insts = aop.Select.allInstancesOf[AddOne](m.toDefinition)
+      val abs = insts.map { i: Instance[AddOne] => i.in.toAbsoluteTarget }
+      val rel = insts.map { i: Instance[AddOne] => i.in.toTarget }
+      rel should be(
+        Seq(
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>in".rt,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>in".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>in".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>in".rt
         )
-        abs should be(
-          Seq(
-            "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>in".rt,
-            "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>in".rt,
-            "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>in".rt,
-            "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>in".rt
-          )
+      )
+      abs should be(
+        Seq(
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>in".rt,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>in".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>in".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>in".rt
         )
-      })
-      getFirrtlAndAnnos(new AddFour, Seq(aspect))
+      )
     }
     it("(10.d): definitionsOf") {
-      val aspect = aop.inspecting.InspectingAspect({ m: AddTwoMixedModules =>
-        val targets = aop.Select.definitionsOf[AddOne](m.toDefinition).map { i: Definition[AddOne] => i.in.toTarget }
-        targets should be(
-          Seq(
-            "~AddTwoMixedModules|AddOne>in".rt,
-            "~AddTwoMixedModules|AddOne_1>in".rt
-          )
+      val m = ChiselGeneratorAnnotation(() => {
+        new AddTwoMixedModules
+      }).elaborate(1).asInstanceOf[DesignAnnotation[AddTwoMixedModules]].design
+      val targets = aop.Select.definitionsOf[AddOne](m.toDefinition).map { i: Definition[AddOne] => i.in.toTarget }
+      targets should be(
+        Seq(
+          "~AddTwoMixedModules|AddOne>in".rt,
+          "~AddTwoMixedModules|AddOne_1>in".rt
         )
-      })
-      getFirrtlAndAnnos(new AddTwoMixedModules, Seq(aspect))
+      )
     }
     it("(10.e): definitionsIn") {
-      val aspect = aop.inspecting.InspectingAspect({ m: AddTwoMixedModules =>
-        val targets = aop.Select.definitionsIn(m.toDefinition).map { i: Definition[BaseModule] => i.toTarget }
-        targets should be(
-          Seq(
-            "~AddTwoMixedModules|AddOne".mt,
-            "~AddTwoMixedModules|AddOne_1".mt
-          )
+      val m = ChiselGeneratorAnnotation(() => {
+        new AddTwoMixedModules
+      }).elaborate(1).asInstanceOf[DesignAnnotation[AddTwoMixedModules]].design
+      val targets = aop.Select.definitionsIn(m.toDefinition).map { i: Definition[BaseModule] => i.toTarget }
+      targets should be(
+        Seq(
+          "~AddTwoMixedModules|AddOne".mt,
+          "~AddTwoMixedModules|AddOne_1".mt
         )
-      })
-      getFirrtlAndAnnos(new AddTwoMixedModules, Seq(aspect))
+      )
     }
     it("(10.f): allDefinitionsOf") {
-      val aspect = aop.inspecting.InspectingAspect({ m: AddFour =>
-        val targets = aop.Select.allDefinitionsOf[AddOne](m.toDefinition).map { i: Definition[AddOne] => i.in.toTarget }
-        targets should be(
-          Seq(
-            "~AddFour|AddOne>in".rt,
-            "~AddFour|AddOne_1>in".rt
-          )
+      val m = ChiselGeneratorAnnotation(() => {
+        new AddFour
+      }).elaborate(1).asInstanceOf[DesignAnnotation[AddFour]].design
+      val targets = aop.Select.allDefinitionsOf[AddOne](m.toDefinition).map { i: Definition[AddOne] => i.in.toTarget }
+      targets should be(
+        Seq(
+          "~AddFour|AddOne>in".rt,
+          "~AddFour|AddOne_1>in".rt
         )
-      })
-      getFirrtlAndAnnos(new AddFour, Seq(aspect))
+      )
     }
     it("(10.g): Select.collectDeep should fail when combined with hierarchy package") {
-      val aspect = aop.inspecting.InspectingAspect({ m: AddFour =>
-        aop.Select.collectDeep(m) { case m: AddOne => m.toTarget }
-      })
-      intercept[Exception] { getFirrtlAndAnnos(new AddFour, Seq(aspect)) }
+      val m = ChiselGeneratorAnnotation(() => {
+        new AddFour
+      }).elaborate(1).asInstanceOf[DesignAnnotation[AddFour]].design
+      intercept[Exception] { aop.Select.collectDeep(m) { case m: AddOne => m.toTarget } }
     }
     it("(10.h): Select.getDeep should fail when combined with hierarchy package") {
-      val aspect = aop.inspecting.InspectingAspect({ m: AddFour =>
-        aop.Select.getDeep(m) { m: BaseModule => Nil }
-      })
-      intercept[Exception] { getFirrtlAndAnnos(new AddFour, Seq(aspect)) }
+      val m = ChiselGeneratorAnnotation(() => {
+        new AddFour
+      }).elaborate(1).asInstanceOf[DesignAnnotation[AddFour]].design
+      intercept[Exception] { aop.Select.getDeep(m) { m: BaseModule => Nil } }
     }
     it("(10.i): Select.instances should fail when combined with hierarchy package") {
-      val aspect = aop.inspecting.InspectingAspect({ m: AddFour =>
-        aop.Select.instances(m)
-      })
-      intercept[Exception] { getFirrtlAndAnnos(new AddFour, Seq(aspect)) }
+      val m = ChiselGeneratorAnnotation(() => {
+        new AddFour
+      }).elaborate(1).asInstanceOf[DesignAnnotation[AddFour]].design
+      intercept[Exception] { aop.Select.instances(m) }
     }
     it("(10.j): allInstancesOf.ios") {
-      val aspect = aop.inspecting.InspectingAspect({ m: AddFour =>
-        val abs = aop.Select.allInstancesOf[AddOne](m.toDefinition).flatMap { i: Instance[AddOne] =>
-          aop.Select.ios(i).map(_.toAbsoluteTarget)
-        }
-        val rel = aop.Select.allInstancesOf[AddOne](m.toDefinition).flatMap { i: Instance[AddOne] =>
-          aop.Select.ios(i).map(_.toTarget)
-        }
-        abs should be(
-          Seq(
-            "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>clock".rt,
-            "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>reset".rt,
-            "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>in".rt,
-            "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>out".rt,
-            "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>clock".rt,
-            "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>reset".rt,
-            "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>in".rt,
-            "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>out".rt,
-            "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>clock".rt,
-            "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>reset".rt,
-            "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>in".rt,
-            "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>out".rt,
-            "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>clock".rt,
-            "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>reset".rt,
-            "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>in".rt,
-            "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>out".rt
-          )
+      val m = ChiselGeneratorAnnotation(() => {
+        new AddFour
+      }).elaborate(1).asInstanceOf[DesignAnnotation[AddFour]].design
+      val abs = aop.Select.allInstancesOf[AddOne](m.toDefinition).flatMap { i: Instance[AddOne] =>
+        aop.Select.ios(i).map(_.toAbsoluteTarget)
+      }
+      val rel = aop.Select.allInstancesOf[AddOne](m.toDefinition).flatMap { i: Instance[AddOne] =>
+        aop.Select.ios(i).map(_.toTarget)
+      }
+      abs should be(
+        Seq(
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>clock".rt,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>reset".rt,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>in".rt,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>out".rt,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>clock".rt,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>reset".rt,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>in".rt,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>out".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>clock".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>reset".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>in".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>out".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>clock".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>reset".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>in".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>out".rt
         )
-
-        rel should be(
-          Seq(
-            "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>clock".rt,
-            "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>reset".rt,
-            "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>in".rt,
-            "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>out".rt,
-            "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>clock".rt,
-            "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>reset".rt,
-            "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>in".rt,
-            "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>out".rt,
-            "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>clock".rt,
-            "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>reset".rt,
-            "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>in".rt,
-            "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>out".rt,
-            "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>clock".rt,
-            "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>reset".rt,
-            "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>in".rt,
-            "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>out".rt
-          )
+      )
+      rel should be(
+        Seq(
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>clock".rt,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>reset".rt,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>in".rt,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>out".rt,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>clock".rt,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>reset".rt,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>in".rt,
+          "~AddFour|AddFour/i0:AddTwoMixedModules/i1:AddOne_1>out".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>clock".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>reset".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>in".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i0:AddOne>out".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>clock".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>reset".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>in".rt,
+          "~AddFour|AddFour/i1:AddTwoMixedModules/i1:AddOne_1>out".rt
         )
-      })
-      getFirrtlAndAnnos(new AddFour, Seq(aspect))
+      )
     }
     it("(10.k): allDefinitionsOf.ios") {
-      val aspect = aop.inspecting.InspectingAspect({ m: AddFour =>
-        val abs = aop.Select.allDefinitionsOf[AddOne](m.toDefinition).flatMap { i: Definition[AddOne] =>
-          aop.Select.ios(i).map(_.toAbsoluteTarget)
-        }
-        val rel = aop.Select.allDefinitionsOf[AddOne](m.toDefinition).flatMap { i: Definition[AddOne] =>
-          aop.Select.ios(i).map(_.toTarget)
-        }
-        abs should be(
-          Seq(
-            "~AddFour|AddOne>clock".rt,
-            "~AddFour|AddOne>reset".rt,
-            "~AddFour|AddOne>in".rt,
-            "~AddFour|AddOne>out".rt,
-            "~AddFour|AddOne_1>clock".rt,
-            "~AddFour|AddOne_1>reset".rt,
-            "~AddFour|AddOne_1>in".rt,
-            "~AddFour|AddOne_1>out".rt
-          )
+      val m = ChiselGeneratorAnnotation(() => {
+        new AddFour
+      }).elaborate(1).asInstanceOf[DesignAnnotation[AddFour]].design
+      val abs = aop.Select.allDefinitionsOf[AddOne](m.toDefinition).flatMap { i: Definition[AddOne] =>
+        aop.Select.ios(i).map(_.toAbsoluteTarget)
+      }
+      val rel = aop.Select.allDefinitionsOf[AddOne](m.toDefinition).flatMap { i: Definition[AddOne] =>
+        aop.Select.ios(i).map(_.toTarget)
+      }
+      abs should be(
+        Seq(
+          "~AddFour|AddOne>clock".rt,
+          "~AddFour|AddOne>reset".rt,
+          "~AddFour|AddOne>in".rt,
+          "~AddFour|AddOne>out".rt,
+          "~AddFour|AddOne_1>clock".rt,
+          "~AddFour|AddOne_1>reset".rt,
+          "~AddFour|AddOne_1>in".rt,
+          "~AddFour|AddOne_1>out".rt
         )
-
-        rel should be(
-          Seq(
-            "~AddFour|AddOne>clock".rt,
-            "~AddFour|AddOne>reset".rt,
-            "~AddFour|AddOne>in".rt,
-            "~AddFour|AddOne>out".rt,
-            "~AddFour|AddOne_1>clock".rt,
-            "~AddFour|AddOne_1>reset".rt,
-            "~AddFour|AddOne_1>in".rt,
-            "~AddFour|AddOne_1>out".rt
-          )
+      )
+      rel should be(
+        Seq(
+          "~AddFour|AddOne>clock".rt,
+          "~AddFour|AddOne>reset".rt,
+          "~AddFour|AddOne>in".rt,
+          "~AddFour|AddOne>out".rt,
+          "~AddFour|AddOne_1>clock".rt,
+          "~AddFour|AddOne_1>reset".rt,
+          "~AddFour|AddOne_1>in".rt,
+          "~AddFour|AddOne_1>out".rt
         )
-
-      })
-      getFirrtlAndAnnos(new AddFour, Seq(aspect))
+      )
     }
     it("(10.l): Select.instancesIn for typed BaseModules") {
-      val aspect = aop.inspecting.InspectingAspect({ m: HasMultipleTypeParamsInside =>
-        val targets = aop.Select.instancesIn(m.toDefinition).map { i: Instance[BaseModule] => i.toTarget }
-        targets should be(
-          Seq(
-            "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i00:HasTypeParams".it,
-            "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i01:HasTypeParams".it,
-            "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i10:HasTypeParams_1".it,
-            "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i11:HasTypeParams_1".it
-          )
+      val m = ChiselGeneratorAnnotation(() => {
+        new HasMultipleTypeParamsInside
+      }).elaborate(1).asInstanceOf[DesignAnnotation[HasMultipleTypeParamsInside]].design
+      val targets = aop.Select.instancesIn(m.toDefinition).map { i: Instance[BaseModule] => i.toTarget }
+      targets should be(
+        Seq(
+          "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i00:HasTypeParams".it,
+          "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i01:HasTypeParams".it,
+          "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i10:HasTypeParams_1".it,
+          "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i11:HasTypeParams_1".it
         )
-      })
-      getFirrtlAndAnnos(new HasMultipleTypeParamsInside, Seq(aspect))
+      )
+
     }
     it("(10.m): Select.instancesOf for typed BaseModules if type is ignored") {
-      val aspect = aop.inspecting.InspectingAspect({ m: HasMultipleTypeParamsInside =>
-        val targets =
-          aop.Select.instancesOf[HasTypeParams[_]](m.toDefinition).map { i: Instance[HasTypeParams[_]] => i.toTarget }
-        targets should be(
-          Seq(
-            "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i00:HasTypeParams".it,
-            "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i01:HasTypeParams".it,
-            "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i10:HasTypeParams_1".it,
-            "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i11:HasTypeParams_1".it
-          )
+      val m = ChiselGeneratorAnnotation(() => {
+        new HasMultipleTypeParamsInside
+      }).elaborate(1).asInstanceOf[DesignAnnotation[HasMultipleTypeParamsInside]].design
+      val targets =
+        aop.Select.instancesOf[HasTypeParams[_]](m.toDefinition).map { i: Instance[HasTypeParams[_]] => i.toTarget }
+      targets should be(
+        Seq(
+          "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i00:HasTypeParams".it,
+          "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i01:HasTypeParams".it,
+          "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i10:HasTypeParams_1".it,
+          "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i11:HasTypeParams_1".it
         )
-      })
-      getFirrtlAndAnnos(new HasMultipleTypeParamsInside, Seq(aspect))
+      )
     }
     it(
       "10.n Select.instancesOf for typed BaseModules even type is specified wrongly (should be ignored, even though we wish it weren't)"
     ) {
-      val aspect = aop.inspecting.InspectingAspect({ m: HasMultipleTypeParamsInside =>
-        val targets = aop.Select.instancesOf[HasTypeParams[SInt]](m.toDefinition).map { i: Instance[HasTypeParams[_]] =>
-          i.toTarget
-        }
-        targets should be(
-          Seq(
-            "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i00:HasTypeParams".it,
-            "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i01:HasTypeParams".it,
-            "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i10:HasTypeParams_1".it,
-            "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i11:HasTypeParams_1".it
-          )
+      val m = ChiselGeneratorAnnotation(() => {
+        new HasMultipleTypeParamsInside
+      }).elaborate(1).asInstanceOf[DesignAnnotation[HasMultipleTypeParamsInside]].design
+      val targets = aop.Select.instancesOf[HasTypeParams[SInt]](m.toDefinition).map { i: Instance[HasTypeParams[_]] =>
+        i.toTarget
+      }
+      targets should be(
+        Seq(
+          "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i00:HasTypeParams".it,
+          "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i01:HasTypeParams".it,
+          "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i10:HasTypeParams_1".it,
+          "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i11:HasTypeParams_1".it
         )
-      })
-      getFirrtlAndAnnos(new HasMultipleTypeParamsInside, Seq(aspect))
+      )
     }
   }
   describe("(11) .suggestName") {
