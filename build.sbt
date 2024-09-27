@@ -72,7 +72,12 @@ lazy val warningSuppression = Seq(
     // This is deprecated and planned to be removed
     "cat=deprecation&origin=chisel3\\.aop\\.injecting.*:s",
     "cat=deprecation&origin=chisel3\\.stage\\.phases\\.MaybeInjectingPhase:s",
-    "cat=deprecation&origin=chisel3\\.ModuleAspect:s"
+    "cat=deprecation&origin=chisel3\\.ModuleAspect:s",
+    "cat=deprecation&origin=chisel3\\.aop\\.inspecting.*:s",
+    "cat=deprecation&origin=chisel3\\.aop\\.Aspect:s",
+    "cat=deprecation&origin=chisel3\\.aop\\.Aspect$:s",
+    "cat=deprecation&origin=chisel3\\.stage\\.phases.AspectPhase:s",
+    "cat=deprecation&origin=chisel3\\.stage\\.phases.MaybeAspectPhase:s"
   ).mkString(",")
 )
 
