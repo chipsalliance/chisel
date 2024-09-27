@@ -231,7 +231,7 @@ class SelectSpec extends ChiselFlatSpec {
     Select.instances(top) should equal(Seq(top.inst0))
   }
 
-  "Using Definition/Instance with Injecting Aspects" should "throw an error" in {
+  "Using Definition/Instance with Select APIs" should "throw an error" in {
     import chisel3.experimental.CloneModuleAsRecord
     import chisel3.experimental.hierarchy._
     @instantiable

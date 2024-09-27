@@ -532,12 +532,8 @@ package experimental {
     private[chisel3] val _ids = ArrayBuffer[HasId]()
 
     private[chisel3] def addId(d: HasId): Unit = {
-      if (Builder.aspectModule(this).isDefined) {
-        aspectModule(this).get.addId(d)
-      } else {
-        require(!_closed, "Can't write to module after module close")
-        _ids += d
-      }
+      require(!_closed, "Can't write to module after module close")
+      _ids += d
     }
 
     // Returns the last id contained within a Module
