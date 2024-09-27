@@ -68,7 +68,11 @@ lazy val warningSuppression = Seq(
     // This is deprecated for external users but not internal use
     "cat=deprecation&origin=firrtl\\.options\\.internal\\.WriteableCircuitAnnotation:s",
     "cat=deprecation&origin=chisel3\\.util\\.experimental\\.BoringUtils.*:s",
-    "cat=deprecation&origin=chisel3\\.ltl.*:s"
+    "cat=deprecation&origin=chisel3\\.ltl.*:s",
+    // This is deprecated and planned to be removed
+    "cat=deprecation&origin=chisel3\\.aop\\.injecting.*:s",
+    "cat=deprecation&origin=chisel3\\.stage\\.phases\\.MaybeInjectingPhase:s",
+    "cat=deprecation&origin=chisel3\\.ModuleAspect:s"
   ).mkString(",")
 )
 
