@@ -5,10 +5,10 @@ package chiselTests.naming
 import chisel3._
 import chisel3.aop.Select
 import chisel3.experimental.{noPrefix, prefix, skipPrefix, AffectsChiselPrefix}
-import chiselTests.{ChiselPropSpec, Utils}
+import chiselTests.{ChiselPropSpec, MatchesAndOmits, Utils}
 import circt.stage.ChiselStage
 
-class PrefixSpec extends ChiselPropSpec with Utils {
+class PrefixSpec extends ChiselPropSpec with MatchesAndOmits with Utils {
   implicit val minimumMajorVersion: Int = 12
   property("Scala plugin should interact with prefixing so last plugin name wins?") {
     class Test extends Module {
@@ -29,9 +29,7 @@ class PrefixSpec extends ChiselPropSpec with Utils {
         }
       }
     }
-    aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(List("x1_first_wire1", "x1", "x2_second_wire1", "x2"))
-    }
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))("wire x1_first_wire1 :", "wire x2_second_wire1 :", "wire x2 :")()
   }
 
   property("Nested prefixes should work") {
@@ -51,20 +49,16 @@ class PrefixSpec extends ChiselPropSpec with Utils {
       { val x1 = builder() }
       { val x2 = builder() }
     }
-    aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(
-        List(
-          "x1_wire1",
-          "x1_wire2",
-          "x1_foo_wire1",
-          "x1",
-          "x2_wire1",
-          "x2_wire2",
-          "x2_foo_wire1",
-          "x2"
-        )
-      )
-    }
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))(
+      "wire x1_wire1 :",
+      "wire x1_wire2 :",
+      "wire x1_foo_wire1 :",
+      "wire x1 :",
+      "wire x2_wire1 :",
+      "wire x2_wire2 :",
+      "wire x2_foo_wire1 :",
+      "wire x2 :"
+    )()
   }
 
   property("Skipping a prefix should work") {
@@ -85,18 +79,14 @@ class PrefixSpec extends ChiselPropSpec with Utils {
       { val x2 = builder2() }
       { builder2() }
     }
-    aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(
-        List(
-          "x1_wire1",
-          "x1",
-          "wire1",
-          "x2",
-          "wire1_1",
-          "wire2"
-        )
-      )
-    }
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))(
+      "wire x1_wire1 :",
+      "wire x1 :",
+      "wire wire1 :",
+      "wire x2 :",
+      "wire wire1_1 :",
+      "wire wire2 :"
+    )()
   }
 
   property("Prefixing seeded with signal") {
@@ -117,9 +107,7 @@ class PrefixSpec extends ChiselPropSpec with Utils {
         }
       }
     }
-    aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(List("x1", "x1_wire", "x2", "x2_wire"))
-    }
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))("wire x1 :", "wire x1_wire :", "wire x2 :", "wire x2_wire :")()
   }
 
   property("Automatic prefixing should work") {
@@ -136,9 +124,12 @@ class PrefixSpec extends ChiselPropSpec with Utils {
         val JACOB = builder()
       }
     }
-    aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(List("ADAM_a", "ADAM", "JACOB_a", "JACOB"))
-    }
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))(
+      "wire ADAM_a :",
+      "wire ADAM :",
+      "wire JACOB_a :",
+      "wire JACOB :"
+    )()
   }
 
   property("No prefixing annotation on defs should work") {
@@ -152,9 +143,7 @@ class PrefixSpec extends ChiselPropSpec with Utils {
 
       { val noprefix = builder() }
     }
-    aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(List("a", "noprefix"))
-    }
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))("wire a :", "wire noprefix :")()
   }
 
   property("Prefixing on temps should work") {
@@ -168,14 +157,10 @@ class PrefixSpec extends ChiselPropSpec with Utils {
 
       { val blah = builder() }
     }
-    aspectTest(() => new Test) { top: Test =>
-      Select.ops(top).map(x => (x._1, x._2.instanceName)) should be(
-        List(
-          ("mul", "_blah_T"),
-          ("add", "blah")
-        )
-      )
-    }
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))(
+      "node _blah_T = mul",
+      "node blah = add"
+    )()
   }
 
   property("Prefixing should not leak into child modules") {
@@ -192,9 +177,7 @@ class PrefixSpec extends ChiselPropSpec with Utils {
         }
       }
     }
-    aspectTest(() => new Test) { top: Test =>
-      Select.wires(Select.instances(top).head).map(_.instanceName) should be(List("wire"))
-    }
+    ChiselStage.emitCHIRRTL(new Test) should include("wire wire :")
   }
 
   property("Prefixing should not leak into child modules, example 2") {
@@ -211,9 +194,7 @@ class PrefixSpec extends ChiselPropSpec with Utils {
         val child = Module(module)
       }
     }
-    aspectTest(() => new Test) { top: Test =>
-      Select.wires(Select.instances(top).head).map(_.instanceName) should be(List("wire"))
-    }
+    ChiselStage.emitCHIRRTL(new Test) should include("wire wire")
   }
 
   property("Instance names should not be added to prefix") {
@@ -232,9 +213,7 @@ class PrefixSpec extends ChiselPropSpec with Utils {
         val child = Module(module)
       }
     }
-    aspectTest(() => new Test) { top: Test =>
-      Select.ios(Select.instances(top).head).map(_.instanceName) should be(List("clock", "reset", "io"))
-    }
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))("input clock :", "input reset :", "input io :")()
   }
 
   property("Prefixing should not be caused by nested Iterable[Iterable[Any]]") {
@@ -246,9 +225,7 @@ class PrefixSpec extends ChiselPropSpec with Utils {
         }
       }
     }
-    aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(List("wire"))
-    }
+    ChiselStage.emitCHIRRTL(new Test) should include("wire wire :")
   }
 
   property("Prefixing should be caused by nested Iterable[Iterable[Data]]") {
@@ -260,9 +237,7 @@ class PrefixSpec extends ChiselPropSpec with Utils {
         }
       }
     }
-    aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(List("iia_wire"))
-    }
+    ChiselStage.emitCHIRRTL(new Test) should include("wire iia_wire :")
   }
 
   property("Prefixing should NOT be influenced by suggestName") {
@@ -274,9 +249,7 @@ class PrefixSpec extends ChiselPropSpec with Utils {
         }
       }
     }
-    aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(List("wire_x", "foo"))
-    }
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))("wire wire_x :", "wire foo :")()
   }
 
   property("Prefixing should be influenced by the \"current name\" of the signal") {
@@ -303,9 +276,14 @@ class PrefixSpec extends ChiselPropSpec with Utils {
         }
       }
     }
-    aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(List("foo", "wire_x", "bar", "wire2_x", "fizz", "fizz_x"))
-    }
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))(
+      "wire foo :",
+      "wire wire_x :",
+      "wire bar :",
+      "wire wire2_x :",
+      "wire fizz :",
+      "wire fizz_x :"
+    )()
   }
 
   property("Prefixing have intuitive behavior") {
@@ -319,9 +297,7 @@ class PrefixSpec extends ChiselPropSpec with Utils {
         }
       }
     }
-    aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(List("wire_mywire", "mywire2"))
-    }
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))("wire wire_mywire :", "wire mywire2 :")()
   }
 
   property("Prefixing on connection to subfields work") {
@@ -339,17 +315,13 @@ class PrefixSpec extends ChiselPropSpec with Utils {
         wire.vec(1.U) := RegNext(3.U)
       }
     }
-    aspectTest(() => new Test) { top: Test =>
-      Select.registers(top).map(_.instanceName) should be(
-        List(
-          "wire_x_REG",
-          "wire_y_REG",
-          "wire_vec_0_REG",
-          "wire_vec_REG",
-          "wire_vec_1_REG"
-        )
-      )
-    }
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))(
+      "reg wire_x_REG :",
+      "reg wire_y_REG :",
+      "reg wire_vec_0_REG :",
+      "reg wire_vec_REG :",
+      "reg wire_vec_1_REG :"
+    )()
   }
 
   property("Prefixing on connection to IOs should work") {
@@ -364,18 +336,7 @@ class PrefixSpec extends ChiselPropSpec with Utils {
         child.in := RegNext(3.U)
       }
     }
-    aspectTest(() => new Test) { top: Test =>
-      Select.registers(top).map(_.instanceName) should be(
-        List(
-          "child_in_REG"
-        )
-      )
-      Select.registers(Select.instances(top).head).map(_.instanceName) should be(
-        List(
-          "out_REG"
-        )
-      )
-    }
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))("reg child_in_REG :", "reg out_REG :")()
   }
 
   property("Prefixing on bulk connects should work") {
@@ -390,18 +351,7 @@ class PrefixSpec extends ChiselPropSpec with Utils {
         child.in <> RegNext(3.U)
       }
     }
-    aspectTest(() => new Test) { top: Test =>
-      Select.registers(top).map(_.instanceName) should be(
-        List(
-          "child_in_REG"
-        )
-      )
-      Select.registers(Select.instances(top).head).map(_.instanceName) should be(
-        List(
-          "out_REG"
-        )
-      )
-    }
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))("reg child_in_REG :", "reg out_REG :")()
   }
 
   property("Connections should use the non-prefixed name of the connected Data") {
@@ -415,9 +365,7 @@ class PrefixSpec extends ChiselPropSpec with Utils {
         }
       }
     }
-    aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(List("foo_x", "foo_x_w"))
-    }
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))("wire foo_x :", "wire foo_x_w :")()
   }
 
   property("Connections to aggregate fields should use the non-prefixed aggregate name") {
@@ -431,9 +379,7 @@ class PrefixSpec extends ChiselPropSpec with Utils {
         }
       }
     }
-    aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(List("foo_x", "foo_x_bar_w"))
-    }
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))("wire foo_x :", "wire foo_x_bar_w :")()
   }
 
   property("Prefixing with wires in recursive functions should grow linearly") {
@@ -449,9 +395,12 @@ class PrefixSpec extends ChiselPropSpec with Utils {
       val in = IO(Input(Vec(4, Bool())))
       val x = func(in)
     }
-    aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(List("x", "x_w_w", "x_w_w_w", "x_w_w_w_w"))
-    }
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))(
+      "wire x :",
+      "wire x_w_w :",
+      "wire x_w_w_w :",
+      "wire x_w_w_w_w :"
+    )()
   }
 
   property("Prefixing should work for verification ops") {
@@ -485,9 +434,7 @@ class PrefixSpec extends ChiselPropSpec with Utils {
         }
       }
     }
-    aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(List("a_b_c"))
-    }
+    ChiselStage.emitCHIRRTL(new Test) should include("wire a_b_c :")
   }
 
   // This checks that we don't just blanket ignore leading _ in prefixes
@@ -502,9 +449,7 @@ class PrefixSpec extends ChiselPropSpec with Utils {
         }
       }
     }
-    aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(List("a__b_c"))
-    }
+    ChiselStage.emitCHIRRTL(new Test) should include("wire a__b_c :")
   }
 
   property("Leading '_' in signal names should be ignored in prefixes from connections") {
@@ -523,9 +468,7 @@ class PrefixSpec extends ChiselPropSpec with Utils {
         }
       }
     }
-    aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(List("a_b_c_d"))
-    }
+    ChiselStage.emitCHIRRTL(new Test) should include("wire a_b_c_d :")
   }
 
   property("Prefixing of AffectsChiselPrefix objects should work") {
@@ -546,10 +489,10 @@ class PrefixSpec extends ChiselPropSpec with Utils {
         nonData2.value := RegNext(3.U)
       }
     }
-    aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(List("nonData_value", "value"))
-    }
+
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))("wire nonData_value :", "wire value :")()
   }
+
   property("Prefixing should not be affected by repeated calls of suggestName") {
     class Test extends Module {
       val in = IO(Input(UInt(3.W)))
@@ -572,8 +515,6 @@ class PrefixSpec extends ChiselPropSpec with Utils {
         thisShouldNotBeHere
       }
     }
-    aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(List("prefixed_wire"))
-    }
+    ChiselStage.emitCHIRRTL(new Test) should include("wire prefixed_wire :")
   }
 }
