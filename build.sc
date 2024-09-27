@@ -126,7 +126,7 @@ trait Firrtl extends common.FirrtlModule with ChiselPublishModule with CrossSbtM
 
   def scoptIvy = v.scopt
 
-  object test extends SbtModuleTests with TestModule.ScalaTest {
+  object test extends SbtModuleTests with TestModule.ScalaTest with ScalafmtModule {
     def ivyDeps = Agg(v.scalatest, v.scalacheck)
   }
 }
@@ -136,7 +136,7 @@ object svsim extends Cross[Svsim](v.scalaCrossVersions)
 trait Svsim extends common.SvsimModule with ChiselPublishModule with CrossSbtModule with ScalafmtModule {
   def millSourcePath = super.millSourcePath / os.up / "svsim"
 
-  object test extends SbtModuleTests with TestModule.ScalaTest {
+  object test extends SbtModuleTests with TestModule.ScalaTest with ScalafmtModule {
     def ivyDeps = Agg(v.scalatest, v.scalacheck)
   }
 }
@@ -218,7 +218,7 @@ trait Chisel extends common.ChiselModule with ChiselPublishModule with CrossSbtM
 
   def pluginModule = plugin(crossScalaVersion)
 
-  object test extends SbtModuleTests with TestModule.ScalaTest {
+  object test extends SbtModuleTests with TestModule.ScalaTest with ScalafmtModule {
     def ivyDeps = Agg(v.scalatest, v.scalacheck)
   }
 }
@@ -231,7 +231,7 @@ trait IntegrationTests extends CrossSbtModule with ScalafmtModule with common.Ha
 
   def millSourcePath = os.pwd / "integration-tests"
 
-  object test extends SbtModuleTests with TestModule.ScalaTest {
+  object test extends SbtModuleTests with TestModule.ScalaTest with ScalafmtModule {
     override def moduleDeps = super.moduleDeps :+ chisel().test
     def ivyDeps = Agg(v.scalatest, v.scalacheck)
   }
