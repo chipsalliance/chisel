@@ -15,6 +15,7 @@ import firrtl.annotations.{Annotation, ModuleTarget, NoTargetAnnotation, SingleT
   * @param modules Additional modules that may be instantiated by s
   * @param annotations Additional annotations that should be passed down compiler
   */
+@deprecated("injecting aspects are being removed in Chisel 7", "6.6.0")
 case class InjectStatement(
   module:      ModuleTarget,
   s:           firrtl.ir.Statement,

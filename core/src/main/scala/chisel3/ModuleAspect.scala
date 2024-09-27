@@ -11,6 +11,7 @@ import chisel3.internal.{Builder, PseudoModule}
   *
   * @param module Module for which this object is an aspect of
   */
+@deprecated("injecting aspects are being removed in Chisel 7", "6.6.0")
 abstract class ModuleAspect private[chisel3] (module: RawModule) extends RawModule with PseudoModule {
 
   Builder.addAspect(module, this)

@@ -25,6 +25,7 @@ import scala.collection.mutable.ArrayBuffer
   * @tparam T Type of top-level module
   * @tparam M Type of root module (join point)
   */
+@deprecated("injecting aspects are being removed in Chisel 7", "6.6.0")
 case class InjectingAspect[T <: RawModule, M <: RawModule](
   selectRoots: T => Iterable[M],
   injection:   M => Unit)
@@ -41,6 +42,7 @@ case class InjectingAspect[T <: RawModule, M <: RawModule](
   * @tparam T Type of top-level module
   * @tparam M Type of root module (join point)
   */
+@deprecated("injecting aspects are being removed in Chisel 7", "6.6.0")
 abstract class InjectorAspect[T <: RawModule, M <: RawModule](
   selectRoots: T => Iterable[M],
   injection:   M => Unit)
