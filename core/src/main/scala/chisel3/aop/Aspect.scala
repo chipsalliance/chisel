@@ -11,6 +11,7 @@ import firrtl.AnnotationSeq
   * what behavior should be done to instance, via the FIRRTL Annotation Mechanism
   * @tparam T Type of top-level module
   */
+@deprecated("aspects are being removed in Chisel 7", "6.6.0")
 abstract class Aspect[T <: RawModule] extends Annotation with Unserializable with NoTargetAnnotation {
 
   /** variable to save [[AnnotationSeq]] from [[chisel3.stage.phases.AspectPhase]]
@@ -35,12 +36,14 @@ abstract class Aspect[T <: RawModule] extends Annotation with Unserializable wit
 }
 
 /** Holds utility functions for Aspect stuff */
+@deprecated("aspects are being removed in Chisel 7", "6.6.0")
 object Aspect {
 
   /** Converts elaborated Chisel components to FIRRTL modules
     * @param chiselIR
     * @return
     */
+  @deprecated("aspects are being removed in Chisel 7", "6.6.0")
   def getFirrtl(chiselIR: chisel3.internal.firrtl.ir.Circuit): firrtl.ir.Circuit = {
     chisel3.internal.firrtl.Converter.convert(chiselIR)
   }
