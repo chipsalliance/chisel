@@ -33,7 +33,6 @@ class ChiselStage extends Stage {
       targets = Seq(
         Dependency[chisel3.stage.phases.AddImplicitOutputFile],
         Dependency[chisel3.stage.phases.AddImplicitOutputAnnotationFile],
-        Dependency[chisel3.stage.phases.MaybeAspectPhase],
         Dependency[chisel3.stage.phases.AddSerializationAnnotations],
         Dependency[chisel3.stage.phases.Convert],
         Dependency[chisel3.stage.phases.AddDedupGroupAnnotations],
