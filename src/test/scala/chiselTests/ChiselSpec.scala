@@ -4,7 +4,6 @@ package chiselTests
 
 import _root_.logger.{LogLevel, LogLevelAnnotation, Logger}
 import chisel3._
-import chisel3.aop.Aspect
 import chisel3.stage.{ChiselGeneratorAnnotation, PrintFullStackTraceAnnotation}
 import chisel3.testers._
 import circt.stage.{CIRCTTarget, CIRCTTargetAnnotation, ChiselStage}
@@ -324,32 +323,6 @@ trait Utils {
     * @param status the exit code
     */
   private case class ExitException(status: Int) extends SecurityException(s"Found a sys.exit with code $status")
-
-  /** A tester which runs generator and uses an aspect to check the returned object
-    * @param gen function to generate a Chisel module
-    * @param f a function to check the Chisel module
-    * @tparam T the Chisel module class
-    */
-  def aspectTest[T <: RawModule](gen: () => T)(f: T => Unit)(implicit scalaMajorVersion: Int): Unit = {
-    // Runs chisel stage
-    def run[T <: RawModule](gen: () => T, annotations: AnnotationSeq): AnnotationSeq = {
-      new ChiselStage().run(
-        Seq(
-          ChiselGeneratorAnnotation(gen),
-          CIRCTTargetAnnotation(CIRCTTarget.CHIRRTL),
-          PrintFullStackTraceAnnotation
-        ) ++ annotations
-      )
-    }
-    // Creates a wrapping aspect to contain checking function
-    case object BuiltAspect extends Aspect[T] {
-      override def toAnnotation(top: T): AnnotationSeq = { f(top); Nil }
-    }
-    val currentMajorVersion = scala.util.Properties.versionNumberString.split('.')(1).toInt
-    if (currentMajorVersion >= scalaMajorVersion) {
-      run(gen, Seq(BuiltAspect))
-    }
-  }
 
   /** Run some code and rethrow an exception with a specific type if an exception of that type occurs anywhere in the
     * stack trace.

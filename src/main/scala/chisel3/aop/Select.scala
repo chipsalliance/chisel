@@ -14,9 +14,7 @@ import firrtl.annotations.ReferenceTarget
 import scala.reflect.runtime.universe.TypeTag
 import scala.collection.mutable
 
-/** Use to select Chisel components in a module, after that module has been constructed
-  * Useful for adding additional Chisel annotations or for use within an [[Aspect]]
-  */
+/** Use to select Chisel components in a module, after that module has been constructed. */
 object Select {
 
   /** Return just leaf components of expanded node
