@@ -6,6 +6,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import java.util.ServiceLoader
 
+import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq}
 import firrtl.options.{RegisteredLibrary, ShellOption}
 import firrtl.ir.Circuit
 import firrtl.annotations.NoTargetAnnotation

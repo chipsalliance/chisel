@@ -2,6 +2,7 @@
 
 package firrtlTests.options.phases
 
+import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq}
 import firrtl.options.{Phase, TargetDirAnnotation}
 import firrtl.options.phases.AddDefaults
 import org.scalatest.flatspec.AnyFlatSpec

@@ -2,7 +2,7 @@
 
 package logger.phases
 
-import firrtl.AnnotationSeq
+import firrtl.{annoSeqToSeq, AnnotationSeq}
 import firrtl.annotations.Annotation
 import firrtl.options.{Dependency, Phase}
 

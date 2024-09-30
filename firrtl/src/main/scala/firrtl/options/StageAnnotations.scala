@@ -2,7 +2,7 @@
 
 package firrtl.options
 
-import firrtl.AnnotationSeq
+import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq}
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.options.Viewer.view
 

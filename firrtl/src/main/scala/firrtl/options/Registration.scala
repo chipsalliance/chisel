@@ -2,7 +2,7 @@
 
 package firrtl.options
 
-import firrtl.AnnotationSeq
+import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq}
 
 import scopt.{OptionDef, OptionParser, Read}
 

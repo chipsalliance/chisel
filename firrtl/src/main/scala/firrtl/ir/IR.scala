@@ -5,7 +5,6 @@ package ir
 
 import firrtl.annotations.Annotation
 
-import dataclass.{data, since}
 import org.apache.commons.text.translate.{AggregateTranslator, JavaUnicodeEscaper, LookupTranslator}
 
 import scala.collection.JavaConverters._
@@ -372,47 +371,28 @@ case class PropAssign(info: Info, loc: Expression, expr: Expression) extends Sta
 case class IsInvalid(info: Info, expr: Expression) extends Statement with HasInfo with UseSerializer
 case class Attach(info: Info, exprs: Seq[Expression]) extends Statement with HasInfo with UseSerializer
 
-@data class Stop(info: Info, ret: Int, clk: Expression, en: Expression, @since("FIRRTL 1.5") name: String = "")
+case class Stop(
+  val info: Info,
+  val ret:  Int,
+  val clk:  Expression,
+  val en:   Expression,
+  val name: String = "")
     extends Statement
     with HasInfo
     with IsDeclaration
-    with UseSerializer {
-  def copy(info: Info = info, ret: Int = ret, clk: Expression = clk, en: Expression = en): Stop = {
-    Stop(info, ret, clk, en, name)
-  }
-}
-object Stop {
-  def unapply(s: Stop): Some[(Info, Int, Expression, Expression)] = {
-    Some((s.info, s.ret, s.clk, s.en))
-  }
-}
-@data class Print(
-  info:   Info,
-  string: StringLit,
-  args:   Seq[Expression],
-  clk:    Expression,
-  en:     Expression,
-  @since("FIRRTL 1.5")
-  name: String = "")
+    with UseSerializer
+
+case class Print(
+  val info:   Info,
+  val string: StringLit,
+  val args:   Seq[Expression],
+  val clk:    Expression,
+  val en:     Expression,
+  val name:   String = "")
     extends Statement
     with HasInfo
     with IsDeclaration
-    with UseSerializer {
-  def copy(
-    info:   Info = info,
-    string: StringLit = string,
-    args:   Seq[Expression] = args,
-    clk:    Expression = clk,
-    en:     Expression = en
-  ): Print = {
-    Print(info, string, args, clk, en, name)
-  }
-}
-object Print {
-  def unapply(s: Print): Some[(Info, StringLit, Seq[Expression], Expression, Expression)] = {
-    Some((s.info, s.string, s.args, s.clk, s.en))
-  }
-}
+    with UseSerializer
 
 case class ProbeDefine(info: Info, sink: Expression, probeExpr: Expression) extends Statement with UseSerializer
 case class ProbeExpr(expr: Expression, tpe: Type = UnknownType) extends Expression with UseSerializer

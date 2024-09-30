@@ -2,7 +2,7 @@
 
 package firrtl.options.phases
 
-import firrtl.AnnotationSeq
+import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq}
 import firrtl.annotations.{AnnotationFileNotFoundException, JsonProtocol}
 import firrtl.options.{InputAnnotationFileAnnotation, Phase, StageUtils}
 import firrtl.FileUtils
@@ -11,6 +11,8 @@ import firrtl.stage.AllowUnrecognizedAnnotations
 import java.io.File
 import scala.collection.mutable
 import scala.util.{Failure, Try}
+
+import org.json4s.convertToJsonInput
 
 /** Recursively expand all [[InputAnnotationFileAnnotation]]s in an [[AnnotationSeq]] */
 class GetIncludes extends Phase {

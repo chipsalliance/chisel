@@ -2,7 +2,7 @@
 
 package firrtl.options
 
-import firrtl.AnnotationSeq
+import firrtl.{seqToAnnoSeq, AnnotationSeq}
 
 import logger.Logger
 
