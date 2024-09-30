@@ -21,7 +21,7 @@ object CommonCompilationSettings {
     def apply(name: String, value: String) = new VerilogPreprocessorDefine(name, Some(value))
     def apply(name: String) = new VerilogPreprocessorDefine(name, None)
   }
-  case class VerilogPreprocessorDefine(name: String, value: Option[String]) {
+  case class VerilogPreprocessorDefine private (name: String, value: Option[String]) {
     private[svsim] def toCommandlineArgument: String = {
       value match {
         case Some(v) => s"+define+${name}=${v}"

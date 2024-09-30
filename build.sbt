@@ -167,7 +167,10 @@ lazy val svsim = (project in file("svsim"))
   .settings(minimalSettings)
   .settings(
     // Published as part of unipublish
-    scalacOptions := Seq("-Xsource:3"),
+    scalacOptions := Seq(
+      "-Xsource:3",
+      "-Xsource-features:case-apply-copy-access"
+    ),
     publish / skip := true,
     libraryDependencies ++= Seq(
       "org.scalatest" %% "scalatest" % "3.2.19" % "test",
