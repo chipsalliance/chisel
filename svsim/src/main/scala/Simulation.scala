@@ -367,7 +367,7 @@ object Simulation {
 
   final case class Value(bitCount: Int, asBigInt: BigInt)
 
-  final case class Port(controller: Simulation.Controller, id: String, info: ModuleInfo.Port) {
+  final case class Port private[Simulation] (controller: Simulation.Controller, id: String, info: ModuleInfo.Port) {
 
     def set(value: BigInt) = {
       controller.sendCommand(Simulation.Command.SetBits(id, value))
