@@ -40,7 +40,7 @@ object dontTouch {
       case _:   Property[_] => ()
       case agg: Aggregate => agg.getElements.foreach(dontTouch.apply)
       case _:   Element =>
-        annotate(new ChiselAnnotation { def toFirrtl = DontTouchAnnotation(data.toNamed) })
+        annotate(new ChiselAnnotation { def toFirrtl: DontTouchAnnotation = DontTouchAnnotation(data.toNamed) })
       case _ => throw new ChiselException("Non-hardware dontTouch")
     }
     data

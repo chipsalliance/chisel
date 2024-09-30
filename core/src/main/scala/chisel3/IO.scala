@@ -26,7 +26,7 @@ object IO {
     if (!module.isIOCreationAllowed)
       Builder.error(
         s"This module cannot have IOs instantiated after disallowing IOs: ${module._whereIOCreationIsDisallowed
-          .map(_.makeMessage { s: String => s })
+          .map(_.makeMessage { (s: String) => s })
           .mkString(",")}"
       )
     require(!module.isClosed, "Can't add more ports after module close")

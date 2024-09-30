@@ -14,7 +14,7 @@ import chisel3.internal.firrtl.Converter
 import chisel3.internal.naming._
 import _root_.firrtl.annotations.{Annotation, CircuitName, ComponentName, IsMember, ModuleName, Named, ReferenceTarget}
 import _root_.firrtl.annotations.AnnotationUtils.validComponentName
-import _root_.firrtl.AnnotationSeq
+import _root_.firrtl.{annoSeqToSeq, AnnotationSeq}
 import _root_.firrtl.renamemap.MutableRenameMap
 import _root_.firrtl.util.BackendCompilationUtilities._
 import _root_.firrtl.{ir => fir}

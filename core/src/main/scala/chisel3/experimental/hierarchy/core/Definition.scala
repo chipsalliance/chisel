@@ -12,6 +12,8 @@ import chisel3.internal.sourceinfo.{DefinitionTransform, DefinitionWrapTransform
 import chisel3.experimental.{BaseModule, SourceInfo}
 import firrtl.annotations.{IsModule, ModuleTarget, NoTargetAnnotation}
 
+import firrtl.seqToAnnoSeq
+
 import scala.annotation.nowarn
 
 /** User-facing Definition type.
