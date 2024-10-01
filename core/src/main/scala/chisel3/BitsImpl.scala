@@ -531,7 +531,7 @@ private[chisel3] trait ResetTypeImpl extends Element { self: Reset =>
 
   def cloneType: this.type = Reset().asInstanceOf[this.type]
 
-  override def litOption: None.type = None
+  override def litOption = None
 
   /** Not really supported */
   def toPrintable: Printable = PString("Reset")
@@ -560,7 +560,7 @@ private[chisel3] trait AsyncResetImpl extends Element { self: AsyncReset =>
 
   def cloneType: this.type = AsyncReset().asInstanceOf[this.type]
 
-  override def litOption: None.type = None
+  override def litOption = None
 
   /** Not really supported */
   def toPrintable: Printable = PString("AsyncReset")

@@ -316,7 +316,8 @@ lazy val core = (project in file("core"))
       "-Xcheckinit",
       "-Xlint:infer-any",
       "-Xsource:3",
-      "-Xsource-features:case-apply-copy-access"
+      "-Xsource-features:case-apply-copy-access",
+      "-Xsource-features:infer-override",
 //      , "-Xlint:missing-interpolator"
     )
   )

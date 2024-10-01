@@ -44,7 +44,7 @@ private[chisel3] sealed trait Alignment {
 
 // The alignment datastructure for a missing field
 private[chisel3] case class EmptyAlignment(isConsumer: Boolean) extends Alignment {
-  def member: DontCare.type = DontCare
+  def member = DontCare
   def invert: EmptyAlignment = this
   def coerced = false
   def coerce: EmptyAlignment = this

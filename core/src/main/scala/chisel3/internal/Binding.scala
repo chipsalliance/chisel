@@ -226,7 +226,7 @@ private[chisel3] object binding {
 
   /** Binding for Data's returned from accessing an Instance/Definition members, if not readable/writable port */
   case object CrossModuleBinding extends TopBinding {
-    def location: None.type = None
+    def location: Option[BaseModule] = None
   }
 
   sealed trait LitBinding extends UnconstrainedBinding with ReadOnlyBinding
