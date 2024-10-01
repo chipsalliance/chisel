@@ -445,8 +445,8 @@ To accomplish this, use the other operators to initialize all `Record` members, 
 import scala.collection.immutable.SeqMap
 
 class Example10 extends RawModule {
-  val abType = new Record { override val elements: SeqMap[String, Data] = SeqMap("a" -> Bool(), "b" -> Flipped(Bool())) }
-  val bcType = new Record { override val elements: SeqMap[String, Data] = SeqMap("b" -> Flipped(Bool()), "c" -> Bool()) }
+  val abType = new Record { override val elements = SeqMap("a" -> Bool(), "b" -> Flipped(Bool())) }
+  val bcType = new Record { override val elements = SeqMap("b" -> Flipped(Bool()), "c" -> Bool()) }
 
   val p = Wire(abType)
   val c = Wire(bcType)
