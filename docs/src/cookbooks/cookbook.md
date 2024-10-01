@@ -469,7 +469,7 @@ import chisel3.reflect.DataMirror
 import chisel3.experimental.requireIsChiselType
 
 class CustomBundleFixed(elts: (String, Data)*) extends Record {
-  override val elements: SeqMap[String, Data] = ListMap(elts.map {
+  override val elements = ListMap(elts.map {
     case (field, elt) =>
       requireIsChiselType(elt)
       field -> DataMirror.internal.chiselTypeClone(elt)

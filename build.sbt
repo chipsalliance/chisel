@@ -464,7 +464,10 @@ lazy val docs = project // new documentation project
       "-language:reflectiveCalls",
       "-language:implicitConversions",
       "-Wconf:msg=firrtl:s,cat=other-implicit-type:s",
-      "-Xsource:3"
+      "-Xsource:3",
+      // We do not want to force type annotations onto the
+      // demonstration user code, especially this comes up in setting the elements of a Record
+      "-Xsource-features:infer-override"
     ),
     mdocIn := file("docs/src"),
     mdocOut := file("docs/generated"),
