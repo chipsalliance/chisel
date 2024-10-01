@@ -46,14 +46,13 @@ object Releases {
   }
 
   // The listReleases API grabs by page so we need to fetch multiple pages
-  def getReleases(github: Github[IO], page: Int = 0): IO[List[String]] = IO(Nil)/*for {
+  def getReleases(github: Github[IO], page: Int = 0): IO[List[String]] = for {
     response <- github.repos.listReleases(repo.owner, repo.repo, Some(Pagination(page, 40)), Map())
     fetched <- liftToIO(response).map(_.map(_.tag_name))
     fetchedMore <-
       if (fetched.contains(oldestRelease)) IO(Nil)
       else getReleases(github, page + 1)
   } yield fetched ++ fetchedMore
-  */
 
   // Check if the release is published to Maven Central
   def isPublished(logger: Logger)(version: SemanticVersion): Boolean = {
