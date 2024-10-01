@@ -25,10 +25,11 @@ object Contributors {
       .unsafeRunSync()
       .result match {
       case Left(e) =>
-        throw new Exception(
+        Nil/*throw new Exception(
           s"Unable to fetch contributors for ${repo.serialize}. Did you misspell it? Did the repository move?" +
             s" Is access token defined: ${token.isDefined}? Original exception: ${e.getMessage}"
         )
+            */
       case Right(r) => r
     }
 

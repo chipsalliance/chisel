@@ -27,6 +27,8 @@ It takes a parameter named "STRING" and has several inputs.
 
 ```scala mdoc:invisible
 import chisel3._
+// Below is required for scala 3 migration
+import chisel3.experimental.fromStringToStringParam
 ```
 
 ```scala mdoc:compile-only

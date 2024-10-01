@@ -463,7 +463,8 @@ lazy val docs = project // new documentation project
     scalacOptions ++= Seq(
       "-language:reflectiveCalls",
       "-language:implicitConversions",
-      "-Wconf:msg=firrtl:s,cat=other-implicit-type:s"
+      "-Wconf:msg=firrtl:s,cat=other-implicit-type:s",
+      "-Xsource:3"
     ),
     mdocIn := file("docs/src"),
     mdocOut := file("docs/generated"),

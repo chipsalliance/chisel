@@ -440,12 +440,12 @@ won't get cloned:
 
 ```scala mdoc:invisible
 import chisel3._
-import scala.collection.immutable.ListMap
+import scala.collection.immutable.{SeqMap, ListMap}
 ```
 
 ```scala mdoc:crash
 class CustomBundleBroken(elts: (String, Data)*) extends Record {
-  val elements = ListMap(elts: _*)
+  override val elements: SeqMap[String, Data] = ListMap(elts: _*)
 
   def apply(elt: String): Data = elements(elt)
 }
@@ -469,7 +469,7 @@ import chisel3.reflect.DataMirror
 import chisel3.experimental.requireIsChiselType
 
 class CustomBundleFixed(elts: (String, Data)*) extends Record {
-  val elements = ListMap(elts.map {
+  override val elements: SeqMap[String, Data] = ListMap(elts.map {
     case (field, elt) =>
       requireIsChiselType(elt)
       field -> DataMirror.internal.chiselTypeClone(elt)

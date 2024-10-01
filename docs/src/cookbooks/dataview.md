@@ -194,7 +194,7 @@ class Bar(val x: Int) extends Foo(x) {
   val bar = UInt(x.W)
 }
 // Define a DataView without having to specify the mapping!
-implicit val view = PartialDataView.supertype[Bar, Foo](b => new Foo(b.x))
+implicit val view: DataView[Bar, Foo] = PartialDataView.supertype[Bar, Foo](b => new Foo(b.x))
 
 class MyModule extends Module {
   val foo = IO(Input(new Foo(8)))
