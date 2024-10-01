@@ -440,12 +440,12 @@ won't get cloned:
 
 ```scala mdoc:invisible
 import chisel3._
-import scala.collection.immutable.{SeqMap, ListMap}
+import scala.collection.immutable.ListMap
 ```
 
 ```scala mdoc:crash
 class CustomBundleBroken(elts: (String, Data)*) extends Record {
-  override val elements: SeqMap[String, Data] = ListMap(elts: _*)
+  override val elements = ListMap(elts: _*)
 
   def apply(elt: String): Data = elements(elt)
 }
