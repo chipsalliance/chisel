@@ -419,7 +419,7 @@ class Bar extends Bundle {
   val d = UInt(8.W)
 }
 object Foo {
-  implicit val f2b: DataView[Foo,Bar] = DataView(_ => new Bar, _.a -> _.c, _.b -> _.d)
+  implicit val f2b: DataView[Foo, Bar] = DataView(_ => new Bar, _.a -> _.c, _.b -> _.d)
   implicit val b2f: DataView[Bar, Foo] = f2b.invert(_ => new Foo)
 }
 ```
