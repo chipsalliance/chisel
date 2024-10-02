@@ -160,6 +160,39 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
     )()
   }
 
+  they should "allow for defines to layer-colored probes without layer blocks" in {
+
+    class Foo extends RawModule {
+      val a, b = IO(Input(Bool()))
+      val x = IO(Output(Probe(Bool(), A)))
+      val y = IO(Output(Probe(Bool(), A.B)))
+      define(x, ProbeValue(a))
+      define(y, ProbeValue(b))
+    }
+
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Foo))(
+      "define x = probe(a)",
+      "define y = probe(b)"
+    )()
+  }
+
+  they should "allow for defines to layer-colored probes regardless of enabled layers" in {
+
+    class Foo extends RawModule {
+      val a, b = IO(Input(Bool()))
+      val x = IO(Output(Probe(Bool(), A)))
+      val y = IO(Output(Probe(Bool(), A.B)))
+      layer.enable(C)
+      define(x, ProbeValue(a))
+      define(y, ProbeValue(b))
+    }
+
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Foo))(
+      "define x = probe(a)",
+      "define y = probe(b)"
+    )()
+  }
+
   they should "be enabled with a trait" in {
 
     class Foo extends RawModule {
@@ -174,22 +207,6 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
       "module Foo enablelayer A.B enablelayer C :"
     )()
 
-  }
-
-  they should "allow to define additional layer-colored probes using enables" in {
-
-    class Foo extends RawModule {
-      // Without this enable, this circuit is illegal because `C` is NOT enabled
-      // when `A` is enabled.  Cf. tests checking errors of this later.
-      layer.enable(A)
-      val a = IO(Output(Probe(Bool(), A)))
-      layer.block(C) {
-        val b = Wire(Bool())
-        define(a, ProbeValue(b))
-      }
-    }
-
-    ChiselStage.convert(new Foo)
   }
 
   they should "work correctly with Definition/Instance" in {
