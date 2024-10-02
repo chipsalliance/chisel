@@ -463,7 +463,7 @@ lazy val docs = project // new documentation project
     scalacOptions ++= Seq(
       "-language:reflectiveCalls",
       "-language:implicitConversions",
-      "-Wconf:msg=firrtl:s,cat=other-implicit-type:s",
+      "-Wconf:msg=firrtl:s",
       "-Xsource:3",
       // We do not want to force type annotations onto the
       // demonstration user code, especially this comes up in setting the elements of a Record
