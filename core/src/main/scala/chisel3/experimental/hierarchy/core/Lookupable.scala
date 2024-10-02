@@ -485,7 +485,7 @@ object Lookupable {
       val ret = that(definition.proto)
       val underlying = new InstantiableClone[B] {
         val getProto = ret
-        lazy val _innerContext = definition
+        lazy val _innerContext: Hierarchy[_] = definition
       }
       new Instance(Clone(underlying))
     }
@@ -493,7 +493,7 @@ object Lookupable {
       val ret = that(instance.proto)
       val underlying = new InstantiableClone[B] {
         val getProto = ret
-        lazy val _innerContext = instance
+        lazy val _innerContext: Hierarchy[_] = instance
       }
       new Instance(Clone(underlying))
     }

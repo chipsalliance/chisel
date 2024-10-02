@@ -9,12 +9,17 @@ import chisel3.Record
   * @param strippedSuffix In the case of forced coersion by [[Input]] or [[Output]], the string to append to the end of the
   *        alias name. Takes the default value of `"_stripped"`
   */
-case class RecordAlias private[chisel3] (info: SourceInfo, id: String, strippedSuffix: String = "_stripped")
+case class RecordAlias private[chisel3] (info: SourceInfo, id: String, strippedSuffix: String = "_stripped") {
+  def copy(info: SourceInfo = this.info, id: String = this.id, strippedSuffix: String = this.strippedSuffix) =
+    new RecordAlias(info, id, strippedSuffix)
+}
 
 object RecordAlias {
-  def apply(id: String)(implicit info:  SourceInfo): RecordAlias = RecordAlias(info, id)
+  def apply(id: String)(implicit info:  SourceInfo): RecordAlias = new RecordAlias(info, id)
   def apply(id: String, strippedSuffix: String)(implicit info: SourceInfo): RecordAlias =
     RecordAlias(info, id, strippedSuffix)
+  def apply(info: SourceInfo, id: String, strippedSuffix: String): RecordAlias =
+    new RecordAlias(info, id, strippedSuffix)
 }
 
 trait HasTypeAlias {

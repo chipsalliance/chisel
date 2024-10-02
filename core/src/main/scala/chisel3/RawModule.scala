@@ -11,6 +11,7 @@ import chisel3.properties.{DynamicObject, Property, StaticObject}
 import chisel3.internal.Builder._
 import chisel3.internal.firrtl.ir._
 import chisel3.reflect.DataMirror
+import chisel3.Module.ResetType._
 import _root_.firrtl.annotations.{IsModule, ModuleTarget}
 import scala.collection.immutable.VectorBuilder
 import scala.collection.mutable.ArrayBuffer
