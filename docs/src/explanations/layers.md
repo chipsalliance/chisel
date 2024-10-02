@@ -147,7 +147,7 @@ object UserDefined {
   // Define an implicit val `root` of type `Layer` to cause layers which can see
   // this to use `root` as their parent layer.  This allows us to nest the
   // user-defined `Debug` layer under the built-in `Verification` layer.
-  implicit val root = Verification
+  implicit val root: Layer = Verification
   object Debug extends Layer(LayerConfig.Extract())
 }
 
