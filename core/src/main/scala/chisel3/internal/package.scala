@@ -180,8 +180,7 @@ package object internal {
         color
       case _ => return
     }
-    val enabledLayers = Builder.enabledLayers.view ++ Builder.layerStack.headOption
-    if (enabledLayers.exists(_.canWriteTo(destLayer))) {
+    if (Builder.layerStack.headOption.forall(_.canWriteTo(destLayer))) {
       return
     }
     Builder.error(errorMessage)
