@@ -445,7 +445,7 @@ import scala.collection.immutable.ListMap
 
 ```scala mdoc:crash
 class CustomBundleBroken(elts: (String, Data)*) extends Record {
-  override val elements = ListMap(elts: _*)
+  val elements = ListMap(elts: _*)
 
   def apply(elt: String): Data = elements(elt)
 }
