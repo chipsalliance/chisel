@@ -10,7 +10,11 @@ import chisel3.Record
   *        alias name. Takes the default value of `"_stripped"`
   */
 case class RecordAlias private[chisel3] (info: SourceInfo, id: String, strippedSuffix: String = "_stripped") {
-  def copy(info: SourceInfo = this.info, id: String = this.id, strippedSuffix: String = this.strippedSuffix) =
+  private[chisel3] def copy(
+    info:           SourceInfo = this.info,
+    id:             String = this.id,
+    strippedSuffix: String = this.strippedSuffix
+  ) =
     new RecordAlias(info, id, strippedSuffix)
 }
 

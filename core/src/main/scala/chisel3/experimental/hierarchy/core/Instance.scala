@@ -71,7 +71,7 @@ final case class Instance[+A] private[chisel3] (private[chisel3] val underlying:
   /** Returns the definition of this Instance */
   override def toDefinition: Definition[A] = new Definition(Proto(proto))
   override def toInstance:   Instance[A] = this
-  def copy[T](underlying: Underlying[T]) = new Instance(underlying)
+  private[chisel3] def copy[T](underlying: Underlying[T]) = new Instance(underlying)
 
 }
 
@@ -185,5 +185,5 @@ object Instance extends SourceInfoDoc {
 
     new Instance(Clone(clone))
   }
-  def apply[T](underlying: Underlying[T]) = new Instance(underlying)
+  private[chisel3] def apply[T](underlying: Underlying[T]) = new Instance(underlying)
 }

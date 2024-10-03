@@ -65,7 +65,7 @@ final case class Definition[+A] private[chisel3] (private[chisel3] val underlyin
 
   override def toDefinition: Definition[A] = this
   override def toInstance:   Instance[A] = new Instance(underlying)
-  def copy[T](underlying: Underlying[T] = this.underlying) = new Definition(underlying)
+  private[chisel3] def copy[T](underlying: Underlying[T] = this.underlying) = new Definition(underlying)
 }
 
 /** Factory methods for constructing [[Definition]]s */
@@ -138,7 +138,7 @@ object Definition extends SourceInfoDoc {
     module.toDefinition
   }
 
-  def apply[T](underlying: Underlying[T]) = new Definition(underlying)
+  private[chisel3] def apply[T](underlying: Underlying[T]) = new Definition(underlying)
 }
 
 /** Stores a [[Definition]] that is imported so that its Instances can be

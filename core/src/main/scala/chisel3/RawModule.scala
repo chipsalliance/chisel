@@ -258,10 +258,10 @@ abstract class RawModule extends BaseModule {
 
 /** Enforce that the Module.reset be Asynchronous (AsyncReset) */
 trait RequireAsyncReset extends Module {
-  override final def resetType: chisel3.Module.ResetType.Asynchronous.type = Module.ResetType.Asynchronous
+  override final def resetType: Module.ResetType.Type = Module.ResetType.Asynchronous
 }
 
 /** Enforce that the Module.reset be Synchronous (Bool) */
 trait RequireSyncReset extends Module {
-  override final def resetType: chisel3.Module.ResetType.Synchronous.type = Module.ResetType.Synchronous
+  override final def resetType: Module.ResetType.Type = Module.ResetType.Synchronous
 }
