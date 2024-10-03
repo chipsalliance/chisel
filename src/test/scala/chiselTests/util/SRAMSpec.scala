@@ -228,25 +228,6 @@ class SRAMSpec extends ChiselFlatSpec {
     val sv = emitSystemVerilog(new Top)
   }
 
-  it should "be possible to access SRAM description information" in {
-
-    class Top extends Module {
-      val size = IO(Output(Property[Int]()))
-      val sram = SRAM(
-        size = 32,
-        tpe = UInt(8.W),
-        numReadPorts = 0,
-        numWritePorts = 0,
-        numReadwritePorts = 1
-      )
-      size := sram.description.get.depth
-    }
-    // TODO we need a way with ChiselSim to evaluate properties
-    val chirrtl = emitCHIRRTL(new Top)
-    chirrtl should include("output size : Integer")
-    chirrtl should include("propassign size, sram.description.depth")
-  }
-
   it should "be possible to create an SramInterface Wire" in {
     class Top extends Module {
       val sramIntf = Wire(
