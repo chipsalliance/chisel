@@ -52,13 +52,13 @@ private[chisel3] object MonoConnect {
     MonoConnectException(
       s"""${formatName(sink)} cannot be written from module ${source.parentNameOpt.getOrElse("(unknown)")}."""
     )
-  def SourceEscapedWhenScopeException(source: Data, whenInfo: SourceInfo) =
+  def SourceEscapedBlockScopeException(source: Data, blockInfo: SourceInfo) =
     MonoConnectException(
-      s"Source ${formatName(source)} has escaped the scope of the when (${whenInfo.makeMessage()}) in which it was constructed."
+      s"Source ${formatName(source)} has escaped the scope of the block (${blockInfo.makeMessage()}) in which it was constructed."
     )
-  def SinkEscapedWhenScopeException(sink: Data, whenInfo: SourceInfo) =
+  def SinkEscapedBlockScopeException(sink: Data, blockInfo: SourceInfo) =
     MonoConnectException(
-      s"Sink ${formatName(sink)} has escaped the scope of the when (${whenInfo.makeMessage()}) in which it was constructed."
+      s"Sink ${formatName(sink)} has escaped the scope of the block (${blockInfo.makeMessage()}) in which it was constructed."
     )
   def UnknownRelationException =
     MonoConnectException("Sink or source unavailable to current module.")
@@ -86,13 +86,13 @@ private[chisel3] object MonoConnect {
   def SinkProbeMonoConnectionException(sink: Data) =
     MonoConnectException(s"Sink ${formatName(sink)} of Probed type cannot participate in a mono connection (:=)")
 
-  /** Check if the argument is visible from current when scope
+  /** Check if the argument is visible from current block scope
     *
-    * Returns source locator of original when declaration if not visible (for error reporting)
+    * Returns source locator of original block declaration if not visible (for error reporting)
     *
-    * @return None if visible, Some(location of original when declaration)
+    * @return None if visible, Some(location of original block declaration)
     */
-  def checkWhenVisibility(x: Data): Option[SourceInfo] = {
+  def checkBlockVisibility(x: Data): Option[SourceInfo] = {
     // TODO: Checking block stack isn't quite right in situations where the stack of blocks
     // doesn't reflect the generated structure (for example using withRegion to jump multiple levels).
     def visible(b: Block) = Builder.hasDynamicContext && Builder.blockStack.contains(b)
@@ -286,13 +286,13 @@ private[chisel3] object MonoConnect {
       case _              => false
     }
 
-    checkWhenVisibility(sink) match {
-      case Some(whenInfo) => throw SinkEscapedWhenScopeException(sink, whenInfo)
+    checkBlockVisibility(sink) match {
+      case Some(blockInfo) => throw SinkEscapedBlockScopeException(sink, blockInfo)
       case None           => ()
     }
 
-    checkWhenVisibility(source) match {
-      case Some(whenInfo) => throw SourceEscapedWhenScopeException(source, whenInfo)
+    checkBlockVisibility(source) match {
+      case Some(blockInfo) => throw SourceEscapedBlockScopeException(source, blockInfo)
       case None           => ()
     }
 
@@ -517,9 +517,9 @@ private[chisel3] object checkConnect {
 
     // Import helpers and exception types.
     import MonoConnect.{
-      checkWhenVisibility,
-      SinkEscapedWhenScopeException,
-      SourceEscapedWhenScopeException,
+      checkBlockVisibility,
+      SinkEscapedBlockScopeException,
+      SourceEscapedBlockScopeException,
       UnknownRelationException,
       UnreadableSourceException,
       UnwritableSinkException
@@ -596,13 +596,13 @@ private[chisel3] object checkConnect {
     // so just error out
     else throw UnknownRelationException
 
-    checkWhenVisibility(sink) match {
-      case Some(whenInfo) => throw SinkEscapedWhenScopeException(sink, whenInfo)
+    checkBlockVisibility(sink) match {
+      case Some(blockInfo) => throw SinkEscapedBlockScopeException(sink, blockInfo)
       case None           => ()
     }
 
-    checkWhenVisibility(source) match {
-      case Some(whenInfo) => throw SourceEscapedWhenScopeException(source, whenInfo)
+    checkBlockVisibility(source) match {
+      case Some(blockInfo) => throw SourceEscapedBlockScopeException(source, blockInfo)
       case None           => ()
     }
   }
