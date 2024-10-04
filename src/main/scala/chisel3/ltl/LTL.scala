@@ -257,7 +257,7 @@ object Sequence {
     *
     * See `SequenceAtom` for more details.
     */
-  def apply(atoms: SequenceAtom*): Sequence = {
+  def apply(atoms: SequenceAtom*)(implicit sourceInfo: SourceInfo): Sequence = {
     require(atoms.nonEmpty)
     def needDelayTail = {
       require(
@@ -408,14 +408,15 @@ sealed abstract class AssertPropertyLike(defaultLayer: Layer) {
     *   emitted as `label: assert(...)`.
     */
   def apply(
-    prop:    Property,
+    prop:    => Property,
     clock:   Option[Clock] = Module.clockOption,
     disable: Option[Disable] = Module.disableOption,
     label:   Option[String] = None
   )(
     implicit sourceInfo: SourceInfo
   ): Unit = block(defaultLayer, skipIfAlreadyInBlock = true, skipIfLayersEnabled = true) {
-    val clocked = clock.fold(prop)(prop.clock(_))
+    val _prop = prop // evaluate prop expression once
+    val clocked = clock.fold(_prop)(_prop.clock(_))
     createIntrinsic(label)(sourceInfo)(clocked.inner, disable.map(!_.value))
   }
 
