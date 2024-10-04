@@ -166,8 +166,12 @@ private[chisel3] trait ObjectModuleImpl {
     implicit sourceInfo: SourceInfo
   ): T = {
     val parent = Builder.currentModule
+    val whenStackOpt = Option.when(Builder.hasDynamicContext)(Builder.whenStack)
+    val layerStackOpt = Option.when(Builder.hasDynamicContext)(Builder.layerStack)
     val module: T = bc // bc is actually evaluated here
     if (!parent.isEmpty) { Builder.currentModule = parent }
+    whenStackOpt.foreach(Builder.whenStack = _)
+    layerStackOpt.foreach(Builder.layerStack = _)
 
     module
   }

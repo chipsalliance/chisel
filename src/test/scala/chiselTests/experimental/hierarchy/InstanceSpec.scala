@@ -78,6 +78,30 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
       chirrtl should include("connect i0.realIn.aminusx, UInt<7>(0h7b)")
     }
+    it("(0.f): access under when does not crash") {
+      class Top extends Module {
+        val definition = Definition(new AddTwo)
+        val i0 = Instance(definition)
+        when(true.B) {
+          val i = i0.i0 // This should not error
+        }
+      }
+      circt.stage.ChiselStage.emitCHIRRTL(new Top)
+    }
+    it("(0.g): access under layer does not crash") {
+      object A extends layer.Layer(layer.LayerConfig.Extract())
+      class Top extends Module {
+        val definition = Definition(new AddTwo)
+        val i0 = Instance(definition)
+        layer.block(A) {
+          val i = i0.i0 // This should not error
+        }
+        layer.block(A) {
+          val i = i0.i1 // This should not error
+        }
+      }
+      circt.stage.ChiselStage.emitCHIRRTL(new Top)
+    }
   }
   describe("(1) Annotations on instances in same chisel compilation") {
     it("(1.a): should work on a single instance, annotating the instance") {
