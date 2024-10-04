@@ -383,4 +383,28 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselRunners {
       }
     })
   }
+
+  class LayerBlockMod extends RawModule {
+    val a, b = IO(Input(Bool()))
+    implicit val info = SourceLine("Foo.scala", 1, 2)
+    AssertProperty(Sequence(Delay(), a))
+    AssumeProperty(a |-> b)
+  }
+
+  it should "wrap all intrinsics in layerblocks" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new LayerBlockMod)
+    val sourceLoc = "@[Foo.scala 1:2]"
+
+    val assertBlockLoc = chirrtl.indexOf(s"layerblock Assert : $sourceLoc")
+    val delayIntrinsicLoc = chirrtl.indexOf(
+      s"intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, a)"
+    )
+    val assumeblockLoc = chirrtl.indexOf(s"layerblock Assume : $sourceLoc")
+    val implicationIntrinsicLoc = chirrtl.indexOf(
+      s"intrinsic(circt_ltl_implication : UInt<1>, a, b) $sourceLoc"
+    )
+
+    assert(assertBlockLoc < delayIntrinsicLoc)
+    assert(assumeblockLoc < implicationIntrinsicLoc)
+  }
 }
