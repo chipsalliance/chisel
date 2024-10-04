@@ -93,8 +93,7 @@ sudo port install openjdk17-temurin
 
 Using [Homebrew](https://brew.sh):
 ```sh
-brew tap homebrew/cask-versions
-brew install --cask temurin17
+brew install temurin@17
 ```
 
 #### Windows
