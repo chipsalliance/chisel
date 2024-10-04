@@ -1,6 +1,7 @@
 // See LICENSE for license details.
 
 enablePlugins(SiteScaladocPlugin)
+val scala3Version = "3.4.2"
 
 addCommandAlias("fmt", "; scalafmtAll ; scalafmtSbt")
 addCommandAlias("fmtCheck", "; scalafmtCheckAll ; scalafmtSbtCheck")
@@ -285,7 +286,20 @@ lazy val macros = (project in file("macros"))
   )
 
 lazy val core = (project in file("core"))
-  .settings(commonSettings: _*)
+// .settings(commonSettings: _*)
+
+  .settings(
+    name := "chisel3-core",
+    scalacOptions := Seq(
+      "-explaintypes",
+      "-feature",
+      "-language:reflectiveCalls",
+      "-unchecked",
+      // "-rewrite", "-source:3.4-migration",
+    ),
+    scalaVersion := scala3Version,
+    crossScalaVersions := Seq("2.13.10", "2.12.17", scala3Version),
+  )
   .enablePlugins(BuildInfoPlugin)
   .settings(
     buildInfoPackage := "chisel3",

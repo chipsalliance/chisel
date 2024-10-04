@@ -7,7 +7,6 @@ import chisel3._
 import chisel3.experimental.hierarchy.{InstantiableClone, ModuleClone}
 import chisel3.internal.{throwException, BaseBlackBox, Builder}
 import chisel3.experimental.{BaseModule, ExtModule, SourceInfo, UnlocatableSourceInfo}
-import chisel3.internal.sourceinfo.InstanceTransform
 import chisel3.internal.firrtl.ir.{Component, DefBlackBox, DefClass, DefIntrinsicModule, DefModule, Port}
 import chisel3.properties.Class
 import firrtl.annotations.IsModule
@@ -131,8 +130,7 @@ object Instance extends SourceInfoDoc {
     * @param definition the Module being created
     * @return an instance of the module definition
     */
-  def apply[T <: BaseModule with IsInstantiable](definition: Definition[T]): Instance[T] =
-    macro InstanceTransform.apply[T]
+  def apply[T <: BaseModule with IsInstantiable](definition: Definition[T]): Instance[T] = InstanceTransformImpl._applyImpl(definition)
 
   /** A constructs an [[Instance]] from a [[Definition]]
     *
@@ -176,7 +174,7 @@ object Instance extends SourceInfoDoc {
           Some(component)
         }
       }
-      Definition(new EmptyExtModule() {})
+      Definition(new EmptyExtModule() {}.asInstanceOf[Underlying[_]])
     }
 
     val ports = experimental.CloneModuleAsRecord(definition.proto)

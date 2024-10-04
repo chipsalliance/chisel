@@ -5,6 +5,7 @@ package chisel3
 import scala.collection.immutable.{ListMap, VectorBuilder}
 import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashSet}
 
+import chisel3.Data.DataExtensions
 import chisel3.internal._
 import chisel3.internal.binding._
 import chisel3.internal.Builder._
@@ -352,7 +353,7 @@ package internal {
     private[chisel3] class ClonePorts(elts: (String, Data)*) extends Record {
       val elements: ListMap[String, Data] = ListMap(elts.map { case (name, d) => name -> d.cloneTypeFull }: _*)
       def apply(field: String) = elements(field)
-      override def cloneType = (new ClonePorts(elts: _*)).asInstanceOf[this.type]
+      override protected def _cloneTypeImpl: Record = (new ClonePorts(elts: _*))
     }
 
     private[chisel3] def cloneIORecord(

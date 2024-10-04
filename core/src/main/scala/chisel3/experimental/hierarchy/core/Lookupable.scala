@@ -2,6 +2,7 @@
 
 package chisel3.experimental.hierarchy.core
 
+import chisel3.Data.DataExtensions
 import chisel3.experimental.{BaseModule, SourceInfo}
 import chisel3.experimental.hierarchy.{InstanceClone, InstantiableClone, ModuleClone}
 
@@ -484,14 +485,16 @@ object Lookupable {
     type C = Either[lookupableL.C, lookupableR.C]
     def definitionLookup[A](that: A => Either[L, R], definition: Definition[A]): C = {
       val ret = that(definition.proto)
-      ret.map { (x: R) => lookupableR.definitionLookup[A](_ => x, definition) }.left.map { (x: L) =>
+      val left = ret.map { (x: R) => lookupableR.definitionLookup[A](_ => x, definition) }.left
+      left.map { x =>
         lookupableL.definitionLookup[A](_ => x, definition)
       }
     }
     def instanceLookup[A](that: A => Either[L, R], instance: Instance[A]): C = {
       import instance._
       val ret = that(proto)
-      ret.map { (x: R) => lookupableR.instanceLookup[A](_ => x, instance) }.left.map { (x: L) =>
+      val left = ret.map { (x: R) => lookupableR.instanceLookup[A](_ => x, instance) }.left
+      left.map { x =>
         lookupableL.instanceLookup[A](_ => x, instance)
       }
     }

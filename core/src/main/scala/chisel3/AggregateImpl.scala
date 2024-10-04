@@ -2,6 +2,7 @@
 
 package chisel3
 
+import chisel3.Data.DataExtensions
 import chisel3.experimental.VecLiterals.AddVecLiteralConstructor
 import chisel3.experimental.dataview.{isView, reify, reifyIdentityView, InvalidViewException}
 
@@ -11,6 +12,7 @@ import chisel3.experimental.{BaseModule, BundleLiteralException, HasTypeAlias, O
 import chisel3.experimental.{requireIsChiselType, requireIsHardware, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal._
 import chisel3.internal.binding._
+import chisel3.internal.util._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.ir._
 import chisel3.reflect.DataMirror
@@ -139,7 +141,7 @@ private[chisel3] trait AggregateImpl extends Data { thiz: Aggregate =>
     val _asUInt = _resizeToWidth(that, this.widthOption)(identity)
     // If that is a literal and all constituent Elements can be represented as literals, return a literal
     val ((_, allLit), rvalues) = {
-      this.flatten.toList.mapAccumulate((0, _asUInt.isLit)) {
+      this.flatten.toList.mapAccumulate[(Int, Boolean), Element]((0, _asUInt.isLit)) {
         case ((lo, literal), elt) =>
           val hi = lo + elt.getWidth
           // Chisel only supports zero width extraction if hi = -1 and lo = 0, so do it manually
@@ -184,7 +186,10 @@ trait VecFactory extends SourceInfoDoc {
     // Other cases do not need a Wire because the literal is truncated to fit.
     else if (idx.width.known && idx.width.get <= w) idx
     else if (idx.width.known) idx(w - 1, 0)
-    else (idx | 0.U(w.W))(w - 1, 0)
+    else {
+      val i: UInt = idx | 0.U(w.W)
+      i(w - 1, 0)
+    }
   }
 }
 
@@ -421,9 +426,7 @@ private[chisel3] abstract class VecImpl[T <: Data] private[chisel3] (gen: => T, 
     */
   def apply(idx: Int): T = self(idx)
 
-  override def cloneType: this.type = {
-    new Vec(gen.cloneTypeFull, length).asInstanceOf[this.type]
-  }
+  override def _cloneType: Vec[T] = new Vec(gen.cloneTypeFull, length)
 
   override def getElements: Seq[Data] = self
 
@@ -491,7 +494,7 @@ private[chisel3] abstract class VecImpl[T <: Data] private[chisel3] (gen: => T, 
     elementInitializers: (Int, T)*
   )(
     implicit sourceInfo: SourceInfo
-  ): this.type = {
+  ): Vec[T] = {
 
     def checkLiteralConstruction(): Unit = {
       val dupKeys = elementInitializers.map { x => x._1 }.groupBy(x => x).flatMap {
@@ -543,7 +546,7 @@ private[chisel3] abstract class VecImpl[T <: Data] private[chisel3] (gen: => T, 
     requireIsChiselType(this, "vec literal constructor model")
     checkLiteralConstruction()
 
-    val clone = cloneType
+    val clone = this.cloneType
     val cloneFields = getRecursiveFields(clone, "(vec root)").toMap
 
     // Create the Vec literal binding from litArgs of arguments
@@ -832,8 +835,10 @@ private[chisel3] trait RecordImpl extends AggregateImpl { thiz: Record =>
     }
   }
 
-  override def cloneType: this.type = {
-    val clone = _cloneTypeImpl.asInstanceOf[this.type]
+  // Note that _cloneTypeImpl is implemented by the compiler plugin and must be a different method name because
+  // We want to run checkClone after calling _cloneTypeImpl
+  final override def _cloneType: Data = {
+    val clone = _cloneTypeImpl
     checkClone(clone)
     clone
   }
@@ -953,10 +958,10 @@ private[chisel3] trait RecordImpl extends AggregateImpl { thiz: Record =>
     * )
     * }}}
     */
-  private[chisel3] def _makeLit(elems: (this.type => (Data, Data))*)(implicit sourceInfo: SourceInfo): this.type = {
+  private[chisel3] def _makeLit(elems: (Data => (Data, Data))*)(implicit sourceInfo: SourceInfo): Data = {
 
     requireIsChiselType(this, "bundle literal constructor model")
-    val clone = cloneType
+    val clone = this.cloneType
     val cloneFields = getRecursiveFields(clone, "_").toMap
 
     // Create the Bundle literal binding from litargs of arguments

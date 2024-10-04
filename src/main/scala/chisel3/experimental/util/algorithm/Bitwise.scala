@@ -21,7 +21,7 @@ object scanLeftOr {
     }
 
     def helper(s: Int, x: UInt): UInt =
-      if (s >= width) x else helper(s + s, x | (x << s)(width - 1, 0))
+      if (s >= width) x else helper(s + s, x | (x << s).apply(width - 1, 0))
     helper(1, data)(width - 1, 0)
   }
 }

@@ -3,6 +3,7 @@
 package chisel3.reflect
 
 import chisel3._
+import chisel3.Data.DataExtensions
 import chisel3.internal._
 import chisel3.internal.binding._
 import chisel3.internal.firrtl.ir._

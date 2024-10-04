@@ -18,6 +18,8 @@ import chisel3.util.simpleClassName
 import scala.reflect.ClassTag
 import scala.util.Try
 
+import chisel3.Data.DataExtensions
+
 /** User-specified directions.
   */
 sealed abstract class SpecifiedDirection(private[chisel3] val value: Byte)
@@ -337,6 +339,7 @@ object Flipped {
   */
 private[chisel3] trait DataImpl extends HasId with NamedComponent { self: Data =>
   import Data.ProbeInfo
+  import Data.DataExtensions
 
   // This is a bad API that punches through object boundaries.
   private[chisel3] def flatten: IndexedSeq[Element] = {
@@ -781,28 +784,12 @@ private[chisel3] trait DataImpl extends HasId with NamedComponent { self: Data =
   private[chisel3] def width: Width
   private[chisel3] def firrtlConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit
 
-  /** Internal API; Chisel users should look at chisel3.chiselTypeOf(...).
+  /** Private implementation of cloneType
     *
-    * cloneType must be defined for any Chisel object extending Data.
-    * It is responsible for constructing a basic copy of the object being cloned.
-    *
-    * @return a copy of the object.
+    * _cloneType must be defined for any Chisel object extending Data.
+    * It is implemented by Chisel itself or by the compiler plugin for user-defined types.
     */
-  def cloneType: this.type
-
-  /** Internal API; Chisel users should look at chisel3.chiselTypeOf(...).
-    *
-    * Returns a copy of this data type, with hardware bindings (if any) removed.
-    * Directionality data and probe information is still preserved.
-    */
-  private[chisel3] def cloneTypeFull: this.type = {
-    val clone = this.cloneType // get a fresh object, without bindings
-    // Only the top-level direction needs to be fixed up, cloneType should do the rest
-    clone.specifiedDirection = specifiedDirection
-    probe.setProbeModifier(clone, probeInfo)
-    clone.isConst = isConst
-    clone
-  }
+  def _cloneType: Data
 
   /** The "strong connect" operator.
     *
@@ -994,6 +981,7 @@ private[chisel3] trait ObjectDataImpl {
     *
     * @param lhs The [[Data]] hardware on the left-hand side of the equality
     */
+  // TODO fold this into DataExtensions
   implicit class DataEquality[T <: Data](lhs: T)(implicit sourceInfo: SourceInfo) {
 
     /** Dynamic recursive equality operator for generic [[Data]]
@@ -1070,6 +1058,33 @@ private[chisel3] trait ObjectDataImpl {
       } else {
         self.viewAsReadOnly(_ => "Cannot connect to read-only value")
       }
+    }
+  }
+
+  implicit class DataExtensions[T <: Data](self: T) {
+
+    /** Internal API; Chisel users should look at chisel3.chiselTypeOf(...).
+      *
+      * cloneType must be defined for any Chisel object extending Data.
+      * It is responsible for constructing a basic copy of the object being cloned.
+      *
+      * @return a copy of the object.
+      */
+    def cloneType: T = self._cloneType.asInstanceOf[T]
+
+    /** Internal API; Chisel users should look at chisel3.chiselTypeOf(...).
+      *
+      * Returns a copy of this data type, with hardware bindings (if any) removed.
+      * Directionality data and probe information is still preserved.
+      */
+    private[chisel3] def cloneTypeFull: T = {
+      val clone = self.cloneType // get a fresh object, without bindings
+      // Only the top-level direction needs to be fixed up, cloneType should do the rest
+      clone.specifiedDirection = self.specifiedDirection
+      // TODO do we need to exclude probe and const from cloneTypeFull on Properties?
+      probe.setProbeModifier(clone, self.probeInfo)
+      clone.isConst = self.isConst
+      clone.asInstanceOf[T]
     }
   }
 }
@@ -1243,7 +1258,8 @@ final case object DontCare extends Element with connectable.ConnectableDocs {
   private[chisel3] override val width: Width = UnknownWidth
 
   bind(DontCareBinding(), SpecifiedDirection.Output)
-  override def cloneType: this.type = DontCare
+
+  override def _cloneType: Data = DontCare
 
   override def toString: String = "DontCare()"
 
