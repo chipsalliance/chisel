@@ -544,15 +544,16 @@ private[chisel3] object ir {
         _.toFirrtl.flatMap(_.update(renames))
       )
 
-    def copy(
-      name:        String = name,
-      components:  Seq[Component] = components,
-      annotations: Seq[ChiselAnnotation] = annotations,
-      renames:     RenameMap = renames,
-      typeAliases: Seq[DefTypeAlias] = typeAliases,
-      layers:      Seq[Layer] = layers,
-      options:     Seq[DefOption] = options
-    ) = Circuit(name, components, annotations, renames, newAnnotations, typeAliases, layers, options)
+    // doesn't work in scala3, cause it conflicts with the builtin copy
+    // def copy(
+    //   name:        String = name,
+    //   components:  Seq[Component] = components,
+    //   annotations: Seq[ChiselAnnotation] = annotations,
+    //   renames:     RenameMap = renames,
+    //   typeAliases: Seq[DefTypeAlias] = typeAliases,
+    //   layers:      Seq[Layer] = layers,
+    //   options:     Seq[DefOption] = options
+    // ) = Circuit(name, components, annotations, renames, newAnnotations, typeAliases, layers, options)
 
   }
 

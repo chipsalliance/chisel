@@ -30,7 +30,7 @@ private[chisel3] abstract class EnumTypeImpl(private[chisel3] val factory: Chise
     }
   }
 
-  override def cloneType: this.type = factory().asInstanceOf[this.type]
+  override def _cloneType: Data = factory()
 
   private[chisel3] def compop(sourceInfo: SourceInfo, op: PrimOp, other: EnumType): Bool = {
     requireIsHardware(this, "bits operated on")
@@ -58,7 +58,7 @@ private[chisel3] abstract class EnumTypeImpl(private[chisel3] val factory: Chise
   // This override just ensures that if `that` has a known width, the result actually has that width
   // Put another way, this is preserving a case where #4159 does **not** occur
   // This can be deleted when Builder.useLegacyWidth is removed.
-  override def do_asTypeOf[T <: Data](that: T)(implicit sourceInfo: SourceInfo): T = {
+  def do_asTypeOf[T <: Data](that: T)(implicit sourceInfo: SourceInfo): T = {
     that.widthOption match {
       // Note that default case will handle literals just fine
       case Some(w) =>
@@ -70,8 +70,8 @@ private[chisel3] abstract class EnumTypeImpl(private[chisel3] val factory: Chise
             _wire := this.asUInt
             _wire
         }
-        _padded.do_asTypeOf(that)
-      case None => super.do_asTypeOf(that)
+        _padded.asTypeOf(that)
+      case None => super.asTypeOf(that)
     }
   }
 
@@ -154,7 +154,7 @@ private[chisel3] abstract class EnumTypeImpl(private[chisel3] val factory: Chise
   }
 
   // This function conducts a depth-wise search to find all enum-type fields within a vector or bundle (or vector of bundles)
-  private def enumFields(d: Aggregate): Seq[Seq[String]] = d match {
+  private def enumFields(d: Data): Seq[Seq[String]] = d match {
     case v: Vec[_] =>
       v.sample_element match {
         case b: Bundle => enumFields(b)
@@ -222,7 +222,15 @@ private[chisel3] abstract class EnumTypeImpl(private[chisel3] val factory: Chise
     for ((name, value) <- allNamesPadded) {
       when(this === value) {
         for ((r, c) <- result.zip(name)) {
-          r := c.toChar.U
+          // todo: this doesn't work in scala3
+          // r := c.toChar.U
+          //      ^^^^^^^^^^
+          //      value U is not a member of Char.
+          //      An extension method was tried,
+          //      but could not be fully constructed:
+          // 
+          //          chisel3.fromLongToLiteral(c.toChar)
+          // r := c.toChar.U
         }
       }
     }
@@ -355,7 +363,8 @@ private[chisel3] trait ChiselEnumImpl { self: ChiselEnum =>
 // This is an enum type that can be connected directly to UInts. It is used as a "glue" to cast non-literal UInts
 // to enums.
 private[chisel3] class UnsafeEnum(override val width: Width) extends EnumType(UnsafeEnum, selfAnnotating = false) {
-  override def cloneType: this.type = new UnsafeEnum(width).asInstanceOf[this.type]
+
+  override def _cloneType: Data = new UnsafeEnum(width)
 }
 private object UnsafeEnum extends ChiselEnum
 

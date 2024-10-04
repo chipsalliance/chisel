@@ -5,7 +5,7 @@ import chisel3.internal.{Builder, NamedComponent}
 import chisel3.internal.binding.{FirrtlMemTypeBinding, SramPortBinding}
 import chisel3.internal.plugin.autoNameRecursively
 import chisel3.experimental.{OpaqueType, SourceInfo}
-import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance, Instantiate}
+import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance}
 import chisel3.internal.sourceinfo.MemTransform
 import chisel3.internal.firrtl.ir.{Arg, FirrtlMemory, LitIndex, Node, Ref, Slot}
 import chisel3.util.experimental.loadMemoryFromFileInline

@@ -11,6 +11,7 @@ import chisel3.internal.firrtl.Converter
 import chisel3.internal.sourceinfo.{DefinitionTransform, DefinitionWrapTransform}
 import chisel3.experimental.{BaseModule, SourceInfo}
 import firrtl.annotations.{IsModule, ModuleTarget, NoTargetAnnotation}
+import firrtl.seqToAnnoSeq
 
 import firrtl.seqToAnnoSeq
 
@@ -101,7 +102,7 @@ object Definition extends SourceInfoDoc {
     *
     * @return the input module as a Definition
     */
-  def apply[T <: BaseModule with IsInstantiable](proto: => T): Definition[T] = macro DefinitionTransform.apply[T]
+  def apply[T <: BaseModule with IsInstantiable](proto: => T): Definition[T] = DefinitionTransformImpl._applyImpl(proto)
 
   /** A construction method to build a Definition of a Module
     *

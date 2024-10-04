@@ -4,6 +4,7 @@ package chisel3
 
 import firrtl.{ir => fir}
 
+import chisel3.Data.DataExtensions
 import chisel3.internal._
 import chisel3.internal.binding._
 import chisel3.internal.Builder.pushCommand
