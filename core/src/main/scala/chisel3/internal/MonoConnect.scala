@@ -288,12 +288,12 @@ private[chisel3] object MonoConnect {
 
     checkBlockVisibility(sink) match {
       case Some(blockInfo) => throw SinkEscapedBlockScopeException(sink, blockInfo)
-      case None           => ()
+      case None            => ()
     }
 
     checkBlockVisibility(source) match {
       case Some(blockInfo) => throw SourceEscapedBlockScopeException(source, blockInfo)
-      case None           => ()
+      case None            => ()
     }
 
     // CASE: Context is same module that both sink node and source node are in
@@ -598,12 +598,12 @@ private[chisel3] object checkConnect {
 
     checkBlockVisibility(sink) match {
       case Some(blockInfo) => throw SinkEscapedBlockScopeException(sink, blockInfo)
-      case None           => ()
+      case None            => ()
     }
 
     checkBlockVisibility(source) match {
       case Some(blockInfo) => throw SourceEscapedBlockScopeException(source, blockInfo)
-      case None           => ()
+      case None            => ()
     }
   }
 

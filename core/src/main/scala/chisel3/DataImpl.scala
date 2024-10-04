@@ -683,7 +683,7 @@ private[chisel3] trait DataImpl extends HasId with NamedComponent { self: Data =
       case _ => false
     }
   }
-  private[chisel3] def visibleFromBlock : Option[SourceInfo] = MonoConnect.checkBlockVisibility(this)
+  private[chisel3] def visibleFromBlock: Option[SourceInfo] = MonoConnect.checkBlockVisibility(this)
   private[chisel3] def requireVisible(): Unit = {
     if (!isVisibleFromModule) {
       throwException(s"operand '$this' is not visible from the current module ${Builder.currentModule.get.name}")
