@@ -537,16 +537,6 @@ private[chisel3] object checkConnect {
     val sink_direction = BindingDirection.from(sink.topBinding, sink.direction)
     val source_direction = BindingDirection.from(source.topBinding, source.direction)
 
-    checkWhenVisibility(sink) match {
-      case Some(whenInfo) => throw SinkEscapedWhenScopeException(sink, whenInfo)
-      case None           => ()
-    }
-
-    checkWhenVisibility(source) match {
-      case Some(whenInfo) => throw SourceEscapedWhenScopeException(source, whenInfo)
-      case None           => ()
-    }
-
     // CASE: Context is same module that both left node and right node are in
     if ((context_mod == sink_mod) && (context_mod == source_mod)) {
       ((sink_direction, source_direction): @unchecked) match {
@@ -605,6 +595,16 @@ private[chisel3] object checkConnect {
     // Not quite sure where left and right are compared to current module
     // so just error out
     else throw UnknownRelationException
+
+    checkWhenVisibility(sink) match {
+      case Some(whenInfo) => throw SinkEscapedWhenScopeException(sink, whenInfo)
+      case None           => ()
+    }
+
+    checkWhenVisibility(source) match {
+      case Some(whenInfo) => throw SourceEscapedWhenScopeException(source, whenInfo)
+      case None           => ()
+    }
   }
 
   // Extra checks specific to Property types. Most of the checks are baked into the Scala type system, but the actual
