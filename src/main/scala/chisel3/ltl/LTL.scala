@@ -257,7 +257,7 @@ object Sequence {
     *
     * See `SequenceAtom` for more details.
     */
-  def apply(atoms: SequenceAtom*): Sequence = {
+  def apply(atoms: SequenceAtom*)(implicit sourceInfo: SourceInfo): Sequence = {
     require(atoms.nonEmpty)
     def needDelayTail = {
       require(
