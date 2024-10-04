@@ -461,10 +461,10 @@ package experimental {
 
     // TODO: this weird re:evaluation/initialization ordering, revisit?
     // Modules that contain bodies should override this.
-    private[chisel3] def getBody : Option[Block] = None
+    private[chisel3] def getBody: Option[Block] = None
 
     // Current block at point of creation.
-    private var _blockVar:       Block = Builder.currentBlock.getOrElse(null)
+    private var _blockVar: Block = Builder.currentBlock.getOrElse(null)
     private[chisel3] def _block: Option[Block] = {
       Option(_blockVar)
     }
@@ -473,7 +473,7 @@ package experimental {
     }
 
     // Return Block containing the instance of this module.
-    protected[chisel3] def getInstantiatingBlock : Option[Block] = _block
+    protected[chisel3] def getInstantiatingBlock: Option[Block] = _block
 
     //
     // Builder Internals - this tracks which Module RTL construction belongs to.

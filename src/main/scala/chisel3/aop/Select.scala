@@ -389,7 +389,8 @@ object Select {
     collect(
       module._component.get
         .asInstanceOf[DefModule]
-        .block.getCommands()
+        .block
+        .getCommands()
     ) {
       case Attach(_, seq) if seq.contains(signal) => seq
     }.flatMap { seq => seq.map(_.id.asInstanceOf[Data]) }.toSet

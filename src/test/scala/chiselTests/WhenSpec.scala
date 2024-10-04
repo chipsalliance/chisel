@@ -231,10 +231,10 @@ class WhenSpec extends ChiselFlatSpec with Utils {
       val out = IO(Output(UInt(8.W)))
 
       var c: Bool = null
-      when (true.B) {
+      when(true.B) {
         c = WireInit(Bool(), true.B)
         out := c
-      } .otherwise {
+      }.otherwise {
         c := false.B
         out := c
       }

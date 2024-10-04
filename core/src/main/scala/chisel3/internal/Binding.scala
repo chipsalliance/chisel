@@ -86,12 +86,8 @@ private[chisel3] object binding {
   case class SramPortBinding(enclosure: RawModule, parentBlock: Option[Block])
       extends ConstrainedBinding
       with BlockBinding
-  case class RegBinding(enclosure: RawModule, parentBlock: Option[Block])
-      extends ConstrainedBinding
-      with BlockBinding
-  case class WireBinding(enclosure: RawModule, parentBlock: Option[Block])
-      extends ConstrainedBinding
-      with BlockBinding
+  case class RegBinding(enclosure: RawModule, parentBlock: Option[Block]) extends ConstrainedBinding with BlockBinding
+  case class WireBinding(enclosure: RawModule, parentBlock: Option[Block]) extends ConstrainedBinding with BlockBinding
 
   case class ClassBinding(enclosure: Class) extends ConstrainedBinding with ReadOnlyBinding
 
@@ -170,7 +166,7 @@ private[chisel3] object binding {
   // Views currently only support 1:1 Element-level mappings
   case class ViewBinding(target: Element, writability: ViewWriteability) extends Binding with BlockBinding {
     def location: Option[BaseModule] = target.binding.flatMap(_.location)
-    def parentBlock : Option[Block] = target.binding.flatMap {
+    def parentBlock: Option[Block] = target.binding.flatMap {
       case b: BlockBinding => b.parentBlock
       case _ => None
     }

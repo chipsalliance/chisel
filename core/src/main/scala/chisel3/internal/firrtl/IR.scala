@@ -339,9 +339,9 @@ private[chisel3] object ir {
       extends Definition
   case class DefObject(sourceInfo: SourceInfo, id: HasId, className: String) extends Definition
 
-  class Block(val sourceInfo: SourceInfo, val owner: Option[Command])  {
+  class Block(val sourceInfo: SourceInfo, val owner: Option[Command]) {
     private val _commands = new VectorBuilder[Command]
-    private var _stagedCommands : VectorBuilder[Command] = null
+    private var _stagedCommands: VectorBuilder[Command] = null
 
     def addCommand(c: Command): Unit = {
       _commands += c
@@ -351,7 +351,7 @@ private[chisel3] object ir {
         _stagedCommands = new VectorBuilder[Command]
       _stagedCommands += c
     }
-    def getCommands() : Seq[Command] = {
+    def getCommands(): Seq[Command] = {
       if (_stagedCommands != null) {
         _commands ++= _stagedCommands.result()
         _stagedCommands.clear()

@@ -283,21 +283,26 @@ object BoringUtils {
             val containingBlockOpt = (conLoc == module) match {
               // If not in same module, insert in block containing instance of port (created above).
               case false => module.getInstantiatingBlock
-              case true => rhs.topBindingOpt match {
-                // If binding records containing block, use that.
-                case Some(bb: BlockBinding) => bb.parentBlock
-                // Special handling to reach in and get instantiating block for ports.
-                case Some(pb: PortBinding) if pb.enclosure._parent == Some(conLoc) => pb.enclosure.getInstantiatingBlock
-                case Some(spb: SecretPortBinding) if spb.enclosure._parent == Some(conLoc) => spb.enclosure.getInstantiatingBlock
-                // Otherwise, default behavior.
-                case _ => None
-              }
+              case true =>
+                rhs.topBindingOpt match {
+                  // If binding records containing block, use that.
+                  case Some(bb: BlockBinding) => bb.parentBlock
+                  // Special handling to reach in and get instantiating block for ports.
+                  case Some(pb: PortBinding) if pb.enclosure._parent == Some(conLoc) =>
+                    pb.enclosure.getInstantiatingBlock
+                  case Some(spb: SecretPortBinding) if spb.enclosure._parent == Some(conLoc) =>
+                    spb.enclosure.getInstantiatingBlock
+                  // Otherwise, default behavior.
+                  case _ => None
+                }
             }
             // Fallback behavior is append to body in specified `conLoc` module.
             val block = containingBlockOpt.getOrElse(module.getBody.get)
 
             val (dst, src) = if (isDrive) (rhs, bore) else (bore, rhs)
-            conLoc.asInstanceOf[RawModule].withRegion(block) { conLoc.asInstanceOf[RawModule].secretConnection(dst, src) }
+            conLoc.asInstanceOf[RawModule].withRegion(block) {
+              conLoc.asInstanceOf[RawModule].secretConnection(dst, src)
+            }
             bore
           }
       }

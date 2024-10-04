@@ -790,12 +790,12 @@ private[chisel3] object Builder extends LazyLogging {
 
   def currentWhen: Option[WhenContext] = dynamicContext.whenStack.headOption
 
-  def blockStack : List[Block] = dynamicContext.blockStack
+  def blockStack: List[Block] = dynamicContext.blockStack
   def blockStack_=(s: List[Block]): Unit = {
     dynamicContext.blockStack = s
   }
 
-  def blockDepth : Int = dynamicContext.blockStack.length
+  def blockDepth: Int = dynamicContext.blockStack.length
   def pushBlock(b: Block): Unit = {
     dynamicContext.blockStack = b :: dynamicContext.blockStack
   }
@@ -808,7 +808,7 @@ private[chisel3] object Builder extends LazyLogging {
 
   def currentBlock: Option[Block] = dynamicContextVar.value match {
     case Some(dc) => dc.blockStack.headOption
-    case _ => None
+    case _        => None
   }
 
   // Helper for reasonable errors when clock or reset value not yet initialized
