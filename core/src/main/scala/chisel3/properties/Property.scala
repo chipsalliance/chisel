@@ -320,6 +320,16 @@ sealed trait Property[T] extends Element { self =>
   ): Property[T] =
     ev.shr(this, that)
 
+  /** Perform shift left as defined by FIRRTL spec section Integer Shift Left Operation.
+    */
+  final def <<(
+    that: Property[T]
+  )(
+    implicit ev: PropertyArithmeticOps[Property[T]],
+    sourceInfo:  SourceInfo
+  ): Property[T] =
+    ev.shl(this, that)
+
   /** Perform concatenation as defined by FIRRTL spec section List Concatenation Operation.
     */
   final def ++(
@@ -389,6 +399,7 @@ sealed trait PropertyArithmeticOps[T] {
   def add(lhs: T, rhs: T)(implicit sourceInfo: SourceInfo): T
   def mul(lhs: T, rhs: T)(implicit sourceInfo: SourceInfo): T
   def shr(lhs: T, rhs: T)(implicit sourceInfo: SourceInfo): T
+  def shl(lhs: T, rhs: T)(implicit sourceInfo: SourceInfo): T
 }
 
 object PropertyArithmeticOps {
@@ -403,6 +414,8 @@ object PropertyArithmeticOps {
         binOp(sourceInfo, fir.IntegerMulOp, lhs, rhs)
       def shr(lhs: Property[Int], rhs: Property[Int])(implicit sourceInfo: SourceInfo) =
         binOp(sourceInfo, fir.IntegerShrOp, lhs, rhs)
+      def shl(lhs: Property[Int], rhs: Property[Int])(implicit sourceInfo: SourceInfo) =
+        binOp(sourceInfo, fir.IntegerShlOp, lhs, rhs)
     }
 
   implicit val longArithmeticOps: PropertyArithmeticOps[Property[Long]] =
@@ -413,6 +426,8 @@ object PropertyArithmeticOps {
         binOp(sourceInfo, fir.IntegerMulOp, lhs, rhs)
       def shr(lhs: Property[Long], rhs: Property[Long])(implicit sourceInfo: SourceInfo) =
         binOp(sourceInfo, fir.IntegerShrOp, lhs, rhs)
+      def shl(lhs: Property[Long], rhs: Property[Long])(implicit sourceInfo: SourceInfo) =
+        binOp(sourceInfo, fir.IntegerShlOp, lhs, rhs)
     }
 
   implicit val bigIntArithmeticOps: PropertyArithmeticOps[Property[BigInt]] =
@@ -423,6 +438,8 @@ object PropertyArithmeticOps {
         binOp(sourceInfo, fir.IntegerMulOp, lhs, rhs)
       def shr(lhs: Property[BigInt], rhs: Property[BigInt])(implicit sourceInfo: SourceInfo) =
         binOp(sourceInfo, fir.IntegerShrOp, lhs, rhs)
+      def shl(lhs: Property[BigInt], rhs: Property[BigInt])(implicit sourceInfo: SourceInfo) =
+        binOp(sourceInfo, fir.IntegerShlOp, lhs, rhs)
     }
 }
 

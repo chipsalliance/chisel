@@ -148,6 +148,7 @@ on integral `Property` typed values.
 | `+`       | Perform addition as defined by FIRRTL spec section Integer Add Operation            |
 | `*`       | Perform multiplication as defined by FIRRTL spec section Integer Multiply Operation |
 | `>>`      | Perform shift right as defined by FIRRTL spec section Integer Shift Right Operation |
+| `<<`      | Perform shift left as defined by FIRRTL spec section Integer Shift Left Operation   |
 
 #### Sequence Operations
 

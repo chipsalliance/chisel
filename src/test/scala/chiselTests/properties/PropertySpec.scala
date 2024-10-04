@@ -814,6 +814,21 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
     )()
   }
 
+  it should "support shift left" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val a = IO(Input(Property[BigInt]()))
+      val b = IO(Input(Property[BigInt]()))
+      val c = IO(Output(Property[BigInt]()))
+      c := a << b
+    })
+
+    matchesAndOmits(chirrtl)(
+      "wire _c_propExpr : Integer",
+      "propassign _c_propExpr, integer_shl(a, b)",
+      "propassign c, _c_propExpr"
+    )()
+  }
+
   behavior.of("PropertySeqOps")
 
   it should "not support expressions involving Property types that don't provide a typeclass instance" in {
