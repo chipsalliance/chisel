@@ -4,7 +4,7 @@ package chisel3.properties
 
 import firrtl.{ir => fir}
 import chisel3.{Data, RawModule, SpecifiedDirection}
-import chisel3.experimental.{BaseModule, SourceInfo, UnlocatableSourceInfo}
+import chisel3.experimental.{BaseModule, SourceInfo}
 import chisel3.experimental.hierarchy.{Definition, Instance, ModuleClone}
 import chisel3.internal.{throwException, Builder}
 import chisel3.internal.binding.{ClassBinding, OpBinding}
@@ -89,7 +89,7 @@ class Class extends BaseModule {
 
   /** Internal state and logic to maintain a buffer of commands.
     */
-  private lazy val _body = new Block(UnlocatableSourceInfo, None /* class command not available */ )
+  private lazy val _body = new Block(_sourceInfo, None /* class command not available */ )
 
   private[chisel3] override def getBody: Option[Block] = Some(_body)
 
