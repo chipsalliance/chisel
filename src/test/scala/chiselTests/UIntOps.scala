@@ -663,4 +663,15 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils with ShiftRigh
     blit.x.litOption should be(Some(0xa))
     blit.y.litOption should be(Some(0xb))
   }
+
+  property("It should be legal to extract zero bits from a zero-width UInt") {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val in = IO(Input(UInt(0.W)))
+      val out1, out2 = IO(Output(UInt(8.W)))
+      out1 := in.take(0)
+      out2 := in(-1, 0)
+    })
+    chirrtl should include("connect out1, UInt<0>(0h0)")
+    chirrtl should include("connect out2, UInt<0>(0h0)")
+  }
 }
