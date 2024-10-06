@@ -8,6 +8,7 @@ import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.ir._
 import chisel3.Data.ProbeInfo
 import chisel3.experimental.{requireIsHardware, SourceInfo}
+import chisel3.experimental.dataview.reifyIdentityView
 import chisel3.reflect.DataMirror.{checkTypeEquivalence, collectAllMembers, hasProbeTypeModifier}
 
 import scala.language.experimental.macros
@@ -33,7 +34,12 @@ package object probe extends SourceInfoDoc {
     * @param probeExpr value to initialize the sink to
     */
   def define[T <: Data](sink: T, probeExpr: T)(implicit sourceInfo: SourceInfo): Unit = {
-    val typeCheckResult = sink.findFirstTypeMismatch(
+    val (realSink, writable) = reifyIdentityView(sink).getOrElse {
+      Builder.error(s"Define only supports identity views for the sink, $sink has multiple targets.")
+      return // This error is recoverable and this function returns Unit, just continue elaboration.
+    }
+    writable.reportIfReadOnlyUnit(())
+    val typeCheckResult = realSink.findFirstTypeMismatch(
       probeExpr,
       strictTypes = true,
       strictWidths = true,
@@ -42,16 +48,26 @@ package object probe extends SourceInfoDoc {
     typeCheckResult.foreach { msg =>
       Builder.error(s"Cannot define a probe on a non-equivalent type.\n$msg")
     }
-    requireHasProbeTypeModifier(sink, "Expected sink to be a probe.")
-    requireNotChildOfProbe(sink, "Expected sink to be the root of a probe.")
+    requireHasProbeTypeModifier(realSink, "Expected sink to be a probe.")
+    requireNotChildOfProbe(realSink, "Expected sink to be the root of a probe.")
     requireHasProbeTypeModifier(probeExpr, "Expected source to be a probe expression.")
+<<<<<<< HEAD
     if (sink.probeInfo.get.writable) {
+=======
+    requireCompatibleDestinationProbeColor(
+      realSink,
+      s"""Cannot define '$realSink' from colors ${(Builder.enabledLayers.view ++ Builder.layerStack.headOption)
+        .map(a => s"'${a.fullName}'")
+        .mkString("{", ", ", "}")} since at least one of these is NOT enabled when '$realSink' is enabled"""
+    )
+    if (realSink.probeInfo.get.writable) {
+>>>>>>> 73e96ea5d (Handle define on views of Probes (#4308))
       requireHasWritableProbeTypeModifier(
         probeExpr,
         "Cannot use a non-writable probe expression to define a writable probe."
       )
     }
-    pushCommand(ProbeDefine(sourceInfo, sink.lref, probeExpr.ref))
+    pushCommand(ProbeDefine(sourceInfo, realSink.lref, probeExpr.ref))
   }
 
   /** Access the value of a probe.
