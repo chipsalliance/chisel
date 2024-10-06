@@ -41,3 +41,4 @@ read these documents in the following order:
 * [Deep Dive into Legacy Connection Operators](explanations/connection-operators)
 * [Properties](explanations/properties)
 * [Layers](explanations/layers)
+* [Calling Native Functions from Chisel (DPI)](explanations/dpi)
