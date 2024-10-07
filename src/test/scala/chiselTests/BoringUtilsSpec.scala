@@ -151,7 +151,7 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
       b := BoringUtils.bore(bar.b_wire)
       c := BoringUtils.bore(c_wire)
     }
-    matchesAndOmits(circt.stage.ChiselStage.emitCHIRRTL(new Foo))(
+    matchesAndOmits(circt.stage.ChiselStage.emitCHIRRTL(new Foo, args))(
       "module Baz :",
       "output a_bore : UInt<1>",
       "connect a_bore, a_wire",
@@ -210,6 +210,90 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
       circt.stage.ChiselStage.emitCHIRRTL(new Foo, args)
     }
     e.getMessage should include("Cannot bore across a Definition/Instance boundary")
+  }
+
+  it should "work if boring from an Instance's output port" in {
+    import chisel3.experimental.hierarchy._
+    @instantiable
+    class Bar extends RawModule {
+      @public val out = IO(Output(UInt(1.W)))
+      out := DontCare
+    }
+    class Foo extends RawModule {
+      val bar = Instance(Definition((new Bar)))
+      val sink = BoringUtils.bore(bar.out)
+    }
+    matchesAndOmits(circt.stage.ChiselStage.emitCHIRRTL(new Foo, args))(
+      "module Bar :",
+      "output out : UInt<1>",
+      "module Foo :",
+      "connect sink, bar.out"
+    )()
+  }
+
+  it should "work if boring to an Instance's output port" in {
+    import chisel3.experimental.hierarchy._
+    @instantiable
+    class Bar extends RawModule {
+      @public val in = IO(Input(UInt(1.W)))
+    }
+    class Foo extends RawModule {
+      val bar = Instance(Definition((new Bar)))
+      val source = BoringUtils.drive(bar.in)
+    }
+    matchesAndOmits(circt.stage.ChiselStage.emitCHIRRTL(new Foo, args))(
+      "module Bar :",
+      "input in : UInt<1>",
+      "module Foo :",
+      "connect bar.in, source"
+    )()
+  }
+
+  it should "not create new probe port when rwTap is used on a prot" in {
+    import chisel3.experimental.hierarchy._
+    class UnitTestHarness extends Module {
+      val dut = Instantiate(new Dut)
+      probe.force(dut.widgetProbes.head, 0xffff.U)
+    }
+
+    @instantiable
+    class Widget extends Module {
+      @public val in = IO(Input(UInt(32.W)))
+      @public val out = IO(Output(UInt(32.W)))
+      out := ~in
+    }
+
+    @instantiable
+    class Dut extends Module {
+      val widgets: Seq[Instance[Widget]] = Seq.tabulate(1) { i =>
+        val widget = Instantiate(new Widget)
+        widget.in := i.U
+        printf(s"widget[${i}].in = ${i}\n")
+        printf(s"widget[${i}].out = ")
+        printf(cf"${widget.out}\n")
+        widget
+      }
+      @public val widgetProbes = widgets.map { widget =>
+        val widgetProbe = IO(RWProbe(UInt(32.W)))
+        val define = BoringUtils.rwTap(widget.out)
+        probe.define(widgetProbe, define)
+        widgetProbe
+      }
+    }
+    val str =
+      matchesAndOmits(circt.stage.ChiselStage.emitCHIRRTL(new UnitTestHarness, args))(
+        "module Widget :",
+        "input clock : Clock",
+        "input reset : Reset",
+        "input in : UInt<32>",
+        "output out : UInt<32>",
+        "node _out_T = not(in)",
+        "connect out, _out_T",
+        "module Dut :",
+        "define widgetProbes_0 = rwprobe(widgets_0.out)",
+        "public module UnitTestHarness :",
+        "force(clock, _T, dut.widgetProbes_0, UInt<32>(0hffff))"
+      )()
   }
 
   it should "work boring upwards" in {
