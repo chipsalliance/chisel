@@ -573,6 +573,53 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
     val verilog = circt.stage.ChiselStage.emitSystemVerilog(new Top(Definition(new Foo)))
   }
 
+  it should "work to rwTap an Instance[..]'s port" in {
+    import chisel3.experimental.hierarchy._
+    class UnitTestHarness extends Module {
+      val dut = Instantiate(new Dut)
+      probe.force(dut.widgetProbes.head, 0xffff.U)
+    }
+
+    @instantiable
+    class Widget extends Module {
+      @public val in = IO(Input(UInt(32.W)))
+      @public val out = IO(Output(UInt(32.W)))
+      out := ~in
+    }
+
+    @instantiable
+    class Dut extends Module {
+      val widgets: Seq[Instance[Widget]] = Seq.tabulate(1) { i =>
+        val widget = Instantiate(new Widget)
+        widget.in := i.U
+        printf(s"widget[${i}].in = ${i}\n")
+        printf(s"widget[${i}].out = ")
+        printf(cf"${widget.out}\n")
+        widget
+      }
+      @public val widgetProbes = widgets.map { widget =>
+        val widgetProbe = IO(probe.RWProbe(UInt(32.W)))
+        val define = BoringUtils.rwTap(widget.out)
+        probe.define(widgetProbe, define)
+        widgetProbe
+      }
+    }
+    val str =
+      matchesAndOmits(circt.stage.ChiselStage.emitCHIRRTL(new UnitTestHarness))(
+        "module Widget :",
+        "input clock : Clock",
+        "input reset : Reset",
+        "input in : UInt<32>",
+        "output out : UInt<32>",
+        "node _out_T = not(in)",
+        "connect out, _out_T",
+        "module Dut :",
+        "define widgetProbes_0 = rwprobe(widgets_0.out)",
+        "public module UnitTestHarness :",
+        "force(clock, _T, dut.widgetProbes_0, UInt<32>(0hffff))"
+      )()
+  }
+
   it should "work with DecoupledIO in a hierarchy" in {
     import chisel3.util.{Decoupled, DecoupledIO}
     class Bar() extends RawModule {
