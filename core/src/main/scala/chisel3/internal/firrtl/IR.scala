@@ -369,6 +369,7 @@ private[chisel3] object ir {
   class When(val sourceInfo: SourceInfo, val pred: Arg) extends Command {
     val ifRegion = new Block(sourceInfo, Some(this))
     private var _elseRegion: Block = null
+    def hasElse:             Boolean = _elseRegion != null
     def elseRegion: Block = {
       if (_elseRegion == null) {
         _elseRegion = new Block(sourceInfo, Some(this))
