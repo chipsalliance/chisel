@@ -467,11 +467,9 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
     matchesAndOmits(chirrtl)(
       // Child
       "output v : { flip in : UInt<1>, out : UInt<1>}[2]",
-      "define bore = rwprobe(v[0].out)",
-      "define bore_1 = rwprobe(v[1].in)",
       // Forwarding probes out from instantiating module.
-      "define outV_0_out = child.bore",
-      "define outV_1_in = child.bore_1"
+      "define outV_0_out = rwprobe(child.v[0].out)",
+      "define outV_1_in = rwprobe(child.v[1].in)"
     )()
     // Send through firtool and lightly check output.
     // Bit fragile across firtool versions.
@@ -480,17 +478,12 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       // Child ports.
       "module Child(",
       "input  v_0_in,",
-      "output v_0_out,",
-      "input  v_1_in",
+      "output v_0_out",
       // Instantiation.
       "Child child (",
       ".v_0_in  (inputs_0),", // Alive because feeds outV_0_out probe.
-      ".v_0_out (", // rwprobe target.
-      ".v_1_in  (inputs_1)", // rwprobe target.
-      // Ref ABI.  Names of internal signals are subject to change.
-      "`define ref_Foo_outV_0_out child.v_0_out",
-      "`define ref_Foo_outV_1_in child.v_1_in"
-    )("v_1_out")
+      ".v_0_out (" // rwprobe target.
+    )("v_1_in", "v_1_out") // These are dead now
   }
 
   it should "work when tapping IO, as probe() from outside module" in {
@@ -592,9 +585,6 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       val widgets: Seq[Instance[Widget]] = Seq.tabulate(1) { i =>
         val widget = Instantiate(new Widget)
         widget.in := i.U
-        printf(s"widget[${i}].in = ${i}\n")
-        printf(s"widget[${i}].out = ")
-        printf(cf"${widget.out}\n")
         widget
       }
       @public val widgetProbes = widgets.map { widget =>
