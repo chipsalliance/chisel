@@ -37,6 +37,7 @@ final object Simulator {
     workspace:                        Workspace,
     customSimulationWorkingDirectory: Option[String],
     verbose:                          Boolean,
+    stderrStream:                     java.io.OutputStream,
     body:                             (SimulatedModule[T]) => U)
       extends BackendProcessor {
     val results = scala.collection.mutable.Stack[BackendInvocationDigest[U]]()
@@ -67,7 +68,7 @@ final object Simulator {
             )
           val compilationEndTime = System.nanoTime()
           val simulationOutcome = Try {
-            simulation.runElaboratedModule(elaboratedModule = elaboratedModule)(body)
+            simulation.runElaboratedModule(elaboratedModule = elaboratedModule, stderrStream = stderrStream)(body)
           }
           val simulationEndTime = System.nanoTime()
           BackendInvocationDigest(
@@ -99,6 +100,7 @@ trait Simulator {
   def customSimulationWorkingDirectory: Option[String] = None
   def verbose:                          Boolean = false
   def firtoolArgs:                      Seq[String] = Seq()
+  def stderrStream:                     java.io.OutputStream = Console.err
 
   private[simulator] def processBackends(processor: Simulator.BackendProcessor): Unit
   private[simulator] def _simulate[T <: RawModule, U](
@@ -114,6 +116,7 @@ trait Simulator {
       workspace,
       customSimulationWorkingDirectory,
       verbose,
+      stderrStream,
       { (module: SimulatedModule[T]) =>
         val outcome = body(module)
         module.completeSimulation()

@@ -90,14 +90,16 @@ package object simulator {
       conservativeCommandResolution: Boolean = false,
       verbose:                       Boolean = false,
       traceEnabled:                  Boolean = false,
-      executionScriptLimit:          Option[Int] = None
+      executionScriptLimit:          Option[Int] = None,
+      stderrStream:                  java.io.OutputStream = Console.err
     )(body:                          SimulatedModule[T] => U
     ): U = {
-      simulation.run(conservativeCommandResolution, verbose, traceEnabled, executionScriptLimit) { controller =>
-        val module = new SimulatedModule(elaboratedModule, controller)
-        AnySimulatedModule.withValue(module) {
-          body(module)
-        }
+      simulation.run(conservativeCommandResolution, verbose, traceEnabled, executionScriptLimit, stderrStream) {
+        controller =>
+          val module = new SimulatedModule(elaboratedModule, controller)
+          AnySimulatedModule.withValue(module) {
+            body(module)
+          }
       }
     }
   }
