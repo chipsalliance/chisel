@@ -9,9 +9,6 @@ import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
 object PrintfMacrosCompat {
-  def interpolatorCheckImpl(fmt: String, data: Bits*)(implicit sourceInfo: SourceInfo): Printf =
-    macro _applyMacroWithInterpolatorCheck
-
   def _applyMacroWithInterpolatorCheck(
     c:          blackbox.Context
   )(fmt:        c.Tree,
