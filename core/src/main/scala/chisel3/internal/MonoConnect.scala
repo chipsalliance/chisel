@@ -93,9 +93,10 @@ private[chisel3] object MonoConnect {
     * @return None if visible, Some(location of original block declaration)
     */
   def checkBlockVisibility(x: Data): Option[SourceInfo] = {
+    require(Builder.hasDynamicContext, "block visibility cannot currently be determined without context")
     // TODO: Checking block stack isn't quite right in situations where the stack of blocks
     // doesn't reflect the generated structure (for example using withRegion to jump multiple levels).
-    def visible(b: Block) = !Builder.hasDynamicContext || Builder.blockStack.contains(b)
+    def visible(b: Block) = Builder.blockStack.contains(b)
     x.topBinding match {
       case mp: MemoryPortBinding =>
         None // TODO (albert-magyar): remove this "bridge" for odd enable logic of current CHIRRTL memories
