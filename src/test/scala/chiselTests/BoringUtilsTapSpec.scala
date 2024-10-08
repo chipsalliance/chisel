@@ -7,7 +7,55 @@ import chisel3.probe
 import chisel3.testers._
 import chisel3.util.experimental.BoringUtils
 
+object BoringUtilsTapSpec {
+
+  import chisel3.experimental.hierarchy._
+
+  @instantiable
+  class Widget extends Module {
+    @public val in = IO(Input(UInt(32.W)))
+    val intermediate = Wire(UInt(32.W))
+    @public val out = IO(Output(UInt(32.W)))
+    intermediate := ~in
+    out := intermediate
+    @public val prb = IO(probe.RWProbe(UInt(32.W)))
+    probe.define(prb, BoringUtils.rwTap(intermediate))
+  }
+
+  class ArbitrarilyDeeperHierarchy extends Module {
+    val widgets =
+      Seq
+        .tabulate(2) { _ =>
+          val widget = Instantiate(new Widget)
+          widget
+        }
+    val (ins, outs) = widgets.map { widget =>
+      val in = IO(Input(UInt(32.W)))
+      widget.in := in
+      val out = IO(Output(UInt(32.W)))
+      out := widget.out
+      (in, out)
+    }.unzip
+  }
+
+  class ArbitrarilyDeepHierarchy extends Module {
+    val hier = Module(new ArbitrarilyDeeperHierarchy)
+    val ins = hier.ins.map { i =>
+      val in = IO(Input(UInt(32.W)))
+      i := in
+      in
+    }
+    val outs = hier.outs.map { o =>
+      val out = IO(Output(UInt(32.W)))
+      out := o
+      out
+    }
+  }
+
+}
+
 class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils with MatchesAndOmits {
+  val args = Array("--throw-on-first-error", "--full-stacktrace")
   "Ready-only tap" should "work downwards from parent to child" in {
     class Foo extends RawModule {
       val internalWire = Wire(Bool())
@@ -484,6 +532,69 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       ".v_0_in  (inputs_0),", // Alive because feeds outV_0_out probe.
       ".v_0_out (" // rwprobe target.
     )("v_1_in", "v_1_out") // These are dead now
+  }
+
+  it should "work to rwTap a RWProbe IO" in {
+
+    import chisel3.experimental.hierarchy._
+    import BoringUtilsTapSpec._
+
+    class UnitTestHarness extends Module {
+      val dut = Instantiate(new Dut)
+      probe.force(dut.widgetProbes.head, 0xffff.U)
+    }
+
+    @instantiable
+    class Dut extends Module {
+      val hier = Module(new ArbitrarilyDeepHierarchy)
+      hier.ins.zipWithIndex.foreach { case (in, i) => in := i.U }
+      hier.outs.foreach(dontTouch(_))
+
+      @public val widgetProbes =
+        aop.Select.unsafe
+          .allCurrentInstancesIn(hier)
+          .filter(_.isA[Widget])
+          .map { module =>
+            val widget = module.asInstanceOf[Instance[Widget]]
+            val widgetProbe = IO(probe.RWProbe(UInt(32.W)))
+            val p = BoringUtils.rwTap(widget.prb)
+            probe.define(widgetProbe, p)
+            widgetProbe
+          }
+    }
+    // Probe creation should happen outside of this function
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Dut, args)
+    println(chirrtl)
+    matchesAndOmits(chirrtl)(
+      // Widget exists once, and has a probe port of an internal wire
+      "module Widget :",
+      "output prb : RWProbe<UInt<32>>",
+      "define prb = rwprobe(intermediate)",
+      // Hierarchies exist and push out probes
+      "module ArbitrarilyDeeperHierarchy :",
+      "output widgetProbes_p_bore : RWProbe<UInt<32>>",
+      "output widgetProbes_p_bore_1 : RWProbe<UInt<32>>",
+      "inst widgets_0 of Widget",
+      "inst widgets_1 of Widget",
+      "define widgetProbes_p_bore = widgets_0.prb",
+      "define widgetProbes_p_bore_1 = widgets_1.prb",
+      // More hierarchies
+      "module ArbitrarilyDeepHierarchy :",
+      "output widgetProbes_p_bore : RWProbe<UInt<32>>",
+      "output widgetProbes_p_bore_1 : RWProbe<UInt<32>>",
+      "inst hier of ArbitrarilyDeeperHierarchy",
+      "define widgetProbes_p_bore = hier.widgetProbes_p_bore",
+      "define widgetProbes_p_bore_1 = hier.widgetProbes_p_bore_1",
+      // Top level module
+      "public module Dut :",
+      "input clock : Clock",
+      "input reset : UInt<1>",
+      "output widgetProbes_0 : RWProbe<UInt<32>>",
+      "output widgetProbes_1 : RWProbe<UInt<32>>",
+      "inst hier of ArbitrarilyDeepHierarchy",
+      "define widgetProbes_0 = hier.widgetProbes_p_bore",
+      "define widgetProbes_1 = hier.widgetProbes_p_bore_1"
+    )()
   }
 
   it should "work when tapping IO, as probe() from outside module" in {
