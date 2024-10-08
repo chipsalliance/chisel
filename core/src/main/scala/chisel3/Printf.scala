@@ -7,6 +7,8 @@ import chisel3.internal.Builder.pushCommand
 import chisel3.experimental.SourceInfo
 import chisel3.PrintfMacrosCompat._
 
+import scala.language.experimental.macros
+
 /** Prints a message in simulation
   *
   * See apply methods for use

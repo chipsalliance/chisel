@@ -10,6 +10,8 @@ import chisel3.layer.block
 import chisel3.layers
 import chisel3.util.circt.IfElseFatalIntrinsic
 
+import scala.language.experimental.macros
+
 /** Base class for all verification statements: Assert, Assume, Cover, Stop and Printf. */
 abstract class VerificationStatement extends NamedComponent {
   _parent.foreach(_.addId(this))

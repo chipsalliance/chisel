@@ -314,8 +314,7 @@ lazy val core = (project in file("core"))
       "-language:reflectiveCalls",
       "-unchecked",
       "-Xcheckinit",
-      "-Xlint:infer-any",
-      "-language:experimental.macros"
+      "-Xlint:infer-any"
 //      , "-Xlint:missing-interpolator"
     )
   )
