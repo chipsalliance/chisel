@@ -459,9 +459,10 @@ package experimental {
     /** Represents an eagerly-determined unique and descriptive identifier for this module */
     final val definitionIdentifier = _definitionIdentifier
 
-    // TODO: this weird re:evaluation/initialization ordering, revisit?
     // Modules that contain bodies should override this.
-    private[chisel3] def getBody: Option[Block] = None
+    protected def hasBody:        Boolean = false
+    protected val _body:          Block = if (hasBody) new Block(_sourceInfo, None /* command not available */ ) else null
+    private[chisel3] def getBody: Option[Block] = Some(_body)
 
     // Current block at point of creation.
     private var _blockVar: Block = Builder.currentBlock.getOrElse(null)

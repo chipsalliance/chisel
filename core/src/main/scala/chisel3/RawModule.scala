@@ -84,8 +84,7 @@ abstract class RawModule extends BaseModule {
   //
   // RTL construction internals
   //
-  private lazy val _body = new Block(_sourceInfo, None /* module command not yet available */ )
-  private[chisel3] override def getBody: Option[Block] = Some(_body)
+  protected override def hasBody: Boolean = true
 
   private[chisel3] def withRegion[A](newRegion: Block)(thunk: => A): A = {
     Builder.pushBlock(newRegion)

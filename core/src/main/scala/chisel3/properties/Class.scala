@@ -89,9 +89,7 @@ class Class extends BaseModule {
 
   /** Internal state and logic to maintain a buffer of commands.
     */
-  private lazy val _body = new Block(_sourceInfo, None /* class command not available */ )
-
-  private[chisel3] override def getBody: Option[Block] = Some(_body)
+  protected override def hasBody: Boolean = true
 
   private def addCommandImpl(c: Command): Unit = {
     require(!_closed, "Can't write to Class after close")
