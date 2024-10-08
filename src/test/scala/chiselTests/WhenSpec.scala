@@ -219,13 +219,6 @@ class WhenSpec extends ChiselFlatSpec with Utils {
   }
 
   "Sibling when blocks" should "emit error for visibility check" in {
-    class Child extends Module {
-      val in = IO(Input(UInt(8.W)))
-      val out = IO(Output(UInt(8.W)))
-
-      out := in
-    }
-
     class Foo extends Module {
       val in = IO(Input(UInt(8.W)))
       val out = IO(Output(UInt(8.W)))
