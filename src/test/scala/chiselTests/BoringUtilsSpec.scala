@@ -231,7 +231,7 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
     )()
   }
 
-  it should "work if boring to an Instance's output port" in {
+  it should "work if driving an Instance's input port" in {
     import chisel3.experimental.hierarchy._
     @instantiable
     class Bar extends RawModule {
