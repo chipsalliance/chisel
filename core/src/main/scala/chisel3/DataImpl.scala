@@ -667,7 +667,7 @@ private[chisel3] trait DataImpl extends HasId with NamedComponent { self: Data =
     )
   }
 
-  private[chisel3] def isVisible: Boolean = isVisibleFromModule && visibleFromWhen.isEmpty
+  private[chisel3] def isVisible: Boolean = isVisibleFromModule && visibleFromBlock.isEmpty
   private[chisel3] def isVisibleFromModule: Boolean = {
     val topBindingOpt = this.topBindingOpt // Only call the function once
     val mod = topBindingOpt.flatMap(_.location)
@@ -683,15 +683,15 @@ private[chisel3] trait DataImpl extends HasId with NamedComponent { self: Data =
       case _ => false
     }
   }
-  private[chisel3] def visibleFromWhen: Option[SourceInfo] = MonoConnect.checkWhenVisibility(this)
+  private[chisel3] def visibleFromBlock: Option[SourceInfo] = MonoConnect.checkBlockVisibility(this)
   private[chisel3] def requireVisible(): Unit = {
     if (!isVisibleFromModule) {
       throwException(s"operand '$this' is not visible from the current module ${Builder.currentModule.get.name}")
     }
-    visibleFromWhen match {
+    visibleFromBlock match {
       case Some(sourceInfo) =>
         throwException(
-          s"operand '$this' has escaped the scope of the when (${sourceInfo.makeMessage()}) in which it was constructed."
+          s"operand '$this' has escaped the scope of the block (${sourceInfo.makeMessage()}) in which it was constructed."
         )
       case None => ()
     }
@@ -1074,7 +1074,7 @@ trait WireFactory {
     val x = if (!t.mustClone(prevId)) t else t.cloneTypeFull
 
     // Bind each element of x to being a Wire
-    x.bind(WireBinding(Builder.forcedUserModule, Builder.currentWhen))
+    x.bind(WireBinding(Builder.forcedUserModule, Builder.currentBlock))
 
     pushCommand(DefWire(sourceInfo, x))
 

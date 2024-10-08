@@ -339,23 +339,47 @@ private[chisel3] object ir {
       extends Definition
   case class DefObject(sourceInfo: SourceInfo, id: HasId, className: String) extends Definition
 
-  class Region extends Command {
-    override val sourceInfo = UnlocatableSourceInfo
-    val region = new VectorBuilder[Command]
+  class Block(val sourceInfo: SourceInfo, val owner: Option[Command]) {
+    private val _commands = new VectorBuilder[Command]
+    private var _secretCommands: mutable.ArrayBuffer[Command] = null
+    private var _closed:         Boolean = false
+
+    def addCommand(c: Command): Unit = {
+      require(!_closed, "cannot add more commands after block is closed")
+      _commands += c
+    }
+    def getCommands(): Seq[Command] = {
+      _closed = true
+      _commands.result()
+    }
+
+    private[chisel3] def addSecretCommand(c: Command): Unit = {
+      if (_secretCommands == null)
+        _secretCommands = new mutable.ArrayBuffer[Command]
+      _secretCommands += c
+    }
+    private[chisel3] def getSecretCommands(): Seq[Command] = {
+      if (_secretCommands == null)
+        Seq.empty
+      else
+        _secretCommands.toSeq
+    }
+    private[chisel3] def getAllCommands(): Seq[Command] = getCommands() ++ getSecretCommands()
   }
 
-  object Region {
-    def unapply(region: Region): Option[(SourceInfo, Seq[Command])] = {
-      Some((region.sourceInfo, region.region.result()))
+  object Block {
+    def unapply(block: Block): Option[(Seq[Command], SourceInfo)] = {
+      Some((block.getAllCommands(), block.sourceInfo))
     }
   }
 
   class When(val sourceInfo: SourceInfo, val pred: Arg) extends Command {
-    val ifRegion = new VectorBuilder[Command]
-    private var _elseRegion: VectorBuilder[Command] = null
-    def elseRegion: VectorBuilder[Command] = {
+    val ifRegion = new Block(sourceInfo, Some(this))
+    private var _elseRegion: Block = null
+    def hasElse:             Boolean = _elseRegion != null
+    def elseRegion: Block = {
       if (_elseRegion == null) {
-        _elseRegion = new VectorBuilder[Command]
+        _elseRegion = new Block(sourceInfo, Some(this))
       }
       _elseRegion
     }
@@ -367,8 +391,8 @@ private[chisel3] object ir {
         (
           when.sourceInfo,
           when.pred,
-          when.ifRegion.result(),
-          Option(when._elseRegion).fold(Seq.empty[Command])(_.result())
+          when.ifRegion.getAllCommands(),
+          Option(when._elseRegion).fold(Seq.empty[Command])(_.getAllCommands())
         )
       )
     }
@@ -397,12 +421,12 @@ private[chisel3] object ir {
     children:   Seq[Layer])
 
   class LayerBlock(val sourceInfo: SourceInfo, val layer: chisel3.layer.Layer) extends Command {
-    val region = new VectorBuilder[Command]
+    val region = new Block(sourceInfo, Some(this))
   }
 
   object LayerBlock {
     def unapply(layerBlock: LayerBlock): Option[(SourceInfo, String, Seq[Command])] = {
-      Some((layerBlock.sourceInfo, layerBlock.layer.name, layerBlock.region.result()))
+      Some((layerBlock.sourceInfo, layerBlock.layer.name, layerBlock.region.getAllCommands()))
     }
   }
 
@@ -452,10 +476,8 @@ private[chisel3] object ir {
     isPublic: Boolean,
     layers:   Seq[chisel3.layer.Layer],
     ports:    Seq[Port],
-    commands: Seq[Command])
-      extends Component {
-    val secretCommands: mutable.ArrayBuffer[Command] = mutable.ArrayBuffer[Command]()
-  }
+    block:    Block)
+      extends Component
 
   case class DefBlackBox(
     id:     BaseBlackBox,
@@ -484,7 +506,7 @@ private[chisel3] object ir {
   case class DefIntrinsic(sourceInfo: SourceInfo, intrinsic: String, args: Seq[Arg], params: Seq[(String, Param)])
       extends Command
 
-  case class DefClass(id: Class, name: String, ports: Seq[Port], commands: Seq[Command]) extends Component
+  case class DefClass(id: Class, name: String, ports: Seq[Port], block: Block) extends Component
 
   case class Circuit(
     name:           String,

@@ -13,7 +13,7 @@ private[chisel3] trait ProbeValueBase {
     requireIsHardware(source)
     // construct probe to return with cloned info
     val clone = if (writable) RWProbe(source.cloneType) else Probe(source.cloneType)
-    clone.bind(OpBinding(Builder.forcedUserModule, Builder.currentWhen))
+    clone.bind(OpBinding(Builder.forcedUserModule, Builder.currentBlock))
     if (writable) {
       if (source.isLit) {
         Builder.error("Cannot get a probe value from a literal.")

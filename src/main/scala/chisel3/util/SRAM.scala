@@ -526,9 +526,9 @@ object SRAM {
     val firrtlReadwritePortNames = nameAndSetRef(firrtlReadwritePorts, "RW")
 
     // set bindings of firrtl memory ports
-    firrtlReadPorts.foreach(_.bind(SramPortBinding(Builder.forcedUserModule, Builder.currentWhen)))
-    firrtlWritePorts.foreach(_.bind(SramPortBinding(Builder.forcedUserModule, Builder.currentWhen)))
-    firrtlReadwritePorts.foreach(_.bind(SramPortBinding(Builder.forcedUserModule, Builder.currentWhen)))
+    firrtlReadPorts.foreach(_.bind(SramPortBinding(Builder.forcedUserModule, Builder.currentBlock)))
+    firrtlWritePorts.foreach(_.bind(SramPortBinding(Builder.forcedUserModule, Builder.currentBlock)))
+    firrtlReadwritePorts.foreach(_.bind(SramPortBinding(Builder.forcedUserModule, Builder.currentBlock)))
 
     // bind type so that memory type can get converted to FIRRTL
     val boundType = tpe.cloneTypeFull
