@@ -705,20 +705,63 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
         widgetProbe
       }
     }
-    val str =
-      matchesAndOmits(circt.stage.ChiselStage.emitCHIRRTL(new UnitTestHarness))(
-        "module Widget :",
-        "input clock : Clock",
-        "input reset : Reset",
-        "input in : UInt<32>",
-        "output out : UInt<32>",
-        "node _out_T = not(in)",
-        "connect out, _out_T",
-        "module Dut :",
-        "define widgetProbes_0 = rwprobe(widgets_0.out)",
-        "public module UnitTestHarness :",
-        "force(clock, _T, dut.widgetProbes_0, UInt<32>(0hffff))"
-      )()
+    matchesAndOmits(circt.stage.ChiselStage.emitCHIRRTL(new UnitTestHarness))(
+      "module Widget :",
+      "input clock : Clock",
+      "input reset : Reset",
+      "input in : UInt<32>",
+      "output out : UInt<32>",
+      "node _out_T = not(in)",
+      "connect out, _out_T",
+      "module Dut :",
+      "define widgetProbes_0 = rwprobe(widgets_0.out)",
+      "public module UnitTestHarness :",
+      "force(clock, _T, dut.widgetProbes_0, UInt<32>(0hffff))"
+    )()
+  }
+
+  it should "work to tap an Instance[..]'s port" in {
+    import chisel3.experimental.hierarchy._
+    class UnitTestHarness extends Module {
+      val dut = Instantiate(new Dut)
+      val w = probe.read(dut.widgetProbes.head)
+      printf("%d", w)
+    }
+
+    @instantiable
+    class Widget extends Module {
+      @public val in = IO(Input(UInt(32.W)))
+      @public val out = IO(Output(UInt(32.W)))
+      out := ~in
+    }
+
+    @instantiable
+    class Dut extends Module {
+      val widgets: Seq[Instance[Widget]] = Seq.tabulate(1) { i =>
+        val widget = Instantiate(new Widget)
+        widget.in := i.U
+        widget
+      }
+      @public val widgetProbes = widgets.map { widget =>
+        val widgetProbe = IO(probe.Probe(UInt(32.W)))
+        val define = BoringUtils.tap(widget.out)
+        probe.define(widgetProbe, define)
+        widgetProbe
+      }
+    }
+    matchesAndOmits(circt.stage.ChiselStage.emitCHIRRTL(new UnitTestHarness))(
+      "module Widget :",
+      "input clock : Clock",
+      "input reset : Reset",
+      "input in : UInt<32>",
+      "output out : UInt<32>",
+      "node _out_T = not(in)",
+      "connect out, _out_T",
+      "module Dut :",
+      "define widgetProbes_0 = probe(widgets_0.out)",
+      "public module UnitTestHarness :",
+      "printf(clock, UInt<1>(0h1), \"%d\", read(dut.widgetProbes_0))"
+    )()
   }
 
   it should "work with DecoupledIO in a hierarchy" in {
