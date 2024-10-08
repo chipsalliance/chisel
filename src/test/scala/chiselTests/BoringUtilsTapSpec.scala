@@ -564,7 +564,6 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
     }
     // Probe creation should happen outside of this function
     val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Dut, args)
-    println(chirrtl)
     matchesAndOmits(chirrtl)(
       // Widget exists once, and has a probe port of an internal wire
       "module Widget :",
