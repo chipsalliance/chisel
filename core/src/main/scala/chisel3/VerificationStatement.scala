@@ -3,12 +3,10 @@
 package chisel3
 
 import chisel3.experimental.{BaseModule, SourceInfo}
-import chisel3.internal.Builder.pushCommand
 import chisel3.internal._
+import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.ir._
 import chisel3.layer.block
-import chisel3.layers
-import chisel3.util.circt.IfElseFatalIntrinsic
 
 import scala.language.experimental.macros
 
@@ -82,57 +80,11 @@ object assert extends VerifPrintMacrosDoc {
   def apply(cond: Bool)(implicit sourceInfo: SourceInfo): Assert =
     macro VerifStmtMacrosCompat.assert._applyMacroWithNoMessage
 
-  import VerificationStatement._
-
   /** An elaboration-time assertion. Calls the built-in Scala assert function. */
   def apply(cond: Boolean, message: => String): Unit = Predef.assert(cond, message)
 
   /** An elaboration-time assertion. Calls the built-in Scala assert function. */
   def apply(cond: Boolean): Unit = Predef.assert(cond, "")
-
-  private def emitIfElseFatalIntrinsic(
-    clock:     Clock,
-    predicate: Bool,
-    enable:    Bool,
-    format:    Printable
-  )(
-    implicit sourceInfo: SourceInfo
-  ): Assert = {
-    block(layers.Verification.Assert, skipIfAlreadyInBlock = true, skipIfLayersEnabled = true) {
-      val id = Builder.forcedUserModule // It should be safe since we push commands anyway.
-      IfElseFatalIntrinsic(id, format, "chisel3_builtin", clock, predicate, enable, format.unpackArgs: _*)(sourceInfo)
-    }
-    new Assert()
-  }
-
-  /** This will be removed in Chisel 3.6 in favor of the Printable version
-    *
-    * @group VerifPrintMacros
-    */
-  def _applyWithSourceLine(
-    cond:    Bool,
-    line:    SourceLineInfo,
-    message: Option[String],
-    data:    Bits*
-  )(
-    implicit sourceInfo: SourceInfo
-  ): Assert = {
-    val pable = formatFailureMessage("Assertion", line, cond, message.map(Printable.pack(_, data: _*)))
-    emitIfElseFatalIntrinsic(Module.clock, cond, !Module.reset.asBool, pable)
-  }
-
-  /** @group VerifPrintMacros */
-  def _applyWithSourceLinePrintable(
-    cond:    Bool,
-    line:    SourceLineInfo,
-    message: Option[Printable]
-  )(
-    implicit sourceInfo: SourceInfo
-  ): Assert = {
-    message.foreach(Printable.checkScope(_))
-    val pable = formatFailureMessage("Assertion", line, cond, message)
-    emitIfElseFatalIntrinsic(Module.clock, cond, !Module.reset.asBool, pable)
-  }
 }
 
 object assume extends VerifPrintMacrosDoc {
@@ -195,49 +147,6 @@ object assume extends VerifPrintMacrosDoc {
 
   /** An elaboration-time assumption. Calls the built-in Scala assume function. */
   def apply(cond: Boolean): Unit = Predef.assume(cond, "")
-
-  import VerificationStatement._
-
-  /** This will be removed in Chisel 3.6 in favor of the Printable version
-    *
-    * @group VerifPrintMacros
-    */
-  def _applyWithSourceLine(
-    cond:    Bool,
-    line:    SourceLineInfo,
-    message: Option[String],
-    data:    Bits*
-  )(
-    implicit sourceInfo: SourceInfo
-  ): Assume = {
-    val id = new Assume()
-    block(layers.Verification.Assume, skipIfAlreadyInBlock = true, skipIfLayersEnabled = true) {
-      when(!Module.reset.asBool) {
-        val formattedMsg = formatFailureMessage("Assumption", line, cond, message.map(Printable.pack(_, data: _*)))
-        Builder.pushCommand(Verification(id, Formal.Assume, sourceInfo, Module.clock.ref, cond.ref, formattedMsg))
-      }
-    }
-    id
-  }
-
-  /** @group VerifPrintMacros */
-  def _applyWithSourceLinePrintable(
-    cond:    Bool,
-    line:    SourceLineInfo,
-    message: Option[Printable]
-  )(
-    implicit sourceInfo: SourceInfo
-  ): Assume = {
-    val id = new Assume()
-    block(layers.Verification.Assume, skipIfAlreadyInBlock = true, skipIfLayersEnabled = true) {
-      message.foreach(Printable.checkScope(_))
-      when(!Module.reset.asBool) {
-        val formattedMsg = formatFailureMessage("Assumption", line, cond, message)
-        Builder.pushCommand(Verification(id, Formal.Assume, sourceInfo, Module.clock.ref, cond.ref, formattedMsg))
-      }
-    }
-    id
-  }
 }
 
 object cover extends VerifPrintMacrosDoc {
@@ -263,23 +172,6 @@ object cover extends VerifPrintMacrosDoc {
     macro VerifStmtMacrosCompat.cover._applyMacroWithMessage
   def apply(cond: Bool)(implicit sourceInfo: SourceInfo): Cover =
     macro VerifStmtMacrosCompat.cover._applyMacroWithNoMessage
-
-  /** @group VerifPrintMacros */
-  def _applyWithSourceLine(
-    cond:    Bool,
-    line:    SourceLineInfo,
-    message: Option[String]
-  )(
-    implicit sourceInfo: SourceInfo
-  ): Cover = {
-    val id = new Cover()
-    block(layers.Verification.Cover, skipIfAlreadyInBlock = true, skipIfLayersEnabled = true) {
-      when(!Module.reset.asBool) {
-        Builder.pushCommand(Verification(id, Formal.Cover, sourceInfo, Module.clock.ref, cond.ref, ""))
-      }
-    }
-    id
-  }
 }
 
 object stop {
@@ -308,33 +200,10 @@ object stop {
     block(layers.Verification, skipIfAlreadyInBlock = true, skipIfLayersEnabled = true) {
       message.foreach(Printable.checkScope(_))
       when(!Module.reset.asBool) {
-        message.foreach(printf.printfWithoutReset(_))
+        message.foreach(PrintfMacrosCompat.printfWithoutReset(_))
         pushCommand(Stop(stopId, sourceInfo, Builder.forcedClock.ref, 0))
       }
     }
     stopId
-  }
-}
-
-/** Helper functions for common functionality required by stop, assert, assume or cover */
-private object VerificationStatement {
-
-  type SourceLineInfo = (String, Int)
-
-  def formatFailureMessage(
-    kind:     String,
-    lineInfo: SourceLineInfo,
-    cond:     Bool,
-    message:  Option[Printable]
-  )(
-    implicit sourceInfo: SourceInfo
-  ): Printable = {
-    val (filename, line) = lineInfo
-    val lineMsg = s"$filename:$line".replaceAll("%", "%%")
-    message match {
-      case Some(msg) =>
-        p"$kind failed: $msg\n"
-      case None => p"$kind failed at $lineMsg\n"
-    }
   }
 }

@@ -94,39 +94,6 @@ object printf {
     * @see [[Printable]] documentation
     * @param pable [[Printable]] to print
     */
-  def apply(pable: Printable)(implicit sourceInfo: SourceInfo): Printf =
-    printfWithReset(pable)(sourceInfo)
-
-  private[chisel3] def printfWithReset(
-    pable: Printable
-  )(
-    implicit sourceInfo: SourceInfo
-  ): Printf = {
-    var printfId: Printf = null
-    when(!Module.reset.asBool) {
-      printfId = printfWithoutReset(pable)
-    }
-    printfId
-  }
-
-  private[chisel3] def printfWithoutReset(
-    pable: Printable
-  )(
-    implicit sourceInfo: SourceInfo
-  ): Printf = {
-    val clock = Builder.forcedClock
-    val printfId = new Printf(pable)
-
-    Printable.checkScope(pable)
-
-    pushCommand(chisel3.internal.firrtl.ir.Printf(printfId, sourceInfo, clock.ref, pable))
-    printfId
-  }
-  private[chisel3] def printfWithoutReset(
-    fmt:  String,
-    data: Bits*
-  )(
-    implicit sourceInfo: SourceInfo
-  ): Printf =
-    printfWithoutReset(Printable.pack(fmt, data: _*))
+  def apply(pable: Printable)(implicit sourceInfo: SourceInfo): chisel3.printf.Printf =
+    PrintfMacrosCompat.printfWithReset(pable)(sourceInfo)
 }
