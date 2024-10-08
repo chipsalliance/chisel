@@ -349,7 +349,7 @@ private[chisel3] object ir {
       _commands += c
     }
     def getCommands(): Seq[Command] = {
-      _closed = true;
+      _closed = true
       _commands.result()
     }
 
