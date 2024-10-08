@@ -280,22 +280,23 @@ object BoringUtils {
             // Determine insertion block.  Best effort until more complete information is available.
             // No block may exist that is valid regardless (need bounce wire),
             // and some connections are illegal anyway.
-            val containingBlockOpt = (conLoc == module) match {
+            val containingBlockOpt = if (conLoc != module) {
               // If not in same module, insert in block containing instance of port (created above).
-              case false => module.getInstantiatingBlock
-              case true =>
-                rhs.topBindingOpt match {
-                  // If binding records containing block, use that.
-                  case Some(bb: BlockBinding) => bb.parentBlock
-                  // Special handling to reach in and get instantiating block for ports.
-                  case Some(pb: PortBinding) if pb.enclosure._parent == Some(conLoc) =>
-                    pb.enclosure.getInstantiatingBlock
-                  case Some(spb: SecretPortBinding) if spb.enclosure._parent == Some(conLoc) =>
-                    spb.enclosure.getInstantiatingBlock
-                  // Otherwise, default behavior.
-                  case _ => None
-                }
+              module.getInstantiatingBlock
+            } else {
+              rhs.topBindingOpt match {
+                // If binding records containing block, use that.
+                case Some(bb: BlockBinding) => bb.parentBlock
+                // Special handling to reach in and get instantiating block for ports.
+                case Some(pb: PortBinding) if pb.enclosure._parent == Some(conLoc) =>
+                  pb.enclosure.getInstantiatingBlock
+                case Some(spb: SecretPortBinding) if spb.enclosure._parent == Some(conLoc) =>
+                  spb.enclosure.getInstantiatingBlock
+                // Otherwise, default behavior.
+                case _ => None
+              }
             }
+
             // Fallback behavior is append to body in specified `conLoc` module.
             val block = containingBlockOpt.getOrElse(module.getBody.get)
 
