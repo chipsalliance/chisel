@@ -276,7 +276,7 @@ object BoringUtils {
 
             // `module` contains the new port.
             // `conLoc` is the module with the `rhs` value, and where we want to insert.
-            require(conLoc == module || Some(conLoc) == module._parent)
+            require(conLoc == module || Some(conLoc) == module._parent, "connection must be in module or parent")
             // Determine insertion block.  Best effort until more complete information is available.
             // No block may exist that is valid regardless (need bounce wire),
             // and some connections are illegal anyway.
