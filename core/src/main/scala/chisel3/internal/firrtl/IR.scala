@@ -341,32 +341,35 @@ private[chisel3] object ir {
 
   class Block(val sourceInfo: SourceInfo, val owner: Option[Command]) {
     private val _commands = new VectorBuilder[Command]
-    private var _stagedCommands: VectorBuilder[Command] = null
+    private var _secretCommands: mutable.ArrayBuffer[Command] = null
     private var _closed:         Boolean = false
 
     def addCommand(c: Command): Unit = {
       require(!_closed, "cannot add more commands after block is closed")
       _commands += c
     }
-    private[chisel3] def addStagedCommand(c: Command): Unit = {
-      require(!_closed, "cannot add more commands after block is closed")
-      if (_stagedCommands == null)
-        _stagedCommands = new VectorBuilder[Command]
-      _stagedCommands += c
-    }
     def getCommands(): Seq[Command] = {
       _closed = true;
-      if (_stagedCommands != null) {
-        _commands ++= _stagedCommands.result()
-        _stagedCommands = null
-      }
       _commands.result()
     }
+
+    private[chisel3] def addSecretCommand(c: Command): Unit = {
+      if (_secretCommands == null)
+        _secretCommands = new mutable.ArrayBuffer[Command]
+      _secretCommands += c
+    }
+    private[chisel3] def getSecretCommands(): Seq[Command] = {
+      if (_secretCommands == null)
+        Seq.empty
+      else
+        _secretCommands.toSeq
+    }
+    private[chisel3] def getAllCommands(): Seq[Command] = getCommands() ++ getSecretCommands()
   }
 
   object Block {
     def unapply(block: Block): Option[(Seq[Command], SourceInfo)] = {
-      Some((block.getCommands(), block.sourceInfo))
+      Some((block.getAllCommands(), block.sourceInfo))
     }
   }
 
@@ -388,8 +391,8 @@ private[chisel3] object ir {
         (
           when.sourceInfo,
           when.pred,
-          when.ifRegion.getCommands(),
-          Option(when._elseRegion).fold(Seq.empty[Command])(_.getCommands())
+          when.ifRegion.getAllCommands(),
+          Option(when._elseRegion).fold(Seq.empty[Command])(_.getAllCommands())
         )
       )
     }
@@ -423,7 +426,7 @@ private[chisel3] object ir {
 
   object LayerBlock {
     def unapply(layerBlock: LayerBlock): Option[(SourceInfo, String, Seq[Command])] = {
-      Some((layerBlock.sourceInfo, layerBlock.layer.name, layerBlock.region.getCommands()))
+      Some((layerBlock.sourceInfo, layerBlock.layer.name, layerBlock.region.getAllCommands()))
     }
   }
 

@@ -1880,8 +1880,8 @@ object PanamaCIRCTConverter {
       case when:       When =>
         visitWhen(
           when,
-          () => visitCommands(parent, when.ifRegion.getCommands()),
-          if (when.hasElse) { Some(() => visitCommands(parent, when.elseRegion.getCommands())) }
+          () => visitCommands(parent, when.ifRegion.getAllCommands()),
+          if (when.hasElse) { Some(() => visitCommands(parent, when.elseRegion.getAllCommands())) }
           else { None }
         )
       case defInstance:         DefInstance                  => visitDefInstance(defInstance)
@@ -1921,7 +1921,7 @@ object PanamaCIRCTConverter {
   }
   def visitDefModule(defModule: DefModule)(implicit cvt: PanamaCIRCTConverter): Unit = {
     cvt.visitDefModule(defModule)
-    val commands = defModule.block.getCommands()
+    val commands = defModule.block.getAllCommands()
     commands.foreach(visitCommand(defModule, _))
   }
   def visitDefIntrinsicModule(defIntrinsicModule: DefIntrinsicModule)(implicit cvt: PanamaCIRCTConverter): Unit = {

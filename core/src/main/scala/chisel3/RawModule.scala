@@ -246,7 +246,7 @@ abstract class RawModule extends BaseModule {
     }
 
     val rhs = computeConnection(left, right)
-    Builder.currentBlock.get.addStagedCommand(rhs)
+    Builder.currentBlock.get.addSecretCommand(rhs)
   }
 
   private[chisel3] def initializeInParent(): Unit = {}
