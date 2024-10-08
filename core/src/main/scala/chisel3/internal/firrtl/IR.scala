@@ -342,19 +342,23 @@ private[chisel3] object ir {
   class Block(val sourceInfo: SourceInfo, val owner: Option[Command]) {
     private val _commands = new VectorBuilder[Command]
     private var _stagedCommands: VectorBuilder[Command] = null
+    private var _closed:         Boolean = false
 
     def addCommand(c: Command): Unit = {
+      require(!_closed, "cannot add more commands after block is closed")
       _commands += c
     }
     private[chisel3] def addStagedCommand(c: Command): Unit = {
+      require(!_closed, "cannot add more commands after block is closed")
       if (_stagedCommands == null)
         _stagedCommands = new VectorBuilder[Command]
       _stagedCommands += c
     }
     def getCommands(): Seq[Command] = {
+      _closed = true;
       if (_stagedCommands != null) {
         _commands ++= _stagedCommands.result()
-        _stagedCommands.clear()
+        _stagedCommands = null
       }
       _commands.result()
     }

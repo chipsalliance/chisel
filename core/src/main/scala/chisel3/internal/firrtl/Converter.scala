@@ -276,6 +276,7 @@ private[chisel3] object Converter {
     */
   def convert(cmds: Seq[Command], ctx: Component, typeAliases: Seq[String]): fir.Statement = {
     var stmts = new VectorBuilder[fir.Statement]()
+    stmts.sizeHint(cmds)
     for (cmd <- cmds)
       stmts += convertCommand(cmd, ctx, typeAliases)
     fir.Block(stmts.result())
