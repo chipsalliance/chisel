@@ -350,11 +350,16 @@ private[chisel3] object ir {
       require(!_closed, "cannot add more commands after block is closed")
       _commandsBuilder += c
     }
-    def getCommands(): Seq[Command] = {
+
+    def close() = {
       if (_commands == null) {
         _commands = _commandsBuilder.result()
         _commandsBuilder = null
       }
+    }
+
+    def getCommands(): Seq[Command] = {
+      close()
       _commands
     }
 

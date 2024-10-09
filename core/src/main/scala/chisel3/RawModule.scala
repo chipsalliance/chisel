@@ -202,6 +202,9 @@ abstract class RawModule extends BaseModule {
     }
     _firrtlPorts = Some(firrtlPorts)
 
+    // No more commands.
+    _body.close()
+
     // Generate IO invalidation commands to initialize outputs as unused,
     //  unless the client wants explicit control over their generation.
     val component =

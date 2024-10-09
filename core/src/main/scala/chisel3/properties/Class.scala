@@ -66,6 +66,9 @@ class Class extends BaseModule {
         Port(port, port.specifiedDirection, sourceInfo)
     }
 
+    // No more commands.
+    _body.close()
+
     // Save the Component.
     _component = Some(DefClass(this, name, ports, _body))
 
