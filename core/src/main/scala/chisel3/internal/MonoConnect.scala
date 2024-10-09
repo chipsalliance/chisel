@@ -7,13 +7,12 @@ import chisel3._
 import chisel3.experimental.{Analog, BaseModule, SourceInfo}
 import chisel3.internal.binding._
 import chisel3.internal.Builder.pushCommand
-import chisel3.internal.firrtl.ir.{Connect, DefInvalid, ProbeDefine, PropAssign}
+import chisel3.internal.firrtl.ir.{Block, Connect, DefInvalid, ProbeDefine, PropAssign}
 import chisel3.internal.firrtl.Converter
 import chisel3.experimental.dataview.{isView, reify, reifyIdentityView}
 import chisel3.properties.{Class, Property}
 import chisel3.reflect.DataMirror
 
-import scala.language.experimental.macros
 import scala.annotation.tailrec
 
 /**
@@ -53,13 +52,13 @@ private[chisel3] object MonoConnect {
     MonoConnectException(
       s"""${formatName(sink)} cannot be written from module ${source.parentNameOpt.getOrElse("(unknown)")}."""
     )
-  def SourceEscapedWhenScopeException(source: Data, whenInfo: SourceInfo) =
+  def SourceEscapedBlockScopeException(source: Data, blockInfo: SourceInfo) =
     MonoConnectException(
-      s"Source ${formatName(source)} has escaped the scope of the when (${whenInfo.makeMessage()}) in which it was constructed."
+      s"Source ${formatName(source)} has escaped the scope of the block (${blockInfo.makeMessage()}) in which it was constructed."
     )
-  def SinkEscapedWhenScopeException(sink: Data, whenInfo: SourceInfo) =
+  def SinkEscapedBlockScopeException(sink: Data, blockInfo: SourceInfo) =
     MonoConnectException(
-      s"Sink ${formatName(sink)} has escaped the scope of the when (${whenInfo.makeMessage()}) in which it was constructed."
+      s"Sink ${formatName(sink)} has escaped the scope of the block (${blockInfo.makeMessage()}) in which it was constructed."
     )
   def UnknownRelationException =
     MonoConnectException("Sink or source unavailable to current module.")
@@ -87,17 +86,21 @@ private[chisel3] object MonoConnect {
   def SinkProbeMonoConnectionException(sink: Data) =
     MonoConnectException(s"Sink ${formatName(sink)} of Probed type cannot participate in a mono connection (:=)")
 
-  /** Check if the argument is visible from current when scope
+  /** Check if the argument is visible from current block scope
     *
-    * Returns source locator of original when declaration if not visible (for error reporting)
+    * Returns source locator of original block declaration if not visible (for error reporting)
     *
-    * @return None if visible, Some(location of original when declaration)
+    * @return None if visible, Some(location of original block declaration)
     */
-  def checkWhenVisibility(x: Data): Option[SourceInfo] = {
+  def checkBlockVisibility(x: Data): Option[SourceInfo] = {
+    require(Builder.hasDynamicContext, "block visibility cannot currently be determined without context")
+    // TODO: Checking block stack isn't quite right in situations where the stack of blocks
+    // doesn't reflect the generated structure (for example using withRegion to jump multiple levels).
+    def visible(b: Block) = Builder.blockStack.contains(b)
     x.topBinding match {
       case mp: MemoryPortBinding =>
         None // TODO (albert-magyar): remove this "bridge" for odd enable logic of current CHIRRTL memories
-      case cd: ConditionalDeclarable => cd.visibility.collect { case wc: WhenContext if !wc.active => wc.sourceInfo }
+      case bb: BlockBinding => bb.parentBlock.collect { case b: Block if !visible(b) => b.sourceInfo }
       case _ => None
     }
   }
@@ -284,14 +287,14 @@ private[chisel3] object MonoConnect {
       case _              => false
     }
 
-    checkWhenVisibility(sink) match {
-      case Some(whenInfo) => throw SinkEscapedWhenScopeException(sink, whenInfo)
-      case None           => ()
+    checkBlockVisibility(sink) match {
+      case Some(blockInfo) => throw SinkEscapedBlockScopeException(sink, blockInfo)
+      case None            => ()
     }
 
-    checkWhenVisibility(source) match {
-      case Some(whenInfo) => throw SourceEscapedWhenScopeException(source, whenInfo)
-      case None           => ()
+    checkBlockVisibility(source) match {
+      case Some(blockInfo) => throw SourceEscapedBlockScopeException(source, blockInfo)
+      case None            => ()
     }
 
     // CASE: Context is same module that both sink node and source node are in
@@ -515,9 +518,9 @@ private[chisel3] object checkConnect {
 
     // Import helpers and exception types.
     import MonoConnect.{
-      checkWhenVisibility,
-      SinkEscapedWhenScopeException,
-      SourceEscapedWhenScopeException,
+      checkBlockVisibility,
+      SinkEscapedBlockScopeException,
+      SourceEscapedBlockScopeException,
       UnknownRelationException,
       UnreadableSourceException,
       UnwritableSinkException
@@ -534,16 +537,6 @@ private[chisel3] object checkConnect {
 
     val sink_direction = BindingDirection.from(sink.topBinding, sink.direction)
     val source_direction = BindingDirection.from(source.topBinding, source.direction)
-
-    checkWhenVisibility(sink) match {
-      case Some(whenInfo) => throw SinkEscapedWhenScopeException(sink, whenInfo)
-      case None           => ()
-    }
-
-    checkWhenVisibility(source) match {
-      case Some(whenInfo) => throw SourceEscapedWhenScopeException(source, whenInfo)
-      case None           => ()
-    }
 
     // CASE: Context is same module that both left node and right node are in
     if ((context_mod == sink_mod) && (context_mod == source_mod)) {
@@ -603,6 +596,16 @@ private[chisel3] object checkConnect {
     // Not quite sure where left and right are compared to current module
     // so just error out
     else throw UnknownRelationException
+
+    checkBlockVisibility(sink) match {
+      case Some(blockInfo) => throw SinkEscapedBlockScopeException(sink, blockInfo)
+      case None            => ()
+    }
+
+    checkBlockVisibility(source) match {
+      case Some(blockInfo) => throw SourceEscapedBlockScopeException(source, blockInfo)
+      case None            => ()
+    }
   }
 
   // Extra checks specific to Property types. Most of the checks are baked into the Scala type system, but the actual

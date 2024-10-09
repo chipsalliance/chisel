@@ -2,22 +2,38 @@ import mill._
 import mill.scalalib._
 import mill.scalalib.publish._
 import mill.scalalib.scalafmt._
+import mill.api.Result
 import mill.define.Cross
 import mill.scalalib.api.ZincWorkerUtil.matchingVersions
+import mill.util.Jvm.createJar
 import $ivy.`com.lihaoyi::mill-contrib-jmh:`
 import mill.contrib.jmh.JmhModule
+import $ivy.`io.chris-kipp::mill-ci-release::0.1.10`
+import io.kipp.mill.ci.release.{CiReleaseModule, SonatypeHost}
+import de.tobiasroeser.mill.vcs.version.VcsVersion // pulled in by mill-ci-release
 import $file.common
 import $file.tests
 
 object v {
-  val pluginScalaCrossVersions = Seq(
-    "2.13.11",
-    "2.13.12",
-    "2.13.13",
-    "2.13.14"
-  )
+
+  val javaVersion = {
+    val rawVersion = sys.props("java.specification.version")
+    // Older versions of Java started with 1., e.g. 1.8 == 8
+    rawVersion.stripPrefix("1.").toInt
+  }
+
+  // Java 21 only works with 2.13.11+, but Project Panama uses Java 21
+  // Only publish plugin for 2.13.11+ when using Java > 11, but still
+  // publish all versions when Java version <= 11.
+  val pluginScalaCrossVersions = {
+    val latest213 = 15
+    val java21Min213 = 11
+    val minVersion = if (javaVersion > 11) java21Min213 else 0
+    val versions = minVersion to latest213
+    versions.map(v => s"2.13.$v").toSeq
+  }
   val scalaCrossVersions = Seq(
-    "2.13.14"
+    "2.13.15"
   )
   val scalaVersion = scalaCrossVersions.head
   val jmhVersion = "1.37"
@@ -73,7 +89,8 @@ object utils extends Module {
           val url = v.circt(
             firtoolVersion,
             if (linux) "linux" else if (mac) "macos" else throw new Exception("unsupported os"),
-            if (amd64) "x64" else throw new Exception("unsupported arch")
+            // circt does not yet publish for macos-aarch64, use x64 for now
+            if (amd64 || mac) "x64" else throw new Exception("unsupported arch")
           )
           T.ctx().log.info(s"Downloading circt from ${url}")
           mill.util.Util.download(url, os.rel / "circt.tar.gz")
@@ -96,7 +113,8 @@ object utils extends Module {
             21,
             "1-2",
             if (linux) "linux" else if (mac) "macos" else throw new Exception("unsupported os"),
-            if (amd64) "x64" else if (aarch64) "aarch64" else throw new Exception("unsupported arch")
+            // There is no macos-aarch64 for jextract 21, use x64 for now
+            if (amd64 || mac) "x64" else if (aarch64) "aarch64" else throw new Exception("unsupported arch")
           )
           T.ctx().log.info(s"Downloading jextract from ${url}")
           mill.util.Util.download(url, os.rel / "jextract.tar.gz")
@@ -108,9 +126,36 @@ object utils extends Module {
   }
 }
 
+trait ChiselPublishModule extends CiReleaseModule {
+  // Publish information
+  def pomSettings = PomSettings(
+    description = artifactName(),
+    organization = "org.chipsalliance",
+    url = "https://www.chisel-lang.org",
+    licenses = Seq(License.`Apache-2.0`),
+    versionControl = VersionControl.github("chipsalliance", "chisel"),
+    developers = Seq(
+      Developer("jackkoenig", "Jack Koenig", "https://github.com/jackkoenig"),
+      Developer("azidar", "Adam Izraelevitz", "https://github.com/azidar"),
+      Developer("seldridge", "Schuyler Eldridge", "https://github.com/seldridge")
+    )
+  )
+
+  override def sonatypeHost = Some(SonatypeHost.s01)
+
+  override def publishVersion = VcsVersion
+    .vcsState()
+    .format(
+      countSep = "+",
+      revHashDigits = 8,
+      untaggedSuffix = "-SNAPSHOT"
+    )
+
+}
+
 object firrtl extends Cross[Firrtl](v.scalaCrossVersions)
 
-trait Firrtl extends common.FirrtlModule with ChiselPublishModule with CrossSbtModule with ScalafmtModule {
+trait Firrtl extends common.FirrtlModule with CrossSbtModule with ScalafmtModule {
   def millSourcePath = super.millSourcePath / os.up / "firrtl"
 
   def osLibModuleIvy = v.osLib
@@ -123,24 +168,24 @@ trait Firrtl extends common.FirrtlModule with ChiselPublishModule with CrossSbtM
 
   def scoptIvy = v.scopt
 
-  object test extends SbtModuleTests with TestModule.ScalaTest {
+  object test extends SbtModuleTests with TestModule.ScalaTest with ScalafmtModule {
     def ivyDeps = Agg(v.scalatest, v.scalacheck)
   }
 }
 
 object svsim extends Cross[Svsim](v.scalaCrossVersions)
 
-trait Svsim extends common.SvsimModule with ChiselPublishModule with CrossSbtModule with ScalafmtModule {
+trait Svsim extends common.SvsimModule with CrossSbtModule with ScalafmtModule {
   def millSourcePath = super.millSourcePath / os.up / "svsim"
 
-  object test extends SbtModuleTests with TestModule.ScalaTest {
+  object test extends SbtModuleTests with TestModule.ScalaTest with ScalafmtModule {
     def ivyDeps = Agg(v.scalatest, v.scalacheck)
   }
 }
 
 object macros extends Cross[Macros](v.scalaCrossVersions)
 
-trait Macros extends common.MacrosModule with ChiselPublishModule with CrossSbtModule with ScalafmtModule {
+trait Macros extends common.MacrosModule with CrossSbtModule with ScalafmtModule {
   def millSourcePath = super.millSourcePath / os.up / "macros"
 
   def scalaReflectIvy = v.scalaReflect(crossScalaVersion)
@@ -148,7 +193,7 @@ trait Macros extends common.MacrosModule with ChiselPublishModule with CrossSbtM
 
 object core extends Cross[Core](v.scalaCrossVersions)
 
-trait Core extends common.CoreModule with ChiselPublishModule with CrossSbtModule with ScalafmtModule {
+trait Core extends common.CoreModule with CrossSbtModule with ScalafmtModule {
   def millSourcePath = super.millSourcePath / os.up / "core"
 
   def firrtlModule = firrtl(crossScalaVersion)
@@ -161,18 +206,32 @@ trait Core extends common.CoreModule with ChiselPublishModule with CrossSbtModul
 
   def firtoolResolverModuleIvy = v.firtoolResolver
 
-  def buildVersion = T("build-from-source")
+  // Similar to the publish version, but no dirty indicators because otherwise
+  // this file will change any time any file is changed.
+  def publishVersion = T {
+    VcsVersion
+      .vcsState()
+      .format(
+        countSep = "+",
+        revHashDigits = 8,
+        untaggedSuffix = "-SNAPSHOT",
+        dirtySep = "",
+        dirtyHashDigits = 0
+      )
+  }
 
-  private def generateBuildInfo = T {
+  def buildInfo = T {
     val outputFile = T.dest / "chisel3" / "BuildInfo.scala"
     val firtoolVersionString = "Some(\"" + utils.firtoolVersion + "\")"
     val contents =
       s"""
          |package chisel3
          |case object BuildInfo {
-         |  val buildInfoPackage: String = "${artifactName()}"
-         |  val version: String = "${buildVersion()}"
+         |  val buildInfoPackage: String = "chisel3"
+         |  val version: String = "${publishVersion()}"
          |  val scalaVersion: String = "${scalaVersion()}"
+         |  @deprecated("Chisel no longer uses SBT, this field will be removed.", "Chisel 7.0")
+         |  val sbtVersion: String = ""
          |  val firtoolVersion: scala.Option[String] = $firtoolVersionString
          |  override val toString: String = {
          |    "buildInfoPackage: %s, version: %s, scalaVersion: %s, firtoolVersion %s".format(
@@ -186,13 +245,18 @@ trait Core extends common.CoreModule with ChiselPublishModule with CrossSbtModul
   }
 
   override def generatedSources = T {
-    super.generatedSources() :+ generateBuildInfo()
+    super.generatedSources() :+ buildInfo()
   }
 }
 
 object plugin extends Cross[Plugin](v.pluginScalaCrossVersions)
 
-trait Plugin extends common.PluginModule with ChiselPublishModule with CrossSbtModule with ScalafmtModule {
+trait Plugin extends common.PluginModule with CrossSbtModule with ScalafmtModule with ChiselPublishModule {
+  override def artifactName = "chisel-plugin"
+
+  // The plugin is compiled for every minor Scala version
+  override def crossFullScalaVersion = true
+
   def millSourcePath = super.millSourcePath / os.up / "plugin"
 
   def scalaLibraryIvy = v.scalaLibrary(crossScalaVersion)
@@ -204,7 +268,7 @@ trait Plugin extends common.PluginModule with ChiselPublishModule with CrossSbtM
 
 object chisel extends Cross[Chisel](v.scalaCrossVersions)
 
-trait Chisel extends common.ChiselModule with ChiselPublishModule with CrossSbtModule with ScalafmtModule {
+trait Chisel extends common.ChiselModule with CrossSbtModule with ScalafmtModule {
   override def millSourcePath = super.millSourcePath / os.up
 
   def svsimModule = svsim(crossScalaVersion)
@@ -215,7 +279,7 @@ trait Chisel extends common.ChiselModule with ChiselPublishModule with CrossSbtM
 
   def pluginModule = plugin(crossScalaVersion)
 
-  object test extends SbtModuleTests with TestModule.ScalaTest {
+  object test extends SbtModuleTests with TestModule.ScalaTest with ScalafmtModule {
     def ivyDeps = Agg(v.scalatest, v.scalacheck)
   }
 }
@@ -228,7 +292,7 @@ trait IntegrationTests extends CrossSbtModule with ScalafmtModule with common.Ha
 
   def millSourcePath = os.pwd / "integration-tests"
 
-  object test extends SbtModuleTests with TestModule.ScalaTest {
+  object test extends SbtModuleTests with TestModule.ScalaTest with ScalafmtModule {
     override def moduleDeps = super.moduleDeps :+ chisel().test
     def ivyDeps = Agg(v.scalatest, v.scalacheck)
   }
@@ -236,7 +300,7 @@ trait IntegrationTests extends CrossSbtModule with ScalafmtModule with common.Ha
 
 object stdlib extends Cross[Stdlib](v.scalaCrossVersions)
 
-trait Stdlib extends common.StdLibModule with ChiselPublishModule with CrossSbtModule with ScalafmtModule {
+trait Stdlib extends common.StdLibModule with CrossSbtModule with ScalafmtModule {
   def millSourcePath = super.millSourcePath / os.up / "stdlib"
 
   def chiselModule = chisel(crossScalaVersion)
@@ -244,22 +308,9 @@ trait Stdlib extends common.StdLibModule with ChiselPublishModule with CrossSbtM
   def pluginModule = plugin(crossScalaVersion)
 }
 
-trait ChiselPublishModule extends PublishModule {
-  def pomSettings = PomSettings(
-    description = artifactName(),
-    organization = "org.chipsalliance",
-    url = "https://www.chisel-lang.org",
-    licenses = Seq(License.`Apache-2.0`),
-    versionControl = VersionControl.github("chipsalliance", "chisel"),
-    developers = Seq()
-  )
-
-  def publishVersion = "5.0-SNAPSHOT"
-}
-
 object circtpanamabinding extends CIRCTPanamaBinding
 
-trait CIRCTPanamaBinding extends common.CIRCTPanamaBindingModule with ChiselPublishModule {
+trait CIRCTPanamaBinding extends common.CIRCTPanamaBindingModule {
 
   def header = T(PathRef(millSourcePath / "jextract-headers.h"))
 
@@ -274,23 +325,19 @@ trait CIRCTPanamaBinding extends common.CIRCTPanamaBindingModule with ChiselPubl
 
 object panamalib extends Cross[PanamaLib](v.scalaCrossVersions)
 
-trait PanamaLib extends common.PanamaLibModule with CrossModuleBase with ChiselPublishModule with ScalafmtModule {
+trait PanamaLib extends common.PanamaLibModule with CrossModuleBase with ScalafmtModule {
   def circtPanamaBindingModule = circtpanamabinding
 }
 
 object panamaom extends Cross[PanamaOM](v.scalaCrossVersions)
 
-trait PanamaOM extends common.PanamaOMModule with CrossModuleBase with ChiselPublishModule with ScalafmtModule {
+trait PanamaOM extends common.PanamaOMModule with CrossModuleBase with ScalafmtModule {
   def panamaLibModule = panamalib(crossScalaVersion)
 }
 
 object panamaconverter extends Cross[PanamaConverter](v.scalaCrossVersions)
 
-trait PanamaConverter
-    extends common.PanamaConverterModule
-    with CrossModuleBase
-    with ChiselPublishModule
-    with ScalafmtModule {
+trait PanamaConverter extends common.PanamaConverterModule with CrossModuleBase with ScalafmtModule {
   def panamaOMModule = panamaom(crossScalaVersion)
 
   def chiselModule = chisel(crossScalaVersion)
@@ -325,4 +372,134 @@ object benchmark extends ScalaModule with JmhModule with ScalafmtModule {
   def jmhCoreVersion = v.jmhVersion
 
   override def moduleDeps = Seq(chisel(v.scalaVersion))
+}
+
+/** Aggregate project for publishing Chisel as a single artifact
+  */
+object unipublish extends ScalaModule with ChiselPublishModule {
+
+  def scalaVersion = v.scalaVersion
+
+  // This is published as chisel
+  override def artifactName = "chisel"
+
+  // Older versions of Scala do not work with newer versions of the JVM
+  // This is a hack to ensure we always use Java 8 to publish Chisel with Scala 2.13
+  // We could use Java 11 with -release 8
+  // Note that this target is used by real publishing but not by publishLocal
+  override def publishArtifacts = T {
+    // TODO when we publish for Scala 3, only do this check for Scala 2.13
+    if (v.javaVersion != 8) {
+      throw new Exception(s"Publishing requires Java 8, current JDK is ${v.javaVersion}")
+    }
+    super.publishArtifacts
+  }
+
+  /** Publish both this project and the plugin (for the default Scala version) */
+  override def publishLocal(localIvyRepo: String = null) = T.command {
+    // TODO consider making this parallel and publishing all cross-versions for plugin
+    plugin(v.scalaVersion).publishLocal(localIvyRepo)()
+    super.publishLocal(localIvyRepo)()
+  }
+
+  // Explicitly not using moduleDeps because that influences so many things
+  def components = Seq(firrtl, svsim, macros, core, chisel).map(_(v.scalaVersion))
+
+  /** Aggregated ivy deps to include as dependencies in POM */
+  def ivyDeps = T { T.traverse(components)(_.ivyDeps)().flatten }
+
+  /** Aggregated local classpath to include in jar */
+  override def localClasspath = T { T.traverse(components)(_.localClasspath)().flatten }
+
+  /** Aggreagted sources from all component modules */
+  def aggregatedSources = T { T.traverse(components)(_.allSources)().flatten }
+
+  /** Aggreagted resources from all component modules */
+  def aggregatedResources = T { T.traverse(components)(_.resources)().flatten }
+
+  /** Aggreagted compile resources from all component modules */
+  def aggregatedCompileResources = T { T.traverse(components)(_.compileResources)().flatten }
+
+  /** Aggregated sourceJar from all component modules
+    */
+  override def sourceJar: T[PathRef] = T {
+    // This is based on the implementation of sourceJar in PublishModule, may need to be kept in sync.
+    val allDirs = aggregatedSources() ++ aggregatedResources() ++ aggregatedCompileResources()
+    createJar(allDirs.map(_.path).filter(os.exists), manifest())
+  }
+
+  // Needed for ScalaDoc
+  override def scalacOptions = T {
+    Seq("-Ymacro-annotations")
+  }
+
+  def scalaDocRootDoc = T.source { T.workspace / "root-doc.txt" }
+
+  def unidocOptions = T {
+    scalacOptions() ++ Seq[String](
+      "-classpath",
+      unidocCompileClasspath().map(_.path).mkString(sys.props("path.separator")),
+      "-diagrams",
+      "-groups",
+      "-skip-packages",
+      "chisel3.internal",
+      "-diagrams-max-classes",
+      "25",
+      "-doc-version",
+      publishVersion(),
+      "-doc-title",
+      "chisel",
+      "-doc-root-content",
+      scalaDocRootDoc().path.toString,
+      "-sourcepath",
+      T.workspace.toString,
+      "-doc-source-url",
+      unidocSourceUrl(),
+      "-language:implicitConversions",
+      "-implicits"
+    )
+  }
+
+  // Built-in UnidocModule is insufficient so we need to implement it ourselves
+  // We could factor this out into a utility
+  def unidocSourceUrl: T[String] = T {
+    val base = "https://github.com/chipsalliance/chisel/tree"
+    val branch = if (publishVersion().endsWith("-SNAPSHOT")) "main" else s"v${publishVersion()}"
+    s"$base/$branch/€{FILE_PATH_EXT}#L€{FILE_LINE}"
+  }
+
+  def unidocVersion: T[Option[String]] = None
+
+  def unidocCompileClasspath = T {
+    Seq(compile().classes) ++ T.traverse(components)(_.compileClasspath)().flatten
+  }
+
+  def unidocSourceFiles = T {
+    allSourceFiles() ++ T.traverse(components)(_.allSourceFiles)().flatten
+  }
+
+  // Based on UnidocModule and docJar in Mill, may need to be kept in sync.
+  override def docJar = T {
+    T.log.info(s"Building unidoc for ${unidocSourceFiles().length} files")
+
+    val javadocDir = T.dest / "javadoc"
+    os.makeDir(javadocDir)
+
+    val fullOptions = unidocOptions() ++
+      Seq("-d", javadocDir.toString) ++
+      unidocSourceFiles().map(_.path.toString)
+
+    zincWorker()
+      .worker()
+      .docJar(
+        scalaVersion(),
+        scalaOrganization(),
+        scalaDocClasspath(),
+        scalacPluginClasspath(),
+        fullOptions
+      ) match {
+      case true  => Result.Success(createJar(Agg(javadocDir))(T.dest))
+      case false => Result.Failure("docJar generation failed")
+    }
+  }
 }

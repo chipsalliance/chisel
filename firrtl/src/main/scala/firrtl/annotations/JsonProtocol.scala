@@ -215,7 +215,7 @@ object JsonProtocol extends LazyLogging {
   }
 
   def deserializeTry(in: JsonInput, allowUnrecognizedAnnotations: Boolean = false): Try[Seq[Annotation]] = Try {
-    val parsed = parse(in)
+    val parsed: JValue = parse(in)
     val annos = parsed match {
       case JArray(objs) => objs
       case x =>

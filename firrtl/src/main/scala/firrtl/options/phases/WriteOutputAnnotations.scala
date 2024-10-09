@@ -2,7 +2,7 @@
 
 package firrtl.options.phases
 
-import firrtl.AnnotationSeq
+import firrtl.{annoSeqToSeq, AnnotationSeq}
 import firrtl.annotations.{Annotation, JsonProtocol}
 import firrtl.options.{
   BufferedCustomFileEmission,
@@ -11,6 +11,7 @@ import firrtl.options.{
   Phase,
   PhaseException,
   StageOptions,
+  StageOptionsView,
   Unserializable,
   Viewer
 }

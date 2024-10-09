@@ -110,6 +110,30 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
     matchesAndOmits(ChiselStage.emitCHIRRTL(new Foo))()("layerblock")
   }
 
+  they should "generate valid CHIRRTL when module instantiated under layer block has layer blocks" in {
+    object A extends layer.Layer(layer.LayerConfig.Inline) {
+      object B extends layer.Layer(layer.LayerConfig.Inline)
+    }
+    class Bar extends RawModule {
+      layer.block(A.B) {
+        val w = WireInit(Bool(), true.B)
+      }
+    }
+
+    class Foo extends RawModule {
+      layer.block(A) {
+        val bar = Module(new Bar())
+      }
+    }
+
+    // Check the generated CHIRRTL only.
+    // Layer-under-module-under-layer is rejected by firtool presently.
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Foo))(
+      // Whitespace shows nested under another block.
+      "      layerblock B : "
+    )()
+  }
+
   they should "allow for defines to layer-colored probes" in {
 
     class Foo extends RawModule {

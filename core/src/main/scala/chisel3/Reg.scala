@@ -2,14 +2,11 @@
 
 package chisel3
 
-import scala.language.experimental.macros
-
 import chisel3.internal._
 import chisel3.internal.binding._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.ir._
 import chisel3.experimental.{requireIsChiselType, requireIsHardware, SourceInfo}
-import chisel3.internal.sourceinfo.SourceInfoTransform
 
 /** Utility for constructing hardware registers
   *
@@ -45,7 +42,7 @@ object Reg {
     val reg = if (!t.mustClone(prevId)) t else t.cloneTypeFull
     val clock = Builder.forcedClock.ref
 
-    reg.bind(RegBinding(Builder.forcedUserModule, Builder.currentWhen))
+    reg.bind(RegBinding(Builder.forcedUserModule, Builder.currentBlock))
     pushCommand(DefReg(sourceInfo, reg, clock))
     reg
   }
@@ -177,7 +174,7 @@ object RegInit {
     val clock = Builder.forcedClock
     val reset = Builder.forcedReset
 
-    reg.bind(RegBinding(Builder.forcedUserModule, Builder.currentWhen))
+    reg.bind(RegBinding(Builder.forcedUserModule, Builder.currentBlock))
     requireIsHardware(init, "reg initializer")
     requireNoProbeTypeModifier(t, "Cannot make a register of a Chisel type with a probe modifier.")
     pushCommand(DefRegInit(sourceInfo, reg, clock.ref, reset.ref, init.ref))

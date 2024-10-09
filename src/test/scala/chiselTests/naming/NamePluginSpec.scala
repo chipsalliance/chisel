@@ -6,19 +6,17 @@ import chisel3._
 import chisel3.aop.Select
 import chisel3.experimental.prefix
 import chisel3.experimental.AffectsChiselName
-import chiselTests.{ChiselFlatSpec, Utils}
+import chiselTests.{ChiselFlatSpec, MatchesAndOmits, Utils}
 import circt.stage.ChiselStage
 
-class NamePluginSpec extends ChiselFlatSpec with Utils {
+class NamePluginSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
   implicit val minimumScalaVersion: Int = 12
 
   "Scala plugin" should "name internally scoped components" in {
     class Test extends Module {
       { val mywire = Wire(UInt(3.W)) }
     }
-    aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).head.toTarget.ref should be("mywire")
-    }
+    ChiselStage.emitCHIRRTL(new Test) should include("wire mywire :")
   }
 
   "Scala plugin" should "name internally scoped instances" in {
@@ -26,9 +24,7 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
     class Test extends Module {
       { val myinstance = Module(new Inner) }
     }
-    aspectTest(() => new Test) { top: Test =>
-      Select.instances(top).head.instanceName should be("myinstance")
-    }
+    ChiselStage.emitCHIRRTL(new Test) should include("inst myinstance of Inner")
   }
 
   "Scala plugin" should "interact with prefixing" in {
@@ -43,9 +39,7 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
         builder()
       }
     }
-    aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(List("first_wire", "second_wire"))
-    }
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))("wire first_wire :", "wire second_wire :")()
   }
 
   "Scala plugin" should "interact with prefixing so last val name wins" in {
@@ -66,9 +60,12 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
         }
       }
     }
-    aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(List("x1_first_wire1", "x1", "x2_second_wire1", "x2"))
-    }
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))(
+      "wire x1_first_wire1",
+      "wire x1",
+      "wire x2_second_wire1",
+      "wire x2"
+    )()
   }
 
   "Scala plugin" should "name verification ops" in {
@@ -97,9 +94,7 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
 
       { val blah = builder() }
     }
-    aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(List("blah"))
-    }
+    ChiselStage.emitCHIRRTL(new Test) should include("wire blah :")
   }
 
   "Naming on iterables" should "work" in {
@@ -116,9 +111,7 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
         }
       }
     }
-    aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(List("blah_0", "blah_1"))
-    }
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))("wire blah_0 :", "wire blah_1 :")()
   }
 
   "Naming on nested iterables" should "work" in {
@@ -137,16 +130,12 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
         }
       }
     }
-    aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(
-        List(
-          "blah_0_0",
-          "blah_0_1",
-          "blah_1_0",
-          "blah_1_1"
-        )
-      )
-    }
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))(
+      "wire blah_0_0 :",
+      "wire blah_0_1 :",
+      "wire blah_1_0 :",
+      "wire blah_1_1 :"
+    )()
   }
 
   "Naming on custom case classes" should "not work" in {
@@ -161,9 +150,8 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
 
       { val blah = builder() }
     }
-    aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(List("a", "b"))
-    }
+
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))("wire a :", "wire b :")()
   }
 
   "Multiple names on an IO within a module" should "get the first name" in {
@@ -174,9 +162,7 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
       }
     }
 
-    aspectTest(() => new Test) { top: Test =>
-      Select.ios(top).map(_.instanceName) should be(List("a"))
-    }
+    ChiselStage.emitCHIRRTL(new Test) should include("output a :")
   }
 
   "Multiple names on a non-IO" should "get the first name" in {
@@ -187,9 +173,7 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
       }
     }
 
-    aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(List("a"))
-    }
+    ChiselStage.emitCHIRRTL(new Test) should include("wire a :")
   }
 
   "Outer Expression, First Statement naming" should "apply to IO" in {
@@ -205,9 +189,7 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
       }
     }
 
-    aspectTest(() => new Test) { top: Test =>
-      Select.ios(top).map(_.instanceName) should be(List("out"))
-    }
+    ChiselStage.emitCHIRRTL(new Test) should include("output out :")
   }
 
   "Outer Expression, First Statement naming" should "apply to non-IO" in {
@@ -223,9 +205,7 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
       }
     }
 
-    aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(List("fizz"))
-    }
+    ChiselStage.emitCHIRRTL(new Test) should include("wire fizz :")
   }
 
   "autoSeed" should "NOT override automatic naming for IO" in {
@@ -236,9 +216,7 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
       }
     }
 
-    aspectTest(() => new Test) { top: Test =>
-      Select.ios(top).map(_.instanceName) should be(List("a"))
-    }
+    ChiselStage.emitCHIRRTL(new Test) should include("output a :")
   }
 
   "autoSeed" should "override automatic naming for non-IO" in {
@@ -249,9 +227,7 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
       }
     }
 
-    aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(List("b"))
-    }
+    ChiselStage.emitCHIRRTL(new Test) should include("wire b :")
   }
 
   "Unapply assignments" should "still be named" in {
@@ -261,9 +237,7 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
       }
     }
 
-    aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(List("a", "b"))
-    }
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))("wire a :", "wire b :")()
   }
 
   "Unapply assignments" should "name (but not prefix) local vals on the RHS" in {
@@ -277,9 +251,7 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
       }
     }
 
-    aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(List("a", "b", "sum"))
-    }
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))("wire a :", "wire b :", "wire sum :")()
   }
 
   "Unapply assignments" should "not override already named things" in {
@@ -290,9 +262,7 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
       }
     }
 
-    aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(List("x", "b"))
-    }
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))("wire x :", "wire b :")()
   }
 
   "Case class unapply assignments" should "be named" in {
@@ -304,9 +274,7 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
       }
     }
 
-    aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(List("a", "b"))
-    }
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))("wire a :", "wire b :")()
   }
 
   "Complex unapply assignments" should "be named" in {
@@ -322,9 +290,7 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
       }
     }
 
-    aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(List("w", "a", "_WIRE"))
-    }
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))("wire w :", "wire a :", "wire _WIRE :")()
   }
 
   "Recursive types" should "not infinitely loop" in {
@@ -351,9 +317,7 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
       }
     }
 
-    aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(List("a_b_c", "a_b", "a"))
-    }
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))("wire a_b_c :", "wire a_b :", "wire a :")()
   }
 
   behavior.of("Unnamed values (aka \"Temporaries\")")
@@ -370,9 +334,7 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
         }
       }
     }
-    aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(List("_a_b_c"))
-    }
+    ChiselStage.emitCHIRRTL(new Test) should include("wire _a_b_c :")
   }
 
   "tuples" should "be named" in {
@@ -380,9 +342,7 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
       val x = (Wire(UInt(3.W)), Wire(UInt(3.W)))
     }
 
-    aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(List("x_1", "x_2"))
-    }
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))("wire x_1 :", "wire x_2 :")()
   }
 
   "nested tuples" should "be named" in {
@@ -393,9 +353,7 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
       )
     }
 
-    aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(List("x_1_1", "x_1_2", "x_2_1", "x_2_2"))
-    }
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))("wire x_1_1 :", "wire x_1_2 :", "wire x_2_1 :", "wire x_2_2 :")()
   }
 
   "tuples containing non-Data" should "be named" in {
@@ -403,9 +361,7 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
       val x = (Wire(UInt(3.W)), "foobar", Wire(UInt(3.W)))
     }
 
-    aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(List("x_1", "x_3"))
-    }
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))("wire x_1 :", "wire x_3 :")()
   }
 
   "tuples nested in options" should "be named" in {
@@ -413,9 +369,7 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
       val x = Option((Wire(UInt(3.W)), Wire(UInt(3.W))))
     }
 
-    aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(List("x_1", "x_2"))
-    }
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))("wire x_1 :", "wire x_2 :")()
   }
 
   "tuple assignment" should "name IOs and registers" in {
@@ -430,11 +384,13 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
       val foo = myFunc()
     }
 
-    aspectTest(() => new Test) { top: Test =>
-      Select.ios(top).map(_.instanceName) should be(List("clock", "reset", "foo_1", "foo_in"))
-      Select.registers(top).map(_.instanceName) should be(List("foo_out_REG"))
-      Select.wires(top).map(_.instanceName) should be(List())
-    }
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))(
+      "input clock :",
+      "input reset :",
+      "output foo_1 :",
+      "input foo_in :",
+      "reg foo_out_REG :"
+    )("wire")
   }
 
   "identity views" should "forward names to their targets" in {
@@ -450,9 +406,11 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
       val zz = z.viewAs[UInt] // But don't accidentally override names
     }
 
-    aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(List("x", "y", "z"))
-    }
+    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))(
+      "wire x :",
+      "wire y :",
+      "wire z :"
+    )()
   }
 
   "AffectsChiselName" should "name the user-defined type" in {
@@ -460,9 +418,7 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
     class Test extends Module {
       val x = SomeClass(Wire(UInt(8.W)))
     }
-    aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(List("x_d"))
-    }
+    ChiselStage.emitCHIRRTL(new Test) should include("wire x_d :")
   }
 
   "AffectsChiselName with a user-defined Product" should "give an empty name" in {
@@ -472,8 +428,6 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
     class Test extends Module {
       val x = SomeClass(Wire(UInt(8.W)))
     }
-    aspectTest(() => new Test) { top: Test =>
-      Select.wires(top).map(_.instanceName) should be(List("x"))
-    }
+    ChiselStage.emitCHIRRTL(new Test) should include("wire x :")
   }
 }

@@ -34,7 +34,7 @@ emitLatestVersion := {
 lazy val minimalSettings = Seq(
   organization := "org.chipsalliance",
   scalacOptions := Seq("-deprecation", "-feature"),
-  scalaVersion := "2.13.14"
+  scalaVersion := "2.13.15"
 )
 
 lazy val commonSettings = minimalSettings ++ Seq(
@@ -121,7 +121,9 @@ lazy val firrtlSettings = Seq(
     "-language:reflectiveCalls",
     "-language:existentials",
     "-language:implicitConversions",
-    "-Yrangepos" // required by SemanticDB compiler plugin
+    "-Yrangepos", // required by SemanticDB compiler plugin
+    "-Xsource:3",
+    "-Xsource-features:infer-override",
   ),
   // Always target Java8 for maximum compatibility
   javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
@@ -137,7 +139,10 @@ lazy val firrtlSettings = Seq(
   ),
   scalacOptions += "-Ymacro-annotations",
   // starting with scala 2.13 the parallel collections are separate from the standard library
-  libraryDependencies += "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4"
+  libraryDependencies += "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4",
+  Test / scalacOptions ++= Seq(
+    "-Xsource-features:package-prefix-implicits"
+  )
 )
 
 lazy val assemblySettings = Seq(
@@ -162,6 +167,10 @@ lazy val svsim = (project in file("svsim"))
   .settings(minimalSettings)
   .settings(
     // Published as part of unipublish
+    scalacOptions := Seq(
+      "-Xsource:3",
+      "-Xsource-features:case-apply-copy-access"
+    ),
     publish / skip := true,
     libraryDependencies ++= Seq(
       "org.scalatest" %% "scalatest" % "3.2.19" % "test",
@@ -231,7 +240,8 @@ lazy val pluginScalaVersions = Seq(
   "2.13.11",
   "2.13.12",
   "2.13.13",
-  "2.13.14"
+  "2.13.14",
+  "2.13.15"
 )
 
 lazy val plugin = (project in file("plugin"))
@@ -330,7 +340,7 @@ lazy val chisel = (project in file("."))
   .settings(
     // Suppress Scala 3 behavior requiring explicit types on implicit definitions
     // Note this must come before the -Wconf is warningSuppression
-    Test / scalacOptions += "-Wconf:cat=other-implicit-type:s"
+    Test / scalacOptions += "-Wconf:cat=other-implicit-type:s",
   )
   .settings(warningSuppression: _*)
   .settings(fatalWarningsSettings: _*)
@@ -453,7 +463,11 @@ lazy val docs = project // new documentation project
     scalacOptions ++= Seq(
       "-language:reflectiveCalls",
       "-language:implicitConversions",
-      "-Wconf:msg=firrtl:s,cat=other-implicit-type:s"
+      "-Wconf:msg=firrtl:s",
+      "-Xsource:3",
+      // We do not want to force type annotations onto the
+      // demonstration user code, especially this comes up in setting the elements of a Record
+      "-Xsource-features:infer-override"
     ),
     mdocIn := file("docs/src"),
     mdocOut := file("docs/generated"),

@@ -2,7 +2,7 @@
 
 package firrtl.options.phases
 
-import firrtl.AnnotationSeq
+import firrtl.{annoSeqToSeq, AnnotationSeq}
 import firrtl.annotations.Annotation
 import firrtl.options.{OptionsException, OutputAnnotationFileAnnotation, Phase, TargetDirAnnotation}
 import firrtl.options.Dependency

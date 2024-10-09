@@ -5,6 +5,7 @@ package firrtlTests.annotationTests
 import firrtl.annotations._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import org.json4s.convertToJsonInput
 
 class LoadMemoryAnnotationSpec extends AnyFreeSpec with Matchers {
   "LoadMemoryAnnotation getFileName" - {

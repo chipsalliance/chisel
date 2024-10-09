@@ -3,7 +3,7 @@
 package chisel3.testers
 
 import chisel3._
-import chisel3.stage.phases.{Convert, Elaborate, Emitter, MaybeInjectingPhase}
+import chisel3.stage.phases.{Convert, Elaborate, Emitter}
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation}
 import firrtl.AnnotationSeq
 import firrtl.annotations.NoTargetAnnotation
@@ -61,8 +61,7 @@ object TesterDriver extends BackendCompilationUtilities {
         targets = Seq(
           Dependency[AddImplicitTesterDirectory],
           Dependency[Emitter],
-          Dependency[Convert],
-          Dependency[MaybeInjectingPhase]
+          Dependency[Convert]
         )
       )
 

@@ -8,8 +8,8 @@ import logger.LazyLogging
 
 import scala.collection.mutable.LinkedHashSet
 
-import scala.reflect
 import scala.reflect.ClassTag
+import firrtl.macros.Macros
 
 object Dependency {
   def apply[A <: DependencyAPI[_]: ClassTag]: Dependency[A] = {
@@ -33,9 +33,7 @@ object Dependency {
     }
   }
 
-  private def isSingleton(obj: AnyRef): Boolean = {
-    reflect.runtime.currentMirror.reflect(obj).symbol.isModuleClass
-  }
+  private def isSingleton(obj: AnyRef): Boolean = Macros.isSingletonImpl(obj)
 }
 
 case class Dependency[+A <: DependencyAPI[_]](id: Either[Class[_ <: A], A with Singleton]) {

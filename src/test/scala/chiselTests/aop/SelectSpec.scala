@@ -6,7 +6,7 @@ import chisel3.testers.BasicTester
 import chiselTests.ChiselFlatSpec
 import chisel3._
 import chisel3.aop.Select.{PredicatedConnect, When, WhenNot}
-import chisel3.aop.{Aspect, Select}
+import chisel3.aop.Select
 import chisel3.experimental.ExtModule
 import chisel3.stage.{ChiselGeneratorAnnotation, DesignAnnotation}
 import circt.stage.ChiselStage
@@ -36,133 +36,87 @@ class SelectTester(results: Seq[Int]) extends BasicTester {
   }
 }
 
-case class SelectAspect[T <: RawModule, X](selector: T => Seq[X], desired: T => Seq[X]) extends Aspect[T] {
-  override def toAnnotation(top: T): AnnotationSeq = {
-    val results = selector(top)
-    val desiredSeq = desired(top)
-    assert(
-      results.length == desiredSeq.length,
-      s"Failure! Results $results have different length than desired $desiredSeq!"
-    )
-    val mismatches = results.zip(desiredSeq).flatMap {
-      case (res, des) if res != des => Seq((res, des))
-      case other                    => Nil
-    }
-    assert(
-      mismatches.isEmpty,
-      s"Failure! The following selected items do not match their desired item:\n" + mismatches.map {
-        case (res: Select.Serializeable, des: Select.Serializeable) =>
-          s"  ${res.serialize} does not match:\n  ${des.serialize}"
-        case (res, des) => s"  $res does not match:\n  $des"
-      }.mkString("\n")
-    )
-    Nil
-  }
-}
-
 class SelectSpec extends ChiselFlatSpec {
 
-  def execute[T <: RawModule, X](
-    dut:      () => T,
-    selector: T => Seq[X],
-    desired:  T => Seq[X]
-  )(
-    implicit tTag: TypeTag[T]
-  ): Unit = {
-    val ret = new circt.stage.ChiselStage().execute(
-      Array("--target", "systemverilog"),
+  "Test" should "pass if selecting correct registers" in {
+    val dut = ChiselGeneratorAnnotation(() => {
+      new SelectTester(Seq(0, 1, 2))
+    }).elaborate(1).asInstanceOf[DesignAnnotation[SelectTester]].design
+    Select.registers(dut) should be(Seq(dut.counter))
+  }
+
+  "Test" should "pass if selecting correct wires" in {
+    val dut = ChiselGeneratorAnnotation(() => {
+      new SelectTester(Seq(0, 1, 2))
+    }).elaborate(1).asInstanceOf[DesignAnnotation[SelectTester]].design
+    Select.wires(dut) should be(Seq(dut.values))
+
+  }
+
+  "Test" should "pass if selecting correct printfs" in {
+    val dut = ChiselGeneratorAnnotation(() => {
+      new SelectTester(Seq(0, 1, 2))
+    }).elaborate(1).asInstanceOf[DesignAnnotation[SelectTester]].design
+    Seq(Select.printfs(dut).last.toString) should be(
       Seq(
-        new chisel3.stage.ChiselGeneratorAnnotation(dut),
-        SelectAspect(selector, desired),
-        new chisel3.stage.ChiselOutputFileAnnotation("test_run_dir/Select.fir")
+        Select
+          .Printf(
+            dut.p,
+            Seq(
+              When(Select.ops("eq")(dut).last.asInstanceOf[Bool]),
+              When(dut.nreset),
+              WhenNot(dut.overflow)
+            ),
+            dut.p.pable,
+            dut.clock
+          )
+          .toString
       )
     )
   }
 
-  "Test" should "pass if selecting correct registers" in {
-    execute(
-      () => new SelectTester(Seq(0, 1, 2)),
-      { dut: SelectTester => Select.registers(dut) },
-      { dut: SelectTester => Seq(dut.counter) }
-    )
-  }
-
-  "Test" should "pass if selecting correct wires" in {
-    execute(
-      () => new SelectTester(Seq(0, 1, 2)),
-      { dut: SelectTester => Select.wires(dut) },
-      { dut: SelectTester => Seq(dut.values) }
-    )
-  }
-
-  "Test" should "pass if selecting correct printfs" in {
-    execute(
-      () => new SelectTester(Seq(0, 1, 2)),
-      { dut: SelectTester => Seq(Select.printfs(dut).last.toString) },
-      { dut: SelectTester =>
-        Seq(
-          Select
-            .Printf(
-              dut.p,
-              Seq(
-                When(Select.ops("eq")(dut).last.asInstanceOf[Bool]),
-                When(dut.nreset),
-                WhenNot(dut.overflow)
-              ),
-              dut.p.pable,
-              dut.clock
-            )
-            .toString
-        )
-      }
-    )
-  }
-
   "Test" should "pass if selecting correct connections" in {
-    execute(
-      () => new SelectTester(Seq(0, 1, 2)),
-      { dut: SelectTester => Select.connectionsTo(dut)(dut.counter) },
-      { dut: SelectTester =>
-        Seq(
-          PredicatedConnect(Nil, dut.counter, dut.added, false),
-          PredicatedConnect(Seq(When(dut.overflow)), dut.counter, dut.zero, false)
-        )
-      }
+    val dut = ChiselGeneratorAnnotation(() => {
+      new SelectTester(Seq(0, 1, 2))
+    }).elaborate(1).asInstanceOf[DesignAnnotation[SelectTester]].design
+    Select.connectionsTo(dut)(dut.counter) should be(
+      Seq(
+        PredicatedConnect(Nil, dut.counter, dut.added, false),
+        PredicatedConnect(Seq(When(dut.overflow)), dut.counter, dut.zero, false)
+      )
     )
+
   }
 
   "Test" should "pass if selecting ops by kind" in {
-    execute(
-      () => new SelectTester(Seq(0, 1, 2)),
-      { dut: SelectTester => Select.ops("tail")(dut) },
-      { dut: SelectTester => Seq(dut.added, dut.zero) }
-    )
+    val dut = ChiselGeneratorAnnotation(() => {
+      new SelectTester(Seq(0, 1, 2))
+    }).elaborate(1).asInstanceOf[DesignAnnotation[SelectTester]].design
+    Select.ops("tail")(dut) should be(Seq(dut.added, dut.zero))
   }
 
   "Test" should "pass if selecting ops" in {
-    execute(
-      () => new SelectTester(Seq(0, 1, 2)),
-      { dut: SelectTester => Select.ops(dut).collect { case ("tail", d) => d } },
-      { dut: SelectTester => Seq(dut.added, dut.zero) }
-    )
+    val dut = ChiselGeneratorAnnotation(() => {
+      new SelectTester(Seq(0, 1, 2))
+    }).elaborate(1).asInstanceOf[DesignAnnotation[SelectTester]].design
+    Select.ops(dut).collect { case ("tail", d) => d } should be(Seq(dut.added, dut.zero))
   }
 
   "Test" should "pass if selecting correct stops" in {
-    execute(
-      () => new SelectTester(Seq(0, 1, 2)),
-      { dut: SelectTester => Seq(Select.stops(dut).last) },
-      { dut: SelectTester =>
-        Seq(
-          Select.Stop(
-            Seq(
-              When(Select.ops("eq")(dut)(1).asInstanceOf[Bool]),
-              When(dut.overflow)
-            ),
-            0,
-            dut.clock
-          )
+    val dut = ChiselGeneratorAnnotation(() => {
+      new SelectTester(Seq(0, 1, 2))
+    }).elaborate(1).asInstanceOf[DesignAnnotation[SelectTester]].design
+    Select.stops(dut) should be(
+      Seq(
+        Select.Stop(
+          Seq(
+            When(Select.ops("eq")(dut)(1).asInstanceOf[Bool]),
+            When(dut.overflow)
+          ),
+          0,
+          dut.clock
         )
-      }
+      )
     )
   }
 
@@ -170,6 +124,35 @@ class SelectSpec extends ChiselFlatSpec {
     class BB extends ExtModule {}
     class Top extends RawModule {
       val bb = Module(new BB)
+    }
+    val top = ChiselGeneratorAnnotation(() => {
+      new Top()
+    }).elaborate(1).asInstanceOf[DesignAnnotation[Top]].design
+    val bbs = Select.collectDeep(top) { case b: BB => b }
+    assert(bbs.size == 1)
+  }
+
+  "collectDeep" should "should look in when regions" in {
+    class BB extends ExtModule {}
+    class Top extends RawModule {
+      when(true.B) {
+        val bb = Module(new BB)
+      }
+    }
+    val top = ChiselGeneratorAnnotation(() => {
+      new Top()
+    }).elaborate(1).asInstanceOf[DesignAnnotation[Top]].design
+    val bbs = Select.collectDeep(top) { case b: BB => b }
+    assert(bbs.size == 1)
+  }
+
+  "collectDeep" should "should look in layer regions" in {
+    object TestLayer extends layer.Layer(layer.LayerConfig.Extract())
+    class BB extends ExtModule {}
+    class Top extends RawModule {
+      layer.block(TestLayer) {
+        val bb = Module(new BB)
+      }
     }
     val top = ChiselGeneratorAnnotation(() => {
       new Top()
@@ -202,7 +185,7 @@ class SelectSpec extends ChiselFlatSpec {
     Select.instances(top) should equal(Seq(top.inst0))
   }
 
-  "Using Definition/Instance with Injecting Aspects" should "throw an error" in {
+  "Using Definition/Instance with Select APIs" should "throw an error" in {
     import chisel3.experimental.CloneModuleAsRecord
     import chisel3.experimental.hierarchy._
     @instantiable

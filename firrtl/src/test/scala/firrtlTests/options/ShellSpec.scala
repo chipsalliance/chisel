@@ -2,6 +2,7 @@
 
 package firrtlTests.options
 
+import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq}
 import firrtl.annotations.NoTargetAnnotation
 import firrtl.options.Shell
 import org.scalatest.flatspec.AnyFlatSpec

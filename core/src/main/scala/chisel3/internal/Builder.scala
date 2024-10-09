@@ -540,11 +540,6 @@ private[chisel3] class DynamicContext(
   val options = mutable.LinkedHashSet[choice.Case]()
   var currentModule: Option[BaseModule] = None
 
-  /** Contains a mapping from a elaborated module to their aspect
-    * Set by [[ModuleAspect]]
-    */
-  val aspectModule: mutable.HashMap[BaseModule, BaseModule] = mutable.HashMap.empty[BaseModule, BaseModule]
-
   // Views that do not correspond to a single ReferenceTarget and thus require renaming
   val unnamedViews: ArrayBuffer[Data] = ArrayBuffer.empty
 
@@ -552,6 +547,7 @@ private[chisel3] class DynamicContext(
   // Used to distinguish between no Module() wrapping, multiple wrappings, and rewrapping
   var readyForModuleConstr: Boolean = false
   var whenStack:            List[WhenContext] = Nil
+  var blockStack:           List[Block] = Nil
   // Clock and Reset are "Delayed" because ImplicitClock and ImplicitReset need to set these values,
   // But the clock or reset defined by the user won't yet be initialized
   var currentClock:     Option[Delayed[Clock]] = None
@@ -721,10 +717,6 @@ private[chisel3] object Builder extends LazyLogging {
   def currentModule_=(target: Option[BaseModule]): Unit = {
     dynamicContext.currentModule = target
   }
-  def aspectModule(module: BaseModule): Option[BaseModule] = dynamicContextVar.value match {
-    case Some(dynamicContext) => dynamicContext.aspectModule.get(module)
-    case _                    => None
-  }
 
   /** Retrieves the parent of a module based on the elaboration context
     *
@@ -733,23 +725,7 @@ private[chisel3] object Builder extends LazyLogging {
     * @return the parent of the module provided
     */
   def retrieveParent(module: BaseModule, context: BaseModule): Option[BaseModule] = {
-    module._parent match {
-      case Some(parentModule) => { //if a parent exists investigate, otherwise return None
-        context match {
-          case aspect: ModuleAspect => { //if aspect context, do the translation
-            Builder.aspectModule(parentModule) match {
-              case Some(parentAspect) => Some(parentAspect) //we've found a translation
-              case _                  => Some(parentModule) //no translation found
-            }
-          } //otherwise just return our parent
-          case _ => Some(parentModule)
-        }
-      }
-      case _ => None
-    }
-  }
-  def addAspect(module: BaseModule, aspect: BaseModule): Unit = {
-    dynamicContext.aspectModule += ((module, aspect))
+    module._parent
   }
   def forcedModule: BaseModule = currentModule match {
     case Some(module) => module
@@ -761,11 +737,7 @@ private[chisel3] object Builder extends LazyLogging {
   }
   def referenceUserModule: RawModule = {
     currentModule match {
-      case Some(module: RawModule) =>
-        aspectModule(module) match {
-          case Some(aspect: RawModule) => aspect
-          case other => module
-        }
+      case Some(module: RawModule) => module
       case _ =>
         throwException(
           "Error: Not in a RawModule. Likely cause: Missed Module() wrap, bare chisel API call, or attempting to construct hardware inside a BlackBox."
@@ -775,11 +747,7 @@ private[chisel3] object Builder extends LazyLogging {
   }
   def referenceUserContainer: BaseModule = {
     currentModule match {
-      case Some(module: RawModule) =>
-        aspectModule(module) match {
-          case Some(aspect: RawModule) => aspect
-          case other => module
-        }
+      case Some(module: RawModule) => module
       case Some(cls: Class) => cls
       case _ =>
         throwException(
@@ -821,6 +789,27 @@ private[chisel3] object Builder extends LazyLogging {
   }
 
   def currentWhen: Option[WhenContext] = dynamicContext.whenStack.headOption
+
+  def blockStack: List[Block] = dynamicContext.blockStack
+  def blockStack_=(s: List[Block]): Unit = {
+    dynamicContext.blockStack = s
+  }
+
+  def blockDepth: Int = dynamicContext.blockStack.length
+  def pushBlock(b: Block): Unit = {
+    dynamicContext.blockStack = b :: dynamicContext.blockStack
+  }
+
+  def popBlock(): Block = {
+    val lastBlock = dynamicContext.blockStack.head
+    dynamicContext.blockStack = dynamicContext.blockStack.tail
+    lastBlock
+  }
+
+  def currentBlock: Option[Block] = dynamicContextVar.value match {
+    case Some(dc) => dc.blockStack.headOption
+    case _        => None
+  }
 
   // Helper for reasonable errors when clock or reset value not yet initialized
   private def getDelayed[A](field: String, dc: Delayed[A]): A = {
@@ -899,7 +888,7 @@ private[chisel3] object Builder extends LazyLogging {
   }
   def pushOp[T <: Data](cmd: DefPrim[T]): T = {
     // Bind each element of the returned Data to being a Op
-    cmd.id.bind(OpBinding(forcedUserModule, currentWhen))
+    cmd.id.bind(OpBinding(forcedUserModule, currentBlock))
     pushCommand(cmd).id
   }
 
@@ -1140,7 +1129,6 @@ private[chisel3] object Builder extends LazyLogging {
           components.update(
             components.size - 1, {
               val newModule = module.copy(isPublic = true)
-              newModule.secretCommands ++= module.secretCommands
               newModule
             }
           )

@@ -105,7 +105,7 @@ import chisel3.experimental.dataview._
 // We recommend putting DataViews in a companion object of one of the involved types
 object AXIBundle {
   // Don't be afraid of the use of implicits, we will discuss this pattern in more detail later
-  implicit val axiView = DataView[VerilogAXIBundle, AXIBundle](
+  implicit val axiView: DataView[VerilogAXIBundle, AXIBundle] = DataView(
     // The first argument is a function constructing an object of View type (AXIBundle)
     // from an object of the Target type (VerilogAXIBundle)
     vab => new AXIBundle(vab.addrWidth),
@@ -157,7 +157,7 @@ a `VerilogAXIBundle` from an instance of an `AXIBundle`:
 
 ```scala mdoc:silent
 // Note that typically you should define these together (eg. inside object AXIBundle)
-implicit val axiView2 = AXIBundle.axiView.invert(ab => new VerilogAXIBundle(ab.addrWidth))
+implicit val axiView2: DataView[AXIBundle, VerilogAXIBundle] = AXIBundle.axiView.invert(ab => new VerilogAXIBundle(ab.addrWidth))
 ```
 
 The following example shows this and illustrates another use case of `DataView`—connecting unrelated
@@ -282,7 +282,7 @@ class BundleB extends Bundle {
 
 ```scala mdoc:crash
 // We forgot BundleA.foo in the mapping!
-implicit val myView = DataView[BundleA, BundleB](_ => new BundleB, _.bar -> _.fizz)
+implicit val myView: DataView[BundleA, BundleB] = DataView(_ => new BundleB, _.bar -> _.fizz)
 class BadMapping extends Module {
    val in = IO(Input(new BundleA))
    val out = IO(Output(new BundleB))
@@ -296,7 +296,7 @@ As that error suggests, if we *want* the view to be non-total, we can use a `Par
 
 ```scala mdoc
 // A PartialDataView does not have to be total for the Target
-implicit val myView = PartialDataView[BundleA, BundleB](_ => new BundleB, _.bar -> _.fizz)
+implicit val myView: DataView[BundleA, BundleB] = PartialDataView[BundleA, BundleB](_ => new BundleB, _.bar -> _.fizz)
 class PartialDataViewModule extends Module {
    val in = IO(Input(new BundleA))
    val out = IO(Output(new BundleB))
@@ -419,8 +419,8 @@ class Bar extends Bundle {
   val d = UInt(8.W)
 }
 object Foo {
-  implicit val f2b = DataView[Foo, Bar](_ => new Bar, _.a -> _.c, _.b -> _.d)
-  implicit val b2f = f2b.invert(_ => new Foo)
+  implicit val f2b: DataView[Foo, Bar] = DataView(_ => new Bar, _.a -> _.c, _.b -> _.d)
+  implicit val b2f: DataView[Bar, Foo] = f2b.invert(_ => new Foo)
 }
 ```
 
@@ -444,7 +444,7 @@ perhaps they would prefer more of "swizzling" behavior rather than a direct mapp
 
 ```scala mdoc
 object Swizzle {
-  implicit val swizzle = DataView[Foo, Bar](_ => new Bar, _.a -> _.d, _.b -> _.c)
+  implicit val swizzle: DataView[Foo, Bar] = DataView(_ => new Bar, _.a -> _.d, _.b -> _.c)
 }
 // Current scope always wins over implicit scope
 import Swizzle._
@@ -495,13 +495,13 @@ the objects of type `Data` within `MyCounter`:
 
 ```scala mdoc:silent
 import chisel3.util.Valid
-implicit val counterProduct = new DataProduct[MyCounter] {
+implicit val counterProduct: DataProduct[MyCounter] = new DataProduct[MyCounter] {
   // The String part of the tuple is a String path to the object to help in debugging
   def dataIterator(a: MyCounter, path: String): Iterator[(Data, String)] =
     List(a.value -> s"$path.value", a.active -> s"$path.active").iterator
 }
 // Now this works
-implicit val counterView = DataView[MyCounter, Valid[UInt]](c => Valid(UInt(c.width.W)), _.value -> _.bits, _.active -> _.valid)
+implicit val counterView: DataView[MyCounter, Valid[UInt]] = DataView(c => Valid(UInt(c.width.W)), _.value -> _.bits, _.active -> _.valid)
 ```
 
 Why is this useful?

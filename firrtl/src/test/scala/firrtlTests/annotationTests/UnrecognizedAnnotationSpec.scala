@@ -3,6 +3,7 @@
 package firrtlTests.annotationTests
 
 import firrtl.FileUtils
+import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq}
 import firrtl.annotations._
 import firrtl.passes.memlib.ReplSeqMemAnnotation
 import firrtl.testutils.FirrtlFlatSpec
@@ -10,6 +11,7 @@ import firrtl.transforms.BlackBoxInlineAnno
 import logger.Logger
 import logger.Logger.OutputCaptor
 
+import org.json4s.convertToJsonInput
 import java.io.{File, PrintWriter}
 
 class UnrecognizedAnnotationSpec extends FirrtlFlatSpec {

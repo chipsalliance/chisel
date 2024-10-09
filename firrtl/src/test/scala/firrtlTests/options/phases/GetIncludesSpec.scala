@@ -4,7 +4,7 @@ package firrtlTests.options.phases
 
 import java.io.{File, PrintWriter}
 
-import firrtl.AnnotationSeq
+import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq}
 import firrtl.annotations.{AnnotationFileNotFoundException, JsonProtocol, NoTargetAnnotation}
 import firrtl.options.phases.GetIncludes
 import firrtl.options.{InputAnnotationFileAnnotation, Phase}

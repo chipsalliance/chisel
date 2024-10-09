@@ -33,11 +33,9 @@ class ChiselStage extends Stage {
       targets = Seq(
         Dependency[chisel3.stage.phases.AddImplicitOutputFile],
         Dependency[chisel3.stage.phases.AddImplicitOutputAnnotationFile],
-        Dependency[chisel3.stage.phases.MaybeAspectPhase],
         Dependency[chisel3.stage.phases.AddSerializationAnnotations],
         Dependency[chisel3.stage.phases.Convert],
         Dependency[chisel3.stage.phases.AddDedupGroupAnnotations],
-        Dependency[chisel3.stage.phases.MaybeInjectingPhase],
         Dependency[circt.stage.phases.AddImplicitOutputFile],
         Dependency[circt.stage.phases.CIRCT]
       ),
@@ -57,7 +55,6 @@ object ChiselStage {
   /** A phase shared by all the CIRCT backends */
   private def phase = new PhaseManager(
     Seq(
-      Dependency[chisel3.aop.injecting.InjectingPhase],
       Dependency[chisel3.stage.phases.Elaborate],
       Dependency[chisel3.stage.phases.Convert],
       Dependency[circt.stage.phases.AddImplicitOutputFile],

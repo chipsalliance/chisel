@@ -326,6 +326,7 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselRunners {
 
   class SequenceConvMod extends RawModule {
     val a, b = IO(Input(Bool()))
+    implicit val info = SourceLine("Foo.scala", 1, 2)
     AssertProperty(Sequence(a))
     AssertProperty(Sequence(a, b))
     AssertProperty(Sequence(Delay(), a))
@@ -336,36 +337,40 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselRunners {
   }
   it should "support Sequence(...) convenience constructor" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new SequenceConvMod)
+    val sourceLoc = "@[Foo.scala 1:2]"
+
     // a
-    chirrtl should include("intrinsic(circt_verif_assert, a)")
+    chirrtl should include(s"intrinsic(circt_verif_assert, a) $sourceLoc")
 
     // a b
-    chirrtl should include("node concat = intrinsic(circt_ltl_concat : UInt<1>, a, b)")
-    chirrtl should include("intrinsic(circt_verif_assert, concat)")
+    chirrtl should include(s"node concat = intrinsic(circt_ltl_concat : UInt<1>, a, b) $sourceLoc")
+    chirrtl should include(s"intrinsic(circt_verif_assert, concat) $sourceLoc")
 
     // Delay() a
-    chirrtl should include("node delay = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, a)")
-    chirrtl should include("intrinsic(circt_verif_assert, delay)")
+    chirrtl should include(s"node delay = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, a) $sourceLoc")
+    chirrtl should include(s"intrinsic(circt_verif_assert, delay) $sourceLoc")
 
     // a Delay() b
-    chirrtl should include("node delay_1 = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, b)")
-    chirrtl should include("node concat_1 = intrinsic(circt_ltl_concat : UInt<1>, a, delay_1)")
-    chirrtl should include("intrinsic(circt_verif_assert, concat_1)")
+    chirrtl should include(s"node delay_1 = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, b) $sourceLoc")
+    chirrtl should include(s"node concat_1 = intrinsic(circt_ltl_concat : UInt<1>, a, delay_1) $sourceLoc")
+    chirrtl should include(s"intrinsic(circt_verif_assert, concat_1) $sourceLoc")
 
     // a Delay(2) b
-    chirrtl should include("node delay_2 = intrinsic(circt_ltl_delay<delay = 2, length = 0> : UInt<1>, b)")
-    chirrtl should include("node concat_2 = intrinsic(circt_ltl_concat : UInt<1>, a, delay_2)")
-    chirrtl should include("intrinsic(circt_verif_assert, concat_2)")
+    chirrtl should include(s"node delay_2 = intrinsic(circt_ltl_delay<delay = 2, length = 0> : UInt<1>, b) $sourceLoc")
+    chirrtl should include(s"node concat_2 = intrinsic(circt_ltl_concat : UInt<1>, a, delay_2) $sourceLoc")
+    chirrtl should include(s"intrinsic(circt_verif_assert, concat_2) $sourceLoc")
 
     // a Delay(42, 1337) b
-    chirrtl should include("node delay_3 = intrinsic(circt_ltl_delay<delay = 42, length = 1295> : UInt<1>, b)")
-    chirrtl should include("node concat_3 = intrinsic(circt_ltl_concat : UInt<1>, a, delay_3)")
-    chirrtl should include("intrinsic(circt_verif_assert, concat_3)")
+    chirrtl should include(
+      s"node delay_3 = intrinsic(circt_ltl_delay<delay = 42, length = 1295> : UInt<1>, b) $sourceLoc"
+    )
+    chirrtl should include(s"node concat_3 = intrinsic(circt_ltl_concat : UInt<1>, a, delay_3) $sourceLoc")
+    chirrtl should include(s"intrinsic(circt_verif_assert, concat_3) $sourceLoc")
 
-    // a Delay(9001, None) b
-    chirrtl should include("node delay_4 = intrinsic(circt_ltl_delay<delay = 9001> : UInt<1>, b)")
-    chirrtl should include("node concat_4 = intrinsic(circt_ltl_concat : UInt<1>, a, delay_4)")
-    chirrtl should include("intrinsic(circt_verif_assert, concat_4)")
+    // a Delay(9001, None) sb
+    chirrtl should include(s"node delay_4 = intrinsic(circt_ltl_delay<delay = 9001> : UInt<1>, b) $sourceLoc")
+    chirrtl should include(s"node concat_4 = intrinsic(circt_ltl_concat : UInt<1>, a, delay_4) $sourceLoc")
+    chirrtl should include(s"intrinsic(circt_verif_assert, concat_4) $sourceLoc")
   }
   it should "compile Sequence(...) convenience constructor" in {
     ChiselStage.emitSystemVerilog(new SequenceConvMod)
@@ -377,5 +382,29 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselRunners {
         AssertProperty(0.U === 1.U)
       }
     })
+  }
+
+  class LayerBlockMod extends RawModule {
+    val a, b = IO(Input(Bool()))
+    implicit val info = SourceLine("Foo.scala", 1, 2)
+    AssertProperty(Sequence(Delay(), a))
+    AssumeProperty(a |-> b)
+  }
+
+  it should "wrap all intrinsics in layerblocks" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new LayerBlockMod)
+    val sourceLoc = "@[Foo.scala 1:2]"
+
+    val assertBlockLoc = chirrtl.indexOf(s"layerblock Assert : $sourceLoc")
+    val delayIntrinsicLoc = chirrtl.indexOf(
+      s"intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, a)"
+    )
+    val assumeblockLoc = chirrtl.indexOf(s"layerblock Assume : $sourceLoc")
+    val implicationIntrinsicLoc = chirrtl.indexOf(
+      s"intrinsic(circt_ltl_implication : UInt<1>, a, b) $sourceLoc"
+    )
+
+    assert(assertBlockLoc < delayIntrinsicLoc)
+    assert(assumeblockLoc < implicationIntrinsicLoc)
   }
 }

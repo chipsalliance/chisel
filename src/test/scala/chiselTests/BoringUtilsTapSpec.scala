@@ -7,7 +7,55 @@ import chisel3.probe
 import chisel3.testers._
 import chisel3.util.experimental.BoringUtils
 
+object BoringUtilsTapSpec {
+
+  import chisel3.experimental.hierarchy._
+
+  @instantiable
+  class Widget extends Module {
+    @public val in = IO(Input(UInt(32.W)))
+    val intermediate = Wire(UInt(32.W))
+    @public val out = IO(Output(UInt(32.W)))
+    intermediate := ~in
+    out := intermediate
+    @public val prb = IO(probe.RWProbe(UInt(32.W)))
+    probe.define(prb, BoringUtils.rwTap(intermediate))
+  }
+
+  class ArbitrarilyDeeperHierarchy extends Module {
+    val widgets =
+      Seq
+        .tabulate(2) { _ =>
+          val widget = Instantiate(new Widget)
+          widget
+        }
+    val (ins, outs) = widgets.map { widget =>
+      val in = IO(Input(UInt(32.W)))
+      widget.in := in
+      val out = IO(Output(UInt(32.W)))
+      out := widget.out
+      (in, out)
+    }.unzip
+  }
+
+  class ArbitrarilyDeepHierarchy extends Module {
+    val hier = Module(new ArbitrarilyDeeperHierarchy)
+    val ins = hier.ins.map { i =>
+      val in = IO(Input(UInt(32.W)))
+      i := in
+      in
+    }
+    val outs = hier.outs.map { o =>
+      val out = IO(Output(UInt(32.W)))
+      out := o
+      out
+    }
+  }
+
+}
+
 class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils with MatchesAndOmits {
+  val args = Array("--throw-on-first-error", "--full-stacktrace")
   "Ready-only tap" should "work downwards from parent to child" in {
     class Foo extends RawModule {
       val internalWire = Wire(Bool())
@@ -55,6 +103,42 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       "module Top :",
       "connect out, read(foo.out_bore)"
     )()
+  }
+
+  // This test requires ability to identify what region to add commands to,
+  // *after* building them.  This is not yet supported.
+  it should "work downwards from grandparent to grandchild through when" in {
+    class Bar extends RawModule {
+      val internalWire = WireInit(Bool(), true.B)
+    }
+    class Foo extends RawModule {
+      when(true.B) {
+        val bar = Module(new Bar)
+      }
+    }
+    class Top extends RawModule {
+      val foo = Module(new Foo)
+      val out = IO(Bool())
+      out := DontCare
+
+      when(true.B) {
+        val w = WireInit(
+          Bool(),
+          BoringUtils.tapAndRead((chisel3.aop.Select.collectDeep(foo) { case b: Bar => b }).head.internalWire)
+        )
+      }
+    }
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
+
+    // The define should be at the end of the when block.
+    matchesAndOmits(chirrtl)(
+      "    when UInt<1>(0h1) :",
+      "      inst bar of Bar",
+      "      define w_bore = bar.w_bore"
+    )()
+
+    // Check is valid FIRRTL.
+    circt.stage.ChiselStage.emitFIRRTLDialect(new Top)
   }
 
   it should "work upwards from child to parent" in {
@@ -107,6 +191,63 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       "module Top :",
       "connect foo.out_bore, parentWire"
     )()
+  }
+
+  it should "work upwards from grandchild to grandparent through when" in {
+    class Bar(grandParentData: Data) extends RawModule {
+      val out = IO(Bool())
+      out := BoringUtils.tapAndRead(grandParentData)
+    }
+    class Foo(parentData: Data) extends RawModule {
+      when(true.B) {
+        val bar = Module(new Bar(parentData))
+      }
+    }
+    class Top extends RawModule {
+      val parentWire = Wire(Bool())
+      parentWire := DontCare
+      val foo = Module(new Foo(parentWire))
+    }
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
+
+    // The connect should be at the end of the when block.
+    matchesAndOmits(chirrtl)(
+      "    when UInt<1>(0h1) :",
+      "      inst bar of Bar",
+      "      connect bar.out_bore, out_bore"
+    )()
+
+    // Check is valid FIRRTL.
+    circt.stage.ChiselStage.emitFIRRTLDialect(new Top)
+  }
+
+  it should "work upwards from grandchild to grandparent into layer" in {
+    object TestLayer extends layer.Layer(layer.LayerConfig.Extract())
+    class Bar(grandParentData: Data) extends RawModule {
+      val out = IO(Bool())
+      out := BoringUtils.tapAndRead(grandParentData)
+    }
+    class Foo(parentData: Data) extends RawModule {
+      layer.block(TestLayer) {
+        val bar = Module(new Bar(parentData))
+      }
+    }
+    class Top extends RawModule {
+      val parentWire = Wire(Bool())
+      parentWire := DontCare
+      val foo = Module(new Foo(parentWire))
+    }
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
+
+    // The connect should be at the end of the layerblock.
+    matchesAndOmits(chirrtl)(
+      "    layerblock TestLayer :",
+      "      inst bar of Bar",
+      "      connect bar.out_bore, out_bore"
+    )()
+
+    // Check is valid FIRRTL and builds to SV.
+    circt.stage.ChiselStage.emitSystemVerilog(new Top)
   }
 
   it should "work from child to its sibling" in {
@@ -374,11 +515,9 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
     matchesAndOmits(chirrtl)(
       // Child
       "output v : { flip in : UInt<1>, out : UInt<1>}[2]",
-      "define bore = rwprobe(v[0].out)",
-      "define bore_1 = rwprobe(v[1].in)",
       // Forwarding probes out from instantiating module.
-      "define outV_0_out = child.bore",
-      "define outV_1_in = child.bore_1"
+      "define outV_0_out = rwprobe(child.v[0].out)",
+      "define outV_1_in = rwprobe(child.v[1].in)"
     )()
     // Send through firtool and lightly check output.
     // Bit fragile across firtool versions.
@@ -387,17 +526,74 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       // Child ports.
       "module Child(",
       "input  v_0_in,",
-      "output v_0_out,",
-      "input  v_1_in",
+      "output v_0_out",
       // Instantiation.
       "Child child (",
       ".v_0_in  (inputs_0),", // Alive because feeds outV_0_out probe.
-      ".v_0_out (", // rwprobe target.
-      ".v_1_in  (inputs_1)", // rwprobe target.
-      // Ref ABI.  Names of internal signals are subject to change.
-      "`define ref_Foo_outV_0_out child.v_0_out",
-      "`define ref_Foo_outV_1_in child.v_1_in"
-    )("v_1_out")
+      ".v_0_out (" // rwprobe target.
+    )("v_1_in", "v_1_out") // These are dead now
+  }
+
+  it should "work to rwTap a RWProbe IO" in {
+
+    import chisel3.experimental.hierarchy._
+    import BoringUtilsTapSpec._
+
+    class UnitTestHarness extends Module {
+      val dut = Instantiate(new Dut)
+      probe.force(dut.widgetProbes.head, 0xffff.U)
+    }
+
+    @instantiable
+    class Dut extends Module {
+      val hier = Module(new ArbitrarilyDeepHierarchy)
+      hier.ins.zipWithIndex.foreach { case (in, i) => in := i.U }
+      hier.outs.foreach(dontTouch(_))
+
+      @public val widgetProbes =
+        aop.Select.unsafe
+          .allCurrentInstancesIn(hier)
+          .filter(_.isA[Widget])
+          .map { module =>
+            val widget = module.asInstanceOf[Instance[Widget]]
+            val widgetProbe = IO(probe.RWProbe(UInt(32.W)))
+            val p = BoringUtils.rwTap(widget.prb)
+            probe.define(widgetProbe, p)
+            widgetProbe
+          }
+    }
+    // Probe creation should happen outside of this function
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Dut, args)
+    matchesAndOmits(chirrtl)(
+      // Widget exists once, and has a probe port of an internal wire
+      "module Widget :",
+      "output prb : RWProbe<UInt<32>>",
+      "define prb = rwprobe(intermediate)",
+      // Hierarchies exist and push out probes
+      "module ArbitrarilyDeeperHierarchy :",
+      "output widgetProbes_p_bore : RWProbe<UInt<32>>",
+      "output widgetProbes_p_bore_1 : RWProbe<UInt<32>>",
+      "inst widgets_0 of Widget",
+      "inst widgets_1 of Widget",
+      "define widgetProbes_p_bore = widgets_0.prb",
+      "define widgetProbes_p_bore_1 = widgets_1.prb",
+      // More hierarchies
+      "module ArbitrarilyDeepHierarchy :",
+      "output widgetProbes_p_bore : RWProbe<UInt<32>>",
+      "output widgetProbes_p_bore_1 : RWProbe<UInt<32>>",
+      "inst hier of ArbitrarilyDeeperHierarchy",
+      "define widgetProbes_p_bore = hier.widgetProbes_p_bore",
+      "define widgetProbes_p_bore_1 = hier.widgetProbes_p_bore_1",
+      // Top level module
+      "public module Dut :",
+      "input clock : Clock",
+      "input reset : UInt<1>",
+      "output widgetProbes_0 : RWProbe<UInt<32>>",
+      "output widgetProbes_1 : RWProbe<UInt<32>>",
+      "inst hier of ArbitrarilyDeepHierarchy",
+      "define widgetProbes_0 = hier.widgetProbes_p_bore",
+      "define widgetProbes_1 = hier.widgetProbes_p_bore_1"
+    )()
   }
 
   it should "work when tapping IO, as probe() from outside module" in {
@@ -478,6 +674,93 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
 
     // Check that firtool also passes
     val verilog = circt.stage.ChiselStage.emitSystemVerilog(new Top(Definition(new Foo)))
+  }
+
+  it should "work to rwTap an Instance[..]'s port" in {
+    import chisel3.experimental.hierarchy._
+    class UnitTestHarness extends Module {
+      val dut = Instantiate(new Dut)
+      probe.force(dut.widgetProbes.head, 0xffff.U)
+    }
+
+    @instantiable
+    class Widget extends Module {
+      @public val in = IO(Input(UInt(32.W)))
+      @public val out = IO(Output(UInt(32.W)))
+      out := ~in
+    }
+
+    @instantiable
+    class Dut extends Module {
+      val widgets: Seq[Instance[Widget]] = Seq.tabulate(1) { i =>
+        val widget = Instantiate(new Widget)
+        widget.in := i.U
+        widget
+      }
+      @public val widgetProbes = widgets.map { widget =>
+        val widgetProbe = IO(probe.RWProbe(UInt(32.W)))
+        val define = BoringUtils.rwTap(widget.out)
+        probe.define(widgetProbe, define)
+        widgetProbe
+      }
+    }
+    matchesAndOmits(circt.stage.ChiselStage.emitCHIRRTL(new UnitTestHarness))(
+      "module Widget :",
+      "input clock : Clock",
+      "input reset : Reset",
+      "input in : UInt<32>",
+      "output out : UInt<32>",
+      "node _out_T = not(in)",
+      "connect out, _out_T",
+      "module Dut :",
+      "define widgetProbes_0 = rwprobe(widgets_0.out)",
+      "public module UnitTestHarness :",
+      "force(clock, _T, dut.widgetProbes_0, UInt<32>(0hffff))"
+    )()
+  }
+
+  it should "work to tap an Instance[..]'s port" in {
+    import chisel3.experimental.hierarchy._
+    class UnitTestHarness extends Module {
+      val dut = Instantiate(new Dut)
+      val w = probe.read(dut.widgetProbes.head)
+      printf("%d", w)
+    }
+
+    @instantiable
+    class Widget extends Module {
+      @public val in = IO(Input(UInt(32.W)))
+      @public val out = IO(Output(UInt(32.W)))
+      out := ~in
+    }
+
+    @instantiable
+    class Dut extends Module {
+      val widgets: Seq[Instance[Widget]] = Seq.tabulate(1) { i =>
+        val widget = Instantiate(new Widget)
+        widget.in := i.U
+        widget
+      }
+      @public val widgetProbes = widgets.map { widget =>
+        val widgetProbe = IO(probe.Probe(UInt(32.W)))
+        val define = BoringUtils.tap(widget.out)
+        probe.define(widgetProbe, define)
+        widgetProbe
+      }
+    }
+    matchesAndOmits(circt.stage.ChiselStage.emitCHIRRTL(new UnitTestHarness))(
+      "module Widget :",
+      "input clock : Clock",
+      "input reset : Reset",
+      "input in : UInt<32>",
+      "output out : UInt<32>",
+      "node _out_T = not(in)",
+      "connect out, _out_T",
+      "module Dut :",
+      "define widgetProbes_0 = probe(widgets_0.out)",
+      "public module UnitTestHarness :",
+      "printf(clock, UInt<1>(0h1), \"%d\", read(dut.widgetProbes_0))"
+    )()
   }
 
   it should "work with DecoupledIO in a hierarchy" in {

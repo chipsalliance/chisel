@@ -2,6 +2,7 @@
 
 package firrtlTests.stage.phases
 
+import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq}
 import firrtl.annotations.Annotation
 import firrtl.stage.phases.AddDefaults
 import firrtl.transforms.BlackBoxTargetDirAnno
