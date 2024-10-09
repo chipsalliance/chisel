@@ -340,8 +340,14 @@ private[chisel3] object ir {
   case class DefObject(sourceInfo: SourceInfo, id: HasId, className: String) extends Definition
 
   class Block(val sourceInfo: SourceInfo) {
+    // While building block, commands go into _commandsBuilder.
     private var _commandsBuilder = ArraySeq.newBuilder[Command]
+
+    // Once closed, store the resulting Seq in _commands.
     private var _commands:       Seq[Command] = null
+
+    // "Secret" commands go into _secretCommands, which can be added to after
+    // closing the block and should be emitted after those in _commands.
     private var _secretCommands: mutable.ArrayBuffer[Command] = null
 
     private def _closed: Boolean = _commandsBuilder == null
