@@ -20,7 +20,7 @@ object VerifStmtMacrosCompat {
 
   type SourceLineInfo = (String, Int)
 
-  def formatFailureMessage(
+  private[chisel3] def formatFailureMessage(
     kind:     String,
     lineInfo: SourceLineInfo,
     cond:     Bool,
@@ -37,7 +37,7 @@ object VerifStmtMacrosCompat {
     }
   }
 
-  def getLine(c: blackbox.Context): SourceLineInfo = {
+  private[chisel3] def getLine(c: blackbox.Context): SourceLineInfo = {
     val p = c.enclosingPosition
     (p.source.file.name, p.line): @nowarn // suppress, there's no clear replacement
   }

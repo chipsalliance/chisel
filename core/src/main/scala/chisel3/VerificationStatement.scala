@@ -154,8 +154,6 @@ object cover extends VerifPrintMacrosDoc {
   /** Named class for cover statements. */
   final class Cover private[chisel3] () extends VerificationStatement
 
-  type SourceLineInfo = (String, Int)
-
   /** Declares a condition to be covered.
     * At ever clock event, a counter is incremented iff the condition is active
     * and reset is inactive.
