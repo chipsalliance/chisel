@@ -92,6 +92,16 @@ object Path {
     }
   }
 
+  /** Construct a Path that refers to a HasTarget
+    */
+  def apply(hasTarget: HasTarget): Path = {
+    new TargetPath {
+      private val scope = Module.currentModule
+      def toTarget():   IsMember = hasTarget.toRelativeTarget(scope)
+      def isMemberPath: Boolean = false
+    }
+  }
+
   /** Construct a Path from a target
     */
   def apply(target: IsMember): Path = apply(target, false)
