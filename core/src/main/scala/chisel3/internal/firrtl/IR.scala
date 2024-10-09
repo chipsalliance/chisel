@@ -340,17 +340,22 @@ private[chisel3] object ir {
   case class DefObject(sourceInfo: SourceInfo, id: HasId, className: String) extends Definition
 
   class Block(val sourceInfo: SourceInfo, val owner: Option[Command]) {
-    private val _commands = new VectorBuilder[Command]
+    private var _commandsBuilder = new VectorBuilder[Command]
+    private var _commands : Seq[Command] = null
     private var _secretCommands: mutable.ArrayBuffer[Command] = null
-    private var _closed:         Boolean = false
 
+    private def _closed: Boolean = _commandsBuilder == null
+   
     def addCommand(c: Command): Unit = {
       require(!_closed, "cannot add more commands after block is closed")
-      _commands += c
+      _commandsBuilder += c
     }
     def getCommands(): Seq[Command] = {
-      _closed = true
-      _commands.result()
+      if (_commands == null) {
+        _commands = _commandsBuilder.result()
+        _commandsBuilder = null
+      }
+      _commands
     }
 
     private[chisel3] def addSecretCommand(c: Command): Unit = {
