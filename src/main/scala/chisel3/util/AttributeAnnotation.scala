@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-package chisel3.utils
+package chisel3.util
 
 import firrtl.AttributeAnnotation
 import firrtl.annotations.Named
