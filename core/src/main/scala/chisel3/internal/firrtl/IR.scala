@@ -339,7 +339,7 @@ private[chisel3] object ir {
       extends Definition
   case class DefObject(sourceInfo: SourceInfo, id: HasId, className: String) extends Definition
 
-  class Block(val sourceInfo: SourceInfo, val owner: Option[Command]) {
+  class Block(val sourceInfo: SourceInfo) {
     private var _commandsBuilder = ArraySeq.newBuilder[Command]
     private var _commands:       Seq[Command] = null
     private var _secretCommands: mutable.ArrayBuffer[Command] = null
@@ -372,19 +372,13 @@ private[chisel3] object ir {
     private[chisel3] def getAllCommands(): Seq[Command] = getCommands() ++ getSecretCommands()
   }
 
-  object Block {
-    def unapply(block: Block): Option[(Seq[Command], SourceInfo)] = {
-      Some((block.getAllCommands(), block.sourceInfo))
-    }
-  }
-
   class When(val sourceInfo: SourceInfo, val pred: Arg) extends Command {
-    val ifRegion = new Block(sourceInfo, Some(this))
+    val ifRegion = new Block(sourceInfo)
     private var _elseRegion: Block = null
     def hasElse:             Boolean = _elseRegion != null
     def elseRegion: Block = {
       if (_elseRegion == null) {
-        _elseRegion = new Block(sourceInfo, Some(this))
+        _elseRegion = new Block(sourceInfo)
       }
       _elseRegion
     }
@@ -426,7 +420,7 @@ private[chisel3] object ir {
     children:   Seq[Layer])
 
   class LayerBlock(val sourceInfo: SourceInfo, val layer: chisel3.layer.Layer) extends Command {
-    val region = new Block(sourceInfo, Some(this))
+    val region = new Block(sourceInfo)
   }
 
   object LayerBlock {

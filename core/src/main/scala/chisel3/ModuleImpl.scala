@@ -461,7 +461,7 @@ package experimental {
 
     // Modules that contain bodies should override this.
     protected def hasBody:        Boolean = false
-    protected val _body:          Block = if (hasBody) new Block(_sourceInfo, None /* command not available */ ) else null
+    protected val _body:          Block = if (hasBody) new Block(_sourceInfo) else null
     private[chisel3] def getBody: Option[Block] = Some(_body)
 
     // Current block at point of creation.
