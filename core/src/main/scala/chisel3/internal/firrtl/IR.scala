@@ -344,7 +344,7 @@ private[chisel3] object ir {
     private var _commandsBuilder = ArraySeq.newBuilder[Command]
 
     // Once closed, store the resulting Seq in _commands.
-    private var _commands:       Seq[Command] = null
+    private var _commands: Seq[Command] = null
 
     // "Secret" commands go into _secretCommands, which can be added to after
     // closing the block and should be emitted after those in _commands.
