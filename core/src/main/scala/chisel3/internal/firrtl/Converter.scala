@@ -295,9 +295,9 @@ private[chisel3] object Converter {
     val stmts = new VectorBuilder[fir.Statement]()
     val commands = block.getCommands()
     val secretCommands = block.getSecretCommands()
-    (commands.knownSize,secretCommands.knownSize) match {
-      case (-1, _) => ()
-      case (s, -1) => stmts.sizeHint(s)
+    (commands.knownSize, secretCommands.knownSize) match {
+      case (-1, _)  => ()
+      case (s, -1)  => stmts.sizeHint(s)
       case (s1, s2) => stmts.sizeHint(s1 + s2)
     }
     for (cmd <- commands)

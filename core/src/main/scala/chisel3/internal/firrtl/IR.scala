@@ -341,11 +341,11 @@ private[chisel3] object ir {
 
   class Block(val sourceInfo: SourceInfo, val owner: Option[Command]) {
     private var _commandsBuilder = new VectorBuilder[Command]
-    private var _commands : Seq[Command] = null
+    private var _commands:       Seq[Command] = null
     private var _secretCommands: mutable.ArrayBuffer[Command] = null
 
     private def _closed: Boolean = _commandsBuilder == null
-   
+
     def addCommand(c: Command): Unit = {
       require(!_closed, "cannot add more commands after block is closed")
       _commandsBuilder += c
