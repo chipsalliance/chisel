@@ -164,17 +164,19 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
   }
 
   it should "support path as a Property literal" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+    val chirrtl = ChiselStage.emitCHIRRTL(new Module {
       val propOutA = IO(Output(Property[Path]()))
       val propOutB = IO(Output(Property[Path]()))
       val propOutC = IO(Output(Property[Path]()))
       val propOutD = IO(Output(Property[Path]()))
       val propOutE = IO(Output(Property[Path]()))
+      val propOutF = IO(Output(Property[Path]()))
       override def desiredName = "Top"
-      val inst = Module(new RawModule {
+      val inst = Module(new Module {
         val localPropOut = IO(Output(Property[Path]()))
         val data = WireInit(false.B)
         val mem = SyncReadMem(1, Bool())
+        val sram = chisel3.util.SRAM(1, Bool(), 1, 1, 0)
         localPropOut := Property(Path(data))
         override def desiredName = "Foo"
       })
@@ -183,6 +185,7 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
       propOutC := Property(inst.mem)
       propOutD := Property(this)
       propOutE := inst.localPropOut
+      propOutF := Property(Path(inst.sram.underlying.get))
     })
     matchesAndOmits(chirrtl)(
       """propassign localPropOut, path("OMReferenceTarget:~Top|Foo>data")""",
@@ -190,7 +193,8 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
       """propassign propOutB, path("OMReferenceTarget:~Top|Top/inst:Foo>data")""",
       """propassign propOutC, path("OMReferenceTarget:~Top|Top/inst:Foo>mem")""",
       """propassign propOutD, path("OMInstanceTarget:~Top|Top")""",
-      """propassign propOutE, inst.localPropOut"""
+      """propassign propOutE, inst.localPropOut""",
+      """propassign propOutF, path("OMReferenceTarget:~Top|Top/inst:Foo>sram_sram")"""
     )()
   }
 
