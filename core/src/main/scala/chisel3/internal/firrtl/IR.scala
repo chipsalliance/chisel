@@ -12,7 +12,7 @@ import _root_.firrtl.{ir => firrtlir}
 import _root_.firrtl.{PrimOps, RenameMap}
 import _root_.firrtl.annotations.Annotation
 
-import scala.collection.immutable.{NumericRange, VectorBuilder}
+import scala.collection.immutable.{ArraySeq, NumericRange}
 import scala.math.BigDecimal.RoundingMode
 import scala.annotation.nowarn
 import scala.collection.mutable
@@ -340,7 +340,7 @@ private[chisel3] object ir {
   case class DefObject(sourceInfo: SourceInfo, id: HasId, className: String) extends Definition
 
   class Block(val sourceInfo: SourceInfo, val owner: Option[Command]) {
-    private var _commandsBuilder = new VectorBuilder[Command]
+    private var _commandsBuilder = ArraySeq.newBuilder[Command]
     private var _commands:       Seq[Command] = null
     private var _secretCommands: mutable.ArrayBuffer[Command] = null
 
