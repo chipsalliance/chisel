@@ -93,7 +93,7 @@ object Path {
   }
 
   /** Construct a Path that refers to a HasTarget
-  */
+    */
   def apply(hasTarget: HasTarget): Path = {
     new TargetPath {
       private val scope = Module.currentModule
