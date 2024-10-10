@@ -83,14 +83,46 @@ class MemoryReadWritePort[T <: Data](tpe: T, addrWidth: Int, masked: Boolean) ex
 /** Description to the SRAM, encoded by the [[chisel3.properties]] API.
   * User can access it via CIRCT API.
   */
-final class SRAMDescription extends Bundle {
-  val depth:           Property[BigInt] = Property[BigInt]()
-  val dataWidth:       Property[Int] = Property[Int]()
-  val masked:          Property[Boolean] = Property[Boolean]()
-  val read:            Property[Int] = Property[Int]()
-  val write:           Property[Int] = Property[Int]()
-  val readwrite:       Property[Int] = Property[Int]()
-  val maskGranularity: Property[Int] = Property[Int]()
+@instantiable
+final class SRAMDescription extends Class {
+  val depth:           Property[BigInt] = IO(Output(Property[BigInt]()))
+  val width:           Property[Int] = IO(Output(Property[Int]()))
+  val masked:          Property[Boolean] = IO(Output(Property[Boolean]()))
+  val read:            Property[Int] = IO(Output(Property[Int]()))
+  val write:           Property[Int] = IO(Output(Property[Int]()))
+  val readwrite:       Property[Int] = IO(Output(Property[Int]()))
+  val maskGranularity: Property[Int] = IO(Output(Property[Int]()))
+  val hierarchy:       Property[Path] = IO(Output(Property[Path]()))
+
+  @public
+  val depthIn: Property[BigInt] = IO(Input(Property[BigInt]()))
+  @public
+  val widthIn: Property[Int] = IO(Input(Property[Int]()))
+  @public
+  val maskedIn: Property[Boolean] = IO(Input(Property[Boolean]()))
+  @public
+  val readIn: Property[Int] = IO(Input(Property[Int]()))
+  @public
+  val writeIn: Property[Int] = IO(Input(Property[Int]()))
+  @public
+  val readwriteIn: Property[Int] = IO(Input(Property[Int]()))
+  @public
+  val maskGranularityIn: Property[Int] = IO(Input(Property[Int]()))
+  @public
+  val hierarchyIn: Property[Path] = IO(Input(Property[Path]()))
+
+  depth := depthIn
+  width := widthIn
+  masked := maskedIn
+  read := readIn
+  write := writeIn
+  readwrite := readwriteIn
+  maskGranularity := maskGranularityIn
+  hierarchy := hierarchyIn
+}
+
+object SRAMDescription {
+  val definition: Definition[SRAMDescription] = Instantiate.definition(new SRAMDescription)
 }
 
 /** A IO bundle of signals connecting to the ports of a memory, as requested by
@@ -141,7 +173,7 @@ class SRAMInterface[T <: Data](
   def underlying: Option[HasTarget] = _underlying
 
   /** Optional SRAM description to hold metadata. */
-  val description = Option.when(hasDescription)(new SRAMDescription)
+  val description: Option[Property[ClassType]] = Option.when(hasDescription)(SRAMDescription.definition.getPropertyType)
 }
 
 /** A memory file with which to preload an [[SRAM]]
@@ -574,22 +606,36 @@ object SRAM {
       assignMask(firrtlReadwritePort.wmask, memReadwritePort.mask)
     }
 
-    // Add metadata to the SRAM.
-    val description = _out.description.get
-    description.depth := Property(size)
-    description.dataWidth := Property(tpe.getWidth)
-    description.masked := Property(isVecMem)
-    description.read := Property(numReadPorts)
-    description.write := Property(numWritePorts)
-    description.readwrite := Property(numReadwritePorts)
-    description.maskGranularity := Property(
-      Option
-        .when(isVecMem)(tpe match {
-          case t: Vec[_] => t.sample_element.getWidth
-        })
-        .getOrElse(0)
-    )
-
+    // Hack to ScalaDoc Bug, see [[LTLIntrinsicInstanceMethodsInternalWorkaround]]
+    implicit class SRAMDescriptionInstanceMethods(underlying: Instance[SRAMDescription]) {
+      implicit val mg:       internal.MacroGenerated = new chisel3.internal.MacroGenerated {}
+      def depthIn:           Property[BigInt] = underlying._lookup(_.depthIn)
+      def widthIn:           Property[Int] = underlying._lookup(_.widthIn)
+      def maskedIn:          Property[Boolean] = underlying._lookup(_.maskedIn)
+      def readIn:            Property[Int] = underlying._lookup(_.readIn)
+      def writeIn:           Property[Int] = underlying._lookup(_.writeIn)
+      def readwriteIn:       Property[Int] = underlying._lookup(_.readwriteIn)
+      def maskGranularityIn: Property[Int] = underlying._lookup(_.maskGranularityIn)
+      def hierarchyIn:       Property[Path] = underlying._lookup(_.hierarchyIn)
+    }
+    _out.description.foreach { description =>
+      val descriptionInstance: Instance[SRAMDescription] = Instantiate(new SRAMDescription)
+      descriptionInstance.depthIn := Property(size)
+      descriptionInstance.widthIn := Property(tpe.getWidth)
+      descriptionInstance.maskedIn := Property(isVecMem)
+      descriptionInstance.readIn := Property(numReadPorts)
+      descriptionInstance.writeIn := Property(numWritePorts)
+      descriptionInstance.readwriteIn := Property(numReadwritePorts)
+      descriptionInstance.maskGranularityIn := Property(
+        Option
+          .when(isVecMem)(tpe match {
+            case t: Vec[_] => t.sample_element.getWidth
+          })
+          .getOrElse(0)
+      )
+      descriptionInstance.hierarchyIn := Property(Path(mem))
+      description := descriptionInstance.getPropertyReference
+    }
     _out
   }
 
