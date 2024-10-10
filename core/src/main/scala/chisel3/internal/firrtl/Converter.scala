@@ -282,6 +282,31 @@ private[chisel3] object Converter {
     fir.Block(stmts.result())
   }
 
+  /** Convert Chisel IR Block into FIRRTL Statements
+    *
+    * @note ctx is needed because references to ports translate differently when referenced within
+    *   the module in which they are defined vs. parent modules
+    * @param block Chisel IR Block to convert
+    * @param ctx Component (Module) context within which we are translating
+    * @param typeAliases Set of aliased type names to emit FIRRTL alias types for
+    * @return FIRRTL Statement that is equivalent to the input block
+    */
+  def convert(block: Block, ctx: Component, typeAliases: Seq[String]): fir.Statement = {
+    val stmts = new VectorBuilder[fir.Statement]()
+    val commands = block.getCommands()
+    val secretCommands = block.getSecretCommands()
+    (commands.knownSize, secretCommands.knownSize) match {
+      case (-1, _)  => ()
+      case (s, -1)  => stmts.sizeHint(s)
+      case (s1, s2) => stmts.sizeHint(s1 + s2)
+    }
+    for (cmd <- commands)
+      stmts += convertCommand(cmd, ctx, typeAliases)
+    for (cmd <- secretCommands)
+      stmts += convertCommand(cmd, ctx, typeAliases)
+    fir.Block(stmts.result())
+  }
+
   def convert(width: Width): fir.Width = width match {
     case UnknownWidth      => fir.UnknownWidth
     case KnownWidth(value) => fir.IntWidth(value)
@@ -402,7 +427,7 @@ private[chisel3] object Converter {
         public,
         layers.map(_.fullName),
         (ports ++ ctx.secretPorts).map(p => convert(p, typeAliases)),
-        convert(block.getAllCommands(), ctx, typeAliases)
+        convert(block, ctx, typeAliases)
       )
     case ctx @ DefBlackBox(id, name, ports, topDir, params) =>
       fir.ExtModule(
@@ -425,7 +450,7 @@ private[chisel3] object Converter {
         convert(id._getSourceLocator),
         name,
         (ports ++ ctx.secretPorts).map(p => convert(p, typeAliases)),
-        convert(block.getAllCommands(), ctx, typeAliases)
+        convert(block, ctx, typeAliases)
       )
   }
 

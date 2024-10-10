@@ -12,7 +12,7 @@ import _root_.firrtl.{ir => firrtlir}
 import _root_.firrtl.{PrimOps, RenameMap}
 import _root_.firrtl.annotations.Annotation
 
-import scala.collection.immutable.{NumericRange, VectorBuilder}
+import scala.collection.immutable.{ArraySeq, NumericRange}
 import scala.math.BigDecimal.RoundingMode
 import scala.annotation.nowarn
 import scala.collection.mutable
@@ -339,18 +339,34 @@ private[chisel3] object ir {
       extends Definition
   case class DefObject(sourceInfo: SourceInfo, id: HasId, className: String) extends Definition
 
-  class Block(val sourceInfo: SourceInfo, val owner: Option[Command]) {
-    private val _commands = new VectorBuilder[Command]
+  class Block(val sourceInfo: SourceInfo) {
+    // While building block, commands go into _commandsBuilder.
+    private var _commandsBuilder = ArraySeq.newBuilder[Command]
+
+    // Once closed, store the resulting Seq in _commands.
+    private var _commands: Seq[Command] = null
+
+    // "Secret" commands go into _secretCommands, which can be added to after
+    // closing the block and should be emitted after those in _commands.
     private var _secretCommands: mutable.ArrayBuffer[Command] = null
-    private var _closed:         Boolean = false
+
+    private def _closed: Boolean = _commandsBuilder == null
 
     def addCommand(c: Command): Unit = {
       require(!_closed, "cannot add more commands after block is closed")
-      _commands += c
+      _commandsBuilder += c
     }
+
+    def close() = {
+      if (_commands == null) {
+        _commands = _commandsBuilder.result()
+        _commandsBuilder = null
+      }
+    }
+
     def getCommands(): Seq[Command] = {
-      _closed = true
-      _commands.result()
+      close()
+      _commands
     }
 
     private[chisel3] def addSecretCommand(c: Command): Unit = {
@@ -367,19 +383,13 @@ private[chisel3] object ir {
     private[chisel3] def getAllCommands(): Seq[Command] = getCommands() ++ getSecretCommands()
   }
 
-  object Block {
-    def unapply(block: Block): Option[(Seq[Command], SourceInfo)] = {
-      Some((block.getAllCommands(), block.sourceInfo))
-    }
-  }
-
   class When(val sourceInfo: SourceInfo, val pred: Arg) extends Command {
-    val ifRegion = new Block(sourceInfo, Some(this))
+    val ifRegion = new Block(sourceInfo)
     private var _elseRegion: Block = null
     def hasElse:             Boolean = _elseRegion != null
     def elseRegion: Block = {
       if (_elseRegion == null) {
-        _elseRegion = new Block(sourceInfo, Some(this))
+        _elseRegion = new Block(sourceInfo)
       }
       _elseRegion
     }
@@ -421,7 +431,7 @@ private[chisel3] object ir {
     children:   Seq[Layer])
 
   class LayerBlock(val sourceInfo: SourceInfo, val layer: chisel3.layer.Layer) extends Command {
-    val region = new Block(sourceInfo, Some(this))
+    val region = new Block(sourceInfo)
   }
 
   object LayerBlock {
