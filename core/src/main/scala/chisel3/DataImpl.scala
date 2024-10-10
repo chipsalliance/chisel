@@ -118,7 +118,9 @@ object ActualDirection {
   case class Bidirectional private[chisel3] (dir: BidirectionalDirection, _value: Byte)
       extends ActualDirection(_value) {
     @deprecated("Use companion object factory apply method", "Chisel 6.5")
-    def this(dir: BidirectionalDirection) = this(dir, dir.value)
+    def this(dir:                  BidirectionalDirection) = this(dir, dir.value)
+    private[chisel3] def copy(dir: BidirectionalDirection = this.dir, _value: Byte = this._value) =
+      new Bidirectional(dir, _value)
   }
   object Bidirectional {
     val Default = new Bidirectional(ActualDirection.Default, ActualDirection.Default.value)
@@ -128,7 +130,8 @@ object ActualDirection {
       case ActualDirection.Flipped => Flipped
     }
     @deprecated("Match on Bidirectional.Default and Bidirectional.Flipped directly instead", "Chisel 6.5")
-    def unapply(dir: Bidirectional): Option[BidirectionalDirection] = Some(dir.dir)
+    def unapply(dir:                Bidirectional): Option[BidirectionalDirection] = Some(dir.dir)
+    private[chisel3] def apply(dir: BidirectionalDirection, _value: Byte) = new Bidirectional(dir, _value)
   }
 
   private[chisel3] def fromByte(b: Byte): ActualDirection = b match {

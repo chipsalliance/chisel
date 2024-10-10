@@ -4,6 +4,7 @@ import chisel3.internal.HasId
 import chisel3.{Aggregate, Data, Element, RawModule}
 import firrtl.AnnotationSeq
 import firrtl.annotations.{Annotation, CompleteTarget, SingleTargetAnnotation}
+import firrtl.annoSeqToSeq
 
 /** The util that records the reference map from original [[Data]]/[[Module]] annotated in Chisel and final FIRRTL.
   * @example

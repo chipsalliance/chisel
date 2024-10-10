@@ -76,7 +76,7 @@ object doNotDedup {
     * @return Unmodified signal `module`
     */
   def apply[T <: RawModule](module: T): Unit = {
-    annotate(new ChiselAnnotation { def toFirrtl = NoDedupAnnotation(module.toNamed) })
+    annotate(new ChiselAnnotation { def toFirrtl: NoDedupAnnotation = NoDedupAnnotation(module.toNamed) })
   }
 }
 
@@ -89,6 +89,6 @@ object dedupGroup {
     * @return Unmodified signal `module`
     */
   def apply[T <: BaseModule](module: T, group: String): Unit = {
-    annotate(new ChiselAnnotation { def toFirrtl = DedupGroupAnnotation(module.toTarget, group) })
+    annotate(new ChiselAnnotation { def toFirrtl: DedupGroupAnnotation = DedupGroupAnnotation(module.toTarget, group) })
   }
 }

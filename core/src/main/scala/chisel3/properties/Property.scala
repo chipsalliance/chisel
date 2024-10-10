@@ -348,7 +348,7 @@ private[chisel3] sealed trait ClassTypeProvider[A] {
 
 private[chisel3] object ClassTypeProvider {
   def apply[A](className: String) = new ClassTypeProvider[A] {
-    val classType = fir.ClassPropertyType(className)
+    val classType: fir.ClassPropertyType = fir.ClassPropertyType(className)
   }
   def apply[A](_classType: fir.PropertyType) = new ClassTypeProvider[A] {
     val classType = _classType
@@ -481,7 +481,7 @@ object Property {
 
   private[chisel3] def makeWithValueOpt[T](implicit _tpe: PropertyType[T]): Property[_tpe.Type] = {
     new Property[_tpe.Type] {
-      val tpe = _tpe
+      val tpe: chisel3.properties.PropertyType[T] = _tpe
     }
   }
 

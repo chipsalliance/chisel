@@ -127,6 +127,7 @@ case class ClassType private[chisel3] (name: String) { self =>
         override def convertUnderlying(value: Property[ClassType] with self.Type) = value.ref
       }
   }
+  def copy(name: String = this.name) = new ClassType(name)
 }
 
 object ClassType {
