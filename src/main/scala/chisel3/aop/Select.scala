@@ -370,6 +370,7 @@ object Select {
     */
   def attachedTo(module: BaseModule)(signal: Data): Set[Data] = {
     check(module)
+<<<<<<< HEAD
     module._component.get
       .asInstanceOf[DefModule]
       .commands
@@ -378,6 +379,16 @@ object Select {
       }
       .flatMap { seq => seq.map(_.id.asInstanceOf[Data]) }
       .toSet
+=======
+    collect(
+      module._component.get
+        .asInstanceOf[DefModule]
+        .block
+        .getCommands()
+    ) {
+      case Attach(_, seq) if seq.contains(Node(signal)) => seq
+    }.flatMap { seq => seq.map(_.id.asInstanceOf[Data]) }.toSet
+>>>>>>> 1aa41cdb7 (Fix Select.attachedTo (#4458))
   }
 
   /** Selects all connections to a signal or its parent signal(s) (if the signal is an element of an aggregate signal)
