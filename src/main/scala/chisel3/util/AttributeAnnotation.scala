@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-package chisel3.utils
+package chisel3.util
 
 import firrtl.AttributeAnnotation
 import firrtl.annotations.Named
@@ -17,16 +17,16 @@ object addAttribute {
     *  import chisel3._
     *  import chisel3.util.addAttribute
     *  class AttributeExample extends Module {
-    *    val io = IO(new Bundle{
-    *      val input = Input(UInt(8))
-    *      val output = Output(UInt(8))
+    *    val io = IO(new Bundle {
+    *      val input = Input(UInt(8.W))
+    *      val output = Output(UInt(8.W))
+    *    })
     *
-    *      val reg = RegNext(io.input)
+    *    val reg = RegNext(io.input)
     *
-    *      addAttribute(reg, "synthesis translate_off")
+    *    addAttribute(reg, "synthesis translate_off")
     *
-    *      io.output := reg
-    *    }
+    *    io.output := reg
     *  }
     *
     *  }}}
