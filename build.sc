@@ -60,6 +60,31 @@ object v {
 
   def circt(version: String, os: String, platform: String) =
     s"https://github.com/llvm/circt/releases/download/firtool-${version}/circt-full-shared-${os}-${platform}.tar.gz"
+
+  val warnConf = Seq(
+    "msg=APIs in chisel3.internal:s",
+    "msg=Importing from firrtl:s",
+    "msg=migration to the MLIR:s",
+    "msg=method hasDefiniteSize in trait IterableOnceOps is deprecated:s", // replacement `knownSize` is not in 2.12
+    "msg=object JavaConverters in package collection is deprecated:s",
+    "msg=undefined in comment for method cf in class PrintableHelper:s",
+    // This is deprecated for external users but not internal use
+    "cat=deprecation&origin=firrtl\\.options\\.internal\\.WriteableCircuitAnnotation:s",
+    "cat=deprecation&origin=chisel3\\.util\\.experimental\\.BoringUtils.*:s",
+    "cat=deprecation&origin=chisel3\\.experimental\\.IntrinsicModule:s",
+    "cat=deprecation&origin=chisel3\\.ltl.*:s"
+  )
+
+  // ScalacOptions
+  val minimalOptions = Seq("-deprecation", "-feature", "-unchecked", "-Werror")
+  val commonOptions = minimalOptions ++ Seq(
+    "-Ymacro-annotations",
+    "-explaintypes",
+    "-Xcheckinit",
+    "-Xlint:infer-any",
+    "-language:reflectiveCalls",
+    s"-Wconf:${warnConf.mkString(",")}"
+  )
 }
 
 object utils extends Module {
@@ -158,6 +183,15 @@ object firrtl extends Cross[Firrtl](v.scalaCrossVersions)
 trait Firrtl extends common.FirrtlModule with CrossSbtModule with ScalafmtModule {
   def millSourcePath = super.millSourcePath / os.up / "firrtl"
 
+  override def scalacOptions = v.commonOptions ++ Seq(
+    "-language:reflectiveCalls",
+    "-language:existentials",
+    "-language:implicitConversions",
+    "-Yrangepos", // required by SemanticDB compiler plugin
+    "-Xsource:3",
+    "-Xsource-features:infer-override"
+  )
+
   def osLibModuleIvy = v.osLib
 
   def json4sIvy = v.json4s
@@ -178,6 +212,11 @@ object svsim extends Cross[Svsim](v.scalaCrossVersions)
 trait Svsim extends common.SvsimModule with CrossSbtModule with ScalafmtModule {
   def millSourcePath = super.millSourcePath / os.up / "svsim"
 
+  override def scalacOptions = v.minimalOptions ++ Seq(
+    "-Xsource:3",
+    "-Xsource-features:case-apply-copy-access"
+  )
+
   object test extends SbtModuleTests with TestModule.ScalaTest with ScalafmtModule {
     def ivyDeps = Agg(v.scalatest, v.scalacheck)
   }
@@ -188,6 +227,8 @@ object macros extends Cross[Macros](v.scalaCrossVersions)
 trait Macros extends common.MacrosModule with CrossSbtModule with ScalafmtModule {
   def millSourcePath = super.millSourcePath / os.up / "macros"
 
+  override def scalacOptions = v.commonOptions
+
   def scalaReflectIvy = v.scalaReflect(crossScalaVersion)
 }
 
@@ -195,6 +236,8 @@ object core extends Cross[Core](v.scalaCrossVersions)
 
 trait Core extends common.CoreModule with CrossSbtModule with ScalafmtModule {
   def millSourcePath = super.millSourcePath / os.up / "core"
+
+  override def scalacOptions = v.commonOptions
 
   def firrtlModule = firrtl(crossScalaVersion)
 
@@ -271,6 +314,8 @@ object chisel extends Cross[Chisel](v.scalaCrossVersions)
 trait Chisel extends common.ChiselModule with CrossSbtModule with ScalafmtModule {
   override def millSourcePath = super.millSourcePath / os.up
 
+  override def scalacOptions = v.commonOptions
+
   def svsimModule = svsim(crossScalaVersion)
 
   def macrosModule = macros(crossScalaVersion)
@@ -281,6 +326,10 @@ trait Chisel extends common.ChiselModule with CrossSbtModule with ScalafmtModule
 
   object test extends SbtModuleTests with TestModule.ScalaTest with ScalafmtModule {
     def ivyDeps = Agg(v.scalatest, v.scalacheck)
+
+    // Suppress Scala 3 behavior requiring explicit types on implicit definitions
+    // Note this must come before the -Wconf is warningSuppression
+    override def scalacOptions = T { super.scalacOptions() :+ "-Wconf:cat=other-implicit-type:s" }
   }
 }
 
@@ -429,9 +478,7 @@ object unipublish extends ScalaModule with ChiselPublishModule {
   }
 
   // Needed for ScalaDoc
-  override def scalacOptions = T {
-    Seq("-Ymacro-annotations")
-  }
+  override def scalacOptions = v.commonOptions
 
   def scalaDocRootDoc = T.source { T.workspace / "root-doc.txt" }
 

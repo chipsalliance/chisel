@@ -7,11 +7,8 @@ import mill.util.Jvm
 import java.util
 import scala.jdk.StreamConverters.StreamHasToScala
 
-trait LitUtilityModule
-    extends ScalaModule
-    with common.HasPanamaConverterModule
-    with common.HasPanamaOMModule
-    with common.HasMacroAnnotations {
+trait LitUtilityModule extends ScalaModule with common.HasPanamaConverterModule with common.HasPanamaOMModule {
+  override def scalacOptions = T { Seq("-Ymacro-annotations") }
   override def circtPanamaBindingModule = panamaConverterModule.circtPanamaBindingModule
 }
 
