@@ -210,7 +210,7 @@ class CastFromNonLitTester extends BasicTester {
   }
 
   val invalid_values =
-    (1 until (1 << EnumExample.getWidth)).filter(!EnumExample.litValues.map(_.litValue).contains(_)).map(_.U)
+    (1 until (1 << EnumExample.getWidth)).filter(!EnumExample.litValues.map(_.litValue.toInt).contains(_)).map(_.U)
 
   for (invalid_val <- invalid_values) {
     val mod = Module(new CastFromNonLit)
@@ -231,7 +231,7 @@ class SafeCastFromNonLitTester extends BasicTester {
   }
 
   val invalid_values =
-    (1 until (1 << EnumExample.getWidth)).filter(!EnumExample.litValues.map(_.litValue).contains(_)).map(_.U)
+    (1 until (1 << EnumExample.getWidth)).filter(!EnumExample.litValues.map(_.litValue.toInt).contains(_)).map(_.U)
 
   for (invalid_val <- invalid_values) {
     val mod = Module(new SafeCastFromNonLit)
