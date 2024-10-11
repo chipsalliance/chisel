@@ -15,6 +15,7 @@ import chisel3.stage.{
   WarningConfigurationFileAnnotation,
   WarningsAsErrorsAnnotation
 }
+import circt.stage.FirtoolOption
 import firrtl.options.BareShell
 import firrtl.options.TargetDirAnnotation
 import logger.{ClassLogLevelAnnotation, LogClassNamesAnnotation, LogFileAnnotation, LogLevelAnnotation}
@@ -51,7 +52,8 @@ trait CLI { this: BareShell =>
     CIRCTTargetAnnotation,
     PreserveAggregate,
     SplitVerilog,
-    FirtoolBinaryPath
+    FirtoolBinaryPath,
+    FirtoolOption
   ).foreach(_.addOptions(parser))
 }
 
