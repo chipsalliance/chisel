@@ -109,7 +109,7 @@ package object simulator {
     ): ElaboratedModule[T] = {
       // Use CIRCT to generate SystemVerilog sources, and potentially additional artifacts
       var someDut: Option[T] = None
-      val firtoolOptions = firtoolArgs.map(circt.stage.FirtoolOption)
+      val firtoolOptions = firtoolArgs.map(circt.stage.FirtoolOption(_))
       val outputAnnotations = (new circt.stage.ChiselStage).execute(
         Array("--target", "systemverilog", "--split-verilog"),
         Seq(
