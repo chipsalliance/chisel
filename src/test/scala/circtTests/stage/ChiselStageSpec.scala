@@ -418,6 +418,30 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
       }
       log2 shouldNot include("Done elaborating.")
     }
+
+    it("should support firtool options") {
+      val targetDir = new File("test_run_dir/ChiselStageSpec")
+
+      val args: Array[String] = Array(
+        "--target",
+        "systemverilog",
+        "--target-dir",
+        targetDir.toString,
+        "--firtool-option=-strip-debug-info"
+      )
+
+      (new ChiselStage)
+        .execute(
+          args,
+          Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.Bar))
+        )
+        .collectFirst {
+          case EmittedVerilogCircuitAnnotation(a) => a
+        }
+        .get
+        .value
+      should not include("ChiselStageSpec.scala")
+    }
   }
 
   describe("ChiselStage exception handling") {

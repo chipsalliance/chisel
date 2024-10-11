@@ -118,7 +118,24 @@ private[stage] case object FirtoolBinaryPath extends HasShellOptions {
 /** Annotation that tells [[circt.stage.phases.CIRCT CIRCT]] what firtool executable to use */
 case class FirtoolBinaryPath(option: String) extends NoTargetAnnotation with CIRCTOption
 
+/** Annotation that passes a command line option to `firtool`.
+  *
+  * @param option an option to pass to `firtool`
+  */
 case class FirtoolOption(option: String) extends NoTargetAnnotation with CIRCTOption
+
+object FirtoolOption extends HasShellOptions {
+
+  override def options = Seq(
+    new ShellOption[String](
+      longOption = "firtool-option",
+      toAnnotationSeq = a => Seq(FirtoolOption(a)),
+      helpText = """an option to pass to "firtool" to control firrtl compilation""",
+      helpValueName = Some("<option>")
+    )
+  )
+
+}
 
 /** Annotation that indicates that firtool should run using the
   * `--split-verilog` option.  This has two effects: (1) Verilog will be emitted
