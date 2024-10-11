@@ -430,7 +430,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
         "--firtool-option=-strip-debug-info"
       )
 
-      (new ChiselStage)
+      ((new ChiselStage)
         .execute(
           args,
           Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.Bar))
@@ -439,7 +439,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
           case EmittedVerilogCircuitAnnotation(a) => a
         }
         .get
-        .value should not include("ChiselStageSpec.scala")
+        .value should not).include("ChiselStageSpec.scala")
     }
   }
 
