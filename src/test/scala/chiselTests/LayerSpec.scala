@@ -160,6 +160,33 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
     )()
   }
 
+  they should "allow for defines to layer-colored probes without layer blocks" in {
+
+    class Foo extends RawModule {
+      val a, b = IO(Input(Bool()))
+      val x = IO(Output(Probe(Bool(), A)))
+      val y = IO(Output(Probe(Bool(), A.B)))
+      define(x, ProbeValue(a))
+      define(y, ProbeValue(b))
+    }
+
+    ChiselStage.convert(new Foo)
+  }
+
+  they should "allow for defines to layer-colored probes regardless of enabled layers" in {
+
+    class Foo extends RawModule {
+      val a, b = IO(Input(Bool()))
+      val x = IO(Output(Probe(Bool(), A)))
+      val y = IO(Output(Probe(Bool(), A.B)))
+      layer.enable(C)
+      define(x, ProbeValue(a))
+      define(y, ProbeValue(b))
+    }
+
+    ChiselStage.convert(new Foo)
+  }
+
   they should "be enabled with a trait" in {
 
     class Foo extends RawModule {
@@ -174,22 +201,6 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
       "module Foo enablelayer A.B enablelayer C :"
     )()
 
-  }
-
-  they should "allow to define additional layer-colored probes using enables" in {
-
-    class Foo extends RawModule {
-      // Without this enable, this circuit is illegal because `C` is NOT enabled
-      // when `A` is enabled.  Cf. tests checking errors of this later.
-      layer.enable(A)
-      val a = IO(Output(Probe(Bool(), A)))
-      layer.block(C) {
-        val b = Wire(Bool())
-        define(a, ProbeValue(b))
-      }
-    }
-
-    ChiselStage.convert(new Foo)
   }
 
   they should "work correctly with Definition/Instance" in {
@@ -330,6 +341,22 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
       }
     }
     intercept[ChiselException] { ChiselStage.emitCHIRRTL(new Foo, Array("--throw-on-first-error")) }
+      .getMessage() should include(
+      "Cannot define 'Foo.a: IO[Bool]' from colors {'C'} since at least one of these is NOT enabled when 'Foo.a: IO[Bool]' is enabled"
+    )
+  }
+
+  it should "not consider enabled layers in error" in {
+    class Foo extends RawModule {
+      layer.enable(A)
+      val a = IO(Output(Probe(Bool(), A)))
+      layer.block(C) {
+        val b = Wire(Bool())
+        define(a, ProbeValue(b))
+      }
+    }
+
+    intercept[ChiselException] { ChiselStage.convert(new Foo, Array("--throw-on-first-error")) }
       .getMessage() should include(
       "Cannot define 'Foo.a: IO[Bool]' from colors {'C'} since at least one of these is NOT enabled when 'Foo.a: IO[Bool]' is enabled"
     )
