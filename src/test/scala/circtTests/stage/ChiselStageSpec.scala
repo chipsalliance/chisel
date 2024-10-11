@@ -439,8 +439,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
           case EmittedVerilogCircuitAnnotation(a) => a
         }
         .get
-        .value
-      should not include("ChiselStageSpec.scala")
+        .value should not include("ChiselStageSpec.scala")
     }
   }
 
