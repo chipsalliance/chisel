@@ -76,8 +76,11 @@ object v {
   )
 
   // ScalacOptions
-  val minimalOptions = Seq("-deprecation", "-feature", "-unchecked", "-Werror")
-  val commonOptions = minimalOptions ++ Seq(
+  val commonOptions = Seq(
+    "-deprecation",
+    "-feature",
+    "-unchecked",
+    "-Werror",
     "-Ymacro-annotations",
     "-explaintypes",
     "-Xcheckinit",
@@ -212,7 +215,7 @@ object svsim extends Cross[Svsim](v.scalaCrossVersions)
 trait Svsim extends common.SvsimModule with CrossSbtModule with ScalafmtModule {
   def millSourcePath = super.millSourcePath / os.up / "svsim"
 
-  override def scalacOptions = v.minimalOptions ++ Seq(
+  override def scalacOptions = v.commonOptions ++ Seq(
     "-Xsource:3",
     "-Xsource-features:case-apply-copy-access"
   )
