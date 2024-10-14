@@ -103,8 +103,9 @@ final class Backend(
         .orElse(defaultArchOverride)
         .map("VCS_ARCH_OVERRIDE" -> _),
       backendSpecificSettings.licenceExpireWarningTimeout
+        .map(_.toString)
         .orElse(defaultLicenseExpireWarningTimeout)
-        .map("VCS_LIC_EXPIRE_WARNING" -> _.toString)
+        .map("VCS_LIC_EXPIRE_WARNING" -> _)
     ).flatten
 
     //format: off

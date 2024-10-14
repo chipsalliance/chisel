@@ -1,20 +1,13 @@
 import mill._
 import mill.scalalib._
 
-trait HasMacroAnnotations extends ScalaModule {
-
-  override def scalacOptions = T {
-    super.scalacOptions() ++ Agg("-Ymacro-annotations")
-  }
-}
-
-trait MacrosModule extends ScalaModule with HasMacroAnnotations {
+trait MacrosModule extends ScalaModule {
   def scalaReflectIvy: Dep
 
   override def ivyDeps = super.ivyDeps() ++ Some(scalaReflectIvy)
 }
 
-trait FirrtlModule extends ScalaModule with HasMacroAnnotations {
+trait FirrtlModule extends ScalaModule {
   def osLibModuleIvy: Dep
 
   def json4sIvy: Dep
@@ -36,7 +29,7 @@ trait FirrtlModule extends ScalaModule with HasMacroAnnotations {
 
 trait SvsimModule extends ScalaModule {}
 
-trait CoreModule extends ScalaModule with HasMacroAnnotations {
+trait CoreModule extends ScalaModule {
   def firrtlModule: FirrtlModule
 
   def macrosModule: MacrosModule
@@ -82,7 +75,7 @@ trait HasChiselPlugin extends ScalaModule {
 
 trait StdLibModule extends ScalaModule with HasChisel
 
-trait ChiselModule extends ScalaModule with HasChiselPlugin with HasMacroAnnotations {
+trait ChiselModule extends ScalaModule with HasChiselPlugin {
   def macrosModule: MacrosModule
 
   def svsimModule: SvsimModule

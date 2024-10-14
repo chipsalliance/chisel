@@ -18,12 +18,68 @@
 
 8. If your backport PR(s) get labeled with `bp-conflict`, it means they cannot be automatically be merged. You can help get them merged by openening a PR against the already-existing backport branch (will be named something like `mergify/bp/3.5.x/pr-2512`) with the necessary cleanup changes. The admins will merge your cleanup PR and remove the `bp-conflict` label if appropriate.
 
+---
 
-### Frequently Asked Questions
+## Building and Testing
 
-#### I'm failing the formatting check. How do I make sure my code is formatted?
+### Dependencies
 
-From the Chisel root directory, run:
+Chisel uses the [Mill](https://mill-build.org/) build tool.
+You can install it as described on the Chisel [installation instructions](https://www.chisel-lang.org/docs/installation), or just use the bootstrap script in this repository: `./mill`.
+Developers should read the Mill documentation to understand the basic commands and use.
+
+The main dependencies for development are the JDK and git.
+Any JDK 8 or newer will work for most development, but note that developing the CIRCT Panama bindings requires Java 21. 
+[Coursier](https://get-coursier.io)'s command-line is useful for hot swapping JDKs.
+For example:
+
+```sh
+eval $(cs java --jvm graalvm-java21 --env)
+```
+
+This will swap the JDK in your shell to the latest release of GraalVM Java 21.
+
+### Useful commands
+
+Mill's `resolve` command plus the wildcard `_` are useful for discovering available projects, tasks, and commands.
+
+```sh
+# See all projects
+./mill resolve _
+
+# See all cross-compile versions for the 'chisel' build unit
+./mill resolve chisel._
+
+# See all available tasks and commands for all 'chisel' build unit
+./mill resolve chisel.__
+```
+
+You can compile everything with (note this includes the CIRCT Panama bindings so requires Java 21):
+```sh
+./mill __.compile
+```
+
+Most testing can be done on just the Chisel build unit:
+```sh
+./mill chisel[2.13.15].test.test
+```
+
+You can test everything with:
+```sh
+./mill __.test
+```
+
+Note the cross-version will likely change in the future, use `./mill resolve chisel._` to see latest version.
+
+Chisel uses ScalaTest so you can run individual tests using standard ScalaTest commands and arguments, e.g.
+```sh
+./mill chisel[2.13.15].test.testOnly chiselTests.VecLiteralSpec -- -z "lits must fit in vec element width"
+```
+
+### Formatting
+
+Chisel enforces formatting using Scalafmt.
+To format the code, run:
 
 ```sh
 # Reformat normal source files
