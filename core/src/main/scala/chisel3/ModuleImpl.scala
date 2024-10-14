@@ -661,7 +661,12 @@ package experimental {
     def desiredName: String = simpleClassName(this.getClass)
 
     /** Legalized name of this module. */
-    final lazy val name =
+    final lazy val name = {
+      def err(msg: String, cause: Throwable = null) = {
+        val msg = s"Error: desiredName of ${this.getClass.getName} is null. "
+        s"Did you evaluate 'name' before all values needed by desiredName were available? $msg."
+        throwException(msg, cause)
+      }
       try {
         // PseudoModules are not "true modules" and thus should share
         // their original modules names without uniquification
@@ -671,12 +676,11 @@ package experimental {
         }
       } catch {
         case e: NullPointerException =>
-          throwException(
-            s"Error: desiredName of ${this.getClass.getName} is null. Did you evaluate 'name' before all values needed by desiredName were available?",
-            e
-          )
+          err("Try adding -Xcheckinit to your scalacOptions to get a more useful stack trace", e)
+        case UninitializedFieldError(msg) => err(msg)
         case t: Throwable => throw t
       }
+    }
 
     /** Returns a FIRRTL ModuleName that references this object
       *

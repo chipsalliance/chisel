@@ -813,12 +813,22 @@ private[chisel3] object Builder extends LazyLogging {
 
   // Helper for reasonable errors when clock or reset value not yet initialized
   private def getDelayed[A](field: String, dc: Delayed[A]): A = {
-    val result = dc.value
-    if (result == null) {
-      // TODO add SourceInfo and change to Builder.exception
+    // TODO add SourceInfo and change to Builder.exception.
+    def err(extra: String) = {
       throwException(
-        s"The implicit $field is null which means the code that sets its definition has not yet executed."
+        s"The implicit $field is null which means the code that sets its definition has not yet executed. $extra."
       )
+    }
+    val result =
+      try {
+        dc.value
+      } catch {
+        // If user uses -Xcheckinit there will be additional information.
+        case UninitializedFieldError(msg) => err(msg)
+      }
+    // If user is not using -Xcheckinit, suggest that they do.
+    if (result == null) {
+      err("Try adding -Xcheckinit to your scalacOptions to get a more useful stack trace")
     }
     result
   }
