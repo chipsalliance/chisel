@@ -26,10 +26,10 @@
 
 Chisel uses the [Mill](https://mill-build.org/) build tool.
 You can install it as described on the Chisel [installation instructions](https://www.chisel-lang.org/docs/installation), or just use the bootstrap script in this repository: `./mill`.
-Developers should real the Mill documentation to understand the basic commands and use.
+Developers should read the Mill documentation to understand the basic commands and use.
 
-The only real dependency for development is the JDK.
-Any JDK 8 or newer will work for most development, but note that developing the CIRCT Panama bindings requires Java 21 or newer.
+The main dependencies for development are the JDK and git.
+Any JDK 8 or newer will work for most development, but note that developing the CIRCT Panama bindings requires Java 21. 
 [Coursier](https://get-coursier.io)'s command-line is useful for hot swapping JDKs.
 For example:
 
@@ -54,7 +54,7 @@ Mill's `resolve` command plus the wildcard `_` are useful for discovering availa
 ./mill resolve chisel.__
 ```
 
-You can compile everything with (note this includes the CIRCT Panama bindings so requires Java 21+):
+You can compile everything with (note this includes the CIRCT Panama bindings so requires Java 21):
 ```sh
 ./mill __.compile
 ```
