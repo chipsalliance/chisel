@@ -317,7 +317,8 @@ object chisel extends Cross[Chisel](v.scalaCrossVersions)
 trait Chisel extends common.ChiselModule with CrossSbtModule with ScalafmtModule {
   override def millSourcePath = super.millSourcePath / os.up
 
-  override def scalacOptions = v.commonOptions
+  // Make sure to include super.scalacOptions for Chisel Plugin
+  override def scalacOptions = T(super.scalacOptions() ++ v.commonOptions)
 
   def svsimModule = svsim(crossScalaVersion)
 
