@@ -171,6 +171,7 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
       val propOutD = IO(Output(Property[Path]()))
       val propOutE = IO(Output(Property[Path]()))
       val propOutF = IO(Output(Property[Path]()))
+      val propOutG = IO(Output(Property[Path]()))
       override def desiredName = "Top"
       val inst = Module(new Module {
         val localPropOut = IO(Output(Property[Path]()))
@@ -186,6 +187,7 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
       propOutD := Property(this)
       propOutE := inst.localPropOut
       propOutF := Property(Path(inst.sram.underlying.get))
+      propOutG := Property(Path(inst.sram.underlying.get, true))
     })
     matchesAndOmits(chirrtl)(
       """propassign localPropOut, path("OMReferenceTarget:~Top|Foo>data")""",
@@ -194,7 +196,8 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
       """propassign propOutC, path("OMReferenceTarget:~Top|Top/inst:Foo>mem")""",
       """propassign propOutD, path("OMInstanceTarget:~Top|Top")""",
       """propassign propOutE, inst.localPropOut""",
-      """propassign propOutF, path("OMReferenceTarget:~Top|Top/inst:Foo>sram_sram")"""
+      """propassign propOutF, path("OMReferenceTarget:~Top|Top/inst:Foo>sram_sram")""",
+      """propassign propOutG, path("OMMemberReferenceTarget:~Top|Top/inst:Foo>sram_sram")"""
     )()
   }
 
