@@ -98,7 +98,7 @@ object Path {
     new TargetPath {
       private val scope = Module.currentModule
       def toTarget():   IsMember = hasTarget.toRelativeTarget(scope)
-      def isMemberPath: Boolean = false
+      def isMemberPath: Boolean = true
     }
   }
 
