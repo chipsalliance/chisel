@@ -75,7 +75,7 @@ object Lookupable {
             newChild.bind(CrossModuleBinding)
             newChild.setAllParents(Some(m))
             newChild
-          case _ => throw new InternalErrorException("Match error: newParent=$newParent")
+          case _ => throw new InternalErrorException(s"Match error: newParent=$newParent")
         }
     }
   }
@@ -197,7 +197,7 @@ object Lookupable {
             val wrMap = mapping.flatMap { case (from, _, wr) => Option.when(wr.isReadOnly)(from -> wr) }.toMap
             AggregateViewBinding(newMap, Option.when(wrMap.nonEmpty)(wrMap))
         }
-      case _ => throw new InternalErrorException("Match error: data.topBinding=${data.topBinding}")
+      case _ => throw new InternalErrorException(s"Match error: data.topBinding=${data.topBinding}")
     }
 
     // TODO Unify the following with `.viewAs`
@@ -211,7 +211,7 @@ object Lookupable {
             Builder.unnamedViews += agg
           case _ => ()
         }
-      case _ => throw new InternalErrorException("Match error: newBinding=$newBinding")
+      case _ => throw new InternalErrorException(s"Match error: newBinding=$newBinding")
     }
 
     result.bind(newBinding)
@@ -271,7 +271,7 @@ object Lookupable {
             val newChild = Module.do_pseudo_apply(new InstanceClone(m.getProto, () => m.instanceName))
             newChild._parent = i._parent
             Clone(newChild)
-          case _ => throw new InternalErrorException("Match error: rec(m)=${rec(m)}")
+          case _ => throw new InternalErrorException(s"Match error: rec(m)=${rec(m)}")
         }
       case Clone(m: InstanceClone[_]) =>
         rec(m) match {
@@ -280,9 +280,9 @@ object Lookupable {
             val newChild = Module.do_pseudo_apply(new InstanceClone(m.getProto, () => m.instanceName))
             newChild._parent = i._parent
             Clone(newChild)
-          case _ => throw new InternalErrorException("Match error: rec(m)=${rec(m)}")
+          case _ => throw new InternalErrorException(s"Match error: rec(m)=${rec(m)}")
         }
-      case _ => throw new InternalErrorException("Match error: module=$module")
+      case _ => throw new InternalErrorException(s"Match error: module=$module")
     }
   }
 
@@ -389,7 +389,7 @@ object Lookupable {
             newChild.setRef(mem.getRef, true)
             newChild
           case _ =>
-            throw new InternalErrorException("Match error: newParent=$newParent")
+            throw new InternalErrorException(s"Match error: newParent=$newParent")
         }
     }
   }
