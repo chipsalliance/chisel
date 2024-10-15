@@ -94,11 +94,13 @@ object Path {
 
   /** Construct a Path that refers to a HasTarget
     */
-  def apply(hasTarget: HasTarget): Path = {
+  def apply(hasTarget: HasTarget): Path = apply(hasTarget, false)
+  def apply(hasTarget: HasTarget, isMemberPath: Boolean): Path = {
+    val _isMemberPath = isMemberPath // avoid name shadowing below
     new TargetPath {
       private val scope = Module.currentModule
       def toTarget():   IsMember = hasTarget.toRelativeTarget(scope)
-      def isMemberPath: Boolean = true
+      def isMemberPath: Boolean = _isMemberPath
     }
   }
 
