@@ -12,6 +12,8 @@ import chisel3.internal.sourceinfo.{DefinitionTransform, DefinitionWrapTransform
 import chisel3.experimental.{BaseModule, SourceInfo}
 import firrtl.annotations.{IsModule, ModuleTarget, NoTargetAnnotation}
 
+import firrtl.seqToAnnoSeq
+
 import scala.annotation.nowarn
 
 /** User-facing Definition type.
@@ -63,7 +65,7 @@ final case class Definition[+A] private[chisel3] (private[chisel3] val underlyin
 
   override def toDefinition: Definition[A] = this
   override def toInstance:   Instance[A] = new Instance(underlying)
-
+  private[chisel3] def copy[T](underlying: Underlying[T] = this.underlying) = new Definition(underlying)
 }
 
 /** Factory methods for constructing [[Definition]]s */
@@ -136,6 +138,7 @@ object Definition extends SourceInfoDoc {
     module.toDefinition
   }
 
+  private[chisel3] def apply[T](underlying: Underlying[T]) = new Definition(underlying)
 }
 
 /** Stores a [[Definition]] that is imported so that its Instances can be

@@ -11,6 +11,7 @@ import chisel3.properties.{DynamicObject, Property, StaticObject}
 import chisel3.internal.Builder._
 import chisel3.internal.firrtl.ir._
 import chisel3.reflect.DataMirror
+import chisel3.Module.ResetType._
 import _root_.firrtl.annotations.{IsModule, ModuleTarget}
 import scala.collection.immutable.VectorBuilder
 import scala.collection.mutable.ArrayBuffer
@@ -257,10 +258,10 @@ abstract class RawModule extends BaseModule {
 
 /** Enforce that the Module.reset be Asynchronous (AsyncReset) */
 trait RequireAsyncReset extends Module {
-  override final def resetType = Module.ResetType.Asynchronous
+  override final def resetType: Module.ResetType.Asynchronous.type = Module.ResetType.Asynchronous
 }
 
 /** Enforce that the Module.reset be Synchronous (Bool) */
 trait RequireSyncReset extends Module {
-  override final def resetType = Module.ResetType.Synchronous
+  override final def resetType: Module.ResetType.Synchronous.type = Module.ResetType.Synchronous
 }

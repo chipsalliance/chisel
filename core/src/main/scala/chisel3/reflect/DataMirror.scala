@@ -177,7 +177,7 @@ object DataMirror {
     // This prevents users from using the _lookup API
     implicit val mg = new chisel3.internal.MacroGenerated {}
 
-    inst._lookup { proto: T => modulePorts(proto) }
+    inst._lookup { (proto: T) => modulePorts(proto) }
   }
 
   /** Returns a recursive representation of a module's ports with underscore-qualified names
@@ -237,7 +237,7 @@ object DataMirror {
     // This prevents users from using the _lookup API
     implicit val mg = new chisel3.internal.MacroGenerated {}
 
-    inst._lookup { proto: T => fullModulePorts(proto) }
+    inst._lookup { (proto: T) => fullModulePorts(proto) }
   }
 
   /** Returns the parent module within which a module instance is instantiated

@@ -54,6 +54,7 @@ sealed case class KnownWidth private (value: Int) extends Width {
     case _             => that
   }
   override def toString: String = s"<${value.toString}>"
+  private[chisel3] def copy(value: Int = this.value) = new KnownWidth(value)
 }
 object KnownWidth {
   private val maxCached = 1024
