@@ -230,7 +230,9 @@ object macros extends Cross[Macros](v.scalaCrossVersions)
 trait Macros extends common.MacrosModule with CrossSbtModule with ScalafmtModule {
   def millSourcePath = super.millSourcePath / os.up / "macros"
 
-  override def scalacOptions = v.commonOptions
+  override def scalacOptions = v.commonOptions ++ Seq(
+    "-Xsource:3"
+  )
 
   def scalaReflectIvy = v.scalaReflect(crossScalaVersion)
 }
@@ -240,7 +242,9 @@ object core extends Cross[Core](v.scalaCrossVersions)
 trait Core extends common.CoreModule with CrossSbtModule with ScalafmtModule {
   def millSourcePath = super.millSourcePath / os.up / "core"
 
-  override def scalacOptions = v.commonOptions
+  override def scalacOptions = v.commonOptions ++ Seq(
+    "-Xsource:3"
+  )
 
   def firrtlModule = firrtl(crossScalaVersion)
 
