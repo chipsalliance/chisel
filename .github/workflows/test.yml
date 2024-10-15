@@ -76,7 +76,10 @@ jobs:
           $CHISEL_FIRTOOL_PATH/firtool -version >> $GITHUB_STEP_SUMMARY
           echo \`\`\` >> $GITHUB_STEP_SUMMARY
       - name: Test
-        run: sbt ++${{ inputs.scala }} test
+        run: |
+          ./mill firrtl[_].test
+          ./mill svsim[_].test
+          ./mill chisel[_].test
       - name: Binary compatibility
         # TODO either make this also check the plugin or decide that we don't
         #      support binary compatibility for the plugin
@@ -155,7 +158,6 @@ jobs:
         with:
           distribution: 'adopt'
           java-version: '11'
-          cache: 'sbt'
       - name: Install CIRCT
         id: install-circt
         if: ${{ inputs.circt }}
@@ -170,7 +172,7 @@ jobs:
           dir=$(dirname $(which firtool))
           echo "CHISEL_FIRTOOL_PATH=$dir" >> "$GITHUB_ENV"
       - name: Integration Tests
-        run: sbt integrationTests/test
+        run: ./mill integrationTests[_].test
 
   # Currently just a sanity check that the benchmarking flow works
   benchmark:
@@ -190,7 +192,7 @@ jobs:
         run: ./mill benchmark.runJmh
 
   std:
-    name: Standard Library Tests
+    name: Standard Library
     runs-on: ubuntu-22.04
     strategy:
       matrix:
@@ -207,9 +209,8 @@ jobs:
         with:
           distribution: 'adopt'
           java-version: '11'
-          cache: 'sbt'
-      - name: Unit Tests
-        run: sbt ++${{ inputs.scala }} standardLibrary/test
+      - name: Compile
+        run: ./mill stdlib[_].compile
 
   website:
     name: Build Mdoc & Website
