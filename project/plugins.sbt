@@ -42,4 +42,4 @@ libraryDependencies += "com.lihaoyi" %% "upickle" % "3.1.3"
 
 // This is an older version due to other things depending on older versions of
 // scala-xml
-libraryDependencies += "io.get-coursier" %% "coursier" % "2.0.16"
+libraryDependencies += "io.get-coursier" %% "coursier" % "2.1.14"
