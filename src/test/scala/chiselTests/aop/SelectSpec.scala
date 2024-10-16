@@ -9,6 +9,7 @@ import chisel3.aop.Select.{PredicatedConnect, When, WhenNot}
 import chisel3.aop.Select
 import chisel3.experimental.ExtModule
 import chisel3.stage.{ChiselGeneratorAnnotation, DesignAnnotation}
+import chisel3.properties.{Class, Property}
 import circt.stage.ChiselStage
 import firrtl.AnnotationSeq
 
@@ -226,7 +227,9 @@ class SelectSpec extends ChiselFlatSpec {
     intercept[Exception] { Select.instances(top) }
   }
 
-  "Select currentInstancesIn and allCurrentInstancesIn" should "support module, extmodule, and D/I" in {
+  behavior.of("Select.unsafe.currentInstancesIn and .allCurrentInstancesIn")
+
+  it should "support module, extmodule, and D/I" in {
     import chisel3.experimental.hierarchy._
 
     class MyLeafExtModule extends ExtModule {}
@@ -293,5 +296,37 @@ class SelectSpec extends ChiselFlatSpec {
     }
 
     ChiselStage.emitCHIRRTL(new MyTopModule)
+  }
+
+  it should "support Classes" in {
+    import chisel3.experimental.hierarchy._
+
+    implicit val mg = new chisel3.internal.MacroGenerated {}
+
+    class MyClass extends Class {
+      val id = IO(Output(Property[Int]()))
+      id := Property(3)
+    }
+
+    class Child extends Module {
+      val cls = Definition(new MyClass)
+      // This models SRAMDescription
+      val io = IO(new Bundle {
+        val metadata = cls.getPropertyType
+      })
+    }
+
+    class Top extends Module {
+      val c = Instantiate(new Child)
+
+      val allInstances = Select.unsafe.allCurrentInstancesIn(this).map(_._lookup { m => m.name })
+      println(allInstances)
+
+      // allInstances should be(
+      //     Seq()
+      // )
+    }
+
+    println(ChiselStage.emitCHIRRTL(new Top))
   }
 }
