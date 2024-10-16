@@ -24,15 +24,23 @@ class PrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with Match
 
     val chirrtl = emitCHIRRTL(new Top)
     println(chirrtl)
-    matchesAndOmits(chirrtl)(
-      "module Foo :",
-      "  wire a : UInt<1>",
-      "module Pref_Foo :",
-      "  wire a : UInt<1>",
-      "module Top :",
-      "  inst foo of Foo",
-      "  inst pref_foo of Pref_Foo",
-    )()
+
+    val lines = """
+      {
+        "class":"chisel3.ModulePrefixAnnotation",
+        "target":"~Top|Pref_Foo",
+        "prefix":"Pref_"
+      }
+
+      module Foo :
+        wire a : UInt<1>
+      module Pref_Foo :
+        wire a : UInt<1>
+      module Top :
+        inst foo of Foo
+        inst pref_foo of Pref_Foo
+        """.linesIterator.map(_.trim).toSeq
+    matchesAndOmits(chirrtl)(lines: _*)()
   }
 
   it should "Allow nested module prefixes" in {
@@ -54,13 +62,29 @@ class PrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with Match
 
     val chirrtl = emitCHIRRTL(new Top)
     println(chirrtl)
-    matchesAndOmits(chirrtl)(
-      "module Outer_Inner_Bar :",
-      "  wire a : UInt<1>",
-      "module Outer_Foo",
-      "  inst bar of Outer_Inner_Bar",
-      "module Top :",
-      "  inst foo of Outer_Foo",
-    )()
+
+    val lines =
+      """circuit Top :%[[
+      [[
+        {
+          "class":"chisel3.ModulePrefixAnnotation",
+          "target":"~Top|Outer_Inner_Bar",
+          "prefix":"Outer_Inner_"
+        },
+        {
+          "class":"chisel3.ModulePrefixAnnotation",
+          "target":"~Top|Outer_Foo",
+          "prefix":"Outer_"
+        }
+      ]]
+      module Outer_Inner_Bar :
+        wire a : UInt<1>
+      module Outer_Foo
+        inst bar of Outer_Inner_Bar
+      module Top :
+        inst foo of Outer_Foo
+        """.linesIterator.map(_.trim).toSeq
+
+    matchesAndOmits(chirrtl)(lines: _*)()
   }
 }

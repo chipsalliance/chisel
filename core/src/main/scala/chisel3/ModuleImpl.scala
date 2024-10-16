@@ -12,10 +12,11 @@ import chisel3.internal.firrtl.ir._
 import chisel3.experimental.{requireIsChiselType, BaseModule, SourceInfo, UnlocatableSourceInfo}
 import chisel3.properties.{Class, Property}
 import chisel3.reflect.DataMirror
-import _root_.firrtl.annotations.{InstanceTarget, IsModule, ModuleName, ModuleTarget}
+import _root_.firrtl.annotations.{InstanceTarget, IsModule, ModuleName, ModuleTarget, SingleTargetAnnotation, Annotation}
 import _root_.firrtl.AnnotationSeq
 import chisel3.internal.plugin.autoNameRecursively
 import chisel3.util.simpleClassName
+import chisel3.experimental.{annotate, ChiselAnnotation}
 import chisel3.experimental.hierarchy.Hierarchy
 
 private[chisel3] trait ObjectModuleImpl {
@@ -23,6 +24,13 @@ private[chisel3] trait ObjectModuleImpl {
   protected def _applyImpl[T <: BaseModule](bc: => T)(implicit sourceInfo: SourceInfo): T = {
     // Instantiate the module definition.
     val module = evaluate[T](bc)
+
+    val prefix = Builder.getModulePrefix
+    if (prefix != "") {
+      annotate(new ChiselAnnotation {
+        def toFirrtl: Annotation = ModulePrefixAnnotation(module.toTarget, prefix)
+      })
+    }
 
     // Handle connections at enclosing scope
     // We use _component because Modules that don't generate them may still have one
@@ -923,4 +931,8 @@ object withModulePrefix {
     Builder.popModulePrefix() 
     res
   }
+}
+
+case class ModulePrefixAnnotation(target: IsModule, prefix: String) extends SingleTargetAnnotation[IsModule] {
+  def duplicate(n: IsModule): ModulePrefixAnnotation = this.copy(target = n)
 }
