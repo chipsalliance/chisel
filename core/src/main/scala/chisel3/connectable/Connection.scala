@@ -243,7 +243,7 @@ private[chisel3] object Connection {
         case List(a, b) =>
           BiConnect.markAnalogConnected(sourceInfo, a, b, currentModule)
           BiConnect.markAnalogConnected(sourceInfo, b, a, currentModule)
-        case _ => throw new InternalErrorException("Match error: as.toList=${as.toList}")
+        case _ => throw new InternalErrorException(s"Match error: as.toList=${as.toList}")
       }
     } catch { // convert Exceptions to Builder.error's so compilation can continue
       case attach.AttachException(message) => Builder.error(message)

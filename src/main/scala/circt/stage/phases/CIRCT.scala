@@ -247,7 +247,7 @@ class CIRCT extends Phase {
             )
         })
 
-    logger.info(s"""Running CIRCT: '${cmd.mkString(" ")}""" + input.fold(_ => " < $$input'", _ => "'"))
+    logger.info(s"""Running CIRCT: '${cmd.mkString(" ")}""" + input.fold(_ => " < $$" + "input'", _ => "'"))
     val stdoutStream, stderrStream = new java.io.ByteArrayOutputStream
     val stdoutWriter = new java.io.PrintWriter(stdoutStream)
     val stderrWriter = new java.io.PrintWriter(stderrStream)
