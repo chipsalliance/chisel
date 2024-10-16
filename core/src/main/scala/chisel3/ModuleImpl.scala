@@ -164,6 +164,9 @@ private[chisel3] trait ObjectModuleImpl {
   /** Returns the current Module */
   def currentModule: Option[BaseModule] = Builder.currentModule
 
+  /** Returns the current nested module prefix */
+  def currentModulePrefix: String = Builder.getModulePrefix
+
   private[chisel3] def do_pseudo_apply[T <: BaseModule](
     bc: => T
   )(
@@ -671,8 +674,9 @@ package experimental {
         // PseudoModules are not "true modules" and thus should share
         // their original modules names without uniquification
         this match {
-          case _: PseudoModule => desiredName
-          case _ => Builder.globalNamespace.name(desiredName)
+          case _: PseudoModule => Module.currentModulePrefix + desiredName
+          case _: BlackBox     => Builder.globalNamespace.name(desiredName)
+          case _               => Builder.globalNamespace.name(Module.currentModulePrefix + desiredName)
         }
       } catch {
         case e: NullPointerException =>
@@ -909,5 +913,14 @@ package experimental {
           case Some(c) => getRef.fullName(c)
         }
 
+  }
+}
+
+object withModulePrefix {
+  def apply[T](prefix: String)(block: => T): T = {
+    Builder.pushModulePrefix(prefix)
+    val res = block // execute block
+    Builder.popModulePrefix() 
+    res
   }
 }
