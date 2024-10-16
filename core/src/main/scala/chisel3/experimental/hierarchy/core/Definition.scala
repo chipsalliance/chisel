@@ -120,6 +120,7 @@ object Definition extends SourceInfoDoc {
         Nil,
         context.throwOnFirstError,
         context.useLegacyWidth,
+        context.includeUtilMetadata,
         context.warningFilters,
         context.sourceRoots,
         Some(context.globalNamespace),

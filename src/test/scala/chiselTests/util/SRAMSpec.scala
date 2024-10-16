@@ -5,6 +5,7 @@ package chiselTests.util
 import chisel3._
 import chisel3.util.{MemoryReadWritePort, SRAM}
 import chisel3.experimental.{annotate, ChiselAnnotation, OpaqueType}
+import chisel3.stage.IncludeUtilMetadata
 import chiselTests.ChiselFlatSpec
 import _root_.circt.stage.ChiselStage.{emitCHIRRTL, emitSystemVerilog}
 import firrtl.annotations.{Annotation, ReferenceTarget, SingleTargetAnnotation}
@@ -32,7 +33,7 @@ class SRAMSpec extends ChiselFlatSpec {
         override def toFirrtl: Annotation = DummyAnno(sram.underlying.get.toTarget)
       })
     }
-    val (chirrtlCircuit, annos) = getFirrtlAndAnnos(new Top)
+    val (chirrtlCircuit, annos) = getFirrtlAndAnnos(new Top, providedAnnotations = Seq(IncludeUtilMetadata))
     val chirrtl = chirrtlCircuit.serialize
     chirrtl should include("module Top :")
     chirrtl should include(
@@ -81,7 +82,7 @@ class SRAMSpec extends ChiselFlatSpec {
     chirrtl should include("module Top :")
     chirrtl should include("mem carrot :")
     chirrtl should include(
-      "wire sramInterface : { readPorts : { flip address : UInt<5>, flip enable : UInt<1>, data : UInt<8>}[0], writePorts : { flip address : UInt<5>, flip enable : UInt<1>, flip data : UInt<8>}[0], readwritePorts : { flip address : UInt<5>, flip enable : UInt<1>, flip isWrite : UInt<1>, readData : UInt<8>, flip writeData : UInt<8>}[1], description : Inst<SRAMDescription>}"
+      "wire sramInterface : { readPorts : { flip address : UInt<5>, flip enable : UInt<1>, data : UInt<8>}[0], writePorts : { flip address : UInt<5>, flip enable : UInt<1>, flip data : UInt<8>}[0], readwritePorts : { flip address : UInt<5>, flip enable : UInt<1>, flip isWrite : UInt<1>, readData : UInt<8>, flip writeData : UInt<8>}[1]}"
     )
 
     val dummyAnno = annos.collectFirst { case DummyAnno(t) => (t.toString) }
@@ -229,5 +230,23 @@ class SRAMSpec extends ChiselFlatSpec {
 
     // check CIRCT can compile the output
     val sv = emitSystemVerilog(new Top)
+  }
+
+  it should "elide metadata by default" in {
+    class Top extends Module {
+      val sram = SRAM(
+        size = 32,
+        tpe = UInt(8.W),
+        numReadPorts = 0,
+        numWritePorts = 0,
+        numReadwritePorts = 1
+      )
+    }
+    val chirrtl = emitCHIRRTL(new Top)
+    // there should be no properties
+    chirrtl shouldNot include("class")
+    chirrtl shouldNot include("Integer")
+    chirrtl shouldNot include("Path")
+    chirrtl shouldNot include("propassign")
   }
 }

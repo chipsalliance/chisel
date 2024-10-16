@@ -42,6 +42,7 @@ class Elaborate extends Phase {
             annotations,
             chiselOptions.throwOnFirstError,
             chiselOptions.useLegacyWidth,
+            chiselOptions.includeUtilMetadata,
             chiselOptions.warningFilters,
             chiselOptions.sourceRoots,
             None,

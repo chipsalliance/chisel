@@ -31,6 +31,7 @@ package object stage {
           case a: WarningConfigurationFileAnnotation => c.copy(warningFilters = c.warningFilters ++ a.filters)
           case UseLegacyWidthBehavior         => c.copy(useLegacyWidth = true)
           case RemapLayer(oldLayer, newLayer) => c.copy(layerMap = c.layerMap + ((oldLayer, newLayer)))
+          case IncludeUtilMetadata            => c.copy(includeUtilMetadata = true)
         }
       }
 
