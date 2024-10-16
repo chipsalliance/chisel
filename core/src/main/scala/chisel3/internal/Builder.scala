@@ -473,12 +473,13 @@ private[chisel3] class ChiselContext() {
 }
 
 private[chisel3] class DynamicContext(
-  val annotationSeq:     AnnotationSeq,
-  val throwOnFirstError: Boolean,
-  val useLegacyWidth:    Boolean,
-  val warningFilters:    Seq[WarningFilter],
-  val sourceRoots:       Seq[File],
-  val defaultNamespace:  Option[Namespace],
+  val annotationSeq:       AnnotationSeq,
+  val throwOnFirstError:   Boolean,
+  val useLegacyWidth:      Boolean,
+  val includeUtilMetadata: Boolean,
+  val warningFilters:      Seq[WarningFilter],
+  val sourceRoots:         Seq[File],
+  val defaultNamespace:    Option[Namespace],
   // Definitions from other scopes in the same elaboration, use allDefinitions below
   val loggerOptions: LoggerOptions,
   val definitions:   ArrayBuffer[Definition[_]],
@@ -967,6 +968,8 @@ private[chisel3] object Builder extends LazyLogging {
   }
 
   def useLegacyWidth: Boolean = dynamicContextVar.value.map(_.useLegacyWidth).getOrElse(false)
+
+  def includeUtilMetadata: Boolean = dynamicContextVar.value.map(_.includeUtilMetadata).getOrElse(false)
 
   // Builds a RenameMap for all Views that do not correspond to a single Data
   // These Data give a fake ReferenceTarget for .toTarget and .toReferenceTarget that the returned
