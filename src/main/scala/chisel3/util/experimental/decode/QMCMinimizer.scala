@@ -261,7 +261,7 @@ object QMCMinimizer extends Minimizer {
           (maxt ++ dc, false)
         case x if !x.mask.testBit(i) => // default to ?
           (mint, true)
-        case _ => throw new InternalErrorException("Match error: table.default=${table.default}")
+        case _ => throw new InternalErrorException(s"Match error: table.default=${table.default}")
       }
 
       implicants.foreach(_.isPrime = true)

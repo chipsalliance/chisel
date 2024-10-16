@@ -375,8 +375,14 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int) extend
       case ActualDirection.Output => SpecifiedDirection.Output
       case ActualDirection.Bidirectional(ActualDirection.Default) | ActualDirection.Unspecified =>
         SpecifiedDirection.Unspecified
+<<<<<<< HEAD:core/src/main/scala/chisel3/Aggregate.scala
       case ActualDirection.Bidirectional(ActualDirection.Flipped) => SpecifiedDirection.Flip
       case ActualDirection.Empty                                  => SpecifiedDirection.Unspecified
+=======
+      case ActualDirection.Bidirectional.Flipped => SpecifiedDirection.Flip
+      case ActualDirection.Empty                 => SpecifiedDirection.Unspecified
+      case dir                                   => throwException(s"Unexpected directionality: $dir")
+>>>>>>> ca773c08a (Fix missing string interpolators, add -Xlint:missing-interpolator (#4471)):core/src/main/scala/chisel3/AggregateImpl.scala
     }
     // TODO port technically isn't directly child of this data structure, but the result of some
     // muxes / demuxes. However, this does make access consistent with the top-level bindings.
