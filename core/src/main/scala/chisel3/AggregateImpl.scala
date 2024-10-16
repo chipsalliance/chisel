@@ -404,7 +404,7 @@ private[chisel3] abstract class VecImpl[T <: Data] private[chisel3] (gen: => T, 
         SpecifiedDirection.Unspecified
       case ActualDirection.Bidirectional.Flipped => SpecifiedDirection.Flip
       case ActualDirection.Empty                 => SpecifiedDirection.Unspecified
-      case dir                                   => throwException("Unexpected directionality: $dir")
+      case dir                                   => throwException(s"Unexpected directionality: $dir")
     }
     // TODO port technically isn't directly child of this data structure, but the result of some
     // muxes / demuxes. However, this does make access consistent with the top-level bindings.

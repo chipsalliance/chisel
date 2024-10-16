@@ -85,6 +85,7 @@ object v {
     "-explaintypes",
     "-Xcheckinit",
     "-Xlint:infer-any",
+    "-Xlint:missing-interpolator",
     "-language:reflectiveCalls",
     s"-Wconf:${warnConf.mkString(",")}"
   )
