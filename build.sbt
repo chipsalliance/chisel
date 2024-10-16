@@ -314,25 +314,6 @@ lazy val core = (project in file("core"))
     // Published as part of unipublish
     publish / skip := true
   )
-  .settings(warningSuppression: _*)
-  .settings(fatalWarningsSettings: _*)
-  .settings(
-    name := "chisel-core",
-    libraryDependencies ++= Seq(
-      "com.lihaoyi" %% "upickle" % "3.3.1",
-      "com.lihaoyi" %% "os-lib" % "0.10.0"
-    ),
-    scalacOptions := scalacOptions.value ++ Seq(
-      "-explaintypes",
-      "-feature",
-      "-language:reflectiveCalls",
-      "-unchecked",
-      "-Xcheckinit",
-      "-Xlint:infer-any",
-      "-Xsource:3",
-//      , "-Xlint:missing-interpolator"
-    )
-  )
   .dependsOn(macros)
   .dependsOn(firrtl)
 
