@@ -82,7 +82,7 @@ package object internal {
       val _pad = Wire(UInt(width.W))
       _pad := b
       _pad.asInstanceOf[A] // This cast is safe because we know A is UInt on this path
-    case u => u.pad(width)
+    case u => u.pad(width).asInstanceOf[A]
   }
 
   // Resize that to this width (if known)

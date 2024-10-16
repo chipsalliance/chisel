@@ -28,6 +28,6 @@ private[chisel3] trait ProbeValueBase {
       } else { source.ref }
       clone.setRef(ProbeExpr(ref))
     }
-    clone
+    clone.asInstanceOf[T]
   }
 }
