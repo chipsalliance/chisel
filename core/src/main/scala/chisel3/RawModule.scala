@@ -82,6 +82,46 @@ abstract class RawModule extends BaseModule {
   }
   private val _atModuleBodyEnd = new ArrayBuffer[() => Unit]
 
+  /** Hook to invoke hardware generators after a Module has been constructed and closed.
+    *
+    * This is useful for running hardware generators after a Module's constructor has run and its Definition is available, while still having access to arguments and definitions in the constructor. The Module itself can no longer be modified at this point.
+    *
+    * An interesting application of this is the generation of unit tests whenever a module is instantiated. For example:
+    *
+    * {{{
+    *   class Example(N: int) extends RawModule {
+    *     private val someSecret: Int = ...
+    *
+    *     afterModuleBuilt {
+    *       // Executes once the surrounding module is closed.
+    *       // We can get its definition at this point and pass it to another module.
+    *       Definition(ExampleTest(this.definition, someSecret))
+    *     }
+    *   }
+    *
+    *   class ExampleTest(unitDef: Definition[Example], someSecret: Int) extends RawModule {
+    *     // Instantiate the generated module and test it.
+    *     val unit = Instance(unitDef)
+    *     ...
+    *   }
+    *
+    *   class Parent extends RawModule {
+    *     Instantiate(Example(42))
+    *   }
+    *
+    *   // Resulting modules:
+    *   // - Parent (top-level)
+    *   //   - instantiates Example
+    *   // - ExampleTest (top-level)
+    *   //   - instantiates Example
+    *   // - Example
+    * }}}
+    */
+  protected def afterModuleBuilt(gen: => Unit): Unit = {
+    _afterModuleBuilt += { () => gen }
+  }
+  private val _afterModuleBuilt = new ArrayBuffer[() => Unit]
+
   //
   // RTL construction internals
   //
@@ -251,6 +291,11 @@ abstract class RawModule extends BaseModule {
 
     val rhs = computeConnection(left, right)
     Builder.currentBlock.get.addSecretCommand(rhs)
+  }
+
+  protected[chisel3] override def moduleBuilt(): Unit = {
+    // Evaluate any afterModuleBuilt generators.
+    _afterModuleBuilt.foreach { gen => gen() }
   }
 
   private[chisel3] def initializeInParent(): Unit = {}

@@ -4,7 +4,7 @@ package chiselTests
 
 import chisel3._
 import chisel3.aop.Select
-import chisel3.experimental.hierarchy.Definition
+import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance}
 import chisel3.reflect.DataMirror
 import chisel3.testers.BasicTester
 import circt.stage.ChiselStage
@@ -169,5 +169,75 @@ class RawModuleSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
         ChiselStage.emitCHIRRTL { new ImplicitModuleDirectlyInRawModuleTester }
       }
     }
+  }
+
+  "RawModule with afterModuleBuilt" should "be able to create other modules" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      override def desiredName = "Foo"
+      val port0 = IO(Input(Bool()))
+
+      afterModuleBuilt {
+        Definition(new RawModule {
+          override def desiredName = "Bar"
+          val port1 = IO(Input(Bool()))
+        })
+      }
+    })
+
+    matchesAndOmits(chirrtl)(
+      "module Foo",
+      "input port0 : UInt<1>",
+      "module Bar",
+      "input port1 : UInt<1>"
+    )()
+  }
+
+  "RawModule with afterModuleBuilt" should "be able to instantiated the surrounding module" in {
+    @instantiable
+    class Foo extends RawModule {
+      override def desiredName = "Foo"
+      @public val port0 = IO(Input(Bool()))
+      @public val port1 = IO(Output(Bool()))
+      port1 := port0
+
+      afterModuleBuilt {
+        val fooDef = this.toDefinition
+        Definition(new RawModule {
+          override def desiredName = "Bar1"
+          val port2 = IO(Input(Bool()))
+          val foo = Instance(fooDef)
+          foo.port0 := port2
+        })
+      }
+
+      afterModuleBuilt {
+        val fooDef = this.toDefinition
+        Definition(new RawModule {
+          override def desiredName = "Bar2"
+          val port3 = IO(Input(Bool()))
+          val foo1 = Instance(fooDef)
+          val foo2 = Instance(fooDef)
+          foo1.port0 := port3
+          foo2.port0 := foo1.port1
+        })
+      }
+    }
+    val chirrtl = ChiselStage.emitCHIRRTL(new Foo)
+
+    matchesAndOmits(chirrtl)(
+      "module Foo :",
+      "input port0 : UInt<1>",
+      "output port1 : UInt<1>",
+      "module Bar1",
+      "input port2 : UInt<1>",
+      "inst foo of Foo",
+      "connect foo.port0, port2",
+      "module Bar2",
+      "input port3 : UInt<1>",
+      "inst foo1 of Foo",
+      "inst foo2 of Foo",
+      "connect foo1.port0, port3",
+      "connect foo2.port0, foo1.port1"
+    )()
   }
 }
