@@ -37,8 +37,8 @@ class DataPrintSpec extends ChiselFlatSpec with Matchers {
         UInt(8.W).toString should be("UInt<8>")
         probe.Probe(UInt(8.W)).toString should be("Probe<UInt<8>>")
         probe.RWProbe(UInt(8.W)).toString should be("RWProbe<UInt<8>>")
-        probe.Probe(UInt(8.W), A).toString should be("Probe<UInt<8>, A>")
-        probe.Probe(UInt(8.W), A.B).toString should be("Probe<UInt<8>, A.B>")
+        probe.Probe(UInt(8.W), A).toString should be("Probe[A]<UInt<8>>")
+        probe.Probe(UInt(8.W), A.B).toString should be("Probe[A.B]<UInt<8>>")
         SInt(15.W).toString should be("SInt<15>")
         Bool().toString should be("Bool")
         Clock().toString should be("Clock")
@@ -55,6 +55,7 @@ class DataPrintSpec extends ChiselFlatSpec with Matchers {
   class BoundDataModule extends Module { // not in the test to avoid anon naming suffixes
     Wire(UInt()).toString should be("BoundDataModule.?: Wire[UInt]")
     Wire(probe.Probe(UInt(1.W))).toString should be("BoundDataModule.?: Wire[Probe<UInt<1>>]")
+    Wire(probe.Probe(UInt(1.W), A)).toString should be("BoundDataModule.?: Wire[Probe[A]<UInt<1>>]")
     Reg(SInt()).toString should be("BoundDataModule.?: Reg[SInt]")
     val io = IO(Output(Bool())) // needs a name so elaboration doesn't fail
     io.toString should be("BoundDataModule.io: IO[Bool]")

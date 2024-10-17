@@ -478,8 +478,8 @@ private[chisel3] trait DataImpl extends HasId with NamedComponent { self: Data =
       probeInfo match {
         case None => chiselType
         case Some(ProbeInfo(writeable, layer)) =>
-          val layerString = layer.map(x => s", ${x.fullName}").getOrElse("")
-          (if (writeable) "RWProbe" else "Probe") + s"<$chiselType$layerString>"
+          val layerString = layer.map(x => s"[${x.fullName}]").getOrElse("")
+          (if (writeable) "RWProbe" else "Probe") + s"$layerString<$chiselType>"
       }
     }
     // Trace views to give better error messages
