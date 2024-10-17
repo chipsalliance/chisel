@@ -342,7 +342,7 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
     }
     intercept[ChiselException] { ChiselStage.emitCHIRRTL(new Foo, Array("--throw-on-first-error")) }
       .getMessage() should include(
-      "Cannot define 'Foo.a: IO[Bool]' from colors {'C'} since at least one of these is NOT enabled when 'Foo.a: IO[Bool]' is enabled"
+      "Cannot define 'Foo.a: IO[Probe[A]<Bool>]' from colors {'C'} since at least one of these is NOT enabled when 'Foo.a: IO[Probe[A]<Bool>]' is enabled"
     )
   }
 
@@ -358,7 +358,7 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
 
     intercept[ChiselException] { ChiselStage.convert(new Foo, Array("--throw-on-first-error")) }
       .getMessage() should include(
-      "Cannot define 'Foo.a: IO[Bool]' from colors {'C'} since at least one of these is NOT enabled when 'Foo.a: IO[Bool]' is enabled"
+      "Cannot define 'Foo.a: IO[Probe[A]<Bool>]' from colors {'C'} since at least one of these is NOT enabled when 'Foo.a: IO[Probe[A]<Bool>]' is enabled"
     )
   }
 

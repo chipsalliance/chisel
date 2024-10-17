@@ -242,7 +242,7 @@ class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
       )
     }
     exc.getMessage should include(
-      "mismatched probe/non-probe types in ProbeSpec_Anon.io.out[0]: IO[Bool] and ProbeSpec_Anon.io.in[0]: IO[Bool]."
+      "mismatched probe/non-probe types in ProbeSpec_Anon.io.out[0]: IO[Probe<Bool>] and ProbeSpec_Anon.io.in[0]: IO[Bool]."
     )
   }
 
@@ -260,7 +260,7 @@ class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
       )
     }
     exc.getMessage should include(
-      "Connection between sink (ProbeSpec_Anon.io.out: IO[Bool]) and source (ProbeSpec_Anon.io.in: IO[Bool]) failed @: Sink io.out in ProbeSpec_Anon of Probed type cannot participate in a mono connection (:=)"
+      "Connection between sink (ProbeSpec_Anon.io.out: IO[Probe<Bool>]) and source (ProbeSpec_Anon.io.in: IO[Bool]) failed @: Sink io.out in ProbeSpec_Anon of Probed type cannot participate in a mono connection (:=)"
     )
   }
 
@@ -295,7 +295,7 @@ class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
       )
     }
     exc.getMessage should include(
-      "Connection between sink (OutProbe.p: IO[Bool]) and source (ProbeSpec_Anon.out: IO[Bool]) failed @: p in OutProbe cannot be written from module ProbeSpec_Anon."
+      "Connection between sink (OutProbe.p: IO[Probe<Bool>]) and source (ProbeSpec_Anon.out: IO[Probe<Bool>]) failed @: p in OutProbe cannot be written from module ProbeSpec_Anon."
     )
   }
 
@@ -383,7 +383,7 @@ class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
     }
     exc.getMessage should include("Cannot define a probe on a non-equivalent type.")
     exc.getMessage should include(
-      "Left (ProbeSpec_Anon.p: IO[UInt<4>]) and Right (ProbeSpec_Anon.w: OpResult[Bool]) have different types"
+      "Left (ProbeSpec_Anon.p: IO[Probe<UInt<4>>]) and Right (ProbeSpec_Anon.w: OpResult[Probe<Bool>]) have different types"
     )
 
   }
