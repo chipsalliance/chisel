@@ -3,9 +3,9 @@
 package chisel3.experimental.util
 
 import geny.Readable
-
 import chisel3.RawModule
 import chisel3.experimental.{SerializableModule, SerializableModuleGenerator, SerializableModuleParameter}
+import firrtl.annotations.Annotation
 
 import scala.reflect.runtime.universe
 import scala.reflect.runtime.universe.{runtimeMirror, typeOf}
@@ -13,6 +13,7 @@ import scala.reflect.runtime.universe.{runtimeMirror, typeOf}
 /** Mixin this trait to produce elaborators for [[SerializableModule]]
   */
 trait SerializableModuleElaborator {
+  def additionalAnnotations: Seq[Annotation] = Nil
 
   /**
     * Implementation of a config API to serialize the [[SerializableModuleParameter]]
@@ -61,7 +62,7 @@ trait SerializableModuleElaborator {
             upickle.default.read[P](parameter)
           ).module().asInstanceOf[RawModule]
         )
-      ): firrtl.AnnotationSeq
+      ) ++ additionalAnnotations
     ) { case (annos, stage) => stage.transform(annos) }
       .flatMap {
         case firrtl.stage.FirrtlCircuitAnnotation(circuit) =>
