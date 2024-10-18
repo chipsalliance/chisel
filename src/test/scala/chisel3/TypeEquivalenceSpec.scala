@@ -314,7 +314,7 @@ class TypeEquivalenceSpec extends AnyFlatSpec {
   it should "detect differences between Probe and Not-Probe" in {
     Probe(Bool()).findFirstTypeMismatch(Bool(), true, true, true) should be(
       Some(
-        ": Left (Bool with probeInfo: Some(writeable=false, color=None)) and Right (Bool with probeInfo: None) have different probeInfo."
+        ": Left (Probe<Bool> with probeInfo: Some(writeable=false, color=None)) and Right (Bool with probeInfo: None) have different probeInfo."
       )
     )
   }
@@ -326,7 +326,7 @@ class TypeEquivalenceSpec extends AnyFlatSpec {
   it should "detect differences between Probe and Not-Probe within a Bundle" in {
     new BundleWithProbe(true).findFirstTypeMismatch(new BundleWithProbe(false), true, true, true) should be(
       Some(
-        ".maybeProbe: Left (Bool with probeInfo: Some(writeable=false, color=None)) and Right (Bool with probeInfo: None) have different probeInfo."
+        ".maybeProbe: Left (Probe<Bool> with probeInfo: Some(writeable=false, color=None)) and Right (Bool with probeInfo: None) have different probeInfo."
       )
     )
   }
@@ -334,21 +334,21 @@ class TypeEquivalenceSpec extends AnyFlatSpec {
   it should "detect differences between probe types" in {
     RWProbe(Bool()).findFirstTypeMismatch(Probe(Bool()), true, true, true) should be(
       Some(
-        ": Left (Bool with probeInfo: Some(writeable=true, color=None)) and Right (Bool with probeInfo: Some(writeable=false, color=None)) have different probeInfo."
+        ": Left (RWProbe<Bool> with probeInfo: Some(writeable=true, color=None)) and Right (Probe<Bool> with probeInfo: Some(writeable=false, color=None)) have different probeInfo."
       )
     )
   }
 
   it should "detect differences through probes" in {
     Probe(Bool()).findFirstTypeMismatch(Probe(Clock()), true, true, true) should be(
-      Some(": Left (Bool) and Right (Clock) have different types.")
+      Some(": Left (Probe<Bool>) and Right (Probe<Clock>) have different types.")
     )
   }
 
   it should "detect differences in presence of probe colors" in {
     Probe(Bool()).findFirstTypeMismatch(Probe(Bool(), Green), true, true, true) should be(
       Some(
-        ": Left (Bool with probeInfo: Some(writeable=false, color=None)) and Right (Bool with probeInfo: Some(writeable=false, color=Some(Green))) have different probeInfo."
+        ": Left (Probe<Bool> with probeInfo: Some(writeable=false, color=None)) and Right (Probe[Green]<Bool> with probeInfo: Some(writeable=false, color=Some(Green))) have different probeInfo."
       )
     )
   }
@@ -356,7 +356,7 @@ class TypeEquivalenceSpec extends AnyFlatSpec {
   it should "detect differences in probe colors" in {
     Probe(Bool(), Red).findFirstTypeMismatch(Probe(Bool(), Green), true, true, true) should be(
       Some(
-        ": Left (Bool with probeInfo: Some(writeable=false, color=Some(Red))) and Right (Bool with probeInfo: Some(writeable=false, color=Some(Green))) have different probeInfo."
+        ": Left (Probe[Red]<Bool> with probeInfo: Some(writeable=false, color=Some(Red))) and Right (Probe[Green]<Bool> with probeInfo: Some(writeable=false, color=Some(Green))) have different probeInfo."
       )
     )
   }
@@ -375,7 +375,7 @@ class TypeEquivalenceSpec extends AnyFlatSpec {
       true
     ) should be(
       Some(
-        ".probe: Left (Bool with probeInfo: Some(writeable=false, color=Some(Red))) and Right (Bool with probeInfo: Some(writeable=false, color=Some(Green))) have different probeInfo."
+        ".probe: Left (Probe[Red]<Bool> with probeInfo: Some(writeable=false, color=Some(Red))) and Right (Probe[Green]<Bool> with probeInfo: Some(writeable=false, color=Some(Green))) have different probeInfo."
       )
     )
   }
@@ -383,7 +383,7 @@ class TypeEquivalenceSpec extends AnyFlatSpec {
   it should "detect differences in probe color presence within a Bundle" in {
     new BundleWithAColor(Some(Red)).findFirstTypeMismatch(new BundleWithAColor(None), true, true, true) should be(
       Some(
-        ".probe: Left (Bool with probeInfo: Some(writeable=false, color=Some(Red))) and Right (Bool with probeInfo: Some(writeable=false, color=None)) have different probeInfo."
+        ".probe: Left (Probe[Red]<Bool> with probeInfo: Some(writeable=false, color=Some(Red))) and Right (Probe<Bool> with probeInfo: Some(writeable=false, color=None)) have different probeInfo."
       )
     )
   }
@@ -391,7 +391,7 @@ class TypeEquivalenceSpec extends AnyFlatSpec {
   it should "detect differences in probe within a Vector" in {
     Vec(3, Probe(Bool())).findFirstTypeMismatch(Vec(3, Bool()), true, true, true) should be(
       Some(
-        "[_]: Left (Bool with probeInfo: Some(writeable=false, color=None)) and Right (Bool with probeInfo: None) have different probeInfo."
+        "[_]: Left (Probe<Bool> with probeInfo: Some(writeable=false, color=None)) and Right (Bool with probeInfo: None) have different probeInfo."
       )
     )
   }
