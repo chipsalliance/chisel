@@ -420,6 +420,8 @@ package object chisel3 {
 
   /** Exposes target information and suggestName functionality of a NamedComponent.
     */
+  // This is only currently used for SRAM to hide the underlying Memory but still let users annotate it.
+  // Rather than generalizing this, it's more likely that we'll just delete it (and the use in SRAM) in favor of Path Properties.
   sealed trait HasTarget {
     def toTarget:         ReferenceTarget
     def toAbsoluteTarget: ReferenceTarget
@@ -434,17 +436,18 @@ package object chisel3 {
   }
 
   object HasTarget {
-
-    /** This wrapping hides the actual object, ensuring users only have access
-      * to the target methods (instead of the type of the underlying object).
-      */
-    private[chisel3] def apply(t: NamedComponent): HasTarget = new HasTarget {
+    private[chisel3] case class Impl(t: SramTarget) extends HasTarget {
       def toTarget = t.toTarget
       def toAbsoluteTarget = t.toAbsoluteTarget
       def toRelativeTarget(root: Option[BaseModule]) = t.toRelativeTarget(root)
 
       def suggestName(seed: String): Unit = t.suggestName(seed)
     }
+
+    /** This wrapping hides the actual object, ensuring users only have access
+      * to the target methods (instead of the type of the underlying object).
+      */
+    private[chisel3] def apply(t: SramTarget): HasTarget = Impl(t)
 
   }
 }

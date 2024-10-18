@@ -439,6 +439,16 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       val (chirrtl, _) = getFirrtlAndAnnos(new AddTwoNestedInstantiableDataWrapper(4))
       exactly(3, chirrtl.serialize.split('\n')) should include("connect i1.in, i0.out")
     }
+    it("(3.r): should work on HasTarget") {
+      class Top() extends Module {
+        val i = Instance(Definition(new HasHasTarget))
+        mark(i.x, "x")
+      }
+      val (_, annos) = getFirrtlAndAnnos(new Top)
+      annos.collect { case c: MarkAnnotation => c } should contain(
+        MarkAnnotation("~Top|Top/i:HasHasTarget>sram_sram".rt, "x")
+      )
+    }
   }
   describe("(4) toInstance") {
     it("(4.a): should work on modules") {
