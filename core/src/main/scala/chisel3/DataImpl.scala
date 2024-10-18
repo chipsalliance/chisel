@@ -474,20 +474,19 @@ private[chisel3] trait DataImpl extends HasId with NamedComponent { self: Data =
   //  DataView, Probe modifiers, a DontCare, and whether it is bound or a pure chisel type
   private[chisel3] def stringAccessor(chiselType: String): String = {
     // Add probe and layer color (if they exist) to the returned String
-    def addProbeModifier(chiselType: String): String = {
+    val chiselTypeWithModifier =
       probeInfo match {
         case None => chiselType
         case Some(ProbeInfo(writeable, layer)) =>
           val layerString = layer.map(x => s"[${x.fullName}]").getOrElse("")
           (if (writeable) "RWProbe" else "Probe") + s"$layerString<$chiselType>"
       }
-    }
     // Trace views to give better error messages
     // Reifying involves checking against ViewParent which requires being in a Builder context
     // Since we're just printing a String, suppress such errors and use this object
     val thiz = Try(reifySingleTarget(this)).toOption.flatten.getOrElse(this)
     thiz.topBindingOpt match {
-      case None => addProbeModifier(chiselType)
+      case None => chiselTypeWithModifier
       // Handle DontCares specially as they are "literal-like" but not actually literals
       case Some(DontCareBinding()) => s"$chiselType(DontCare)"
       case Some(topBinding) =>
@@ -495,7 +494,7 @@ private[chisel3] trait DataImpl extends HasId with NamedComponent { self: Data =
         val name = thiz.earlyName
         val mod = thiz.parentNameOpt.map(_ + ".").getOrElse("")
 
-        s"$mod$name: $binding[${addProbeModifier(chiselType)}]"
+        s"$mod$name: $binding[$chiselTypeWithModifier}]"
     }
   }
 
