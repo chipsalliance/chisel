@@ -494,7 +494,7 @@ private[chisel3] trait DataImpl extends HasId with NamedComponent { self: Data =
         val name = thiz.earlyName
         val mod = thiz.parentNameOpt.map(_ + ".").getOrElse("")
 
-        s"$mod$name: $binding[$chiselTypeWithModifier}]"
+        s"$mod$name: $binding[$chiselTypeWithModifier]"
     }
   }
 
