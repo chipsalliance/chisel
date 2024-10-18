@@ -412,6 +412,46 @@ object Lookupable {
       }
     }
 
+  // TODO, this, cloneMemToContext, and cloneDataToContext should be unified
+  private def cloneHasTargetToContext(
+    hasTarget: HasTarget,
+    context:   BaseModule
+  )(
+    implicit sourceInfo: SourceInfo
+  ): HasTarget = {
+    hasTarget match {
+      case HasTarget.Impl(st: SramTarget) =>
+        st._parent match {
+          case None => hasTarget
+          case Some(parent) =>
+            val newParent = cloneModuleToContext(Proto(parent), context)
+            newParent match {
+              case Proto(p) if p == parent => hasTarget
+              case Clone(mod: BaseModule) =>
+                val existingMod = Builder.currentModule
+                Builder.currentModule = Some(mod)
+                val newChild = new SramTarget
+                Builder.currentModule = existingMod
+                newChild.setRef(st.getRef, true)
+                HasTarget(newChild)
+              case _ =>
+                throw new InternalErrorException(s"Match error: newParent=$newParent")
+            }
+        }
+    }
+  }
+
+  implicit def lookupHasTarget(implicit sourceInfo: SourceInfo): Simple[HasTarget] =
+    new Lookupable[HasTarget] {
+      type C = HasTarget
+      def definitionLookup[A](that: A => HasTarget, definition: Definition[A]): C = {
+        cloneHasTargetToContext(that(definition.proto), definition.getInnerDataContext.get)
+      }
+      def instanceLookup[A](that: A => HasTarget, instance: Instance[A]): C = {
+        cloneHasTargetToContext(that(instance.proto), instance.getInnerDataContext.get)
+      }
+    }
+
   import scala.language.higherKinds // Required to avoid warning for lookupIterable type parameter
   implicit def lookupIterable[B, F[_] <: Iterable[_]](
     implicit sourceInfo: SourceInfo,
