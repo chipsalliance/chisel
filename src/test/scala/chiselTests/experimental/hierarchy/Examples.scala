@@ -3,7 +3,7 @@
 package chiselTests.experimental.hierarchy
 
 import chisel3._
-import chisel3.util.Valid
+import chisel3.util.{SRAM, Valid}
 import chisel3.experimental.hierarchy._
 import chisel3.experimental.{attach, Analog, BaseModule}
 
@@ -221,6 +221,11 @@ object Examples {
     val x = Wire(UInt(3.W))
     val y = Wire(Bool())
     @public val xy = (x, y)
+  }
+  @instantiable
+  class HasHasTarget() extends Module {
+    val sram = SRAM(1024, UInt(8.W), 1, 1, 0)
+    @public val x: HasTarget = sram.underlying.get
   }
   @instantiable
   class HasVec() extends Module {
