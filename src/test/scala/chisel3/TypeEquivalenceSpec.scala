@@ -309,7 +309,11 @@ class TypeEquivalenceSpec extends AnyFlatSpec {
   it should "detect differences between Probe and Not-Probe" in {
     Probe(Bool()).findFirstTypeMismatch(Bool(), true, true, true) should be(
       Some(
+<<<<<<< HEAD
         ": Left (Bool with probeInfo: Some(writeable=false)) and Right (Bool with probeInfo: None) have different probeInfo."
+=======
+        ": Left (Probe<Bool> with probeInfo: Some(writeable=false, color=None)) and Right (Bool with probeInfo: None) have different probeInfo."
+>>>>>>> 8c718b2b6 (Add Probes to .toString Data methods (#4478))
       )
     )
   }
@@ -321,7 +325,11 @@ class TypeEquivalenceSpec extends AnyFlatSpec {
   it should "detect differences between Probe and Not-Probe within a Bundle" in {
     new BundleWithProbe(true).findFirstTypeMismatch(new BundleWithProbe(false), true, true, true) should be(
       Some(
+<<<<<<< HEAD
         ".maybeProbe: Left (Bool with probeInfo: Some(writeable=false)) and Right (Bool with probeInfo: None) have different probeInfo."
+=======
+        ".maybeProbe: Left (Probe<Bool> with probeInfo: Some(writeable=false, color=None)) and Right (Bool with probeInfo: None) have different probeInfo."
+>>>>>>> 8c718b2b6 (Add Probes to .toString Data methods (#4478))
       )
     )
   }
@@ -329,21 +337,75 @@ class TypeEquivalenceSpec extends AnyFlatSpec {
   it should "detect differences between probe types" in {
     RWProbe(Bool()).findFirstTypeMismatch(Probe(Bool()), true, true, true) should be(
       Some(
+<<<<<<< HEAD
         ": Left (Bool with probeInfo: Some(writeable=true)) and Right (Bool with probeInfo: Some(writeable=false)) have different probeInfo."
+=======
+        ": Left (RWProbe<Bool> with probeInfo: Some(writeable=true, color=None)) and Right (Probe<Bool> with probeInfo: Some(writeable=false, color=None)) have different probeInfo."
+>>>>>>> 8c718b2b6 (Add Probes to .toString Data methods (#4478))
       )
     )
   }
 
   it should "detect differences through probes" in {
     Probe(Bool()).findFirstTypeMismatch(Probe(Clock()), true, true, true) should be(
-      Some(": Left (Bool) and Right (Clock) have different types.")
+      Some(": Left (Probe<Bool>) and Right (Probe<Clock>) have different types.")
+    )
+  }
+
+<<<<<<< HEAD
+  it should "detect differences in probe within a Vector" in {
+    Vec(3, Probe(Bool())).findFirstTypeMismatch(Vec(3, Bool()), true, true, true) should be(
+      Some(
+        "[_]: Left (Bool with probeInfo: Some(writeable=false)) and Right (Bool with probeInfo: None) have different probeInfo."
+=======
+  it should "detect differences in presence of probe colors" in {
+    Probe(Bool()).findFirstTypeMismatch(Probe(Bool(), Green), true, true, true) should be(
+      Some(
+        ": Left (Probe<Bool> with probeInfo: Some(writeable=false, color=None)) and Right (Probe[Green]<Bool> with probeInfo: Some(writeable=false, color=Some(Green))) have different probeInfo."
+      )
+    )
+  }
+
+  it should "detect differences in probe colors" in {
+    Probe(Bool(), Red).findFirstTypeMismatch(Probe(Bool(), Green), true, true, true) should be(
+      Some(
+        ": Left (Probe[Red]<Bool> with probeInfo: Some(writeable=false, color=Some(Red))) and Right (Probe[Green]<Bool> with probeInfo: Some(writeable=false, color=Some(Green))) have different probeInfo."
+      )
+    )
+  }
+
+  it should "work with probes within a Bundle" in {
+    new BundleWithAColor(Some(Red)).findFirstTypeMismatch(new BundleWithAColor(Some(Red)), true, true, true) should be(
+      None
+    )
+  }
+
+  it should "detect differences in probe colors within a Bundle" in {
+    new BundleWithAColor(Some(Red)).findFirstTypeMismatch(
+      new BundleWithAColor(Some(Green)),
+      true,
+      true,
+      true
+    ) should be(
+      Some(
+        ".probe: Left (Probe[Red]<Bool> with probeInfo: Some(writeable=false, color=Some(Red))) and Right (Probe[Green]<Bool> with probeInfo: Some(writeable=false, color=Some(Green))) have different probeInfo."
+      )
+    )
+  }
+
+  it should "detect differences in probe color presence within a Bundle" in {
+    new BundleWithAColor(Some(Red)).findFirstTypeMismatch(new BundleWithAColor(None), true, true, true) should be(
+      Some(
+        ".probe: Left (Probe[Red]<Bool> with probeInfo: Some(writeable=false, color=Some(Red))) and Right (Probe<Bool> with probeInfo: Some(writeable=false, color=None)) have different probeInfo."
+      )
     )
   }
 
   it should "detect differences in probe within a Vector" in {
     Vec(3, Probe(Bool())).findFirstTypeMismatch(Vec(3, Bool()), true, true, true) should be(
       Some(
-        "[_]: Left (Bool with probeInfo: Some(writeable=false)) and Right (Bool with probeInfo: None) have different probeInfo."
+        "[_]: Left (Probe<Bool> with probeInfo: Some(writeable=false, color=None)) and Right (Bool with probeInfo: None) have different probeInfo."
+>>>>>>> 8c718b2b6 (Add Probes to .toString Data methods (#4478))
       )
     )
   }

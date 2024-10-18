@@ -408,6 +408,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     }
   }
 
+<<<<<<< HEAD:core/src/main/scala/chisel3/Data.scala
   // Both _direction and _resolvedUserDirection are saved versions of computed variables (for
   // efficiency, avoid expensive recomputation of frequent operations).
   // Both are only valid after binding is set.
@@ -424,13 +425,25 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     _directionVar = actualDirection
   }
 
+=======
+  // Specializes the .toString method of a [[Data]] for conditions such as
+  //  DataView, Probe modifiers, a DontCare, and whether it is bound or a pure chisel type
+>>>>>>> 8c718b2b6 (Add Probes to .toString Data methods (#4478)):core/src/main/scala/chisel3/DataImpl.scala
   private[chisel3] def stringAccessor(chiselType: String): String = {
+    // Add probe and layer color (if they exist) to the returned String
+    val chiselTypeWithModifier =
+      probeInfo match {
+        case None => chiselType
+        case Some(ProbeInfo(writeable, layer)) =>
+          val layerString = layer.map(x => s"[${x.fullName}]").getOrElse("")
+          (if (writeable) "RWProbe" else "Probe") + s"$layerString<$chiselType>"
+      }
     // Trace views to give better error messages
     // Reifying involves checking against ViewParent which requires being in a Builder context
     // Since we're just printing a String, suppress such errors and use this object
     val thiz = Try(reifySingleTarget(this)).toOption.flatten.getOrElse(this)
     thiz.topBindingOpt match {
-      case None => chiselType
+      case None => chiselTypeWithModifier
       // Handle DontCares specially as they are "literal-like" but not actually literals
       case Some(DontCareBinding()) => s"$chiselType(DontCare)"
       case Some(topBinding) =>
@@ -438,7 +451,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
         val name = thiz.earlyName
         val mod = thiz.parentNameOpt.map(_ + ".").getOrElse("")
 
-        s"$mod$name: $binding[$chiselType]"
+        s"$mod$name: $binding[$chiselTypeWithModifier]"
     }
   }
 
