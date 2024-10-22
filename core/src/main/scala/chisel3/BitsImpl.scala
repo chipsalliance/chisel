@@ -100,7 +100,7 @@ private[chisel3] trait BitsImpl extends Element { self: Bits =>
   }
 
   protected def _applyImpl(x: UInt)(implicit sourceInfo: SourceInfo): Bool =
-    extract(x)
+    do_extract(x)
 
   protected def _applyImpl(x: Int, y: Int)(implicit sourceInfo: SourceInfo): UInt = {
     if ((x < y && !(x == -1 && y == 0)) || y < 0) {
@@ -331,15 +331,15 @@ private[chisel3] trait UIntImpl extends BitsImpl with Num[UInt] { self: UInt =>
   protected def _rotateLeftImpl(n: Int)(implicit sourceInfo: SourceInfo): UInt = width match {
     case _ if (n == 0)             => this
     case KnownWidth(w) if (w <= 1) => this
-    case KnownWidth(w) if n >= w   => rotateLeft(n % w)
-    case _ if (n < 0)              => rotateRight(-n)
+    case KnownWidth(w) if n >= w   => do_rotateLeft(n % w)
+    case _ if (n < 0)              => do_rotateRight(-n)
     case _                         => tail(n) ## head(n)
   }
 
   protected def _rotateRightImpl(n: Int)(implicit sourceInfo: SourceInfo): UInt = width match {
-    case _ if (n <= 0)             => rotateLeft(-n)
+    case _ if (n <= 0)             => do_rotateLeft(-n)
     case KnownWidth(w) if (w <= 1) => this
-    case KnownWidth(w) if n >= w   => rotateRight(n % w)
+    case KnownWidth(w) if n >= w   => do_rotateRight(n % w)
     case _                         => this(n - 1, 0) ## (this >> n)
   }
 
