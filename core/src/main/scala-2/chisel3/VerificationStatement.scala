@@ -154,6 +154,8 @@ object cover extends VerifPrintMacrosDoc {
   /** Named class for cover statements. */
   final class Cover private[chisel3] () extends VerificationStatement
 
+  type SourceLineInfo = (String, Int)
+
   /** Declares a condition to be covered.
     * At ever clock event, a counter is incremented iff the condition is active
     * and reset is inactive.
@@ -199,7 +201,7 @@ object stop {
       message.foreach(Printable.checkScope(_))
       when(!Module.reset.asBool) {
         message.foreach(PrintfMacrosCompat.printfWithoutReset(_))
-        pushCommand(Stop(stopId, sourceInfo, Builder.forcedClock.ref, 0))
+        pushCommand(chisel3.internal.firrtl.ir.Stop(stopId, sourceInfo, Builder.forcedClock.ref, 0))
       }
     }
     stopId

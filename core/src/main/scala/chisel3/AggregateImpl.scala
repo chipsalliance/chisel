@@ -11,6 +11,7 @@ import chisel3.experimental.{BaseModule, BundleLiteralException, HasTypeAlias, O
 import chisel3.experimental.{requireIsChiselType, requireIsHardware, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal._
 import chisel3.internal.binding._
+import chisel3.internal.util._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.ir._
 import chisel3.reflect.DataMirror
@@ -139,7 +140,7 @@ private[chisel3] trait AggregateImpl extends Data { thiz: Aggregate =>
     val _asUInt = _resizeToWidth(that, this.widthOption)(identity)
     // If that is a literal and all constituent Elements can be represented as literals, return a literal
     val ((_, allLit), rvalues) = {
-      this.flatten.toList.mapAccumulate((0, _asUInt.isLit)) {
+      this.flatten.toList.mapAccumulate[(Int, Boolean), Element]((0, _asUInt.isLit)) {
         case ((lo, literal), elt) =>
           val hi = lo + elt.getWidth
           // Chisel only supports zero width extraction if hi = -1 and lo = 0, so do it manually
@@ -184,7 +185,10 @@ trait VecFactory extends SourceInfoDoc {
     // Other cases do not need a Wire because the literal is truncated to fit.
     else if (idx.width.known && idx.width.get <= w) idx
     else if (idx.width.known) idx(w - 1, 0)
-    else (idx | 0.U(w.W))(w - 1, 0)
+    else {
+      val i: UInt = idx | 0.U(w.W)
+      i(w - 1, 0)
+    }
   }
 }
 
