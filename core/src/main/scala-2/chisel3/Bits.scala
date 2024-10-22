@@ -182,8 +182,6 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends BitsImpl w
     * $sumWidthInt
     * @group Bitwise
     */
-  // REVIEW TODO: redundant
-  // REVIEW TODO: should these return this.type or Bits?
   final def <<(that: BigInt): Bits = macro SourceInfoWhiteboxTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
@@ -281,6 +279,8 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends BitsImpl w
   /** @group SourceInfoTransformMacro */
   def do_##(that: Bits)(implicit sourceInfo: SourceInfo): UInt = _impl_##(that)
 }
+
+object Bits extends UIntFactory
 
 /** A data type for unsigned integers, represented as a binary bitvector. Defines arithmetic operations between other
   * integer types.
@@ -553,6 +553,8 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with UIntI
   override def do_asSInt(implicit sourceInfo: SourceInfo): SInt = _asSIntImpl
 }
 
+object UInt extends UIntFactory
+
 /** A data type for signed integers, represented as a binary bitvector. Defines arithmetic operations between other
   * integer types.
   *
@@ -734,6 +736,8 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with SIntI
   override def do_asSInt(implicit sourceInfo: SourceInfo): SInt = _asSIntImpl
 }
 
+object SInt extends SIntFactory
+
 sealed trait Reset extends ResetImpl with ToBoolable {
 
   /** Casts this $coll to an [[AsyncReset]] */
@@ -876,3 +880,5 @@ sealed class Bool() extends UInt(1.W) with BoolImpl with Reset {
   /** @group SourceInfoTransformMacro */
   def do_asAsyncReset(implicit sourceInfo: SourceInfo): AsyncReset = _asAsyncResetImpl
 }
+
+object Bool extends BoolFactory

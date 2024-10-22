@@ -2,7 +2,7 @@ package chisel3.experimental
 
 import chisel3.internal.HasId
 import chisel3.{Aggregate, Data, Element, RawModule}
-import firrtl.AnnotationSeq
+import firrtl.{annoSeqToSeq, AnnotationSeq}
 import firrtl.annotations.{Annotation, CompleteTarget, SingleTargetAnnotation}
 import firrtl.annoSeqToSeq
 

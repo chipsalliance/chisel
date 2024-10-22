@@ -3,8 +3,9 @@
 package chisel3
 
 import chisel3.experimental.{requireIsHardware, SourceInfo}
-import chisel3.internal.{_resizeToWidth, throwException, BaseModule}
+import chisel3.internal.{throwException, BaseModule}
 import chisel3.internal.Builder.pushOp
+import chisel3.internal.util._
 import chisel3.internal.firrtl.ir._
 import chisel3.internal.firrtl.ir.PrimOp._
 import _root_.firrtl.{ir => firrtlir}
@@ -41,7 +42,7 @@ private[chisel3] trait BitsImpl extends Element { self: Bits =>
   }
 
   protected def _headImpl(n: Int)(implicit sourceInfo: SourceInfo): UInt = {
-    width match {
+    this.width match {
       case KnownWidth(x) => require(x >= n, s"Can't head($n) for width $x < $n")
       case UnknownWidth  => ()
     }
@@ -193,9 +194,9 @@ private[chisel3] trait BitsImpl extends Element { self: Bits =>
   protected def _asSIntImpl(implicit sourceInfo: SourceInfo): SInt
 
   protected def _asBoolImpl(implicit sourceInfo: SourceInfo): Bool = {
-    width match {
+    this.width match {
       case KnownWidth(1) => this(0)
-      case _             => throwException(s"can't covert ${this.getClass.getSimpleName}$width to Bool")
+      case _             => throwException(s"can't covert ${this.getClass.getSimpleName}${this.width} to Bool")
     }
   }
 
