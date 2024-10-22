@@ -544,6 +544,8 @@ private[chisel3] object ir {
         _.toFirrtl.flatMap(_.update(renames))
       )
 
+    // TODO this method doesn't compile with Scala3 because it
+    // conflicts with the built-in `copy` method
     def copy(
       name:        String = name,
       components:  Seq[Component] = components,
