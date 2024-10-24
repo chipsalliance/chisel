@@ -922,4 +922,44 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
     val e = the[ChiselException] thrownBy circt.stage.ChiselStage.emitCHIRRTL(new Top)
     e.getMessage should include("BoringUtils currently only support identity views")
   }
+
+  it should "reuse existing port in a closed module" in {
+    class Foo extends Module {
+      val io = IO(Output(UInt(32.W)))
+      val ioProbe = IO(probe.RWProbe(UInt(32.W)))
+      probe.define(ioProbe, probe.RWProbeValue(io))
+      io := 0.U
+    }
+
+    class Bar extends Module {
+      val foo = Module(new Foo)
+      val ioNames = reflect.DataMirror.modulePorts(foo).map(_._1) // close foo
+      val io = IO(Output(UInt(32.W)))
+      io := foo.io
+    }
+
+    class Baz extends Module {
+      val bar = Module(new Bar)
+      val reProbe = Wire(probe.RWProbe(UInt(32.W)))
+      probe.define(reProbe, BoringUtils.rwTap(bar.foo.ioProbe))
+      probe.forceInitial(reProbe, 1.U)
+    }
+
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Baz)
+    matchesAndOmits(chirrtl)(
+      "module Foo :",
+      "output io : UInt<32>",
+      "output ioProbe : RWProbe<UInt<32>>",
+      "define ioProbe = rwprobe(io)",
+      "module Bar :",
+      "inst foo of Foo",
+      "output bore : RWProbe<UInt<32>>",
+      "define bore = foo.ioProbe",
+      "module Baz :",
+      "inst bar of Bar",
+      "wire reProbe : RWProbe<UInt<32>>",
+      "define reProbe = bar.bore",
+      "force_initial(reProbe, UInt<32>(0h1))"
+    )()
+  }
 }
