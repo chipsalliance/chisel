@@ -246,10 +246,10 @@ object BoringUtils {
     }
     def drill(source: A, path: Seq[BaseModule], connectionLocation: Seq[BaseModule], up: Boolean): A = {
       path.zip(connectionLocation).foldLeft(source) {
-        case (rhs, (module, conLoc)) if (module.isFullyClosed) => boringError(module); DontCare.asInstanceOf[A]
         case (rhs, (module, _)) if (up && module == path(0) && isPort(rhs)) => {
           rhs
         }
+        case (rhs, (module, conLoc)) if (module.isFullyClosed) => boringError(module); DontCare.asInstanceOf[A]
         case (rhs, (module, conLoc)) =>
           skipPrefix { // so `lcaSource` isn't in the name of the secret port
             if (!up && createProbe.nonEmpty && createProbe.get.writable) {
