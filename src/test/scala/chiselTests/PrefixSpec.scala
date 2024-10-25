@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.experimental.hierarchy.{Instantiate, Definition, Instance, instantiable, public}
 import circt.stage.ChiselStage.emitCHIRRTL
 
 class PrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with MatchesAndOmits {
@@ -23,7 +24,6 @@ class PrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with Match
     }
 
     val chirrtl = emitCHIRRTL(new Top)
-    println(chirrtl)
 
     val lines = """
       {
@@ -61,7 +61,6 @@ class PrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with Match
     }
 
     val chirrtl = emitCHIRRTL(new Top)
-    println(chirrtl)
 
     val lines =
       """circuit Top :%[[
@@ -87,4 +86,82 @@ class PrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with Match
 
     matchesAndOmits(chirrtl)(lines: _*)()
   }
+
+  it should "Instnantiate should create distinct module definitions when instantiated with distinct prefixes" in {
+    class Top extends Module {
+      val width = 8
+      val in  = IO(Input(UInt(width.W)))
+      val out = IO(Output(UInt(width.W)))
+
+      val foo_inst = withModulePrefix("Foo") {
+        Instantiate(new AddOne(width))
+      }
+
+      val bar_inst = withModulePrefix("Bar") {
+        Instantiate(new AddOne(width))
+      }
+
+      // np: no prefix
+      val np_inst = Instantiate(new AddOne(width))
+
+      foo_inst.in := in
+      bar_inst.in := foo_inst.out
+      out         := bar_inst.out
+      np_inst.in  := in
+    }
+
+    val chirrtl = emitCHIRRTL(new Top)
+    // println(chirrtl)
+
+    val lines = """
+      module Foo_AddOne :
+      module Bar_AddOne :
+      module AddOne :
+      public module Top :
+        inst np_inst of AddOne
+        inst foo_inst of Foo_AddOne
+        inst bar_inst of Bar_AddOne
+        """.linesIterator.map(_.trim).toSeq
+
+    matchesAndOmits(chirrtl)(lines: _*)("AddOne_1")
+  }
+
+  it should "Instnantiate should reference the same module definitions when instantiated with the same prefix" in {
+    class Top extends Module {
+      val width = 8
+      val in  = IO(Input(UInt(width.W)))
+      val out = IO(Output(UInt(width.W)))
+      val foo_inst1 = withModulePrefix("Foo") {
+        Instantiate(new AddOne(width))
+      }
+
+      val foo_inst2 = withModulePrefix("Foo") {
+        Instantiate(new AddOne(width))
+      }
+
+      foo_inst1.in := in
+      foo_inst2.in := in
+      out   := foo_inst1.out
+    }
+
+    val chirrtl = emitCHIRRTL(new Top)
+    // println(chirrtl)
+
+    val lines = """
+      module Foo_AddOne :
+      public module Top :
+        inst foo_inst1 of Foo_AddOne
+        inst foo_inst2 of Foo_AddOne
+        """.linesIterator.map(_.trim).toSeq
+
+    matchesAndOmits(chirrtl)(lines: _*)("AddOne_1", "Bar_AddOne")
+  }
+}
+
+// This has to be defined at the top-level because @instantiable doesn't work when nested.
+@instantiable
+class AddOne(width: Int) extends Module {
+  @public val in  = IO(Input(UInt(width.W)))
+  @public val out = IO(Output(UInt(width.W)))
+  out := in + 1.U
 }

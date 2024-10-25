@@ -235,6 +235,10 @@ private[chisel3] trait ObjectModuleImpl {
     /** Explicitly Asynchronous Reset */
     case object Asynchronous extends Type
   }
+
+  def getModulePrefixList: List[String] = {
+    Builder.getModulePrefixList
+  }
 }
 
 private[chisel3] trait ModuleImpl extends RawModule with ImplicitClock with ImplicitReset {
@@ -920,7 +924,6 @@ package experimental {
           case None    => getRef.name
           case Some(c) => getRef.fullName(c)
         }
-
   }
 }
 
