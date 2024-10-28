@@ -3,7 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.hierarchy.{Instantiate, Definition, Instance, instantiable, public}
+import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance, Instantiate}
 import circt.stage.ChiselStage.emitCHIRRTL
 
 class PrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with MatchesAndOmits {
@@ -90,7 +90,7 @@ class PrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with Match
   it should "Instnantiate should create distinct module definitions when instantiated with distinct prefixes" in {
     class Top extends Module {
       val width = 8
-      val in  = IO(Input(UInt(width.W)))
+      val in = IO(Input(UInt(width.W)))
       val out = IO(Output(UInt(width.W)))
 
       val foo_inst = withModulePrefix("Foo") {
@@ -106,8 +106,8 @@ class PrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with Match
 
       foo_inst.in := in
       bar_inst.in := foo_inst.out
-      out         := bar_inst.out
-      np_inst.in  := in
+      out := bar_inst.out
+      np_inst.in := in
     }
 
     val chirrtl = emitCHIRRTL(new Top)
@@ -129,7 +129,7 @@ class PrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with Match
   it should "Instnantiate should reference the same module definitions when instantiated with the same prefix" in {
     class Top extends Module {
       val width = 8
-      val in  = IO(Input(UInt(width.W)))
+      val in = IO(Input(UInt(width.W)))
       val out = IO(Output(UInt(width.W)))
       val foo_inst1 = withModulePrefix("Foo") {
         Instantiate(new AddOne(width))
@@ -141,7 +141,7 @@ class PrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with Match
 
       foo_inst1.in := in
       foo_inst2.in := in
-      out   := foo_inst1.out
+      out := foo_inst1.out
     }
 
     val chirrtl = emitCHIRRTL(new Top)
@@ -161,7 +161,7 @@ class PrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with Match
 // This has to be defined at the top-level because @instantiable doesn't work when nested.
 @instantiable
 class AddOne(width: Int) extends Module {
-  @public val in  = IO(Input(UInt(width.W)))
+  @public val in = IO(Input(UInt(width.W)))
   @public val out = IO(Output(UInt(width.W)))
   out := in + 1.U
 }

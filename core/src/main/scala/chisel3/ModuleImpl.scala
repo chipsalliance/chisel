@@ -12,7 +12,14 @@ import chisel3.internal.firrtl.ir._
 import chisel3.experimental.{requireIsChiselType, BaseModule, SourceInfo, UnlocatableSourceInfo}
 import chisel3.properties.{Class, Property}
 import chisel3.reflect.DataMirror
-import _root_.firrtl.annotations.{InstanceTarget, IsModule, ModuleName, ModuleTarget, SingleTargetAnnotation, Annotation}
+import _root_.firrtl.annotations.{
+  Annotation,
+  InstanceTarget,
+  IsModule,
+  ModuleName,
+  ModuleTarget,
+  SingleTargetAnnotation
+}
 import _root_.firrtl.AnnotationSeq
 import chisel3.internal.plugin.autoNameRecursively
 import chisel3.util.simpleClassName
@@ -688,7 +695,7 @@ package experimental {
         this match {
           case _: PseudoModule => Module.currentModulePrefix + desiredName
           case _: BlackBox     => Builder.globalNamespace.name(desiredName)
-          case _               => Builder.globalNamespace.name(Module.currentModulePrefix + desiredName)
+          case _ => Builder.globalNamespace.name(Module.currentModulePrefix + desiredName)
         }
       } catch {
         case e: NullPointerException =>
@@ -931,7 +938,7 @@ object withModulePrefix {
   def apply[T](prefix: String)(block: => T): T = {
     Builder.pushModulePrefix(prefix)
     val res = block // execute block
-    Builder.popModulePrefix() 
+    Builder.popModulePrefix()
     res
   }
 }
