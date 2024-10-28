@@ -8,7 +8,7 @@ import circt.stage.ChiselStage.emitCHIRRTL
 
 class PrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with MatchesAndOmits {
 
-  behavior.of("withPrefix")
+  behavior.of("withModulePrefix")
 
   it should "prefix modules in a withModulePrefix block, but not outside" in {
     class Foo extends RawModule {
