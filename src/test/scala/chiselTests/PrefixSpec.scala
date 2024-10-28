@@ -87,7 +87,7 @@ class PrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with Match
     matchesAndOmits(chirrtl)(lines: _*)()
   }
 
-  it should "Instnantiate should create distinct module definitions when instantiated with distinct prefixes" in {
+  it should "Instantiate should create distinct module definitions when instantiated with distinct prefixes" in {
     class Top extends Module {
       val width = 8
       val in = IO(Input(UInt(width.W)))
