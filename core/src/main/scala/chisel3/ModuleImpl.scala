@@ -694,7 +694,7 @@ package experimental {
         // their original modules names without uniquification
         this match {
           case _: PseudoModule => Module.currentModulePrefix + desiredName
-          case _: BlackBox     => Builder.globalNamespace.name(desiredName)
+          case _: BaseBlackBox     => Builder.globalNamespace.name(desiredName)
           case _ => Builder.globalNamespace.name(Module.currentModulePrefix + desiredName)
         }
       } catch {
