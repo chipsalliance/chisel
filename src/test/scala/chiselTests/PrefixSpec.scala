@@ -154,12 +154,12 @@ class PrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with Match
 
     matchesAndOmits(chirrtl)(lines: _*)("AddOne_1", "Bar_AddOne")
   }
-}
 
-// This has to be defined at the top-level because @instantiable doesn't work when nested.
-@instantiable
-class AddOne(width: Int) extends Module {
-  @public val in = IO(Input(UInt(width.W)))
-  @public val out = IO(Output(UInt(width.W)))
-  out := in + 1.U
+  // This has to be defined at the top-level because @instantiable doesn't work when nested.
+  @instantiable
+  class AddOne(width: Int) extends Module {
+    @public val in = IO(Input(UInt(width.W)))
+    @public val out = IO(Output(UInt(width.W)))
+    out := in + 1.U
+  }
 }
