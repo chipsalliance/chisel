@@ -206,7 +206,7 @@ trait Firrtl extends common.FirrtlModule with CrossSbtModule with ScalafmtModule
 
   def scoptIvy = v.scopt
 
-  object test extends SbtModuleTests with TestModule.ScalaTest with ScalafmtModule {
+  object test extends SbtTests with TestModule.ScalaTest with ScalafmtModule {
     def ivyDeps = Agg(v.scalatest, v.scalacheck)
   }
 }
@@ -221,7 +221,7 @@ trait Svsim extends common.SvsimModule with CrossSbtModule with ScalafmtModule {
     "-Xsource-features:case-apply-copy-access"
   )
 
-  object test extends SbtModuleTests with TestModule.ScalaTest with ScalafmtModule {
+  object test extends SbtTests with TestModule.ScalaTest with ScalafmtModule {
     def ivyDeps = Agg(v.scalatest, v.scalacheck)
   }
 }
@@ -333,7 +333,7 @@ trait Chisel extends common.ChiselModule with CrossSbtModule with ScalafmtModule
 
   def pluginModule = plugin(crossScalaVersion)
 
-  object test extends SbtModuleTests with TestModule.ScalaTest with ScalafmtModule {
+  object test extends SbtTests with TestModule.ScalaTest with ScalafmtModule {
     def ivyDeps = Agg(v.scalatest, v.scalacheck)
 
     // Suppress Scala 3 behavior requiring explicit types on implicit definitions
@@ -350,7 +350,7 @@ trait IntegrationTests extends CrossSbtModule with ScalafmtModule with common.Ha
 
   def millSourcePath = os.pwd / "integration-tests"
 
-  object test extends SbtModuleTests with TestModule.ScalaTest with ScalafmtModule {
+  object test extends SbtTests with TestModule.ScalaTest with ScalafmtModule {
     override def moduleDeps = super.moduleDeps :+ chisel().test
     def ivyDeps = Agg(v.scalatest, v.scalacheck)
   }
