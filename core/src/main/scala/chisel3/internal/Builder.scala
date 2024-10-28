@@ -1188,8 +1188,7 @@ private[chisel3] object Builder extends LazyLogging {
   }
 
   def getModulePrefixList: List[String] = {
-    val modulePrefixStack = chiselContext.get().modulePrefixStack
-    modulePrefixStack.toList
+    chiselContext.get().modulePrefixStack
   }
 
   initializeSingletons()
