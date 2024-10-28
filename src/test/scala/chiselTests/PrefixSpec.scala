@@ -126,7 +126,7 @@ class PrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with Match
     matchesAndOmits(chirrtl)(lines: _*)("AddOne_1")
   }
 
-  it should "Instnantiate should reference the same module definitions when instantiated with the same prefix" in {
+  it should "Instantiate should reference the same module definitions when instantiated with the same prefix" in {
     class Top extends Module {
       val width = 8
       val in = IO(Input(UInt(width.W)))
