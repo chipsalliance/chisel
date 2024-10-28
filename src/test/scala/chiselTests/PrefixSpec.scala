@@ -111,7 +111,6 @@ class PrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with Match
     }
 
     val chirrtl = emitCHIRRTL(new Top)
-    // println(chirrtl)
 
     val lines = """
       module Foo_AddOne :
@@ -145,7 +144,6 @@ class PrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with Match
     }
 
     val chirrtl = emitCHIRRTL(new Top)
-    // println(chirrtl)
 
     val lines = """
       module Foo_AddOne :
