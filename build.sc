@@ -5,7 +5,7 @@ import mill.scalalib.scalafmt._
 import mill.api.Result
 import mill.define.Cross
 import mill.scalalib.api.ZincWorkerUtil.matchingVersions
-import mill.util.Jvm.createJar
+import mill.util.Jvm
 import $ivy.`com.lihaoyi::mill-contrib-jmh:`
 import mill.contrib.jmh.JmhModule
 import $ivy.`io.chris-kipp::mill-ci-release::0.1.10`
@@ -46,6 +46,7 @@ object v {
   val dataclass = ivy"io.github.alexarchambault::data-class:0.2.6"
   val commonText = ivy"org.apache.commons:commons-text:1.12.0"
   val scopt = ivy"com.github.scopt::scopt:4.1.0"
+  val mdoc = ivy"org.scalameta::mdoc:2.3.7"
 
   def scalaReflect(scalaVersion: String) = ivy"org.scala-lang:scala-reflect:$scalaVersion"
 
@@ -432,6 +433,52 @@ object benchmark extends ScalaModule with JmhModule with ScalafmtModule {
   override def moduleDeps = Seq(chisel(v.scalaVersion))
 }
 
+/** MDoc project */
+object docs extends SbtModule with common.HasChiselPlugin {
+  override def scalaVersion = v.scalaVersion
+
+  def pluginModule = plugin(v.scalaVersion)
+
+  // Our scala sources to be used by mdoc live here
+  override def millSourcePath = super.millSourcePath / os.up / "docs-target"
+
+  override def ivyDeps = T { Agg(v.mdoc, v.scalatest) }
+
+  override def scalacOptions = super.scalacOptions() ++ v.commonOptions
+
+  override def moduleDeps = Seq(chisel(v.scalaVersion))
+
+  def mdocSourceDir = T { millSourcePath / os.up / "docs" / "src" }
+
+  def mdocOutDir = T { millSourcePath / os.up / "docs" / "generated" }
+
+  def mdocSources = T.sources { mdocSourceDir() }
+
+  def mdocExtraArguments = T {
+    // None of our links are hygienic because they're primarily used on the website with .html
+    Seq("--cwd", "docs", "--no-link-hygiene")
+  }
+
+  def mdoc = T {
+    val classpath = runClasspath().map(_.path)
+
+    //val dir = T.dest.toIO.getAbsolutePath
+    //val dirParams = mdocSources().map(pr => Seq(s"--in", pr.path.toIO.getAbsolutePath, "--out",  dir)).iterator.flatten.toSeq
+    val inOutArgs =
+      mdocSources().flatMap(inDir => Seq[String]("--in", inDir.path.toString, "--out", mdocOutDir().toString))
+    val mdocArgs =
+      Seq("--classpath", classpath.mkString(":")) ++
+        Seq("--scalac-options", scalacOptions().mkString(" ")) ++
+        inOutArgs ++ mdocExtraArguments()
+
+    T.log.debug("Running mdoc with args: " + mdocArgs.mkString(" "))
+
+    Jvm.runLocal("mdoc.Main", classpath, mdocArgs)
+
+    PathRef(T.dest)
+  }
+}
+
 /** Aggregate project for publishing Chisel as a single artifact
   */
 object unipublish extends ScalaModule with ChiselPublishModule {
@@ -483,7 +530,7 @@ object unipublish extends ScalaModule with ChiselPublishModule {
   override def sourceJar: T[PathRef] = T {
     // This is based on the implementation of sourceJar in PublishModule, may need to be kept in sync.
     val allDirs = aggregatedSources() ++ aggregatedResources() ++ aggregatedCompileResources()
-    createJar(allDirs.map(_.path).filter(os.exists), manifest())
+    Jvm.createJar(allDirs.map(_.path).filter(os.exists), manifest())
   }
 
   // Needed for ScalaDoc
@@ -554,7 +601,7 @@ object unipublish extends ScalaModule with ChiselPublishModule {
         scalacPluginClasspath(),
         fullOptions
       ) match {
-      case true  => Result.Success(createJar(Agg(javadocDir))(T.dest))
+      case true  => Result.Success(Jvm.createJar(Agg(javadocDir))(T.dest))
       case false => Result.Failure("docJar generation failed")
     }
   }
