@@ -6,8 +6,18 @@ import chisel3._
 import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance, Instantiate}
 import circt.stage.ChiselStage.emitCHIRRTL
 
-class PrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with MatchesAndOmits {
+object PrefixSpec {
+  // This has to be defined at the top-level because @instantiable doesn't work when nested.
+  @instantiable
+  class AddOne(width: Int) extends Module {
+    @public val in = IO(Input(UInt(width.W)))
+    @public val out = IO(Output(UInt(width.W)))
+    out := in + 1.U
+  }
+}
 
+class PrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with MatchesAndOmits {
+  import PrefixSpec._
   behavior.of("withModulePrefix")
 
   it should "prefix modules in a withModulePrefix block, but not outside" in {
@@ -153,13 +163,5 @@ class PrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with Match
         """.linesIterator.map(_.trim).toSeq
 
     matchesAndOmits(chirrtl)(lines: _*)("AddOne_1", "Bar_AddOne")
-  }
-
-  // This has to be defined at the top-level because @instantiable doesn't work when nested.
-  @instantiable
-  class AddOne(width: Int) extends Module {
-    @public val in = IO(Input(UInt(width.W)))
-    @public val out = IO(Output(UInt(width.W)))
-    out := in + 1.U
   }
 }
