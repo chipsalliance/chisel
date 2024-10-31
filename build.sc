@@ -11,8 +11,8 @@ import mill.contrib.jmh.JmhModule
 import $ivy.`io.chris-kipp::mill-ci-release::0.1.10`
 import io.kipp.mill.ci.release.{CiReleaseModule, SonatypeHost}
 import de.tobiasroeser.mill.vcs.version.VcsVersion // pulled in by mill-ci-release
-import $file.common
-import $file.tests
+
+import $file.panama
 
 object v {
 
@@ -32,9 +32,11 @@ object v {
     val versions = minVersion to latest213
     versions.map(v => s"2.13.$v").toSeq
   }
+
   val scalaCrossVersions = Seq(
     "2.13.15"
   )
+
   val scalaVersion = scalaCrossVersions.head
   val jmhVersion = "1.37"
   val osLib = ivy"com.lihaoyi::os-lib:0.10.0"
@@ -53,105 +55,20 @@ object v {
 
   def scalaLibrary(scalaVersion: String) = ivy"org.scala-lang:scala-library:$scalaVersion"
 
-  // 21, 1-2, {linux-x64, macos-x64, windows-x64}
-  // 22, 1-2, {linux-x64, macos-aarch64, macos-x64, windows-x64}
-  def jextract(jdkVersion: Int, jextractVersion: String, os: String, platform: String) =
-    s"https://download.java.net/java/early_access/jextract/21/1/openjdk-${jdkVersion}-jextract+${jextractVersion}_${os}-${platform}_bin.tar.gz"
-
   def circt(version: String, os: String, platform: String) =
     s"https://github.com/llvm/circt/releases/download/firtool-${version}/circt-full-shared-${os}-${platform}.tar.gz"
-
-  val warnConf = Seq(
-    "msg=APIs in chisel3.internal:s",
-    "msg=Importing from firrtl:s",
-    "msg=migration to the MLIR:s",
-    "msg=method hasDefiniteSize in trait IterableOnceOps is deprecated:s", // replacement `knownSize` is not in 2.12
-    "msg=object JavaConverters in package collection is deprecated:s",
-    "msg=undefined in comment for method cf in class PrintableHelper:s",
-    // This is deprecated for external users but not internal use
-    "cat=deprecation&origin=firrtl\\.options\\.internal\\.WriteableCircuitAnnotation:s",
-    "cat=deprecation&origin=chisel3\\.util\\.experimental\\.BoringUtils.*:s",
-    "cat=deprecation&origin=chisel3\\.experimental\\.IntrinsicModule:s",
-    "cat=deprecation&origin=chisel3\\.ltl.*:s"
-  )
-
-  // ScalacOptions
-  val commonOptions = Seq(
-    "-deprecation",
-    "-feature",
-    "-unchecked",
-    "-Werror",
-    "-Ymacro-annotations",
-    "-explaintypes",
-    "-Xcheckinit",
-    "-Xlint:infer-any",
-    "-Xlint:missing-interpolator",
-    "-language:reflectiveCalls",
-    s"-Wconf:${warnConf.mkString(",")}"
-  )
 }
 
-object utils extends Module {
-
-  val architecture = System.getProperty("os.arch")
-  val operationSystem = System.getProperty("os.name")
-
-  val mac = operationSystem.toLowerCase.startsWith("mac")
-  val linux = operationSystem.toLowerCase.startsWith("linux")
-  val windows = operationSystem.toLowerCase.startsWith("win")
-  val amd64 = architecture.matches("^(x8664|amd64|ia32e|em64t|x64|x86_64)$")
-  val aarch64 = architecture.equals("aarch64") | architecture.startsWith("armv8")
-
+private object utils extends Module {
   val firtoolVersion = {
     val j = _root_.upickle.default.read[Map[String, String]](os.read(millSourcePath / os.up / "etc" / "circt.json"))
     j("version").stripPrefix("firtool-")
   }
 
-  // use T.persistent to avoid download repeatedly
-  def circtInstallDir: T[os.Path] = T.persistent {
-    T.ctx().env.get("CIRCT_INSTALL_PATH") match {
-      case Some(dir) => os.Path(dir)
-      case None =>
-        T.ctx().log.info("Use CIRCT_INSTALL_PATH to vendor circt")
-        val tarPath = T.dest / "circt.tar.gz"
-        if (!os.exists(tarPath)) {
-          val url = v.circt(
-            firtoolVersion,
-            if (linux) "linux" else if (mac) "macos" else throw new Exception("unsupported os"),
-            // circt does not yet publish for macos-aarch64, use x64 for now
-            if (amd64 || mac) "x64" else throw new Exception("unsupported arch")
-          )
-          T.ctx().log.info(s"Downloading circt from ${url}")
-          mill.util.Util.download(url, os.rel / "circt.tar.gz")
-          T.ctx().log.info(s"Download Successfully")
-        }
-        os.proc("tar", "xvf", tarPath, "--strip-components=1").call(T.dest)
-        T.dest
-    }
-  }
-
-  // use T.persistent to avoid download repeatedly
-  def jextractInstallDir: T[os.Path] = T.persistent {
-    T.ctx().env.get("JEXTRACT_INSTALL_PATH") match {
-      case Some(dir) => os.Path(dir)
-      case None =>
-        T.ctx().log.info("Use JEXTRACT_INSTALL_PATH to vendor jextract")
-        val tarPath = T.dest / "jextract.tar.gz"
-        if (!os.exists(tarPath)) {
-          val url = v.jextract(
-            21,
-            "1-2",
-            if (linux) "linux" else if (mac) "macos" else throw new Exception("unsupported os"),
-            // There is no macos-aarch64 for jextract 21, use x64 for now
-            if (amd64 || mac) "x64" else if (aarch64) "aarch64" else throw new Exception("unsupported arch")
-          )
-          T.ctx().log.info(s"Downloading jextract from ${url}")
-          mill.util.Util.download(url, os.rel / "jextract.tar.gz")
-          T.ctx().log.info(s"Download Successfully")
-        }
-        os.proc("tar", "xvf", tarPath, "--strip-components=1").call(T.dest)
-        T.dest
-    }
+  def isScala3(ver: String): Boolean = ver match {
+    case "3.4.2" => true
+    case "2.13.15" => false
+    case _ => false // todo throw error here?
   }
 }
 
@@ -182,29 +99,48 @@ trait ChiselPublishModule extends CiReleaseModule {
 
 }
 
+trait HasScala2MacroAnno extends CrossSbtModule {
+  override def scalacOptions = T {
+    if (!utils.isScala3(crossValue)) {
+      super.scalacOptions() ++ Agg("-Ymacro-annotations")
+    } else super.scalacOptions()
+  }
+}
+
+trait HasScala2Plugin extends CrossSbtModule {
+  def pluginModule: Plugin
+
+  override def scalacOptions = T {
+    if (!utils.isScala3(crossValue)) {
+      super.scalacOptions() ++ Agg(s"-Xplugin:${pluginModule.jar().path}")
+    } else super.scalacOptions()
+  }
+
+  override def scalacPluginClasspath = T {
+    if (!utils.isScala3(crossValue)) {
+      super.scalacPluginClasspath() ++ Agg(pluginModule.jar())
+    } else super.scalacPluginClasspath()
+  }
+}
+
 object firrtl extends Cross[Firrtl](v.scalaCrossVersions)
 
-trait Firrtl extends common.FirrtlModule with CrossSbtModule with ScalafmtModule {
-  def millSourcePath = super.millSourcePath / os.up / "firrtl"
+trait Firrtl extends CrossSbtModule with Cross.Module[String] with HasScala2MacroAnno with ScalafmtModule {
+  def scalaVersion = crossValue
 
-  override def scalacOptions = v.commonOptions ++ Seq(
-    "-language:reflectiveCalls",
-    "-language:existentials",
-    "-language:implicitConversions",
-    "-Yrangepos", // required by SemanticDB compiler plugin
-    "-Xsource:3",
-    "-Xsource-features:infer-override"
+  val commonDeps = Agg(
+    ivy"com.github.scopt::scopt:4.1.0",
+    ivy"org.apache.commons:commons-text:1.12.0",
+    ivy"com.lihaoyi::os-lib:0.10.0",
+    ivy"org.json4s::json4s-native:4.1.0-M5",
   )
 
-  def osLibModuleIvy = v.osLib
-
-  def json4sIvy = v.json4s
-
-  def dataclassIvy = v.dataclass
-
-  def commonTextIvy = v.commonText
-
-  def scoptIvy = v.scopt
+  def ivyDeps = utils.isScala3(crossValue) match {
+    case true => commonDeps
+    case false => commonDeps ++ Agg(
+      ivy"io.github.alexarchambault::data-class:0.2.6"
+    )
+  }
 
   object test extends SbtModuleTests with TestModule.ScalaTest with ScalafmtModule {
     def ivyDeps = Agg(v.scalatest, v.scalacheck)
@@ -212,14 +148,8 @@ trait Firrtl extends common.FirrtlModule with CrossSbtModule with ScalafmtModule
 }
 
 object svsim extends Cross[Svsim](v.scalaCrossVersions)
-
-trait Svsim extends common.SvsimModule with CrossSbtModule with ScalafmtModule {
+trait Svsim extends CrossSbtModule with ScalafmtModule {
   def millSourcePath = super.millSourcePath / os.up / "svsim"
-
-  override def scalacOptions = v.commonOptions ++ Seq(
-    "-Xsource:3",
-    "-Xsource-features:case-apply-copy-access"
-  )
 
   object test extends SbtModuleTests with TestModule.ScalaTest with ScalafmtModule {
     def ivyDeps = Agg(v.scalatest, v.scalacheck)
@@ -227,35 +157,32 @@ trait Svsim extends common.SvsimModule with CrossSbtModule with ScalafmtModule {
 }
 
 object macros extends Cross[Macros](v.scalaCrossVersions)
-
-trait Macros extends common.MacrosModule with CrossSbtModule with ScalafmtModule {
+trait Macros extends CrossSbtModule with HasScala2MacroAnno with ScalafmtModule {
   def millSourcePath = super.millSourcePath / os.up / "macros"
-
-  override def scalacOptions = v.commonOptions ++ Seq(
-    "-Xsource:3"
-  )
-
-  def scalaReflectIvy = v.scalaReflect(crossScalaVersion)
+  override def ivyDeps = super.ivyDeps() ++ Seq(ivy"org.scala-lang:scala-reflect:$scalaVersion")
 }
 
 object core extends Cross[Core](v.scalaCrossVersions)
-
-trait Core extends common.CoreModule with CrossSbtModule with ScalafmtModule {
+trait Core extends CrossSbtModule with HasScala2MacroAnno with ScalafmtModule {
+  def scalaVersion = crossValue
   def millSourcePath = super.millSourcePath / os.up / "core"
 
-  override def scalacOptions = v.commonOptions ++ Seq(
-    "-Xsource:3"
+  val crossModuleDeps = Seq(firrtl(crossScalaVersion)) ++ {
+    if (utils.isScala3(crossValue)) Seq.empty
+    else Seq(macros(crossScalaVersion))
+  }
+
+  override def moduleDeps = super.moduleDeps ++ crossModuleDeps
+
+  val commonDeps = Agg(
+    ivy"com.lihaoyi::os-lib:0.10.0",
+    ivy"com.lihaoyi::upickle:3.3.1"
   )
 
-  def firrtlModule = firrtl(crossScalaVersion)
-
-  def macrosModule = macros(crossScalaVersion)
-
-  def osLibModuleIvy = v.osLib
-
-  def upickleModuleIvy = v.upickle
-
-  def firtoolResolverModuleIvy = v.firtoolResolver
+  override def ivyDeps = utils.isScala3(crossValue) match {
+    case true => super.ivyDeps() ++ commonDeps
+    case false => super.ivyDeps() ++ commonDeps ++ Agg(ivy"org.chipsalliance::firtool-resolver:2.0.0")
+  }
 
   // Similar to the publish version, but no dirty indicators because otherwise
   // this file will change any time any file is changed.
@@ -270,7 +197,6 @@ trait Core extends common.CoreModule with CrossSbtModule with ScalafmtModule {
         dirtyHashDigits = 0
       )
   }
-
   def buildInfo = T {
     val outputFile = T.dest / "chisel3" / "BuildInfo.scala"
     val firtoolVersionString = "Some(\"" + utils.firtoolVersion + "\")"
@@ -294,15 +220,13 @@ trait Core extends common.CoreModule with CrossSbtModule with ScalafmtModule {
     os.write(outputFile, contents, createFolders = true)
     PathRef(T.dest)
   }
-
   override def generatedSources = T {
     super.generatedSources() :+ buildInfo()
   }
 }
 
 object plugin extends Cross[Plugin](v.pluginScalaCrossVersions)
-
-trait Plugin extends common.PluginModule with CrossSbtModule with ScalafmtModule with ChiselPublishModule {
+trait Plugin extends CrossSbtModule with ScalafmtModule with ChiselPublishModule {
   override def artifactName = "chisel-plugin"
 
   // The plugin is compiled for every minor Scala version
@@ -315,37 +239,27 @@ trait Plugin extends common.PluginModule with CrossSbtModule with ScalafmtModule
   def scalaReflectIvy = v.scalaReflect(crossScalaVersion)
 
   def scalaCompilerIvy: Dep = v.scalaCompiler(crossScalaVersion)
+
+  def ivyDeps = super.ivyDeps() ++ Agg(scalaLibraryIvy, scalaReflectIvy, scalaCompilerIvy)
 }
 
 object chisel extends Cross[Chisel](v.scalaCrossVersions)
-
-trait Chisel extends common.ChiselModule with CrossSbtModule with ScalafmtModule {
+trait Chisel extends CrossSbtModule with HasScala2MacroAnno with ScalafmtModule {
   override def millSourcePath = super.millSourcePath / os.up
-
-  // Make sure to include super.scalacOptions for Chisel Plugin
-  override def scalacOptions = T(super.scalacOptions() ++ v.commonOptions)
 
   def svsimModule = svsim(crossScalaVersion)
 
-  def macrosModule = macros(crossScalaVersion)
-
   def coreModule = core(crossScalaVersion)
 
-  def pluginModule = plugin(crossScalaVersion)
+  override def moduleDeps = super.moduleDeps ++ Seq(coreModule, svsimModule)
 
   object test extends SbtModuleTests with TestModule.ScalaTest with ScalafmtModule {
     def ivyDeps = Agg(v.scalatest, v.scalacheck)
-
-    // Suppress Scala 3 behavior requiring explicit types on implicit definitions
-    // Note this must come before the -Wconf is warningSuppression
-    override def scalacOptions = T { super.scalacOptions() :+ "-Wconf:cat=other-implicit-type:s" }
   }
 }
 
 object integrationTests extends Cross[IntegrationTests](v.scalaCrossVersions)
-
-trait IntegrationTests extends CrossSbtModule with ScalafmtModule with common.HasChiselPlugin {
-
+trait IntegrationTests extends CrossSbtModule with ScalafmtModule with HasScala2Plugin {
   def pluginModule = plugin()
 
   def millSourcePath = os.pwd / "integration-tests"
@@ -357,72 +271,12 @@ trait IntegrationTests extends CrossSbtModule with ScalafmtModule with common.Ha
 }
 
 object stdlib extends Cross[Stdlib](v.scalaCrossVersions)
-
-trait Stdlib extends common.StdLibModule with CrossSbtModule with ScalafmtModule {
+trait Stdlib extends CrossSbtModule with ScalafmtModule {
   def millSourcePath = super.millSourcePath / os.up / "stdlib"
 
   def chiselModule = chisel(crossScalaVersion)
 
   def pluginModule = plugin(crossScalaVersion)
-}
-
-object circtpanamabinding extends CIRCTPanamaBinding
-
-trait CIRCTPanamaBinding extends common.CIRCTPanamaBindingModule {
-
-  def header = T(PathRef(millSourcePath / "jextract-headers.h"))
-
-  def circtInstallPath = T(utils.circtInstallDir())
-
-  def jextractBinary = T(utils.jextractInstallDir() / "bin" / "jextract")
-
-  def includePaths = T(Seq(PathRef(circtInstallPath() / "include")))
-
-  def libraryPaths = T(Seq(PathRef(circtInstallPath() / "lib")))
-}
-
-object panamalib extends Cross[PanamaLib](v.scalaCrossVersions)
-
-trait PanamaLib extends common.PanamaLibModule with CrossModuleBase with ScalafmtModule {
-  def circtPanamaBindingModule = circtpanamabinding
-}
-
-object panamaom extends Cross[PanamaOM](v.scalaCrossVersions)
-
-trait PanamaOM extends common.PanamaOMModule with CrossModuleBase with ScalafmtModule {
-  def panamaLibModule = panamalib(crossScalaVersion)
-}
-
-object panamaconverter extends Cross[PanamaConverter](v.scalaCrossVersions)
-
-trait PanamaConverter extends common.PanamaConverterModule with CrossModuleBase with ScalafmtModule {
-  def panamaOMModule = panamaom(crossScalaVersion)
-
-  def chiselModule = chisel(crossScalaVersion)
-
-  def pluginModule = plugin(crossScalaVersion)
-}
-
-object litutility extends Cross[LitUtility](v.scalaCrossVersions)
-
-trait LitUtility extends tests.LitUtilityModule with CrossModuleBase with ScalafmtModule {
-  def millSourcePath = super.millSourcePath / os.up / "lit" / "utility"
-  def panamaConverterModule = panamaconverter(crossScalaVersion)
-  def panamaOMModule = panamaom(crossScalaVersion)
-}
-
-object lit extends Cross[Lit](v.scalaCrossVersions)
-
-trait Lit extends tests.LitModule with Cross.Module[String] {
-  def scalaVersion: T[String] = crossValue
-  def runClasspath: T[Seq[os.Path]] = T(litutility(crossValue).runClasspath().map(_.path))
-  def pluginJars:   T[Seq[os.Path]] = T(Seq(litutility(crossValue).panamaConverterModule.pluginModule.jar().path))
-  def javaLibraryPath: T[Seq[os.Path]] = T(
-    litutility(crossValue).panamaConverterModule.circtPanamaBindingModule.libraryPaths().map(_.path)
-  )
-  def javaHome:     T[os.Path] = T(os.Path(sys.props("java.home")))
-  def chiselLitDir: T[os.Path] = T(millSourcePath)
-  def litConfigIn:  T[PathRef] = T.source(millSourcePath / "tests" / "lit.site.cfg.py.in")
 }
 
 object benchmark extends ScalaModule with JmhModule with ScalafmtModule {
@@ -487,7 +341,9 @@ object unipublish extends ScalaModule with ChiselPublishModule {
   }
 
   // Needed for ScalaDoc
-  override def scalacOptions = v.commonOptions
+  override def scalacOptions = T {
+    Seq("-Ymacro-annotations")
+  }
 
   def scalaDocRootDoc = T.source { T.workspace / "root-doc.txt" }
 
@@ -559,3 +415,4 @@ object unipublish extends ScalaModule with ChiselPublishModule {
     }
   }
 }
+
