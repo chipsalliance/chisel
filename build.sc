@@ -315,20 +315,34 @@ trait PanamaOM extends panama.PanamaOMModule with CrossModuleBase with ScalafmtM
 
 object panamaconverter extends Cross[PanamaConverter](v.scalaCrossVersions)
 
-trait PanamaConverter extends panama.PanamaConverterModule with CrossModuleBase with ScalafmtModule {
+trait PanamaConverter extends
+    panama.PanamaConverterModule
+    with CrossModuleBase
+    with HasScala2Plugin
+    with ScalafmtModule {
   def panamaOMModule = panamaom(crossScalaVersion)
 
-  def chiselModule = millbuild.build.chisel(crossScalaVersion)
+  def chiselModule = chisel(crossScalaVersion)
 
-  def pluginModule = millbuild.build.plugin(crossScalaVersion)
+  def pluginModule = plugin(crossScalaVersion)
+
+  override def moduleDeps = super.moduleDeps ++ Some(chiselModule)
 }
 
 object litutility extends Cross[LitUtility](v.scalaCrossVersions)
 
-trait LitUtility extends panama.LitUtilityModule with CrossModuleBase with ScalafmtModule {
+trait LitUtility extends
+    panama.LitUtilityModule
+    with CrossModuleBase
+    with HasScala2Plugin
+    with ScalafmtModule {
+  def chiselModule = chisel(crossScalaVersion)
+  def pluginModule = plugin(crossScalaVersion)
   def millSourcePath = super.millSourcePath / os.up / "lit" / "utility"
   def panamaConverterModule = panamaconverter(crossScalaVersion)
   def panamaOMModule = panamaom(crossScalaVersion)
+
+  override def moduleDeps = super.moduleDeps ++ Some(chiselModule)
 }
 
 object lit extends Cross[Lit](v.scalaCrossVersions)

@@ -8,7 +8,6 @@ import mill.scalalib.scalafmt._
 
 import java.util
 import scala.jdk.StreamConverters.StreamHasToScala
-import $file.build
 
 object utils extends Module {
   val architecture = System.getProperty("os.arch")
@@ -79,24 +78,6 @@ object utils extends Module {
         T.dest
     }
   }
-}
-
-trait HasScala2ChiselPlugin extends CrossSbtModule {
-  def pluginModule: build.Plugin
-
-  override def scalacOptions = T {
-    super.scalacOptions() ++ Agg(s"-Xplugin:${pluginModule.jar().path}")
-  }
-
-  override def scalacPluginClasspath = T {
-    super.scalacPluginClasspath() ++ Agg(pluginModule.jar())
-  }
-}
-
-trait HasChisel extends ScalaModule with HasScala2ChiselPlugin {
-  def chiselModule: build.Chisel
-
-  override def moduleDeps = super.moduleDeps ++ Some(chiselModule)
 }
 
 trait HasJextractGeneratedSources extends JavaModule {
@@ -226,34 +207,17 @@ trait HasPanamaOMModule extends ScalaModule with HasCIRCTPanamaBindingModule {
   override def moduleDeps = super.moduleDeps ++ Some(panamaOMModule)
 }
 
-trait PanamaConverterModule extends ScalaModule with HasPanamaOMModule with HasChisel
+trait PanamaConverterModule extends ScalaModule with HasPanamaOMModule
 
-trait HasPanamaConverterModule extends ScalaModule with HasCIRCTPanamaBindingModule with HasChisel {
+trait HasPanamaConverterModule extends ScalaModule with HasCIRCTPanamaBindingModule {
   def panamaConverterModule: PanamaConverterModule
 
   def circtPanamaBindingModule = panamaConverterModule.circtPanamaBindingModule
-
-  override def chiselModule = panamaConverterModule.chiselModule
-
-  override def pluginModule = panamaConverterModule.pluginModule
 
   override def moduleDeps = super.moduleDeps ++ Some(panamaConverterModule)
 }
 
 trait PanamaOM extends PanamaOMModule with CrossModuleBase with ScalafmtModule
-
-object litutility extends Cross[build.LitUtility](build.v.scalaCrossVersions)
-trait Lit extends LitModule with Cross.Module[String] {
-  def scalaVersion: T[String] = crossValue
-  def runClasspath: T[Seq[os.Path]] = T(litutility(crossValue).runClasspath().map(_.path))
-  def pluginJars:   T[Seq[os.Path]] = T(Seq(litutility(crossValue).panamaConverterModule.pluginModule.jar().path))
-  def javaLibraryPath: T[Seq[os.Path]] = T(
-    litutility(crossValue).panamaConverterModule.circtPanamaBindingModule.libraryPaths().map(_.path)
-  )
-  def javaHome:     T[os.Path] = T(os.Path(sys.props("java.home")))
-  def chiselLitDir: T[os.Path] = T(millSourcePath)
-  def litConfigIn:  T[PathRef] = T.source(millSourcePath / "tests" / "lit.site.cfg.py.in")
-}
 
 trait LitUtilityModule extends ScalaModule with HasPanamaConverterModule with HasPanamaOMModule {
   override def scalacOptions = T { Seq("-Ymacro-annotations") }
