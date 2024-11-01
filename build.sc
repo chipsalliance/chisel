@@ -55,6 +55,35 @@ object v {
 
   def circt(version: String, os: String, platform: String) =
     s"https://github.com/llvm/circt/releases/download/firtool-${version}/circt-full-shared-${os}-${platform}.tar.gz"
+
+  val scala2WarnConf = Seq(
+    "msg=APIs in chisel3.internal:s",
+    "msg=Importing from firrtl:s",
+    "msg=migration to the MLIR:s",
+    "msg=method hasDefiniteSize in trait IterableOnceOps is deprecated:s", // replacement `knownSize` is not in 2.12
+    "msg=object JavaConverters in package collection is deprecated:s",
+    "msg=undefined in comment for method cf in class PrintableHelper:s",
+    // This is deprecated for external users but not internal use
+    "cat=deprecation&origin=firrtl\\.options\\.internal\\.WriteableCircuitAnnotation:s",
+    "cat=deprecation&origin=chisel3\\.util\\.experimental\\.BoringUtils.*:s",
+    "cat=deprecation&origin=chisel3\\.experimental\\.IntrinsicModule:s",
+    "cat=deprecation&origin=chisel3\\.ltl.*:s"
+  )
+
+  // ScalacOptions
+  val scala2CommonOptions = Seq(
+    "-deprecation",
+    "-feature",
+    "-unchecked",
+    "-Werror",
+    "-Ymacro-annotations",
+    "-explaintypes",
+    "-Xcheckinit",
+    "-Xlint:infer-any",
+    "-Xlint:missing-interpolator",
+    "-language:reflectiveCalls",
+    s"-Wconf:${scala2WarnConf.mkString(",")}"
+  )
 }
 
 private object utils extends Module {
@@ -124,20 +153,31 @@ trait HasScala2Plugin extends CrossSbtModule {
 object firrtl extends Cross[Firrtl](v.scalaCrossVersions)
 
 trait Firrtl extends CrossSbtModule with Cross.Module[String] with HasScala2MacroAnno with ScalafmtModule {
+  def millSourcePath = super.millSourcePath / os.up / "firrtl"
   def scalaVersion = crossValue
 
+  override def scalacOptions = utils.isScala3(crossValue) match {
+    case false => v.scala2CommonOptions ++ Seq(
+      "-language:reflectiveCalls",
+      "-language:existentials",
+      "-language:implicitConversions",
+      "-Yrangepos", // required by SemanticDB compiler plugin
+      "-Xsource:3",
+      "-Xsource-features:infer-override"
+    )
+    case true => Seq.empty
+  }
+
   val commonDeps = Agg(
-    ivy"com.github.scopt::scopt:4.1.0",
-    ivy"org.apache.commons:commons-text:1.12.0",
-    ivy"com.lihaoyi::os-lib:0.10.0",
-    ivy"org.json4s::json4s-native:4.1.0-M5",
+    v.scopt,
+    v.commonText,
+    v.osLib,
+    v.json4s
   )
 
   def ivyDeps = utils.isScala3(crossValue) match {
     case true => commonDeps
-    case false => commonDeps ++ Agg(
-      ivy"io.github.alexarchambault::data-class:0.2.6"
-    )
+    case false => commonDeps ++ Agg(v.dataclass)
   }
 
   object test extends SbtModuleTests with TestModule.ScalaTest with ScalafmtModule {
@@ -149,6 +189,14 @@ object svsim extends Cross[Svsim](v.scalaCrossVersions)
 trait Svsim extends CrossSbtModule with ScalafmtModule {
   def millSourcePath = super.millSourcePath / os.up / "svsim"
 
+  override def scalacOptions = utils.isScala3(crossValue) match {
+    case false => v.scala2CommonOptions ++ Seq(
+      "-Xsource:3",
+      "-Xsource-features:case-apply-copy-access"
+    )
+    case true => Seq.empty
+  }
+
   object test extends SbtModuleTests with TestModule.ScalaTest with ScalafmtModule {
     def ivyDeps = Agg(v.scalatest, v.scalacheck)
   }
@@ -157,6 +205,14 @@ trait Svsim extends CrossSbtModule with ScalafmtModule {
 object macros extends Cross[Macros](v.scalaCrossVersions)
 trait Macros extends CrossSbtModule with HasScala2MacroAnno with ScalafmtModule {
   def millSourcePath = super.millSourcePath / os.up / "macros"
+
+  override def scalacOptions = utils.isScala3(crossValue) match {
+    case false => v.scala2CommonOptions ++ Seq(
+      "-Xsource:3"
+    )
+    case true => Seq.empty
+  }
+
   override def ivyDeps = super.ivyDeps() ++ Seq(ivy"org.scala-lang:scala-reflect:$scalaVersion")
 }
 
@@ -164,6 +220,13 @@ object core extends Cross[Core](v.scalaCrossVersions)
 trait Core extends CrossSbtModule with HasScala2MacroAnno with ScalafmtModule {
   def scalaVersion = crossValue
   def millSourcePath = super.millSourcePath / os.up / "core"
+
+  override def scalacOptions = utils.isScala3(crossValue) match {
+    case false => v.scala2CommonOptions ++ Seq(
+      "-Xsource:3"
+    )
+    case true => Seq.empty
+  }
 
   val crossModuleDeps = Seq(firrtl(crossScalaVersion)) ++ {
     if (utils.isScala3(crossValue)) Seq.empty
@@ -173,13 +236,13 @@ trait Core extends CrossSbtModule with HasScala2MacroAnno with ScalafmtModule {
   override def moduleDeps = super.moduleDeps ++ crossModuleDeps
 
   val commonDeps = Agg(
-    ivy"com.lihaoyi::os-lib:0.10.0",
-    ivy"com.lihaoyi::upickle:3.3.1"
+    v.osLib,
+    v.upickle
   )
 
   override def ivyDeps = utils.isScala3(crossValue) match {
     case true => super.ivyDeps() ++ commonDeps
-    case false => super.ivyDeps() ++ commonDeps ++ Agg(ivy"org.chipsalliance::firtool-resolver:2.0.0")
+    case false => super.ivyDeps() ++ commonDeps ++ Agg(v.firtoolResolver)
   }
 
   // Similar to the publish version, but no dirty indicators because otherwise
@@ -226,6 +289,7 @@ trait Core extends CrossSbtModule with HasScala2MacroAnno with ScalafmtModule {
 object plugin extends Cross[Plugin](v.pluginScalaCrossVersions)
 trait Plugin extends CrossSbtModule with ScalafmtModule with ChiselPublishModule {
   override def artifactName = "chisel-plugin"
+
   // The plugin is compiled for every minor Scala version
   override def crossFullScalaVersion = true
 
@@ -247,6 +311,10 @@ trait Chisel extends CrossSbtModule with HasScala2MacroAnno with ScalafmtModule 
 
   object test extends SbtModuleTests with TestModule.ScalaTest with ScalafmtModule {
     def ivyDeps = Agg(v.scalatest, v.scalacheck)
+
+    // Suppress Scala 3 behavior requiring explicit types on implicit definitions
+    // Note this must come before the -Wconf is warningSuppression
+    override def scalacOptions = T { super.scalacOptions() :+ "-Wconf:cat=other-implicit-type:s" }
   }
 }
 
@@ -453,8 +521,8 @@ object unipublish extends ScalaModule with ChiselPublishModule {
     os.makeDir(javadocDir)
 
     val fullOptions = unidocOptions() ++
-      Seq("-d", javadocDir.toString) ++
-      unidocSourceFiles().map(_.path.toString)
+    Seq("-d", javadocDir.toString) ++
+    unidocSourceFiles().map(_.path.toString)
 
     zincWorker()
       .worker()
@@ -465,8 +533,8 @@ object unipublish extends ScalaModule with ChiselPublishModule {
         scalacPluginClasspath(),
         fullOptions
       ) match {
-      case true  => Result.Success(createJar(Agg(javadocDir))(T.dest))
-      case false => Result.Failure("docJar generation failed")
-    }
+        case true  => Result.Success(createJar(Agg(javadocDir))(T.dest))
+        case false => Result.Failure("docJar generation failed")
+      }
   }
 }
