@@ -50,9 +50,7 @@ object v {
   val scopt = ivy"com.github.scopt::scopt:4.1.0"
 
   def scalaReflect(scalaVersion: String) = ivy"org.scala-lang:scala-reflect:$scalaVersion"
-
   def scalaCompiler(scalaVersion: String) = ivy"org.scala-lang:scala-compiler:$scalaVersion"
-
   def scalaLibrary(scalaVersion: String) = ivy"org.scala-lang:scala-library:$scalaVersion"
 
   def circt(version: String, os: String, platform: String) =
@@ -228,16 +226,12 @@ trait Core extends CrossSbtModule with HasScala2MacroAnno with ScalafmtModule {
 object plugin extends Cross[Plugin](v.pluginScalaCrossVersions)
 trait Plugin extends CrossSbtModule with ScalafmtModule with ChiselPublishModule {
   override def artifactName = "chisel-plugin"
-
   // The plugin is compiled for every minor Scala version
   override def crossFullScalaVersion = true
 
   def millSourcePath = super.millSourcePath / os.up / "plugin"
-
   def scalaLibraryIvy = v.scalaLibrary(crossScalaVersion)
-
   def scalaReflectIvy = v.scalaReflect(crossScalaVersion)
-
   def scalaCompilerIvy: Dep = v.scalaCompiler(crossScalaVersion)
 
   def ivyDeps = super.ivyDeps() ++ Agg(scalaLibraryIvy, scalaReflectIvy, scalaCompilerIvy)
@@ -246,9 +240,7 @@ trait Plugin extends CrossSbtModule with ScalafmtModule with ChiselPublishModule
 object chisel extends Cross[Chisel](v.scalaCrossVersions)
 trait Chisel extends CrossSbtModule with HasScala2MacroAnno with ScalafmtModule {
   override def millSourcePath = super.millSourcePath / os.up
-
   def svsimModule = svsim(crossScalaVersion)
-
   def coreModule = core(crossScalaVersion)
 
   override def moduleDeps = super.moduleDeps ++ Seq(coreModule, svsimModule)
@@ -261,7 +253,6 @@ trait Chisel extends CrossSbtModule with HasScala2MacroAnno with ScalafmtModule 
 object integrationTests extends Cross[IntegrationTests](v.scalaCrossVersions)
 trait IntegrationTests extends CrossSbtModule with ScalafmtModule with HasScala2Plugin {
   def pluginModule = plugin()
-
   def millSourcePath = os.pwd / "integration-tests"
 
   object test extends SbtModuleTests with TestModule.ScalaTest with ScalafmtModule {
@@ -273,9 +264,7 @@ trait IntegrationTests extends CrossSbtModule with ScalafmtModule with HasScala2
 object stdlib extends Cross[Stdlib](v.scalaCrossVersions)
 trait Stdlib extends CrossSbtModule with ScalafmtModule {
   def millSourcePath = super.millSourcePath / os.up / "stdlib"
-
   def chiselModule = chisel(crossScalaVersion)
-
   def pluginModule = plugin(crossScalaVersion)
 }
 
@@ -289,15 +278,10 @@ object benchmark extends ScalaModule with JmhModule with ScalafmtModule {
 object circtpanamabinding extends CIRCTPanamaBinding
 
 trait CIRCTPanamaBinding extends panama.CIRCTPanamaBindingModule {
-
   def header = T(PathRef(millSourcePath / "jextract-headers.h"))
-
   def circtInstallPath = T(panama.utils.circtInstallDir())
-
   def jextractBinary = T(panama.utils.jextractInstallDir() / "bin" / "jextract")
-
   def includePaths = T(Seq(PathRef(circtInstallPath() / "include")))
-
   def libraryPaths = T(Seq(PathRef(circtInstallPath() / "lib")))
 }
 
@@ -321,9 +305,7 @@ trait PanamaConverter extends
     with HasScala2Plugin
     with ScalafmtModule {
   def panamaOMModule = panamaom(crossScalaVersion)
-
   def chiselModule = chisel(crossScalaVersion)
-
   def pluginModule = plugin(crossScalaVersion)
 
   override def moduleDeps = super.moduleDeps ++ Some(chiselModule)
