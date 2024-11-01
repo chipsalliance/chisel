@@ -156,18 +156,19 @@ trait Firrtl extends CrossSbtModule with Cross.Module[String] with HasScala2Macr
   def millSourcePath = super.millSourcePath / os.up / "firrtl"
   def scalaVersion = crossValue
 
-  override def scalacOptions = utils.isScala3(crossValue) match {
-    case false => v.scala2CommonOptions ++ Seq(
-      "-language:reflectiveCalls",
-      "-language:existentials",
-      "-language:implicitConversions",
-      "-Yrangepos", // required by SemanticDB compiler plugin
-      "-Xsource:3",
-      "-Xsource-features:infer-override"
-    )
-    case true => Seq.empty
+  override def scalacOptions = T {
+    utils.isScala3(crossValue) match {
+      case false => v.scala2CommonOptions ++ Seq(
+        "-language:reflectiveCalls",
+        "-language:existentials",
+        "-language:implicitConversions",
+        "-Yrangepos", // required by SemanticDB compiler plugin
+        "-Xsource:3",
+        "-Xsource-features:infer-override"
+      )
+      case true => Seq.empty[String]
+    }
   }
-
   val commonDeps = Agg(
     v.scopt,
     v.commonText,
@@ -189,12 +190,14 @@ object svsim extends Cross[Svsim](v.scalaCrossVersions)
 trait Svsim extends CrossSbtModule with ScalafmtModule {
   def millSourcePath = super.millSourcePath / os.up / "svsim"
 
-  override def scalacOptions = utils.isScala3(crossValue) match {
-    case false => v.scala2CommonOptions ++ Seq(
-      "-Xsource:3",
-      "-Xsource-features:case-apply-copy-access"
-    )
-    case true => Seq.empty
+  override def scalacOptions = T {
+    utils.isScala3(crossValue) match {
+      case false => v.scala2CommonOptions ++ Seq(
+        "-Xsource:3",
+        "-Xsource-features:case-apply-copy-access"
+      )
+      case true => Seq.empty[String]
+    }
   }
 
   object test extends SbtModuleTests with TestModule.ScalaTest with ScalafmtModule {
@@ -206,11 +209,13 @@ object macros extends Cross[Macros](v.scalaCrossVersions)
 trait Macros extends CrossSbtModule with HasScala2MacroAnno with ScalafmtModule {
   def millSourcePath = super.millSourcePath / os.up / "macros"
 
-  override def scalacOptions = utils.isScala3(crossValue) match {
-    case false => v.scala2CommonOptions ++ Seq(
-      "-Xsource:3"
-    )
-    case true => Seq.empty
+  override def scalacOptions = T {
+    utils.isScala3(crossValue) match {
+      case false => v.scala2CommonOptions ++ Seq(
+        "-Xsource:3"
+      )
+      case true => Seq.empty[String]
+    }
   }
 
   override def ivyDeps = super.ivyDeps() ++ Seq(ivy"org.scala-lang:scala-reflect:$scalaVersion")
@@ -221,11 +226,13 @@ trait Core extends CrossSbtModule with HasScala2MacroAnno with ScalafmtModule {
   def scalaVersion = crossValue
   def millSourcePath = super.millSourcePath / os.up / "core"
 
-  override def scalacOptions = utils.isScala3(crossValue) match {
-    case false => v.scala2CommonOptions ++ Seq(
-      "-Xsource:3"
-    )
-    case true => Seq.empty
+  override def scalacOptions = T {
+    utils.isScala3(crossValue) match {
+      case false => v.scala2CommonOptions ++ Seq(
+        "-Xsource:3"
+      )
+      case true => Seq.empty[String]
+    }
   }
 
   val crossModuleDeps = Seq(firrtl(crossScalaVersion)) ++ {
