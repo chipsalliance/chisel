@@ -341,6 +341,8 @@ trait Stdlib extends CrossSbtModule with ScalafmtModule {
   def millSourcePath = super.millSourcePath / os.up / "stdlib"
   def chiselModule = chisel(crossScalaVersion)
   def pluginModule = plugin(crossScalaVersion)
+
+  override def moduleDeps = Seq(chiselModule, pluginModule)
 }
 
 object benchmark extends ScalaModule with JmhModule with ScalafmtModule {
