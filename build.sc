@@ -286,6 +286,65 @@ object benchmark extends ScalaModule with JmhModule with ScalafmtModule {
   override def moduleDeps = Seq(chisel(v.scalaVersion))
 }
 
+object circtpanamabinding extends CIRCTPanamaBinding
+
+trait CIRCTPanamaBinding extends panama.CIRCTPanamaBindingModule {
+
+  def header = T(PathRef(millSourcePath / "jextract-headers.h"))
+
+  def circtInstallPath = T(panama.utils.circtInstallDir())
+
+  def jextractBinary = T(panama.utils.jextractInstallDir() / "bin" / "jextract")
+
+  def includePaths = T(Seq(PathRef(circtInstallPath() / "include")))
+
+  def libraryPaths = T(Seq(PathRef(circtInstallPath() / "lib")))
+}
+
+object panamalib extends Cross[PanamaLib](v.scalaCrossVersions)
+
+trait PanamaLib extends panama.PanamaLibModule with CrossModuleBase with ScalafmtModule {
+  def circtPanamaBindingModule = circtpanamabinding
+}
+
+object panamaom extends Cross[PanamaOM](v.scalaCrossVersions)
+
+trait PanamaOM extends panama.PanamaOMModule with CrossModuleBase with ScalafmtModule {
+  def panamaLibModule = panamalib(crossScalaVersion)
+}
+
+object panamaconverter extends Cross[PanamaConverter](v.scalaCrossVersions)
+
+trait PanamaConverter extends panama.PanamaConverterModule with CrossModuleBase with ScalafmtModule {
+  def panamaOMModule = panamaom(crossScalaVersion)
+
+  def chiselModule = millbuild.build.chisel(crossScalaVersion)
+
+  def pluginModule = millbuild.build.plugin(crossScalaVersion)
+}
+
+object litutility extends Cross[LitUtility](v.scalaCrossVersions)
+
+trait LitUtility extends panama.LitUtilityModule with CrossModuleBase with ScalafmtModule {
+  def millSourcePath = super.millSourcePath / os.up / "lit" / "utility"
+  def panamaConverterModule = panamaconverter(crossScalaVersion)
+  def panamaOMModule = panamaom(crossScalaVersion)
+}
+
+object lit extends Cross[Lit](v.scalaCrossVersions)
+
+trait Lit extends panama.LitModule with Cross.Module[String] {
+  def scalaVersion: T[String] = crossValue
+  def runClasspath: T[Seq[os.Path]] = T(litutility(crossValue).runClasspath().map(_.path))
+  def pluginJars:   T[Seq[os.Path]] = T(Seq(litutility(crossValue).panamaConverterModule.pluginModule.jar().path))
+  def javaLibraryPath: T[Seq[os.Path]] = T(
+    litutility(crossValue).panamaConverterModule.circtPanamaBindingModule.libraryPaths().map(_.path)
+  )
+  def javaHome:     T[os.Path] = T(os.Path(sys.props("java.home")))
+  def chiselLitDir: T[os.Path] = T(millSourcePath)
+  def litConfigIn:  T[PathRef] = T.source(millSourcePath / "tests" / "lit.site.cfg.py.in")
+}
+
 /** Aggregate project for publishing Chisel as a single artifact
   */
 object unipublish extends ScalaModule with ChiselPublishModule {
@@ -415,4 +474,3 @@ object unipublish extends ScalaModule with ChiselPublishModule {
     }
   }
 }
-

@@ -10,7 +10,7 @@ import java.util
 import scala.jdk.StreamConverters.StreamHasToScala
 import $file.build
 
-private object utils extends Module {
+object utils extends Module {
   val architecture = System.getProperty("os.arch")
   val operationSystem = System.getProperty("os.name")
 
@@ -194,7 +194,7 @@ trait HasCIRCTPanamaBindingModule extends JavaModule {
   def circtPanamaBindingModule: CIRCTPanamaBindingModule
 
   override def moduleDeps = super.moduleDeps ++ Some(circtPanamaBindingModule)
-
+  //
   override def javacOptions = T(super.javacOptions() ++ Seq("--enable-preview", "--release", "21"))
 
   override def forkArgs: T[Seq[String]] = T(
@@ -239,52 +239,10 @@ trait HasPanamaConverterModule extends ScalaModule with HasCIRCTPanamaBindingMod
 
   override def moduleDeps = super.moduleDeps ++ Some(panamaConverterModule)
 }
-object circtpanamabinding extends CIRCTPanamaBinding
 
-trait CIRCTPanamaBinding extends CIRCTPanamaBindingModule {
+trait PanamaOM extends PanamaOMModule with CrossModuleBase with ScalafmtModule
 
-  def header = T(PathRef(millSourcePath / "jextract-headers.h"))
-
-  def circtInstallPath = T(utils.circtInstallDir())
-
-  def jextractBinary = T(utils.jextractInstallDir() / "bin" / "jextract")
-
-  def includePaths = T(Seq(PathRef(circtInstallPath() / "include")))
-
-  def libraryPaths = T(Seq(PathRef(circtInstallPath() / "lib")))
-}
-
-object panamalib extends Cross[PanamaLib](build.v.scalaCrossVersions)
-
-trait PanamaLib extends PanamaLibModule with CrossModuleBase with ScalafmtModule {
-  def circtPanamaBindingModule = circtpanamabinding
-}
-
-object panamaom extends Cross[PanamaOM](build.v.scalaCrossVersions)
-
-trait PanamaOM extends PanamaOMModule with CrossModuleBase with ScalafmtModule {
-  def panamaLibModule = panamalib(crossScalaVersion)
-}
-
-object panamaconverter extends Cross[PanamaConverter](build.v.scalaCrossVersions)
-
-trait PanamaConverter extends PanamaConverterModule with CrossModuleBase with ScalafmtModule {
-  def panamaOMModule = panamaom(crossScalaVersion)
-
-  def chiselModule = build.chisel(crossScalaVersion)
-
-  def pluginModule = build.plugin(crossScalaVersion)
-}
-object litutility extends Cross[LitUtility](build.v.scalaCrossVersions)
-
-trait LitUtility extends LitUtilityModule with CrossModuleBase with ScalafmtModule {
-  def millSourcePath = super.millSourcePath / os.up / "lit" / "utility"
-  def panamaConverterModule = panamaconverter(crossScalaVersion)
-  def panamaOMModule = panamaom(crossScalaVersion)
-}
-
-object lit extends Cross[Lit](build.v.scalaCrossVersions)
-
+object litutility extends Cross[build.LitUtility](build.v.scalaCrossVersions)
 trait Lit extends LitModule with Cross.Module[String] {
   def scalaVersion: T[String] = crossValue
   def runClasspath: T[Seq[os.Path]] = T(litutility(crossValue).runClasspath().map(_.path))
