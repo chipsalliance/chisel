@@ -476,9 +476,7 @@ object unipublish extends ScalaModule with ChiselPublishModule {
   }
 
   // Needed for ScalaDoc
-  override def scalacOptions = T {
-    Seq("-Ymacro-annotations")
-  }
+  override def scalacOptions = v.scala2CommonOptions
 
   def scalaDocRootDoc = T.source { T.workspace / "root-doc.txt" }
 
