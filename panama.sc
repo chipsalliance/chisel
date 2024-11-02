@@ -181,8 +181,8 @@ trait HasCIRCTPanamaBindingModule extends JavaModule {
   override def forkArgs: T[Seq[String]] = T(
     super.forkArgs() ++ Seq("--enable-native-access=ALL-UNNAMED", "--enable-preview")
       ++ circtPanamaBindingModule
-      .libraryPaths()
-      .map(p => s"-Djava.library.path=${p.path}")
+        .libraryPaths()
+        .map(p => s"-Djava.library.path=${p.path}")
   )
 }
 

@@ -49,9 +49,9 @@ object v {
   val commonText = ivy"org.apache.commons:commons-text:1.12.0"
   val scopt = ivy"com.github.scopt::scopt:4.1.0"
 
-  def scalaReflect(scalaVersion: String) = ivy"org.scala-lang:scala-reflect:$scalaVersion"
+  def scalaReflect(scalaVersion:  String) = ivy"org.scala-lang:scala-reflect:$scalaVersion"
   def scalaCompiler(scalaVersion: String) = ivy"org.scala-lang:scala-compiler:$scalaVersion"
-  def scalaLibrary(scalaVersion: String) = ivy"org.scala-lang:scala-library:$scalaVersion"
+  def scalaLibrary(scalaVersion:  String) = ivy"org.scala-lang:scala-library:$scalaVersion"
 
   def circt(version: String, os: String, platform: String) =
     s"https://github.com/llvm/circt/releases/download/firtool-${version}/circt-full-shared-${os}-${platform}.tar.gz"
@@ -372,8 +372,8 @@ trait PanamaOM extends panama.PanamaOMModule with CrossModuleBase with ScalafmtM
 
 object panamaconverter extends Cross[PanamaConverter](v.scalaCrossVersions)
 
-trait PanamaConverter extends
-    panama.PanamaConverterModule
+trait PanamaConverter
+    extends panama.PanamaConverterModule
     with CrossModuleBase
     with HasScala2Plugin
     with ScalafmtModule {
@@ -386,11 +386,7 @@ trait PanamaConverter extends
 
 object litutility extends Cross[LitUtility](v.scalaCrossVersions)
 
-trait LitUtility extends
-    panama.LitUtilityModule
-    with CrossModuleBase
-    with HasScala2Plugin
-    with ScalafmtModule {
+trait LitUtility extends panama.LitUtilityModule with CrossModuleBase with HasScala2Plugin with ScalafmtModule {
   def chiselModule = chisel(crossScalaVersion)
   def pluginModule = plugin(crossScalaVersion)
   def millSourcePath = super.millSourcePath / os.up / "lit" / "utility"
@@ -531,8 +527,8 @@ object unipublish extends ScalaModule with ChiselPublishModule {
     os.makeDir(javadocDir)
 
     val fullOptions = unidocOptions() ++
-    Seq("-d", javadocDir.toString) ++
-    unidocSourceFiles().map(_.path.toString)
+      Seq("-d", javadocDir.toString) ++
+      unidocSourceFiles().map(_.path.toString)
 
     zincWorker()
       .worker()
@@ -543,8 +539,8 @@ object unipublish extends ScalaModule with ChiselPublishModule {
         scalacPluginClasspath(),
         fullOptions
       ) match {
-        case true  => Result.Success(createJar(Agg(javadocDir))(T.dest))
-        case false => Result.Failure("docJar generation failed")
-      }
+      case true  => Result.Success(createJar(Agg(javadocDir))(T.dest))
+      case false => Result.Failure("docJar generation failed")
+    }
   }
 }
