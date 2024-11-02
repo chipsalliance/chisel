@@ -92,11 +92,7 @@ private object utils extends Module {
     j("version").stripPrefix("firtool-")
   }
 
-  def isScala3(ver: String): Boolean = ver match {
-    case "3.4.2" => true
-    case "2.13.15" => false
-    case _ => false // todo throw error here?
-  }
+  def isScala3(ver: String): Boolean = ver.startsWith("3.")
 }
 
 trait ChiselPublishModule extends CiReleaseModule {
@@ -128,7 +124,7 @@ trait ChiselPublishModule extends CiReleaseModule {
 
 trait HasScala2MacroAnno extends CrossSbtModule {
   override def scalacOptions = T {
-    if (!utils.isScala3(crossValue)) {
+    if (!utils.isScala3(crossScalaVersion)) {
       super.scalacOptions() ++ Agg("-Ymacro-annotations")
     } else super.scalacOptions()
   }
@@ -138,13 +134,13 @@ trait HasScala2Plugin extends CrossSbtModule {
   def pluginModule: Plugin
 
   override def scalacOptions = T {
-    if (!utils.isScala3(crossValue)) {
+    if (!utils.isScala3(crossScalaVersion)) {
       super.scalacOptions() ++ Agg(s"-Xplugin:${pluginModule.jar().path}")
     } else super.scalacOptions()
   }
 
   override def scalacPluginClasspath = T {
-    if (!utils.isScala3(crossValue)) {
+    if (!utils.isScala3(crossScalaVersion)) {
       super.scalacPluginClasspath() ++ Agg(pluginModule.jar())
     } else super.scalacPluginClasspath()
   }
@@ -154,11 +150,13 @@ object firrtl extends Cross[Firrtl](v.scalaCrossVersions)
 
 trait Firrtl extends CrossSbtModule with Cross.Module[String] with HasScala2MacroAnno with ScalafmtModule {
   def millSourcePath = super.millSourcePath / os.up / "firrtl"
-  def scalaVersion = crossValue
+  def scalaVersion = crossScalaVersion
 
   override def scalacOptions = T {
-    utils.isScala3(crossValue) match {
-      case false => v.scala2CommonOptions ++ Seq(
+    if (utils.isScala3(crossScalaVersion)) {
+      Seq.empty[String]
+    } else {
+      v.scala2CommonOptions ++ Seq(
         "-language:reflectiveCalls",
         "-language:existentials",
         "-language:implicitConversions",
@@ -166,9 +164,9 @@ trait Firrtl extends CrossSbtModule with Cross.Module[String] with HasScala2Macr
         "-Xsource:3",
         "-Xsource-features:infer-override"
       )
-      case true => Seq.empty[String]
     }
   }
+
   val commonDeps = Agg(
     v.scopt,
     v.commonText,
@@ -176,9 +174,10 @@ trait Firrtl extends CrossSbtModule with Cross.Module[String] with HasScala2Macr
     v.json4s
   )
 
-  def ivyDeps = utils.isScala3(crossValue) match {
-    case true => commonDeps
-    case false => commonDeps ++ Agg(v.dataclass)
+  def ivyDeps = if (utils.isScala3(crossScalaVersion)) {
+    commonDeps
+  } else {
+    commonDeps ++ Agg(v.dataclass)
   }
 
   object test extends SbtModuleTests with TestModule.ScalaTest with ScalafmtModule {
@@ -191,12 +190,13 @@ trait Svsim extends CrossSbtModule with ScalafmtModule {
   def millSourcePath = super.millSourcePath / os.up / "svsim"
 
   override def scalacOptions = T {
-    utils.isScala3(crossValue) match {
-      case false => v.scala2CommonOptions ++ Seq(
+    if (utils.isScala3(crossScalaVersion)) {
+      Seq.empty[String]
+    } else {
+      v.scala2CommonOptions ++ Seq(
         "-Xsource:3",
         "-Xsource-features:case-apply-copy-access"
       )
-      case true => Seq.empty[String]
     }
   }
 
@@ -210,11 +210,12 @@ trait Macros extends CrossSbtModule with HasScala2MacroAnno with ScalafmtModule 
   def millSourcePath = super.millSourcePath / os.up / "macros"
 
   override def scalacOptions = T {
-    utils.isScala3(crossValue) match {
-      case false => v.scala2CommonOptions ++ Seq(
+    if (utils.isScala3(crossScalaVersion)) {
+      Seq.empty[String]
+    } else {
+      v.scala2CommonOptions ++ Seq(
         "-Xsource:3"
       )
-      case true => Seq.empty[String]
     }
   }
 
@@ -223,20 +224,21 @@ trait Macros extends CrossSbtModule with HasScala2MacroAnno with ScalafmtModule 
 
 object core extends Cross[Core](v.scalaCrossVersions)
 trait Core extends CrossSbtModule with HasScala2MacroAnno with ScalafmtModule {
-  def scalaVersion = crossValue
+  def scalaVersion = crossScalaVersion
   def millSourcePath = super.millSourcePath / os.up / "core"
 
   override def scalacOptions = T {
-    utils.isScala3(crossValue) match {
-      case false => v.scala2CommonOptions ++ Seq(
+    if (utils.isScala3(crossScalaVersion)) {
+      Seq.empty[String]
+    } else {
+      v.scala2CommonOptions ++ Seq(
         "-Xsource:3"
       )
-      case true => Seq.empty[String]
     }
   }
 
   val crossModuleDeps = Seq(firrtl(crossScalaVersion)) ++ {
-    if (utils.isScala3(crossValue)) Seq.empty
+    if (utils.isScala3(crossScalaVersion)) Seq.empty
     else Seq(macros(crossScalaVersion))
   }
 
@@ -247,9 +249,10 @@ trait Core extends CrossSbtModule with HasScala2MacroAnno with ScalafmtModule {
     v.upickle
   )
 
-  override def ivyDeps = utils.isScala3(crossValue) match {
-    case true => super.ivyDeps() ++ commonDeps
-    case false => super.ivyDeps() ++ commonDeps ++ Agg(v.firtoolResolver)
+  override def ivyDeps = if (utils.isScala3(crossScalaVersion)) {
+    super.ivyDeps() ++ commonDeps
+  } else {
+    super.ivyDeps() ++ commonDeps ++ Agg(v.firtoolResolver)
   }
 
   // Similar to the publish version, but no dirty indicators because otherwise
@@ -345,13 +348,6 @@ trait Stdlib extends CrossSbtModule with ScalafmtModule {
   override def moduleDeps = Seq(chiselModule, pluginModule)
 }
 
-object benchmark extends ScalaModule with JmhModule with ScalafmtModule {
-  def scalaVersion = v.scalaVersion
-  def jmhCoreVersion = v.jmhVersion
-
-  override def moduleDeps = Seq(chisel(v.scalaVersion))
-}
-
 object circtpanamabinding extends CIRCTPanamaBinding
 
 trait CIRCTPanamaBinding extends panama.CIRCTPanamaBindingModule {
@@ -416,6 +412,13 @@ trait Lit extends panama.LitModule with Cross.Module[String] {
   def javaHome:     T[os.Path] = T(os.Path(sys.props("java.home")))
   def chiselLitDir: T[os.Path] = T(millSourcePath)
   def litConfigIn:  T[PathRef] = T.source(millSourcePath / "tests" / "lit.site.cfg.py.in")
+}
+
+object benchmark extends ScalaModule with JmhModule with ScalafmtModule {
+  def scalaVersion = v.scalaVersion
+  def jmhCoreVersion = v.jmhVersion
+
+  override def moduleDeps = Seq(chisel(v.scalaVersion))
 }
 
 /** Aggregate project for publishing Chisel as a single artifact
