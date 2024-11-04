@@ -28,6 +28,7 @@ import scala.reflect.macros.blackbox.Context
 sealed trait ChiselSubtypeOf[A, B]
 
 object ChiselSubtypeOf {
+  // TODO return an empty tree here instead of a quasiquote for scala3 compatibility
   def genChiselSubtypeOf[A: c.WeakTypeTag, B: c.WeakTypeTag](c: Context): c.Tree = {
     import c.universe._
 
