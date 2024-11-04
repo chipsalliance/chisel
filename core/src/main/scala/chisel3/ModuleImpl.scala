@@ -16,8 +16,10 @@ import _root_.firrtl.annotations.{
   Annotation,
   InstanceTarget,
   IsModule,
+  IsMember,
   ModuleName,
   ModuleTarget,
+  Target,
   SingleTargetAnnotation
 }
 import _root_.firrtl.AnnotationSeq
@@ -31,8 +33,6 @@ private[chisel3] trait ObjectModuleImpl {
   protected def _applyImpl[T <: BaseModule](bc: => T)(implicit sourceInfo: SourceInfo): T = {
     // Instantiate the module definition.
     val module: T = evaluate[T](bc)
-
-    ModulePrefixAnnotation.annotate(module)
 
     // Handle connections at enclosing scope
     // We use _component because Modules that don't generate them may still have one
@@ -938,16 +938,16 @@ object withModulePrefix {
   }
 }
 
-private case class ModulePrefixAnnotation(target: IsModule, prefix: String) extends SingleTargetAnnotation[IsModule] {
-  def duplicate(n: IsModule): ModulePrefixAnnotation = this.copy(target = n)
+private case class ModulePrefixAnnotation(target: IsMember, prefix: String) extends SingleTargetAnnotation[IsMember] {
+  def duplicate(n: IsMember): ModulePrefixAnnotation = this.copy(target = n)
 }
 
 private object ModulePrefixAnnotation {
-  def annotate[T <: BaseModule](module: T): Unit = {
+  def annotate[T <: IsMember](target: T): Unit = {
       val prefix = Builder.getModulePrefix
       if (prefix != "") {
         val annotation: ChiselAnnotation = new ChiselAnnotation {
-          def toFirrtl: Annotation = ModulePrefixAnnotation(module.toTarget, prefix)
+          def toFirrtl: Annotation = ModulePrefixAnnotation(target, prefix)
         }
         chisel3.experimental.annotate(annotation)
       }

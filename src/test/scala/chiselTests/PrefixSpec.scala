@@ -36,12 +36,6 @@ class PrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with Match
     val chirrtl = emitCHIRRTL(new Top)
 
     val lines = """
-      {
-        "class":"chisel3.ModulePrefixAnnotation",
-        "target":"~Top|Pref_Foo",
-        "prefix":"Pref_"
-      }
-
       module Foo :
         wire a : UInt<1>
       module Pref_Foo :
@@ -73,19 +67,7 @@ class PrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with Match
     val chirrtl = emitCHIRRTL(new Top)
 
     val lines =
-      """circuit Top :%[[
-      [[
-        {
-          "class":"chisel3.ModulePrefixAnnotation",
-          "target":"~Top|Outer_Inner_Bar",
-          "prefix":"Outer_Inner_"
-        },
-        {
-          "class":"chisel3.ModulePrefixAnnotation",
-          "target":"~Top|Outer_Foo",
-          "prefix":"Outer_"
-        }
-      ]]
+      """
       module Outer_Inner_Bar :
         wire a : UInt<1>
       module Outer_Foo
