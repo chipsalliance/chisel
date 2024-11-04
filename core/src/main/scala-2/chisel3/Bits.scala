@@ -182,6 +182,8 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends BitsImpl w
     * $sumWidthInt
     * @group Bitwise
     */
+  // REVIEW TODO: redundant
+  // REVIEW TODO: should these return this.type or Bits?
   final def <<(that: BigInt): Bits = macro SourceInfoWhiteboxTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
