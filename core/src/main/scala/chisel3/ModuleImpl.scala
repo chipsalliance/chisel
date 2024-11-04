@@ -943,11 +943,11 @@ private case class ModulePrefixAnnotation(target: IsMember, prefix: String) exte
 }
 
 private object ModulePrefixAnnotation {
-  def annotate[T <: IsMember](target: T): Unit = {
+  def annotate[T <: HasId](target: T): Unit = {
       val prefix = Builder.getModulePrefix
       if (prefix != "") {
         val annotation: ChiselAnnotation = new ChiselAnnotation {
-          def toFirrtl: Annotation = ModulePrefixAnnotation(target, prefix)
+          def toFirrtl: Annotation = ModulePrefixAnnotation(target.toTarget, prefix)
         }
         chisel3.experimental.annotate(annotation)
       }

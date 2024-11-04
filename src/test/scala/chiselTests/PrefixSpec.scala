@@ -5,6 +5,7 @@ package chiselTests
 import chisel3._
 import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance, Instantiate}
 import circt.stage.ChiselStage.emitCHIRRTL
+import circt.stage.ChiselStage
 
 object PrefixSpec {
   // This has to be defined at the top-level because @instantiable doesn't work when nested.
@@ -145,5 +146,37 @@ class PrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with Match
         """.linesIterator.map(_.trim).toSeq
 
     matchesAndOmits(chirrtl)(lines: _*)("AddOne_1", "Bar_AddOne")
+  }
+
+  it should "Memories work" in {
+    class Top extends Module {
+      val io = IO(new Bundle {
+        val enable = Input(Bool())
+        val write = Input(Bool())
+        val addr = Input(UInt(10.W))
+        val dataIn = Input(UInt(8.W))
+        val dataOut = Output(UInt(8.W))
+      })
+
+      val mem = withModulePrefix("Foo") {
+        SyncReadMem(1024, UInt(8.W))
+      }
+
+      mem.write(io.addr, io.dataIn)
+      io.dataOut := mem.read(io.addr, io.enable)
+    }
+
+//    val sv = ChiselStage.emitSystemVerilog(new Top)
+//    println(sv)
+
+    val chirrtl = emitCHIRRTL(new Top, args = Array("--full-stacktrace"))
+    println(chirrtl)
+
+    val lines = """
+      module mem_1024x8(
+      module Top(
+        """.linesIterator.map(_.trim).toSeq
+
+//    matchesAndOmits(sv)(lines: _*)()
   }
 }
