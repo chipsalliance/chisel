@@ -312,10 +312,11 @@ trait Plugin extends CrossSbtModule with ScalafmtModule with ChiselPublishModule
 }
 
 object chisel extends Cross[Chisel](v.scalaCrossVersions)
-trait Chisel extends CrossSbtModule with HasScala2MacroAnno with ScalafmtModule {
+trait Chisel extends CrossSbtModule with HasScala2MacroAnno with HasScala2Plugin with ScalafmtModule {
   override def millSourcePath = super.millSourcePath / os.up
   def svsimModule = svsim(crossScalaVersion)
   def coreModule = core(crossScalaVersion)
+  def pluginModule = plugin()
 
   override def moduleDeps = super.moduleDeps ++ Seq(coreModule, svsimModule)
 
@@ -329,7 +330,7 @@ trait Chisel extends CrossSbtModule with HasScala2MacroAnno with ScalafmtModule 
 }
 
 object integrationTests extends Cross[IntegrationTests](v.scalaCrossVersions)
-trait IntegrationTests extends CrossSbtModule with ScalafmtModule with HasScala2Plugin {
+trait IntegrationTests extends CrossSbtModule with HasScala2Plugin with ScalafmtModule {
   def pluginModule = plugin()
   def millSourcePath = os.pwd / "integration-tests"
 
@@ -340,7 +341,7 @@ trait IntegrationTests extends CrossSbtModule with ScalafmtModule with HasScala2
 }
 
 object stdlib extends Cross[Stdlib](v.scalaCrossVersions)
-trait Stdlib extends CrossSbtModule with ScalafmtModule {
+trait Stdlib extends CrossSbtModule with HasScala2Plugin with ScalafmtModule {
   def millSourcePath = super.millSourcePath / os.up / "stdlib"
   def chiselModule = chisel(crossScalaVersion)
   def pluginModule = plugin(crossScalaVersion)
