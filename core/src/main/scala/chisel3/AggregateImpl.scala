@@ -185,10 +185,7 @@ trait VecFactory extends SourceInfoDoc {
     // Other cases do not need a Wire because the literal is truncated to fit.
     else if (idx.width.known && idx.width.get <= w) idx
     else if (idx.width.known) idx(w - 1, 0)
-    else {
-      val i: UInt = idx | 0.U(w.W)
-      i(w - 1, 0)
-    }
+    else (idx | 0.U(w.W))(w - 1, 0)
   }
 }
 
