@@ -11,7 +11,7 @@ import chisel3.experimental.{BaseModule, BundleLiteralException, HasTypeAlias, O
 import chisel3.experimental.{requireIsChiselType, requireIsHardware, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal._
 import chisel3.internal.binding._
-import chisel3.internal.util._
+import chisel3.internal.util._resizeToWidth
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.ir._
 import chisel3.reflect.DataMirror
