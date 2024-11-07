@@ -22,7 +22,7 @@ All modules defined inside of this block, whether an immediate submodule or a de
 
 For example, suppose we write the following:
 
-```scala mdoc:silent
+```scala mdoc:silent:reset
 import chisel3._
 
 class Top extends Module {
