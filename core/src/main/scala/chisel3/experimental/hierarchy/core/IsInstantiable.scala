@@ -11,6 +11,10 @@ trait IsInstantiable
 
 object IsInstantiable {
   implicit class IsInstantiableExtensions[T <: IsInstantiable](i: T) {
+    @deprecated(
+      "Use of @instantiable on user-defined types is deprecated. Implement Lookupable for your type instead.",
+      "Chisel 7.0.0"
+    )
     def toInstance: Instance[T] = new Instance(Proto(i))
   }
 }

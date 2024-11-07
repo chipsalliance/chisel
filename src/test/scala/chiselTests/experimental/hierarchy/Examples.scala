@@ -223,6 +223,12 @@ object Examples {
     @public val xy = (x, y)
   }
   @instantiable
+  class HasTuple5() extends Module {
+    val wire = Wire(UInt(3.W))
+    val inst = Module(new AddOne)
+    @public val tup = (3, wire, "hi", inst, List(1, 2, 3))
+  }
+  @instantiable
   class HasHasTarget() extends Module {
     val sram = SRAM(1024, UInt(8.W), 1, 1, 0)
     @public val x: HasTarget = sram.underlying.get
@@ -375,5 +381,33 @@ object Examples {
     @public val x: Unit = ()
     // Should also work in type-parameterized lookupable things
     @public val y: (Data, Unit) = (Wire(UInt(3.W)), ())
+  }
+
+  case class UserDefinedType(name: String, data: UInt, inst: Instance[AddOne])
+  object UserDefinedType {
+    implicit val lookupable: Lookupable.Simple[UserDefinedType] =
+      Lookupable.product3[UserDefinedType, String, UInt, Instance[AddOne]](
+        x => (x.name, x.data, x.inst),
+        UserDefinedType.apply
+      )
+  }
+
+  case class ParameterizedUserDefinedType[A, M <: BaseModule](value: A, inst: Instance[M])
+  object ParameterizedUserDefinedType {
+    implicit def lookupable[A: Lookupable, M <: BaseModule]: Lookupable.Simple[ParameterizedUserDefinedType[A, M]] =
+      Lookupable.product2[ParameterizedUserDefinedType[A, M], A, Instance[M]](
+        x => (x.value, x.inst),
+        ParameterizedUserDefinedType.apply
+      )
+  }
+
+  @instantiable
+  class HasUserDefinedType extends Module {
+    val defn = Definition(new AddOne)
+    val inst0: Instance[AddOne] = Instance(defn)
+    val inst1: Instance[AddOne] = Instance(defn)
+    val wire = Wire(UInt(8.W))
+    @public val simple = UserDefinedType("foo", wire, inst0)
+    @public val parameterized = ParameterizedUserDefinedType(List(1, 2, 3), inst1)
   }
 }
