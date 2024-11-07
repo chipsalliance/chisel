@@ -931,9 +931,13 @@ package experimental {
 
 object withModulePrefix {
   def apply[T](prefix: String)(block: => T): T = {
-    Builder.pushModulePrefix(prefix)
+    if (prefix != "") {
+      Builder.pushModulePrefix(prefix)
+    }
     val res = block // execute block
-    Builder.popModulePrefix()
+    if (prefix != "") {
+      Builder.popModulePrefix()
+    }
     res
   }
 }
