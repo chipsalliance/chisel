@@ -369,4 +369,11 @@ object Examples {
     out := copy.out
 
   }
+
+  @instantiable
+  class HasPublicUnit extends Module {
+    @public val x: Unit = ()
+    // Should also work in type-parameterized lookupable things
+    @public val y: (Data, Unit) = (Wire(UInt(3.W)), ())
+  }
 }
