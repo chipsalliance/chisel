@@ -15,12 +15,12 @@ import chisel3.reflect.DataMirror
 import _root_.firrtl.annotations.{
   Annotation,
   InstanceTarget,
-  IsModule,
   IsMember,
+  IsModule,
   ModuleName,
   ModuleTarget,
-  Target,
-  SingleTargetAnnotation
+  SingleTargetAnnotation,
+  Target
 }
 import _root_.firrtl.AnnotationSeq
 import chisel3.internal.plugin.autoNameRecursively
@@ -948,12 +948,12 @@ private case class ModulePrefixAnnotation(target: IsMember, prefix: String) exte
 
 private object ModulePrefixAnnotation {
   def annotate[T <: HasId](target: T): Unit = {
-      val prefix = Builder.getModulePrefix
-      if (prefix != "") {
-        val annotation: ChiselAnnotation = new ChiselAnnotation {
-          def toFirrtl: Annotation = ModulePrefixAnnotation(target.toTarget, prefix)
-        }
-        chisel3.experimental.annotate(annotation)
+    val prefix = Builder.getModulePrefix
+    if (prefix != "") {
+      val annotation: ChiselAnnotation = new ChiselAnnotation {
+        def toFirrtl: Annotation = ModulePrefixAnnotation(target.toTarget, prefix)
       }
+      chisel3.experimental.annotate(annotation)
+    }
   }
 }
