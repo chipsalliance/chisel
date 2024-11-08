@@ -390,6 +390,16 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
           "Cannot create a memory port in a different module (Top) than where the memory is (HasMems)."
       )
     }
+    it("(3.o): should work on HasTarget") {
+      class Top() extends Module {
+        val i = Definition(new HasHasTarget)
+        mark(i.x, "x")
+      }
+      val (_, annos) = getFirrtlAndAnnos(new Top)
+      annos.collect { case c: MarkAnnotation => c } should contain(
+        MarkAnnotation("~Top|HasHasTarget>sram_sram".rt, "x")
+      )
+    }
   }
   describe("(4): toDefinition") {
     it("(4.a): should work on modules") {

@@ -485,3 +485,21 @@ object RemapLayer extends HasShellOptions {
   )
 
 }
+
+/** Include metadata for chisel utils.
+  *
+  * Some built-in Chisel utilities (like [[chisel3.util.SRAM]]) can optionally be built with metadata.
+  * Adding this option will include the metadata when building relevant blocks.
+  *
+  * Use as CLI option `--include-util-metadata`.
+  */
+case object IncludeUtilMetadata extends NoTargetAnnotation with ChiselOption with HasShellOptions with Unserializable {
+
+  val options = Seq(
+    new ShellOption[Unit](
+      longOption = "include-util-metadata",
+      toAnnotationSeq = _ => Seq(IncludeUtilMetadata),
+      helpText = "Include metadata for chisel utils"
+    )
+  )
+}

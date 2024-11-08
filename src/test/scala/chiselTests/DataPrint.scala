@@ -26,17 +26,26 @@ class DataPrintSpec extends ChiselFlatSpec with Matchers {
     val f = EnumTest.Type()
   }
 
+  object A extends layer.Layer(layer.LayerConfig.Extract()) {
+    object B extends layer.Layer(layer.LayerConfig.Extract())
+  }
+
   "Data types" should "have a meaningful string representation" in {
     ChiselStage.emitCHIRRTL {
       new RawModule {
         UInt().toString should be("UInt")
         UInt(8.W).toString should be("UInt<8>")
+        probe.Probe(UInt(8.W)).toString should be("Probe<UInt<8>>")
+        probe.RWProbe(UInt(8.W)).toString should be("RWProbe<UInt<8>>")
+        probe.Probe(UInt(8.W), A).toString should be("Probe[A]<UInt<8>>")
+        probe.Probe(UInt(8.W), A.B).toString should be("Probe[A.B]<UInt<8>>")
         SInt(15.W).toString should be("SInt<15>")
         Bool().toString should be("Bool")
         Clock().toString should be("Clock")
         Vec(3, UInt(2.W)).toString should be("UInt<2>[3]")
         EnumTest.Type().toString should be("EnumTest")
         (new BundleTest).toString should be("BundleTest")
+        (probe.Probe(new BundleTest)).toString should be("Probe<BundleTest>")
         new Bundle { val a = UInt(8.W) }.toString should be("AnonymousBundle")
         new Bundle { val a = UInt(8.W) }.a.toString should be("UInt<8>")
       }
@@ -45,6 +54,8 @@ class DataPrintSpec extends ChiselFlatSpec with Matchers {
 
   class BoundDataModule extends Module { // not in the test to avoid anon naming suffixes
     Wire(UInt()).toString should be("BoundDataModule.?: Wire[UInt]")
+    Wire(probe.Probe(UInt(1.W))).toString should be("BoundDataModule.?: Wire[Probe<UInt<1>>]")
+    Wire(probe.Probe(UInt(1.W), A)).toString should be("BoundDataModule.?: Wire[Probe[A]<UInt<1>>]")
     Reg(SInt()).toString should be("BoundDataModule.?: Reg[SInt]")
     val io = IO(Output(Bool())) // needs a name so elaboration doesn't fail
     io.toString should be("BoundDataModule.io: IO[Bool]")

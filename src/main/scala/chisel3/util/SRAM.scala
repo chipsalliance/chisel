@@ -532,8 +532,11 @@ object SRAM {
     // underlying target
     val mem = autoNameRecursively("sram")(new SramTarget)
 
+    val includeMetadata = Builder.includeUtilMetadata
+
     // user-facing interface into the SRAM
-    val sramIntfType = new SRAMInterface(size, tpe, numReadPorts, numWritePorts, numReadwritePorts, isVecMem, true)
+    val sramIntfType =
+      new SRAMInterface(size, tpe, numReadPorts, numWritePorts, numReadwritePorts, isVecMem, includeMetadata)
     val _out = Wire(sramIntfType)
     _out._underlying = Some(HasTarget(mem))
 
