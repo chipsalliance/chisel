@@ -246,5 +246,13 @@ class PrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with Match
     }
 
     val chirrtl = emitCHIRRTL(new Top)
+
+    val lines = """
+      extmodule Sub
+        defname = Sub
+      module Top
+        """.linesIterator.map(_.trim).toSeq
+
+    matchesAndOmits(chirrtl)(lines: _*)()
   }
 }
