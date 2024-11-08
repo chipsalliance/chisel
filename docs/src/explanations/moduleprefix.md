@@ -115,3 +115,8 @@ class Top extends Module {
 ```
 
 In this example, we end up with four modules: `Top`, `Foo_Sub`, `Bar_Sub`, and `Sub`.
+
+When using `Definition` and `Instance`, all `Definition` calls will be affected by `withModulePrefix`.
+However, `Instance` will not be effected, since it always creates an instance of the captured definition.
+
+`ExtModule` is unaffected by `withModulePrefix`.
