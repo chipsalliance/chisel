@@ -178,7 +178,7 @@ class PrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with Match
 //    println(sv)
 
     val chirrtl = emitCHIRRTL(new Top)
-    println(chirrtl)
+    //println(chirrtl)
 
     val lines = """
       module mem_1024x8(
@@ -206,6 +206,28 @@ class PrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with Match
         """.linesIterator.map(_.trim).toSeq
 
     matchesAndOmits(chirrtl)(lines: _*)()
+  }
+
+  it should "allow definitions to be instantiated within a withModulePrefix block without prefixing it" in {
+    class Child(defn: Definition[AddOne]) extends Module {
+      val addone = Instance(defn)
+    }
+
+    class Top extends Module {
+      val defn =  Definition(new AddOne(8))
+
+      val child = withModulePrefix("Foo") {
+        Module(new Child(defn))
+      }
+    }
+
+    val chirrtl = emitCHIRRTL(new Top)
+
+    val lines = """
+    module AddOne
+    module Foo_Child
+    public module Top
+        """.linesIterator.map(_.trim).toSeq
   }
 
   it should "withModulePrefix does not affect ExtModules" in {
