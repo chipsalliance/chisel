@@ -230,7 +230,7 @@ class PrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with Match
         """.linesIterator.map(_.trim).toSeq
   }
 
-  it should "withModulePrefix does not affect ExtModules" in {
+  it should "withModulePrefix does not automatically affect ExtModules" in {
     class Sub extends ExtModule {
     }
 
