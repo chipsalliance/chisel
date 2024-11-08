@@ -926,6 +926,9 @@ package experimental {
           case None    => getRef.name
           case Some(c) => getRef.fullName(c)
         }
+
+    /** Returns the current nested module prefix */
+    val currentModulePrefix: String = Builder.getModulePrefix
   }
 }
 

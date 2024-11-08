@@ -255,4 +255,24 @@ class PrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with Match
 
     matchesAndOmits(chirrtl)(lines: _*)()
   }
+
+  it should "Using currentModulePrefix to force the name of an extmodule" in {
+    class Sub extends ExtModule {
+      override def desiredName = currentModulePrefix + "Sub"
+    }
+
+    class Top extends Module {
+      val sub_foo = withModulePrefix("Foo") { Module(new Sub) }
+    }
+
+    val chirrtl = emitCHIRRTL(new Top)
+
+    val lines = """
+      extmodule Foo_Sub
+        defname = Foo_Sub
+      module Top
+        """.linesIterator.map(_.trim).toSeq
+
+    matchesAndOmits(chirrtl)(lines: _*)()
+  }
 }
