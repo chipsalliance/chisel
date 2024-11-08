@@ -461,7 +461,7 @@ private[chisel3] trait NamedComponent extends HasId {
 
 // Mutable global state for chisel that can appear outside a Builder context
 private[chisel3] class ChiselContext() {
-  val sep: String = "_"
+  val modulePrefixSeperator: String = "_"
   val idGen = new IdGen
 
   // Records the different prefixes which have been scoped at this point in time
@@ -1182,7 +1182,7 @@ private[chisel3] object Builder extends LazyLogging {
   def getModulePrefix: String = {
     val ctx = chiselContext.get()
     val modulePrefixStack = ctx.modulePrefixStack
-    val sep = ctx.sep
+    val sep = ctx.modulePrefixSeperator
     if (modulePrefixStack.isEmpty) {
       ""
     } else {
