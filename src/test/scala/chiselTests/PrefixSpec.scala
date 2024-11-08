@@ -174,18 +174,27 @@ class PrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with Match
       io.dataOut := smem.read(io.addr, io.enable)
     }
 
-//    val sv = ChiselStage.emitSystemVerilog(new Top)
-//    println(sv)
-
     val chirrtl = emitCHIRRTL(new Top)
-    //println(chirrtl)
 
     val lines = """
-      module mem_1024x8(
-      module Top(
+      {
+        "class":"chisel3.ModulePrefixAnnotation",
+        "target":"~Top|Top>smem",
+        "prefix":"Foo_"
+      },
+      {
+        "class":"chisel3.ModulePrefixAnnotation",
+        "target":"~Top|Top>cmem",
+        "prefix":"Bar_"
+      },
+      {
+        "class":"chisel3.ModulePrefixAnnotation",
+        "target":"~Top|Top>sram_sram",
+        "prefix":"Baz_"
+      }
         """.linesIterator.map(_.trim).toSeq
 
-//    matchesAndOmits(sv)(lines: _*)()
+    matchesAndOmits(chirrtl)(lines: _*)()
   }
 
   it should "Definitions that appear within withModulePrefix get prefixed" in {
@@ -198,7 +207,6 @@ class PrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with Match
     }
 
     val chirrtl = emitCHIRRTL(new Top)
-//    println(chirrtl)
 
     val lines = """
   module Foo_AddOne
@@ -238,6 +246,5 @@ class PrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with Match
     }
 
     val chirrtl = emitCHIRRTL(new Top)
-    //println(chirrtl)
   }
 }
