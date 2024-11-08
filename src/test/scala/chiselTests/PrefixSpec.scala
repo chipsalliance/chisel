@@ -258,7 +258,7 @@ class PrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with Match
 
   it should "Using currentModulePrefix to force the name of an extmodule" in {
     class Sub extends ExtModule {
-      override def desiredName = currentModulePrefix + "Sub"
+      override def desiredName = modulePrefix + "Sub"
     }
 
     class Top extends Module {

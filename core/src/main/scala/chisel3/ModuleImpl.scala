@@ -928,7 +928,7 @@ package experimental {
         }
 
     /** Returns the current nested module prefix */
-    val currentModulePrefix: String = Builder.getModulePrefix
+    val modulePrefix: String = Builder.getModulePrefix
   }
 }
 
