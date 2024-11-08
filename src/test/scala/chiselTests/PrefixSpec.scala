@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.experimental.ExtModule
 import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance, Instantiate}
 import circt.stage.ChiselStage.emitCHIRRTL
 import circt.stage.ChiselStage
@@ -29,9 +30,7 @@ class PrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with Match
     class Top extends RawModule {
       val foo = Module(new Foo)
 
-      withModulePrefix("Pref") {
-        val pref_foo = Module(new Foo)
-      }
+      val pref_foo = withModulePrefix("Pref") { Module(new Foo) }
     }
 
     val chirrtl = emitCHIRRTL(new Top)
@@ -198,5 +197,17 @@ class PrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with Match
         """.linesIterator.map(_.trim).toSeq
 
     matchesAndOmits(chirrtl)(lines: _*)()
+  }
+
+  it should "withModulePrefix does not affect ExtModules" in {
+    class Sub extends ExtModule {
+    }
+
+    class Top extends Module {
+      val sub_foo = withModulePrefix("Foo") { Module(new Sub) }
+    }
+
+    val chirrtl = emitCHIRRTL(new Top)
+    println(chirrtl)
   }
 }
