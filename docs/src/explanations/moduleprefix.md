@@ -45,7 +45,7 @@ If a generator is run in multiple prefix blocks, the result is multiple identica
 each with its own distinct prefix.
 For example, consider if we create two instances of `Sub` above like this:
 
-```scala mdoc:silent
+```scala mdoc:silent:reset
 import chisel3._
 
 class Top extends Module {
@@ -68,7 +68,7 @@ Both `Foo_Sub` and `Bar_Sub` will be identical to each other.
 
 Module prefixes can also be nested.
 
-```scala mdoc:silent
+```scala mdoc:silent:reset
 import chisel3._
 
 class Top extends Module {
@@ -92,7 +92,7 @@ This results in three module definitions: `Top`, `Foo_Mid`, and `Foo_Bar_Sub`.
 
 The `withModulePrefix` blocks also work with the `Instantiate` API.
 
-```scala mdoc:silent
+```scala mdoc:silent:reset
 import chisel3._
 import chisel3.experimental.hierarchy.{instantiable, Instantiate}
 
