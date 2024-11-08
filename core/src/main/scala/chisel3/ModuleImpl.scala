@@ -930,9 +930,10 @@ package experimental {
 }
 
 /**
- * Creates a block under which any generator that gets run results in a module whose name is prepended with the given prefix.
- */
+  * Creates a block under which any generator that gets run results in a module whose name is prepended with the given prefix.
+  */
 object withModulePrefix {
+
   /**
     * @param arg prefix Prefix is the module prefix, blank means ignore.
     */

@@ -214,7 +214,7 @@ class PrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with Match
     }
 
     class Top extends Module {
-      val defn =  Definition(new AddOne(8))
+      val defn = Definition(new AddOne(8))
 
       val child = withModulePrefix("Foo") {
         Module(new Child(defn))
@@ -231,8 +231,7 @@ class PrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with Match
   }
 
   it should "withModulePrefix does not automatically affect ExtModules" in {
-    class Sub extends ExtModule {
-    }
+    class Sub extends ExtModule {}
 
     class Top extends Module {
       val sub_foo = withModulePrefix("Foo") { Module(new Sub) }
