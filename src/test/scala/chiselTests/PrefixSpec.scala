@@ -7,6 +7,7 @@ import chisel3.experimental.ExtModule
 import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance, Instantiate}
 import circt.stage.ChiselStage.emitCHIRRTL
 import circt.stage.ChiselStage
+import chisel3.util.SRAM
 
 object PrefixSpec {
   // This has to be defined at the top-level because @instantiable doesn't work when nested.
@@ -157,18 +158,26 @@ class PrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with Match
         val dataOut = Output(UInt(8.W))
       })
 
-      val mem = withModulePrefix("Foo") {
+      val smem = withModulePrefix("Foo") {
         SyncReadMem(1024, UInt(8.W))
       }
 
-      mem.write(io.addr, io.dataIn)
-      io.dataOut := mem.read(io.addr, io.enable)
+      val cmem = withModulePrefix("Bar") {
+        Mem(1024, UInt(8.W))
+      }
+
+      val sram = withModulePrefix("Baz") {
+        SRAM(1024, UInt(8.W), 1, 1, 0)
+      }
+
+      smem.write(io.addr, io.dataIn)
+      io.dataOut := smem.read(io.addr, io.enable)
     }
 
 //    val sv = ChiselStage.emitSystemVerilog(new Top)
 //    println(sv)
 
-    val chirrtl = emitCHIRRTL(new Top, args = Array("--full-stacktrace"))
+    val chirrtl = emitCHIRRTL(new Top)
     println(chirrtl)
 
     val lines = """
@@ -189,7 +198,7 @@ class PrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with Match
     }
 
     val chirrtl = emitCHIRRTL(new Top)
-    println(chirrtl)
+//    println(chirrtl)
 
     val lines = """
   module Foo_AddOne
@@ -208,6 +217,6 @@ class PrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with Match
     }
 
     val chirrtl = emitCHIRRTL(new Top)
-    println(chirrtl)
+    //println(chirrtl)
   }
 }
