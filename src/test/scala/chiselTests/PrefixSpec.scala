@@ -179,4 +179,24 @@ class PrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with Match
 
 //    matchesAndOmits(sv)(lines: _*)()
   }
+
+  it should "Definitions that appear within withModulePrefix get prefixed" in {
+    class Top extends Module {
+      val dfn = withModulePrefix("Foo") {
+        Definition(new AddOne(8))
+      }
+
+      val addone = Instance(dfn)
+    }
+
+    val chirrtl = emitCHIRRTL(new Top)
+    println(chirrtl)
+
+    val lines = """
+  module Foo_AddOne
+  module Top
+        """.linesIterator.map(_.trim).toSeq
+
+    matchesAndOmits(chirrtl)(lines: _*)()
+  }
 }
