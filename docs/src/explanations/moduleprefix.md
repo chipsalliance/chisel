@@ -120,3 +120,11 @@ When using `Definition` and `Instance`, all `Definition` calls will be affected 
 However, `Instance` will not be effected, since it always creates an instance of the captured definition.
 
 `BlackBox` and `ExtModule` are unaffected by `withModulePrefix`.
+If you wish to have one that is sensitive to the module prefix,
+you can explicitly name the module like this:
+
+```scala mdoc:silent
+class Sub extends ExtModule {
+  override def desiredName = modulePrefix + "Sub"
+}
+```
