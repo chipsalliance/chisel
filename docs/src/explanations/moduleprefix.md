@@ -123,7 +123,11 @@ However, `Instance` will not be effected, since it always creates an instance of
 If you wish to have one that is sensitive to the module prefix,
 you can explicitly name the module like this:
 
-```scala mdoc:silent
+```scala mdoc:silent:reset
+import chisel3._
+import chisel3.experimental.hierarchy.{instantiable, Instantiate}
+import chisel3.experimental.ExtModule
+
 class Sub extends ExtModule {
   override def desiredName = modulePrefix + "Sub"
 }
