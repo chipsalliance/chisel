@@ -114,6 +114,7 @@ private[chisel3] trait ObjectModuleImpl {
     Builder.setPrefix(savePrefix)
     Builder.enabledLayers = saveEnabledLayers
 
+    module.moduleBuilt()
     module
   }
 
@@ -643,6 +644,11 @@ package experimental {
         }
       }
     }
+
+    /** Called once the module's definition has been fully built. At this point
+      * the module can be instantiated through its definition.
+      */
+    protected[chisel3] def moduleBuilt(): Unit = {}
 
     //
     // Chisel Internals
