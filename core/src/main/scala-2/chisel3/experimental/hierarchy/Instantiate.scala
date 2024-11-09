@@ -57,7 +57,7 @@ object Instantiate extends InstantiateImpl {
   ): Instance[A] = _instanceImpl(args, f)
 
   /** This is not part of the public API, do not call directly! */
-  def _defination[K, A <: BaseModule: ru.WeakTypeTag](
+  def _definition[K, A <: BaseModule: ru.WeakTypeTag](
     args: K,
     f:    K => A
   ): Definition[A] = _definitionImpl(args, f)
@@ -160,11 +160,11 @@ object Instantiate extends InstantiateImpl {
           val funcArgTypes = args.map(_.asInstanceOf[Tree].tpe.widen)
           val constructor = q"(($funcArg: (..$funcArgTypes)) => new $tpname[..$tparams](...$conArgs))"
           val tup = q"(..$args)"
-          q"chisel3.experimental.hierarchy.Instantiate._defination[(..$funcArgTypes), $tpname]($tup, $constructor)"
+          q"chisel3.experimental.hierarchy.Instantiate._definition[(..$funcArgTypes), $tpname]($tup, $constructor)"
 
         case _ =>
           val msg =
-            s"Argument to Instantiate.defination(...) must be of form 'new <T <: chisel3.Module>(<arguments...>)'.\n" +
+            s"Argument to Instantiate.definition(...) must be of form 'new <T <: chisel3.Module>(<arguments...>)'.\n" +
               "Note that named arguments are currently not supported.\n" +
               s"Got: '$con'"
           c.error(con.pos, msg)

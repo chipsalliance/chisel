@@ -12,17 +12,27 @@ import chisel3.internal.firrtl.ir._
 import chisel3.experimental.{requireIsChiselType, BaseModule, SourceInfo, UnlocatableSourceInfo}
 import chisel3.properties.{Class, Property}
 import chisel3.reflect.DataMirror
-import _root_.firrtl.annotations.{InstanceTarget, IsModule, ModuleName, ModuleTarget}
+import _root_.firrtl.annotations.{
+  Annotation,
+  InstanceTarget,
+  IsMember,
+  IsModule,
+  ModuleName,
+  ModuleTarget,
+  SingleTargetAnnotation,
+  Target
+}
 import _root_.firrtl.AnnotationSeq
 import chisel3.internal.plugin.autoNameRecursively
 import chisel3.util.simpleClassName
+import chisel3.experimental.{annotate, ChiselAnnotation}
 import chisel3.experimental.hierarchy.Hierarchy
 
 private[chisel3] trait ObjectModuleImpl {
 
   protected def _applyImpl[T <: BaseModule](bc: => T)(implicit sourceInfo: SourceInfo): T = {
     // Instantiate the module definition.
-    val module = evaluate[T](bc)
+    val module: T = evaluate[T](bc)
 
     // Handle connections at enclosing scope
     // We use _component because Modules that don't generate them may still have one
@@ -165,6 +175,9 @@ private[chisel3] trait ObjectModuleImpl {
   /** Returns the current Module */
   def currentModule: Option[BaseModule] = Builder.currentModule
 
+  /** Returns the current nested module prefix */
+  def currentModulePrefix: String = Builder.getModulePrefix
+
   private[chisel3] def do_pseudo_apply[T <: BaseModule](
     bc: => T
   )(
@@ -224,6 +237,10 @@ private[chisel3] trait ObjectModuleImpl {
 
     /** Explicitly Asynchronous Reset */
     case object Asynchronous extends Type
+  }
+
+  def getModulePrefixList: List[String] = {
+    Builder.getModulePrefixList
   }
 }
 
@@ -677,8 +694,9 @@ package experimental {
         // PseudoModules are not "true modules" and thus should share
         // their original modules names without uniquification
         this match {
-          case _: PseudoModule => desiredName
-          case _ => Builder.globalNamespace.name(desiredName)
+          case _: PseudoModule => Module.currentModulePrefix + desiredName
+          case _: BaseBlackBox => Builder.globalNamespace.name(desiredName)
+          case _ => Builder.globalNamespace.name(Module.currentModulePrefix + desiredName)
         }
       } catch {
         case e: NullPointerException =>
@@ -915,5 +933,43 @@ package experimental {
           case Some(c) => getRef.fullName(c)
         }
 
+    /** Returns the current nested module prefix */
+    val modulePrefix: String = Builder.getModulePrefix
+  }
+}
+
+/**
+  * Creates a block under which any generator that gets run results in a module whose name is prepended with the given prefix.
+  */
+object withModulePrefix {
+
+  /**
+    * @param arg prefix Prefix is the module prefix, blank means ignore.
+    */
+  def apply[T](prefix: String)(block: => T): T = {
+    if (prefix != "") {
+      Builder.pushModulePrefix(prefix)
+    }
+    val res = block // execute block
+    if (prefix != "") {
+      Builder.popModulePrefix()
+    }
+    res
+  }
+}
+
+private case class ModulePrefixAnnotation(target: IsMember, prefix: String) extends SingleTargetAnnotation[IsMember] {
+  def duplicate(n: IsMember): ModulePrefixAnnotation = this.copy(target = n)
+}
+
+private object ModulePrefixAnnotation {
+  def annotate[T <: HasId](target: T): Unit = {
+    val prefix = Builder.getModulePrefix
+    if (prefix != "") {
+      val annotation: ChiselAnnotation = new ChiselAnnotation {
+        def toFirrtl: Annotation = ModulePrefixAnnotation(target.toTarget, prefix)
+      }
+      chisel3.experimental.annotate(annotation)
+    }
   }
 }

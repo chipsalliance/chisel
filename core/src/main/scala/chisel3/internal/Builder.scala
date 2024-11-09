@@ -461,6 +461,7 @@ private[chisel3] trait NamedComponent extends HasId {
 
 // Mutable global state for chisel that can appear outside a Builder context
 private[chisel3] class ChiselContext() {
+  val modulePrefixSeperator: String = "_"
   val idGen = new IdGen
 
   // Records the different prefixes which have been scoped at this point in time
@@ -470,6 +471,8 @@ private[chisel3] class ChiselContext() {
   // The namespace outside of Builder context is useless, but it ensures that views can still be created
   // and the resulting .toTarget is very clearly useless (_$$View$$_...)
   val viewNamespace = Namespace.empty
+
+  var modulePrefixStack: Prefix = Nil
 }
 
 private[chisel3] class DynamicContext(
@@ -1163,6 +1166,37 @@ private[chisel3] object Builder extends LazyLogging {
       )
     }
   }
+
+  // Puts a module prefix string onto the module prefix stack
+  def pushModulePrefix(prefix: String): Unit = {
+    val context = chiselContext.get()
+    context.modulePrefixStack = prefix :: context.modulePrefixStack
+  }
+
+  // Remove the module prefix on top of the stack
+  def popModulePrefix(): List[String] = {
+    val context = chiselContext.get()
+    val tail = context.modulePrefixStack.tail
+    context.modulePrefixStack = tail
+    tail
+  }
+
+  // Returns the nested module prefix at this moment
+  def getModulePrefix: String = {
+    val ctx = chiselContext.get()
+    val modulePrefixStack = ctx.modulePrefixStack
+    val sep = ctx.modulePrefixSeperator
+    if (modulePrefixStack.isEmpty) {
+      ""
+    } else {
+      modulePrefixStack.foldLeft("")((a, b) => b + sep + a)
+    }
+  }
+
+  def getModulePrefixList: List[String] = {
+    chiselContext.get().modulePrefixStack
+  }
+
   initializeSingletons()
 }
 
