@@ -244,7 +244,10 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
           super.transform(tree)
         }
       // Also look for Module class definitions for inserting source locators
-      case module: ClassDef if isAModule(module.symbol) && !module.mods.hasFlag(Flag.ABSTRACT) =>
+      case module: ClassDef
+          if isAModule(module.symbol) && !module.mods.hasFlag(
+            Flag.ABSTRACT
+          ) && !isOverriddenSourceLocator(module.impl) =>
         val path = SourceInfoFileResolver.resolve(module.pos.source)
         val info = localTyper.typed(q"chisel3.experimental.SourceLine($path, ${module.pos.line}, ${module.pos.column})")
 
