@@ -5,16 +5,20 @@ package chisel3.util.experimental
 import chisel3._
 
 import scala.collection.immutable.SeqMap
+import chisel3.experimental.SourceInfo
 
 class AutoBlackBox(
   val verilog:      String,
-  val signalFilter: String => Boolean = _ => true)
+  val signalFilter: String => Boolean = _ => true
+)(
+  implicit val __sourceInfo: SourceInfo)
     extends FixedIOExtModule(
       ioGenerator = new AutoBundleFromVerilog(
         SeqMap.from(SlangUtils.verilogModuleIO(SlangUtils.getVerilogAst(verilog)))
       )(signalFilter)
     ) {
   override def desiredName = SlangUtils.verilogModuleName(SlangUtils.getVerilogAst(verilog))
+  override def _sourceInfo = __sourceInfo
 }
 
 class AutoBundleFromVerilog(
