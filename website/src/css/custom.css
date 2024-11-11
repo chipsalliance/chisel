@@ -47,10 +47,11 @@
 
 /* Make links more obvious */
 a {
-  color: blue;
+  color: var(--ifm-color-primary-light);
 }
+
 a:hover {
-  color: blue;
+  color: var(--ifm-color-primary);
 }
 
 /* Styling for the result of TOCInline
