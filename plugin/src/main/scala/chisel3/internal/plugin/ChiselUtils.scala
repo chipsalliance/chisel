@@ -61,5 +61,8 @@ private[plugin] trait ChiselOuterUtils { outerSelf: TypingTransformers =>
     def isNullaryMethodNamed(name: String, defdef: DefDef): Boolean =
       defdef.name.decodedName.toString == name && defdef.tparams.isEmpty && defdef.vparamss.isEmpty
 
+    def isOverriddenSourceLocator(impl: Template) = impl.body
+      .exists(m => m.symbol != null && m.symbol.name.toString == "_sourceInfo")
+
   }
 }
