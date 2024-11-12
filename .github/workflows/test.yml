@@ -23,6 +23,11 @@ on:
         default: '2.4'
         required: true
         type: string
+      slang:
+        description: 'The slang version to use'
+        default: '7.0'
+        required: true
+        type: string
       circt:
         description: 'The CIRCT version to use (must be a valid release tag, "nightly", or "version-file").
                       Leave off (or empty) to let Chisel manage the CIRCT version'
@@ -49,6 +54,10 @@ jobs:
         uses: ./.github/workflows/install-espresso
         with:
           version: ${{ inputs.espresso }}
+      - name: Install Slang
+        uses: ./.github/workflows/build-slang
+        with:
+          version: ${{ inputs.slang }}
       - name: Setup Java
         uses: actions/setup-java@v4
         with:

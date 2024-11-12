@@ -1,0 +1,29 @@
+name: Build Slang
+
+inputs:
+  version:
+    description: 'version to install'
+    required: false
+    default: '7.0'
+
+runs:
+  using: composite
+  steps:
+    - id: cache-slang
+      uses: actions/cache@v4
+      with:
+        path: /usr/local/bin/slang
+        key: slang-${{ runner.os }}-${{ inputs.version }}
+    - name: Build from source
+      shell: bash
+      if: steps.cache-slang.outputs.cache-hit != 'true'
+      run: |
+        cd /tmp
+        wget -q https://github.com/MikePopoloski/slang/archive/refs/tags/v${{ inputs.version }}.tar.gz -O slang.tar.gz
+        tar xf slang.tar.gz 
+        cd slang-${{ inputs.version }}
+        cmake -B build
+        cmake --build build
+        cd build && ctest --output-on-failure
+        cp bin/slang /usr/local/bin/slang
+        slang || true
