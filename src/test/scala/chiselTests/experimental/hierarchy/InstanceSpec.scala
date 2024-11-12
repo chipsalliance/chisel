@@ -474,6 +474,18 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         MarkAnnotation("~Top|Top/i:HasHasTarget>sram_sram".rt, "x")
       )
     }
+    it("(3.s): should work on Unit") {
+      class Top extends Module {
+        val i = Instance(Definition(new HasPublicUnit))
+        i.x should be(())
+        mark(i.y._1, "y_1")
+        i.y._2 should be(())
+      }
+      val (_, annos) = getFirrtlAndAnnos(new Top)
+      annos.collect { case c: MarkAnnotation => c } should contain(
+        MarkAnnotation("~Top|Top/i:HasPublicUnit>y_1".rt, "y_1")
+      )
+    }
   }
   describe("(4) toInstance") {
     it("(4.a): should work on modules") {

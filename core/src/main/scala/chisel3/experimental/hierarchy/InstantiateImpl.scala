@@ -73,7 +73,7 @@ private[chisel3] trait InstantiateImpl {
 
   import chisel3.internal.BuilderContextCache
   // Include type of module in key since different modules could have the same arguments
-  private case class CacheKey[A <: BaseModule](args: Any, tt: ru.WeakTypeTag[A])
+  private case class CacheKey[A <: BaseModule](args: Any, tt: ru.WeakTypeTag[A], modulePrefix: List[String])
       extends BuilderContextCache.Key[Definition[A]]
 
   protected def _instanceImpl[K, A <: BaseModule: ru.WeakTypeTag](
@@ -88,9 +88,10 @@ private[chisel3] trait InstantiateImpl {
     args: K,
     f:    K => A
   ): Definition[A] = {
+    val modulePrefix = Builder.getModulePrefixList
     Builder.contextCache
       .getOrElseUpdate(
-        CacheKey(boxAllData(args), implicitly[ru.WeakTypeTag[A]]), {
+        CacheKey(boxAllData(args), implicitly[ru.WeakTypeTag[A]], modulePrefix), {
           // The definition needs to have no source locator because otherwise it will be unstably
           // derived from the first invocation of Instantiate for the particular Module
           Definition.do_apply(f(args))(UnlocatableSourceInfo)
