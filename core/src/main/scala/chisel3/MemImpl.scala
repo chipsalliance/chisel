@@ -23,6 +23,7 @@ private[chisel3] trait ObjectMemImpl {
     val mem = new Mem(mt, size, sourceInfo)
     mt.bind(MemTypeBinding(mem))
     pushCommand(DefMemory(sourceInfo, mem, mt, size))
+    ModulePrefixAnnotation.annotate(mem)
     mem
   }
 
@@ -207,6 +208,7 @@ private[chisel3] trait ObjectSyncReadMemImpl {
     val mem = new SyncReadMem(mt, size, ruw, sourceInfo)
     mt.bind(MemTypeBinding(mem))
     pushCommand(DefSeqMemory(sourceInfo, mem, mt, size, ruw))
+    ModulePrefixAnnotation.annotate(mem)
     mem
   }
 

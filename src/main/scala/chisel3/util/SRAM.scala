@@ -639,6 +639,7 @@ object SRAM {
       descriptionInstance.hierarchyIn := Property(Path(mem))
       description := descriptionInstance.getPropertyReference
     }
+    ModulePrefixAnnotation.annotate(mem)
     _out
   }
 
