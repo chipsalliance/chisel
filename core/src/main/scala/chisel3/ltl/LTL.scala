@@ -6,7 +6,7 @@ import chisel3._
 import chisel3.layer.{block, Layer}
 import chisel3.util.circt._
 import chisel3.experimental.hierarchy.Instance
-import chisel3.experimental.SourceInfo
+import chisel3.experimental.{SourceInfo, UnlocatableSourceInfo}
 
 /** An opaque sequence returned by an intrinsic.
   *
@@ -410,7 +410,7 @@ sealed abstract class AssertPropertyLike(defaultLayer: Layer) {
   def apply(
     prop:    => Property,
     clock:   Option[Clock] = Module.clockOption,
-    disable: Option[Disable] = Module.disableOption,
+    disable: Option[Disable] = Module.disableOption(UnlocatableSourceInfo),
     label:   Option[String] = None
   )(
     implicit sourceInfo: SourceInfo
