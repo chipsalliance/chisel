@@ -292,7 +292,7 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
       layer.addLayer(ExpensiveAsserts)
     }
 
-    ChiselStage.emitCHIRRTL(new Foo) should include("""layer ExpensiveAsserts, bind, "Verification/ExpensiveAsserts"""")
+    ChiselStage.emitCHIRRTL(new Foo) should include("""layer ExpensiveAsserts, bind, "verification/ExpensiveAsserts"""")
   }
 
   "addLayer API" should "add a layer to the output CHIRRTL even if no layer block references that layer" in {
@@ -303,17 +303,28 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
     matchesAndOmits(ChiselStage.emitCHIRRTL(new Foo))("layer A")("layer block")
   }
 
-  "Default Layers" should "always be emitted in CHIRRTL (whereas non-default layers are optionally emitted)" in {
+  "Default Layers" should "always be emitted" in {
     class Foo extends RawModule {}
+    val chirrtl = ChiselStage.emitCHIRRTL(new Foo)
 
-    matchesAndOmits(ChiselStage.emitCHIRRTL(new Foo))(
+    info("default layers are emitted")
+    matchesAndOmits(chirrtl)(
       "layer Verification",
       "layer Assert",
       "layer Assume",
       "layer Cover"
-    )(
-      "layer B"
-    )
+    )()
+
+    info("user-defined layers are not emitted if not used")
+    chirrtl should not include("layer B")
+
+    info("default layers have lowercase directories")
+    matchesAndOmits(chirrtl)(
+      """layer Verification, bind, "verification"""",
+      """layer Assert, bind, "verification/assert"""",
+      """layer Assume, bind, "verification/assume"""",
+      """layer Cover, bind, "verification/cover""""
+    )()
   }
 
   "Layers error checking" should "require that the current layer is an ancestor of the desired layer" in {
