@@ -5,6 +5,7 @@ package chisel3
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.experimental.SourceInfo
+import chisel3.{layer, layers}
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
@@ -75,7 +76,9 @@ object PrintfMacrosCompat {
 
     Printable.checkScope(pable)
 
-    pushCommand(chisel3.internal.firrtl.ir.Printf(printfId, sourceInfo, clock.ref, pable))
+    layer.block(layers.Verification, skipIfAlreadyInBlock = true, skipIfLayersEnabled = true) {
+      pushCommand(chisel3.internal.firrtl.ir.Printf(printfId, sourceInfo, clock.ref, pable))
+    }
     printfId
   }
 

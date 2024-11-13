@@ -8,24 +8,20 @@ import circt.stage.ChiselStage
 class SinglePrintfTester() extends Module {
   val x = 254.U
   printf("x=%x", x)
-  stop()
 }
 
 class ASCIIPrintfTester() extends Module {
   printf((0x20 to 0x7e).map(_.toChar).mkString.replace("%", "%%"))
-  stop()
 }
 
 class MultiPrintfTester() extends Module {
   val x = 254.U
   val y = 255.U
   printf("x=%x y=%x", x, y)
-  stop()
 }
 
 class ASCIIPrintableTester extends Module {
   printf(PString((0x20 to 0x7e).map(_.toChar).mkString("")))
-  stop()
 }
 
 class ScopeTesterModule extends Module {
@@ -42,7 +38,10 @@ class ScopeTesterModule extends Module {
 
 class PrintfSpec extends ChiselFlatSpec {
   "A printf with a single argument" should "elaborate" in {
-    ChiselStage.emitCHIRRTL(new SinglePrintfTester)
+    val chirrtl = ChiselStage.emitCHIRRTL(new SinglePrintfTester)
+
+    info("printfs are wrapped in the `Verification` layerblock by default")
+    chirrtl should include("layerblock Verification")
   }
   "A printf with multiple arguments" should "elaborate" in {
     ChiselStage.emitCHIRRTL(new MultiPrintfTester)
