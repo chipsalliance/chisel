@@ -1,10 +1,12 @@
+// SPDX-License-Identifier: Apache-2.0
+
 package chisel3.experimental.dataview
 
 import chisel3._
 import scala.reflect.runtime.universe.WeakTypeTag
 
-object InvertibleDataView {
-  private def swapArgs[A, B, C, D](f: (A, B) => Iterable[(C, D)]): (B, A) => Iterable[(D, C)] = {
+private[chisel3] trait InvertibleDataView {
+  def swapArgs[A, B, C, D](f: (A, B) => Iterable[(C, D)]): (B, A) => Iterable[(D, C)] = {
     case (b, a) => f(a, b).map(_.swap)
   }
 
