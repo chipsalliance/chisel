@@ -74,7 +74,7 @@ package object internal {
     width:  Int,
     isUInt: Boolean
   )(
-    implicit sourceInfo: SourceInfo,
+    implicit sourceInfo: SourceInfo
   ): A = x match {
     case b: Bool if !b.isLit && width > 1 && isUInt =>
       val _pad = Wire(UInt(width.W))
