@@ -316,7 +316,7 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
     )()
 
     info("user-defined layers are not emitted if not used")
-    chirrtl should not include("layer B")
+    (chirrtl should not).include("layer B")
 
     info("default layers have lowercase directories")
     matchesAndOmits(chirrtl)(
