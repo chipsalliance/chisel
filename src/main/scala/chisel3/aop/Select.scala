@@ -64,7 +64,7 @@ object Select {
               case p: IsClone[_] =>
                 parent._lookup { x => new Instance(Clone(p)).asInstanceOf[Instance[BaseModule]] }
               case other: BaseModule =>
-                parent._lookup { x => other }
+                parent._lookup { x => other.toInstance }
             }
         }
       case other => Nil
@@ -90,7 +90,7 @@ object Select {
                 val i = parent._lookup { x => new Instance(Clone(p)).asInstanceOf[Instance[BaseModule]] }
                 if (i.isA[T]) Some(i.asInstanceOf[Instance[T]]) else None
               case other: BaseModule =>
-                val i = parent._lookup { x => other }
+                val i = parent._lookup { x => other.toInstance }
                 if (i.isA[T]) Some(i.asInstanceOf[Instance[T]]) else None
             }
           case other => None
@@ -647,7 +647,7 @@ object Select {
         case clone: IsClone[_] =>
           parent._lookup { _ => new Instance(Clone(clone)).asInstanceOf[Instance[BaseModule]] }
         case mod: BaseModule =>
-          parent._lookup { _ => mod }
+          parent._lookup { _ => mod.toInstance }
       }.toSeq
     }
 

@@ -79,12 +79,12 @@ sealed trait Hierarchy[+A] {
     * @param lookup typeclass which contains the correct lookup function, based on the types of A and B
     * @param macroGenerated a value created in the macro, to make it harder for users to use this API
     */
-  def _lookup[B, C](
+  def _lookup[B](
     that: A => B
   )(
     implicit lookup: Lookupable[B],
     macroGenerated:  chisel3.internal.MacroGenerated
-  ): lookup.C
+  ): B
 
   /** @return Return the underlying Definition[A] of this Hierarchy[A] */
   def toDefinition: Definition[A]

@@ -14,7 +14,7 @@ class RelativeInnerModule extends RawModule {
 
 @instantiable
 class RelativeMiddleModule extends RawModule {
-  @public val inner = Module(new RelativeInnerModule())
+  @public val inner = Module(new RelativeInnerModule()).toInstance
 }
 
 class RelativeOuterRootModule extends RawModule {

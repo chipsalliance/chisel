@@ -72,7 +72,7 @@ object Examples {
     @public val out = IO(Output(UInt(32.W)))
     val definition = Definition(new AddOne)
     @public val i0: Instance[AddOne] = Instance(definition)
-    @public val i1 = Module(new AddOne)
+    @public val i1 = Module(new AddOne).toInstance
     i0.in := in
     i1.in := i0.out
     out := i1.out

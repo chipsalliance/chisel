@@ -21,34 +21,28 @@ import chisel3.internal.binding.{AggregateViewBinding, ChildBinding, CrossModule
   "@public is only legal within a class or trait marked @instantiable, and only on vals of type" +
     " Data, BaseModule, MemBase, IsInstantiable, IsLookupable, or Instance[_], or in an Iterable, Option, Either, or Tuple2"
 )
-trait Lookupable[-B] {
-  type C // Return type of the lookup
-  /** Function called to modify the returned value of type B from A, into C
-    *
-    * @param that function that selects B from A
-    * @param instance Instance of A, used to determine C's context
-    * @return
-    */
-  def instanceLookup[A](that: A => B, instance: Instance[A]): C
+trait Lookupable[B] {
 
-  /** Function called to modify the returned value of type B from A, into C
+  /** Function called to modify the context of B
     *
     * @param that function that selects B from A
-    * @param definition Definition of A, used to determine C's context
+    * @param instance Instance of A, used to determine B's context
     * @return
     */
-  def definitionLookup[A](that:     A => B, definition: Definition[A]): C
+  def instanceLookup[A](that: A => B, instance: Instance[A]): B
+
+  /** Function called to modify the context of B
+    *
+    * @param that function that selects B from A
+    * @param definition Definition of A, used to determine B's context
+    * @return
+    */
+  def definitionLookup[A](that:     A => B, definition: Definition[A]): B
   protected def getProto[A](h:      Hierarchy[A]): A = h.proto
   protected def getUnderlying[A](h: Hierarchy[A]): Underlying[A] = h.underlying
 }
 
 object Lookupable {
-
-  /** Type alias for simplifying explicit Lookupable type ascriptions */
-  type Aux[B, C0] = Lookupable[B] { type C = C0 }
-
-  /** Type alias for simple Lookupable types */
-  type Simple[B] = Aux[B, B]
 
   /** Clones a data and sets its internal references to its parent module to be in a new context.
     *
@@ -286,21 +280,18 @@ object Lookupable {
     }
   }
 
-  class SimpleLookupable[X] extends Lookupable[X] {
-    type B = X
-    type C = X
-    def definitionLookup[A](that: A => B, definition: Definition[A]): C = that(definition.proto)
-    def instanceLookup[A](that:   A => B, instance:   Instance[A]):   C = that(instance.proto)
+  class SimpleLookupable[B] extends Lookupable[B] {
+    def definitionLookup[A](that: A => B, definition: Definition[A]): B = that(definition.proto)
+    def instanceLookup[A](that:   A => B, instance:   Instance[A]):   B = that(instance.proto)
   }
 
-  implicit def lookupInstance[B <: BaseModule](implicit sourceInfo: SourceInfo): Simple[Instance[B]] =
+  implicit def lookupInstance[B <: BaseModule](implicit sourceInfo: SourceInfo): Lookupable[Instance[B]] =
     new Lookupable[Instance[B]] {
-      type C = Instance[B]
-      def definitionLookup[A](that: A => Instance[B], definition: Definition[A]): C = {
+      def definitionLookup[A](that: A => Instance[B], definition: Definition[A]): Instance[B] = {
         val ret = that(definition.proto)
         new Instance(cloneModuleToContext(ret.underlying, definition.getInnerDataContext.get))
       }
-      def instanceLookup[A](that: A => Instance[B], instance: Instance[A]): C = {
+      def instanceLookup[A](that: A => Instance[B], instance: Instance[A]): Instance[B] = {
         val ret = that(instance.proto)
         instance.underlying match {
           // If instance is just a normal module, no changing of context is necessary
@@ -310,27 +301,9 @@ object Lookupable {
       }
     }
 
-  implicit def lookupModule[B <: BaseModule](implicit sourceInfo: SourceInfo): Aux[B, Instance[B]] =
+  implicit def lookupData[B <: Data](implicit sourceInfo: SourceInfo): Lookupable[B] =
     new Lookupable[B] {
-      type C = Instance[B]
-      def definitionLookup[A](that: A => B, definition: Definition[A]): C = {
-        val ret = that(definition.proto)
-        new Instance(cloneModuleToContext(Proto(ret), definition.getInnerDataContext.get))
-      }
-      def instanceLookup[A](that: A => B, instance: Instance[A]): C = {
-        val ret = that(instance.proto)
-        instance.underlying match {
-          // If instance is just a normal module, no changing of context is necessary
-          case Proto(_) => new Instance(Proto(ret))
-          case Clone(_) => new Instance(cloneModuleToContext(Proto(ret), instance.getInnerDataContext.get))
-        }
-      }
-    }
-
-  implicit def lookupData[B <: Data](implicit sourceInfo: SourceInfo): Simple[B] =
-    new Lookupable[B] {
-      type C = B
-      def definitionLookup[A](that: A => B, definition: Definition[A]): C = {
+      def definitionLookup[A](that: A => B, definition: Definition[A]): B = {
         val ret = that(definition.proto)
         if (isView(ret)) {
           ??? // TODO!!!!!!  cloneViewToContext(ret, instance, ioMap, instance.getInnerDataContext)
@@ -338,7 +311,7 @@ object Lookupable {
           doLookupData(ret, definition.cache, None, definition.getInnerDataContext)
         }
       }
-      def instanceLookup[A](that: A => B, instance: Instance[A]): C = {
+      def instanceLookup[A](that: A => B, instance: Instance[A]): B = {
         val ret = that(instance.proto)
 
         // As Property ports are not yet Lookupable, they are skipped here.
@@ -394,13 +367,12 @@ object Lookupable {
     }
   }
 
-  implicit def lookupMem[B <: MemBase[_]](implicit sourceInfo: SourceInfo): Simple[B] =
+  implicit def lookupMem[B <: MemBase[_]](implicit sourceInfo: SourceInfo): Lookupable[B] =
     new Lookupable[B] {
-      type C = B
-      def definitionLookup[A](that: A => B, definition: Definition[A]): C = {
+      def definitionLookup[A](that: A => B, definition: Definition[A]): B = {
         cloneMemToContext(that(definition.proto), definition.getInnerDataContext.get)
       }
-      def instanceLookup[A](that: A => B, instance: Instance[A]): C = {
+      def instanceLookup[A](that: A => B, instance: Instance[A]): B = {
         cloneMemToContext(that(instance.proto), instance.getInnerDataContext.get)
       }
     }
@@ -434,13 +406,12 @@ object Lookupable {
     }
   }
 
-  implicit def lookupHasTarget(implicit sourceInfo: SourceInfo): Simple[HasTarget] =
+  implicit def lookupHasTarget(implicit sourceInfo: SourceInfo): Lookupable[HasTarget] =
     new Lookupable[HasTarget] {
-      type C = HasTarget
-      def definitionLookup[A](that: A => HasTarget, definition: Definition[A]): C = {
+      def definitionLookup[A](that: A => HasTarget, definition: Definition[A]): HasTarget = {
         cloneHasTargetToContext(that(definition.proto), definition.getInnerDataContext.get)
       }
-      def instanceLookup[A](that: A => HasTarget, instance: Instance[A]): C = {
+      def instanceLookup[A](that: A => HasTarget, instance: Instance[A]): HasTarget = {
         cloneHasTargetToContext(that(instance.proto), instance.getInnerDataContext.get)
       }
     }
@@ -449,28 +420,26 @@ object Lookupable {
   implicit def lookupIterable[B, F[_] <: Iterable[_]](
     implicit sourceInfo: SourceInfo,
     lookupable:          Lookupable[B]
-  ): Aux[F[B], F[lookupable.C]] = new Lookupable[F[B]] {
-    type C = F[lookupable.C]
-    def definitionLookup[A](that: A => F[B], definition: Definition[A]): C = {
+  ): Lookupable[F[B]] = new Lookupable[F[B]] {
+    def definitionLookup[A](that: A => F[B], definition: Definition[A]): F[B] = {
       val ret = that(definition.proto).asInstanceOf[Iterable[B]]
-      ret.map { (x: B) => lookupable.definitionLookup[A](_ => x, definition) }.asInstanceOf[C]
+      ret.map { (x: B) => lookupable.definitionLookup[A](_ => x, definition) }.asInstanceOf[F[B]]
     }
-    def instanceLookup[A](that: A => F[B], instance: Instance[A]): C = {
+    def instanceLookup[A](that: A => F[B], instance: Instance[A]): F[B] = {
       import instance._
       val ret = that(proto).asInstanceOf[Iterable[B]]
-      ret.map { (x: B) => lookupable.instanceLookup[A](_ => x, instance) }.asInstanceOf[C]
+      ret.map { (x: B) => lookupable.instanceLookup[A](_ => x, instance) }.asInstanceOf[F[B]]
     }
   }
   implicit def lookupOption[B](
     implicit sourceInfo: SourceInfo,
     lookupable:          Lookupable[B]
-  ): Aux[Option[B], Option[lookupable.C]] = new Lookupable[Option[B]] {
-    type C = Option[lookupable.C]
-    def definitionLookup[A](that: A => Option[B], definition: Definition[A]): C = {
+  ): Lookupable[Option[B]] = new Lookupable[Option[B]] {
+    def definitionLookup[A](that: A => Option[B], definition: Definition[A]): Option[B] = {
       val ret = that(definition.proto)
       ret.map { (x: B) => lookupable.definitionLookup[A](_ => x, definition) }
     }
-    def instanceLookup[A](that: A => Option[B], instance: Instance[A]): C = {
+    def instanceLookup[A](that: A => Option[B], instance: Instance[A]): Option[B] = {
       import instance._
       val ret = that(proto)
       ret.map { (x: B) => lookupable.instanceLookup[A](_ => x, instance) }
@@ -480,15 +449,14 @@ object Lookupable {
     implicit sourceInfo: SourceInfo,
     lookupableL:         Lookupable[L],
     lookupableR:         Lookupable[R]
-  ): Aux[Either[L, R], Either[lookupableL.C, lookupableR.C]] = new Lookupable[Either[L, R]] {
-    type C = Either[lookupableL.C, lookupableR.C]
-    def definitionLookup[A](that: A => Either[L, R], definition: Definition[A]): C = {
+  ): Lookupable[Either[L, R]] = new Lookupable[Either[L, R]] {
+    def definitionLookup[A](that: A => Either[L, R], definition: Definition[A]): Either[L, R] = {
       val ret = that(definition.proto)
       ret.map { (x: R) => lookupableR.definitionLookup[A](_ => x, definition) }.left.map { (x: L) =>
         lookupableL.definitionLookup[A](_ => x, definition)
       }
     }
-    def instanceLookup[A](that: A => Either[L, R], instance: Instance[A]): C = {
+    def instanceLookup[A](that: A => Either[L, R], instance: Instance[A]): Either[L, R] = {
       import instance._
       val ret = that(proto)
       ret.map { (x: R) => lookupableR.instanceLookup[A](_ => x, instance) }.left.map { (x: L) =>
@@ -501,41 +469,18 @@ object Lookupable {
     implicit sourceInfo: SourceInfo,
     lookupableX:         Lookupable[X],
     lookupableY:         Lookupable[Y]
-  ): Aux[(X, Y), (lookupableX.C, lookupableY.C)] = new Lookupable[(X, Y)] {
-    type C = (lookupableX.C, lookupableY.C)
-    def definitionLookup[A](that: A => (X, Y), definition: Definition[A]): C = {
+  ): Lookupable[(X, Y)] = new Lookupable[(X, Y)] {
+    def definitionLookup[A](that: A => (X, Y), definition: Definition[A]): (X, Y) = {
       val ret = that(definition.proto)
       (
         lookupableX.definitionLookup[A](_ => ret._1, definition),
         lookupableY.definitionLookup[A](_ => ret._2, definition)
       )
     }
-    def instanceLookup[A](that: A => (X, Y), instance: Instance[A]): C = {
+    def instanceLookup[A](that: A => (X, Y), instance: Instance[A]): (X, Y) = {
       import instance._
       val ret = that(proto)
       (lookupableX.instanceLookup[A](_ => ret._1, instance), lookupableY.instanceLookup[A](_ => ret._2, instance))
-    }
-  }
-
-  implicit def lookupIsInstantiable[B <: IsInstantiable](
-    implicit sourceInfo: SourceInfo
-  ): Aux[B, Instance[B]] = new Lookupable[B] {
-    type C = Instance[B]
-    def definitionLookup[A](that: A => B, definition: Definition[A]): C = {
-      val ret = that(definition.proto)
-      val underlying = new InstantiableClone[B] {
-        val getProto = ret
-        lazy val _innerContext: Hierarchy[_] = definition
-      }
-      new Instance(Clone(underlying))
-    }
-    def instanceLookup[A](that: A => B, instance: Instance[A]): C = {
-      val ret = that(instance.proto)
-      val underlying = new InstantiableClone[B] {
-        val getProto = ret
-        lazy val _innerContext: Hierarchy[_] = instance
-      }
-      new Instance(Clone(underlying))
     }
   }
 
