@@ -11,7 +11,6 @@ import chisel3.experimental.{BaseModule, BundleLiteralException, HasTypeAlias, O
 import chisel3.experimental.{requireIsChiselType, requireIsHardware, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal._
 import chisel3.internal.binding._
-import chisel3.internal.util._resizeToWidth
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.ir._
 import chisel3.reflect.DataMirror
@@ -137,7 +136,7 @@ private[chisel3] trait AggregateImpl extends Data { thiz: Aggregate =>
   }
 
   override private[chisel3] def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): Data = {
-    val _asUInt = _resizeToWidth(that, this.widthOption)(identity)
+    val _asUInt = _resizeToWidth(that, this.widthOption, true)(identity)
     // If that is a literal and all constituent Elements can be represented as literals, return a literal
     val ((_, allLit), rvalues) = {
       this.flatten.toList.mapAccumulate[(Int, Boolean), Element]((0, _asUInt.isLit)) {

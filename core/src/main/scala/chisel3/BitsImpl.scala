@@ -5,7 +5,7 @@ package chisel3
 import chisel3.experimental.{requireIsHardware, SourceInfo}
 import chisel3.internal.{throwException, BaseModule}
 import chisel3.internal.Builder.pushOp
-import chisel3.internal.util._
+import chisel3.internal._
 import chisel3.internal.firrtl.ir._
 import chisel3.internal.firrtl.ir.PrimOp._
 import _root_.firrtl.{ir => firrtlir}
@@ -389,7 +389,7 @@ private[chisel3] trait UIntImpl extends BitsImpl with Num[UInt] { self: UInt =>
   override private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): UInt = this
 
   override private[chisel3] def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): this.type = {
-    _resizeToWidth(that, this.widthOption)(identity).asInstanceOf[this.type]
+    _resizeToWidth(that, this.widthOption, true)(identity).asInstanceOf[this.type]
   }
 
   private def subtractAsSInt(that: UInt)(implicit sourceInfo: SourceInfo): SInt =
@@ -515,7 +515,7 @@ private[chisel3] trait SIntImpl extends BitsImpl with Num[SInt] { self: SInt =>
   override def _asSIntImpl(implicit sourceInfo: SourceInfo): SInt = this
 
   override private[chisel3] def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): this.type =
-    _resizeToWidth(that.asSInt, this.widthOption)(_.asSInt).asInstanceOf[this.type]
+    _resizeToWidth(that.asSInt, this.widthOption, false)(_.asSInt).asInstanceOf[this.type]
 }
 
 private[chisel3] trait ResetImpl extends Element { self: Reset =>
@@ -641,6 +641,6 @@ private[chisel3] trait BoolImpl extends UIntImpl { self: Bool =>
     pushOp(DefPrim(sourceInfo, AsyncReset(), AsAsyncResetOp, ref))
 
   override private[chisel3] def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): this.type = {
-    _resizeToWidth(that, this.widthOption)(identity).asBool.asInstanceOf[this.type]
+    _resizeToWidth(that, this.widthOption, true)(identity).asBool.asInstanceOf[this.type]
   }
 }
