@@ -5,6 +5,8 @@ Module prefixing allows you to create namespaces in the Verilog output of your d
 They are especially useful for when you want to name a particular subsystem of your design,
 and you want to make it easy to identify which subsystem a file belongs to by its name.
 
+## withModulePrefix
+
 We can open a module prefix block using `withModulePrefix`:
 
 ```scala mdoc:silent
@@ -41,6 +43,46 @@ The result will be a design with two module definitions: `Top` and `Foo_Sub`.
 Note that the `val sub =` part must be pulled outside of the `withModulePrefix` block,
 or else the module will not be accessible to the rest of the `Top` module.
 
+## localModulePrefix
+
+We can also set a module prefix on a module by overriding the `localModulePrefix` method.
+This is useful if you want to set a prefix for all instances of a module.
+
+```scala mdoc:silent:reset
+import chisel3._
+
+class Top extends Module {
+  override def localModulePrefix = Some("Foo")
+  val sub = Module(new Sub)
+}
+
+class Sub extends Module {
+  // ..
+}
+```
+
+This results in two module definitions: `Foo_Top` and `Foo_Sub`.
+
+You can also override `localPrefixAppliesToSelf` to `false` to only apply the prefix to the children.
+
+```scala mdoc:silent:reset
+import chisel3._
+
+class Top extends Module {
+  override def localModulePrefix = Some("Foo")
+  override def localPrefixAppliesToSelf = false
+  val sub = Module(new Sub)
+}
+
+class Sub extends Module {
+  // ..
+}
+```
+
+This results in the two module definitions `Top` and `Foo_Sub`.
+
+## Multiple Prefixes
+
 If a generator is run in multiple prefix blocks, the result is multiple identical copies of the module definition,
 each with its own distinct prefix.
 For example, consider if we create two instances of `Sub` above like this:
@@ -66,6 +108,8 @@ class Sub extends Module {
 Then, the resulting Verilog will have three module definitions: `Top`, `Foo_Sub`, and `Bar_Sub`.
 Both `Foo_Sub` and `Bar_Sub` will be identical to each other.
 
+## Nested Prefixes
+
 Module prefixes can also be nested.
 
 ```scala mdoc:silent:reset
@@ -78,9 +122,10 @@ class Top extends Module {
 }
 
 class Mid extends Module {
-  val sub = withModulePrefix("Bar") {
-    Module(new Sub)
-  }
+  // You can mix withModulePrefix and localModulePrefix.
+  override def localModulePrefix = Some("Bar")
+  override def localPrefixAppliesToSelf = false
+  val sub = Module(new Sub)
 }
 
 class Sub extends Module {
@@ -89,6 +134,8 @@ class Sub extends Module {
 ```
 
 This results in three module definitions: `Top`, `Foo_Mid`, and `Foo_Bar_Sub`.
+
+## Instantiate
 
 The `withModulePrefix` blocks also work with the `Instantiate` API.
 
@@ -118,6 +165,8 @@ In this example, we end up with four modules: `Top`, `Foo_Sub`, `Bar_Sub`, and `
 
 When using `Definition` and `Instance`, all `Definition` calls will be affected by `withModulePrefix`.
 However, `Instance` will not be effected, since it always creates an instance of the captured definition.
+
+## External Modules
 
 `BlackBox` and `ExtModule` are unaffected by `withModulePrefix`.
 If you wish to have one that is sensitive to the module prefix,
