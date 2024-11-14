@@ -315,6 +315,14 @@ trait Chisel extends CrossSbtModule with HasScala2MacroAnno with HasScala2Plugin
   def coreModule = core(crossScalaVersion)
   def pluginModule = plugin()
 
+  override def scalacOptions = T {
+    if (v.isScala3(crossScalaVersion)) {
+      Seq.empty[String]
+    } else {
+      super.scalacOptions() ++ v.scala2CommonOptions
+    }
+  }
+
   override def moduleDeps = super.moduleDeps ++ Seq(coreModule, svsimModule)
 
   object test extends SbtModuleTests with TestModule.ScalaTest with ScalafmtModule {
