@@ -50,6 +50,17 @@ trait InlineInstance { self: BaseModule =>
     .map(chisel3.experimental.annotate(_))
 }
 
+/** Inlines all instances of a module. If this module dedups with any other
+  * module, instances of that other module will also be inlined.
+  */
+trait InlineInstanceAllowDedup { self: BaseModule =>
+  chisel3.experimental.annotate(
+    new ChiselAnnotation {
+      def toFirrtl: Annotation = InlineAnnotation(self.toNamed)
+    }
+  )
+}
+
 /** Flattens an instance of a module
   *
   * @example {{{
