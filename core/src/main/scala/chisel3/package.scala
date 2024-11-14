@@ -131,8 +131,6 @@ package object chisel3 {
     def W: Width = Width(int)
   }
 
-  object Vec extends VecFactory
-
   // Some possible regex replacements for the literal specifier deprecation:
   // (note: these are not guaranteed to handle all edge cases! check all replacements!)
   // Bool\((true|false)\)
@@ -149,11 +147,6 @@ package object chisel3 {
   //  => $2.as$1
   // (UInt|SInt)\(([_a-zA-Z][_0-9a-zA-Z]*),\s*(?:width\s*=)?\s*(\d+|[_a-zA-Z][_0-9a-zA-Z]*)\)
   //  => $2.as$1($3.W)
-
-  object Bits extends UIntFactory
-  object UInt extends UIntFactory
-  object SInt extends SIntFactory
-  object Bool extends BoolFactory
 
   /** Public API to access Node/Signal names.
     * currently, the node's name, the full path name, and references to its parent Module and component.

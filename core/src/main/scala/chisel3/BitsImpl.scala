@@ -41,7 +41,7 @@ private[chisel3] trait BitsImpl extends Element { self: Bits =>
   }
 
   protected def _headImpl(n: Int)(implicit sourceInfo: SourceInfo): UInt = {
-    width match {
+    this.width match {
       case KnownWidth(x) => require(x >= n, s"Can't head($n) for width $x < $n")
       case UnknownWidth  => ()
     }
@@ -193,9 +193,9 @@ private[chisel3] trait BitsImpl extends Element { self: Bits =>
   protected def _asSIntImpl(implicit sourceInfo: SourceInfo): SInt
 
   protected def _asBoolImpl(implicit sourceInfo: SourceInfo): Bool = {
-    width match {
+    this.width match {
       case KnownWidth(1) => this(0)
-      case _             => throwException(s"can't covert ${this.getClass.getSimpleName}$width to Bool")
+      case _             => throwException(s"can't covert ${this.getClass.getSimpleName}${this.width} to Bool")
     }
   }
 
@@ -388,7 +388,7 @@ private[chisel3] trait UIntImpl extends BitsImpl with Num[UInt] { self: UInt =>
   override private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): UInt = this
 
   override private[chisel3] def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): this.type = {
-    _resizeToWidth(that, this.widthOption)(identity).asInstanceOf[this.type]
+    _resizeToWidth(that, this.widthOption, true)(identity).asInstanceOf[this.type]
   }
 
   private def subtractAsSInt(that: UInt)(implicit sourceInfo: SourceInfo): SInt =
@@ -514,7 +514,7 @@ private[chisel3] trait SIntImpl extends BitsImpl with Num[SInt] { self: SInt =>
   override def _asSIntImpl(implicit sourceInfo: SourceInfo): SInt = this
 
   override private[chisel3] def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): this.type =
-    _resizeToWidth(that.asSInt, this.widthOption)(_.asSInt).asInstanceOf[this.type]
+    _resizeToWidth(that.asSInt, this.widthOption, false)(_.asSInt).asInstanceOf[this.type]
 }
 
 private[chisel3] trait ResetImpl extends Element { self: Reset =>
@@ -640,6 +640,6 @@ private[chisel3] trait BoolImpl extends UIntImpl { self: Bool =>
     pushOp(DefPrim(sourceInfo, AsyncReset(), AsAsyncResetOp, ref))
 
   override private[chisel3] def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): this.type = {
-    _resizeToWidth(that, this.widthOption)(identity).asBool.asInstanceOf[this.type]
+    _resizeToWidth(that, this.widthOption, true)(identity).asBool.asInstanceOf[this.type]
   }
 }

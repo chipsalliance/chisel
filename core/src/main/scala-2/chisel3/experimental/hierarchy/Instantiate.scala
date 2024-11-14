@@ -54,13 +54,13 @@ object Instantiate extends InstantiateImpl {
     f:    K => A
   )(
     implicit sourceInfo: SourceInfo
-  ): Instance[A] = _instanceImpl(args, f)
+  ): Instance[A] = _instanceImpl(args, f, implicitly[ru.WeakTypeTag[A]])
 
   /** This is not part of the public API, do not call directly! */
   def _definition[K, A <: BaseModule: ru.WeakTypeTag](
     args: K,
     f:    K => A
-  ): Definition[A] = _definitionImpl(args, f)
+  ): Definition[A] = _definitionImpl(args, f, implicitly[ru.WeakTypeTag[A]])
 
   private object internal {
 

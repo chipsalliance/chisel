@@ -74,6 +74,8 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, length: Int)
   ): T = _reduceTreeImpl(redOp, layerOp)
 }
 
+object Vec extends VecFactory
+
 object VecInit extends VecInitImpl with SourceInfoDoc {
 
   /** Creates a new [[Vec]] composed of elements of the input Seq of [[Data]]

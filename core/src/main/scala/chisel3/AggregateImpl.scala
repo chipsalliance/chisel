@@ -136,10 +136,10 @@ private[chisel3] trait AggregateImpl extends Data { thiz: Aggregate =>
   }
 
   override private[chisel3] def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): Data = {
-    val _asUInt = _resizeToWidth(that, this.widthOption)(identity)
+    val _asUInt = _resizeToWidth(that, this.widthOption, true)(identity)
     // If that is a literal and all constituent Elements can be represented as literals, return a literal
     val ((_, allLit), rvalues) = {
-      this.flatten.toList.mapAccumulate((0, _asUInt.isLit)) {
+      this.flatten.toList.mapAccumulate[(Int, Boolean), Element]((0, _asUInt.isLit)) {
         case ((lo, literal), elt) =>
           val hi = lo + elt.getWidth
           // Chisel only supports zero width extraction if hi = -1 and lo = 0, so do it manually
