@@ -20,8 +20,8 @@
   --ifm-color-primary-light: #24296a;
   --ifm-color-primary-lighter: #262b6e;
   --ifm-color-primary-lightest: #2b307d;
-  --color-link: #212560;
-  --color-link-hover: #1e2156;
+  --color-link: blue;
+  --color-link-hover: blue;
   --ifm-code-font-size: 95%;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
 }
