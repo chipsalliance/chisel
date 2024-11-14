@@ -275,4 +275,86 @@ class ModulePrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with
 
     matchesAndOmits(chirrtl)(lines: _*)()
   }
+
+  behavior.of("BaseModule.localModulePrefix")
+
+  it should "set the prefix for a Module and its children" in {
+
+    class Foo extends RawModule
+    class Bar extends RawModule
+
+    class Top extends RawModule {
+      override def localModulePrefix = Some("Prefix")
+      val foo = Module(new Foo)
+      val bar = Module(new Bar)
+    }
+
+    val chirrtl = emitCHIRRTL(new Top)
+    val lines =
+      """
+      module Prefix_Foo :
+      module Prefix_Bar :
+      module Prefix_Top :
+        inst foo of Prefix_Foo
+        inst bar of Prefix_Bar
+      """.linesIterator.map(_.trim).toSeq
+
+    matchesAndOmits(chirrtl)(lines: _*)()
+  }
+
+  it should "set the prefix for a Module's children but not the Module itself if localPrefixAppliesToSelf is false" in {
+
+    class Foo extends RawModule
+    class Bar extends RawModule
+
+    class Top extends RawModule {
+      override def localModulePrefix = Some("Prefix")
+      override def localPrefixAppliesToSelf = false
+      val foo = Module(new Foo)
+      val bar = Module(new Bar)
+    }
+
+    val chirrtl = emitCHIRRTL(new Top)
+    val lines =
+      """
+      module Prefix_Foo :
+      module Prefix_Bar :
+      module Top :
+        inst foo of Prefix_Foo
+        inst bar of Prefix_Bar
+      """.linesIterator.map(_.trim).toSeq
+
+    matchesAndOmits(chirrtl)(lines: _*)()
+  }
+
+  it should "compose with withModulePrefix" in {
+
+    class Foo extends RawModule {
+      override def localModulePrefix = Some("Inner")
+    }
+    class Bar extends RawModule
+
+    class Top extends RawModule {
+      override def localModulePrefix = Some("Outer")
+      val f1 = Module(new Foo)
+      withModulePrefix("Prefix") {
+        val f2 = Module(new Foo)
+        val bar = Module(new Bar)
+      }
+    }
+
+    val chirrtl = emitCHIRRTL(new Top)
+    val lines =
+      """
+      module Outer_Inner_Foo :
+      module Outer_Prefix_Inner_Foo :
+      module Outer_Prefix_Bar :
+      module Outer_Top :
+        inst f1 of Outer_Inner_Foo
+        inst f2 of Outer_Prefix_Inner_Foo
+        inst bar of Outer_Prefix_Bar
+      """.linesIterator.map(_.trim).toSeq
+
+    matchesAndOmits(chirrtl)(lines: _*)()
+  }
 }

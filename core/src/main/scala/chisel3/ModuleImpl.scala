@@ -123,6 +123,9 @@ private[chisel3] trait ObjectModuleImpl {
     Builder.currentReset = saveReset
     Builder.setPrefix(savePrefix)
     Builder.enabledLayers = saveEnabledLayers
+    if (module.localModulePrefix.isDefined) {
+      Builder.popModulePrefix() // Pop localModulePrefix if it was defined
+    }
 
     module.moduleBuilt()
     module
@@ -696,7 +699,7 @@ package experimental {
         this match {
           case _: PseudoModule => Module.currentModulePrefix + desiredName
           case _: BaseBlackBox => Builder.globalNamespace.name(desiredName)
-          case _ => Builder.globalNamespace.name(Module.currentModulePrefix + desiredName)
+          case _ => Builder.globalNamespace.name(this.modulePrefix + desiredName)
         }
       } catch {
         case e: NullPointerException =>
@@ -933,8 +936,29 @@ package experimental {
           case Some(c) => getRef.fullName(c)
         }
 
-    /** Returns the current nested module prefix */
-    val modulePrefix: String = Builder.getModulePrefix
+    /** Additional module prefix, applies to this module if defined (unless localModulePrefix is false) and all children.
+      */
+    def localModulePrefix: Option[String] = None
+
+    /** Should [[localModulePrefix]] apply to this module? Defaults to true.
+      *
+      * Users should override to false if [[localModulePrefix]] should apply only to children.
+      */
+    def localPrefixAppliesToSelf: Boolean = true
+
+    /** The resolved module prefix used for this Module.
+      *
+      * Includes [[localModulePrefix]] if defined and if [[localPrefixAppliesToSelf]] is true.
+      */
+    final val modulePrefix: String =
+      withModulePrefix(localModulePrefix.filter(_ => localPrefixAppliesToSelf).getOrElse("")) {
+        Builder.getModulePrefix
+      }
+
+    // Apply localModulePrefix to children.
+    localModulePrefix.foreach { prefix =>
+      Builder.pushModulePrefix(prefix)
+    }
   }
 }
 
