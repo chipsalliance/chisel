@@ -9,7 +9,7 @@ import circt.stage.ChiselStage.emitCHIRRTL
 import circt.stage.ChiselStage
 import chisel3.util.SRAM
 
-object PrefixSpec {
+object ModulePrefixSpec {
   // This has to be defined at the top-level because @instantiable doesn't work when nested.
   @instantiable
   class AddOne(width: Int) extends Module {
@@ -19,8 +19,8 @@ object PrefixSpec {
   }
 }
 
-class PrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with MatchesAndOmits {
-  import PrefixSpec._
+class ModulePrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with MatchesAndOmits {
+  import ModulePrefixSpec._
   behavior.of("withModulePrefix")
 
   it should "prefix modules in a withModulePrefix block, but not outside" in {
