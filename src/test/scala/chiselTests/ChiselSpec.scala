@@ -365,7 +365,7 @@ trait Utils {
 }
 
 /** Contains helpful function to assert both statements to match, and statements to omit */
-trait MatchesAndOmits {
+trait MatchesAndOmits extends Assertions {
   private def matches(lines: List[String], matchh: String): Option[String] = lines.filter(_.contains(matchh)).lastOption
   private def omits(line:    String, omit:         String): Option[(String, String)] =
     if (line.contains(omit)) Some((omit, line)) else None
@@ -374,11 +374,11 @@ trait MatchesAndOmits {
     val lines = output.split("\n").toList
     val unmatched = matchList.flatMap { m =>
       if (matches(lines, m).nonEmpty) None else Some(m)
-    }.map(x => s"  > $x was unmatched")
+    }.map(x => s"  > '$x' was unmatched")
     val unomitted = omitList.flatMap { o => omits(lines, o) }.map {
-      case (o, l) => s"  > $o was not omitted in ($l)"
+      case (o, l) => s"  > '$o' was not omitted in ($l)"
     }
     val results = unmatched ++ unomitted
-    assert(results.isEmpty, results.mkString("\n"))
+    assert(results.isEmpty, results.mkString("\n") + s"\nFull Input:\n'$output'\n")
   }
 }
