@@ -3,9 +3,8 @@
 package chisel3
 
 import chisel3.experimental.{requireIsHardware, SourceInfo}
-import chisel3.internal.{throwException, BaseModule}
+import chisel3.internal.{_resizeToWidth, throwException, BaseModule}
 import chisel3.internal.Builder.pushOp
-import chisel3.internal._
 import chisel3.internal.firrtl.ir._
 import chisel3.internal.firrtl.ir.PrimOp._
 import _root_.firrtl.{ir => firrtlir}

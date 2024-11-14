@@ -2,7 +2,7 @@
 
 package chisel3
 
-trait PrintfImpl {
+private[chisel3] trait PrintfImpl {
 
   /** Helper for packing escape characters */
   private[chisel3] def format(formatIn: String): String = {
