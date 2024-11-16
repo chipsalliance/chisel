@@ -1,4 +1,4 @@
-package chisel3.experimental
+package chisel3.experimental.hierarchy
 
 /** Classes or traits which will be used with the [[Definition]] + [[Instance]] api should be marked
   * with the [[instantiable]] annotation at the class/trait definition.
