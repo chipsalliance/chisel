@@ -119,7 +119,7 @@ trait ChiselPublishModule extends CiReleaseModule {
 
 }
 
-trait HasScala2MacroAnno extends CrossSbtModule {
+trait HasScala2MacroAnno extends CrossModuleBase {
   override def scalacOptions = T {
     if (!v.isScala3(crossScalaVersion)) {
       super.scalacOptions() ++ Agg("-Ymacro-annotations")
@@ -127,7 +127,7 @@ trait HasScala2MacroAnno extends CrossSbtModule {
   }
 }
 
-trait HasScala2Plugin extends CrossSbtModule {
+trait HasScala2Plugin extends CrossModuleBase {
   def pluginModule: Plugin
 
   override def scalacOptions = T {
