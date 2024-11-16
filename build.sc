@@ -216,7 +216,7 @@ trait Macros extends CrossSbtModule with HasScala2MacroAnno with ScalafmtModule 
     }
   }
 
-  override def ivyDeps = super.ivyDeps() ++ Seq(ivy"org.scala-lang:scala-reflect:$scalaVersion")
+  override def ivyDeps = super.ivyDeps() ++ Seq(v.scalaReflect(crossScalaVersion))
 }
 
 object core extends Cross[Core](v.scalaCrossVersions)
