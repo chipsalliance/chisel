@@ -4,7 +4,7 @@ package chisel3
 
 import firrtl._
 import firrtl.options.OptionsView
-
+import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq}
 import chisel3.internal.firrtl.ir.{Circuit => ChiselCircuit}
 import chisel3.stage.CircuitSerializationAnnotation.FirrtlFileFormat
 

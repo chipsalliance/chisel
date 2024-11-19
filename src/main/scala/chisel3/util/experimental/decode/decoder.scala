@@ -7,6 +7,7 @@ import chisel3.experimental.{annotate, requireIsAnnotatable, ChiselAnnotation}
 import chisel3.util.{pla, BitPat}
 import chisel3.util.experimental.{getAnnotations, BitSet}
 import firrtl.annotations.Annotation
+import firrtl.annoSeqToSeq
 import logger.LazyLogging
 
 object decoder extends LazyLogging {

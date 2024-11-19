@@ -3,7 +3,7 @@
 package chisel3.stage.phases
 
 import chisel3.stage.ChiselCircuitAnnotation
-import firrtl.AnnotationSeq
+import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq}
 import firrtl.options.{Dependency, OutputAnnotationFileAnnotation, Phase}
 
 /** Adds an [[firrtl.options.OutputAnnotationFileAnnotation]] if one does not exist. This replicates old behavior where

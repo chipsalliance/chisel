@@ -20,7 +20,7 @@ import firrtl.options.BareShell
 import firrtl.options.TargetDirAnnotation
 import logger.{ClassLogLevelAnnotation, LogClassNamesAnnotation, LogFileAnnotation, LogLevelAnnotation}
 
-trait CLI { this: BareShell =>
+trait CLI extends BareShell { this: BareShell =>
 
   /** Include options for logging
     *

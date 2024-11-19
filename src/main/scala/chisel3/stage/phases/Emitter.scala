@@ -2,11 +2,11 @@
 
 package chisel3.stage.phases
 
-import firrtl.AnnotationSeq
-import firrtl.options.{Dependency, Phase, StageOptions}
+import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq}
+import firrtl.options.{Dependency, Phase, StageOptions, StageOptionsView}
 import firrtl.options.Viewer.view
 
-import chisel3.stage.{ChiselCircuitAnnotation, ChiselOptions, CircuitSerializationAnnotation}
+import chisel3.stage.{ChiselCircuitAnnotation, ChiselOptions, ChiselOptionsView, CircuitSerializationAnnotation}
 import CircuitSerializationAnnotation.FirrtlFileFormat
 
 import java.io.{BufferedOutputStream, File, FileOutputStream}

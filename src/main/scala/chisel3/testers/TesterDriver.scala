@@ -5,7 +5,7 @@ package chisel3.testers
 import chisel3._
 import chisel3.stage.phases.{Convert, Elaborate, Emitter}
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation}
-import firrtl.AnnotationSeq
+import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq}
 import firrtl.annotations.NoTargetAnnotation
 import firrtl.options.{Dependency, Phase, PhaseManager, TargetDirAnnotation, Unserializable}
 import firrtl.stage.FirrtlCircuitAnnotation

@@ -1,7 +1,7 @@
 package chisel3.util.experimental
 
 import chisel3.internal.Builder
-import firrtl.AnnotationSeq
+import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq}
 
 object getAnnotations {
 

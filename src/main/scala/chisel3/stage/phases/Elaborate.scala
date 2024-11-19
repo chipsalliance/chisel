@@ -10,13 +10,14 @@ import chisel3.stage.{
   ChiselCircuitAnnotation,
   ChiselGeneratorAnnotation,
   ChiselOptions,
+  ChiselOptionsView,
   DesignAnnotation,
   ThrowOnFirstErrorAnnotation
 }
-import firrtl.AnnotationSeq
+import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq}
 import firrtl.options.{Dependency, Phase}
 import firrtl.options.Viewer.view
-import logger.LoggerOptions
+import logger.{LoggerOptions, LoggerOptionsView}
 
 import scala.collection.mutable.ArrayBuffer
 
