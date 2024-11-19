@@ -48,6 +48,7 @@ Chisel is [permissively licensed](LICENSE) (Apache 2.0) under the guidance of [C
 [![Scala version support](https://index.scala-lang.org/chipsalliance/chisel/chisel/latest-by-scala-version.svg?platform=jvm)](https://index.scala-lang.org/chipsalliance/chisel/chisel)
 [![Scala version support (chisel3)](https://index.scala-lang.org/chipsalliance/chisel/chisel3/latest-by-scala-version.svg?platform=jvm)](https://index.scala-lang.org/chipsalliance/chisel/chisel3)
 [![Sonatype Snapshots](https://img.shields.io/nexus/s/org.chipsalliance/chisel_2.13?server=https%3A%2F%2Fs01.oss.sonatype.org)](https://s01.oss.sonatype.org/content/repositories/snapshots/org/chipsalliance/chisel_2.13)
+[![Gurubase](https://img.shields.io/badge/Gurubase-Ask%20Chisel%20Guru-006BFF)](https://gurubase.io/g/chisel)
 
 ## What does Chisel code look like?
 
