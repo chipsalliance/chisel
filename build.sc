@@ -38,6 +38,7 @@ object v extends Module {
   }
 
   val scalaCrossVersions = Seq(
+    "3.3.3",
     "2.13.15"
   )
 
@@ -251,7 +252,7 @@ trait Core extends CrossSbtModule with HasScala2MacroAnno with ScalafmtModule {
   )
 
   override def ivyDeps = if (v.isScala3(crossScalaVersion)) {
-    super.ivyDeps() ++ commonDeps
+    super.ivyDeps() ++ commonDeps ++ Agg(v.firtoolResolver.withDottyCompat(scalaVersion()))
   } else {
     super.ivyDeps() ++ commonDeps ++ Agg(v.firtoolResolver)
   }
@@ -313,7 +314,7 @@ trait Plugin extends CrossSbtModule with ScalafmtModule with ChiselPublishModule
 }
 
 object chisel extends Cross[Chisel](v.scalaCrossVersions)
-trait Chisel extends CrossSbtModule with HasScala2MacroAnno with HasScala2Plugin with ScalafmtModule {
+trait Chisel extends CrossSbtModule with HasScala2MacroAnno with ScalafmtModule {
   override def millSourcePath = super.millSourcePath / os.up
   def svsimModule = svsim(crossScalaVersion)
   def coreModule = core(crossScalaVersion)
