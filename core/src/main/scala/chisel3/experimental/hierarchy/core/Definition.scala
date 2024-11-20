@@ -9,7 +9,6 @@ import chisel3.internal.{Builder, DynamicContext}
 import chisel3.internal.firrtl.Converter
 import chisel3.experimental.{BaseModule, SourceInfo}
 import firrtl.annotations.{IsModule, ModuleTarget, NoTargetAnnotation}
-
 import firrtl.seqToAnnoSeq
 
 import scala.annotation.nowarn
