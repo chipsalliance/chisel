@@ -73,7 +73,11 @@ object v extends Module {
     "cat=deprecation&origin=firrtl\\.options\\.internal\\.WriteableCircuitAnnotation:s",
     "cat=deprecation&origin=chisel3\\.util\\.experimental\\.BoringUtils.*:s",
     "cat=deprecation&origin=chisel3\\.experimental\\.IntrinsicModule:s",
-    "cat=deprecation&origin=chisel3\\.ltl.*:s"
+    "cat=deprecation&origin=chisel3\\.ltl.*:s",
+    // Deprecated for external users, will eventually be removed.
+    "cat=deprecation&msg=Looking up Modules is deprecated:s",
+    // Only for testing of deprecated APIs
+    "cat=deprecation&msg=Use of @instantiable on user-defined types is deprecated:s"
   )
 
   // ScalacOptions

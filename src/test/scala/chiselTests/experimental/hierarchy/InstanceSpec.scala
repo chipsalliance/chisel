@@ -248,6 +248,23 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       )
       chirrtl.serialize should include("attach (port, i0.port)")
     }
+    it("(1.n): should work on user-defined types that provide Lookupable") {
+      class Top extends Module {
+        val definition = Definition(new HasUserDefinedType)
+        val i0 = Instance(definition)
+        i0.simple.name should be("foo")
+        i0.parameterized.value should be(List(1, 2, 3))
+        mark(i0.simple.data, "data")
+        mark(i0.simple.inst, "inst")
+        mark(i0.parameterized.inst, "inst2")
+      }
+      val (_, annos) = getFirrtlAndAnnos(new Top)
+      (annos.collect { case c: MarkAnnotation => c } should contain).allOf(
+        MarkAnnotation("~Top|Top/i0:HasUserDefinedType>wire".rt, "data"),
+        MarkAnnotation("~Top|Top/i0:HasUserDefinedType/inst0:AddOne".it, "inst"),
+        MarkAnnotation("~Top|Top/i0:HasUserDefinedType/inst1:AddOne".it, "inst2")
+      )
+    }
   }
   describe("(2) Annotations on designs not in the same chisel compilation") {
     it("(2.a): should work on an innerWire, marked in a different compilation") {
@@ -484,6 +501,22 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos.collect { case c: MarkAnnotation => c } should contain(
         MarkAnnotation("~Top|Top/i:HasPublicUnit>y_1".rt, "y_1")
+      )
+    }
+    it("(3.t): should work on Tuple5 with a Module in it") {
+      class Top() extends Module {
+        val i = Instance(Definition(new HasTuple5()))
+        val (3, w: UInt, "hi", inst: Instance[AddOne], l) = i.tup
+        l should be(List(1, 2, 3))
+        mark(w, "wire")
+        mark(inst, "inst")
+      }
+      val (_, annos) = getFirrtlAndAnnos(new Top)
+      annos.collect { case c: MarkAnnotation => c } should contain(
+        MarkAnnotation("~Top|Top/i:HasTuple5>wire".rt, "wire")
+      )
+      annos.collect { case c: MarkAnnotation => c } should contain(
+        MarkAnnotation("~Top|Top/i:HasTuple5/inst:AddOne".it, "inst")
       )
     }
   }

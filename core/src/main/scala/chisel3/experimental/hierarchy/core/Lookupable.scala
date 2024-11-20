@@ -13,13 +13,31 @@ import chisel3.internal.firrtl.ir.{Arg, ILit, Index, LitIndex, ModuleIO, Slot, U
 import chisel3.internal.{throwException, Builder, ViewParent}
 import chisel3.internal.binding.{AggregateViewBinding, ChildBinding, CrossModuleBinding, ViewBinding, ViewWriteability}
 
-/** Represents lookup typeclass to determine how a value accessed from an original IsInstantiable
-  *   should be tweaked to return the Instance's version
-  * Sealed.
+/** Typeclass used to recontextualize values from an original Definition to an Instance
+  *
+  * Implementations for Chisel types and other common Scala types are provided in the companion object.
+  * Users can define Lookupable for their own types.
+  *
+  * @example {{{
+  * case class Foo[T <: Data](name: String, data: T)
+  * object Foo {
+  *   implicit def lookupable[T <: Data]: Lookupable.Simple[Foo[T]] =
+  *     Lookupable.product2[Foo[T], String, T](
+  *       x => (x.name, x.data),
+  *       Foo.apply
+  *     )
+  * }
+  * }}}
   */
 @implicitNotFound(
-  "@public is only legal within a class or trait marked @instantiable, and only on vals of type" +
-    " Data, BaseModule, MemBase, IsInstantiable, IsLookupable, or Instance[_], or in an Iterable, Option, Either, or Tuple2"
+  "@public is only legal within a class or trait marked @instantiable, and only on vals of types" +
+    " that have a Lookupable implementation. Chisel types like Data, BaseModule, and MemBase are supported," +
+    " as are common Scala types like String, Int, Boolean, Iterable, Option, Either, and Tuples." +
+    " Please implement Lookupable for ${B}."
+)
+@deprecatedInheritance(
+  "Users should use Lookupable factory methods instead (e.g. Lookupable.isLookupable or Lookupable.product<n>)",
+  "Chisel 7.0.0"
 )
 trait Lookupable[-B] {
   type C // Return type of the lookup
@@ -40,6 +58,24 @@ trait Lookupable[-B] {
   def definitionLookup[A](that:     A => B, definition: Definition[A]): C
   protected def getProto[A](h:      Hierarchy[A]): A = h.proto
   protected def getUnderlying[A](h: Hierarchy[A]): Underlying[A] = h.underlying
+
+  // Single method that may eventually replace instanceLookup and definitionLookup.
+  private[chisel3] def hierarchyLookup[A](that: A => B, hierarchy: Hierarchy[A]): C = {
+    hierarchy match {
+      case h: Instance[A]   => instanceLookup(that, h)
+      case h: Definition[A] => definitionLookup(that, h)
+      case h => throw new InternalErrorException(s"Match error: hierarchy=$hierarchy")
+    }
+  }
+}
+// Simplify the implementation of Lookupable by only having 1 virtual method.
+// Only the Chisel core types need separate implementations for Instance and Definition.
+private trait LookupableImpl[-B] extends Lookupable[B] {
+
+  protected def impl[A](that: A => B, hierarchy: Hierarchy[A]): C
+
+  override def instanceLookup[A](that:   A => B, instance:   Instance[A]):   C = impl(that, instance)
+  override def definitionLookup[A](that: A => B, definition: Definition[A]): C = impl(that, definition)
 }
 
 object Lookupable {
@@ -49,6 +85,101 @@ object Lookupable {
 
   /** Type alias for simple Lookupable types */
   type Simple[B] = Aux[B, B]
+
+  /** Provides a lookupable for a type X that does not need special handling
+    *
+    * This can only be used by types that do not contain a [[Data]], [[BaseModule]], or any [[IsInstantiable]].
+    */
+  def isLookupable[X]: Simple[X] = new LookupableImpl[X] {
+    type C = X
+    type B = X
+    override protected def impl[A](that: A => B, hierarchy: Hierarchy[A]): C = that(hierarchy.proto)
+  }
+
+  /** Factory method for creating Lookupable for user-defined types
+    */
+  def product1[X, T1: Lookupable](
+    in:  X => T1,
+    out: T1 => X
+  )(
+    implicit sourceInfo: SourceInfo
+  ): Simple[X] = new LookupableImpl[X] {
+    type C = X
+    override protected def impl[A](that: A => X, hierarchy: Hierarchy[A]): C = {
+      val t1res = implicitly[Lookupable[T1]].hierarchyLookup[A](a => in(that(a)), hierarchy).asInstanceOf[T1]
+      out(t1res)
+    }
+  }
+
+  /** Factory method for creating Lookupable for user-defined types
+    */
+  def product2[X, T1: Lookupable, T2: Lookupable](
+    in:  X => (T1, T2),
+    out: (T1, T2) => X
+  )(
+    implicit sourceInfo: SourceInfo
+  ): Simple[X] = new LookupableImpl[X] {
+    type C = X
+    override protected def impl[A](that: A => X, hierarchy: Hierarchy[A]): C = {
+      val t1res = implicitly[Lookupable[T1]].hierarchyLookup[A](a => in(that(a))._1, hierarchy).asInstanceOf[T1]
+      val t2res = implicitly[Lookupable[T2]].hierarchyLookup[A](a => in(that(a))._2, hierarchy).asInstanceOf[T2]
+      out(t1res, t2res)
+    }
+  }
+
+  /** Factory method for creating Lookupable for user-defined types
+    */
+  def product3[X, T1: Lookupable, T2: Lookupable, T3: Lookupable](
+    in:  X => (T1, T2, T3),
+    out: (T1, T2, T3) => X
+  )(
+    implicit sourceInfo: SourceInfo
+  ): Simple[X] = new LookupableImpl[X] {
+    type C = X
+    override protected def impl[A](that: A => X, hierarchy: Hierarchy[A]): C = {
+      val t1res = implicitly[Lookupable[T1]].hierarchyLookup[A](a => in(that(a))._1, hierarchy).asInstanceOf[T1]
+      val t2res = implicitly[Lookupable[T2]].hierarchyLookup[A](a => in(that(a))._2, hierarchy).asInstanceOf[T2]
+      val t3res = implicitly[Lookupable[T3]].hierarchyLookup[A](a => in(that(a))._3, hierarchy).asInstanceOf[T3]
+      out(t1res, t2res, t3res)
+    }
+  }
+
+  /** Factory method for creating Lookupable for user-defined types
+    */
+  def product4[X, T1: Lookupable, T2: Lookupable, T3: Lookupable, T4: Lookupable](
+    in:  X => (T1, T2, T3, T4),
+    out: (T1, T2, T3, T4) => X
+  )(
+    implicit sourceInfo: SourceInfo
+  ): Simple[X] = new LookupableImpl[X] {
+    type C = X
+    override protected def impl[A](that: A => X, hierarchy: Hierarchy[A]): C = {
+      val t1res = implicitly[Lookupable[T1]].hierarchyLookup[A](a => in(that(a))._1, hierarchy).asInstanceOf[T1]
+      val t2res = implicitly[Lookupable[T2]].hierarchyLookup[A](a => in(that(a))._2, hierarchy).asInstanceOf[T2]
+      val t3res = implicitly[Lookupable[T3]].hierarchyLookup[A](a => in(that(a))._3, hierarchy).asInstanceOf[T3]
+      val t4res = implicitly[Lookupable[T4]].hierarchyLookup[A](a => in(that(a))._4, hierarchy).asInstanceOf[T4]
+      out(t1res, t2res, t3res, t4res)
+    }
+  }
+
+  /** Factory method for creating Lookupable for user-defined types
+    */
+  def product5[X, T1: Lookupable, T2: Lookupable, T3: Lookupable, T4: Lookupable, T5: Lookupable](
+    in:  X => (T1, T2, T3, T4, T5),
+    out: (T1, T2, T3, T4, T5) => X
+  )(
+    implicit sourceInfo: SourceInfo
+  ): Simple[X] = new LookupableImpl[X] {
+    type C = X
+    override protected def impl[A](that: A => X, hierarchy: Hierarchy[A]): C = {
+      val t1res = implicitly[Lookupable[T1]].hierarchyLookup[A](a => in(that(a))._1, hierarchy).asInstanceOf[T1]
+      val t2res = implicitly[Lookupable[T2]].hierarchyLookup[A](a => in(that(a))._2, hierarchy).asInstanceOf[T2]
+      val t3res = implicitly[Lookupable[T3]].hierarchyLookup[A](a => in(that(a))._3, hierarchy).asInstanceOf[T3]
+      val t4res = implicitly[Lookupable[T4]].hierarchyLookup[A](a => in(that(a))._4, hierarchy).asInstanceOf[T4]
+      val t5res = implicitly[Lookupable[T5]].hierarchyLookup[A](a => in(that(a))._5, hierarchy).asInstanceOf[T5]
+      out(t1res, t2res, t3res, t4res, t5res)
+    }
+  }
 
   /** Clones a data and sets its internal references to its parent module to be in a new context.
     *
@@ -286,6 +417,7 @@ object Lookupable {
     }
   }
 
+  @deprecated("Use Lookupable.isLookupable instead of extending this.", "Chisel 7.0.0")
   class SimpleLookupable[X] extends Lookupable[X] {
     type B = X
     type C = X
@@ -310,6 +442,7 @@ object Lookupable {
       }
     }
 
+  @deprecated("Looking up Modules is deprecated, please cast to Instance instead (.toInstance).", "Chisel 7.0.0")
   implicit def lookupModule[B <: BaseModule](implicit sourceInfo: SourceInfo): Aux[B, Instance[B]] =
     new Lookupable[B] {
       type C = Instance[B]
@@ -395,13 +528,10 @@ object Lookupable {
   }
 
   implicit def lookupMem[B <: MemBase[_]](implicit sourceInfo: SourceInfo): Simple[B] =
-    new Lookupable[B] {
+    new LookupableImpl[B] {
       type C = B
-      def definitionLookup[A](that: A => B, definition: Definition[A]): C = {
-        cloneMemToContext(that(definition.proto), definition.getInnerDataContext.get)
-      }
-      def instanceLookup[A](that: A => B, instance: Instance[A]): C = {
-        cloneMemToContext(that(instance.proto), instance.getInnerDataContext.get)
+      override protected def impl[A](that: A => B, hierarchy: Hierarchy[A]): C = {
+        cloneMemToContext(that(hierarchy.proto), hierarchy.getInnerDataContext.get)
       }
     }
 
@@ -435,13 +565,10 @@ object Lookupable {
   }
 
   implicit def lookupHasTarget(implicit sourceInfo: SourceInfo): Simple[HasTarget] =
-    new Lookupable[HasTarget] {
+    new LookupableImpl[HasTarget] {
       type C = HasTarget
-      def definitionLookup[A](that: A => HasTarget, definition: Definition[A]): C = {
-        cloneHasTargetToContext(that(definition.proto), definition.getInnerDataContext.get)
-      }
-      def instanceLookup[A](that: A => HasTarget, instance: Instance[A]): C = {
-        cloneHasTargetToContext(that(instance.proto), instance.getInnerDataContext.get)
+      override protected def impl[A](that: A => HasTarget, hierarchy: Hierarchy[A]): C = {
+        cloneHasTargetToContext(that(hierarchy.proto), hierarchy.getInnerDataContext.get)
       }
     }
 
@@ -449,108 +576,136 @@ object Lookupable {
   implicit def lookupIterable[B, F[_] <: Iterable[_]](
     implicit sourceInfo: SourceInfo,
     lookupable:          Lookupable[B]
-  ): Aux[F[B], F[lookupable.C]] = new Lookupable[F[B]] {
+  ): Aux[F[B], F[lookupable.C]] = new LookupableImpl[F[B]] {
     type C = F[lookupable.C]
-    def definitionLookup[A](that: A => F[B], definition: Definition[A]): C = {
-      val ret = that(definition.proto).asInstanceOf[Iterable[B]]
-      ret.map { (x: B) => lookupable.definitionLookup[A](_ => x, definition) }.asInstanceOf[C]
-    }
-    def instanceLookup[A](that: A => F[B], instance: Instance[A]): C = {
-      import instance._
-      val ret = that(proto).asInstanceOf[Iterable[B]]
-      ret.map { (x: B) => lookupable.instanceLookup[A](_ => x, instance) }.asInstanceOf[C]
+    override protected def impl[A](that: A => F[B], hierarchy: Hierarchy[A]): C = {
+      val ret = that(hierarchy.proto).asInstanceOf[Iterable[B]]
+      ret.map { (x: B) => lookupable.hierarchyLookup[A](_ => x, hierarchy) }.asInstanceOf[C]
     }
   }
   implicit def lookupOption[B](
     implicit sourceInfo: SourceInfo,
     lookupable:          Lookupable[B]
-  ): Aux[Option[B], Option[lookupable.C]] = new Lookupable[Option[B]] {
+  ): Aux[Option[B], Option[lookupable.C]] = new LookupableImpl[Option[B]] {
     type C = Option[lookupable.C]
-    def definitionLookup[A](that: A => Option[B], definition: Definition[A]): C = {
-      val ret = that(definition.proto)
-      ret.map { (x: B) => lookupable.definitionLookup[A](_ => x, definition) }
-    }
-    def instanceLookup[A](that: A => Option[B], instance: Instance[A]): C = {
-      import instance._
-      val ret = that(proto)
-      ret.map { (x: B) => lookupable.instanceLookup[A](_ => x, instance) }
+    override protected def impl[A](that: A => Option[B], hierarchy: Hierarchy[A]): C = {
+      val ret = that(hierarchy.proto)
+      ret.map { (x: B) => lookupable.hierarchyLookup[A](_ => x, hierarchy) }
     }
   }
   implicit def lookupEither[L, R](
     implicit sourceInfo: SourceInfo,
     lookupableL:         Lookupable[L],
     lookupableR:         Lookupable[R]
-  ): Aux[Either[L, R], Either[lookupableL.C, lookupableR.C]] = new Lookupable[Either[L, R]] {
+  ): Aux[Either[L, R], Either[lookupableL.C, lookupableR.C]] = new LookupableImpl[Either[L, R]] {
     type C = Either[lookupableL.C, lookupableR.C]
-    def definitionLookup[A](that: A => Either[L, R], definition: Definition[A]): C = {
-      val ret = that(definition.proto)
-      ret.map { (x: R) => lookupableR.definitionLookup[A](_ => x, definition) }.left.map { (x: L) =>
-        lookupableL.definitionLookup[A](_ => x, definition)
-      }
-    }
-    def instanceLookup[A](that: A => Either[L, R], instance: Instance[A]): C = {
-      import instance._
-      val ret = that(proto)
-      ret.map { (x: R) => lookupableR.instanceLookup[A](_ => x, instance) }.left.map { (x: L) =>
-        lookupableL.instanceLookup[A](_ => x, instance)
+    override protected def impl[A](that: A => Either[L, R], hierarchy: Hierarchy[A]): C = {
+      val ret = that(hierarchy.proto)
+      ret.map { (x: R) => lookupableR.hierarchyLookup[A](_ => x, hierarchy) }.left.map { (x: L) =>
+        lookupableL.hierarchyLookup[A](_ => x, hierarchy)
       }
     }
   }
 
-  implicit def lookupTuple2[X, Y](
+  // TODO Once Lookupable return type change is removed, we can just call product factory above.
+  implicit def lookupTuple2[T1, T2](
     implicit sourceInfo: SourceInfo,
-    lookupableX:         Lookupable[X],
-    lookupableY:         Lookupable[Y]
-  ): Aux[(X, Y), (lookupableX.C, lookupableY.C)] = new Lookupable[(X, Y)] {
-    type C = (lookupableX.C, lookupableY.C)
-    def definitionLookup[A](that: A => (X, Y), definition: Definition[A]): C = {
-      val ret = that(definition.proto)
-      (
-        lookupableX.definitionLookup[A](_ => ret._1, definition),
-        lookupableY.definitionLookup[A](_ => ret._2, definition)
-      )
-    }
-    def instanceLookup[A](that: A => (X, Y), instance: Instance[A]): C = {
-      import instance._
-      val ret = that(proto)
-      (lookupableX.instanceLookup[A](_ => ret._1, instance), lookupableY.instanceLookup[A](_ => ret._2, instance))
+    lookupableT1:        Lookupable[T1],
+    lookupableT2:        Lookupable[T2]
+  ): Aux[(T1, T2), (lookupableT1.C, lookupableT2.C)] = new LookupableImpl[(T1, T2)] {
+    type C = (lookupableT1.C, lookupableT2.C)
+    override protected def impl[A](that: A => (T1, T2), hierarchy: Hierarchy[A]): C = {
+      val t1res = lookupableT1.hierarchyLookup[A](that(_)._1, hierarchy)
+      val t2res = lookupableT2.hierarchyLookup[A](that(_)._2, hierarchy)
+      (t1res, t2res)
     }
   }
 
+  // TODO Once Lookupable return type change is removed, we can just call product factory above.
+  implicit def lookupTuple3[T1, T2, T3](
+    implicit sourceInfo: SourceInfo,
+    lookupableT1:        Lookupable[T1],
+    lookupableT2:        Lookupable[T2],
+    lookupableT3:        Lookupable[T3]
+  ): Aux[(T1, T2, T3), (lookupableT1.C, lookupableT2.C, lookupableT3.C)] = new LookupableImpl[(T1, T2, T3)] {
+    type C = (lookupableT1.C, lookupableT2.C, lookupableT3.C)
+    override protected def impl[A](that: A => (T1, T2, T3), hierarchy: Hierarchy[A]): C = {
+      val t1res = lookupableT1.hierarchyLookup[A](that(_)._1, hierarchy)
+      val t2res = lookupableT2.hierarchyLookup[A](that(_)._2, hierarchy)
+      val t3res = lookupableT3.hierarchyLookup[A](that(_)._3, hierarchy)
+      (t1res, t2res, t3res)
+    }
+  }
+
+  // TODO Once Lookupable return type change is removed, we can just call product factory above.
+  implicit def lookupTuple4[T1, T2, T3, T4](
+    implicit sourceInfo: SourceInfo,
+    lookupableT1:        Lookupable[T1],
+    lookupableT2:        Lookupable[T2],
+    lookupableT3:        Lookupable[T3],
+    lookupableT4:        Lookupable[T4]
+  ): Aux[(T1, T2, T3, T4), (lookupableT1.C, lookupableT2.C, lookupableT3.C, lookupableT4.C)] =
+    new LookupableImpl[(T1, T2, T3, T4)] {
+      type C = (lookupableT1.C, lookupableT2.C, lookupableT3.C, lookupableT4.C)
+      override protected def impl[A](that: A => (T1, T2, T3, T4), hierarchy: Hierarchy[A]): C = {
+        val t1res = lookupableT1.hierarchyLookup[A](that(_)._1, hierarchy)
+        val t2res = lookupableT2.hierarchyLookup[A](that(_)._2, hierarchy)
+        val t3res = lookupableT3.hierarchyLookup[A](that(_)._3, hierarchy)
+        val t4res = lookupableT4.hierarchyLookup[A](that(_)._4, hierarchy)
+        (t1res, t2res, t3res, t4res)
+      }
+    }
+
+  // TODO Once Lookupable return type change is removed, we can just call product factory above.
+  implicit def lookupTuple5[T1, T2, T3, T4, T5](
+    implicit sourceInfo: SourceInfo,
+    lookupableT1:        Lookupable[T1],
+    lookupableT2:        Lookupable[T2],
+    lookupableT3:        Lookupable[T3],
+    lookupableT4:        Lookupable[T4],
+    lookupableT5:        Lookupable[T5]
+  ): Aux[(T1, T2, T3, T4, T5), (lookupableT1.C, lookupableT2.C, lookupableT3.C, lookupableT4.C, lookupableT5.C)] =
+    new LookupableImpl[(T1, T2, T3, T4, T5)] {
+      type C = (lookupableT1.C, lookupableT2.C, lookupableT3.C, lookupableT4.C, lookupableT5.C)
+      override protected def impl[A](that: A => (T1, T2, T3, T4, T5), hierarchy: Hierarchy[A]): C = {
+        val t1res = lookupableT1.hierarchyLookup[A](that(_)._1, hierarchy)
+        val t2res = lookupableT2.hierarchyLookup[A](that(_)._2, hierarchy)
+        val t3res = lookupableT3.hierarchyLookup[A](that(_)._3, hierarchy)
+        val t4res = lookupableT4.hierarchyLookup[A](that(_)._4, hierarchy)
+        val t5res = lookupableT5.hierarchyLookup[A](that(_)._5, hierarchy)
+        (t1res, t2res, t3res, t4res, t5res)
+      }
+    }
+
+  @deprecated(
+    "Use of @instantiable on user-defined types is deprecated. Implement Lookupable for your type instead.",
+    "Chisel 7.0.0"
+  )
   implicit def lookupIsInstantiable[B <: IsInstantiable](
     implicit sourceInfo: SourceInfo
-  ): Aux[B, Instance[B]] = new Lookupable[B] {
+  ): Aux[B, Instance[B]] = new LookupableImpl[B] {
     type C = Instance[B]
-    def definitionLookup[A](that: A => B, definition: Definition[A]): C = {
-      val ret = that(definition.proto)
+    override protected def impl[A](that: A => B, hierarchy: Hierarchy[A]): C = {
+      val ret = that(hierarchy.proto)
       val underlying = new InstantiableClone[B] {
         val getProto = ret
-        lazy val _innerContext: Hierarchy[_] = definition
-      }
-      new Instance(Clone(underlying))
-    }
-    def instanceLookup[A](that: A => B, instance: Instance[A]): C = {
-      val ret = that(instance.proto)
-      val underlying = new InstantiableClone[B] {
-        val getProto = ret
-        lazy val _innerContext: Hierarchy[_] = instance
+        lazy val _innerContext: Hierarchy[_] = hierarchy
       }
       new Instance(Clone(underlying))
     }
   }
 
-  implicit def lookupIsLookupable[B <: IsLookupable](implicit sourceInfo: SourceInfo): SimpleLookupable[B] =
-    new SimpleLookupable[B]()
+  implicit def lookupIsLookupable[B <: IsLookupable](implicit sourceInfo: SourceInfo): Simple[B] = isLookupable[B]
 
-  implicit val lookupInt:     SimpleLookupable[Int] = new SimpleLookupable[Int]()
-  implicit val lookupByte:    SimpleLookupable[Byte] = new SimpleLookupable[Byte]()
-  implicit val lookupShort:   SimpleLookupable[Short] = new SimpleLookupable[Short]()
-  implicit val lookupLong:    SimpleLookupable[Long] = new SimpleLookupable[Long]()
-  implicit val lookupFloat:   SimpleLookupable[Float] = new SimpleLookupable[Float]()
-  implicit val lookupDouble:  SimpleLookupable[Double] = new SimpleLookupable[Double]()
-  implicit val lookupChar:    SimpleLookupable[Char] = new SimpleLookupable[Char]()
-  implicit val lookupString:  SimpleLookupable[String] = new SimpleLookupable[String]()
-  implicit val lookupBoolean: SimpleLookupable[Boolean] = new SimpleLookupable[Boolean]()
-  implicit val lookupBigInt:  SimpleLookupable[BigInt] = new SimpleLookupable[BigInt]()
-  implicit val lookupUnit:    SimpleLookupable[Unit] = new SimpleLookupable[Unit]()
+  implicit val lookupInt:     Simple[Int] = isLookupable[Int]
+  implicit val lookupByte:    Simple[Byte] = isLookupable[Byte]
+  implicit val lookupShort:   Simple[Short] = isLookupable[Short]
+  implicit val lookupLong:    Simple[Long] = isLookupable[Long]
+  implicit val lookupFloat:   Simple[Float] = isLookupable[Float]
+  implicit val lookupDouble:  Simple[Double] = isLookupable[Double]
+  implicit val lookupChar:    Simple[Char] = isLookupable[Char]
+  implicit val lookupString:  Simple[String] = isLookupable[String]
+  implicit val lookupBoolean: Simple[Boolean] = isLookupable[Boolean]
+  implicit val lookupBigInt:  Simple[BigInt] = isLookupable[BigInt]
+  implicit val lookupUnit:    Simple[Unit] = isLookupable[Unit]
 }
