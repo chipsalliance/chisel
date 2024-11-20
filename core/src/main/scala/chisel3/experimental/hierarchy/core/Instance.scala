@@ -166,7 +166,7 @@ object Instance extends SourceInfoDoc {
           Some(component)
         }
       }
-      Definition(new EmptyExtModule() {})
+      Definition(new EmptyExtModule() {}.asInstanceOf[Underlying[_]])
     }
 
     val ports = experimental.CloneModuleAsRecord(definition.proto)
