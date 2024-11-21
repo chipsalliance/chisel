@@ -119,6 +119,7 @@ package object simulator {
             dut
           },
           circt.stage.FirtoolOption("-disable-annotation-unknown"),
+          circt.stage.FirtoolOption("-advanced-layer-sink"),
           firrtl.options.TargetDirAnnotation(workspace.supportArtifactsPath)
         ) ++ firtoolOptions
       )
