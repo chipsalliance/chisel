@@ -13,6 +13,7 @@ import firrtl.options.{Dependency, OptionsException, Phase}
   * `chisel3.stage.ChiselStage`.
   */
 class Checks extends Phase {
+  import firrtl.annoSeqToSeq
 
   override def prerequisites = Seq.empty
   override def optionalPrerequisites = Seq.empty

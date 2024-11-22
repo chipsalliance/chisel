@@ -56,11 +56,13 @@ private[chisel3] trait ReverseImpl {
         var res = in
         var shift = length >> 1
         var mask = ((BigInt(1) << length) - 1).asUInt(length.W)
-        do {
+        var initial = true
+        while (initial || shift > 0) {
+          initial = false
           mask = mask ^ (mask(length - shift - 1, 0) << shift)
-          res = ((res >> shift) & mask) | ((res(length - shift - 1, 0) << shift) & ~mask)
+          res = ((res >> shift) & mask) | ((res(length - shift - 1, 0) << shift) & !mask)
           shift = shift >> 1
-        } while (shift > 0)
+        }
         res
       case _ =>
         val half = (1 << log2Ceil(length)) / 2

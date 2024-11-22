@@ -4,7 +4,7 @@ package circt
 
 import circt.stage.{CIRCTOption, CIRCTTargetAnnotation, PreserveAggregate}
 
-import firrtl.AnnotationSeq
+import firrtl.{annoSeqToSeq, AnnotationSeq}
 import firrtl.options.OptionsView
 import firrtl.stage.{FirrtlOption, OutputFileAnnotation}
 

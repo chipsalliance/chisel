@@ -3,6 +3,7 @@
 package chisel3.util.circt
 
 import chisel3._
+import chisel3.experimental.fromStringToStringParam
 import chisel3.internal.Builder
 
 object PlusArgsTest {

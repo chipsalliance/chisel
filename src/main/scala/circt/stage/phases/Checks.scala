@@ -4,7 +4,7 @@ package circt.stage.phases
 
 import circt.stage.{CIRCTTargetAnnotation, SplitVerilog}
 
-import firrtl.AnnotationSeq
+import firrtl.{annoSeqToSeq, AnnotationSeq}
 import firrtl.annotations.Annotation
 import firrtl.options.{Dependency, OptionsException, Phase, TargetDirAnnotation}
 import firrtl.stage.OutputFileAnnotation

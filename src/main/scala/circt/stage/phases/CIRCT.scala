@@ -7,19 +7,28 @@ import chisel3.BuildInfo.{firtoolVersion, version => chiselVersion}
 import chisel3.InternalErrorException
 import chisel3.experimental.hierarchy.core.ImportDefinitionAnnotation
 import chisel3.stage.{ChiselCircuitAnnotation, DesignAnnotation, SourceRootAnnotation}
-import circt.stage.{CIRCTOptions, CIRCTTarget, EmittedMLIR, PreserveAggregate}
+import circt.stage.{CIRCTOptions, CIRCTOptionsView, CIRCTTarget, EmittedMLIR, PreserveAggregate}
 import firrtl.annotations.JsonProtocol
 import firrtl.ir.CircuitWithAnnos
 import firrtl.options.Viewer.view
-import firrtl.options.{CustomFileEmission, Dependency, OptionsException, Phase, StageOptions, Unserializable}
-import firrtl.stage.FirrtlOptions
-import firrtl.{AnnotationSeq, EmittedVerilogCircuit, EmittedVerilogCircuitAnnotation}
+import firrtl.options.{
+  CustomFileEmission,
+  Dependency,
+  OptionsException,
+  Phase,
+  StageOptions,
+  StageOptionsView,
+  Unserializable
+}
+import firrtl.stage.{FirrtlOptions, FirrtlOptionsView}
+import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq, EmittedVerilogCircuit, EmittedVerilogCircuitAnnotation}
 
 import java.io.File
 import scala.collection.mutable
 import scala.util.control.NoStackTrace
 import firrtl.EmittedBtor2CircuitAnnotation
 import firrtl.EmittedBtor2Circuit
+import org.json4s.convertToJsonInput
 
 private object Helpers {
   implicit class LogLevelHelpers(logLevel: LogLevel.Value) {

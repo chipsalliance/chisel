@@ -5,6 +5,7 @@ import chisel3.reflect.DataMirror
 import chisel3.experimental.dataview.reifyIdentityView
 import scala.collection.mutable
 import java.nio.file.{Files, Path, Paths}
+import firrtl.seqToAnnoSeq
 
 package object simulator {
 

@@ -3,8 +3,7 @@
 package chisel3.util.circt.dpi
 
 import chisel3._
-
-import chisel3.experimental.{IntParam, IntrinsicModule, Param, StringParam}
+import chisel3.experimental.{fromIntToIntParam, fromStringToStringParam, IntParam, IntrinsicModule, Param, StringParam}
 
 private object GetDPIParams {
   def apply(

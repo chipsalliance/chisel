@@ -5,7 +5,7 @@ package circt.stage
 import chisel3.RawModule
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation, CircuitSerializationAnnotation}
 import chisel3.stage.CircuitSerializationAnnotation.FirrtlFileFormat
-import firrtl.{AnnotationSeq, EmittedVerilogCircuitAnnotation}
+import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq, EmittedVerilogCircuitAnnotation}
 import firrtl.options.{CustomFileEmission, Dependency, Phase, PhaseManager, Stage, StageMain, Unserializable}
 import firrtl.stage.FirrtlCircuitAnnotation
 import logger.LogLevelAnnotation
