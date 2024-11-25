@@ -224,11 +224,14 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     }.getOrElse {
       requireIsHardware(this, "bits to be sliced")
 
-      widthOption match {
-        case Some(w) if w == 0 => Builder.error(s"Cannot extract from zero-width")
-        case Some(w) if y >= w => Builder.error(s"High and low indices $x and $y are both out of range [0, ${w - 1}]")
-        case Some(w) if x >= w => Builder.error(s"High index $x is out of range [0, ${w - 1}]")
-        case _                 =>
+      // Illegal zero-width extractions are already caught, any at this point are legal.
+      if (resultWidth != 0) {
+        widthOption match {
+          case Some(w) if w == 0 => Builder.error(s"Cannot extract from zero-width")
+          case Some(w) if y >= w => Builder.error(s"High and low indices $x and $y are both out of range [0, ${w - 1}]")
+          case Some(w) if x >= w => Builder.error(s"High index $x is out of range [0, ${w - 1}]")
+          case _                 =>
+        }
       }
 
       // FIRRTL does not yet support empty extraction so we must return the zero-width wire here:

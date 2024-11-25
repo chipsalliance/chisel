@@ -5,7 +5,7 @@ package chiselTests
 import chisel3._
 import chisel3.util.Counter
 import chisel3.testers._
-import chisel3.experimental.{BaseModule, ChiselAnnotation}
+import chisel3.experimental.{BaseModule, ChiselAnnotation, OpaqueType}
 import chisel3.probe._
 import chisel3.properties.Property
 import chisel3.util.experimental.BoringUtils
@@ -152,7 +152,7 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
       b := BoringUtils.bore(bar.b_wire)
       c := BoringUtils.bore(c_wire)
     }
-    matchesAndOmits(circt.stage.ChiselStage.emitCHIRRTL(new Foo))(
+    matchesAndOmits(circt.stage.ChiselStage.emitCHIRRTL(new Foo, args))(
       "module Baz :",
       "output a_bore : UInt<1>",
       "connect a_bore, a_wire",
@@ -211,6 +211,25 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
       circt.stage.ChiselStage.emitCHIRRTL(new Foo, args)
     }
     e.getMessage should include("Cannot bore across a Definition/Instance boundary")
+  }
+
+  it should "work if boring from an Instance's output port" in {
+    import chisel3.experimental.hierarchy._
+    @instantiable
+    class Bar extends RawModule {
+      @public val out = IO(Output(UInt(1.W)))
+      out := DontCare
+    }
+    class Foo extends RawModule {
+      val bar = Instance(Definition((new Bar)))
+      val sink = BoringUtils.bore(bar.out)
+    }
+    matchesAndOmits(circt.stage.ChiselStage.emitCHIRRTL(new Foo, args))(
+      "module Bar :",
+      "output out : UInt<1>",
+      "module Foo :",
+      "connect sink, bar.out"
+    )()
   }
 
   it should "work boring upwards" in {
@@ -374,6 +393,76 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
       "output a_bore : Integer",
       "propassign a_bore, baz.a",
       "propassign a, bar.a_bore"
+    )()
+  }
+
+  it should "bore from an opaque type that wraps a Property" in {
+    class MyOpaqueProperty extends Record with OpaqueType {
+      private val underlying = Property[Int]()
+      val elements = scala.collection.immutable.SeqMap("" -> underlying)
+      override protected def errorOnAsUInt = true
+    }
+
+    class Baz extends RawModule {
+      val a = IO(Output(new MyOpaqueProperty))
+    }
+
+    class Bar extends RawModule {
+      val baz = Module(new Baz)
+    }
+
+    class Foo extends RawModule {
+      val a = IO(Output(new MyOpaqueProperty))
+
+      val bar = Module(new Bar)
+
+      a := BoringUtils.bore(bar.baz.a)
+    }
+
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Foo)
+
+    matchesAndOmits(chirrtl)(
+      "output a_bore : Integer",
+      "propassign a_bore, baz.a",
+      "propassign a_bore, bar.a_bore"
+    )()
+  }
+
+  it should "bore from nested opaque types that wrap a Property" in {
+    class MyOpaqueProperty extends Record with OpaqueType {
+      private val underlying = Property[Int]()
+      val elements = scala.collection.immutable.SeqMap("" -> underlying)
+      override protected def errorOnAsUInt = true
+    }
+
+    class MyOuterOpaque extends Record with OpaqueType {
+      private val underlying = new MyOpaqueProperty
+      val elements = scala.collection.immutable.SeqMap("" -> underlying)
+      override protected def errorOnAsUInt = true
+    }
+
+    class Baz extends RawModule {
+      val a = IO(Output(new MyOpaqueProperty))
+    }
+
+    class Bar extends RawModule {
+      val baz = Module(new Baz)
+    }
+
+    class Foo extends RawModule {
+      val a = IO(Output(new MyOpaqueProperty))
+
+      val bar = Module(new Bar)
+
+      a := BoringUtils.bore(bar.baz.a)
+    }
+
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Foo)
+
+    matchesAndOmits(chirrtl)(
+      "output a_bore : Integer",
+      "propassign a_bore, baz.a",
+      "propassign a_bore, bar.a_bore"
     )()
   }
 }
