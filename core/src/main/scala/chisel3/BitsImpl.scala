@@ -23,15 +23,15 @@ private[chisel3] trait BitsImpl extends Element { self: Bits =>
   // Only used for in a few cases, hopefully to be removed
   private[chisel3] def cloneTypeWidth(width: Width): this.type
 
-  def cloneType: this.type = cloneTypeWidth(width)
+  def cloneType: this.type = cloneTypeWidth(this.width)
 
   /** A non-ambiguous name of this `Bits` instance for use in generated Verilog names
     * Inserts the width directly after the typeName, e.g. UInt4, SInt1
     */
-  override def typeName: String = s"${simpleClassName(this.getClass)}$width"
+  override def typeName: String = s"${simpleClassName(this.getClass)}${this.width}"
 
   protected def _tailImpl(n: Int)(implicit sourceInfo: SourceInfo): UInt = {
-    val w = width match {
+    val w = this.width match {
       case KnownWidth(x) =>
         require(x >= n, s"Can't tail($n) for width $x < $n")
         Width(x - n)
@@ -99,7 +99,7 @@ private[chisel3] trait BitsImpl extends Element { self: Bits =>
   }
 
   protected def _applyImpl(x: UInt)(implicit sourceInfo: SourceInfo): Bool =
-    do_extract(x)
+    extract(x)
 
   protected def _applyImpl(x: Int, y: Int)(implicit sourceInfo: SourceInfo): UInt = {
     if ((x < y && !(x == -1 && y == 0)) || y < 0) {
@@ -330,15 +330,15 @@ private[chisel3] trait UIntImpl extends BitsImpl with Num[UInt] { self: UInt =>
   protected def _rotateLeftImpl(n: Int)(implicit sourceInfo: SourceInfo): UInt = width match {
     case _ if (n == 0)             => this
     case KnownWidth(w) if (w <= 1) => this
-    case KnownWidth(w) if n >= w   => do_rotateLeft(n % w)
-    case _ if (n < 0)              => do_rotateRight(-n)
+    case KnownWidth(w) if n >= w   => rotateLeft(n % w)
+    case _ if (n < 0)              => rotateRight(-n)
     case _                         => tail(n) ## head(n)
   }
 
   protected def _rotateRightImpl(n: Int)(implicit sourceInfo: SourceInfo): UInt = width match {
-    case _ if (n <= 0)             => do_rotateLeft(-n)
+    case _ if (n <= 0)             => rotateLeft(-n)
     case KnownWidth(w) if (w <= 1) => this
-    case KnownWidth(w) if n >= w   => do_rotateRight(n % w)
+    case KnownWidth(w) if n >= w   => rotateRight(n % w)
     case _                         => this(n - 1, 0) ## (this >> n)
   }
 
