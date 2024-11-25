@@ -5,6 +5,7 @@ package chisel3.choice
 import scala.collection.immutable.ListMap
 
 import chisel3.{Data, FixedIOBaseModule, Module, SourceInfoDoc}
+import chisel3.Data.DataExtensions
 import chisel3.experimental.{BaseModule, SourceInfo}
 import chisel3.internal.{groupByIntoSeq, Builder}
 import chisel3.internal.binding.WireBinding

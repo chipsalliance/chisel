@@ -7,6 +7,7 @@ import chisel3.internal.binding._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.ir._
 import chisel3.experimental.{requireIsChiselType, requireIsHardware, SourceInfo}
+import chisel3.Data.DataExtensions
 
 /** Utility for constructing hardware registers
   *

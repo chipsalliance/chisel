@@ -30,7 +30,7 @@ private[chisel3] abstract class EnumTypeImpl(private[chisel3] val factory: Chise
     }
   }
 
-  override def cloneType: this.type = factory().asInstanceOf[this.type]
+  override def _cloneType: Data = factory()
 
   private[chisel3] def compop(sourceInfo: SourceInfo, op: PrimOp, other: EnumType): Bool = {
     requireIsHardware(this, "bits operated on")

@@ -2,6 +2,7 @@
 
 package chisel3
 
+import chisel3.Data.DataExtensions
 import chisel3.experimental.{requireIsHardware, SourceInfo}
 import chisel3.internal.{_resizeToWidth, throwException, BaseModule}
 import chisel3.internal.Builder.pushOp
@@ -21,9 +22,9 @@ private[chisel3] trait BitsImpl extends Element { self: Bits =>
   // Arguments against: generates down to a FIRRTL UInt anyways
 
   // Only used for in a few cases, hopefully to be removed
-  private[chisel3] def cloneTypeWidth(width: Width): this.type
+  private[chisel3] def cloneTypeWidth(width: Width): Bits
 
-  def cloneType: this.type = cloneTypeWidth(this.width)
+  override def _cloneType: Data = cloneTypeWidth(this.width)
 
   /** A non-ambiguous name of this `Bits` instance for use in generated Verilog names
     * Inserts the width directly after the typeName, e.g. UInt4, SInt1
@@ -167,7 +168,7 @@ private[chisel3] trait BitsImpl extends Element { self: Bits =>
   // Pad literal to that width
   protected def _padLit(that: Int): this.type
 
-  protected def _padImpl(that: Int)(implicit sourceInfo: SourceInfo): this.type = this.width match {
+  protected def _padImpl(that: Int)(implicit sourceInfo: SourceInfo): Bits = this.width match {
     case KnownWidth(w) if w >= that => this
     case _ if this.isLit            => this._padLit(that)
     case _                          => binop(sourceInfo, cloneTypeWidth(this.width.max(Width(that))), PadOp, that)
@@ -222,8 +223,7 @@ private[chisel3] trait UIntImpl extends BitsImpl with Num[UInt] { self: UInt =>
     }
   }
 
-  private[chisel3] override def cloneTypeWidth(w: Width): this.type =
-    new UInt(w).asInstanceOf[this.type]
+  private[chisel3] override def cloneTypeWidth(w: Width): UInt = new UInt(w)
 
   override protected def _padLit(that: Int): this.type = {
     val value = this.litValue
@@ -403,8 +403,7 @@ private[chisel3] trait SIntImpl extends BitsImpl with Num[SInt] { self: SInt =>
     }
   }
 
-  private[chisel3] override def cloneTypeWidth(w: Width): this.type =
-    new SInt(w).asInstanceOf[this.type]
+  private[chisel3] override def cloneTypeWidth(w: Width): SInt = new SInt(w)
 
   override protected def _padLit(that: Int): this.type = {
     val value = this.litValue
@@ -529,7 +528,7 @@ private[chisel3] trait ResetTypeImpl extends Element { self: Reset =>
 
   override def toString: String = stringAccessor("Reset")
 
-  def cloneType: this.type = Reset().asInstanceOf[this.type]
+  override def _cloneType: Data = Reset()
 
   override def litOption: Option[BigInt] = None
 
@@ -558,7 +557,7 @@ private[chisel3] trait AsyncResetImpl extends Element { self: AsyncReset =>
 
   override def toString: String = stringAccessor("AsyncReset")
 
-  def cloneType: this.type = AsyncReset().asInstanceOf[this.type]
+  override def _cloneType: Data = AsyncReset()
 
   override def litOption: Option[BigInt] = None
 
@@ -599,9 +598,9 @@ private[chisel3] trait BoolImpl extends UIntImpl { self: Bool =>
     }
   }
 
-  private[chisel3] override def cloneTypeWidth(w: Width): this.type = {
+  private[chisel3] override def cloneTypeWidth(w: Width): Bool = {
     require(!w.known || w.get == 1)
-    new Bool().asInstanceOf[this.type]
+    new Bool()
   }
 
   /** Convert to a [[scala.Option]] of [[scala.Boolean]] */
