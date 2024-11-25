@@ -247,14 +247,7 @@ object BoringUtils {
     def drill(source: A, path: Seq[BaseModule], connectionLocation: Seq[BaseModule], up: Boolean): A = {
       path.zip(connectionLocation).foldLeft(source) {
         case (rhs, (module, conLoc)) if (module.isFullyClosed) => boringError(module); DontCare.asInstanceOf[A]
-<<<<<<< HEAD
-        case (rhs, (module, _))
-            if (up && module == path(0) && isPort(rhs) && (!createProbe.nonEmpty || !createProbe.get.writable)) => {
-          // When drilling from the original source, if it's already a port just return it.
-          // As an exception, insist rwTaps are done from within the module and exported out.
-=======
-        case (rhs, (module, _)) if ((up || isDriveDone(rhs)) && module == path(0) && isPort(rhs)) => {
->>>>>>> 3bbf860f7 (Fix Boring.rwTap on instance ports (#4451))
+        case (rhs, (module, _)) if (up && module == path(0) && isPort(rhs)) => {
           rhs
         }
         case (rhs, (module, conLoc)) =>

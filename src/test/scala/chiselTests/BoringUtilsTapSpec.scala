@@ -437,14 +437,6 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       // Instantiation.
       "Child child (",
       ".v_0_in  (inputs_0),", // Alive because feeds outV_0_out probe.
-<<<<<<< HEAD
-      ".v_0_out (", // rwprobe target.
-      ".v_1_in  (inputs_1)", // rwprobe target.
-      // Ref ABI.  Names of internal signals are subject to change.
-      "`define ref_Foo_Foo_outV_0_out child.v_0_out",
-      "`define ref_Foo_Foo_outV_1_in child.v_1_in"
-    )("v_1_out")
-=======
       ".v_0_out (" // rwprobe target.
     )("v_1_in", "v_1_out") // These are dead now
   }
@@ -466,20 +458,16 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       hier.outs.foreach(dontTouch(_))
 
       @public val widgetProbes =
-        aop.Select.unsafe
-          .allCurrentInstancesIn(hier)
-          .filter(_.isA[Widget])
-          .map { module =>
-            val widget = module.asInstanceOf[Instance[Widget]]
-            val widgetProbe = IO(probe.RWProbe(UInt(32.W)))
-            val p = BoringUtils.rwTap(widget.prb)
-            probe.define(widgetProbe, p)
-            widgetProbe
-          }
+        hier.hier.widgets.map { module =>
+          val widget = module.toInstance
+          val widgetProbe = IO(probe.RWProbe(UInt(32.W)))
+          val p = BoringUtils.rwTap(widget.prb)
+          probe.define(widgetProbe, p)
+          widgetProbe
+        }
     }
     // Probe creation should happen outside of this function
     val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Dut, args)
-    println(chirrtl)
     matchesAndOmits(chirrtl)(
       // Widget exists once, and has a probe port of an internal wire
       "module Widget :",
@@ -501,7 +489,7 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       "define widgetProbes_p_bore = hier.widgetProbes_p_bore",
       "define widgetProbes_p_bore_1 = hier.widgetProbes_p_bore_1",
       // Top level module
-      "public module Dut :",
+      "module Dut :",
       "input clock : Clock",
       "input reset : UInt<1>",
       "output widgetProbes_0 : RWProbe<UInt<32>>",
@@ -510,7 +498,6 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       "define widgetProbes_0 = hier.widgetProbes_p_bore",
       "define widgetProbes_1 = hier.widgetProbes_p_bore_1"
     )()
->>>>>>> 3bbf860f7 (Fix Boring.rwTap on instance ports (#4451))
   }
 
   it should "work when tapping IO, as probe() from outside module" in {
@@ -631,7 +618,7 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       "connect out, _out_T",
       "module Dut :",
       "define widgetProbes_0 = rwprobe(widgets_0.out)",
-      "public module UnitTestHarness :",
+      "module UnitTestHarness :",
       "force(clock, _T, dut.widgetProbes_0, UInt<32>(0hffff))"
     )()
   }
@@ -675,7 +662,7 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       "connect out, _out_T",
       "module Dut :",
       "define widgetProbes_0 = probe(widgets_0.out)",
-      "public module UnitTestHarness :",
+      "module UnitTestHarness :",
       "printf(clock, UInt<1>(0h1), \"%d\", read(dut.widgetProbes_0))"
     )()
   }

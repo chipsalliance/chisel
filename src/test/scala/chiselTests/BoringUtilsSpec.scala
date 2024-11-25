@@ -232,24 +232,6 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
     )()
   }
 
-  it should "work if driving an Instance's input port" in {
-    import chisel3.experimental.hierarchy._
-    @instantiable
-    class Bar extends RawModule {
-      @public val in = IO(Input(UInt(1.W)))
-    }
-    class Foo extends RawModule {
-      val bar = Instance(Definition((new Bar)))
-      val source = BoringUtils.drive(bar.in)
-    }
-    matchesAndOmits(circt.stage.ChiselStage.emitCHIRRTL(new Foo, args))(
-      "module Bar :",
-      "input in : UInt<1>",
-      "module Foo :",
-      "connect bar.in, source"
-    )()
-  }
-
   it should "work boring upwards" in {
     import chisel3.experimental.hierarchy._
     class Bar(parentData: Data) extends RawModule {
