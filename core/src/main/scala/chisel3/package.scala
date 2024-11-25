@@ -436,7 +436,7 @@ package object chisel3 {
   }
 
   object HasTarget {
-    private[chisel3] case class Impl(t: SramTarget) extends HasTarget {
+    private[chisel3] case class Impl(t: MemBase[_]) extends HasTarget {
       def toTarget = t.toTarget
       def toAbsoluteTarget = t.toAbsoluteTarget
       def toRelativeTarget(root: Option[BaseModule]) = t.toRelativeTarget(root)
@@ -447,7 +447,7 @@ package object chisel3 {
     /** This wrapping hides the actual object, ensuring users only have access
       * to the target methods (instead of the type of the underlying object).
       */
-    private[chisel3] def apply(t: SramTarget): HasTarget = Impl(t)
+    private[chisel3] def apply(t: MemBase[_]): HasTarget = Impl(t)
 
   }
 }

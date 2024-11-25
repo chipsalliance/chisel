@@ -420,24 +420,8 @@ object Lookupable {
     implicit sourceInfo: SourceInfo
   ): HasTarget = {
     hasTarget match {
-      case HasTarget.Impl(st: SramTarget) =>
-        st._parent match {
-          case None => hasTarget
-          case Some(parent) =>
-            val newParent = cloneModuleToContext(Proto(parent), context)
-            newParent match {
-              case Proto(p) if p == parent => hasTarget
-              case Clone(mod: BaseModule) =>
-                val existingMod = Builder.currentModule
-                Builder.currentModule = Some(mod)
-                val newChild = new SramTarget
-                Builder.currentModule = existingMod
-                newChild.setRef(st.getRef, true)
-                HasTarget(newChild)
-              case _ =>
-                throw new InternalErrorException(s"Match error: newParent=$newParent")
-            }
-        }
+      case HasTarget.Impl(st: MemBase[_]) =>
+        HasTarget(cloneMemToContext(st, context))
     }
   }
 

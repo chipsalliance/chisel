@@ -397,7 +397,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       }
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos.collect { case c: MarkAnnotation => c } should contain(
-        MarkAnnotation("~Top|HasHasTarget>sram_sram".rt, "x")
+        MarkAnnotation("~Top|HasHasTarget>sram_mem".rt, "x")
       )
     }
   }
