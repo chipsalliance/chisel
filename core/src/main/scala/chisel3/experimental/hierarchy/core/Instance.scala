@@ -34,7 +34,7 @@ final case class Instance[+A] private[chisel3] (private[chisel3] val underlying:
     case Proto(value: IsInstantiable) => None
     case Clone(i: BaseModule) => Some(i)
     case Clone(i: InstantiableClone[_]) => i.getInnerContext
-    case _ => throw new InternalErrorException("Match error: underlying=$underlying")
+    case _ => throw new InternalErrorException(s"Match error: underlying=$underlying")
   }
 
   /** @return the context this instance. Note that for non-module clones, getInnerDataContext will be the same as getClonedParent */
@@ -42,7 +42,7 @@ final case class Instance[+A] private[chisel3] (private[chisel3] val underlying:
     case Proto(value: BaseModule) => value._parent
     case Clone(i: BaseModule) => i._parent
     case Clone(i: InstantiableClone[_]) => i.getInnerContext
-    case _ => throw new InternalErrorException("Match error: underlying=$underlying")
+    case _ => throw new InternalErrorException(s"Match error: underlying=$underlying")
   }
 
   /** Used by Chisel's internal macros. DO NOT USE in your normal Chisel code!!!
@@ -84,7 +84,7 @@ object Instance extends SourceInfoDoc {
     def toTarget: IsModule = i.underlying match {
       case Proto(x: BaseModule) => x.getTarget
       case Clone(x: IsClone[_] with BaseModule) => x.getTarget
-      case _ => throw new InternalErrorException("Match error: i.underlying=${i.underlying}")
+      case _ => throw new InternalErrorException(s"Match error: i.underlying=${i.underlying}")
     }
 
     /** If this is an instance of a Module, returns the toAbsoluteTarget of this instance
@@ -93,7 +93,7 @@ object Instance extends SourceInfoDoc {
     def toAbsoluteTarget: IsModule = i.underlying match {
       case Proto(x) => x.toAbsoluteTarget
       case Clone(x: IsClone[_] with BaseModule) => x.toAbsoluteTarget
-      case _ => throw new InternalErrorException("Match error: i.underlying=${i.underlying}")
+      case _ => throw new InternalErrorException(s"Match error: i.underlying=${i.underlying}")
     }
 
     def suggestName(name: String): Unit = i.underlying match {
