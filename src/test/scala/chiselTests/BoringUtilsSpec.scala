@@ -152,7 +152,7 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
       b := BoringUtils.bore(bar.b_wire)
       c := BoringUtils.bore(c_wire)
     }
-    matchesAndOmits(circt.stage.ChiselStage.emitCHIRRTL(new Foo))(
+    matchesAndOmits(circt.stage.ChiselStage.emitCHIRRTL(new Foo, args))(
       "module Baz :",
       "output a_bore : UInt<1>",
       "connect a_bore, a_wire",
@@ -211,6 +211,25 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
       circt.stage.ChiselStage.emitCHIRRTL(new Foo, args)
     }
     e.getMessage should include("Cannot bore across a Definition/Instance boundary")
+  }
+
+  it should "work if boring from an Instance's output port" in {
+    import chisel3.experimental.hierarchy._
+    @instantiable
+    class Bar extends RawModule {
+      @public val out = IO(Output(UInt(1.W)))
+      out := DontCare
+    }
+    class Foo extends RawModule {
+      val bar = Instance(Definition((new Bar)))
+      val sink = BoringUtils.bore(bar.out)
+    }
+    matchesAndOmits(circt.stage.ChiselStage.emitCHIRRTL(new Foo, args))(
+      "module Bar :",
+      "output out : UInt<1>",
+      "module Foo :",
+      "connect sink, bar.out"
+    )()
   }
 
   it should "work boring upwards" in {
