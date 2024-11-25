@@ -374,7 +374,7 @@ object Select {
       .asInstanceOf[DefModule]
       .commands
       .collect {
-        case Attach(_, seq) if seq.contains(signal) => seq
+        case Attach(_, seq) if seq.contains(Node(signal)) => seq
       }
       .flatMap { seq => seq.map(_.id.asInstanceOf[Data]) }
       .toSet
