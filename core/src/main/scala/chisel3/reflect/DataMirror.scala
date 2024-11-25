@@ -10,6 +10,7 @@ import chisel3.experimental.{requireIsHardware, BaseModule, SourceInfo}
 import chisel3.experimental.hierarchy.{Instance, ModuleClone}
 import chisel3.experimental.hierarchy.core.Clone
 import chisel3.properties.Property
+import chisel3.Data.DataExtensions
 import scala.reflect.ClassTag
 
 object DataMirror {

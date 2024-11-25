@@ -4,6 +4,7 @@ package chisel3
 
 import chisel3.experimental.VecLiterals.AddVecLiteralConstructor
 import chisel3.experimental.dataview.{isView, reify, reifyIdentityView, InvalidViewException}
+import chisel3.Data.DataExtensions
 
 import scala.collection.immutable.{SeqMap, VectorMap}
 import scala.collection.mutable.{HashSet, LinkedHashMap}
@@ -421,9 +422,7 @@ private[chisel3] abstract class VecImpl[T <: Data] private[chisel3] (gen: => T, 
     */
   def apply(idx: Int): T = self(idx)
 
-  override def cloneType: this.type = {
-    new Vec(gen.cloneTypeFull, length).asInstanceOf[this.type]
-  }
+  override def _cloneType: Vec[T] = new Vec(gen.cloneTypeFull, length)
 
   override def getElements: Seq[Data] = self
 
@@ -491,7 +490,7 @@ private[chisel3] abstract class VecImpl[T <: Data] private[chisel3] (gen: => T, 
     elementInitializers: (Int, T)*
   )(
     implicit sourceInfo: SourceInfo
-  ): this.type = {
+  ): Vec[T] = {
 
     def checkLiteralConstruction(): Unit = {
       val dupKeys = elementInitializers.map { x => x._1 }.groupBy(x => x).flatMap {
@@ -543,7 +542,7 @@ private[chisel3] abstract class VecImpl[T <: Data] private[chisel3] (gen: => T, 
     requireIsChiselType(this, "vec literal constructor model")
     checkLiteralConstruction()
 
-    val clone = cloneType
+    val clone = this.cloneType
     val cloneFields = getRecursiveFields(clone, "(vec root)").toMap
 
     // Create the Vec literal binding from litArgs of arguments
@@ -832,8 +831,10 @@ private[chisel3] trait RecordImpl extends AggregateImpl { thiz: Record =>
     }
   }
 
-  override def cloneType: this.type = {
-    val clone = _cloneTypeImpl.asInstanceOf[this.type]
+  // Note that _cloneTypeImpl is implemented by the compiler plugin and must be a different method name because
+  // We want to run checkClone after calling _cloneTypeImpl
+  final override def _cloneType: Data = {
+    val clone = _cloneTypeImpl
     checkClone(clone)
     clone
   }
@@ -953,10 +954,10 @@ private[chisel3] trait RecordImpl extends AggregateImpl { thiz: Record =>
     * )
     * }}}
     */
-  private[chisel3] def _makeLit(elems: (this.type => (Data, Data))*)(implicit sourceInfo: SourceInfo): this.type = {
+  private[chisel3] def _makeLit(elems: (Data => (Data, Data))*)(implicit sourceInfo: SourceInfo): Data = {
 
     requireIsChiselType(this, "bundle literal constructor model")
-    val clone = cloneType
+    val clone = this.cloneType
     val cloneFields = getRecursiveFields(clone, "_").toMap
 
     // Create the Bundle literal binding from litargs of arguments
