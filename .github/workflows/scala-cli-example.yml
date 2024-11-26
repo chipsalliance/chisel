@@ -14,6 +14,8 @@ jobs:
     name: Generate Chisel Scala CLI Example
     needs: [generate_scala_cli_example]
     runs-on: ubuntu-22.04
+    permissions:
+      contents: write
 
     steps:
       - name: Download Generated CLI Example
@@ -27,6 +29,6 @@ jobs:
           echo '```' >> $GITHUB_STEP_SUMMARY
       - name: Upload To Release Page
         if: github.event_name == 'release'
-        uses: softprops/action-gh-release@v2.0.5
+        uses: softprops/action-gh-release@v2.1.0
         with:
           files: chisel-example.scala
