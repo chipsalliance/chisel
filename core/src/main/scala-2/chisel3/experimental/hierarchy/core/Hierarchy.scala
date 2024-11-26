@@ -34,7 +34,7 @@ object Hierarchy {
     def toTarget: IsModule = i match {
       case d: Definition[T] => new Definition.DefinitionBaseModuleExtensions(d).toTarget
       case i: Instance[T]   => new Instance.InstanceBaseModuleExtensions(i).toTarget
-      case _ => throw new InternalErrorException("Match error: toTarget i=$i")
+      case _ => throw new InternalErrorException(s"Match error: toTarget i=$i")
     }
 
     /** Returns the toAbsoluteTarget of this hierarchy
@@ -43,7 +43,7 @@ object Hierarchy {
     def toAbsoluteTarget: IsModule = i match {
       case d: Definition[T] => new Definition.DefinitionBaseModuleExtensions(d).toAbsoluteTarget
       case i: Instance[T]   => new Instance.InstanceBaseModuleExtensions(i).toAbsoluteTarget
-      case _ => throw new InternalErrorException("Match error: toAbsoluteTarget i=$i")
+      case _ => throw new InternalErrorException(s"Match error: toAbsoluteTarget i=$i")
     }
 
     /** Returns the toRelativeTarget of this hierarchy
@@ -52,7 +52,7 @@ object Hierarchy {
     def toRelativeTarget(root: Option[BaseModule]): IsModule = i match {
       case d: Definition[T] => new Definition.DefinitionBaseModuleExtensions(d).toRelativeTarget(root)
       case i: Instance[T]   => new Instance.InstanceBaseModuleExtensions(i).toRelativeTarget(root)
-      case _ => throw new InternalErrorException("Match error: toAbsoluteTarget i=$i")
+      case _ => throw new InternalErrorException(s"Match error: toAbsoluteTarget i=$i")
     }
 
     /** Returns the toRelativeTarget of this hierarchy
@@ -61,7 +61,7 @@ object Hierarchy {
     def toRelativeTargetToHierarchy(root: Option[Hierarchy[BaseModule]]): IsModule = i match {
       case d: Definition[T] => new Definition.DefinitionBaseModuleExtensions(d).toRelativeTargetToHierarchy(root)
       case i: Instance[T]   => new Instance.InstanceBaseModuleExtensions(i).toRelativeTargetToHierarchy(root)
-      case _ => throw new InternalErrorException("Match error: toAbsoluteTarget i=$i")
+      case _ => throw new InternalErrorException(s"Match error: toAbsoluteTarget i=$i")
     }
 
   }

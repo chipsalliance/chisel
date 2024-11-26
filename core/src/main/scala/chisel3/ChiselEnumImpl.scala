@@ -58,7 +58,7 @@ private[chisel3] abstract class EnumTypeImpl(private[chisel3] val factory: Chise
   // This override just ensures that if `that` has a known width, the result actually has that width
   // Put another way, this is preserving a case where #4159 does **not** occur
   // This can be deleted when Builder.useLegacyWidth is removed.
-  override def do_asTypeOf[T <: Data](that: T)(implicit sourceInfo: SourceInfo): T = {
+  override def _asTypeOfImpl[T <: Data](that: T)(implicit sourceInfo: SourceInfo): T = {
     that.widthOption match {
       // Note that default case will handle literals just fine
       case Some(w) =>
