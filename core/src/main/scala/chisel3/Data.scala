@@ -424,13 +424,22 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     _directionVar = actualDirection
   }
 
+  // Specializes the .toString method of a [[Data]] for conditions such as
+  //  DataView, Probe modifiers, a DontCare, and whether it is bound or a pure chisel type
   private[chisel3] def stringAccessor(chiselType: String): String = {
+    // Add probe (if it exists) to the returned String
+    val chiselTypeWithModifier =
+      probeInfo match {
+        case None => chiselType
+        case Some(ProbeInfo(writeable)) =>
+          (if (writeable) "RWProbe" else "Probe") + s"<$chiselType>"
+      }
     // Trace views to give better error messages
     // Reifying involves checking against ViewParent which requires being in a Builder context
     // Since we're just printing a String, suppress such errors and use this object
     val thiz = Try(reifySingleTarget(this)).toOption.flatten.getOrElse(this)
     thiz.topBindingOpt match {
-      case None => chiselType
+      case None => chiselTypeWithModifier
       // Handle DontCares specially as they are "literal-like" but not actually literals
       case Some(DontCareBinding()) => s"$chiselType(DontCare)"
       case Some(topBinding) =>
@@ -438,7 +447,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
         val name = thiz.earlyName
         val mod = thiz.parentNameOpt.map(_ + ".").getOrElse("")
 
-        s"$mod$name: $binding[$chiselType]"
+        s"$mod$name: $binding[$chiselTypeWithModifier]"
     }
   }
 
