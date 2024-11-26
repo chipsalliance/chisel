@@ -46,7 +46,7 @@ trait HierarchyImpl[+A] {
       Set.empty[String]
     }
   }
-  private def inBaseClasses(clz: String): Boolean = superClasses.contains(clz)
+  protected def inBaseClasses(clz: String): Boolean = superClasses.contains(clz)
 
   /** Used by Chisel's internal macros. DO NOT USE in your normal Chisel code!!!
     * Instead, mark the field you are accessing with [[public]]

@@ -2,7 +2,6 @@
 
 package chisel3.experimental.hierarchy
 
-import scala.reflect.runtime.{universe => ru}
 import scala.collection.mutable
 
 import chisel3._
