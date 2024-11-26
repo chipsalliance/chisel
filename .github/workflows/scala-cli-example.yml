@@ -8,7 +8,18 @@ on:
 jobs:
   generate_scala_cli_example:
     name: Generate Scala CLI Example
+<<<<<<< HEAD
     runs-on: ubuntu-latest
+=======
+    uses: ./.github/workflows/build-scala-cli-example.yml
+
+  publish_example:
+    name: Generate Chisel Scala CLI Example
+    needs: [generate_scala_cli_example]
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+>>>>>>> 25d00af83 (Update CD permissions for uploading release artifacts (#4529))
 
     steps:
       - name: Checkout
@@ -26,7 +37,7 @@ jobs:
           retention-days: 7
       - name: Upload To Release Page
         if: github.event_name == 'release'
-        uses: softprops/action-gh-release@v2.0.5
+        uses: softprops/action-gh-release@v2.1.0
         with:
           files: chisel-example.scala
 
