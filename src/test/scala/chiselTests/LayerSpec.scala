@@ -62,5 +62,4 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
     )
 
   }
-
 }

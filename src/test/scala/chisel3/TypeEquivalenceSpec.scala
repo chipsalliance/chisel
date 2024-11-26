@@ -309,7 +309,7 @@ class TypeEquivalenceSpec extends AnyFlatSpec {
   it should "detect differences between Probe and Not-Probe" in {
     Probe(Bool()).findFirstTypeMismatch(Bool(), true, true, true) should be(
       Some(
-        ": Left (Bool with probeInfo: Some(writeable=false)) and Right (Bool with probeInfo: None) have different probeInfo."
+        ": Left (Probe<Bool> with probeInfo: Some(writeable=false)) and Right (Bool with probeInfo: None) have different probeInfo."
       )
     )
   }
@@ -321,7 +321,7 @@ class TypeEquivalenceSpec extends AnyFlatSpec {
   it should "detect differences between Probe and Not-Probe within a Bundle" in {
     new BundleWithProbe(true).findFirstTypeMismatch(new BundleWithProbe(false), true, true, true) should be(
       Some(
-        ".maybeProbe: Left (Bool with probeInfo: Some(writeable=false)) and Right (Bool with probeInfo: None) have different probeInfo."
+        ".maybeProbe: Left (Probe<Bool> with probeInfo: Some(writeable=false)) and Right (Bool with probeInfo: None) have different probeInfo."
       )
     )
   }
@@ -329,21 +329,21 @@ class TypeEquivalenceSpec extends AnyFlatSpec {
   it should "detect differences between probe types" in {
     RWProbe(Bool()).findFirstTypeMismatch(Probe(Bool()), true, true, true) should be(
       Some(
-        ": Left (Bool with probeInfo: Some(writeable=true)) and Right (Bool with probeInfo: Some(writeable=false)) have different probeInfo."
+        ": Left (RWProbe<Bool> with probeInfo: Some(writeable=true)) and Right (Probe<Bool> with probeInfo: Some(writeable=false)) have different probeInfo."
       )
     )
   }
 
   it should "detect differences through probes" in {
     Probe(Bool()).findFirstTypeMismatch(Probe(Clock()), true, true, true) should be(
-      Some(": Left (Bool) and Right (Clock) have different types.")
+      Some(": Left (Probe<Bool>) and Right (Probe<Clock>) have different types.")
     )
   }
 
   it should "detect differences in probe within a Vector" in {
     Vec(3, Probe(Bool())).findFirstTypeMismatch(Vec(3, Bool()), true, true, true) should be(
       Some(
-        "[_]: Left (Bool with probeInfo: Some(writeable=false)) and Right (Bool with probeInfo: None) have different probeInfo."
+        "[_]: Left (Probe<Bool> with probeInfo: Some(writeable=false)) and Right (Bool with probeInfo: None) have different probeInfo."
       )
     )
   }
