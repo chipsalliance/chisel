@@ -62,8 +62,15 @@ abstract class InjectorAspect[T <: RawModule, M <: RawModule](
         new DynamicContext(
           annotationsInAspect,
           chiselOptions.throwOnFirstError,
+<<<<<<< HEAD
           chiselOptions.warningsAsErrors,
           chiselOptions.sourceRoots
+=======
+          chiselOptions.warningFilters,
+          chiselOptions.sourceRoots,
+          None,
+          Nil // FIXME this maybe should somehow grab definitions from earlier elaboration
+>>>>>>> a050b8cda (Fix using Definitions as arguments to Definitions (#3726))
         )
       // Add existing module names into the namespace. If injection logic instantiates new modules
       //  which would share the same name, they will get uniquified accordingly
