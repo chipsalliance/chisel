@@ -302,14 +302,14 @@ class ModulePrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with
     matchesAndOmits(chirrtl)(lines: _*)()
   }
 
-  it should "set the prefix for a Module's children but not the Module itself if localPrefixAppliesToSelf is false" in {
+  it should "set the prefix for a Module's children but not the Module itself if localModulePrefixAppliesToSelf is false" in {
 
     class Foo extends RawModule
     class Bar extends RawModule
 
     class Top extends RawModule {
       override def localModulePrefix = Some("Prefix")
-      override def localPrefixAppliesToSelf = false
+      override def localModulePrefixAppliesToSelf = false
       val foo = Module(new Foo)
       val bar = Module(new Bar)
     }

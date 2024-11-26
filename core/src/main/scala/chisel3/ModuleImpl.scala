@@ -936,7 +936,7 @@ package experimental {
           case Some(c) => getRef.fullName(c)
         }
 
-    /** Additional module prefix, applies to this module if defined (unless localModulePrefix is false) and all children.
+    /** Additional module prefix, applies to this module if defined (unless localModulePrefixAppliesToSelf is false) and all children.
       */
     def localModulePrefix: Option[String] = None
 
@@ -944,14 +944,14 @@ package experimental {
       *
       * Users should override to false if [[localModulePrefix]] should apply only to children.
       */
-    def localPrefixAppliesToSelf: Boolean = true
+    def localModulePrefixAppliesToSelf: Boolean = true
 
     /** The resolved module prefix used for this Module.
       *
-      * Includes [[localModulePrefix]] if defined and if [[localPrefixAppliesToSelf]] is true.
+      * Includes [[localModulePrefix]] if defined and if [[localModulePrefixAppliesToSelf]] is true.
       */
     final val modulePrefix: String =
-      withModulePrefix(localModulePrefix.filter(_ => localPrefixAppliesToSelf).getOrElse("")) {
+      withModulePrefix(localModulePrefix.filter(_ => localModulePrefixAppliesToSelf).getOrElse("")) {
         Builder.getModulePrefix
       }
 
