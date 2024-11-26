@@ -241,10 +241,6 @@ private[chisel3] trait ObjectModuleImpl {
     /** Explicitly Asynchronous Reset */
     case object Asynchronous extends Type
   }
-
-  def getModulePrefixList: List[String] = {
-    Builder.getModulePrefixList
-  }
 }
 
 private[chisel3] trait ModuleImpl extends RawModule with ImplicitClock with ImplicitReset {
@@ -946,18 +942,27 @@ package experimental {
       */
     def localModulePrefixAppliesToSelf: Boolean = true
 
+    /** Should the localModulePrefix include a separator between prefix and the Module name
+      *
+      * Defaults to true, users can override to false if they don't want a separator.
+      */
+    def localModulePrefixUseSeparator: Boolean = true
+
     /** The resolved module prefix used for this Module.
       *
       * Includes [[localModulePrefix]] if defined and if [[localModulePrefixAppliesToSelf]] is true.
       */
     final val modulePrefix: String =
-      withModulePrefix(localModulePrefix.filter(_ => localModulePrefixAppliesToSelf).getOrElse("")) {
+      withModulePrefix(
+        localModulePrefix.filter(_ => localModulePrefixAppliesToSelf).getOrElse(""),
+        localModulePrefixUseSeparator
+      ) {
         Builder.getModulePrefix
       }
 
     // Apply localModulePrefix to children.
     localModulePrefix.foreach { prefix =>
-      Builder.pushModulePrefix(prefix)
+      Builder.pushModulePrefix(prefix, localModulePrefixUseSeparator)
     }
   }
 }
@@ -967,12 +972,23 @@ package experimental {
   */
 object withModulePrefix {
 
-  /**
-    * @param arg prefix Prefix is the module prefix, blank means ignore.
+  /** Prefixes modules with the given prefix
+    *
+    * Uses default separator.
+    *
+    * @param prefix The module prefix, blank means ignore.
     */
-  def apply[T](prefix: String)(block: => T): T = {
+  def apply[T](prefix: String)(block: => T): T =
+    apply(prefix, true)(block)
+
+  /** Prefixes modules with the given prefix
+    *
+    * @param prefix The module prefix, blank means ignore.
+    * @param includeSeparator Include the separator after the prefix
+    */
+  def apply[T](prefix: String, includeSeparator: Boolean)(block: => T): T = {
     if (prefix != "") {
-      Builder.pushModulePrefix(prefix)
+      Builder.pushModulePrefix(prefix, includeSeparator)
     }
     val res = block // execute block
     if (prefix != "") {

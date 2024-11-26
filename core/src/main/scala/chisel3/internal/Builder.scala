@@ -472,7 +472,8 @@ private[chisel3] class ChiselContext() {
   // and the resulting .toTarget is very clearly useless (_$$View$$_...)
   val viewNamespace = Namespace.empty
 
-  var modulePrefixStack: Prefix = Nil
+  // Pairs of Prefix and whether to include the separator
+  var modulePrefixStack: List[(String, Boolean)] = Nil
 }
 
 private[chisel3] class DynamicContext(
@@ -1168,17 +1169,16 @@ private[chisel3] object Builder extends LazyLogging {
   }
 
   // Puts a module prefix string onto the module prefix stack
-  def pushModulePrefix(prefix: String): Unit = {
+  def pushModulePrefix(prefix: String, includeSeparator: Boolean): Unit = {
     val context = chiselContext.get()
-    context.modulePrefixStack = prefix :: context.modulePrefixStack
+    context.modulePrefixStack = (prefix, includeSeparator) :: context.modulePrefixStack
   }
 
   // Remove the module prefix on top of the stack
-  def popModulePrefix(): List[String] = {
+  def popModulePrefix(): Unit = {
     val context = chiselContext.get()
     val tail = context.modulePrefixStack.tail
     context.modulePrefixStack = tail
-    tail
   }
 
   // Returns the nested module prefix at this moment
@@ -1186,15 +1186,15 @@ private[chisel3] object Builder extends LazyLogging {
     val ctx = chiselContext.get()
     val modulePrefixStack = ctx.modulePrefixStack
     val sep = ctx.modulePrefixSeperator
-    if (modulePrefixStack.isEmpty) {
-      ""
-    } else {
-      modulePrefixStack.foldLeft("")((a, b) => b + sep + a)
+    modulePrefixStack.foldLeft("") {
+      case (acc, (elt, useSep)) =>
+        val s = if (useSep) sep else ""
+        elt + s + acc
     }
   }
 
-  def getModulePrefixList: List[String] = {
-    chiselContext.get().modulePrefixStack
+  def getModulePrefixSeperator: String = {
+    chiselContext.get().modulePrefixSeperator
   }
 
   initializeSingletons()

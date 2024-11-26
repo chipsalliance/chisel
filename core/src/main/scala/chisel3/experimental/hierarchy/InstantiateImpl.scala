@@ -73,7 +73,7 @@ private[chisel3] trait InstantiateImpl {
 
   import chisel3.internal.BuilderContextCache
   // Include type of module in key since different modules could have the same arguments
-  private case class CacheKey[A <: BaseModule](args: Any, tt: Any, modulePrefix: List[String])
+  private case class CacheKey[A <: BaseModule](args: Any, tt: Any, modulePrefix: String)
       extends BuilderContextCache.Key[Definition[A]]
 
   protected def _instanceImpl[K, A <: BaseModule](
@@ -90,7 +90,7 @@ private[chisel3] trait InstantiateImpl {
     f:    K => A,
     tt:   Any
   ): Definition[A] = {
-    val modulePrefix = Builder.getModulePrefixList
+    val modulePrefix = Module.currentModulePrefix
     Builder.contextCache
       .getOrElseUpdate(
         CacheKey[A](boxAllData(args), tt, modulePrefix), {
