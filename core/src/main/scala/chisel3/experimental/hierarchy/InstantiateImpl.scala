@@ -81,7 +81,7 @@ private[chisel3] trait InstantiateImpl {
     tt:   Any
   )(
     implicit sourceInfo: SourceInfo
-  ): Instance[A] = Instance.do_apply(_definitionImpl(args, f, tt))(sourceInfo)
+  ): Instance[A] = Instance.apply(_definitionImpl(args, f, tt))(sourceInfo)
 
   /** This is not part of the public API, do not call directly! */
   protected def _definitionImpl[K, A <: BaseModule](
@@ -95,7 +95,7 @@ private[chisel3] trait InstantiateImpl {
         CacheKey[A](boxAllData(args), tt, modulePrefix), {
           // The definition needs to have no source locator because otherwise it will be unstably
           // derived from the first invocation of Instantiate for the particular Module
-          Definition.do_apply(f(args))(UnlocatableSourceInfo)
+          Definition.apply(f(args))(UnlocatableSourceInfo)
         }
       )
       .asInstanceOf[Definition[A]]
