@@ -305,7 +305,7 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with UIntI
 
   def abs: UInt = _absImpl
 
-  override def unary_~(implicit sourceInfo: SourceInfo) = _impl_unary_~
+  override def unary_~(implicit sourceInfo: SourceInfo): UInt = _impl_unary_~
 
   // REVIEW TODO: Can these be defined on Bits?
   /** Or reduction operator
