@@ -130,6 +130,20 @@ class SelectSpec extends ChiselFlatSpec {
     )
   }
 
+  "Test" should "pass if selecting attach" in {
+    import chisel3.experimental.{attach, Analog}
+    class AttachTest extends RawModule {
+      val a, b, c = IO(Analog(8.W))
+      attach(a, b, c)
+    }
+    val dut = ChiselGeneratorAnnotation(() => new AttachTest)
+      .elaborate(1)
+      .asInstanceOf[DesignAnnotation[AttachTest]]
+      .design
+    Select.attachedTo(dut)(dut.a) should be(Set(dut.a, dut.b, dut.c))
+
+  }
+
   "Test" should "pass if selecting ops by kind" in {
     execute(
       () => new SelectTester(Seq(0, 1, 2)),
