@@ -9,6 +9,8 @@ jobs:
   generate_scala_cli_example:
     name: Generate Scala CLI Example
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout
@@ -26,7 +28,7 @@ jobs:
           retention-days: 7
       - name: Upload To Release Page
         if: github.event_name == 'release'
-        uses: softprops/action-gh-release@v2.0.5
+        uses: softprops/action-gh-release@v2.1.0
         with:
           files: chisel-example.scala
 
