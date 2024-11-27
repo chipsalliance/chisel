@@ -44,7 +44,8 @@ class CIRCTSRAMReadWritePort(memoryParameter: CIRCTSRAMParameter) extends Record
   val clock = Input(Clock())
   val address = Input(UInt(log2Ceil(memoryParameter.depth).W))
   val writeData = Input(UInt(memoryParameter.width.W))
-  val writeMask = Option.when(memoryParameter.masked)(Input(UInt(memoryParameter.width.W)))
+  val writeMask =
+    Option.when(memoryParameter.masked)(Input(UInt((memoryParameter.width / memoryParameter.maskGranularity).W)))
   val writeEnable = Input(Bool())
   val readData = Output(UInt(memoryParameter.width.W))
   val enable = Input(Bool())
@@ -64,7 +65,8 @@ class CIRCTSRAMWritePort(memoryParameter: CIRCTSRAMParameter) extends Record {
   val clock = Input(Clock())
   val address = Input(UInt(log2Ceil(memoryParameter.depth).W))
   val data = Input(UInt(memoryParameter.width.W))
-  val mask = Option.when(memoryParameter.masked)(Input(UInt(memoryParameter.width.W)))
+  val mask =
+    Option.when(memoryParameter.masked)(Input(UInt((memoryParameter.width / memoryParameter.maskGranularity).W)))
   val enable = Input(Bool())
 
   // Records store elements in reverse order
