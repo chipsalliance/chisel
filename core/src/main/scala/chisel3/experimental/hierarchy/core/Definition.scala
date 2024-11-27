@@ -2,13 +2,11 @@
 
 package chisel3.experimental.hierarchy.core
 
-import scala.language.experimental.macros
 import chisel3._
 
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 import chisel3.internal.{Builder, DynamicContext}
 import chisel3.internal.firrtl.Converter
-import chisel3.internal.sourceinfo.{DefinitionTransform, DefinitionWrapTransform}
 import chisel3.experimental.{BaseModule, SourceInfo}
 import firrtl.annotations.{IsModule, ModuleTarget, NoTargetAnnotation}
 
@@ -101,15 +99,7 @@ object Definition extends SourceInfoDoc {
     *
     * @return the input module as a Definition
     */
-  def apply[T <: BaseModule with IsInstantiable](proto: => T): Definition[T] = macro DefinitionTransform.apply[T]
-
-  /** A construction method to build a Definition of a Module
-    *
-    * @param bc the Module being defined
-    *
-    * @return the input module as a Definition
-    */
-  def do_apply[T <: BaseModule with IsInstantiable](
+  def apply[T <: BaseModule with IsInstantiable](
     proto: => T
   )(
     implicit sourceInfo: SourceInfo
