@@ -4,9 +4,9 @@ package circt.stage.phases
 
 import circt.stage.SplitVerilog
 
-import firrtl.AnnotationSeq
+import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq}
 import firrtl.options.{Dependency, Phase, Viewer}
-import firrtl.stage.{FirrtlOptions, OutputFileAnnotation}
+import firrtl.stage.{FirrtlOptions, FirrtlOptionsView, OutputFileAnnotation}
 
 /** [[firrtl.options.Phase Phase]] that adds an [[firrtl.stage.OutputFileAnnotation OutputFileAnnotation]] if one does
   * not already exist.

@@ -20,7 +20,7 @@ import chisel3.layer.Layer
 import chisel3.internal.{Builder, WarningFilter}
 import chisel3.internal.firrtl.ir.Circuit
 import chisel3.internal.firrtl.Converter
-import firrtl.AnnotationSeq
+import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq}
 import firrtl.ir.{CircuitWithAnnos, Serializer}
 import scala.util.control.NonFatal
 import java.io.{BufferedWriter, File, FileWriter}

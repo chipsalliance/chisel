@@ -43,6 +43,24 @@ The result will be a design with two module definitions: `Top` and `Foo_Sub`.
 Note that the `val sub =` part must be pulled outside of the `withModulePrefix` block,
 or else the module will not be accessible to the rest of the `Top` module.
 
+You can omit the prefix separator (`_`) by passing `false` as the second argument:
+
+```scala mdoc:silent:reset
+import chisel3._
+
+class Top extends Module {
+  val sub = withModulePrefix("Foo", false) {
+    Module(new Sub)
+  }
+}
+
+class Sub extends Module {
+  // ..
+}
+```
+
+This results in two module definitions: `Top` and `FooSub`.
+
 ## localModulePrefix
 
 We can also set a module prefix on a module by overriding the `localModulePrefix` method.
@@ -63,14 +81,14 @@ class Sub extends Module {
 
 This results in two module definitions: `Foo_Top` and `Foo_Sub`.
 
-You can also override `localPrefixAppliesToSelf` to `false` to only apply the prefix to the children.
+You can also override `localModulePrefixAppliesToSelf` to `false` to only apply the prefix to the children.
 
 ```scala mdoc:silent:reset
 import chisel3._
 
 class Top extends Module {
   override def localModulePrefix = Some("Foo")
-  override def localPrefixAppliesToSelf = false
+  override def localModulePrefixAppliesToSelf = false
   val sub = Module(new Sub)
 }
 
@@ -80,6 +98,24 @@ class Sub extends Module {
 ```
 
 This results in the two module definitions `Top` and `Foo_Sub`.
+
+You can also override `localModulePrefixUseSeparator` to `false` to omit the separator.
+
+```scala mdoc:silent:reset
+import chisel3._
+
+class Top extends Module {
+  override def localModulePrefix = Some("Foo")
+  override def localModulePrefixUseSeparator = false
+  val sub = Module(new Sub)
+}
+
+class Sub extends Module {
+  // ..
+}
+```
+
+This results in the two module definitions `FooTop` and `FooSub`.
 
 ## Multiple Prefixes
 
@@ -124,7 +160,7 @@ class Top extends Module {
 class Mid extends Module {
   // You can mix withModulePrefix and localModulePrefix.
   override def localModulePrefix = Some("Bar")
-  override def localPrefixAppliesToSelf = false
+  override def localModulePrefixAppliesToSelf = false
   val sub = Module(new Sub)
 }
 

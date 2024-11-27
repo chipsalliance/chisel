@@ -2,7 +2,7 @@ package chisel3
 
 import chisel3.stage.ChiselGeneratorAnnotation
 import circt.stage.{CIRCTTarget, CIRCTTargetAnnotation, ChiselStage}
-import firrtl.{AnnotationSeq, EmittedVerilogCircuitAnnotation}
+import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq, EmittedVerilogCircuitAnnotation}
 import firrtl.options.{Dependency, PhaseManager}
 
 object getVerilogString {

@@ -85,16 +85,17 @@ chisel3.docs.emitSystemVerilog(new AddTwoInstantiate(16))
 
 ## How do I access internal fields of an instance?
 
-You can mark internal members of a class or trait marked with `@instantiable` with the `@public` annotation.
-The requirements are that the field is publicly accessible, is a `val` or `lazy val`, and is a valid type.
-The list of valid types are:
+You can mark internal members of a Module class or trait marked with `@instantiable` with the `@public` annotation.
+The requirements are that the field is publicly accessible, is a `val` or `lazy val`, and must have an implementation of `Lookupable`.
 
-1. `IsInstantiable`
-2. `IsLookupable`
-3. `Data`
-4. `BaseModule`
-5. `Iterable`/`Option `containing a type that meets these requirements
-6. Basic type like `String`, `Int`, `BigInt` etc.
+Types that are supported by default are:
+
+1. `Data`
+2. `BaseModule`
+3. `MemBase`
+4. `IsLookupable`
+5. `Iterable`/`Option`/`Either` containing a type that meets these requirements
+6. Basic type like `String`, `Int`, `BigInt`, `Unit`, etc.
 
 To mark a superclass's member as `@public`, use the following pattern (shown with `val clock`).
 
@@ -122,13 +123,15 @@ class MyModule extends Module {
 }
 ```
 
-## How do I make my parameters accessible from an instance?
+## How do I make my fields accessible from an instance?
 
-If an instance's parameters are simple (e.g. `Int`, `String` etc.) they can be marked directly with `@public`.
+If an instance's fields are simple (e.g. `Int`, `String` etc.) they can be marked directly with `@public`.
 
-Often, parameters are more complicated and are contained in case classes.
-In such cases, mark the case class with the `IsLookupable` trait.
+Often, fields are more complicated (e.g. a user-defined case class).
+If a case class is only made up of simple types (i.e. it does *not* contain any `Data`, `BaseModules`, memories, or `Instances`),
+it can extend the `IsLookupable` trait.
 This indicates to Chisel that instances of the `IsLookupable` class may be accessed from within instances.
+(If the class *does* contain things like `Data` or modules, [the section below](#how-do-i-make-case-classes-containing-data-or-modules-accessible-from-an-instance).)
 
 However, ensure that these parameters are true for **all** instances of a definition.
 For example, if our parameters contained an id field which was instance-specific but defaulted to zero,
@@ -167,7 +170,140 @@ val chiselCircuit = (new chisel3.stage.phases.Elaborate)
 println("```")
 ```
 
-## How do I look up parameters from a Definition, if I don't want to instantiate it?
+## How do I make case classes containing Data or Modules accessible from an instance?
+
+For case classes containing `Data`, `BaseModule`, `MemBase` or `Instance` types, you can provide an implementation of the `Lookupable` typeclass.
+
+**Note that Lookupable for Modules is deprecated, please cast to Instance instead (with `.toInstance`).**
+
+Consider the following case class:
+
+```scala mdoc:reset
+import chisel3._
+import chisel3.experimental.hierarchy.{Definition, Instance, instantiable, public}
+
+@instantiable
+class MyModule extends Module {
+  @public val wire = Wire(UInt(8.W))
+}
+case class UserDefinedType(name: String, data: UInt, inst: Instance[MyModule])
+```
+
+By default, instances of `UserDefinedType` will not be accessible from instances:
+
+```scala mdoc:fail
+@instantiable
+class HasUserDefinedType extends Module {
+  val inst = Module(new MyModule)
+  val wire = Wire(UInt(8.W))
+  @public val x = UserDefinedType("foo", wire, inst.toInstance)
+}
+```
+
+We can implement the `Lookupable` type class for `UserDefinedType` in order to make it accessible.
+This involves defining an implicit val in the companion object for `UserDefinedType`.
+Because `UserDefinedType` has three fields, we use the `Lookupable.product3` factory.
+It takes 4 type parameters: the type of the case class, and the types of each of its fields.
+
+**If any fields are `BaseModules`, you must change them to be `Instance[_]` in order to define the `Lookupable` typeclass.**
+
+For more information about typeclasses, see the [DataView section on Type Classes](https://www.chisel-lang.org/chisel3/docs/explanations/dataview#type-classes).
+
+```scala mdoc
+import chisel3.experimental.hierarchy.Lookupable
+object UserDefinedType {
+  // Use Lookupable.Simple type alias as return type.
+  implicit val lookupable: Lookupable.Simple[UserDefinedType] =
+    Lookupable.product3[UserDefinedType, String, UInt, Instance[MyModule]](
+      // Provide the recipe for converting the UserDefinedType to a Tuple.
+      x => (x.name, x.data, x.inst),
+      // Provide the recipe for converting a Tuple to a user defined type.
+      // For case classes, you can use the built-in factory method.
+      UserDefinedType.apply
+    )
+}
+```
+
+Now, we can access instances of `UserDefinedType` from instances:
+
+```scala mdoc
+@instantiable
+class HasUserDefinedType extends Module {
+  val inst = Module(new MyModule)
+  val wire = Wire(UInt(8.W))
+  @public val x = UserDefinedType("foo", wire, inst.toInstance)
+}
+class Top extends Module {
+  val inst = Instance(Definition(new HasUserDefinedType))
+  println(s"Name is: ${inst.x.name}")
+}
+```
+
+## How do I make type parameterized case classes accessible from an instance?
+
+Consider the following type-parameterized case class:
+
+```scala mdoc:reset
+import chisel3._
+import chisel3.experimental.hierarchy.{Definition, Instance, instantiable, public}
+
+case class ParameterizedUserDefinedType[A, T <: Data](value: A, data: T)
+```
+
+Similarly to `HasUserDefinedType` we need to define an implicit to provide the `Lookupable` typeclass.
+Unlike the simpler example above, however, we use an `implicit def` to handle the type parameters:
+
+```scala mdoc
+import chisel3.experimental.hierarchy.Lookupable
+object ParameterizedUserDefinedType {
+  // Type class materialization is recursive, so both A and T must have Lookupable instances.
+  // We required this for A via the context bound `: Lookupable`.
+  // Data is a Chisel built-in so is known to have a Lookupable instance.
+  implicit def lookupable[A : Lookupable, T <: Data]: Lookupable.Simple[ParameterizedUserDefinedType[A, T]] =
+    Lookupable.product2[ParameterizedUserDefinedType[A, T], A, T](
+      x => (x.value, x.data),
+      ParameterizedUserDefinedType.apply
+    )
+}
+```
+
+Now, we can access instances of `ParameterizedUserDefinedType` from instances:
+
+```scala mdoc
+class ChildModule extends Module {
+  @public val wire = Wire(UInt(8.W))
+}
+@instantiable
+class HasUserDefinedType extends Module {
+  val wire = Wire(UInt(8.W))
+  @public val x = ParameterizedUserDefinedType("foo", wire)
+  @public val y = ParameterizedUserDefinedType(List(1, 2, 3), wire)
+}
+class Top extends Module {
+  val inst = Instance(Definition(new HasUserDefinedType))
+  println(s"x.value is: ${inst.x.value}")
+  println(s"y.value.head is: ${inst.y.value.head}")
+}
+```
+
+## How do I make case classes with lots of fields accessible from an instance?
+
+Lookupable provides factories for `product1` to `product5`.
+If your class has more than 5 fields, you can use nested tuples as "pseduo-fields" in the mapping.
+
+```scala mdoc
+case class LotsOfFields(a: Data, b: Data, c: Data, d: Data, e: Data, f: Data)
+object LotsOfFields {
+  implicit val lookupable: Lookupable.Simple[LotsOfFields] =
+    Lookupable.product5[LotsOfFields, Data, Data, Data, Data, (Data, Data)](
+      x => (x.a, x.b, x.c, x.d, (x.e, x.f)),
+      // Cannot use factory method directly this time since we have to unpack the tuple.
+      { case (a, b, c, d, (e, f)) => LotsOfFields(a, b, c, d, e, f) },
+    )
+}
+```
+
+## How do I look up fields from a Definition, if I don't want to instantiate it?
 
 Just like `Instance`s, `Definition`'s also contain accessors for `@public` members.
 As such, you can directly access them:

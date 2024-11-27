@@ -276,6 +276,24 @@ class ModulePrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with
     matchesAndOmits(chirrtl)(lines: _*)()
   }
 
+  it should "support omitting the separator" in {
+    class Foo extends Module
+    class Top extends Module {
+      val foo = withModulePrefix("Prefix", false) {
+        Module(new Foo)
+      }
+    }
+
+    val chirrtl = emitCHIRRTL(new Top)
+
+    val lines = """
+      module PrefixFoo :
+      module Top :
+        inst foo of PrefixFoo
+        """.linesIterator.map(_.trim).toSeq
+    matchesAndOmits(chirrtl)(lines: _*)()
+  }
+
   behavior.of("BaseModule.localModulePrefix")
 
   it should "set the prefix for a Module and its children" in {
@@ -302,14 +320,14 @@ class ModulePrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with
     matchesAndOmits(chirrtl)(lines: _*)()
   }
 
-  it should "set the prefix for a Module's children but not the Module itself if localPrefixAppliesToSelf is false" in {
+  it should "set the prefix for a Module's children but not the Module itself if localModulePrefixAppliesToSelf is false" in {
 
     class Foo extends RawModule
     class Bar extends RawModule
 
     class Top extends RawModule {
       override def localModulePrefix = Some("Prefix")
-      override def localPrefixAppliesToSelf = false
+      override def localModulePrefixAppliesToSelf = false
       val foo = Module(new Foo)
       val bar = Module(new Bar)
     }
@@ -353,6 +371,56 @@ class ModulePrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with
         inst f1 of Outer_Inner_Foo
         inst f2 of Outer_Prefix_Inner_Foo
         inst bar of Outer_Prefix_Bar
+      """.linesIterator.map(_.trim).toSeq
+
+    matchesAndOmits(chirrtl)(lines: _*)()
+  }
+
+  it should "omit the prefix if localModulePrefixUseSeparator is false" in {
+    class Foo extends RawModule {
+      override def localModulePrefix = Some("Inner")
+      override def localModulePrefixUseSeparator = false
+    }
+    class Top extends RawModule {
+      override def localModulePrefix = Some("Outer")
+      override def localModulePrefixUseSeparator = false
+      override def localModulePrefixAppliesToSelf = false
+      val foo = Module(new Foo)
+    }
+
+    val chirrtl = emitCHIRRTL(new Top)
+    val lines =
+      """
+      module OuterInnerFoo :
+      module Top :
+        inst foo of OuterInnerFoo
+      """.linesIterator.map(_.trim).toSeq
+
+    matchesAndOmits(chirrtl)(lines: _*)()
+  }
+
+  it should "support mixing and matching of separator omission" in {
+    class Foo extends RawModule {
+      override def localModulePrefix = Some("Inner")
+    }
+    class Bar extends RawModule {
+      override def localModulePrefix = Some("Middle")
+      val foo = Module(new Foo)
+    }
+    class Top extends RawModule {
+      override def localModulePrefix = Some("Outer")
+      override def localModulePrefixUseSeparator = false
+      val bar = Module(new Bar)
+    }
+
+    val chirrtl = emitCHIRRTL(new Top)
+    val lines =
+      """
+      module OuterMiddle_Inner_Foo :
+      module OuterMiddle_Bar :
+        inst foo of OuterMiddle_Inner_Foo
+      module OuterTop :
+        inst bar of OuterMiddle_Bar
       """.linesIterator.map(_.trim).toSeq
 
     matchesAndOmits(chirrtl)(lines: _*)()

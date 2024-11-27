@@ -226,6 +226,22 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos should contain(MarkAnnotation("~Top|AddOneWithAnnotation>innerWire".rt, "innerWire"))
     }
+    it("(1.n): should work on user-defined types that provide Lookupable") {
+      class Top extends Module {
+        val defn = Definition(new HasUserDefinedType)
+        defn.simple.name should be("foo")
+        defn.parameterized.value should be(List(1, 2, 3))
+        mark(defn.simple.data, "data")
+        mark(defn.simple.inst, "inst")
+        mark(defn.parameterized.inst, "inst2")
+      }
+      val (_, annos) = getFirrtlAndAnnos(new Top)
+      (annos.collect { case c: MarkAnnotation => c } should contain).allOf(
+        MarkAnnotation("~Top|HasUserDefinedType>wire".rt, "data"),
+        MarkAnnotation("~Top|HasUserDefinedType/inst0:AddOne".it, "inst"),
+        MarkAnnotation("~Top|HasUserDefinedType/inst1:AddOne".it, "inst2")
+      )
+    }
   }
   describe("(2): Annotations on designs not in the same chisel compilation") {
     it("(2.a): should work on an innerWire, marked in a different compilation") {
@@ -390,7 +406,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
           "Cannot create a memory port in a different module (Top) than where the memory is (HasMems)."
       )
     }
-    it("(3.o): should work on HasTarget") {
+    it("(3.p): should work on HasTarget") {
       class Top() extends Module {
         val i = Definition(new HasHasTarget)
         mark(i.x, "x")
@@ -398,6 +414,20 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos.collect { case c: MarkAnnotation => c } should contain(
         MarkAnnotation("~Top|HasHasTarget>sram_sram".rt, "x")
+      )
+    }
+    it("(3.q): should work on Tuple5 with a Module in it") {
+      class Top() extends Module {
+        val defn = Definition(new HasTuple5())
+        val (3, w: UInt, "hi", inst: Instance[AddOne], l) = defn.tup
+        l should be(List(1, 2, 3))
+        mark(w, "wire")
+        mark(inst, "inst")
+      }
+      val (_, annos) = getFirrtlAndAnnos(new Top)
+      annos.collect { case c: MarkAnnotation => c } should contain(MarkAnnotation("~Top|HasTuple5>wire".rt, "wire"))
+      annos.collect { case c: MarkAnnotation => c } should contain(
+        MarkAnnotation("~Top|HasTuple5/inst:AddOne".it, "inst")
       )
     }
   }
