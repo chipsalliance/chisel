@@ -18,13 +18,9 @@ on:
 jobs:
   generate_release_notes:
     name: Generate Release Notes
-<<<<<<< HEAD
     runs-on: ubuntu-latest
-=======
-    runs-on: ubuntu-22.04
     permissions:
       contents: write
->>>>>>> 25d00af83 (Update CD permissions for uploading release artifacts (#4529))
 
     steps:
       - name: Checkout
