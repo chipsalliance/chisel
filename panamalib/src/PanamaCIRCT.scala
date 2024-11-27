@@ -321,10 +321,6 @@ class PanamaCIRCT {
     CAPI.circtFirtoolOptionsSetCompanionMode(options.get, value.get)
   def circtFirtoolOptionsSetDisableAggressiveMergeConnections(options: CirctFirtoolFirtoolOptions, value: Boolean) =
     CAPI.circtFirtoolOptionsSetDisableAggressiveMergeConnections(options.get, value)
-  def circtFirtoolOptionsSetEmitOmir(options: CirctFirtoolFirtoolOptions, value: Boolean) =
-    CAPI.circtFirtoolOptionsSetEmitOmir(options.get, value)
-  def circtFirtoolOptionsSetOmirOutFile(options: CirctFirtoolFirtoolOptions, value: String) =
-    CAPI.circtFirtoolOptionsSetOmirOutFile(options.get, newString(value).get)
   def circtFirtoolOptionsSetLowerMemories(options: CirctFirtoolFirtoolOptions, value: Boolean) =
     CAPI.circtFirtoolOptionsSetLowerMemories(options.get, value)
   def circtFirtoolOptionsSetBlackBoxRootPath(options: CirctFirtoolFirtoolOptions, value: String) =
