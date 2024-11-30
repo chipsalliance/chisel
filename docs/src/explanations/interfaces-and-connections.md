@@ -159,7 +159,7 @@ NOTE: When using `Chisel._` (compatibility mode) instead of `chisel3._`, the `:=
 
 ## The standard ready-valid interface (ReadyValidIO / Decoupled)
 
-Chisel provides a standard interface for [ready-valid interfaces](http://inst.eecs.berkeley.edu/~cs150/Documents/Interfaces.pdf).
+Chisel provides a standard interface for ready-valid interfaces (for example used in AXI).
 A ready-valid interface consists of a `ready` signal, a `valid` signal, and some data stored in `bits`.
 The `ready` bit indicates that a consumer is *ready* to consume data.
 The `valid` bit indicates that a producer has *valid* data on `bits`.
@@ -212,7 +212,7 @@ class ConsumingData extends Module {
 }
 ```
 
-`DecoupledIO` is a ready-valid interface with the *convention* that there are no guarantees placed on deasserting `ready` or `valid` or on the stability of `bits`.
+`DecoupledIO` is a ready-valid interface with the *convention* that no guarantees are placed on deasserting `ready` or `valid` or on the stability of `bits`.
 That means `ready` and `valid` can also be deasserted without a data transfer.
 
 `IrrevocableIO` is a ready-valid interface with the *convention* that the value of `bits` will not change while `valid` is asserted and `ready` is deasserted.
