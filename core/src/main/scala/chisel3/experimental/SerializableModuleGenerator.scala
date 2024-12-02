@@ -98,9 +98,9 @@ case class SerializableModuleGenerator[M <: SerializableModule[P], P <: Serializ
         parameter,
         implicitly[universe.TypeTag[M]]
       ),
-      Definition.do_apply(construct)(UnlocatableSourceInfo)
+      Definition.apply(construct)(UnlocatableSourceInfo)
     )
 
   /** get an instance of from this generator. */
-  def instance(): Instance[M with BaseModule] = Instance.do_apply(definition())(UnlocatableSourceInfo)
+  def instance(): Instance[M with BaseModule] = Instance.apply(definition())(UnlocatableSourceInfo)
 }

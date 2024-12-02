@@ -2,12 +2,10 @@
 
 package chisel3.experimental.hierarchy.core
 
-import scala.language.experimental.macros
 import chisel3._
 import chisel3.experimental.hierarchy.{InstantiableClone, ModuleClone}
 import chisel3.internal.{throwException, BaseBlackBox, Builder}
 import chisel3.experimental.{BaseModule, ExtModule, SourceInfo, UnlocatableSourceInfo}
-import chisel3.internal.sourceinfo.InstanceTransform
 import chisel3.internal.firrtl.ir.{Component, DefBlackBox, DefClass, DefIntrinsicModule, DefModule, Port}
 import chisel3.properties.Class
 import firrtl.annotations.IsModule
@@ -131,15 +129,7 @@ object Instance extends SourceInfoDoc {
     * @param definition the Module being created
     * @return an instance of the module definition
     */
-  def apply[T <: BaseModule with IsInstantiable](definition: Definition[T]): Instance[T] =
-    macro InstanceTransform.apply[T]
-
-  /** A constructs an [[Instance]] from a [[Definition]]
-    *
-    * @param definition the Module being created
-    * @return an instance of the module definition
-    */
-  def do_apply[T <: BaseModule with IsInstantiable](
+  def apply[T <: BaseModule with IsInstantiable](
     definition: Definition[T]
   )(
     implicit sourceInfo: SourceInfo
