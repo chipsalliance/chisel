@@ -8,6 +8,7 @@ import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instanc
 import circt.stage.ChiselStage.emitCHIRRTL
 import circt.stage.ChiselStage
 import chisel3.util.SRAM
+import firrtl.transforms.DedupGroupAnnotation
 
 object ModulePrefixSpec {
   // This has to be defined at the top-level because @instantiable doesn't work when nested.
@@ -425,4 +426,25 @@ class ModulePrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with
 
     matchesAndOmits(chirrtl)(lines: _*)()
   }
+
+  behavior.of("Module prefixes")
+
+  it should "affect the dedup group" in {
+    class Foo extends RawModule
+    class Bar extends RawModule {
+      override def localModulePrefix = Some("Outer")
+      val foo = withModulePrefix("Inner") {
+        Module(new Foo)
+      }
+    }
+    class Top extends RawModule {
+      val bar = Module(new Bar)
+    }
+    val (_, annos) = getFirrtlAndAnnos(new Top)
+    val dedupGroups = annos.collect {
+      case DedupGroupAnnotation(target, group) => target.module -> group
+    }
+    dedupGroups should be(Seq("Outer_Inner_Foo" -> "Outer_Inner_Foo", "Outer_Bar" -> "Outer_Bar", "Top" -> "Top"))
+  }
+
 }
