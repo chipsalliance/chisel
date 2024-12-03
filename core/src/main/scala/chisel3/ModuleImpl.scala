@@ -682,6 +682,17 @@ package experimental {
       */
     def desiredName: String = simpleClassName(this.getClass)
 
+    /** The name that will be proposed for this module, subject to uniquification.
+      *
+      * Includes the module prefix for user-defined modules (but not for blackboxes).
+      */
+    private[chisel3] def _proposedName: String = this match {
+      // PseudoModules (e.g. Instances) and BlackBoxes have their names set by desiredName.
+      case _: PseudoModule => desiredName
+      case _: BaseBlackBox => desiredName
+      case _ => this.modulePrefix + desiredName
+    }
+
     /** Legalized name of this module. */
     final lazy val name = {
       def err(msg: String, cause: Throwable = null) = {
@@ -693,9 +704,8 @@ package experimental {
         // PseudoModules are not "true modules" and thus should share
         // their original modules names without uniquification
         this match {
-          case _: PseudoModule => Module.currentModulePrefix + desiredName
-          case _: BaseBlackBox => Builder.globalNamespace.name(desiredName)
-          case _ => Builder.globalNamespace.name(this.modulePrefix + desiredName)
+          case _: PseudoModule => _proposedName
+          case _ => Builder.globalNamespace.name(_proposedName)
         }
       } catch {
         case e: NullPointerException =>
