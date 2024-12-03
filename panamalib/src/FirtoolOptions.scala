@@ -25,7 +25,6 @@ case class DisableOptimization(value: Boolean) extends FirtoolOption
 case class DisableRandom(value: RandomKindEnum) extends FirtoolOption
 case class DisableUnknownAnnotations(value: Boolean) extends FirtoolOption
 case class VerificationFlavor(value: VerificationFlavorEnum) extends FirtoolOption
-case class EmitOmir(value: Boolean) extends FirtoolOption
 case class EmitSeparateAlwaysBlocks(value: Boolean) extends FirtoolOption
 case class EnableAnnotationWarning(value: Boolean) extends FirtoolOption
 case class EtcDisableInstanceExtraction(value: Boolean) extends FirtoolOption
@@ -38,7 +37,6 @@ case class IgnoreReadEnableMem(value: Boolean) extends FirtoolOption
 case class LowerAnnotationsNoRefTypePorts(value: Boolean) extends FirtoolOption
 case class LowerMemories(value: Boolean) extends FirtoolOption
 case class NoDedup(value: Boolean) extends FirtoolOption
-case class OmirOutFile(value: String) extends FirtoolOption
 case class OutputAnnotationFilename(value: String) extends FirtoolOption
 case class OutputFilename(value: String) extends FirtoolOption
 case class PreserveAggregate(value: PreserveAggregateModeEnum) extends FirtoolOption
