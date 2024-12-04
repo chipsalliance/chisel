@@ -39,7 +39,6 @@ class LayerSpec extends ChiselFlatSpec with Utils with FileCheck {
     }
 
     info("CHIRRTL emission looks correct")
-    // TODO: Switch to FileCheck for this testing.  This is going to miss all sorts of ordering issues.
     generateFirrtlAndFileCheck(new Foo)(s"""|CHECK:      layer A, bind, "A" :
                                             |CHECK-NEXT:   layer B, bind, "A${sep}B" :
                                             |
