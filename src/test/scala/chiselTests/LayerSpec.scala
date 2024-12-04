@@ -39,16 +39,18 @@ class LayerSpec extends ChiselFlatSpec with Utils with FileCheck {
     }
 
     info("CHIRRTL emission looks correct")
-    generateFirrtlAndFileCheck(new Foo)(s"""|CHECK:      layer A, bind, "A" :
-                                            |CHECK-NEXT:   layer B, bind, "A${sep}B" :
-                                            |
-                                            |CHECK:      module Foo :
-                                            |CHECK:        layerblock A :
-                                            |CHECK-NEXT:     wire w : UInt<1>
-                                            |CHECK:          layerblock B :
-                                            |CHECK-NEXT:       wire x : UInt<1>
-                                            |CHECK:        wire y : UInt<1>
-                                            |""".stripMargin)
+    generateFirrtlAndFileCheck(new Foo) {
+      s"""|CHECK:      layer A, bind, "A" :
+          |CHECK-NEXT:   layer B, bind, "A${sep}B" :
+          |
+          |CHECK:      module Foo :
+          |CHECK:        layerblock A :
+          |CHECK-NEXT:     wire w : UInt<1>
+          |CHECK:          layerblock B :
+          |CHECK-NEXT:       wire x : UInt<1>
+          |CHECK:        wire y : UInt<1>
+          |""".stripMargin
+    }
   }
 
   they should "create parent layer blocks automatically" in {
@@ -60,10 +62,13 @@ class LayerSpec extends ChiselFlatSpec with Utils with FileCheck {
       }
     }
 
-    generateFirrtlAndFileCheck(new Foo)("""|CHECK: layerblock A :
-                                           |CHECK:   layerblock B :
-                                           |CHECK:     layerblock C :
-                                           |""".stripMargin)
+    val check =
+      generateFirrtlAndFileCheck(new Foo) {
+        """|CHECK: layerblock A :
+           |CHECK:   layerblock B :
+           |CHECK:     layerblock C :
+           |""".stripMargin
+      }
   }
 
   they should "respect the 'skipIfAlreadyInBlock' parameter" in {
@@ -74,9 +79,12 @@ class LayerSpec extends ChiselFlatSpec with Utils with FileCheck {
       }
     }
 
-    generateFirrtlAndFileCheck(new Foo)("""|CHECK:     layerblock A :
-                                           |CHECK-NOT:   layerblock C :
-                                           |""".stripMargin)
+    val check =
+      generateFirrtlAndFileCheck(new Foo) {
+        """|CHECK:     layerblock A :
+           |CHECK-NOT:   layerblock C :
+           |""".stripMargin
+      }
   }
 
   they should "respect the 'skipIfLayersEnabled' parameter" in {
@@ -115,14 +123,16 @@ class LayerSpec extends ChiselFlatSpec with Utils with FileCheck {
 
     // Check the generated CHIRRTL only.
     // Layer-under-module-under-layer is rejected by firtool presently.
-    generateFirrtlAndFileCheck(new Foo)("""|CHECK:      module Bar :
-                                           |CHECK:        layerblock A :
-                                           |CHECK-NEXT:     layerblock B :
-                                           |
-                                           |CHECK:      module Foo :
-                                           |CHECK:        layerblock A :
-                                           |CHECK-NEXT:     inst bar of Bar
-                                           |""".stripMargin)
+    generateFirrtlAndFileCheck(new Foo) {
+      """|CHECK:      module Bar :
+         |CHECK:        layerblock A :
+         |CHECK-NEXT:     layerblock B :
+         |
+         |CHECK:      module Foo :
+         |CHECK:        layerblock A :
+         |CHECK-NEXT:     inst bar of Bar
+         |""".stripMargin
+    }
   }
 
   they should "allow for defines to layer-colored probes" in {
@@ -142,15 +152,17 @@ class LayerSpec extends ChiselFlatSpec with Utils with FileCheck {
       }
     }
 
-    generateFirrtlAndFileCheck(new Foo)("""|CHECK:      module Foo :
-                                           |CHECK:        define x = probe(a)
-                                           |CHECK-NEXT:   define y = probe(b)
-                                           |CHECK-NEXT:   layerblock A :
-                                           |CHECK-NEXT:     define x = probe(c)
-                                           |CHECK-NEXT:     define y = probe(d)
-                                           |CHECK-NEXT:     layerblock B :
-                                           |CHECK-NEXT:       define y = probe(e)
-                                           |""".stripMargin)
+    generateFirrtlAndFileCheck(new Foo) {
+      """|CHECK:      module Foo :
+         |CHECK:        define x = probe(a)
+         |CHECK-NEXT:   define y = probe(b)
+         |CHECK-NEXT:   layerblock A :
+         |CHECK-NEXT:     define x = probe(c)
+         |CHECK-NEXT:     define y = probe(d)
+         |CHECK-NEXT:     layerblock B :
+         |CHECK-NEXT:       define y = probe(e)
+         |""".stripMargin
+    }
   }
 
   they should "allow for defines to layer-colored probes without layer blocks" in {
@@ -189,12 +201,14 @@ class LayerSpec extends ChiselFlatSpec with Utils with FileCheck {
       layer.enable(layer.Layer.root)
     }
 
-    generateFirrtlAndFileCheck(new Foo)("""|CHECK:      layer A, bind
-                                           |CHECK-NEXT:   layer B, bind
-                                           |CHECK-NEXT: layer C, bind
-                                           |
-                                           |CHECK: module Foo enablelayer A.B enablelayer C :
-                                           |""".stripMargin)
+    generateFirrtlAndFileCheck(new Foo) {
+      """|CHECK:      layer A, bind
+         |CHECK-NEXT:   layer B, bind
+         |CHECK-NEXT: layer C, bind
+         |
+         |CHECK: module Foo enablelayer A.B enablelayer C :
+         |""".stripMargin
+    }
 
   }
 
@@ -261,20 +275,22 @@ class LayerSpec extends ChiselFlatSpec with Utils with FileCheck {
       s"layer $name, bind$dirsStr :"
     }
 
-    generateFirrtlAndFileCheck(new Foo)(s"""|CHECK:      circuit Foo :
-                                            |CHECK-NEXT:   layer LayerWithDefaultOutputDir, bind, "LayerWithDefaultOutputDir" :
-                                            |CHECK-NEXT:     layer SublayerWithDefaultOutputDir, bind, "LayerWithDefaultOutputDir${sep}SublayerWithDefaultOutputDir" :
-                                            |CHECK-NEXT:     layer SublayerWithCustomOutputDir, bind, "myOtherOutputDir" :
-                                            |CHECK-NEXT:     layer SublayerWithNoOutputDir, bind :
-                                            |CHECK-NEXT:   layer LayerWithCustomOutputDir, bind, "myOutputDir" :
-                                            |CHECK-NEXT:     layer SublayerWithDefaultOutputDir, bind, "myOutputDir${sep}SublayerWithDefaultOutputDir"
-                                            |CHECK-NEXT:     layer SublayerWithCustomOutputDir, bind, "myOtherOutputDir" :
-                                            |CHECK-NEXT:     layer SublayerWithNoOutputDir, bind :
-                                            |CHECK-NEXT:   layer LayerWithNoOutputDir, bind :
-                                            |CHECK-NEXT:     layer SublayerWithDefaultOutputDir, bind, "SublayerWithDefaultOutputDir" :
-                                            |CHECK-NEXT:     layer SublayerWithCustomOutputDir, bind, "myOtherOutputDir" :
-                                            |CHECK-NEXT:     layer SublayerWithNoOutputDir, bind :
-                                            |""".stripMargin)
+    generateFirrtlAndFileCheck(new Foo) {
+      s"""|CHECK:      circuit Foo :
+          |CHECK-NEXT:   layer LayerWithDefaultOutputDir, bind, "LayerWithDefaultOutputDir" :
+          |CHECK-NEXT:     layer SublayerWithDefaultOutputDir, bind, "LayerWithDefaultOutputDir${sep}SublayerWithDefaultOutputDir" :
+          |CHECK-NEXT:     layer SublayerWithCustomOutputDir, bind, "myOtherOutputDir" :
+          |CHECK-NEXT:     layer SublayerWithNoOutputDir, bind :
+          |CHECK-NEXT:   layer LayerWithCustomOutputDir, bind, "myOutputDir" :
+          |CHECK-NEXT:     layer SublayerWithDefaultOutputDir, bind, "myOutputDir${sep}SublayerWithDefaultOutputDir"
+          |CHECK-NEXT:     layer SublayerWithCustomOutputDir, bind, "myOtherOutputDir" :
+          |CHECK-NEXT:     layer SublayerWithNoOutputDir, bind :
+          |CHECK-NEXT:   layer LayerWithNoOutputDir, bind :
+          |CHECK-NEXT:     layer SublayerWithDefaultOutputDir, bind, "SublayerWithDefaultOutputDir" :
+          |CHECK-NEXT:     layer SublayerWithCustomOutputDir, bind, "myOtherOutputDir" :
+          |CHECK-NEXT:     layer SublayerWithNoOutputDir, bind :
+          |""".stripMargin
+    }
   }
 
   they should "allow manually overriding the parent layer" in {
@@ -294,11 +310,11 @@ class LayerSpec extends ChiselFlatSpec with Utils with FileCheck {
       layer.addLayer(A)
     }
 
-    generateFirrtlAndFileCheck(new Foo)(
+    generateFirrtlAndFileCheck(new Foo) {
       """|CHECK:     layer A
          |CHECK-NOT:   layerblock
          |""".stripMargin
-    )
+    }
   }
 
   "Default Layers" should "always be emitted" in {
@@ -306,13 +322,13 @@ class LayerSpec extends ChiselFlatSpec with Utils with FileCheck {
     val chirrtl = ChiselStage.emitCHIRRTL(new Foo)
 
     info("default layers are emitted")
-    fileCheckString(chirrtl)(
+    fileCheckString(chirrtl) {
       s"""|CHECK:      layer Verification, bind, "verification" :
           |CHECK-NEXT:   layer Assert, bind, "verification${sep}assert" :
           |CHECK-NEXT:   layer Assume, bind, "verification${sep}assume" :
           |CHECK-NEXT:   layer Cover, bind, "verification${sep}cover" :
           |""".stripMargin
-    )
+    }
 
     info("user-defined layers are not emitted if not used")
     (chirrtl should not).include("layer B")
@@ -375,11 +391,11 @@ class LayerSpec extends ChiselFlatSpec with Utils with FileCheck {
       }
     }
 
-    generateFirrtlAndFileCheck(new Foo)(
+    generateFirrtlAndFileCheck(new Foo) {
       """|CHECK:      layer A, inline :
          |CHECK-NEXT:   layer B, inline :
          |""".stripMargin
-    )
+    }
   }
 
   "Inline layers" should "be ignored when choosing default output directories" in {
@@ -422,7 +438,7 @@ class LayerSpec extends ChiselFlatSpec with Utils with FileCheck {
       }
     }
 
-    generateFirrtlAndFileCheck(new Foo)(
+    generateFirrtlAndFileCheck(new Foo) {
       s"""|CHECK:      layer LayerWithDefaultOutputDir, bind, "LayerWithDefaultOutputDir" :
           |CHECK-NEXT:   layer InlineSublayer, inline :
           |CHECK-NEXT:     layer SublayerWithDefaultOutputDir, bind, "LayerWithDefaultOutputDir${sep}SublayerWithDefaultOutputDir" :
@@ -433,6 +449,6 @@ class LayerSpec extends ChiselFlatSpec with Utils with FileCheck {
           |CHECK-NEXT:   layer InlineSublayer, inline :
           |CHECK-NEXT:     layer SublayerWithDefaultOutputDir, bind, "SublayerWithDefaultOutputDir" :
           |""".stripMargin
-    )
+    }
   }
 }
