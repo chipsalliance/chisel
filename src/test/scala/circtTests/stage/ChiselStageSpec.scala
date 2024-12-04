@@ -1200,31 +1200,31 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
         new Counter,
         firtoolOpts = Array("-enable-layers=Verification,Verification.Assert,Verification.Assume,Verification.Cover")
       )
-      btor2 should include("""1 sort bitvec 1
-                             |2 input 1 reset
-                             |3 sort bitvec 32
-                             |4 state 3 count
-                             |5 state 1 hbr
-                             |6 constd 1 0
-                             |7 init 1 5 6
-                             |8 constd 3 43
-                             |9 constd 3 1
-                             |10 constd 3 42
-                             |11 constd 3 0
-                             |12 eq 1 4 10
-                             |13 add 3 4 9
-                             |14 ite 3 12 11 13
-                             |15 ult 1 4 8
-                             |16 constd 1 -1
-                             |17 or 1 2 5
-                             |18 xor 1 2 16
-                             |19 and 1 5 18
-                             |20 implies 1 19 15
-                             |21 not 1 20
-                             |22 bad 21
-                             |23 ite 3 2 11 14
-                             |24 next 3 4 23
-                             |25 next 1 5 17""".stripMargin)
+      btor2 should include("""|1 sort bitvec 1
+                              |2 input 1 reset
+                              |3 sort bitvec 32
+                              |4 state 3 count
+                              |5 constd 1 0
+                              |6 state 1 hbr
+                              |7 init 1 6 5
+                              |8 constd 3 43
+                              |9 constd 3 1
+                              |10 constd 3 42
+                              |11 constd 3 0
+                              |12 eq 1 4 10
+                              |13 add 3 4 9
+                              |14 ite 3 12 11 13
+                              |15 ult 1 4 8
+                              |16 constd 1 -1
+                              |17 or 1 2 6
+                              |18 xor 1 2 16
+                              |19 and 1 6 18
+                              |20 implies 1 19 15
+                              |21 not 1 20
+                              |22 bad 21
+                              |23 ite 3 2 11 14
+                              |24 next 3 4 23
+                              |25 next 1 6 17""".stripMargin)
     }
 
     it("""should error if give a "--target-directory" option""") {
