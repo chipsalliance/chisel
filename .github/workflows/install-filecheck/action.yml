@@ -1,0 +1,27 @@
+name: Install FileCheck
+
+inputs:
+  version:
+    description: 'version to install'
+    required: false
+    default: 'FileCheck-16.0.6-test'
+
+runs:
+  using: composite
+  steps:
+    - id: cache-filecheck
+      uses: actions/cache@v3
+      with:
+        path: FileCheck
+        key: filecheck-${{ runner.os }}-${{ inputs.version }}
+
+    - shell: bash
+      if: steps.cache-filecheck.outputs.cache-hit != 'true'
+      run: |
+        mkdir -p filecheck/bin
+        wget -q https://github.com/jackkoenig/FileCheck/releases/download/${{ inputs.version }}/FileCheck-linux-x64
+        chmod +x FileCheck-linux-x64
+        mv FileCheck-linux-x64 filecheck/bin/FileCheck
+
+    - shell: bash
+      run: echo "$(pwd)/filecheck/bin" >> $GITHUB_PATH
