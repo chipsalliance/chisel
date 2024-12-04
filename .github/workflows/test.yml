@@ -132,7 +132,7 @@ jobs:
           $CHISEL_FIRTOOL_PATH/firtool -version >> $GITHUB_STEP_SUMMARY
           echo \`\`\` >> $GITHUB_STEP_SUMMARY
       - name: Compile with Mill
-        run: ./mill __.compile
+        run: ./mill chisel[2.13.15].compile
 
   mill3:
     name: compile scala-3 project with mill
@@ -188,7 +188,7 @@ jobs:
       - name: Check Build Script Formatting
         run: ./mill --meta-level 1 mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll sources
       - name: Check Source File Format
-        run: ./mill __.checkFormat
+        run: ./mill chisel[2.13.15].checkFormat
 
   integration:
     name: Integration Tests
@@ -221,7 +221,7 @@ jobs:
           dir=$(dirname $(which firtool))
           echo "CHISEL_FIRTOOL_PATH=$dir" >> "$GITHUB_ENV"
       - name: Integration Tests
-        run: ./mill -j0 integrationTests[_].test
+        run: ./mill -j0 integrationTests[2.13.15].test
 
   # Currently just a sanity check that the benchmarking flow works
   benchmark:
