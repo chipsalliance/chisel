@@ -58,15 +58,13 @@ jobs:
         uses: ./.github/workflows/build-slang
         with:
           version: ${{ inputs.slang }}
-      - name: Setup Java
-        uses: actions/setup-java@v4
       - name: Install FileCheck
         run: |
           sudo apt update
           sudo apt install llvm-12-tools
           echo "/usr/lib/llvm-12/bin" >> $GITHUB_PATH
-      - name: Setup Scala
-        uses: actions/setup-java@v3
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
           distribution: 'adopt'
           java-version: ${{ inputs.jvm }}
