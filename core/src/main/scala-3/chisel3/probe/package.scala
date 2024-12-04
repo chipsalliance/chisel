@@ -11,5 +11,5 @@ package object probe extends ObjectProbeImpl {
     *
     * @param source probe whose value is getting accessed
     */
-  def read[T <: Data](source: T)(implicit sourceInfo: SourceInfo): T = _readImpl(source)
+  def read[T <: Data](source: T)(using sourceInfo: SourceInfo): T = _readImpl(source)
 }

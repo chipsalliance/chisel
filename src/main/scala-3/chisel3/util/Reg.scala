@@ -13,7 +13,7 @@ object RegEnable extends RegEnableImpl {
     * val regWithEnable = RegEnable(nextVal, ena)
     * }}}
     */
-  def apply[T <: Data](next: T, enable: Bool)(implicit sourceInfo: SourceInfo): T = _applyImpl(next, enable)
+  def apply[T <: Data](next: T, enable: Bool)(using sourceInfo: SourceInfo): T = _applyImpl(next, enable)
 
   /** Returns a register with the specified next, update enable gate, and reset initialization.
     *
@@ -26,7 +26,7 @@ object RegEnable extends RegEnableImpl {
     init:   T,
     enable: Bool
   )(
-    implicit sourceInfo: SourceInfo
+    using sourceInfo: SourceInfo
   ): T = _applyImpl(next, init, enable)
 }
 
@@ -47,7 +47,7 @@ object ShiftRegister extends ShiftRegisterImpl {
     n:  Int,
     en: Bool = true.B
   )(
-    implicit sourceInfo: SourceInfo
+    using sourceInfo: SourceInfo
   ): T =
     _applyImpl(in, n, en)
 
@@ -62,7 +62,7 @@ object ShiftRegister extends ShiftRegisterImpl {
     * val regDelayTwo = ShiftRegister(nextVal, 2)
     * }}}
     */
-  def apply[T <: Data](in: T, n: Int)(implicit sourceInfo: SourceInfo): T =
+  def apply[T <: Data](in: T, n: Int)(using sourceInfo: SourceInfo): T =
     _applyImpl(in, n)
 
   /** Returns the n-cycle delayed version of the input signal with reset initialization.
@@ -82,7 +82,7 @@ object ShiftRegister extends ShiftRegisterImpl {
     resetData: T,
     en:        Bool
   )(
-    implicit sourceInfo: SourceInfo
+    using sourceInfo: SourceInfo
   ): T = _applyImpl(in, n, resetData, en)
 
   /** Returns the n-cycle delayed version of the input signal (SyncReadMem-based ShiftRegister implementation).
@@ -100,7 +100,7 @@ object ShiftRegister extends ShiftRegisterImpl {
     useDualPortSram: Boolean,
     name:            Option[String]
   )(
-    implicit sourceInfo: SourceInfo
+    using sourceInfo: SourceInfo
   ): T = _applyImplMem(in, n, en, useDualPortSram, name)
 }
 
@@ -117,7 +117,7 @@ object ShiftRegisters extends ShiftRegistersImpl {
     n:  Int,
     en: Bool
   )(
-    implicit sourceInfo: SourceInfo
+    using sourceInfo: SourceInfo
   ): Seq[T] = _applyImpl(in, n, en)
 
   /** Returns a sequence of delayed input signal registers from 1 to n.
@@ -127,7 +127,7 @@ object ShiftRegisters extends ShiftRegistersImpl {
     * @param in input to delay
     * @param n  number of cycles to delay
     */
-  def apply[T <: Data](in: T, n: Int)(implicit sourceInfo: SourceInfo): Seq[T] =
+  def apply[T <: Data](in: T, n: Int)(using sourceInfo: SourceInfo): Seq[T] =
     _applyImpl(in, n)
 
   /** Returns delayed input signal registers with reset initialization from 1 to n.
@@ -143,6 +143,6 @@ object ShiftRegisters extends ShiftRegistersImpl {
     resetData: T,
     en:        Bool
   )(
-    implicit sourceInfo: SourceInfo
+    using sourceInfo: SourceInfo
   ): Seq[T] = _applyImpl(in, n, resetData, en)
 }

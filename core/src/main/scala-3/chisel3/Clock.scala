@@ -12,5 +12,5 @@ object Clock {
 sealed class Clock extends ClockImpl {
 
   /** Returns the contents of the clock wire as a [[Bool]]. */
-  def asBool(implicit sourceInfo: SourceInfo): Bool = _asBoolImpl
+  def asBool(using sourceInfo: SourceInfo): Bool = _asBoolImpl
 }

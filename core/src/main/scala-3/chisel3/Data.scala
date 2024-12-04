@@ -22,7 +22,7 @@ abstract class Data extends DataImpl with SourceInfoDoc {
     * @note bit widths are NOT checked, may pad or drop bits from input
     * @note that should have known widths
     */
-  def asTypeOf[T <: Data](that: T)(implicit sourceInfo: SourceInfo): T = _asTypeOfImpl(that)
+  def asTypeOf[T <: Data](that: T)(using sourceInfo: SourceInfo): T = _asTypeOfImpl(that)
 
   /** Reinterpret cast to UInt.
     *
