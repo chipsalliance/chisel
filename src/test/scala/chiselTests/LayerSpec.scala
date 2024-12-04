@@ -403,7 +403,7 @@ class LayerSpec extends ChiselFlatSpec with Utils with FileCheck {
     }
 
     info("FIRRTL okay")
-    generateFirrtlAndFileCheck(new Foo){
+    generateFirrtlAndFileCheck(new Foo) {
       """|CHECK:      layer A, bind
          |CHECK-NEXT:   layer B, inline :
          |CHECK-NEXT:     layer C, inline :
@@ -418,7 +418,7 @@ class LayerSpec extends ChiselFlatSpec with Utils with FileCheck {
         "-enable-layers=Verification,Verification.Assert,Verification.Assume,Verification.Cover"
       )
     )
-    fileCheckString(verilog){
+    fileCheckString(verilog) {
       """|CHECK:      module Foo(
          |CHECK-NOT:    assert property
          |
