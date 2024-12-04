@@ -6,22 +6,13 @@ import chisel3._
 import chisel3.experimental.hierarchy.core.{Definition, Instance}
 import chisel3.experimental.hierarchy.instantiable
 import chisel3.probe.{define, Probe, ProbeValue}
-import chiselTests.{ChiselFlatSpec, MatchesAndOmits, Utils}
+import chiselTests.{ChiselFlatSpec, FileCheck, Utils}
 import java.nio.file.{FileSystems, Paths}
 import _root_.circt.stage.ChiselStage
 
-class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
+class LayerSpec extends ChiselFlatSpec with Utils with FileCheck {
 
   val sep: String = FileSystems.getDefault().getSeparator()
-
-  def bindLayer(name: String, dirs: List[String]): String = {
-    val dirsStr = if (dirs.nonEmpty) s""", "${dirs.mkString(sep)}"""" else ""
-    s"layer $name, bind$dirsStr :"
-  }
-
-  def inlineLayer(name: String): String = {
-    s"layer $name, inline :"
-  }
 
   object A extends layer.Layer(layer.LayerConfig.Extract()) {
     object B extends layer.Layer(layer.LayerConfig.Extract())
@@ -47,19 +38,18 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
       y := DontCare
     }
 
-    val chirrtl = ChiselStage.emitCHIRRTL(new Foo, Array("--full-stacktrace"))
-
     info("CHIRRTL emission looks correct")
     // TODO: Switch to FileCheck for this testing.  This is going to miss all sorts of ordering issues.
-    matchesAndOmits(chirrtl)(
-      "layer A, bind, \"A\" :",
-      "layer B, bind, \"A" ++ sep ++ "B\" :",
-      "layerblock A :",
-      "wire w : UInt<1>",
-      "layerblock B :",
-      "wire x : UInt<1>",
-      "wire y : UInt<1>"
-    )()
+    generateFirrtlAndFileCheck(new Foo)(s"""|CHECK:      layer A, bind, "A" :
+                                            |CHECK-NEXT:   layer B, bind, "A${sep}B" :
+                                            |
+                                            |CHECK:      module Foo :
+                                            |CHECK:        layerblock A :
+                                            |CHECK-NEXT:     wire w : UInt<1>
+                                            |CHECK:          layerblock B :
+                                            |CHECK-NEXT:       wire x : UInt<1>
+                                            |CHECK:        wire y : UInt<1>
+                                            |""".stripMargin)
   }
 
   they should "create parent layer blocks automatically" in {
@@ -71,11 +61,10 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
       }
     }
 
-    matchesAndOmits(ChiselStage.emitCHIRRTL(new Foo))(
-      "layerblock A :",
-      "layerblock B :",
-      "layerblock C :"
-    )()
+    generateFirrtlAndFileCheck(new Foo)("""|CHECK: layerblock A :
+                                           |CHECK:   layerblock B :
+                                           |CHECK:     layerblock C :
+                                           |""".stripMargin)
   }
 
   they should "respect the 'skipIfAlreadyInBlock' parameter" in {
@@ -86,9 +75,9 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
       }
     }
 
-    matchesAndOmits(ChiselStage.emitCHIRRTL(new Foo))(
-      "layerblock A"
-    )("layerblock C")
+    generateFirrtlAndFileCheck(new Foo)("""|CHECK:     layerblock A :
+                                           |CHECK-NOT:   layerblock C :
+                                           |""".stripMargin)
   }
 
   they should "respect the 'skipIfLayersEnabled' parameter" in {
@@ -97,7 +86,7 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
       layer.block(A.B, skipIfLayersEnabled = true) {}
     }
 
-    matchesAndOmits(ChiselStage.emitCHIRRTL(new Foo))()("layerblock")
+    generateFirrtlAndFileCheck(new Foo)("CHECK-NOT: layerblock")
   }
 
   they should "create no layer blocks when wrapped in 'elideBlocks'" in {
@@ -106,8 +95,7 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
         layer.block(A.B) {}
       }
     }
-
-    matchesAndOmits(ChiselStage.emitCHIRRTL(new Foo))()("layerblock")
+    generateFirrtlAndFileCheck(new Foo)("CHECK-NOT: layerblock")
   }
 
   they should "generate valid CHIRRTL when module instantiated under layer block has layer blocks" in {
@@ -128,10 +116,14 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
 
     // Check the generated CHIRRTL only.
     // Layer-under-module-under-layer is rejected by firtool presently.
-    matchesAndOmits(ChiselStage.emitCHIRRTL(new Foo))(
-      // Whitespace shows nested under another block.
-      "      layerblock B : "
-    )()
+    generateFirrtlAndFileCheck(new Foo)("""|CHECK:      module Bar :
+                                           |CHECK:        layerblock A :
+                                           |CHECK-NEXT:     layerblock B :
+                                           |
+                                           |CHECK:      module Foo :
+                                           |CHECK:        layerblock A :
+                                           |CHECK-NEXT:     inst bar of Bar
+                                           |""".stripMargin)
   }
 
   they should "allow for defines to layer-colored probes" in {
@@ -151,13 +143,15 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
       }
     }
 
-    matchesAndOmits(ChiselStage.emitCHIRRTL(new Foo))(
-      "define x = probe(a)",
-      "define y = probe(b)",
-      "define x = probe(c)",
-      "define y = probe(d)",
-      "define y = probe(e)"
-    )()
+    generateFirrtlAndFileCheck(new Foo)("""|CHECK:      module Foo :
+                                           |CHECK:        define x = probe(a)
+                                           |CHECK-NEXT:   define y = probe(b)
+                                           |CHECK-NEXT:   layerblock A :
+                                           |CHECK-NEXT:     define x = probe(c)
+                                           |CHECK-NEXT:     define y = probe(d)
+                                           |CHECK-NEXT:     layerblock B :
+                                           |CHECK-NEXT:       define y = probe(e)
+                                           |""".stripMargin)
   }
 
   they should "allow for defines to layer-colored probes without layer blocks" in {
@@ -196,10 +190,12 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
       layer.enable(layer.Layer.root)
     }
 
-    matchesAndOmits(ChiselStage.emitCHIRRTL(new Foo))(
-      "layer A, bind",
-      "module Foo enablelayer A.B enablelayer C :"
-    )()
+    generateFirrtlAndFileCheck(new Foo)("""|CHECK:      layer A, bind
+                                           |CHECK-NEXT:   layer B, bind
+                                           |CHECK-NEXT: layer C, bind
+                                           |
+                                           |CHECK: module Foo enablelayer A.B enablelayer C :
+                                           |""".stripMargin)
 
   }
 
@@ -215,7 +211,7 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
     }
 
     val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Foo)
-    matchesAndOmits(chirrtl)("layer A")()
+    chirrtl should include("layer A")
   }
 
   they should "emit the output directory when present" in {
@@ -266,21 +262,20 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
       s"layer $name, bind$dirsStr :"
     }
 
-    val text = ChiselStage.emitCHIRRTL(new Foo)
-    matchesAndOmits(text)(
-      bindLayer("LayerWithDefaultOutputDir", List("LayerWithDefaultOutputDir")),
-      bindLayer("SublayerWithDefaultOutputDir", List("LayerWithDefaultOutputDir", "SublayerWithDefaultOutputDir")),
-      bindLayer("SublayerWithCustomOutputDir", List("myOtherOutputDir")),
-      bindLayer("SublayerWithNoOutputDir", List()),
-      bindLayer("LayerWithCustomOutputDir", List("myOutputDir")),
-      bindLayer("SublayerWithDefaultOutputDir", List("myOutputDir", "SublayerWithDefaultOutputDir")),
-      bindLayer("SublayerWithCustomOutputDir", List("myOtherOutputDir")),
-      bindLayer("SublayerWithNoOutputDir", List()),
-      bindLayer("LayerWithNoOutputDir", List()),
-      bindLayer("SublayerWithDefaultOutputDir", List("SublayerWithDefaultOutputDir")),
-      bindLayer("SublayerWithCustomOutputDir", List("myOtherOutputDir")),
-      bindLayer("SublayerWithNoOutputDir", List())
-    )()
+    generateFirrtlAndFileCheck(new Foo)(s"""|CHECK:      circuit Foo :
+                                            |CHECK-NEXT:   layer LayerWithDefaultOutputDir, bind, "LayerWithDefaultOutputDir" :
+                                            |CHECK-NEXT:     layer SublayerWithDefaultOutputDir, bind, "LayerWithDefaultOutputDir${sep}SublayerWithDefaultOutputDir" :
+                                            |CHECK-NEXT:     layer SublayerWithCustomOutputDir, bind, "myOtherOutputDir" :
+                                            |CHECK-NEXT:     layer SublayerWithNoOutputDir, bind :
+                                            |CHECK-NEXT:   layer LayerWithCustomOutputDir, bind, "myOutputDir" :
+                                            |CHECK-NEXT:     layer SublayerWithDefaultOutputDir, bind, "myOutputDir${sep}SublayerWithDefaultOutputDir"
+                                            |CHECK-NEXT:     layer SublayerWithCustomOutputDir, bind, "myOtherOutputDir" :
+                                            |CHECK-NEXT:     layer SublayerWithNoOutputDir, bind :
+                                            |CHECK-NEXT:   layer LayerWithNoOutputDir, bind :
+                                            |CHECK-NEXT:     layer SublayerWithDefaultOutputDir, bind, "SublayerWithDefaultOutputDir" :
+                                            |CHECK-NEXT:     layer SublayerWithCustomOutputDir, bind, "myOtherOutputDir" :
+                                            |CHECK-NEXT:     layer SublayerWithNoOutputDir, bind :
+                                            |""".stripMargin)
   }
 
   they should "allow manually overriding the parent layer" in {
@@ -300,7 +295,11 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
       layer.addLayer(A)
     }
 
-    matchesAndOmits(ChiselStage.emitCHIRRTL(new Foo))("layer A")("layer block")
+    generateFirrtlAndFileCheck(new Foo)(
+      """|CHECK:     layer A
+         |CHECK-NOT:   layerblock
+         |""".stripMargin
+    )
   }
 
   "Default Layers" should "always be emitted" in {
@@ -308,23 +307,16 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
     val chirrtl = ChiselStage.emitCHIRRTL(new Foo)
 
     info("default layers are emitted")
-    matchesAndOmits(chirrtl)(
-      "layer Verification",
-      "layer Assert",
-      "layer Assume",
-      "layer Cover"
-    )()
+    fileCheckString(chirrtl)(
+      s"""|CHECK:      layer Verification, bind, "verification" :
+          |CHECK-NEXT:   layer Assert, bind, "verification${sep}assert" :
+          |CHECK-NEXT:   layer Assume, bind, "verification${sep}assume" :
+          |CHECK-NEXT:   layer Cover, bind, "verification${sep}cover" :
+          |""".stripMargin
+    )
 
     info("user-defined layers are not emitted if not used")
     (chirrtl should not).include("layer B")
-
-    info("default layers have lowercase directories")
-    matchesAndOmits(chirrtl)(
-      """layer Verification, bind, "verification"""",
-      """layer Assert, bind, "verification/assert"""",
-      """layer Assume, bind, "verification/assume"""",
-      """layer Cover, bind, "verification/cover""""
-    )()
   }
 
   "Layers error checking" should "require that the current layer is an ancestor of the desired layer" in {
@@ -384,10 +376,11 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
       }
     }
 
-    matchesAndOmits(ChiselStage.emitCHIRRTL(new Foo))(
-      "layer A, inline :",
-      "layer B, inline :"
-    )()
+    generateFirrtlAndFileCheck(new Foo)(
+      """|CHECK:      layer A, inline :
+         |CHECK-NEXT:   layer B, inline :
+         |""".stripMargin
+    )
   }
 
   "Inline layers" should "be ignored when choosing default output directories" in {
@@ -430,16 +423,17 @@ class LayerSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
       }
     }
 
-    matchesAndOmits(ChiselStage.emitCHIRRTL(new Foo))(
-      bindLayer("LayerWithDefaultOutputDir", List("LayerWithDefaultOutputDir")),
-      inlineLayer("InlineSublayer"),
-      bindLayer("SublayerWithDefaultOutputDir", List("LayerWithDefaultOutputDir", "SublayerWithDefaultOutputDir")),
-      bindLayer("LayerWithCustomOutputDir", List("myOutputDir")),
-      inlineLayer("InlineSublayer"),
-      bindLayer("SublayerWithDefaultOutputDir", List("myOutputDir", "SublayerWithDefaultOutputDir")),
-      bindLayer("LayerWithNoOutputDir", List()),
-      inlineLayer("InlineSublayer"),
-      bindLayer("SublayerWithDefaultOutputDir", List("SublayerWithDefaultOutputDir"))
-    )()
+    generateFirrtlAndFileCheck(new Foo)(
+      s"""|CHECK:      layer LayerWithDefaultOutputDir, bind, "LayerWithDefaultOutputDir" :
+          |CHECK-NEXT:   layer InlineSublayer, inline :
+          |CHECK-NEXT:     layer SublayerWithDefaultOutputDir, bind, "LayerWithDefaultOutputDir${sep}SublayerWithDefaultOutputDir" :
+          |CHECK-NEXT: layer LayerWithCustomOutputDir, bind, "myOutputDir" :
+          |CHECK-NEXT:   layer InlineSublayer, inline :
+          |CHECK-NEXT:     layer SublayerWithDefaultOutputDir, bind, "myOutputDir${sep}SublayerWithDefaultOutputDir" :
+          |CHECK-NEXT: layer LayerWithNoOutputDir, bind :
+          |CHECK-NEXT:   layer InlineSublayer, inline :
+          |CHECK-NEXT:     layer SublayerWithDefaultOutputDir, bind, "SublayerWithDefaultOutputDir" :
+          |""".stripMargin
+    )
   }
 }
