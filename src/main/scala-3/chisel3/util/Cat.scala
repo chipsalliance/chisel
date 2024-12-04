@@ -19,7 +19,7 @@ object Cat extends CatImpl {
   /** Concatenates the argument data elements, in argument order, together. The first argument
     * forms the most significant bits, while the last argument forms the least significant bits.
     */
-  def apply[T <: Bits](a: T, r: T*)(implicit sourceInfo: SourceInfo): UInt = _applyImpl(a, r: _*)
+  def apply[T <: Bits](a: T, r: T*)(using sourceInfo: SourceInfo): UInt = _applyImpl(a, r: _*)
 
   /** Concatenates the data elements of the input sequence, in reverse sequence order, together.
     * The first element of the sequence forms the most significant bits, while the last element
@@ -28,5 +28,5 @@ object Cat extends CatImpl {
     * Equivalent to r(0) ## r(1) ## ... ## r(n-1).
     * @note This returns a `0.U` if applied to a zero-element `Vec`.
     */
-  def apply[T <: Bits](r: Seq[T])(implicit sourceInfo: SourceInfo): UInt = _applyImpl(r)
+  def apply[T <: Bits](r: Seq[T])(using sourceInfo: SourceInfo): UInt = _applyImpl(r)
 }

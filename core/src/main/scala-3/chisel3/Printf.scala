@@ -54,6 +54,6 @@ object printf {
     * @see [[Printable]] documentation
     * @param pable [[Printable]] to print
     */
-  def apply(pable: Printable)(implicit sourceInfo: SourceInfo): chisel3.printf.Printf =
-    PrintfMacrosCompat.printfWithReset(pable)(sourceInfo)
+  def apply(pable: Printable)(using sourceInfo: SourceInfo): chisel3.printf.Printf =
+    PrintfMacrosCompat.printfWithReset(pable)(using sourceInfo)
 }

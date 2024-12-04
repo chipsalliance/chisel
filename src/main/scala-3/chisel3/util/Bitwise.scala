@@ -25,13 +25,13 @@ object FillInterleaved extends FillInterleavedImpl {
     *
     * Output data-equivalent to in(size(in)-1) (n times) ## ... ## in(1) (n times) ## in(0) (n times)
     */
-  def apply(n: Int, in: UInt)(implicit sourceInfo: SourceInfo): UInt = _applyImpl(n, in)
+  def apply(n: Int, in: UInt)(using sourceInfo: SourceInfo): UInt = _applyImpl(n, in)
 
   /** Creates n repetitions of each bit of x in order.
     *
     * Output data-equivalent to in(size(in)-1) (n times) ## ... ## in(1) (n times) ## in(0) (n times)
     */
-  def apply(n: Int, in: Seq[Bool])(implicit sourceInfo: SourceInfo): UInt = _applyImpl(n, in)
+  def apply(n: Int, in: Seq[Bool])(using sourceInfo: SourceInfo): UInt = _applyImpl(n, in)
 }
 
 /** Returns the number of bits set (value is 1 or true) in the input signal.
@@ -47,8 +47,8 @@ object FillInterleaved extends FillInterleavedImpl {
   */
 object PopCount extends PopCountImpl {
 
-  def apply(in: Iterable[Bool])(implicit sourceInfo: SourceInfo): UInt = _applyImpl(in)
-  def apply(in: Bits)(implicit sourceInfo: SourceInfo): UInt = _applyImpl(in)
+  def apply(in: Iterable[Bool])(using sourceInfo: SourceInfo): UInt = _applyImpl(in)
+  def apply(in: Bits)(using sourceInfo:           SourceInfo): UInt = _applyImpl(in)
 }
 
 /** Create repetitions of the input using a tree fanout topology.
@@ -66,7 +66,7 @@ object Fill extends FillImpl {
     * Output data-equivalent to x ## x ## ... ## x (n repetitions).
     * @throws java.lang.IllegalArgumentException if `n` is less than zero
     */
-  def apply(n: Int, x: UInt)(implicit sourceInfo: SourceInfo): UInt = _applyImpl(n, x)
+  def apply(n: Int, x: UInt)(using sourceInfo: SourceInfo): UInt = _applyImpl(n, x)
 }
 
 /** Returns the input in bit-reversed order. Useful for little/big-endian conversion.
@@ -79,5 +79,5 @@ object Fill extends FillImpl {
   */
 object Reverse extends ReverseImpl {
 
-  def apply(in: UInt)(implicit sourceInfo: SourceInfo): UInt = _applyImpl(in)
+  def apply(in: UInt)(using sourceInfo: SourceInfo): UInt = _applyImpl(in)
 }

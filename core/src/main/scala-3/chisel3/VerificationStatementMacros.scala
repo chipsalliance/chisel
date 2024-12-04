@@ -23,7 +23,7 @@ object VerifStmtMacrosCompat {
     cond:     Bool,
     message:  Option[Printable]
   )(
-    implicit sourceInfo: SourceInfo
+    using sourceInfo: SourceInfo
   ): Printable = {
     val (filename, line) = lineInfo
     val lineMsg = s"$filename:$line".replaceAll("%", "%%")

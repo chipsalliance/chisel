@@ -10,7 +10,7 @@ object PrintfMacrosCompat {
   private[chisel3] def printfWithReset(
     pable: Printable
   )(
-    implicit sourceInfo: SourceInfo
+    using sourceInfo: SourceInfo
   ): chisel3.printf.Printf = {
     var printfId: chisel3.printf.Printf = null
     when(!Module.reset.asBool) {
@@ -22,7 +22,7 @@ object PrintfMacrosCompat {
   private[chisel3] def printfWithoutReset(
     pable: Printable
   )(
-    implicit sourceInfo: SourceInfo
+    using sourceInfo: SourceInfo
   ): chisel3.printf.Printf = {
     val clock = Builder.forcedClock
     val printfId = new chisel3.printf.Printf(pable)

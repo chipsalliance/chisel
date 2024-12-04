@@ -23,7 +23,7 @@ class Disable private[chisel3] (private[chisel3] val value: Bool) extends Disabl
     * @return invert the logical value of this `Disable`
     * @group Bitwise
     */
-  def unary_!(implicit sourceInfo: SourceInfo): Disable = new Disable(!this.value)
+  def unary_!(using sourceInfo: SourceInfo): Disable = new Disable(!this.value)
 }
 
 object Disable extends ObectDisableImpl
