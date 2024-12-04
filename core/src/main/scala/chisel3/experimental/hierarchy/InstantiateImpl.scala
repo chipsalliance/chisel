@@ -89,10 +89,10 @@ private[chisel3] trait InstantiateImpl {
     f:    K => A,
     tt:   Any
   ): Definition[A] = {
-    val modulePrefix = Builder.getModulePrefixList
+    val modulePrefix = Module.currentModulePrefix
     Builder.contextCache
       .getOrElseUpdate(
-        CacheKey[A](boxAllData(args), tt, modulePrefix), {
+        CacheKey[A](boxAllData(args), tt, Seq(modulePrefix).toList), {
           // The definition needs to have no source locator because otherwise it will be unstably
           // derived from the first invocation of Instantiate for the particular Module
           Definition.apply(f(args))(UnlocatableSourceInfo)
