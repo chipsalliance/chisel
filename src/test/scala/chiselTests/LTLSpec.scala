@@ -407,4 +407,23 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselRunners {
     assert(assertBlockLoc < delayIntrinsicLoc)
     assert(assumeblockLoc < implicationIntrinsicLoc)
   }
+
+  it should "not produce name collisions" in {
+    class Test extends RawModule {
+      val io = IO(Input(UInt(8.W)))
+
+      val clockWire = Wire(Clock())
+      val resetWire = Wire(Reset())
+
+      withClockAndReset(clockWire, resetWire) {
+        AssertProperty(Property.eventually(io.orR))
+      }
+
+      val clock = IO(Input(Clock()))
+      val reset = IO(Input(Reset()))
+
+      clockWire := clock
+      resetWire := reset
+    }
+  }
 }
