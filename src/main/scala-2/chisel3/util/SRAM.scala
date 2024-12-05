@@ -617,6 +617,108 @@ object SRAM {
       sourceInfo
     )
 
+  private def memInterface_blackbox_impl[T <: Data](
+    size:                BigInt,
+    tpe:                 T,
+    readPortClocks:      Seq[Clock],
+    writePortClocks:     Seq[Clock],
+    readwritePortClocks: Seq[Clock],
+    memoryFile:          Option[MemoryFile],
+    evidenceOpt:         Option[T <:< Vec[_]],
+    sourceInfo:          SourceInfo
+  ): SRAMInterface[T] = {
+    val numReadPorts = readPortClocks.size
+    val numWritePorts = writePortClocks.size
+    val numReadwritePorts = readwritePortClocks.size
+    val enableMask = evidenceOpt.isDefined
+    val isValidSRAM = ((numReadPorts + numReadwritePorts) > 0) && ((numWritePorts + numReadwritePorts) > 0)
+    val maskGranularity = tpe match {
+      case vec: Vec[_] if enableMask => vec.sample_element.getWidth
+      case _ => 0
+    }
+
+    if (!isValidSRAM) {
+      val badMemory =
+        if (numReadPorts + numReadwritePorts == 0)
+          "write-only SRAM (R + RW === 0)"
+        else
+          "read-only SRAM (W + RW === 0)"
+      Builder.error(
+        s"Attempted to initialize a $badMemory! SRAMs must have both at least one read accessor and at least one write accessor."
+      )
+    }
+
+    val mem = Instantiate(
+      new SRAMBlackbox(
+        new CIRCTSRAMParameter(
+          s"sram_${numReadPorts}R_${numWritePorts}W_${numReadwritePorts}RW_${maskGranularity}M_${size}x${tpe.getWidth}",
+          numReadPorts,
+          numWritePorts,
+          numReadwritePorts,
+          size.intValue,
+          tpe.getWidth,
+          maskGranularity
+        )
+      )
+    )
+
+    val sramReadPorts = Seq.tabulate(numReadPorts)(i => mem.io.R(i))
+    val sramWritePorts = Seq.tabulate(numWritePorts)(i => mem.io.W(i))
+    val sramReadwritePorts = Seq.tabulate(numReadwritePorts)(i => mem.io.RW(i))
+
+    val includeMetadata = Builder.includeUtilMetadata
+
+    val out = Wire(
+      new SRAMInterface(size, tpe, numReadPorts, numWritePorts, numReadwritePorts, enableMask, includeMetadata)
+    )
+
+    out.readPorts.zip(sramReadPorts).zip(readPortClocks).map {
+      case ((intfReadPort, sramReadPort), readClock) =>
+        sramReadPort.address := intfReadPort.address
+        sramReadPort.clock := readClock
+        intfReadPort.data := sramReadPort.data.asTypeOf(tpe)
+        sramReadPort.enable := intfReadPort.enable
+    }
+    out.writePorts.zip(sramWritePorts).zip(writePortClocks).map {
+      case ((intfWritePort, sramWritePort), writeClock) =>
+        sramWritePort.address := intfWritePort.address
+        sramWritePort.clock := writeClock
+        sramWritePort.data := intfWritePort.data.asUInt
+        sramWritePort.enable := intfWritePort.enable
+        sramWritePort.mask match {
+          case Some(mask) => mask := intfWritePort.mask.get.asUInt
+          case None       => assert(intfWritePort.mask.isEmpty)
+        }
+    }
+    out.readwritePorts.zip(sramReadwritePorts).zip(readwritePortClocks).map {
+      case ((intfReadwritePort, sramReadwritePort), readwriteClock) =>
+        sramReadwritePort.address := intfReadwritePort.address
+        sramReadwritePort.clock := readwriteClock
+        sramReadwritePort.enable := intfReadwritePort.enable
+        intfReadwritePort.readData := sramReadwritePort.readData.asTypeOf(tpe)
+        sramReadwritePort.writeData := intfReadwritePort.writeData.asUInt
+        sramReadwritePort.writeEnable := intfReadwritePort.isWrite
+        sramReadwritePort.writeMask match {
+          case Some(mask) => mask := intfReadwritePort.mask.get.asUInt
+          case None       => assert(intfReadwritePort.mask.isEmpty)
+        }
+    }
+
+    out.description.foreach { description =>
+      val descriptionInstance: Instance[SRAMDescription] = Instantiate(new SRAMDescription)
+      descriptionInstance.depthIn := Property(size)
+      descriptionInstance.widthIn := Property(tpe.getWidth)
+      descriptionInstance.maskedIn := Property(enableMask)
+      descriptionInstance.readIn := Property(numReadPorts)
+      descriptionInstance.writeIn := Property(numWritePorts)
+      descriptionInstance.readwriteIn := Property(numReadwritePorts)
+      descriptionInstance.maskGranularityIn := Property(maskGranularity)
+      descriptionInstance.hierarchyIn := Property(Path(mem.toTarget))
+      description := descriptionInstance.getPropertyReference
+    }
+    out
+  }
+
   private def memInterface_impl[T <: Data](
     size:                BigInt,
     tpe:                 T,
@@ -627,6 +729,18 @@ object SRAM {
     evidenceOpt:         Option[T <:< Vec[_]],
     sourceInfo:          SourceInfo
   ): SRAMInterface[T] = {
+    if (Builder.useSRAMBlackbox)
+      return memInterface_blackbox_impl(
+        size,
+        tpe,
+        readPortClocks,
+        writePortClocks,
+        readwritePortClocks,
+        memoryFile,
+        evidenceOpt,
+        sourceInfo
+      )
+
     val numReadPorts = readPortClocks.size
     val numWritePorts = writePortClocks.size
     val numReadwritePorts = readwritePortClocks.size

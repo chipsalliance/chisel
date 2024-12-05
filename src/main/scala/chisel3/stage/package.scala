@@ -32,6 +32,7 @@ package object stage {
           case UseLegacyWidthBehavior         => c.copy(useLegacyWidth = true)
           case RemapLayer(oldLayer, newLayer) => c.copy(layerMap = c.layerMap + ((oldLayer, newLayer)))
           case IncludeUtilMetadata            => c.copy(includeUtilMetadata = true)
+          case UseSRAMBlackbox                => c.copy(useSRAMBlackbox = true)
         }
       }
 

@@ -111,6 +111,7 @@ object Definition extends SourceInfoDoc {
         context.throwOnFirstError,
         context.useLegacyWidth,
         context.includeUtilMetadata,
+        context.useSRAMBlackbox,
         context.warningFilters,
         context.sourceRoots,
         Some(context.globalNamespace),
