@@ -160,10 +160,10 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends BitsImpl w
     * @note For [[SInt]]s only, this will do sign extension.
     * @group Bitwise
     */
-  final def pad(that: Int): Bits = macro SourceInfoWhiteboxTransform.thatArg
+  final def pad(that: Int): this.type = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_pad(that: Int)(implicit sourceInfo: SourceInfo): Bits = _padImpl(that)
+  def do_pad(that: Int)(implicit sourceInfo: SourceInfo): this.type = _padImpl(that)
 
   /** Bitwise inversion operator
     *
@@ -182,6 +182,8 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends BitsImpl w
     * $sumWidthInt
     * @group Bitwise
     */
+  // REVIEW TODO: redundant
+  // REVIEW TODO: should these return this.type or Bits?
   final def <<(that: BigInt): Bits = macro SourceInfoWhiteboxTransform.thatArg
 
   /** @group SourceInfoTransformMacro */

@@ -13,7 +13,7 @@ private[chisel3] trait ClockImpl extends Element {
 
   override def toString: String = stringAccessor("Clock")
 
-  override def _cloneType: Data = Clock()
+  def cloneType: this.type = Clock().asInstanceOf[this.type]
 
   override def connect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
     that match {

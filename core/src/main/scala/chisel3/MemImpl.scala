@@ -9,7 +9,6 @@ import chisel3.internal.binding._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.ir._
 import chisel3.experimental.{requireIsChiselType, requireIsHardware, SourceInfo, SourceLine}
-import chisel3.Data.DataExtensions
 
 private[chisel3] trait ObjectMemImpl {
 
