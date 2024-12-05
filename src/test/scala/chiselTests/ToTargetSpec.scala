@@ -5,7 +5,7 @@ package chiselTests
 import chisel3._
 import chisel3.properties.{Path, Property}
 import circt.stage.ChiselStage
-import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance}
+import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance, Instantiate}
 
 @instantiable
 class RelativeInnerModule extends RawModule {
@@ -142,6 +142,20 @@ class RelativeSiblingsInstancesParent extends RawModule {
     val referenceDefinitionInstanceOut = IO(Output(Property[Path]()))
     referenceDefinitionInstanceOut := Property(Path(referenceDefinitionInstance))
   }
+}
+
+class PathFromInstanceToTarget extends RawModule {
+  @instantiable
+  class Hierarchy1 extends RawModule {
+    @instantiable
+    class Hierarchy2 extends RawModule {
+      val target = Instantiate(new RelativeInnerModule)
+      @public val path = IO(Output(Property[Path]()))
+      path := Property(Path(target.toTarget))
+    }
+    val instance2 = Instantiate(new Hierarchy2)
+  }
+  val instance1 = Instantiate(new Hierarchy1)
 }
 
 class ToTargetSpec extends ChiselFlatSpec with Utils {
@@ -288,6 +302,11 @@ class ToTargetSpec extends ChiselFlatSpec with Utils {
       ChiselStage.emitCHIRRTL(new RelativeSiblingsDefinitionBadModule2)
     }
     e.getMessage should include("No common ancestor between")
+  }
+
+  it should ("get correct Path from an Instance") in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new PathFromInstanceToTarget)
+    chirrtl should include("OMInstanceTarget:~PathFromInstanceToTarget|Hierarchy2/target:RelativeInnerModule")
   }
 
 }
