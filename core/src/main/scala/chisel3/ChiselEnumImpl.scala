@@ -363,8 +363,7 @@ private[chisel3] trait ChiselEnumImpl { self: ChiselEnum =>
 // This is an enum type that can be connected directly to UInts. It is used as a "glue" to cast non-literal UInts
 // to enums.
 private[chisel3] class UnsafeEnum(override val width: Width) extends EnumType(UnsafeEnum, selfAnnotating = false) {
-
-  override def _cloneType: Data = new UnsafeEnum(width)
+  override def cloneType: this.type = new UnsafeEnum(width).asInstanceOf[this.type]
 }
 private object UnsafeEnum extends ChiselEnum
 

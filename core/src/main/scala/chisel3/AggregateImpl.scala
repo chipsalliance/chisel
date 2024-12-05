@@ -543,7 +543,7 @@ private[chisel3] abstract class VecImpl[T <: Data] private[chisel3] (gen: => T, 
     requireIsChiselType(this, "vec literal constructor model")
     checkLiteralConstruction()
 
-    val clone = cloneType
+    val clone: this.type = this.cloneType
     val cloneFields = getRecursiveFields(clone, "(vec root)").toMap
 
     // Create the Vec literal binding from litArgs of arguments
@@ -833,7 +833,7 @@ private[chisel3] trait RecordImpl extends AggregateImpl { thiz: Record =>
   }
 
   override def cloneType: this.type = {
-    val clone = _cloneTypeImpl.asInstanceOf[this.type]
+    val clone: this.type = _cloneTypeImpl.asInstanceOf[this.type]
     checkClone(clone)
     clone
   }
@@ -956,7 +956,7 @@ private[chisel3] trait RecordImpl extends AggregateImpl { thiz: Record =>
   private[chisel3] def _makeLit(elems: (this.type => (Data, Data))*)(implicit sourceInfo: SourceInfo): this.type = {
 
     requireIsChiselType(this, "bundle literal constructor model")
-    val clone = cloneType
+    val clone: this.type = cloneType
     val cloneFields = getRecursiveFields(clone, "_").toMap
 
     // Create the Bundle literal binding from litargs of arguments

@@ -796,7 +796,7 @@ private[chisel3] trait DataImpl extends HasId with NamedComponent { self: Data =
     * Directionality data and probe information is still preserved.
     */
   private[chisel3] def cloneTypeFull: this.type = {
-    val clone = this.cloneType // get a fresh object, without bindings
+    val clone: this.type = this.cloneType // get a fresh object, without bindings
     // Only the top-level direction needs to be fixed up, cloneType should do the rest
     clone.specifiedDirection = specifiedDirection
     probe.setProbeModifier(clone, probeInfo)
