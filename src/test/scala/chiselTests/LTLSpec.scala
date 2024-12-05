@@ -413,17 +413,15 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselRunners {
       val io = IO(Input(UInt(8.W)))
 
       val clockWire = Wire(Clock())
-      val resetWire = Wire(Reset())
 
-      withClockAndReset(clockWire, resetWire) {
+      withClock(clockWire) {
         AssertProperty(Property.eventually(io.orR))
       }
 
       val clock = IO(Input(Clock()))
-      val reset = IO(Input(Reset()))
-
       clockWire := clock
-      resetWire := reset
     }
+
+    val chirrtl = ChiselStage.emitCHIRRTL(new Test)
   }
 }
