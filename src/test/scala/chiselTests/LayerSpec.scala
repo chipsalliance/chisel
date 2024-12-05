@@ -425,9 +425,9 @@ class LayerSpec extends ChiselFlatSpec with Utils with FileCheck {
          |CHECK:      module Foo_A(
          |CHECK-NOT:    `ifdef
          |CHECK:        foo: assert property
-         |CHECK:        `ifdef A_B
+         |CHECK:        `ifdef A$B
          |CHECK-NEXT:     bar: assert property
-         |CHECK-NEXT:     `ifdef A_B_C
+         |CHECK-NEXT:     `ifdef A$B$C
          |CHECK-NEXT:       baz: assert property
          |CHECK-NEXT:     `endif
          |CHECK-NEXT:   `endif""".stripMargin
