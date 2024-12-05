@@ -12,7 +12,6 @@ import chisel3.experimental.dataview.{isView, reify, reifyIdentityView}
 import chisel3.internal.firrtl.ir.{Arg, ILit, Index, LitIndex, ModuleIO, Slot, ULit}
 import chisel3.internal.{throwException, Builder, ViewParent}
 import chisel3.internal.binding.{AggregateViewBinding, ChildBinding, CrossModuleBinding, ViewBinding, ViewWriteability}
-import chisel3.Data.DataExtensions
 
 /** Typeclass used to recontextualize values from an original Definition to an Instance
   *

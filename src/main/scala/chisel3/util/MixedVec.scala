@@ -3,7 +3,6 @@
 package chisel3.util
 
 import chisel3._
-import chisel3.Data.DataExtensions
 import chisel3.experimental.requireIsChiselType
 
 import scala.collection.immutable.ListMap

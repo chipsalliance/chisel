@@ -28,7 +28,6 @@ import chisel3.internal.plugin.autoNameRecursively
 import chisel3.util.simpleClassName
 import chisel3.experimental.{annotate, ChiselAnnotation}
 import chisel3.experimental.hierarchy.Hierarchy
-import chisel3.Data.DataExtensions
 
 private[chisel3] trait ObjectModuleImpl {
 
@@ -371,7 +370,7 @@ package internal {
     private[chisel3] class ClonePorts(elts: (String, Data)*) extends Record {
       val elements: ListMap[String, Data] = ListMap(elts.map { case (name, d) => name -> d.cloneTypeFull }: _*)
       def apply(field: String) = elements(field)
-      override protected def _cloneTypeImpl: Record = (new ClonePorts(elts: _*))
+      override def cloneType = (new ClonePorts(elts: _*)).asInstanceOf[this.type]
     }
 
     private[chisel3] def cloneIORecord(

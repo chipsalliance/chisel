@@ -11,7 +11,6 @@ import chisel3.Data.ProbeInfo
 import chisel3.experimental.{requireIsHardware, SourceInfo}
 import chisel3.experimental.dataview.reifyIdentityView
 import chisel3.reflect.DataMirror.{checkTypeEquivalence, collectAllMembers, hasProbeTypeModifier}
-import chisel3.Data.DataExtensions
 
 private[chisel3] trait ObjectProbeImpl {
 
