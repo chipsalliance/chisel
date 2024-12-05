@@ -106,8 +106,8 @@ object Path {
 
   /** Construct a Path from a target
     */
-  def apply(target: IsMember): Path = apply(target, false)
-  def apply(target: IsMember, isMemberPath: Boolean): Path = {
+  def apply(target: => IsMember): Path = apply(target, false)
+  def apply(target: => IsMember, isMemberPath: Boolean): Path = {
     val _isMemberPath = isMemberPath // avoid name shadowing below
     new TargetPath {
       def toTarget():   IsMember = target
