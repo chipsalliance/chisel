@@ -481,6 +481,7 @@ private[chisel3] class DynamicContext(
   val throwOnFirstError:   Boolean,
   val useLegacyWidth:      Boolean,
   val includeUtilMetadata: Boolean,
+  val useSRAMBlackbox:     Boolean,
   val warningFilters:      Seq[WarningFilter],
   val sourceRoots:         Seq[File],
   val defaultNamespace:    Option[Namespace],
@@ -974,6 +975,8 @@ private[chisel3] object Builder extends LazyLogging {
   def useLegacyWidth: Boolean = dynamicContextVar.value.map(_.useLegacyWidth).getOrElse(false)
 
   def includeUtilMetadata: Boolean = dynamicContextVar.value.map(_.includeUtilMetadata).getOrElse(false)
+
+  def useSRAMBlackbox: Boolean = dynamicContextVar.value.map(_.useSRAMBlackbox).getOrElse(false)
 
   // Builds a RenameMap for all Views that do not correspond to a single Data
   // These Data give a fake ReferenceTarget for .toTarget and .toReferenceTarget that the returned

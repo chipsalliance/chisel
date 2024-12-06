@@ -18,6 +18,7 @@ import chisel3.properties.Class.ClassDefinitionOps
 import chisel3.properties.{Class, ClassType, Path, Property}
 
 import scala.collection.immutable.{ListMap, VectorMap}
+import chisel3.util.experimental.{CIRCTSRAMInterface, CIRCTSRAMParameter}
 
 /** A bundle of signals representing a memory read port.
   *
@@ -199,6 +200,120 @@ case class BinaryMemoryFile(path: String) extends MemoryFile(MemoryLoadFileType.
   * @param path The path to the hex file
   */
 case class HexMemoryFile(path: String) extends MemoryFile(MemoryLoadFileType.Hex)
+
+class SRAMBlackbox(parameter: CIRCTSRAMParameter)
+    extends FixedIOExtModule(new CIRCTSRAMInterface(parameter))
+    with HasExtModuleInline { self =>
+
+  private val verilogInterface: String =
+    (Seq.tabulate(parameter.write)(idx =>
+      Seq(
+        s"// Write Port $idx",
+        s"input [${log2Ceil(parameter.depth) - 1}:0] W${idx}_addr",
+        s"input W${idx}_en",
+        s"input W${idx}_clk",
+        s"input [${parameter.width - 1}:0] W${idx}_data"
+      ) ++
+        Option.when(parameter.masked)(s"input [${parameter.width / parameter.maskGranularity - 1}:0] W${idx}_mask")
+    ) ++
+      Seq.tabulate(parameter.read)(idx =>
+        Seq(
+          s"// Read Port $idx",
+          s"input [${log2Ceil(parameter.depth) - 1}:0] R${idx}_addr",
+          s"input R${idx}_en",
+          s"input R${idx}_clk",
+          s"output [${parameter.width - 1}:0] R${idx}_data"
+        )
+      ) ++
+      Seq.tabulate(parameter.readwrite)(idx =>
+        Seq(
+          s"// ReadWrite Port $idx",
+          s"input [${log2Ceil(parameter.depth) - 1}:0] RW${idx}_addr",
+          s"input RW${idx}_en",
+          s"input RW${idx}_clk",
+          s"input RW${idx}_wmode",
+          s"input [${parameter.width - 1}:0] RW${idx}_wdata",
+          s"output [${parameter.width - 1}:0] RW${idx}_rdata"
+        ) ++ Option
+          .when(parameter.masked)(
+            s"input [${parameter.width / parameter.maskGranularity - 1}:0] RW${idx}_wmask"
+          )
+      )).flatten.mkString(",\n")
+
+  private val rLogic = Seq
+    .tabulate(parameter.read) { idx =>
+      val prefix = s"R${idx}"
+      Seq(
+        s"reg _${prefix}_en;",
+        s"reg [${log2Ceil(parameter.depth) - 1}:0] _${prefix}_addr;"
+      ) ++
+        Seq(
+          s"always @(posedge ${prefix}_clk) begin // ${prefix}",
+          s"_${prefix}_en <= ${prefix}_en;",
+          s"_${prefix}_addr <= ${prefix}_addr;",
+          s"end // ${prefix}"
+        ) ++
+        Some(s"assign ${prefix}_data = _${prefix}_en ? Memory[_${prefix}_addr] : ${parameter.width}'bx;")
+    }
+    .flatten
+
+  private val wLogic = Seq
+    .tabulate(parameter.write) { idx =>
+      val prefix = s"W${idx}"
+      Seq(s"always @(posedge ${prefix}_clk) begin // ${prefix}") ++
+        (if (parameter.masked)
+           Seq.tabulate(parameter.width / parameter.maskGranularity)(i =>
+             s"if (${prefix}_en & ${prefix}_mask[${i}]) Memory[${prefix}_addr][${i * parameter.maskGranularity} +: ${parameter.maskGranularity}] <= ${prefix}_data[${(i + 1) * parameter.maskGranularity - 1}:${i * parameter.maskGranularity}];"
+           )
+         else
+           Seq(s"if (${prefix}_en) Memory[${prefix}_addr] <= ${prefix}_data;")) ++
+        Seq(s"end // ${prefix}")
+    }
+    .flatten
+
+  private val rwLogic = Seq
+    .tabulate(parameter.readwrite) { idx =>
+      val prefix = s"RW${idx}"
+      Seq(
+        s"reg [${log2Ceil(parameter.depth) - 1}:0] _${prefix}_raddr;",
+        s"reg _${prefix}_ren;",
+        s"reg _${prefix}_rmode;"
+      ) ++
+        Seq(s"always @(posedge ${prefix}_clk) begin // ${prefix}") ++
+        Seq(
+          s"_${prefix}_raddr <= ${prefix}_addr;",
+          s"_${prefix}_ren <= ${prefix}_en;",
+          s"_${prefix}_rmode <= ${prefix}_wmode;"
+        ) ++
+        (if (parameter.masked)
+           Seq.tabulate(parameter.width / parameter.maskGranularity)(i =>
+             s"if(${prefix}_en & ${prefix}_wmask[${i}] & ${prefix}_wmode) Memory[${prefix}_addr][${i * parameter.maskGranularity} +: ${parameter.maskGranularity}] <= ${prefix}_wdata[${(i + 1) * parameter.maskGranularity - 1}:${i * parameter.maskGranularity}];"
+           )
+         else
+           Seq(s"if (${prefix}_en & ${prefix}_wmode) Memory[${prefix}_addr] <= ${prefix}_wdata;")) ++
+        Seq(s"end // ${prefix}") ++
+        Seq(
+          s"assign ${prefix}_rdata = _${prefix}_ren & ~_${prefix}_rmode ? Memory[_${prefix}_raddr] : ${parameter.width}'bx;"
+        )
+    }
+    .flatten
+
+  private val logic =
+    (Seq(s"reg [${parameter.width - 1}:0] Memory[0:${parameter.depth - 1}];") ++ wLogic ++ rLogic ++ rwLogic)
+      .mkString("\n")
+
+  override def desiredName = parameter.moduleName
+
+  setInline(
+    desiredName + ".sv",
+    s"""module ${parameter.moduleName}(
+       |${verilogInterface}
+       |);
+       |${logic}
+       |endmodule
+       |""".stripMargin
+  )
+}
 
 object SRAM {
 
@@ -502,6 +617,113 @@ object SRAM {
       sourceInfo
     )
 
+  private def memInterface_blackbox_impl[T <: Data](
+    size:                BigInt,
+    tpe:                 T,
+    readPortClocks:      Seq[Clock],
+    writePortClocks:     Seq[Clock],
+    readwritePortClocks: Seq[Clock],
+    memoryFile:          Option[MemoryFile],
+    evidenceOpt:         Option[T <:< Vec[_]],
+    sourceInfo:          SourceInfo
+  ): SRAMInterface[T] = {
+    val numReadPorts = readPortClocks.size
+    val numWritePorts = writePortClocks.size
+    val numReadwritePorts = readwritePortClocks.size
+    val enableMask = evidenceOpt.isDefined
+    val isValidSRAM = ((numReadPorts + numReadwritePorts) > 0) && ((numWritePorts + numReadwritePorts) > 0)
+    val maskGranularity = tpe match {
+      case vec: Vec[_] if enableMask => vec.sample_element.getWidth
+      case _ => 0
+    }
+
+    if (!isValidSRAM) {
+      val badMemory =
+        if (numReadPorts + numReadwritePorts == 0)
+          "write-only SRAM (R + RW === 0)"
+        else
+          "read-only SRAM (W + RW === 0)"
+      Builder.error(
+        s"Attempted to initialize a $badMemory! SRAMs must have both at least one read accessor and at least one write accessor."
+      )
+    }
+
+    val mem = Instantiate(
+      new SRAMBlackbox(
+        new CIRCTSRAMParameter(
+          s"sram_${numReadPorts}R_${numWritePorts}W_${numReadwritePorts}RW_${maskGranularity}M_${size}x${tpe.getWidth}",
+          numReadPorts,
+          numWritePorts,
+          numReadwritePorts,
+          size.intValue,
+          tpe.getWidth,
+          maskGranularity
+        )
+      )
+    )
+
+    implicit class SRAMInstanceMethods(underlying: Instance[SRAMBlackbox]) {
+      implicit val mg: internal.MacroGenerated = new chisel3.internal.MacroGenerated {}
+      def io = underlying._lookup(_.io)
+    }
+
+    val sramReadPorts = Seq.tabulate(numReadPorts)(i => mem.io.R(i))
+    val sramWritePorts = Seq.tabulate(numWritePorts)(i => mem.io.W(i))
+    val sramReadwritePorts = Seq.tabulate(numReadwritePorts)(i => mem.io.RW(i))
+
+    val includeMetadata = Builder.includeUtilMetadata
+
+    val out = Wire(
+      new SRAMInterface(size, tpe, numReadPorts, numWritePorts, numReadwritePorts, enableMask, includeMetadata)
+    )
+
+    out.readPorts.zip(sramReadPorts).zip(readPortClocks).map {
+      case ((intfReadPort, sramReadPort), readClock) =>
+        sramReadPort.address := intfReadPort.address
+        sramReadPort.clock := readClock
+        intfReadPort.data := sramReadPort.data.asTypeOf(tpe)
+        sramReadPort.enable := intfReadPort.enable
+    }
+    out.writePorts.zip(sramWritePorts).zip(writePortClocks).map {
+      case ((intfWritePort, sramWritePort), writeClock) =>
+        sramWritePort.address := intfWritePort.address
+        sramWritePort.clock := writeClock
+        sramWritePort.data := intfWritePort.data.asUInt
+        sramWritePort.enable := intfWritePort.enable
+        sramWritePort.mask match {
+          case Some(mask) => mask := intfWritePort.mask.get.asUInt
+          case None       => assert(intfWritePort.mask.isEmpty)
+        }
+    }
+    out.readwritePorts.zip(sramReadwritePorts).zip(readwritePortClocks).map {
+      case ((intfReadwritePort, sramReadwritePort), readwriteClock) =>
+        sramReadwritePort.address := intfReadwritePort.address
+        sramReadwritePort.clock := readwriteClock
+        sramReadwritePort.enable := intfReadwritePort.enable
+        intfReadwritePort.readData := sramReadwritePort.readData.asTypeOf(tpe)
+        sramReadwritePort.writeData := intfReadwritePort.writeData.asUInt
+        sramReadwritePort.writeEnable := intfReadwritePort.isWrite
+        sramReadwritePort.writeMask match {
+          case Some(mask) => mask := intfReadwritePort.mask.get.asUInt
+          case None       => assert(intfReadwritePort.mask.isEmpty)
+        }
+    }
+
+    out.description.foreach { description =>
+      val descriptionInstance: Instance[SRAMDescription] = Instantiate(new SRAMDescription)
+      descriptionInstance.depthIn := Property(size)
+      descriptionInstance.widthIn := Property(tpe.getWidth)
+      descriptionInstance.maskedIn := Property(enableMask)
+      descriptionInstance.readIn := Property(numReadPorts)
+      descriptionInstance.writeIn := Property(numWritePorts)
+      descriptionInstance.readwriteIn := Property(numReadwritePorts)
+      descriptionInstance.maskGranularityIn := Property(maskGranularity)
+      descriptionInstance.hierarchyIn := Property(Path(mem.toTarget))
+      description := descriptionInstance.getPropertyReference
+    }
+    out
+  }
+
   private def memInterface_impl[T <: Data](
     size:                BigInt,
     tpe:                 T,
@@ -512,6 +734,18 @@ object SRAM {
     evidenceOpt:         Option[T <:< Vec[_]],
     sourceInfo:          SourceInfo
   ): SRAMInterface[T] = {
+    if (Builder.useSRAMBlackbox)
+      return memInterface_blackbox_impl(
+        size,
+        tpe,
+        readPortClocks,
+        writePortClocks,
+        readwritePortClocks,
+        memoryFile,
+        evidenceOpt,
+        sourceInfo
+      )
+
     val numReadPorts = readPortClocks.size
     val numWritePorts = writePortClocks.size
     val numReadwritePorts = readwritePortClocks.size
@@ -609,18 +843,6 @@ object SRAM {
       assignMask(firrtlReadwritePort.wmask, memReadwritePort.mask)
     }
 
-    // Hack to ScalaDoc Bug, see [[LTLIntrinsicInstanceMethodsInternalWorkaround]]
-    implicit class SRAMDescriptionInstanceMethods(underlying: Instance[SRAMDescription]) {
-      implicit val mg:       internal.MacroGenerated = new chisel3.internal.MacroGenerated {}
-      def depthIn:           Property[BigInt] = underlying._lookup(_.depthIn)
-      def widthIn:           Property[Int] = underlying._lookup(_.widthIn)
-      def maskedIn:          Property[Boolean] = underlying._lookup(_.maskedIn)
-      def readIn:            Property[Int] = underlying._lookup(_.readIn)
-      def writeIn:           Property[Int] = underlying._lookup(_.writeIn)
-      def readwriteIn:       Property[Int] = underlying._lookup(_.readwriteIn)
-      def maskGranularityIn: Property[Int] = underlying._lookup(_.maskGranularityIn)
-      def hierarchyIn:       Property[Path] = underlying._lookup(_.hierarchyIn)
-    }
     _out.description.foreach { description =>
       val descriptionInstance: Instance[SRAMDescription] = Instantiate(new SRAMDescription)
       descriptionInstance.depthIn := Property(size)
@@ -641,6 +863,24 @@ object SRAM {
     }
     ModulePrefixAnnotation.annotate(mem)
     _out
+  }
+
+  // There appears to be a bug in ScalaDoc where you cannot use macro-generated methods in the same
+  // compilation unit as the macro-generated type. This means that any use of Definition[_] or
+  // Instance[_] of the above classes within this compilation unit breaks ScalaDoc generation. This
+  // issue appears to be similar to https://stackoverflow.com/questions/42684101 but applying the
+  // specific mitigation did not seem to work.  As a workaround, we simply write the extension methods
+  // that are generated by the @instantiable macro so that we can use them here.
+  implicit class SRAMDescriptionInstanceMethods(underlying: Instance[SRAMDescription]) {
+    implicit val mg:       internal.MacroGenerated = new chisel3.internal.MacroGenerated {}
+    def depthIn:           Property[BigInt] = underlying._lookup(_.depthIn)
+    def widthIn:           Property[Int] = underlying._lookup(_.widthIn)
+    def maskedIn:          Property[Boolean] = underlying._lookup(_.maskedIn)
+    def readIn:            Property[Int] = underlying._lookup(_.readIn)
+    def writeIn:           Property[Int] = underlying._lookup(_.writeIn)
+    def readwriteIn:       Property[Int] = underlying._lookup(_.readwriteIn)
+    def maskGranularityIn: Property[Int] = underlying._lookup(_.maskGranularityIn)
+    def hierarchyIn:       Property[Path] = underlying._lookup(_.hierarchyIn)
   }
 
   /** Assigns a given SRAM-style mask to a FIRRTL memory port mask. The FIRRTL

@@ -503,3 +503,18 @@ case object IncludeUtilMetadata extends NoTargetAnnotation with ChiselOption wit
     )
   )
 }
+
+/** Use Blackbox implementation for SRAM
+  *
+  * Use as CLI option `--use-sram-blackbox`.
+  */
+case object UseSRAMBlackbox extends NoTargetAnnotation with ChiselOption with HasShellOptions with Unserializable {
+
+  val options = Seq(
+    new ShellOption[Unit](
+      longOption = "use-sram-blackbox",
+      toAnnotationSeq = _ => Seq(UseSRAMBlackbox),
+      helpText = "Use Blackbox implementation for SRAM"
+    )
+  )
+}

@@ -2,15 +2,18 @@
 
 package chiselTests.util
 
-import chisel3._
-import chisel3.util.{MemoryReadWritePort, SRAM}
-import chisel3.experimental.{annotate, ChiselAnnotation, OpaqueType}
-import chisel3.stage.IncludeUtilMetadata
-import chiselTests.ChiselFlatSpec
 import _root_.circt.stage.ChiselStage.{emitCHIRRTL, emitSystemVerilog}
+import _root_.circt.stage.{CIRCTTarget, CIRCTTargetAnnotation, ChiselStage}
+import chisel3._
+import chisel3.experimental.{annotate, ChiselAnnotation, OpaqueType}
+import chisel3.stage.{ChiselGeneratorAnnotation, IncludeUtilMetadata, UseSRAMBlackbox}
+import chisel3.util.{MemoryReadWritePort, SRAM}
+import chiselTests.ChiselFlatSpec
+import firrtl.EmittedVerilogCircuitAnnotation
 import firrtl.annotations.{Annotation, ReferenceTarget, SingleTargetAnnotation}
 
 import scala.collection.immutable.SeqMap
+import scala.util.chaining.scalaUtilChainingOps
 
 class SRAMSpec extends ChiselFlatSpec {
   case class DummyAnno(target: ReferenceTarget) extends SingleTargetAnnotation[ReferenceTarget] {
@@ -248,5 +251,37 @@ class SRAMSpec extends ChiselFlatSpec {
     chirrtl shouldNot include("Integer")
     chirrtl shouldNot include("Path")
     chirrtl shouldNot include("propassign")
+  }
+
+  it should "get emitted by SRAMBlackbox" in {
+    def test(rd: Int, wr: Int, rw: Int, depth: Int, width: Int, maskGranularity: Int) = {
+      class Top extends Module {
+        val sram = SRAM.masked(depth, Vec(width / maskGranularity, UInt(maskGranularity.W)), rd, wr, rw)
+
+        val ioR = IO(chiselTypeOf(sram.readPorts)).tap(_.zip(sram.readPorts).foreach {
+          case (io, mem) => io <> mem
+        })
+        val ioRW = IO(chiselTypeOf(sram.readwritePorts)).tap(_.zip(sram.readwritePorts).foreach {
+          case (io, mem) => io <> mem
+        })
+        val ioW = IO(chiselTypeOf(sram.writePorts)).tap(_.zip(sram.writePorts).foreach {
+          case (io, mem) => io <> mem
+        })
+      }
+
+      val resultDir = "SRAMSpecTemp"
+      (new ChiselStage)
+        .execute(
+          Array("--target-dir", resultDir, "--split-verilog"),
+          Seq(
+            ChiselGeneratorAnnotation(() => new Top),
+            CIRCTTargetAnnotation(CIRCTTarget.SystemVerilog),
+            UseSRAMBlackbox
+          )
+        )
+
+      os.proc("slang", "--lint-only", "-f", "firrtl_black_box_resource_files.f").call(os.pwd / resultDir)
+    }
+    Seq.tabulate(2, 2, 2) { case (rd, wr, rw) => if (rd + rw != 0 && wr + rw != 0) test(rd, wr, rw, 32, 8, 2) }
   }
 }
