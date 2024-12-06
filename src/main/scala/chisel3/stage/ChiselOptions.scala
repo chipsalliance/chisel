@@ -16,7 +16,8 @@ class ChiselOptions private[stage] (
   val warningFilters:      Vector[WarningFilter] = Vector.empty,
   val useLegacyWidth:      Boolean = false,
   val layerMap:            Map[Layer, Layer] = Map.empty,
-  val includeUtilMetadata: Boolean = false) {
+  val includeUtilMetadata: Boolean = false,
+  val useSRAMBlackbox:     Boolean = false) {
 
   private[stage] def copy(
     printFullStackTrace: Boolean = printFullStackTrace,
@@ -27,7 +28,8 @@ class ChiselOptions private[stage] (
     warningFilters:      Vector[WarningFilter] = warningFilters,
     useLegacyWidth:      Boolean = useLegacyWidth,
     layerMap:            Map[Layer, Layer] = layerMap,
-    includeUtilMetadata: Boolean = includeUtilMetadata
+    includeUtilMetadata: Boolean = includeUtilMetadata,
+    useSRAMBlackbox:     Boolean = useSRAMBlackbox
   ): ChiselOptions = {
 
     new ChiselOptions(
@@ -39,7 +41,8 @@ class ChiselOptions private[stage] (
       warningFilters = warningFilters,
       useLegacyWidth = useLegacyWidth,
       layerMap = layerMap,
-      includeUtilMetadata = includeUtilMetadata
+      includeUtilMetadata = includeUtilMetadata,
+      useSRAMBlackbox = useSRAMBlackbox
     )
 
   }
