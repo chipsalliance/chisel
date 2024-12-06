@@ -37,7 +37,7 @@ private[chisel3] object UnaryLTLIntrinsic {
   )(
     implicit sourceInfo: SourceInfo
   ): Bool =
-    BaseIntrinsic(f"ltl_$intrinsicName", Bool(), params)(_in)
+    BaseIntrinsic(f"ltl_$intrinsicName", Bool(), params)(_in).suggestName(f"ltl_$intrinsicName")
 }
 
 /** Base instrinsic for all binary intrinsics with `lhs`, `rhs`, and `out` ports. */
@@ -50,7 +50,7 @@ private[chisel3] object BinaryLTLIntrinsic {
   )(
     implicit sourceInfo: SourceInfo
   ): Bool =
-    BaseIntrinsic(f"ltl_$intrinsicName", Bool(), params)(lhs, rhs)
+    BaseIntrinsic(f"ltl_$intrinsicName", Bool(), params)(lhs, rhs).suggestName(f"ltl_$intrinsicName")
 }
 
 /** A wrapper intrinsic for the CIRCT `ltl.and` operation. */
