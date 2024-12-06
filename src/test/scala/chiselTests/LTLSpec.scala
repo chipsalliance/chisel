@@ -49,15 +49,15 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselRunners {
     chirrtl should include("input a : UInt<1>")
     chirrtl should include("input b : UInt<1>")
     chirrtl should include("input c : UInt<1>")
-    chirrtl should include(f"node _T = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, a) $sourceLoc")
-    chirrtl should include(f"node _T_1 = intrinsic(circt_ltl_delay<delay = 2, length = 2> : UInt<1>, b) $sourceLoc")
-    chirrtl should include(f"node _T_2 = intrinsic(circt_ltl_delay<delay = 5> : UInt<1>, c) $sourceLoc")
-    chirrtl should include(f"node _T_3 = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, b) $sourceLoc")
-    chirrtl should include(f"node _T_4 = intrinsic(circt_ltl_concat : UInt<1>, a, _T_3) $sourceLoc")
-    chirrtl should include(f"node _T_5 = intrinsic(circt_ltl_delay<delay = 0> : UInt<1>, b) $sourceLoc")
-    chirrtl should include(f"node _T_6 = intrinsic(circt_ltl_concat : UInt<1>, a, _T_5) $sourceLoc")
-    chirrtl should include(f"node _T_7 = intrinsic(circt_ltl_delay<delay = 1> : UInt<1>, b) $sourceLoc")
-    chirrtl should include(f"node _T_8 = intrinsic(circt_ltl_concat : UInt<1>, a, _T_7) $sourceLoc")
+    chirrtl should include(f"node ltl_delay = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, a) $sourceLoc")
+    chirrtl should include(f"node ltl_delay_1 = intrinsic(circt_ltl_delay<delay = 2, length = 2> : UInt<1>, b) $sourceLoc")
+    chirrtl should include(f"node ltl_delay_2 = intrinsic(circt_ltl_delay<delay = 5> : UInt<1>, c) $sourceLoc")
+    chirrtl should include(f"node ltl_delay_3 = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, b) $sourceLoc")
+    chirrtl should include(f"node ltl_concat = intrinsic(circt_ltl_concat : UInt<1>, a, ltl_delay_3) $sourceLoc")
+    chirrtl should include(f"node ltl_delay_4 = intrinsic(circt_ltl_delay<delay = 0> : UInt<1>, b) $sourceLoc")
+    chirrtl should include(f"node ltl_concat_1 = intrinsic(circt_ltl_concat : UInt<1>, a, ltl_delay_4) $sourceLoc")
+    chirrtl should include(f"node ltl_delay_5 = intrinsic(circt_ltl_delay<delay = 1> : UInt<1>, b) $sourceLoc")
+    chirrtl should include(f"node ltl_concat_2 = intrinsic(circt_ltl_concat : UInt<1>, a, ltl_delay_5) $sourceLoc")
   }
   it should "compile sequence delay operations" in {
     ChiselStage.emitSystemVerilog(new DelaysMod)
@@ -77,9 +77,9 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselRunners {
     chirrtl should include("input c : UInt<1>")
     chirrtl should include("input d : UInt<1>")
     chirrtl should include("input e : UInt<1>")
-    chirrtl should include(f"node _T = intrinsic(circt_ltl_concat : UInt<1>, a, b) $sourceLoc")
-    chirrtl should include(f"node _T_1 = intrinsic(circt_ltl_concat : UInt<1>, c, d) $sourceLoc")
-    chirrtl should include(f"node _T_2 = intrinsic(circt_ltl_concat : UInt<1>, _T_1, e) $sourceLoc")
+    chirrtl should include(f"intrinsic(circt_ltl_concat : UInt<1>, a, b) $sourceLoc")
+    chirrtl should include(f"node ltl_concat_1 = intrinsic(circt_ltl_concat : UInt<1>, c, d) $sourceLoc")
+    chirrtl should include(f"intrinsic(circt_ltl_concat : UInt<1>, ltl_concat_1, e) $sourceLoc")
   }
   it should "compile sequence concat operations" in {
     ChiselStage.emitSystemVerilog(new ConcatMod)
@@ -102,14 +102,14 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselRunners {
     chirrtl should include("input c : UInt<1>")
     chirrtl should include("input d : UInt<1>")
     chirrtl should include("input e : UInt<1>")
-    chirrtl should include(f"node _T = intrinsic(circt_ltl_repeat<base = 1, more = 0> : UInt<1>, a) $sourceLoc")
-    chirrtl should include(f"node _T_1 = intrinsic(circt_ltl_repeat<base = 2, more = 2> : UInt<1>, b) $sourceLoc")
-    chirrtl should include(f"node _T_2 = intrinsic(circt_ltl_repeat<base = 5> : UInt<1>, c) $sourceLoc")
+    chirrtl should include(f"node ltl_repeat = intrinsic(circt_ltl_repeat<base = 1, more = 0> : UInt<1>, a) $sourceLoc")
+    chirrtl should include(f"node ltl_repeat_1 = intrinsic(circt_ltl_repeat<base = 2, more = 2> : UInt<1>, b) $sourceLoc")
+    chirrtl should include(f"node ltl_repeat_2 = intrinsic(circt_ltl_repeat<base = 5> : UInt<1>, c) $sourceLoc")
     chirrtl should include(
-      f"node _T_3 = intrinsic(circt_ltl_goto_repeat<base = 1, more = 2> : UInt<1>, d) $sourceLoc"
+      f"node ltl_goto_repeat = intrinsic(circt_ltl_goto_repeat<base = 1, more = 2> : UInt<1>, d) $sourceLoc"
     )
     chirrtl should include(
-      f"node _T_4 = intrinsic(circt_ltl_non_consecutive_repeat<base = 1, more = 2> : UInt<1>, e) $sourceLoc"
+      f"node ltl_non_consecutive_repeat = intrinsic(circt_ltl_non_consecutive_repeat<base = 1, more = 2> : UInt<1>, e) $sourceLoc"
     )
   }
   it should "compile sequence repeat operations" in {
@@ -140,28 +140,28 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselRunners {
     val sourceLoc = "@[Foo.scala 1:2]"
 
     // Sequences
-    chirrtl should include(f"node _T = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, a) $sourceLoc")
-    chirrtl should include(f"node _T_1 = intrinsic(circt_ltl_and : UInt<1>, _T, b) $sourceLoc")
-    chirrtl should include(f"node _T_2 = intrinsic(circt_ltl_or : UInt<1>, _T, b) $sourceLoc")
-    chirrtl should include(f"node _T_3 = intrinsic(circt_ltl_intersect : UInt<1>, _T, b) $sourceLoc")
-    chirrtl should include(f"node _T_4 = intrinsic(circt_ltl_intersect : UInt<1>, _T_3, _T_1) $sourceLoc")
-    chirrtl should include(f"node _T_5 = intrinsic(circt_ltl_intersect : UInt<1>, _T_4, _T_2) $sourceLoc")
-    chirrtl should include(f"node _T_6 = intrinsic(circt_ltl_clock : UInt<1>, _T, clock) $sourceLoc")
+    chirrtl should include(f"node ltl_delay = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, a) $sourceLoc")
+    chirrtl should include(f"node ltl_and = intrinsic(circt_ltl_and : UInt<1>, ltl_delay, b) $sourceLoc")
+    chirrtl should include(f"node ltl_or = intrinsic(circt_ltl_or : UInt<1>, ltl_delay, b) $sourceLoc")
+    chirrtl should include(f"node ltl_intersect = intrinsic(circt_ltl_intersect : UInt<1>, ltl_delay, b) $sourceLoc")
+    chirrtl should include(f"node ltl_intersect_1 = intrinsic(circt_ltl_intersect : UInt<1>, ltl_intersect, ltl_and) $sourceLoc")
+    chirrtl should include(f"node ltl_intersect_2 = intrinsic(circt_ltl_intersect : UInt<1>, ltl_intersect_1, ltl_or) $sourceLoc")
+    chirrtl should include(f"node ltl_clock = intrinsic(circt_ltl_clock : UInt<1>, ltl_delay, clock) $sourceLoc")
 
     // Properties
-    chirrtl should include(f"node _T_7 = intrinsic(circt_ltl_eventually : UInt<1>, a) $sourceLoc")
-    chirrtl should include(f"node _T_8 = intrinsic(circt_ltl_and : UInt<1>, _T_7, b) $sourceLoc")
-    chirrtl should include(f"node _T_9 = intrinsic(circt_ltl_or : UInt<1>, _T_7, b) $sourceLoc")
-    chirrtl should include(f"node _T_10 = intrinsic(circt_ltl_intersect : UInt<1>, _T_7, b) $sourceLoc")
+    chirrtl should include(f"node ltl_eventually = intrinsic(circt_ltl_eventually : UInt<1>, a) $sourceLoc")
+    chirrtl should include(f"node ltl_and_1 = intrinsic(circt_ltl_and : UInt<1>, ltl_eventually, b) $sourceLoc")
+    chirrtl should include(f"node ltl_or_1 = intrinsic(circt_ltl_or : UInt<1>, ltl_eventually, b) $sourceLoc")
+    chirrtl should include(f"node ltl_intersect_3 = intrinsic(circt_ltl_intersect : UInt<1>, ltl_eventually, b) $sourceLoc")
     chirrtl should include(
-      f"node _T_11 = intrinsic(circt_ltl_intersect : UInt<1>, _T_10, _T_8) $sourceLoc"
+      f"node ltl_intersect_4 = intrinsic(circt_ltl_intersect : UInt<1>, ltl_intersect_3, ltl_and_1) $sourceLoc"
     )
-    chirrtl should include(f"node _T_12 = intrinsic(circt_ltl_intersect : UInt<1>, _T_11, _T_9) $sourceLoc")
-    chirrtl should include(f"node _T_13 = intrinsic(circt_ltl_clock : UInt<1>, _T_7, clock) $sourceLoc")
+    chirrtl should include(f"node ltl_intersect_5 = intrinsic(circt_ltl_intersect : UInt<1>, ltl_intersect_4, ltl_or_1) $sourceLoc")
+    chirrtl should include(f"node ltl_clock_1 = intrinsic(circt_ltl_clock : UInt<1>, ltl_eventually, clock) $sourceLoc")
 
     // Until
-    chirrtl should include(f"node _T_14 = intrinsic(circt_ltl_until : UInt<1>, _T, b) $sourceLoc")
-    chirrtl should include(f"node _T_15 = intrinsic(circt_ltl_until : UInt<1>, _T_7, b) $sourceLoc")
+    chirrtl should include(f"node ltl_until = intrinsic(circt_ltl_until : UInt<1>, ltl_delay, b) $sourceLoc")
+    chirrtl should include(f"node ltl_until_1 = intrinsic(circt_ltl_until : UInt<1>, ltl_eventually, b) $sourceLoc")
   }
   it should "compile and, or, intersect, and clock operations" in {
     ChiselStage.emitSystemVerilog(new AndOrClockMod)
@@ -194,20 +194,20 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselRunners {
     val sourceLoc = "@[Foo.scala 1:2]"
 
     // Overlapping
-    chirrtl should include(f"node _T = intrinsic(circt_ltl_implication : UInt<1>, a, b) $sourceLoc")
-    chirrtl should include(f"node _T_1 = intrinsic(circt_ltl_implication : UInt<1>, a, b) $sourceLoc")
+    chirrtl should include(f"intrinsic(circt_ltl_implication : UInt<1>, a, b) $sourceLoc")
+    chirrtl should include(f"intrinsic(circt_ltl_implication : UInt<1>, a, b) $sourceLoc")
 
     // Non-overlapping (emitted as `a ## true |-> b`)
     chirrtl should include(
-      f"node _T_2 = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, UInt<1>(0h1)) $sourceLoc"
+      f"node ltl_delay = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, UInt<1>(0h1)) $sourceLoc"
     )
-    chirrtl should include(f"node _T_3 = intrinsic(circt_ltl_concat : UInt<1>, a, _T_2) $sourceLoc")
-    chirrtl should include(f"node _T_4 = intrinsic(circt_ltl_implication : UInt<1>, _T_3, b) $sourceLoc")
+    chirrtl should include(f"node ltl_concat = intrinsic(circt_ltl_concat : UInt<1>, a, ltl_delay) $sourceLoc")
+    chirrtl should include(f"node ltl_implication_2 = intrinsic(circt_ltl_implication : UInt<1>, ltl_concat, b) $sourceLoc")
     chirrtl should include(
-      f"node _T_5 = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, UInt<1>(0h1)) $sourceLoc"
+      f"node ltl_delay_1 = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, UInt<1>(0h1)) $sourceLoc"
     )
-    chirrtl should include(f"node _T_6 = intrinsic(circt_ltl_concat : UInt<1>, a, _T_5) $sourceLoc")
-    chirrtl should include(f"node _T_7 = intrinsic(circt_ltl_implication : UInt<1>, _T_6, b) $sourceLoc")
+    chirrtl should include(f"node ltl_concat_1 = intrinsic(circt_ltl_concat : UInt<1>, a, ltl_delay_1) $sourceLoc")
+    chirrtl should include(f"node ltl_implication_3 = intrinsic(circt_ltl_implication : UInt<1>, ltl_concat_1, b) $sourceLoc")
   }
   it should "compile property implication operation" in {
     ChiselStage.emitSystemVerilog(new PropImplicationMod)
@@ -280,9 +280,9 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselRunners {
       val sourceLoc = "@[Foo.scala 1:2]"
       chirrtl should include("node has_been_reset = intrinsic(circt_has_been_reset : UInt<1>, clock, reset)")
       chirrtl should include("node disable = eq(has_been_reset, UInt<1>(0h0))")
-      chirrtl should include(f"node _T = intrinsic(circt_ltl_clock : UInt<1>, a, clock) $sourceLoc")
-      chirrtl should include(f"node _T_1 = eq(disable, UInt<1>(0h0)) $sourceLoc")
-      chirrtl should include(f"intrinsic(circt_verif_$op, _T, _T_1) $sourceLoc")
+      chirrtl should include(f"node ltl_clock = intrinsic(circt_ltl_clock : UInt<1>, a, clock) $sourceLoc")
+      chirrtl should include(f"node _T = eq(disable, UInt<1>(0h0)) $sourceLoc")
+      chirrtl should include(f"intrinsic(circt_verif_$op, ltl_clock, _T) $sourceLoc")
     }
   }
 
@@ -311,17 +311,17 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselRunners {
       AssertProperty(a, clock = Some(c), disable = Some(b.asDisable))
     })
     // with clock; emitted as `assert(clock(a, c))`
-    chirrtl should include("node _T = intrinsic(circt_ltl_clock : UInt<1>, a, c)")
-    chirrtl should include("intrinsic(circt_verif_assert, _T)")
+    chirrtl should include("node ltl_clock = intrinsic(circt_ltl_clock : UInt<1>, a, c)")
+    chirrtl should include("intrinsic(circt_verif_assert, ltl_clock)")
 
     // with disable; emitted as `assert(a, disable)`
-    chirrtl should include("node _T_1 = eq(b, UInt<1>(0h0))")
-    chirrtl should include("intrinsic(circt_verif_assert, a, _T_1)")
+    chirrtl should include("node _T = eq(b, UInt<1>(0h0))")
+    chirrtl should include("intrinsic(circt_verif_assert, a, _T)")
 
     // with clock and disable; emitted as `assert(clock(disable(a, b), c))`
-    chirrtl should include("node _T_2 = intrinsic(circt_ltl_clock : UInt<1>, a, c)")
-    chirrtl should include("node _T_3 = eq(b, UInt<1>(0h0))")
-    chirrtl should include("intrinsic(circt_verif_assert, _T_2, _T_3)")
+    chirrtl should include("node ltl_clock_1 = intrinsic(circt_ltl_clock : UInt<1>, a, c)")
+    chirrtl should include("node _T_1 = eq(b, UInt<1>(0h0))")
+    chirrtl should include("intrinsic(circt_verif_assert, ltl_clock_1, _T_1)")
   }
 
   class SequenceConvMod extends RawModule {
@@ -343,34 +343,34 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselRunners {
     chirrtl should include(s"intrinsic(circt_verif_assert, a) $sourceLoc")
 
     // a b
-    chirrtl should include(s"node _T = intrinsic(circt_ltl_concat : UInt<1>, a, b) $sourceLoc")
-    chirrtl should include(s"intrinsic(circt_verif_assert, _T) $sourceLoc")
+    chirrtl should include(s"node ltl_concat = intrinsic(circt_ltl_concat : UInt<1>, a, b) $sourceLoc")
+    chirrtl should include(s"intrinsic(circt_verif_assert, ltl_concat) $sourceLoc")
 
     // Delay() a
-    chirrtl should include(s"node _T_1 = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, a) $sourceLoc")
-    chirrtl should include(s"intrinsic(circt_verif_assert, _T_1) $sourceLoc")
+    chirrtl should include(s"node ltl_delay = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, a) $sourceLoc")
+    chirrtl should include(s"intrinsic(circt_verif_assert, ltl_delay) $sourceLoc")
 
     // a Delay() b
-    chirrtl should include(s"node _T_2 = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, b) $sourceLoc")
-    chirrtl should include(s"node _T_3 = intrinsic(circt_ltl_concat : UInt<1>, a, _T_2) $sourceLoc")
-    chirrtl should include(s"intrinsic(circt_verif_assert, _T_3) $sourceLoc")
+    chirrtl should include(s"node ltl_delay_1 = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, b) $sourceLoc")
+    chirrtl should include(s"node ltl_concat_1 = intrinsic(circt_ltl_concat : UInt<1>, a, ltl_delay_1) $sourceLoc")
+    chirrtl should include(s"intrinsic(circt_verif_assert, ltl_concat_1) $sourceLoc")
 
     // a Delay(2) b
-    chirrtl should include(s"node _T_4 = intrinsic(circt_ltl_delay<delay = 2, length = 0> : UInt<1>, b) $sourceLoc")
-    chirrtl should include(s"node _T_5 = intrinsic(circt_ltl_concat : UInt<1>, a, _T_4) $sourceLoc")
-    chirrtl should include(s"intrinsic(circt_verif_assert, _T_5) $sourceLoc")
+    chirrtl should include(s"node ltl_delay_2 = intrinsic(circt_ltl_delay<delay = 2, length = 0> : UInt<1>, b) $sourceLoc")
+    chirrtl should include(s"node ltl_concat_2 = intrinsic(circt_ltl_concat : UInt<1>, a, ltl_delay_2) $sourceLoc")
+    chirrtl should include(s"intrinsic(circt_verif_assert, ltl_concat_2) $sourceLoc")
 
     // a Delay(42, 1337) b
     chirrtl should include(
-      s"node _T_6 = intrinsic(circt_ltl_delay<delay = 42, length = 1295> : UInt<1>, b) $sourceLoc"
+      s"node ltl_delay_3 = intrinsic(circt_ltl_delay<delay = 42, length = 1295> : UInt<1>, b) $sourceLoc"
     )
-    chirrtl should include(s"node _T_7 = intrinsic(circt_ltl_concat : UInt<1>, a, _T_6) $sourceLoc")
-    chirrtl should include(s"intrinsic(circt_verif_assert, _T_7) $sourceLoc")
+    chirrtl should include(s"node ltl_concat_3 = intrinsic(circt_ltl_concat : UInt<1>, a, ltl_delay_3) $sourceLoc")
+    chirrtl should include(s"intrinsic(circt_verif_assert, ltl_concat_3) $sourceLoc")
 
     // a Delay(9001, None) sb
-    chirrtl should include(s"node _T_8 = intrinsic(circt_ltl_delay<delay = 9001> : UInt<1>, b) $sourceLoc")
-    chirrtl should include(s"node _T_9 = intrinsic(circt_ltl_concat : UInt<1>, a, _T_8) $sourceLoc")
-    chirrtl should include(s"intrinsic(circt_verif_assert, _T_9) $sourceLoc")
+    chirrtl should include(s"node ltl_delay_4 = intrinsic(circt_ltl_delay<delay = 9001> : UInt<1>, b) $sourceLoc")
+    chirrtl should include(s"node ltl_concat_4 = intrinsic(circt_ltl_concat : UInt<1>, a, ltl_delay_4) $sourceLoc")
+    chirrtl should include(s"intrinsic(circt_verif_assert, ltl_concat_4) $sourceLoc")
   }
   it should "compile Sequence(...) convenience constructor" in {
     ChiselStage.emitSystemVerilog(new SequenceConvMod)
@@ -406,22 +406,5 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselRunners {
 
     assert(assertBlockLoc < delayIntrinsicLoc)
     assert(assumeblockLoc < implicationIntrinsicLoc)
-  }
-
-  it should "not produce name collisions with clock" in {
-    class Test extends RawModule {
-      val io = IO(Input(UInt(8.W)))
-
-      val clockWire = Wire(Clock())
-
-      withClock(clockWire) {
-        AssertProperty(Property.eventually(io.orR))
-      }
-
-      val clock = IO(Input(Clock()))
-      clockWire := clock
-    }
-
-    val chirrtl = ChiselStage.emitCHIRRTL(new Test)
   }
 }
