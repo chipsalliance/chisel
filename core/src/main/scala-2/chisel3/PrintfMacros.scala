@@ -77,7 +77,7 @@ object PrintfMacrosCompat {
     Printable.checkScope(pable)
 
     layer.block(layers.Verification, skipIfAlreadyInBlock = true, skipIfLayersEnabled = true) {
-      pushCommand(chisel3.internal.firrtl.ir.Printf(printfId, sourceInfo, clock.ref, pable))
+      pushCommand(chisel3.internal.firrtl.ir.Printf(printfId, sourceInfo, clock.ref, (!Module.disable.value).ref, pable))
     }
     printfId
   }

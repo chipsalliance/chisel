@@ -10,6 +10,8 @@ import chisel3.layers
 import chisel3.util.circt.IfElseFatalIntrinsic
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal._
+import chisel3.ltl._
+import chisel3.ltl.Sequence.BoolSequence
 
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
@@ -40,6 +42,17 @@ object VerifStmtMacrosCompat {
   private[chisel3] def getLine(c: blackbox.Context): SourceLineInfo = {
     val p = c.enclosingPosition
     (p.source.file.name, p.line): @nowarn // suppress, there's no clear replacement
+  }
+
+  private[chisel3] def resetToDisableMigrationChecks(label: String)(implicit sourceInfo: SourceInfo) = {
+    val disable = Module.disable.value
+    withDisable(Disable.Never) {
+      AssertProperty(
+        prop = ltl.Property.eventually(!disable),
+        label = Some(s"${label}_never_enabled")
+      )
+      CoverProperty(!disable, s"${label}_enabled")
+    }
   }
 
   object assert {
@@ -117,6 +130,7 @@ object VerifStmtMacrosCompat {
     ): chisel3.assert.Assert = {
       block(layers.Verification.Assert, skipIfAlreadyInBlock = true, skipIfLayersEnabled = true) {
         val id = Builder.forcedUserModule // It should be safe since we push commands anyway.
+        resetToDisableMigrationChecks("assertion")
         IfElseFatalIntrinsic(id, format, "chisel3_builtin", clock, predicate, enable, format.unpackArgs: _*)(sourceInfo)
       }
       new chisel3.assert.Assert()
@@ -186,6 +200,7 @@ object VerifStmtMacrosCompat {
       val id = new chisel3.assume.Assume()
       block(layers.Verification.Assume, skipIfAlreadyInBlock = true, skipIfLayersEnabled = true) {
         message.foreach(Printable.checkScope(_))
+        resetToDisableMigrationChecks("assumption")
         when(!Module.reset.asBool) {
           val formattedMsg = formatFailureMessage("Assumption", line, cond, message)
           Builder.pushCommand(Verification(id, Formal.Assume, sourceInfo, Module.clock.ref, cond.ref, formattedMsg))
@@ -230,6 +245,7 @@ object VerifStmtMacrosCompat {
     ): chisel3.cover.Cover = {
       val id = new chisel3.cover.Cover()
       block(layers.Verification.Cover, skipIfAlreadyInBlock = true, skipIfLayersEnabled = true) {
+        resetToDisableMigrationChecks("cover")
         when(!Module.reset.asBool) {
           Builder.pushCommand(Verification(id, Formal.Cover, sourceInfo, Module.clock.ref, cond.ref, ""))
         }

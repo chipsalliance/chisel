@@ -190,14 +190,14 @@ private[chisel3] object Converter {
       fir.DefObject(convert(info), e.name, className)
     case e @ Stop(_, info, clock, ret) =>
       fir.Stop(convert(info), ret, convert(clock, ctx, info), firrtl.Utils.one, e.name)
-    case e @ Printf(_, info, clock, pable) =>
+    case e @ Printf(_, info, clock, enable, pable) =>
       val (fmt, args) = unpack(pable, ctx)
       fir.Print(
         convert(info),
         fir.StringLit(fmt),
         args.map(a => convert(a, ctx, info)),
         convert(clock, ctx, info),
-        firrtl.Utils.one,
+        convert(enable, ctx, info),
         e.name
       )
     case e @ ProbeDefine(sourceInfo, sink, probeExpr) =>
