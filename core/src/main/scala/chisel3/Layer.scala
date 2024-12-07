@@ -8,7 +8,7 @@ import chisel3.internal.firrtl.ir.{LayerBlock, Node}
 import chisel3.util.simpleClassName
 import java.nio.file.{Path, Paths}
 import scala.annotation.tailrec
-import scala.collection.mutable.LinkedHashSet
+import scala.collection.mutable.{ArrayBuffer, LinkedHashSet}
 
 /** This object contains Chisel language features for creating layers.  Layers
   * are collections of hardware that are not always present in the circuit.
@@ -119,6 +119,19 @@ object layer {
       case null              => false
       case _ if this == that => true
       case _                 => this.canWriteTo(that.parent)
+    }
+
+    /** Return a list containg this layer and all its parents, excluding the root
+      * layer.  The deepest layer (this layer) is the first element in the list.
+      *
+      * @return a sequence of all layers
+      */
+    private[chisel3] def layerSeq: List[Layer] = {
+      def rec(current: Layer, acc: List[Layer]): List[Layer] = current match {
+        case Layer.root => acc
+        case _          => rec(current.parent, current :: acc)
+      }
+      rec(this, Nil)
     }
   }
 
