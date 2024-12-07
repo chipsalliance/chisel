@@ -8,7 +8,7 @@ import chisel3.internal.firrtl.ir.{LayerBlock, Node}
 import chisel3.util.simpleClassName
 import java.nio.file.{Path, Paths}
 import scala.annotation.tailrec
-import scala.collection.mutable.LinkedHashSet
+import scala.collection.mutable.{ArrayBuffer, LinkedHashSet}
 
 /** This object contains Chisel language features for creating layers.  Layers
   * are collections of hardware that are not always present in the circuit.
@@ -119,6 +119,20 @@ object layer {
       case null              => false
       case _ if this == that => true
       case _                 => this.canWriteTo(that.parent)
+    }
+
+    /** Return a sequence of this layer and all its parents, excluding the root layer.
+      *
+      * @return a sequence of all layers
+      */
+    private[chisel3] def layerSeq: Seq[Layer] = {
+      var currentLayer: Layer = this
+      val layers = ArrayBuffer.empty[Layer]
+      while (currentLayer != Layer.Root) {
+        layers.addOne(currentLayer)
+        currentLayer = currentLayer.parent
+      }
+      layers.reverse.toSeq
     }
   }
 
