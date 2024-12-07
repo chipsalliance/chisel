@@ -27,16 +27,56 @@ object layer {
     final case object Bind extends Type
   }
 
+  /** Enumeration of different application binary interfaces (ABIs) for how to
+    * enable layers.  These are implementations of the FIRRTL ABI Specification.
+    */
+  object ABI {
+    sealed trait Type
+
+    /** An ABI that is implemented as a file included during Verilog elabortion. */
+    final case object FileInclude extends Type {
+
+      /** Retun the file name of
+        */
+      def toFilename(layer: Layer, circuitName: String): String = {
+        (s"layers-$circuitName" +: layer.layerSeq.map(_.name)).mkString("-") + ".sv"
+      }
+
+    }
+
+    /** An ABI that requires a preprocessor macro identifier to be defined during Verilog elaboration.
+      */
+    final case object PreprocessorDefine extends Type {
+
+      /** Return the macro identifier that should be defined. */
+      def toMacroIdentifier(layer: Layer, circuitName: String): String = {
+        (s"layer_$circuitName" +: layer.layerSeq.map(_.name)).mkString("$")
+      }
+
+    }
+
+    /** A dummy ABI for the root LayerConfig.  This should be unused otherwise. */
+    final case object Root extends Type
+  }
+
   sealed trait OutputDirBehavior
   final case object DefaultOutputDir extends OutputDirBehavior
   final case object NoOutputDir extends OutputDirBehavior
   final case class CustomOutputDir(path: Path) extends OutputDirBehavior
 
-  sealed trait LayerConfig
+  sealed trait LayerConfig {
+    def abi: ABI.Type
+  }
   object LayerConfig {
-    final case class Extract(outputDirBehavior: OutputDirBehavior = DefaultOutputDir) extends LayerConfig
-    final case object Inline extends LayerConfig
-    private[chisel3] final case object Root extends LayerConfig
+    final case class Extract(outputDirBehavior: OutputDirBehavior = DefaultOutputDir) extends LayerConfig {
+      override val abi: ABI.Type = ABI.FileInclude
+    }
+    final case object Inline extends LayerConfig {
+      override val abi: ABI.Type = ABI.PreprocessorDefine
+    }
+    private[chisel3] final case object Root extends LayerConfig {
+      override val abi: ABI.Type = ABI.Root
+    }
   }
 
   /** A layer declaration.
