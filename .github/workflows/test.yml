@@ -132,7 +132,45 @@ jobs:
           $CHISEL_FIRTOOL_PATH/firtool -version >> $GITHUB_STEP_SUMMARY
           echo \`\`\` >> $GITHUB_STEP_SUMMARY
       - name: Compile with Mill
-        run: ./mill __.compile
+        run: ./mill chisel[].compile
+
+  mill3:
+    name: compile scala-3 project with mill
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'adopt'
+          java-version: '21'
+      - name: Install CIRCT
+        id: install-circt
+        if: ${{ inputs.circt }}
+        uses: circt/install-circt@v1.1.1
+        with:
+          version: ${{ inputs.circt }}
+          github-token: ${{ github.token }}
+      # TODO have install-circt do this
+      - name: Set CHISEL_FIRTOOL_PATH and CIRCT_INSTALL_PATH
+        if: steps.install-circt.outcome == 'success'
+        run: |
+          bindir=$(dirname $(which firtool))
+          installdir=$(dirname $bindir)
+          echo "CHISEL_FIRTOOL_PATH=$bindir" >> "$GITHUB_ENV"
+          echo "CIRCT_INSTALL_PATH=$installdir" >> "$GITHUB_ENV"
+      - name: Print firtool version
+        if: steps.install-circt.outcome == 'success'
+        run: |
+          echo "The CIRCT version used is:" >> $GITHUB_STEP_SUMMARY
+          echo \`\`\` >> $GITHUB_STEP_SUMMARY
+          $CHISEL_FIRTOOL_PATH/firtool -version >> $GITHUB_STEP_SUMMARY
+          echo \`\`\` >> $GITHUB_STEP_SUMMARY
+      - name: Compile with Mill
+        run: ./mill chisel[3.3.3].compile
 
   doc:
     name: Formatting
@@ -150,7 +188,7 @@ jobs:
       - name: Check Build Script Formatting
         run: ./mill --meta-level 1 mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll sources
       - name: Check Source File Format
-        run: ./mill __.checkFormat
+        run: ./mill chisel[].checkFormat
 
   integration:
     name: Integration Tests
@@ -183,7 +221,7 @@ jobs:
           dir=$(dirname $(which firtool))
           echo "CHISEL_FIRTOOL_PATH=$dir" >> "$GITHUB_ENV"
       - name: Integration Tests
-        run: ./mill -j0 integrationTests[_].test
+        run: ./mill -j0 integrationTests[].test
 
   # Currently just a sanity check that the benchmarking flow works
   benchmark:

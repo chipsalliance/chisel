@@ -38,7 +38,8 @@ object v extends Module {
   }
 
   val scalaCrossVersions = Seq(
-    "2.13.15"
+    "2.13.15",
+    "3.3.3"
   )
 
   def isScala3(ver: String): Boolean = ver.startsWith("3.")
@@ -251,7 +252,7 @@ trait Core extends CrossSbtModule with HasScala2MacroAnno with ScalafmtModule {
   )
 
   override def ivyDeps = if (v.isScala3(crossScalaVersion)) {
-    super.ivyDeps() ++ commonDeps
+    super.ivyDeps() ++ commonDeps ++ Agg(v.firtoolResolver.withDottyCompat(scalaVersion()))
   } else {
     super.ivyDeps() ++ commonDeps ++ Agg(v.firtoolResolver)
   }
