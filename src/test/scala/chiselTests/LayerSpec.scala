@@ -5,6 +5,7 @@ package chiselTests
 import chisel3._
 import chisel3.experimental.hierarchy.core.{Definition, Instance}
 import chisel3.experimental.hierarchy.instantiable
+import chisel3.ltl.AssertProperty
 import chisel3.probe.{define, Probe, ProbeValue}
 import chiselTests.{ChiselFlatSpec, FileCheck, Utils}
 import java.nio.file.{FileSystems, Paths}
@@ -380,25 +381,60 @@ class LayerSpec extends ChiselFlatSpec with Utils with FileCheck {
     )
   }
 
-  "Inline layers" should "generated expected FIRRTL" in {
-    object A extends layer.Layer(layer.LayerConfig.Inline) {
-      object B extends layer.Layer(layer.LayerConfig.Inline)
-    }
-
-    class Foo extends RawModule {
-      layer.block(A) {
-        layer.block(A.B) {}
+  "Inline layers" should "generate expected FIRRTL and SystemVerilog" in {
+    object A extends layer.Layer(layer.LayerConfig.Extract()) {
+      object B extends layer.Layer(layer.LayerConfig.Inline) {
+        object C extends layer.Layer(layer.LayerConfig.Inline)
       }
     }
 
+    class Foo extends Module {
+      val a = IO(Input(UInt(2.W)))
+
+      layer.block(A) {
+        AssertProperty(a > 0.U, "foo")
+        layer.block(A.B) {
+          AssertProperty(a > 1.U, "bar")
+          layer.block(A.B.C) {
+            AssertProperty(a > 2.U, "baz")
+          }
+        }
+      }
+    }
+
+    info("FIRRTL okay")
     generateFirrtlAndFileCheck(new Foo) {
-      """|CHECK:      layer A, inline :
+      """|CHECK:      layer A, bind
          |CHECK-NEXT:   layer B, inline :
+         |CHECK-NEXT:     layer C, inline :
          |""".stripMargin
+    }
+
+    info("SystemVerilog okay")
+    val verilog = ChiselStage.emitSystemVerilog(
+      new Foo,
+      firtoolOpts = Array(
+        "-disable-all-randomization",
+        "-enable-layers=Verification,Verification.Assert,Verification.Assume,Verification.Cover"
+      )
+    )
+    fileCheckString(verilog) {
+      """|CHECK:      module Foo(
+         |CHECK-NOT:    assert property
+         |
+         |CHECK:      module Foo_A(
+         |CHECK-NOT:    `ifdef
+         |CHECK:        foo: assert property
+         |CHECK:        `ifdef layer_Foo$A$B
+         |CHECK-NEXT:     bar: assert property
+         |CHECK-NEXT:     `ifdef layer_Foo$A$B$C
+         |CHECK-NEXT:       baz: assert property
+         |CHECK-NEXT:     `endif
+         |CHECK-NEXT:   `endif""".stripMargin
     }
   }
 
-  "Inline layers" should "be ignored when choosing default output directories" in {
+  they should "be ignored when choosing default output directories" in {
     object LayerWithDefaultOutputDir extends layer.Layer(layer.LayerConfig.Extract()) {
       object InlineSublayer extends layer.Layer(layer.LayerConfig.Inline) {
         object SublayerWithDefaultOutputDir extends layer.Layer(layer.LayerConfig.Extract()) {}
