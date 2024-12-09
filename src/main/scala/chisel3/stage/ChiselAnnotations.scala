@@ -392,7 +392,9 @@ object ChiselOutputFileAnnotation extends HasShellOptions {
   * @param design top-level Chisel design
   * @tparam DUT Type of the top-level Chisel design
   */
-case class DesignAnnotation[DUT <: RawModule](design: DUT) extends NoTargetAnnotation with Unserializable
+case class DesignAnnotation[DUT <: RawModule](design: DUT, layers: Seq[chisel3.layer.Layer] = Seq.empty)
+    extends NoTargetAnnotation
+    with Unserializable
 
 /** Use legacy Chisel width behavior.
   *

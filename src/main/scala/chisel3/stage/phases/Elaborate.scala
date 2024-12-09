@@ -6,6 +6,7 @@ import chisel3.Module
 import chisel3.experimental.hierarchy.core.Definition
 import chisel3.internal.ExceptionHelpers.ThrowableHelpers
 import chisel3.internal.{Builder, BuilderContextCache, DynamicContext}
+import chisel3.internal.firrtl.ir
 import chisel3.stage.{
   ChiselCircuitAnnotation,
   ChiselGeneratorAnnotation,
@@ -53,9 +54,16 @@ class Elaborate extends Phase {
             BuilderContextCache.empty,
             chiselOptions.layerMap
           )
-        val (circuit, dut) =
+        val (circuit, dut) = {
           Builder.build(Module(gen()), context)
-        Seq(ChiselCircuitAnnotation(circuit), DesignAnnotation(dut))
+        }
+
+        // Extract the Chisel layers from a circuit via an in-order walk.
+        def walkLayers(layer: ir.Layer, layers: Seq[chisel3.layer.Layer] = Nil): Seq[chisel3.layer.Layer] = {
+          layer.children.foldLeft(layers :+ layer.chiselLayer) { case (acc, x) => walkLayers(x, acc) }
+        }
+
+        Seq(ChiselCircuitAnnotation(circuit), DesignAnnotation(dut, layers = circuit.layers.flatMap(walkLayers(_))))
       } catch {
         /* if any throwable comes back and we're in "stack trace trimming" mode, then print an error and trim the stack trace
          */

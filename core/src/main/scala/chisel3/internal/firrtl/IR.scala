@@ -425,10 +425,11 @@ private[chisel3] object ir {
   }
 
   final case class Layer(
-    sourceInfo: SourceInfo,
-    name:       String,
-    config:     LayerConfig,
-    children:   Seq[Layer])
+    sourceInfo:  SourceInfo,
+    name:        String,
+    config:      LayerConfig,
+    children:    Seq[Layer],
+    chiselLayer: layer.Layer)
 
   class LayerBlock(val sourceInfo: SourceInfo, val layer: chisel3.layer.Layer) extends Command {
     val region = new Block(sourceInfo)

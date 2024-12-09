@@ -1130,7 +1130,7 @@ private[chisel3] object Builder extends LazyLogging {
           case layer.LayerConfig.Inline     => LayerConfig.Inline
           case layer.LayerConfig.Root       => ???
         }
-        Layer(l.sourceInfo, l.name, config, children.map(foldLayers).toSeq)
+        Layer(l.sourceInfo, l.name, config, children.map(foldLayers).toSeq, l)
       }
 
       val optionDefs = groupByIntoSeq(options)(opt => opt.group).map {
