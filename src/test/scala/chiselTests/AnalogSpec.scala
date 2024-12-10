@@ -162,7 +162,7 @@ class AnalogSpec extends ChiselFlatSpec with Utils {
   // Also note this relies on executing Firrtl from Chisel directly
   it should "NOT be connectable to UInts" in {
     a[Exception] should be thrownBy {
-      runTester {
+      ChiselStage.emitSystemVerilog {
         new BasicTester {
           val uint = WireDefault(0.U(32.W))
           val sint = Wire(Analog(32.W))
