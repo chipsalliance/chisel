@@ -54,6 +54,30 @@ object LayerControl {
           case _ => None
         }
     }
+
+    /** Return a partial function that will return true if a file should be included
+      * in the build to enable a layer.  This partial function is not defined if
+      * the file is not a layer file.
+      *
+      * @param module an elaborated module
+      * @return a partial function to test if layer files should be included
+      */
+    final def shouldIncludeFile(module: ElaboratedModule[_ <: RawModule]): PartialFunction[File, Boolean] = {
+      val layerFilenames: Seq[String] = getLayerSubset(module).flatMap {
+        case layer =>
+          layer.config.abi match {
+            case abi: chisel3.layer.ABI.FileInclude.type =>
+              Some(abi.toFilename(layer, module.wrapped.circuitName))
+            case _ => None
+          }
+      }
+
+      {
+        case a if a.getName().startsWith("layers-") =>
+          layerFilenames.mkString("|").r.matches(a.getName())
+      }
+    }
+
   }
 
   /** Enable all layers */
