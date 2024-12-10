@@ -28,6 +28,22 @@ package object choice {
   abstract class Group(implicit _sourceInfo: SourceInfo) {
     self: Singleton =>
 
+    private[choice] def registerCases(): Unit = {
+      // Grab a symbol for the derived class (a concrete Group)
+      val instanceMirror = cm.reflect(this)
+      val symbol = instanceMirror.symbol
+
+      symbol.typeSignature.members.collect {
+        // Look only for inner objects in the Group. Note, this is not recursive.
+        case m: ModuleSymbol if m.isStatic =>
+          val instance = cm.reflectModule(m.asModule).instance
+          // Confirms the instance is a subtype of Case
+          if (cm.classSymbol(instance.getClass).toType <:< typeOf[Case]) {
+            Builder.options += instance.asInstanceOf[Case]
+          }
+      }
+    }
+
     private[chisel3] def sourceInfo: SourceInfo = _sourceInfo
 
     private[chisel3] def name: String = simpleClassName(this.getClass())
@@ -59,20 +75,7 @@ package object choice {
     * This API can be used to guarantee that a design will always have certain
     * group defined.  This is analagous in spirit to [[layer.addLayer]].
     */
-  def addGroup[T <: Group: TypeTag](group: T): Unit = {
-
-    val tpe = typeOf[T]
-    val classSymbol = tpe.typeSymbol.asClass
-    val classMirror = cm.reflectClass(classSymbol)
-
-    tpe.members.collect {
-      // Look only for inner objects.  Note, this is not recursive.
-      case m: ModuleSymbol if m.isStatic =>
-        val instance = cm.reflectModule(m.asModule).instance
-        // Confirms the instance is a subtype of Case
-        if (cm.classSymbol(instance.getClass).toType <:< typeOf[Case]) {
-          Builder.options += instance.asInstanceOf[Case]
-        }
-    }
+  def addGroup(group: Group): Unit = {
+    group.registerCases()
   }
 }
