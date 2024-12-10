@@ -93,9 +93,10 @@ class EphemeralSimulatorSpec extends AnyFunSpec with Matchers {
           }
         }
         it("should error if an enabled layer does not exist") {
-          intercept [IllegalArgumentException] {simulate(new Foo, layerControl = LayerControl.Enable(B)) { dut =>
-                                                 dut.clock.step()
-                                               }
+          intercept[IllegalArgumentException] {
+            simulate(new Foo, layerControl = LayerControl.Enable(B)) { dut =>
+              dut.clock.step()
+            }
           }.getMessage() must include("cannot enable layer 'B' as it is not one of the defined layers")
         }
       }
