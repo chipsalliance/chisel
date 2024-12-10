@@ -3,6 +3,7 @@ package chisel3
 import svsim._
 import chisel3.reflect.DataMirror
 import chisel3.experimental.dataview.reifyIdentityView
+import chisel3.stage.DesignAnnotation
 import scala.collection.mutable
 import java.nio.file.{Files, Path, Paths}
 import firrtl.seqToAnnoSeq
@@ -14,7 +15,8 @@ package object simulator {
     */
   final class ElaboratedModule[T] private[simulator] (
     private[simulator] val wrapped: T,
-    private[simulator] val ports:   Seq[(Data, ModuleInfo.Port)])
+    private[simulator] val ports:   Seq[(Data, ModuleInfo.Port)],
+    private[simulator] val layers:  Seq[chisel3.layer.Layer])
 
   /**
     * A class that enables using a Chisel module to control an `svsim.Simulation`.
@@ -222,7 +224,8 @@ package object simulator {
           ports = ports.map(_._2)
         )
       )
-      new ElaboratedModule(dut, ports)
+      val layers = outputAnnotations.collectFirst { case DesignAnnotation(_, layers) => layers }.get
+      new ElaboratedModule(dut, ports, layers)
     }
   }
 }
