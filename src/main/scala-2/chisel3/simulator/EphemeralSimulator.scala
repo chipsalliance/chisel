@@ -23,7 +23,7 @@ object EphemeralSimulator extends PeekPokeAPI {
     layerControl: LayerControl.Type = LayerControl.EnableAll
   )(body:         (T) => Unit
   ): Unit = {
-    makeSimulator(layerControl).simulate(module)({ module => body(module.wrapped) }).result
+    makeSimulator(layerControl).simulate(module, layerControl)({ module => body(module.wrapped) }).result
   }
 
   private class DefaultSimulator(val workspacePath: String, layerControl: LayerControl.Type)

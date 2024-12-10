@@ -99,11 +99,16 @@ trait Simulator {
   def customSimulationWorkingDirectory: Option[String] = None
   def verbose:                          Boolean = false
   def firtoolArgs:                      Seq[String] = Seq()
+  def commonCompilationSettings: CommonCompilationSettings
 
-  private[simulator] def processBackends(processor: Simulator.BackendProcessor): Unit
+  private[simulator] def processBackends(
+    processor:                 Simulator.BackendProcessor,
+    commonCompilationSettings: CommonCompilationSettings
+  ): Unit
   private[simulator] def _simulate[T <: RawModule, U](
-    module: => T
-  )(body:   (SimulatedModule[T]) => U
+    module:       => T,
+    layerControl: LayerControl.Type
+  )(body:         (SimulatedModule[T]) => U
   ): Seq[Simulator.BackendInvocationDigest[U]] = {
     val workspace = new Workspace(path = workspacePath, workingDirectoryPrefix = workingDirectoryPrefix)
     workspace.reset()
@@ -120,7 +125,13 @@ trait Simulator {
         outcome
       }
     )
-    processBackends(compiler)
+
+    processBackends(
+      compiler,
+      commonCompilationSettings.copy(verilogPreprocessorDefines =
+        commonCompilationSettings.verilogPreprocessorDefines ++ layerControl.preprocessorDefines(elaboratedModule)
+      )
+    )
     compiler.results.toSeq
   }
 }
@@ -129,10 +140,11 @@ trait MultiBackendSimulator extends Simulator {
   def processBackends(processor: Simulator.BackendProcessor): Unit
 
   def simulate[T <: RawModule, U](
-    module: => T
-  )(body:   (SimulatedModule[T]) => U
+    module:       => T,
+    layerControl: LayerControl.Type = LayerControl.EnableAll
+  )(body:         (SimulatedModule[T]) => U
   ): Seq[Simulator.BackendInvocationDigest[U]] = {
-    _simulate(module)(body)
+    _simulate(module, layerControl)(body)
   }
 }
 
@@ -142,15 +154,19 @@ trait SingleBackendSimulator[T <: Backend] extends Simulator {
   def commonCompilationSettings:          CommonCompilationSettings
   def backendSpecificCompilationSettings: backend.CompilationSettings
 
-  final def processBackends(processor: Simulator.BackendProcessor): Unit = {
+  final def processBackends(
+    processor:                 Simulator.BackendProcessor,
+    commonCompilationSettings: CommonCompilationSettings
+  ): Unit = {
     processor.process(backend)(tag, commonCompilationSettings, backendSpecificCompilationSettings)
   }
 
   def simulate[T <: RawModule, U](
-    module: => T
-  )(body:   (SimulatedModule[T]) => U
+    module:       => T,
+    layerControl: LayerControl.Type = LayerControl.EnableAll
+  )(body:         (SimulatedModule[T]) => U
   ): Simulator.BackendInvocationDigest[U] = {
-    _simulate(module)(body).head
+    _simulate(module, layerControl)(body).head
   }
 
 }

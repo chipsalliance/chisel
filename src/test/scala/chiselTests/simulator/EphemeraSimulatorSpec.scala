@@ -24,36 +24,80 @@ class EphemeralSimulatorSpec extends AnyFunSpec with Matchers {
       }
     }
     describe("layer control functionality") {
-      object A extends Layer(LayerConfig.Extract())
-      class Foo extends Module {
-        block(A) {
-          chisel3.assert(false.B)
+      describe("for extract layers") {
+        object A extends Layer(LayerConfig.Extract())
+        class Foo extends Module {
+          block(A) {
+            chisel3.assert(false.B)
+          }
         }
-      }
-      it("should enable all layers by default") {
-        intercept[svsim.Simulation.UnexpectedEndOfMessages.type] {
-          simulate(new Foo) { dut =>
+        it("should enable all layers by default") {
+          intercept[svsim.Simulation.UnexpectedEndOfMessages.type] {
+            simulate(new Foo) { dut =>
+              dut.clock.step()
+            }
+          }
+        }
+        it("should enable all layers when provied with EnableAll") {
+          intercept[svsim.Simulation.UnexpectedEndOfMessages.type] {
+            simulate(new Foo, layerControl = LayerControl.EnableAll) { dut =>
+              dut.clock.step()
+            }
+          }
+        }
+        it("should disable all layers when provided with Enable()") {
+          simulate(new Foo, layerControl = LayerControl.Enable()) { dut =>
             dut.clock.step()
           }
         }
-      }
-      it("should enable all layers when provied with EnableAll") {
-        intercept[svsim.Simulation.UnexpectedEndOfMessages.type] {
-          simulate(new Foo, layerControl = LayerControl.EnableAll) { dut =>
-            dut.clock.step()
+        it("should enable specific layers with Enable") {
+          intercept[svsim.Simulation.UnexpectedEndOfMessages.type] {
+            simulate(new Foo, layerControl = LayerControl.Enable(A)) { dut =>
+              dut.clock.step()
+            }
           }
         }
       }
-      it("should disable all layers when provided with Enable()") {
-        simulate(new Foo, layerControl = LayerControl.Enable()) { dut =>
-          dut.clock.step()
+      describe("for inline layers") {
+        object A extends Layer(LayerConfig.Inline)
+        object B extends Layer(LayerConfig.Inline)
+        class Foo extends Module {
+          block(A) {
+            chisel3.assert(false.B)
+          }
         }
-      }
-      it("should enable specific layers with Enable") {
-        intercept[svsim.Simulation.UnexpectedEndOfMessages.type] {
-          simulate(new Foo, layerControl = LayerControl.Enable(A)) { dut =>
+        it("should enable all layers by default") {
+          intercept[svsim.Simulation.UnexpectedEndOfMessages.type] {
+            simulate(new Foo) { dut =>
+              dut.clock.step()
+            }
+          }
+        }
+        it("should enable all layers when provied with EnableAll") {
+          intercept[svsim.Simulation.UnexpectedEndOfMessages.type] {
+            simulate(new Foo, layerControl = LayerControl.EnableAll) { dut =>
+              dut.clock.step()
+            }
+          }
+        }
+        it("should disable all layers when provided with Enable()") {
+          simulate(new Foo, layerControl = LayerControl.Enable()) { dut =>
             dut.clock.step()
           }
+        }
+        it("should enable specific layers with Enable") {
+          intercept[svsim.Simulation.UnexpectedEndOfMessages.type] {
+            simulate(new Foo, layerControl = LayerControl.Enable(A)) { dut =>
+              dut.clock.step()
+            }
+          }
+        }
+        it("should error if an enabled layer does not exist") {
+          intercept[IllegalArgumentException] {
+            simulate(new Foo, layerControl = LayerControl.Enable(B)) { dut =>
+              dut.clock.step()
+            }
+          }.getMessage() must include("cannot enable layer 'B' as it is not one of the defined layers")
         }
       }
     }

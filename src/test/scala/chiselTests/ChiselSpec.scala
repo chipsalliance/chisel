@@ -61,7 +61,7 @@ trait ChiselRunners extends Assertions {
             VerilogPreprocessorDefine("ASSERT_VERBOSE_COND", s"!${Workspace.testbenchModuleName}.reset"),
             VerilogPreprocessorDefine("PRINTF_COND", s"!${Workspace.testbenchModuleName}.reset"),
             VerilogPreprocessorDefine("STOP_COND", s"!${Workspace.testbenchModuleName}.reset")
-          ),
+          ) ++ layerControl.preprocessorDefines(elaboratedModule),
           includeDirs = Some(Seq(workspace.primarySourcesPath)),
           fileFilter = layerControl.filter
         )
