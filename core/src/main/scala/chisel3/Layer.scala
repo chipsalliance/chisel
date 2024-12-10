@@ -35,6 +35,7 @@ object layer {
 
     /** An ABI that is implemented as a file included during Verilog elabortion. */
     final case object FileInclude extends Type {
+
       /** Retun the file name of
         */
       def toFilename(layer: Layer, circuitName: String): String = {
