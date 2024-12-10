@@ -3,7 +3,12 @@
 package chisel3
 
 import chisel3.experimental.{BaseModule, SourceInfo}
+import chisel3.internal.Builder
 import chisel3.util.simpleClassName
+
+import scala.collection.mutable
+import scala.reflect.runtime.universe._
+import scala.reflect.runtime.{currentMirror => cm}
 
 /** This package contains Chisel language definitions for describing configuration options and their accepted values.
   */
@@ -13,7 +18,7 @@ package object choice {
     *
     * @example
     * {{{
-    * import chisel3.option.{Group, Case}
+    * import chisel3.choice.{Group, Case}
     * object Platform extends Group {
     *   object FPGA extends Case
     *   object ASIC extends Case
@@ -46,5 +51,28 @@ package object choice {
       * @param module Module to map to the current case.
       */
     def ->[T](module: => T): (Case, () => T) = (this, () => module)
+  }
+
+  /** Registers all options in a group with the Builder.
+    * This lets Chisel know  that this layer should be emitted into FIRRTL text.
+    *
+    * This API can be used to guarantee that a design will always have certain
+    * group defined.  This is analagous in spirit to [[layer.addLayer]].
+    */
+  def addGroup[T <: Group: TypeTag](group: T): Unit = {
+
+    val tpe = typeOf[T]
+    val classSymbol = tpe.typeSymbol.asClass
+    val classMirror = cm.reflectClass(classSymbol)
+
+    tpe.members.collect {
+      // Look only for inner objects.  Note, this is not recursive.
+      case m: ModuleSymbol if m.isStatic =>
+        val instance = cm.reflectModule(m.asModule).instance
+        // Confirms the instance is a subtype of Case
+        if (cm.classSymbol(instance.getClass).toType <:< typeOf[Case]) {
+          Builder.options += instance.asInstanceOf[Case]
+        }
+    }
   }
 }
