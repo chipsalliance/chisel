@@ -99,11 +99,16 @@ trait Simulator {
   def customSimulationWorkingDirectory: Option[String] = None
   def verbose:                          Boolean = false
   def firtoolArgs:                      Seq[String] = Seq()
+  def commonCompilationSettings: CommonCompilationSettings
 
-  private[simulator] def processBackends(processor: Simulator.BackendProcessor): Unit
+  private[simulator] def processBackends(
+    processor:                 Simulator.BackendProcessor,
+    commonCompilationSettings: CommonCompilationSettings
+  ): Unit
   private[simulator] def _simulate[T <: RawModule, U](
-    module: => T
-  )(body:   (SimulatedModule[T]) => U
+    module:       => T,
+    layerControl: LayerControl.Type
+  )(body:         (SimulatedModule[T]) => U
   ): Seq[Simulator.BackendInvocationDigest[U]] = {
     val workspace = new Workspace(path = workspacePath, workingDirectoryPrefix = workingDirectoryPrefix)
     workspace.reset()
@@ -120,7 +125,36 @@ trait Simulator {
         outcome
       }
     )
-    processBackends(compiler)
+
+    val preprocessorDefines =
+      scala.collection.mutable.ArrayBuffer.empty[CommonCompilationSettings.VerilogPreprocessorDefine]
+
+    def addLayer(layer: chisel3.layer.Layer): Unit = layer.config.abi match {
+      case abi: chisel3.layer.ABI.FileInclude.type =>
+      case abi: chisel3.layer.ABI.PreprocessorDefine.type =>
+        require(
+          elaboratedModule.layers.contains(layer),
+          s"""cannot enable layer '${layer.fullName}' as it is not one of the defined layers: ${elaboratedModule.layers
+            .map(_.fullName)}"""
+        )
+        preprocessorDefines += CommonCompilationSettings.VerilogPreprocessorDefine(
+          abi.toMacroIdentifier(layer, elaboratedModule.wrapped.name)
+        )
+      case chisel3.layer.ABI.Root =>
+    }
+
+    val layers = layerControl match {
+      case LayerControl.EnableAll => elaboratedModule.layers
+      case enable: LayerControl.Enable => enable.layers
+    }
+    layers.foreach(addLayer)
+
+    processBackends(
+      compiler,
+      commonCompilationSettings.copy(verilogPreprocessorDefines =
+        commonCompilationSettings.verilogPreprocessorDefines ++ preprocessorDefines
+      )
+    )
     compiler.results.toSeq
   }
 }
@@ -129,10 +163,11 @@ trait MultiBackendSimulator extends Simulator {
   def processBackends(processor: Simulator.BackendProcessor): Unit
 
   def simulate[T <: RawModule, U](
-    module: => T
-  )(body:   (SimulatedModule[T]) => U
+    module:       => T,
+    layerControl: LayerControl.Type = LayerControl.EnableAll
+  )(body:         (SimulatedModule[T]) => U
   ): Seq[Simulator.BackendInvocationDigest[U]] = {
-    _simulate(module)(body)
+    _simulate(module, layerControl)(body)
   }
 }
 
@@ -142,15 +177,19 @@ trait SingleBackendSimulator[T <: Backend] extends Simulator {
   def commonCompilationSettings:          CommonCompilationSettings
   def backendSpecificCompilationSettings: backend.CompilationSettings
 
-  final def processBackends(processor: Simulator.BackendProcessor): Unit = {
+  final def processBackends(
+    processor:                 Simulator.BackendProcessor,
+    commonCompilationSettings: CommonCompilationSettings
+  ): Unit = {
     processor.process(backend)(tag, commonCompilationSettings, backendSpecificCompilationSettings)
   }
 
   def simulate[T <: RawModule, U](
-    module: => T
-  )(body:   (SimulatedModule[T]) => U
+    module:       => T,
+    layerControl: LayerControl.Type = LayerControl.EnableAll
+  )(body:         (SimulatedModule[T]) => U
   ): Simulator.BackendInvocationDigest[U] = {
-    _simulate(module)(body).head
+    _simulate(module, layerControl)(body).head
   }
 
 }

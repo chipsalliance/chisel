@@ -193,7 +193,7 @@ class SelectSpec extends ChiselFlatSpec {
     }
     val top = ChiselGeneratorAnnotation(() => {
       new Top()
-    }).elaborate.collectFirst { case DesignAnnotation(design: Top) => design }.get
+    }).elaborate.collectFirst { case DesignAnnotation(design: Top, _) => design }.get
     Select.collectDeep(top) { case x => x } should equal(Seq(top, top.inst0))
     Select.getDeep(top)(x => Seq(x)) should equal(Seq(top, top.inst0))
     Select.instances(top) should equal(Seq(top.inst0))
@@ -220,7 +220,7 @@ class SelectSpec extends ChiselFlatSpec {
     }
     val top = ChiselGeneratorAnnotation(() => {
       new Top()
-    }).elaborate.collectFirst { case DesignAnnotation(design: Top) => design }.get
+    }).elaborate.collectFirst { case DesignAnnotation(design: Top, _) => design }.get
     intercept[Exception] { Select.collectDeep(top) { case x => x } }
     intercept[Exception] { Select.getDeep(top)(x => Seq(x)) }
     intercept[Exception] { Select.instances(top) }

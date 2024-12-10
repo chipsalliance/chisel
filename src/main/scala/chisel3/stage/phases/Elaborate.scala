@@ -53,9 +53,10 @@ class Elaborate extends Phase {
             BuilderContextCache.empty,
             chiselOptions.layerMap
           )
-        val (circuit, dut) =
+        val (circuit, dut, layers) = {
           Builder.build(Module(gen()), context)
-        Seq(ChiselCircuitAnnotation(circuit), DesignAnnotation(dut))
+        }
+        Seq(ChiselCircuitAnnotation(circuit), DesignAnnotation(dut, layers))
       } catch {
         /* if any throwable comes back and we're in "stack trace trimming" mode, then print an error and trim the stack trace
          */
