@@ -141,10 +141,11 @@ class AddGroupSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
     val chirrtl = ChiselStage.emitCHIRRTL(new ModuleWithoutChoice, Array("--full-stacktrace"))
 
     info("CHIRRTL emission looks correct")
-    matchesAndOmits(chirrtl)(
-      "option Platform :",
-      "FPGA",
-      "ASIC"
+    fileCheckString(chirrtl)(
+      """|CHECK: option Platform :
+         |CHECK-NEXT: FPGA
+         |CHECK-NEXT: ASIC
+         |""".stripMargin
     )()
   }
 }
