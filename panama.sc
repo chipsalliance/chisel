@@ -138,10 +138,7 @@ trait HasJextractGeneratedSources extends JavaModule {
           linkLibraries().flatMap(l => Seq("-l", l))
       ).call(T.dest)
       // @formatter:on
-      Lib
-        .findSourceFiles(os.walk(T.dest).map(PathRef(_)), Seq("java"))
-        .distinct
-        .map(PathRef(_))
+      Seq(PathRef(T.dest))
     }
   }
 
