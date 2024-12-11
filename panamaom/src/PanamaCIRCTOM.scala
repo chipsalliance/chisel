@@ -32,6 +32,61 @@ class PanamaCIRCTOMEvaluator private[chisel3] (circt: PanamaCIRCT, mlirModule: M
 abstract class PanamaCIRCTOMEvaluatorValue {
   val circt: PanamaCIRCT
   val value: OMEvaluatorValue
+  def objOpt: Option[PanamaCIRCTOMEvaluatorValueObject] =
+    this match {
+      case valueObject: PanamaCIRCTOMEvaluatorValueObject => Some(valueObject)
+      case _ => None
+    }
+  def obj: PanamaCIRCTOMEvaluatorValueObject = objOpt.get
+
+  def basePathOpt: Option[PanamaCIRCTOMEvaluatorValueBasePath] =
+    this match {
+      case path: PanamaCIRCTOMEvaluatorValueBasePath => Some(path)
+      case _ => None
+    }
+  def basePath: PanamaCIRCTOMEvaluatorValueBasePath = basePathOpt.get
+
+  def listOpt: Option[PanamaCIRCTOMEvaluatorValueList] =
+    this match {
+      case list: PanamaCIRCTOMEvaluatorValueList => Some(list)
+      case _ => None
+    }
+  def list: PanamaCIRCTOMEvaluatorValueList = listOpt.get
+
+  def mapOpt: Option[PanamaCIRCTOMEvaluatorValueMap] =
+    this match {
+      case map: PanamaCIRCTOMEvaluatorValueMap => Some(map)
+      case _ => None
+    }
+  def mapPath: PanamaCIRCTOMEvaluatorValueMap = mapOpt.get
+
+  def pathOpt: Option[PanamaCIRCTOMEvaluatorValuePath] =
+    this match {
+      case path: PanamaCIRCTOMEvaluatorValuePath => Some(path)
+      case _ => None
+    }
+  def path: PanamaCIRCTOMEvaluatorValuePath = pathOpt.get
+
+  def intOpt: Option[PanamaCIRCTOMEvaluatorValuePrimitiveInteger] =
+    this match {
+      case integer: PanamaCIRCTOMEvaluatorValuePrimitiveInteger => Some(integer)
+      case _ => None
+    }
+  def int: PanamaCIRCTOMEvaluatorValuePrimitiveInteger = intOpt.get
+
+  def stringOpt: Option[PanamaCIRCTOMEvaluatorValuePrimitiveString] =
+    this match {
+      case string: PanamaCIRCTOMEvaluatorValuePrimitiveString => Some(string)
+      case _ => None
+    }
+  def string: PanamaCIRCTOMEvaluatorValuePrimitiveString = stringOpt.get
+
+  def tupleOpt: Option[PanamaCIRCTOMEvaluatorValueTuple] =
+    this match {
+      case tuple: PanamaCIRCTOMEvaluatorValueTuple => Some(tuple)
+      case _ => None
+    }
+  def tuple: PanamaCIRCTOMEvaluatorValueTuple = tupleOpt.get
 
   // Incomplete. currently for debugging purposes only
   override def toString: String = {
@@ -148,6 +203,7 @@ class PanamaCIRCTOMEvaluatorValuePrimitiveString private[chisel3] (
 
 class PanamaCIRCTOMEvaluatorValueObject private[chisel3] (val circt: PanamaCIRCT, val value: OMEvaluatorValue)
     extends PanamaCIRCTOMEvaluatorValue {
+  def apply(name: String): PanamaCIRCTOMEvaluatorValue = field(name)
   def field(name: String): PanamaCIRCTOMEvaluatorValue =
     PanamaCIRCTOMEvaluatorValue.newValue(circt, circt.omEvaluatorObjectGetField(value, name))
 
