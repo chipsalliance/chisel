@@ -128,8 +128,12 @@ trait Simulator {
 
     processBackends(
       compiler,
-      commonCompilationSettings.copy(verilogPreprocessorDefines =
-        commonCompilationSettings.verilogPreprocessorDefines ++ layerControl.preprocessorDefines(elaboratedModule)
+      commonCompilationSettings.copy(
+        verilogPreprocessorDefines =
+          commonCompilationSettings.verilogPreprocessorDefines ++ layerControl.preprocessorDefines(
+            elaboratedModule
+          ),
+        fileFilter = commonCompilationSettings.fileFilter.orElse(layerControl.shouldIncludeFile(elaboratedModule))
       )
     )
     compiler.results.toSeq

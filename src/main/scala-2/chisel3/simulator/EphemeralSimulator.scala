@@ -23,16 +23,13 @@ object EphemeralSimulator extends PeekPokeAPI {
     layerControl: LayerControl.Type = LayerControl.EnableAll
   )(body:         (T) => Unit
   ): Unit = {
-    makeSimulator(layerControl).simulate(module, layerControl)({ module => body(module.wrapped) }).result
+    makeSimulator().simulate(module, layerControl)({ module => body(module.wrapped) }).result
   }
 
-  private class DefaultSimulator(val workspacePath: String, layerControl: LayerControl.Type)
-      extends SingleBackendSimulator[verilator.Backend] {
+  private class DefaultSimulator(val workspacePath: String) extends SingleBackendSimulator[verilator.Backend] {
     val backend = verilator.Backend.initializeFromProcessEnvironment()
     val tag = "default"
-    val commonCompilationSettings = CommonCompilationSettings(
-      fileFilter = layerControl.filter
-    )
+    val commonCompilationSettings = CommonCompilationSettings()
     val backendSpecificCompilationSettings = verilator.Backend.CompilationSettings()
 
     // Try to clean up temporary workspace if possible
@@ -40,14 +37,13 @@ object EphemeralSimulator extends PeekPokeAPI {
       (new Directory(new File(workspacePath))).deleteRecursively()
     }
   }
-  private def makeSimulator(layerControl: LayerControl.Type): DefaultSimulator = {
+  private def makeSimulator(): DefaultSimulator = {
     // TODO: Use ProcessHandle when we can drop Java 8 support
     // val id = ProcessHandle.current().pid().toString()
     val id = java.lang.management.ManagementFactory.getRuntimeMXBean().getName()
     val className = getClass().getName().stripSuffix("$")
     new DefaultSimulator(
-      workspacePath = Files.createTempDirectory(s"${className}_${id}_").toString,
-      layerControl = layerControl
+      workspacePath = Files.createTempDirectory(s"${className}_${id}_").toString
     )
   }
 }

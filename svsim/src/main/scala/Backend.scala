@@ -15,7 +15,7 @@ case class CommonCompilationSettings(
   libraryExtensions: Option[Seq[String]] = None,
   libraryPaths:      Option[Seq[String]] = None,
   includeDirs:       Option[Seq[String]] = None,
-  fileFilter:        File => Boolean = _ => true)
+  fileFilter:        PartialFunction[File, Boolean] = PartialFunction.empty)
 object CommonCompilationSettings {
   object VerilogPreprocessorDefine {
     def apply(name: String, value: String) = new VerilogPreprocessorDefine(name, Some(value))
