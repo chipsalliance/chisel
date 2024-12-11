@@ -13,20 +13,6 @@ object LayerControl {
   /** The type of all layer control variations */
   sealed trait Type {
 
-    /** Return true if a file should be included in the build.  This will always
-      * return true for any non-layer file.
-      * @param file the file to check
-      */
-    final def filter(file: File): Boolean = file.getName match {
-      case nonLayer if !nonLayer.startsWith("layers-") => true
-      case layer                                       => shouldEnable(layer)
-    }
-
-    /** Return true if a layer should be included in the build.
-      * @param layerFilename the filename of a layer
-      */
-    protected def shouldEnable(layerFilename: String): Boolean
-
     /** Return the layers that should be enabled in a circuit.  The layers must exist in the design.
       *
       * @param design an Annotation that contains an elaborated design used to check that the requested layers exist
@@ -82,7 +68,6 @@ object LayerControl {
 
   /** Enable all layers */
   final case object EnableAll extends Type {
-    override protected def shouldEnable(layerFilename: String) = true
 
     override protected def getLayerSubset(module: ElaboratedModule[_]): Seq[Layer] = module.layers
   }
@@ -103,7 +88,6 @@ object LayerControl {
           re.matches(_)
       }
     }
-    override protected def shouldEnable(filename: String) = _shouldEnable(filename)
 
     override protected def getLayerSubset(module: ElaboratedModule[_]): Seq[Layer] = {
       val definedLayers = module.layers
