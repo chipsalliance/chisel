@@ -13,13 +13,32 @@ object LayerControl {
   /** The type of all layer control variations */
   sealed trait Type {
 
-    /** Return the layers that should be enabled in a circuit.  The layers must exist in the design.
+    /** Return the layers that should be enabled in a circuit.  The layers must exist in the circuit.
       *
-      * @param design an Annotation that contains an elaborated design used to check that the requested layers exist
-      * @return all layers that should be enabled
-      * @throws IllegalArgumentException if the requested layers
+      * @param allLayers all layers that are defined in a circuit
+      * @return the layers that should be enabled
+      * @throws IllegalArgumentException if the requested layers are not in `allLayers`
       */
-    protected def getLayerSubset(module: ElaboratedModule[_]): Seq[Layer]
+    protected def getLayerSubset(allLayers: Seq[Layer]): Seq[Layer]
+
+    /** Return the preprocessor defines that should be set to enable the layers of
+      * this `LayerControl.Type`.
+      *
+      * @param module a Chisel module
+      * @param allLayers all the layers that are allow
+      * @return preprocessor defines to control the enabling of these layers
+      */
+    final def preprocessorDefines(
+      module:    RawModule,
+      allLayers: Seq[Layer]
+    ): Seq[VerilogPreprocessorDefine] = getLayerSubset(allLayers).flatMap {
+      case layer =>
+        layer.config.abi match {
+          case abi: chisel3.layer.ABI.PreprocessorDefine.type =>
+            Some(VerilogPreprocessorDefine(abi.toMacroIdentifier(layer, module.circuitName)))
+          case _ => None
+        }
+    }
 
     /** Return the preprocessor defines that should be set to enable the layers of
       * this `LayerControl.Type`.
@@ -27,33 +46,30 @@ object LayerControl {
       * This requires passing an elaborated module in order to know what layers
       * exist in the design.
       *
-      * @param module an elaborated module
+      * @param module an elaborated Chisel module
       * @return preprocessor defines to control the enabling of these layers
       */
     final def preprocessorDefines(
       module: ElaboratedModule[_ <: RawModule]
-    ): Seq[VerilogPreprocessorDefine] = getLayerSubset(module).flatMap {
-      case layer =>
-        layer.config.abi match {
-          case abi: chisel3.layer.ABI.PreprocessorDefine.type =>
-            Some(VerilogPreprocessorDefine(abi.toMacroIdentifier(layer, module.wrapped.circuitName)))
-          case _ => None
-        }
-    }
+    ): Seq[VerilogPreprocessorDefine] = preprocessorDefines(module.wrapped, module.layers)
 
     /** Return a partial function that will return true if a file should be included
       * in the build to enable a layer.  This partial function is not defined if
       * the file is not a layer file.
       *
-      * @param module an elaborated module
+      * @param module a Chisel module
+      * @param allLayers all the layers that can be enabled
       * @return a partial function to test if layer files should be included
       */
-    final def shouldIncludeFile(module: ElaboratedModule[_ <: RawModule]): PartialFunction[File, Boolean] = {
-      val layerFilenames: Seq[String] = getLayerSubset(module).flatMap {
+    final def shouldIncludeFile(
+      module:    RawModule,
+      allLayers: Seq[Layer]
+    ): PartialFunction[File, Boolean] = {
+      val layerFilenames: Seq[String] = getLayerSubset(allLayers).flatMap {
         case layer =>
           layer.config.abi match {
             case abi: chisel3.layer.ABI.FileInclude.type =>
-              Some(abi.toFilename(layer, module.wrapped.circuitName))
+              Some(abi.toFilename(layer, module.circuitName))
             case _ => None
           }
       }
@@ -64,12 +80,23 @@ object LayerControl {
       }
     }
 
+    /** Return a partial function that will return true if a file should be included
+      * in the build to enable a layer.  This partial function is not defined if
+      * the file is not a layer file.
+      *
+      * @param module an elaborated Chisel module
+      * @return a partial function to test if layer files should be included
+      */
+    final def shouldIncludeFile(
+      module: ElaboratedModule[_ <: RawModule]
+    ): PartialFunction[File, Boolean] = shouldIncludeFile(module.wrapped, module.layers)
+
   }
 
   /** Enable all layers */
   final case object EnableAll extends Type {
 
-    override protected def getLayerSubset(module: ElaboratedModule[_]): Seq[Layer] = module.layers
+    override protected def getLayerSubset(layers: Seq[Layer]): Seq[Layer] = layers
   }
 
   /** Enable only the specified layers
@@ -89,12 +116,12 @@ object LayerControl {
       }
     }
 
-    override protected def getLayerSubset(module: ElaboratedModule[_]): Seq[Layer] = {
-      val definedLayers = module.layers
+    override protected def getLayerSubset(allLayers: Seq[Layer]): Seq[Layer] = {
+      val layerSet = allLayers.toSet
       layers.foreach { layer =>
         require(
-          definedLayers.contains(layer),
-          s"""cannot enable layer '${layer.fullName}' as it is not one of the defined layers: ${definedLayers.map(
+          layerSet.contains(layer),
+          s"""cannot enable layer '${layer.fullName}' as it is not one of the defined layers: ${allLayers.map(
             _.fullName
           )}"""
         )
