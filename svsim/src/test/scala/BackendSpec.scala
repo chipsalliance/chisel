@@ -43,6 +43,8 @@ case class CustomVerilatorBackend(actualBackend: verilator.Backend) extends Back
       backendSpecificSettings
     )
   }
+
+  override def escapeDefine(string: String): String = string
 }
 
 class VerilatorSpec extends BackendSpec {
