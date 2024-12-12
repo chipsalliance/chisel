@@ -76,9 +76,9 @@ trait Backend {
     backendSpecificSettings: CompilationSettings
   ): Backend.Parameters
 
-  /** This function will be applied to all defines (both the keys and the values.
+  /** This function will be applied to all defines (both the keys and the values).
     * This can be used to workaround subtleties in how different simulators
-    * parse defines.
+    * parse defines and require different escaping.
     */
   def escapeDefine(string: String): String
 }
