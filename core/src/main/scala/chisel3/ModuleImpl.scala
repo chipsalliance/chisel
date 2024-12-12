@@ -5,6 +5,7 @@ package chisel3
 import scala.collection.immutable.{ListMap, VectorBuilder}
 import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashSet}
 
+import chisel3.experimental.hierarchy.core.Hierarchy.HierarchyBaseModuleExtensions
 import chisel3.internal._
 import chisel3.internal.binding._
 import chisel3.internal.Builder._

@@ -544,19 +544,6 @@ private[chisel3] object ir {
       annotations.flatMap(_.toFirrtl.update(renames)) ++ newAnnotations.flatMap(
         _.toFirrtl.flatMap(_.update(renames))
       )
-
-    // TODO this method doesn't compile with Scala3 because it
-    // conflicts with the built-in `copy` method
-    def copy(
-      name:        String = name,
-      components:  Seq[Component] = components,
-      annotations: Seq[ChiselAnnotation] = annotations,
-      renames:     RenameMap = renames,
-      typeAliases: Seq[DefTypeAlias] = typeAliases,
-      layers:      Seq[Layer] = layers,
-      options:     Seq[DefOption] = options
-    ) = Circuit(name, components, annotations, renames, newAnnotations, typeAliases, layers, options)
-
   }
 
   object Circuit
