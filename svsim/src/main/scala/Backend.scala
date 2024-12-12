@@ -22,7 +22,7 @@ object CommonCompilationSettings {
     def apply(name: String) = new VerilogPreprocessorDefine(name, None)
   }
   case class VerilogPreprocessorDefine private (name: String, value: Option[String]) {
-    private[svsim] def toCommandlineArgument(backend: Backend): String = {
+    final def toCommandlineArgument(backend: Backend): String = {
       value match {
         case Some(v) => s"+define+${backend.escapeDefine(name)}=${backend.escapeDefine(v)}"
         case None    => s"+define+${backend.escapeDefine(name)}"
