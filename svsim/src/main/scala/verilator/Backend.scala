@@ -160,7 +160,7 @@ final class Backend(
                 VerilogPreprocessorDefine(svsim.Backend.HarnessCompilationFlags.enableVcdTracingSupport)
               )
             },
-          ).flatten.map(_.toCommandlineArgument),
+          ).flatten.map(_.toCommandlineArgument(this)),
         ).flatten,
         environment = Seq()
       ),
@@ -168,4 +168,6 @@ final class Backend(
     )
     //format: on
   }
+
+  override def escapeDefine(string: String): String = string
 }
