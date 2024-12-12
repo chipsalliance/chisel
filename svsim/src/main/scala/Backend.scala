@@ -22,10 +22,10 @@ object CommonCompilationSettings {
     def apply(name: String) = new VerilogPreprocessorDefine(name, None)
   }
   case class VerilogPreprocessorDefine private (name: String, value: Option[String]) {
-    private[svsim] def toCommandlineArgument: String = {
+    private[svsim] def toCommandlineArgument(backend: Backend): String = {
       value match {
-        case Some(v) => s"+define+${name}=${v}"
-        case None    => s"+define+${name}"
+        case Some(v) => s"+define+${backend.escapeDefine(name)}=${backend.escapeDefine(v)}"
+        case None    => s"+define+${backend.escapeDefine(name)}"
       }
     }
   }
@@ -75,6 +75,12 @@ trait Backend {
     commonSettings:          CommonCompilationSettings,
     backendSpecificSettings: CompilationSettings
   ): Backend.Parameters
+
+  /** This function will be applied to all defines (both the keys and the values).
+    * This can be used to workaround subtleties in how different simulators
+    * parse defines and require different escaping.
+    */
+  def escapeDefine(string: String): String
 }
 
 final object Backend {

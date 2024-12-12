@@ -193,7 +193,7 @@ final class Backend(
               VerilogPreprocessorDefine(svsim.Backend.HarnessCompilationFlags.supportsDelayInPublicFunctions)
             ),
             backendSpecificSettings.traceSettings.verilogPreprocessorDefines
-          ).flatten.map(_.toCommandlineArgument),
+          ).flatten.map(_.toCommandlineArgument(this)),
         ).flatten,
         environment = environment ++ Seq(
           "VCS_HOME" -> vcsHome,
@@ -212,4 +212,9 @@ final class Backend(
     )
     //format: on
   }
+
+  /** VCS seems to require that dollar signs in arguments are escaped.  This is
+    * different from Verilator.
+    */
+  override def escapeDefine(string: String): String = string.replace("$", "\\$")
 }
