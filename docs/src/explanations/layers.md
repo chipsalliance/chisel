@@ -9,7 +9,10 @@ section: "chisel3"
 Layers describe functionality of a Chisel generator that a user would like to
 _optionally_ include at Verilog elaboration time.  Pragmatically, they are a
 feature to access SystemVerilog's `bind` construct and `` `ifdef `` preprocessor
-macros.  Layers are typically used to describe design verification code or
+macros.  The optional functionality of layers, by construction, is not allowed
+to affect logic outside the layer.
+
+Layers are typically used to describe design verification code or
 debugging logic that a user would like to be able to later disable (for
 performance, verbosity, or cleanliness reasons) or use internally, but exclude
 from delivery to a customer.
@@ -176,8 +179,7 @@ after a design is compiled to SystemVerilog.
 
 :::info
 
-For the exact definition of the FIRRTL ABI for layers, see the [latest version
-of the FIRRTL ABI
+For the exact definition of the FIRRTL ABI for layers, see the [FIRRTL ABI
 Specification](https://github.com/chipsalliance/firrtl-spec/releases/latest/download/abi.pdf).
 
 :::
