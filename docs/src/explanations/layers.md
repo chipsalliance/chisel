@@ -290,6 +290,105 @@ object UserDefined {
 
 :::
 
+## Layer-coloring
+
+While layers are not allowed to influence the design or their parent layers, it
+is often useful and necessary to allow layer blocks to send information out of
+their containing modules to be read by layer blocks of the same layer or
+children layers. Hardware which has this optional property is said to be
+_layer-colored_.  Both probes and wires can be layer-colored.
+
+### Layer-colored Probes and Wires
+
+A layer-colored probe is a probe that exists if a user enables its corresponding
+layer during Verilog elaboration.  Layer-colored probes are used to describe
+optional verification, debugging, or logging interfaces.
+
+Layer-colored wires are used as temporary storage of defined probe values.  They
+are used for communication between layer blocks of the same layer in the same
+module or as temporary storage when forwarding a probe to a port.
+
+A layer-colored probe or wire may be the target of a `define` if the `define` is
+enabled when the color of the probe or wire is enabled.  A layer-colored probe
+or wire may be `read` from if the color of the probe or wire is enabled when the
+`read` is enabled.  Put differently, you may write to your layer or a child
+layer and you may read from your layer or a parent layer.
+
+The example below shows two layer-colored probe ports and one layer-colored
+probe wire driven in legal ways:
+
+```scala mdoc:reset
+import chisel3._
+import chisel3.layer.{Layer, LayerConfig}
+import chisel3.probe.{Probe, ProbeValue, define}
+
+object A extends Layer(LayerConfig.Extract())
+object B extends Layer(LayerConfig.Extract())
+
+class Foo extends RawModule {
+  val a = IO(Output(Probe(Bool(), A)))
+  val b = IO(Output(Probe(Bool(), B)))
+
+  layer.block(A) {
+    val a_wire = WireInit(false.B)
+    define(a, ProbeValue(a_wire))
+  }
+
+  val b_wire_probe = Wire(Probe(Bool(), B))
+  define(b, b_wire_probe)
+
+  layer.block(B) {
+    val b_wire = WireInit(false.B)
+    define(b_wire_probe, ProbeValue(b_wire))
+  }
+
+}
+```
+
+:::info
+
+For more information, see the layer coloring section of the [FIRRTL
+Specification](https://github.com/chipsalliance/firrtl-spec/releases/latest/download/spec.pdf).
+
+:::
+
+### Enabling Layers
+
+When working with layer-colored probes, it is often convenient to grant access
+to probes of one or more colors.  E.g., testbenches often want to _enable_ all
+layers in a design-under-test so that they gain access to layer-colored probe
+ports necessary for advanced design verification.  Without an additional
+feature, this use case is poorly supported with just layer coloring.  First, it
+is tedious to enclose all code inside a testbench in a layer block.  Second, a
+testbench may need to read probes with colors that do not have a parent--child
+relationship.  No layer block is capable of both legally reading from different
+probes and combining the results.
+
+To support this use case, Chisel provides the `layer.enable` API.  This API
+grants access to any layer-colored probes of instantiated modules for the
+enabled layer.  The API may be used more than once to enable more than one
+layer.
+
+The example below instantiates module `Foo` from the previous section.  After
+enabling layers `A` and `B`, the module can read from probes with colors `A` and
+`B` and use their results in a single operation:
+
+```scala mdoc:silent
+import chisel3.layer.enable
+import chisel3.probe.read
+
+class Bar extends RawModule {
+
+  enable(A)
+  enable(B)
+
+  val foo = Module(new Foo)
+
+  val c = read(foo.a) ^ read(foo.b)
+
+}
+```
+
 ## Examples
 
 ### Simple Extract Layer
