@@ -479,6 +479,27 @@ object Serializer {
     case other => b ++= other.serialize // Handle user-defined nodes
   }
 
+  private def s(node: TestParam)(implicit b: StringBuilder, indent: Int): Unit = node match {
+    case IntTestParam(value)    => b ++= value.toString
+    case DoubleTestParam(value) => b ++= value.toString
+    case StringTestParam(value) => b ++= StringLit(value).escape
+    case ArrayTestParam(value) =>
+      b ++= "[";
+      value.zipWithIndex.foreach { case (value, i) =>
+        if (i > 0) b ++= ", "
+        s(value)
+      }
+      b ++= "]"
+    case MapTestParam(value) =>
+      b ++= "{"
+      value.keys.toSeq.sorted.zipWithIndex.foreach { case (name, i) =>
+        if (i > 0) b ++= ", "
+        b ++= name; b ++= " = "; s(value(name))
+      }
+      b ++= "}"
+    case other => b ++= other.serialize // Handle user-defined nodes
+  }
+
   private def sIt(node: DefModule)(implicit indent: Int): Iterator[String] = node match {
     case Module(info, name, public, layers, ports, body) =>
       val start = {
@@ -519,6 +540,13 @@ object Serializer {
         b.toString
       }
       Iterator(start) ++ sIt(body)(indent + 1)
+    case FormalTest(info, name, moduleName, params) =>
+      implicit val b = new StringBuilder
+      doIndent(0); b ++= "formal "; b ++= legalize(name); b ++= " of "; b ++= legalize(moduleName); b ++= " :"; s(info)
+      params.value.keys.toSeq.sorted.foreach { case name =>
+        newLineAndIndent(1); b ++= name; b ++= " = "; s(params.value(name))
+      }
+      Iterator(b.toString)
     case other =>
       Iterator(Indent * indent, other.serialize) // Handle user-defined nodes
   }
@@ -549,6 +577,7 @@ object Serializer {
     if (layers.nonEmpty) {
       implicit val b = new StringBuilder
       layers.foreach(s)
+      newLineNoIndent()
       Iterator(b.toString)
     } else Iterator.empty
   }
