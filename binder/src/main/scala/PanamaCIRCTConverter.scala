@@ -513,7 +513,7 @@ class PanamaCIRCTConverter extends CIRCTConverter {
             case fir.DoublePropertyLiteral(value) =>
               val attrs = Seq(("value", circt.mlirFloatAttrDoubleGet(circt.mlirF64TypeGet(), value)))
               ("double", attrs, Seq.empty)
-            case fir.StringPropertyLiteral(value) =>
+            case fir.StringPropertyLiteral(fir.StringLit(value)) =>
               val attrs = Seq(("value", circt.mlirStringAttrGet(value)))
               ("string", attrs, Seq.empty)
             case fir.BooleanPropertyLiteral(value) =>

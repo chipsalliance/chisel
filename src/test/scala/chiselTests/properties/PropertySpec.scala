@@ -132,6 +132,31 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
     )()
   }
 
+  it should "escape special characters in Property String literals" in {
+    val input = "foo\"\n\t\\bar"
+    val expected = """foo\"\n\t\\bar"""
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val propOut = IO(Output(Property[String]()))
+      propOut := Property(input)
+    })
+
+    matchesAndOmits(chirrtl)(
+      s"""propassign propOut, String("$expected")"""
+    )()
+  }
+
+  it should "not escape characters that do not need escaping in Property String literals" in {
+    val input = "foo!@#$%^&*()_+bar"
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val propOut = IO(Output(Property[String]()))
+      propOut := Property(input)
+    })
+
+    matchesAndOmits(chirrtl)(
+      s"""propassign propOut, String("$input")"""
+    )()
+  }
+
   it should "support Boolean as a Property type" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
       val boolProp = IO(Input(Property[Boolean]()))
