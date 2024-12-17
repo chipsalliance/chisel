@@ -8,8 +8,7 @@ import nsc.plugins.{Plugin, PluginComponent}
 import scala.reflect.internal.util.NoPosition
 import scala.collection.mutable
 
-private[plugin] case class ChiselPluginArguments(
-  val skipFiles: mutable.HashSet[String] = mutable.HashSet.empty) {
+private[plugin] case class ChiselPluginArguments(val skipFiles: mutable.HashSet[String] = mutable.HashSet.empty) {
   var deprecateSFC: Boolean = true
   def useBundlePluginOpt = "useBundlePlugin"
   def useBundlePluginFullOpt = s"-P:${ChiselPlugin.name}:$useBundlePluginOpt"
@@ -27,8 +26,7 @@ object ChiselPlugin {
   private[plugin] def runComponent(
     global:    Global,
     arguments: ChiselPluginArguments
-  )(unit:      global.CompilationUnit
-  ): Boolean = {
+  )(unit: global.CompilationUnit): Boolean = {
     // This plugin doesn't work on Scala 2.11 nor Scala 3. Rather than complicate the sbt build flow,
     // instead we just check the version and if its an early Scala version, the plugin does nothing
     val scalaVersion = scala.util.Properties.versionNumberString.split('.')

@@ -45,8 +45,7 @@ object IntrinsicExpr {
     intrinsic: String,
     ret:       => T,
     params:    (String, Param)*
-  )(data:      Data*
-  )(
+  )(data: Data*)(
     implicit sourceInfo: SourceInfo
   ): T = {
     val prevId = Builder.idGen.value

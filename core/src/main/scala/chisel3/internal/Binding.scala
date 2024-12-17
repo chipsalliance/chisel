@@ -58,7 +58,7 @@ private[chisel3] object binding {
   // Location will track where this Module is, and the bound object can be referenced in FIRRTL
   sealed trait ConstrainedBinding extends TopBinding {
     def enclosure: BaseModule
-    def location: Option[BaseModule] = Some(enclosure)
+    def location:  Option[BaseModule] = Some(enclosure)
   }
 
   // A binding representing a data that cannot be (re)assigned to.
@@ -180,9 +180,7 @@ private[chisel3] object binding {
     * @note The types of key and value need not match for the top Data in a total view of type
     *       Aggregate
     */
-  case class AggregateViewBinding(
-    childMap:       Map[Data, Data],
-    writabilityMap: Option[Map[Data, ViewWriteability]])
+  case class AggregateViewBinding(childMap: Map[Data, Data], writabilityMap: Option[Map[Data, ViewWriteability]])
       extends Binding
       with BlockBinding {
     // Helper lookup function since types of Elements always match
@@ -198,7 +196,7 @@ private[chisel3] object binding {
           key, {
             key.binding match {
               case Some(ChildBinding(parent)) => rec(map, parent)
-              case _                          => throwException(s"Internal error! $key not found in AggregateViewBinding writabilityMap!")
+              case _ => throwException(s"Internal error! $key not found in AggregateViewBinding writabilityMap!")
             }
           }
         )

@@ -66,9 +66,8 @@ object ReifySpec {
   implicit val myView: DataView[(UInt, TargetBundle), ViewBundle] =
     DataView.mapping[(UInt, TargetBundle), ViewBundle](
       _ => new ViewBundle,
-      {
-        case ((u, t), v) =>
-          Seq(u -> v.foo, t.fizz.child.value -> v.bar.a(0), t.buzz.value -> v.bar.a(1), t.vec -> v.bar.b)
+      { case ((u, t), v) =>
+        Seq(u -> v.foo, t.fizz.child.value -> v.bar.a(0), t.buzz.value -> v.bar.a(1), t.vec -> v.bar.b)
       }
     )
 }
@@ -84,11 +83,10 @@ class ReifySpec extends AnyFunSpec {
         val wires = (new AllElementsBundle).getElements.map(Wire(_))
 
         // .getElements returns Data so we have to match that these are Elements.
-        wires.foreach {
-          case elt: Element =>
-            _reify(elt) should be(elt)
-            _reifyIdentityView(elt) should be(Some(elt))
-            reifySingleTarget(elt) should be(Some(elt))
+        wires.foreach { case elt: Element =>
+          _reify(elt) should be(elt)
+          _reifyIdentityView(elt) should be(Some(elt))
+          reifySingleTarget(elt) should be(Some(elt))
         }
       })
     }
@@ -98,11 +96,10 @@ class ReifySpec extends AnyFunSpec {
         val bundle = IO(new AllElementsBundle)
 
         // .getElements returns Data so we have to match that these are Elements.
-        bundle.getElements.foreach {
-          case elt: Element =>
-            _reify(elt) should be(elt)
-            _reifyIdentityView(elt) should be(Some(elt))
-            reifySingleTarget(elt) should be(Some(elt))
+        bundle.getElements.foreach { case elt: Element =>
+          _reify(elt) should be(elt)
+          _reifyIdentityView(elt) should be(Some(elt))
+          reifySingleTarget(elt) should be(Some(elt))
         }
       })
     }
@@ -116,11 +113,10 @@ class ReifySpec extends AnyFunSpec {
         reifySingleTarget(view) should be(Some(bundle))
 
         // .getElements returns Data so we have to match that these are Elements.
-        view.getElements.zip(bundle.getElements).foreach {
-          case (v: Element, t: Element) =>
-            _reify(v) should be(t)
-            _reifyIdentityView(v) should be(Some(t))
-            reifySingleTarget(v) should be(Some(t))
+        view.getElements.zip(bundle.getElements).foreach { case (v: Element, t: Element) =>
+          _reify(v) should be(t)
+          _reifyIdentityView(v) should be(Some(t))
+          reifySingleTarget(v) should be(Some(t))
         }
       })
     }
@@ -134,11 +130,10 @@ class ReifySpec extends AnyFunSpec {
         reifySingleTarget(view) should be(None)
 
         // .getElements returns Data so we have to match that these are Elements.
-        view.getElements.zip(wires).foreach {
-          case (v: Element, t: Element) =>
-            _reify(v) should be(t)
-            _reifyIdentityView(v) should be(Some(t))
-            reifySingleTarget(v) should be(Some(t))
+        view.getElements.zip(wires).foreach { case (v: Element, t: Element) =>
+          _reify(v) should be(t)
+          _reifyIdentityView(v) should be(Some(t))
+          reifySingleTarget(v) should be(Some(t))
         }
       })
     }
@@ -196,11 +191,10 @@ class ReifySpec extends AnyFunSpec {
         val child = Instantiate(new MyModule)
 
         // .getElements returns Data so we have to match that these are Elements.
-        child.ios.foreach {
-          case elt: Element =>
-            _reify(elt) should be(elt)
-            _reifyIdentityView(elt) should be(Some(elt))
-            reifySingleTarget(elt) should be(Some(elt))
+        child.ios.foreach { case elt: Element =>
+          _reify(elt) should be(elt)
+          _reifyIdentityView(elt) should be(Some(elt))
+          reifySingleTarget(elt) should be(Some(elt))
         }
       })
     }
@@ -214,11 +208,10 @@ class ReifySpec extends AnyFunSpec {
         val child = Instantiate(new MyModule)
 
         // .getElements returns Data so we have to match that these are Elements.
-        child.bundle.getElements.foreach {
-          case elt: Element =>
-            _reify(elt) should be(elt)
-            _reifyIdentityView(elt) should be(Some(elt))
-            reifySingleTarget(elt) should be(Some(elt))
+        child.bundle.getElements.foreach { case elt: Element =>
+          _reify(elt) should be(elt)
+          _reifyIdentityView(elt) should be(Some(elt))
+          reifySingleTarget(elt) should be(Some(elt))
         }
       })
     }
@@ -236,11 +229,10 @@ class ReifySpec extends AnyFunSpec {
         reifySingleTarget(child.view) should be(Some(child.bundle))
 
         // .getElements returns Data so we have to match that these are Elements.
-        child.view.getElements.zip(child.bundle.getElements).foreach {
-          case (v: Element, t: Element) =>
-            _reify(v) should be(t)
-            _reifyIdentityView(v) should be(Some(t))
-            reifySingleTarget(v) should be(Some(t))
+        child.view.getElements.zip(child.bundle.getElements).foreach { case (v: Element, t: Element) =>
+          _reify(v) should be(t)
+          _reifyIdentityView(v) should be(Some(t))
+          reifySingleTarget(v) should be(Some(t))
         }
       })
     }
@@ -258,11 +250,10 @@ class ReifySpec extends AnyFunSpec {
         reifySingleTarget(child.view) should be(None)
 
         // .getElements returns Data so we have to match that these are Elements.
-        child.view.getElements.zip(child.wires).foreach {
-          case (v: Element, t: Element) =>
-            _reify(v) should be(t)
-            _reifyIdentityView(v) should be(Some(t))
-            reifySingleTarget(v) should be(Some(t))
+        child.view.getElements.zip(child.wires).foreach { case (v: Element, t: Element) =>
+          _reify(v) should be(t)
+          _reifyIdentityView(v) should be(Some(t))
+          reifySingleTarget(v) should be(Some(t))
         }
       })
     }

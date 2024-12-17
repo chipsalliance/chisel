@@ -31,13 +31,12 @@ object LayerControl {
     final def preprocessorDefines(
       module:    RawModule,
       allLayers: Seq[Layer]
-    ): Seq[VerilogPreprocessorDefine] = getLayerSubset(allLayers).flatMap {
-      case layer =>
-        layer.config.abi match {
-          case abi: chisel3.layer.ABI.PreprocessorDefine.type =>
-            Some(VerilogPreprocessorDefine(abi.toMacroIdentifier(layer, module.circuitName)))
-          case _ => None
-        }
+    ): Seq[VerilogPreprocessorDefine] = getLayerSubset(allLayers).flatMap { case layer =>
+      layer.config.abi match {
+        case abi: chisel3.layer.ABI.PreprocessorDefine.type =>
+          Some(VerilogPreprocessorDefine(abi.toMacroIdentifier(layer, module.circuitName)))
+        case _ => None
+      }
     }
 
     /** Return the preprocessor defines that should be set to enable the layers of
@@ -65,13 +64,12 @@ object LayerControl {
       module:    RawModule,
       allLayers: Seq[Layer]
     ): PartialFunction[File, Boolean] = {
-      val layerFilenames: Seq[String] = getLayerSubset(allLayers).flatMap {
-        case layer =>
-          layer.config.abi match {
-            case abi: chisel3.layer.ABI.FileInclude.type =>
-              Some(abi.toFilename(layer, module.circuitName))
-            case _ => None
-          }
+      val layerFilenames: Seq[String] = getLayerSubset(allLayers).flatMap { case layer =>
+        layer.config.abi match {
+          case abi: chisel3.layer.ABI.FileInclude.type =>
+            Some(abi.toFilename(layer, module.circuitName))
+          case _ => None
+        }
       }
 
       {
@@ -122,8 +120,8 @@ object LayerControl {
         require(
           layerSet.contains(layer),
           s"""cannot enable layer '${layer.fullName}' as it is not one of the defined layers: ${allLayers.map(
-            _.fullName
-          )}"""
+              _.fullName
+            )}"""
         )
       }
       layers

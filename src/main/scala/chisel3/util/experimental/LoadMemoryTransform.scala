@@ -17,8 +17,8 @@ import scala.collection.mutable
 private case class ChiselLoadMemoryAnnotation[T <: Data](
   target:      MemBase[T],
   fileName:    String,
-  hexOrBinary: MemoryLoadFileType.FileType = MemoryLoadFileType.Hex)
-    extends ChiselAnnotation {
+  hexOrBinary: MemoryLoadFileType.FileType = MemoryLoadFileType.Hex
+) extends ChiselAnnotation {
 
   if (fileName.isEmpty) {
     throw new Exception(

@@ -251,8 +251,8 @@ object BoringUtils {
     def boringError(module: BaseModule): Unit = {
       (module.fullyClosedErrorMessages ++ Seq(
         (si, s"Can only bore into modules that are not fully closed: ${module.name} was fully closed")
-      )).foreach {
-        case (sourceInfo, msg) => Builder.error(msg)(sourceInfo)
+      )).foreach { case (sourceInfo, msg) =>
+        Builder.error(msg)(sourceInfo)
       }
     }
     def drill(source: A, path: Seq[BaseModule], connectionLocation: Seq[BaseModule], up: Boolean): A = {

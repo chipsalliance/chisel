@@ -18,7 +18,7 @@ private[chisel3] trait ClockImpl extends Element {
   override def connect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
     that match {
       case _: Clock | DontCare => super.connect(that)(sourceInfo)
-      case _ => super.badConnect(that)(sourceInfo)
+      case _                   => super.badConnect(that)(sourceInfo)
     }
 
   override def litOption: Option[BigInt] = None

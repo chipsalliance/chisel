@@ -55,10 +55,10 @@ sealed trait RenameMap {
 
   protected def _recordAll(map: collection.Map[CompleteTarget, Seq[CompleteTarget]]): Unit =
     map.foreach {
-      case (from: IsComponent, tos: Seq[_]) => completeRename(from, tos)
-      case (from: IsModule, tos: Seq[_]) => completeRename(from, tos)
+      case (from: IsComponent, tos: Seq[_])   => completeRename(from, tos)
+      case (from: IsModule, tos: Seq[_])      => completeRename(from, tos)
       case (from: CircuitTarget, tos: Seq[_]) => completeRename(from, tos)
-      case other => Utils.throwInternalError(s"Illegal rename: ${other._1} -> ${other._2}")
+      case other                              => Utils.throwInternalError(s"Illegal rename: ${other._1} -> ${other._2}")
     }
 
   /** Renames a [[firrtl.annotations.CompleteTarget CompleteTarget]]
@@ -109,9 +109,8 @@ sealed trait RenameMap {
 
   /** Visualize the [[RenameMap]]
     */
-  def serialize: String = _underlying.map {
-    case (k, v) =>
-      k.serialize + "=>" + v.map(_.serialize).mkString(", ")
+  def serialize: String = _underlying.map { case (k, v) =>
+    k.serialize + "=>" + v.map(_.serialize).mkString(", ")
   }.mkString("\n")
 
   /** Records which local InstanceTargets will require modification.
@@ -209,7 +208,7 @@ sealed trait RenameMap {
               val parent = t.copy(component = t.component.dropRight(1))
               traverseTokens(parent).map(_.flatMap { x =>
                 (x, last) match {
-                  case (t2: InstanceTarget, Field(f)) => Some(t2.ref(f))
+                  case (t2: InstanceTarget, Field(f))  => Some(t2.ref(f))
                   case (t2: ReferenceTarget, Field(f)) => Some(t2.field(f))
                   case (t2: ReferenceTarget, Index(i)) => Some(t2.index(i))
                   case other =>
@@ -400,8 +399,8 @@ sealed trait RenameMap {
             }
             rename match {
               case Seq(absolute: IsModule) if absolute.module == absolute.circuit =>
-                val withChildren = children.foldLeft(absolute) {
-                  case (target, (inst, ofMod)) => target.instOf(inst.value, ofMod.value)
+                val withChildren = children.foldLeft(absolute) { case (target, (inst, ofMod)) =>
+                  target.instOf(inst.value, ofMod.value)
                 }
                 AbsoluteOfModule(withChildren)
               case Seq(isMod: ModuleTarget) =>
@@ -453,7 +452,7 @@ sealed trait RenameMap {
     } else {
       key match {
         case t: CircuitTarget => None
-        case t: ModuleTarget => moduleGet(errors)(t)
+        case t: ModuleTarget  => moduleGet(errors)(t)
         case t: IsComponent =>
           ofModuleGet(errors)(t) match {
             case AbsoluteOfModule(absolute) =>
@@ -513,16 +512,15 @@ sealed trait RenameMap {
       key match {
         case t: CircuitTarget => circuitGet(errors)(t)
         case t: ModuleTarget =>
-          circuitGet(errors)(CircuitTarget(t.circuit)).map {
-            case CircuitTarget(c) => t.copy(circuit = c)
+          circuitGet(errors)(CircuitTarget(t.circuit)).map { case CircuitTarget(c) =>
+            t.copy(circuit = c)
           }
         case t: IsComponent =>
-          circuitGet(errors)(CircuitTarget(t.circuit)).map {
-            case CircuitTarget(c) =>
-              t match {
-                case ref:  ReferenceTarget => ref.copy(circuit = c)
-                case inst: InstanceTarget  => inst.copy(circuit = c)
-              }
+          circuitGet(errors)(CircuitTarget(t.circuit)).map { case CircuitTarget(c) =>
+            t match {
+              case ref:  ReferenceTarget => ref.copy(circuit = c)
+              case inst: InstanceTarget  => inst.copy(circuit = c)
+            }
           }
       }
     }
@@ -595,8 +593,8 @@ package object renamemap {
     protected val _underlying: mutable.HashMap[CompleteTarget, Seq[CompleteTarget]] =
       mutable.HashMap[CompleteTarget, Seq[CompleteTarget]](),
     protected val _chained:   Option[RenameMap] = None,
-    protected val doDistinct: Boolean = true)
-      extends RenameMap {
+    protected val doDistinct: Boolean = true
+  ) extends RenameMap {
 
     /** Record that the from [[firrtl.annotations.CircuitTarget CircuitTarget]] is renamed to another
       * [[firrtl.annotations.CircuitTarget CircuitTarget]]
@@ -665,8 +663,8 @@ package object renamemap {
     def delete(name: ComponentName): Unit = _underlying(name) = Seq.empty
 
     def addMap(map: collection.Map[Named, Seq[Named]]): Unit =
-      recordAll(map.map {
-        case (key, values) => (Target.convertNamed2Target(key), values.map(Target.convertNamed2Target))
+      recordAll(map.map { case (key, values) =>
+        (Target.convertNamed2Target(key), values.map(Target.convertNamed2Target))
       })
   }
 }

@@ -143,16 +143,16 @@ class DedupSpec extends ChiselFlatSpec {
 
   it should "not add DedupGroupAnnotation to intrinsics" in {
     val (_, annos) = getFirrtlAndAnnos(new ModuleWithIntrinsic)
-    val dedupGroupAnnos = annos.collect {
-      case DedupGroupAnnotation(target, _) => target.module
+    val dedupGroupAnnos = annos.collect { case DedupGroupAnnotation(target, _) =>
+      target.module
     }
     dedupGroupAnnos should contain theSameElementsAs Seq("ModuleWithIntrinsic")
   }
 
   it should "not add DedupGroupAnnotation to classes" in {
     val (_, annos) = getFirrtlAndAnnos(new ModuleWithClass)
-    val dedupGroupAnnos = annos.collect {
-      case DedupGroupAnnotation(target, _) => target.module
+    val dedupGroupAnnos = annos.collect { case DedupGroupAnnotation(target, _) =>
+      target.module
     }
     dedupGroupAnnos should contain theSameElementsAs Seq("ModuleWithClass")
   }

@@ -31,10 +31,9 @@ class LayerControlSpec extends AnyFunSpec with Matchers {
       info("non-layer files are ignored")
       layerControl.shouldIncludeFile(elaboratedModule).isDefinedAt(new File("Foo.sv")) should be(false)
 
-      Seq("layers-Foo-A.sv", "layers-Foo-B.sv", "layers-Foo-B-C.sv").map(new File(_)).foreach {
-        case filename =>
-          info(s"$filename is included")
-          layerControl.shouldIncludeFile(elaboratedModule)(filename) should be(true)
+      Seq("layers-Foo-A.sv", "layers-Foo-B.sv", "layers-Foo-B-C.sv").map(new File(_)).foreach { case filename =>
+        info(s"$filename is included")
+        layerControl.shouldIncludeFile(elaboratedModule)(filename) should be(true)
       }
     }
   }
@@ -45,10 +44,9 @@ class LayerControlSpec extends AnyFunSpec with Matchers {
       info("non-layer files are ignored")
       layerControl.shouldIncludeFile(elaboratedModule).isDefinedAt(new File("Foo.sv")) should be(false)
 
-      Seq("layers-Foo-A.sv", "layers-Foo-B.sv", "layers-Foo-B-C.sv").map(new File(_)).foreach {
-        case filename =>
-          info(s"$filename is excluded")
-          layerControl.shouldIncludeFile(elaboratedModule)(filename) should be(false)
+      Seq("layers-Foo-A.sv", "layers-Foo-B.sv", "layers-Foo-B-C.sv").map(new File(_)).foreach { case filename =>
+        info(s"$filename is excluded")
+        layerControl.shouldIncludeFile(elaboratedModule)(filename) should be(false)
       }
     }
   }
@@ -59,10 +57,9 @@ class LayerControlSpec extends AnyFunSpec with Matchers {
       info("non-layer files are ignored")
       layerControl.shouldIncludeFile(elaboratedModule).isDefinedAt(new File("Foo.sv")) should be(false)
 
-      Seq("layers-Foo-A.sv", "layers-Foo-B.sv", "layers-Foo-B-C.sv").map(new File(_)).foreach {
-        case filename =>
-          info(s"$filename is excluded")
-          layerControl.shouldIncludeFile(elaboratedModule)(filename) should be(false)
+      Seq("layers-Foo-A.sv", "layers-Foo-B.sv", "layers-Foo-B-C.sv").map(new File(_)).foreach { case filename =>
+        info(s"$filename is excluded")
+        layerControl.shouldIncludeFile(elaboratedModule)(filename) should be(false)
       }
     }
   }
@@ -73,10 +70,9 @@ class LayerControlSpec extends AnyFunSpec with Matchers {
       info("non-layer files are ignored")
       layerControl.shouldIncludeFile(elaboratedModule).isDefinedAt(new File("foo")) should be(false)
 
-      Seq("layers-Foo-A.sv", "layers-Foo-B-C.sv").map(new File(_)).foreach {
-        case filename =>
-          info(s"$filename is included")
-          layerControl.shouldIncludeFile(elaboratedModule)(filename) should be(true)
+      Seq("layers-Foo-A.sv", "layers-Foo-B-C.sv").map(new File(_)).foreach { case filename =>
+        info(s"$filename is included")
+        layerControl.shouldIncludeFile(elaboratedModule)(filename) should be(true)
       }
 
       info("layers-Foo-A-B.sv is excluded")

@@ -18,7 +18,8 @@ final class Connectable[+T <: Data] private (
   val base:                      T,
   private[chisel3] val waived:   Set[Data],
   private[chisel3] val squeezed: Set[Data],
-  private[chisel3] val excluded: Set[Data]) {
+  private[chisel3] val excluded: Set[Data]
+) {
   requireIsHardware(base, s"Can only created Connectable of components, not unbound Chisel types")
 
   private[chisel3] def copy(

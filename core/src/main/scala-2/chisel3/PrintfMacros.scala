@@ -11,11 +11,8 @@ import scala.reflect.macros.blackbox
 
 object PrintfMacrosCompat {
   def _applyMacroWithInterpolatorCheck(
-    c:          blackbox.Context
-  )(fmt:        c.Tree,
-    data:       c.Tree*
-  )(sourceInfo: c.Tree
-  ): c.Tree = {
+    c: blackbox.Context
+  )(fmt: c.Tree, data: c.Tree*)(sourceInfo: c.Tree): c.Tree = {
     import c.universe._
     _checkFormatString(c)(fmt)
     val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("printfWithReset"))

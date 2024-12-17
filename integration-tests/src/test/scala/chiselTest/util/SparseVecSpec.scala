@@ -20,11 +20,7 @@ import java.util.ResourceBundle
   * @param tpe the type of the vecs
   * @param mapping a mapping of index to value
   */
-class SparseVecDynamicIndexEquivalenceTest(
-  size:    Int,
-  tpe:     UInt,
-  mapping: Seq[(Int, UInt)],
-  debug:   Boolean = false)
+class SparseVecDynamicIndexEquivalenceTest(size: Int, tpe: UInt, mapping: Seq[(Int, UInt)], debug: Boolean = false)
     extends BasicTester {
 
   // The number of indices that needs to be checked.  This is larger than `size`
@@ -38,9 +34,8 @@ class SparseVecDynamicIndexEquivalenceTest(
   private val denseVec = {
     val w = Wire(Vec(size, tpe))
     w.foreach(_ := DontCare)
-    mapping.foreach {
-      case (index, data) =>
-        w(index) := data
+    mapping.foreach { case (index, data) =>
+      w(index) := data
     }
     w
   }
@@ -98,8 +93,8 @@ class SparseVecTest(
   outOfBoundsBehavior:  OutOfBoundsBehavior.Type,
   mapping:              Seq[(Int, UInt)],
   expected:             Seq[(Int, Data)],
-  debug:                Boolean = false)
-    extends BasicTester {
+  debug:                Boolean = false
+) extends BasicTester {
   // Create a wire SparseVec and initialize it to the values in the mapping.
   private val sparseVec = Wire(new SparseVec(size, tpe, mapping.map(_._1), defaultValueBehavior, outOfBoundsBehavior))
   sparseVec.elements.values.zip(mapping.map(_._2)).foreach { case (a, b) => a :<>= b }
@@ -115,10 +110,9 @@ class SparseVecTest(
       new TestBundle
     )
   )
-  expected.zipWithIndex.foreach {
-    case ((index, value), testNumber) =>
-      tests(testNumber).index := index.U
-      tests(testNumber).value := value
+  expected.zipWithIndex.foreach { case ((index, value), testNumber) =>
+    tests(testNumber).index := index.U
+    tests(testNumber).value := value
   }
 
   // Access the dense vector and the sparse vector, using all of the access

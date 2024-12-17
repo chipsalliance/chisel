@@ -57,18 +57,17 @@ class IllegalRefSpec extends ChiselFlatSpec with Utils {
 
   val variants = Map("a connect" -> true, "an op" -> false)
 
-  variants.foreach {
-    case (k, v) =>
-      s"Illegal cross-module references in ${k}" should "fail" in {
-        a[ChiselException] should be thrownBy extractCause[ChiselException] {
-          ChiselStage.emitCHIRRTL { new IllegalRefOuter(v) }
-        }
+  variants.foreach { case (k, v) =>
+    s"Illegal cross-module references in ${k}" should "fail" in {
+      a[ChiselException] should be thrownBy extractCause[ChiselException] {
+        ChiselStage.emitCHIRRTL { new IllegalRefOuter(v) }
       }
+    }
 
-      s"Using a signal that has escaped its enclosing when scope in ${k}" should "fail" in {
-        a[ChiselException] should be thrownBy extractCause[ChiselException] {
-          ChiselStage.emitCHIRRTL { new CrossWhenConnect(v) }
-        }
+    s"Using a signal that has escaped its enclosing when scope in ${k}" should "fail" in {
+      a[ChiselException] should be thrownBy extractCause[ChiselException] {
+        ChiselStage.emitCHIRRTL { new CrossWhenConnect(v) }
       }
+    }
   }
 }

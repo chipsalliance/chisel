@@ -196,7 +196,7 @@ package object dataview {
         }
         getMatchedFields(aa, ba).foreach {
           case (aelt: Element, belt: Element) => onElt(aelt, belt)
-          case (t, v) => aggregateMappings += (v -> t)
+          case (t, v)                         => aggregateMappings += (v -> t)
         }
     }
 
@@ -206,19 +206,18 @@ package object dataview {
 
     val targetSeen: Option[mutable.Set[Data]] = if (total) Some(mutable.Set.empty[Data]) else None
 
-    val elementResult = elementBindings.map {
-      case (data, targets) =>
-        val targetsx = targets match {
-          case collection.Seq(target: Element) => target
-          case collection.Seq() =>
-            viewNonTotalErrors = data :: viewNonTotalErrors
-            data.asInstanceOf[Element] // Return the Data itself, will error after this map, cast is safe
-          case x =>
-            throw InvalidViewException(s"Got $x, expected Seq(_: Direct)")
-        }
-        // TODO record and report aliasing errors
-        targetSeen.foreach(_ += targetsx)
-        data -> targetsx
+    val elementResult = elementBindings.map { case (data, targets) =>
+      val targetsx = targets match {
+        case collection.Seq(target: Element) => target
+        case collection.Seq() =>
+          viewNonTotalErrors = data :: viewNonTotalErrors
+          data.asInstanceOf[Element] // Return the Data itself, will error after this map, cast is safe
+        case x =>
+          throw InvalidViewException(s"Got $x, expected Seq(_: Direct)")
+      }
+      // TODO record and report aliasing errors
+      targetSeen.foreach(_ += targetsx)
+      data -> targetsx
     }.toMap
 
     // Check for totality of Target
@@ -319,13 +318,12 @@ package object dataview {
         case Some(vb @ AggregateViewBinding(lookup, _)) => lookup.get(data).map(_ -> vb.lookupWritability(data))
         case Some(_)                                    => Some(data -> ViewWriteability.Default)
       }
-    candidate.flatMap {
-      case (d, wr) =>
-        val wrx = wrAcc.combine(wr)
-        // This cast is safe by construction, we only put Data in the view mapping if it is an identity mapping.
-        val cast = d.asInstanceOf[T]
-        // Candidate may itself be a view, keep tracing in those cases.
-        if (isView(d)) reifyIdentityView(cast, wrx) else Some(cast -> wrx)
+    candidate.flatMap { case (d, wr) =>
+      val wrx = wrAcc.combine(wr)
+      // This cast is safe by construction, we only put Data in the view mapping if it is an identity mapping.
+      val cast = d.asInstanceOf[T]
+      // Candidate may itself be a view, keep tracing in those cases.
+      if (isView(d)) reifyIdentityView(cast, wrx) else Some(cast -> wrx)
     }
   }
 

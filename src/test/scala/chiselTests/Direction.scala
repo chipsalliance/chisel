@@ -46,7 +46,7 @@ class TopDirectionOutput extends Module {
 
 class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
 
-  //TODO: In Chisel3 these are actually FIRRTL errors. Remove from tests?
+  // TODO: In Chisel3 these are actually FIRRTL errors. Remove from tests?
 
   property("Outputs should be assignable") {
     ChiselStage.emitCHIRRTL(new GoodDirection)

@@ -112,7 +112,7 @@ object ComplicatedFixture {
     override def prerequisites = Seq(Dependency[B])
     override def invalidates(phase: Phase): Boolean = phase match {
       case _: C | _: E => true
-      case _ => false
+      case _           => false
     }
   }
   class E extends IdentityPhase {
@@ -162,14 +162,14 @@ object InvertedAnalysisFixture {
     override def prerequisites = Seq(Dependency[Analysis])
     override def invalidates(phase: Phase): Boolean = phase match {
       case _: Analysis | _: A => true
-      case _ => false
+      case _                  => false
     }
   }
   class C extends IdentityPhase {
     override def prerequisites = Seq(Dependency[Analysis])
     override def invalidates(phase: Phase): Boolean = phase match {
       case _: Analysis | _: B => true
-      case _ => false
+      case _                  => false
     }
   }
 

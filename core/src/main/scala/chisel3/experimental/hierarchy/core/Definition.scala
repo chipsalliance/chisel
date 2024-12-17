@@ -138,5 +138,5 @@ object Definition extends SourceInfoDoc {
   */
 case class ImportDefinitionAnnotation[T <: BaseModule with IsInstantiable](
   definition:      Definition[T],
-  overrideDefName: Option[String] = None)
-    extends NoTargetAnnotation
+  overrideDefName: Option[String] = None
+) extends NoTargetAnnotation

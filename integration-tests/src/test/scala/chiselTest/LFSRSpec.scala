@@ -107,7 +107,7 @@ class LFSRSpec extends ChiselFlatSpec with Utils {
   def periodCheck(gen: (Int, Set[Int], LFSRReduce) => PRNG, reduction: LFSRReduce, range: Range): Unit = {
     val testName = s"have a maximal period over a range of widths (${range.head} to ${range.last})" +
       s" using ${reduction.getClass}"
-    //TODO: SFC->MFC, these tests fail due to a bootstrap problem under MFC in LFSRMaxPeriod
+    // TODO: SFC->MFC, these tests fail due to a bootstrap problem under MFC in LFSRMaxPeriod
     it should testName ignore {
       range.foreach { width =>
         LFSR.tapsMaxPeriod(width).foreach { taps =>

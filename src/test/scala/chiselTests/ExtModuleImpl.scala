@@ -23,7 +23,7 @@ class ExtModuleAdd(n: Int) extends ExtModule with HasExtModuleInline {
     val out = Output(UInt(16.W))
   })
 
-  //scalastyle:off regex
+  // scalastyle:off regex
   setInline(
     "ExtModuleAdd.v",
     s"""

@@ -28,9 +28,8 @@ object when {
     */
 
   def apply(
-    cond:  => Bool
-  )(block: => Any
-  )(
+    cond: => Bool
+  )(block: => Any)(
     implicit sourceInfo: SourceInfo
   ): WhenContext = {
     new WhenContext(sourceInfo, () => cond, block, Nil)
@@ -53,8 +52,8 @@ object when {
   def cond: Bool = {
     implicit val sourceInfo = UnlocatableSourceInfo
     val whens = Builder.whenStack
-    whens.foldRight(true.B) {
-      case (ctx, acc) => acc && ctx.localCond
+    whens.foldRight(true.B) { case (ctx, acc) =>
+      acc && ctx.localCond
     }
   }
 }
@@ -88,7 +87,8 @@ final class WhenContext private[chisel3] (
   cond:        () => Bool,
   block:       => Any,
   // For capturing conditions from prior whens or elsewhens
-  altConds: List[() => Bool]) {
+  altConds: List[() => Bool]
+) {
 
   /** Indicate if the `WhenContext` is "closed" (`None`) or if this is writing to
     * the "if" or "else" region.
@@ -100,8 +100,8 @@ final class WhenContext private[chisel3] (
   /** Returns the local condition, inverted for an otherwise */
   private[chisel3] def localCond: Bool = {
     implicit val sourceInfo = UnlocatableSourceInfo
-    val alt = altConds.foldRight(true.B) {
-      case (c, acc) => acc & !c()
+    val alt = altConds.foldRight(true.B) { case (c, acc) =>
+      acc & !c()
     }
     scope match {
       case Some(Scope.If)   => alt && cond()
@@ -118,8 +118,7 @@ final class WhenContext private[chisel3] (
     */
   def elsewhen(
     elseCond: => Bool
-  )(block:    => Any
-  )(
+  )(block: => Any)(
     implicit sourceInfo: SourceInfo
   ): WhenContext = {
     Builder.forcedUserModule.withRegion(whenCommand.elseRegion) {

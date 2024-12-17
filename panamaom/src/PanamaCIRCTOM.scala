@@ -91,8 +91,8 @@ abstract class PanamaCIRCTOMEvaluatorValue {
   // Incomplete. currently for debugging purposes only
   override def toString: String = {
     this match {
-      case v: PanamaCIRCTOMEvaluatorValuePath => s"path{${v.toString}}"
-      case v: PanamaCIRCTOMEvaluatorValueList => s"[ ${v.elements.map(_.toString).mkString(", ")} ]"
+      case v: PanamaCIRCTOMEvaluatorValuePath      => s"path{${v.toString}}"
+      case v: PanamaCIRCTOMEvaluatorValueList      => s"[ ${v.elements.map(_.toString).mkString(", ")} ]"
       case v: PanamaCIRCTOMEvaluatorValuePrimitive => s"prim{${v.toString}}"
       case v: PanamaCIRCTOMEvaluatorValueObject =>
         val subfields = v.fieldNames
@@ -187,8 +187,8 @@ abstract class PanamaCIRCTOMEvaluatorValuePrimitive extends PanamaCIRCTOMEvaluat
 class PanamaCIRCTOMEvaluatorValuePrimitiveInteger private[chisel3] (
   val circt:     PanamaCIRCT,
   val value:     OMEvaluatorValue,
-  val primitive: MlirAttribute)
-    extends PanamaCIRCTOMEvaluatorValuePrimitive {
+  val primitive: MlirAttribute
+) extends PanamaCIRCTOMEvaluatorValuePrimitive {
   val integer:           Long = circt.mlirIntegerAttrGetValueSInt(primitive)
   override def toString: String = integer.toString
 }
@@ -196,8 +196,8 @@ class PanamaCIRCTOMEvaluatorValuePrimitiveInteger private[chisel3] (
 class PanamaCIRCTOMEvaluatorValuePrimitiveString private[chisel3] (
   val circt:     PanamaCIRCT,
   val value:     OMEvaluatorValue,
-  val primitive: MlirAttribute)
-    extends PanamaCIRCTOMEvaluatorValuePrimitive {
+  val primitive: MlirAttribute
+) extends PanamaCIRCTOMEvaluatorValuePrimitive {
   override def toString: String = circt.mlirStringAttrGetValue(primitive)
 }
 

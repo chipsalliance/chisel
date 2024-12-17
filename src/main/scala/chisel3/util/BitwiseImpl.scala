@@ -49,8 +49,8 @@ private[chisel3] trait ReverseImpl {
 
   private def doit(in: UInt, length: Int)(implicit sourceInfo: SourceInfo): UInt =
     length match {
-      case _ if length < 0                                    => throw new IllegalArgumentException(s"length (=$length) must be nonnegative integer.")
-      case _ if length <= 1                                   => in
+      case _ if length < 0  => throw new IllegalArgumentException(s"length (=$length) must be nonnegative integer.")
+      case _ if length <= 1 => in
       case _ if isPow2(length) && length >= 8 && length <= 64 =>
         // This esoterica improves simulation performance
         var res = in

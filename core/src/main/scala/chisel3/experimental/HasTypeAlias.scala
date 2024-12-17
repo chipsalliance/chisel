@@ -19,7 +19,7 @@ case class RecordAlias private[chisel3] (info: SourceInfo, id: String, strippedS
 }
 
 object RecordAlias {
-  def apply(id: String)(implicit info:  SourceInfo): RecordAlias = new RecordAlias(info, id)
+  def apply(id: String)(implicit info: SourceInfo): RecordAlias = new RecordAlias(info, id)
   def apply(id: String, strippedSuffix: String)(implicit info: SourceInfo): RecordAlias =
     RecordAlias(info, id, strippedSuffix)
   def apply(info: SourceInfo, id: String, strippedSuffix: String): RecordAlias =

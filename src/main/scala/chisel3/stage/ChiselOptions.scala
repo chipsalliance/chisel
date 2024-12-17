@@ -17,7 +17,8 @@ class ChiselOptions private[stage] (
   val useLegacyWidth:      Boolean = false,
   val layerMap:            Map[Layer, Layer] = Map.empty,
   val includeUtilMetadata: Boolean = false,
-  val useSRAMBlackbox:     Boolean = false) {
+  val useSRAMBlackbox:     Boolean = false
+) {
 
   private[stage] def copy(
     printFullStackTrace: Boolean = printFullStackTrace,

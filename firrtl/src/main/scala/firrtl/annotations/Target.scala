@@ -153,7 +153,7 @@ object Target {
       tokens.tail.zip(tokens.tail.tail).foreach {
         case (".", value: String) => subComps += Field(value)
         case ("[", value: String) => subComps += Index(value.toInt)
-        case other =>
+        case other                =>
       }
     }
     subComps.toSeq
@@ -209,7 +209,7 @@ object Target {
   def getPathlessTarget(t: Target): Target = {
     t.tryToComplete match {
       case c: CircuitTarget => c
-      case m: IsMember => m.pathlessTarget
+      case m: IsMember      => m.pathlessTarget
       case t: GenericTarget if t.isLegal =>
         val newTokens = t.tokens.dropWhile(x => x.isInstanceOf[Instance] || x.isInstanceOf[OfModule])
         GenericTarget(t.circuitOpt, t.moduleOpt, newTokens)
@@ -248,9 +248,9 @@ case class GenericTarget(circuitOpt: Option[String], moduleOpt: Option[String], 
 
   override def toNamed: Named = getComplete match {
     case Some(c: IsComponent) if c.isLocal => c.toNamed
-    case Some(c: ModuleTarget) => c.toNamed
-    case Some(c: CircuitTarget) => c.toNamed
-    case other => throw Target.NamedException(s"Cannot convert $this to [[Named]]")
+    case Some(c: ModuleTarget)             => c.toNamed
+    case Some(c: CircuitTarget)            => c.toNamed
+    case other                             => throw Target.NamedException(s"Cannot convert $this to [[Named]]")
   }
 
   override def toTarget: CompleteTarget = getComplete.get
@@ -273,8 +273,8 @@ case class GenericTarget(circuitOpt: Option[String], moduleOpt: Option[String], 
   override def isLocal: Boolean = !(getPath.nonEmpty && getPath.get.nonEmpty)
 
   def path: Vector[(Instance, OfModule)] = if (isComplete) {
-    tokens.zip(tokens.tail).collect {
-      case (i: Instance, o: OfModule) => (i, o)
+    tokens.zip(tokens.tail).collect { case (i: Instance, o: OfModule) =>
+      (i, o)
     }
   } else Vector.empty[(Instance, OfModule)]
 
@@ -293,9 +293,9 @@ case class GenericTarget(circuitOpt: Option[String], moduleOpt: Option[String], 
     */
   def getRef: Option[(String, Seq[TargetToken])] = if (isComplete) {
     val (optRef, comps) = tokens.foldLeft((None: Option[String], Vector.empty[TargetToken])) {
-      case ((None, v), Ref(r)) => (Some(r), v)
+      case ((None, v), Ref(r))           => (Some(r), v)
       case ((r: Some[String], comps), c) => (r, comps :+ c)
-      case ((r, v), other) => (None, v)
+      case ((r, v), other)               => (None, v)
     }
     optRef.map(x => (x, comps))
   } else {
@@ -308,7 +308,7 @@ case class GenericTarget(circuitOpt: Option[String], moduleOpt: Option[String], 
   def getInstanceOf: Option[(String, String)] = if (isComplete) {
     tokens.grouped(2).foldLeft(None: Option[(String, String)]) {
       case (instOf, Seq(i: Instance, o: OfModule)) => Some((i.value, o.value))
-      case (instOf, _) => None
+      case (instOf, _)                             => None
     }
   } else {
     None
@@ -456,9 +456,8 @@ trait IsMember extends CompleteTarget {
   /** @return List of local Instance Targets refering to each instance/ofModule in this member's path */
   def pathAsTargets: Seq[InstanceTarget] = {
     path
-      .foldLeft((module, Vector.empty[InstanceTarget])) {
-        case ((m, vec), (Instance(i), OfModule(o))) =>
-          (o, vec :+ InstanceTarget(circuit, m, Nil, i, o))
+      .foldLeft((module, Vector.empty[InstanceTarget])) { case ((m, vec), (Instance(i), OfModule(o))) =>
+        (o, vec :+ InstanceTarget(circuit, m, Nil, i, o))
       }
       ._2
   }
@@ -522,8 +521,8 @@ trait IsComponent extends IsMember {
     }
   }
 
-  override def justPath: Seq[TargetToken] = path.foldLeft(Vector.empty[TargetToken]) {
-    case (vec, (i, o)) => vec ++ Seq(i, o)
+  override def justPath: Seq[TargetToken] = path.foldLeft(Vector.empty[TargetToken]) { case (vec, (i, o)) =>
+    vec ++ Seq(i, o)
   }
 
   override def pathTarget: IsModule = {
@@ -623,8 +622,8 @@ case class ReferenceTarget(
   module:            String,
   override val path: Seq[(Instance, OfModule)],
   ref:               String,
-  component:         Seq[TargetToken])
-    extends IsComponent {
+  component:         Seq[TargetToken]
+) extends IsComponent {
 
   /** @param value Index value of this target
     * @return A new [[ReferenceTarget]] to the specified index of this [[ReferenceTarget]]
@@ -745,8 +744,8 @@ case class InstanceTarget(
   module:            String,
   override val path: Seq[(Instance, OfModule)],
   instance:          String,
-  ofModule:          String)
-    extends IsModule
+  ofModule:          String
+) extends IsModule
     with IsComponent {
 
   /** @return a [[ReferenceTarget]] referring to this declaration of this instance */

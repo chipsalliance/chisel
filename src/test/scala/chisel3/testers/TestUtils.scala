@@ -31,8 +31,8 @@ object TestUtils {
       ChiselGeneratorAnnotation(() => gen) +: annos
     )
 
-    val circuit = processedAnnos.collectFirst {
-      case FirrtlCircuitAnnotation(a) => a
+    val circuit = processedAnnos.collectFirst { case FirrtlCircuitAnnotation(a) =>
+      a
     }.get
     (circuit, processedAnnos)
   }

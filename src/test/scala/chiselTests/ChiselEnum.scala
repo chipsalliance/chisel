@@ -813,8 +813,8 @@ class ChiselEnumAnnotationSpec extends AnyFreeSpec with Matchers {
 
   def isCorrect(anno: EnumDefAnnotation, correct: CorrectDefAnno): Boolean = {
     (anno.typeName == correct.typeName ||
-    anno.typeName.endsWith("." + correct.typeName) ||
-    anno.typeName.endsWith("$" + correct.typeName)) &&
+      anno.typeName.endsWith("." + correct.typeName) ||
+      anno.typeName.endsWith("$" + correct.typeName)) &&
     anno.definition == correct.definition
   }
 
@@ -824,7 +824,7 @@ class ChiselEnumAnnotationSpec extends AnyFreeSpec with Matchers {
       case _                      => throw new Exception("Unknown target type in EnumComponentAnnotation")
     }) &&
     (anno.enumTypeName == correct.typeName || anno.enumTypeName.endsWith("." + correct.typeName) ||
-    anno.enumTypeName.endsWith("$" + correct.typeName))
+      anno.enumTypeName.endsWith("$" + correct.typeName))
   }
 
   def isCorrect(anno: EnumVecAnnotation, correct: CorrectVecAnno): Boolean = {
@@ -833,7 +833,7 @@ class ChiselEnumAnnotationSpec extends AnyFreeSpec with Matchers {
       case _                      => throw new Exception("Unknown target type in EnumVecAnnotation")
     }) &&
     (anno.typeName == correct.typeName || anno.typeName.endsWith("." + correct.typeName) ||
-    anno.typeName.endsWith("$" + correct.typeName)) &&
+      anno.typeName.endsWith("$" + correct.typeName)) &&
     anno.fields.map(_.toSeq).toSet == correct.fields
   }
 

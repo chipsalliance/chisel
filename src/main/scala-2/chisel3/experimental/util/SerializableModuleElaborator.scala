@@ -45,8 +45,7 @@ trait SerializableModuleElaborator {
   def designImpl[M <: SerializableModule[P]: universe.TypeTag, P <: SerializableModuleParameter: universe.TypeTag](
     parameter: Readable
   )(
-    implicit
-    rwP: upickle.default.Reader[P]
+    implicit rwP: upickle.default.Reader[P]
   ): (Readable, Readable) = {
     var fir: firrtl.ir.Circuit = null
     val annos = Seq(

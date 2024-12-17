@@ -18,8 +18,8 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
     with TypingTransformers
     with ChiselOuterUtils {
   import global._
-  val runsAfter: List[String] = List[String]("typer")
-  val phaseName: String = "chiselcomponent"
+  val runsAfter:              List[String] = List[String]("typer")
+  val phaseName:              String = "chiselcomponent"
   def newPhase(_prev: Phase): ChiselComponentPhase = new ChiselComponentPhase(_prev)
   class ChiselComponentPhase(prev: Phase) extends StdPhase(prev) {
     override def name: String = phaseName

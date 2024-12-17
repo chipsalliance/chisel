@@ -72,8 +72,8 @@ class SparseVec[A <: Data](
   gen:              => A,
   indices:          Seq[Int],
   defaultValue:     DefaultValueBehavior.Type = DefaultValueBehavior.Indeterminate,
-  outOfBoundsValue: OutOfBoundsBehavior.Type = OutOfBoundsBehavior.Indeterminate)
-    extends Record {
+  outOfBoundsValue: OutOfBoundsBehavior.Type = OutOfBoundsBehavior.Indeterminate
+) extends Record {
 
   require(indices.size <= size, s"the SparseVec indices size (${indices.size}) must be <= the SparseVec size ($size)")
 
@@ -83,11 +83,10 @@ class SparseVec[A <: Data](
   override final val elements = {
     var nonUniqueIndices: List[Int] = Nil // List is cheap in common case, no allocation
     val duplicates:       HashSet[Int] = HashSet.empty[Int]
-    val result = indices.view.map {
-      case index =>
-        if (!duplicates.add(index))
-          nonUniqueIndices ::= index
-        index.toString -> DataMirror.internal.chiselTypeClone(gen)
+    val result = indices.view.map { case index =>
+      if (!duplicates.add(index))
+        nonUniqueIndices ::= index
+      index.toString -> DataMirror.internal.chiselTypeClone(gen)
     }.to(VectorMap)
     // Throw a runtime exception if there is a non-unique indices.
     // TODO: Improve this error message.
@@ -193,16 +192,14 @@ class SparseVec[A <: Data](
         // in the denseVec.  If out-of-bounds values are possible and the user
         // instructed us to return the first-element on out-of-bounds acesses,
         // then fill out the array with BitPats to do this.
-        val bitPats = indices.zipWithIndex.map {
-          case (index, i) =>
-            BitPat(index.U(addrWidth.W)) -> BitPat(d.encoding(i + baseEncodedAddress, encodedSize))
+        val bitPats = indices.zipWithIndex.map { case (index, i) =>
+          BitPat(index.U(addrWidth.W)) -> BitPat(d.encoding(i + baseEncodedAddress, encodedSize))
         } ++ {
           (outOfBoundsValue, zeroValue) match {
             case (OutOfBoundsBehavior.Indeterminate, _) | (_, None) => Seq.empty
             case (OutOfBoundsBehavior.First, Some(_)) =>
-              (size until BigInt(addrWidth).pow(2).toInt).map {
-                case i =>
-                  BitPat(i.U(addrWidth.W)) -> BitPat(d.encoding(baseEncodedAddress, encodedSize))
+              (size until BigInt(addrWidth).pow(2).toInt).map { case i =>
+                BitPat(i.U(addrWidth.W)) -> BitPat(d.encoding(baseEncodedAddress, encodedSize))
               }
           }
         }
@@ -237,11 +234,10 @@ class SparseVec[A <: Data](
         result := defaultValue.getValue(lookupType)
 
         // Generate one when statement for each value.
-        indices.zip(elements.values).foreach {
-          case (index, data) =>
-            when(addr === index.U) {
-              result := data
-            }
+        indices.zip(elements.values).foreach { case (index, data) =>
+          when(addr === index.U) {
+            result := data
+          }
         }
 
         // If the elements have a value at index zero and if the user indicated

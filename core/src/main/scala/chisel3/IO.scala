@@ -26,8 +26,8 @@ object IO {
     if (!module.isIOCreationAllowed)
       Builder.error(
         s"This module cannot have IOs instantiated after disallowing IOs: ${module._whereIOCreationIsDisallowed
-          .map(_.makeMessage { (s: String) => s })
-          .mkString(",")}"
+            .map(_.makeMessage { (s: String) => s })
+            .mkString(",")}"
       )
     require(!module.isClosed, "Can't add more ports after module close")
     val prevId = Builder.idGen.value
@@ -97,14 +97,13 @@ object FlatIO {
     gen match {
       case d if hasProbeTypeModifier(d) => IO(d)
       case _:      Element => IO(gen)
-      case _:      Vec[_] => IO(gen)
+      case _:      Vec[_]  => IO(gen)
       case record: R =>
         val ports: Seq[Data] =
-          record._elements.toSeq.reverse.map {
-            case (name, data) =>
-              val p = IO(coerceDirection(data).asInstanceOf[Data])
-              p.suggestName(name)
-              p
+          record._elements.toSeq.reverse.map { case (name, data) =>
+            val p = IO(coerceDirection(data).asInstanceOf[Data])
+            p.suggestName(name)
+            p
 
           }
 
