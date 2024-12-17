@@ -45,6 +45,14 @@ object v extends Module {
 
   def isScala3(ver: String): Boolean = ver.startsWith("3.")
 
+  def buildUnits(): Seq[ScalaModule] = {
+    scalaCrossVersions.flatMap { ver =>
+      Seq(chisel(ver), stdlib(ver), unipublish)
+    } ++ scalaCrossVersions.filterNot(isScala3(_)).flatMap { ver2 =>
+      Seq(chisel(ver2).test)
+    }
+  }
+
   val scalaVersion = scalaCrossVersions.head
   val jmhVersion = "1.37"
   val osLib = ivy"com.lihaoyi::os-lib:0.10.0"
@@ -96,6 +104,10 @@ object v extends Module {
     "-language:reflectiveCalls",
     s"-Wconf:${scala2WarnConf.mkString(",")}"
   )
+}
+
+def compileAll() = T.command {
+  T.traverse(v.buildUnits())(_.compile)()
 }
 
 trait ChiselPublishModule extends CiReleaseModule {

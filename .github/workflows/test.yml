@@ -90,7 +90,7 @@ jobs:
           $CHISEL_FIRTOOL_PATH/firtool -version >> $GITHUB_STEP_SUMMARY
           echo \`\`\` >> $GITHUB_STEP_SUMMARY
       - name: Test
-        run: ./mill -j0 firrtl[_].test + svsim[_].test + chisel[_].test
+        run: ./mill -j0 firrtl[].test + svsim[].test + chisel[].test
       - name: Binary compatibility
         # TODO either make this also check the plugin or decide that we don't
         #      support binary compatibility for the plugin
@@ -132,45 +132,7 @@ jobs:
           $CHISEL_FIRTOOL_PATH/firtool -version >> $GITHUB_STEP_SUMMARY
           echo \`\`\` >> $GITHUB_STEP_SUMMARY
       - name: Compile with Mill
-        run: ./mill chisel[].compile
-
-  mill3:
-    name: compile scala-3 project with mill
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.ref }}
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'adopt'
-          java-version: '21'
-      - name: Install CIRCT
-        id: install-circt
-        if: ${{ inputs.circt }}
-        uses: circt/install-circt@v1.1.1
-        with:
-          version: ${{ inputs.circt }}
-          github-token: ${{ github.token }}
-      # TODO have install-circt do this
-      - name: Set CHISEL_FIRTOOL_PATH and CIRCT_INSTALL_PATH
-        if: steps.install-circt.outcome == 'success'
-        run: |
-          bindir=$(dirname $(which firtool))
-          installdir=$(dirname $bindir)
-          echo "CHISEL_FIRTOOL_PATH=$bindir" >> "$GITHUB_ENV"
-          echo "CIRCT_INSTALL_PATH=$installdir" >> "$GITHUB_ENV"
-      - name: Print firtool version
-        if: steps.install-circt.outcome == 'success'
-        run: |
-          echo "The CIRCT version used is:" >> $GITHUB_STEP_SUMMARY
-          echo \`\`\` >> $GITHUB_STEP_SUMMARY
-          $CHISEL_FIRTOOL_PATH/firtool -version >> $GITHUB_STEP_SUMMARY
-          echo \`\`\` >> $GITHUB_STEP_SUMMARY
-      - name: Compile with Mill
-        run: ./mill chisel[3.3.4].compile
+        run: ./mill compileAll
 
   doc:
     name: Formatting
@@ -188,7 +150,7 @@ jobs:
       - name: Check Build Script Formatting
         run: ./mill --meta-level 1 mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll sources
       - name: Check Source File Format
-        run: ./mill chisel[].checkFormat
+        run: ./mill __.checkFormat
 
   integration:
     name: Integration Tests
