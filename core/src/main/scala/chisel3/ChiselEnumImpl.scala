@@ -228,7 +228,7 @@ private[chisel3] abstract class EnumTypeImpl(private[chisel3] val factory: Chise
           //      value U is not a member of Char.
           //      An extension method was tried,
           //      but could not be fully constructed:
-          // 
+          //
           //          chisel3.fromLongToLiteral(c.toChar)
           // r := c.toChar.U
         }

@@ -15,7 +15,7 @@ object Module extends ObjectModuleImpl with SourceInfoDoc {
     */
   // TODO(adkian-sifive) the callsite here explicitly passes
   // sourceInfo so it cannot be a contextual parameter
-  def apply[T <: BaseModule](bc: => T): T = _applyImpl(bc)
+  def apply[T <: BaseModule](bc:    => T): T = _applyImpl(bc)
   def do_apply[T <: BaseModule](bc: => T)(implicit sourceInfo: SourceInfo): T = apply(bc)
 }
 

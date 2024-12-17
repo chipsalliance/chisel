@@ -27,7 +27,6 @@ import scala.reflect.macros.blackbox.Context
   */
 sealed trait ChiselSubtypeOf[A, B]
 
-
 // return an empty tree here instead of a quasiquote for scala3 compatibility
 object ChiselSubtypeOf {
   // TODO return an empty tree here instead of a quasiquote for scala3 compatibility

@@ -6,7 +6,8 @@ import chisel3.experimental.BaseModule
 import _root_.firrtl.annotations.IsModule
 
 trait Hierarchy[+A] extends HierarchyImpl[A] {
-/** Determine whether underlying proto is of type provided.
+
+  /** Determine whether underlying proto is of type provided.
     *
     * @note IMPORTANT: this function requires summoning a TypeTag[B], which will fail if B is an inner class.
     * @note IMPORTANT: this function IGNORES type parameters, akin to normal type erasure.

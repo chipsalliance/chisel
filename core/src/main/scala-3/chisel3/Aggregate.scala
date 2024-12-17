@@ -52,8 +52,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, length: Int)
 
   override def toString: String = super[VecImpl].toString
 
-  def apply(p: UInt)(using sourceInfo: SourceInfo): T = do_apply(p)
-  def do_apply(p: UInt)(using sourceInfo: SourceInfo): T = _applyImpl(p)
+  def apply(p: UInt)(using sourceInfo: SourceInfo): T = _applyImpl(p)
 
   /** A reduce operation in a tree like structure instead of sequentially
     * @example An adder tree

@@ -55,4 +55,3 @@ object cover extends VerifPrintMacrosDoc {
 
   type SourceLineInfo = (String, Int)
 }
-

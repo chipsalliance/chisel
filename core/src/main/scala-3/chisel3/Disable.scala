@@ -3,8 +3,7 @@
 package chisel3
 
 import chisel3.internal._
-import chisel3.experimental.{OpaqueType, SourceInfo}
-import scala.collection.immutable.ListMap
+import chisel3.experimental.SourceInfo
 
 /** API for handling disabling of simulation constructs
   *
