@@ -3,7 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.choice.{Case, Group, ModuleChoice}
+import chisel3.choice.{addGroup, Case, Group, ModuleChoice}
 import chiselTests.{ChiselFlatSpec, MatchesAndOmits, Utils}
 import _root_.circt.stage.ChiselStage
 
@@ -23,7 +23,7 @@ class ASICTarget extends FixedIOExtModule[TargetIO](new TargetIO(8))
 
 class VerifTarget extends FixedIORawModule[TargetIO](new TargetIO(8))
 
-class ModuleChoiceSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
+class ModuleChoiceSpec extends ChiselFlatSpec with Utils with FileCheck {
   it should "emit options and cases" in {
     class ModuleWithChoice extends Module {
       val out = IO(UInt(8.W))
@@ -35,17 +35,14 @@ class ModuleChoiceSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
       out := inst.out
     }
 
-    val chirrtl = ChiselStage.emitCHIRRTL(new ModuleWithChoice, Array("--full-stacktrace"))
-
-    info("CHIRRTL emission looks correct")
-    matchesAndOmits(chirrtl)(
-      "option Platform :",
-      "FPGA",
-      "ASIC",
-      "instchoice inst of VerifTarget, Platform :",
-      "FPGA => FPGATarget",
-      "ASIC => ASICTarget"
-    )()
+    generateFirrtlAndFileCheck(new ModuleWithChoice)(
+      """|CHECK: option Platform :
+         |CHECK-NEXT: FPGA
+         |CHECK-NEXT: ASIC
+         |CHECK: instchoice inst of VerifTarget, Platform :
+         |CHECK-NEXT: FPGA => FPGATarget
+         |CHECK-NEXT: ASIC => ASICTarget""".stripMargin
+    )
   }
 
   it should "require that all cases are part of the same option" in {
@@ -128,4 +125,21 @@ class ModuleChoiceSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
 
   }
 
+}
+class AddGroupSpec extends ChiselFlatSpec with Utils with FileCheck {
+  it should "emit options for a registered group even if there are no consumers" in {
+    class ModuleWithoutChoice extends Module {
+      addGroup(Platform)
+      val out = IO(UInt(8.W))
+      val in = IO(UInt(8.W))
+      out := in
+    }
+
+    generateFirrtlAndFileCheck(new ModuleWithoutChoice)(
+      """|CHECK: option Platform :
+         |CHECK-NEXT: ASIC @[
+         |CHECK-NEXT: FPGA @[
+         |""".stripMargin
+    )
+  }
 }
