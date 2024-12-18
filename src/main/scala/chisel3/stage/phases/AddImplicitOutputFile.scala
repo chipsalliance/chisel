@@ -20,8 +20,9 @@ class AddImplicitOutputFile extends Phase {
   def transform(annotations: AnnotationSeq): AnnotationSeq =
     annotations.collectFirst { case _: ChiselOutputFileAnnotation => annotations }.getOrElse {
 
-      val x: Option[AnnotationSeq] = annotations.collectFirst { case a: ChiselCircuitAnnotation =>
-        ChiselOutputFileAnnotation(a.circuit.name) +: annotations
+      val x: Option[AnnotationSeq] = annotations.collectFirst {
+        case a: ChiselCircuitAnnotation =>
+          ChiselOutputFileAnnotation(a.circuit.name) +: annotations
       }
 
       x.getOrElse(annotations)

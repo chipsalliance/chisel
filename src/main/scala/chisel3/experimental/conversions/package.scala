@@ -45,7 +45,8 @@ package object conversions {
     V2 <: Data,
     V3 <: Data,
     V4 <: Data
-  ](tup: (T1, T2, T3, T4))(
+  ](tup: (T1, T2, T3, T4)
+  )(
     implicit v1: DataView[T1, V1],
     v2:          DataView[T2, V2],
     v3:          DataView[T3, V3],
@@ -66,7 +67,8 @@ package object conversions {
     V3 <: Data,
     V4 <: Data,
     V5 <: Data
-  ](tup: (T1, T2, T3, T4, T5))(
+  ](tup: (T1, T2, T3, T4, T5)
+  )(
     implicit v1: DataView[T1, V1],
     v2:          DataView[T2, V2],
     v3:          DataView[T3, V3],
@@ -90,7 +92,8 @@ package object conversions {
     V4 <: Data,
     V5 <: Data,
     V6 <: Data
-  ](tup: (T1, T2, T3, T4, T5, T6))(
+  ](tup: (T1, T2, T3, T4, T5, T6)
+  )(
     implicit v1: DataView[T1, V1],
     v2:          DataView[T2, V2],
     v3:          DataView[T3, V3],
@@ -117,7 +120,8 @@ package object conversions {
     V5 <: Data,
     V6 <: Data,
     V7 <: Data
-  ](tup: (T1, T2, T3, T4, T5, T6, T7))(
+  ](tup: (T1, T2, T3, T4, T5, T6, T7)
+  )(
     implicit v1: DataView[T1, V1],
     v2:          DataView[T2, V2],
     v3:          DataView[T3, V3],
@@ -147,7 +151,8 @@ package object conversions {
     V6 <: Data,
     V7 <: Data,
     V8 <: Data
-  ](tup: (T1, T2, T3, T4, T5, T6, T7, T8))(
+  ](tup: (T1, T2, T3, T4, T5, T6, T7, T8)
+  )(
     implicit v1: DataView[T1, V1],
     v2:          DataView[T2, V2],
     v3:          DataView[T3, V3],
@@ -180,7 +185,8 @@ package object conversions {
     V7 <: Data,
     V8 <: Data,
     V9 <: Data
-  ](tup: (T1, T2, T3, T4, T5, T6, T7, T8, T9))(
+  ](tup: (T1, T2, T3, T4, T5, T6, T7, T8, T9)
+  )(
     implicit v1: DataView[T1, V1],
     v2:          DataView[T2, V2],
     v3:          DataView[T3, V3],
@@ -216,7 +222,8 @@ package object conversions {
     V8 <: Data,
     V9 <: Data,
     V10 <: Data
-  ](tup: (T1, T2, T3, T4, T5, T6, T7, T8, T9, T10))(
+  ](tup: (T1, T2, T3, T4, T5, T6, T7, T8, T9, T10)
+  )(
     implicit v1: DataView[T1, V1],
     v2:          DataView[T2, V2],
     v3:          DataView[T3, V3],

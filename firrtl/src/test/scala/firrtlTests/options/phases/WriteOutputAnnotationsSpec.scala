@@ -45,9 +45,10 @@ class WriteOutputAnnotationsSpec extends AnyFlatSpec with Matchers with firrtl.t
 
     read
       .zip(a)
-      .foreach { case (read, expected) =>
-        info(s"$read matches")
-        read should be(expected)
+      .foreach {
+        case (read, expected) =>
+          info(s"$read matches")
+          read should be(expected)
       }
 
     f.delete()

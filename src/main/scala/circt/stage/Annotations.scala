@@ -91,7 +91,10 @@ object CIRCTTargetAnnotation extends HasShellOptions {
   * @param value a string of MLIR
   * @param suffix an optional suffix added to the filename when this is written to disk
   */
-case class EmittedMLIR(filename: String, value: String, suffix: Option[String])
+case class EmittedMLIR(
+  filename: String,
+  value:    String,
+  suffix:   Option[String])
     extends NoTargetAnnotation
     with CustomFileEmission {
 

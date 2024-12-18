@@ -14,8 +14,9 @@ import chisel3.experimental.SourceInfo
   */
 class SwitchContext[T <: Element](cond: T, whenContext: Option[WhenContext], lits: Set[BigInt]) {
   def is(
-    v: Iterable[T]
-  )(block: => Any)(
+    v:     Iterable[T]
+  )(block: => Any
+  )(
     implicit sourceInfo: SourceInfo
   ): SwitchContext[T] = {
     if (!v.isEmpty) {
@@ -38,9 +39,10 @@ class SwitchContext[T <: Element](cond: T, whenContext: Option[WhenContext], lit
   def is(v: T)(block: => Any)(implicit sourceInfo: SourceInfo): SwitchContext[T] =
     is(Seq(v))(block)
   def is(
-    v:  T,
-    vr: T*
-  )(block: => Any)(
+    v:     T,
+    vr:    T*
+  )(block: => Any
+  )(
     implicit sourceInfo: SourceInfo
   ): SwitchContext[T] = is(v :: vr.toList)(block)
 }

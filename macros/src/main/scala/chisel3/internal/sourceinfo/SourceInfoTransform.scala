@@ -260,7 +260,8 @@ class SourceInfoTransform(val c: Context) extends AutoSourceTransform {
     mask:      c.Tree,
     en:        c.Tree,
     isWrite:   c.Tree
-  )(evidence: c.Tree): c.Tree = {
+  )(evidence:  c.Tree
+  ): c.Tree = {
     q"$thisObj.$doFuncTerm($idx, $writeData, $mask, $en, $isWrite)($evidence, $implicitSourceInfo)"
   }
 
@@ -271,7 +272,8 @@ class SourceInfoTransform(val c: Context) extends AutoSourceTransform {
     en:        c.Tree,
     isWrite:   c.Tree,
     clock:     c.Tree
-  )(evidence: c.Tree): c.Tree = {
+  )(evidence:  c.Tree
+  ): c.Tree = {
     q"$thisObj.$doFuncTerm($idx, $writeData, $mask, $en, $isWrite, $clock)($evidence, $implicitSourceInfo)"
   }
 

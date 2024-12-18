@@ -21,19 +21,21 @@ private[chisel3] trait ModuleChoiceImpl {
   ): T = {
     val instDefaultModule = Module.evaluate(default)
 
-    val choiceModules = choices.map { case (choice, module) =>
-      val instModule = Module.evaluate(module())
-      if (!instModule.io.typeEquivalent(instDefaultModule.io)) {
-        Builder.error("Error: choice module IO bundles are not type equivalent")
-      }
-      Builder.options += choice
-      (choice, instModule)
+    val choiceModules = choices.map {
+      case (choice, module) =>
+        val instModule = Module.evaluate(module())
+        if (!instModule.io.typeEquivalent(instDefaultModule.io)) {
+          Builder.error("Error: choice module IO bundles are not type equivalent")
+        }
+        Builder.options += choice
+        (choice, instModule)
     }
 
-    groupByIntoSeq(choiceModules.map(_._1))(opt => opt).foreach { case (_, group) =>
-      if (group.size != 1) {
-        throw new IllegalArgumentException(s"Error: duplicate case '${group.head.name}'")
-      }
+    groupByIntoSeq(choiceModules.map(_._1))(opt => opt).foreach {
+      case (_, group) =>
+        if (group.size != 1) {
+          throw new IllegalArgumentException(s"Error: duplicate case '${group.head.name}'")
+        }
     }
 
     val groupedChoices = choices.map(_._1.group).distinct
@@ -55,8 +57,9 @@ private[chisel3] trait ModuleChoiceImpl {
         binding,
         instDefaultModule,
         group,
-        choiceModules.map { case (choice, instModule) =>
-          (choice.name, instModule)
+        choiceModules.map {
+          case (choice, instModule) =>
+            (choice.name, instModule)
         }
       )
     )

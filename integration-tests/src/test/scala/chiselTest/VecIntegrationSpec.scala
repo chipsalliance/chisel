@@ -44,8 +44,9 @@ class VecIntegrationSpec extends ChiselPropSpec {
       }
     }
 
-    forAll(safeUIntN(8)) { case (w: Int, v: List[Int]) =>
-      assertTesterPasses { new RegTester(w, v) }
+    forAll(safeUIntN(8)) {
+      case (w: Int, v: List[Int]) =>
+        assertTesterPasses { new RegTester(w, v) }
     }
   }
 

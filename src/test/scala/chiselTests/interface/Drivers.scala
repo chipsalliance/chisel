@@ -16,8 +16,7 @@ object Drivers {
   case class CompilationUnit(
     generator:   () => RawModule,
     args:        Array[String] = Array.empty,
-    annotations: AnnotationSeq = Seq.empty
-  )
+    annotations: AnnotationSeq = Seq.empty)
 
   /** Compile one or more Chisel Modules into an output directory. The first
     * compile will be put into the output directory. All subsequent compiles
@@ -29,24 +28,25 @@ object Drivers {
     main:  CompilationUnit,
     other: CompilationUnit*
   ) = {
-    (main +: other).zipWithIndex.foreach { case (CompilationUnit(generator, args, annotations), i) =>
-      stage.execute(
-        Array(
-          "--target",
-          "systemverilog",
-          "--target-dir",
-          dir.getPath() + "/firrtl"
-        ) ++ args,
-        Seq(
-          ChiselGeneratorAnnotation(generator),
-          FirtoolOption("-split-verilog"),
-          FirtoolOption("-o"),
-          FirtoolOption(dir.getPath() + s"/compile-$i"),
-          FirtoolOption("-disable-annotation-unknown"),
-          FirtoolOption("-disable-all-randomization"),
-          FirtoolOption("-strip-debug-info")
-        ) ++ annotations
-      )
+    (main +: other).zipWithIndex.foreach {
+      case (CompilationUnit(generator, args, annotations), i) =>
+        stage.execute(
+          Array(
+            "--target",
+            "systemverilog",
+            "--target-dir",
+            dir.getPath() + "/firrtl"
+          ) ++ args,
+          Seq(
+            ChiselGeneratorAnnotation(generator),
+            FirtoolOption("-split-verilog"),
+            FirtoolOption("-o"),
+            FirtoolOption(dir.getPath() + s"/compile-$i"),
+            FirtoolOption("-disable-annotation-unknown"),
+            FirtoolOption("-disable-all-randomization"),
+            FirtoolOption("-strip-debug-info")
+          ) ++ annotations
+        )
     }
   }
 
@@ -65,10 +65,11 @@ object Drivers {
       .map(dir => s"-I${dir.getPath()}")
 
     /** Find any reference definition files, which need to be parsed by Verilator first */
-    val refDefinitionFiles = includeDirs.flatMap { case f =>
-      f.listFiles().collect {
-        case f if f.getName().startsWith("ref_") => f.getPath()
-      }
+    val refDefinitionFiles = includeDirs.flatMap {
+      case f =>
+        f.listFiles().collect {
+          case f if f.getName().startsWith("ref_") => f.getPath()
+        }
     }
 
     val cmd: Seq[String] = Seq(

@@ -180,9 +180,10 @@ object JsonProtocol extends LazyLogging {
     val tags = getTags(annos.toSeq)
 
     implicit val formats = jsonFormat(tags)
-    Try(writePretty(annos, out)).recoverWith { case e: org.json4s.MappingException =>
-      val badAnnos = findUnserializeableAnnos(annos.toSeq)
-      Failure(if (badAnnos.isEmpty) e else UnserializableAnnotationException(badAnnos))
+    Try(writePretty(annos, out)).recoverWith {
+      case e: org.json4s.MappingException =>
+        val badAnnos = findUnserializeableAnnos(annos.toSeq)
+        Failure(if (badAnnos.isEmpty) e else UnserializableAnnotationException(badAnnos))
     }
   }
 

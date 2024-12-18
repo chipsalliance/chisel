@@ -19,8 +19,7 @@ class CIRCTOptions private[stage] (
   val firtoolOptions:    Seq[String] = Seq.empty,
   val splitVerilog:      Boolean = false,
   val firtoolBinaryPath: Option[String] = None,
-  val dumpFir:           Boolean = false
-) {
+  val dumpFir:           Boolean = false) {
 
   private[stage] def copy(
     outputFile:        Option[File] = outputFile,

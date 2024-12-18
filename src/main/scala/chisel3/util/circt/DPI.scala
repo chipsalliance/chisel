@@ -44,7 +44,10 @@ object RawClockedNonVoidFunctionCall {
     ret:          => T,
     inputNames:   Option[Seq[String]] = None,
     outputName:   Option[String] = None
-  )(clock: Clock, enable: Bool, data: Data*): T = {
+  )(clock:        Clock,
+    enable:       Bool,
+    data:         Data*
+  ): T = {
     IntrinsicExpr(
       "circt_dpi_call",
       ret,
@@ -74,7 +77,9 @@ object RawUnclockedNonVoidFunctionCall {
     ret:          => T,
     inputNames:   Option[Seq[String]] = None,
     outputName:   Option[String] = None
-  )(enable: Bool, data: Data*): T = {
+  )(enable:       Bool,
+    data:         Data*
+  ): T = {
     IntrinsicExpr(
       "circt_dpi_call",
       ret,
@@ -97,7 +102,10 @@ object RawClockedVoidFunctionCall {
   def apply(
     functionName: String,
     inputNames:   Option[Seq[String]] = None
-  )(clock: Clock, enable: Bool, data: Data*): Unit = {
+  )(clock:        Clock,
+    enable:       Bool,
+    data:         Data*
+  ): Unit = {
     Intrinsic("circt_dpi_call", GetDPIParams(functionName, true, inputNames): _*)(
       (Seq(clock, enable) ++ data): _*
     )
@@ -107,13 +115,13 @@ object RawClockedVoidFunctionCall {
 // A common trait for DPI functions.
 trait DPIFunctionImport {
   def functionName: String
-  def inputNames:   Option[Seq[String]] = None
+  def inputNames: Option[Seq[String]] = None
 }
 
 // Base trait for a non-void function that returns `T`.
 trait DPINonVoidFunctionImport[T <: Data] extends DPIFunctionImport {
-  def ret:        T
-  def clocked:    Boolean
+  def ret:     T
+  def clocked: Boolean
   def outputName: Option[String] = None
   final def callWithEnable(enable: Bool, data: Data*): T =
     if (clocked) {

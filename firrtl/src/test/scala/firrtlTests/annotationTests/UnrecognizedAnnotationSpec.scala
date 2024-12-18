@@ -69,8 +69,7 @@ class UnrecognizedAnnotationSpec extends FirrtlFlatSpec {
     outputAnnotations:     String,
     outputAnnotationsFull: String,
     firrtlSource:          String,
-    firrtlOutput:          String
-  )
+    firrtlOutput:          String)
 
   def setupFiles(addAllowUnrecognizedFlag: Boolean, addAllowUnrecognizedAnno: Boolean): TestFileNames = {
     val dirName = (addAllowUnrecognizedFlag, addAllowUnrecognizedAnno) match {
