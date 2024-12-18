@@ -27,19 +27,31 @@ class VerifTarget extends FixedIORawModule[TargetIO](new TargetIO(8)) {
   io.out := io.in
 }
 
+class ModuleWithChoice[T <: Data](
+  default:        => FixedIOBaseModule[T]
+)(alternateImpls: Seq[(Case, () => FixedIOBaseModule[T])])
+    extends Module {
+  val inst = ModuleChoice(default)(alternateImpls)
+  val io = IO(inst.cloneType)
+  io <> inst
+}
+
 class ModuleChoiceSpec extends ChiselFlatSpec with Utils with FileCheck {
   it should "emit options and cases" in {
-    class ModuleWithChoice extends Module {
-      val out = IO(UInt(8.W))
+    class ModuleWithValidChoices
+        extends ModuleWithChoice(new VerifTarget)(Seq(Platform.FPGA -> new FPGATarget, Platform.ASIC -> new ASICTarget))
 
-      val inst =
-        ModuleChoice(new VerifTarget)(Seq(Platform.FPGA -> new FPGATarget, Platform.ASIC -> new ASICTarget))
+    generateFirrtlAndFileCheck(new ModuleWithValidChoices)(
+      """|CHECK: option Platform :
+         |CHECK-NEXT: FPGA
+         |CHECK-NEXT: ASIC
+         |CHECK: instchoice inst of VerifTarget, Platform :
+         |CHECK-NEXT: FPGA => FPGATarget
+         |CHECK-NEXT: ASIC => ASICTarget""".stripMargin
+    )
+  }
 
-      inst.in := 42.U(8.W)
-      out := inst.out
-    }
-
-    generateFirrtlAndFileCheck(new ModuleWithChoice)(
+    generateFirrtlAndFileCheck(new ModuleWithValidChoices)(
       """|CHECK: option Platform :
          |CHECK-NEXT: FPGA
          |CHECK-NEXT: ASIC
@@ -51,20 +63,15 @@ class ModuleChoiceSpec extends ChiselFlatSpec with Utils with FileCheck {
 
   it should "require that all cases are part of the same option" in {
 
-    class MixedOptions extends Module {
-      object Performance extends Group {
-        object Fast extends Case
-        object Small extends Case
-      }
-
-      val out = IO(UInt(8.W))
-
-      val inst =
-        ModuleChoice(new VerifTarget)(Seq(Platform.FPGA -> new FPGATarget, Performance.Fast -> new ASICTarget))
-
-      inst.in := 42.U(8.W)
-      out := inst.out
+    object Performance extends Group {
+      object Fast extends Case
+      object Small extends Case
     }
+
+    class MixedOptions
+        extends ModuleWithChoice(new VerifTarget)(
+          Seq(Platform.FPGA -> new FPGATarget, Performance.Fast -> new ASICTarget)
+        )
 
     intercept[IllegalArgumentException] { ChiselStage.emitCHIRRTL(new MixedOptions) }.getMessage() should include(
       "cannot mix choices from different groups: Platform, Performance"
@@ -74,17 +81,9 @@ class ModuleChoiceSpec extends ChiselFlatSpec with Utils with FileCheck {
 
   it should "require that at least one alternative is present" in {
 
-    class MixedOptions extends Module {
-      val out = IO(UInt(8.W))
+    class NoAlternatives extends ModuleWithChoice(new VerifTarget)(Seq())
 
-      val inst =
-        ModuleChoice(new VerifTarget)(Seq())
-
-      inst.in := 42.U(8.W)
-      out := inst.out
-    }
-
-    intercept[IllegalArgumentException] { ChiselStage.emitCHIRRTL(new MixedOptions) }.getMessage() should include(
+    intercept[IllegalArgumentException] { ChiselStage.emitCHIRRTL(new NoAlternatives) }.getMessage() should include(
       "at least one alternative must be specified"
     )
 
@@ -92,20 +91,12 @@ class ModuleChoiceSpec extends ChiselFlatSpec with Utils with FileCheck {
 
   it should "allow a subset of options to be provided" in {
 
-    class SparseOptions extends Module {
-      val out = IO(Output(UInt(8.W)))
-      val in = IO(Input(UInt(8.W)))
-
-      val inst = ModuleChoice(new VerifTarget)(Seq(Platform.FPGA -> new FPGATarget))
-
-      inst.in := in
-      out := inst.out
-    }
+    class SubsetOptions extends ModuleWithChoice(new VerifTarget)(Seq(Platform.FPGA -> new FPGATarget))
 
     // Note, because of a quirk in how [[Case]]s are registered, only those referenced
     // in the Module here are going to be captured. This will be fixed in a forthcoming PR
     // that implements an [[addLayer]] like feature for [[Group]]s
-    generateFirrtlAndFileCheck(new SparseOptions)(
+    generateFirrtlAndFileCheck(new SubsetOptions)(
       """|CHECK: option Platform :
          |CHECK-NEXT: FPGA
          |CHECK: instchoice inst of VerifTarget, Platform :
@@ -115,15 +106,8 @@ class ModuleChoiceSpec extends ChiselFlatSpec with Utils with FileCheck {
 
   it should "require that all cases are distinct" in {
 
-    class MixedOptions extends Module {
-      val out = IO(UInt(8.W))
-
-      val inst =
-        ModuleChoice(new VerifTarget)(Seq(Platform.FPGA -> new FPGATarget, Platform.FPGA -> new ASICTarget))
-
-      inst.in := 42.U(8.W)
-      out := inst.out
-    }
+    class MixedOptions
+        extends ModuleWithChoice(new VerifTarget)(Seq(Platform.FPGA -> new FPGATarget, Platform.FPGA -> new ASICTarget))
 
     intercept[IllegalArgumentException] { ChiselStage.emitCHIRRTL(new MixedOptions) }.getMessage() should include(
       "duplicate case 'FPGA'"
@@ -133,17 +117,9 @@ class ModuleChoiceSpec extends ChiselFlatSpec with Utils with FileCheck {
 
   it should "require that all IO bundles are type equivalent" in {
 
-    class MixedIO extends Module {
-      val out = IO(UInt(8.W))
+    class Target16 extends FixedIOExtModule[TargetIO](new TargetIO(16))
 
-      class Target16 extends FixedIOExtModule[TargetIO](new TargetIO(16))
-
-      val inst =
-        ModuleChoice(new VerifTarget)(Seq(Platform.FPGA -> new Target16))
-
-      inst.in := 42.U(8.W)
-      out := inst.out
-    }
+    class MixedIO extends ModuleWithChoice(new VerifTarget)(Seq(Platform.FPGA -> new Target16))
 
     intercept[ChiselException] { ChiselStage.emitCHIRRTL(new MixedIO, Array("--throw-on-first-error")) }
       .getMessage() should include(
