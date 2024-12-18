@@ -16,7 +16,7 @@ import org.scalatest.matchers.should.Matchers
 
 class BlackBoxAdd(n: Int) extends HasBlackBoxInline {
   val io = IO(new Bundle {
-    val in = Input(UInt(16.W))
+    val in  = Input(UInt(16.W))
     val out = Output(UInt(16.W))
   })
 
@@ -35,13 +35,13 @@ class BlackBoxAdd(n: Int) extends HasBlackBoxInline {
 
 class UsesBlackBoxAddViaInline extends Module {
   val io = IO(new Bundle {
-    val in = Input(UInt(16.W))
+    val in  = Input(UInt(16.W))
     val out = Output(UInt(16.W))
   })
 
   val blackBoxAdd = Module(new BlackBoxAdd(5))
   blackBoxAdd.io.in := io.in
-  io.out := blackBoxAdd.io.out
+  io.out            := blackBoxAdd.io.out
 }
 
 class BlackBoxMinus extends HasBlackBoxResource {
@@ -73,7 +73,7 @@ class UsesBlackBoxMinusViaResource extends Module {
 
   mod0.io.in1 := io.in1
   mod0.io.in2 := io.in2
-  io.out := mod0.io.out
+  io.out      := mod0.io.out
 }
 
 class UsesBlackBoxMinusViaPath extends Module {
@@ -87,7 +87,7 @@ class UsesBlackBoxMinusViaPath extends Module {
 
   mod0.io.in1 := io.in1
   mod0.io.in2 := io.in2
-  io.out := mod0.io.out
+  io.out      := mod0.io.out
 }
 
 class BlackBoxResourceNotFound extends HasBlackBoxResource {
@@ -101,7 +101,7 @@ class UsesMissingBlackBoxResource extends RawModule {
 
 class BlackBoxImplSpec extends AnyFreeSpec with Matchers {
   val targetDir = "test_run_dir"
-  val stage = new ChiselStage
+  val stage     = new ChiselStage
   "BlackBox can have verilator source implementation" - {
     "Implementations can be contained in-line" in {
       val annotations = Seq(
@@ -130,7 +130,7 @@ class BlackBoxImplSpec extends AnyFreeSpec with Matchers {
     // TODO: This is temporarily disabled until firtool 1.30.0 is released.  This requires:
     //   - https://github.com/llvm/circt/commit/0285a98d96b8df898e02c5ed9528f869bff80dcf
     "Implementations can be contained in arbitrary files" ignore {
-      val targetDir = "test_run_dir/blackbox-path"
+      val targetDir   = "test_run_dir/blackbox-path"
       val annotations = Seq(
         TargetDirAnnotation(targetDir),
         ChiselGeneratorAnnotation(() => new UsesBlackBoxMinusViaPath),

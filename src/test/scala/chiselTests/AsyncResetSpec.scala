@@ -10,7 +10,7 @@ import circt.stage.ChiselStage
 class AsyncResetTester extends BasicTester {
   val (_, cDiv) = Counter(true.B, 4)
   // First rising edge when count === 3
-  val slowClk = cDiv.asClock
+  val slowClk   = cDiv.asClock
 
   val (count, done) = Counter(true.B, 16)
 
@@ -90,25 +90,25 @@ class AsyncResetAggregateTester extends BasicTester {
 
 class AsyncResetQueueTester extends BasicTester {
   val (_, cDiv) = Counter(true.B, 4)
-  val slowClk = cDiv.asClock
+  val slowClk   = cDiv.asClock
 
   val (count, done) = Counter(true.B, 16)
 
   val asyncResetNext = RegNext(false.B, false.B)
-  val asyncReset = asyncResetNext.asAsyncReset
+  val asyncReset     = asyncResetNext.asAsyncReset
 
   val queue = withClockAndReset(slowClk, asyncReset) {
     Module(new Queue(UInt(8.W), 4))
   }
   queue.io.enq.valid := true.B
-  queue.io.enq.bits := count
+  queue.io.enq.bits  := count
 
   queue.io.deq.ready := false.B
 
   val doCheck = RegNext(false.B, false.B)
   when(queue.io.count === 3.U) {
     asyncResetNext := true.B
-    doCheck := true.B
+    doCheck        := true.B
   }
   when(doCheck) {
     assert(queue.io.count === 0.U)
@@ -131,7 +131,7 @@ class AsyncResetDontCareModule extends RawModule {
   monoAggWire := DontCare
 
   // Can't bulk connect to Wire so only ports here
-  val bulkPort = IO(Output(AsyncReset()))
+  val bulkPort    = IO(Output(AsyncReset()))
   bulkPort <> DontCare
   val bulkAggPort = IO(Output(Valid(AsyncReset())))
   bulkAggPort <> DontCare
@@ -165,7 +165,7 @@ class AsyncResetSpec extends ChiselFlatSpec with Utils {
   it should "NOT be allowed to connect directly to a Bool" in {
     a[ChiselException] should be thrownBy extractCause[ChiselException] {
       ChiselStage.emitCHIRRTL(new BasicTester {
-        val bool = Wire(Bool())
+        val bool   = Wire(Bool())
         val areset = reset.asAsyncReset
         bool := areset
       })
@@ -182,9 +182,9 @@ class AsyncResetSpec extends ChiselFlatSpec with Utils {
 
   it should "allow casting to and from Bool" in {
     ChiselStage.emitCHIRRTL(new BasicTester {
-      val r: Reset = reset
+      val r: Reset      = reset
       val a: AsyncReset = WireInit(r.asAsyncReset)
-      val b: Bool = a.asBool
+      val b: Bool       = a.asBool
       val c: AsyncReset = b.asAsyncReset
     })
   }
@@ -197,7 +197,7 @@ class AsyncResetSpec extends ChiselFlatSpec with Utils {
     assertTesterPasses(new BasicTester {
       // Also check that it traces through wires
       val initValue = Wire(SInt())
-      val reg = withReset(reset.asAsyncReset)(RegNext(initValue, 27.S))
+      val reg       = withReset(reset.asAsyncReset)(RegNext(initValue, 27.S))
       initValue := -43.S
       val (count, done) = Counter(true.B, 4)
       when(count === 0.U) {
@@ -215,7 +215,7 @@ class AsyncResetSpec extends ChiselFlatSpec with Utils {
       val y = UInt(16.W)
     }
     assertTesterPasses(new BasicTester {
-      val reg = withReset(reset.asAsyncReset) {
+      val reg           = withReset(reset.asAsyncReset) {
         RegNext(0xbad0cad0L.U.asTypeOf(new MyBundle), 0xdeadbeefL.U.asTypeOf(new MyBundle))
       }
       val (count, done) = Counter(true.B, 4)
@@ -229,7 +229,7 @@ class AsyncResetSpec extends ChiselFlatSpec with Utils {
   }
   it should "allow literals cast to Vecs as reset values" in {
     assertTesterPasses(new BasicTester {
-      val reg = withReset(reset.asAsyncReset) {
+      val reg           = withReset(reset.asAsyncReset) {
         RegNext(0xbad0cad0L.U.asTypeOf(Vec(4, UInt(8.W))), 0xdeadbeefL.U.asTypeOf(Vec(4, UInt(8.W))))
       }
       val (count, done) = Counter(true.B, 4)

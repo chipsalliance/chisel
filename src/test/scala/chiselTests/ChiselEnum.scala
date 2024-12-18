@@ -36,7 +36,7 @@ object NonIncreasingEnum extends ChiselEnum {
 
 class SimpleConnector(inType: Data, outType: Data) extends Module {
   val io = IO(new Bundle {
-    val in = Input(inType)
+    val in  = Input(inType)
     val out = Output(outType)
   })
 
@@ -45,7 +45,7 @@ class SimpleConnector(inType: Data, outType: Data) extends Module {
 
 class CastToUInt extends Module {
   val io = IO(new Bundle {
-    val in = Input(EnumExample())
+    val in  = Input(EnumExample())
     val out = Output(UInt())
   })
 
@@ -54,34 +54,34 @@ class CastToUInt extends Module {
 
 class CastFromLit(in: UInt) extends Module {
   val io = IO(new Bundle {
-    val out = Output(EnumExample())
+    val out   = Output(EnumExample())
     val valid = Output(Bool())
   })
 
-  io.out := EnumExample(in)
+  io.out   := EnumExample(in)
   io.valid := io.out.isValid
 }
 
 class CastFromNonLit extends Module {
   val io = IO(new Bundle {
-    val in = Input(UInt(EnumExample.getWidth.W))
-    val out = Output(EnumExample())
+    val in    = Input(UInt(EnumExample.getWidth.W))
+    val out   = Output(EnumExample())
     val valid = Output(Bool())
   })
 
-  io.out := EnumExample(io.in)
+  io.out   := EnumExample(io.in)
   io.valid := io.out.isValid
 }
 
 class SafeCastFromNonLit extends Module {
   val io = IO(new Bundle {
-    val in = Input(UInt(EnumExample.getWidth.W))
-    val out = Output(EnumExample())
+    val in    = Input(UInt(EnumExample.getWidth.W))
+    val out   = Output(EnumExample())
     val valid = Output(Bool())
   })
 
   val (enum, valid) = EnumExample.safe(io.in)
-  io.out := enum
+  io.out   := enum
   io.valid := valid
 }
 
@@ -89,7 +89,7 @@ class CastFromNonLitWidth(w: Option[Int] = None) extends Module {
   val width = if (w.isDefined) w.get.W else UnknownWidth
 
   val io = IO(new Bundle {
-    val in = Input(UInt(width))
+    val in  = Input(UInt(width))
     val out = Output(EnumExample())
   })
 
@@ -131,14 +131,14 @@ class ChiselEnumFSM extends Module {
 
   // This FSM detects two 1's one after the other
   val io = IO(new Bundle {
-    val in = Input(Bool())
-    val out = Output(Bool())
+    val in    = Input(Bool())
+    val out   = Output(Bool())
     val state = Output(State())
   })
 
   val state = RegInit(sNone)
 
-  io.out := (state === sTwo1s)
+  io.out   := (state === sTwo1s)
   io.state := state
 
   switch(state) {
@@ -163,20 +163,20 @@ class ChiselEnumFSM extends Module {
 }
 
 object Opcode extends ChiselEnum {
-  val load = Value(0x03.U)
-  val imm = Value(0x13.U)
+  val load  = Value(0x03.U)
+  val imm   = Value(0x13.U)
   val auipc = Value(0x17.U)
   val store = Value(0x23.U)
-  val reg = Value(0x33.U)
-  val lui = Value(0x37.U)
-  val br = Value(0x63.U)
-  val jalr = Value(0x67.U)
-  val jal = Value(0x6f.U)
+  val reg   = Value(0x33.U)
+  val lui   = Value(0x37.U)
+  val br    = Value(0x63.U)
+  val jalr  = Value(0x67.U)
+  val jal   = Value(0x6f.U)
 }
 
 class LoadStoreExample extends Module {
   val io = IO(new Bundle {
-    val opcode = Input(Opcode())
+    val opcode        = Input(Opcode())
     val load_or_store = Output(Bool())
   })
   io.load_or_store := io.opcode.isOneOf(Opcode.load, Opcode.store)
@@ -308,12 +308,12 @@ class ChiselEnumFSMTester extends BasicTester {
   val dut = Module(new ChiselEnumFSM)
 
   // Inputs and expected results
-  val inputs: Vec[Bool] = VecInit(false.B, true.B, false.B, true.B, true.B, true.B, false.B, true.B, true.B, false.B)
+  val inputs: Vec[Bool]   = VecInit(false.B, true.B, false.B, true.B, true.B, true.B, false.B, true.B, true.B, false.B)
   val expected: Vec[Bool] =
     VecInit(false.B, false.B, false.B, false.B, false.B, true.B, true.B, false.B, false.B, true.B)
-  val expected_state = VecInit(sNone, sNone, sOne1, sNone, sOne1, sTwo1s, sTwo1s, sNone, sOne1, sTwo1s)
+  val expected_state      = VecInit(sNone, sNone, sOne1, sNone, sOne1, sTwo1s, sTwo1s, sNone, sOne1, sTwo1s)
 
-  val cntr = Counter(inputs.length)
+  val cntr  = Counter(inputs.length)
   val cycle = cntr.value
 
   dut.io.in := inputs(cycle)
@@ -405,10 +405,10 @@ class ChiselEnumSpec extends ChiselFlatSpec with Utils with FileCheck {
   it should "give the correct width for Chisel Enum values" in {
     val verilog = ChiselStage.emitSystemVerilog(new RawModule {
       val out1, out2, out3 = IO(Output(UInt(8.W)))
-      val e = EnumExample.e1
-      val x = e.asUInt
-      val y = e.asTypeOf(UInt())
-      val z = e.asTypeOf(UInt(e.getWidth.W))
+      val e                = EnumExample.e1
+      val x                = e.asUInt
+      val y                = e.asTypeOf(UInt())
+      val z                = e.asTypeOf(UInt(e.getWidth.W))
       out1 := Cat(1.U, x)
       out2 := Cat(1.U, y)
       out3 := Cat(1.U, z)
@@ -428,10 +428,10 @@ class ChiselEnumSpec extends ChiselFlatSpec with Utils with FileCheck {
     val verilog = ChiselStage.emitSystemVerilog(
       new RawModule {
         val out1, out2, out3 = IO(Output(UInt(8.W)))
-        val e = EnumExample.e1
-        val x = e.asUInt
-        val y = e.asTypeOf(UInt())
-        val z = e.asTypeOf(UInt(e.getWidth.W))
+        val e                = EnumExample.e1
+        val x                = e.asUInt
+        val y                = e.asTypeOf(UInt())
+        val z                = e.asTypeOf(UInt(e.getWidth.W))
         out1 := Cat(1.U, x)
         out2 := Cat(1.U, y)
         out3 := Cat(1.U, z)
@@ -525,7 +525,7 @@ class ChiselEnumSpec extends ChiselFlatSpec with Utils with FileCheck {
     }
 
     class MyModule extends Module {
-      val in = IO(Input(UInt(2.W)))
+      val in  = IO(Input(UInt(2.W)))
       val out = IO(Output(MyEnum()))
       out := MyEnum(in)
     }
@@ -542,7 +542,7 @@ class ChiselEnumSpec extends ChiselFlatSpec with Utils with FileCheck {
     }
 
     class MyModule extends Module {
-      val in = IO(Input(UInt(2.W)))
+      val in  = IO(Input(UInt(2.W)))
       val out = IO(Output(TotalEnum()))
       out := TotalEnum(in)
     }
@@ -556,7 +556,7 @@ class ChiselEnumSpec extends ChiselFlatSpec with Utils with FileCheck {
     }
 
     class MyModule extends Module {
-      val in = IO(Input(UInt(2.W)))
+      val in  = IO(Input(UInt(2.W)))
       val out = IO(Output(TestEnum()))
       suppressEnumCastWarning {
         val res = TestEnum(in)
@@ -576,7 +576,7 @@ class ChiselEnumSpec extends ChiselFlatSpec with Utils with FileCheck {
     }
 
     class MyModule extends Module {
-      val in = IO(Input(UInt(2.W)))
+      val in   = IO(Input(UInt(2.W)))
       val out1 = IO(Output(TestEnum1()))
       val out2 = IO(Output(TestEnum2()))
       suppressEnumCastWarning {
@@ -586,7 +586,7 @@ class ChiselEnumSpec extends ChiselFlatSpec with Utils with FileCheck {
     }
     val (log, _) = grabLog(ChiselStage.emitCHIRRTL(new MyModule))
     log should include("warn")
-    log should include("TestEnum2") // not suppressed
+    log should include("TestEnum2")       // not suppressed
     (log should not).include("TestEnum1") // suppressed
   }
 
@@ -596,7 +596,7 @@ class ChiselEnumSpec extends ChiselFlatSpec with Utils with FileCheck {
     }
 
     class MyModule extends Module {
-      val in = IO(Input(UInt(2.W)))
+      val in  = IO(Input(UInt(2.W)))
       val out = IO(Output(MyEnum()))
       out := MyEnum.safe(in)._1
     }
@@ -610,8 +610,8 @@ class ChiselEnumSpec extends ChiselFlatSpec with Utils with FileCheck {
     }
 
     class MyModule extends Module {
-      val in = IO(Input(UInt(2.W)))
-      val out = IO(Output(TotalEnum()))
+      val in           = IO(Input(UInt(2.W)))
+      val out          = IO(Output(TotalEnum()))
       val (res, valid) = TotalEnum.safe(in)
       assert(valid.litToBoolean, "It should be true.B")
       out := res
@@ -636,22 +636,22 @@ class ChiselEnumAnnotator extends Module {
 
   object LocalEnum extends ChiselEnum {
     val le0, le1 = Value
-    val le2 = Value
-    val le100 = Value(100.U)
+    val le2      = Value
+    val le100    = Value(100.U)
   }
 
   val io = IO(new Bundle {
-    val in = Input(EnumExample())
-    val out = Output(EnumExample())
+    val in    = Input(EnumExample())
+    val out   = Output(EnumExample())
     val other = Output(OtherEnum())
     val local = Output(LocalEnum())
   })
 
   class Bund extends Bundle {
-    val field = EnumExample()
-    val other = OtherEnum()
-    val local = LocalEnum()
-    val vec = Vec(5, EnumExample())
+    val field         = EnumExample()
+    val other         = OtherEnum()
+    val local         = LocalEnum()
+    val vec           = Vec(5, EnumExample())
     val inner_bundle1 = new Bundle {
       val x = UInt(4.W)
       val y = Vec(3, UInt(4.W))
@@ -667,18 +667,18 @@ class ChiselEnumAnnotator extends Module {
     }
   }
 
-  val simple = Wire(EnumExample())
-  val vec = VecInit(e0, e1, e2)
+  val simple      = Wire(EnumExample())
+  val vec         = VecInit(e0, e1, e2)
   val vec_of_vecs = VecInit(VecInit(e0, e1), VecInit(e100, e101))
 
-  val bund = Wire(new Bund())
+  val bund           = Wire(new Bund())
   val vec_of_bundles = Wire(Vec(5, new Bund()))
 
-  io.out := e101
-  io.other := OtherEnum.otherEnum
-  io.local := LocalEnum.le0
-  simple := e100
-  bund := DontCare
+  io.out         := e101
+  io.other       := OtherEnum.otherEnum
+  io.local       := LocalEnum.le0
+  simple         := e100
+  bund           := DontCare
   vec_of_bundles := DontCare
 
   // Make sure that dynamically indexing into a Vec of enums will not cause an elaboration error.
@@ -695,22 +695,22 @@ class ChiselEnumAnnotatorWithChiselName extends Module {
 
   object LocalEnum extends ChiselEnum with AffectsChiselPrefix {
     val le0, le1 = Value
-    val le2 = Value
-    val le100 = Value(100.U)
+    val le2      = Value
+    val le100    = Value(100.U)
   }
 
   val io = IO(new Bundle {
-    val in = Input(EnumExample())
-    val out = Output(EnumExample())
+    val in    = Input(EnumExample())
+    val out   = Output(EnumExample())
     val other = Output(OtherEnum())
     val local = Output(LocalEnum())
   })
 
   class Bund extends Bundle {
-    val field = EnumExample()
-    val other = OtherEnum()
-    val local = LocalEnum()
-    val vec = Vec(5, EnumExample())
+    val field         = EnumExample()
+    val other         = OtherEnum()
+    val local         = LocalEnum()
+    val vec           = Vec(5, EnumExample())
     val inner_bundle1 = new Bundle {
       val x = UInt(4.W)
       val y = Vec(3, UInt(4.W))
@@ -726,18 +726,18 @@ class ChiselEnumAnnotatorWithChiselName extends Module {
     }
   }
 
-  val simple = Wire(EnumExample())
-  val vec = VecInit(e0, e1, e2)
+  val simple      = Wire(EnumExample())
+  val vec         = VecInit(e0, e1, e2)
   val vec_of_vecs = VecInit(VecInit(e0, e1), VecInit(e100, e101))
 
-  val bund = Wire(new Bund())
+  val bund           = Wire(new Bund())
   val vec_of_bundles = Wire(Vec(5, new Bund()))
 
-  io.out := e101
-  io.other := OtherEnum.otherEnum
-  io.local := LocalEnum.le0
-  simple := e100
-  bund := DontCare
+  io.out         := e101
+  io.other       := OtherEnum.otherEnum
+  io.local       := LocalEnum.le0
+  simple         := e100
+  bund           := DontCare
   vec_of_bundles := DontCare
 
   // Make sure that dynamically indexing into a Vec of enums will not cause an elaboration error.
@@ -754,8 +754,8 @@ class ChiselEnumAnnotationSpec extends AnyFreeSpec with Matchers {
   import firrtl.annotations.{Annotation, ComponentName}
 
   val enumExampleName = "EnumExample"
-  val otherEnumName = "OtherEnum"
-  val localEnumName = "LocalEnum"
+  val otherEnumName   = "OtherEnum"
+  val localEnumName   = "LocalEnum"
 
   case class CorrectDefAnno(typeName: String, definition: Map[String, BigInt])
   case class CorrectCompAnno(targetName: String, typeName: String)
@@ -813,8 +813,8 @@ class ChiselEnumAnnotationSpec extends AnyFreeSpec with Matchers {
 
   def isCorrect(anno: EnumDefAnnotation, correct: CorrectDefAnno): Boolean = {
     (anno.typeName == correct.typeName ||
-    anno.typeName.endsWith("." + correct.typeName) ||
-    anno.typeName.endsWith("$" + correct.typeName)) &&
+      anno.typeName.endsWith("." + correct.typeName) ||
+      anno.typeName.endsWith("$" + correct.typeName)) &&
     anno.definition == correct.definition
   }
 
@@ -824,7 +824,7 @@ class ChiselEnumAnnotationSpec extends AnyFreeSpec with Matchers {
       case _                      => throw new Exception("Unknown target type in EnumComponentAnnotation")
     }) &&
     (anno.enumTypeName == correct.typeName || anno.enumTypeName.endsWith("." + correct.typeName) ||
-    anno.enumTypeName.endsWith("$" + correct.typeName))
+      anno.enumTypeName.endsWith("$" + correct.typeName))
   }
 
   def isCorrect(anno: EnumVecAnnotation, correct: CorrectVecAnno): Boolean = {
@@ -833,7 +833,7 @@ class ChiselEnumAnnotationSpec extends AnyFreeSpec with Matchers {
       case _                      => throw new Exception("Unknown target type in EnumVecAnnotation")
     }) &&
     (anno.typeName == correct.typeName || anno.typeName.endsWith("." + correct.typeName) ||
-    anno.typeName.endsWith("$" + correct.typeName)) &&
+      anno.typeName.endsWith("$" + correct.typeName)) &&
     anno.fields.map(_.toSeq).toSet == correct.fields
   }
 
@@ -857,9 +857,9 @@ class ChiselEnumAnnotationSpec extends AnyFreeSpec with Matchers {
         Seq(ChiselGeneratorAnnotation(strongEnumAnnotatorGen))
       )
 
-    val enumDefAnnos = annos.collect { case a: EnumDefAnnotation => a }
+    val enumDefAnnos  = annos.collect { case a: EnumDefAnnotation => a }
     val enumCompAnnos = annos.collect { case a: EnumComponentAnnotation => a }
-    val enumVecAnnos = annos.collect { case a: EnumVecAnnotation => a }
+    val enumVecAnnos  = annos.collect { case a: EnumVecAnnotation => a }
 
     allCorrectDefs(enumDefAnnos, correctDefAnnos) should be(true)
     allCorrectComps(enumCompAnnos, correctCompAnnos) should be(true)

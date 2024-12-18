@@ -15,14 +15,15 @@ import experimental.{prefix, requireIsHardware}
   * @param squeezed members of base who will not trigger an error if would end up being truncated
   */
 final class Connectable[+T <: Data] private (
-  val base:                      T,
-  private[chisel3] val waived:   Set[Data],
+  val base: T,
+  private[chisel3] val waived: Set[Data],
   private[chisel3] val squeezed: Set[Data],
-  private[chisel3] val excluded: Set[Data]) {
+  private[chisel3] val excluded: Set[Data]
+) {
   requireIsHardware(base, s"Can only created Connectable of components, not unbound Chisel types")
 
   private[chisel3] def copy(
-    waived:   Set[Data] = this.waived,
+    waived: Set[Data] = this.waived,
     squeezed: Set[Data] = this.squeezed,
     excluded: Set[Data] = this.excluded
   ): Connectable[T] =
@@ -131,7 +132,7 @@ final class Connectable[+T <: Data] private (
   private def addOpaque(members: Seq[Data]): Seq[Data] = {
     members.flatMap {
       case x: Record if x._isOpaqueType => Seq(x, x.getElements.head)
-      case o => Seq(o)
+      case o                            => Seq(o)
     }
   }
 }
@@ -140,8 +141,8 @@ object Connectable {
 
   /** Create a Connectable from a Data */
   def apply[T <: Data](
-    base:             T,
-    waiveSelection:   Data => Boolean = { _ => false },
+    base: T,
+    waiveSelection: Data => Boolean = { _ => false },
     squeezeSelection: Data => Boolean = { _ => false },
     excludeSelection: Data => Boolean = { _ => false }
   ): Connectable[T] = {
@@ -253,7 +254,7 @@ object Connectable {
     consumer: Connectable[T],
     producer: Connectable[T]
   ): (Connectable[T], Connectable[T]) = {
-    val result = DataMirror.collectMembersOverAllForAny(Some((consumer.base: Data)), Some((producer.base: Data))) {
+    val result  = DataMirror.collectMembersOverAllForAny(Some((consumer.base: Data)), Some((producer.base: Data))) {
       case x @ (Some(c), None) => x
       case x @ (None, Some(p)) => x
     }
@@ -315,10 +316,10 @@ object Connectable {
       *   BiConnect which uses AbsoluteDirection to "Do the right thing"TM.
       */
     private def doFirrtlConnect[S <: Data](consumer: T, producer: S)(implicit sourceInfo: SourceInfo): Unit = {
-      val flip = consumer match {
+      val flip       = consumer match {
         case rec: Record if rec._isOpaqueType =>
           rec.elementsIterator.next().specifiedDirection == SpecifiedDirection.Flip
-        case _ => false
+        case _                                => false
       }
       val (lhs, rhs) = if (flip) (producer, consumer) else (consumer, producer)
       lhs.firrtlConnect(rhs)

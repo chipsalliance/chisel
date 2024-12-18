@@ -67,10 +67,10 @@ object DummyNamer extends NamingContextInterface {
 /** Actual namer functionality.
   */
 class NamingContext extends NamingContextInterface {
-  val descendants = new IdentityHashMap[AnyRef, ListBuffer[NamingContext]]()
+  val descendants          = new IdentityHashMap[AnyRef, ListBuffer[NamingContext]]()
   val anonymousDescendants = ListBuffer[NamingContext]()
-  val items = ListBuffer[(AnyRef, String)]()
-  var closed = false // a sanity check to ensure no more name() calls are done after namePrefix
+  val items                = ListBuffer[(AnyRef, String)]()
+  var closed               = false // a sanity check to ensure no more name() calls are done after namePrefix
 
   /** Adds a NamingContext object as a descendant - where its contained objects will have names
     * prefixed with the name given to the reference object, if the reference object is named in the
@@ -80,7 +80,7 @@ class NamingContext extends NamingContextInterface {
     ref match {
       case ref: AnyRef =>
         // getOrElseUpdate
-        val l = descendants.get(ref)
+        val l   = descendants.get(ref)
         val buf =
           if (l != null) l
           else {
@@ -89,7 +89,7 @@ class NamingContext extends NamingContextInterface {
             value
           }
         buf += descendant
-      case _ => anonymousDescendants += descendant
+      case _           => anonymousDescendants += descendant
     }
   }
 
@@ -97,7 +97,7 @@ class NamingContext extends NamingContextInterface {
     assert(!closed, "Can't name elements after namePrefix called")
     obj match {
       case ref: AnyRef => items += ((ref, name))
-      case _ =>
+      case _           =>
     }
     obj
   }

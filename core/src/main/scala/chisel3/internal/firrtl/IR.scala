@@ -7,7 +7,7 @@ import chisel3._
 import chisel3.internal._
 import chisel3.internal.binding._
 import chisel3.experimental._
-import chisel3.properties.{Property, PropertyType => PropertyTypeclass, Class, DynamicObject}
+import chisel3.properties.{Class, DynamicObject, Property, PropertyType => PropertyTypeclass}
 import _root_.firrtl.{ir => firrtlir}
 import _root_.firrtl.{PrimOps, RenameMap}
 import _root_.firrtl.annotations.Annotation
@@ -25,54 +25,54 @@ private[chisel3] object ir {
   }
 
   object PrimOp {
-    val AddOp = PrimOp("add")
-    val SubOp = PrimOp("sub")
-    val TailOp = PrimOp("tail")
-    val HeadOp = PrimOp("head")
-    val TimesOp = PrimOp("mul")
-    val DivideOp = PrimOp("div")
-    val RemOp = PrimOp("rem")
-    val ShiftLeftOp = PrimOp("shl")
-    val ShiftRightOp = PrimOp("shr")
-    val DynamicShiftLeftOp = PrimOp("dshl")
+    val AddOp               = PrimOp("add")
+    val SubOp               = PrimOp("sub")
+    val TailOp              = PrimOp("tail")
+    val HeadOp              = PrimOp("head")
+    val TimesOp             = PrimOp("mul")
+    val DivideOp            = PrimOp("div")
+    val RemOp               = PrimOp("rem")
+    val ShiftLeftOp         = PrimOp("shl")
+    val ShiftRightOp        = PrimOp("shr")
+    val DynamicShiftLeftOp  = PrimOp("dshl")
     val DynamicShiftRightOp = PrimOp("dshr")
-    val BitAndOp = PrimOp("and")
-    val BitOrOp = PrimOp("or")
-    val BitXorOp = PrimOp("xor")
-    val BitNotOp = PrimOp("not")
-    val ConcatOp = PrimOp("cat")
-    val BitsExtractOp = PrimOp("bits")
-    val LessOp = PrimOp("lt")
-    val LessEqOp = PrimOp("leq")
-    val GreaterOp = PrimOp("gt")
-    val GreaterEqOp = PrimOp("geq")
-    val EqualOp = PrimOp("eq")
-    val PadOp = PrimOp("pad")
-    val NotEqualOp = PrimOp("neq")
-    val NegOp = PrimOp("neg")
-    val MultiplexOp = PrimOp("mux")
-    val AndReduceOp = PrimOp("andr")
-    val OrReduceOp = PrimOp("orr")
-    val XorReduceOp = PrimOp("xorr")
-    val ConvertOp = PrimOp("cvt")
-    val AsUIntOp = PrimOp("asUInt")
-    val AsSIntOp = PrimOp("asSInt")
-    val AsFixedPointOp = PrimOp("asFixedPoint")
-    val AsIntervalOp = PrimOp("asInterval")
-    val WrapOp = PrimOp("wrap")
-    val SqueezeOp = PrimOp("squz")
-    val ClipOp = PrimOp("clip")
-    val SetBinaryPoint = PrimOp("setp")
-    val IncreasePrecision = PrimOp("incp")
-    val DecreasePrecision = PrimOp("decp")
-    val AsClockOp = PrimOp("asClock")
-    val AsAsyncResetOp = PrimOp("asAsyncReset")
+    val BitAndOp            = PrimOp("and")
+    val BitOrOp             = PrimOp("or")
+    val BitXorOp            = PrimOp("xor")
+    val BitNotOp            = PrimOp("not")
+    val ConcatOp            = PrimOp("cat")
+    val BitsExtractOp       = PrimOp("bits")
+    val LessOp              = PrimOp("lt")
+    val LessEqOp            = PrimOp("leq")
+    val GreaterOp           = PrimOp("gt")
+    val GreaterEqOp         = PrimOp("geq")
+    val EqualOp             = PrimOp("eq")
+    val PadOp               = PrimOp("pad")
+    val NotEqualOp          = PrimOp("neq")
+    val NegOp               = PrimOp("neg")
+    val MultiplexOp         = PrimOp("mux")
+    val AndReduceOp         = PrimOp("andr")
+    val OrReduceOp          = PrimOp("orr")
+    val XorReduceOp         = PrimOp("xorr")
+    val ConvertOp           = PrimOp("cvt")
+    val AsUIntOp            = PrimOp("asUInt")
+    val AsSIntOp            = PrimOp("asSInt")
+    val AsFixedPointOp      = PrimOp("asFixedPoint")
+    val AsIntervalOp        = PrimOp("asInterval")
+    val WrapOp              = PrimOp("wrap")
+    val SqueezeOp           = PrimOp("squz")
+    val ClipOp              = PrimOp("clip")
+    val SetBinaryPoint      = PrimOp("setp")
+    val IncreasePrecision   = PrimOp("incp")
+    val DecreasePrecision   = PrimOp("decp")
+    val AsClockOp           = PrimOp("asClock")
+    val AsAsyncResetOp      = PrimOp("asAsyncReset")
   }
 
   sealed abstract class Arg {
-    def localName: String = name
+    def localName: String                      = name
     def contextualName(ctx: Component): String = name
-    def fullName(ctx:       Component): String = contextualName(ctx)
+    def fullName(ctx: Component): String       = contextualName(ctx)
     def name: String
   }
 
@@ -81,11 +81,11 @@ private[chisel3] object ir {
       case Some(arg) => arg.contextualName(ctx)
       case None      => id.instanceName
     }
-    override def localName: String = id.getOptionRef match {
+    override def localName: String                      = id.getOptionRef match {
       case Some(arg) => arg.localName
       case None      => id.instanceName
     }
-    def name: String = id.getOptionRef match {
+    def name: String                                    = id.getOptionRef match {
       case Some(arg) => arg.name
       case None      => id.instanceName
     }
@@ -97,30 +97,30 @@ private[chisel3] object ir {
     def earlyLocalName(id: HasId, includeRoot: Boolean): String = id.getOptionRef match {
       case Some(Index(Node(imm), Node(value))) =>
         s"${earlyLocalName(imm, includeRoot)}[${earlyLocalName(value, includeRoot)}]"
-      case Some(LitIndex(Node(imm), idx)) => s"${earlyLocalName(imm, includeRoot)}[$idx]"
-      case Some(Index(Node(imm), arg))    => s"${earlyLocalName(imm, includeRoot)}[${arg.localName}]"
-      case Some(Slot(Node(imm), name))    => s"${earlyLocalName(imm, includeRoot)}.$name"
-      case Some(OpaqueSlot(Node(imm)))    => s"${earlyLocalName(imm, includeRoot)}"
-      case Some(ProbeExpr(Node(ref)))     => s"${earlyLocalName(ref, includeRoot)}"
-      case Some(RWProbeExpr(Node(ref)))   => s"${earlyLocalName(ref, includeRoot)}"
-      case Some(ProbeRead(Node(ref)))     => s"${earlyLocalName(ref, includeRoot)}"
-      case Some(arg) if includeRoot       => arg.name
-      case None if includeRoot =>
+      case Some(LitIndex(Node(imm), idx))      => s"${earlyLocalName(imm, includeRoot)}[$idx]"
+      case Some(Index(Node(imm), arg))         => s"${earlyLocalName(imm, includeRoot)}[${arg.localName}]"
+      case Some(Slot(Node(imm), name))         => s"${earlyLocalName(imm, includeRoot)}.$name"
+      case Some(OpaqueSlot(Node(imm)))         => s"${earlyLocalName(imm, includeRoot)}"
+      case Some(ProbeExpr(Node(ref)))          => s"${earlyLocalName(ref, includeRoot)}"
+      case Some(RWProbeExpr(Node(ref)))        => s"${earlyLocalName(ref, includeRoot)}"
+      case Some(ProbeRead(Node(ref)))          => s"${earlyLocalName(ref, includeRoot)}"
+      case Some(arg) if includeRoot            => arg.name
+      case None if includeRoot                 =>
         id match {
-          case data: Data          => data._computeName(Some("?")).get
-          case obj:  DynamicObject => obj._computeName(Some("?")).get
-          case _ => "?"
+          case data: Data         => data._computeName(Some("?")).get
+          case obj: DynamicObject => obj._computeName(Some("?")).get
+          case _                  => "?"
         }
-      case _ => "_" // Used when includeRoot == false
+      case _                                   => "_" // Used when includeRoot == false
     }
   }
 
   abstract class LitArg(val num: BigInt, widthArg: Width) extends Arg {
-    def forcedWidth = widthArg.known
-    def width: Width = if (forcedWidth) widthArg else Width(minWidth)
+    def forcedWidth                                     = widthArg.known
+    def width: Width                                    = if (forcedWidth) widthArg else Width(minWidth)
     override def contextualName(ctx: Component): String = name
     // Ensure the node representing this LitArg has a ref to it and a literal binding.
-    def bindLitArg[T <: Element](elem: T): T = {
+    def bindLitArg[T <: Element](elem: T): T            = {
       elem.bind(ElementLitBinding(this))
       elem.setRef(this)
       elem
@@ -154,7 +154,7 @@ private[chisel3] object ir {
   }
 
   case class ULit(n: BigInt, w: Width) extends LitArg(n, w) {
-    def name:     String = "UInt" + width + "(0h0" + num.toString(16) + ")"
+    def name: String  = "UInt" + width + "(0h0" + num.toString(16) + ")"
     def minWidth: Int = (if (w.known) 0 else 1).max(n.bitLength)
 
     def cloneWithWidth(newWidth: Width): this.type = {
@@ -167,7 +167,7 @@ private[chisel3] object ir {
   }
 
   case class SLit(n: BigInt, w: Width) extends LitArg(n, w) {
-    def name: String = {
+    def name: String  = {
       val unsigned = if (n < 0) (BigInt(1) << width.get) + n else n
       s"asSInt(${ULit(unsigned, width).name})"
     }
@@ -184,12 +184,10 @@ private[chisel3] object ir {
     *
     * These are not LitArgs, because not all property literals are integers.
     */
-  case class PropertyLit[T, U](
-    propertyType: PropertyTypeclass[_] { type Underlying = U; type Type = T },
-    lit:          U)
+  case class PropertyLit[T, U](propertyType: PropertyTypeclass[_] { type Underlying = U; type Type = T }, lit: U)
       extends Arg {
-    def name:     String = s"PropertyLit($lit)"
-    def minWidth: Int = 0
+    def name: String                               = s"PropertyLit($lit)"
+    def minWidth: Int                              = 0
     def cloneWithWidth(newWidth: Width): this.type = PropertyLit(propertyType, lit).asInstanceOf[this.type]
 
     /** Expose a bindLitArg API for PropertyLit, similar to LitArg.
@@ -234,12 +232,12 @@ private[chisel3] object ir {
       // NOTE: mod eq ctx.id only occurs in Target and Named-related APIs
       if (mod eq ctx.id) localName else name
   }
-  case class Slot(imm: Arg, name: String) extends Arg {
+  case class Slot(imm: Arg, name: String)                 extends Arg {
     override def contextualName(ctx: Component): String = {
       val immName = imm.contextualName(ctx)
       if (immName.isEmpty) name else s"$immName.$name"
     }
-    override def localName: String = {
+    override def localName: String                      = {
       val immName = imm.localName
       if (immName.isEmpty) name else s"$immName.$name"
     }
@@ -247,20 +245,20 @@ private[chisel3] object ir {
 
   case class OpaqueSlot(imm: Node) extends Arg {
     override def contextualName(ctx: Component): String = imm.contextualName(ctx)
-    override def name: String = imm.name
+    override def name: String                           = imm.name
   }
 
   case class Index(imm: Arg, value: Arg) extends Arg {
-    def name: String = s"[$value]"
+    def name: String                                    = s"[$value]"
     override def contextualName(ctx: Component): String = s"${imm.contextualName(ctx)}[${value.contextualName(ctx)}]"
-    override def localName: String = s"${imm.localName}[${value.localName}]"
+    override def localName: String                      = s"${imm.localName}[${value.localName}]"
   }
 
   // Like index above, except the index is a literal, used for elements of Vecs
   case class LitIndex(imm: Arg, value: Int) extends Arg {
-    def name: String = s"[$value]"
+    def name: String                                    = s"[$value]"
     override def contextualName(ctx: Component): String = s"${imm.contextualName(ctx)}[$value]"
-    override def localName: String = s"${imm.localName}[$value]"
+    override def localName: String                      = s"${imm.localName}[$value]"
   }
 
   sealed trait ProbeDetails { this: Arg =>
@@ -269,15 +267,15 @@ private[chisel3] object ir {
   }
   case class ProbeExpr(probe: Arg) extends Arg with ProbeDetails
   case class RWProbeExpr(probe: Arg) extends Arg with ProbeDetails
-  case class ProbeRead(probe: Arg) extends Arg with ProbeDetails
+  case class ProbeRead(probe: Arg)   extends Arg with ProbeDetails
 
   sealed abstract class MemPortDirection(name: String) {
     override def toString: String = name
   }
-  object MemPortDirection {
-    object READ extends MemPortDirection("read")
+  object MemPortDirection                              {
+    object READ  extends MemPortDirection("read")
     object WRITE extends MemPortDirection("write")
-    object RDWR extends MemPortDirection("rdwr")
+    object RDWR  extends MemPortDirection("rdwr")
     object INFER extends MemPortDirection("infer")
   }
 
@@ -303,41 +301,41 @@ private[chisel3] object ir {
   case class DefMemory(sourceInfo: SourceInfo, id: HasId, t: Data, size: BigInt) extends Definition
 
   case class DefSeqMemory(
-    sourceInfo:     SourceInfo,
-    id:             HasId,
-    t:              Data,
-    size:           BigInt,
-    readUnderWrite: fir.ReadUnderWrite.Value)
-      extends Definition
+    sourceInfo: SourceInfo,
+    id: HasId,
+    t: Data,
+    size: BigInt,
+    readUnderWrite: fir.ReadUnderWrite.Value
+  ) extends Definition
 
   case class FirrtlMemory(
-    sourceInfo:         SourceInfo,
-    id:                 HasId,
-    t:                  Data,
-    size:               BigInt,
-    readPortNames:      Seq[String],
-    writePortNames:     Seq[String],
-    readwritePortNames: Seq[String])
-      extends Definition
+    sourceInfo: SourceInfo,
+    id: HasId,
+    t: Data,
+    size: BigInt,
+    readPortNames: Seq[String],
+    writePortNames: Seq[String],
+    readwritePortNames: Seq[String]
+  ) extends Definition
 
   case class DefMemPort[T <: Data](
     sourceInfo: SourceInfo,
-    id:         T,
-    source:     Node,
-    dir:        MemPortDirection,
-    index:      Arg,
-    clock:      Arg)
-      extends Definition
+    id: T,
+    source: Node,
+    dir: MemPortDirection,
+    index: Arg,
+    clock: Arg
+  ) extends Definition
 
   case class DefInstance(sourceInfo: SourceInfo, id: BaseModule, ports: Seq[Port]) extends Definition
   case class DefInstanceChoice(
     sourceInfo: SourceInfo,
-    id:         HasId,
-    default:    BaseModule,
-    option:     String,
-    choices:    Seq[(String, BaseModule)])
-      extends Definition
-  case class DefObject(sourceInfo: SourceInfo, id: HasId, className: String) extends Definition
+    id: HasId,
+    default: BaseModule,
+    option: String,
+    choices: Seq[(String, BaseModule)]
+  ) extends Definition
+  case class DefObject(sourceInfo: SourceInfo, id: HasId, className: String)       extends Definition
 
   class Block(val sourceInfo: SourceInfo) {
     // While building block, commands go into _commandsBuilder.
@@ -374,20 +372,20 @@ private[chisel3] object ir {
         _secretCommands = new mutable.ArrayBuffer[Command]
       _secretCommands += c
     }
-    private[chisel3] def getSecretCommands(): Seq[Command] = {
+    private[chisel3] def getSecretCommands(): Seq[Command]  = {
       if (_secretCommands == null)
         Seq.empty
       else
         _secretCommands.toSeq
     }
-    private[chisel3] def getAllCommands(): Seq[Command] = getCommands() ++ getSecretCommands()
+    private[chisel3] def getAllCommands(): Seq[Command]     = getCommands() ++ getSecretCommands()
   }
 
   class When(val sourceInfo: SourceInfo, val pred: Arg) extends Command {
-    val ifRegion = new Block(sourceInfo)
+    val ifRegion                   = new Block(sourceInfo)
     private var _elseRegion: Block = null
-    def hasElse:             Boolean = _elseRegion != null
-    def elseRegion: Block = {
+    def hasElse: Boolean           = _elseRegion != null
+    def elseRegion: Block          = {
       if (_elseRegion == null) {
         _elseRegion = new Block(sourceInfo)
       }
@@ -408,9 +406,9 @@ private[chisel3] object ir {
     }
   }
 
-  case class Connect(sourceInfo: SourceInfo, loc: Arg, exp: Arg) extends Command
-  case class PropAssign(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
-  case class Attach(sourceInfo: SourceInfo, locs: Seq[Node]) extends Command
+  case class Connect(sourceInfo: SourceInfo, loc: Arg, exp: Arg)               extends Command
+  case class PropAssign(sourceInfo: SourceInfo, loc: Node, exp: Arg)           extends Command
+  case class Attach(sourceInfo: SourceInfo, locs: Seq[Node])                   extends Command
   case class Stop(id: stop.Stop, sourceInfo: SourceInfo, clock: Arg, ret: Int) extends Definition
 
   object LayerConvention {
@@ -421,15 +419,16 @@ private[chisel3] object ir {
   sealed abstract class LayerConfig
   object LayerConfig {
     final case class Extract(outputDir: Option[String]) extends LayerConfig
-    final case object Inline extends LayerConfig
+    final case object Inline                            extends LayerConfig
   }
 
   final case class Layer(
-    sourceInfo:  SourceInfo,
-    name:        String,
-    config:      LayerConfig,
-    children:    Seq[Layer],
-    chiselLayer: layer.Layer)
+    sourceInfo: SourceInfo,
+    name: String,
+    config: LayerConfig,
+    children: Seq[Layer],
+    chiselLayer: layer.Layer
+  )
 
   class LayerBlock(val sourceInfo: SourceInfo, val layer: chisel3.layer.Layer) extends Command {
     val region = new Block(sourceInfo)
@@ -441,40 +440,37 @@ private[chisel3] object ir {
     }
   }
 
-  case class DefOption(
-    sourceInfo: SourceInfo,
-    name:       String,
-    cases:      Seq[DefOptionCase])
+  case class DefOption(sourceInfo: SourceInfo, name: String, cases: Seq[DefOptionCase])
   case class DefOptionCase(sourceInfo: SourceInfo, name: String)
 
   case class Port(id: Data, dir: SpecifiedDirection, sourceInfo: SourceInfo)
 
   case class Printf(id: printf.Printf, sourceInfo: SourceInfo, clock: Arg, pable: Printable) extends Definition
 
-  case class ProbeDefine(sourceInfo: SourceInfo, sink: Arg, probe: Arg) extends Command
-  case class ProbeForceInitial(sourceInfo: SourceInfo, probe: Arg, value: Arg) extends Command
-  case class ProbeReleaseInitial(sourceInfo: SourceInfo, probe: Arg) extends Command
+  case class ProbeDefine(sourceInfo: SourceInfo, sink: Arg, probe: Arg)                        extends Command
+  case class ProbeForceInitial(sourceInfo: SourceInfo, probe: Arg, value: Arg)                 extends Command
+  case class ProbeReleaseInitial(sourceInfo: SourceInfo, probe: Arg)                           extends Command
   case class ProbeForce(sourceInfo: SourceInfo, clock: Arg, cond: Arg, probe: Arg, value: Arg) extends Command
-  case class ProbeRelease(sourceInfo: SourceInfo, clock: Arg, cond: Arg, probe: Arg) extends Command
+  case class ProbeRelease(sourceInfo: SourceInfo, clock: Arg, cond: Arg, probe: Arg)           extends Command
 
   object Formal extends Enumeration {
     val Assert = Value("assert")
     val Assume = Value("assume")
-    val Cover = Value("cover")
+    val Cover  = Value("cover")
   }
 
   case class Verification[T <: VerificationStatement](
-    id:         T,
-    op:         Formal.Value,
+    id: T,
+    op: Formal.Value,
     sourceInfo: SourceInfo,
-    clock:      Arg,
-    predicate:  Arg,
-    pable:      Printable)
-      extends Definition
+    clock: Arg,
+    predicate: Arg,
+    pable: Printable
+  ) extends Definition
 
   abstract class Component extends Arg {
-    def id:    BaseModule
-    def name:  String
+    def id: BaseModule
+    def name: String
     def ports: Seq[Port]
     val secretPorts: mutable.ArrayBuffer[Port] = id.secretPorts
   }
@@ -482,37 +478,37 @@ private[chisel3] object ir {
   case class DefTypeAlias(sourceInfo: SourceInfo, underlying: fir.Type, val name: String)
 
   case class DefModule(
-    id:       RawModule,
-    name:     String,
+    id: RawModule,
+    name: String,
     isPublic: Boolean,
-    layers:   Seq[chisel3.layer.Layer],
-    ports:    Seq[Port],
-    block:    Block)
-      extends Component
+    layers: Seq[chisel3.layer.Layer],
+    ports: Seq[Port],
+    block: Block
+  ) extends Component
 
   case class DefBlackBox(
-    id:     BaseBlackBox,
-    name:   String,
-    ports:  Seq[Port],
+    id: BaseBlackBox,
+    name: String,
+    ports: Seq[Port],
     topDir: SpecifiedDirection,
-    params: Map[String, Param])
-      extends Component
+    params: Map[String, Param]
+  ) extends Component
 
   case class DefIntrinsicModule(
-    id:     BaseIntrinsicModule,
-    name:   String,
-    ports:  Seq[Port],
+    id: BaseIntrinsicModule,
+    name: String,
+    ports: Seq[Port],
     topDir: SpecifiedDirection,
-    params: Map[String, Param])
-      extends Component
+    params: Map[String, Param]
+  ) extends Component
 
   case class DefIntrinsicExpr[T <: Data](
     sourceInfo: SourceInfo,
-    intrinsic:  String,
-    id:         T,
-    args:       Seq[Arg],
-    params:     Seq[(String, Param)])
-      extends Definition
+    intrinsic: String,
+    id: T,
+    args: Seq[Arg],
+    params: Seq[(String, Param)]
+  ) extends Definition
 
   case class DefIntrinsic(sourceInfo: SourceInfo, intrinsic: String, args: Seq[Arg], params: Seq[(String, Param)])
       extends Command
@@ -520,23 +516,24 @@ private[chisel3] object ir {
   case class DefClass(id: Class, name: String, ports: Seq[Port], block: Block) extends Component
 
   case class Circuit(
-    name:           String,
-    components:     Seq[Component],
-    annotations:    Seq[ChiselAnnotation],
-    renames:        RenameMap,
+    name: String,
+    components: Seq[Component],
+    annotations: Seq[ChiselAnnotation],
+    renames: RenameMap,
     newAnnotations: Seq[ChiselMultiAnnotation],
-    typeAliases:    Seq[DefTypeAlias],
-    layers:         Seq[Layer],
-    options:        Seq[DefOption]) {
+    typeAliases: Seq[DefTypeAlias],
+    layers: Seq[Layer],
+    options: Seq[DefOption]
+  ) {
 
     def this(
-      name:        String,
-      components:  Seq[Component],
+      name: String,
+      components: Seq[Component],
       annotations: Seq[ChiselAnnotation],
-      renames:     RenameMap,
+      renames: RenameMap,
       typeAliases: Seq[DefTypeAlias],
-      layers:      Seq[Layer],
-      options:     Seq[DefOption]
+      layers: Seq[Layer],
+      options: Seq[DefOption]
     ) =
       this(name, components, annotations, renames, Seq.empty, typeAliases, layers, options)
 
@@ -548,13 +545,13 @@ private[chisel3] object ir {
     // TODO this method doesn't compile with Scala3 because it
     // conflicts with the built-in `copy` method
     def copy(
-      name:        String = name,
-      components:  Seq[Component] = components,
+      name: String = name,
+      components: Seq[Component] = components,
       annotations: Seq[ChiselAnnotation] = annotations,
-      renames:     RenameMap = renames,
+      renames: RenameMap = renames,
       typeAliases: Seq[DefTypeAlias] = typeAliases,
-      layers:      Seq[Layer] = layers,
-      options:     Seq[DefOption] = options
+      layers: Seq[Layer] = layers,
+      options: Seq[DefOption] = options
     ) = Circuit(name, components, annotations, renames, newAnnotations, typeAliases, layers, options)
 
   }
@@ -568,13 +565,13 @@ private[chisel3] object ir {
     }
 
     def apply(
-      name:        String,
-      components:  Seq[Component],
+      name: String,
+      components: Seq[Component],
       annotations: Seq[ChiselAnnotation],
-      renames:     RenameMap,
+      renames: RenameMap,
       typeAliases: Seq[DefTypeAlias] = Seq.empty,
-      layers:      Seq[Layer] = Seq.empty,
-      options:     Seq[DefOption] = Seq.empty
+      layers: Seq[Layer] = Seq.empty,
+      options: Seq[DefOption] = Seq.empty
     ): Circuit =
       new Circuit(name, components, annotations, renames, typeAliases, layers, options)
   }

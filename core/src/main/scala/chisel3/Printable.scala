@@ -66,7 +66,7 @@ object Printable {
   /** Pack standard printf fmt, args* style into Printable
     */
   def pack(fmt: String, data: Data*): Printable = {
-    val args = data.iterator
+    val args                 = data.iterator
     // Error handling
     def carrotAt(index: Int) = (" " * index) + "^"
     def errorMsg(index: Int) =
@@ -82,9 +82,9 @@ object Printable {
       }
       val _ = args.next()
     }
-    var iter = 0
-    var curr_start = 0
-    val buf = mutable.ListBuffer.empty[String]
+    var iter                   = 0
+    var curr_start             = 0
+    val buf                    = mutable.ListBuffer.empty[String]
     while (iter < fmt.size) {
       // Encountered % which is either
       // 1. Describing a format specifier.
@@ -143,10 +143,10 @@ object Printable {
     def getData(x: Printable): Seq[Data] = {
       x match {
         case y: FirrtlFormat => Seq(y.bits)
-        case Name(d)       => Seq(d)
-        case FullName(d)   => Seq(d)
-        case Printables(p) => p.flatMap(getData(_)).toSeq
-        case _             => Seq() // Handles subtypes PString and Percent
+        case Name(d)         => Seq(d)
+        case FullName(d)     => Seq(d)
+        case Printables(p)   => p.flatMap(getData(_)).toSeq
+        case _               => Seq() // Handles subtypes PString and Percent
       }
     }
     getData(message).foreach(_.requireVisible())
@@ -192,7 +192,7 @@ object FirrtlFormat {
   def apply(specifier: String, data: Data): FirrtlFormat = {
     val bits = data match {
       case b: Bits => b
-      case d => throw new Exception(s"Trying to construct FirrtlFormat with non-bits $d!")
+      case d       => throw new Exception(s"Trying to construct FirrtlFormat with non-bits $d!")
     }
     specifier match {
       case "d" => Decimal(bits)
@@ -219,17 +219,17 @@ case class Character(bits: Bits) extends FirrtlFormat('c')
 /** Put innermost name (eg. field of bundle) */
 case class Name(data: Data) extends Printable {
   final def unpack(ctx: Component): (String, Iterable[String]) = (data.ref.name, List.empty)
-  final def unpackArgs: Seq[Bits] = List.empty
+  final def unpackArgs: Seq[Bits]                              = List.empty
 }
 
 /** Put full name within parent namespace (eg. bundleName.field) */
 case class FullName(data: Data) extends Printable {
   final def unpack(ctx: Component): (String, Iterable[String]) = (data.ref.fullName(ctx), List.empty)
-  final def unpackArgs: Seq[Bits] = List.empty
+  final def unpackArgs: Seq[Bits]                              = List.empty
 }
 
 /** Represents escaped percents */
 case object Percent extends Printable {
   final def unpack(ctx: Component): (String, Iterable[String]) = ("%%", List.empty)
-  final def unpackArgs: Seq[Bits] = List.empty
+  final def unpackArgs: Seq[Bits]                              = List.empty
 }

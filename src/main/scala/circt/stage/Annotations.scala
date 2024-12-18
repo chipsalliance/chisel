@@ -14,8 +14,8 @@ sealed trait CIRCTOption extends Unserializable { this: Annotation => }
 object PreserveAggregate extends HasShellOptions {
   sealed trait Type
   object OneDimVec extends Type
-  object Vec extends Type
-  object All extends Type
+  object Vec       extends Type
+  object All       extends Type
 
   override def options = Seq(
     new ShellOption[String](
@@ -91,10 +91,7 @@ object CIRCTTargetAnnotation extends HasShellOptions {
   * @param value a string of MLIR
   * @param suffix an optional suffix added to the filename when this is written to disk
   */
-case class EmittedMLIR(
-  filename: String,
-  value:    String,
-  suffix:   Option[String])
+case class EmittedMLIR(filename: String, value: String, suffix: Option[String])
     extends NoTargetAnnotation
     with CustomFileEmission {
 

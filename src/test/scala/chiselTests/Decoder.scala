@@ -10,7 +10,7 @@ import chisel3.util._
 
 class Decoder(bitpats: List[String]) extends Module {
   val io = IO(new Bundle {
-    val inst = Input(UInt(32.W))
+    val inst    = Input(UInt(32.W))
     val matched = Output(Bool())
   })
   io.matched := VecInit(bitpats.map(BitPat(_) === io.inst)).reduce(_ || _)
@@ -18,8 +18,8 @@ class Decoder(bitpats: List[String]) extends Module {
 
 class DecoderTester(pairs: List[(String, String)]) extends BasicTester {
   val (insts, bitpats) = pairs.unzip
-  val (cnt, wrap) = Counter(true.B, pairs.size)
-  val dut = Module(new Decoder(bitpats))
+  val (cnt, wrap)      = Counter(true.B, pairs.size)
+  val dut              = Module(new Decoder(bitpats))
   dut.io.inst := VecInit(insts.map(_.asUInt))(cnt)
   when(!dut.io.matched) {
     assert(cnt === 0.U)
@@ -33,10 +33,10 @@ class DecoderTester(pairs: List[(String, String)]) extends BasicTester {
 class DecoderSpec extends ChiselPropSpec {
 
   // Use a single Int to make both a specific instruction and a BitPat that will match it
-  val bitpatPair = for (seed <- Arbitrary.arbitrary[Int]) yield {
+  val bitpatPair             = for (seed <- Arbitrary.arbitrary[Int]) yield {
     val rnd = new scala.util.Random(seed)
-    val bs = seed.toBinaryString
-    val bp = bs.map(if (rnd.nextBoolean()) _ else "?")
+    val bs  = seed.toBinaryString
+    val bp  = bs.map(if (rnd.nextBoolean()) _ else "?")
 
     // The following randomly throws in white space and underscores which are legal and ignored.
     val bpp = bp.map { a =>

@@ -31,8 +31,8 @@ object RegEnable extends RegEnableImpl {
 
   /** @group SourceInfoTransformMacro */
   def do_apply[T <: Data](
-    next:   T,
-    init:   T,
+    next: T,
+    init: T,
     enable: Bool
   )(
     implicit sourceInfo: SourceInfo
@@ -56,7 +56,7 @@ object ShiftRegister extends ShiftRegisterImpl {
   /** @group SourceInfoTransformMacro */
   def do_apply[T <: Data](
     in: T,
-    n:  Int,
+    n: Int,
     en: Bool = true.B
   )(
     implicit sourceInfo: SourceInfo
@@ -95,10 +95,10 @@ object ShiftRegister extends ShiftRegisterImpl {
 
   /** @group SourceInfoTransformMacro */
   def do_apply[T <: Data](
-    in:        T,
-    n:         Int,
+    in: T,
+    n: Int,
     resetData: T,
-    en:        Bool
+    en: Bool
   )(
     implicit sourceInfo: SourceInfo
   ): T = _applyImpl(in, n, resetData, en)
@@ -116,11 +116,11 @@ object ShiftRegister extends ShiftRegisterImpl {
 
   /** @group SourceInfoTransformMacro */
   def do_mem[T <: Data](
-    in:              T,
-    n:               Int,
-    en:              Bool,
+    in: T,
+    n: Int,
+    en: Bool,
     useDualPortSram: Boolean,
-    name:            Option[String]
+    name: Option[String]
   )(
     implicit sourceInfo: SourceInfo
   ): T = _applyImplMem(in, n, en, useDualPortSram, name)
@@ -139,7 +139,7 @@ object ShiftRegisters extends ShiftRegistersImpl {
   /** @group SourceInfoTransformMacro */
   def do_apply[T <: Data](
     in: T,
-    n:  Int,
+    n: Int,
     en: Bool
   )(
     implicit sourceInfo: SourceInfo
@@ -169,10 +169,10 @@ object ShiftRegisters extends ShiftRegistersImpl {
 
   /** @group SourceInfoTransformMacro */
   def do_apply[T <: Data](
-    in:        T,
-    n:         Int,
+    in: T,
+    n: Int,
     resetData: T,
-    en:        Bool
+    en: Bool
   )(
     implicit sourceInfo: SourceInfo
   ): Seq[T] = _applyImpl(in, n, resetData, en)

@@ -16,7 +16,7 @@ trait UIntFactory {
 
   /** Create a UInt literal with specified width. */
   protected[chisel3] def Lit(value: BigInt, width: Width): UInt = {
-    val lit = ULit(value, width)
+    val lit    = ULit(value, width)
     val result = new UInt(lit.width)
     // Bind result to being an Literal
     lit.bindLitArg(result)

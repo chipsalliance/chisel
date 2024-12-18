@@ -6,16 +6,11 @@ import java.lang.ProcessBuilder.Redirect
 import scala.annotation.meta.param
 import scala.jdk.CollectionConverters._
 
-case class ModuleInfo(
-  name:  String,
-  ports: Seq[ModuleInfo.Port]) {
+case class ModuleInfo(name: String, ports: Seq[ModuleInfo.Port]) {
   private[svsim] val instanceName = "dut"
 }
-object ModuleInfo {
-  case class Port(
-    name:       String,
-    isSettable: Boolean = false,
-    isGettable: Boolean = false) {
+object ModuleInfo                                                {
+  case class Port(name: String, isSettable: Boolean = false, isGettable: Boolean = false) {
     assert(name.matches("^[a-zA-Z0-9\\-_]*$"))
   }
 }
@@ -27,7 +22,8 @@ final class Workspace(
   path: String,
   /** The prefix for the working directory used when invoking `compile`
     */
-  val workingDirectoryPrefix: String = "workdir") {
+  val workingDirectoryPrefix: String = "workdir"
+) {
 
   val absolutePath =
     if (path.startsWith("/"))
@@ -52,7 +48,7 @@ final class Workspace(
   def reset() = {
     _moduleInfo = None
 
-    val rm = Runtime.getRuntime().exec(Array("rm", "-rf", absolutePath)).waitFor()
+    val rm            = Runtime.getRuntime().exec(Array("rm", "-rf", absolutePath)).waitFor()
     val pathsToCreate = Seq(
       supportArtifactsPath,
       primarySourcesPath,
@@ -62,9 +58,9 @@ final class Workspace(
   }
 
   private def copyResource(klass: Class[_], name: String, targetDirectory: String) = {
-    val inputStream = klass.getResourceAsStream(name)
+    val inputStream  = klass.getResourceAsStream(name)
     if (inputStream == null) throw new java.io.FileNotFoundException(name)
-    val file = new java.io.File(targetDirectory, name.split("/").last)
+    val file         = new java.io.File(targetDirectory, name.split("/").last)
     val outputStream = new java.io.FileOutputStream(file)
     Iterator
       .continually(inputStream.read)
@@ -295,19 +291,20 @@ final class Workspace(
     * @param outputTag A string which will be used to tag the output directory. This enables compiling and simulating the same workspace with multiple backends.
     */
   def compile[T <: Backend](
-    backend:                          T
-  )(workingDirectoryTag:              String,
-    commonSettings:                   CommonCompilationSettings,
-    backendSpecificSettings:          backend.CompilationSettings,
+    backend: T
+  )(
+    workingDirectoryTag: String,
+    commonSettings: CommonCompilationSettings,
+    backendSpecificSettings: backend.CompilationSettings,
     customSimulationWorkingDirectory: Option[String],
-    verbose:                          Boolean
+    verbose: Boolean
   ): Simulation = {
-    val moduleInfo = _moduleInfo.get
+    val moduleInfo           = _moduleInfo.get
     val workingDirectoryPath = s"$absolutePath/$workingDirectoryPrefix-$workingDirectoryTag"
-    val workingDirectory = new File(workingDirectoryPath)
+    val workingDirectory     = new File(workingDirectoryPath)
     workingDirectory.mkdir()
 
-    val parameters = backend.generateParameters(
+    val parameters  = backend.generateParameters(
       outputBinaryName = "simulation",
       topModuleName = Workspace.testbenchModuleName,
       additionalHeaderPaths = Seq(workingDirectoryPath),
@@ -321,16 +318,16 @@ final class Workspace(
       .filter(commonSettings.fileFilter.orElse { case _ => true })
       .map { file => workingDirectory.toPath().relativize(file.toPath()).toString() }
 
-    val traceFileStem = (backendSpecificSettings match {
+    val traceFileStem         = (backendSpecificSettings match {
       case s: verilator.Backend.CompilationSettings =>
         s.traceStyle.collectFirst {
           case verilator.Backend.CompilationSettings.TraceStyle.Vcd(_, filename: String) if filename.nonEmpty =>
             filename.stripSuffix(".vcd")
         }
-      case _ => None
+      case _                                        => None
     }).getOrElse(s"$workingDirectoryPath/trace")
     val simulationEnvironment = Seq(
-      "SVSIM_SIMULATION_LOG" -> s"$workingDirectoryPath/simulation-log.txt",
+      "SVSIM_SIMULATION_LOG"   -> s"$workingDirectoryPath/simulation-log.txt",
       // The simulation driver appends the appropriate extension to the file path
       "SVSIM_SIMULATION_TRACE" -> traceFileStem
     ) ++ parameters.simulationInvocation.environment
@@ -406,13 +403,13 @@ final class Workspace(
     /**
       * Use the generated Makefile to compile the simulation, since this exercises the Makefile codepath and makes it less likely that we will break `make replay`.
       */
-    val processBuilder = new ProcessBuilder("make", "-C", workingDirectoryPath, "simulation")
+    val processBuilder       = new ProcessBuilder("make", "-C", workingDirectoryPath, "simulation")
     processBuilder.redirectErrorStream(true)
-    val process = processBuilder.start()
+    val process              = processBuilder.start()
     @scala.annotation.nowarn(
       "msg=Use `scala.jdk.CollectionConverters` instead"
     )
-    def readLogLines() = {
+    def readLogLines()       = {
       val sourceLocationRegex = "[\\./]*generated-sources/".r
       new BufferedReader(new InputStreamReader(process.getInputStream()))
         .lines()
@@ -427,7 +424,7 @@ final class Workspace(
         .asScala
         .toSeq
     }
-    val compilationLogLines = readLogLines()
+    val compilationLogLines  = readLogLines()
     process.waitFor()
     val compilationLogWriter = new PrintWriter(
       new BufferedWriter(
@@ -457,10 +454,10 @@ final class Workspace(
 /** A micro-DSL for writing files.
   */
 private class LineWriter(path: String) {
-  private val wrapped = new BufferedWriter(new FileWriter(path, false))
+  private val wrapped            = new BufferedWriter(new FileWriter(path, false))
   def apply(components: String*) = {
     components.foreach(wrapped.write)
     wrapped.newLine()
   }
-  def close() = wrapped.close()
+  def close()                    = wrapped.close()
 }

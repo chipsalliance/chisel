@@ -10,13 +10,13 @@ class Coord extends Bundle {
 }
 
 class BundleWire(n: Int) extends Module {
-  val io = IO(new Bundle {
-    val in = Input(new Coord)
+  val io     = IO(new Bundle {
+    val in   = Input(new Coord)
     val outs = Output(Vec(n, new Coord))
   })
   val coords = Wire(Vec(n, new Coord))
   for (i <- 0 until n) {
-    coords(i) := io.in
+    coords(i)  := io.in
     io.outs(i) := coords(i)
   }
 }

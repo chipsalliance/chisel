@@ -8,7 +8,7 @@ package object hierarchy {
   type Hierarchy[P] = core.Hierarchy[P]
   val Hierarchy = core.Hierarchy
   type IsInstantiable = core.IsInstantiable
-  type IsLookupable = core.IsLookupable
-  type Lookupable[P] = core.Lookupable[P]
+  type IsLookupable   = core.IsLookupable
+  type Lookupable[P]  = core.Lookupable[P]
   val Lookupable = core.Lookupable
 }

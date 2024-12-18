@@ -7,24 +7,24 @@ import chisel3.experimental.BaseModule
 import chisel3.naming.{fixTraitIdentifier, HasCustomIdentifier, IdentifierProposer}
 import chiselTests.ChiselFunSpec
 
-class ConcreteClass(i: Int) extends Module
-trait NormalTrait extends Module
-abstract class AbstractClass extends Module
+class ConcreteClass(i: Int)          extends Module
+trait NormalTrait                    extends Module
+abstract class AbstractClass         extends Module
 abstract class AbstArgsClass(i: Int) extends Module
 abstract class NestedAbtrClz(b: Int) extends AbstArgsClass(b)
-class NestedCrctClz(b: Int) extends ConcreteClass(b)
-class NestedTratClz(b: Int) extends NormalTrait
+class NestedCrctClz(b: Int)          extends ConcreteClass(b)
+class NestedTratClz(b: Int)          extends NormalTrait
 @fixTraitIdentifier
-trait FixedNormalTrait extends Module
+trait FixedNormalTrait               extends Module
 
 class FooModule(i: Int) extends Module with HasCustomIdentifier {
   protected val customDefinitionIdentifierProposal = s"A_Different_Name_for_FooModule"
 }
 
-class Foo(i: Int) extends HasCustomIdentifier {
+class Foo(i: Int)                           extends HasCustomIdentifier {
   protected val customDefinitionIdentifierProposal = s"A_Different_Name_for_Foo"
 }
-class BuiltGivenFoo(f: Foo) extends Module
+class BuiltGivenFoo(f: Foo)                 extends Module
 class BuiltGivenInstance[A <: Module](i: A) extends Module
 
 class HasByNameArg(g: => Module) extends Module {

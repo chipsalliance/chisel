@@ -23,13 +23,13 @@ trait SerializableModuleParameter
 trait SerializableModule[T <: SerializableModuleParameter] { this: BaseModule =>
   val parameter: T
 }
-object SerializableModuleGenerator {
+object SerializableModuleGenerator                         {
 
   /** serializer for SerializableModuleGenerator. */
   implicit def rw[P <: SerializableModuleParameter, M <: SerializableModule[P]](
     implicit rwP: ReadWriter[P],
-    pTypeTag:     universe.TypeTag[P],
-    mTypeTag:     universe.TypeTag[M]
+    pTypeTag: universe.TypeTag[P],
+    mTypeTag: universe.TypeTag[M]
   ): ReadWriter[SerializableModuleGenerator[M, P]] = readwriter[ujson.Value].bimap[SerializableModuleGenerator[M, P]](
     { (x: SerializableModuleGenerator[M, P]) =>
       ujson
@@ -49,8 +49,8 @@ object SerializableModuleGenerator {
   /** cache instance of a generator. */
   private case class CacheKey[P <: SerializableModuleParameter, M <: SerializableModule[P]](
     parameter: P,
-    mTypeTag:  universe.TypeTag[M])
-      extends BuilderContextCache.Key[Definition[M with BaseModule]]
+    mTypeTag: universe.TypeTag[M]
+  ) extends BuilderContextCache.Key[Definition[M with BaseModule]]
 
 }
 
@@ -61,9 +61,7 @@ object SerializableModuleGenerator {
 case class SerializableModuleGenerator[M <: SerializableModule[P], P <: SerializableModuleParameter](
   generator: Class[M],
   parameter: P
-)(
-  implicit val pTag: universe.TypeTag[P],
-  implicit val mTag: universe.TypeTag[M]) {
+)(implicit val pTag: universe.TypeTag[P], implicit val mTag: universe.TypeTag[M]) {
   private[chisel3] def construct: M with BaseModule = {
     require(
       generator.getConstructors.length == 1,

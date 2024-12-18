@@ -5,7 +5,7 @@ package chisel3.panamalib.option
 import chisel3.panamalib._
 
 object PanamaFirtoolOption {
-  implicit class FirtoolOptionToPanama(fo: FirtoolOption) {
+  implicit class FirtoolOptionToPanama(fo: FirtoolOption)    {
     def toPanama(panamaCIRCT: PanamaCIRCT, options: CirctFirtoolFirtoolOptions): Unit = fo match {
       // format: off
       case AddMuxPragmas(value: Boolean) => panamaCIRCT.circtFirtoolOptionsSetAddMuxPragmas(options, value)
@@ -57,17 +57,17 @@ object PanamaFirtoolOption {
     }
   }
 
-  implicit def buildModeEnumtoPanama(e: BuildModeEnum): CirctFirtoolBuildMode = e match {
+  implicit def buildModeEnumtoPanama(e: BuildModeEnum): CirctFirtoolBuildMode                                     = e match {
     case BuildModeDefault => CirctFirtoolBuildMode.Default
     case BuildModeDebug   => CirctFirtoolBuildMode.Debug
     case BuildModeRelease => CirctFirtoolBuildMode.Release
   }
-  implicit def companionModeEnumtoPanama(e: CompanionModeEnum): CirctFirtoolCompanionMode = e match {
+  implicit def companionModeEnumtoPanama(e: CompanionModeEnum): CirctFirtoolCompanionMode                         = e match {
     case CompanionModeBind        => CirctFirtoolCompanionMode.Bind
     case CompanionModeInstantiate => CirctFirtoolCompanionMode.Instantiate
     case CompanionModeDrop        => CirctFirtoolCompanionMode.Drop
   }
-  implicit def randomKindEnumtoPanama(e: RandomKindEnum): CirctFirtoolRandomKind = e match {
+  implicit def randomKindEnumtoPanama(e: RandomKindEnum): CirctFirtoolRandomKind                                  = e match {
     case RandomKindNone => CirctFirtoolRandomKind.None
     case RandomKindMem  => CirctFirtoolRandomKind.Mem
     case RandomKindReg  => CirctFirtoolRandomKind.Reg
@@ -80,13 +80,13 @@ object PanamaFirtoolOption {
       case PreserveAggregateModeVec       => CirctFirtoolPreserveAggregateMode.Vec
       case PreserveAggregateModeAll       => CirctFirtoolPreserveAggregateMode.All
     }
-  implicit def preserveValuesModeEnumtoPanama(e: PreserveValuesModeEnum): CirctFirtoolPreserveValuesMode = e match {
+  implicit def preserveValuesModeEnumtoPanama(e: PreserveValuesModeEnum): CirctFirtoolPreserveValuesMode          = e match {
     case PreserveValuesModeStrip => CirctFirtoolPreserveValuesMode.Strip
     case PreserveValuesModeNone  => CirctFirtoolPreserveValuesMode.None
     case PreserveValuesModeNamed => CirctFirtoolPreserveValuesMode.Named
     case PreserveValuesModeAll   => CirctFirtoolPreserveValuesMode.All
   }
-  implicit def verificationFlavor(e: VerificationFlavorEnum): CirctFirtoolVerificationFlavor = e match {
+  implicit def verificationFlavor(e: VerificationFlavorEnum): CirctFirtoolVerificationFlavor                      = e match {
     case VerificationFlavorNone        => CirctFirtoolVerificationFlavor.None
     case VerificationFlavorIfElseFatal => CirctFirtoolVerificationFlavor.IfElseFatal
     case VerificationFlavorImmediate   => CirctFirtoolVerificationFlavor.Immediate

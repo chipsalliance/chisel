@@ -59,7 +59,7 @@ object withClock {
     // Save parentScope
     val parentClock = Builder.currentClockDelayed
     Builder.currentClock = clock.map(Delayed(_))
-    val res = block // execute block
+    val res         = block // execute block
     // Return to old scope
     Builder.currentClock = parentClock
     res
@@ -86,7 +86,7 @@ object withReset {
     // Save parentScope
     val parentReset = Builder.currentResetDelayed
     Builder.currentReset = reset.map(Delayed(_))
-    val res = block // execute block
+    val res         = block // execute block
     // Return to old scope
     Builder.currentReset = parentReset
     res

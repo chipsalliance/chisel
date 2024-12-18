@@ -16,16 +16,16 @@ import scala.collection.immutable.SeqMap
 
 object ConnectableSpec {
   class ConnectionTest[T <: Data, S <: Data](
-    outType:     S,
-    inType:      T,
+    outType: S,
+    inType: T,
     inDrivesOut: Boolean,
-    op:          (Data, Data) => Unit,
-    monitorOp:   Option[(Data, Data) => Unit],
-    nTmps:       Int)
-      extends Module {
+    op: (Data, Data) => Unit,
+    monitorOp: Option[(Data, Data) => Unit],
+    nTmps: Int
+  ) extends Module {
     val io = IO(new Bundle {
-      val in = Flipped(inType)
-      val out = Flipped(Flipped(outType)) // no clonetype, no Aligned (yet)
+      val in      = Flipped(inType)
+      val out     = Flipped(Flipped(outType)) // no clonetype, no Aligned (yet)
       val monitor = monitorOp.map(mop => {
         Output(inType)
       })
@@ -34,19 +34,19 @@ object ConnectableSpec {
       mop(io.monitor.get, io.in)
     })
 
-    val wiresIn = Seq.fill(nTmps)(Wire(inType))
+    val wiresIn  = Seq.fill(nTmps)(Wire(inType))
     val wiresOut = Seq.fill(nTmps)(Wire(outType))
-    (Seq(io.out) ++ wiresOut ++ wiresIn).zip(wiresOut ++ wiresIn :+ io.in).foreach {
-      case (l, r) => if (inDrivesOut) op(l, r) else op(r, l)
+    (Seq(io.out) ++ wiresOut ++ wiresIn).zip(wiresOut ++ wiresIn :+ io.in).foreach { case (l, r) =>
+      if (inDrivesOut) op(l, r) else op(r, l)
     }
   }
 
-  def vec[T <: Data](tpe:                 T, n: Int = 3) = Vec(n, tpe)
+  def vec[T <: Data](tpe: T, n: Int = 3)     = Vec(n, tpe)
   def alignedBundle[T <: Data](fieldType: T) = new Bundle {
     val foo = Flipped(Flipped(fieldType))
     val bar = Flipped(Flipped(fieldType))
   }
-  def mixedBundle[T <: Data](fieldType: T) = new Bundle {
+  def mixedBundle[T <: Data](fieldType: T)   = new Bundle {
     val foo = Flipped(Flipped(fieldType))
     val bar = Flipped(fieldType)
   }
@@ -57,12 +57,12 @@ object ConnectableSpec {
   def flippedBarBundle[T <: Data](fieldType: T) = new Bundle {
     val bar = Flipped(fieldType)
   }
-  def opaqueType[T <: Data](fieldType: T) = new Record with OpaqueType {
+  def opaqueType[T <: Data](fieldType: T)       = new Record with OpaqueType {
     lazy val elements = SeqMap("" -> Flipped(Flipped(fieldType)))
   }
 
-  def allElementTypes(): Seq[() => Data] = Seq(() => UInt(3.W))
-  def allFieldModifiers(fieldType: () => Data): Seq[() => Data] = {
+  def allElementTypes(): Seq[() => Data]                          = Seq(() => UInt(3.W))
+  def allFieldModifiers(fieldType: () => Data): Seq[() => Data]   = {
     Seq(
       fieldType,
       () => Flipped(fieldType()),
@@ -85,9 +85,9 @@ object ConnectableSpec {
     mixedFieldModifiers(element).flatMap(x => Seq(() => Vec(1, x())))
   }
   // 2353 types, takes a few seconds to run all of them, but it's worth it
-  def allTypes(): Seq[() => Data] = {
-    val elements = allElementTypes()
-    val allAggs = elements.flatMap { e =>
+  def allTypes(): Seq[() => Data]                   = {
+    val elements     = allElementTypes()
+    val allAggs      = elements.flatMap { e =>
       allVecs(e) ++ allBundles(e)
     }
     val allNestedAgg = allAggs.flatMap { e =>
@@ -95,9 +95,9 @@ object ConnectableSpec {
     }
     elements ++ allAggs ++ allNestedAgg
   }
-  def getInfo(t: Data): Seq[Any] = DataMirror
-    .collectMembers(t) {
-      case x => (x, DataMirror.specifiedDirectionOf(x))
+  def getInfo(t: Data): Seq[Any]                    = DataMirror
+    .collectMembers(t) { case x =>
+      (x, DataMirror.specifiedDirectionOf(x))
     }
     .toSeq
 
@@ -107,7 +107,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
   import ConnectableSpec._
 
   def testCheck(firrtl: String, matches: Seq[String], nonMatches: Seq[String]): String = {
-    val unmatched = matches.collect {
+    val unmatched  = matches.collect {
       case m if !firrtl.contains(m) => m
     }.toList
     val badMatches = nonMatches.collect {
@@ -119,12 +119,12 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
   }
   def testBuild[T <: Data, S <: Data](
     outType: S,
-    inType:  T
+    inType: T
   )(
     implicit inDrivesOut: Boolean,
-    nTmps:                Int,
-    op:                   (Data, Data) => Unit,
-    monitorOp:            Option[(Data, Data) => Unit]
+    nTmps: Int,
+    op: (Data, Data) => Unit,
+    monitorOp: Option[(Data, Data) => Unit]
   ): String = {
     ChiselStage.emitCHIRRTL(
       gen = new ConnectionTest(outType, inType, inDrivesOut, op, monitorOp, nTmps),
@@ -132,16 +132,16 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     )
   }
   def testException[T <: Data, S <: Data](
-    outType:        S,
-    inType:         T,
+    outType: S,
+    inType: T,
     messageMatches: String*
   )(
     implicit inDrivesOut: Boolean,
-    nTmps:                Int,
-    op:                   (Data, Data) => Unit,
-    monitorOp:            Option[(Data, Data) => Unit]
+    nTmps: Int,
+    op: (Data, Data) => Unit,
+    monitorOp: Option[(Data, Data) => Unit]
   ): String = {
-    val x = intercept[ChiselException] {
+    val x       = intercept[ChiselException] {
       testBuild(outType, inType)
     }
     val message = x.getMessage()
@@ -151,33 +151,33 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     message
   }
   def testDistinctTypes(
-    tpeOut:     Data,
-    tpeIn:      Data,
-    matches:    Seq[String] = Seq("connect io.out, io.in"),
+    tpeOut: Data,
+    tpeIn: Data,
+    matches: Seq[String] = Seq("connect io.out, io.in"),
     nonMatches: Seq[String] = Nil
   )(
     implicit inDrivesOut: Boolean,
-    nTmps:                Int,
-    op:                   (Data, Data) => Unit,
-    monitorOp:            Option[(Data, Data) => Unit]
+    nTmps: Int,
+    op: (Data, Data) => Unit,
+    monitorOp: Option[(Data, Data) => Unit]
   ): String = testCheck(testBuild(tpeOut, tpeIn), matches, nonMatches)
   def test(
-    tpeIn:      Data,
-    matches:    Seq[String] = Seq("connect io.out, io.in"),
+    tpeIn: Data,
+    matches: Seq[String] = Seq("connect io.out, io.in"),
     nonMatches: Seq[String] = Nil
   )(
     implicit inDrivesOut: Boolean,
-    nTmps:                Int,
-    op:                   (Data, Data) => Unit,
-    monitorOp:            Option[(Data, Data) => Unit]
+    nTmps: Int,
+    op: (Data, Data) => Unit,
+    monitorOp: Option[(Data, Data) => Unit]
   ): String = testDistinctTypes(tpeIn, tpeIn, matches, nonMatches)
 
   // (D)irectional Bulk Connect tests
   describe("(0): :<>=") {
-    implicit val op: (Data, Data) => Unit = { _ :<>= _ }
+    implicit val op: (Data, Data) => Unit                = { _ :<>= _ }
     implicit val monitorOp: Option[(Data, Data) => Unit] = None
-    implicit val inDrivesOut = true
-    implicit val nTmps = 0
+    implicit val inDrivesOut                             = true
+    implicit val nTmps                                   = 0
 
     it("(0.a): Emit 'connect' between identical non-Analog ground types") {
       test(Bool())
@@ -322,10 +322,10 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     // TODO Write test that demonstrates multiple evaluation of producer: => T
   }
   describe("(1): :<= ") {
-    implicit val op: (Data, Data) => Unit = { _ :<= _ }
+    implicit val op: (Data, Data) => Unit                = { _ :<= _ }
     implicit val monitorOp: Option[(Data, Data) => Unit] = None
-    implicit val inDrivesOut = true
-    implicit val nTmps = 0
+    implicit val inDrivesOut                             = true
+    implicit val nTmps                                   = 0
 
     it("(1.a): Emit 'connect' between identical non-Analog ground types") {
       test(Bool())
@@ -413,7 +413,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(alignedBundle(alignedBundle(Clock())), bundleBundleMatches)
     }
     it("(1.d): Emit 'connect' between identical aggregate types with mixed flipped/aligned fields") {
-      val bundleMatches = Seq("connect io.out.foo, io.in.foo")
+      val bundleMatches    = Seq("connect io.out.foo, io.in.foo")
       val nonBundleMatches = Seq("connect io.in.bar, io.out.bar")
       test(mixedBundle(Bool()), bundleMatches, nonBundleMatches)
       test(mixedBundle(UInt(16.W)), bundleMatches, nonBundleMatches)
@@ -421,7 +421,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(mixedBundle(Clock()), bundleMatches, nonBundleMatches)
     }
     it("(1.e): Emit 'connect' between identical aggregate types with mixed flipped/aligned fields, hierarchically") {
-      val vecBundleMatches = Seq(
+      val vecBundleMatches    = Seq(
         "connect io.out[0].foo, io.in[0].foo",
         "connect io.out[1].foo, io.in[1].foo",
         "connect io.out[2].foo, io.in[2].foo"
@@ -436,7 +436,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(vec(mixedBundle(SInt(16.W))), vecBundleMatches, nonVecBundleMatches)
       test(vec(mixedBundle(Clock())), vecBundleMatches, nonVecBundleMatches)
 
-      val bundleVecMatches = Seq(
+      val bundleVecMatches    = Seq(
         "connect io.out.foo[0], io.in.foo[0]",
         "connect io.out.foo[1], io.in.foo[1]",
         "connect io.out.foo[2], io.in.foo[2]"
@@ -451,7 +451,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(mixedBundle(vec(SInt(16.W))), bundleVecMatches, nonBundleVecMatches)
       test(mixedBundle(vec(Clock())), bundleVecMatches, nonBundleVecMatches)
 
-      val bundleBundleMatches = Seq(
+      val bundleBundleMatches    = Seq(
         "connect io.out.bar.bar, io.in.bar.bar",
         "connect io.out.foo.foo, io.in.foo.foo"
       )
@@ -542,10 +542,10 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     }
   }
   describe("(2): :>= ") {
-    implicit val op: (Data, Data) => Unit = { _ :>= _ }
+    implicit val op: (Data, Data) => Unit                = { _ :>= _ }
     implicit val monitorOp: Option[(Data, Data) => Unit] = None
-    implicit val inDrivesOut = true
-    implicit val nTmps = 0
+    implicit val inDrivesOut                             = true
+    implicit val nTmps                                   = 0
 
     it("(2.a): Emit 'skip' between identical non-Analog ground types") {
       val skip = Seq("skip")
@@ -595,7 +595,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(alignedBundle(alignedBundle(Clock())), skip)
     }
     it("(2.d): Emit 'connect' between identical aggregate types with mixed flipped/aligned fields") {
-      val bundleMatches = Seq("connect io.in.bar, io.out.bar")
+      val bundleMatches    = Seq("connect io.in.bar, io.out.bar")
       val nonBundleMatches = Seq("connect io.out.foo, io.in.foo")
       test(mixedBundle(Bool()), bundleMatches, nonBundleMatches)
       test(mixedBundle(UInt(16.W)), bundleMatches, nonBundleMatches)
@@ -603,7 +603,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(mixedBundle(Clock()), bundleMatches, nonBundleMatches)
     }
     it("(2.e): Emit 'connect' between identical aggregate types with mixed flipped/aligned fields, hierarchically") {
-      val vecBundleMatches = Seq(
+      val vecBundleMatches    = Seq(
         "connect io.in[0].bar, io.out[0].bar",
         "connect io.in[1].bar, io.out[1].bar",
         "connect io.in[2].bar, io.out[2].bar"
@@ -618,7 +618,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(vec(mixedBundle(SInt(16.W))), vecBundleMatches, nonVecBundleMatches)
       test(vec(mixedBundle(Clock())), vecBundleMatches, nonVecBundleMatches)
 
-      val bundleVecMatches = Seq(
+      val bundleVecMatches    = Seq(
         "connect io.in.bar[0], io.out.bar[0]",
         "connect io.in.bar[1], io.out.bar[1]",
         "connect io.in.bar[2], io.out.bar[2]"
@@ -633,7 +633,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       test(mixedBundle(vec(SInt(16.W))), bundleVecMatches, nonBundleVecMatches)
       test(mixedBundle(vec(Clock())), bundleVecMatches, nonBundleVecMatches)
 
-      val bundleBundleMatches = Seq(
+      val bundleBundleMatches    = Seq(
         "connect io.in.bar.foo, io.out.bar.foo",
         "connect io.in.foo.bar, io.out.foo.bar"
       )
@@ -718,10 +718,10 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     }
   }
   describe("(3): :#= ") {
-    implicit val op: (Data, Data) => Unit = { _ :<>= _ }
+    implicit val op: (Data, Data) => Unit                = { _ :<>= _ }
     implicit val monitorOp: Option[(Data, Data) => Unit] = Some({ _ :#= _ })
-    implicit val inDrivesOut = true
-    implicit val nTmps = 0
+    implicit val inDrivesOut                             = true
+    implicit val nTmps                                   = 0
 
     it("(3.a): Emit 'connect' between identical non-Analog ground types") {
       test(Bool())
@@ -860,7 +860,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       testException(SInt(1.W), Clock(), "have different types")
     }
     it("(3.g): Emit 'attach' between Analog types or Aggregates with Analog types") {
-      implicit val op: (Data, Data) => Unit = { _ :#= _ }
+      implicit val op: (Data, Data) => Unit                = { _ :#= _ }
       implicit val monitorOp: Option[(Data, Data) => Unit] = None
       test(Analog(3.W), Seq("attach (io.out, io.in)"))
       test(mixedBundle(Analog(3.W)), Seq("attach (io.out.foo, io.in.foo)", "attach (io.out.bar, io.in.bar"))
@@ -868,7 +868,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     }
     it("(3.h): Error on unconnected or dangling subfield/subindex from either side") {
       // Missing flip bar
-      implicit val op: (Data, Data) => Unit = { _ :#= _ }
+      implicit val op: (Data, Data) => Unit                = { _ :#= _ }
       implicit val monitorOp: Option[(Data, Data) => Unit] = None
       testException(mixedBundle(Bool()), alignedFooBundle(Bool()), "unmatched consumer field")
       testException(alignedFooBundle(Bool()), mixedBundle(Bool()), "unmatched producer field")
@@ -898,7 +898,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       )
     }
     it("(3.i): Always connect to consumer regardless of orientation") {
-      implicit val op: (Data, Data) => Unit = { _ :#= _ }
+      implicit val op: (Data, Data) => Unit                = { _ :#= _ }
       implicit val monitorOp: Option[(Data, Data) => Unit] = None
       testException(mixedBundle(Bool()), alignedBundle(Bool()), "cannot be written from module")
       testDistinctTypes(
@@ -913,7 +913,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     it(
       "(3.k): When connecting FROM DontCare, emit for aligned aggregate fields and emit for flipped aggregate fields"
     ) {
-      implicit val op: (Data, Data) => Unit = { (x, y) => x :#= DontCare }
+      implicit val op: (Data, Data) => Unit                = { (x, y) => x :#= DontCare }
       implicit val monitorOp: Option[(Data, Data) => Unit] = None
       test(UInt(3.W), Seq("invalidate io.out"))
       test(SInt(3.W), Seq("invalidate io.out"))
@@ -953,10 +953,10 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
 
   describe("(4): Connectable waived") {
     import scala.collection.immutable.SeqMap
-    class Decoupled(val hasData: Boolean) extends Bundle {
+    class Decoupled(val hasData: Boolean)               extends Bundle {
       val valid = Bool()
       val ready = Flipped(Bool())
-      val data = if (hasData) Some(UInt(32.W)) else None
+      val data  = if (hasData) Some(UInt(32.W)) else None
     }
     class BundleMap(fields: SeqMap[String, () => Data]) extends Record {
       val elements = fields.map { case (name, gen) => name -> gen() }
@@ -967,17 +967,17 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         Connectable(d, bundleMapElements.flatten.toSet, Set.empty)
       }
     }
-    class DecoupledGen[T <: Data](val gen: () => T) extends Bundle {
+    class DecoupledGen[T <: Data](val gen: () => T)     extends Bundle {
       val valid = Bool()
       val ready = Flipped(Bool())
-      val data = gen()
+      val data  = gen()
     }
     it("(4.a) Using waive works for nested field") {
       class NestedDecoupled(val hasData: Boolean) extends Bundle {
         val foo = new Decoupled(hasData)
       }
-      class MyModule extends Module {
-        val in = IO(Flipped(new NestedDecoupled(true)))
+      class MyModule                              extends Module {
+        val in  = IO(Flipped(new NestedDecoupled(true)))
         val out = IO(new NestedDecoupled(false))
         out :<>= in.waiveEach { case d: Decoupled if d.data.nonEmpty => d.data.toSeq }
       }
@@ -992,7 +992,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     }
     it("(4.b) Inline waiver things") {
       class MyModule extends Module {
-        val in = IO(Flipped(new Decoupled(true)))
+        val in  = IO(Flipped(new Decoupled(true)))
         val out = IO(new Decoupled(false))
         out :<>= in.waive(_.data.get)
       }
@@ -1007,21 +1007,21 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     }
     it("(4.c) BundleMap example can use programmatic waiving") {
       class MyModule extends Module {
-        def ab = new BundleMap(
+        def ab  = new BundleMap(
           SeqMap(
             "a" -> (() => UInt(2.W)),
             "b" -> (() => UInt(2.W))
           )
         )
-        def bc = new BundleMap(
+        def bc  = new BundleMap(
           SeqMap(
             "b" -> (() => UInt(2.W)),
             "c" -> (() => UInt(2.W))
           )
         )
-        val in = IO(Flipped(new DecoupledGen(() => ab)))
+        val in  = IO(Flipped(new DecoupledGen(() => ab)))
         val out = IO(new DecoupledGen(() => bc))
-        //Programmatic
+        // Programmatic
         BundleMap.waive(out) :<>= BundleMap.waive(in)
       }
       testCheck(
@@ -1036,22 +1036,22 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     }
     it("(4.d) Connect defaults, then create Connectable to connect to") {
       class MyModule extends Module {
-        def ab = new BundleMap(
+        def ab  = new BundleMap(
           SeqMap(
             "a" -> (() => UInt(2.W)),
             "b" -> (() => UInt(2.W))
           )
         )
-        def bc = new BundleMap(
+        def bc  = new BundleMap(
           SeqMap(
             "b" -> (() => UInt(2.W)),
             "c" -> (() => UInt(2.W))
           )
         )
-        val in = IO(Flipped(new DecoupledGen(() => ab)))
+        val in  = IO(Flipped(new DecoupledGen(() => ab)))
         val out = IO(new DecoupledGen(() => bc))
         out :<= (chiselTypeOf(out).Lit(_.data.elements("b") -> 1.U, _.data.elements("c") -> 1.U))
-        //Programmatic
+        // Programmatic
         BundleMap.waive(out) :<>= BundleMap.waive(in)
       }
       testCheck(
@@ -1073,11 +1073,11 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       class OnlyBackPressure extends Bundle {
         val ready = Flipped(UInt(3.W))
       }
-      class MyModule extends Module {
+      class MyModule         extends Module {
         // Have to nest in bundle because it calls the connecting-to-seq version
-        val in3 = IO(Flipped(new Bundle { val v = Vec(3, new OnlyBackPressure) }))
+        val in3  = IO(Flipped(new Bundle { val v = Vec(3, new OnlyBackPressure) }))
         val out3 = IO(new Bundle { val v = Vec(3, new OnlyBackPressure) })
-        val in2 = IO(Flipped(new Bundle { val v = Vec(2, new OnlyBackPressure) }))
+        val in2  = IO(Flipped(new Bundle { val v = Vec(2, new OnlyBackPressure) }))
         val out2 = IO(new Bundle { val v = Vec(2, new OnlyBackPressure) })
         // Should do nothing, but also doesn't error, which is good
         out3 :<= in3
@@ -1104,10 +1104,10 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
   }
   describe("(5): Connectable squeezing") {
     import scala.collection.immutable.SeqMap
-    class Decoupled(val hasBigData: Boolean) extends Bundle {
+    class Decoupled(val hasBigData: Boolean)            extends Bundle {
       val valid = Bool()
       val ready = Flipped(Bool())
-      val data = if (hasBigData) UInt(32.W) else UInt(8.W)
+      val data  = if (hasBigData) UInt(32.W) else UInt(8.W)
     }
     class BundleMap(fields: SeqMap[String, () => Data]) extends Record {
       val elements = fields.map { case (name, gen) => name -> gen() }
@@ -1118,17 +1118,17 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         Connectable(d, bundleMapElements.flatten.toSet, Set.empty)
       }
     }
-    class DecoupledGen[T <: Data](val gen: () => T) extends Bundle {
+    class DecoupledGen[T <: Data](val gen: () => T)     extends Bundle {
       val valid = Bool()
       val ready = Flipped(Bool())
-      val data = gen()
+      val data  = gen()
     }
     it("(5.a) Using squeeze works for nested field") {
       class NestedDecoupled(val hasBigData: Boolean) extends Bundle {
         val foo = new Decoupled(hasBigData)
       }
-      class MyModule extends Module {
-        val in = IO(Flipped(new NestedDecoupled(true)))
+      class MyModule                                 extends Module {
+        val in  = IO(Flipped(new NestedDecoupled(true)))
         val out = IO(new NestedDecoupled(false))
         out :<>= in.squeezeEach { case d: Decoupled => Seq(d.data) }
       }
@@ -1144,7 +1144,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     }
     it("(5.b) Squeeze works on UInt") {
       class MyModule extends Module {
-        val in = IO(Flipped(UInt(3.W)))
+        val in  = IO(Flipped(UInt(3.W)))
         val out = IO(UInt(1.W))
         out :<>= in.squeeze
       }
@@ -1158,21 +1158,21 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     }
     it("(5.c) BundleMap example can use programmatic squeezing") {
       class MyModule extends Module {
-        def ab = new BundleMap(
+        def ab  = new BundleMap(
           SeqMap(
             "a" -> (() => UInt(2.W)),
             "b" -> (() => UInt(3.W))
           )
         )
-        def bc = new BundleMap(
+        def bc  = new BundleMap(
           SeqMap(
             "b" -> (() => UInt(2.W)),
             "c" -> (() => UInt(2.W))
           )
         )
-        val in = IO(Flipped(new DecoupledGen(() => ab)))
+        val in  = IO(Flipped(new DecoupledGen(() => ab)))
         val out = IO(new DecoupledGen(() => bc))
-        //Programmatic
+        // Programmatic
         BundleMap.waive(out) :<>= BundleMap.waive(in).squeezeAll
       }
       testCheck(
@@ -1191,11 +1191,11 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       class OnlyBackPressure(width: Int) extends Bundle {
         val ready = Flipped(UInt(width.W))
       }
-      class MyModule extends Module {
+      class MyModule                     extends Module {
         // Have to nest in bundle because it calls the connecting-to-seq version
-        val in3 = IO(Flipped(new Bundle { val v = Vec(3, new OnlyBackPressure(1)) }))
+        val in3  = IO(Flipped(new Bundle { val v = Vec(3, new OnlyBackPressure(1)) }))
         val out3 = IO(new Bundle { val v = Vec(3, new OnlyBackPressure(2)) })
-        val in2 = IO(Flipped(new Bundle { val v = Vec(2, new OnlyBackPressure(1)) }))
+        val in2  = IO(Flipped(new Bundle { val v = Vec(2, new OnlyBackPressure(1)) }))
         val out2 = IO(new Bundle { val v = Vec(2, new OnlyBackPressure(2)) })
         // Should do nothing, but also doesn't error, which is good
         out3 :<= in3
@@ -1215,10 +1215,10 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     it("(5.f) Squeeze works on OpaqueType") {
       class OpaqueRecord(width: Int) extends Record with OpaqueType {
         private val underlying = UInt(width.W)
-        val elements = SeqMap("" -> underlying)
+        val elements           = SeqMap("" -> underlying)
       }
-      class MyModule extends Module {
-        val in = IO(Input(new OpaqueRecord(4)))
+      class MyModule                 extends Module                 {
+        val in  = IO(Input(new OpaqueRecord(4)))
         val out = IO(Output(new OpaqueRecord(2)))
         out :<>= in.squeeze
       }
@@ -1233,9 +1233,9 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     it("(5.g) Squeeze works on nested OpaqueType fields") {
       class OpaqueRecord(width: Int) extends Record with OpaqueType {
         private val underlying = UInt(width.W)
-        val elements = SeqMap("" -> underlying)
+        val elements           = SeqMap("" -> underlying)
       }
-      class MyModule extends Module {
+      class MyModule                 extends Module                 {
         val inA = IO(Flipped(new Bundle {
           val opaque = new OpaqueRecord(4)
         }))
@@ -1261,8 +1261,8 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     it("(5.h) Squeeze all as") {
       class NestedDecoupled1 extends Bundle { val foo = new Decoupled(true) }
       class NestedDecoupled2 extends Bundle { val foo = new Decoupled(true) }
-      class MyModule extends Module {
-        val in = IO(Flipped(new NestedDecoupled1()))
+      class MyModule         extends Module {
+        val in  = IO(Flipped(new NestedDecoupled1()))
         val out = IO(new NestedDecoupled2())
         out.squeezeAllAs[Data] :<>= in.squeezeAllAs[Data]
       }
@@ -1279,10 +1279,10 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
   }
   describe("(E): Connectable excluding") {
     import scala.collection.immutable.SeqMap
-    class Decoupled(val hasBigData: Boolean) extends Bundle {
+    class Decoupled(val hasBigData: Boolean)            extends Bundle {
       val valid = Bool()
       val ready = Flipped(Bool())
-      val data = if (hasBigData) UInt(32.W) else UInt(8.W)
+      val data  = if (hasBigData) UInt(32.W) else UInt(8.W)
     }
     class BundleMap(fields: SeqMap[String, () => Data]) extends Record {
       val elements = fields.map { case (name, gen) => name -> gen() }
@@ -1298,17 +1298,17 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         (Connectable(x, Set.empty, Set.empty, xFields.toSet), Connectable(y, Set.empty, Set.empty, yFields.toSet))
       }
     }
-    class DecoupledGen[T <: Data](val gen: () => T) extends Bundle {
+    class DecoupledGen[T <: Data](val gen: () => T)     extends Bundle {
       val valid = Bool()
       val ready = Flipped(Bool())
-      val data = gen()
+      val data  = gen()
     }
     it("(E.a) Using exclude works for nested field") {
       class NestedDecoupled(val hasBigData: Boolean) extends Bundle {
         val foo = new Decoupled(hasBigData)
       }
-      class MyModule extends Module {
-        val in = IO(Flipped(new NestedDecoupled(true)))
+      class MyModule                                 extends Module {
+        val in  = IO(Flipped(new NestedDecoupled(true)))
         val out = IO(new NestedDecoupled(false))
         out.excludeEach { case d: Decoupled => Seq(d.data) } :<>= in.excludeEach { case d: Decoupled => Seq(d.data) }
       }
@@ -1325,7 +1325,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     }
     it("(E.b) exclude works on UInt") {
       class MyModule extends Module {
-        val in = IO(Flipped(UInt(3.W)))
+        val in  = IO(Flipped(UInt(3.W)))
         val out = IO(UInt(1.W))
         out.exclude :<>= in.exclude
       }
@@ -1339,21 +1339,21 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     }
     it("(E.c) BundleMap example can use programmatic excluding") {
       class MyModule extends Module {
-        def ab = new BundleMap(
+        def ab          = new BundleMap(
           SeqMap(
             "a" -> (() => UInt(2.W)),
             "b" -> (() => UInt(2.W))
           )
         )
-        def bc = new BundleMap(
+        def bc          = new BundleMap(
           SeqMap(
             "b" -> (() => UInt(2.W)),
             "c" -> (() => UInt(2.W))
           )
         )
-        val in = IO(Flipped(new DecoupledGen(() => ab)))
-        val out = IO(new DecoupledGen(() => bc))
-        //Programmatic
+        val in          = IO(Flipped(new DecoupledGen(() => ab)))
+        val out         = IO(new DecoupledGen(() => bc))
+        // Programmatic
         val (cout, cin) = BundleMap.onlyIncludeUnion(out, in)
         cout :<>= cin
       }
@@ -1371,9 +1371,9 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       class OnlyBackPressure(width: Int) extends Bundle {
         val ready = Flipped(UInt(width.W))
       }
-      class MyModule extends Module {
+      class MyModule                     extends Module {
         // Have to nest in bundle because it calls the connecting-to-seq version
-        val in2 = IO(Flipped(new Bundle { val v = Vec(2, new OnlyBackPressure(2)) }))
+        val in2  = IO(Flipped(new Bundle { val v = Vec(2, new OnlyBackPressure(2)) }))
         val out3 = IO(new Bundle { val v = Vec(3, new OnlyBackPressure(2)) })
         // Should do nothing, but also doesn't error, which is good
         out3.exclude(_.v(2)) :<= in2
@@ -1391,10 +1391,10 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     it("(E.f) exclude works on OpaqueType") {
       class OpaqueRecord(width: Int) extends Record with OpaqueType {
         private val underlying = UInt(width.W)
-        val elements = SeqMap("" -> underlying)
+        val elements           = SeqMap("" -> underlying)
       }
-      class MyModule extends Module {
-        val in = IO(Input(new OpaqueRecord(4)))
+      class MyModule                 extends Module                 {
+        val in  = IO(Input(new OpaqueRecord(4)))
         val out = IO(Output(new OpaqueRecord(2)))
         out.exclude :<>= in.exclude
       }
@@ -1408,7 +1408,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     }
     it("(E.g) matched fields with one side excluded errors") {
       class MyModule extends Module {
-        val in = IO(Flipped(new Decoupled(true)))
+        val in  = IO(Flipped(new Decoupled(true)))
         val out = IO(new Decoupled(true))
         out.exclude(_.data) :<>= in
       }
@@ -1426,17 +1426,17 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     it("(6.o) :<>= works with DataView to connect a bundle that is a subtype") {
       import chisel3.experimental.dataview._
 
-      class SmallBundle extends Bundle {
+      class SmallBundle extends Bundle      {
         val f1 = UInt(4.W)
         val f2 = UInt(5.W)
       }
-      class BigBundle extends SmallBundle {
+      class BigBundle   extends SmallBundle {
         val f3 = UInt(6.W)
       }
 
       class ConnectSupertype extends Module {
         val io = IO(new Bundle {
-          val in = Input((new SmallBundle))
+          val in  = Input((new SmallBundle))
           val out = Output((new BigBundle))
 
           val foo = Input((new BigBundle))
@@ -1464,20 +1464,20 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     it("(6.p) :<>= works with DataView to connect a two Bundles with a common trait") {
       import chisel3.experimental.dataview._
 
-      class SmallBundle extends Bundle {
-        val common = Output(UInt(4.W))
+      class SmallBundle extends Bundle      {
+        val common        = Output(UInt(4.W))
         val commonFlipped = Input(UInt(4.W))
       }
-      class BigA extends SmallBundle {
+      class BigA        extends SmallBundle {
         val a = Input(UInt(6.W))
       }
-      class BigB extends SmallBundle {
+      class BigB        extends SmallBundle {
         val b = Output(UInt(6.W))
       }
 
       class ConnectCommonTrait extends Module {
         val io = IO(new Bundle {
-          val in = Flipped(new BigA)
+          val in  = Flipped(new BigA)
           val out = (new BigB)
         })
         io.in := DontCare
@@ -1518,14 +1518,14 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         val foo = UInt(3.W)
         val bar = Flipped(UInt(3.W))
       }
-      class MyModule extends Module {
+      class MyModule    extends Module {
         val lit = new MixedBundle().Lit(
           _.foo -> 0.U,
           _.bar -> 1.U
         )
-        val w0 = Wire(new MixedBundle)
+        val w0  = Wire(new MixedBundle)
         w0 :#= lit
-        val w1 = Wire(new MixedBundle)
+        val w1  = Wire(new MixedBundle)
         w1 :#= lit
         w1 :<>= w0
       }
@@ -1548,22 +1548,22 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     it(
       "(8.a.b) Initialize wires with different optional fields with :#= and using :<>= to connect wires of mixed directions, waiving extra field for being unconnected or dangling"
     ) {
-      class MixedBundle extends Bundle {
+      class MixedBundle                  extends Bundle {
         val foo = UInt(3.W)
         val bar = Flipped(UInt(3.W))
       }
       class Parent(hasOptional: Boolean) extends Bundle {
         val necessary = new MixedBundle
-        val optional = if (hasOptional) Some(new MixedBundle) else None
+        val optional  = if (hasOptional) Some(new MixedBundle) else None
       }
-      class MyModule extends Module {
-        val lit = new Parent(true).Lit(
-          _.necessary.foo -> 0.U,
-          _.necessary.bar -> 1.U,
+      class MyModule                     extends Module {
+        val lit           = new Parent(true).Lit(
+          _.necessary.foo    -> 0.U,
+          _.necessary.bar    -> 1.U,
           _.optional.get.foo -> 2.U,
           _.optional.get.bar -> 3.U
         )
-        val hasOptional = Wire(new Parent(true))
+        val hasOptional   = Wire(new Parent(true))
         hasOptional :#= lit
         val lacksOptional = Wire(new Parent(false))
         lacksOptional :#= lit.waive(_.optional.get)
@@ -1581,15 +1581,15 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       )
     }
     it("(8.b) Waiving ok-to-dangle field connecting a wider bus to a narrower bus") {
-      class ReadyValid extends Bundle {
+      class ReadyValid extends Bundle     {
         val valid = Bool()
         val ready = Flipped(Bool())
       }
-      class Decoupled extends ReadyValid {
+      class Decoupled  extends ReadyValid {
         val data = UInt(32.W)
       }
-      class MyModule extends Module {
-        val in = IO(Flipped(new Decoupled()))
+      class MyModule   extends Module     {
+        val in  = IO(Flipped(new Decoupled()))
         val out = IO(new ReadyValid())
         out :<>= in.waiveAs[ReadyValid](_.data)
       }
@@ -1607,15 +1607,15 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     it(
       "(8.c) Waiving ok-to-not-connect field connecting a narrower bus to a wider bus, with defaults for unconnected fields set via last connect semantics"
     ) {
-      class ReadyValid extends Bundle {
+      class ReadyValid extends Bundle     {
         val valid = Bool()
         val ready = Flipped(Bool())
       }
-      class Decoupled extends ReadyValid {
+      class Decoupled  extends ReadyValid {
         val data = UInt(32.W)
       }
-      class MyModule extends Module {
-        val in = IO(Flipped(new ReadyValid()))
+      class MyModule   extends Module     {
+        val in  = IO(Flipped(new ReadyValid()))
         val out = IO(new Decoupled())
         out :<= (new Decoupled()).Lit(_.data -> 0.U)
         out.waiveAs[ReadyValid](_.data) :<>= in
@@ -1635,15 +1635,15 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     it(
       "(8.d) Waiving ok-to-not-connect field connecting a narrower bus to a wider bus will error if no default specified"
     ) {
-      class ReadyValid extends Bundle {
+      class ReadyValid extends Bundle     {
         val valid = Bool()
         val ready = Flipped(Bool())
       }
-      class Decoupled extends ReadyValid {
+      class Decoupled  extends ReadyValid {
         val data = UInt(32.W)
       }
-      class MyModule extends Module {
-        val in = IO(Flipped(new ReadyValid()))
+      class MyModule   extends Module     {
+        val in  = IO(Flipped(new ReadyValid()))
         val out = IO(new Decoupled())
         (out: ReadyValid) :<>= in
       }
@@ -1655,11 +1655,11 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       class Decoupled extends Bundle {
         val valid = Bool()
         val ready = Flipped(Bool())
-        val data = UInt(32.W)
+        val data  = UInt(32.W)
       }
-      class MyModule extends Module {
-        val in = IO(Flipped(new Decoupled()))
-        val out = IO(new Decoupled())
+      class MyModule  extends Module {
+        val in      = IO(Flipped(new Decoupled()))
+        val out     = IO(new Decoupled())
         val monitor = IO(Output(new Decoupled()))
         out :<>= in
         monitor :#= in
@@ -1679,16 +1679,16 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     it(
       "(8.f) A structurally different and fully aligned monitor version of a bundle can easily be connected to, provided missing fields are ok-to-dangle"
     ) {
-      class ReadyValid extends Bundle {
+      class ReadyValid extends Bundle     {
         val valid = Bool()
         val ready = Flipped(Bool())
       }
-      class Decoupled extends ReadyValid {
+      class Decoupled  extends ReadyValid {
         val data = UInt(32.W)
       }
-      class MyModule extends Module {
-        val in = IO(Flipped(new Decoupled()))
-        val out = IO(new Decoupled())
+      class MyModule   extends Module     {
+        val in      = IO(Flipped(new Decoupled()))
+        val out     = IO(new Decoupled())
         val monitor = IO(Output(new ReadyValid()))
         out :<>= in
         monitor :#= in.waiveAs[ReadyValid](_.data)
@@ -1705,16 +1705,16 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       )
     }
     it("(8.g) Discarding echo bits is ok if waived ok-to-dangle (waived dangles)") {
-      class Decoupled extends Bundle {
+      class Decoupled     extends Bundle    {
         val valid = Bool()
         val ready = Flipped(Bool())
-        val data = UInt(32.W)
+        val data  = UInt(32.W)
       }
       class DecoupledEcho extends Decoupled {
         val echo = Flipped(UInt(3.W))
       }
-      class MyModule extends Module {
-        val in = IO(Flipped(new Decoupled()))
+      class MyModule      extends Module    {
+        val in  = IO(Flipped(new Decoupled()))
         val out = IO(new DecoupledEcho())
         out.waiveAs[Decoupled](_.echo) :<>= in
       }
@@ -1731,16 +1731,16 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       )
     }
     it("(8.h) Discarding echo bits is an error if not waived (dangles default to errors)") {
-      class Decoupled extends Bundle {
+      class Decoupled     extends Bundle    {
         val valid = Bool()
         val ready = Flipped(Bool())
-        val data = UInt(32.W)
+        val data  = UInt(32.W)
       }
       class DecoupledEcho extends Decoupled {
         val echo = Flipped(UInt(3.W))
       }
-      class MyModule extends Module {
-        val in = IO(Flipped(new Decoupled()))
+      class MyModule      extends Module    {
+        val in  = IO(Flipped(new Decoupled()))
         val out = IO(new DecoupledEcho())
         (out: Decoupled) :<>= in
       }
@@ -1752,8 +1752,8 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       class BoolRecord(fields: String*) extends Record {
         val elements = SeqMap(fields.map(f => f -> Bool()): _*)
       }
-      class MyModule extends Module {
-        val in = IO(Flipped(new BoolRecord("a", "b")))
+      class MyModule                    extends Module {
+        val in  = IO(Flipped(new BoolRecord("a", "b")))
         val out = IO(new BoolRecord("b", "c"))
         out.waiveAll :<>= in.waiveAll
       }
@@ -1766,8 +1766,8 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     it("(8.i) Partial connect on bundles") {
       class BoolBundleA extends Bundle { val foo = Bool() }
       class BoolBundleB extends Bundle { val foo = Bool() }
-      class MyModule extends Module {
-        val in = IO(Flipped(new BoolBundleA))
+      class MyModule    extends Module {
+        val in  = IO(Flipped(new BoolBundleA))
         val out = IO(new BoolBundleB)
         out.waiveAllAs[Bundle] :<>= in.waiveAllAs[Bundle]
       }
@@ -1779,9 +1779,9 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     }
     it("(8.j) WaiveEach with a cast") {
       class BoolBundleA extends Bundle { val foo = UInt(); val bar = Bool() }
-      class BoolBundleB extends Bundle { val foo = UInt() }
-      class MyModule extends Module {
-        val in = IO(Flipped(new BoolBundleA))
+      class BoolBundleB extends Bundle { val foo = UInt()                   }
+      class MyModule    extends Module {
+        val in  = IO(Flipped(new BoolBundleA))
         val out = IO(new BoolBundleB)
         (out: Bundle) :<>= in.waiveEach[Bundle] { case x: Bool => Seq(x) }
       }
@@ -1793,9 +1793,9 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     }
     it("(8.k) Use unsafe") {
       class BoolBundleA extends Bundle { val foo = UInt(); val bar = Bool() }
-      class BoolBundleB extends Bundle { val foo = UInt() }
-      class MyModule extends Module {
-        val in = IO(Flipped(new BoolBundleA))
+      class BoolBundleB extends Bundle { val foo = UInt()                   }
+      class MyModule    extends Module {
+        val in  = IO(Flipped(new BoolBundleA))
         val out = IO(new BoolBundleB)
         out.unsafe :<>= in.unsafe
       }
@@ -1808,8 +1808,8 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     it("(8.l) Use as") {
       class BoolBundleA extends Bundle { val foo = UInt() }
       class BoolBundleB extends Bundle { val foo = UInt() }
-      class MyModule extends Module {
-        val in = IO(Flipped(new BoolBundleA))
+      class MyModule    extends Module {
+        val in  = IO(Flipped(new BoolBundleA))
         val out = IO(new BoolBundleB)
         out.as[Data] :<>= in.as[Data]
       }
@@ -1821,8 +1821,8 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     }
     it("(8.m) Erroring connections are Builder.error, not Exception as") {
       class MyModule extends Module {
-        val in = IO(Flipped(Bool()))
-        val out = IO(Bool())
+        val in                    = IO(Flipped(Bool()))
+        val out                   = IO(Bool())
         val connectionGoesThrough =
           try {
             in :<>= out
@@ -1862,7 +1862,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       it("(9.a.1) allows the user to customize the waive behavior of the Connectable for their class as producer") {
 
         class MyModule extends RawModule {
-          val in = IO(Input(new MyBundle(true)))
+          val in  = IO(Input(new MyBundle(true)))
           val out = IO(Output(new MyBundle(false)))
 
           out :<>= in
@@ -1882,7 +1882,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       it("(9.a.2) allows the user to customize the waive behavior of the Connectable for their class as consumer") {
 
         class MyModule extends RawModule {
-          val in = IO(Input(new MyBundle(false)))
+          val in  = IO(Input(new MyBundle(false)))
           val out = IO(Output(new MyBundle(true)))
 
           out :<>= in
@@ -1904,7 +1904,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       ) {
 
         class MyModule extends RawModule {
-          val in = IO(Input(new OuterBundle(true)))
+          val in  = IO(Input(new OuterBundle(true)))
           val out = IO(Output(new OuterBundle(false)))
 
           out :<>= in
@@ -1940,7 +1940,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       it("(9.b.1) allows the user to customize the squeeze behavior of the Connectable for their class as producer") {
 
         class MyModule extends RawModule {
-          val in = IO(Input(new MyBundle(2)))
+          val in  = IO(Input(new MyBundle(2)))
           val out = IO(Output(new MyBundle(1)))
 
           out :<>= in
@@ -1959,7 +1959,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       it("(9.b.2) allows the user to customize the squeeze behavior of the Connectable for their class as consumer") {
 
         class MyModule extends RawModule {
-          val in = IO(Input(new MyBundle(1)))
+          val in  = IO(Input(new MyBundle(1)))
           val out = IO(Output(new MyBundle(2)))
 
           out :<>= in
@@ -1980,7 +1980,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       ) {
 
         class MyModule extends RawModule {
-          val in = IO(Input(new OuterBundle(2)))
+          val in  = IO(Input(new OuterBundle(2)))
           val out = IO(Output(new OuterBundle(1)))
 
           out :<>= in
@@ -2019,7 +2019,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       it("(9.c.1) allows the user to customize the exclude behavior of the Connectable for their class as producer") {
 
         class MyModule extends RawModule {
-          val in = IO(Input(new MyBundle(true)))
+          val in  = IO(Input(new MyBundle(true)))
           val out = IO(Output(new MyBundle(false)))
 
           out :<>= in
@@ -2039,7 +2039,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       it("(9.c.2) allows the user to customize the exclude behavior of the Connectable for their class as consumer") {
 
         class MyModule extends RawModule {
-          val in = IO(Input(new MyBundle(false)))
+          val in  = IO(Input(new MyBundle(false)))
           val out = IO(Output(new MyBundle(true)))
 
           out :<>= in
@@ -2061,7 +2061,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       ) {
 
         class MyModule extends RawModule {
-          val in = IO(Input(new OuterBundle(true)))
+          val in  = IO(Input(new OuterBundle(true)))
           val out = IO(Output(new OuterBundle(false)))
 
           out :<>= in

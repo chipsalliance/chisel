@@ -15,7 +15,7 @@ object OpaqueTypeSpec {
 
   class SingleElementRecord extends Record with OpaqueType {
     private val underlying = UInt(8.W)
-    val elements = SeqMap("" -> underlying)
+    val elements           = SeqMap("" -> underlying)
 
     def +(that: SingleElementRecord): SingleElementRecord = {
       val _w = Wire(new SingleElementRecord)
@@ -35,21 +35,21 @@ object OpaqueTypeSpec {
   }
 
   class InnerRecord extends Record with OpaqueType {
-    val k = new InnerInnerRecord
+    val k        = new InnerInnerRecord
     val elements = SeqMap("" -> k)
   }
 
   class InnerInnerRecord extends Record with OpaqueType {
-    val k = new SingleElementRecord
+    val k        = new SingleElementRecord
     val elements = SeqMap("" -> k)
   }
 
   class NestedRecordModule extends Module {
-    val in = IO(Input(new InnerRecord))
-    val out = IO(Output(new InnerRecord))
+    val in   = IO(Input(new InnerRecord))
+    val out  = IO(Output(new InnerRecord))
     val inst = Module(new InnerModule)
     inst.io.foo := in
-    out := inst.io.bar
+    out         := inst.io.bar
   }
 
   class InnerModule extends Module {
@@ -64,11 +64,11 @@ object OpaqueTypeSpec {
 
   class NamedSingleElementRecord extends Record with OpaqueType {
     private val underlying = UInt(8.W)
-    val elements = SeqMap("unused" -> underlying)
+    val elements           = SeqMap("unused" -> underlying)
   }
 
   class NamedSingleElementModule extends Module {
-    val in = IO(Input(new NamedSingleElementRecord))
+    val in  = IO(Input(new NamedSingleElementRecord))
     val out = IO(Output(new NamedSingleElementRecord))
     out := in
   }
@@ -76,13 +76,13 @@ object OpaqueTypeSpec {
   class ErroneousOverride extends Record with OpaqueType {
     private val underlyingA = UInt(8.W)
     private val underlyingB = UInt(8.W)
-    val elements = SeqMap("x" -> underlyingA, "y" -> underlyingB)
+    val elements            = SeqMap("x" -> underlyingA, "y" -> underlyingB)
 
     override def opaqueType = true
   }
 
   class ErroneousOverrideModule extends Module {
-    val in = IO(Input(new ErroneousOverride))
+    val in  = IO(Input(new ErroneousOverride))
     val out = IO(Output(new ErroneousOverride))
     out := in
   }
@@ -90,13 +90,13 @@ object OpaqueTypeSpec {
   class NotActuallyOpaqueType extends Record with OpaqueType {
     private val underlyingA = UInt(8.W)
     private val underlyingB = UInt(8.W)
-    val elements = SeqMap("x" -> underlyingA, "y" -> underlyingB)
+    val elements            = SeqMap("x" -> underlyingA, "y" -> underlyingB)
 
     override def opaqueType = false
   }
 
   class NotActuallyOpaqueTypeModule extends Module {
-    val in = IO(Input(new NotActuallyOpaqueType))
+    val in  = IO(Input(new NotActuallyOpaqueType))
     val out = IO(Output(new NotActuallyOpaqueType))
     out := in
   }
@@ -104,7 +104,7 @@ object OpaqueTypeSpec {
   // Illustrate how to dyanmically decide between OpaqueType or not
   sealed trait MaybeBoxed[T <: Data] extends Record {
     def underlying: T
-    def boxed:      Boolean
+    def boxed: Boolean
   }
   object MaybeBoxed {
     def apply[T <: Data](gen: T, boxed: Boolean): MaybeBoxed[T] = {
@@ -112,18 +112,18 @@ object OpaqueTypeSpec {
     }
   }
   class Boxed[T <: Data](gen: T) extends MaybeBoxed[T] {
-    def boxed = true
+    def boxed         = true
     lazy val elements = SeqMap("underlying" -> gen)
-    def underlying = elements.head._2
+    def underlying    = elements.head._2
   }
   class Unboxed[T <: Data](gen: T) extends MaybeBoxed[T] with OpaqueType {
-    def boxed = false
+    def boxed         = false
     lazy val elements = SeqMap("" -> gen)
-    def underlying = elements.head._2
+    def underlying    = elements.head._2
   }
 
   class MaybeNoAsUInt(noAsUInt: Boolean) extends Record with OpaqueType {
-    lazy val elements = SeqMap("" -> UInt(8.W))
+    lazy val elements                    = SeqMap("" -> UInt(8.W))
     override protected def errorOnAsUInt = noAsUInt
   }
 }
@@ -143,7 +143,7 @@ class OpaqueTypeSpec extends ChiselFlatSpec with Utils {
   they should "work correctly for toTarget in nested OpaqueType Records" in {
     var mod: NestedRecordModule = null
     ChiselStage.emitCHIRRTL { mod = new NestedRecordModule; mod }
-    val testStrings = Seq(
+    val testStrings             = Seq(
       mod.inst.io.foo.toTarget.serialize,
       mod.inst.io.foo.k.toTarget.serialize,
       mod.inst.io.foo.k.k.toTarget.serialize,
@@ -157,8 +157,8 @@ class OpaqueTypeSpec extends ChiselFlatSpec with Utils {
   they should "work correctly with DataMirror in nested OpaqueType Records" in {
     var mod: NestedRecordModule = null
     ChiselStage.emitCHIRRTL { mod = new NestedRecordModule; mod }
-    val ports = DataMirror.fullModulePorts(mod.inst)
-    val expectedPorts = Seq(
+    val ports                   = DataMirror.fullModulePorts(mod.inst)
+    val expectedPorts           = Seq(
       ("clock", mod.inst.clock),
       ("reset", mod.inst.reset),
       ("io", mod.inst.io),
@@ -205,9 +205,9 @@ class OpaqueTypeSpec extends ChiselFlatSpec with Utils {
 
   they should "support conditional OpaqueTypes via traits and factory methods" in {
     class MyModule extends Module {
-      val in0 = IO(Input(MaybeBoxed(UInt(8.W), true)))
+      val in0  = IO(Input(MaybeBoxed(UInt(8.W), true)))
       val out0 = IO(Output(MaybeBoxed(UInt(8.W), true)))
-      val in1 = IO(Input(MaybeBoxed(UInt(8.W), false)))
+      val in1  = IO(Input(MaybeBoxed(UInt(8.W), false)))
       val out1 = IO(Output(MaybeBoxed(UInt(8.W), false)))
       out0 := in0
       out1 := in1
@@ -220,7 +220,7 @@ class OpaqueTypeSpec extends ChiselFlatSpec with Utils {
   they should "work with .toTarget" in {
     var m: SingleElementRecordModule = null
     ChiselStage.emitCHIRRTL { m = new SingleElementRecordModule; m }
-    val q = m.in1.toTarget.toString
+    val q                            = m.in1.toTarget.toString
     assert(q == "~SingleElementRecordModule|SingleElementRecordModule>in1")
   }
 
@@ -232,7 +232,7 @@ class OpaqueTypeSpec extends ChiselFlatSpec with Utils {
 
   they should "support making .asUInt illegal" in {
     class AsUIntTester(gen: Data) extends RawModule {
-      val in = IO(Input(gen))
+      val in  = IO(Input(gen))
       val out = IO(Output(UInt()))
       out :#= in.asUInt
     }
@@ -248,7 +248,7 @@ class OpaqueTypeSpec extends ChiselFlatSpec with Utils {
 
   they should "support give a decent error for .asUInt nested in an Aggregate" in {
     class AsUIntTester(gen: Data) extends RawModule {
-      val in = IO(Input(Valid(gen)))
+      val in  = IO(Input(Valid(gen)))
       val out = IO(Output(UInt()))
       out :#= in.asUInt
     }

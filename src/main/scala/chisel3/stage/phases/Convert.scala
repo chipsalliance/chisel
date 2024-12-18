@@ -17,10 +17,10 @@ import scala.annotation.nowarn
   */
 class Convert extends Phase {
 
-  override def prerequisites = Seq(Dependency[Elaborate])
-  override def optionalPrerequisites = Seq.empty
+  override def prerequisites          = Seq(Dependency[Elaborate])
+  override def optionalPrerequisites  = Seq.empty
   override def optionalPrerequisiteOf = Seq.empty
-  override def invalidates(a: Phase) = false
+  override def invalidates(a: Phase)  = false
 
   @nowarn("msg=Do not use annotations val of Circuit directly")
   def transform(annotations: AnnotationSeq): AnnotationSeq = annotations.flatMap {
@@ -29,9 +29,9 @@ class Convert extends Phase {
         /* Convert this Chisel Circuit to a FIRRTL Circuit */
         Some(FirrtlCircuitAnnotation(Converter.convert(a.circuit))) ++
         /* Convert all Chisel Annotations to FIRRTL Annotations */
-        //TODO: clean up this code when firrtl is merged
+        // TODO: clean up this code when firrtl is merged
         a.circuit.firrtlAnnotations
-    case a => Some(a)
+    case a                          => Some(a)
   }
 
 }

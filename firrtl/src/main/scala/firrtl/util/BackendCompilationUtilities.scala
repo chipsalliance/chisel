@@ -20,7 +20,7 @@ object BackendCompilationUtilities extends LazyLogging {
 
   def timeStamp: String = {
     val format = new SimpleDateFormat("yyyyMMddHHmmss")
-    val now = Calendar.getInstance.getTime
+    val now    = Calendar.getInstance.getTime
     format.format(now)
   }
 
@@ -33,7 +33,7 @@ object BackendCompilationUtilities extends LazyLogging {
     * @param file the file to write it into
     */
   def copyResourceToFile(name: String, file: File): Unit = {
-    val in = getClass.getResourceAsStream(name)
+    val in  = getClass.getResourceAsStream(name)
     if (in == null) {
       throw new FileNotFoundException(s"Resource '$name'")
     }
@@ -55,8 +55,8 @@ object BackendCompilationUtilities extends LazyLogging {
 
   def makeHarness(template: String => String, post: String)(f: File): File = {
     val prefix = f.toString.split("/").last
-    val vf = new File(f.toString + post)
-    val w = new FileWriter(vf)
+    val vf     = new File(f.toString + post)
+    val w      = new FileWriter(vf)
     w.write(template(prefix))
     w.close()
     vf
@@ -99,18 +99,18 @@ object BackendCompilationUtilities extends LazyLogging {
     * @param extraCmdLineArgs list of additional command line arguments
     */
   def verilogToCpp(
-    dutFile:          String,
-    dir:              File,
-    vSources:         Seq[File],
-    cppHarness:       File,
-    suppressVcd:      Boolean = false,
+    dutFile: String,
+    dir: File,
+    vSources: Seq[File],
+    cppHarness: File,
+    suppressVcd: Boolean = false,
     resourceFileName: String = firrtl.transforms.BlackBoxSourceHelper.defaultFileListName,
     extraCmdLineArgs: Seq[String] = Seq.empty
   ): ProcessBuilder = {
 
     val topModule = dutFile
 
-    val list_file = new File(dir, resourceFileName)
+    val list_file           = new File(dir, resourceFileName)
     val blackBoxVerilogList = {
       if (list_file.exists()) {
         Seq("-f", list_file.getAbsolutePath)
@@ -129,8 +129,8 @@ object BackendCompilationUtilities extends LazyLogging {
         Set.empty
       }
     }
-    val vSourcesFiltered = vSources.filterNot(f => blackBoxHelperFiles.contains(f.getCanonicalPath))
-    val command = Seq(
+    val vSourcesFiltered                 = vSources.filterNot(f => blackBoxHelperFiles.contains(f.getCanonicalPath))
+    val command                          = Seq(
       "verilator",
       "--cc",
       s"${dir.getAbsolutePath}/$dutFile.v"
@@ -139,9 +139,9 @@ object BackendCompilationUtilities extends LazyLogging {
       blackBoxVerilogList ++
       vSourcesFiltered.flatMap(file => Seq("-v", file.getCanonicalPath)) ++
       Seq("--assert", "-Wno-fatal", "-Wno-WIDTH", "-Wno-STMTDLY") ++ {
-      if (suppressVcd) { Seq.empty }
-      else { Seq("--trace") }
-    } ++
+        if (suppressVcd) { Seq.empty }
+        else { Seq("--trace") }
+      } ++
       Seq(
         "-O1",
         "--top-module",
@@ -164,13 +164,13 @@ object BackendCompilationUtilities extends LazyLogging {
     Seq("make", "-C", dir.toString, "-j", "-f", s"V$prefix.mk", s"V$prefix")
 
   def executeExpectingFailure(
-    prefix:       String,
-    dir:          File,
+    prefix: String,
+    dir: File,
     assertionMsg: String = ""
   ): Boolean = {
-    var triggered = false
+    var triggered                = false
     val assertionMessageSupplied = assertionMsg != ""
-    val e = Process(s"./V$prefix", dir) !
+    val e                        = Process(s"./V$prefix", dir) !
       ProcessLogger(
         line => {
           triggered = triggered || (assertionMessageSupplied && line.contains(assertionMsg))

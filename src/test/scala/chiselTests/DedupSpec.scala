@@ -12,15 +12,15 @@ import chisel3.experimental.hierarchy._
 import chisel3.util.circt.PlusArgsValue
 
 class DedupIO extends Bundle {
-  val in = Flipped(Decoupled(UInt(32.W)))
+  val in  = Flipped(Decoupled(UInt(32.W)))
   val out = Decoupled(UInt(32.W))
 }
 
 class DedupQueues(n: Int) extends Module {
   require(n > 0)
-  val io = IO(new DedupIO)
+  val io     = IO(new DedupIO)
   val queues = Seq.fill(n)(Module(new Queue(UInt(32.W), 4)))
-  var port = io.in
+  var port   = io.in
   for (q <- queues) {
     q.io.enq <> port
     port = q.io.deq
@@ -39,7 +39,7 @@ class DedupSubModule extends Module {
 }
 
 class NestedDedup extends Module {
-  val io = IO(new DedupIO)
+  val io    = IO(new DedupIO)
   val inst0 = Module(new DedupSubModule)
   val inst1 = Module(new DedupSubModule)
   inst0.io.in <> io.in
@@ -53,27 +53,27 @@ object DedupConsts {
 
 class SharedConstantValDedup extends Module {
   val io = IO(new Bundle {
-    val in = Input(UInt(8.W))
+    val in  = Input(UInt(8.W))
     val out = Output(UInt(8.W))
   })
   io.out := io.in + DedupConsts.foo
 }
 
 class SharedConstantValDedupTop extends Module {
-  val io = IO(new Bundle {
-    val in = Input(UInt(8.W))
+  val io    = IO(new Bundle {
+    val in  = Input(UInt(8.W))
     val out = Output(UInt(8.W))
   })
   val inst0 = Module(new SharedConstantValDedup)
   val inst1 = Module(new SharedConstantValDedup)
   inst0.io.in := io.in
   inst1.io.in := io.in
-  io.out := inst0.io.out + inst1.io.out
+  io.out      := inst0.io.out + inst1.io.out
 }
 
 class SharedConstantValDedupTopDesiredName extends Module {
-  val io = IO(new Bundle {
-    val in = Input(UInt(8.W))
+  val io    = IO(new Bundle {
+    val in  = Input(UInt(8.W))
     val out = Output(UInt(8.W))
   })
   val inst0 = Module(new SharedConstantValDedup {
@@ -84,7 +84,7 @@ class SharedConstantValDedupTopDesiredName extends Module {
   })
   inst0.io.in := io.in
   inst1.io.in := io.in
-  io.out := inst0.io.out + inst1.io.out
+  io.out      := inst0.io.out + inst1.io.out
 }
 
 class ModuleWithIntrinsic extends Module {
@@ -96,7 +96,7 @@ class ModuleWithClass extends Module {
 }
 
 class DedupSpec extends ChiselFlatSpec {
-  private val ModuleRegex = """\s*module\s+(\w+)\b.*""".r
+  private val ModuleRegex                = """\s*module\s+(\w+)\b.*""".r
   def countModules(verilog: String): Int =
     (verilog.split("\n").collect { case ModuleRegex(name) => name }).filterNot(_.contains("ram_4x32")).size
 
@@ -142,17 +142,17 @@ class DedupSpec extends ChiselFlatSpec {
   }
 
   it should "not add DedupGroupAnnotation to intrinsics" in {
-    val (_, annos) = getFirrtlAndAnnos(new ModuleWithIntrinsic)
-    val dedupGroupAnnos = annos.collect {
-      case DedupGroupAnnotation(target, _) => target.module
+    val (_, annos)      = getFirrtlAndAnnos(new ModuleWithIntrinsic)
+    val dedupGroupAnnos = annos.collect { case DedupGroupAnnotation(target, _) =>
+      target.module
     }
     dedupGroupAnnos should contain theSameElementsAs Seq("ModuleWithIntrinsic")
   }
 
   it should "not add DedupGroupAnnotation to classes" in {
-    val (_, annos) = getFirrtlAndAnnos(new ModuleWithClass)
-    val dedupGroupAnnos = annos.collect {
-      case DedupGroupAnnotation(target, _) => target.module
+    val (_, annos)      = getFirrtlAndAnnos(new ModuleWithClass)
+    val dedupGroupAnnos = annos.collect { case DedupGroupAnnotation(target, _) =>
+      target.module
     }
     dedupGroupAnnos should contain theSameElementsAs Seq("ModuleWithClass")
   }

@@ -14,23 +14,23 @@ import logger.{LogLevel, LogLevelAnnotation}
 
 /** Object containing Modules used for testing */
 object ForceNamesHierarchy {
-  class WrapperExample extends Module {
-    val in = IO(Input(UInt(3.W)))
-    val out = IO(Output(UInt(3.W)))
+  class WrapperExample extends Module                     {
+    val in   = IO(Input(UInt(3.W)))
+    val out  = IO(Output(UInt(3.W)))
     val inst = Module(new Wrapper)
     inst.in := in
-    out := inst.out
+    out     := inst.out
   }
-  class Wrapper extends Module with InlineInstance {
-    val in = IO(Input(UInt(3.W)))
-    val out = IO(Output(UInt(3.W)))
+  class Wrapper        extends Module with InlineInstance {
+    val in   = IO(Input(UInt(3.W)))
+    val out  = IO(Output(UInt(3.W)))
     val inst = Module(new MyLeaf)
     forceName(inst, "inst")
     inst.in := in
-    out := inst.out
+    out     := inst.out
   }
-  class MyLeaf extends Module {
-    val in = IO(Input(UInt(3.W)))
+  class MyLeaf         extends Module                     {
+    val in  = IO(Input(UInt(3.W)))
     val out = IO(Output(UInt(3.W)))
     out := in
   }
@@ -39,10 +39,10 @@ object ForceNamesHierarchy {
 class ForceNamesSpec extends ChiselFlatSpec {
 
   def run[T <: RawModule](
-    dut:        => T,
-    testName:   String,
+    dut: => T,
+    testName: String,
     inputAnnos: Seq[Annotation] = Nil,
-    info:       LogLevel.Value = LogLevel.None
+    info: LogLevel.Value = LogLevel.None
   ): Iterable[String] = {
     val stage = new ChiselStage
 
@@ -51,9 +51,9 @@ class ForceNamesSpec extends ChiselFlatSpec {
       ChiselGeneratorAnnotation(() => dut)
     ) ++ inputAnnos
 
-    val ret = stage.execute(Array("--target", "systemverilog"), annos)
-    val verilog = ret.collectFirst {
-      case e: EmittedVerilogCircuitAnnotation => e.value.value
+    val ret     = stage.execute(Array("--target", "systemverilog"), annos)
+    val verilog = ret.collectFirst { case e: EmittedVerilogCircuitAnnotation =>
+      e.value.value
     }.get
 
     verilog.split("\\\n")

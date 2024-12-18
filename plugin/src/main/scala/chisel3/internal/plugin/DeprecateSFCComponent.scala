@@ -15,11 +15,11 @@ class DeprecateSFCComponent(val global: Global, arguments: ChiselPluginArguments
     extends PluginComponent
     with TypingTransformers {
   import global._
-  val runsAfter: List[String] = List[String]("typer")
-  val phaseName: String = "deprecatesfccomponent"
+  val runsAfter: List[String]                       = List[String]("typer")
+  val phaseName: String                             = "deprecatesfccomponent"
   def newPhase(_prev: Phase): DeprecateSFCComponent = new DeprecateSFCComponent(_prev)
   class DeprecateSFCComponent(prev: Phase) extends StdPhase(prev) {
-    override def name: String = phaseName
+    override def name: String              = phaseName
     def apply(unit: CompilationUnit): Unit = {
       if (ChiselPlugin.runComponent(global, arguments)(unit)) {
         unit.body = new MyTypingTransformer(unit).transform(unit.body)
@@ -47,8 +47,7 @@ class DeprecateSFCComponent(val global: Global, arguments: ChiselPluginArguments
         Reporting.WarningCategory
       }
     }
-    implicit final class GlobalCompat(
-      self: DeprecateSFCComponent.this.global.type) {
+    implicit final class GlobalCompat(self: DeprecateSFCComponent.this.global.type) {
 
       // Added in Scala 2.13.2 for configurable warnings
       object runReporting {
@@ -74,7 +73,7 @@ class DeprecateSFCComponent(val global: Global, arguments: ChiselPluginArguments
           imp.symbol
         )
         super.transform(imp)
-      case _ => super.transform(tree)
+      case _                                                                               => super.transform(tree)
     }
   }
 }

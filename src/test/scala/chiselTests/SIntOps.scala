@@ -8,44 +8,44 @@ import circt.stage.ChiselStage
 
 class SIntOps extends Module {
   val io = IO(new Bundle {
-    val a = Input(SInt(16.W))
-    val b = Input(SInt(16.W))
-    val addout = Output(SInt(16.W))
-    val subout = Output(SInt(16.W))
-    val timesout = Output(SInt(16.W))
-    val divout = Output(SInt(16.W))
-    val modout = Output(SInt(16.W))
-    val lshiftout = Output(SInt(16.W))
-    val rshiftout = Output(SInt(16.W))
-    val lessout = Output(Bool())
-    val greatout = Output(Bool())
-    val eqout = Output(Bool())
-    val noteqout = Output(Bool())
-    val lesseqout = Output(Bool())
+    val a          = Input(SInt(16.W))
+    val b          = Input(SInt(16.W))
+    val addout     = Output(SInt(16.W))
+    val subout     = Output(SInt(16.W))
+    val timesout   = Output(SInt(16.W))
+    val divout     = Output(SInt(16.W))
+    val modout     = Output(SInt(16.W))
+    val lshiftout  = Output(SInt(16.W))
+    val rshiftout  = Output(SInt(16.W))
+    val lessout    = Output(Bool())
+    val greatout   = Output(Bool())
+    val eqout      = Output(Bool())
+    val noteqout   = Output(Bool())
+    val lesseqout  = Output(Bool())
     val greateqout = Output(Bool())
-    val negout = Output(SInt(16.W))
+    val negout     = Output(SInt(16.W))
   })
 
   val a = io.a
   val b = io.b
 
-  io.addout := a +% b
-  io.subout := a -% b
+  io.addout     := a +% b
+  io.subout     := a -% b
   // TODO:
-  //io.timesout := (a * b)(15, 0)
-  //io.divout := a / Mux(b === 0.S, 1.S, b)
-  //io.divout := (a / b)(15, 0)
-  //io.modout := 0.S
-  //io.lshiftout := (a << 12)(15, 0) //  (a << ub(3, 0))(15, 0).toSInt
-  io.rshiftout := (a >> 8) // (a >> ub).toSInt
-  io.lessout := a < b
-  io.greatout := a > b
-  io.eqout := a === b
-  io.noteqout := (a =/= b)
-  io.lesseqout := a <= b
+  // io.timesout := (a * b)(15, 0)
+  // io.divout := a / Mux(b === 0.S, 1.S, b)
+  // io.divout := (a / b)(15, 0)
+  // io.modout := 0.S
+  // io.lshiftout := (a << 12)(15, 0) //  (a << ub(3, 0))(15, 0).toSInt
+  io.rshiftout  := (a >> 8) // (a >> ub).toSInt
+  io.lessout    := a < b
+  io.greatout   := a > b
+  io.eqout      := a === b
+  io.noteqout   := (a =/= b)
+  io.lesseqout  := a <= b
   io.greateqout := a >= b
-  io.negout := -a(15, 0).asSInt
-  io.negout := (0.S -% a)
+  io.negout     := -a(15, 0).asSInt
+  io.negout     := (0.S -% a)
 }
 
 /*
@@ -138,14 +138,14 @@ class SIntOpsSpec extends ChiselPropSpec with Utils with ShiftRightWidthBehavior
   //   Single Argument case 2
   property("modulo divide should give min width of arguments") {
     assertKnownWidth(4) {
-      val x = WireDefault(SInt(8.W), DontCare)
-      val y = WireDefault(SInt(4.W), DontCare)
+      val x  = WireDefault(SInt(8.W), DontCare)
+      val y  = WireDefault(SInt(4.W), DontCare)
       val op = x % y
       WireDefault(chiselTypeOf(op), op)
     }
     assertKnownWidth(4) {
-      val x = WireDefault(SInt(4.W), DontCare)
-      val y = WireDefault(SInt(8.W), DontCare)
+      val x  = WireDefault(SInt(4.W), DontCare)
+      val y  = WireDefault(SInt(8.W), DontCare)
       val op = x % y
       WireDefault(chiselTypeOf(op), op)
     }
@@ -153,20 +153,20 @@ class SIntOpsSpec extends ChiselPropSpec with Utils with ShiftRightWidthBehavior
 
   property("division should give the width of the numerator + 1") {
     assertKnownWidth(9) {
-      val x = WireDefault(SInt(8.W), DontCare)
-      val y = WireDefault(SInt(4.W), DontCare)
+      val x  = WireDefault(SInt(8.W), DontCare)
+      val y  = WireDefault(SInt(4.W), DontCare)
       val op = x / y
       WireDefault(chiselTypeOf(op), op)
     }
     assertKnownWidth(5) {
-      val x = WireDefault(SInt(4.W), DontCare)
-      val y = WireDefault(SInt(8.W), DontCare)
+      val x  = WireDefault(SInt(4.W), DontCare)
+      val y  = WireDefault(SInt(8.W), DontCare)
       val op = x / y
       WireDefault(chiselTypeOf(op), op)
     }
     assertKnownWidth(1) {
-      val x = WireDefault(SInt(0.W), DontCare)
-      val y = WireDefault(SInt(8.W), DontCare)
+      val x  = WireDefault(SInt(0.W), DontCare)
+      val y  = WireDefault(SInt(8.W), DontCare)
       val op = x / y
       WireDefault(chiselTypeOf(op), op)
     }
@@ -174,12 +174,12 @@ class SIntOpsSpec extends ChiselPropSpec with Utils with ShiftRightWidthBehavior
 
   property("Zero-width bit extractions should be supported") {
     assertKnownWidth(0) {
-      val x = WireDefault(SInt(8.W), DontCare)
+      val x  = WireDefault(SInt(8.W), DontCare)
       val op = x(-1, 0)
       WireDefault(chiselTypeOf(op), op)
     }
     assertKnownWidth(0) {
-      val x = WireDefault(SInt(8.W), DontCare)
+      val x  = WireDefault(SInt(8.W), DontCare)
       val hi = 5
       val lo = 6
       val op = (x >> lo)(hi - lo, 0)
@@ -189,7 +189,7 @@ class SIntOpsSpec extends ChiselPropSpec with Utils with ShiftRightWidthBehavior
 
   property("Zero-width bit extractions from the middle of an SInt should give an actionable error") {
     val (log, x) = grabLog(intercept[Exception](ChiselStage.emitCHIRRTL(new RawModule {
-      val x = WireDefault(SInt(8.W), DontCare)
+      val x  = WireDefault(SInt(8.W), DontCare)
       val op = x(5, 6)
       WireDefault(chiselTypeOf(op), op)
     })))
@@ -209,9 +209,9 @@ class SIntOpsSpec extends ChiselPropSpec with Utils with ShiftRightWidthBehavior
 
     // Focused test to show the mismatch
     class TestModule extends Module {
-      val in = IO(Input(SInt(8.W)))
+      val in         = IO(Input(SInt(8.W)))
       val widthcheck = Wire(SInt())
-      val shifted = in >> 8
+      val shifted    = in >> 8
       shifted.getWidth should be(0)
       widthcheck := shifted
       dontTouch(widthcheck)

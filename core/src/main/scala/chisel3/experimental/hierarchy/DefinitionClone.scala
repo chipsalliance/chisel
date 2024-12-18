@@ -15,14 +15,14 @@ import chisel3.internal.firrtl.ir.{Component, Ref}
   * InstanceClone (which represents the returned module).
   */
 private[chisel3] class DefinitionClone[T <: BaseModule](val getProto: T) extends PseudoModule with core.IsClone[T] {
-  override def toString = s"DefinitionClone(${getProto})"
-  override private[chisel3] def _definitionIdentifier = getProto.definitionIdentifier
+  override def toString                                       = s"DefinitionClone(${getProto})"
+  override private[chisel3] def _definitionIdentifier         = getProto.definitionIdentifier
   // No addition components are generated
   private[chisel3] def generateComponent(): Option[Component] = None
   // Do not call default addId function, which may modify a module that is already "closed"
-  override def addId(d: HasId): Unit = ()
+  override def addId(d: HasId): Unit                          = ()
   // Necessary for toTarget to work
-  private[chisel3] def initializeInParent(): Unit = ()
+  private[chisel3] def initializeInParent(): Unit             = ()
   // Module name is the same as proto's module name
-  override def desiredName: String = getProto.name
+  override def desiredName: String                            = getProto.name
 }

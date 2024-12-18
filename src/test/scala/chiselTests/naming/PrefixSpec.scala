@@ -39,7 +39,7 @@ class PrefixSpec extends ChiselPropSpec with MatchesAndOmits with Utils {
         val wire2 = Wire(UInt(3.W))
         wire2
       }
-      def builder(): UInt = {
+      def builder(): UInt  = {
         val wire1 = Wire(UInt(3.W))
         val wire2 = Wire(UInt(3.W))
         prefix("foo") {
@@ -70,7 +70,7 @@ class PrefixSpec extends ChiselPropSpec with MatchesAndOmits with Utils {
           wire2
         }
       }
-      def builder(): UInt = {
+      def builder(): UInt  = {
         prefix("foo") {
           builder2()
         }
@@ -120,7 +120,7 @@ class PrefixSpec extends ChiselPropSpec with MatchesAndOmits with Utils {
       }
 
       {
-        val ADAM = builder()
+        val ADAM  = builder()
         val JACOB = builder()
       }
     }
@@ -191,7 +191,7 @@ class PrefixSpec extends ChiselPropSpec with MatchesAndOmits with Utils {
       val x = IO(Input(UInt(3.W)))
       val y = {
         lazy val module = new Child
-        val child = Module(module)
+        val child       = Module(module)
       }
     }
     ChiselStage.emitCHIRRTL(new Test) should include("wire wire")
@@ -210,7 +210,7 @@ class PrefixSpec extends ChiselPropSpec with MatchesAndOmits with Utils {
           val x = UInt(3.W)
           new Child(x)
         }
-        val child = Module(module)
+        val child       = Module(module)
       }
     }
     matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))("input clock :", "input reset :", "input io :")()
@@ -304,15 +304,15 @@ class PrefixSpec extends ChiselPropSpec with MatchesAndOmits with Utils {
     class Test extends Module {
       {
         val wire = Wire(new Bundle {
-          val x = UInt(3.W)
-          val y = UInt(3.W)
+          val x   = UInt(3.W)
+          val y   = UInt(3.W)
           val vec = Vec(4, UInt(3.W))
         })
         wire.x := RegNext(3.U)
-        wire.y := RegNext(3.U)
-        wire.vec(0) := RegNext(3.U)
+        wire.y           := RegNext(3.U)
+        wire.vec(0)      := RegNext(3.U)
         wire.vec(wire.x) := RegNext(3.U)
-        wire.vec(1.U) := RegNext(3.U)
+        wire.vec(1.U)    := RegNext(3.U)
       }
     }
     matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))(
@@ -326,11 +326,11 @@ class PrefixSpec extends ChiselPropSpec with MatchesAndOmits with Utils {
 
   property("Prefixing on connection to IOs should work") {
     class Child extends Module {
-      val in = IO(Input(UInt(3.W)))
+      val in  = IO(Input(UInt(3.W)))
       val out = IO(Output(UInt(3.W)))
       out := RegNext(in)
     }
-    class Test extends Module {
+    class Test  extends Module {
       {
         val child = Module(new Child)
         child.in := RegNext(3.U)
@@ -341,11 +341,11 @@ class PrefixSpec extends ChiselPropSpec with MatchesAndOmits with Utils {
 
   property("Prefixing on bulk connects should work") {
     class Child extends Module {
-      val in = IO(Input(UInt(3.W)))
+      val in  = IO(Input(UInt(3.W)))
       val out = IO(Output(UInt(3.W)))
       out := RegNext(in)
     }
-    class Test extends Module {
+    class Test  extends Module {
       {
         val child = Module(new Child)
         child.in <> RegNext(3.U)
@@ -392,8 +392,8 @@ class PrefixSpec extends ChiselPropSpec with MatchesAndOmits with Utils {
           w
         }
       }
-      val in = IO(Input(Vec(4, Bool())))
-      val x = func(in)
+      val in                           = IO(Input(Vec(4, Bool())))
+      val x                            = func(in)
     }
     matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))(
       "wire x :",
@@ -478,7 +478,7 @@ class PrefixSpec extends ChiselPropSpec with MatchesAndOmits with Utils {
     class NotADataUnprefixed {
       val value = Wire(UInt(3.W))
     }
-    class Test extends Module {
+    class Test     extends Module              {
       {
         val nonData = new NotAData
         // Instance name of nonData.value should be nonData_value
@@ -495,7 +495,7 @@ class PrefixSpec extends ChiselPropSpec with MatchesAndOmits with Utils {
 
   property("Prefixing should not be affected by repeated calls of suggestName") {
     class Test extends Module {
-      val in = IO(Input(UInt(3.W)))
+      val in       = IO(Input(UInt(3.W)))
       val prefixed = {
         val wire = Wire(UInt(3.W)).suggestName("wire") // "prefixed_wire"
         wire := in

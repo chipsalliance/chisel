@@ -21,19 +21,19 @@ object VerifStmtMacrosCompat {
   type SourceLineInfo = (String, Int)
 
   private[chisel3] def formatFailureMessage(
-    kind:     String,
+    kind: String,
     lineInfo: SourceLineInfo,
-    cond:     Bool,
-    message:  Option[Printable]
+    cond: Bool,
+    message: Option[Printable]
   )(
     implicit sourceInfo: SourceInfo
   ): Printable = {
     val (filename, line) = lineInfo
-    val lineMsg = s"$filename:$line".replaceAll("%", "%%")
+    val lineMsg          = s"$filename:$line".replaceAll("%", "%%")
     message match {
       case Some(msg) =>
         p"$kind failed: $msg\n"
-      case None => p"$kind failed at $lineMsg\n"
+      case None      => p"$kind failed at $lineMsg\n"
     }
   }
 
@@ -46,12 +46,8 @@ object VerifStmtMacrosCompat {
 
     /** @group VerifPrintMacros */
     def _applyMacroWithInterpolatorCheck(
-      c:          blackbox.Context
-    )(cond:       c.Tree,
-      message:    c.Tree,
-      data:       c.Tree*
-    )(sourceInfo: c.Tree
-    ): c.Tree = {
+      c: blackbox.Context
+    )(cond: c.Tree, message: c.Tree, data: c.Tree*)(sourceInfo: c.Tree): c.Tree = {
       import c.universe._
       _checkFormatString(c)(message)
       val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithSourceLinePrintable"))
@@ -60,12 +56,8 @@ object VerifStmtMacrosCompat {
 
     /** @group VerifPrintMacros */
     def _applyMacroWithStringMessage(
-      c:          blackbox.Context
-    )(cond:       c.Tree,
-      message:    c.Tree,
-      data:       c.Tree
-    )(sourceInfo: c.Tree
-    ): c.Tree = {
+      c: blackbox.Context
+    )(cond: c.Tree, message: c.Tree, data: c.Tree)(sourceInfo: c.Tree): c.Tree = {
       import c.universe._
       val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithSourceLinePrintable"))
       q"$apply_impl_do($cond, ${getLine(c)},_root_.scala.Some(_root_.chisel3.Printable.pack($message,..$data)))($sourceInfo)"
@@ -73,11 +65,8 @@ object VerifStmtMacrosCompat {
 
     /** @group VerifPrintMacros */
     def _applyMacroWithPrintableMessage(
-      c:          blackbox.Context
-    )(cond:       c.Tree,
-      message:    c.Tree
-    )(sourceInfo: c.Tree
-    ): c.Tree = {
+      c: blackbox.Context
+    )(cond: c.Tree, message: c.Tree)(sourceInfo: c.Tree): c.Tree = {
       import c.universe._
       val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithSourceLinePrintable"))
       q"$apply_impl_do($cond, ${getLine(c)}, _root_.scala.Some($message))($sourceInfo)"
@@ -85,10 +74,8 @@ object VerifStmtMacrosCompat {
 
     /** @group VerifPrintMacros */
     def _applyMacroWithNoMessage(
-      c:          blackbox.Context
-    )(cond:       c.Tree
-    )(sourceInfo: c.Tree
-    ): c.Tree = {
+      c: blackbox.Context
+    )(cond: c.Tree)(sourceInfo: c.Tree): c.Tree = {
       import c.universe._
       val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithSourceLinePrintable"))
       q"$apply_impl_do($cond, ${getLine(c)}, _root_.scala.None)($sourceInfo)"
@@ -96,8 +83,8 @@ object VerifStmtMacrosCompat {
 
     /** @group VerifPrintMacros */
     def _applyWithSourceLinePrintable(
-      cond:    Bool,
-      line:    SourceLineInfo,
+      cond: Bool,
+      line: SourceLineInfo,
       message: Option[Printable]
     )(
       implicit sourceInfo: SourceInfo
@@ -108,10 +95,10 @@ object VerifStmtMacrosCompat {
     }
 
     private def emitIfElseFatalIntrinsic(
-      clock:     Clock,
+      clock: Clock,
       predicate: Bool,
-      enable:    Bool,
-      format:    Printable
+      enable: Bool,
+      format: Printable
     )(
       implicit sourceInfo: SourceInfo
     ): chisel3.assert.Assert = {
@@ -127,12 +114,8 @@ object VerifStmtMacrosCompat {
 
     /** @group VerifPrintMacros */
     def _applyMacroWithInterpolatorCheck(
-      c:          blackbox.Context
-    )(cond:       c.Tree,
-      message:    c.Tree,
-      data:       c.Tree*
-    )(sourceInfo: c.Tree
-    ): c.Tree = {
+      c: blackbox.Context
+    )(cond: c.Tree, message: c.Tree, data: c.Tree*)(sourceInfo: c.Tree): c.Tree = {
       import c.universe._
       _checkFormatString(c)(message)
       val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithSourceLinePrintable"))
@@ -141,12 +124,8 @@ object VerifStmtMacrosCompat {
 
     /** @group VerifPrintMacros */
     def _applyMacroWithStringMessage(
-      c:          blackbox.Context
-    )(cond:       c.Tree,
-      message:    c.Tree,
-      data:       c.Tree
-    )(sourceInfo: c.Tree
-    ): c.Tree = {
+      c: blackbox.Context
+    )(cond: c.Tree, message: c.Tree, data: c.Tree)(sourceInfo: c.Tree): c.Tree = {
       import c.universe._
       val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithSourceLinePrintable"))
       q"$apply_impl_do($cond, ${getLine(c)}, _root_.scala.Some(_root_.chisel3.Printable.pack($message, ..$data)))($sourceInfo)"
@@ -154,11 +133,8 @@ object VerifStmtMacrosCompat {
 
     /** @group VerifPrintMacros */
     def _applyMacroWithPrintableMessage(
-      c:          blackbox.Context
-    )(cond:       c.Tree,
-      message:    c.Tree
-    )(sourceInfo: c.Tree
-    ): c.Tree = {
+      c: blackbox.Context
+    )(cond: c.Tree, message: c.Tree)(sourceInfo: c.Tree): c.Tree = {
       import c.universe._
       val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithSourceLinePrintable"))
       q"$apply_impl_do($cond, ${getLine(c)}, _root_.scala.Some($message))($sourceInfo)"
@@ -166,10 +142,8 @@ object VerifStmtMacrosCompat {
 
     /** @group VerifPrintMacros */
     def _applyMacroWithNoMessage(
-      c:          blackbox.Context
-    )(cond:       c.Tree
-    )(sourceInfo: c.Tree
-    ): c.Tree = {
+      c: blackbox.Context
+    )(cond: c.Tree)(sourceInfo: c.Tree): c.Tree = {
       import c.universe._
       val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithSourceLinePrintable"))
       q"$apply_impl_do($cond, ${getLine(c)}, _root_.scala.None)($sourceInfo)"
@@ -177,8 +151,8 @@ object VerifStmtMacrosCompat {
 
     /** @group VerifPrintMacros */
     def _applyWithSourceLinePrintable(
-      cond:    Bool,
-      line:    SourceLineInfo,
+      cond: Bool,
+      line: SourceLineInfo,
       message: Option[Printable]
     )(
       implicit sourceInfo: SourceInfo
@@ -199,10 +173,8 @@ object VerifStmtMacrosCompat {
 
     /** @group VerifPrintMacros */
     def _applyMacroWithNoMessage(
-      c:          blackbox.Context
-    )(cond:       c.Tree
-    )(sourceInfo: c.Tree
-    ): c.Tree = {
+      c: blackbox.Context
+    )(cond: c.Tree)(sourceInfo: c.Tree): c.Tree = {
       import c.universe._
       val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithSourceLine"))
       q"$apply_impl_do($cond, ${getLine(c)}, _root_.scala.None)($sourceInfo)"
@@ -210,11 +182,8 @@ object VerifStmtMacrosCompat {
 
     /** @group VerifPrintMacros */
     def _applyMacroWithMessage(
-      c:          blackbox.Context
-    )(cond:       c.Tree,
-      message:    c.Tree
-    )(sourceInfo: c.Tree
-    ): c.Tree = {
+      c: blackbox.Context
+    )(cond: c.Tree, message: c.Tree)(sourceInfo: c.Tree): c.Tree = {
       import c.universe._
       val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("_applyWithSourceLine"))
       q"$apply_impl_do($cond, ${getLine(c)}, _root_.scala.Some($message))($sourceInfo)"
@@ -222,8 +191,8 @@ object VerifStmtMacrosCompat {
 
     /** @group VerifPrintMacros */
     def _applyWithSourceLine(
-      cond:    Bool,
-      line:    SourceLineInfo,
+      cond: Bool,
+      line: SourceLineInfo,
       message: Option[String]
     )(
       implicit sourceInfo: SourceInfo

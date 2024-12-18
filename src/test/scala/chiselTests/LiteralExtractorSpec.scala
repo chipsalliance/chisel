@@ -43,7 +43,7 @@ class LiteralExtractorSpec extends ChiselFlatSpec {
   }
 
   "doubles and big decimals" should "round trip properly" in {
-    val bigInt108 = BigInt("1" * 108, 2)
+    val bigInt108  = BigInt("1" * 108, 2)
     val bigDecimal = Num.toBigDecimal(bigInt108, 2)
 
     val bigIntFromBigDecimal = Num.toBigInt(bigDecimal, 2)
@@ -65,7 +65,7 @@ class LiteralExtractorSpec extends ChiselFlatSpec {
 
       val bigDecimal = BigDecimal(double)
 
-      val bigIntFromDouble = Num.toBigInt(double, 0)
+      val bigIntFromDouble     = Num.toBigInt(double, 0)
       val bigIntFromBigDecimal = Num.toBigInt(bigDecimal, 0)
 
       bigIntFromDouble should be(bigIntFromBigDecimal)

@@ -52,27 +52,27 @@ class AnalogExceptionTester extends BasicTester {
 }
 
 class DataEqualitySpec extends ChiselFlatSpec with Utils {
-  object MyEnum extends ChiselEnum {
+  object MyEnum                                extends ChiselEnum {
     val sA, sB = Value
   }
-  object MyEnumB extends ChiselEnum {
+  object MyEnumB                               extends ChiselEnum {
     val sA, sB = Value
   }
-  class MyBundle extends Bundle {
+  class MyBundle                               extends Bundle     {
     val a = UInt(8.W)
     val b = Bool()
     val c = MyEnum()
   }
-  class LongBundle extends Bundle {
+  class LongBundle                             extends Bundle     {
     val a = UInt(48.W)
     val b = SInt(32.W)
     val c = SInt(32.W)
   }
-  class RuntimeSensitiveBundle(gen: => Bundle) extends Bundle {
-    val a = UInt(8.W)
+  class RuntimeSensitiveBundle(gen: => Bundle) extends Bundle     {
+    val a         = UInt(8.W)
     val b: Bundle = gen
   }
-  class MaybeEmptyBundle(x: Boolean) extends Bundle {
+  class MaybeEmptyBundle(x: Boolean)           extends Bundle     {
     val a = Option.when(x)(UInt(8.W))
   }
 

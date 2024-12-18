@@ -8,7 +8,7 @@ import chisel3.experimental.AffectsChiselPrefix
 import scala.collection.mutable.ListBuffer
 
 trait NamedModuleTester extends Module with AffectsChiselPrefix {
-  val expectedNameMap = ListBuffer[(InstanceId, String)]()
+  val expectedNameMap       = ListBuffer[(InstanceId, String)]()
   val expectedModuleNameMap = ListBuffer[(Module, String)]()
 
   /** Expects some name for a node that is propagated to FIRRTL.
@@ -33,7 +33,7 @@ trait NamedModuleTester extends Module with AffectsChiselPrefix {
     */
   def getNameFailures(): List[(InstanceId, String, String)] = {
     val failures = ListBuffer[(InstanceId, String, String)]()
-    for ((ref, expectedName) <- expectedNameMap) {
+    for ((ref, expectedName)       <- expectedNameMap) {
       if (ref.instanceName != expectedName) {
         failures += ((ref, expectedName, ref.instanceName))
       }

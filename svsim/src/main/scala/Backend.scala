@@ -8,18 +8,19 @@ import java.io.File
   */
 case class CommonCompilationSettings(
   verilogPreprocessorDefines: Seq[CommonCompilationSettings.VerilogPreprocessorDefine] = Seq(),
-  optimizationStyle:          CommonCompilationSettings.OptimizationStyle = CommonCompilationSettings.OptimizationStyle.Default,
+  optimizationStyle: CommonCompilationSettings.OptimizationStyle = CommonCompilationSettings.OptimizationStyle.Default,
   availableParallelism: CommonCompilationSettings.AvailableParallelism =
     CommonCompilationSettings.AvailableParallelism.Default,
-  defaultTimescale:  Option[CommonCompilationSettings.Timescale] = None,
+  defaultTimescale: Option[CommonCompilationSettings.Timescale] = None,
   libraryExtensions: Option[Seq[String]] = None,
-  libraryPaths:      Option[Seq[String]] = None,
-  includeDirs:       Option[Seq[String]] = None,
-  fileFilter:        PartialFunction[File, Boolean] = PartialFunction.empty)
+  libraryPaths: Option[Seq[String]] = None,
+  includeDirs: Option[Seq[String]] = None,
+  fileFilter: PartialFunction[File, Boolean] = PartialFunction.empty
+)
 object CommonCompilationSettings {
-  object VerilogPreprocessorDefine {
+  object VerilogPreprocessorDefine                                                   {
     def apply(name: String, value: String) = new VerilogPreprocessorDefine(name, Some(value))
-    def apply(name: String) = new VerilogPreprocessorDefine(name, None)
+    def apply(name: String)                = new VerilogPreprocessorDefine(name, None)
   }
   case class VerilogPreprocessorDefine private (name: String, value: Option[String]) {
     final def toCommandlineArgument(backend: Backend): String = {
@@ -69,10 +70,10 @@ object CommonCompilationSettings {
 trait Backend {
   type CompilationSettings
   def generateParameters(
-    outputBinaryName:        String,
-    topModuleName:           String,
-    additionalHeaderPaths:   Seq[String],
-    commonSettings:          CommonCompilationSettings,
+    outputBinaryName: String,
+    topModuleName: String,
+    additionalHeaderPaths: Seq[String],
+    commonSettings: CommonCompilationSettings,
     backendSpecificSettings: CompilationSettings
   ): Backend.Parameters
 
@@ -86,9 +87,10 @@ trait Backend {
 final object Backend {
 
   final case class Parameters(
-    private[svsim] val compilerPath:         String,
-    private[svsim] val compilerInvocation:   Parameters.Invocation,
-    private[svsim] val simulationInvocation: Parameters.Invocation)
+    private[svsim] val compilerPath: String,
+    private[svsim] val compilerInvocation: Parameters.Invocation,
+    private[svsim] val simulationInvocation: Parameters.Invocation
+  )
 
   final object Parameters {
 
@@ -96,8 +98,9 @@ final object Backend {
       * Parameters for the invocation of a command-line tool. The constituent properties are private to `svsim` and not meant for external consumption (we may change this representation in the future, for example to [add convenient tracing functionality to make-replay](https://github.com/chipsalliance/chisel/issues/3150)).
       */
     final case class Invocation(
-      private[svsim] val arguments:   Seq[String],
-      private[svsim] val environment: Seq[(String, String)])
+      private[svsim] val arguments: Seq[String],
+      private[svsim] val environment: Seq[(String, String)]
+    )
   }
 
   /**
@@ -108,7 +111,7 @@ final object Backend {
     /** Verilator support requires that we manually implement some SystemVerilog functions, such as `run_simulation` and `simulation_main`. These flags control the Verilator-specific code paths.
       */
     val enableVerilatorSupport = "SVSIM_ENABLE_VERILATOR_SUPPORT"
-    val enableVerilatorTrace = "SVSIM_VERILATOR_TRACE_ENABLED"
+    val enableVerilatorTrace   = "SVSIM_VERILATOR_TRACE_ENABLED"
 
     /** This flag controls if VCS-specifc code is compiled.
       */
@@ -117,8 +120,8 @@ final object Backend {
     /** Flags enabling various tracing mechanisms.
       * Note: These flags do not cause tracing to occur, they simply support for these tracing mechanisms in the harness.
       */
-    val enableVcdTracingSupport = "SVSIM_ENABLE_VCD_TRACING_SUPPORT"
-    val enableVpdTracingSupport = "SVSIM_ENABLE_VPD_TRACING_SUPPORT"
+    val enableVcdTracingSupport  = "SVSIM_ENABLE_VCD_TRACING_SUPPORT"
+    val enableVpdTracingSupport  = "SVSIM_ENABLE_VPD_TRACING_SUPPORT"
     val enableFsdbTracingSupport = "SVSIM_ENABLE_FSDB_TRACING_SUPPORT"
 
     /** Verilator does not currently support delay (`#delay`) in DPI functions, so we omit the SystemVerilog definition of the `run_simulation` function and instead provide a C implementation.

@@ -9,11 +9,11 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
 object LoggerSpec {
-  val ErrorMsg = "message error"
-  val WarnMsg = "message warn"
-  val InfoMsg = "message info"
-  val DebugMsg = "message debug"
-  val TraceMsg = "message trace"
+  val ErrorMsg    = "message error"
+  val WarnMsg     = "message warn"
+  val InfoMsg     = "message info"
+  val DebugMsg    = "message debug"
+  val TraceMsg    = "message trace"
   val globalLevel = LogLevel.Warn
 }
 
@@ -27,12 +27,12 @@ class Logger1 extends LazyLogging {
   }
 }
 
-class LogsInfo2 extends LazyLogging {
+class LogsInfo2  extends LazyLogging                                                        {
   def run(): Unit = {
     logger.info("logger2")
   }
 }
-class LogsInfo3 extends LazyLogging {
+class LogsInfo3  extends LazyLogging                                                        {
   def run(): Unit = {
     logger.info("logger3")
   }
@@ -47,7 +47,7 @@ class LoggerSpec extends AnyFreeSpec with Matchers with OneInstancePerTest with 
           Logger.setOutput(captor.printStream)
           Logger.setLevel(LogLevel.None)
 
-          val r1 = new Logger1
+          val r1             = new Logger1
           r1.run()
           val messagesLogged = captor.getOutputAsString
 
@@ -64,7 +64,7 @@ class LoggerSpec extends AnyFreeSpec with Matchers with OneInstancePerTest with 
           val captor = new OutputCaptor
           Logger.setOutput(captor.printStream)
 
-          val r1 = new Logger1
+          val r1             = new Logger1
           r1.run()
           val messagesLogged = captor.getOutputAsString
 
@@ -82,7 +82,7 @@ class LoggerSpec extends AnyFreeSpec with Matchers with OneInstancePerTest with 
           Logger.setOutput(captor.printStream)
           Logger.setLevel(LogLevel.Warn)
 
-          val r1 = new Logger1
+          val r1             = new Logger1
           r1.run()
           val messagesLogged = captor.getOutputAsString
 
@@ -98,7 +98,7 @@ class LoggerSpec extends AnyFreeSpec with Matchers with OneInstancePerTest with 
           Logger.setOutput(captor.printStream)
           Logger.setLevel(LogLevel.Info)
 
-          val r1 = new Logger1
+          val r1             = new Logger1
           r1.run()
           val messagesLogged = captor.getOutputAsString
 
@@ -117,7 +117,7 @@ class LoggerSpec extends AnyFreeSpec with Matchers with OneInstancePerTest with 
           Logger.setOutput(captor.printStream)
           Logger.setLevel(LogLevel.Debug)
 
-          val r1 = new Logger1
+          val r1             = new Logger1
           r1.run()
           val messagesLogged = captor.getOutputAsString
 
@@ -137,7 +137,7 @@ class LoggerSpec extends AnyFreeSpec with Matchers with OneInstancePerTest with 
           Logger.setOutput(captor.printStream)
           Logger.setLevel(LogLevel.Trace)
 
-          val r1 = new Logger1
+          val r1             = new Logger1
           r1.run()
           val messagesLogged = captor.getOutputAsString
 

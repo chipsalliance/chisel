@@ -12,10 +12,10 @@ import chisel3.experimental.{requireIsChiselType, SourceInfo}
 object Const {
   def apply[T <: Data](source: => T)(implicit sourceInfo: SourceInfo): T = {
     val prevId = Builder.idGen.value
-    val data = source // should only evaluate source once
+    val data   = source // should only evaluate source once
     requireIsChiselType(data)
     requireNoProbeTypeModifier(data, "Cannot create Const of a Probe.")
-    val ret = if (!data.mustClone(prevId)) data else data.cloneType.asInstanceOf[T]
+    val ret    = if (!data.mustClone(prevId)) data else data.cloneType.asInstanceOf[T]
     ret.isConst = true
     ret
   }

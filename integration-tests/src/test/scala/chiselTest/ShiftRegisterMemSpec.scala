@@ -9,8 +9,8 @@ import org.scalacheck.{Gen, Shrink}
 
 class ShiftMemTester(n: Int, dp_mem: Boolean) extends BasicTester {
   val (cntVal, done) = Counter(true.B, n)
-  val start = 23.U
-  val sr = ShiftRegister.mem(cntVal + start, n, true.B, dp_mem, Some("simple_sr"))
+  val start          = 23.U
+  val sr             = ShiftRegister.mem(cntVal + start, n, true.B, dp_mem, Some("simple_sr"))
   when(RegNext(done)) {
     assert(sr === start)
     stop()

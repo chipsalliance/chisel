@@ -7,7 +7,7 @@ import chisel3.testers.BasicTester
 import chisel3.util._
 
 class CountTester(max: Int) extends BasicTester {
-  val cnt = Counter(max)
+  val cnt      = Counter(max)
   assert(cnt.n == max)
   when(true.B) { cnt.inc() }
   val expected = if (max == 0) 0.U else (max - 1).U
@@ -21,7 +21,7 @@ class EnableTester(seed: Int) extends BasicTester {
   ens := ens >> 1
 
   val (cntEnVal, _) = Counter(ens(0), 32)
-  val (_, done) = Counter(true.B, 33)
+  val (_, done)     = Counter(true.B, 33)
 
   when(done) {
     assert(cntEnVal === popCount(seed).asUInt)
@@ -31,8 +31,8 @@ class EnableTester(seed: Int) extends BasicTester {
 
 class ResetTester(n: Int) extends BasicTester {
   val triggerReset = WireInit(false.B)
-  val wasReset = RegNext(triggerReset)
-  val (value, _) = Counter(0 until 8, reset = triggerReset)
+  val wasReset     = RegNext(triggerReset)
+  val (value, _)   = Counter(0 until 8, reset = triggerReset)
 
   triggerReset := value === (n - 1).U
 
@@ -52,7 +52,7 @@ class WrapTester(max: Int) extends BasicTester {
 
 class RangeTester(r: Range) extends BasicTester {
   val (cnt, wrap) = Counter(r)
-  val checkWrap = RegInit(false.B)
+  val checkWrap   = RegInit(false.B)
 
   when(checkWrap) {
     assert(cnt === r.head.U)

@@ -60,21 +60,21 @@ object layer {
   }
 
   sealed trait OutputDirBehavior
-  final case object DefaultOutputDir extends OutputDirBehavior
-  final case object NoOutputDir extends OutputDirBehavior
+  final case object DefaultOutputDir           extends OutputDirBehavior
+  final case object NoOutputDir                extends OutputDirBehavior
   final case class CustomOutputDir(path: Path) extends OutputDirBehavior
 
   sealed trait LayerConfig {
     def abi: ABI.Type
   }
-  object LayerConfig {
+  object LayerConfig       {
     final case class Extract(outputDirBehavior: OutputDirBehavior = DefaultOutputDir) extends LayerConfig {
       override val abi: ABI.Type = ABI.FileInclude
     }
-    final case object Inline extends LayerConfig {
+    final case object Inline                                                          extends LayerConfig {
       override val abi: ABI.Type = ABI.PreprocessorDefine
     }
-    private[chisel3] final case object Root extends LayerConfig {
+    private[chisel3] final case object Root                                           extends LayerConfig {
       override val abi: ABI.Type = ABI.Root
     }
   }
@@ -87,18 +87,16 @@ object layer {
     */
   abstract class Layer(
     val config: LayerConfig
-  )(
-    implicit _parent: Layer,
-    _sourceInfo:      SourceInfo) {
+  )(implicit _parent: Layer, _sourceInfo: SourceInfo) {
     self: Singleton =>
 
     @deprecated("`Convention` is being removed in favor of `LayerConfig`", "Chisel 7.0.0")
     def this(
-      convention:        Convention.Type,
+      convention: Convention.Type,
       outputDirBehavior: OutputDirBehavior = DefaultOutputDir
     )(
       implicit _parent: Layer,
-      _sourceInfo:      SourceInfo
+      _sourceInfo: SourceInfo
     ) = this(LayerConfig.Extract(outputDirBehavior))
 
     /** This establishes a new implicit val for any nested layers. */
@@ -128,8 +126,8 @@ object layer {
       */
     private[chisel3] final def outputDir: Option[Path] = {
       config match {
-        case LayerConfig.Root   => None
-        case LayerConfig.Inline => None
+        case LayerConfig.Root                       => None
+        case LayerConfig.Inline                     => None
         case LayerConfig.Extract(outputDirBehavior) =>
           outputDirBehavior match {
             case NoOutputDir          => None
@@ -190,7 +188,7 @@ object layer {
   def addLayer(layer: Layer) = {
     var currentLayer: Layer = layer
     while (currentLayer != Layer.Root && !Builder.layers.contains(currentLayer)) {
-      val layer = currentLayer
+      val layer  = currentLayer
       val parent = layer.parent
 
       Builder.layers += layer
@@ -218,11 +216,10 @@ object layer {
     * layerblock is not an ancestor of the desired layer
     */
   def block[A](
-    layer:                Layer,
+    layer: Layer,
     skipIfAlreadyInBlock: Boolean = false,
-    skipIfLayersEnabled:  Boolean = false
-  )(thunk:                => A
-  )(
+    skipIfLayersEnabled: Boolean = false
+  )(thunk: => A)(
     implicit sourceInfo: SourceInfo
   ): Unit = {
     // Do nothing if we are already in a layer block and are not supposed to
@@ -234,9 +231,9 @@ object layer {
       return
     }
 
-    val _layer = Builder.layerMap.getOrElse(layer, layer)
+    val _layer         = Builder.layerMap.getOrElse(layer, layer)
     var layersToCreate = List.empty[Layer]
-    var currentLayer = _layer
+    var currentLayer   = _layer
     while (currentLayer != Builder.layerStack.head && currentLayer != Layer.Root) {
       layersToCreate = currentLayer :: layersToCreate
       currentLayer = currentLayer.parent
@@ -249,12 +246,12 @@ object layer {
     addLayer(_layer)
 
     def createLayers(layers: List[Layer])(thunk: => A): A = layers match {
-      case Nil => thunk
+      case Nil          => thunk
       case head :: tail =>
         val layerBlock = new LayerBlock(sourceInfo, head)
         Builder.pushCommand(layerBlock)
         Builder.layerStack = head :: Builder.layerStack
-        val result = Builder.forcedUserModule.withRegion(layerBlock.region)(createLayers(tail)(thunk))
+        val result     = Builder.forcedUserModule.withRegion(layerBlock.region)(createLayers(tail)(thunk))
         Builder.layerStack = Builder.layerStack.tail
         result
     }
@@ -282,7 +279,7 @@ object layer {
   /** Call this function from within a `Module` body to enable this layer globally for that module. */
   final def enable(layer: Layer): Unit = layer match {
     case Layer.Root =>
-    case _ =>
+    case _          =>
       addLayer(layer)
       Builder.enabledLayers += layer
   }

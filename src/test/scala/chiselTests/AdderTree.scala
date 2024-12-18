@@ -7,7 +7,7 @@ import chisel3.testers.BasicTester
 
 class AdderTree[T <: Bits with Num[T]](genType: T, vecSize: Int) extends Module {
   val io = IO(new Bundle {
-    val numIn = Input(Vec(vecSize, genType))
+    val numIn  = Input(Vec(vecSize, genType))
     val numOut = Output(genType)
   })
   io.numOut := io.numIn.reduceTree((a: T, b: T) => (a + b))
@@ -15,7 +15,7 @@ class AdderTree[T <: Bits with Num[T]](genType: T, vecSize: Int) extends Module 
 
 class AdderTreeTester(bitWidth: Int, numsToAdd: List[Int]) extends BasicTester {
   val genType = UInt(bitWidth.W)
-  val dut = Module(new AdderTree(genType, numsToAdd.size))
+  val dut     = Module(new AdderTree(genType, numsToAdd.size))
   dut.io.numIn := VecInit(numsToAdd.map(x => x.asUInt(bitWidth.W)))
   val sumCorrect = dut.io.numOut === (numsToAdd.reduce(_ + _) % (1 << bitWidth)).asUInt(bitWidth.W)
   assert(sumCorrect)

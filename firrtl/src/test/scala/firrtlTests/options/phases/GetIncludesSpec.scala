@@ -41,11 +41,10 @@ class GetIncludesSpec extends AnyFlatSpec with Matchers with firrtl.testutils.Ut
     new File(dir, "e.anno.json") -> Seq(E)
   )
 
-  files.foreach {
-    case (file, annotations) =>
-      val pw = new PrintWriter(file)
-      pw.write(JsonProtocol.serialize(annotations))
-      pw.close()
+  files.foreach { case (file, annotations) =>
+    val pw = new PrintWriter(file)
+    pw.write(JsonProtocol.serialize(annotations))
+    pw.close()
   }
 
   class Fixture { val phase: Phase = new GetIncludes }
@@ -59,18 +58,18 @@ class GetIncludesSpec extends AnyFlatSpec with Matchers with firrtl.testutils.Ut
   }
 
   it should "read annotations from a file" in new Fixture {
-    val e = ref("e")
-    val in = Seq(e)
+    val e      = ref("e")
+    val in     = Seq(e)
     val expect = Seq(E)
-    val out = phase.transform(in)
+    val out    = phase.transform(in)
 
     checkAnnos(out, expect)
   }
 
   it should "read annotations from multiple files, but not reading duplicates" in new Fixture {
-    val Seq(d, e) = Seq("d", "e").map(ref)
-    val in = Seq(d, e, e, d)
-    val expect = Seq(D, E)
+    val Seq(d, e)        = Seq("d", "e").map(ref)
+    val in               = Seq(d, e, e, d)
+    val expect           = Seq(D, E)
     val (stdout, _, out) = grabStdOutErr { phase.transform(in) }
 
     checkAnnos(out, expect)
@@ -83,9 +82,9 @@ class GetIncludesSpec extends AnyFlatSpec with Matchers with firrtl.testutils.Ut
 
   it should "handle recursive references gracefully, but show a warning" in new Fixture {
     val Seq(a, b, c, d, e) = Seq("a", "b", "c", "d", "e").map(ref)
-    val in = Seq(a)
-    val expect = Seq(A, B, C, D, E)
-    val (stdout, _, out) = grabStdOutErr { phase.transform(in) }
+    val in                 = Seq(a)
+    val expect             = Seq(A, B, C, D, E)
+    val (stdout, _, out)   = grabStdOutErr { phase.transform(in) }
 
     checkAnnos(out, expect)
 

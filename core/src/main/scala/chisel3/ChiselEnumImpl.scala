@@ -26,7 +26,7 @@ private[chisel3] abstract class EnumTypeImpl(private[chisel3] val factory: Chise
           case Some(name) => s"${factory.getClass.getSimpleName.init}($value=$name)"
           case None       => stringAccessor(s"${factory.getClass.getSimpleName.init}($value=(invalid))")
         }
-      case _ => stringAccessor(s"${factory.getClass.getSimpleName.init}")
+      case _           => stringAccessor(s"${factory.getClass.getSimpleName.init}")
     }
   }
 
@@ -48,10 +48,10 @@ private[chisel3] abstract class EnumTypeImpl(private[chisel3] val factory: Chise
 
   protected def _impl_===(that: EnumType)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, EqualOp, that)
   protected def _impl_=/=(that: EnumType)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, NotEqualOp, that)
-  protected def _impl_<(that:   EnumType)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, LessOp, that)
-  protected def _impl_>(that:   EnumType)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, GreaterOp, that)
-  protected def _impl_<=(that:  EnumType)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, LessEqOp, that)
-  protected def _impl_>=(that:  EnumType)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, GreaterEqOp, that)
+  protected def _impl_<(that: EnumType)(implicit sourceInfo: SourceInfo): Bool   = compop(sourceInfo, LessOp, that)
+  protected def _impl_>(that: EnumType)(implicit sourceInfo: SourceInfo): Bool   = compop(sourceInfo, GreaterOp, that)
+  protected def _impl_<=(that: EnumType)(implicit sourceInfo: SourceInfo): Bool  = compop(sourceInfo, LessEqOp, that)
+  protected def _impl_>=(that: EnumType)(implicit sourceInfo: SourceInfo): Bool  = compop(sourceInfo, GreaterEqOp, that)
 
   // This preserves the _workaround_ for https://github.com/chipsalliance/chisel/issues/4159
   // Note that #4159 is due to _asUIntImpl below not actually padding the UInt
@@ -65,13 +65,13 @@ private[chisel3] abstract class EnumTypeImpl(private[chisel3] val factory: Chise
         val _padded = this.litOption match {
           case Some(value) =>
             value.U(w.W)
-          case None =>
+          case None        =>
             val _wire = Wire(UInt(w.W))
             _wire := this.asUInt
             _wire
         }
         _padded.do_asTypeOf(that)
-      case None => super.do_asTypeOf(that)
+      case None    => super.do_asTypeOf(that)
     }
   }
 
@@ -81,7 +81,7 @@ private[chisel3] abstract class EnumTypeImpl(private[chisel3] val factory: Chise
       // See https://github.com/chipsalliance/chisel/issues/4159.
       case Some(value) if !Builder.useLegacyWidth =>
         value.U(width)
-      case _ =>
+      case _                                      =>
         pushOp(DefPrim(sourceInfo, UInt(width), AsUIntOp, ref))
     }
   }
@@ -129,7 +129,7 @@ private[chisel3] abstract class EnumTypeImpl(private[chisel3] val factory: Chise
       }
     } else {
       val enums_with_nexts = factory.all.zip(factory.all.tail :+ factory.all.head)
-      val next_enum = SeqUtils.priorityMux(enums_with_nexts.map { case (e, n) => (this === e, n) })
+      val next_enum        = SeqUtils.priorityMux(enums_with_nexts.map { case (e, n) => (this === e, n) })
       next_enum.asInstanceOf[this.type]
     }
   }
@@ -140,7 +140,7 @@ private[chisel3] abstract class EnumTypeImpl(private[chisel3] val factory: Chise
   }
 
   override private[chisel3] def bind(
-    target:          Binding,
+    target: Binding,
     parentDirection: SpecifiedDirection = SpecifiedDirection.Unspecified
   ): Unit = {
     super.bind(target, parentDirection)
@@ -158,20 +158,20 @@ private[chisel3] abstract class EnumTypeImpl(private[chisel3] val factory: Chise
     case v: Vec[_] =>
       v.sample_element match {
         case b: Bundle => enumFields(b)
-        case _ => Seq()
+        case _         => Seq()
       }
     case b: Record =>
       b.elements.collect {
-        case (name, e: EnumType) if this.typeEquivalent(e) => Seq(Seq(name))
+        case (name, e: EnumType) if this.typeEquivalent(e)              => Seq(Seq(name))
         case (name, v: Vec[_]) if this.typeEquivalent(v.sample_element) => Seq(Seq(name))
-        case (name, b2: Bundle) => enumFields(b2).map(name +: _)
+        case (name, b2: Bundle)                                         => enumFields(b2).map(name +: _)
       }.flatten.toSeq
   }
 
   private def outerMostVec(d: Data = this): Option[Vec[_]] = {
     val currentVecOpt = d match {
       case v: Vec[_] => Some(v)
-      case _ => None
+      case _         => None
     }
 
     d.binding match {
@@ -180,7 +180,7 @@ private[chisel3] abstract class EnumTypeImpl(private[chisel3] val factory: Chise
           case outer @ Some(_) => outer
           case None            => currentVecOpt
         }
-      case _ => currentVecOpt
+      case _                          => currentVecOpt
     }
   }
 
@@ -208,13 +208,13 @@ private[chisel3] abstract class EnumTypeImpl(private[chisel3] val factory: Chise
   protected def enumTypeName: String = factory.enumTypeName
 
   def toPrintable: Printable = {
-    implicit val sourceInfo = UnlocatableSourceInfo
-    val allNames = factory.allNames.zip(factory.all)
-    val nameSize = allNames.map(_._1.length).max
+    implicit val sourceInfo          = UnlocatableSourceInfo
+    val allNames                     = factory.allNames.zip(factory.all)
+    val nameSize                     = allNames.map(_._1.length).max
     def leftPad(str: String): String = {
       str.reverse.padTo(nameSize, ' ').reverse
     }
-    val allNamesPadded = allNames.map { case (name, value) => leftPad(name) -> value }
+    val allNamesPadded               = allNames.map { case (name, value) => leftPad(name) -> value }
 
     val result = Wire(Vec(nameSize, UInt(8.W))).suggestName(s"_${enumTypeName}Printable")
     result.foreach(_ := '?'.U)
@@ -240,14 +240,14 @@ private[chisel3] trait ChiselEnumImpl { self: ChiselEnum =>
     def apply(): Type = ChiselEnumImpl.this.apply()
   }
 
-  private var id:             BigInt = 0
+  private var id: BigInt            = 0
   private[chisel3] var width: Width = 0.W
 
   private case class EnumRecord(inst: Type, name: String)
   private val enumRecords = mutable.ArrayBuffer.empty[EnumRecord]
 
-  private def enumNames = enumRecords.map(_.name).toSeq
-  private def enumValues = enumRecords.map(_.inst.litValue).toSeq
+  private def enumNames     = enumRecords.map(_.name).toSeq
+  private def enumValues    = enumRecords.map(_.inst.litValue).toSeq
   private def enumInstances = enumRecords.map(_.inst).toSeq
 
   private[chisel3] val enumTypeName = getClass.getName.init
@@ -263,7 +263,7 @@ private[chisel3] trait ChiselEnumImpl { self: ChiselEnum =>
 
   def getWidth: Int = width.get
 
-  def all: Seq[Type] = enumInstances
+  def all: Seq[Type]        = enumInstances
   /* Accessor for Seq of names in enumRecords */
   def allNames: Seq[String] = enumNames
 
@@ -302,7 +302,7 @@ private[chisel3] trait ChiselEnumImpl { self: ChiselEnum =>
   def apply(): Type = new Type
 
   private def castImpl(
-    n:    UInt,
+    n: UInt,
     warn: Boolean
   )(
     implicit sourceInfo: SourceInfo
@@ -357,7 +357,7 @@ private[chisel3] trait ChiselEnumImpl { self: ChiselEnum =>
 private[chisel3] class UnsafeEnum(override val width: Width) extends EnumType(UnsafeEnum, selfAnnotating = false) {
   override def cloneType: this.type = new UnsafeEnum(width).asInstanceOf[this.type]
 }
-private object UnsafeEnum extends ChiselEnum
+private object UnsafeEnum                                    extends ChiselEnum
 
 /** Suppress enum cast warnings
   *

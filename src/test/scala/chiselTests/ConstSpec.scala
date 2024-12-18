@@ -31,7 +31,7 @@ class ConstSpec extends ChiselFlatSpec with Utils {
   "Const modifier on I/O" should "emit FIRRTL const descriptors" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new Module {
       val io = IO(new Bundle {
-        val in = Input(Const(UInt(8.W)))
+        val in  = Input(Const(UInt(8.W)))
         val out = Output(Const(UInt(8.W)))
       })
     })
@@ -41,7 +41,7 @@ class ConstSpec extends ChiselFlatSpec with Utils {
   "Const modifier on bundles and vectors" should "emit FIRRTL const descriptors" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new Module {
       val io = IO(Const(new Bundle {
-        val in = Input(Const(Vec(5, AsyncReset())))
+        val in  = Input(Const(Vec(5, AsyncReset())))
         val out = Output(Const(Bool()))
       }))
     })
@@ -90,7 +90,7 @@ class ConstSpec extends ChiselFlatSpec with Utils {
 
   "Const to const connections" should "emit a direct passthrough connection" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new Module {
-      val in = IO(Input(Const(new FooBundle)))
+      val in  = IO(Input(Const(new FooBundle)))
       val out = IO(Output(Const(new FooBundle)))
       out := in
     })
@@ -99,7 +99,7 @@ class ConstSpec extends ChiselFlatSpec with Utils {
 
   "Const to non-const connections" should "emit a direct passthrough connection" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new Module {
-      val in = IO(Input(Const(new FooBundle)))
+      val in  = IO(Input(Const(new FooBundle)))
       val out = IO(Output(new FooBundle))
       out := in
     })
@@ -108,7 +108,7 @@ class ConstSpec extends ChiselFlatSpec with Utils {
 
   "Const to nested const connections" should "emit a direct passthrough connection" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new Module {
-      val in = IO(Input(Const(new Bundle {
+      val in  = IO(Input(Const(new Bundle {
         val foo = new FooBundle
       })))
       val out = IO(Output(Const(new Bundle {
@@ -126,7 +126,7 @@ class ConstSpec extends ChiselFlatSpec with Utils {
 
   "Const to const bidirection connections using ':<>='" should "emit a direct passthrough connection" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new Module {
-      val in = IO(Const(Flipped(new BidirectionalBundle)))
+      val in  = IO(Const(Flipped(new BidirectionalBundle)))
       val out = IO(Const(new BidirectionalBundle))
       out :<>= in
     })
@@ -135,7 +135,7 @@ class ConstSpec extends ChiselFlatSpec with Utils {
 
   "Const to const bidirection connections using '<>'" should "emit a direct passthrough connection" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new Module {
-      val in = IO(Const(Flipped(new BidirectionalBundle)))
+      val in  = IO(Const(Flipped(new BidirectionalBundle)))
       val out = IO(Const(new BidirectionalBundle))
       out <> in
     })
@@ -144,7 +144,7 @@ class ConstSpec extends ChiselFlatSpec with Utils {
 
   "Const to const coercing mono connections using ':#='" should "emit elementwise connections" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new Module {
-      val in = IO(Const(Flipped(new BidirectionalBundle)))
+      val in  = IO(Const(Flipped(new BidirectionalBundle)))
       val out = IO(Output(Const(new BidirectionalBundle)))
       out :#= in
     })

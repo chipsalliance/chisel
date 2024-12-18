@@ -45,11 +45,10 @@ trait SerializableModuleElaborator {
   def designImpl[M <: SerializableModule[P]: universe.TypeTag, P <: SerializableModuleParameter: universe.TypeTag](
     parameter: Readable
   )(
-    implicit
-    rwP: upickle.default.Reader[P]
+    implicit rwP: upickle.default.Reader[P]
   ): (Readable, Readable) = {
     var fir: firrtl.ir.Circuit = null
-    val annos = Seq(
+    val annos                  = Seq(
       new chisel3.stage.phases.Elaborate,
       new chisel3.stage.phases.Convert
     ).foldLeft(
@@ -68,11 +67,11 @@ trait SerializableModuleElaborator {
         case firrtl.stage.FirrtlCircuitAnnotation(circuit) =>
           fir = circuit
           None
-        case _: firrtl.options.Unserializable => None
-        case a => Some(a)
+        case _: firrtl.options.Unserializable              => None
+        case a                                             => Some(a)
       }
     val firrtlStream: Readable = fir.serialize
-    val annoStream:   Readable = firrtl.annotations.JsonProtocol.serializeRecover(annos)
+    val annoStream: Readable   = firrtl.annotations.JsonProtocol.serializeRecover(annos)
     (firrtlStream, annoStream)
   }
 }

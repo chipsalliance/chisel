@@ -30,7 +30,7 @@ object prefix {
     */
   def apply[T](name: HasId)(f: => T): T = {
     val pushed = Builder.pushPrefix(name)
-    val ret = f
+    val ret    = f
     if (pushed) {
       Builder.popPrefix()
     }
@@ -79,7 +79,7 @@ object noPrefix {
   def apply[T](f: => T): T = {
     val prefix = Builder.getPrefix
     Builder.clearPrefix()
-    val ret = f
+    val ret    = f
     Builder.setPrefix(prefix)
     ret
   }
@@ -95,11 +95,11 @@ object skipPrefix {
     * @return The return value of the provided function
     */
   def apply[T](f: => T): T = {
-    val prefix = Builder.getPrefix
+    val prefix  = Builder.getPrefix
     val skipped = if (prefix.nonEmpty) prefix.tail else prefix
     Builder.clearPrefix()
     Builder.setPrefix(skipped)
-    val ret = f
+    val ret     = f
     Builder.clearPrefix()
     Builder.setPrefix(prefix)
     ret

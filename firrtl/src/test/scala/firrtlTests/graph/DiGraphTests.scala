@@ -73,14 +73,14 @@ class DiGraphTests extends FirrtlFlatSpec {
   }
 
   "Graph summation" should "be order-wise equivalent to original" in {
-    val first = acyclicGraph.subgraph(Set("a", "b", "c"))
+    val first  = acyclicGraph.subgraph(Set("a", "b", "c"))
     val second = acyclicGraph.subgraph(Set("b", "c", "d", "e"))
 
     (first + second).getEdgeMap should equal(acyclicGraph.getEdgeMap)
   }
 
   it should "be idempotent" in {
-    val first = acyclicGraph.subgraph(Set("a", "b", "c"))
+    val first  = acyclicGraph.subgraph(Set("a", "b", "c"))
     val second = acyclicGraph.subgraph(Set("b", "c", "d", "e"))
 
     (first + second + second + second).getEdgeMap should equal(acyclicGraph.getEdgeMap)
@@ -88,8 +88,8 @@ class DiGraphTests extends FirrtlFlatSpec {
 
   "linearize" should "not cause a stack overflow on very large graphs" in {
     // Graph of 0 -> 1, 1 -> 2, etc.
-    val N = 10000
-    val edges = (1 to N).zipWithIndex.map({ case (n, idx) => idx -> Set(n) }).toMap
+    val N        = 10000
+    val edges    = (1 to N).zipWithIndex.map({ case (n, idx) => idx -> Set(n) }).toMap
     val bigGraph = DiGraph(edges + (N -> Set.empty[Int]))
     bigGraph.linearize should be(0 to N)
   }

@@ -12,15 +12,15 @@ import chisel3.experimental.SourceInfo
 private[chisel3] object WarningID extends Enumeration {
   type WarningID = Value
 
-  val NoID = Value(0) // Reserved
-  val UnsafeUIntCastToEnum = Value(1)
-  val DynamicBitSelectTooWide = Value(2)
+  val NoID                      = Value(0) // Reserved
+  val UnsafeUIntCastToEnum      = Value(1)
+  val DynamicBitSelectTooWide   = Value(2)
   val DynamicBitSelectTooNarrow = Value(3)
-  val DynamicIndexTooWide = Value(4)
-  val DynamicIndexTooNarrow = Value(5)
-  val ExtractFromVecSizeZero = Value(6)
+  val DynamicIndexTooWide       = Value(4)
+  val DynamicIndexTooNarrow     = Value(5)
+  val ExtractFromVecSizeZero    = Value(6)
   val BundleLiteralValueTooWide = Value(7)
-  val AsTypeOfReadOnly = Value(8)
+  val AsTypeOfReadOnly          = Value(8)
 }
 import WarningID.WarningID
 
@@ -31,7 +31,7 @@ private[chisel3] object Warning {
     val num = f"[W${id.id}%03d] "
     new Warning(info, id, num + msg)
   }
-  def noInfo(id: WarningID, msg: String): Warning = {
+  def noInfo(id: WarningID, msg: String): Warning                           = {
     implicit val info = SourceInfo.materializeFromStacktrace
     Warning(id, msg)
   }

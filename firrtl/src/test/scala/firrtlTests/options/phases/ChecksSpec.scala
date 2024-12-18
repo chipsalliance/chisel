@@ -11,7 +11,7 @@ import org.scalatest.matchers.should.Matchers
 class ChecksSpec extends AnyFlatSpec with Matchers {
 
   val targetDir = TargetDirAnnotation("foo")
-  val annoOut = OutputAnnotationFileAnnotation("bar")
+  val annoOut   = OutputAnnotationFileAnnotation("bar")
 
   class Fixture { val phase: Phase = new Checks }
 

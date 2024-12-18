@@ -41,15 +41,15 @@ class TappedInterfaceSpec extends AnyFunSpec with Matchers {
       * specification-set interface.
       */
     class InternalModule extends Module {
-      val x = IO(Input(Bool()))
-      val y = IO(Output(Bool()))
+      val x    = IO(Input(Bool()))
+      val y    = IO(Output(Bool()))
       val lfsr = chisel3.util.random.LFSR(16)
 
       // things that will get tapped
       val internalWire = Wire(Bool())
-      val internalReg = RegInit(Bool(), false.B)
+      val internalReg  = RegInit(Bool(), false.B)
       internalWire := lfsr(0)
-      internalReg := lfsr(1)
+      internalReg  := lfsr(1)
 
       y := x ^ internalWire ^ internalReg
     }
@@ -58,15 +58,15 @@ class TappedInterfaceSpec extends AnyFunSpec with Matchers {
       * interface that looks like the specification-set interface.
       */
     class WrapperModule extends Module {
-      val hello = IO(Input(Bool()))
-      val world = IO(Output(Bool()))
+      val hello   = IO(Input(Bool()))
+      val world   = IO(Output(Bool()))
       val tapWire = IO(Output(RWProbe(Bool())))
-      val tapReg = IO(Output(RWProbe(Bool())))
+      val tapReg  = IO(Output(RWProbe(Bool())))
 
       val internalModule = Module(new InternalModule)
 
       internalModule.x := hello
-      world := internalModule.y
+      world            := internalModule.y
 
       define(tapWire, rwTap(internalModule.internalWire))
       define(tapReg, rwTap(internalModule.internalReg))
@@ -81,10 +81,10 @@ class TappedInterfaceSpec extends AnyFunSpec with Matchers {
         override def genModule() = new WrapperModule
 
         override def portMap = Seq(
-          _.hello -> _.a,
-          _.world -> _.b,
+          _.hello   -> _.a,
+          _.world   -> _.b,
           _.tapWire -> _.c,
-          _.tapReg -> _.d
+          _.tapReg  -> _.d
         )
 
         override def properties = {}
@@ -107,7 +107,7 @@ class TappedInterfaceSpec extends AnyFunSpec with Matchers {
       val baz = chisel3.Module(new WrapperModuleInterface.Wrapper.BlackBox)
 
       baz.io.a := a
-      b := baz.io.b
+      b        := baz.io.b
 
       forceInitial(baz.io.c, true.B)
       force(baz.io.d, false.B)

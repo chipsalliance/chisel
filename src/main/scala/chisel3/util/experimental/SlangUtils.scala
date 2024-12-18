@@ -39,10 +39,10 @@ object SlangUtils {
                     .findFirstMatchIn(value.value("type").str) match {
                     case Some(m) =>
                       m.group("MSB").toInt - m.group("LSB").toInt + 1
-                    case None =>
+                    case None    =>
                       value.value("type").str match {
                         case "logic" => 1
-                        case _ =>
+                        case _       =>
                           throw new ChiselException(
                             s"Unhandled type ${value.value("type").str}"
                           )
@@ -56,9 +56,9 @@ object SlangUtils {
                 }
               }
             )
-          case _ => None
+          case _                                                               => None
         }
-      case _ => None
+      case _                                                                   => None
     }
   }.to(collection.immutable.SeqMap)
 
@@ -67,7 +67,7 @@ object SlangUtils {
     val names = verilogAst.obj("design").obj("members").arr.flatMap {
       case value: ujson.Obj if value.value("kind").strOpt.contains("Instance") =>
         Some(value.value("name").str)
-      case _ => None
+      case _                                                                   => None
     }
     require(names.length == 1, "only support one verilog module currently")
     names.head
@@ -80,20 +80,20 @@ object SlangUtils {
         value.value("body").obj.value("members").arr.flatMap {
           case value: ujson.Obj if value.value("kind").strOpt.contains("Parameter") =>
             Some(value.value("name").str -> (value.value("type").str match {
-              case "real" => DoubleParam(value.value("value").str.toDouble)
+              case "real"   => DoubleParam(value.value("value").str.toDouble)
               case "string" =>
                 StringParam(
                   value.value("value").str.stripPrefix("\"").stripSuffix("\"")
                 )
-              case "int" => IntParam(BigInt(value.value("value").str.toInt))
-              case lit =>
+              case "int"    => IntParam(BigInt(value.value("value").str.toInt))
+              case lit      =>
                 throw new ChiselException(
                   s"unsupported literal: $lit in\n ${ujson.reformat(value, 2)}"
                 )
             }))
-          case _ => None
+          case _                                                                    => None
         }
-      case _ => None
+      case _                                                                   => None
     }
   }.toSeq
 }

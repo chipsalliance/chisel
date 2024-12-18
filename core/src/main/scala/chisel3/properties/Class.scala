@@ -34,7 +34,7 @@ class Class extends BaseModule {
     for (id <- getIds) {
       id match {
         case id: ModuleClone[_] => id.setRefAndPortsRef(_namespace) // special handling
-        case id: DynamicObject => {
+        case id: DynamicObject  => {
           // Force name of the Object, and set its Property[ClassType] type's ref to the Object.
           // The type's ref can't be set within instantiate, because the Object hasn't been named yet.
           // This also updates the source Class ref to the DynamicObject ref now that it's named.
@@ -42,28 +42,27 @@ class Class extends BaseModule {
           id.getReference.setRef(id.getRef)
           id.setSourceClassRef()
         }
-        case id: StaticObject => {
+        case id: StaticObject   => {
           // Set the StaticObject's ref and Property[ClassType] type's ref to the BaseModule for the Class.
           // These refs can't be set upon instantiation, because the ModuleClone hasn't been named yet.
           id.setRef(id.getInstanceModule.getRef)
           id.getReference.setRef(id.getInstanceModule.getRef)
         }
-        case id: Data =>
+        case id: Data           =>
           if (id.isSynthesizable) {
             id.topBinding match {
               case ClassBinding(_) =>
                 id.forceName(default = "_T", _namespace)
-              case _ => ()
+              case _               => ()
             }
           }
-        case _ => ()
+        case _                  => ()
       }
     }
 
     // Create IR Ports and set the firrtlPorts variable.
-    val ports = getModulePortsAndLocators.map {
-      case (port, sourceInfo) =>
-        Port(port, port.specifiedDirection, sourceInfo)
+    val ports = getModulePortsAndLocators.map { case (port, sourceInfo) =>
+      Port(port, port.specifiedDirection, sourceInfo)
     }
 
     // No more commands.
@@ -118,7 +117,7 @@ case class ClassType private[chisel3] (name: String) { self =>
   sealed trait Type
 
   private object Type {
-    implicit val classTypeProvider: ClassTypeProvider[Type] = ClassTypeProvider(name)
+    implicit val classTypeProvider: ClassTypeProvider[Type]                                       = ClassTypeProvider(name)
     implicit val propertyType: ClassTypePropertyType.Aux[Property[ClassType] with self.Type, Arg] =
       new ClassTypePropertyType[Property[ClassType] with self.Type](classTypeProvider.classType) {
         override def convert(value: Underlying, ctx: Component, info: SourceInfo): fir.Expression =
@@ -131,14 +130,14 @@ case class ClassType private[chisel3] (name: String) { self =>
 }
 
 object ClassType {
-  private def apply(name:            String): ClassType = new ClassType(name)
+  private def apply(name: String): ClassType            = new ClassType(name)
   def unsafeGetClassTypeByName(name: String): ClassType = ClassType(name)
 }
 
 sealed trait AnyClassType
 
 object AnyClassType {
-  implicit val classTypeProvider: ClassTypeProvider[AnyClassType] = ClassTypeProvider(fir.AnyRefPropertyType)
+  implicit val classTypeProvider: ClassTypeProvider[AnyClassType]                                             = ClassTypeProvider(fir.AnyRefPropertyType)
   implicit val propertyType: RecursivePropertyType.Aux[Property[ClassType] with AnyClassType, ClassType, Arg] =
     new RecursivePropertyType[Property[ClassType] with AnyClassType] {
       type Type = ClassType
@@ -185,11 +184,11 @@ object Class {
         rm.addCommand(DefObject(sourceInfo, obj, obj.className.name))
         classProp.bind(OpBinding(rm, Builder.currentBlock), SpecifiedDirection.Unspecified)
       }
-      case cls: Class => {
+      case cls: Class    => {
         cls.addCommand(DefObject(sourceInfo, obj, obj.className.name))
         classProp.bind(ClassBinding(cls), SpecifiedDirection.Unspecified)
       }
-      case _ => throwException("Internal Error! Property connection can only occur within RawModule or Class.")
+      case _             => throwException("Internal Error! Property connection can only occur within RawModule or Class.")
     }
 
     obj
@@ -252,7 +251,7 @@ object Class {
 
       // Get a StaticObject for bookkeeping.
       val staticObject = new StaticObject(baseModule)
-      val ref = staticObject.getReference
+      val ref          = staticObject.getReference
 
       // Bind the source type.
       val contextMod = Builder.referenceUserContainer
@@ -260,10 +259,10 @@ object Class {
         case rm: RawModule => {
           ref.bind(OpBinding(rm, Builder.currentBlock), SpecifiedDirection.Unspecified)
         }
-        case cls: Class => {
+        case cls: Class    => {
           ref.bind(ClassBinding(cls), SpecifiedDirection.Unspecified)
         }
-        case _ => throwException("Internal Error! Property connection can only occur within RawModule or Class.")
+        case _             => throwException("Internal Error! Property connection can only occur within RawModule or Class.")
       }
 
       ref

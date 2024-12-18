@@ -10,7 +10,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 class ChiselAnnotationsSpecFoo extends RawModule {
-  val in = IO(Input(Bool()))
+  val in  = IO(Input(Bool()))
   val out = IO(Output(Bool()))
   out := ~in
 }
@@ -36,7 +36,7 @@ class ChiselAnnotationsSpec extends AnyFlatSpec with Matchers {
 
   it should "elaborate to a ChiselCircuitAnnotation" in {
     val annotation = ChiselGeneratorAnnotation(() => new ChiselAnnotationsSpecFoo)
-    val res = annotation.elaborate
+    val res        = annotation.elaborate
     res(0) shouldBe a[ChiselCircuitAnnotation]
     res(1) shouldBe a[DesignAnnotation[_]]
   }
@@ -50,20 +50,20 @@ class ChiselAnnotationsSpec extends AnyFlatSpec with Matchers {
 
   it should "elaborate a module without parameters" in {
     val annotation = ChiselGeneratorAnnotation("chiselTests.stage.ChiselAnnotationsSpecFoo()")
-    val res = annotation.elaborate
+    val res        = annotation.elaborate
     res(0) shouldBe a[ChiselCircuitAnnotation]
     res(1) shouldBe a[DesignAnnotation[_]]
   }
 
   it should "elaborate a module with parameters" in {
     val annotation = ChiselGeneratorAnnotation("""chiselTests.stage.ChiselAnnotationsSpecBaz("hello")""")
-    val res = annotation.elaborate
+    val res        = annotation.elaborate
     res(0) shouldBe a[ChiselCircuitAnnotation]
     res(1) shouldBe a[DesignAnnotation[_]]
   }
 
   it should "throw an exception if elaboration from a String refers to nonexistant class" in {
-    val bar = "chiselTests.stage.ChiselAnnotationsSpecBar()"
+    val bar        = "chiselTests.stage.ChiselAnnotationsSpecBar()"
     val annotation = ChiselGeneratorAnnotation(bar)
     intercept[OptionsException] { annotation.elaborate }.getMessage should startWith(
       s"Unable to run module generator '$bar' because it or one of its arguments could not be found"

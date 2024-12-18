@@ -54,8 +54,8 @@ private[chisel3] object SeqUtils {
       in.head._2
     } else {
       val r = in.view.reverse
-      r.tail.foldLeft(r.head._2) {
-        case (alt, (sel, elt)) => Mux(sel, elt, alt)
+      r.tail.foldLeft(r.head._2) { case (alt, (sel, elt)) =>
+        Mux(sel, elt, alt)
       }
     }
   }
@@ -85,9 +85,8 @@ private[chisel3] object SeqUtils {
         case _: SInt =>
           // SInt's have to be managed carefully so sign extension works
 
-          val sInts: Iterable[(Bool, SInt)] = in.collect {
-            case (s: Bool, f: SInt) =>
-              (s, f.asTypeOf(output).asInstanceOf[SInt])
+          val sInts: Iterable[(Bool, SInt)] = in.collect { case (s: Bool, f: SInt) =>
+            (s, f.asTypeOf(output).asInstanceOf[SInt])
           }
 
           val masked = for ((s, i) <- sInts) yield Mux(s, i, 0.S)
@@ -96,13 +95,12 @@ private[chisel3] object SeqUtils {
         case agg: Aggregate =>
           val allDefineWidth = in.forall { case (_, element) => element.widthOption.isDefined }
           if (allDefineWidth) {
-            val out = Wire(agg)
+            val out           = Wire(agg)
             val (sel, inData) = in.unzip
-            val inElts = inData.map(_.asInstanceOf[Aggregate].getElements)
+            val inElts        = inData.map(_.asInstanceOf[Aggregate].getElements)
             // We want to iterate on the columns of inElts, so we transpose
-            out.getElements.zip(inElts.transpose).foreach {
-              case (outElt, elts) =>
-                outElt := oneHotMux(sel.zip(elts))
+            out.getElements.zip(inElts.transpose).foreach { case (outElt, elts) =>
+              outElt := oneHotMux(sel.zip(elts))
             }
             out.asInstanceOf[T]
           } else {

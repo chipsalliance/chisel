@@ -16,12 +16,12 @@ import chisel3.util.random.LFSR
   * @param useSyncReadMem True uses SyncReadMem instead of Mem as an internal memory element
   */
 class ThingsPassThroughFlushQueueTester(
-  elements:       Seq[Int],
-  queueDepth:     Int,
-  bitWidth:       Int,
-  tap:            Int,
-  useSyncReadMem: Boolean)
-    extends ThingsPassThroughTester(elements, queueDepth, bitWidth, tap, useSyncReadMem, hasFlush = true)
+  elements: Seq[Int],
+  queueDepth: Int,
+  bitWidth: Int,
+  tap: Int,
+  useSyncReadMem: Boolean
+) extends ThingsPassThroughTester(elements, queueDepth, bitWidth, tap, useSyncReadMem, hasFlush = true)
 
 /** Generic flush queue tester base class
   *
@@ -32,19 +32,19 @@ class ThingsPassThroughFlushQueueTester(
   * @param useSyncReadMem True uses SyncReadMem instead of Mem as an internal memory element
   */
 abstract class FlushQueueTesterBase(
-  elements:       Seq[Int],
-  queueDepth:     Int,
-  bitWidth:       Int,
-  tap:            Int,
-  useSyncReadMem: Boolean)
-    extends BasicTester {
-  val q = Module(new Queue(UInt(bitWidth.W), queueDepth, hasFlush = true))
-  val elems = VecInit(elements.map(_.U))
-  val inCnt = Counter(elements.length + 1)
-  val outCnt = RegInit(0.U(log2Ceil(elements.length).W))
+  elements: Seq[Int],
+  queueDepth: Int,
+  bitWidth: Int,
+  tap: Int,
+  useSyncReadMem: Boolean
+) extends BasicTester {
+  val q        = Module(new Queue(UInt(bitWidth.W), queueDepth, hasFlush = true))
+  val elems    = VecInit(elements.map(_.U))
+  val inCnt    = Counter(elements.length + 1)
+  val outCnt   = RegInit(0.U(log2Ceil(elements.length).W))
   val currQCnt = RegInit(0.U(log2Ceil(5).W))
 
-  val flush: Bool = WireInit(false.B)
+  val flush: Bool   = WireInit(false.B)
   val flushRegister = RegNext(flush, init = false.B)
   q.io.flush.get := flush
   q.io.enq.valid := (inCnt.value < elements.length.U)
@@ -53,13 +53,13 @@ abstract class FlushQueueTesterBase(
   q.io.enq.bits := elems(inCnt.value)
   when(q.io.enq.fire) {
     inCnt.inc()
-    currQCnt := currQCnt + 1.U //counts how many items have been enqueued
+    currQCnt := currQCnt + 1.U // counts how many items have been enqueued
   }
   when(q.io.deq.fire) {
-    assert(flushRegister === false.B) //check queue isn't flushed (can't dequeue an empty queue)
+    assert(flushRegister === false.B) // check queue isn't flushed (can't dequeue an empty queue)
   }
-  when(flushRegister) { //Internal signal maybe_full is a register so some signals update on the next cycle
-    //check that queue gets flushed when queue is full
+  when(flushRegister) { // Internal signal maybe_full is a register so some signals update on the next cycle
+    // check that queue gets flushed when queue is full
     assert(q.io.count === 0.U)
     assert(!q.io.deq.valid, "Expected to not be able to dequeue when flush is asserted the previous cycle")
     assert(
@@ -67,7 +67,7 @@ abstract class FlushQueueTesterBase(
       "Expected enqueue to be ready when flush was asserted the previous cycle because queue should be empty"
     )
   }
-  when(inCnt.value === elements.length.U) { //stop when all entries are enqueued
+  when(inCnt.value === elements.length.U) { // stop when all entries are enqueued
     stop()
   }
 }
@@ -82,11 +82,11 @@ abstract class FlushQueueTesterBase(
   */
 class QueueGetsFlushedTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean)
     extends FlushQueueTesterBase(elements, queueDepth, bitWidth, tap, useSyncReadMem) {
-  flush := LFSR(16)((tap + 3) % 16) //testing a flush when flush is called randomly
+  flush := LFSR(16)((tap + 3) % 16) // testing a flush when flush is called randomly
   val halfCnt = (queueDepth + 1) / 2
 
   when(q.io.deq.fire) {
-    //ensure that what comes out is what comes in
+    // ensure that what comes out is what comes in
     assert(currQCnt <= queueDepth.U)
     assert(elems(outCnt) === q.io.deq.bits)
     outCnt := outCnt + 1.U
@@ -96,8 +96,8 @@ class QueueGetsFlushedTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int,
   }
   when(flush) {
     assert(currQCnt === 0.U || q.io.deq.valid)
-    outCnt := outCnt + Mux(q.io.enq.fire, (currQCnt + 1.U), currQCnt)
-    currQCnt := 0.U //resets the number of items currently inside queue
+    outCnt   := outCnt + Mux(q.io.enq.fire, (currQCnt + 1.U), currQCnt)
+    currQCnt := 0.U // resets the number of items currently inside queue
   }
 }
 
@@ -112,10 +112,10 @@ class QueueGetsFlushedTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int,
 class EmptyFlushEdgecaseTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean)
     extends FlushQueueTesterBase(elements, queueDepth, bitWidth, tap, useSyncReadMem) {
   val cycleCounter = Counter(elements.length + 1)
-  cycleCounter.inc() //counts every cycle
+  cycleCounter.inc() // counts every cycle
 
-  //testing a flush when queue is empty
-  flush := (cycleCounter.value === 0.U && inCnt.value === 0.U) //flushed only before anything is enqueued
+  // testing a flush when queue is empty
+  flush          := (cycleCounter.value === 0.U && inCnt.value === 0.U) // flushed only before anything is enqueued
   q.io.enq.valid := (inCnt.value < elements.length.U) && !flush
 
   when(q.io.deq.fire) {
@@ -133,23 +133,23 @@ class EmptyFlushEdgecaseTester(elements: Seq[Int], queueDepth: Int, bitWidth: In
   * @param useSyncReadMem True uses SyncReadMem instead of Mem as an internal memory element
   */
 class EnqueueEmptyFlushEdgecaseTester(
-  elements:       Seq[Int],
-  queueDepth:     Int,
-  bitWidth:       Int,
-  tap:            Int,
-  useSyncReadMem: Boolean)
-    extends FlushQueueTesterBase(elements, queueDepth, bitWidth, tap, useSyncReadMem) {
+  elements: Seq[Int],
+  queueDepth: Int,
+  bitWidth: Int,
+  tap: Int,
+  useSyncReadMem: Boolean
+) extends FlushQueueTesterBase(elements, queueDepth, bitWidth, tap, useSyncReadMem) {
   val cycleCounter = Counter(elements.length + 1)
-  val outCounter = Counter(elements.length + 1)
+  val outCounter   = Counter(elements.length + 1)
 
-  //testing an enqueue during a flush
-  flush := (cycleCounter.value === 0.U && inCnt.value === 0.U) //flushed only before anything is enqueued
-  cycleCounter.inc() //counts every cycle
+  // testing an enqueue during a flush
+  flush := (cycleCounter.value === 0.U && inCnt.value === 0.U) // flushed only before anything is enqueued
+  cycleCounter.inc() // counts every cycle
 
   when(q.io.deq.fire) {
-    //flush and enqueue were both active on the first cycle,
-    //so that element is flushed immediately which makes outCnt off by one
-    assert(elems(outCounter.value + 1.U) === q.io.deq.bits) //ensure that what comes out is what comes in
+    // flush and enqueue were both active on the first cycle,
+    // so that element is flushed immediately which makes outCnt off by one
+    assert(elems(outCounter.value + 1.U) === q.io.deq.bits) // ensure that what comes out is what comes in
     outCounter.inc()
   }
 }
@@ -163,18 +163,18 @@ class EnqueueEmptyFlushEdgecaseTester(
   * @param useSyncReadMem True uses SyncReadMem instead of Mem as an internal memory element
   */
 class FullQueueFlushEdgecaseTester(
-  elements:       Seq[Int],
-  queueDepth:     Int,
-  bitWidth:       Int,
-  tap:            Int,
-  useSyncReadMem: Boolean)
-    extends FlushQueueTesterBase(elements, queueDepth, bitWidth, tap, useSyncReadMem) {
+  elements: Seq[Int],
+  queueDepth: Int,
+  bitWidth: Int,
+  tap: Int,
+  useSyncReadMem: Boolean
+) extends FlushQueueTesterBase(elements, queueDepth, bitWidth, tap, useSyncReadMem) {
 
-  //testing a flush when queue is full
+  // testing a flush when queue is full
   flush := (currQCnt === queueDepth.U)
 
   when(q.io.deq.fire) {
-    //ensure that what comes out is what comes in
+    // ensure that what comes out is what comes in
     assert(currQCnt <= queueDepth.U)
     assert(elems(outCnt) === q.io.deq.bits)
     outCnt := outCnt + 1.U
@@ -183,8 +183,8 @@ class FullQueueFlushEdgecaseTester(
     }
   }
   when(flush) {
-    outCnt := outCnt + currQCnt
-    currQCnt := 0.U //resets the number of items currently inside queue
+    outCnt   := outCnt + currQCnt
+    currQCnt := 0.U // resets the number of items currently inside queue
     assert(currQCnt === 0.U || q.io.deq.valid)
   }
 }
@@ -198,33 +198,33 @@ class FullQueueFlushEdgecaseTester(
   * @param useSyncReadMem True uses SyncReadMem instead of Mem as an internal memory element
   */
 class DequeueFullQueueEdgecaseTester(
-  elements:       Seq[Int],
-  queueDepth:     Int,
-  bitWidth:       Int,
-  tap:            Int,
-  useSyncReadMem: Boolean)
-    extends FlushQueueTesterBase(elements, queueDepth, bitWidth, tap, useSyncReadMem) {
-  //Queue should be able to dequeue when queue is not empty and flush is high
+  elements: Seq[Int],
+  queueDepth: Int,
+  bitWidth: Int,
+  tap: Int,
+  useSyncReadMem: Boolean
+) extends FlushQueueTesterBase(elements, queueDepth, bitWidth, tap, useSyncReadMem) {
+  // Queue should be able to dequeue when queue is not empty and flush is high
 
-  //testing a flush when dequeue is called
-  flush := currQCnt === (queueDepth / 2).U
+  // testing a flush when dequeue is called
+  flush          := currQCnt === (queueDepth / 2).U
   q.io.enq.valid := !flushRegister
   q.io.deq.ready := flush
 
   when(q.io.deq.fire) {
-    //ensure that what comes out is what comes in
+    // ensure that what comes out is what comes in
     assert(currQCnt <= queueDepth.U)
     assert(elems(outCnt) === q.io.deq.bits)
     assert(currQCnt > 0.U)
   }
   when(flush) {
-    //The outcount register is one count behind because the dequeue happens at the same time as the flush
-    outCnt := outCnt + currQCnt + 1.U
-    currQCnt := 0.U //resets the number of items currently inside queue
+    // The outcount register is one count behind because the dequeue happens at the same time as the flush
+    outCnt   := outCnt + currQCnt + 1.U
+    currQCnt := 0.U // resets the number of items currently inside queue
     assert(currQCnt === 0.U || q.io.deq.valid)
   }
   when(flushRegister) {
-    //check that queue gets flushed when queue is full
+    // check that queue gets flushed when queue is full
     assert(q.io.deq.fire === false.B)
   }
 

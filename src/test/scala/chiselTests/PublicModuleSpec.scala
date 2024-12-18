@@ -22,7 +22,7 @@ class PublicModuleSpec extends ChiselFlatSpec with MatchesAndOmits {
   class Qux extends RawModule
 
   class Baz extends RawModule with Public {
-    val qux = Module(new Qux)
+    val qux               = Module(new Qux)
     override def isPublic = false
   }
 
@@ -31,9 +31,9 @@ class PublicModuleSpec extends ChiselFlatSpec with MatchesAndOmits {
   }
 
   class Foo extends RawModule {
-    val bar = Module(new Bar)
-    val quz = Instance(Definition(new Quz))
-    val corge = Instance(Definition(new Corge))
+    val bar    = Module(new Bar)
+    val quz    = Instance(Definition(new Quz))
+    val corge  = Instance(Definition(new Corge))
     val grault = Instance(Definition(new Grault))
   }
 

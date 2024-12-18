@@ -6,18 +6,18 @@ import chisel3._
 import circt.stage.ChiselStage
 
 class MemorySearch extends Module {
-  val io = IO(new Bundle {
-    val target = Input(UInt(4.W))
-    val en = Input(Bool())
-    val done = Output(Bool())
+  val io    = IO(new Bundle {
+    val target  = Input(UInt(4.W))
+    val en      = Input(Bool())
+    val done    = Output(Bool())
     val address = Output(UInt(3.W))
   })
-  val vals = Array(0, 4, 15, 14, 2, 5, 13)
+  val vals  = Array(0, 4, 15, 14, 2, 5, 13)
   val index = RegInit(0.U(3.W))
-  val elts = VecInit(vals.toIndexedSeq.map(_.asUInt(4.W)))
+  val elts  = VecInit(vals.toIndexedSeq.map(_.asUInt(4.W)))
   // val elts  = Mem(UInt(32.W), 8) TODO ????
-  val elt = elts(index)
-  val end = !io.en && ((elt === io.target) || (index === 7.U))
+  val elt   = elts(index)
+  val end   = !io.en && ((elt === io.target) || (index === 7.U))
   when(io.en) {
     index := 0.U
   }.elsewhen(!end) {

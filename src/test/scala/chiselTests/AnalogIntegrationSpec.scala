@@ -13,7 +13,7 @@ import chisel3.experimental._
  */
 
 class AnalogBlackBoxPort extends Bundle {
-  val in = Input(Valid(UInt(32.W)))
+  val in  = Input(Valid(UInt(32.W)))
   val out = Output(UInt(32.W))
 }
 
@@ -21,7 +21,7 @@ class AnalogBlackBoxPort extends Bundle {
 // Has multiple ports for driving and checking but only one shared bus
 class AnalogBlackBoxIO(val n: Int) extends Bundle {
   require(n > 0)
-  val bus = Analog(32.W)
+  val bus  = Analog(32.W)
   val port = Vec(n, new AnalogBlackBoxPort)
 }
 
@@ -41,7 +41,7 @@ trait AnalogBlackBoxModuleIntf extends Module {
 
 // AnalogBlackBox wrapper, which extends Module to present the common io._ interface
 class AnalogBlackBoxModule(index: Int) extends AnalogBlackBoxModuleIntf {
-  val io = IO(new AnalogBlackBoxIO(1))
+  val io   = IO(new AnalogBlackBoxIO(1))
   val impl = Module(new AnalogBlackBox(index))
   io <> impl.io
 }
@@ -49,11 +49,11 @@ class AnalogBlackBoxModule(index: Int) extends AnalogBlackBoxModuleIntf {
 // Wraps up n blackboxes, connecing their buses and simply forwarding their ports up
 class AnalogBlackBoxWrapper(n: Int, idxs: Seq[Int]) extends AnalogBlackBoxModuleIntf {
   require(n > 0)
-  val io = IO(new AnalogBlackBoxIO(n))
+  val io  = IO(new AnalogBlackBoxIO(n))
   val bbs = idxs.map(i => Module(new AnalogBlackBoxModule(i)))
-  io.bus <> bbs.head.io.bus // Always bulk connect io.bus to first bus
+  io.bus <> bbs.head.io.bus         // Always bulk connect io.bus to first bus
   io.port <> bbs.flatMap(_.io.port) // Connect ports
-  attach(bbs.map(_.io.bus): _*) // Attach all the buses
+  attach(bbs.map(_.io.bus): _*)     // Attach all the buses
 }
 
 // Common superclass for AnalogDUT and AnalogSmallDUT
@@ -82,7 +82,7 @@ class AnalogDUT extends AnalogDUTModule(5) { // 5 BlackBoxes
   // Attach first 3 Modules
   attach(mods.take(3).map(_.io.bus): _*)
   // Attach last module to 1st through AnalogConnector
-  val con = Module(new AnalogConnector)
+  val con  = Module(new AnalogConnector)
   attach(con.io.bus1, mods.head.io.bus)
   attach(con.io.bus2, mods.last.io.bus)
 }
@@ -117,13 +117,13 @@ class AnalogIntegrationTester(mod: => AnalogDUTModule) extends BasicTester {
     printf(p"@$cycle: BlackBox #$idx: $dut\n")
     // Defaults
     dut.in.valid := false.B
-    dut.in.bits := BusValue
+    dut.in.bits  := BusValue
     // Error checking
     assert(dut.out === expectedValue)
 
     when(cycle === idx.U) {
       expectedValue := BusValue + idx.U
-      dut.in.valid := true.B
+      dut.in.valid  := true.B
 
     }
   }

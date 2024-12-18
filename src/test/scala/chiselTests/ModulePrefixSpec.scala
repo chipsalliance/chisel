@@ -14,7 +14,7 @@ object ModulePrefixSpec {
   // This has to be defined at the top-level because @instantiable doesn't work when nested.
   @instantiable
   class AddOne(width: Int) extends Module {
-    @public val in = IO(Input(UInt(width.W)))
+    @public val in  = IO(Input(UInt(width.W)))
     @public val out = IO(Output(UInt(width.W)))
     out := in + 1.U
   }
@@ -84,8 +84,8 @@ class ModulePrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with
   it should "Instantiate should create distinct module definitions when instantiated with distinct prefixes" in {
     class Top extends Module {
       val width = 8
-      val in = IO(Input(UInt(width.W)))
-      val out = IO(Output(UInt(width.W)))
+      val in    = IO(Input(UInt(width.W)))
+      val out   = IO(Output(UInt(width.W)))
 
       val foo_inst = withModulePrefix("Foo") {
         Instantiate(new AddOne(width))
@@ -100,8 +100,8 @@ class ModulePrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with
 
       foo_inst.in := in
       bar_inst.in := foo_inst.out
-      out := bar_inst.out
-      np_inst.in := in
+      out         := bar_inst.out
+      np_inst.in  := in
     }
 
     val chirrtl = emitCHIRRTL(new Top)
@@ -121,9 +121,9 @@ class ModulePrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with
 
   it should "Instantiate should reference the same module definitions when instantiated with the same prefix" in {
     class Top extends Module {
-      val width = 8
-      val in = IO(Input(UInt(width.W)))
-      val out = IO(Output(UInt(width.W)))
+      val width     = 8
+      val in        = IO(Input(UInt(width.W)))
+      val out       = IO(Output(UInt(width.W)))
       val foo_inst1 = withModulePrefix("Foo") {
         Instantiate(new AddOne(width))
       }
@@ -134,7 +134,7 @@ class ModulePrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with
 
       foo_inst1.in := in
       foo_inst2.in := in
-      out := foo_inst1.out
+      out          := foo_inst1.out
     }
 
     val chirrtl = emitCHIRRTL(new Top)
@@ -152,10 +152,10 @@ class ModulePrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with
   it should "Memories work" in {
     class Top extends Module {
       val io = IO(new Bundle {
-        val enable = Input(Bool())
-        val write = Input(Bool())
-        val addr = Input(UInt(10.W))
-        val dataIn = Input(UInt(8.W))
+        val enable  = Input(Bool())
+        val write   = Input(Bool())
+        val addr    = Input(UInt(10.W))
+        val dataIn  = Input(UInt(8.W))
         val dataOut = Output(UInt(8.W))
       })
 
@@ -304,12 +304,12 @@ class ModulePrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with
 
     class Top extends RawModule {
       override def localModulePrefix = Some("Prefix")
-      val foo = Module(new Foo)
-      val bar = Module(new Bar)
+      val foo                        = Module(new Foo)
+      val bar                        = Module(new Bar)
     }
 
     val chirrtl = emitCHIRRTL(new Top)
-    val lines =
+    val lines   =
       """
       module Prefix_Foo :
       module Prefix_Bar :
@@ -327,14 +327,14 @@ class ModulePrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with
     class Bar extends RawModule
 
     class Top extends RawModule {
-      override def localModulePrefix = Some("Prefix")
+      override def localModulePrefix              = Some("Prefix")
       override def localModulePrefixAppliesToSelf = false
-      val foo = Module(new Foo)
-      val bar = Module(new Bar)
+      val foo                                     = Module(new Foo)
+      val bar                                     = Module(new Bar)
     }
 
     val chirrtl = emitCHIRRTL(new Top)
-    val lines =
+    val lines   =
       """
       module Prefix_Foo :
       module Prefix_Bar :
@@ -355,15 +355,15 @@ class ModulePrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with
 
     class Top extends RawModule {
       override def localModulePrefix = Some("Outer")
-      val f1 = Module(new Foo)
+      val f1                         = Module(new Foo)
       withModulePrefix("Prefix") {
-        val f2 = Module(new Foo)
+        val f2  = Module(new Foo)
         val bar = Module(new Bar)
       }
     }
 
     val chirrtl = emitCHIRRTL(new Top)
-    val lines =
+    val lines   =
       """
       module Outer_Inner_Foo :
       module Outer_Prefix_Inner_Foo :
@@ -379,18 +379,18 @@ class ModulePrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with
 
   it should "omit the prefix if localModulePrefixUseSeparator is false" in {
     class Foo extends RawModule {
-      override def localModulePrefix = Some("Inner")
+      override def localModulePrefix             = Some("Inner")
       override def localModulePrefixUseSeparator = false
     }
     class Top extends RawModule {
-      override def localModulePrefix = Some("Outer")
-      override def localModulePrefixUseSeparator = false
+      override def localModulePrefix              = Some("Outer")
+      override def localModulePrefixUseSeparator  = false
       override def localModulePrefixAppliesToSelf = false
-      val foo = Module(new Foo)
+      val foo                                     = Module(new Foo)
     }
 
     val chirrtl = emitCHIRRTL(new Top)
-    val lines =
+    val lines   =
       """
       module OuterInnerFoo :
       module Top :
@@ -406,16 +406,16 @@ class ModulePrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with
     }
     class Bar extends RawModule {
       override def localModulePrefix = Some("Middle")
-      val foo = Module(new Foo)
+      val foo                        = Module(new Foo)
     }
     class Top extends RawModule {
-      override def localModulePrefix = Some("Outer")
+      override def localModulePrefix             = Some("Outer")
       override def localModulePrefixUseSeparator = false
-      val bar = Module(new Bar)
+      val bar                                    = Module(new Bar)
     }
 
     val chirrtl = emitCHIRRTL(new Top)
-    val lines =
+    val lines   =
       """
       module OuterMiddle_Inner_Foo :
       module OuterMiddle_Bar :
@@ -433,7 +433,7 @@ class ModulePrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with
     class Foo extends RawModule
     class Bar extends RawModule {
       override def localModulePrefix = Some("Outer")
-      val foo = withModulePrefix("Inner") {
+      val foo                        = withModulePrefix("Inner") {
         Module(new Foo)
       }
     }
@@ -441,8 +441,8 @@ class ModulePrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with
       val bar = Module(new Bar)
     }
     val (_, annos) = getFirrtlAndAnnos(new Top)
-    val dedupGroups = annos.collect {
-      case DedupGroupAnnotation(target, group) => target.module -> group
+    val dedupGroups = annos.collect { case DedupGroupAnnotation(target, group) =>
+      target.module -> group
     }
     dedupGroups should be(Seq("Outer_Inner_Foo" -> "Outer_Inner_Foo", "Outer_Bar" -> "Outer_Bar", "Top" -> "Top"))
   }

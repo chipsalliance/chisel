@@ -21,12 +21,12 @@ private[chisel3] trait DynamicObjectImpl extends HasId with NamedComponent {
 
   // Keep state for a reference to the Class from which the DynamicObject was created.
   // This is used to update the Class ref to the DynamicObject ref, for Classes created via DynamicObject.apply.
-  private var _class: Class = null
+  private var _class: Class                               = null
   protected[chisel3] def setSourceClass(cls: Class): Unit = {
     require(_class == null, "Cannot set DynamicObject class multiple times")
     _class = cls
   }
-  private def getSourceClass: Option[Class] = Option(_class)
+  private def getSourceClass: Option[Class]               = Option(_class)
 
   /** Set the source Class ref to this DynamicObject's ref.
     *

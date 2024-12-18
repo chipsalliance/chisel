@@ -21,17 +21,17 @@ object DataMirrorSpec {
     DataMirror.isVisible(internal.viewAs[Bool]) should be(true)
   }
   @instantiable
-  class Child(parent: RawModule) extends Module {
-    val inst = Module(new GrandChild(this))
-    @public val io = IO(Input(Bool()))
-    val internal = WireInit(false.B)
+  class Child(parent: RawModule)      extends Module {
+    val inst           = Module(new GrandChild(this))
+    @public val io     = IO(Input(Bool()))
+    val internal       = WireInit(false.B)
     lazy val underWhen = WireInit(false.B)
     when(true.B) {
       underWhen := true.B // trigger the lazy val
       DataMirror.isVisible(underWhen) should be(true)
       DataMirror.isVisible((internal, underWhen).viewAs) should be(true)
     }
-    val mixedView = (io, underWhen).viewAs
+    val mixedView      = (io, underWhen).viewAs
     DataMirror.getParent(inst) should be(Some(this))
     DataMirror.getParent(this) should be(Some(parent))
     DataMirror.isVisible(io) should be(true)
@@ -46,11 +46,11 @@ object DataMirrorSpec {
     DataMirror.isVisible(mixedView._1) should be(true)
   }
   @instantiable
-  class Parent extends Module {
-    @public val io = IO(Input(Bool()))
-    @public val inst = Module(new Child(this))
+  class Parent                        extends Module {
+    @public val io       = IO(Input(Bool()))
+    @public val inst     = Module(new Child(this))
     @public val internal = WireInit(io)
-    @public val tuple = (io, internal).viewAs
+    @public val tuple    = (io, internal).viewAs
     inst.io := internal
     DataMirror.getParent(inst) should be(Some(this))
     DataMirror.getParent(this) should be(None)
@@ -87,17 +87,17 @@ class DataMirrorSpec extends ChiselFlatSpec {
 
   it should "validate bindings" in {
     class MyModule extends Module {
-      val typ = UInt(4.W)
+      val typ    = UInt(4.W)
       val vectyp = Vec(8, UInt(4.W))
-      val io = IO(new Bundle {
-        val in = Input(UInt(4.W))
+      val io     = IO(new Bundle {
+        val in  = Input(UInt(4.W))
         val vec = Input(vectyp)
         val out = Output(UInt(4.W))
       })
-      val vec = Wire(vectyp)
+      val vec    = Wire(vectyp)
       val regvec = Reg(vectyp)
-      val wire = Wire(UInt(4.W))
-      val reg = RegNext(wire)
+      val wire   = Wire(UInt(4.W))
+      val reg    = RegNext(wire)
 
       assertIO(io)
       assertIO(io.in)
@@ -164,7 +164,7 @@ class DataMirrorSpec extends ChiselFlatSpec {
   it should "support querying if a Data is a Property" in {
     ChiselStage.emitCHIRRTL(new RawModule {
       val notProperty = IO(Input(Bool()))
-      val property = IO(Input(Property[Int]()))
+      val property    = IO(Input(Property[Int]()))
 
       DataMirror.isProperty(notProperty) shouldBe false
       DataMirror.isProperty(property) shouldBe true
@@ -173,7 +173,7 @@ class DataMirrorSpec extends ChiselFlatSpec {
 
   "chiselTypeClone" should "preserve Scala type information" in {
     class MyModule extends Module {
-      val in = IO(Input(UInt(8.W)))
+      val in  = IO(Input(UInt(8.W)))
       val out = IO(Output(DataMirror.internal.chiselTypeClone(in)))
       // The connection checks the types
       out :#= in
@@ -185,7 +185,7 @@ class DataMirrorSpec extends ChiselFlatSpec {
     class InputOutputTest extends Bundle {
       val incoming = Input(DecoupledIO(UInt(8.W)))
       val outgoing = Output(DecoupledIO(UInt(8.W)))
-      val mixed = DecoupledIO(UInt(8.W))
+      val mixed    = DecoupledIO(UInt(8.W))
     }
     // Top-level negative test.
     assert(!DataMirror.isFullyAligned(new InputOutputTest()))
@@ -226,7 +226,7 @@ class DataMirrorSpec extends ChiselFlatSpec {
   }
 
   "getLayerColor" should "return a layer color if one exists" in {
-    object A extends layer.Layer(layer.LayerConfig.Extract())
+    object A  extends layer.Layer(layer.LayerConfig.Extract())
     class Foo extends Bundle {
       val a = Bool()
       val b = Probe(Bool())
@@ -247,9 +247,9 @@ class DataMirrorSpec extends ChiselFlatSpec {
 
   "currentModulePorts" should "return an in-progress module's IOs" in {
     class Foo extends RawModule {
-      val in = IO(Input(Bool()))
-      val out = IO(Output(Bool()))
-      val wire = Wire(Bool())
+      val in    = IO(Input(Bool()))
+      val out   = IO(Output(Bool()))
+      val wire  = Wire(Bool())
       val child = Module(new RawModule {})
 
       val ports0 = DataMirror.internal.currentModulePorts(this)
@@ -269,7 +269,7 @@ class DataMirrorSpec extends ChiselFlatSpec {
   "currentInstancePorts" should "return an Instance's IOs" in {
     @instantiable
     class Foo extends RawModule {
-      @public val in = IO(Input(Bool()))
+      @public val in  = IO(Input(Bool()))
       @public val out = IO(Output(Bool()))
     }
 
@@ -304,16 +304,16 @@ class DataMirrorSpec extends ChiselFlatSpec {
     class Bar extends Module {
       @public val io = IO(new Bundle {
         val vec = Vec(2, Bool())
-        val x = UInt(4.W)
+        val x   = UInt(4.W)
       })
     }
 
     class Foo extends Module {
       val definition = Definition(new Bar)
-      val instA = Instance(definition)
-      val portsA = DataMirror.modulePorts(instA)
+      val instA      = Instance(definition)
+      val portsA     = DataMirror.modulePorts(instA)
 
-      val instB = (Module(new Bar)).toInstance
+      val instB  = (Module(new Bar)).toInstance
       val portsB = DataMirror.fullModulePorts(instB)
     }
 

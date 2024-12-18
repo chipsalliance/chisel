@@ -90,8 +90,8 @@ object PRNG {
   def apply(gen: => PRNG, increment: Bool = true.B): UInt = {
     val prng = Module(gen)
     prng.io.seed.valid := false.B
-    prng.io.seed.bits := DontCare
-    prng.io.increment := increment
+    prng.io.seed.bits  := DontCare
+    prng.io.increment  := increment
     prng.io.out.asUInt
   }
 

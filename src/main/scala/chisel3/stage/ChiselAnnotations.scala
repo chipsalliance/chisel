@@ -99,15 +99,14 @@ case class WarningConfigurationAnnotation(value: String)
       // Add accumulating index to each filter for error reporting
       .mapAccumulate(0) { case (idx, s) => (idx + 1 + s.length, (idx, s)) } // + 1 for removed ','
       ._2 // Discard accumulator
-      .map {
-        case (idx, s) =>
-          WarningFilter.parse(s) match {
-            case Right(wf) => wf
-            case Left((jdx, msg)) =>
-              val carat = (" " * (idx + jdx)) + "^"
-              // Note tab before value and carat
-              throw new Exception(s"Failed to parse configuration: $msg\n  $value\n  $carat")
-          }
+      .map { case (idx, s) =>
+        WarningFilter.parse(s) match {
+          case Right(wf)        => wf
+          case Left((jdx, msg)) =>
+            val carat = (" " * (idx + jdx)) + "^"
+            // Note tab before value and carat
+            throw new Exception(s"Failed to parse configuration: $msg\n  $value\n  $carat")
+        }
       }
   }
 }
@@ -140,9 +139,9 @@ case class WarningConfigurationFileAnnotation(value: File)
     * Returns the trimmed String and the number of whitespace characters trimmed from the beginning
     */
   private def trimAndRemoveComments(s: String): (String, Int) = {
-    val commentStart = s.indexOf('#')
-    val noComment = if (commentStart == -1) s else s.splitAt(commentStart)._1 // Only take part before line comment
-    val trimmed = noComment.trim()
+    val commentStart           = s.indexOf('#')
+    val noComment              = if (commentStart == -1) s else s.splitAt(commentStart)._1 // Only take part before line comment
+    val trimmed                = noComment.trim()
     // We still need to calculate how much whitespace was removed for use in error messages
     val amountTrimmedFromStart =
       trimmed.headOption.map(c => s.indexOf(c)).filter(_ > 0).getOrElse(0)
@@ -154,21 +153,20 @@ case class WarningConfigurationFileAnnotation(value: File)
     require(value.exists, s"Warning configuration file '$value' must exist!")
     require(value.isFile && value.canRead, s"Warning configuration file '$value' must be a readable file!")
     val lines = scala.io.Source.fromFile(value).getLines()
-    lines.zipWithIndex.flatMap {
-      case (contents, lineNo) =>
-        val (str, jdx) = trimAndRemoveComments(contents)
-        Option.when(str.nonEmpty) {
-          WarningFilter.parse(str) match {
-            case Right(wf) => wf
-            case Left((idx, msg)) =>
-              val carat = (" " * (idx + jdx)) + "^"
-              val info = s"$value:${lineNo + 1}:$idx" // +1 to lineNo because we start at 0 but files start with 1
-              // Note tab before value and carat
-              throw new Exception(
-                s"Failed to parse configuration at $info: $msg\n  $contents\n  $carat"
-              )
-          }
+    lines.zipWithIndex.flatMap { case (contents, lineNo) =>
+      val (str, jdx) = trimAndRemoveComments(contents)
+      Option.when(str.nonEmpty) {
+        WarningFilter.parse(str) match {
+          case Right(wf)        => wf
+          case Left((idx, msg)) =>
+            val carat = (" " * (idx + jdx)) + "^"
+            val info  = s"$value:${lineNo + 1}:$idx" // +1 to lineNo because we start at 0 but files start with 1
+            // Note tab before value and carat
+            throw new Exception(
+              s"Failed to parse configuration at $info: $msg\n  $contents\n  $carat"
+            )
         }
+      }
     }.toVector
   }
 }
@@ -236,7 +234,7 @@ object ChiselGeneratorAnnotation extends HasShellOptions {
       case boolean if boolean.toBooleanOption.isDefined => boolean.toBoolean
       case integer if integer.toIntOption.isDefined     => integer.toInt
       case float if float.toDoubleOption.isDefined      => float.toDouble
-      case classPattern(a, b) =>
+      case classPattern(a, b)                           =>
         val constructor = Class.forName(a).getConstructors()(0)
         if (b.isEmpty) {
           constructor.newInstance()
@@ -244,7 +242,7 @@ object ChiselGeneratorAnnotation extends HasShellOptions {
           val arguments = b.split(',').map(stringToAny).toSeq
           constructor.newInstance(arguments: _*)
         }
-      case string => str
+      case string                                       => str
     }
   }
 
@@ -265,17 +263,17 @@ object ChiselGeneratorAnnotation extends HasShellOptions {
         // itself.
         case e: InvocationTargetException =>
           throw e.getCause
-        case e: ClassNotFoundException =>
+        case e: ClassNotFoundException    =>
           throw new OptionsException(
             s"Unable to run module generator '$name' because it or one of its arguments could not be found. (Did you misspell it or them?)",
             e
           )
-        case e: IllegalArgumentException =>
+        case e: IllegalArgumentException  =>
           throw new OptionsException(
             s"Unable to run module generator '$name' because the arguments are invalid. (Did you pass the correct number and type of arguments?)",
             e
           )
-        case e: ClassCastException =>
+        case e: ClassCastException        =>
           throw new OptionsException(
             s"Unable to run module generator '$name' because this is not a 'RawModule'. (Did you try to construct something that is not a 'RawModule' or did you forget to append '()' to indicate that this is not a string?)",
             e
@@ -354,15 +352,15 @@ case class CircuitSerializationAnnotation(circuit: Circuit, filename: String, fo
     */
   def emitLazily(annos: Seq[Annotation]): Iterable[String] = {
     // First emit all circuit logic without modules
-    val prelude = {
+    val prelude                  = {
       val dummyCircuit = circuit.copy(components = Nil)
-      val converted = Converter.convert(dummyCircuit)
-      val withAnnos = CircuitWithAnnos(converted, annos)
+      val converted    = Converter.convert(dummyCircuit)
+      val withAnnos    = CircuitWithAnnos(converted, annos)
       Serializer.lazily(withAnnos)
     }
     val typeAliases: Seq[String] = circuit.typeAliases.map(_.name)
-    val modules = circuit.components.iterator.map(c => Converter.convert(c, typeAliases))
-    val moduleStrings = modules.flatMap { m =>
+    val modules                  = circuit.components.iterator.map(c => Converter.convert(c, typeAliases))
+    val moduleStrings            = modules.flatMap { m =>
       Serializer.lazily(m, 1) ++ Seq("\n\n")
     }
     prelude ++ moduleStrings
@@ -449,7 +447,7 @@ object RemapLayer extends HasShellOptions {
   private def getLayer(name: String): Layer = try {
     Class.forName(name).getField("MODULE$").get(null).asInstanceOf[Layer]
   } catch {
-    case e: NoSuchFieldException =>
+    case e: NoSuchFieldException   =>
       throw new OptionsException(
         s"Layer '$name' exists, but is not a singleton object. (Is this wrapped in an outer class?)",
         e
@@ -459,7 +457,7 @@ object RemapLayer extends HasShellOptions {
         s"Unable to reflectively find layer '$name'. (Did you misspell it?)",
         e
       )
-    case e: ClassCastException =>
+    case e: ClassCastException     =>
       throw new OptionsException(
         s"Object '$name' must be a `Layer`, but could not be cast as one.",
         e

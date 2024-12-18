@@ -13,15 +13,15 @@ import chisel3.internal.{containsProbe, requireNoProbeTypeModifier, Builder}
 private[chisel3] trait ProbeBase {
 
   protected def apply[T <: Data](
-    source:   => T,
+    source: => T,
     writable: Boolean,
-    _color:   Option[layer.Layer]
+    _color: Option[layer.Layer]
   )(
     implicit sourceInfo: SourceInfo
   ): T = {
     val prevId = Builder.idGen.value
     // call Output() to coerce passivity
-    val data = Output(source) // should only evaluate source once
+    val data   = Output(source) // should only evaluate source once
     requireNoProbeTypeModifier(data, "Cannot probe a probe.")
     if (containsProbe(data)) {
       Builder.error("Cannot create a probe of an aggregate containing a probe.")
@@ -34,7 +34,7 @@ private[chisel3] trait ProbeBase {
 
     val ret: T = if (!data.mustClone(prevId)) data else data.cloneType.asInstanceOf[T]
     // Remap the color if the user is using the ChiselStage --remap-layer option.
-    val color = _color.map(c =>
+    val color  = _color.map(c =>
       Builder.inContext match {
         case false => c
         case true  => Builder.layerMap.getOrElse(c, c)
@@ -49,7 +49,7 @@ private[chisel3] trait ProbeBase {
   }
 
   protected def apply[T <: Data](
-    source:   => T,
+    source: => T,
     writable: Boolean
   )(
     implicit sourceInfo: SourceInfo

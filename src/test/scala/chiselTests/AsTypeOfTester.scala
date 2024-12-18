@@ -55,7 +55,7 @@ class AsTypeOfVecTester extends BasicTester {
 
 class AsTypeOfTruncationTester extends BasicTester {
   val truncate = (64 + 3).U.asTypeOf(UInt(3.W))
-  val expand = 1.U.asTypeOf(UInt(3.W))
+  val expand   = 1.U.asTypeOf(UInt(3.W))
 
   assert(DataMirror.widthOf(truncate).get == 3)
   assert(truncate === 3.U)
@@ -82,11 +82,11 @@ class AsTypeOfClockTester extends BasicTester {
 }
 
 class AsChiselEnumTester extends BasicTester {
-  object MyEnum extends ChiselEnum {
+  object MyEnum  extends ChiselEnum {
     val foo, bar = Value
-    val fizz = Value(2.U)
+    val fizz     = Value(2.U)
   }
-  class MyBundle extends Bundle {
+  class MyBundle extends Bundle     {
     val a = Bool()
     val b = Bool()
   }
@@ -108,11 +108,11 @@ class AsChiselEnumTester extends BasicTester {
   // In aggregate
   class OtherBundle extends Bundle {
     val myEnum = MyEnum()
-    val foo = Bool()
+    val foo    = Bool()
   }
   val wire = Wire(new OtherBundle)
   wire.myEnum := MyEnum.fizz
-  wire.foo := true.B
+  wire.foo    := true.B
 
   assert(wire.asUInt === 5.U)
   val other = 5.U.asTypeOf(new OtherBundle)
@@ -123,28 +123,28 @@ class AsChiselEnumTester extends BasicTester {
 }
 
 object AsTypeOfSpec {
-  class MyBundle extends Bundle {
+  class MyBundle                     extends Bundle     {
     val a = UInt(4.W)
     val b = UInt(4.W)
   }
-  class MyBundleUnknownWidth(w: Int) extends Bundle {
+  class MyBundleUnknownWidth(w: Int) extends Bundle     {
     val a = UInt(w.W)
     val b = UInt()
   }
-  object MyEnum extends ChiselEnum {
+  object MyEnum                      extends ChiselEnum {
     val a, b = Value
-    val c = Value(10.U)
+    val c    = Value(10.U)
   }
 
-  class SimpleAsTypeOf[A <: Data, B <: Data](gen1: A, gen2: B) extends RawModule {
-    val in = IO(Input(gen1))
+  class SimpleAsTypeOf[A <: Data, B <: Data](gen1: A, gen2: B)                         extends RawModule {
+    val in  = IO(Input(gen1))
     // Out is a wire so we can use inferred widths
     val out = dontTouch(Wire(gen2))
     out :#= in.asTypeOf(out)
   }
   class WireSourceAsTypeOf[A <: Data, B <: Data](gen1: A, gen2: B)(driveIn: A => Unit) extends RawModule {
     // Called in so that tests can check for same Verilog from this and SimpleAsTypeOf
-    val in = dontTouch(Wire(gen1))
+    val in  = dontTouch(Wire(gen1))
     driveIn(in)
     val out = dontTouch(Wire(gen2))
     out := in.asTypeOf(out)
@@ -479,7 +479,7 @@ class AsTypeOfSpec extends ChiselFunSpec {
       they("should error") {
         val e = the[ChiselException] thrownBy ChiselStage.emitSystemVerilog(
           new RawModule {
-            val in = IO(Input(UInt(8.W)))
+            val in  = IO(Input(UInt(8.W)))
             val out = IO(Analog(8.W))
             out := in.asTypeOf(out)
           },
@@ -491,7 +491,7 @@ class AsTypeOfSpec extends ChiselFunSpec {
     describe("as the source type") {
       they("should error") {
         val e = the[ChiselException] thrownBy ChiselStage.emitSystemVerilog(new RawModule {
-          val in = IO(Analog(8.W))
+          val in  = IO(Analog(8.W))
           val out = IO(Output(UInt(8.W)))
           out := in.asTypeOf(out)
         })

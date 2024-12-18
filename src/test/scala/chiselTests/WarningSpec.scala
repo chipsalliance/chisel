@@ -14,9 +14,9 @@ class WarningSpec extends ChiselFlatSpec with Utils {
   }
 
   class MyModule extends Module {
-    val in = IO(Input(UInt(2.W)))
-    val out1 = IO(Output(MyEnum()))
-    val out2 = IO(Output(MyEnum()))
+    val in                        = IO(Input(UInt(2.W)))
+    val out1                      = IO(Output(MyEnum()))
+    val out2                      = IO(Output(MyEnum()))
     def func(out: EnumType): Unit = {
       out := MyEnum(in)
     }
@@ -25,7 +25,7 @@ class WarningSpec extends ChiselFlatSpec with Utils {
   }
 
   "Warnings" should "be de-duplicated" in {
-    val (log, _) = grabLog(ChiselStage.emitCHIRRTL(new MyModule))
+    val (log, _)                               = grabLog(ChiselStage.emitCHIRRTL(new MyModule))
     def countSubstring(s: String, sub: String) =
       s.sliding(sub.length).count(_ == sub)
     countSubstring(log, "Casting non-literal UInt") should be(1)

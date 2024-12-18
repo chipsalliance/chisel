@@ -29,7 +29,7 @@ class StringSpec extends FirrtlPropSpec {
   }
 
   // Valid escapes = \n, \t, \\, \", \'
-  val esc = """\\\'\"\t\n"""
+  val esc      = """\\\'\"\t\n"""
   val validEsc = Seq('n', 't', '\\', '"', '\'')
   property(s"Escape characters [$esc] should parse") {
     val lit = StringLit.unescape(esc)
@@ -44,8 +44,8 @@ class StringSpec extends FirrtlPropSpec {
   // From IEEE 1364-2001 2.6
   def isValidVerilogString(str: String): Boolean = {
     @tailrec def rec(xs: List[Char]): Boolean = xs match {
-      case Nil => true
-      case '\\' :: esc =>
+      case Nil          => true
+      case '\\' :: esc  =>
         if (Set('n', 't', '\\', '"').contains(esc.head)) rec(esc.tail)
         else { // Check valid octal escape, otherwise illegal
           val next3 = esc.take(3)
@@ -59,18 +59,18 @@ class StringSpec extends FirrtlPropSpec {
     rec(str.toList)
   }
   // From IEEE 1364-2001 17.1.1.2
-  val legalFormats = "HhDdOoBbCcLlVvMmSsTtUuZz%".toSet
+  val legalFormats                               = "HhDdOoBbCcLlVvMmSsTtUuZz%".toSet
   def isValidVerilogFormat(str: String): Boolean = str.toSeq.sliding(2).forall {
     case Seq('%', char) if legalFormats contains char => true
     case _                                            => true
   }
 
   // Generators for legal Firrtl format strings
-  val genFormat = Gen.oneOf("bdxc%").map(List('%', _))
-  val genEsc = Gen.oneOf(esc.toSeq).map(List(_))
-  val genChar = arbitrary[Char].suchThat(c => (c != '%' && c != '\\')).map(List(_))
+  val genFormat   = Gen.oneOf("bdxc%").map(List('%', _))
+  val genEsc      = Gen.oneOf(esc.toSeq).map(List(_))
+  val genChar     = arbitrary[Char].suchThat(c => (c != '%' && c != '\\')).map(List(_))
   val genFragment = Gen.frequency((10, genChar), (1, genFormat), (1, genEsc)).map(_.mkString)
-  val genString = Gen.listOf[String](genFragment).map(_.mkString)
+  val genString   = Gen.listOf[String](genFragment).map(_.mkString)
 
   property("Firrtl Format Strings with Unicode chars should emit as legal Verilog Strings") {
     forAll(genString) { str =>

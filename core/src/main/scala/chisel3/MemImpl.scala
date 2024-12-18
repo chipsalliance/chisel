@@ -14,12 +14,12 @@ private[chisel3] trait ObjectMemImpl {
 
   protected def _applyImpl[T <: Data](
     size: BigInt,
-    t:    T
+    t: T
   )(
     implicit sourceInfo: SourceInfo
   ): Mem[T] = {
     requireIsChiselType(t, "memory type")
-    val mt = t.cloneTypeFull
+    val mt  = t.cloneTypeFull
     val mem = new Mem(mt, size, sourceInfo)
     mt.bind(MemTypeBinding(mem))
     pushCommand(DefMemory(sourceInfo, mem, mt, size))
@@ -33,7 +33,7 @@ private[chisel3] trait ObjectMemImpl {
 
 private[chisel3] trait MemBaseImpl[T <: Data] extends HasId with NamedComponent {
 
-  def t:      T
+  def t: T
   def length: BigInt
 
   protected def sourceInfo: SourceInfo
@@ -80,10 +80,10 @@ private[chisel3] trait MemBaseImpl[T <: Data] extends HasId with NamedComponent 
     _applyImpl(idx, clock, MemPortDirection.READ, false)
 
   protected def _applyImpl(
-    idx:   UInt,
+    idx: UInt,
     clock: Clock,
-    dir:   MemPortDirection,
-    warn:  Boolean
+    dir: MemPortDirection,
+    warn: Boolean
   )(
     implicit sourceInfo: SourceInfo
   ): T = {
@@ -100,10 +100,10 @@ private[chisel3] trait MemBaseImpl[T <: Data] extends HasId with NamedComponent 
     _writeImpl(idx, data, clock, false)
 
   private def _writeImpl(
-    idx:   UInt,
-    data:  T,
+    idx: UInt,
+    data: T,
     clock: Clock,
-    warn:  Boolean
+    warn: Boolean
   )(
     implicit sourceInfo: SourceInfo
   ): Unit = {
@@ -114,41 +114,41 @@ private[chisel3] trait MemBaseImpl[T <: Data] extends HasId with NamedComponent 
   }
 
   protected def _writeImpl(
-    idx:  UInt,
+    idx: UInt,
     data: T,
     mask: Seq[Bool]
   )(
     implicit evidence: T <:< Vec[_],
-    sourceInfo:        SourceInfo
+    sourceInfo: SourceInfo
   ): Unit =
     _maskedWriteImpl(idx, data, mask, Builder.forcedClock, true)
 
   protected def _writeImpl(
-    idx:   UInt,
-    data:  T,
-    mask:  Seq[Bool],
+    idx: UInt,
+    data: T,
+    mask: Seq[Bool],
     clock: Clock
   )(
     implicit evidence: T <:< Vec[_],
-    sourceInfo:        SourceInfo
+    sourceInfo: SourceInfo
   ): Unit =
     _maskedWriteImpl(idx, data, mask, clock, false)
 
   private def _maskedWriteImpl(
-    idx:   UInt,
-    data:  T,
-    mask:  Seq[Bool],
+    idx: UInt,
+    data: T,
+    mask: Seq[Bool],
     clock: Clock,
-    warn:  Boolean
+    warn: Boolean
   )(
     implicit evidence: T <:< Vec[_],
-    sourceInfo:        SourceInfo
+    sourceInfo: SourceInfo
   ): Unit = {
     if (warn && clockInst.isDefined && clock != clockInst.get) {
       clockWarning(None, MemPortDirection.WRITE)
     }
     val accessor = makePort(sourceInfo, idx, MemPortDirection.WRITE, clock).asInstanceOf[Vec[Data]]
-    val dataVec = data.asInstanceOf[Vec[Data]]
+    val dataVec  = data.asInstanceOf[Vec[Data]]
     if (accessor.length != dataVec.length) {
       Builder.error(s"Mem write data must contain ${accessor.length} elements (found ${dataVec.length})")
     }
@@ -161,9 +161,9 @@ private[chisel3] trait MemBaseImpl[T <: Data] extends HasId with NamedComponent 
 
   private def makePort(
     sourceInfo: SourceInfo,
-    idx:        UInt,
-    dir:        MemPortDirection,
-    clock:      Clock
+    idx: UInt,
+    dir: MemPortDirection,
+    clock: Clock
   ): T = {
     if (Builder.currentModule != _parent) {
       throwException(
@@ -192,19 +192,19 @@ private[chisel3] trait MemImpl[T <: Data] extends MemBaseImpl[T] {
 private[chisel3] trait ObjectSyncReadMemImpl {
 
   type ReadUnderWrite = fir.ReadUnderWrite.Value
-  val Undefined = fir.ReadUnderWrite.Undefined
-  val ReadFirst = fir.ReadUnderWrite.Old
+  val Undefined  = fir.ReadUnderWrite.Undefined
+  val ReadFirst  = fir.ReadUnderWrite.Old
   val WriteFirst = fir.ReadUnderWrite.New
 
   protected def _applyImpl[T <: Data](
     size: BigInt,
-    t:    T,
-    ruw:  ReadUnderWrite = Undefined
+    t: T,
+    ruw: ReadUnderWrite = Undefined
   )(
     implicit sourceInfo: SourceInfo
   ): SyncReadMem[T] = {
     requireIsChiselType(t, "memory type")
-    val mt = t.cloneTypeFull
+    val mt  = t.cloneTypeFull
     val mem = new SyncReadMem(mt, size, ruw, sourceInfo)
     mt.bind(MemTypeBinding(mem))
     pushCommand(DefSeqMemory(sourceInfo, mem, mt, size, ruw))
@@ -215,7 +215,7 @@ private[chisel3] trait ObjectSyncReadMemImpl {
   // Alternate signatures can't use default parameter values
   protected def _applyImpl[T <: Data](
     size: Int,
-    t:    T
+    t: T
   )(
     implicit sourceInfo: SourceInfo
   ): SyncReadMem[T] = _applyImpl(BigInt(size), t)
@@ -223,8 +223,8 @@ private[chisel3] trait ObjectSyncReadMemImpl {
   // Alternate signatures can't use default parameter values
   protected def _applyImpl[T <: Data](
     size: Int,
-    t:    T,
-    ruw:  ReadUnderWrite
+    t: T,
+    ruw: ReadUnderWrite
   )(
     implicit sourceInfo: SourceInfo
   ): SyncReadMem[T] = _applyImpl(BigInt(size), t, ruw)
@@ -244,15 +244,15 @@ private[chisel3] trait SyncReadMemImpl[T <: Data] extends MemBaseImpl[T] {
     _readImpl(idx, en, clock, false)
 
   private def _readImpl(
-    addr:   UInt,
+    addr: UInt,
     enable: Bool,
-    clock:  Clock,
-    warn:   Boolean
+    clock: Clock,
+    warn: Boolean
   )(
     implicit sourceInfo: SourceInfo
   ): T = {
     var _port: Option[T] = None
-    val _a = WireDefault(chiselTypeOf(addr), DontCare)
+    val _a               = WireDefault(chiselTypeOf(addr), DontCare)
     when(enable) {
       _a := addr
       _port = Some(super._applyImpl(_a, clock, MemPortDirection.READ, warn))
@@ -266,28 +266,28 @@ private[chisel3] trait SyncReadMemImpl[T <: Data] extends MemBaseImpl[T] {
     _readWriteImpl(idx, writeData, en, isWrite, Builder.forcedClock, true)
 
   protected def _readWriteImpl(
-    idx:     UInt,
-    data:    T,
-    en:      Bool,
+    idx: UInt,
+    data: T,
+    en: Bool,
     isWrite: Bool,
-    clock:   Clock
+    clock: Clock
   )(
     implicit sourceInfo: SourceInfo
   ): T =
     _readWriteImpl(idx, data, en, isWrite, clock, false)
 
   private def _readWriteImpl(
-    addr:    UInt,
-    data:    T,
-    enable:  Bool,
+    addr: UInt,
+    data: T,
+    enable: Bool,
     isWrite: Bool,
-    clock:   Clock,
-    warn:    Boolean
+    clock: Clock,
+    warn: Boolean
   )(
     implicit sourceInfo: SourceInfo
   ): T = {
     var _port: Option[T] = None
-    val _a = WireDefault(chiselTypeOf(addr), DontCare)
+    val _a               = WireDefault(chiselTypeOf(addr), DontCare)
     when(enable) {
       _a := addr
       _port = Some(super._applyImpl(_a, clock, MemPortDirection.RDWR, warn))
@@ -300,42 +300,42 @@ private[chisel3] trait SyncReadMemImpl[T <: Data] extends MemBaseImpl[T] {
   }
 
   protected def _readWriteImpl(
-    idx:       UInt,
+    idx: UInt,
     writeData: T,
-    mask:      Seq[Bool],
-    en:        Bool,
-    isWrite:   Bool
+    mask: Seq[Bool],
+    en: Bool,
+    isWrite: Bool
   )(
     implicit evidence: T <:< Vec[_],
-    sourceInfo:        SourceInfo
+    sourceInfo: SourceInfo
   ): T = _maskedReadWriteImpl(idx, writeData, mask, en, isWrite, Builder.forcedClock, true)
 
   protected def _readWriteImpl(
-    idx:       UInt,
+    idx: UInt,
     writeData: T,
-    mask:      Seq[Bool],
-    en:        Bool,
-    isWrite:   Bool,
-    clock:     Clock
+    mask: Seq[Bool],
+    en: Bool,
+    isWrite: Bool,
+    clock: Clock
   )(
     implicit evidence: T <:< Vec[_],
-    sourceInfo:        SourceInfo
+    sourceInfo: SourceInfo
   ) = _maskedReadWriteImpl(idx, writeData, mask, en, isWrite, clock, false)
 
   private def _maskedReadWriteImpl(
-    addr:    UInt,
-    data:    T,
-    mask:    Seq[Bool],
-    enable:  Bool,
+    addr: UInt,
+    data: T,
+    mask: Seq[Bool],
+    enable: Bool,
     isWrite: Bool,
-    clock:   Clock,
-    warn:    Boolean
+    clock: Clock,
+    warn: Boolean
   )(
     implicit evidence: T <:< Vec[_],
-    sourceInfo:        SourceInfo
+    sourceInfo: SourceInfo
   ): T = {
     var _port: Option[T] = None
-    val _a = WireDefault(chiselTypeOf(addr), DontCare)
+    val _a               = WireDefault(chiselTypeOf(addr), DontCare)
     when(enable) {
       _a := addr
       _port = Some(super._applyImpl(_a, clock, MemPortDirection.RDWR, warn))

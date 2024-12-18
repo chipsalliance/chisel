@@ -19,7 +19,7 @@ class AddSerializationAnnotationsSpec extends AnyFlatSpec with Matchers {
 
   class Fixture {
     val phase: Phase = new AddSerializationAnnotations
-    val manager = new PhaseManager(Dependency[AddSerializationAnnotations] :: Nil)
+    val manager      = new PhaseManager(Dependency[AddSerializationAnnotations] :: Nil)
   }
 
   behavior.of(classOf[AddSerializationAnnotations].toString)

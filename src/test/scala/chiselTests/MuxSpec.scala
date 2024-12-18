@@ -23,9 +23,9 @@ class MuxTester extends BasicTester {
 }
 
 class MuxBetween[A <: Data, B <: Data](genA: A, genB: B) extends RawModule {
-  val in0 = IO(Input(genA))
-  val in1 = IO(Input(genB))
-  val sel = IO(Input(Bool()))
+  val in0    = IO(Input(genA))
+  val in1    = IO(Input(genB))
+  val sel    = IO(Input(Bool()))
   val result = Mux(sel, in0, in1)
 }
 
@@ -55,9 +55,8 @@ class MuxLookupEnumTester extends BasicTester {
     val b = Value(7.U)
     val c = Value
   }
-  val mapping = TestEnum.all.zipWithIndex.map {
-    case (e, i) =>
-      e -> i.U
+  val mapping = TestEnum.all.zipWithIndex.map { case (e, i) =>
+    e -> i.U
   }
   assert(MuxLookup(TestEnum.a, 3.U)(mapping) === 0.U)
   assert(MuxLookup(TestEnum.b, 3.U)(mapping) === 1.U)
@@ -79,14 +78,14 @@ class MuxLookupEnumSpec extends ChiselFlatSpec {
 
 class MuxLookupWrapper(keyWidth: Int, default: Int, mapping: () => Seq[(UInt, UInt)]) extends RawModule {
   val outputWidth = log2Ceil(default).max(keyWidth) // make room for default value
-  val key = IO(Input(UInt(keyWidth.W)))
-  val output = IO(Output(UInt(outputWidth.W)))
+  val key         = IO(Input(UInt(keyWidth.W)))
+  val output      = IO(Output(UInt(outputWidth.W)))
   output := MuxLookup(key, default.U)(mapping())
 }
 
 class MuxLookupExhaustiveSpec extends ChiselPropSpec {
-  val keyWidth = 2
-  val default = 9 // must be less than 10 to avoid hex/decimal mismatches
+  val keyWidth  = 2
+  val default   = 9 // must be less than 10 to avoid hex/decimal mismatches
   val firrtlLit = s"""UInt<4>(0h$default)"""
 
   // Assumes there are no literals with 'UInt<4>(0h09)' in the output FIRRTL

@@ -51,7 +51,7 @@ class LazyCloneSpec extends ChiselFlatSpec {
     Counter.count = 0L
     class MyModule extends RawModule {
       val foo = new Foo
-      val io = IO(Flipped(new Bundle {
+      val io  = IO(Flipped(new Bundle {
         val x = Output(foo)
         val y = Input(foo)
       }))
@@ -76,7 +76,7 @@ class LazyCloneSpec extends ChiselFlatSpec {
     Counter.count = 0L
     class MyModule extends RawModule {
       val gen = UInt(8.W)
-      val in = IO(Input(new GenRecord(gen)))
+      val in  = IO(Input(new GenRecord(gen)))
       val out = IO(Output(new GenRecord(gen)))
       out := in
     }
@@ -87,7 +87,7 @@ class LazyCloneSpec extends ChiselFlatSpec {
   it should "not clone when ref is external to the Record but not the binding operation" in {
     Counter.count = 0L
     class MyModule extends RawModule {
-      val in = IO(Input(new GenRecord(UInt(8.W))))
+      val in  = IO(Input(new GenRecord(UInt(8.W))))
       val out = IO(Output(new GenRecord(UInt(8.W))))
       out := in
     }
@@ -99,7 +99,7 @@ class LazyCloneSpec extends ChiselFlatSpec {
     Counter.count = 0L
     class MyModule extends RawModule {
       val gen = UInt(8.W)
-      val in = IO(Input(new NestedGenBundle(gen)))
+      val in  = IO(Input(new NestedGenBundle(gen)))
       val out = IO(Output(new NestedGenBundle(gen)))
       out := in
     }
@@ -110,7 +110,7 @@ class LazyCloneSpec extends ChiselFlatSpec {
   it should "not clone when nested ref is external to the Bundle but not the binding operation" in {
     Counter.count = 0L
     class MyModule extends RawModule {
-      val in = IO(Input(new NestedGenBundle(UInt(8.W))))
+      val in  = IO(Input(new NestedGenBundle(UInt(8.W))))
       val out = IO(Output(new NestedGenBundle(UInt(8.W))))
       out := in
     }
@@ -121,7 +121,7 @@ class LazyCloneSpec extends ChiselFlatSpec {
   it should "not clone Vecs (but Vecs always clone their gen 1 + size times)" in {
     Counter.count = 0L
     class MyModule extends RawModule {
-      val in = IO(Input(Vec(2, new Foo)))
+      val in  = IO(Input(Vec(2, new Foo)))
       val out = IO(Output(Vec(2, new Foo)))
       out := in
     }
@@ -134,7 +134,7 @@ class LazyCloneSpec extends ChiselFlatSpec {
     Counter.count = 0L
     class MyModule extends RawModule {
       val gen = new Foo
-      val in = IO(Input(Vec(2, gen)))
+      val in  = IO(Input(Vec(2, gen)))
       val out = IO(Output(Vec(2, gen)))
       out := in
     }

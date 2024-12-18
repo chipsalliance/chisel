@@ -45,7 +45,7 @@ class PopCountSpec extends AnyFlatSpec with Matchers {
       out := PopCount(Seq(true.B, false.B, false.B, false.B))
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    val add = """add.*BitwiseSpec\.scala""".r
+    val add  = """add.*BitwiseSpec\.scala""".r
     (chirrtl should include).regex(add)
     val bits = """bits.*BitwiseSpec\.scala""".r
     (chirrtl should include).regex(bits)
@@ -58,7 +58,7 @@ class PopCountSpec extends AnyFlatSpec with Matchers {
       out := PopCount("b1000".U)
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    val add = """add.*BitwiseSpec\.scala""".r
+    val add  = """add.*BitwiseSpec\.scala""".r
     (chirrtl should include).regex(add)
     val bits = """bits.*BitwiseSpec\.scala""".r
     (chirrtl should include).regex(bits)

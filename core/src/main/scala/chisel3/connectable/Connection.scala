@@ -15,47 +15,47 @@ import scala.collection.mutable
 
 // Datastructure capturing the semantics of each connectable operator
 private[chisel3] sealed trait Connection {
-  val noDangles:               Boolean
-  val noUnconnected:           Boolean
-  val mustMatch:               Boolean
-  val noWrongOrientations:     Boolean
-  val noMismatchedWidths:      Boolean
-  val connectToConsumer:       Boolean
-  val connectToProducer:       Boolean
+  val noDangles: Boolean
+  val noUnconnected: Boolean
+  val mustMatch: Boolean
+  val noWrongOrientations: Boolean
+  val noMismatchedWidths: Boolean
+  val connectToConsumer: Boolean
+  val connectToProducer: Boolean
   val alwaysConnectToConsumer: Boolean
 }
 
 private[chisel3] case object ColonLessEq extends Connection {
-  val noDangles:               Boolean = true
-  val noUnconnected:           Boolean = true
-  val mustMatch:               Boolean = true
-  val noWrongOrientations:     Boolean = true
-  val noMismatchedWidths:      Boolean = true
-  val connectToConsumer:       Boolean = true
-  val connectToProducer:       Boolean = false
+  val noDangles: Boolean               = true
+  val noUnconnected: Boolean           = true
+  val mustMatch: Boolean               = true
+  val noWrongOrientations: Boolean     = true
+  val noMismatchedWidths: Boolean      = true
+  val connectToConsumer: Boolean       = true
+  val connectToProducer: Boolean       = false
   val alwaysConnectToConsumer: Boolean = false
 }
 
 private[chisel3] case object ColonGreaterEq extends Connection {
-  val noDangles:               Boolean = true
-  val noUnconnected:           Boolean = true
-  val mustMatch:               Boolean = true
-  val noWrongOrientations:     Boolean = true
-  val noMismatchedWidths:      Boolean = true
-  val connectToConsumer:       Boolean = false
-  val connectToProducer:       Boolean = true
+  val noDangles: Boolean               = true
+  val noUnconnected: Boolean           = true
+  val mustMatch: Boolean               = true
+  val noWrongOrientations: Boolean     = true
+  val noMismatchedWidths: Boolean      = true
+  val connectToConsumer: Boolean       = false
+  val connectToProducer: Boolean       = true
   val alwaysConnectToConsumer: Boolean = false
 }
 
 private[chisel3] case object ColonLessGreaterEq extends Connection {
-  val noDangles:               Boolean = true
-  val noUnconnected:           Boolean = true
-  val mustMatch:               Boolean = true
-  val noWrongOrientations:     Boolean = true
-  val noMismatchedWidths:      Boolean = true
-  val connectToConsumer:       Boolean = true
-  val connectToProducer:       Boolean = true
-  val alwaysConnectToConsumer: Boolean = false
+  val noDangles: Boolean                                                         = true
+  val noUnconnected: Boolean                                                     = true
+  val mustMatch: Boolean                                                         = true
+  val noWrongOrientations: Boolean                                               = true
+  val noMismatchedWidths: Boolean                                                = true
+  val connectToConsumer: Boolean                                                 = true
+  val connectToProducer: Boolean                                                 = true
+  val alwaysConnectToConsumer: Boolean                                           = false
   def canFirrtlConnect(consumer: Connectable[Data], producer: Connectable[Data]) = {
     val typeEquivalent =
       try {
@@ -75,13 +75,13 @@ private[chisel3] case object ColonLessGreaterEq extends Connection {
 }
 
 private[chisel3] case object ColonHashEq extends Connection {
-  val noDangles:               Boolean = true
-  val noUnconnected:           Boolean = true
-  val mustMatch:               Boolean = true
-  val noWrongOrientations:     Boolean = false
-  val noMismatchedWidths:      Boolean = true
-  val connectToConsumer:       Boolean = true
-  val connectToProducer:       Boolean = false
+  val noDangles: Boolean               = true
+  val noUnconnected: Boolean           = true
+  val mustMatch: Boolean               = true
+  val noWrongOrientations: Boolean     = false
+  val noMismatchedWidths: Boolean      = true
+  val connectToConsumer: Boolean       = true
+  val connectToProducer: Boolean       = false
   val alwaysConnectToConsumer: Boolean = true
 }
 
@@ -104,7 +104,7 @@ private[chisel3] object Connection {
   def connect[T <: Data](
     cRoot: Connectable[T],
     pRoot: Connectable[T],
-    cOp:   Connection
+    cOp: Connection
   )(
     implicit sourceInfo: SourceInfo
   ): Unit = {
@@ -120,8 +120,8 @@ private[chisel3] object Connection {
     try {
       (l, r) match {
         case (x: Analog, y: Analog) => connectAnalog(x, y)
-        case (x: Analog, DontCare) => connectAnalog(x, DontCare)
-        case (_, _) => l := r
+        case (x: Analog, DontCare)  => connectAnalog(x, DontCare)
+        case (_, _)                 => l := r
       }
     } catch {
       case e: Exception => Builder.error(e.getMessage)
@@ -129,8 +129,8 @@ private[chisel3] object Connection {
   }
 
   private def doConnection[T <: Data](
-    consumer:     Connectable[T],
-    producer:     Connectable[T],
+    consumer: Connectable[T],
+    producer: Connectable[T],
     connectionOp: Connection
   )(
     implicit sourceInfo: SourceInfo
@@ -186,31 +186,28 @@ private[chisel3] object Connection {
           (conAlign.member, proAlign.member) match {
             case (consumer: Aggregate, producer: Aggregate)
                 if !hasProbeTypeModifier(consumer) && !hasProbeTypeModifier(producer) =>
-              matchingZipOfChildren(Some(conAlign), Some(proAlign)).foreach {
-                case (ceo, peo) =>
-                  doConnection(ceo.getOrElse(conAlign.empty), peo.getOrElse(proAlign.empty))
+              matchingZipOfChildren(Some(conAlign), Some(proAlign)).foreach { case (ceo, peo) =>
+                doConnection(ceo.getOrElse(conAlign.empty), peo.getOrElse(proAlign.empty))
               }
             case (consumer: Aggregate, DontCare) if !hasProbeTypeModifier(consumer) =>
-              consumer.getElements.foreach {
-                case f =>
-                  doConnection(
-                    deriveChildAlignment(f, conAlign),
-                    deriveChildAlignment(f, conAlign).swap(DontCare)
-                  )
+              consumer.getElements.foreach { case f =>
+                doConnection(
+                  deriveChildAlignment(f, conAlign),
+                  deriveChildAlignment(f, conAlign).swap(DontCare)
+                )
               }
             case (DontCare, producer: Aggregate) if !hasProbeTypeModifier(producer) =>
-              producer.getElements.foreach {
-                case f =>
-                  doConnection(
-                    deriveChildAlignment(f, proAlign).swap(DontCare),
-                    deriveChildAlignment(f, proAlign)
-                  )
+              producer.getElements.foreach { case f =>
+                doConnection(
+                  deriveChildAlignment(f, proAlign).swap(DontCare),
+                  deriveChildAlignment(f, proAlign)
+                )
               }
             // Check that neither consumer nor producer contains probes
             case (consumer: Data, producer: Data)
                 if (hasProbeTypeModifier(consumer) ^ hasProbeTypeModifier(producer)) =>
               errors = s"mismatched probe/non-probe types in ${consumer} and ${producer}." +: errors
-            case (consumer, producer) =>
+            case (consumer, producer)                                               =>
               val alignment = (
                 conAlign.alignsWith(proAlign),
                 (!conAlign.alignsWith(
@@ -225,10 +222,10 @@ private[chisel3] object Connection {
                 case (_, _, true) => proAlign
                 case other        => throw new Exception(other.toString)
               }
-              val lAndROpt = alignment.computeLandR(consumer, producer, connectionOp)
+              val lAndROpt  = alignment.computeLandR(consumer, producer, connectionOp)
               lAndROpt.foreach { case (l, r) => connect(l, r) }
           }
-        case other => throw new Exception(other.toString + " " + connectionOp)
+        case other                                        => throw new Exception(other.toString + " " + connectionOp)
       }
     }
 
@@ -245,11 +242,11 @@ private[chisel3] object Connection {
     val currentModule = Builder.currentModule.get.asInstanceOf[RawModule]
     try {
       as.toList match {
-        case List(a) => BiConnect.markAnalogConnected(sourceInfo, a, DontCare, currentModule)
+        case List(a)    => BiConnect.markAnalogConnected(sourceInfo, a, DontCare, currentModule)
         case List(a, b) =>
           BiConnect.markAnalogConnected(sourceInfo, a, b, currentModule)
           BiConnect.markAnalogConnected(sourceInfo, b, a, currentModule)
-        case _ => throw new InternalErrorException(s"Match error: as.toList=${as.toList}")
+        case _          => throw new InternalErrorException(s"Match error: as.toList=${as.toList}")
       }
     } catch { // convert Exceptions to Builder.error's so compilation can continue
       case attach.AttachException(message) => Builder.error(message)
@@ -264,7 +261,7 @@ private[chisel3] object Connection {
         val currentModule = Builder.currentModule.get.asInstanceOf[RawModule]
         attach.impl(Seq(a, ba), currentModule)(sourceInfo)
       }
-      case (DontCare) => {
+      case (DontCare)   => {
         checkAnalog(a)
         pushCommand(DefInvalid(sourceInfo, a.lref))
       }

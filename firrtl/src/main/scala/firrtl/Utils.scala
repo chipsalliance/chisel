@@ -28,7 +28,7 @@ object Utils extends LazyLogging {
           e
         }
       }
-      case None | null => null
+      case None | null        => null
     }
   }
 
@@ -39,9 +39,9 @@ object Utils extends LazyLogging {
     */
   def throwInternalError(message: String = "", exception: Option[Throwable] = None) = {
     // We'll get the first exception in the chain, keeping it intact.
-    val first = true
+    val first     = true
     val throwable = getThrowable(exception, true)
-    val string = if (message.nonEmpty) message + "\n" else message
+    val string    = if (message.nonEmpty) message + "\n" else message
     error(
       "Internal Error! %sPlease file an issue at https://github.com/ucb-bar/firrtl/issues".format(string),
       throwable
@@ -49,21 +49,21 @@ object Utils extends LazyLogging {
   }
 
   def time[R](block: => R): (Double, R) = {
-    val t0 = System.nanoTime()
-    val result = block
-    val t1 = System.nanoTime()
+    val t0         = System.nanoTime()
+    val result     = block
+    val t1         = System.nanoTime()
     val timeMillis = (t1 - t0) / 1000000.0
     (timeMillis, result)
   }
 
   def getUIntWidth(u: BigInt): Int = u.bitLength
-  val BoolType = UIntType(IntWidth(1))
-  val one = UIntLiteral(1)
-  val zero = UIntLiteral(0)
+  val BoolType                     = UIntType(IntWidth(1))
+  val one                          = UIntLiteral(1)
+  val zero                         = UIntLiteral(0)
 
-  def sub_type(v: Type): Type = v match {
+  def sub_type(v: Type): Type              = v match {
     case vx: VectorType => vx.tpe
-    case vx => UnknownType
+    case vx             => UnknownType
   }
   def field_type(v: Type, s: String): Type = v match {
     case vx: BundleType =>
@@ -71,7 +71,7 @@ object Utils extends LazyLogging {
         case Some(f) => f.tpe
         case None    => UnknownType
       }
-    case vx => UnknownType
+    case vx             => UnknownType
   }
 
 // =================================

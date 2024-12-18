@@ -12,8 +12,8 @@ import scala.util.matching.Regex
 // Workaround for https://github.com/sbt/sbt/issues/3966
 object RangeTransform {
   val UnspecifiedNumber: Regex = """(\?).*""".r
-  val IntegerNumber:     Regex = """(-?\d+).*""".r
-  val DecimalNumber:     Regex = """(-?\d+\.\d+).*""".r
+  val IntegerNumber: Regex     = """(-?\d+).*""".r
+  val DecimalNumber: Regex     = """(-?\d+\.\d+).*""".r
 }
 
 /** Convert the string to IntervalRange, with unknown, open or closed endpoints and a binary point
@@ -32,15 +32,15 @@ class RangeTransform(val c: blackbox.Context) {
   def apply(args: c.Tree*): c.Tree = {
     val stringTrees = c.prefix.tree match {
       case q"$_(scala.StringContext.apply(..$strings))" => strings
-      case _ =>
+      case _                                            =>
         c.abort(
           c.enclosingPosition,
           s"Range macro unable to parse StringContext, got: ${showCode(c.prefix.tree)}"
         )
     }
-    val strings = stringTrees.map {
+    val strings     = stringTrees.map {
       case Literal(Constant(string: String)) => string
-      case tree =>
+      case tree                              =>
         c.abort(
           c.enclosingPosition,
           s"Range macro unable to parse StringContext element, got: ${showRaw(tree)}"
@@ -48,8 +48,8 @@ class RangeTransform(val c: blackbox.Context) {
     }
 
     var nextStringIndex: Int = 1
-    var nextArgIndex:    Int = 0
-    var currString:      String = strings.head
+    var nextArgIndex: Int    = 0
+    var currString: String   = strings.head
 
     /** Mutably gets the next numeric value in the range specifier.
       */
@@ -74,7 +74,7 @@ class RangeTransform(val c: blackbox.Context) {
           case RangeTransform.DecimalNumber(numberString) => numberString
           case RangeTransform.IntegerNumber(numberString) => numberString
           case RangeTransform.UnspecifiedNumber(_)        => "?"
-          case _ =>
+          case _                                          =>
             c.abort(
               c.enclosingPosition,
               s"Bad number or unspecified bound $currString"
@@ -93,9 +93,9 @@ class RangeTransform(val c: blackbox.Context) {
     // Currently, not allowed to have the end stops (inclusive / exclusive) be interpolated.
     currString = currString.dropWhile(_ == ' ')
     val startInclusive = currString.headOption match {
-      case Some('[') => true
-      case Some('(') => false
-      case Some('?') =>
+      case Some('[')   => true
+      case Some('(')   => false
+      case Some('?')   =>
         c.abort(
           c.enclosingPosition,
           s"start of range as unknown s must be '[?' or '(?' not '?'"
@@ -105,7 +105,7 @@ class RangeTransform(val c: blackbox.Context) {
           c.enclosingPosition,
           s"Unknown start inclusive/exclusive specifier, got: '$other'"
         )
-      case None =>
+      case None        =>
         c.abort(
           c.enclosingPosition,
           s"No initial inclusive/exclusive specifier"
@@ -131,9 +131,9 @@ class RangeTransform(val c: blackbox.Context) {
     currString = currString.dropWhile(_ == ' ')
 
     val endInclusive = currString.headOption match {
-      case Some(']') => true
-      case Some(')') => false
-      case Some('?') =>
+      case Some(']')   => true
+      case Some(')')   => false
+      case Some('?')   =>
         c.abort(
           c.enclosingPosition,
           s"start of range as unknown s must be '[?' or '(?' not '?'"
@@ -143,7 +143,7 @@ class RangeTransform(val c: blackbox.Context) {
           c.enclosingPosition,
           s"Unknown end inclusive/exclusive specifier, got: '$other' expecting ')' or ']'"
         )
-      case None =>
+      case None        =>
         c.abort(
           c.enclosingPosition,
           s"Incomplete range specifier, missing end inclusive/exclusive specifier"
@@ -153,7 +153,7 @@ class RangeTransform(val c: blackbox.Context) {
     currString = currString.dropWhile(_ == ' ')
 
     val binaryPointString = currString.headOption match {
-      case Some('.') =>
+      case Some('.')   =>
         currString = currString.substring(1)
         computeNextValue()
       case Some(other) =>
@@ -161,7 +161,7 @@ class RangeTransform(val c: blackbox.Context) {
           c.enclosingPosition,
           s"Unknown end binary point prefix, got: '$other' was expecting '.'"
         )
-      case None =>
+      case None        =>
         Literal(Constant(0))
     }
 

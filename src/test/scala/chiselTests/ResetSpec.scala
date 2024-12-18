@@ -27,7 +27,7 @@ class AbstractResetDontCareModule extends RawModule {
   monoAggWire := DontCare
 
   // Can't bulk connect to Wire so only ports here
-  val bulkPort = IO(Output(Reset()))
+  val bulkPort    = IO(Output(Reset()))
   bulkPort <> DontCare
   val bulkAggPort = IO(Output(Valid(Reset())))
   bulkAggPort <> DontCare
@@ -43,46 +43,46 @@ class ResetSpec extends ChiselFlatSpec with Utils {
 
   it should "be able to drive Bool" in {
     ChiselStage.emitSystemVerilog(new RawModule {
-      val in = IO(Input(Bool()))
+      val in  = IO(Input(Bool()))
       val out = IO(Output(Bool()))
-      val w = Wire(Reset())
-      w := in
+      val w   = Wire(Reset())
+      w   := in
       out := w
     })
   }
 
   it should "be able to drive AsyncReset" in {
     ChiselStage.emitSystemVerilog(new RawModule {
-      val in = IO(Input(AsyncReset()))
+      val in  = IO(Input(AsyncReset()))
       val out = IO(Output(AsyncReset()))
-      val w = Wire(Reset())
-      w := in
+      val w   = Wire(Reset())
+      w   := in
       out := w
     })
   }
 
   it should "allow writing modules that are reset agnostic" in {
     val sync = compile(new Module {
-      val io = IO(new Bundle {
+      val io   = IO(new Bundle {
         val out = Output(UInt(8.W))
       })
       val inst = Module(new ResetAgnosticModule)
       inst.clk := clock
       inst.rst := reset
       assert(inst.rst.isInstanceOf[chisel3.ResetType])
-      io.out := inst.out
+      io.out   := inst.out
     })
     sync should include("always @(posedge clk)")
 
     val async = compile(new Module {
-      val io = IO(new Bundle {
+      val io   = IO(new Bundle {
         val out = Output(UInt(8.W))
       })
       val inst = Module(new ResetAgnosticModule)
       inst.clk := clock
       inst.rst := reset.asTypeOf(AsyncReset())
       assert(inst.rst.isInstanceOf[chisel3.ResetType])
-      io.out := inst.out
+      io.out   := inst.out
     })
     async should include("always @(posedge clk or posedge rst)")
   }
@@ -105,28 +105,28 @@ class ResetSpec extends ChiselFlatSpec with Utils {
 
   they should "be able to override the value of the implicit reset" in {
     val verilog = ChiselStage.emitSystemVerilog(new Module {
-      val gate = IO(Input(Bool()))
-      val in = IO(Input(UInt(8.W)))
-      val out = IO(Output(UInt(8.W)))
+      val gate                             = IO(Input(Bool()))
+      val in                               = IO(Input(UInt(8.W)))
+      val out                              = IO(Output(UInt(8.W)))
       override protected val implicitReset = reset.asBool || gate
-      val r = RegInit(0.U)
+      val r                                = RegInit(0.U)
       out := r
-      r := in
+      r   := in
     })
     verilog should include("if (reset | gate)")
   }
 
   they should "be able to add an implicit clock to a RawModule" in {
     val verilog = ChiselStage.emitSystemVerilog(new RawModule with ImplicitReset {
-      val foo = IO(Input(Bool()))
-      val in = IO(Input(UInt(8.W)))
-      val out = IO(Output(UInt(8.W)))
+      val foo                              = IO(Input(Bool()))
+      val in                               = IO(Input(UInt(8.W)))
+      val out                              = IO(Output(UInt(8.W)))
       override protected val implicitReset = !foo
 
       val clk = IO(Input(Clock()))
-      val r = withClock(clk)(RegInit(0.U))
+      val r   = withClock(clk)(RegInit(0.U))
       out := r
-      r := in
+      r   := in
     })
     verilog should include("if (~foo)")
   }
@@ -158,8 +158,8 @@ class ResetSpec extends ChiselFlatSpec with Utils {
     val e = the[ChiselException] thrownBy (
       ChiselStage.emitCHIRRTL(
         new RawModule with ImplicitReset {
-          val r = Module.reset
-          val foo = IO(Input(AsyncReset()))
+          val r                                = Module.reset
+          val foo                              = IO(Input(AsyncReset()))
           override protected def implicitReset = foo
         },
         args = Array("--throw-on-first-error")

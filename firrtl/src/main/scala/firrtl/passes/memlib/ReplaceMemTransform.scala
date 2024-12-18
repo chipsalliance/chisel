@@ -9,10 +9,10 @@ import firrtl.annotations._
 import firrtl.options.{HasShellOptions, ShellOption}
 
 sealed trait PassOption
-case object InputConfigFileName extends PassOption
+case object InputConfigFileName  extends PassOption
 case object OutputConfigFileName extends PassOption
-case object PassCircuitName extends PassOption
-case object PassModuleName extends PassOption
+case object PassCircuitName      extends PassOption
+case object PassModuleName       extends PassOption
 
 object PassConfigUtil {
   type PassOptionMap = Map[PassOption, String]
@@ -23,7 +23,7 @@ object PassConfigUtil {
 
     def nextPassOption(map: PassOptionMap, list: List[String]): PassOptionMap = {
       list match {
-        case Nil => map
+        case Nil                   => map
         case "-i" :: value :: tail =>
           nextPassOption(map + (InputConfigFileName -> value), tail)
         case "-o" :: value :: tail =>
@@ -32,7 +32,7 @@ object PassConfigUtil {
           nextPassOption(map + (PassCircuitName -> value), tail)
         case "-m" :: value :: tail =>
           nextPassOption(map + (PassModuleName -> value), tail)
-        case option :: tail =>
+        case option :: tail        =>
           error("Unknown option " + option + usage)
       }
     }
@@ -60,8 +60,8 @@ Optional Arguments:
   -i<filename>         Specify the input configuration file (for additional optimizations)
 """
 
-    val passOptions = PassConfigUtil.getPassOptions(t, usage)
-    val outputConfig = passOptions.getOrElse(
+    val passOptions   = PassConfigUtil.getPassOptions(t, usage)
+    val outputConfig  = passOptions.getOrElse(
       OutputConfigFileName,
       error("No output config file provided for ReplSeqMem!" + usage)
     )

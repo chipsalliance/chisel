@@ -37,22 +37,22 @@ object VecBundleDataView {
 }
 
 object FlatDecoupledDataView {
-  class FizzBuzz extends Bundle {
+  class FizzBuzz      extends Bundle {
     val fizz = UInt(8.W)
     val buzz = UInt(8.W)
   }
   class FlatDecoupled extends Bundle {
     val valid = Output(Bool())
     val ready = Input(Bool())
-    val fizz = Output(UInt(8.W))
-    val buzz = Output(UInt(8.W))
+    val fizz  = Output(UInt(8.W))
+    val buzz  = Output(UInt(8.W))
   }
   implicit val view = DataView[FlatDecoupled, DecoupledIO[FizzBuzz]](
     _ => Decoupled(new FizzBuzz),
     _.valid -> _.valid,
     _.ready -> _.ready,
-    _.fizz -> _.bits.fizz,
-    _.buzz -> _.bits.buzz
+    _.fizz  -> _.bits.fizz,
+    _.buzz  -> _.bits.buzz
   )
   implicit val view2 = view.invert(_ => new FlatDecoupled)
 }
@@ -84,7 +84,7 @@ class DataViewSpec extends ChiselFlatSpec {
   it should "support simple Bundle viewing" in {
     import SimpleBundleDataView._
     class MyModule extends Module {
-      val in = IO(Input(new BundleA(8)))
+      val in  = IO(Input(new BundleA(8)))
       val out = IO(Output(new BundleB(8)))
       out := in.viewAs[BundleB]
     }
@@ -95,7 +95,7 @@ class DataViewSpec extends ChiselFlatSpec {
   it should "be a bidirectional mapping" in {
     import SimpleBundleDataView._
     class MyModule extends Module {
-      val in = IO(Input(new BundleA(8)))
+      val in  = IO(Input(new BundleA(8)))
       val out = IO(Output(new BundleB(8)))
       out.viewAs[BundleA] := in
     }
@@ -105,10 +105,10 @@ class DataViewSpec extends ChiselFlatSpec {
 
   it should "handle viewing UInts as UInts" in {
     class MyModule extends Module {
-      val in = IO(Input(UInt(8.W)))
+      val in  = IO(Input(UInt(8.W)))
       val foo = IO(Output(UInt(8.W)))
       val bar = IO(Output(UInt(8.W)))
-      foo := in.viewAs[UInt]
+      foo              := in.viewAs[UInt]
       bar.viewAs[UInt] := in
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
@@ -131,10 +131,10 @@ class DataViewSpec extends ChiselFlatSpec {
       val foo = UInt(8.W)
     }
     class MyModule extends Module {
-      val in = IO(Input(new MyBundle))
+      val in   = IO(Input(new MyBundle))
       val fizz = IO(Output(new MyBundle))
       val buzz = IO(Output(new MyBundle))
-      fizz := in.viewAs[MyBundle]
+      fizz                  := in.viewAs[MyBundle]
       buzz.viewAs[MyBundle] := in
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
@@ -144,10 +144,10 @@ class DataViewSpec extends ChiselFlatSpec {
 
   it should "handle viewing Vecs as their same concrete type" in {
     class MyModule extends Module {
-      val in = IO(Input(Vec(1, UInt(8.W))))
+      val in   = IO(Input(Vec(1, UInt(8.W))))
       val fizz = IO(Output(Vec(1, UInt(8.W))))
       val buzz = IO(Output(Vec(1, UInt(8.W))))
-      fizz := in.viewAs[Vec[UInt]]
+      fizz                   := in.viewAs[Vec[UInt]]
       buzz.viewAs[Vec[UInt]] := in
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
@@ -158,10 +158,10 @@ class DataViewSpec extends ChiselFlatSpec {
   it should "handle viewing Vecs as Bundles and vice versa" in {
     import VecBundleDataView._
     class MyModule extends Module {
-      val in = IO(Input(new MyBundle))
-      val out = IO(Output(Vec(2, UInt(8.W))))
+      val in   = IO(Input(new MyBundle))
+      val out  = IO(Output(Vec(2, UInt(8.W))))
       val out2 = IO(Output(Vec(2, UInt(8.W))))
-      out := in.viewAs[Vec[UInt]]
+      out                   := in.viewAs[Vec[UInt]]
       out2.viewAs[MyBundle] := in
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
@@ -174,8 +174,8 @@ class DataViewSpec extends ChiselFlatSpec {
   it should "work with bidirectional connections for nested types" in {
     import FlatDecoupledDataView._
     class MyModule extends Module {
-      val enq = IO(Flipped(Decoupled(new FizzBuzz)))
-      val deq = IO(new FlatDecoupled)
+      val enq  = IO(Flipped(Decoupled(new FizzBuzz)))
+      val deq  = IO(new FlatDecoupled)
       val deq2 = IO(new FlatDecoupled)
       deq <> enq.viewAs[FlatDecoupled]
       deq2.viewAs[DecoupledIO[FizzBuzz]] <> enq
@@ -192,18 +192,18 @@ class DataViewSpec extends ChiselFlatSpec {
   }
 
   it should "support viewing a Bundle as a Parent Bundle type" in {
-    class Foo extends Bundle {
+    class Foo      extends Bundle {
       val foo = UInt(8.W)
     }
-    class Bar extends Foo {
+    class Bar      extends Foo    {
       val bar = UInt(8.W)
     }
     class MyModule extends Module {
-      val fooIn = IO(Input(new Foo))
+      val fooIn  = IO(Input(new Foo))
       val barOut = IO(Output(new Bar))
       barOut.viewAsSupertype(new Foo) := fooIn
 
-      val barIn = IO(Input(new Bar))
+      val barIn  = IO(Input(new Bar))
       val fooOut = IO(Output(new Foo))
       fooOut := barIn.viewAsSupertype(new Foo)
     }
@@ -224,11 +224,11 @@ class DataViewSpec extends ChiselFlatSpec {
     }
 
     class MyModule extends Module {
-      val fooIn = IO(Input(new Foo))
+      val fooIn  = IO(Input(new Foo))
       val barOut = IO(Output(new Bar))
       barOut.viewAsSupertype(new Foo) := fooIn
 
-      val barIn = IO(Input(new Bar))
+      val barIn  = IO(Input(new Bar))
       val fooOut = IO(Output(new Foo))
       fooOut := barIn.viewAsSupertype(new Foo)
     }
@@ -241,17 +241,17 @@ class DataViewSpec extends ChiselFlatSpec {
     class Foo extends Record {
       override val elements = SeqMap("foo" -> UInt(8.W), "quz" -> UInt(8.W))
     }
-    class Bar extends Foo {
+    class Bar extends Foo    {
       // No actual relationship in the elements...
       override val elements = SeqMap("bar" -> UInt(8.W))
     }
 
     class MyModule extends Module {
-      val fooIn = IO(Input(new Foo))
+      val fooIn  = IO(Input(new Foo))
       val barOut = IO(Output(new Bar))
       barOut.viewAsSupertype(new Foo) := fooIn
 
-      val barIn = IO(Input(new Bar))
+      val barIn  = IO(Input(new Bar))
       val fooOut = IO(Output(new Foo))
       fooOut := barIn.viewAsSupertype(new Foo)
     }
@@ -266,7 +266,7 @@ class DataViewSpec extends ChiselFlatSpec {
     }
 
     class MyModule extends Module {
-      val ifc = IO(Flipped(new Foo))
+      val ifc    = IO(Flipped(new Foo))
       val ifcMon = IO(Input(new Foo))
 
       ifc :<= DontCare
@@ -278,19 +278,19 @@ class DataViewSpec extends ChiselFlatSpec {
   }
 
   it should "be easy to make a PartialDataView viewing a Bundle as a Parent Bundle type" in {
-    class Foo(x: Int) extends Bundle {
+    class Foo(x: Int)     extends Bundle {
       val foo = UInt(x.W)
     }
     class Bar(val x: Int) extends Foo(x) {
       val bar = UInt(x.W)
     }
     implicit val view = PartialDataView.supertype[Bar, Foo](b => new Foo(b.x))
-    class MyModule extends Module {
-      val fooIn = IO(Input(new Foo(8)))
+    class MyModule        extends Module {
+      val fooIn  = IO(Input(new Foo(8)))
       val barOut = IO(Output(new Bar(8)))
       barOut.viewAs[Foo] := fooIn
 
-      val barIn = IO(Input(new Bar(8)))
+      val barIn  = IO(Input(new Bar(8)))
       val fooOut = IO(Output(new Foo(8)))
       fooOut := barIn.viewAs[Foo]
     }
@@ -300,25 +300,25 @@ class DataViewSpec extends ChiselFlatSpec {
   }
 
   it should "support viewing structural supertypes" in {
-    class A extends Bundle {
+    class A        extends Bundle {
       val x = UInt(3.W)
       val y = UInt(3.W)
       val z = UInt(3.W)
     }
-    class B extends Bundle {
+    class B        extends Bundle {
       val x = UInt(3.W)
       val y = UInt(3.W)
     }
-    class C extends Bundle {
+    class C        extends Bundle {
       val y = UInt(3.W)
       val z = UInt(3.W)
     }
     class MyModule extends Module {
       val io = IO(new Bundle {
-        val a = Input(new A)
-        val b = Output(new B)
-        val c = Output(new C)
-        val inc = Input(new C)
+        val a    = Input(new A)
+        val b    = Output(new B)
+        val c    = Output(new C)
+        val inc  = Input(new C)
         val outa = Output(new A)
       })
       io.b <> io.a.viewAsSupertype(new B)
@@ -333,28 +333,28 @@ class DataViewSpec extends ChiselFlatSpec {
   }
 
   it should "support viewing structural supertypes with bundles" in {
-    class Foo extends Bundle {
+    class Foo      extends Bundle {
       val y = UInt(3.W)
     }
-    class A extends Bundle {
+    class A        extends Bundle {
       val foo = new Foo
-      val x = UInt(3.W)
-      val z = UInt(3.W)
+      val x   = UInt(3.W)
+      val z   = UInt(3.W)
     }
-    class B extends Bundle {
-      val x = UInt(3.W)
+    class B        extends Bundle {
+      val x   = UInt(3.W)
       val foo = new Foo
     }
-    class C extends Bundle {
+    class C        extends Bundle {
       val foo = new Foo
-      val z = UInt(3.W)
+      val z   = UInt(3.W)
     }
     class MyModule extends Module {
       val io = IO(new Bundle {
-        val a = Input(new A)
-        val b = Output(new B)
-        val c = Output(new C)
-        val inc = Input(new C)
+        val a    = Input(new A)
+        val b    = Output(new B)
+        val c    = Output(new C)
+        val inc  = Input(new C)
         val outa = Output(new A)
       })
       io.b <> io.a.viewAsSupertype(new B)
@@ -370,12 +370,12 @@ class DataViewSpec extends ChiselFlatSpec {
   }
 
   it should "error during elaboration for sub-type errors that cannot be found at compile-time" in {
-    class A extends Bundle {
+    class A        extends Bundle {
       val x = UInt(3.W)
       val y = UInt(4.W)
       val z = UInt(3.W)
     }
-    class B extends Bundle {
+    class B        extends Bundle {
       val x = UInt(3.W)
       val y = UInt(3.W)
     }
@@ -390,19 +390,19 @@ class DataViewSpec extends ChiselFlatSpec {
   }
 
   it should "support viewing structural supertypes with generated types" in {
-    class Foo extends Bundle {
+    class Foo                                  extends Bundle {
       val foo = UInt(8.W)
     }
-    class Bar extends Foo {
+    class Bar                                  extends Foo    {
       val bar = UInt(8.W)
     }
     class MyInterface[T <: Data](gen: () => T) extends Bundle {
-      val foo = gen()
+      val foo  = gen()
       val fizz = UInt(8.W)
       val buzz = UInt(8.W)
     }
-    class MyModule extends Module {
-      val fooIf = IO(Input(new MyInterface(() => UInt(8.W))))
+    class MyModule                             extends Module {
+      val fooIf  = IO(Input(new MyInterface(() => UInt(8.W))))
       val fooOut = IO(Output(new Foo))
       fooOut <> fooIf.viewAsSupertype(new Foo)
     }
@@ -472,12 +472,12 @@ class DataViewSpec extends ChiselFlatSpec {
       val value = UInt(8.W)
     }
     class MyModule extends Module {
-      val a = IO(Input(UInt(8.W)))
-      val b = IO(Input(new MyBundle))
-      val cond = IO(Input(Bool()))
+      val a                 = IO(Input(UInt(8.W)))
+      val b                 = IO(Input(new MyBundle))
+      val cond              = IO(Input(Bool()))
       val and, mux, bitsCat = IO(Output(UInt(8.W)))
       // Chisel unconditionally emits a node, so name it at least
-      val x = a.viewAs[UInt] & b.viewAs[MyBundle].value
+      val x                 = a.viewAs[UInt] & b.viewAs[MyBundle].value
       and.viewAs[UInt] := x
 
       val y = Mux(cond.viewAs[Bool], a.viewAs[UInt], b.value.viewAs[UInt])
@@ -508,9 +508,9 @@ class DataViewSpec extends ChiselFlatSpec {
   it should "support .asUInt of Views" in {
     import VecBundleDataView._
     class MyModule extends Module {
-      val barIn = IO(Input(new MyBundle))
+      val barIn  = IO(Input(new MyBundle))
       val fooOut = IO(Output(UInt()))
-      val cat = barIn.viewAs[Vec[UInt]].asUInt
+      val cat    = barIn.viewAs[Vec[UInt]].asUInt
       fooOut := cat
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
@@ -520,11 +520,11 @@ class DataViewSpec extends ChiselFlatSpec {
 
   it should "be composable" in {
     // Given DataView[A, B] and DataView[B, C], derive DataView[A, C]
-    class Foo(val foo: UInt) extends Bundle
-    class Bar(val bar: UInt) extends Bundle
+    class Foo(val foo: UInt)   extends Bundle
+    class Bar(val bar: UInt)   extends Bundle
     class Fizz(val fizz: UInt) extends Bundle
 
-    implicit val foo2bar = DataView[Foo, Bar](f => new Bar(chiselTypeClone(f.foo)), _.foo -> _.bar)
+    implicit val foo2bar  = DataView[Foo, Bar](f => new Bar(chiselTypeClone(f.foo)), _.foo -> _.bar)
     implicit val bar2fizz = DataView[Bar, Fizz](b => new Fizz(chiselTypeClone(b.bar)), _.bar -> _.fizz)
 
     implicit val foo2fizz: DataView[Foo, Fizz] = foo2bar.andThen(bar2fizz)
@@ -543,8 +543,8 @@ class DataViewSpec extends ChiselFlatSpec {
   it should "enable using Seq like Data" in {
     class MyModule extends Module {
       val a, b, c, d = IO(Input(UInt(8.W)))
-      val sel = IO(Input(Bool()))
-      val y, z = IO(Output(UInt(8.W)))
+      val sel        = IO(Input(Bool()))
+      val y, z       = IO(Output(UInt(8.W)))
       // Unclear why the implicit conversion does not work in this case for Seq
       // That being said, it's easy enough to cast via `.viewAs` with or without
       Seq(y, z) := Mux(sel, Seq(a, b).viewAs, Seq(c, d).viewAs[Vec[UInt]])
@@ -559,9 +559,9 @@ class DataViewSpec extends ChiselFlatSpec {
     import SimpleBundleDataView._
     class MyModule extends Module {
       val cond = IO(Input(Bool()))
-      val in1 = IO(Input(new BundleA(8)))
-      val in2 = IO(Input(new BundleA(8)))
-      val out = IO(Output(new BundleB(8)))
+      val in1  = IO(Input(new BundleA(8)))
+      val in2  = IO(Input(new BundleA(8)))
+      val out  = IO(Output(new BundleB(8)))
 
       out := Mux(cond, in1.viewAs[BundleB], in2.viewAs[BundleB])
     }
@@ -582,9 +582,9 @@ class DataViewSpec extends ChiselFlatSpec {
     import SimpleBundleDataView._
     class MyModule extends Module {
       val cond = IO(Input(Bool()))
-      val in1 = IO(Input(new BundleA(8)))
-      val in2 = IO(Input(new BundleA(8)))
-      val out = IO(Output(new BundleA(8)))
+      val in1  = IO(Input(new BundleA(8)))
+      val in2  = IO(Input(new BundleA(8)))
+      val out  = IO(Output(new BundleA(8)))
 
       out := Mux(cond, in1.viewAs[BundleA], in2.viewAs[BundleA])
     }
@@ -596,9 +596,9 @@ class DataViewSpec extends ChiselFlatSpec {
   it should "handle Probe of a view of a Bundle" in {
     import SimpleBundleDataView._
     class MyModule extends Module {
-      val in = IO(Input(new BundleA(8)))
+      val in        = IO(Input(new BundleA(8)))
       val out_probe = IO(Output(Probe(new BundleB(8))))
-      val view = in.viewAs[BundleB]
+      val view      = in.viewAs[BundleB]
       define(out_probe, ProbeValue(view))
     }
     val firrtl = ChiselStage.emitCHIRRTL(new MyModule)
@@ -621,8 +621,8 @@ class DataViewSpec extends ChiselFlatSpec {
         tup => new MyBundle(tup.productIterator.toList.tail.mkString("_")),
         _._1 -> _.x
       )
-    class MyModule extends Module {
-      val in = IO(Input(UInt(8.W)))
+    class MyModule                   extends Module {
+      val in  = IO(Input(UInt(8.W)))
       val bun = (in, 'a', "b", 0, 1.toByte, 2.toShort, 3L, BigInt(4), 5.0f, 6.0).viewAs[MyBundle]
       val out = IO(Output(chiselTypeOf(bun)))
       out := bun
@@ -640,8 +640,8 @@ class DataViewSpec extends ChiselFlatSpec {
       opt => new MyBundle(opt.map(_.getWidth)),
       { case (opt, bun) => opt.zip(bun.x).map { case (o, b) => o -> b } }
     )
-    class MyModule extends Module {
-      val in = IO(Input(UInt(8.W)))
+    class MyModule                 extends Module {
+      val in   = IO(Input(UInt(8.W)))
       val out1 = IO(Output(new MyBundle(Some(8))))
       val out2 = IO(Output(new MyBundle(None)))
       out1 := Option(in).viewAs[MyBundle]
@@ -685,17 +685,17 @@ class DataViewSpec extends ChiselFlatSpec {
 
   it should "support dynamic indexing for Vec identity views" in {
     class MyModule extends Module {
-      val dataIn = IO(Input(UInt(8.W)))
-      val addr = IO(Input(UInt(2.W)))
+      val dataIn  = IO(Input(UInt(8.W)))
+      val addr    = IO(Input(UInt(2.W)))
       val dataOut = IO(Output(UInt(8.W)))
 
-      val vec = RegInit(0.U.asTypeOf(Vec(4, UInt(8.W))))
-      val view = vec.viewAs[Vec[UInt]]
+      val vec      = RegInit(0.U.asTypeOf(Vec(4, UInt(8.W))))
+      val view     = vec.viewAs[Vec[UInt]]
       // Dynamic indexing is more of a "generator" in Chisel3 than an individual node
       // This style is not recommended, this is just testing the behavior
       val selected = view(addr)
       selected := dataIn
-      dataOut := selected
+      dataOut  := selected
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
     chirrtl should include("connect vec[addr], dataIn")
@@ -713,19 +713,19 @@ class DataViewSpec extends ChiselFlatSpec {
       _._2 -> _.bar
     )
     class MyModule extends Module {
-      val dataIn = IO(Input(UInt(8.W)))
-      val addr = IO(Input(UInt(2.W)))
+      val dataIn  = IO(Input(UInt(8.W)))
+      val addr    = IO(Input(UInt(2.W)))
       val dataOut = IO(Output(UInt(8.W)))
 
-      val vec = RegInit(0.U.asTypeOf(Vec(4, UInt(8.W))))
-      val addrReg = Reg(UInt(2.W))
-      val view = (vec, addrReg).viewAs[MyBundle]
+      val vec      = RegInit(0.U.asTypeOf(Vec(4, UInt(8.W))))
+      val addrReg  = Reg(UInt(2.W))
+      val view     = (vec, addrReg).viewAs[MyBundle]
       // Dynamic indexing is more of a "generator" in Chisel3 than an individual node
       // This style is not recommended, this is just testing the behavior
       val selected = view.foo(view.bar)
       view.bar := addr
       selected := dataIn
-      dataOut := selected
+      dataOut  := selected
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
     chirrtl should include("connect vec[addrReg], dataIn")
@@ -734,7 +734,7 @@ class DataViewSpec extends ChiselFlatSpec {
 
   it should "allow views between reset types" in {
     class A extends Bundle {
-      val bool = Bool()
+      val bool       = Bool()
       val asyncreset = AsyncReset()
     }
 
@@ -749,7 +749,7 @@ class DataViewSpec extends ChiselFlatSpec {
 
       implicit val view = DataView[A, B](
         _ => new B,
-        _.bool -> _.reset_0,
+        _.bool       -> _.reset_0,
         _.asyncreset -> _.reset_1
       )
 
@@ -768,16 +768,16 @@ class DataViewSpec extends ChiselFlatSpec {
 
   it should "error if you try to dynamically index a Vec view that does not correspond to a Vec target" in {
     class MyModule extends Module {
-      val inA, inB = IO(Input(UInt(8.W)))
+      val inA, inB   = IO(Input(UInt(8.W)))
       val outA, outB = IO(Output(UInt(8.W)))
-      val idx = IO(Input(UInt(1.W)))
+      val idx        = IO(Input(UInt(1.W)))
 
       val a, b, c, d = RegInit(0.U)
 
       // Dynamic indexing is more of a "generator" in Chisel3 than an individual node
       // This style is not recommended, this is just testing the behavior
       val selected = Seq((a, b), (c, d)).apply(idx)
-      selected := (inA, inB)
+      selected     := (inA, inB)
       (outA, outB) := selected
     }
     (the[InvalidViewException] thrownBy {
@@ -790,7 +790,7 @@ class DataViewSpec extends ChiselFlatSpec {
     implicit val dv = DataView[UInt, MyBundle](_ => new MyBundle(UInt(), UInt()), _ -> _.bar)
     class MyModule extends Module {
       val tpe = new MyBundle(UInt(8.W), UInt(8.W))
-      val in = IO(Input(UInt(8.W)))
+      val in  = IO(Input(UInt(8.W)))
       val out = IO(Output(tpe))
       out := in.viewAs[MyBundle]
     }
@@ -802,7 +802,7 @@ class DataViewSpec extends ChiselFlatSpec {
     implicit val dv = DataView[(UInt, UInt), UInt](_ => UInt(), _._1 -> _)
     class MyModule extends Module {
       val a, b = IO(Input(UInt(8.W)))
-      val out = IO(Output(UInt(8.W)))
+      val out  = IO(Output(UInt(8.W)))
       out := (a, b).viewAs[UInt]
     }
     val err = the[InvalidViewException] thrownBy (ChiselStage.emitSystemVerilog(new MyModule))
@@ -810,17 +810,17 @@ class DataViewSpec extends ChiselFlatSpec {
   }
 
   it should "error if the mapping contains Data that are not part of the Target" in {
-    class BundleA extends Bundle {
+    class BundleA  extends Bundle {
       val foo = UInt(8.W)
     }
-    class BundleB extends Bundle {
+    class BundleB  extends Bundle {
       val fizz = UInt(8.W)
       val buzz = UInt(8.W)
     }
     class MyModule extends Module {
-      val in = IO(Input(new BundleA))
-      val out = IO(Output(new BundleB))
-      val foo = Wire(UInt(8.W))
+      val in          = IO(Input(new BundleA))
+      val out         = IO(Output(new BundleB))
+      val foo         = Wire(UInt(8.W))
       implicit val dv = DataView[BundleA, BundleB](_ => new BundleB, _.foo -> _.fizz, (_, b) => (foo, b.buzz))
       out := in.viewAs[BundleB]
     }
@@ -839,7 +839,7 @@ class DataViewSpec extends ChiselFlatSpec {
     implicit val dv = DataView[BundleA, BundleB](_ => new BundleB, _.foo -> _.fizz, (_, b) => (3.U, b.buzz))
     implicit val dv2 = dv.invert(_ => new BundleA)
     class MyModule extends Module {
-      val in = IO(Input(new BundleA))
+      val in  = IO(Input(new BundleA))
       val out = IO(Output(new BundleB))
       out.viewAs[BundleA] := in
     }
@@ -848,15 +848,15 @@ class DataViewSpec extends ChiselFlatSpec {
   }
 
   it should "error if a view has a width that does not match the target" in {
-    class BundleA extends Bundle {
+    class BundleA  extends Bundle {
       val foo = UInt(8.W)
     }
-    class BundleB extends Bundle {
+    class BundleB  extends Bundle {
       val bar = UInt(4.W)
     }
     implicit val dv = DataView[BundleA, BundleB](_ => new BundleB, _.foo -> _.bar)
     class MyModule extends Module {
-      val in = IO(Input(new BundleA))
+      val in  = IO(Input(new BundleA))
       val out = IO(Output(new BundleB))
       out := in.viewAs[BundleB]
     }
@@ -866,15 +866,15 @@ class DataViewSpec extends ChiselFlatSpec {
   }
 
   it should "error if a view has a known width when the target width is unknown" in {
-    class BundleA extends Bundle {
+    class BundleA  extends Bundle {
       val foo = UInt()
     }
-    class BundleB extends Bundle {
+    class BundleB  extends Bundle {
       val bar = UInt(4.W)
     }
     implicit val dv = DataView[BundleA, BundleB](_ => new BundleB, _.foo -> _.bar)
     class MyModule extends Module {
-      val in = IO(Input(new BundleA))
+      val in  = IO(Input(new BundleA))
       val out = IO(Output(new BundleB))
       out := in.viewAs[BundleB]
     }
@@ -887,16 +887,16 @@ class DataViewSpec extends ChiselFlatSpec {
   it should "support invalidation" in {
     class MyModule extends Module {
       val a, b, c, d, e, f = IO(Output(UInt(8.W)))
-      val foo = (a, b).viewAs
-      val bar = (c, d).viewAs
-      val fizz = (e, f).viewAs
-      foo := DontCare
+      val foo              = (a, b).viewAs
+      val bar              = (c, d).viewAs
+      val fizz             = (e, f).viewAs
+      foo     := DontCare
       bar <> DontCare
       fizz._1 := DontCare
       fizz._2 <> DontCare
     }
 
-    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
+    val chirrtl  = ChiselStage.emitCHIRRTL(new MyModule)
     val expected = ('a' to 'f').map(c => s"invalidate $c")
     for (line <- expected) {
       chirrtl should include(line)
@@ -917,9 +917,9 @@ class DataViewSpec extends ChiselFlatSpec {
 
   it should "handle viewing Probes as their referenced type" in {
     class MyModule extends Module {
-      val a = IO(Output(Probe(Bool())))
-      val w = WireInit(Bool(), false.B)
-      val w_probe = ProbeValue(w)
+      val a            = IO(Output(Probe(Bool())))
+      val w            = WireInit(Bool(), false.B)
+      val w_probe      = ProbeValue(w)
       val w_probe_view = w_probe.viewAs[Bool]
       define(a, w_probe_view)
     }
@@ -929,9 +929,9 @@ class DataViewSpec extends ChiselFlatSpec {
 
   it should "handle viewing RWProbes as their referenced type" in {
     class MyModule extends Module {
-      val a = IO(Output(RWProbe(Bool())))
-      val w = WireInit(Bool(), false.B)
-      val w_probe = RWProbeValue(w)
+      val a            = IO(Output(RWProbe(Bool())))
+      val w            = WireInit(Bool(), false.B)
+      val w_probe      = RWProbeValue(w)
       val w_probe_view = w_probe.viewAs[Bool]
       define(a, w_probe_view)
     }
@@ -946,10 +946,10 @@ class DataViewSpec extends ChiselFlatSpec {
     class OuterBundle extends Bundle {
       val a = Probe(new InnerBundle)
     }
-    class MyModule extends Module {
-      val p = Wire(new OuterBundle)
+    class MyModule    extends Module {
+      val p    = Wire(new OuterBundle)
       val view = p.viewAs[OuterBundle]
-      val w = Wire(new InnerBundle)
+      val w    = Wire(new InnerBundle)
       define(view.a, ProbeValue(w))
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
@@ -958,9 +958,9 @@ class DataViewSpec extends ChiselFlatSpec {
 
   it should "error if attempting to define a Probe viewed as a RWProbe" in {
     class MyModule extends Module {
-      val a = IO(Output(RWProbe(Bool())))
-      val w = WireInit(Bool(), false.B)
-      val w_probe = ProbeValue(w)
+      val a            = IO(Output(RWProbe(Bool())))
+      val w            = WireInit(Bool(), false.B)
+      val w_probe      = ProbeValue(w)
       val w_probe_view = w_probe.viewAs[Bool]
       define(a, w_probe_view)
     }
@@ -970,9 +970,9 @@ class DataViewSpec extends ChiselFlatSpec {
 
   it should "error if attempting to connect a viewed a Probe to a connectable" in {
     class MyModule extends Module {
-      val a = IO(Output(Bool()))
-      val w = WireInit(Bool(), false.B)
-      val w_probe = ProbeValue(w)
+      val a            = IO(Output(Bool()))
+      val w            = WireInit(Bool(), false.B)
+      val w_probe      = ProbeValue(w)
       val w_probe_view = w_probe.viewAs[Bool]
       a := w_probe_view
     }
@@ -983,7 +983,7 @@ class DataViewSpec extends ChiselFlatSpec {
   it should "support literals as part of the target" in {
     import ValidExtensions._
     class MyModule extends Module {
-      val in0, in1, in2, in3, in4 = IO(Input(UInt(8.W)))
+      val in0, in1, in2, in3, in4      = IO(Input(UInt(8.W)))
       val out0, out1, out2, out3, out4 = IO(Output(Valid(UInt(8.W))))
       out0 := in0.viewAs[Valid[UInt]]
       out1 <> in1.viewAs[Valid[UInt]]
@@ -1001,7 +1001,7 @@ class DataViewSpec extends ChiselFlatSpec {
   it should "error if a literal in a target would be driven" in {
     import ValidExtensions._
     class MyModule(op: (Valid[UInt], Valid[UInt]) => Unit) extends Module {
-      val in = IO(Input(Valid(UInt(8.W))))
+      val in  = IO(Input(Valid(UInt(8.W))))
       val out = IO(Output(UInt(8.W)))
       op(out.viewAs[Valid[UInt]], in)
     }
@@ -1025,11 +1025,11 @@ class DataViewSpec extends ChiselFlatSpec {
     implicit val dv =
       DataView.mapping[Valid[UInt], UInt](_.bits.cloneType, (v, x) => Seq(v.bits -> x, v.valid -> true.B))
     class MyModule extends Module {
-      val in = IO(Input(Valid(UInt(8.W))))
+      val in  = IO(Input(Valid(UInt(8.W))))
       val out = IO(Output(UInt(8.W)))
       out := in.viewAs[UInt]
     }
-    val e = the[ChiselException] thrownBy {
+    val e           = the[ChiselException] thrownBy {
       ChiselStage.emitCHIRRTL(new MyModule, Array("--throw-on-first-error"))
     }
     e.getMessage should include("View mapping must only contain Elements within the View")
@@ -1038,7 +1038,7 @@ class DataViewSpec extends ChiselFlatSpec {
   it should "support DontCare as part of the target" in {
     import DontCareDataView._
     class MyModule extends Module {
-      val in0, in1, in2, in3, in4 = IO(Input(UInt(8.W)))
+      val in0, in1, in2, in3, in4      = IO(Input(UInt(8.W)))
       val out0, out1, out2, out3, out4 = IO(Output(new Foo))
       out0 := in0.viewAs[Foo]
       out1 <> in1.viewAs[Foo]
@@ -1056,7 +1056,7 @@ class DataViewSpec extends ChiselFlatSpec {
   it should "error if a DontCare in a target would be driven" in {
     import DontCareDataView._
     class MyModule(op: (Foo, Foo) => Unit) extends Module {
-      val in = IO(Input(new Foo))
+      val in  = IO(Input(new Foo))
       val out = IO(Output(UInt(8.W)))
       op(out.viewAs[Foo], in)
     }
@@ -1084,11 +1084,11 @@ class DataViewSpec extends ChiselFlatSpec {
     implicit val dv =
       DataView.mapping[Valid[UInt], UInt](_.bits.cloneType, (v, x) => Seq(v.bits -> x, v.valid -> DontCare))
     class MyModule extends Module {
-      val in = IO(Input(Valid(UInt(8.W))))
+      val in  = IO(Input(Valid(UInt(8.W))))
       val out = IO(Output(UInt(8.W)))
       out := in.viewAs[UInt]
     }
-    val e = the[ChiselException] thrownBy {
+    val e           = the[ChiselException] thrownBy {
       ChiselStage.emitCHIRRTL(new MyModule, Array("--throw-on-first-error"))
     }
     e.getMessage should include("View mapping must only contain Elements within the View")
@@ -1099,8 +1099,8 @@ class DataViewSpec extends ChiselFlatSpec {
       ChiselStage.emitCHIRRTL(
         new RawModule {
           override def desiredName = "Top"
-          val in = IO(Input(UInt(8.W)))
-          val out = IO(Output(SInt(8.W)))
+          val in                   = IO(Input(UInt(8.W)))
+          val out                  = IO(Output(SInt(8.W)))
           out.viewAs[SInt] := in
         },
         Array("--throw-on-first-error")
@@ -1114,8 +1114,8 @@ class DataViewSpec extends ChiselFlatSpec {
       ChiselStage.emitCHIRRTL(
         new RawModule {
           override def desiredName = "Top"
-          val foo, bar = IO(Input(UInt(8.W)))
-          val fizz, buzz = IO(Output(SInt(8.W)))
+          val foo, bar             = IO(Input(UInt(8.W)))
+          val fizz, buzz           = IO(Output(SInt(8.W)))
           // Unfortunately, := does a bad job when the view doesn't map to a single Data, but at least connectables do a good job
           ((fizz, buzz).viewAs: Data) :#= ((foo, bar).viewAs: Data)
         },
@@ -1129,11 +1129,11 @@ class DataViewSpec extends ChiselFlatSpec {
 
   it should "preserve literal values for Elements" in {
     class MyModule extends Module {
-      val x = 123.U
+      val x  = 123.U
       val xv = x.viewAs[UInt]
       xv.litOption should be(x.litOption)
       xv.litValue should be(x.litValue)
-      val y = -23.S
+      val y  = -23.S
       val yv = y.viewAs[SInt]
       yv.litOption should be(y.litOption)
       yv.litValue should be(y.litValue)
@@ -1143,11 +1143,11 @@ class DataViewSpec extends ChiselFlatSpec {
 
   it should "preserve literal values for BundleLiterals" in {
     import chisel3.experimental.BundleLiterals._
-    class BundleA extends Bundle {
+    class BundleA  extends Bundle {
       val foo = UInt(4.W)
       val bar = UInt(4.W)
     }
-    class BundleB extends Bundle {
+    class BundleB  extends Bundle {
       val a = UInt(4.W)
       val b = UInt(4.W)
       val c = UInt(4.W)
@@ -1155,7 +1155,7 @@ class DataViewSpec extends ChiselFlatSpec {
     implicit val dv =
       DataView[BundleA, BundleB](_ => new BundleB, _.foo -> _.c, _.bar -> _.a, (_, b) => 6.U(4.W) -> b.b)
     class MyModule extends Module {
-      val bunA = (new BundleA).Lit(_.foo -> 0xa.U, _.bar -> 0xd.U)
+      val bunA     = (new BundleA).Lit(_.foo -> 0xa.U, _.bar -> 0xd.U)
       val bunAView = bunA.viewAs[BundleA]
       bunA.litValue should be(0xad)
       bunA.litOption should be(Some(0xad))
@@ -1172,7 +1172,7 @@ class DataViewSpec extends ChiselFlatSpec {
   it should "preserve literal values for VecLiterals (viewed as nested Bundles)" in {
     import chisel3.experimental.VecLiterals._
     case class Box(value: UInt) extends Bundle
-    class MyBundle extends Bundle {
+    class MyBundle              extends Bundle {
       val foo = Vec(2, UInt(4.W))
       val bar = Vec(2, Box(UInt(4.W)))
     }
@@ -1183,8 +1183,8 @@ class DataViewSpec extends ChiselFlatSpec {
       _(2) -> _.bar(0).value,
       _(3) -> _.foo(1)
     )
-    class MyModule extends Module {
-      val vec = Vec.Lit(0xa.U, 0xb.U, 0xc.U, 0xd.U)
+    class MyModule              extends Module {
+      val vec     = Vec.Lit(0xa.U, 0xb.U, 0xc.U, 0xd.U)
       val vecView = vec.viewAs[Vec[UInt]]
       vec.litValue should be(0xdcba)
       vec.litOption should be(Some(0xdcba))
@@ -1201,10 +1201,10 @@ class DataViewSpec extends ChiselFlatSpec {
   it should "NOT invent literal values for views of empty Aggregates" in {
     class MyModule extends Module {
       val emptyBundle = IO(Output(new Bundle {}))
-      val emptyVec = IO(Output(Vec(0, UInt(8.W))))
+      val emptyVec    = IO(Output(Vec(0, UInt(8.W))))
 
       val bundleView = emptyBundle.viewAs[Bundle]
-      val vecView = emptyVec.viewAs[Vec[UInt]]
+      val vecView    = emptyVec.viewAs[Vec[UInt]]
 
       emptyBundle.litOption should be(None)
       bundleView.litOption should be(None)
@@ -1217,10 +1217,10 @@ class DataViewSpec extends ChiselFlatSpec {
   it should "support literal values for views of empty Aggregates" in {
     class MyModule extends Module {
       val emptyBundle = (new Bundle {}).Lit()
-      val emptyVec = Vec(0, UInt(8.W)).Lit()
+      val emptyVec    = Vec(0, UInt(8.W)).Lit()
 
       val bundleView = emptyBundle.viewAs[Bundle]
-      val vecView = emptyVec.viewAs[Vec[UInt]]
+      val vecView    = emptyVec.viewAs[Vec[UInt]]
 
       emptyBundle.litOption should be(Some(0))
       bundleView.litOption should be(Some(0))
@@ -1231,16 +1231,16 @@ class DataViewSpec extends ChiselFlatSpec {
   }
 
   it should "support view of Properties in a List[Property]" in {
-    class MyBundle extends Bundle {
+    class MyBundle    extends Bundle    {
       val prop = Property[String]()
     }
     class ChildModule extends RawModule {
       val io = IO(Output(new MyBundle))
     }
-    class MyModule extends Module {
-      val out = IO(Output(Property[List[String]]()))
+    class MyModule    extends Module    {
+      val out   = IO(Output(Property[List[String]]()))
       val child = Module(new ChildModule)
-      val view = child.io.viewAs[MyBundle]
+      val view  = child.io.viewAs[MyBundle]
       out := Property(List(view.prop))
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
@@ -1253,7 +1253,7 @@ class DataViewSpec extends ChiselFlatSpec {
     class MyBundle(val foo: UInt, val bar: UInt) extends Bundle
     implicit val dv = PartialDataView[UInt, MyBundle](_ => new MyBundle(UInt(), UInt()), _ -> _.bar)
     class MyModule extends Module {
-      val in = IO(Input(UInt(8.W)))
+      val in  = IO(Input(UInt(8.W)))
       val out = IO(Output(new MyBundle(UInt(8.W), UInt(8.W))))
       out := in.viewAs[MyBundle]
     }
@@ -1265,7 +1265,7 @@ class DataViewSpec extends ChiselFlatSpec {
     implicit val dv = PartialDataView[(UInt, UInt), UInt](_ => UInt(), _._2 -> _)
     class MyModule extends Module {
       val a, b = IO(Input(UInt(8.W)))
-      val out = IO(Output(UInt(8.W)))
+      val out  = IO(Output(UInt(8.W)))
       out := (a, b).viewAs[UInt]
     }
     val verilog = ChiselStage.emitSystemVerilog(new MyModule)

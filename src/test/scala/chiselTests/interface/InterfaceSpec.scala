@@ -106,7 +106,7 @@ class InterfaceSpec extends AnyFunSpec with Matchers {
 
       bar1.io.a := a
       bar2.io.a := bar1.io.b
-      b := bar2.io.b
+      b         := bar2.io.b
     }
   }
 
@@ -184,7 +184,7 @@ class InterfaceSpec extends AnyFunSpec with Matchers {
     case class SomeProperties(a: Int, b: String, c: Int => Int)
 
     object InterfaceWithProperties extends Interface {
-      override type Ports = Bundle {}
+      override type Ports      = Bundle {}
       override type Properties = SomeProperties
       override val ports = new Bundle {}
     }
@@ -193,23 +193,23 @@ class InterfaceSpec extends AnyFunSpec with Matchers {
 
     val conformanceGood = new ConformsTo[InterfaceWithProperties.type, Bar] {
       override def genModule() = new Bar
-      override def portMap = Seq.empty
+      override def portMap     = Seq.empty
       // The conformance defines the properties.
-      override def properties = SomeProperties(42, "hello", _ + 8)
+      override def properties  = SomeProperties(42, "hello", _ + 8)
     }
 
     val conformanceBad = new ConformsTo[InterfaceWithProperties.type, Bar] {
       override def genModule() = new Bar
-      override def portMap = Seq.empty
+      override def portMap     = Seq.empty
       // The conformance defines the properties.
-      override def properties = SomeProperties(51, "hello", _ + 8)
+      override def properties  = SomeProperties(51, "hello", _ + 8)
     }
 
     it("should be able to read properties") {
       class Foo(conformance: ConformsTo[InterfaceWithProperties.type, Bar]) extends RawModule {
         private implicit val c = conformance
 
-        val bar = Module(new InterfaceWithProperties.Wrapper.BlackBox)
+        val bar                = Module(new InterfaceWithProperties.Wrapper.BlackBox)
         private val properties = bar.properties[Bar]
 
         // Check that the component works in this context.
@@ -267,8 +267,8 @@ class InterfaceSpec extends AnyFunSpec with Matchers {
       }
 
       class RefComponent extends RawModule {
-        val w_ref = IO(Output(Probe(Bool())))
-        val w = WireInit(false.B)
+        val w_ref   = IO(Output(Probe(Bool())))
+        val w       = WireInit(false.B)
         val w_probe = ProbeValue(w)
         define(w_ref, w_probe)
       }
@@ -285,7 +285,7 @@ class InterfaceSpec extends AnyFunSpec with Matchers {
         }
 
       class RefClient extends RawModule {
-        val x = IO(Output(Bool()))
+        val x            = IO(Output(Bool()))
         val refInterface = chisel3.Module(new RefInterface.Wrapper.BlackBox)
         x := read(refInterface.io.r)
       }
@@ -318,7 +318,7 @@ class InterfaceSpec extends AnyFunSpec with Matchers {
 
     class RefComponent extends RawModule {
       val w_ref = IO(Output(Probe(Bool())))
-      val w = Wire(new Bundle {
+      val w     = Wire(new Bundle {
         val a = UInt(4.W)
         val b = Bool()
       })
@@ -340,7 +340,7 @@ class InterfaceSpec extends AnyFunSpec with Matchers {
       }
 
     class RefClient extends RawModule {
-      val x = IO(Output(Bool()))
+      val x            = IO(Output(Bool()))
       val refInterface = chisel3.Module(new RefInterface.Wrapper.BlackBox)
       x := read(refInterface.io.r)
     }

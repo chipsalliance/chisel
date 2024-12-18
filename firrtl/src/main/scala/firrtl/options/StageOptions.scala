@@ -11,16 +11,17 @@ import java.io.File
   * @param outputAnnotationFileName an output annotation filename
   */
 class StageOptions private[firrtl] (
-  val targetDir:         String = TargetDirAnnotation().directory,
+  val targetDir: String = TargetDirAnnotation().directory,
   val annotationFilesIn: Seq[String] = Seq.empty,
   val annotationFileOut: Option[String] = None,
-  val programArgs:       Seq[String] = Seq.empty) {
+  val programArgs: Seq[String] = Seq.empty
+) {
 
   private[options] def copy(
-    targetDir:         String = targetDir,
+    targetDir: String = targetDir,
     annotationFilesIn: Seq[String] = annotationFilesIn,
     annotationFileOut: Option[String] = annotationFileOut,
-    programArgs:       Seq[String] = programArgs
+    programArgs: Seq[String] = programArgs
   ): StageOptions = {
 
     new StageOptions(

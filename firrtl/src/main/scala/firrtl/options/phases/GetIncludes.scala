@@ -28,7 +28,7 @@ class GetIncludes extends Phase {
     * @throws annotations.AnnotationFileNotFoundException if the file does not exist
     */
   private def readAnnotationsFromFile(
-    filename:                     String,
+    filename: String,
     allowUnrecognizedAnnotations: Boolean = false
   ): AnnotationSeq = {
     val file = new File(filename).getCanonicalFile
@@ -53,7 +53,7 @@ class GetIncludes extends Phase {
           includeGuard += value
           getIncludes(includeGuard)(readAnnotationsFromFile(value, allowUnrecognizedAnnotations))
         }
-      case x => Seq(x)
+      case x                                        => Seq(x)
     }
   }
 

@@ -16,15 +16,15 @@ class ObjectSpec extends ChiselFlatSpec with MatchesAndOmits {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
       val cls = Definition(new Class {
         override def desiredName = "Test"
-        val in = IO(Input(Property[Int]()))
-        val out = IO(Output(Property[Int]()))
+        val in                   = IO(Input(Property[Int]()))
+        val out                  = IO(Output(Property[Int]()))
         out := in
       })
 
       Definition(new Class {
         override def desiredName = "Parent"
-        val out = IO(Output(Class.unsafeGetReferenceType("Test")))
-        val obj1 = Class.unsafeGetDynamicObject("Test")
+        val out                  = IO(Output(Class.unsafeGetReferenceType("Test")))
+        val obj1                 = Class.unsafeGetDynamicObject("Test")
         out := obj1.getReference
       })
     })
@@ -40,15 +40,15 @@ class ObjectSpec extends ChiselFlatSpec with MatchesAndOmits {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
       val cls = Definition(new Class {
         override def desiredName = "Test"
-        val in = IO(Input(Property[Int]()))
-        val out = IO(Output(Property[Int]()))
+        val in                   = IO(Input(Property[Int]()))
+        val out                  = IO(Output(Property[Int]()))
         out := in
       })
 
       Module(new RawModule {
         override def desiredName = "Parent"
-        val out = IO(Output(Class.unsafeGetReferenceType("Test")))
-        val obj1 = Class.unsafeGetDynamicObject("Test")
+        val out                  = IO(Output(Class.unsafeGetReferenceType("Test")))
+        val obj1                 = Class.unsafeGetDynamicObject("Test")
         out := obj1.getReference
       })
     })
@@ -64,10 +64,10 @@ class ObjectSpec extends ChiselFlatSpec with MatchesAndOmits {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
       val cls = Definition(new Class {
         override def desiredName = "Test"
-        val out = IO(Output(Property[Int]()))
+        val out                  = IO(Output(Property[Int]()))
       })
 
-      val out = IO(Output(Property[Int]()))
+      val out  = IO(Output(Property[Int]()))
       val obj1 = Class.unsafeGetDynamicObject("Test")
       out := obj1.getField[Int]("out")
     })
@@ -82,10 +82,10 @@ class ObjectSpec extends ChiselFlatSpec with MatchesAndOmits {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
       val cls = Definition(new Class {
         override def desiredName = "Test"
-        val in = IO(Input(Property[Int]()))
+        val in                   = IO(Input(Property[Int]()))
       })
 
-      val in = IO(Input(Property[Int]()))
+      val in   = IO(Input(Property[Int]()))
       val obj1 = Class.unsafeGetDynamicObject("Test")
       obj1.getField[Int]("in") := in
     })
@@ -102,8 +102,8 @@ class ObjectSpec extends ChiselFlatSpec with MatchesAndOmits {
 
       val obj = DynamicObject(new Class {
         override def desiredName = "Test"
-        val in = IO(Input(Property[Int]()))
-        val out = IO(Output(Property[Int]()))
+        val in                   = IO(Input(Property[Int]()))
+        val out                  = IO(Output(Property[Int]()))
       })
 
       obj.getField[Int]("in") := Property(1)
@@ -124,7 +124,7 @@ class ObjectSpec extends ChiselFlatSpec with MatchesAndOmits {
 
       val obj = DynamicObject(new Class {
         override def desiredName = "Test"
-        val out = IO(Output(Property[Int]()))
+        val out                  = IO(Output(Property[Int]()))
         out := BoringUtils.bore(in)
       })
     })
@@ -144,22 +144,22 @@ class ObjectSpec extends ChiselFlatSpec with MatchesAndOmits {
         Definition({
           val cls1 = Definition(new Class {
             override def desiredName = "Test"
-            val in = IO(Input(Property[Int]()))
-            val out = IO(Output(Property[Int]()))
+            val in                   = IO(Input(Property[Int]()))
+            val out                  = IO(Output(Property[Int]()))
             out := in
           })
 
           val cls2 = Definition(new Class {
             override def desiredName = "Test"
-            val in = IO(Input(Property[Int]()))
-            val out = IO(Output(Property[Int]()))
+            val in                   = IO(Input(Property[Int]()))
+            val out                  = IO(Output(Property[Int]()))
             out := in
           })
 
           new Class {
             override def desiredName = "Parent"
-            val out1 = IO(Output(cls1.getPropertyType))
-            val out2 = IO(Output(cls2.getPropertyType))
+            val out1                 = IO(Output(cls1.getPropertyType))
+            val out2                 = IO(Output(cls2.getPropertyType))
 
             val obj1 = Instance(cls1)
             val obj2 = Instance(cls2)
@@ -187,21 +187,21 @@ class ObjectSpec extends ChiselFlatSpec with MatchesAndOmits {
       new RawModule {
         val cls1 = Definition(new Class {
           override def desiredName = "Test"
-          val in = IO(Input(Property[Int]()))
-          val out = IO(Output(Property[Int]()))
+          val in                   = IO(Input(Property[Int]()))
+          val out                  = IO(Output(Property[Int]()))
           out := in
         })
         val cls2 = Definition(new Class {
           override def desiredName = "Test"
-          val in = IO(Input(Property[Int]()))
-          val out = IO(Output(Property[Int]()))
+          val in                   = IO(Input(Property[Int]()))
+          val out                  = IO(Output(Property[Int]()))
           out := in
         })
 
         Module(new RawModule {
           override def desiredName = "Parent"
-          val out1 = IO(Output(cls1.getPropertyType))
-          val out2 = IO(Output(cls2.getPropertyType))
+          val out1                 = IO(Output(cls1.getPropertyType))
+          val out2                 = IO(Output(cls2.getPropertyType))
 
           val obj1 = Instance(cls1)
           val obj2 = Instance(cls2)

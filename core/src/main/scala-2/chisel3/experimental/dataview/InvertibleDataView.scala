@@ -6,8 +6,8 @@ import chisel3._
 import scala.reflect.runtime.universe.WeakTypeTag
 
 private[chisel3] trait InvertibleDataView {
-  def swapArgs[A, B, C, D](f: (A, B) => Iterable[(C, D)]): (B, A) => Iterable[(D, C)] = {
-    case (b, a) => f(a, b).map(_.swap)
+  def swapArgs[A, B, C, D](f: (A, B) => Iterable[(C, D)]): (B, A) => Iterable[(D, C)] = { case (b, a) =>
+    f(a, b).map(_.swap)
   }
 
   /** Provides `invert` for invertible [[DataView]]s
@@ -26,8 +26,8 @@ private[chisel3] trait InvertibleDataView {
       // only defined on TotalDataView, it wasn't included in implicit resolution. Thus we end up
       // with a runtime check.
       if (!view.total) {
-        val tt = implicitly[WeakTypeTag[T]].tpe
-        val vv = implicitly[WeakTypeTag[V]].tpe
+        val tt  = implicitly[WeakTypeTag[T]].tpe
+        val vv  = implicitly[WeakTypeTag[V]].tpe
         val msg = s"Cannot invert '$view' as it is non-total.\n  Try providing a DataView[$vv, $tt]." +
           s"\n  Please see https://www.chisel-lang.org/chisel3/docs/explanations/dataview."
         throw InvalidViewException(msg)

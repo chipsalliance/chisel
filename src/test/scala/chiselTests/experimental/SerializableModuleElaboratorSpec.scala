@@ -9,8 +9,8 @@ import upickle.default.read
 
 class GCDSerializableModuleElaborator extends SerializableModuleElaborator {
   val configPath = os.pwd / "config.json"
-  val firPath = os.pwd / "GCD.fir"
-  val annosPath = os.pwd / "GCD.anno.json"
+  val firPath    = os.pwd / "GCD.fir"
+  val annosPath  = os.pwd / "GCD.anno.json"
 
   def config(parameter: GCDSerializableModuleParameter) =
     os.write.over(configPath, configImpl(parameter))
@@ -28,7 +28,7 @@ class SerializableModuleElaboratorSpec extends ChiselFlatSpec {
   elaborator.config(GCDSerializableModuleParameter(16))
   elaborator.design()
 
-  val firFile = os.read(elaborator.firPath)
+  val firFile   = os.read(elaborator.firPath)
   val annosFile = os.read(elaborator.annosPath)
 
   "SerializableModuleElaborator" should "elaborate firrtl" in {

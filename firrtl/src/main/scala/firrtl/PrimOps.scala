@@ -180,7 +180,7 @@ object PrimOps extends LazyLogging {
     Head, Tail
   )
   // format: on
-  private lazy val strToPrimOp: Map[String, PrimOp] = {
+  private lazy val strToPrimOp: Map[String, PrimOp]    = {
     builtinPrimOps.map { case op: PrimOp => op.toString -> op }.toMap
   }
 

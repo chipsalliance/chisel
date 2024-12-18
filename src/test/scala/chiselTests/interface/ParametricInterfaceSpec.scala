@@ -24,7 +24,7 @@ class ParametricInterfaceSpec extends AnyFunSpec with Matchers {
     */
   class BarInterfaceGenerator private[interface] (val width: Int) extends InterfaceGenerator {
 
-    override type Ports = BarBundle
+    override type Ports      = BarBundle
     override type Properties = Unit
 
     override val ports = new BarBundle(width)
@@ -91,12 +91,12 @@ class ParametricInterfaceSpec extends AnyFunSpec with Matchers {
       val a = IO(Input(UInt(32.W)))
       val b = IO(Output(UInt(32.W)))
 
-      private val intf = Package.BarInterface32
+      private val intf       = Package.BarInterface32
       private val bar1, bar2 = chisel3.Module(new intf.Wrapper.BlackBox)
 
       bar1.io.a := a
       bar2.io.a := bar1.io.b
-      b := bar2.io.b
+      b         := bar2.io.b
     }
   }
 
@@ -108,12 +108,12 @@ class ParametricInterfaceSpec extends AnyFunSpec with Matchers {
       val a = IO(Input(UInt(64.W)))
       val b = IO(Output(UInt(64.W)))
 
-      private val intf = Package.BarInterface64
+      private val intf       = Package.BarInterface64
       private val bar1, bar2 = chisel3.Module(new intf.Wrapper.BlackBox)
 
       bar1.io.a := a
       bar2.io.a := bar1.io.b
-      b := bar2.io.b
+      b         := bar2.io.b
     }
   }
 
@@ -161,7 +161,7 @@ class ParametricInterfaceSpec extends AnyFunSpec with Matchers {
         * preserved as a property of the Interface.
         */
       abstract class FooInterfaceGenerator(val a: Int) extends InterfaceGenerator {
-        override type Ports = FooBundle
+        override type Ports      = FooBundle
         override type Properties = FooProperties
 
         /** This is a property of the Interface that varies with each interface. */
@@ -170,11 +170,11 @@ class ParametricInterfaceSpec extends AnyFunSpec with Matchers {
 
       object Package {
         object FooInterface_4 extends FooInterfaceGenerator(4) with Interface {
-          val width = a + 2
+          val width          = a + 2
           override val ports = new FooBundle(width)
         }
         object FooInterface_8 extends FooInterfaceGenerator(8) with Interface {
-          val width = a * 3
+          val width          = a * 3
           override val ports = new FooBundle(width)
         }
       }
@@ -187,20 +187,20 @@ class ParametricInterfaceSpec extends AnyFunSpec with Matchers {
 
       val barConformance_4 = new ConformsTo[Package.FooInterface_4.type, Bar] {
         override def genModule() = new Bar(Package.FooInterface_4.width)
-        override def portMap = Seq(
+        override def portMap     = Seq(
           _.x -> _.a,
           _.y -> _.b
         )
-        override def properties = FooProperties("Alice")
+        override def properties  = FooProperties("Alice")
       }
 
       val barConformance_8 = new ConformsTo[Package.FooInterface_8.type, Bar] {
         override def genModule() = new Bar(Package.FooInterface_8.width)
-        override def portMap = Seq(
+        override def portMap     = Seq(
           _.x -> _.a,
           _.y -> _.b
         )
-        override def properties = FooProperties("Bob")
+        override def properties  = FooProperties("Bob")
       }
 
       class Baz(width: Int) extends RawModule {
@@ -211,20 +211,20 @@ class ParametricInterfaceSpec extends AnyFunSpec with Matchers {
 
       val bazConformance_4 = new ConformsTo[Package.FooInterface_4.type, Baz] {
         override def genModule() = new Baz(Package.FooInterface_4.width)
-        override def portMap = Seq(
+        override def portMap     = Seq(
           _.rr -> _.a,
           _.ss -> _.b
         )
-        override def properties = FooProperties("Candice")
+        override def properties  = FooProperties("Candice")
       }
 
       val bazConformance_8 = new ConformsTo[Package.FooInterface_8.type, Baz] {
         override def genModule() = new Baz(Package.FooInterface_8.width)
-        override def portMap = Seq(
+        override def portMap     = Seq(
           _.rr -> _.a,
           _.ss -> _.b
         )
-        override def properties = FooProperties("Dave")
+        override def properties  = FooProperties("Dave")
       }
 
     }

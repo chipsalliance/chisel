@@ -44,8 +44,8 @@ object ChiselSubtypeOf {
       // figure out. Otherwise, the types must be equal or we throw an error.
       (baseType(b) <:< baseType(a) || baseType(a) <:< baseType(b)) || a =:= b
 
-    val a = implicitly[c.WeakTypeTag[A]].tpe
-    val b = implicitly[c.WeakTypeTag[B]].tpe
+    val a     = implicitly[c.WeakTypeTag[A]].tpe
+    val b     = implicitly[c.WeakTypeTag[B]].tpe
     val tdata = implicitly[c.WeakTypeTag[Data]].tpe
 
     // Only look at public members that are getters and that are subtypes of Data.
@@ -55,7 +55,7 @@ object ChiselSubtypeOf {
     // Go through every public member of b and make sure a member with the
     // same name exists in a and it has the same structural type.
     for (vb <- mb) {
-      val name = TermName(vb.name.toString)
+      val name  = TermName(vb.name.toString)
       val vaTyp = a.member(name).info.resultType
       val vbTyp = vb.info.resultType
       if (vaTyp == NoType || vbTyp == NoType || !couldBeEqual(vaTyp, vbTyp)) {

@@ -116,7 +116,7 @@ object BoringUtils {
   private def boringNamespace = Builder.contextCache.getOrElseUpdate(CacheKey, Namespace.empty)
 
   /* Get a new name (value) from the namespace */
-  private def newName(value: String): String = {
+  private def newName(value: String): String    = {
     boringNamespace.name(value)
   }
   /* True if the requested name (value) exists in the namespace */
@@ -136,15 +136,15 @@ object BoringUtils {
     "Chisel 6.0"
   )
   def addSource(
-    component:    NamedComponent,
-    name:         String,
+    component: NamedComponent,
+    name: String,
     disableDedup: Boolean = false,
-    uniqueName:   Boolean = false
+    uniqueName: Boolean = false
   ): String = {
 
-    val id = if (uniqueName) { newName(name) }
+    val id          = if (uniqueName) { newName(name) }
     else { name }
-    val maybeDedup =
+    val maybeDedup  =
       if (disableDedup) { Seq(new ChiselAnnotation { def toFirrtl = NoDedupAnnotation(component.toNamed.module) }) }
       else { Seq[ChiselAnnotation]() }
     val annotations =
@@ -172,21 +172,21 @@ object BoringUtils {
     "Chisel 6.0"
   )
   def addSink(
-    component:    InstanceId,
-    name:         String,
+    component: InstanceId,
+    name: String,
     disableDedup: Boolean = false,
-    forceExists:  Boolean = false
+    forceExists: Boolean = false
   ): Unit = {
 
     if (forceExists && !checkName(name)) {
       throw new BoringUtilsException(s"Sink ID '$name' not found in BoringUtils ID namespace")
     }
-    def moduleName = component.toNamed match {
+    def moduleName  = component.toNamed match {
       case c: ModuleName    => c
       case c: ComponentName => c.module
-      case _ => throw new ChiselException("Can only add a Module or Component sink", null)
+      case _                => throw new ChiselException("Can only add a Module or Component sink", null)
     }
-    val maybeDedup =
+    val maybeDedup  =
       if (disableDedup) { Seq(new ChiselAnnotation { def toFirrtl = NoDedupAnnotation(moduleName) }) }
       else { Seq[ChiselAnnotation]() }
     val annotations =
@@ -215,23 +215,23 @@ object BoringUtils {
       } catch {
         case _: Exception => "bore"
       }
-    val genName = addSource(source, boringName, true, true)
+    val genName    = addSource(source, boringName, true, true)
     sinks.foreach(addSink(_, genName, true, true))
     genName
   }
 
   private def boreOrTap[A <: Data](
-    source:      A,
+    source: A,
     createProbe: Option[ProbeInfo] = None,
-    isDrive:     Boolean = false
+    isDrive: Boolean = false
   )(
     implicit si: SourceInfo
   ): A = {
-    def parent(d: Data): BaseModule = d.topBinding.location.get
-    def purePortTypeBase = if (createProbe.nonEmpty) Output(chiselTypeOf(source))
+    def parent(d: Data): BaseModule                                                                  = d.topBinding.location.get
+    def purePortTypeBase                                                                             = if (createProbe.nonEmpty) Output(chiselTypeOf(source))
     else if (DataMirror.hasOuterFlip(source)) Flipped(chiselTypeOf(source))
     else chiselTypeOf(source)
-    def purePortType = createProbe match {
+    def purePortType                                                                                 = createProbe match {
       case Some(pi) =>
         // If the source is already a probe, don't double wrap it in a probe.
         purePortTypeBase.probeInfo match {
@@ -239,20 +239,20 @@ object BoringUtils {
           case None if pi.writable => RWProbe(purePortTypeBase)
           case None                => Probe(purePortTypeBase)
         }
-      case None => purePortTypeBase
+      case None     => purePortTypeBase
     }
-    def isPort(d: Data): Boolean = d.topBindingOpt match {
+    def isPort(d: Data): Boolean                                                                     = d.topBindingOpt match {
       case Some(PortBinding(_)) => true
       case _                    => false
     }
-    def isDriveDone(d: Data): Boolean = {
+    def isDriveDone(d: Data): Boolean                                                                = {
       isDrive && isPort(d) && DataMirror.directionOf(d) == ActualDirection.Input
     }
-    def boringError(module: BaseModule): Unit = {
+    def boringError(module: BaseModule): Unit                                                        = {
       (module.fullyClosedErrorMessages ++ Seq(
         (si, s"Can only bore into modules that are not fully closed: ${module.name} was fully closed")
-      )).foreach {
-        case (sourceInfo, msg) => Builder.error(msg)(sourceInfo)
+      )).foreach { case (sourceInfo, msg) =>
+        Builder.error(msg)(sourceInfo)
       }
     }
     def drill(source: A, path: Seq[BaseModule], connectionLocation: Seq[BaseModule], up: Boolean): A = {
@@ -260,8 +260,8 @@ object BoringUtils {
         case (rhs, (module, _)) if ((up || isDriveDone(rhs)) && module == path(0) && isPort(rhs)) => {
           rhs
         }
-        case (rhs, (module, conLoc)) if (module.isFullyClosed) => boringError(module); DontCare.asInstanceOf[A]
-        case (rhs, (module, conLoc)) =>
+        case (rhs, (module, conLoc)) if (module.isFullyClosed)                                    => boringError(module); DontCare.asInstanceOf[A]
+        case (rhs, (module, conLoc))                                                              =>
           skipPrefix { // so `lcaSource` isn't in the name of the secret port
             if (!up && createProbe.nonEmpty && createProbe.get.writable) {
               Builder.error("Cannot drill writable probes upwards.")
@@ -286,14 +286,14 @@ object BoringUtils {
             } else {
               rhs.topBindingOpt match {
                 // If binding records containing block, use that.
-                case Some(bb: BlockBinding) => bb.parentBlock
+                case Some(bb: BlockBinding)                                                => bb.parentBlock
                 // Special handling to reach in and get instantiating block for ports.
-                case Some(pb: PortBinding) if pb.enclosure._parent == Some(conLoc) =>
+                case Some(pb: PortBinding) if pb.enclosure._parent == Some(conLoc)         =>
                   pb.enclosure.getInstantiatingBlock
                 case Some(spb: SecretPortBinding) if spb.enclosure._parent == Some(conLoc) =>
                   spb.enclosure.getInstantiatingBlock
                 // Otherwise, default behavior.
-                case _ => None
+                case _                                                                     => None
               }
             }
 
@@ -312,13 +312,13 @@ object BoringUtils {
     requireIsHardware(source)
     val thisModule = Builder.currentModule.get
     source.topBindingOpt match {
-      case None =>
+      case None                     =>
         Builder.error(s"Cannot bore from ${source._errorContext}")
       case Some(CrossModuleBinding) =>
         Builder.error(
           s"Cannot bore across a Definition/Instance boundary:${thisModule._errorContext} cannot access ${source}"
         )
-      case _ => // Actually bore
+      case _                        => // Actually bore
     }
     if (parent(source) == thisModule) {
       // No boring to do
@@ -331,13 +331,13 @@ object BoringUtils {
       return source
     }
 
-    val lcaResult = DataMirror.findLCAPaths(source, thisModule)
+    val lcaResult          = DataMirror.findLCAPaths(source, thisModule)
     if (lcaResult.isEmpty) {
       Builder.error(s"Cannot bore from $source to ${thisModule.name}, as they do not share a least common ancestor")
     }
     val (upPath, downPath) = lcaResult.get
-    val lcaSource = drill(source, upPath.dropRight(1), upPath.dropRight(1), up = !isDrive)
-    val sink = drill(lcaSource, downPath.reverse.tail, downPath.reverse, up = isDrive)
+    val lcaSource          = drill(source, upPath.dropRight(1), upPath.dropRight(1), up = !isDrive)
+    val sink               = drill(lcaSource, downPath.reverse.tail, downPath.reverse, up = isDrive)
 
     if (
       createProbe.nonEmpty || DataMirror.hasProbeTypeModifier(purePortTypeBase) ||

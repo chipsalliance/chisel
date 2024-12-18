@@ -40,9 +40,9 @@ object assert extends assertImpl with VerifPrintMacrosDoc {
     */
   // Macros currently can't take default arguments, so we need two functions to emulate defaults.
   def apply(
-    cond:    Bool,
+    cond: Bool,
     message: String,
-    data:    Bits*
+    data: Bits*
   )(
     implicit sourceInfo: SourceInfo
   ): Assert = macro VerifStmtMacrosCompat.assert._applyMacroWithInterpolatorCheck
@@ -62,7 +62,7 @@ object assert extends assertImpl with VerifPrintMacrosDoc {
     * that
     */
   def apply(
-    cond:    Bool,
+    cond: Bool,
     message: Printable
   )(
     implicit sourceInfo: SourceInfo
@@ -97,9 +97,9 @@ object assume extends assumeImpl with VerifPrintMacrosDoc {
     */
   // Macros currently can't take default arguments, so we need two functions to emulate defaults.
   def apply(
-    cond:    Bool,
+    cond: Bool,
     message: String,
-    data:    Bits*
+    data: Bits*
   )(
     implicit sourceInfo: SourceInfo
   ): Assume = macro VerifStmtMacrosCompat.assume._applyMacroWithInterpolatorCheck
@@ -118,7 +118,7 @@ object assume extends assumeImpl with VerifPrintMacrosDoc {
     * @note See [[printf.apply(pable:chisel3\.Printable)*]] for documentation on printf using Printables
     */
   def apply(
-    cond:    Bool,
+    cond: Bool,
     message: Printable
   )(
     implicit sourceInfo: SourceInfo

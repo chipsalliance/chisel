@@ -16,10 +16,10 @@ trait BundleSpecUtils {
     val bar = UInt(16.W)
     val foo = UInt(16.W)
   }
-  class BundleFoo extends Bundle {
+  class BundleFoo    extends Bundle {
     val foo = UInt(16.W)
   }
-  class BundleBar extends Bundle {
+  class BundleBar    extends Bundle {
     val bar = UInt(16.W)
   }
 
@@ -33,7 +33,7 @@ trait BundleSpecUtils {
 
   class MyModule(output: Bundle, input: Bundle) extends Module {
     val io = IO(new Bundle {
-      val in = Input(input)
+      val in  = Input(input)
       val out = Output(output)
     })
     io.out <> io.in
@@ -105,8 +105,8 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
       new BasicTester {
         val m = Module(new Module {
           val io = IO(new Bundle {
-            val f = Output(UInt(8.W))
-            val unrelated = (0 to 10).toSeq
+            val f          = Output(UInt(8.W))
+            val unrelated  = (0 to 10).toSeq
             val unrelated2 = Seq("Hello", "World", "Chisel")
           })
           io.f := 0.U
@@ -140,7 +140,7 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
       ChiselStage.emitCHIRRTL {
         new Module {
           class MyBundle(val foo: UInt) extends Bundle
-          val in = IO(Input(new MyBundle(123.U))) // This should error: value passed in instead of type
+          val in  = IO(Input(new MyBundle(123.U))) // This should error: value passed in instead of type
           val out = IO(Output(new MyBundle(UInt(8.W))))
 
           out := in
@@ -154,7 +154,7 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
         new Module {
           class MyBundle(val foo: UInt) extends Bundle
           val out = IO(Output(Vec(2, UInt(8.W))))
-          val in = IO(Input(new MyBundle(out(0)))) // This should error: Bound aggregate passed
+          val in  = IO(Input(new MyBundle(out(0)))) // This should error: Bound aggregate passed
           out := in
         }
       }

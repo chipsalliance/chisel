@@ -35,7 +35,7 @@ class Checks extends Phase {
       case a: OutputFileAnnotation    => a +=: outF
       case a: InfoModeAnnotation      => a +=: im
       case a: FirrtlCircuitAnnotation => a +=: inC
-      case _ =>
+      case _                          =>
     })
 
     /* At this point, only a FIRRTL Circuit should exist */
@@ -65,7 +65,7 @@ class Checks extends Phase {
 
     /* One mandatory info mode must be specified */
     if (im.size != 1) {
-      val x = im.map { case InfoModeAnnotation(x) => x }
+      val x              = im.map { case InfoModeAnnotation(x) => x }
       val (msg, suggest) = if (im.size == 0) { ("none found", "forget one of") }
       else { (s"""found '${x.mkString(", ")}'""", "use multiple of") }
       throw new OptionsException(s"""|Exactly one info mode must be specified, but $msg. Did you $suggest the following?

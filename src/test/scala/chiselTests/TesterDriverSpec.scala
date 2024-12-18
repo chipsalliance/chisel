@@ -11,7 +11,7 @@ import chisel3.util._
   * circuit after the constructor has finished.
   */
 class FinishTester extends BasicTester {
-  val test_wire_width = 2
+  val test_wire_width          = 2
   val test_wire_override_value = 3
 
   val counter = Counter(1)
@@ -37,8 +37,8 @@ class FinishTester extends BasicTester {
 class TesterDriverSpec extends ChiselFlatSpec {
   "TesterDriver calls BasicTester's finish method which" should
     "allow modifications of test circuit after the tester's constructor is done" in {
-    assertTesterPasses {
-      new FinishTester
+      assertTesterPasses {
+        new FinishTester
+      }
     }
-  }
 }

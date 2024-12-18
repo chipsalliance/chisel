@@ -20,13 +20,13 @@ class WireSpec extends ChiselFlatSpec {
   }
   it should "have source locator information on wires" in {
     class Dummy extends chisel3.Module {
-      val in = IO(Input(Bool()))
+      val in  = IO(Input(Bool()))
       val out = IO(Output(Bool()))
 
-      val wire = WireInit(Bool(), true.B)
+      val wire  = WireInit(Bool(), true.B)
       val wire2 = Wire(Bool())
       wire2 := in
-      out := in & wire & wire2
+      out   := in & wire & wire2
     }
 
     val chirrtl = ChiselStage.emitCHIRRTL(new Dummy)

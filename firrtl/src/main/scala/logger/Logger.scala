@@ -47,7 +47,7 @@ object LogLevel extends Enumeration {
   * extend this trait to enable logging in a class you are implementing
   */
 trait LazyLogging {
-  protected val logger = new Logger(this.getClass.getName)
+  protected val logger  = new Logger(this.getClass.getName)
   def getLogger: Logger = logger
 }
 
@@ -56,12 +56,12 @@ trait LazyLogging {
   * when used in multi-threaded environments
   */
 private class LoggerState {
-  var globalLevel = LogLevel.None
-  val classLevels = new scala.collection.mutable.HashMap[String, LogLevel.Value]
-  val classToLevelCache = new scala.collection.mutable.HashMap[String, LogLevel.Value]
-  var logClassNames = false
-  var stream:             PrintStream = Console.out
-  var fromInvoke:         Boolean = false // this is used to not have invokes re-create run-state
+  var globalLevel                                     = LogLevel.None
+  val classLevels                                     = new scala.collection.mutable.HashMap[String, LogLevel.Value]
+  val classToLevelCache                               = new scala.collection.mutable.HashMap[String, LogLevel.Value]
+  var logClassNames                                   = false
+  var stream: PrintStream                             = Console.out
+  var fromInvoke: Boolean                             = false // this is used to not have invokes re-create run-state
   var stringBufferOption: Option[Logger.OutputCaptor] = None
 
   override def toString: String = {
@@ -88,7 +88,7 @@ private class LoggerState {
   */
 object Logger {
   private val updatableLoggerState = new DynamicVariable[Option[LoggerState]](Some(new LoggerState))
-  private def state: LoggerState = {
+  private def state: LoggerState   = {
     updatableLoggerState.value.get
   }
 
@@ -97,7 +97,7 @@ object Logger {
     */
   class OutputCaptor {
     val byteArrayOutputStream = new ByteArrayOutputStream()
-    val printStream = new PrintStream(byteArrayOutputStream)
+    val printStream           = new PrintStream(byteArrayOutputStream)
 
     /**
       * Get logged messages to this captor as a string
@@ -165,7 +165,7 @@ object Logger {
     val levelForThisClassName = state.classToLevelCache.getOrElse(
       className, {
         // otherwise break up the class name in to full package path as list and find most specific entry you can
-        val packageNameList = className.split("""\.""").toList
+        val packageNameList                                                 = className.split("""\.""").toList
         /*
          * start with full class path, lopping off from the tail until nothing left
          */
@@ -174,7 +174,7 @@ object Logger {
             LogLevel.None
           } else {
             val partialName = packageList.mkString(".")
-            val level = classLevels.getOrElse(
+            val level       = classLevels.getOrElse(
               partialName, {
                 matchPathToFindLevel(packageList.reverse.tail.reverse)
               }
@@ -217,7 +217,7 @@ object Logger {
     testPackageNameMatch(className, level) match {
       case Some(true)  => logIt()
       case Some(false) =>
-      case None =>
+      case None        =>
         if (getGlobalLevel >= level) {
           logIt()
         }

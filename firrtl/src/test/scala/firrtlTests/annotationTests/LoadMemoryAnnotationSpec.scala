@@ -36,7 +36,7 @@ class LoadMemoryAnnotationSpec extends AnyFreeSpec with Matchers {
       originalMemoryNameOpt = Some("memory")
     )
 
-    val annoString = JsonProtocol.serializeTry(Seq(lma)).get
+    val annoString  = JsonProtocol.serializeTry(Seq(lma)).get
     val loadedAnnos = JsonProtocol.deserializeTry(annoString).get
     lma should equal(loadedAnnos.head)
   }

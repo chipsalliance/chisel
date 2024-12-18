@@ -15,10 +15,10 @@ import scala.collection.mutable
   * @param hexOrBinary   use \$readmemh or \$readmemb, i.e. hex or binary text input, default is hex
   */
 private case class ChiselLoadMemoryAnnotation[T <: Data](
-  target:      MemBase[T],
-  fileName:    String,
-  hexOrBinary: MemoryLoadFileType.FileType = MemoryLoadFileType.Hex)
-    extends ChiselAnnotation {
+  target: MemBase[T],
+  fileName: String,
+  hexOrBinary: MemoryLoadFileType.FileType = MemoryLoadFileType.Hex
+) extends ChiselAnnotation {
 
   if (fileName.isEmpty) {
     throw new Exception(
@@ -98,8 +98,8 @@ object loadMemoryFromFile {
     * @param hexOrBinary whether the file uses a hex or binary number representation
     */
   def apply[T <: Data](
-    memory:      MemBase[T],
-    fileName:    String,
+    memory: MemBase[T],
+    fileName: String,
     hexOrBinary: MemoryLoadFileType.FileType = MemoryLoadFileType.Hex
   ): Unit = {
     annotate(ChiselLoadMemoryAnnotation(memory, fileName, hexOrBinary))
@@ -173,8 +173,8 @@ object loadMemoryFromFileInline {
     * @param hexOrBinary whether the file uses a hex or binary number representation
     */
   def apply[T <: Data](
-    memory:      MemBase[T],
-    fileName:    String,
+    memory: MemBase[T],
+    fileName: String,
     hexOrBinary: MemoryLoadFileType.FileType = MemoryLoadFileType.Hex
   ): Unit = {
     annotate(new ChiselAnnotation {

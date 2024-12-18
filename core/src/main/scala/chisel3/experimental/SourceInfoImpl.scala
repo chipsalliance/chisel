@@ -4,8 +4,8 @@ package chisel3.experimental
 
 private[chisel3] trait SourceLineImpl {
   def filename: String
-  def line:     Int
-  def col:      Int
+  def line: Int
+  def col: Int
 
   protected def _makeMessageImpl(f: String => String = x => x): String = f(s"@[${this.prettyPrint}]")
 

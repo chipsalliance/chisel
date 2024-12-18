@@ -35,12 +35,12 @@ object Reg {
     */
   def apply[T <: Data](source: => T)(implicit sourceInfo: SourceInfo): T = {
     val prevId = Builder.idGen.value
-    val t = source // evaluate once (passed by name)
+    val t      = source // evaluate once (passed by name)
     requireIsChiselType(t, "reg type")
     if (t.isConst) Builder.error("Cannot create register with constant value.")(sourceInfo)
     requireNoProbeTypeModifier(t, "Cannot make a register of a Chisel type with a probe modifier.")
-    val reg = if (!t.mustClone(prevId)) t else t.cloneTypeFull
-    val clock = Builder.forcedClock.ref
+    val reg    = if (!t.mustClone(prevId)) t else t.cloneTypeFull
+    val clock  = Builder.forcedClock.ref
 
     reg.bind(RegBinding(Builder.forcedUserModule, Builder.currentBlock))
     pushCommand(DefReg(sourceInfo, reg, clock))
@@ -79,9 +79,9 @@ object RegNext {
   def apply[T <: Data](next: T)(implicit sourceInfo: SourceInfo): T = {
     val model = (next match {
       case next: Bits => next.cloneTypeWidth(Width())
-      case next => next.cloneTypeFull
+      case next       => next.cloneTypeFull
     }).asInstanceOf[T]
-    val reg = Reg(model)
+    val reg   = Reg(model)
 
     requireIsHardware(next, "reg next")
     reg := next
@@ -93,9 +93,9 @@ object RegNext {
   def apply[T <: Data](next: T, init: T)(implicit sourceInfo: SourceInfo): T = {
     val model = (next match {
       case next: Bits => next.cloneTypeWidth(Width())
-      case next => next.cloneTypeFull
+      case next       => next.cloneTypeFull
     }).asInstanceOf[T]
-    val reg = RegInit(model, init) // TODO: this makes NO sense
+    val reg   = RegInit(model, init) // TODO: this makes NO sense
 
     requireIsHardware(next, "reg next")
     reg := next
@@ -170,7 +170,7 @@ object RegInit {
     */
   def apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo): T = {
     requireIsChiselType(t, "reg type")
-    val reg = t.cloneTypeFull
+    val reg   = t.cloneTypeFull
     val clock = Builder.forcedClock
     val reset = Builder.forcedReset
 
@@ -188,7 +188,7 @@ object RegInit {
     val model = (init match {
       // If init is a literal without forced width OR any non-literal, let width be inferred
       case init: Bits if !init.litIsForcedWidth.getOrElse(false) => init.cloneTypeWidth(Width())
-      case init => init.cloneTypeFull
+      case init                                                  => init.cloneTypeFull
     }).asInstanceOf[T]
     RegInit(model, init)
   }

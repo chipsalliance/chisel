@@ -8,6 +8,6 @@ import firrtl.annotations._
 class AnnotationSeq private (underlying: Seq[Annotation]) {
   def toSeq: Seq[Annotation] = underlying
 }
-object AnnotationSeq {
+object AnnotationSeq                                      {
   def apply(xs: Seq[Annotation]): AnnotationSeq = new AnnotationSeq(xs)
 }

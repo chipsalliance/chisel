@@ -18,7 +18,7 @@ object LibraryHooks {
     * @note Implicitly requires being inside a Hierarchy Library Extension
     */
   def buildInstance[A](
-    definition:       Definition[A],
+    definition: Definition[A],
     createUnderlying: Underlying[A] => Underlying[A]
   )(
     implicit inside: InsideHierarchyLibraryExtension

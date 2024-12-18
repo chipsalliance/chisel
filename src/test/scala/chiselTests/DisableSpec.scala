@@ -32,7 +32,7 @@ class DisableSpec extends AnyFlatSpec with Matchers {
   it should "default to hasBeenReset in a Module" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new Module {
       override def desiredName = "Top"
-      val doDisable = Module.disableOption
+      val doDisable            = Module.disableOption
     })
     chirrtl should include("module Top :")
     chirrtl should include("node doDisable_has_been_reset = intrinsic(circt_has_been_reset : UInt<1>, clock, reset)")

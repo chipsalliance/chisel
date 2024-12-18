@@ -20,8 +20,8 @@ class VecIntegrationSpec extends ChiselPropSpec {
 
   property("A Reg of a Vec should operate correctly") {
     class RegTesterMod(vecSize: Int) extends Module {
-      val io = IO(new Bundle {
-        val in = Input(Vec(vecSize, UInt()))
+      val io     = IO(new Bundle {
+        val in  = Input(Vec(vecSize, UInt()))
         val out = Output(Vec(vecSize, UInt()))
       })
       val vecReg = RegNext(io.in, VecInit(Seq.fill(vecSize) { 0.U }))
@@ -29,8 +29,8 @@ class VecIntegrationSpec extends ChiselPropSpec {
     }
 
     class RegTester(w: Int, values: List[Int]) extends BasicTester {
-      val v = VecInit(values.map(_.U(w.W)))
-      val dut = Module(new RegTesterMod(values.length))
+      val v       = VecInit(values.map(_.U(w.W)))
+      val dut     = Module(new RegTesterMod(values.length))
       val doneReg = RegInit(false.B)
       dut.io.in := v
       when(doneReg) {
@@ -44,16 +44,15 @@ class VecIntegrationSpec extends ChiselPropSpec {
       }
     }
 
-    forAll(safeUIntN(8)) {
-      case (w: Int, v: List[Int]) =>
-        assertTesterPasses { new RegTester(w, v) }
+    forAll(safeUIntN(8)) { case (w: Int, v: List[Int]) =>
+      assertTesterPasses { new RegTester(w, v) }
     }
   }
 
   property("VecInit should iterate correctly") {
     class IterateTester(start: Int, len: Int)(f: UInt => UInt) extends BasicTester {
       val controlVec = VecInit(Seq.iterate(start.U, len)(f))
-      val testVec = VecInit.iterate(start.U, len)(f)
+      val testVec    = VecInit.iterate(start.U, len)(f)
       chisel3.assert(
         controlVec.asUInt === testVec.asUInt,
         cf"Expected Vec to be filled like $controlVec, instead created $testVec\n"
@@ -68,7 +67,7 @@ class VecIntegrationSpec extends ChiselPropSpec {
   property("Regs of vecs should be usable as shift registers") {
     class ShiftRegisterTester(n: Int) extends BasicTester {
       val (cnt, wrap) = Counter(true.B, n * 2)
-      val shifter = Reg(Vec(n, UInt((log2Ceil(n).max(1)).W)))
+      val shifter     = Reg(Vec(n, UInt((log2Ceil(n).max(1)).W)))
       shifter.zip(shifter.drop(1)).foreach { case (l, r) => l := r }
       shifter(n - 1) := cnt
       when(cnt >= n.asUInt) {
@@ -85,7 +84,7 @@ class VecIntegrationSpec extends ChiselPropSpec {
 
   property("Dynamic indexing of a Vec of Module IOs should work") {
     class ModuleIODynamicIndexTester(n: Int) extends BasicTester {
-      val duts = VecInit.fill(n)(Module(new PassthroughModule).io)
+      val duts   = VecInit.fill(n)(Module(new PassthroughModule).io)
       val tester = Module(new PassthroughModuleTester)
 
       val (cycle, done) = Counter(true.B, n)

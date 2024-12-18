@@ -19,11 +19,11 @@ import org.scalatest.matchers.should.Matchers
 
 class ExtModuleAdd(n: Int) extends ExtModule with HasExtModuleInline {
   val io = IO(new Bundle {
-    val in = Input(UInt(16.W))
+    val in  = Input(UInt(16.W))
     val out = Output(UInt(16.W))
   })
 
-  //scalastyle:off regex
+  // scalastyle:off regex
   setInline(
     "ExtModuleAdd.v",
     s"""
@@ -39,13 +39,13 @@ class ExtModuleAdd(n: Int) extends ExtModule with HasExtModuleInline {
 
 class UsesExtModuleAddViaInline extends Module {
   val io = IO(new Bundle {
-    val in = Input(UInt(16.W))
+    val in  = Input(UInt(16.W))
     val out = Output(UInt(16.W))
   })
 
   val blackBoxAdd = Module(new ExtModuleAdd(5))
   blackBoxAdd.io.in := io.in
-  io.out := blackBoxAdd.io.out
+  io.out            := blackBoxAdd.io.out
 }
 
 class ExtModuleMinus extends ExtModule with HasExtModuleResource {
@@ -79,7 +79,7 @@ class UsesExtModuleMinusViaResource extends Module {
 
   mod0.io.in1 := io.in1
   mod0.io.in2 := io.in2
-  io.out := mod0.io.out
+  io.out      := mod0.io.out
 }
 
 class UsesExtModuleMinusViaPath extends Module {
@@ -93,7 +93,7 @@ class UsesExtModuleMinusViaPath extends Module {
 
   mod0.io.in1 := io.in1
   mod0.io.in2 := io.in2
-  io.out := mod0.io.out
+  io.out      := mod0.io.out
 }
 
 class ExtModuleResourceNotFound extends HasExtModuleResource {
@@ -124,7 +124,7 @@ class ExtModuleImplSpec extends AnyFreeSpec with Matchers {
     }
 
     "Implementations can be contained in resource files" in {
-      val targetDir = "test_run_dir/extmodule-resource"
+      val targetDir   = "test_run_dir/extmodule-resource"
       val annotations = Seq(
         TargetDirAnnotation(targetDir),
         ChiselGeneratorAnnotation(() => new UsesExtModuleMinusViaResource),
@@ -140,7 +140,7 @@ class ExtModuleImplSpec extends AnyFreeSpec with Matchers {
     // TODO: This is temporarily disabled until firtool 1.30.0 is released.  This requires:
     //   - https://github.com/llvm/circt/commit/0285a98d96b8df898e02c5ed9528f869bff80dcf
     "Implementations can be contained in arbitrary files" ignore {
-      val targetDir = "test_run_dir/extmodule-path"
+      val targetDir   = "test_run_dir/extmodule-path"
       val annotations = Seq(
         TargetDirAnnotation(targetDir),
         ChiselGeneratorAnnotation(() => new UsesExtModuleMinusViaPath),

@@ -12,30 +12,29 @@ import org.scalatest.matchers.should.Matchers
 /* Printable Tests */
 class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
   // This regex is brittle, it specifically finds the clock and enable signals followed by commas
-  private val PrintfRegex = """\s*printf\(\w+, [^,]+,(.*)\).*""".r
-  private val StringRegex = """([^"]*)"(.*?)"(.*)""".r
+  private val PrintfRegex                             = """\s*printf\(\w+, [^,]+,(.*)\).*""".r
+  private val StringRegex                             = """([^"]*)"(.*?)"(.*)""".r
   private case class Printf(str: String, args: Seq[String])
   private def getPrintfs(firrtl: String): Seq[Printf] = {
-    def processArgs(str: String): Seq[String] =
+    def processArgs(str: String): Seq[String]           =
       str.split(",").toIndexedSeq.map(_.trim).filter(_.nonEmpty)
     def processBody(str: String): (String, Seq[String]) = {
       str match {
         case StringRegex(_, fmt, args) =>
           (fmt, processArgs(args))
-        case _ => fail(s"Regex to process Printf should work on $str!")
+        case _                         => fail(s"Regex to process Printf should work on $str!")
       }
     }
-    firrtl.split("\n").toIndexedSeq.collect {
-      case PrintfRegex(matched) =>
-        val (str, args) = processBody(matched)
-        Printf(str, args)
+    firrtl.split("\n").toIndexedSeq.collect { case PrintfRegex(matched) =>
+      val (str, args) = processBody(matched)
+      Printf(str, args)
     }
   }
 
   // Generates firrtl, gets Printfs
   // Calls fail() if failed match; else calls the partial function which could have its own check
   private def generateAndCheck(gen: => RawModule)(check: PartialFunction[Seq[Printf], Unit])(implicit pos: Position) = {
-    val firrtl = ChiselStage.emitCHIRRTL(gen)
+    val firrtl  = ChiselStage.emitCHIRRTL(gen)
     val printfs = getPrintfs(firrtl)
     if (!check.isDefinedAt(printfs)) {
       fail()
@@ -50,16 +49,14 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
     class MyModule extends BasicTester {
       printf(p"An exact string")
     }
-    generateAndCheck(new MyModule) {
-      case Seq(Printf("An exact string", Seq())) =>
+    generateAndCheck(new MyModule) { case Seq(Printf("An exact string", Seq())) =>
     }
   }
   it should "handle Printable and String concatenation" in {
     class MyModule extends BasicTester {
       printf(p"First " + PString("Second ") + "Third")
     }
-    generateAndCheck(new MyModule) {
-      case Seq(Printf("First Second Third", Seq())) =>
+    generateAndCheck(new MyModule) { case Seq(Printf("First Second Third", Seq())) =>
     }
   }
   it should "call toString on non-Printable objects" in {
@@ -67,8 +64,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
       val myInt = 1234
       printf(p"myInt = $myInt")
     }
-    generateAndCheck(new MyModule) {
-      case Seq(Printf("myInt = 1234", Seq())) =>
+    generateAndCheck(new MyModule) { case Seq(Printf("myInt = 1234", Seq())) =>
     }
   }
   it should "generate proper printf for simple Decimal printing" in {
@@ -76,50 +72,46 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
       val myWire = WireDefault(1234.U)
       printf(p"myWire = ${Decimal(myWire)}")
     }
-    generateAndCheck(new MyModule) {
-      case Seq(Printf("myWire = %d", Seq("myWire"))) =>
+    generateAndCheck(new MyModule) { case Seq(Printf("myWire = %d", Seq("myWire"))) =>
     }
   }
   it should "handle printing literals" in {
     class MyModule extends BasicTester {
       printf(Decimal(10.U(32.W)))
     }
-    generateAndCheck(new MyModule) {
-      case Seq(Printf("%d", Seq(lit))) =>
-        assert(lit contains "UInt<32>")
+    generateAndCheck(new MyModule) { case Seq(Printf("%d", Seq(lit))) =>
+      assert(lit contains "UInt<32>")
     }
   }
   it should "correctly escape percent" in {
     class MyModule extends BasicTester {
       printf(p"%")
     }
-    generateAndCheck(new MyModule) {
-      case Seq(Printf("%%", Seq())) =>
+    generateAndCheck(new MyModule) { case Seq(Printf("%%", Seq())) =>
     }
   }
   it should "correctly emit tab" in {
     class MyModule extends BasicTester {
       printf(p"\t")
     }
-    generateAndCheck(new MyModule) {
-      case Seq(Printf("\\t", Seq())) =>
+    generateAndCheck(new MyModule) { case Seq(Printf("\\t", Seq())) =>
     }
   }
   it should "support names of circuit elements including submodule IO" in {
     // Submodule IO is a subtle issue because the Chisel element has a different
     // parent module
-    class MySubModule extends Module {
+    class MySubModule extends Module      {
       val io = IO(new Bundle {
         val fizz = UInt(32.W)
       })
     }
-    class MyBundle extends Bundle {
+    class MyBundle    extends Bundle      {
       val foo = UInt(32.W)
     }
-    class MyModule extends BasicTester {
+    class MyModule    extends BasicTester {
       override def desiredName: String = "MyModule"
-      val myWire = Wire(new MyBundle)
-      val myInst = Module(new MySubModule)
+      val myWire                       = Wire(new MyBundle)
+      val myInst                       = Module(new MySubModule)
       printf(p"${Name(myWire.foo)}")
       printf(p"${FullName(myWire.foo)}")
       printf(p"${FullName(myInst.io.fizz)}")
@@ -129,17 +121,16 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
     }
   }
   it should "handle printing ports of submodules" in {
-    class MySubModule extends Module {
+    class MySubModule extends Module      {
       val io = IO(new Bundle {
         val fizz = UInt(32.W)
       })
     }
-    class MyModule extends BasicTester {
+    class MyModule    extends BasicTester {
       val myInst = Module(new MySubModule)
       printf(p"${myInst.io.fizz}")
     }
-    generateAndCheck(new MyModule) {
-      case Seq(Printf("%d", Seq("myInst.io.fizz"))) =>
+    generateAndCheck(new MyModule) { case Seq(Printf("%d", Seq("myInst.io.fizz"))) =>
     }
   }
   it should "print UInts and SInts as Decimal by default" in {
@@ -148,8 +139,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
       val mySInt = WireDefault(-1.S)
       printf(p"$myUInt & $mySInt")
     }
-    generateAndCheck(new MyModule) {
-      case Seq(Printf("%d & %d", Seq("myUInt", "mySInt"))) =>
+    generateAndCheck(new MyModule) { case Seq(Printf("%d & %d", Seq("myUInt", "mySInt"))) =>
     }
   }
   it should "print Vecs like Scala Seqs by default" in {
@@ -186,8 +176,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
       myBun.`a-x` := 0.U
       printf(p"$myBun")
     }
-    generateAndCheck(new MyModule) {
-      case Seq(Printf("UnsanitaryBundle(aminusx -> %d)", Seq("myBun.aminusx"))) =>
+    generateAndCheck(new MyModule) { case Seq(Printf("UnsanitaryBundle(aminusx -> %d)", Seq("myBun.aminusx"))) =>
     }
   }
 
@@ -195,8 +184,8 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
   it should "print regular scala variables with cf format specifier" in {
 
     class MyModule extends BasicTester {
-      val f1 = 20.4517
-      val i1 = 10
+      val f1   = 20.4517
+      val i1   = 10
       val str1 = "String!"
       printf(
         cf"F1 = $f1 D1 = $i1 F1 formatted = $f1%2.2f str1 = $str1%s i1_str = $i1%s i1_hex=$i1%x"
@@ -211,9 +200,9 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
 
   it should "print chisel bits with cf format specifier" in {
 
-    class MyBundle extends Bundle {
-      val foo = UInt(32.W)
-      val bar = UInt(32.W)
+    class MyBundle extends Bundle      {
+      val foo                             = UInt(32.W)
+      val bar                             = UInt(32.W)
       override def toPrintable: Printable = {
         cf"Bundle : " +
           cf"Foo : $foo%x Bar : $bar%x"
@@ -226,26 +215,25 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
       w1.bar := 10.U
       printf(cf"w1 = $w1")
     }
-    generateAndCheck(new MyModule) {
-      case Seq(Printf("w1 = Bundle : Foo : %x Bar : %x", Seq("w1.foo", "w1.bar"))) =>
+    generateAndCheck(new MyModule) { case Seq(Printf("w1 = Bundle : Foo : %x Bar : %x", Seq("w1.foo", "w1.bar"))) =>
     }
   }
 
   it should "support names of circuit elements using format specifier including submodule IO with cf format specifier" in {
     // Submodule IO is a subtle issue because the Chisel element has a different
     // parent module
-    class MySubModule extends Module {
+    class MySubModule extends Module      {
       val io = IO(new Bundle {
         val fizz = UInt(32.W)
       })
     }
-    class MyBundle extends Bundle {
+    class MyBundle    extends Bundle      {
       val foo = UInt(32.W)
     }
-    class MyModule extends BasicTester {
+    class MyModule    extends BasicTester {
       override def desiredName: String = "MyModule"
-      val myWire = Wire(new MyBundle)
-      val myInst = Module(new MySubModule)
+      val myWire                       = Wire(new MyBundle)
+      val myInst                       = Module(new MySubModule)
       printf(cf"${myWire.foo}%n")
       printf(cf"${myWire.foo}%N")
       printf(cf"${myInst.io.fizz}%N")
@@ -272,9 +260,8 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
       printf(cf"%%  $b1%x%%$b2%b = ${b1 % b2}%d %%%% Tail String")
     }
 
-    generateAndCheck(new MyModule) {
-      case Seq(Printf("%%  %x%%%b = %d %%%% Tail String", Seq(lita, litb, _))) =>
-        assert(lita.contains("UInt<4>") && litb.contains("UInt<5>"))
+    generateAndCheck(new MyModule) { case Seq(Printf("%%  %x%%%b = %d %%%% Tail String", Seq(lita, litb, _))) =>
+      assert(lita.contains("UInt<4>") && litb.contains("UInt<5>"))
     }
   }
 
@@ -291,9 +278,9 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
 
   it should "allow Printables to be expanded and used" in {
     class MyModule extends BasicTester {
-      val w1 = 20.U
-      val f1 = 30.2
-      val i1 = 14
+      val w1    = 20.U
+      val f1    = 30.2
+      val i1    = 14
       val pable = cf"w1 = $w1%b f1 = $f1%2.2f"
       printf(cf"Trying to expand printable $pable and mix with i1 = $i1%d")
     }
@@ -327,8 +314,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
     class MyModule extends BasicTester {
       printf(Printable.pack("\\ \\]"))
     }
-    generateAndCheck(new MyModule) {
-      case Seq(Printf("\\\\ \\\\]", Seq())) =>
+    generateAndCheck(new MyModule) { case Seq(Printf("\\\\ \\\\]", Seq())) =>
     }
   }
 }

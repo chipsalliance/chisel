@@ -32,21 +32,21 @@ object ExceptionHelpers {
   private[chisel3] def getErrorLineInFile(sourceRoots: Seq[File], sl: SourceLine): List[String] = {
     def tryFileInSourceRoot(sourceRoot: File): Option[List[String]] = {
       try {
-        val file = new File(sourceRoot, sl.filename)
-        val lines = Source.fromFile(file).getLines()
-        var i = 0
+        val file      = new File(sourceRoot, sl.filename)
+        val lines     = Source.fromFile(file).getLines()
+        var i         = 0
         while (i < (sl.line - 1) && lines.hasNext) {
           lines.next()
           i += 1
         }
-        val line = lines.next()
+        val line      = lines.next()
         val caretLine = (" " * (sl.col - 1)) + "^"
         Some(line :: caretLine :: Nil)
       } catch {
         case scala.util.control.NonFatal(_) => None
       }
     }
-    val sourceRootsWithDefault = if (sourceRoots.nonEmpty) sourceRoots else Seq(new File("."))
+    val sourceRootsWithDefault                                      = if (sourceRoots.nonEmpty) sourceRoots else Seq(new File("."))
     // View allows us to search the directories one at a time and early out
     sourceRootsWithDefault.view.map(tryFileInSourceRoot(_)).collectFirst { case Some(value) => value }.getOrElse(Nil)
   }
@@ -69,7 +69,7 @@ object ExceptionHelpers {
       */
     def trimStackTraceToUserCode(
       packageTrimlist: Set[String] = packageTrimlist,
-      anchor:          Option[String] = Some(builderName)
+      anchor: Option[String] = Some(builderName)
     ): Unit = {
       def inTrimlist(ste: StackTraceElement) = {
         val packageName = ste.getClassName().takeWhile(_ != '.')
@@ -81,7 +81,7 @@ object ExceptionHelpers {
           // Step 1: Remove elements from the top in the package trimlist
           //         Only include ellipsis at top if something is dropped from top
           val droppedFromTop = inTrimlist(a.head)
-          val trimmed =
+          val trimmed        =
             a.dropWhile(inTrimlist)
               // Step 2: Optionally remove elements from the bottom until the anchor
               .reverse
@@ -92,7 +92,7 @@ object ExceptionHelpers {
               .reverse
               .toArray
           // Step 5: Add ellipsis stack trace elements and "--full-stacktrace" info
-          val withEllipses =
+          val withEllipses   =
             Option.when(droppedFromTop)(ellipsis()) ++:
               trimmed :+
               ellipsis() :+
@@ -117,17 +117,18 @@ object ExceptionHelpers {
   * May filter on source file or message, a None filter means "match everything"
   */
 private[chisel3] case class WarningFilter(
-  src:    Option[PathMatcher],
-  id:     Option[WarningID.WarningID],
-  action: WarningFilter.Action) {
+  src: Option[PathMatcher],
+  id: Option[WarningID.WarningID],
+  action: WarningFilter.Action
+) {
 
   /** Does this filter apply to the warning? */
   def applies(warning: Warning): Boolean = {
     // Option.forall matches if None which is intentional
-    val idMatch = this.id.forall(_ == warning.id)
+    val idMatch  = this.id.forall(_ == warning.id)
     // Using def so that srcMatch won't run unless necessary
     def srcMatch = this.src match {
-      case None => true // No src regex means match all
+      case None          => true // No src regex means match all
       case Some(srcGlob) =>
         val filename = warning.info.filenameOption
         filename match {
@@ -141,15 +142,15 @@ private[chisel3] case class WarningFilter(
 private[chisel3] object WarningFilter {
   sealed trait Action
   case object Suppress extends Action
-  case object Warn extends Action
-  case object Error extends Action
+  case object Warn     extends Action
+  case object Error    extends Action
 
   // Some helpers for error reporting
-  private def actionOneOf = "must be one of ':e, :w, or :s'."
+  private def actionOneOf   = "must be one of ':e, :w, or :s'."
   private def categoryOneOf = "must be one of 'any', 'src', or 'id'."
 
   // TODO find a better way to deal with line and column
-  private def srcGlobDefault(base: String): String = base //s"**/$base"
+  private def srcGlobDefault(base: String): String = base // s"**/$base"
 
   /** Parse a String into a [[WarningFilter]]
     *
@@ -157,19 +158,19 @@ private[chisel3] object WarningFilter {
     * @return Left on failure with index of invalid character and a message or Right of successfully built Warning Filters
     */
   def parse(value: String): Either[(Int, String), WarningFilter] = {
-    val actionIdx = value.lastIndexOf(':')
+    val actionIdx                           = value.lastIndexOf(':')
     if (actionIdx < 0) {
       return Left(value.size - 1 -> s"Filter '$value' is missing an action, $actionOneOf")
     }
-    val (filterStr, actionStr) = value.splitAt(actionIdx)
-    val action: Action = actionStr match {
-      case ":e" => Error
-      case ":w" => Warn
-      case ":s" => Suppress
+    val (filterStr, actionStr)              = value.splitAt(actionIdx)
+    val action: Action                      = actionStr match {
+      case ":e"  => Error
+      case ":w"  => Warn
+      case ":s"  => Suppress
       case other =>
         return Left(actionIdx -> s"Invalid action '$other', $actionOneOf")
     }
-    val filterParts: List[String] = filterStr.split("&").toList
+    val filterParts: List[String]           = filterStr.split("&").toList
     // Add index for adding a carat in error reporting
     val partsWithIndex: List[(Int, String)] =
       filterParts
@@ -177,14 +178,14 @@ private[chisel3] object WarningFilter {
         ._2
 
     // Find and record the parts
-    var any:     Boolean = false
-    var srcGlob: Option[PathMatcher] = None
-    var id:      Option[WarningID.WarningID] = None
+    var any: Boolean                    = false
+    var srcGlob: Option[PathMatcher]    = None
+    var id: Option[WarningID.WarningID] = None
     for ((idx, str) <- partsWithIndex) {
-      val catIdx = str.indexOf('=')
+      val catIdx                = str.indexOf('=')
       val (category, remainder) = if (catIdx < 0) (str, "") else str.splitAt(catIdx + 1) // +1 to include = in cat
-      val regex = category match {
-        case "any" =>
+      val regex                 = category match {
+        case "any"  =>
           // Any must be unique
           if (srcGlob.nonEmpty || id.nonEmpty || any) return Left(idx -> "'any' cannot be combined with other filters.")
           if (catIdx != -1) return Left(idx -> "'any' cannot have modifiers.")
@@ -202,7 +203,7 @@ private[chisel3] object WarningFilter {
               val jdx = idx + "src=".length
               return Left(jdx -> s"Invalid glob expression: '$remainder'")
           }
-        case "id=" =>
+        case "id="  =>
           if (id.nonEmpty) return Left(idx -> s"Cannot have duplicates of the same category.")
           val warningId =
             for {
@@ -213,7 +214,7 @@ private[chisel3] object WarningFilter {
               if value > 0 && value < WarningID.maxId
             } yield WarningID(value)
           warningId match {
-            case None =>
+            case None        =>
               val jdx = idx + "id=".length
               return Left(
                 jdx -> s"Warning ID must be an integer in range [1, ${WarningID.maxId - 1}], got '$remainder'."
@@ -221,7 +222,7 @@ private[chisel3] object WarningFilter {
             case Some(value) =>
               id = Some(value)
           }
-        case other =>
+        case other  =>
           val cleanCat = if (other.last == '=') other.init else other // Drop trailing =
           return Left(idx -> s"Invalid category '$cleanCat', $categoryOneOf")
       }
@@ -239,14 +240,14 @@ private[chisel3] object throwException {
 
 private[chisel3] sealed trait UseColor
 private[chisel3] object UseColor {
-  case object Enabled extends UseColor
-  case object Disabled extends UseColor
+  case object Enabled             extends UseColor
+  case object Disabled            extends UseColor
   case class Error(value: String) extends UseColor
 
   val envVar = "CHISEL_USE_COLOR"
 
   val value: UseColor = sys.env.get(envVar) match {
-    case None =>
+    case None          =>
       val detect = System.console() != null && sys.env.get("TERM").exists(_ != "dumb")
       if (detect) Enabled else Disabled
     case Some("true")  => Enabled
@@ -265,15 +266,16 @@ private[chisel3] object UseColor {
 private[chisel3] object ErrorLog {
   def withColor(color: String, message: String): String =
     if (UseColor.useColor) color + message + Console.RESET else message
-  val depTag = "[" + withColor(Console.BLUE, "deprecated") + "]"
-  val warnTag = "[" + withColor(Console.YELLOW, "warn") + "]"
-  val errTag = "[" + withColor(Console.RED, "error") + "]"
+  val depTag                                            = "[" + withColor(Console.BLUE, "deprecated") + "]"
+  val warnTag                                           = "[" + withColor(Console.YELLOW, "warn") + "]"
+  val errTag                                            = "[" + withColor(Console.RED, "error") + "]"
 }
 
 private[chisel3] class ErrorLog(
-  warningFilters:    Seq[WarningFilter],
-  sourceRoots:       Seq[File],
-  throwOnFirstError: Boolean) {
+  warningFilters: Seq[WarningFilter],
+  sourceRoots: Seq[File],
+  throwOnFirstError: Boolean
+) {
   import ErrorLog.withColor
 
   /** Returns an appropriate location string for the provided source info.
@@ -282,21 +284,21 @@ private[chisel3] class ErrorLog(
     */
   private def errorLocationString(si: Option[SourceInfo]): String = {
     si match {
-      case Some(sl: SourceLine) => sl.serialize
+      case Some(sl: SourceLine)  => sl.serialize
       case Some(_: NoSourceInfo) => "(unknown)"
-      case None => ""
+      case None                  => ""
     }
   }
 
   // TODO refactor this to just hold more information in the ErrorEntry and do extra processing at report time
   // id is optional because it has only been applied to warnings, TODO apply to errors
   private def logWarningOrError(msg: String, si: Option[SourceInfo], isFatal: Boolean): Unit = {
-    val location = errorLocationString(si)
+    val location           = errorLocationString(si)
     val sourceLineAndCaret =
       si.collect { case sl: SourceLine => ExceptionHelpers.getErrorLineInFile(sourceRoots, sl) }.getOrElse(Nil)
-    val fullMessage = if (location.isEmpty) msg else s"$location: $msg"
-    val errorLines = fullMessage :: sourceLineAndCaret
-    val entry = ErrorEntry(errorLines, isFatal)
+    val fullMessage        = if (location.isEmpty) msg else s"$location: $msg"
+    val errorLines         = fullMessage :: sourceLineAndCaret
+    val entry              = ErrorEntry(errorLines, isFatal)
     if (throwOnFirstError && isFatal) {
       throwException(entry.serialize(includeTag = false))
     }
@@ -310,7 +312,7 @@ private[chisel3] class ErrorLog(
 
   /** Log a warning, will have warning filters applied before logging */
   def warning(warning: Warning): Unit = {
-    val action =
+    val action                    =
       warningFilters.collectFirst { case wf if wf.applies(warning) => wf.action }
         .getOrElse(WarningFilter.Warn) // Default is to warn
     val doReport: Option[Boolean] = action match {
@@ -341,12 +343,11 @@ private[chisel3] class ErrorLog(
         logger.error(
           s"[error] Invalid value for environment variable '${UseColor.envVar}', must be 'true', 'false', or not set!"
         )
-      case _ =>
+      case _                     =>
     }
 
-    deprecations.foreach {
-      case ((message, sourceLoc), count) =>
-        logger.warn(s"${ErrorLog.depTag} $sourceLoc ($count calls): $message")
+    deprecations.foreach { case ((message, sourceLoc), count) =>
+      logger.warn(s"${ErrorLog.depTag} $sourceLoc ($count calls): $message")
     }
     errors.foreach(e => logger.error(e.serialize(includeTag = true)))
 
@@ -367,7 +368,7 @@ private[chisel3] class ErrorLog(
       logger.warn(s"""${ErrorLog.warnTag}     scalacOptions := Seq("-unchecked", "-deprecation")""")
     }
 
-    val allErrors = errors.filter(_.isFatal)
+    val allErrors   = errors.filter(_.isFatal)
     val allWarnings = errors.filter(!_.isFatal)
 
     if (!allWarnings.isEmpty && !allErrors.isEmpty) {
@@ -404,10 +405,10 @@ private[chisel3] class ErrorLog(
     }
   }
 
-  private val errors = LinkedHashSet[ErrorEntry]()
+  private val errors       = LinkedHashSet[ErrorEntry]()
   private val deprecations = LinkedHashMap[(String, String), Int]()
 
-  private val startTime = System.currentTimeMillis
+  private val startTime         = System.currentTimeMillis
   private def elapsedTime: Long = System.currentTimeMillis - startTime
 }
 

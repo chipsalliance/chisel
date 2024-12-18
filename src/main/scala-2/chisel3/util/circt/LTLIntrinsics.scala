@@ -18,10 +18,9 @@ import chisel3.experimental.SourceInfo
 private[chisel3] object BaseIntrinsic {
   def apply[T <: Data](
     intrinsicName: String,
-    ret:           => T,
-    maybeParams:   Seq[(String, Param)] = Seq()
-  )(data:          Data*
-  )(
+    ret: => T,
+    maybeParams: Seq[(String, Param)] = Seq()
+  )(data: Data*)(
     implicit sourceInfo: SourceInfo
   ): T = {
     IntrinsicExpr(f"circt_$intrinsicName", ret, maybeParams: _*)(data: _*)
@@ -32,9 +31,8 @@ private[chisel3] object BaseIntrinsic {
 private[chisel3] object UnaryLTLIntrinsic {
   def apply[T <: Data](
     intrinsicName: String,
-    params:        Seq[(String, Param)] = Seq()
-  )(_in:           T
-  )(
+    params: Seq[(String, Param)] = Seq()
+  )(_in: T)(
     implicit sourceInfo: SourceInfo
   ): Bool =
     BaseIntrinsic(f"ltl_$intrinsicName", Bool(), params)(_in).suggestName(f"ltl_$intrinsicName")
@@ -44,10 +42,8 @@ private[chisel3] object UnaryLTLIntrinsic {
 private[chisel3] object BinaryLTLIntrinsic {
   def apply[T <: Data, U <: Data](
     intrinsicName: String,
-    params:        Seq[(String, Param)] = Seq()
-  )(lhs:           T,
-    rhs:           U
-  )(
+    params: Seq[(String, Param)] = Seq()
+  )(lhs: T, rhs: U)(
     implicit sourceInfo: SourceInfo
   ): Bool =
     BaseIntrinsic(f"ltl_$intrinsicName", Bool(), params)(lhs, rhs).suggestName(f"ltl_$intrinsicName")
@@ -147,10 +143,8 @@ private[chisel3] object LTLDisableIntrinsic {
 private[chisel3] object VerifAssertLikeIntrinsic {
   def apply(
     intrinsicName: String,
-    label:         Option[String]
-  )(prop:          Bool,
-    enable:        Option[Bool]
-  )(
+    label: Option[String]
+  )(prop: Bool, enable: Option[Bool])(
     implicit sourceInfo: SourceInfo
   ): Unit = {
     val name = f"circt_verif_$intrinsicName"

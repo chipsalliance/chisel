@@ -7,34 +7,34 @@ import chisel3._
 import chisel3.util._
 
 class Risc extends Module {
-  val io = IO(new Bundle {
-    val isWr = Input(Bool())
+  val io      = IO(new Bundle {
+    val isWr   = Input(Bool())
     val wrAddr = Input(UInt(8.W))
     val wrData = Input(Bits(32.W))
-    val boot = Input(Bool())
-    val valid = Output(Bool())
-    val out = Output(Bits(32.W))
+    val boot   = Input(Bool())
+    val valid  = Output(Bool())
+    val out    = Output(Bits(32.W))
   })
   val memSize = 256
-  val file = Mem(memSize, Bits(32.W))
-  val code = Mem(memSize, Bits(32.W))
-  val pc = RegInit(0.U(8.W))
+  val file    = Mem(memSize, Bits(32.W))
+  val code    = Mem(memSize, Bits(32.W))
+  val pc      = RegInit(0.U(8.W))
 
   val add_op :: imm_op :: Nil = Enum(2)
 
   val inst = code(pc)
-  val op = inst(31, 24)
-  val rci = inst(23, 16)
-  val rai = inst(15, 8)
-  val rbi = inst(7, 0)
+  val op   = inst(31, 24)
+  val rci  = inst(23, 16)
+  val rai  = inst(15, 8)
+  val rbi  = inst(7, 0)
 
   val ra = Mux(rai === 0.U, 0.U, file(rai))
   val rb = Mux(rbi === 0.U, 0.U, file(rbi))
   val rc = Wire(Bits(32.W))
 
   io.valid := false.B
-  io.out := 0.U
-  rc := 0.U
+  io.out   := 0.U
+  rc       := 0.U
 
   when(io.isWr) {
     code(io.wrAddr) := io.wrData
@@ -51,7 +51,7 @@ class Risc extends Module {
     }.otherwise {
       file(rci) := rc
     }
-    pc := pc +% 1.U
+    pc     := pc +% 1.U
   }
 }
 

@@ -37,7 +37,7 @@ class DataViewTargetSpec extends ChiselFlatSpec {
   )
 
   // Check helpers
-  private def checkAll(impl: Data, refs: String*): Unit = {
+  private def checkAll(impl: Data, refs: String*): Unit  = {
     refs.size should be(checks.size)
     for ((check, value) <- checks.zip(refs)) {
       check(impl) should be(value)
@@ -51,13 +51,13 @@ class DataViewTargetSpec extends ChiselFlatSpec {
   behavior.of("DataView Naming")
 
   it should "support views of Elements" in {
-    class MyChild extends Module {
-      val out = IO(Output(UInt(8.W)))
+    class MyChild  extends Module {
+      val out        = IO(Output(UInt(8.W)))
       val insideView = out.viewAs[UInt]
       out := 0.U
     }
     class MyParent extends Module {
-      val out = IO(Output(UInt(8.W)))
+      val out  = IO(Output(UInt(8.W)))
       val inst = Module(new MyChild)
       out := inst.out
     }
@@ -68,28 +68,28 @@ class DataViewTargetSpec extends ChiselFlatSpec {
 
   it should "support 1:1 mappings of Aggregates and their children" in {
     class MyBundle extends Bundle {
-      val foo = UInt(8.W)
+      val foo  = UInt(8.W)
       val bars = Vec(2, UInt(8.W))
     }
     implicit val dv =
       DataView[MyBundle, Vec[UInt]](_ => Vec(3, UInt(8.W)), _.foo -> _(0), _.bars(0) -> _(1), _.bars(1) -> _(2))
-    class MyChild extends Module {
-      val out = IO(Output(new MyBundle))
-      val outView = out.viewAs[Vec[UInt]] // Note different type
-      val outFooView = out.foo.viewAs[UInt]
-      val outBarsView = out.bars.viewAs[Vec[UInt]]
+    class MyChild  extends Module {
+      val out          = IO(Output(new MyBundle))
+      val outView      = out.viewAs[Vec[UInt]] // Note different type
+      val outFooView   = out.foo.viewAs[UInt]
+      val outBarsView  = out.bars.viewAs[Vec[UInt]]
       val outBars0View = out.bars(0).viewAs[UInt]
       out := 0.U.asTypeOf(new MyBundle)
     }
     class MyParent extends Module {
-      val out = IO(Output(new MyBundle))
+      val out  = IO(Output(new MyBundle))
       val inst = Module(new MyChild)
       out := inst.out
     }
     val m = elaborateAndGetModule(new MyParent)
-    val outView = m.inst.out.viewAs[Vec[UInt]] // Note different type
-    val outFooView = m.inst.out.foo.viewAs[UInt]
-    val outBarsView = m.inst.out.bars.viewAs[Vec[UInt]]
+    val outView      = m.inst.out.viewAs[Vec[UInt]] // Note different type
+    val outFooView   = m.inst.out.foo.viewAs[UInt]
+    val outBarsView  = m.inst.out.bars.viewAs[Vec[UInt]]
     val outBars0View = m.inst.out.bars(0).viewAs[UInt]
 
     checkSameAs(m.inst.out, m.inst.outView, outView)
@@ -111,8 +111,8 @@ class DataViewTargetSpec extends ChiselFlatSpec {
     class MyBundle extends Bundle {
       val foo = Vec(2, UInt(8.W))
     }
-    class MyChild extends Module {
-      val out = IO(Output(new MyBundle))
+    class MyChild  extends Module {
+      val out     = IO(Output(new MyBundle))
       val outView = out.viewAs[MyBundle]
       mark(out.foo, 0)
       mark(outView.foo, 1)
@@ -121,12 +121,12 @@ class DataViewTargetSpec extends ChiselFlatSpec {
       out := 0.U.asTypeOf(new MyBundle)
     }
     class MyParent extends Module {
-      val out = IO(Output(new MyBundle))
+      val out  = IO(Output(new MyBundle))
       val inst = Module(new MyChild)
       out := inst.out
     }
     val (_, annos) = getFirrtlAndAnnos(new MyParent)
-    val pairs = annos.collect { case DummyAnno(t, idx) => (idx, t.toString) }.sortBy(_._1)
+    val pairs    = annos.collect { case DummyAnno(t, idx) => (idx, t.toString) }.sortBy(_._1)
     val expected = Seq(
       0 -> "~MyParent|MyChild>out.foo",
       1 -> "~MyParent|MyChild>out.foo",
@@ -142,7 +142,7 @@ class DataViewTargetSpec extends ChiselFlatSpec {
       val c, d = Output(UInt(8.W))
     }
     // Note that each use of a Tuple as Data causes an implicit conversion creating a View
-    class MyChild extends Module {
+    class MyChild  extends Module {
       val io = IO(new MyBundle)
       (io.c, io.d) := (io.a, io.b)
       // The type annotations create the views via the implicit conversion
@@ -155,12 +155,12 @@ class DataViewTargetSpec extends ChiselFlatSpec {
       mark((io.b, io.d), 4) // Mix it up for fun
     }
     class MyParent extends Module {
-      val io = IO(new MyBundle)
+      val io   = IO(new MyBundle)
       val inst = Module(new MyChild)
       io <> inst.io
     }
     val (_, annos) = getFirrtlAndAnnos(new MyParent)
-    val pairs = annos.collect { case DummyAnno(t, idx) => (idx, t.toString) }.sorted
+    val pairs    = annos.collect { case DummyAnno(t, idx) => (idx, t.toString) }.sorted
     val expected = Seq(
       0 -> "~MyParent|MyChild>io.a",
       0 -> "~MyParent|MyChild>io.b",
@@ -178,13 +178,13 @@ class DataViewTargetSpec extends ChiselFlatSpec {
 
   it should "support views with toRelativeTarget" in {
     class MyBundle extends Bundle {
-      val foo = UInt(8.W)
+      val foo  = UInt(8.W)
       val bars = Vec(2, UInt(8.W))
     }
     implicit val dv =
       DataView[MyBundle, Vec[UInt]](_ => Vec(3, UInt(8.W)), _.foo -> _(0), _.bars(0) -> _(1), _.bars(1) -> _(2))
-    class MyChild extends Module {
-      val out = IO(Output(new MyBundle))
+    class MyChild  extends Module {
+      val out     = IO(Output(new MyBundle))
       val outView = out.viewAs[Vec[UInt]]
       out := 0.U.asTypeOf(new MyBundle)
     }
@@ -197,7 +197,7 @@ class DataViewTargetSpec extends ChiselFlatSpec {
       }
     }
     val (_, annos) = getFirrtlAndAnnos(new MyParent)
-    val pairs = annos.collect { case DummyAnno(t, idx) => (idx, t.toString) }.sorted
+    val pairs    = annos.collect { case DummyAnno(t, idx) => (idx, t.toString) }.sorted
     val expected = Seq(
       0 -> "~MyParent|MyParent/inst:MyChild>out",
       1 -> "~MyParent|MyChild>out",

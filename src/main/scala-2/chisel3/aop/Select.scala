@@ -41,11 +41,11 @@ object Select {
           else
             Seq.empty
         head ++ collect(ifRegion)(f) ++ collect(elseRegion)(f)
-      case cmd @ LayerBlock(_, _, region) =>
+      case cmd @ LayerBlock(_, _, region)          =>
         val head = f.lift(cmd).toSeq
         head ++ collect(region)(f)
-      case cmd if f.isDefinedAt(cmd) => Some(f(cmd))
-      case _                         => None
+      case cmd if f.isDefinedAt(cmd)               => Some(f(cmd))
+      case _                                       => None
     }
   }
 
@@ -58,16 +58,15 @@ object Select {
     implicit val mg = new chisel3.internal.MacroGenerated {}
     parent.proto._component.get match {
       case d: DefModule =>
-        collect(d.block.getCommands()) {
-          case d: DefInstance =>
-            d.id match {
-              case p: IsClone[_] =>
-                parent._lookup { x => new Instance(Clone(p)).asInstanceOf[Instance[BaseModule]] }
-              case other: BaseModule =>
-                parent._lookup { x => other }
-            }
+        collect(d.block.getCommands()) { case d: DefInstance =>
+          d.id match {
+            case p: IsClone[_]     =>
+              parent._lookup { x => new Instance(Clone(p)).asInstanceOf[Instance[BaseModule]] }
+            case other: BaseModule =>
+              parent._lookup { x => other }
+          }
         }
-      case other => Nil
+      case other        => Nil
     }
   }
 
@@ -86,16 +85,16 @@ object Select {
         collect(d.block.getCommands()) {
           case d: DefInstance =>
             d.id match {
-              case p: IsClone[_] =>
+              case p: IsClone[_]     =>
                 val i = parent._lookup { x => new Instance(Clone(p)).asInstanceOf[Instance[BaseModule]] }
                 if (i.isA[T]) Some(i.asInstanceOf[Instance[T]]) else None
               case other: BaseModule =>
                 val i = parent._lookup { x => other }
                 if (i.isA[T]) Some(i.asInstanceOf[Instance[T]]) else None
             }
-          case other => None
+          case other          => None
         }.flatten
-      case other => Nil
+      case other        => Nil
     }
   }
 
@@ -107,7 +106,7 @@ object Select {
     * @param root top of the hierarchy to search for instances/modules of given type
     */
   def allInstancesOf[T <: BaseModule: TypeTag](root: Hierarchy[BaseModule]): Seq[Instance[T]] = {
-    val soFar = if (root.isA[T]) Seq(root.toInstance.asInstanceOf[Instance[T]]) else Nil
+    val soFar             = if (root.isA[T]) Seq(root.toInstance.asInstanceOf[Instance[T]]) else Nil
     val allLocalInstances = instancesIn(root)
     soFar ++ (allLocalInstances.flatMap(allInstancesOf[T]))
   }
@@ -118,20 +117,19 @@ object Select {
     */
   def definitionsIn(parent: Hierarchy[BaseModule]): Seq[Definition[BaseModule]] = {
     type DefType = Definition[BaseModule]
-    implicit val mg = new chisel3.internal.MacroGenerated {}
+    implicit val mg  = new chisel3.internal.MacroGenerated {}
     check(parent)
-    val defs = parent.proto._component.get match {
+    val defs         = parent.proto._component.get match {
       case d: DefModule =>
-        collect(d.block.getCommands()) {
-          case i: DefInstance =>
-            i.id match {
-              case p: IsClone[_] =>
-                parent._lookup { x => new Definition(Proto(p.getProto)).asInstanceOf[Definition[BaseModule]] }
-              case other: BaseModule =>
-                parent._lookup { x => other.toDefinition }
-            }
+        collect(d.block.getCommands()) { case i: DefInstance =>
+          i.id match {
+            case p: IsClone[_]     =>
+              parent._lookup { x => new Definition(Proto(p.getProto)).asInstanceOf[Definition[BaseModule]] }
+            case other: BaseModule =>
+              parent._lookup { x => other.toDefinition }
+          }
         }
-      case other => Nil
+      case other        => Nil
     }
     val (_, defList) = defs.foldLeft((Set.empty[DefType], List.empty[DefType])) {
       case ((set, list), definition: Definition[BaseModule]) =>
@@ -151,19 +149,19 @@ object Select {
     check(parent)
     implicit val mg = new chisel3.internal.MacroGenerated {}
     type DefType = Definition[T]
-    val defs = parent.proto._component.get match {
+    val defs         = parent.proto._component.get match {
       case d: DefModule =>
         collect(d.block.getCommands()) {
           case d: DefInstance =>
             d.id match {
-              case p: IsClone[_] =>
+              case p: IsClone[_]     =>
                 val d = parent._lookup { x => new Definition(Clone(p)).asInstanceOf[Definition[BaseModule]] }
                 if (d.isA[T]) Some(d.asInstanceOf[Definition[T]]) else None
               case other: BaseModule =>
                 val d = parent._lookup { x => other.toDefinition }
                 if (d.isA[T]) Some(d.asInstanceOf[Definition[T]]) else None
             }
-          case other => None
+          case other          => None
         }.flatten
     }
     val (_, defList) = defs.foldLeft((Set.empty[DefType], List.empty[DefType])) {
@@ -183,9 +181,9 @@ object Select {
     */
   def allDefinitionsOf[T <: BaseModule: TypeTag](root: Hierarchy[BaseModule]): Seq[Definition[T]] = {
     type DefType = Definition[T]
-    val allDefSet = mutable.HashSet[Definition[BaseModule]]()
-    val defSet = mutable.HashSet[DefType]()
-    val defList = mutable.ArrayBuffer[DefType]()
+    val allDefSet                               = mutable.HashSet[Definition[BaseModule]]()
+    val defSet                                  = mutable.HashSet[DefType]()
+    val defList                                 = mutable.ArrayBuffer[DefType]()
     def rec(hier: Definition[BaseModule]): Unit = {
       if (hier.isA[T] && !defSet.contains(hier.asInstanceOf[DefType])) {
         defSet += hier.asInstanceOf[DefType]
@@ -214,7 +212,7 @@ object Select {
     */
   def getDeep[T](module: BaseModule)(collector: BaseModule => Seq[T]): Seq[T] = {
     check(module)
-    val myItems = collector(module)
+    val myItems           = collector(module)
     val deepChildrenItems = instances(module).flatMap { i =>
       getDeep(i)(collector)
     }
@@ -234,7 +232,7 @@ object Select {
     */
   def collectDeep[T](module: BaseModule)(collector: PartialFunction[BaseModule, T]): Iterable[T] = {
     check(module)
-    val myItems = collector.lift(module)
+    val myItems           = collector.lift(module)
     val deepChildrenItems = instances(module).flatMap { i =>
       collectDeep(i)(collector)
     }
@@ -255,15 +253,15 @@ object Select {
           case i: DefInstance =>
             i.id match {
               case m: ModuleClone[_] if !m._madeFromDefinition => None
-              case _: PseudoModule =>
+              case _: PseudoModule                             =>
                 throw new Exception(
                   "instances, collectDeep, and getDeep are currently incompatible with Definition/Instance!"
                 )
-              case other => Some(other)
+              case other                                       => Some(other)
             }
-          case _ => None
+          case _              => None
         }.flatten
-      case other => Nil
+      case other        => Nil
     }
   }
 
@@ -303,8 +301,8 @@ object Select {
     */
   def syncReadMems(module: BaseModule): Seq[SyncReadMem[_]] = {
     check(module)
-    collect(module._component.get.asInstanceOf[DefModule].block.getCommands()) {
-      case r: DefSeqMemory => r.id.asInstanceOf[SyncReadMem[_]]
+    collect(module._component.get.asInstanceOf[DefModule].block.getCommands()) { case r: DefSeqMemory =>
+      r.id.asInstanceOf[SyncReadMem[_]]
     }
   }
 
@@ -313,8 +311,8 @@ object Select {
     */
   def mems(module: BaseModule): Seq[Mem[_]] = {
     check(module)
-    collect(module._component.get.asInstanceOf[DefModule].block.getCommands()) {
-      case r: DefMemory => r.id.asInstanceOf[Mem[_]]
+    collect(module._component.get.asInstanceOf[DefModule].block.getCommands()) { case r: DefMemory =>
+      r.id.asInstanceOf[Mem[_]]
     }
   }
 
@@ -323,8 +321,8 @@ object Select {
     */
   def ops(module: BaseModule): Seq[(String, Data)] = {
     check(module)
-    collect(module._component.get.asInstanceOf[DefModule].block.getCommands()) {
-      case d: DefPrim[_] => (d.op.name, d.id)
+    collect(module._component.get.asInstanceOf[DefModule].block.getCommands()) { case d: DefPrim[_] =>
+      (d.op.name, d.id)
     }
   }
 
@@ -345,8 +343,8 @@ object Select {
     */
   def wires(module: BaseModule): Seq[Data] = {
     check(module)
-    collect(module._component.get.asInstanceOf[DefModule].block.getCommands()) {
-      case r: DefWire => r.id
+    collect(module._component.get.asInstanceOf[DefModule].block.getCommands()) { case r: DefWire =>
+      r.id
     }
   }
 
@@ -355,8 +353,8 @@ object Select {
     */
   def memPorts(module: BaseModule): Seq[(Data, MemPortDirection, MemBase[_])] = {
     check(module)
-    collect(module._component.get.asInstanceOf[DefModule].block.getCommands()) {
-      case r: DefMemPort[_] => (r.id, r.dir, r.source.id.asInstanceOf[MemBase[_ <: Data]])
+    collect(module._component.get.asInstanceOf[DefModule].block.getCommands()) { case r: DefMemPort[_] =>
+      (r.id, r.dir, r.source.id.asInstanceOf[MemBase[_ <: Data]])
     }
   }
 
@@ -376,8 +374,8 @@ object Select {
     */
   def invalids(module: BaseModule): Seq[Data] = {
     check(module)
-    collect(module._component.get.asInstanceOf[DefModule].block.getCommands()) {
-      case DefInvalid(_, arg) => getData(arg)
+    collect(module._component.get.asInstanceOf[DefModule].block.getCommands()) { case DefInvalid(_, arg) =>
+      getData(arg)
     }
   }
 
@@ -405,20 +403,20 @@ object Select {
     */
   def connectionsTo(module: BaseModule)(signal: Data): Seq[PredicatedConnect] = {
     check(module)
-    val sensitivitySignals = DataMirror.collectAllMembers(signal).toSet
-    val predicatedConnects = mutable.ArrayBuffer[PredicatedConnect]()
-    val isPort = module._component.get
+    val sensitivitySignals            = DataMirror.collectAllMembers(signal).toSet
+    val predicatedConnects            = mutable.ArrayBuffer[PredicatedConnect]()
+    val isPort                        = module._component.get
       .asInstanceOf[DefModule]
       .ports
       .flatMap { port =>
         port.id match {
           case d: Data => DataMirror.collectAllMembers(d)
-          case _ => Nil
+          case _       => Nil
         }
       }
       .contains(signal)
     var prePredicates: Seq[Predicate] = Nil
-    var seenDef = isPort
+    var seenDef                       = isPort
     searchWhens(
       module,
       (cmd: Command, preds) => {
@@ -426,7 +424,7 @@ object Select {
           case cmd: DefinitionIR if cmd.id.isInstanceOf[Data] =>
             val x = DataMirror.collectAllMembers(cmd.id.asInstanceOf[Data])
             if (x.contains(signal)) prePredicates = preds
-          case Connect(_, loc @ Node(d: Data), exp) =>
+          case Connect(_, loc @ Node(d: Data), exp)           =>
             val effected = getEffected(loc).toSet
             if (sensitivitySignals.intersect(effected).nonEmpty) {
               val expData = getData(exp)
@@ -435,7 +433,7 @@ object Select {
                 .foreach(x => assert(x._1 == x._2, s"Prepredicates $x must match for signal $signal"))
               predicatedConnects += PredicatedConnect(preds.dropRight(prePredicates.size), d, expData, isBulk = false)
             }
-          case other =>
+          case other                                          =>
         }
       }
     )
@@ -454,7 +452,7 @@ object Select {
         cmd match {
           case chisel3.internal.firrtl.ir.Stop(_, _, clock, ret) =>
             stops += Stop(preds, ret, getId(clock).asInstanceOf[Clock])
-          case other =>
+          case other                                             =>
         }
       }
     )
@@ -473,7 +471,7 @@ object Select {
         cmd match {
           case chisel3.internal.firrtl.ir.Printf(id, _, clock, pable) =>
             printfs += Printf(id, preds, pable, getId(clock).asInstanceOf[Clock])
-          case other =>
+          case other                                                  =>
         }
       }
     )
@@ -481,7 +479,7 @@ object Select {
   }
 
   // Checks that a module has finished its construction
-  private def check(module: BaseModule): Unit = {
+  private def check(module: BaseModule): Unit               = {
     require(module.isClosed, "Can't use Selector on modules that have not finished construction!")
     require(module._component.isDefined, "Can't use Selector on modules that don't have components!")
   }
@@ -489,25 +487,25 @@ object Select {
 
   // Given a loc, return all subcomponents of id that could be assigned to in connect
   private def getEffected(a: Arg): Seq[Data] = a match {
-    case Node(id: Data) => DataMirror.collectAllMembers(id)
+    case Node(id: Data)        => DataMirror.collectAllMembers(id)
     case Slot(imm: Node, name) => Seq(imm.id.asInstanceOf[Record].elements(name))
-    case Index(imm, _)    => getEffected(imm)
-    case LitIndex(imm, _) => getEffected(imm)
-    case _                => throw new InternalErrorException(s"Match error: a=$a")
+    case Index(imm, _)         => getEffected(imm)
+    case LitIndex(imm, _)      => getEffected(imm)
+    case _                     => throw new InternalErrorException(s"Match error: a=$a")
   }
 
   // Given an arg, return the corresponding id. Don't use on a loc of a connect.
   private def getId(a: Arg): HasId = a match {
     case Node(id) => id
-    case l: ULit => l.num.U(l.w)
-    case l: SLit => l.num.S(l.w)
-    case other =>
+    case l: ULit  => l.num.U(l.w)
+    case l: SLit  => l.num.S(l.w)
+    case other    =>
       sys.error(s"Something went horribly wrong! I was expecting ${other} to be a lit or a node!")
   }
 
   private def getData(a: Arg): Data = a match {
     case Node(data: Data) => data
-    case other =>
+    case other            =>
       sys.error(s"Something went horribly wrong! I was expecting ${other} to be Data!")
   }
 
@@ -522,7 +520,7 @@ object Select {
     case e: ChiselException =>
       i.getOptionRef.get match {
         case l: LitArg => l.num.intValue.toString
-        case _ => throw new InternalErrorException(s"Match error: i.getOptionRef.get=${i.getOptionRef.get}")
+        case _         => throw new InternalErrorException(s"Match error: i.getOptionRef.get=${i.getOptionRef.get}")
       }
   }
 
@@ -531,21 +529,21 @@ object Select {
     check(module)
 
     def searchCommands(
-      commands:       Seq[Command],
-      preds:          Seq[Predicate],
+      commands: Seq[Command],
+      preds: Seq[Predicate],
       processCommand: (Command, Seq[Predicate]) => Unit
     ): Unit = commands.foreach {
       case FWhen(_, cond, ifRegion, elseRegion) =>
         val pred = cond match {
-          case Node(pred: Bool) => When(pred)
+          case Node(pred: Bool)                => When(pred)
           case l: LitArg if l.num == BigInt(1) => When(true.B)
           case l: LitArg if l.num == BigInt(0) => When(false.B)
-          case _ => sys.error(s"Something went horribly wrong! I was expecting $cond to be a lit or a bool!")
+          case _                               => sys.error(s"Something went horribly wrong! I was expecting $cond to be a lit or a bool!")
         }
         searchCommands(ifRegion, pred +: preds, processCommand)
         searchCommands(elseRegion, pred.not +: preds, processCommand)
-      case LayerBlock(_, _, region) => searchCommands(region, preds, processCommand)
-      case cmd                      => processCommand(cmd, preds)
+      case LayerBlock(_, _, region)             => searchCommands(region, preds, processCommand)
+      case cmd                                  => processCommand(cmd, preds)
     }
 
     searchCommands(module._component.get.asInstanceOf[DefModule].block.getCommands(), Seq.empty, processCommand)
@@ -567,7 +565,7 @@ object Select {
     * @param bool the when predicate
     */
   case class When(bool: Bool) extends Predicate {
-    def not:       WhenNot = WhenNot(bool)
+    def not: WhenNot      = WhenNot(bool)
     def serialize: String = s"${getName(bool)}"
   }
 
@@ -576,7 +574,7 @@ object Select {
     * @param bool the when predicate corresponding to this otherwise predicate
     */
   case class WhenNot(bool: Bool) extends Predicate {
-    def not:       When = When(bool)
+    def not: When         = When(bool)
     def serialize: String = s"!${getName(bool)}"
   }
 
@@ -634,7 +632,7 @@ object Select {
       parent._ids.view.collect {
         case clone: IsClone[_] =>
           new Instance(Clone(clone)).asInstanceOf[Instance[BaseModule]]
-        case mod: BaseModule =>
+        case mod: BaseModule   =>
           new Instance(Proto(mod))
       }.toSeq
     }
@@ -646,7 +644,7 @@ object Select {
       parent.proto._ids.view.collect {
         case clone: IsClone[_] =>
           parent._lookup { _ => new Instance(Clone(clone)).asInstanceOf[Instance[BaseModule]] }
-        case mod: BaseModule =>
+        case mod: BaseModule   =>
           parent._lookup { _ => mod }
       }.toSeq
     }

@@ -25,13 +25,13 @@ import chisel3.internal
 object log2Up {
   // Do not deprecate until zero-width wires fully work:
   // https://github.com/freechipsproject/chisel3/issues/847
-  //@chiselRuntimeDeprecated
-  //@deprecated("Use log2Ceil instead", "chisel3")
+  // @chiselRuntimeDeprecated
+  // @deprecated("Use log2Ceil instead", "chisel3")
   def apply(in: BigInt): Int = {
     require(in >= 0, s"log2Up is only defined on integers >= 0, got $in")
     1.max((in - 1).bitLength)
   }
-  def apply(in: Int): Int = apply(BigInt(in))
+  def apply(in: Int): Int    = apply(BigInt(in))
 }
 
 /** Compute the log2 of a Scala integer, rounded up.
@@ -53,7 +53,7 @@ object log2Ceil {
     require(in > 0, s"log2 is only defined on integers > 0, got $in")
     (in - 1).bitLength
   }
-  def apply(in: Int): Int = apply(BigInt(in))
+  def apply(in: Int): Int    = apply(BigInt(in))
 }
 
 /** Compute the log2 of a Scala integer, rounded down, with min value of 1.
@@ -68,10 +68,10 @@ object log2Ceil {
 object log2Down {
   // Do not deprecate until zero-width wires fully work:
   // https://github.com/freechipsproject/chisel3/issues/847
-  //@chiselRuntimeDeprecated
-  //@deprecated("Use log2Floor instead", "chisel3")
+  // @chiselRuntimeDeprecated
+  // @deprecated("Use log2Floor instead", "chisel3")
   def apply(in: BigInt): Int = log2Up(in) - (if (isPow2(in)) 0 else 1)
-  def apply(in: Int):    Int = apply(BigInt(in))
+  def apply(in: Int): Int    = apply(BigInt(in))
 }
 
 /** Compute the log2 of a Scala integer, rounded down.
@@ -87,7 +87,7 @@ object log2Down {
   */
 object log2Floor {
   def apply(in: BigInt): Int = log2Ceil(in) - (if (isPow2(in)) 0 else 1)
-  def apply(in: Int):    Int = apply(BigInt(in))
+  def apply(in: Int): Int    = apply(BigInt(in))
 }
 
 /** Returns whether a Scala integer is a power of two.
@@ -101,7 +101,7 @@ object log2Floor {
   */
 object isPow2 {
   def apply(in: BigInt): Boolean = in > 0 && ((in & (in - 1)) == 0)
-  def apply(in: Int):    Boolean = apply(BigInt(in))
+  def apply(in: Int): Boolean    = apply(BigInt(in))
 }
 
 object unsignedBitLength {

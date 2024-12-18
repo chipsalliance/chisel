@@ -13,7 +13,7 @@ class NewAnnotationsSpec extends AnyFreeSpec with Matchers {
 
   class MuchUsedModule extends Module {
     val io = IO(new Bundle {
-      val in = Input(UInt(16.W))
+      val in  = Input(UInt(16.W))
       val out = Output(UInt(16.W))
     })
     io.out := io.in +% 1.U
@@ -21,7 +21,7 @@ class NewAnnotationsSpec extends AnyFreeSpec with Matchers {
 
   class UsesMuchUsedModule extends Module {
     val io = IO(new Bundle {
-      val in = Input(UInt(16.W))
+      val in  = Input(UInt(16.W))
       val out = Output(UInt(16.W))
     })
 
@@ -34,7 +34,7 @@ class NewAnnotationsSpec extends AnyFreeSpec with Matchers {
     mod1.io.in := mod0.io.out
     mod2.io.in := mod1.io.out
     mod3.io.in := mod2.io.out
-    io.out := mod3.io.out
+    io.out     := mod3.io.out
 
     // Give two annotations as single element of the seq - ensures previous API works by wrapping into a seq.
     annotate(new ChiselMultiAnnotation { def toFirrtl = Seq(new NoDedupAnnotation(mod2.toNamed)) })
@@ -56,12 +56,12 @@ class NewAnnotationsSpec extends AnyFreeSpec with Matchers {
           Seq(ChiselGeneratorAnnotation(() => new UsesMuchUsedModule))
         )
 
-      val dontTouchAnnos = dutAnnos.collect { case DontTouchAnnotation(target) => target.serialize }
-      val noDedupAnnos = dutAnnos.collect { case NoDedupAnnotation(target) => target.serialize }
+      val dontTouchAnnos         = dutAnnos.collect { case DontTouchAnnotation(target) => target.serialize }
+      val noDedupAnnos           = dutAnnos.collect { case NoDedupAnnotation(target) => target.serialize }
       require(dontTouchAnnos.size == 2, s"Exactly two DontTouch Annotations expected but got $dontTouchAnnos ")
       require(noDedupAnnos.size == 2, s"Exactly two NoDedup Annotations expected but got $noDedupAnnos ")
       val dontTouchAnnosCombined = dontTouchAnnos.mkString(",")
-      val noDedupAnnosCombined = noDedupAnnos.mkString(",")
+      val noDedupAnnosCombined   = noDedupAnnos.mkString(",")
 
       noDedupAnnosCombined should include("~UsesMuchUsedModule|MuchUsedModule_2")
       noDedupAnnosCombined should include("~UsesMuchUsedModule|MuchUsedModule_3")

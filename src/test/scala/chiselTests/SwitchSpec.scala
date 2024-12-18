@@ -10,9 +10,9 @@ class SwitchSpec extends ChiselFlatSpec with Utils {
   "switch" should "require literal conditions" in {
     a[java.lang.IllegalArgumentException] should be thrownBy extractCause[IllegalArgumentException] {
       ChiselStage.emitCHIRRTL(new Module {
-        val io = IO(new Bundle {})
+        val io    = IO(new Bundle {})
         val state = RegInit(0.U)
-        val wire = WireDefault(0.U)
+        val wire  = WireDefault(0.U)
         switch(state) {
           is(wire) { state := 1.U }
         }
@@ -22,7 +22,7 @@ class SwitchSpec extends ChiselFlatSpec with Utils {
   it should "require mutually exclusive conditions" in {
     a[java.lang.IllegalArgumentException] should be thrownBy extractCause[IllegalArgumentException] {
       ChiselStage.emitCHIRRTL(new Module {
-        val io = IO(new Bundle {})
+        val io    = IO(new Bundle {})
         val state = RegInit(0.U)
         switch(state) {
           is(0.U) { state := 1.U }
@@ -35,7 +35,7 @@ class SwitchSpec extends ChiselFlatSpec with Utils {
   it should "provide useful source locators" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new Module {
       val io = IO(new Bundle {
-        val in = Input(UInt(2.W))
+        val in  = Input(UInt(2.W))
         val out = Output(UInt(2.W))
       })
 

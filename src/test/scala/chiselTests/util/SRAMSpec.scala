@@ -94,7 +94,7 @@ class SRAMSpec extends ChiselFlatSpec {
 
   it should "emit proper masks for non-Aggregate memories" in {
     class Top extends Module {
-      val foo = SRAM(
+      val foo   = SRAM(
         size = 32,
         tpe = UInt(8.W),
         numReadPorts = 1,
@@ -113,7 +113,7 @@ class SRAMSpec extends ChiselFlatSpec {
 
   it should "emit proper masks for Vec memories" in {
     class Top extends Module {
-      val maskedVecMem = SRAM.masked(
+      val maskedVecMem   = SRAM.masked(
         size = 32,
         tpe = Vec(2, UInt(8.W)),
         numReadPorts = 0,
@@ -123,7 +123,7 @@ class SRAMSpec extends ChiselFlatSpec {
       val maskedVecMemIo = IO(maskedVecMem.cloneType)
       maskedVecMemIo :<>= maskedVecMem
 
-      val unmaskedVecMem = SRAM(
+      val unmaskedVecMem   = SRAM(
         size = 64,
         tpe = Vec(4, UInt(8.W)),
         numReadPorts = 1,
@@ -133,7 +133,7 @@ class SRAMSpec extends ChiselFlatSpec {
       val unmaskedVecMemIo = IO(unmaskedVecMem.cloneType)
       unmaskedVecMemIo :<>= unmaskedVecMem
 
-      val maskedVecRecordMem = SRAM.masked(
+      val maskedVecRecordMem   = SRAM.masked(
         size = 64,
         tpe = Vec(
           3,
@@ -180,7 +180,7 @@ class SRAMSpec extends ChiselFlatSpec {
   it should "emit proper masks for Record memories" in {
     class Top extends Module {
       // SRAM does not currently support masked Records
-      val unmaskedRecordMem = SRAM(
+      val unmaskedRecordMem   = SRAM(
         size = 64,
         tpe = new Bundle {
           val x = UInt(3.W)
@@ -207,11 +207,11 @@ class SRAMSpec extends ChiselFlatSpec {
   it should "emit proper masks for OpaqueTypes memories" in {
     class Box[T <: Data](gen: T) extends Record with OpaqueType {
       val underlying = gen.cloneType
-      val elements = SeqMap("" -> gen)
+      val elements   = SeqMap("" -> gen)
     }
-    class Top extends Module {
+    class Top                    extends Module                 {
       // SRAM does not currently support masked Records
-      val unmaskedRecordMem = SRAM(
+      val unmaskedRecordMem   = SRAM(
         size = 64,
         tpe = new Box(new Bundle {
           val x = new Box(UInt(3.W))
@@ -258,14 +258,14 @@ class SRAMSpec extends ChiselFlatSpec {
       class Top extends Module {
         val sram = SRAM.masked(depth, Vec(width / maskGranularity, UInt(maskGranularity.W)), rd, wr, rw)
 
-        val ioR = IO(chiselTypeOf(sram.readPorts)).tap(_.zip(sram.readPorts).foreach {
-          case (io, mem) => io <> mem
+        val ioR  = IO(chiselTypeOf(sram.readPorts)).tap(_.zip(sram.readPorts).foreach { case (io, mem) =>
+          io <> mem
         })
-        val ioRW = IO(chiselTypeOf(sram.readwritePorts)).tap(_.zip(sram.readwritePorts).foreach {
-          case (io, mem) => io <> mem
+        val ioRW = IO(chiselTypeOf(sram.readwritePorts)).tap(_.zip(sram.readwritePorts).foreach { case (io, mem) =>
+          io <> mem
         })
-        val ioW = IO(chiselTypeOf(sram.writePorts)).tap(_.zip(sram.writePorts).foreach {
-          case (io, mem) => io <> mem
+        val ioW  = IO(chiselTypeOf(sram.writePorts)).tap(_.zip(sram.writePorts).foreach { case (io, mem) =>
+          io <> mem
         })
       }
 

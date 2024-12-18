@@ -52,10 +52,10 @@ class DecoderTableSpec extends ChiselFlatSpec {
   }
 
   class ExampleALUDecoder extends Module {
-    val inst = IO(Input(UInt(4.W)))
+    val inst     = IO(Input(UInt(4.W)))
     val isWideOp = IO(Output(Bool()))
-    val isAddOp = IO(Output(Bool()))
-    val isLegal = IO(Output(Bool()))
+    val isAddOp  = IO(Output(Bool()))
+    val isLegal  = IO(Output(Bool()))
 
     val allInstructions = Seq(
       Insn(Op.add, true),
@@ -64,11 +64,11 @@ class DecoderTableSpec extends ChiselFlatSpec {
       Insn(Op.sub, false)
     )
 
-    val decodeTable = new DecodeTable(allInstructions, Seq(IsWideOp, IsAddOp, legal))
+    val decodeTable   = new DecodeTable(allInstructions, Seq(IsWideOp, IsAddOp, legal))
     val decodedBundle = decodeTable.decode(inst)
     isWideOp := decodedBundle(IsWideOp)
-    isAddOp := decodedBundle(IsAddOp)
-    isLegal := decodedBundle(legal)
+    isAddOp  := decodedBundle(IsAddOp)
+    isLegal  := decodedBundle(legal)
   }
 
   "DecoderTable" should "elaborate a decoder" in {
@@ -78,7 +78,7 @@ class DecoderTableSpec extends ChiselFlatSpec {
   "DecoderTable" should "decode every field" in {
     assertTesterPasses(new BasicTester {
       val input = "b1100".U(4.W)
-      val dut = Module(new ExampleALUDecoder)
+      val dut   = Module(new ExampleALUDecoder)
       dut.inst := input
       chisel3.assert(dut.isWideOp, "WRONG OUTPUT %b", dut.isWideOp)
       stop()

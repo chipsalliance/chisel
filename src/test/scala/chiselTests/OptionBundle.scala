@@ -7,7 +7,7 @@ import chisel3.testers.BasicTester
 import circt.stage.ChiselStage
 
 class OptionBundle(val hasIn: Boolean) extends Bundle {
-  val in = if (hasIn) {
+  val in  = if (hasIn) {
     Some(Input(Bool()))
   } else {
     None

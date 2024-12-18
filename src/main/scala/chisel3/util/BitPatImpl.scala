@@ -29,8 +29,8 @@ private[chisel3] trait ObjectBitPatImpl {
     // (especially with things like mask polarity).
     require(x.head == 'b', "BitPats must be in binary and be prefixed with 'b'")
     require(x.length > 1, "BitPat width cannot be 0.")
-    var bits = BigInt(0)
-    var mask = BigInt(0)
+    var bits  = BigInt(0)
+    var mask  = BigInt(0)
     var count = 0
     for (d <- x.tail) {
       if (!(d == '_' || d.isWhitespace)) {
@@ -97,7 +97,7 @@ private[chisel3] trait ObjectBitPatImpl {
   def apply(x: UInt): BitPat = {
     require(x.isLit, s"$x is not a literal, BitPat.apply(x: UInt) only accepts literals")
     val width = x.getWidth.max(1) // BitPat doesn't support zero-width
-    val mask = (BigInt(1) << width) - 1
+    val mask  = (BigInt(1) << width) - 1
     new BitPat(x.litValue, mask, width)
   }
 }
@@ -138,7 +138,7 @@ package experimental {
       * @return A `BitSet` matching exactly all inputs in range [start, start + length)
       */
     def fromRange(
-      start:  BigInt,
+      start: BigInt,
       length: BigInt
     ): BitSet = fromRange(start, length, (start + length - 1).bitLength)
 
@@ -150,9 +150,9 @@ package experimental {
       * @return A `BitSet` matcing exactly all inputs in range [start, start + length)
       */
     def fromRange(
-      start:  BigInt,
+      start: BigInt,
       length: BigInt,
-      width:  Int
+      width: Int
     ): BitSet = {
       require(length > 0, "Cannot construct a empty BitSetRange")
       val maxKnownLength = (start + length - 1).bitLength
@@ -164,8 +164,8 @@ package experimental {
       // Break down to individual bitpats
       val atoms = {
         val collected = mutable.Set[BitPat]()
-        var ptr = start
-        var left = length
+        var ptr       = start
+        var left      = length
         while (left > 0) {
           var curPow = left.bitLength - 1
           if (ptr != 0) {
@@ -173,7 +173,7 @@ package experimental {
             if (maxPow < curPow) curPow = maxPow
           }
 
-          val inc = BigInt(1) << curPow
+          val inc  = BigInt(1) << curPow
           require((ptr & inc - 1) == 0, "BitPatRange: Internal sanity check")
           val mask = (BigInt(1) << width) - inc
           collected.add(new BitPat(ptr, mask, width))
@@ -185,8 +185,8 @@ package experimental {
       }
 
       new BitSet {
-        def terms = atoms
-        override def getWidth: Int = width
+        def terms                     = atoms
+        override def getWidth: Int    = width
         override def toString: String = s"BitSetRange(0x${start.toString(16)} - 0x${(start + length).toString(16)})"
       }
     }
@@ -271,7 +271,7 @@ package experimental {
     override def equals(obj: Any): Boolean = {
       obj match {
         case that: BitSet => this.getWidth == that.getWidth && this.cover(that) && that.cover(this)
-        case _ => false
+        case _            => false
       }
     }
 
@@ -291,7 +291,7 @@ private[chisel3] trait BitPatImpl extends util.experimental.BitSet {
   import chisel3.util.experimental.BitSet
 
   def value: BigInt
-  def mask:  BigInt
+  def mask: BigInt
   def width: Int
 
   /**
@@ -303,7 +303,7 @@ private[chisel3] trait BitPatImpl extends util.experimental.BitSet {
     obj match {
       case that: BitPat => this.value == that.value && this.mask == that.mask && this.width == that.width
       case that: BitSet => super.equals(obj)
-      case _ => false
+      case _            => false
     }
   }
 
@@ -339,7 +339,7 @@ private[chisel3] trait BitPatImpl extends util.experimental.BitSet {
     */
   override def overlap(that: BitSet): Boolean = that match {
     case that: BitPat => ((mask & that.mask) & (value ^ that.value)) == 0
-    case _ => super.overlap(that)
+    case _            => super.overlap(that)
   }
 
   /** Check whether this `BitSet` covers that (i.e. forall b matches that, b also matches this)
@@ -349,7 +349,7 @@ private[chisel3] trait BitPatImpl extends util.experimental.BitSet {
     */
   override def cover(that: BitSet): Boolean = that match {
     case that: BitPat => (mask & (~that.mask | (value ^ that.value))) == 0
-    case _ => super.cover(that)
+    case _            => super.cover(that)
   }
 
   /** Intersect `this` and `that` `BitPat`.
@@ -384,7 +384,7 @@ private[chisel3] trait BitPatImpl extends util.experimental.BitSet {
     }
 
     val intersection = intersect(that)
-    val omask = this.mask
+    val omask        = this.mask
     if (intersection.isEmpty) {
       this
     } else {
@@ -393,7 +393,7 @@ private[chisel3] trait BitPatImpl extends util.experimental.BitSet {
           intersection.terms.flatMap { remove =>
             enumerateBits(~omask & remove.mask).map { bit =>
               // Only care about higher than current bit in remove
-              val nmask = (omask | ~(bit - 1)) & remove.mask
+              val nmask  = (omask | ~(bit - 1)) & remove.mask
               val nvalue = (remove.value ^ bit) & nmask
               val nwidth = remove.width
               new BitPat(nvalue, nmask, nwidth)
@@ -423,10 +423,10 @@ private[chisel3] trait BitPatImpl extends util.experimental.BitSet {
   // This is micro-optimized and memoized because it is used for lots of BitPat operations
   private lazy val _rawString: String = {
     val sb = new StringBuilder(width)
-    var i = 0
+    var i  = 0
     while (i < width) {
       val bitIdx = width - i - 1
-      val char =
+      val char   =
         if (mask.testBit(bitIdx)) {
           if (value.testBit(bitIdx)) {
             '1'

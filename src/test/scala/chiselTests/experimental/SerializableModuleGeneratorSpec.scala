@@ -20,10 +20,10 @@ class GCDSerializableModule(val parameter: GCDSerializableModuleParameter)
     val e = Input(Bool())
     val z = Output(UInt(parameter.width.W))
   })
-  val x = Reg(UInt(parameter.width.W))
-  val y = Reg(UInt(parameter.width.W))
-  val z = Reg(UInt(parameter.width.W))
-  val e = Reg(Bool())
+  val x  = Reg(UInt(parameter.width.W))
+  val y  = Reg(UInt(parameter.width.W))
+  val z  = Reg(UInt(parameter.width.W))
+  val e  = Reg(Bool())
   when(e) {
     x := io.a
     y := io.b
@@ -62,9 +62,9 @@ class SerializableModuleGeneratorSpec extends ChiselFlatSpec with Utils {
   "SerializableModuleGenerator" should "be able to elaborate with D/I" in {
     val cir = circt.stage.ChiselStage.emitCHIRRTL(
       new Module {
-        val i32 =
+        val i32  =
           SerializableModuleGenerator(classOf[GCDSerializableModule], GCDSerializableModuleParameter(32)).instance()
-        val i16 =
+        val i16  =
           SerializableModuleGenerator(classOf[GCDSerializableModule], GCDSerializableModuleParameter(16)).instance()
         val ii32 =
           SerializableModuleGenerator(classOf[GCDSerializableModule], GCDSerializableModuleParameter(32)).instance()

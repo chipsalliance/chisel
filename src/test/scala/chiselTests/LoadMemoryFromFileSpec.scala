@@ -13,9 +13,9 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
 class Read[A <: Data](depth: Int, tpe: => A) extends Bundle {
-  val en = Input(Bool())
-  val data = Output(tpe)
-  val addr = Input(UInt(log2Up(depth).W))
+  val en                                         = Input(Bool())
+  val data                                       = Output(tpe)
+  val addr                                       = Input(UInt(log2Up(depth).W))
   def connectToMemory(mem: chisel3.Mem[A]): Unit = {
     data := DontCare
     when(en) {
@@ -41,10 +41,10 @@ class UsesThreeMems(memoryDepth: Int, memoryType: Data) extends Module {
 
 class UsesThreeMemsInline(
   memoryDepth: Int,
-  memoryType:  Data,
-  memoryFile:  String,
-  hexOrBinary: MemoryLoadFileType.FileType)
-    extends Module {
+  memoryType: Data,
+  memoryFile: String,
+  hexOrBinary: MemoryLoadFileType.FileType
+) extends Module {
   val io = Seq.fill(3)(IO(new Read(memoryDepth, memoryType)))
 
   val memory1 = Mem(memoryDepth, memoryType)
@@ -144,7 +144,7 @@ class LoadMemoryFromFileSpec extends AnyFreeSpec with Matchers {
     case dir if dir.isDirectory() =>
       dir.listFiles().foreach(deleteRecursively)
       dir.delete()
-    case file => file.delete()
+    case file                     => file.delete()
   }
 
   def compile(gen: => RawModule, targetDirName: File, splitVerilog: Boolean = true): Unit = {

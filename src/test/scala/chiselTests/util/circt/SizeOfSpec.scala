@@ -18,8 +18,8 @@ private class SizeOfBundle extends Bundle {
 }
 
 private class SizeOfTop extends Module {
-  val w = IO(Input(UInt(65.W)))
-  val x = IO(Input(new SizeOfBundle))
+  val w    = IO(Input(UInt(65.W)))
+  val x    = IO(Input(new SizeOfBundle))
   val outw = IO(Output(UInt(32.W)))
   val outx = IO(Output(UInt(32.W)))
   outw := SizeOf(w)

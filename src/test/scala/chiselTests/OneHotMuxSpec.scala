@@ -40,7 +40,7 @@ class SimpleOneHotTester extends BasicTester {
     Seq(
       false.B -> 2.U,
       false.B -> 4.U,
-      true.B -> 8.U,
+      true.B  -> 8.U,
       false.B -> 11.U
     )
   )
@@ -55,7 +55,7 @@ class SIntOneHotTester extends BasicTester {
   out := Mux1H(
     Seq(
       false.B -> (-3).S,
-      true.B -> (-5).S,
+      true.B  -> (-5).S,
       false.B -> (-7).S,
       false.B -> (-11).S
     )
@@ -85,7 +85,7 @@ trait HasMakeLit[T] {
 class ParameterizedOneHot[T <: Data](values: Seq[T], outGen: T) extends Module {
   val io = IO(new Bundle {
     val selectors = Input(Vec(4, Bool()))
-    val out = Output(outGen)
+    val out       = Output(outGen)
   })
 
   val terms = io.selectors.zip(values)
@@ -95,11 +95,11 @@ class ParameterizedOneHot[T <: Data](values: Seq[T], outGen: T) extends Module {
 class ParameterizedAggregateOneHot[T <: Data](valGen: HasMakeLit[T], outGen: T) extends Module {
   val io = IO(new Bundle {
     val selectors = Input(Vec(4, Bool()))
-    val out = Output(outGen)
+    val out       = Output(outGen)
   })
 
   val values = (0 until 4).map { n => valGen.makeLit(n) }
-  val terms = io.selectors.zip(values)
+  val terms  = io.selectors.zip(values)
   io.out := Mux1H(terms)
 }
 

@@ -11,14 +11,14 @@ import chisel3.internal.firrtl.ir._
 
 @deprecated("There no CIRCTConverter anymore, use circtpanamaconverter directly", "Chisel 6.0")
 abstract class CIRCTConverter {
-  val mlirStream:         Writable
-  val firrtlStream:       Writable
-  val verilogStream:      Writable
+  val mlirStream: Writable
+  val firrtlStream: Writable
+  val verilogStream: Writable
   val mlirBytecodeStream: Writable
   def exportSplitVerilog(directory: os.Path): Unit
 
   def passManager(): CIRCTPassManager
-  def om():          CIRCTOM
+  def om(): CIRCTOM
 
   def visitCircuit(name: String): Unit
 

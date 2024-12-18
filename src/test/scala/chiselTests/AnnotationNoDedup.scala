@@ -10,7 +10,7 @@ import org.scalatest.matchers.should.Matchers
 
 class MuchUsedModule extends Module {
   val io = IO(new Bundle {
-    val in = Input(UInt(16.W))
+    val in  = Input(UInt(16.W))
     val out = Output(UInt(16.W))
   })
   io.out := io.in +% 1.U
@@ -18,7 +18,7 @@ class MuchUsedModule extends Module {
 
 class UsesMuchUsedModule(addAnnos: Boolean) extends Module {
   val io = IO(new Bundle {
-    val in = Input(UInt(16.W))
+    val in  = Input(UInt(16.W))
     val out = Output(UInt(16.W))
   })
 
@@ -31,7 +31,7 @@ class UsesMuchUsedModule(addAnnos: Boolean) extends Module {
   mod1.io.in := mod0.io.out
   mod2.io.in := mod1.io.out
   mod3.io.in := mod2.io.out
-  io.out := mod3.io.out
+  io.out     := mod3.io.out
 
   if (addAnnos) {
     doNotDedup(mod1)

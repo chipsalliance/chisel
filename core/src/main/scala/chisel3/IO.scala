@@ -26,12 +26,12 @@ object IO {
     if (!module.isIOCreationAllowed)
       Builder.error(
         s"This module cannot have IOs instantiated after disallowing IOs: ${module._whereIOCreationIsDisallowed
-          .map(_.makeMessage { (s: String) => s })
-          .mkString(",")}"
+            .map(_.makeMessage { (s: String) => s })
+            .mkString(",")}"
       )
     require(!module.isClosed, "Can't add more ports after module close")
     val prevId = Builder.idGen.value
-    val data = iodef // evaluate once (passed by name)
+    val data   = iodef                    // evaluate once (passed by name)
     requireIsChiselType(data, "io type")
 
     // Fail if the module is a Class, and the type is Data.
@@ -39,10 +39,10 @@ object IO {
       case _: Class => {
         data match {
           case _: Property[_] => ()
-          case _ => Builder.error(s"Class ports must be Property type, but found ${data._localErrorContext}.")
+          case _              => Builder.error(s"Class ports must be Property type, but found ${data._localErrorContext}.")
         }
       }
-      case _ => ()
+      case _        => ()
     }
 
     // Clone the IO so we preserve immutability of data types
@@ -96,15 +96,14 @@ object FlatIO {
     type R = T with Record
     gen match {
       case d if hasProbeTypeModifier(d) => IO(d)
-      case _:      Element => IO(gen)
-      case _:      Vec[_] => IO(gen)
-      case record: R =>
+      case _: Element                   => IO(gen)
+      case _: Vec[_]                    => IO(gen)
+      case record: R                    =>
         val ports: Seq[Data] =
-          record._elements.toSeq.reverse.map {
-            case (name, data) =>
-              val p = IO(coerceDirection(data).asInstanceOf[Data])
-              p.suggestName(name)
-              p
+          record._elements.toSeq.reverse.map { case (name, data) =>
+            val p = IO(coerceDirection(data).asInstanceOf[Data])
+            p.suggestName(name)
+            p
 
           }
 

@@ -16,8 +16,8 @@ import chisel3.internal.binding._
   */
 abstract class Element extends Data {
   private[chisel3] final def allElements: Seq[Element] = Seq(this)
-  def widthKnown:                         Boolean = width.known
-  def name:                               String = getRef.name
+  def widthKnown: Boolean                              = width.known
+  def name: String                                     = getRef.name
 
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
     this.maybeAddToParentIds(target)
@@ -28,12 +28,12 @@ abstract class Element extends Data {
 
   private[chisel3] override def topBindingOpt: Option[TopBinding] = super.topBindingOpt match {
     // Translate Bundle lit bindings to Element lit bindings
-    case Some(BundleLitBinding(litMap)) =>
+    case Some(BundleLitBinding(litMap))             =>
       litMap.get(this) match {
         case Some(litArg) => Some(ElementLitBinding(litArg))
         case _            => Some(DontCareBinding())
       }
-    case Some(VecLitBinding(litMap)) =>
+    case Some(VecLitBinding(litMap))                =>
       litMap.get(this) match {
         case Some(litArg) => Some(ElementLitBinding(litArg))
         case _            => Some(DontCareBinding())
@@ -46,19 +46,19 @@ abstract class Element extends Data {
           val wr = b.lookupWritability(this)
           Some(ViewBinding(elt, wr))
         // Children of Probes won't be in viewMap, just return the binding
-        case _ => Some(b)
+        case _                  => Some(b)
       }
-    case topBindingOpt => topBindingOpt
+    case topBindingOpt                              => topBindingOpt
   }
 
   private[chisel3] def litArgOption: Option[LitArg] = topBindingOpt match {
     case Some(ElementLitBinding(litArg)) => Some(litArg)
-    case Some(_: ViewBinding) =>
+    case Some(_: ViewBinding)            =>
       reify(this)._1.litArgOption
-    case _ => None
+    case _                               => None
   }
 
-  override def litOption:                Option[BigInt] = litArgOption.map(_.num)
+  override def litOption: Option[BigInt]                 = litArgOption.map(_.num)
   private[chisel3] def litIsForcedWidth: Option[Boolean] = litArgOption.map(_.forcedWidth)
 
   private[chisel3] def firrtlConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {

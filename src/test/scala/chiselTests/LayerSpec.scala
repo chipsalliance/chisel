@@ -107,10 +107,10 @@ class LayerSpec extends ChiselFlatSpec with Utils with FileCheck {
   }
 
   they should "generate valid CHIRRTL when module instantiated under layer block has layer blocks" in {
-    object A extends layer.Layer(layer.LayerConfig.Inline) {
+    object A  extends layer.Layer(layer.LayerConfig.Inline) {
       object B extends layer.Layer(layer.LayerConfig.Inline)
     }
-    class Bar extends RawModule {
+    class Bar extends RawModule                             {
       layer.block(A.B) {
         val w = WireInit(Bool(), true.B)
       }
@@ -140,8 +140,8 @@ class LayerSpec extends ChiselFlatSpec with Utils with FileCheck {
 
     class Foo extends RawModule {
       val a, b, c, d, e = IO(Input(Bool()))
-      val x = IO(Output(Probe(Bool(), A)))
-      val y = IO(Output(Probe(Bool(), A.B)))
+      val x             = IO(Output(Probe(Bool(), A)))
+      val y             = IO(Output(Probe(Bool(), A.B)))
       define(x, ProbeValue(a))
       define(y, ProbeValue(b))
       layer.block(A) {
@@ -170,8 +170,8 @@ class LayerSpec extends ChiselFlatSpec with Utils with FileCheck {
 
     class Foo extends RawModule {
       val a, b = IO(Input(Bool()))
-      val x = IO(Output(Probe(Bool(), A)))
-      val y = IO(Output(Probe(Bool(), A.B)))
+      val x    = IO(Output(Probe(Bool(), A)))
+      val y    = IO(Output(Probe(Bool(), A.B)))
       define(x, ProbeValue(a))
       define(y, ProbeValue(b))
     }
@@ -183,8 +183,8 @@ class LayerSpec extends ChiselFlatSpec with Utils with FileCheck {
 
     class Foo extends RawModule {
       val a, b = IO(Input(Bool()))
-      val x = IO(Output(Probe(Bool(), A)))
-      val y = IO(Output(Probe(Bool(), A.B)))
+      val x    = IO(Output(Probe(Bool(), A)))
+      val y    = IO(Output(Probe(Bool(), A.B)))
       layer.enable(C)
       define(x, ProbeValue(a))
       define(y, ProbeValue(b))

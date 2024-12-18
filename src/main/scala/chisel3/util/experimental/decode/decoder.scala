@@ -20,8 +20,8 @@ object decoder extends LazyLogging {
     * @return decode table output.
     */
   def apply(minimizer: Minimizer, input: UInt, truthTable: TruthTable): UInt = {
-    val minimizedTable = getAnnotations().collect {
-      case DecodeTableAnnotation(_, in, out) => TruthTable.fromString(in) -> TruthTable.fromString(out)
+    val minimizedTable = getAnnotations().collect { case DecodeTableAnnotation(_, in, out) =>
+      TruthTable.fromString(in) -> TruthTable.fromString(out)
     }.toMap.getOrElse(truthTable, minimizer.minimize(truthTable))
     if (minimizedTable.table.isEmpty) {
       val outputs = Wire(UInt(minimizedTable.default.getWidth.W))
@@ -79,7 +79,7 @@ object decoder extends LazyLogging {
       case EspressoNotFoundException =>
         logger.error(s"espresso is not found in your PATH:\n${sys.env("PATH").split(":").mkString("\n")}".stripMargin)
         qmcFallBack(input, truthTable)
-      case e: java.io.IOException =>
+      case e: java.io.IOException    =>
         logger.error(s"espresso failed to run with ${e.getMessage}")
         qmcFallBack(input, truthTable)
     }
@@ -105,11 +105,10 @@ object decoder extends LazyLogging {
       input,
       chisel3.util.experimental.decode.TruthTable.fromString(
         {
-          bitSets.zipWithIndex.flatMap {
-            case (bs, i) =>
-              bs.terms.map(bp =>
-                s"${bp.rawString}->${if (errorBit) "0" else ""}${"0" * (bitSets.size - i - 1)}1${"0" * i}"
-              )
+          bitSets.zipWithIndex.flatMap { case (bs, i) =>
+            bs.terms.map(bp =>
+              s"${bp.rawString}->${if (errorBit) "0" else ""}${"0" * (bitSets.size - i - 1)}1${"0" * i}"
+            )
           } ++ Seq(s"${if (errorBit) "1" ++ "0" * bitSets.size else "?" * bitSets.size}")
         }.mkString("\n")
       )

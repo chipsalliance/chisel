@@ -35,8 +35,8 @@ object FileUtils {
     * @param pathName an absolute or relative path string
     */
   def getPath(pathName: String): os.Path = os.FilePath(pathName) match {
-    case path: os.Path    => path
-    case sub:  os.SubPath => os.pwd / sub
-    case rel:  os.RelPath => os.pwd / rel
+    case path: os.Path   => path
+    case sub: os.SubPath => os.pwd / sub
+    case rel: os.RelPath => os.pwd / rel
   }
 }

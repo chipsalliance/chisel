@@ -15,9 +15,9 @@ import scala.collection.mutable
   */
 object Checks extends Phase {
 
-  override def prerequisites = Seq(Dependency[AddDefaults])
+  override def prerequisites          = Seq(Dependency[AddDefaults])
   override def optionalPrerequisiteOf = Seq.empty
-  override def invalidates(a: Phase) = false
+  override def invalidates(a: Phase)  = false
 
   /** Ensure that an [[firrtl.AnnotationSeq AnnotationSeq]] has necessary [[Logger]] [[firrtl.annotations.Annotation
     * Annotation]]s
@@ -30,7 +30,7 @@ object Checks extends Phase {
     annotations.foreach(_ match {
       case a: LogLevelAnnotation => ll += a
       case a: LogFileAnnotation  => lf += a
-      case _ =>
+      case _                     =>
     })
     if (ll.size > 1) {
       val l = ll.map { case LogLevelAnnotation(x) => x }

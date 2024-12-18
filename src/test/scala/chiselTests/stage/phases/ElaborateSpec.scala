@@ -14,8 +14,8 @@ class ElaborateSpec extends AnyFlatSpec with Matchers {
 
   class Foo extends Module {
     override def desiredName: String = "Foo"
-    val io = IO(new Bundle {
-      val in = Input(Bool())
+    val io                           = IO(new Bundle {
+      val in  = Input(Bool())
       val out = Output(Bool())
     })
 
@@ -32,7 +32,7 @@ class ElaborateSpec extends AnyFlatSpec with Matchers {
 
   it should "expand ChiselGeneratorAnnotations into ChiselCircuitAnnotations and delete originals" in new Fixture {
     val annotations = Seq(ChiselGeneratorAnnotation(() => new Foo), ChiselGeneratorAnnotation(() => new Bar))
-    val out = phase.transform(annotations)
+    val out         = phase.transform(annotations)
 
     info("original annotations removed")
     out.collect { case a: ChiselGeneratorAnnotation => a } should be(empty)

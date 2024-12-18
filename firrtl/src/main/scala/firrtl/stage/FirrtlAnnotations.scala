@@ -48,7 +48,7 @@ case class InfoModeAnnotation(modeName: String = "use") extends NoTargetAnnotati
   def toInfoMode(infoSource: Option[String] = None): Parser.InfoMode = modeName match {
     case "use"    => Parser.UseInfo
     case "ignore" => Parser.IgnoreInfo
-    case _ =>
+    case _        =>
       val a = infoSource.getOrElse("unknown source")
       modeName match {
         case "gen"    => Parser.GenInfo(a)

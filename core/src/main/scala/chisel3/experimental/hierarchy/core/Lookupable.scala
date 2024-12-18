@@ -55,8 +55,8 @@ trait Lookupable[-B] {
     * @param definition Definition of A, used to determine C's context
     * @return
     */
-  def definitionLookup[A](that:     A => B, definition: Definition[A]): C
-  protected def getProto[A](h:      Hierarchy[A]): A = h.proto
+  def definitionLookup[A](that: A => B, definition: Definition[A]): C
+  protected def getProto[A](h: Hierarchy[A]): A                  = h.proto
   protected def getUnderlying[A](h: Hierarchy[A]): Underlying[A] = h.underlying
 
   // Single method that may eventually replace instanceLookup and definitionLookup.
@@ -64,7 +64,7 @@ trait Lookupable[-B] {
     hierarchy match {
       case h: Instance[A]   => instanceLookup(that, h)
       case h: Definition[A] => definitionLookup(that, h)
-      case h => throw new InternalErrorException(s"Match error: hierarchy=$hierarchy")
+      case h                => throw new InternalErrorException(s"Match error: hierarchy=$hierarchy")
     }
   }
 }
@@ -74,7 +74,7 @@ private trait LookupableImpl[-B] extends Lookupable[B] {
 
   protected def impl[A](that: A => B, hierarchy: Hierarchy[A]): C
 
-  override def instanceLookup[A](that:   A => B, instance:   Instance[A]):   C = impl(that, instance)
+  override def instanceLookup[A](that: A => B, instance: Instance[A]): C       = impl(that, instance)
   override def definitionLookup[A](that: A => B, definition: Definition[A]): C = impl(that, definition)
 }
 
@@ -99,7 +99,7 @@ object Lookupable {
   /** Factory method for creating Lookupable for user-defined types
     */
   def product1[X, T1: Lookupable](
-    in:  X => T1,
+    in: X => T1,
     out: T1 => X
   )(
     implicit sourceInfo: SourceInfo
@@ -114,7 +114,7 @@ object Lookupable {
   /** Factory method for creating Lookupable for user-defined types
     */
   def product2[X, T1: Lookupable, T2: Lookupable](
-    in:  X => (T1, T2),
+    in: X => (T1, T2),
     out: (T1, T2) => X
   )(
     implicit sourceInfo: SourceInfo
@@ -130,7 +130,7 @@ object Lookupable {
   /** Factory method for creating Lookupable for user-defined types
     */
   def product3[X, T1: Lookupable, T2: Lookupable, T3: Lookupable](
-    in:  X => (T1, T2, T3),
+    in: X => (T1, T2, T3),
     out: (T1, T2, T3) => X
   )(
     implicit sourceInfo: SourceInfo
@@ -147,7 +147,7 @@ object Lookupable {
   /** Factory method for creating Lookupable for user-defined types
     */
   def product4[X, T1: Lookupable, T2: Lookupable, T3: Lookupable, T4: Lookupable](
-    in:  X => (T1, T2, T3, T4),
+    in: X => (T1, T2, T3, T4),
     out: (T1, T2, T3, T4) => X
   )(
     implicit sourceInfo: SourceInfo
@@ -165,7 +165,7 @@ object Lookupable {
   /** Factory method for creating Lookupable for user-defined types
     */
   def product5[X, T1: Lookupable, T2: Lookupable, T3: Lookupable, T4: Lookupable, T5: Lookupable](
-    in:  X => (T1, T2, T3, T4, T5),
+    in: X => (T1, T2, T3, T4, T5),
     out: (T1, T2, T3, T4, T5) => X
   )(
     implicit sourceInfo: SourceInfo
@@ -188,34 +188,34 @@ object Lookupable {
     * @return
     */
   private[chisel3] def cloneDataToContext[T <: Data](
-    data:    T,
+    data: T,
     context: BaseModule
   )(
     implicit sourceInfo: SourceInfo
   ): T = {
     experimental.requireIsHardware(data, "cross module reference type")
     data._parent match {
-      case None => data
+      case None         => data
       case Some(parent) =>
         val newParent = cloneModuleToContext(Proto(parent), context)
         newParent match {
           case Proto(p) if p == parent => data
-          case Clone(m: BaseModule) =>
+          case Clone(m: BaseModule)    =>
             val newChild = data.cloneTypeFull
             newChild.setRef(data.getRef, true)
             newChild.bind(CrossModuleBinding)
             newChild.setAllParents(Some(m))
             newChild
-          case _ => throw new InternalErrorException(s"Match error: newParent=$newParent")
+          case _                       => throw new InternalErrorException(s"Match error: newParent=$newParent")
         }
     }
   }
   // The business logic of lookupData
   // Also called by cloneViewToContext which potentially needs to lookup stuff from ioMap or the cache
   private[chisel3] def doLookupData[A, B <: Data](
-    data:    B,
-    cache:   HashMap[Data, Data],
-    ioMap:   Option[Map[Data, Data]],
+    data: B,
+    cache: HashMap[Data, Data],
+    ioMap: Option[Map[Data, Data]],
     context: Option[BaseModule]
   )(
     implicit sourceInfo: SourceInfo
@@ -223,7 +223,7 @@ object Lookupable {
     def impl[C <: Data](d: C): C = d match {
       case x: Data if ioMap.nonEmpty && ioMap.get.contains(x) => ioMap.get(x).asInstanceOf[C]
       case x: Data if cache.contains(x)                       => cache(x).asInstanceOf[C]
-      case _ =>
+      case _                                                  =>
         assert(context.nonEmpty) // TODO is this even possible? Better error message here
         val ret = cloneDataToContext(d, context.get)
         cache(d) = ret
@@ -231,7 +231,7 @@ object Lookupable {
     }
     data.binding match {
       case Some(_: ChildBinding) => mapRootAndExtractSubField(data, impl)
-      case _ => impl(data)
+      case _                     => impl(data)
     }
   }
 
@@ -255,34 +255,34 @@ object Lookupable {
     * Invariants that elt is a Child of something of the type of data is dynamically checked as we traverse
     */
   private def mapRootAndExtractSubField[A <: Data](arg: A, f: Data => Data): A = {
-    def err(msg:               String) = throwException(s"Internal Error! $msg")
+    def err(msg: String)                                              = throwException(s"Internal Error! $msg")
     def unrollCoordinates(res: List[Arg], d: Data): (List[Arg], Data) = d.binding.get match {
       case ChildBinding(parent) =>
         d.getRef match {
           case arg @ (_: Slot | _: Index | _: LitIndex | _: ModuleIO) => unrollCoordinates(arg :: res, parent)
-          case other => err(s"unrollCoordinates failed for '$arg'! Unexpected arg '$other'")
+          case other                                                  => err(s"unrollCoordinates failed for '$arg'! Unexpected arg '$other'")
         }
-      case _ => (res, d)
+      case _                    => (res, d)
     }
-    def applyCoordinates(fullCoor: List[Arg], start: Data): Data = {
+    def applyCoordinates(fullCoor: List[Arg], start: Data): Data      = {
       def rec(coor: List[Arg], d: Data): Data = {
         if (coor.isEmpty) d
         else {
           val next = (coor.head, d) match {
-            case (Slot(_, name), rec: Record) => rec._elements(name)
-            case (LitIndex(_, n), vec: Vec[_]) => vec.apply(n)
+            case (Slot(_, name), rec: Record)     => rec._elements(name)
+            case (LitIndex(_, n), vec: Vec[_])    => vec.apply(n)
             case (Index(_, ILit(n)), vec: Vec[_]) => vec.apply(n.toInt)
             case (ModuleIO(_, name), rec: Record) => rec._elements(name)
-            case (arg, _) => err(s"Unexpected Arg '$arg' applied to '$d'! Root was '$start'.")
+            case (arg, _)                         => err(s"Unexpected Arg '$arg' applied to '$d'! Root was '$start'.")
           }
           applyCoordinates(coor.tail, next)
         }
       }
       rec(fullCoor, start)
     }
-    val (coor, root) = unrollCoordinates(Nil, arg)
-    val newRoot = f(root)
-    val result = applyCoordinates(coor, newRoot)
+    val (coor, root)                                                  = unrollCoordinates(Nil, arg)
+    val newRoot                                                       = f(root)
+    val result                                                        = applyCoordinates(coor, newRoot)
     try {
       result.asInstanceOf[A]
     } catch {
@@ -294,9 +294,9 @@ object Lookupable {
   // If `.viewAs` would capture its arguments, we could potentially use it
   // TODO Describe what this is doing at a high level
   private[chisel3] def cloneViewToContext[A, B <: Data](
-    data:    B,
-    cache:   HashMap[Data, Data],
-    ioMap:   Option[Map[Data, Data]],
+    data: B,
+    cache: HashMap[Data, Data],
+    ioMap: Option[Map[Data, Data]],
     context: Option[BaseModule]
   )(
     implicit sourceInfo: SourceInfo
@@ -308,12 +308,12 @@ object Lookupable {
 
     // We have to lookup the target(s) of the view since they may need to be underlying into the current context
     val newBinding = data.topBinding match {
-      case ViewBinding(target, writable1) =>
+      case ViewBinding(target, writable1)     =>
         val (reified, writable2) = reify(target)
         ViewBinding(lookupData(reified), writable1.combine(writable2))
       case avb @ AggregateViewBinding(map, _) =>
         data match {
-          case e: Element =>
+          case e: Element   =>
             val (reified, writable) = reify(avb.lookup(e).get)
             ViewBinding(lookupData(reified), avb.lookupWritability(e).combine(writable))
           case _: Aggregate =>
@@ -321,28 +321,28 @@ object Lookupable {
             // faster to just use it but then call reifyIdentityView in case the target is itself a view
             def reifyOpt(data: Data): Option[(Data, ViewWriteability)] = map.get(data).flatMap(reifyIdentityView(_))
             // Just remap each Data present in the map
-            val mapping = coiterate(result, data).flatMap {
-              case (res, from) => reifyOpt(from).map { case (t, w) => (res, lookupData(t), w) }
+            val mapping                                                = coiterate(result, data).flatMap { case (res, from) =>
+              reifyOpt(from).map { case (t, w) => (res, lookupData(t), w) }
             }
-            val newMap = mapping.map { case (from, to, _) => from -> to }.toMap
-            val wrMap = mapping.flatMap { case (from, _, wr) => Option.when(wr.isReadOnly)(from -> wr) }.toMap
+            val newMap                                                 = mapping.map { case (from, to, _) => from -> to }.toMap
+            val wrMap                                                  = mapping.flatMap { case (from, _, wr) => Option.when(wr.isReadOnly)(from -> wr) }.toMap
             AggregateViewBinding(newMap, Option.when(wrMap.nonEmpty)(wrMap))
         }
-      case _ => throw new InternalErrorException(s"Match error: data.topBinding=${data.topBinding}")
+      case _                                  => throw new InternalErrorException(s"Match error: data.topBinding=${data.topBinding}")
     }
 
     // TODO Unify the following with `.viewAs`
     // We must also mark any non-identity Aggregates as unnammed
     newBinding match {
-      case _: ViewBinding => // Do nothing
+      case _: ViewBinding                    => // Do nothing
       case AggregateViewBinding(childMap, _) =>
         // TODO we could do reifySingleTarget instead of just marking non-identity mappings
         getRecursiveFields.lazily(result, "_").foreach {
           case (agg: Aggregate, _) if !childMap.contains(agg) =>
             Builder.unnamedViews += agg
-          case _ => ()
+          case _                                              => ()
         }
-      case _ => throw new InternalErrorException(s"Match error: newBinding=$newBinding")
+      case _                                 => throw new InternalErrorException(s"Match error: newBinding=$newBinding")
     }
 
     result.bind(newBinding)
@@ -364,7 +364,7 @@ object Lookupable {
     * @return original or clone in the new context
     */
   private[chisel3] def cloneModuleToContext[T <: BaseModule](
-    module:  Underlying[T],
+    module: Underlying[T],
     context: BaseModule
   )(
     implicit sourceInfo: SourceInfo
@@ -377,15 +377,15 @@ object Lookupable {
         Clone(newChild)
       }
       (m, context) match {
-        case (c, ctx) if ctx == c => Proto(c)
+        case (c, ctx) if ctx == c                        => Proto(c)
         case (c, ctx: IsClone[_]) if ctx.hasSameProto(c) => Clone(ctx.asInstanceOf[IsClone[A]])
-        case (c, ctx) if c._parent.isEmpty => Proto(c)
-        case (_, _) =>
+        case (c, ctx) if c._parent.isEmpty               => Proto(c)
+        case (_, _)                                      =>
           cloneModuleToContext(Proto(m._parent.get), context) match {
-            case Proto(p) => Proto(m)
+            case Proto(p)             => Proto(m)
             case Clone(p: BaseModule) =>
               clone(m, Some(p), () => m.instanceName)
-            case _ =>
+            case _                    =>
               throw new Exception(
                 s"Match Error: cloneModuleToContext(Proto(m._parent.get), context)=" +
                   s"${cloneModuleToContext(Proto(m._parent.get), context)}"
@@ -394,26 +394,26 @@ object Lookupable {
       }
     }
     module match {
-      case Proto(m) => rec(m)
-      case Clone(m: ModuleClone[_]) =>
+      case Proto(m)                   => rec(m)
+      case Clone(m: ModuleClone[_])   =>
         rec(m) match {
-          case Proto(mx) => Clone(mx)
+          case Proto(mx)                  => Clone(mx)
           case Clone(i: InstanceClone[_]) =>
             val newChild = Module.do_pseudo_apply(new InstanceClone(m.getProto, () => m.instanceName))
             newChild._parent = i._parent
             Clone(newChild)
-          case _ => throw new InternalErrorException(s"Match error: rec(m)=${rec(m)}")
+          case _                          => throw new InternalErrorException(s"Match error: rec(m)=${rec(m)}")
         }
       case Clone(m: InstanceClone[_]) =>
         rec(m) match {
-          case Proto(mx) => Clone(mx)
+          case Proto(mx)                  => Clone(mx)
           case Clone(i: InstanceClone[_]) =>
             val newChild = Module.do_pseudo_apply(new InstanceClone(m.getProto, () => m.instanceName))
             newChild._parent = i._parent
             Clone(newChild)
-          case _ => throw new InternalErrorException(s"Match error: rec(m)=${rec(m)}")
+          case _                          => throw new InternalErrorException(s"Match error: rec(m)=${rec(m)}")
         }
-      case _ => throw new InternalErrorException(s"Match error: module=$module")
+      case _                          => throw new InternalErrorException(s"Match error: module=$module")
     }
   }
 
@@ -422,7 +422,7 @@ object Lookupable {
     type B = X
     type C = X
     def definitionLookup[A](that: A => B, definition: Definition[A]): C = that(definition.proto)
-    def instanceLookup[A](that:   A => B, instance:   Instance[A]):   C = that(instance.proto)
+    def instanceLookup[A](that: A => B, instance: Instance[A]): C       = that(instance.proto)
   }
 
   implicit def lookupInstance[B <: BaseModule](implicit sourceInfo: SourceInfo): Simple[Instance[B]] =
@@ -432,7 +432,7 @@ object Lookupable {
         val ret = that(definition.proto)
         new Instance(cloneModuleToContext(ret.underlying, definition.getInnerDataContext.get))
       }
-      def instanceLookup[A](that: A => Instance[B], instance: Instance[A]): C = {
+      def instanceLookup[A](that: A => Instance[B], instance: Instance[A]): C       = {
         val ret = that(instance.proto)
         instance.underlying match {
           // If instance is just a normal module, no changing of context is necessary
@@ -450,7 +450,7 @@ object Lookupable {
         val ret = that(definition.proto)
         new Instance(cloneModuleToContext(Proto(ret), definition.getInnerDataContext.get))
       }
-      def instanceLookup[A](that: A => B, instance: Instance[A]): C = {
+      def instanceLookup[A](that: A => B, instance: Instance[A]): C       = {
         val ret = that(instance.proto)
         instance.underlying match {
           // If instance is just a normal module, no changing of context is necessary
@@ -471,22 +471,22 @@ object Lookupable {
           doLookupData(ret, definition.cache, None, definition.getInnerDataContext)
         }
       }
-      def instanceLookup[A](that: A => B, instance: Instance[A]): C = {
+      def instanceLookup[A](that: A => B, instance: Instance[A]): C       = {
         val ret = that(instance.proto)
 
         // As Property ports are not yet Lookupable, they are skipped here.
         def getIoMap(hierarchy: Hierarchy[_]): Option[Map[Data, Data]] = {
           hierarchy.underlying match {
-            case Clone(x: ModuleClone[_]) => Some(x.ioMap)
-            case Proto(x: BaseModule) => Some(x.getChiselPorts.map { case (_, data: Data) => data -> data }.toMap)
+            case Clone(x: ModuleClone[_])       => Some(x.ioMap)
+            case Proto(x: BaseModule)           => Some(x.getChiselPorts.map { case (_, data: Data) => data -> data }.toMap)
             case Clone(x: InstantiableClone[_]) => getIoMap(x._innerContext)
-            case Clone(x: InstanceClone[_]) => None
-            case other => {
+            case Clone(x: InstanceClone[_])     => None
+            case other                          => {
               Builder.exception(s"Internal Error! Unexpected case where we can't get IO Map: $other")
             }
           }
         }
-        val ioMap = getIoMap(instance)
+        val ioMap                                                      = getIoMap(instance)
 
         if (isView(ret)) {
           cloneViewToContext(ret, instance.cache, ioMap, instance.getInnerDataContext)
@@ -498,22 +498,22 @@ object Lookupable {
     }
 
   private[chisel3] def cloneMemToContext[T <: MemBase[_]](
-    mem:     T,
+    mem: T,
     context: BaseModule
   )(
     implicit sourceInfo: SourceInfo
   ): T = {
     mem._parent match {
-      case None => mem
+      case None         => mem
       case Some(parent) =>
         val newParent = cloneModuleToContext(Proto(parent), context)
         newParent match {
           case Proto(p) if p == parent => mem
-          case Clone(mod: BaseModule) =>
+          case Clone(mod: BaseModule)  =>
             val existingMod = Builder.currentModule
             Builder.currentModule = Some(mod)
             val newChild: T = mem match {
-              case m: Mem[_] => new Mem(m.t.asInstanceOf[Data].cloneTypeFull, m.length, sourceInfo).asInstanceOf[T]
+              case m: Mem[_]         => new Mem(m.t.asInstanceOf[Data].cloneTypeFull, m.length, sourceInfo).asInstanceOf[T]
               case m: SyncReadMem[_] =>
                 new SyncReadMem(m.t.asInstanceOf[Data].cloneTypeFull, m.length, m.readUnderWrite, sourceInfo)
                   .asInstanceOf[T]
@@ -521,7 +521,7 @@ object Lookupable {
             Builder.currentModule = existingMod
             newChild.setRef(mem.getRef, true)
             newChild
-          case _ =>
+          case _                       =>
             throw new InternalErrorException(s"Match error: newParent=$newParent")
         }
     }
@@ -538,26 +538,26 @@ object Lookupable {
   // TODO, this, cloneMemToContext, and cloneDataToContext should be unified
   private def cloneHasTargetToContext(
     hasTarget: HasTarget,
-    context:   BaseModule
+    context: BaseModule
   )(
     implicit sourceInfo: SourceInfo
   ): HasTarget = {
     hasTarget match {
       case HasTarget.Impl(st: SramTarget) =>
         st._parent match {
-          case None => hasTarget
+          case None         => hasTarget
           case Some(parent) =>
             val newParent = cloneModuleToContext(Proto(parent), context)
             newParent match {
               case Proto(p) if p == parent => hasTarget
-              case Clone(mod: BaseModule) =>
+              case Clone(mod: BaseModule)  =>
                 val existingMod = Builder.currentModule
                 Builder.currentModule = Some(mod)
-                val newChild = new SramTarget
+                val newChild    = new SramTarget
                 Builder.currentModule = existingMod
                 newChild.setRef(st.getRef, true)
                 HasTarget(newChild)
-              case _ =>
+              case _                       =>
                 throw new InternalErrorException(s"Match error: newParent=$newParent")
             }
         }
@@ -575,7 +575,7 @@ object Lookupable {
   import scala.language.higherKinds // Required to avoid warning for lookupIterable type parameter
   implicit def lookupIterable[B, F[_] <: Iterable[_]](
     implicit sourceInfo: SourceInfo,
-    lookupable:          Lookupable[B]
+    lookupable: Lookupable[B]
   ): Aux[F[B], F[lookupable.C]] = new LookupableImpl[F[B]] {
     type C = F[lookupable.C]
     override protected def impl[A](that: A => F[B], hierarchy: Hierarchy[A]): C = {
@@ -585,7 +585,7 @@ object Lookupable {
   }
   implicit def lookupOption[B](
     implicit sourceInfo: SourceInfo,
-    lookupable:          Lookupable[B]
+    lookupable: Lookupable[B]
   ): Aux[Option[B], Option[lookupable.C]] = new LookupableImpl[Option[B]] {
     type C = Option[lookupable.C]
     override protected def impl[A](that: A => Option[B], hierarchy: Hierarchy[A]): C = {
@@ -595,8 +595,8 @@ object Lookupable {
   }
   implicit def lookupEither[L, R](
     implicit sourceInfo: SourceInfo,
-    lookupableL:         Lookupable[L],
-    lookupableR:         Lookupable[R]
+    lookupableL: Lookupable[L],
+    lookupableR: Lookupable[R]
   ): Aux[Either[L, R], Either[lookupableL.C, lookupableR.C]] = new LookupableImpl[Either[L, R]] {
     type C = Either[lookupableL.C, lookupableR.C]
     override protected def impl[A](that: A => Either[L, R], hierarchy: Hierarchy[A]): C = {
@@ -610,8 +610,8 @@ object Lookupable {
   // TODO Once Lookupable return type change is removed, we can just call product factory above.
   implicit def lookupTuple2[T1, T2](
     implicit sourceInfo: SourceInfo,
-    lookupableT1:        Lookupable[T1],
-    lookupableT2:        Lookupable[T2]
+    lookupableT1: Lookupable[T1],
+    lookupableT2: Lookupable[T2]
   ): Aux[(T1, T2), (lookupableT1.C, lookupableT2.C)] = new LookupableImpl[(T1, T2)] {
     type C = (lookupableT1.C, lookupableT2.C)
     override protected def impl[A](that: A => (T1, T2), hierarchy: Hierarchy[A]): C = {
@@ -624,9 +624,9 @@ object Lookupable {
   // TODO Once Lookupable return type change is removed, we can just call product factory above.
   implicit def lookupTuple3[T1, T2, T3](
     implicit sourceInfo: SourceInfo,
-    lookupableT1:        Lookupable[T1],
-    lookupableT2:        Lookupable[T2],
-    lookupableT3:        Lookupable[T3]
+    lookupableT1: Lookupable[T1],
+    lookupableT2: Lookupable[T2],
+    lookupableT3: Lookupable[T3]
   ): Aux[(T1, T2, T3), (lookupableT1.C, lookupableT2.C, lookupableT3.C)] = new LookupableImpl[(T1, T2, T3)] {
     type C = (lookupableT1.C, lookupableT2.C, lookupableT3.C)
     override protected def impl[A](that: A => (T1, T2, T3), hierarchy: Hierarchy[A]): C = {
@@ -640,10 +640,10 @@ object Lookupable {
   // TODO Once Lookupable return type change is removed, we can just call product factory above.
   implicit def lookupTuple4[T1, T2, T3, T4](
     implicit sourceInfo: SourceInfo,
-    lookupableT1:        Lookupable[T1],
-    lookupableT2:        Lookupable[T2],
-    lookupableT3:        Lookupable[T3],
-    lookupableT4:        Lookupable[T4]
+    lookupableT1: Lookupable[T1],
+    lookupableT2: Lookupable[T2],
+    lookupableT3: Lookupable[T3],
+    lookupableT4: Lookupable[T4]
   ): Aux[(T1, T2, T3, T4), (lookupableT1.C, lookupableT2.C, lookupableT3.C, lookupableT4.C)] =
     new LookupableImpl[(T1, T2, T3, T4)] {
       type C = (lookupableT1.C, lookupableT2.C, lookupableT3.C, lookupableT4.C)
@@ -659,11 +659,11 @@ object Lookupable {
   // TODO Once Lookupable return type change is removed, we can just call product factory above.
   implicit def lookupTuple5[T1, T2, T3, T4, T5](
     implicit sourceInfo: SourceInfo,
-    lookupableT1:        Lookupable[T1],
-    lookupableT2:        Lookupable[T2],
-    lookupableT3:        Lookupable[T3],
-    lookupableT4:        Lookupable[T4],
-    lookupableT5:        Lookupable[T5]
+    lookupableT1: Lookupable[T1],
+    lookupableT2: Lookupable[T2],
+    lookupableT3: Lookupable[T3],
+    lookupableT4: Lookupable[T4],
+    lookupableT5: Lookupable[T5]
   ): Aux[(T1, T2, T3, T4, T5), (lookupableT1.C, lookupableT2.C, lookupableT3.C, lookupableT4.C, lookupableT5.C)] =
     new LookupableImpl[(T1, T2, T3, T4, T5)] {
       type C = (lookupableT1.C, lookupableT2.C, lookupableT3.C, lookupableT4.C, lookupableT5.C)
@@ -686,9 +686,9 @@ object Lookupable {
   ): Aux[B, Instance[B]] = new LookupableImpl[B] {
     type C = Instance[B]
     override protected def impl[A](that: A => B, hierarchy: Hierarchy[A]): C = {
-      val ret = that(hierarchy.proto)
+      val ret        = that(hierarchy.proto)
       val underlying = new InstantiableClone[B] {
-        val getProto = ret
+        val getProto                         = ret
         lazy val _innerContext: Hierarchy[_] = hierarchy
       }
       new Instance(Clone(underlying))
@@ -697,15 +697,15 @@ object Lookupable {
 
   implicit def lookupIsLookupable[B <: IsLookupable](implicit sourceInfo: SourceInfo): Simple[B] = isLookupable[B]
 
-  implicit val lookupInt:     Simple[Int] = isLookupable[Int]
-  implicit val lookupByte:    Simple[Byte] = isLookupable[Byte]
-  implicit val lookupShort:   Simple[Short] = isLookupable[Short]
-  implicit val lookupLong:    Simple[Long] = isLookupable[Long]
-  implicit val lookupFloat:   Simple[Float] = isLookupable[Float]
-  implicit val lookupDouble:  Simple[Double] = isLookupable[Double]
-  implicit val lookupChar:    Simple[Char] = isLookupable[Char]
-  implicit val lookupString:  Simple[String] = isLookupable[String]
+  implicit val lookupInt: Simple[Int]         = isLookupable[Int]
+  implicit val lookupByte: Simple[Byte]       = isLookupable[Byte]
+  implicit val lookupShort: Simple[Short]     = isLookupable[Short]
+  implicit val lookupLong: Simple[Long]       = isLookupable[Long]
+  implicit val lookupFloat: Simple[Float]     = isLookupable[Float]
+  implicit val lookupDouble: Simple[Double]   = isLookupable[Double]
+  implicit val lookupChar: Simple[Char]       = isLookupable[Char]
+  implicit val lookupString: Simple[String]   = isLookupable[String]
   implicit val lookupBoolean: Simple[Boolean] = isLookupable[Boolean]
-  implicit val lookupBigInt:  Simple[BigInt] = isLookupable[BigInt]
-  implicit val lookupUnit:    Simple[Unit] = isLookupable[Unit]
+  implicit val lookupBigInt: Simple[BigInt]   = isLookupable[BigInt]
+  implicit val lookupUnit: Simple[Unit]       = isLookupable[Unit]
 }

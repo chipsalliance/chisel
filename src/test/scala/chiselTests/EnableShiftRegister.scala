@@ -6,9 +6,9 @@ import circt.stage.ChiselStage
 
 class EnableShiftRegister extends Module {
   val io = IO(new Bundle {
-    val in = Input(UInt(4.W))
+    val in    = Input(UInt(4.W))
     val shift = Input(Bool())
-    val out = Output(UInt(4.W))
+    val out   = Output(UInt(4.W))
   })
   val r0 = RegInit(0.U(4.W))
   val r1 = RegInit(0.U(4.W))

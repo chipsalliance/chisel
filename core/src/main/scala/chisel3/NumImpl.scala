@@ -20,7 +20,7 @@ private[chisel3] trait NumImpl[T <: Data] {
   */
 trait NumObject {
   val MaxBitsBigIntToBigDecimal = 108
-  val MaxBitsBigIntToDouble = 53
+  val MaxBitsBigIntToDouble     = 53
 
   /**
     * How to create a bigint from a double with a specific binaryPoint
@@ -30,7 +30,7 @@ trait NumObject {
     */
   def toBigInt(x: Double, binaryPoint: Int): BigInt = {
     val multiplier = math.pow(2, binaryPoint)
-    val result = BigInt(math.round(x * multiplier))
+    val result     = BigInt(math.round(x * multiplier))
     result
   }
 
@@ -51,7 +51,7 @@ trait NumObject {
     */
   def toBigInt(x: BigDecimal, binaryPoint: Int, roundingMode: RoundingMode): BigInt = {
     val multiplier = math.pow(2, binaryPoint)
-    val result = (x * multiplier).setScale(0, roundingMode).toBigInt
+    val result     = (x * multiplier).setScale(0, roundingMode).toBigInt
     result
   }
 
@@ -68,7 +68,7 @@ trait NumObject {
       )
     }
     val multiplier = math.pow(2, binaryPoint)
-    val result = i.toDouble / multiplier
+    val result     = i.toDouble / multiplier
     result
   }
 
@@ -85,7 +85,7 @@ trait NumObject {
       )
     }
     val multiplier = BigDecimal(1.0) / BigDecimal(math.pow(2, binaryPoint))
-    val result = BigDecimal(value) * multiplier
+    val result     = BigDecimal(value) * multiplier
     result
   }
 

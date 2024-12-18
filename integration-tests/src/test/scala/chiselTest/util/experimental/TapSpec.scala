@@ -33,7 +33,7 @@ class RightUpper extends Module {
 
 class UpDownTest extends BasicTester {
   val rightUpper = Module(new RightUpper)
-  val leftUpper = Module(new LeftUpper(rightUpper.rightLower.tapMe))
+  val leftUpper  = Module(new LeftUpper(rightUpper.rightLower.tapMe))
 }
 
 /** Circuit follows this layout:

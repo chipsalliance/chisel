@@ -28,7 +28,7 @@ object QMCMinimizer extends Minimizer {
 
     override def equals(that: Any): Boolean = that match {
       case x: Implicant => bp.value == x.bp.value && bp.mask == x.bp.mask
-      case _ => false
+      case _            => false
     }
 
     override def hashCode = bp.value.toInt
@@ -127,7 +127,7 @@ object QMCMinimizer extends Minimizer {
     *         c: implicants that are not cover by any of the essential prime implicants
     */
   private def getEssentialPrimeImplicants(
-    primes:   Seq[Implicant],
+    primes: Seq[Implicant],
     minterms: Seq[Implicant]
   ): (Seq[Implicant], Seq[Implicant], Seq[Implicant]) = {
     // primeCovers(i): implicants that `prime(i)` covers
@@ -146,11 +146,11 @@ object QMCMinimizer extends Minimizer {
     // implicants that only one prime implicant covers
     val essentiallyCovered = minterms.filter(t => primes.count(_.covers(t)) == 1)
     // essential prime implicants, prime implicants that covers only one implicant
-    val essential = primes.filter(p => essentiallyCovered.exists(p.covers))
+    val essential          = primes.filter(p => essentiallyCovered.exists(p.covers))
     // {nonessential} = {prime implicants} - {essential prime implicants}
-    val nonessential = primes.filterNot(essential contains _)
+    val nonessential       = primes.filterNot(essential contains _)
     // implicants that no essential prime implicants covers
-    val uncovered = minterms.filterNot(t => essential.exists(_.covers(t)))
+    val uncovered          = minterms.filterNot(t => essential.exists(_.covers(t)))
     if (essential.isEmpty || uncovered.isEmpty)
       (essential, nonessential, uncovered)
     else {
@@ -210,7 +210,7 @@ object QMCMinimizer extends Minimizer {
       // cover(i): nonessential prime implicants that covers `minterms(i)`
       val cover = minterms.map(m => implicants.filter(_.covers(m)))
       // all subsets of `cover`, NP algorithm, O(2 ^ len(cover))
-      val all = cover.tail.foldLeft(cover.head.map(Set(_)))((c0, c1) => c0.flatMap(a => c1.map(a + _)))
+      val all   = cover.tail.foldLeft(cover.head.map(Set(_)))((c0, c1) => c0.flatMap(a => c1.map(a + _)))
       all.map(_.toList).reduceLeft((a, b) => if (cheaper(a, b)) a else b)
     } else
       Seq[Implicant]()
@@ -232,7 +232,7 @@ object QMCMinimizer extends Minimizer {
     )
 
     // make sure no two inputs specified in the truth table intersect
-    for (t <- inputs.tails; if t.nonEmpty)
+    for (t <- inputs.tails if t.nonEmpty)
       for (u <- t.tail)
         require(!t.head.intersects(u), "truth table entries " + t.head + " and " + u + " overlap")
 
@@ -252,20 +252,20 @@ object QMCMinimizer extends Minimizer {
       val maxt: Seq[Implicant] =
         table.table.filter { case (_, t) => t.mask.testBit(i) && !t.value.testBit(i) }.map(_._1).map(toImplicant)
       // Don't cares, implicants that can produce either 0 or 1 as output
-      val dc: Seq[Implicant] = table.table.filter { case (_, t) => !t.mask.testBit(i) }.map(_._1).map(toImplicant)
+      val dc: Seq[Implicant]   = table.table.filter { case (_, t) => !t.mask.testBit(i) }.map(_._1).map(toImplicant)
 
       val (implicants, defaultToDc) = table.default match {
         case x if x.mask.testBit(i) && !x.value.testBit(i) => // default to 0
           (mint ++ dc, false)
-        case x if x.mask.testBit(i) && x.value.testBit(i) => // default to 1
+        case x if x.mask.testBit(i) && x.value.testBit(i)  => // default to 1
           (maxt ++ dc, false)
-        case x if !x.mask.testBit(i) => // default to ?
+        case x if !x.mask.testBit(i)                       => // default to ?
           (mint, true)
-        case _ => throw new InternalErrorException(s"Match error: table.default=${table.default}")
+        case _                                             => throw new InternalErrorException(s"Match error: table.default=${table.default}")
       }
 
       implicants.foreach(_.isPrime = true)
-      val cols = (0 to n).reverse.map(b => implicants.filter(b == _.bp.mask.bitCount))
+      val cols       = (0 to n).reverse.map(b => implicants.filter(b == _.bp.mask.bitCount))
       val mergeTable = cols.map(c => (0 to n).map(b => collection.mutable.Set(c.filter(b == _.bp.value.bitCount): _*)))
 
       // O(n ^ 3)
@@ -317,26 +317,24 @@ object QMCMinimizer extends Minimizer {
         )
       )
     else
-      minimized.tail.foldLeft(table.copy(table = Seq(minimized.head))) {
-        case (tb, t) =>
-          if (tb.table.exists(x => x._1 == t._1)) {
-            tb.copy(table = tb.table.map {
-              case (k, v) =>
-                if (k == t._1) {
-                  def ones(bitPat: BitPat) = bitPat.rawString.zipWithIndex.collect { case ('1', x) => x }
-                  (
-                    k,
-                    BitPat(
-                      "b" + (0 until v.getWidth)
-                        .map(i => if ((ones(v) ++ ones(t._2)).contains(i)) "1" else "?")
-                        .mkString
-                    )
-                  )
-                } else (k, v)
-            })
-          } else {
-            tb.copy(table = tb.table :+ t)
-          }
+      minimized.tail.foldLeft(table.copy(table = Seq(minimized.head))) { case (tb, t) =>
+        if (tb.table.exists(x => x._1 == t._1)) {
+          tb.copy(table = tb.table.map { case (k, v) =>
+            if (k == t._1) {
+              def ones(bitPat: BitPat) = bitPat.rawString.zipWithIndex.collect { case ('1', x) => x }
+              (
+                k,
+                BitPat(
+                  "b" + (0 until v.getWidth)
+                    .map(i => if ((ones(v) ++ ones(t._2)).contains(i)) "1" else "?")
+                    .mkString
+                )
+              )
+            } else (k, v)
+          })
+        } else {
+          tb.copy(table = tb.table :+ t)
+        }
       }
   }
 }

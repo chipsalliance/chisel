@@ -14,7 +14,7 @@ import circt.stage.ChiselStage
 import scala.language.reflectiveCalls
 
 class VecLiteralSpec extends ChiselFreeSpec with Utils {
-  object MyEnum extends ChiselEnum {
+  object MyEnum  extends ChiselEnum {
     val sA, sB, sC = Value
   }
   object MyEnumB extends ChiselEnum {
@@ -71,10 +71,10 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
     }
   }
 
-  //NOTE: I had problems where this would not work if this class declaration was inside test scope
+  // NOTE: I had problems where this would not work if this class declaration was inside test scope
   class HasVecInit extends Module {
     val initValue = Vec(4, UInt(8.W)).Lit(0 -> 0xab.U(8.W), 1 -> 0xcd.U(8.W), 2 -> 0xef.U(8.W), 3 -> 0xff.U(8.W))
-    val y = RegInit(initValue)
+    val y         = RegInit(initValue)
   }
 
   "Vec literals should work when used to initialize a reg of vec" in {
@@ -86,10 +86,10 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
     firrtl should include("""regreset y : UInt<8>[4], clock, reset, _y_WIRE""".stripMargin)
   }
 
-  //NOTE: I had problems where this would not work if this class declaration was inside test scope
+  // NOTE: I had problems where this would not work if this class declaration was inside test scope
   class HasPartialVecInit extends Module {
     val initValue = Vec(4, UInt(8.W)).Lit(0 -> 0xab.U(8.W), 2 -> 0xef.U(8.W), 3 -> 0xff.U(8.W))
-    val y = RegInit(initValue)
+    val y         = RegInit(initValue)
   }
 
   "Vec literals should work when used to partially initialize a reg of vec" in {
@@ -102,10 +102,10 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
   }
 
   class ResetRegWithPartialVecLiteral extends Module {
-    val in = IO(Input(Vec(4, UInt(8.W))))
-    val out = IO(Output(Vec(4, UInt(8.W))))
+    val in        = IO(Input(Vec(4, UInt(8.W))))
+    val out       = IO(Output(Vec(4, UInt(8.W))))
     val initValue = Vec(4, UInt(8.W)).Lit(0 -> 0xab.U(8.W), 2 -> 0xef.U(8.W), 3 -> 0xff.U(8.W))
-    val y = RegInit(initValue)
+    val y         = RegInit(initValue)
     when(in(1) > 0.U) {
       y(1) := in(1)
     }
@@ -117,7 +117,7 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
 
   "Vec literals should only init specified fields when used to partially initialize a reg of vec" in {
     assertTesterPasses(new BasicTester {
-      val m = Module(new ResetRegWithPartialVecLiteral)
+      val m                  = Module(new ResetRegWithPartialVecLiteral)
       val (counter, wrapped) = Counter(true.B, 8)
       m.in := DontCare
       when(counter < 2.U) {
@@ -327,11 +327,11 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
 
         val vecWire1 = Wire(Output(vecFactory))
         val vecWire2 = Wire(Output(vecFactory))
-        val vecLit1 = vecFactory.Lit(0 -> 6.U(8.W))
-        val vecLit2 = vecFactory.Lit(1 -> 13.U(8.W))
+        val vecLit1  = vecFactory.Lit(0 -> 6.U(8.W))
+        val vecLit2  = vecFactory.Lit(1 -> 13.U(8.W))
 
-        vecWire1 := vecLit1
-        vecWire2 := vecLit2
+        vecWire1    := vecLit1
+        vecWire2    := vecLit2
         vecWire1(1) := 2.U(8.W)
         printf("vw1(0) %x  vw1(1) %x\n", vecWire1(0).asUInt, vecWire1(1).asUInt)
         chisel3.assert(vecWire1(0) === 6.U(8.W))
@@ -417,7 +417,7 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
 
   "vec literals are instantiated on connect and are not bulk connected" in {
     class VecExample5 extends RawModule {
-      val out = IO(Output(Vec(2, UInt(4.W))))
+      val out    = IO(Output(Vec(2, UInt(4.W))))
       val bundle = Vec(2, UInt(4.W)).Lit(
         0 -> 0xa.U,
         1 -> 0xb.U
@@ -436,7 +436,7 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
   }
 
   class VecExample extends RawModule {
-    val out = IO(Output(Vec(2, new SubBundle)))
+    val out    = IO(Output(Vec(2, new SubBundle)))
     val bundle = Vec(2, new SubBundle).Lit(
       0 -> (new SubBundle).Lit(_.foo -> 42.U, _.bar -> 0xd.U),
       1 -> (new SubBundle).Lit(_.foo -> 7.U, _.bar -> 3.U)
@@ -473,8 +473,8 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
   }
 
   "bundles can contain vec lits" in {
-    val vec1 = Vec(3, UInt(4.W)).Lit(0 -> 0xa.U, 1 -> 0xb.U, 2 -> 0xc.U)
-    val vec2 = Vec(2, UInt(4.W)).Lit(0 -> 0xd.U, 1 -> 0xe.U)
+    val vec1   = Vec(3, UInt(4.W)).Lit(0 -> 0xa.U, 1 -> 0xb.U, 2 -> 0xc.U)
+    val vec2   = Vec(2, UInt(4.W)).Lit(0 -> 0xd.U, 1 -> 0xe.U)
     val bundle = (new Bundle {
       val foo = Vec(3, UInt(4.W))
       val bar = Vec(2, UInt(4.W))
@@ -512,7 +512,7 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
     val chirrtl = ChiselStage.emitCHIRRTL(new Module {
       val r = RegInit(Vec(2, UInt(4.W)).Lit(0 -> 1.U, 1 -> 2.U))
     })
-    val wire = """wire.*: const UInt<4>\[2\]""".r
+    val wire    = """wire.*: const UInt<4>\[2\]""".r
     (chirrtl should include).regex(wire)
   }
 
@@ -535,11 +535,11 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
   "Vec literals should use the width of the Vec element rather than the widths of the literals" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
       // Whether the user specifies a width or not.
-      val lit0 = (Vec(2, UInt(4.W))).Lit(0 -> 0x3.U, 1 -> 0x2.U(3.W))
+      val lit0  = (Vec(2, UInt(4.W))).Lit(0 -> 0x3.U, 1 -> 0x2.U(3.W))
       lit0(0).getWidth should be(4)
       lit0(1).getWidth should be(4)
       val uint0 = Cat(lit0(1), lit0(0))
-      val lit1 = Vec.Lit(0x3.U, 0x2.U(4.W))
+      val lit1  = Vec.Lit(0x3.U, 0x2.U(4.W))
       lit1(0).getWidth should be(4)
       lit1(1).getWidth should be(4)
       val uint1 = Cat(lit1(1), lit1(0))

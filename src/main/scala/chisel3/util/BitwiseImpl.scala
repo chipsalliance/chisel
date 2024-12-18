@@ -29,14 +29,14 @@ private[chisel3] trait FillImpl {
 
   protected def _applyImpl(n: Int, x: UInt)(implicit sourceInfo: SourceInfo): UInt = {
     n match {
-      case _ if n < 0 => throw new IllegalArgumentException(s"n (=$n) must be nonnegative integer.")
-      case 0          => UInt(0.W)
-      case 1          => x
+      case _ if n < 0                             => throw new IllegalArgumentException(s"n (=$n) must be nonnegative integer.")
+      case 0                                      => UInt(0.W)
+      case 1                                      => x
       case _ if x.isWidthKnown && x.getWidth == 1 =>
         Mux(x.asBool, ((BigInt(1) << n) - 1).asUInt(n.W), 0.U(n.W))
-      case _ =>
+      case _                                      =>
         val nBits = log2Ceil(n + 1)
-        val p2 = Array.ofDim[UInt](nBits)
+        val p2    = Array.ofDim[UInt](nBits)
         p2(0) = x
         for (i <- 1 until p2.length)
           p2(i) = Cat(p2(i - 1), p2(i - 1))
@@ -53,9 +53,9 @@ private[chisel3] trait ReverseImpl {
       case _ if length <= 1                                   => in
       case _ if isPow2(length) && length >= 8 && length <= 64 =>
         // This esoterica improves simulation performance
-        var res = in
+        var res   = in
         var shift = length >> 1
-        var mask = ((BigInt(1) << length) - 1).asUInt(length.W)
+        var mask  = ((BigInt(1) << length) - 1).asUInt(length.W)
         while ({
           mask = mask ^ (mask(length - shift - 1, 0) << shift)
           res = ((res >> shift) & mask) | ((res(length - shift - 1, 0) << shift) & ~mask)
@@ -63,7 +63,7 @@ private[chisel3] trait ReverseImpl {
           shift > 0
         }) {}
         res
-      case _ =>
+      case _                                                  =>
         val half = (1 << log2Ceil(length)) / 2
         Cat(doit(in(half - 1, 0), half), doit(in(length - 1, half), length - half))
     }

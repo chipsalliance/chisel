@@ -12,7 +12,7 @@ import chisel3._
 class UInt2VecOfBool extends CookbookTester(1) {
   // Example
   val uint = 0xc.U
-  val vec = VecInit(uint.asBools)
+  val vec  = VecInit(uint.asBools)
   printf(p"$vec") // Vec(0, 0, 1, 1)
 
   // Test

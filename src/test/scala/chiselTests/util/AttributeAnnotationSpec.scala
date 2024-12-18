@@ -8,7 +8,7 @@ import _root_.circt.stage.ChiselStage
 class AttributeAnnotationSpec extends ChiselFlatSpec {
   class AttributeExample extends Module {
     val io = IO(new Bundle {
-      val input = Input(UInt(8.W))
+      val input  = Input(UInt(8.W))
       val output = Output(UInt(8.W))
     })
 

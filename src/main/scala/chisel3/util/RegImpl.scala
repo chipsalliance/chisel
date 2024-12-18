@@ -14,8 +14,8 @@ private[chisel3] trait RegEnableImpl {
   }
 
   protected def _applyImpl[T <: Data](
-    next:   T,
-    init:   T,
+    next: T,
+    init: T,
     enable: Bool
   )(
     implicit sourceInfo: SourceInfo
@@ -30,7 +30,7 @@ private[chisel3] trait ShiftRegisterImpl {
 
   protected def _applyImpl[T <: Data](
     in: T,
-    n:  Int,
+    n: Int,
     en: Bool = true.B
   )(
     implicit sourceInfo: SourceInfo
@@ -38,21 +38,21 @@ private[chisel3] trait ShiftRegisterImpl {
     ShiftRegisters(in, n, en).lastOption.getOrElse(in)
 
   protected def _applyImpl[T <: Data](
-    in:        T,
-    n:         Int,
+    in: T,
+    n: Int,
     resetData: T,
-    en:        Bool
+    en: Bool
   )(
     implicit sourceInfo: SourceInfo
   ): T =
     ShiftRegisters(in, n, resetData, en).lastOption.getOrElse(in)
 
   protected def _applyImplMem[T <: Data](
-    in:              T,
-    n:               Int,
-    en:              Bool = true.B,
+    in: T,
+    n: Int,
+    en: Bool = true.B,
     useDualPortSram: Boolean = false,
-    name:            Option[String] = None
+    name: Option[String] = None
   )(
     implicit sourceInfo: SourceInfo
   ): T = {
@@ -62,12 +62,12 @@ private[chisel3] trait ShiftRegisterImpl {
       val out = RegEnable(in, en)
       out
     } else if (useDualPortSram) {
-      val mem = SyncReadMem(n, in.cloneType)
+      val mem   = SyncReadMem(n, in.cloneType)
       if (name != None) {
         mem.suggestName(name.get)
       }
       val raddr = Counter(en, n)._1
-      val out = mem.read(raddr, en)
+      val out   = mem.read(raddr, en)
 
       val waddr = RegEnable(raddr, (n - 1).U, en)
       when(en) {
@@ -92,8 +92,8 @@ private[chisel3] trait ShiftRegisterImpl {
       }
 
       val index_counter = Counter(en, n)._1
-      val raddr_sp0 = index_counter >> 1.U
-      val raddr_sp1 = RegEnable(raddr_sp0, (n / 2 - 1).U, en)
+      val raddr_sp0     = index_counter >> 1.U
+      val raddr_sp1     = RegEnable(raddr_sp0, (n / 2 - 1).U, en)
 
       val wen_sp0 = index_counter(0)
       val wen_sp1 = WireDefault(false.B)
@@ -118,7 +118,7 @@ private[chisel3] trait ShiftRegistersImpl {
 
   protected def _applyImpl[T <: Data](
     in: T,
-    n:  Int,
+    n: Int,
     en: Bool = true.B
   )(
     implicit sourceInfo: SourceInfo
@@ -126,10 +126,10 @@ private[chisel3] trait ShiftRegistersImpl {
     Seq.iterate(in, n + 1)(util.RegEnable(_, en)).drop(1)
 
   protected def _applyImpl[T <: Data](
-    in:        T,
-    n:         Int,
+    in: T,
+    n: Int,
     resetData: T,
-    en:        Bool
+    en: Bool
   )(
     implicit sourceInfo: SourceInfo
   ): Seq[T] =

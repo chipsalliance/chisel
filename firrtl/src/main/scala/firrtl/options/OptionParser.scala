@@ -34,7 +34,7 @@ trait DuplicateHandling extends OptionParser[AnnotationSeq] {
     /** Message for found duplicate options */
     def msg(x: String, y: String) = s"""Duplicate $x "$y" (did your custom Transform or OptionsManager add this?)"""
 
-    val longDups = options.map(_.name).groupBy(identity).collect { case (k, v) if v.size > 1 && k != "" => k }
+    val longDups  = options.map(_.name).groupBy(identity).collect { case (k, v) if v.size > 1 && k != "" => k }
     val shortDups = options.map(_.shortOpt).flatten.groupBy(identity).collect { case (k, v) if v.size > 1 => k }
 
     if (longDups.nonEmpty) {

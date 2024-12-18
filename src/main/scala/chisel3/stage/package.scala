@@ -20,19 +20,19 @@ package object stage {
     def view(options: AnnotationSeq): ChiselOptions = options.collect { case a: ChiselOption => a }
       .foldLeft(new ChiselOptions()) { (c, x) =>
         x match {
-          case PrintFullStackTraceAnnotation => c.copy(printFullStackTrace = true)
-          case ThrowOnFirstErrorAnnotation   => c.copy(throwOnFirstError = true)
-          case WarningsAsErrorsAnnotation =>
+          case PrintFullStackTraceAnnotation         => c.copy(printFullStackTrace = true)
+          case ThrowOnFirstErrorAnnotation           => c.copy(throwOnFirstError = true)
+          case WarningsAsErrorsAnnotation            =>
             c.copy(warningFilters = c.warningFilters :+ WarningsAsErrorsAnnotation.asFilter)
-          case ChiselOutputFileAnnotation(f) => c.copy(outputFile = Some(f))
-          case ChiselCircuitAnnotation(a)    => c.copy(chiselCircuit = Some(a))
-          case SourceRootAnnotation(s)       => c.copy(sourceRoots = c.sourceRoots :+ s)
+          case ChiselOutputFileAnnotation(f)         => c.copy(outputFile = Some(f))
+          case ChiselCircuitAnnotation(a)            => c.copy(chiselCircuit = Some(a))
+          case SourceRootAnnotation(s)               => c.copy(sourceRoots = c.sourceRoots :+ s)
           case a: WarningConfigurationAnnotation     => c.copy(warningFilters = c.warningFilters ++ a.filters)
           case a: WarningConfigurationFileAnnotation => c.copy(warningFilters = c.warningFilters ++ a.filters)
-          case UseLegacyWidthBehavior         => c.copy(useLegacyWidth = true)
-          case RemapLayer(oldLayer, newLayer) => c.copy(layerMap = c.layerMap + ((oldLayer, newLayer)))
-          case IncludeUtilMetadata            => c.copy(includeUtilMetadata = true)
-          case UseSRAMBlackbox                => c.copy(useSRAMBlackbox = true)
+          case UseLegacyWidthBehavior                => c.copy(useLegacyWidth = true)
+          case RemapLayer(oldLayer, newLayer)        => c.copy(layerMap = c.layerMap + ((oldLayer, newLayer)))
+          case IncludeUtilMetadata                   => c.copy(includeUtilMetadata = true)
+          case UseSRAMBlackbox                       => c.copy(useSRAMBlackbox = true)
         }
       }
 

@@ -13,31 +13,31 @@ import firrtl.options.{TargetDirAnnotation, Unserializable}
 import scala.io.Source
 
 class SimpleIO extends Bundle {
-  val in = Input(UInt(32.W))
+  val in  = Input(UInt(32.W))
   val out = Output(UInt(32.W))
 }
 
 class PlusOne extends Module {
-  val io = IO(new SimpleIO)
+  val io    = IO(new SimpleIO)
   val myReg = RegInit(0.U(8.W))
   dontTouch(myReg)
   io.out := io.in + 1.asUInt
 }
 
 class ModuleVec(val n: Int) extends Module {
-  val io = IO(new Bundle {
-    val ins = Input(Vec(n, UInt(32.W)))
+  val io     = IO(new Bundle {
+    val ins  = Input(Vec(n, UInt(32.W)))
     val outs = Output(Vec(n, UInt(32.W)))
   })
   val pluses = VecInit(Seq.fill(n) { Module(new PlusOne).io })
   for (i <- 0 until n) {
     pluses(i).in := io.ins(i)
-    io.outs(i) := pluses(i).out
+    io.outs(i)   := pluses(i).out
   }
 }
 
 class ModuleWire extends Module {
-  val io = IO(new SimpleIO)
+  val io  = IO(new SimpleIO)
   val inc = Wire(chiselTypeOf(Module(new PlusOne).io))
   inc.in := io.in
   io.out := inc.out
@@ -45,43 +45,43 @@ class ModuleWire extends Module {
 
 class ModuleWhen extends Module {
   val io = IO(new Bundle {
-    val s = new SimpleIO
+    val s  = new SimpleIO
     val en = Output(Bool())
   })
   when(io.en) {
     val inc = Module(new PlusOne).io
-    inc.in := io.s.in
+    inc.in   := io.s.in
     io.s.out := inc.out
   }.otherwise { io.s.out := io.s.in }
 }
 
 class ModuleForgetWrapper extends Module {
-  val io = IO(new SimpleIO)
+  val io   = IO(new SimpleIO)
   val inst = new PlusOne
 }
 
 class ModuleDoubleWrap extends Module {
-  val io = IO(new SimpleIO)
+  val io   = IO(new SimpleIO)
   val inst = Module(Module(new PlusOne))
 }
 
 class ModuleRewrap extends Module {
-  val io = IO(new SimpleIO)
-  val inst = Module(new PlusOne)
+  val io    = IO(new SimpleIO)
+  val inst  = Module(new PlusOne)
   val inst2 = Module(inst)
 }
 
 class ModuleWrapper(gen: => Module) extends Module {
-  val io = IO(new Bundle {})
-  val child = Module(gen)
+  val io                   = IO(new Bundle {})
+  val child                = Module(gen)
   override val desiredName = s"${child.desiredName}Wrapper"
 }
 
 class NullModuleWrapper extends Module {
-  val io = IO(new Bundle {})
+  val io                        = IO(new Bundle {})
   override lazy val desiredName = s"${child.desiredName}Wrapper"
   println(s"My name is ${name}")
-  val child = Module(new ModuleWire)
+  val child                     = Module(new ModuleWire)
 }
 
 class ModuleSpec extends ChiselPropSpec with Utils {
@@ -214,7 +214,7 @@ class ModuleSpec extends ChiselPropSpec with Utils {
   property("DataMirror.modulePorts should work") {
     ChiselStage.emitCHIRRTL(new Module {
       val io = IO(new Bundle {})
-      val m = Module(new chisel3.Module {
+      val m  = Module(new chisel3.Module {
         val a = IO(UInt(8.W))
         val b = IO(Bool())
       })
@@ -224,8 +224,8 @@ class ModuleSpec extends ChiselPropSpec with Utils {
 
   property("DataMirror.modulePorts should replace deprecated <module>.getPorts") {
     class MyModule extends Module {
-      val io = IO(new Bundle {
-        val in = Input(UInt(8.W))
+      val io    = IO(new Bundle {
+        val in  = Input(UInt(8.W))
         val out = Output(Vec(2, UInt(8.W)))
       })
       val extra = IO(Input(UInt(8.W)))
@@ -243,7 +243,7 @@ class ModuleSpec extends ChiselPropSpec with Utils {
       Seq(
         "clock" -> mod.clock,
         "reset" -> mod.reset,
-        "io" -> mod.io,
+        "io"    -> mod.io,
         "extra" -> mod.extra
       )
     )
@@ -251,8 +251,8 @@ class ModuleSpec extends ChiselPropSpec with Utils {
 
   property("DataMirror.fullModulePorts should return all ports including children of Aggregates") {
     class MyModule extends Module {
-      val io = IO(new Bundle {
-        val in = Input(UInt(8.W))
+      val io    = IO(new Bundle {
+        val in  = Input(UInt(8.W))
         val out = Output(Vec(2, UInt(8.W)))
       })
       val extra = IO(Input(UInt(8.W)))
@@ -266,14 +266,14 @@ class ModuleSpec extends ChiselPropSpec with Utils {
       mod
     }
     val expected = Seq(
-      "clock" -> mod.clock,
-      "reset" -> mod.reset,
-      "io" -> mod.io,
-      "io_out" -> mod.io.out,
+      "clock"    -> mod.clock,
+      "reset"    -> mod.reset,
+      "io"       -> mod.io,
+      "io_out"   -> mod.io.out,
       "io_out_0" -> mod.io.out(0),
       "io_out_1" -> mod.io.out(1),
-      "io_in" -> mod.io.in,
-      "extra" -> mod.extra
+      "io_in"    -> mod.io.in,
+      "extra"    -> mod.extra
     )
     (DataMirror.fullModulePorts(mod) should contain).theSameElementsInOrderAs(expected)
   }
@@ -317,7 +317,7 @@ class ModuleSpec extends ChiselPropSpec with Utils {
   property("emitVerilog((new PlusOne()..) shall produce a valid Verilog file in a subfolder") {
     val testDir = "test_run_dir/emit_verilog_test"
     emitVerilog(new PlusOne(), Array("--target-dir", testDir))
-    val s = Source.fromFile(s"$testDir/PlusOne.sv").mkString("")
+    val s       = Source.fromFile(s"$testDir/PlusOne.sv").mkString("")
     assert(s.contains("assign io_out = io_in + 32'h1"))
   }
 }

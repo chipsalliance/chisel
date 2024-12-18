@@ -12,17 +12,17 @@ abstract class EnumType(factory: ChiselEnum, selfAnnotating: Boolean = true)
 
   final def ===(that: EnumType): Bool = macro SourceInfoTransform.thatArg
   final def =/=(that: EnumType): Bool = macro SourceInfoTransform.thatArg
-  final def <(that:   EnumType): Bool = macro SourceInfoTransform.thatArg
-  final def <=(that:  EnumType): Bool = macro SourceInfoTransform.thatArg
-  final def >(that:   EnumType): Bool = macro SourceInfoTransform.thatArg
-  final def >=(that:  EnumType): Bool = macro SourceInfoTransform.thatArg
+  final def <(that: EnumType): Bool = macro SourceInfoTransform.thatArg
+  final def <=(that: EnumType): Bool = macro SourceInfoTransform.thatArg
+  final def >(that: EnumType): Bool = macro SourceInfoTransform.thatArg
+  final def >=(that: EnumType): Bool = macro SourceInfoTransform.thatArg
 
   def do_===(that: EnumType)(implicit sourceInfo: SourceInfo): Bool = _impl_===(that)
   def do_=/=(that: EnumType)(implicit sourceInfo: SourceInfo): Bool = _impl_=/=(that)
-  def do_<(that:   EnumType)(implicit sourceInfo: SourceInfo): Bool = _impl_<(that)
-  def do_>(that:   EnumType)(implicit sourceInfo: SourceInfo): Bool = _impl_>(that)
-  def do_<=(that:  EnumType)(implicit sourceInfo: SourceInfo): Bool = _impl_<=(that)
-  def do_>=(that:  EnumType)(implicit sourceInfo: SourceInfo): Bool = _impl_>=(that)
+  def do_<(that: EnumType)(implicit sourceInfo: SourceInfo): Bool   = _impl_<(that)
+  def do_>(that: EnumType)(implicit sourceInfo: SourceInfo): Bool   = _impl_>(that)
+  def do_<=(that: EnumType)(implicit sourceInfo: SourceInfo): Bool  = _impl_<=(that)
+  def do_>=(that: EnumType)(implicit sourceInfo: SourceInfo): Bool  = _impl_>=(that)
 }
 
 abstract class ChiselEnum extends ChiselEnumImpl {

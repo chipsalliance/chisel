@@ -24,10 +24,10 @@ object CheckTypeEquivalenceSpec {
     }
     ChiselStage.emitCHIRRTL(new TestModule)
   }
-  private def testSame[A <: Data, B <: Data](gen1: A, gen2: B)(implicit pos: Position): Unit = test(gen1, gen2, true)
-  private def testDiff[A <: Data, B <: Data](gen1: A, gen2: B)(implicit pos: Position): Unit = test(gen1, gen2, false)
+  private def testSame[A <: Data, B <: Data](gen1: A, gen2: B)(implicit pos: Position): Unit                  = test(gen1, gen2, true)
+  private def testDiff[A <: Data, B <: Data](gen1: A, gen2: B)(implicit pos: Position): Unit                  = test(gen1, gen2, false)
 
-  private def elementTypes =
+  private def elementTypes            =
     Seq(UInt(8.W), UInt(), SInt(8.W), SInt(), Bool(), Clock(), Reset(), AsyncReset(), Analog(8.W))
   private def elementTypeCombinations = elementTypes.combinations(2).map { pair => (pair(0), pair(1)) }
 

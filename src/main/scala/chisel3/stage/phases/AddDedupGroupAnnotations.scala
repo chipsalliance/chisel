@@ -13,14 +13,14 @@ import chisel3.experimental.dedupGroup
 import chisel3.internal.firrtl.ir.{DefBlackBox, DefClass, DefIntrinsicModule}
 
 class AddDedupGroupAnnotations extends Phase {
-  override def prerequisites = Seq.empty
+  override def prerequisites                                 = Seq.empty
   override def optionalPrerequisites: Seq[Dependency[Phase]] = Seq(Dependency[Convert])
-  override def optionalPrerequisiteOf = Seq.empty
-  override def invalidates(a: Phase) = false
+  override def optionalPrerequisiteOf                        = Seq.empty
+  override def invalidates(a: Phase)                         = false
 
   def transform(annotations: AnnotationSeq): AnnotationSeq = {
     val chiselOptions = view[ChiselOptions](annotations)
-    val circuit = chiselOptions.chiselCircuit.getOrElse {
+    val circuit       = chiselOptions.chiselCircuit.getOrElse {
       throw new ChiselException(
         s"Unable to locate the elaborated circuit, did ${classOf[Elaborate].getName} run correctly"
       )

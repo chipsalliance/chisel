@@ -12,19 +12,19 @@ import firrtl.stage.OutputFileAnnotation
 /** Check properties of an [[firrtl.AnnotationSeq!]] to look for errors before running CIRCT. */
 class Checks extends Phase {
 
-  override def prerequisites = Seq.empty
+  override def prerequisites          = Seq.empty
   override def optionalPrerequisiteOf = Seq(Dependency[circt.stage.phases.CIRCT])
-  override def invalidates(a: Phase) = false
+  override def invalidates(a: Phase)  = false
 
   override def transform(annotations: AnnotationSeq): AnnotationSeq = {
     val target, outputFile, split, targetDir = collection.mutable.ArrayBuffer[Annotation]()
 
     annotations.foreach {
-      case a: OutputFileAnnotation => outputFile += a
-      case a @ SplitVerilog => split += a
+      case a: OutputFileAnnotation  => outputFile += a
+      case a @ SplitVerilog         => split += a
       case a: TargetDirAnnotation   => targetDir += a
       case a: CIRCTTargetAnnotation => target += a
-      case _ =>
+      case _                        =>
     }
 
     if ((split.size > 0) && (outputFile.size != 0)) {

@@ -40,17 +40,17 @@ private[chisel3] trait ObjectModuleImpl {
       // Class only uses the Definition API, and is not allowed here.
       module match {
         case _: Class => throwException("Module() cannot be called on a Class. Please use Definition().")
-        case _ => ()
+        case _        => ()
       }
 
       val component = module._component.get
       component match {
         case DefClass(_, name, _, _) =>
           Builder.referenceUserContainer match {
-            case rm:  RawModule => rm.addCommand(DefObject(sourceInfo, module, name))
-            case cls: Class     => cls.addCommand(DefObject(sourceInfo, module, name))
+            case rm: RawModule => rm.addCommand(DefObject(sourceInfo, module, name))
+            case cls: Class    => cls.addCommand(DefObject(sourceInfo, module, name))
           }
-        case _ => pushCommand(DefInstance(sourceInfo, module, component.ports))
+        case _                       => pushCommand(DefInstance(sourceInfo, module, component.ports))
       }
       module.initializeInParent()
     }
@@ -68,8 +68,8 @@ private[chisel3] trait ObjectModuleImpl {
     }
     Builder.readyForModuleConstr = true
 
-    val parent = Builder.currentModule
-    val parentWhenStack = Builder.whenStack
+    val parent           = Builder.currentModule
+    val parentWhenStack  = Builder.whenStack
     val parentBlockStack = Builder.blockStack
     val parentLayerStack = Builder.layerStack
 
@@ -77,7 +77,7 @@ private[chisel3] trait ObjectModuleImpl {
     // Note that Disable is a function of whatever the current reset is, so it does not need a port
     //   and thus does not change when we cross module boundaries
     val (saveClock, saveReset) = (Builder.currentClockDelayed, Builder.currentResetDelayed)
-    val savePrefix = Builder.getPrefix
+    val savePrefix             = Builder.getPrefix
     Builder.clearPrefix()
     Builder.currentClock = None
     Builder.currentReset = None
@@ -115,7 +115,7 @@ private[chisel3] trait ObjectModuleImpl {
 
     // Reset Builder state *after* generating the component, so any atModuleBodyEnd generators are still within the
     // scope of the current Module.
-    Builder.currentModule = parent // Back to parent!
+    Builder.currentModule = parent   // Back to parent!
     Builder.whenStack = parentWhenStack
     Builder.blockStack = parentBlockStack
     Builder.layerStack = parentLayerStack
@@ -171,7 +171,7 @@ private[chisel3] trait ObjectModuleImpl {
       case (Some(clock), Some(reset)) =>
         val has_been_reset = IntrinsicExpr("circt_has_been_reset", Bool())(clock, reset).suggestName("has_been_reset")
         Some(new Disable(has_been_reset))
-      case _ => None
+      case _                          => None
     }
   }
 
@@ -186,11 +186,11 @@ private[chisel3] trait ObjectModuleImpl {
   )(
     implicit sourceInfo: SourceInfo
   ): T = {
-    val parent = Builder.currentModule
-    val whenStackOpt = Option.when(Builder.hasDynamicContext)(Builder.whenStack)
+    val parent        = Builder.currentModule
+    val whenStackOpt  = Option.when(Builder.hasDynamicContext)(Builder.whenStack)
     val layerStackOpt = Option.when(Builder.hasDynamicContext)(Builder.layerStack)
     val blockStackOpt = Option.when(Builder.hasDynamicContext)(Builder.blockStack)
-    val module: T = bc // bc is actually evaluated here
+    val module: T     = bc // bc is actually evaluated here
     if (!parent.isEmpty) { Builder.currentModule = parent }
     whenStackOpt.foreach(Builder.whenStack = _)
     layerStackOpt.foreach(Builder.layerStack = _)
@@ -257,18 +257,18 @@ private[chisel3] trait ModuleImpl extends RawModule with ImplicitClock with Impl
   override protected def implicitReset: Reset = reset
 
   // TODO Delete these
-  private var _override_clock: Option[Clock] = None
-  private var _override_reset: Option[Bool] = None
+  private var _override_clock: Option[Clock]               = None
+  private var _override_reset: Option[Bool]                = None
   @deprecated("Use withClock at Module instantiation", "Chisel 3.5")
-  protected def override_clock: Option[Clock] = _override_clock
+  protected def override_clock: Option[Clock]              = _override_clock
   @deprecated("Use withClock at Module instantiation", "Chisel 3.5")
-  protected def override_reset: Option[Bool] = _override_reset
+  protected def override_reset: Option[Bool]               = _override_reset
   @deprecated("Use withClock at Module instantiation", "Chisel 3.5")
   protected def override_clock_=(rhs: Option[Clock]): Unit = {
     _override_clock = rhs
   }
   @deprecated("Use withClock at Module instantiation", "Chisel 3.5")
-  protected def override_reset_=(rhs: Option[Bool]): Unit = {
+  protected def override_reset_=(rhs: Option[Bool]): Unit  = {
     _override_reset = rhs
   }
   // End TODO Delete
@@ -277,7 +277,7 @@ private[chisel3] trait ModuleImpl extends RawModule with ImplicitClock with Impl
     // Top module and compatibility mode use Bool for reset
     // Note that a Definition elaboration will lack a parent, but still not be a Top module
     resetType match {
-      case Module.ResetType.Default => {
+      case Module.ResetType.Default      => {
         val inferReset = (_parent.isDefined || Builder.inDefinition)
         if (inferReset) Reset() else Bool()
       }
@@ -368,8 +368,8 @@ package internal {
       */
     private[chisel3] class ClonePorts(elts: (String, Data)*) extends Record {
       val elements: ListMap[String, Data] = ListMap(elts.map { case (name, d) => name -> d.cloneTypeFull }: _*)
-      def apply(field: String) = elements(field)
-      override def cloneType = (new ClonePorts(elts: _*)).asInstanceOf[this.type]
+      def apply(field: String)            = elements(field)
+      override def cloneType              = (new ClonePorts(elts: _*)).asInstanceOf[this.type]
     }
 
     private[chisel3] def cloneIORecord(
@@ -385,15 +385,15 @@ package internal {
       require(proto.isClosed, "Can't clone a module before module close")
       require(cloneParent.getOptionRef.isEmpty, "Can't have ref set already!")
       // Chisel ports can be Data or Property, but to clone as a Record, we can only return Data.
-      val dataPorts = proto.getChiselPorts.collect { case (name, data: Data) => (name, data) }
+      val dataPorts   = proto.getChiselPorts.collect { case (name, data: Data) => (name, data) }
       // Fake Module to serve as the _parent of the cloned ports
       // We don't create this inside the ModuleClone because we need the ref to be set by the
       // currentModule (and not clonePorts)
-      val clonePorts = proto match {
+      val clonePorts  = proto match {
         // BlackBox needs special handling for its pseduo-io Bundle
         case b: BlackBox =>
           new ClonePorts(dataPorts :+ ("io" -> b._io.get): _*)
-        case _ => new ClonePorts(dataPorts: _*)
+        case _           => new ClonePorts(dataPorts: _*)
       }
       // getChiselPorts (nor cloneTypeFull in general)
       // does not recursively copy the right specifiedDirection,
@@ -418,7 +418,7 @@ package experimental {
   object BaseModule {
     implicit class BaseModuleExtensions[T <: BaseModule](b: T)(implicit si: SourceInfo) {
       import chisel3.experimental.hierarchy.core.{Definition, Instance}
-      def toInstance: Instance[T] = new Instance(Proto(b))
+      def toInstance: Instance[T]     = new Instance(Proto(b))
       def toDefinition: Definition[T] = {
         val result = new Definition(Proto(b))
         // .toDefinition is sometimes called in Select APIs outside of Chisel elaboration
@@ -438,8 +438,8 @@ package experimental {
     _parent.foreach(_.addId(this))
 
     // Set if the returned top-level module of a nested call to the Chisel Builder, see Definition.apply
-    private var _circuitVar:       BaseModule = null // using nullable var for better memory usage
-    private[chisel3] def _circuit: Option[BaseModule] = Option(_circuitVar)
+    private var _circuitVar: BaseModule                               = null // using nullable var for better memory usage
+    private[chisel3] def _circuit: Option[BaseModule]                 = Option(_circuitVar)
     private[chisel3] def _circuit_=(target: Option[BaseModule]): Unit = {
       _circuitVar = target.getOrElse(null)
     }
@@ -463,12 +463,12 @@ package experimental {
 
       filters
         .foldLeft(baseName) { case (str, filter) => filter(str) } // 1. Apply filters to baseName
-        .split("\\.|\\$") // 2. Split string at '.' or '$'
+        .split("\\.|\\$")               // 2. Split string at '.' or '$'
         .filterNot(_.forall(_.isDigit)) // 3. Drop purely numeric names
-        .last // 4. Use the last name
+        .last                           // 4. Use the last name
     }
     // Needed this to override identifier for DefinitionClone
-    private[chisel3] def _definitionIdentifier = {
+    private[chisel3] def _definitionIdentifier        = {
       val madeProposal = chisel3.naming.IdentifierProposer.makeProposal(this._moduleDefinitionIdentifierProposal)
       Builder.globalIdentifierNamespace.name(madeProposal)
     }
@@ -477,13 +477,13 @@ package experimental {
     final val definitionIdentifier = _definitionIdentifier
 
     // Modules that contain bodies should override this.
-    protected def hasBody:        Boolean = false
-    protected val _body:          Block = if (hasBody) new Block(_sourceInfo) else null
+    protected def hasBody: Boolean              = false
+    protected val _body: Block                  = if (hasBody) new Block(_sourceInfo) else null
     private[chisel3] def getBody: Option[Block] = Some(_body)
 
     // Current block at point of creation.
-    private var _blockVar: Block = Builder.currentBlock.getOrElse(null)
-    private[chisel3] def _block: Option[Block] = {
+    private var _blockVar: Block                               = Builder.currentBlock.getOrElse(null)
+    private[chisel3] def _block: Option[Block]                 = {
       Option(_blockVar)
     }
     private[chisel3] def _block_=(target: Option[Block]): Unit = {
@@ -498,7 +498,7 @@ package experimental {
     //
     this match {
       case _: PseudoModule =>
-      case other =>
+      case other           =>
         if (!Builder.readyForModuleConstr) {
           throwException("Error: attempted to instantiate a Module without wrapping it in Module().")
         }
@@ -557,11 +557,11 @@ package experimental {
       ret
     }
 
-    private[chisel3] var toDefinitionCalled:  Option[SourceInfo] = None
+    private[chisel3] var toDefinitionCalled: Option[SourceInfo]  = None
     private[chisel3] var modulePortsAskedFor: Option[SourceInfo] = None
 
     /** Where a Module becomes fully closed (no secret ports drilled afterwards) */
-    private[chisel3] def isFullyClosed = fullyClosedErrorMessages.nonEmpty
+    private[chisel3] def isFullyClosed                                            = fullyClosedErrorMessages.nonEmpty
     private[chisel3] def fullyClosedErrorMessages: Iterable[(SourceInfo, String)] = {
       toDefinitionCalled.map(si =>
         (si, s"Calling .toDefinition fully closes ${name}, but it is later bored through!")
@@ -589,7 +589,7 @@ package experimental {
       case agg: Aggregate  =>
         // Ideally we could just take .last._id, but Records store their elements in reverse order
         getRecursiveFields.lazily(agg, "").map(_._1._id).max
-      case other => other._id
+      case other           => other._id
     }
 
     private[chisel3] def getIds: Iterable[HasId] = {
@@ -651,7 +651,7 @@ package experimental {
               )(UnlocatableSourceInfo)
             }
             port.setRef(ModuleIO(this, _namespace.name(name)))
-          case None =>
+          case None       =>
             Builder.error(
               s"Unable to name port $port in $this, " +
                 s"try making it a public field of the Module ${source.makeMessage()}"
@@ -690,7 +690,7 @@ package experimental {
       // PseudoModules (e.g. Instances) and BlackBoxes have their names set by desiredName.
       case _: PseudoModule => desiredName
       case _: BaseBlackBox => desiredName
-      case _ => this.modulePrefix + desiredName
+      case _               => this.modulePrefix + desiredName
     }
 
     /** Legalized name of this module. */
@@ -705,13 +705,13 @@ package experimental {
         // their original modules names without uniquification
         this match {
           case _: PseudoModule => _proposedName
-          case _ => Builder.globalNamespace.name(_proposedName)
+          case _               => Builder.globalNamespace.name(_proposedName)
         }
       } catch {
         case e: NullPointerException =>
           err("Try adding -Xcheckinit to your scalacOptions to get a more useful stack trace", e)
         case UninitializedFieldError(msg) => err(msg)
-        case t: Throwable => throw t
+        case t: Throwable                 => throw t
       }
     }
 
@@ -726,11 +726,11 @@ package experimental {
       * @note Should not be called until circuit elaboration is complete
       */
     final def toTarget: ModuleTarget = this match {
-      case m: experimental.hierarchy.InstanceClone[_] =>
+      case m: experimental.hierarchy.InstanceClone[_]   =>
         throwException(s"Internal Error! It's not legal to call .toTarget on an InstanceClone. $m")
       case m: experimental.hierarchy.DefinitionClone[_] =>
         throwException(s"Internal Error! It's not legal to call .toTarget on an DefinitionClone. $m")
-      case _ => ModuleTarget(this.circuitName, this.name)
+      case _                                            => ModuleTarget(this.circuitName, this.name)
     }
 
     /** Returns the real target of a Module which may be an [[InstanceTarget]]
@@ -745,14 +745,14 @@ package experimental {
       * the correct [[InstanceTarget]]s whenever using the Definition/Instance API.
       */
     private[chisel3] def getTarget: IsModule = this match {
-      case m: experimental.hierarchy.InstanceClone[_] if m._parent.nonEmpty =>
+      case m: experimental.hierarchy.InstanceClone[_] if m._parent.nonEmpty    =>
         m._parent.get.getTarget.instOf(instanceName, name)
-      case m: experimental.hierarchy.ModuleClone[_] if m._madeFromDefinition =>
+      case m: experimental.hierarchy.ModuleClone[_] if m._madeFromDefinition   =>
         m._parent.get.getTarget.instOf(instanceName, name)
       // Without this, we get the wrong CircuitName for the Definition
       case m: experimental.hierarchy.DefinitionClone[_] if m._circuit.nonEmpty =>
         ModuleTarget(this._circuit.get.circuitName, this.name)
-      case _ => this.toTarget
+      case _                                                                   => this.toTarget
     }
 
     /** Returns a FIRRTL ModuleTarget that references this object
@@ -792,14 +792,14 @@ package experimental {
       else
         (root, _parent) match {
           // If root was defined, and we are not there yet, recurse up.
-          case (_, Some(parent)) => parent.toRelativeTarget(root).instOf(this.instanceName, name)
+          case (_, Some(parent))         => parent.toRelativeTarget(root).instOf(this.instanceName, name)
           // If root was defined, and there is no parent, the root was not an ancestor.
           case (Some(definedRoot), None) =>
             throwException(
               s"Requested .toRelativeTarget relative to ${definedRoot.name}, but it is not an ancestor of $this"
             )
           // If root was not defined, and there is no parent, return this.
-          case (None, None) => getTarget
+          case (None, None)              => getTarget
         }
     }
 
@@ -823,10 +823,10 @@ package experimental {
       // and terminates once the root is just a ModuleTarget
       def recurse(thisRelative: IsModule, rootRelative: IsModule): IsModule = {
         (thisRelative, rootRelative) match {
-          case (t: IsModule, r: ModuleTarget) => {
+          case (t: IsModule, r: ModuleTarget)         => {
             if (t.module == r.module) t else fail()
           }
-          case (t: ModuleTarget, r: InstanceTarget) => fail()
+          case (t: ModuleTarget, r: InstanceTarget)   => fail()
           case (t: InstanceTarget, r: InstanceTarget) => {
             if ((t.module == r.module) && (r.asPath.head == t.asPath.head))
               recurse(t.stripHierarchy(1), r.stripHierarchy(1))
@@ -897,7 +897,7 @@ package experimental {
 
     // Must have separate createSecretIO from addSecretIO to get plugin to name it
     private[chisel3] def addSecretIO[A <: Data](iodef: A)(implicit sourceInfo: SourceInfo): A = {
-      val name = iodef._computeName(None).getOrElse("secret")
+      val name    = iodef._computeName(None).getOrElse("secret")
       iodef.setRef(ModuleIO(this, _namespace.name(name)))
       val newPort = new Port(iodef, iodef.specifiedDirection, sourceInfo)
       if (_closed) {

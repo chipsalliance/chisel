@@ -50,12 +50,12 @@ final class Analog private (private[chisel3] val width: Width) extends Element {
       case x                                                        => throwException(s"Analog may not have explicit direction, got '$x'")
     }
     val targetTopBinding = target match {
-      case target: TopBinding => target
-      case ChildBinding(parent) => parent.topBinding
+      case target: TopBinding           => target
+      case ChildBinding(parent)         => parent.topBinding
       // See https://github.com/freechipsproject/chisel3/pull/946
       case SampleElementBinding(parent) => parent.topBinding
-      case a: MemTypeBinding[_]    => a
-      case a: FirrtlMemTypeBinding => a
+      case a: MemTypeBinding[_]         => a
+      case a: FirrtlMemTypeBinding      => a
     }
 
     targetTopBinding match {

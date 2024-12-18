@@ -457,8 +457,8 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with UIntI
   /** @group SourceInfoTransformMacro */
   def do_xorR(implicit sourceInfo: SourceInfo): Bool = _xorRImpl
 
-  override def do_<(that:  UInt)(implicit sourceInfo: SourceInfo): Bool = _impl_<(that)
-  override def do_>(that:  UInt)(implicit sourceInfo: SourceInfo): Bool = _impl_>(that)
+  override def do_<(that: UInt)(implicit sourceInfo: SourceInfo): Bool  = _impl_<(that)
+  override def do_>(that: UInt)(implicit sourceInfo: SourceInfo): Bool  = _impl_>(that)
   override def do_<=(that: UInt)(implicit sourceInfo: SourceInfo): Bool = _impl_<=(that)
   override def do_>=(that: UInt)(implicit sourceInfo: SourceInfo): Bool = _impl_>=(that)
 
@@ -494,13 +494,13 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with UIntI
   /** @group SourceInfoTransformMacro */
   def do_unary_!(implicit sourceInfo: SourceInfo): Bool = _impl_unary_!
 
-  override def do_<<(that: Int)(implicit sourceInfo:    SourceInfo): UInt = _impl_<<(that)
+  override def do_<<(that: Int)(implicit sourceInfo: SourceInfo): UInt    = _impl_<<(that)
   override def do_<<(that: BigInt)(implicit sourceInfo: SourceInfo): UInt = _impl_<<(that)
-  override def do_<<(that: UInt)(implicit sourceInfo:   SourceInfo): UInt = _impl_<<(that)
+  override def do_<<(that: UInt)(implicit sourceInfo: SourceInfo): UInt   = _impl_<<(that)
 
-  override def do_>>(that: Int)(implicit sourceInfo:    SourceInfo): UInt = _impl_>>(that)
+  override def do_>>(that: Int)(implicit sourceInfo: SourceInfo): UInt    = _impl_>>(that)
   override def do_>>(that: BigInt)(implicit sourceInfo: SourceInfo): UInt = _impl_>>(that)
-  override def do_>>(that: UInt)(implicit sourceInfo:   SourceInfo): UInt = _impl_>>(that)
+  override def do_>>(that: UInt)(implicit sourceInfo: SourceInfo): UInt   = _impl_>>(that)
 
   /**
     * Circular shift to the left
@@ -698,8 +698,8 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with SIntI
   /** @group SourceInfoTransformMacro */
   override def do_unary_~(implicit sourceInfo: SourceInfo): SInt = _impl_unary_~
 
-  override def do_<(that:  SInt)(implicit sourceInfo: SourceInfo): Bool = _impl_<(that)
-  override def do_>(that:  SInt)(implicit sourceInfo: SourceInfo): Bool = _impl_>(that)
+  override def do_<(that: SInt)(implicit sourceInfo: SourceInfo): Bool  = _impl_<(that)
+  override def do_>(that: SInt)(implicit sourceInfo: SourceInfo): Bool  = _impl_>(that)
   override def do_<=(that: SInt)(implicit sourceInfo: SourceInfo): Bool = _impl_<=(that)
   override def do_>=(that: SInt)(implicit sourceInfo: SourceInfo): Bool = _impl_>=(that)
 
@@ -727,13 +727,13 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with SIntI
 
   def do_abs(implicit sourceInfo: SourceInfo): SInt = _absImpl
 
-  override def do_<<(that: Int)(implicit sourceInfo:    SourceInfo): SInt = _impl_<<(that)
+  override def do_<<(that: Int)(implicit sourceInfo: SourceInfo): SInt    = _impl_<<(that)
   override def do_<<(that: BigInt)(implicit sourceInfo: SourceInfo): SInt = _impl_<<(that)
-  override def do_<<(that: UInt)(implicit sourceInfo:   SourceInfo): SInt = _impl_<<(that)
+  override def do_<<(that: UInt)(implicit sourceInfo: SourceInfo): SInt   = _impl_<<(that)
 
-  override def do_>>(that: Int)(implicit sourceInfo:    SourceInfo): SInt = _impl_>>(that)
+  override def do_>>(that: Int)(implicit sourceInfo: SourceInfo): SInt    = _impl_>>(that)
   override def do_>>(that: BigInt)(implicit sourceInfo: SourceInfo): SInt = _impl_>>(that)
-  override def do_>>(that: UInt)(implicit sourceInfo:   SourceInfo): SInt = _impl_>>(that)
+  override def do_>>(that: UInt)(implicit sourceInfo: SourceInfo): SInt   = _impl_>>(that)
 
   override def do_asSInt(implicit sourceInfo: SourceInfo): SInt = _asSIntImpl
 }

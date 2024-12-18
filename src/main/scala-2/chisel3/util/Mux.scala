@@ -37,7 +37,7 @@ object MuxLookup extends MuxLookupImpl with SourceInfoDoc {
 
   /** @group SourceInfoTransformMacro */
   def do_applyEnum[S <: EnumType, T <: Data](
-    key:     S,
+    key: S,
     default: T,
     mapping: Seq[(S, T)]
   )(

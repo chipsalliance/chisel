@@ -12,7 +12,7 @@ import VendingMachineUtils._
 class VendingMachineIO(val legalCoins: Seq[Coin]) extends Bundle {
   require(legalCoins.size >= 1, "The vending machine must accept at least 1 coin!")
   // Order of coins by value
-  val coins: Seq[Coin] = legalCoins.sortBy(_.value)
+  val coins: Seq[Coin]           = legalCoins.sortBy(_.value)
   // Map of coin names to their relative position in value (ie. index in inputs)
   val indexMap: Map[String, Int] = coins.map(_.name).zipWithIndex.toMap
 
@@ -21,7 +21,7 @@ class VendingMachineIO(val legalCoins: Seq[Coin]) extends Bundle {
     "All coins must be a multiple of the lowest value coin!"
   )
 
-  val inputs = Input(Vec(legalCoins.size, Bool()))
+  val inputs   = Input(Vec(legalCoins.size, Bool()))
   val dispense = Output(Bool())
 
   def apply(coin: String): Unit = {
@@ -43,20 +43,18 @@ abstract class ParameterizedVendingMachine(legalCoins: Seq[Coin], val sodaCost: 
   }
 }
 
-class VendingMachineGenerator(
-  legalCoins: Seq[Coin],
-  sodaCost:   Int)
+class VendingMachineGenerator(legalCoins: Seq[Coin], sodaCost: Int)
     extends ParameterizedVendingMachine(legalCoins, sodaCost) {
   require(sodaCost > 0, "Sodas must actually cost something!")
 
   // All coin values are normalized to a multiple of the minimum coin value
-  val minCoin = io.coins.head.value
-  val maxCoin = io.coins.last.value
+  val minCoin  = io.coins.head.value
+  val maxCoin  = io.coins.last.value
   val maxValue = (sodaCost + maxCoin - minCoin) / minCoin // normalize to minimum value
 
-  val width = log2Ceil(maxValue + 1).W
-  val value = RegInit(0.asUInt(width))
-  val incValue = WireDefault(0.asUInt(width))
+  val width      = log2Ceil(maxValue + 1).W
+  val value      = RegInit(0.asUInt(width))
+  val incValue   = WireDefault(0.asUInt(width))
   val doDispense = value >= (sodaCost / minCoin).U
 
   when(doDispense) {
@@ -71,23 +69,20 @@ class VendingMachineGenerator(
   io.dispense := doDispense
 }
 
-class ParameterizedVendingMachineTester(
-  mod:        => ParameterizedVendingMachine,
-  testLength: Int)
-    extends BasicTester {
+class ParameterizedVendingMachineTester(mod: => ParameterizedVendingMachine, testLength: Int) extends BasicTester {
   require(testLength > 0, "Test length must be positive!")
 
   // Construct the module
-  val dut = Module(mod)
+  val dut   = Module(mod)
   val coins = dut.io.coins
 
   // Inputs and expected results
   // Do random testing
-  private val _rand = scala.util.Random
-  val inputs:   Seq[Option[Coin]] = Seq.fill(testLength)(coins.lift(_rand.nextInt(coins.size + 1)))
-  val expected: Seq[Boolean] = getExpectedResults(inputs, dut.sodaCost)
+  private val _rand             = scala.util.Random
+  val inputs: Seq[Option[Coin]] = Seq.fill(testLength)(coins.lift(_rand.nextInt(coins.size + 1)))
+  val expected: Seq[Boolean]    = getExpectedResults(inputs, dut.sodaCost)
 
-  val inputVec: Vec[UInt] = VecInit(inputs.map {
+  val inputVec: Vec[UInt]    = VecInit(inputs.map {
     case Some(coin) => (1 << dut.io.indexMap(coin.name)).asUInt(coins.size.W)
     case None       => 0.asUInt(coins.size.W)
   })

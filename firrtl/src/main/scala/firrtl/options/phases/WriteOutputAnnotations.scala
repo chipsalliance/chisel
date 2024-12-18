@@ -42,22 +42,22 @@ class WriteOutputAnnotations extends Phase {
 
   /** Write the input [[AnnotationSeq]] to a fie. */
   def transform(annotations: AnnotationSeq): AnnotationSeq = {
-    val sopts = Viewer[StageOptions].view(annotations)
-    val filesToWrite = mutable.HashMap.empty[String, Annotation]
+    val sopts                                                      = Viewer[StageOptions].view(annotations)
+    val filesToWrite                                               = mutable.HashMap.empty[String, Annotation]
     // Grab the circuit annotation so we can write serializable annotations to it
     // We also must calculate the filename because the annotation will be deleted before calling
     // writeToFile
     var circuitAnnoOpt: Option[(File, WriteableCircuitAnnotation)] = None
-    val serializable = annotations.flatMap { anno =>
+    val serializable                                               = annotations.flatMap { anno =>
       // Check for file clobbering
       anno match {
-        case _: Unserializable =>
+        case _: Unserializable     =>
         case a: CustomFileEmission =>
-          val filename = a.filename(annotations)
+          val filename  = a.filename(annotations)
           val canonical = filename.getCanonicalPath()
 
           filesToWrite.get(canonical) match {
-            case None =>
+            case None        =>
             case Some(first) =>
               val msg =
                 s"""|Multiple CustomFileEmission annotations would be serialized to the same file, '$canonical'
@@ -71,16 +71,16 @@ class WriteOutputAnnotations extends Phase {
               throw new PhaseException(msg)
           }
           filesToWrite(canonical) = a
-        case _ =>
+        case _                     =>
       }
       // Write files with CustomFileEmission and filter out Unserializable ones
       anno match {
-        case _:   Unserializable => None
+        case _: Unserializable               => None
         case wca: WriteableCircuitAnnotation =>
           val filename = wca.filename(annotations)
           if (circuitAnnoOpt.nonEmpty) {
             val Some((firstFN, firstWCA)) = circuitAnnoOpt
-            val msg =
+            val msg                       =
               s"""|Multiple circuit annotations found--only 1 is supported
                   | - first circuit:
                   |     filename: $firstFN
@@ -94,8 +94,8 @@ class WriteOutputAnnotations extends Phase {
           }
           circuitAnnoOpt = Some(filename -> wca)
           None
-        case a: CustomFileEmission =>
-          val filename = a.filename(annotations)
+        case a: CustomFileEmission           =>
+          val filename  = a.filename(annotations)
           val canonical = filename.getCanonicalPath()
 
           val w = new BufferedOutputStream(new FileOutputStream(filename))
@@ -105,15 +105,15 @@ class WriteOutputAnnotations extends Phase {
               val it = buf.getBytesBuffered
               it.foreach(bytearr => w.write(bytearr))
             // Regular emission
-            case _ =>
+            case _                               =>
               a.getBytes match {
                 case arr: mutable.ArraySeq[Byte] => w.write(arr.array.asInstanceOf[Array[Byte]])
-                case other => other.foreach(w.write(_))
+                case other                       => other.foreach(w.write(_))
               }
           }
           w.close()
           a.replacements(filename)
-        case a => Some(a)
+        case a                               => Some(a)
       }
     }
 
@@ -121,10 +121,10 @@ class WriteOutputAnnotations extends Phase {
     circuitAnnoOpt match {
       case Some((file, circuitAnno)) =>
         circuitAnno.writeToFile(file, serializable)
-      case None =>
+      case None                      =>
         // Otherwise, write to the old .anno.json
         sopts.annotationFileOut match {
-          case None =>
+          case None       =>
           case Some(file) =>
             val pw = new PrintWriter(sopts.getBuildFileName(file, Some(".anno.json")))
             JsonProtocol.serializeTry(serializable, pw).get // .get to throw any exceptions

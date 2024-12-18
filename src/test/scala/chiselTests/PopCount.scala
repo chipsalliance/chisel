@@ -11,7 +11,7 @@ class PopCountTester(n: Int) extends BasicTester {
   x := x + 1.U
   when(RegNext(x === ~0.U(n.W))) { stop() }
 
-  val result = PopCount(x.asBools)
+  val result   = PopCount(x.asBools)
   val expected = x.asBools.foldLeft(0.U)(_ +& _)
   assert(result === expected)
 

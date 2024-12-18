@@ -13,7 +13,7 @@ import org.scalatest.matchers.should.Matchers
 class InvalidateAPISpec extends ChiselPropSpec with Matchers with Utils {
 
   def myGenerateFirrtl(t: => Module): String = ChiselStage.emitCHIRRTL(t)
-  def compileFirrtl(t: => Module): Unit = {
+  def compileFirrtl(t: => Module): Unit      = {
     val testDir = createTestDirectory(this.getClass.getSimpleName)
 
     (new ChiselStage).execute(
@@ -22,7 +22,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with Utils {
     )
   }
   class TrivialInterface extends Bundle {
-    val in = Input(Bool())
+    val in  = Input(Bool())
     val out = Output(Bool())
   }
 
@@ -109,7 +109,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with Utils {
 
   property("FIRRTL should complain about partial initialization with conditional connect") {
     class ModuleWithIncompleteAssignment extends Module {
-      val io = IO(new Bundle {
+      val io      = IO(new Bundle {
         val out = Output(Bool())
       })
       val counter = Counter(8)
@@ -127,7 +127,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with Utils {
     "FIRRTL should not complain about partial initialization with conditional connect after unconditional connect"
   ) {
     class ModuleWithUnconditionalAssignment extends Module {
-      val io = IO(new Bundle {
+      val io      = IO(new Bundle {
         val out = Output(Bool())
       })
       val counter = Counter(8)
@@ -143,7 +143,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with Utils {
     "FIRRTL should not complain about partial initialization with conditional connect with otherwise clause"
   ) {
     class ModuleWithConditionalAndOtherwiseAssignment extends Module {
-      val io = IO(new Bundle {
+      val io      = IO(new Bundle {
         val out = Output(Bool())
       })
       val counter = Counter(8)

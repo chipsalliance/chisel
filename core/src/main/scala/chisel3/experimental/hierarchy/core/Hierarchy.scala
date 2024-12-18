@@ -18,7 +18,7 @@ import scala.annotation.implicitNotFound
 sealed trait Hierarchy[+A] {
   private[chisel3] def underlying: Underlying[A]
   private[chisel3] def proto: A = underlying match {
-    case Proto(value) => value
+    case Proto(value)         => value
     case Clone(i: IsClone[A]) => i.getProto
   }
 
@@ -38,14 +38,14 @@ sealed trait Hierarchy[+A] {
   def isA[B: TypeTag]: Boolean = {
     val tptag = implicitly[TypeTag[B]]
     // drop any type information for the comparison, because the proto will not have that information.
-    val name = tptag.tpe.toString.takeWhile(_ != '[')
+    val name  = tptag.tpe.toString.takeWhile(_ != '[')
     inBaseClasses(name)
   }
 
   // This code handles a special-case where, within an mdoc context, the type returned from
   //  scala reflection (typetag) looks different than when returned from java reflection.
   //  This function detects this case and reshapes the string to match.
-  private def modifyReplString(clz: String): String = {
+  private def modifyReplString(clz: String): String             = {
     if (clz != null) {
       clz.split('.').toList match {
         case "repl" :: "MdocSession" :: app :: rest => s"$app.this." + rest.mkString(".")
@@ -53,7 +53,7 @@ sealed trait Hierarchy[+A] {
       }
     } else clz
   }
-  private lazy val superClasses = calculateSuperClasses(proto.getClass())
+  private lazy val superClasses                                 = calculateSuperClasses(proto.getClass())
   private def calculateSuperClasses(clz: Class[_]): Set[String] = {
     if (clz != null) {
       Set(modifyReplString(clz.getCanonicalName())) ++
@@ -63,7 +63,7 @@ sealed trait Hierarchy[+A] {
       Set.empty[String]
     }
   }
-  private def inBaseClasses(clz: String): Boolean = superClasses.contains(clz)
+  private def inBaseClasses(clz: String): Boolean               = superClasses.contains(clz)
 
   /** Used by Chisel's internal macros. DO NOT USE in your normal Chisel code!!!
     * Instead, mark the field you are accessing with [[public]]
@@ -83,7 +83,7 @@ sealed trait Hierarchy[+A] {
     that: A => B
   )(
     implicit lookup: Lookupable[B],
-    macroGenerated:  chisel3.internal.MacroGenerated
+    macroGenerated: chisel3.internal.MacroGenerated
   ): lookup.C
 
   /** @return Return the underlying Definition[A] of this Hierarchy[A] */
@@ -105,7 +105,7 @@ object Hierarchy {
     def toTarget: IsModule = i match {
       case d: Definition[T] => new Definition.DefinitionBaseModuleExtensions(d).toTarget
       case i: Instance[T]   => new Instance.InstanceBaseModuleExtensions(i).toTarget
-      case _ => throw new InternalErrorException(s"Match error: toTarget i=$i")
+      case _                => throw new InternalErrorException(s"Match error: toTarget i=$i")
     }
 
     /** Returns the toAbsoluteTarget of this hierarchy
@@ -114,7 +114,7 @@ object Hierarchy {
     def toAbsoluteTarget: IsModule = i match {
       case d: Definition[T] => new Definition.DefinitionBaseModuleExtensions(d).toAbsoluteTarget
       case i: Instance[T]   => new Instance.InstanceBaseModuleExtensions(i).toAbsoluteTarget
-      case _ => throw new InternalErrorException(s"Match error: toAbsoluteTarget i=$i")
+      case _                => throw new InternalErrorException(s"Match error: toAbsoluteTarget i=$i")
     }
 
     /** Returns the toRelativeTarget of this hierarchy
@@ -123,7 +123,7 @@ object Hierarchy {
     def toRelativeTarget(root: Option[BaseModule]): IsModule = i match {
       case d: Definition[T] => new Definition.DefinitionBaseModuleExtensions(d).toRelativeTarget(root)
       case i: Instance[T]   => new Instance.InstanceBaseModuleExtensions(i).toRelativeTarget(root)
-      case _ => throw new InternalErrorException(s"Match error: toAbsoluteTarget i=$i")
+      case _                => throw new InternalErrorException(s"Match error: toAbsoluteTarget i=$i")
     }
 
     /** Returns the toRelativeTarget of this hierarchy
@@ -132,7 +132,7 @@ object Hierarchy {
     def toRelativeTargetToHierarchy(root: Option[Hierarchy[BaseModule]]): IsModule = i match {
       case d: Definition[T] => new Definition.DefinitionBaseModuleExtensions(d).toRelativeTargetToHierarchy(root)
       case i: Instance[T]   => new Instance.InstanceBaseModuleExtensions(i).toRelativeTargetToHierarchy(root)
-      case _ => throw new InternalErrorException(s"Match error: toAbsoluteTarget i=$i")
+      case _                => throw new InternalErrorException(s"Match error: toAbsoluteTarget i=$i")
     }
 
   }

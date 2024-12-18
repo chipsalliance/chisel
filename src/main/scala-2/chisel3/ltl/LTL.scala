@@ -40,10 +40,10 @@ private case class DelayAtom(val min: Int, val max: Option[Int]) extends Sequenc
   * in `Sequence(...)`. See `SequenceAtom` for details.
   */
 object Delay {
-  def apply(): SequenceAtom = DelayAtom(1, Some(1))
-  def apply(delay: Int): SequenceAtom = DelayAtom(delay, Some(delay))
-  def apply(min:   Int, max: Int): SequenceAtom = DelayAtom(min, Some(max))
-  def apply(min:   Int, max: Option[Int]): SequenceAtom = DelayAtom(min, max)
+  def apply(): SequenceAtom                           = DelayAtom(1, Some(1))
+  def apply(delay: Int): SequenceAtom                 = DelayAtom(delay, Some(delay))
+  def apply(min: Int, max: Int): SequenceAtom         = DelayAtom(min, Some(max))
+  def apply(min: Int, max: Option[Int]): SequenceAtom = DelayAtom(min, max)
 }
 
 /** A Linear Temporal Logic (LTL) sequence. */
@@ -269,8 +269,8 @@ object Sequence {
     atoms.head match {
       case seq: Sequence if atoms.tail.nonEmpty => seq.concat(Sequence(atoms.tail: _*))
       case seq: Sequence                        => seq
-      case DelayAtom(min, None)      => needDelayTail.delayAtLeast(min)
-      case DelayAtom(min, Some(max)) => needDelayTail.delayRange(min, max)
+      case DelayAtom(min, None)                 => needDelayTail.delayAtLeast(min)
+      case DelayAtom(min, Some(max))            => needDelayTail.delayRange(min, max)
     }
   }
 }
@@ -408,14 +408,14 @@ sealed abstract class AssertPropertyLike(defaultLayer: Layer) {
     *   emitted as `label: assert(...)`.
     */
   def apply(
-    prop:    => Property,
-    clock:   Option[Clock] = Module.clockOption,
+    prop: => Property,
+    clock: Option[Clock] = Module.clockOption,
     disable: Option[Disable] = Module.disableOption,
-    label:   Option[String] = None
+    label: Option[String] = None
   )(
     implicit sourceInfo: SourceInfo
   ): Unit = block(defaultLayer, skipIfAlreadyInBlock = true, skipIfLayersEnabled = true) {
-    val _prop = prop // evaluate prop expression once
+    val _prop   = prop // evaluate prop expression once
     val clocked = clock.fold(_prop)(_prop.clock(_))
     createIntrinsic(label)(sourceInfo)(clocked.inner, disable.map(!_.value))
   }
@@ -442,7 +442,7 @@ sealed abstract class AssertPropertyLike(defaultLayer: Layer) {
     * and disabled in the case where the design has not yet been reset.
     */
   def apply(
-    cond:  Bool,
+    cond: Bool,
     label: String
   )(
     implicit sourceInfo: SourceInfo
@@ -465,10 +465,10 @@ sealed abstract class AssertPropertyLike(defaultLayer: Layer) {
     * and disabled in the case where the design has not yet been reset.
     */
   def apply(
-    cond:    Bool,
-    clock:   Clock,
+    cond: Bool,
+    clock: Clock,
     disable: Disable,
-    label:   String
+    label: String
   )(
     implicit sourceInfo: SourceInfo
   ): Unit = {

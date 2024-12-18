@@ -38,7 +38,7 @@ trait Utils {
     */
   def grabStdOutErr[T](thunk: => T): (String, String, T) = {
     val stdout, stderr = new ByteArrayOutputStream()
-    val ret = scala.Console.withOut(stdout) { scala.Console.withErr(stderr) { thunk } }
+    val ret            = scala.Console.withOut(stdout) { scala.Console.withErr(stderr) { thunk } }
     (stdout.toString, stderr.toString, ret)
   }
 

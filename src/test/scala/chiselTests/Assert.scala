@@ -27,8 +27,8 @@ class SucceedingAssertTester() extends BasicTester {
 
 class PipelinedResetModule extends Module {
   val io = IO(new Bundle {})
-  val a = RegInit(0xbeef.U)
-  val b = RegInit(0xbeef.U)
+  val a  = RegInit(0xbeef.U)
+  val b  = RegInit(0xbeef.U)
   assert(a === b)
 }
 
@@ -74,7 +74,7 @@ class PrintableBadUnescapedPercentAssertTester extends BasicTester {
 }
 
 class PrintableAssumeTester extends Module {
-  val in = IO(Input(UInt(8.W)))
+  val in  = IO(Input(UInt(8.W)))
   val out = IO(Output(UInt(8.W)))
 
   val w = Wire(UInt(8.W))
@@ -85,7 +85,7 @@ class PrintableAssumeTester extends Module {
 }
 
 class PrintableScopeTester extends Module {
-  val in = IO(Input(UInt(8.W)))
+  val in  = IO(Input(UInt(8.W)))
   val out = IO(Output(UInt(8.W)))
   out := in
 
@@ -129,7 +129,7 @@ class AssumePrintablePortScope extends BasicTester {
 }
 
 class PrintableWhenScopeTester extends Module {
-  val in = IO(Input(UInt(8.W)))
+  val in  = IO(Input(UInt(8.W)))
   val out = IO(Output(UInt(8.W)))
 
   out := in

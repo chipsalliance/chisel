@@ -10,6 +10,6 @@ import firrtl.annotations._
   * DCE treats the component as a top-level sink of the circuit
   */
 case class DontTouchAnnotation(target: ReferenceTarget) extends SingleTargetAnnotation[ReferenceTarget] {
-  def targets = Seq(target)
+  def targets                       = Seq(target)
   def duplicate(n: ReferenceTarget) = this.copy(n)
 }

@@ -29,7 +29,7 @@ class ClockDividerTest extends BasicTester {
 
 class MultiClockSubModuleTest extends BasicTester {
   class SubModule extends Module {
-    val io = IO(new Bundle {
+    val io         = IO(new Bundle {
       val out = Output(UInt())
     })
     val (cycle, _) = Counter(true.B, 10)
@@ -37,7 +37,7 @@ class MultiClockSubModuleTest extends BasicTester {
   }
 
   val (cycle, done) = Counter(true.B, 10)
-  val cDiv = RegInit(true.B) // start with falling edge to simplify clock relationship assert
+  val cDiv          = RegInit(true.B) // start with falling edge to simplify clock relationship assert
   cDiv := !cDiv
 
   val otherClock = cDiv.asClock
@@ -55,7 +55,7 @@ class MultiClockSubModuleTest extends BasicTester {
 /** Test withReset changing the reset of a Reg */
 class WithResetTest extends BasicTester {
   val reset2 = WireDefault(false.B)
-  val reg = withReset(reset2 || reset.asBool) { RegInit(0.U(8.W)) }
+  val reg    = withReset(reset2 || reset.asBool) { RegInit(0.U(8.W)) }
   reg := reg + 1.U
 
   val (cycle, done) = Counter(true.B, 10)
@@ -132,16 +132,16 @@ class MultiClockSpec extends ChiselFlatSpec with Utils {
   "Differing clocks at memory and port instantiation" should "warn" in {
     class modMemDifferingClock extends Module {
       val myClock = IO(Input(Clock()))
-      val mem = withClock(myClock) { Mem(4, UInt(8.W)) }
-      val port0 = mem(0.U)
+      val mem     = withClock(myClock) { Mem(4, UInt(8.W)) }
+      val port0   = mem(0.U)
     }
     val (logMemDifferingClock, _) = grabLog(ChiselStage.emitCHIRRTL(new modMemDifferingClock))
     logMemDifferingClock should include("memory is different")
 
     class modSyncReadMemDifferingClock extends Module {
       val myClock = IO(Input(Clock()))
-      val mem = withClock(myClock) { SyncReadMem(4, UInt(8.W)) }
-      val port0 = mem(0.U)
+      val mem     = withClock(myClock) { SyncReadMem(4, UInt(8.W)) }
+      val port0   = mem(0.U)
     }
     val (logSyncReadMemDifferingClock, _) = grabLog(ChiselStage.emitCHIRRTL(new modSyncReadMemDifferingClock))
     logSyncReadMemDifferingClock should include("memory is different")
@@ -150,7 +150,7 @@ class MultiClockSpec extends ChiselFlatSpec with Utils {
   "Differing clocks at memory and write accessor instantiation" should "warn" in {
     class modMemWriteDifferingClock extends Module {
       val myClock = IO(Input(Clock()))
-      val mem = withClock(myClock) { Mem(4, UInt(8.W)) }
+      val mem     = withClock(myClock) { Mem(4, UInt(8.W)) }
       mem(1.U) := 1.U
     }
     val (logMemWriteDifferingClock, _) = grabLog(ChiselStage.emitCHIRRTL(new modMemWriteDifferingClock))
@@ -158,7 +158,7 @@ class MultiClockSpec extends ChiselFlatSpec with Utils {
 
     class modSyncReadMemWriteDifferingClock extends Module {
       val myClock = IO(Input(Clock()))
-      val mem = withClock(myClock) { SyncReadMem(4, UInt(8.W)) }
+      val mem     = withClock(myClock) { SyncReadMem(4, UInt(8.W)) }
       mem.write(1.U, 1.U)
     }
     val (logSyncReadMemWriteDifferingClock, _) = grabLog(ChiselStage.emitCHIRRTL(new modSyncReadMemWriteDifferingClock))
@@ -168,7 +168,7 @@ class MultiClockSpec extends ChiselFlatSpec with Utils {
   "Differing clocks at memory and read accessor instantiation" should "warn" in {
     class modSyncReadMemReadDifferingClock extends Module {
       val myClock = IO(Input(Clock()))
-      val mem = withClock(myClock) { SyncReadMem(4, UInt(8.W)) }
+      val mem     = withClock(myClock) { SyncReadMem(4, UInt(8.W)) }
       val readVal = mem.read(0.U)
     }
     val (logSyncReadMemReadDifferingClock, _) = grabLog(ChiselStage.emitCHIRRTL(new modSyncReadMemReadDifferingClock))
@@ -178,16 +178,16 @@ class MultiClockSpec extends ChiselFlatSpec with Utils {
   "Passing clock parameter to memory port instantiation" should "not warn" in {
     class modMemPortClock extends Module {
       val myClock = IO(Input(Clock()))
-      val mem = Mem(4, UInt(8.W))
-      val port0 = mem(0.U, myClock)
+      val mem     = Mem(4, UInt(8.W))
+      val port0   = mem(0.U, myClock)
     }
     val (logMemPortClock, _) = grabLog(ChiselStage.emitCHIRRTL(new modMemPortClock))
     (logMemPortClock should not).include("memory is different")
 
     class modSyncReadMemPortClock extends Module {
       val myClock = IO(Input(Clock()))
-      val mem = SyncReadMem(4, UInt(8.W))
-      val port0 = mem(0.U, myClock)
+      val mem     = SyncReadMem(4, UInt(8.W))
+      val port0   = mem(0.U, myClock)
     }
     val (logSyncReadMemPortClock, _) = grabLog(ChiselStage.emitCHIRRTL(new modSyncReadMemPortClock))
     (logSyncReadMemPortClock should not).include("memory is different")
@@ -196,7 +196,7 @@ class MultiClockSpec extends ChiselFlatSpec with Utils {
   "Passing clock parameter to memory write accessor" should "not warn" in {
     class modMemWriteClock extends Module {
       val myClock = IO(Input(Clock()))
-      val mem = Mem(4, UInt(8.W))
+      val mem     = Mem(4, UInt(8.W))
       mem.write(0.U, 0.U, myClock)
     }
     val (logMemWriteClock, _) = grabLog(ChiselStage.emitCHIRRTL(new modMemWriteClock))
@@ -204,7 +204,7 @@ class MultiClockSpec extends ChiselFlatSpec with Utils {
 
     class modSyncReadMemWriteClock extends Module {
       val myClock = IO(Input(Clock()))
-      val mem = SyncReadMem(4, UInt(8.W))
+      val mem     = SyncReadMem(4, UInt(8.W))
       mem.write(0.U, 0.U, myClock)
     }
     val (logSyncReadMemWriteClock, _) = grabLog(ChiselStage.emitCHIRRTL(new modSyncReadMemWriteClock))
@@ -214,7 +214,7 @@ class MultiClockSpec extends ChiselFlatSpec with Utils {
   "Passing clock parameter to memory read accessor" should "not warn" in {
     class modMemReadClock extends Module {
       val myClock = IO(Input(Clock()))
-      val mem = Mem(4, UInt(8.W))
+      val mem     = Mem(4, UInt(8.W))
       val readVal = mem.read(0.U, myClock)
     }
     val (logMemReadClock, _) = grabLog(ChiselStage.emitCHIRRTL(new modMemReadClock))
@@ -222,7 +222,7 @@ class MultiClockSpec extends ChiselFlatSpec with Utils {
 
     class modSyncReadMemReadClock extends Module {
       val myClock = IO(Input(Clock()))
-      val mem = SyncReadMem(4, UInt(8.W))
+      val mem     = SyncReadMem(4, UInt(8.W))
       val readVal = mem.read(0.U, myClock)
     }
     val (logSyncReadMemReadClock, _) = grabLog(ChiselStage.emitCHIRRTL(new modSyncReadMemReadClock))

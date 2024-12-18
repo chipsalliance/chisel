@@ -44,11 +44,11 @@ private[chisel3] object MonoConnect {
 
   // These are all the possible exceptions that can be thrown.
   // These are from element-level connection
-  def UnreadableSourceException(sink: Data, source: Data) =
+  def UnreadableSourceException(sink: Data, source: Data)                   =
     MonoConnectException(
       s"""${formatName(source)} cannot be read from module ${sink.parentNameOpt.getOrElse("(unknown)")}."""
     )
-  def UnwritableSinkException(sink: Data, source: Data) =
+  def UnwritableSinkException(sink: Data, source: Data)                     =
     MonoConnectException(
       s"""${formatName(sink)} cannot be written from module ${source.parentNameOpt.getOrElse("(unknown)")}."""
     )
@@ -56,34 +56,34 @@ private[chisel3] object MonoConnect {
     MonoConnectException(
       s"Source ${formatName(source)} has escaped the scope of the block (${blockInfo.makeMessage()}) in which it was constructed."
     )
-  def SinkEscapedBlockScopeException(sink: Data, blockInfo: SourceInfo) =
+  def SinkEscapedBlockScopeException(sink: Data, blockInfo: SourceInfo)     =
     MonoConnectException(
       s"Sink ${formatName(sink)} has escaped the scope of the block (${blockInfo.makeMessage()}) in which it was constructed."
     )
-  def UnknownRelationException =
+  def UnknownRelationException                                              =
     MonoConnectException("Sink or source unavailable to current module.")
   // These are when recursing down aggregate types
-  def MismatchedVecException =
+  def MismatchedVecException                                                =
     MonoConnectException("Sink and Source are different length Vecs.")
-  def MissingFieldException(field: String) =
+  def MissingFieldException(field: String)                                  =
     MonoConnectException(s"Source Record missing field ($field).")
-  def MismatchedException(sink: Data, source: Data) =
+  def MismatchedException(sink: Data, source: Data)                         =
     MonoConnectException(
       s"Sink (${sink.cloneType.toString}) and Source (${source.cloneType.toString}) have different types."
     )
-  def DontCareCantBeSink =
+  def DontCareCantBeSink                                                    =
     MonoConnectException("DontCare cannot be a connection sink")
-  def AnalogCantBeMonoSink(sink: Data) =
+  def AnalogCantBeMonoSink(sink: Data)                                      =
     MonoConnectException(s"Sink ${formatName(sink)} of type Analog cannot participate in a mono connection (:=)")
-  def AnalogCantBeMonoSource(source: Data) =
+  def AnalogCantBeMonoSource(source: Data)                                  =
     MonoConnectException(s"Source ${formatName(source)} of type Analog cannot participate in a mono connection (:=)")
-  def AnalogMonoConnectionException(source: Data, sink: Data) =
+  def AnalogMonoConnectionException(source: Data, sink: Data)               =
     MonoConnectException(
       s"Source ${formatName(source)} and sink ${formatName(sink)} of type Analog cannot participate in a mono connection (:=)"
     )
-  def SourceProbeMonoConnectionException(source: Data) =
+  def SourceProbeMonoConnectionException(source: Data)                      =
     MonoConnectException(s"Source ${formatName(source)} of Probed type cannot participate in a mono connection (:=)")
-  def SinkProbeMonoConnectionException(sink: Data) =
+  def SinkProbeMonoConnectionException(sink: Data)                          =
     MonoConnectException(s"Sink ${formatName(sink)} of Probed type cannot participate in a mono connection (:=)")
 
   /** Check if the argument is visible from current block scope
@@ -101,7 +101,7 @@ private[chisel3] object MonoConnect {
       case mp: MemoryPortBinding =>
         None // TODO (albert-magyar): remove this "bridge" for odd enable logic of current CHIRRTL memories
       case bb: BlockBinding => bb.parentBlock.collect { case b: Block if !visible(b) => b.sourceInfo }
-      case _ => None
+      case _                => None
     }
   }
 
@@ -117,9 +117,9 @@ private[chisel3] object MonoConnect {
     * This gives the user a 'path' to where in the connections things went wrong.
     */
   def connect(
-    sourceInfo:  SourceInfo,
-    sink:        Data,
-    source:      Data,
+    sourceInfo: SourceInfo,
+    sink: Data,
+    source: Data,
     context_mod: BaseModule
   ): Unit = {
     (sink, source) match {
@@ -131,40 +131,40 @@ private[chisel3] object MonoConnect {
       // A probe-y thing cannot be connected to a different probe-y thing.
       case (_, source_e: Data) if DataMirror.hasProbeTypeModifier(source_e) =>
         throw SourceProbeMonoConnectionException(source_e)
-      case (sink_e: Data, _) if DataMirror.hasProbeTypeModifier(sink_e) =>
+      case (sink_e: Data, _) if DataMirror.hasProbeTypeModifier(sink_e)     =>
         throw SinkProbeMonoConnectionException(sink_e)
 
       // Handle legal element cases, note (Bool, Bool) is caught by the first two, as Bool is a UInt
-      case (sink_e: Bool, source_e: UInt) =>
+      case (sink_e: Bool, source_e: UInt)                                            =>
         elemConnect(sourceInfo, sink_e, source_e, context_mod)
-      case (sink_e: UInt, source_e: Bool) =>
+      case (sink_e: UInt, source_e: Bool)                                            =>
         elemConnect(sourceInfo, sink_e, source_e, context_mod)
-      case (sink_e: UInt, source_e: UInt) =>
+      case (sink_e: UInt, source_e: UInt)                                            =>
         elemConnect(sourceInfo, sink_e, source_e, context_mod)
-      case (sink_e: SInt, source_e: SInt) =>
+      case (sink_e: SInt, source_e: SInt)                                            =>
         elemConnect(sourceInfo, sink_e, source_e, context_mod)
-      case (sink_e: Clock, source_e: Clock) =>
+      case (sink_e: Clock, source_e: Clock)                                          =>
         elemConnect(sourceInfo, sink_e, source_e, context_mod)
-      case (sink_e: AsyncReset, source_e: AsyncReset) =>
+      case (sink_e: AsyncReset, source_e: AsyncReset)                                =>
         elemConnect(sourceInfo, sink_e, source_e, context_mod)
-      case (sink_e: ResetType, source_e: Reset) =>
+      case (sink_e: ResetType, source_e: Reset)                                      =>
         elemConnect(sourceInfo, sink_e, source_e, context_mod)
-      case (sink_e: Reset, source_e: ResetType) =>
+      case (sink_e: Reset, source_e: ResetType)                                      =>
         elemConnect(sourceInfo, sink_e, source_e, context_mod)
-      case (sink_e: EnumType, source_e: UnsafeEnum) =>
+      case (sink_e: EnumType, source_e: UnsafeEnum)                                  =>
         elemConnect(sourceInfo, sink_e, source_e, context_mod)
       case (sink_e: EnumType, source_e: EnumType) if sink_e.typeEquivalent(source_e) =>
         elemConnect(sourceInfo, sink_e, source_e, context_mod)
-      case (sink_e: UnsafeEnum, source_e: UInt) =>
+      case (sink_e: UnsafeEnum, source_e: UInt)                                      =>
         elemConnect(sourceInfo, sink_e, source_e, context_mod)
-      case (sink_p: Property[_], source_p: Property[_]) =>
+      case (sink_p: Property[_], source_p: Property[_])                              =>
         propConnect(sourceInfo, sink_p, source_p, context_mod)
 
       // Handle Vec case
       case (sink_v: Vec[Data @unchecked], source_v: Vec[Data @unchecked]) =>
         if (sink_v.length != source_v.length) { throw MismatchedVecException }
 
-        val sinkReified: Option[Vec[Data @unchecked]] =
+        val sinkReified: Option[Vec[Data @unchecked]]   =
           if (isView(sink_v)) reifyIdentityView(sink_v).map(reportIfReadOnly(_)(sourceInfo)) else Some(sink_v)
         val sourceReified: Option[Vec[Data @unchecked]] =
           if (isView(source_v)) reifyIdentityView(source_v).map(_._1) else Some(source_v)
@@ -188,7 +188,7 @@ private[chisel3] object MonoConnect {
           }
         }
       // Handle Vec connected to DontCare. Apply the DontCare to individual elements.
-      case (sink_v: Vec[Data @unchecked], DontCare) =>
+      case (sink_v: Vec[Data @unchecked], DontCare)                       =>
         for (idx <- 0 until sink_v.length) {
           try {
             connect(sourceInfo, sink_v(idx), source, context_mod)
@@ -199,7 +199,7 @@ private[chisel3] object MonoConnect {
 
       // Handle Record case
       case (sink_r: Record, source_r: Record) =>
-        val sinkReified: Option[Record] =
+        val sinkReified: Option[Record]   =
           if (isView(sink_r)) reifyIdentityView(sink_r).map(reportIfReadOnly(_)(sourceInfo)) else Some(sink_r)
         val sourceReified: Option[Record] =
           if (isView(source_r)) reifyIdentityView(source_r).map(_._1) else Some(source_r)
@@ -227,7 +227,7 @@ private[chisel3] object MonoConnect {
           }
         }
       // Handle Record connected to DontCare. Apply the DontCare to individual elements.
-      case (sink_r: Record, DontCare) =>
+      case (sink_r: Record, DontCare)         =>
         // For each field, descend with right
         for ((field, sink_sub) <- sink_r._elements) {
           try {
@@ -245,15 +245,15 @@ private[chisel3] object MonoConnect {
         }(sourceInfo) // Nothing to push if an error.
 
       // DontCare as a sink is illegal.
-      case (DontCare, _) => throw DontCareCantBeSink
+      case (DontCare, _)          => throw DontCareCantBeSink
       // Analog is illegal in mono connections.
       case (_: Analog, _: Analog) => throw AnalogMonoConnectionException(source, sink)
       // Analog is illegal in mono connections.
-      case (_: Analog, _) => throw AnalogCantBeMonoSink(sink)
+      case (_: Analog, _)         => throw AnalogCantBeMonoSink(sink)
       // Analog is illegal in mono connections.
-      case (_, _: Analog) => throw AnalogCantBeMonoSource(source)
+      case (_, _: Analog)         => throw AnalogCantBeMonoSource(source)
       // Sink and source are different subtypes of data so fail
-      case (sink, source) => throw MismatchedException(sink, source)
+      case (sink, source)         => throw MismatchedException(sink, source)
     }
   }
 
@@ -264,21 +264,21 @@ private[chisel3] object MonoConnect {
     */
   private[chisel3] def dataConnectContextCheck(
     implicit sourceInfo: SourceInfo,
-    sink:                Data,
-    source:              Data,
-    context_mod:         BaseModule
+    sink: Data,
+    source: Data,
+    context_mod: BaseModule
   ): Boolean = {
     import ActualDirection.{Bidirectional, Input, Output}
     // If source has no location, assume in context module
     // This can occur if is a literal, unbound will error previously
-    val sink_mod:   BaseModule = sink.topBinding.location.getOrElse(throw UnwritableSinkException(sink, source))
+    val sink_mod: BaseModule   = sink.topBinding.location.getOrElse(throw UnwritableSinkException(sink, source))
     val source_mod: BaseModule = source.topBinding.location.getOrElse(context_mod)
 
-    val sink_parent_opt = Builder.retrieveParent(sink_mod, context_mod)
+    val sink_parent_opt   = Builder.retrieveParent(sink_mod, context_mod)
     val source_parent_opt = Builder.retrieveParent(source_mod, context_mod)
-    val context_mod_opt = Some(context_mod)
+    val context_mod_opt   = Some(context_mod)
 
-    val sink_is_port = sink.topBinding match {
+    val sink_is_port   = sink.topBinding match {
       case PortBinding(_) => true
       case _              => false
     }
@@ -308,9 +308,9 @@ private[chisel3] object MonoConnect {
       // See: https://github.com/freechipsproject/firrtl/issues/1703
       // Original behavior should just check if the sink direction is an Input
       val sinkCanBeInput = sink.direction match {
-        case Input => true
+        case Input            => true
         case _: Bidirectional => true
-        case _ => false
+        case _                => false
       }
       // Thus, right node better be a port node and thus have a direction
       if (!source_is_port) { false }
@@ -326,9 +326,9 @@ private[chisel3] object MonoConnect {
       // See: https://github.com/freechipsproject/firrtl/issues/1703
       // Original behavior should just check if the sink direction is an Input
       sink.direction match {
-        case Input => true
+        case Input            => true
         case _: Bidirectional => true
-        case _ => false
+        case _                => false
       }
     }
 
@@ -343,9 +343,9 @@ private[chisel3] object MonoConnect {
         // See: https://github.com/freechipsproject/firrtl/issues/1703
         // Original behavior should just check if the sink direction is an Input
         sink.direction match {
-          case Input => true
+          case Input            => true
           case _: Bidirectional => true // NOTE: Workaround for non-agnostified ports
-          case _ => false
+          case _                => false
         }
       } else { false }
     }
@@ -364,25 +364,25 @@ private[chisel3] object MonoConnect {
     * to a Port.
     */
   @tailrec private[chisel3] def traceFlow(
-    wantToBeSink:     Boolean,
+    wantToBeSink: Boolean,
     currentlyFlipped: Boolean,
-    data:             Data,
-    context_mod:      BaseModule
+    data: Data,
+    context_mod: BaseModule
   ): Boolean = {
-    val sdir = data.specifiedDirection
-    val coercedFlip = sdir == SpecifiedDirection.Input
+    val sdir         = data.specifiedDirection
+    val coercedFlip  = sdir == SpecifiedDirection.Input
     val coercedAlign = sdir == SpecifiedDirection.Output
-    val flipped = sdir == SpecifiedDirection.Flip
+    val flipped      = sdir == SpecifiedDirection.Flip
     val traceFlipped = ((flipped ^ currentlyFlipped) || coercedFlip) && (!coercedAlign)
     data.binding.get match {
-      case ChildBinding(parent) => traceFlow(wantToBeSink, traceFlipped, parent, context_mod)
+      case ChildBinding(parent)   => traceFlow(wantToBeSink, traceFlipped, parent, context_mod)
       case PortBinding(enclosure) =>
         val childPort = enclosure != context_mod
         wantToBeSink ^ childPort ^ traceFlipped
-      case _ => true
+      case _                      => true
     }
   }
-  def canBeSink(data:   Data, context_mod: BaseModule): Boolean = traceFlow(true, false, data, context_mod)
+  def canBeSink(data: Data, context_mod: BaseModule): Boolean   = traceFlow(true, false, data, context_mod)
   def canBeSource(data: Data, context_mod: BaseModule): Boolean = traceFlow(false, false, data, context_mod)
 
   /** Check whether two Data can be bulk connected (<=) in FIRRTL. (MonoConnect case)
@@ -392,9 +392,9 @@ private[chisel3] object MonoConnect {
     * a `BiConnect` (`chisel3.<>` or `chisel.:<>=`) is necessary.
     */
   private[chisel3] def canFirrtlConnectData(
-    sink:        Data,
-    source:      Data,
-    sourceInfo:  SourceInfo,
+    sink: Data,
+    source: Data,
+    sourceInfo: SourceInfo,
     context_mod: BaseModule
   ): Boolean = {
     // Assuming we're using a <>, check if a FIRRTL.<= connection operator is valid in that case
@@ -414,7 +414,7 @@ private[chisel3] object MonoConnect {
     //  otherwise, issue a Connect.
     source.topBinding match {
       case b: DontCareBinding => pushCommand(DefInvalid(sourceInfo, sink.lref))
-      case _ => pushCommand(Connect(sourceInfo, sink.lref, source.ref))
+      case _                  => pushCommand(Connect(sourceInfo, sink.lref, source.ref))
     }
   }
 
@@ -422,13 +422,13 @@ private[chisel3] object MonoConnect {
   // Then it either issues it or throws the appropriate exception.
   def elemConnect(
     implicit sourceInfo: SourceInfo,
-    _sink:               Element,
-    _source:             Element,
-    context_mod:         BaseModule
+    _sink: Element,
+    _source: Element,
+    context_mod: BaseModule
   ): Unit = {
     // Reify sink and source if they're views.
     val (sink, writable) = reify(_sink)
-    val (source, _) = reify(_source)
+    val (source, _)      = reify(_source)
 
     checkConnect(sourceInfo, sink, source, context_mod)
     writable.reportIfReadOnlyUnit(issueConnect(sink, source))
@@ -436,13 +436,13 @@ private[chisel3] object MonoConnect {
 
   def propConnect(
     sourceInfo: SourceInfo,
-    sinkProp:   Property[_],
+    sinkProp: Property[_],
     sourceProp: Property[_],
-    context:    BaseModule
+    context: BaseModule
   ): Unit = {
     // Reify sink and source if they're views.
     val (sink, writable) = reify(sinkProp)
-    val (source, _) = reify(sourceProp)
+    val (source, _)      = reify(sourceProp)
 
     checkConnect(sourceInfo, sink, source, context)
     // Add the PropAssign command directly onto the correct BaseModule subclass.
@@ -451,19 +451,19 @@ private[chisel3] object MonoConnect {
         writable.reportIfReadOnlyUnit {
           rm.addCommand(PropAssign(sourceInfo, sink.lref(sourceInfo), source.ref))
         }(sourceInfo)
-      case cls: Class =>
+      case cls: Class    =>
         writable.reportIfReadOnlyUnit {
           cls.addCommand(PropAssign(sourceInfo, sink.lref(sourceInfo), source.ref))
         }(sourceInfo)
-      case _ => throwException("Internal Error! Property connection can only occur within RawModule or Class.")
+      case _             => throwException("Internal Error! Property connection can only occur within RawModule or Class.")
     }
   }
 
   def probeDefine(
-    sourceInfo:  SourceInfo,
-    sinkProbe:   Data,
+    sourceInfo: SourceInfo,
+    sinkProbe: Data,
     sourceProbe: Data,
-    context:     BaseModule
+    context: BaseModule
   ): Unit = {
 
     val (sink, writable) = reifyIdentityView(sinkProbe).getOrElse(
@@ -471,7 +471,7 @@ private[chisel3] object MonoConnect {
         s"If a DataView contains a Probe, it must resolve to one Data. $sinkProbe does not meet this criteria."
       )
     )
-    val (source, _) = reifyIdentityView(sourceProbe).getOrElse(
+    val (source, _)      = reifyIdentityView(sourceProbe).getOrElse(
       throwException(
         s"If a DataView contains a Probe, it must resolve to one Data. $sourceProbe does not meet this criteria."
       )
@@ -493,9 +493,9 @@ private[chisel3] object MonoConnect {
   */
 private[chisel3] object checkConnect {
   def apply(
-    sourceInfo:  SourceInfo,
-    sink:        Element,
-    source:      Element,
+    sourceInfo: SourceInfo,
+    sink: Element,
+    source: Element,
     context_mod: BaseModule
   ): Unit = {
     checkConnection(sourceInfo, sink, source, context_mod)
@@ -504,14 +504,14 @@ private[chisel3] object checkConnect {
     (sink, source) match {
       case (sinkProp: Property[_], sourceProp: Property[_]) =>
         checkConnect.checkPropertyConnection(sourceInfo, sinkProp, sourceProp)
-      case (_, _) =>
+      case (_, _)                                           =>
     }
   }
 
   def checkConnection(
-    sourceInfo:  SourceInfo,
-    sink:        Data,
-    source:      Data,
+    sourceInfo: SourceInfo,
+    sink: Data,
+    source: Data,
     context_mod: BaseModule
   ): Unit = {
     import BindingDirection.{Input, Internal, Output} // Using extensively so import these
@@ -528,14 +528,14 @@ private[chisel3] object checkConnect {
 
     // If source has no location, assume in context module
     // This can occur if is a literal, unbound will error previously
-    val sink_mod:   BaseModule = sink.topBinding.location.getOrElse(throw UnwritableSinkException(sink, source))
+    val sink_mod: BaseModule   = sink.topBinding.location.getOrElse(throw UnwritableSinkException(sink, source))
     val source_mod: BaseModule = source.topBinding.location.getOrElse(context_mod)
 
-    val sink_parent_opt = Builder.retrieveParent(sink_mod, context_mod)
+    val sink_parent_opt   = Builder.retrieveParent(sink_mod, context_mod)
     val source_parent_opt = Builder.retrieveParent(source_mod, context_mod)
-    val context_mod_opt = Some(context_mod)
+    val context_mod_opt   = Some(context_mod)
 
-    val sink_direction = BindingDirection.from(sink.topBinding, sink.direction)
+    val sink_direction   = BindingDirection.from(sink.topBinding, sink.direction)
     val source_direction = BindingDirection.from(source.topBinding, source.direction)
 
     // CASE: Context is same module that both left node and right node are in
@@ -632,7 +632,7 @@ private[chisel3] object checkConnect {
             s"Sink Property[ClassType] expected class $sinkClassName, but source Instance[Class] was class $sourceClassName $info"
           )
         )
-      case (_, _) => ()
+      case (_, _)                                                                             => ()
     }
   }
 }

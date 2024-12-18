@@ -13,8 +13,8 @@ import org.scalatest.matchers.should.Matchers
 import scala.io.Source
 
 private class ClockGateTop extends RawModule {
-  val clock = IO(Input(Clock()))
-  val enable = IO(Input(Bool()))
+  val clock      = IO(Input(Clock()))
+  val enable     = IO(Input(Bool()))
   val gatedClock = IO(Output(Clock()))
   gatedClock := ClockGate(clock, enable)
 }

@@ -11,18 +11,17 @@ import firrtl.options.{Dependency, OutputAnnotationFileAnnotation, Phase}
   */
 class AddImplicitOutputAnnotationFile extends Phase {
 
-  override def prerequisites = Seq(Dependency[Elaborate])
-  override def optionalPrerequisites = Seq.empty
+  override def prerequisites          = Seq(Dependency[Elaborate])
+  override def optionalPrerequisites  = Seq.empty
   override def optionalPrerequisiteOf = Seq.empty
-  override def invalidates(a: Phase) = false
+  override def invalidates(a: Phase)  = false
 
   def transform(annotations: AnnotationSeq): AnnotationSeq = annotations.collectFirst {
     case _: OutputAnnotationFileAnnotation => annotations
   }.getOrElse {
 
-    val x: Option[AnnotationSeq] = annotations.collectFirst {
-      case a: ChiselCircuitAnnotation =>
-        OutputAnnotationFileAnnotation(a.circuit.name) +: annotations
+    val x: Option[AnnotationSeq] = annotations.collectFirst { case a: ChiselCircuitAnnotation =>
+      OutputAnnotationFileAnnotation(a.circuit.name) +: annotations
     }
 
     x.getOrElse(annotations)

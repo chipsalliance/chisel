@@ -41,13 +41,13 @@ trait HasAutoTypename {
   override def typeName: String = autoTypeName(simpleClassName(this.getClass), _typeNameConParams)
 
   private def autoTypeName(bundleName: String, typeNameParams: Iterable[Any]): String = {
-    _typeNameConParams.foldLeft(sanitize(bundleName)) {
-      case (prev, accessor) => prev + s"_${accessorString(accessor)}"
+    _typeNameConParams.foldLeft(sanitize(bundleName)) { case (prev, accessor) =>
+      prev + s"_${accessorString(accessor)}"
     }
   }
 
   private def accessorString(accessor: Any): String = accessor match {
-    case d: Data => d.typeName
+    case d: Data   => d.typeName
     case s: String =>
       sanitize(s, true) // Allow leading digits since this accessor string will occur after an underscore
     case _ => s"$accessor"

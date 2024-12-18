@@ -38,7 +38,7 @@ package object internal {
       // for temporaries
       val builder = new java.lang.StringBuilder()
       // Starting with _ is the indicator of a temporary
-      val temp = isTemp(seed)
+      val temp    = isTemp(seed)
       // Make sure the final result is also a temporary if this is a temporary
       if (temp) {
         builder.append('_')
@@ -61,17 +61,17 @@ package object internal {
   private[chisel3] def sanitize(s: String, leadingDigitOk: Boolean = false): String = {
     // TODO what character set does FIRRTL truly support? using ANSI C for now
     def legalStart(c: Char) = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'
-    def legal(c:      Char) = legalStart(c) || (c >= '0' && c <= '9')
-    val res = if (s.forall(legal)) s else s.filter(legal)
-    val headOk = (!res.isEmpty) && (leadingDigitOk || legalStart(res.head))
+    def legal(c: Char)      = legalStart(c) || (c >= '0' && c <= '9')
+    val res                 = if (s.forall(legal)) s else s.filter(legal)
+    val headOk              = (!res.isEmpty) && (leadingDigitOk || legalStart(res.head))
     if (headOk) res else s"_$res"
   }
 
   // Workaround for https://github.com/chipsalliance/chisel/issues/4162
   // We can't use the .asTypeOf workaround because this is used to implement .asTypeOf
   private[chisel3] def _padHandleBool[A <: Bits](
-    x:      A,
-    width:  Int,
+    x: A,
+    width: Int,
     isUInt: Boolean
   )(
     implicit sourceInfo: SourceInfo
@@ -80,16 +80,15 @@ package object internal {
       val _pad = Wire(UInt(width.W))
       _pad := b
       _pad.asInstanceOf[A] // This cast is safe because we know A is UInt on this path
-    case u => u.pad(width).asInstanceOf[A]
+    case u                                          => u.pad(width).asInstanceOf[A]
   }
 
   // Resize that to this width (if known)
   private[chisel3] def _resizeToWidth[A <: Bits](
-    that:           A,
+    that: A,
     targetWidthOpt: Option[Int],
-    isUInt:         Boolean
-  )(fromUInt:       UInt => A
-  )(
+    isUInt: Boolean
+  )(fromUInt: UInt => A)(
     implicit sourceInfo: SourceInfo
   ): A = {
     (targetWidthOpt, that.widthOption) match {
@@ -97,9 +96,9 @@ package object internal {
         if (targetWidth == thatWidth) that
         else if (targetWidth > thatWidth) _padHandleBool(that, targetWidth, isUInt)
         else fromUInt(that.take(targetWidth))
-      case (Some(targetWidth), None) => fromUInt(_padHandleBool(that, targetWidth, isUInt).take(targetWidth))
-      case (None, Some(thatWidth))   => that
-      case (None, None)              => that
+      case (Some(targetWidth), None)            => fromUInt(_padHandleBool(that, targetWidth, isUInt).take(targetWidth))
+      case (None, Some(thatWidth))              => that
+      case (None, None)                         => that
     }
   }
 
@@ -113,8 +112,8 @@ package object internal {
     private[chisel3] val absoluteTarget: IsModule = ModuleTarget(this.circuitName, "_$$AbsoluteView$$_")
 
     // This module is not instantiable
-    override private[chisel3] def generateComponent():  Option[Component] = None
-    override private[chisel3] def initializeInParent(): Unit = ()
+    override private[chisel3] def generateComponent(): Option[Component] = None
+    override private[chisel3] def initializeInParent(): Unit             = ()
     // This module is not really part of the circuit
     _parent = None
 
@@ -133,7 +132,7 @@ package object internal {
     Module.do_apply(new ViewParentAPI)(UnlocatableSourceInfo)
 
   private[chisel3] def requireHasProbeTypeModifier(
-    probe:        Data,
+    probe: Data,
     errorMessage: String = ""
   )(
     implicit sourceInfo: SourceInfo
@@ -143,7 +142,7 @@ package object internal {
   }
 
   private[chisel3] def requireNoProbeTypeModifier(
-    probe:        Data,
+    probe: Data,
     errorMessage: String = ""
   )(
     implicit sourceInfo: SourceInfo
@@ -153,7 +152,7 @@ package object internal {
   }
 
   private[chisel3] def requireHasWritableProbeTypeModifier(
-    probe:        Data,
+    probe: Data,
     errorMessage: String = ""
   )(
     implicit sourceInfo: SourceInfo
@@ -166,11 +165,11 @@ package object internal {
   private[chisel3] def containsProbe(data: Data): Boolean = data match {
     case a: Aggregate =>
       a.elementsIterator.foldLeft(false)((res: Boolean, d: Data) => res || containsProbe(d))
-    case leaf => leaf.probeInfo.nonEmpty
+    case leaf         => leaf.probeInfo.nonEmpty
   }
 
   private[chisel3] def requireCompatibleDestinationProbeColor(
-    dest:         Data,
+    dest: Data,
     errorMessage: => String = ""
   )(
     implicit sourceInfo: SourceInfo
@@ -178,7 +177,7 @@ package object internal {
     val destLayer = dest.probeInfo match {
       case Some(Data.ProbeInfo(_, Some(color))) =>
         color
-      case _ => return
+      case _                                    => return
     }
     if (Builder.layerStack.headOption.forall(_.canWriteTo(destLayer))) {
       return
@@ -187,7 +186,7 @@ package object internal {
   }
 
   private[chisel3] def requireNotChildOfProbe(
-    probe:        Data,
+    probe: Data,
     errorMessage: => String = ""
   )(
     implicit sourceInfo: SourceInfo
@@ -196,20 +195,19 @@ package object internal {
       case Some(ChildBinding(parent)) =>
         if (parent.probeInfo.nonEmpty) {
           val providedMsg = errorMessage // only evaluate by-name argument once
-          val msg = if (providedMsg.isEmpty) "Expected a root of a probe." else providedMsg
+          val msg         = if (providedMsg.isEmpty) "Expected a root of a probe." else providedMsg
           Builder.error(msg)
         }
-      case _ => ()
+      case _                          => ()
     }
   }
 
   // TODO this exists in cats.Traverse, should we just use that?
   private[chisel3] implicit class ListSyntax[A](xs: List[A]) {
     def mapAccumulate[B, C](z: B)(f: (B, A) => (B, C)): (B, List[C]) = {
-      val (zz, result) = xs.foldLeft((z, List.empty[C])) {
-        case ((acc, res), a) =>
-          val (accx, c) = f(acc, a)
-          (accx, c :: res)
+      val (zz, result) = xs.foldLeft((z, List.empty[C])) { case ((acc, res), a) =>
+        val (accx, c) = f(acc, a)
+        (accx, c :: res)
       }
       (zz, result.reverse)
     }
@@ -222,7 +220,7 @@ package object internal {
   private[chisel3] class Delayed[A](a: => A) {
     lazy val value: A = a
   }
-  private[chisel3] object Delayed {
+  private[chisel3] object Delayed            {
     def apply[A](a: => A): Delayed[A] = new Delayed(a)
   }
 
@@ -270,7 +268,7 @@ package object internal {
     val map = mutable.LinkedHashMap.empty[K, mutable.ListBuffer[A]]
     for (x <- xs) {
       val key = f(x)
-      val l = map.getOrElseUpdate(key, mutable.ListBuffer.empty[A])
+      val l   = map.getOrElseUpdate(key, mutable.ListBuffer.empty[A])
       l += x
     }
     map.view.map({ case (k, vs) => k -> vs.toList }).toList

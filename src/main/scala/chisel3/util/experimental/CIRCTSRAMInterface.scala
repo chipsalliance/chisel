@@ -15,46 +15,47 @@ object CIRCTSRAMParameter {
 }
 
 case class CIRCTSRAMParameter(
-  moduleName:      String,
-  read:            Int,
-  write:           Int,
-  readwrite:       Int,
-  depth:           Int,
-  width:           Int,
-  maskGranularity: Int) {
+  moduleName: String,
+  read: Int,
+  write: Int,
+  readwrite: Int,
+  depth: Int,
+  width: Int,
+  maskGranularity: Int
+) {
   def masked: Boolean = maskGranularity != 0
 }
 
 class CIRCTSRAMReadPort(memoryParameter: CIRCTSRAMParameter) extends Record {
-  val clock = Input(Clock())
+  val clock   = Input(Clock())
   val address = Input(UInt(log2Ceil(memoryParameter.depth).W))
-  val data = Output(UInt(memoryParameter.width.W))
-  val enable = Input(Bool())
+  val data    = Output(UInt(memoryParameter.width.W))
+  val enable  = Input(Bool())
 
   // Records store elements in reverse order
   val elements: SeqMap[String, Data] = SeqMap(
     "addr" -> address,
-    "en" -> enable,
-    "clk" -> clock,
+    "en"   -> enable,
+    "clk"  -> clock,
     "data" -> data
   ).toSeq.reverse.to(SeqMap)
 }
 
 class CIRCTSRAMReadWritePort(memoryParameter: CIRCTSRAMParameter) extends Record {
-  val clock = Input(Clock())
-  val address = Input(UInt(log2Ceil(memoryParameter.depth).W))
-  val writeData = Input(UInt(memoryParameter.width.W))
-  val writeMask =
+  val clock       = Input(Clock())
+  val address     = Input(UInt(log2Ceil(memoryParameter.depth).W))
+  val writeData   = Input(UInt(memoryParameter.width.W))
+  val writeMask   =
     Option.when(memoryParameter.masked)(Input(UInt((memoryParameter.width / memoryParameter.maskGranularity).W)))
   val writeEnable = Input(Bool())
-  val readData = Output(UInt(memoryParameter.width.W))
-  val enable = Input(Bool())
+  val readData    = Output(UInt(memoryParameter.width.W))
+  val enable      = Input(Bool())
 
   // Records store elements in reverse order
   val elements: SeqMap[String, Data] = (SeqMap(
-    "addr" -> address,
-    "en" -> enable,
-    "clk" -> clock,
+    "addr"  -> address,
+    "en"    -> enable,
+    "clk"   -> clock,
     "wmode" -> writeEnable,
     "wdata" -> writeData,
     "rdata" -> readData
@@ -62,28 +63,28 @@ class CIRCTSRAMReadWritePort(memoryParameter: CIRCTSRAMParameter) extends Record
 }
 
 class CIRCTSRAMWritePort(memoryParameter: CIRCTSRAMParameter) extends Record {
-  val clock = Input(Clock())
+  val clock   = Input(Clock())
   val address = Input(UInt(log2Ceil(memoryParameter.depth).W))
-  val data = Input(UInt(memoryParameter.width.W))
-  val mask =
+  val data    = Input(UInt(memoryParameter.width.W))
+  val mask    =
     Option.when(memoryParameter.masked)(Input(UInt((memoryParameter.width / memoryParameter.maskGranularity).W)))
-  val enable = Input(Bool())
+  val enable  = Input(Bool())
 
   // Records store elements in reverse order
   val elements: SeqMap[String, Data] = (SeqMap(
     "addr" -> address,
-    "en" -> enable,
-    "clk" -> clock,
+    "en"   -> enable,
+    "clk"  -> clock,
     "data" -> data
   ) ++ Option.when(memoryParameter.masked)("mask" -> mask.get)).toSeq.reverse.to(SeqMap)
 }
 
 class CIRCTSRAMInterface(memoryParameter: CIRCTSRAMParameter) extends Record {
-  def R(idx: Int) =
+  def R(idx: Int)  =
     elements.getOrElse(s"R$idx", throw new Exception(s"Cannot get port R$idx")).asInstanceOf[CIRCTSRAMReadPort]
   def RW(idx: Int) =
     elements.getOrElse(s"RW$idx", throw new Exception(s"Cannot get port RW$idx")).asInstanceOf[CIRCTSRAMReadWritePort]
-  def W(idx: Int) =
+  def W(idx: Int)  =
     elements.getOrElse(s"W$idx", throw new Exception(s"Cannot get port W$idx")).asInstanceOf[CIRCTSRAMWritePort]
 
   // Records store elements in reverse order

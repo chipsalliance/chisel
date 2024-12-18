@@ -11,9 +11,9 @@ class InstanceNameModule extends Module {
     val foo = Input(UInt(32.W))
     val bar = Output(UInt(32.W))
   })
-  val x = 3.U
-  val y = UInt(8.W)
-  val z = new Bundle {
+  val x  = 3.U
+  val y  = UInt(8.W)
+  val z  = new Bundle {
     val foo = UInt(8.W)
   }
 
@@ -24,7 +24,7 @@ class InstanceNameModule extends Module {
 
 class InstanceNameSpec extends ChiselFlatSpec {
   behavior.of("instanceName")
-  val moduleName = "InstanceNameModule"
+  val moduleName            = "InstanceNameModule"
   var m: InstanceNameModule = _
   ChiselStage.emitCHIRRTL { m = new InstanceNameModule; m }
 

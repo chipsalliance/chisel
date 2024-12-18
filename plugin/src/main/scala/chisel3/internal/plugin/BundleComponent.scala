@@ -27,12 +27,12 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
     with ChiselOuterUtils {
   import global._
 
-  val phaseName: String = "chiselbundlephase"
-  val runsAfter: List[String] = "typer" :: Nil
+  val phaseName: String            = "chiselbundlephase"
+  val runsAfter: List[String]      = "typer" :: Nil
   def newPhase(prev: Phase): Phase = new BundlePhase(prev)
 
   private class BundlePhase(prev: Phase) extends StdPhase(prev) {
-    override def name: String = phaseName
+    override def name: String              = phaseName
     def apply(unit: CompilationUnit): Unit = {
       if (ChiselPlugin.runComponent(global, arguments)(unit)) {
         unit.body = new MyTypingTransformer(unit).transform(unit.body)
@@ -48,10 +48,10 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
     def isVarArgs(sym: Symbol): Boolean = definitions.isRepeatedParamType(sym.tpe)
 
     def getConstructorAndParams(body: List[Tree], isBundle: Boolean): (Option[DefDef], Seq[Symbol]) = {
-      val paramAccessors = mutable.ListBuffer[Symbol]()
+      val paramAccessors                     = mutable.ListBuffer[Symbol]()
       var primaryConstructor: Option[DefDef] = None
       body.foreach {
-        case acc: ValDef if acc.symbol.isParamAccessor =>
+        case acc: ValDef if acc.symbol.isParamAccessor      =>
           paramAccessors += acc.symbol
         case con: DefDef if con.symbol.isPrimaryConstructor =>
           if (con.symbol.isPrivate) {
@@ -61,36 +61,36 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
             primaryConstructor = Some(con)
           }
 
-        case d: DefDef if isNullaryMethodNamed("_cloneTypeImpl", d) =>
+        case d: DefDef if isNullaryMethodNamed("_cloneTypeImpl", d)            =>
           val msg = "Users cannot override _cloneTypeImpl. Let the compiler plugin generate it."
           global.reporter.error(d.pos, msg)
         case d: DefDef if isNullaryMethodNamed("_elementsImpl", d) && isBundle =>
           val msg = "Users cannot override _elementsImpl. Let the compiler plugin generate it."
           global.reporter.error(d.pos, msg)
-        case d: DefDef if isNullaryMethodNamed("_usingPlugin", d) && isBundle =>
+        case d: DefDef if isNullaryMethodNamed("_usingPlugin", d) && isBundle  =>
           val msg = "Users cannot override _usingPlugin, it is for the compiler plugin's use only."
           global.reporter.error(d.pos, msg)
-        case d: DefDef if isNullaryMethodNamed("cloneType", d) =>
+        case d: DefDef if isNullaryMethodNamed("cloneType", d)                 =>
           val prefix = if (isBundle) "Bundles" else "Records"
-          val msg = s"$prefix cannot override cloneType. Let the compiler plugin generate it."
+          val msg    = s"$prefix cannot override cloneType. Let the compiler plugin generate it."
           global.reporter.error(d.pos, msg)
-        case d: DefDef if isNullaryMethodNamed("_typeNameConParams", d) =>
+        case d: DefDef if isNullaryMethodNamed("_typeNameConParams", d)        =>
           val msg = "Users cannot override _typeNameConParams. Let the compiler plugin generate it."
           global.reporter.error(d.pos, msg)
-        case _ =>
+        case _                                                                 =>
       }
       (primaryConstructor, paramAccessors.toList)
     }
 
     def generateAutoCloneType(
-      record:     ClassDef,
-      thiz:       global.This,
+      record: ClassDef,
+      thiz: global.This,
       conArgsOpt: Option[List[List[Tree]]],
-      isBundle:   Boolean
+      isBundle: Boolean
     ): Option[Tree] = {
       conArgsOpt.map { conArgs =>
         val tparamList = record.tparams.map { t => Ident(t.symbol) }
-        val ttpe =
+        val ttpe       =
           if (tparamList.nonEmpty) AppliedTypeTree(Ident(record.symbol), tparamList) else Ident(record.symbol)
         val newUntyped = New(ttpe, conArgs)
 
@@ -225,7 +225,7 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
       // Create a this.<ref> for each field matching order of constructor arguments
       // List of Lists because we can have multiple parameter lists
       Some(constructor.vparamss.map(_.map { vp =>
-        val p = paramLookup(vp.name.toString)
+        val p      = paramLookup(vp.name.toString)
         // Make this.<ref>
         val select = gen.mkAttributedSelect(thiz.asInstanceOf[Tree], p)
         // Clone any Data parameters to avoid field aliasing, need full clone to include direction
@@ -239,9 +239,9 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
 
       case record: ClassDef
           if isARecord(record.symbol) && !record.mods.hasFlag(Flag.ABSTRACT) => // check that its not abstract
-        val isBundle: Boolean = isABundle(record.symbol)
-        val thiz:     global.This = gen.mkAttributedThis(record.symbol)
-        val conArgs:  Option[List[List[Tree]]] = extractConArgs(record, thiz, isBundle)
+        val isBundle: Boolean                 = isABundle(record.symbol)
+        val thiz: global.This                 = gen.mkAttributedThis(record.symbol)
+        val conArgs: Option[List[List[Tree]]] = extractConArgs(record, thiz, isBundle)
 
         // ==================== Generate _cloneTypeImpl ====================
         val cloneTypeImplOpt = generateAutoCloneType(record, thiz, conArgs, isBundle)

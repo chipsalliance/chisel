@@ -7,7 +7,7 @@ import chisel3.testers.BasicTester
 
 class ParameterizedModule(invert: Boolean) extends Module {
   val io = IO(new Bundle {
-    val in = Input(Bool())
+    val in  = Input(Bool())
     val out = Output(Bool())
   })
   if (invert) {
@@ -22,10 +22,10 @@ class ParameterizedModule(invert: Boolean) extends Module {
   * check that deduplication actually happens, though.
   */
 class ParameterizedModuleTester() extends BasicTester {
-  val invert = Module(new ParameterizedModule(true))
+  val invert    = Module(new ParameterizedModule(true))
   val noninvert = Module(new ParameterizedModule(false))
 
-  invert.io.in := true.B
+  invert.io.in    := true.B
   noninvert.io.in := true.B
   assert(invert.io.out === false.B)
   assert(noninvert.io.out === true.B)

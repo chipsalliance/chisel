@@ -10,7 +10,7 @@ import circt.stage.ChiselStage
 
 class IntModuleTest extends IntrinsicModule("TestIntrinsic") {
   val foo = IO(new Bundle() {
-    val in = Input(Bool())
+    val in  = Input(Bool())
     val out = Output(Bool())
   })
 }

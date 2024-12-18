@@ -4,7 +4,7 @@ package chiselTests
 
 import chisel3._
 import chisel3.experimental.{annotate, ChiselAnnotation}
-import chisel3.stage.{ChiselGeneratorAnnotation}
+import chisel3.stage.ChiselGeneratorAnnotation
 import chisel3.testers.BasicTester
 import circt.stage.ChiselStage
 import firrtl.annotations.{CircuitTarget, SingleTargetAnnotation, Target}
@@ -42,7 +42,7 @@ object identify {
   */
 class ModC(widthC: Int) extends Module {
   val io = IO(new Bundle {
-    val in = Input(UInt(widthC.W))
+    val in  = Input(UInt(widthC.W))
     val out = Output(UInt(widthC.W))
   })
   io.out := io.in
@@ -58,13 +58,13 @@ class ModC(widthC: Int) extends Module {
   * @param annoParam  parameter is only used in annotation not in circuit
   */
 class ModA(annoParam: Int) extends Module {
-  val io = IO(new Bundle {
-    val in = Input(UInt())
+  val io   = IO(new Bundle {
+    val in  = Input(UInt())
     val out = Output(UInt())
   })
   val modC = Module(new ModC(16))
   modC.io.in := io.in
-  io.out := modC.io.out
+  io.out     := modC.io.out
 
   identify(this, s"ModA(ignore param)")
 
@@ -73,33 +73,33 @@ class ModA(annoParam: Int) extends Module {
 }
 
 class ModB(widthB: Int) extends Module {
-  val io = IO(new Bundle {
-    val in = Input(UInt(widthB.W))
+  val io   = IO(new Bundle {
+    val in  = Input(UInt(widthB.W))
     val out = Output(UInt(widthB.W))
   })
   val modC = Module(new ModC(widthB))
   modC.io.in := io.in
-  io.out := modC.io.out
+  io.out     := modC.io.out
 
   identify(io.in, s"modB.io.in annotated from inside modB")
 }
 
 class TopOfDiamond extends Module {
   val io = IO(new Bundle {
-    val in = Input(UInt(32.W))
+    val in  = Input(UInt(32.W))
     val out = Output(UInt(32.W))
   })
-  val x = Reg(UInt(32.W))
-  val y = Reg(UInt(32.W))
+  val x  = Reg(UInt(32.W))
+  val y  = Reg(UInt(32.W))
 
   val modA = Module(new ModA(64))
   val modB = Module(new ModB(32))
 
-  x := io.in
+  x          := io.in
   modA.io.in := x
   modB.io.in := x
 
-  y := modA.io.out + modB.io.out
+  y      := modA.io.out + modB.io.out
   io.out := y
 
   identify(this, s"TopOfDiamond\nWith\nSome new lines")
@@ -129,7 +129,7 @@ class AnnotatingDiamondSpec extends AnyFreeSpec with Matchers {
         )
         .filter {
           case _: IdentityAnnotation => true
-          case _ => false
+          case _                     => false
         }
         .toSeq
 

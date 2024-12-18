@@ -10,7 +10,7 @@ import chisel3.testers.BasicTester
 import circt.stage.ChiselStage
 
 class UnclockedPlusOne extends RawModule {
-  val in = IO(Input(UInt(32.W)))
+  val in  = IO(Input(UInt(32.W)))
   val out = IO(Output(UInt(32.W)))
 
   out := in + 1.asUInt
@@ -25,14 +25,14 @@ class RawModuleTester extends BasicTester {
 
 class PlusOneModule extends Module {
   val io = IO(new Bundle {
-    val in = Input(UInt(32.W))
+    val in  = Input(UInt(32.W))
     val out = Output(UInt(32.W))
   })
   io.out := io.in + 1.asUInt
 }
 
 class RawModuleWithImplicitModule extends RawModule {
-  val in = IO(Input(UInt(32.W)))
+  val in  = IO(Input(UInt(32.W)))
   val out = IO(Output(UInt(32.W)))
   val clk = IO(Input(Clock()))
   val rst = IO(Input(Bool()))
@@ -40,7 +40,7 @@ class RawModuleWithImplicitModule extends RawModule {
   withClockAndReset(clk, rst) {
     val plusModule = Module(new PlusOneModule)
     plusModule.io.in := in
-    out := plusModule.io.out
+    out              := plusModule.io.out
   }
 }
 
@@ -48,7 +48,7 @@ class ImplicitModuleInRawModuleTester extends BasicTester {
   val plusModule = Module(new RawModuleWithImplicitModule)
   plusModule.clk := clock
   plusModule.rst := reset
-  plusModule.in := 42.U
+  plusModule.in  := 42.U
   assert(plusModule.out === 43.U)
   stop()
 }
@@ -174,12 +174,12 @@ class RawModuleSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
   "RawModule with afterModuleBuilt" should "be able to create other modules" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
       override def desiredName = "Foo"
-      val port0 = IO(Input(Bool()))
+      val port0                = IO(Input(Bool()))
 
       afterModuleBuilt {
         Module(new RawModule {
           override def desiredName = "Bar"
-          val port1 = IO(Input(Bool()))
+          val port1                = IO(Input(Bool()))
         })
       }
     })
@@ -196,15 +196,15 @@ class RawModuleSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
     @instantiable
     class Foo extends RawModule {
       override def desiredName = "Foo"
-      @public val port0 = IO(Input(Bool()))
+      @public val port0        = IO(Input(Bool()))
 
       afterModuleBuilt {
         val fooDef = this.toDefinition
         Module(new RawModule {
           override def desiredName = "Bar"
-          val port1 = IO(Input(Bool()))
-          val foo1 = Instance(fooDef)
-          val foo2 = Instance(fooDef)
+          val port1                = IO(Input(Bool()))
+          val foo1                 = Instance(fooDef)
+          val foo2                 = Instance(fooDef)
           foo1.port0 := port1
           foo2.port0 := port1
         })

@@ -34,7 +34,7 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers with Utils {
   it should "clone an anonymous inner bundle successfully" in {
     emitCHIRRTL {
       class TestTop(val w: Int) extends Module {
-        val io = IO(new Bundle {})
+        val io     = IO(new Bundle {})
         val myWire = Wire(new Bundle { val a = UInt(w.W) })
       }
       new TestTop(2)
@@ -45,16 +45,16 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers with Utils {
     emitCHIRRTL {
       class Inner(val w: Int) extends Module {
         val io = IO(new Bundle {
-          val in = Input(UInt(w.W))
+          val in  = Input(UInt(w.W))
           val out = Output(UInt(w.W))
         })
       }
       class Outer(val w: Int) extends Module {
         val io = IO(new Bundle {
-          val in = Input(UInt(w.W))
+          val in  = Input(UInt(w.W))
           val out = Output(UInt(w.W))
         })
-        val i = Module(new Inner(w))
+        val i  = Module(new Inner(w))
         val iw = Wire(chiselTypeOf(i.io))
         iw <> io
         i.io <> iw
@@ -80,11 +80,11 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers with Utils {
         val bun = new Bundle {
           val foo = UInt(w.W)
         }
-        val io = IO(new Bundle {
+        val io  = IO(new Bundle {
           val inner = Input(bun)
         })
-        val w0 = WireDefault(io)
-        val w1 = WireDefault(io.inner)
+        val w0  = WireDefault(io)
+        val w1  = WireDefault(io.inner)
       }
       new TestModule(8)
     }
@@ -127,7 +127,7 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers with Utils {
         val bar = Output(Option(new { def mkBundle = new Bundle { val x = Vec(n, gen) } }).get.mkBundle)
       }
       val io = IO(new MyBundle(4, UInt(8.W)))
-      val myWire = WireInit(io.foo)
+      val myWire  = WireInit(io.foo)
       val myWire2 = WireInit(io.bar)
       io.bar.x := io.foo.x
     })

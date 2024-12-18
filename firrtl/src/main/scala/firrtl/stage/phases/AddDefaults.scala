@@ -22,10 +22,10 @@ class AddDefaults extends Phase {
     annotations.foreach {
       case _: BlackBoxTargetDirAnno => bb = false
       case _: InfoModeAnnotation    => im = false
-      case _ =>
+      case _                        =>
     }
 
-    val default = new FirrtlOptions()
+    val default   = new FirrtlOptions()
     val targetDir = annotations.collectFirst { case d: TargetDirAnnotation => d }
       .getOrElse(TargetDirAnnotation())
       .directory

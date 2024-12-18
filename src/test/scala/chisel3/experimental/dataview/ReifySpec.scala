@@ -17,8 +17,8 @@ import chisel3.experimental.hierarchy.{instantiable, public, Instantiate}
 object ReifySpec {
 
   // Helpers to unpack the tuple returned by reify.
-  def _reify(elt:              Element): Element = reify(elt)._1
-  def _reifyIdentityView(data: Data):    Option[Data] = reifyIdentityView(data).map(_._1)
+  def _reify(elt: Element): Element                = reify(elt)._1
+  def _reifyIdentityView(data: Data): Option[Data] = reifyIdentityView(data).map(_._1)
 
   // Views can be single target of the same type, but still not identity.
   type ReversedVec[T <: Data] = Vec[T]
@@ -26,14 +26,14 @@ object ReifySpec {
     DataView.mapping[Vec[T], ReversedVec[T]](v => v.cloneType, { case (a, b) => a.reverse.zip(b) })
 
   class AllElementsBundle extends Bundle {
-    val u = UInt(8.W)
-    val s = SInt(8.W)
-    val b = Bool()
-    val r = Reset()
-    val d = AsyncReset()
-    val c = Clock()
-    val a = Analog(8.W)
-    val p = Probe(UInt(8.W))
+    val u    = UInt(8.W)
+    val s    = SInt(8.W)
+    val b    = Bool()
+    val r    = Reset()
+    val d    = AsyncReset()
+    val c    = Clock()
+    val a    = Analog(8.W)
+    val p    = Probe(UInt(8.W))
     val prop = Property[String]()
   }
   implicit val allElementsView: DataView[Seq[Data], AllElementsBundle] =
@@ -42,22 +42,22 @@ object ReifySpec {
       { case (a, b) => a.zip(b.getElements) }
     )
 
-  class SimpleBundle extends Bundle {
+  class SimpleBundle    extends Bundle {
     val value = UInt(8.W)
   }
-  class NestedBundle extends Bundle {
+  class NestedBundle    extends Bundle {
     val child = new SimpleBundle
   }
-  class TargetBundle extends Bundle {
+  class TargetBundle    extends Bundle {
     val fizz = new NestedBundle
     val buzz = new SimpleBundle
-    val vec = Vec(2, UInt(8.W))
+    val vec  = Vec(2, UInt(8.W))
   }
   class ViewChildBundle extends Bundle {
     val a = Vec(2, UInt(8.W))
     val b = Vec(2, UInt(8.W))
   }
-  class ViewBundle extends Bundle {
+  class ViewBundle      extends Bundle {
     val foo = UInt(8.W) // used to ensure ViewBundle isn't 1-1
     val bar = new ViewChildBundle
   }
@@ -66,9 +66,8 @@ object ReifySpec {
   implicit val myView: DataView[(UInt, TargetBundle), ViewBundle] =
     DataView.mapping[(UInt, TargetBundle), ViewBundle](
       _ => new ViewBundle,
-      {
-        case ((u, t), v) =>
-          Seq(u -> v.foo, t.fizz.child.value -> v.bar.a(0), t.buzz.value -> v.bar.a(1), t.vec -> v.bar.b)
+      { case ((u, t), v) =>
+        Seq(u -> v.foo, t.fizz.child.value -> v.bar.a(0), t.buzz.value -> v.bar.a(1), t.vec -> v.bar.b)
       }
     )
 }
@@ -84,11 +83,10 @@ class ReifySpec extends AnyFunSpec {
         val wires = (new AllElementsBundle).getElements.map(Wire(_))
 
         // .getElements returns Data so we have to match that these are Elements.
-        wires.foreach {
-          case elt: Element =>
-            _reify(elt) should be(elt)
-            _reifyIdentityView(elt) should be(Some(elt))
-            reifySingleTarget(elt) should be(Some(elt))
+        wires.foreach { case elt: Element =>
+          _reify(elt) should be(elt)
+          _reifyIdentityView(elt) should be(Some(elt))
+          reifySingleTarget(elt) should be(Some(elt))
         }
       })
     }
@@ -98,11 +96,10 @@ class ReifySpec extends AnyFunSpec {
         val bundle = IO(new AllElementsBundle)
 
         // .getElements returns Data so we have to match that these are Elements.
-        bundle.getElements.foreach {
-          case elt: Element =>
-            _reify(elt) should be(elt)
-            _reifyIdentityView(elt) should be(Some(elt))
-            reifySingleTarget(elt) should be(Some(elt))
+        bundle.getElements.foreach { case elt: Element =>
+          _reify(elt) should be(elt)
+          _reifyIdentityView(elt) should be(Some(elt))
+          reifySingleTarget(elt) should be(Some(elt))
         }
       })
     }
@@ -110,17 +107,16 @@ class ReifySpec extends AnyFunSpec {
     it("should reify single targets and identity for all Elements in an Aggregate identity-view") {
       ChiselStage.convert(new Module {
         val bundle = IO(new AllElementsBundle)
-        val view = bundle.viewAs[AllElementsBundle]
+        val view   = bundle.viewAs[AllElementsBundle]
 
         _reifyIdentityView(view) should be(Some(bundle))
         reifySingleTarget(view) should be(Some(bundle))
 
         // .getElements returns Data so we have to match that these are Elements.
-        view.getElements.zip(bundle.getElements).foreach {
-          case (v: Element, t: Element) =>
-            _reify(v) should be(t)
-            _reifyIdentityView(v) should be(Some(t))
-            reifySingleTarget(v) should be(Some(t))
+        view.getElements.zip(bundle.getElements).foreach { case (v: Element, t: Element) =>
+          _reify(v) should be(t)
+          _reifyIdentityView(v) should be(Some(t))
+          reifySingleTarget(v) should be(Some(t))
         }
       })
     }
@@ -128,24 +124,23 @@ class ReifySpec extends AnyFunSpec {
     it("should reify single targets and identity for all Elements in an Aggregate non-identity and non-1-1 view") {
       ChiselStage.convert(new Module {
         val wires = (new AllElementsBundle).getElements.map(Wire(_))
-        val view = wires.viewAs[AllElementsBundle]
+        val view  = wires.viewAs[AllElementsBundle]
 
         _reifyIdentityView(view) should be(None)
         reifySingleTarget(view) should be(None)
 
         // .getElements returns Data so we have to match that these are Elements.
-        view.getElements.zip(wires).foreach {
-          case (v: Element, t: Element) =>
-            _reify(v) should be(t)
-            _reifyIdentityView(v) should be(Some(t))
-            reifySingleTarget(v) should be(Some(t))
+        view.getElements.zip(wires).foreach { case (v: Element, t: Element) =>
+          _reify(v) should be(t)
+          _reifyIdentityView(v) should be(Some(t))
+          reifySingleTarget(v) should be(Some(t))
         }
       })
     }
 
     it("should distinguish identity views from single-target views (even if the single target is the same type!") {
       ChiselStage.convert(new Module {
-        val vec = IO(Vec(2, UInt(8.W)))
+        val vec  = IO(Vec(2, UInt(8.W)))
         val view = vec.viewAs[ReversedVec[UInt]]
 
         DataMirror.checkTypeEquivalence(vec, view) should be(true)
@@ -165,8 +160,8 @@ class ReifySpec extends AnyFunSpec {
 
     it("should correctly reify single-target views despite complex hierarchy") {
       ChiselStage.convert(new Module {
-        val in0 = IO(Input(UInt(8.W)))
-        val in1 = IO(Input(new TargetBundle))
+        val in0  = IO(Input(UInt(8.W)))
+        val in1  = IO(Input(new TargetBundle))
         val view = (in0, in1).viewAs[ViewBundle]
 
         reifySingleTarget(view) should be(None)
@@ -196,11 +191,10 @@ class ReifySpec extends AnyFunSpec {
         val child = Instantiate(new MyModule)
 
         // .getElements returns Data so we have to match that these are Elements.
-        child.ios.foreach {
-          case elt: Element =>
-            _reify(elt) should be(elt)
-            _reifyIdentityView(elt) should be(Some(elt))
-            reifySingleTarget(elt) should be(Some(elt))
+        child.ios.foreach { case elt: Element =>
+          _reify(elt) should be(elt)
+          _reifyIdentityView(elt) should be(Some(elt))
+          reifySingleTarget(elt) should be(Some(elt))
         }
       })
     }
@@ -214,11 +208,10 @@ class ReifySpec extends AnyFunSpec {
         val child = Instantiate(new MyModule)
 
         // .getElements returns Data so we have to match that these are Elements.
-        child.bundle.getElements.foreach {
-          case elt: Element =>
-            _reify(elt) should be(elt)
-            _reifyIdentityView(elt) should be(Some(elt))
-            reifySingleTarget(elt) should be(Some(elt))
+        child.bundle.getElements.foreach { case elt: Element =>
+          _reify(elt) should be(elt)
+          _reifyIdentityView(elt) should be(Some(elt))
+          reifySingleTarget(elt) should be(Some(elt))
         }
       })
     }
@@ -227,7 +220,7 @@ class ReifySpec extends AnyFunSpec {
       @instantiable
       class MyModule extends RawModule {
         @public val bundle = IO(new AllElementsBundle)
-        @public val view = bundle.viewAs[AllElementsBundle]
+        @public val view   = bundle.viewAs[AllElementsBundle]
       }
       ChiselStage.convert(new Module {
         val child = Instantiate(new MyModule)
@@ -236,11 +229,10 @@ class ReifySpec extends AnyFunSpec {
         reifySingleTarget(child.view) should be(Some(child.bundle))
 
         // .getElements returns Data so we have to match that these are Elements.
-        child.view.getElements.zip(child.bundle.getElements).foreach {
-          case (v: Element, t: Element) =>
-            _reify(v) should be(t)
-            _reifyIdentityView(v) should be(Some(t))
-            reifySingleTarget(v) should be(Some(t))
+        child.view.getElements.zip(child.bundle.getElements).foreach { case (v: Element, t: Element) =>
+          _reify(v) should be(t)
+          _reifyIdentityView(v) should be(Some(t))
+          reifySingleTarget(v) should be(Some(t))
         }
       })
     }
@@ -249,7 +241,7 @@ class ReifySpec extends AnyFunSpec {
       @instantiable
       class MyModule extends RawModule {
         @public val wires = (new AllElementsBundle).getElements.map(Wire(_))
-        @public val view = wires.viewAs[AllElementsBundle]
+        @public val view  = wires.viewAs[AllElementsBundle]
       }
       ChiselStage.convert(new Module {
         val child = Instantiate(new MyModule)
@@ -258,11 +250,10 @@ class ReifySpec extends AnyFunSpec {
         reifySingleTarget(child.view) should be(None)
 
         // .getElements returns Data so we have to match that these are Elements.
-        child.view.getElements.zip(child.wires).foreach {
-          case (v: Element, t: Element) =>
-            _reify(v) should be(t)
-            _reifyIdentityView(v) should be(Some(t))
-            reifySingleTarget(v) should be(Some(t))
+        child.view.getElements.zip(child.wires).foreach { case (v: Element, t: Element) =>
+          _reify(v) should be(t)
+          _reifyIdentityView(v) should be(Some(t))
+          reifySingleTarget(v) should be(Some(t))
         }
       })
     }
@@ -270,13 +261,13 @@ class ReifySpec extends AnyFunSpec {
     it("should distinguish identity views from single-target views (even if the single target is the same type!") {
       @instantiable
       class MyModule extends RawModule {
-        @public val vec = IO(Vec(2, UInt(8.W)))
+        @public val vec  = IO(Vec(2, UInt(8.W)))
         @public val view = vec.viewAs[ReversedVec[UInt]]
       }
       ChiselStage.convert(new Module {
         val child = Instantiate(new MyModule)
-        val vec = child.vec
-        val view = child.view
+        val vec   = child.vec
+        val view  = child.view
 
         DataMirror.checkTypeEquivalence(vec, view) should be(true)
 
@@ -296,15 +287,15 @@ class ReifySpec extends AnyFunSpec {
     it("should correctly reify single-target views despite complex hierarchy") {
       @instantiable
       class MyModule extends RawModule {
-        @public val in0 = IO(Input(UInt(8.W)))
-        @public val in1 = IO(Input(new TargetBundle))
+        @public val in0  = IO(Input(UInt(8.W)))
+        @public val in1  = IO(Input(new TargetBundle))
         @public val view = (in0, in1).viewAs[ViewBundle]
       }
       ChiselStage.convert(new Module {
         val child = Instantiate(new MyModule)
-        val in0 = child.in0
-        val in1 = child.in1
-        val view = child.view
+        val in0   = child.in0
+        val in1   = child.in1
+        val view  = child.view
 
         reifySingleTarget(view) should be(None)
         _reifyIdentityView(view.bar) should be(None)

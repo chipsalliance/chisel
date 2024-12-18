@@ -27,7 +27,7 @@ class Checks extends Phase {
     annotations.foreach {
       case a: TargetDirAnnotation            => td += a
       case a: OutputAnnotationFileAnnotation => outA += a
-      case _ =>
+      case _                                 =>
     }
 
     if (td.size != 1) {

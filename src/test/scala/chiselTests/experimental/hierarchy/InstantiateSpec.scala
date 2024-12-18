@@ -21,72 +21,72 @@ object InstantiateSpec {
 
   @instantiable
   class NoArgs extends Module {
-    @public val in = IO(Input(UInt(8.W)))
+    @public val in  = IO(Input(UInt(8.W)))
     @public val out = IO(Output(UInt(8.W)))
     out := in + 1.U
   }
 
   @instantiable
   class OneImplicitArg(implicit n: Int) extends Module {
-    @public val in = IO(Input(UInt(8.W)))
+    @public val in  = IO(Input(UInt(8.W)))
     @public val out = IO(Output(UInt(8.W)))
     out := in + n.U
   }
 
   @instantiable
   class TwoImplicitArgs(implicit n: Int, m: String) extends Module {
-    @public val in = IO(Input(UInt(8.W)))
+    @public val in  = IO(Input(UInt(8.W)))
     @public val out = IO(Output(UInt(8.W)))
     out := in + (n + m.toInt).U
   }
 
   @instantiable
   class OneArg(n: Int) extends Module {
-    @public val in = IO(Input(UInt(8.W)))
+    @public val in  = IO(Input(UInt(8.W)))
     @public val out = IO(Output(UInt(8.W)))
     out := in + n.U
   }
 
   @instantiable
   class ThreeArgs(n: Int, m: Int, o: String) extends Module {
-    @public val in = IO(Input(UInt(8.W)))
+    @public val in  = IO(Input(UInt(8.W)))
     @public val out = IO(Output(UInt(8.W)))
     out := in + (n + m + o.toInt).U
   }
 
   @instantiable
   class TupleArg(n: (Int, Int)) extends Module {
-    @public val in = IO(Input(UInt(8.W)))
+    @public val in  = IO(Input(UInt(8.W)))
     @public val out = IO(Output(UInt(8.W)))
     out := in + (n._1 + n._2).U
   }
 
   @instantiable
   class DefaultArguments(n: Int = 10, m: Int = 11) extends Module {
-    @public val in = IO(Input(UInt(8.W)))
+    @public val in  = IO(Input(UInt(8.W)))
     @public val out = IO(Output(UInt(8.W)))
     out := in + (n + m).U
   }
 
   @instantiable
   class MixedDefaultArguments(n: Int, m: Int = 2) extends Module {
-    @public val in = IO(Input(UInt(8.W)))
+    @public val in  = IO(Input(UInt(8.W)))
     @public val out = IO(Output(UInt(8.W)))
     out := in + (n + m).U
   }
 
   @instantiable
   class HogWild()(n: Int)(m: Int, o: String) extends Module {
-    @public val in = IO(Input(UInt(8.W)))
+    @public val in  = IO(Input(UInt(8.W)))
     @public val out = IO(Output(UInt(8.W)))
     out := in + (n + m + o.toInt).U
   }
 
   @instantiable
   class TypeParameterized[A](arg: A) extends Module {
-    @public val in = IO(Input(UInt(8.W)))
+    @public val in  = IO(Input(UInt(8.W)))
     @public val out = IO(Output(UInt(8.W)))
-    val n = arg match {
+    val n           = arg match {
       case s: String => s.toInt
       case i: Int    => i
     }
@@ -105,8 +105,8 @@ object InstantiateSpec {
     // Need to override desiredName to work around the fact that the Instantiate cache doesn't get
     // cleared between tests
     override def desiredName = s"${this.getClass.getSimpleName}_${dataToString(gen)}"
-    @public val in = IO(Input(gen))
-    @public val out = IO(Output(gen))
+    @public val in           = IO(Input(gen))
+    @public val out          = IO(Output(gen))
     out := in
   }
 
@@ -114,54 +114,54 @@ object InstantiateSpec {
     // Need to override desiredName to work around the fact that the Instantiate cache doesn't get
     // cleared between tests
     override def desiredName = s"${this.getClass.getSimpleName}_${dataToString(gen)}"
-    @public val in = IO(Input(gen))
-    @public val out = IO(Output(gen))
+    @public val in           = IO(Input(gen))
+    @public val out          = IO(Output(gen))
     out := in
   }
 
   sealed trait MyEnumeration
-  case object FooEnum extends MyEnumeration
-  case object BarEnum extends MyEnumeration
+  case object FooEnum             extends MyEnumeration
+  case object BarEnum             extends MyEnumeration
   case class FizzEnum(value: Int) extends MyEnumeration
   case class BuzzEnum(value: Int) extends MyEnumeration
 
   class ModuleParameterizedByProductTypes(param: MyEnumeration) extends Module {
     override def desiredName = s"${this.getClass.getSimpleName}_$param"
-    val gen = param match {
+    val gen                  = param match {
       case FooEnum     => UInt(8.W)
       case BarEnum     => SInt(8.W)
       case FizzEnum(n) => Vec(n, UInt(8.W))
       case BuzzEnum(n) => Vec(n, SInt(8.W))
     }
-    @public val in = IO(Input(gen))
-    @public val out = IO(Output(gen))
+    @public val in           = IO(Input(gen))
+    @public val out          = IO(Output(gen))
     out := in
   }
 
   class ModuleParameterizedBySeq(param: Seq[Int]) extends Module {
     override def desiredName = s"${this.getClass.getSimpleName}_" + param.mkString("_")
-    @public val in = param.map(w => IO(Input(UInt(w.W))))
-    @public val out = param.map(w => IO(Output(UInt(w.W))))
+    @public val in           = param.map(w => IO(Input(UInt(w.W))))
+    @public val out          = param.map(w => IO(Output(UInt(w.W))))
     out.zip(in).foreach { case (o, i) => o := i }
   }
 
   @instantiable
   class InstantiableBlackBox extends BlackBox {
     @public val io = IO(new Bundle {
-      val in = Input(UInt(8.W))
+      val in  = Input(UInt(8.W))
       val out = Output(UInt(8.W))
     })
   }
 
   @instantiable
   class InstantiableExtModule extends ExtModule {
-    @public val in = IO(Input(UInt(8.W)))
+    @public val in  = IO(Input(UInt(8.W)))
     @public val out = IO(Output(UInt(8.W)))
   }
 
   @instantiable
   class InstantiableIntrinsic extends IntrinsicModule("MyIntrinsic", Map()) {
-    @public val in = IO(Input(UInt(8.W)))
+    @public val in  = IO(Input(UInt(8.W)))
     @public val out = IO(Output(UInt(8.W)))
   }
 
@@ -174,8 +174,8 @@ object InstantiateSpec {
   }
   @instantiable
   class Foo(i: Int) extends Module {
-    val bar0 = Instantiate(new Bar(0))
-    val bar1 = Instantiate(new Bar(1))
+    val bar0  = Instantiate(new Bar(0))
+    val bar1  = Instantiate(new Bar(1))
     val bar11 = Instantiate(new Bar(1))
   }
 }
@@ -202,28 +202,28 @@ class InstantiateSpec extends ChiselFunSpec with Utils {
     it("should be Instantiate-able if there are only a single implicit argument") {
       val modules = convert(new Top {
         implicit val n = 3
-        val inst0 = Instantiate(new OneImplicitArg)
-        val inst1 = Instantiate(new OneImplicitArg)
+        val inst0      = Instantiate(new OneImplicitArg)
+        val inst1      = Instantiate(new OneImplicitArg)
       }).modules.map(_.name)
       assert(modules == Seq("OneImplicitArg", "Top"))
     }
 
     it("should be Instantiate-able if there are multiple implicit arguments") {
       val modules = convert(new Top {
-        implicit val n = 3
+        implicit val n   = 3
         implicit val str = "4"
-        val inst0 = Instantiate(new TwoImplicitArgs)
-        val inst1 = Instantiate(new TwoImplicitArgs)
+        val inst0        = Instantiate(new TwoImplicitArgs)
+        val inst1        = Instantiate(new TwoImplicitArgs)
       }).modules.map(_.name)
       assert(modules == Seq("TwoImplicitArgs", "Top"))
     }
 
     it("should be Instantiate-able when arguments are passed manually") {
       val modules = convert(new Top {
-        implicit val n = 5
+        implicit val n   = 5
         implicit val str = "6"
-        val inst0 = Instantiate(new TwoImplicitArgs)
-        val inst1 = Instantiate(new TwoImplicitArgs()(n, str))
+        val inst0        = Instantiate(new TwoImplicitArgs)
+        val inst1        = Instantiate(new TwoImplicitArgs()(n, str))
       }).modules.map(_.name)
       assert(modules == Seq("TwoImplicitArgs", "Top"))
     }
@@ -232,7 +232,7 @@ class InstantiateSpec extends ChiselFunSpec with Utils {
   describe("Module classes that take a single argument list") {
     it("should be Instantiate-able when there is only a single argument") {
       val modules = convert(new Top {
-        val n = 3
+        val n     = 3
         val inst0 = Instantiate(new OneArg(3))
         val inst1 = Instantiate(new OneArg(n))
       }).modules.map(_.name)
@@ -258,7 +258,7 @@ class InstantiateSpec extends ChiselFunSpec with Utils {
     }
 
     it("should be Instantiable-able with arguments passed explicitly") {
-      val m = 13
+      val m       = 13
       val modules = convert(new Top {
         val inst0 = Instantiate(new DefaultArguments(10, 13))
         val inst1 = Instantiate(new DefaultArguments(10, m))
@@ -267,7 +267,7 @@ class InstantiateSpec extends ChiselFunSpec with Utils {
     }
 
     it("should be Instantiable-able with only some default arguments passed explicitly") {
-      val n = 11
+      val n       = 11
       val modules = convert(new Top {
         val inst0 = Instantiate(new DefaultArguments(n))
         val inst1 = Instantiate(new DefaultArguments(11))
@@ -276,7 +276,7 @@ class InstantiateSpec extends ChiselFunSpec with Utils {
     }
 
     it("should be Instantiable-able with mixed regular and default arguments") {
-      val n = 7
+      val n       = 7
       val modules = convert(new Top {
         val inst0 = Instantiate(new MixedDefaultArguments(7))
         val inst1 = Instantiate(new MixedDefaultArguments(n, 2))
@@ -298,9 +298,9 @@ class InstantiateSpec extends ChiselFunSpec with Utils {
 
   describe("Module classes that take multiple parameter lists") {
     it("should be Instantiate-able with a crazy collection of argument lists") {
-      val n = 7
-      val m = 18
-      val s = "3"
+      val n       = 7
+      val m       = 18
+      val s       = "3"
       val modules = convert(new Top {
         val inst0 = Instantiate(new HogWild()(7)(18, "3"))
         val inst1 = Instantiate(new HogWild()(n)(m, s))
@@ -312,7 +312,7 @@ class InstantiateSpec extends ChiselFunSpec with Utils {
   describe("Module classes with type parameters") {
     it("should work for non-Data type parameters") {
       val modules = convert(new Top {
-        val n = "17"
+        val n     = "17"
         val inst0 = Instantiate(new TypeParameterized("17"))
         val inst1 = Instantiate(new TypeParameterized(n))
       }).modules.map(_.name)
@@ -409,7 +409,7 @@ class InstantiateSpec extends ChiselFunSpec with Utils {
     it("should provide source locators for module instances") {
       // Materialize the source info so we can use it in the check
       implicit val info = implicitly[chisel3.experimental.SourceInfo]
-      val chirrtl = convert(new Top {
+      val chirrtl       = convert(new Top {
         val inst = Instantiate(new OneArg(3))
       }).serialize
       chirrtl should include(s"inst inst of OneArg @[${info.asInstanceOf[SourceLine].serialize}]")
@@ -502,7 +502,7 @@ class InstantiateSpec extends ChiselFunSpec with Utils {
 
   it("Instantiate.definition should work") {
     class MyTop extends Top {
-      val def0 = Instantiate.definition(new Foo(1))
+      val def0  = Instantiate.definition(new Foo(1))
       val inst0 = def0.toInstance
       val inst1 = Instantiate(new Foo(1))
     }

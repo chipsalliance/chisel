@@ -15,7 +15,7 @@ class PanamaCIRCTOMEvaluator private[chisel3] (circt: PanamaCIRCT, mlirModule: M
   val evaluator = circt.omEvaluatorNew(mlirModule)
 
   def instantiate(
-    className:    String,
+    className: String,
     actualParams: Seq[PanamaCIRCTOMEvaluatorValue]
   ): Option[PanamaCIRCTOMEvaluatorValueObject] = {
     val params = actualParams.map(_.asInstanceOf[PanamaCIRCTOMEvaluatorValue].value)
@@ -35,66 +35,66 @@ abstract class PanamaCIRCTOMEvaluatorValue {
   def objOpt: Option[PanamaCIRCTOMEvaluatorValueObject] =
     this match {
       case valueObject: PanamaCIRCTOMEvaluatorValueObject => Some(valueObject)
-      case _ => None
+      case _                                              => None
     }
-  def obj: PanamaCIRCTOMEvaluatorValueObject = objOpt.get
+  def obj: PanamaCIRCTOMEvaluatorValueObject            = objOpt.get
 
   def basePathOpt: Option[PanamaCIRCTOMEvaluatorValueBasePath] =
     this match {
       case path: PanamaCIRCTOMEvaluatorValueBasePath => Some(path)
-      case _ => None
+      case _                                         => None
     }
-  def basePath: PanamaCIRCTOMEvaluatorValueBasePath = basePathOpt.get
+  def basePath: PanamaCIRCTOMEvaluatorValueBasePath            = basePathOpt.get
 
   def listOpt: Option[PanamaCIRCTOMEvaluatorValueList] =
     this match {
       case list: PanamaCIRCTOMEvaluatorValueList => Some(list)
-      case _ => None
+      case _                                     => None
     }
-  def list: PanamaCIRCTOMEvaluatorValueList = listOpt.get
+  def list: PanamaCIRCTOMEvaluatorValueList            = listOpt.get
 
   def mapOpt: Option[PanamaCIRCTOMEvaluatorValueMap] =
     this match {
       case map: PanamaCIRCTOMEvaluatorValueMap => Some(map)
-      case _ => None
+      case _                                   => None
     }
-  def mapPath: PanamaCIRCTOMEvaluatorValueMap = mapOpt.get
+  def mapPath: PanamaCIRCTOMEvaluatorValueMap        = mapOpt.get
 
   def pathOpt: Option[PanamaCIRCTOMEvaluatorValuePath] =
     this match {
       case path: PanamaCIRCTOMEvaluatorValuePath => Some(path)
-      case _ => None
+      case _                                     => None
     }
-  def path: PanamaCIRCTOMEvaluatorValuePath = pathOpt.get
+  def path: PanamaCIRCTOMEvaluatorValuePath            = pathOpt.get
 
   def intOpt: Option[PanamaCIRCTOMEvaluatorValuePrimitiveInteger] =
     this match {
       case integer: PanamaCIRCTOMEvaluatorValuePrimitiveInteger => Some(integer)
-      case _ => None
+      case _                                                    => None
     }
-  def int: PanamaCIRCTOMEvaluatorValuePrimitiveInteger = intOpt.get
+  def int: PanamaCIRCTOMEvaluatorValuePrimitiveInteger            = intOpt.get
 
   def stringOpt: Option[PanamaCIRCTOMEvaluatorValuePrimitiveString] =
     this match {
       case string: PanamaCIRCTOMEvaluatorValuePrimitiveString => Some(string)
-      case _ => None
+      case _                                                  => None
     }
-  def string: PanamaCIRCTOMEvaluatorValuePrimitiveString = stringOpt.get
+  def string: PanamaCIRCTOMEvaluatorValuePrimitiveString            = stringOpt.get
 
   def tupleOpt: Option[PanamaCIRCTOMEvaluatorValueTuple] =
     this match {
       case tuple: PanamaCIRCTOMEvaluatorValueTuple => Some(tuple)
-      case _ => None
+      case _                                       => None
     }
-  def tuple: PanamaCIRCTOMEvaluatorValueTuple = tupleOpt.get
+  def tuple: PanamaCIRCTOMEvaluatorValueTuple            = tupleOpt.get
 
   // Incomplete. currently for debugging purposes only
   override def toString: String = {
     this match {
-      case v: PanamaCIRCTOMEvaluatorValuePath => s"path{${v.toString}}"
-      case v: PanamaCIRCTOMEvaluatorValueList => s"[ ${v.elements.map(_.toString).mkString(", ")} ]"
+      case v: PanamaCIRCTOMEvaluatorValuePath      => s"path{${v.toString}}"
+      case v: PanamaCIRCTOMEvaluatorValueList      => s"[ ${v.elements.map(_.toString).mkString(", ")} ]"
       case v: PanamaCIRCTOMEvaluatorValuePrimitive => s"prim{${v.toString}}"
-      case v: PanamaCIRCTOMEvaluatorValueObject =>
+      case v: PanamaCIRCTOMEvaluatorValueObject    =>
         val subfields = v.fieldNames
           .map(name => (name, v.field(name)))
           .map { case (name, value) => s".$name => { ${value.toString} }" }
@@ -103,7 +103,7 @@ abstract class PanamaCIRCTOMEvaluatorValue {
     }
   }
 }
-object PanamaCIRCTOMEvaluatorValue {
+object PanamaCIRCTOMEvaluatorValue         {
   def newValue(circt: PanamaCIRCT, value: OMEvaluatorValue): PanamaCIRCTOMEvaluatorValue = {
     if (circt.omEvaluatorValueIsAObject(value)) {
       new PanamaCIRCTOMEvaluatorValueObject(circt, value)
@@ -131,8 +131,8 @@ object PanamaCIRCTOMEvaluatorValue {
 
 class PanamaCIRCTOMEvaluatorValueList private[chisel3] (val circt: PanamaCIRCT, val value: OMEvaluatorValue)
     extends PanamaCIRCTOMEvaluatorValue {
-  val numElements: Long = circt.omEvaluatorListGetNumElements(value)
-  def getElement(index: Long) =
+  val numElements: Long                            = circt.omEvaluatorListGetNumElements(value)
+  def getElement(index: Long)                      =
     PanamaCIRCTOMEvaluatorValue.newValue(circt, circt.omEvaluatorListGetElement(value, index))
   def elements(): Seq[PanamaCIRCTOMEvaluatorValue] =
     (0.toLong until numElements).map { i =>
@@ -142,15 +142,15 @@ class PanamaCIRCTOMEvaluatorValueList private[chisel3] (val circt: PanamaCIRCT, 
 
 class PanamaCIRCTOMEvaluatorValueTuple private[chisel3] (val circt: PanamaCIRCT, val value: OMEvaluatorValue)
     extends PanamaCIRCTOMEvaluatorValue {
-  val numElements: Long = circt.omEvaluatorTupleGetNumElements(value)
+  val numElements: Long       = circt.omEvaluatorTupleGetNumElements(value)
   def getElement(index: Long) =
     PanamaCIRCTOMEvaluatorValue.newValue(circt, circt.omEvaluatorTupleGetElement(value, index))
 }
 
 class PanamaCIRCTOMEvaluatorValueMap private[chisel3] (val circt: PanamaCIRCT, val value: OMEvaluatorValue)
     extends PanamaCIRCTOMEvaluatorValue {
-  val tpe:  MlirType = circt.omEvaluatorMapGetType(value)
-  val keys: MlirAttribute = circt.omEvaluatorMapGetKeys(value)
+  val tpe: MlirType                   = circt.omEvaluatorMapGetType(value)
+  val keys: MlirAttribute             = circt.omEvaluatorMapGetKeys(value)
   def getElement(attr: MlirAttribute) =
     PanamaCIRCTOMEvaluatorValue.newValue(circt, circt.omEvaluatorMapGetElement(value, attr))
 }
@@ -185,19 +185,19 @@ abstract class PanamaCIRCTOMEvaluatorValuePrimitive extends PanamaCIRCTOMEvaluat
 }
 
 class PanamaCIRCTOMEvaluatorValuePrimitiveInteger private[chisel3] (
-  val circt:     PanamaCIRCT,
-  val value:     OMEvaluatorValue,
-  val primitive: MlirAttribute)
-    extends PanamaCIRCTOMEvaluatorValuePrimitive {
-  val integer:           Long = circt.mlirIntegerAttrGetValueSInt(primitive)
+  val circt: PanamaCIRCT,
+  val value: OMEvaluatorValue,
+  val primitive: MlirAttribute
+) extends PanamaCIRCTOMEvaluatorValuePrimitive {
+  val integer: Long             = circt.mlirIntegerAttrGetValueSInt(primitive)
   override def toString: String = integer.toString
 }
 
 class PanamaCIRCTOMEvaluatorValuePrimitiveString private[chisel3] (
-  val circt:     PanamaCIRCT,
-  val value:     OMEvaluatorValue,
-  val primitive: MlirAttribute)
-    extends PanamaCIRCTOMEvaluatorValuePrimitive {
+  val circt: PanamaCIRCT,
+  val value: OMEvaluatorValue,
+  val primitive: MlirAttribute
+) extends PanamaCIRCTOMEvaluatorValuePrimitive {
   override def toString: String = circt.mlirStringAttrGetValue(primitive)
 }
 
@@ -208,7 +208,7 @@ class PanamaCIRCTOMEvaluatorValueObject private[chisel3] (val circt: PanamaCIRCT
     PanamaCIRCTOMEvaluatorValue.newValue(circt, circt.omEvaluatorObjectGetField(value, name))
 
   def fieldNames(): Seq[String] = {
-    val names = circt.omEvaluatorObjectGetFieldNames(value)
+    val names    = circt.omEvaluatorObjectGetFieldNames(value)
     val numNames = circt.mlirArrayAttrGetNumElements(names)
     Seq.tabulate(numNames.toInt)(identity).map { i =>
       val name = circt.mlirArrayAttrGetElement(names, i)

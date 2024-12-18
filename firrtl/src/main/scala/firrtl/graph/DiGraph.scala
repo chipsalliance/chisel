@@ -91,7 +91,7 @@ class DiGraph[T](private[graph] val edges: LinkedHashMap[T, LinkedHashSet[T]]) {
         case _: PathNotFoundException =>
           foundPath = Seq.empty[T]
           false
-        case t: Throwable =>
+        case t: Throwable             =>
           throw t
 
       }
@@ -107,9 +107,9 @@ class DiGraph[T](private[graph] val edges: LinkedHashMap[T, LinkedHashSet[T]]) {
     */
   def linearize: Seq[T] = {
     // permanently marked nodes are implicitly held in order
-    val order = new mutable.ArrayBuffer[T]
+    val order      = new mutable.ArrayBuffer[T]
     // invariant: no intersection between unmarked and tempMarked
-    val unmarked = new mutable.LinkedHashSet[T]
+    val unmarked   = new mutable.LinkedHashSet[T]
     val tempMarked = new mutable.LinkedHashSet[T]
 
     case class LinearizeFrame[A](v: A, expanded: Boolean)
@@ -160,7 +160,7 @@ class DiGraph[T](private[graph] val edges: LinkedHashMap[T, LinkedHashSet[T]]) {
     * traversal
     */
   def BFS(root: T, blacklist: Set[T]): Map[T, T] = {
-    val prev = new mutable.LinkedHashMap[T, T]
+    val prev  = new mutable.LinkedHashMap[T, T]
     val queue = new mutable.Queue[T]
     queue.enqueue(root)
     while (queue.nonEmpty) {
@@ -216,7 +216,7 @@ class DiGraph[T](private[graph] val edges: LinkedHashMap[T, LinkedHashSet[T]]) {
     */
   def path(start: T, end: T, blacklist: Set[T]): Seq[T] = {
     val nodePath = new mutable.ArrayBuffer[T]
-    val prev = BFS(start, blacklist)
+    val prev     = BFS(start, blacklist)
     nodePath += end
     while (nodePath.last != start && prev.contains(nodePath.last)) {
       nodePath += prev(nodePath.last)
@@ -233,11 +233,11 @@ class DiGraph[T](private[graph] val edges: LinkedHashMap[T, LinkedHashSet[T]]) {
     */
   def findSCCs: Seq[Seq[T]] = {
     var counter: BigInt = 0
-    val stack = new mutable.Stack[T]
-    val onstack = new LinkedHashSet[T]
-    val indices = new LinkedHashMap[T, BigInt]
-    val lowlinks = new LinkedHashMap[T, BigInt]
-    val sccs = new mutable.ArrayBuffer[Seq[T]]
+    val stack           = new mutable.Stack[T]
+    val onstack         = new LinkedHashSet[T]
+    val indices         = new LinkedHashMap[T, BigInt]
+    val lowlinks        = new LinkedHashMap[T, BigInt]
+    val sccs            = new mutable.ArrayBuffer[Seq[T]]
 
     /*
      * Recursive code is transformed to iterative code by representing
@@ -255,9 +255,9 @@ class DiGraph[T](private[graph] val edges: LinkedHashMap[T, LinkedHashSet[T]]) {
       callStack.push(new StrongConnectFrame(node, getEdges(node).iterator))
       while (!callStack.isEmpty) {
         val frame = callStack.top
-        val v = frame.v
+        val v     = frame.v
         frame.childCall match {
-          case None =>
+          case None    =>
             indices(v) = counter
             lowlinks(v) = counter
             counter = counter + 1
@@ -307,9 +307,9 @@ class DiGraph[T](private[graph] val edges: LinkedHashMap[T, LinkedHashSet[T]]) {
     */
   def pathsInDAG(start: T): LinkedHashMap[T, Seq[Seq[T]]] = {
     // paths(v) holds the set of paths from start to v
-    val paths = new LinkedHashMap[T, mutable.Set[Seq[T]]]
-    val queue = new mutable.Queue[T]
-    val reachable = reachableFrom(start)
+    val paths                             = new LinkedHashMap[T, mutable.Set[Seq[T]]]
+    val queue                             = new mutable.Queue[T]
+    val reachable                         = reachableFrom(start)
     def addBinding(n: T, p: Seq[T]): Unit = {
       paths.getOrElseUpdate(n, new LinkedHashSet[Seq[T]]) += p
     }
@@ -331,19 +331,18 @@ class DiGraph[T](private[graph] val edges: LinkedHashMap[T, LinkedHashSet[T]]) {
   def reverse: DiGraph[T] = {
     val mdg = new MutableDiGraph[T]
     edges.foreach({ case (u, edges) => mdg.addVertex(u) })
-    edges.foreach({
-      case (u, edges) =>
-        edges.foreach(v => mdg.addEdge(v, u))
+    edges.foreach({ case (u, edges) =>
+      edges.foreach(v => mdg.addEdge(v, u))
     })
     DiGraph(mdg)
   }
 
   private def filterEdges(vprime: Set[T]): LinkedHashMap[T, LinkedHashSet[T]] = {
-    def filterNodeSet(s:        LinkedHashSet[T]): LinkedHashSet[T] = s.filter({ case (k) => vprime.contains(k) })
+    def filterNodeSet(s: LinkedHashSet[T]): LinkedHashSet[T]                                            = s.filter({ case (k) => vprime.contains(k) })
     def filterAdjacencyLists(m: LinkedHashMap[T, LinkedHashSet[T]]): LinkedHashMap[T, LinkedHashSet[T]] = m.map({
       case (k, v) => (k, filterNodeSet(v))
     })
-    val eprime: LinkedHashMap[T, LinkedHashSet[T]] = edges.filter({ case (k, v) => vprime.contains(k) })
+    val eprime: LinkedHashMap[T, LinkedHashSet[T]]                                                      = edges.filter({ case (k, v) => vprime.contains(k) })
     filterAdjacencyLists(eprime)
   }
 
@@ -406,28 +405,27 @@ class DiGraph[T](private[graph] val edges: LinkedHashMap[T, LinkedHashSet[T]]) {
   def prettyTree(charSet: CharSet = PrettyCharSet)(implicit ev: T =:= String): String = {
     // Set up characters for building the tree
     val (l, n, c) = (charSet.lastNode, charSet.notLastNode, charSet.continuation)
-    val ctab = " " * c.size + " "
+    val ctab      = " " * c.size + " "
 
     // Recursively adds each node of the DiGraph to accumulating List[String]
     // Uses List because prepend is cheap and this prevents quadratic behavior of String
     //   concatenations or even flatMapping on Seqs
     def rec(tab: String, node: T, mark: String, prev: List[String]): List[String] = {
-      val here = s"$mark$node"
+      val here     = s"$mark$node"
       val children = this.getEdges(node)
-      val last = children.size - 1
+      val last     = children.size - 1
       children.toList // Convert LinkedHashSet to List to avoid determinism issues
         .zipWithIndex // Find last
-        .foldLeft(here :: prev) {
-          case (acc, (nodex, idx)) =>
-            val nextTab = if (idx == last) tab + ctab else tab + c + " "
-            val nextMark = if (idx == last) tab + l else tab + n
-            rec(nextTab, nodex, nextMark + " ", acc)
+        .foldLeft(here :: prev) { case (acc, (nodex, idx)) =>
+          val nextTab  = if (idx == last) tab + ctab else tab + c + " "
+          val nextMark = if (idx == last) tab + l else tab + n
+          rec(nextTab, nodex, nextMark + " ", acc)
         }
     }
     this.findSources.toList // Convert LinkedHashSet to List to avoid determinism issues
       .sortBy(_.toString) // Make order deterministic
-      .foldLeft(Nil: List[String]) {
-        case (acc, root) => rec("", root, "", acc)
+      .foldLeft(Nil: List[String]) { case (acc, root) =>
+        rec("", root, "", acc)
       }
       .reverse
       .mkString("\n")

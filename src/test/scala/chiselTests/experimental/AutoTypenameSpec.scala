@@ -7,8 +7,8 @@ import chisel3.util.{Decoupled, Queue}
 import circt.stage.ChiselStage
 
 class Top(gen: Bundle) extends Module {
-  val in = IO(Input(gen))
-  val out = IO(Output(gen))
+  val in                   = IO(Input(gen))
+  val out                  = IO(Output(gen))
   override def desiredName = s"Top_${out.typeName}"
 }
 
@@ -56,7 +56,7 @@ class AutoTypenameSpec extends ChiselFlatSpec {
     runTest(new DataBundle(Bool()), "DataBundle_Bool")
     runTest(
       new DataBundle(new Bundle {
-        val bar = UInt(3.W)
+        val bar               = UInt(3.W)
         override def typeName = "AnonBundle"
       }),
       "DataBundle_AnonBundle"

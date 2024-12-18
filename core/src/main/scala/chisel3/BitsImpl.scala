@@ -35,7 +35,7 @@ private[chisel3] trait BitsImpl extends Element { self: Bits =>
       case KnownWidth(x) =>
         require(x >= n, s"Can't tail($n) for width $x < $n")
         Width(x - n)
-      case UnknownWidth => Width()
+      case UnknownWidth  => Width()
     }
     binop(sourceInfo, UInt(width = w), TailOp, n)
   }
@@ -93,7 +93,7 @@ private[chisel3] trait BitsImpl extends Element { self: Bits =>
         }
       }
     }
-    val theBits = this >> x
+    val theBits   = this >> x
     val noExtract = theBits.widthOption.exists(_ <= 1)
     if (noExtract) theBits.asBool else theBits(0)
   }
@@ -141,7 +141,7 @@ private[chisel3] trait BitsImpl extends Element { self: Bits =>
   protected def _applyImpl(x: BigInt, y: BigInt)(implicit sourceInfo: SourceInfo): UInt =
     _applyImpl(castToInt(x, "High index"), castToInt(y, "Low index"))
 
-  private[chisel3] def unop[T <: Data](sourceInfo: SourceInfo, dest: T, op: PrimOp): T = {
+  private[chisel3] def unop[T <: Data](sourceInfo: SourceInfo, dest: T, op: PrimOp): T                 = {
     requireIsHardware(this, "bits operated on")
     pushOp(DefPrim(sourceInfo, dest, op, this.ref))
   }
@@ -149,17 +149,17 @@ private[chisel3] trait BitsImpl extends Element { self: Bits =>
     requireIsHardware(this, "bits operated on")
     pushOp(DefPrim(sourceInfo, dest, op, this.ref, ILit(other)))
   }
-  private[chisel3] def binop[T <: Data](sourceInfo: SourceInfo, dest: T, op: PrimOp, other: Bits): T = {
+  private[chisel3] def binop[T <: Data](sourceInfo: SourceInfo, dest: T, op: PrimOp, other: Bits): T   = {
     requireIsHardware(this, "bits operated on")
     requireIsHardware(other, "bits operated on")
     pushOp(DefPrim(sourceInfo, dest, op, this.ref, other.ref))
   }
-  private[chisel3] def compop(sourceInfo: SourceInfo, op: PrimOp, other: Bits): Bool = {
+  private[chisel3] def compop(sourceInfo: SourceInfo, op: PrimOp, other: Bits): Bool                   = {
     requireIsHardware(this, "bits operated on")
     requireIsHardware(other, "bits operated on")
     pushOp(DefPrim(sourceInfo, Bool(), op, this.ref, other.ref))
   }
-  private[chisel3] def redop(sourceInfo: SourceInfo, op: PrimOp): Bool = {
+  private[chisel3] def redop(sourceInfo: SourceInfo, op: PrimOp): Bool                                 = {
     requireIsHardware(this, "bits operated on")
     pushOp(DefPrim(sourceInfo, Bool(), op, this.ref))
   }
@@ -277,9 +277,9 @@ private[chisel3] trait UIntImpl extends BitsImpl with Num[UInt] { self: UInt =>
 
   protected def _xorRImpl(implicit sourceInfo: SourceInfo): Bool = redop(sourceInfo, XorReduceOp)
 
-  protected def _impl_<(that: UInt)(implicit sourceInfo: SourceInfo): Bool =
+  protected def _impl_<(that: UInt)(implicit sourceInfo: SourceInfo): Bool  =
     compop(sourceInfo, LessOp, that)
-  protected def _impl_>(that: UInt)(implicit sourceInfo: SourceInfo): Bool =
+  protected def _impl_>(that: UInt)(implicit sourceInfo: SourceInfo): Bool  =
     compop(sourceInfo, GreaterOp, that)
   protected def _impl_<=(that: UInt)(implicit sourceInfo: SourceInfo): Bool =
     compop(sourceInfo, LessEqOp, that)
@@ -294,18 +294,18 @@ private[chisel3] trait UIntImpl extends BitsImpl with Num[UInt] { self: UInt =>
 
   protected def _impl_unary_!(implicit sourceInfo: SourceInfo): Bool = this === 0.U(1.W)
 
-  override protected def _impl_<<(that: Int)(implicit sourceInfo: SourceInfo): UInt =
+  override protected def _impl_<<(that: Int)(implicit sourceInfo: SourceInfo): UInt    =
     binop(sourceInfo, UInt(this.width + that), ShiftLeftOp, validateShiftAmount(that))
   override protected def _impl_<<(that: BigInt)(implicit sourceInfo: SourceInfo): UInt =
     this << castToInt(that, "Shift amount")
-  override protected def _impl_<<(that: UInt)(implicit sourceInfo: SourceInfo): UInt =
+  override protected def _impl_<<(that: UInt)(implicit sourceInfo: SourceInfo): UInt   =
     binop(sourceInfo, UInt(this.width.dynamicShiftLeft(that.width)), DynamicShiftLeftOp, that)
 
   // Implement legacy [buggy] UInt shr behavior for both Chisel and FIRRTL
   @nowarn("msg=method shiftRight in class Width is deprecated")
   private def legacyShiftRight(that: Int)(implicit sourceInfo: SourceInfo): UInt = {
     val resultWidth = this.width.shiftRight(that)
-    val op = binop(sourceInfo, UInt(resultWidth), ShiftRightOp, validateShiftAmount(that))
+    val op          = binop(sourceInfo, UInt(resultWidth), ShiftRightOp, validateShiftAmount(that))
     resultWidth match {
       // To emulate old FIRRTL behavior where minimum width is 1, we need to insert pad(_, 1) whenever
       // the width is or could be 0. Thus we check if it is known to be 0 or is unknown.
@@ -314,17 +314,17 @@ private[chisel3] trait UIntImpl extends BitsImpl with Num[UInt] { self: UInt =>
         // we need to seed a name to avoid name collisions.
         op.autoSeed("_shrLegacyWidthFixup")
         op.binop(sourceInfo, UInt(w), PadOp, 1)
-      case _ => op
+      case _                                  => op
     }
   }
 
-  override protected def _impl_>>(that: Int)(implicit sourceInfo: SourceInfo): UInt = {
+  override protected def _impl_>>(that: Int)(implicit sourceInfo: SourceInfo): UInt    = {
     if (Builder.useLegacyWidth) legacyShiftRight(that)
     else binop(sourceInfo, UInt(this.width.unsignedShiftRight(that)), ShiftRightOp, validateShiftAmount(that))
   }
   override protected def _impl_>>(that: BigInt)(implicit sourceInfo: SourceInfo): UInt =
     this >> castToInt(that, "Shift amount")
-  override protected def _impl_>>(that: UInt)(implicit sourceInfo: SourceInfo): UInt =
+  override protected def _impl_>>(that: UInt)(implicit sourceInfo: SourceInfo): UInt   =
     binop(sourceInfo, UInt(this.width), DynamicShiftRightOp, that)
 
   protected def _rotateLeftImpl(n: Int)(implicit sourceInfo: SourceInfo): UInt = width match {
@@ -343,13 +343,13 @@ private[chisel3] trait UIntImpl extends BitsImpl with Num[UInt] { self: UInt =>
   }
 
   private def dynamicShift(
-    n:           UInt,
+    n: UInt,
     staticShift: (UInt, Int) => UInt
   )(
     implicit sourceInfo: SourceInfo
   ): UInt =
-    n.asBools.zipWithIndex.foldLeft(this) {
-      case (in, (en, sh)) => Mux(en, staticShift(in, 1 << sh), in)
+    n.asBools.zipWithIndex.foldLeft(this) { case (in, (en, sh)) =>
+      Mux(en, staticShift(in, 1 << sh), in)
     }
 
   protected def _rotateRightImpl(n: UInt)(implicit sourceInfo: SourceInfo): UInt =
@@ -381,7 +381,7 @@ private[chisel3] trait UIntImpl extends BitsImpl with Num[UInt] { self: UInt =>
         }
       // Using SInt.Lit instead of .S so we can use Width argument which may be Unknown
       SInt.Lit(signedValue, this.width.max(Width(1))) // SInt literal has width >= 1
-    case None =>
+    case None        =>
       pushOp(DefPrim(sourceInfo, SInt(width), AsSIntOp, ref))
   }
 
@@ -429,7 +429,7 @@ private[chisel3] trait SIntImpl extends BitsImpl with Num[SInt] { self: SInt =>
 
   protected def _impl_*(that: UInt)(implicit sourceInfo: SourceInfo): SInt = {
     val thatToSInt = that.zext
-    val result = binop(sourceInfo, SInt(this.width + thatToSInt.width), TimesOp, thatToSInt)
+    val result     = binop(sourceInfo, SInt(this.width + thatToSInt.width), TimesOp, thatToSInt)
     result.tail(1).asSInt
   }
 
@@ -457,9 +457,9 @@ private[chisel3] trait SIntImpl extends BitsImpl with Num[SInt] { self: SInt =>
   protected def _impl_unary_~(implicit sourceInfo: SourceInfo): SInt =
     unop(sourceInfo, UInt(width = width), BitNotOp).asSInt
 
-  protected def _impl_<(that: SInt)(implicit sourceInfo: SourceInfo): Bool =
+  protected def _impl_<(that: SInt)(implicit sourceInfo: SourceInfo): Bool  =
     compop(sourceInfo, LessOp, that)
-  protected def _impl_>(that: SInt)(implicit sourceInfo: SourceInfo): Bool =
+  protected def _impl_>(that: SInt)(implicit sourceInfo: SourceInfo): Bool  =
     compop(sourceInfo, GreaterOp, that)
   protected def _impl_<=(that: SInt)(implicit sourceInfo: SourceInfo): Bool =
     compop(sourceInfo, LessEqOp, that)
@@ -476,15 +476,15 @@ private[chisel3] trait SIntImpl extends BitsImpl with Num[SInt] { self: SInt =>
     Mux(this < 0.S, -this, this)
   }
 
-  override protected def _impl_<<(that: Int)(implicit sourceInfo: SourceInfo): SInt =
+  override protected def _impl_<<(that: Int)(implicit sourceInfo: SourceInfo): SInt    =
     binop(sourceInfo, SInt(this.width + that), ShiftLeftOp, validateShiftAmount(that))
   override protected def _impl_<<(that: BigInt)(implicit sourceInfo: SourceInfo): SInt =
     this << castToInt(that, "Shift amount")
-  override protected def _impl_<<(that: UInt)(implicit sourceInfo: SourceInfo): SInt =
+  override protected def _impl_<<(that: UInt)(implicit sourceInfo: SourceInfo): SInt   =
     binop(sourceInfo, SInt(this.width.dynamicShiftLeft(that.width)), DynamicShiftLeftOp, that)
 
   @nowarn("msg=method shiftRight in class Width is deprecated")
-  override protected def _impl_>>(that: Int)(implicit sourceInfo: SourceInfo): SInt = {
+  override protected def _impl_>>(that: Int)(implicit sourceInfo: SourceInfo): SInt    = {
     // We don't need to pad to emulate old behavior for SInt, just emulate old Chisel behavior with reported width.
     // FIRRTL will give a minimum of 1 bit for SInt.
     val newWidth = if (Builder.useLegacyWidth) this.width.shiftRight(that) else this.width.signedShiftRight(that)
@@ -492,7 +492,7 @@ private[chisel3] trait SIntImpl extends BitsImpl with Num[SInt] { self: SInt =>
   }
   override protected def _impl_>>(that: BigInt)(implicit sourceInfo: SourceInfo): SInt =
     this >> castToInt(that, "Shift amount")
-  override protected def _impl_>>(that: UInt)(implicit sourceInfo: SourceInfo): SInt =
+  override protected def _impl_>>(that: UInt)(implicit sourceInfo: SourceInfo): SInt   =
     binop(sourceInfo, SInt(this.width), DynamicShiftRightOp, that)
 
   override private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): UInt =
@@ -507,7 +507,7 @@ private[chisel3] trait SIntImpl extends BitsImpl with Num[SInt] { self: SInt =>
           }
         // Using UInt.Lit instead of .U so we can use Width argument which may be Unknown
         UInt.Lit(posValue, this.width)
-      case None =>
+      case None        =>
         pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref))
     }
 

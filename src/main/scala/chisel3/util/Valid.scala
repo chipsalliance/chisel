@@ -49,8 +49,8 @@ class Valid[+T <: Data](gen: T) extends Bundle {
     */
   def map[B <: Data](f: T => B): Valid[B] = {
     val _map_bits = f(bits)
-    val _map = Wire(Valid(chiselTypeOf(_map_bits)))
-    _map.bits := _map_bits
+    val _map      = Wire(Valid(chiselTypeOf(_map_bits)))
+    _map.bits  := _map_bits
     _map.valid := valid
     _map.readOnly
   }
@@ -134,7 +134,7 @@ object Pipe {
     if (latency == 0) {
       val out = Wire(Valid(chiselTypeOf(enqBits)))
       out.valid := enqValid
-      out.bits := enqBits
+      out.bits  := enqBits
       out
     } else
       prefix("pipe") {

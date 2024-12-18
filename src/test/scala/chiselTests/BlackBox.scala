@@ -11,7 +11,7 @@ import chisel3.util._
 
 class BlackBoxInverter extends BlackBox {
   val io = IO(new Bundle() {
-    val in = Input(Bool())
+    val in  = Input(Bool())
     val out = Output(Bool())
   })
 }
@@ -20,15 +20,15 @@ class BlackBoxInverter extends BlackBox {
 // This style is discouraged, please use "val io"
 class BlackBoxInverterSuggestName extends BlackBox {
   override def desiredName: String = "BlackBoxInverter"
-  val foo = IO(new Bundle() {
-    val in = Input(Bool())
+  val foo                          = IO(new Bundle() {
+    val in  = Input(Bool())
     val out = Output(Bool())
   }).suggestName("io")
 }
 
 class BlackBoxPassthrough extends BlackBox {
   val io = IO(new Bundle() {
-    val in = Input(Bool())
+    val in  = Input(Bool())
     val out = Output(Bool())
   })
 }
@@ -36,7 +36,7 @@ class BlackBoxPassthrough extends BlackBox {
 // Test Flip on top-level IO
 class BlackBoxPassthrough2 extends BlackBox {
   val io = IO(Flipped(new Bundle() {
-    val in = Output(Bool())
+    val in  = Output(Bool())
     val out = Input(Bool())
   }))
 }
@@ -44,8 +44,8 @@ class BlackBoxPassthrough2 extends BlackBox {
 class BlackBoxRegister extends BlackBox {
   val io = IO(new Bundle() {
     val clock = Input(Clock())
-    val in = Input(Bool())
-    val out = Output(Bool())
+    val in    = Input(Bool())
+    val out   = Output(Bool())
   })
 }
 
@@ -87,13 +87,13 @@ class BlackBoxFlipTester extends BasicTester {
   */
 
 class MultiBlackBoxTester extends BasicTester {
-  val blackBoxInvPos = Module(new BlackBoxInverter)
-  val blackBoxInvNeg = Module(new BlackBoxInverter)
+  val blackBoxInvPos  = Module(new BlackBoxInverter)
+  val blackBoxInvNeg  = Module(new BlackBoxInverter)
   val blackBoxPassPos = Module(new BlackBoxPassthrough)
   val blackBoxPassNeg = Module(new BlackBoxPassthrough)
 
-  blackBoxInvPos.io.in := 1.U
-  blackBoxInvNeg.io.in := 0.U
+  blackBoxInvPos.io.in  := 1.U
+  blackBoxInvNeg.io.in  := 0.U
   blackBoxPassPos.io.in := 1.U
   blackBoxPassNeg.io.in := 0.U
 
@@ -106,14 +106,14 @@ class MultiBlackBoxTester extends BasicTester {
 
 class BlackBoxWithClockTester extends BasicTester {
   val blackBox = Module(new BlackBoxRegister)
-  val model = Reg(Bool())
+  val model    = Reg(Bool())
 
   val (cycles, end) = Counter(true.B, 15)
 
   val impetus = cycles(0)
   blackBox.io.clock := clock
-  blackBox.io.in := impetus
-  model := impetus
+  blackBox.io.in    := impetus
+  model             := impetus
 
   when(cycles > 0.U) {
     assert(blackBox.io.out === model)
@@ -158,7 +158,7 @@ class BlackBoxUIntIO extends BlackBox {
 }
 
 class SimplerBlackBoxWithParamsTester extends BasicTester {
-  val blackBoxTypeParamBit = Module(new BlackBoxTypeParam(1, "bit"))
+  val blackBoxTypeParamBit  = Module(new BlackBoxTypeParam(1, "bit"))
   val blackBoxTypeParamWord = Module(new BlackBoxTypeParam(32, "bit [31:0]"))
 
   val (cycles, end) = Counter(true.B, 4)
@@ -170,14 +170,14 @@ class SimplerBlackBoxWithParamsTester extends BasicTester {
 }
 
 class BlackBoxWithParamsTester extends BasicTester {
-  val blackBoxOne = Module(new BlackBoxConstant(1))
-  val blackBoxFour = Module(new BlackBoxConstant(4))
+  val blackBoxOne            = Module(new BlackBoxConstant(1))
+  val blackBoxFour           = Module(new BlackBoxConstant(4))
   val blackBoxStringParamOne = Module(new BlackBoxStringParam("one"))
   val blackBoxStringParamTwo = Module(new BlackBoxStringParam("two"))
-  val blackBoxRealParamOne = Module(new BlackBoxRealParam(1.0))
-  val blackBoxRealParamNeg = Module(new BlackBoxRealParam(-1.0))
-  val blackBoxTypeParamBit = Module(new BlackBoxTypeParam(1, "bit"))
-  val blackBoxTypeParamWord = Module(new BlackBoxTypeParam(32, "bit [31:0]"))
+  val blackBoxRealParamOne   = Module(new BlackBoxRealParam(1.0))
+  val blackBoxRealParamNeg   = Module(new BlackBoxRealParam(-1.0))
+  val blackBoxTypeParamBit   = Module(new BlackBoxTypeParam(1, "bit"))
+  val blackBoxTypeParamWord  = Module(new BlackBoxTypeParam(32, "bit [31:0]"))
 
   val (cycles, end) = Counter(true.B, 4)
 
@@ -206,21 +206,21 @@ class BlackBoxSpec extends ChiselFlatSpec {
   "A BlackBoxed register" should "work" in {
     assertTesterPasses({ new BlackBoxWithClockTester }, Seq("/chisel3/BlackBoxTest.v"))
   }
-  //TODO: SFC->MFC, this test is ignored because the parameters have undesired quotes around values in verilog in MFC
+  // TODO: SFC->MFC, this test is ignored because the parameters have undesired quotes around values in verilog in MFC
   "BlackBoxes with simpler parameters" should "work" ignore {
     assertTesterPasses(
       { new SimplerBlackBoxWithParamsTester },
       Seq("/chisel3/BlackBoxTest.v")
     )
   }
-  //TODO: SFC->MFC, this test is ignored because the parameters have undesired quotes around values in verilog in MFC
+  // TODO: SFC->MFC, this test is ignored because the parameters have undesired quotes around values in verilog in MFC
   "BlackBoxes with parameters" should "work" ignore {
     assertTesterPasses({ new BlackBoxWithParamsTester }, Seq("/chisel3/BlackBoxTest.v"))
   }
   "DataMirror.modulePorts" should "work with BlackBox" in {
     ChiselStage.emitCHIRRTL(new Module {
       val io = IO(new Bundle {})
-      val m = Module(new BlackBoxPassthrough)
+      val m  = Module(new BlackBoxPassthrough)
       assert(DataMirror.modulePorts(m) == Seq("in" -> m.io.in, "out" -> m.io.out))
     })
   }
@@ -249,12 +249,12 @@ class BlackBoxSpec extends ChiselFlatSpec {
     class ParameterizedBlackBox(m: Map[String, Param]) extends BlackBox(m) {
       val io = IO(new Bundle {
         val out = Output(Clock())
-        val in = Input(Clock())
+        val in  = Input(Clock())
       })
     }
 
     class Top(m: Map[String, Param]) extends Module {
-      val io = IO(new Bundle {})
+      val io  = IO(new Bundle {})
       val pbb = Module(new ParameterizedBlackBox(m))
       pbb.io.in := clock
     }

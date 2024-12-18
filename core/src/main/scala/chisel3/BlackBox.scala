@@ -24,9 +24,9 @@ package experimental {
 
   /** Parameters for BlackBoxes */
   sealed abstract class Param
-  case class IntParam(value: BigInt) extends Param
-  case class DoubleParam(value: Double) extends Param
-  case class StringParam(value: String) extends Param
+  case class IntParam(value: BigInt)           extends Param
+  case class DoubleParam(value: Double)        extends Param
+  case class StringParam(value: String)        extends Param
 
   /** Creates a parameter from the Printable's resulting format String */
   case class PrintableParam(value: chisel3.Printable, context: BaseModule) extends Param
@@ -78,10 +78,10 @@ package experimental {
       // Ports are named in the same way as regular Modules
       namePorts()
 
-      val firrtlPorts = getModulePorts.map {
-        case port => Port(port, port.specifiedDirection, UnlocatableSourceInfo)
+      val firrtlPorts = getModulePorts.map { case port =>
+        Port(port, port.specifiedDirection, UnlocatableSourceInfo)
       }
-      val component = DefBlackBox(this, name, firrtlPorts, SpecifiedDirection.Unspecified, params)
+      val component   = DefBlackBox(this, name, firrtlPorts, SpecifiedDirection.Unspecified, params)
       _component = Some(component)
       _component
     }
@@ -127,9 +127,7 @@ package experimental {
   * }}}
   * @note The parameters API is experimental and may change
   */
-abstract class BlackBox(
-  val params: Map[String, Param] = Map.empty[String, Param])
-    extends BaseBlackBox {
+abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param]) extends BaseBlackBox {
 
   // Find a Record port named "io" for purposes of stripping the prefix
   private[chisel3] lazy val _io: Option[Record] =
@@ -168,7 +166,7 @@ abstract class BlackBox(
     val firrtlPorts = namedPorts.map { namedPort =>
       Port(namedPort._2, namedPort._2.specifiedDirection, UnlocatableSourceInfo)
     }
-    val component = DefBlackBox(this, name, firrtlPorts, io.specifiedDirection, params)
+    val component   = DefBlackBox(this, name, firrtlPorts, io.specifiedDirection, params)
     _component = Some(component)
     _component
   }

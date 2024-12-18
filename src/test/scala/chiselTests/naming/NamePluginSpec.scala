@@ -21,7 +21,7 @@ class NamePluginSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
 
   "Scala plugin" should "name internally scoped instances" in {
     class Inner extends Module {}
-    class Test extends Module {
+    class Test  extends Module {
       { val myinstance = Module(new Inner) }
     }
     ChiselStage.emitCHIRRTL(new Test) should include("inst myinstance of Inner")
@@ -180,12 +180,12 @@ class NamePluginSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
     class Test extends RawModule {
       {
         val widthOpt: Option[Int] = Some(4)
-        val out = widthOpt.map { w =>
+        val out                   = widthOpt.map { w =>
           val port = IO(Output(UInt(w.W)))
           port
         }
-        val foo = out
-        val bar = out.get
+        val foo                   = out
+        val bar                   = out.get
       }
     }
 
@@ -196,12 +196,12 @@ class NamePluginSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
     class Test extends RawModule {
       {
         val widthOpt: Option[Int] = Some(4)
-        val fizz = widthOpt.map { w =>
+        val fizz                  = widthOpt.map { w =>
           val wire = Wire(UInt(w.W))
           wire
         }
-        val foo = fizz
-        val bar = fizz.get
+        val foo                   = fizz
+        val bar                   = fizz.get
       }
     }
 
@@ -245,7 +245,7 @@ class NamePluginSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
       {
         val (a, b) = {
           val x, y = Wire(UInt(3.W))
-          val sum = WireInit(x + y)
+          val sum  = WireInit(x + y)
           (x, y)
         }
       }
@@ -257,7 +257,7 @@ class NamePluginSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
   "Unapply assignments" should "not override already named things" in {
     class Test extends Module {
       {
-        val x = Wire(UInt(3.W))
+        val x      = Wire(UInt(3.W))
         val (a, b) = (x, Wire(UInt(3.W)))
       }
     }
@@ -269,7 +269,7 @@ class NamePluginSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
     case class Foo(x: UInt, y: UInt)
     class Test extends Module {
       {
-        def func() = Foo(Wire(UInt(3.W)), Wire(UInt(3.W)))
+        def func()    = Foo(Wire(UInt(3.W)), Wire(UInt(3.W)))
         val Foo(a, b) = func()
       }
     }
@@ -281,8 +281,8 @@ class NamePluginSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
     case class Foo(x: UInt, y: UInt)
     class Test extends Module {
       {
-        val w = Wire(UInt(3.W))
-        def func() = {
+        val w                       = Wire(UInt(3.W))
+        def func()                  = {
           val x = Foo(Wire(UInt(3.W)), Wire(UInt(3.W)))
           (x, w) :: Nil
         }
@@ -376,7 +376,7 @@ class NamePluginSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
     class Test extends Module {
       def myFunc(): (UInt, String) = {
         val out = IO(Output(UInt(3.W)))
-        val in = IO(Input(UInt(3.W)))
+        val in  = IO(Input(UInt(3.W)))
         out := Mux(in(0), RegNext(in + 2.U), in << 3)
         (out, "Hi!")
       }
@@ -402,7 +402,7 @@ class NamePluginSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
       }
       val y = Wire(UInt(3.W)).readOnly // readOnly is implemented with views
 
-      val z = Wire(UInt(3.W))
+      val z  = Wire(UInt(3.W))
       val zz = z.viewAs[UInt] // But don't accidentally override names
     }
 
@@ -415,7 +415,7 @@ class NamePluginSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
 
   "AffectsChiselName" should "name the user-defined type" in {
     case class SomeClass(d: UInt) extends AffectsChiselName
-    class Test extends Module {
+    class Test                    extends Module {
       val x = SomeClass(Wire(UInt(8.W)))
     }
     ChiselStage.emitCHIRRTL(new Test) should include("wire x_d :")
@@ -425,7 +425,7 @@ class NamePluginSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
     case class SomeClass(d: UInt) extends AffectsChiselName {
       override def productElementName(n: Int): String = ""
     }
-    class Test extends Module {
+    class Test                    extends Module            {
       val x = SomeClass(Wire(UInt(8.W)))
     }
     ChiselStage.emitCHIRRTL(new Test) should include("wire x :")

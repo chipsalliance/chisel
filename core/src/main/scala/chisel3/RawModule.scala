@@ -80,7 +80,7 @@ abstract class RawModule extends BaseModule {
   protected def atModuleBodyEnd(gen: => Unit): Unit = {
     _atModuleBodyEnd += { () => gen }
   }
-  private val _atModuleBodyEnd = new ArrayBuffer[() => Unit]
+  private val _atModuleBodyEnd                      = new ArrayBuffer[() => Unit]
 
   /** Hook to invoke hardware generators after a Module has been constructed and closed.
     *
@@ -120,7 +120,7 @@ abstract class RawModule extends BaseModule {
   protected def afterModuleBuilt(gen: => Unit): Unit = {
     _afterModuleBuilt += { () => gen }
   }
-  private val _afterModuleBuilt = new ArrayBuffer[() => Unit]
+  private val _afterModuleBuilt                      = new ArrayBuffer[() => Unit]
 
   //
   // RTL construction internals
@@ -140,7 +140,7 @@ abstract class RawModule extends BaseModule {
     require(Builder.currentBlock.isDefined, "must have block set")
     Builder.currentBlock.get.addCommand(c)
   }
-  protected def getCommands: Seq[Command] = {
+  protected def getCommands: Seq[Command]           = {
     require(_closed, "Can't get commands before module close")
     _body.getCommands()
   }
@@ -177,8 +177,8 @@ abstract class RawModule extends BaseModule {
     case id: assert.Assert    => id.forceName(default = "assert", _namespace)
     case id: assume.Assume    => id.forceName(default = "assume", _namespace)
     case id: cover.Cover      => id.forceName(default = "cover", _namespace)
-    case id: printf.Printf => id.forceName(default = "printf", _namespace)
-    case id: DynamicObject => {
+    case id: printf.Printf    => id.forceName(default = "printf", _namespace)
+    case id: DynamicObject    => {
       // Force name of the DynamicObject, and set its Property[ClassType] type's ref to the DynamicObject.
       // The type's ref can't be set upon instantiation, because the DynamicObject hasn't been named yet.
       // This also updates the source Class ref to the DynamicObject ref now that it's named.
@@ -186,30 +186,30 @@ abstract class RawModule extends BaseModule {
       id.getReference.setRef(id.getRef)
       id.setSourceClassRef()
     }
-    case id: StaticObject => {
+    case id: StaticObject     => {
       // Set the StaticObject's ref and Property[ClassType] type's ref to the BaseModule for the Class.
       // These refs can't be set upon instantiation, because the ModuleClone hasn't been named yet.
       id.setRef(id.getInstanceModule.getRef)
       id.getReference.setRef(id.getInstanceModule.getRef)
     }
-    case id: Data =>
+    case id: Data             =>
       if (id.isSynthesizable) {
         id.topBinding match {
-          case OpBinding(_, _) =>
+          case OpBinding(_, _)         =>
             id.forceName(default = "_T", _namespace)
           case MemoryPortBinding(_, _) =>
             id.forceName(default = "MPORT", _namespace)
-          case PortBinding(_) =>
+          case PortBinding(_)          =>
             id.forceName(default = "PORT", _namespace, true, x => ModuleIO(this, x))
-          case RegBinding(_, _) =>
+          case RegBinding(_, _)        =>
             id.forceName(default = "REG", _namespace)
-          case WireBinding(_, _) =>
+          case WireBinding(_, _)       =>
             id.forceName(default = "_WIRE", _namespace)
           // probes have their refs set eagerly
-          case _ => // don't name literals
+          case _                       => // don't name literals
         }
       }
-    case m: SramTarget =>
+    case m: SramTarget        =>
       id.forceName(default = "MEM", _namespace)
   }
 
@@ -237,9 +237,8 @@ abstract class RawModule extends BaseModule {
       nameId(id)
     }
 
-    val firrtlPorts = getModulePortsAndLocators.map {
-      case (port, sourceInfo) =>
-        Port(port, port.specifiedDirection, sourceInfo)
+    val firrtlPorts = getModulePortsAndLocators.map { case (port, sourceInfo) =>
+      Port(port, port.specifiedDirection, sourceInfo)
     }
     _firrtlPorts = Some(firrtlPorts)
 
@@ -284,7 +283,7 @@ abstract class RawModule extends BaseModule {
                 if !DataMirror.checkAlignmentTypeEquivalence(left, right) &&
                   DataMirror.checkAlignmentTypeEquivalence(left, Output(chiselTypeOf(right))) =>
               Connect(si, Node(left), ProbeRead(ProbeExpr(Node(right))))
-            case (_, _) => Connect(si, Node(left), Node(right))
+            case (_, _)                           => Connect(si, Node(left), Node(right))
           }
       }
     }

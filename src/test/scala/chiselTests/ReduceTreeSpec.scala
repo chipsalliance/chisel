@@ -8,25 +8,25 @@ import chisel3.testers.BasicTester
 
 class Arbiter[T <: Data: Manifest](n: Int, private val gen: T) extends Module {
   val io = IO(new Bundle {
-    val in = Flipped(Vec(n, new DecoupledIO(gen)))
+    val in  = Flipped(Vec(n, new DecoupledIO(gen)))
     val out = new DecoupledIO(gen)
   })
 
   def arbitrateTwo(a: DecoupledIO[T], b: DecoupledIO[T]) = {
 
     val idleA :: idleB :: hasA :: hasB :: Nil = Enum(4)
-    val regData = Reg(gen)
-    val regState = RegInit(idleA)
-    val out = Wire(new DecoupledIO(gen))
+    val regData                               = Reg(gen)
+    val regState                              = RegInit(idleA)
+    val out                                   = Wire(new DecoupledIO(gen))
 
-    a.ready := regState === idleA
-    b.ready := regState === idleB
+    a.ready   := regState === idleA
+    b.ready   := regState === idleB
     out.valid := (regState === hasA || regState === hasB)
 
     switch(regState) {
       is(idleA) {
         when(a.valid) {
-          regData := a.bits
+          regData  := a.bits
           regState := hasA
         }.otherwise {
           regState := idleB
@@ -34,7 +34,7 @@ class Arbiter[T <: Data: Manifest](n: Int, private val gen: T) extends Module {
       }
       is(idleB) {
         when(b.valid) {
-          regData := b.bits
+          regData  := b.bits
           regState := hasB
         }.otherwise {
           regState := idleA
@@ -68,7 +68,7 @@ class ReduceTreeBalancedTester(nodes: Int) extends BasicTester {
   val dut = Module(new Arbiter(nodes, UInt(16.W)))
   for (i <- 0 until nodes) {
     dut.io.in(i).valid := true.B
-    dut.io.in(i).bits := 0.U
+    dut.io.in(i).bits  := 0.U
   }
   dut.io.out.ready := true.B
 

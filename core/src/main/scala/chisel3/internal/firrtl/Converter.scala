@@ -16,19 +16,19 @@ import scala.collection.immutable.{Queue, VectorBuilder, VectorMap}
 private[chisel3] object Converter {
   // TODO modeled on unpack method on Printable, refactor?
   def unpack(pable: Printable, ctx: Component): (String, Seq[Arg]) = pable match {
-    case Printables(pables) =>
+    case Printables(pables)   =>
       val (fmts, args) = pables.map(p => unpack(p, ctx)).unzip
       (fmts.mkString, args.flatten.toSeq)
-    case PString(str) => (str.replaceAll("%", "%%"), List.empty)
+    case PString(str)         => (str.replaceAll("%", "%%"), List.empty)
     case format: FirrtlFormat =>
       ("%" + format.specifier, List(format.bits.ref))
-    case Name(data)     => (data.ref.name, List.empty)
-    case FullName(data) => (data.ref.fullName(ctx), List.empty)
-    case Percent        => ("%%", List.empty)
+    case Name(data)           => (data.ref.name, List.empty)
+    case FullName(data)       => (data.ref.fullName(ctx), List.empty)
+    case Percent              => ("%%", List.empty)
   }
 
   private def reportInternalError(msg: String): Nothing = {
-    val link = "https://github.com/chipsalliance/chisel3/issues/new"
+    val link    = "https://github.com/chipsalliance/chisel3/issues/new"
     val fullMsg = s"Internal Error! $msg This is a bug in Chisel, please file an issue at '$link'"
     throwException(fullMsg)
   }
@@ -36,7 +36,7 @@ private[chisel3] object Converter {
   def getRef(id: HasId, sourceInfo: SourceInfo): Arg =
     id.getOptionRef.getOrElse {
       val module = id._parent.map(m => s" '$id' was defined in module '$m'.").getOrElse("")
-      val loc = sourceInfo.makeMessage(" " + _)
+      val loc    = sourceInfo.makeMessage(" " + _)
       reportInternalError(s"Could not get ref for '$id'$loc!$module")
     }
 
@@ -46,8 +46,8 @@ private[chisel3] object Converter {
   }
 
   def convert(info: SourceInfo): fir.Info = info match {
-    case _:  NoSourceInfo => fir.NoInfo
-    case sl: SourceLine   => fir.FileInfo.fromUnescaped(sl.serialize)
+    case _: NoSourceInfo => fir.NoInfo
+    case sl: SourceLine  => fir.FileInfo.fromUnescaped(sl.serialize)
   }
 
   def convert(op: PrimOp): fir.PrimOp = firrtl.PrimOps.fromString(op.name)
@@ -63,77 +63,77 @@ private[chisel3] object Converter {
   //   * Memoize?
   //   * Move into the Chisel IR?
   def convert(arg: Arg, ctx: Component, info: SourceInfo): fir.Expression = arg match {
-    case Node(id) =>
+    case Node(id)                      =>
       convert(getRef(id, info), ctx, info)
-    case Ref(name) =>
+    case Ref(name)                     =>
       fir.Reference(name, fir.UnknownType)
-    case Slot(imm, name) =>
+    case Slot(imm, name)               =>
       fir.SubField(convert(imm, ctx, info), name, fir.UnknownType)
-    case OpaqueSlot(imm) =>
+    case OpaqueSlot(imm)               =>
       convert(imm, ctx, info)
-    case LitIndex(imm, idx) =>
+    case LitIndex(imm, idx)            =>
       fir.SubIndex(convert(imm, ctx, info), idx, fir.UnknownType)
-    case Index(imm, ILit(idx)) =>
+    case Index(imm, ILit(idx))         =>
       fir.SubIndex(convert(imm, ctx, info), castToInt(idx, "Index"), fir.UnknownType)
-    case Index(imm, value) =>
+    case Index(imm, value)             =>
       fir.SubAccess(convert(imm, ctx, info), convert(value, ctx, info), fir.UnknownType)
-    case ModuleIO(mod, name) =>
+    case ModuleIO(mod, name)           =>
       if (mod eq ctx.id) fir.Reference(name, fir.UnknownType)
       else fir.SubField(fir.Reference(getRef(mod, info).name, fir.UnknownType), name, fir.UnknownType)
-    case ModuleCloneIO(mod, name) =>
+    case ModuleCloneIO(mod, name)      =>
       if (mod eq ctx.id) clonedModuleIOError(mod, name, info)
       else fir.Reference(name)
-    case u @ ULit(n, UnknownWidth) =>
+    case u @ ULit(n, UnknownWidth)     =>
       fir.UIntLiteral(n, fir.IntWidth(u.minWidth))
-    case ULit(n, w) =>
+    case ULit(n, w)                    =>
       fir.UIntLiteral(n, convert(w))
-    case slit @ SLit(n, w) =>
+    case slit @ SLit(n, w)             =>
       fir.SIntLiteral(n, convert(w))
       val unsigned = if (n < 0) (BigInt(1) << slit.width.get) + n else n
-      val uint = convert(ULit(unsigned, slit.width), ctx, info)
+      val uint     = convert(ULit(unsigned, slit.width), ctx, info)
       fir.DoPrim(firrtl.PrimOps.AsSInt, Seq(uint), Seq.empty, fir.UnknownType)
     // TODO Simplify
-    case lit: ILit =>
+    case lit: ILit                     =>
       throw new InternalErrorException(s"Unexpected ILit: $lit")
-    case PropertyLit(tpe, lit) => tpe.convert(lit, ctx, info)
-    case e @ ProbeExpr(probe) =>
+    case PropertyLit(tpe, lit)         => tpe.convert(lit, ctx, info)
+    case e @ ProbeExpr(probe)          =>
       fir.ProbeExpr(convert(probe, ctx, info))
-    case e @ RWProbeExpr(probe) =>
+    case e @ RWProbeExpr(probe)        =>
       fir.RWProbeExpr(convert(probe, ctx, info))
-    case e @ ProbeRead(probe) =>
+    case e @ ProbeRead(probe)          =>
       fir.ProbeRead(convert(probe, ctx, info))
     case PropExpr(info, tpe, op, args) =>
       fir.PropExpr(convert(info), tpe, op, args.map(convert(_, ctx, info)))
-    case other =>
+    case other                         =>
       throw new InternalErrorException(s"Unexpected type in convert $other")
   }
 
   /** Convert Commands that map 1:1 to Statements */
   def convertCommand(cmd: Command, ctx: Component, typeAliases: Seq[String]): fir.Statement = cmd match {
-    case e: DefPrim[_] =>
+    case e: DefPrim[_]                                                                          =>
       val consts = e.args.collect { case ILit(i) => i }
-      val args = e.args.flatMap {
+      val args   = e.args.flatMap {
         case _: ILit => None
-        case other => Some(convert(other, ctx, e.sourceInfo))
+        case other   => Some(convert(other, ctx, e.sourceInfo))
       }
-      val expr = e.op.name match {
+      val expr   = e.op.name match {
         case "mux" =>
           assert(args.size == 3, s"Mux with unexpected args: $args")
           fir.Mux(args(0), args(1), args(2), fir.UnknownType)
-        case _ =>
+        case _     =>
           fir.DoPrim(convert(e.op), args, consts, fir.UnknownType)
       }
       fir.DefNode(convert(e.sourceInfo), e.name, expr)
-    case e @ DefWire(info, id) =>
+    case e @ DefWire(info, id)                                                                  =>
       fir.DefWire(convert(info), e.name, extractType(id, info, typeAliases))
-    case e @ DefReg(info, id, clock) =>
+    case e @ DefReg(info, id, clock)                                                            =>
       fir.DefRegister(
         convert(info),
         e.name,
         extractType(id, info, typeAliases),
         convert(clock, ctx, info)
       )
-    case e @ DefRegInit(info, id, clock, reset, init) =>
+    case e @ DefRegInit(info, id, clock, reset, init)                                           =>
       fir.DefRegisterWithReset(
         convert(info),
         e.name,
@@ -142,9 +142,9 @@ private[chisel3] object Converter {
         convert(reset, ctx, info),
         convert(init, ctx, info)
       )
-    case e @ DefMemory(info, id, t, size) =>
+    case e @ DefMemory(info, id, t, size)                                                       =>
       firrtl.CDefMemory(convert(info), e.name, extractType(t, info, typeAliases), size, false)
-    case e @ DefSeqMemory(info, id, t, size, ruw) =>
+    case e @ DefSeqMemory(info, id, t, size, ruw)                                               =>
       firrtl.CDefMemory(convert(info), e.name, extractType(t, info, typeAliases), size, true, ruw)
     case e @ FirrtlMemory(info, id, t, size, readPortNames, writePortNames, readwritePortNames) =>
       fir.DefMemory(
@@ -158,7 +158,7 @@ private[chisel3] object Converter {
         writePortNames,
         readwritePortNames
       )
-    case e: DefMemPort[_] =>
+    case e: DefMemPort[_]                                                                       =>
       val info = e.sourceInfo
       firrtl.CDefMPort(
         convert(e.sourceInfo),
@@ -168,17 +168,17 @@ private[chisel3] object Converter {
         Seq(convert(e.index, ctx, info), convert(e.clock, ctx, info)),
         convert(e.dir)
       )
-    case Connect(info, loc, exp) =>
+    case Connect(info, loc, exp)                                                                =>
       fir.Connect(convert(info), convert(loc, ctx, info), convert(exp, ctx, info))
-    case PropAssign(info, loc, exp) =>
+    case PropAssign(info, loc, exp)                                                             =>
       fir.PropAssign(convert(info), convert(loc, ctx, info), convert(exp, ctx, info))
-    case Attach(info, locs) =>
+    case Attach(info, locs)                                                                     =>
       fir.Attach(convert(info), locs.map(l => convert(l, ctx, info)))
-    case DefInvalid(info, arg) =>
+    case DefInvalid(info, arg)                                                                  =>
       fir.IsInvalid(convert(info), convert(arg, ctx, info))
-    case e @ DefInstance(info, id, _) =>
+    case e @ DefInstance(info, id, _)                                                           =>
       fir.DefInstance(convert(info), e.name, id.name)
-    case e @ DefInstanceChoice(info, _, default, option, choices) =>
+    case e @ DefInstanceChoice(info, _, default, option, choices)                               =>
       fir.DefInstanceChoice(
         convert(info),
         e.name,
@@ -186,11 +186,11 @@ private[chisel3] object Converter {
         option,
         choices.map { case (opt, mod) => (opt, mod.name) }
       )
-    case e @ DefObject(info, _, className) =>
+    case e @ DefObject(info, _, className)                                                      =>
       fir.DefObject(convert(info), e.name, className)
-    case e @ Stop(_, info, clock, ret) =>
+    case e @ Stop(_, info, clock, ret)                                                          =>
       fir.Stop(convert(info), ret, convert(clock, ctx, info), firrtl.Utils.one, e.name)
-    case e @ Printf(_, info, clock, pable) =>
+    case e @ Printf(_, info, clock, pable)                                                      =>
       val (fmt, args) = unpack(pable, ctx)
       fir.Print(
         convert(info),
@@ -200,13 +200,13 @@ private[chisel3] object Converter {
         firrtl.Utils.one,
         e.name
       )
-    case e @ ProbeDefine(sourceInfo, sink, probeExpr) =>
+    case e @ ProbeDefine(sourceInfo, sink, probeExpr)                                           =>
       fir.ProbeDefine(convert(sourceInfo), convert(sink, ctx, sourceInfo), convert(probeExpr, ctx, sourceInfo))
-    case e @ ProbeForceInitial(sourceInfo, probe, value) =>
+    case e @ ProbeForceInitial(sourceInfo, probe, value)                                        =>
       fir.ProbeForceInitial(convert(sourceInfo), convert(probe, ctx, sourceInfo), convert(value, ctx, sourceInfo))
-    case e @ ProbeReleaseInitial(sourceInfo, probe) =>
+    case e @ ProbeReleaseInitial(sourceInfo, probe)                                             =>
       fir.ProbeReleaseInitial(convert(sourceInfo), convert(probe, ctx, sourceInfo))
-    case e @ ProbeForce(sourceInfo, clock, cond, probe, value) =>
+    case e @ ProbeForce(sourceInfo, clock, cond, probe, value)                                  =>
       fir.ProbeForce(
         convert(sourceInfo),
         convert(clock, ctx, sourceInfo),
@@ -214,16 +214,16 @@ private[chisel3] object Converter {
         convert(probe, ctx, sourceInfo),
         convert(value, ctx, sourceInfo)
       )
-    case e @ ProbeRelease(sourceInfo, clock, cond, probe) =>
+    case e @ ProbeRelease(sourceInfo, clock, cond, probe)                                       =>
       fir.ProbeRelease(
         convert(sourceInfo),
         convert(clock, ctx, sourceInfo),
         convert(cond, ctx, sourceInfo),
         convert(probe, ctx, sourceInfo)
       )
-    case e @ Verification(_, op, info, clk, pred, pable) =>
+    case e @ Verification(_, op, info, clk, pred, pable)                                        =>
       val (fmt, args) = unpack(pable, ctx)
-      val firOp = op match {
+      val firOp       = op match {
         case Formal.Assert => fir.Formal.Assert
         case Formal.Assume => fir.Formal.Assume
         case Formal.Cover  => fir.Formal.Cover
@@ -238,15 +238,15 @@ private[chisel3] object Converter {
         args.map(a => convert(a, ctx, info)),
         e.name
       )
-    case i @ DefIntrinsic(info, intrinsic, args, params) =>
+    case i @ DefIntrinsic(info, intrinsic, args, params)                                        =>
       fir.IntrinsicStmt(
         convert(info),
         intrinsic,
         args.map(a => convert(a, ctx, info)),
         params.map { case (k, v) => convert(k, v) }
       )
-    case i @ DefIntrinsicExpr(info, intrinsic, id, args, params) =>
-      val tpe = extractType(id, info, typeAliases)
+    case i @ DefIntrinsicExpr(info, intrinsic, id, args, params)                                =>
+      val tpe  = extractType(id, info, typeAliases)
       val expr = fir.IntrinsicExpr(
         intrinsic,
         args.map(a => convert(a, ctx, info)),
@@ -254,14 +254,14 @@ private[chisel3] object Converter {
         tpe
       )
       fir.DefNode(convert(info), i.name, expr)
-    case When(info, pred, ifRegion, elseRegion) =>
+    case When(info, pred, ifRegion, elseRegion)                                                 =>
       fir.Conditionally(
         convert(info),
         convert(pred, ctx, info),
         convert(ifRegion, ctx, typeAliases),
         if (elseRegion.nonEmpty) convert(elseRegion, ctx, typeAliases) else fir.EmptyStmt
       )
-    case LayerBlock(info, layer, region) =>
+    case LayerBlock(info, layer, region)                                                        =>
       fir.LayerBlock(convert(info), layer, convert(region, ctx, typeAliases))
   }
 
@@ -292,8 +292,8 @@ private[chisel3] object Converter {
     * @return FIRRTL Statement that is equivalent to the input block
     */
   def convert(block: Block, ctx: Component, typeAliases: Seq[String]): fir.Statement = {
-    val stmts = new VectorBuilder[fir.Statement]()
-    val commands = block.getCommands()
+    val stmts          = new VectorBuilder[fir.Statement]()
+    val commands       = block.getCommands()
     val secretCommands = block.getSecretCommands()
     (commands.knownSize, secretCommands.knownSize) match {
       case (-1, _)  => ()
@@ -313,26 +313,26 @@ private[chisel3] object Converter {
   }
 
   private def firrtlUserDirOf(t: Data): SpecifiedDirection = t match {
-    case t: Vec[_] =>
+    case t: Vec[_]                    =>
       SpecifiedDirection.fromParent(t.specifiedDirection, firrtlUserDirOf(t.sample_element))
     case t: Record if t._isOpaqueType =>
       SpecifiedDirection.fromParent(t.specifiedDirection, firrtlUserDirOf(t.elementsIterator.next()))
-    case t => t.specifiedDirection
+    case t                            => t.specifiedDirection
   }
 
   def extractType(baseType: Data, info: SourceInfo, typeAliases: Seq[String] = Seq.empty): fir.Type =
     extractType(baseType, false, info, true, true, typeAliases)
 
   def extractType(
-    baseType:    Data,
-    clearDir:    Boolean,
-    info:        SourceInfo,
-    checkProbe:  Boolean,
-    checkConst:  Boolean,
+    baseType: Data,
+    clearDir: Boolean,
+    info: SourceInfo,
+    checkProbe: Boolean,
+    checkConst: Boolean,
     typeAliases: Seq[String]
   ): fir.Type = baseType match {
     // extract underlying type for probe
-    case t: Data if (checkProbe && t.probeInfo.nonEmpty) =>
+    case t: Data if (checkProbe && t.probeInfo.nonEmpty)                        =>
       if (t.probeInfo.get.writable) {
         fir.RWProbeType(
           extractType(t, clearDir, info, false, checkConst, typeAliases),
@@ -345,16 +345,16 @@ private[chisel3] object Converter {
         )
       }
     // extract underlying type for const
-    case t: Data if (checkConst && t.isConst) =>
+    case t: Data if (checkConst && t.isConst)                                   =>
       fir.ConstType(extractType(t, clearDir, info, checkProbe, false, typeAliases))
-    case _: Clock      => fir.ClockType
-    case _: AsyncReset => fir.AsyncResetType
-    case _: ResetType  => fir.ResetType
-    case t: EnumType   => fir.UIntType(convert(t.width))
-    case t: UInt       => fir.UIntType(convert(t.width))
-    case t: SInt       => fir.SIntType(convert(t.width))
-    case t: Analog => fir.AnalogType(convert(t.width))
-    case t: Vec[_] =>
+    case _: Clock                                                               => fir.ClockType
+    case _: AsyncReset                                                          => fir.AsyncResetType
+    case _: ResetType                                                           => fir.ResetType
+    case t: EnumType                                                            => fir.UIntType(convert(t.width))
+    case t: UInt                                                                => fir.UIntType(convert(t.width))
+    case t: SInt                                                                => fir.SIntType(convert(t.width))
+    case t: Analog                                                              => fir.AnalogType(convert(t.width))
+    case t: Vec[_]                                                              =>
       val childClearDir = clearDir ||
         t.specifiedDirection == SpecifiedDirection.Input || t.specifiedDirection == SpecifiedDirection.Output
       // if Vector is a probe, don't emit Probe<...> on its elements
@@ -362,16 +362,16 @@ private[chisel3] object Converter {
     // Handle aliased bundles: Emit an AliasType directly
     case t: HasTypeAlias if t.finalizedAlias.exists { typeAliases.contains(_) } =>
       fir.AliasType(t.finalizedAlias.get)
-    case t: Record => {
-      val childClearDir = clearDir ||
+    case t: Record                                                              => {
+      val childClearDir                  = clearDir ||
         t.specifiedDirection == SpecifiedDirection.Input || t.specifiedDirection == SpecifiedDirection.Output
       // if Record is a probe, don't emit Probe<...> on its elements
       def eltField(elt: Data): fir.Field = (childClearDir, firrtlUserDirOf(elt)) match {
-        case (true, _) =>
+        case (true, _)                                                           =>
           fir.Field(getRef(elt, info).name, fir.Default, extractType(elt, true, info, checkProbe, true, typeAliases))
         case (false, SpecifiedDirection.Unspecified | SpecifiedDirection.Output) =>
           fir.Field(getRef(elt, info).name, fir.Default, extractType(elt, false, info, checkProbe, true, typeAliases))
-        case (false, SpecifiedDirection.Flip | SpecifiedDirection.Input) =>
+        case (false, SpecifiedDirection.Flip | SpecifiedDirection.Input)         =>
           fir.Field(getRef(elt, info).name, fir.Flip, extractType(elt, false, info, checkProbe, true, typeAliases))
       }
       if (!t._isOpaqueType)
@@ -379,48 +379,48 @@ private[chisel3] object Converter {
       else
         extractType(t._elements.head._2, childClearDir, info, checkProbe, true, typeAliases)
     }
-    case t: Property[_] => t.getPropertyType
+    case t: Property[_]                                                         => t.getPropertyType
   }
 
   def convert(name: String, param: Param): fir.Param = param match {
-    case IntParam(value)    => fir.IntParam(name, value)
-    case DoubleParam(value) => fir.DoubleParam(name, value)
-    case StringParam(value) => fir.StringParam(name, fir.StringLit(value))
+    case IntParam(value)           => fir.IntParam(name, value)
+    case DoubleParam(value)        => fir.DoubleParam(name, value)
+    case StringParam(value)        => fir.StringParam(name, fir.StringLit(value))
     case PrintableParam(value, id) => {
-      val ctx = id._component.get
+      val ctx      = id._component.get
       val (fmt, _) = unpack(value, ctx)
       fir.StringParam(name, fir.StringLit(fmt))
     }
-    case RawParam(value) => fir.RawStringParam(name, value)
+    case RawParam(value)           => fir.RawStringParam(name, value)
   }
 
   // TODO: Modify Panama CIRCT to account for type aliasing information. This is a temporary hack to
   // allow Panama CIRCT to compile
   def convert(
-    port:   Port,
+    port: Port,
     topDir: SpecifiedDirection
   ): fir.Port = convert(port, Seq.empty, topDir)
 
   def convert(
-    port:        Port,
+    port: Port,
     typeAliases: Seq[String],
-    topDir:      SpecifiedDirection = SpecifiedDirection.Unspecified
+    topDir: SpecifiedDirection = SpecifiedDirection.Unspecified
   ): fir.Port = {
     val resolvedDir = SpecifiedDirection.fromParent(topDir, firrtlUserDirOf(port.id))
-    val dir = resolvedDir match {
+    val dir         = resolvedDir match {
       case SpecifiedDirection.Unspecified | SpecifiedDirection.Output => fir.Output
       case SpecifiedDirection.Flip | SpecifiedDirection.Input         => fir.Input
     }
-    val clearDir = resolvedDir match {
+    val clearDir    = resolvedDir match {
       case SpecifiedDirection.Input | SpecifiedDirection.Output     => true
       case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip => false
     }
-    val tpe = extractType(port.id, clearDir, port.sourceInfo, true, true, typeAliases)
+    val tpe         = extractType(port.id, clearDir, port.sourceInfo, true, true, typeAliases)
     fir.Port(convert(port.sourceInfo), getRef(port.id, port.sourceInfo).name, dir, tpe)
   }
 
   def convert(component: Component, typeAliases: Seq[String]): fir.DefModule = component match {
-    case ctx @ DefModule(id, name, public, layers, ports, block) =>
+    case ctx @ DefModule(id, name, public, layers, ports, block)   =>
       fir.Module(
         convert(id._getSourceLocator),
         name,
@@ -429,7 +429,7 @@ private[chisel3] object Converter {
         (ports ++ ctx.secretPorts).map(p => convert(p, typeAliases)),
         convert(block, ctx, typeAliases)
       )
-    case ctx @ DefBlackBox(id, name, ports, topDir, params) =>
+    case ctx @ DefBlackBox(id, name, ports, topDir, params)        =>
       fir.ExtModule(
         convert(id._getSourceLocator),
         name,
@@ -445,7 +445,7 @@ private[chisel3] object Converter {
         id.intrinsic,
         params.keys.toList.sorted.map { name => convert(name, params(name)) }
       )
-    case ctx @ DefClass(id, name, ports, block) =>
+    case ctx @ DefClass(id, name, ports, block)                    =>
       fir.DefClass(
         convert(id._getSourceLocator),
         name,
@@ -484,7 +484,7 @@ private[chisel3] object Converter {
 
   // TODO Unclear if this should just be the default
   def convertLazily(circuit: Circuit): fir.Circuit = {
-    val lazyModules = LazyList() ++ circuit.components
+    val lazyModules              = LazyList() ++ circuit.components
     val typeAliases: Seq[String] = circuit.typeAliases.map(_.name)
     fir.Circuit(
       fir.NoInfo,

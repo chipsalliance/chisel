@@ -34,24 +34,24 @@ import chisel3.reflect.DataMirror
 /** Common utility functions for Chisel unit tests. */
 trait ChiselRunners extends Assertions {
   private val verilatorBackend = verilator.Backend.initializeFromProcessEnvironment()
-  private val timeStampFormat = new SimpleDateFormat("yyyyMMddHHmmss")
+  private val timeStampFormat  = new SimpleDateFormat("yyyyMMddHHmmss")
   def runTester(
-    t:                    => BasicTester,
+    t: => BasicTester,
     additionalVResources: Seq[String] = Seq(),
-    layerControl:         LayerControl.Type = LayerControl.EnableAll
+    layerControl: LayerControl.Type = LayerControl.EnableAll
   ): Boolean = {
-    val workspacePath = Seq(
+    val workspacePath    = Seq(
       "test_run_dir",
       getClass.getSimpleName,
       /// This is taken from the legacy `TesterDriver` class. It isn't ideal and we hope to improve this eventually.
       timeStampFormat.format(Calendar.getInstance().getTime())
     ).mkString("/")
-    val workspace = new Workspace(workspacePath)
+    val workspace        = new Workspace(workspacePath)
     workspace.reset()
     val elaboratedModule = workspace.elaborateGeneratedModule({ () => t })
     additionalVResources.foreach(workspace.addPrimarySourceFromResource(getClass(), _))
     workspace.generateAdditionalSources()
-    val simulation = workspace.compile(verilatorBackend)(
+    val simulation       = workspace.compile(verilatorBackend)(
       "verilator", {
         import CommonCompilationSettings._
         CommonCompilationSettings(
@@ -74,7 +74,7 @@ trait ChiselRunners extends Assertions {
     try {
       simulation
         .runElaboratedModule(elaboratedModule) { module =>
-          val dut = module.wrapped
+          val dut   = module.wrapped
           val clock = module.port(dut.clock)
           val reset = module.port(dut.reset)
           reset.set(1)
@@ -113,16 +113,16 @@ trait ChiselRunners extends Assertions {
     }
   }
   def assertTesterPasses(
-    t:                    => BasicTester,
+    t: => BasicTester,
     additionalVResources: Seq[String] = Seq(),
-    layerControl:         LayerControl.Type = LayerControl.EnableAll
+    layerControl: LayerControl.Type = LayerControl.EnableAll
   ): Unit = {
     assert(runTester(t, additionalVResources, layerControl))
   }
   def assertTesterFails(
-    t:                    => BasicTester,
+    t: => BasicTester,
     additionalVResources: Seq[String] = Seq(),
-    layerControl:         LayerControl.Type = LayerControl.EnableAll
+    layerControl: LayerControl.Type = LayerControl.EnableAll
   ): Unit = {
     assert(!runTester(t, additionalVResources, layerControl))
   }
@@ -131,9 +131,9 @@ trait ChiselRunners extends Assertions {
     class TestModule extends Module {
       val testPoint = gen
       assert(testPoint.getWidth === expected)
-      val out = IO(chiselTypeOf(testPoint))
+      val out       = IO(chiselTypeOf(testPoint))
       // Sanity check that firrtl doesn't change the width
-      val zero = 0.U(0.W).asTypeOf(chiselTypeOf(testPoint))
+      val zero      = 0.U(0.W).asTypeOf(chiselTypeOf(testPoint))
       if (DataMirror.isWire(testPoint)) {
         testPoint := zero
       }
@@ -152,12 +152,12 @@ trait ChiselRunners extends Assertions {
 
   def assertInferredWidth(expected: Int, args: Iterable[String] = Nil)(gen: => Data)(implicit pos: Position): Unit = {
     class TestModule extends Module {
-      val testPoint = gen
+      val testPoint  = gen
       assert(!testPoint.isWidthKnown, s"Asserting that width should be inferred yet width is known to Chisel!")
       // Sanity check that firrtl doesn't change the width
       val widthcheck = Wire(chiselTypeOf(testPoint))
       dontTouch(widthcheck)
-      val zero = 0.U(0.W).asTypeOf(chiselTypeOf(testPoint))
+      val zero       = 0.U(0.W).asTypeOf(chiselTypeOf(testPoint))
       if (DataMirror.isWire(testPoint)) {
         testPoint := zero
       }
@@ -186,8 +186,8 @@ trait ChiselRunners extends Assertions {
         Array("--target-dir", BackendCompilationUtilities.createTestDirectory(this.getClass.getSimpleName).toString),
         Seq(ChiselGeneratorAnnotation(() => t), CIRCTTargetAnnotation(CIRCTTarget.SystemVerilog))
       )
-      .collectFirst {
-        case EmittedVerilogCircuitAnnotation(a) => a.value
+      .collectFirst { case EmittedVerilogCircuitAnnotation(a) =>
+        a.value
       }
       .getOrElse(fail("No Verilog circuit was emitted by the FIRRTL compiler!"))
   }
@@ -216,9 +216,9 @@ trait FileCheck extends BeforeAndAfterEachTestData { this: Suite =>
 
   private def sanitize(n: String): String = n.replaceAll(" ", "_").replaceAll("\\W+", "")
 
-  private val testRunDir: os.Path = os.pwd / os.RelPath(BackendCompilationUtilities.TestDirectory)
-  private val suiteDir:   os.Path = testRunDir / sanitize(suiteName)
-  private var checkFile:  Option[os.Path] = None
+  private val testRunDir: os.Path        = os.pwd / os.RelPath(BackendCompilationUtilities.TestDirectory)
+  private val suiteDir: os.Path          = testRunDir / sanitize(suiteName)
+  private var checkFile: Option[os.Path] = None
 
   override def beforeEach(testData: TestData): Unit = {
     // TODO check that these are always available
@@ -250,7 +250,7 @@ trait FileCheck extends BeforeAndAfterEachTestData { this: Suite =>
   def elaborateAndFileCheckOutAndErr(t: => RawModule, fileCheckArgs: String*)(check: String): Unit = {
     val outStream = new ByteArrayOutputStream()
     withOut(outStream)(withErr(outStream)(ChiselStage.emitCHIRRTL(t)))
-    val result = outStream.toString
+    val result    = outStream.toString
     fileCheckString(outStream.toString, fileCheckArgs: _*)(check)
   }
 }
@@ -276,10 +276,10 @@ abstract class ChiselPropSpec extends AnyPropSpec with ChiselRunners with ScalaC
 
   // Generator for positive (ascending or descending) ranges.
   def posRange: Gen[Range] = for {
-    dir <- Gen.oneOf(true, false)
+    dir  <- Gen.oneOf(true, false)
     step <- Gen.choose(1, 3)
-    m <- Gen.choose(1, 10)
-    n <- Gen.choose(1, 10)
+    m    <- Gen.choose(1, 10)
+    n    <- Gen.choose(1, 10)
   } yield {
     if (dir) {
       Range(m, (m + n) * step, step)
@@ -338,7 +338,7 @@ trait Utils {
     */
   def grabStdOutErr[T](thunk: => T): (String, String, T) = {
     val stdout, stderr = new ByteArrayOutputStream()
-    val ret = scala.Console.withOut(stdout) { scala.Console.withErr(stderr) { thunk } }
+    val ret            = scala.Console.withOut(stdout) { scala.Console.withErr(stderr) { thunk } }
     (stdout.toString, stderr.toString, ret)
   }
 
@@ -354,9 +354,9 @@ trait Utils {
     * @return a tuple containing LOGGED, and what the thunk returns
     */
   def grabLogLevel[T](level: LogLevel.Value)(thunk: => T): (String, T) = {
-    val baos = new ByteArrayOutputStream()
+    val baos   = new ByteArrayOutputStream()
     val stream = new PrintStream(baos, true, "utf-8")
-    val ret = Logger.makeScope(LogLevelAnnotation(level) :: Nil) {
+    val ret    = Logger.makeScope(LogLevelAnnotation(level) :: Nil) {
       Logger.setOutput(stream)
       thunk
     }
@@ -398,7 +398,7 @@ trait Utils {
 
     exceptions.collectFirst { case a: A => a } match {
       case Some(a) => throw a
-      case None =>
+      case None    =>
         exceptions match {
           case Nil    => ()
           case h :: t => throw h
@@ -410,19 +410,19 @@ trait Utils {
 
 /** Contains helpful function to assert both statements to match, and statements to omit */
 trait MatchesAndOmits extends Assertions {
-  private def matches(lines: List[String], matchh: String): Option[String] = lines.filter(_.contains(matchh)).lastOption
-  private def omits(line:    String, omit:         String): Option[(String, String)] =
+  private def matches(lines: List[String], matchh: String): Option[String]         = lines.filter(_.contains(matchh)).lastOption
+  private def omits(line: String, omit: String): Option[(String, String)]          =
     if (line.contains(omit)) Some((omit, line)) else None
-  private def omits(lines: List[String], omit: String): Seq[(String, String)] = lines.flatMap { omits(_, omit) }
+  private def omits(lines: List[String], omit: String): Seq[(String, String)]      = lines.flatMap { omits(_, omit) }
   def matchesAndOmits(output: String)(matchList: String*)(omitList: String*): Unit = {
-    val lines = output.split("\n").toList
+    val lines     = output.split("\n").toList
     val unmatched = matchList.flatMap { m =>
       if (matches(lines, m).nonEmpty) None else Some(m)
     }.map(x => s"  > '$x' was unmatched")
-    val unomitted = omitList.flatMap { o => omits(lines, o) }.map {
-      case (o, l) => s"  > '$o' was not omitted in ($l)"
+    val unomitted = omitList.flatMap { o => omits(lines, o) }.map { case (o, l) =>
+      s"  > '$o' was not omitted in ($l)"
     }
-    val results = unmatched ++ unomitted
+    val results   = unmatched ++ unomitted
     assert(results.isEmpty, results.mkString("\n") + s"\nFull Input:\n'$output'\n")
   }
 }

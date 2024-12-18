@@ -12,14 +12,15 @@ package logger
 class LoggerOptions private[logger] (
   val globalLogLevel: LogLevel.Value = LogLevelAnnotation().globalLogLevel,
   val classLogLevels: Map[String, LogLevel.Value] = Map.empty,
-  val logClassNames:  Boolean = false,
-  val logFileName:    Option[String] = None) {
+  val logClassNames: Boolean = false,
+  val logFileName: Option[String] = None
+) {
 
   private[logger] def copy(
     globalLogLevel: LogLevel.Value = globalLogLevel,
     classLogLevels: Map[String, LogLevel.Value] = classLogLevels,
-    logClassNames:  Boolean = logClassNames,
-    logFileName:    Option[String] = logFileName
+    logClassNames: Boolean = logClassNames,
+    logFileName: Option[String] = logFileName
   ): LoggerOptions = {
 
     new LoggerOptions(

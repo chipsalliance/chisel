@@ -68,7 +68,7 @@ class StageMain(val stage: Stage) {
   final def main(args: Array[String]): Unit = try {
     stage.execute(args, Seq.empty)
   } catch {
-    case a: StageError =>
+    case a: StageError       =>
       System.exit(a.code.number)
     case a: OptionsException =>
       StageUtils.dramaticUsageError(a.message)

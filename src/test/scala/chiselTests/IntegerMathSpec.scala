@@ -7,13 +7,13 @@ import chisel3.testers.BasicTester
 
 class IntegerMathTester extends BasicTester {
 
-  //TODO: Add more operators
+  // TODO: Add more operators
 
   /* absolute values tests */
 
-  val uint = 3.U(4.W)
-  val sint = (-3).S
-  val sintpos = 3.S
+  val uint         = 3.U(4.W)
+  val sint         = (-3).S
+  val sintpos      = 3.S
   val wrongSIntPos = 4.S
 
   assert(uint.abs === uint)

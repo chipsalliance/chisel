@@ -10,7 +10,7 @@ class DecoupledSpec extends ChiselFlatSpec with FileCheck {
   "Decoupled() and Decoupled.empty" should "give DecoupledIO with empty payloads" in {
     ChiselStage.emitCHIRRTL(new Module {
       val io = IO(new Bundle {
-        val in = Flipped(Decoupled())
+        val in  = Flipped(Decoupled())
         val out = Decoupled.empty
       })
       io.out <> io.in
@@ -34,8 +34,8 @@ class DecoupledSpec extends ChiselFlatSpec with FileCheck {
 
   "Decoupled.map" should "apply a function to a wrapped Bundle" in {
     class TestBundle extends Bundle {
-      val foo = UInt(8.W)
-      val bar = UInt(8.W)
+      val foo  = UInt(8.W)
+      val bar  = UInt(8.W)
       val fizz = Bool()
       val buzz = Bool()
     }
@@ -44,8 +44,8 @@ class DecoupledSpec extends ChiselFlatSpec with FileCheck {
     def func(t: TestBundle): TestBundle = {
       val res = Wire(new TestBundle)
 
-      res.foo := t.foo + 1.U
-      res.bar := t.bar - 1.U
+      res.foo  := t.foo + 1.U
+      res.bar  := t.bar - 1.U
       res.fizz := false.B
       res.buzz := true.B
 

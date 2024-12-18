@@ -9,7 +9,7 @@ import chisel3.experimental.fromStringToStringParam
 import chisel3.internal.Builder
 
 class PlusArgsRetBundle[T <: Data](gen: => T) extends Bundle {
-  val found = Output(Bool())
+  val found  = Output(Bool())
   val result = Output(gen)
 }
 

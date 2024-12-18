@@ -9,7 +9,7 @@ import chisel3.util.Valid
 class ValidSpec extends ChiselFlatSpec {
   "Valid.map" should "apply a function to the wrapped Data" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new Module {
-      val in = IO(Flipped(Valid(UInt(8.W))))
+      val in  = IO(Flipped(Valid(UInt(8.W))))
       val out = IO(Valid(UInt(8.W)))
       out :#= in.map(_ + 1.U)
     })
@@ -27,8 +27,8 @@ class ValidSpec extends ChiselFlatSpec {
 
   "Valid.map" should "apply a function to a wrapped Bundle" in {
     class TestBundle extends Bundle {
-      val foo = UInt(8.W)
-      val bar = UInt(8.W)
+      val foo  = UInt(8.W)
+      val bar  = UInt(8.W)
       val fizz = Bool()
       val buzz = Bool()
     }
@@ -37,8 +37,8 @@ class ValidSpec extends ChiselFlatSpec {
     def func(t: TestBundle): TestBundle = {
       val res = Wire(new TestBundle)
 
-      res.foo := t.foo + 1.U
-      res.bar := t.bar - 1.U
+      res.foo  := t.foo + 1.U
+      res.bar  := t.bar - 1.U
       res.fizz := false.B
       res.buzz := true.B
 
@@ -47,7 +47,7 @@ class ValidSpec extends ChiselFlatSpec {
 
     val chirrtl = ChiselStage
       .emitCHIRRTL(new Module {
-        val in = IO(Flipped(Valid(new TestBundle)))
+        val in  = IO(Flipped(Valid(new TestBundle)))
         val out = IO(Valid(new TestBundle))
         out :#= in.map(func)
       })
@@ -84,7 +84,7 @@ class ValidSpec extends ChiselFlatSpec {
 
     val chirrtl = ChiselStage
       .emitCHIRRTL(new Module {
-        val in = IO(Flipped(Valid(new TestBundle)))
+        val in  = IO(Flipped(Valid(new TestBundle)))
         val out = IO(Valid(UInt(8.W)))
         out :#= in.map(bundle => bundle.foo & bundle.bar)
       })

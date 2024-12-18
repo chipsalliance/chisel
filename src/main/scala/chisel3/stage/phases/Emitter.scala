@@ -18,15 +18,15 @@ import java.io.{BufferedOutputStream, File, FileOutputStream}
   */
 class Emitter extends Phase {
 
-  override def prerequisites =
+  override def prerequisites          =
     Seq(
       Dependency[Elaborate],
       Dependency[AddImplicitOutputFile],
       Dependency[AddImplicitOutputAnnotationFile]
     )
-  override def optionalPrerequisites = Seq.empty
+  override def optionalPrerequisites  = Seq.empty
   override def optionalPrerequisiteOf = Seq(Dependency[Convert])
-  override def invalidates(a: Phase) = false
+  override def invalidates(a: Phase)  = false
 
   def transform(annotations: AnnotationSeq): AnnotationSeq = {
     val copts = view[ChiselOptions](annotations)
@@ -35,10 +35,10 @@ class Emitter extends Phase {
     annotations.flatMap {
       case a: ChiselCircuitAnnotation if copts.outputFile.isDefined =>
         val filename = sopts.getBuildFileName(copts.outputFile.get, Some(".fir"))
-        val csa = CircuitSerializationAnnotation(a.circuit, filename, FirrtlFileFormat)
+        val csa      = CircuitSerializationAnnotation(a.circuit, filename, FirrtlFileFormat)
         csa.doWriteToFile(new File(filename), Nil)
         Some(a)
-      case a => Some(a)
+      case a                                                        => Some(a)
     }
     annotations
   }

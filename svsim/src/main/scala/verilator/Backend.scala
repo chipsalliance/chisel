@@ -15,16 +15,17 @@ object Backend {
   }
 
   case class CompilationSettings(
-    traceStyle:                 Option[CompilationSettings.TraceStyle] = None,
-    outputSplit:                Option[Int] = None,
-    outputSplitCFuncs:          Option[Int] = None,
-    disabledWarnings:           Seq[String] = Seq(),
+    traceStyle: Option[CompilationSettings.TraceStyle] = None,
+    outputSplit: Option[Int] = None,
+    outputSplitCFuncs: Option[Int] = None,
+    disabledWarnings: Seq[String] = Seq(),
     disableFatalExitOnWarnings: Boolean = false,
-    enableAllAssertions:        Boolean = false)
+    enableAllAssertions: Boolean = false
+  )
 
   def initializeFromProcessEnvironment() = {
-    val output = mutable.ArrayBuffer.empty[String]
-    val exitCode = List("which", "verilator").!(ProcessLogger(output += _))
+    val output         = mutable.ArrayBuffer.empty[String]
+    val exitCode       = List("which", "verilator").!(ProcessLogger(output += _))
     if (exitCode != 0) {
       throw new Exception(s"verilator not found on the PATH!\n${output.mkString("\n")}")
     }
@@ -32,16 +33,14 @@ object Backend {
     new Backend(executablePath = executablePath)
   }
 }
-final class Backend(
-  executablePath: String)
-    extends svsim.Backend {
+final class Backend(executablePath: String) extends svsim.Backend {
   type CompilationSettings = Backend.CompilationSettings
 
   def generateParameters(
-    outputBinaryName:        String,
-    topModuleName:           String,
-    additionalHeaderPaths:   Seq[String],
-    commonSettings:          CommonCompilationSettings,
+    outputBinaryName: String,
+    topModuleName: String,
+    additionalHeaderPaths: Seq[String],
+    commonSettings: CommonCompilationSettings,
     backendSpecificSettings: CompilationSettings
   ): svsim.Backend.Parameters = {
     import CommonCompilationSettings._

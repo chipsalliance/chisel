@@ -18,24 +18,24 @@ class RuntimeDeprecatedTransform(val c: Context) {
       annottee match {
         case q"$mods def $tname[..$tparams](...$paramss): $tpt = $expr" => {
           val Modifiers(_, _, annotations) = mods
-          val annotationMessage = annotations.collect { // get all messages from deprecated annotations
+          val annotationMessage            = annotations.collect { // get all messages from deprecated annotations
             case q"new deprecated($desc, $since)" => desc
           } match { // ensure there's only one and return it
             case msg :: Nil => msg
-            case _ =>
+            case _          =>
               c.abort(
                 c.enclosingPosition,
                 s"@chiselRuntimeDeprecated annotion must be used with exactly one @deprecated annotation, got annotations $annotations"
               )
           }
-          val message = s"$tname is deprecated: $annotationMessage"
-          val transformedExpr = q""" {
+          val message                      = s"$tname is deprecated: $annotationMessage"
+          val transformedExpr              = q""" {
         _root_.chisel3.internal.Builder.deprecated($message)
         $expr
         } """
           q"$mods def $tname[..$tparams](...$paramss): $tpt = $transformedExpr"
         }
-        case other =>
+        case other                                                      =>
           c.abort(
             c.enclosingPosition,
             s"@chiselRuntimeDeprecated annotion may only be used on defs, got ${showCode(other)}"

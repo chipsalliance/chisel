@@ -133,9 +133,9 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
   }
 
   it should "escape special characters in Property String literals" in {
-    val input = "foo\"\n\t\\bar"
+    val input    = "foo\"\n\t\\bar"
     val expected = """foo\"\n\t\\bar"""
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+    val chirrtl  = ChiselStage.emitCHIRRTL(new RawModule {
       val propOut = IO(Output(Property[String]()))
       propOut := Property(input)
     })
@@ -146,7 +146,7 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
   }
 
   it should "not escape characters that do not need escaping in Property String literals" in {
-    val input = "foo!@#$%^&*()_+bar"
+    val input   = "foo!@#$%^&*()_+bar"
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
       val propOut = IO(Output(Property[String]()))
       propOut := Property(input)
@@ -190,19 +190,19 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
 
   it should "support path as a Property literal" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new Module {
-      val propOutA = IO(Output(Property[Path]()))
-      val propOutB = IO(Output(Property[Path]()))
-      val propOutC = IO(Output(Property[Path]()))
-      val propOutD = IO(Output(Property[Path]()))
-      val propOutE = IO(Output(Property[Path]()))
-      val propOutF = IO(Output(Property[Path]()))
-      val propOutG = IO(Output(Property[Path]()))
+      val propOutA             = IO(Output(Property[Path]()))
+      val propOutB             = IO(Output(Property[Path]()))
+      val propOutC             = IO(Output(Property[Path]()))
+      val propOutD             = IO(Output(Property[Path]()))
+      val propOutE             = IO(Output(Property[Path]()))
+      val propOutF             = IO(Output(Property[Path]()))
+      val propOutG             = IO(Output(Property[Path]()))
       override def desiredName = "Top"
-      val inst = Module(new Module {
+      val inst                 = Module(new Module {
         val localPropOut = IO(Output(Property[Path]()))
-        val data = WireInit(false.B)
-        val mem = SyncReadMem(1, Bool())
-        val sram = chisel3.util.SRAM(1, Bool(), 1, 1, 0)
+        val data         = WireInit(false.B)
+        val mem          = SyncReadMem(1, Bool())
+        val sram         = chisel3.util.SRAM(1, Bool(), 1, 1, 0)
         localPropOut := Property(Path(data))
         override def desiredName = "Foo"
       })
@@ -228,15 +228,15 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
 
   it should "support member path target types when requested" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val propOutA = IO(Output(Property[Path]()))
-      val propOutB = IO(Output(Property[Path]()))
-      val propOutC = IO(Output(Property[Path]()))
-      val propOutD = IO(Output(Property[Path]()))
+      val propOutA             = IO(Output(Property[Path]()))
+      val propOutB             = IO(Output(Property[Path]()))
+      val propOutC             = IO(Output(Property[Path]()))
+      val propOutD             = IO(Output(Property[Path]()))
       override def desiredName = "Top"
-      val inst = Module(new RawModule {
+      val inst                 = Module(new RawModule {
         val localPropOut = IO(Output(Property[Path]()))
-        val data = WireInit(false.B)
-        val mem = SyncReadMem(1, Bool())
+        val data         = WireInit(false.B)
+        val mem          = SyncReadMem(1, Bool())
         localPropOut := Property(Path(data, true))
         override def desiredName = "Foo"
       })
@@ -259,14 +259,14 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
     def runTest[A](mkTarget: => A, mkPath: A => Path): Unit = {
       val e = the[ChiselException] thrownBy {
         ChiselStage.emitCHIRRTL(new RawModule {
-          val child1 = Module(new RawModule {
+          val child1   = Module(new RawModule {
             override def desiredName = "Child1"
-            val target = mkTarget
+            val target               = mkTarget
           })
           val captured = child1.target
-          val child2 = Module(new RawModule {
+          val child2   = Module(new RawModule {
             override def desiredName = "Child2"
-            val out = IO(Output(Property[Path]()))
+            val out                  = IO(Output(Property[Path]()))
             out := Property(mkPath(captured))
           })
         })
@@ -307,7 +307,7 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
 
   it should "support connecting Property types of the same type" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val propIn = IO(Input(Property[Int]()))
+      val propIn  = IO(Input(Property[Int]()))
       val propOut = IO(Output(Property[Int]()))
       propOut := propIn
     })
@@ -362,7 +362,7 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
 
   it should "support mixed Seqs of Integer literal and ports as Seq Property values" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val propIn = IO(Input(Property[BigInt]()))
+      val propIn  = IO(Input(Property[BigInt]()))
       val propOut = IO(Output(Property[Seq[BigInt]]()))
       // Use connectable to show that Property[Seq[Property[A]]]
       propOut :#= Property(Seq(propIn, Property(BigInt(123))))
@@ -436,7 +436,7 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
   }
 
   it should "support connectable operators when nested in a Bundle" in {
-    class MyBundle extends Bundle {
+    class MyBundle              extends Bundle    {
       val foo = Property[String]()
       val bar = Flipped(Property[BigInt]())
     }
@@ -474,7 +474,7 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
 
     val chirrtl4 = ChiselStage.emitCHIRRTL(new RawModule {
       val out = IO(Output(new MyBundle))
-      val in = IO(Input(new MyBundle))
+      val in  = IO(Input(new MyBundle))
       out :#= in
     })
     matchesAndOmits(chirrtl4)(
@@ -493,7 +493,7 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
       val outgoing = IO(new MyBundle)
       val incoming = IO(Flipped(new MyBundle))
-      val wire = Wire(new MyBundle)
+      val wire     = Wire(new MyBundle)
       wire :<>= incoming
       outgoing :<>= wire
     })
@@ -570,9 +570,9 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
   it should "emit correct types for all the ways of creating class references and properties" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
       val cls = ClassType.unsafeGetClassTypeByName("MyClass")
-      val a = IO(Input(Property[cls.Type]()))
-      val b = IO(Output(Property[Seq[cls.Type]]()))
-      val c = IO(Output(a.cloneType))
+      val a   = IO(Input(Property[cls.Type]()))
+      val b   = IO(Output(Property[Seq[cls.Type]]()))
+      val c   = IO(Output(a.cloneType))
 
       val myClass = Class.unsafeGetDynamicObject("MyClass")
 
@@ -585,11 +585,11 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
       // this is still fine because we already know the ClassType of a
       c :#= a
 
-      val obj = Class.unsafeGetDynamicObject("FooBar")
+      val obj    = Class.unsafeGetDynamicObject("FooBar")
       val objRef = obj.getReference
-      val d = IO(Output(objRef.cloneType))
-      val e = IO(Output(Property[objRef.ClassType]()))
-      val f = IO(Output(Class.unsafeGetReferenceType(obj.className.name)))
+      val d      = IO(Output(objRef.cloneType))
+      val e      = IO(Output(Property[objRef.ClassType]()))
+      val f      = IO(Output(Class.unsafeGetReferenceType(obj.className.name)))
 
       d :#= obj.getReference
       e :#= obj.getReference
@@ -604,8 +604,8 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
 
       // should work with methods
       def connectAB(cls: ClassType) = {
-        val a = IO(Output(Property[cls.Type]())).suggestName(cls.name + "A")
-        val b = IO(Output(Property[cls.Type]())).suggestName(cls.name + "B")
+        val a   = IO(Output(Property[cls.Type]())).suggestName(cls.name + "A")
+        val b   = IO(Output(Property[cls.Type]())).suggestName(cls.name + "B")
         val obj = Class.unsafeGetDynamicObject(cls.name).suggestName(cls.name + "Obj")
         a := obj.getReference
         b := obj.getReference
@@ -689,7 +689,7 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
   it should "support isLit" in {
     ChiselStage.emitCHIRRTL(new RawModule {
       val port = IO(Input(Property[Int]()))
-      val lit = Property(1)
+      val lit  = Property(1)
 
       port.isLit shouldBe false
       lit.isLit shouldBe true
@@ -746,7 +746,7 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
 
       child.a := a
       child.b := a
-      c := BoringUtils.bore(child.c)
+      c       := BoringUtils.bore(child.c)
     })
 
     matchesAndOmits(chirrtl)(
@@ -764,9 +764,9 @@ class PropertySpec extends ChiselFlatSpec with MatchesAndOmits {
 
       val mod = Module(new RawModule {
         override def desiredName = "Foo"
-        val a = IO(Input(Property[Int]()))
-        val b = IO(Input(Property[Int]()))
-        val c = a + b
+        val a                    = IO(Input(Property[Int]()))
+        val b                    = IO(Input(Property[Int]()))
+        val c                    = a + b
       })
 
       mod.c.toTarget.toString should equal("~Top|Foo>c")

@@ -17,7 +17,7 @@ class FlatIOSpec extends ChiselFlatSpec with MatchesAndOmits {
   it should "create ports without a prefix" in {
     class MyModule extends RawModule {
       val io = FlatIO(new Bundle {
-        val in = Input(UInt(8.W))
+        val in  = Input(UInt(8.W))
         val out = Output(UInt(8.W))
       })
       io.out := io.in
@@ -30,7 +30,7 @@ class FlatIOSpec extends ChiselFlatSpec with MatchesAndOmits {
 
   it should "support bulk connections between FlatIOs and regular IOs" in {
     class MyModule extends RawModule {
-      val in = FlatIO(Input(Valid(UInt(8.W))))
+      val in  = FlatIO(Input(Valid(UInt(8.W))))
       val out = IO(Output(Valid(UInt(8.W))))
       out := in
     }
@@ -43,8 +43,8 @@ class FlatIOSpec extends ChiselFlatSpec with MatchesAndOmits {
     class MyModule extends RawModule {
       val io = FlatIO(new Bundle {
         val addr = Input(UInt(2.W))
-        val in = Input(Vec(4, UInt(8.W)))
-        val out = Output(Vec(4, UInt(8.W)))
+        val in   = Input(Vec(4, UInt(8.W)))
+        val out  = Output(Vec(4, UInt(8.W)))
       })
       io.out(io.addr) := io.in(io.addr)
     }
@@ -53,13 +53,13 @@ class FlatIOSpec extends ChiselFlatSpec with MatchesAndOmits {
   }
 
   it should "support Analog members" in {
-    class MyBundle extends Bundle {
+    class MyBundle extends Bundle    {
       val foo = Output(UInt(8.W))
       val bar = Analog(8.W)
     }
     class MyModule extends RawModule {
       val io = FlatIO(new Bundle {
-        val in = Flipped(new MyBundle)
+        val in  = Flipped(new MyBundle)
         val out = new MyBundle
       })
       io.out <> io.in
@@ -81,11 +81,11 @@ class FlatIOSpec extends ChiselFlatSpec with MatchesAndOmits {
   }
 
   it should "maintain port order for Bundles" in {
-    class MyBundle extends Bundle {
+    class MyBundle       extends Bundle {
       val foo = Bool()
       val bar = Bool()
     }
-    class MyModule extends Module {
+    class MyModule       extends Module {
       val io = IO(Input(new MyBundle))
     }
     class MyFlatIOModule extends Module {
@@ -102,10 +102,10 @@ class FlatIOSpec extends ChiselFlatSpec with MatchesAndOmits {
   }
 
   it should "maintain port order for Records" in {
-    class MyRecord extends Record {
+    class MyRecord       extends Record {
       val elements = SeqMap("foo" -> Bool(), "bar" -> Bool())
     }
-    class MyModule extends Module {
+    class MyModule       extends Module {
       val io = IO(Input(new MyRecord))
     }
     class MyFlatIOModule extends Module {

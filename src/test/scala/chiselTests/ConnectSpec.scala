@@ -8,13 +8,13 @@ import chisel3.testers.BasicTester
 import circt.stage.ChiselStage
 
 abstract class CrossCheck extends Bundle {
-  val in:  Data
+  val in: Data
   val out: Data
 }
 
 class CrossConnects(inType: Data, outType: Data) extends Module {
   val io = IO(new Bundle {
-    val in = Input(inType)
+    val in  = Input(inType)
     val out = Output(outType)
   })
   io.out := io.in
@@ -22,7 +22,7 @@ class CrossConnects(inType: Data, outType: Data) extends Module {
 
 class PipeInternalWires extends Module {
   import chisel3.util.Pipe
-  val io = IO(new Bundle {
+  val io   = IO(new Bundle {
     val a = Input(Bool())
     val b = Input(UInt(32.W))
   })
@@ -118,7 +118,7 @@ class ConnectSpec extends ChiselPropSpec with Utils {
       inner.myReg := false.B // ERROR
     }
 
-    val assignError = the[ChiselException] thrownBy { ChiselStage.emitCHIRRTL { new OuterAssignExample } }
+    val assignError         = the[ChiselException] thrownBy { ChiselStage.emitCHIRRTL { new OuterAssignExample } }
     val expectedAssignError = """.*@: myReg in InnerExample cannot be written from module OuterAssignExample."""
     (assignError.getMessage should fullyMatch).regex(expectedAssignError)
 
@@ -128,11 +128,11 @@ class ConnectSpec extends ChiselPropSpec with Utils {
       myReg := inner.myReg // ERROR
     }
 
-    val readError = the[ChiselException] thrownBy { ChiselStage.emitCHIRRTL { new OuterReadExample } }
+    val readError         = the[ChiselException] thrownBy { ChiselStage.emitCHIRRTL { new OuterReadExample } }
     val expectedReadError = """.*@: myReg in InnerExample cannot be read from module OuterReadExample."""
     (readError.getMessage should fullyMatch).regex(expectedReadError)
 
-    val typeMismatchError = the[ChiselException] thrownBy {
+    val typeMismatchError         = the[ChiselException] thrownBy {
       ChiselStage.emitCHIRRTL {
         new RawModule {
           val myUInt = Wire(UInt(4.W))

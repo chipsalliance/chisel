@@ -9,7 +9,7 @@ import java.io.{BufferedReader, FileReader}
 
 class VCSSpec extends BackendSpec {
   import vcs.Backend.CompilationSettings._
-  val backend = vcs.Backend.initializeFromProcessEnvironment()
+  val backend             = vcs.Backend.initializeFromProcessEnvironment()
   val compilationSettings = vcs.Backend.CompilationSettings(
     traceSettings = TraceSettings(
       enableVcd = true
@@ -29,10 +29,10 @@ class VCSSpec extends BackendSpec {
 case class CustomVerilatorBackend(actualBackend: verilator.Backend) extends Backend {
   type CompilationSettings = verilator.Backend.CompilationSettings
   def generateParameters(
-    outputBinaryName:        String,
-    topModuleName:           String,
-    additionalHeaderPaths:   Seq[String],
-    commonSettings:          CommonCompilationSettings,
+    outputBinaryName: String,
+    topModuleName: String,
+    additionalHeaderPaths: Seq[String],
+    commonSettings: CommonCompilationSettings,
     backendSpecificSettings: CompilationSettings
   ): Backend.Parameters = {
     actualBackend.generateParameters(
@@ -49,7 +49,7 @@ case class CustomVerilatorBackend(actualBackend: verilator.Backend) extends Back
 
 class VerilatorSpec extends BackendSpec {
   import verilator.Backend.CompilationSettings._
-  val backend = CustomVerilatorBackend(verilator.Backend.initializeFromProcessEnvironment())
+  val backend             = CustomVerilatorBackend(verilator.Backend.initializeFromProcessEnvironment())
   val compilationSettings = verilator.Backend.CompilationSettings(
     traceStyle = Some(TraceStyle.Vcd(traceUnderscore = false))
   )
@@ -58,12 +58,11 @@ class VerilatorSpec extends BackendSpec {
 
 trait BackendSpec extends AnyFunSpec with Matchers {
   def test[Backend <: svsim.Backend](
-    name:                String,
-    backend:             Backend
-  )(compilationSettings: backend.CompilationSettings
-  ) = {
+    name: String,
+    backend: Backend
+  )(compilationSettings: backend.CompilationSettings) = {
     describe(s"Svsim backend '$name'") {
-      val workspace = new svsim.Workspace(path = s"test_run_dir/${getClass().getSimpleName()}")
+      val workspace              = new svsim.Workspace(path = s"test_run_dir/${getClass().getSimpleName()}")
       var simulation: Simulation = null
 
       it("fails to compile a testbench without generated sources") {
@@ -119,12 +118,12 @@ trait BackendSpec extends AnyFunSpec with Matchers {
           verbose = false,
           executionScriptLimit = None
         ) { controller =>
-          val clock = controller.port("clock")
-          val a = controller.port("a")
-          val b = controller.port("b")
+          val clock      = controller.port("clock")
+          val a          = controller.port("a")
+          val b          = controller.port("b")
           val loadValues = controller.port("loadValues")
-          val isValid = controller.port("isValid")
-          val result = controller.port("result")
+          val isValid    = controller.port("isValid")
+          val result     = controller.port("result")
 
           controller.setTraceEnabled(true)
 
@@ -158,7 +157,7 @@ trait BackendSpec extends AnyFunSpec with Matchers {
             sentinel = Some(isValid, 1)
           )
 
-          var isValidChecked: Boolean = false
+          var isValidChecked: Boolean  = false
           isValid.check { value =>
             isValidChecked = true
             assert(value.asBigInt === 1)

@@ -16,8 +16,8 @@ import org.scalatest.flatspec.AnyFlatSpec
 object JsonProtocolTestClasses {
   trait Parent
 
-  case class ChildA(foo: Int) extends Parent
-  case class ChildB(bar: String) extends Parent
+  case class ChildA(foo: Int)                              extends Parent
+  case class ChildB(bar: String)                           extends Parent
   case class PolymorphicParameterAnnotation(param: Parent) extends NoTargetAnnotation
   case class PolymorphicParameterAnnotationWithTypeHints(param: Parent)
       extends NoTargetAnnotation
@@ -51,43 +51,43 @@ class JsonProtocolSpec extends AnyFlatSpec {
   }
 
   it should "serialize and deserialize with type hints" in {
-    val anno = PolymorphicParameterAnnotationWithTypeHints(ChildA(1))
+    val anno      = PolymorphicParameterAnnotationWithTypeHints(ChildA(1))
     val deserAnno = serializeAndDeserialize(anno)
     assert(anno == deserAnno)
 
-    val anno2 = PolymorphicParameterAnnotationWithTypeHints(ChildB("Test"))
+    val anno2      = PolymorphicParameterAnnotationWithTypeHints(ChildB("Test"))
     val deserAnno2 = serializeAndDeserialize(anno2)
     assert(anno2 == deserAnno2)
   }
 
   "Annotations with non-primitive type parameters" should "not serialize and deserialize without type hints" in {
-    val anno = TypeParameterizedAnnotation(ChildA(1))
+    val anno      = TypeParameterizedAnnotation(ChildA(1))
     val deserAnno = serializeAndDeserialize(anno)
     assert(anno != deserAnno)
   }
   it should "serialize and deserialize with type hints" in {
-    val anno = TypeParameterizedAnnotationWithTypeHints(ChildA(1))
+    val anno      = TypeParameterizedAnnotationWithTypeHints(ChildA(1))
     val deserAnno = serializeAndDeserialize(anno)
     assert(anno == deserAnno)
   }
 
   "JSON object order" should "not affect deserialization" in {
-    val anno = SimpleAnnotation("hello")
+    val anno           = SimpleAnnotation("hello")
     val serializedAnno = """[{
       "alpha": "hello",
       "class": "firrtlTests.JsonProtocolTestClasses$SimpleAnnotation"
     }]"""
-    val deserAnno = JsonProtocol.deserialize(serializedAnno).head
+    val deserAnno      = JsonProtocol.deserialize(serializedAnno).head
     assert(anno == deserAnno)
   }
 
   "JsonProtocol" should "support serializing directly to a Java Writer" in {
     val anno = SimpleAnnotation("hello")
     class NaiveWriter extends java.io.Writer {
-      private var contents: String = ""
-      def value:            String = contents
-      def close():          Unit = contents = ""
-      def flush():          Unit = contents = ""
+      private var contents: String                            = ""
+      def value: String                                       = contents
+      def close(): Unit                                       = contents = ""
+      def flush(): Unit                                       = contents = ""
       def write(cbuff: Array[Char], off: Int, len: Int): Unit = {
         for (i <- off until off + len) {
           contents += cbuff(i)

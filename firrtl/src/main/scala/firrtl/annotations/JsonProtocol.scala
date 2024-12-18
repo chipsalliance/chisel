@@ -164,7 +164,7 @@ object JsonProtocol extends LazyLogging {
     annos
       .flatMap({
         case anno: HasSerializationHints => anno.getClass +: anno.typeHints
-        case anno => Seq(anno.getClass)
+        case anno                        => Seq(anno.getClass)
       })
       .distinct
 
@@ -180,10 +180,9 @@ object JsonProtocol extends LazyLogging {
     val tags = getTags(annos.toSeq)
 
     implicit val formats = jsonFormat(tags)
-    Try(writePretty(annos, out)).recoverWith {
-      case e: org.json4s.MappingException =>
-        val badAnnos = findUnserializeableAnnos(annos.toSeq)
-        Failure(if (badAnnos.isEmpty) e else UnserializableAnnotationException(badAnnos))
+    Try(writePretty(annos, out)).recoverWith { case e: org.json4s.MappingException =>
+      val badAnnos = findUnserializeableAnnos(annos.toSeq)
+      Failure(if (badAnnos.isEmpty) e else UnserializableAnnotationException(badAnnos))
     }
   }
 
@@ -192,7 +191,7 @@ object JsonProtocol extends LazyLogging {
     * @note this is slower than standard serialization
     */
   def serializeRecover(annos: Seq[Annotation]): String = {
-    val tags = classOf[UnserializeableAnnotation] +: getTags(annos)
+    val tags             = classOf[UnserializeableAnnotation] +: getTags(annos)
     implicit val formats = jsonFormat(tags)
 
     val safeAnnos = annos.map { anno =>
@@ -216,9 +215,9 @@ object JsonProtocol extends LazyLogging {
 
   def deserializeTry(in: JsonInput, allowUnrecognizedAnnotations: Boolean = false): Try[Seq[Annotation]] = Try {
     val parsed: JValue = parse(in)
-    val annos = parsed match {
+    val annos          = parsed match {
       case JArray(objs) => objs
-      case x =>
+      case x            =>
         throw new InvalidAnnotationJSONException(
           s"Annotations must be serialized as a JArray, got ${x.getClass.getName} instead!"
         )
@@ -243,16 +242,16 @@ object JsonProtocol extends LazyLogging {
           if (requireClassField && hint.isEmpty)
             throw new InvalidAnnotationJSONException(s"Expected field 'class' not found! $fields")
           hint ++: findTypeHints(fields.map(_._2))
-        case JArray(arr) => findTypeHints(arr)
-        case _           => Seq()
+        case JArray(arr)     => findTypeHints(arr)
+        case _               => Seq()
       })
       .distinct
 
     // I don't much like this var here, but it has made it much simpler
     // to maintain backward compatibility with the exception test structure
     var classNotFoundBuildingLoaded = false
-    val classes = findTypeHints(annos, true)
-    val loaded = classes.flatMap { x =>
+    val classes                     = findTypeHints(annos, true)
+    val loaded                      = classes.flatMap { x =>
       (try {
         Some(Class.forName(x))
       } catch {
@@ -261,7 +260,7 @@ object JsonProtocol extends LazyLogging {
           None
       }): Option[Class[_]]
     }
-    implicit val formats = jsonFormat(loaded)
+    implicit val formats            = jsonFormat(loaded)
     try {
       read[List[Annotation]](in)
     } catch {
@@ -269,7 +268,7 @@ object JsonProtocol extends LazyLogging {
         // If we get here, the build `read` failed to process an annotation
         // So we will map the annos one a time, wrapping the JSON of the unrecognized annotations
         val exceptionList = new mutable.ArrayBuffer[String]()
-        val firrtlAnnos = annos.map { jsonAnno =>
+        val firrtlAnnos   = annos.map { jsonAnno =>
           try {
             jsonAnno.extract[Annotation]
           } catch {
@@ -290,8 +289,8 @@ object JsonProtocol extends LazyLogging {
           )
           if (classNotFoundBuildingLoaded) {
             val distinctProblems = exceptionList.distinct
-            val problems = distinctProblems.take(10).mkString(", ")
-            val dots = if (distinctProblems.length > 10) {
+            val problems         = distinctProblems.take(10).mkString(", ")
+            val dots             = if (distinctProblems.length > 10) {
               ", ..."
             } else {
               ""
@@ -304,7 +303,7 @@ object JsonProtocol extends LazyLogging {
     }
   }.recoverWith {
     // Translate some generic errors to specific ones
-    case e: java.lang.ClassNotFoundException =>
+    case e: java.lang.ClassNotFoundException                                            =>
       Failure(AnnotationClassNotFoundException(e.getMessage))
     // Eat the stack traces of json4s exceptions
     case e @ (_: org.json4s.ParserUtil.ParseException | _: org.json4s.MappingException) =>
@@ -314,14 +313,14 @@ object JsonProtocol extends LazyLogging {
       in match {
         case FileInput(file) =>
           Failure(InvalidAnnotationFileException(file, e))
-        case _ =>
+        case _               =>
           Failure(e)
       }
-    case e: FirrtlUserException =>
+    case e: FirrtlUserException             =>
       in match {
         case FileInput(file) =>
           Failure(InvalidAnnotationFileException(file, e))
-        case _ => Failure(e)
+        case _               => Failure(e)
       }
   }
 }

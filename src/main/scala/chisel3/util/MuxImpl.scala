@@ -25,10 +25,10 @@ import chisel3.experimental.SourceInfo
 object Mux1H {
   def apply[T <: Data](sel: Seq[Bool], in: Seq[T]): T =
     apply(sel.zip(in))
-  def apply[T <: Data](in:  Iterable[(Bool, T)]): T = SeqUtils.oneHotMux(in)
-  def apply[T <: Data](sel: UInt, in: Seq[T]): T =
+  def apply[T <: Data](in: Iterable[(Bool, T)]): T    = SeqUtils.oneHotMux(in)
+  def apply[T <: Data](sel: UInt, in: Seq[T]): T      =
     apply((0 until in.size).map(sel(_)), in)
-  def apply(sel: UInt, in: UInt): Bool = (sel & in).orR
+  def apply(sel: UInt, in: UInt): Bool                = (sel & in).orR
 }
 
 /** Builds a Mux tree under the assumption that multiple select signals
@@ -45,15 +45,15 @@ object Mux1H {
   * Returns the output of the Mux tree.
   */
 object PriorityMux {
-  def apply[T <: Data](in:  Seq[(Bool, T)]): T = SeqUtils.priorityMux(in)
+  def apply[T <: Data](in: Seq[(Bool, T)]): T         = SeqUtils.priorityMux(in)
   def apply[T <: Data](sel: Seq[Bool], in: Seq[T]): T = apply(sel.zip(in))
-  def apply[T <: Data](sel: Bits, in: Seq[T]): T = apply((0 until in.size).map(sel(_)), in)
+  def apply[T <: Data](sel: Bits, in: Seq[T]): T      = apply((0 until in.size).map(sel(_)), in)
 }
 
 private[chisel3] trait MuxLookupImpl {
 
   protected def _applyEnumImpl[S <: EnumType, T <: Data](
-    key:     S,
+    key: S,
     default: T,
     mapping: Seq[(S, T)]
   )(
@@ -62,7 +62,7 @@ private[chisel3] trait MuxLookupImpl {
     _applyImpl[UInt, T](key.asUInt, default, mapping.map { case (s, t) => (s.asUInt, t) })
 
   protected def _applyImpl[S <: UInt, T <: Data](
-    key:     S,
+    key: S,
     default: T,
     mapping: Seq[(S, T)]
   )(
@@ -71,15 +71,15 @@ private[chisel3] trait MuxLookupImpl {
     /* If the mapping is defined for all possible values of the key, then don't use the default value */
     val (defaultx, mappingx) = key.widthOption match {
       case Some(width) =>
-        val keySetSize = BigInt(1) << width
-        val keyMask = keySetSize - 1
+        val keySetSize      = BigInt(1) << width
+        val keyMask         = keySetSize - 1
         val distinctLitKeys = mapping.flatMap(_._1.litOption).map(_ & keyMask).distinct
         if (distinctLitKeys.size == keySetSize) {
           (mapping.head._2, mapping.tail)
         } else {
           (default, mapping)
         }
-      case None => (default, mapping)
+      case None        => (default, mapping)
     }
 
     mappingx.foldLeft(defaultx) { case (d, (k, v)) => Mux(k === key, v, d) }

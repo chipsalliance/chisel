@@ -11,13 +11,13 @@ import chisel3.experimental.VecLiterals.AddVecLiteralConstructor
 import chisel3.experimental.BundleLiteralException
 
 class BundleLiteralSpec extends ChiselFlatSpec with Utils {
-  object MyEnum extends ChiselEnum {
+  object MyEnum  extends ChiselEnum {
     val sA, sB = Value
   }
   object MyEnumB extends ChiselEnum {
     val sA, sB = Value
   }
-  class MyBundle extends Bundle {
+  class MyBundle extends Bundle     {
     val a = UInt(8.W)
     val b = Bool()
     val c = MyEnum()
@@ -29,7 +29,7 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
     val c = UInt(16.W)
   }
 
-  class ChildBundle extends Bundle {
+  class ChildBundle           extends Bundle {
     val foo = UInt(4.W)
   }
   class ComplexBundle(w: Int) extends Bundle {
@@ -42,7 +42,7 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
     assertTesterPasses {
       new BasicTester {
         val bundleLit = (new MyBundle).Lit(_.a -> 42.U, _.b -> false.B, _.c -> MyEnum.sB)
-        bundleLit.litOption should equal(Some(169)) // packed as 42 (8-bit), false=0 (1-bit), sB=1 (1-bit)
+        bundleLit.litOption should equal(Some(169))                    // packed as 42 (8-bit), false=0 (1-bit), sB=1 (1-bit)
         chisel3.assert(bundleLit.asUInt === bundleLit.litOption.get.U) // sanity-check consistency with runtime
 
         val longBundleLit =
@@ -155,7 +155,7 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
           _.b.c -> false.B,
           _.b.d -> 255.U,
           _.b.e -> MyEnum.sB,
-          _.f -> MyEnum.sB
+          _.f   -> MyEnum.sB
         )
         chisel3.assert(expandedBundleLit.a.a === 42.U)
         chisel3.assert(expandedBundleLit.a.b === true.B)
@@ -188,7 +188,7 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
     assertTesterPasses {
       new BasicTester {
         val bundleWire = Wire(Output(new MyBundle))
-        val bundleLit = (new MyBundle).Lit(_.a -> 42.U, _.b -> true.B, _.c -> MyEnum.sB)
+        val bundleLit  = (new MyBundle).Lit(_.a -> 42.U, _.b -> true.B, _.c -> MyEnum.sB)
         bundleWire := bundleLit
 
         chisel3.assert(bundleWire.a === 42.U)
@@ -203,7 +203,7 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
     assertTesterPasses {
       new BasicTester {
         val bundleWire = Wire(Output(new MyBundle))
-        val bundleLit = (new MyBundle).Lit(_.a -> 42.U)
+        val bundleLit  = (new MyBundle).Lit(_.a -> 42.U)
         bundleWire := bundleLit
 
         chisel3.assert(bundleWire.a === 42.U)
@@ -361,7 +361,7 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
     }
     val (stdout, _, chirrtl) = grabStdOutErr(ChiselStage.emitCHIRRTL(new RawModule {
       val lit = (new SimpleBundle).Lit(_.a -> 0xde.U, _.b -> 0xad.U)
-      val x = Cat(lit.a, lit.b)
+      val x   = Cat(lit.a, lit.b)
     }))
     stdout should include("[W007] Literal value ULit(222,) is too wide for field _.a with width 4")
     stdout should include("[W007] Literal value ULit(173,) is too wide for field _.b with width 4")
@@ -376,7 +376,7 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
     val chirrtl = ChiselStage.emitCHIRRTL(
       new RawModule {
         val lit = (new SimpleBundle).Lit(_.a -> 5.U, _.b -> 0.U)
-        val x = Cat(lit.a, lit.b)
+        val x   = Cat(lit.a, lit.b)
       },
       args = Array("--warnings-as-errors")
     )
@@ -396,7 +396,7 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
     val chirrtl = ChiselStage.emitCHIRRTL(new Module {
       val r = RegInit((new MyBundle).Lit(_.a -> 42.U, _.b -> true.B, _.c -> MyEnum.sB))
     })
-    val wire = """wire.*: const \{ a : UInt<8>, b : UInt<1>, c : UInt<1>\}""".r
+    val wire    = """wire.*: const \{ a : UInt<8>, b : UInt<1>, c : UInt<1>\}""".r
     (chirrtl should include).regex(wire)
   }
 

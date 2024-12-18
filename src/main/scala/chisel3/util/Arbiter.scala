@@ -47,18 +47,18 @@ private object ArbiterCtrl {
 }
 
 abstract class LockingArbiterLike[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T => Bool]) extends Module {
-  def grant:  Seq[Bool]
+  def grant: Seq[Bool]
   def choice: UInt
   val io = IO(new ArbiterIO(gen, n))
 
-  io.chosen := choice
+  io.chosen    := choice
   io.out.valid := io.in(io.chosen).valid
-  io.out.bits := io.in(io.chosen).bits
+  io.out.bits  := io.in(io.chosen).bits
 
   if (count > 1) {
     val lockCount = Counter(count)
-    val lockIdx = Reg(UInt())
-    val locked = lockCount.value =/= 0.U
+    val lockIdx   = Reg(UInt())
+    val locked    = lockCount.value =/= 0.U
     val wantsLock = needsLock.map(_(io.out.bits)).getOrElse(true.B)
 
     when(io.out.fire && wantsLock) {
@@ -139,17 +139,17 @@ class Arbiter[T <: Data](val gen: T, val n: Int) extends Module {
 
   val io = IO(new ArbiterIO(gen, n))
 
-  io.chosen := (n - 1).asUInt
+  io.chosen   := (n - 1).asUInt
   io.out.bits := io.in(n - 1).bits
   for (i <- n - 2 to 0 by -1) {
     when(io.in(i).valid) {
-      io.chosen := i.asUInt
+      io.chosen   := i.asUInt
       io.out.bits := io.in(i).bits
     }
   }
 
   val grant = ArbiterCtrl(io.in.map(_.valid))
   for ((in, g) <- io.in.zip(grant))
-    in.ready := g && io.out.ready
+    in.ready   := g && io.out.ready
   io.out.valid := !grant.last || io.in.last.valid
 }

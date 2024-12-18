@@ -13,17 +13,17 @@ object BoringUtilsTapSpec {
 
   @instantiable
   class Widget extends Module {
-    @public val in = IO(Input(UInt(32.W)))
+    @public val in   = IO(Input(UInt(32.W)))
     val intermediate = Wire(UInt(32.W))
-    @public val out = IO(Output(UInt(32.W)))
+    @public val out  = IO(Output(UInt(32.W)))
     intermediate := ~in
-    out := intermediate
+    out          := intermediate
     @public val prb = IO(probe.RWProbe(UInt(32.W)))
     probe.define(prb, BoringUtils.rwTap(intermediate))
   }
 
   class ArbitrarilyDeeperHierarchy extends Module {
-    val widgets =
+    val widgets     =
       Seq
         .tabulate(2) { _ =>
           val widget = Instantiate(new Widget)
@@ -40,7 +40,7 @@ object BoringUtilsTapSpec {
 
   class ArbitrarilyDeepHierarchy extends Module {
     val hier = Module(new ArbitrarilyDeeperHierarchy)
-    val ins = hier.ins.map { i =>
+    val ins  = hier.ins.map { i =>
       val in = IO(Input(UInt(32.W)))
       i := in
       in
@@ -61,9 +61,9 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       val internalWire = Wire(Bool())
     }
     class Top extends RawModule {
-      val foo = Module(new Foo())
+      val foo      = Module(new Foo())
       val outProbe = IO(probe.Probe(Bool()))
-      val out = IO(Bool())
+      val out      = IO(Bool())
       probe.define(outProbe, BoringUtils.tap(foo.internalWire))
       out := BoringUtils.tapAndRead(foo.internalWire)
     }
@@ -144,14 +144,14 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
   it should "work upwards from child to parent" in {
     class Foo(parentData: Data) extends RawModule {
       val outProbe = IO(probe.Probe(Bool()))
-      val out = IO(Bool())
+      val out      = IO(Bool())
       probe.define(outProbe, BoringUtils.tap(parentData))
       out := BoringUtils.tapAndRead(parentData)
       out := probe.read(outProbe)
     }
-    class Top extends RawModule {
+    class Top                   extends RawModule {
       val parentWire = Wire(Bool())
-      val foo = Module(new Foo(parentWire))
+      val foo        = Module(new Foo(parentWire))
     }
     val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top, Array("--full-stacktrace"))
     matchesAndOmits(chirrtl)(
@@ -173,12 +173,12 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       val out = IO(Bool())
       out := BoringUtils.tapAndRead(grandParentData)
     }
-    class Foo(parentData: Data) extends RawModule {
+    class Foo(parentData: Data)      extends RawModule {
       val bar = Module(new Bar(parentData))
     }
-    class Top extends RawModule {
+    class Top                        extends RawModule {
       val parentWire = Wire(Bool())
-      val foo = Module(new Foo(parentWire))
+      val foo        = Module(new Foo(parentWire))
     }
     val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
     matchesAndOmits(chirrtl)(
@@ -198,12 +198,12 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       val out = IO(Bool())
       out := BoringUtils.tapAndRead(grandParentData)
     }
-    class Foo(parentData: Data) extends RawModule {
+    class Foo(parentData: Data)      extends RawModule {
       when(true.B) {
         val bar = Module(new Bar(parentData))
       }
     }
-    class Top extends RawModule {
+    class Top                        extends RawModule {
       val parentWire = Wire(Bool())
       parentWire := DontCare
       val foo = Module(new Foo(parentWire))
@@ -222,17 +222,17 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
   }
 
   it should "work upwards from grandchild to grandparent into layer" in {
-    object TestLayer extends layer.Layer(layer.LayerConfig.Extract())
+    object TestLayer                 extends layer.Layer(layer.LayerConfig.Extract())
     class Bar(grandParentData: Data) extends RawModule {
       val out = IO(Bool())
       out := BoringUtils.tapAndRead(grandParentData)
     }
-    class Foo(parentData: Data) extends RawModule {
+    class Foo(parentData: Data)      extends RawModule {
       layer.block(TestLayer) {
         val bar = Module(new Bar(parentData))
       }
     }
-    class Top extends RawModule {
+    class Top                        extends RawModule {
       val parentWire = Wire(Bool())
       parentWire := DontCare
       val foo = Module(new Foo(parentWire))
@@ -251,14 +251,14 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
   }
 
   it should "work from child to its sibling" in {
-    class Bar extends RawModule {
+    class Bar           extends RawModule {
       val a = Wire(Bool())
     }
     class Baz(_a: Bool) extends RawModule {
       val b = Wire(Bool())
       b := BoringUtils.tapAndRead(_a)
     }
-    class Top extends RawModule {
+    class Top           extends RawModule {
       val bar = Module(new Bar)
       val baz = Module(new Baz(bar.a))
     }
@@ -276,7 +276,7 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
   }
 
   it should "work from child to sibling at different levels" in {
-    class Bar extends RawModule {
+    class Bar           extends RawModule {
       val a = Wire(Bool())
     }
     class Baz(_a: Bool) extends RawModule {
@@ -286,7 +286,7 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
     class Foo(_a: Bool) extends RawModule {
       val baz = Module(new Baz(_a))
     }
-    class Top extends RawModule {
+    class Top           extends RawModule {
       val bar = Module(new Bar)
       val foo = Module(new Foo(bar.a))
     }
@@ -310,12 +310,12 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
     import chisel3.experimental.dataview._
     class Foo extends RawModule {
       private val internalWire = Wire(Bool())
-      val view = internalWire.viewAs[Bool]
+      val view                 = internalWire.viewAs[Bool]
     }
     class Top extends RawModule {
-      val foo = Module(new Foo)
+      val foo      = Module(new Foo)
       val outProbe = IO(probe.Probe(Bool()))
-      val out = IO(Bool())
+      val out      = IO(Bool())
       probe.define(outProbe, BoringUtils.tap(foo.view))
       out := BoringUtils.tapAndRead(foo.view)
     }
@@ -334,7 +334,7 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
 
   it should "NOT work [yet] for non-identity views" in {
     import chisel3.experimental.dataview._
-    class MyBundle extends Bundle {
+    class MyBundle extends Bundle    {
       val a = Bool()
       val b = Bool()
     }
@@ -345,13 +345,13 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
         _._2 -> _.b
       )
     }
-    class Foo extends RawModule {
+    class Foo      extends RawModule {
       private val w1, w2 = Wire(Bool())
-      val view = (w1, w2).viewAs[MyBundle]
+      val view           = (w1, w2).viewAs[MyBundle]
     }
-    class Top extends RawModule {
-      val foo = Module(new Foo)
-      val out = IO(new MyBundle)
+    class Top      extends RawModule {
+      val foo      = Module(new Foo)
+      val out      = IO(new MyBundle)
       val outProbe = IO(probe.Probe(new MyBundle))
       probe.define(outProbe, BoringUtils.tap(foo.view))
       out := BoringUtils.tapAndRead(foo.view)
@@ -392,9 +392,9 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       val outProbe = IO(probe.RWProbe(Bool()))
       probe.define(outProbe, BoringUtils.rwTap(parentData))
     }
-    class Top extends RawModule {
+    class Top                   extends RawModule {
       val parentWire = Wire(Bool())
-      val foo = Module(new Foo(parentWire))
+      val foo        = Module(new Foo(parentWire))
     }
     val e = intercept[Exception] {
       circt.stage.ChiselStage.emitCHIRRTL(new Top, Array("--throw-on-first-error"))
@@ -403,7 +403,7 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
   }
 
   it should "not work from child to sibling at different levels" in {
-    class Bar extends RawModule {
+    class Bar           extends RawModule {
       val a = Wire(Bool())
     }
     class Baz(_a: Bool) extends RawModule {
@@ -413,7 +413,7 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
     class Foo(_a: Bool) extends RawModule {
       val baz = Module(new Baz(_a))
     }
-    class Top extends RawModule {
+    class Top           extends RawModule {
       val bar = Module(new Bar)
       val foo = Module(new Foo(bar.a))
     }
@@ -426,10 +426,10 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
   it should "work when tapping an element within a Bundle" in {
     val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(
       new RawModule {
-        class MiniBundle extends Bundle {
+        class MiniBundle extends Bundle    {
           val x = Bool()
         }
-        class Child() extends RawModule {
+        class Child()    extends RawModule {
           val b = Wire(new MiniBundle)
         }
 
@@ -441,7 +441,7 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
 
         // tap Bundle, then access element
         val outRWBundleProbe = IO(probe.RWProbe(new MiniBundle))
-        val outElem = IO(probe.RWProbe(Bool()))
+        val outElem          = IO(probe.RWProbe(Bool()))
         probe.define(outRWBundleProbe, BoringUtils.rwTap(child.b))
         probe.define(outElem, outRWBundleProbe.x)
       }
@@ -471,7 +471,7 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
 
         // tap Vec, then access element
         val outRWVecProbe = IO(probe.RWProbe(Vec(4, Bool())))
-        val outElem = IO(probe.RWProbe(Bool()))
+        val outElem       = IO(probe.RWProbe(Bool()))
         probe.define(outRWVecProbe, BoringUtils.rwTap(child.b))
         probe.define(outElem, outRWVecProbe(1))
       }
@@ -488,18 +488,18 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
 
   it should "work when rw-tapping IO, as rwprobe() from inside module" in {
     class Foo extends RawModule {
-      class InOutBundle extends Bundle {
-        val in = Flipped(Bool())
+      class InOutBundle extends Bundle    {
+        val in  = Flipped(Bool())
         val out = Bool()
       }
-      class Child() extends RawModule {
+      class Child()     extends RawModule {
         val v = IO(Vec(2, new InOutBundle))
         v(0).out := v(0).in
         v(1).out := v(1).in
       }
 
       val inputs = IO(Flipped(Vec(2, Bool())))
-      val child = Module(new Child())
+      val child  = Module(new Child())
       child.v(0).in := inputs(0)
       child.v(1).in := inputs(1)
 
@@ -530,7 +530,7 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       // Instantiation.
       "Child child (",
       ".v_0_in  (inputs_0),", // Alive because feeds outV_0_out probe.
-      ".v_0_out (" // rwprobe target.
+      ".v_0_out ("            // rwprobe target.
     )("v_1_in", "v_1_out") // These are dead now
   }
 
@@ -555,9 +555,9 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
           .allCurrentInstancesIn(hier)
           .filter(_.isA[Widget])
           .map { module =>
-            val widget = module.asInstanceOf[Instance[Widget]]
+            val widget      = module.asInstanceOf[Instance[Widget]]
             val widgetProbe = IO(probe.RWProbe(UInt(32.W)))
-            val p = BoringUtils.rwTap(widget.prb)
+            val p           = BoringUtils.rwTap(widget.prb)
             probe.define(widgetProbe, p)
             widgetProbe
           }
@@ -598,18 +598,18 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
 
   it should "work when tapping IO, as probe() from outside module" in {
     class Foo extends RawModule {
-      class InOutBundle extends Bundle {
-        val in = Flipped(Bool())
+      class InOutBundle extends Bundle    {
+        val in  = Flipped(Bool())
         val out = Bool()
       }
-      class Child() extends RawModule {
+      class Child()     extends RawModule {
         val v = IO(Vec(2, new InOutBundle))
         v(0).out := v(0).in
         v(1).out := v(1).in
       }
 
       val inputs = IO(Flipped(Vec(2, Bool())))
-      val child = Module(new Child())
+      val child  = Module(new Child())
       child.v(0).in := inputs(0)
       child.v(1).in := inputs(1)
 
@@ -685,7 +685,7 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
 
     @instantiable
     class Widget extends Module {
-      @public val in = IO(Input(UInt(32.W)))
+      @public val in  = IO(Input(UInt(32.W)))
       @public val out = IO(Output(UInt(32.W)))
       out := ~in
     }
@@ -697,9 +697,9 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
         widget.in := i.U
         widget
       }
-      @public val widgetProbes = widgets.map { widget =>
+      @public val widgetProbes           = widgets.map { widget =>
         val widgetProbe = IO(probe.RWProbe(UInt(32.W)))
-        val define = BoringUtils.rwTap(widget.out)
+        val define      = BoringUtils.rwTap(widget.out)
         probe.define(widgetProbe, define)
         widgetProbe
       }
@@ -723,13 +723,13 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
     import chisel3.experimental.hierarchy._
     class UnitTestHarness extends Module {
       val dut = Instantiate(new Dut)
-      val w = probe.read(dut.widgetProbes.head)
+      val w   = probe.read(dut.widgetProbes.head)
       printf("%d", w)
     }
 
     @instantiable
     class Widget extends Module {
-      @public val in = IO(Input(UInt(32.W)))
+      @public val in  = IO(Input(UInt(32.W)))
       @public val out = IO(Output(UInt(32.W)))
       out := ~in
     }
@@ -741,9 +741,9 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
         widget.in := i.U
         widget
       }
-      @public val widgetProbes = widgets.map { widget =>
+      @public val widgetProbes           = widgets.map { widget =>
         val widgetProbe = IO(probe.Probe(UInt(32.W)))
-        val define = BoringUtils.tap(widget.out)
+        val define      = BoringUtils.tap(widget.out)
         probe.define(widgetProbe, define)
         widgetProbe
       }
@@ -765,19 +765,19 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
 
   it should "work with DecoupledIO in a hierarchy" in {
     import chisel3.util.{Decoupled, DecoupledIO}
-    class Bar() extends RawModule {
+    class Bar()              extends RawModule {
       val decoupledThing = Wire(Decoupled(Bool()))
       decoupledThing := DontCare
     }
-    class Foo() extends RawModule {
+    class Foo()              extends RawModule {
       val bar = Module(new Bar())
     }
     class FakeView(foo: Foo) extends RawModule {
       val decoupledThing = Wire(DecoupledIO(Bool()))
       decoupledThing := BoringUtils.tapAndRead(foo.bar.decoupledThing)
     }
-    class Top() extends RawModule {
-      val foo = Module(new Foo())
+    class Top()              extends RawModule {
+      val foo      = Module(new Foo())
       val fakeView = Module(new FakeView(foo))
     }
 
@@ -806,7 +806,7 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
     }
 
     class Foo extends RawModule {
-      val a = WireInit(DecoupledIO(Bool()), DontCare)
+      val a   = WireInit(DecoupledIO(Bool()), DontCare)
       val bar = Module(new Bar(a))
     }
 
@@ -852,7 +852,7 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       val a = IO(probe.Probe(Bool()))
     }
     class Foo extends RawModule {
-      val b = IO(probe.Probe(Bool()))
+      val b   = IO(probe.Probe(Bool()))
       val bar = Module(new Bar)
       probe.define(b, BoringUtils.tap(bar.a))
     }
@@ -868,7 +868,7 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
     import chisel3.experimental.dataview._
     class Bar extends RawModule {
       private val internalWire = Wire(Bool())
-      val view = internalWire.viewAs[Bool]
+      val view                 = internalWire.viewAs[Bool]
     }
     class Foo extends RawModule {
       val bar = Module(new Bar)
@@ -895,7 +895,7 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
 
   it should "NOT work [yet] for non-identity views" in {
     import chisel3.experimental.dataview._
-    class MyBundle extends Bundle {
+    class MyBundle extends Bundle    {
       val a = Bool()
       val b = Bool()
     }
@@ -906,14 +906,14 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
         _._2 -> _.b
       )
     }
-    class Bar extends RawModule {
+    class Bar      extends RawModule {
       private val w1, w2 = Wire(Bool())
-      val view = (w1, w2).viewAs[MyBundle]
+      val view           = (w1, w2).viewAs[MyBundle]
     }
-    class Foo extends RawModule {
+    class Foo      extends RawModule {
       val bar = Module(new Bar)
     }
-    class Top extends RawModule {
+    class Top      extends RawModule {
       val foo = Module(new Foo)
       val out = IO(Bool())
       out := probe.read(BoringUtils.rwTap(foo.bar.view))
@@ -925,21 +925,21 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
 
   it should "reuse existing port in a closed module" in {
     class Foo extends Module {
-      val io = IO(Output(UInt(32.W)))
+      val io      = IO(Output(UInt(32.W)))
       val ioProbe = IO(probe.RWProbe(UInt(32.W)))
       probe.define(ioProbe, probe.RWProbeValue(io))
       io := 0.U
     }
 
     class Bar extends Module {
-      val foo = Module(new Foo)
+      val foo     = Module(new Foo)
       val ioNames = reflect.DataMirror.modulePorts(foo).map(_._1) // close foo
-      val io = IO(Output(UInt(32.W)))
+      val io      = IO(Output(UInt(32.W)))
       io := foo.io
     }
 
     class Baz extends Module {
-      val bar = Module(new Bar)
+      val bar     = Module(new Bar)
       val reProbe = Wire(probe.RWProbe(UInt(32.W)))
       probe.define(reProbe, BoringUtils.rwTap(bar.foo.ioProbe))
       probe.forceInitial(reProbe, 1.U)

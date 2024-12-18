@@ -15,9 +15,9 @@ class FooLFSR(val reduction: LFSRReduce, seed: Option[BigInt]) extends PRNG(4, s
 
 class LFSRMaxPeriod(gen: => UInt) extends BasicTester {
 
-  val rv = gen
+  val rv      = gen
   val started = RegNext(true.B, false.B)
-  val seed = withReset(!started) { RegInit(rv) }
+  val seed    = withReset(!started) { RegInit(rv) }
 
   val (_, wrap) = Counter(started, math.pow(2.0, rv.getWidth).toInt - 1)
 
@@ -38,7 +38,7 @@ class LFSRMaxPeriod(gen: => UInt) extends BasicTester {
   */
 class LFSRDistribution(gen: => UInt, cycles: Int = 10000) extends BasicTester {
 
-  val rv = gen
+  val rv   = gen
   val bins = Reg(Vec(8, UInt(32.W)))
 
   // Use tap points on each LFSR so values are more independent
@@ -77,14 +77,14 @@ class LFSRResetTester(gen: => LFSR, lockUpValue: BigInt) extends BasicTester {
 
   val lfsr = Module(gen)
   lfsr.io.seed.valid := false.B
-  lfsr.io.seed.bits := DontCare
-  lfsr.io.increment := true.B
+  lfsr.io.seed.bits  := DontCare
+  lfsr.io.increment  := true.B
 
   val (count, done) = Counter(true.B, 5)
 
   lfsr.io.seed.valid := count === 1.U
-  lfsr.io.seed.bits := lockUpValue.U(lfsr.width.W).asBools
-  lfsr.io.increment := true.B
+  lfsr.io.seed.bits  := lockUpValue.U(lfsr.width.W).asBools
+  lfsr.io.increment  := true.B
 
   when(count === 2.U) {
     assert(lfsr.io.out.asUInt === lockUpValue.U, "LFSR is NOT locked up, but should be!")
@@ -107,7 +107,7 @@ class LFSRSpec extends ChiselFlatSpec with Utils {
   def periodCheck(gen: (Int, Set[Int], LFSRReduce) => PRNG, reduction: LFSRReduce, range: Range): Unit = {
     val testName = s"have a maximal period over a range of widths (${range.head} to ${range.last})" +
       s" using ${reduction.getClass}"
-    //TODO: SFC->MFC, these tests fail due to a bootstrap problem under MFC in LFSRMaxPeriod
+    // TODO: SFC->MFC, these tests fail due to a bootstrap problem under MFC in LFSRMaxPeriod
     it should testName ignore {
       range.foreach { width =>
         LFSR.tapsMaxPeriod(width).foreach { taps =>

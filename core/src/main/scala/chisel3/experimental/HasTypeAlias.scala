@@ -11,18 +11,18 @@ import chisel3.Record
   */
 case class RecordAlias private[chisel3] (info: SourceInfo, id: String, strippedSuffix: String = "_stripped") {
   private[chisel3] def copy(
-    info:           SourceInfo = this.info,
-    id:             String = this.id,
+    info: SourceInfo = this.info,
+    id: String = this.id,
     strippedSuffix: String = this.strippedSuffix
   ) =
     new RecordAlias(info, id, strippedSuffix)
 }
 
 object RecordAlias {
-  def apply(id: String)(implicit info:  SourceInfo): RecordAlias = new RecordAlias(info, id)
+  def apply(id: String)(implicit info: SourceInfo): RecordAlias                         = new RecordAlias(info, id)
   def apply(id: String, strippedSuffix: String)(implicit info: SourceInfo): RecordAlias =
     RecordAlias(info, id, strippedSuffix)
-  def apply(info: SourceInfo, id: String, strippedSuffix: String): RecordAlias =
+  def apply(info: SourceInfo, id: String, strippedSuffix: String): RecordAlias          =
     new RecordAlias(info, id, strippedSuffix)
 }
 

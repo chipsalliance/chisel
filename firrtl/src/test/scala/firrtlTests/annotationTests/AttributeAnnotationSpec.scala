@@ -15,7 +15,7 @@ class AttributeAnnotationSpec extends AnyFreeSpec with Matchers {
       "X_INTERFACE_INFO = \"some:interface:type:1.0 SIGNAL\""
     )
 
-    val annoString = JsonProtocol.serializeTry(Seq(attribAnno)).get
+    val annoString  = JsonProtocol.serializeTry(Seq(attribAnno)).get
     val loadedAnnos = JsonProtocol.deserializeTry(annoString).get
     attribAnno should equal(loadedAnnos.head)
   }

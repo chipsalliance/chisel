@@ -8,16 +8,15 @@ import nsc.plugins.{Plugin, PluginComponent}
 import scala.reflect.internal.util.NoPosition
 import scala.collection.mutable
 
-private[plugin] case class ChiselPluginArguments(
-  val skipFiles: mutable.HashSet[String] = mutable.HashSet.empty) {
-  var deprecateSFC: Boolean = true
-  def useBundlePluginOpt = "useBundlePlugin"
-  def useBundlePluginFullOpt = s"-P:${ChiselPlugin.name}:$useBundlePluginOpt"
-  def genBundleElementsOpt = "genBundleElements"
+private[plugin] case class ChiselPluginArguments(val skipFiles: mutable.HashSet[String] = mutable.HashSet.empty) {
+  var deprecateSFC: Boolean    = true
+  def useBundlePluginOpt       = "useBundlePlugin"
+  def useBundlePluginFullOpt   = s"-P:${ChiselPlugin.name}:$useBundlePluginOpt"
+  def genBundleElementsOpt     = "genBundleElements"
   def genBundleElementsFullOpt = s"-P:${ChiselPlugin.name}:$genBundleElementsOpt"
   // Annoying because this shouldn't be used by users
-  def skipFilePluginOpt = "INTERNALskipFile:"
-  def skipFilePluginFullOpt = s"-P:${ChiselPlugin.name}:$skipFilePluginOpt"
+  def skipFilePluginOpt        = "INTERNALskipFile:"
+  def skipFilePluginFullOpt    = s"-P:${ChiselPlugin.name}:$skipFilePluginOpt"
 }
 
 object ChiselPlugin {
@@ -25,15 +24,14 @@ object ChiselPlugin {
 
   // Also logs why the component was not run
   private[plugin] def runComponent(
-    global:    Global,
+    global: Global,
     arguments: ChiselPluginArguments
-  )(unit:      global.CompilationUnit
-  ): Boolean = {
+  )(unit: global.CompilationUnit): Boolean = {
     // This plugin doesn't work on Scala 2.11 nor Scala 3. Rather than complicate the sbt build flow,
     // instead we just check the version and if its an early Scala version, the plugin does nothing
-    val scalaVersion = scala.util.Properties.versionNumberString.split('.')
+    val scalaVersion   = scala.util.Properties.versionNumberString.split('.')
     val scalaVersionOk = scalaVersion(0).toInt == 2 && scalaVersion(1).toInt >= 12
-    val skipFile = arguments.skipFiles(unit.source.file.path)
+    val skipFile       = arguments.skipFiles(unit.source.file.path)
     if (scalaVersionOk && !skipFile) {
       true
     } else {
@@ -51,9 +49,9 @@ object ChiselPlugin {
 
 // The plugin to be run by the Scala compiler during compilation of Chisel code
 class ChiselPlugin(val global: Global) extends Plugin {
-  val name = ChiselPlugin.name
-  val description = "Plugin for Chisel 3 Hardware Description Language"
-  private val arguments = ChiselPluginArguments()
+  val name                              = ChiselPlugin.name
+  val description                       = "Plugin for Chisel 3 Hardware Description Language"
+  private val arguments                 = ChiselPluginArguments()
   val components: List[PluginComponent] = List[PluginComponent](
     new ChiselComponent(global, arguments),
     new BundleComponent(global, arguments),

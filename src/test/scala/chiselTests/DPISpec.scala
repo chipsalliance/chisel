@@ -41,9 +41,9 @@ private object EmitDPIImplementation {
 
 class DPIIntrinsicTest extends Module {
   val io = IO(new Bundle {
-    val a = Input(UInt(32.W))
-    val b = Input(UInt(32.W))
-    val add_clocked_result = Output(UInt(32.W))
+    val a                    = Input(UInt(32.W))
+    val b                    = Input(UInt(32.W))
+    val add_clocked_result   = Output(UInt(32.W))
     val add_unclocked_result = Output(UInt(32.W))
   })
 
@@ -53,53 +53,53 @@ class DPIIntrinsicTest extends Module {
   RawClockedVoidFunctionCall("hello")(clock, true.B)
 
   // Stateless function with result
-  val result_clocked =
+  val result_clocked   =
     RawClockedNonVoidFunctionCall("add", UInt(32.W), Some(Seq("lhs", "rhs")), Some("result"))(clock, true.B, io.a, io.b)
   val result_unclocked =
     RawUnclockedNonVoidFunctionCall("add", UInt(32.W), Some(Seq("lhs", "rhs")), Some("result"))(true.B, io.a, io.b)
 
-  io.add_clocked_result := result_clocked
+  io.add_clocked_result   := result_clocked
   io.add_unclocked_result := result_unclocked
 }
 
 object Hello extends DPIClockedVoidFunctionImport {
   override val functionName = "hello"
-  final def apply() = super.call()
+  final def apply()         = super.call()
 }
 
 object AddClocked extends DPINonVoidFunctionImport[UInt] {
-  override val functionName = "add"
-  override val ret = UInt(32.W)
-  override val clocked = true
-  override val inputNames = Some(Seq("lhs", "rhs"))
-  override val outputName = Some("result")
+  override val functionName                   = "add"
+  override val ret                            = UInt(32.W)
+  override val clocked                        = true
+  override val inputNames                     = Some(Seq("lhs", "rhs"))
+  override val outputName                     = Some("result")
   final def apply(lhs: UInt, rhs: UInt): UInt = super.call(lhs, rhs)
 }
 
 object AddUnclocked extends DPINonVoidFunctionImport[UInt] {
-  override val functionName = "add"
-  override val ret = UInt(32.W)
-  override val clocked = false
-  override val inputNames = Some(Seq("lhs", "rhs"))
-  override val outputName = Some("result")
+  override val functionName                   = "add"
+  override val ret                            = UInt(32.W)
+  override val clocked                        = false
+  override val inputNames                     = Some(Seq("lhs", "rhs"))
+  override val outputName                     = Some("result")
   final def apply(lhs: UInt, rhs: UInt): UInt = super.call(lhs, rhs)
 }
 
 class DPIAPITest extends Module {
   val io = IO(new Bundle {
-    val a = Input(UInt(32.W))
-    val b = Input(UInt(32.W))
-    val add_clocked_result = Output(UInt(32.W))
+    val a                    = Input(UInt(32.W))
+    val b                    = Input(UInt(32.W))
+    val add_clocked_result   = Output(UInt(32.W))
     val add_unclocked_result = Output(UInt(32.W))
   })
 
   EmitDPIImplementation()
 
   Hello()
-  val result_clocked = AddClocked(io.a, io.b)
+  val result_clocked   = AddClocked(io.a, io.b)
   val result_unclocked = AddUnclocked(io.a, io.b)
 
-  io.add_clocked_result := result_clocked
+  io.add_clocked_result   := result_clocked
   io.add_unclocked_result := result_unclocked
 }
 
@@ -132,7 +132,7 @@ class DPISpec extends AnyFunSpec with Matchers {
         .result
 
       val outputFile = io.Source.fromFile("test_run_dir/simulator/DPIIntrinsic/workdir-verilator/simulation-log.txt")
-      val output = outputFile.mkString
+      val output     = outputFile.mkString
       outputFile.close()
       output should include("hello from c++")
     }
@@ -163,7 +163,7 @@ class DPISpec extends AnyFunSpec with Matchers {
         .result
 
       val outputFile = io.Source.fromFile("test_run_dir/simulator/DPIAPI/workdir-verilator/simulation-log.txt")
-      val output = outputFile.mkString
+      val output     = outputFile.mkString
       outputFile.close()
       output should include("hello from c++")
     }

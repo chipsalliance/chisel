@@ -16,7 +16,7 @@ object SerializerSpec {
 
   case class WrapExpr(expr: Expression) extends Expression {
     def serialize: String = s"wrap(${expr.serialize})"
-    def tpe:       Type = expr.tpe
+    def tpe: Type         = expr.tpe
   }
 
   private def tab(s: String): String = {
@@ -121,7 +121,7 @@ object SMemTestCircuit {
 
   def findRuw(c: Circuit): ReadUnderWrite.Value = {
     val main = c.modules.head.asInstanceOf[Module]
-    val mem = main.body.asInstanceOf[Block].stmts.collectFirst { case m: CDefMemory => m }.get
+    val mem  = main.body.asInstanceOf[Block].stmts.collectFirst { case m: CDefMemory => m }.get
     mem.readUnderWrite
   }
 }
@@ -131,21 +131,21 @@ class SerializerSpec extends AnyFlatSpec with Matchers {
 
   "ir.Serializer" should "support custom Statements" in {
     val stmt = WrapStmt(DefWire(NoInfo, "myWire", Utils.BoolType))
-    val ser = "wrap(wire myWire : UInt<1>)"
+    val ser  = "wrap(wire myWire : UInt<1>)"
     Serializer.serialize(stmt) should be(ser)
   }
 
   it should "support custom Expression" in {
     val expr = WrapExpr(Reference("foo"))
-    val ser = "wrap(foo)"
+    val ser  = "wrap(foo)"
     Serializer.serialize(expr) should be(ser)
   }
 
   it should "support nested custom Statements and Expressions" in {
-    val expr = SubField(WrapExpr(Reference("foo")), "bar")
-    val stmt = WrapStmt(DefNode(NoInfo, "n", expr))
+    val expr  = SubField(WrapExpr(Reference("foo")), "bar")
+    val stmt  = WrapStmt(DefNode(NoInfo, "n", expr))
     val stmts = Block(stmt :: Nil)
-    val ser = "wrap(node n = wrap(foo).bar)"
+    val ser   = "wrap(node n = wrap(foo).bar)"
     Serializer.serialize(stmts) should be(ser)
   }
 
@@ -200,7 +200,7 @@ class SerializerSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "emit whens with empty Blocks correctly" in {
-    val when = Conditionally(NoInfo, Reference("cond"), Block(Seq()), EmptyStmt)
+    val when       = Conditionally(NoInfo, Reference("cond"), Block(Seq()), EmptyStmt)
     val serialized = Serializer.serialize(when, 1)
     serialized should be("  when cond :\n    skip\n")
   }
@@ -280,18 +280,18 @@ class SerializerSpec extends AnyFlatSpec with Matchers {
       }
     }
 
-    val stmt = HackStmt(DefNode(NoInfo, "foo", Reference("bar")))
+    val stmt                 = HackStmt(DefNode(NoInfo, "foo", Reference("bar")))
     val it: Iterable[String] = Serializer.lazily(stmt)
     assert(!stmtSerialized, "We should be able to construct the serializer lazily")
 
-    var mapExecuted = false
+    var mapExecuted           = false
     val it2: Iterable[String] = it.map { x =>
       mapExecuted = true
       x + ","
     }
     assert(!stmtSerialized && !mapExecuted, "We should be able to map the serializer lazily")
 
-    var appendExecuted = false
+    var appendExecuted        = false
     val it3: Iterable[String] = it2 ++ Seq("hi").view.map { x =>
       appendExecuted = true
       x

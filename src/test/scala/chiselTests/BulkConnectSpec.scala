@@ -9,10 +9,10 @@ class BulkConnectSpec extends ChiselPropSpec {
   property("Chisel connects should emit FIRRTL bulk connects when possible") {
     val chirrtl = ChiselStage.emitCHIRRTL(new Module {
       val io = IO(new Bundle {
-        val inMono = Input(Vec(4, UInt(8.W)))
+        val inMono  = Input(Vec(4, UInt(8.W)))
         val outMono = Output(Vec(4, UInt(8.W)))
-        val inBi = Input(Vec(4, UInt(8.W)))
-        val outBi = Output(Vec(4, UInt(8.W)))
+        val inBi    = Input(Vec(4, UInt(8.W)))
+        val outBi   = Output(Vec(4, UInt(8.W)))
       })
       io.outMono := io.inMono
       io.outBi <> io.inBi
@@ -23,7 +23,7 @@ class BulkConnectSpec extends ChiselPropSpec {
 
   property("Chisel connects should not emit FIRRTL bulk connects between differing FIRRTL types") {
     val chirrtl = ChiselStage.emitCHIRRTL(new Module {
-      val in = IO(Flipped(new Bundle {
+      val in  = IO(Flipped(new Bundle {
         val foo = Flipped(new Bundle {
           val bar = Input(UInt(8.W))
         })
@@ -98,8 +98,8 @@ class BulkConnectSpec extends ChiselPropSpec {
     type ReversedVec[T <: Data] = Vec[T]
     implicit def reversedVecView[T <: Data]: DataView[Vec[T], ReversedVec[T]] =
       DataView.mapping[Vec[T], ReversedVec[T]](v => v.cloneType, { case (a, b) => a.reverse.zip(b) })
-    val chirrtl = ChiselStage.emitCHIRRTL(new Module {
-      val in0, in1 = IO(Input(Vec(2, UInt(8.W))))
+    val chirrtl                                                               = ChiselStage.emitCHIRRTL(new Module {
+      val in0, in1   = IO(Input(Vec(2, UInt(8.W))))
       val out0, out1 = IO(Output(Vec(2, UInt(8.W))))
 
       out0 := in0.viewAs[ReversedVec[UInt]]

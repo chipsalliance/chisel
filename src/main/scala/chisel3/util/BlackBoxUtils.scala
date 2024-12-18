@@ -15,7 +15,7 @@ private[util] object BlackBoxHelpers {
     /** Generate a BlackBoxInlineAnno from a Java Resource and a module name. */
     def fromResource(resourceName: String, moduleName: ModuleName) = try {
       val blackBoxFile = os.resource / os.RelPath(resourceName.dropWhile(_ == '/'))
-      val contents = os.read(blackBoxFile)
+      val contents     = os.read(blackBoxFile)
       if (contents.size > BigInt(2).pow(20)) {
         val message =
           s"Black box resource $resourceName, which will be converted to an inline annotation, is greater than 1 MiB." +

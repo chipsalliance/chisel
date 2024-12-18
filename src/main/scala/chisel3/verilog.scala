@@ -46,8 +46,8 @@ object getVerilogString {
     ) ++ (new circt.stage.ChiselStage).shell.parse(args) ++ annotations
     phase
       .transform(annos)
-      .collectFirst {
-        case EmittedVerilogCircuitAnnotation(a) => a
+      .collectFirst { case EmittedVerilogCircuitAnnotation(a) =>
+        a
       }
       .get
       .value
@@ -61,8 +61,8 @@ object emitVerilog {
         Array("--target", "systemverilog") ++ args,
         ChiselGeneratorAnnotation(() => gen) +: annotations
       )
-      .collectFirst {
-        case EmittedVerilogCircuitAnnotation(a) => a
+      .collectFirst { case EmittedVerilogCircuitAnnotation(a) =>
+        a
       }
       .get
       .value

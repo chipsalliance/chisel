@@ -23,8 +23,8 @@ class EmitterSpec extends AnyFlatSpec with Matchers {
   behavior.of(classOf[Emitter].toString)
 
   it should "do nothing if no ChiselOutputFileAnnotations are present" in new Fixture {
-    val dir = new File("test_run_dir/EmitterSpec")
-    val annotations =
+    val dir          = new File("test_run_dir/EmitterSpec")
+    val annotations  =
       (new Elaborate).transform(Seq(TargetDirAnnotation(dir.toString), ChiselGeneratorAnnotation(() => new FooModule)))
     val annotationsx = phase.transform(annotations)
 
@@ -38,8 +38,8 @@ class EmitterSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "emit a ChiselCircuitAnnotation to a specific file" in new Fixture {
-    val dir = new File("test_run_dir/EmitterSpec")
-    val circuit = (new Elaborate)
+    val dir         = new File("test_run_dir/EmitterSpec")
+    val circuit     = (new Elaborate)
       .transform(Seq(ChiselGeneratorAnnotation(() => new BarModule)))
       .collectFirst { case a: ChiselCircuitAnnotation => a }
       .get

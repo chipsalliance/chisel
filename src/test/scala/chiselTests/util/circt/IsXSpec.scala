@@ -19,9 +19,9 @@ private class IsXBundle extends Bundle {
 }
 
 private class IsXTop extends Module {
-  val w = IO(Input(UInt(65.W)))
-  val x = IO(Input(new IsXBundle))
-  val y = IO(Input(UInt(65.W)))
+  val w    = IO(Input(UInt(65.W)))
+  val x    = IO(Input(new IsXBundle))
+  val y    = IO(Input(UInt(65.W)))
   val outw = IO(Output(UInt(1.W)))
   val outx = IO(Output(UInt(1.W)))
   val outy = IO(Output(UInt(1.W)))

@@ -23,7 +23,7 @@ case class ConvertSpecChiselAnnotation(name: String) extends ChiselAnnotation {
 class ConvertSpecFoo extends RawModule {
   override val desiredName: String = "foo"
 
-  val in = IO(Input(Bool()))
+  val in  = IO(Input(Bool()))
   val out = IO(Output(Bool()))
 
   experimental.annotate(ConvertSpecChiselAnnotation("bar"))

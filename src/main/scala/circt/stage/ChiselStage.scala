@@ -17,10 +17,10 @@ import firrtl.EmittedBtor2CircuitAnnotation
   */
 class ChiselStage extends Stage {
 
-  override def prerequisites = Seq.empty
-  override def optionalPrerequisites = Seq.empty
+  override def prerequisites          = Seq.empty
+  override def optionalPrerequisites  = Seq.empty
   override def optionalPrerequisiteOf = Seq.empty
-  override def invalidates(a: Phase) = false
+  override def invalidates(a: Phase)  = false
 
   override val shell = new firrtl.options.Shell("circt") with CLI {
     // These are added by firrtl.options.Shell (which we must extend because we are a Stage)
@@ -66,7 +66,7 @@ object ChiselStage {
 
   /** Elaborate a Chisel circuit into a CHIRRTL string */
   def emitCHIRRTL(
-    gen:  => RawModule,
+    gen: => RawModule,
     args: Array[String] = Array.empty
   ): String = {
     val annos = Seq(
@@ -77,13 +77,13 @@ object ChiselStage {
     val resultAnnos = phase.transform(annos)
 
     var circuitAnno: Option[CircuitSerializationAnnotation] = None
-    val inFileAnnos = resultAnnos.flatMap {
+    val inFileAnnos                                         = resultAnnos.flatMap {
       case a: ChiselCircuitAnnotation =>
         circuitAnno = Some(CircuitSerializationAnnotation(a.circuit, "", FirrtlFileFormat))
         None
-      case _: Unserializable     => None
-      case _: CustomFileEmission => None
-      case a => Some(a)
+      case _: Unserializable          => None
+      case _: CustomFileEmission      => None
+      case a                          => Some(a)
     }
     circuitAnno.get.emitLazily(inFileAnnos).mkString
   }
@@ -94,7 +94,7 @@ object ChiselStage {
     * @param args additional command line arguments to pass to Chisel
     */
   def emitCHIRRTLFile(
-    gen:  => RawModule,
+    gen: => RawModule,
     args: Array[String] = Array.empty
   ): AnnotationSeq = {
     (new circt.stage.ChiselStage).execute(
@@ -108,7 +108,7 @@ object ChiselStage {
     * @param gen a call-by-name Chisel module
     */
   def convert(
-    gen:  => RawModule,
+    gen: => RawModule,
     args: Array[String] = Array.empty
   ): firrtl.ir.Circuit = {
     val annos = Seq(
@@ -118,16 +118,16 @@ object ChiselStage {
 
     phase
       .transform(annos)
-      .collectFirst {
-        case FirrtlCircuitAnnotation(a) => a
+      .collectFirst { case FirrtlCircuitAnnotation(a) =>
+        a
       }
       .get
   }
 
   /** Compile a Chisel circuit to FIRRTL dialect */
   def emitFIRRTLDialect(
-    gen:         => RawModule,
-    args:        Array[String] = Array.empty,
+    gen: => RawModule,
+    args: Array[String] = Array.empty,
     firtoolOpts: Array[String] = Array.empty
   ): String = {
     val annos = Seq(
@@ -137,16 +137,16 @@ object ChiselStage {
 
     phase
       .transform(annos)
-      .collectFirst {
-        case EmittedMLIR(_, a, _) => a
+      .collectFirst { case EmittedMLIR(_, a, _) =>
+        a
       }
       .get
   }
 
   /** Compile a Chisel circuit to HWS dialect */
   def emitHWDialect(
-    gen:         => RawModule,
-    args:        Array[String] = Array.empty,
+    gen: => RawModule,
+    args: Array[String] = Array.empty,
     firtoolOpts: Array[String] = Array.empty
   ): String = {
     val annos = Seq(
@@ -156,8 +156,8 @@ object ChiselStage {
 
     phase
       .transform(annos)
-      .collectFirst {
-        case EmittedMLIR(_, a, _) => a
+      .collectFirst { case EmittedMLIR(_, a, _) =>
+        a
       }
       .get
   }
@@ -170,8 +170,8 @@ object ChiselStage {
     * @return a string containing the Verilog output
     */
   def emitSystemVerilog(
-    gen:         => RawModule,
-    args:        Array[String] = Array.empty,
+    gen: => RawModule,
+    args: Array[String] = Array.empty,
     firtoolOpts: Array[String] = Array.empty
   ): String = {
     val annos = Seq(
@@ -180,8 +180,8 @@ object ChiselStage {
     ) ++ (new Shell("circt")).parse(args) ++ firtoolOpts.map(FirtoolOption(_))
     phase
       .transform(annos)
-      .collectFirst {
-        case EmittedVerilogCircuitAnnotation(a) => a
+      .collectFirst { case EmittedVerilogCircuitAnnotation(a) =>
+        a
       }
       .get
       .value
@@ -195,8 +195,8 @@ object ChiselStage {
     * @return a string containing the Verilog output
     */
   def emitSystemVerilogFile(
-    gen:         => RawModule,
-    args:        Array[String] = Array.empty,
+    gen: => RawModule,
+    args: Array[String] = Array.empty,
     firtoolOpts: Array[String] = Array.empty
   ): AnnotationSeq =
     (new circt.stage.ChiselStage).execute(
@@ -212,8 +212,8 @@ object ChiselStage {
     * @return a string containing the btor2 output
     */
   def emitBtor2(
-    gen:         => RawModule,
-    args:        Array[String] = Array.empty,
+    gen: => RawModule,
+    args: Array[String] = Array.empty,
     firtoolOpts: Array[String] = Array.empty
   ): String = {
     val annos = Seq(
@@ -222,8 +222,8 @@ object ChiselStage {
     ) ++ (new Shell("circt")).parse(args) ++ firtoolOpts.map(FirtoolOption(_))
     phase
       .transform(annos)
-      .collectFirst {
-        case EmittedBtor2CircuitAnnotation(a) => a
+      .collectFirst { case EmittedBtor2CircuitAnnotation(a) =>
+        a
       }
       .get
       .value

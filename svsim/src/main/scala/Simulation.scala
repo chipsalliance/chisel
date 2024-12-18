@@ -7,45 +7,45 @@ import scala.util.Try
 import java.io.{BufferedReader, BufferedWriter, File, InputStreamReader, OutputStreamWriter}
 
 final class Simulation private[svsim] (
-  executableName:           String,
-  settings:                 Simulation.Settings,
+  executableName: String,
+  settings: Simulation.Settings,
   val workingDirectoryPath: String,
-  moduleInfo:               ModuleInfo) {
+  moduleInfo: ModuleInfo
+) {
   private val executionScriptPath = s"$workingDirectoryPath/execution-script.txt"
 
   def run[T](body: Simulation.Controller => T): T = run()(body)
   def run[T](
     conservativeCommandResolution: Boolean = false,
-    verbose:                       Boolean = false,
-    traceEnabled:                  Boolean = false,
-    executionScriptLimit:          Option[Int] = None
-  )(body:                          Simulation.Controller => T
-  ): T = {
-    val cwd = settings.customWorkingDirectory match {
-      case None => workingDirectoryPath
+    verbose: Boolean = false,
+    traceEnabled: Boolean = false,
+    executionScriptLimit: Option[Int] = None
+  )(body: Simulation.Controller => T): T = {
+    val cwd            = settings.customWorkingDirectory match {
+      case None        => workingDirectoryPath
       case Some(value) =>
         if (value.startsWith("/"))
           value
         else
           s"$workingDirectoryPath/$value"
     }
-    val command = Seq(s"$workingDirectoryPath/$executableName") ++ settings.arguments
+    val command        = Seq(s"$workingDirectoryPath/$executableName") ++ settings.arguments
     val processBuilder = new ProcessBuilder(command: _*)
     processBuilder.directory(new File(cwd))
     processBuilder.redirectError(ProcessBuilder.Redirect.INHERIT)
-    val environment = settings.environment ++ Seq(
+    val environment    = settings.environment ++ Seq(
       Some("SVSIM_EXECUTION_SCRIPT" -> executionScriptPath),
       executionScriptLimit.map("SVSIM_EXECUTION_SCRIPT_LIMIT" -> _.toString)
     ).flatten
     environment.foreach { (pair) =>
       processBuilder.environment().put(pair._1, pair._2)
     }
-    val process = processBuilder.start()
+    val process        = processBuilder.start()
     sys.addShutdownHook {
       if (process.isAlive())
         process.destroyForcibly()
     }
-    val controller = new Simulation.Controller(
+    val controller     = new Simulation.Controller(
       new BufferedWriter(new OutputStreamWriter(process.getOutputStream())),
       new BufferedReader(new InputStreamReader(process.getInputStream())),
       moduleInfo,
@@ -55,7 +55,7 @@ final class Simulation private[svsim] (
     if (traceEnabled) {
       controller.setTraceEnabled(true)
     }
-    val bodyOutcome = Try {
+    val bodyOutcome    = Try {
       val result = body(controller)
       // Exceptions thrown from commands still in the queue when `body` returns should supercede returning `result`
       controller.completeInFlightCommands()
@@ -93,20 +93,22 @@ final class Simulation private[svsim] (
 object Simulation {
   private[svsim] final case class Settings(
     customWorkingDirectory: Option[String] = None,
-    arguments:              Seq[String] = Seq(),
-    environment:            Map[String, String] = Map())
+    arguments: Seq[String] = Seq(),
+    environment: Map[String, String] = Map()
+  )
 
   /** @note Methods in this class and `Simulation.Port` are somewhat lazy in their execution. Specifically, methods returning `Unit` neither flush the command buffer, nor do they actively read from the message buffer. Only commands which return a value will wait to return until the simulation has progressed to the point where the value is available. This can improve performance by essentially enabling batching of both commands and messages. If you want to ensure that all commands have been sent to the simulation executable, you can call `completeInFlightCommands()`.
     */
   final class Controller private[Simulation] (
-    commandWriter:                 BufferedWriter,
-    messageReader:                 BufferedReader,
-    moduleInfo:                    ModuleInfo,
+    commandWriter: BufferedWriter,
+    messageReader: BufferedReader,
+    moduleInfo: ModuleInfo,
     conservativeCommandResolution: Boolean = false,
-    logMessagesAndCommands:        Boolean = false) {
+    logMessagesAndCommands: Boolean = false
+  ) {
 
     private def readStringOfLength(length: Int): String = {
-      val array = new Array[Char](length)
+      val array      = new Array[Char](length)
       val readLength = messageReader.read(array)
       if (readLength != length) {
         throw new Exception(s"Expected string of length ${length} but got ${readLength}")
@@ -114,20 +116,20 @@ object Simulation {
       new String(array)
     }
 
-    private var readMessageCount = 0
+    private var readMessageCount                               = 0
     // For specific message formats, consult `simulation-driver.cpp`
     private def readNextAvailableMessage(): Simulation.Message = {
       object MessageCode {
         val Ready = 'r'
         val Error = 'e'
-        val Ack = 'k'
-        val Bits = 'b'
-        val Log = 'l'
+        val Ack   = 'k'
+        val Bits  = 'b'
+        val Log   = 'l'
       }
 
       def readChar(): Option[Char] = {
         val array = new Array[Char](1)
-        val read = messageReader.read(array)
+        val read  = messageReader.read(array)
         if (read != 1) {
           None
         } else {
@@ -160,20 +162,20 @@ object Simulation {
         case MessageCode.Error => {
           throw new Error(messageReader.readLine())
         }
-        case MessageCode.Ack => {
+        case MessageCode.Ack   => {
           val rest = messageReader.readLine()
           if (rest != "ack") {
             throw new Exception(s"Malformed ack message: ${messageCode} ${rest}")
           }
           Ack
         }
-        case MessageCode.Bits => {
+        case MessageCode.Bits  => {
           val bitCount = Integer.parseInt(readStringOfLength(8), 16)
           mustRead(' ')
           Bits(bitCount, BigInt(messageReader.readLine(), 16))
         }
-        case MessageCode.Log => {
-          val length = Integer.parseInt(readStringOfLength(8), 16)
+        case MessageCode.Log   => {
+          val length  = Integer.parseInt(readStringOfLength(8), 16)
           if (length < 0) {
             throw new Exception("Invalid log message length")
           }
@@ -182,7 +184,7 @@ object Simulation {
           mustRead('\n')
           Log(new String(content))
         }
-        case _ => throw new Exception(s"Unknown message code: ${messageCode}")
+        case _                 => throw new Exception(s"Unknown message code: ${messageCode}")
       }
       if (logMessagesAndCommands) {
         // NOTE: Commands are 1-indexed, but messages are 0-indexed since we read the first message (READY) before we send any commands.
@@ -227,16 +229,16 @@ object Simulation {
       }
     }
 
-    private var sentCommandCount = 0
+    private var sentCommandCount                                     = 0
     private[Simulation] def sendCommand(command: Simulation.Command) = {
       object CommandCode extends Enumeration {
-        val Done = 'D'
-        val Log = 'L'
+        val Done    = 'D'
+        val Log     = 'L'
         val GetBits = 'G'
         val SetBits = 'S'
-        val Run = 'R'
-        val Tick = 'T'
-        val Trace = 'W'
+        val Run     = 'R'
+        val Tick    = 'T'
+        val Trace   = 'W'
       };
 
       sentCommandCount += 1
@@ -248,27 +250,27 @@ object Simulation {
       import Simulation.Command._
       // For specific command formats, consult `simulation-driver.cpp`
       command match {
-        case Done => {
+        case Done                                                                            => {
           commandWriter.write(CommandCode.Done)
         }
-        case Log => {
+        case Log                                                                             => {
           commandWriter.write(CommandCode.Log)
         }
-        case GetBits(id, isSigned) => {
+        case GetBits(id, isSigned)                                                           => {
           commandWriter.write(CommandCode.GetBits)
           commandWriter.write(" ")
           commandWriter.write(if (isSigned) "s" else "u")
           commandWriter.write(" ")
           commandWriter.write(id)
         }
-        case SetBits(id, value) => {
+        case SetBits(id, value)                                                              => {
           commandWriter.write(CommandCode.SetBits)
           commandWriter.write(" ")
           commandWriter.write(id)
           commandWriter.write(" ")
           commandWriter.write(value.toString(16))
         }
-        case Run(timesteps) => {
+        case Run(timesteps)                                                                  => {
           commandWriter.write(CommandCode.Run)
           commandWriter.write(" ")
           commandWriter.write(timesteps.toHexString)
@@ -292,10 +294,10 @@ object Simulation {
               commandWriter.write("=")
               commandWriter.write(value.toString(16))
             }
-            case None =>
+            case None                =>
           }
         }
-        case Trace(enable) => {
+        case Trace(enable)                                                                   => {
           commandWriter.write(CommandCode.Trace)
           commandWriter.write(" ")
           commandWriter.write(if (enable) "1" else "0")
@@ -306,9 +308,8 @@ object Simulation {
 
     def readLog(): String = {
       sendCommand(Simulation.Command.Log)
-      processNextMessage {
-        case Simulation.Message.Log(message) =>
-          message
+      processNextMessage { case Simulation.Message.Log(message) =>
+        message
       }
     }
 
@@ -322,9 +323,8 @@ object Simulation {
       expectNextMessage { case Simulation.Message.Ack => }
     }
 
-    private val portInfos = moduleInfo.ports.zipWithIndex.map {
-      case (port, index) =>
-        port.name -> (index.toHexString, port)
+    private val portInfos = moduleInfo.ports.zipWithIndex.map { case (port, index) =>
+      port.name -> (index.toHexString, port)
     }.toMap
 
     def port(name: String): Simulation.Port = {
@@ -338,31 +338,31 @@ object Simulation {
 
   sealed trait Message
   object Message {
-    case object Ready extends Message
-    case object Ack extends Message
-    case class Error(message: String) extends Throwable(message) with Message
+    case object Ready                          extends Message
+    case object Ack                            extends Message
+    case class Error(message: String)          extends Throwable(message) with Message
     case class Bits(count: Int, value: BigInt) extends Message
-    case class Log(message: String) extends Message
+    case class Log(message: String)            extends Message
   }
 
   case object UnexpectedEndOfMessages extends Exception
 
   sealed trait Command
   object Command {
-    case object Done extends Command
-    case object Log extends Command
+    case object Done                                  extends Command
+    case object Log                                   extends Command
     case class GetBits(id: String, isSigned: Boolean) extends Command
-    case class SetBits(id: String, value: BigInt) extends Command
-    case class Run(timesteps: Int) extends Command
+    case class SetBits(id: String, value: BigInt)     extends Command
+    case class Run(timesteps: Int)                    extends Command
     case class Tick(
-      id:                String,
-      inPhaseValue:      BigInt,
-      outOfPhaseValue:   BigInt,
+      id: String,
+      inPhaseValue: BigInt,
+      outOfPhaseValue: BigInt,
       timestepsPerPhase: Int,
-      maxCycles:         Int,
-      sentinel:          Option[(Port, BigInt)])
-        extends Command
-    case class Trace(enable: Boolean) extends Command
+      maxCycles: Int,
+      sentinel: Option[(Port, BigInt)]
+    ) extends Command
+    case class Trace(enable: Boolean)                 extends Command
   }
 
   final case class Value(bitCount: Int, asBigInt: BigInt)
@@ -371,16 +371,14 @@ object Simulation {
 
     def set(value: BigInt) = {
       controller.sendCommand(Simulation.Command.SetBits(id, value))
-      controller.expectNextMessage {
-        case Simulation.Message.Ack =>
+      controller.expectNextMessage { case Simulation.Message.Ack =>
       }
     }
 
     def get(isSigned: Boolean = false): Value = {
       controller.sendCommand(Simulation.Command.GetBits(id, isSigned))
-      controller.processNextMessage {
-        case Simulation.Message.Bits(bitCount, value) =>
-          Value(bitCount, value)
+      controller.processNextMessage { case Simulation.Message.Bits(bitCount, value) =>
+        Value(bitCount, value)
       }
     }
 
@@ -388,50 +386,46 @@ object Simulation {
       controller.sendCommand(
         Simulation.Command.Tick(id, inPhaseValue, outOfPhaseValue, timestepsPerPhase, cycles, None)
       )
-      controller.expectNextMessage {
-        case Simulation.Message.Bits(_, _) =>
+      controller.expectNextMessage { case Simulation.Message.Bits(_, _) =>
       }
     }
 
     def tick(
       timestepsPerPhase: Int,
-      maxCycles:         Int,
-      inPhaseValue:      BigInt,
-      outOfPhaseValue:   BigInt,
-      sentinel:          Option[(Port, BigInt)]
+      maxCycles: Int,
+      inPhaseValue: BigInt,
+      outOfPhaseValue: BigInt,
+      sentinel: Option[(Port, BigInt)]
     ): BigInt = {
       controller.sendCommand(
         Simulation.Command.Tick(id, inPhaseValue, outOfPhaseValue, timestepsPerPhase, maxCycles, sentinel)
       )
-      controller.processNextMessage {
-        case Simulation.Message.Bits(_, cyclesElapsed) =>
-          cyclesElapsed
+      controller.processNextMessage { case Simulation.Message.Bits(_, cyclesElapsed) =>
+        cyclesElapsed
       }
     }
 
     def tick(
-      timestepsPerPhase:      Int,
-      maxCycles:              Int,
-      inPhaseValue:           BigInt,
-      outOfPhaseValue:        BigInt,
-      sentinel:               Option[(Port, BigInt)],
+      timestepsPerPhase: Int,
+      maxCycles: Int,
+      inPhaseValue: BigInt,
+      outOfPhaseValue: BigInt,
+      sentinel: Option[(Port, BigInt)],
       checkElapsedCycleCount: (BigInt) => Unit
     ) = {
       controller.sendCommand(
         Simulation.Command.Tick(id, inPhaseValue, outOfPhaseValue, timestepsPerPhase, maxCycles, sentinel)
       )
-      controller.expectNextMessage {
-        case Simulation.Message.Bits(_, cyclesElapsed) =>
-          checkElapsedCycleCount(cyclesElapsed)
+      controller.expectNextMessage { case Simulation.Message.Bits(_, cyclesElapsed) =>
+        checkElapsedCycleCount(cyclesElapsed)
       }
     }
 
-    def check(f: Value => Unit): Unit = check()(f)
+    def check(f: Value => Unit): Unit                            = check()(f)
     def check(isSigned: Boolean = false)(f: Value => Unit): Unit = {
       controller.sendCommand(Simulation.Command.GetBits(id, isSigned))
-      controller.expectNextMessage {
-        case Simulation.Message.Bits(bitCount, value) =>
-          f(Value(bitCount, value))
+      controller.expectNextMessage { case Simulation.Message.Bits(bitCount, value) =>
+        f(Value(bitCount, value))
       }
     }
   }

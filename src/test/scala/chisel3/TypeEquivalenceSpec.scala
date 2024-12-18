@@ -32,20 +32,20 @@ object TypeEquivalenceSpec {
 
   object Fizz extends ChiselEnum {
     val e0, e1 = Value
-    val e4 = Value(4.U)
+    val e4     = Value(4.U)
   }
 
   object Buzz extends ChiselEnum {
     val e0, e1 = Value
-    val e4 = Value(4.U)
+    val e4     = Value(4.U)
   }
 
   class BundleWithProbe(useProbe: Boolean) extends Bundle {
-    val logic = Bool()
+    val logic      = Bool()
     val maybeProbe = if (useProbe) Probe(Bool()) else Bool()
   }
 
-  object Red extends Layer(layer.LayerConfig.Extract()) {
+  object Red   extends Layer(layer.LayerConfig.Extract()) {
     override def toString = "Red"
   }
   object Green extends Layer(layer.LayerConfig.Extract()) {
@@ -166,9 +166,9 @@ class TypeEquivalenceSpec extends AnyFlatSpec {
   behavior.of("Data.findFirstTypeMismatch")
 
   it should "support comparing UInts" in {
-    val x = UInt(8.W)
-    val y = UInt(8.W)
-    val z = UInt(4.W)
+    val x  = UInt(8.W)
+    val y  = UInt(8.W)
+    val z  = UInt(4.W)
     val zz = UInt()
     x.findFirstTypeMismatch(y, true, true, true) should be(None)
     x.findFirstTypeMismatch(z, true, true, true) should be(
@@ -182,9 +182,9 @@ class TypeEquivalenceSpec extends AnyFlatSpec {
   }
 
   it should "support comparing SInts" in {
-    val x = SInt(8.W)
-    val y = SInt(8.W)
-    val z = SInt(4.W)
+    val x  = SInt(8.W)
+    val y  = SInt(8.W)
+    val z  = SInt(4.W)
     val zz = SInt()
     x.findFirstTypeMismatch(y, true, true, true) should be(None)
     x.findFirstTypeMismatch(z, true, true, true) should be(

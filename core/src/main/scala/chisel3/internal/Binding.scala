@@ -37,7 +37,7 @@ private[chisel3] object binding {
             case ActualDirection.Input  => Input
             case dir                    => throw new RuntimeException(s"Unexpected port element direction '$dir'")
           }
-        case _ => Internal
+        case _                                     => Internal
       }
     }
   }
@@ -56,7 +56,7 @@ private[chisel3] object binding {
   }
   // A constrained binding can only be read/written by specific modules
   // Location will track where this Module is, and the bound object can be referenced in FIRRTL
-  sealed trait ConstrainedBinding extends TopBinding {
+  sealed trait ConstrainedBinding   extends TopBinding {
     def enclosure: BaseModule
     def location: Option[BaseModule] = Some(enclosure)
   }
@@ -86,7 +86,7 @@ private[chisel3] object binding {
   case class SramPortBinding(enclosure: RawModule, parentBlock: Option[Block])
       extends ConstrainedBinding
       with BlockBinding
-  case class RegBinding(enclosure: RawModule, parentBlock: Option[Block]) extends ConstrainedBinding with BlockBinding
+  case class RegBinding(enclosure: RawModule, parentBlock: Option[Block])  extends ConstrainedBinding with BlockBinding
   case class WireBinding(enclosure: RawModule, parentBlock: Option[Block]) extends ConstrainedBinding with BlockBinding
 
   case class ClassBinding(enclosure: Class) extends ConstrainedBinding with ReadOnlyBinding
@@ -127,7 +127,7 @@ private[chisel3] object binding {
       * Will use onFail value if this is a read-only view to continue elaboration and aggregate more errors.
       */
     final def reportIfReadOnly[A](onPass: => A)(onFail: => A)(implicit info: SourceInfo): A = this match {
-      case ViewWriteability.Default => onPass
+      case ViewWriteability.Default                        => onPass
       case ViewWriteability.ReadOnlyDeprecated(getWarning) =>
         Builder.warning(getWarning(info))
         onPass // This is just a warning so we propagate the pass value.
@@ -153,7 +153,7 @@ private[chisel3] object binding {
     case class ReadOnlyDeprecated(getWarning: SourceInfo => Warning) extends ViewWriteability {
       override def combine(that: ViewWriteability): ViewWriteability = that match {
         case ro: ReadOnly => ro
-        case _ => this
+        case _            => this
       }
     }
 
@@ -166,9 +166,9 @@ private[chisel3] object binding {
   // Views currently only support 1:1 Element-level mappings
   case class ViewBinding(target: Element, writability: ViewWriteability) extends Binding with BlockBinding {
     def location: Option[BaseModule] = target.binding.flatMap(_.location)
-    def parentBlock: Option[Block] = target.binding.flatMap {
+    def parentBlock: Option[Block]   = target.binding.flatMap {
       case b: BlockBinding => b.parentBlock
-      case _ => None
+      case _               => None
     }
   }
 
@@ -180,9 +180,7 @@ private[chisel3] object binding {
     * @note The types of key and value need not match for the top Data in a total view of type
     *       Aggregate
     */
-  case class AggregateViewBinding(
-    childMap:       Map[Data, Data],
-    writabilityMap: Option[Map[Data, ViewWriteability]])
+  case class AggregateViewBinding(childMap: Map[Data, Data], writabilityMap: Option[Map[Data, ViewWriteability]])
       extends Binding
       with BlockBinding {
     // Helper lookup function since types of Elements always match
@@ -214,7 +212,7 @@ private[chisel3] object binding {
       if (locations.size == 1) Some(locations.head)
       else None
     }
-    lazy val parentBlock: Option[Block] = {
+    lazy val parentBlock: Option[Block]   = {
       val contexts = childMap.values.view
         .flatMap(_.binding.toSeq.collect { case b: BlockBinding => b.parentBlock }.flatten)
         .toVector
@@ -229,13 +227,13 @@ private[chisel3] object binding {
     def location: Option[BaseModule] = None
   }
 
-  sealed trait LitBinding extends UnconstrainedBinding with ReadOnlyBinding
+  sealed trait LitBinding                                   extends UnconstrainedBinding with ReadOnlyBinding
   // Literal binding attached to a element that is not part of a Bundle.
-  case class ElementLitBinding(litArg: LitArg) extends LitBinding
+  case class ElementLitBinding(litArg: LitArg)              extends LitBinding
   // Literal binding attached to the root of a Bundle, containing literal values of its children.
-  case class BundleLitBinding(litMap: Map[Data, LitArg]) extends LitBinding
+  case class BundleLitBinding(litMap: Map[Data, LitArg])    extends LitBinding
   // Literal binding attached to the root of a Vec, containing literal values of its children.
   case class VecLitBinding(litMap: VectorMap[Data, LitArg]) extends LitBinding
   // Literal binding attached to a Property.
-  case object PropertyValueBinding extends UnconstrainedBinding with ReadOnlyBinding
+  case object PropertyValueBinding                          extends UnconstrainedBinding with ReadOnlyBinding
 }

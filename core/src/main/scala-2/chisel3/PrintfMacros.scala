@@ -11,11 +11,8 @@ import scala.reflect.macros.blackbox
 
 object PrintfMacrosCompat {
   def _applyMacroWithInterpolatorCheck(
-    c:          blackbox.Context
-  )(fmt:        c.Tree,
-    data:       c.Tree*
-  )(sourceInfo: c.Tree
-  ): c.Tree = {
+    c: blackbox.Context
+  )(fmt: c.Tree, data: c.Tree*)(sourceInfo: c.Tree): c.Tree = {
     import c.universe._
     _checkFormatString(c)(fmt)
     val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("printfWithReset"))
@@ -40,7 +37,7 @@ object PrintfMacrosCompat {
           throwOnChiselData(y)
         }
       }
-      case _ =>
+      case _        =>
     }
     throwOnChiselData(fmt)
 
@@ -50,7 +47,7 @@ object PrintfMacrosCompat {
           c.enclosingPosition,
           errorString
         )
-      case _ =>
+      case _                                          =>
     }
   }
 
@@ -71,7 +68,7 @@ object PrintfMacrosCompat {
   )(
     implicit sourceInfo: SourceInfo
   ): chisel3.printf.Printf = {
-    val clock = Builder.forcedClock
+    val clock    = Builder.forcedClock
     val printfId = new chisel3.printf.Printf(pable)
 
     Printable.checkScope(pable)
@@ -83,7 +80,7 @@ object PrintfMacrosCompat {
   }
 
   private[chisel3] def printfWithoutReset(
-    fmt:  String,
+    fmt: String,
     data: Bits*
   )(
     implicit sourceInfo: SourceInfo

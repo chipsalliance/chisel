@@ -8,8 +8,8 @@ import chisel3._
 import chisel3.util._
 
 class SimpleVendingMachineIO extends Bundle {
-  val nickel = Input(Bool())
-  val dime = Input(Bool())
+  val nickel   = Input(Bool())
+  val dime     = Input(Bool())
   val dispense = Output(Bool())
 }
 
@@ -22,7 +22,7 @@ abstract class SimpleVendingMachine extends Module {
 // Vending machine implemented with a Finite State Machine
 class FSMVendingMachine extends SimpleVendingMachine {
   val sIdle :: s5 :: s10 :: s15 :: sOk :: Nil = Enum(5)
-  val state = RegInit(sIdle)
+  val state                                   = RegInit(sIdle)
 
   switch(state) {
     is(sIdle) {
@@ -59,11 +59,11 @@ class VerilogVendingMachine extends BlackBox {
 // Shim because Blackbox io is slightly different than normal Chisel Modules
 class VerilogVendingMachineWrapper extends SimpleVendingMachine {
   val impl = Module(new VerilogVendingMachine)
-  impl.io.clock := clock
-  impl.io.reset := reset
+  impl.io.clock  := clock
+  impl.io.reset  := reset
   impl.io.nickel := io.nickel
-  impl.io.dime := io.dime
-  io.dispense := impl.io.dispense
+  impl.io.dime   := io.dime
+  io.dispense    := impl.io.dispense
 }
 
 // Accept a reference to a SimpleVendingMachine so it can be constructed inside
@@ -76,11 +76,11 @@ class SimpleVendingMachineTester(mod: => SimpleVendingMachine) extends BasicTest
   when(done) { stop(); stop() } // Stop twice because of Verilator
 
   val nickelInputs = VecInit(true.B, true.B, true.B, true.B, true.B, false.B, false.B, false.B, true.B, false.B)
-  val dimeInputs = VecInit(false.B, false.B, false.B, false.B, false.B, true.B, true.B, false.B, false.B, true.B)
-  val expected = VecInit(false.B, false.B, false.B, false.B, true.B, false.B, false.B, true.B, false.B, false.B)
+  val dimeInputs   = VecInit(false.B, false.B, false.B, false.B, false.B, true.B, true.B, false.B, false.B, true.B)
+  val expected     = VecInit(false.B, false.B, false.B, false.B, true.B, false.B, false.B, true.B, false.B, false.B)
 
   dut.io.nickel := nickelInputs(cycle)
-  dut.io.dime := dimeInputs(cycle)
+  dut.io.dime   := dimeInputs(cycle)
   assert(dut.io.dispense === expected(cycle))
 }
 

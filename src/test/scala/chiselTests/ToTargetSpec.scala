@@ -21,7 +21,7 @@ class RelativeOuterRootModule extends RawModule {
   val middle = Module(new RelativeMiddleModule())
 
   atModuleBodyEnd {
-    val reference = middle.inner.wire.toRelativeTarget(Some(this))
+    val reference    = middle.inner.wire.toRelativeTarget(Some(this))
     val referenceOut = IO(Output(Property[Path]()))
     referenceOut := Property(Path(reference))
   }
@@ -32,36 +32,36 @@ class RelativeCurrentModule extends RawModule {
 
   val child = Module(new RawModule {
     override def desiredName = "Child"
-    val io = IO(Output(Bool()))
+    val io                   = IO(Output(Bool()))
   })
 
   val io = IO(Output(Bool()))
 
   atModuleBodyEnd {
-    val reference1 = wire.toRelativeTarget(Some(this))
+    val reference1    = wire.toRelativeTarget(Some(this))
     val referenceOut1 = IO(Output(Property[Path]()))
     referenceOut1 := Property(Path(reference1))
 
-    val reference2 = child.io.toRelativeTarget(Some(this))
+    val reference2    = child.io.toRelativeTarget(Some(this))
     val referenceOut2 = IO(Output(Property[Path]()))
     referenceOut2 := Property(Path(reference2))
 
-    val reference3 = io.toRelativeTarget(Some(this))
+    val reference3    = io.toRelativeTarget(Some(this))
     val referenceOut3 = IO(Output(Property[Path]()))
     referenceOut3 := Property(Path(reference3))
   }
 }
 
 class RelativeOuterMiddleModule extends RawModule {
-  val middle = Module(new RelativeMiddleModule())
-  val reference = middle.inner.wire.toRelativeTarget(Some(middle))
+  val middle       = Module(new RelativeMiddleModule())
+  val reference    = middle.inner.wire.toRelativeTarget(Some(middle))
   val referenceOut = IO(Output(Property[Path]()))
   referenceOut := Property(Path(reference))
 }
 
 class RelativeOuterLocalModule extends RawModule {
-  val inner = Module(new RelativeInnerModule())
-  val reference = inner.wire.toRelativeTarget(Some(inner))
+  val inner        = Module(new RelativeInnerModule())
+  val reference    = inner.wire.toRelativeTarget(Some(inner))
   val referenceOut = IO(Output(Property[Path]()))
   referenceOut := Property(Path(reference))
 }
@@ -70,7 +70,7 @@ class RelativeDefaultModule extends RawModule {
   val middle = Module(new RelativeMiddleModule())
 
   atModuleBodyEnd {
-    val reference = middle.inner.wire.toRelativeTarget(None)
+    val reference    = middle.inner.wire.toRelativeTarget(None)
     val referenceOut = IO(Output(Property[Path]()))
     referenceOut := Property(Path(reference))
   }
@@ -86,7 +86,7 @@ class RelativeSiblingsModule extends RawModule {
 }
 
 class RelativeSiblingsInstancesModule extends RawModule {
-  val middle = Definition(new RelativeMiddleModule())
+  val middle  = Definition(new RelativeMiddleModule())
   val middle1 = Instance(middle)
   val middle2 = Instance(middle)
 }
@@ -122,23 +122,23 @@ class RelativeSiblingsInstancesParent extends RawModule {
   val outer = Module(new RelativeSiblingsInstancesModule())
 
   atModuleBodyEnd {
-    val referenceInstanceAbsolute = outer.middle1.toRelativeTargetToHierarchy(None)
+    val referenceInstanceAbsolute    = outer.middle1.toRelativeTargetToHierarchy(None)
     val referenceInstanceAbsoluteOut = IO(Output(Property[Path]()))
     referenceInstanceAbsoluteOut := Property(Path(referenceInstanceAbsolute))
 
-    val referenceInstance = outer.middle1.inner.toRelativeTargetToHierarchy(Some(outer.middle1))
+    val referenceInstance    = outer.middle1.inner.toRelativeTargetToHierarchy(Some(outer.middle1))
     val referenceInstanceOut = IO(Output(Property[Path]()))
     referenceInstanceOut := Property(Path(referenceInstance))
 
-    val referenceInstanceWire = outer.middle2.inner.wire.toRelativeTargetToHierarchy(Some(outer.middle2))
+    val referenceInstanceWire    = outer.middle2.inner.wire.toRelativeTargetToHierarchy(Some(outer.middle2))
     val referenceInstanceWireOut = IO(Output(Property[Path]()))
     referenceInstanceWireOut := Property(Path(referenceInstanceWire))
 
-    val referenceDefinitionWire = outer.middle.inner.wire.toRelativeTargetToHierarchy(Some(outer.middle))
+    val referenceDefinitionWire    = outer.middle.inner.wire.toRelativeTargetToHierarchy(Some(outer.middle))
     val referenceDefinitionWireOut = IO(Output(Property[Path]()))
     referenceDefinitionWireOut := Property(Path(referenceDefinitionWire))
 
-    val referenceDefinitionInstance = outer.middle.inner.toRelativeTargetToHierarchy(Some(outer.middle))
+    val referenceDefinitionInstance    = outer.middle.inner.toRelativeTargetToHierarchy(Some(outer.middle))
     val referenceDefinitionInstanceOut = IO(Output(Property[Path]()))
     referenceDefinitionInstanceOut := Property(Path(referenceDefinitionInstance))
   }
@@ -149,7 +149,7 @@ class PathFromInstanceToTarget extends RawModule {
   class Hierarchy1 extends RawModule {
     @instantiable
     class Hierarchy2 extends RawModule {
-      val target = Instantiate(new RelativeInnerModule)
+      val target       = Instantiate(new RelativeInnerModule)
       @public val path = IO(Output(Property[Path]()))
       path := Property(Path(target.toTarget))
     }
@@ -163,7 +163,7 @@ class ToTargetSpec extends ChiselFlatSpec with Utils {
   var m: InstanceNameModule = _
   ChiselStage.emitCHIRRTL { m = new InstanceNameModule; m }
 
-  val mn = "InstanceNameModule"
+  val mn  = "InstanceNameModule"
   val top = s"~$mn|$mn"
 
   behavior.of(".toTarget")
@@ -199,7 +199,7 @@ class ToTargetSpec extends ChiselFlatSpec with Utils {
     class Example extends Module {
       val tpe = UInt(8.W)
 
-      val in = IO(Input(tpe))
+      val in  = IO(Input(tpe))
       val out = IO(Output(tpe))
       out := in
     }

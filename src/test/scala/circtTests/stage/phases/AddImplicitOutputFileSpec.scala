@@ -41,7 +41,7 @@ class AddImplicitOutputFileSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "set the output file based on a FirrtlCircuitAnnotation's main" in new Fixture {
-    val in = Seq(FirrtlCircuitAnnotation(circuit))
+    val in  = Seq(FirrtlCircuitAnnotation(circuit))
     val out = OutputFileAnnotation(circuit.main) +: in
     phase.transform(in).toSeq should be(out)
   }

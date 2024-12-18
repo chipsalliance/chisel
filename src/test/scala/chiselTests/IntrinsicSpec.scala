@@ -39,8 +39,8 @@ class IntrinsicSpec extends ChiselFlatSpec with MatchesAndOmits {
 
   it should "support intrinsic expressions" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val f = IO(UInt(3.W))
-      val g = IO(UInt(5.W))
+      val f    = IO(UInt(3.W))
+      val g    = IO(UInt(5.W))
       val test = IntrinsicExpr("test", UInt(32.W))(f, g) + 3.U
     })
 
@@ -49,8 +49,8 @@ class IntrinsicSpec extends ChiselFlatSpec with MatchesAndOmits {
 
   it should "support intrinsic expressions with parameters and arguments" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val f = IO(UInt(3.W))
-      val g = IO(UInt(5.W))
+      val f    = IO(UInt(3.W))
+      val g    = IO(UInt(5.W))
       val test = IntrinsicExpr("test", UInt(32.W), "foo" -> "bar", "x" -> 5)(f, g) + 3.U
     })
 

@@ -25,14 +25,14 @@ class ASCIIPrintableTester extends Module {
 }
 
 class ScopeTesterModule extends Module {
-  val in = IO(Input(UInt(8.W)))
+  val in  = IO(Input(UInt(8.W)))
   val out = IO(Output(UInt(8.W)))
   out := in
 
   val w = Wire(UInt(8.W))
   w := 125.U
 
-  val p = cf"$in"
+  val p  = cf"$in"
   val wp = cf"$w"
 }
 

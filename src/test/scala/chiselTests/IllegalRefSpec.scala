@@ -11,19 +11,19 @@ object IllegalRefSpec {
       val i = Input(Bool())
       val o = Output(Bool())
     })
-    val x = io.i & io.i
+    val x  = io.i & io.i
     io.o := io.i
   }
 
   class IllegalRefOuter(useConnect: Boolean) extends RawModule {
     val io = IO(new Bundle {
-      val a = Input(Bool())
-      val b = Input(Bool())
+      val a   = Input(Bool())
+      val b   = Input(Bool())
       val out = Output(Bool())
     })
 
     val inst = Module(new IllegalRefInner)
-    io.out := inst.io.o
+    io.out    := inst.io.o
     inst.io.i := io.a
     val x = WireInit(io.b)
     if (useConnect) {
@@ -34,7 +34,7 @@ object IllegalRefSpec {
   }
 
   class CrossWhenConnect(useConnect: Boolean) extends RawModule {
-    val io = IO(new Bundle {
+    val io                        = IO(new Bundle {
       val i = Input(Bool())
       val o = Output(Bool())
     })
@@ -57,18 +57,17 @@ class IllegalRefSpec extends ChiselFlatSpec with Utils {
 
   val variants = Map("a connect" -> true, "an op" -> false)
 
-  variants.foreach {
-    case (k, v) =>
-      s"Illegal cross-module references in ${k}" should "fail" in {
-        a[ChiselException] should be thrownBy extractCause[ChiselException] {
-          ChiselStage.emitCHIRRTL { new IllegalRefOuter(v) }
-        }
+  variants.foreach { case (k, v) =>
+    s"Illegal cross-module references in ${k}" should "fail" in {
+      a[ChiselException] should be thrownBy extractCause[ChiselException] {
+        ChiselStage.emitCHIRRTL { new IllegalRefOuter(v) }
       }
+    }
 
-      s"Using a signal that has escaped its enclosing when scope in ${k}" should "fail" in {
-        a[ChiselException] should be thrownBy extractCause[ChiselException] {
-          ChiselStage.emitCHIRRTL { new CrossWhenConnect(v) }
-        }
+    s"Using a signal that has escaped its enclosing when scope in ${k}" should "fail" in {
+      a[ChiselException] should be thrownBy extractCause[ChiselException] {
+        ChiselStage.emitCHIRRTL { new CrossWhenConnect(v) }
       }
+    }
   }
 }

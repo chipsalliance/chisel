@@ -28,7 +28,7 @@ class RegistrationSpec extends AnyFlatSpec with Matchers {
   behavior.of("RegisteredLibrary")
 
   it should "BarLibrary be discovered by Java.util.ServiceLoader" in {
-    val iter = ServiceLoader.load(classOf[RegisteredLibrary]).iterator()
+    val iter       = ServiceLoader.load(classOf[RegisteredLibrary]).iterator()
     val transforms = scala.collection.mutable.ArrayBuffer[RegisteredLibrary]()
     while (iter.hasNext) {
       transforms += iter.next()

@@ -63,7 +63,7 @@ object pla {
     )
 
     // now all inputs / outputs have the same width
-    val numberOfInputs = inputTerms.head.getWidth
+    val numberOfInputs  = inputTerms.head.getWidth
     val numberOfOutputs = outputTerms.head.getWidth
 
     val inverterMask = invert.value & invert.mask
@@ -74,7 +74,7 @@ object pla {
       )
 
     // input wires of the generated PLA
-    val inputs = Wire(UInt(numberOfInputs.W))
+    val inputs    = Wire(UInt(numberOfInputs.W))
     val invInputs = ~inputs
 
     // output wires of the generated PLA
@@ -104,11 +104,10 @@ object pla {
         .tabulate(numberOfOutputs) { i =>
           val andMatrixLines = table
             // OR matrix composed by input terms which makes this output bit a `1`
-            .filter {
-              case (_, or) => or.mask.testBit(i) && or.value.testBit(i)
-            }.map {
-              case (inputTerm, _) =>
-                andMatrixOutputs(inputTerm.toString)
+            .filter { case (_, or) =>
+              or.mask.testBit(i) && or.value.testBit(i)
+            }.map { case (inputTerm, _) =>
+              andMatrixOutputs(inputTerm.toString)
             }
           if (andMatrixLines.isEmpty) false.B
           else Cat(andMatrixLines).orR

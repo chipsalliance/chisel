@@ -25,14 +25,14 @@ object TestUtils {
   // This used for backward support of test that rely on chisel3 chirrtl generation and access to the annotations
   // produced by it. New tests should not utilize this or getFirrtlAndAnnos
   def getChirrtlAndAnnotations(gen: => RawModule, annos: AnnotationSeq = Seq()): (Circuit, Seq[Annotation]) = {
-    val dir = createTestDirectory(this.getClass.getSimpleName).toString
+    val dir            = createTestDirectory(this.getClass.getSimpleName).toString
     val processedAnnos = (new ChiselStage).execute(
       Array("--target-dir", dir, "--target", "chirrtl"),
       ChiselGeneratorAnnotation(() => gen) +: annos
     )
 
-    val circuit = processedAnnos.collectFirst {
-      case FirrtlCircuitAnnotation(a) => a
+    val circuit = processedAnnos.collectFirst { case FirrtlCircuitAnnotation(a) =>
+      a
     }.get
     (circuit, processedAnnos)
   }

@@ -63,7 +63,7 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
     * requirements. This is used to solve sub-problems arising from invalidations.
     */
   protected def copy(
-    targets:      Seq[Dependency[B]],
+    targets: Seq[Dependency[B]],
     currentState: Seq[Dependency[B]],
     knownObjects: ISet[B] = dependencyToObject.values.toSet
   ): B
@@ -78,13 +78,13 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
     * generate/filter the edges to explore. Additionally, this will include edges to previously discovered nodes.
     */
   private def bfs(
-    start:     LinkedHashSet[Dependency[B]],
+    start: LinkedHashSet[Dependency[B]],
     blacklist: LinkedHashSet[Dependency[B]],
     extractor: B => Set[Dependency[B]]
   ): LinkedHashMap[B, LinkedHashSet[B]] = {
 
     val (queue, edges) = {
-      val a: Queue[Dependency[B]] = Queue(start.toSeq: _*)
+      val a: Queue[Dependency[B]]               = Queue(start.toSeq: _*)
       val b: LinkedHashMap[B, LinkedHashSet[B]] =
         LinkedHashMap[B, LinkedHashSet[B]](start.map((dToO(_) -> LinkedHashSet[B]())).toSeq: _*)
       (a, b)
@@ -150,10 +150,9 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
         .map { a => a -> prerequisiteGraph.getVertices.filter(a._optionalPrerequisiteOf(_)) }
       x.values
         .reduce(_ ++ _)
-        .foldLeft(x) {
-          case (xx, y) =>
-            if (xx.contains(y)) { xx }
-            else { xx ++ Map(y -> Set.empty[B]) }
+        .foldLeft(x) { case (xx, y) =>
+          if (xx.contains(y)) { xx }
+          else { xx ++ Map(y -> Set.empty[B]) }
         }
     }
     DiGraph(edges).reverse
@@ -207,12 +206,12 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
      */
     val sorted = {
       val edges = {
-        val v = cyclePossible("invalidates", invalidateGraph) { invalidateGraph.linearize }.reverse
+        val v   = cyclePossible("invalidates", invalidateGraph) { invalidateGraph.linearize }.reverse
         /* A comparison function that will sort vertices based on the topological sort of the invalidation graph */
         val cmp =
           (l: B, r: B) =>
-            v.foldLeft((Map.empty[B, Dependency[B] => Boolean], ISet.empty[Dependency[B]])) {
-              case ((m, s), r) => (m + (r -> ((a: Dependency[B]) => !s(a))), s + r)
+            v.foldLeft((Map.empty[B, Dependency[B] => Boolean], ISet.empty[Dependency[B]])) { case ((m, s), r) =>
+              (m + (r -> ((a: Dependency[B]) => !s(a))), s + r)
             }._1(l)(r)
         new LinkedHashMap() ++
           v.map(vv => vv -> (new LinkedHashSet() ++ (dependencyGraph.getEdges(vv).toSeq.sortWith(cmp))))
@@ -225,17 +224,16 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
     }
 
     /* [todo] Seq is inefficient here, but Array has ClassTag problems. Use something else? */
-    val (s, l) = sorted.foldLeft((_currentState, Seq[B]())) {
-      case ((state, out), in) =>
-        val prereqs = in._prerequisites ++
-          dependencyGraph.getEdges(in).toSeq.map(oToD) ++
-          otherPrerequisites.getEdges(in).toSeq.map(oToD)
-        val preprocessing: Option[B] = {
-          if ((prereqs.diff(state)).nonEmpty) { Some(this.copy(prereqs.toSeq, state.toSeq)) }
-          else { None }
-        }
-        /* "in" is added *after* invalidation because a transform my not invalidate itself! */
-        ((state ++ prereqs).map(dToO).filterNot(in.invalidates).map(oToD) += in, out ++ preprocessing :+ in)
+    val (s, l)                    = sorted.foldLeft((_currentState, Seq[B]())) { case ((state, out), in) =>
+      val prereqs                  = in._prerequisites ++
+        dependencyGraph.getEdges(in).toSeq.map(oToD) ++
+        otherPrerequisites.getEdges(in).toSeq.map(oToD)
+      val preprocessing: Option[B] = {
+        if ((prereqs.diff(state)).nonEmpty) { Some(this.copy(prereqs.toSeq, state.toSeq)) }
+        else { None }
+      }
+      /* "in" is added *after* invalidation because a transform my not invalidate itself! */
+      ((state ++ prereqs).map(dToO).filterNot(in.invalidates).map(oToD) += in, out ++ preprocessing :+ in)
     }
     val postprocessing: Option[B] = {
       if ((_targets.diff(s)).nonEmpty) { Some(this.copy(_targets.toSeq, s.toSeq)) }
@@ -249,7 +247,7 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
     */
   lazy val flattenedTransformOrder: Seq[B] = transformOrder.flatMap {
     case p: DependencyManager[A, B] => p.flattenedTransformOrder
-    case p => Some(p)
+    case p                          => Some(p)
   }
 
   final override def transform(annotations: A): A = {
@@ -266,23 +264,22 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
       val w = wrappers.foldLeft(t) { case (tx, wrapper) => wrapper(tx) }
       wrapperToClass += (w -> t)
       w
-    }.foldLeft((annotations, _currentState)) {
-      case ((a, state), t) =>
-        if (!t.prerequisites.toSet.subsetOf(state)) {
-          throw new DependencyManagerException(
-            s"""|Tried to execute '$t' for which run-time prerequisites were not satisfied:
-                |  state: ${state.mkString("\n    -", "\n    -", "")}
-                |  prerequisites: ${prerequisites.mkString("\n    -", "\n    -", "")}""".stripMargin
-          )
-        }
-        val logger = t.getLogger
-        logger.info(s"======== Starting ${t.name} ========")
-        val (timeMillis, annosx) = firrtl.Utils.time { t.transform(a) }
-        logger.info(s"""----------------------------${"-" * t.name.size}---------\n""")
-        logger.info(f"Time: $timeMillis%.1f ms")
-        logger.info(s"======== Finished ${t.name} ========")
-        val statex = (state += wrapperToClass(t)).map(dToO).filterNot(t.invalidates).map(oToD)
-        (annosx, statex)
+    }.foldLeft((annotations, _currentState)) { case ((a, state), t) =>
+      if (!t.prerequisites.toSet.subsetOf(state)) {
+        throw new DependencyManagerException(
+          s"""|Tried to execute '$t' for which run-time prerequisites were not satisfied:
+              |  state: ${state.mkString("\n    -", "\n    -", "")}
+              |  prerequisites: ${prerequisites.mkString("\n    -", "\n    -", "")}""".stripMargin
+        )
+      }
+      val logger               = t.getLogger
+      logger.info(s"======== Starting ${t.name} ========")
+      val (timeMillis, annosx) = firrtl.Utils.time { t.transform(a) }
+      logger.info(s"""----------------------------${"-" * t.name.size}---------\n""")
+      logger.info(f"Time: $timeMillis%.1f ms")
+      logger.info(s"======== Finished ${t.name} ========")
+      val statex               = (state += wrapperToClass(t)).map(dToO).filterNot(t.invalidates).map(oToD)
+      (annosx, statex)
     }._1
   }
 
@@ -300,9 +297,8 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
 
     def toGraphviz(digraph: DiGraph[B], attributes: String = "", tab: String = "    "): Option[String] = {
       val edges =
-        digraph.getEdgeMap.collect { case (v, edges) if edges.nonEmpty => (v -> edges) }.map {
-          case (v, edges) =>
-            s"""${transformName(v)} -> ${edges.map(e => transformName(e)).mkString("{ ", " ", " }")}"""
+        digraph.getEdgeMap.collect { case (v, edges) if edges.nonEmpty => (v -> edges) }.map { case (v, edges) =>
+          s"""${transformName(v)} -> ${edges.map(e => transformName(e)).mkString("{ ", " ", " }")}"""
         }
 
       if (edges.isEmpty) { None }
@@ -351,7 +347,7 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
       var offset = id
 
       val targets = pm._targets.toSeq.map(_.name).mkString(", ")
-      val state = pm._currentState.toSeq.map(_.name).mkString(", ")
+      val state   = pm._currentState.toSeq.map(_.name).mkString(", ")
 
       val header = s"""|${tab}subgraph cluster_$id {
                        |$tab  label="targets: $targets\\nstate: $state"
@@ -363,7 +359,7 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
           val (str, d) = rec(a, rotate(cm), tab + "  ", offset + 1)
           offset = d
           str
-        case a =>
+        case a                          =>
           val name = s"""${transformName(a, "_" + id)}"""
           sorted += name
           s"""$tab  $name [label="${a.name}"]"""
@@ -387,9 +383,9 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
     * @param size the number of nodes at the current level of the tree
     */
   def customPrintHandling(
-    tab:     String,
+    tab: String,
     charSet: CharSet,
-    size:    Int
+    size: Int
   ): Option[PartialFunction[(B, Int), Seq[String]]] = None
 
   /** Helper utility when recursing during pretty printing
@@ -400,14 +396,14 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
   def prettyPrintRec(tab: String, charSet: CharSet): Seq[String] = {
 
     val (l, n, c) = (charSet.lastNode, charSet.notLastNode, charSet.continuation)
-    val last = transformOrder.size - 1
+    val last      = transformOrder.size - 1
 
     val defaultHandling: PartialFunction[(B, Int), Seq[String]] = {
       case (a: DependencyManager[_, _], `last`) =>
         Seq(s"$tab$l ${a.name}") ++ a.prettyPrintRec(s"""$tab${" " * c.size} """, charSet)
-      case (a: DependencyManager[_, _], _) => Seq(s"$tab$n ${a.name}") ++ a.prettyPrintRec(s"$tab$c ", charSet)
-      case (a, `last`) => Seq(s"$tab$l ${a.name}")
-      case (a, _)      => Seq(s"$tab$n ${a.name}")
+      case (a: DependencyManager[_, _], _)      => Seq(s"$tab$n ${a.name}") ++ a.prettyPrintRec(s"$tab$c ", charSet)
+      case (a, `last`)                          => Seq(s"$tab$l ${a.name}")
+      case (a, _)                               => Seq(s"$tab$n ${a.name}")
     }
 
     val handling = customPrintHandling(tab, charSet, transformOrder.size) match {
@@ -424,7 +420,7 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
     * @param charSet a collection of characters to use when printing
     */
   def prettyPrint(
-    tab:     String = "",
+    tab: String = "",
     charSet: DependencyManagerUtils.CharSet = DependencyManagerUtils.PrettyCharSet
   ): String = {
 
@@ -441,10 +437,10 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
   * @param targets the [[Phase]]s you want to run
   */
 class PhaseManager(
-  val targets:      Seq[PhaseManager.PhaseDependency],
+  val targets: Seq[PhaseManager.PhaseDependency],
   val currentState: Seq[PhaseManager.PhaseDependency] = Seq.empty,
-  val knownObjects: Set[Phase] = Set.empty)
-    extends DependencyManager[AnnotationSeq, Phase]
+  val knownObjects: Set[Phase] = Set.empty
+) extends DependencyManager[AnnotationSeq, Phase]
     with Phase {
 
   import PhaseManager.PhaseDependency
@@ -478,15 +474,15 @@ object DependencyManagerUtils {
 
   /** Uses prettier characters, but possibly not supported by all fonts */
   object PrettyCharSet extends CharSet {
-    val lastNode = "└──"
-    val notLastNode = "├──"
+    val lastNode     = "└──"
+    val notLastNode  = "├──"
     val continuation = "│  "
   }
 
   /** Basic ASCII output */
   object ASCIICharSet extends CharSet {
-    val lastNode = "\\--"
-    val notLastNode = "|--"
+    val lastNode     = "\\--"
+    val notLastNode  = "|--"
     val continuation = "|  "
   }
 

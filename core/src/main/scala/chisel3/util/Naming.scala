@@ -16,8 +16,8 @@ object simpleClassName {
 
     filters
       .foldLeft(baseName) { case (str, filter) => filter(str) } // 1. Apply filters to baseName
-      .split("\\.|\\$") // 2. Split string at '.' or '$'
+      .split("\\.|\\$")               // 2. Split string at '.' or '$'
       .filterNot(_.forall(_.isDigit)) // 3. Drop purely numeric names
-      .last // 4. Use the last name
+      .last                           // 4. Use the last name
   }
 }

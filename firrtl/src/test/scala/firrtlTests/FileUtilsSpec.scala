@@ -15,7 +15,7 @@ class FileUtilsSpec extends AnyFlatSpec with Matchers {
 
   def withSampleAnnotations(f: String => Unit): Unit = {
     val tempFile = Files.createTempFile("SampleAnnotations", ".anno.json")
-    val source = getClass.getResourceAsStream(sampleAnnotations)
+    val source   = getClass.getResourceAsStream(sampleAnnotations)
     Files.copy(source, tempFile, REPLACE_EXISTING)
     f(tempFile.toString)
     Files.delete(tempFile)

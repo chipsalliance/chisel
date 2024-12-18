@@ -10,7 +10,7 @@ import java.io.File
 
 class SimpleTest extends Module {
   val io = IO(new Bundle {
-    val in = Input(UInt(8.W))
+    val in  = Input(UInt(8.W))
     val out = Output(UInt(8.W))
   })
   io.out := io.in
@@ -29,7 +29,7 @@ class VerificationSpec extends ChiselPropSpec with Matchers {
   }
 
   property("basic equality check should work") {
-    val fir = ChiselStage.emitCHIRRTL(new SimpleTest)
+    val fir   = ChiselStage.emitCHIRRTL(new SimpleTest)
     val lines = fir.split("(\n|@)").map(_.trim).toIndexedSeq
 
     // reset guard around the verification statement
@@ -49,12 +49,12 @@ class VerificationSpec extends ChiselPropSpec with Matchers {
 
     /** Circuit that contains and annotates verification nodes. */
     class AnnotationTest extends Module {
-      val io = IO(new Bundle {
-        val in = Input(UInt(8.W))
+      val io   = IO(new Bundle {
+        val in  = Input(UInt(8.W))
         val out = Output(UInt(8.W))
       })
       io.out := io.in
-      val cov = cover(io.in === 3.U)
+      val cov  = cover(io.in === 3.U)
       val assm = chisel3.assume(io.in =/= 2.U)
       val asst = chisel3.assert(io.out === io.in)
     }
@@ -64,7 +64,7 @@ class VerificationSpec extends ChiselPropSpec with Matchers {
     ChiselStage.emitSystemVerilogFile(gen = new AnnotationTest, args = Array("-td", testDir.getPath))
 
     // read in FIRRTL file
-    val svFile = new File(testDir, "AnnotationTest.sv")
+    val svFile  = new File(testDir, "AnnotationTest.sv")
     svFile should exist
     val svLines = scala.io.Source.fromFile(svFile).getLines().toList
 

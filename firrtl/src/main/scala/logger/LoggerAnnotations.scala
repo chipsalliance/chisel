@@ -51,7 +51,7 @@ object ClassLogLevelAnnotation extends HasShellOptions {
       toAnnotationSeq = (a: Seq[String]) =>
         a.map { aa =>
           val className :: levelName :: _ = aa.split(":").toList
-          val level = LogLevel(levelName)
+          val level                       = LogLevel(levelName)
           ClassLogLevelAnnotation(className, level)
         },
       helpText = "Set per-class logging verbosity",

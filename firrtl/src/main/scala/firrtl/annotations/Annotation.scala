@@ -24,7 +24,7 @@ trait Annotation extends Product {
 /** If an Annotation does not target any [[Named]] thing in the circuit, then all updates just
   * return the Annotation itself
   */
-trait NoTargetAnnotation extends Annotation {
+trait NoTargetAnnotation                 extends Annotation {
   def update(renames: RenameMap): Seq[NoTargetAnnotation] = Seq(this)
 }
 
@@ -40,7 +40,7 @@ trait SingleTargetAnnotation[T <: Named] extends Annotation {
   // invoking duplicate if newTarget cannot be cast to T (only possible in the concrete subclass)
   def update(renames: RenameMap): Seq[Annotation] = {
     target match {
-      case c: Target =>
+      case c: Target   =>
         val x = renames.get(c)
         x.map(newTargets => newTargets.map(t => duplicate(t.asInstanceOf[T]))).getOrElse(List(this))
       case from: Named =>
@@ -49,11 +49,11 @@ trait SingleTargetAnnotation[T <: Named] extends Annotation {
           .map(_.map { newT =>
             val result = newT match {
               case c: InstanceTarget => ModuleName(c.ofModule, CircuitName(c.circuit))
-              case c: IsMember =>
+              case c: IsMember       =>
                 val local = Target.referringModule(c)
                 c.setPathTarget(local)
-              case c: CircuitTarget => c.toNamed
-              case other => throw Target.NamedException(s"Cannot convert $other to [[Named]]")
+              case c: CircuitTarget  => c.toNamed
+              case other             => throw Target.NamedException(s"Cannot convert $other to [[Named]]")
             }
             (Target.convertTarget2Named(result): @unchecked) match {
               case newTarget: T @unchecked =>

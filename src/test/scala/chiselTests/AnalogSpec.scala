@@ -16,7 +16,7 @@ class AnalogReaderIO extends Bundle {
 // IO for Modules that drive bus from in (there should be only 1)
 class AnalogWriterIO extends Bundle {
   val bus = Analog(32.W)
-  val in = Input(UInt(32.W))
+  val in  = Input(UInt(32.W))
 }
 
 trait AnalogReader {
@@ -25,23 +25,23 @@ trait AnalogReader {
 }
 
 class AnalogReaderBlackBox extends BlackBox with AnalogReader {
-  val io = IO(new AnalogReaderIO)
+  val io  = IO(new AnalogReaderIO)
   def out = io.out
   def bus = io.bus
 }
 
-class AnalogReaderWrapper extends Module with AnalogReader {
-  val io = IO(new AnalogReaderIO)
+class AnalogReaderWrapper  extends Module with AnalogReader {
+  val io  = IO(new AnalogReaderIO)
   def out = io.out
   def bus = io.bus
   val mod = Module(new AnalogReaderBlackBox)
   io <> mod.io
 }
-class AnalogWriterBlackBox extends BlackBox {
+class AnalogWriterBlackBox extends BlackBox                 {
   val io = IO(new AnalogWriterIO)
 }
 // Connects two Analog ports
-class AnalogConnector extends Module {
+class AnalogConnector      extends Module                   {
   val io = IO(new Bundle {
     val bus1 = Analog(32.W)
     val bus2 = Analog(32.W)
@@ -51,9 +51,9 @@ class AnalogConnector extends Module {
 
 class VecAnalogReaderWrapper extends RawModule with AnalogReader {
   val vecbus = IO(Vec(1, Analog(32.W)))
-  val out = IO(Output(UInt(32.W)))
-  val mod = Module(new AnalogReaderBlackBox)
-  def bus = vecbus(0)
+  val out    = IO(Output(UInt(32.W)))
+  val mod    = Module(new AnalogReaderBlackBox)
+  def bus    = vecbus(0)
   mod.io.bus <> bus
   out := mod.io.out
 }
@@ -67,9 +67,9 @@ class VecBundleAnalogReaderWrapper extends RawModule with AnalogReader {
       }
     )
   )
-  def bus = vecBunBus(0).analog
-  val out = IO(Output(UInt(32.W)))
-  val mod = Module(new AnalogReaderBlackBox)
+  def bus       = vecBunBus(0).analog
+  val out       = IO(Output(UInt(32.W)))
+  val mod       = Module(new AnalogReaderBlackBox)
   mod.io.bus <> bus
   out := mod.io.out
 }
@@ -95,7 +95,7 @@ class AnalogSpec extends ChiselFlatSpec with Utils {
     a[ChiselException] should be thrownBy extractCause[ChiselException] {
       ChiselStage.emitCHIRRTL {
         new Module {
-          val io = IO(new Bundle {})
+          val io  = IO(new Bundle {})
           val reg = Reg(Analog(32.W))
         }
       }
@@ -139,7 +139,7 @@ class AnalogSpec extends ChiselFlatSpec with Utils {
     a[ChiselException] should be thrownBy extractCause[ChiselException] {
       ChiselStage.emitCHIRRTL {
         new Module {
-          val io = IO(new Bundle {})
+          val io  = IO(new Bundle {})
           val mem = Mem(16, Analog(32.W))
         }
       }
@@ -150,8 +150,8 @@ class AnalogSpec extends ChiselFlatSpec with Utils {
     a[ChiselException] should be thrownBy extractCause[ChiselException] {
       ChiselStage.emitCHIRRTL {
         new Module {
-          val io = IO(new Bundle {})
-          val mem = Mem(16, Analog(32.W))
+          val io   = IO(new Bundle {})
+          val mem  = Mem(16, Analog(32.W))
           val port = mem(5.U)
         }
       }
@@ -186,7 +186,7 @@ class AnalogSpec extends ChiselFlatSpec with Utils {
   it should "error if any bulk connected more than once" in {
     a[ChiselException] should be thrownBy extractCause[ChiselException] {
       ChiselStage.emitCHIRRTL(new Module {
-        val io = IO(new Bundle {})
+        val io    = IO(new Bundle {})
         val wires = List.fill(3)(Wire(Analog(32.W)))
         wires(0) <> wires(1)
         wires(0) <> wires(2)
@@ -194,7 +194,7 @@ class AnalogSpec extends ChiselFlatSpec with Utils {
     }
     a[ChiselException] should be thrownBy extractCause[ChiselException] {
       ChiselStage.emitCHIRRTL(new Module {
-        val io = IO(new Bundle {})
+        val io    = IO(new Bundle {})
         val wires = List.fill(2)(Wire(Analog(32.W)))
         wires(0) <> DontCare
         wires(0) <> wires(1)
@@ -226,14 +226,14 @@ class AnalogSpec extends ChiselFlatSpec with Utils {
       val io = IO(new Bundle {
         val a = new MyBundle
       })
-      val w = Wire(new MyBundle)
+      val w  = Wire(new MyBundle)
       w <> io.a
     })
     ChiselStage.emitCHIRRTL(new Module {
       val io = IO(new Bundle {
         val a = Vec(1, new MyBundle)
       })
-      val w = Wire(Vec(1, new MyBundle))
+      val w  = Wire(Vec(1, new MyBundle))
       w <> io.a
     })
   }
@@ -252,7 +252,7 @@ class AnalogSpec extends ChiselFlatSpec with Utils {
   it should "work with 3 blackboxes separately attached via a wire" in {
     assertTesterPasses(
       new AnalogTester {
-        val mods = Seq.fill(2)(Module(new AnalogReaderBlackBox))
+        val mods    = Seq.fill(2)(Module(new AnalogReaderBlackBox))
         val busWire = Wire(Analog(32.W))
         attach(busWire, writer.io.bus)
         attach(busWire, mods(0).io.bus)
@@ -268,7 +268,7 @@ class AnalogSpec extends ChiselFlatSpec with Utils {
   ignore should "work with intermediate wires attached to each other" in {
     assertTesterPasses(
       new AnalogTester {
-        val mod = Module(new AnalogReaderBlackBox)
+        val mod     = Module(new AnalogReaderBlackBox)
         val busWire = Seq.fill(2)(Wire(Analog(32.W)))
         attach(busWire(0), writer.io.bus)
         attach(busWire(1), mod.io.bus)
@@ -282,7 +282,7 @@ class AnalogSpec extends ChiselFlatSpec with Utils {
   it should "work with blackboxes at different levels of the module hierarchy" in {
     assertTesterPasses(
       new AnalogTester {
-        val mods = Seq(Module(new AnalogReaderBlackBox), Module(new AnalogReaderWrapper))
+        val mods    = Seq(Module(new AnalogReaderBlackBox), Module(new AnalogReaderWrapper))
         val busWire = Wire(writer.io.bus.cloneType)
         attach(writer.io.bus, mods(0).bus, mods(1).bus)
         mods.foreach(check(_))
@@ -295,7 +295,7 @@ class AnalogSpec extends ChiselFlatSpec with Utils {
   ignore should "support two analog ports in the same module" in {
     assertTesterPasses(
       new AnalogTester {
-        val reader = Module(new AnalogReaderBlackBox)
+        val reader    = Module(new AnalogReaderBlackBox)
         val connector = Module(new AnalogConnector)
         connector.io.bus1 <> writer.io.bus
         reader.io.bus <> connector.io.bus2

@@ -11,7 +11,7 @@ private[chisel3] object instantiableMacro {
   def impl(c: whitebox.Context)(annottees: c.Expr[Any]*): c.Expr[Any] = {
     import c.universe._
     def processBody(stats: Seq[Tree]): (Seq[Tree], Iterable[Tree]) = {
-      val extensions = scala.collection.mutable.ArrayBuffer.empty[Tree]
+      val extensions  = scala.collection.mutable.ArrayBuffer.empty[Tree]
       extensions += q"implicit val mg: chisel3.internal.MacroGenerated = new chisel3.internal.MacroGenerated {}"
       // Note the triple `_` prefixing `module` is to avoid conflicts if a user marks a 'val module'
       //  with @public; in this case, the lookup code is ambiguous between the generated `def module`
@@ -31,28 +31,28 @@ private[chisel3] object instantiableMacro {
               case aVal: ValDef =>
                 extensions += atPos(aVal.pos)(q"def ${aVal.name} = ___module._lookup(_.${aVal.name})")
                 if (aVal.name.toString == aVal.children.last.toString) Nil else Seq(aVal)
-              case other => Seq(other)
+              case other        => Seq(other)
             }
-          case other => Seq(other)
+          case other                                                                                  => Seq(other)
         }
       }
       (resultStats, extensions)
     }
-    val result = {
-      val (clz, objOpt) = annottees.map(_.tree).toList match {
+    val result                                                     = {
+      val (clz, objOpt)                  = annottees.map(_.tree).toList match {
         case Seq(c, o) => (c, Some(o))
         case Seq(c)    => (c, None)
-        case _ =>
+        case _         =>
           throw new Exception(
             s"Internal Error: Please file an issue at https://github.com/chipsalliance/chisel3/issues: Match error: annottees.map(_.tree).toList=${annottees.map(_.tree).toList}"
           )
       }
       val (newClz, implicitClzs, tpname) = clz match {
         case q"$mods class $tpname[..$tparams] $ctorMods(...$paramss) extends { ..$earlydefns } with ..$parents { $self => ..$stats }" =>
-          val defname = TypeName(tpname.toString + c.freshName())
-          val instname = TypeName(tpname.toString + c.freshName())
+          val defname                = TypeName(tpname.toString + c.freshName())
+          val instname               = TypeName(tpname.toString + c.freshName())
           val (newStats, extensions) = processBody(stats)
-          val argTParams = tparams.map(_.name)
+          val argTParams             = tparams.map(_.name)
           (
             q""" $mods class $tpname[..$tparams] $ctorMods(...$paramss) extends { ..$earlydefns } with ..$parents with chisel3.experimental.hierarchy.IsInstantiable { $self => ..$newStats } """,
             Seq(
@@ -61,11 +61,11 @@ private[chisel3] object instantiableMacro {
             ),
             tpname
           )
-        case q"$mods trait $tpname[..$tparams] extends { ..$earlydefns } with ..$parents { $self => ..$stats }" =>
-          val defname = TypeName(tpname.toString + c.freshName())
-          val instname = TypeName(tpname.toString + c.freshName())
+        case q"$mods trait $tpname[..$tparams] extends { ..$earlydefns } with ..$parents { $self => ..$stats }"                        =>
+          val defname                = TypeName(tpname.toString + c.freshName())
+          val instname               = TypeName(tpname.toString + c.freshName())
           val (newStats, extensions) = processBody(stats)
-          val argTParams = tparams.map(_.name)
+          val argTParams             = tparams.map(_.name)
           (
             q"$mods trait $tpname[..$tparams] extends { ..$earlydefns } with ..$parents with chisel3.experimental.hierarchy.IsInstantiable { $self => ..$newStats }",
             Seq(
@@ -75,8 +75,8 @@ private[chisel3] object instantiableMacro {
             tpname
           )
       }
-      val newObj = objOpt match {
-        case None => q"""object ${tpname.toTermName} { ..$implicitClzs } """
+      val newObj                         = objOpt match {
+        case None                                                                                              => q"""object ${tpname.toTermName} { ..$implicitClzs } """
         case Some(obj @ q"$mods object $tname extends { ..$earlydefns } with ..$parents { $self => ..$body }") =>
           q"""
             $mods object $tname extends { ..$earlydefns } with ..$parents { $self =>
@@ -84,7 +84,7 @@ private[chisel3] object instantiableMacro {
               ..$body
             }
           """
-        case _ =>
+        case _                                                                                                 =>
           throw new Exception(
             s"Internal Error: Please file an issue at https://github.com/chipsalliance/chisel3/issues: Match error: objOpt: $objOpt"
           )
@@ -102,4 +102,4 @@ private[chisel3] object instantiableMacro {
 private[chisel3] class instantiable extends StaticAnnotation {
   def macroTransform(annottees: Any*): Any = macro instantiableMacro.impl
 }
-private[chisel3] class public extends StaticAnnotation
+private[chisel3] class public       extends StaticAnnotation

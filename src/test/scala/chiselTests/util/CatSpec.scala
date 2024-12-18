@@ -11,7 +11,7 @@ import _root_.circt.stage.ChiselStage
 object CatSpec {
 
   class JackIsATypeSystemGod extends Module {
-    val in = IO(Input(Vec(0, UInt(8.W))))
+    val in  = IO(Input(Vec(0, UInt(8.W))))
     val out = IO(Output(UInt(8.W)))
 
     out := Cat(in)
@@ -34,7 +34,7 @@ class CatSpec extends ChiselFlatSpec {
   it should "not override the names of its arguments" in {
     class MyModule extends RawModule {
       val a, b, c, d = IO(Input(UInt(8.W)))
-      val out = IO(Output(UInt()))
+      val out        = IO(Output(UInt()))
 
       out := Cat(a, b, c, d)
     }
@@ -46,7 +46,7 @@ class CatSpec extends ChiselFlatSpec {
 
   it should "have prefixed naming" in {
     class MyModule extends RawModule {
-      val in = IO(Input(Vec(8, UInt(8.W))))
+      val in  = IO(Input(Vec(8, UInt(8.W))))
       val out = IO(Output(UInt()))
 
       // noPrefix to avoid `out` as prefix
@@ -61,7 +61,7 @@ class CatSpec extends ChiselFlatSpec {
 
   it should "have a source locator when passing a seq" in {
     class MyModule extends RawModule {
-      val in = IO(Input(Vec(8, UInt(8.W))))
+      val in  = IO(Input(Vec(8, UInt(8.W))))
       val out = IO(Output(UInt()))
 
       // noPrefix to avoid `out` as prefix
@@ -74,7 +74,7 @@ class CatSpec extends ChiselFlatSpec {
 
   it should "have a source locator when passing args" in {
     class MyModule extends RawModule {
-      val in = IO(Input(Vec(8, UInt(8.W))))
+      val in  = IO(Input(Vec(8, UInt(8.W))))
       val out = IO(Output(UInt()))
       out := Cat(in(0), in(1))
     }

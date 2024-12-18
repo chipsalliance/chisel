@@ -13,35 +13,35 @@ private[chisel3] trait BackendCompilationUtilities extends LazyLogging {
   import scala.sys.process.{ProcessBuilder, ProcessLogger, _}
 
   // Inlined from old trait firrtl.util.BackendCompilationUtilities
-  lazy val TestDirectory = FirrtlBackendCompilationUtilities.TestDirectory
-  def timeStamp:            String = FirrtlBackendCompilationUtilities.timeStamp
-  def loggingProcessLogger: ProcessLogger = FirrtlBackendCompilationUtilities.loggingProcessLogger
-  def copyResourceToFile(name: String, file: File): Unit =
+  lazy val TestDirectory                                                   = FirrtlBackendCompilationUtilities.TestDirectory
+  def timeStamp: String                                                    = FirrtlBackendCompilationUtilities.timeStamp
+  def loggingProcessLogger: ProcessLogger                                  = FirrtlBackendCompilationUtilities.loggingProcessLogger
+  def copyResourceToFile(name: String, file: File): Unit                   =
     FirrtlBackendCompilationUtilities.copyResourceToFile(name, file)
-  def createTestDirectory(testName: String): File = FirrtlBackendCompilationUtilities.createTestDirectory(testName)
-  def makeHarness(template:         String => String, post: String)(f: File): File =
+  def createTestDirectory(testName: String): File                          = FirrtlBackendCompilationUtilities.createTestDirectory(testName)
+  def makeHarness(template: String => String, post: String)(f: File): File =
     FirrtlBackendCompilationUtilities.makeHarness(template, post)(f)
-  def firrtlToVerilog(prefix: String, dir: File): ProcessBuilder =
+  def firrtlToVerilog(prefix: String, dir: File): ProcessBuilder           =
     FirrtlBackendCompilationUtilities.firrtlToVerilog(prefix, dir)
   def verilogToCpp(
-    dutFile:          String,
-    dir:              File,
-    vSources:         Seq[File],
-    cppHarness:       File,
-    suppressVcd:      Boolean = false,
+    dutFile: String,
+    dir: File,
+    vSources: Seq[File],
+    cppHarness: File,
+    suppressVcd: Boolean = false,
     resourceFileName: String = firrtl.transforms.BlackBoxSourceHelper.defaultFileListName
   ): ProcessBuilder = {
     FirrtlBackendCompilationUtilities.verilogToCpp(dutFile, dir, vSources, cppHarness, suppressVcd, resourceFileName)
   }
-  def cppToExe(prefix: String, dir: File): ProcessBuilder = FirrtlBackendCompilationUtilities.cppToExe(prefix, dir)
+  def cppToExe(prefix: String, dir: File): ProcessBuilder                  = FirrtlBackendCompilationUtilities.cppToExe(prefix, dir)
   def executeExpectingFailure(
-    prefix:       String,
-    dir:          File,
+    prefix: String,
+    dir: File,
     assertionMsg: String = ""
   ): Boolean = {
     FirrtlBackendCompilationUtilities.executeExpectingFailure(prefix, dir, assertionMsg)
   }
-  def executeExpectingSuccess(prefix: String, dir: File): Boolean =
+  def executeExpectingSuccess(prefix: String, dir: File): Boolean          =
     FirrtlBackendCompilationUtilities.executeExpectingSuccess(prefix, dir)
 
 }

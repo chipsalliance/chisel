@@ -45,10 +45,9 @@ class WriteOutputAnnotationsSpec extends AnyFlatSpec with Matchers with firrtl.t
 
     read
       .zip(a)
-      .foreach {
-        case (read, expected) =>
-          info(s"$read matches")
-          read should be(expected)
+      .foreach { case (read, expected) =>
+        info(s"$read matches")
+        read should be(expected)
       }
 
     f.delete()
@@ -59,18 +58,18 @@ class WriteOutputAnnotationsSpec extends AnyFlatSpec with Matchers with firrtl.t
   behavior.of(classOf[WriteOutputAnnotations].toString)
 
   it should "write annotations to a file (excluding StageOptions)" in new Fixture {
-    val file = new File(dir + "/should-write-annotations-to-a-file.anno.json")
+    val file        = new File(dir + "/should-write-annotations-to-a-file.anno.json")
     val annotations = Seq(
       OutputAnnotationFileAnnotation(file.toString),
       WriteOutputAnnotationsSpec.FooAnnotation,
       WriteOutputAnnotationsSpec.BarAnnotation(0),
       WriteOutputAnnotationsSpec.BarAnnotation(1)
     )
-    val expected = annotations.filter {
+    val expected    = annotations.filter {
       case _: StageOption => false
-      case _ => true
+      case _              => true
     }
-    val out = phase.transform(annotations)
+    val out         = phase.transform(annotations)
 
     info("annotations should be as expected")
     out.toSeq should be(annotations)
@@ -79,17 +78,17 @@ class WriteOutputAnnotationsSpec extends AnyFlatSpec with Matchers with firrtl.t
   }
 
   it should "write CustomFileEmission annotations" in new Fixture {
-    val file = new File("write-CustomFileEmission-annotations.anno.json")
-    val annotations = Seq(
+    val file               = new File("write-CustomFileEmission-annotations.anno.json")
+    val annotations        = Seq(
       TargetDirAnnotation(dir),
       OutputAnnotationFileAnnotation(file.toString),
       WriteOutputAnnotationsSpec.Custom("hello!")
     )
     val serializedFileName = view[StageOptions](annotations).getBuildFileName("Custom", Some(".Emission"))
-    val expected = annotations.flatMap {
+    val expected           = annotations.flatMap {
       case _: WriteOutputAnnotationsSpec.Custom => Some(WriteOutputAnnotationsSpec.Replacement(serializedFileName))
       case _: StageOption                       => None
-      case a => Some(a)
+      case a                                    => Some(a)
     }
 
     val out = phase.transform(annotations)
@@ -104,8 +103,8 @@ class WriteOutputAnnotationsSpec extends AnyFlatSpec with Matchers with firrtl.t
   }
 
   it should "support CustomFileEmission to binary files" in new Fixture {
-    val file = new File("write-CustomFileEmission-binary-files.anno.json")
-    val data = Array[Byte](0x0a, 0xa0.toByte)
+    val file        = new File("write-CustomFileEmission-binary-files.anno.json")
+    val data        = Array[Byte](0x0a, 0xa0.toByte)
     val annotations = Seq(
       TargetDirAnnotation(dir),
       OutputAnnotationFileAnnotation(file.toString),
@@ -113,28 +112,28 @@ class WriteOutputAnnotationsSpec extends AnyFlatSpec with Matchers with firrtl.t
     )
 
     val serializedFileName = view[StageOptions](annotations).getBuildFileName("Binary", Some(".Emission"))
-    val out = phase.transform(annotations)
+    val out                = phase.transform(annotations)
 
     info(s"file '$serializedFileName' exists")
     new File(serializedFileName) should (exist)
 
     info(s"file '$serializedFileName' is correct")
     val inputStream = new java.io.FileInputStream(serializedFileName)
-    val result = new Array[Byte](2)
+    val result      = new Array[Byte](2)
     inputStream.read(result)
     result should equal(data)
   }
 
   it should "write BufferedCustomFileEmission annotations" in new Fixture {
-    val file = new File("write-CustomFileEmission-annotations.anno.json")
-    val data = List("hi", "bye", "yo")
-    val annotations = Seq(
+    val file               = new File("write-CustomFileEmission-annotations.anno.json")
+    val data               = List("hi", "bye", "yo")
+    val annotations        = Seq(
       TargetDirAnnotation(dir),
       OutputAnnotationFileAnnotation(file.toString),
       WriteOutputAnnotationsSpec.Buffered(data)
     )
     val serializedFileName = view[StageOptions](annotations).getBuildFileName("Buffered", Some(".Emission"))
-    val out = phase.transform(annotations)
+    val out                = phase.transform(annotations)
 
     info(s"file '$serializedFileName' exists")
     new File(serializedFileName) should (exist)
@@ -145,7 +144,7 @@ class WriteOutputAnnotationsSpec extends AnyFlatSpec with Matchers with firrtl.t
   }
 
   it should "error if multiple annotations try to write to the same file" in new Fixture {
-    val file = new File("write-CustomFileEmission-annotations-error.anno.json")
+    val file        = new File("write-CustomFileEmission-annotations-error.anno.json")
     val annotations = Seq(
       TargetDirAnnotation(dir),
       OutputAnnotationFileAnnotation(file.toString),

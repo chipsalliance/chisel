@@ -38,13 +38,13 @@ import chisel3._
   * $paramUpdateSeed
   */
 class GaloisLFSR(
-  width:         Int,
-  taps:          Set[Int],
-  seed:          Option[BigInt] = Some(1),
+  width: Int,
+  taps: Set[Int],
+  seed: Option[BigInt] = Some(1),
   val reduction: LFSRReduce = XOR,
-  step:          Int = 1,
-  updateSeed:    Boolean = false)
-    extends PRNG(width, seed, step, updateSeed)
+  step: Int = 1,
+  updateSeed: Boolean = false
+) extends PRNG(width, seed, step, updateSeed)
     with LFSR {
 
   def delta(s: Seq[Bool]): Seq[Bool] = {
@@ -93,10 +93,10 @@ object GaloisLFSR {
     * $paramReduction
     */
   def apply(
-    width:     Int,
-    taps:      Set[Int],
+    width: Int,
+    taps: Set[Int],
     increment: Bool = true.B,
-    seed:      Option[BigInt] = Some(1),
+    seed: Option[BigInt] = Some(1),
     reduction: LFSRReduce = XOR
   ): UInt = PRNG(new GaloisLFSR(width, taps, seed, reduction), increment)
 
@@ -107,9 +107,9 @@ object GaloisLFSR {
     * $paramReduction
     */
   def maxPeriod(
-    width:     Int,
+    width: Int,
     increment: Bool = true.B,
-    seed:      Option[BigInt] = Some(1),
+    seed: Option[BigInt] = Some(1),
     reduction: LFSRReduce = XOR
   ): UInt = PRNG(new MaxPeriodGaloisLFSR(width, seed, reduction), increment)
 

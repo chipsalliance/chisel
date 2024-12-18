@@ -21,7 +21,7 @@ import scala.reflect.macros.whitebox
 trait SourceInfoTransformMacro {
   val c: Context
   import c.universe._
-  def thisObj: Tree = c.prefix.tree
+  def thisObj: Tree      = c.prefix.tree
   def implicitSourceInfo = q"implicitly[_root_.chisel3.experimental.SourceInfo]"
 }
 
@@ -36,7 +36,7 @@ class UIntTransform(val c: Context) extends SourceInfoTransformMacro {
 
 class ProbeTransform(val c: Context) extends SourceInfoTransformMacro {
   import c.universe._
-  def sourceApply[T: c.WeakTypeTag](source: c.Tree): c.Tree = {
+  def sourceApply[T: c.WeakTypeTag](source: c.Tree): c.Tree                         = {
     val tpe = weakTypeOf[T]
     q"$thisObj.do_apply[$tpe]($source)($implicitSourceInfo)"
   }
@@ -44,7 +44,7 @@ class ProbeTransform(val c: Context) extends SourceInfoTransformMacro {
     val tpe = weakTypeOf[T]
     q"$thisObj.do_apply[$tpe]($source, Some($color))($implicitSourceInfo)"
   }
-  def sourceRead[T: c.WeakTypeTag](source: c.Tree): c.Tree = {
+  def sourceRead[T: c.WeakTypeTag](source: c.Tree): c.Tree                          = {
     val tpe = weakTypeOf[T]
     q"$thisObj.do_read[$tpe]($source)($implicitSourceInfo)"
   }
@@ -84,7 +84,7 @@ class DefinitionWrapTransform(val c: Context) extends SourceInfoTransformMacro {
 object MemTransform
 class MemTransform(val c: Context) extends SourceInfoTransformMacro {
   import c.universe._
-  def apply[T: c.WeakTypeTag](size: c.Tree, t: c.Tree): c.Tree = {
+  def apply[T: c.WeakTypeTag](size: c.Tree, t: c.Tree): c.Tree                  = {
     q"$thisObj.do_apply($size, $t)($implicitSourceInfo)"
   }
   def apply_ruw[T: c.WeakTypeTag](size: c.Tree, t: c.Tree, ruw: c.Tree): c.Tree = {
@@ -122,43 +122,43 @@ class MuxLookupTransform(val c: Context) extends SourceInfoTransformMacro {
 object VecTransform
 class VecTransform(val c: Context) extends SourceInfoTransformMacro {
   import c.universe._
-  def apply_elts(elts: c.Tree): c.Tree = {
+  def apply_elts(elts: c.Tree): c.Tree                                        = {
     q"$thisObj.do_apply($elts)($implicitSourceInfo)"
   }
-  def apply_elt0(elt0: c.Tree, elts: c.Tree*): c.Tree = {
+  def apply_elt0(elt0: c.Tree, elts: c.Tree*): c.Tree                         = {
     q"$thisObj.do_apply($elt0, ..$elts)($implicitSourceInfo)"
   }
-  def tabulate(n: c.Tree)(gen: c.Tree): c.Tree = {
+  def tabulate(n: c.Tree)(gen: c.Tree): c.Tree                                = {
     q"$thisObj.do_tabulate($n)($gen)($implicitSourceInfo)"
   }
-  def tabulate2D(n: c.Tree, m: c.Tree)(gen: c.Tree): c.Tree = {
+  def tabulate2D(n: c.Tree, m: c.Tree)(gen: c.Tree): c.Tree                   = {
     q"$thisObj.do_tabulate($n,$m)($gen)($implicitSourceInfo)"
   }
-  def tabulate3D(n: c.Tree, m: c.Tree, p: c.Tree)(gen: c.Tree): c.Tree = {
+  def tabulate3D(n: c.Tree, m: c.Tree, p: c.Tree)(gen: c.Tree): c.Tree        = {
     q"$thisObj.do_tabulate($n,$m,$p)($gen)($implicitSourceInfo)"
   }
-  def fill(n: c.Tree)(gen: c.Tree): c.Tree = {
+  def fill(n: c.Tree)(gen: c.Tree): c.Tree                                    = {
     q"$thisObj.do_fill($n)($gen)($implicitSourceInfo)"
   }
-  def fill2D(n: c.Tree, m: c.Tree)(gen: c.Tree): c.Tree = {
+  def fill2D(n: c.Tree, m: c.Tree)(gen: c.Tree): c.Tree                       = {
     q"$thisObj.do_fill($n,$m)($gen)($implicitSourceInfo)"
   }
-  def fill3D(n: c.Tree, m: c.Tree, p: c.Tree)(gen: c.Tree): c.Tree = {
+  def fill3D(n: c.Tree, m: c.Tree, p: c.Tree)(gen: c.Tree): c.Tree            = {
     q"$thisObj.do_fill($n,$m,$p)($gen)($implicitSourceInfo)"
   }
   def fill4D(n: c.Tree, m: c.Tree, p: c.Tree, q: c.Tree)(gen: c.Tree): c.Tree = {
     q"$thisObj.do_fill($n,$m,$p,$q)($gen)($implicitSourceInfo)"
   }
-  def iterate(start: c.Tree, len: c.Tree)(f: c.Tree): c.Tree = {
+  def iterate(start: c.Tree, len: c.Tree)(f: c.Tree): c.Tree                  = {
     q"$thisObj.do_iterate($start,$len)($f)($implicitSourceInfo)"
   }
-  def contains(x: c.Tree)(ev: c.Tree): c.Tree = {
+  def contains(x: c.Tree)(ev: c.Tree): c.Tree                                 = {
     q"$thisObj.do_contains($x)($implicitSourceInfo, $ev)"
   }
-  def reduceTree(redOp: c.Tree, layerOp: c.Tree): c.Tree = {
+  def reduceTree(redOp: c.Tree, layerOp: c.Tree): c.Tree                      = {
     q"$thisObj.do_reduceTree($redOp,$layerOp)($implicitSourceInfo)"
   }
-  def reduceTreeDefault(redOp: c.Tree): c.Tree = {
+  def reduceTreeDefault(redOp: c.Tree): c.Tree                                = {
     q"$thisObj.do_reduceTree($redOp)($implicitSourceInfo)"
   }
 }
@@ -175,7 +175,7 @@ abstract class AutoSourceTransform extends SourceInfoTransformMacro {
   def doFuncTerm: TermName = {
     val funcName = c.macroApplication match {
       case q"$_.$funcName[..$_](...$_)" => funcName
-      case _ =>
+      case _                            =>
         throw new Exception(
           s"Chisel Internal Error: Could not resolve function name from macro application: ${showCode(c.macroApplication)}"
         )
@@ -255,25 +255,23 @@ class SourceInfoTransform(val c: Context) extends AutoSourceTransform {
   }
 
   def idxDataMaskEnIswArg(
-    idx:       c.Tree,
+    idx: c.Tree,
     writeData: c.Tree,
-    mask:      c.Tree,
-    en:        c.Tree,
-    isWrite:   c.Tree
-  )(evidence:  c.Tree
-  ): c.Tree = {
+    mask: c.Tree,
+    en: c.Tree,
+    isWrite: c.Tree
+  )(evidence: c.Tree): c.Tree = {
     q"$thisObj.$doFuncTerm($idx, $writeData, $mask, $en, $isWrite)($evidence, $implicitSourceInfo)"
   }
 
   def idxDataMaskEnIswClockArg(
-    idx:       c.Tree,
+    idx: c.Tree,
     writeData: c.Tree,
-    mask:      c.Tree,
-    en:        c.Tree,
-    isWrite:   c.Tree,
-    clock:     c.Tree
-  )(evidence:  c.Tree
-  ): c.Tree = {
+    mask: c.Tree,
+    en: c.Tree,
+    isWrite: c.Tree,
+    clock: c.Tree
+  )(evidence: c.Tree): c.Tree = {
     q"$thisObj.$doFuncTerm($idx, $writeData, $mask, $en, $isWrite, $clock)($evidence, $implicitSourceInfo)"
   }
 
@@ -371,7 +369,7 @@ class IntLiteralApplyTransform(val c: Context) extends AutoSourceTransform {
                |""".stripMargin
           c.warning(c.enclosingPosition, msg)
         }
-      case _ => // do nothing
+      case _                                    => // do nothing
     }
     q"$thisObj.$doFuncTerm($x)($implicitSourceInfo)"
   }

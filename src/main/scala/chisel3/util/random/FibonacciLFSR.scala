@@ -40,13 +40,13 @@ import chisel3._
   * $paramUpdateSeed
   */
 class FibonacciLFSR(
-  width:         Int,
-  taps:          Set[Int],
-  seed:          Option[BigInt] = Some(1),
+  width: Int,
+  taps: Set[Int],
+  seed: Option[BigInt] = Some(1),
   val reduction: LFSRReduce = XOR,
-  step:          Int = 1,
-  updateSeed:    Boolean = false)
-    extends PRNG(width, seed, step, updateSeed)
+  step: Int = 1,
+  updateSeed: Boolean = false
+) extends PRNG(width, seed, step, updateSeed)
     with LFSR {
 
   def delta(s: Seq[Bool]): Seq[Bool] = taps.map { case i => s(i - 1) }.reduce(reduction) +: s.dropRight(1)
@@ -89,10 +89,10 @@ object FibonacciLFSR {
     * $paramReduction
     */
   def apply(
-    width:     Int,
-    taps:      Set[Int],
+    width: Int,
+    taps: Set[Int],
     increment: Bool = true.B,
-    seed:      Option[BigInt] = Some(1),
+    seed: Option[BigInt] = Some(1),
     reduction: LFSRReduce = XOR
   ): UInt = PRNG(new FibonacciLFSR(width, taps, seed, reduction), increment)
 
@@ -103,9 +103,9 @@ object FibonacciLFSR {
     * $paramReduction
     */
   def maxPeriod(
-    width:     Int,
+    width: Int,
     increment: Bool = true.B,
-    seed:      Option[BigInt] = Some(1),
+    seed: Option[BigInt] = Some(1),
     reduction: LFSRReduce = XOR
   ): UInt = PRNG(new MaxPeriodFibonacciLFSR(width, seed, reduction), increment)
 

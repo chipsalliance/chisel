@@ -24,13 +24,13 @@ class HasDeadCodeChild(withDontTouch: Boolean) extends Module {
 }
 
 class HasDeadCode(withDontTouch: Boolean) extends Module {
-  val io = IO(new Bundle {
+  val io   = IO(new Bundle {
     val a = Input(UInt(32.W))
     val b = Output(UInt(32.W))
   })
   val inst = Module(new HasDeadCodeChild(withDontTouch))
   inst.io.a := io.a
-  io.b := inst.io.b
+  io.b      := inst.io.b
   val dead = WireDefault(io.a + 1.U)
   if (withDontTouch) {
     dontTouch(dead)
@@ -49,7 +49,7 @@ class HasDeadCodeChildLeaves() extends Module {
 }
 
 class HasDeadCodeLeaves() extends Module {
-  val io = IO(new Bundle {
+  val io   = IO(new Bundle {
     val a = Input(UInt(32.W))
     val b = Output(UInt(32.W))
   })
@@ -63,13 +63,13 @@ class HasDeadCodeLeaves() extends Module {
 
 class HasProbesAndProperties() extends Module {
   val io = IO(new Bundle {
-    val a = Output(UInt(32.W))
+    val a     = Output(UInt(32.W))
     val probe = Output(Probe(UInt(32.W)))
-    val prop = Output(Property[Int]())
+    val prop  = Output(Property[Int]())
   })
   io.a := DontCare
   io.probe := probe.ProbeValue(io.a)
-  io.prop := Property(5)
+  io.prop  := Property(5)
 
   dontTouch(io)
 }

@@ -7,7 +7,7 @@ import circt.stage.ChiselStage
 
 class Padder extends Module {
   val io = IO(new Bundle {
-    val a = Input(UInt(4.W))
+    val a   = Input(UInt(4.W))
     val asp = Output(SInt(8.W))
     val aup = Output(UInt(8.W))
   })

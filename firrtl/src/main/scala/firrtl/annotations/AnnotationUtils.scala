@@ -9,8 +9,8 @@ import firrtl.ir._
 
 case class InvalidAnnotationFileException(file: File, cause: FirrtlUserException = null)
     extends FirrtlUserException(s"$file", cause)
-case class UnrecogizedAnnotationsException(msg: String) extends FirrtlUserException(s"Unrecognized annotations $msg")
-case class InvalidAnnotationJSONException(msg: String) extends FirrtlUserException(msg)
+case class UnrecogizedAnnotationsException(msg: String)       extends FirrtlUserException(s"Unrecognized annotations $msg")
+case class InvalidAnnotationJSONException(msg: String)        extends FirrtlUserException(msg)
 case class AnnotationFileNotFoundException(file: File)
     extends FirrtlUserException(
       s"Annotation file $file not found!"
@@ -21,7 +21,7 @@ case class AnnotationClassNotFoundException(className: String)
     )
 class UnserializableAnnotationException private (msg: String) extends FirrtlUserException(msg)
 object UnserializableAnnotationException {
-  private def toMessage(pair: (Annotation, Throwable)): String =
+  private def toMessage(pair: (Annotation, Throwable)): String      =
     s"Failed to serialiaze annotation of type ${pair._1.getClass.getName} because '${pair._2.getMessage}'"
   private[firrtl] def apply(badAnnos: Seq[(Annotation, Throwable)]) = {
     require(badAnnos.nonEmpty)
@@ -33,14 +33,14 @@ object UnserializableAnnotationException {
 object AnnotationUtils {
 
   /** Returns true if a valid Module name */
-  val SerializedModuleName = """([a-zA-Z_][a-zA-Z_0-9~!@#$%^*\-+=?/]*)""".r
+  val SerializedModuleName                = """([a-zA-Z_][a-zA-Z_0-9~!@#$%^*\-+=?/]*)""".r
   def validModuleName(s: String): Boolean = s match {
     case SerializedModuleName(name) => true
     case _                          => false
   }
 
   /** Returns true if a valid component/subcomponent name */
-  val SerializedComponentName = """([a-zA-Z_][a-zA-Z_0-9\[\]\.~!@#$%^*\-+=?/]*)""".r
+  val SerializedComponentName                = """([a-zA-Z_][a-zA-Z_0-9\[\]\.~!@#$%^*\-+=?/]*)""".r
   def validComponentName(s: String): Boolean = s match {
     case SerializedComponentName(name) => true
     case _                             => false
@@ -50,7 +50,7 @@ object AnnotationUtils {
     *  "foo.bar[boo.far]" becomes Seq("foo" "." "bar" "[" "boo" "." "far" "]")
     */
   def tokenize(s: String): Seq[String] = s.find(c => "[].".contains(c)) match {
-    case Some(_) =>
+    case Some(_)         =>
       val i = s.indexWhere(c => "[].".contains(c))
       s.slice(0, i) match {
         case "" => s(i).toString +: tokenize(s.drop(i + 1))
@@ -88,7 +88,7 @@ object AnnotationUtils {
     */
   def toExp(s: String): Expression = {
     def parse(tokens: Seq[String]): Expression = {
-      val DecPattern = """(\d+)""".r
+      val DecPattern                                                          = """(\d+)""".r
       def findClose(tokens: Seq[String], index: Int, nOpen: Int): Seq[String] = {
         if (index >= tokens.size) {
           Utils.error("Cannot find closing bracket ]")
@@ -100,19 +100,19 @@ object AnnotationUtils {
             case _                 => findClose(tokens, index + 1, nOpen)
           }
       }
-      def buildup(e: Expression, tokens: Seq[String]): Expression = tokens match {
+      def buildup(e: Expression, tokens: Seq[String]): Expression             = tokens match {
         case "[" :: tail =>
           val indexOrAccess = findClose(tokens, 0, 0)
-          val exp = indexOrAccess.head match {
+          val exp           = indexOrAccess.head match {
             case DecPattern(d) => SubIndex(e, d.toInt, UnknownType)
             case _             => SubAccess(e, parse(indexOrAccess), UnknownType)
           }
           buildup(exp, tokens.drop(2 + indexOrAccess.size))
         case "." :: tail =>
           buildup(SubField(e, tokens(1), UnknownType), tokens.drop(2))
-        case Nil => e
+        case Nil         => e
       }
-      val root = Reference(tokens.head, UnknownType)
+      val root                                                                = Reference(tokens.head, UnknownType)
       buildup(root, tokens.tail)
     }
     if (validComponentName(s)) {

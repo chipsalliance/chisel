@@ -24,8 +24,8 @@ package object dataview {
       writability: ViewWriteability
     )(
       implicit dataproduct: DataProduct[T],
-      dataView:             DataView[T, V],
-      sourceInfo:           SourceInfo
+      dataView: DataView[T, V],
+      sourceInfo: SourceInfo
     ): V = {
       // TODO put a try catch here for ExpectedHardwareException and perhaps others
       // It's likely users will accidentally use chiselTypeOf or something that may error,
@@ -47,24 +47,24 @@ package object dataview {
 
     def viewAs[V <: Data](
       implicit dataproduct: DataProduct[T],
-      dataView:             DataView[T, V],
-      sourceInfo:           SourceInfo
+      dataView: DataView[T, V],
+      sourceInfo: SourceInfo
     ): V = _viewAsImpl(ViewWriteability.Default)
 
     private[chisel3] def viewAsReadOnlyDeprecated[V <: Data](
       getWarning: SourceInfo => Warning
     )(
       implicit dataproduct: DataProduct[T],
-      dataView:             DataView[T, V],
-      sourceInfo:           SourceInfo
+      dataView: DataView[T, V],
+      sourceInfo: SourceInfo
     ): V = _viewAsImpl(ViewWriteability.ReadOnlyDeprecated(getWarning))
 
     private[chisel3] def viewAsReadOnly[V <: Data](
       getError: SourceInfo => String
     )(
       implicit dataproduct: DataProduct[T],
-      dataView:             DataView[T, V],
-      sourceInfo:           SourceInfo
+      dataView: DataView[T, V],
+      sourceInfo: SourceInfo
     ): V = _viewAsImpl(ViewWriteability.ReadOnly(getError))
   }
 
@@ -79,11 +79,11 @@ package object dataview {
   }
 
   private def nonTotalViewException(
-    dataView:     DataView[_, _],
-    target:       Any,
-    view:         Data,
+    dataView: DataView[_, _],
+    target: Any,
+    view: Data,
     targetFields: Seq[String],
-    viewFields:   Seq[String]
+    viewFields: Seq[String]
   ) = {
     def missingMsg(name: String, fields: Seq[String]): Option[String] = {
       val str = fields.mkString(", ")
@@ -93,28 +93,28 @@ package object dataview {
         case _ => Some(s"$name fields '$str' are missing")
       }
     }
-    val vs = missingMsg("view", viewFields)
-    val ts = missingMsg("target", targetFields)
-    val reasons = (ts ++ vs).mkString(" and ").capitalize
-    val suggestion = if (ts.nonEmpty) "\n  If the view *should* be non-total, try a 'PartialDataView'." else ""
-    val msg = s"Viewing $target as $view is non-Total!\n  $reasons.\n  DataView used is $dataView.$suggestion"
+    val vs                                                            = missingMsg("view", viewFields)
+    val ts                                                            = missingMsg("target", targetFields)
+    val reasons                                                       = (ts ++ vs).mkString(" and ").capitalize
+    val suggestion                                                    = if (ts.nonEmpty) "\n  If the view *should* be non-total, try a 'PartialDataView'." else ""
+    val msg                                                           = s"Viewing $target as $view is non-Total!\n  $reasons.\n  DataView used is $dataView.$suggestion"
     throw InvalidViewException(msg)
   }
 
   // TODO should this be moved to class Aggregate / can it be unified with Aggregate.bind?
   private def doBind[T: DataProduct, V <: Data](
-    target:      T,
-    view:        V,
-    dataView:    DataView[T, V],
+    target: T,
+    view: V,
+    dataView: DataView[T, V],
     writability: ViewWriteability
   )(
     implicit sourceInfo: SourceInfo
   ): Unit = {
-    val mapping = dataView.mapping(target, view)
-    val total = dataView.total
+    val mapping                            = dataView.mapping(target, view)
+    val total                              = dataView.total
     // Lookups to check the mapping results
     val viewFieldLookup: Map[Data, String] = getRecursiveFields(view, "_").toMap
-    val targetContains:  Data => Boolean = implicitly[DataProduct[T]].dataSet(target)
+    val targetContains: Data => Boolean    = implicitly[DataProduct[T]].dataSet(target)
 
     // Resulting bindings for each Element of the View
     // Kept separate from Aggregates for totality checking
@@ -148,29 +148,29 @@ package object dataview {
 
       (tex, vex) match {
         /* Allow views where the types are equal. */
-        case (a, b) if a.getClass == b.getClass =>
+        case (a, b) if a.getClass == b.getClass                                         =>
           // View width must be unknown or match target width
           if (vex.widthKnown && vex.width != tex.width) {
             def widthAsString(x: Element) = x.widthOption.map("<" + _ + ">").getOrElse("<unknown>")
-            val fieldName = viewFieldName(vex)
-            val vwidth = widthAsString(vex)
-            val twidth = widthAsString(tex)
+            val fieldName                 = viewFieldName(vex)
+            val vwidth                    = widthAsString(vex)
+            val twidth                    = widthAsString(tex)
             throw InvalidViewException(
               s"View field $fieldName has width ${vwidth} that is incompatible with target value $tex's width ${twidth}"
             )
           }
         /* allow bool <=> reset views. */
-        case (a: Bool, _: Reset) =>
-        case (_: Reset, a: Bool) =>
+        case (a: Bool, _: Reset)                                                        =>
+        case (_: Reset, a: Bool)                                                        =>
         /* Allow AsyncReset <=> Reset views. */
-        case (a: AsyncReset, _: Reset) =>
-        case (_: Reset, a: AsyncReset) =>
+        case (a: AsyncReset, _: Reset)                                                  =>
+        case (_: Reset, a: AsyncReset)                                                  =>
         /* Allow DontCare in the target only */
-        case (DontCare, _) =>
+        case (DontCare, _)                                                              =>
         /* Allow Property[_] <=> Property[_] views when the underlying type is the same */
         case (a: Property[_], b: Property[_]) if a.getPropertyType == b.getPropertyType =>
         /* All other views produce a runtime error. */
-        case _ =>
+        case _                                                                          =>
           val fieldName = viewFieldName(vex)
           throw InvalidViewException(s"Field $fieldName specified as view of non-type-equivalent value $tex")
       }
@@ -186,7 +186,7 @@ package object dataview {
       case (aa: Aggregate, ba: Aggregate) =>
         if (!ba.typeEquivalent(aa)) {
           val fieldName = viewFieldLookup(ba)
-          val reason = ba
+          val reason    = ba
             .findFirstTypeMismatch(aa, strictTypes = true, strictWidths = true, strictProbeInfo = true)
             .map(s => s"\nbecause $s")
             .getOrElse("")
@@ -196,29 +196,28 @@ package object dataview {
         }
         getMatchedFields(aa, ba).foreach {
           case (aelt: Element, belt: Element) => onElt(aelt, belt)
-          case (t, v) => aggregateMappings += (v -> t)
+          case (t, v)                         => aggregateMappings += (v -> t)
         }
     }
 
     // Errors in totality of the View, use var List to keep fast path cheap (no allocation)
-    var viewNonTotalErrors:   List[Data] = Nil
+    var viewNonTotalErrors: List[Data]     = Nil
     var targetNonTotalErrors: List[String] = Nil
 
     val targetSeen: Option[mutable.Set[Data]] = if (total) Some(mutable.Set.empty[Data]) else None
 
-    val elementResult = elementBindings.map {
-      case (data, targets) =>
-        val targetsx = targets match {
-          case collection.Seq(target: Element) => target
-          case collection.Seq() =>
-            viewNonTotalErrors = data :: viewNonTotalErrors
-            data.asInstanceOf[Element] // Return the Data itself, will error after this map, cast is safe
-          case x =>
-            throw InvalidViewException(s"Got $x, expected Seq(_: Direct)")
-        }
-        // TODO record and report aliasing errors
-        targetSeen.foreach(_ += targetsx)
-        data -> targetsx
+    val elementResult = elementBindings.map { case (data, targets) =>
+      val targetsx = targets match {
+        case collection.Seq(target: Element) => target
+        case collection.Seq()                =>
+          viewNonTotalErrors = data :: viewNonTotalErrors
+          data.asInstanceOf[Element] // Return the Data itself, will error after this map, cast is safe
+        case x =>
+          throw InvalidViewException(s"Got $x, expected Seq(_: Direct)")
+      }
+      // TODO record and report aliasing errors
+      targetSeen.foreach(_ += targetsx)
+      data -> targetsx
     }.toMap
 
     // Check for totality of Target
@@ -234,7 +233,7 @@ package object dataview {
     }
 
     view match {
-      case elt: Element => view.bind(ViewBinding(elementResult(elt), writability))
+      case elt: Element   => view.bind(ViewBinding(elementResult(elt), writability))
       case agg: Aggregate =>
         val fullResult = elementResult ++ aggregateMappings
 
@@ -248,7 +247,7 @@ package object dataview {
           getRecursiveFields.lazily(view, "_").foreach {
             case (unnamed: Aggregate, _) if !fullResult.contains(unnamed) =>
               Builder.unnamedViews += unnamed
-            case _ => // Do nothing
+            case _                                                        => // Do nothing
           }
         }
         val aggWritability = Option.when(writability.isReadOnly)(
@@ -263,11 +262,11 @@ package object dataview {
   // Note that this does *not* include writability so do not use this in place of reify.
   private def unfoldView(elt: Element): LazyList[Element] = {
     def rec(e: Element): LazyList[Element] = e.topBindingOpt match {
-      case Some(ViewBinding(target, _)) => target #:: rec(target)
+      case Some(ViewBinding(target, _))    => target #:: rec(target)
       case Some(avb: AggregateViewBinding) =>
         val target = avb.lookup(e).get
         target #:: rec(target)
-      case Some(_) | None => LazyList.empty
+      case Some(_) | None                  => LazyList.empty
     }
     elt #:: rec(elt)
   }
@@ -289,14 +288,14 @@ package object dataview {
     * Chisel.
     */
   @tailrec private[chisel3] def reify(
-    elt:        Element,
+    elt: Element,
     topBinding: TopBinding,
-    wrAcc:      ViewWriteability
+    wrAcc: ViewWriteability
   ): (Element, ViewWriteability) = {
     topBinding match {
       case ViewBinding(target, writeability) =>
         reify(target, target.topBinding, wrAcc.combine(writeability))
-      case _ => (elt, wrAcc)
+      case _                                 => (elt, wrAcc)
     }
   }
 
@@ -309,7 +308,7 @@ package object dataview {
     * @note Returns Some(_) of the argument if it is not a view.
     */
   private[chisel3] def reifyIdentityView[T <: Data](
-    data:  T,
+    data: T,
     wrAcc: ViewWriteability = ViewWriteability.Default
   ): Option[(T, ViewWriteability)] = {
     val candidate: Option[(Data, ViewWriteability)] =
@@ -319,13 +318,12 @@ package object dataview {
         case Some(vb @ AggregateViewBinding(lookup, _)) => lookup.get(data).map(_ -> vb.lookupWritability(data))
         case Some(_)                                    => Some(data -> ViewWriteability.Default)
       }
-    candidate.flatMap {
-      case (d, wr) =>
-        val wrx = wrAcc.combine(wr)
-        // This cast is safe by construction, we only put Data in the view mapping if it is an identity mapping.
-        val cast = d.asInstanceOf[T]
-        // Candidate may itself be a view, keep tracing in those cases.
-        if (isView(d)) reifyIdentityView(cast, wrx) else Some(cast -> wrx)
+    candidate.flatMap { case (d, wr) =>
+      val wrx  = wrAcc.combine(wr)
+      // This cast is safe by construction, we only put Data in the view mapping if it is an identity mapping.
+      val cast = d.asInstanceOf[T]
+      // Candidate may itself be a view, keep tracing in those cases.
+      if (isView(d)) reifyIdentityView(cast, wrx) else Some(cast -> wrx)
     }
   }
 
@@ -354,7 +352,7 @@ package object dataview {
       data.topBindingOpt.flatMap {
         case AggregateViewBinding(mapping, _) =>
           // Take every single leaf and map to its target
-          val leaves = DataMirror.collectLeafMembers(data)
+          val leaves  = DataMirror.collectLeafMembers(data)
           val targets = leaves.map { l =>
             // All leaves are stored in the mapping.
             val oneLevel = mapping(l)
@@ -364,19 +362,19 @@ package object dataview {
           }
           // Now, if there are any targets, check if all of the targets share a common parent,
           // and if that parent is exclusively composed of these targets.
-          val tset = targets.toSet
+          val tset    = targets.toSet
           targets.headOption.flatMap { head =>
             allParents(head).find {
               // This is kind of a hack but ClonePorts is itself a hack.
               // We must ignore ClonePorts because it isn't a real Data, so it cannot be the "Single Target" to which we map.
               case _: ClonePorts => false
-              case p =>
+              case p             =>
                 val pset = DataMirror.collectLeafMembers(p).toSet
                 pset == tset
             }
           }
         // Anything else should've been handled by reifyIdentityView
-        case bad => err(s"This should not be reachable. Got binding = $bad in")
+        case bad                              => err(s"This should not be reachable. Got binding = $bad in")
 
       }
     }

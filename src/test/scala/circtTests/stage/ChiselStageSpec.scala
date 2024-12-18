@@ -38,7 +38,7 @@ object ChiselStageSpec {
 
   class Bar extends RawModule {
     val sel = IO(Input(UInt(3.W)))
-    val in = IO(Input(Vec(8, UInt(8.W))))
+    val in  = IO(Input(Vec(8, UInt(8.W))))
     val out = IO(Output(UInt(8.W)))
     out := in(sel)
   }
@@ -49,7 +49,7 @@ object ChiselStageSpec {
   }
 
   class Baz extends RawModule {
-    val in = IO(Input(new BazBundle))
+    val in  = IO(Input(new BazBundle))
     val out = IO(Output(new BazBundle))
     out := in
   }
@@ -61,11 +61,11 @@ object ChiselStageSpec {
   }
 
   class Quz extends RawModule {
-    val a = IO(Input(Bool()))
-    val b = IO(Output(Bool()))
+    val a   = IO(Input(Bool()))
+    val b   = IO(Output(Bool()))
     val qux = Module(new Qux)
     qux.a := a
-    b := qux.b
+    b     := qux.b
   }
 
   import firrtl.annotations.NoTargetAnnotation
@@ -104,7 +104,7 @@ object ChiselStageSpec {
 
   class ErrorCaughtByFirtool extends RawModule {
     implicit val info = SourceLine("Foo", 3, 10)
-    val w = Wire(UInt(8.W))
+    val w             = Wire(UInt(8.W))
   }
 
   object A extends Layer(LayerConfig.Extract())
@@ -286,8 +286,8 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
             FirtoolOption("--lowering-options=disallowPackedArrays")
           )
         )
-        .collectFirst {
-          case EmittedVerilogCircuitAnnotation(a) => a
+        .collectFirst { case EmittedVerilogCircuitAnnotation(a) =>
+          a
         }
         .get
         .value should include("case")
@@ -309,8 +309,8 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
           args,
           Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.Baz), PreserveAggregate(PreserveAggregate.All))
         )
-        .collectFirst {
-          case EmittedVerilogCircuitAnnotation(a) => a
+        .collectFirst { case EmittedVerilogCircuitAnnotation(a) =>
+          a
         }
         .get
         .value should include("struct")
@@ -391,10 +391,10 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
         "--target-dir",
         targetDir.toString
       )
-      val annos = Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.Foo))
-      val msg = "Checking CHISEL_FIRTOOL_PATH for firtool"
+      val annos               = Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.Foo))
+      val msg                 = "Checking CHISEL_FIRTOOL_PATH for firtool"
       // By default it should NOT show anything
-      val (log1, _) = grabLog {
+      val (log1, _)           = grabLog {
         (new ChiselStage).execute(args, annos)
       }
       log1 shouldNot include(msg)
@@ -407,8 +407,8 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
 
     it("should support --log-level") {
       def args(level: String): Array[String] = Array("--target", "chirrtl", "--log-level", level)
-      val annos = Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.Foo))
-      val (log1, _) = grabLog {
+      val annos                              = Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.Foo))
+      val (log1, _)                          = grabLog {
         (new ChiselStage).execute(args("info"), annos)
       }
       log1 should include("Done elaborating.")
@@ -435,8 +435,8 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
           args,
           Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.Bar))
         )
-        .collectFirst {
-          case EmittedVerilogCircuitAnnotation(a) => a
+        .collectFirst { case EmittedVerilogCircuitAnnotation(a) =>
+          a
         }
         .get
         .value should not).include("ChiselStageSpec.scala")
@@ -679,7 +679,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
       }
 
       val lines = e.getMessage.split("\n")
-      val idx = lines.indexWhere(_.contains("not fully initialized"))
+      val idx   = lines.indexWhere(_.contains("not fully initialized"))
       lines(idx) should include(
         "src/test/resources/chisel3/sourceroot1/Foo:3:10: error: sink \"w\" not fully initialized"
       )
@@ -688,7 +688,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
     }
 
     it("should report the firtool version against which Chisel was published in error messages") {
-      val e = intercept[java.lang.Exception] {
+      val e       = intercept[java.lang.Exception] {
         ChiselStage.emitSystemVerilog(new ChiselStageSpec.ErrorCaughtByFirtool)
       }
       val version = chisel3.BuildInfo.firtoolVersion.getOrElse("<unknown>")
@@ -701,7 +701,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
           import chisel3._
           ChiselStage.emitCHIRRTL(new Module {
             val in = IO(Input(UInt(8.W)))
-            val y = in >> -1
+            val y  = in >> -1
             require(false) // This should not suppress reporting the negative shift
           })
         }
@@ -729,7 +729,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
       class Foo extends RawModule with SimpleIO {
         val bar = Module(new Bar)
         bar.a := a
-        b := bar.b
+        b     := bar.b
       }
 
       val targetDir = new File("test_run_dir/InlineInstance")
@@ -743,8 +743,8 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
 
       ((new ChiselStage)
         .execute(args, Seq(ChiselGeneratorAnnotation(() => new Foo)))
-        .collectFirst {
-          case EmittedVerilogCircuitAnnotation(a) => a
+        .collectFirst { case EmittedVerilogCircuitAnnotation(a) =>
+          a
         }
         .get
         .value should not).include("module Bar")
@@ -767,13 +767,13 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
       class Bar extends RawModule with SimpleIO {
         val baz = Module(new Baz)
         baz.a := a
-        b := baz.b
+        b     := baz.b
       }
 
       class Foo extends RawModule with SimpleIO {
         val bar = Module(new Bar with FlattenInstance)
         bar.a := a
-        b := bar.b
+        b     := bar.b
       }
 
       val targetDir = new File("test_run_dir/FlattenInstance")
@@ -787,8 +787,8 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
 
       val verilog = (new ChiselStage)
         .execute(args, Seq(ChiselGeneratorAnnotation(() => new Foo)))
-        .collectFirst {
-          case EmittedVerilogCircuitAnnotation(a) => a
+        .collectFirst { case EmittedVerilogCircuitAnnotation(a) =>
+          a
         }
         .get
         .value
@@ -895,8 +895,8 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
 
       val verilog = (new ChiselStage)
         .execute(args, Seq(ChiselGeneratorAnnotation(() => new Foo)))
-        .collectFirst {
-          case EmittedVerilogCircuitAnnotation(a) => a
+        .collectFirst { case EmittedVerilogCircuitAnnotation(a) =>
+          a
         }
         .get
         .value
@@ -927,13 +927,13 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
       class Bar extends RawModule with SimpleIO with InlineInstance {
         val baz = Module(new Baz)
         baz.a := a
-        b := baz.b
+        b     := baz.b
       }
 
       class Foo extends RawModule with SimpleIO {
         val bar = Module(new Bar)
         bar.a := a
-        b := bar.b
+        b     := bar.b
 
         forceName(bar.baz)
       }
@@ -949,8 +949,8 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
 
       val verilog: String = (new ChiselStage)
         .execute(args, Seq(ChiselGeneratorAnnotation(() => new Foo)))
-        .collectFirst {
-          case EmittedVerilogCircuitAnnotation(a) => a
+        .collectFirst { case EmittedVerilogCircuitAnnotation(a) =>
+          a
         }
         .get
         .value
@@ -997,7 +997,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
         val baz = Module(new Baz)
         bar.a := a
         baz.a := a
-        b := bar.b ^ baz.b
+        b     := bar.b ^ baz.b
       }
 
       val targetDir = new File("test_run_dir/Dedup")
@@ -1011,8 +1011,8 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
 
       val verilog: String = (new ChiselStage)
         .execute(args, Seq(ChiselGeneratorAnnotation(() => new Foo)))
-        .collectFirst {
-          case EmittedVerilogCircuitAnnotation(a) => a
+        .collectFirst { case EmittedVerilogCircuitAnnotation(a) =>
+          a
         }
         .get
         .value
@@ -1049,7 +1049,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
         val baz = Module(new Baz)
         bar.a := a
         baz.a := a
-        b := bar.b ^ baz.b
+        b     := bar.b ^ baz.b
         doNotDedup(baz)
       }
 
@@ -1064,8 +1064,8 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
 
       val verilog: String = (new ChiselStage)
         .execute(args, Seq(ChiselGeneratorAnnotation(() => new Foo)))
-        .collectFirst {
-          case EmittedVerilogCircuitAnnotation(a) => a
+        .collectFirst { case EmittedVerilogCircuitAnnotation(a) =>
+          a
         }
         .get
         .value
@@ -1111,8 +1111,8 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
           new ChiselStageSpec.Bar,
           args
         )
-        .collectFirst {
-          case CircuitSerializationAnnotation(_, filename, _) => filename
+        .collectFirst { case CircuitSerializationAnnotation(_, filename, _) =>
+          filename
         }
         .get should be("Bar")
 
@@ -1174,8 +1174,8 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
           args,
           Array("--lowering-options=disallowPackedArrays")
         )
-        .collectFirst {
-          case EmittedVerilogCircuitAnnotation(a) => a
+        .collectFirst { case EmittedVerilogCircuitAnnotation(a) =>
+          a
         }
         .get
         .value should include("case")

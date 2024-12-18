@@ -12,7 +12,7 @@ import firrtl.transforms.DontTouchAnnotation
 object DataViewIntegrationSpec {
 
   class QueueIntf[T <: Data](gen: T, entries: Int) extends Bundle {
-    val ports = new QueueIO(gen, entries)
+    val ports   = new QueueIO(gen, entries)
     // Let's grab a reference to something internal too
     // Output because can't have directioned and undirectioned stuff
     val enq_ptr = Output(UInt(log2Ceil(entries).W))
@@ -21,7 +21,7 @@ object DataViewIntegrationSpec {
   // It's not clear if a view of a Module ever _can_ be total since internal nodes are part of the Module
   implicit def queueView[T <: Data] = PartialDataView[Queue[T], QueueIntf[T]](
     q => new QueueIntf(q.gen, q.entries),
-    _.io -> _.ports,
+    _.io            -> _.ports,
     // Some token internal signal
     _.enq_ptr.value -> _.enq_ptr
   )
@@ -29,7 +29,7 @@ object DataViewIntegrationSpec {
   object MyQueue {
     def apply[T <: Data](enq: DecoupledIO[T], n: Int): QueueIntf[T] = {
       val queue = Module(new Queue[T](enq.bits.cloneType, n))
-      val view = queue.viewAs[QueueIntf[T]]
+      val view  = queue.viewAs[QueueIntf[T]]
       view.ports.enq <> enq
       view
     }
@@ -50,7 +50,7 @@ class DataViewIntegrationSpec extends ChiselFlatSpec {
 
   "Users" should "be able to view and annotate Modules" in {
     val (_, annos) = getFirrtlAndAnnos(new MyModule)
-    val ts = annos.collect { case DontTouchAnnotation(t) => t.serialize }
+    val ts         = annos.collect { case DontTouchAnnotation(t) => t.serialize }
     ts should equal(Seq("~MyModule|Queue4_UInt8>enq_ptr_value"))
   }
 }

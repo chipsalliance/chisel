@@ -24,8 +24,8 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
     it("(0.b): accessing internal fields through non-generated means is hard to do") {
       class Top extends Module {
         val definition = Definition(new AddOne)
-        //definition.lookup(_.in) // Uncommenting this line will give the following error:
-        //"You are trying to access a macro-only API. Please use the @public annotation instead."
+        // definition.lookup(_.in) // Uncommenting this line will give the following error:
+        // "You are trying to access a macro-only API. Please use the @public annotation instead."
         definition.in
       }
       val (chirrtl, _) = getFirrtlAndAnnos(new Top)
@@ -34,7 +34,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
     it("(0.c): reset inference is not defaulted to Bool for definitions") {
       class Top extends Module with RequireAsyncReset {
         val definition = Definition(new HasUninferredReset)
-        val i0 = Instance(definition)
+        val i0         = Instance(definition)
         i0.in := 0.U
       }
       val (chirrtl, _) = getFirrtlAndAnnos(new Top)
@@ -48,7 +48,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
             (x: Int) =>
               Seq.tabulate(x) { j =>
                 val addOneDef = Definition(new AddOneParameterized(x + j))
-                val addOne = Instance(addOneDef)
+                val addOne    = Instance(addOneDef)
                 addOne
               }
           )
@@ -62,8 +62,8 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
     }
     it("(0.e): multiple instantiations should have sequential names") {
       class Top extends Module {
-        val addOneDef = Definition(new AddOneParameterized(4))
-        val addOne = Instance(addOneDef)
+        val addOneDef   = Definition(new AddOneParameterized(4))
+        val addOne      = Instance(addOneDef)
         val otherAddOne = Module(new AddOneParameterized(4))
       }
       val (chirrtl, _) = getFirrtlAndAnnos(new Top)
@@ -78,7 +78,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
             (x: Int) =>
               Seq.tabulate(x) { j =>
                 val addOneDef = Definition(new AddOneWithNested(x + j))
-                val addOne = Instance(addOneDef)
+                val addOne    = Instance(addOneDef)
                 addOne
               }
           )
@@ -95,7 +95,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       class Top extends Module {
         val addOne = Definition(new AddOne)
         val addTwo = Definition(new AddTwoDefinitionArgument(addOne))
-        val inst = Instance(addTwo)
+        val inst   = Instance(addTwo)
         inst.in := 12.U
       }
       val chirrtl = getFirrtlAndAnnos(new Top)._1.serialize
@@ -108,7 +108,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       class Top extends Module {
         val addOne = Module(new AddOne)
         val addTwo = Definition(new AddTwoDefinitionArgument(addOne.toDefinition))
-        val inst = Instance(addTwo)
+        val inst   = Instance(addTwo)
         inst.in := 12.U
       }
       val chirrtl = getFirrtlAndAnnos(new Top)._1.serialize
@@ -155,7 +155,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
     it("(1.e): should work on a definition in an instance, annotating the definition") {
       class Top extends Module {
         val definition: Definition[AddTwo] = Definition(new AddTwo)
-        val i0 = Instance(definition)
+        val i0                             = Instance(definition)
         mark(i0.definition, "i0.i0")
       }
       val (_, annos) = getFirrtlAndAnnos(new Top)
@@ -289,7 +289,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
     }
     it("(3.c): should work on islookupables") {
       class Top() extends Module {
-        val p = Parameters("hi", 0)
+        val p  = Parameters("hi", 0)
         val up = Definition(new UsesParameters(p))
         mark(up.x, up.y.string + up.y.int)
       }
@@ -347,14 +347,14 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
     ignore("(3.j): should work on vals in constructor arguments") {
       class Top() extends Module {
         val i = Definition(new HasPublicConstructorArgs(10))
-        //mark(i.x, i.int.toString)
+        // mark(i.x, i.int.toString)
       }
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos should contain(MarkAnnotation("~Top|HasPublicConstructorArgs>x".rt, "10"))
     }
     it("(3.k): should work on unimplemented vals in abstract classes/traits") {
       class Top() extends Module {
-        val i = Definition(new ConcreteHasBlah())
+        val i                               = Definition(new ConcreteHasBlah())
         def f(d: Definition[HasBlah]): Unit = {
           mark(d, d.blah.toString)
         }
@@ -418,7 +418,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
     }
     it("(3.q): should work on Tuple5 with a Module in it") {
       class Top() extends Module {
-        val defn = Definition(new HasTuple5())
+        val defn                                          = Definition(new HasTuple5())
         val (3, w: UInt, "hi", inst: Instance[AddOne], l) = defn.tup
         l should be(List(1, 2, 3))
         mark(w, "wire")
@@ -495,22 +495,22 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
     }
   }
   describe("(6): @instantiable traits should work as expected") {
-    class MyBundle extends Bundle {
-      val in = Input(UInt(8.W))
+    class MyBundle                                  extends Bundle                 {
+      val in  = Input(UInt(8.W))
       val out = Output(UInt(8.W))
     }
     @instantiable
-    trait ModuleIntf extends BaseModule {
+    trait ModuleIntf                                extends BaseModule             {
       @public val io = IO(new MyBundle)
     }
     @instantiable
     class ModuleWithCommonIntf(suffix: String = "") extends Module with ModuleIntf {
       override def desiredName: String = super.desiredName + suffix
-      @public val sum = io.in + 1.U
+      @public val sum                  = io.in + 1.U
 
       io.out := sum
     }
-    class BlackBoxWithCommonIntf extends BlackBox with ModuleIntf
+    class BlackBoxWithCommonIntf                    extends BlackBox with ModuleIntf
 
     it("(6.a): A Module that implements an @instantiable trait should be definable as that trait") {
       class Top extends Module {
@@ -520,7 +520,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       }
       val expected = List(
         "~Top|ModuleWithCommonIntf>io.in".rt -> "gotcha",
-        "~Top|ModuleWithCommonIntf".mt -> "inst"
+        "~Top|ModuleWithCommonIntf".mt       -> "inst"
       )
       val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
       for (e <- expected.map(MarkAnnotation.tupled)) {
@@ -538,8 +538,8 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       }
       val expected = List(
         "~Top|ModuleWithCommonIntf>io.in".rt -> "gotcha",
-        "~Top|ModuleWithCommonIntf>sum".rt -> "also this",
-        "~Top|ModuleWithCommonIntf".mt -> "inst"
+        "~Top|ModuleWithCommonIntf>sum".rt   -> "also this",
+        "~Top|ModuleWithCommonIntf".mt       -> "inst"
       )
       val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
       for (e <- expected.map(MarkAnnotation.tupled)) {
@@ -548,14 +548,14 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
     }
     it("(6.c): A BlackBox that implements an @instantiable trait should be instantiable as that trait") {
       class Top extends Module {
-        val m: ModuleIntf = Module(new BlackBoxWithCommonIntf)
+        val m: ModuleIntf             = Module(new BlackBoxWithCommonIntf)
         val d: Definition[ModuleIntf] = m.toDefinition
         mark(d.io.in, "gotcha")
         mark(d, "module")
       }
       val expected = List(
         "~Top|BlackBoxWithCommonIntf>in".rt -> "gotcha",
-        "~Top|BlackBoxWithCommonIntf".mt -> "module"
+        "~Top|BlackBoxWithCommonIntf".mt    -> "module"
       )
       val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
       for (e <- expected.map(MarkAnnotation.tupled)) {
@@ -564,7 +564,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
     }
     it("(6.d): It should be possible to have Vectors of @instantiable traits mixing concrete subclasses") {
       class Top extends Module {
-        val definition = Definition(new ModuleWithCommonIntf("X"))
+        val definition                         = Definition(new ModuleWithCommonIntf("X"))
         val insts: Seq[Definition[ModuleIntf]] = Vector(
           Module(new ModuleWithCommonIntf("Y")).toDefinition,
           Module(new BlackBoxWithCommonIntf).toDefinition,
@@ -576,7 +576,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       }
       val expected = List(
         "~Top|ModuleWithCommonIntfY>io.in".rt -> "foo",
-        "~Top|BlackBoxWithCommonIntf>in".rt -> "bar",
+        "~Top|BlackBoxWithCommonIntf>in".rt   -> "bar",
         "~Top|ModuleWithCommonIntfX>io.in".rt -> "fizz"
       )
       val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
@@ -590,27 +590,27 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
     ignore("(7.a): should work on simple Views") {
       @instantiable
       class MyModule extends RawModule {
-        val in = IO(Input(UInt(8.W)))
+        val in          = IO(Input(UInt(8.W)))
         @public val out = IO(Output(UInt(8.W)))
-        val sum = in + 1.U
+        val sum         = in + 1.U
         out := sum + 1.U
         @public val foo = in.viewAs[UInt]
         @public val bar = sum.viewAs[UInt]
       }
-      class Top extends RawModule {
+      class Top      extends RawModule {
         val foo = IO(Input(UInt(8.W)))
         val bar = IO(Output(UInt(8.W)))
-        val d = Definition(new MyModule)
-        val i = Instance(d)
+        val d   = Definition(new MyModule)
+        val i   = Instance(d)
         i.foo := foo
-        bar := i.out
+        bar   := i.out
         mark(d.out, "out")
         mark(d.foo, "foo")
         mark(d.bar, "bar")
       }
       val expectedAnnos = List(
         "~Top|MyModule>out".rt -> "out",
-        "~Top|MyModule>in".rt -> "foo",
+        "~Top|MyModule>in".rt  -> "foo",
         "~Top|MyModule>sum".rt -> "bar"
       )
       val expectedLines = List(
@@ -618,11 +618,11 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
         "connect bar, i.out"
       )
       val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
-      val text = chirrtl.serialize
+      val text             = chirrtl.serialize
       for (line <- expectedLines) {
         text should include(line)
       }
-      for (e <- expectedAnnos.map(MarkAnnotation.tupled)) {
+      for (e    <- expectedAnnos.map(MarkAnnotation.tupled)) {
         annos should contain(e)
       }
     }
@@ -630,24 +630,24 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       import chiselTests.experimental.SimpleBundleDataView._
       @instantiable
       class MyModule extends RawModule {
-        private val a = IO(Input(new BundleA(8)))
-        private val b = IO(Output(new BundleA(8)))
-        @public val in = a.viewAs[BundleB]
+        private val a   = IO(Input(new BundleA(8)))
+        private val b   = IO(Output(new BundleA(8)))
+        @public val in  = a.viewAs[BundleB]
         @public val out = b.viewAs[BundleB]
         out := in
       }
-      class Top extends RawModule {
+      class Top      extends RawModule {
         val foo = IO(Input(new BundleB(8)))
         val bar = IO(Output(new BundleB(8)))
-        val d = Definition(new MyModule)
-        val i = Instance(d)
-        i.in := foo
+        val d   = Definition(new MyModule)
+        val i   = Instance(d)
+        i.in    := foo
         bar.bar := i.out.bar
         mark(d.in, "in")
         mark(d.in.bar, "in_bar")
       }
       val expectedAnnos = List(
-        "~Top|MyModule>a".rt -> "in",
+        "~Top|MyModule>a".rt     -> "in",
         "~Top|MyModule>a.foo".rt -> "in_bar"
       )
       val expectedLines = List(
@@ -655,11 +655,11 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
         "connect bar, i.b.foo"
       )
       val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
-      val text = chirrtl.serialize
+      val text             = chirrtl.serialize
       for (line <- expectedLines) {
         text should include(line)
       }
-      for (e <- expectedAnnos.map(MarkAnnotation.tupled)) {
+      for (e    <- expectedAnnos.map(MarkAnnotation.tupled)) {
         annos should contain(e)
       }
     }

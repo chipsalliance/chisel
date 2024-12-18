@@ -113,7 +113,7 @@ object Counter {
     * maximum and the condition is true).
     */
   def apply(cond: Bool, n: Int): (UInt, Bool) = {
-    val c = new Counter(n)
+    val c    = new Counter(n)
     val wrap = WireInit(false.B)
     when(cond) { wrap := c.inc() }
     (c.value, wrap)
@@ -128,7 +128,7 @@ object Counter {
     * maximum and the condition is true).
     */
   def apply(r: Range, enable: Bool = true.B, reset: Bool = false.B): (UInt, Bool) = {
-    val c = new Counter(r)
+    val c    = new Counter(r)
     val wrap = WireInit(false.B)
 
     when(reset) {

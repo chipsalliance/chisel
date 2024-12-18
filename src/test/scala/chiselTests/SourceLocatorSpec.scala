@@ -11,28 +11,28 @@ import firrtl.ir.FileInfo
 object SourceLocatorSpec {
   val thisFile = "src/test/scala/chiselTests/SourceLocatorSpec.scala"
 
-  class RawModuleChild extends RawModule
-  class ModuleChild extends Module
-  class InheritanceModule extends ModuleChild
-  class BlackBoxChild extends BlackBox {
+  class RawModuleChild                         extends RawModule
+  class ModuleChild                            extends Module
+  class InheritanceModule                      extends ModuleChild
+  class BlackBoxChild                          extends BlackBox  {
     val io = IO(new Bundle {})
   }
-  class ExtModuleChild extends ExtModule
+  class ExtModuleChild                         extends ExtModule
   class WrapperTop[T <: BaseModule](gen: => T) extends RawModule {
     val child = Module(gen)
   }
-  class ClassChild extends properties.Class
-  class ClassTop extends RawModule {
+  class ClassChild                             extends properties.Class
+  class ClassTop                               extends RawModule {
     Definition(new ClassChild)
   }
-  class Outer extends RawModule {
+  class Outer                                  extends RawModule {
     class Inner extends RawModule
-    val c = Module(new Inner)
+    val c  = Module(new Inner)
     val c2 = Module(new RawModule {
       override def desiredName = "AnonymousModule"
     })
   }
-  class DefinitionWrapper extends RawModule {
+  class DefinitionWrapper                      extends RawModule {
     Definition(new RawModuleChild)
   }
 }
@@ -52,8 +52,8 @@ class SourceLocatorSpec extends ChiselFunSpec with Utils {
 
   describe("(1) Source locators with special characters") {
     val filename = "I need escaping\n\\\t].scala"
-    val escaped = "I need escaping\\n\\\\\\t\\].scala"
-    val info = SourceLine(filename, 123, 456)
+    val escaped  = "I need escaping\\n\\\\\\t\\].scala"
+    val info     = SourceLine(filename, 123, 456)
     it("(1.a): are properly escaped when converting to FIRRTL") {
       val firrtl = FileInfo.fromUnescaped(filename)
       firrtl should equal(FileInfo(escaped))
@@ -62,7 +62,7 @@ class SourceLocatorSpec extends ChiselFunSpec with Utils {
       implicit val sl = info
 
       val chirrtl = emitCHIRRTL(new RawModule {
-        val in = IO(Input(UInt(8.W)))
+        val in  = IO(Input(UInt(8.W)))
         val out = IO(Output(UInt(8.W)))
         out := in
       })

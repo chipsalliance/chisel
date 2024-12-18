@@ -12,8 +12,8 @@ import chiselTests.experimental.hierarchy.Utils
 class OutputDirAnnotationSpec extends AnyFunSpec with Matchers {
   describe("output directory annotation works") {
     it("should put module where requested") {
-      class TestModule extends RawModule with Public {}
-      class ParentModule extends RawModule {
+      class TestModule   extends RawModule with Public {}
+      class ParentModule extends RawModule             {
         val test = outputDir(Module(new TestModule), "foo")
       }
 

@@ -13,7 +13,7 @@ class NameCollisionSpec extends ChiselFlatSpec with Utils {
       ChiselStage.emitCHIRRTL(
         new Module {
           val foo, bar = IO(Input(UInt(8.W)))
-          val out = IO(Output(UInt(8.W)))
+          val out      = IO(Output(UInt(8.W)))
 
           // Rename both inputs to the same name
           foo.suggestName("same")
@@ -34,7 +34,7 @@ class NameCollisionSpec extends ChiselFlatSpec with Utils {
       ChiselStage.emitCHIRRTL(
         new Module {
           val foo, bar = IO(Input(UInt(8.W)))
-          val out = IO(Output(UInt(8.W)))
+          val out      = IO(Output(UInt(8.W)))
 
           // Seed an initial name with no necessary sanitization
           foo.suggestName("unsanitary")
@@ -53,7 +53,7 @@ class NameCollisionSpec extends ChiselFlatSpec with Utils {
     ChiselStage.emitCHIRRTL(
       new Module {
         val foo, bar = IO(Input(UInt(8.W)))
-        val out = IO(Output(UInt(8.W)))
+        val out      = IO(Output(UInt(8.W)))
 
         out.suggestName("unsanitary-")
 

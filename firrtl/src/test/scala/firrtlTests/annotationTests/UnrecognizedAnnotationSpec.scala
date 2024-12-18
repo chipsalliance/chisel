@@ -64,12 +64,13 @@ class UnrecognizedAnnotationSpec extends FirrtlFlatSpec {
   //
 
   case class TestFileNames(
-    allowUnrecognized:     Boolean,
-    inputAnnotations:      String,
-    outputAnnotations:     String,
+    allowUnrecognized: Boolean,
+    inputAnnotations: String,
+    outputAnnotations: String,
     outputAnnotationsFull: String,
-    firrtlSource:          String,
-    firrtlOutput:          String)
+    firrtlSource: String,
+    firrtlOutput: String
+  )
 
   def setupFiles(addAllowUnrecognizedFlag: Boolean, addAllowUnrecognizedAnno: Boolean): TestFileNames = {
     val dirName = (addAllowUnrecognizedFlag, addAllowUnrecognizedAnno) match {
@@ -78,7 +79,7 @@ class UnrecognizedAnnotationSpec extends FirrtlFlatSpec {
       case (false, true)  => s"test_run_dir/unrecognized_annotation_anno"
       case (true, true)   => s"test_run_dir/unrecognized_annotation_flag_and_anno"
     }
-    val dir = new File(dirName)
+    val dir     = new File(dirName)
     dir.mkdirs()
 
     val fileNames = TestFileNames(

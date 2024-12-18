@@ -14,7 +14,7 @@ trait BoolFactory {
     */
   protected[chisel3] def Lit(x: Boolean): Bool = {
     val result = new Bool()
-    val lit = ULit(if (x) 1 else 0, Width(1))
+    val lit    = ULit(if (x) 1 else 0, Width(1))
     // Ensure we have something capable of generating a name.
     lit.bindLitArg(result)
   }

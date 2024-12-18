@@ -19,17 +19,17 @@ object ReadOnlySpec {
     val a = UInt(8.W)
   }
   object SimpleBundle {
-    implicit val toOther: DataView[SimpleBundle, OtherBundle] = DataView(
+    implicit val toOther: DataView[SimpleBundle, OtherBundle]           = DataView(
       _ => new OtherBundle,
       _.a -> _.foo
     )
     implicit val toBigger: DataView[(SimpleBundle, UInt), BiggerBundle] = DataView(
       _ => new BiggerBundle,
       _._1.a -> _.fizz,
-      _._2 -> _.buzz
+      _._2   -> _.buzz
     )
   }
-  class OtherBundle extends Bundle {
+  class OtherBundle  extends Bundle {
     val foo = UInt(8.W)
   }
   class BiggerBundle extends Bundle {
@@ -50,9 +50,9 @@ object ReadOnlySpec {
   }
 
   class ProbeBundle extends Bundle {
-    val probe = Probe(UInt(8.W))
+    val probe   = Probe(UInt(8.W))
     val rwProbe = RWProbe(UInt(8.W))
-    val field = UInt(8.W)
+    val field   = UInt(8.W)
   }
   object ProbeBundle {
     implicit val fromTuple: DataView[(UInt, UInt, UInt), ProbeBundle] = DataView(
@@ -65,7 +65,7 @@ object ReadOnlySpec {
 
   class PropertyBundle extends Bundle {
     val field = UInt(8.W)
-    val prop = Property[String]()
+    val prop  = Property[String]()
   }
   object PropertyBundle {
     implicit val fromTuple: DataView[(UInt, Property[String]), PropertyBundle] = DataView(
@@ -127,7 +127,7 @@ class ReadOnlySpec extends ChiselFlatSpec with Utils {
   it should "be an error to connect to a read-only Bundle" in {
     for (op <- rightToLeftConnectOps) {
       check(new RawModule {
-        val in = IO(Input(new SimpleBundle))
+        val in  = IO(Input(new SimpleBundle))
         val foo = IO(new SimpleBundle)
         op(foo.readOnly, in)
       })
@@ -138,7 +138,7 @@ class ReadOnlySpec extends ChiselFlatSpec with Utils {
     for (op <- rightToLeftConnectOps) {
       check(new RawModule {
         val foo = IO(UInt(8.W))
-        val x = foo.viewAs[UInt].readOnly
+        val x   = foo.viewAs[UInt].readOnly
         op(x, 1.U)
       })
     }
@@ -148,7 +148,7 @@ class ReadOnlySpec extends ChiselFlatSpec with Utils {
     for (op <- rightToLeftConnectOps) {
       check(new RawModule {
         val out = IO(new SimpleBundle)
-        val x = out.viewAs[OtherBundle].readOnly
+        val x   = out.viewAs[OtherBundle].readOnly
         op(x.foo, 1.U)
       })
     }
@@ -157,9 +157,9 @@ class ReadOnlySpec extends ChiselFlatSpec with Utils {
   it should "be an error to connect to a read-only view of a Bundle" in {
     for (op <- rightToLeftConnectOps) {
       check(new RawModule {
-        val in = IO(Input(new OtherBundle))
+        val in  = IO(Input(new OtherBundle))
         val out = IO(new SimpleBundle)
-        val x = out.viewAs[OtherBundle].readOnly
+        val x   = out.viewAs[OtherBundle].readOnly
         op(x, in)
       })
     }
@@ -169,7 +169,7 @@ class ReadOnlySpec extends ChiselFlatSpec with Utils {
     for (op <- rightToLeftConnectOps) {
       check(new RawModule {
         val out = IO(new SimpleBundle)
-        val x = out.readOnly.viewAs[OtherBundle]
+        val x   = out.readOnly.viewAs[OtherBundle]
         op(x.foo, 1.U)
       })
     }
@@ -178,9 +178,9 @@ class ReadOnlySpec extends ChiselFlatSpec with Utils {
   it should "be an error to connect to a view of a read-only Bundle" in {
     for (op <- rightToLeftConnectOps) {
       check(new RawModule {
-        val in = IO(Input(new OtherBundle))
+        val in  = IO(Input(new OtherBundle))
         val out = Wire(new SimpleBundle).readOnly
-        val x = out.viewAs[OtherBundle]
+        val x   = out.viewAs[OtherBundle]
         op(x, in)
       })
     }
@@ -201,9 +201,9 @@ class ReadOnlySpec extends ChiselFlatSpec with Utils {
     for (op <- rightToLeftConnectOps) {
       check(new RawModule {
         val in = IO(Input(new BiggerBundle))
-        val w = Wire(new SimpleBundle)
-        val x = Wire(UInt(8.W))
-        val y = (w, x).viewAs[BiggerBundle].readOnly
+        val w  = Wire(new SimpleBundle)
+        val x  = Wire(UInt(8.W))
+        val y  = (w, x).viewAs[BiggerBundle].readOnly
         op(y, in)
       })
     }
@@ -236,9 +236,9 @@ class ReadOnlySpec extends ChiselFlatSpec with Utils {
     for (op <- rightToLeftConnectOps) {
       check(new RawModule {
         val in = IO(Input(new BiggerBundle))
-        val w = Wire(new SimpleBundle).readOnly
-        val x = Wire(UInt(8.W))
-        val y = (w, x).viewAs[BiggerBundle]
+        val w  = Wire(new SimpleBundle).readOnly
+        val x  = Wire(UInt(8.W))
+        val y  = (w, x).viewAs[BiggerBundle]
         op(y, in)
       })
     }
@@ -248,7 +248,7 @@ class ReadOnlySpec extends ChiselFlatSpec with Utils {
     for (op <- leftToRightConnectOps) {
       check(new RawModule {
         val in = IO(Flipped(new BidirectionalBundle))
-        val w = Wire(new BidirectionalBundle)
+        val w  = Wire(new BidirectionalBundle)
         op(w, in.readOnly)
       })
     }
@@ -258,15 +258,15 @@ class ReadOnlySpec extends ChiselFlatSpec with Utils {
     for (op <- leftToRightConnectOps) {
       check(new RawModule {
         val x, y = Wire(UInt(8.W))
-        val z = (x, y.readOnly).viewAs[BidirectionalBundle]
-        val out = IO(new BidirectionalBundle)
+        val z    = (x, y.readOnly).viewAs[BidirectionalBundle]
+        val out  = IO(new BidirectionalBundle)
         op(out, z)
       })
       // But note that it's fine if x (not flipped) is readOnly.
       ChiselStage.convert(new RawModule {
         val x, y = Wire(UInt(8.W))
-        val z = (x.readOnly, y).viewAs[BidirectionalBundle]
-        val out = IO(new BidirectionalBundle)
+        val z    = (x.readOnly, y).viewAs[BidirectionalBundle]
+        val out  = IO(new BidirectionalBundle)
         op(out, z)
       })
     }
@@ -301,7 +301,7 @@ class ReadOnlySpec extends ChiselFlatSpec with Utils {
     })
     // Check the RWProbe too.
     check(new RawModule {
-      val w = Wire(new ProbeBundle).readOnly
+      val w  = Wire(new ProbeBundle).readOnly
       val w2 = Wire(UInt(8.W))
       define(w.rwProbe, RWProbeValue(w2))
     })

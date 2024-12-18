@@ -48,9 +48,9 @@ class PRNGUpdateSeedTest(updateSeed: Boolean, seed: BigInt, expected: BigInt) ex
 
   val (count, done) = Counter(true.B, 4)
 
-  a.io.increment := true.B
+  a.io.increment  := true.B
   a.io.seed.valid := count === 2.U
-  a.io.seed.bits := seed.U(a.width.W).asBools
+  a.io.seed.bits  := seed.U(a.width.W).asBools
 
   when(count === 3.U) {
     assert(a.io.out.asUInt === expected.U, "Output didn't match!")

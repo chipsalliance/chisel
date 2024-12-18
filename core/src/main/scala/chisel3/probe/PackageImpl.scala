@@ -21,7 +21,7 @@ private[chisel3] trait ObjectProbeImpl {
         // also set sample_element's probe information in Vecs
         member match {
           case v: Vec[_] => v.sample_element.probeInfo = probeInfo
-          case _ => // do nothing
+          case _         => // do nothing
         }
       }
     }
@@ -38,7 +38,7 @@ private[chisel3] trait ObjectProbeImpl {
       return // This error is recoverable and this function returns Unit, just continue elaboration.
     }
     writable.reportIfReadOnlyUnit(())
-    val typeCheckResult = realSink.findFirstTypeMismatch(
+    val typeCheckResult      = realSink.findFirstTypeMismatch(
       probeExpr,
       strictTypes = true,
       strictWidths = true,
@@ -53,8 +53,8 @@ private[chisel3] trait ObjectProbeImpl {
     requireCompatibleDestinationProbeColor(
       realSink,
       s"""Cannot define '$realSink' from colors ${(Builder.layerStack.headOption)
-        .map(a => s"'${a.fullName}'")
-        .mkString("{", ", ", "}")} since at least one of these is NOT enabled when '$realSink' is enabled"""
+          .map(a => s"'${a.fullName}'")
+          .mkString("{", ", ", "}")} since at least one of these is NOT enabled when '$realSink' is enabled"""
     )
     if (realSink.probeInfo.get.writable) {
       requireHasWritableProbeTypeModifier(
@@ -84,7 +84,7 @@ private[chisel3] trait ObjectProbeImpl {
         a.probeInfo = None
         a.elementsIterator.foreach(x => clearProbeInfo(x))
       }
-      case leaf => { leaf.probeInfo = None }
+      case leaf         => { leaf.probeInfo = None }
     }
   }
 
@@ -97,14 +97,14 @@ private[chisel3] trait ObjectProbeImpl {
 
     // check data width is known
     data.widthOption match {
-      case None => Builder.error("Data width unknown.")
+      case None    => Builder.error("Data width unknown.")
       case Some(w) =>
         if (probe.widthOption.exists(w > _)) Builder.error(s"Data width $w is larger than $probeWidth.")
     }
 
     data match {
       case d: Bits => d.pad(probeWidth).asInstanceOf[T]
-      case d => d
+      case d       => d
     }
   }
 
@@ -140,7 +140,7 @@ private[chisel3] trait ObjectProbeImpl {
   def force(probe: Data, value: Data)(implicit sourceInfo: SourceInfo): Unit = {
     requireHasWritableProbeTypeModifier(probe, "Cannot force a non-writable Probe.")
     val clock = Builder.forcedClock
-    val cond = Module.disableOption.map(!_.value).getOrElse(true.B)
+    val cond  = Module.disableOption.map(!_.value).getOrElse(true.B)
     pushCommand(ProbeForce(sourceInfo, clock.ref, cond.ref, probe.ref, padDataToProbeWidth(value, probe).ref))
   }
 
@@ -156,7 +156,7 @@ private[chisel3] trait ObjectProbeImpl {
   def release(probe: Data)(implicit sourceInfo: SourceInfo): Unit = {
     requireHasWritableProbeTypeModifier(probe, "Cannot release a non-writable Probe.")
     val clock = Builder.forcedClock
-    val cond = Module.disableOption.map(!_.value).getOrElse(true.B)
+    val cond  = Module.disableOption.map(!_.value).getOrElse(true.B)
     pushCommand(ProbeRelease(sourceInfo, clock.ref, cond.ref, probe.ref))
   }
 

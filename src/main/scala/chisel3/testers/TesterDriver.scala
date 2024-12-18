@@ -17,19 +17,19 @@ import scala.sys.process.ProcessLogger
 
 @nowarn("msg=trait BackendCompilationUtilities in package chisel3 is deprecated")
 object TesterDriver extends BackendCompilationUtilities {
-  //TODO: need to remove BackendCompilationUtilities here but it will break external API
+  // TODO: need to remove BackendCompilationUtilities here but it will break external API
   //      unless all methods of it are implemented
 
   private[chisel3] trait Backend extends NoTargetAnnotation with Unserializable {
     def execute(
-      t:                    () => BasicTester,
+      t: () => BasicTester,
       additionalVResources: Seq[String] = Seq(),
-      annotations:          AnnotationSeq = Seq(),
-      nameHint:             Option[String] = None,
-      processLogger:        ProcessLogger = loggingProcessLogger
+      annotations: AnnotationSeq = Seq(),
+      nameHint: Option[String] = None,
+      processLogger: ProcessLogger = loggingProcessLogger
     ): Boolean
   }
-  case object VerilatorBackend extends Backend {
+  case object VerilatorBackend   extends Backend                                {
     def ensureExistingAbsolutePath(name: String): os.Path = {
       val otherPath: os.Path =
         try {
@@ -51,11 +51,11 @@ object TesterDriver extends BackendCompilationUtilities {
       * frontend, and which can be turned into executables with assertions.
       */
     def execute(
-      t:                    () => BasicTester,
+      t: () => BasicTester,
       additionalVResources: Seq[String] = Seq(),
-      annotations:          AnnotationSeq = Seq(),
-      nameHint:             Option[String] = None,
-      processLogger:        ProcessLogger = loggingProcessLogger
+      annotations: AnnotationSeq = Seq(),
+      nameHint: Option[String] = None,
+      processLogger: ProcessLogger = loggingProcessLogger
     ): Boolean = {
       val pm = new PhaseManager(
         targets = Seq(
@@ -68,10 +68,10 @@ object TesterDriver extends BackendCompilationUtilities {
       val annotationsFromPhase1 = pm.transform(ChiselGeneratorAnnotation(finishWrapper(t)) +: annotations)
 
       val target: String = annotationsFromPhase1.collectFirst { case FirrtlCircuitAnnotation(cir) => cir.main }.get
-      val path = annotationsFromPhase1.collectFirst { case TargetDirAnnotation(dir) => dir }.map(new File(_)).get
+      val path           = annotationsFromPhase1.collectFirst { case TargetDirAnnotation(dir) => dir }.map(new File(_)).get
 
       // Copy CPP harness and other Verilog sources from resources into files
-      val cppHarness = new File(path, "top.cpp")
+      val cppHarness       = new File(path, "top.cpp")
       copyResourceToFile("/chisel3/top.cpp", cppHarness)
       // NOTE: firrtl.Driver.execute() may end up copying these same resources in its BlackBoxSourceHelper code.
       // As long as the same names are used for the output files, and we avoid including duplicate files
@@ -81,8 +81,8 @@ object TesterDriver extends BackendCompilationUtilities {
         writeResourceToDirectory(name, path)
       })
 
-      val dirName = annotationsFromPhase1.collectFirst { case TargetDirAnnotation(dirName) => dirName }.getOrElse(".")
-      val verilog = circt.stage.ChiselStage.emitSystemVerilog(t())
+      val dirName     = annotationsFromPhase1.collectFirst { case TargetDirAnnotation(dirName) => dirName }.getOrElse(".")
+      val verilog     = circt.stage.ChiselStage.emitSystemVerilog(t())
       val verilogPath = ensureExistingAbsolutePath(path.toString) / (target + ".v")
       os.write.over(verilogPath, verilog)
       // Use sys.Process to invoke a bunch of backend stuff, then run the resulting exe
@@ -105,10 +105,10 @@ object TesterDriver extends BackendCompilationUtilities {
 
   /** Set the target directory to the name of the top module after elaboration */
   final class AddImplicitTesterDirectory extends Phase {
-    override def prerequisites = Seq(Dependency[Elaborate])
-    override def optionalPrerequisites = Seq.empty
+    override def prerequisites          = Seq(Dependency[Elaborate])
+    override def optionalPrerequisites  = Seq.empty
     override def optionalPrerequisiteOf = Seq(Dependency[Emitter])
-    override def invalidates(a: Phase) = false
+    override def invalidates(a: Phase)  = false
 
     override def transform(a: AnnotationSeq) = a.flatMap {
       case a @ ChiselCircuitAnnotation(circuit) =>
@@ -118,7 +118,7 @@ object TesterDriver extends BackendCompilationUtilities {
             firrtl.util.BackendCompilationUtilities.createTestDirectory(circuit.name).getAbsolutePath.toString
           )
         )
-      case a => Seq(a)
+      case a                                    => Seq(a)
     }
   }
 
@@ -126,16 +126,16 @@ object TesterDriver extends BackendCompilationUtilities {
     * frontend, and which can be turned into executables with assertions.
     */
   def execute(
-    t:                    () => BasicTester,
+    t: () => BasicTester,
     additionalVResources: Seq[String] = Seq(),
-    annotations:          AnnotationSeq = Seq(),
-    nameHint:             Option[String] = None,
+    annotations: AnnotationSeq = Seq(),
+    nameHint: Option[String] = None,
     /** Logger used for forked processes, useful for capturing Verilator process stdout and stderr */
     processLogger: ProcessLogger = loggingProcessLogger
   ): Boolean = {
 
     val backendAnnotations = annotations.collect { case anno: Backend => anno }
-    val backendAnnotation = if (backendAnnotations.length == 1) {
+    val backendAnnotation  = if (backendAnnotations.length == 1) {
       backendAnnotations.head
     } else if (backendAnnotations.isEmpty) {
       defaultBackend

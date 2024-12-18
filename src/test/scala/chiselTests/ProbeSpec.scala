@@ -20,7 +20,7 @@ class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
       new RawModule {
         val a = IO(Output(RWProbe(Bool())))
 
-        val w = WireInit(Bool(), false.B)
+        val w       = WireInit(Bool(), false.B)
         val w_probe = RWProbeValue(w)
         define(a, w_probe)
       },
@@ -40,7 +40,7 @@ class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
 
         class UTurn() extends RawModule {
           val io = IO(new Bundle {
-            val in = Input(Bool())
+            val in  = Input(Bool())
             val out = Output(RWProbe(Bool()))
           })
           define(io.out, RWProbeValue(io.in))
@@ -78,7 +78,7 @@ class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
   "Probe methods in when contexts" should "work" in {
     val chirrtl = ChiselStage.emitCHIRRTL(
       new RawModule {
-        val in = IO(Input(Bool()))
+        val in  = IO(Input(Bool()))
         val out = IO(Output(RWProbe(Bool())))
 
         val w = WireInit(Bool(), false.B)
@@ -138,7 +138,7 @@ class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
         }
 
         val outProbe = IO(Output(Probe(UInt(16.W))))
-        val child = Module(new VecChild())
+        val child    = Module(new VecChild())
         define(outProbe, child.p(0)(1))
       },
       Array("--full-stacktrace")
@@ -155,17 +155,17 @@ class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
     val chirrtl = ChiselStage.emitCHIRRTL(
       new RawModule {
         class FooBundle() extends Bundle {
-          val bar = Probe(Bool())
-          val baz = UInt(4.W)
-          val qux = Flipped(Probe(UInt(4.W)))
+          val bar  = Probe(Bool())
+          val baz  = UInt(4.W)
+          val qux  = Flipped(Probe(UInt(4.W)))
           val fizz = Flipped(Bool())
         }
         val io = Wire(new Bundle {
           val in = Flipped(new FooBundle())
-          val a = new FooBundle()
-          val b = new FooBundle()
-          val c = new FooBundle()
-          val d = Output(new FooBundle())
+          val a  = new FooBundle()
+          val b  = new FooBundle()
+          val c  = new FooBundle()
+          val d  = Output(new FooBundle())
         })
 
         io.a.exclude(_.bar, _.qux) :<>= io.in.exclude(_.bar, _.qux)
@@ -218,7 +218,7 @@ class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
           val baz = UInt(4.W)
         }
         val io = IO(new Bundle {
-          val in = Input(new FooBundle)
+          val in  = Input(new FooBundle)
           val out = Output(Probe(new FooBundle))
         })
         io.out :<>= probe.ProbeValue(io.in)
@@ -233,7 +233,7 @@ class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
       ChiselStage.emitCHIRRTL(
         new RawModule {
           val io = IO(new Bundle {
-            val in = Input(Vec(2, Bool()))
+            val in  = Input(Vec(2, Bool()))
             val out = Output(Vec(2, Probe(Bool())))
           })
           io.out :<>= io.in
@@ -251,7 +251,7 @@ class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
       ChiselStage.emitCHIRRTL(
         new RawModule {
           val io = IO(new Bundle {
-            val in = Input(Bool())
+            val in  = Input(Bool())
             val out = Output(Probe(Bool()))
           })
           io.out := io.in
@@ -268,7 +268,7 @@ class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
     val chirrtl = ChiselStage.emitCHIRRTL(
       new RawModule {
         val io = IO(new Bundle {
-          val in = Input(Bool())
+          val in  = Input(Bool())
           val out = Output(Probe(Bool()))
         })
         io.out := probe.ProbeValue(io.in)
@@ -304,7 +304,7 @@ class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
       ChiselStage.emitCHIRRTL(
         new RawModule {
           val io = IO(new Bundle {
-            val in = Input(Vec(2, Bool()))
+            val in  = Input(Vec(2, Bool()))
             val out = Output(Vec(2, Probe(Bool())))
           })
           io.out := io.in
@@ -327,8 +327,8 @@ class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
 
           class OutProbe extends RawModule {
             val vec_of_probes = IO(Output(Vec(2, Probe(Bool()))))
-            val t = true.B
-            val f = false.B
+            val t             = true.B
+            val f             = false.B
             probe.define(vec_of_probes(0), probe.ProbeValue(t))
             probe.define(vec_of_probes(1), probe.ProbeValue(f))
           }
@@ -353,8 +353,8 @@ class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
 
         class OutProbe extends RawModule {
           val vec_of_probes = IO(Output(Vec(2, Probe(Bool()))))
-          val t = true.B
-          val f = false.B
+          val t             = true.B
+          val f             = false.B
           probe.define(vec_of_probes(0), probe.ProbeValue(t))
           probe.define(vec_of_probes(1), probe.ProbeValue(f))
         }
@@ -424,7 +424,7 @@ class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
   "WireInit of a probe" should "work" in {
     class Test extends RawModule {
       val init = WireInit(Bool(), false.B)
-      val w = WireInit(RWProbe(Bool()), RWProbeValue(init))
+      val w    = WireInit(RWProbe(Bool()), RWProbeValue(init))
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new Test)
     processChirrtl(chirrtl) should contain("wire w : RWProbe<UInt<1>>")
@@ -471,7 +471,7 @@ class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
   "Defining a Probe with a rwprobe()" should "work" in {
     val chirrtl = ChiselStage.emitCHIRRTL(
       new RawModule {
-        val in = IO(Input(Bool()))
+        val in  = IO(Input(Bool()))
         val out = IO(Output(Probe(Bool())))
         define(out, RWProbeValue(in))
       },
@@ -484,7 +484,7 @@ class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
     val exc = intercept[chisel3.ChiselException] {
       ChiselStage.emitCHIRRTL(
         new RawModule {
-          val in = IO(Input(Bool()))
+          val in  = IO(Input(Bool()))
           val out = IO(Output(RWProbe(Bool())))
           define(out, ProbeValue(in))
         },
@@ -498,7 +498,7 @@ class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
     val exc = intercept[chisel3.ChiselException] {
       ChiselStage.emitCHIRRTL(
         new Module {
-          val in = IO(Input(Bool()))
+          val in  = IO(Input(Bool()))
           val out = IO(Output(Probe(Bool())))
           force(out, in)
         },
@@ -563,7 +563,7 @@ class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
     val chirrtl = ChiselStage.emitCHIRRTL(
       new Module {
         val in = IO(Input(UInt(4.W)))
-        val p = IO(Output(RWProbe(UInt(16.W))))
+        val p  = IO(Output(RWProbe(UInt(16.W))))
         forceInitial(p, 123.U)
         force(p, in)
       },
@@ -594,7 +594,7 @@ class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
       ChiselStage.emitCHIRRTL(
         new Module {
           val in = IO(Input(UInt()))
-          val p = IO(Output(RWProbe(UInt(16.W))))
+          val p  = IO(Output(RWProbe(UInt(16.W))))
           force(p, in)
         },
         Array("--throw-on-first-error")
@@ -608,7 +608,7 @@ class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
       ChiselStage.emitCHIRRTL(
         new Module {
           val in = IO(Input(UInt(16.W)))
-          val p = IO(Output(RWProbe(UInt())))
+          val p  = IO(Output(RWProbe(UInt())))
           force(p, in)
         },
         Array("--throw-on-first-error")
@@ -622,7 +622,7 @@ class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
       ChiselStage.emitSystemVerilog(
         new RawModule {
           val in = IO(Input(UInt(16.W)))
-          val p = IO(Output(Probe(new Bundle {
+          val p  = IO(Output(Probe(new Bundle {
             val a = UInt(16.W)
           })))
           define(p.a, ProbeValue(in))
@@ -638,18 +638,18 @@ class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
 
     // Demonstrate that a bundle with data + probes works.
     class MiniBundle extends Bundle {
-      val x = Flipped(UInt(16.W))
+      val x    = Flipped(UInt(16.W))
       val refs = new Bundle {
         val out = RWProbe(UInt(16.W))
         val reg = RWProbe(UInt(16.W))
       }
     }
-    class Top extends Module {
-      val b = IO(new MiniBundle)
+    class Top        extends Module {
+      val b   = IO(new MiniBundle)
       val out = IO(Output(UInt(16.W)))
 
       val r = Reg(UInt(16.W))
-      r := b.x
+      r   := b.x
       out := r
 
       // Export rwprobe's to various signals.
@@ -709,10 +709,10 @@ class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
     object MyEnum extends ChiselEnum {
       val e0, e1, e2 = Value
     }
-    class TestMod extends RawModule {
+    class TestMod extends RawModule  {
       val a = IO(Output(RWProbe(MyEnum())))
 
-      val w = WireInit(MyEnum(), MyEnum.e1)
+      val w       = WireInit(MyEnum(), MyEnum.e1)
       val w_probe = RWProbeValue(w)
       define(a, w_probe)
     }
@@ -723,7 +723,7 @@ class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
     object LayerA extends Layer(LayerConfig.Extract()) {
       object LayerB extends Layer(LayerConfig.Extract())
     }
-    class Foo extends RawModule {
+    class Foo     extends RawModule                    {
       val a = IO(Output(Probe.apply(UInt(1.W), LayerA)))
       val b = IO(Output(Probe.apply(UInt(2.W), LayerA.LayerB)))
     }

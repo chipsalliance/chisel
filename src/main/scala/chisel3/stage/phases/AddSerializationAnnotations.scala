@@ -14,19 +14,19 @@ import chisel3.ChiselException
   */
 class AddSerializationAnnotations extends Phase {
 
-  override def prerequisites = Seq(Dependency[Elaborate], Dependency[AddImplicitOutputFile])
-  override def optionalPrerequisites = Seq.empty
+  override def prerequisites          = Seq(Dependency[Elaborate], Dependency[AddImplicitOutputFile])
+  override def optionalPrerequisites  = Seq.empty
   override def optionalPrerequisiteOf = Seq.empty
-  override def invalidates(a: Phase) = false
+  override def invalidates(a: Phase)  = false
 
   def transform(annotations: AnnotationSeq): AnnotationSeq = {
     val chiselOptions = view[ChiselOptions](annotations)
-    val circuit = chiselOptions.chiselCircuit.getOrElse {
+    val circuit       = chiselOptions.chiselCircuit.getOrElse {
       throw new ChiselException(
         s"Unable to locate the elaborated circuit, did ${classOf[Elaborate].getName} run correctly"
       )
     }
-    val filename = chiselOptions.outputFile.getOrElse(circuit.name).stripSuffix(".fir")
+    val filename      = chiselOptions.outputFile.getOrElse(circuit.name).stripSuffix(".fir")
     CircuitSerializationAnnotation(circuit, filename, FirrtlFileFormat) +: annotations
   }
 }

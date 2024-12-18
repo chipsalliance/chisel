@@ -15,11 +15,12 @@ import scopt.{OptionDef, OptionParser, Read}
   * @param helpValueName a string to show as a placeholder argument in help text
   */
 final class ShellOption[A: Read](
-  val longOption:      String,
+  val longOption: String,
   val toAnnotationSeq: A => AnnotationSeq,
-  val helpText:        String,
-  val shortOption:     Option[String] = None,
-  val helpValueName:   Option[String] = None) {
+  val helpText: String,
+  val shortOption: Option[String] = None,
+  val helpValueName: Option[String] = None
+) {
 
   /** Add this specific shell (command line) option to an option parser
     * @param p an option parser

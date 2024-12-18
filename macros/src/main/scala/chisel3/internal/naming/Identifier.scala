@@ -14,33 +14,33 @@ private[chisel3] object identifyMacro {
       val (clz, objOpt) = annottees.map(_.tree).toList match {
         case Seq(c, o) => (c, Some(o))
         case Seq(c)    => (c, None)
-        case _ =>
+        case _         =>
           throw new Exception(
             s"Internal Error: Please file an issue at https://github.com/chipsalliance/chisel3/issues: Match error: annottees.map(_.tree).toList=${annottees.map(_.tree).toList}"
           )
       }
-      val newClz = clz match {
+      val newClz        = clz match {
         case q"$mods trait $tpname[..$tparams] extends { ..$earlydefns } with ..$parents { $self => ..$stats }" =>
-          val defname = TypeName(tpname.toString + c.freshName())
-          val instname = TypeName(tpname.toString + c.freshName())
+          val defname   = TypeName(tpname.toString + c.freshName())
+          val instname  = TypeName(tpname.toString + c.freshName())
           stats.foreach { stat =>
             stat match {
               case aDef: DefDef if aDef.name.toString == "_traitModuleDefinitionIdentifierProposal" =>
                 c.error(aDef.pos, s"Custom implementations of _traitModuleDefinitionIdentifierProposal are not allowed")
-              case _ =>
+              case _                                                                                =>
             }
           }
           val newMethod = q"override protected def _traitModuleDefinitionIdentifierProposal = Some(${tpname.toString})"
-          val newStats = newMethod +: stats
+          val newStats  = newMethod +: stats
           (
-            q"$mods trait $tpname[..$tparams] extends { ..$earlydefns } with ..$parents { $self => ..$newStats }",
+            q"$mods trait $tpname[..$tparams] extends { ..$earlydefns } with ..$parents { $self => ..$newStats }"
           )
-        case _ =>
+        case _                                                                                                  =>
           c.error(c.enclosingPosition, "Can only use @identify on traits, not classes, objects, vals, or defs")
           clz
       }
       objOpt match {
-        case None => newClz
+        case None    => newClz
         case Some(o) =>
           q"""
             $newClz

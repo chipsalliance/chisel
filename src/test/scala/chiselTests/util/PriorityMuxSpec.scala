@@ -13,11 +13,11 @@ class PriorityMuxTester extends BasicTester {
   val sel = Wire(UInt(3.W))
   sel := 0.U // default
 
-  val elts = Seq(5.U, 6.U, 7.U)
+  val elts  = Seq(5.U, 6.U, 7.U)
   val muxed = PriorityMux(sel, elts)
 
   // Priority is given to lowest order bit
-  val tests = Seq(
+  val tests         = Seq(
     1.U -> elts(0),
     2.U -> elts(1),
     3.U -> elts(0),
@@ -49,8 +49,8 @@ class PriorityMuxSpec extends ChiselFlatSpec {
 
   it should "be stack safe" in {
     emitCHIRRTL(new RawModule {
-      val n = 1 << 15
-      val in = IO(Input(Vec(n, UInt(8.W))))
+      val n   = 1 << 15
+      val in  = IO(Input(Vec(n, UInt(8.W))))
       val sel = IO(Input(UInt(n.W)))
       val out = IO(Output(UInt(8.W)))
       out := PriorityMux(sel, in)

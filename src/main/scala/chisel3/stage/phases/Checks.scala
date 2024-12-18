@@ -15,10 +15,10 @@ import firrtl.options.{Dependency, OptionsException, Phase}
 class Checks extends Phase {
   import firrtl.annoSeqToSeq
 
-  override def prerequisites = Seq.empty
-  override def optionalPrerequisites = Seq.empty
+  override def prerequisites          = Seq.empty
+  override def optionalPrerequisites  = Seq.empty
   override def optionalPrerequisiteOf = Seq(Dependency[Elaborate])
-  override def invalidates(a: Phase) = false
+  override def invalidates(a: Phase)  = false
 
   def transform(annotations: AnnotationSeq): AnnotationSeq = {
     val st, outF, lm = collection.mutable.ListBuffer[Annotation]()
@@ -26,7 +26,7 @@ class Checks extends Phase {
       case a: PrintFullStackTraceAnnotation.type => a +=: st
       case a: ChiselOutputFileAnnotation         => a +=: outF
       case a: RemapLayer                         => a +=: lm
-      case _ =>
+      case _                                     =>
     }
 
     if (st.size > 1) {
@@ -52,7 +52,7 @@ class Checks extends Phase {
           s"""|The same old layer, '$oldLayer' is renamed multiple times: '${lmMap(oldLayer)}' and '$newLayer'
               |""".stripMargin
         )
-      case RemapLayer(oldLayer, newLayer) => lmMap += ((oldLayer, newLayer))
+      case RemapLayer(oldLayer, newLayer)                             => lmMap += ((oldLayer, newLayer))
     }
 
     annotations

@@ -12,13 +12,13 @@ import firrtl.options.internal.WriteableCircuitAnnotation
 import firrtl.options.{Dependency, Phase}
 
 case class PanamaCIRCTConverterAnnotation(converter: PanamaCIRCTConverter) extends NoTargetAnnotation
-case class FirtoolOptionsAnnotation(firtoolOptions: FirtoolOptions) extends NoTargetAnnotation
+case class FirtoolOptionsAnnotation(firtoolOptions: FirtoolOptions)        extends NoTargetAnnotation
 
 object Convert extends Phase {
-  override def prerequisites = Seq(Dependency[Elaborate])
-  override def optionalPrerequisites = Seq.empty
+  override def prerequisites          = Seq(Dependency[Elaborate])
+  override def optionalPrerequisites  = Seq.empty
   override def optionalPrerequisiteOf = Seq.empty
-  override def invalidates(a: Phase) = false
+  override def invalidates(a: Phase)  = false
 
   def transform(annotations: AnnotationSeq): AnnotationSeq =
     annotations.flatMap {
@@ -28,8 +28,8 @@ object Convert extends Phase {
           PanamaCIRCTConverterAnnotation(
             PanamaCIRCTConverter.convert(
               circuit,
-              annotations.collectFirst {
-                case FirtoolOptionsAnnotation(firtoolOptions) => firtoolOptions
+              annotations.collectFirst { case FirtoolOptionsAnnotation(firtoolOptions) =>
+                firtoolOptions
               },
               firrtl.annotations.JsonProtocol.serialize(circuit.firrtlAnnotations.filter { anno =>
                 Seq(
@@ -127,6 +127,6 @@ object Convert extends Phase {
             )
           )
         )
-      case a => Seq(a)
+      case a                                    => Seq(a)
     }
 }

@@ -14,8 +14,8 @@ class GCD extends Module {
     val z = Output(UInt(32.W))
     val v = Output(Bool())
   })
-  val x = Reg(UInt(32.W))
-  val y = Reg(UInt(32.W))
+  val x  = Reg(UInt(32.W))
+  val y  = Reg(UInt(32.W))
   when(x > y) { x := x -% y }.otherwise { y := y -% x }
   when(io.e) { x := io.a; y := io.b }
   io.z := x
@@ -23,7 +23,7 @@ class GCD extends Module {
 }
 
 class GCDTester(a: Int, b: Int, z: Int) extends BasicTester {
-  val dut = Module(new GCD)
+  val dut   = Module(new GCD)
   val first = RegInit(true.B)
   dut.io.a := a.U
   dut.io.b := b.U
@@ -37,12 +37,12 @@ class GCDTester(a: Int, b: Int, z: Int) extends BasicTester {
 
 class GCDSpec extends ChiselPropSpec {
 
-  //TODO: use generators and this function to make z's
+  // TODO: use generators and this function to make z's
   def gcd(a: Int, b: Int): Int = if (b == 0) a else gcd(b, a % b)
 
   val gcds = Table(
     ("a", "b", "z"), // First tuple defines column names
-    (64, 48, 16), // Subsequent tuples define the data
+    (64, 48, 16),    // Subsequent tuples define the data
     (12, 9, 3),
     (48, 64, 16)
   )

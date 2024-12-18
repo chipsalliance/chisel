@@ -28,7 +28,7 @@ trait ChiselMultiAnnotation {
 }
 
 object annotate {
-  def apply(anno: ChiselAnnotation): Unit = {
+  def apply(anno: ChiselAnnotation): Unit       = {
     Builder.annotations += anno
   }
   def apply(annos: ChiselMultiAnnotation): Unit = {

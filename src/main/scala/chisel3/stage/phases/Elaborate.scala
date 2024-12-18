@@ -30,16 +30,16 @@ class Elaborate extends Phase {
     Dependency[chisel3.stage.phases.Checks],
     Dependency(_root_.logger.phases.Checks)
   )
-  override def optionalPrerequisites = Seq.empty
-  override def optionalPrerequisiteOf = Seq.empty
-  override def invalidates(a: Phase) = false
+  override def optionalPrerequisites                 = Seq.empty
+  override def optionalPrerequisiteOf                = Seq.empty
+  override def invalidates(a: Phase)                 = false
 
   def transform(annotations: AnnotationSeq): AnnotationSeq = annotations.flatMap {
     case ChiselGeneratorAnnotation(gen) =>
       val chiselOptions = view[ChiselOptions](annotations)
       val loggerOptions = view[LoggerOptions](annotations)
       try {
-        val context =
+        val context        =
           new DynamicContext(
             annotations,
             chiselOptions.throwOnFirstError,
@@ -73,7 +73,7 @@ class Elaborate extends Phase {
           }
           throw (a)
       }
-    case a => Some(a)
+    case a                              => Some(a)
   }
 
 }

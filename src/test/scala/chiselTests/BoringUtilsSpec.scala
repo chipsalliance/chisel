@@ -22,13 +22,13 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
   val args = Array("--throw-on-first-error", "--full-stacktrace")
 
   class BoringInverter extends Module {
-    val io = IO(new Bundle {})
-    val a = Wire(UInt(1.W))
+    val io   = IO(new Bundle {})
+    val a    = Wire(UInt(1.W))
     val notA = Wire(UInt(1.W))
-    val b = Wire(UInt(1.W))
-    a := 0.U
+    val b    = Wire(UInt(1.W))
+    a    := 0.U
     notA := ~a
-    b := a
+    b    := a
     chisel3.assert(b === 1.U)
     BoringUtils.addSource(notA, "x")
     BoringUtils.addSink(b, "x")
@@ -56,14 +56,14 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
 
   class Sink extends RawModule with WireX {
     val out = IO(Output(UInt()))
-    x := 0.U // Default value. Output is zero unless we bore...
+    x   := 0.U // Default value. Output is zero unless we bore...
     out := x
   }
 
   class Top(val width: Int) extends Module {
     /* From the perspective of deduplication, all sources are identical and all sinks are identical. */
     val sources = Seq.fill(3)(Module(new Source))
-    val sinks = Seq.fill(6)(Module(new Sink))
+    val sinks   = Seq.fill(6)(Module(new Sink))
 
     /* Sources are differentiated by their input connections only. */
     sources.zip(Seq(0, 1, 2)).map { case (a, b) => a.in := b.U }
@@ -110,7 +110,7 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
   }
 
   class InternalBore extends RawModule {
-    val in = IO(Input(Bool()))
+    val in  = IO(Input(Bool()))
     val out = IO(Output(Bool()))
     out := false.B
     BoringUtils.bore(in, Seq(out))
@@ -220,7 +220,7 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
       out := DontCare
     }
     class Foo extends RawModule {
-      val bar = Instance(Definition((new Bar)))
+      val bar  = Instance(Definition((new Bar)))
       val sink = BoringUtils.bore(bar.out)
     }
     matchesAndOmits(circt.stage.ChiselStage.emitCHIRRTL(new Foo, args))(
@@ -238,7 +238,7 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
       @public val in = IO(Input(UInt(1.W)))
     }
     class Foo extends RawModule {
-      val bar = Instance(Definition((new Bar)))
+      val bar    = Instance(Definition((new Bar)))
       val source = BoringUtils.drive(bar.in)
     }
     matchesAndOmits(circt.stage.ChiselStage.emitCHIRRTL(new Foo, args))(
@@ -255,8 +255,8 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
       val q = Wire(UInt(1.W))
       q := BoringUtils.bore(parentData)
     }
-    class Foo extends RawModule {
-      val a = IO(Input(UInt(1.W)))
+    class Foo                   extends RawModule {
+      val a   = IO(Input(UInt(1.W)))
       val bar = Module(new Bar(a))
     }
     matchesAndOmits(circt.stage.ChiselStage.emitCHIRRTL(new Foo))(
@@ -277,9 +277,9 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
       dontTouch(a_wire)
     }
     class Foo extends RawModule {
-      val a = IO(Output(UInt()))
+      val a   = IO(Output(UInt()))
       val bar = Module(new Bar)
-      //val preBore = DataMirror.modulePorts(bar)
+      // val preBore = DataMirror.modulePorts(bar)
       a := BoringUtils.bore(bar.a_wire)
       val postBore = DataMirror.modulePorts(bar)
       postBore.size should be(1)
@@ -293,8 +293,8 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
       dontTouch(a_wire)
     }
     class Foo extends RawModule {
-      val a = IO(Output(UInt()))
-      val bar = Module(new Bar)
+      val a       = IO(Output(UInt()))
+      val bar     = Module(new Bar)
       val preBore = DataMirror.modulePorts(bar)
       a := BoringUtils.bore(bar.a_wire)
     }
@@ -313,7 +313,7 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
       dontTouch(a_wire)
     }
     class Foo extends RawModule {
-      val a = IO(Output(UInt()))
+      val a   = IO(Output(UInt()))
       val bar = Module(new Bar)
       a := BoringUtils.bore(bar.a_wire)
       bar.toDefinition
@@ -415,8 +415,8 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
 
   it should "bore from an opaque type that wraps a Property" in {
     class MyOpaqueProperty extends Record with OpaqueType {
-      private val underlying = Property[Int]()
-      val elements = scala.collection.immutable.SeqMap("" -> underlying)
+      private val underlying               = Property[Int]()
+      val elements                         = scala.collection.immutable.SeqMap("" -> underlying)
       override protected def errorOnAsUInt = true
     }
 
@@ -447,14 +447,14 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
 
   it should "bore from nested opaque types that wrap a Property" in {
     class MyOpaqueProperty extends Record with OpaqueType {
-      private val underlying = Property[Int]()
-      val elements = scala.collection.immutable.SeqMap("" -> underlying)
+      private val underlying               = Property[Int]()
+      val elements                         = scala.collection.immutable.SeqMap("" -> underlying)
       override protected def errorOnAsUInt = true
     }
 
     class MyOuterOpaque extends Record with OpaqueType {
-      private val underlying = new MyOpaqueProperty
-      val elements = scala.collection.immutable.SeqMap("" -> underlying)
+      private val underlying               = new MyOpaqueProperty
+      val elements                         = scala.collection.immutable.SeqMap("" -> underlying)
       override protected def errorOnAsUInt = true
     }
 

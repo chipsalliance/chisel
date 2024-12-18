@@ -48,7 +48,7 @@ class Shell(applicationName: String) extends BareShell(applicationName) {
   /** Contains all discovered [[RegisteredLibrary]] */
   final lazy val registeredLibraries: Seq[RegisteredLibrary] = {
     val libraries = scala.collection.mutable.ArrayBuffer[RegisteredLibrary]()
-    val iter = ServiceLoader.load(classOf[RegisteredLibrary]).iterator()
+    val iter      = ServiceLoader.load(classOf[RegisteredLibrary]).iterator()
     while (iter.hasNext) {
       val lib = iter.next()
       libraries += lib

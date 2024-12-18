@@ -13,10 +13,10 @@ trait PeekPokeAPI {
       extends Exception(s"Failed Expectation: Observed value '$observed' != $expected. $message")
   object FailedExpectationException {
     def apply[T](
-      observed:     T,
-      expected:     T,
-      message:      String,
-      sourceInfo:   SourceInfo,
+      observed: T,
+      expected: T,
+      message: String,
+      sourceInfo: SourceInfo,
       extraContext: Seq[String]
     ): FailedExpectationException[T] = {
       val fullMessage = s"$message ${sourceInfo.makeMessage()}" +
@@ -48,7 +48,7 @@ trait PeekPokeAPI {
       * Stops early if the `sentinelPort` is equal to the `sentinelValue`.
       */
     def stepUntil(sentinelPort: Data, sentinelValue: BigInt, maxCycles: Int): Unit = {
-      val module = AnySimulatedModule.current
+      val module         = AnySimulatedModule.current
       module.willEvaluate()
       val simulationPort = module.port(clock)
       simulationPort.tick(
@@ -71,8 +71,8 @@ trait PeekPokeAPI {
       encode(value.bitCount, value.asBigInt)
     }
 
-    final def peek(): T = encode(data.peekValue())
-    final def expect(expected: T)(implicit sourceInfo: SourceInfo): Unit = {
+    final def peek(): T                                                                        = encode(data.peekValue())
+    final def expect(expected: T)(implicit sourceInfo: SourceInfo): Unit                       = {
       data.expect(
         expected.litValue,
         encode(_).litValue,
@@ -80,10 +80,10 @@ trait PeekPokeAPI {
         sourceInfo
       )
     }
-    final def expect(expected: T, message: String)(implicit sourceInfo: SourceInfo): Unit = {
+    final def expect(expected: T, message: String)(implicit sourceInfo: SourceInfo): Unit      = {
       data.expect(expected.litValue, encode(_).litValue, (_: BigInt, _: BigInt) => message, sourceInfo)
     }
-    final def expect(expected: BigInt)(implicit sourceInfo: SourceInfo): Unit = {
+    final def expect(expected: BigInt)(implicit sourceInfo: SourceInfo): Unit                  = {
       data.expect(
         expected,
         _.asBigInt,
@@ -122,31 +122,31 @@ trait PeekPokeAPI {
   implicit final class testableData[T <: Data](data: T) {
     private def isSigned = data.isInstanceOf[SInt]
 
-    def poke(boolean: Boolean): Unit = {
+    def poke(boolean: Boolean): Unit  = {
       poke(if (boolean) 1 else 0)
     }
-    def poke(literal: T): Unit = {
+    def poke(literal: T): Unit        = {
       poke(literal.litValue)
     }
-    def poke(value: BigInt): Unit = {
-      val module = AnySimulatedModule.current
+    def poke(value: BigInt): Unit     = {
+      val module         = AnySimulatedModule.current
       module.willPoke()
       val simulationPort = module.port(data)
       simulationPort.set(value)
     }
     def peekValue(): Simulation.Value = {
-      val module = AnySimulatedModule.current
+      val module         = AnySimulatedModule.current
       module.willPeek()
       val simulationPort = module.port(data)
       simulationPort.get(isSigned = isSigned)
     }
     def expect[T](
-      expected:     T,
-      encode:       (Simulation.Value) => T,
+      expected: T,
+      encode: (Simulation.Value) => T,
       buildMessage: (T, T) => String,
-      sourceInfo:   SourceInfo
+      sourceInfo: SourceInfo
     ): Unit = {
-      val module = AnySimulatedModule.current
+      val module         = AnySimulatedModule.current
       module.willPeek()
       val simulationPort = module.port(data)
 
@@ -157,7 +157,7 @@ trait PeekPokeAPI {
             sourceInfo match {
               case sl: SourceLine =>
                 ExceptionHelpers.getErrorLineInFile(Seq(), sl)
-              case _ =>
+              case _              =>
                 Seq()
             }
           throw FailedExpectationException(

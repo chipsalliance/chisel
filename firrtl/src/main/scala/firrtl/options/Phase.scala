@@ -126,13 +126,13 @@ trait DependencyAPI[A <: DependencyAPI[A]] { this: TransformLike[_] =>
   /** All transform that must run before this transform
     * $seqNote
     */
-  def prerequisites:                        Seq[Dependency[A]] = Seq.empty
+  def prerequisites: Seq[Dependency[A]]                                  = Seq.empty
   private[options] lazy val _prerequisites: LinkedHashSet[Dependency[A]] = new LinkedHashSet() ++ prerequisites
 
   /** All transforms that, if a prerequisite of *another* transform, will run before this transform.
     * $seqNote
     */
-  def optionalPrerequisites: Seq[Dependency[A]] = Seq.empty
+  def optionalPrerequisites: Seq[Dependency[A]]                                  = Seq.empty
   private[options] lazy val _optionalPrerequisites: LinkedHashSet[Dependency[A]] =
     new LinkedHashSet() ++ optionalPrerequisites
 
@@ -146,7 +146,7 @@ trait DependencyAPI[A <: DependencyAPI[A]] { this: TransformLike[_] =>
     * @note This method **will not** result in the listed transforms running. If you want to add multiple transforms at
     * once, you should use a `DependencyManager` with multiple targets.
     */
-  def optionalPrerequisiteOf: Seq[Dependency[A]] = Seq.empty
+  def optionalPrerequisiteOf: Seq[Dependency[A]]                                  = Seq.empty
   private[options] lazy val _optionalPrerequisiteOf: LinkedHashSet[Dependency[A]] =
     new LinkedHashSet() ++ optionalPrerequisiteOf
 

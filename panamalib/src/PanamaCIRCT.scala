@@ -33,7 +33,7 @@ class PanamaCIRCT {
   // Public items for outside
 
   // Constants for this instance
-  val unkLoc = mlirLocationUnknownGet()
+  val unkLoc         = mlirLocationUnknownGet()
   val emptyArrayAttr = mlirArrayAttrGet(Seq.empty)
 
   //////////////////////////////////////////////////
@@ -41,7 +41,7 @@ class PanamaCIRCT {
   //
 
   private def newString(string: String): MlirStringRef = {
-    val bytes = string.getBytes()
+    val bytes  = string.getBytes()
     val buffer = arena.allocate(bytes.length + 1)
     buffer.copyFrom(MemorySegment.ofArray(bytes))
     MlirStringRef(CAPI.mlirStringRefCreateFromCString(arena, buffer))
@@ -72,12 +72,11 @@ class PanamaCIRCT {
       val sizeOfT = xs(0).sizeof
 
       val buffer = arena.allocate(sizeOfT * xs.length)
-      xs.zipWithIndex.foreach {
-        case (x, i) =>
-          x.get match {
-            case value: MemorySegment => buffer.asSlice(sizeOfT * i, sizeOfT).copyFrom(value)
-            case value: Int           => buffer.setAtIndex(CAPI.C_INT, i, value)
-          }
+      xs.zipWithIndex.foreach { case (x, i) =>
+        x.get match {
+          case value: MemorySegment => buffer.asSlice(sizeOfT * i, sizeOfT).copyFrom(value)
+          case value: Int           => buffer.setAtIndex(CAPI.C_INT, i, value)
+        }
       }
       (buffer, xs.length)
     } else {
@@ -91,7 +90,7 @@ class PanamaCIRCT {
 
   def mlirModuleCreateEmpty(location: MlirLocation) = MlirModule(CAPI.mlirModuleCreateEmpty(arena, location.get))
 
-  def mlirModuleCreateParse(module: String) = MlirModule(
+  def mlirModuleCreateParse(module: String)           = MlirModule(
     CAPI.mlirModuleCreateParse(arena, mlirCtx, newString(module).get)
   )
   def mlirModuleCreateParseBytes(module: Array[Byte]) = MlirModule(
@@ -254,7 +253,7 @@ class PanamaCIRCT {
     CAPI.mlirOperationPrint(op.get, newStringCallback(callback).get, NULL)
 
   def mlirOperationWriteBytecode(op: MlirOperation, callback: Array[Byte] => Unit) = {
-    val cb = new circt.MlirStringCallback {
+    val cb           = new circt.MlirStringCallback {
       def apply(message: MemorySegment, userData: MemorySegment) = {
         callback(MlirStringRef(message).toBytes)
       }
@@ -289,90 +288,90 @@ class PanamaCIRCT {
     CAPI.mlirOpPassManagerGetNestedUnder(arena, pm.get, newString(operationName).get)
   )
 
-  def circtFirtoolOptionsCreateDefault() = CirctFirtoolFirtoolOptions(CAPI.circtFirtoolOptionsCreateDefault(arena))
-  def circtFirtoolOptionsDestroy(options:           CirctFirtoolFirtoolOptions) = CAPI.circtFirtoolOptionsDestroy(options.get)
-  def circtFirtoolOptionsSetOutputFilename(options: CirctFirtoolFirtoolOptions, value: String) =
+  def circtFirtoolOptionsCreateDefault()                                                                               = CirctFirtoolFirtoolOptions(CAPI.circtFirtoolOptionsCreateDefault(arena))
+  def circtFirtoolOptionsDestroy(options: CirctFirtoolFirtoolOptions)                                                  = CAPI.circtFirtoolOptionsDestroy(options.get)
+  def circtFirtoolOptionsSetOutputFilename(options: CirctFirtoolFirtoolOptions, value: String)                         =
     CAPI.circtFirtoolOptionsSetOutputFilename(options.get, newString(value).get)
-  def circtFirtoolOptionsSetDisableUnknownAnnotations(options: CirctFirtoolFirtoolOptions, value: Boolean) =
+  def circtFirtoolOptionsSetDisableUnknownAnnotations(options: CirctFirtoolFirtoolOptions, value: Boolean)             =
     CAPI.circtFirtoolOptionsSetDisableUnknownAnnotations(options.get, value)
-  def circtFirtoolOptionsSetDisableAnnotationsClassless(options: CirctFirtoolFirtoolOptions, value: Boolean) =
+  def circtFirtoolOptionsSetDisableAnnotationsClassless(options: CirctFirtoolFirtoolOptions, value: Boolean)           =
     CAPI.circtFirtoolOptionsSetDisableAnnotationsClassless(options.get, value)
-  def circtFirtoolOptionsSetLowerAnnotationsNoRefTypePorts(options: CirctFirtoolFirtoolOptions, value: Boolean) =
+  def circtFirtoolOptionsSetLowerAnnotationsNoRefTypePorts(options: CirctFirtoolFirtoolOptions, value: Boolean)        =
     CAPI.circtFirtoolOptionsSetLowerAnnotationsNoRefTypePorts(options.get, value)
   def circtFirtoolOptionsSetPreserveAggregate(
     options: CirctFirtoolFirtoolOptions,
-    value:   CirctFirtoolPreserveAggregateMode
+    value: CirctFirtoolPreserveAggregateMode
   ) = CAPI.circtFirtoolOptionsSetPreserveAggregate(options.get, value.get)
   def circtFirtoolOptionsSetPreserveValues(options: CirctFirtoolFirtoolOptions, value: CirctFirtoolPreserveValuesMode) =
     CAPI.circtFirtoolOptionsSetPreserveValues(options.get, value.get)
-  def circtFirtoolOptionsSetBuildMode(options: CirctFirtoolFirtoolOptions, value: CirctFirtoolBuildMode) =
+  def circtFirtoolOptionsSetBuildMode(options: CirctFirtoolFirtoolOptions, value: CirctFirtoolBuildMode)               =
     CAPI.circtFirtoolOptionsSetBuildMode(options.get, value.get)
-  def circtFirtoolOptionsSetDisableOptimization(options: CirctFirtoolFirtoolOptions, value: Boolean) =
+  def circtFirtoolOptionsSetDisableOptimization(options: CirctFirtoolFirtoolOptions, value: Boolean)                   =
     CAPI.circtFirtoolOptionsSetDisableOptimization(options.get, value)
-  def circtFirtoolOptionsSetExportChiselInterface(options: CirctFirtoolFirtoolOptions, value: Boolean) =
+  def circtFirtoolOptionsSetExportChiselInterface(options: CirctFirtoolFirtoolOptions, value: Boolean)                 =
     CAPI.circtFirtoolOptionsSetExportChiselInterface(options.get, value)
-  def circtFirtoolOptionsSetChiselInterfaceOutDirectory(options: CirctFirtoolFirtoolOptions, value: String) =
+  def circtFirtoolOptionsSetChiselInterfaceOutDirectory(options: CirctFirtoolFirtoolOptions, value: String)            =
     CAPI.circtFirtoolOptionsSetChiselInterfaceOutDirectory(options.get, newString(value).get)
-  def circtFirtoolOptionsSetVbToBv(options: CirctFirtoolFirtoolOptions, value: Boolean) =
+  def circtFirtoolOptionsSetVbToBv(options: CirctFirtoolFirtoolOptions, value: Boolean)                                =
     CAPI.circtFirtoolOptionsSetVbToBv(options.get, value)
-  def circtFirtoolOptionsSetNoDedup(options: CirctFirtoolFirtoolOptions, value: Boolean) =
+  def circtFirtoolOptionsSetNoDedup(options: CirctFirtoolFirtoolOptions, value: Boolean)                               =
     CAPI.circtFirtoolOptionsSetNoDedup(options.get, value)
-  def circtFirtoolOptionsSetCompanionMode(options: CirctFirtoolFirtoolOptions, value: CirctFirtoolCompanionMode) =
+  def circtFirtoolOptionsSetCompanionMode(options: CirctFirtoolFirtoolOptions, value: CirctFirtoolCompanionMode)       =
     CAPI.circtFirtoolOptionsSetCompanionMode(options.get, value.get)
-  def circtFirtoolOptionsSetDisableAggressiveMergeConnections(options: CirctFirtoolFirtoolOptions, value: Boolean) =
+  def circtFirtoolOptionsSetDisableAggressiveMergeConnections(options: CirctFirtoolFirtoolOptions, value: Boolean)     =
     CAPI.circtFirtoolOptionsSetDisableAggressiveMergeConnections(options.get, value)
-  def circtFirtoolOptionsSetLowerMemories(options: CirctFirtoolFirtoolOptions, value: Boolean) =
+  def circtFirtoolOptionsSetLowerMemories(options: CirctFirtoolFirtoolOptions, value: Boolean)                         =
     CAPI.circtFirtoolOptionsSetLowerMemories(options.get, value)
-  def circtFirtoolOptionsSetBlackBoxRootPath(options: CirctFirtoolFirtoolOptions, value: String) =
+  def circtFirtoolOptionsSetBlackBoxRootPath(options: CirctFirtoolFirtoolOptions, value: String)                       =
     CAPI.circtFirtoolOptionsSetBlackBoxRootPath(options.get, newString(value).get)
-  def circtFirtoolOptionsSetReplSeqMem(options: CirctFirtoolFirtoolOptions, value: Boolean) =
+  def circtFirtoolOptionsSetReplSeqMem(options: CirctFirtoolFirtoolOptions, value: Boolean)                            =
     CAPI.circtFirtoolOptionsSetReplSeqMem(options.get, value)
-  def circtFirtoolOptionsSetReplSeqMemFile(options: CirctFirtoolFirtoolOptions, value: String) =
+  def circtFirtoolOptionsSetReplSeqMemFile(options: CirctFirtoolFirtoolOptions, value: String)                         =
     CAPI.circtFirtoolOptionsSetReplSeqMemFile(options.get, newString(value).get)
-  def circtFirtoolOptionsSetExtractTestCode(options: CirctFirtoolFirtoolOptions, value: Boolean) =
+  def circtFirtoolOptionsSetExtractTestCode(options: CirctFirtoolFirtoolOptions, value: Boolean)                       =
     CAPI.circtFirtoolOptionsSetExtractTestCode(options.get, value)
-  def circtFirtoolOptionsSetIgnoreReadEnableMem(options: CirctFirtoolFirtoolOptions, value: Boolean) =
+  def circtFirtoolOptionsSetIgnoreReadEnableMem(options: CirctFirtoolFirtoolOptions, value: Boolean)                   =
     CAPI.circtFirtoolOptionsSetIgnoreReadEnableMem(options.get, value)
-  def circtFirtoolOptionsSetDisableRandom(options: CirctFirtoolFirtoolOptions, value: CirctFirtoolRandomKind) =
+  def circtFirtoolOptionsSetDisableRandom(options: CirctFirtoolFirtoolOptions, value: CirctFirtoolRandomKind)          =
     CAPI.circtFirtoolOptionsSetDisableRandom(options.get, value.get)
-  def circtFirtoolOptionsSetOutputAnnotationFilename(options: CirctFirtoolFirtoolOptions, value: String) =
+  def circtFirtoolOptionsSetOutputAnnotationFilename(options: CirctFirtoolFirtoolOptions, value: String)               =
     CAPI.circtFirtoolOptionsSetOutputAnnotationFilename(options.get, newString(value).get)
-  def circtFirtoolOptionsSetEnableAnnotationWarning(options: CirctFirtoolFirtoolOptions, value: Boolean) =
+  def circtFirtoolOptionsSetEnableAnnotationWarning(options: CirctFirtoolFirtoolOptions, value: Boolean)               =
     CAPI.circtFirtoolOptionsSetEnableAnnotationWarning(options.get, value)
-  def circtFirtoolOptionsSetAddMuxPragmas(options: CirctFirtoolFirtoolOptions, value: Boolean) =
+  def circtFirtoolOptionsSetAddMuxPragmas(options: CirctFirtoolFirtoolOptions, value: Boolean)                         =
     CAPI.circtFirtoolOptionsSetAddMuxPragmas(options.get, value)
   def circtFirtoolOptionsSetVerificationFlavor(
     options: CirctFirtoolFirtoolOptions,
-    value:   CirctFirtoolVerificationFlavor
+    value: CirctFirtoolVerificationFlavor
   ) =
     CAPI.circtFirtoolOptionsSetVerificationFlavor(options.get, value.get)
-  def circtFirtoolOptionsSetEmitSeparateAlwaysBlocks(options: CirctFirtoolFirtoolOptions, value: Boolean) =
+  def circtFirtoolOptionsSetEmitSeparateAlwaysBlocks(options: CirctFirtoolFirtoolOptions, value: Boolean)              =
     CAPI.circtFirtoolOptionsSetEmitSeparateAlwaysBlocks(options.get, value)
-  def circtFirtoolOptionsSetEtcDisableInstanceExtraction(options: CirctFirtoolFirtoolOptions, value: Boolean) =
+  def circtFirtoolOptionsSetEtcDisableInstanceExtraction(options: CirctFirtoolFirtoolOptions, value: Boolean)          =
     CAPI.circtFirtoolOptionsSetEtcDisableInstanceExtraction(options.get, value)
-  def circtFirtoolOptionsSetEtcDisableRegisterExtraction(options: CirctFirtoolFirtoolOptions, value: Boolean) =
+  def circtFirtoolOptionsSetEtcDisableRegisterExtraction(options: CirctFirtoolFirtoolOptions, value: Boolean)          =
     CAPI.circtFirtoolOptionsSetEtcDisableRegisterExtraction(options.get, value)
-  def circtFirtoolOptionsSetEtcDisableModuleInlining(options: CirctFirtoolFirtoolOptions, value: Boolean) =
+  def circtFirtoolOptionsSetEtcDisableModuleInlining(options: CirctFirtoolFirtoolOptions, value: Boolean)              =
     CAPI.circtFirtoolOptionsSetEtcDisableModuleInlining(options.get, value)
   def circtFirtoolOptionsSetAddVivadoRAMAddressConflictSynthesisBugWorkaround(
     options: CirctFirtoolFirtoolOptions,
-    value:   Boolean
+    value: Boolean
   ) = CAPI.circtFirtoolOptionsSetAddVivadoRAMAddressConflictSynthesisBugWorkaround(options.get, value)
-  def circtFirtoolOptionsSetCkgModuleName(options: CirctFirtoolFirtoolOptions, value: String) =
+  def circtFirtoolOptionsSetCkgModuleName(options: CirctFirtoolFirtoolOptions, value: String)                          =
     CAPI.circtFirtoolOptionsSetCkgModuleName(options.get, newString(value).get)
-  def circtFirtoolOptionsSetCkgInputName(options: CirctFirtoolFirtoolOptions, value: String) =
+  def circtFirtoolOptionsSetCkgInputName(options: CirctFirtoolFirtoolOptions, value: String)                           =
     CAPI.circtFirtoolOptionsSetCkgInputName(options.get, newString(value).get)
-  def circtFirtoolOptionsSetCkgOutputName(options: CirctFirtoolFirtoolOptions, value: String) =
+  def circtFirtoolOptionsSetCkgOutputName(options: CirctFirtoolFirtoolOptions, value: String)                          =
     CAPI.circtFirtoolOptionsSetCkgOutputName(options.get, newString(value).get)
-  def circtFirtoolOptionsSetCkgEnableName(options: CirctFirtoolFirtoolOptions, value: String) =
+  def circtFirtoolOptionsSetCkgEnableName(options: CirctFirtoolFirtoolOptions, value: String)                          =
     CAPI.circtFirtoolOptionsSetCkgEnableName(options.get, newString(value).get)
-  def circtFirtoolOptionsSetCkgTestEnableName(options: CirctFirtoolFirtoolOptions, value: String) =
+  def circtFirtoolOptionsSetCkgTestEnableName(options: CirctFirtoolFirtoolOptions, value: String)                      =
     CAPI.circtFirtoolOptionsSetCkgTestEnableName(options.get, newString(value).get)
-  def circtFirtoolOptionsSetExportModuleHierarchy(options: CirctFirtoolFirtoolOptions, value: Boolean) =
+  def circtFirtoolOptionsSetExportModuleHierarchy(options: CirctFirtoolFirtoolOptions, value: Boolean)                 =
     CAPI.circtFirtoolOptionsSetExportModuleHierarchy(options.get, value)
-  def circtFirtoolOptionsSetStripFirDebugInfo(options: CirctFirtoolFirtoolOptions, value: Boolean) =
+  def circtFirtoolOptionsSetStripFirDebugInfo(options: CirctFirtoolFirtoolOptions, value: Boolean)                     =
     CAPI.circtFirtoolOptionsSetStripFirDebugInfo(options.get, value)
-  def circtFirtoolOptionsSetStripDebugInfo(options: CirctFirtoolFirtoolOptions, value: Boolean) =
+  def circtFirtoolOptionsSetStripDebugInfo(options: CirctFirtoolFirtoolOptions, value: Boolean)                        =
     CAPI.circtFirtoolOptionsSetStripDebugInfo(options.get, value)
 
   def circtFirtoolPopulatePreprocessTransforms(pm: MlirPassManager, options: CirctFirtoolFirtoolOptions) =
@@ -381,9 +380,9 @@ class PanamaCIRCT {
     )
 
   def circtFirtoolPopulateCHIRRTLToLowFIRRTL(
-    pm:            MlirPassManager,
-    options:       CirctFirtoolFirtoolOptions,
-    module:        MlirModule,
+    pm: MlirPassManager,
+    options: CirctFirtoolFirtoolOptions,
+    module: MlirModule,
     inputFilename: String
   ) = MlirLogicalResult(
     CAPI.circtFirtoolPopulateCHIRRTLToLowFIRRTL(arena, pm.get, options.get, newString(inputFilename).get)
@@ -398,16 +397,16 @@ class PanamaCIRCT {
   )
 
   def circtFirtoolPopulateExportVerilog(
-    pm:       MlirPassManager,
-    options:  CirctFirtoolFirtoolOptions,
+    pm: MlirPassManager,
+    options: CirctFirtoolFirtoolOptions,
     callback: String => Unit
   ) = MlirLogicalResult(
     CAPI.circtFirtoolPopulateExportVerilog(arena, pm.get, options.get, newStringCallback(callback).get, NULL)
   )
 
   def circtFirtoolPopulateExportSplitVerilog(
-    pm:        MlirPassManager,
-    options:   CirctFirtoolFirtoolOptions,
+    pm: MlirPassManager,
+    options: CirctFirtoolFirtoolOptions,
     directory: String
   ) = MlirLogicalResult(
     CAPI.circtFirtoolPopulateExportSplitVerilog(arena, pm.get, options.get, newString(directory).get)
@@ -438,12 +437,11 @@ class PanamaCIRCT {
 
   def firrtlTypeGetBundle(fields: Seq[FIRRTLBundleField]): MlirType = {
     val buffer = circt.FIRRTLBundleField.allocateArray(fields.length, arena)
-    fields.zipWithIndex.foreach {
-      case (field, i) =>
-        val fieldBuffer = buffer.asSlice(circt.FIRRTLBundleField.sizeof() * i, circt.FIRRTLBundleField.sizeof())
-        circt.FIRRTLBundleField.name$slice(fieldBuffer).copyFrom(mlirIdentifierGet(field.name).get)
-        circt.FIRRTLBundleField.isFlip$set(fieldBuffer, field.isFlip)
-        circt.FIRRTLBundleField.type$slice(fieldBuffer).copyFrom(field.tpe.get)
+    fields.zipWithIndex.foreach { case (field, i) =>
+      val fieldBuffer = buffer.asSlice(circt.FIRRTLBundleField.sizeof() * i, circt.FIRRTLBundleField.sizeof())
+      circt.FIRRTLBundleField.name$slice(fieldBuffer).copyFrom(mlirIdentifierGet(field.name).get)
+      circt.FIRRTLBundleField.isFlip$set(fieldBuffer, field.isFlip)
+      circt.FIRRTLBundleField.type$slice(fieldBuffer).copyFrom(field.tpe.get)
     }
     MlirType(CAPI.firrtlTypeGetBundle(arena, mlirCtx, fields.length, buffer))
   }
@@ -473,12 +471,11 @@ class PanamaCIRCT {
 
   def firrtlTypeGetClass(name: MlirAttribute /* FlatSymbolRefAttr */, elements: Seq[FIRRTLClassElement]): MlirType = {
     val buffer = circt.FIRRTLClassElement.allocateArray(elements.length, arena)
-    elements.zipWithIndex.foreach {
-      case (element, i) =>
-        val elementBuffer = buffer.asSlice(circt.FIRRTLClassElement.sizeof() * i, circt.FIRRTLClassElement.sizeof())
-        circt.FIRRTLClassElement.name$slice(elementBuffer).copyFrom(mlirIdentifierGet(element.name).get)
-        circt.FIRRTLClassElement.type$slice(elementBuffer).copyFrom(element.tpe.get)
-        circt.FIRRTLClassElement.direction$set(elementBuffer, element.direction.get)
+    elements.zipWithIndex.foreach { case (element, i) =>
+      val elementBuffer = buffer.asSlice(circt.FIRRTLClassElement.sizeof() * i, circt.FIRRTLClassElement.sizeof())
+      circt.FIRRTLClassElement.name$slice(elementBuffer).copyFrom(mlirIdentifierGet(element.name).get)
+      circt.FIRRTLClassElement.type$slice(elementBuffer).copyFrom(element.tpe.get)
+      circt.FIRRTLClassElement.direction$set(elementBuffer, element.direction.get)
     }
     MlirType(CAPI.firrtlTypeGetClass(arena, mlirCtx, name.get, elements.length, buffer))
   }
@@ -513,7 +510,7 @@ class PanamaCIRCT {
   def firrtlValueFoldFlow(value: MlirValue, flow: Int): Int = CAPI.firrtlValueFoldFlow(value.get, flow)
 
   def firrtlImportAnnotationsFromJSONRaw(annotationsStr: String): Option[MlirAttribute] = {
-    val attr = circt.MlirAttribute.allocate(arena)
+    val attr   = circt.MlirAttribute.allocate(arena)
     val result = CAPI.firrtlImportAnnotationsFromJSONRaw(mlirCtx, newString(annotationsStr).get, attr)
     if (result) {
       Some(MlirAttribute(attr))
@@ -567,98 +564,98 @@ class PanamaCIRCT {
   // OM C-API
   //
 
-  def omTypeIsAClassType(tpe:          MlirType): Boolean = CAPI.omTypeIsAClassType(tpe.get)
-  def omClassTypeGetName(tpe:          MlirType) = MlirIdentifier(CAPI.omClassTypeGetName(arena, tpe.get))
-  def omTypeIsAFrozenBasePathType(tpe: MlirType): Boolean = CAPI.omTypeIsAFrozenBasePathType(tpe.get)
-  def omTypeIsAFrozenPathType(tpe:     MlirType): Boolean = CAPI.omTypeIsAFrozenPathType(tpe.get)
-  def omTypeIsAMapType(tpe:            MlirType): Boolean = CAPI.omTypeIsAMapType(tpe.get)
-  def omMapTypeGetKeyType(tpe:         MlirType) = MlirType(CAPI.omMapTypeGetKeyType(arena, tpe.get))
-  def omTypeIsAStringType(tpe:         MlirType): Boolean = CAPI.omTypeIsAStringType(tpe.get)
-  def omEvaluatorNew(mod:              MlirModule) = OMEvaluator(CAPI.omEvaluatorNew(arena, mod.get))
+  def omTypeIsAClassType(tpe: MlirType): Boolean                                                             = CAPI.omTypeIsAClassType(tpe.get)
+  def omClassTypeGetName(tpe: MlirType)                                                                      = MlirIdentifier(CAPI.omClassTypeGetName(arena, tpe.get))
+  def omTypeIsAFrozenBasePathType(tpe: MlirType): Boolean                                                    = CAPI.omTypeIsAFrozenBasePathType(tpe.get)
+  def omTypeIsAFrozenPathType(tpe: MlirType): Boolean                                                        = CAPI.omTypeIsAFrozenPathType(tpe.get)
+  def omTypeIsAMapType(tpe: MlirType): Boolean                                                               = CAPI.omTypeIsAMapType(tpe.get)
+  def omMapTypeGetKeyType(tpe: MlirType)                                                                     = MlirType(CAPI.omMapTypeGetKeyType(arena, tpe.get))
+  def omTypeIsAStringType(tpe: MlirType): Boolean                                                            = CAPI.omTypeIsAStringType(tpe.get)
+  def omEvaluatorNew(mod: MlirModule)                                                                        = OMEvaluator(CAPI.omEvaluatorNew(arena, mod.get))
   def omEvaluatorInstantiate(evaluator: OMEvaluator, className: String, actualParams: Seq[OMEvaluatorValue]) = {
     val params = seqToArray(actualParams);
     OMEvaluatorValue(
       CAPI.omEvaluatorInstantiate(arena, evaluator.get, mlirStringAttrGet(className).get, params._2, params._1)
     )
   }
-  def omEvaluatorGetModule(evaluator: OMEvaluator) = MlirModule(CAPI.omEvaluatorGetModule(arena, evaluator.get))
-  def omEvaluatorObjectIsNull(obj:    OMEvaluatorValue):      Boolean = CAPI.omEvaluatorObjectIsNull(obj.get)
-  def omEvaluatorObjectGetType(obj:   OMEvaluatorValue) = MlirType(CAPI.omEvaluatorObjectGetType(arena, obj.get))
-  def omEvaluatorObjectGetField(obj:  OMEvaluatorValue, name: String) = OMEvaluatorValue(
+  def omEvaluatorGetModule(evaluator: OMEvaluator)                                                           = MlirModule(CAPI.omEvaluatorGetModule(arena, evaluator.get))
+  def omEvaluatorObjectIsNull(obj: OMEvaluatorValue): Boolean                                                = CAPI.omEvaluatorObjectIsNull(obj.get)
+  def omEvaluatorObjectGetType(obj: OMEvaluatorValue)                                                        = MlirType(CAPI.omEvaluatorObjectGetType(arena, obj.get))
+  def omEvaluatorObjectGetField(obj: OMEvaluatorValue, name: String)                                         = OMEvaluatorValue(
     CAPI.omEvaluatorObjectGetField(arena, obj.get, mlirStringAttrGet(name).get)
   )
-  def omEvaluatorObjectGetHash(obj: OMEvaluatorValue): Int = CAPI.omEvaluatorObjectGetHash(obj.get)
-  def omEvaluatorObjectIsEq(obj:    OMEvaluatorValue, other: OMEvaluatorValue): Boolean =
+  def omEvaluatorObjectGetHash(obj: OMEvaluatorValue): Int                                                   = CAPI.omEvaluatorObjectGetHash(obj.get)
+  def omEvaluatorObjectIsEq(obj: OMEvaluatorValue, other: OMEvaluatorValue): Boolean                         =
     CAPI.omEvaluatorObjectIsEq(obj.get, other.get)
-  def omEvaluatorObjectGetFieldNames(obj: OMEvaluatorValue) = MlirAttribute(
+  def omEvaluatorObjectGetFieldNames(obj: OMEvaluatorValue)                                                  = MlirAttribute(
     CAPI.omEvaluatorObjectGetFieldNames(arena, obj.get)
   )
-  def omEvaluatorValueGetLoc(evaluatorValue: OMEvaluatorValue) = MlirLocation(
+  def omEvaluatorValueGetLoc(evaluatorValue: OMEvaluatorValue)                                               = MlirLocation(
     CAPI.omEvaluatorValueGetLoc(arena, evaluatorValue.get)
   )
-  def omEvaluatorValueIsNull(evaluatorValue: OMEvaluatorValue): Boolean =
+  def omEvaluatorValueIsNull(evaluatorValue: OMEvaluatorValue): Boolean                                      =
     CAPI.omEvaluatorValueIsNull(evaluatorValue.get)
-  def omEvaluatorValueIsAObject(evaluatorValue: OMEvaluatorValue): Boolean =
+  def omEvaluatorValueIsAObject(evaluatorValue: OMEvaluatorValue): Boolean                                   =
     CAPI.omEvaluatorValueIsAObject(evaluatorValue.get)
-  def omEvaluatorValueIsAPrimitive(evaluatorValue: OMEvaluatorValue): Boolean =
+  def omEvaluatorValueIsAPrimitive(evaluatorValue: OMEvaluatorValue): Boolean                                =
     CAPI.omEvaluatorValueIsAPrimitive(evaluatorValue.get)
-  def omEvaluatorValueGetPrimitive(evaluatorValue: OMEvaluatorValue) = MlirAttribute(
+  def omEvaluatorValueGetPrimitive(evaluatorValue: OMEvaluatorValue)                                         = MlirAttribute(
     CAPI.omEvaluatorValueGetPrimitive(arena, evaluatorValue.get)
   )
-  def omEvaluatorValueFromPrimitive(primitive: MlirAttribute) = OMEvaluatorValue(
+  def omEvaluatorValueFromPrimitive(primitive: MlirAttribute)                                                = OMEvaluatorValue(
     CAPI.omEvaluatorValueFromPrimitive(arena, primitive.get)
   )
-  def omEvaluatorValueIsAList(evaluatorValue: OMEvaluatorValue): Boolean =
+  def omEvaluatorValueIsAList(evaluatorValue: OMEvaluatorValue): Boolean                                     =
     CAPI.omEvaluatorValueIsAList(evaluatorValue.get)
-  def omEvaluatorListGetNumElements(evaluatorValue: OMEvaluatorValue): Long =
+  def omEvaluatorListGetNumElements(evaluatorValue: OMEvaluatorValue): Long                                  =
     CAPI.omEvaluatorListGetNumElements(evaluatorValue.get)
-  def omEvaluatorListGetElement(evaluatorValue: OMEvaluatorValue, pos: Long) = OMEvaluatorValue(
+  def omEvaluatorListGetElement(evaluatorValue: OMEvaluatorValue, pos: Long)                                 = OMEvaluatorValue(
     CAPI.omEvaluatorListGetElement(arena, evaluatorValue.get, pos)
   )
-  def omEvaluatorValueIsATuple(evaluatorValue: OMEvaluatorValue): Boolean =
+  def omEvaluatorValueIsATuple(evaluatorValue: OMEvaluatorValue): Boolean                                    =
     CAPI.omEvaluatorValueIsATuple(evaluatorValue.get)
-  def omEvaluatorTupleGetNumElements(evaluatorValue: OMEvaluatorValue): Long =
+  def omEvaluatorTupleGetNumElements(evaluatorValue: OMEvaluatorValue): Long                                 =
     CAPI.omEvaluatorTupleGetNumElements(evaluatorValue.get)
-  def omEvaluatorTupleGetElement(evaluatorValue: OMEvaluatorValue, pos: Long) = OMEvaluatorValue(
+  def omEvaluatorTupleGetElement(evaluatorValue: OMEvaluatorValue, pos: Long)                                = OMEvaluatorValue(
     CAPI.omEvaluatorTupleGetElement(arena, evaluatorValue.get, pos)
   )
-  def omEvaluatorMapGetElement(evaluatorValue: OMEvaluatorValue, attr: MlirAttribute) = OMEvaluatorValue(
+  def omEvaluatorMapGetElement(evaluatorValue: OMEvaluatorValue, attr: MlirAttribute)                        = OMEvaluatorValue(
     CAPI.omEvaluatorMapGetElement(arena, evaluatorValue.get, attr.get)
   )
-  def omEvaluatorMapGetKeys(obj:             OMEvaluatorValue) = MlirAttribute(CAPI.omEvaluatorMapGetKeys(arena, obj.get))
-  def omEvaluatorValueIsAMap(evaluatorValue: OMEvaluatorValue): Boolean =
+  def omEvaluatorMapGetKeys(obj: OMEvaluatorValue)                                                           = MlirAttribute(CAPI.omEvaluatorMapGetKeys(arena, obj.get))
+  def omEvaluatorValueIsAMap(evaluatorValue: OMEvaluatorValue): Boolean                                      =
     CAPI.omEvaluatorValueIsAMap(evaluatorValue.get)
-  def omEvaluatorMapGetType(evaluatorValue: OMEvaluatorValue): MlirType = MlirType(
+  def omEvaluatorMapGetType(evaluatorValue: OMEvaluatorValue): MlirType                                      = MlirType(
     CAPI.omEvaluatorMapGetType(arena, evaluatorValue.get)
   )
-  def omEvaluatorValueIsABasePath(evaluatorValue: OMEvaluatorValue): Boolean =
+  def omEvaluatorValueIsABasePath(evaluatorValue: OMEvaluatorValue): Boolean                                 =
     CAPI.omEvaluatorValueIsABasePath(evaluatorValue.get)
-  def omEvaluatorBasePathGetEmpty() = OMEvaluatorValue(CAPI.omEvaluatorBasePathGetEmpty(arena, mlirCtx))
-  def omEvaluatorValueIsAPath(evaluatorValue: OMEvaluatorValue): Boolean =
+  def omEvaluatorBasePathGetEmpty()                                                                          = OMEvaluatorValue(CAPI.omEvaluatorBasePathGetEmpty(arena, mlirCtx))
+  def omEvaluatorValueIsAPath(evaluatorValue: OMEvaluatorValue): Boolean                                     =
     CAPI.omEvaluatorValueIsAPath(evaluatorValue.get)
-  def omEvaluatorPathGetAsString(evaluatorValue: OMEvaluatorValue): String = mlirStringAttrGetValue(
+  def omEvaluatorPathGetAsString(evaluatorValue: OMEvaluatorValue): String                                   = mlirStringAttrGetValue(
     MlirAttribute(CAPI.omEvaluatorPathGetAsString(arena, evaluatorValue.get))
   )
-  def omEvaluatorValueIsAReference(evaluatorValue: OMEvaluatorValue): Boolean =
+  def omEvaluatorValueIsAReference(evaluatorValue: OMEvaluatorValue): Boolean                                =
     CAPI.omEvaluatorValueIsAReference(evaluatorValue.get)
-  def omEvaluatorValueGetReferenceValue(evaluatorValue: OMEvaluatorValue): OMEvaluatorValue =
+  def omEvaluatorValueGetReferenceValue(evaluatorValue: OMEvaluatorValue): OMEvaluatorValue                  =
     OMEvaluatorValue(CAPI.omEvaluatorValueGetReferenceValue(arena, evaluatorValue.get))
-  def omAttrIsAReferenceAttr(attr:     MlirAttribute): Boolean = CAPI.omAttrIsAReferenceAttr(attr.get)
-  def omReferenceAttrGetInnerRef(attr: MlirAttribute) = MlirAttribute(CAPI.omReferenceAttrGetInnerRef(arena, attr.get))
-  def omAttrIsAIntegerAttr(attr:       MlirAttribute): Boolean = CAPI.omAttrIsAIntegerAttr(attr.get)
-  def omIntegerAttrGetInt(attr:        MlirAttribute) = MlirAttribute(CAPI.omIntegerAttrGetInt(arena, attr.get))
-  def omIntegerAttrGet(attr:           MlirAttribute) = MlirAttribute(CAPI.omIntegerAttrGet(arena, attr.get))
-  def omAttrIsAListAttr(attr:          MlirAttribute): Boolean = CAPI.omAttrIsAListAttr(attr.get)
-  def omListAttrGetNumElements(attr:   MlirAttribute): Long = CAPI.omListAttrGetNumElements(attr.get)
-  def omListAttrGetElement(attr:       MlirAttribute, pos: Long) = MlirAttribute(
+  def omAttrIsAReferenceAttr(attr: MlirAttribute): Boolean                                                   = CAPI.omAttrIsAReferenceAttr(attr.get)
+  def omReferenceAttrGetInnerRef(attr: MlirAttribute)                                                        = MlirAttribute(CAPI.omReferenceAttrGetInnerRef(arena, attr.get))
+  def omAttrIsAIntegerAttr(attr: MlirAttribute): Boolean                                                     = CAPI.omAttrIsAIntegerAttr(attr.get)
+  def omIntegerAttrGetInt(attr: MlirAttribute)                                                               = MlirAttribute(CAPI.omIntegerAttrGetInt(arena, attr.get))
+  def omIntegerAttrGet(attr: MlirAttribute)                                                                  = MlirAttribute(CAPI.omIntegerAttrGet(arena, attr.get))
+  def omAttrIsAListAttr(attr: MlirAttribute): Boolean                                                        = CAPI.omAttrIsAListAttr(attr.get)
+  def omListAttrGetNumElements(attr: MlirAttribute): Long                                                    = CAPI.omListAttrGetNumElements(attr.get)
+  def omListAttrGetElement(attr: MlirAttribute, pos: Long)                                                   = MlirAttribute(
     CAPI.omListAttrGetElement(arena, attr.get, pos)
   )
-  def omAttrIsAMapAttr(attr:        MlirAttribute): Boolean = CAPI.omAttrIsAMapAttr(attr.get)
-  def omMapAttrGetNumElements(attr: MlirAttribute): Long = CAPI.omMapAttrGetNumElements(attr.get)
-  def omMapAttrGetElementKey(attr:  MlirAttribute, pos: Long) = MlirIdentifier(
+  def omAttrIsAMapAttr(attr: MlirAttribute): Boolean                                                         = CAPI.omAttrIsAMapAttr(attr.get)
+  def omMapAttrGetNumElements(attr: MlirAttribute): Long                                                     = CAPI.omMapAttrGetNumElements(attr.get)
+  def omMapAttrGetElementKey(attr: MlirAttribute, pos: Long)                                                 = MlirIdentifier(
     CAPI.omMapAttrGetElementKey(arena, attr.get, pos)
   )
-  def omMapAttrGetElementValue(attr: MlirAttribute, pos: Long) = MlirAttribute(
+  def omMapAttrGetElementValue(attr: MlirAttribute, pos: Long)                                               = MlirAttribute(
     CAPI.omMapAttrGetElementValue(arena, attr.get, pos)
   )
 }
@@ -676,7 +673,7 @@ trait ForeignType[T] {
 }
 
 final case class MlirAttribute(ptr: MemorySegment) extends ForeignType[MemorySegment] {
-  private[panamalib] def get = ptr
+  private[panamalib] def get    = ptr
   private[panamalib] val sizeof = circt.MlirAttribute.sizeof().toInt
 }
 object MlirAttribute {
@@ -684,7 +681,7 @@ object MlirAttribute {
 }
 
 final case class MlirNamedAttribute(ptr: MemorySegment) extends ForeignType[MemorySegment] {
-  private[panamalib] def get = ptr
+  private[panamalib] def get    = ptr
   private[panamalib] val sizeof = circt.MlirNamedAttribute.sizeof().toInt
 }
 object MlirNamedAttribute {
@@ -692,7 +689,7 @@ object MlirNamedAttribute {
 }
 
 final case class MlirBlock(ptr: MemorySegment) extends ForeignType[MemorySegment] {
-  private[panamalib] def get = ptr
+  private[panamalib] def get    = ptr
   private[panamalib] val sizeof = circt.MlirBlock.sizeof().toInt
 }
 object MlirBlock {
@@ -700,7 +697,7 @@ object MlirBlock {
 }
 
 final case class MlirRegion(ptr: MemorySegment) extends ForeignType[MemorySegment] {
-  private[panamalib] def get = ptr
+  private[panamalib] def get    = ptr
   private[panamalib] val sizeof = circt.MlirRegion.sizeof().toInt
 }
 object MlirRegion {
@@ -708,7 +705,7 @@ object MlirRegion {
 }
 
 final case class MlirIdentifier(ptr: MemorySegment) extends ForeignType[MemorySegment] {
-  private[panamalib] def get = ptr
+  private[panamalib] def get    = ptr
   private[panamalib] val sizeof = circt.MlirIdentifier.sizeof().toInt
 }
 object MlirIdentifier {
@@ -716,7 +713,7 @@ object MlirIdentifier {
 }
 
 final case class MlirLocation(ptr: MemorySegment) extends ForeignType[MemorySegment] {
-  private[panamalib] def get = ptr
+  private[panamalib] def get    = ptr
   private[panamalib] val sizeof = circt.MlirLocation.sizeof().toInt
 }
 object MlirLocation {
@@ -724,7 +721,7 @@ object MlirLocation {
 }
 
 final case class MlirModule(ptr: MemorySegment) extends ForeignType[MemorySegment] {
-  private[panamalib] def get = ptr
+  private[panamalib] def get    = ptr
   private[panamalib] val sizeof = circt.MlirModule.sizeof().toInt
 }
 object MlirModule {
@@ -732,7 +729,7 @@ object MlirModule {
 }
 
 final case class MlirOperation(ptr: MemorySegment) extends ForeignType[MemorySegment] {
-  private[panamalib] def get = ptr
+  private[panamalib] def get    = ptr
   private[panamalib] val sizeof = circt.MlirOperation.sizeof().toInt
 }
 object MlirOperation {
@@ -740,7 +737,7 @@ object MlirOperation {
 }
 
 final case class MlirOperationState(ptr: MemorySegment) extends ForeignType[MemorySegment] {
-  private[panamalib] def get = ptr
+  private[panamalib] def get    = ptr
   private[panamalib] val sizeof = circt.MlirOperationState.sizeof().toInt
 }
 object MlirOperationState {
@@ -748,7 +745,7 @@ object MlirOperationState {
 }
 
 final case class MlirType(ptr: MemorySegment) extends ForeignType[MemorySegment] {
-  private[panamalib] def get = ptr
+  private[panamalib] def get    = ptr
   private[panamalib] val sizeof = circt.MlirType.sizeof().toInt
 }
 object MlirType {
@@ -756,7 +753,7 @@ object MlirType {
 }
 
 final case class MlirValue(ptr: MemorySegment) extends ForeignType[MemorySegment] {
-  private[panamalib] def get = ptr
+  private[panamalib] def get    = ptr
   private[panamalib] val sizeof = circt.MlirValue.sizeof().toInt
 }
 object MlirValue {
@@ -764,7 +761,7 @@ object MlirValue {
 }
 
 final case class MlirStringRef(ptr: MemorySegment) extends ForeignType[MemorySegment] {
-  private[panamalib] def get = ptr
+  private[panamalib] def get    = ptr
   private[panamalib] val sizeof = circt.MlirStringRef.sizeof().toInt
 
   def toBytes: Array[Byte] = {
@@ -779,7 +776,7 @@ object MlirStringRef {
 }
 
 final case class MlirLogicalResult(ptr: MemorySegment) extends ForeignType[MemorySegment] {
-  private[panamalib] def get = ptr
+  private[panamalib] def get    = ptr
   private[panamalib] val sizeof = circt.MlirLogicalResult.sizeof().toInt
 }
 object MlirLogicalResult {
@@ -787,7 +784,7 @@ object MlirLogicalResult {
 }
 
 final case class MlirStringCallback(ptr: MemorySegment) extends ForeignType[MemorySegment] {
-  private[panamalib] def get = ptr
+  private[panamalib] def get    = ptr
   private[panamalib] val sizeof = CAPI.C_POINTER.byteSize().toInt
 }
 object MlirStringCallback {
@@ -795,7 +792,7 @@ object MlirStringCallback {
 }
 
 final case class MlirPassManager(ptr: MemorySegment) extends ForeignType[MemorySegment] {
-  private[panamalib] def get = ptr
+  private[panamalib] def get    = ptr
   private[panamalib] val sizeof = circt.MlirPassManager.sizeof().toInt
 }
 object MlirPassManager {
@@ -803,7 +800,7 @@ object MlirPassManager {
 }
 
 final case class MlirOpPassManager(ptr: MemorySegment) extends ForeignType[MemorySegment] {
-  private[panamalib] def get = ptr
+  private[panamalib] def get    = ptr
   private[panamalib] val sizeof = circt.MlirOpPassManager.sizeof().toInt
 }
 object MlirOpPassManager {
@@ -811,7 +808,7 @@ object MlirOpPassManager {
 }
 
 final case class MlirPass(ptr: MemorySegment) extends ForeignType[MemorySegment] {
-  private[panamalib] def get = ptr
+  private[panamalib] def get    = ptr
   private[panamalib] val sizeof = circt.MlirPass.sizeof().toInt
 }
 object MlirPass {
@@ -823,7 +820,7 @@ final case class FIRRTLBundleField(name: String, isFlip: Boolean, tpe: MlirType)
 final case class FIRRTLClassElement(name: String, tpe: MlirType, direction: FIRRTLDirection)
 
 final case class CirctFirtoolFirtoolOptions(ptr: MemorySegment) extends ForeignType[MemorySegment] {
-  private[panamalib] def get = ptr
+  private[panamalib] def get    = ptr
   private[panamalib] val sizeof = circt.CirctFirtoolFirtoolOptions.sizeof().toInt
 }
 object CirctFirtoolFirtoolOptions {
@@ -831,7 +828,7 @@ object CirctFirtoolFirtoolOptions {
 }
 
 final case class OMEvaluator(ptr: MemorySegment) extends ForeignType[MemorySegment] {
-  private[panamalib] def get = ptr
+  private[panamalib] def get    = ptr
   private[panamalib] val sizeof = circt.OMEvaluator.sizeof().toInt
 }
 object OMEvaluator {
@@ -839,7 +836,7 @@ object OMEvaluator {
 }
 
 final case class OMEvaluatorValue(ptr: MemorySegment) extends ForeignType[MemorySegment] {
-  private[panamalib] def get = ptr
+  private[panamalib] def get    = ptr
   private[panamalib] val sizeof = circt.OMEvaluatorValue.sizeof().toInt
 }
 object OMEvaluatorValue {
@@ -847,7 +844,7 @@ object OMEvaluatorValue {
 }
 
 final case class HWInstanceGraph(ptr: MemorySegment) extends ForeignType[MemorySegment] {
-  private[panamalib] def get = ptr
+  private[panamalib] def get    = ptr
   private[panamalib] val sizeof = circt.HWInstanceGraph.sizeof().toInt
 }
 object HWInstanceGraph {
@@ -855,7 +852,7 @@ object HWInstanceGraph {
 }
 
 final case class HWInstanceGraphNode(ptr: MemorySegment) extends ForeignType[MemorySegment] {
-  private[panamalib] def get = ptr
+  private[panamalib] def get    = ptr
   private[panamalib] val sizeof = circt.HWInstanceGraphNode.sizeof().toInt
 }
 object HWInstanceGraphNode {
@@ -863,7 +860,7 @@ object HWInstanceGraphNode {
 }
 
 final case class HWInstanceGraphNodeCallback(ptr: MemorySegment) extends ForeignType[MemorySegment] {
-  private[panamalib] def get = ptr
+  private[panamalib] def get    = ptr
   private[panamalib] val sizeof = CAPI.C_POINTER.byteSize().toInt
 }
 object HWInstanceGraphNodeCallback {
@@ -875,55 +872,55 @@ object HWInstanceGraphNodeCallback {
 //
 
 sealed abstract class FIRRTLConvention(val value: Int) extends ForeignType[Int] {
-  private[panamalib] def get = value
+  private[panamalib] def get    = value
   private[panamalib] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
 }
 object FIRRTLConvention {
-  final case object Internal extends FIRRTLConvention(value = CAPI.FIRRTL_CONVENTION_INTERNAL())
+  final case object Internal   extends FIRRTLConvention(value = CAPI.FIRRTL_CONVENTION_INTERNAL())
   final case object Scalarized extends FIRRTLConvention(value = CAPI.FIRRTL_CONVENTION_SCALARIZED())
 }
 
 sealed abstract class FIRRTLNameKind(val value: Int) extends ForeignType[Int] {
-  private[panamalib] def get = value
+  private[panamalib] def get    = value
   private[panamalib] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
 }
 object FIRRTLNameKind {
-  final case object DroppableName extends FIRRTLNameKind(value = CAPI.FIRRTL_NAME_KIND_DROPPABLE_NAME())
+  final case object DroppableName   extends FIRRTLNameKind(value = CAPI.FIRRTL_NAME_KIND_DROPPABLE_NAME())
   final case object InterestingName extends FIRRTLNameKind(value = CAPI.FIRRTL_NAME_KIND_INTERESTING_NAME())
 }
 
 sealed abstract class FIRRTLDirection(val value: Int) extends ForeignType[Int] {
-  private[panamalib] def get = value
+  private[panamalib] def get    = value
   private[panamalib] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
 }
 object FIRRTLDirection {
-  final case object In extends FIRRTLDirection(value = CAPI.FIRRTL_DIRECTION_IN())
+  final case object In  extends FIRRTLDirection(value = CAPI.FIRRTL_DIRECTION_IN())
   final case object Out extends FIRRTLDirection(value = CAPI.FIRRTL_DIRECTION_OUT())
 }
 
 sealed abstract class FIRRTLRUW(val value: Int) extends ForeignType[Int] {
-  private[panamalib] def get = value
+  private[panamalib] def get    = value
   private[panamalib] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
 }
 object FIRRTLRUW {
   final case object Undefined extends FIRRTLRUW(value = CAPI.FIRRTL_RUW_UNDEFINED())
-  final case object Old extends FIRRTLRUW(value = CAPI.FIRRTL_RUW_OLD())
-  final case object New extends FIRRTLRUW(value = CAPI.FIRRTL_RUW_NEW())
+  final case object Old       extends FIRRTLRUW(value = CAPI.FIRRTL_RUW_OLD())
+  final case object New       extends FIRRTLRUW(value = CAPI.FIRRTL_RUW_NEW())
 }
 
 sealed abstract class FIRRTLMemDir(val value: Int) extends ForeignType[Int] {
-  private[panamalib] def get = value
+  private[panamalib] def get    = value
   private[panamalib] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
 }
 object FIRRTLMemDir {
-  final case object Infer extends FIRRTLMemDir(value = CAPI.FIRRTL_MEM_DIR_INFER())
-  final case object Read extends FIRRTLMemDir(value = CAPI.FIRRTL_MEM_DIR_READ())
-  final case object Write extends FIRRTLMemDir(value = CAPI.FIRRTL_MEM_DIR_WRITE())
+  final case object Infer     extends FIRRTLMemDir(value = CAPI.FIRRTL_MEM_DIR_INFER())
+  final case object Read      extends FIRRTLMemDir(value = CAPI.FIRRTL_MEM_DIR_READ())
+  final case object Write     extends FIRRTLMemDir(value = CAPI.FIRRTL_MEM_DIR_WRITE())
   final case object ReadWrite extends FIRRTLMemDir(value = CAPI.FIRRTL_MEM_DIR_READ_WRITE())
 }
 
 sealed class CirctFirtoolPreserveAggregateMode(val value: Int) extends ForeignType[Int] {
-  private[panamalib] def get = value
+  private[panamalib] def get    = value
   private[panamalib] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
 }
 object CirctFirtoolPreserveAggregateMode {
@@ -938,7 +935,7 @@ object CirctFirtoolPreserveAggregateMode {
 }
 
 sealed class CirctFirtoolPreserveValuesMode(val value: Int) extends ForeignType[Int] {
-  private[panamalib] def get = value
+  private[panamalib] def get    = value
   private[panamalib] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
 }
 object CirctFirtoolPreserveValuesMode {
@@ -947,32 +944,32 @@ object CirctFirtoolPreserveValuesMode {
   final case object None extends CirctFirtoolPreserveValuesMode(value = CAPI.CIRCT_FIRTOOL_PRESERVE_VALUES_MODE_NONE())
   final case object Named
       extends CirctFirtoolPreserveValuesMode(value = CAPI.CIRCT_FIRTOOL_PRESERVE_VALUES_MODE_NAMED())
-  final case object All extends CirctFirtoolPreserveValuesMode(value = CAPI.CIRCT_FIRTOOL_PRESERVE_VALUES_MODE_ALL())
+  final case object All  extends CirctFirtoolPreserveValuesMode(value = CAPI.CIRCT_FIRTOOL_PRESERVE_VALUES_MODE_ALL())
 }
 
 sealed class CirctFirtoolBuildMode(val value: Int) extends ForeignType[Int] {
-  private[panamalib] def get = value
+  private[panamalib] def get    = value
   private[panamalib] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
 }
 object CirctFirtoolBuildMode {
   final case object Default extends CirctFirtoolBuildMode(value = CAPI.CIRCT_FIRTOOL_BUILD_MODE_DEFAULT())
-  final case object Debug extends CirctFirtoolBuildMode(value = CAPI.CIRCT_FIRTOOL_BUILD_MODE_DEBUG())
+  final case object Debug   extends CirctFirtoolBuildMode(value = CAPI.CIRCT_FIRTOOL_BUILD_MODE_DEBUG())
   final case object Release extends CirctFirtoolBuildMode(value = CAPI.CIRCT_FIRTOOL_BUILD_MODE_RELEASE())
 }
 
 sealed class CirctFirtoolRandomKind(val value: Int) extends ForeignType[Int] {
-  private[panamalib] def get = value
+  private[panamalib] def get    = value
   private[panamalib] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
 }
 object CirctFirtoolRandomKind {
   final case object None extends CirctFirtoolRandomKind(value = CAPI.CIRCT_FIRTOOL_RANDOM_KIND_NONE())
-  final case object Mem extends CirctFirtoolRandomKind(value = CAPI.CIRCT_FIRTOOL_RANDOM_KIND_MEM())
-  final case object Reg extends CirctFirtoolRandomKind(value = CAPI.CIRCT_FIRTOOL_RANDOM_KIND_REG())
-  final case object All extends CirctFirtoolRandomKind(value = CAPI.CIRCT_FIRTOOL_RANDOM_KIND_ALL())
+  final case object Mem  extends CirctFirtoolRandomKind(value = CAPI.CIRCT_FIRTOOL_RANDOM_KIND_MEM())
+  final case object Reg  extends CirctFirtoolRandomKind(value = CAPI.CIRCT_FIRTOOL_RANDOM_KIND_REG())
+  final case object All  extends CirctFirtoolRandomKind(value = CAPI.CIRCT_FIRTOOL_RANDOM_KIND_ALL())
 }
 
 sealed class CirctFirtoolCompanionMode(val value: Int) extends ForeignType[Int] {
-  private[panamalib] def get = value
+  private[panamalib] def get    = value
   private[panamalib] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
 }
 object CirctFirtoolCompanionMode {
@@ -983,7 +980,7 @@ object CirctFirtoolCompanionMode {
 }
 
 sealed class CirctFirtoolVerificationFlavor(val value: Int) extends ForeignType[Int] {
-  private[panamalib] def get = value
+  private[panamalib] def get    = value
   private[panamalib] val sizeof = 4 // FIXME: jextract doesn't export type for C enum
 }
 object CirctFirtoolVerificationFlavor {
@@ -992,5 +989,5 @@ object CirctFirtoolVerificationFlavor {
       extends CirctFirtoolVerificationFlavor(value = CAPI.CIRCT_FIRTOOL_VERIFICATION_FLAVOR_IF_ELSE_FATAL())
   final case object Immediate
       extends CirctFirtoolVerificationFlavor(value = CAPI.CIRCT_FIRTOOL_VERIFICATION_FLAVOR_IMMEDIATE())
-  final case object Sva extends CirctFirtoolVerificationFlavor(value = CAPI.CIRCT_FIRTOOL_VERIFICATION_FLAVOR_SVA())
+  final case object Sva  extends CirctFirtoolVerificationFlavor(value = CAPI.CIRCT_FIRTOOL_VERIFICATION_FLAVOR_SVA())
 }

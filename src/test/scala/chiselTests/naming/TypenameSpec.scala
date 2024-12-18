@@ -16,14 +16,14 @@ class TypenameSpec extends ChiselFlatSpec {
       }
 
       val io = IO(new Bundle {
-        val uint = Decoupled(UInt(4.W))
-        val sint = Decoupled(SInt(8.W))
-        val bool = Decoupled(Bool())
-        val vec = Decoupled(Vec(3, UInt(8.W)))
+        val uint       = Decoupled(UInt(4.W))
+        val sint       = Decoupled(SInt(8.W))
+        val bool       = Decoupled(Bool())
+        val vec        = Decoupled(Vec(3, UInt(8.W)))
         val asyncReset = Decoupled(AsyncReset())
-        val reset = Decoupled(Reset())
-        val clock = Decoupled(Clock())
-        val analog = Analog(32.W)
+        val reset      = Decoupled(Reset())
+        val clock      = Decoupled(Clock())
+        val analog     = Analog(32.W)
       })
 
       val uintEnq = Wire(Decoupled(UInt(4.W)))

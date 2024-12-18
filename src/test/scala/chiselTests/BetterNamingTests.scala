@@ -18,10 +18,10 @@ class Other(w: Int) extends Module {
 // Check the names of the Modules (not instances)
 class PerNameIndexing(count: Int) extends NamedModuleTester {
   def genModName(prefix: String, idx: Int): String = if (idx == 0) prefix else s"${prefix}_$idx"
-  val wires = Seq.tabulate(count) { i =>
+  val wires                                        = Seq.tabulate(count) { i =>
     expectModuleName(Module(new Other(i)), genModName("Other", i))
   }
-  val queues = Seq.tabulate(count) { i =>
+  val queues                                       = Seq.tabulate(count) { i =>
     expectModuleName(
       Module(new Queue(UInt(i.W), 16) {
         // For this test we need to override desiredName to give the old name, so that indexing
@@ -35,7 +35,7 @@ class PerNameIndexing(count: Int) extends NamedModuleTester {
 
 // Note this only checks Iterable[Chisel.Data] which excludes Maps
 class IterableNaming extends NamedModuleTester {
-  val seq = Seq.tabulate(3) { i =>
+  val seq    = Seq.tabulate(3) { i =>
     Seq.tabulate(2) { j => expectName(WireDefault((i * j).U), s"seq_${i}_${j}") }
   }
   val optSet = Some(
@@ -47,7 +47,7 @@ class IterableNaming extends NamedModuleTester {
     )
   )
 
-  val stack = {
+  val stack  = {
     val s = mutable.Stack[Module]()
     for (i <- 0 until 4) {
       val j = 3 - i
@@ -62,7 +62,7 @@ class IterableNaming extends NamedModuleTester {
   // infinite-size structures. Scala 2.13 LazyList would give the same old naming behavior but does
   // not exist in Scala 2.12 so this test has been simplified a bit.
   val stream = LazyList.continually(Module(new Other(8)))
-  val list = List.tabulate(4)(i => expectName(Module(new Other(i)), s"list_$i"))
+  val list   = List.tabulate(4)(i => expectName(Module(new Other(i)), s"list_$i"))
 }
 
 class DigitFieldNamesInRecord extends NamedModuleTester {

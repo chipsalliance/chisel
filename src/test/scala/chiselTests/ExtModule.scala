@@ -13,12 +13,12 @@ import chisel3.reflect.DataMirror
 package extmoduletests {
 
   class BlackBoxInverter extends ExtModule {
-    val in = IO(Input(Bool()))
+    val in  = IO(Input(Bool()))
     val out = IO(Output(Bool()))
   }
 
   class BlackBoxPassthrough extends ExtModule {
-    val in = IO(Input(Bool()))
+    val in  = IO(Input(Bool()))
     val out = IO(Output(Bool()))
   }
 }
@@ -41,13 +41,13 @@ class ExtModuleTester extends BasicTester {
   */
 
 class MultiExtModuleTester extends BasicTester {
-  val blackBoxInvPos = Module(new extmoduletests.BlackBoxInverter)
-  val blackBoxInvNeg = Module(new extmoduletests.BlackBoxInverter)
+  val blackBoxInvPos  = Module(new extmoduletests.BlackBoxInverter)
+  val blackBoxInvNeg  = Module(new extmoduletests.BlackBoxInverter)
   val blackBoxPassPos = Module(new extmoduletests.BlackBoxPassthrough)
   val blackBoxPassNeg = Module(new extmoduletests.BlackBoxPassthrough)
 
-  blackBoxInvPos.in := 1.U
-  blackBoxInvNeg.in := 0.U
+  blackBoxInvPos.in  := 1.U
+  blackBoxInvNeg.in  := 0.U
   blackBoxPassPos.in := 1.U
   blackBoxPassNeg.in := 0.U
 
@@ -59,21 +59,21 @@ class MultiExtModuleTester extends BasicTester {
 }
 
 class ExtModuleWithSuggestName extends ExtModule {
-  val in = IO(Input(UInt(8.W)))
+  val in  = IO(Input(UInt(8.W)))
   in.suggestName("foo")
   val out = IO(Output(UInt(8.W)))
 }
 
 class ExtModuleWithSuggestNameTester extends Module {
-  val in = IO(Input(UInt(8.W)))
-  val out = IO(Output(UInt(8.W)))
+  val in   = IO(Input(UInt(8.W)))
+  val out  = IO(Output(UInt(8.W)))
   val inst = Module(new ExtModuleWithSuggestName)
   inst.in := in
-  out := inst.out
+  out     := inst.out
 }
 
 class SimpleIOBundle extends Bundle {
-  val in = Input(UInt(8.W))
+  val in  = Input(UInt(8.W))
   val out = Output(UInt(8.W))
 }
 
@@ -82,16 +82,16 @@ class ExtModuleWithFlatIO extends ExtModule {
 }
 
 class ExtModuleWithFlatIOTester extends Module {
-  val io = IO(new SimpleIOBundle)
+  val io   = IO(new SimpleIOBundle)
   val inst = Module(new ExtModuleWithFlatIO)
   io <> inst.badIO
 }
 
 class ExtModuleInvalidatedTester extends Module {
-  val in = IO(Input(UInt(8.W)))
-  val out = IO(Output(UInt(8.W)))
+  val in   = IO(Input(UInt(8.W)))
+  val out  = IO(Output(UInt(8.W)))
   val inst = Module(new ExtModule {
-    val in = IO(Input(UInt(8.W)))
+    val in  = IO(Input(UInt(8.W)))
     val out = IO(Output(UInt(8.W)))
   })
   inst.in := in
@@ -108,7 +108,7 @@ class ExtModuleSpec extends ChiselFlatSpec {
   "DataMirror.modulePorts" should "work with ExtModule" in {
     ChiselStage.emitCHIRRTL(new Module {
       val io = IO(new Bundle {})
-      val m = Module(new extmoduletests.BlackBoxPassthrough)
+      val m  = Module(new extmoduletests.BlackBoxPassthrough)
       assert(DataMirror.modulePorts(m) == Seq("in" -> m.in, "out" -> m.out))
     })
   }

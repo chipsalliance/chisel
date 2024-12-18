@@ -13,7 +13,7 @@ object Platform extends Group {
 }
 
 class TargetIO(width: Int) extends Bundle {
-  val in = Flipped(UInt(width.W))
+  val in  = Flipped(UInt(width.W))
   val out = UInt(width.W)
 }
 
@@ -32,7 +32,7 @@ class ModuleChoiceSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
         ModuleChoice(new VerifTarget)(Seq(Platform.FPGA -> new FPGATarget, Platform.ASIC -> new ASICTarget))
 
       inst.in := 42.U(8.W)
-      out := inst.out
+      out     := inst.out
     }
 
     val chirrtl = ChiselStage.emitCHIRRTL(new ModuleWithChoice, Array("--full-stacktrace"))
@@ -52,7 +52,7 @@ class ModuleChoiceSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
 
     class MixedOptions extends Module {
       object Performance extends Group {
-        object Fast extends Case
+        object Fast  extends Case
         object Small extends Case
       }
 
@@ -62,7 +62,7 @@ class ModuleChoiceSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
         ModuleChoice(new VerifTarget)(Seq(Platform.FPGA -> new FPGATarget, Performance.Fast -> new ASICTarget))
 
       inst.in := 42.U(8.W)
-      out := inst.out
+      out     := inst.out
     }
 
     intercept[IllegalArgumentException] { ChiselStage.emitCHIRRTL(new MixedOptions) }.getMessage() should include(
@@ -80,7 +80,7 @@ class ModuleChoiceSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
         ModuleChoice(new VerifTarget)(Seq())
 
       inst.in := 42.U(8.W)
-      out := inst.out
+      out     := inst.out
     }
 
     intercept[IllegalArgumentException] { ChiselStage.emitCHIRRTL(new MixedOptions) }.getMessage() should include(
@@ -98,7 +98,7 @@ class ModuleChoiceSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
         ModuleChoice(new VerifTarget)(Seq(Platform.FPGA -> new FPGATarget, Platform.FPGA -> new ASICTarget))
 
       inst.in := 42.U(8.W)
-      out := inst.out
+      out     := inst.out
     }
 
     intercept[IllegalArgumentException] { ChiselStage.emitCHIRRTL(new MixedOptions) }.getMessage() should include(
@@ -118,7 +118,7 @@ class ModuleChoiceSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
         ModuleChoice(new VerifTarget)(Seq(Platform.FPGA -> new Target16))
 
       inst.in := 42.U(8.W)
-      out := inst.out
+      out     := inst.out
     }
 
     intercept[ChiselException] { ChiselStage.emitCHIRRTL(new MixedIO, Array("--throw-on-first-error")) }

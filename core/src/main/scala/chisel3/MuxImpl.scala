@@ -12,28 +12,28 @@ private[chisel3] trait MuxImpl {
 
   protected def _applyImpl[T <: Data](
     cond: Bool,
-    con:  T,
-    alt:  T
+    con: T,
+    alt: T
   )(
     implicit sourceInfo: SourceInfo
   ): T = {
     requireIsHardware(cond, "mux condition")
     requireIsHardware(con, "mux true value")
     requireIsHardware(alt, "mux false value")
-    val d = cloneSupertype(Seq(con, alt), "Mux")
+    val d      = cloneSupertype(Seq(con, alt), "Mux")
     val conRef = con match { // this matches chisel semantics (DontCare as object) to firrtl semantics (invalidate)
       case DontCare =>
         val dcWire = Wire(d)
         dcWire := DontCare
         dcWire.ref
-      case _ => con.ref
+      case _        => con.ref
     }
     val altRef = alt match {
       case DontCare =>
         val dcWire = Wire(d)
         dcWire := DontCare
         dcWire.ref
-      case _ => alt.ref
+      case _        => alt.ref
     }
     pushOp(DefPrim(sourceInfo, d, MultiplexOp, cond.ref, conRef, altRef))
   }

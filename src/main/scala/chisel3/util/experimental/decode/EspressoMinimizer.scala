@@ -27,23 +27,23 @@ object EspressoMinimizer extends Minimizer with LazyLogging {
         .replace('0', 't')
         .replace('1', '0')
         .replace('t', '1')
-      val defaultType: Char = {
+      val defaultType: Char      = {
         val t = table.default.rawString.toCharArray.distinct
         require(t.length == 1, "Internal Error: espresso only accept unified default type.")
         t.head
       }
-      val tableType: String = defaultType match {
+      val tableType: String      = defaultType match {
         case '?' => "fr"
         case _   => "fd"
       }
-      val rawTable = table.toString
+      val rawTable               = table.toString
         .split("\n")
         .filter(_.contains("->"))
         .mkString("\n")
         .replace("->", " ")
         .replace('?', '-')
       // invert all output, since espresso cannot handle default is on.
-      val invertRawTable = rawTable
+      val invertRawTable         = rawTable
         .split("\n")
         .map(_.split(" "))
         .map(row => s"${row(0)} ${invert(row(1))}")
@@ -73,7 +73,7 @@ object EspressoMinimizer extends Minimizer with LazyLogging {
       else out
     }
 
-    val input = writeTable(table)
+    val input  = writeTable(table)
     logger.trace(s"""espresso input table:
                     |$input
                     |""".stripMargin)

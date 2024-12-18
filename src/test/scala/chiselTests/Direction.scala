@@ -11,22 +11,22 @@ import circt.stage.ChiselStage
 import scala.collection.immutable.SeqMap
 
 class DirectionedBundle extends Bundle {
-  val in = Input(UInt(32.W))
+  val in  = Input(UInt(32.W))
   val out = Output(UInt(32.W))
 }
 
 class DirectionHaver extends Module {
   val io = IO(new Bundle {
-    val in = Input(UInt(32.W))
-    val out = Output(UInt(32.W))
-    val inBundle = Input(new DirectionedBundle) // should override elements
+    val in        = Input(UInt(32.W))
+    val out       = Output(UInt(32.W))
+    val inBundle  = Input(new DirectionedBundle)  // should override elements
     val outBundle = Output(new DirectionedBundle) // should override elements
   })
 }
 
 class GoodDirection extends DirectionHaver {
-  io.out := 0.U
-  io.outBundle.in := 0.U
+  io.out           := 0.U
+  io.outBundle.in  := 0.U
   io.outBundle.out := 0.U
 }
 
@@ -40,13 +40,13 @@ class BadSubDirection extends DirectionHaver {
 
 class TopDirectionOutput extends Module {
   val io = IO(Output(new DirectionedBundle))
-  io.in := 42.U
+  io.in  := 42.U
   io.out := 117.U
 }
 
 class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
 
-  //TODO: In Chisel3 these are actually FIRRTL errors. Remove from tests?
+  // TODO: In Chisel3 these are actually FIRRTL errors. Remove from tests?
 
   property("Outputs should be assignable") {
     ChiselStage.emitCHIRRTL(new GoodDirection)
@@ -69,19 +69,19 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
     ChiselStage.emitCHIRRTL(new Module {
       val io = IO(new Bundle {
         val foo = Input(UInt(8.W))
-        val x = Vec(0, Output(UInt(8.W)))
+        val x   = Vec(0, Output(UInt(8.W)))
       })
     })
     ChiselStage.emitCHIRRTL(new Module {
       val io = IO(new Bundle {
         val foo = Input(UInt(8.W))
-        val x = Flipped(Vec(0, Output(UInt(8.W))))
+        val x   = Flipped(Vec(0, Output(UInt(8.W))))
       })
     })
     ChiselStage.emitCHIRRTL(new Module {
       val io = IO(new Bundle {
         val foo = Input(UInt(8.W))
-        val x = Output(Vec(0, UInt(8.W)))
+        val x   = Output(Vec(0, UInt(8.W)))
       })
     })
   }
@@ -92,7 +92,7 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
     ChiselStage.emitCHIRRTL(new Module {
       val io = IO(new Bundle {
         val foo = Input(UInt(8.W))
-        val x = Vec(0, UInt(8.W))
+        val x   = Vec(0, UInt(8.W))
       })
     })
   }
@@ -101,19 +101,19 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
     ChiselStage.emitCHIRRTL(new Module {
       val io = IO(new Bundle {
         val foo = Input(UInt(8.W))
-        val x = new Bundle {}
+        val x   = new Bundle {}
       })
     })
     ChiselStage.emitCHIRRTL(new Module {
       val io = IO(new Bundle {
         val foo = Input(UInt(8.W))
-        val x = Flipped(new Bundle {})
+        val x   = Flipped(new Bundle {})
       })
     })
     ChiselStage.emitCHIRRTL(new Module {
       val io = IO(new Bundle {
         val foo = Input(UInt(8.W))
-        val x = new Bundle {
+        val x   = new Bundle {
           val y = if (false) Some(Input(UInt(8.W))) else None
         }
       })
@@ -126,7 +126,7 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
     ChiselStage.emitCHIRRTL(new Module {
       val io = IO(new Bundle {
         val foo = UInt(8.W)
-        val x = Input(new Bundle {})
+        val x   = Input(new Bundle {})
       })
     })
   }
@@ -137,14 +137,14 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
   property("Flipped should flip the specified direction of a Bundle") {
     class MyBundle extends Bundle {
       val out = Output(UInt(8.W))
-      val in = Input(UInt(8.W))
+      val in  = Input(UInt(8.W))
     }
-    class Top extends Module {
-      val foo = IO(Flipped(new MyBundle))
+    class Top      extends Module {
+      val foo     = IO(Flipped(new MyBundle))
       // Where I come from, referential transparency is a good thing
       val fooType = chiselTypeOf(foo)
-      val fizz = IO(Flipped(fooType))
-      val buzz = IO(Flipped(chiselTypeOf(foo)))
+      val fizz    = IO(Flipped(fooType))
+      val buzz    = IO(Flipped(chiselTypeOf(foo)))
 
       DataMirror.specifiedDirectionOf(foo) should be(SpecifiedDirection.Flip)
       DataMirror.specifiedDirectionOf(fizz) should be(SpecifiedDirection.Unspecified)
@@ -160,32 +160,32 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
   }
 
   property("Directions should be preserved through cloning and binding of Bundles") {
-    class MyBundle extends Bundle {
+    class MyBundle                                  extends Bundle {
       val foo = Input(UInt(8.W))
       val bar = Output(UInt(8.W))
     }
-    class MyOuterBundle extends Bundle {
+    class MyOuterBundle                             extends Bundle {
       val fizz = new MyBundle
       val buzz = Flipped(new MyBundle)
     }
     class Top(hwop: MyOuterBundle => MyOuterBundle) extends Module {
-      val a = new MyOuterBundle
-      val b = hwop(a)
+      val a             = new MyOuterBundle
+      val b             = hwop(a)
       val specifiedDirs = Seq(
         a.fizz.foo -> SpecifiedDirection.Input,
         a.fizz.bar -> SpecifiedDirection.Output,
-        a.fizz -> SpecifiedDirection.Unspecified,
+        a.fizz     -> SpecifiedDirection.Unspecified,
         a.buzz.foo -> SpecifiedDirection.Input,
         a.buzz.bar -> SpecifiedDirection.Output,
-        a.buzz -> SpecifiedDirection.Flip
+        a.buzz     -> SpecifiedDirection.Flip
       )
-      val actualDirs = Seq(
+      val actualDirs    = Seq(
         b.fizz.foo -> Direction.Input,
         b.fizz.bar -> Direction.Output,
-        b.fizz -> Direction.Bidirectional(Direction.Default),
+        b.fizz     -> Direction.Bidirectional(Direction.Default),
         b.buzz.foo -> Direction.Output,
         b.buzz.bar -> Direction.Input,
-        b.buzz -> Direction.Bidirectional(Direction.Flipped)
+        b.buzz     -> Direction.Bidirectional(Direction.Flipped)
       )
       for ((data, dir) <- specifiedDirs) {
         DataMirror.specifiedDirectionOf(data) shouldBe (dir)
@@ -202,27 +202,27 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
 
   property("Directions should be preserved through cloning and binding of Vecs") {
     class Top(hwop: Vec[Vec[UInt]] => Vec[Vec[UInt]]) extends Module {
-      val a = Vec(1, Input(UInt(8.W)))
-      val b = Vec(1, a)
-      val c = Vec(1, Flipped(a))
-      val io0 = IO(b)
-      val io1 = IO(c)
+      val a             = Vec(1, Input(UInt(8.W)))
+      val b             = Vec(1, a)
+      val c             = Vec(1, Flipped(a))
+      val io0           = IO(b)
+      val io1           = IO(c)
       val specifiedDirs = Seq(
-        a(0) -> SpecifiedDirection.Input,
+        a(0)    -> SpecifiedDirection.Input,
         b(0)(0) -> SpecifiedDirection.Input,
-        a -> SpecifiedDirection.Unspecified,
-        b -> SpecifiedDirection.Unspecified,
-        c(0) -> SpecifiedDirection.Flip,
+        a       -> SpecifiedDirection.Unspecified,
+        b       -> SpecifiedDirection.Unspecified,
+        c(0)    -> SpecifiedDirection.Flip,
         c(0)(0) -> SpecifiedDirection.Input,
-        c -> SpecifiedDirection.Unspecified
+        c       -> SpecifiedDirection.Unspecified
       )
-      val actualDirs = Seq(
+      val actualDirs    = Seq(
         io0(0)(0) -> Direction.Input,
-        io0(0) -> Direction.Input,
-        io0 -> Direction.Input,
+        io0(0)    -> Direction.Input,
+        io0       -> Direction.Input,
         io1(0)(0) -> Direction.Output,
-        io1(0) -> Direction.Output,
-        io1 -> Direction.Output
+        io1(0)    -> Direction.Output,
+        io1       -> Direction.Output
       )
       for ((data, dir) <- specifiedDirs) {
         DataMirror.specifiedDirectionOf(data) shouldBe (dir)
@@ -294,7 +294,7 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
   }
 
   property("Using Vec and Flipped together should calculate directions properly for an ExtModule") {
-    class MyBundle extends Bundle {
+    class MyBundle   extends Bundle    {
       val a = Input(Bool())
       val b = Output(Bool())
     }
@@ -320,7 +320,7 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
       assert(DataMirror.directionOf(flippedVecVecFlipped.head.head.a) == Direction.Input)
       assert(DataMirror.directionOf(flippedVecVecFlipped.head.head.b) == Direction.Output)
     }
-    class MyModule extends RawModule {
+    class MyModule   extends RawModule {
       val child = Module(new MyBlackBox)
     }
 
@@ -386,7 +386,7 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
     }
 
     val emitted: String = ChiselStage.emitCHIRRTL(new MyModule)
-    val firrtl:  String = ChiselStage.convert(new MyModule).serialize
+    val firrtl: String  = ChiselStage.convert(new MyModule).serialize
 
     // Check that emitted directions are correct.
     Seq(emitted, firrtl).foreach { o =>
@@ -450,12 +450,12 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
   }
 
   property("Can now describe a Decoupled bundle using Flipped, not Input/Output in chisel3") {
-    class Decoupled extends Bundle {
-      val bits = UInt(3.W)
+    class Decoupled extends Bundle    {
+      val bits  = UInt(3.W)
       val valid = Bool()
       val ready = Flipped(Bool())
     }
-    class MyModule extends RawModule {
+    class MyModule  extends RawModule {
       val incoming = IO(Flipped(new Decoupled))
       val outgoing = IO(new Decoupled)
 
@@ -470,21 +470,21 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
     assert(emitted.contains("connect outgoing, incoming"))
   }
   property("Can now mix Input/Output and Flipped within the same bundle") {
-    class Decoupled extends Bundle {
-      val bits = UInt(3.W)
+    class Decoupled           extends Bundle    {
+      val bits  = UInt(3.W)
       val valid = Bool()
       val ready = Flipped(Bool())
     }
-    class DecoupledAndMonitor extends Bundle {
+    class DecoupledAndMonitor extends Bundle    {
       val producer = new Decoupled()
       val consumer = Flipped(new Decoupled())
-      val monitor = Input(new Decoupled()) // Same as Flipped(stripFlipsIn(..))
-      val driver = Output(new Decoupled()) // Same as stripFlipsIn(..)
+      val monitor  = Input(new Decoupled())  // Same as Flipped(stripFlipsIn(..))
+      val driver   = Output(new Decoupled()) // Same as stripFlipsIn(..)
     }
-    class MyModule extends RawModule {
+    class MyModule            extends RawModule {
       val io = IO(Flipped(new DecoupledAndMonitor()))
       io.consumer <> io.producer
-      io.monitor.bits := io.driver.bits
+      io.monitor.bits  := io.driver.bits
       io.monitor.valid := io.driver.valid
       io.monitor.ready := io.driver.ready
     }
@@ -503,7 +503,7 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
   }
 
   property("Output mixed with unspecified directions should report Output") {
-    class MyBundle extends Bundle {
+    class MyBundle extends Bundle    {
       val foo = UInt(8.W)
       val bar = Output(UInt(8.W))
     }
@@ -522,7 +522,7 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
   }
 
   property("Input mixed with Flipped directions should report Input") {
-    class MyBundle extends Bundle {
+    class MyBundle extends Bundle    {
       val foo = Flipped(UInt(8.W))
       val bar = Input(UInt(8.W))
     }
@@ -541,19 +541,19 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
   }
 
   property("Bugfix: marking Vec fields with mixed directionality as Output/Input clears inner directions") {
-    class Decoupled extends Bundle {
-      val bits = UInt(3.W)
+    class Decoupled extends Bundle    {
+      val bits  = UInt(3.W)
       val valid = Bool()
       val ready = Flipped(Bool())
     }
-    class Coercing extends Bundle {
+    class Coercing  extends Bundle    {
       val source = Output(Vec(1, new Decoupled()))
-      val sink = Input(Vec(1, new Decoupled()))
+      val sink   = Input(Vec(1, new Decoupled()))
     }
-    class MyModule extends RawModule {
-      val io = IO(new Coercing())
+    class MyModule  extends RawModule {
+      val io     = IO(new Coercing())
       val source = IO(Output(Vec(1, new Decoupled())))
-      val sink = IO(Input(Vec(1, new Decoupled())))
+      val sink   = IO(Input(Vec(1, new Decoupled())))
     }
 
     val emitted: String = ChiselStage.emitCHIRRTL(new MyModule)
@@ -576,16 +576,16 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
   }
   property("Bugfix: clearing all flips inside an opaque type") {
 
-    class Decoupled extends Bundle {
-      val bits = UInt(3.W)
+    class Decoupled    extends Bundle                 {
+      val bits  = UInt(3.W)
       val valid = Bool()
       val ready = Flipped(Bool())
     }
     class MyOpaqueType extends Record with OpaqueType {
-      val k = new Decoupled()
+      val k        = new Decoupled()
       val elements = SeqMap("" -> k)
     }
-    class MyModule extends RawModule {
+    class MyModule     extends RawModule              {
       val w = Wire(new MyOpaqueType())
     }
 
@@ -600,7 +600,7 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
 
   property("Probe and const are preserved by Output()") {
     class MyModule extends RawModule {
-      val tpe = probe.Probe(Const(Bool()))
+      val tpe  = probe.Probe(Const(Bool()))
       val test = IO(Output(tpe))
     }
     val emitted: String = ChiselStage.emitCHIRRTL(new MyModule)

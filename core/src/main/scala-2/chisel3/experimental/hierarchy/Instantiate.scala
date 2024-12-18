@@ -51,7 +51,7 @@ object Instantiate extends InstantiateImpl {
 
   def _instance[K, A <: BaseModule: ru.WeakTypeTag](
     args: K,
-    f:    K => A
+    f: K => A
   )(
     implicit sourceInfo: SourceInfo
   ): Instance[A] = _instanceImpl(args, f, implicitly[ru.WeakTypeTag[A]])
@@ -59,12 +59,12 @@ object Instantiate extends InstantiateImpl {
   /** This is not part of the public API, do not call directly! */
   def _definition[K, A <: BaseModule: ru.WeakTypeTag](
     args: K,
-    f:    K => A
+    f: K => A
   ): Definition[A] = _definitionImpl(args, f, implicitly[ru.WeakTypeTag[A]])
 
   private object internal {
 
-    def instance[A <: BaseModule: c.WeakTypeTag](c: Context)(con: c.Tree): c.Tree = {
+    def instance[A <: BaseModule: c.WeakTypeTag](c: Context)(con: c.Tree): c.Tree   = {
       import c.universe._
 
       def matchStructure(proto: List[List[Tree]], args: List[Tree]): List[List[Tree]] = {
@@ -86,7 +86,7 @@ object Instantiate extends InstantiateImpl {
       con match {
         case q"new $tpname[..$tparams](...$argss)" =>
           // We first flatten the [potentially] multiple parameter lists into a single tuple (size 0 and 1 are special)
-          val args = argss.flatten
+          val args  = argss.flatten
           val nargs = args.size
 
           val funcArg = Ident(TermName("arg"))
@@ -102,8 +102,8 @@ object Instantiate extends InstantiateImpl {
           // We can't quasi-quote this too early, needs to be splatted in the later context
           // widen turns singleton type into nearest non-singleton type, eg. Int(3) => Int
           val funcArgTypes = args.map(_.asInstanceOf[Tree].tpe.widen)
-          val constructor = q"(($funcArg: (..$funcArgTypes)) => new $tpname[..$tparams](...$conArgs))"
-          val tup = q"(..$args)"
+          val constructor  = q"(($funcArg: (..$funcArgTypes)) => new $tpname[..$tparams](...$conArgs))"
+          val tup          = q"(..$args)"
           q"chisel3.experimental.hierarchy.Instantiate._instance[(..$funcArgTypes), $tpname]($tup, $constructor)"
 
         case _ =>
@@ -142,7 +142,7 @@ object Instantiate extends InstantiateImpl {
       con match {
         case q"new $tpname[..$tparams](...$argss)" =>
           // We first flatten the [potentially] multiple parameter lists into a single tuple (size 0 and 1 are special)
-          val args = argss.flatten
+          val args  = argss.flatten
           val nargs = args.size
 
           val funcArg = Ident(TermName("arg"))
@@ -158,8 +158,8 @@ object Instantiate extends InstantiateImpl {
           // We can't quasi-quote this too early, needs to be splatted in the later context
           // widen turns singleton type into nearest non-singleton type, eg. Int(3) => Int
           val funcArgTypes = args.map(_.asInstanceOf[Tree].tpe.widen)
-          val constructor = q"(($funcArg: (..$funcArgTypes)) => new $tpname[..$tparams](...$conArgs))"
-          val tup = q"(..$args)"
+          val constructor  = q"(($funcArg: (..$funcArgTypes)) => new $tpname[..$tparams](...$conArgs))"
+          val tup          = q"(..$args)"
           q"chisel3.experimental.hierarchy.Instantiate._definition[(..$funcArgTypes), $tpname]($tup, $constructor)"
 
         case _ =>

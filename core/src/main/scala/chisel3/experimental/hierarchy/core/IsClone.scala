@@ -17,7 +17,7 @@ trait IsClone[+T] {
   def hasSameProto(a: Any): Boolean = {
     val aProto = a match {
       case x: IsClone[_] => x.getProto
-      case o => o
+      case o             => o
     }
     this == aProto || getProto == aProto
   }

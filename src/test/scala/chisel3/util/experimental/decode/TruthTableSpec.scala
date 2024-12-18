@@ -21,7 +21,7 @@ class TruthTableSpec extends AnyFlatSpec {
     ),
     BitPat("b0")
   )
-  val str = """001->?
+  val str   = """001->?
               |010->?
               |100->1
               |101->1
@@ -67,7 +67,7 @@ class TruthTableSpec extends AnyFlatSpec {
     class Foo extends Module {
 
       val io = IO(new Bundle {
-        val in = Input(UInt(4.W))
+        val in  = Input(UInt(4.W))
         val out = Output(UInt(16.W))
       })
 

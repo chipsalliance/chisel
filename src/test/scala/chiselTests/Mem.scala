@@ -22,8 +22,8 @@ class MemVecTester extends BasicTester {
 
 class SyncReadMemTester extends BasicTester {
   val (cnt, _) = Counter(true.B, 5)
-  val mem = SyncReadMem(2, UInt(2.W))
-  val rdata = mem.read(cnt - 1.U, cnt =/= 0.U)
+  val mem      = SyncReadMem(2, UInt(2.W))
+  val rdata    = mem.read(cnt - 1.U, cnt =/= 0.U)
 
   switch(cnt) {
     is(0.U) { mem.write(cnt, 3.U) }
@@ -38,12 +38,12 @@ class SyncReadMemWriteCollisionTester extends BasicTester {
   val (cnt, _) = Counter(true.B, 5)
 
   // Write-first
-  val m0 = SyncReadMem(2, UInt(2.W), SyncReadMem.WriteFirst)
+  val m0  = SyncReadMem(2, UInt(2.W), SyncReadMem.WriteFirst)
   val rd0 = m0.read(cnt)
   m0.write(cnt, cnt)
 
   // Read-first
-  val m1 = SyncReadMem(2, UInt(2.W), SyncReadMem.ReadFirst)
+  val m1  = SyncReadMem(2, UInt(2.W), SyncReadMem.ReadFirst)
   val rd1 = m1.read(cnt)
   m1.write(cnt, cnt)
 
@@ -60,8 +60,8 @@ class SyncReadMemWriteCollisionTester extends BasicTester {
 
 class SyncReadMemWithZeroWidthTester extends BasicTester {
   val (cnt, _) = Counter(true.B, 3)
-  val mem = SyncReadMem(2, UInt(0.W))
-  val rdata = mem.read(0.U, true.B)
+  val mem      = SyncReadMem(2, UInt(0.W))
+  val rdata    = mem.read(0.U, true.B)
 
   switch(cnt) {
     is(1.U) { assert(rdata === 0.U) }
@@ -72,8 +72,8 @@ class SyncReadMemWithZeroWidthTester extends BasicTester {
 // TODO this can't actually simulate with FIRRTL behavioral mems
 class HugeSMemTester(size: BigInt) extends BasicTester {
   val (cnt, _) = Counter(true.B, 5)
-  val mem = SyncReadMem(size, UInt(8.W))
-  val rdata = mem.read(cnt - 1.U, cnt =/= 0.U)
+  val mem      = SyncReadMem(size, UInt(8.W))
+  val rdata    = mem.read(cnt - 1.U, cnt =/= 0.U)
 
   switch(cnt) {
     is(0.U) { mem.write(cnt, 3.U) }
@@ -85,8 +85,8 @@ class HugeSMemTester(size: BigInt) extends BasicTester {
 }
 class HugeCMemTester(size: BigInt) extends BasicTester {
   val (cnt, _) = Counter(true.B, 5)
-  val mem = Mem(size, UInt(8.W))
-  val rdata = mem.read(cnt)
+  val mem      = Mem(size, UInt(8.W))
+  val rdata    = mem.read(cnt)
 
   switch(cnt) {
     is(0.U) { mem.write(cnt, 3.U) }
@@ -99,11 +99,11 @@ class HugeCMemTester(size: BigInt) extends BasicTester {
 
 class SyncReadMemBundleTester extends BasicTester {
   val (cnt, _) = Counter(true.B, 5)
-  val tpe = new Bundle {
+  val tpe      = new Bundle {
     val foo = UInt(2.W)
   }
-  val mem = SyncReadMem(2, tpe)
-  val rdata = mem.read(cnt - 1.U, cnt =/= 0.U)
+  val mem      = SyncReadMem(2, tpe)
+  val rdata    = mem.read(cnt - 1.U, cnt =/= 0.U)
 
   switch(cnt) {
     is(0.U) {
@@ -146,23 +146,23 @@ private class TrueDualPortMemoryIO(val addrW: Int, val dataW: Int) extends Bundl
   require(addrW > 0, "address width must be greater than 0")
   require(dataW > 0, "data width must be greater than 0")
 
-  val clka = Input(Clock())
-  val ena = Input(Bool())
-  val wea = Input(Bool())
+  val clka  = Input(Clock())
+  val ena   = Input(Bool())
+  val wea   = Input(Bool())
   val addra = Input(UInt(addrW.W))
-  val dia = Input(UInt(dataW.W))
-  val doa = Output(UInt(dataW.W))
+  val dia   = Input(UInt(dataW.W))
+  val doa   = Output(UInt(dataW.W))
 
-  val clkb = Input(Clock())
-  val enb = Input(Bool())
-  val web = Input(Bool())
+  val clkb  = Input(Clock())
+  val enb   = Input(Bool())
+  val web   = Input(Bool())
   val addrb = Input(UInt(addrW.W))
-  val dib = Input(UInt(dataW.W))
-  val dob = Output(UInt(dataW.W))
+  val dib   = Input(UInt(dataW.W))
+  val dob   = Output(UInt(dataW.W))
 }
 
 private class TrueDualPortMemory(addrW: Int, dataW: Int) extends RawModule {
-  val io = IO(new TrueDualPortMemoryIO(addrW, dataW))
+  val io  = IO(new TrueDualPortMemoryIO(addrW, dataW))
   val ram = SyncReadMem(1 << addrW, UInt(dataW.W))
 
   // Port a
@@ -190,7 +190,7 @@ private class TrueDualPortMemory(addrW: Int, dataW: Int) extends RawModule {
 
 class MemReadWriteTester extends BasicTester {
   val (cnt, _) = Counter(true.B, 6)
-  val mem = SyncReadMem(2, UInt(2.W))
+  val mem      = SyncReadMem(2, UInt(2.W))
 
   // The address to write to, alternating between 0 and 1 each cycle
   val address = Wire(UInt())
@@ -213,24 +213,24 @@ class MemReadWriteTester extends BasicTester {
   switch(cnt) {
     is(0.U) { // Cycle 1: Write 3.U to address 0
       address := 0.U
-      enable := true.B
+      enable  := true.B
       isWrite := true.B
-      wdata := 3.U
+      wdata   := 3.U
     }
     is(1.U) { // Cycle 2: Write 2.U to address 1
       address := 1.U
-      enable := true.B
+      enable  := true.B
       isWrite := true.B
-      wdata := 2.U
+      wdata   := 2.U
     }
     is(2.U) { // Cycle 3: Read from address 0 (data returned next cycle)
       address := 0.U
-      enable := true.B
+      enable  := true.B
       isWrite := false.B
     }
     is(3.U) { // Cycle 4: Expect RDWR port to contain 3.U, then read from address 1
       address := 1.U
-      enable := true.B
+      enable  := true.B
       isWrite := false.B
       assert(rdata === 3.U)
     }
@@ -245,7 +245,7 @@ class MemReadWriteTester extends BasicTester {
 
 class MemMaskedReadWriteTester extends BasicTester {
   val (cnt, _) = Counter(true.B, 11)
-  val mem = SyncReadMem(2, Vec(4, UInt(8.W)))
+  val mem      = SyncReadMem(2, Vec(4, UInt(8.W)))
 
   // The address to write to, alternating between 0 and 1 each cycle
   val address = Wire(UInt())
@@ -272,28 +272,28 @@ class MemMaskedReadWriteTester extends BasicTester {
   switch(cnt) {
     is(0.U) { // Cycle 1: Write (1.U, 2.U, 3.U, 4.U) with mask (1, 1, 1, 1) to address 0
       address := 0.U
-      enable := true.B
+      enable  := true.B
       isWrite := true.B
-      mask := VecInit.fill(4)(true.B)
-      wdata := VecInit(1.U, 2.U, 3.U, 4.U)
+      mask    := VecInit.fill(4)(true.B)
+      wdata   := VecInit(1.U, 2.U, 3.U, 4.U)
     }
     is(1.U) { // Cycle 2: Write (5.U, 6.U, 7.U, 8.U) with mask (1, 1, 1, 1) to address 1
       address := 1.U
-      enable := true.B
+      enable  := true.B
       isWrite := true.B
-      mask := VecInit.fill(4)(true.B)
-      wdata := VecInit(5.U, 6.U, 7.U, 8.U)
+      mask    := VecInit.fill(4)(true.B)
+      wdata   := VecInit(5.U, 6.U, 7.U, 8.U)
     }
     is(2.U) { // Cycle 3: Read from address 0 (data returned next cycle)
       address := 0.U
-      enable := true.B
+      enable  := true.B
       isWrite := false.B
     }
     is(3.U) { // Cycle 4: Expect RDWR port to contain (1.U, 2.U, 3.U, 4.U), then read from address 1
       assert(rdata === VecInit(1.U, 2.U, 3.U, 4.U))
 
       address := 1.U
-      enable := true.B
+      enable  := true.B
       isWrite := false.B
     }
     is(4.U) { // Cycle 5: Expect rdata to contain (5.U, 6.U, 7.U, 8.U)
@@ -301,23 +301,23 @@ class MemMaskedReadWriteTester extends BasicTester {
     }
     is(5.U) { // Cycle 6: Write (0.U, - , - , 0.U) with mask (1, 0, 0, 1) to address 0
       address := 0.U
-      enable := true.B
+      enable  := true.B
       isWrite := true.B
-      mask := VecInit(true.B, false.B, false.B, true.B)
+      mask    := VecInit(true.B, false.B, false.B, true.B)
       // Bogus values for 2nd and 3rd indices to make sure they aren't actually written
-      wdata := VecInit(0.U, 100.U, 100.U, 0.U)
+      wdata   := VecInit(0.U, 100.U, 100.U, 0.U)
     }
     is(6.U) { // Cycle 7: Write (- , 0.U , 0.U , -) with mask (0, 1, 1, 0) to address 1
       address := 1.U
-      enable := true.B
+      enable  := true.B
       isWrite := true.B
-      mask := VecInit(false.B, true.B, true.B, false.B)
+      mask    := VecInit(false.B, true.B, true.B, false.B)
       // Bogus values for 1st and 4th indices to make sure they aren't actually written
-      wdata := VecInit(100.U, 0.U, 0.U, 100.U)
+      wdata   := VecInit(100.U, 0.U, 0.U, 100.U)
     }
     is(7.U) { // Cycle 8: Read from address 0 (data returned next cycle)
       address := 0.U
-      enable := true.B
+      enable  := true.B
       isWrite := false.B
     }
     is(8.U) { // Cycle 9: Expect RDWR port to contain (0.U, 2.U, 3.U, 0.U), then read from address 1
@@ -325,7 +325,7 @@ class MemMaskedReadWriteTester extends BasicTester {
       assert(rdata === VecInit(0.U, 2.U, 3.U, 0.U))
 
       address := 1.U
-      enable := true.B
+      enable  := true.B
       isWrite := false.B
     }
     is(9.U) { // Cycle 10: Expect rdata to contain (5.U, 0.U, 0.U, 8.U)
@@ -355,7 +355,7 @@ class MemorySpec extends ChiselPropSpec {
     assertTesterPasses { new MemBundleTester }
   }
 
-  //TODO: SFC->MFC, this test is ignored because the read-under-write specifiers are not emitted to work with MFC
+  // TODO: SFC->MFC, this test is ignored because the read-under-write specifiers are not emitted to work with MFC
   ignore("SyncReadMem write collision behaviors should work") {
     assertTesterPasses { new SyncReadMemWriteCollisionTester }
   }
@@ -384,10 +384,10 @@ class MemorySpec extends ChiselPropSpec {
 
   property("Massive memories should be emitted in Verilog") {
     val addrWidth = 65
-    val size = BigInt(1) << addrWidth
-    val smem = ChiselStage.emitCHIRRTL(new HugeSMemTester(size))
+    val size      = BigInt(1) << addrWidth
+    val smem      = ChiselStage.emitCHIRRTL(new HugeSMemTester(size))
     smem should include(s"smem mem : UInt<8> [$size]")
-    val cmem = ChiselStage.emitCHIRRTL(new HugeCMemTester(size))
+    val cmem      = ChiselStage.emitCHIRRTL(new HugeCMemTester(size))
     cmem should include(s"cmem mem : UInt<8> [$size]")
   }
 
@@ -410,17 +410,17 @@ class MemorySpec extends ChiselPropSpec {
   property("Memories can have addresses driven before their declarations") {
     class TestModule extends Module {
       val io = IO(new Bundle {
-        val rdEnable = Input(Bool())
-        val writeData = Input(UInt(2.W))
+        val rdEnable     = Input(Bool())
+        val writeData    = Input(UInt(2.W))
         val mrwWriteData = Input(Vec(2, UInt(2.W)))
         val mrwWriteMask = Input(Vec(2, Bool()))
 
-        val rwEnable = Input(Bool())
-        val rwIsWrite = Input(Bool())
+        val rwEnable   = Input(Bool())
+        val rwIsWrite  = Input(Bool())
         val mrwIsWrite = Input(Bool())
 
-        val rdReadValue = Output(UInt(2.W))
-        val rwReadValue = Output(UInt(2.W))
+        val rdReadValue  = Output(UInt(2.W))
+        val rwReadValue  = Output(UInt(2.W))
         val mrwReadValue = Output(Vec(2, UInt(2.W)))
       })
 
@@ -432,15 +432,15 @@ class MemorySpec extends ChiselPropSpec {
       val addr = Wire(UInt(2.W))
       addr := 0.U
 
-      val mem = SyncReadMem(4, UInt(2.W))
+      val mem    = SyncReadMem(4, UInt(2.W))
       val vecMem = SyncReadMem(4, Vec(2, UInt(2.W)))
 
       // Should elaborate correctly
-      io.rdReadValue := mem.read(addr, io.rdEnable)
+      io.rdReadValue  := mem.read(addr, io.rdEnable)
       // Should elaborate correctly
       mem.write(addr, io.writeData)
       // Should elaborate correctly
-      io.rwReadValue := mem.readWrite(addr, io.writeData, io.rwEnable, io.rwIsWrite)
+      io.rwReadValue  := mem.readWrite(addr, io.writeData, io.rwEnable, io.rwIsWrite)
       // Should elaborate correctly
       io.mrwReadValue := vecMem.readWrite(addr, io.mrwWriteData, io.mrwWriteMask, io.rwEnable, io.rwIsWrite)
     }
@@ -460,58 +460,57 @@ class SRAMSpec extends ChiselFunSpec {
         if (numWR + numRW) > 0
       } yield (numRD, numWR, numRW)
 
-    portCombos.foreach {
-      case (numRD, numWR, numRW) =>
-        val portedness: String = {
-          val rdPorts: String = if (numRD > 0) s"${numRD}R" else ""
-          val wrPorts: String = if (numWR > 0) s"${numWR}W" else ""
-          val rwPorts: String = if (numRW > 0) s"${numRW}RW" else ""
+    portCombos.foreach { case (numRD, numWR, numRW) =>
+      val portedness: String = {
+        val rdPorts: String = if (numRD > 0) s"${numRD}R" else ""
+        val wrPorts: String = if (numWR > 0) s"${numWR}W" else ""
+        val rwPorts: String = if (numRW > 0) s"${numRW}RW" else ""
 
-          s"$rdPorts$wrPorts$rwPorts"
-        }
-        it(s"should generate a $portedness memory") {
-          class TestModule(val rd: Int, val wr: Int, val rw: Int) extends Module {
-            val mem = SRAM(32, UInt(8.W), rd, wr, rw)
+        s"$rdPorts$wrPorts$rwPorts"
+      }
+      it(s"should generate a $portedness memory") {
+        class TestModule(val rd: Int, val wr: Int, val rw: Int) extends Module {
+          val mem = SRAM(32, UInt(8.W), rd, wr, rw)
 
-            dontTouch(mem)
+          dontTouch(mem)
 
-            for (i <- 0 until rd) {
-              mem.readPorts(i) := DontCare
-            }
-            for (i <- 0 until wr) {
-              mem.writePorts(i) := DontCare
-            }
-            for (i <- 0 until rw) {
-              mem.readwritePorts(i) := DontCare
-            }
+          for (i <- 0 until rd) {
+            mem.readPorts(i) := DontCare
           }
-          val chirrtl = ChiselStage.emitCHIRRTL(new TestModule(numRD, numWR, numRW), args = Array("--full-stacktrace"))
-
-          // Check that the chirrtl ports actually exist and the signals
-          // are properly connected
-          for (rd <- 0 until numRD) {
-            chirrtl should include(s"connect mem_sram.R$rd.addr, mem.readPorts[$rd].address")
-            chirrtl should include(s"connect mem.readPorts[$rd].data, mem_sram.R$rd.data")
-            chirrtl should include(s"connect mem_sram.R$rd.en, mem.readPorts[$rd].enable")
+          for (i <- 0 until wr) {
+            mem.writePorts(i) := DontCare
           }
-
-          for (wr <- 0 until numWR) {
-            chirrtl should include(s"connect mem_sram.W$wr.addr, mem.writePorts[$wr].address")
-            chirrtl should include(s"connect mem_sram.W$wr.data, mem.writePorts[$wr].data")
-            chirrtl should include(s"connect mem_sram.W$wr.en, mem.writePorts[$wr].enable")
-            chirrtl should include(s"connect mem_sram.W$wr.mask, UInt<1>(0h1)")
-          }
-
-          for (rw <- 0 until numRW) {
-            chirrtl should include(s"connect mem_sram.RW$rw.addr, mem.readwritePorts[$rw].address")
-            chirrtl should include(s"connect mem_sram.RW$rw.en, mem.readwritePorts[$rw].enable")
-            chirrtl should include(s"connect mem.readwritePorts[$rw].readData, mem_sram.RW$rw.rdata")
-            chirrtl should include(s"connect mem_sram.RW$rw.wdata, mem.readwritePorts[$rw].writeData")
-            chirrtl should include(s"connect mem_sram.RW$rw.wmode, mem.readwritePorts[$rw].isWrite")
-            chirrtl should include(s"connect mem_sram.RW$rw.wmask, UInt<1>(0h1)")
-
+          for (i <- 0 until rw) {
+            mem.readwritePorts(i) := DontCare
           }
         }
+        val chirrtl = ChiselStage.emitCHIRRTL(new TestModule(numRD, numWR, numRW), args = Array("--full-stacktrace"))
+
+        // Check that the chirrtl ports actually exist and the signals
+        // are properly connected
+        for (rd <- 0 until numRD) {
+          chirrtl should include(s"connect mem_sram.R$rd.addr, mem.readPorts[$rd].address")
+          chirrtl should include(s"connect mem.readPorts[$rd].data, mem_sram.R$rd.data")
+          chirrtl should include(s"connect mem_sram.R$rd.en, mem.readPorts[$rd].enable")
+        }
+
+        for (wr <- 0 until numWR) {
+          chirrtl should include(s"connect mem_sram.W$wr.addr, mem.writePorts[$wr].address")
+          chirrtl should include(s"connect mem_sram.W$wr.data, mem.writePorts[$wr].data")
+          chirrtl should include(s"connect mem_sram.W$wr.en, mem.writePorts[$wr].enable")
+          chirrtl should include(s"connect mem_sram.W$wr.mask, UInt<1>(0h1)")
+        }
+
+        for (rw <- 0 until numRW) {
+          chirrtl should include(s"connect mem_sram.RW$rw.addr, mem.readwritePorts[$rw].address")
+          chirrtl should include(s"connect mem_sram.RW$rw.en, mem.readwritePorts[$rw].enable")
+          chirrtl should include(s"connect mem.readwritePorts[$rw].readData, mem_sram.RW$rw.rdata")
+          chirrtl should include(s"connect mem_sram.RW$rw.wdata, mem.readwritePorts[$rw].writeData")
+          chirrtl should include(s"connect mem_sram.RW$rw.wmode, mem.readwritePorts[$rw].isWrite")
+          chirrtl should include(s"connect mem_sram.RW$rw.wmask, UInt<1>(0h1)")
+
+        }
+      }
     }
 
     it(s"should support masking with Vec-valued data") {
@@ -546,8 +545,8 @@ class SRAMSpec extends ChiselFunSpec {
       class TestModule extends Module {
         val (counter, _) = Counter(true.B, 11)
 
-        val readClocks = IO(Input(Vec(3, Clock())))
-        val writeClocks = IO(Input(Vec(3, Clock())))
+        val readClocks      = IO(Input(Vec(3, Clock())))
+        val writeClocks     = IO(Input(Vec(3, Clock())))
         val readwriteClocks = IO(Input(Vec(3, Clock())))
 
         val mem = SRAM(
@@ -561,8 +560,8 @@ class SRAMSpec extends ChiselFunSpec {
         dontTouch(mem)
 
         for (i <- 0 until 3) {
-          mem.readPorts(i) := DontCare
-          mem.writePorts(i) := DontCare
+          mem.readPorts(i)      := DontCare
+          mem.writePorts(i)     := DontCare
           mem.readwritePorts(i) := DontCare
         }
       }

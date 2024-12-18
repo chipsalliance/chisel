@@ -26,7 +26,7 @@ object Mem extends ObjectMemImpl with SourceInfoDoc {
   /** @group SourceInfoTransformMacro */
   def do_apply[T <: Data](
     size: BigInt,
-    t:    T
+    t: T
   )(
     implicit sourceInfo: SourceInfo
   ): Mem[T] = _applyImpl(size, t)
@@ -118,20 +118,20 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt, protected
     * @note this is only allowed if the memory's element data type is a Vec
     */
   def write(
-    idx:       UInt,
+    idx: UInt,
     writeData: T,
-    mask:      Seq[Bool]
+    mask: Seq[Bool]
   )(
     implicit evidence: T <:< Vec[_]
   ): Unit = macro SourceInfoTransform.idxDataMaskArg
 
   def do_write(
-    idx:  UInt,
+    idx: UInt,
     data: T,
     mask: Seq[Bool]
   )(
     implicit evidence: T <:< Vec[_],
-    sourceInfo:        SourceInfo
+    sourceInfo: SourceInfo
   ): Unit = _writeImpl(idx, data, mask)
 
   /** Creates a masked write accessor into the memory with a clock
@@ -146,22 +146,22 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt, protected
     * @note this is only allowed if the memory's element data type is a Vec
     */
   def write(
-    idx:       UInt,
+    idx: UInt,
     writeData: T,
-    mask:      Seq[Bool],
-    clock:     Clock
+    mask: Seq[Bool],
+    clock: Clock
   )(
     implicit evidence: T <:< Vec[_]
   ): Unit = macro SourceInfoTransform.idxDataMaskClockArg
 
   def do_write(
-    idx:   UInt,
-    data:  T,
-    mask:  Seq[Bool],
+    idx: UInt,
+    data: T,
+    mask: Seq[Bool],
     clock: Clock
   )(
     implicit evidence: T <:< Vec[_],
-    sourceInfo:        SourceInfo
+    sourceInfo: SourceInfo
   ): Unit = _writeImpl(idx, data, mask, clock)
 }
 
@@ -199,8 +199,8 @@ object SyncReadMem extends ObjectSyncReadMemImpl {
   /** @group SourceInfoTransformMacro */
   def do_apply[T <: Data](
     size: BigInt,
-    t:    T,
-    ruw:  ReadUnderWrite = Undefined
+    t: T,
+    ruw: ReadUnderWrite = Undefined
   )(
     implicit sourceInfo: SourceInfo
   ): SyncReadMem[T] = _applyImpl(size, t, ruw)
@@ -209,7 +209,7 @@ object SyncReadMem extends ObjectSyncReadMemImpl {
   // Alternate signatures can't use default parameter values
   def do_apply[T <: Data](
     size: Int,
-    t:    T
+    t: T
   )(
     implicit sourceInfo: SourceInfo
   ): SyncReadMem[T] = _applyImpl(size, t)
@@ -218,8 +218,8 @@ object SyncReadMem extends ObjectSyncReadMemImpl {
   // Alternate signatures can't use default parameter values
   def do_apply[T <: Data](
     size: Int,
-    t:    T,
-    ruw:  ReadUnderWrite
+    t: T,
+    ruw: ReadUnderWrite
   )(
     implicit sourceInfo: SourceInfo
   ): SyncReadMem[T] = _applyImpl(size, t, ruw)
@@ -236,11 +236,11 @@ object SyncReadMem extends ObjectSyncReadMemImpl {
   * result is undefined (unlike Vec, where the last assignment wins)
   */
 sealed class SyncReadMem[T <: Data] private[chisel3] (
-  t:                  T,
-  n:                  BigInt,
+  t: T,
+  n: BigInt,
   val readUnderWrite: SyncReadMem.ReadUnderWrite,
-  sourceInfo:         SourceInfo)
-    extends MemBase[T](t, n, sourceInfo)
+  sourceInfo: SourceInfo
+) extends MemBase[T](t, n, sourceInfo)
     with SyncReadMemImpl[T] {
 
   override def read(x: UInt): T = macro SourceInfoTransform.xArg
@@ -314,11 +314,11 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
 
   /** @group SourceInfoTransformMacro */
   def do_readWrite(
-    idx:     UInt,
-    data:    T,
-    en:      Bool,
+    idx: UInt,
+    data: T,
+    en: Bool,
     isWrite: Bool,
-    clock:   Clock
+    clock: Clock
   )(
     implicit sourceInfo: SourceInfo
   ): T = _readWriteImpl(idx, data, en, isWrite, clock)
@@ -359,24 +359,24 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
     * @note this is only allowed if the memory's element data type is a Vec
     */
   def readWrite(
-    idx:       UInt,
+    idx: UInt,
     writeData: T,
-    mask:      Seq[Bool],
-    en:        Bool,
-    isWrite:   Bool
+    mask: Seq[Bool],
+    en: Bool,
+    isWrite: Bool
   )(
     implicit evidence: T <:< Vec[_]
   ): T = macro SourceInfoTransform.idxDataMaskEnIswArg
 
   def do_readWrite(
-    idx:       UInt,
+    idx: UInt,
     writeData: T,
-    mask:      Seq[Bool],
-    en:        Bool,
-    isWrite:   Bool
+    mask: Seq[Bool],
+    en: Bool,
+    isWrite: Bool
   )(
     implicit evidence: T <:< Vec[_],
-    sourceInfo:        SourceInfo
+    sourceInfo: SourceInfo
   ): T = _readWriteImpl(idx, writeData, mask, en, isWrite)
 
   /** Generates an explicit read-write port for this SyncReadMem, with a bytemask for
@@ -398,25 +398,25 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
     * @note this is only allowed if the memory's element data type is a Vec
     */
   def readWrite(
-    idx:       UInt,
+    idx: UInt,
     writeData: T,
-    mask:      Seq[Bool],
-    en:        Bool,
-    isWrite:   Bool,
-    clock:     Clock
+    mask: Seq[Bool],
+    en: Bool,
+    isWrite: Bool,
+    clock: Clock
   )(
     implicit evidence: T <:< Vec[_]
   ): T = macro SourceInfoTransform.idxDataMaskEnIswClockArg
 
   def do_readWrite(
-    idx:       UInt,
+    idx: UInt,
     writeData: T,
-    mask:      Seq[Bool],
-    en:        Bool,
-    isWrite:   Bool,
-    clock:     Clock
+    mask: Seq[Bool],
+    en: Bool,
+    isWrite: Bool,
+    clock: Clock
   )(
     implicit evidence: T <:< Vec[_],
-    sourceInfo:        SourceInfo
+    sourceInfo: SourceInfo
   ) = _readWriteImpl(idx, writeData, mask, en, isWrite, clock)
 }

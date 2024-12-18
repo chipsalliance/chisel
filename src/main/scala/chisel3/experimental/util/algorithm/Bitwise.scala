@@ -37,7 +37,7 @@ object scanLeftOr {
   */
 object scanRightOr {
   def apply(data: UInt): UInt = {
-    val width = data.widthOption match {
+    val width                         = data.widthOption match {
       case Some(w) => w
       case None    => throw new IllegalArgumentException("Cannot call scanRightOr on data with unknown width.")
     }

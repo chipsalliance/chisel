@@ -44,14 +44,14 @@ final case class Definition[+A] private[chisel3] (private[chisel3] val underlyin
     that: A => B
   )(
     implicit lookup: Lookupable[B],
-    macroGenerated:  chisel3.internal.MacroGenerated
+    macroGenerated: chisel3.internal.MacroGenerated
   ): lookup.C = {
     lookup.definitionLookup(that, this)
   }
 
   /** @return the context of any Data's return from inside the instance */
   private[chisel3] def getInnerDataContext: Option[BaseModule] = proto match {
-    case value: BaseModule =>
+    case value: BaseModule     =>
       val newChild = Module.do_pseudo_apply(new experimental.hierarchy.DefinitionClone(value))(
         chisel3.experimental.UnlocatableSourceInfo
       )
@@ -61,8 +61,8 @@ final case class Definition[+A] private[chisel3] (private[chisel3] val underlyin
     case value: IsInstantiable => None
   }
 
-  override def toDefinition: Definition[A] = this
-  override def toInstance:   Instance[A] = new Instance(underlying)
+  override def toDefinition: Definition[A]                                  = this
+  override def toInstance: Instance[A]                                      = new Instance(underlying)
   private[chisel3] def copy[T](underlying: Underlying[T] = this.underlying) = new Definition(underlying)
 }
 
@@ -122,7 +122,7 @@ object Definition extends SourceInfoDoc {
       )
     }
     dynamicContext.inDefinition = true
-    val (ir, module) = Builder.build(Module(proto), dynamicContext)
+    val (ir, module)   = Builder.build(Module(proto), dynamicContext)
     Builder.components ++= ir.components
     Builder.annotations ++= ir.annotations: @nowarn // this will go away when firrtl is merged
     Builder.layers ++= dynamicContext.layers
@@ -137,6 +137,6 @@ object Definition extends SourceInfoDoc {
   * compiled separately.
   */
 case class ImportDefinitionAnnotation[T <: BaseModule with IsInstantiable](
-  definition:      Definition[T],
-  overrideDefName: Option[String] = None)
-    extends NoTargetAnnotation
+  definition: Definition[T],
+  overrideDefName: Option[String] = None
+) extends NoTargetAnnotation

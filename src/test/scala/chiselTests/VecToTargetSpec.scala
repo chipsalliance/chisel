@@ -12,15 +12,15 @@ trait VecToTargetSpecUtils extends Utils {
     val vec = IO(Input(Vec(4, Bool())))
 
     // Index a Vec with a Scala literal.
-    val scalaLit = 0
+    val scalaLit             = 0
     val vecSubaccessScalaLit = vec(scalaLit)
 
     // Index a Vec with a Chisel literal.
-    val chiselLit = 0.U
+    val chiselLit             = 0.U
     val vecSubaccessChiselLit = vec(chiselLit)
 
     // Index a Vec with a node.
-    val node = IO(Input(UInt(2.W)))
+    val node             = IO(Input(UInt(2.W)))
     val vecSubaccessNode = vec(node)
 
     // Put an otherwise un-targetable Vec subaccess into a temp.

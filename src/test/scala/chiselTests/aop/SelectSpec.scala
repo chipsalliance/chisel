@@ -15,14 +15,14 @@ import firrtl.AnnotationSeq
 import scala.reflect.runtime.universe.TypeTag
 
 class SelectTester(results: Seq[Int]) extends BasicTester {
-  val values = VecInit(results.map(_.U))
+  val values  = VecInit(results.map(_.U))
   val counter = RegInit(0.U(results.length.W))
-  val added = counter + 1.U
+  val added   = counter + 1.U
   counter := added
-  val overflow = counter >= values.length.U
-  val nreset = reset.asBool === false.B
-  val selected = values(counter)
-  val zero = 0.U + 0.U
+  val overflow         = counter >= values.length.U
+  val nreset           = reset.asBool === false.B
+  val selected         = values(counter)
+  val zero             = 0.U + 0.U
   var p: printf.Printf = null
   when(overflow) {
     counter := zero
@@ -135,7 +135,7 @@ class SelectSpec extends ChiselFlatSpec {
   }
 
   "Blackboxes" should "be supported in Select.instances" in {
-    class BB extends ExtModule {}
+    class BB  extends ExtModule {}
     class Top extends RawModule {
       val bb = Module(new BB)
     }
@@ -147,7 +147,7 @@ class SelectSpec extends ChiselFlatSpec {
   }
 
   "collectDeep" should "should look in when regions" in {
-    class BB extends ExtModule {}
+    class BB  extends ExtModule {}
     class Top extends RawModule {
       when(true.B) {
         val bb = Module(new BB)
@@ -162,8 +162,8 @@ class SelectSpec extends ChiselFlatSpec {
 
   "collectDeep" should "should look in layer regions" in {
     object TestLayer extends layer.Layer(layer.LayerConfig.Extract())
-    class BB extends ExtModule {}
-    class Top extends RawModule {
+    class BB         extends ExtModule {}
+    class Top        extends RawModule {
       layer.block(TestLayer) {
         val bb = Module(new BB)
       }
@@ -178,18 +178,18 @@ class SelectSpec extends ChiselFlatSpec {
   "CloneModuleAsRecord" should "NOT show up in Select aspects" in {
     import chisel3.experimental.CloneModuleAsRecord
     class Child extends RawModule {
-      val in = IO(Input(UInt(8.W)))
+      val in  = IO(Input(UInt(8.W)))
       val out = IO(Output(UInt(8.W)))
       out := in
     }
-    class Top extends Module {
-      val in = IO(Input(UInt(8.W)))
-      val out = IO(Output(UInt(8.W)))
+    class Top   extends Module    {
+      val in    = IO(Input(UInt(8.W)))
+      val out   = IO(Output(UInt(8.W)))
       val inst0 = Module(new Child)
       val inst1 = CloneModuleAsRecord(inst0)
-      inst0.in := in
+      inst0.in    := in
       inst1("in") := inst0.out
-      out := inst1("out")
+      out         := inst1("out")
     }
     val top = ChiselGeneratorAnnotation(() => {
       new Top()
@@ -204,19 +204,19 @@ class SelectSpec extends ChiselFlatSpec {
     import chisel3.experimental.hierarchy._
     @instantiable
     class Child extends RawModule {
-      @public val in = IO(Input(UInt(8.W)))
+      @public val in  = IO(Input(UInt(8.W)))
       @public val out = IO(Output(UInt(8.W)))
       out := in
     }
-    class Top extends Module {
-      val in = IO(Input(UInt(8.W)))
-      val out = IO(Output(UInt(8.W)))
+    class Top   extends Module    {
+      val in         = IO(Input(UInt(8.W)))
+      val out        = IO(Output(UInt(8.W)))
       val definition = Definition(new Child)
-      val inst0 = Instance(definition)
-      val inst1 = Instance(definition)
+      val inst0      = Instance(definition)
+      val inst1      = Instance(definition)
       inst0.in := in
       inst1.in := inst0.out
-      out := inst1.out
+      out      := inst1.out
     }
     val top = ChiselGeneratorAnnotation(() => {
       new Top()

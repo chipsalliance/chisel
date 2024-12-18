@@ -22,7 +22,7 @@ object RecordSpec {
 
   class MyModule(output: => Record, input: => Record) extends Module {
     val io = IO(new Bundle {
-      val in = Input(input)
+      val in  = Input(input)
       val out = Output(output)
     })
     io.out <> io.in
@@ -30,10 +30,10 @@ object RecordSpec {
 
   class ConnectionTestModule(output: => Record, input: => Record) extends Module {
     val io = IO(new Bundle {
-      val inMono = Input(input)
+      val inMono  = Input(input)
       val outMono = Output(output)
-      val inBi = Input(input)
-      val outBi = Output(output)
+      val inBi    = Input(input)
+      val outBi   = Output(output)
     })
     io.outMono := io.inMono
     io.outBi <> io.inBi
@@ -41,7 +41,7 @@ object RecordSpec {
 
   class RecordSerializationTest extends BasicTester {
     val recordType = new CustomBundle("fizz" -> UInt(16.W), "buzz" -> UInt(16.W))
-    val record = Wire(recordType)
+    val record     = Wire(recordType)
     // Note that "buzz" was added later than "fizz" and is therefore higher order
     record("fizz") := "hdead".U
     record("buzz") := "hbeef".U
@@ -65,7 +65,7 @@ object RecordSpec {
     when(cycle === 0.U) {
       queue.io.enq.bits("foo") := 1234.U
       queue.io.enq.bits("bar") := 5678.U
-      queue.io.enq.valid := true.B
+      queue.io.enq.valid       := true.B
     }
     when(cycle === 1.U) {
       queue.io.deq.ready := true.B
@@ -80,7 +80,7 @@ object RecordSpec {
 
   class AliasedRecord extends Module {
     val field = UInt(32.W)
-    val io = IO(new CustomBundle("in" -> Input(field), "out" -> Output(field)))
+    val io    = IO(new CustomBundle("in" -> Input(field), "out" -> Output(field)))
   }
 
   class RecordIOModule extends Module {
@@ -134,7 +134,7 @@ class RecordSpec extends ChiselFlatSpec with Utils {
 
   they should "not allow aliased fields" in {
     class AliasedFieldRecord extends Record {
-      val foo = UInt(8.W)
+      val foo      = UInt(8.W)
       val elements = SeqMap("foo" -> foo, "bar" -> foo)
     }
 
@@ -186,8 +186,8 @@ class RecordSpec extends ChiselFlatSpec with Utils {
 
   "CustomBundle" should "work like built-in aggregates" in {
     ChiselStage.emitCHIRRTL(new Module {
-      val gen = new CustomBundle("foo" -> UInt(32.W))
-      val io = IO(Output(gen))
+      val gen  = new CustomBundle("foo" -> UInt(32.W))
+      val io   = IO(Output(gen))
       val wire = Wire(gen)
       io := wire
     })
@@ -211,17 +211,16 @@ class RecordSpec extends ChiselFlatSpec with Utils {
 
   "Bundle types which couldn't be cloned by the plugin" should "throw an error" in {
     class CustomBundleBroken(elts: (String, Data)*) extends Record {
-      val elements = ListMap(elts.map {
-        case (field, elt) =>
-          field -> elt
+      val elements                 = ListMap(elts.map { case (field, elt) =>
+        field -> elt
       }: _*)
       def apply(elt: String): Data = elements(elt)
     }
     val err = the[ChiselException] thrownBy {
       val recordType = new CustomBundleBroken("fizz" -> UInt(16.W), "buzz" -> UInt(16.W))
-      val record = Wire(recordType)
-      val uint = record.asUInt
-      val record2 = uint.asTypeOf(recordType)
+      val record     = Wire(recordType)
+      val uint       = record.asUInt
+      val record2    = uint.asTypeOf(recordType)
     }
 
     err.getMessage should include("bundle plugin was unable to clone")
@@ -231,20 +230,20 @@ class RecordSpec extends ChiselFlatSpec with Utils {
     class InnerNestedRecord[T <: Data](gen: T) extends Record {
       val elements = SeqMap("a" -> gen)
     }
-    class NestedRecord[T <: Data](gen: T) extends Record {
-      val inner1 = new InnerNestedRecord(gen)
-      val inner2 = new InnerNestedRecord(UInt(4.W))
+    class NestedRecord[T <: Data](gen: T)      extends Record {
+      val inner1   = new InnerNestedRecord(gen)
+      val inner2   = new InnerNestedRecord(UInt(4.W))
       val elements = SeqMap("a" -> inner1, "b" -> inner2)
     }
-    class MyRecord[T <: Data](gen: T) extends Record {
-      val nested = new NestedRecord(gen)
+    class MyRecord[T <: Data](gen: T)          extends Record {
+      val nested   = new NestedRecord(gen)
       val elements = SeqMap("a" -> nested)
     }
 
     val e = the[ChiselException] thrownBy {
       ChiselStage.emitCHIRRTL(new Module {
         val myReg = RegInit(0.U(8.W))
-        val io = IO(Input(new MyRecord(myReg)))
+        val io    = IO(Input(new MyRecord(myReg)))
       })
     }
     e.getMessage should include("must be a Chisel type, not hardware")

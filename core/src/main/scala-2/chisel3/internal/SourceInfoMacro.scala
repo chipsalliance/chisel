@@ -13,7 +13,7 @@ import chisel3.internal.sourceinfo.SourceInfoFileResolver
 private[chisel3] object SourceInfoMacro {
   def generate_source_info(c: Context): c.Tree = {
     import c.universe._
-    val p = c.enclosingPosition
+    val p    = c.enclosingPosition
     val path = SourceInfoFileResolver.resolve(p.source)
 
     q"_root_.chisel3.experimental.SourceLine($path, ${p.line}, ${p.column})"

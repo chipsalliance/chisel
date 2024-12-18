@@ -13,7 +13,7 @@ import chisel3.util._
 
 class DetectTwoOnes extends Module {
   val io = IO(new Bundle {
-    val in = Input(Bool())
+    val in  = Input(Bool())
     val out = Output(Bool())
   })
 
@@ -51,7 +51,7 @@ class DetectTwoOnesTester extends CookbookTester(10) {
   val dut = Module(new DetectTwoOnes)
 
   // Inputs and expected results
-  val inputs: Vec[Bool] = VecInit(false.B, true.B, false.B, true.B, true.B, true.B, false.B, true.B, true.B, false.B)
+  val inputs: Vec[Bool]   = VecInit(false.B, true.B, false.B, true.B, true.B, true.B, false.B, true.B, true.B, false.B)
   val expected: Vec[Bool] =
     VecInit(false.B, false.B, false.B, false.B, false.B, true.B, true.B, false.B, false.B, true.B)
 

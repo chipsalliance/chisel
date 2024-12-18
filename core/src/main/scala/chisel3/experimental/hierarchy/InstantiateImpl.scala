@@ -28,7 +28,7 @@ private[chisel3] trait InstantiateImpl {
       case rec: Record  =>
         // Purely structural, actual class of Record isn't involved
         rec.elements.map { case (name, data) => name -> convertDataForHashing(data) }
-      case vec: Vec[_] =>
+      case vec: Vec[_]  =>
         // We could map on elements but that's a lot of duplicated work for a type
         // Note that empty vecs of the same type will give same hash value, probably should be equal
         // as well, but Vec.typeEquivalent checks sample_element so they will not be equal
@@ -64,11 +64,11 @@ private[chisel3] trait InstantiateImpl {
 
   // Recursively box all Data (by traversing Products and Iterables) in DataBoxes
   private def boxAllData(a: Any): Any = a match {
-    case d: Data => new DataBox(d) // Must check this before Iterable because Vec is Iterable
+    case d: Data         => new DataBox(d) // Must check this before Iterable because Vec is Iterable
     // Must check before Product, because many Iterables are Products, but can still be equal, eg. List(1) == Vector(1)
     case it: Iterable[_] => it.map(boxAllData(_))
-    case p:  Product     => Vector(p.getClass) ++ p.productIterator.map(boxAllData(_))
-    case other => other
+    case p: Product      => Vector(p.getClass) ++ p.productIterator.map(boxAllData(_))
+    case other           => other
   }
 
   import chisel3.internal.BuilderContextCache
@@ -78,8 +78,8 @@ private[chisel3] trait InstantiateImpl {
 
   protected def _instanceImpl[K, A <: BaseModule](
     args: K,
-    f:    K => A,
-    tt:   Any
+    f: K => A,
+    tt: Any
   )(
     implicit sourceInfo: SourceInfo
   ): Instance[A] = Instance.apply(_definitionImpl(args, f, tt))(sourceInfo)
@@ -87,8 +87,8 @@ private[chisel3] trait InstantiateImpl {
   /** This is not part of the public API, do not call directly! */
   protected def _definitionImpl[K, A <: BaseModule](
     args: K,
-    f:    K => A,
-    tt:   Any
+    f: K => A,
+    tt: Any
   ): Definition[A] = {
     val modulePrefix = Module.currentModulePrefix
     Builder.contextCache

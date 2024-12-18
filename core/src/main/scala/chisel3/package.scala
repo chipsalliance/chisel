@@ -43,7 +43,7 @@ package object chisel3 {
     def B: Bool = bigint match {
       case bigint if bigint == 0 => Bool.Lit(false)
       case bigint if bigint == 1 => Bool.Lit(true)
-      case bigint =>
+      case bigint                =>
         Builder.error(s"Cannot convert $bigint to Bool, must be 0 or 1")(UnlocatableSourceInfo)
         Bool.Lit(false)
     }
@@ -79,7 +79,7 @@ package object chisel3 {
     def asSInt(width: Width): SInt = SInt.Lit(bigint, width)
   }
 
-  implicit class fromIntToLiteral(int: Int) extends fromBigIntToLiteral(int)
+  implicit class fromIntToLiteral(int: Int)    extends fromBigIntToLiteral(int)
   implicit class fromLongToLiteral(long: Long) extends fromBigIntToLiteral(long)
 
   implicit class fromStringToLiteral(str: String) {
@@ -105,7 +105,7 @@ package object chisel3 {
 
     protected def parse(n: String): BigInt = {
       val (base, num) = n.splitAt(1)
-      val radix = base match {
+      val radix       = base match {
         case "x" | "h" => 16
         case "d"       => 10
         case "o"       => 8
@@ -153,10 +153,10 @@ package object chisel3 {
     * These are only valid once the design has been elaborated, and should not be used during its construction.
     */
   trait InstanceId {
-    def instanceName:   String
-    def pathName:       String
+    def instanceName: String
+    def pathName: String
     def parentPathName: String
-    def parentModName:  String
+    def parentModName: String
 
     /** Returns a FIRRTL Named that refers to this object in the elaborated hardware graph */
     def toNamed: Named
@@ -256,7 +256,7 @@ package object chisel3 {
         // Check if part starts with a format specifier (with % - disambiguate with literal % checking the next character if needed to be %)
         // In the case of %f specifier there is a chance that we need more information - so capture till the 1st letter (a-zA-Z).
         // Example cf"This is $val%2.2f here" - parts - Seq("This is ","%2.2f here") - the format specifier here is %2.2f.
-        val endFmtIdx =
+        val endFmtIdx   =
           if (part.length > 1 && part(0) == '%' && part(1) != '%') part.indexWhere(_.isLetter)
           else -1
         val (fmt, rest) = part.splitAt(endFmtIdx + 1)
@@ -266,9 +266,9 @@ package object chisel3 {
 
       }
 
-      //TODO: Update this to current API when 2.12 is EOL
+      // TODO: Update this to current API when 2.12 is EOL
       sc.checkLengths(args) // Enforce sc.parts.size == pargs.size + 1
-      val parts = sc.parts.map(StringContext.processEscapes)
+      val parts           = sc.parts.map(StringContext.processEscapes)
       // The 1st part is assumed never to contain a format specifier.
       // If the 1st part of a string is an argument - then the 1st part will be an empty String.
       // So we need to parse parts following the 1st one to get the format specifiers if any
@@ -277,18 +277,18 @@ package object chisel3 {
       // Align parts to their potential specifiers
       val pables = partsAfterFirst.zip(args).flatMap {
         case (part, arg) => {
-          val (fmt, modP) = extractFormatSpecifier(part)
+          val (fmt, modP)       = extractFormatSpecifier(part)
           val fmtArg: Printable = arg match {
-            case d: Data => {
+            case d: Data      => {
               fmt match {
                 case Some("%n")                          => Name(d)
                 case Some("%N")                          => FullName(d)
                 case Some(fForm) if d.isInstanceOf[Bits] => FirrtlFormat(fForm.substring(1, 2), d)
-                case Some(x) => {
+                case Some(x)                             => {
                   val msg = s"Illegal format specifier '$x' for Chisel Data type!\n"
                   throw new UnknownFormatConversionException(msg)
                 }
-                case None => d.toPrintable
+                case None                                => d.toPrintable
               }
             }
             case p: Printable => {
@@ -297,7 +297,7 @@ package object chisel3 {
                   val msg = s"Illegal format specifier '$x' for Chisel Printable type!\n"
                   throw new UnknownFormatConversionException(msg)
                 }
-                case None => p
+                case None    => p
               }
             }
 
@@ -370,7 +370,7 @@ package object chisel3 {
         ExceptionHelpers.packageTrimlist.contains(packageName)
       }
 
-      val trimmedLeft = throwable.getStackTrace().view.dropWhile(isBlacklisted)
+      val trimmedLeft    = throwable.getStackTrace().view.dropWhile(isBlacklisted)
       val trimmedReverse = trimmedLeft.toIndexedSeq.reverse.view
         .dropWhile(ste => !ste.getClassName.startsWith(ExceptionHelpers.builderName))
         .dropWhile(isBlacklisted)
@@ -402,9 +402,9 @@ package object chisel3 {
 
   /** Attempted to re-bind an already bound (directionality or hardware) object
     */
-  case class RebindingException(message: String) extends BindingException(message)
+  case class RebindingException(message: String)   extends BindingException(message)
   // Connection exceptions.
-  case class BiConnectException(message: String) extends ChiselException(message)
+  case class BiConnectException(message: String)   extends ChiselException(message)
   case class MonoConnectException(message: String) extends ChiselException(message)
 
   final val deprecatedMFCMessage =
@@ -417,9 +417,9 @@ package object chisel3 {
   // This is only currently used for SRAM to hide the underlying Memory but still let users annotate it.
   // Rather than generalizing this, it's more likely that we'll just delete it (and the use in SRAM) in favor of Path Properties.
   sealed trait HasTarget {
-    def toTarget:         ReferenceTarget
+    def toTarget: ReferenceTarget
     def toAbsoluteTarget: ReferenceTarget
-    def toRelativeTarget(root:            Option[BaseModule]):            ReferenceTarget
+    def toRelativeTarget(root: Option[BaseModule]): ReferenceTarget
     def toRelativeTargetToHierarchy(root: Option[Hierarchy[BaseModule]]): ReferenceTarget
 
     /** Exposes the suggestName method of the NamedComponent so users can
@@ -432,9 +432,9 @@ package object chisel3 {
 
   object HasTarget {
     private[chisel3] case class Impl(t: SramTarget) extends HasTarget {
-      def toTarget = t.toTarget
-      def toAbsoluteTarget = t.toAbsoluteTarget
-      def toRelativeTarget(root:            Option[BaseModule]) = t.toRelativeTarget(root)
+      def toTarget                                                         = t.toTarget
+      def toAbsoluteTarget                                                 = t.toAbsoluteTarget
+      def toRelativeTarget(root: Option[BaseModule])                       = t.toRelativeTarget(root)
       def toRelativeTargetToHierarchy(root: Option[Hierarchy[BaseModule]]) = t.toRelativeTargetToHierarchy(root)
 
       def suggestName(seed: String): Unit = t.suggestName(seed)

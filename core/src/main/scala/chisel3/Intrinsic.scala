@@ -43,16 +43,15 @@ object IntrinsicExpr {
     */
   def apply[T <: Data](
     intrinsic: String,
-    ret:       => T,
-    params:    (String, Param)*
-  )(data:      Data*
-  )(
+    ret: => T,
+    params: (String, Param)*
+  )(data: Data*)(
     implicit sourceInfo: SourceInfo
   ): T = {
     val prevId = Builder.idGen.value
-    val t = ret // evaluate once (passed by name)
+    val t      = ret // evaluate once (passed by name)
     requireIsChiselType(t, "intrinsic type")
-    val int = if (!t.mustClone(prevId)) t else t.cloneTypeFull
+    val int    = if (!t.mustClone(prevId)) t else t.cloneTypeFull
 
     int.bind(OpBinding(Builder.forcedUserModule, Builder.currentBlock))
     require(params.map(_._1).distinct.size == params.size, "parameter names must be unique")

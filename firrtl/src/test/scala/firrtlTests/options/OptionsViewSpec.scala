@@ -12,7 +12,7 @@ class OptionsViewSpec extends AnyFlatSpec with Matchers {
 
   /* Annotations */
   case class NameAnnotation(name: String) extends NoTargetAnnotation
-  case class ValueAnnotation(value: Int) extends NoTargetAnnotation
+  case class ValueAnnotation(value: Int)  extends NoTargetAnnotation
 
   /* The type we want to view the annotations as */
   case class Foo(name: Option[String] = None, value: Option[Int] = None)

@@ -25,7 +25,7 @@ class EphemeralSimulatorSpec extends AnyFunSpec with Matchers {
     }
     describe("layer control functionality") {
       describe("for extract layers") {
-        object A extends Layer(LayerConfig.Extract())
+        object A  extends Layer(LayerConfig.Extract())
         class Foo extends Module {
           block(A) {
             chisel3.assert(false.B)
@@ -59,8 +59,8 @@ class EphemeralSimulatorSpec extends AnyFunSpec with Matchers {
         }
       }
       describe("for inline layers") {
-        object A extends Layer(LayerConfig.Inline)
-        object B extends Layer(LayerConfig.Inline)
+        object A  extends Layer(LayerConfig.Inline)
+        object B  extends Layer(LayerConfig.Inline)
         class Foo extends Module {
           block(A) {
             chisel3.assert(false.B)

@@ -19,7 +19,7 @@ class MixedVecAssignTester(w: Int, values: List[Int]) extends BasicTester {
 
 class MixedVecRegTester(w: Int, values: List[Int]) extends BasicTester {
   val valuesInit = MixedVecInit(values.map(v => v.U(w.W)))
-  val reg = Reg(MixedVec(chiselTypeOf(valuesInit)))
+  val reg        = Reg(MixedVec(chiselTypeOf(valuesInit)))
 
   val doneReg = RegInit(false.B)
   doneReg := true.B
@@ -38,14 +38,14 @@ class MixedVecRegTester(w: Int, values: List[Int]) extends BasicTester {
 
 class MixedVecIOPassthroughModule[T <: Data](hvec: MixedVec[T]) extends Module {
   val io = IO(new Bundle {
-    val in = Input(hvec)
+    val in  = Input(hvec)
     val out = Output(hvec)
   })
   io.out := io.in
 }
 
 class MixedVecIOTester(boundVals: Seq[Data]) extends BasicTester {
-  val v = MixedVecInit(boundVals)
+  val v   = MixedVecInit(boundVals)
   val dut = Module(new MixedVecIOPassthroughModule(MixedVec(chiselTypeOf(v))))
   dut.io.in := v
   for ((a, b) <- dut.io.out.zip(boundVals)) {
@@ -77,7 +77,7 @@ class MixedVecZeroEntryTester extends BasicTester {
 
 class MixedVecUIntDynamicIndexTester extends BasicTester {
   val wire: MixedVec[UInt] = Wire(MixedVec(Seq(UInt(8.W), UInt(16.W), UInt(4.W), UInt(7.W))))
-  val n = wire.length
+  val n                    = wire.length
 
   for (i <- 0 until n) {
     wire(i) := i.U
@@ -146,7 +146,7 @@ class MixedVecOneBitTester extends BasicTester {
   val oneBit = Reg(MixedVec(Seq(UInt(1.W))))
   when(!flag) {
     oneBit(0) := 1.U(1.W)
-    flag := true.B
+    flag      := true.B
   }.otherwise {
     assert(oneBit(0) === 1.U)
     assert(oneBit.asUInt === 1.U)
@@ -175,29 +175,26 @@ class MixedVecIntegrationSpec extends ChiselPropSpec with Utils {
   }
 
   property("MixedVecs should be assignable") {
-    forAll(safeUIntN(8)) {
-      case (w: Int, v: List[Int]) =>
-        assertTesterPasses {
-          new MixedVecAssignTester(w, v)
-        }
+    forAll(safeUIntN(8)) { case (w: Int, v: List[Int]) =>
+      assertTesterPasses {
+        new MixedVecAssignTester(w, v)
+      }
     }
   }
 
   property("MixedVecs should be usable as the type for Reg()") {
-    forAll(safeUIntN(8)) {
-      case (w: Int, v: List[Int]) =>
-        assertTesterPasses {
-          new MixedVecRegTester(w, v)
-        }
+    forAll(safeUIntN(8)) { case (w: Int, v: List[Int]) =>
+      assertTesterPasses {
+        new MixedVecRegTester(w, v)
+      }
     }
   }
 
   property("MixedVecs should be passed through IO") {
-    forAll(safeUIntN(8)) {
-      case (w: Int, v: List[Int]) =>
-        assertTesterPasses {
-          new MixedVecIOTester(v.map(i => i.U(w.W)))
-        }
+    forAll(safeUIntN(8)) { case (w: Int, v: List[Int]) =>
+      assertTesterPasses {
+        new MixedVecIOTester(v.map(i => i.U(w.W)))
+      }
     }
   }
 

@@ -59,13 +59,13 @@ class DataPrintSpec extends ChiselFlatSpec with Matchers {
     Reg(SInt()).toString should be("BoundDataModule.?: Reg[SInt]")
     val io = IO(Output(Bool())) // needs a name so elaboration doesn't fail
     io.toString should be("BoundDataModule.io: IO[Bool]")
-    val m = Mem(4, UInt(2.W))
+    val m  = Mem(4, UInt(2.W))
     m(2).toString should be("BoundDataModule.?: MemPort[UInt<2>]")
     (2.U + 2.U).toString should be("BoundDataModule.?: OpResult[UInt<2>]")
     Wire(Vec(3, UInt(2.W))).toString should be("BoundDataModule.?: Wire[UInt<2>[3]]")
 
-    val idx = IO(Input(UInt(3.W)))
-    val jdx = IO(Input(new Bundle {
+    val idx  = IO(Input(UInt(3.W)))
+    val jdx  = IO(Input(new Bundle {
       val value = UInt(3.W)
     }))
     val port = IO(Input(new Bundle {
@@ -85,7 +85,7 @@ class DataPrintSpec extends ChiselFlatSpec with Matchers {
     inner.io.a.toString should be("InnerModule.io.a: IO[UInt<4>]")
 
     class FooTypeTest extends Bundle {
-      val foo = Vec(2, UInt(8.W))
+      val foo  = Vec(2, UInt(8.W))
       val fizz = UInt(8.W)
     }
     val tpe = new FooTypeTest
@@ -93,15 +93,15 @@ class DataPrintSpec extends ChiselFlatSpec with Matchers {
     fooio.foo(0).toString should be("BoundDataModule.fooio.foo[0]: IO[UInt<8>]")
 
     class NestedBundle extends Bundle {
-      val nestedFoo = UInt(8.W)
+      val nestedFoo    = UInt(8.W)
       val nestedFooVec = Vec(2, UInt(8.W))
     }
-    class NestedType extends Bundle {
+    class NestedType   extends Bundle {
       val foo = new NestedBundle
     }
 
     val nestedTpe = new NestedType
-    val nestedio = IO(Input(nestedTpe))
+    val nestedio  = IO(Input(nestedTpe))
     (nestedio.foo.nestedFoo.toString should be("BoundDataModule.nestedio.foo.nestedFoo: IO[UInt<8>]"))
     (nestedio.foo.nestedFooVec(0).toString should be("BoundDataModule.nestedio.foo.nestedFooVec[0]: IO[UInt<8>]"))
   }

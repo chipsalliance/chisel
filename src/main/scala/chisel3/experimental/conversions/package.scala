@@ -19,7 +19,7 @@ package object conversions {
     tup: (T1, T2)
   )(
     implicit v1: DataView[T1, V1],
-    v2:          DataView[T2, V2]
+    v2: DataView[T2, V2]
   ): HWTuple2[V1, V2] = {
     tup.viewAs[HWTuple2[V1, V2]]
   }
@@ -29,8 +29,8 @@ package object conversions {
     tup: (T1, T2, T3)
   )(
     implicit v1: DataView[T1, V1],
-    v2:          DataView[T2, V2],
-    v3:          DataView[T3, V3]
+    v2: DataView[T2, V2],
+    v3: DataView[T3, V3]
   ): HWTuple3[V1, V2, V3] = {
     tup.viewAs[HWTuple3[V1, V2, V3]]
   }
@@ -45,12 +45,11 @@ package object conversions {
     V2 <: Data,
     V3 <: Data,
     V4 <: Data
-  ](tup: (T1, T2, T3, T4)
-  )(
+  ](tup: (T1, T2, T3, T4))(
     implicit v1: DataView[T1, V1],
-    v2:          DataView[T2, V2],
-    v3:          DataView[T3, V3],
-    v4:          DataView[T4, V4]
+    v2: DataView[T2, V2],
+    v3: DataView[T3, V3],
+    v4: DataView[T4, V4]
   ): HWTuple4[V1, V2, V3, V4] = {
     tup.viewAs[HWTuple4[V1, V2, V3, V4]]
   }
@@ -67,13 +66,12 @@ package object conversions {
     V3 <: Data,
     V4 <: Data,
     V5 <: Data
-  ](tup: (T1, T2, T3, T4, T5)
-  )(
+  ](tup: (T1, T2, T3, T4, T5))(
     implicit v1: DataView[T1, V1],
-    v2:          DataView[T2, V2],
-    v3:          DataView[T3, V3],
-    v4:          DataView[T4, V4],
-    v5:          DataView[T5, V5]
+    v2: DataView[T2, V2],
+    v3: DataView[T3, V3],
+    v4: DataView[T4, V4],
+    v5: DataView[T5, V5]
   ): HWTuple5[V1, V2, V3, V4, V5] = {
     tup.viewAs[HWTuple5[V1, V2, V3, V4, V5]]
   }
@@ -92,14 +90,13 @@ package object conversions {
     V4 <: Data,
     V5 <: Data,
     V6 <: Data
-  ](tup: (T1, T2, T3, T4, T5, T6)
-  )(
+  ](tup: (T1, T2, T3, T4, T5, T6))(
     implicit v1: DataView[T1, V1],
-    v2:          DataView[T2, V2],
-    v3:          DataView[T3, V3],
-    v4:          DataView[T4, V4],
-    v5:          DataView[T5, V5],
-    v6:          DataView[T6, V6]
+    v2: DataView[T2, V2],
+    v3: DataView[T3, V3],
+    v4: DataView[T4, V4],
+    v5: DataView[T5, V5],
+    v6: DataView[T6, V6]
   ): HWTuple6[V1, V2, V3, V4, V5, V6] = {
     tup.viewAs[HWTuple6[V1, V2, V3, V4, V5, V6]]
   }
@@ -120,15 +117,14 @@ package object conversions {
     V5 <: Data,
     V6 <: Data,
     V7 <: Data
-  ](tup: (T1, T2, T3, T4, T5, T6, T7)
-  )(
+  ](tup: (T1, T2, T3, T4, T5, T6, T7))(
     implicit v1: DataView[T1, V1],
-    v2:          DataView[T2, V2],
-    v3:          DataView[T3, V3],
-    v4:          DataView[T4, V4],
-    v5:          DataView[T5, V5],
-    v6:          DataView[T6, V6],
-    v7:          DataView[T7, V7]
+    v2: DataView[T2, V2],
+    v3: DataView[T3, V3],
+    v4: DataView[T4, V4],
+    v5: DataView[T5, V5],
+    v6: DataView[T6, V6],
+    v7: DataView[T7, V7]
   ): HWTuple7[V1, V2, V3, V4, V5, V6, V7] = {
     tup.viewAs[HWTuple7[V1, V2, V3, V4, V5, V6, V7]]
   }
@@ -151,16 +147,15 @@ package object conversions {
     V6 <: Data,
     V7 <: Data,
     V8 <: Data
-  ](tup: (T1, T2, T3, T4, T5, T6, T7, T8)
-  )(
+  ](tup: (T1, T2, T3, T4, T5, T6, T7, T8))(
     implicit v1: DataView[T1, V1],
-    v2:          DataView[T2, V2],
-    v3:          DataView[T3, V3],
-    v4:          DataView[T4, V4],
-    v5:          DataView[T5, V5],
-    v6:          DataView[T6, V6],
-    v7:          DataView[T7, V7],
-    v8:          DataView[T8, V8]
+    v2: DataView[T2, V2],
+    v3: DataView[T3, V3],
+    v4: DataView[T4, V4],
+    v5: DataView[T5, V5],
+    v6: DataView[T6, V6],
+    v7: DataView[T7, V7],
+    v8: DataView[T8, V8]
   ): HWTuple8[V1, V2, V3, V4, V5, V6, V7, V8] = {
     tup.viewAs[HWTuple8[V1, V2, V3, V4, V5, V6, V7, V8]]
   }
@@ -185,32 +180,31 @@ package object conversions {
     V7 <: Data,
     V8 <: Data,
     V9 <: Data
-  ](tup: (T1, T2, T3, T4, T5, T6, T7, T8, T9)
-  )(
+  ](tup: (T1, T2, T3, T4, T5, T6, T7, T8, T9))(
     implicit v1: DataView[T1, V1],
-    v2:          DataView[T2, V2],
-    v3:          DataView[T3, V3],
-    v4:          DataView[T4, V4],
-    v5:          DataView[T5, V5],
-    v6:          DataView[T6, V6],
-    v7:          DataView[T7, V7],
-    v8:          DataView[T8, V8],
-    v9:          DataView[T9, V9]
+    v2: DataView[T2, V2],
+    v3: DataView[T3, V3],
+    v4: DataView[T4, V4],
+    v5: DataView[T5, V5],
+    v6: DataView[T6, V6],
+    v7: DataView[T7, V7],
+    v8: DataView[T8, V8],
+    v9: DataView[T9, V9]
   ): HWTuple9[V1, V2, V3, V4, V5, V6, V7, V8, V9] = {
     tup.viewAs[HWTuple9[V1, V2, V3, V4, V5, V6, V7, V8, V9]]
   }
 
   /** Implicit conversion between [[Tuple10]] and [[HWTuple10]] */
   implicit def tuple10hwtuple[
-    T1:  DataProduct,
-    T2:  DataProduct,
-    T3:  DataProduct,
-    T4:  DataProduct,
-    T5:  DataProduct,
-    T6:  DataProduct,
-    T7:  DataProduct,
-    T8:  DataProduct,
-    T9:  DataProduct,
+    T1: DataProduct,
+    T2: DataProduct,
+    T3: DataProduct,
+    T4: DataProduct,
+    T5: DataProduct,
+    T6: DataProduct,
+    T7: DataProduct,
+    T8: DataProduct,
+    T9: DataProduct,
     T10: DataProduct,
     V1 <: Data,
     V2 <: Data,
@@ -222,18 +216,17 @@ package object conversions {
     V8 <: Data,
     V9 <: Data,
     V10 <: Data
-  ](tup: (T1, T2, T3, T4, T5, T6, T7, T8, T9, T10)
-  )(
+  ](tup: (T1, T2, T3, T4, T5, T6, T7, T8, T9, T10))(
     implicit v1: DataView[T1, V1],
-    v2:          DataView[T2, V2],
-    v3:          DataView[T3, V3],
-    v4:          DataView[T4, V4],
-    v5:          DataView[T5, V5],
-    v6:          DataView[T6, V6],
-    v7:          DataView[T7, V7],
-    v8:          DataView[T8, V8],
-    v9:          DataView[T9, V9],
-    v10:         DataView[T10, V10]
+    v2: DataView[T2, V2],
+    v3: DataView[T3, V3],
+    v4: DataView[T4, V4],
+    v5: DataView[T5, V5],
+    v6: DataView[T6, V6],
+    v7: DataView[T7, V7],
+    v8: DataView[T8, V8],
+    v9: DataView[T9, V9],
+    v10: DataView[T10, V10]
   ): HWTuple10[V1, V2, V3, V4, V5, V6, V7, V8, V9, V10] = {
     tup.viewAs[HWTuple10[V1, V2, V3, V4, V5, V6, V7, V8, V9, V10]]
   }

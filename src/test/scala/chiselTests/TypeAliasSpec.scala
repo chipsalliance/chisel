@@ -15,7 +15,7 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
       }
 
       val io = IO(new Bundle {
-        val in = Input(new FooBundle)
+        val in  = Input(new FooBundle)
         val out = Output(new FooBundle)
       })
 
@@ -43,12 +43,12 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
       class FooBundle extends Bundle with HasTypeAlias {
         override def aliasName = RecordAlias("Fizz")
 
-        val x = UInt(8.W)
+        val x   = UInt(8.W)
         val bar = new BarBundle
       }
 
       val io = IO(new Bundle {
-        val in = Input(new FooBundle)
+        val in  = Input(new FooBundle)
         val out = Output(new FooBundle)
       })
 
@@ -76,7 +76,7 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
       }
 
       val io = IO(new Bundle {
-        val in = Input(new FooBundle)
+        val in  = Input(new FooBundle)
         val out = Output(new FooBundle)
       })
 
@@ -100,7 +100,7 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
       }
 
       val io = IO(new Bundle {
-        val in = Input(new BarBundle)
+        val in  = Input(new BarBundle)
         val out = Output(new BarBundle)
       })
 
@@ -123,7 +123,7 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
       }
 
       val io = IO(new Bundle {
-        val in = Input(new BarBundle)
+        val in  = Input(new BarBundle)
         val out = Output(new BarBundle)
       })
 
@@ -150,7 +150,7 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
       }
 
       val io = IO(new Bundle {
-        val in = Input(new BarBundle)
+        val in  = Input(new BarBundle)
         val out = Output(new BarBundle)
       })
 
@@ -170,7 +170,7 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
     class Test extends Module {
       // All three of these bundles are structurally equivalent in FIRRTL and thus
       // are equivalent, substitutable aliases for each other. Merge/dedup them into one
-      class FooBundle extends Bundle with HasTypeAlias {
+      class FooBundle    extends Bundle with HasTypeAlias {
         override def aliasName = RecordAlias("IdenticalBundle")
 
         val x = UInt(8.W)
@@ -182,7 +182,7 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
         val x = UInt(8.W)
         val y = UInt(8.W)
       }
-      class BarBundle extends Bundle with HasTypeAlias {
+      class BarBundle    extends Bundle with HasTypeAlias {
         override def aliasName = RecordAlias("IdenticalBundle")
 
         val x = UInt(8.W)
@@ -190,7 +190,7 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
       }
 
       val io = IO(new Bundle {
-        val in = Input(new FooBundle)
+        val in  = Input(new FooBundle)
         val out = Output(new BarBundle)
       })
 
@@ -229,7 +229,7 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
         }
 
         val io = IO(new Bundle {
-          val in = Input(new FooBundle)
+          val in  = Input(new FooBundle)
           val out = Output(new BarBundle)
         })
 
@@ -237,7 +237,7 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
         io.out.y :#= io.in.x
       }
 
-      val args = Array("--throw-on-first-error", "--full-stacktrace")
+      val args    = Array("--throw-on-first-error", "--full-stacktrace")
       val chirrtl = ChiselStage.emitCHIRRTL(new Test, args)
     }).getMessage
 
@@ -260,7 +260,7 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
       }
 
       val io = IO(new Bundle {
-        val in = Input(new FooBundle)
+        val in  = Input(new FooBundle)
         val out = Output(new FooBundle)
       })
 
@@ -328,14 +328,14 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
           }
 
           val io = IO(new Bundle {
-            val in = Input(new FooBundle)
+            val in  = Input(new FooBundle)
             val out = Output(new FooBundle)
           })
 
           io.out.x :#= io.in.x
         }
 
-        val args = Array("--throw-on-first-error", "--full-stacktrace")
+        val args    = Array("--throw-on-first-error", "--full-stacktrace")
         val chirrtl = ChiselStage.emitCHIRRTL(new Test(tpe), args)
       }).getMessage should include(
         s"Attempted to use an illegal word '$tpe' for a type alias. Chisel does not automatically disambiguate these aliases at this time."
@@ -347,15 +347,15 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
     class Test extends Module {
       class FooBundle(width: Int) extends Bundle with HasTypeAlias {
         override def aliasName = RecordAlias("FooBundle")
-        val x = UInt(width.W)
+        val x                  = UInt(width.W)
       }
       class BarBundle(width: Int) extends Bundle with HasTypeAlias {
         override def aliasName = RecordAlias("BarBundle")
-        val y = SInt(width.W)
+        val y                  = SInt(width.W)
       }
       // All three of these bundles are structurally equivalent in FIRRTL and thus
       // are equivalent, substitutable aliases for each other. Merge/dedup them into one
-      class ParentBundle extends Bundle with HasTypeAlias {
+      class ParentBundle          extends Bundle with HasTypeAlias {
         override def aliasName = RecordAlias("ParentBundle")
 
         val foo = new FooBundle(8)
@@ -363,7 +363,7 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
       }
 
       val io = IO(new Bundle {
-        val in = Input(new ParentBundle)
+        val in  = Input(new ParentBundle)
         val out = Output(new ParentBundle)
       })
 
@@ -383,16 +383,16 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
     class Test extends Module {
       class ChildBundle(width: Int) extends Bundle with HasTypeAlias {
         override def aliasName = RecordAlias("ChildBundle")
-        val y = Flipped(SInt(width.W))
+        val y                  = Flipped(SInt(width.W))
       }
-      class ParentBundle extends Bundle with HasTypeAlias {
+      class ParentBundle            extends Bundle with HasTypeAlias {
         override def aliasName = RecordAlias("ParentBundle")
 
         val bar = new ChildBundle(3)
       }
 
       val io = IO(new Bundle {
-        val in = Input(new ParentBundle)
+        val in  = Input(new ParentBundle)
         val out = Output(new ParentBundle)
       })
 
@@ -421,7 +421,7 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
       }
 
       val io = IO(new Bundle {
-        val in = Input(new FooRecord)
+        val in  = Input(new FooRecord)
         val out = Output(new FooRecord)
       })
 
@@ -446,7 +446,7 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
       }
 
       val io = IO(new Bundle {
-        val in = Input(new FooRecord)
+        val in  = Input(new FooRecord)
         val out = Output(new FooRecord)
       })
 
@@ -471,7 +471,7 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
       }
 
       val io = IO(new Bundle {
-        val in = Flipped(new FooRecord)
+        val in  = Flipped(new FooRecord)
         val out = new FooRecord
       })
 
@@ -496,7 +496,7 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
       }
 
       val io = IO(new Bundle {
-        val in = Flipped(new FooRecord)
+        val in  = Flipped(new FooRecord)
         val out = new FooRecord
       })
 

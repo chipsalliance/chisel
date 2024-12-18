@@ -24,7 +24,7 @@ class TraceSpec extends ChiselFlatSpec with Matchers {
 
   def compile(testName: String, gen: () => Module): (os.Path, AnnotationSeq) = {
     val testDir = os.Path(createTestDirectory(testName).getAbsolutePath)
-    val annos = (new ChiselStage).execute(
+    val annos   = (new ChiselStage).execute(
       Array("--target-dir", s"$testDir", "--target", "systemverilog", "--split-verilog"),
       Seq(
         ChiselGeneratorAnnotation(gen)
@@ -61,7 +61,7 @@ class TraceSpec extends ChiselFlatSpec with Matchers {
     }
 
     class Module1 extends Module {
-      val i = IO(Input(new Bundle1))
+      val i  = IO(Input(new Bundle1))
       val m0 = Module(new Module0)
       m0.i := i
       m0.o := DontCare
@@ -72,11 +72,11 @@ class TraceSpec extends ChiselFlatSpec with Matchers {
     }
 
     val (testDir, annos) = compile("TraceFromAnnotations", () => new Module1)
-    val dut = annos.collectFirst { case DesignAnnotation(dut: Module1, _) => dut }.get
+    val dut              = annos.collectFirst { case DesignAnnotation(dut: Module1, _) => dut }.get
     // out of Builder.
 
     val oneTarget = finalTarget(annos)(dut.m0.r.a.a).head
-    val ioTarget = finalTarget(annos)(dut.m0.i.b(1)(2)).head
+    val ioTarget  = finalTarget(annos)(dut.m0.i.b(1)(2)).head
 
     val topName = "Module1"
     oneTarget should be(refTarget(topName, "r_a_a", Seq(Instance("m0") -> OfModule("Module0"))))
@@ -93,17 +93,17 @@ class TraceSpec extends ChiselFlatSpec with Matchers {
           .flatMap(finalTarget(annos))
           .toSet
           .map { target: CompleteTarget =>
-            s"""public_flat_rd -module "${target.tokens.collectFirst {
-              case OfModule(m) => m
-            }.get}" -var "${target.tokens.collectFirst { case Ref(r) => r }.get}""""
+            s"""public_flat_rd -module "${target.tokens.collectFirst { case OfModule(m) =>
+                m
+              }.get}" -var "${target.tokens.collectFirst { case Ref(r) => r }.get}""""
           }
           .mkString("\n") + "\n"
 
     def verilatorTemplate(data: Seq[Data], annos: AnnotationSeq): String = {
       val vpiNames = data.flatMap(finalTarget(annos)).map { ct =>
         s"""TOP.${ct.circuit}.${ct.path.map { case (Instance(i), _) => i }.mkString(".")}.${ct.tokens.collectFirst {
-          case Ref(r) => r
-        }.get}"""
+            case Ref(r) => r
+          }.get}"""
       }
       s"""
          |#include "V${topName}.h"
@@ -160,10 +160,10 @@ class TraceSpec extends ChiselFlatSpec with Matchers {
          |""".stripMargin
     }
 
-    val config = os.temp(dir = testDir, contents = generateVerilatorConfigFile(Seq(dut.m0.o.a.b), annos))
+    val config  = os.temp(dir = testDir, contents = generateVerilatorConfigFile(Seq(dut.m0.o.a.b), annos))
     val verilog = testDir / s"$topName.sv"
-    val cpp = os.temp(dir = testDir, suffix = ".cpp", contents = verilatorTemplate(Seq(dut.m0.o.a.b), annos))
-    val exe = testDir / "obj_dir" / s"V$topName"
+    val cpp     = os.temp(dir = testDir, suffix = ".cpp", contents = verilatorTemplate(Seq(dut.m0.o.a.b), annos))
+    val exe     = testDir / "obj_dir" / s"V$topName"
     os.proc(
       "verilator",
       "--cc",
@@ -183,13 +183,13 @@ class TraceSpec extends ChiselFlatSpec with Matchers {
 
   "TraceFromCollideBundle" should "work" in {
     class CollideModule extends Module {
-      val a = IO(
+      val a     = IO(
         Input(
           Vec(
             2,
             new Bundle {
-              val b = Flipped(Bool())
-              val c = Vec(
+              val b     = Flipped(Bool())
+              val c     = Vec(
                 2,
                 new Bundle {
                   val d = UInt(2.W)
@@ -202,9 +202,9 @@ class TraceSpec extends ChiselFlatSpec with Matchers {
         )
       )
       val a_0_c = IO(Output(UInt(5.W)))
-      val a__0 = IO(Output(UInt(5.W)))
+      val a__0  = IO(Output(UInt(5.W)))
       a_0_c := DontCare
-      a__0 := DontCare
+      a__0  := DontCare
 
       traceName(a)
       dontTouch(a)
@@ -215,23 +215,23 @@ class TraceSpec extends ChiselFlatSpec with Matchers {
     }
 
     val (_, annos) = compile("TraceFromCollideBundle", () => new CollideModule)
-    val dut = annos.collectFirst { case DesignAnnotation(dut: CollideModule, _) => dut }.get
+    val dut        = annos.collectFirst { case DesignAnnotation(dut: CollideModule, _) => dut }.get
 
     val topName = "CollideModule"
 
-    val a0 = finalTarget(annos)(dut.a(0))
-    val a__0 = finalTarget(annos)(dut.a__0).head
+    val a0       = finalTarget(annos)(dut.a(0))
+    val a__0     = finalTarget(annos)(dut.a__0).head
     val a__0_ref = refTarget(topName, "a__0")
     a0.foreach(_ shouldNot be(a__0_ref))
     a__0 should be(a__0_ref)
 
-    val a0_c = finalTarget(annos)(dut.a(0).c)
-    val a_0_c = finalTarget(annos)(dut.a_0_c).head
+    val a0_c      = finalTarget(annos)(dut.a(0).c)
+    val a_0_c     = finalTarget(annos)(dut.a_0_c).head
     val a_0_c_ref = refTarget(topName, "a_0_c")
     a0_c.foreach(_ shouldNot be(a_0_c_ref))
     a_0_c should be(a_0_c_ref)
 
-    val a0_c1_e = finalTarget(annos)(dut.a(0).c(1).e).head
+    val a0_c1_e  = finalTarget(annos)(dut.a(0).c(1).e).head
     val a0_c_1_e = finalTarget(annos)(dut.a(0).c_1_e).head
     println(dut.a(0).c(1).e.toTarget)
     println(a0_c1_e)
@@ -251,15 +251,15 @@ class TraceSpec extends ChiselFlatSpec with Matchers {
     }
 
     class Module1 extends Module {
-      val i = IO(Input(Bool()))
-      val o = IO(Output(Bool()))
+      val i  = IO(Input(Bool()))
+      val o  = IO(Output(Bool()))
       val m0 = Module(new Module0 with InlineInstance)
       m0.i := i
-      o := m0.o
+      o    := m0.o
     }
 
     val (_, annos) = compile("Inline", () => new Module1)
-    val dut = annos.collectFirst { case DesignAnnotation(dut: Module1, _) => dut }.get
+    val dut        = annos.collectFirst { case DesignAnnotation(dut: Module1, _) => dut }.get
 
     val m0_i = finalTarget(annos)(dut.m0.i).head
     m0_i should be(refTarget("Module1", "m0_i"))
@@ -267,16 +267,16 @@ class TraceSpec extends ChiselFlatSpec with Matchers {
 
   "Constant Propagation" should "be turned off by traceName" in {
     class Module0 extends Module {
-      val i = WireDefault(1.U)
+      val i  = WireDefault(1.U)
       val i0 = i + 1.U
-      val o = IO(Output(UInt(2.W)))
+      val o  = IO(Output(UInt(2.W)))
       traceName(i0)
       dontTouch(i0)
       o := i0
     }
 
     val (_, annos) = compile("ConstantProp", () => new Module0)
-    val dut = annos.collectFirst { case DesignAnnotation(dut: Module0, _) => dut }.get
+    val dut        = annos.collectFirst { case DesignAnnotation(dut: Module0, _) => dut }.get
 
     val i0 = finalTarget(annos)(dut.i0).head
     i0 should be(refTarget("Module0", "i0"))
@@ -294,17 +294,17 @@ class TraceSpec extends ChiselFlatSpec with Matchers {
     }
 
     class M1 extends Module {
-      val io = IO(new Io)
+      val io  = IO(new Io)
       val bar = Module(new Not)
       bar.io <> io
     }
 
     class M2 extends Module {
-      val io = IO(new Io)
-      val m1 = Module(new M1 with InlineInstance)
+      val io  = IO(new Io)
+      val m1  = Module(new M1 with InlineInstance)
       val foo = Module(new Not)
 
-      m1.io.i := io.i
+      m1.io.i  := io.i
       foo.io.i := io.i
 
       io.o := m1.io.o && foo.io.o
@@ -319,10 +319,10 @@ class TraceSpec extends ChiselFlatSpec with Matchers {
     }
 
     val (_, annos) = compile("NestedModule", () => new M3)
-    val m3 = annos.collectFirst { case DesignAnnotation(dut: M3, _) => dut }.get
+    val m3         = annos.collectFirst { case DesignAnnotation(dut: M3, _) => dut }.get
 
     val m2_m1_not = finalTarget(annos)(m3.m2.m1.bar).head
-    val m2_not = finalTarget(annos)(m3.m2.foo).head
+    val m2_not    = finalTarget(annos)(m3.m2.foo).head
 
     m2_m1_not should be(instTarget("M3", "m1_bar", "Not", Seq(Instance("m2") -> OfModule("M2"))))
     m2_not should be(instTarget("M3", "foo", "Not", Seq(Instance("m2") -> OfModule("M2"))))
@@ -337,7 +337,7 @@ class TraceSpec extends ChiselFlatSpec with Matchers {
       Seq(a, b).foreach { a => traceName(a); dontTouch(a) }
     }
     val (_, annos) = compile("NestedModule", () => new M)
-    val dut = annos.collectFirst { case DesignAnnotation(dut: M, _) => dut }.get
+    val dut        = annos.collectFirst { case DesignAnnotation(dut: M, _) => dut }.get
     val allTargets = finalTargetMap(annos)
     allTargets(dut.a.toAbsoluteTarget) should be(Seq(refTarget("M", "a")))
     allTargets(dut.b(0).toAbsoluteTarget) should be(Seq(refTarget("M", "b_0")))

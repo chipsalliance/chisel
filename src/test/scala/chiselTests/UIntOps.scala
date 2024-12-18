@@ -10,24 +10,24 @@ import org.scalatest.matchers.should.Matchers
 
 class UIntOps extends Module {
   val io = IO(new Bundle {
-    val a = Input(UInt(32.W))
-    val b = Input(UInt(32.W))
-    val addout = Output(UInt(32.W))
-    val subout = Output(UInt(32.W))
-    val addampout = Output(UInt(33.W))
-    val subampout = Output(UInt(33.W))
-    val timesout = Output(UInt(32.W))
-    val divout = Output(UInt(32.W))
-    val modout = Output(UInt(32.W))
-    val lshiftout = Output(UInt(32.W))
-    val rshiftout = Output(UInt(32.W))
+    val a          = Input(UInt(32.W))
+    val b          = Input(UInt(32.W))
+    val addout     = Output(UInt(32.W))
+    val subout     = Output(UInt(32.W))
+    val addampout  = Output(UInt(33.W))
+    val subampout  = Output(UInt(33.W))
+    val timesout   = Output(UInt(32.W))
+    val divout     = Output(UInt(32.W))
+    val modout     = Output(UInt(32.W))
+    val lshiftout  = Output(UInt(32.W))
+    val rshiftout  = Output(UInt(32.W))
     val lrotateout = Output(UInt(32.W))
     val rrotateout = Output(UInt(32.W))
-    val lessout = Output(Bool())
-    val greatout = Output(Bool())
-    val eqout = Output(Bool())
-    val noteqout = Output(Bool())
-    val lesseqout = Output(Bool())
+    val lessout    = Output(Bool())
+    val greatout   = Output(Bool())
+    val eqout      = Output(Bool())
+    val noteqout   = Output(Bool())
+    val lesseqout  = Output(Bool())
     val greateqout = Output(Bool())
   })
 
@@ -36,22 +36,22 @@ class UIntOps extends Module {
   val a = io.a
   val b = io.b
 
-  io.addout := a +% b
-  io.subout := a -% b
-  io.addampout := a +& b
-  io.subampout := a -& b
-  io.timesout := (a * b)(31, 0)
-  io.divout := a / Mux(b === 0.U, 1.U, b)
-  io.modout := a % b
-  io.lshiftout := (a << b(3, 0))(31, 0)
-  io.rshiftout := a >> b
+  io.addout     := a +% b
+  io.subout     := a -% b
+  io.addampout  := a +& b
+  io.subampout  := a -& b
+  io.timesout   := (a * b)(31, 0)
+  io.divout     := a / Mux(b === 0.U, 1.U, b)
+  io.modout     := a % b
+  io.lshiftout  := (a << b(3, 0))(31, 0)
+  io.rshiftout  := a >> b
   io.lrotateout := a.rotateLeft(5)
   io.rrotateout := a.rotateRight(5)
-  io.lessout := a < b
-  io.greatout := a > b
-  io.eqout := a === b
-  io.noteqout := (a =/= b)
-  io.lesseqout := a <= b
+  io.lessout    := a < b
+  io.greatout   := a > b
+  io.eqout      := a === b
+  io.noteqout   := (a =/= b)
+  io.lesseqout  := a <= b
   io.greateqout := a >= b
 }
 
@@ -127,7 +127,7 @@ class NegativeShift(t: => Bits) extends Module {
 
 class BasicRotate extends BasicTester {
   val shiftAmount = random.LFSR(4)
-  val ctr = RegInit(0.U(4.W))
+  val ctr         = RegInit(0.U(4.W))
 
   val rotL = 1.U(3.W).rotateLeft(shiftAmount)
   val rotR = 1.U(3.W).rotateRight(shiftAmount)
@@ -219,11 +219,8 @@ trait ShiftRightWidthBehavior { self: ChiselRunners =>
   }
 
   def testShiftRightWidthBehavior[T <: Bits](
-    factory:        BitsFactory[T]
-  )(chiselMinWidth: Int,
-    firrtlMinWidth: Int,
-    args:           Iterable[String] = Nil
-  ): Unit = {
+    factory: BitsFactory[T]
+  )(chiselMinWidth: Int, firrtlMinWidth: Int, args: Iterable[String] = Nil): Unit = {
     assertKnownWidth(4, args) {
       val in = IO(Input(factory(8.W)))
       in >> 4
@@ -246,27 +243,27 @@ trait ShiftRightWidthBehavior { self: ChiselRunners =>
     }
     assertInferredWidth(4, args) {
       val in = IO(Input(factory(8.W)))
-      val w = WireInit(factory(), in)
+      val w  = WireInit(factory(), in)
       w >> 4
     }
     assertInferredWidth(firrtlMinWidth, args) {
       val in = IO(Input(factory(8.W)))
-      val w = WireInit(factory(), in)
+      val w  = WireInit(factory(), in)
       w >> 8
     }
     assertInferredWidth(firrtlMinWidth, args) {
       val in = IO(Input(factory(8.W)))
-      val w = WireInit(factory(), in)
+      val w  = WireInit(factory(), in)
       w >> 16
     }
     assertInferredWidth(firrtlMinWidth, args) {
       val in = IO(Input(factory(0.W)))
-      val w = WireInit(factory(), in)
+      val w  = WireInit(factory(), in)
       w >> 8
     }
     assertInferredWidth(firrtlMinWidth, args) {
       val in = IO(Input(factory(0.W)))
-      val w = WireInit(factory(), in)
+      val w  = WireInit(factory(), in)
       w >> 0
     }
   }
@@ -363,7 +360,7 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils with ShiftRigh
   property("asBools should support chained apply") {
     ChiselStage.emitCHIRRTL(new Module {
       val io = IO(new Bundle {
-        val in = Input(UInt(8.W))
+        val in  = Input(UInt(8.W))
         val out = Output(Bool())
       })
       io.out := io.in.asBools(2)
@@ -375,26 +372,26 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils with ShiftRigh
   //   Single Argument case 2
   property("modulo divide should give min width of arguments") {
     assertKnownWidth(4) {
-      val x = WireDefault(UInt(8.W), DontCare)
-      val y = WireDefault(UInt(4.W), DontCare)
+      val x  = WireDefault(UInt(8.W), DontCare)
+      val y  = WireDefault(UInt(4.W), DontCare)
       val op = x % y
       WireDefault(chiselTypeOf(op), op)
     }
     assertKnownWidth(4) {
-      val x = WireDefault(UInt(4.W), DontCare)
-      val y = WireDefault(UInt(8.W), DontCare)
+      val x  = WireDefault(UInt(4.W), DontCare)
+      val y  = WireDefault(UInt(8.W), DontCare)
       val op = x % y
       WireDefault(chiselTypeOf(op), op)
     }
     assertKnownWidth(0) {
-      val x = WireDefault(UInt(0.W), DontCare)
-      val y = WireDefault(UInt(8.W), DontCare)
+      val x  = WireDefault(UInt(0.W), DontCare)
+      val y  = WireDefault(UInt(8.W), DontCare)
       val op = x % y
       WireDefault(chiselTypeOf(op), op)
     }
     assertKnownWidth(0) {
-      val x = WireDefault(UInt(8.W), DontCare)
-      val y = WireDefault(UInt(0.W), DontCare)
+      val x  = WireDefault(UInt(8.W), DontCare)
+      val y  = WireDefault(UInt(0.W), DontCare)
       val op = x % y
       WireDefault(chiselTypeOf(op), op)
     }
@@ -402,20 +399,20 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils with ShiftRigh
 
   property("division should give the width of the numerator") {
     assertKnownWidth(8) {
-      val x = WireDefault(UInt(8.W), DontCare)
-      val y = WireDefault(UInt(4.W), DontCare)
+      val x  = WireDefault(UInt(8.W), DontCare)
+      val y  = WireDefault(UInt(4.W), DontCare)
       val op = x / y
       WireDefault(chiselTypeOf(op), op)
     }
     assertKnownWidth(4) {
-      val x = WireDefault(UInt(4.W), DontCare)
-      val y = WireDefault(UInt(8.W), DontCare)
+      val x  = WireDefault(UInt(4.W), DontCare)
+      val y  = WireDefault(UInt(8.W), DontCare)
       val op = x / y
       WireDefault(chiselTypeOf(op), op)
     }
     assertKnownWidth(0) {
-      val x = WireDefault(UInt(0.W), DontCare)
-      val y = WireDefault(UInt(8.W), DontCare)
+      val x  = WireDefault(UInt(0.W), DontCare)
+      val y  = WireDefault(UInt(8.W), DontCare)
       val op = x / y
       WireDefault(chiselTypeOf(op), op)
     }
@@ -423,12 +420,12 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils with ShiftRigh
 
   property("head and tail should be zero-width on zero-width wires") {
     assertKnownWidth(0) {
-      val x = WireDefault(UInt(0.W), DontCare)
+      val x  = WireDefault(UInt(0.W), DontCare)
       val op = x.tail(0)
       WireDefault(chiselTypeOf(op), op)
     }
     assertKnownWidth(0) {
-      val x = WireDefault(UInt(0.W), DontCare)
+      val x  = WireDefault(UInt(0.W), DontCare)
       val op = x.head(0)
       WireDefault(chiselTypeOf(op), op)
     }
@@ -436,20 +433,20 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils with ShiftRigh
 
   property("basic arithmetic operations be supported on zero-width wires") {
     assertKnownWidth(0) {
-      val x = WireDefault(UInt(0.W), DontCare)
-      val y = WireDefault(UInt(0.W), DontCare)
+      val x  = WireDefault(UInt(0.W), DontCare)
+      val y  = WireDefault(UInt(0.W), DontCare)
       val op = x + y
       WireDefault(chiselTypeOf(op), op)
     }
     assertKnownWidth(0) {
-      val x = WireDefault(UInt(0.W), DontCare)
-      val y = WireDefault(UInt(0.W), DontCare)
+      val x  = WireDefault(UInt(0.W), DontCare)
+      val y  = WireDefault(UInt(0.W), DontCare)
       val op = x - y
       WireDefault(chiselTypeOf(op), op)
     }
     assertKnownWidth(0) {
-      val x = WireDefault(UInt(0.W), DontCare)
-      val y = WireDefault(UInt(0.W), DontCare)
+      val x  = WireDefault(UInt(0.W), DontCare)
+      val y  = WireDefault(UInt(0.W), DontCare)
       val op = x * y
       WireDefault(chiselTypeOf(op), op)
     }
@@ -457,12 +454,12 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils with ShiftRigh
 
   property("Zero-width bit extractions should be supported") {
     assertKnownWidth(0) {
-      val x = WireDefault(UInt(8.W), DontCare)
+      val x  = WireDefault(UInt(8.W), DontCare)
       val op = x(-1, 0)
       WireDefault(chiselTypeOf(op), op)
     }
     assertKnownWidth(0) {
-      val x = WireDefault(UInt(8.W), DontCare)
+      val x  = WireDefault(UInt(8.W), DontCare)
       val hi = 5
       val lo = 6
       val op = (x >> lo)(hi - lo, 0)
@@ -472,7 +469,7 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils with ShiftRigh
 
   property("Zero-width bit extractions from the middle of a UInt should give an actionable error") {
     val (log, x) = grabLog(intercept[Exception](ChiselStage.emitCHIRRTL(new RawModule {
-      val x = WireDefault(UInt(8.W), DontCare)
+      val x  = WireDefault(UInt(8.W), DontCare)
       val op = x(5, 6)
       WireDefault(chiselTypeOf(op), op)
     })))
@@ -482,68 +479,66 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils with ShiftRigh
   }
 
   property("emit warning if dynamic index is too wide or too narrow") {
-    class TooWide extends Module {
-      val in = IO(Input(UInt(2.W)))
+    class TooWide   extends Module {
+      val in    = IO(Input(UInt(2.W)))
       val index = IO(Input(UInt(2.W)))
-      val out = IO(Output(Bool()))
+      val out   = IO(Output(Bool()))
       out := in(index)
     }
     class TooNarrow extends Module {
-      val in = IO(Input(UInt(3.W)))
+      val in    = IO(Input(UInt(3.W)))
       val index = IO(Input(UInt(1.W)))
-      val out = IO(Output(Bool()))
+      val out   = IO(Output(Bool()))
       out := in(index)
     }
 
     Seq(
       grabLog(ChiselStage.emitCHIRRTL(new TooWide)),
       grabLog(ChiselStage.emitCHIRRTL(new TooNarrow))
-    ).foreach {
-      case (log, _) =>
-        log should include("warn")
+    ).foreach { case (log, _) =>
+      log should include("warn")
     }
 
     a[ChiselException] should be thrownBy extractCause[ChiselException] {
       ChiselStage.emitCHIRRTL(new RawModule {
-        val in = IO(Input(UInt(0.W)))
+        val in    = IO(Input(UInt(0.W)))
         val index = IO(Input(UInt(1.W)))
-        val out = IO(Output(Bool()))
+        val out   = IO(Output(Bool()))
         out := in(index)
       })
     }
 
     class Ok extends Module {
-      val in1 = IO(Input(UInt(9.W)))
+      val in1    = IO(Input(UInt(9.W)))
       val index1 = IO(Input(UInt(4.W)))
-      val out1 = IO(Output(Bool()))
+      val out1   = IO(Output(Bool()))
       out1 := in1(index1)
 
-      val in2 = IO(Input(UInt(8.W)))
+      val in2    = IO(Input(UInt(8.W)))
       val index2 = IO(Input(UInt(3.W)))
-      val out2 = IO(Output(Bool()))
+      val out2   = IO(Output(Bool()))
       out2 := in2(index2)
 
-      val in3 = IO(Input(Bool()))
+      val in3    = IO(Input(Bool()))
       val index3 = IO(Input(UInt(0.W)))
-      val out3 = IO(Output(Bool()))
+      val out3   = IO(Output(Bool()))
       out3 := in3(index3)
     }
 
     Seq(
       grabLog(ChiselStage.emitCHIRRTL(new Ok))
-    ).foreach {
-      case (log, _) =>
-        log should be("")
+    ).foreach { case (log, _) =>
+      log should be("")
     }
   }
 
   property("Calling .asBool on a Bool should be a noop") {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val a = IO(Input(Bool()))
+      val a       = IO(Input(Bool()))
       val b: UInt = IO(Input(Bool()))
-      val y, z = IO(Output(Bool()))
-      val c = a.asBool
-      val d = b.asBool
+      val y, z    = IO(Output(Bool()))
+      val c       = a.asBool
+      val d       = b.asBool
       y := c
       z := d
       a should be(c)
@@ -564,9 +559,9 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils with ShiftRigh
 
     // Focused test to show the mismatch
     class TestModule extends Module {
-      val in = IO(Input(UInt(8.W)))
+      val in         = IO(Input(UInt(8.W)))
       val widthcheck = Wire(UInt())
-      val shifted = in >> 8
+      val shifted    = in >> 8
       shifted.getWidth should be(0)
       widthcheck := shifted
       dontTouch(widthcheck)
@@ -577,7 +572,7 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils with ShiftRigh
 
   property("--use-legacy-width should have a minimal impact on emission") {
     class TestModule extends Module {
-      val a, b, c = IO(Input(UInt(8.W)))
+      val a, b, c    = IO(Input(UInt(8.W)))
       val widthcheck = Wire(UInt())
       dontTouch(widthcheck)
 
@@ -587,13 +582,13 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils with ShiftRigh
     val defaultFirrtl = ChiselStage.emitCHIRRTL(new TestModule)
     val withOptFirrtl = ChiselStage.emitCHIRRTL(new TestModule, Array("--use-legacy-width"))
     // We should see the fixup
-    val defaultOnly = Seq("node _widthcheck_T = shr(w, 3)")
-    val withOptOnly = Seq(
+    val defaultOnly   = Seq("node _widthcheck_T = shr(w, 3)")
+    val withOptOnly   = Seq(
       "node _widthcheck_shrLegacyWidthFixup = shr(w, 3)",
       "node _widthcheck_T = pad(_widthcheck_shrLegacyWidthFixup, 1)"
     )
     // Everything downstream of the shr or pad should be unchanged
-    val common = Seq(
+    val common        = Seq(
       "node _widthcheck_T_1 = add(_widthcheck_T, b)",
       "node _widthcheck_T_2 = tail(_widthcheck_T_1, 1)",
       "node _widthcheck_T_3 = sub(_widthcheck_T_2, c)",
@@ -666,7 +661,7 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils with ShiftRigh
 
   property("It should be legal to extract zero bits from a zero-width UInt") {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val in = IO(Input(UInt(0.W)))
+      val in         = IO(Input(UInt(0.W)))
       val out1, out2 = IO(Output(UInt(8.W)))
       out1 := in.take(0)
       out2 := in(-1, 0)

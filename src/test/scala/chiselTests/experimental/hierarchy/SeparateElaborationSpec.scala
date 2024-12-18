@@ -24,8 +24,8 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
   private def getDesignAnnotation[T <: RawModule](annos: AnnotationSeq): DesignAnnotation[T] = {
     val designAnnos = annos.flatMap { a =>
       a match {
-        case a: DesignAnnotation[T] => Some(a) //TODO: cleanup, T is necessary to make type of designAnnos right
-        case _ => None
+        case a: DesignAnnotation[T] => Some(a) // TODO: cleanup, T is necessary to make type of designAnnos right
+        case _                      => None
       }
     }
     require(designAnnos.length == 1, s"Exactly one DesignAnnotation should exist, but found: $designAnnos.")
@@ -51,7 +51,7 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
       a match {
         case a: ChiselCircuitAnnotation =>
           a.circuit.components.map { c => ImportDefinitionAnnotation(c.id.toDefinition) }
-        case _ => Seq.empty
+        case _                          => Seq.empty
       }
     }
   }
@@ -63,11 +63,11 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
       val dutDef = getAddOneDefinition(testDir)
 
       class Testbench(defn: Definition[AddOne]) extends Module {
-        val mod = Module(new AddOne)
+        val mod  = Module(new AddOne)
         val inst = Instance(defn)
 
         // Tie inputs to a value so ChiselStage does not complain
-        mod.in := 0.U
+        mod.in  := 0.U
         inst.in := 0.U
         dontTouch(mod.out)
       }
@@ -154,7 +154,7 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
           ChiselGeneratorAnnotation(() => new AddOneParameterized(4))
         )
       )
-      val dutDef0 = getDesignAnnotation(dutAnnos0).design.asInstanceOf[AddOneParameterized].toDefinition
+      val dutDef0   = getDesignAnnotation(dutAnnos0).design.asInstanceOf[AddOneParameterized].toDefinition
 
       val dutAnnos1 = (new ChiselStage).execute(
         Array("--target-dir", s"$testDir/dutDef1", "--target", "systemverilog"),
@@ -164,7 +164,7 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
           ImportDefinitionAnnotation(dutDef0)
         )
       )
-      val dutDef1 = getDesignAnnotation(dutAnnos1).design.asInstanceOf[AddOneParameterized].toDefinition
+      val dutDef1   = getDesignAnnotation(dutAnnos1).design.asInstanceOf[AddOneParameterized].toDefinition
 
       class Testbench(defn0: Definition[AddOneParameterized], defn1: Definition[AddOneParameterized]) extends Module {
         val inst0 = Instance(defn0)
@@ -207,7 +207,7 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
           ChiselGeneratorAnnotation(() => new AddOneParameterized(4))
         )
       )
-      val dutDef0 = getDesignAnnotation(dutAnnos0).design.asInstanceOf[AddOneParameterized].toDefinition
+      val dutDef0   = getDesignAnnotation(dutAnnos0).design.asInstanceOf[AddOneParameterized].toDefinition
 
       val dutAnnos1 = (new ChiselStage).execute(
         Array("--target-dir", s"$testDir/dutDef1", "--target", "systemverilog"),
@@ -215,7 +215,7 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
           ChiselGeneratorAnnotation(() => new AddOneParameterized(8))
         )
       )
-      val dutDef1 = getDesignAnnotation(dutAnnos1).design.asInstanceOf[AddOneParameterized].toDefinition
+      val dutDef1   = getDesignAnnotation(dutAnnos1).design.asInstanceOf[AddOneParameterized].toDefinition
 
       class Testbench(defn0: Definition[AddOneParameterized], defn1: Definition[AddOneParameterized]) extends Module {
         val inst0 = Instance(defn0)
@@ -255,22 +255,22 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
     ) {
       val testDir = createTestDirectory(this.getClass.getSimpleName).toString
 
-      val dutAnnos0 = (new ChiselStage).execute(
+      val dutAnnos0              = (new ChiselStage).execute(
         Array("--target-dir", s"$testDir/dutDef0", "--target", "systemverilog"),
         Seq(
           ChiselGeneratorAnnotation(() => new AddTwoMixedModules)
         )
       )
-      val dutDef0 = getDesignAnnotation(dutAnnos0).design.asInstanceOf[AddTwoMixedModules].toDefinition
+      val dutDef0                = getDesignAnnotation(dutAnnos0).design.asInstanceOf[AddTwoMixedModules].toDefinition
       val importDefinitionAnnos0 = allModulesToImportedDefs(dutAnnos0)
 
-      val dutAnnos1 = (new ChiselStage).execute(
+      val dutAnnos1              = (new ChiselStage).execute(
         Array("--target-dir", s"$testDir/dutDef1", "--target", "systemverilog"),
         Seq(
           ChiselGeneratorAnnotation(() => new AddTwoMixedModules)
         ) ++ importDefinitionAnnos0
       )
-      val dutDef1 = getDesignAnnotation(dutAnnos1).design.asInstanceOf[AddTwoMixedModules].toDefinition
+      val dutDef1                = getDesignAnnotation(dutAnnos1).design.asInstanceOf[AddTwoMixedModules].toDefinition
       val importDefinitionAnnos1 = allModulesToImportedDefs(dutAnnos1)
 
       class Testbench(defn0: Definition[AddTwoMixedModules], defn1: Definition[AddTwoMixedModules]) extends Module {
@@ -309,23 +309,23 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
   ) {
     val testDir = createTestDirectory(this.getClass.getSimpleName).toString
 
-    val dutAnnos0 = (new ChiselStage).execute(
+    val dutAnnos0              = (new ChiselStage).execute(
       Array("--target-dir", s"$testDir/dutDef0", "--target", "systemverilog"),
       Seq(
         ChiselGeneratorAnnotation(() => new AddTwoMixedModules)
       )
     )
-    val dutDef0 = getDesignAnnotation(dutAnnos0).design.asInstanceOf[AddTwoMixedModules].toDefinition
+    val dutDef0                = getDesignAnnotation(dutAnnos0).design.asInstanceOf[AddTwoMixedModules].toDefinition
     val importDefinitionAnnos0 = allModulesToImportedDefs(dutAnnos0)
 
-    val dutAnnos1 = (new ChiselStage).execute(
+    val dutAnnos1              = (new ChiselStage).execute(
       Array("--target-dir", s"$testDir/dutDef1", "--target", "systemverilog"),
       Seq(
         ChiselGeneratorAnnotation(() => new AddTwoMixedModules),
         ImportDefinitionAnnotation(dutDef0)
       )
     )
-    val dutDef1 = getDesignAnnotation(dutAnnos1).design.asInstanceOf[AddTwoMixedModules].toDefinition
+    val dutDef1                = getDesignAnnotation(dutAnnos1).design.asInstanceOf[AddTwoMixedModules].toDefinition
     val importDefinitionAnnos1 = allModulesToImportedDefs(dutAnnos1)
 
     class Testbench(defn0: Definition[AddTwoMixedModules], defn1: Definition[AddTwoMixedModules]) extends Module {
@@ -364,11 +364,11 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
       val dutDef = getAddOneDefinition(testDir)
 
       class Testbench(defn: Definition[AddOne]) extends Module {
-        val mod = Module(new AddOne)
+        val mod  = Module(new AddOne)
         val inst = Instance(defn)
 
         // Tie inputs to a value so ChiselStage does not complain
-        mod.in := 0.U
+        mod.in  := 0.U
         inst.in := 0.U
         dontTouch(mod.out)
       }
@@ -401,7 +401,7 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
         ChiselGeneratorAnnotation(() => new AddOneParameterized(4))
       )
     )
-    val dutDef0 = getDesignAnnotation(dutAnnos0).design.asInstanceOf[AddOneParameterized].toDefinition
+    val dutDef0   = getDesignAnnotation(dutAnnos0).design.asInstanceOf[AddOneParameterized].toDefinition
 
     val dutAnnos1 = (new ChiselStage).execute(
       Array("--target-dir", s"$testDir/dutDef1", "--target", "systemverilog"),
@@ -411,7 +411,7 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
         ImportDefinitionAnnotation(dutDef0)
       )
     )
-    val dutDef1 = getDesignAnnotation(dutAnnos1).design.asInstanceOf[AddOneParameterized].toDefinition
+    val dutDef1   = getDesignAnnotation(dutAnnos1).design.asInstanceOf[AddOneParameterized].toDefinition
 
     class Testbench(defn0: Definition[AddOneParameterized], defn1: Definition[AddOneParameterized]) extends Module {
       val inst0 = Instance(defn0)
@@ -448,16 +448,16 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
   ) {
     val testDir = createTestDirectory(this.getClass.getSimpleName).toString
 
-    val dutAnnos0 = (new ChiselStage).execute(
+    val dutAnnos0              = (new ChiselStage).execute(
       Array("--target-dir", s"$testDir/dutDef0", "--target", "systemverilog"),
       Seq(
         ChiselGeneratorAnnotation(() => new AddOneParameterized(4))
       )
     )
     val importDefinitionAnnos0 = allModulesToImportedDefs(dutAnnos0)
-    val dutDef0 = getDesignAnnotation(dutAnnos0).design.asInstanceOf[AddOneParameterized].toDefinition
+    val dutDef0                = getDesignAnnotation(dutAnnos0).design.asInstanceOf[AddOneParameterized].toDefinition
 
-    val dutAnnos1 = (new ChiselStage).execute(
+    val dutAnnos1              = (new ChiselStage).execute(
       Array("--target-dir", s"$testDir/dutDef1", "--target", "systemverilog"),
       Seq(
         ChiselGeneratorAnnotation(() => new AddOneParameterized(8)),
@@ -466,7 +466,7 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
       )
     )
     val importDefinitionAnnos1 = allModulesToImportedDefs(dutAnnos1)
-    val dutDef1 = getDesignAnnotation(dutAnnos1).design.asInstanceOf[AddOneParameterized].toDefinition
+    val dutDef1                = getDesignAnnotation(dutAnnos1).design.asInstanceOf[AddOneParameterized].toDefinition
 
     class Testbench(defn0: Definition[AddOneParameterized], defn1: Definition[AddOneParameterized]) extends Module {
       val inst0 = Instance(defn0)

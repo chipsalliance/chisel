@@ -47,15 +47,15 @@ private object Helpers {
     * @todo This is very janky and should be changed to something more stable.
     */
   def extractAnnotationFile(string: String, filename: String): AnnotationSeq = {
-    var inAnno = false
+    var inAnno           = false
     val filtered: String = string.linesIterator.filter {
       case line if line.startsWith("// ----- 8< ----- FILE") && line.contains(filename) =>
         inAnno = true
         false
-      case line if line.startsWith("// ----- 8< ----- FILE") =>
+      case line if line.startsWith("// ----- 8< ----- FILE")                            =>
         inAnno = false
         false
-      case line if inAnno =>
+      case line if inAnno                                                               =>
         true
 
       case _ => false
@@ -69,8 +69,8 @@ private object Helpers {
 
   class LoggerShim(logger: Logger) extends firtoolresolver.Logger {
     def error(msg: String): Unit = logger.error(msg)
-    def warn(msg:  String): Unit = logger.warn(msg)
-    def info(msg:  String): Unit = logger.info(msg)
+    def warn(msg: String): Unit  = logger.warn(msg)
+    def info(msg: String): Unit  = logger.info(msg)
     def debug(msg: String): Unit = logger.debug(msg)
     def trace(msg: String): Unit = logger.trace(msg)
   }
@@ -137,12 +137,12 @@ class CIRCT extends Phase {
 
   import scala.sys.process._
 
-  override def prerequisites = Seq(
+  override def prerequisites          = Seq(
     Dependency[circt.stage.phases.AddImplicitOutputFile]
   )
-  override def optionalPrerequisites = Seq.empty
+  override def optionalPrerequisites  = Seq.empty
   override def optionalPrerequisiteOf = Seq.empty
-  override def invalidates(a: Phase) = false
+  override def invalidates(a: Phase)  = false
 
   override def transform(annotations: AnnotationSeq): AnnotationSeq = {
     val circtOptions = view[CIRCTOptions](annotations)
@@ -154,10 +154,10 @@ class CIRCT extends Phase {
     }
 
     val firrtlOptions = view[FirrtlOptions](annotations)
-    val stageOptions = view[StageOptions](annotations)
+    val stageOptions  = view[StageOptions](annotations)
 
-    var logLevel = _root_.logger.LogLevel.None
-    var split = circtOptions.splitVerilog
+    var logLevel    = _root_.logger.LogLevel.None
+    var split       = circtOptions.splitVerilog
     val includeDirs = mutable.ArrayBuffer.empty[String]
 
     // Partition the annotations into those that will be passed to CIRCT and
@@ -166,25 +166,25 @@ class CIRCT extends Phase {
     val (passthroughAnnotations, circtAnnotations) = annotations.partition {
       case _: ImportDefinitionAnnotation[_] | _: DesignAnnotation[_] | _: ChiselCircuitAnnotation =>
         true
-      case _ => false
+      case _                                                                                      => false
     }
 
     val annotationsx: AnnotationSeq = circtAnnotations.flatMap {
-      case a: CustomFileEmission => {
+      case a: CustomFileEmission                    => {
         val filename = a.filename(annotations)
         a.replacements(filename)
       }
-      case _:    ImportDefinitionAnnotation[_] => Nil
-      case anno: _root_.logger.LogLevelAnnotation =>
+      case _: ImportDefinitionAnnotation[_]         => Nil
+      case anno: _root_.logger.LogLevelAnnotation   =>
         logLevel = anno.globalLogLevel
         Nil
-      case SourceRootAnnotation(dir) =>
+      case SourceRootAnnotation(dir)                =>
         includeDirs += dir.toString
         Nil
       /* The following can be dropped. */
       case _: _root_.logger.ClassLogLevelAnnotation => Nil
       /* Default case: leave the annotation around and let firtool warn about it. */
-      case a => Seq(a)
+      case a                                        => Seq(a)
     }
 
     /* Filter the annotations to only those things which CIRCT should see. */
@@ -192,11 +192,11 @@ class CIRCT extends Phase {
       case _: ChiselCircuitAnnotation => None
       case _: Unserializable          => None
       case _: CustomFileEmission      => None
-      case a => Some(a)
+      case a                          => Some(a)
     }
 
     val (serialization: Iterable[String], circuitName: String) = firrtlOptions.firrtlCircuit match {
-      case None => throw new OptionsException("No input file specified!")
+      case None          => throw new OptionsException("No input file specified!")
       // TODO can we avoid converting, how else would we include filteredAnnos?
       case Some(circuit) =>
         val cwa = CircuitWithAnnos(circuit = circuit, annotations = filteredAnnotations)
@@ -206,9 +206,9 @@ class CIRCT extends Phase {
     // FIRRTL is serialized either in memory or to a file
     val input: Either[Iterable[String], os.Path] =
       if (circtOptions.dumpFir) {
-        val td = os.Path(stageOptions.targetDir, os.pwd)
+        val td       = os.Path(stageOptions.targetDir, os.pwd)
         val filename = firrtlOptions.outputFileName.getOrElse(circuitName)
-        val firPath = td / s"$filename.fir"
+        val firPath  = td / s"$filename.fir"
         os.write.over(firPath, serialization, createFolders = true)
         Right(firPath)
       } else {
@@ -222,10 +222,10 @@ class CIRCT extends Phase {
 
     val binary = circtOptions.firtoolBinaryPath.getOrElse {
       // .get is safe, firtoolVersion is an Option for backwards compatibility
-      val version = firtoolVersion.get
+      val version  = firtoolVersion.get
       val resolved = firtoolresolver.Resolve(new LoggerShim(logger), version)
       resolved match {
-        case Left(msg) =>
+        case Left(msg)  =>
           throw new Exceptions.FirtoolNotFound(msg)
         case Right(bin) =>
           bin.path.toString
@@ -256,15 +256,15 @@ class CIRCT extends Phase {
           case (Some(CIRCTTarget.SystemVerilog), true)  => Seq("--split-verilog", s"-o=${stageOptions.targetDir}")
           case (Some(CIRCTTarget.SystemVerilog), false) => None
           case (Some(CIRCTTarget.Btor2), false)         => Seq("--btor2")
-          case (None, _) =>
+          case (None, _)                                =>
             throw new Exception(
               "No 'circtOptions.target' specified. This should be impossible if dependencies are satisfied!"
             )
-          case (_, true) =>
+          case (_, true)                                =>
             throw new Exception(
               s"The circtOptions.target specified (${circtOptions.target}) does not support running with an EmitAllModulesAnnotation as CIRCT only supports one-file-per-module for Verilog or SystemVerilog targets."
             )
-          case _ =>
+          case _                                        =>
             throw new Exception(
               s"Invalid combination of circtOptions.target ${circtOptions.target} and split ${split}"
             )
@@ -272,15 +272,15 @@ class CIRCT extends Phase {
 
     logger.info(s"""Running CIRCT: '${cmd.mkString(" ")}""" + input.fold(_ => " < $$" + "input'", _ => "'"))
     val stdoutStream, stderrStream = new java.io.ByteArrayOutputStream
-    val stdoutWriter = new java.io.PrintWriter(stdoutStream)
-    val stderrWriter = new java.io.PrintWriter(stderrStream)
-    val stdin: os.ProcessInput = input match {
+    val stdoutWriter               = new java.io.PrintWriter(stdoutStream)
+    val stderrWriter               = new java.io.PrintWriter(stderrStream)
+    val stdin: os.ProcessInput     = input match {
       case Left(it) => (it: os.Source) // Static cast to apply implicit conversion
       case Right(_) => os.Pipe
     }
-    val stdout = os.ProcessOutput.Readlines(stdoutWriter.println)
-    val stderr = os.ProcessOutput.Readlines(stderrWriter.println)
-    val exitValue =
+    val stdout                     = os.ProcessOutput.Readlines(stdoutWriter.println)
+    val stderr                     = os.ProcessOutput.Readlines(stderrWriter.println)
+    val exitValue                  =
       try {
         os.proc(cmd).call(check = false, stdin = stdin, stdout = stdout, stderr = stderr).exitCode
       } catch {
@@ -289,40 +289,40 @@ class CIRCT extends Phase {
       }
     stdoutWriter.close()
     stderrWriter.close()
-    val result = stdoutStream.toString
+    val result                     = stdoutStream.toString
     logger.info(result)
-    val errors = stderrStream.toString
+    val errors                     = stderrStream.toString
     if (exitValue != 0)
       throw new Exceptions.FirtoolNonZeroExitCode(binary, exitValue, result, errors)
-    val finalAnnotations = if (split) {
+    val finalAnnotations           = if (split) {
       logger.info(result)
       val file = new File(stageOptions.getBuildFileName(circtAnnotationFilename, Some(".anno.json")))
       file match {
         case file if !file.canRead() => Seq.empty
-        case file => {
+        case file                    => {
           val foo = JsonProtocol.deserialize(file, false)
           foo
         }
       }
     } else { // if split it has already been written out to the file system stdout not necessary.
       val outputFileName: String = stageOptions.getBuildFileName(firrtlOptions.outputFileName.get)
-      val outputAnnotations = extractAnnotationFile(result, circtAnnotationFilename)
+      val outputAnnotations      = extractAnnotationFile(result, circtAnnotationFilename)
       outputAnnotations ++ (circtOptions.target match {
-        case Some(CIRCTTarget.FIRRTL) =>
+        case Some(CIRCTTarget.FIRRTL)        =>
           Seq(EmittedMLIR(outputFileName, result, Some(".fir.mlir")))
-        case Some(CIRCTTarget.HW) =>
+        case Some(CIRCTTarget.HW)            =>
           Seq(EmittedMLIR(outputFileName, result, Some(".hw.mlir")))
-        case Some(CIRCTTarget.Verilog) =>
+        case Some(CIRCTTarget.Verilog)       =>
           Seq(EmittedVerilogCircuitAnnotation(EmittedVerilogCircuit(outputFileName, result, ".v")))
-        case Some(CIRCTTarget.Btor2) =>
+        case Some(CIRCTTarget.Btor2)         =>
           Seq(EmittedBtor2CircuitAnnotation(EmittedBtor2Circuit(outputFileName, result, ".btor2")))
         case Some(CIRCTTarget.SystemVerilog) =>
           Seq(EmittedVerilogCircuitAnnotation(EmittedVerilogCircuit(outputFileName, result, ".sv")))
-        case None =>
+        case None                            =>
           throw new Exception(
             "No 'circtOptions.target' specified. This should be impossible if dependencies are satisfied!"
           )
-        case unknown =>
+        case unknown                         =>
           throw new InternalErrorException(s"Match Error: Unknon CIRCTTarget: $unknown")
       })
     }

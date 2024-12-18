@@ -28,7 +28,7 @@ class Packet extends Bundle {
   * The problem does not occur if the Vec is taken out
   */
 class VectorPacketIO(val n: Int) extends Bundle {
-  val ins = Vec(n, chisel3.util.DeqIO(new Packet()))
+  val ins  = Vec(n, chisel3.util.DeqIO(new Packet()))
   val outs = Vec(n, chisel3.util.EnqIO(new Packet()))
 }
 
@@ -37,7 +37,7 @@ class VectorPacketIO(val n: Int) extends Bundle {
   * the value of n does not affect the error
   */
 class BrokenVectorPacketModule extends Module {
-  val n = 4
+  val n  = 4
   val io = IO(new VectorPacketIO(n))
 
   // Avoid a "Reference io is not fully initialized" error from firrtl.
@@ -64,8 +64,8 @@ class VectorPacketIOUnitTester extends BasicTester {
 class VectorPacketIOUnitTesterSpec extends ChiselFlatSpec {
   "a circuit using an io containing a vector of EnqIO wrapped packets" should
     "compile and run" in {
-    assertTesterPasses {
-      new VectorPacketIOUnitTester
+      assertTesterPasses {
+        new VectorPacketIOUnitTester
+      }
     }
-  }
 }

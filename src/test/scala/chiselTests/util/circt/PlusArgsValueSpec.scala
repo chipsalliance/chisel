@@ -13,11 +13,11 @@ import org.scalatest.matchers.should.Matchers
 import scala.io.Source
 
 private class PlusArgsValueTop extends Module {
-  val wf = IO(Output(UInt(1.W)))
-  val wv = IO(Output(UInt(32.W)))
-  val xf = IO(Output(UInt(1.W)))
-  val xv = IO(Output(UInt(32.W)))
-  val zv = IO(Output(UInt(32.W)))
+  val wf   = IO(Output(UInt(1.W)))
+  val wv   = IO(Output(UInt(32.W)))
+  val xf   = IO(Output(UInt(1.W)))
+  val xv   = IO(Output(UInt(32.W)))
+  val zv   = IO(Output(UInt(32.W)))
   val tmpw = PlusArgsValue(UInt(32.W), "FOO=%d")
   val tmpx = PlusArgsValue(xv, "BAR=%d")
   zv := PlusArgsValue(xv, "BAR=%d", 42.U)

@@ -10,9 +10,9 @@ import logger.{LogLevelAnnotation, LoggerOption}
 /** Add default logger [[Annotation]]s */
 private[logger] class AddDefaults extends Phase {
 
-  override def prerequisites = Seq.empty
+  override def prerequisites          = Seq.empty
   override def optionalPrerequisiteOf = Seq.empty
-  override def invalidates(a: Phase) = false
+  override def invalidates(a: Phase)  = false
 
   /** Add missing default [[Logger]] [[Annotation]]s to an [[AnnotationSeq]]
     * @param annotations input annotations
@@ -22,7 +22,7 @@ private[logger] class AddDefaults extends Phase {
     var ll = true
     annotations.collect { case a: LoggerOption => a }.map {
       case _: LogLevelAnnotation => ll = false
-      case _ =>
+      case _                     =>
     }
     annotations ++
       (if (ll) Seq(LogLevelAnnotation()) else Seq())

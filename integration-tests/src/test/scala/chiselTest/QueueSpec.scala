@@ -10,29 +10,29 @@ import chisel3.util.random.LFSR
 import org.scalacheck._
 
 class ThingsPassThroughTester(
-  elements:       Seq[Int],
-  queueDepth:     Int,
-  bitWidth:       Int,
-  tap:            Int,
+  elements: Seq[Int],
+  queueDepth: Int,
+  bitWidth: Int,
+  tap: Int,
   useSyncReadMem: Boolean,
-  hasFlush:       Boolean)
-    extends BasicTester {
-  val q = Module(new Queue(UInt(bitWidth.W), queueDepth, useSyncReadMem = useSyncReadMem, hasFlush = hasFlush))
-  val elems = VecInit(elements.map {
+  hasFlush: Boolean
+) extends BasicTester {
+  val q      = Module(new Queue(UInt(bitWidth.W), queueDepth, useSyncReadMem = useSyncReadMem, hasFlush = hasFlush))
+  val elems  = VecInit(elements.map {
     _.asUInt
   })
-  val inCnt = Counter(elements.length + 1)
+  val inCnt  = Counter(elements.length + 1)
   val outCnt = Counter(elements.length + 1)
 
   q.io.enq.valid := (inCnt.value < elements.length.U)
   q.io.deq.ready := LFSR(16)(tap)
-  q.io.flush.foreach { _ := false.B } //Flush behavior is tested in QueueFlushSpec
-  q.io.enq.bits := elems(inCnt.value)
+  q.io.flush.foreach { _ := false.B } // Flush behavior is tested in QueueFlushSpec
+  q.io.enq.bits  := elems(inCnt.value)
   when(q.io.enq.fire) {
     inCnt.inc()
   }
   when(q.io.deq.fire) {
-    //ensure that what comes out is what comes in
+    // ensure that what comes out is what comes in
     assert(elems(outCnt.value) === q.io.deq.bits)
     outCnt.inc()
   }
@@ -43,19 +43,19 @@ class ThingsPassThroughTester(
 
 class QueueReasonableReadyValid(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean)
     extends BasicTester {
-  val q = Module(new Queue(UInt(bitWidth.W), queueDepth, useSyncReadMem = useSyncReadMem))
-  val elems = VecInit(elements.map {
+  val q      = Module(new Queue(UInt(bitWidth.W), queueDepth, useSyncReadMem = useSyncReadMem))
+  val elems  = VecInit(elements.map {
     _.asUInt
   })
-  val inCnt = Counter(elements.length + 1)
+  val inCnt  = Counter(elements.length + 1)
   val outCnt = Counter(elements.length + 1)
 
   q.io.enq.valid := (inCnt.value < elements.length.U)
-  //Queue should be full or ready
+  // Queue should be full or ready
   assert(q.io.enq.ready || q.io.count === queueDepth.U)
 
   q.io.deq.ready := LFSR(16)(tap)
-  //Queue should be empty or valid
+  // Queue should be empty or valid
   assert(q.io.deq.valid || q.io.count === 0.U)
 
   q.io.enq.bits := elems(inCnt.value)
@@ -72,11 +72,11 @@ class QueueReasonableReadyValid(elements: Seq[Int], queueDepth: Int, bitWidth: I
 
 class CountIsCorrectTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean)
     extends BasicTester {
-  val q = Module(new Queue(UInt(bitWidth.W), queueDepth, useSyncReadMem = useSyncReadMem))
-  val elems = VecInit(elements.map {
+  val q      = Module(new Queue(UInt(bitWidth.W), queueDepth, useSyncReadMem = useSyncReadMem))
+  val elems  = VecInit(elements.map {
     _.asUInt(bitWidth.W)
   })
-  val inCnt = Counter(elements.length + 1)
+  val inCnt  = Counter(elements.length + 1)
   val outCnt = Counter(elements.length + 1)
 
   q.io.enq.valid := (inCnt.value < elements.length.U)
@@ -91,7 +91,7 @@ class CountIsCorrectTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, t
     outCnt.inc()
     assert(q.io.count === (inCnt.value - outCnt.value))
   }
-  //assert(q.io.count === (inCnt.value - outCnt.value))
+  // assert(q.io.count === (inCnt.value - outCnt.value))
 
   when(outCnt.value === elements.length.U) {
     stop()
@@ -99,11 +99,11 @@ class CountIsCorrectTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, t
 }
 
 class QueueSinglePipeTester(elements: Seq[Int], bitWidth: Int, tap: Int, useSyncReadMem: Boolean) extends BasicTester {
-  val q = Module(new Queue(UInt(bitWidth.W), 1, pipe = true, useSyncReadMem = useSyncReadMem))
-  val elems = VecInit(elements.map {
+  val q      = Module(new Queue(UInt(bitWidth.W), 1, pipe = true, useSyncReadMem = useSyncReadMem))
+  val elems  = VecInit(elements.map {
     _.asUInt(bitWidth.W)
   })
-  val inCnt = Counter(elements.length + 1)
+  val inCnt  = Counter(elements.length + 1)
   val outCnt = Counter(elements.length + 1)
 
   q.io.enq.valid := (inCnt.value < elements.length.U)
@@ -126,11 +126,11 @@ class QueueSinglePipeTester(elements: Seq[Int], bitWidth: Int, tap: Int, useSync
 
 class QueuePipeTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean)
     extends BasicTester {
-  val q = Module(new Queue(UInt(bitWidth.W), queueDepth, pipe = true, useSyncReadMem = useSyncReadMem))
-  val elems = VecInit(elements.map {
+  val q      = Module(new Queue(UInt(bitWidth.W), queueDepth, pipe = true, useSyncReadMem = useSyncReadMem))
+  val elems  = VecInit(elements.map {
     _.asUInt(bitWidth.W)
   })
-  val inCnt = Counter(elements.length + 1)
+  val inCnt  = Counter(elements.length + 1)
   val outCnt = Counter(elements.length + 1)
 
   q.io.enq.valid := (inCnt.value < elements.length.U)
@@ -153,19 +153,19 @@ class QueuePipeTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: I
 
 class QueueFlowTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean)
     extends BasicTester {
-  val q = Module(new Queue(UInt(bitWidth.W), queueDepth, flow = true, useSyncReadMem = useSyncReadMem))
-  val elems = VecInit(elements.map {
+  val q      = Module(new Queue(UInt(bitWidth.W), queueDepth, flow = true, useSyncReadMem = useSyncReadMem))
+  val elems  = VecInit(elements.map {
     _.asUInt
   })
-  val inCnt = Counter(elements.length + 1)
+  val inCnt  = Counter(elements.length + 1)
   val outCnt = Counter(elements.length + 1)
 
   q.io.enq.valid := (inCnt.value < elements.length.U)
-  //Queue should be full or ready
+  // Queue should be full or ready
   assert(q.io.enq.ready || q.io.count === queueDepth.U)
 
   q.io.deq.ready := LFSR(16)(tap)
-  //Queue should be empty or valid
+  // Queue should be empty or valid
   assert(q.io.deq.valid || (q.io.count === 0.U && !q.io.enq.fire))
 
   q.io.enq.bits := elems(inCnt.value)
@@ -185,10 +185,10 @@ class QueueFactoryTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap
   val enq = Wire(Decoupled(UInt(bitWidth.W)))
   val deq = Queue(enq, queueDepth, useSyncReadMem = useSyncReadMem)
 
-  val elems = VecInit(elements.map {
+  val elems  = VecInit(elements.map {
     _.asUInt
   })
-  val inCnt = Counter(elements.length + 1)
+  val inCnt  = Counter(elements.length + 1)
   val outCnt = Counter(elements.length + 1)
 
   enq.valid := (inCnt.value < elements.length.U)
@@ -199,7 +199,7 @@ class QueueFactoryTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap
     inCnt.inc()
   }
   when(deq.fire) {
-    //ensure that what comes out is what comes in
+    // ensure that what comes out is what comes in
     assert(elems(outCnt.value) === deq.bits)
     outCnt.inc()
   }
@@ -282,7 +282,7 @@ class QueueSpec extends ChiselPropSpec {
 
   property("Queue.irrevocable should elaborate") {
     class IrrevocableQueue extends Module {
-      val in = Wire(Decoupled(Bool()))
+      val in     = Wire(Decoupled(Bool()))
       val iQueue = Queue.irrevocable(in, 1)
     }
     (new chisel3.stage.phases.Elaborate)
@@ -291,7 +291,7 @@ class QueueSpec extends ChiselPropSpec {
 
   property("Queue.apply should have decent names") {
     class HasTwoQueues extends Module {
-      val in = IO(Flipped(Decoupled(UInt(8.W))))
+      val in  = IO(Flipped(Decoupled(UInt(8.W))))
       val out = IO(Decoupled(UInt(8.W)))
 
       val foo = Queue(in, 2)

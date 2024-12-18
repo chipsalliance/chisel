@@ -26,8 +26,8 @@ class CompositionalPortTester extends NamedModuleTester {
 }
 
 class PortNameUniquenessTester extends NamedModuleTester {
-  val wire = expectName(Wire(UInt()), "wire_1")
-  val foo = expectName(Wire(UInt()).suggestName("wire"), "wire_2")
+  val wire   = expectName(Wire(UInt()), "wire_1")
+  val foo    = expectName(Wire(UInt()).suggestName("wire"), "wire_2")
   val output = expectName(IO(Output(UInt())).suggestName("wire"), "wire")
 }
 

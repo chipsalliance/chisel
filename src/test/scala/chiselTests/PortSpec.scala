@@ -11,7 +11,7 @@ class PortSpec extends ChiselFreeSpec {
   }
 
   class Dummy extends Module {
-    val in = IO(new DummyIO)
+    val in  = IO(new DummyIO)
     val out = IO(Output(Bool()))
     out := in.foo.asUInt + in.bar
   }

@@ -79,7 +79,7 @@ class NoOtherwiseOverlappedWhenTester() extends BasicTester {
 class SubmoduleWhenTester extends BasicTester {
   val (cycle, done) = Counter(true.B, 3)
   when(done) { stop() }
-  val children =
+  val children      =
     Seq(Module(new PassthroughModule), Module(new PassthroughModule), Module(new PassthroughRawModule))
   children.foreach { child =>
     when(cycle === 1.U) {
@@ -93,11 +93,11 @@ class SubmoduleWhenTester extends BasicTester {
 }
 
 class WhenCondTester extends BasicTester {
-  val pred = Wire(Vec(4, Bool()))
+  val pred          = Wire(Vec(4, Bool()))
   val (cycle, done) = Counter(true.B, 1 << pred.size)
   // Cycle through every predicate
   pred := cycle.asBools
-  val Seq(a, b, c, d) = pred // Just for nicer accessors
+  val Seq(a, b, c, d)            = pred // Just for nicer accessors
   // When want the when predicates on connection to optimize away,
   //   it's not necessary but it makes the Verilog prettier
   val w1, w2, w3, w4, w5, w6, w7 = WireInit(Bool(), DontCare)
@@ -148,11 +148,11 @@ class WhenSpec extends ChiselFlatSpec with Utils {
   "Returning in a when scope" should "give a reasonable error message" in {
     val e = the[ChiselException] thrownBy extractCause[ChiselException] {
       ChiselStage.emitCHIRRTL(new Module {
-        val io = IO(new Bundle {
-          val foo = Input(UInt(8.W))
-          val bar = Input(UInt(8.W))
+        val io           = IO(new Bundle {
+          val foo  = Input(UInt(8.W))
+          val bar  = Input(UInt(8.W))
           val cond = Input(Bool())
-          val out = Output(UInt(8.W))
+          val out  = Output(UInt(8.W))
         })
         def func(): UInt = {
           when(io.cond) {
@@ -169,38 +169,38 @@ class WhenSpec extends ChiselFlatSpec with Utils {
 
   "Using a value that has escaped from a when scope in a connection" should "give a reasonable error message" in {
     implicit val info: SourceInfo = SourceLine("Foo.scala", 12, 3)
-    val e = the[ChiselException] thrownBy {
+    val e                         = the[ChiselException] thrownBy {
       ChiselStage.emitCHIRRTL(new Module {
         override def desiredName = "Top"
-        val foo, bar = IO(Output(UInt(8.W)))
-        val a = IO(Input(Bool()))
-        lazy val w = Wire(UInt(8.W))
+        val foo, bar             = IO(Output(UInt(8.W)))
+        val a                    = IO(Input(Bool()))
+        lazy val w               = Wire(UInt(8.W))
         when(a) {
           foo := w
         }
         bar := w
       })
     }
-    val msg =
+    val msg                       =
       "Source foo_w in Top has escaped the scope of the block (@[Foo.scala:12:3]) in which it was constructed."
     e.getMessage should include(msg)
   }
 
   "Using a value that has escaped from a when scope in an operation" should "give a reasonable error message" in {
     implicit val info: SourceInfo = SourceLine("Foo.scala", 12, 3)
-    val e = the[ChiselException] thrownBy {
+    val e                         = the[ChiselException] thrownBy {
       ChiselStage.emitCHIRRTL(new Module {
         override def desiredName = "Top"
-        val foo, bar = IO(Output(UInt(8.W)))
-        val a = IO(Input(Bool()))
-        lazy val w = Wire(UInt(8.W))
+        val foo, bar             = IO(Output(UInt(8.W)))
+        val a                    = IO(Input(Bool()))
+        lazy val w               = Wire(UInt(8.W))
         when(a) {
           foo := w
         }
         bar := w + 1.U
       })
     }
-    val msg =
+    val msg                       =
       "operand 'Top.foo_w: Wire[UInt<8>]' has escaped the scope of the block (@[Foo.scala:12:3]) in which it was constructed."
     e.getMessage should include(msg)
   }
@@ -208,7 +208,7 @@ class WhenSpec extends ChiselFlatSpec with Utils {
   "Whens with empty else clauses" should "not emit the else clause" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new Module {
       val cond = IO(Input(Bool()))
-      val out = IO(Output(UInt(8.W)))
+      val out  = IO(Output(UInt(8.W)))
       when(cond) {
         out := 1.U
       }
@@ -220,7 +220,7 @@ class WhenSpec extends ChiselFlatSpec with Utils {
 
   "Sibling when blocks" should "emit error for visibility check" in {
     class Foo extends Module {
-      val in = IO(Input(UInt(8.W)))
+      val in  = IO(Input(UInt(8.W)))
       val out = IO(Output(UInt(8.W)))
 
       var c: Bool = null
@@ -228,7 +228,7 @@ class WhenSpec extends ChiselFlatSpec with Utils {
         c = WireInit(Bool(), true.B)
         out := c
       }.otherwise {
-        c := false.B
+        c   := false.B
         out := c
       }
     }

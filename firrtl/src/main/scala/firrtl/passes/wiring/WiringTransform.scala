@@ -11,6 +11,6 @@ case class SourceAnnotation(target: ComponentName, pin: String) extends SingleTa
 }
 
 /** A module, e.g. ExtModule etc., that should add the input pin */
-case class SinkAnnotation(target: Named, pin: String) extends SingleTargetAnnotation[Named] {
+case class SinkAnnotation(target: Named, pin: String)           extends SingleTargetAnnotation[Named]         {
   def duplicate(n: Named) = this.copy(target = n)
 }

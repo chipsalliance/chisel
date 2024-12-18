@@ -25,8 +25,8 @@ object Mux extends MuxImpl with SourceInfoDoc {
   /** @group SourceInfoTransformMacro */
   def do_apply[T <: Data](
     cond: Bool,
-    con:  T,
-    alt:  T
+    con: T,
+    alt: T
   )(
     implicit sourceInfo: SourceInfo
   ): T = _applyImpl(cond, con, alt)
