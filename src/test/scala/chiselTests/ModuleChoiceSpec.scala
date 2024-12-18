@@ -5,6 +5,7 @@ package chiselTests
 import chisel3._
 import chisel3.choice.{Case, Group, ModuleChoice}
 import chiselTests.{ChiselFlatSpec, MatchesAndOmits, Utils}
+import chisel3.experimental.hierarchy.Definition
 import _root_.circt.stage.ChiselStage
 
 object Platform extends Group {
@@ -51,7 +52,14 @@ class ModuleChoiceSpec extends ChiselFlatSpec with Utils with FileCheck {
     )
   }
 
-    generateFirrtlAndFileCheck(new ModuleWithValidChoices)(
+  it should "emit options and cases for Modules including definitions" in {
+    class ModuleWithValidChoices
+        extends ModuleWithChoice(new VerifTarget)(Seq(Platform.FPGA -> new FPGATarget, Platform.ASIC -> new ASICTarget))
+    class TopWithDefinition extends Module {
+      val definitionWithChoice = Definition(new ModuleWithValidChoices)
+    }
+
+    generateFirrtlAndFileCheck(new TopWithDefinition)(
       """|CHECK: option Platform :
          |CHECK-NEXT: FPGA
          |CHECK-NEXT: ASIC
