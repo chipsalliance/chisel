@@ -70,8 +70,8 @@ private[chisel3] abstract class EnumTypeImpl(private[chisel3] val factory: Chise
             _wire := this.asUInt
             _wire
         }
-        _padded.asTypeOf(that)
-      case None => super.asTypeOf(that)
+        _padded._asTypeOfImpl(that)
+      case None => super._asTypeOfImpl(that)
     }
   }
 
@@ -222,15 +222,7 @@ private[chisel3] abstract class EnumTypeImpl(private[chisel3] val factory: Chise
     for ((name, value) <- allNamesPadded) {
       when(this === value) {
         for ((r, c) <- result.zip(name)) {
-          // todo: this doesn't work in scala3
-          // r := c.toChar.U
-          //      ^^^^^^^^^^
-          //      value U is not a member of Char.
-          //      An extension method was tried,
-          //      but could not be fully constructed:
-          //
-          //          chisel3.fromLongToLiteral(c.toChar)
-          // r := c.toChar.U
+          r := UInt.Lit(BigInt(c.toChar), Width())
         }
       }
     }

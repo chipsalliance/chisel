@@ -861,7 +861,7 @@ private[chisel3] trait DataImpl extends HasId with NamedComponent { self: Data =
   /** Returns Some(width) if the width is known, else None. */
   final def widthOption: Option[Int] = if (isWidthKnown) Some(getWidth) else None
 
-  protected def _asTypeOfImpl[T <: Data](that: T)(implicit sourceInfo: SourceInfo): T = {
+  private[chisel3] def _asTypeOfImpl[T <: Data](that: T)(implicit sourceInfo: SourceInfo): T = {
     that._fromUInt(this.asUInt).asInstanceOf[T].viewAsReadOnly { _ =>
       "Return values of asTypeOf are now read-only"
     }
