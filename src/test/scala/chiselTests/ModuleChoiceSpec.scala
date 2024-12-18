@@ -17,13 +17,17 @@ class TargetIO(width: Int) extends Bundle {
   val out = UInt(width.W)
 }
 
-class FPGATarget extends FixedIOExtModule[TargetIO](new TargetIO(8))
+class FPGATarget extends FixedIORawModule[TargetIO](new TargetIO(8)) {
+  io.out := io.in
+}
 
 class ASICTarget extends FixedIOExtModule[TargetIO](new TargetIO(8))
 
-class VerifTarget extends FixedIORawModule[TargetIO](new TargetIO(8))
+class VerifTarget extends FixedIORawModule[TargetIO](new TargetIO(8)) {
+  io.out := io.in
+}
 
-class ModuleChoiceSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
+class ModuleChoiceSpec extends ChiselFlatSpec with Utils with FileCheck {
   it should "emit options and cases" in {
     class ModuleWithChoice extends Module {
       val out = IO(UInt(8.W))
@@ -35,17 +39,14 @@ class ModuleChoiceSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
       out := inst.out
     }
 
-    val chirrtl = ChiselStage.emitCHIRRTL(new ModuleWithChoice, Array("--full-stacktrace"))
-
-    info("CHIRRTL emission looks correct")
-    matchesAndOmits(chirrtl)(
-      "option Platform :",
-      "FPGA",
-      "ASIC",
-      "instchoice inst of VerifTarget, Platform :",
-      "FPGA => FPGATarget",
-      "ASIC => ASICTarget"
-    )()
+    generateFirrtlAndFileCheck(new ModuleWithChoice)(
+      """|CHECK: option Platform :
+         |CHECK-NEXT: FPGA
+         |CHECK-NEXT: ASIC
+         |CHECK: instchoice inst of VerifTarget, Platform :
+         |CHECK-NEXT: FPGA => FPGATarget
+         |CHECK-NEXT: ASIC => ASICTarget""".stripMargin
+    )
   }
 
   it should "require that all cases are part of the same option" in {
@@ -87,6 +88,29 @@ class ModuleChoiceSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
       "at least one alternative must be specified"
     )
 
+  }
+
+  it should "allow a subset of options to be provided" in {
+
+    class SparseOptions extends Module {
+      val out = IO(Output(UInt(8.W)))
+      val in = IO(Input(UInt(8.W)))
+
+      val inst = ModuleChoice(new VerifTarget)(Seq(Platform.FPGA -> new FPGATarget))
+
+      inst.in := in
+      out := inst.out
+    }
+
+    // Note, because of a quirk in how [[Case]]s are registered, only those referenced
+    // in the Module here are going to be captured. This will be fixed in a forthcoming PR
+    // that implements an [[addLayer]] like feature for [[Group]]s
+    generateFirrtlAndFileCheck(new SparseOptions)(
+      """|CHECK: option Platform :
+         |CHECK-NEXT: FPGA
+         |CHECK: instchoice inst of VerifTarget, Platform :
+         |CHECK-NEXT: FPGA => FPGATarget""".stripMargin
+    )
   }
 
   it should "require that all cases are distinct" in {
