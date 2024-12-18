@@ -211,9 +211,8 @@ class RecordSpec extends ChiselFlatSpec with Utils {
 
   "Bundle types which couldn't be cloned by the plugin" should "throw an error" in {
     class CustomBundleBroken(elts: (String, Data)*) extends Record {
-      val elements = ListMap(elts.map {
-        case (field, elt) =>
-          field -> elt
+      val elements = ListMap(elts.map { case (field, elt) =>
+        field -> elt
       }: _*)
       def apply(elt: String): Data = elements(elt)
     }

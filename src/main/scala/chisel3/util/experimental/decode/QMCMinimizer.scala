@@ -232,7 +232,7 @@ object QMCMinimizer extends Minimizer {
     )
 
     // make sure no two inputs specified in the truth table intersect
-    for (t <- inputs.tails; if t.nonEmpty)
+    for (t <- inputs.tails if t.nonEmpty)
       for (u <- t.tail)
         require(!t.head.intersects(u), "truth table entries " + t.head + " and " + u + " overlap")
 
@@ -317,26 +317,24 @@ object QMCMinimizer extends Minimizer {
         )
       )
     else
-      minimized.tail.foldLeft(table.copy(table = Seq(minimized.head))) {
-        case (tb, t) =>
-          if (tb.table.exists(x => x._1 == t._1)) {
-            tb.copy(table = tb.table.map {
-              case (k, v) =>
-                if (k == t._1) {
-                  def ones(bitPat: BitPat) = bitPat.rawString.zipWithIndex.collect { case ('1', x) => x }
-                  (
-                    k,
-                    BitPat(
-                      "b" + (0 until v.getWidth)
-                        .map(i => if ((ones(v) ++ ones(t._2)).contains(i)) "1" else "?")
-                        .mkString
-                    )
-                  )
-                } else (k, v)
-            })
-          } else {
-            tb.copy(table = tb.table :+ t)
-          }
+      minimized.tail.foldLeft(table.copy(table = Seq(minimized.head))) { case (tb, t) =>
+        if (tb.table.exists(x => x._1 == t._1)) {
+          tb.copy(table = tb.table.map { case (k, v) =>
+            if (k == t._1) {
+              def ones(bitPat: BitPat) = bitPat.rawString.zipWithIndex.collect { case ('1', x) => x }
+              (
+                k,
+                BitPat(
+                  "b" + (0 until v.getWidth)
+                    .map(i => if ((ones(v) ++ ones(t._2)).contains(i)) "1" else "?")
+                    .mkString
+                )
+              )
+            } else (k, v)
+          })
+        } else {
+          tb.copy(table = tb.table :+ t)
+        }
       }
   }
 }

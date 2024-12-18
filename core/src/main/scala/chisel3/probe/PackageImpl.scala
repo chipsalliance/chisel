@@ -53,8 +53,8 @@ private[chisel3] trait ObjectProbeImpl {
     requireCompatibleDestinationProbeColor(
       realSink,
       s"""Cannot define '$realSink' from colors ${(Builder.layerStack.headOption)
-        .map(a => s"'${a.fullName}'")
-        .mkString("{", ", ", "}")} since at least one of these is NOT enabled when '$realSink' is enabled"""
+          .map(a => s"'${a.fullName}'")
+          .mkString("{", ", ", "}")} since at least one of these is NOT enabled when '$realSink' is enabled"""
     )
     if (realSink.probeInfo.get.writable) {
       requireHasWritableProbeTypeModifier(

@@ -49,8 +49,8 @@ object SerializableModuleGenerator {
   /** cache instance of a generator. */
   private case class CacheKey[P <: SerializableModuleParameter, M <: SerializableModule[P]](
     parameter: P,
-    mTypeTag:  universe.TypeTag[M])
-      extends BuilderContextCache.Key[Definition[M with BaseModule]]
+    mTypeTag:  universe.TypeTag[M]
+  ) extends BuilderContextCache.Key[Definition[M with BaseModule]]
 
 }
 
@@ -61,9 +61,7 @@ object SerializableModuleGenerator {
 case class SerializableModuleGenerator[M <: SerializableModule[P], P <: SerializableModuleParameter](
   generator: Class[M],
   parameter: P
-)(
-  implicit val pTag: universe.TypeTag[P],
-  implicit val mTag: universe.TypeTag[M]) {
+)(implicit val pTag: universe.TypeTag[P], implicit val mTag: universe.TypeTag[M]) {
   private[chisel3] def construct: M with BaseModule = {
     require(
       generator.getConstructors.length == 1,

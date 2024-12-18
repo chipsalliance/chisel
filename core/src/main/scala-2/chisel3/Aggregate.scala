@@ -117,9 +117,8 @@ object VecInit extends VecInitImpl with SourceInfoDoc {
 
   /** @group SourceInfoTransformMacro */
   def do_tabulate[T <: Data](
-    n:   Int
-  )(gen: (Int) => T
-  )(
+    n: Int
+  )(gen: (Int) => T)(
     implicit sourceInfo: SourceInfo
   ): Vec[T] = _tabulateImpl(n)(gen)
 
@@ -136,10 +135,9 @@ object VecInit extends VecInitImpl with SourceInfoDoc {
 
   /** @group SourceInfoTransformMacro */
   def do_tabulate[T <: Data](
-    n:   Int,
-    m:   Int
-  )(gen: (Int, Int) => T
-  )(
+    n: Int,
+    m: Int
+  )(gen: (Int, Int) => T)(
     implicit sourceInfo: SourceInfo
   ): Vec[Vec[T]] = _tabulateImpl(n, m)(gen)
 
@@ -157,11 +155,10 @@ object VecInit extends VecInitImpl with SourceInfoDoc {
 
   /** @group SourceInfoTransformMacro */
   def do_tabulate[T <: Data](
-    n:   Int,
-    m:   Int,
-    p:   Int
-  )(gen: (Int, Int, Int) => T
-  )(
+    n: Int,
+    m: Int,
+    p: Int
+  )(gen: (Int, Int, Int) => T)(
     implicit sourceInfo: SourceInfo
   ): Vec[Vec[Vec[T]]] = _tabulateImpl(n, m, p)(gen)
 
@@ -189,10 +186,9 @@ object VecInit extends VecInitImpl with SourceInfoDoc {
 
   /** @group SourceInfoTransformMacro */
   def do_fill[T <: Data](
-    n:   Int,
-    m:   Int
-  )(gen: => T
-  )(
+    n: Int,
+    m: Int
+  )(gen: => T)(
     implicit sourceInfo: SourceInfo
   ): Vec[Vec[T]] = _fillImpl(n, m)(gen)
 
@@ -209,11 +205,10 @@ object VecInit extends VecInitImpl with SourceInfoDoc {
 
   /** @group SourceInfoTransformMacro */
   def do_fill[T <: Data](
-    n:   Int,
-    m:   Int,
-    p:   Int
-  )(gen: => T
-  )(
+    n: Int,
+    m: Int,
+    p: Int
+  )(gen: => T)(
     implicit sourceInfo: SourceInfo
   ): Vec[Vec[Vec[T]]] = _fillImpl(n, m, p)(gen)
 
@@ -231,8 +226,7 @@ object VecInit extends VecInitImpl with SourceInfoDoc {
   def do_iterate[T <: Data](
     start: T,
     len:   Int
-  )(f:     (T) => T
-  )(
+  )(f: (T) => T)(
     implicit sourceInfo: SourceInfo
   ): Vec[T] = _iterateImpl(start, len)(f)
 }

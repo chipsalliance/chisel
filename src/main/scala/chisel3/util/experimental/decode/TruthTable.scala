@@ -57,9 +57,8 @@ object TruthTable {
     *         for the input
     */
   private def mergeTableOnInputs(table: Iterable[(BitPat, BitPat)]): Seq[(BitPat, Seq[BitPat])] = {
-    groupByIntoSeq(table)(_._1).map {
-      case (input, mappings) =>
-        input -> mappings.map(_._2)
+    groupByIntoSeq(table)(_._1).map { case (input, mappings) =>
+      input -> mappings.map(_._2)
     }
   }
 
@@ -105,14 +104,13 @@ object TruthTable {
 
     val mergedTable = mergeTableOnInputs(paddedTable)
 
-    val finalTable: Seq[(BitPat, BitPat)] = mergedTable.map {
-      case (input, outputs) =>
-        val (result, noCollisions) = outputs.tail.foldLeft((outputs.head, checkCollisions)) {
-          case ((acc, ok), o) => (merge(acc, o), ok && acc.overlap(o))
-        }
-        // Throw an error if checkCollisions is true but there are bits with a non-zero overlap.
-        require(!checkCollisions || noCollisions, s"TruthTable conflict on merged row:\n  $input -> $outputs")
-        (input, result)
+    val finalTable: Seq[(BitPat, BitPat)] = mergedTable.map { case (input, outputs) =>
+      val (result, noCollisions) = outputs.tail.foldLeft((outputs.head, checkCollisions)) { case ((acc, ok), o) =>
+        (merge(acc, o), ok && acc.overlap(o))
+      }
+      // Throw an error if checkCollisions is true but there are bits with a non-zero overlap.
+      require(!checkCollisions || noCollisions, s"TruthTable conflict on merged row:\n  $input -> $outputs")
+      (input, result)
     }
 
     import BitPat.bitPatOrder
@@ -188,9 +186,9 @@ object TruthTable {
         .rawString
         .zip(indexes)
     def bitPat(indexedChar: Seq[(Char, Int)]) = BitPat(s"b${indexedChar
-      .sortBy(_._2)
-      .map(_._1)
-      .mkString}")
+        .sortBy(_._2)
+        .map(_._1)
+        .mkString}")
     val needToMerge = tables.size > 1
     if (needToMerge) {
       TruthTable(

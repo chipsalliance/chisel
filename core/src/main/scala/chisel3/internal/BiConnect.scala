@@ -310,7 +310,7 @@ private[chisel3] object BiConnect {
     // do not bulk connect the 'io' pseudo-bundle of a BlackBox since it will be decomposed in FIRRTL
     def blackBoxCheck = Seq(source, sink).map(_._parent).forall {
       case Some(_: BlackBox) => false
-      case _ => true
+      case _                 => true
     }
 
     typeCheck && contextCheck && bindingCheck && flowSinkCheck && flowSourceCheck && sourceAndSinkNotLiteralOrViewCheck && blackBoxCheck

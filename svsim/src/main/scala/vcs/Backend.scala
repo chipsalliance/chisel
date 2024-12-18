@@ -18,7 +18,8 @@ object Backend {
     final case class TraceSettings(
       enableVcd:    Boolean = false,
       enableVpd:    Boolean = false,
-      fsdbSettings: Option[TraceSettings.FsdbSettings] = None) {
+      fsdbSettings: Option[TraceSettings.FsdbSettings] = None
+    ) {
       private def fsdbEnabled = fsdbSettings match {
         case Some(_) => true
         case None    => false
@@ -40,9 +41,8 @@ object Backend {
         (enableVcd, svsim.Backend.HarnessCompilationFlags.enableVcdTracingSupport),
         (enableVpd, svsim.Backend.HarnessCompilationFlags.enableVpdTracingSupport),
         (fsdbEnabled, svsim.Backend.HarnessCompilationFlags.enableFsdbTracingSupport)
-      ).collect {
-        case (true, value) =>
-          svsim.CommonCompilationSettings.VerilogPreprocessorDefine(value)
+      ).collect { case (true, value) =>
+        svsim.CommonCompilationSettings.VerilogPreprocessorDefine(value)
       }
       private[vcs] def environment = fsdbSettings match {
         case None                                        => Seq()
@@ -56,7 +56,8 @@ object Backend {
 
   final case class SimulationSettings(
     customWorkingDirectory: Option[String] = None,
-    assertionSettings:      Option[AssertionSettings] = None)
+    assertionSettings:      Option[AssertionSettings] = None
+  )
 
   case class CompilationSettings(
     xProp:                       Option[CompilationSettings.XProp] = None,
@@ -65,7 +66,8 @@ object Backend {
     simulationSettings:          SimulationSettings = SimulationSettings(),
     licenceExpireWarningTimeout: Option[Int] = None,
     archOverride:                Option[String] = None,
-    waitForLicenseIfUnavailable: Boolean = false)
+    waitForLicenseIfUnavailable: Boolean = false
+  )
 
   def initializeFromProcessEnvironment() = {
     (sys.env.get("VCS_HOME"), sys.env.get("LM_LICENSE_FILE")) match {
@@ -86,8 +88,8 @@ final class Backend(
   vcsHome:                            String,
   lmLicenseFile:                      String,
   defaultArchOverride:                Option[String] = None,
-  defaultLicenseExpireWarningTimeout: Option[String] = None)
-    extends svsim.Backend {
+  defaultLicenseExpireWarningTimeout: Option[String] = None
+) extends svsim.Backend {
   type CompilationSettings = Backend.CompilationSettings
 
   def generateParameters(

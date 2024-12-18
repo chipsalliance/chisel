@@ -20,8 +20,8 @@ object CheckTypes {
   //   it cannot drive Bool nor AsyncResetType
   private def compare(sink: Type, source: Type): Boolean =
     (sink, source) match {
-      case (_: UIntType, _: UIntType) => true
-      case (_: SIntType, _: SIntType) => true
+      case (_: UIntType, _: UIntType)       => true
+      case (_: SIntType, _: SIntType)       => true
       case (ClockType, ClockType)           => true
       case (AsyncResetType, AsyncResetType) => true
       case (ResetType, tpe)                 => legalResetType(tpe)
@@ -34,19 +34,18 @@ object CheckTypes {
         sink.size == source.size && compare(sink.tpe, source.tpe)
       case (sink: BundleType, source: BundleType) =>
         (sink.fields.size == source.fields.size) &&
-          sink.fields.zip(source.fields).forall {
-            case (f1, f2) =>
-              (f1.flip == f2.flip) && (f1.name == f2.name) && (f1.flip match {
-                case Default => compare(f1.tpe, f2.tpe)
-                // We allow UInt<1> and AsyncReset to drive Reset but not the other way around
-                case Flip => compare(f2.tpe, f1.tpe)
-              })
-          }
+        sink.fields.zip(source.fields).forall { case (f1, f2) =>
+          (f1.flip == f2.flip) && (f1.name == f2.name) && (f1.flip match {
+            case Default => compare(f1.tpe, f2.tpe)
+            // We allow UInt<1> and AsyncReset to drive Reset but not the other way around
+            case Flip => compare(f2.tpe, f1.tpe)
+          })
+        }
       // Const connection validity is checked later on in the Firrtl compiler.
       case (sink: ConstType, source: ConstType) => compare(sink.underlying, source.underlying)
-      case (sink, source: ConstType) => compare(sink, source.underlying)
-      case (sink: ConstType, source) => compare(sink.underlying, source)
-      case _ => false
+      case (sink, source: ConstType)            => compare(sink, source.underlying)
+      case (sink: ConstType, source)            => compare(sink.underlying, source)
+      case _                                    => false
     }
 
   def validConnect(locTpe: Type, expTpe: Type): Boolean = {

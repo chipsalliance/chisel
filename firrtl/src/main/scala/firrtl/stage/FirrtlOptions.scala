@@ -12,7 +12,8 @@ import firrtl.ir.Circuit
 class FirrtlOptions private[stage] (
   val outputFileName: Option[String] = None,
   val infoModeName:   String = InfoModeAnnotation().modeName,
-  val firrtlCircuit:  Option[Circuit] = None) {
+  val firrtlCircuit:  Option[Circuit] = None
+) {
 
   private[stage] def copy(
     outputFileName: Option[String] = outputFileName,

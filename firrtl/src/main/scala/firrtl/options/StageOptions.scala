@@ -14,7 +14,8 @@ class StageOptions private[firrtl] (
   val targetDir:         String = TargetDirAnnotation().directory,
   val annotationFilesIn: Seq[String] = Seq.empty,
   val annotationFileOut: Option[String] = None,
-  val programArgs:       Seq[String] = Seq.empty) {
+  val programArgs:       Seq[String] = Seq.empty
+) {
 
   private[options] def copy(
     targetDir:         String = targetDir,

@@ -87,9 +87,7 @@ object layer {
     */
   abstract class Layer(
     val config: LayerConfig
-  )(
-    implicit _parent: Layer,
-    _sourceInfo:      SourceInfo) {
+  )(implicit _parent: Layer, _sourceInfo: SourceInfo) {
     self: Singleton =>
 
     @deprecated("`Convention` is being removed in favor of `LayerConfig`", "Chisel 7.0.0")
@@ -221,8 +219,7 @@ object layer {
     layer:                Layer,
     skipIfAlreadyInBlock: Boolean = false,
     skipIfLayersEnabled:  Boolean = false
-  )(thunk:                => A
-  )(
+  )(thunk: => A)(
     implicit sourceInfo: SourceInfo
   ): Unit = {
     // Do nothing if we are already in a layer block and are not supposed to

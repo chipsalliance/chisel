@@ -16,25 +16,27 @@ package object simulator {
   final class ElaboratedModule[T] private[simulator] (
     private[simulator] val wrapped: T,
     private[simulator] val ports:   Seq[(Data, ModuleInfo.Port)],
-    private[simulator] val layers:  Seq[chisel3.layer.Layer])
+    private[simulator] val layers:  Seq[chisel3.layer.Layer]
+  )
 
   /**
     * A class that enables using a Chisel module to control an `svsim.Simulation`.
     */
   final class SimulatedModule[T] private[simulator] (
     private[simulator] val elaboratedModule: ElaboratedModule[T],
-    controller:                              Simulation.Controller)
-      extends AnySimulatedModule(elaboratedModule.ports, controller) {
+    controller:                              Simulation.Controller
+  ) extends AnySimulatedModule(elaboratedModule.ports, controller) {
     def wrapped: T = elaboratedModule.wrapped
   }
   sealed class AnySimulatedModule protected (
     ports:          Seq[(Data, ModuleInfo.Port)],
-    val controller: Simulation.Controller) {
+    val controller: Simulation.Controller
+  ) {
 
     // -- Port Mapping
 
-    private val simulationPorts = ports.map {
-      case (data, port) => data -> controller.port(port.name)
+    private val simulationPorts = ports.map { case (data, port) =>
+      data -> controller.port(port.name)
     }.toMap
     def port(data: Data): Simulation.Port = {
       // TODO, we can support non identity views, but it will require changing this API to return a Seq[Port]
@@ -94,8 +96,7 @@ package object simulator {
       verbose:                       Boolean = false,
       traceEnabled:                  Boolean = false,
       executionScriptLimit:          Option[Int] = None
-    )(body:                          SimulatedModule[T] => U
-    ): U = {
+    )(body: SimulatedModule[T] => U): U = {
       simulation.run(conservativeCommandResolution, verbose, traceEnabled, executionScriptLimit) { controller =>
         val module = new SimulatedModule(elaboratedModule, controller)
         AnySimulatedModule.withValue(module) {
@@ -187,15 +188,13 @@ package object simulator {
         def leafPorts(node: Data, name: String): Seq[(Data, ModuleInfo.Port)] = {
           node match {
             case record: Record => {
-              record.elements.toSeq.flatMap {
-                case (fieldName, field) =>
-                  leafPorts(field, s"${name}_${fieldName}")
+              record.elements.toSeq.flatMap { case (fieldName, field) =>
+                leafPorts(field, s"${name}_${fieldName}")
               }
             }
             case vec: Vec[_] => {
-              vec.zipWithIndex.flatMap {
-                case (element, index) =>
-                  leafPorts(element, s"${name}_${index}")
+              vec.zipWithIndex.flatMap { case (element, index) =>
+                leafPorts(element, s"${name}_${index}")
               }
             }
             case element: Element =>
@@ -215,7 +214,7 @@ package object simulator {
         // Chisel ports can be Data or Property, but there is no ABI for Property ports, so we only return Data.
         DataMirror.modulePorts(dut).flatMap {
           case (name, data: Data) => leafPorts(data, name)
-          case _ => Nil
+          case _                  => Nil
         }
       }
       workspace.elaborate(

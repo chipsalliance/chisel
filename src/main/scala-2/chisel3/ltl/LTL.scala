@@ -40,9 +40,9 @@ private case class DelayAtom(val min: Int, val max: Option[Int]) extends Sequenc
   * in `Sequence(...)`. See `SequenceAtom` for details.
   */
 object Delay {
-  def apply(): SequenceAtom = DelayAtom(1, Some(1))
-  def apply(delay: Int): SequenceAtom = DelayAtom(delay, Some(delay))
-  def apply(min:   Int, max: Int): SequenceAtom = DelayAtom(min, Some(max))
+  def apply():                             SequenceAtom = DelayAtom(1, Some(1))
+  def apply(delay: Int):                   SequenceAtom = DelayAtom(delay, Some(delay))
+  def apply(min:   Int, max: Int):         SequenceAtom = DelayAtom(min, Some(max))
   def apply(min:   Int, max: Option[Int]): SequenceAtom = DelayAtom(min, max)
 }
 

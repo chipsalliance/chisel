@@ -43,8 +43,8 @@ class UsesThreeMemsInline(
   memoryDepth: Int,
   memoryType:  Data,
   memoryFile:  String,
-  hexOrBinary: MemoryLoadFileType.FileType)
-    extends Module {
+  hexOrBinary: MemoryLoadFileType.FileType
+) extends Module {
   val io = Seq.fill(3)(IO(new Read(memoryDepth, memoryType)))
 
   val memory1 = Mem(memoryDepth, memoryType)

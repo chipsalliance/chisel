@@ -76,9 +76,8 @@ class ShiftsTester(n: Int) extends BasicTester {
   val start = 23.U
   val srs = ShiftRegisters(cntVal + start, n)
   when(RegNext(done)) {
-    srs.zipWithIndex.foreach {
-      case (data, index) =>
-        assert(data === (23 + n - 1 - index).U)
+    srs.zipWithIndex.foreach { case (data, index) =>
+      assert(data === (23 + n - 1 - index).U)
     }
     stop()
   }

@@ -19,7 +19,7 @@ private[chisel3] trait BackendCompilationUtilities extends LazyLogging {
   def copyResourceToFile(name: String, file: File): Unit =
     FirrtlBackendCompilationUtilities.copyResourceToFile(name, file)
   def createTestDirectory(testName: String): File = FirrtlBackendCompilationUtilities.createTestDirectory(testName)
-  def makeHarness(template:         String => String, post: String)(f: File): File =
+  def makeHarness(template: String => String, post: String)(f: File): File =
     FirrtlBackendCompilationUtilities.makeHarness(template, post)(f)
   def firrtlToVerilog(prefix: String, dir: File): ProcessBuilder =
     FirrtlBackendCompilationUtilities.firrtlToVerilog(prefix, dir)

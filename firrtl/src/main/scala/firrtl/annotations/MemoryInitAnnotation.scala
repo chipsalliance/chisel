@@ -15,9 +15,9 @@ sealed trait MemoryInitAnnotation extends SingleTargetAnnotation[ReferenceTarget
 case class MemoryFileInlineAnnotation(
   target:      ReferenceTarget,
   filename:    String,
-  hexOrBinary: MemoryLoadFileType.FileType = MemoryLoadFileType.Hex)
-    extends MemoryInitAnnotation {
+  hexOrBinary: MemoryLoadFileType.FileType = MemoryLoadFileType.Hex
+) extends MemoryInitAnnotation {
   require(filename.trim.nonEmpty, "empty filename not allowed in MemoryFileInlineAnnotation")
   override def duplicate(n: ReferenceTarget): Annotation = copy(n)
-  override def isRandomInit: Boolean = false
+  override def isRandomInit:                  Boolean = false
 }

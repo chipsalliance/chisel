@@ -119,7 +119,8 @@ object ExceptionHelpers {
 private[chisel3] case class WarningFilter(
   src:    Option[PathMatcher],
   id:     Option[WarningID.WarningID],
-  action: WarningFilter.Action) {
+  action: WarningFilter.Action
+) {
 
   /** Does this filter apply to the warning? */
   def applies(warning: Warning): Boolean = {
@@ -149,7 +150,7 @@ private[chisel3] object WarningFilter {
   private def categoryOneOf = "must be one of 'any', 'src', or 'id'."
 
   // TODO find a better way to deal with line and column
-  private def srcGlobDefault(base: String): String = base //s"**/$base"
+  private def srcGlobDefault(base: String): String = base // s"**/$base"
 
   /** Parse a String into a [[WarningFilter]]
     *
@@ -273,7 +274,8 @@ private[chisel3] object ErrorLog {
 private[chisel3] class ErrorLog(
   warningFilters:    Seq[WarningFilter],
   sourceRoots:       Seq[File],
-  throwOnFirstError: Boolean) {
+  throwOnFirstError: Boolean
+) {
   import ErrorLog.withColor
 
   /** Returns an appropriate location string for the provided source info.
@@ -282,9 +284,9 @@ private[chisel3] class ErrorLog(
     */
   private def errorLocationString(si: Option[SourceInfo]): String = {
     si match {
-      case Some(sl: SourceLine) => sl.serialize
+      case Some(sl: SourceLine)  => sl.serialize
       case Some(_: NoSourceInfo) => "(unknown)"
-      case None => ""
+      case None                  => ""
     }
   }
 
@@ -344,9 +346,8 @@ private[chisel3] class ErrorLog(
       case _ =>
     }
 
-    deprecations.foreach {
-      case ((message, sourceLoc), count) =>
-        logger.warn(s"${ErrorLog.depTag} $sourceLoc ($count calls): $message")
+    deprecations.foreach { case ((message, sourceLoc), count) =>
+      logger.warn(s"${ErrorLog.depTag} $sourceLoc ($count calls): $message")
     }
     errors.foreach(e => logger.error(e.serialize(includeTag = true)))
 

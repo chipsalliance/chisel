@@ -186,8 +186,8 @@ trait ChiselRunners extends Assertions {
         Array("--target-dir", BackendCompilationUtilities.createTestDirectory(this.getClass.getSimpleName).toString),
         Seq(ChiselGeneratorAnnotation(() => t), CIRCTTargetAnnotation(CIRCTTarget.SystemVerilog))
       )
-      .collectFirst {
-        case EmittedVerilogCircuitAnnotation(a) => a.value
+      .collectFirst { case EmittedVerilogCircuitAnnotation(a) =>
+        a.value
       }
       .getOrElse(fail("No Verilog circuit was emitted by the FIRRTL compiler!"))
   }
@@ -411,7 +411,7 @@ trait Utils {
 /** Contains helpful function to assert both statements to match, and statements to omit */
 trait MatchesAndOmits extends Assertions {
   private def matches(lines: List[String], matchh: String): Option[String] = lines.filter(_.contains(matchh)).lastOption
-  private def omits(line:    String, omit:         String): Option[(String, String)] =
+  private def omits(line: String, omit: String): Option[(String, String)] =
     if (line.contains(omit)) Some((omit, line)) else None
   private def omits(lines: List[String], omit: String): Seq[(String, String)] = lines.flatMap { omits(_, omit) }
   def matchesAndOmits(output: String)(matchList: String*)(omitList: String*): Unit = {
@@ -419,8 +419,8 @@ trait MatchesAndOmits extends Assertions {
     val unmatched = matchList.flatMap { m =>
       if (matches(lines, m).nonEmpty) None else Some(m)
     }.map(x => s"  > '$x' was unmatched")
-    val unomitted = omitList.flatMap { o => omits(lines, o) }.map {
-      case (o, l) => s"  > '$o' was not omitted in ($l)"
+    val unomitted = omitList.flatMap { o => omits(lines, o) }.map { case (o, l) =>
+      s"  > '$o' was not omitted in ($l)"
     }
     val results = unmatched ++ unomitted
     assert(results.isEmpty, results.mkString("\n") + s"\nFull Input:\n'$output'\n")

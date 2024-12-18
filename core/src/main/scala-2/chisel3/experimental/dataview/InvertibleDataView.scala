@@ -6,8 +6,8 @@ import chisel3._
 import scala.reflect.runtime.universe.WeakTypeTag
 
 private[chisel3] trait InvertibleDataView {
-  def swapArgs[A, B, C, D](f: (A, B) => Iterable[(C, D)]): (B, A) => Iterable[(D, C)] = {
-    case (b, a) => f(a, b).map(_.swap)
+  def swapArgs[A, B, C, D](f: (A, B) => Iterable[(C, D)]): (B, A) => Iterable[(D, C)] = { case (b, a) =>
+    f(a, b).map(_.swap)
   }
 
   /** Provides `invert` for invertible [[DataView]]s

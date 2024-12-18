@@ -118,8 +118,8 @@ object ChiselStage {
 
     phase
       .transform(annos)
-      .collectFirst {
-        case FirrtlCircuitAnnotation(a) => a
+      .collectFirst { case FirrtlCircuitAnnotation(a) =>
+        a
       }
       .get
   }
@@ -137,8 +137,8 @@ object ChiselStage {
 
     phase
       .transform(annos)
-      .collectFirst {
-        case EmittedMLIR(_, a, _) => a
+      .collectFirst { case EmittedMLIR(_, a, _) =>
+        a
       }
       .get
   }
@@ -156,8 +156,8 @@ object ChiselStage {
 
     phase
       .transform(annos)
-      .collectFirst {
-        case EmittedMLIR(_, a, _) => a
+      .collectFirst { case EmittedMLIR(_, a, _) =>
+        a
       }
       .get
   }
@@ -180,8 +180,8 @@ object ChiselStage {
     ) ++ (new Shell("circt")).parse(args) ++ firtoolOpts.map(FirtoolOption(_))
     phase
       .transform(annos)
-      .collectFirst {
-        case EmittedVerilogCircuitAnnotation(a) => a
+      .collectFirst { case EmittedVerilogCircuitAnnotation(a) =>
+        a
       }
       .get
       .value
@@ -222,8 +222,8 @@ object ChiselStage {
     ) ++ (new Shell("circt")).parse(args) ++ firtoolOpts.map(FirtoolOption(_))
     phase
       .transform(annos)
-      .collectFirst {
-        case EmittedBtor2CircuitAnnotation(a) => a
+      .collectFirst { case EmittedBtor2CircuitAnnotation(a) =>
+        a
       }
       .get
       .value

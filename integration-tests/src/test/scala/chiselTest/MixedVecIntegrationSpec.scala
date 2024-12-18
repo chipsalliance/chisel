@@ -175,29 +175,26 @@ class MixedVecIntegrationSpec extends ChiselPropSpec with Utils {
   }
 
   property("MixedVecs should be assignable") {
-    forAll(safeUIntN(8)) {
-      case (w: Int, v: List[Int]) =>
-        assertTesterPasses {
-          new MixedVecAssignTester(w, v)
-        }
+    forAll(safeUIntN(8)) { case (w: Int, v: List[Int]) =>
+      assertTesterPasses {
+        new MixedVecAssignTester(w, v)
+      }
     }
   }
 
   property("MixedVecs should be usable as the type for Reg()") {
-    forAll(safeUIntN(8)) {
-      case (w: Int, v: List[Int]) =>
-        assertTesterPasses {
-          new MixedVecRegTester(w, v)
-        }
+    forAll(safeUIntN(8)) { case (w: Int, v: List[Int]) =>
+      assertTesterPasses {
+        new MixedVecRegTester(w, v)
+      }
     }
   }
 
   property("MixedVecs should be passed through IO") {
-    forAll(safeUIntN(8)) {
-      case (w: Int, v: List[Int]) =>
-        assertTesterPasses {
-          new MixedVecIOTester(v.map(i => i.U(w.W)))
-        }
+    forAll(safeUIntN(8)) { case (w: Int, v: List[Int]) =>
+      assertTesterPasses {
+        new MixedVecIOTester(v.map(i => i.U(w.W)))
+      }
     }
   }
 

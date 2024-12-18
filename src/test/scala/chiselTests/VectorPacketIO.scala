@@ -64,8 +64,8 @@ class VectorPacketIOUnitTester extends BasicTester {
 class VectorPacketIOUnitTesterSpec extends ChiselFlatSpec {
   "a circuit using an io containing a vector of EnqIO wrapped packets" should
     "compile and run" in {
-    assertTesterPasses {
-      new VectorPacketIOUnitTester
+      assertTesterPasses {
+        new VectorPacketIOUnitTester
+      }
     }
-  }
 }

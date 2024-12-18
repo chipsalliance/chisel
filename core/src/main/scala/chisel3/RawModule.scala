@@ -177,7 +177,7 @@ abstract class RawModule extends BaseModule {
     case id: assert.Assert    => id.forceName(default = "assert", _namespace)
     case id: assume.Assume    => id.forceName(default = "assume", _namespace)
     case id: cover.Cover      => id.forceName(default = "cover", _namespace)
-    case id: printf.Printf => id.forceName(default = "printf", _namespace)
+    case id: printf.Printf    => id.forceName(default = "printf", _namespace)
     case id: DynamicObject => {
       // Force name of the DynamicObject, and set its Property[ClassType] type's ref to the DynamicObject.
       // The type's ref can't be set upon instantiation, because the DynamicObject hasn't been named yet.
@@ -237,9 +237,8 @@ abstract class RawModule extends BaseModule {
       nameId(id)
     }
 
-    val firrtlPorts = getModulePortsAndLocators.map {
-      case (port, sourceInfo) =>
-        Port(port, port.specifiedDirection, sourceInfo)
+    val firrtlPorts = getModulePortsAndLocators.map { case (port, sourceInfo) =>
+      Port(port, port.specifiedDirection, sourceInfo)
     }
     _firrtlPorts = Some(firrtlPorts)
 

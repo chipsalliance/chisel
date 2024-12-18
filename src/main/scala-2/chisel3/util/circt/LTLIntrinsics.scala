@@ -20,8 +20,7 @@ private[chisel3] object BaseIntrinsic {
     intrinsicName: String,
     ret:           => T,
     maybeParams:   Seq[(String, Param)] = Seq()
-  )(data:          Data*
-  )(
+  )(data: Data*)(
     implicit sourceInfo: SourceInfo
   ): T = {
     IntrinsicExpr(f"circt_$intrinsicName", ret, maybeParams: _*)(data: _*)
@@ -33,8 +32,7 @@ private[chisel3] object UnaryLTLIntrinsic {
   def apply[T <: Data](
     intrinsicName: String,
     params:        Seq[(String, Param)] = Seq()
-  )(_in:           T
-  )(
+  )(_in: T)(
     implicit sourceInfo: SourceInfo
   ): Bool =
     BaseIntrinsic(f"ltl_$intrinsicName", Bool(), params)(_in).suggestName(f"ltl_$intrinsicName")
@@ -45,9 +43,7 @@ private[chisel3] object BinaryLTLIntrinsic {
   def apply[T <: Data, U <: Data](
     intrinsicName: String,
     params:        Seq[(String, Param)] = Seq()
-  )(lhs:           T,
-    rhs:           U
-  )(
+  )(lhs: T, rhs: U)(
     implicit sourceInfo: SourceInfo
   ): Bool =
     BaseIntrinsic(f"ltl_$intrinsicName", Bool(), params)(lhs, rhs).suggestName(f"ltl_$intrinsicName")
@@ -148,9 +144,7 @@ private[chisel3] object VerifAssertLikeIntrinsic {
   def apply(
     intrinsicName: String,
     label:         Option[String]
-  )(prop:          Bool,
-    enable:        Option[Bool]
-  )(
+  )(prop: Bool, enable: Option[Bool])(
     implicit sourceInfo: SourceInfo
   ): Unit = {
     val name = f"circt_verif_$intrinsicName"

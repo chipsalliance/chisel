@@ -21,8 +21,8 @@ object ConnectableSpec {
     inDrivesOut: Boolean,
     op:          (Data, Data) => Unit,
     monitorOp:   Option[(Data, Data) => Unit],
-    nTmps:       Int)
-      extends Module {
+    nTmps:       Int
+  ) extends Module {
     val io = IO(new Bundle {
       val in = Flipped(inType)
       val out = Flipped(Flipped(outType)) // no clonetype, no Aligned (yet)
@@ -36,12 +36,12 @@ object ConnectableSpec {
 
     val wiresIn = Seq.fill(nTmps)(Wire(inType))
     val wiresOut = Seq.fill(nTmps)(Wire(outType))
-    (Seq(io.out) ++ wiresOut ++ wiresIn).zip(wiresOut ++ wiresIn :+ io.in).foreach {
-      case (l, r) => if (inDrivesOut) op(l, r) else op(r, l)
+    (Seq(io.out) ++ wiresOut ++ wiresIn).zip(wiresOut ++ wiresIn :+ io.in).foreach { case (l, r) =>
+      if (inDrivesOut) op(l, r) else op(r, l)
     }
   }
 
-  def vec[T <: Data](tpe:                 T, n: Int = 3) = Vec(n, tpe)
+  def vec[T <: Data](tpe: T, n: Int = 3) = Vec(n, tpe)
   def alignedBundle[T <: Data](fieldType: T) = new Bundle {
     val foo = Flipped(Flipped(fieldType))
     val bar = Flipped(Flipped(fieldType))
@@ -96,8 +96,8 @@ object ConnectableSpec {
     elements ++ allAggs ++ allNestedAgg
   }
   def getInfo(t: Data): Seq[Any] = DataMirror
-    .collectMembers(t) {
-      case x => (x, DataMirror.specifiedDirectionOf(x))
+    .collectMembers(t) { case x =>
+      (x, DataMirror.specifiedDirectionOf(x))
     }
     .toSeq
 
@@ -174,7 +174,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
 
   // (D)irectional Bulk Connect tests
   describe("(0): :<>=") {
-    implicit val op: (Data, Data) => Unit = { _ :<>= _ }
+    implicit val op:        (Data, Data) => Unit = { _ :<>= _ }
     implicit val monitorOp: Option[(Data, Data) => Unit] = None
     implicit val inDrivesOut = true
     implicit val nTmps = 0
@@ -322,7 +322,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     // TODO Write test that demonstrates multiple evaluation of producer: => T
   }
   describe("(1): :<= ") {
-    implicit val op: (Data, Data) => Unit = { _ :<= _ }
+    implicit val op:        (Data, Data) => Unit = { _ :<= _ }
     implicit val monitorOp: Option[(Data, Data) => Unit] = None
     implicit val inDrivesOut = true
     implicit val nTmps = 0
@@ -542,7 +542,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     }
   }
   describe("(2): :>= ") {
-    implicit val op: (Data, Data) => Unit = { _ :>= _ }
+    implicit val op:        (Data, Data) => Unit = { _ :>= _ }
     implicit val monitorOp: Option[(Data, Data) => Unit] = None
     implicit val inDrivesOut = true
     implicit val nTmps = 0
@@ -718,7 +718,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     }
   }
   describe("(3): :#= ") {
-    implicit val op: (Data, Data) => Unit = { _ :<>= _ }
+    implicit val op:        (Data, Data) => Unit = { _ :<>= _ }
     implicit val monitorOp: Option[(Data, Data) => Unit] = Some({ _ :#= _ })
     implicit val inDrivesOut = true
     implicit val nTmps = 0
@@ -860,7 +860,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       testException(SInt(1.W), Clock(), "have different types")
     }
     it("(3.g): Emit 'attach' between Analog types or Aggregates with Analog types") {
-      implicit val op: (Data, Data) => Unit = { _ :#= _ }
+      implicit val op:        (Data, Data) => Unit = { _ :#= _ }
       implicit val monitorOp: Option[(Data, Data) => Unit] = None
       test(Analog(3.W), Seq("attach (io.out, io.in)"))
       test(mixedBundle(Analog(3.W)), Seq("attach (io.out.foo, io.in.foo)", "attach (io.out.bar, io.in.bar"))
@@ -868,7 +868,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     }
     it("(3.h): Error on unconnected or dangling subfield/subindex from either side") {
       // Missing flip bar
-      implicit val op: (Data, Data) => Unit = { _ :#= _ }
+      implicit val op:        (Data, Data) => Unit = { _ :#= _ }
       implicit val monitorOp: Option[(Data, Data) => Unit] = None
       testException(mixedBundle(Bool()), alignedFooBundle(Bool()), "unmatched consumer field")
       testException(alignedFooBundle(Bool()), mixedBundle(Bool()), "unmatched producer field")
@@ -898,7 +898,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
       )
     }
     it("(3.i): Always connect to consumer regardless of orientation") {
-      implicit val op: (Data, Data) => Unit = { _ :#= _ }
+      implicit val op:        (Data, Data) => Unit = { _ :#= _ }
       implicit val monitorOp: Option[(Data, Data) => Unit] = None
       testException(mixedBundle(Bool()), alignedBundle(Bool()), "cannot be written from module")
       testDistinctTypes(
@@ -913,7 +913,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
     it(
       "(3.k): When connecting FROM DontCare, emit for aligned aggregate fields and emit for flipped aggregate fields"
     ) {
-      implicit val op: (Data, Data) => Unit = { (x, y) => x :#= DontCare }
+      implicit val op:        (Data, Data) => Unit = { (x, y) => x :#= DontCare }
       implicit val monitorOp: Option[(Data, Data) => Unit] = None
       test(UInt(3.W), Seq("invalidate io.out"))
       test(SInt(3.W), Seq("invalidate io.out"))
@@ -1021,7 +1021,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         )
         val in = IO(Flipped(new DecoupledGen(() => ab)))
         val out = IO(new DecoupledGen(() => bc))
-        //Programmatic
+        // Programmatic
         BundleMap.waive(out) :<>= BundleMap.waive(in)
       }
       testCheck(
@@ -1051,7 +1051,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         val in = IO(Flipped(new DecoupledGen(() => ab)))
         val out = IO(new DecoupledGen(() => bc))
         out :<= (chiselTypeOf(out).Lit(_.data.elements("b") -> 1.U, _.data.elements("c") -> 1.U))
-        //Programmatic
+        // Programmatic
         BundleMap.waive(out) :<>= BundleMap.waive(in)
       }
       testCheck(
@@ -1172,7 +1172,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         )
         val in = IO(Flipped(new DecoupledGen(() => ab)))
         val out = IO(new DecoupledGen(() => bc))
-        //Programmatic
+        // Programmatic
         BundleMap.waive(out) :<>= BundleMap.waive(in).squeezeAll
       }
       testCheck(
@@ -1353,7 +1353,7 @@ class ConnectableSpec extends ChiselFunSpec with Utils {
         )
         val in = IO(Flipped(new DecoupledGen(() => ab)))
         val out = IO(new DecoupledGen(() => bc))
-        //Programmatic
+        // Programmatic
         val (cout, cin) = BundleMap.onlyIncludeUnion(out, in)
         cout :<>= cin
       }

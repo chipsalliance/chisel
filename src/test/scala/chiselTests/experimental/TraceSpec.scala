@@ -93,17 +93,17 @@ class TraceSpec extends ChiselFlatSpec with Matchers {
           .flatMap(finalTarget(annos))
           .toSet
           .map { target: CompleteTarget =>
-            s"""public_flat_rd -module "${target.tokens.collectFirst {
-              case OfModule(m) => m
-            }.get}" -var "${target.tokens.collectFirst { case Ref(r) => r }.get}""""
+            s"""public_flat_rd -module "${target.tokens.collectFirst { case OfModule(m) =>
+                m
+              }.get}" -var "${target.tokens.collectFirst { case Ref(r) => r }.get}""""
           }
           .mkString("\n") + "\n"
 
     def verilatorTemplate(data: Seq[Data], annos: AnnotationSeq): String = {
       val vpiNames = data.flatMap(finalTarget(annos)).map { ct =>
         s"""TOP.${ct.circuit}.${ct.path.map { case (Instance(i), _) => i }.mkString(".")}.${ct.tokens.collectFirst {
-          case Ref(r) => r
-        }.get}"""
+            case Ref(r) => r
+          }.get}"""
       }
       s"""
          |#include "V${topName}.h"
