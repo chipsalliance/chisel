@@ -34,14 +34,33 @@ object v extends Module {
     val java21Min213 = 11
     val minVersion = if (javaVersion > 11) java21Min213 else 0
     val versions = minVersion to latest213
-    versions.map(v => s"2.13.$v").toSeq
+    val versionSeq = versions.map(v => s"2.13.$v").toSeq
+    versionSeq ++ Seq("3.3.4")
   }
 
   val scalaCrossVersions = Seq(
-    "2.13.15"
+    "2.13.15",
+    "3.3.4"
   )
 
   def isScala3(ver: String): Boolean = ver.startsWith("3.")
+
+  def buildUnits(): Seq[ScalaModule] = {
+    scalaCrossVersions.flatMap { ver =>
+      Seq(chisel(ver), stdlib(ver), unipublish)
+    } ++ scalaCrossVersions.filterNot(isScala3(_)).flatMap { ver2 =>
+      Seq(
+        chisel(ver2).test,
+        firrtl(ver2).test,
+        svsim(ver2).test,
+        integrationTests(ver2).test,
+        litutility(ver2),
+        panamaconverter(ver2),
+        panamalib(ver2),
+        panamaom(ver2)
+      )
+    }
+  }
 
   val scalaVersion = scalaCrossVersions.head
   val jmhVersion = "1.37"
@@ -94,6 +113,10 @@ object v extends Module {
     "-language:reflectiveCalls",
     s"-Wconf:${scala2WarnConf.mkString(",")}"
   )
+}
+
+def compileAll() = T.command {
+  T.traverse(v.buildUnits())(_.compile)()
 }
 
 trait ChiselPublishModule extends CiReleaseModule {
@@ -251,7 +274,7 @@ trait Core extends CrossSbtModule with HasScala2MacroAnno with ScalafmtModule {
   )
 
   override def ivyDeps = if (v.isScala3(crossScalaVersion)) {
-    super.ivyDeps() ++ commonDeps
+    super.ivyDeps() ++ commonDeps ++ Agg(v.firtoolResolver.withDottyCompat(scalaVersion()))
   } else {
     super.ivyDeps() ++ commonDeps ++ Agg(v.firtoolResolver)
   }
@@ -309,7 +332,13 @@ trait Plugin extends CrossSbtModule with ScalafmtModule with ChiselPublishModule
   def scalaReflectIvy = v.scalaReflect(crossScalaVersion)
   def scalaCompilerIvy: Dep = v.scalaCompiler(crossScalaVersion)
 
-  def ivyDeps = super.ivyDeps() ++ Agg(scalaLibraryIvy, scalaReflectIvy, scalaCompilerIvy)
+  def ivyDeps = T {
+    if (!v.isScala3(crossScalaVersion)) {
+      super.ivyDeps() ++ Agg(scalaLibraryIvy, scalaReflectIvy, scalaCompilerIvy)
+    } else {
+      super.ivyDeps()
+    }
+  }
 }
 
 object chisel extends Cross[Chisel](v.scalaCrossVersions)

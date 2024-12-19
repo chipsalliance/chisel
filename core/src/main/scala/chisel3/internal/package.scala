@@ -130,7 +130,7 @@ package object internal {
     * @note this is a lazy val so that calling functions in this package object doesn't create it
     */
   private[chisel3] lazy val ViewParent =
-    Module.do_apply(new ViewParentAPI)(UnlocatableSourceInfo)
+    Module._applyImpl(new ViewParentAPI)(UnlocatableSourceInfo)
 
   private[chisel3] def requireHasProbeTypeModifier(
     probe:        Data,
