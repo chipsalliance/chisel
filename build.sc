@@ -49,7 +49,16 @@ object v extends Module {
     scalaCrossVersions.flatMap { ver =>
       Seq(chisel(ver), stdlib(ver), unipublish)
     } ++ scalaCrossVersions.filterNot(isScala3(_)).flatMap { ver2 =>
-      Seq(chisel(ver2).test, firrtl(ver2).test, svsim(ver2).test, integrationTests(ver2).test, litutility(ver2), panamaconverter(ver2), panamalib(ver2), panamaom(ver2))
+      Seq(
+        chisel(ver2).test,
+        firrtl(ver2).test,
+        svsim(ver2).test,
+        integrationTests(ver2).test,
+        litutility(ver2),
+        panamaconverter(ver2),
+        panamalib(ver2),
+        panamaom(ver2)
+      )
     }
   }
 

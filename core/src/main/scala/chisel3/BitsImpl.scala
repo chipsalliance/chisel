@@ -99,7 +99,7 @@ private[chisel3] trait BitsImpl extends Element { self: Bits =>
   }
 
   protected def _applyImpl(x: UInt)(implicit sourceInfo: SourceInfo): Bool =
-    extract(x)
+    _extractImpl(x)
 
   protected def _applyImpl(x: Int, y: Int)(implicit sourceInfo: SourceInfo): UInt = {
     if ((x < y && !(x == -1 && y == 0)) || y < 0) {
