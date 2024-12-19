@@ -125,6 +125,7 @@ object Definition extends SourceInfoDoc {
     Builder.components ++= ir.components
     Builder.annotations ++= ir.annotations: @nowarn // this will go away when firrtl is merged
     Builder.layers ++= dynamicContext.layers
+    Builder.options ++= dynamicContext.options
     module._circuit = Builder.currentModule
     module.toDefinition
   }
