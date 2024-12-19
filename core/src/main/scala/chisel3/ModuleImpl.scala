@@ -31,7 +31,7 @@ import chisel3.experimental.hierarchy.Hierarchy
 
 private[chisel3] trait ObjectModuleImpl {
 
-  protected def _applyImpl[T <: BaseModule](bc: => T)(implicit sourceInfo: SourceInfo): T = {
+  protected[chisel3] def _applyImpl[T <: BaseModule](bc: => T)(implicit sourceInfo: SourceInfo): T = {
     // Instantiate the module definition.
     val module: T = evaluate[T](bc)
 
