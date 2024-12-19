@@ -10,7 +10,6 @@ import chisel3.internal.binding._
 import chisel3.internal.firrtl.{ir, Converter}
 import chisel3.experimental.{prefix, requireIsHardware, Analog, SourceInfo}
 import chisel3.experimental.hierarchy.Instance
-import scala.reflect.runtime.universe.{typeOf, TypeTag}
 import scala.annotation.{implicitAmbiguous, implicitNotFound}
 import chisel3.experimental.BaseModule
 import chisel3.internal.NamedComponent
@@ -287,7 +286,7 @@ sealed trait Property[T] extends Element { self =>
     * The only extra information present on a Property type is directionality.
     */
   private[chisel3] override def cloneTypeFull: this.type = {
-    val clone = this.cloneType
+    val clone: this.type = this.cloneType
     clone.specifiedDirection = specifiedDirection
     clone
   }

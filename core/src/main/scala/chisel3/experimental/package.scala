@@ -91,9 +91,6 @@ package object experimental {
   @deprecated("FlatIO has moved to package chisel3", "Chisel 6.0")
   val FlatIO = chisel3.FlatIO
 
-  class dump extends chisel3.internal.naming.dump
-  class treedump extends chisel3.internal.naming.treedump
-
   /** Generate prefixes from values of this type in the Chisel compiler plugin
     *
     * Users can mixin this trait to tell the Chisel compiler plugin to include the names of
@@ -132,7 +129,8 @@ package object experimental {
   object BundleLiterals {
     implicit class AddBundleLiteralConstructor[T <: Record](x: T) {
       def Lit(elems: (T => (Data, Data))*)(implicit sourceInfo: SourceInfo): T = {
-        x._makeLit(elems: _*)
+        val fs = elems.map(_.asInstanceOf[Data => (Data, Data)])
+        x._makeLit(fs: _*).asInstanceOf[T]
       }
     }
   }

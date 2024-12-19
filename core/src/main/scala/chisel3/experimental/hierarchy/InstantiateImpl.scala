@@ -2,7 +2,6 @@
 
 package chisel3.experimental.hierarchy
 
-import scala.reflect.runtime.{universe => ru}
 import scala.collection.mutable
 
 import chisel3._
@@ -73,7 +72,7 @@ private[chisel3] trait InstantiateImpl {
 
   import chisel3.internal.BuilderContextCache
   // Include type of module in key since different modules could have the same arguments
-  private case class CacheKey[A <: BaseModule](args: Any, tt: Any, modulePrefix: String)
+  private case class CacheKey[A <: BaseModule](args: Any, tt: Any, modulePrefix: List[String])
       extends BuilderContextCache.Key[Definition[A]]
 
   protected def _instanceImpl[K, A <: BaseModule](
@@ -93,7 +92,7 @@ private[chisel3] trait InstantiateImpl {
     val modulePrefix = Module.currentModulePrefix
     Builder.contextCache
       .getOrElseUpdate(
-        CacheKey[A](boxAllData(args), tt, modulePrefix), {
+        CacheKey[A](boxAllData(args), tt, List(modulePrefix)), {
           // The definition needs to have no source locator because otherwise it will be unstably
           // derived from the first invocation of Instantiate for the particular Module
           Definition.apply(f(args))(UnlocatableSourceInfo)

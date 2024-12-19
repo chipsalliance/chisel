@@ -5,6 +5,7 @@ package chisel3
 import scala.collection.immutable.{ListMap, VectorBuilder}
 import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashSet}
 
+import chisel3.experimental.hierarchy.core.Hierarchy.HierarchyBaseModuleExtensions
 import chisel3.internal._
 import chisel3.internal.binding._
 import chisel3.internal.Builder._
@@ -30,7 +31,7 @@ import chisel3.experimental.hierarchy.Hierarchy
 
 private[chisel3] trait ObjectModuleImpl {
 
-  protected def _applyImpl[T <: BaseModule](bc: => T)(implicit sourceInfo: SourceInfo): T = {
+  protected[chisel3] def _applyImpl[T <: BaseModule](bc: => T)(implicit sourceInfo: SourceInfo): T = {
     // Instantiate the module definition.
     val module: T = evaluate[T](bc)
 

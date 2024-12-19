@@ -12,7 +12,6 @@ import scala.annotation.{nowarn, tailrec}
 /** This package contains the main chisel3 API.
   */
 package object chisel3 {
-  import internal.chiselRuntimeDeprecated
   import experimental.{DeprecatedSourceInfo, UnlocatableSourceInfo}
   import internal.firrtl.ir.Port
   import internal.Builder

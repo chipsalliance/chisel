@@ -58,7 +58,7 @@ private[chisel3] abstract class EnumTypeImpl(private[chisel3] val factory: Chise
   // This override just ensures that if `that` has a known width, the result actually has that width
   // Put another way, this is preserving a case where #4159 does **not** occur
   // This can be deleted when Builder.useLegacyWidth is removed.
-  override def do_asTypeOf[T <: Data](that: T)(implicit sourceInfo: SourceInfo): T = {
+  override def _asTypeOfImpl[T <: Data](that: T)(implicit sourceInfo: SourceInfo): T = {
     that.widthOption match {
       // Note that default case will handle literals just fine
       case Some(w) =>
@@ -70,8 +70,8 @@ private[chisel3] abstract class EnumTypeImpl(private[chisel3] val factory: Chise
             _wire := this.asUInt
             _wire
         }
-        _padded.do_asTypeOf(that)
-      case None => super.do_asTypeOf(that)
+        _padded._asTypeOfImpl(that)
+      case None => super._asTypeOfImpl(that)
     }
   }
 
@@ -154,7 +154,7 @@ private[chisel3] abstract class EnumTypeImpl(private[chisel3] val factory: Chise
   }
 
   // This function conducts a depth-wise search to find all enum-type fields within a vector or bundle (or vector of bundles)
-  private def enumFields(d: Aggregate): Seq[Seq[String]] = d match {
+  private def enumFields(d: Data): Seq[Seq[String]] = d match {
     case v: Vec[_] =>
       v.sample_element match {
         case b: Bundle => enumFields(b)
@@ -222,7 +222,7 @@ private[chisel3] abstract class EnumTypeImpl(private[chisel3] val factory: Chise
     for ((name, value) <- allNamesPadded) {
       when(this === value) {
         for ((r, c) <- result.zip(name)) {
-          r := c.toChar.U
+          r := UInt.Lit(BigInt(c.toChar), Width())
         }
       }
     }

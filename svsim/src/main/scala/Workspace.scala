@@ -351,11 +351,11 @@ final class Workspace(
       //format: off
       // For this debug flow, we rebuild the simulation from scratch every time, to avoid issues if the simulation was originally compiled in a different environment, like using SiFive's `wake`.
       l("clean:")
-	    l("\tls . | grep -v Makefile | grep -v execution-script.txt | xargs rm -rf")
+      l("\tls . | grep -v Makefile | grep -v execution-script.txt | xargs rm -rf")
       l()
       l("simulation: clean")
       l("\t$(compilerEnvironment) \\")
-	    l("\t", parameters.compilerPath, " \\")
+      l("\t", parameters.compilerPath, " \\")
       for (argument <- parameters.compilerInvocation.arguments) {
         val sanitizedArugment = argument
           .replace("$", "$$")
