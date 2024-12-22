@@ -47,7 +47,7 @@ object Mux1H {
   * Returns the output of the Mux tree.
   */
 object PriorityMux {
-  def apply[T <: Data](in:  Seq[(Bool, T)]): T = SeqUtils.priorityMux(in)
+  def apply[T <: Data](in: Seq[(Bool, T)]): T = SeqUtils.priorityMux(in)
   def apply[T <: Data](sel: Seq[Bool], in: Seq[T]): T = {
     require(sel.size == in.size, "PriorityMux: Number of select signals and inputs must match")
     apply(sel.zip(in))
