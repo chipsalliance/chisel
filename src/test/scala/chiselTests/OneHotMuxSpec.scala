@@ -31,6 +31,12 @@ class OneHotMuxSpec extends AnyFreeSpec with Matchers with ChiselRunners {
     }
     e.getMessage should include("Mux1H must have a non-empty argument")
   }
+  "Mux1H should give a error when given two different size" in {
+    val e = intercept[IllegalArgumentException] {
+      Mux1H(Seq(true.B, true.B), Seq(1.U, 2.U, 3.U))
+    }
+    e.getMessage should include("Mux1H: Number of select signals and inputs must match")
+  }
 
 }
 
