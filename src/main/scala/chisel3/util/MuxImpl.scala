@@ -24,7 +24,7 @@ import chisel3.experimental.SourceInfo
   */
 object Mux1H {
   def apply[T <: Data](sel: Seq[Bool], in: Seq[T]): T = {
-    require(sel.size == in.size, "Mux1H: Number of select signals and inputs must match")
+    require(sel.size == in.size, s"Mux1H: input Seqs must have the same length, got sel ${sel.size} and in ${in.size}")
     apply(sel.zip(in))
   }
   def apply[T <: Data](in:  Iterable[(Bool, T)]): T = SeqUtils.oneHotMux(in)
@@ -49,7 +49,10 @@ object Mux1H {
 object PriorityMux {
   def apply[T <: Data](in: Seq[(Bool, T)]): T = SeqUtils.priorityMux(in)
   def apply[T <: Data](sel: Seq[Bool], in: Seq[T]): T = {
-    require(sel.size == in.size, "PriorityMux: Number of select signals and inputs must match")
+    require(
+      sel.size == in.size,
+      s"PriorityMux: input Seqs must have the same length, got sel ${sel.size} and in ${in.size}"
+    )
     apply(sel.zip(in))
   }
   def apply[T <: Data](sel: Bits, in: Seq[T]): T = apply((0 until in.size).map(sel(_)), in)

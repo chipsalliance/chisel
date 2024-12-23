@@ -47,13 +47,6 @@ class PriorityMuxSpec extends ChiselFlatSpec {
     assertTesterPasses(new PriorityMuxTester)
   }
 
-  it should "give a error when inputs are two different size" in {
-    val e = intercept[IllegalArgumentException] {
-      PriorityMux(Seq(true.B, true.B), Seq(1.U, 2.U, 3.U))
-    }
-    e.getMessage should include("PriorityMux: Number of select signals and inputs must match")
-  }
-
   it should "be stack safe" in {
     emitCHIRRTL(new RawModule {
       val n = 1 << 15
@@ -69,5 +62,12 @@ class PriorityMuxSpec extends ChiselFlatSpec {
       PriorityMux(0.U, Seq.empty[UInt])
     }
     e.getMessage should include("PriorityMux must have a non-empty argument")
+  }
+
+  it should "give a error when given different size Seqs" in {
+    val e = intercept[IllegalArgumentException] {
+      PriorityMux(Seq(true.B, true.B), Seq(1.U, 2.U, 3.U))
+    }
+    e.getMessage should include("PriorityMux: input Seqs must have the same length, got sel 2 and in 3")
   }
 }
