@@ -272,7 +272,9 @@ object BoringUtils {
             // the creation of input probes.
             val bore =
               if (up) module.createSecretIO(purePortType)
-              else module.createSecretIO(Flipped(purePortTypeBase.cloneType))
+              else if (DataMirror.hasProbeTypeModifier(purePortTypeBase))
+                module.createSecretIO(Flipped(purePortTypeBase.cloneType))
+              else module.createSecretIO(Flipped(purePortTypeBase))
             module.addSecretIO(bore)
 
             // TODO: Check for wiring non-probes not in same block, reject/diagnose.
