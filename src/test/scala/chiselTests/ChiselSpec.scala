@@ -246,6 +246,11 @@ trait FileCheck extends BeforeAndAfterEachTestData { this: Suite =>
     fileCheckString(ChiselStage.emitCHIRRTL(t), fileCheckArgs: _*)(check)
   }
 
+  /** Generate SystemVerilog and run it through FileCheck */
+  def generateSystemVerilogAndFileCheck(t: => RawModule, fileCheckArgs: String*)(check: String): Unit = {
+    fileCheckString(ChiselStage.emitSystemVerilog(t), fileCheckArgs: _*)(check)
+  }
+
   /** Elaborate a Module, capture the stdout and stderr, check stdout and stderr with FileCheck */
   def elaborateAndFileCheckOutAndErr(t: => RawModule, fileCheckArgs: String*)(check: String): Unit = {
     val outStream = new ByteArrayOutputStream()
