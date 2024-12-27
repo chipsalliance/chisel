@@ -268,8 +268,13 @@ object BoringUtils {
             }
 
             /** create a port, and drill up. */
-            // if drilling down, don't drill Probe types
-            val bore = if (up) module.createSecretIO(purePortType) else module.createSecretIO(Flipped(purePortTypeBase))
+            // If drilling down, drop modifiers (via cloneType).  This prevents
+            // the creation of input probes.
+            val bore =
+              if (up) module.createSecretIO(purePortType)
+              else if (DataMirror.hasProbeTypeModifier(purePortTypeBase))
+                module.createSecretIO(Flipped(purePortTypeBase.cloneType))
+              else module.createSecretIO(Flipped(purePortTypeBase))
             module.addSecretIO(bore)
 
             // TODO: Check for wiring non-probes not in same block, reject/diagnose.

@@ -196,6 +196,38 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
     )()
   }
 
+  it should "not create input probes" in {
+
+    object A extends layer.Layer(layer.LayerConfig.Extract())
+
+    class Bar extends RawModule {
+
+      val a_probe = IO(Output(Probe(Bool(), A)))
+
+      layer.block(A) {
+        val a = dontTouch(WireInit(false.B))
+        define(a_probe, ProbeValue(a))
+      }
+
+    }
+
+    class Foo extends RawModule {
+
+      val bar = Module(new Bar)
+
+      layer.block(A) {
+        class Baz extends RawModule {
+          val b = dontTouch(WireInit(BoringUtils.tapAndRead(bar.a_probe)))
+        }
+        val baz = Module(new Baz)
+      }
+
+    }
+
+    val firrtl = circt.stage.ChiselStage.emitCHIRRTL(new Foo)
+    firrtl should include("input b_bore : UInt<1>")
+  }
+
   it should "not work over a Definition/Instance boundary" in {
     import chisel3.experimental.hierarchy._
     @instantiable
