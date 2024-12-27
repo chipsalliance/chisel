@@ -6,12 +6,12 @@ import chisel3._
 import chisel3.util.Valid
 import circt.stage.ChiselStage.emitCHIRRTL
 import chisel3.experimental.Analog
-import chiselTests.{ChiselFlatSpec, MatchesAndOmits}
+import chiselTests.{ChiselFlatSpec, FileCheck}
 import chisel3.reflect.DataMirror
 import scala.collection.immutable.SeqMap
 import circt.stage.ChiselStage
 
-class FlatIOSpec extends ChiselFlatSpec with MatchesAndOmits {
+class FlatIOSpec extends ChiselFlatSpec with FileCheck {
   behavior.of("FlatIO")
 
   it should "create ports without a prefix" in {
@@ -22,10 +22,12 @@ class FlatIOSpec extends ChiselFlatSpec with MatchesAndOmits {
       })
       io.out := io.in
     }
-    val chirrtl = emitCHIRRTL(new MyModule)
-    chirrtl should include("input in : UInt<8>")
-    chirrtl should include("output out : UInt<8>")
-    chirrtl should include("connect out, in")
+    generateFirrtlAndFileCheck(new MyModule)(
+      """|CHECK:      input in : UInt<8>
+         |CHECK-NEXT: output out : UInt<8>
+         |CHECK:      connect out, in
+         |"""".stripMargin
+    )
   }
 
   it should "support bulk connections between FlatIOs and regular IOs" in {
@@ -34,9 +36,11 @@ class FlatIOSpec extends ChiselFlatSpec with MatchesAndOmits {
       val out = IO(Output(Valid(UInt(8.W))))
       out := in
     }
-    val chirrtl = emitCHIRRTL(new MyModule)
-    chirrtl should include("connect out.bits, bits")
-    chirrtl should include("connect out.valid, valid")
+    generateFirrtlAndFileCheck(new MyModule)(
+      """|CHECK:      connect out.bits, bits
+         |CHECK-NEXT: connect out.valid, valid
+         |"""".stripMargin
+    )
   }
 
   it should "support dynamically indexing Vecs inside of FlatIOs" in {
@@ -64,9 +68,11 @@ class FlatIOSpec extends ChiselFlatSpec with MatchesAndOmits {
       })
       io.out <> io.in
     }
-    val chirrtl = emitCHIRRTL(new MyModule)
-    chirrtl should include("connect out.foo, in.foo")
-    chirrtl should include("attach (out.bar, in.bar)")
+    generateFirrtlAndFileCheck(new MyModule)(
+      """|CHECK:      attach (out.bar, in.bar)
+         |CHECK-NEXT: connect out.foo, in.foo
+         |"""".stripMargin
+    )
   }
 
   it should "be an `IO` for elements and vectors" in {
@@ -75,9 +81,11 @@ class FlatIOSpec extends ChiselFlatSpec with MatchesAndOmits {
       val a = FlatIO(UInt(1.W))
       val b = FlatIO(Vec(2, UInt(2.W)))
     }
-    val chirrtl = emitCHIRRTL(new Foo)
-    chirrtl should include("output a : UInt<1>")
-    chirrtl should include("output b : UInt<2>[2]")
+    generateFirrtlAndFileCheck(new Foo)(
+      """|CHECK:      output a : UInt<1>
+         |CHECK-NEXT: output b : UInt<2>[2]
+         |"""".stripMargin
+    )
   }
 
   it should "maintain port order for Bundles" in {
@@ -92,13 +100,16 @@ class FlatIOSpec extends ChiselFlatSpec with MatchesAndOmits {
       val io = FlatIO(Input(new MyBundle))
     }
 
-    matchesAndOmits(
-      ChiselStage.emitSystemVerilog(new MyModule)
-    )("io_foo,")("io_bar,")
-
-    matchesAndOmits(
-      ChiselStage.emitSystemVerilog(new MyFlatIOModule)
-    )("foo,")("bar,")
+    generateSystemVerilogAndFileCheck(new MyModule)(
+      """|CHECK:      io_foo
+         |CHECK-NEXT: io_bar
+         |"""".stripMargin
+    )
+    generateSystemVerilogAndFileCheck(new MyFlatIOModule)(
+      """|CHECK:      foo
+         |CHECK-NEXT: bar
+         |"""".stripMargin
+    )
   }
 
   it should "maintain port order for Records" in {
@@ -111,12 +122,16 @@ class FlatIOSpec extends ChiselFlatSpec with MatchesAndOmits {
     class MyFlatIOModule extends Module {
       val io = FlatIO(Input(new MyRecord))
     }
-    matchesAndOmits(
-      ChiselStage.emitSystemVerilog(new MyModule)
-    )("io_bar,")("io_foo,")
-    matchesAndOmits(
-      ChiselStage.emitSystemVerilog(new MyFlatIOModule)
-    )("bar,")("foo,")
+    generateSystemVerilogAndFileCheck(new MyModule)(
+      """|CHECK:      io_bar
+         |CHECK-NEXT: io_foo
+         |"""".stripMargin
+    )
+    generateSystemVerilogAndFileCheck(new MyFlatIOModule)(
+      """|CHECK:      bar
+         |CHECK-NEXT: foo
+         |"""".stripMargin
+    )
   }
 
 }
