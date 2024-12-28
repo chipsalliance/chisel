@@ -54,7 +54,7 @@ object BoringUtilsTapSpec {
 
 }
 
-class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils with MatchesAndOmits {
+class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils with FileCheck {
   val args = Array("--throw-on-first-error", "--full-stacktrace")
   "Ready-only tap" should "work downwards from parent to child" in {
     class Foo extends RawModule {
@@ -67,17 +67,17 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       probe.define(outProbe, BoringUtils.tap(foo.internalWire))
       out := BoringUtils.tapAndRead(foo.internalWire)
     }
-    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
-    matchesAndOmits(chirrtl)(
-      "module Foo :",
-      "output bore : Probe<UInt<1>>",
-      "output out_bore : Probe<UInt<1>>",
-      "define bore = probe(internalWire)",
-      "define out_bore = probe(internalWire)",
-      "module Top :",
-      "define outProbe = foo.bore",
-      "connect out, read(foo.out_bore)"
-    )()
+    generateFirrtlAndFileCheck(new Top)(
+      """|CHECK-LABEL: module Foo :
+         |CHECK:         output bore : Probe<UInt<1>>
+         |CHECK:         output out_bore : Probe<UInt<1>>
+         |CHECK:         define bore = probe(internalWire)
+         |CHECK:         define out_bore = probe(internalWire)
+         |CHECK-LABEL: module Top :
+         |CHECK:         define outProbe = foo.bore
+         |CHECK:         connect out, read(foo.out_bore)
+         |""".stripMargin
+    )
   }
 
   it should "work downwards from grandparent to grandchild" in {
@@ -92,17 +92,17 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       val out = IO(Bool())
       out := BoringUtils.tapAndRead(foo.bar.internalWire)
     }
-    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
-    matchesAndOmits(chirrtl)(
-      "module Bar :",
-      "output out_bore : Probe<UInt<1>>",
-      "define out_bore = probe(internalWire)",
-      "module Foo :",
-      "output out_bore : Probe<UInt<1>>",
-      "define out_bore = bar.out_bore",
-      "module Top :",
-      "connect out, read(foo.out_bore)"
-    )()
+    generateFirrtlAndFileCheck(new Top)(
+      """|CHECK-LABEL: module Bar :
+         |CHECK:         output out_bore : Probe<UInt<1>>
+         |CHECK:         define out_bore = probe(internalWire)
+         |CHECK-LABEL: module Foo :
+         |CHECK:         output out_bore : Probe<UInt<1>>
+         |CHECK:         define out_bore = bar.out_bore
+         |CHECK-LABEL: module Top :
+         |CHECK:         connect out, read(foo.out_bore)
+         |""".stripMargin
+    )
   }
 
   // This test requires ability to identify what region to add commands to,
@@ -128,14 +128,14 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
         )
       }
     }
-    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
 
     // The define should be at the end of the when block.
-    matchesAndOmits(chirrtl)(
-      "    when UInt<1>(0h1) :",
-      "      inst bar of Bar",
-      "      define w_bore = bar.w_bore"
-    )()
+    generateFirrtlAndFileCheck(new Top)(
+      """|CHECK: when UInt<1>(0h1) :
+         |CHECK:   inst bar of Bar
+         |CHECK:   define w_bore = bar.w_bore
+         |""".stripMargin
+    )
 
     // Check is valid FIRRTL.
     circt.stage.ChiselStage.emitFIRRTLDialect(new Top)
@@ -153,19 +153,19 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       val parentWire = Wire(Bool())
       val foo = Module(new Foo(parentWire))
     }
-    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top, Array("--full-stacktrace"))
-    matchesAndOmits(chirrtl)(
-      "module Foo :",
-      "output outProbe : Probe<UInt<1>>",
-      "input bore : UInt<1>",
-      "input out_bore : UInt<1>",
-      "define outProbe = probe(bore)",
-      "connect out, out_bore",
-      "connect out, read(outProbe)",
-      "module Top :",
-      "connect foo.bore, parentWire",
-      "connect foo.out_bore, parentWire"
-    )()
+    generateFirrtlAndFileCheck(new Top)(
+      """|CHECK-LABEL: module Foo :
+         |CHECK:         output outProbe : Probe<UInt<1>>
+         |CHECK:         input bore : UInt<1>
+         |CHECK:         input out_bore : UInt<1>
+         |CHECK:         define outProbe = probe(bore)
+         |CHECK:         connect out, out_bore
+         |CHECK:         connect out, read(outProbe)
+         |CHECK-LABEL: module Top :
+         |CHECK:         connect foo.bore, parentWire
+         |CHECK:         connect foo.out_bore, parentWire
+         |""".stripMargin
+    )
   }
 
   it should "work upwards from grandchild to grandparent" in {
@@ -180,17 +180,17 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       val parentWire = Wire(Bool())
       val foo = Module(new Foo(parentWire))
     }
-    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
-    matchesAndOmits(chirrtl)(
-      "module Bar :",
-      "input out_bore : UInt<1>",
-      "connect out, out_bore",
-      "module Foo :",
-      "input out_bore : UInt<1>",
-      "connect bar.out_bore, out_bore",
-      "module Top :",
-      "connect foo.out_bore, parentWire"
-    )()
+    generateFirrtlAndFileCheck(new Top)(
+      """|CHECK-LABEL: module Bar :
+         |CHECK:         input out_bore : UInt<1>
+         |CHECK:         connect out, out_bore
+         |CHECK-LABEL: module Foo :
+         |CHECK:         input out_bore : UInt<1>
+         |CHECK:         connect bar.out_bore, out_bore
+         |CHECK-LABEL: module Top :
+         |CHECK:         connect foo.out_bore, parentWire
+         |""".stripMargin
+    )
   }
 
   it should "work upwards from grandchild to grandparent through when" in {
@@ -208,14 +208,16 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       parentWire := DontCare
       val foo = Module(new Foo(parentWire))
     }
-    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
 
     // The connect should be at the end of the when block.
-    matchesAndOmits(chirrtl)(
-      "    when UInt<1>(0h1) :",
-      "      inst bar of Bar",
-      "      connect bar.out_bore, out_bore"
-    )()
+    generateFirrtlAndFileCheck(new Top)(
+      """|CHECK-LABEL: module Foo :
+         |CHECK:         when UInt<1>(0h1) :
+         |CHECK:           inst bar of Bar
+         |CHECK:           connect bar.out_bore, out_bore
+         |CHECK-LABEL: public module Top :
+         |""".stripMargin
+    )
 
     // Check is valid FIRRTL.
     circt.stage.ChiselStage.emitFIRRTLDialect(new Top)
@@ -237,14 +239,15 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       parentWire := DontCare
       val foo = Module(new Foo(parentWire))
     }
-    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
 
     // The connect should be at the end of the layerblock.
-    matchesAndOmits(chirrtl)(
-      "    layerblock TestLayer :",
-      "      inst bar of Bar",
-      "      connect bar.out_bore, out_bore"
-    )()
+    generateFirrtlAndFileCheck(new Top)(
+      """|CHECK-LABEL: module Foo :
+         |CHECK:         layerblock TestLayer :
+         |CHECK:           inst bar of Bar
+         |CHECK:           connect bar.out_bore, out_bore
+         |CHECK-LABEL: public module Top :""".stripMargin
+    )
 
     // Check is valid FIRRTL and builds to SV.
     circt.stage.ChiselStage.emitSystemVerilog(new Top)
@@ -262,17 +265,16 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       val bar = Module(new Bar)
       val baz = Module(new Baz(bar.a))
     }
-    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
-    matchesAndOmits(chirrtl)(
-      "module Bar :",
-      "output b_bore : Probe<UInt<1>>",
-      "define b_bore = probe(a)",
-      "module Baz :",
-      "input b_bore : UInt<1>",
-      "connect b, b_bore",
-      "module Top :",
-      "connect baz.b_bore, read(bar.b_bore)"
-    )()
+    generateFirrtlAndFileCheck(new Top)(
+      """|CHECK-LABEL: module Bar :
+         |CHECK:         output b_bore : Probe<UInt<1>>
+         |CHECK:         define b_bore = probe(a)
+         |CHECK-LABEL: module Baz :
+         |CHECK:         input b_bore : UInt<1>
+         |CHECK:         connect b, b_bore
+         |CHECK-LABEL: module Top :
+         |CHECK:         connect baz.b_bore, read(bar.b_bore)""".stripMargin
+    )
   }
 
   it should "work from child to sibling at different levels" in {
@@ -290,20 +292,20 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       val bar = Module(new Bar)
       val foo = Module(new Foo(bar.a))
     }
-    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
-    matchesAndOmits(chirrtl)(
-      "module Bar :",
-      "output b_bore : Probe<UInt<1>>",
-      "define b_bore = probe(a)",
-      "module Baz :",
-      "input b_bore : UInt<1>",
-      "connect b, b_bore",
-      "module Foo :",
-      "input b_bore : UInt<1>",
-      "connect baz.b_bore, b_bore",
-      "module Top :",
-      "connect foo.b_bore, read(bar.b_bore)"
-    )()
+    generateFirrtlAndFileCheck(new Top)(
+      """|CHECK-LABEL: module Bar :
+         |CHECK:         output b_bore : Probe<UInt<1>>
+         |CHECK:         define b_bore = probe(a)
+         |CHECK-LABEL: module Baz :
+         |CHECK:         input b_bore : UInt<1>
+         |CHECK:         connect b, b_bore
+         |CHECK-LABEL: module Foo :
+         |CHECK:         input b_bore : UInt<1>
+         |CHECK:         connect baz.b_bore, b_bore
+         |CHECK-LABEL: module Top :
+         |CHECK:         connect foo.b_bore, read(bar.b_bore)
+         |""".stripMargin
+    )
   }
 
   it should "work for identity views" in {
@@ -319,17 +321,17 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       probe.define(outProbe, BoringUtils.tap(foo.view))
       out := BoringUtils.tapAndRead(foo.view)
     }
-    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
-    matchesAndOmits(chirrtl)(
-      "module Foo :",
-      "output bore : Probe<UInt<1>>",
-      "output out_bore : Probe<UInt<1>>",
-      "define bore = probe(internalWire)",
-      "define out_bore = probe(internalWire)",
-      "module Top :",
-      "define outProbe = foo.bore",
-      "connect out, read(foo.out_bore)"
-    )()
+    generateFirrtlAndFileCheck(new Top)(
+      """|CHECK-LABEL: module Foo :
+         |CHECK:         output bore : Probe<UInt<1>>
+         |CHECK:         output out_bore : Probe<UInt<1>>
+         |CHECK:         define bore = probe(internalWire)
+         |CHECK:         define out_bore = probe(internalWire)
+         |CHECK-LABEL: module Top :
+         |CHECK:         define outProbe = foo.bore
+         |CHECK:         connect out, read(foo.out_bore)
+         |""".stripMargin
+    )
   }
 
   it should "NOT work [yet] for non-identity views" in {
@@ -373,18 +375,18 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       out := probe.read(BoringUtils.rwTap(foo.bar.internalWire))
       probe.forceInitial(BoringUtils.rwTap(foo.bar.internalWire), false.B)
     }
-    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
-    matchesAndOmits(chirrtl)(
-      "module Bar :",
-      "output out_bore : RWProbe<UInt<1>>",
-      "define out_bore = rwprobe(internalWire)",
-      "module Foo :",
-      "output out_bore : RWProbe<UInt<1>>",
-      "define out_bore = bar.out_bore",
-      "module Top :",
-      "connect out, read(foo.out_bore)",
-      "force_initial(foo.bore, UInt<1>(0h0))"
-    )()
+    generateFirrtlAndFileCheck(new Top)(
+      """|CHECK-LABEL: module Bar :
+         |CHECK:         output out_bore : RWProbe<UInt<1>>
+         |CHECK:         define out_bore = rwprobe(internalWire)
+         |CHECK-LABEL: module Foo :
+         |CHECK:         output out_bore : RWProbe<UInt<1>>
+         |CHECK:         define out_bore = bar.out_bore
+         |CHECK-LABEL: module Top :
+         |CHECK:         connect out, read(foo.out_bore)
+         |CHECK:         force_initial(foo.bore, UInt<1>(0h0))
+         |""".stripMargin
+    )
   }
 
   it should "not work upwards child to parent" in {
@@ -424,7 +426,7 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
   }
 
   it should "work when tapping an element within a Bundle" in {
-    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(
+    generateFirrtlAndFileCheck {
       new RawModule {
         class MiniBundle extends Bundle {
           val x = Bool()
@@ -445,19 +447,19 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
         probe.define(outRWBundleProbe, BoringUtils.rwTap(child.b))
         probe.define(outElem, outRWBundleProbe.x)
       }
+    }(
+      """|CHECK: wire b : { x : UInt<1>}
+         |CHECK: define bore = rwprobe(b.x)
+         |CHECK: define bore_1 = rwprobe(b)
+         |CHECK: define outRWProbe = child.bore
+         |CHECK: define outRWBundleProbe = child.bore_1
+         |CHECK: define outElem = outRWBundleProbe.x
+         |""".stripMargin
     )
-    matchesAndOmits(chirrtl)(
-      "wire b : { x : UInt<1>}",
-      "define bore = rwprobe(b.x)",
-      "define bore_1 = rwprobe(b)",
-      "define outRWProbe = child.bore",
-      "define outRWBundleProbe = child.bore_1",
-      "define outElem = outRWBundleProbe.x"
-    )()
   }
 
   it should "work when tapping an element within a Vec" in {
-    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(
+    generateFirrtlAndFileCheck {
       new RawModule {
         class Child() extends RawModule {
           val b = Wire(Vec(4, Bool()))
@@ -475,15 +477,15 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
         probe.define(outRWVecProbe, BoringUtils.rwTap(child.b))
         probe.define(outElem, outRWVecProbe(1))
       }
+    }(
+      """|CHECK: wire b : UInt<1>[4]
+         |CHECK: define bore = rwprobe(b[2])
+         |CHECK: define bore_1 = rwprobe(b)
+         |CHECK: define outRWProbe = child.bore
+         |CHECK: define outRWVecProbe = child.bore_1
+         |CHECK: define outElem = outRWVecProbe[1]
+         |""".stripMargin
     )
-    matchesAndOmits(chirrtl)(
-      "wire b : UInt<1>[4]",
-      "define bore = rwprobe(b[2])",
-      "define bore_1 = rwprobe(b)",
-      "define outRWProbe = child.bore",
-      "define outRWVecProbe = child.bore_1",
-      "define outElem = outRWVecProbe[1]"
-    )()
   }
 
   it should "work when rw-tapping IO, as rwprobe() from inside module" in {
@@ -511,27 +513,25 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       val outV_1_in = IO(probe.RWProbe(Bool()))
       probe.define(outV_1_in, BoringUtils.rwTap(child.v(1).in))
     }
-    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Foo)
-    matchesAndOmits(chirrtl)(
-      // Child
-      "output v : { flip in : UInt<1>, out : UInt<1>}[2]",
-      // Forwarding probes out from instantiating module.
-      "define outV_0_out = rwprobe(child.v[0].out)",
-      "define outV_1_in = rwprobe(child.v[1].in)"
-    )()
+    generateFirrtlAndFileCheck(new Foo)(
+      """|CHECK-LABEL: module Child :
+         |CHECK:         output v : { flip in : UInt<1>, out : UInt<1>}[2]
+         |CHECK:         define outV_0_out = rwprobe(child.v[0].out)
+         |CHECK:         define outV_1_in = rwprobe(child.v[1].in)
+         |""".stripMargin
+    )
     // Send through firtool and lightly check output.
     // Bit fragile across firtool versions.
-    val sv = circt.stage.ChiselStage.emitSystemVerilog(new Foo)
-    matchesAndOmits(sv)(
+    generateSystemVerilogAndFileCheck(new Foo, "--implicit-check-not=v_1_in", "--implicit-check-not=v_1_out")(
       // Child ports.
-      "module Child(",
-      "input  v_0_in,",
-      "output v_0_out",
-      // Instantiation.
-      "Child child (",
-      ".v_0_in  (inputs_0),", // Alive because feeds outV_0_out probe.
-      ".v_0_out (" // rwprobe target.
-    )("v_1_in", "v_1_out") // These are dead now
+      """|CHECK-LABEL: module Child(
+         |CHECK:         input  v_0_in,
+         |CHECK:         output v_0_out
+         |CHECK:         Child child (
+         |CHECK: .v_0_in  (inputs_0),
+         |CHECK: .v_0_out (
+         |""".stripMargin
+    )
   }
 
   it should "work to rwTap a RWProbe IO" in {
@@ -563,37 +563,33 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
           }
     }
     // Probe creation should happen outside of this function
-    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Dut, args)
-    matchesAndOmits(chirrtl)(
-      // Widget exists once, and has a probe port of an internal wire
-      "module Widget :",
-      "output prb : RWProbe<UInt<32>>",
-      "define prb = rwprobe(intermediate)",
-      // Hierarchies exist and push out probes
-      "module ArbitrarilyDeeperHierarchy :",
-      "output widgetProbes_p_bore : RWProbe<UInt<32>>",
-      "output widgetProbes_p_bore_1 : RWProbe<UInt<32>>",
-      "inst widgets_0 of Widget",
-      "inst widgets_1 of Widget",
-      "define widgetProbes_p_bore = widgets_0.prb",
-      "define widgetProbes_p_bore_1 = widgets_1.prb",
-      // More hierarchies
-      "module ArbitrarilyDeepHierarchy :",
-      "output widgetProbes_p_bore : RWProbe<UInt<32>>",
-      "output widgetProbes_p_bore_1 : RWProbe<UInt<32>>",
-      "inst hier of ArbitrarilyDeeperHierarchy",
-      "define widgetProbes_p_bore = hier.widgetProbes_p_bore",
-      "define widgetProbes_p_bore_1 = hier.widgetProbes_p_bore_1",
-      // Top level module
-      "public module Dut :",
-      "input clock : Clock",
-      "input reset : UInt<1>",
-      "output widgetProbes_0 : RWProbe<UInt<32>>",
-      "output widgetProbes_1 : RWProbe<UInt<32>>",
-      "inst hier of ArbitrarilyDeepHierarchy",
-      "define widgetProbes_0 = hier.widgetProbes_p_bore",
-      "define widgetProbes_1 = hier.widgetProbes_p_bore_1"
-    )()
+    generateFirrtlAndFileCheck(new Dut)(
+      """|CHECK-LABEL: module Widget :
+         |CHECK:         output prb : RWProbe<UInt<32>>
+         |CHECK:         define prb = rwprobe(intermediate)
+         |CHECK-LABEL: module ArbitrarilyDeeperHierarchy :
+         |CHECK:         output widgetProbes_p_bore : RWProbe<UInt<32>>
+         |CHECK:         output widgetProbes_p_bore_1 : RWProbe<UInt<32>>
+         |CHECK:         inst widgets_0 of Widget
+         |CHECK:         inst widgets_1 of Widget
+         |CHECK:         define widgetProbes_p_bore = widgets_0.prb
+         |CHECK:         define widgetProbes_p_bore_1 = widgets_1.prb
+         |CHECK-LABEL: module ArbitrarilyDeepHierarchy :
+         |CHECK:         output widgetProbes_p_bore : RWProbe<UInt<32>>
+         |CHECK:         output widgetProbes_p_bore_1 : RWProbe<UInt<32>>
+         |CHECK:         inst hier of ArbitrarilyDeeperHierarchy
+         |CHECK:         define widgetProbes_p_bore = hier.widgetProbes_p_bore
+         |CHECK:         define widgetProbes_p_bore_1 = hier.widgetProbes_p_bore_1
+         |CHECK-LABEL: public module Dut :
+         |CHECK:         input clock : Clock
+         |CHECK:         input reset : UInt<1>
+         |CHECK:         output widgetProbes_0 : RWProbe<UInt<32>>
+         |CHECK:         output widgetProbes_1 : RWProbe<UInt<32>>
+         |CHECK:         inst hier of ArbitrarilyDeepHierarchy
+         |CHECK:         define widgetProbes_0 = hier.widgetProbes_p_bore
+         |CHECK:         define widgetProbes_1 = hier.widgetProbes_p_bore_1
+         |""".stripMargin
+    )
   }
 
   it should "work when tapping IO, as probe() from outside module" in {
@@ -625,15 +621,15 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       val outV_1_out_refsub = IO(probe.Probe(Bool()))
       probe.define(outV_1_out_refsub, outProbeForChildVec(1).out)
     }
-    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Foo)
-    matchesAndOmits(chirrtl)(
+    generateFirrtlAndFileCheck(new Foo, "--implicit-check-not='define bore'")(
       // Child port.
-      "output v : { flip in : UInt<1>, out : UInt<1>}[2]",
-      // Probes in terms of child instance ports.
-      "define outProbeForChildVec = probe(child.v)",
-      "define outV_1_in = probe(child.v[1].in)",
-      "define outV_1_out_refsub = outProbeForChildVec[1].out"
-    )("define bore")
+      """|CHECK-LABEL: module Child :
+         |CHECK:         output v : { flip in : UInt<1>, out : UInt<1>}[2]
+         |CHECK:         define outProbeForChildVec = probe(child.v)
+         |CHECK:         define outV_1_in = probe(child.v[1].in)
+         |CHECK:         define outV_1_out_refsub = outProbeForChildVec[1].out
+         |""".stripMargin
+    )
 
     // Send through firtool but don't inspect output.
     // Read-only probes only ensure they'll read same as in input FIRRTL,
@@ -662,15 +658,15 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       val outProbe = IO(probe.RWProbe(Bool()))
       probe.define(outProbe, fooInstB.tapTarget)
     }
-    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top(Definition(new Foo)), Array("--full-stacktrace"))
-    matchesAndOmits(chirrtl)(
-      "module Foo :",
-      "output tapTarget : RWProbe<UInt<1>>",
-      "define tapTarget = rwprobe(internalWire)",
-      "module Top :",
-      "force_initial(fooInstA.tapTarget, UInt<1>(0h1))",
-      "define outProbe = fooInstB.tapTarget"
-    )()
+    generateFirrtlAndFileCheck(new Top(Definition(new Foo)))(
+      """|CHECK-LABEL: module Foo :
+         |CHECK:         output tapTarget : RWProbe<UInt<1>>
+         |CHECK:         define tapTarget = rwprobe(internalWire)
+         |CHECK-LABEL: module Top :
+         |CHECK:         force_initial(fooInstA.tapTarget, UInt<1>(0h1))
+         |CHECK:         define outProbe = fooInstB.tapTarget
+         |""".stripMargin
+    )
 
     // Check that firtool also passes
     val verilog = circt.stage.ChiselStage.emitSystemVerilog(new Top(Definition(new Foo)))
@@ -704,19 +700,20 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
         widgetProbe
       }
     }
-    matchesAndOmits(circt.stage.ChiselStage.emitCHIRRTL(new UnitTestHarness))(
-      "module Widget :",
-      "input clock : Clock",
-      "input reset : Reset",
-      "input in : UInt<32>",
-      "output out : UInt<32>",
-      "node _out_T = not(in)",
-      "connect out, _out_T",
-      "module Dut :",
-      "define widgetProbes_0 = rwprobe(widgets_0.out)",
-      "public module UnitTestHarness :",
-      "force(clock, _T, dut.widgetProbes_0, UInt<32>(0hffff))"
-    )()
+    generateFirrtlAndFileCheck(new UnitTestHarness)(
+      """|CHECK-LABEL: module Widget :
+         |CHECK:         input clock : Clock
+         |CHECK:         input reset : Reset
+         |CHECK:         input in : UInt<32>
+         |CHECK:         output out : UInt<32>
+         |CHECK:         node _out_T = not(in)
+         |CHECK:         connect out, _out_T
+         |CHECK-LABEL: module Dut :
+         |CHECK:         define widgetProbes_0 = rwprobe(widgets_0.out)
+         |CHECK:         public module UnitTestHarness :
+         |CHECK:         force(clock, _T, dut.widgetProbes_0, UInt<32>(0hffff))
+         |""".stripMargin
+    )
   }
 
   it should "work to tap an Instance[..]'s port" in {
@@ -748,19 +745,20 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
         widgetProbe
       }
     }
-    matchesAndOmits(circt.stage.ChiselStage.emitCHIRRTL(new UnitTestHarness))(
-      "module Widget :",
-      "input clock : Clock",
-      "input reset : Reset",
-      "input in : UInt<32>",
-      "output out : UInt<32>",
-      "node _out_T = not(in)",
-      "connect out, _out_T",
-      "module Dut :",
-      "define widgetProbes_0 = probe(widgets_0.out)",
-      "public module UnitTestHarness :",
-      "printf(clock, UInt<1>(0h1), \"%d\", read(dut.widgetProbes_0))"
-    )()
+    generateFirrtlAndFileCheck(new UnitTestHarness)(
+      """|CHECK-LABEL: module Widget :
+         |CHECK:         input clock : Clock
+         |CHECK:         input reset : Reset
+         |CHECK:         input in : UInt<32>
+         |CHECK:         output out : UInt<32>
+         |CHECK:         node _out_T = not(in)
+         |CHECK:         connect out, _out_T
+         |CHECK-LABEL: module Dut :
+         |CHECK:         define widgetProbes_0 = probe(widgets_0.out)
+         |CHECK:         public module UnitTestHarness :
+         |CHECK:         printf(clock, UInt<1>(0h1), "%d", read(dut.widgetProbes_0))
+         |""".stripMargin
+    )
   }
 
   it should "work with DecoupledIO in a hierarchy" in {
@@ -781,19 +779,19 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       val fakeView = Module(new FakeView(foo))
     }
 
-    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top(), Array("--full-stacktrace"))
-    matchesAndOmits(chirrtl)(
-      "module Bar :",
-      "output decoupledThing_bore : Probe<{ ready : UInt<1>, valid : UInt<1>, bits : UInt<1>}>",
-      "define decoupledThing_bore = probe(decoupledThing)",
-      "module Foo :",
-      "output decoupledThing_bore : Probe<{ ready : UInt<1>, valid : UInt<1>, bits : UInt<1>}>",
-      "define decoupledThing_bore = bar.decoupledThing_bore",
-      "module FakeView :",
-      "input decoupledThing_bore : { ready : UInt<1>, valid : UInt<1>, bits : UInt<1>}",
-      "module Top :",
-      "connect fakeView.decoupledThing_bore, read(foo.decoupledThing_bore)"
-    )()
+    generateFirrtlAndFileCheck(new Top())(
+      """|CHECK-LABEL: module Bar :
+         |CHECK:         output decoupledThing_bore : Probe<{ ready : UInt<1>, valid : UInt<1>, bits : UInt<1>}>
+         |CHECK:         define decoupledThing_bore = probe(decoupledThing)
+         |CHECK-LABEL: module Foo :
+         |CHECK:         output decoupledThing_bore : Probe<{ ready : UInt<1>, valid : UInt<1>, bits : UInt<1>}>
+         |CHECK:         define decoupledThing_bore = bar.decoupledThing_bore
+         |CHECK-LABEL: module FakeView :
+         |CHECK:         input decoupledThing_bore : { ready : UInt<1>, valid : UInt<1>, bits : UInt<1>}
+         |CHECK-LABEL: module Top :
+         |CHECK:         connect fakeView.decoupledThing_bore, read(foo.decoupledThing_bore)
+         |""".stripMargin
+    )
 
     // Check that firtool also passes
     val verilog = circt.stage.ChiselStage.emitSystemVerilog(new Top())
@@ -810,15 +808,14 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       val bar = Module(new Bar(a))
     }
 
-    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Foo, Array("--full-stacktrace"))
-
-    matchesAndOmits(chirrtl)(
-      "module Bar :",
-      "input bore : { ready : UInt<1>, valid : UInt<1>, bits : UInt<1>}",
-      "module Foo :",
-      "wire a : { flip ready : UInt<1>, valid : UInt<1>, bits : UInt<1>}",
-      "connect bar.bore, read(probe(a))"
-    )()
+    generateFirrtlAndFileCheck(new Foo)(
+      """|CHECK-LABEL: module Bar :
+         |CHECK:         input bore : { ready : UInt<1>, valid : UInt<1>, bits : UInt<1>}
+         |CHECK-LABEL: module Foo :
+         |CHECK:         wire a : { flip ready : UInt<1>, valid : UInt<1>, bits : UInt<1>}
+         |CHECK:         connect bar.bore, read(probe(a))
+         |""".stripMargin
+    )
 
     // Check that firtool also passes
     val verilog = circt.stage.ChiselStage.emitSystemVerilog(new Foo)
@@ -832,16 +829,15 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       assert(chisel3.reflect.DataMirror.isFullyAligned(b), "tapAndRead should always return passive data")
     }
 
-    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Foo, Array("--full-stacktrace"))
-
-    matchesAndOmits(chirrtl)(
-      "module Foo :",
-      "wire a : { flip ready : UInt<1>, valid : UInt<1>, bits : UInt<1>}",
-      "wire b : { ready : UInt<1>, valid : UInt<1>, bits : UInt<1>}",
-      "connect b.bits, a.bits",
-      "connect b.valid, a.valid",
-      "connect b.ready, a.ready"
-    )()
+    generateFirrtlAndFileCheck(new Foo)(
+      """|CHECK-LABEL: module Foo :
+         |CHECK:         wire a : { flip ready : UInt<1>, valid : UInt<1>, bits : UInt<1>}
+         |CHECK:         wire b : { ready : UInt<1>, valid : UInt<1>, bits : UInt<1>}
+         |CHECK:         connect b.bits, a.bits
+         |CHECK:         connect b.valid, a.valid
+         |CHECK:         connect b.ready, a.ready
+         |""".stripMargin
+    )
 
     // Check that firtool also passes
     val verilog = circt.stage.ChiselStage.emitSystemVerilog(new Foo)
@@ -857,11 +853,7 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       probe.define(b, BoringUtils.tap(bar.a))
     }
 
-    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Foo)
-
-    matchesAndOmits(chirrtl)(
-      "define b = bar.a"
-    )()
+    circt.stage.ChiselStage.emitCHIRRTL(new Foo) should include("define b = bar.a")
   }
 
   it should "work for identity views" in {
@@ -879,18 +871,18 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       out := probe.read(BoringUtils.rwTap(foo.bar.view))
       probe.forceInitial(BoringUtils.rwTap(foo.bar.view), false.B)
     }
-    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
-    matchesAndOmits(chirrtl)(
-      "module Bar :",
-      "output out_bore : RWProbe<UInt<1>>",
-      "define out_bore = rwprobe(internalWire)",
-      "module Foo :",
-      "output out_bore : RWProbe<UInt<1>>",
-      "define out_bore = bar.out_bore",
-      "module Top :",
-      "connect out, read(foo.out_bore)",
-      "force_initial(foo.bore, UInt<1>(0h0))"
-    )()
+    generateFirrtlAndFileCheck(new Top)(
+      """|CHECK-LABEL: module Bar :
+         |CHECK:         output out_bore : RWProbe<UInt<1>>
+         |CHECK:         define out_bore = rwprobe(internalWire)
+         |CHECK-LABEL: module Foo :
+         |CHECK:         output out_bore : RWProbe<UInt<1>>
+         |CHECK:         define out_bore = bar.out_bore
+         |CHECK-LABEL: module Top :
+         |CHECK:         connect out, read(foo.out_bore)
+         |CHECK:         force_initial(foo.bore, UInt<1>(0h0))
+         |""".stripMargin
+    )
   }
 
   it should "NOT work [yet] for non-identity views" in {
@@ -945,21 +937,20 @@ class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils wi
       probe.forceInitial(reProbe, 1.U)
     }
 
-    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Baz)
-    matchesAndOmits(chirrtl)(
-      "module Foo :",
-      "output io : UInt<32>",
-      "output ioProbe : RWProbe<UInt<32>>",
-      "define ioProbe = rwprobe(io)",
-      "module Bar :",
-      "inst foo of Foo",
-      "output bore : RWProbe<UInt<32>>",
-      "define bore = foo.ioProbe",
-      "module Baz :",
-      "inst bar of Bar",
-      "wire reProbe : RWProbe<UInt<32>>",
-      "define reProbe = bar.bore",
-      "force_initial(reProbe, UInt<32>(0h1))"
-    )()
+    generateFirrtlAndFileCheck(new Baz)(
+      """|CHECK-LABEL: module Foo :
+         |CHECK:         output io : UInt<32>
+         |CHECK:         output ioProbe : RWProbe<UInt<32>>
+         |CHECK:         define ioProbe = rwprobe(io)
+         |CHECK-LABEL: module Bar :
+         |CHECK:         output bore : RWProbe<UInt<32>>
+         |CHECK:         inst foo of Foo
+         |CHECK:         define bore = foo.ioProbe
+         |CHECK-LABEL: module Baz :
+         |CHECK:         inst bar of Bar
+         |CHECK:         wire reProbe : RWProbe<UInt<32>>
+         |CHECK:         define reProbe = bar.bore
+         |CHECK:         force_initial(reProbe, UInt<32>(0h1))""".stripMargin
+    )
   }
 }

@@ -6,7 +6,7 @@ import chisel3._
 import chisel3.experimental.hierarchy.{instantiable, Definition, Instance}
 import circt.stage.ChiselStage
 
-class PublicModuleSpec extends ChiselFlatSpec with MatchesAndOmits {
+class PublicModuleSpec extends ChiselFlatSpec with FileCheck {
 
   @instantiable
   class Grault extends RawModule with Public {
@@ -44,29 +44,49 @@ class PublicModuleSpec extends ChiselFlatSpec with MatchesAndOmits {
   }
 
   "non-main modules" should "be implicitly private" in {
-    matchesAndOmits(chirrtl)("module Qux")("public module Qux")
+    fileCheckString(chirrtl)(
+      """|CHECK-NOT: public module Qux
+         |CHECK:     module Qux
+         |"""".stripMargin
+    )
   }
 
   "definitions" should "be implicitly private" in {
-    matchesAndOmits(chirrtl)("module Quz")("public module Quz")
+    fileCheckString(chirrtl)(
+      """|CHECK-NOT: public module Quz
+         |CHECK:     module Quz
+         |"""".stripMargin
+    )
   }
 
   behavior.of("the Public trait")
 
   it should "cause a module that mixes it in to be public" in {
-    chirrtl should include("public module Bar")
+    fileCheckString(chirrtl)(
+      """|CHECK-NOT: public module Bar
+         |CHECK:     module Bar
+         |"""".stripMargin
+    )
   }
 
   it should "allow making a module that mixes it in private via an override" in {
-    matchesAndOmits(chirrtl)("module Baz")("public module Baz")
+    fileCheckString(chirrtl)(
+      """|CHECK-NOT: public module Baz
+         |CHECK:     module Baz
+         |"""".stripMargin
+    )
   }
 
   it should "cause a Definition that mixes it in to be public" in {
-    matchesAndOmits(chirrtl)("public module Corge")()
+    chirrtl should include("public module Corge")
   }
 
   it should "allow making a Definition that mixes it in private via an override" in {
-    matchesAndOmits(chirrtl)("module Grault")("public module Grault")
+    fileCheckString(chirrtl)(
+      """|CHECK-NOT: public module Grault
+         |CHECK:     module Grault
+         |"""".stripMargin
+    )
   }
 
 }
