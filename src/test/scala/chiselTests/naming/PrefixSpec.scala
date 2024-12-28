@@ -5,162 +5,187 @@ package chiselTests.naming
 import chisel3._
 import chisel3.aop.Select
 import chisel3.experimental.{noPrefix, prefix, skipPrefix, AffectsChiselPrefix}
-import chiselTests.{ChiselPropSpec, MatchesAndOmits, Utils}
+import chiselTests.{ChiselPropSpec, FileCheck, Utils}
 import circt.stage.ChiselStage
 
-class PrefixSpec extends ChiselPropSpec with MatchesAndOmits with Utils {
+class PrefixSpec extends ChiselPropSpec with FileCheck with Utils {
   implicit val minimumMajorVersion: Int = 12
   property("Scala plugin should interact with prefixing so last plugin name wins?") {
-    class Test extends Module {
-      def builder(): UInt = {
-        val wire1 = Wire(UInt(3.W))
-        val wire2 = Wire(UInt(3.W))
-        wire2
-      }
-
-      {
-        val x1 = prefix("first") {
-          builder()
-        }
-      }
-      {
-        val x2 = prefix("second") {
-          builder()
-        }
-      }
-    }
-    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))("wire x1_first_wire1 :", "wire x2_second_wire1 :", "wire x2 :")()
-  }
-
-  property("Nested prefixes should work") {
-    class Test extends Module {
-      def builder2(): UInt = {
-        val wire1 = Wire(UInt(3.W))
-        val wire2 = Wire(UInt(3.W))
-        wire2
-      }
-      def builder(): UInt = {
-        val wire1 = Wire(UInt(3.W))
-        val wire2 = Wire(UInt(3.W))
-        prefix("foo") {
-          builder2()
-        }
-      }
-      { val x1 = builder() }
-      { val x2 = builder() }
-    }
-    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))(
-      "wire x1_wire1 :",
-      "wire x1_wire2 :",
-      "wire x1_foo_wire1 :",
-      "wire x1 :",
-      "wire x2_wire1 :",
-      "wire x2_wire2 :",
-      "wire x2_foo_wire1 :",
-      "wire x2 :"
-    )()
-  }
-
-  property("Skipping a prefix should work") {
-    class Test extends Module {
-      def builder2(): UInt = {
-        skipPrefix {
+    generateFirrtlAndFileCheck {
+      new Module {
+        def builder(): UInt = {
           val wire1 = Wire(UInt(3.W))
           val wire2 = Wire(UInt(3.W))
           wire2
         }
-      }
-      def builder(): UInt = {
-        prefix("foo") {
-          builder2()
+
+        {
+          val x1 = prefix("first") {
+            builder()
+          }
+        }
+        {
+          val x2 = prefix("second") {
+            builder()
+          }
         }
       }
-      { val x1 = builder() }
-      { val x2 = builder2() }
-      { builder2() }
-    }
-    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))(
-      "wire x1_wire1 :",
-      "wire x1 :",
-      "wire wire1 :",
-      "wire x2 :",
-      "wire wire1_1 :",
-      "wire wire2 :"
-    )()
+    }(
+      """|CHECK: wire x1_first_wire1 :
+         |CHECK: wire x2_second_wire1 :
+         |CHECK: wire x2 :
+         |""".stripMargin
+    )
+  }
+
+  property("Nested prefixes should work") {
+    generateFirrtlAndFileCheck {
+      new Module {
+        def builder2(): UInt = {
+          val wire1 = Wire(UInt(3.W))
+          val wire2 = Wire(UInt(3.W))
+          wire2
+        }
+        def builder(): UInt = {
+          val wire1 = Wire(UInt(3.W))
+          val wire2 = Wire(UInt(3.W))
+          prefix("foo") {
+            builder2()
+          }
+        }
+        { val x1 = builder() }
+        { val x2 = builder() }
+      }
+    }(
+      """|CHECK: wire x1_wire1 :
+         |CHECK: wire x1_wire2 :
+         |CHECK: wire x1_foo_wire1 :
+         |CHECK: wire x1 :
+         |CHECK: wire x2_wire1 :
+         |CHECK: wire x2_wire2 :
+         |CHECK: wire x2_foo_wire1 :
+         |CHECK: wire x2 :""".stripMargin
+    )
+  }
+
+  property("Skipping a prefix should work") {
+    generateFirrtlAndFileCheck {
+      new Module {
+        def builder2(): UInt = {
+          skipPrefix {
+            val wire1 = Wire(UInt(3.W))
+            val wire2 = Wire(UInt(3.W))
+            wire2
+          }
+        }
+        def builder(): UInt = {
+          prefix("foo") {
+            builder2()
+          }
+        }
+        { val x1 = builder() }
+        { val x2 = builder2() }
+        { builder2() }
+      }
+    }(
+      """|CHECK: wire x1_wire1 :
+         |CHECK: wire x1 :
+         |CHECK: wire wire1 :
+         |CHECK: wire x2 :
+         |CHECK: wire wire1_1 :
+         |CHECK: wire wire2 :
+         |""".stripMargin
+    )
   }
 
   property("Prefixing seeded with signal") {
-    class Test extends Module {
-      def builder(): UInt = {
-        val wire = Wire(UInt(3.W))
-        wire := 3.U
-        wire
-      }
-      {
-        val x1 = Wire(UInt(3.W))
-        x1 := {
-          builder()
+    generateFirrtlAndFileCheck {
+      new Module {
+        def builder(): UInt = {
+          val wire = Wire(UInt(3.W))
+          wire := 3.U
+          wire
         }
-        val x2 = Wire(UInt(3.W))
-        x2 := {
-          builder()
+        {
+          val x1 = Wire(UInt(3.W))
+          x1 := {
+            builder()
+          }
+          val x2 = Wire(UInt(3.W))
+          x2 := {
+            builder()
+          }
         }
       }
-    }
-    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))("wire x1 :", "wire x1_wire :", "wire x2 :", "wire x2_wire :")()
+    }(
+      """|CHECK: wire x1 :
+         |CHECK: wire x1_wire :
+         |CHECK: wire x2 :
+         |CHECK: wire x2_wire :
+         |""".stripMargin
+    )
   }
 
   property("Automatic prefixing should work") {
 
-    class Test extends Module {
-      def builder(): UInt = {
-        val a = Wire(UInt(3.W))
-        val b = Wire(UInt(3.W))
-        b
-      }
+    generateFirrtlAndFileCheck {
+      new Module {
+        def builder(): UInt = {
+          val a = Wire(UInt(3.W))
+          val b = Wire(UInt(3.W))
+          b
+        }
 
-      {
-        val ADAM = builder()
-        val JACOB = builder()
+        {
+          val ADAM = builder()
+          val JACOB = builder()
+        }
       }
-    }
-    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))(
-      "wire ADAM_a :",
-      "wire ADAM :",
-      "wire JACOB_a :",
-      "wire JACOB :"
-    )()
+    }(
+      """|CHECK: wire ADAM_a :
+         |CHECK: wire ADAM :
+         |CHECK: wire JACOB_a :
+         |CHECK: wire JACOB :
+         |""".stripMargin
+    )
   }
 
   property("No prefixing annotation on defs should work") {
 
-    class Test extends Module {
-      def builder(): UInt = noPrefix {
-        val a = Wire(UInt(3.W))
-        val b = Wire(UInt(3.W))
-        b
-      }
+    generateFirrtlAndFileCheck {
+      new Module {
+        def builder(): UInt = noPrefix {
+          val a = Wire(UInt(3.W))
+          val b = Wire(UInt(3.W))
+          b
+        }
 
-      { val noprefix = builder() }
-    }
-    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))("wire a :", "wire noprefix :")()
+        { val noprefix = builder() }
+      }
+    }(
+      """|CHECK: wire a :
+         |CHECK: wire noprefix :
+         |""".stripMargin
+    )
   }
 
   property("Prefixing on temps should work") {
 
-    class Test extends Module {
-      def builder(): UInt = {
-        val a = Wire(UInt(3.W))
-        val b = Wire(UInt(3.W))
-        a +& (b * a)
-      }
+    generateFirrtlAndFileCheck {
+      new Module {
+        def builder(): UInt = {
+          val a = Wire(UInt(3.W))
+          val b = Wire(UInt(3.W))
+          a +& (b * a)
+        }
 
-      { val blah = builder() }
-    }
-    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))(
-      "node _blah_T = mul",
-      "node blah = add"
-    )()
+        { val blah = builder() }
+      }
+    }(
+      """|CHECK: node _blah_T = mul
+         |CHECK: node blah = add
+         |""".stripMargin
+    )
   }
 
   property("Prefixing should not leak into child modules") {
@@ -198,22 +223,28 @@ class PrefixSpec extends ChiselPropSpec with MatchesAndOmits with Utils {
   }
 
   property("Instance names should not be added to prefix") {
-    class Child(tpe: UInt) extends Module {
-      {
-        val io = IO(Input(tpe))
-      }
-    }
-
-    class Test extends Module {
-      {
-        lazy val module = {
-          val x = UInt(3.W)
-          new Child(x)
+    generateFirrtlAndFileCheck {
+      class Child(tpe: UInt) extends Module {
+        {
+          val io = IO(Input(tpe))
         }
-        val child = Module(module)
       }
-    }
-    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))("input clock :", "input reset :", "input io :")()
+
+      new Module {
+        {
+          lazy val module = {
+            val x = UInt(3.W)
+            new Child(x)
+          }
+          val child = Module(module)
+        }
+      }
+    }(
+      """|CHECK: input clock :
+         |CHECK: input reset :
+         |CHECK: input io :
+         |""".stripMargin
+    )
   }
 
   property("Prefixing should not be caused by nested Iterable[Iterable[Any]]") {
@@ -241,185 +272,225 @@ class PrefixSpec extends ChiselPropSpec with MatchesAndOmits with Utils {
   }
 
   property("Prefixing should NOT be influenced by suggestName") {
-    class Test extends Module {
-      {
-        val wire = {
-          val x = Wire(UInt(3.W)) // wire_x
-          Wire(UInt(3.W)).suggestName("foo")
+    generateFirrtlAndFileCheck {
+      new Module {
+        {
+          val wire = {
+            val x = Wire(UInt(3.W)) // wire_x
+            Wire(UInt(3.W)).suggestName("foo")
+          }
         }
       }
-    }
-    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))("wire wire_x :", "wire foo :")()
+    }(
+      """|CHECK: wire wire_x :
+         |CHECK: wire foo :
+         |""".stripMargin
+    )
   }
 
   property("Prefixing should be influenced by the \"current name\" of the signal") {
-    class Test extends Module {
-      {
-        val wire = {
-          val y = Wire(UInt(3.W)).suggestName("foo")
-          val x = Wire(UInt(3.W)) // wire_x
-          y
-        }
+    generateFirrtlAndFileCheck {
+      new Module {
+        {
+          val wire = {
+            val y = Wire(UInt(3.W)).suggestName("foo")
+            val x = Wire(UInt(3.W)) // wire_x
+            y
+          }
 
-        val wire2 = Wire(UInt(3.W))
-        wire2 := {
-          val x = Wire(UInt(3.W)) // wire2_x
-          x + 1.U
-        }
-        wire2.suggestName("bar")
+          val wire2 = Wire(UInt(3.W))
+          wire2 := {
+            val x = Wire(UInt(3.W)) // wire2_x
+            x + 1.U
+          }
+          wire2.suggestName("bar")
 
-        val wire3 = Wire(UInt(3.W))
-        wire3.suggestName("fizz")
-        wire3 := {
-          val x = Wire(UInt(3.W)) // fizz_x
-          x + 1.U
+          val wire3 = Wire(UInt(3.W))
+          wire3.suggestName("fizz")
+          wire3 := {
+            val x = Wire(UInt(3.W)) // fizz_x
+            x + 1.U
+          }
         }
       }
-    }
-    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))(
-      "wire foo :",
-      "wire wire_x :",
-      "wire bar :",
-      "wire wire2_x :",
-      "wire fizz :",
-      "wire fizz_x :"
-    )()
+    }(
+      """|CHECK: wire foo :
+         |CHECK: wire wire_x :
+         |CHECK: wire bar :
+         |CHECK: wire wire2_x :
+         |CHECK: wire fizz :
+         |CHECK: wire fizz_x :
+         |""".stripMargin
+    )
   }
 
   property("Prefixing have intuitive behavior") {
-    class Test extends Module {
-      {
-        val wire = {
-          val x = Wire(UInt(3.W)).suggestName("mywire")
-          val y = Wire(UInt(3.W)).suggestName("mywire2")
-          y := x
-          y
+    generateFirrtlAndFileCheck {
+      new Module {
+        {
+          val wire = {
+            val x = Wire(UInt(3.W)).suggestName("mywire")
+            val y = Wire(UInt(3.W)).suggestName("mywire2")
+            y := x
+            y
+          }
         }
       }
-    }
-    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))("wire wire_mywire :", "wire mywire2 :")()
+    }(
+      """|CHECK: wire wire_mywire :
+         |CHECK: wire mywire2 :
+         |""".stripMargin
+    )
   }
 
   property("Prefixing on connection to subfields work") {
-    class Test extends Module {
-      {
-        val wire = Wire(new Bundle {
-          val x = UInt(3.W)
-          val y = UInt(3.W)
-          val vec = Vec(4, UInt(3.W))
-        })
-        wire.x := RegNext(3.U)
-        wire.y := RegNext(3.U)
-        wire.vec(0) := RegNext(3.U)
-        wire.vec(wire.x) := RegNext(3.U)
-        wire.vec(1.U) := RegNext(3.U)
+    generateFirrtlAndFileCheck {
+      new Module {
+        {
+          val wire = Wire(new Bundle {
+            val x = UInt(3.W)
+            val y = UInt(3.W)
+            val vec = Vec(4, UInt(3.W))
+          })
+          wire.x := RegNext(3.U)
+          wire.y := RegNext(3.U)
+          wire.vec(0) := RegNext(3.U)
+          wire.vec(wire.x) := RegNext(3.U)
+          wire.vec(1.U) := RegNext(3.U)
+        }
       }
-    }
-    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))(
-      "reg wire_x_REG :",
-      "reg wire_y_REG :",
-      "reg wire_vec_0_REG :",
-      "reg wire_vec_REG :",
-      "reg wire_vec_1_REG :"
-    )()
+    }(
+      """|CHECK: reg wire_x_REG :
+         |CHECK: reg wire_y_REG :
+         |CHECK: reg wire_vec_0_REG :
+         |CHECK: reg wire_vec_REG :
+         |CHECK: reg wire_vec_1_REG :
+         |""".stripMargin
+    )
   }
 
   property("Prefixing on connection to IOs should work") {
-    class Child extends Module {
-      val in = IO(Input(UInt(3.W)))
-      val out = IO(Output(UInt(3.W)))
-      out := RegNext(in)
-    }
-    class Test extends Module {
-      {
-        val child = Module(new Child)
-        child.in := RegNext(3.U)
+    generateFirrtlAndFileCheck {
+      class Child extends Module {
+        val in = IO(Input(UInt(3.W)))
+        val out = IO(Output(UInt(3.W)))
+        out := RegNext(in)
       }
-    }
-    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))("reg child_in_REG :", "reg out_REG :")()
+      new Module {
+        {
+          val child = Module(new Child)
+          child.in := RegNext(3.U)
+        }
+      }
+    }(
+      """|CHECK: reg out_REG :
+         |CHECK: reg child_in_REG :
+         |""".stripMargin
+    )
   }
 
   property("Prefixing on bulk connects should work") {
-    class Child extends Module {
-      val in = IO(Input(UInt(3.W)))
-      val out = IO(Output(UInt(3.W)))
-      out := RegNext(in)
-    }
-    class Test extends Module {
-      {
-        val child = Module(new Child)
-        child.in <> RegNext(3.U)
+    generateFirrtlAndFileCheck {
+      class Child extends Module {
+        val in = IO(Input(UInt(3.W)))
+        val out = IO(Output(UInt(3.W)))
+        out := RegNext(in)
       }
-    }
-    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))("reg child_in_REG :", "reg out_REG :")()
+      new Module {
+        {
+          val child = Module(new Child)
+          child.in <> RegNext(3.U)
+        }
+      }
+    }(
+      """|CHECK: reg out_REG :
+         |CHECK: reg child_in_REG :
+         |""".stripMargin
+    )
+
   }
 
   property("Connections should use the non-prefixed name of the connected Data") {
-    class Test extends Module {
-      prefix("foo") {
-        val x = Wire(UInt(8.W))
-        x := {
-          val w = Wire(UInt(8.W))
-          w := 3.U
-          w + 1.U
+    generateFirrtlAndFileCheck {
+      new Module {
+        prefix("foo") {
+          val x = Wire(UInt(8.W))
+          x := {
+            val w = Wire(UInt(8.W))
+            w := 3.U
+            w + 1.U
+          }
         }
       }
-    }
-    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))("wire foo_x :", "wire foo_x_w :")()
+    }(
+      """|CHECK: wire foo_x :
+         |CHECK: wire foo_x_w :
+         |""".stripMargin
+    )
   }
 
   property("Connections to aggregate fields should use the non-prefixed aggregate name") {
-    class Test extends Module {
-      prefix("foo") {
-        val x = Wire(new Bundle { val bar = UInt(8.W) })
-        x.bar := {
-          val w = Wire(new Bundle { val fizz = UInt(8.W) })
-          w.fizz := 3.U
-          w.fizz + 1.U
+    generateFirrtlAndFileCheck {
+      new Module {
+        prefix("foo") {
+          val x = Wire(new Bundle { val bar = UInt(8.W) })
+          x.bar := {
+            val w = Wire(new Bundle { val fizz = UInt(8.W) })
+            w.fizz := 3.U
+            w.fizz + 1.U
+          }
         }
       }
-    }
-    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))("wire foo_x :", "wire foo_x_bar_w :")()
+    }(
+      """|CHECK: wire foo_x :
+         |CHECK: wire foo_x_bar_w :
+         |""".stripMargin
+    )
   }
 
   property("Prefixing with wires in recursive functions should grow linearly") {
-    class Test extends Module {
-      def func(bools: Seq[Bool]): Bool = {
-        if (bools.isEmpty) true.B
-        else {
-          val w = Wire(Bool())
-          w := bools.head && func(bools.tail)
-          w
+    generateFirrtlAndFileCheck {
+      new Module {
+        def func(bools: Seq[Bool]): Bool = {
+          if (bools.isEmpty) true.B
+          else {
+            val w = Wire(Bool())
+            w := bools.head && func(bools.tail)
+            w
+          }
         }
+        val in = IO(Input(Vec(4, Bool())))
+        val x = func(in)
       }
-      val in = IO(Input(Vec(4, Bool())))
-      val x = func(in)
-    }
-    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))(
-      "wire x :",
-      "wire x_w_w :",
-      "wire x_w_w_w :",
-      "wire x_w_w_w_w :"
-    )()
+    }(
+      """|CHECK: wire x :
+         |CHECK: wire x_w_w :
+         |CHECK: wire x_w_w_w :
+         |CHECK: wire x_w_w_w_w :
+         |""".stripMargin
+    )
   }
 
   property("Prefixing should work for verification ops") {
-    class Test extends Module {
-      val foo, bar = IO(Input(UInt(8.W)))
+    generateFirrtlAndFileCheck {
+      new Module {
+        val foo, bar = IO(Input(UInt(8.W)))
 
-      {
-        val x5 = {
-          val x2 = cover(foo =/= bar)
-          val x3 = chisel3.assume(foo =/= 123.U)
-          val x4 = printf("foo = %d\n", foo)
-          x2
+        {
+          val x5 = {
+            val x2 = cover(foo =/= bar)
+            val x3 = chisel3.assume(foo =/= 123.U)
+            val x4 = printf("foo = %d\n", foo)
+            x2
+          }
         }
       }
-    }
-    val chirrtl = ChiselStage.emitCHIRRTL(new Test)
-    (chirrtl should include).regex("cover.*: x5")
-    (chirrtl should include).regex("assume.*: x5_x3")
-    (chirrtl should include).regex("printf.*: x5_x4")
+    }(
+      """|CHECK: cover{{.*}}: x5
+         |CHECK: assume{{.*}}: x5_x3
+         |CHECK: printf{{.*}}: x5_x4
+         |""".stripMargin
+    )
   }
 
   property("Leading '_' in val names should be ignored in prefixes") {
@@ -472,25 +543,29 @@ class PrefixSpec extends ChiselPropSpec with MatchesAndOmits with Utils {
   }
 
   property("Prefixing of AffectsChiselPrefix objects should work") {
-    class NotAData extends AffectsChiselPrefix {
-      val value = Wire(UInt(3.W))
-    }
-    class NotADataUnprefixed {
-      val value = Wire(UInt(3.W))
-    }
-    class Test extends Module {
-      {
-        val nonData = new NotAData
-        // Instance name of nonData.value should be nonData_value
-        nonData.value := RegNext(3.U)
-
-        val nonData2 = new NotADataUnprefixed
-        // Instance name of nonData2.value should be value
-        nonData2.value := RegNext(3.U)
+    generateFirrtlAndFileCheck {
+      class NotAData extends AffectsChiselPrefix {
+        val value = Wire(UInt(3.W))
       }
-    }
+      class NotADataUnprefixed {
+        val value = Wire(UInt(3.W))
+      }
+      new Module {
+        {
+          val nonData = new NotAData
+          // Instance name of nonData.value should be nonData_value
+          nonData.value := RegNext(3.U)
 
-    matchesAndOmits(ChiselStage.emitCHIRRTL(new Test))("wire nonData_value :", "wire value :")()
+          val nonData2 = new NotADataUnprefixed
+          // Instance name of nonData2.value should be value
+          nonData2.value := RegNext(3.U)
+        }
+      }
+    }(
+      """|CHECK: wire nonData_value :
+         |CHECK: wire value :
+         |""".stripMargin
+    )
   }
 
   property("Prefixing should not be affected by repeated calls of suggestName") {
