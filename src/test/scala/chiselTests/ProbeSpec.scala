@@ -7,10 +7,9 @@ import chisel3.layer.{Layer, LayerConfig}
 import chisel3.probe._
 import chisel3.util.Counter
 import chisel3.testers.{BasicTester, TesterDriver}
-import chiselTests.MatchesAndOmits
 import circt.stage.ChiselStage
 
-class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
+class ProbeSpec extends ChiselFlatSpec with FileCheck with Utils {
   // Strip SourceInfos and split into lines
   private def processChirrtl(chirrtl: String): Array[String] =
     chirrtl.split('\n').map(line => line.takeWhile(_ != '@').trim())
@@ -727,11 +726,14 @@ class ProbeSpec extends ChiselFlatSpec with MatchesAndOmits with Utils {
       val a = IO(Output(Probe.apply(UInt(1.W), LayerA)))
       val b = IO(Output(Probe.apply(UInt(2.W), LayerA.LayerB)))
     }
-    matchesAndOmits(ChiselStage.emitCHIRRTL(new Foo))(
-      "layer LayerA",
-      "output a : Probe<UInt<1>, LayerA>",
-      "output b : Probe<UInt<2>, LayerA.LayerB>"
-    )()
+    generateFirrtlAndFileCheck(new Foo)(
+      """|CHECK-LABEL: layer LayerA,
+         |CHECK-NEXT:    layer LayerB,
+         |CHECK-LABEL: public module Foo :
+         |CHECK:         output a : Probe<UInt<1>, LayerA>
+         |CHECK:         output b : Probe<UInt<2>, LayerA.LayerB>
+         |""".stripMargin
+    )
   }
 
   "Probes" should "have valid names" in {

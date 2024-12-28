@@ -5,10 +5,10 @@ package chiselTests
 import chisel3._
 import circt.stage.ChiselStage
 import org.scalatest.matchers.should.Matchers
-import chiselTests.{ChiselFlatSpec, MatchesAndOmits}
+import chiselTests.{ChiselFlatSpec, FileCheck}
 import chisel3.util.experimental.{InlineInstance, InlineInstanceAllowDedup}
 
-class InlineInstanceSpec extends ChiselFlatSpec with MatchesAndOmits {
+class InlineInstanceSpec extends ChiselFlatSpec with FileCheck {
   class ModuleA extends RawModule {
     val w = dontTouch(WireInit(false.B))
   }
@@ -23,17 +23,15 @@ class InlineInstanceSpec extends ChiselFlatSpec with MatchesAndOmits {
   }
 
   "InlineInstanceAllowDedup" should "Inline any module that dedups with a module marked inline" in {
-    val verilog = ChiselStage.emitSystemVerilog(new TopModule)
-    matchesAndOmits(verilog)(
-      "module TopModule()",
-      "module ModuleA();"
-    )(
-      "module ModuleB()"
+    generateSystemVerilogAndFileCheck(new TopModule, "--implicit-check-not=ModuleB")(
+      """|CHECK: ModuleA()
+         |CHECK: TopModule()
+         |""".stripMargin
     )
   }
 }
 
-class InlineInstanceAllowDedupSpec extends ChiselFlatSpec with MatchesAndOmits {
+class InlineInstanceAllowDedupSpec extends ChiselFlatSpec with FileCheck {
   class ModuleA extends RawModule {
     val w = dontTouch(WireInit(false.B))
   }
@@ -48,12 +46,10 @@ class InlineInstanceAllowDedupSpec extends ChiselFlatSpec with MatchesAndOmits {
   }
 
   "InlineInstanceAllowDedup" should "Inline any module that dedups with a module marked inline" in {
-    val verilog = ChiselStage.emitSystemVerilog(new TopModule)
-    matchesAndOmits(verilog)(
-      "module TopModule()"
-    )(
-      "module ModuleA()",
-      "module ModuleB()"
+    generateSystemVerilogAndFileCheck(new TopModule)(
+      """|CHECK-NOT: Module{{A|B}}
+         |CHECK:     TopModule()
+         |""".stripMargin
     )
   }
 }

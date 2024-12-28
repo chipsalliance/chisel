@@ -6,140 +6,146 @@ import chisel3._
 import chisel3.properties.{Class, DynamicObject, Property}
 import chisel3.experimental.hierarchy.{Definition, Instance}
 import chisel3.util.experimental.BoringUtils
-import chiselTests.{ChiselFlatSpec, MatchesAndOmits}
+import chiselTests.{ChiselFlatSpec, FileCheck}
 import circt.stage.ChiselStage
 
-class ObjectSpec extends ChiselFlatSpec with MatchesAndOmits {
+class ObjectSpec extends ChiselFlatSpec with FileCheck {
   behavior.of("DynamicObject")
 
   it should "support Objects in Class ports" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val cls = Definition(new Class {
-        override def desiredName = "Test"
-        val in = IO(Input(Property[Int]()))
-        val out = IO(Output(Property[Int]()))
-        out := in
-      })
+    generateFirrtlAndFileCheck {
+      new RawModule {
+        val cls = Definition(new Class {
+          override def desiredName = "Test"
+          val in = IO(Input(Property[Int]()))
+          val out = IO(Output(Property[Int]()))
+          out := in
+        })
 
-      Definition(new Class {
-        override def desiredName = "Parent"
-        val out = IO(Output(Class.unsafeGetReferenceType("Test")))
-        val obj1 = Class.unsafeGetDynamicObject("Test")
-        out := obj1.getReference
-      })
-    })
-
-    matchesAndOmits(chirrtl)(
-      "class Parent",
-      "output out : Inst<Test>",
-      "propassign out, obj1"
-    )()
+        Definition(new Class {
+          override def desiredName = "Parent"
+          val out = IO(Output(Class.unsafeGetReferenceType("Test")))
+          val obj1 = Class.unsafeGetDynamicObject("Test")
+          out := obj1.getReference
+        })
+      }
+    }(
+      """|CHECK: class Parent
+         |CHECK: output out : Inst<Test>
+         |CHECK: propassign out, obj1
+         |""".stripMargin
+    )
   }
 
   it should "support Objects in Module ports" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val cls = Definition(new Class {
-        override def desiredName = "Test"
-        val in = IO(Input(Property[Int]()))
-        val out = IO(Output(Property[Int]()))
-        out := in
-      })
+    generateFirrtlAndFileCheck {
+      new RawModule {
+        val cls = Definition(new Class {
+          override def desiredName = "Test"
+          val in = IO(Input(Property[Int]()))
+          val out = IO(Output(Property[Int]()))
+          out := in
+        })
 
-      Module(new RawModule {
-        override def desiredName = "Parent"
-        val out = IO(Output(Class.unsafeGetReferenceType("Test")))
-        val obj1 = Class.unsafeGetDynamicObject("Test")
-        out := obj1.getReference
-      })
-    })
-
-    matchesAndOmits(chirrtl)(
-      "module Parent",
-      "output out : Inst<Test>",
-      "propassign out, obj1"
-    )()
+        Module(new RawModule {
+          override def desiredName = "Parent"
+          val out = IO(Output(Class.unsafeGetReferenceType("Test")))
+          val obj1 = Class.unsafeGetDynamicObject("Test")
+          out := obj1.getReference
+        })
+      }
+    }(
+      """|CHECK: module Parent
+         |CHECK: output out : Inst<Test>
+         |CHECK: propassign out, obj1
+         |""".stripMargin
+    )
   }
 
   it should "support output Object fields as sources" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val cls = Definition(new Class {
-        override def desiredName = "Test"
+    generateFirrtlAndFileCheck {
+      new RawModule {
+        val cls = Definition(new Class {
+          override def desiredName = "Test"
+          val out = IO(Output(Property[Int]()))
+        })
+
         val out = IO(Output(Property[Int]()))
-      })
-
-      val out = IO(Output(Property[Int]()))
-      val obj1 = Class.unsafeGetDynamicObject("Test")
-      out := obj1.getField[Int]("out")
-    })
-
-    matchesAndOmits(chirrtl)(
-      "object obj1 of Test",
-      "propassign out, obj1.out"
-    )()
+        val obj1 = Class.unsafeGetDynamicObject("Test")
+        out := obj1.getField[Int]("out")
+      }
+    }(
+      """|CHECK: object obj1 of Test
+         |CHECK: propassign out, obj1.out
+         |""".stripMargin
+    )
   }
 
   it should "support input Object fields as sinks" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val cls = Definition(new Class {
-        override def desiredName = "Test"
+    generateFirrtlAndFileCheck {
+      new RawModule {
+        val cls = Definition(new Class {
+          override def desiredName = "Test"
+          val in = IO(Input(Property[Int]()))
+        })
+
         val in = IO(Input(Property[Int]()))
-      })
-
-      val in = IO(Input(Property[Int]()))
-      val obj1 = Class.unsafeGetDynamicObject("Test")
-      obj1.getField[Int]("in") := in
-    })
-
-    matchesAndOmits(chirrtl)(
-      "object obj1 of Test",
-      "propassign obj1.in, in"
-    )()
+        val obj1 = Class.unsafeGetDynamicObject("Test")
+        obj1.getField[Int]("in") := in
+      }
+    }(
+      """|CHECK: object obj1 of Test
+         |CHECK: propassign obj1.in, in
+         |""".stripMargin
+    )
   }
 
   it should "support creating DynamicObject from a Class with DynamicObject.apply" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val out = IO(Output(Property[Int]()))
-
-      val obj = DynamicObject(new Class {
-        override def desiredName = "Test"
-        val in = IO(Input(Property[Int]()))
+    generateFirrtlAndFileCheck {
+      new RawModule {
         val out = IO(Output(Property[Int]()))
-      })
 
-      obj.getField[Int]("in") := Property(1)
+        val obj = DynamicObject(new Class {
+          override def desiredName = "Test"
+          val in = IO(Input(Property[Int]()))
+          val out = IO(Output(Property[Int]()))
+        })
 
-      out := obj.getField[Int]("out")
-    })
+        obj.getField[Int]("in") := Property(1)
 
-    matchesAndOmits(chirrtl)(
-      "object obj of Test",
-      "propassign obj.in, Integer(1)",
-      "propassign out, obj.out"
-    )()
+        out := obj.getField[Int]("out")
+      }
+    }(
+      """|CHECK: object obj of Test
+         |CHECK: propassign obj.in, Integer(1)
+         |CHECK: propassign out, obj.out
+         |""".stripMargin
+    )
   }
 
   it should "support boring ports through a Class created with DynamicObject.apply" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val in = IO(Input(Property[Int]()))
+    generateFirrtlAndFileCheck {
+      new RawModule {
+        val in = IO(Input(Property[Int]()))
 
-      val obj = DynamicObject(new Class {
-        override def desiredName = "Test"
-        val out = IO(Output(Property[Int]()))
-        out := BoringUtils.bore(in)
-      })
-    })
-
-    matchesAndOmits(chirrtl)(
-      "input out_bore : Integer",
-      "propassign out, out_bore",
-      "propassign obj.out_bore, in"
-    )()
+        val obj = DynamicObject(new Class {
+          override def desiredName = "Test"
+          val out = IO(Output(Property[Int]()))
+          out := BoringUtils.bore(in)
+        })
+      }
+    }(
+      """|CHECK: input out_bore : Integer
+         |CHECK: propassign out, out_bore
+         |CHECK: propassign obj.out_bore, in
+         |""".stripMargin
+    )
   }
 
   behavior.of("StaticObject")
 
   it should "support Instances of Objects in Class ports" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(
+    generateFirrtlAndFileCheck {
       new RawModule {
         Definition({
           val cls1 = Definition(new Class {
@@ -169,21 +175,20 @@ class ObjectSpec extends ChiselFlatSpec with MatchesAndOmits {
           }
         })
       }
+    }(
+      """|CHECK: class Parent
+         |CHECK: output out1 : Inst<Test>
+         |CHECK: output out2 : Inst<Test_1>
+         |CHECK: object obj1 of Test
+         |CHECK: object obj2 of Test_1
+         |CHECK: propassign out1, obj1
+         |CHECK: propassign out2, obj2
+         |""".stripMargin
     )
-
-    matchesAndOmits(chirrtl)(
-      "class Parent",
-      "output out1 : Inst<Test>",
-      "output out2 : Inst<Test_1>",
-      "object obj1 of Test",
-      "object obj2 of Test_1",
-      "propassign out1, obj1",
-      "propassign out2, obj2"
-    )()
   }
 
   it should "support Instances of Objects in Module ports" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(
+    generateFirrtlAndFileCheck {
       new RawModule {
         val cls1 = Definition(new Class {
           override def desiredName = "Test"
@@ -210,17 +215,16 @@ class ObjectSpec extends ChiselFlatSpec with MatchesAndOmits {
           out2 := obj2.getPropertyReference
         })
       }
+    }(
+      """|CHECK: module Parent
+         |CHECK: output out1 : Inst<Test>
+         |CHECK: output out2 : Inst<Test_1>
+         |CHECK: object obj1 of Test
+         |CHECK: object obj2 of Test_1
+         |CHECK: propassign out1, obj1
+         |CHECK: propassign out2, obj2
+         |""".stripMargin
     )
-
-    matchesAndOmits(chirrtl)(
-      "module Parent",
-      "output out1 : Inst<Test>",
-      "output out2 : Inst<Test_1>",
-      "object obj1 of Test",
-      "object obj2 of Test_1",
-      "propassign out1, obj1",
-      "propassign out2, obj2"
-    )()
   }
 
   it should "error for Instances of Objects in Module ports of the wrong type" in {

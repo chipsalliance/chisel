@@ -246,6 +246,11 @@ trait FileCheck extends BeforeAndAfterEachTestData { this: Suite =>
     fileCheckString(ChiselStage.emitCHIRRTL(t), fileCheckArgs: _*)(check)
   }
 
+  /** Generate SystemVerilog and run it through FileCheck */
+  def generateSystemVerilogAndFileCheck(t: => RawModule, fileCheckArgs: String*)(check: String): Unit = {
+    fileCheckString(ChiselStage.emitSystemVerilog(t), fileCheckArgs: _*)(check)
+  }
+
   /** Elaborate a Module, capture the stdout and stderr, check stdout and stderr with FileCheck */
   def elaborateAndFileCheckOutAndErr(t: => RawModule, fileCheckArgs: String*)(check: String): Unit = {
     val outStream = new ByteArrayOutputStream()
@@ -405,24 +410,5 @@ trait Utils {
         }
     }
 
-  }
-}
-
-/** Contains helpful function to assert both statements to match, and statements to omit */
-trait MatchesAndOmits extends Assertions {
-  private def matches(lines: List[String], matchh: String): Option[String] = lines.filter(_.contains(matchh)).lastOption
-  private def omits(line:    String, omit:         String): Option[(String, String)] =
-    if (line.contains(omit)) Some((omit, line)) else None
-  private def omits(lines: List[String], omit: String): Seq[(String, String)] = lines.flatMap { omits(_, omit) }
-  def matchesAndOmits(output: String)(matchList: String*)(omitList: String*): Unit = {
-    val lines = output.split("\n").toList
-    val unmatched = matchList.flatMap { m =>
-      if (matches(lines, m).nonEmpty) None else Some(m)
-    }.map(x => s"  > '$x' was unmatched")
-    val unomitted = omitList.flatMap { o => omits(lines, o) }.map {
-      case (o, l) => s"  > '$o' was not omitted in ($l)"
-    }
-    val results = unmatched ++ unomitted
-    assert(results.isEmpty, results.mkString("\n") + s"\nFull Input:\n'$output'\n")
   }
 }

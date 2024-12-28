@@ -62,7 +62,7 @@ class ImplicitModuleDirectlyInRawModuleTester extends BasicTester {
   stop()
 }
 
-class RawModuleSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
+class RawModuleSpec extends ChiselFlatSpec with Utils with FileCheck {
   "RawModule" should "elaborate" in {
     ChiselStage.emitCHIRRTL { new RawModuleWithImplicitModule }
   }
@@ -72,47 +72,51 @@ class RawModuleSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
   }
 
   "RawModule with atModuleBodyEnd" should "support late stage generators" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      atModuleBodyEnd {
-        val extraPort0 = IO(Output(Bool()))
-        extraPort0 := 0.B
-      }
+    generateFirrtlAndFileCheck {
+      new RawModule {
+        atModuleBodyEnd {
+          val extraPort0 = IO(Output(Bool()))
+          extraPort0 := 0.B
+        }
 
-      atModuleBodyEnd {
-        val extraPort1 = IO(Output(Bool()))
-        extraPort1 := 1.B
+        atModuleBodyEnd {
+          val extraPort1 = IO(Output(Bool()))
+          extraPort1 := 1.B
+        }
       }
-    })
-
-    matchesAndOmits(chirrtl)(
-      "output extraPort0 : UInt<1>",
-      "output extraPort1 : UInt<1>",
-      "connect extraPort0, UInt<1>(0h0)",
-      "connect extraPort1, UInt<1>(0h1)"
-    )()
+    }(
+      """|CHECK-LABEL: public module
+         |CHECK:         output extraPort0 : UInt<1>
+         |CHECK:         output extraPort1 : UInt<1>
+         |CHECK:         connect extraPort0, UInt<1>(0h0)
+         |CHECK:         connect extraPort1, UInt<1>(0h1)
+         |""".stripMargin
+    )
   }
 
   "RawModule with atModuleBodyEnd" should "support multiple connects" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val port = IO(Output(UInt(2.W)))
+    generateFirrtlAndFileCheck {
+      new RawModule {
+        val port = IO(Output(UInt(2.W)))
 
-      atModuleBodyEnd {
-        port := 2.U
+        atModuleBodyEnd {
+          port := 2.U
+        }
+
+        atModuleBodyEnd {
+          port := 3.U
+        }
+
+        port := 1.U
       }
-
-      atModuleBodyEnd {
-        port := 3.U
-      }
-
-      port := 1.U
-    })
-
-    matchesAndOmits(chirrtl)(
-      "output port : UInt<2>",
-      "connect port, UInt<1>(0h1)",
-      "connect port, UInt<2>(0h2)",
-      "connect port, UInt<2>(0h3)"
-    )()
+    }(
+      """|CHECK-LABEL: public module
+         |CHECK:         output port : UInt<2>
+         |CHECK:         connect port, UInt<1>(0h1)
+         |CHECK:         connect port, UInt<2>(0h2)
+         |CHECK:         connect port, UInt<2>(0h3)
+         |""".stripMargin
+    )
   }
 
   "RawModule with atModuleBodyEnd" should "support the added hardware in DataMirror" in {
@@ -172,24 +176,25 @@ class RawModuleSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
   }
 
   "RawModule with afterModuleBuilt" should "be able to create other modules" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      override def desiredName = "Foo"
-      val port0 = IO(Input(Bool()))
+    generateFirrtlAndFileCheck {
+      new RawModule {
+        override def desiredName = "Foo"
+        val port0 = IO(Input(Bool()))
 
-      afterModuleBuilt {
-        Module(new RawModule {
-          override def desiredName = "Bar"
-          val port1 = IO(Input(Bool()))
-        })
+        afterModuleBuilt {
+          Module(new RawModule {
+            override def desiredName = "Bar"
+            val port1 = IO(Input(Bool()))
+          })
+        }
       }
-    })
-
-    matchesAndOmits(chirrtl)(
-      "module Foo",
-      "input port0 : UInt<1>",
-      "module Bar",
-      "input port1 : UInt<1>"
-    )()
+    }(
+      """|CHECK-LABEL: module Foo :
+         |CHECK:         input port0 : UInt<1>
+         |CHECK-LABEL: public module Bar :
+         |CHECK:         input port1 : UInt<1>
+         |""".stripMargin
+    )
   }
 
   "RawModule with afterModuleBuilt" should "be able to instantiate the surrounding module" in {
@@ -210,17 +215,17 @@ class RawModuleSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
         })
       }
     }
-    val chirrtl = ChiselStage.emitCHIRRTL(new Foo)
 
-    matchesAndOmits(chirrtl)(
-      "module Foo :",
-      "input port0 : UInt<1>",
-      "module Bar",
-      "input port1 : UInt<1>",
-      "inst foo1 of Foo",
-      "inst foo2 of Foo",
-      "connect foo1.port0, port1",
-      "connect foo2.port0, port1"
-    )()
+    generateFirrtlAndFileCheck(new Foo)(
+      """|CHECK-LABEL: module Foo :
+         |CHECK:         input port0 : UInt<1>
+         |CHECK-LABEL: public module Bar
+         |CHECK:         input port1 : UInt<1>
+         |CHECK:         inst foo1 of Foo
+         |CHECK:         inst foo2 of Foo
+         |CHECK:         connect foo1.port0, port1
+         |CHECK:         connect foo2.port0, port1
+         |""".stripMargin
+    )
   }
 }
