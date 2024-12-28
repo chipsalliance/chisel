@@ -4,7 +4,7 @@ package chiselTests
 
 import chisel3._
 import chisel3.choice.{Case, Group, ModuleChoice}
-import chiselTests.{ChiselFlatSpec, MatchesAndOmits, Utils}
+import chiselTests.{ChiselFlatSpec, Utils}
 import chisel3.experimental.hierarchy.Definition
 import _root_.circt.stage.ChiselStage
 
