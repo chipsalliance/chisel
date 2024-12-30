@@ -8,7 +8,7 @@ import chisel3.panamaom._
 import lit.utility._
 
 // SFC-FIRRTL-LABEL: circuit IntPropTest :
-// SFC-FIRRTL-NEXT: module IntPropTest :
+// SFC-FIRRTL: public module IntPropTest :
 // SFC-FIRRTL-NEXT: output intProp : Integer
 class IntPropTest extends RawModule {
   val intProp = IO(Output(Property[Int]()))
