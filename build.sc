@@ -204,7 +204,7 @@ trait Firrtl extends CrossSbtModule with Cross.Module[String] with HasScala2Macr
     commonDeps ++ Agg(v.dataclass)
   }
 
-  object test extends SbtModuleTests with TestModule.ScalaTest with ScalafmtModule {
+  object test extends SbtTests with TestModule.ScalaTest with ScalafmtModule {
     def ivyDeps = Agg(v.scalatest, v.scalacheck)
   }
 }
@@ -224,7 +224,7 @@ trait Svsim extends CrossSbtModule with ScalafmtModule {
     }
   }
 
-  object test extends SbtModuleTests with TestModule.ScalaTest with ScalafmtModule {
+  object test extends SbtTests with TestModule.ScalaTest with ScalafmtModule {
     def ivyDeps = Agg(v.scalatest, v.scalacheck)
   }
 }
@@ -243,7 +243,7 @@ trait Macros extends CrossSbtModule with HasScala2MacroAnno with ScalafmtModule 
     }
   }
 
-  override def ivyDeps = super.ivyDeps() ++ Seq(v.scalaReflect(crossScalaVersion))
+  override def ivyDeps = super.ivyDeps() ++ Option.when(!v.isScala3(crossScalaVersion))(v.scalaReflect(crossScalaVersion))
 }
 
 object core extends Cross[Core](v.scalaCrossVersions)
@@ -358,7 +358,9 @@ trait Chisel extends CrossSbtModule with HasScala2MacroAnno with HasScala2Plugin
 
   override def moduleDeps = super.moduleDeps ++ Seq(coreModule, svsimModule)
 
-  object test extends SbtModuleTests with TestModule.ScalaTest with ScalafmtModule {
+  def ivyDeps = Agg(v.scalatest)
+
+  object test extends SbtTests with TestModule.ScalaTest with ScalafmtModule {
     def ivyDeps = Agg(v.scalatest, v.scalacheck)
 
     // Suppress Scala 3 behavior requiring explicit types on implicit definitions
@@ -372,7 +374,7 @@ trait IntegrationTests extends CrossSbtModule with HasScala2Plugin with Scalafmt
   def pluginModule = plugin()
   def millSourcePath = os.pwd / "integration-tests"
 
-  object test extends SbtModuleTests with TestModule.ScalaTest with ScalafmtModule {
+  object test extends SbtTests with TestModule.ScalaTest with ScalafmtModule {
     override def moduleDeps = super.moduleDeps :+ chisel().test
     def ivyDeps = Agg(v.scalatest, v.scalacheck)
   }
