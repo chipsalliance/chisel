@@ -1089,7 +1089,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
 
       val text = ChiselStage.emitCHIRRTL(new ChiselStageSpec.Foo(hasDontTouch = true))
       info("found a version string")
-      text should include("FIRRTL version 4.1.0")
+      text should include("FIRRTL version 4.2.0")
       info("found an Annotation")
       text should include("firrtl.transforms.DontTouchAnnotation")
       info("found a circuit")
