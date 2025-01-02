@@ -15,16 +15,19 @@ import scala.collection.immutable.{Queue, VectorBuilder, VectorMap}
 
 private[chisel3] object Converter {
   // TODO modeled on unpack method on Printable, refactor?
-  def unpack(pable: Printable, ctx: Component): (String, Seq[Arg]) = pable match {
-    case Printables(pables) =>
-      val (fmts, args) = pables.map(p => unpack(p, ctx)).unzip
-      (fmts.mkString, args.flatten.toSeq)
-    case PString(str) => (str.replaceAll("%", "%%"), List.empty)
-    case format: FirrtlFormat =>
-      ("%" + format.specifier, List(format.bits.ref))
-    case Name(data)     => (data.ref.name, List.empty)
-    case FullName(data) => (data.ref.fullName(ctx), List.empty)
-    case Percent        => ("%%", List.empty)
+  def unpack(pable: Printable, ctx: Component, sourceInfo: SourceInfo): (String, Seq[Arg]) = {
+    implicit val info: SourceInfo = sourceInfo
+    pable match {
+      case Printables(pables) =>
+        val (fmts, args) = pables.map(p => unpack(p, ctx, sourceInfo)).unzip
+        (fmts.mkString, args.flatten.toSeq)
+      case PString(str) => (str.replaceAll("%", "%%"), List.empty)
+      case format: FirrtlFormat =>
+        ("%" + format.specifier, List(format.bits.ref))
+      case Name(data)     => (data.ref.name, List.empty)
+      case FullName(data) => (data.ref.fullName(ctx), List.empty)
+      case Percent        => ("%%", List.empty)
+    }
   }
 
   private def reportInternalError(msg: String): Nothing = {
@@ -191,7 +194,7 @@ private[chisel3] object Converter {
     case e @ Stop(_, info, clock, ret) =>
       fir.Stop(convert(info), ret, convert(clock, ctx, info), firrtl.Utils.one, e.name)
     case e @ Printf(_, info, clock, pable) =>
-      val (fmt, args) = unpack(pable, ctx)
+      val (fmt, args) = unpack(pable, ctx, info)
       fir.Print(
         convert(info),
         fir.StringLit(fmt),
@@ -222,7 +225,7 @@ private[chisel3] object Converter {
         convert(probe, ctx, sourceInfo)
       )
     case e @ Verification(_, op, info, clk, pred, pable) =>
-      val (fmt, args) = unpack(pable, ctx)
+      val (fmt, args) = unpack(pable, ctx, info)
       val firOp = op match {
         case Formal.Assert => fir.Formal.Assert
         case Formal.Assume => fir.Formal.Assume
@@ -388,7 +391,7 @@ private[chisel3] object Converter {
     case StringParam(value) => fir.StringParam(name, fir.StringLit(value))
     case PrintableParam(value, id) => {
       val ctx = id._component.get
-      val (fmt, _) = unpack(value, ctx)
+      val (fmt, _) = unpack(value, ctx, UnlocatableSourceInfo)
       fir.StringParam(name, fir.StringLit(fmt))
     }
     case RawParam(value) => fir.RawStringParam(name, value)

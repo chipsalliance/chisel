@@ -124,7 +124,7 @@ case class ClassType private[chisel3] (name: String) { self =>
         override def convert(value: Underlying, ctx: Component, info: SourceInfo): fir.Expression =
           Converter.convert(value, ctx, info)
         type Underlying = Arg
-        override def convertUnderlying(value: Property[ClassType] with self.Type) = value.ref
+        override def convertUnderlying(value: Property[ClassType] with self.Type, info: SourceInfo) = value.ref(info)
       }
   }
   def copy(name: String = this.name) = new ClassType(name)
@@ -147,7 +147,7 @@ object AnyClassType {
       override def convert(value: Underlying, ctx: Component, info: SourceInfo): fir.Expression =
         Converter.convert(value, ctx, info)
       type Underlying = Arg
-      override def convertUnderlying(value: Property[ClassType] with AnyClassType) = value.ref
+      override def convertUnderlying(value: Property[ClassType] with AnyClassType, info: SourceInfo) = value.ref(info)
     }
 }
 

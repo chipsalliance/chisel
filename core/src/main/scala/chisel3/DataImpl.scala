@@ -697,16 +697,13 @@ private[chisel3] trait DataImpl extends HasId with NamedComponent { self: Data =
     }
   }
   private[chisel3] def visibleFromBlock: Option[SourceInfo] = MonoConnect.checkBlockVisibility(this)
-  private[chisel3] def requireVisible(): Unit = {
+  private[chisel3] def requireVisible()(implicit info: SourceInfo): Unit = {
     if (!isVisibleFromModule) {
       throwException(s"operand '$this' is not visible from the current module ${Builder.currentModule.get.name}")
     }
     visibleFromBlock match {
-      case Some(sourceInfo) =>
-        throwException(
-          s"operand '$this' has escaped the scope of the block (${sourceInfo.makeMessage()}) in which it was constructed."
-        )
-      case None => ()
+      case Some(blockInfo) => MonoConnect.escapedScopeError(this, blockInfo)
+      case None            => ()
     }
   }
 
@@ -727,7 +724,7 @@ private[chisel3] trait DataImpl extends HasId with NamedComponent { self: Data =
   }
 
   // Internal API: returns a ref, if bound
-  private[chisel3] def ref: Arg = {
+  private[chisel3] def ref(implicit info: SourceInfo): Arg = {
     def materializeWire(makeConst: Boolean = false): Arg = {
       if (!Builder.currentModule.isDefined) throwException(s"internal error: cannot materialize ref for $this")
       implicit val sourceInfo = UnlocatableSourceInfo

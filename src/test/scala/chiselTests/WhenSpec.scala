@@ -170,38 +170,44 @@ class WhenSpec extends ChiselFlatSpec with Utils {
   "Using a value that has escaped from a when scope in a connection" should "give a reasonable error message" in {
     implicit val info: SourceInfo = SourceLine("Foo.scala", 12, 3)
     val e = the[ChiselException] thrownBy {
-      ChiselStage.emitCHIRRTL(new Module {
-        override def desiredName = "Top"
-        val foo, bar = IO(Output(UInt(8.W)))
-        val a = IO(Input(Bool()))
-        lazy val w = Wire(UInt(8.W))
-        when(a) {
-          foo := w
-        }
-        bar := w
-      })
+      ChiselStage.emitCHIRRTL(
+        new Module {
+          override def desiredName = "Top"
+          val foo, bar = IO(Output(UInt(8.W)))
+          val a = IO(Input(Bool()))
+          lazy val w = Wire(UInt(8.W))
+          when(a) {
+            foo := w
+          }
+          bar := w
+        },
+        args = Array("--throw-on-first-error")
+      )
     }
     val msg =
-      "Source foo_w in Top has escaped the scope of the block (@[Foo.scala:12:3]) in which it was constructed."
+      "'Top.foo_w: Wire[UInt<8>]' has escaped the scope of the block (@[Foo.scala:12:3]) in which it was constructed."
     e.getMessage should include(msg)
   }
 
   "Using a value that has escaped from a when scope in an operation" should "give a reasonable error message" in {
     implicit val info: SourceInfo = SourceLine("Foo.scala", 12, 3)
     val e = the[ChiselException] thrownBy {
-      ChiselStage.emitCHIRRTL(new Module {
-        override def desiredName = "Top"
-        val foo, bar = IO(Output(UInt(8.W)))
-        val a = IO(Input(Bool()))
-        lazy val w = Wire(UInt(8.W))
-        when(a) {
-          foo := w
-        }
-        bar := w + 1.U
-      })
+      ChiselStage.emitCHIRRTL(
+        new Module {
+          override def desiredName = "Top"
+          val foo, bar = IO(Output(UInt(8.W)))
+          val a = IO(Input(Bool()))
+          lazy val w = Wire(UInt(8.W))
+          when(a) {
+            foo := w
+          }
+          bar := w + 1.U
+        },
+        args = Array("--throw-on-first-error")
+      )
     }
     val msg =
-      "operand 'Top.foo_w: Wire[UInt<8>]' has escaped the scope of the block (@[Foo.scala:12:3]) in which it was constructed."
+      "'Top.foo_w: Wire[UInt<8>]' has escaped the scope of the block (@[Foo.scala:12:3]) in which it was constructed."
     e.getMessage should include(msg)
   }
 
@@ -232,7 +238,7 @@ class WhenSpec extends ChiselFlatSpec with Utils {
         out := c
       }
     }
-    val e = the[ChiselException] thrownBy ChiselStage.emitCHIRRTL(new Foo)
+    val e = the[ChiselException] thrownBy ChiselStage.emitCHIRRTL(new Foo, args = Array("--throw-on-first-error"))
     e.getMessage should include("has escaped the scope of the block")
   }
 }

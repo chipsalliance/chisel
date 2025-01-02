@@ -1157,7 +1157,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
       .map(p => {
         val param = p._2 match {
           case pable: PrintableParam =>
-            val (fmt, fmtArgs) = Converter.unpack(pable.value, parent)
+            val (fmt, fmtArgs) = Converter.unpack(pable.value, parent, UnlocatableSourceInfo)
             args = fmtArgs
             StringParam(fmt)
           case others => others
@@ -1707,7 +1707,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
 
   def visitPrintf(parent: Component, printf: Printf): Unit = {
     val loc = util.convert(printf.sourceInfo)
-    val (fmt, args) = Converter.unpack(printf.pable, parent)
+    val (fmt, args) = Converter.unpack(printf.pable, parent, printf.sourceInfo)
     util
       .OpBuilder("firrtl.printf", firCtx.currentBlock, loc)
       .withNamedAttr("formatString", circt.mlirStringAttrGet(fmt))
@@ -1739,7 +1739,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
     opName: String
   ): Unit = {
     val loc = util.convert(verifi.sourceInfo)
-    val (fmt, args) = Converter.unpack(verifi.pable, parent)
+    val (fmt, args) = Converter.unpack(verifi.pable, parent, verifi.sourceInfo)
     util
       .OpBuilder(opName, firCtx.currentBlock, loc)
       .withNamedAttr("message", circt.mlirStringAttrGet(fmt))

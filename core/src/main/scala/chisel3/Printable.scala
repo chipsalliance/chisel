@@ -2,6 +2,7 @@
 
 package chisel3
 
+import chisel3.experimental.SourceInfo
 import chisel3.internal.firrtl.ir.Component
 
 import scala.collection.mutable
@@ -49,7 +50,7 @@ sealed abstract class Printable {
     * @note This must be called after elaboration when Chisel nodes actually
     *   have names
     */
-  def unpack(ctx: Component): (String, Iterable[String])
+  def unpack(ctx: Component)(implicit info: SourceInfo): (String, Iterable[String])
 
   /** Unpack into a Seq of captured Bits arguments
     */
@@ -139,7 +140,7 @@ object Printable {
     StringContext(bufEscapeBackSlash.toSeq: _*).cf(data: _*)
   }
 
-  private[chisel3] def checkScope(message: Printable): Unit = {
+  private[chisel3] def checkScope(message: Printable)(implicit info: SourceInfo): Unit = {
     def getData(x: Printable): Seq[Data] = {
       x match {
         case y: FirrtlFormat => Seq(y.bits)
@@ -155,7 +156,7 @@ object Printable {
 
 case class Printables(pables: Iterable[Printable]) extends Printable {
   require(pables.hasDefiniteSize, "Infinite-sized iterables are not supported!")
-  final def unpack(ctx: Component): (String, Iterable[String]) = {
+  final def unpack(ctx: Component)(implicit info: SourceInfo): (String, Iterable[String]) = {
     val (fmts, args) = pables.map(_.unpack(ctx)).unzip
     (fmts.mkString, args.flatten)
   }
@@ -165,7 +166,7 @@ case class Printables(pables: Iterable[Printable]) extends Printable {
 
 /** Wrapper for printing Scala Strings */
 case class PString(str: String) extends Printable {
-  final def unpack(ctx: Component): (String, Iterable[String]) =
+  final def unpack(ctx: Component)(implicit info: SourceInfo): (String, Iterable[String]) =
     (str.replaceAll("%", "%%"), List.empty)
 
   final def unpackArgs: Seq[Bits] = List.empty
@@ -174,7 +175,7 @@ case class PString(str: String) extends Printable {
 /** Superclass for Firrtl format specifiers for Bits */
 sealed abstract class FirrtlFormat(private[chisel3] val specifier: Char) extends Printable {
   def bits: Bits
-  def unpack(ctx: Component): (String, Iterable[String]) = {
+  def unpack(ctx: Component)(implicit info: SourceInfo): (String, Iterable[String]) = {
     (s"%$specifier", List(bits.ref.fullName(ctx)))
   }
 
@@ -218,18 +219,19 @@ case class Character(bits: Bits) extends FirrtlFormat('c')
 
 /** Put innermost name (eg. field of bundle) */
 case class Name(data: Data) extends Printable {
-  final def unpack(ctx: Component): (String, Iterable[String]) = (data.ref.name, List.empty)
+  final def unpack(ctx: Component)(implicit info: SourceInfo): (String, Iterable[String]) = (data.ref.name, List.empty)
   final def unpackArgs: Seq[Bits] = List.empty
 }
 
 /** Put full name within parent namespace (eg. bundleName.field) */
 case class FullName(data: Data) extends Printable {
-  final def unpack(ctx: Component): (String, Iterable[String]) = (data.ref.fullName(ctx), List.empty)
+  final def unpack(ctx: Component)(implicit info: SourceInfo): (String, Iterable[String]) =
+    (data.ref.fullName(ctx), List.empty)
   final def unpackArgs: Seq[Bits] = List.empty
 }
 
 /** Represents escaped percents */
 case object Percent extends Printable {
-  final def unpack(ctx: Component): (String, Iterable[String]) = ("%%", List.empty)
+  final def unpack(ctx: Component)(implicit info: SourceInfo): (String, Iterable[String]) = ("%%", List.empty)
   final def unpackArgs: Seq[Bits] = List.empty
 }

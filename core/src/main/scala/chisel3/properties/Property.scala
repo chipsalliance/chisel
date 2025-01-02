@@ -41,7 +41,7 @@ sealed trait PropertyType[T] {
 
   /** Get convert from the raw type T to this type's internal, underlying representation
     */
-  def convertUnderlying(value: T): Underlying
+  def convertUnderlying(value: T, info: SourceInfo): Underlying
 }
 
 /** Trait for PropertyTypes that may lookup themselves up during implicit resolution
@@ -63,7 +63,7 @@ private[chisel3] trait SimplePropertyType[T] extends RecursivePropertyType[T] {
   final type Underlying = T
   def convert(value:           T): fir.Expression
   def convert(value:           T, ctx: ir.Component, info: SourceInfo): fir.Expression = convert(value)
-  def convertUnderlying(value: T): T = value
+  def convertUnderlying(value: T, info: SourceInfo): T = value
 }
 
 private[chisel3] class SeqPropertyType[A, F[A] <: Seq[A], PT <: PropertyType[A]](val tpe: PT)
@@ -75,8 +75,8 @@ private[chisel3] class SeqPropertyType[A, F[A] <: Seq[A], PT <: PropertyType[A]]
   type Underlying = Seq[tpe.Underlying]
   override def convert(value: Underlying, ctx: ir.Component, info: SourceInfo): fir.Expression =
     fir.SequencePropertyValue(tpe.getPropertyType(), value.map(tpe.convert(_, ctx, info)))
-  override def convertUnderlying(value: F[A]) =
-    value.map(tpe.convertUnderlying(_))
+  override def convertUnderlying(value: F[A], info: SourceInfo) =
+    value.map(v => tpe.convertUnderlying(v, info))
 }
 
 /** This contains recursive versions of Seq PropertyTypes. These instances need be lower priority to prevent ambiguous implicit errors with the non-recursive versions.
@@ -142,7 +142,7 @@ private[chisel3] object PropertyType extends LowPriorityPropertyTypeInstances {
       // these methods should never be called
       type Underlying = Nothing
       override def convert(value:           Underlying, ctx: ir.Component, info: SourceInfo): fir.Expression = ???
-      override def convertUnderlying(value: T) = ???
+      override def convertUnderlying(value: T, info:         SourceInfo) = ???
     }
 
   implicit val stringPropertyTypeInstance: SimplePropertyType[String] =
@@ -159,7 +159,7 @@ private[chisel3] object PropertyType extends LowPriorityPropertyTypeInstances {
       override def getPropertyType(): fir.PropertyType = fir.PathPropertyType
       override def convert(value: Underlying, ctx: ir.Component, info: SourceInfo): fir.Expression = value.convert()
       type Underlying = Path
-      override def convertUnderlying(value: M) = Path(value)
+      override def convertUnderlying(value: M, info: SourceInfo) = Path(value)
     }
 
   private def dataPathTypeInstance[D <: Data]: RecursivePropertyType.Aux[D, Path, Path] = new RecursivePropertyType[D] {
@@ -167,7 +167,7 @@ private[chisel3] object PropertyType extends LowPriorityPropertyTypeInstances {
     override def getPropertyType(): fir.PropertyType = fir.PathPropertyType
     override def convert(value: Underlying, ctx: ir.Component, info: SourceInfo): fir.Expression = value.convert()
     type Underlying = Path
-    override def convertUnderlying(value: D) = Path(value)
+    override def convertUnderlying(value: D, info: SourceInfo) = Path(value)
   }
 
   // We can't just do <: Element because Property subclasses Element
@@ -184,7 +184,7 @@ private[chisel3] object PropertyType extends LowPriorityPropertyTypeInstances {
       override def getPropertyType(): fir.PropertyType = fir.PathPropertyType
       override def convert(value: Underlying, ctx: ir.Component, info: SourceInfo): fir.Expression = value.convert()
       type Underlying = Path
-      override def convertUnderlying(value: M) = Path(value)
+      override def convertUnderlying(value: M, info: SourceInfo) = Path(value)
     }
 
   implicit def propertyTypeInstance[T](
@@ -195,7 +195,7 @@ private[chisel3] object PropertyType extends LowPriorityPropertyTypeInstances {
     override def convert(value: Underlying, ctx: ir.Component, info: SourceInfo): fir.Expression =
       Converter.convert(value, ctx, info)
     type Underlying = ir.Arg
-    override def convertUnderlying(value: Property[T]) = value.ref
+    override def convertUnderlying(value: Property[T], info: SourceInfo) = value.ref(info)
   }
 
   implicit def recursiveSequencePropertyTypeInstance[A, F[A] <: Seq[A]](
@@ -224,7 +224,8 @@ sealed trait Property[T] extends Element { self =>
         override def convert(value: Underlying, ctx: ir.Component, info: SourceInfo): fir.Expression =
           Converter.convert(value, ctx, info)
         type Underlying = ir.Arg
-        override def convertUnderlying(value: Property[ClassType] with self.ClassType) = value.ref
+        override def convertUnderlying(value: Property[ClassType] with self.ClassType, info: SourceInfo) =
+          value.ref(info)
       }
   }
 
@@ -492,8 +493,8 @@ object Property {
 
   /** Create a new Property literal of type T.
     */
-  def apply[T](lit: T)(implicit tpe: PropertyType[T]): Property[tpe.Type] = {
-    val literal = ir.PropertyLit[tpe.Type, tpe.Underlying](tpe, tpe.convertUnderlying(lit))
+  def apply[T](lit: T)(implicit tpe: PropertyType[T], info: SourceInfo): Property[tpe.Type] = {
+    val literal = ir.PropertyLit[tpe.Type, tpe.Underlying](tpe, tpe.convertUnderlying(lit, info))
     val result = makeWithValueOpt(tpe)
     literal.bindLitArg(result)
   }

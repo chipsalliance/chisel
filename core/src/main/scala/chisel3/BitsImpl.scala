@@ -142,24 +142,29 @@ private[chisel3] trait BitsImpl extends Element { self: Bits =>
     _applyImpl(castToInt(x, "High index"), castToInt(y, "Low index"))
 
   private[chisel3] def unop[T <: Data](sourceInfo: SourceInfo, dest: T, op: PrimOp): T = {
+    implicit val info: SourceInfo = sourceInfo
     requireIsHardware(this, "bits operated on")
     pushOp(DefPrim(sourceInfo, dest, op, this.ref))
   }
   private[chisel3] def binop[T <: Data](sourceInfo: SourceInfo, dest: T, op: PrimOp, other: BigInt): T = {
+    implicit val info: SourceInfo = sourceInfo
     requireIsHardware(this, "bits operated on")
     pushOp(DefPrim(sourceInfo, dest, op, this.ref, ILit(other)))
   }
   private[chisel3] def binop[T <: Data](sourceInfo: SourceInfo, dest: T, op: PrimOp, other: Bits): T = {
+    implicit val info: SourceInfo = sourceInfo
     requireIsHardware(this, "bits operated on")
     requireIsHardware(other, "bits operated on")
     pushOp(DefPrim(sourceInfo, dest, op, this.ref, other.ref))
   }
   private[chisel3] def compop(sourceInfo: SourceInfo, op: PrimOp, other: Bits): Bool = {
+    implicit val info: SourceInfo = sourceInfo
     requireIsHardware(this, "bits operated on")
     requireIsHardware(other, "bits operated on")
     pushOp(DefPrim(sourceInfo, Bool(), op, this.ref, other.ref))
   }
   private[chisel3] def redop(sourceInfo: SourceInfo, op: PrimOp): Bool = {
+    implicit val info: SourceInfo = sourceInfo
     requireIsHardware(this, "bits operated on")
     pushOp(DefPrim(sourceInfo, Bool(), op, this.ref))
   }

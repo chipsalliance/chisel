@@ -52,14 +52,10 @@ private[chisel3] object MonoConnect {
     MonoConnectException(
       s"""${formatName(sink)} cannot be written from module ${source.parentNameOpt.getOrElse("(unknown)")}."""
     )
-  def SourceEscapedBlockScopeException(source: Data, blockInfo: SourceInfo) =
-    MonoConnectException(
-      s"Source ${formatName(source)} has escaped the scope of the block (${blockInfo.makeMessage()}) in which it was constructed."
-    )
-  def SinkEscapedBlockScopeException(sink: Data, blockInfo: SourceInfo) =
-    MonoConnectException(
-      s"Sink ${formatName(sink)} has escaped the scope of the block (${blockInfo.makeMessage()}) in which it was constructed."
-    )
+  def escapedScopeError(data: Data, blockInfo: SourceInfo)(implicit lineInfo: SourceInfo): Unit = {
+    val msg = s"'$data' has escaped the scope of the block (${blockInfo.makeMessage()}) in which it was constructed."
+    Builder.error(msg)
+  }
   def UnknownRelationException =
     MonoConnectException("Sink or source unavailable to current module.")
   // These are when recursing down aggregate types
@@ -177,7 +173,7 @@ private[chisel3] object MonoConnect {
             context_mod
           )
         ) {
-          pushCommand(Connect(sourceInfo, sinkReified.get.lref(sourceInfo), sourceReified.get.ref))
+          pushCommand(Connect(sourceInfo, sinkReified.get.lref(sourceInfo), sourceReified.get.ref(sourceInfo)))
         } else {
           for (idx <- 0 until sink_v.length) {
             try {
@@ -212,7 +208,7 @@ private[chisel3] object MonoConnect {
             context_mod
           )
         ) {
-          pushCommand(Connect(sourceInfo, sinkReified.get.lref(sourceInfo), sourceReified.get.ref))
+          pushCommand(Connect(sourceInfo, sinkReified.get.lref(sourceInfo), sourceReified.get.ref(sourceInfo)))
         } else {
           // For each field, descend with right
           for ((field, sink_sub) <- sink_r._elements) {
@@ -288,12 +284,12 @@ private[chisel3] object MonoConnect {
     }
 
     checkBlockVisibility(sink) match {
-      case Some(blockInfo) => throw SinkEscapedBlockScopeException(sink, blockInfo)
+      case Some(blockInfo) => escapedScopeError(sink, blockInfo)
       case None            => ()
     }
 
     checkBlockVisibility(source) match {
-      case Some(blockInfo) => throw SourceEscapedBlockScopeException(source, blockInfo)
+      case Some(blockInfo) => escapedScopeError(source, blockInfo)
       case None            => ()
     }
 
@@ -440,6 +436,7 @@ private[chisel3] object MonoConnect {
     sourceProp: Property[_],
     context:    BaseModule
   ): Unit = {
+    implicit val info: SourceInfo = sourceInfo
     // Reify sink and source if they're views.
     val (sink, writable) = reify(sinkProp)
     val (source, _) = reify(sourceProp)
@@ -449,11 +446,11 @@ private[chisel3] object MonoConnect {
     context match {
       case rm: RawModule =>
         writable.reportIfReadOnlyUnit {
-          rm.addCommand(PropAssign(sourceInfo, sink.lref(sourceInfo), source.ref))
+          rm.addCommand(PropAssign(sourceInfo, sink.lref, source.ref))
         }(sourceInfo)
       case cls: Class =>
         writable.reportIfReadOnlyUnit {
-          cls.addCommand(PropAssign(sourceInfo, sink.lref(sourceInfo), source.ref))
+          cls.addCommand(PropAssign(sourceInfo, sink.lref, source.ref))
         }(sourceInfo)
       case _ => throwException("Internal Error! Property connection can only occur within RawModule or Class.")
     }
@@ -465,7 +462,7 @@ private[chisel3] object MonoConnect {
     sourceProbe: Data,
     context:     BaseModule
   ): Unit = {
-
+    implicit val info: SourceInfo = sourceInfo
     val (sink, writable) = reifyIdentityView(sinkProbe).getOrElse(
       throwException(
         s"If a DataView contains a Probe, it must resolve to one Data. $sinkProbe does not meet this criteria."
@@ -480,7 +477,7 @@ private[chisel3] object MonoConnect {
     context match {
       case rm: RawModule =>
         writable.reportIfReadOnlyUnit {
-          rm.addCommand(ProbeDefine(sourceInfo, sink.lref(sourceInfo), source.ref))
+          rm.addCommand(ProbeDefine(sourceInfo, sink.lref, source.ref))
         }(sourceInfo) // Nothing to push if an error.
       case _ => throwException("Internal Error! Probe connection can only occur within RawModule.")
     }
@@ -519,8 +516,7 @@ private[chisel3] object checkConnect {
     // Import helpers and exception types.
     import MonoConnect.{
       checkBlockVisibility,
-      SinkEscapedBlockScopeException,
-      SourceEscapedBlockScopeException,
+      escapedScopeError,
       UnknownRelationException,
       UnreadableSourceException,
       UnwritableSinkException
@@ -598,12 +594,12 @@ private[chisel3] object checkConnect {
     else throw UnknownRelationException
 
     checkBlockVisibility(sink) match {
-      case Some(blockInfo) => throw SinkEscapedBlockScopeException(sink, blockInfo)
+      case Some(blockInfo) => escapedScopeError(sink, blockInfo)(sourceInfo)
       case None            => ()
     }
 
     checkBlockVisibility(source) match {
-      case Some(blockInfo) => throw SourceEscapedBlockScopeException(source, blockInfo)
+      case Some(blockInfo) => escapedScopeError(source, blockInfo)(sourceInfo)
       case None            => ()
     }
   }
