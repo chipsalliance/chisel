@@ -114,14 +114,14 @@ object InnerSymSlot {
 
 class InnerSymCache {
   val slots = mutable.Map.empty[Long, InnerSymSlot]
-  var portSyms = Seq.empty[Option[String]]
+  var portSymbols = Seq.empty[Option[String]]
 
   def clear(): Unit = slots.clear()
 
   def setOpSlot(id: HasId, op: MlirOperation): Unit =
     slots += ((id._id, InnerSymSlot.Op(op)))
   def setPortSlots(op: MlirOperation, ports: Seq[Port]): Unit = {
-    portSyms = ports.map(_ => None)
+    portSymbols = ports.map(_ => None)
     ports.zipWithIndex.foreach {
       case (port, i) =>
         slots += ((port.id._id, InnerSymSlot.Port(op, i)))
@@ -131,8 +131,8 @@ class InnerSymCache {
   def getSlot(id: HasId): Option[InnerSymSlot] =
     slots.get(id._id)
   def assignPortSym(index: Int, innerSym: String): Seq[Option[String]] = {
-    portSyms = portSyms.updated(index, Some(innerSym))
-    portSyms
+    portSymbols = portSymbols.updated(index, Some(innerSym))
+    portSymbols
   }
 }
 
@@ -283,7 +283,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
         .withNamedAttr("portNames", circt.mlirArrayAttrGet(ports.nameAttrs))
         .withNamedAttr("portTypes", circt.mlirArrayAttrGet(ports.typeAttrs))
         .withNamedAttr("portAnnotations", circt.mlirArrayAttrGet(ports.annotationAttrs))
-        .withNamedAttr("portSyms", circt.mlirArrayAttrGet(ports.symAttrs))
+        .withNamedAttr("portSymbols", circt.mlirArrayAttrGet(ports.symAttrs))
         .withNamedAttr("portLocations", circt.mlirArrayAttrGet(ports.locAttrs))
     }
 
@@ -618,13 +618,13 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
                   circt.hwInnerSymAttrGet(probe.localName)
                 )
               case InnerSymSlot.Port(op, index) =>
-                val portSyms = firCtx.innerSymCache
+                val portSymbols = firCtx.innerSymCache
                   .assignPortSym(index, probe.localName)
                   .map(_.map(circt.hwInnerSymAttrGet(_)).getOrElse(circt.hwInnerSymAttrGetEmpty()))
                 circt.mlirOperationSetInherentAttributeByName(
                   op,
-                  "portSyms",
-                  circt.mlirArrayAttrGet(portSyms)
+                  "portSymbols",
+                  circt.mlirArrayAttrGet(portSymbols)
                 )
             }
             util
@@ -1199,6 +1199,11 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
       visitElseRegion.get()
     }
     firCtx.leaveWhen()
+  }
+
+  def visitLayerBlock(layerBlock: LayerBlock, visitRegion: () => Unit): Unit = {
+    // TODO: Switch to layer region
+    visitRegion()
   }
 
   def visitDefInstance(defInstance: DefInstance): Unit = {
@@ -1884,6 +1889,8 @@ object PanamaCIRCTConverter {
           if (when.hasElse) { Some(() => visitCommands(parent, when.elseRegion.getAllCommands())) }
           else { None }
         )
+      case layerBlock: LayerBlock =>
+        visitLayerBlock(layerBlock, () => visitCommands(parent, layerBlock.region.getAllCommands()))
       case defInstance:         DefInstance                  => visitDefInstance(defInstance)
       case defMemPort:          DefMemPort[ChiselData]       => visitDefMemPort(defMemPort)
       case defMemory:           DefMemory                    => visitDefMemory(defMemory)
@@ -1944,6 +1951,14 @@ object PanamaCIRCTConverter {
     implicit cvt: PanamaCIRCTConverter
   ): Unit = {
     cvt.visitWhen(when, visitIfRegion, visitElseRegion)
+  }
+  def visitLayerBlock(
+    layerBlock:  LayerBlock,
+    visitRegion: () => Unit
+  )(
+    implicit cvt: PanamaCIRCTConverter
+  ): Unit = {
+    cvt.visitLayerBlock(layerBlock, visitRegion)
   }
   def visitDefInstance(defInstance: DefInstance)(implicit cvt: PanamaCIRCTConverter): Unit = {
     cvt.visitDefInstance(defInstance)
