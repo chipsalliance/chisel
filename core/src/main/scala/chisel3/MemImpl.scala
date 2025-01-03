@@ -165,13 +165,14 @@ private[chisel3] trait MemBaseImpl[T <: Data] extends HasId with NamedComponent 
     dir:        MemPortDirection,
     clock:      Clock
   ): T = {
+    implicit val info: SourceInfo = sourceInfo
     if (Builder.currentModule != _parent) {
       throwException(
         s"Cannot create a memory port in a different module (${Builder.currentModule.get.name}) than where the memory is (${_parent.get.name})."
       )
     }
     requireIsHardware(idx, "memory port index")
-    val i = Vec.truncateIndex(idx, length)(sourceInfo)
+    val i = Vec.truncateIndex(idx, length)
 
     val port = pushCommand(
       DefMemPort(sourceInfo, t.cloneTypeFull, Node(this), dir, i.ref, clock.ref)

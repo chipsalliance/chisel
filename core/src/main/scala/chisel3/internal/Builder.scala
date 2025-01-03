@@ -268,7 +268,7 @@ private[chisel3] trait HasId extends chisel3.InstanceId {
   private[chisel3] def setRef(parent: Node, index: Int): Unit = setRef(LitIndex(parent, index))
   private[chisel3] def setRef(parent: Node, index: UInt): Unit = index.litOption match {
     case Some(lit) if lit.isValidInt => setRef(LitIndex(parent, lit.intValue))
-    case _                           => setRef(Index(parent, index.ref))
+    case _                           => setRef(Index(parent, index.ref(UnlocatableSourceInfo)))
   }
   private[chisel3] def getRef:       Arg = _ref.get
   private[chisel3] def getOptionRef: Option[Arg] = _ref
