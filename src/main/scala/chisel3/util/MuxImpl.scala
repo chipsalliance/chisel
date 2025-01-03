@@ -23,8 +23,10 @@ import chisel3.experimental.SourceInfo
   * @note results unspecified unless exactly one select signal is high
   */
 object Mux1H {
-  def apply[T <: Data](sel: Seq[Bool], in: Seq[T]): T =
+  def apply[T <: Data](sel: Seq[Bool], in: Seq[T]): T = {
+    require(sel.size == in.size, s"Mux1H: input Seqs must have the same length, got sel ${sel.size} and in ${in.size}")
     apply(sel.zip(in))
+  }
   def apply[T <: Data](in:  Iterable[(Bool, T)]): T = SeqUtils.oneHotMux(in)
   def apply[T <: Data](sel: UInt, in: Seq[T]): T =
     apply((0 until in.size).map(sel(_)), in)
@@ -45,8 +47,14 @@ object Mux1H {
   * Returns the output of the Mux tree.
   */
 object PriorityMux {
-  def apply[T <: Data](in:  Seq[(Bool, T)]): T = SeqUtils.priorityMux(in)
-  def apply[T <: Data](sel: Seq[Bool], in: Seq[T]): T = apply(sel.zip(in))
+  def apply[T <: Data](in: Seq[(Bool, T)]): T = SeqUtils.priorityMux(in)
+  def apply[T <: Data](sel: Seq[Bool], in: Seq[T]): T = {
+    require(
+      sel.size == in.size,
+      s"PriorityMux: input Seqs must have the same length, got sel ${sel.size} and in ${in.size}"
+    )
+    apply(sel.zip(in))
+  }
   def apply[T <: Data](sel: Bits, in: Seq[T]): T = apply((0 until in.size).map(sel(_)), in)
 }
 

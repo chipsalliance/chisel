@@ -31,6 +31,12 @@ class OneHotMuxSpec extends AnyFreeSpec with Matchers with ChiselRunners {
     }
     e.getMessage should include("Mux1H must have a non-empty argument")
   }
+  "Mux1H should give a error when given different size Seqs" in {
+    val e = intercept[IllegalArgumentException] {
+      Mux1H(Seq(true.B, true.B), Seq(1.U, 2.U, 3.U))
+    }
+    e.getMessage should include("Mux1H: input Seqs must have the same length, got sel 2 and in 3")
+  }
 
 }
 

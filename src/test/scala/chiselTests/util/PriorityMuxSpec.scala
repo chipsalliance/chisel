@@ -63,4 +63,11 @@ class PriorityMuxSpec extends ChiselFlatSpec {
     }
     e.getMessage should include("PriorityMux must have a non-empty argument")
   }
+
+  it should "give a error when given different size Seqs" in {
+    val e = intercept[IllegalArgumentException] {
+      PriorityMux(Seq(true.B, true.B), Seq(1.U, 2.U, 3.U))
+    }
+    e.getMessage should include("PriorityMux: input Seqs must have the same length, got sel 2 and in 3")
+  }
 }
