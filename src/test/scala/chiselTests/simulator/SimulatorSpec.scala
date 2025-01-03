@@ -17,6 +17,27 @@ class VerilatorSimulator(val workspacePath: String) extends SingleBackendSimulat
   val backendSpecificCompilationSettings = verilator.Backend.CompilationSettings()
 }
 
+class ExceptionSpec extends AnyFunSpec with Matchers {
+  def serializeRoundtrip(a: Any) = {
+    val baos = new java.io.ByteArrayOutputStream
+    val oos = new java.io.ObjectOutputStream(baos)
+    oos.writeObject(a)
+    oos.flush()
+    val ois = new java.io.ObjectInputStream(new java.io.ByteArrayInputStream(baos.toByteArray))
+    ois.readObject
+  }
+  describe("Serialization of FailedExpectationException") {
+    it("should not throw NotSerializableException") {
+      serializeRoundtrip(PeekPokeAPI.FailedExpectationException(1.B, 0.B, "failed"))
+      serializeRoundtrip(PeekPokeAPI.FailedExpectationException(1.U, 3.U, "failed"))
+      serializeRoundtrip(PeekPokeAPI.FailedExpectationException(BigInt(123), BigInt(12), "failed"))
+      serializeRoundtrip(
+        PeekPokeAPI.FailedExpectationException(Simulation.Value(8, 22), Simulation.Value(8, 27), "failed")
+      )
+    }
+  }
+}
+
 class SimulatorSpec extends AnyFunSpec with Matchers {
   describe("Chisel Simulator") {
     it("runs GCD correctly") {

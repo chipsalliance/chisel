@@ -2,7 +2,6 @@
 
 package svsim
 
-import scala.collection.mutable.Queue
 import scala.util.Try
 import java.io.{BufferedReader, BufferedWriter, File, InputStreamReader, OutputStreamWriter}
 
@@ -18,7 +17,8 @@ final class Simulation private[svsim] (
     conservativeCommandResolution: Boolean = false,
     verbose:                       Boolean = false,
     traceEnabled:                  Boolean = false,
-    executionScriptLimit:          Option[Int] = None
+    executionScriptLimit:          Option[Int] = None,
+    executionScriptEnabled:        Boolean = false
   )(body:                          Simulation.Controller => T
   ): T = {
     val cwd = settings.customWorkingDirectory match {
@@ -34,7 +34,7 @@ final class Simulation private[svsim] (
     processBuilder.directory(new File(cwd))
     processBuilder.redirectError(ProcessBuilder.Redirect.INHERIT)
     val environment = settings.environment ++ Seq(
-      Some("SVSIM_EXECUTION_SCRIPT" -> executionScriptPath),
+      Option.when(executionScriptEnabled)("SVSIM_EXECUTION_SCRIPT" -> executionScriptPath),
       executionScriptLimit.map("SVSIM_EXECUTION_SCRIPT_LIMIT" -> _.toString)
     ).flatten
     environment.foreach { (pair) =>
@@ -56,18 +56,18 @@ final class Simulation private[svsim] (
       controller.setTraceEnabled(true)
     }
     val bodyOutcome = Try {
-      val result = body(controller)
+      body(controller)
+    }
+    val completionOutcome = Try {
       // Exceptions thrown from commands still in the queue when `body` returns should supercede returning `result`
       controller.completeInFlightCommands()
-      result
     }
 
     // Always attempt graceful shutdown, even if `body` failed.
     val gracefulShutdownOutcome = Try[Unit] {
       // If the process is still running, give it an opportunity to shut down gracefully
       if (process.isAlive()) {
-        controller.sendCommand(Simulation.Command.Done)
-        controller.completeInFlightCommands()
+        controller.sendDone()
         process.waitFor()
       }
     }
@@ -83,6 +83,7 @@ final class Simulation private[svsim] (
       throw new Exception(s"Nonzero exit status: ${process.exitValue()}")
     }
 
+    completionOutcome.get
     // Issues during graceful shutdown are considered test failures
     gracefulShutdownOutcome.get
 
@@ -192,9 +193,9 @@ object Simulation {
       message
     }
 
-    private val expectations: Queue[PartialFunction[Simulation.Message, Unit]] = Queue.empty
+    private val expectations: SyncQueue[PartialFunction[Simulation.Message, Unit]] = SyncQueue.empty
 
-    def completeInFlightCommands() = {
+    def completeInFlightCommands() = synchronized {
       commandWriter.flush()
 
       expectations.foreach { f =>
@@ -208,10 +209,33 @@ object Simulation {
       expectations.clear()
     }
 
-    private[Simulation] def processNextMessage[A](f: PartialFunction[Simulation.Message, A]): A = {
-      completeInFlightCommands()
+    private[Simulation] def sendCommandAndExpectNextMessage(
+      command: Simulation.Command
+    )(f:       => PartialFunction[Simulation.Message, Unit]
+    ) = synchronized {
+      sendCommand(command)
+      expectNextMessage(f)
+    }
 
-      val message = readNextAvailableMessage()
+    private[Simulation] def sendCommandAndProcessNextMessage[A](
+      command: Simulation.Command
+    )(f:       => PartialFunction[Simulation.Message, A]
+    ) = synchronized {
+      sendCommand(command)
+      processNextMessage(f)
+    }
+
+    private[Simulation] def sendDone(): Unit = synchronized {
+      sendCommand(Simulation.Command.Done)
+      completeInFlightCommands()
+    }
+
+    private def processNextMessage[A](f: PartialFunction[Simulation.Message, A]): A = {
+      completeInFlightCommands()
+      val message = {
+        readNextAvailableMessage()
+      }
+
       if (f.isDefinedAt(message)) {
         f(message)
       } else {
@@ -219,8 +243,8 @@ object Simulation {
       }
     }
 
-    private[Simulation] def expectNextMessage(f: PartialFunction[Simulation.Message, Unit]) = {
-      if (conservativeCommandResolution) {
+    private def expectNextMessage(f: PartialFunction[Simulation.Message, Unit]) = {
+      if (true || conservativeCommandResolution) {
         processNextMessage(f)
       } else {
         expectations.enqueue(f)
@@ -228,7 +252,7 @@ object Simulation {
     }
 
     private var sentCommandCount = 0
-    private[Simulation] def sendCommand(command: Simulation.Command) = {
+    private def sendCommand(command: Simulation.Command) = {
       object CommandCode extends Enumeration {
         val Done = 'D'
         val Log = 'L'
@@ -239,87 +263,90 @@ object Simulation {
         val Trace = 'W'
       };
 
-      sentCommandCount += 1
-      if (logMessagesAndCommands) {
-        // NOTE: Commands are 1-indexed, but messages are 0-indexed since we read the first message (READY) before we send any commands.
-        println(s"Sending command ${sentCommandCount}: ${command}")
-      }
+      synchronized {
+        sentCommandCount += 1
+        if (logMessagesAndCommands) {
+          // NOTE: Commands are 1-indexed, but messages are 0-indexed since we read the first message (READY) before we send any commands.
+          println(s"Sending command ${sentCommandCount}: ${command}")
+        }
 
-      import Simulation.Command._
-      // For specific command formats, consult `simulation-driver.cpp`
-      command match {
-        case Done => {
-          commandWriter.write(CommandCode.Done)
-        }
-        case Log => {
-          commandWriter.write(CommandCode.Log)
-        }
-        case GetBits(id, isSigned) => {
-          commandWriter.write(CommandCode.GetBits)
-          commandWriter.write(" ")
-          commandWriter.write(if (isSigned) "s" else "u")
-          commandWriter.write(" ")
-          commandWriter.write(id)
-        }
-        case SetBits(id, value) => {
-          commandWriter.write(CommandCode.SetBits)
-          commandWriter.write(" ")
-          commandWriter.write(id)
-          commandWriter.write(" ")
-          commandWriter.write(value.toString(16))
-        }
-        case Run(timesteps) => {
-          commandWriter.write(CommandCode.Run)
-          commandWriter.write(" ")
-          commandWriter.write(timesteps.toHexString)
-        }
-        case Tick(id, inPhaseValue, outOfPhaseValue, timestepsPerPhase, maxCycles, sentinel) => {
-          commandWriter.write(CommandCode.Tick)
-          commandWriter.write(" ")
-          commandWriter.write(id)
-          commandWriter.write(" ")
-          commandWriter.write(inPhaseValue.toString(16))
-          commandWriter.write(",")
-          commandWriter.write(outOfPhaseValue.toString(16))
-          commandWriter.write("-")
-          commandWriter.write(timestepsPerPhase.toHexString)
-          commandWriter.write("*")
-          commandWriter.write(maxCycles.toHexString)
-          sentinel match {
-            case Some((port, value)) => {
-              commandWriter.write(" ")
-              commandWriter.write(port.id)
-              commandWriter.write("=")
-              commandWriter.write(value.toString(16))
+        import Simulation.Command._
+        // For specific command formats, consult `simulation-driver.cpp`
+        command match {
+          case Done => {
+            commandWriter.write(CommandCode.Done)
+          }
+          case Log => {
+            commandWriter.write(CommandCode.Log)
+          }
+          case GetBits(id, isSigned) => {
+            commandWriter.write(CommandCode.GetBits)
+            commandWriter.write(" ")
+            commandWriter.write(if (isSigned) "s" else "u")
+            commandWriter.write(" ")
+            commandWriter.write(id)
+          }
+          case SetBits(id, value) => {
+            commandWriter.write(CommandCode.SetBits)
+            commandWriter.write(" ")
+            commandWriter.write(id)
+            commandWriter.write(" ")
+            commandWriter.write(value.toString(16))
+          }
+          case Run(timesteps) => {
+            commandWriter.write(CommandCode.Run)
+            commandWriter.write(" ")
+            commandWriter.write(timesteps.toHexString)
+          }
+          case Tick(id, inPhaseValue, outOfPhaseValue, timestepsPerPhase, maxCycles, sentinel) => {
+            commandWriter.write(CommandCode.Tick)
+            commandWriter.write(" ")
+            commandWriter.write(id)
+            commandWriter.write(" ")
+            commandWriter.write(inPhaseValue.toString(16))
+            commandWriter.write(",")
+            commandWriter.write(outOfPhaseValue.toString(16))
+            commandWriter.write("-")
+            commandWriter.write(timestepsPerPhase.toHexString)
+            commandWriter.write("*")
+            commandWriter.write(maxCycles.toHexString)
+            sentinel match {
+              case Some((port, value)) => {
+                commandWriter.write(" ")
+                commandWriter.write(port.id)
+                commandWriter.write("=")
+                commandWriter.write(value.toString(16))
+              }
+              case None =>
             }
-            case None =>
+          }
+          case Trace(enable) => {
+            commandWriter.write(CommandCode.Trace)
+            commandWriter.write(" ")
+            commandWriter.write(if (enable) "1" else "0")
           }
         }
-        case Trace(enable) => {
-          commandWriter.write(CommandCode.Trace)
-          commandWriter.write(" ")
-          commandWriter.write(if (enable) "1" else "0")
-        }
+        commandWriter.newLine()
       }
-      commandWriter.newLine()
     }
 
     def readLog(): String = {
-      sendCommand(Simulation.Command.Log)
-      processNextMessage {
+      sendCommandAndProcessNextMessage(Simulation.Command.Log) {
         case Simulation.Message.Log(message) =>
           message
       }
     }
 
     def run(timesteps: Int) = {
-      sendCommand(Simulation.Command.Run(timesteps))
-      expectNextMessage { case Simulation.Message.Ack => }
+      sendCommandAndExpectNextMessage(Simulation.Command.Run(timesteps)) {
+        case Simulation.Message.Ack =>
+      }
     }
 
     def setTraceEnabled(enabled: Boolean): Unit = {
-      sendCommand(Simulation.Command.Trace(enabled))
-      expectNextMessage { case Simulation.Message.Ack => }
+      sendCommandAndExpectNextMessage(Simulation.Command.Trace(enabled)) {
+        case Simulation.Message.Ack =>
+      }
     }
 
     private val portInfos = moduleInfo.ports.zipWithIndex.map {
@@ -370,25 +397,22 @@ object Simulation {
   final case class Port private[Simulation] (controller: Simulation.Controller, id: String, info: ModuleInfo.Port) {
 
     def set(value: BigInt) = {
-      controller.sendCommand(Simulation.Command.SetBits(id, value))
-      controller.expectNextMessage {
+      controller.sendCommandAndExpectNextMessage(Simulation.Command.SetBits(id, value)) {
         case Simulation.Message.Ack =>
       }
     }
 
     def get(isSigned: Boolean = false): Value = {
-      controller.sendCommand(Simulation.Command.GetBits(id, isSigned))
-      controller.processNextMessage {
+      controller.sendCommandAndProcessNextMessage(Simulation.Command.GetBits(id, isSigned)) {
         case Simulation.Message.Bits(bitCount, value) =>
           Value(bitCount, value)
       }
     }
 
     def tick(timestepsPerPhase: Int, cycles: Int, inPhaseValue: BigInt, outOfPhaseValue: BigInt) = {
-      controller.sendCommand(
+      controller.sendCommandAndExpectNextMessage(
         Simulation.Command.Tick(id, inPhaseValue, outOfPhaseValue, timestepsPerPhase, cycles, None)
-      )
-      controller.expectNextMessage {
+      ) {
         case Simulation.Message.Bits(_, _) =>
       }
     }
@@ -400,10 +424,9 @@ object Simulation {
       outOfPhaseValue:   BigInt,
       sentinel:          Option[(Port, BigInt)]
     ): BigInt = {
-      controller.sendCommand(
+      controller.sendCommandAndProcessNextMessage(
         Simulation.Command.Tick(id, inPhaseValue, outOfPhaseValue, timestepsPerPhase, maxCycles, sentinel)
-      )
-      controller.processNextMessage {
+      ) {
         case Simulation.Message.Bits(_, cyclesElapsed) =>
           cyclesElapsed
       }
@@ -417,10 +440,9 @@ object Simulation {
       sentinel:               Option[(Port, BigInt)],
       checkElapsedCycleCount: (BigInt) => Unit
     ) = {
-      controller.sendCommand(
+      controller.sendCommandAndExpectNextMessage(
         Simulation.Command.Tick(id, inPhaseValue, outOfPhaseValue, timestepsPerPhase, maxCycles, sentinel)
-      )
-      controller.expectNextMessage {
+      ) {
         case Simulation.Message.Bits(_, cyclesElapsed) =>
           checkElapsedCycleCount(cyclesElapsed)
       }
@@ -428,8 +450,7 @@ object Simulation {
 
     def check(f: Value => Unit): Unit = check()(f)
     def check(isSigned: Boolean = false)(f: Value => Unit): Unit = {
-      controller.sendCommand(Simulation.Command.GetBits(id, isSigned))
-      controller.expectNextMessage {
+      controller.sendCommandAndExpectNextMessage(Simulation.Command.GetBits(id, isSigned)) {
         case Simulation.Message.Bits(bitCount, value) =>
           f(Value(bitCount, value))
       }

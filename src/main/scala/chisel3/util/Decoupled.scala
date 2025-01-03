@@ -34,7 +34,7 @@ abstract class ReadyValidIO[+T <: Data](gen: T) extends Bundle {
   /** The data to be transferred when ready and valid are asserted at the same cycle
     * @group Signals
     */
-  val bits = Output(gen)
+  val bits: T = Output(gen)
 
   /** A stable typeName for this `ReadyValidIO` and any of its implementations
     * using the supplied `Data` generator's `typeName`

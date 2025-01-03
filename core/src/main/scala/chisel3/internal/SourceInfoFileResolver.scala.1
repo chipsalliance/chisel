@@ -1,0 +1,26 @@
+// SPDX-License-Identifier: Apache-2.0
+
+package chisel3.internal.sourceinfo
+
+import scala.language.experimental.macros
+import scala.reflect.macros.blackbox.Context
+
+///////////////////////////////////////////////////////
+//                     WARNING!!                     //
+// This file is soft-linked into the compiler plugin //
+// so that the logic stays consistent                //
+///////////////////////////////////////////////////////
+
+/** Scala compile-time function for determine the String used to represent a source file path in SourceInfos */
+private[internal] object SourceInfoFileResolver {
+  def resolve(source: scala.reflect.internal.util.SourceFile): String = {
+    val projectRoot = sys.props.get("chisel.project.root")
+    val root =
+      java.nio.file.Paths.get(projectRoot.getOrElse(".")).toAbsolutePath.toString // or use `os-lib`?
+
+    if (root.nonEmpty) // would root be ever empty???
+      source.file.canonicalPath.stripPrefix(root).stripPrefix(java.io.File.separator)
+    else
+      source.file.name
+  }
+}
