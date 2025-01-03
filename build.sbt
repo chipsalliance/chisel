@@ -208,7 +208,7 @@ lazy val chiselSettings = Seq(
   libraryDependencies ++= Seq(
     "org.scalatest" %% "scalatest" % "3.2.19" % "test",
     "org.scalatestplus" %% "scalacheck-1-18" % "3.2.19.0" % "test",
-    "com.lihaoyi" %% "upickle" % "3.3.1",
+    "com.lihaoyi" %% "upickle" % "4.0.2",
     "org.chipsalliance" %% "firtool-resolver" % "2.0.0"
   )
 ) ++ (
@@ -306,7 +306,7 @@ lazy val core = (project in file("core"))
   .settings(
     name := "chisel-core",
     libraryDependencies ++= Seq(
-      "com.lihaoyi" %% "upickle" % "3.3.1",
+      "com.lihaoyi" %% "upickle" % "4.0.2",
       "com.lihaoyi" %% "os-lib" % "0.10.0"
     ),
     scalacOptions := scalacOptions.value ++ Seq(
