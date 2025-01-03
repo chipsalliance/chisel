@@ -211,6 +211,8 @@ class PanamaCIRCT {
 
   def mlirBoolAttrGet(value: Boolean) = MlirAttribute(CAPI.mlirBoolAttrGet(arena, mlirCtx, if (value) 1 else 0))
 
+  def mlirBoolAttrGetValue(attr: MlirAttribute): Boolean = CAPI.mlirBoolAttrGetValue(attr.get)
+
   def mlirStringAttrGet(string: String) = MlirAttribute(CAPI.mlirStringAttrGet(arena, mlirCtx, newString(string).get))
 
   def mlirStringAttrGetValue(attr: MlirAttribute): String = {
@@ -219,6 +221,10 @@ class PanamaCIRCT {
   }
 
   def mlirAttributeIsAInteger(attr: MlirAttribute): Boolean = CAPI.mlirAttributeIsAInteger(attr.get)
+
+  def mlirAttributeIsAFloat(attr: MlirAttribute): Boolean = CAPI.mlirAttributeIsAFloat(attr.get)
+
+  def mlirAttributeIsABool(attr: MlirAttribute): Boolean = CAPI.mlirAttributeIsABool(attr.get)
 
   def mlirAttributeIsAString(attr: MlirAttribute): Boolean = CAPI.mlirAttributeIsAString(attr.get)
 
@@ -233,6 +239,8 @@ class PanamaCIRCT {
   def mlirFloatAttrDoubleGet(tpe: MlirType, value: Double) = MlirAttribute(
     CAPI.mlirFloatAttrDoubleGet(arena, mlirCtx, tpe.get, value)
   )
+
+  def mlirFloatAttrGetValueDouble(attr: MlirAttribute): Double = CAPI.mlirFloatAttrGetValueDouble(attr.get)
 
   def mlirFlatSymbolRefAttrGet(symbol: String) = MlirAttribute(
     CAPI.mlirFlatSymbolRefAttrGet(arena, mlirCtx, newString(symbol).get)
