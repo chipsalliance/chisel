@@ -8,7 +8,7 @@ import mill.scalalib.api.ZincWorkerUtil.matchingVersions
 import mill.util.Jvm.createJar
 import $ivy.`com.lihaoyi::mill-contrib-jmh:`
 import mill.contrib.jmh.JmhModule
-import $ivy.`io.chris-kipp::mill-ci-release::0.1.10`
+import $ivy.`io.chris-kipp::mill-ci-release::0.2.0`
 import io.kipp.mill.ci.release.{CiReleaseModule, SonatypeHost}
 import de.tobiasroeser.mill.vcs.version.VcsVersion // pulled in by mill-ci-release
 
