@@ -62,6 +62,15 @@ class PropertyTest extends Module {
   // SFT-FIRRTL-NEXT: propassign b, List<List<Integer>>(List<Integer>(Integer(456)))
   a := Property(Seq[Seq[Int]](Seq(123)))
   b := Property(Seq[Seq[Int]](Seq(456)))
+
+  // SFC-FIRRTL: output f : Double
+  // SFC-FIRRTL: output bool : Bool
+  val f = IO(Output(Property[Double]()))
+  val bool = IO(Output(Property[Boolean]()))
+  // SFC-FIRRTL: propassign f, Double(1.23)
+  // SFC-FIRRTL: propassign bool, Bool(true)
+  f := Property(1.23)
+  bool := Property(true)
 }
 
 args.head match {
@@ -78,6 +87,8 @@ args.head match {
 
     // CHECK-NEXT: .a => { [ [ 123 ] ] }
     // CHECK-NEXT: .b => { [ [ 456 ] ] }
+    // CHECK-NEXT: .bool => { true }
+    // CHECK-NEXT: .f => { 1.23 }
     // CHECK-NEXT: .p => { OMReferenceTarget:~PropertyTest|PropertyTest>i }
     obj.foreachField((name, value) => println(s".$name => { ${value.toString} }"))
 
