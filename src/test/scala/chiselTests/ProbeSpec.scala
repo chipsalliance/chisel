@@ -745,4 +745,43 @@ class ProbeSpec extends ChiselFlatSpec with FileCheck with Utils {
     }
     ChiselStage.emitCHIRRTL(new TestMod)
   }
+
+  "Probes of Bool()" should "fail to be driven with 0.U.asTypeOf(...)" in {
+    class TestMod extends RawModule {
+      val a = IO(Output(Probe(Bool())))
+      a :#= 0.U.asTypeOf(a)
+    }
+    val exc = intercept[chisel3.ChiselException] {
+      ChiselStage.emitCHIRRTL(new TestMod, Array("--throw-on-first-error"))
+    }
+    exc.getMessage should include(
+      "Cannot create Const of a Probe."
+    ) // current message is: mismatched probe/non-probe types in TestMod.a")
+  }
+  "Probes of Aggregates" should "fail to be driven with 0.U.asTypeOf(...)" in {
+    class BundleWithABool extends Bundle {
+      val foo = Bool()
+    }
+    class TestMod extends RawModule {
+      val a = IO(Output(Probe(new BundleWithABool())))
+      a :#= 0.U.asTypeOf(a)
+    }
+    val exc = intercept[chisel3.ChiselException] {
+      ChiselStage.emitCHIRRTL(new TestMod, Array("--throw-on-first-error"))
+    }
+    exc.getMessage should include("Cannot create Const of a Probe.")
+  }
+  "Bundles of Probes" should "fail to be driven with 0.U.asTypeOf(...)" in {
+    class BundleWithAProbe extends Bundle {
+      val tap = Probe(Bool())
+    }
+    class TestMod extends RawModule {
+      val a = IO(Output(new BundleWithAProbe()))
+      a :#= 0.U.asTypeOf(a)
+    }
+    val exc = intercept[chisel3.ChiselException] {
+      ChiselStage.emitCHIRRTL(new TestMod, Array("--throw-on-first-error"))
+    }
+    exc.getMessage should include("Cannot create Const of a Probe.") // currently just succeeds!
+  }
 }
