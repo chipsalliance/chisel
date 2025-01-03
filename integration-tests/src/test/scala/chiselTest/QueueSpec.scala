@@ -316,12 +316,24 @@ class QueueSpec extends ChiselPropSpec {
         probe.define(id, probe.ProbeValue(_id))
       }
 
-      private val (queue, shadow) = Queue.withShadowLayer(enq = in, layerDataTuple = (probe.read(id), layers.Verification))
+      private val (queue, shadow) =
+        Queue.withShadowLayer(enq = in, layerDataTuple = (probe.read(id), layers.Verification))
       out :<>= queue
       probe.define(outShadow, shadow)
     }
 
     println(ChiselStage.emitCHIRRTL(new Foo))
-    println(ChiselStage.emitSystemVerilog(new Foo, firtoolOpts=Array("-disable-all-randomization", "-strip-debug-info", "-enable-layers=Verification.Assert", "-enable-layers=Verification.Assume", "-enable-layers=Verification.Cover")))
+    println(
+      ChiselStage.emitSystemVerilog(
+        new Foo,
+        firtoolOpts = Array(
+          "-disable-all-randomization",
+          "-strip-debug-info",
+          "-enable-layers=Verification.Assert",
+          "-enable-layers=Verification.Assume",
+          "-enable-layers=Verification.Cover"
+        )
+      )
+    )
   }
 }
