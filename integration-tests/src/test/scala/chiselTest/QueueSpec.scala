@@ -303,4 +303,25 @@ class QueueSpec extends ChiselPropSpec {
     chirrtl should include("inst foo_q of Queue")
     chirrtl should include("inst bar_q of Queue")
   }
+
+  property("A shadow queue should track an identifier") {
+    class Foo extends Module {
+      val in = IO(Flipped(Decoupled(UInt(8.W))))
+      val out = IO(Decoupled(UInt(8.W)))
+      val outShadow = IO(probe.Probe(Valid(UInt(4.W)), layers.Verification))
+
+      private val id = Wire(probe.Probe(UInt(4.W), layers.Verification))
+      layer.block(layers.Verification) {
+        val (_id, _) = Counter(in.fire, 15)
+        probe.define(id, probe.ProbeValue(_id))
+      }
+
+      private val (queue, shadow) = Queue.withShadowLayer(enq = in, layerDataTuple = (probe.read(id), layers.Verification))
+      out :<>= queue
+      probe.define(outShadow, shadow)
+    }
+
+    println(ChiselStage.emitCHIRRTL(new Foo))
+    println(ChiselStage.emitSystemVerilog(new Foo, firtoolOpts=Array("-disable-all-randomization", "-strip-debug-info", "-enable-layers=Verification.Assert", "-enable-layers=Verification.Assume", "-enable-layers=Verification.Cover")))
+  }
 }

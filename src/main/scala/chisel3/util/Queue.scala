@@ -3,6 +3,8 @@ package chisel3.util
 
 import chisel3._
 import chisel3.experimental.requireIsChiselType
+import chisel3.layer.{block, Layer}
+import chisel3.probe.{define, Probe, ProbeValue}
 
 /** An I/O Bundle for Queues
   * @param gen The type of data to queue
@@ -183,6 +185,37 @@ object Queue {
       enq.ready := q.io.enq.ready
       q.io.deq
     }
+  }
+
+  def withShadowLayer[T <: Data, S <: Data](
+    enq:            ReadyValidIO[T],
+    entries:        Int = 2,
+    pipe:           Boolean = false,
+    flow:           Boolean = false,
+    useSyncReadMem: Boolean = false,
+    flush:          Option[Bool] = None,
+    layerDataTuple: (S, layer.Layer)
+  ): (DecoupledIO[T], Valid[S]) = {
+    val queue = apply(enq, entries, pipe, flow, useSyncReadMem, flush)
+
+    val (data, layer) = layerDataTuple
+    val shadowDeq = Wire(Probe(Valid(chiselTypeOf(data)), layer))
+    block(layer) {
+      val shadowEnq = Wire(Decoupled(chiselTypeOf(data)))
+      shadowEnq.ready :<= true.B
+      shadowEnq.valid :<= enq.fire
+      shadowEnq.bits :<= data
+
+      val shadowQueue = Queue(shadowEnq, entries, pipe, flow, useSyncReadMem, flush)
+
+      val _shadowDeq = Wire(Valid(chiselTypeOf(data)))
+      _shadowDeq.valid :<= shadowQueue.valid
+      _shadowDeq.bits :<= shadowQueue.bits
+      shadowQueue.ready :<= queue.ready
+      define(shadowDeq, ProbeValue(_shadowDeq))
+    }
+
+    (queue, shadowDeq)
   }
 
   /** Create a queue and supply a [[IrrevocableIO]] containing the product.
