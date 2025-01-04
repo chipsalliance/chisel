@@ -239,14 +239,13 @@ class ShadowQueueFactoryTester(queueDepth: Int, tap: Int, useSyncReadMem: Boolea
   }
 
   private val (queue, shadow) =
-    Queue.withShadowLayer(
+    Queue.withShadow(
       enq = enq,
       entries = queueDepth,
-      useSyncReadMem = useSyncReadMem,
-      layerDataTuple = (probe.read(idIn), layers.Verification)
+      useSyncReadMem = useSyncReadMem
     )
   deq :<>= queue
-  probe.define(idOut, shadow)
+  probe.define(idOut, shadow(probe.read(idIn), layers.Verification))
 }
 
 class QueueSpec extends ChiselPropSpec {

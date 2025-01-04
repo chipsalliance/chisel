@@ -5,6 +5,7 @@ import chisel3._
 import chisel3.experimental.requireIsChiselType
 import chisel3.layer.{block, Layer}
 import chisel3.probe.{define, Probe, ProbeValue}
+import chisel3.util.experimental.BoringUtils
 
 /** An I/O Bundle for Queues
   * @param gen The type of data to queue
@@ -187,35 +188,85 @@ object Queue {
     }
   }
 
-  def withShadowLayer[T <: Data, S <: Data](
+  /** A factory for creating shadow queues.  This is created using the
+    * `withShadowQueue` method.
+    */
+  class ShadowFactory[T <: Data] private[Queue] (
+    enq:            ReadyValidIO[T],
+    deq:            ReadyValidIO[T],
+    entries:        Int,
+    pipe:           Boolean,
+    flow:           Boolean,
+    useSyncReadMem: Boolean,
+    flush:          Option[Bool]) {
+
+    /** Create a "shadow" `Queue` in a specific layer that will be queued and
+      * dequeued in lockstep with an original `Queue`.  Connections are made
+      * using `BoringUtils.tapAndRead` which allows this method to be called
+      * anywhere in the hierarchy.
+      *
+      * An intended use case of this is as a building block of a "shadow" design
+      * verification datapath which augments an existing design datapath with
+      * additional information.  E.g., a shadow datapath that tracks transations
+      * in an interconnect.
+      *
+      * @param data a hardware data that should be enqueued together with the
+      * original `Queue`'s data
+      * @param layer the `Layer` in which this queue should be created
+      * @return a layer-colored `Valid` interface of probe type
+      */
+    def apply[A <: Data](data: A, layer: Layer): Valid[A] = {
+      val shadowDeq = Wire(Probe(Valid(chiselTypeOf(data)), layer))
+
+      block(layer) {
+        val shadowEnq = Wire(Decoupled(chiselTypeOf(data)))
+        shadowEnq.ready :<= true.B
+        shadowEnq.valid :<= BoringUtils.tapAndRead(enq).fire
+        shadowEnq.bits :<= data
+
+        val shadowQueue = Queue(shadowEnq, entries, pipe, flow, useSyncReadMem, flush.map(BoringUtils.tapAndRead))
+
+        val _shadowDeq = Wire(Valid(chiselTypeOf(data)))
+        _shadowDeq.valid :<= shadowQueue.valid
+        _shadowDeq.bits :<= shadowQueue.bits
+        shadowQueue.ready :<= BoringUtils.tapAndRead(deq).ready
+        define(shadowDeq, ProbeValue(_shadowDeq))
+      }
+
+      shadowDeq
+    }
+  }
+
+  /** Create a [[Queue]] and supply a [[DecoupledIO]] containing the product.
+    * This additionally returns a [[ShadowFactory]] which can be used to build
+    * shadow datapaths that work in lockstep with this [[Queue]].
+    *
+    * @param enq input (enqueue) interface to the queue, also determines type of
+    *            queue elements.
+    * @param entries depth (number of elements) of the queue
+    * @param pipe True if a single entry queue can run at full throughput (like
+    *             a pipeline). The `ready` signals are combinationally coupled.
+    * @param flow True if the inputs can be consumed on the same cycle (the
+    *             inputs "flow" through the queue immediately).  The `valid`
+    *             signals are coupled.
+    * @param useSyncReadMem True uses SyncReadMem instead of Mem as an internal
+    *                       memory element.
+    * @param flush Optional [[Bool]] signal, if defined, the [[Queue.hasFlush]]
+    *              will be true, and connect correspond signal to [[Queue]]
+    *              instance.
+    * @return output (dequeue) interface from the queue and a [[ShadowFactory]]
+    *         for creating shadow [[Queue]]s
+    */
+  def withShadow[T <: Data](
     enq:            ReadyValidIO[T],
     entries:        Int = 2,
     pipe:           Boolean = false,
     flow:           Boolean = false,
     useSyncReadMem: Boolean = false,
-    flush:          Option[Bool] = None,
-    layerDataTuple: (S, layer.Layer)
-  ): (DecoupledIO[T], Valid[S]) = {
-    val queue = apply(enq, entries, pipe, flow, useSyncReadMem, flush)
-
-    val (data, layer) = layerDataTuple
-    val shadowDeq = Wire(Probe(Valid(chiselTypeOf(data)), layer))
-    block(layer) {
-      val shadowEnq = Wire(Decoupled(chiselTypeOf(data)))
-      shadowEnq.ready :<= true.B
-      shadowEnq.valid :<= enq.fire
-      shadowEnq.bits :<= data
-
-      val shadowQueue = Queue(shadowEnq, entries, pipe, flow, useSyncReadMem, flush)
-
-      val _shadowDeq = Wire(Valid(chiselTypeOf(data)))
-      _shadowDeq.valid :<= shadowQueue.valid
-      _shadowDeq.bits :<= shadowQueue.bits
-      shadowQueue.ready :<= queue.ready
-      define(shadowDeq, ProbeValue(_shadowDeq))
-    }
-
-    (queue, shadowDeq)
+    flush:          Option[Bool] = None
+  ): (DecoupledIO[T], ShadowFactory[T]) = {
+    val deq = apply(enq, entries, pipe, flow, useSyncReadMem, flush)
+    (deq, new ShadowFactory(enq, deq, entries, pipe, flow, useSyncReadMem, flush))
   }
 
   /** Create a queue and supply a [[IrrevocableIO]] containing the product.
