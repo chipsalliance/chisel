@@ -12,8 +12,8 @@ object Probe extends ProbeBase {
   def apply[T <: Data](source: => T)(using sourceInfo: SourceInfo): T =
     super.apply(source, false, None)
 
-  def apply[T <: Data](source: => T, color: Option[layer.Layer])(using sourceInfo: SourceInfo): T =
-    super.apply(source, false, color)
+  def apply[T <: Data](source: => T, color: layer.Layer)(using sourceInfo: SourceInfo): T =
+    super.apply(source, false, Some(color))
 }
 
 object RWProbe extends ProbeBase with SourceInfoDoc {
