@@ -220,9 +220,8 @@ object Queue {
 
       block(layer) {
         val shadowEnq = Wire(Decoupled(chiselTypeOf(data)))
-        val enqProbe = BoringUtils.tapAndRead(enq)
-        shadowEnq.ready :<= enqProbe.ready
-        shadowEnq.valid :<= enqProbe.valid
+        val probeEnq = BoringUtils.tapAndRead(enq)
+        shadowEnq.valid :<= probeEnq.valid
         shadowEnq.bits :<= data
 
         val shadowQueue = Queue(shadowEnq, entries, pipe, flow, useSyncReadMem, flush.map(BoringUtils.tapAndRead))
