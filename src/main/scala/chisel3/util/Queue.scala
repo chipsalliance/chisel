@@ -189,7 +189,7 @@ object Queue {
   }
 
   /** A factory for creating shadow queues.  This is created using the
-    * `withShadowQueue` method.
+    * `withShadow` method.
     */
   class ShadowFactory private[Queue] (
     enq:            ReadyValidIO[Data],
