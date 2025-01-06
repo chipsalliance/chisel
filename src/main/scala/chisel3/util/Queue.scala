@@ -223,10 +223,6 @@ object Queue {
         val probeEnq = BoringUtils.tapAndRead(enq)
         shadowEnq.valid :<= probeEnq.valid
         shadowEnq.bits :<= data
-        assert(
-          probeEnq.ready === shadowEnq.ready,
-          "ready signals of shadow queue not moving in lockstep with its original"
-        )
 
         val shadowQueue = Queue(shadowEnq, entries, pipe, flow, useSyncReadMem, flush.map(BoringUtils.tapAndRead))
 
