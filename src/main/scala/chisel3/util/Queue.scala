@@ -191,9 +191,9 @@ object Queue {
   /** A factory for creating shadow queues.  This is created using the
     * `withShadowQueue` method.
     */
-  class ShadowFactory[T <: Data] private[Queue] (
-    enq:            ReadyValidIO[T],
-    deq:            ReadyValidIO[T],
+  class ShadowFactory private[Queue] (
+    enq:            ReadyValidIO[Data],
+    deq:            ReadyValidIO[Data],
     entries:        Int,
     pipe:           Boolean,
     flow:           Boolean,
@@ -265,7 +265,7 @@ object Queue {
     flow:           Boolean = false,
     useSyncReadMem: Boolean = false,
     flush:          Option[Bool] = None
-  ): (DecoupledIO[T], ShadowFactory[T]) = {
+  ): (DecoupledIO[T], ShadowFactory) = {
     val deq = apply(enq, entries, pipe, flow, useSyncReadMem, flush)
     (deq, new ShadowFactory(enq, deq, entries, pipe, flow, useSyncReadMem, flush))
   }
