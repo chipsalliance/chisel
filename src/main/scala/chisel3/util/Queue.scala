@@ -142,6 +142,25 @@ class Queue[T <: Data](
     * generator's `typeName`
     */
   override def desiredName = s"Queue${entries}_${gen.typeName}"
+
+  /** Create a "shadow" `Queue` in a specific layer that will be queued and
+    * dequeued in lockstep with an original `Queue`.  Connections are made using
+    * `BoringUtils.tapAndRead` which allows this method to be called anywhere in
+    * the hierarchy.
+    *
+    * An intended use case of this is as a building block of a "shadow" design
+    * verification datapath which augments an existing design datapath with
+    * additional information.  E.g., a shadow datapath that tracks transations
+    * in an interconnect.
+    *
+    * @param data a hardware data that should be enqueued together with the
+    * original `Queue`'s data
+    * @param layer the `Layer` in which this queue should be created
+    * @return a layer-colored `Valid` interface of probe type
+    */
+  def shadow[A <: Data](data: A, layer: Layer): Valid[A] = {
+    (new Queue.ShadowFactory(enq = io.enq, deq = io.deq, entries, pipe, flow, useSyncReadMem, io.flush))(data, layer)
+  }
 }
 
 /** Factory for a generic hardware queue. */
