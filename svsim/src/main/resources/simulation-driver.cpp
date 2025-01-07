@@ -909,6 +909,10 @@ void simulation_main(int argc, char const **argv) {
 }
 
 void run_simulation(int delay) {
+  if(!delay) {
+    testbench->eval_step();
+    return;
+  }
   testbench->eval();
   context->timeInc(delay);
 }
