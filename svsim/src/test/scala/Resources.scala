@@ -46,5 +46,25 @@ object Resources {
         )
       )
     }
+    def elaborateSIntWire(): Unit = {
+      workspace.addPrimarySourceFromResource(getClass, "/SIntWire.sv")
+      workspace.elaborate(
+        ModuleInfo(
+          name = "SIntWire",
+          ports = Seq(
+            new ModuleInfo.Port(
+              name = "in",
+              isSettable = true,
+              isGettable = true
+            ),
+            new ModuleInfo.Port(
+              name = "out",
+              isSettable = false,
+              isGettable = true
+            )
+          )
+        )
+      )
+    }
   }
 }

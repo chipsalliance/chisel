@@ -183,6 +183,48 @@ trait BackendSpec extends AnyFunSpec with Matchers {
         val traceReader = new BufferedReader(new FileReader(s"${simulation.workingDirectoryPath}/trace.vcd"))
         traceReader.lines().count() must be > 1L
       }
+
+      it("communicates data correctly") {
+        import Resources._
+        workspace.reset()
+        workspace.elaborateSIntWire()
+        workspace.generateAdditionalSources()
+        simulation = workspace.compile(
+          backend
+        )(
+          workingDirectoryTag = name,
+          commonSettings = CommonCompilationSettings(),
+          backendSpecificSettings = compilationSettings,
+          customSimulationWorkingDirectory = None,
+          verbose = false
+        )
+        simulation.run(
+          verbose = false,
+          executionScriptLimit = None
+        ) { controller =>
+          val in = controller.port("in")
+          val out = controller.port("out")
+
+          controller.setTraceEnabled(true)
+
+          val inVal = 0x80000000
+          val outVal = inVal
+
+          in.set(inVal)
+          in.check(isSigned = true) { value =>
+            assert(value.asBigInt === inVal)
+          }
+          var isOutChecked: Boolean = false
+          out.check(isSigned = true) { value =>
+            isOutChecked = true
+            assert(value.asBigInt === inVal)
+          }
+          assert(isOutChecked === false)
+
+          controller.completeInFlightCommands()
+          assert(isOutChecked === true)
+        }
+      }
     }
   }
 }
