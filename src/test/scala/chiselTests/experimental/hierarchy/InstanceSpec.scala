@@ -1067,7 +1067,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       val m = ChiselGeneratorAnnotation(() => {
         new AddTwoMixedModules
       }).elaborate(1).asInstanceOf[DesignAnnotation[AddTwoMixedModules]].design
-      aop.Select.instancesOf[AddOne](m.toDefinition).map { i: Instance[AddOne] => i.toTarget } should be(
+      aop.Select.instancesOf[AddOne](m.toDefinition).map { (i: Instance[AddOne]) => i.toTarget } should be(
         Seq(
           "~AddTwoMixedModules|AddTwoMixedModules/i0:AddOne".it,
           "~AddTwoMixedModules|AddTwoMixedModules/i1:AddOne_1".it
@@ -1079,8 +1079,8 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         new AddTwoMixedModules
       }).elaborate(1).asInstanceOf[DesignAnnotation[AddTwoMixedModules]].design
       val insts = aop.Select.instancesIn(m.toDefinition)
-      val abs = insts.map { i: Instance[BaseModule] => i.toAbsoluteTarget }
-      val rel = insts.map { i: Instance[BaseModule] => i.toTarget }
+      val abs = insts.map { (i: Instance[BaseModule]) => i.toAbsoluteTarget }
+      val rel = insts.map { (i: Instance[BaseModule]) => i.toTarget }
       abs should be(
         Seq(
           "~AddTwoMixedModules|AddTwoMixedModules/i0:AddOne".it,
@@ -1099,8 +1099,8 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         new AddFour
       }).elaborate(1).asInstanceOf[DesignAnnotation[AddFour]].design
       val insts = aop.Select.allInstancesOf[AddOne](m.toDefinition)
-      val abs = insts.map { i: Instance[AddOne] => i.in.toAbsoluteTarget }
-      val rel = insts.map { i: Instance[AddOne] => i.in.toTarget }
+      val abs = insts.map { (i: Instance[AddOne]) => i.in.toAbsoluteTarget }
+      val rel = insts.map { (i: Instance[AddOne]) => i.in.toTarget }
       rel should be(
         Seq(
           "~AddFour|AddFour/i0:AddTwoMixedModules/i0:AddOne>in".rt,
@@ -1122,7 +1122,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       val m = ChiselGeneratorAnnotation(() => {
         new AddTwoMixedModules
       }).elaborate(1).asInstanceOf[DesignAnnotation[AddTwoMixedModules]].design
-      val targets = aop.Select.definitionsOf[AddOne](m.toDefinition).map { i: Definition[AddOne] => i.in.toTarget }
+      val targets = aop.Select.definitionsOf[AddOne](m.toDefinition).map { (i: Definition[AddOne]) => i.in.toTarget }
       targets should be(
         Seq(
           "~AddTwoMixedModules|AddOne>in".rt,
@@ -1134,7 +1134,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       val m = ChiselGeneratorAnnotation(() => {
         new AddTwoMixedModules
       }).elaborate(1).asInstanceOf[DesignAnnotation[AddTwoMixedModules]].design
-      val targets = aop.Select.definitionsIn(m.toDefinition).map { i: Definition[BaseModule] => i.toTarget }
+      val targets = aop.Select.definitionsIn(m.toDefinition).map { (i: Definition[BaseModule]) => i.toTarget }
       targets should be(
         Seq(
           "~AddTwoMixedModules|AddOne".mt,
@@ -1146,7 +1146,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       val m = ChiselGeneratorAnnotation(() => {
         new AddFour
       }).elaborate(1).asInstanceOf[DesignAnnotation[AddFour]].design
-      val targets = aop.Select.allDefinitionsOf[AddOne](m.toDefinition).map { i: Definition[AddOne] => i.in.toTarget }
+      val targets = aop.Select.allDefinitionsOf[AddOne](m.toDefinition).map { (i: Definition[AddOne]) => i.in.toTarget }
       targets should be(
         Seq(
           "~AddFour|AddOne>in".rt,
@@ -1164,7 +1164,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       val m = ChiselGeneratorAnnotation(() => {
         new AddFour
       }).elaborate(1).asInstanceOf[DesignAnnotation[AddFour]].design
-      intercept[Exception] { aop.Select.getDeep(m) { m: BaseModule => Nil } }
+      intercept[Exception] { aop.Select.getDeep(m) { (m: BaseModule) => Nil } }
     }
     it("(10.i): Select.instances should fail when combined with hierarchy package") {
       val m = ChiselGeneratorAnnotation(() => {
@@ -1176,10 +1176,10 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       val m = ChiselGeneratorAnnotation(() => {
         new AddFour
       }).elaborate(1).asInstanceOf[DesignAnnotation[AddFour]].design
-      val abs = aop.Select.allInstancesOf[AddOne](m.toDefinition).flatMap { i: Instance[AddOne] =>
+      val abs = aop.Select.allInstancesOf[AddOne](m.toDefinition).flatMap { (i: Instance[AddOne]) =>
         aop.Select.ios(i).map(_.toAbsoluteTarget)
       }
-      val rel = aop.Select.allInstancesOf[AddOne](m.toDefinition).flatMap { i: Instance[AddOne] =>
+      val rel = aop.Select.allInstancesOf[AddOne](m.toDefinition).flatMap { (i: Instance[AddOne]) =>
         aop.Select.ios(i).map(_.toTarget)
       }
       abs should be(
@@ -1227,10 +1227,10 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       val m = ChiselGeneratorAnnotation(() => {
         new AddFour
       }).elaborate(1).asInstanceOf[DesignAnnotation[AddFour]].design
-      val abs = aop.Select.allDefinitionsOf[AddOne](m.toDefinition).flatMap { i: Definition[AddOne] =>
+      val abs = aop.Select.allDefinitionsOf[AddOne](m.toDefinition).flatMap { (i: Definition[AddOne]) =>
         aop.Select.ios(i).map(_.toAbsoluteTarget)
       }
-      val rel = aop.Select.allDefinitionsOf[AddOne](m.toDefinition).flatMap { i: Definition[AddOne] =>
+      val rel = aop.Select.allDefinitionsOf[AddOne](m.toDefinition).flatMap { (i: Definition[AddOne]) =>
         aop.Select.ios(i).map(_.toTarget)
       }
       abs should be(
@@ -1262,7 +1262,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       val m = ChiselGeneratorAnnotation(() => {
         new HasMultipleTypeParamsInside
       }).elaborate(1).asInstanceOf[DesignAnnotation[HasMultipleTypeParamsInside]].design
-      val targets = aop.Select.instancesIn(m.toDefinition).map { i: Instance[BaseModule] => i.toTarget }
+      val targets = aop.Select.instancesIn(m.toDefinition).map { (i: Instance[BaseModule]) => i.toTarget }
       targets should be(
         Seq(
           "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i00:HasTypeParams".it,
@@ -1278,7 +1278,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         new HasMultipleTypeParamsInside
       }).elaborate(1).asInstanceOf[DesignAnnotation[HasMultipleTypeParamsInside]].design
       val targets =
-        aop.Select.instancesOf[HasTypeParams[_]](m.toDefinition).map { i: Instance[HasTypeParams[_]] => i.toTarget }
+        aop.Select.instancesOf[HasTypeParams[_]](m.toDefinition).map { (i: Instance[HasTypeParams[_]]) => i.toTarget }
       targets should be(
         Seq(
           "~HasMultipleTypeParamsInside|HasMultipleTypeParamsInside/i00:HasTypeParams".it,
@@ -1294,7 +1294,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       val m = ChiselGeneratorAnnotation(() => {
         new HasMultipleTypeParamsInside
       }).elaborate(1).asInstanceOf[DesignAnnotation[HasMultipleTypeParamsInside]].design
-      val targets = aop.Select.instancesOf[HasTypeParams[SInt]](m.toDefinition).map { i: Instance[HasTypeParams[_]] =>
+      val targets = aop.Select.instancesOf[HasTypeParams[SInt]](m.toDefinition).map { (i: Instance[HasTypeParams[_]]) =>
         i.toTarget
       }
       targets should be(
