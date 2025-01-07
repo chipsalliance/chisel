@@ -158,9 +158,11 @@ class Queue[T <: Data](
     * @param layer the `Layer` in which this queue should be created
     * @return a layer-colored `Valid` interface of probe type
     */
-  def shadow[A <: Data](data: A, layer: Layer): Valid[A] = {
-    (new Queue.ShadowFactory(enq = io.enq, deq = io.deq, entries, pipe, flow, useSyncReadMem, io.flush))(data, layer)
-  }
+  def shadow[A <: Data](data: A, layer: Layer): Valid[A] =
+    withClockAndReset(BoringUtils.tapAndRead(clock), BoringUtils.tapAndRead(reset)) {
+      val shadow = new Queue.ShadowFactory(enq = io.enq, deq = io.deq, entries, pipe, flow, useSyncReadMem, io.flush)
+      shadow(data, layer)
+    }
 }
 
 /** Factory for a generic hardware queue. */
@@ -219,6 +221,12 @@ object Queue {
     useSyncReadMem: Boolean,
     flush:          Option[Bool]) {
 
+    /** The clock used when building the original Queue. */
+    private val clock = Module.clock
+
+    /** The reset used when elaborating the original Queue. */
+    private val reset = Module.reset
+
     /** Create a "shadow" `Queue` in a specific layer that will be queued and
       * dequeued in lockstep with an original `Queue`.  Connections are made
       * using `BoringUtils.tapAndRead` which allows this method to be called
@@ -234,26 +242,27 @@ object Queue {
       * @param layer the `Layer` in which this queue should be created
       * @return a layer-colored `Valid` interface of probe type
       */
-    def apply[A <: Data](data: A, layer: Layer): Valid[A] = {
-      val shadowDeq = Wire(Probe(Valid(chiselTypeOf(data)), layer))
+    def apply[A <: Data](data: A, layer: Layer): Valid[A] =
+      withClockAndReset(BoringUtils.tapAndRead(clock), BoringUtils.tapAndRead(reset)) {
+        val shadowDeq = Wire(Probe(Valid(chiselTypeOf(data)), layer))
 
-      block(layer) {
-        val shadowEnq = Wire(Decoupled(chiselTypeOf(data)))
-        val probeEnq = BoringUtils.tapAndRead(enq)
-        shadowEnq.valid :<= probeEnq.valid
-        shadowEnq.bits :<= data
+        block(layer) {
+          val shadowEnq = Wire(Decoupled(chiselTypeOf(data)))
+          val probeEnq = BoringUtils.tapAndRead(enq)
+          shadowEnq.valid :<= probeEnq.valid
+          shadowEnq.bits :<= data
 
-        val shadowQueue = Queue(shadowEnq, entries, pipe, flow, useSyncReadMem, flush.map(BoringUtils.tapAndRead))
+          val shadowQueue = Queue(shadowEnq, entries, pipe, flow, useSyncReadMem, flush.map(BoringUtils.tapAndRead))
 
-        val _shadowDeq = Wire(Valid(chiselTypeOf(data)))
-        _shadowDeq.valid :<= shadowQueue.valid
-        _shadowDeq.bits :<= shadowQueue.bits
-        shadowQueue.ready :<= BoringUtils.tapAndRead(deq).ready
-        define(shadowDeq, ProbeValue(_shadowDeq))
+          val _shadowDeq = Wire(Valid(chiselTypeOf(data)))
+          _shadowDeq.valid :<= shadowQueue.valid
+          _shadowDeq.bits :<= shadowQueue.bits
+          shadowQueue.ready :<= BoringUtils.tapAndRead(deq).ready
+          define(shadowDeq, ProbeValue(_shadowDeq))
+        }
+
+        shadowDeq
       }
-
-      shadowDeq
-    }
   }
 
   /** Create a [[Queue]] and supply a [[DecoupledIO]] containing the product.
