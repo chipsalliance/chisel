@@ -21,13 +21,17 @@ mlirModuleGetOperation
 mlirOperationStateGet
 mlirNamedAttributeGet
 mlirAttributeIsAInteger
+mlirAttributeIsAFloat
+mlirAttributeIsABool
 mlirAttributeIsAString
 mlirIntegerAttrGet
 mlirIntegerAttrGetValueInt
 mlirIntegerAttrGetValueSInt
 mlirIntegerAttrGetValueUInt
 mlirFloatAttrDoubleGet
+mlirFloatAttrGetValueDouble
 mlirBoolAttrGet
+mlirBoolAttrGetValue
 mlirStringAttrGet
 mlirStringAttrGetValue
 mlirArrayAttrGet
