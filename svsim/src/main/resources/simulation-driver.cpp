@@ -263,8 +263,10 @@ static void sendBits(uint8_t *mutableBytes, int bitCount, bool isSigned) {
         mutableBytes[i] = (uint8_t)byte;
       }
     }
-    // Strip irrelevant bits
-    mutableBytes[byteCount - 1] &= signBitMask - 1;
+    // Strip irrelevant bits only when needed (#4593)
+    if (mutableBytes[byteCount - 1] != 0b10000000) {
+      mutableBytes[byteCount - 1] &= signBitMask - 1;
+    }
   }
   for (int i = byteCount - 1; i >= 0; i--) {
     writeMessageBody("%02X", mutableBytes[i]);
