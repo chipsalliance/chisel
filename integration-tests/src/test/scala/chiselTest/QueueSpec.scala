@@ -208,6 +208,46 @@ class QueueFactoryTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap
   }
 }
 
+/** Test that a Shadow Queue keeps track of shadow identifiers that are fed to
+  * it.  This feeds data into a queue and an identifier (which is `data >> 1`)
+  * into the shadow queue.  It then checks that each data read out has the
+  * expected identifier.
+  */
+class ShadowQueueFactoryTester(queueDepth: Int, tap: Int, useSyncReadMem: Boolean) extends BasicTester {
+  val enq, deq = Wire(Decoupled(UInt(32.W)))
+
+  private val (dataCounter, _) = Counter(0 to 31 by 2, enable = enq.fire)
+
+  enq.valid :<= true.B
+  deq.ready :<= LFSR(16)(tap)
+
+  enq.bits :<= dataCounter
+
+  private val idIn = Wire(probe.Probe(UInt(4.W), layers.Verification))
+  private val idOut = Wire(probe.Probe(Valid(UInt(4.W)), layers.Verification))
+  layer.block(layers.Verification) {
+    probe.define(idIn, probe.ProbeValue(dataCounter >> 1))
+
+    when(deq.fire) {
+      assert(deq.bits >> 1 === probe.read(idOut).bits)
+    }
+  }
+
+  private val (_, done) = Counter(0 to 8, enable = deq.fire)
+  when(done) {
+    stop()
+  }
+
+  private val (queue, shadow) =
+    Queue.withShadow(
+      enq = enq,
+      entries = queueDepth,
+      useSyncReadMem = useSyncReadMem
+    )
+  deq :<>= queue
+  probe.define(idOut, shadow(probe.read(idIn), layers.Verification))
+}
+
 class QueueSpec extends ChiselPropSpec {
 
   property("Queue should have things pass through") {
@@ -302,5 +342,14 @@ class QueueSpec extends ChiselPropSpec {
     val chirrtl = ChiselStage.emitCHIRRTL(new HasTwoQueues)
     chirrtl should include("inst foo_q of Queue")
     chirrtl should include("inst bar_q of Queue")
+  }
+
+  property("A shadow queue should track an identifier") {
+    forAll(vecSizes, Gen.choose(0, 15), Gen.oneOf(true, false)) { (depth, tap, isSync) =>
+      info(s"depth: $depth, tap: $tap, isSync: $isSync")
+      assertTesterPasses {
+        new ShadowQueueFactoryTester(depth, tap, isSync)
+      }
+    }
   }
 }
