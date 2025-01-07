@@ -479,10 +479,18 @@ object Select {
 
   // Given a loc, return all subcomponents of id that could be assigned to in connect
   private def getEffected(a: Arg): Seq[Data] = a match {
+<<<<<<< HEAD
     case Node(id: Data) => getIntermediateAndLeafs(id)
     case Slot(imm, name) => Seq(imm.id.asInstanceOf[Record].elements(name))
     case Index(imm, _)   => getEffected(imm)
     case _               => throw new InternalErrorException("Match error: a=$a")
+=======
+    case Node(id: Data) => DataMirror.collectAllMembers(id)
+    case Slot(imm: Node, name) => Seq(imm.id.asInstanceOf[Record].elements(name))
+    case Index(imm, _)    => getEffected(imm)
+    case LitIndex(imm, _) => getEffected(imm)
+    case _                => throw new InternalErrorException(s"Match error: a=$a")
+>>>>>>> ca773c08a (Fix missing string interpolators, add -Xlint:missing-interpolator (#4471))
   }
 
   // Given an arg, return the corresponding id. Don't use on a loc of a connect.
@@ -511,7 +519,7 @@ object Select {
     case e: ChiselException =>
       i.getOptionRef.get match {
         case l: LitArg => l.num.intValue.toString
-        case _ => throw new InternalErrorException("Match error: i.getOptionRef.get=${i.getOptionRef.get}")
+        case _ => throw new InternalErrorException(s"Match error: i.getOptionRef.get=${i.getOptionRef.get}")
       }
   }
 
