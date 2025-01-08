@@ -46,19 +46,69 @@ object Resources {
         )
       )
     }
-    def elaborateSIntWire(): Unit = {
-      workspace.addPrimarySourceFromResource(getClass, "/SIntWire.sv")
+    def elaborateSIntTest(): Unit = {
+      workspace.addPrimarySourceFromResource(getClass, "/SIntTest.sv")
       workspace.elaborate(
         ModuleInfo(
-          name = "SIntWire",
+          name = "SIntTest",
           ports = Seq(
             new ModuleInfo.Port(
-              name = "in",
+              name = "in_8",
               isSettable = true,
               isGettable = true
             ),
             new ModuleInfo.Port(
-              name = "out",
+              name = "in_31",
+              isSettable = true,
+              isGettable = true
+            ),
+            new ModuleInfo.Port(
+              name = "in_32",
+              isSettable = true,
+              isGettable = true
+            ),
+            new ModuleInfo.Port(
+              name = "in_33",
+              isSettable = true,
+              isGettable = true
+            ),
+            new ModuleInfo.Port(
+              name = "out_8",
+              isSettable = false,
+              isGettable = true
+            ),
+            new ModuleInfo.Port(
+              name = "out_31",
+              isSettable = false,
+              isGettable = true
+            ),
+            new ModuleInfo.Port(
+              name = "out_32",
+              isSettable = false,
+              isGettable = true
+            ),
+            new ModuleInfo.Port(
+              name = "out_33",
+              isSettable = false,
+              isGettable = true
+            ),
+            new ModuleInfo.Port(
+              name = "out_const_8",
+              isSettable = false,
+              isGettable = true
+            ),
+            new ModuleInfo.Port(
+              name = "out_const_31",
+              isSettable = false,
+              isGettable = true
+            ),
+            new ModuleInfo.Port(
+              name = "out_const_32",
+              isSettable = false,
+              isGettable = true
+            ),
+            new ModuleInfo.Port(
+              name = "out_const_33",
               isSettable = false,
               isGettable = true
             )
