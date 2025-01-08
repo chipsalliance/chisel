@@ -6,6 +6,7 @@ import chisel3.stage.{
   ChiselCircuitAnnotation,
   ChiselGeneratorAnnotation,
   CircuitSerializationAnnotation,
+  EmitVerifStatementDisableProperties,
   PrintFullStackTraceAnnotation,
   RemapLayer,
   SourceRootAnnotation,
@@ -44,7 +45,8 @@ trait CLI extends BareShell { this: BareShell =>
     WarningConfigurationFileAnnotation,
     SourceRootAnnotation,
     DumpFir,
-    RemapLayer
+    RemapLayer,
+    EmitVerifStatementDisableProperties
   ).foreach(_.addOptions(parser))
 
   parser.note("CIRCT (MLIR FIRRTL Compiler) options")

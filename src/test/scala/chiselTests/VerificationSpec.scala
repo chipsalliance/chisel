@@ -21,7 +21,7 @@ class SimpleTest extends Module {
   }
 }
 
-class VerificationSpec extends ChiselPropSpec with Matchers {
+class VerificationSpec extends ChiselPropSpec with FileCheck with Matchers {
 
   def assertContains(s: Seq[String], x: String): Unit = {
     val containsLine = s.map(_.contains(x)).reduce(_ || _)
@@ -73,5 +73,33 @@ class VerificationSpec extends ChiselPropSpec with Matchers {
     exactly(1, svLines) should include("assume__assm:")
     exactly(1, svLines) should include("assume(io_in != 8'h2)")
     exactly(1, svLines) should include("$error(\"Assumption failed")
+  }
+
+  property("verification statements should check that Disable toggles") {
+    class DisableChecksTest extends Module {
+      val io = IO(new Bundle {
+        val in = Input(UInt(8.W))
+        val out = Output(UInt(8.W))
+      })
+      io.out := io.in
+      val assert = chisel3.assert(io.out === io.in)
+      printf(cf"io: ${io.in}")
+    }
+
+    val fir = ChiselStage.emitCHIRRTL(
+      new DisableChecksTest,
+      args = Array("--emit-verif-statement-disable-properties")
+    )
+    fileCheckString(fir)(
+      """
+      CHECK: node assert_disable =
+      CHECK: node [[NOT_DISABLE:[a-zA-Z0-9_]+]] = eq(assert_disable, UInt<1>(0h0))
+      CHECK: node assert_ltl_eventually = intrinsic(circt_ltl_eventually : UInt<1>, [[NOT_DISABLE]])
+
+      CHECK: node disable =
+      CHECK: node [[NOT_DISABLE_1:[a-zA-Z0-9_]+]] = eq(disable, UInt<1>(0h0))
+      CHECK: node ltl_eventually = intrinsic(circt_ltl_eventually : UInt<1>, [[NOT_DISABLE_1]])
+      """
+    )
   }
 }
