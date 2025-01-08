@@ -74,12 +74,26 @@ abstract class PanamaCIRCTOMEvaluatorValue {
     }
   def int: PanamaCIRCTOMEvaluatorValuePrimitiveInteger = intOpt.get
 
+  def floatOpt: Option[PanamaCIRCTOMEvaluatorValuePrimitiveFloat] =
+    this match {
+      case float: PanamaCIRCTOMEvaluatorValuePrimitiveFloat => Some(float)
+      case _ => None
+    }
+  def float: PanamaCIRCTOMEvaluatorValuePrimitiveFloat = floatOpt.get
+
   def stringOpt: Option[PanamaCIRCTOMEvaluatorValuePrimitiveString] =
     this match {
       case string: PanamaCIRCTOMEvaluatorValuePrimitiveString => Some(string)
       case _ => None
     }
   def string: PanamaCIRCTOMEvaluatorValuePrimitiveString = stringOpt.get
+
+  def boolOpt: Option[PanamaCIRCTOMEvaluatorValuePrimitiveBool] =
+    this match {
+      case bool: PanamaCIRCTOMEvaluatorValuePrimitiveBool => Some(bool)
+      case _ => None
+    }
+  def bool: PanamaCIRCTOMEvaluatorValuePrimitiveBool = boolOpt.get
 
   def tupleOpt: Option[PanamaCIRCTOMEvaluatorValueTuple] =
     this match {
@@ -169,8 +183,12 @@ object PanamaCIRCTOMEvaluatorValuePrimitive {
 
     if (circt.omAttrIsAIntegerAttr(primitive)) {
       new PanamaCIRCTOMEvaluatorValuePrimitiveInteger(circt, value, circt.omIntegerAttrGetInt(primitive))
+    } else if (circt.mlirAttributeIsAFloat(primitive)) {
+      new PanamaCIRCTOMEvaluatorValuePrimitiveFloat(circt, value, primitive)
     } else if (circt.mlirAttributeIsAString(primitive)) {
       new PanamaCIRCTOMEvaluatorValuePrimitiveString(circt, value, primitive)
+    } else if (circt.mlirAttributeIsABool(primitive)) {
+      new PanamaCIRCTOMEvaluatorValuePrimitiveBool(circt, value, primitive)
     } else {
       circt.mlirAttributeDump(primitive)
       throw new Exception("unknown OMEvaluatorValuePrimitive attribute, dumped")
@@ -180,7 +198,9 @@ object PanamaCIRCTOMEvaluatorValuePrimitive {
 abstract class PanamaCIRCTOMEvaluatorValuePrimitive extends PanamaCIRCTOMEvaluatorValue {
   override def toString: String = this match {
     case v: PanamaCIRCTOMEvaluatorValuePrimitiveInteger => v.toString
+    case v: PanamaCIRCTOMEvaluatorValuePrimitiveFloat   => v.toString
     case v: PanamaCIRCTOMEvaluatorValuePrimitiveString  => v.toString
+    case v: PanamaCIRCTOMEvaluatorValuePrimitiveBool    => v.toString
   }
 }
 
@@ -193,12 +213,30 @@ class PanamaCIRCTOMEvaluatorValuePrimitiveInteger private[chisel3] (
   override def toString: String = integer.toString
 }
 
+class PanamaCIRCTOMEvaluatorValuePrimitiveFloat private[chisel3] (
+  val circt:     PanamaCIRCT,
+  val value:     OMEvaluatorValue,
+  val primitive: MlirAttribute)
+    extends PanamaCIRCTOMEvaluatorValuePrimitive {
+  val double:            Double = circt.mlirFloatAttrGetValueDouble(primitive)
+  override def toString: String = double.toString
+}
+
 class PanamaCIRCTOMEvaluatorValuePrimitiveString private[chisel3] (
   val circt:     PanamaCIRCT,
   val value:     OMEvaluatorValue,
   val primitive: MlirAttribute)
     extends PanamaCIRCTOMEvaluatorValuePrimitive {
   override def toString: String = circt.mlirStringAttrGetValue(primitive)
+}
+
+class PanamaCIRCTOMEvaluatorValuePrimitiveBool private[chisel3] (
+  val circt:     PanamaCIRCT,
+  val value:     OMEvaluatorValue,
+  val primitive: MlirAttribute)
+    extends PanamaCIRCTOMEvaluatorValuePrimitive {
+  val boolean:           Boolean = circt.mlirBoolAttrGetValue(primitive)
+  override def toString: String = boolean.toString
 }
 
 class PanamaCIRCTOMEvaluatorValueObject private[chisel3] (val circt: PanamaCIRCT, val value: OMEvaluatorValue)
