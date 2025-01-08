@@ -440,21 +440,18 @@ static uint8_t *scanHexBits(const char **scanCursor, const char *scanEnd,
   }
 
   bool isNegative;
-  int valueBitCount;
   if (**scanCursor == '-') {
     (*scanCursor)++;
     if (reverseScanCursor < *scanCursor) {
       failWithError("Unexpected end of negative value when %s.", description);
     }
     isNegative = true;
-    if (bitCount <= 1) {
-      failWithError("Cannot scan 1-bit-wide negative value when %s.",
+    if (bitCount < 1) {
+      failWithError("Cannot scan 0-bit-wide negative value when %s.",
                     description);
     }
-    valueBitCount = bitCount - 1;
   } else {
     isNegative = false;
-    valueBitCount = bitCount;
   }
 
   int byteCount = (bitCount + 7) / 8;
@@ -464,7 +461,7 @@ static uint8_t *scanHexBits(const char **scanCursor, const char *scanEnd,
   const char *firstCharacterOfValue = *scanCursor;
   int carry = 1; // Only used when `isNegative` is true
   int scannedByteCount = 0;
-  int valueByteCount = (valueBitCount + 7) / 8;
+  int valueByteCount = (bitCount + 7) / 8;
   while (scannedByteCount < valueByteCount) {
     int scannedByte = scanHexByteReverse(&reverseScanCursor,
                                          firstCharacterOfValue, description);
@@ -490,11 +487,10 @@ static uint8_t *scanHexBits(const char **scanCursor, const char *scanEnd,
   // A mask of the "inapplicable" bits in the high order byte, used to determine
   // if we received too many bits for the value we are trying to scan. This
   // value could be calculated with bitwise operations, but I find a table to be
-  // cleaner and easier to understand. We use `valueBitCount` instead of
-  // `bitCount` because the sign bit should be `1` for negative numbers along
-  // with all of the other leading bits.
+  // cleaner and easier to understand. There's no sign bit in Scala's `BigInt.toString(16)`,
+  // instead a minus sign will be present.
   uint8_t highOrderByteMask;
-  switch (valueBitCount % 8) {
+  switch (bitCount % 8) {
   case 1:
     highOrderByteMask = 0b11111110;
     break;

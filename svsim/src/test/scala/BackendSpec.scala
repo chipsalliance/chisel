@@ -230,8 +230,7 @@ trait BackendSpec extends AnyFunSpec with Matchers {
           verbose = false,
           executionScriptLimit = None
         ) { controller =>
-          // When bitWidth % 8 == 1, scanHexBits() will infer the wrong size
-          val bitWidths: Seq[Int] = List(8, 31, 32)
+          val bitWidths: Seq[Int] = List(8, 31, 32, 33)
           val inPorts = bitWidths.map(b => controller.port(s"in_${b}"))
           val outPorts = bitWidths.map(b => controller.port(s"out_${b}"))
 
@@ -241,7 +240,7 @@ trait BackendSpec extends AnyFunSpec with Matchers {
           def boundValues(bitWidth: Int): Seq[BigInt] = {
             val minVal = BigInt(-1) << (bitWidth - 1)
             val maxVal = (BigInt(1) << (bitWidth - 1)) - 1
-            val deltaRange = maxVal.min(BigInt(3))
+            val deltaRange = maxVal.min(BigInt(257))
             val valueNearZero = for { v <- -deltaRange to deltaRange} yield v
             val valueNearMax = for {delta <- BigInt(0) to deltaRange} yield maxVal-delta
             val valueNearMin = for {delta <- BigInt(0) to deltaRange} yield minVal+delta
