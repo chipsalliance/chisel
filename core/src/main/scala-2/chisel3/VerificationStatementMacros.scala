@@ -44,16 +44,17 @@ object VerifStmtMacrosCompat {
     (p.source.file.name, p.line): @nowarn // suppress, there's no clear replacement
   }
 
-  private[chisel3] def resetToDisableMigrationChecks(label: String)(implicit sourceInfo: SourceInfo) = {
-    val disable = Module.disable.value
-    withDisable(Disable.Never) {
-      AssertProperty(
-        prop = ltl.Property.eventually(!disable),
-        label = Some(s"${label}_never_enabled")
-      )
-      CoverProperty(!disable, s"${label}_enabled")
+  private[chisel3] def resetToDisableMigrationChecks(label: String)(implicit sourceInfo: SourceInfo) =
+    if (Builder.emitVerifStatementDisableProperties) {
+      val disable = Module.disable.value
+      withDisable(Disable.Never) {
+        AssertProperty(
+          prop = ltl.Property.eventually(!disable),
+          label = Some(s"${label}_never_enabled")
+        )
+        CoverProperty(!disable, s"${label}_enabled")
+      }
     }
-  }
 
   object assert {
 

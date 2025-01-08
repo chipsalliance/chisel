@@ -518,3 +518,17 @@ case object UseSRAMBlackbox extends NoTargetAnnotation with ChiselOption with Ha
     )
   )
 }
+
+case object EmitVerifStatementDisableProperties
+    extends NoTargetAnnotation
+    with ChiselOption
+    with HasShellOptions
+    with Unserializable {
+  val options = Seq(
+    new ShellOption[Unit](
+      longOption = "emit-verif-statement-disable-properties",
+      toAnnotationSeq = _ => Seq(EmitVerifStatementDisableProperties),
+      helpText = "Emit properties to check that Disable for verification statements is eventually toggled"
+    )
+  )
+}

@@ -29,10 +29,11 @@ package object stage {
           case SourceRootAnnotation(s)       => c.copy(sourceRoots = c.sourceRoots :+ s)
           case a: WarningConfigurationAnnotation     => c.copy(warningFilters = c.warningFilters ++ a.filters)
           case a: WarningConfigurationFileAnnotation => c.copy(warningFilters = c.warningFilters ++ a.filters)
-          case UseLegacyWidthBehavior         => c.copy(useLegacyWidth = true)
-          case RemapLayer(oldLayer, newLayer) => c.copy(layerMap = c.layerMap + ((oldLayer, newLayer)))
-          case IncludeUtilMetadata            => c.copy(includeUtilMetadata = true)
-          case UseSRAMBlackbox                => c.copy(useSRAMBlackbox = true)
+          case UseLegacyWidthBehavior              => c.copy(useLegacyWidth = true)
+          case RemapLayer(oldLayer, newLayer)      => c.copy(layerMap = c.layerMap + ((oldLayer, newLayer)))
+          case IncludeUtilMetadata                 => c.copy(includeUtilMetadata = true)
+          case UseSRAMBlackbox                     => c.copy(useSRAMBlackbox = true)
+          case EmitVerifStatementDisableProperties => c.copy(emitVerifStatementDisableProperties = true)
         }
       }
 

@@ -45,6 +45,7 @@ class Elaborate extends Phase {
             chiselOptions.useLegacyWidth,
             chiselOptions.includeUtilMetadata,
             chiselOptions.useSRAMBlackbox,
+            chiselOptions.emitVerifStatementDisableProperties,
             chiselOptions.warningFilters,
             chiselOptions.sourceRoots,
             None,
