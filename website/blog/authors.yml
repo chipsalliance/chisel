@@ -1,0 +1,10 @@
+seldridge:
+  name: Schuyler Eldridge
+  title: Principal Engineer at SiFive
+  url: https://seldridge.dev
+  image_url: https://github.com/seldridge.png
+  page: true
+  socials:
+    x: theSchuyler
+    github: seldridge
+    linkedin: schuylereldridge

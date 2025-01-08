@@ -90,6 +90,7 @@ const config = {
           {to: '/docs', label: 'Docs', position: 'left'},
           {to: '/community', label: 'Community', position: 'left'},
           {to: '/api', label: 'API', position: 'left'},
+          {to: '/blog', label: 'Blog', position: 'left'},
           {
             href: 'https://www.chipsalliance.org/',
             position: 'right',
@@ -147,6 +148,10 @@ const config = {
                 label: 'GitHub',
                 href: 'https://github.com/chipsalliance/chisel',
               },
+              {
+                label: 'Blog',
+                to: '/blog',
+              }
             ],
           },
         ],
@@ -208,4 +213,3 @@ const config = {
 
 
 module.exports = config;
-
