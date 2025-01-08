@@ -1,0 +1,4 @@
+miscellaneous:
+  description: "Miscellaneous posts"
+release:
+  description: "Blog posts about new Chisel releases"
