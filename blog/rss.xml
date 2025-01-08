@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+    <channel>
+        <title>Chisel Blog</title>
+        <link>https://www.chisel-lang.org/blog</link>
+        <description>Chisel Blog</description>
+        <lastBuildDate>Tue, 07 Jan 2025 00:00:00 GMT</lastBuildDate>
+        <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
+        <generator>https://github.com/jpmonette/feed</generator>
+        <language>en</language>
+        <item>
+            <title><![CDATA[Restarting the Blog]]></title>
+            <link>https://www.chisel-lang.org/blog/restarting-the-blog</link>
+            <guid>https://www.chisel-lang.org/blog/restarting-the-blog</guid>
+            <pubDate>Tue, 07 Jan 2025 00:00:00 GMT</pubDate>
+            <description><![CDATA[After a long hiatus, the Chisel developers are restarting the Chisel blog.]]></description>
+            <content:encoded><![CDATA[<p>It's been many years since the Chisel project had a blog.  In the spirit of New
+Year's resolutions (and more pragmatically as a means to better communicate with
+the open source community about Chisel), the Chisel developers are restarting
+the blog.</p>
+<p>In the future look for posts by Chisel users and developers about new features,
+the rationale behind existing features, and more communication about the broad
+direction of Chisel.</p>]]></content:encoded>
+            <category>Miscellaneous</category>
+        </item>
+    </channel>
+</rss>

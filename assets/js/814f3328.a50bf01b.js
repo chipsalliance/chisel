@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkchisel_lang=self.webpackChunkchisel_lang||[]).push([[7472],{5513:e=>{e.exports=JSON.parse('{"title":"Recent posts","items":[{"title":"Restarting the Blog","permalink":"/blog/restarting-the-blog","unlisted":false,"date":"2025-01-07T00:00:00.000Z"}]}')}}]);

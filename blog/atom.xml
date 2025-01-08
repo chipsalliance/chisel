@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <id>https://www.chisel-lang.org/blog</id>
+    <title>Chisel Blog</title>
+    <updated>2025-01-07T00:00:00.000Z</updated>
+    <generator>https://github.com/jpmonette/feed</generator>
+    <link rel="alternate" href="https://www.chisel-lang.org/blog"/>
+    <subtitle>Chisel Blog</subtitle>
+    <icon>https://www.chisel-lang.org/img/chisel-tool-icon.svg</icon>
+    <entry>
+        <title type="html"><![CDATA[Restarting the Blog]]></title>
+        <id>https://www.chisel-lang.org/blog/restarting-the-blog</id>
+        <link href="https://www.chisel-lang.org/blog/restarting-the-blog"/>
+        <updated>2025-01-07T00:00:00.000Z</updated>
+        <summary type="html"><![CDATA[After a long hiatus, the Chisel developers are restarting the Chisel blog.]]></summary>
+        <content type="html"><![CDATA[<p>It's been many years since the Chisel project had a blog.  In the spirit of New
+Year's resolutions (and more pragmatically as a means to better communicate with
+the open source community about Chisel), the Chisel developers are restarting
+the blog.</p>
+<p>In the future look for posts by Chisel users and developers about new features,
+the rationale behind existing features, and more communication about the broad
+direction of Chisel.</p>]]></content>
+        <author>
+            <name>Schuyler Eldridge</name>
+            <uri>https://seldridge.dev</uri>
+        </author>
+        <category label="Miscellaneous" term="Miscellaneous"/>
+    </entry>
+</feed>

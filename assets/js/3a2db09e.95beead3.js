@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkchisel_lang=self.webpackChunkchisel_lang||[]).push([[8121],{8070:s=>{s.exports=JSON.parse('{"tags":[{"label":"Miscellaneous","permalink":"/blog/tags/miscellaneous","description":"Miscellaneous posts","count":1}]}')}}]);
