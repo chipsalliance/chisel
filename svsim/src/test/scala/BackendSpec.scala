@@ -211,7 +211,7 @@ trait BackendSpec extends AnyFunSpec with Matchers {
           for (idxBitWidth <- 0 until bitWidths.length) {
             val bitWidth = bitWidths(idxBitWidth)
             val outConst = outConstPorts(idxBitWidth)
-            val outConstVal = BigInt(-1)<<(bitWidth-1)
+            val outConstVal = BigInt(-1) << (bitWidth - 1)
             var isOutConstChecked: Boolean = false
             outConst.check(isSigned = true) { value =>
               isOutConstChecked = true
@@ -241,9 +241,9 @@ trait BackendSpec extends AnyFunSpec with Matchers {
             val minVal = BigInt(-1) << (bitWidth - 1)
             val maxVal = (BigInt(1) << (bitWidth - 1)) - 1
             val deltaRange = maxVal.min(BigInt(257))
-            val valueNearZero = for { v <- -deltaRange to deltaRange} yield v
-            val valueNearMax = for {delta <- BigInt(0) to deltaRange} yield maxVal-delta
-            val valueNearMin = for {delta <- BigInt(0) to deltaRange} yield minVal+delta
+            val valueNearZero = for { v <- -deltaRange to deltaRange } yield v
+            val valueNearMax = for { delta <- BigInt(0) to deltaRange } yield maxVal - delta
+            val valueNearMin = for { delta <- BigInt(0) to deltaRange } yield minVal + delta
             valueNearMin ++ valueNearZero ++ valueNearMax
           }
 
