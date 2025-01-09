@@ -909,7 +909,7 @@ Chisel does not support SystemVerilog `X` directly, but it is possible to check 
 import chisel3._
 import chisel3.util.circt.IsX
 
-class XSafeAssert extends Module {
+class AssertButAllowX extends Module {
   val in = IO(Input(UInt(8.W)))
 
   // Assert that in is never zero; also do not trigger assert in the presence of X.
@@ -919,7 +919,7 @@ class XSafeAssert extends Module {
 
 ```scala mdoc:invisible
 // Hidden but will make sure this actually compiles
-chisel3.docs.emitSystemVerilog(new XSafeAssert)
+chisel3.docs.emitSystemVerilog(new AssertButAllowX)
 ```
 
 ## Predictable Naming
