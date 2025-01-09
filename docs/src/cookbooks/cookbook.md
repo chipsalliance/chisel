@@ -912,7 +912,7 @@ import chisel3.util.circt.IsX
 class XSafeAssert extends Module {
   val in = IO(Input(UInt(8.W)))
 
-  // Assert that in is never zero, but also guard against X
+  // Assert that in is never zero; also do not trigger assert in the presence of X.
   assert(IsX(in) || in =/= 0.U, "in should never equal 0")
 }
 ```
