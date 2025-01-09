@@ -65,9 +65,22 @@ class PriorityMuxSpec extends ChiselFlatSpec {
   }
 
   it should "give a error when given different size Seqs" in {
-    val e = intercept[IllegalArgumentException] {
-      PriorityMux(Seq(true.B, true.B), Seq(1.U, 2.U, 3.U))
+    val e = intercept[ChiselException] {
+      emitCHIRRTL(
+        new RawModule {
+          PriorityMux(Seq(true.B, false.B), Seq(1.U, 2.U, 3.U))
+        },
+        args = Array("--throw-on-first-error")
+      )
     }
+    e.getMessage should include("PriorityMuxSpec.scala") // Make sure source locator comes from this file
     e.getMessage should include("PriorityMux: input Seqs must have the same length, got sel 2 and in 3")
+  }
+
+  // The input bitvector is sign extended to the width of the sequence
+  it should "NOT error when given mismatched selector width and Seq size" in {
+    emitCHIRRTL(new RawModule {
+      PriorityMux("b10".U(2.W), Seq(1.U, 2.U, 3.U))
+    })
   }
 }

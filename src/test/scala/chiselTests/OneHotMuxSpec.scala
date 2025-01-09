@@ -5,6 +5,7 @@ package chiselTests
 import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util.{Mux1H, UIntToOH}
+import _root_.circt.stage.ChiselStage.emitCHIRRTL
 import org.scalatest._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -32,12 +33,23 @@ class OneHotMuxSpec extends AnyFreeSpec with Matchers with ChiselRunners {
     e.getMessage should include("Mux1H must have a non-empty argument")
   }
   "Mux1H should give a error when given different size Seqs" in {
-    val e = intercept[IllegalArgumentException] {
-      Mux1H(Seq(true.B, true.B), Seq(1.U, 2.U, 3.U))
+    val e = intercept[ChiselException] {
+      emitCHIRRTL(
+        new RawModule {
+          Mux1H(Seq(true.B, false.B), Seq(1.U, 2.U, 3.U))
+        },
+        args = Array("--throw-on-first-error")
+      )
     }
+    e.getMessage should include("OneHotMuxSpec.scala") // Make sure source locator comes from this file
     e.getMessage should include("Mux1H: input Seqs must have the same length, got sel 2 and in 3")
   }
-
+  // The input bitvector is sign extended to the width of the sequence
+  "Mux1H should NOT error when given mismatched selector width and Seq size" in {
+    emitCHIRRTL(new RawModule {
+      Mux1H("b10".U(2.W), Seq(1.U, 2.U, 3.U))
+    })
+  }
 }
 
 class SimpleOneHotTester extends BasicTester {
