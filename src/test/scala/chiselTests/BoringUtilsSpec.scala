@@ -377,6 +377,35 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
     log should include("Can only bore into modules that are not fully closed")
   }
 
+  it should "support boring on a Module even after .toInstance (and accessing a port)" in {
+    import chisel3.experimental.hierarchy._
+    @instantiable
+    class Bar extends RawModule {
+      @public val port = IO(Output(UInt(8.W)))
+      val a_wire = WireInit(UInt(1.W), DontCare)
+    }
+    class Foo extends RawModule {
+      val bar = Module(new Bar)
+      val bi = bar.toInstance
+      val x = BoringUtils.bore(bar.a_wire)
+      val p = bi.port // Previously, the lookup here would close the module due to reflecting on the IOs of bar
+      val y = BoringUtils.bore(bar.a_wire)
+    }
+
+    generateFirrtlAndFileCheck(new Foo)(
+      """|CHECK-LABEL: module Bar :
+         |CHECK:         output port : UInt<8>
+         |CHECK:         output x_bore : UInt<1>
+         |CHECK:         output y_bore : UInt<1>
+         |CHECK:         connect x_bore, a_wire
+         |CHECK:         connect y_bore, a_wire
+         |CHECK-LABEL: module Foo :
+         |CHECK:         connect x, bar.x_bore
+         |CHECK:         connect y, bar.y_bore
+         |""".stripMargin
+    )
+  }
+
   it should "not create a new port when source is a port" in {
     class Baz extends RawModule {
       val a = IO(Output(Bool()))
