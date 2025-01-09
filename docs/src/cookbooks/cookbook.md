@@ -902,7 +902,7 @@ compile(new TooWideOrNarrowUInt(8, 4))
 Verilog has "case equality" (`===`) and inequality (`!==`) operators.
 They are typically used to ignore unknown (`X`) values in assertions.
 
-Chisel does not support SystemVerilog `X` directly, but it is possible to check if a value is `X` with `chisel3.util.circt.isX`.
+Chisel does not support Verilog `X` directly, but it is possible to check if a value is `X` with `chisel3.util.circt.isX`.
 `isX` is commonly used to guard assertions against `X` which gives similar behavior to Verilog case equality.
 
 ```scala mdoc:silent:reset
