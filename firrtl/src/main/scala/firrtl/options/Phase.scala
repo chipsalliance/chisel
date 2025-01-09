@@ -9,7 +9,7 @@ import logger.LazyLogging
 import scala.collection.mutable.LinkedHashSet
 
 import scala.reflect.ClassTag
-import firrtl.macros.Macros
+import java.lang.reflect.Modifier
 
 object Dependency {
   def apply[A <: DependencyAPI[_]: ClassTag]: Dependency[A] = {
@@ -33,7 +33,16 @@ object Dependency {
     }
   }
 
-  private def isSingleton(obj: AnyRef): Boolean = Macros.isSingletonImpl(obj)
+  private def isSingleton(obj: Any): Boolean = {
+    val clazz = obj.getClass
+    try {
+      // Check if the class has a static field named "MODULE$"
+      val moduleField = clazz.getDeclaredField("MODULE$")
+      Modifier.isStatic(moduleField.getModifiers)
+    } catch {
+      case _: NoSuchFieldException => false
+    }
+  }
 }
 
 case class Dependency[+A <: DependencyAPI[_]](id: Either[Class[_ <: A], A with Singleton]) {
