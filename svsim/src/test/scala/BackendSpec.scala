@@ -183,6 +183,95 @@ trait BackendSpec extends AnyFunSpec with Matchers {
         val traceReader = new BufferedReader(new FileReader(s"${simulation.workingDirectoryPath}/trace.vcd"))
         traceReader.lines().count() must be > 1L
       }
+
+      // Check sendBits()
+      it("communicates data to the Scala side correctly (#4593)") {
+        import Resources._
+        workspace.reset()
+        workspace.elaborateSIntTest()
+        workspace.generateAdditionalSources()
+        simulation = workspace.compile(
+          backend
+        )(
+          workingDirectoryTag = name,
+          commonSettings = CommonCompilationSettings(),
+          backendSpecificSettings = compilationSettings,
+          customSimulationWorkingDirectory = None,
+          verbose = false
+        )
+        simulation.run(
+          verbose = false,
+          executionScriptLimit = None
+        ) { controller =>
+          val bitWidths: Seq[Int] = List(8, 31, 32, 33)
+          val outConstPorts = bitWidths.map(b => controller.port(s"out_const_${b}"))
+
+          controller.setTraceEnabled(true)
+
+          for (idxBitWidth <- 0 until bitWidths.length) {
+            val bitWidth = bitWidths(idxBitWidth)
+            val outConst = outConstPorts(idxBitWidth)
+            val outConstVal = BigInt(-1) << (bitWidth - 1)
+            var isOutConstChecked: Boolean = false
+            outConst.check(isSigned = true) { value =>
+              isOutConstChecked = true
+              assert(value.asBigInt === outConstVal)
+            }
+            assert(isOutConstChecked === false)
+            controller.completeInFlightCommands()
+            assert(isOutConstChecked === true)
+          }
+        }
+      }
+
+      // Check both scanHexBits() and sendBits()
+      it("communicates data from and to the Scala side correctly") {
+        simulation.run(
+          verbose = false,
+          executionScriptLimit = None
+        ) { controller =>
+          val bitWidths: Seq[Int] = List(8, 31, 32, 33)
+          val inPorts = bitWidths.map(b => controller.port(s"in_${b}"))
+          val outPorts = bitWidths.map(b => controller.port(s"out_${b}"))
+
+          controller.setTraceEnabled(true)
+
+          // Some values near bounds
+          def boundValues(bitWidth: Int): Seq[BigInt] = {
+            val minVal = BigInt(-1) << (bitWidth - 1)
+            val maxVal = (BigInt(1) << (bitWidth - 1)) - 1
+            val deltaRange = maxVal.min(BigInt(257))
+            val valueNearZero = for { v <- -deltaRange to deltaRange } yield v
+            val valueNearMax = for { delta <- BigInt(0) to deltaRange } yield maxVal - delta
+            val valueNearMin = for { delta <- BigInt(0) to deltaRange } yield minVal + delta
+            valueNearMin ++ valueNearZero ++ valueNearMax
+          }
+
+          for (idxBitWidth <- 0 until bitWidths.length) {
+            val bitWidth = bitWidths(idxBitWidth)
+            val in = inPorts(idxBitWidth)
+            val out = outPorts(idxBitWidth)
+
+            val inValues = boundValues(bitWidth)
+            val outValues = inValues
+            for ((inVal, outVal) <- inValues.zip(outValues)) {
+              in.set(inVal)
+              in.check(isSigned = true) { value =>
+                assert(value.asBigInt === inVal)
+              }
+              var isOutChecked: Boolean = false
+              out.check(isSigned = true) { value =>
+                isOutChecked = true
+                assert(value.asBigInt === inVal)
+              }
+              assert(isOutChecked === false)
+
+              controller.completeInFlightCommands()
+              assert(isOutChecked === true)
+            }
+          }
+        }
+      }
     }
   }
 }
