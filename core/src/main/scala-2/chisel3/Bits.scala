@@ -37,6 +37,8 @@ private[chisel3] sealed trait ToBoolable extends Element {
   */
 sealed abstract class Bits(private[chisel3] val width: Width) extends BitsImpl with ToBoolable {
 
+  type Self <: Bits
+
   /** Tail operator
     *
     * @param n the number of bits to remove
@@ -170,7 +172,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends BitsImpl w
     * @return this $coll with each bit inverted
     * @group Bitwise
     */
-  final def unary_~ : Bits = macro SourceInfoWhiteboxTransform.noArg
+  final def unary_~ : Self = macro SourceInfoWhiteboxTransform.noArg
 
   /** @group SourceInfoTransformMacro */
   def do_unary_~(implicit sourceInfo: SourceInfo): Bits = _impl_unary_~
@@ -293,6 +295,7 @@ object Bits extends UIntFactory
   * @define constantWidth  @note The width of the returned $coll is unchanged, i.e., `width of this`.
   */
 sealed class UInt private[chisel3] (width: Width) extends Bits(width) with UIntImpl {
+  type Self = UInt
 
   // TODO: refactor to share documentation with Num or add independent scaladoc
   /** Unary negation (expanding width)
@@ -566,6 +569,7 @@ object UInt extends UIntFactory
   * @define constantWidth  @note The width of the returned $coll is unchanged, i.e., `width of this`.
   */
 sealed class SInt private[chisel3] (width: Width) extends Bits(width) with SIntImpl {
+  override type Self = SInt
 
   /** Unary negation (constant width)
     *
@@ -807,6 +811,8 @@ sealed class AsyncReset(private[chisel3] val width: Width = Width(1)) extends As
   * @define numType $coll
   */
 sealed class Bool() extends UInt(1.W) with BoolImpl with Reset {
+  //Compiler fails with error
+  //override type Self = Bool
 
   // REVIEW TODO: Why does this need to exist and have different conventions
   // than Bits?
