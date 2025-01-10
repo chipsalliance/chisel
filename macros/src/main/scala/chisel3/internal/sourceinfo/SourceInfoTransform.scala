@@ -324,6 +324,10 @@ class SourceInfoTransform(val c: Context) extends AutoSourceTransform {
   def inNEnUseDualPortSramNameArg(in: c.Tree, n: c.Tree, en: c.Tree, useDualPortSram: c.Tree, name: c.Tree): c.Tree = {
     q"$thisObj.$doFuncTerm($in, $n, $en, $useDualPortSram, $name)($implicitSourceInfo)"
   }
+
+  def selInArg(sel: c.Tree, in: c.Tree): c.Tree = {
+    q"$thisObj.$doFuncTerm($sel, $in)($implicitSourceInfo)"
+  }
 }
 
 // Workaround for https://github.com/sbt/sbt/issues/3966
