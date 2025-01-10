@@ -210,41 +210,51 @@ static void sendReady() { writeMessage(MESSAGE_READY, "ready"); }
 static void sendAck() { writeMessage(MESSAGE_ACK, "ack"); }
 
 // This method may modify the bytes in the buffer
+// Scala's BigInt.toString(16) follows the format of
+// `s"${if(value<0) "-" else ""}${value.abs.toString(16)}"`
 static void sendBits(uint8_t *mutableBytes, int bitCount, bool isSigned) {
   if (bitCount <= 0) {
     failWithError("Cannot send 0-bit value.");
-  }
-  if (isSigned && bitCount <= 1) {
-    failWithError("Cannot send 1-bit signed value.");
   }
   writeMessageStart(MESSAGE_BITS);
   writeMessageBody("%08X ", bitCount) int byteCount = (bitCount + 7) / 8;
   if (isSigned) {
     uint8_t signBitMask;
+    // A very dirty way to sign-extend the most significant byte
+    //  when the signed number is negative
+    uint8_t lastByteNegativePad;
     switch (bitCount % 8) {
     case 1:
       signBitMask = 0b00000001;
+      lastByteNegativePad = 0b11111110;
       break;
     case 2:
       signBitMask = 0b00000010;
+      lastByteNegativePad = 0b11111100;
       break;
     case 3:
       signBitMask = 0b00000100;
+      lastByteNegativePad = 0b11111000;
       break;
     case 4:
       signBitMask = 0b00001000;
+      lastByteNegativePad = 0b11110000;
       break;
     case 5:
       signBitMask = 0b00010000;
+      lastByteNegativePad = 0b11100000;
       break;
     case 6:
       signBitMask = 0b00100000;
+      lastByteNegativePad = 0b11000000;
       break;
     case 7:
       signBitMask = 0b01000000;
+      lastByteNegativePad = 0b10000000;
       break;
     case 0:
       signBitMask = 0b10000000;
+      lastByteNegativePad = 0b00000000;
       break;
     }
     if (mutableBytes[byteCount - 1] & signBitMask) {
@@ -253,13 +263,17 @@ static void sendBits(uint8_t *mutableBytes, int bitCount, bool isSigned) {
       int carry = 1;
       for (int i = 0; i < byteCount; i++) {
         int byte = mutableBytes[i];
+        // We need to sign-extend the last byte
+        if (i == byteCount - 1) {
+          byte = mutableBytes[i] | lastByteNegativePad;
+        }
         byte = (~byte & 0xFF) + carry;
         carry = byte >> 8;
         mutableBytes[i] = (uint8_t)byte;
       }
+      // Since we sign-extended the number,
+      //  two's compliment just works, no need to strip bits (#4593)
     }
-    // Strip irrelevant bits
-    mutableBytes[byteCount - 1] &= signBitMask - 1;
   }
   for (int i = byteCount - 1; i >= 0; i--) {
     writeMessageBody("%02X", mutableBytes[i]);
@@ -405,6 +419,9 @@ int scanHexByteReverse(const char **reverseScanCursor,
 }
 
 /**
+ * Scala's BigInt.toString(16) follows the format of
+ * `s"${if(value<0) "-" else ""}${value.abs.toString(16)}"`
+ *
  * Returned value must be manually freed.
  */
 static uint8_t *scanHexBits(const char **scanCursor, const char *scanEnd,
@@ -418,21 +435,18 @@ static uint8_t *scanHexBits(const char **scanCursor, const char *scanEnd,
   }
 
   bool isNegative;
-  int valueBitCount;
   if (**scanCursor == '-') {
     (*scanCursor)++;
     if (reverseScanCursor < *scanCursor) {
       failWithError("Unexpected end of negative value when %s.", description);
     }
     isNegative = true;
-    if (bitCount <= 1) {
-      failWithError("Cannot scan 1-bit-wide negative value when %s.",
+    if (bitCount < 1) {
+      failWithError("Cannot scan 0-bit-wide negative value when %s.",
                     description);
     }
-    valueBitCount = bitCount - 1;
   } else {
     isNegative = false;
-    valueBitCount = bitCount;
   }
 
   int byteCount = (bitCount + 7) / 8;
@@ -442,7 +456,7 @@ static uint8_t *scanHexBits(const char **scanCursor, const char *scanEnd,
   const char *firstCharacterOfValue = *scanCursor;
   int carry = 1; // Only used when `isNegative` is true
   int scannedByteCount = 0;
-  int valueByteCount = (valueBitCount + 7) / 8;
+  int valueByteCount = (bitCount + 7) / 8;
   while (scannedByteCount < valueByteCount) {
     int scannedByte = scanHexByteReverse(&reverseScanCursor,
                                          firstCharacterOfValue, description);
@@ -468,11 +482,10 @@ static uint8_t *scanHexBits(const char **scanCursor, const char *scanEnd,
   // A mask of the "inapplicable" bits in the high order byte, used to determine
   // if we received too many bits for the value we are trying to scan. This
   // value could be calculated with bitwise operations, but I find a table to be
-  // cleaner and easier to understand. We use `valueBitCount` instead of
-  // `bitCount` because the sign bit should be `1` for negative numbers along
-  // with all of the other leading bits.
+  // cleaner and easier to understand. There's no sign bit in Scala's `BigInt.toString(16)`,
+  // instead a minus sign will be present.
   uint8_t highOrderByteMask;
-  switch (valueBitCount % 8) {
+  switch (bitCount % 8) {
   case 1:
     highOrderByteMask = 0b11111110;
     break;
@@ -909,6 +922,10 @@ void simulation_main(int argc, char const **argv) {
 }
 
 void run_simulation(int delay) {
+  if(!delay) {
+    testbench->eval_step();
+    return;
+  }
   testbench->eval();
   context->timeInc(delay);
 }
