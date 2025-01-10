@@ -116,6 +116,11 @@ object Definition extends SourceInfoDoc {
     val (ir, module) = Builder.build(Module(proto), dynamicContext, false)
     Builder.components ++= ir.components
     Builder.annotations ++= ir.annotations: @nowarn // this will go away when firrtl is merged
+<<<<<<< HEAD
+=======
+    Builder.layers ++= dynamicContext.layers
+    Builder.options ++= dynamicContext.options
+>>>>>>> 00705702 (Fix ModuleChoice under D/I (#4569))
     module._circuit = Builder.currentModule
     module.toDefinition
   }
