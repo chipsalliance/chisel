@@ -8,7 +8,7 @@ section: "chisel3"
 
 We used llvm-lit and scala-cli to test CIRCT Converter. For how this tool works, see [lit - LLVM Integrated Tester](https://llvm.org/docs/CommandGuide/lit.html).
 
-Ensure that the `lit`, `llvm`, and `scala-cli` commands are available in your environment.
+Ensure that the `lit`, `llvm`, and `scala-cli` tools are available in your environment.
 
 ## Run tests
 
