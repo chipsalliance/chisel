@@ -6,6 +6,7 @@ import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.must.Matchers
 import svsim._
 import java.io.{BufferedReader, FileReader}
+import svsimTests.Resources.TestWorkspace
 
 class VCSSpec extends BackendSpec {
   import vcs.Backend.CompilationSettings._
@@ -270,6 +271,36 @@ trait BackendSpec extends AnyFunSpec with Matchers {
               assert(isOutChecked === true)
             }
           }
+        }
+      }
+
+      it("handles initial statements correctly (#3962)") {
+        workspace.reset()
+        workspace.elaborateInitialTest()
+        workspace.generateAdditionalSources()
+        simulation = workspace.compile(
+          backend
+        )(
+          workingDirectoryTag = name,
+          commonSettings = CommonCompilationSettings(),
+          backendSpecificSettings = compilationSettings,
+          customSimulationWorkingDirectory = None,
+          verbose = false
+        )
+        simulation.run(
+          verbose = false,
+          executionScriptLimit = None
+        ) { controller =>
+
+          controller.setTraceEnabled(true)
+
+          val clock = controller.port("clock")
+          clock.set(0)
+          controller.run(1)
+          clock.set(1)
+          controller.run(1)
+
+          controller.completeInFlightCommands()
         }
       }
     }
