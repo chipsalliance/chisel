@@ -8,6 +8,8 @@ section: "chisel3"
 
 We used llvm-lit and scala-cli to test CIRCT Converter. For how this tool works, see [lit - LLVM Integrated Tester](https://llvm.org/docs/CommandGuide/lit.html).
 
+Ensure that the `lit`, `llvm`, and `scala-cli` commands are available in your environment.
+
 ## Run tests
 
 The first line of the test file indicates how the test will be run, mostly in the form of `scala-cli ... | FileCheck`.
@@ -24,11 +26,21 @@ mill -i lit[_].run
 
 There is a lack of a convenient way to debug test cases. But the `println` debugging method always works.
 
-You need to temporarily modify `tests.sc` to make `lit` output more detailed (stdout, stderr).
+You need to temporarily modify `panama.sc` to make `lit` output more detailed (stdout, stderr).
 
 ```diff
--os.proc("lit", litConfig().path)
-+os.proc("lit", litConfig().path, "-a")
+diff --git a/panama.sc b/panama.sc
+--- a/panama.sc
++++ b/panama.sc
+@@ -243,7 +243,7 @@ trait LitModule extends Module {
+     PathRef(T.dest)
+   }
+   def run(args: String*) = T.command(
+-    os.proc("lit", litConfig().path)
++    os.proc("lit", litConfig().path, "-a")
+       .call(T.dest, stdout = os.ProcessOutput.Readlines(line => T.ctx().log.info("[lit] " + line)))
+   )
+ }
 ```
 
 If the output of `FileCheck` confuses you, you will also need to temporarily remove the `| FileCheck ...` from the test case file header.
