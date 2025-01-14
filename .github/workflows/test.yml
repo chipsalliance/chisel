@@ -108,7 +108,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'adopt'
-          java-version: '21'
+          java-version: '22'
       - name: Install CIRCT
         id: install-circt
         if: ${{ inputs.circt }}
