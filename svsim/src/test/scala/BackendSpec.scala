@@ -291,7 +291,6 @@ trait BackendSpec extends AnyFunSpec with Matchers {
           verbose = false,
           executionScriptLimit = None
         ) { controller =>
-
           controller.setTraceEnabled(true)
 
           val clock = controller.port("clock")
