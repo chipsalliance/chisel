@@ -7,7 +7,7 @@ import mill.scalalib.publish._
 import mill.api.Result
 import mill.scalalib.api.ZincWorkerUtil.matchingVersions
 import mill.util.Jvm.createJar
-import $ivy.`io.chris-kipp::mill-ci-release_mill0.12:0.2.1` // https://github.com/ckipp01/mill-ci-release/pull/143
+import $ivy.`io.chris-kipp::mill-ci-release::0.2.1`
 import io.kipp.mill.ci.release.{CiReleaseModule, SonatypeHost}
 import de.tobiasroeser.mill.vcs.version.VcsVersion // pulled in by mill-ci-release
 
