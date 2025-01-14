@@ -6,6 +6,7 @@ import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.must.Matchers
 import svsim._
 import java.io.{BufferedReader, FileReader}
+import svsimTests.Resources.TestWorkspace
 
 class VCSSpec extends BackendSpec {
   import vcs.Backend.CompilationSettings._
@@ -269,6 +270,29 @@ trait BackendSpec extends AnyFunSpec with Matchers {
               controller.completeInFlightCommands()
               assert(isOutChecked === true)
             }
+          }
+        }
+      }
+
+      it("handles initial statements correctly (#3962)") {
+        workspace.reset()
+        workspace.elaborateInitialTest()
+        workspace.generateAdditionalSources()
+        simulation = workspace.compile(
+          backend
+        )(
+          workingDirectoryTag = name,
+          commonSettings = CommonCompilationSettings(),
+          backendSpecificSettings = compilationSettings,
+          customSimulationWorkingDirectory = None,
+          verbose = false
+        )
+        simulation.run(
+          verbose = false,
+          executionScriptLimit = None
+        ) { controller =>
+          controller.port("b").check(isSigned = false) { value =>
+            assert(value.asBigInt === 1)
           }
         }
       }

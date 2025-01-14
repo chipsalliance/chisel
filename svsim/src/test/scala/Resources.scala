@@ -116,5 +116,20 @@ object Resources {
         )
       )
     }
+    def elaborateInitialTest(): Unit = {
+      workspace.addPrimarySourceFromResource(getClass, "/Initial.sv")
+      workspace.elaborate(
+        ModuleInfo(
+          name = "Initial",
+          ports = Seq(
+            new ModuleInfo.Port(
+              name = "b",
+              isSettable = false,
+              isGettable = true
+            )
+          )
+        )
+      )
+    }
   }
 }
