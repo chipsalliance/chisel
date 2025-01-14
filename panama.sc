@@ -30,7 +30,7 @@ object utils extends Module {
   // 21, 1-2, {linux-x64, macos-x64, windows-x64}
   // 22, 1-2, {linux-x64, macos-aarch64, macos-x64, windows-x64}
   def jextract(jdkVersion: Int, jextractVersion: String, os: String, platform: String) =
-    s"https://download.java.net/java/early_access/jextract/21/1/openjdk-${jdkVersion}-jextract+${jextractVersion}_${os}-${platform}_bin.tar.gz"
+    s"https://download.java.net/java/early_access/jextract/22/6/openjdk-${jdkVersion}-jextract+${jextractVersion}_${os}-${platform}_bin.tar.gz"
 
   // use T.persistent to avoid download repeatedly
   def circtInstallDir: T[os.Path] = T.persistent {
@@ -64,11 +64,11 @@ object utils extends Module {
         val tarPath = T.dest / "jextract.tar.gz"
         if (!os.exists(tarPath)) {
           val url = jextract(
-            21,
-            "1-2",
+            22,
+            "6-47",
             if (linux) "linux" else if (mac) "macos" else throw new Exception("unsupported os"),
             // There is no macos-aarch64 for jextract 21, use x64 for now
-            if (amd64 || mac) "x64" else if (aarch64) "aarch64" else throw new Exception("unsupported arch")
+            if (amd64) "x64" else if (aarch64) "aarch64" else throw new Exception("unsupported arch")
           )
           T.ctx().log.info(s"Downloading jextract from ${url}")
           mill.util.Util.download(url, os.rel / "jextract.tar.gz")
@@ -127,7 +127,6 @@ trait HasJextractGeneratedSources extends JavaModule {
           ++ Seq(
             "-t", target(),
             "--header-class-name", headerClassName(),
-            "--source",
             "--output", T.dest.toString
           ) ++ includeFunctions().flatMap(f => Seq("--include-function", f)) ++
           includeConstants().flatMap(f => Seq("--include-constant", f)) ++
@@ -142,7 +141,7 @@ trait HasJextractGeneratedSources extends JavaModule {
     }
   }
 
-  override def javacOptions = T(super.javacOptions() ++ Seq("--enable-preview", "--release", "21"))
+  override def javacOptions = T(super.javacOptions() ++ Seq("--release", "22"))
 }
 
 // Java Codegen for all declared functions.
@@ -173,7 +172,7 @@ trait HasCIRCTPanamaBindingModule extends JavaModule {
 
   override def moduleDeps = super.moduleDeps ++ Some(circtPanamaBindingModule)
   //
-  override def javacOptions = T(super.javacOptions() ++ Seq("--enable-preview", "--release", "21"))
+  override def javacOptions = T(super.javacOptions() ++ Seq("--release", "22"))
 
   override def forkArgs: T[Seq[String]] = T(
     super.forkArgs() ++ Seq("--enable-native-access=ALL-UNNAMED", "--enable-preview")

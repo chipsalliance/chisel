@@ -52,17 +52,15 @@ class PanamaCIRCT {
     buffer.copyFrom(MemorySegment.ofArray(bytes))
 
     val stringRef = circt.MlirStringRef.allocate(arena)
-    circt.MlirStringRef.data$set(stringRef, buffer)
-    circt.MlirStringRef.length$set(stringRef, bytes.length)
+    circt.MlirStringRef.data(stringRef, buffer)
+    circt.MlirStringRef.length(stringRef, bytes.length)
 
     MlirStringRef(stringRef)
   }
 
   private def newStringCallback(callback: String => Unit): MlirStringCallback = {
-    val cb = new circt.MlirStringCallback {
-      def apply(message: MemorySegment, userData: MemorySegment) = {
-        callback(MlirStringRef(message).toString)
-      }
+    val cb: circt.MlirStringCallback.Function = (message, userData) => {
+      callback(MlirStringRef(message).toString)
     }
     MlirStringCallback(circt.MlirStringCallback.allocate(cb, arena))
   }
@@ -262,10 +260,8 @@ class PanamaCIRCT {
     CAPI.mlirOperationPrint(op.get, newStringCallback(callback).get, NULL)
 
   def mlirOperationWriteBytecode(op: MlirOperation, callback: Array[Byte] => Unit) = {
-    val cb = new circt.MlirStringCallback {
-      def apply(message: MemorySegment, userData: MemorySegment) = {
-        callback(MlirStringRef(message).toBytes)
-      }
+    val cb: circt.MlirStringCallback.Function = (message, userData) => {
+      callback(MlirStringRef(message).toBytes)
     }
     val mlirCallback = MlirStringCallback(circt.MlirStringCallback.allocate(cb, arena))
     CAPI.mlirOperationWriteBytecode(op.get, mlirCallback.get, NULL)
@@ -424,9 +420,9 @@ class PanamaCIRCT {
   def circtFirtoolPopulateFinalizeIR(pm: MlirPassManager, options: CirctFirtoolFirtoolOptions) =
     MlirLogicalResult(CAPI.circtFirtoolPopulateFinalizeIR(arena, pm.get, options.get))
 
-  def mlirLogicalResultIsSuccess(res: MlirLogicalResult): Boolean = circt.MlirLogicalResult.value$get(res.get) != 0
+  def mlirLogicalResultIsSuccess(res: MlirLogicalResult): Boolean = circt.MlirLogicalResult.value(res.get) != 0
 
-  def mlirLogicalResultIsFailure(res: MlirLogicalResult): Boolean = circt.MlirLogicalResult.value$get(res.get) == 0
+  def mlirLogicalResultIsFailure(res: MlirLogicalResult): Boolean = circt.MlirLogicalResult.value(res.get) == 0
 
   def firrtlTypeGetUInt(width: Int) = MlirType(CAPI.firrtlTypeGetUInt(arena, mlirCtx, width))
 
@@ -449,9 +445,9 @@ class PanamaCIRCT {
     fields.zipWithIndex.foreach {
       case (field, i) =>
         val fieldBuffer = buffer.asSlice(circt.FIRRTLBundleField.sizeof() * i, circt.FIRRTLBundleField.sizeof())
-        circt.FIRRTLBundleField.name$slice(fieldBuffer).copyFrom(mlirIdentifierGet(field.name).get)
-        circt.FIRRTLBundleField.isFlip$set(fieldBuffer, field.isFlip)
-        circt.FIRRTLBundleField.type$slice(fieldBuffer).copyFrom(field.tpe.get)
+        circt.FIRRTLBundleField.name(fieldBuffer).copyFrom(mlirIdentifierGet(field.name).get)
+        circt.FIRRTLBundleField.isFlip(fieldBuffer, field.isFlip)
+        circt.FIRRTLBundleField.`type`(fieldBuffer).copyFrom(field.tpe.get)
     }
     MlirType(CAPI.firrtlTypeGetBundle(arena, mlirCtx, fields.length, buffer))
   }
@@ -484,9 +480,9 @@ class PanamaCIRCT {
     elements.zipWithIndex.foreach {
       case (element, i) =>
         val elementBuffer = buffer.asSlice(circt.FIRRTLClassElement.sizeof() * i, circt.FIRRTLClassElement.sizeof())
-        circt.FIRRTLClassElement.name$slice(elementBuffer).copyFrom(mlirIdentifierGet(element.name).get)
-        circt.FIRRTLClassElement.type$slice(elementBuffer).copyFrom(element.tpe.get)
-        circt.FIRRTLClassElement.direction$set(elementBuffer, element.direction.get)
+        circt.FIRRTLClassElement.name(elementBuffer).copyFrom(mlirIdentifierGet(element.name).get)
+        circt.FIRRTLClassElement.`type`(elementBuffer).copyFrom(element.tpe.get)
+        circt.FIRRTLClassElement.direction(elementBuffer, element.direction.get)
     }
     MlirType(CAPI.firrtlTypeGetClass(arena, mlirCtx, name.get, elements.length, buffer))
   }
@@ -551,13 +547,12 @@ class PanamaCIRCT {
   )
 
   def hwInstanceGraphForEachNode(instaceGraph: HWInstanceGraph, callback: HWInstanceGraphNode => Unit) = {
+    val nodeProcessorFn: circt.HWInstanceGraphNodeCallback.Function = (node, userData) => {
+      callback(HWInstanceGraphNode(node))
+    }
     val cb = HWInstanceGraphNodeCallback(
       circt.HWInstanceGraphNodeCallback.allocate(
-        new circt.HWInstanceGraphNodeCallback {
-          def apply(node: MemorySegment, userData: MemorySegment) = {
-            callback(HWInstanceGraphNode(node))
-          }
-        },
+        nodeProcessorFn,
         arena
       )
     )
@@ -776,7 +771,7 @@ final case class MlirStringRef(ptr: MemorySegment) extends ForeignType[MemorySeg
   private[panamalib] val sizeof = circt.MlirStringRef.sizeof().toInt
 
   def toBytes: Array[Byte] = {
-    var slice = circt.MlirStringRef.data$get(ptr).asSlice(0, circt.MlirStringRef.length$get(ptr))
+    var slice = circt.MlirStringRef.data(ptr).asSlice(0, circt.MlirStringRef.length(ptr))
     slice.toArray(JAVA_BYTE)
   }
 

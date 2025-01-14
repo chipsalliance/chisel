@@ -1,7 +1,9 @@
 MlirContext
+MlirDialect
 MlirDialectHandle
 MlirStringRef
 MlirType
+MlirTypeID
 MlirValue
 MlirLocation
 MlirAttribute
