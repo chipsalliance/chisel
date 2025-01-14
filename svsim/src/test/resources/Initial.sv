@@ -1,14 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
-module Initial(input clock);
+module Initial(output b);
 
   reg a = 1'b0;
 
+  assign b = a;
+
   initial
     a = 1'b1;
-
-  always @(posedge clock) begin
-    assert(a == 1'b1);
-  end
 
 endmodule

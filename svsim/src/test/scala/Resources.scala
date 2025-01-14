@@ -123,8 +123,8 @@ object Resources {
           name = "Initial",
           ports = Seq(
             new ModuleInfo.Port(
-              name = "clock",
-              isSettable = true,
+              name = "b",
+              isSettable = false,
               isGettable = true
             )
           )

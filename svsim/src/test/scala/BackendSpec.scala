@@ -291,15 +291,9 @@ trait BackendSpec extends AnyFunSpec with Matchers {
           verbose = false,
           executionScriptLimit = None
         ) { controller =>
-          controller.setTraceEnabled(true)
-
-          val clock = controller.port("clock")
-          clock.set(0)
-          controller.run(1)
-          clock.set(1)
-          controller.run(1)
-
-          controller.completeInFlightCommands()
+          controller.port("b").check(isSigned = false) { value =>
+            assert(value.asBigInt === 1)
+          }
         }
       }
     }
