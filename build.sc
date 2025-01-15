@@ -358,7 +358,7 @@ trait Chisel extends CrossSbtModule with HasScala2MacroAnno with HasScala2Plugin
 
   override def moduleDeps = super.moduleDeps ++ Seq(coreModule, svsimModule)
 
-  object test extends SbtModuleTests with TestModule.ScalaTest with ScalafmtModule {
+  object test extends CrossSbtModuleTests with TestModule.ScalaTest with ScalafmtModule {
     def ivyDeps = Agg(v.scalatest, v.scalacheck)
 
     // Suppress Scala 3 behavior requiring explicit types on implicit definitions
