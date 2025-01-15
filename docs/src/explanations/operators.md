@@ -33,7 +33,7 @@ Chisel defines a set of hardware operators:
 | **Logical Operations**                      | **Valid on:** Bool
 | `val sleep = !busy`                         | Logical NOT                       |
 | `val hit = tagMatch && valid`               | Logical AND                       |
-| `val stall = src1busy || src2busy`          | Logical OR                        |
+| `val stall = src1busy \|\| src2busy`        | Logical OR                        |
 | `val out = Mux(sel, inTrue, inFalse)`       | Two-input mux where sel is a Bool |
 | **Arithmetic operations**                   | **Valid on Nums:** SInt and UInt.  |
 | `val sum = a + b` *or* `val sum = a +% b`   | Addition (without width expansion) |
