@@ -69,7 +69,7 @@ lazy val warningSuppression = Seq(
     "cat=deprecation&origin=chisel3\\.util\\.experimental\\.BoringUtils.*:s",
     "cat=deprecation&origin=chisel3\\.experimental\\.IntrinsicModule:s",
     "cat=deprecation&origin=chisel3\\.ltl.*:s",
-    "cat=deprecation&msg=Looking up Modules is deprecated:s",
+    "cat=deprecation&msg=Looking up Modules is deprecated:s"
   ).mkString(",")
 )
 
@@ -124,7 +124,7 @@ lazy val firrtlSettings = Seq(
     "-language:implicitConversions",
     "-Yrangepos", // required by SemanticDB compiler plugin
     "-Xsource:3",
-    "-Xsource-features:infer-override",
+    "-Xsource-features:infer-override"
   ),
   // Always target Java8 for maximum compatibility
   javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
@@ -208,7 +208,7 @@ lazy val chiselSettings = Seq(
   libraryDependencies ++= Seq(
     "org.scalatest" %% "scalatest" % "3.2.19" % "test",
     "org.scalatestplus" %% "scalacheck-1-18" % "3.2.19.0" % "test",
-    "com.lihaoyi" %% "upickle" % "3.3.1",
+    "com.lihaoyi" %% "upickle" % "4.1.0",
     "org.chipsalliance" %% "firtool-resolver" % "2.0.0"
   )
 ) ++ (
@@ -306,7 +306,7 @@ lazy val core = (project in file("core"))
   .settings(
     name := "chisel-core",
     libraryDependencies ++= Seq(
-      "com.lihaoyi" %% "upickle" % "3.3.1",
+      "com.lihaoyi" %% "upickle" % "4.1.0",
       "com.lihaoyi" %% "os-lib" % "0.10.0"
     ),
     scalacOptions := scalacOptions.value ++ Seq(
@@ -316,7 +316,7 @@ lazy val core = (project in file("core"))
       "-unchecked",
       "-Xcheckinit",
       "-Xlint:infer-any",
-      "-Xsource:3",
+      "-Xsource:3"
 //      , "-Xlint:missing-interpolator"
     )
   )
@@ -342,7 +342,7 @@ lazy val chisel = (project in file("."))
   .settings(
     // Suppress Scala 3 behavior requiring explicit types on implicit definitions
     // Note this must come before the -Wconf is warningSuppression
-    Test / scalacOptions += "-Wconf:cat=other-implicit-type:s",
+    Test / scalacOptions += "-Wconf:cat=other-implicit-type:s"
   )
   .settings(warningSuppression: _*)
   .settings(fatalWarningsSettings: _*)
