@@ -44,6 +44,8 @@ object Select {
       case cmd @ LayerBlock(_, _, region) =>
         val head = f.lift(cmd).toSeq
         head ++ collect(region)(f)
+      case cmd @ Placeholder(_, block) =>
+        collect(block)(f)
       case cmd if f.isDefinedAt(cmd) => Some(f(cmd))
       case _                         => None
     }

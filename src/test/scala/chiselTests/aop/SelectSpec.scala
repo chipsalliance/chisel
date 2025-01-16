@@ -134,6 +134,20 @@ class SelectSpec extends ChiselFlatSpec {
     )
   }
 
+  "Placeholders" should "be examined" in {
+    class Foo extends RawModule {
+      val placeholder = new Placeholder()
+      val a = Wire(Bool())
+      val b = placeholder.append {
+        Wire(Bool())
+      }
+    }
+    val design = ChiselGeneratorAnnotation(() => {
+      new Foo
+    }).elaborate(1).asInstanceOf[DesignAnnotation[Foo]].design
+    Select.wires(design).size should be(2)
+  }
+
   "Blackboxes" should "be supported in Select.instances" in {
     class BB extends ExtModule {}
     class Top extends RawModule {
