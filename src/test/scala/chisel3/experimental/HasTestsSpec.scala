@@ -9,11 +9,11 @@ import chisel3.experimental.hierarchy._
 @instantiable
 class ModuleWithTests extends Module with HasTests {
   @public val io = IO(new Bundle {
-    val in  = Input(UInt(32.W))
+    val in = Input(UInt(32.W))
     val out = Output(UInt(32.W))
   })
 
-  test("foo") { instance  =>
+  test("foo") { instance =>
     instance.io.in := 3.U
     assert(instance.io.out === 3.U)
   }
