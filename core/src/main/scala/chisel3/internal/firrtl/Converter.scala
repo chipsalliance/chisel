@@ -2,7 +2,7 @@
 
 package chisel3.internal.firrtl
 
-import chisel3._
+import chisel3.{Placeholder => _, _}
 import chisel3.experimental._
 import chisel3.experimental.{NoSourceInfo, SourceInfo, SourceLine, UnlocatableSourceInfo}
 import chisel3.properties.Property
@@ -266,6 +266,8 @@ private[chisel3] object Converter {
       )
     case LayerBlock(info, layer, region) =>
       fir.LayerBlock(convert(info), layer, convert(region, ctx, typeAliases))
+    case Placeholder(info, block) =>
+      convert(block, ctx, typeAliases)
   }
 
   /** Convert Chisel IR Commands into FIRRTL Statements
