@@ -64,4 +64,8 @@ trait HasTestsWithResult[TestResult] extends ElaboratesParents { module: RawModu
   }
 }
 
+/** Provides methods to build unit testharnesses inline after this module is elaborated.
+ *  The test bodies do not communicate with the testharness and are expected to end the
+ *  simulation themselves.
+ */
 trait HasTests extends HasTestsWithResult[Unit] { this: RawModule => }
