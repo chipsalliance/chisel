@@ -5,6 +5,7 @@ package chisel3
 import chisel3.experimental.{SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal.{Builder, HasId}
 import chisel3.internal.firrtl.ir.{LayerBlock, Node}
+import chisel3.reflect.DataMirror
 import chisel3.util.simpleClassName
 import java.nio.file.{Path, Paths}
 import scala.annotation.tailrec
@@ -196,6 +197,77 @@ object layer {
       Builder.layers += layer
       currentLayer = parent
     }
+  }
+
+  /** A type class that describes how to post-process the return value from a layer block. */
+  trait BlockReturnHandler[A] {
+
+    /** Post-process the return value.
+      *
+      * @param placeholder the location above the layer block where commands can be inserted
+      * @param layerBlock the current layer block
+      * @param result the return value of the layer block
+      * @param sourceInfo source locator information
+      * @return the post-processed result
+      */
+    def apply(placeholder: Placeholder, layerBlock: LayerBlock, result: A)(implicit sourceInfo: SourceInfo): A
+  }
+
+  object BlockReturnHandler {
+
+    /** Return a [[BlockReturnHandler]] that will return its result without processing. */
+    def identity[A]: BlockReturnHandler[A] = new BlockReturnHandler[A] {
+
+      override def apply(
+        placeholder: Placeholder,
+        layerBlock:  LayerBlock,
+        result:      A
+      )(
+        implicit sourceInfo: SourceInfo
+      ): A = {
+        result
+      }
+
+    }
+
+    /** Return a [[BlockReturnHandler]] that will create a [[Wire]] of layer-colored
+      * probe type _above_ the layer block and [[probe.define]] this at the end
+      * of the layer block.
+      */
+    implicit def layerColoredWire[A <: Data]: BlockReturnHandler[A] = new BlockReturnHandler[A] {
+      override def apply(
+        placeholder: Placeholder,
+        layerBlock:  LayerBlock,
+        result:      A
+      )(
+        implicit sourceInfo: SourceInfo
+      ): A = {
+        // The result wire is either a new layer-colored probe wire or an
+        // existing layer-colored probe wire forwarded up.  If it is the former,
+        // the wire is colored with the current layer.  For the latter, the wire
+        // keeps its existing layer color.
+        val layerColoredWire = placeholder.append {
+          result.probeInfo match {
+            case None            => Wire(probe.Probe(chiselTypeOf(result), layerBlock.layer))
+            case Some(probeInfo) => Wire(chiselTypeOf(result))
+          }
+        }
+
+        // Similarly, if the result is a probe, then we forward it directly.  If
+        // it is a non-probe, then we need to probe if first.
+        Builder.forcedUserModule.withRegion(layerBlock.region) {
+          val source = DataMirror.hasProbeTypeModifier(result) match {
+            case true  => result
+            case false => probe.ProbeValue(result)
+          }
+          probe.define(layerColoredWire, source)
+        }
+
+        // Return the layer-colored wire _above_ the layer block.
+        layerColoredWire
+      }
+    }
+
   }
 
   /** Create a new layer block.  This is hardware that will be enabled
