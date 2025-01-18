@@ -295,15 +295,15 @@ object layer {
     skipIfLayersEnabled:  Boolean = false
   )(thunk:                => A
   )(
-    implicit sourceInfo: SourceInfo
-  ): Unit = {
+    implicit tc: BlockReturnHandler[A] = BlockReturnHandler.identity[A],
+    sourceInfo:  SourceInfo
+  ): A = {
     // Do nothing if we are already in a layer block and are not supposed to
     // create new layer blocks.
     if (
       skipIfAlreadyInBlock && Builder.layerStack.size > 1 || skipIfLayersEnabled && Builder.enabledLayers.nonEmpty || Builder.elideLayerBlocks
     ) {
-      thunk
-      return
+      return thunk
     }
 
     val _layer = Builder.layerMap.getOrElse(layer, layer)
@@ -318,20 +318,37 @@ object layer {
       s"a layerblock associated with layer '${_layer.fullName}' cannot be created under a layerblock of non-ancestor layer '${Builder.layerStack.head.fullName}'"
     )
 
+    if (layersToCreate.isEmpty)
+      return thunk
+
     addLayer(_layer)
 
+    // Save the append point _before_ the layer block so that we can insert a
+    // layer-colored wire once the `thunk` executes.
+    val beforeLayerBlock = new Placeholder
+
+    // Track the current layer block.  When this is used, this will be the
+    // innermost layer block that will be created.  This is guaranteed to be
+    // non-null as long as `layersToCreate` is not empty.
+    var layerBlock: LayerBlock = null
+
+    // Recursively create any necessary layers.  There are two cases:
+    //
+    // 1. There are no layers left to create.  Run the thunk, create the
+    //    layer-colored wire, and define it.
+    // 2. There are layers left to create.  Create the next layer and recurse.
     def createLayers(layers: List[Layer])(thunk: => A): A = layers match {
       case Nil => thunk
       case head :: tail =>
-        val layerBlock = new LayerBlock(sourceInfo, head)
-        Builder.pushCommand(layerBlock)
+        layerBlock = Builder.pushCommand(new LayerBlock(sourceInfo, head))
         Builder.layerStack = head :: Builder.layerStack
         val result = Builder.forcedUserModule.withRegion(layerBlock.region)(createLayers(tail)(thunk))
         Builder.layerStack = Builder.layerStack.tail
         result
     }
 
-    createLayers(layersToCreate)(thunk)
+    val result = createLayers(layersToCreate)(thunk)
+    implicitly[BlockReturnHandler[A]].apply(beforeLayerBlock, layerBlock, result)
   }
 
   /** API that will cause any calls to `block` in the `thunk` to not create new
