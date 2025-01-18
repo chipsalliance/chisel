@@ -1,0 +1,26 @@
+package build.lit.utility
+
+import mill._
+import mill.scalalib._
+import mill.scalalib.scalafmt._
+import mill.define.Cross
+
+import build._
+
+object `package` extends RootModule {
+  // https://github.com/com-lihaoyi/mill/issues/3693
+  object cross extends Cross[LitUtility](v.scalaCrossVersions)
+}
+
+trait LitUtility extends ScalaModule with HasPanamaConverterModule with HasPanamaOMModule with CrossModuleBase with HasScala2Plugin with ScalafmtModule {
+  override def scalacOptions = Task { Seq("-Ymacro-annotations") }
+  override def circtPanamaBindingModule = panamaConverterModule.circtPanamaBindingModule
+
+  def chiselModule = chisel(crossScalaVersion)
+  def pluginModule = plugin.cross(crossScalaVersion)
+  def millSourcePath = super.millSourcePath / os.up
+  def panamaConverterModule = panamaconverter.cross(crossScalaVersion)
+  def panamaOMModule = panamaom.cross(crossScalaVersion)
+
+  override def moduleDeps = super.moduleDeps ++ Some(chiselModule)
+}

@@ -1,0 +1,46 @@
+package build.lit
+
+import mill._
+import mill.scalalib._
+import mill.scalalib.scalafmt._
+import mill.define.Cross
+
+import build._
+import build.lit.utility
+
+object `package` extends RootModule {
+  // https://github.com/com-lihaoyi/mill/issues/3693
+  object cross extends Cross[Lit](v.scalaCrossVersions)
+}
+
+trait Lit extends Module with Cross.Module[String] {
+  def millSourcePath = super.millSourcePath / os.up
+
+  def litConfig: T[PathRef] = Task {
+    os.write(
+      Task.dest / "lit.site.cfg.py",
+      os.read(litConfigIn().path)
+        .replaceAll("@SCALA_VERSION@", scalaVersion())
+        .replaceAll("@RUN_CLASSPATH@", runClasspath().mkString(","))
+        .replaceAll("@SCALA_PLUGIN_JARS@", pluginJars().mkString(","))
+        .replaceAll("@JAVA_HOME@", javaHome().toString)
+        .replaceAll("@JAVA_LIBRARY_PATH@", javaLibraryPath().mkString(","))
+        .replaceAll("@CHISEL_LIT_DIR@", chiselLitDir().toString)
+    )
+    PathRef(Task.dest)
+  }
+
+  def run(args: String*) = Task.Command(
+    os.proc("lit", litConfig().path)
+      .call(Task.dest, stdout = os.ProcessOutput.Readlines(line => Task.ctx().log.info("[lit] " + line)))
+  )
+  def scalaVersion: T[String] = crossValue
+  def runClasspath: T[Seq[os.Path]] = Task(utility.cross(crossValue).runClasspath().map(_.path))
+  def pluginJars:   T[Seq[os.Path]] = Task(Seq(utility.cross(crossValue).panamaConverterModule.pluginModule.jar().path))
+  def javaLibraryPath: T[Seq[os.Path]] = Task(
+    utility.cross(crossValue).panamaConverterModule.circtPanamaBindingModule.libraryPaths().map(_.path)
+  )
+  def javaHome:     T[os.Path] = Task(os.Path(sys.props("java.home")))
+  def chiselLitDir: T[os.Path] = Task(millSourcePath)
+  def litConfigIn:  T[PathRef] = Task.Source(millSourcePath / "tests" / "lit.site.cfg.py.in")
+}
