@@ -1,0 +1,35 @@
+package build.plugin
+
+import mill._
+import mill.scalalib._
+import mill.scalalib.scalafmt._
+import mill.define.Cross
+
+import build._
+import $file.release
+
+object `package` extends RootModule {
+  // https://github.com/com-lihaoyi/mill/issues/3693
+  object cross extends Cross[Plugin](v.scalaCrossVersions)
+}
+
+trait Plugin extends CrossSbtModule with ScalafmtModule with release.ChiselPublishModule {
+  override def artifactName = "chisel-plugin"
+
+  def millSourcePath = super.millSourcePath / os.up
+
+  // The plugin is compiled for every minor Scala version
+  override def crossFullScalaVersion = true
+
+  def scalaLibraryIvy = v.scalaLibrary(crossScalaVersion)
+  def scalaReflectIvy = v.scalaReflect(crossScalaVersion)
+  def scalaCompilerIvy: Dep = v.scalaCompiler(crossScalaVersion)
+
+  def ivyDeps = Task {
+    if (!v.isScala3(crossScalaVersion)) {
+      super.ivyDeps() ++ Agg(scalaLibraryIvy, scalaReflectIvy, scalaCompilerIvy)
+    } else {
+      super.ivyDeps()
+    }
+  }
+}

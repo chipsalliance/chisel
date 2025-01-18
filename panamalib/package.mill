@@ -1,0 +1,20 @@
+package build.panamalib
+
+import mill._
+import mill.scalalib._
+import mill.scalalib.scalafmt._
+import mill.define.Cross
+
+import build._
+
+object `package` extends RootModule {
+  // https://github.com/com-lihaoyi/mill/issues/3693
+  object cross extends Cross[PanamaLib](v.scalaCrossVersions)
+}
+
+// The Scala API for PanamaBinding, API here is experimentally public to all developers
+trait PanamaLib extends ScalaModule with HasCIRCTPanamaBindingModule with CrossModuleBase with ScalafmtModule {
+  def millSourcePath = super.millSourcePath / os.up
+
+  def circtPanamaBindingModule = circtpanamabinding
+}
