@@ -6,13 +6,14 @@ import mill.scalalib.scalafmt._
 import mill.define.Cross
 
 import build._
+import $file.release
 
 object `package` extends RootModule {
   // https://github.com/com-lihaoyi/mill/issues/3693
   object cross extends Cross[Plugin](v.scalaCrossVersions)
 }
 
-trait Plugin extends CrossSbtModule with ScalafmtModule with ChiselPublishModule {
+trait Plugin extends CrossSbtModule with ScalafmtModule with release.ChiselPublishModule {
   override def artifactName = "chisel-plugin"
 
   def millSourcePath = super.millSourcePath / os.up

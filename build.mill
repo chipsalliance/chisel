@@ -2,14 +2,7 @@ package build
 
 import mill._
 import mill.scalalib._
-import mill.scalalib.publish._
 import mill.scalalib.scalafmt._
-import mill.api.Result
-import mill.scalalib.api.ZincWorkerUtil.matchingVersions
-import mill.util.Jvm.createJar
-import $ivy.`io.chris-kipp::mill-ci-release::0.1.10`
-import io.kipp.mill.ci.release.{CiReleaseModule, SonatypeHost}
-import de.tobiasroeser.mill.vcs.version.VcsVersion // pulled in by mill-ci-release
 
 import $packages._
 import build._
@@ -117,33 +110,6 @@ object v extends Module {
 
 def compileAll() = Task.Command {
   Task.traverse(v.buildUnits())(_.compile)()
-}
-
-trait ChiselPublishModule extends CiReleaseModule {
-  // Publish information
-  def pomSettings = PomSettings(
-    description = artifactName(),
-    organization = "org.chipsalliance",
-    url = "https://www.chisel-lang.org",
-    licenses = Seq(License.`Apache-2.0`),
-    versionControl = VersionControl.github("chipsalliance", "chisel"),
-    developers = Seq(
-      Developer("jackkoenig", "Jack Koenig", "https://github.com/jackkoenig"),
-      Developer("azidar", "Adam Izraelevitz", "https://github.com/azidar"),
-      Developer("seldridge", "Schuyler Eldridge", "https://github.com/seldridge")
-    )
-  )
-
-  override def sonatypeHost = Some(SonatypeHost.s01)
-
-  override def publishVersion = VcsVersion
-    .vcsState()
-    .format(
-      countSep = "+",
-      revHashDigits = 8,
-      untaggedSuffix = "-SNAPSHOT"
-    )
-
 }
 
 trait HasScala2MacroAnno extends CrossModuleBase {
@@ -279,6 +245,7 @@ trait HasPanamaConverterModule extends ScalaModule with HasCIRCTPanamaBindingMod
   override def moduleDeps = super.moduleDeps ++ Some(panamaConverterModule)
 }
 
+// TODO: move chisel src to subfolder once we have dropped sbt flow
 object chisel extends Cross[Chisel](v.scalaCrossVersions)
 
 trait Chisel extends CrossSbtModule with HasScala2MacroAnno with HasScala2Plugin with ScalafmtModule {
@@ -306,130 +273,4 @@ trait Chisel extends CrossSbtModule with HasScala2MacroAnno with HasScala2Plugin
   }
 }
 
-/** Aggregate project for publishing Chisel as a single artifact
-  */
-object unipublish extends ScalaModule with ChiselPublishModule {
-
-  def scalaVersion = v.scalaVersion
-
-  // This is published as chisel
-  override def artifactName = "chisel"
-
-  // Older versions of Scala do not work with newer versions of the JVM
-  // This is a hack to ensure we always use Java 8 to publish Chisel with Scala 2.13
-  // We could use Java 11 with -release 8
-  // Note that this target is used by real publishing but not by publishLocal
-  override def publishArtifacts = Task {
-    // TODO when we publish for Scala 3, only do this check for Scala 2.13
-    if (v.javaVersion != 8) {
-      throw new Exception(s"Publishing requires Java 8, current JDK is ${v.javaVersion}")
-    }
-    super.publishArtifacts
-  }
-
-  /** Publish both this project and the plugin (for the default Scala version) */
-  override def publishLocal(localIvyRepo: String = null) = Task.Command {
-    // TODO consider making this parallel and publishing all cross-versions for plugin
-    plugin.cross(v.scalaVersion).publishLocal(localIvyRepo)()
-    super.publishLocal(localIvyRepo)()
-  }
-
-  // Explicitly not using moduleDeps because that influences so many things
-  def components = Seq(firrtl.cross, svsim.cross, macros.cross, core.cross, chisel).map(_(v.scalaVersion))
-
-  /** Aggregated ivy deps to include as dependencies in POM */
-  def ivyDeps = Task { Task.traverse(components)(_.ivyDeps)().flatten }
-
-  /** Aggregated local classpath to include in jar */
-  override def localClasspath = Task { Task.traverse(components)(_.localClasspath)().flatten }
-
-  /** Aggreagted sources from all component modules */
-  def aggregatedSources = Task { Task.traverse(components)(_.allSources)().flatten }
-
-  /** Aggreagted resources from all component modules */
-  def aggregatedResources = Task { Task.traverse(components)(_.resources)().flatten }
-
-  /** Aggreagted compile resources from all component modules */
-  def aggregatedCompileResources = Task { Task.traverse(components)(_.compileResources)().flatten }
-
-  /** Aggregated sourceJar from all component modules
-    */
-  override def sourceJar: T[PathRef] = Task {
-    // This is based on the implementation of sourceJar in PublishModule, may need to be kept in sync.
-    val allDirs = aggregatedSources() ++ aggregatedResources() ++ aggregatedCompileResources()
-    createJar(allDirs.map(_.path).filter(os.exists), manifest())
-  }
-
-  // Needed for ScalaDoc
-  override def scalacOptions = v.scala2CommonOptions
-
-  def scalaDocRootDoc = Task.Source { Task.workspace / "root-doc.txt" }
-
-  def unidocOptions = Task {
-    scalacOptions() ++ Seq[String](
-      "-classpath",
-      unidocCompileClasspath().map(_.path).mkString(sys.props("path.separator")),
-      "-diagrams",
-      "-groups",
-      "-skip-packages",
-      "chisel3.internal",
-      "-diagrams-max-classes",
-      "25",
-      "-doc-version",
-      publishVersion(),
-      "-doc-title",
-      "chisel",
-      "-doc-root-content",
-      scalaDocRootDoc().path.toString,
-      "-sourcepath",
-      Task.workspace.toString,
-      "-doc-source-url",
-      unidocSourceUrl(),
-      "-language:implicitConversions",
-      "-implicits"
-    )
-  }
-
-  // Built-in UnidocModule is insufficient so we need to implement it ourselves
-  // We could factor this out into a utility
-  def unidocSourceUrl: T[String] = Task {
-    val base = "https://github.com/chipsalliance/chisel/tree"
-    val branch = if (publishVersion().endsWith("-SNAPSHOT")) "main" else s"v${publishVersion()}"
-    s"$base/$branch/€{FILE_PATH_EXT}#L€{FILE_LINE}"
-  }
-
-  def unidocVersion: T[Option[String]] = None
-
-  def unidocCompileClasspath = Task {
-    Seq(compile().classes) ++ Task.traverse(components)(_.compileClasspath)().flatten
-  }
-
-  def unidocSourceFiles = Task {
-    allSourceFiles() ++ Task.traverse(components)(_.allSourceFiles)().flatten
-  }
-
-  // Based on UnidocModule and docJar in Mill, may need to be kept in sync.
-  override def docJar = Task {
-    Task.log.info(s"Building unidoc for ${unidocSourceFiles().length} files")
-
-    val javadocDir = Task.dest / "javadoc"
-    os.makeDir(javadocDir)
-
-    val fullOptions = unidocOptions() ++
-      Seq("-d", javadocDir.toString) ++
-      unidocSourceFiles().map(_.path.toString)
-
-    zincWorker()
-      .worker()
-      .docJar(
-        scalaVersion(),
-        scalaOrganization(),
-        scalaDocClasspath(),
-        scalacPluginClasspath(),
-        fullOptions
-      ) match {
-      case true  => Result.Success(createJar(Agg(javadocDir))(Task.dest))
-      case false => Result.Failure("docJar generation failed")
-    }
-  }
-}
+object unipublish extends release.Unipublish
