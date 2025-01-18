@@ -308,15 +308,27 @@ class LayerSpec extends ChiselFlatSpec with Utils with FileCheck {
 
   "Values returned by layer blocks" should "be layer-colored wires" in {
     class Foo extends RawModule {
+      val out = IO {
+        Output {
+          new Bundle {
+            val a = Probe(UInt(1.W), A)
+            val b = Probe(UInt(2.W), A.B)
+            val c = Probe(UInt(3.W), A.B)
+          }
+        }
+      }
+
       // A single layer block
       val a = layer.block(A) {
         Wire(UInt(1.W))
       }
+      define(out.a, a)
 
       // Auto-creation of parent layer blocks
       val b = layer.block(A.B) {
         Wire(UInt(2.W))
       }
+      define(out.b, b)
 
       // Nested layer blocks
       val c = layer.block(A) {
@@ -324,6 +336,7 @@ class LayerSpec extends ChiselFlatSpec with Utils with FileCheck {
           Wire(UInt(3.W))
         }
       }
+      define(out.c, c)
 
       // No layers created.  Check all generator code paths.
       layer.block(A) {
@@ -365,12 +378,14 @@ class LayerSpec extends ChiselFlatSpec with Utils with FileCheck {
           |CHECK-NEXT:   layerblock A :
           |CHECK-NEXT:     wire [[a:.*]] : UInt<1>
           |CHECK-NEXT:     define a = probe([[a]])
+          |CHECK:        define out.a = a
           |
           |CHECK:        wire b : Probe<UInt<2>, A.B>
           |CHECK-NEXT:   layerblock A :
           |CHECK-NEXT:     layerblock B :
           |CHECK-NEXT:       wire [[b:.*]] : UInt<2>
           |CHECK-NEXT:       define b = probe([[b]])
+          |CHECK:        define out.b = b
           |
           |CHECK:        wire c : Probe<UInt<3>, A.B>
           |CHECK-NEXT:   layerblock A :
@@ -379,6 +394,7 @@ class LayerSpec extends ChiselFlatSpec with Utils with FileCheck {
           |CHECK-NEXT:       wire [[c:.*]] : UInt<3>
           |CHECK-NEXT:       define [[c0]] = probe([[c]])
           |CHECK:          define c = [[c0]]
+          |CHECK:        define out.c = c
           |
           |CHECK:        layerblock A :
           |CHECK-NEXT:     wire d : UInt<4>
