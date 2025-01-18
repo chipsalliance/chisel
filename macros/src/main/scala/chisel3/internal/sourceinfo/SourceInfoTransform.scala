@@ -10,7 +10,7 @@ import scala.reflect.macros.blackbox.Context
 import scala.reflect.macros.whitebox
 
 /** Transforms a function call so that it can both provide implicit-style source information and
-  * have a chained apply call. Without macros, only one is possible, since having a implicit
+  * have a chained apply call. Without macros, only one is possible, since having an implicit
   * argument in the definition will cause the compiler to interpret a chained apply as an
   * explicit implicit argument and give type errors.
   *
@@ -323,6 +323,10 @@ class SourceInfoTransform(val c: Context) extends AutoSourceTransform {
 
   def inNEnUseDualPortSramNameArg(in: c.Tree, n: c.Tree, en: c.Tree, useDualPortSram: c.Tree, name: c.Tree): c.Tree = {
     q"$thisObj.$doFuncTerm($in, $n, $en, $useDualPortSram, $name)($implicitSourceInfo)"
+  }
+
+  def selInArg(sel: c.Tree, in: c.Tree): c.Tree = {
+    q"$thisObj.$doFuncTerm($sel, $in)($implicitSourceInfo)"
   }
 }
 

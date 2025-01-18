@@ -51,5 +51,5 @@ case class SourceLine(filename: String, line: Int, col: Int) extends SourceInfo 
 }
 
 object SourceInfo extends ObjectSourceInfoImpl {
-  implicit def materialize: SourceInfo = ???
+  implicit def materialize: SourceInfo = UnlocatableSourceInfo
 }

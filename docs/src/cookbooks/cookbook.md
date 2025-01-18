@@ -897,6 +897,31 @@ compile(new TooWideOrNarrowUInt(8, 2))
 compile(new TooWideOrNarrowUInt(8, 4))
 ```
 
+## How can I use Verilog "case equality" operators in Chisel?
+
+Verilog has "case equality" (`===`) and inequality (`!==`) operators.
+They are typically used to ignore unknown (`X`) values in assertions.
+
+Chisel does not support Verilog `X` directly, but it is possible to check if a value is `X` with `chisel3.util.circt.isX`.
+`isX` is commonly used to guard assertions against `X` which gives similar behavior to Verilog case equality.
+
+```scala mdoc:silent:reset
+import chisel3._
+import chisel3.util.circt.IsX
+
+class AssertButAllowX extends Module {
+  val in = IO(Input(UInt(8.W)))
+
+  // Assert that in is never zero; also do not trigger assert in the presence of X.
+  assert(IsX(in) || in =/= 0.U, "in should never equal 0")
+}
+```
+
+```scala mdoc:invisible
+// Hidden but will make sure this actually compiles
+chisel3.docs.emitSystemVerilog(new AssertButAllowX)
+```
+
 ## Predictable Naming
 
 ### How do I get Chisel to name signals properly in blocks like when/withClockAndReset?

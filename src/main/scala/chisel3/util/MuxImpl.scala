@@ -7,55 +7,38 @@ package chisel3.util
 
 import chisel3._
 import chisel3.experimental.SourceInfo
+import chisel3.internal.Builder
 
-/** Builds a Mux tree out of the input signal vector using a one hot encoded
-  * select signal. Returns the output of the Mux tree.
-  *
-  * @example {{{
-  * val hotValue = chisel3.util.Mux1H(Seq(
-  *  io.selector(0) -> 2.U,
-  *  io.selector(1) -> 4.U,
-  *  io.selector(2) -> 8.U,
-  *  io.selector(4) -> 11.U,
-  * ))
-  * }}}
-  *
-  * @note results unspecified unless exactly one select signal is high
-  */
-object Mux1H {
-  def apply[T <: Data](sel: Seq[Bool], in: Seq[T]): T = {
-    require(sel.size == in.size, s"Mux1H: input Seqs must have the same length, got sel ${sel.size} and in ${in.size}")
-    apply(sel.zip(in))
+private[chisel3] trait Mux1HImpl {
+  protected def _applyImpl[T <: Data](sel: Seq[Bool], in: Seq[T])(implicit sourceInfo: SourceInfo): T = {
+    if (sel.size != in.size) {
+      Builder.error(s"Mux1H: input Seqs must have the same length, got sel ${sel.size} and in ${in.size}")
+    }
+    _applyImpl(sel.zip(in))
   }
-  def apply[T <: Data](in:  Iterable[(Bool, T)]): T = SeqUtils.oneHotMux(in)
-  def apply[T <: Data](sel: UInt, in: Seq[T]): T =
-    apply((0 until in.size).map(sel(_)), in)
-  def apply(sel: UInt, in: UInt): Bool = (sel & in).orR
+
+  protected def _applyImpl[T <: Data](in: Iterable[(Bool, T)])(implicit sourceInfo: SourceInfo): T =
+    SeqUtils.oneHotMux(in)
+
+  protected def _applyImpl[T <: Data](sel: UInt, in: Seq[T])(implicit sourceInfo: SourceInfo): T =
+    _applyImpl((0 until in.size).map(sel(_)), in)
+
+  protected def _applyImpl(sel: UInt, in: UInt)(implicit sourceInfo: SourceInfo): Bool = (sel & in).orR
 }
 
-/** Builds a Mux tree under the assumption that multiple select signals
-  * can be enabled. Priority is given to the first select signal.
-  *
-  * @example {{{
-  * val hotValue = chisel3.util.PriorityMux(Seq(
-  *  io.selector(0) -> 2.U,
-  *  io.selector(1) -> 4.U,
-  *  io.selector(2) -> 8.U,
-  *  io.selector(4) -> 11.U,
-  * ))
-  * }}}
-  * Returns the output of the Mux tree.
-  */
-object PriorityMux {
-  def apply[T <: Data](in: Seq[(Bool, T)]): T = SeqUtils.priorityMux(in)
-  def apply[T <: Data](sel: Seq[Bool], in: Seq[T]): T = {
-    require(
-      sel.size == in.size,
-      s"PriorityMux: input Seqs must have the same length, got sel ${sel.size} and in ${in.size}"
-    )
-    apply(sel.zip(in))
+private[chisel3] trait PriorityMuxImpl {
+
+  protected def _applyImpl[T <: Data](in: Seq[(Bool, T)]): T = SeqUtils.priorityMux(in)
+
+  protected def _applyImpl[T <: Data](sel: Seq[Bool], in: Seq[T])(implicit sourceInfo: SourceInfo): T = {
+    if (sel.size != in.size) {
+      Builder.error(s"PriorityMux: input Seqs must have the same length, got sel ${sel.size} and in ${in.size}")
+    }
+    _applyImpl(sel.zip(in))
   }
-  def apply[T <: Data](sel: Bits, in: Seq[T]): T = apply((0 until in.size).map(sel(_)), in)
+
+  protected def _applyImpl[T <: Data](sel: Bits, in: Seq[T])(implicit sourceInfo: SourceInfo): T =
+    _applyImpl((0 until in.size).map(sel(_)), in)
 }
 
 private[chisel3] trait MuxLookupImpl {

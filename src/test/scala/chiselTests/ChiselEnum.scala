@@ -80,8 +80,8 @@ class SafeCastFromNonLit extends Module {
     val valid = Output(Bool())
   })
 
-  val (enum, valid) = EnumExample.safe(io.in)
-  io.out := enum
+  val (enumVal, valid) = EnumExample.safe(io.in)
+  io.out := enumVal
   io.valid := valid
 }
 
@@ -184,28 +184,28 @@ class LoadStoreExample extends Module {
 }
 
 class CastToUIntTester extends BasicTester {
-  for ((enum, lit) <- EnumExample.all.zip(EnumExample.litValues)) {
+  for ((enumVal, lit) <- EnumExample.all.zip(EnumExample.litValues)) {
     val mod = Module(new CastToUInt)
-    mod.io.in := enum
+    mod.io.in := enumVal
     assert(mod.io.out === lit)
   }
   stop()
 }
 
 class CastFromLitTester extends BasicTester {
-  for ((enum, lit) <- EnumExample.all.zip(EnumExample.litValues)) {
+  for ((enumVal, lit) <- EnumExample.all.zip(EnumExample.litValues)) {
     val mod = Module(new CastFromLit(lit))
-    assert(mod.io.out === enum)
+    assert(mod.io.out === enumVal)
     assert(mod.io.valid === true.B)
   }
   stop()
 }
 
 class CastFromNonLitTester extends BasicTester {
-  for ((enum, lit) <- EnumExample.all.zip(EnumExample.litValues)) {
+  for ((enumVal, lit) <- EnumExample.all.zip(EnumExample.litValues)) {
     val mod = Module(new CastFromNonLit)
     mod.io.in := lit
-    assert(mod.io.out === enum)
+    assert(mod.io.out === enumVal)
     assert(mod.io.valid === true.B)
   }
 
@@ -223,10 +223,10 @@ class CastFromNonLitTester extends BasicTester {
 }
 
 class SafeCastFromNonLitTester extends BasicTester {
-  for ((enum, lit) <- EnumExample.all.zip(EnumExample.litValues)) {
+  for ((enumVal, lit) <- EnumExample.all.zip(EnumExample.litValues)) {
     val mod = Module(new SafeCastFromNonLit)
     mod.io.in := lit
-    assert(mod.io.out === enum)
+    assert(mod.io.out === enumVal)
     assert(mod.io.valid === true.B)
   }
 
