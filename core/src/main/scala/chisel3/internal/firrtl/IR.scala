@@ -339,6 +339,27 @@ private[chisel3] object ir {
       extends Definition
   case class DefObject(sourceInfo: SourceInfo, id: HasId, className: String) extends Definition
 
+  class Placeholder(val sourceInfo: SourceInfo) extends Command {
+    private var buffer: mutable.Builder[Command, ArraySeq[Command]] = null
+
+    def getBuffer: mutable.Builder[Command, ArraySeq[Command]] = {
+      if (buffer == null)
+        buffer = ArraySeq.newBuilder[Command]
+      buffer
+    }
+
+  }
+
+  object Placeholder {
+    def unapply(placeholder: Placeholder): Option[(SourceInfo, Seq[Command])] = {
+      Some(
+        (placeholder.sourceInfo, placeholder.getBuffer.result())
+      )
+    }
+  }
+
+  class AppendPoint private[ir] (private[ir] val buffer: mutable.Builder[Command, ArraySeq[Command]])
+
   class Block(val sourceInfo: SourceInfo) {
     // While building block, commands go into _commandsBuilder.
     private var _commandsBuilder = ArraySeq.newBuilder[Command]
@@ -355,6 +376,14 @@ private[chisel3] object ir {
     def addCommand(c: Command): Unit = {
       require(!_closed, "cannot add more commands after block is closed")
       _commandsBuilder += c
+    }
+
+    def appendToPlaceholder[A](placeholder: Placeholder)(thunk: => A): A = {
+      val oldPoint = _commandsBuilder
+      _commandsBuilder = placeholder.getBuffer
+      val result = thunk
+      _commandsBuilder = oldPoint
+      result
     }
 
     def close() = {
