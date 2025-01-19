@@ -8,6 +8,7 @@ import chisel3.experimental.SourceInfo
 import chisel3.{layer, layers}
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
+import chisel3.VerifStmtMacrosCompat.resetToDisableMigrationChecks
 
 object PrintfMacrosCompat {
   def _applyMacroWithInterpolatorCheck(
@@ -77,6 +78,7 @@ object PrintfMacrosCompat {
     Printable.checkScope(pable)
 
     layer.block(layers.Verification, skipIfAlreadyInBlock = true, skipIfLayersEnabled = true) {
+      resetToDisableMigrationChecks("printf")
       pushCommand(chisel3.internal.firrtl.ir.Printf(printfId, sourceInfo, clock.ref, pable))
     }
     printfId
