@@ -7,7 +7,7 @@ import mill.scalalib.publish._
 import mill.api.Result
 import mill.scalalib.api.ZincWorkerUtil.matchingVersions
 import mill.util.Jvm.createJar
-import $ivy.`io.chris-kipp::mill-ci-release::0.1.10`
+import $ivy.`io.chris-kipp::mill-ci-release_mill0.12:0.2.1` // https://github.com/ckipp01/mill-ci-release/pull/143
 import io.kipp.mill.ci.release.{CiReleaseModule, SonatypeHost}
 import de.tobiasroeser.mill.vcs.version.VcsVersion // pulled in by mill-ci-release
 
@@ -48,18 +48,6 @@ trait Unipublish extends ScalaModule with ChiselPublishModule {
 
   // This is published as chisel
   override def artifactName = "chisel"
-
-  // Older versions of Scala do not work with newer versions of the JVM
-  // This is a hack to ensure we always use Java 8 to publish Chisel with Scala 2.13
-  // We could use Java 11 with -release 8
-  // Note that this target is used by real publishing but not by publishLocal
-  override def publishArtifacts = Task {
-    // TODO when we publish for Scala 3, only do this check for Scala 2.13
-    if (v.javaVersion != 8) {
-      throw new Exception(s"Publishing requires Java 8, current JDK is ${v.javaVersion}")
-    }
-    super.publishArtifacts
-  }
 
   /** Publish both this project and the plugin (for the default Scala version) */
   override def publishLocal(localIvyRepo: String = null) = Task.Command {

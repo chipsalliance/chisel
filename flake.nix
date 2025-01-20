@@ -15,12 +15,14 @@
         let
           pkgs = import nixpkgs { inherit system; overlays = [ overlay ]; };
           deps = with pkgs; [
+            jdk21
             mill
             circt
             jextract-21
             lit
             scala-cli
             llvm
+            verilator
           ];
         in
         {
