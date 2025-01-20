@@ -83,7 +83,7 @@ jobs:
       - name: Setup Scala
         uses: VirtusLab/scala-cli-setup@v1
         with:
-          jvm: adopt:21
+          jvm: adoptium:21
           apps: sbt
       - name: Publish
         run: ./mill -i io.kipp.mill.ci.release.ReleaseModule/publishAll
