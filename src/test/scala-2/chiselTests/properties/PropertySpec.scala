@@ -787,7 +787,7 @@ class PropertySpec extends ChiselFlatSpec with FileCheck {
     }))
 
     e.getMessage should include(
-      "Property expressions are currently only supported in RawModules @[src/test/scala/chiselTests/properties/PropertySpec.scala"
+      "Property expressions are currently only supported in RawModules @[src/test/scala-2/chiselTests/properties/PropertySpec.scala"
     )
   }
 
@@ -876,7 +876,7 @@ class PropertySpec extends ChiselFlatSpec with FileCheck {
     }))
 
     e.getMessage should include(
-      "Property expressions are currently only supported in RawModules @[src/test/scala/chiselTests/properties/PropertySpec.scala"
+      "Property expressions are currently only supported in RawModules @[src/test/scala-2/chiselTests/properties/PropertySpec.scala"
     )
   }
 
