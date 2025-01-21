@@ -163,7 +163,7 @@ class WarningConfigurationSpec extends AnyFunSpec with Matchers with chiselTests
 
       info("including when rooted")
       val args3 =
-        Array("--warn-conf", "src=src/test/scala/**/WarningConfigurationSpec.scala:s,any:e", "--throw-on-first-error")
+        Array("--warn-conf", "src=src/test/scala-2/**/WarningConfigurationSpec.scala:s,any:e", "--throw-on-first-error")
       ChiselStage.emitCHIRRTL(new ModuleWithWarning, args3)
     }
 

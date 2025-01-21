@@ -23,8 +23,8 @@ class PortSpec extends ChiselFreeSpec {
     chirrtl should include("input reset : UInt<1>")
     // other ports get source locators
     chirrtl should include(
-      "output in : { flip foo : UInt<1>, flip bar : UInt<8>} @[src/test/scala/chiselTests/PortSpec.scala"
+      "output in : { flip foo : UInt<1>, flip bar : UInt<8>} @[src/test/scala-2/chiselTests/PortSpec.scala"
     )
-    chirrtl should include("output out : UInt<1> @[src/test/scala/chiselTests/PortSpec.scala")
+    chirrtl should include("output out : UInt<1> @[src/test/scala-2/chiselTests/PortSpec.scala")
   }
 }
