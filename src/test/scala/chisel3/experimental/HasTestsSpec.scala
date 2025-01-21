@@ -5,10 +5,9 @@ import chisel3.util.Enum
 import chisel3.testers._
 import chisel3.experimental.HasTests
 import chisel3.experimental.hierarchy._
-import chisel3.experimental.HasTestsWithResult
 
 @instantiable
-class ModuleWithTests(ioWidth: Int = 32) extends Module with HasTests {
+class ModuleWithTests(ioWidth: Int = 32) extends Module with HasTests[Unit] {
   @public val io = IO(new Bundle {
     val in = Input(UInt(ioWidth.W))
     val out = Output(UInt(ioWidth.W))
@@ -27,7 +26,7 @@ class ModuleWithTests(ioWidth: Int = 32) extends Module with HasTests {
   }
 }
 
-trait HasTestsWithSuccess extends HasTestsWithResult[Bool] { module: RawModule =>
+trait HasTestsWithSuccess extends HasTests[Bool] { module: RawModule =>
   override protected def generateTestHarness(
     testName:   String,
     definition: Definition[module.type],
@@ -72,8 +71,8 @@ class HasTestsSpec extends ChiselFlatSpec with FileCheck {
       | CHECK: module ModuleWithTests
       |
       | CHECK: public module ModuleWithTests_foo
-      | CHECK: input clock : Clock
-      | CHECK: input reset : UInt<1>
+      | CHECK: input clock
+      | CHECK: input reset
       | CHECK: inst dut of ModuleWithTests
       |
       | CHECK: public module ModuleWithTests_bar
@@ -84,20 +83,30 @@ class HasTestsSpec extends ChiselFlatSpec with FileCheck {
     )
   }
 
+  it should "compile to verilog" in {
+    generateSystemVerilogAndFileCheck(new ModuleWithTests)(
+      """
+      | CHECK: module ModuleWithTests_foo
+      | CHECK: module ModuleWithTests_foo
+      | CHECK: module ModuleWithTests_bar
+      """
+    )
+  }
+
   it should "generate a public module for each test with a custom testharness" in {
     generateFirrtlAndFileCheck(new ModuleWithTestsWithSuccess)(
       """
       | CHECK: module ModuleWithTestsWithSuccess
       |
       | CHECK: public module ModuleWithTestsWithSuccess_foo
-      | CHECK: input clock : Clock
-      | COM: CHECK: input reset : UInt<1>
+      | CHECK: input clock
+      | CHECK: input reset
       | CHECK: output success : UInt<1>
       | CHECK: inst dut of ModuleWithTestsWithSuccess
       |
       | CHECK: public module ModuleWithTestsWithSuccess_bar
-      | CHECK: input clock : Clock
-      | COM: CHECK: input reset : UInt<1>
+      | CHECK: input clock
+      | CHECK: input reset
       | CHECK: output success : UInt<1>
       | CHECK: inst dut of ModuleWithTestsWithSuccess
       """
