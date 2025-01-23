@@ -99,15 +99,14 @@ case class WarningConfigurationAnnotation(value: String)
       // Add accumulating index to each filter for error reporting
       .mapAccumulate(0) { case (idx, s) => (idx + 1 + s.length, (idx, s)) } // + 1 for removed ','
       ._2 // Discard accumulator
-      .map {
-        case (idx, s) =>
-          WarningFilter.parse(s) match {
-            case Right(wf) => wf
-            case Left((jdx, msg)) =>
-              val carat = (" " * (idx + jdx)) + "^"
-              // Note tab before value and carat
-              throw new Exception(s"Failed to parse configuration: $msg\n  $value\n  $carat")
-          }
+      .map { case (idx, s) =>
+        WarningFilter.parse(s) match {
+          case Right(wf) => wf
+          case Left((jdx, msg)) =>
+            val carat = (" " * (idx + jdx)) + "^"
+            // Note tab before value and carat
+            throw new Exception(s"Failed to parse configuration: $msg\n  $value\n  $carat")
+        }
       }
   }
 }
@@ -154,21 +153,20 @@ case class WarningConfigurationFileAnnotation(value: File)
     require(value.exists, s"Warning configuration file '$value' must exist!")
     require(value.isFile && value.canRead, s"Warning configuration file '$value' must be a readable file!")
     val lines = scala.io.Source.fromFile(value).getLines()
-    lines.zipWithIndex.flatMap {
-      case (contents, lineNo) =>
-        val (str, jdx) = trimAndRemoveComments(contents)
-        Option.when(str.nonEmpty) {
-          WarningFilter.parse(str) match {
-            case Right(wf) => wf
-            case Left((idx, msg)) =>
-              val carat = (" " * (idx + jdx)) + "^"
-              val info = s"$value:${lineNo + 1}:$idx" // +1 to lineNo because we start at 0 but files start with 1
-              // Note tab before value and carat
-              throw new Exception(
-                s"Failed to parse configuration at $info: $msg\n  $contents\n  $carat"
-              )
-          }
+    lines.zipWithIndex.flatMap { case (contents, lineNo) =>
+      val (str, jdx) = trimAndRemoveComments(contents)
+      Option.when(str.nonEmpty) {
+        WarningFilter.parse(str) match {
+          case Right(wf) => wf
+          case Left((idx, msg)) =>
+            val carat = (" " * (idx + jdx)) + "^"
+            val info = s"$value:${lineNo + 1}:$idx" // +1 to lineNo because we start at 0 but files start with 1
+            // Note tab before value and carat
+            throw new Exception(
+              s"Failed to parse configuration at $info: $msg\n  $contents\n  $carat"
+            )
         }
+      }
     }.toVector
   }
 }
@@ -479,7 +477,7 @@ object RemapLayer extends HasShellOptions {
       toAnnotationSeq = (raw: String) =>
         raw match {
           case layerMapRegex(oldLayerName, newLayerName) => Seq(RemapLayer(oldLayerName, newLayerName))
-          case _                                         => throw new OptionsException(s"Invalid layer remap format: '$raw'")
+          case _ => throw new OptionsException(s"Invalid layer remap format: '$raw'")
         },
       helpText = "Globally remap a layer to another layer",
       helpValueName = Some("<oldLayer>,<newLayer>")

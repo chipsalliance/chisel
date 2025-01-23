@@ -185,7 +185,7 @@ object SyncReadMem extends ObjectSyncReadMemImpl {
     * @param size number of elements in the memory
     * @param t data type of memory element
     */
-  def apply[T <: Data](size: BigInt, t: T): SyncReadMem[T] = macro MemTransform.apply[T]
+  def apply[T <: Data](size: BigInt, t: T):                      SyncReadMem[T] = macro MemTransform.apply[T]
   def apply[T <: Data](size: BigInt, t: T, ruw: ReadUnderWrite): SyncReadMem[T] = macro MemTransform.apply_ruw[T]
 
   /** Creates a sequential/synchronous-read, sequential/synchronous-write [[SyncReadMem]].
@@ -193,7 +193,7 @@ object SyncReadMem extends ObjectSyncReadMemImpl {
     * @param size number of elements in the memory
     * @param t data type of memory element
     */
-  def apply[T <: Data](size: Int, t: T): SyncReadMem[T] = macro MemTransform.apply[T]
+  def apply[T <: Data](size: Int, t: T):                      SyncReadMem[T] = macro MemTransform.apply[T]
   def apply[T <: Data](size: Int, t: T, ruw: ReadUnderWrite): SyncReadMem[T] = macro MemTransform.apply_ruw[T]
 
   /** @group SourceInfoTransformMacro */
@@ -239,8 +239,8 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
   t:                  T,
   n:                  BigInt,
   val readUnderWrite: SyncReadMem.ReadUnderWrite,
-  sourceInfo:         SourceInfo)
-    extends MemBase[T](t, n, sourceInfo)
+  sourceInfo:         SourceInfo
+) extends MemBase[T](t, n, sourceInfo)
     with SyncReadMemImpl[T] {
 
   override def read(x: UInt): T = macro SourceInfoTransform.xArg

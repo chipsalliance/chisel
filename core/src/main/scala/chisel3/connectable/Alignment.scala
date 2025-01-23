@@ -47,33 +47,27 @@ private[chisel3] case class EmptyAlignment(isConsumer: Boolean) extends Alignmen
   def member: Data = DontCare
   def invert: EmptyAlignment = this
   def coerced = false
-  def coerce: EmptyAlignment = this
+  def coerce:        EmptyAlignment = this
   def swap(d: Data): Alignment = this
-  def alignment: String = "none"
+  def alignment:     String = "none"
 }
 
 private[chisel3] sealed trait NonEmptyAlignment extends Alignment
 
-private[chisel3] case class AlignedWithRoot(
-  member:     Data,
-  coerced:    Boolean,
-  isConsumer: Boolean)
+private[chisel3] case class AlignedWithRoot(member: Data, coerced: Boolean, isConsumer: Boolean)
     extends NonEmptyAlignment {
   def invert = if (coerced) this else FlippedWithRoot(member, coerced, isConsumer)
-  def coerce: AlignedWithRoot = this.copy(member, true)
+  def coerce:        AlignedWithRoot = this.copy(member, true)
   def swap(d: Data): Alignment = this.copy(member = d)
-  def alignment: String = "aligned"
+  def alignment:     String = "aligned"
 }
 
-private[chisel3] case class FlippedWithRoot(
-  member:     Data,
-  coerced:    Boolean,
-  isConsumer: Boolean)
+private[chisel3] case class FlippedWithRoot(member: Data, coerced: Boolean, isConsumer: Boolean)
     extends NonEmptyAlignment {
   def invert = if (coerced) this else AlignedWithRoot(member, coerced, isConsumer)
-  def coerce: FlippedWithRoot = this.copy(member, true)
+  def coerce:        FlippedWithRoot = this.copy(member, true)
   def swap(d: Data): Alignment = this.copy(member = d)
-  def alignment: String = "flipped"
+  def alignment:     String = "flipped"
 }
 
 object Alignment {
@@ -89,9 +83,9 @@ object Alignment {
     def recUp(x: Data): Boolean = x.binding match {
       case _ if isLocallyCoercing(x) => true
       case None                      => false
-      case Some(t: TopBinding) => false
-      case Some(ChildBinding(p)) => recUp(p)
-      case other                 => throw new Exception(s"Unexpected $other! $x, $member")
+      case Some(t: TopBinding)       => false
+      case Some(ChildBinding(p))     => recUp(p)
+      case other                     => throw new Exception(s"Unexpected $other! $x, $member")
     }
     def isLocallyCoercing(d: Data): Boolean = {
       val s = DataMirror.specifiedDirectionOf(d)
@@ -115,8 +109,8 @@ object Alignment {
     left:  Option[Alignment],
     right: Option[Alignment]
   ): Seq[(Option[Alignment], Option[Alignment])] = {
-    Data.dataMatchingZipOfChildren.matchingZipOfChildren(left.map(_.member), right.map(_.member)).map {
-      case (l, r) => l.map(deriveChildAlignment(_, left.get)) -> r.map(deriveChildAlignment(_, right.get))
+    Data.dataMatchingZipOfChildren.matchingZipOfChildren(left.map(_.member), right.map(_.member)).map { case (l, r) =>
+      l.map(deriveChildAlignment(_, left.get)) -> r.map(deriveChildAlignment(_, right.get))
     }
   }
 }
@@ -130,12 +124,12 @@ private[chisel3] case class ConnectableAlignment(base: Connectable[Data], align:
   // Returns loc and roc
   final def computeLandR(c: Data, p: Data, op: Connection): Option[(Data, Data)] = {
     (c, p, this.align, op.connectToConsumer, op.connectToProducer, op.alwaysConnectToConsumer) match {
-      case (x: Analog, y: Analog, _, _, _, _) => Some((x, y))
-      case (x: Analog, DontCare, _, _, _, _) => Some((x, DontCare))
+      case (x: Analog, y: Analog, _, _, _, _)     => Some((x, y))
+      case (x: Analog, DontCare, _, _, _, _)      => Some((x, DontCare))
       case (x, y, _: AlignedWithRoot, true, _, _) => Some((c, p))
       case (x, y, _: FlippedWithRoot, _, true, _) => Some((p, c))
-      case (x, y, _, _, _, true) => Some((c, p))
-      case other                 => None
+      case (x, y, _, _, _, true)                  => Some((c, p))
+      case other                                  => None
     }
   }
 

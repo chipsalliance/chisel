@@ -113,9 +113,8 @@ object VecInit extends VecInitImpl with SourceInfoDoc {
     * [[Data]] that becomes the output element
     */
   def tabulate[T <: Data](
-    n:   Int
-  )(gen: (Int) => T
-  )(
+    n: Int
+  )(gen: (Int) => T)(
     using sourceInfo: SourceInfo
   ): Vec[T] = _tabulateImpl(n)(gen)
 
@@ -129,10 +128,9 @@ object VecInit extends VecInitImpl with SourceInfoDoc {
     * [[Data]] that becomes the output element
     */
   def tabulate[T <: Data](
-    n:   Int,
-    m:   Int
-  )(gen: (Int, Int) => T
-  )(
+    n: Int,
+    m: Int
+  )(gen: (Int, Int) => T)(
     using sourceInfo: SourceInfo
   ): Vec[Vec[T]] = _tabulateImpl(n, m)(gen)
 
@@ -146,11 +144,10 @@ object VecInit extends VecInitImpl with SourceInfoDoc {
     * [[Data]] that becomes the output element
     */
   def tabulate[T <: Data](
-    n:   Int,
-    m:   Int,
-    p:   Int
-  )(gen: (Int, Int, Int) => T
-  )(
+    n: Int,
+    m: Int,
+    p: Int
+  )(gen: (Int, Int, Int) => T)(
     using sourceInfo: SourceInfo
   ): Vec[Vec[Vec[T]]] = _tabulateImpl(n, m, p)(gen)
 
@@ -172,10 +169,9 @@ object VecInit extends VecInitImpl with SourceInfoDoc {
     * element of the same type
     */
   def fill[T <: Data](
-    n:   Int,
-    m:   Int
-  )(gen: => T
-  )(
+    n: Int,
+    m: Int
+  )(gen: => T)(
     using sourceInfo: SourceInfo
   ): Vec[Vec[T]] = _fillImpl(n, m)(gen)
 
@@ -189,11 +185,10 @@ object VecInit extends VecInitImpl with SourceInfoDoc {
     * element of the same type
     */
   def fill[T <: Data](
-    n:   Int,
-    m:   Int,
-    p:   Int
-  )(gen: => T
-  )(
+    n: Int,
+    m: Int,
+    p: Int
+  )(gen: => T)(
     using sourceInfo: SourceInfo
   ): Vec[Vec[Vec[T]]] = _fillImpl(n, m, p)(gen)
 
@@ -208,8 +203,7 @@ object VecInit extends VecInitImpl with SourceInfoDoc {
   def iterate[T <: Data](
     start: T,
     len:   Int
-  )(f:     (T) => T
-  )(
+  )(f: (T) => T)(
     using sourceInfo: SourceInfo
   ): Vec[T] = _iterateImpl(start, len)(f)
 }

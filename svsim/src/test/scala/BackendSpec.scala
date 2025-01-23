@@ -59,10 +59,9 @@ class VerilatorSpec extends BackendSpec {
 
 trait BackendSpec extends AnyFunSpec with Matchers {
   def test[Backend <: svsim.Backend](
-    name:                String,
-    backend:             Backend
-  )(compilationSettings: backend.CompilationSettings
-  ) = {
+    name:    String,
+    backend: Backend
+  )(compilationSettings: backend.CompilationSettings) = {
     describe(s"Svsim backend '$name'") {
       val workspace = new svsim.Workspace(path = s"test_run_dir/${getClass().getSimpleName()}")
       var simulation: Simulation = null

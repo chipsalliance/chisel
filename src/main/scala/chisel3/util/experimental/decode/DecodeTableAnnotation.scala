@@ -13,10 +13,7 @@ import firrtl.annotations.{Annotation, ReferenceTarget, SingleTargetAnnotation}
   * @param truthTable input [[TruthTable]] encoded in a serialized [[TruthTable]].
   * @param minimizedTable minimized [[truthTable]] encoded in a serialized [[TruthTable]].
   */
-case class DecodeTableAnnotation(
-  target:         ReferenceTarget,
-  truthTable:     String,
-  minimizedTable: String)
+case class DecodeTableAnnotation(target: ReferenceTarget, truthTable: String, minimizedTable: String)
     extends SingleTargetAnnotation[ReferenceTarget] {
   override def duplicate(n: ReferenceTarget): Annotation = this.copy(target = n)
 }

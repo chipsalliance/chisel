@@ -139,9 +139,9 @@ object BackendCompilationUtilities extends LazyLogging {
       blackBoxVerilogList ++
       vSourcesFiltered.flatMap(file => Seq("-v", file.getCanonicalPath)) ++
       Seq("--assert", "-Wno-fatal", "-Wno-WIDTH", "-Wno-STMTDLY") ++ {
-      if (suppressVcd) { Seq.empty }
-      else { Seq("--trace") }
-    } ++
+        if (suppressVcd) { Seq.empty }
+        else { Seq("--trace") }
+      } ++
       Seq(
         "-O1",
         "--top-module",

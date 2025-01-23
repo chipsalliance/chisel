@@ -12,7 +12,13 @@ object `package` extends RootModule {
   object cross extends Cross[LitUtility](v.scalaCrossVersions)
 }
 
-trait LitUtility extends ScalaModule with HasPanamaConverterModule with HasPanamaOMModule with CrossModuleBase with HasScala2Plugin with ScalafmtModule {
+trait LitUtility
+    extends ScalaModule
+    with HasPanamaConverterModule
+    with HasPanamaOMModule
+    with CrossModuleBase
+    with HasScala2Plugin
+    with ScalafmtModule {
   override def scalacOptions = Task { Seq("-Ymacro-annotations") }
   override def circtPanamaBindingModule = panamaConverterModule.circtPanamaBindingModule
 

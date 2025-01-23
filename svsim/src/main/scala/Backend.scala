@@ -8,14 +8,15 @@ import java.io.File
   */
 case class CommonCompilationSettings(
   verilogPreprocessorDefines: Seq[CommonCompilationSettings.VerilogPreprocessorDefine] = Seq(),
-  optimizationStyle:          CommonCompilationSettings.OptimizationStyle = CommonCompilationSettings.OptimizationStyle.Default,
+  optimizationStyle: CommonCompilationSettings.OptimizationStyle = CommonCompilationSettings.OptimizationStyle.Default,
   availableParallelism: CommonCompilationSettings.AvailableParallelism =
     CommonCompilationSettings.AvailableParallelism.Default,
   defaultTimescale:  Option[CommonCompilationSettings.Timescale] = None,
   libraryExtensions: Option[Seq[String]] = None,
   libraryPaths:      Option[Seq[String]] = None,
   includeDirs:       Option[Seq[String]] = None,
-  fileFilter:        PartialFunction[File, Boolean] = PartialFunction.empty)
+  fileFilter:        PartialFunction[File, Boolean] = PartialFunction.empty
+)
 object CommonCompilationSettings {
   object VerilogPreprocessorDefine {
     def apply(name: String, value: String) = new VerilogPreprocessorDefine(name, Some(value))
@@ -88,7 +89,8 @@ final object Backend {
   final case class Parameters(
     private[svsim] val compilerPath:         String,
     private[svsim] val compilerInvocation:   Parameters.Invocation,
-    private[svsim] val simulationInvocation: Parameters.Invocation)
+    private[svsim] val simulationInvocation: Parameters.Invocation
+  )
 
   final object Parameters {
 
@@ -97,7 +99,8 @@ final object Backend {
       */
     final case class Invocation(
       private[svsim] val arguments:   Seq[String],
-      private[svsim] val environment: Seq[(String, String)])
+      private[svsim] val environment: Seq[(String, String)]
+    )
   }
 
   /**

@@ -19,7 +19,8 @@ final class ShellOption[A: Read](
   val toAnnotationSeq: A => AnnotationSeq,
   val helpText:        String,
   val shortOption:     Option[String] = None,
-  val helpValueName:   Option[String] = None) {
+  val helpValueName:   Option[String] = None
+) {
 
   /** Add this specific shell (command line) option to an option parser
     * @param p an option parser

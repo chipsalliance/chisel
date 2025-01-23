@@ -29,7 +29,7 @@ import chisel3.experimental.SourceInfo
 trait Num[T <: Data] extends NumImpl[T] {
   // def << (b: T): T
   // def >> (b: T): T
-  //def unary_-: T
+  // def unary_-: T
 
   // REVIEW TODO: double check ops conventions against FIRRTL
 

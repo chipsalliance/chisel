@@ -5,7 +5,7 @@ import chisel3._
 trait HierarchyProto[+A] {
   private[chisel3] def underlying: Underlying[A]
   private[chisel3] def proto: A = underlying match {
-    case Proto(value) => value
+    case Proto(value)         => value
     case Clone(i: IsClone[A]) => i.getProto
   }
 }

@@ -4,7 +4,7 @@ package chisel3
 
 object Width {
   def apply(x: Int): Width = KnownWidth(x)
-  def apply(): Width = UnknownWidth
+  def apply():       Width = UnknownWidth
 }
 
 sealed abstract class Width {
@@ -20,19 +20,19 @@ sealed abstract class Width {
   def shiftRight(that:         Int): Width = this.op(this, (a, b) => 0.max(a - that))
   def unsignedShiftRight(that: Int): Width = this.op(this, (a, b) => 0.max(a - that))
   def signedShiftRight(that:   Int): Width = this.op(this, (a, b) => 1.max(a - that))
-  def dynamicShiftLeft(that:   Width): Width =
+  def dynamicShiftLeft(that: Width): Width =
     this.op(that, (a, b) => a + (1 << b) - 1)
 
-  def known: Boolean
-  def get:   W
+  def known:                                     Boolean
+  def get:                                       W
   protected def op(that: Width, f: (W, W) => W): Width
 }
 
 case object UnknownWidth extends Width {
-  def known: Boolean = false
-  def get:   Int = None.get
+  def known:                           Boolean = false
+  def get:                             Int = None.get
   def op(that: Width, f: (W, W) => W): Width = this
-  override def toString: String = ""
+  override def toString:               String = ""
 
   @deprecated("UnknownWidth is now a case object, remove the parentheses", "Chisel 7.0")
   def apply(): UnknownWidth.type = this

@@ -25,8 +25,8 @@ import chisel3.internal
 object log2Up {
   // Do not deprecate until zero-width wires fully work:
   // https://github.com/freechipsproject/chisel3/issues/847
-  //@chiselRuntimeDeprecated
-  //@deprecated("Use log2Ceil instead", "chisel3")
+  // @chiselRuntimeDeprecated
+  // @deprecated("Use log2Ceil instead", "chisel3")
   def apply(in: BigInt): Int = {
     require(in >= 0, s"log2Up is only defined on integers >= 0, got $in")
     1.max((in - 1).bitLength)
@@ -68,8 +68,8 @@ object log2Ceil {
 object log2Down {
   // Do not deprecate until zero-width wires fully work:
   // https://github.com/freechipsproject/chisel3/issues/847
-  //@chiselRuntimeDeprecated
-  //@deprecated("Use log2Floor instead", "chisel3")
+  // @chiselRuntimeDeprecated
+  // @deprecated("Use log2Floor instead", "chisel3")
   def apply(in: BigInt): Int = log2Up(in) - (if (isPow2(in)) 0 else 1)
   def apply(in: Int):    Int = apply(BigInt(in))
 }

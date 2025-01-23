@@ -31,8 +31,7 @@ object ModuleChoice extends ModuleChoiceImpl with SourceInfoDoc {
     */
   def apply[T <: Data](
     default: => FixedIOBaseModule[T]
-  )(choices: => Seq[(Case, () => FixedIOBaseModule[T])]
-  ): T =
+  )(choices: => Seq[(Case, () => FixedIOBaseModule[T])]): T =
     macro InstChoiceTransform.apply[T]
 
   /** @group SourceInfoTransformMacro */

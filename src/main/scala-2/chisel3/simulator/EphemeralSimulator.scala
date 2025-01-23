@@ -21,8 +21,7 @@ object EphemeralSimulator extends PeekPokeAPI {
   def simulate[T <: RawModule](
     module:       => T,
     layerControl: LayerControl.Type = LayerControl.EnableAll
-  )(body:         (T) => Unit
-  ): Unit = {
+  )(body: (T) => Unit): Unit = {
     makeSimulator().simulate(module, layerControl)({ module => body(module.wrapped) }).result
   }
 

@@ -10,7 +10,8 @@ final class Simulation private[svsim] (
   executableName:           String,
   settings:                 Simulation.Settings,
   val workingDirectoryPath: String,
-  moduleInfo:               ModuleInfo) {
+  moduleInfo:               ModuleInfo
+) {
   private val executionScriptPath = s"$workingDirectoryPath/execution-script.txt"
 
   def run[T](body: Simulation.Controller => T): T = run()(body)
@@ -19,8 +20,7 @@ final class Simulation private[svsim] (
     verbose:                       Boolean = false,
     traceEnabled:                  Boolean = false,
     executionScriptLimit:          Option[Int] = None
-  )(body:                          Simulation.Controller => T
-  ): T = {
+  )(body: Simulation.Controller => T): T = {
     val cwd = settings.customWorkingDirectory match {
       case None => workingDirectoryPath
       case Some(value) =>
@@ -94,7 +94,8 @@ object Simulation {
   private[svsim] final case class Settings(
     customWorkingDirectory: Option[String] = None,
     arguments:              Seq[String] = Seq(),
-    environment:            Map[String, String] = Map())
+    environment:            Map[String, String] = Map()
+  )
 
   /** @note Methods in this class and `Simulation.Port` are somewhat lazy in their execution. Specifically, methods returning `Unit` neither flush the command buffer, nor do they actively read from the message buffer. Only commands which return a value will wait to return until the simulation has progressed to the point where the value is available. This can improve performance by essentially enabling batching of both commands and messages. If you want to ensure that all commands have been sent to the simulation executable, you can call `completeInFlightCommands()`.
     */
@@ -103,7 +104,8 @@ object Simulation {
     messageReader:                 BufferedReader,
     moduleInfo:                    ModuleInfo,
     conservativeCommandResolution: Boolean = false,
-    logMessagesAndCommands:        Boolean = false) {
+    logMessagesAndCommands:        Boolean = false
+  ) {
 
     private def readStringOfLength(length: Int): String = {
       val array = new Array[Char](length)
@@ -306,9 +308,8 @@ object Simulation {
 
     def readLog(): String = {
       sendCommand(Simulation.Command.Log)
-      processNextMessage {
-        case Simulation.Message.Log(message) =>
-          message
+      processNextMessage { case Simulation.Message.Log(message) =>
+        message
       }
     }
 
@@ -322,9 +323,8 @@ object Simulation {
       expectNextMessage { case Simulation.Message.Ack => }
     }
 
-    private val portInfos = moduleInfo.ports.zipWithIndex.map {
-      case (port, index) =>
-        port.name -> (index.toHexString, port)
+    private val portInfos = moduleInfo.ports.zipWithIndex.map { case (port, index) =>
+      port.name -> (index.toHexString, port)
     }.toMap
 
     def port(name: String): Simulation.Port = {
@@ -360,8 +360,8 @@ object Simulation {
       outOfPhaseValue:   BigInt,
       timestepsPerPhase: Int,
       maxCycles:         Int,
-      sentinel:          Option[(Port, BigInt)])
-        extends Command
+      sentinel:          Option[(Port, BigInt)]
+    ) extends Command
     case class Trace(enable: Boolean) extends Command
   }
 
@@ -371,16 +371,14 @@ object Simulation {
 
     def set(value: BigInt) = {
       controller.sendCommand(Simulation.Command.SetBits(id, value))
-      controller.expectNextMessage {
-        case Simulation.Message.Ack =>
+      controller.expectNextMessage { case Simulation.Message.Ack =>
       }
     }
 
     def get(isSigned: Boolean = false): Value = {
       controller.sendCommand(Simulation.Command.GetBits(id, isSigned))
-      controller.processNextMessage {
-        case Simulation.Message.Bits(bitCount, value) =>
-          Value(bitCount, value)
+      controller.processNextMessage { case Simulation.Message.Bits(bitCount, value) =>
+        Value(bitCount, value)
       }
     }
 
@@ -388,8 +386,7 @@ object Simulation {
       controller.sendCommand(
         Simulation.Command.Tick(id, inPhaseValue, outOfPhaseValue, timestepsPerPhase, cycles, None)
       )
-      controller.expectNextMessage {
-        case Simulation.Message.Bits(_, _) =>
+      controller.expectNextMessage { case Simulation.Message.Bits(_, _) =>
       }
     }
 
@@ -403,9 +400,8 @@ object Simulation {
       controller.sendCommand(
         Simulation.Command.Tick(id, inPhaseValue, outOfPhaseValue, timestepsPerPhase, maxCycles, sentinel)
       )
-      controller.processNextMessage {
-        case Simulation.Message.Bits(_, cyclesElapsed) =>
-          cyclesElapsed
+      controller.processNextMessage { case Simulation.Message.Bits(_, cyclesElapsed) =>
+        cyclesElapsed
       }
     }
 
@@ -420,18 +416,16 @@ object Simulation {
       controller.sendCommand(
         Simulation.Command.Tick(id, inPhaseValue, outOfPhaseValue, timestepsPerPhase, maxCycles, sentinel)
       )
-      controller.expectNextMessage {
-        case Simulation.Message.Bits(_, cyclesElapsed) =>
-          checkElapsedCycleCount(cyclesElapsed)
+      controller.expectNextMessage { case Simulation.Message.Bits(_, cyclesElapsed) =>
+        checkElapsedCycleCount(cyclesElapsed)
       }
     }
 
     def check(f: Value => Unit): Unit = check()(f)
     def check(isSigned: Boolean = false)(f: Value => Unit): Unit = {
       controller.sendCommand(Simulation.Command.GetBits(id, isSigned))
-      controller.expectNextMessage {
-        case Simulation.Message.Bits(bitCount, value) =>
-          f(Value(bitCount, value))
+      controller.expectNextMessage { case Simulation.Message.Bits(bitCount, value) =>
+        f(Value(bitCount, value))
       }
     }
   }

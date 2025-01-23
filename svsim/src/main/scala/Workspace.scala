@@ -6,16 +6,11 @@ import java.lang.ProcessBuilder.Redirect
 import scala.annotation.meta.param
 import scala.jdk.CollectionConverters._
 
-case class ModuleInfo(
-  name:  String,
-  ports: Seq[ModuleInfo.Port]) {
+case class ModuleInfo(name: String, ports: Seq[ModuleInfo.Port]) {
   private[svsim] val instanceName = "dut"
 }
 object ModuleInfo {
-  case class Port(
-    name:       String,
-    isSettable: Boolean = false,
-    isGettable: Boolean = false) {
+  case class Port(name: String, isSettable: Boolean = false, isGettable: Boolean = false) {
     assert(name.matches("^[a-zA-Z0-9\\-_]*$"))
   }
 }
@@ -27,7 +22,8 @@ final class Workspace(
   path: String,
   /** The prefix for the working directory used when invoking `compile`
     */
-  val workingDirectoryPrefix: String = "workdir") {
+  val workingDirectoryPrefix: String = "workdir"
+) {
 
   val absolutePath =
     if (path.startsWith("/"))
@@ -301,8 +297,9 @@ final class Workspace(
     * @param outputTag A string which will be used to tag the output directory. This enables compiling and simulating the same workspace with multiple backends.
     */
   def compile[T <: Backend](
-    backend:                          T
-  )(workingDirectoryTag:              String,
+    backend: T
+  )(
+    workingDirectoryTag:              String,
     commonSettings:                   CommonCompilationSettings,
     backendSpecificSettings:          backend.CompilationSettings,
     customSimulationWorkingDirectory: Option[String],

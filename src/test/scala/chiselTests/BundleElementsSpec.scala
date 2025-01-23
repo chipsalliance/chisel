@@ -404,7 +404,7 @@ class BundleElementsSpec extends AnyFreeSpec with Matchers {
   class UsesBundleWithOptionFields extends Module {
     val outTrue = IO(Output(new OptionBundle(hasIn = true)))
     val outFalse = IO(Output(new OptionBundle(hasIn = false)))
-    //NOTE: The _.in.get _.in is an optional field
+    // NOTE: The _.in.get _.in is an optional field
     assertElementsMatchExpected(outTrue)("out" -> _.out, "in" -> _.in.get)
     assertElementsMatchExpected(outFalse)("out" -> _.out)
   }
@@ -429,7 +429,7 @@ class BundleElementsSpec extends AnyFreeSpec with Matchers {
   }
 
   "plugin will NOT see fields that are Data but declared in some way as Any" in {
-    //This is not incompatible with chisel not using the plugin, but this code is considered bad practice
+    // This is not incompatible with chisel not using the plugin, but this code is considered bad practice
 
     ChiselStage.emitCHIRRTL(new Module {
       val out = IO(Output(new Bundle {
@@ -497,10 +497,7 @@ class BundleElementsSpec extends AnyFreeSpec with Matchers {
   }
 
   "plugin should handle fields using the boolean to option construct" in {
-    case class ALUConfig(
-      xLen: Int,
-      mul:  Boolean,
-      b:    Boolean)
+    case class ALUConfig(xLen: Int, mul: Boolean, b: Boolean)
 
     class OptionalBundle extends Bundle {
       val optionBundleA = Input(UInt(3.W))
@@ -592,23 +589,22 @@ object assertElementsMatchExpected {
     val missingMsg = "missing field in #elements"
     val extraMsg = "extra field in #elements"
     val paired = elements.toSeq.zipAll(expected, missingMsg -> UInt(1.W), extraMsg -> UInt(1.W))
-    val errorsStrings = paired.flatMap {
-      case (element, expected) =>
-        val (elementName, elementData) = element
-        val (expectedName, expectedData) = expected
-        if (elementName == missingMsg) {
-          Some(s"#elements is missing the '$expectedName' field")
-        } else if (expectedName == extraMsg) {
-          Some(s"expected fields did not include '$elementName' field found in #elements")
-        } else if (elementName != expectedName) {
-          Some(s"field: '$elementName' did not match expected '$expectedName'")
-        } else if (elementData != expectedData) {
-          Some(
-            s"field '$elementName' data field ${elementData}(${elementData.hashCode}) did not match expected $expectedData(${expectedData.hashCode})"
-          )
-        } else {
-          None
-        }
+    val errorsStrings = paired.flatMap { case (element, expected) =>
+      val (elementName, elementData) = element
+      val (expectedName, expectedData) = expected
+      if (elementName == missingMsg) {
+        Some(s"#elements is missing the '$expectedName' field")
+      } else if (expectedName == extraMsg) {
+        Some(s"expected fields did not include '$elementName' field found in #elements")
+      } else if (elementName != expectedName) {
+        Some(s"field: '$elementName' did not match expected '$expectedName'")
+      } else if (elementData != expectedData) {
+        Some(
+          s"field '$elementName' data field ${elementData}(${elementData.hashCode}) did not match expected $expectedData(${expectedData.hashCode})"
+        )
+      } else {
+        None
+      }
     }
     assert(errorsStrings.isEmpty, s"Bundle: ${bun.getClass.getName}: " + errorsStrings.mkString(", "))
   }

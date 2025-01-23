@@ -71,7 +71,7 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
     }
   }
 
-  //NOTE: I had problems where this would not work if this class declaration was inside test scope
+  // NOTE: I had problems where this would not work if this class declaration was inside test scope
   class HasVecInit extends Module {
     val initValue = Vec(4, UInt(8.W)).Lit(0 -> 0xab.U(8.W), 1 -> 0xcd.U(8.W), 2 -> 0xef.U(8.W), 3 -> 0xff.U(8.W))
     val y = RegInit(initValue)
@@ -86,7 +86,7 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
     firrtl should include("""regreset y : UInt<8>[4], clock, reset, _y_WIRE""".stripMargin)
   }
 
-  //NOTE: I had problems where this would not work if this class declaration was inside test scope
+  // NOTE: I had problems where this would not work if this class declaration was inside test scope
   class HasPartialVecInit extends Module {
     val initValue = Vec(4, UInt(8.W)).Lit(0 -> 0xab.U(8.W), 2 -> 0xef.U(8.W), 3 -> 0xff.U(8.W))
     val y = RegInit(initValue)

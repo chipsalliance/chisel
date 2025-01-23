@@ -145,8 +145,8 @@ class SRAMInterface[T <: Data](
   val numWritePorts:     Int,
   val numReadwritePorts: Int,
   val masked:            Boolean = false,
-  val hasDescription:    Boolean = false)
-    extends Bundle {
+  val hasDescription:    Boolean = false
+) extends Bundle {
 
   /** Public accessor for data type of this interface. */
   def dataType: T = tpe
@@ -159,7 +159,7 @@ class SRAMInterface[T <: Data](
   }
   override def typeName: String =
     s"SRAMInterface_${SRAM.portedness(numReadPorts, numWritePorts, numReadwritePorts)}${if (masked) "_masked"
-    else ""}}_${tpe.typeName}"
+      else ""}}_${tpe.typeName}"
 
   val addrWidth = log2Up(memSize)
 
@@ -677,23 +677,21 @@ object SRAM {
       new SRAMInterface(size, tpe, numReadPorts, numWritePorts, numReadwritePorts, enableMask, includeMetadata)
     )
 
-    out.readPorts.zip(sramReadPorts).zip(readPortClocks).map {
-      case ((intfReadPort, sramReadPort), readClock) =>
-        sramReadPort.address := intfReadPort.address
-        sramReadPort.clock := readClock
-        intfReadPort.data := sramReadPort.data.asTypeOf(tpe)
-        sramReadPort.enable := intfReadPort.enable
+    out.readPorts.zip(sramReadPorts).zip(readPortClocks).map { case ((intfReadPort, sramReadPort), readClock) =>
+      sramReadPort.address := intfReadPort.address
+      sramReadPort.clock := readClock
+      intfReadPort.data := sramReadPort.data.asTypeOf(tpe)
+      sramReadPort.enable := intfReadPort.enable
     }
-    out.writePorts.zip(sramWritePorts).zip(writePortClocks).map {
-      case ((intfWritePort, sramWritePort), writeClock) =>
-        sramWritePort.address := intfWritePort.address
-        sramWritePort.clock := writeClock
-        sramWritePort.data := intfWritePort.data.asUInt
-        sramWritePort.enable := intfWritePort.enable
-        sramWritePort.mask match {
-          case Some(mask) => mask := intfWritePort.mask.get.asUInt
-          case None       => assert(intfWritePort.mask.isEmpty)
-        }
+    out.writePorts.zip(sramWritePorts).zip(writePortClocks).map { case ((intfWritePort, sramWritePort), writeClock) =>
+      sramWritePort.address := intfWritePort.address
+      sramWritePort.clock := writeClock
+      sramWritePort.data := intfWritePort.data.asUInt
+      sramWritePort.enable := intfWritePort.enable
+      sramWritePort.mask match {
+        case Some(mask) => mask := intfWritePort.mask.get.asUInt
+        case None       => assert(intfWritePort.mask.isEmpty)
+      }
     }
     out.readwritePorts.zip(sramReadwritePorts).zip(readwritePortClocks).map {
       case ((intfReadwritePort, sramReadwritePort), readwriteClock) =>
@@ -782,11 +780,10 @@ object SRAM {
 
     // set references to firrtl memory ports
     def nameAndSetRef(ports: Seq[Data], namePrefix: String): Seq[String] = {
-      ports.zipWithIndex.map {
-        case (p, idx) =>
-          val name = namePrefix + idx
-          p.setRef(Slot(Node(mem), name))
-          name
+      ports.zipWithIndex.map { case (p, idx) =>
+        val name = namePrefix + idx
+        p.setRef(Slot(Node(mem), name))
+        name
       }
     }
 

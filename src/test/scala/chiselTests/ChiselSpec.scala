@@ -186,8 +186,8 @@ trait ChiselRunners extends Assertions {
         Array("--target-dir", BackendCompilationUtilities.createTestDirectory(this.getClass.getSimpleName).toString),
         Seq(ChiselGeneratorAnnotation(() => t), CIRCTTargetAnnotation(CIRCTTarget.SystemVerilog))
       )
-      .collectFirst {
-        case EmittedVerilogCircuitAnnotation(a) => a.value
+      .collectFirst { case EmittedVerilogCircuitAnnotation(a) =>
+        a.value
       }
       .getOrElse(fail("No Verilog circuit was emitted by the FIRRTL compiler!"))
   }

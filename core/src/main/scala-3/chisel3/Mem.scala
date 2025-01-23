@@ -167,8 +167,8 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
   t:                  T,
   n:                  BigInt,
   val readUnderWrite: SyncReadMem.ReadUnderWrite,
-  sourceInfo:         SourceInfo)
-    extends MemBase[T](t, n, sourceInfo)
+  sourceInfo:         SourceInfo
+) extends MemBase[T](t, n, sourceInfo)
     with SyncReadMemImpl[T] {
 
   override def read(idx: UInt)(using sourceInfo: SourceInfo): T = _readImpl(idx)

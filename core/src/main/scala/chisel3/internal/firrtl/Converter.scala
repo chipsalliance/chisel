@@ -356,7 +356,7 @@ private[chisel3] object Converter {
     case t: EnumType   => fir.UIntType(convert(t.width))
     case t: UInt       => fir.UIntType(convert(t.width))
     case t: SInt       => fir.SIntType(convert(t.width))
-    case t: Analog => fir.AnalogType(convert(t.width))
+    case t: Analog     => fir.AnalogType(convert(t.width))
     case t: Vec[_] =>
       val childClearDir = clearDir ||
         t.specifiedDirection == SpecifiedDirection.Input || t.specifiedDirection == SpecifiedDirection.Output

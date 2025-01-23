@@ -13,7 +13,8 @@ class LoggerOptions private[logger] (
   val globalLogLevel: LogLevel.Value = LogLevelAnnotation().globalLogLevel,
   val classLogLevels: Map[String, LogLevel.Value] = Map.empty,
   val logClassNames:  Boolean = false,
-  val logFileName:    Option[String] = None) {
+  val logFileName:    Option[String] = None
+) {
 
   private[logger] def copy(
     globalLogLevel: LogLevel.Value = globalLogLevel,

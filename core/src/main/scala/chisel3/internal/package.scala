@@ -88,8 +88,7 @@ package object internal {
     that:           A,
     targetWidthOpt: Option[Int],
     isUInt:         Boolean
-  )(fromUInt:       UInt => A
-  )(
+  )(fromUInt: UInt => A)(
     implicit sourceInfo: SourceInfo
   ): A = {
     (targetWidthOpt, that.widthOption) match {
@@ -206,10 +205,9 @@ package object internal {
   // TODO this exists in cats.Traverse, should we just use that?
   private[chisel3] implicit class ListSyntax[A](xs: List[A]) {
     def mapAccumulate[B, C](z: B)(f: (B, A) => (B, C)): (B, List[C]) = {
-      val (zz, result) = xs.foldLeft((z, List.empty[C])) {
-        case ((acc, res), a) =>
-          val (accx, c) = f(acc, a)
-          (accx, c :: res)
+      val (zz, result) = xs.foldLeft((z, List.empty[C])) { case ((acc, res), a) =>
+        val (accx, c) = f(acc, a)
+        (accx, c :: res)
       }
       (zz, result.reverse)
     }

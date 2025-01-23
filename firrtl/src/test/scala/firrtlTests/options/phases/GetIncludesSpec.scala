@@ -41,11 +41,10 @@ class GetIncludesSpec extends AnyFlatSpec with Matchers with firrtl.testutils.Ut
     new File(dir, "e.anno.json") -> Seq(E)
   )
 
-  files.foreach {
-    case (file, annotations) =>
-      val pw = new PrintWriter(file)
-      pw.write(JsonProtocol.serialize(annotations))
-      pw.close()
+  files.foreach { case (file, annotations) =>
+    val pw = new PrintWriter(file)
+    pw.write(JsonProtocol.serialize(annotations))
+    pw.close()
   }
 
   class Fixture { val phase: Phase = new GetIncludes }

@@ -52,8 +52,8 @@ class ForceNamesSpec extends ChiselFlatSpec {
     ) ++ inputAnnos
 
     val ret = stage.execute(Array("--target", "systemverilog"), annos)
-    val verilog = ret.collectFirst {
-      case e: EmittedVerilogCircuitAnnotation => e.value.value
+    val verilog = ret.collectFirst { case e: EmittedVerilogCircuitAnnotation =>
+      e.value.value
     }.get
 
     verilog.split("\\\n")
