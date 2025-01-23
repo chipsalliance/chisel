@@ -25,5 +25,10 @@ trait Macros extends CrossSbtModule with HasScala2MacroAnno with ScalafmtModule 
     }
   }
 
-  override def ivyDeps = super.ivyDeps() ++ Seq(v.scalaReflect(crossScalaVersion))
+  override def ivyDeps =
+    if (!v.isScala3(crossScalaVersion)) {
+      super.ivyDeps() ++ Seq(v.scalaReflect(crossScalaVersion))
+    } else {
+      super.ivyDeps()
+    }
 }
