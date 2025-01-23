@@ -30,6 +30,6 @@ object ModuleChoice extends ModuleChoiceImpl {
     default: => FixedIOBaseModule[T],
     choices: Seq[(Case, () => FixedIOBaseModule[T])]
   )(
-    using sourceInfo: SourceInfo
+    using SourceInfo
   ): T = _applyImpl(default, choices)
 }

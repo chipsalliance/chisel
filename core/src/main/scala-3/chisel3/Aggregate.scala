@@ -52,7 +52,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, length: Int)
 
   override def toString: String = super[VecImpl].toString
 
-  def apply(p: UInt)(using sourceInfo: SourceInfo): T = _applyImpl(p)
+  def apply(p: UInt)(using SourceInfo): T = _applyImpl(p)
 
   /** A reduce operation in a tree like structure instead of sequentially
     * @example An adder tree
@@ -75,7 +75,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, length: Int)
     redOp:   (T, T) => T,
     layerOp: (T) => T = (x: T) => x
   )(
-    using sourceInfo: SourceInfo
+    using SourceInfo
   ): T = _reduceTreeImpl(redOp, layerOp)
 }
 
@@ -92,7 +92,7 @@ object VecInit extends VecInitImpl with SourceInfoDoc {
     * element
     * @note output elements are connected from the input elements
     */
-  def apply[T <: Data](elts: Seq[T])(using sourceInfo: SourceInfo): Vec[T] = _applyImpl(elts)
+  def apply[T <: Data](elts: Seq[T])(using SourceInfo): Vec[T] = _applyImpl(elts)
 
   /** Creates a new [[Vec]] composed of the input [[Data]] nodes.
     *
@@ -102,7 +102,7 @@ object VecInit extends VecInitImpl with SourceInfoDoc {
     * element
     * @note output elements are connected from the input elements
     */
-  def apply[T <: Data](elt0: T, elts: T*)(using sourceInfo: SourceInfo): Vec[T] = _applyImpl(elt0, elts: _*)
+  def apply[T <: Data](elt0: T, elts: T*)(using SourceInfo): Vec[T] = _applyImpl(elt0, elts: _*)
 
   /** Creates a new [[Vec]] of length `n` composed of the results of the given
     * function applied over a range of integer values starting from 0.
@@ -115,7 +115,7 @@ object VecInit extends VecInitImpl with SourceInfoDoc {
   def tabulate[T <: Data](
     n: Int
   )(gen: (Int) => T)(
-    using sourceInfo: SourceInfo
+    using SourceInfo
   ): Vec[T] = _tabulateImpl(n)(gen)
 
   /** Creates a new 2D [[Vec]] of length `n by m` composed of the results of the given
@@ -131,7 +131,7 @@ object VecInit extends VecInitImpl with SourceInfoDoc {
     n: Int,
     m: Int
   )(gen: (Int, Int) => T)(
-    using sourceInfo: SourceInfo
+    using SourceInfo
   ): Vec[Vec[T]] = _tabulateImpl(n, m)(gen)
 
   /** Creates a new 3D [[Vec]] of length `n by m by p` composed of the results of the given
@@ -148,7 +148,7 @@ object VecInit extends VecInitImpl with SourceInfoDoc {
     m: Int,
     p: Int
   )(gen: (Int, Int, Int) => T)(
-    using sourceInfo: SourceInfo
+    using SourceInfo
   ): Vec[Vec[Vec[T]]] = _tabulateImpl(n, m, p)(gen)
 
   /** Creates a new [[Vec]] of length `n` composed of the result of the given
@@ -158,7 +158,7 @@ object VecInit extends VecInitImpl with SourceInfoDoc {
     * @param gen function that takes in an element T and returns an output
     * element of the same type
     */
-  def fill[T <: Data](n: Int)(gen: => T)(using sourceInfo: SourceInfo): Vec[T] = _fillImpl(n)(gen)
+  def fill[T <: Data](n: Int)(gen: => T)(using SourceInfo): Vec[T] = _fillImpl(n)(gen)
 
   /** Creates a new 2D [[Vec]] of length `n by m` composed of the result of the given
     * function applied to an element of data type T.
@@ -172,7 +172,7 @@ object VecInit extends VecInitImpl with SourceInfoDoc {
     n: Int,
     m: Int
   )(gen: => T)(
-    using sourceInfo: SourceInfo
+    using SourceInfo
   ): Vec[Vec[T]] = _fillImpl(n, m)(gen)
 
   /** Creates a new 3D [[Vec]] of length `n by m by p` composed of the result of the given
@@ -189,7 +189,7 @@ object VecInit extends VecInitImpl with SourceInfoDoc {
     m: Int,
     p: Int
   )(gen: => T)(
-    using sourceInfo: SourceInfo
+    using SourceInfo
   ): Vec[Vec[Vec[T]]] = _fillImpl(n, m, p)(gen)
 
   /** Creates a new [[Vec]] of length `n` composed of the result of the given
@@ -204,7 +204,7 @@ object VecInit extends VecInitImpl with SourceInfoDoc {
     start: T,
     len:   Int
   )(f: (T) => T)(
-    using sourceInfo: SourceInfo
+    using SourceInfo
   ): Vec[T] = _iterateImpl(start, len)(f)
 }
 
@@ -215,32 +215,32 @@ trait VecLike[T <: Data] extends VecLikeImpl[T] with SourceInfoDoc {
 
   /** Creates a dynamically indexed read or write accessor into the array.
     */
-  def apply(p: UInt)(using sourceInfo: SourceInfo): T
+  def apply(p: UInt)(using SourceInfo): T
 
   /** Outputs true if p outputs true for every element.
     */
-  def forall(p: T => Bool)(using sourceInfo: SourceInfo): Bool = _forallImpl(p)
+  def forall(p: T => Bool)(using SourceInfo): Bool = _forallImpl(p)
 
   /** Outputs true if p outputs true for at least one element.
     */
-  def exists(p: T => Bool)(using sourceInfo: SourceInfo): Bool = _existsImpl(p)
+  def exists(p: T => Bool)(using SourceInfo): Bool = _existsImpl(p)
 
   /** Outputs true if the vector contains at least one element equal to x (using
     * the === operator).
     */
-  def contains(x: T)(using sourceInfo: SourceInfo, ev: T <:< UInt): Bool = _containsImpl(x)
+  def contains(x: T)(using SourceInfo, T <:< UInt): Bool = _containsImpl(x)
 
   /** Outputs the number of elements for which p is true.
     */
-  def count(p: T => Bool)(using sourceInfo: SourceInfo): UInt = _countImpl(p)
+  def count(p: T => Bool)(using SourceInfo): UInt = _countImpl(p)
 
   /** Outputs the index of the first element for which p outputs true.
     */
-  def indexWhere(p: T => Bool)(using sourceInfo: SourceInfo): UInt = _indexWhereImpl(p)
+  def indexWhere(p: T => Bool)(using SourceInfo): UInt = _indexWhereImpl(p)
 
   /** Outputs the index of the last element for which p outputs true.
     */
-  def lastIndexWhere(p: T => Bool)(using sourceInfo: SourceInfo): UInt = _lastIndexWhereImpl(p)
+  def lastIndexWhere(p: T => Bool)(using SourceInfo): UInt = _lastIndexWhereImpl(p)
 
   /** Outputs the index of the element for which p outputs true, assuming that
     * the there is exactly one such element.
@@ -252,7 +252,7 @@ trait VecLike[T <: Data] extends VecLikeImpl[T] with SourceInfoDoc {
     * true is NOT checked (useful in cases where the condition doesn't always
     * hold, but the results are not used in those cases)
     */
-  def onlyIndexWhere(p: T => Bool)(using sourceInfo: SourceInfo): UInt = _onlyIndexWhereImpl(p)
+  def onlyIndexWhere(p: T => Bool)(using SourceInfo): UInt = _onlyIndexWhereImpl(p)
 }
 
 /** Base class for Aggregates based on key values pairs of String and Data

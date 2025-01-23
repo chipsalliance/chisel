@@ -32,6 +32,6 @@ object printf extends PrintfImpl {
     * @see [[Printable]] documentation
     * @param pable [[Printable]] to print
     */
-  def apply(pable: Printable)(using sourceInfo: SourceInfo): chisel3.printf.Printf =
-    PrintfMacrosCompat.printfWithReset(pable)(using sourceInfo)
+  def apply(pable: Printable)(using SourceInfo): chisel3.printf.Printf =
+    PrintfMacrosCompat.printfWithReset(pable)
 }

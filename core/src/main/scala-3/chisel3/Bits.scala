@@ -32,7 +32,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends BitsImpl w
     * @return This $coll with the `n` most significant bits removed.
     * @group Bitwise
     */
-  def tail(n: Int)(using sourceInfo: SourceInfo): UInt = _tailImpl(n)
+  def tail(n: Int)(using SourceInfo): UInt = _tailImpl(n)
 
   /** Head operator
     *
@@ -40,7 +40,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends BitsImpl w
     * @return The `n` most significant bits of this $coll
     * @group Bitwise
     */
-  def head(n: Int)(using sourceInfo: SourceInfo): UInt = _headImpl(n)
+  def head(n: Int)(using SourceInfo): UInt = _headImpl(n)
 
   /** Returns the specified bit on this $coll as a [[Bool]], statically addressed.
     *
@@ -48,31 +48,31 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends BitsImpl w
     * @return the specified bit
     */
 
-  final def extract(x: BigInt)(using sourceInfo: SourceInfo): Bool = _extractImpl(x)
+  final def extract(x: BigInt)(using SourceInfo): Bool = _extractImpl(x)
 
   /** Returns the specified bit on this $coll as a [[Bool]], statically addressed.
     *
     * @param x an index
     * @return the specified bit
     */
-  final def apply(x: Int)(using sourceInfo: SourceInfo): Bool = _applyImpl(x)
+  final def apply(x: Int)(using SourceInfo): Bool = _applyImpl(x)
 
   /** Grab the bottom n bits.  Return 0.U(0.W) if n==0. */
-  final def take(n: Int)(using sourceInfo: SourceInfo): UInt = _takeImpl(n)
+  final def take(n: Int)(using SourceInfo): UInt = _takeImpl(n)
 
   /** Returns the specified bit on this wire as a [[Bool]], dynamically addressed.
     *
     * @param x a hardware component whose value will be used for dynamic addressing
     * @return the specified bit
     */
-  final def extract(x: UInt)(using sourceInfo: SourceInfo): Bool = _extractImpl(x)
+  final def extract(x: UInt)(using SourceInfo): Bool = _extractImpl(x)
 
   /** Returns the specified bit on this wire as a [[Bool]], dynamically addressed.
     *
     * @param x a hardware component whose value will be used for dynamic addressing
     * @return the specified bit
     */
-  final def apply(x: UInt)(using sourceInfo: SourceInfo): Bool = _applyImpl(x)
+  final def apply(x: UInt)(using SourceInfo): Bool = _applyImpl(x)
 
   /** Returns a subset of bits on this $coll from `hi` to `lo` (inclusive), statically addressed.
     *
@@ -85,7 +85,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends BitsImpl w
     * @param y the low bit
     * @return a hardware component contain the requested bits
     */
-  final def apply(x: Int, y: Int)(using sourceInfo: SourceInfo): UInt = _applyImpl(x, y)
+  final def apply(x: Int, y: Int)(using SourceInfo): UInt = _applyImpl(x, y)
 
   // REVIEW TODO: again, is this necessary? Or just have this and use implicits?
   /** Returns a subset of bits on this $coll from `hi` to `lo` (inclusive), statically addressed.
@@ -99,7 +99,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends BitsImpl w
     * @param y the low bit
     * @return a hardware component contain the requested bits
     */
-  final def apply(x: BigInt, y: BigInt)(using sourceInfo: SourceInfo): UInt = _applyImpl(x, y)
+  final def apply(x: BigInt, y: BigInt)(using SourceInfo): UInt = _applyImpl(x, y)
 
   /** Pad operator
     *
@@ -109,14 +109,14 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends BitsImpl w
     * @note For [[SInt]]s only, this will do sign extension.
     * @group Bitwise
     */
-  def pad(that: Int)(using sourceInfo: SourceInfo): Bits = _padImpl(that)
+  def pad(that: Int)(using SourceInfo): Bits = _padImpl(that)
 
   /** Bitwise inversion operator
     *
     * @return this $coll with each bit inverted
     * @group Bitwise
     */
-  def unary_~(using sourceInfo: SourceInfo): Bits = _impl_unary_~
+  def unary_~(using SourceInfo): Bits = _impl_unary_~
 
   /** Static left shift operator
     *
@@ -125,7 +125,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends BitsImpl w
     * $sumWidthInt
     * @group Bitwise
     */
-  def <<(that: BigInt)(using sourceInfo: SourceInfo): Bits = _impl_<<(that)
+  def <<(that: BigInt)(using SourceInfo): Bits = _impl_<<(that)
 
   /** Static left shift operator
     *
@@ -134,7 +134,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends BitsImpl w
     * $sumWidthInt
     * @group Bitwise
     */
-  def <<(that: Int)(using sourceInfo: SourceInfo): Bits = _impl_<<(that)
+  def <<(that: Int)(using SourceInfo): Bits = _impl_<<(that)
 
   /** Dynamic left shift operator
     *
@@ -143,7 +143,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends BitsImpl w
     * @note The width of the returned $coll is `width of this + pow(2, width of that) - 1`.
     * @group Bitwise
     */
-  def <<(that: UInt)(using sourceInfo: SourceInfo): Bits = _impl_<<(that)
+  def <<(that: UInt)(using SourceInfo): Bits = _impl_<<(that)
 
   /** Static right shift operator
     *
@@ -152,7 +152,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends BitsImpl w
     * $unchangedWidth
     * @group Bitwise
     */
-  def >>(that: BigInt)(using sourceInfo: SourceInfo): Bits = _impl_>>(that)
+  def >>(that: BigInt)(using SourceInfo): Bits = _impl_>>(that)
 
   /** Static right shift operator
     *
@@ -161,7 +161,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends BitsImpl w
     * $unchangedWidth
     * @group Bitwise
     */
-  def >>(that: Int)(using sourceInfo: SourceInfo): Bits = _impl_>>(that)
+  def >>(that: Int)(using SourceInfo): Bits = _impl_>>(that)
 
   /** Dynamic right shift operator
     *
@@ -171,17 +171,17 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends BitsImpl w
     * $unchangedWidth
     * @group Bitwise
     */
-  def >>(that: UInt)(using sourceInfo: SourceInfo): Bits = _impl_>>(that)
+  def >>(that: UInt)(using SourceInfo): Bits = _impl_>>(that)
 
   /** Returns the contents of this wire as a [[scala.collection.Seq]] of [[Bool]]. */
-  def asBools(using sourceInfo: SourceInfo): Seq[Bool] = _asBoolsImpl
+  def asBools(using SourceInfo): Seq[Bool] = _asBoolsImpl
 
   /** Reinterpret this $coll as an [[SInt]]
     *
     * @note The arithmetic value is not preserved if the most-significant bit is set. For example, a [[UInt]] of
     * width 3 and value 7 (0b111) would become an [[SInt]] of width 3 and value -1.
     */
-  def asSInt(using sourceInfo: SourceInfo): SInt = _asSIntImpl
+  def asSInt(using SourceInfo): SInt = _asSIntImpl
 
   def asBool: Bool = _asBoolImpl
 
@@ -192,7 +192,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends BitsImpl w
     * $sumWidth
     * @group Bitwise
     */
-  def ##(that: Bits)(using sourceInfo: SourceInfo): UInt = _impl_##(that)
+  def ##(that: Bits)(using SourceInfo): UInt = _impl_##(that)
 }
 
 object Bits extends UIntFactory
@@ -214,7 +214,7 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with UIntI
     * $constantWidth
     * @group Arithmetic
     */
-  def unary_-(using sourceInfo: SourceInfo): UInt = _impl_unary_-
+  def unary_-(using SourceInfo): UInt = _impl_unary_-
 
   /** Unary negation (constant width)
     *
@@ -222,7 +222,7 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with UIntI
     * $constantWidth
     * @group Arithmetic
     */
-  def unary_-%(using sourceInfo: SourceInfo): UInt = _impl_unary_-%
+  def unary_-%(using SourceInfo): UInt = _impl_unary_-%
 
   override def +(that: UInt): UInt = _impl_+(that)
   override def -(that: UInt): UInt = _impl_-(that)
@@ -305,7 +305,7 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with UIntI
 
   def abs: UInt = _absImpl
 
-  override def unary_~(using sourceInfo: SourceInfo): UInt = _impl_unary_~
+  override def unary_~(using SourceInfo): UInt = _impl_unary_~
 
   // REVIEW TODO: Can these be defined on Bits?
   /** Or reduction operator
@@ -327,7 +327,7 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with UIntI
     * @return a hardware [[Bool]] resulting from every bit of this $coll xor'd together
     * @group Bitwise
     */
-  final def xorR(using sourceInfo: SourceInfo): Bool = _xorRImpl
+  final def xorR(using SourceInfo): Bool = _xorRImpl
 
   override def <(that:  UInt): Bool = _impl_<(that)
   override def >(that:  UInt): Bool = _impl_>(that)
@@ -340,7 +340,7 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with UIntI
     * @return a hardware [[Bool]] asserted if this $coll is not equal to `that`
     * @group Comparison
     */
-  def =/=(that: UInt)(using sourceInfo: SourceInfo): Bool = _impl_=/=(that)
+  def =/=(that: UInt)(using SourceInfo): Bool = _impl_=/=(that)
 
   /** Dynamic equals operator
     *
@@ -348,40 +348,40 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with UIntI
     * @return a hardware [[Bool]] asserted if this $coll is equal to `that`
     * @group Comparison
     */
-  def ===(that: UInt)(using sourceInfo: SourceInfo): Bool = _impl_===(that)
+  def ===(that: UInt)(using SourceInfo): Bool = _impl_===(that)
 
   /** Unary not
     *
     * @return a hardware [[Bool]] asserted if this $coll equals zero
     * @group Bitwise
     */
-  def unary_!(using sourceInfo: SourceInfo): Bool = _impl_unary_!
+  def unary_!(using SourceInfo): Bool = _impl_unary_!
 
-  override def <<(that: Int)(using sourceInfo:    SourceInfo): UInt = _impl_<<(that)
-  override def <<(that: BigInt)(using sourceInfo: SourceInfo): UInt = _impl_<<(that)
-  override def <<(that: UInt)(using sourceInfo:   SourceInfo): UInt = _impl_<<(that)
+  override def <<(that: Int)(using SourceInfo):    UInt = _impl_<<(that)
+  override def <<(that: BigInt)(using SourceInfo): UInt = _impl_<<(that)
+  override def <<(that: UInt)(using SourceInfo):   UInt = _impl_<<(that)
 
-  override def >>(that: Int)(using sourceInfo:    SourceInfo): UInt = _impl_>>(that)
-  override def >>(that: BigInt)(using sourceInfo: SourceInfo): UInt = _impl_>>(that)
-  override def >>(that: UInt)(using sourceInfo:   SourceInfo): UInt = _impl_>>(that)
+  override def >>(that: Int)(using SourceInfo):    UInt = _impl_>>(that)
+  override def >>(that: BigInt)(using SourceInfo): UInt = _impl_>>(that)
+  override def >>(that: UInt)(using SourceInfo):   UInt = _impl_>>(that)
 
   /**
     * Circular shift to the left
     * @param that number of bits to rotate
     * @return UInt of same width rotated left n bits
     */
-  def rotateLeft(n: Int)(using sourceInfo: SourceInfo): UInt = _rotateLeftImpl(n)
+  def rotateLeft(n: Int)(using SourceInfo): UInt = _rotateLeftImpl(n)
 
-  def rotateLeft(n: UInt)(using sourceInfo: SourceInfo): UInt = _rotateLeftImpl(n)
+  def rotateLeft(n: UInt)(using SourceInfo): UInt = _rotateLeftImpl(n)
 
   /**
     * Circular shift to the right
     * @param that number of bits to rotate
     * @return UInt of same width rotated right n bits
     */
-  def rotateRight(n: Int)(using sourceInfo: SourceInfo): UInt = _rotateRightImpl(n)
+  def rotateRight(n: Int)(using SourceInfo): UInt = _rotateRightImpl(n)
 
-  def rotateRight(n: UInt)(using sourceInfo: SourceInfo): UInt = _rotateRightImpl(n)
+  def rotateRight(n: UInt)(using SourceInfo): UInt = _rotateRightImpl(n)
 
   /** Conditionally set or clear a bit
     *
@@ -390,7 +390,7 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with UIntI
     * @return a hrdware $coll with bit `off` set or cleared based on the value of `dat`
     * $unchangedWidth
     */
-  def bitSet(off: UInt, dat: Bool)(using sourceInfo: SourceInfo): UInt = _bitSetImpl(off, dat)
+  def bitSet(off: UInt, dat: Bool)(using SourceInfo): UInt = _bitSetImpl(off, dat)
 
   // TODO: this eventually will be renamed as toSInt, once the existing toSInt
   // completes its deprecation phase.
@@ -399,9 +399,9 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with UIntI
     * @return an [[SInt]] equal to this $coll with an additional zero in its most significant bit
     * @note The width of the returned [[SInt]] is `width of this` + `1`.
     */
-  def zext(using sourceInfo: SourceInfo): SInt = _zextImpl
+  def zext(using SourceInfo): SInt = _zextImpl
 
-  override def asSInt(using sourceInfo: SourceInfo): SInt = _asSIntImpl
+  override def asSInt(using SourceInfo): SInt = _asSIntImpl
 }
 
 object UInt extends UIntFactory
@@ -414,7 +414,7 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with SIntI
     * $constantWidth
     * @group Arithmetic
     */
-  final def unary_-(using sourceInfo: SourceInfo): SInt = _impl_unary_-
+  final def unary_-(using SourceInfo): SInt = _impl_unary_-
 
   /** Unary negation (constant width)
     *
@@ -422,7 +422,7 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with SIntI
     * $constantWidth
     * @group Arithmetic
     */
-  def unary_-%(using sourceInfo: SourceInfo): SInt = _impl_unary_-%
+  def unary_-%(using SourceInfo): SInt = _impl_unary_-%
 
   /** add (default - no growth) operator */
   override def +(that: SInt): SInt = _impl_+(that)
@@ -441,7 +441,7 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with SIntI
     * $singleCycleMul
     * @group Arithmetic
     */
-  def *(that: UInt)(using sourceInfo: SourceInfo): SInt = _impl_*(that)
+  def *(that: UInt)(using SourceInfo): SInt = _impl_*(that)
 
   /** Addition operator (expanding width)
     *
@@ -450,7 +450,7 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with SIntI
     * $maxWidthPlusOne
     * @group Arithmetic
     */
-  def +&(that: SInt)(using sourceInfo: SourceInfo): SInt = _impl_+&(that)
+  def +&(that: SInt)(using SourceInfo): SInt = _impl_+&(that)
 
   /** Addition operator (constant width)
     *
@@ -459,7 +459,7 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with SIntI
     * $maxWidth
     * @group Arithmetic
     */
-  def +%(that: SInt)(using sourceInfo: SourceInfo): SInt = _impl_+%(that)
+  def +%(that: SInt)(using SourceInfo): SInt = _impl_+%(that)
 
   /** Subtraction operator (increasing width)
     *
@@ -468,7 +468,7 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with SIntI
     * $maxWidthPlusOne
     * @group Arithmetic
     */
-  def -&(that: SInt)(using sourceInfo: SourceInfo): SInt = _impl_-&(that)
+  def -&(that: SInt)(using SourceInfo): SInt = _impl_-&(that)
 
   /** Subtraction operator (constant width)
     *
@@ -477,7 +477,7 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with SIntI
     * $maxWidth
     * @group Arithmetic
     */
-  def -%(that: SInt)(using sourceInfo: SourceInfo): SInt = _impl_-%(that)
+  def -%(that: SInt)(using SourceInfo): SInt = _impl_-%(that)
 
   /** Bitwise and operator
     *
@@ -486,7 +486,7 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with SIntI
     * $maxWidth
     * @group Bitwise
     */
-  def &(that: SInt)(using sourceInfo: SourceInfo): SInt = _impl_&(that)
+  def &(that: SInt)(using SourceInfo): SInt = _impl_&(that)
 
   /** Bitwise or operator
     *
@@ -504,9 +504,9 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with SIntI
     * $maxWidth
     * @group Bitwise
     */
-  def ^(that: SInt)(using sourceInfo: SourceInfo): SInt = _impl_^(that)
+  def ^(that: SInt)(using SourceInfo): SInt = _impl_^(that)
 
-  override def unary_~(using sourceInfo: SourceInfo): SInt = _impl_unary_~
+  override def unary_~(using SourceInfo): SInt = _impl_unary_~
 
   override def <(that:  SInt): Bool = _impl_<(that)
   override def >(that:  SInt): Bool = _impl_>(that)
@@ -531,22 +531,22 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with SIntI
 
   def abs: SInt = _absImpl
 
-  override def <<(that: Int)(using sourceInfo:    SourceInfo): SInt = _impl_<<(that)
-  override def <<(that: BigInt)(using sourceInfo: SourceInfo): SInt = _impl_<<(that)
-  override def <<(that: UInt)(using sourceInfo:   SourceInfo): SInt = _impl_<<(that)
+  override def <<(that: Int)(using SourceInfo):    SInt = _impl_<<(that)
+  override def <<(that: BigInt)(using SourceInfo): SInt = _impl_<<(that)
+  override def <<(that: UInt)(using SourceInfo):   SInt = _impl_<<(that)
 
-  override def >>(that: Int)(using sourceInfo:    SourceInfo): SInt = _impl_>>(that)
-  override def >>(that: BigInt)(using sourceInfo: SourceInfo): SInt = _impl_>>(that)
-  override def >>(that: UInt)(using sourceInfo:   SourceInfo): SInt = _impl_>>(that)
+  override def >>(that: Int)(using SourceInfo):    SInt = _impl_>>(that)
+  override def >>(that: BigInt)(using SourceInfo): SInt = _impl_>>(that)
+  override def >>(that: UInt)(using SourceInfo):   SInt = _impl_>>(that)
 
-  override def asSInt(using sourceInfo: SourceInfo): SInt = _asSIntImpl
+  override def asSInt(using SourceInfo): SInt = _asSIntImpl
 }
 
 object SInt extends SIntFactory
 
 sealed trait Reset extends ResetImpl with ToBoolable {
-  def asAsyncReset(using sourceInfo: SourceInfo): AsyncReset
-  def asDisable(using sourceInfo:    SourceInfo): Disable = _asDisableImpl
+  def asAsyncReset(using SourceInfo): AsyncReset
+  def asDisable(using SourceInfo):    Disable = _asDisableImpl
 }
 
 object Reset {
@@ -559,9 +559,9 @@ object Reset {
   * super type due to Bool inheriting from abstract class UInt
   */
 final class ResetType(private[chisel3] val width: Width = Width(1)) extends Reset with ResetTypeImpl with ToBoolable {
-  def asAsyncReset(using sourceInfo: SourceInfo): AsyncReset = _asAsyncResetImpl
-  def asBool:                                     Bool = _asBoolImpl
-  def toBool:                                     Bool = asBool
+  def asAsyncReset(using SourceInfo): AsyncReset = _asAsyncResetImpl
+  def asBool:                         Bool = _asBoolImpl
+  def toBool:                         Bool = asBool
 }
 
 object AsyncReset {
@@ -575,10 +575,10 @@ object AsyncReset {
   * asychronously reset registers.
   */
 sealed class AsyncReset(private[chisel3] val width: Width = Width(1)) extends AsyncResetImpl with Reset {
-  override def toString:                          String = stringAccessor("AsyncReset")
-  def asAsyncReset(using sourceInfo: SourceInfo): AsyncReset = _asAsyncResetImpl
-  def asBool:                                     Bool = _asBoolImpl
-  def toBool:                                     Bool = _asBoolImpl
+  override def toString:              String = stringAccessor("AsyncReset")
+  def asAsyncReset(using SourceInfo): AsyncReset = _asAsyncResetImpl
+  def asBool:                         Bool = _asBoolImpl
+  def toBool:                         Bool = _asBoolImpl
 }
 
 // REVIEW TODO: Why does this extend UInt and not Bits? Does defining airth
@@ -599,7 +599,7 @@ sealed class Bool() extends UInt(1.W) with BoolImpl with Reset {
     * @return the bitwise and of  this $coll and `that`
     * @group Bitwise
     */
-  def &(that: Bool)(using sourceInfo: SourceInfo): Bool = _impl_&(that)
+  def &(that: Bool)(using SourceInfo): Bool = _impl_&(that)
 
   /** Bitwise or operator
     *
@@ -615,9 +615,9 @@ sealed class Bool() extends UInt(1.W) with BoolImpl with Reset {
     * @return the bitwise xor of this $coll and `that`
     * @group Bitwise
     */
-  def ^(that: Bool)(using sourceInfo: SourceInfo): Bool = _impl_^(that)
+  def ^(that: Bool)(using SourceInfo): Bool = _impl_^(that)
 
-  override def unary_~(using sourceInfo: SourceInfo): Bool = _impl_unary_~
+  override def unary_~(using SourceInfo): Bool = _impl_unary_~
 
   /** Logical or operator
     *
@@ -626,7 +626,7 @@ sealed class Bool() extends UInt(1.W) with BoolImpl with Reset {
     * @note this is equivalent to [[Bool!.|(that:chisel3\.Bool)* Bool.|)]]
     * @group Logical
     */
-  def ||(that: Bool)(using sourceInfo: SourceInfo): Bool = _impl_||(that)
+  def ||(that: Bool)(using SourceInfo): Bool = _impl_||(that)
 
   /** Logical and operator
     *
@@ -635,14 +635,14 @@ sealed class Bool() extends UInt(1.W) with BoolImpl with Reset {
     * @note this is equivalent to [[Bool!.&(that:chisel3\.Bool)* Bool.&]]
     * @group Logical
     */
-  def &&(that: Bool)(using sourceInfo: SourceInfo): Bool = _impl_&&(that)
+  def &&(that: Bool)(using SourceInfo): Bool = _impl_&&(that)
 
   override def asBool: Bool = _asBoolImpl
 
   /** Reinterprets this $coll as a clock */
-  def asClock(using sourceInfo: SourceInfo): Clock = _asClockImpl
+  def asClock(using SourceInfo): Clock = _asClockImpl
 
-  def asAsyncReset(using sourceInfo: SourceInfo): AsyncReset = _asAsyncResetImpl
+  def asAsyncReset(using SourceInfo): AsyncReset = _asAsyncResetImpl
 }
 
 object Bool extends BoolFactory

@@ -24,13 +24,13 @@ import chisel3.experimental.SourceInfo
   */
 object Mux1H extends Mux1HImpl {
 
-  def apply[T <: Data](sel: Seq[Bool], in: Seq[T])(implicit sourceInfo: SourceInfo): T = _applyImpl(sel, in)
+  def apply[T <: Data](sel: Seq[Bool], in: Seq[T])(using SourceInfo): T = _applyImpl(sel, in)
 
-  def apply[T <: Data](in: Iterable[(Bool, T)])(implicit sourceInfo: SourceInfo): T = _applyImpl(in)
+  def apply[T <: Data](in: Iterable[(Bool, T)])(using SourceInfo): T = _applyImpl(in)
 
-  def apply[T <: Data](sel: UInt, in: Seq[T])(implicit sourceInfo: SourceInfo): T = _applyImpl(sel, in)
+  def apply[T <: Data](sel: UInt, in: Seq[T])(using SourceInfo): T = _applyImpl(sel, in)
 
-  def apply(sel: UInt, in: UInt)(implicit sourceInfo: SourceInfo): Bool = _applyImpl(sel, in)
+  def apply(sel: UInt, in: UInt)(using SourceInfo): Bool = _applyImpl(sel, in)
 }
 
 /** Builds a Mux tree under the assumption that multiple select signals
@@ -48,11 +48,11 @@ object Mux1H extends Mux1HImpl {
   */
 object PriorityMux extends PriorityMuxImpl {
 
-  def apply[T <: Data](in: Seq[(Bool, T)])(implicit sourceInfo: SourceInfo): T = _applyImpl(in)
+  def apply[T <: Data](in: Seq[(Bool, T)])(using SourceInfo): T = _applyImpl(in)
 
-  def apply[T <: Data](sel: Seq[Bool], in: Seq[T])(implicit sourceInfo: SourceInfo): T = _applyImpl(sel, in)
+  def apply[T <: Data](sel: Seq[Bool], in: Seq[T])(using SourceInfo): T = _applyImpl(sel, in)
 
-  def apply[T <: Data](sel: Bits, in: Seq[T])(implicit sourceInfo: SourceInfo): T = _applyImpl(sel, in)
+  def apply[T <: Data](sel: Bits, in: Seq[T])(using SourceInfo): T = _applyImpl(sel, in)
 }
 
 /** Creates a cascade of n Muxs to search for a key value. The Selector may be a UInt or an EnumType.
@@ -74,7 +74,7 @@ object MuxLookup extends MuxLookupImpl {
     default: T,
     mapping: Seq[(S, T)]
   )(
-    implicit sourceinfo: SourceInfo
+    using SourceInfo
   ): T = _applyEnumImpl(key, default, mapping)
 
   /** @param key a key to search for
@@ -82,6 +82,6 @@ object MuxLookup extends MuxLookupImpl {
     * @param mapping a sequence to search of keys and values
     * @return the value found or the default if not
     */
-  def apply[S <: UInt, T <: Data](key: S, default: T, mapping: Seq[(S, T)])(implicit sourceinfo: SourceInfo): T =
+  def apply[S <: UInt, T <: Data](key: S, default: T, mapping: Seq[(S, T)])(using SourceInfo): T =
     _applyImpl(key, default, mapping)
 }
