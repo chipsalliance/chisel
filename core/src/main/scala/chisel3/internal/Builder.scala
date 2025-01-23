@@ -1199,6 +1199,85 @@ private[chisel3] object Builder extends LazyLogging {
   }
 
   initializeSingletons()
+
+  /** The representation of the state of the [[Builder]] at a current point in
+    * time.  This is intended to capture _enough_ information to insert hardware
+    * at another point in the circuit.
+    *
+    * @see [[chisel3.Placeholder]]
+    */
+  case class State(
+    currentModule: Option[BaseModule],
+    whenStack:     List[WhenContext],
+    blockStack:    List[Block],
+    layerStack:    List[layer.Layer],
+    prefix:        Prefix,
+    clock:         Option[Delayed[Clock]],
+    reset:         Option[Delayed[Reset]],
+    enabledLayers: List[layer.Layer]
+  )
+
+  object State {
+
+    /** Return a [[State]] suitable for doing module construction.
+      */
+    def default: State = State(
+      currentModule = Builder.currentModule,
+      whenStack = Nil,
+      blockStack = Builder.blockStack,
+      layerStack = layer.Layer.Root :: Nil,
+      prefix = Nil,
+      clock = None,
+      reset = None,
+      enabledLayers = Nil
+    )
+
+    /** Capture the current [[Builder]] state.
+      */
+    def save: State = {
+      State(
+        currentModule = Builder.currentModule,
+        whenStack = Builder.whenStack,
+        blockStack = Builder.blockStack,
+        layerStack = Builder.layerStack,
+        prefix = Builder.getPrefix,
+        clock = Builder.currentClockDelayed,
+        reset = Builder.currentResetDelayed,
+        enabledLayers = Builder.enabledLayers.toList
+      )
+    }
+
+    /** Set the [[Builder]] state to that provided by the parameter.
+      *
+      * @param state the state to set the [[Builder]] to
+      */
+    def restore(state: State) = {
+      Builder.currentModule = state.currentModule
+      Builder.whenStack = state.whenStack
+      Builder.blockStack = state.blockStack
+      Builder.layerStack = state.layerStack
+      Builder.setPrefix(state.prefix)
+      Builder.currentClock = state.clock
+      Builder.currentReset = state.reset
+      Builder.enabledLayers = enabledLayers
+    }
+
+    /** Run the `thunk` with the context provided by `state`.  Save the [[Builder]]
+      * state before the thunk and restore it afterwards.
+      *
+      * @param state change the [[Builder]] to this state when running the thunk
+      * @param thunk some hardware to generate
+      * @return whatever the `thunk` returns
+      */
+    def guard[A](state: State)(thunk: => A): A = {
+      val old = save
+      restore(state)
+      val result = thunk
+      restore(old)
+      result
+    }
+
+  }
 }
 
 /** Allows public access to the naming stack in Builder / DynamicContext, and handles invocations
