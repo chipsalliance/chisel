@@ -91,8 +91,8 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt, protected
     data: T,
     mask: Seq[Bool]
   )(
-    implicit evidence: T <:< Vec[_],
-    sourceInfo:        SourceInfo
+    using T <:< Vec[_],
+    SourceInfo
   ): Unit = _writeImpl(idx, data, mask)
 
   /** Creates a masked write accessor into the memory with a clock
@@ -112,8 +112,8 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt, protected
     mask:  Seq[Bool],
     clock: Clock
   )(
-    implicit evidence: T <:< Vec[_],
-    sourceInfo:        SourceInfo
+    using T <:< Vec[_],
+    SourceInfo
   ): Unit = _writeImpl(idx, data, mask, clock)
 }
 
@@ -277,8 +277,8 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
     en:        Bool,
     isWrite:   Bool
   )(
-    implicit evidence: T <:< Vec[_],
-    sourceInfo:        SourceInfo
+    using T <:< Vec[_],
+    SourceInfo
   ): T = _readWriteImpl(idx, writeData, mask, en, isWrite)
 
   /** Generates an explicit read-write port for this SyncReadMem, with a bytemask for
@@ -307,7 +307,7 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
     isWrite:   Bool,
     clock:     Clock
   )(
-    implicit evidence: T <:< Vec[_],
-    sourceInfo:        SourceInfo
+    using T <:< Vec[_],
+    SourceInfo
   ): T = _readWriteImpl(idx, writeData, mask, en, isWrite, clock)
 }
