@@ -22,6 +22,6 @@ object Mux extends MuxImpl with SourceInfoDoc {
     con:  T,
     alt:  T
   )(
-    using sourceInfo: SourceInfo
+    using SourceInfo
   ): T = _applyImpl(cond, con, alt)
 }
