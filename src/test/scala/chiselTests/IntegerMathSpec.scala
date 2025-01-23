@@ -7,7 +7,7 @@ import chisel3.testers.BasicTester
 
 class IntegerMathTester extends BasicTester {
 
-  //TODO: Add more operators
+  // TODO: Add more operators
 
   /* absolute values tests */
 

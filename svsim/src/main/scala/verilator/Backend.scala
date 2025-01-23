@@ -20,7 +20,8 @@ object Backend {
     outputSplitCFuncs:          Option[Int] = None,
     disabledWarnings:           Seq[String] = Seq(),
     disableFatalExitOnWarnings: Boolean = false,
-    enableAllAssertions:        Boolean = false)
+    enableAllAssertions:        Boolean = false
+  )
 
   def initializeFromProcessEnvironment() = {
     val output = mutable.ArrayBuffer.empty[String]
@@ -32,9 +33,7 @@ object Backend {
     new Backend(executablePath = executablePath)
   }
 }
-final class Backend(
-  executablePath: String)
-    extends svsim.Backend {
+final class Backend(executablePath: String) extends svsim.Backend {
   type CompilationSettings = Backend.CompilationSettings
 
   def generateParameters(

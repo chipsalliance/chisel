@@ -187,10 +187,7 @@ package object experimental {
     * Users may not instantiate this class directly. Instead they should use the implicit conversion from `Tuple3` in
     * `chisel3.experimental.conversions`
     */
-  final class HWTuple3[+A <: Data, +B <: Data, +C <: Data] private[chisel3] (
-    val _1: A,
-    val _2: B,
-    val _3: C)
+  final class HWTuple3[+A <: Data, +B <: Data, +C <: Data] private[chisel3] (val _1: A, val _2: B, val _3: C)
       extends Bundle() {
     // Because this implementation exists in chisel3.core, it cannot compile with the plugin, so we implement the behavior manually
     override protected def _usingPlugin: Boolean = true
@@ -215,8 +212,8 @@ package object experimental {
     val _1: A,
     val _2: B,
     val _3: C,
-    val _4: D)
-      extends Bundle() {
+    val _4: D
+  ) extends Bundle() {
     // Because this implementation exists in chisel3.core, it cannot compile with the plugin, so we implement the behavior manually
     override protected def _usingPlugin: Boolean = true
     override protected def _cloneTypeImpl: Bundle = new HWTuple4(
@@ -243,8 +240,8 @@ package object experimental {
     val _2: B,
     val _3: C,
     val _4: D,
-    val _5: E)
-      extends Bundle() {
+    val _5: E
+  ) extends Bundle() {
     // Because this implementation exists in chisel3.core, it cannot compile with the plugin, so we implement the behavior manually
     override protected def _usingPlugin: Boolean = true
     override protected def _cloneTypeImpl: Bundle = new HWTuple5(
@@ -274,8 +271,8 @@ package object experimental {
     val _3: C,
     val _4: D,
     val _5: E,
-    val _6: F)
-      extends Bundle() {
+    val _6: F
+  ) extends Bundle() {
     // Because this implementation exists in chisel3.core, it cannot compile with the plugin, so we implement the behavior manually
     override protected def _usingPlugin: Boolean = true
     override protected def _cloneTypeImpl: Bundle = new HWTuple6(
@@ -309,14 +306,7 @@ package object experimental {
     +E <: Data,
     +F <: Data,
     +G <: Data
-  ] private[chisel3] (
-    val _1: A,
-    val _2: B,
-    val _3: C,
-    val _4: D,
-    val _5: E,
-    val _6: F,
-    val _7: G)
+  ] private[chisel3] (val _1: A, val _2: B, val _3: C, val _4: D, val _5: E, val _6: F, val _7: G)
       extends Bundle() {
     // Because this implementation exists in chisel3.core, it cannot compile with the plugin, so we implement the behavior manually
     override protected def _usingPlugin: Boolean = true
@@ -354,15 +344,7 @@ package object experimental {
     +F <: Data,
     +G <: Data,
     +H <: Data
-  ] private[chisel3] (
-    val _1: A,
-    val _2: B,
-    val _3: C,
-    val _4: D,
-    val _5: E,
-    val _6: F,
-    val _7: G,
-    val _8: H)
+  ] private[chisel3] (val _1: A, val _2: B, val _3: C, val _4: D, val _5: E, val _6: F, val _7: G, val _8: H)
       extends Bundle() {
     // Because this implementation exists in chisel3.core, it cannot compile with the plugin, so we implement the behavior manually
     override protected def _usingPlugin: Boolean = true
@@ -403,16 +385,7 @@ package object experimental {
     +G <: Data,
     +H <: Data,
     +I <: Data
-  ] private[chisel3] (
-    val _1: A,
-    val _2: B,
-    val _3: C,
-    val _4: D,
-    val _5: E,
-    val _6: F,
-    val _7: G,
-    val _8: H,
-    val _9: I)
+  ] private[chisel3] (val _1: A, val _2: B, val _3: C, val _4: D, val _5: E, val _6: F, val _7: G, val _8: H, val _9: I)
       extends Bundle() {
     // Because this implementation exists in chisel3.core, it cannot compile with the plugin, so we implement the behavior manually
     override protected def _usingPlugin: Boolean = true
@@ -466,8 +439,8 @@ package object experimental {
     val _7:  G,
     val _8:  H,
     val _9:  I,
-    val _10: J)
-      extends Bundle() {
+    val _10: J
+  ) extends Bundle() {
     // Because this implementation exists in chisel3.core, it cannot compile with the plugin, so we implement the behavior manually
     override protected def _usingPlugin: Boolean = true
     override protected def _cloneTypeImpl: Bundle = new HWTuple10(

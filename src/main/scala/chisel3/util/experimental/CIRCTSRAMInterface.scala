@@ -21,7 +21,8 @@ case class CIRCTSRAMParameter(
   readwrite:       Int,
   depth:           Int,
   width:           Int,
-  maskGranularity: Int) {
+  maskGranularity: Int
+) {
   def masked: Boolean = maskGranularity != 0
 }
 

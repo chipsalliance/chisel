@@ -21,8 +21,8 @@ abstract class IntrinsicModule(intrinsicName: String, val params: Map[String, Pa
     // Ports are named in the same way as regular Modules
     namePorts()
 
-    val firrtlPorts = getModulePorts.map {
-      case port => Port(port, port.specifiedDirection, UnlocatableSourceInfo)
+    val firrtlPorts = getModulePorts.map { case port =>
+      Port(port, port.specifiedDirection, UnlocatableSourceInfo)
     }
     val component = DefIntrinsicModule(this, name, firrtlPorts, SpecifiedDirection.Unspecified, params)
     _component = Some(component)

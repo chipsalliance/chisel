@@ -265,7 +265,7 @@ package object chisel3 {
 
       }
 
-      //TODO: Update this to current API when 2.12 is EOL
+      // TODO: Update this to current API when 2.12 is EOL
       sc.checkLengths(args) // Enforce sc.parts.size == pargs.size + 1
       val parts = sc.parts.map(StringContext.processEscapes)
       // The 1st part is assumed never to contain a format specifier.
@@ -416,8 +416,8 @@ package object chisel3 {
   // This is only currently used for SRAM to hide the underlying Memory but still let users annotate it.
   // Rather than generalizing this, it's more likely that we'll just delete it (and the use in SRAM) in favor of Path Properties.
   sealed trait HasTarget {
-    def toTarget:         ReferenceTarget
-    def toAbsoluteTarget: ReferenceTarget
+    def toTarget:                                                         ReferenceTarget
+    def toAbsoluteTarget:                                                 ReferenceTarget
     def toRelativeTarget(root:            Option[BaseModule]):            ReferenceTarget
     def toRelativeTargetToHierarchy(root: Option[Hierarchy[BaseModule]]): ReferenceTarget
 

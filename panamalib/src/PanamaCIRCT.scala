@@ -72,12 +72,11 @@ class PanamaCIRCT {
       val sizeOfT = xs(0).sizeof
 
       val buffer = arena.allocate(sizeOfT * xs.length)
-      xs.zipWithIndex.foreach {
-        case (x, i) =>
-          x.get match {
-            case value: MemorySegment => buffer.asSlice(sizeOfT * i, sizeOfT).copyFrom(value)
-            case value: Int           => buffer.setAtIndex(CAPI.C_INT, i, value)
-          }
+      xs.zipWithIndex.foreach { case (x, i) =>
+        x.get match {
+          case value: MemorySegment => buffer.asSlice(sizeOfT * i, sizeOfT).copyFrom(value)
+          case value: Int           => buffer.setAtIndex(CAPI.C_INT, i, value)
+        }
       }
       (buffer, xs.length)
     } else {
@@ -298,7 +297,7 @@ class PanamaCIRCT {
   )
 
   def circtFirtoolOptionsCreateDefault() = CirctFirtoolFirtoolOptions(CAPI.circtFirtoolOptionsCreateDefault(arena))
-  def circtFirtoolOptionsDestroy(options:           CirctFirtoolFirtoolOptions) = CAPI.circtFirtoolOptionsDestroy(options.get)
+  def circtFirtoolOptionsDestroy(options: CirctFirtoolFirtoolOptions) = CAPI.circtFirtoolOptionsDestroy(options.get)
   def circtFirtoolOptionsSetOutputFilename(options: CirctFirtoolFirtoolOptions, value: String) =
     CAPI.circtFirtoolOptionsSetOutputFilename(options.get, newString(value).get)
   def circtFirtoolOptionsSetDisableUnknownAnnotations(options: CirctFirtoolFirtoolOptions, value: Boolean) =
@@ -446,12 +445,11 @@ class PanamaCIRCT {
 
   def firrtlTypeGetBundle(fields: Seq[FIRRTLBundleField]): MlirType = {
     val buffer = circt.FIRRTLBundleField.allocateArray(fields.length, arena)
-    fields.zipWithIndex.foreach {
-      case (field, i) =>
-        val fieldBuffer = buffer.asSlice(circt.FIRRTLBundleField.sizeof() * i, circt.FIRRTLBundleField.sizeof())
-        circt.FIRRTLBundleField.name$slice(fieldBuffer).copyFrom(mlirIdentifierGet(field.name).get)
-        circt.FIRRTLBundleField.isFlip$set(fieldBuffer, field.isFlip)
-        circt.FIRRTLBundleField.type$slice(fieldBuffer).copyFrom(field.tpe.get)
+    fields.zipWithIndex.foreach { case (field, i) =>
+      val fieldBuffer = buffer.asSlice(circt.FIRRTLBundleField.sizeof() * i, circt.FIRRTLBundleField.sizeof())
+      circt.FIRRTLBundleField.name$slice(fieldBuffer).copyFrom(mlirIdentifierGet(field.name).get)
+      circt.FIRRTLBundleField.isFlip$set(fieldBuffer, field.isFlip)
+      circt.FIRRTLBundleField.type$slice(fieldBuffer).copyFrom(field.tpe.get)
     }
     MlirType(CAPI.firrtlTypeGetBundle(arena, mlirCtx, fields.length, buffer))
   }
@@ -481,12 +479,11 @@ class PanamaCIRCT {
 
   def firrtlTypeGetClass(name: MlirAttribute /* FlatSymbolRefAttr */, elements: Seq[FIRRTLClassElement]): MlirType = {
     val buffer = circt.FIRRTLClassElement.allocateArray(elements.length, arena)
-    elements.zipWithIndex.foreach {
-      case (element, i) =>
-        val elementBuffer = buffer.asSlice(circt.FIRRTLClassElement.sizeof() * i, circt.FIRRTLClassElement.sizeof())
-        circt.FIRRTLClassElement.name$slice(elementBuffer).copyFrom(mlirIdentifierGet(element.name).get)
-        circt.FIRRTLClassElement.type$slice(elementBuffer).copyFrom(element.tpe.get)
-        circt.FIRRTLClassElement.direction$set(elementBuffer, element.direction.get)
+    elements.zipWithIndex.foreach { case (element, i) =>
+      val elementBuffer = buffer.asSlice(circt.FIRRTLClassElement.sizeof() * i, circt.FIRRTLClassElement.sizeof())
+      circt.FIRRTLClassElement.name$slice(elementBuffer).copyFrom(mlirIdentifierGet(element.name).get)
+      circt.FIRRTLClassElement.type$slice(elementBuffer).copyFrom(element.tpe.get)
+      circt.FIRRTLClassElement.direction$set(elementBuffer, element.direction.get)
     }
     MlirType(CAPI.firrtlTypeGetClass(arena, mlirCtx, name.get, elements.length, buffer))
   }
@@ -590,13 +587,13 @@ class PanamaCIRCT {
     )
   }
   def omEvaluatorGetModule(evaluator: OMEvaluator) = MlirModule(CAPI.omEvaluatorGetModule(arena, evaluator.get))
-  def omEvaluatorObjectIsNull(obj:    OMEvaluatorValue):      Boolean = CAPI.omEvaluatorObjectIsNull(obj.get)
+  def omEvaluatorObjectIsNull(obj:    OMEvaluatorValue): Boolean = CAPI.omEvaluatorObjectIsNull(obj.get)
   def omEvaluatorObjectGetType(obj:   OMEvaluatorValue) = MlirType(CAPI.omEvaluatorObjectGetType(arena, obj.get))
-  def omEvaluatorObjectGetField(obj:  OMEvaluatorValue, name: String) = OMEvaluatorValue(
+  def omEvaluatorObjectGetField(obj: OMEvaluatorValue, name: String) = OMEvaluatorValue(
     CAPI.omEvaluatorObjectGetField(arena, obj.get, mlirStringAttrGet(name).get)
   )
   def omEvaluatorObjectGetHash(obj: OMEvaluatorValue): Int = CAPI.omEvaluatorObjectGetHash(obj.get)
-  def omEvaluatorObjectIsEq(obj:    OMEvaluatorValue, other: OMEvaluatorValue): Boolean =
+  def omEvaluatorObjectIsEq(obj: OMEvaluatorValue, other: OMEvaluatorValue): Boolean =
     CAPI.omEvaluatorObjectIsEq(obj.get, other.get)
   def omEvaluatorObjectGetFieldNames(obj: OMEvaluatorValue) = MlirAttribute(
     CAPI.omEvaluatorObjectGetFieldNames(arena, obj.get)
@@ -633,7 +630,7 @@ class PanamaCIRCT {
   def omEvaluatorMapGetElement(evaluatorValue: OMEvaluatorValue, attr: MlirAttribute) = OMEvaluatorValue(
     CAPI.omEvaluatorMapGetElement(arena, evaluatorValue.get, attr.get)
   )
-  def omEvaluatorMapGetKeys(obj:             OMEvaluatorValue) = MlirAttribute(CAPI.omEvaluatorMapGetKeys(arena, obj.get))
+  def omEvaluatorMapGetKeys(obj: OMEvaluatorValue) = MlirAttribute(CAPI.omEvaluatorMapGetKeys(arena, obj.get))
   def omEvaluatorValueIsAMap(evaluatorValue: OMEvaluatorValue): Boolean =
     CAPI.omEvaluatorValueIsAMap(evaluatorValue.get)
   def omEvaluatorMapGetType(evaluatorValue: OMEvaluatorValue): MlirType = MlirType(
@@ -658,12 +655,12 @@ class PanamaCIRCT {
   def omIntegerAttrGet(attr:           MlirAttribute) = MlirAttribute(CAPI.omIntegerAttrGet(arena, attr.get))
   def omAttrIsAListAttr(attr:          MlirAttribute): Boolean = CAPI.omAttrIsAListAttr(attr.get)
   def omListAttrGetNumElements(attr:   MlirAttribute): Long = CAPI.omListAttrGetNumElements(attr.get)
-  def omListAttrGetElement(attr:       MlirAttribute, pos: Long) = MlirAttribute(
+  def omListAttrGetElement(attr: MlirAttribute, pos: Long) = MlirAttribute(
     CAPI.omListAttrGetElement(arena, attr.get, pos)
   )
   def omAttrIsAMapAttr(attr:        MlirAttribute): Boolean = CAPI.omAttrIsAMapAttr(attr.get)
   def omMapAttrGetNumElements(attr: MlirAttribute): Long = CAPI.omMapAttrGetNumElements(attr.get)
-  def omMapAttrGetElementKey(attr:  MlirAttribute, pos: Long) = MlirIdentifier(
+  def omMapAttrGetElementKey(attr: MlirAttribute, pos: Long) = MlirIdentifier(
     CAPI.omMapAttrGetElementKey(arena, attr.get, pos)
   )
   def omMapAttrGetElementValue(attr: MlirAttribute, pos: Long) = MlirAttribute(

@@ -28,14 +28,13 @@ object switch {
   def impl(c: Context)(cond: c.Tree)(x: c.Tree): c.Tree = {
     import c.universe._
     val q"..$body" = x
-    val res = body.foldLeft(q"""new chisel3.util.SwitchContext($cond, None, Set.empty)""") {
-      case (acc, tree) =>
-        tree match {
-          // TODO: remove when Chisel compatibility package is removed
-          case q"Chisel.`package`.is.apply( ..$params )( ..$body )" => q"$acc.is( ..$params )( ..$body )"
-          case q"chisel3.util.is.apply( ..$params )( ..$body )"     => q"$acc.is( ..$params )( ..$body )"
-          case b                                                    => throw new Exception(s"Cannot include blocks that do not begin with is() in switch.")
-        }
+    val res = body.foldLeft(q"""new chisel3.util.SwitchContext($cond, None, Set.empty)""") { case (acc, tree) =>
+      tree match {
+        // TODO: remove when Chisel compatibility package is removed
+        case q"Chisel.`package`.is.apply( ..$params )( ..$body )" => q"$acc.is( ..$params )( ..$body )"
+        case q"chisel3.util.is.apply( ..$params )( ..$body )"     => q"$acc.is( ..$params )( ..$body )"
+        case b => throw new Exception(s"Cannot include blocks that do not begin with is() in switch.")
+      }
     }
     q"""{ $res }"""
   }

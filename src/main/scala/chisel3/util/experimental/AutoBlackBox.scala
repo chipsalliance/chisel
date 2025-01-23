@@ -10,8 +10,7 @@ import chisel3.experimental.SourceInfo
 class AutoBlackBox(
   val verilog:      String,
   val signalFilter: String => Boolean = _ => true
-)(
-  implicit val __sourceInfo: SourceInfo)
+)(implicit val __sourceInfo: SourceInfo)
     extends FixedIOExtModule(
       ioGenerator = new AutoBundleFromVerilog(
         SeqMap.from(SlangUtils.verilogModuleIO(SlangUtils.getVerilogAst(verilog)))
@@ -22,12 +21,11 @@ class AutoBlackBox(
 }
 
 class AutoBundleFromVerilog(
-  allElements:  SeqMap[String, Data]
+  allElements: SeqMap[String, Data]
 )(signalFilter: String => Boolean)
     extends Record {
-  val elements: SeqMap[String, Data] = allElements.filter(n => signalFilter(n._1)).map {
-    case (k, v) =>
-      k -> chisel3.reflect.DataMirror.internal.chiselTypeClone(v)
+  val elements: SeqMap[String, Data] = allElements.filter(n => signalFilter(n._1)).map { case (k, v) =>
+    k -> chisel3.reflect.DataMirror.internal.chiselTypeClone(v)
   }
   def apply(data: String) = elements.getOrElse(
     data,

@@ -23,24 +23,24 @@ final case class Instance[+A] private[chisel3] (private[chisel3] val underlying:
     extends SealedHierarchy[A] {
   underlying match {
     case Proto(p: IsClone[_]) => chisel3.internal.throwException("Cannot have a Proto with a clone!")
-    case other => //Ok
+    case other                => // Ok
   }
 
   /** @return the context of any Data's return from inside the instance */
   private[chisel3] def getInnerDataContext: Option[BaseModule] = underlying match {
-    case Proto(value: BaseModule) => Some(value)
-    case Proto(value: IsInstantiable) => None
-    case Clone(i: BaseModule) => Some(i)
+    case Proto(value: BaseModule)       => Some(value)
+    case Proto(value: IsInstantiable)   => None
+    case Clone(i: BaseModule)           => Some(i)
     case Clone(i: InstantiableClone[_]) => i.getInnerContext
-    case _ => throw new InternalErrorException(s"Match error: underlying=$underlying")
+    case _                              => throw new InternalErrorException(s"Match error: underlying=$underlying")
   }
 
   /** @return the context this instance. Note that for non-module clones, getInnerDataContext will be the same as getClonedParent */
   private[chisel3] def getClonedParent: Option[BaseModule] = underlying match {
-    case Proto(value: BaseModule) => value._parent
-    case Clone(i: BaseModule) => i._parent
+    case Proto(value: BaseModule)       => value._parent
+    case Clone(i: BaseModule)           => i._parent
     case Clone(i: InstantiableClone[_]) => i.getInnerContext
-    case _ => throw new InternalErrorException(s"Match error: underlying=$underlying")
+    case _                              => throw new InternalErrorException(s"Match error: underlying=$underlying")
   }
 
   /** Used by Chisel's internal macros. DO NOT USE in your normal Chisel code!!!
@@ -81,7 +81,7 @@ object Instance extends SourceInfoDoc {
       * @return target of this instance
       */
     def toTarget: IsModule = i.underlying match {
-      case Proto(x: BaseModule) => x.getTarget
+      case Proto(x: BaseModule)                 => x.getTarget
       case Clone(x: IsClone[_] with BaseModule) => x.getTarget
       case _ => throw new InternalErrorException(s"Match error: i.underlying=${i.underlying}")
     }
@@ -90,7 +90,7 @@ object Instance extends SourceInfoDoc {
       * @return absoluteTarget of this instance
       */
     def toAbsoluteTarget: IsModule = i.underlying match {
-      case Proto(x) => x.toAbsoluteTarget
+      case Proto(x)                             => x.toAbsoluteTarget
       case Clone(x: IsClone[_] with BaseModule) => x.toAbsoluteTarget
       case _ => throw new InternalErrorException(s"Match error: i.underlying=${i.underlying}")
     }
@@ -106,21 +106,21 @@ object Instance extends SourceInfoDoc {
       * @note This doesn't have special handling for Views.
       */
     def toRelativeTarget(root: Option[BaseModule]): IsModule = i.underlying match {
-      case Proto(x) => x.toRelativeTarget(root)
+      case Proto(x)                             => x.toRelativeTarget(root)
       case Clone(x: IsClone[_] with BaseModule) => x.toRelativeTarget(root)
       case _ => throw new InternalErrorException(s"Match error: i.underlying=${i.underlying}")
     }
 
     def toRelativeTargetToHierarchy(root: Option[Hierarchy[BaseModule]]): IsModule = i.underlying match {
-      case Proto(x) => x.toRelativeTargetToHierarchy(root)
+      case Proto(x)                             => x.toRelativeTargetToHierarchy(root)
       case Clone(x: IsClone[_] with BaseModule) => x.toRelativeTargetToHierarchy(root)
       case _ => throw new InternalErrorException(s"Match error: i.underlying=${i.underlying}")
     }
 
     def suggestName(name: String): Unit = i.underlying match {
       case Clone(m: BaseModule) => m.suggestName(name)
-      case Proto(m) => m.suggestName(name)
-      case x        => Builder.exception(s"Cannot call .suggestName on $x")(UnlocatableSourceInfo)
+      case Proto(m)             => m.suggestName(name)
+      case x                    => Builder.exception(s"Cannot call .suggestName on $x")(UnlocatableSourceInfo)
     }
   }
 
@@ -158,9 +158,8 @@ object Instance extends SourceInfoDoc {
         override def generateComponent(): Option[Component] = {
           require(!_closed, s"Can't generate $desiredName module more than once")
           _closed = true
-          val firrtlPorts = definition.proto.getModulePortsAndLocators.map {
-            case (port, sourceInfo) =>
-              Port(port, port.specifiedDirection, sourceInfo): @nowarn // Deprecated code allowed for internal use
+          val firrtlPorts = definition.proto.getModulePortsAndLocators.map { case (port, sourceInfo) =>
+            Port(port, port.specifiedDirection, sourceInfo): @nowarn // Deprecated code allowed for internal use
           }
           val component = DefBlackBox(this, definition.proto.name, firrtlPorts, SpecifiedDirection.Unspecified, params)
           Some(component)

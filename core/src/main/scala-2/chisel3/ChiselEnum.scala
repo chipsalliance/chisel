@@ -26,7 +26,7 @@ abstract class EnumType(factory: ChiselEnum, selfAnnotating: Boolean = true)
 }
 
 abstract class ChiselEnum extends ChiselEnumImpl {
-  protected def Value: Type = macro EnumMacros.ValImpl
+  protected def Value:           Type = macro EnumMacros.ValImpl
   protected def Value(id: UInt): Type = macro EnumMacros.ValCustomImpl
 }
 

@@ -316,7 +316,7 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
     class Foo extends RawModule {
       val a = IO(Output(UInt()))
       val bar = Module(new Bar)
-      //val preBore = DataMirror.modulePorts(bar)
+      // val preBore = DataMirror.modulePorts(bar)
       a := BoringUtils.bore(bar.a_wire)
       val postBore = DataMirror.modulePorts(bar)
       postBore.size should be(1)

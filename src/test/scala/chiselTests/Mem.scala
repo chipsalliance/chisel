@@ -355,7 +355,7 @@ class MemorySpec extends ChiselPropSpec {
     assertTesterPasses { new MemBundleTester }
   }
 
-  //TODO: SFC->MFC, this test is ignored because the read-under-write specifiers are not emitted to work with MFC
+  // TODO: SFC->MFC, this test is ignored because the read-under-write specifiers are not emitted to work with MFC
   ignore("SyncReadMem write collision behaviors should work") {
     assertTesterPasses { new SyncReadMemWriteCollisionTester }
   }
@@ -460,58 +460,57 @@ class SRAMSpec extends ChiselFunSpec {
         if (numWR + numRW) > 0
       } yield (numRD, numWR, numRW)
 
-    portCombos.foreach {
-      case (numRD, numWR, numRW) =>
-        val portedness: String = {
-          val rdPorts: String = if (numRD > 0) s"${numRD}R" else ""
-          val wrPorts: String = if (numWR > 0) s"${numWR}W" else ""
-          val rwPorts: String = if (numRW > 0) s"${numRW}RW" else ""
+    portCombos.foreach { case (numRD, numWR, numRW) =>
+      val portedness: String = {
+        val rdPorts: String = if (numRD > 0) s"${numRD}R" else ""
+        val wrPorts: String = if (numWR > 0) s"${numWR}W" else ""
+        val rwPorts: String = if (numRW > 0) s"${numRW}RW" else ""
 
-          s"$rdPorts$wrPorts$rwPorts"
-        }
-        it(s"should generate a $portedness memory") {
-          class TestModule(val rd: Int, val wr: Int, val rw: Int) extends Module {
-            val mem = SRAM(32, UInt(8.W), rd, wr, rw)
+        s"$rdPorts$wrPorts$rwPorts"
+      }
+      it(s"should generate a $portedness memory") {
+        class TestModule(val rd: Int, val wr: Int, val rw: Int) extends Module {
+          val mem = SRAM(32, UInt(8.W), rd, wr, rw)
 
-            dontTouch(mem)
+          dontTouch(mem)
 
-            for (i <- 0 until rd) {
-              mem.readPorts(i) := DontCare
-            }
-            for (i <- 0 until wr) {
-              mem.writePorts(i) := DontCare
-            }
-            for (i <- 0 until rw) {
-              mem.readwritePorts(i) := DontCare
-            }
+          for (i <- 0 until rd) {
+            mem.readPorts(i) := DontCare
           }
-          val chirrtl = ChiselStage.emitCHIRRTL(new TestModule(numRD, numWR, numRW), args = Array("--full-stacktrace"))
-
-          // Check that the chirrtl ports actually exist and the signals
-          // are properly connected
-          for (rd <- 0 until numRD) {
-            chirrtl should include(s"connect mem_sram.R$rd.addr, mem.readPorts[$rd].address")
-            chirrtl should include(s"connect mem.readPorts[$rd].data, mem_sram.R$rd.data")
-            chirrtl should include(s"connect mem_sram.R$rd.en, mem.readPorts[$rd].enable")
+          for (i <- 0 until wr) {
+            mem.writePorts(i) := DontCare
           }
-
-          for (wr <- 0 until numWR) {
-            chirrtl should include(s"connect mem_sram.W$wr.addr, mem.writePorts[$wr].address")
-            chirrtl should include(s"connect mem_sram.W$wr.data, mem.writePorts[$wr].data")
-            chirrtl should include(s"connect mem_sram.W$wr.en, mem.writePorts[$wr].enable")
-            chirrtl should include(s"connect mem_sram.W$wr.mask, UInt<1>(0h1)")
-          }
-
-          for (rw <- 0 until numRW) {
-            chirrtl should include(s"connect mem_sram.RW$rw.addr, mem.readwritePorts[$rw].address")
-            chirrtl should include(s"connect mem_sram.RW$rw.en, mem.readwritePorts[$rw].enable")
-            chirrtl should include(s"connect mem.readwritePorts[$rw].readData, mem_sram.RW$rw.rdata")
-            chirrtl should include(s"connect mem_sram.RW$rw.wdata, mem.readwritePorts[$rw].writeData")
-            chirrtl should include(s"connect mem_sram.RW$rw.wmode, mem.readwritePorts[$rw].isWrite")
-            chirrtl should include(s"connect mem_sram.RW$rw.wmask, UInt<1>(0h1)")
-
+          for (i <- 0 until rw) {
+            mem.readwritePorts(i) := DontCare
           }
         }
+        val chirrtl = ChiselStage.emitCHIRRTL(new TestModule(numRD, numWR, numRW), args = Array("--full-stacktrace"))
+
+        // Check that the chirrtl ports actually exist and the signals
+        // are properly connected
+        for (rd <- 0 until numRD) {
+          chirrtl should include(s"connect mem_sram.R$rd.addr, mem.readPorts[$rd].address")
+          chirrtl should include(s"connect mem.readPorts[$rd].data, mem_sram.R$rd.data")
+          chirrtl should include(s"connect mem_sram.R$rd.en, mem.readPorts[$rd].enable")
+        }
+
+        for (wr <- 0 until numWR) {
+          chirrtl should include(s"connect mem_sram.W$wr.addr, mem.writePorts[$wr].address")
+          chirrtl should include(s"connect mem_sram.W$wr.data, mem.writePorts[$wr].data")
+          chirrtl should include(s"connect mem_sram.W$wr.en, mem.writePorts[$wr].enable")
+          chirrtl should include(s"connect mem_sram.W$wr.mask, UInt<1>(0h1)")
+        }
+
+        for (rw <- 0 until numRW) {
+          chirrtl should include(s"connect mem_sram.RW$rw.addr, mem.readwritePorts[$rw].address")
+          chirrtl should include(s"connect mem_sram.RW$rw.en, mem.readwritePorts[$rw].enable")
+          chirrtl should include(s"connect mem.readwritePorts[$rw].readData, mem_sram.RW$rw.rdata")
+          chirrtl should include(s"connect mem_sram.RW$rw.wdata, mem.readwritePorts[$rw].writeData")
+          chirrtl should include(s"connect mem_sram.RW$rw.wmode, mem.readwritePorts[$rw].isWrite")
+          chirrtl should include(s"connect mem_sram.RW$rw.wmask, UInt<1>(0h1)")
+
+        }
+      }
     }
 
     it(s"should support masking with Vec-valued data") {

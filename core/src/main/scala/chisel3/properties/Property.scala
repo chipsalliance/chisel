@@ -61,9 +61,9 @@ private[chisel3] object RecursivePropertyType {
 private[chisel3] trait SimplePropertyType[T] extends RecursivePropertyType[T] {
   final type Type = T
   final type Underlying = T
-  def convert(value:           T): fir.Expression
-  def convert(value:           T, ctx: ir.Component, info: SourceInfo): fir.Expression = convert(value)
-  def convertUnderlying(value: T, info: SourceInfo): T = value
+  def convert(value:           T):                                       fir.Expression
+  def convert(value:           T, ctx:  ir.Component, info: SourceInfo): fir.Expression = convert(value)
+  def convertUnderlying(value: T, info: SourceInfo):                     T = value
 }
 
 private[chisel3] class SeqPropertyType[A, F[A] <: Seq[A], PT <: PropertyType[A]](val tpe: PT)

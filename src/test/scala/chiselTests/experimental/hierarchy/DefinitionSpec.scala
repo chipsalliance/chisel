@@ -24,8 +24,8 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
     it("(0.b): accessing internal fields through non-generated means is hard to do") {
       class Top extends Module {
         val definition = Definition(new AddOne)
-        //definition.lookup(_.in) // Uncommenting this line will give the following error:
-        //"You are trying to access a macro-only API. Please use the @public annotation instead."
+        // definition.lookup(_.in) // Uncommenting this line will give the following error:
+        // "You are trying to access a macro-only API. Please use the @public annotation instead."
         definition.in
       }
       val (chirrtl, _) = getFirrtlAndAnnos(new Top)
@@ -347,7 +347,7 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
     ignore("(3.j): should work on vals in constructor arguments") {
       class Top() extends Module {
         val i = Definition(new HasPublicConstructorArgs(10))
-        //mark(i.x, i.int.toString)
+        // mark(i.x, i.int.toString)
       }
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos should contain(MarkAnnotation("~Top|HasPublicConstructorArgs>x".rt, "10"))

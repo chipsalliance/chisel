@@ -43,9 +43,7 @@ abstract class ParameterizedVendingMachine(legalCoins: Seq[Coin], val sodaCost: 
   }
 }
 
-class VendingMachineGenerator(
-  legalCoins: Seq[Coin],
-  sodaCost:   Int)
+class VendingMachineGenerator(legalCoins: Seq[Coin], sodaCost: Int)
     extends ParameterizedVendingMachine(legalCoins, sodaCost) {
   require(sodaCost > 0, "Sodas must actually cost something!")
 
@@ -71,10 +69,7 @@ class VendingMachineGenerator(
   io.dispense := doDispense
 }
 
-class ParameterizedVendingMachineTester(
-  mod:        => ParameterizedVendingMachine,
-  testLength: Int)
-    extends BasicTester {
+class ParameterizedVendingMachineTester(mod: => ParameterizedVendingMachine, testLength: Int) extends BasicTester {
   require(testLength > 0, "Test length must be positive!")
 
   // Construct the module

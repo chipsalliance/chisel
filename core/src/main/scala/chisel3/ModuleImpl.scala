@@ -459,7 +459,8 @@ package experimental {
 
       /* A sequence of string filters applied to the name */
       val filters: Seq[String => String] =
-        Seq(((a: String) => raw"\$$+anon".r.replaceAllIn(a, "_Anon")) // Merge the "$$anon" name with previous name
+        Seq(
+          ((a: String) => raw"\$$+anon".r.replaceAllIn(a, "_Anon")) // Merge the "$$anon" name with previous name
         )
 
       filters

@@ -25,16 +25,16 @@ import scala.language.experimental.macros
   * @note results unspecified unless exactly one select signal is high
   */
 object Mux1H extends Mux1HImpl {
-  def apply[T <: Data](sel:    Seq[Bool], in: Seq[T]): T = macro SourceInfoTransform.selInArg
+  def apply[T <: Data](sel: Seq[Bool], in: Seq[T]): T = macro SourceInfoTransform.selInArg
   def do_apply[T <: Data](sel: Seq[Bool], in: Seq[T])(implicit sourceInfo: SourceInfo): T = _applyImpl(sel, in)
 
-  def apply[T <: Data](in:    Iterable[(Bool, T)]): T = macro SourceInfoTransform.inArg
+  def apply[T <: Data](in:    Iterable[(Bool, T)]):                                  T = macro SourceInfoTransform.inArg
   def do_apply[T <: Data](in: Iterable[(Bool, T)])(implicit sourceInfo: SourceInfo): T = _applyImpl(in)
 
-  def apply[T <: Data](sel:    UInt, in: Seq[T]): T = macro SourceInfoTransform.selInArg
+  def apply[T <: Data](sel: UInt, in: Seq[T]): T = macro SourceInfoTransform.selInArg
   def do_apply[T <: Data](sel: UInt, in: Seq[T])(implicit sourceInfo: SourceInfo): T = _applyImpl(sel, in)
 
-  def apply(sel:    UInt, in: UInt): Bool = macro SourceInfoTransform.selInArg
+  def apply(sel:    UInt, in: UInt):                                  Bool = macro SourceInfoTransform.selInArg
   def do_apply(sel: UInt, in: UInt)(implicit sourceInfo: SourceInfo): Bool = _applyImpl(sel, in)
 
 }
@@ -54,13 +54,13 @@ object Mux1H extends Mux1HImpl {
   */
 object PriorityMux extends PriorityMuxImpl {
 
-  def apply[T <: Data](in:    Seq[(Bool, T)]): T = macro SourceInfoTransform.inArg
+  def apply[T <: Data](in:    Seq[(Bool, T)]):                                  T = macro SourceInfoTransform.inArg
   def do_apply[T <: Data](in: Seq[(Bool, T)])(implicit sourceInfo: SourceInfo): T = _applyImpl(in)
 
-  def apply[T <: Data](sel:    Seq[Bool], in: Seq[T]): T = macro SourceInfoTransform.selInArg
+  def apply[T <: Data](sel: Seq[Bool], in: Seq[T]): T = macro SourceInfoTransform.selInArg
   def do_apply[T <: Data](sel: Seq[Bool], in: Seq[T])(implicit sourceInfo: SourceInfo): T = _applyImpl(sel, in)
 
-  def apply[T <: Data](sel:    Bits, in: Seq[T]): T = macro SourceInfoTransform.selInArg
+  def apply[T <: Data](sel: Bits, in: Seq[T]): T = macro SourceInfoTransform.selInArg
   def do_apply[T <: Data](sel: Bits, in: Seq[T])(implicit sourceInfo: SourceInfo): T = _applyImpl(sel, in)
 }
 

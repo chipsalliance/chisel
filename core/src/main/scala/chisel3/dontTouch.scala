@@ -38,7 +38,7 @@ object dontTouch {
     data match {
       case d if DataMirror.hasProbeTypeModifier(d) => ()
       case _:   Property[_] => ()
-      case agg: Aggregate => agg.getElements.foreach(dontTouch.apply)
+      case agg: Aggregate   => agg.getElements.foreach(dontTouch.apply)
       case _:   Element =>
         annotate(new ChiselAnnotation { def toFirrtl: DontTouchAnnotation = DontTouchAnnotation(data.toNamed) })
       case _ => throw new ChiselException("Non-hardware dontTouch")

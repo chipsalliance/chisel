@@ -78,8 +78,8 @@ package experimental {
       // Ports are named in the same way as regular Modules
       namePorts()
 
-      val firrtlPorts = getModulePorts.map {
-        case port => Port(port, port.specifiedDirection, UnlocatableSourceInfo)
+      val firrtlPorts = getModulePorts.map { case port =>
+        Port(port, port.specifiedDirection, UnlocatableSourceInfo)
       }
       val component = DefBlackBox(this, name, firrtlPorts, SpecifiedDirection.Unspecified, params)
       _component = Some(component)
@@ -127,9 +127,7 @@ package experimental {
   * }}}
   * @note The parameters API is experimental and may change
   */
-abstract class BlackBox(
-  val params: Map[String, Param] = Map.empty[String, Param])
-    extends BaseBlackBox {
+abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param]) extends BaseBlackBox {
 
   // Find a Record port named "io" for purposes of stripping the prefix
   private[chisel3] lazy val _io: Option[Record] =

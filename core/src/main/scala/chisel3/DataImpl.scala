@@ -67,8 +67,7 @@ object SpecifiedDirection {
 
   private[chisel3] def specifiedDirection[T <: Data](
     source: => T
-  )(dir:    T => SpecifiedDirection
-  ): T = {
+  )(dir: T => SpecifiedDirection): T = {
     val prevId = Builder.idGen.value
     val data = source // evaluate source once (passed by name)
     requireIsChiselType(data)
@@ -118,7 +117,7 @@ object ActualDirection {
   case class Bidirectional private[chisel3] (dir: BidirectionalDirection, _value: Byte)
       extends ActualDirection(_value) {
     @deprecated("Use companion object factory apply method", "Chisel 6.5")
-    def this(dir:                  BidirectionalDirection) = this(dir, dir.value)
+    def this(dir: BidirectionalDirection) = this(dir, dir.value)
     private[chisel3] def copy(dir: BidirectionalDirection = this.dir, _value: Byte = this._value) =
       new Bidirectional(dir, _value)
   }
@@ -250,7 +249,7 @@ private[chisel3] object getRecursiveFields {
   def noPath(data:       Data): Seq[Data] = lazilyNoPath(data).toVector
   def lazilyNoPath(data: Data): Iterable[Data] = DataMirror.collectMembers(data) { case x => x }
 
-  def apply(data:  Data, path: String): Seq[(Data, String)] = lazily(data, path).toVector
+  def apply(data: Data, path: String): Seq[(Data, String)] = lazily(data, path).toVector
   def lazily(data: Data, path: String): Iterable[(Data, String)] = DataMirror.collectMembersAndPaths(data, path) {
     case x => x
   }
@@ -270,13 +269,12 @@ private[chisel3] object getMatchedFields {
     case (x: Record, y: Record) =>
       (x._elements
         .zip(y._elements))
-        .map {
-          case ((xName, xElt), (yName, yElt)) =>
-            require(
-              xName == yName,
-              s"$xName != $yName, ${x._elements}, ${y._elements}, $x, $y"
-            ) // assume fields returned in same, deterministic order
-            getMatchedFields(xElt, yElt)
+        .map { case ((xName, xElt), (yName, yElt)) =>
+          require(
+            xName == yName,
+            s"$xName != $yName, ${x._elements}, ${y._elements}, $x, $y"
+          ) // assume fields returned in same, deterministic order
+          getMatchedFields(xElt, yElt)
         }
         .fold(Seq(x -> y)) {
           _ ++ _
@@ -284,9 +282,8 @@ private[chisel3] object getMatchedFields {
     case (x: Vec[_], y: Vec[_]) =>
       (x.elementsIterator
         .zip(y.elementsIterator))
-        .map {
-          case (xElt, yElt) =>
-            getMatchedFields(xElt, yElt)
+        .map { case (xElt, yElt) =>
+          getMatchedFields(xElt, yElt)
         }
         .fold(Seq(x -> y)) {
           _ ++ _
@@ -413,7 +410,7 @@ private[chisel3] trait DataImpl extends HasId with NamedComponent { self: Data =
     */
   private[chisel3] def _assignCompatibilityExplicitDirection: Unit = {
     (this, specifiedDirection) match {
-      case (_: Analog, _) => // nothing to do
+      case (_: Analog, _)                                            => // nothing to do
       case (_, SpecifiedDirection.Unspecified)                       => specifiedDirection = SpecifiedDirection.Output
       case (_, SpecifiedDirection.Flip)                              => specifiedDirection = SpecifiedDirection.Input
       case (_, SpecifiedDirection.Input | SpecifiedDirection.Output) => // nothing to do
@@ -447,7 +444,7 @@ private[chisel3] trait DataImpl extends HasId with NamedComponent { self: Data =
   private[chisel3] def topBindingOpt: Option[TopBinding] = _binding.flatMap {
     case ChildBinding(parent) => parent.topBindingOpt
     case bindingVal: TopBinding => Some(bindingVal)
-    case SampleElementBinding(parent) => parent.topBindingOpt
+    case SampleElementBinding(parent)                     => parent.topBindingOpt
     case (_: MemTypeBinding[_] | _: FirrtlMemTypeBinding) => None
   }
 
@@ -570,7 +567,7 @@ private[chisel3] trait DataImpl extends HasId with NamedComponent { self: Data =
       case (_: ReadOnlyBinding, _: ReadOnlyBinding) => throwException(s"Both $this and $that are read-only")
       // DontCare cannot be a sink (LHS)
       case (_: DontCareBinding, _) => throw BiConnect.DontCareCantBeSink
-      case _ => // fine
+      case _                       => // fine
     }
     try {
       BiConnect.connect(sourceInfo, this, that, Builder.referenceUserModule)
@@ -640,13 +637,12 @@ private[chisel3] trait DataImpl extends HasId with NamedComponent { self: Data =
           case (r1: Record, r2: Record) if !strictTypes || r1.getClass == r2.getClass =>
             val (larger, smaller, msg) =
               if (r1._elements.size >= r2._elements.size) (r1, r2, "Left") else (r2, r1, "Right")
-            larger._elements.flatMap {
-              case (name, data) =>
-                val recurse = smaller._elements.get(name) match {
-                  case None        => Some(s": Dangling field on $msg")
-                  case Some(data2) => rec(data, data2)
-                }
-                recurse.map("." + name + _)
+            larger._elements.flatMap { case (name, data) =>
+              val recurse = smaller._elements.get(name) match {
+                case None        => Some(s": Dangling field on $msg")
+                case Some(data2) => rec(data, data2)
+              }
+              recurse.map("." + name + _)
             }.headOption
           case (v1: Vec[_], v2: Vec[_]) =>
             if (v1.size != v2.size) {
@@ -691,9 +687,9 @@ private[chisel3] trait DataImpl extends HasId with NamedComponent { self: Data =
         true
       case Some(ViewBinding(target, _))           => target.isVisibleFromModule
       case Some(AggregateViewBinding(mapping, _)) => mapping.values.forall(_.isVisibleFromModule)
-      case Some(pb: SecretPortBinding) => true // Ignore secret to not require visibility
-      case Some(_: UnconstrainedBinding) => true
-      case _ => false
+      case Some(pb: SecretPortBinding)            => true // Ignore secret to not require visibility
+      case Some(_: UnconstrainedBinding)          => true
+      case _                                      => false
     }
   }
   private[chisel3] def visibleFromBlock: Option[SourceInfo] = MonoConnect.checkBlockVisibility(this)
@@ -719,7 +715,7 @@ private[chisel3] trait DataImpl extends HasId with NamedComponent { self: Data =
         val writability = wr1.combine(wr2)
         writability.reportIfReadOnly(target2.lref)(Wire(chiselTypeOf(target2)).lref)
       case Some(binding: TopBinding) => Node(this)
-      case opt => throwException(s"internal error: unknown binding $opt in generating LHS ref")
+      case opt                       => throwException(s"internal error: unknown binding $opt in generating LHS ref")
     }
   }
 
@@ -775,7 +771,7 @@ private[chisel3] trait DataImpl extends HasId with NamedComponent { self: Data =
   private[chisel3] def setAllParents(parent: Option[BaseModule]): Unit =
     DataMirror.collectAllMembers(this).foreach { x => x._parent = parent }
 
-  private[chisel3] def width: Width
+  private[chisel3] def width:                                                      Width
   private[chisel3] def firrtlConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit
 
   /** Internal API; Chisel users should look at chisel3.chiselTypeOf(...).
@@ -913,9 +909,8 @@ private[chisel3] trait ObjectDataImpl {
   private[chisel3] def makeConnectableDefault[T <: Data](d: T): Connectable[T] = {
     val base = Connectable.apply(d)
     DataMirror
-      .collectMembers(d) {
-        case hasCustom: HasCustomConnectable =>
-          hasCustom
+      .collectMembers(d) { case hasCustom: HasCustomConnectable =>
+        hasCustom
       }
       .foldLeft(base)((connectable, hasCustom) => hasCustom.customConnectable(connectable))
   }
@@ -939,9 +934,9 @@ private[chisel3] trait ObjectDataImpl {
       implicit class RecordOptGet(rOpt: Option[Record]) {
         // Like .get, but its already defined on Option
         def grab(k: String): Option[Data] = rOpt.flatMap { _._elements.get(k) }
-        def keys: Iterable[String] = rOpt.map { r => r._elements.map(_._1) }.getOrElse(Seq.empty[String])
+        def keys:            Iterable[String] = rOpt.map { r => r._elements.map(_._1) }.getOrElse(Seq.empty[String])
       }
-      //TODO(azidar): Rewrite this to be more clear, probably not the cleanest way to express this
+      // TODO(azidar): Rewrite this to be more clear, probably not the cleanest way to express this
       private def isDifferent(l: Option[Data], r: Option[Data]): Boolean =
         l.nonEmpty && r.nonEmpty && !isRecord(l, r) && !isVec(l, r) && !isElement(l, r) && !isProbe(l, r)
       private def isRecord(l: Option[Data], r: Option[Data]): Boolean =
@@ -1001,12 +996,12 @@ private[chisel3] trait ObjectDataImpl {
       */
     def ===(rhs: T): Bool = {
       (lhs, rhs) match {
-        case (thiz: UInt, that: UInt) => thiz === that
-        case (thiz: SInt, that: SInt) => thiz === that
+        case (thiz: UInt, that: UInt)             => thiz === that
+        case (thiz: SInt, that: SInt)             => thiz === that
         case (thiz: AsyncReset, that: AsyncReset) => thiz.asBool === that.asBool
-        case (thiz: Reset, that: Reset) => thiz.asBool === that.asBool
-        case (thiz: EnumType, that: EnumType) => thiz === that
-        case (thiz: Clock, that: Clock) => thiz.asUInt === that.asUInt
+        case (thiz: Reset, that: Reset)           => thiz.asBool === that.asBool
+        case (thiz: EnumType, that: EnumType)     => thiz === that
+        case (thiz: Clock, that: Clock)           => thiz.asUInt === that.asUInt
         case (thiz: Vec[_], that: Vec[_]) =>
           if (thiz.length != that.length) {
             throwException(s"Cannot compare Vecs $thiz and $that: Vec sizes differ")
@@ -1021,23 +1016,22 @@ private[chisel3] trait ObjectDataImpl {
           if (thiz._elements.size != that._elements.size) {
             throwException(s"Cannot compare Bundles $thiz and $that: Bundle types differ")
           } else {
-            thiz._elements.map {
-              case (thisName, thisData) =>
-                if (!that._elements.contains(thisName))
+            thiz._elements.map { case (thisName, thisData) =>
+              if (!that._elements.contains(thisName))
+                throwException(
+                  s"Cannot compare Bundles $thiz and $that: field $thisName (from $thiz) was not found in $that"
+                )
+
+              val thatData = that._elements(thisName)
+
+              try {
+                thisData === thatData
+              } catch {
+                case e: chisel3.ChiselException =>
                   throwException(
-                    s"Cannot compare Bundles $thiz and $that: field $thisName (from $thiz) was not found in $that"
+                    s"Cannot compare field $thisName in Bundles $thiz and $that: ${e.getMessage.split(": ").last}"
                   )
-
-                val thatData = that._elements(thisName)
-
-                try {
-                  thisData === thatData
-                } catch {
-                  case e: chisel3.ChiselException =>
-                    throwException(
-                      s"Cannot compare field $thisName in Bundles $thiz and $that: ${e.getMessage.split(": ").last}"
-                    )
-                }
+              }
             }
               .reduceOption(_ && _) // forall but that isn't defined for Bool on Seq
               .getOrElse(true.B)

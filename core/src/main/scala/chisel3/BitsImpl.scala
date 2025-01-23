@@ -353,8 +353,8 @@ private[chisel3] trait UIntImpl extends BitsImpl with Num[UInt] { self: UInt =>
   )(
     implicit sourceInfo: SourceInfo
   ): UInt =
-    n.asBools.zipWithIndex.foldLeft(this) {
-      case (in, (en, sh)) => Mux(en, staticShift(in, 1 << sh), in)
+    n.asBools.zipWithIndex.foldLeft(this) { case (in, (en, sh)) =>
+      Mux(en, staticShift(in, 1 << sh), in)
     }
 
   protected def _rotateRightImpl(n: UInt)(implicit sourceInfo: SourceInfo): UInt =

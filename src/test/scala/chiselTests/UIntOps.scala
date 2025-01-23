@@ -214,16 +214,13 @@ class UIntLitZeroWidthTester extends BasicTester {
 trait ShiftRightWidthBehavior { self: ChiselRunners =>
   // The UInt and SInt objects don't share a type, so make one up that they can conform to structurally
   type BitsFactory[T <: Bits] = {
-    def apply(): T
+    def apply():         T
     def apply(w: Width): T
   }
 
   def testShiftRightWidthBehavior[T <: Bits](
-    factory:        BitsFactory[T]
-  )(chiselMinWidth: Int,
-    firrtlMinWidth: Int,
-    args:           Iterable[String] = Nil
-  ): Unit = {
+    factory: BitsFactory[T]
+  )(chiselMinWidth: Int, firrtlMinWidth: Int, args: Iterable[String] = Nil): Unit = {
     assertKnownWidth(4, args) {
       val in = IO(Input(factory(8.W)))
       in >> 4
@@ -498,9 +495,8 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils with ShiftRigh
     Seq(
       grabLog(ChiselStage.emitCHIRRTL(new TooWide)),
       grabLog(ChiselStage.emitCHIRRTL(new TooNarrow))
-    ).foreach {
-      case (log, _) =>
-        log should include("warn")
+    ).foreach { case (log, _) =>
+      log should include("warn")
     }
 
     a[ChiselException] should be thrownBy extractCause[ChiselException] {
@@ -531,9 +527,8 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils with ShiftRigh
 
     Seq(
       grabLog(ChiselStage.emitCHIRRTL(new Ok))
-    ).foreach {
-      case (log, _) =>
-        log should be("")
+    ).foreach { case (log, _) =>
+      log should be("")
     }
   }
 

@@ -48,7 +48,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends BitsImpl w
     * @return the specified bit
     */
 
-  final def extract(x:    BigInt)(using sourceInfo: SourceInfo): Bool = _extractImpl(x)
+  final def extract(x: BigInt)(using sourceInfo: SourceInfo): Bool = _extractImpl(x)
 
   /** Returns the specified bit on this $coll as a [[Bool]], statically addressed.
     *
@@ -59,7 +59,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends BitsImpl w
 
   /** Grab the bottom n bits.  Return 0.U(0.W) if n==0. */
   final def take(n: Int)(using sourceInfo: SourceInfo): UInt = _takeImpl(n)
-  
+
   /** Returns the specified bit on this wire as a [[Bool]], dynamically addressed.
     *
     * @param x a hardware component whose value will be used for dynamic addressing
@@ -560,8 +560,8 @@ object Reset {
   */
 final class ResetType(private[chisel3] val width: Width = Width(1)) extends Reset with ResetTypeImpl with ToBoolable {
   def asAsyncReset(using sourceInfo: SourceInfo): AsyncReset = _asAsyncResetImpl
-  def asBool: Bool = _asBoolImpl
-  def toBool: Bool = asBool
+  def asBool:                                     Bool = _asBoolImpl
+  def toBool:                                     Bool = asBool
 }
 
 object AsyncReset {
@@ -575,10 +575,10 @@ object AsyncReset {
   * asychronously reset registers.
   */
 sealed class AsyncReset(private[chisel3] val width: Width = Width(1)) extends AsyncResetImpl with Reset {
-  override def toString: String = stringAccessor("AsyncReset")
+  override def toString:                          String = stringAccessor("AsyncReset")
   def asAsyncReset(using sourceInfo: SourceInfo): AsyncReset = _asAsyncResetImpl
-  def asBool: Bool = _asBoolImpl
-  def toBool: Bool = _asBoolImpl
+  def asBool:                                     Bool = _asBoolImpl
+  def toBool:                                     Bool = _asBoolImpl
 }
 
 // REVIEW TODO: Why does this extend UInt and not Bits? Does defining airth

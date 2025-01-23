@@ -105,8 +105,7 @@ trait Interface extends InterfaceCommon { self: Singleton =>
     /** The module that wraps any module which conforms to this Interface.
       */
     final class Module[B <: BaseModule](
-    )(
-      implicit conformance: Conformance[B])
+    )(implicit conformance: Conformance[B])
         extends RawModule
         with Entity {
       final val io = FlatIO(ports)
@@ -146,8 +145,8 @@ trait Interface extends InterfaceCommon { self: Singleton =>
             }
             .flatten
         }
-        probes(io).zip(probes(portsView)).foreach {
-          case (ioProbe, internalProbe) => define(ioProbe, internalProbe)
+        probes(io).zip(probes(portsView)).foreach { case (ioProbe, internalProbe) =>
+          define(ioProbe, internalProbe)
         }
       } catch {
         case e: InvalidViewException =>

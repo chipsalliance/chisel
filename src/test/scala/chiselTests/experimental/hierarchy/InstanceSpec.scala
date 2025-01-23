@@ -39,8 +39,8 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       class Top extends Module {
         val definition = Definition(new AddOne)
         val i0 = Instance(definition)
-        //i0.lookup(_.in) // Uncommenting this line will give the following error:
-        //"You are trying to access a macro-only API. Please use the @public annotation instead."
+        // i0.lookup(_.in) // Uncommenting this line will give the following error:
+        // "You are trying to access a macro-only API. Please use the @public annotation instead."
         i0.in
       }
       val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
@@ -407,7 +407,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
     ignore("(3.k): should work on vals in constructor arguments") {
       class Top() extends Module {
         val i = Instance(Definition(new HasPublicConstructorArgs(10)))
-        //mark(i.x, i.int.toString)
+        // mark(i.x, i.int.toString)
       }
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos.collect { case c: MarkAnnotation => c } should contain(
@@ -448,9 +448,9 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       }
       @instantiable class SubClass() extends SupClass with SupTrait {
         // This errors
-        //@public private val privateVal = 10
+        // @public private val privateVal = 10
         // This errors
-        //@public protected val protectedVal = 10
+        // @public protected val protectedVal = 10
         @public override val overriddenVal = 12
         @public final val finalVal = 12
         @public lazy val lazyValue = 12
@@ -528,7 +528,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       }
       def f(i: Instance[AddOne]): Unit = mark(i.innerWire, "blah")
       val (_, annos) = getFirrtlAndAnnos(new Top)
-      //TODO: Should this be ~Top|Top/i:AddOne>innerWire ???
+      // TODO: Should this be ~Top|Top/i:AddOne>innerWire ???
       annos.collect { case c: MarkAnnotation => c } should contain(MarkAnnotation("~Top|AddOne>innerWire".rt, "blah"))
     }
     it("(4.b): should work on IsInstantiable") {
@@ -550,7 +550,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       }
       def f(i: Seq[Instance[AddTwo]]): Data = i.head.i0.innerWire
       val (c, annos) = getFirrtlAndAnnos(new Top)
-      //TODO: Should this be ~Top|Top... ??
+      // TODO: Should this be ~Top|Top... ??
       annos.collect { case c: MarkAnnotation => c } should contain(
         MarkAnnotation("~Top|AddTwo/i0:AddOne>innerWire".rt, "blah")
       )

@@ -120,8 +120,8 @@ private[chisel3] object Connection {
     try {
       (l, r) match {
         case (x: Analog, y: Analog) => connectAnalog(x, y)
-        case (x: Analog, DontCare) => connectAnalog(x, DontCare)
-        case (_, _) => l := r
+        case (x: Analog, DontCare)  => connectAnalog(x, DontCare)
+        case (_, _)                 => l := r
       }
     } catch {
       case e: Exception => Builder.error(e.getMessage)
@@ -186,25 +186,22 @@ private[chisel3] object Connection {
           (conAlign.member, proAlign.member) match {
             case (consumer: Aggregate, producer: Aggregate)
                 if !hasProbeTypeModifier(consumer) && !hasProbeTypeModifier(producer) =>
-              matchingZipOfChildren(Some(conAlign), Some(proAlign)).foreach {
-                case (ceo, peo) =>
-                  doConnection(ceo.getOrElse(conAlign.empty), peo.getOrElse(proAlign.empty))
+              matchingZipOfChildren(Some(conAlign), Some(proAlign)).foreach { case (ceo, peo) =>
+                doConnection(ceo.getOrElse(conAlign.empty), peo.getOrElse(proAlign.empty))
               }
             case (consumer: Aggregate, DontCare) if !hasProbeTypeModifier(consumer) =>
-              consumer.getElements.foreach {
-                case f =>
-                  doConnection(
-                    deriveChildAlignment(f, conAlign),
-                    deriveChildAlignment(f, conAlign).swap(DontCare)
-                  )
+              consumer.getElements.foreach { case f =>
+                doConnection(
+                  deriveChildAlignment(f, conAlign),
+                  deriveChildAlignment(f, conAlign).swap(DontCare)
+                )
               }
             case (DontCare, producer: Aggregate) if !hasProbeTypeModifier(producer) =>
-              producer.getElements.foreach {
-                case f =>
-                  doConnection(
-                    deriveChildAlignment(f, proAlign).swap(DontCare),
-                    deriveChildAlignment(f, proAlign)
-                  )
+              producer.getElements.foreach { case f =>
+                doConnection(
+                  deriveChildAlignment(f, proAlign).swap(DontCare),
+                  deriveChildAlignment(f, proAlign)
+                )
               }
             // Check that neither consumer nor producer contains probes
             case (consumer: Data, producer: Data)

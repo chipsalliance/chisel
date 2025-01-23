@@ -28,8 +28,8 @@ object Convert extends Phase {
           PanamaCIRCTConverterAnnotation(
             PanamaCIRCTConverter.convert(
               circuit,
-              annotations.collectFirst {
-                case FirtoolOptionsAnnotation(firtoolOptions) => firtoolOptions
+              annotations.collectFirst { case FirtoolOptionsAnnotation(firtoolOptions) =>
+                firtoolOptions
               },
               firrtl.annotations.JsonProtocol.serialize(circuit.firrtlAnnotations.filter { anno =>
                 Seq(

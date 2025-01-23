@@ -13,7 +13,7 @@ import chisel3.experimental.SourceInfo
   * @define coll data
   */
 abstract class Data extends DataImpl with SourceInfoDoc {
-  
+
   /** Does a reinterpret cast of the bits in this node into the format that provides.
     * Returns a new Wire of that type. Does not modify existing nodes.
     *

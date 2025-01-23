@@ -24,9 +24,8 @@ class TargetSpec extends FirrtlPropSpec {
         (top.ref("r").index(1).field("hi").clock, "~Circuit|Top>r[1].hi@clock"),
         (GenericTarget(None, None, Vector(Ref("r"))), "~???|???>r")
       )
-    targets.foreach {
-      case (t, str) =>
-        assert(t.serialize == str, s"$t does not properly serialize")
+    targets.foreach { case (t, str) =>
+      assert(t.serialize == str, s"$t does not properly serialize")
     }
   }
   property("Should convert to/from Named") {
@@ -65,20 +64,35 @@ class TargetSpec extends FirrtlPropSpec {
     val top = circuit.module("B")
     val targets = Seq(
       (circuit, "circuit A:"),
-      (top, """|circuit A:
-              |└── module B:""".stripMargin),
-      (top.instOf("c", "C"), """|circuit A:
-                               |└── module B:
-                               |    └── inst c of C:""".stripMargin),
-      (top.ref("r"), """|circuit A:
-                       |└── module B:
-                       |    └── r""".stripMargin),
-      (top.ref("r").index(1).field("hi").clock, """|circuit A:
-                                                  |└── module B:
-                                                  |    └── r[1].hi@clock""".stripMargin),
-      (GenericTarget(None, None, Vector(Ref("r"))), """|circuit ???:
-                                                      |└── module ???:
-                                                      |    └── r""".stripMargin)
+      (
+        top,
+        """|circuit A:
+           |└── module B:""".stripMargin
+      ),
+      (
+        top.instOf("c", "C"),
+        """|circuit A:
+           |└── module B:
+           |    └── inst c of C:""".stripMargin
+      ),
+      (
+        top.ref("r"),
+        """|circuit A:
+           |└── module B:
+           |    └── r""".stripMargin
+      ),
+      (
+        top.ref("r").index(1).field("hi").clock,
+        """|circuit A:
+           |└── module B:
+           |    └── r[1].hi@clock""".stripMargin
+      ),
+      (
+        GenericTarget(None, None, Vector(Ref("r"))),
+        """|circuit ???:
+           |└── module ???:
+           |    └── r""".stripMargin
+      )
     )
     targets.foreach { case (t, str) => assert(t.prettyPrint() == str, s"$t didn't properly prettyPrint") }
   }

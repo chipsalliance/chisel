@@ -47,7 +47,7 @@ final class Analog private (private[chisel3] val width: Width) extends Element {
     this.maybeAddToParentIds(target)
     SpecifiedDirection.fromParent(parentDirection, specifiedDirection) match {
       case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip =>
-      case x                                                        => throwException(s"Analog may not have explicit direction, got '$x'")
+      case x => throwException(s"Analog may not have explicit direction, got '$x'")
     }
     val targetTopBinding = target match {
       case target: TopBinding => target

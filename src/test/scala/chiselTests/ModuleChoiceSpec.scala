@@ -29,7 +29,7 @@ class VerifTarget extends FixedIORawModule[TargetIO](new TargetIO(8)) {
 }
 
 class ModuleWithChoice[T <: Data](
-  default:        => FixedIOBaseModule[T]
+  default: => FixedIOBaseModule[T]
 )(alternateImpls: Seq[(Case, () => FixedIOBaseModule[T])])
     extends Module {
   val inst = ModuleChoice(default)(alternateImpls)
