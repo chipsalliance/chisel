@@ -494,6 +494,17 @@ private[chisel3] object ir {
     params: Map[String, Param]
   ) extends Component
 
+  case class DefFormalTest(
+    name:       String,
+    module:     BaseModule,
+    params:     MapTestParam,
+    sourceInfo: SourceInfo
+  ) extends Component {
+    def id = module
+    val ports: Seq[Port] = Seq.empty
+    override val secretPorts = mutable.ArrayBuffer[Port]()
+  }
+
   case class DefIntrinsicModule(
     id:     BaseIntrinsicModule,
     name:   String,

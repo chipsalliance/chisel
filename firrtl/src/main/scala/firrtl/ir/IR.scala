@@ -647,6 +647,23 @@ case class IntModule(info: Info, name: String, ports: Seq[Port], intrinsic: Stri
   */
 case class DefClass(info: Info, name: String, ports: Seq[Port], body: Statement) extends DefModule with UseSerializer
 
+/** Parameters for test declarations.
+  */
+sealed abstract class TestParam extends FirrtlNode
+case class IntTestParam(value: BigInt) extends TestParam with UseSerializer
+case class DoubleTestParam(value: Double) extends TestParam with UseSerializer
+case class StringTestParam(value: String) extends TestParam with UseSerializer
+case class ArrayTestParam(value: Seq[TestParam]) extends TestParam with UseSerializer
+case class MapTestParam(value: Map[String, TestParam]) extends TestParam with UseSerializer
+
+/** Formal Test
+  */
+case class FormalTest(info: Info, name: String, moduleName: String, params: MapTestParam)
+    extends DefModule
+    with UseSerializer {
+  val ports: Seq[Port] = Seq.empty
+}
+
 case class Circuit(
   info:        Info,
   modules:     Seq[DefModule],

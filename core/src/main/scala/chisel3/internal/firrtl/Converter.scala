@@ -397,6 +397,14 @@ private[chisel3] object Converter {
     case RawParam(value) => fir.RawStringParam(name, value)
   }
 
+  def convert(param: TestParam): fir.TestParam = param match {
+    case IntTestParam(value)    => fir.IntTestParam(value)
+    case DoubleTestParam(value) => fir.DoubleTestParam(value)
+    case StringTestParam(value) => fir.StringTestParam(value)
+    case ArrayTestParam(value)  => fir.ArrayTestParam(value.map(convert))
+    case MapTestParam(value)    => fir.MapTestParam(value.map { case (name, value) => (name, convert(value)) })
+  }
+
   // TODO: Modify Panama CIRCT to account for type aliasing information. This is a temporary hack to
   // allow Panama CIRCT to compile
   def convert(
@@ -454,6 +462,13 @@ private[chisel3] object Converter {
         name,
         (ports ++ ctx.secretPorts).map(p => convert(p, typeAliases)),
         convert(block, ctx, typeAliases)
+      )
+    case ctx @ DefFormalTest(name, module, params, sourceInfo) =>
+      fir.FormalTest(
+        convert(sourceInfo),
+        name,
+        module.name,
+        convert(params).asInstanceOf[fir.MapTestParam]
       )
   }
 
