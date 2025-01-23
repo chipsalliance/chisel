@@ -9,7 +9,7 @@ import chisel3.experimental.hierarchy.Definition
 import firrtl.ir.FileInfo
 
 object SourceLocatorSpec {
-  val thisFile = "src/test/scala/chiselTests/SourceLocatorSpec.scala"
+  val thisFile = "src/test/scala-2/chiselTests/SourceLocatorSpec.scala"
 
   class RawModuleChild extends RawModule
   class ModuleChild extends Module
@@ -46,7 +46,7 @@ class SourceLocatorSpec extends ChiselFunSpec with Utils {
         val w = WireInit(UInt(1.W), 0.U)
       }
       val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
-      chirrtl should include("@[src/test/scala/chiselTests/SourceLocatorSpec.scala")
+      chirrtl should include("@[src/test/scala-2/chiselTests/SourceLocatorSpec.scala")
     }
   }
 
