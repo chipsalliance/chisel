@@ -236,24 +236,27 @@ package object dataview {
       case elt: Element => view.bind(ViewBinding(elementResult(elt), writability))
       case agg: Aggregate =>
         val fullResult = elementResult ++ aggregateMappings
-
-        // We need to record any Aggregates that don't have a single-target mapping.
-        // Technically, this adds any Aggregate that is not an identity mapping,
-        // but we don't have a cheap way to check for single-target.
-        // The Builder context check is a hack to allow calling .viewAs outside of elaboration
-        // on views that are not identity but still single-target.
-        // FIXME we really just need to get rid of the need for unnammed view renaming.
-        if (Builder.inContext) {
-          getRecursiveFields.lazily(view, "_").foreach {
-            case (unnamed: Aggregate, _) if !fullResult.contains(unnamed) =>
-              Builder.unnamedViews += unnamed
-            case _ => // Do nothing
-          }
-        }
         val aggWritability = Option.when(writability.isReadOnly)(
           Map((agg: Data) -> writability)
         )
         agg.bind(AggregateViewBinding(fullResult, aggWritability))
+    }
+  }
+
+  // When annotating views that are not identity mappings, we need to record them for renaming
+  // Technically, this adds any Aggregate that is not an identity mapping,
+  // but we don't have a cheap way to check for single-target.
+  private[chisel3] def recordViewForRenaming(view: Data): Unit = {
+    view.topBinding match {
+      case _: ViewBinding => () // No need for renaming
+      case AggregateViewBinding(mapping, _) =>
+        getRecursiveFields.lazily(view, "_").foreach {
+          case (unnamed: Aggregate, _) if !mapping.contains(unnamed) =>
+            Builder.unnamedViews += unnamed
+          case _ => () // Do nothing
+        }
+      case _ =>
+        Builder.exception(s"Internal Error! recordViewForRenaming($view)")(UnlocatableSourceInfo)
     }
   }
 

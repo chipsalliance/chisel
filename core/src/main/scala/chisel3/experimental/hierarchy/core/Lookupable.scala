@@ -331,20 +331,6 @@ object Lookupable {
       case _ => throw new InternalErrorException(s"Match error: data.topBinding=${data.topBinding}")
     }
 
-    // TODO Unify the following with `.viewAs`
-    // We must also mark any non-identity Aggregates as unnammed
-    newBinding match {
-      case _: ViewBinding => // Do nothing
-      case AggregateViewBinding(childMap, _) =>
-        // TODO we could do reifySingleTarget instead of just marking non-identity mappings
-        getRecursiveFields.lazily(result, "_").foreach {
-          case (agg: Aggregate, _) if !childMap.contains(agg) =>
-            Builder.unnamedViews += agg
-          case _ => ()
-        }
-      case _ => throw new InternalErrorException(s"Match error: newBinding=$newBinding")
-    }
-
     result.bind(newBinding)
     result.setAllParents(Some(ViewParent))
     result.forceName("view", Builder.viewNamespace)
