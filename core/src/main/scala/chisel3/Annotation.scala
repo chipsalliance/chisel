@@ -59,7 +59,11 @@ object annotate {
     */
   def apply(targets: InstanceId*)(mkAnnos: => Seq[Annotation]): Unit = {
     targets.foreach {
-      case d: Data => requireIsAnnotatable(d, "Data marked with annotation")
+      case d: Data =>
+        requireIsAnnotatable(d, "Data marked with annotation")
+        if (dataview.isView(d)) {
+          dataview.recordViewForRenaming(d)
+        }
       case _ => ()
     }
     // TODO record views that need to be renamed
