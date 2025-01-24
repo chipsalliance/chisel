@@ -15,12 +15,7 @@ object forceName {
     * @param instance Instance to name
     */
   def apply(instance: chisel3.experimental.BaseModule, name: String): Unit = {
-    annotate(new ChiselAnnotation {
-      def toFirrtl = {
-        val t = instance.toAbsoluteTarget
-        ForceNameAnnotation(t, name)
-      }
-    })
+    annotate(instance)(Seq(ForceNameAnnotation(instance.toAbsoluteTarget, name)))
   }
 
   /** Force the name of this instance to the name its given during Chisel compilation
@@ -29,12 +24,7 @@ object forceName {
     * @param instance Signal to name
     */
   def apply(instance: chisel3.experimental.BaseModule): Unit = {
-    annotate(new ChiselAnnotation {
-      def toFirrtl = {
-        val t = instance.toAbsoluteTarget
-        ForceNameAnnotation(t, instance.instanceName)
-      }
-    })
+    annotate(instance)(Seq(ForceNameAnnotation(instance.toAbsoluteTarget, instance.instanceName)))
   }
 }
 

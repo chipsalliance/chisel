@@ -15,7 +15,7 @@ class ChiselOptionsViewSpec extends AnyFlatSpec with Matchers {
   behavior.of(ChiselOptionsView.getClass.getName)
 
   it should "construct a view from an AnnotationSeq" in {
-    val bar = Circuit("bar", Seq.empty, Seq.empty, RenameMap())
+    val bar = Circuit("bar", Seq.empty, Seq.empty, RenameMap(), Seq.empty, Seq.empty, Seq.empty)
     val annotations = Seq(
       PrintFullStackTraceAnnotation,
       ChiselOutputFileAnnotation("foo"),

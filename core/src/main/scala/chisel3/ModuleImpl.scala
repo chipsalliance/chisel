@@ -10,7 +10,7 @@ import chisel3.internal._
 import chisel3.internal.binding._
 import chisel3.internal.Builder._
 import chisel3.internal.firrtl.ir._
-import chisel3.experimental.{requireIsChiselType, BaseModule, SourceInfo, UnlocatableSourceInfo}
+import chisel3.experimental.{requireIsChiselType, BaseModule, SourceInfo, Targetable, UnlocatableSourceInfo}
 import chisel3.properties.{Class, Property}
 import chisel3.reflect.DataMirror
 import _root_.firrtl.annotations.{
@@ -980,13 +980,10 @@ private case class ModulePrefixAnnotation(target: IsMember, prefix: String) exte
 }
 
 private object ModulePrefixAnnotation {
-  def annotate[T <: HasId](target: T): Unit = {
+  def annotate[T <: HasId: Targetable](target: T): Unit = {
     val prefix = Builder.getModulePrefix
     if (prefix != "") {
-      val annotation: ChiselAnnotation = new ChiselAnnotation {
-        def toFirrtl: Annotation = ModulePrefixAnnotation(target.toTarget, prefix)
-      }
-      chisel3.experimental.annotate(annotation)
+      chisel3.experimental.annotate(target)(Seq(ModulePrefixAnnotation(target.toTarget, prefix)))
     }
   }
 }

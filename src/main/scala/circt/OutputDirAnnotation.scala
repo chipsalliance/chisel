@@ -26,9 +26,7 @@ case class OutputDirAnnotation(target: ModuleTarget, dirname: String) extends Si
   */
 object outputDir {
   def apply[T <: BaseModule](data: T, dirname: String): T = {
-    annotate(new ChiselAnnotation {
-      def toFirrtl = OutputDirAnnotation(data.toTarget, dirname)
-    })
+    annotate(data)(Seq(OutputDirAnnotation(data.toTarget, dirname)))
     data
   }
 }
