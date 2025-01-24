@@ -23,7 +23,7 @@ import chisel3.internal.Builder.Prefix
 import logger.{LazyLogging, LoggerOption}
 
 import scala.collection.mutable
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 import java.io.File
 import scala.util.control.NonFatal
 import chisel3.ChiselException
@@ -476,6 +476,7 @@ private[chisel3] class ChiselContext() {
   var modulePrefixStack: List[(String, Boolean)] = Nil
 }
 
+@nowarn("msg=Avoid custom annotations")
 private[chisel3] class DynamicContext(
   val annotationSeq:       AnnotationSeq,
   val throwOnFirstError:   Boolean,
@@ -570,6 +571,7 @@ private[chisel3] class DynamicContext(
   var inDefinition: Boolean = false
 }
 
+@nowarn("msg=Avoid custom annotations")
 private[chisel3] object Builder extends LazyLogging {
 
   // Represents the current state of the prefixes given

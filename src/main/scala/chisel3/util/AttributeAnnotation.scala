@@ -35,9 +35,6 @@ object addAttribute {
     * @param annoString attribute string to add to target.
     */
   def apply(target: Data, annoString: String): Unit = {
-    requireIsAnnotatable(target, "target must be annotatable")
-    annotate(new ChiselAnnotation {
-      def toFirrtl = AttributeAnnotation(target.toNamed, annoString)
-    })
+    annotate(target)(Seq(AttributeAnnotation(target.toNamed, annoString)))
   }
 }
