@@ -2,9 +2,12 @@
 
 package chisel3.experimental
 
+import scala.annotation.nowarn
 import chisel3._
 import firrtl.annotations._
 
+// Rather than refactoring the annotation work here, we should just remove ChiselEnum annotations
+@nowarn("msg=Avoid custom annotations")
 object EnumAnnotations {
 
   /** An annotation for strong enum instances that are ''not'' inside of Vecs
@@ -16,6 +19,10 @@ object EnumAnnotations {
     def duplicate(n: Named): EnumComponentAnnotation = this.copy(target = n)
   }
 
+  @deprecated(
+    "Avoid custom annotations. If you must use annotations, new annotate.apply method that takes Data",
+    "Chisel 7.0"
+  )
   case class EnumComponentChiselAnnotation(target: InstanceId, enumTypeName: String) extends ChiselAnnotation {
     def toFirrtl: EnumComponentAnnotation = EnumComponentAnnotation(target.toNamed, enumTypeName)
   }
@@ -45,6 +52,10 @@ object EnumAnnotations {
     def duplicate(n: Named): EnumVecAnnotation = this.copy(target = n)
   }
 
+  @deprecated(
+    "Avoid custom annotations. If you must use annotations, new annotate.apply method that takes Data",
+    "Chisel 7.0"
+  )
   case class EnumVecChiselAnnotation(target: InstanceId, typeName: String, fields: Seq[Seq[String]])
       extends ChiselAnnotation {
     override def toFirrtl: EnumVecAnnotation = EnumVecAnnotation(target.toNamed, typeName, fields)
@@ -57,6 +68,10 @@ object EnumAnnotations {
     */
   case class EnumDefAnnotation(typeName: String, definition: Map[String, BigInt]) extends NoTargetAnnotation
 
+  @deprecated(
+    "Avoid custom annotations. If you must use annotations, new annotate.apply method that takes Data",
+    "Chisel 7.0"
+  )
   case class EnumDefChiselAnnotation(typeName: String, definition: Map[String, BigInt]) extends ChiselAnnotation {
     override def toFirrtl: Annotation = EnumDefAnnotation(typeName, definition)
   }
