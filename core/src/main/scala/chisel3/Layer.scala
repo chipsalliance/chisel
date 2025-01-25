@@ -2,9 +2,11 @@
 
 package chisel3
 
-import chisel3.experimental.{SourceInfo, UnlocatableSourceInfo}
+import chisel3.Data.ProbeInfo
+import chisel3.experimental.{requireIsHardware, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal.{Builder, HasId}
 import chisel3.internal.firrtl.ir.{LayerBlock, Node}
+import chisel3.reflect.DataMirror
 import chisel3.util.simpleClassName
 import java.nio.file.{Path, Paths}
 import scala.annotation.tailrec
@@ -194,6 +196,111 @@ object layer {
       Builder.layers += layer
       currentLayer = parent
     }
+  }
+
+  /** A type class that describes how to post-process the return value from a layer block. */
+  sealed trait BlockReturnHandler[A] {
+
+    /** The type that will be returned by this handler. */
+    type R
+
+    /** Do not post-process the return value.  This is what should happen if the
+      * code early exits, i.e., if no layer block is created.
+      */
+    private[chisel3] def identity(result: A): R
+
+    /** Post-process the return value.
+      *
+      * @param placeholder the location above the layer block where commands can be inserted
+      * @param layerBlock the current layer block
+      * @param result the return value of the layer block
+      * @param sourceInfo source locator information
+      * @return the post-processed result
+      */
+    private[chisel3] def apply(placeholder: Placeholder, layerBlock: LayerBlock, result: A)(
+      implicit sourceInfo: SourceInfo
+    ): R
+  }
+
+  object BlockReturnHandler {
+
+    type Aux[A, B] = BlockReturnHandler[A] { type R = B }
+
+    /** Return a [[BlockReturnHandler]] that will always return [[Unit]]. */
+    def unit[A]: Aux[A, Unit] = new BlockReturnHandler[A] {
+
+      override type R = Unit
+
+      override private[chisel3] def identity(result: A): R = ()
+
+      override private[chisel3] def apply(
+        placeholder: Placeholder,
+        layerBlock:  LayerBlock,
+        result:      A
+      )(
+        implicit sourceInfo: SourceInfo
+      ): R = {
+        ()
+      }
+
+    }
+
+    /** Return a [[BlockReturnHandler]] that, if a layer block is created, will
+      * create a [[Wire]] of layer-colored probe type _above_ the layer block
+      * and [[probe.define]] this at the end of the layer block.  If no
+      * layer-block is created, then the result is pass-through.
+      */
+    implicit def layerColoredWire[A <: Data]: Aux[A, A] = new BlockReturnHandler[A] {
+
+      override type R = A
+
+      override private[chisel3] def identity(result: A): R = result
+
+      override private[chisel3] def apply(
+        placeholder: Placeholder,
+        layerBlock:  LayerBlock,
+        result:      A
+      )(
+        implicit sourceInfo: SourceInfo
+      ): R = {
+        // Don't allow returning non-hardware types.  This avoids problems like
+        // returning a probe type which we can't handle.
+        requireIsHardware(result)
+
+        // The result wire is either a new layer-colored probe wire or an
+        // existing layer-colored probe wire forwarded up.  If it is the former,
+        // the wire is colored with the current layer.  For the latter, the wire
+        // needs to have a compatible color.  If it has one, use it.  If it
+        // needs a color, set it on the wire.
+        val layerColoredWire = placeholder.append {
+          result.probeInfo match {
+            case None                     => Wire(probe.Probe(chiselTypeOf(result), layerBlock.layer))
+            case Some(ProbeInfo(_, None)) => Wire(probe.Probe(result.cloneType, layerBlock.layer))
+            case Some(ProbeInfo(_, Some(color))) =>
+              if (!layerBlock.layer.canWriteTo(color))
+                Builder.error(
+                  s"cannot return probe of color '${color.fullName}' from a layer block associated with layer '${layerBlock.layer.fullName}'"
+                )
+              Wire(chiselTypeOf(result))
+          }
+        }
+
+        // Similarly, if the result is a probe, then we forward it directly.  If
+        // it is a non-probe, then we need to probe it first.
+        Builder.forcedUserModule.withRegion(layerBlock.region) {
+          val source = DataMirror.hasProbeTypeModifier(result) match {
+            case true  => result
+            case false => probe.ProbeValue(result)
+          }
+          probe.define(layerColoredWire, source)
+        }
+
+        // Return the layer-colored wire _above_ the layer block.
+        layerColoredWire
+      }
+
+    }
+
   }
 
   /** Create a new layer block.  This is hardware that will be enabled
