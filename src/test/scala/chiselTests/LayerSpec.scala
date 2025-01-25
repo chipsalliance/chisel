@@ -10,6 +10,7 @@ import chisel3.probe.{define, Probe, ProbeValue}
 import chiselTests.{ChiselFlatSpec, FileCheck, Utils}
 import java.nio.file.{FileSystems, Paths}
 import _root_.circt.stage.ChiselStage
+import chisel3.reflect.DataMirror.internal.chiselTypeClone
 
 class LayerSpec extends ChiselFlatSpec with Utils with FileCheck {
 
@@ -157,10 +158,10 @@ class LayerSpec extends ChiselFlatSpec with Utils with FileCheck {
       """|CHECK:      module Foo :
          |CHECK:        define x = probe(a)
          |CHECK-NEXT:   define y = probe(b)
-         |CHECK-NEXT:   layerblock A :
+         |CHECK:        layerblock A :
          |CHECK-NEXT:     define x = probe(c)
          |CHECK-NEXT:     define y = probe(d)
-         |CHECK-NEXT:     layerblock B :
+         |CHECK:          layerblock B :
          |CHECK-NEXT:       define y = probe(e)
          |""".stripMargin
     }
@@ -304,6 +305,133 @@ class LayerSpec extends ChiselFlatSpec with Utils with FileCheck {
     }
 
     ChiselStage.emitCHIRRTL(new Foo) should include("""layer ExpensiveAsserts, bind, "verification/ExpensiveAsserts"""")
+  }
+
+  "Values returned by layer blocks" should "be layer-colored wires" in {
+    class Foo extends RawModule {
+      val out = IO {
+        Output {
+          new Bundle {
+            val a = Probe(UInt(1.W), A)
+            val b = Probe(UInt(2.W), A.B)
+            val c = Probe(UInt(3.W), A.B)
+            val d = Probe(UInt(4.W), A)
+          }
+        }
+      }
+
+      // A single layer block
+      val a = layer.block(A) {
+        Wire(UInt(1.W))
+      }
+      define(out.a, a)
+
+      // Auto-creation of parent layer blocks
+      val b = layer.block(A.B) {
+        Wire(UInt(2.W))
+      }
+      define(out.b, b)
+
+      // Nested layer blocks
+      val c = layer.block(A) {
+        layer.block(A.B) {
+          Wire(UInt(3.W))
+        }
+      }
+      define(out.c, c)
+
+      // Return of ProbeValue
+      val d = layer.block(A) {
+        ProbeValue(Wire(UInt(4.W)))
+      }
+      define(out.d, d)
+
+      // No layers created.  Check all generator code paths.
+      layer.block(A) {
+        // Path 1: `skipIfAlreadyInBlock` set
+        val e = layer.block(C, skipIfAlreadyInBlock = true) {
+          Wire(UInt(5.W))
+        }
+        // Path 2: requested layer is the current layer
+        val f = layer.block(A) {
+          Wire(UInt(6.W))
+        }
+      }
+      // Path 3: `skipIfLayersEnabled` is set and a layer is enabled
+      layer.enable(C)
+      val g = layer.block(C, skipIfLayersEnabled = true) {
+        Wire(UInt(7.W))
+      }
+      // Path 4: the `elideBlocks` API is used
+      val h = layer.elideBlocks {
+        layer.block(A) {
+          Wire(UInt(8.W))
+        }
+      }
+
+      // Return non-`Data` as `Unit`.
+      val i = layer.block(A) {
+        42
+      }
+      assert(i.getClass() == classOf[Unit])
+
+      // Return `Unit` as `Unit`.
+      val j = layer.block(A) { () }
+      assert(j.getClass() == classOf[Unit])
+    }
+
+    generateFirrtlAndFileCheck(new Foo) {
+      s"""|CHECK:      module Foo
+          |CHECK:        wire a : Probe<UInt<1>, A>
+          |CHECK-NEXT:   layerblock A :
+          |CHECK-NEXT:     wire [[a:.*]] : UInt<1>
+          |CHECK-NEXT:     define a = probe([[a]])
+          |CHECK:        define out.a = a
+          |
+          |CHECK:        wire b : Probe<UInt<2>, A.B>
+          |CHECK-NEXT:   layerblock A :
+          |CHECK-NEXT:     layerblock B :
+          |CHECK-NEXT:       wire [[b:.*]] : UInt<2>
+          |CHECK-NEXT:       define b = probe([[b]])
+          |CHECK:        define out.b = b
+          |
+          |CHECK:        wire c : Probe<UInt<3>, A.B>
+          |CHECK-NEXT:   layerblock A :
+          |CHECK-NEXT:     wire [[c0:.*]] : Probe<UInt<3>, A.B>
+          |CHECK-NEXT:     layerblock B :
+          |CHECK-NEXT:       wire [[c:.*]] : UInt<3>
+          |CHECK-NEXT:       define [[c0]] = probe([[c]])
+          |CHECK:          define c = [[c0]]
+          |CHECK:        define out.c = c
+          |
+          |CHECK:        wire d : Probe<UInt<4>, A>
+          |CHECK-NEXT:   layerblock A :
+          |CHECK-NEXT:     wire [[d:.*]] : UInt<4>
+          |CHECK-NEXT:     define d = probe([[d]])
+          |CHECK:        define out.d = d
+          |
+          |CHECK:        layerblock A :
+          |CHECK-NEXT:     wire e : UInt<5>
+          |CHECK-NEXT:     wire f : UInt<6>
+          |CHECK-NOT:    layerblock
+          |CHECK:        wire g : UInt<7>
+          |CHECK-NOT:    layerblock
+          |CHECK:        wire h : UInt<8>
+          |""".stripMargin
+    }
+  }
+
+  they should "require compatible color if returning a layer-colored wire" in {
+    class Foo extends RawModule {
+
+      val a = layer.block(A) {
+        Wire(Probe(Bool(), C))
+      }
+
+    }
+
+    intercept[ChiselException] { ChiselStage.convert(new Foo, Array("--throw-on-first-error")) }
+      .getMessage() should include("cannot return probe of color 'C' from a layer block associated with layer 'A'")
   }
 
   "addLayer API" should "add a layer to the output CHIRRTL even if no layer block references that layer" in {
