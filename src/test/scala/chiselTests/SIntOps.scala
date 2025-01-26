@@ -171,4 +171,31 @@ class SIntOpsSpec extends ChiselPropSpec with Utils {
       WireDefault(chiselTypeOf(op), op)
     }
   }
+
+  property("Zero-width bit extractions should be supported") {
+    assertKnownWidth(0) {
+      val x = WireDefault(SInt(8.W), DontCare)
+      val op = x(-1, 0)
+      WireDefault(chiselTypeOf(op), op)
+    }
+    assertKnownWidth(0) {
+      val x = WireDefault(SInt(8.W), DontCare)
+      val hi = 5
+      val lo = 6
+      val op = (x >> lo)(hi - lo, 0)
+      WireDefault(chiselTypeOf(op), op)
+    }
+  }
+
+  property("Zero-width bit extractions from the middle of an SInt should give an actionable error") {
+    val (log, x) = grabLog(intercept[Exception](ChiselStage.emitCHIRRTL(new RawModule {
+      val x = WireDefault(SInt(8.W), DontCare)
+      val op = x(5, 6)
+      WireDefault(chiselTypeOf(op), op)
+    })))
+    log should include(
+      "Invalid bit range [hi=5, lo=6]. If you are trying to extract zero-width range, right-shift by 'lo' before extracting."
+    )
+  }
+
 }
