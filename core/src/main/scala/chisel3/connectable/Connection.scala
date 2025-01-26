@@ -111,6 +111,7 @@ private[chisel3] object Connection {
     doConnection(cRoot, pRoot, cOp)
   }
 
+<<<<<<< HEAD
   // Consumed by the := operator, set to what chisel3 will eventually become.
   implicit val chisel5CompileOptions = new chisel3.CompileOptions {
     val connectFieldsMustMatch:      Boolean = true
@@ -148,16 +149,22 @@ private[chisel3] object Connection {
     }
   }
 
+=======
+>>>>>>> 4a5cbfd05 (Added more Connectable customization functions (#3227))
   private def connect(
     l: Data,
     r: Data
   )(
     implicit sourceInfo: SourceInfo
   ): Unit = {
-    (l, r) match {
-      case (x: Analog, y: Analog) => connectAnalog(x, y)
-      case (x: Analog, DontCare) => connectAnalog(x, DontCare)
-      case (_, _) => l := r
+    try {
+      (l, r) match {
+        case (x: Analog, y: Analog) => connectAnalog(x, y)
+        case (x: Analog, DontCare) => connectAnalog(x, DontCare)
+        case (_, _) => l := r
+      }
+    } catch {
+      case e: Exception => Builder.error(e.getMessage)
     }
   }
 
