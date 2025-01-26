@@ -6,8 +6,14 @@ import chisel3.RawModule
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation, CircuitSerializationAnnotation}
 import chisel3.stage.CircuitSerializationAnnotation.FirrtlFileFormat
 import firrtl.{AnnotationSeq, EmittedVerilogCircuitAnnotation}
+<<<<<<< HEAD
 import firrtl.options.{Dependency, Phase, PhaseManager, Shell, Stage, StageMain}
 import firrtl.stage.FirrtlCircuitAnnotation
+=======
+import firrtl.options.{CustomFileEmission, Dependency, Phase, PhaseManager, Stage, StageMain, Unserializable}
+import firrtl.stage.FirrtlCircuitAnnotation
+import logger.LogLevelAnnotation
+>>>>>>> 88d147d90 (Fix ChiselStage and Builder handling of logging (#3895))
 
 /** Entry point for running Chisel with the CIRCT compiler.
   *
@@ -22,21 +28,27 @@ class ChiselStage extends Stage {
   override def optionalPrerequisiteOf = Seq.empty
   override def invalidates(a: Phase) = false
 
-  override val shell = new Shell("circt") with CLI
+  override val shell = new firrtl.options.Shell("circt") with CLI {
+    // These are added by firrtl.options.Shell (which we must extend because we are a Stage)
+    override protected def includeLoggerOptions = false
+  }
 
   override def run(annotations: AnnotationSeq): AnnotationSeq = {
 
     val pm = new PhaseManager(
       targets = Seq(
-        Dependency[chisel3.stage.phases.Checks],
         Dependency[chisel3.stage.phases.AddImplicitOutputFile],
         Dependency[chisel3.stage.phases.AddImplicitOutputAnnotationFile],
         Dependency[chisel3.stage.phases.MaybeAspectPhase],
         Dependency[chisel3.stage.phases.AddSerializationAnnotations],
         Dependency[chisel3.stage.phases.Convert],
         Dependency[chisel3.stage.phases.MaybeInjectingPhase],
+<<<<<<< HEAD
         Dependency[firrtl.stage.phases.AddImplicitOutputFile],
         Dependency[circt.stage.phases.Checks],
+=======
+        Dependency[circt.stage.phases.AddImplicitOutputFile],
+>>>>>>> 88d147d90 (Fix ChiselStage and Builder handling of logging (#3895))
         Dependency[circt.stage.phases.CIRCT]
       ),
       currentState = Seq(
@@ -55,7 +67,6 @@ object ChiselStage {
   /** A phase shared by all the CIRCT backends */
   private def phase = new PhaseManager(
     Seq(
-      Dependency[chisel3.stage.phases.Checks],
       Dependency[chisel3.aop.injecting.InjectingPhase],
       Dependency[chisel3.stage.phases.Elaborate],
       Dependency[chisel3.stage.phases.Convert],
@@ -74,7 +85,11 @@ object ChiselStage {
     val annos = Seq(
       ChiselGeneratorAnnotation(() => gen),
       CIRCTTargetAnnotation(CIRCTTarget.CHIRRTL)
+<<<<<<< HEAD
     ) ++ (new ChiselStage).shell.parse(args)
+=======
+    ) ++ (new Shell("circt")).parse(args)
+>>>>>>> 88d147d90 (Fix ChiselStage and Builder handling of logging (#3895))
 
     phase
       .transform(annos)
@@ -97,7 +112,11 @@ object ChiselStage {
     val annos = Seq(
       ChiselGeneratorAnnotation(() => gen),
       CIRCTTargetAnnotation(CIRCTTarget.CHIRRTL)
+<<<<<<< HEAD
     ) ++ (new ChiselStage).shell.parse(args)
+=======
+    ) ++ (new Shell("circt")).parse(args)
+>>>>>>> 88d147d90 (Fix ChiselStage and Builder handling of logging (#3895))
 
     phase
       .transform(annos)
@@ -116,7 +135,11 @@ object ChiselStage {
     val annos = Seq(
       ChiselGeneratorAnnotation(() => gen),
       CIRCTTargetAnnotation(CIRCTTarget.FIRRTL)
+<<<<<<< HEAD
     ) ++ (new ChiselStage).shell.parse(args) ++ firtoolOpts.map(FirtoolOption(_))
+=======
+    ) ++ (new Shell("circt")).parse(args) ++ firtoolOpts.map(FirtoolOption(_))
+>>>>>>> 88d147d90 (Fix ChiselStage and Builder handling of logging (#3895))
 
     phase
       .transform(annos)
@@ -135,7 +158,11 @@ object ChiselStage {
     val annos = Seq(
       ChiselGeneratorAnnotation(() => gen),
       CIRCTTargetAnnotation(CIRCTTarget.HW)
+<<<<<<< HEAD
     ) ++ (new ChiselStage).shell.parse(args) ++ firtoolOpts.map(FirtoolOption(_))
+=======
+    ) ++ (new Shell("circt")).parse(args) ++ firtoolOpts.map(FirtoolOption(_))
+>>>>>>> 88d147d90 (Fix ChiselStage and Builder handling of logging (#3895))
 
     phase
       .transform(annos)
@@ -160,7 +187,11 @@ object ChiselStage {
     val annos = Seq(
       ChiselGeneratorAnnotation(() => gen),
       CIRCTTargetAnnotation(CIRCTTarget.SystemVerilog)
+<<<<<<< HEAD
     ) ++ (new circt.stage.ChiselStage).shell.parse(args) ++ firtoolOpts.map(FirtoolOption(_))
+=======
+    ) ++ (new Shell("circt")).parse(args) ++ firtoolOpts.map(FirtoolOption(_))
+>>>>>>> 88d147d90 (Fix ChiselStage and Builder handling of logging (#3895))
     phase
       .transform(annos)
       .collectFirst {

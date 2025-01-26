@@ -9,19 +9,24 @@ import chisel3.experimental._
 import chisel3.experimental.hierarchy.core.{Clone, ImportDefinitionAnnotation, Instance}
 import chisel3.internal.firrtl._
 import chisel3.internal.naming._
-import _root_.firrtl.annotations.{CircuitName, ComponentName, IsMember, ModuleName, Named, ReferenceTarget}
+import _root_.firrtl.annotations.{Annotation, CircuitName, ComponentName, IsMember, ModuleName, Named, ReferenceTarget}
 import _root_.firrtl.annotations.AnnotationUtils.validComponentName
 import _root_.firrtl.AnnotationSeq
 import _root_.firrtl.renamemap.MutableRenameMap
 import _root_.firrtl.util.BackendCompilationUtilities._
 import chisel3.experimental.dataview.{reify, reifySingleData}
 import chisel3.internal.Builder.Prefix
-import logger.LazyLogging
+import logger.{LazyLogging, LoggerOption}
 
 import scala.collection.mutable
 import scala.annotation.tailrec
 import java.io.File
 import scala.util.control.NonFatal
+<<<<<<< HEAD
+=======
+import chisel3.ChiselException
+import logger.LoggerOptions
+>>>>>>> 88d147d90 (Fix ChiselStage and Builder handling of logging (#3895))
 
 private[chisel3] class Namespace(keywords: Set[String]) {
   // This HashMap is compressed, not every name in the namespace is present here.
@@ -425,11 +430,24 @@ private[chisel3] class ChiselContext() {
 }
 
 private[chisel3] class DynamicContext(
+<<<<<<< HEAD
   val annotationSeq:     AnnotationSeq,
   val throwOnFirstError: Boolean,
   val warningsAsErrors:  Boolean,
   val sourceRoots:       Seq[File]) {
   val importDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
+=======
+  val annotationSeq:         AnnotationSeq,
+  val throwOnFirstError:     Boolean,
+  val legacyShiftRightWidth: Boolean,
+  val warningFilters:        Seq[WarningFilter],
+  val sourceRoots:           Seq[File],
+  val defaultNamespace:      Option[Namespace],
+  // Definitions from other scopes in the same elaboration, use allDefinitions below
+  val outerScopeDefinitions: List[Iterable[Definition[_]]],
+  val loggerOptions:         LoggerOptions) {
+  val importedDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
+>>>>>>> 88d147d90 (Fix ChiselStage and Builder handling of logging (#3895))
 
   // Map holding the actual names of extModules
   // Pick the definition name by default in case not passed through annotation.
@@ -836,6 +854,16 @@ private[chisel3] object Builder extends LazyLogging {
     f:              => T,
     dynamicContext: DynamicContext,
     forceModName:   Boolean = true
+  ): (Circuit, T) = {
+    // Logger has its own context separate from Chisel's dynamic context
+    _root_.logger.Logger.makeScope(dynamicContext.loggerOptions) {
+      buildImpl(f, dynamicContext)
+    }
+  }
+
+  private def buildImpl[T <: BaseModule](
+    f:              => T,
+    dynamicContext: DynamicContext
   ): (Circuit, T) = {
     dynamicContextVar.withValue(Some(dynamicContext)) {
       ViewParent: Unit // Must initialize the singleton in a Builder context or weird things can happen

@@ -103,7 +103,20 @@ object Definition extends SourceInfoDoc {
   ): Definition[T] = {
     val dynamicContext = {
       val context = Builder.captureContext()
+<<<<<<< HEAD
       new DynamicContext(Nil, context.throwOnFirstError, context.warningsAsErrors, context.sourceRoots)
+=======
+      new DynamicContext(
+        Nil,
+        context.throwOnFirstError,
+        context.legacyShiftRightWidth,
+        context.warningFilters,
+        context.sourceRoots,
+        Some(context.globalNamespace),
+        Builder.allDefinitions,
+        context.loggerOptions
+      )
+>>>>>>> 88d147d90 (Fix ChiselStage and Builder handling of logging (#3895))
     }
     Builder.globalNamespace.copyTo(dynamicContext.globalNamespace)
     dynamicContext.inDefinition = true
