@@ -1,0 +1,4 @@
+# SourceInfo is sealed
+ProblemFilters.exclude[ReversedMissingMethodProblem]("chisel3.experimental.SourceInfo.filenameOption")
+# ErrorEntry is private
+ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.internal.ErrorEntry.serialize")

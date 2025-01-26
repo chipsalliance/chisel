@@ -12,7 +12,7 @@ import scala.annotation.{nowarn, tailrec}
   */
 package object chisel3 {
   import internal.chiselRuntimeDeprecated
-  import experimental.{DeprecatedSourceInfo, UnlocatableSourceInfo}
+  import experimental.{DeprecatedSourceInfo, SourceLineNoCol, UnlocatableSourceInfo}
   import internal.firrtl.{Port, Width}
   import internal.Builder
 
@@ -43,7 +43,8 @@ package object chisel3 {
       case bigint if bigint == 0 => Bool.Lit(false)
       case bigint if bigint == 1 => Bool.Lit(true)
       case bigint =>
-        Builder.error(s"Cannot convert $bigint to Bool, must be 0 or 1")(UnlocatableSourceInfo)
+        val info = SourceLineNoCol.materialize.getOrElse(UnlocatableSourceInfo)
+        Builder.error(s"Cannot convert $bigint to Bool, must be 0 or 1")(info)
         Bool.Lit(false)
     }
 

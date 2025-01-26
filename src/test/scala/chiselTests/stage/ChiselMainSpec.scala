@@ -191,6 +191,8 @@ class ChiselMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
             }
           }
         }
+      println(stdout)
+      println(stderr)
 
       Then("the expected exception was thrown")
       (result should be).a(Symbol("right"))

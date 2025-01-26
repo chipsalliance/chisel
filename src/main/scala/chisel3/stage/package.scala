@@ -20,14 +20,17 @@ package object stage {
     def view(options: AnnotationSeq): ChiselOptions = options.collect { case a: ChiselOption => a }
       .foldLeft(new ChiselOptions()) { (c, x) =>
         x match {
-          case NoRunFirrtlCompilerAnnotation  => c.copy(runFirrtlCompiler = false)
-          case PrintFullStackTraceAnnotation  => c.copy(printFullStackTrace = true)
-          case ThrowOnFirstErrorAnnotation    => c.copy(throwOnFirstError = true)
-          case WarningsAsErrorsAnnotation     => c.copy(warningsAsErrors = true)
+          case NoRunFirrtlCompilerAnnotation => c.copy(runFirrtlCompiler = false)
+          case PrintFullStackTraceAnnotation => c.copy(printFullStackTrace = true)
+          case ThrowOnFirstErrorAnnotation   => c.copy(throwOnFirstError = true)
+          case WarningsAsErrorsAnnotation =>
+            c.copy(warningFilters = c.warningFilters :+ WarningsAsErrorsAnnotation.asFilter)
           case WarnReflectiveNamingAnnotation => c // Do nothing, ignored
           case ChiselOutputFileAnnotation(f)  => c.copy(outputFile = Some(f))
           case ChiselCircuitAnnotation(a)     => c.copy(chiselCircuit = Some(a))
           case SourceRootAnnotation(s)        => c.copy(sourceRoots = c.sourceRoots :+ s)
+          case a: WarningConfigurationAnnotation     => c.copy(warningFilters = c.warningFilters ++ a.filters)
+          case a: WarningConfigurationFileAnnotation => c.copy(warningFilters = c.warningFilters ++ a.filters)
         }
       }
 
