@@ -601,15 +601,31 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     rec(leftType, rightType)
   }
 
+<<<<<<< HEAD
   private[chisel3] def requireVisible(): Unit = {
+=======
+  private[chisel3] def isVisible: Boolean = isVisibleFromModule && visibleFromWhen.isEmpty
+  private[chisel3] def isVisibleFromModule: Boolean = {
+    val topBindingOpt = this.topBindingOpt // Only call the function once
+>>>>>>> 84a21f8a7 (Fix visibility for views (#3818))
     val mod = topBindingOpt.flatMap(_.location)
     topBindingOpt match {
       case Some(tb: TopBinding) if (mod == Builder.currentModule) =>
       case Some(pb: PortBinding)
+<<<<<<< HEAD
           if (mod.flatMap(Builder.retrieveParent(_, Builder.currentModule.get)) == Builder.currentModule) =>
       case Some(_: UnconstrainedBinding) =>
       case _ =>
         throwException(s"operand '$this' is not visible from the current module")
+=======
+          if mod.flatMap(Builder.retrieveParent(_, Builder.currentModule.get)) == Builder.currentModule =>
+        true
+      case Some(ViewBinding(target))           => target.isVisibleFromModule
+      case Some(AggregateViewBinding(mapping)) => mapping.values.forall(_.isVisibleFromModule)
+      case Some(pb: SecretPortBinding) => true // Ignore secret to not require visibility
+      case Some(_: UnconstrainedBinding) => true
+      case _ => false
+>>>>>>> 84a21f8a7 (Fix visibility for views (#3818))
     }
     MonoConnect.checkWhenVisibility(this) match {
       case Some(sourceInfo) =>
