@@ -19,11 +19,20 @@ object v extends Module {
     val j = _root_.upickle.default.read[Map[String, String]](os.read(millSourcePath / os.up / "etc" / "circt.json"))
     j("version").stripPrefix("firtool-")
   }
+
+  val latest213Version = {
+    val scalaConfigFile = os.read(millSourcePath / os.up / "etc" / "scala.json")
+    val json = _root_.upickle.default.read[Map[String, String]](scalaConfigFile)
+    val res = json("latest213")
+    println(s"jack = $res")
+    res
+  }
+
   // Java 21 only works with 2.13.11+, but Project Panama uses Java 21
   // Only publish plugin for 2.13.11+ when using Java > 11, but still
   // publish all versions when Java version <= 11.
   val pluginScalaCrossVersions = {
-    val latest213 = 15
+    val latest213 = latest213Version.split('.').last.toInt
     val java21Min213 = 11
     val minVersion = if (javaVersion > 11) java21Min213 else 0
     val versions = minVersion to latest213
@@ -32,7 +41,7 @@ object v extends Module {
   }
 
   val scalaCrossVersions = Seq(
-    "2.13.15",
+    latest213Version,
     "3.3.4"
   )
 
