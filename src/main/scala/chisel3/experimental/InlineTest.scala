@@ -19,7 +19,8 @@ package object inlinetest {
     /** A Definition of the DUT module. */
     dutDefinition: Definition[M],
     /** The body for this test, returns a result. */
-    body: Instance[M] => R)
+    body: Instance[M] => R
+  )
 
   /** An implementation of a testharness generator.
     *
