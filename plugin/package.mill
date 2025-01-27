@@ -10,7 +10,7 @@ import $file.release
 
 object `package` extends RootModule {
   // https://github.com/com-lihaoyi/mill/issues/3693
-  object cross extends Cross[Plugin](v.scalaCrossVersions)
+  object cross extends Cross[Plugin](v.pluginScalaCrossVersions)
 }
 
 trait Plugin extends CrossSbtModule with ScalafmtModule with release.ChiselPublishModule {
