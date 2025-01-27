@@ -777,6 +777,7 @@ private[chisel3] object Builder extends LazyLogging {
     dynamicContext.blockStack = s
   }
 
+  def blockDepth: Int = dynamicContext.blockStack.length
   def pushBlock(b: Block): Unit = {
     dynamicContext.blockStack = b :: dynamicContext.blockStack
   }
