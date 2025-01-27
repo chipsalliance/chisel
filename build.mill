@@ -99,6 +99,7 @@ object v extends Module {
     "-unchecked",
     "-Werror",
     "-Ymacro-annotations",
+    "-release:8",
     "-explaintypes",
     "-Xcheckinit",
     "-Xlint:infer-any",
@@ -134,6 +135,15 @@ trait HasScala2Plugin extends CrossModuleBase {
     if (!v.isScala3(crossScalaVersion)) {
       super.scalacPluginClasspath() ++ Agg(pluginModule.jar())
     } else super.scalacPluginClasspath()
+  }
+}
+
+trait HasCommonOptions extends CrossModuleBase {
+  def xsource3: Boolean = true
+  override def scalacOptions = Task {
+    if (!v.isScala3(crossScalaVersion)) {
+      super.scalacOptions() ++ v.scala2CommonOptions ++ Option.when(xsource3)("-Xsource:3")
+    } else super.scalacOptions()
   }
 }
 
