@@ -21,8 +21,19 @@ trait Plugin extends CrossSbtModule with ScalafmtModule with release.ChiselPubli
   // The plugin is compiled for every minor Scala version
   override def crossFullScalaVersion = true
 
+  // This is a bit of a hack, but for some reason, Scala compilation crashes with -release 8 for
+  // Scala 2.13.0-2.13.2. While -release 8 is what we want, -target:jvm-1.8 at least ensures the
+  // bytecode is Java 8 compatible, and then the higher Scala versions compiled with -release 8 will
+  // enforce the other guarantees of -release 8 (that we don't accidentally use Java APIs introduced
+  // in newer JDKs).
+  def releaseArg(scalaVersion: String): Seq[String] = {
+    val badSet = Set("2.13.0", "2.13.1", "2.13.2")
+    if (badSet.contains(scalaVersion)) Seq("-target:jvm-1.8")
+    else Seq("-release", "8")
+  }
+
   // Does not use common options because -Wconf wasn't supported in early 2.13, nor was "-release:"
-  override def scalacOptions = super.scalacOptions() ++ Seq("-release", "8")
+  override def scalacOptions = super.scalacOptions() ++ releaseArg(crossScalaVersion)
 
   def scalaLibraryIvy = v.scalaLibrary(crossScalaVersion)
   def scalaReflectIvy = v.scalaReflect(crossScalaVersion)
