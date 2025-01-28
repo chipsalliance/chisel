@@ -97,7 +97,7 @@ final class Workspace(
       l("module ", Workspace.testbenchModuleName, ";")
       for ((port, index) <- ports) {
         if (port.isSettable) {
-      l("  reg  [$bits(", dut.instanceName, ".",  port.name, ")-1:0] ", port.name, ";")
+      l("  reg  [$bits(", dut.instanceName, ".",  port.name, ")-1:0] ", port.name, " = '0;")
         } else {
       l("  wire [$bits(", dut.instanceName, ".",  port.name, ")-1:0] ", port.name, ";")
         }
