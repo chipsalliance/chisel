@@ -36,7 +36,7 @@ object RawClockedNonVoidFunctionCall {
     *
     * Please refer https://github.com/llvm/circt/blob/main/docs/Dialects/FIRRTL/FIRRTLIntrinsics.md#dpi-intrinsic-abi for DPI function ABI.
     * @example {{{
-    * val a = RawClockedNonVoidFunctionCall("dpi_func_foo", UInt(1.W), clock, enable, b, c)
+    * val a = RawClockedNonVoidFunctionCall("dpi_func_foo", UInt(1.W))(clock, enable, b, c)
     * }}}
     */
   def apply[T <: Data](
@@ -66,7 +66,7 @@ object RawUnclockedNonVoidFunctionCall {
     *
     * Please refer https://github.com/llvm/circt/blob/main/docs/Dialects/FIRRTL/FIRRTLIntrinsics.md#dpi-intrinsic-abi for DPI function ABI.
     * @example {{{
-    * val a = RawUnclockedNonVoidFunctionCall("dpi_func_foo", UInt(1.W), enable, b, c)
+    * val a = RawUnclockedNonVoidFunctionCall("dpi_func_foo", UInt(1.W))(enable, b, c)
     * }}}
     */
   def apply[T <: Data](
@@ -91,7 +91,7 @@ object RawClockedVoidFunctionCall {
     *
     * Please refer https://github.com/llvm/circt/blob/main/docs/Dialects/FIRRTL/FIRRTLIntrinsics.md#dpi-intrinsic-abi for DPI function ABI.
     * @example {{{
-    * RawClockedVoidFunctionCall("dpi_func_foo", UInt(1.W), clock, enable, b, c)
+    * RawClockedVoidFunctionCall("dpi_func_foo", UInt(1.W))(clock, enable, b, c)
     * }}}
     */
   def apply(
