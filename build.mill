@@ -283,6 +283,8 @@ trait Chisel extends CrossSbtModule with HasScala2MacroAnno with HasScala2Plugin
     // Suppress Scala 3 behavior requiring explicit types on implicit definitions
     // Note this must come before the -Wconf is warningSuppression
     override def scalacOptions = Task { super.scalacOptions() :+ "-Wconf:cat=other-implicit-type:s" }
+
+    override def testForkGrouping = discoveredTestClasses().grouped(8).toSeq
   }
 }
 
