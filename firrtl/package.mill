@@ -12,23 +12,27 @@ object `package` extends RootModule {
   object cross extends Cross[Firrtl](v.scalaCrossVersions)
 }
 
-trait Firrtl extends CrossSbtModule with Cross.Module[String] with HasScala2MacroAnno with ScalafmtModule {
+trait Firrtl
+    extends CrossSbtModule
+    with Cross.Module[String]
+    with HasScala2MacroAnno
+    with HasCommonOptions
+    with ScalafmtModule {
   def scalaVersion = crossScalaVersion
 
   def millSourcePath = super.millSourcePath / os.up
 
   override def scalacOptions = Task {
-    if (v.isScala3(crossScalaVersion)) {
-      Seq.empty[String]
-    } else {
-      v.scala2CommonOptions ++ Seq(
-        "-language:reflectiveCalls",
-        "-language:existentials",
-        "-language:implicitConversions",
-        "-Yrangepos", // required by SemanticDB compiler plugin
-        "-Xsource:3",
-        "-Xsource-features:infer-override"
-      )
+    super.scalacOptions() ++ {
+      if (v.isScala3(crossScalaVersion)) Seq.empty[String]
+      else
+        Seq(
+          "-language:reflectiveCalls",
+          "-language:existentials",
+          "-language:implicitConversions",
+          "-Yrangepos", // required by SemanticDB compiler plugin
+          "-Xsource-features:infer-override"
+        )
     }
   }
 

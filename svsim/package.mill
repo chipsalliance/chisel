@@ -12,18 +12,14 @@ object `package` extends RootModule {
   object cross extends Cross[Svsim](v.scalaCrossVersions)
 }
 
-trait Svsim extends CrossSbtModule with ScalafmtModule {
+trait Svsim extends CrossSbtModule with HasCommonOptions with ScalafmtModule {
   def millSourcePath = super.millSourcePath / os.up
 
   override def scalacOptions = Task {
-    if (v.isScala3(crossScalaVersion)) {
-      Seq.empty[String]
-    } else {
-      v.scala2CommonOptions ++ Seq(
-        "-Xsource:3",
+    super.scalacOptions() ++
+      Option.when(!v.isScala3(crossScalaVersion))(
         "-Xsource-features:case-apply-copy-access"
       )
-    }
   }
 
   object test extends SbtTests with TestModule.ScalaTest with ScalafmtModule {

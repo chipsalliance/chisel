@@ -12,9 +12,12 @@ object `package` extends RootModule {
   object cross extends Cross[IntegrationTests](v.scalaCrossVersions)
 }
 
-trait IntegrationTests extends CrossSbtModule with HasScala2Plugin with ScalafmtModule {
+trait IntegrationTests extends CrossSbtModule with HasScala2Plugin with HasCommonOptions with ScalafmtModule {
   def pluginModule = plugin.cross()
   def millSourcePath = super.millSourcePath / os.up
+
+  // TODO enable
+  override def xsource3 = false
 
   object test extends SbtTests with TestModule.ScalaTest with ScalafmtModule {
     override def moduleDeps = super.moduleDeps :+ chisel().test

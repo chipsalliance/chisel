@@ -13,13 +13,16 @@ object `package` extends RootModule {
   object cross extends Cross[Plugin](v.pluginScalaCrossVersions)
 }
 
-trait Plugin extends CrossSbtModule with ScalafmtModule with release.ChiselPublishModule {
+trait Plugin extends CrossSbtModule with ScalafmtModule with HasCommonOptions with release.ChiselPublishModule {
   override def artifactName = "chisel-plugin"
 
   def millSourcePath = super.millSourcePath / os.up
 
   // The plugin is compiled for every minor Scala version
   override def crossFullScalaVersion = true
+
+  // There is no code sharing in the plugin so no point in -Xsource:3
+  override def xsource3 = false
 
   def scalaLibraryIvy = v.scalaLibrary(crossScalaVersion)
   def scalaReflectIvy = v.scalaReflect(crossScalaVersion)
