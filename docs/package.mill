@@ -1,0 +1,61 @@
+// See LICENSE for license details.
+
+package build.docs
+
+import mill._
+import mill.scalalib._
+import mill.scalalib.scalafmt._
+import mill.api.Result
+import mill.util.Jvm
+
+import build._
+
+/** MDoc project */
+object `package` extends RootModule with SbtModule with HasScala2Plugin with HasCommonOptions {
+
+  override def scalaVersion = v.scalaVersion
+
+  // This not really a CrossModule but HasScala2Plugin and HasCommonOptions require it
+  override def crossValue = v.scalaVersion
+
+  def pluginModule = plugin.cross()
+
+  def jack = Task {
+    println(Version.SemanticVersion.parse("v6.6.1"))
+  }
+
+  // Our scala sources to be used by mdoc live here
+  override def millSourcePath = super.millSourcePath / os.up / "docs-target"
+
+  override def ivyDeps = T { Agg(v.mdoc, v.scalatest) }
+
+  override def moduleDeps = Seq(chisel(v.scalaVersion))
+
+  def mdocSourceDir = T { millSourcePath / os.up / "docs" / "src" }
+
+  def mdocOutDir = T { millSourcePath / os.up / "docs" / "generated" }
+
+  def mdocSources = T.sources { mdocSourceDir() }
+
+  def mdocExtraArguments = T {
+    // None of our links are hygienic because they're primarily used on the website with .html
+    Seq("--cwd", "docs", "--no-link-hygiene")
+  }
+
+  def mdoc = T {
+    val classpath = runClasspath().map(_.path)
+
+    val inOutArgs =
+      mdocSources().flatMap(inDir => Seq[String]("--in", inDir.path.toString, "--out", mdocOutDir().toString))
+    val mdocArgs =
+      Seq("--classpath", classpath.mkString(":")) ++
+        Seq("--scalac-options", scalacOptions().mkString(" ")) ++
+        inOutArgs ++ mdocExtraArguments()
+
+    T.log.debug("Running mdoc with args: " + mdocArgs.mkString(" "))
+
+    Jvm.runLocal("mdoc.Main", classpath, mdocArgs)
+
+    PathRef(T.dest)
+  }
+}
