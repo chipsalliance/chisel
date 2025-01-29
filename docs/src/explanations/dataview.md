@@ -230,6 +230,7 @@ This is much more verbose than the original idea of just using the Tuples direct
 We can make this better by providing an implicit conversion that views a `Tuple` as a `HWTuple2`:
 
 ```scala mdoc
+import scala.language.implicitConversions
 implicit def tuple2hwtuple[A <: Data, B <: Data](tup: (A, B)): HWTuple2[A, B] =
   tup.viewAs[HWTuple2[A, B]]
 ```

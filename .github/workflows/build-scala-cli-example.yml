@@ -37,7 +37,6 @@ jobs:
         uses: VirtusLab/scala-cli-setup@v1
         with:
           jvm: adoptium:17
-          apps: sbt
       - name: Generate Chisel Scala CLI Example
         shell: bash
         run: |

@@ -37,7 +37,7 @@ default: build
 # Using index as standin for all md files
 # Note this doesn't work when a markdown file is deleted
 $(mdoc_out)/index.md: $(chisel-non-website)
-	cd $(chisel_dir) && sbt docs/mdoc
+	cd $(chisel_dir) && ./mill mdoc
 
 $(website_docs_dir):
 	mkdir -p $@
@@ -48,7 +48,7 @@ $(website_docs_dir)/index.md: $(mdoc_out)/index.md | $(website_docs_dir)
 latest_version = $(chisel_dir)/latest-version.txt
 
 $(latest_version): $(chisel-non-website)
-	cd $(chisel_dir) && sbt emitLatestVersion
+	cd $(chisel_dir) && ./mill show latestStableVersion | tr -d '"' > $@
 
 $(latest_scaladoc_dir):
 	mkdir -p $@
@@ -68,14 +68,14 @@ $(latest_scaladoc_dir)/index.html: $(latest_version) | $(latest_scaladoc_dir)
 $(latest_chisel_download):
 	mkdir -p $@
 
-$(latest_chisel_download)/chisel-example.scala: $(latest_chisel_download) $(latest_version)
+$(latest_chisel_download)/chisel-example.scala: $(latest_version) | $(latest_chisel_download)
 	$(eval VER := $(shell cat $(latest_version)))
 	$(generate_scala_cli) $(VER) > $@
 
 $(snapshot_chisel_download):
 	mkdir -p $@
 
-$(snapshot_chisel_download)/chisel-example.scala: $(snapshot_chisel_download)
+$(snapshot_chisel_download)/chisel-example.scala: | $(snapshot_chisel_download)
 	$(eval VER := $(shell cd $(chisel_dir) && ./mill show unipublish.publishVersion | tr -d \"))
 	$(generate_scala_cli) $(VER) > $@
 
@@ -88,10 +88,10 @@ $(generated_dir):
 
 # Unclear what this should depend on
 $(contributors): $(chisel-non-website) | $(generated_dir)
-	cd $(chisel_dir) && sbt docs/determineContributors
+	cd $(chisel_dir) && ./mill docs.contributorsMarkdown
 
 $(scaladoc_links): $(chisel-non-website) | $(generated_dir)
-	cd $(chisel_dir) && sbt docs/generateScalaDocLinks
+	cd $(chisel_dir) && ./mill docs.scaladocLinks
 
 $(install_timestamp): $(this_dir)/package.json
 	cd $(this_dir) && npm install

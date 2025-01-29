@@ -21,6 +21,7 @@ import chisel3.util._
 // Helper to print stdout from Chisel elab
 // May be related to: https://github.com/scalameta/mdoc/issues/517
 import java.io._
+import firrtl.seqToAnnoSeq
 import _root_.logger.Logger
 def grabLog[T](thunk: => T): (String, T) = {
   val baos = new ByteArrayOutputStream()
