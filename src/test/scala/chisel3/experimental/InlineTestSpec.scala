@@ -150,8 +150,11 @@ class HasTestsSpec extends ChiselFlatSpec with FileCheck {
   it should "compile to verilog" in {
     generateSystemVerilogAndFileCheck(new ModuleWithTests)(
       """
+      | CHECK: module ModuleWithTests
       | CHECK: module test_ModuleWithTests_foo
       | CHECK: module test_ModuleWithTests_bar
+      | CHECK: module test_ModuleWithTests_with_result
+      | CHECK: module test_ModuleWithTests_with_monitor
       """
     )
   }
