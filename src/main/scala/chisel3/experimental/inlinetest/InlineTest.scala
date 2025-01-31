@@ -9,7 +9,7 @@ import chisel3.experimental.hierarchy.{Definition, Instance}
   *  @tparam M the type of the DUT module
   *  @tparam R the type of the result returned by the test body
   */
-class TestParameters[M <: RawModule, R] private(
+class TestParameters[M <: RawModule, R] private[inlinetest] (
   /** The [[desiredName]] of the DUT module. */
   val dutName: String,
   /** The user-provided name of the test. */
