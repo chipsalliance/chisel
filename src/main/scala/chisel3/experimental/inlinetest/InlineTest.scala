@@ -9,15 +9,15 @@ import chisel3.experimental.hierarchy.{Definition, Instance}
   *  @tparam M the type of the DUT module
   *  @tparam R the type of the result returned by the test body
   */
-case class TestParameters[M <: RawModule, R](
+class TestParameters[M <: RawModule, R] private(
   /** The [[desiredName]] of the DUT module. */
-  dutName: String,
+  val dutName: String,
   /** The user-provided name of the test. */
-  testName: String,
+  val testName: String,
   /** A Definition of the DUT module. */
-  dutDefinition: Definition[M],
+  val dutDefinition: Definition[M],
   /** The body for this test, returns a result. */
-  body: Instance[M] => R)
+  val body: Instance[M] => R)
 
 /** An implementation of a testharness generator.
   *
@@ -73,7 +73,7 @@ trait HasTests[M <: RawModule] { module: M =>
     */
   protected final def test[R](testName: String)(body: Instance[M] => R)(implicit th: TestHarness[M, R]): Unit =
     elaborateParentModule { moduleDefinition =>
-      val test = TestParameters[M, R](desiredName, testName, moduleDefinition, body)
+      val test = new TestParameters[M, R](desiredName, testName, moduleDefinition, body)
       th.generate(test)
     }
 }
