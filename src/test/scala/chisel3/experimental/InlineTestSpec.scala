@@ -57,7 +57,7 @@ trait HasMonitorSocket { this: RawModule =>
 }
 
 class ProtocolBundle(width: Int) extends Bundle {
-  val in  = Flipped(UInt(width.W))
+  val in = Flipped(UInt(width.W))
   val out = UInt(width.W)
 }
 
