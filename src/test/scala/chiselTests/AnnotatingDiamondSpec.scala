@@ -3,7 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.{annotate, ChiselAnnotation}
+import chisel3.experimental.annotate
 import chisel3.stage.ChiselGeneratorAnnotation
 import chisel3.testers.BasicTester
 import circt.stage.ChiselStage
@@ -19,14 +19,9 @@ case class IdentityAnnotation(target: Target, value: String) extends SingleTarge
   def duplicate(n: Target): IdentityAnnotation = this.copy(target = n)
 }
 
-/** ChiselAnnotation that corresponds to the above FIRRTL annotation */
-case class IdentityChiselAnnotation(target: InstanceId, value: String) extends ChiselAnnotation {
-  def toFirrtl: IdentityAnnotation = IdentityAnnotation(target.toNamed, value)
-}
 object identify {
   def apply(component: InstanceId, value: String): Unit = {
-    val anno = IdentityChiselAnnotation(component, value)
-    annotate(anno)
+    annotate(component)(Seq(IdentityAnnotation(component.toNamed, value)))
   }
 }
 

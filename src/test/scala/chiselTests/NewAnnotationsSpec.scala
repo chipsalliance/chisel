@@ -1,6 +1,6 @@
 package chiselTests
 import chisel3._
-import chisel3.experimental.{annotate, ChiselMultiAnnotation}
+import chisel3.experimental.annotate
 import chisel3.stage.ChiselGeneratorAnnotation
 import circt.stage.ChiselStage
 import firrtl.stage.FirrtlCircuitAnnotation
@@ -37,14 +37,13 @@ class NewAnnotationsSpec extends AnyFreeSpec with Matchers {
     io.out := mod3.io.out
 
     // Give two annotations as single element of the seq - ensures previous API works by wrapping into a seq.
-    annotate(new ChiselMultiAnnotation { def toFirrtl = Seq(new NoDedupAnnotation(mod2.toNamed)) })
-    annotate(new ChiselMultiAnnotation { def toFirrtl = Seq(new NoDedupAnnotation(mod3.toNamed)) })
+    annotate(mod2)(Seq(new NoDedupAnnotation(mod2.toNamed)))
+    annotate(mod3)(Seq(new NoDedupAnnotation(mod3.toNamed)))
 
     // Pass multiple annotations in the same seq - should get emitted out correctly.
-    annotate(new ChiselMultiAnnotation {
-      def toFirrtl =
-        Seq(new DontTouchAnnotation(mod1.io.in.toNamed), new DontTouchAnnotation(mod1.io.out.toNamed))
-    })
+    annotate(mod1.io.in, mod1.io.out)(
+      Seq(new DontTouchAnnotation(mod1.io.in.toNamed), new DontTouchAnnotation(mod1.io.out.toNamed))
+    )
   }
 
   val stage = new ChiselStage
