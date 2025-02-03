@@ -82,6 +82,9 @@ private[chisel3] trait AggregateImpl extends Data { thiz: Aggregate =>
     */
   def getElements: Seq[Data]
 
+  /** Amortize this result, as it can be very expensive to determine this otherwise */
+  private[chisel3] lazy val containsProbe: Boolean = elementsIterator.exists(d => chisel3.internal.containsProbe(d))
+
   /** Similar to [[getElements]] but allows for more optimized use */
   private[chisel3] def elementsIterator: Iterator[Data]
 
