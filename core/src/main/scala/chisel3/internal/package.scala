@@ -163,7 +163,7 @@ package object internal {
   }
 
   private[chisel3] def containsProbe(data: Data): Boolean = data match {
-    case a: Aggregate => a.containsProbe
+    case a: Aggregate => a.probeInfo.nonEmpty || a.elementsContainProbe
     case leaf => leaf.probeInfo.nonEmpty
   }
 

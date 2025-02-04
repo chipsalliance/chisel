@@ -83,7 +83,7 @@ private[chisel3] trait AggregateImpl extends Data { thiz: Aggregate =>
   def getElements: Seq[Data]
 
   /** Save this result, as it can be very expensive to determine this otherwise */
-  private[chisel3] lazy val containsProbe: Boolean = elementsIterator.exists(d => chisel3.internal.containsProbe(d))
+  private[chisel3] lazy val elementsContainProbe: Boolean = elementsIterator.exists(d => chisel3.internal.containsProbe(d))
 
   /** Similar to [[getElements]] but allows for more optimized use */
   private[chisel3] def elementsIterator: Iterator[Data]
@@ -235,6 +235,9 @@ private[chisel3] abstract class VecImpl[T <: Data] private[chisel3] (gen: => T, 
   override def typeName = s"Vec${length}_${gen.typeName}"
 
   override def containsAFlipped = sample_element.containsAFlipped
+
+    /** Save this result, as it can be very expensive to determine this otherwise */
+  override private[chisel3] lazy val elementsContainProbe: Boolean = chisel3.internal.containsProbe(sample_element)
 
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
     this.maybeAddToParentIds(target)
