@@ -113,7 +113,7 @@ object Serializer {
     case DoublePropertyLiteral(value) =>
       b ++= "Double("; b ++= value.toString(); b ++= ")"
     case StringPropertyLiteral(value) =>
-      b ++= "String(\""; b ++= value; b ++= "\")"
+      b ++= "String("; b ++= value.escape; b ++= ")"
     case BooleanPropertyLiteral(value) =>
       b ++= s"Bool(${value})"
     case PathPropertyLiteral(value) =>
