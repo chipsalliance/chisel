@@ -61,13 +61,21 @@ Mill's `resolve` command plus the wildcard `_` are useful for discovering availa
 
 You can compile everything with (note this includes the CIRCT Panama bindings so requires Java 21):
 ```sh
-./mill __.compile
+./mill compileAll
 ```
+
+Note that this is a custom command.
+Typical Mill docs will suggest `./mill __.compile` to compile everything, but this does not currently work due to the
+work-in-progress addition of Scala 3 support.
 
 Most testing can be done on just the Chisel build unit:
 ```sh
-./mill chisel[2.13.15].test.test
+./mill chisel[].test.test
 ```
+
+The `[]` exists because we are cross-compiling between Scala 2.13 and Scala 3.
+You can pick a specific version, e.g. `./mill chisel[2.13.15]`.
+Using `[]` will pick the first version in the list of supported versions which one can think about as the "default" version.
 
 You can test everything with:
 ```sh
@@ -78,7 +86,7 @@ Note the cross-version will likely change in the future, use `./mill resolve chi
 
 Chisel uses ScalaTest so you can run individual tests using standard ScalaTest commands and arguments, e.g.
 ```sh
-./mill chisel[2.13.15].test.testOnly chiselTests.VecLiteralSpec -- -z "lits must fit in vec element width"
+./mill chisel[].test.testOnly chiselTests.VecLiteralSpec -- -z "lits must fit in vec element width"
 ```
 
 ### Formatting
