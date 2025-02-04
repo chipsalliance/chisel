@@ -27,11 +27,11 @@ private[plugin] trait ChiselOuterUtils { outerSelf: TypingTransformers =>
     def stringFromTypeName(name: TypeName): String =
       name.toString.trim() // Remove trailing space (Scalac implementation detail)
 
-    def isAModule(sym: Symbol): Boolean = { sym.tpe <:< baseModuleTpe }
-    def isExactBaseModule(sym: Symbol): Boolean = { sym.tpe =:= baseModuleTpe }
-    def isABundle(sym: Symbol): Boolean = { sym.tpe <:< bundleTpe }
-    def isAutoTypenamed(sym: Symbol): Boolean = { sym.tpe <:< autoTypenameTpe }
-    def isARecord(sym: Symbol): Boolean = { sym.tpe <:< recordTpe }
+    def isAModule(sym:           Symbol): Boolean = { sym.tpe <:< baseModuleTpe }
+    def isExactBaseModule(sym:   Symbol): Boolean = { sym.tpe =:= baseModuleTpe }
+    def isABundle(sym:           Symbol): Boolean = { sym.tpe <:< bundleTpe }
+    def isAutoTypenamed(sym:     Symbol): Boolean = { sym.tpe <:< autoTypenameTpe }
+    def isARecord(sym:           Symbol): Boolean = { sym.tpe <:< recordTpe }
     def isIgnoreSeqInBundle(sym: Symbol): Boolean = { sym.tpe <:< ignoreSeqTpe }
     def isSeqOfData(sym: Symbol): Boolean = {
       val tpe = sym.tpe

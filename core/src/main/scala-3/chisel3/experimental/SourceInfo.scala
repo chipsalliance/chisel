@@ -30,7 +30,7 @@ sealed trait SourceInfo {
 
 sealed trait NoSourceInfo extends SourceInfo {
   def makeMessage(f: String => String = x => x): String = ""
-  def filenameOption: Option[String] = None
+  def filenameOption:                            Option[String] = None
 }
 
 /** For when source info can't be generated because of a technical limitation, like for Reg because

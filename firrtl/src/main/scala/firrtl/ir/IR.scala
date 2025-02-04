@@ -167,8 +167,8 @@ abstract class PrimOp extends FirrtlNode {
       case x: Int        => "int"
       case other => "other"
     }
-    val exprs = groups.getOrElse("exp", Nil).collect {
-      case e: Expression => e
+    val exprs = groups.getOrElse("exp", Nil).collect { case e: Expression =>
+      e
     }
     val consts = groups.getOrElse("int", Nil).map {
       _ match {
@@ -287,11 +287,7 @@ case class DoPrim(op: PrimOp, args: Seq[Expression], consts: Seq[BigInt], tpe: T
 
 abstract class Statement extends FirrtlNode
 case class DefWire(info: Info, name: String, tpe: Type) extends Statement with IsDeclaration with UseSerializer
-case class DefRegister(
-  info:  Info,
-  name:  String,
-  tpe:   Type,
-  clock: Expression)
+case class DefRegister(info: Info, name: String, tpe: Type, clock: Expression)
     extends Statement
     with IsDeclaration
     with UseSerializer
@@ -301,8 +297,8 @@ case class DefRegisterWithReset(
   tpe:   Type,
   clock: Expression,
   reset: Expression,
-  init:  Expression)
-    extends Statement
+  init:  Expression
+) extends Statement
     with IsDeclaration
     with UseSerializer
 
@@ -315,12 +311,7 @@ case class DefInstance(info: Info, name: String, module: String, tpe: Type = Unk
     with IsDeclaration
     with UseSerializer
 
-case class DefInstanceChoice(
-  info:    Info,
-  name:    String,
-  default: String,
-  option:  String,
-  choices: Seq[(String, String)])
+case class DefInstanceChoice(info: Info, name: String, default: String, option: String, choices: Seq[(String, String)])
     extends Statement
     with IsDeclaration
     with UseSerializer
@@ -344,8 +335,8 @@ case class DefMemory(
   writers:      Seq[String],
   readwriters:  Seq[String],
   // TODO: handle read-under-write
-  readUnderWrite: ReadUnderWrite.Value = ReadUnderWrite.Undefined)
-    extends Statement
+  readUnderWrite: ReadUnderWrite.Value = ReadUnderWrite.Undefined
+) extends Statement
     with IsDeclaration
     with UseSerializer
 case class DefNode(info: Info, name: String, value: Expression) extends Statement with IsDeclaration with UseSerializer
@@ -353,11 +344,7 @@ case class DefNode(info: Info, name: String, value: Expression) extends Statemen
 /** Record/bundle type definition that names a FIRRTL type with an alias name */
 case class DefTypeAlias(info: Info, name: String, tpe: Type) extends Statement with UseSerializer
 
-case class Conditionally(
-  info:   Info,
-  pred:   Expression,
-  conseq: Statement,
-  alt:    Statement)
+case class Conditionally(info: Info, pred: Expression, conseq: Statement, alt: Statement)
     extends Statement
     with HasInfo
     with UseSerializer
@@ -372,12 +359,7 @@ case class PropAssign(info: Info, loc: Expression, expr: Expression) extends Sta
 case class IsInvalid(info: Info, expr: Expression) extends Statement with HasInfo with UseSerializer
 case class Attach(info: Info, exprs: Seq[Expression]) extends Statement with HasInfo with UseSerializer
 
-case class Stop(
-  val info: Info,
-  val ret:  Int,
-  val clk:  Expression,
-  val en:   Expression,
-  val name: String = "")
+case class Stop(val info: Info, val ret: Int, val clk: Expression, val en: Expression, val name: String = "")
     extends Statement
     with HasInfo
     with IsDeclaration
@@ -389,8 +371,8 @@ case class Print(
   val args:   Seq[Expression],
   val clk:    Expression,
   val en:     Expression,
-  val name:   String = "")
-    extends Statement
+  val name:   String = ""
+) extends Statement
     with HasInfo
     with IsDeclaration
     with UseSerializer
@@ -416,11 +398,7 @@ object LayerConfig {
   final case object Inline extends LayerConfig
 }
 
-final case class Layer(
-  info:   Info,
-  name:   String,
-  config: LayerConfig,
-  body:   Seq[Layer])
+final case class Layer(info: Info, name: String, config: LayerConfig, body: Seq[Layer])
     extends FirrtlNode
     with IsDeclaration
     with UseSerializer {
@@ -436,11 +414,7 @@ case class LayerBlock(info: Info, layer: String, body: Statement) extends Statem
 case class DefOption(info: Info, name: String, cases: Seq[DefOptionCase])
 case class DefOptionCase(info: Info, name: String)
 
-case class IntrinsicExpr(
-  intrinsic: String,
-  args:      Seq[Expression],
-  params:    Seq[Param],
-  tpe:       Type)
+case class IntrinsicExpr(intrinsic: String, args: Seq[Expression], params: Seq[Param], tpe: Type)
     extends Expression
     with UseSerializer
 
@@ -449,8 +423,8 @@ case class IntrinsicStmt(
   intrinsic: String,
   args:      Seq[Expression],
   params:    Seq[Param],
-  tpe:       Option[Type] = None)
-    extends Statement
+  tpe:       Option[Type] = None
+) extends Statement
     with UseSerializer
 
 // formal
@@ -468,8 +442,8 @@ case class Verification(
   en:   Expression,
   msg:  StringLit,
   args: Seq[Expression],
-  name: String = "")
-    extends Statement
+  name: String = ""
+) extends Statement
     with HasInfo
     with IsDeclaration
     with UseSerializer {
@@ -482,19 +456,19 @@ case object EmptyStmt extends Statement with UseSerializer
 abstract class Width extends FirrtlNode {
   def +(x: Width): Width = (this, x) match {
     case (a: IntWidth, b: IntWidth) => IntWidth(a.width + b.width)
-    case _ => UnknownWidth
+    case _                          => UnknownWidth
   }
   def -(x: Width): Width = (this, x) match {
     case (a: IntWidth, b: IntWidth) => IntWidth(a.width - b.width)
-    case _ => UnknownWidth
+    case _                          => UnknownWidth
   }
   def max(x: Width): Width = (this, x) match {
     case (a: IntWidth, b: IntWidth) => IntWidth(a.width.max(b.width))
-    case _ => UnknownWidth
+    case _                          => UnknownWidth
   }
   def min(x: Width): Width = (this, x) match {
     case (a: IntWidth, b: IntWidth) => IntWidth(a.width.min(b.width))
-    case _ => UnknownWidth
+    case _                          => UnknownWidth
   }
 }
 
@@ -611,11 +585,7 @@ case object Output extends Direction {
 }
 
 /** [[DefModule]] Port */
-case class Port(
-  info:      Info,
-  name:      String,
-  direction: Direction,
-  tpe:       Type)
+case class Port(info: Info, name: String, direction: Direction, tpe: Type)
     extends FirrtlNode
     with IsDeclaration
     with UseSerializer
@@ -660,12 +630,7 @@ case class Module(info: Info, name: String, public: Boolean, layers: Seq[String]
   * Generally used for Verilog black boxes
   * @param defname Defined name of the external module (ie. the name Firrtl will emit)
   */
-case class ExtModule(
-  info:    Info,
-  name:    String,
-  ports:   Seq[Port],
-  defname: String,
-  params:  Seq[Param])
+case class ExtModule(info: Info, name: String, ports: Seq[Port], defname: String, params: Seq[Param])
     extends DefModule
     with UseSerializer
 
@@ -674,12 +639,7 @@ case class ExtModule(
   * Used for compiler intrinsics.
   * @param intrinsic Defined intrinsic of the module
   */
-case class IntModule(
-  info:      Info,
-  name:      String,
-  ports:     Seq[Port],
-  intrinsic: String,
-  params:    Seq[Param])
+case class IntModule(info: Info, name: String, ports: Seq[Port], intrinsic: String, params: Seq[Param])
     extends DefModule
     with UseSerializer
 
@@ -687,14 +647,31 @@ case class IntModule(
   */
 case class DefClass(info: Info, name: String, ports: Seq[Port], body: Statement) extends DefModule with UseSerializer
 
+/** Parameters for test declarations.
+  */
+sealed abstract class TestParam extends FirrtlNode
+case class IntTestParam(value: BigInt) extends TestParam with UseSerializer
+case class DoubleTestParam(value: Double) extends TestParam with UseSerializer
+case class StringTestParam(value: String) extends TestParam with UseSerializer
+case class ArrayTestParam(value: Seq[TestParam]) extends TestParam with UseSerializer
+case class MapTestParam(value: Map[String, TestParam]) extends TestParam with UseSerializer
+
+/** Formal Test
+  */
+case class FormalTest(info: Info, name: String, moduleName: String, params: MapTestParam)
+    extends DefModule
+    with UseSerializer {
+  val ports: Seq[Port] = Seq.empty
+}
+
 case class Circuit(
   info:        Info,
   modules:     Seq[DefModule],
   main:        String,
   typeAliases: Seq[DefTypeAlias] = Seq.empty,
   layers:      Seq[Layer] = Seq.empty,
-  options:     Seq[DefOption] = Seq.empty)
-    extends FirrtlNode
+  options:     Seq[DefOption] = Seq.empty
+) extends FirrtlNode
     with HasInfo
     with UseSerializer
 

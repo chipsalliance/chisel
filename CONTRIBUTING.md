@@ -29,15 +29,20 @@ You can install it as described on the Chisel [installation instructions](https:
 Developers should read the Mill documentation to understand the basic commands and use.
 
 The main dependencies for development are the JDK and git.
-Any JDK 8 or newer will work for most development, but note that developing the CIRCT Panama bindings requires Java 21. 
+Any JDK 11 or newer will work for most development, but note that developing the CIRCT Panama bindings requires Java 21.
 [Coursier](https://get-coursier.io)'s command-line is useful for hot swapping JDKs.
-For example:
+For example, the following swap the JDK in your shell to the latest release of GraalVM Java 21:
 
 ```sh
 eval $(cs java --jvm graalvm-java21 --env)
 ```
 
-This will swap the JDK in your shell to the latest release of GraalVM Java 21.
+While the CIRCT Panama bindings require Java 21, publishing the Chisel plugin for versions < 2.13.11 requires Java 11.
+To switch the JDK in your shell to the latest patch release of Temurin Java 11:
+
+```sh
+eval $(cs java --jvm temurin:11 --env)
+```
 
 ### Useful commands
 

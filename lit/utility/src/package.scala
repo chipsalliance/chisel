@@ -15,9 +15,8 @@ package object lit {
       ).foldLeft(
         firrtl.AnnotationSeq(Seq(chisel3.stage.ChiselGeneratorAnnotation(() => module)))
       ) { case (annos, phase) => phase.transform(annos) }
-        .collectFirst {
-          case chisel3.panamaconverter.stage.PanamaCIRCTConverterAnnotation(converter) =>
-            converter
+        .collectFirst { case chisel3.panamaconverter.stage.PanamaCIRCTConverterAnnotation(converter) =>
+          converter
         }
         .get
 

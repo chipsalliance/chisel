@@ -228,4 +228,43 @@ class RawModuleSpec extends ChiselFlatSpec with Utils with FileCheck {
          |""".stripMargin
     )
   }
+
+  "RawModule marked as formal test" should "emit a formal test declaration" in {
+    class Foo extends RawModule {
+      FormalTest(this)
+      FormalTest(this, MapTestParam(Map("hello" -> StringTestParam("world"))))
+      FormalTest(
+        this,
+        MapTestParam(
+          Map(
+            "a_int" -> IntTestParam(42),
+            "b_double" -> DoubleTestParam(13.37),
+            "c_string" -> StringTestParam("hello"),
+            "d_array" -> ArrayTestParam(Seq(IntTestParam(42), StringTestParam("hello"))),
+            "e_map" -> MapTestParam(
+              Map(
+                "x" -> IntTestParam(42),
+                "y" -> StringTestParam("hello")
+              )
+            )
+          )
+        ),
+        "thisBetterWork"
+      )
+    }
+
+    generateFirrtlAndFileCheck(new Foo)(
+      """|CHECK: formal Foo of [[FOO:Foo_.*]] :
+         |CHECK: formal Foo_1 of [[FOO]] :
+         |CHECK:   hello = "world"
+         |CHECK: formal thisBetterWork of [[FOO]] :
+         |CHECK:   a_int = 42
+         |CHECK:   b_double = 13.37
+         |CHECK:   c_string = "hello"
+         |CHECK:   d_array = [42, "hello"]
+         |CHECK:   e_map = {x = 42, y = "hello"}
+         |CHECK: module [[FOO]] :
+         |""".stripMargin
+    )
+  }
 }

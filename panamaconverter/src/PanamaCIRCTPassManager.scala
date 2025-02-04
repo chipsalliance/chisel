@@ -9,7 +9,8 @@ import chisel3.panamalib.option.PanamaFirtoolOption.FirtoolOptionsToPanama
 private[panamaconverter] class PanamaCIRCTPassManager(
   circt:      PanamaCIRCT,
   mlirModule: MlirModule,
-  fos:        Option[FirtoolOptions]) {
+  fos:        Option[FirtoolOptions]
+) {
   val pm = circt.mlirPassManagerCreate()
   val options = fos.map(_.toPanama(circt)).getOrElse(circt.circtFirtoolOptionsCreateDefault())
 

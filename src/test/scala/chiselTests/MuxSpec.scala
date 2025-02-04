@@ -55,9 +55,8 @@ class MuxLookupEnumTester extends BasicTester {
     val b = Value(7.U)
     val c = Value
   }
-  val mapping = TestEnum.all.zipWithIndex.map {
-    case (e, i) =>
-      e -> i.U
+  val mapping = TestEnum.all.zipWithIndex.map { case (e, i) =>
+    e -> i.U
   }
   assert(MuxLookup(TestEnum.a, 3.U)(mapping) === 0.U)
   assert(MuxLookup(TestEnum.b, 3.U)(mapping) === 1.U)

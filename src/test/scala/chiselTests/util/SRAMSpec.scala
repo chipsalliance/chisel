@@ -258,14 +258,14 @@ class SRAMSpec extends ChiselFlatSpec {
       class Top extends Module {
         val sram = SRAM.masked(depth, Vec(width / maskGranularity, UInt(maskGranularity.W)), rd, wr, rw)
 
-        val ioR = IO(chiselTypeOf(sram.readPorts)).tap(_.zip(sram.readPorts).foreach {
-          case (io, mem) => io <> mem
+        val ioR = IO(chiselTypeOf(sram.readPorts)).tap(_.zip(sram.readPorts).foreach { case (io, mem) =>
+          io <> mem
         })
-        val ioRW = IO(chiselTypeOf(sram.readwritePorts)).tap(_.zip(sram.readwritePorts).foreach {
-          case (io, mem) => io <> mem
+        val ioRW = IO(chiselTypeOf(sram.readwritePorts)).tap(_.zip(sram.readwritePorts).foreach { case (io, mem) =>
+          io <> mem
         })
-        val ioW = IO(chiselTypeOf(sram.writePorts)).tap(_.zip(sram.writePorts).foreach {
-          case (io, mem) => io <> mem
+        val ioW = IO(chiselTypeOf(sram.writePorts)).tap(_.zip(sram.writePorts).foreach { case (io, mem) =>
+          io <> mem
         })
       }
 

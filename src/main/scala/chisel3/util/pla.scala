@@ -104,11 +104,10 @@ object pla {
         .tabulate(numberOfOutputs) { i =>
           val andMatrixLines = table
             // OR matrix composed by input terms which makes this output bit a `1`
-            .filter {
-              case (_, or) => or.mask.testBit(i) && or.value.testBit(i)
-            }.map {
-              case (inputTerm, _) =>
-                andMatrixOutputs(inputTerm.toString)
+            .filter { case (_, or) =>
+              or.mask.testBit(i) && or.value.testBit(i)
+            }.map { case (inputTerm, _) =>
+              andMatrixOutputs(inputTerm.toString)
             }
           if (andMatrixLines.isEmpty) false.B
           else Cat(andMatrixLines).orR

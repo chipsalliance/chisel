@@ -6,14 +6,17 @@ import java.io.File
 import firrtl.util.BackendCompilationUtilities._
 class HarnessSpec extends ChiselPropSpec {
 
-  def makeTrivialVerilog: (File => File) = makeHarness((prefix: String) => s"""
+  def makeTrivialVerilog: (File => File) = makeHarness(
+    (prefix: String) => s"""
 module ${prefix};
   initial begin
     $$display("$prefix!");
     $$finish;
   end
 endmodule
-""", ".v") _
+""",
+    ".v"
+  ) _
 
   def makeFailingVerilog: (File => File) = makeHarness(
     (prefix: String) => s"""

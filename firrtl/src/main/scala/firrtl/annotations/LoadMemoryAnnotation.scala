@@ -34,8 +34,8 @@ case class LoadMemoryAnnotation(
   target:                ComponentName,
   fileName:              String,
   hexOrBinary:           MemoryLoadFileType = MemoryLoadFileType.Hex,
-  originalMemoryNameOpt: Option[String] = None)
-    extends SingleTargetAnnotation[Named] {
+  originalMemoryNameOpt: Option[String] = None
+) extends SingleTargetAnnotation[Named] {
 
   val (prefix, suffix) = {
     fileName.split("""\.""").toList match {

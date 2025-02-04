@@ -15,8 +15,8 @@ class ThingsPassThroughTester(
   bitWidth:       Int,
   tap:            Int,
   useSyncReadMem: Boolean,
-  hasFlush:       Boolean)
-    extends BasicTester {
+  hasFlush:       Boolean
+) extends BasicTester {
   val q = Module(new Queue(UInt(bitWidth.W), queueDepth, useSyncReadMem = useSyncReadMem, hasFlush = hasFlush))
   val elems = VecInit(elements.map {
     _.asUInt
@@ -26,13 +26,13 @@ class ThingsPassThroughTester(
 
   q.io.enq.valid := (inCnt.value < elements.length.U)
   q.io.deq.ready := LFSR(16)(tap)
-  q.io.flush.foreach { _ := false.B } //Flush behavior is tested in QueueFlushSpec
+  q.io.flush.foreach { _ := false.B } // Flush behavior is tested in QueueFlushSpec
   q.io.enq.bits := elems(inCnt.value)
   when(q.io.enq.fire) {
     inCnt.inc()
   }
   when(q.io.deq.fire) {
-    //ensure that what comes out is what comes in
+    // ensure that what comes out is what comes in
     assert(elems(outCnt.value) === q.io.deq.bits)
     outCnt.inc()
   }
@@ -51,11 +51,11 @@ class QueueReasonableReadyValid(elements: Seq[Int], queueDepth: Int, bitWidth: I
   val outCnt = Counter(elements.length + 1)
 
   q.io.enq.valid := (inCnt.value < elements.length.U)
-  //Queue should be full or ready
+  // Queue should be full or ready
   assert(q.io.enq.ready || q.io.count === queueDepth.U)
 
   q.io.deq.ready := LFSR(16)(tap)
-  //Queue should be empty or valid
+  // Queue should be empty or valid
   assert(q.io.deq.valid || q.io.count === 0.U)
 
   q.io.enq.bits := elems(inCnt.value)
@@ -91,7 +91,7 @@ class CountIsCorrectTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, t
     outCnt.inc()
     assert(q.io.count === (inCnt.value - outCnt.value))
   }
-  //assert(q.io.count === (inCnt.value - outCnt.value))
+  // assert(q.io.count === (inCnt.value - outCnt.value))
 
   when(outCnt.value === elements.length.U) {
     stop()
@@ -161,11 +161,11 @@ class QueueFlowTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: I
   val outCnt = Counter(elements.length + 1)
 
   q.io.enq.valid := (inCnt.value < elements.length.U)
-  //Queue should be full or ready
+  // Queue should be full or ready
   assert(q.io.enq.ready || q.io.count === queueDepth.U)
 
   q.io.deq.ready := LFSR(16)(tap)
-  //Queue should be empty or valid
+  // Queue should be empty or valid
   assert(q.io.deq.valid || (q.io.count === 0.U && !q.io.enq.fire))
 
   q.io.enq.bits := elems(inCnt.value)
@@ -199,7 +199,7 @@ class QueueFactoryTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap
     inCnt.inc()
   }
   when(deq.fire) {
-    //ensure that what comes out is what comes in
+    // ensure that what comes out is what comes in
     assert(elems(outCnt.value) === deq.bits)
     outCnt.inc()
   }

@@ -56,8 +56,8 @@ trait Lookupable[-B] {
     * @return
     */
   def definitionLookup[A](that:     A => B, definition: Definition[A]): C
-  protected def getProto[A](h:      Hierarchy[A]): A = h.proto
-  protected def getUnderlying[A](h: Hierarchy[A]): Underlying[A] = h.underlying
+  protected def getProto[A](h:      Hierarchy[A]):                      A = h.proto
+  protected def getUnderlying[A](h: Hierarchy[A]):                      Underlying[A] = h.underlying
 
   // Single method that may eventually replace instanceLookup and definitionLookup.
   private[chisel3] def hierarchyLookup[A](that: A => B, hierarchy: Hierarchy[A]): C = {
@@ -231,7 +231,7 @@ object Lookupable {
     }
     data.binding match {
       case Some(_: ChildBinding) => mapRootAndExtractSubField(data, impl)
-      case _ => impl(data)
+      case _                     => impl(data)
     }
   }
 
@@ -255,7 +255,7 @@ object Lookupable {
     * Invariants that elt is a Child of something of the type of data is dynamically checked as we traverse
     */
   private def mapRootAndExtractSubField[A <: Data](arg: A, f: Data => Data): A = {
-    def err(msg:               String) = throwException(s"Internal Error! $msg")
+    def err(msg: String) = throwException(s"Internal Error! $msg")
     def unrollCoordinates(res: List[Arg], d: Data): (List[Arg], Data) = d.binding.get match {
       case ChildBinding(parent) =>
         d.getRef match {
@@ -269,11 +269,11 @@ object Lookupable {
         if (coor.isEmpty) d
         else {
           val next = (coor.head, d) match {
-            case (Slot(_, name), rec: Record) => rec._elements(name)
-            case (LitIndex(_, n), vec: Vec[_]) => vec.apply(n)
+            case (Slot(_, name), rec: Record)     => rec._elements(name)
+            case (LitIndex(_, n), vec: Vec[_])    => vec.apply(n)
             case (Index(_, ILit(n)), vec: Vec[_]) => vec.apply(n.toInt)
             case (ModuleIO(_, name), rec: Record) => rec._elements(name)
-            case (arg, _) => err(s"Unexpected Arg '$arg' applied to '$d'! Root was '$start'.")
+            case (arg, _)                         => err(s"Unexpected Arg '$arg' applied to '$d'! Root was '$start'.")
           }
           applyCoordinates(coor.tail, next)
         }
@@ -321,8 +321,8 @@ object Lookupable {
             // faster to just use it but then call reifyIdentityView in case the target is itself a view
             def reifyOpt(data: Data): Option[(Data, ViewWriteability)] = map.get(data).flatMap(reifyIdentityView(_))
             // Just remap each Data present in the map
-            val mapping = coiterate(result, data).flatMap {
-              case (res, from) => reifyOpt(from).map { case (t, w) => (res, lookupData(t), w) }
+            val mapping = coiterate(result, data).flatMap { case (res, from) =>
+              reifyOpt(from).map { case (t, w) => (res, lookupData(t), w) }
             }
             val newMap = mapping.map { case (from, to, _) => from -> to }.toMap
             val wrMap = mapping.flatMap { case (from, _, wr) => Option.when(wr.isReadOnly)(from -> wr) }.toMap
@@ -377,9 +377,9 @@ object Lookupable {
         Clone(newChild)
       }
       (m, context) match {
-        case (c, ctx) if ctx == c => Proto(c)
+        case (c, ctx) if ctx == c                        => Proto(c)
         case (c, ctx: IsClone[_]) if ctx.hasSameProto(c) => Clone(ctx.asInstanceOf[IsClone[A]])
-        case (c, ctx) if c._parent.isEmpty => Proto(c)
+        case (c, ctx) if c._parent.isEmpty               => Proto(c)
         case (_, _) =>
           cloneModuleToContext(Proto(m._parent.get), context) match {
             case Proto(p) => Proto(m)
@@ -477,10 +477,10 @@ object Lookupable {
         // As Property ports are not yet Lookupable, they are skipped here.
         def getIoMap(hierarchy: Hierarchy[_]): Option[Map[Data, Data]] = {
           hierarchy.underlying match {
-            case Clone(x: ModuleClone[_]) => Some(x.ioMap)
-            case Proto(x: BaseModule) => Some(x.getIOs.map { data => data -> data }.toMap)
+            case Clone(x: ModuleClone[_])       => Some(x.ioMap)
+            case Proto(x: BaseModule)           => Some(x.getIOs.map { data => data -> data }.toMap)
             case Clone(x: InstantiableClone[_]) => getIoMap(x._innerContext)
-            case Clone(x: InstanceClone[_]) => None
+            case Clone(x: InstanceClone[_])     => None
             case other => {
               Builder.exception(s"Internal Error! Unexpected case where we can't get IO Map: $other")
             }

@@ -1,0 +1,24 @@
+package build.macros
+
+import mill._
+import mill.scalalib._
+import mill.scalalib.scalafmt._
+import mill.define.Cross
+
+import build._
+
+object `package` extends RootModule {
+  // https://github.com/com-lihaoyi/mill/issues/3693
+  object cross extends Cross[Macros](v.scalaCrossVersions)
+}
+
+trait Macros extends CrossSbtModule with HasScala2MacroAnno with HasCommonOptions with ScalafmtModule {
+  def millSourcePath = super.millSourcePath / os.up
+
+  override def ivyDeps =
+    if (!v.isScala3(crossScalaVersion)) {
+      super.ivyDeps() ++ Seq(v.scalaReflect(crossScalaVersion))
+    } else {
+      super.ivyDeps()
+    }
+}

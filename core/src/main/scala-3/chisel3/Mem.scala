@@ -15,7 +15,7 @@ object Mem extends ObjectMemImpl with SourceInfoDoc {
     size: BigInt,
     t:    T
   )(
-    using sourceInfo: SourceInfo
+    using SourceInfo
   ): Mem[T] = _applyImpl(size, t)
 
   /** Creates a combinational/asynchronous-read, sequential/synchronous-write [[Mem]].
@@ -23,7 +23,7 @@ object Mem extends ObjectMemImpl with SourceInfoDoc {
     * @param size number of elements in the memory
     * @param t data type of memory element
     */
-  def apply[T <: Data](size: Int, t: T)(using sourceInfo: SourceInfo): Mem[T] = _applyImpl(size, t)
+  def apply[T <: Data](size: Int, t: T)(using SourceInfo): Mem[T] = _applyImpl(size, t)
 }
 
 sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt, protected val sourceInfo: SourceInfo)
@@ -35,38 +35,38 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt, protected
   /** Creates a read accessor into the memory with static addressing. See the
     * class documentation of the memory for more detailed information.
     */
-  def apply(idx: BigInt)(using sourceInfo: SourceInfo): T = _applyImpl(idx)
+  def apply(idx: BigInt)(using SourceInfo): T = _applyImpl(idx)
 
   /** Creates a read accessor into the memory with static addressing. See the
     * class documentation of the memory for more detailed information.
     */
-  def apply(idx: Int)(using sourceInfo: SourceInfo): T = _applyImpl(idx)
+  def apply(idx: Int)(using SourceInfo): T = _applyImpl(idx)
 
   /** Creates a read/write accessor into the memory with dynamic addressing.
     * See the class documentation of the memory for more detailed information.
     */
-  def apply(idx: UInt)(using sourceInfo: SourceInfo): T = _applyImpl(idx)
+  def apply(idx: UInt)(using SourceInfo): T = _applyImpl(idx)
 
-  def apply(idx: UInt, clock: Clock)(using sourceInfo: SourceInfo): T = _applyImpl(idx, clock)
+  def apply(idx: UInt, clock: Clock)(using SourceInfo): T = _applyImpl(idx, clock)
 
   /** Creates a read accessor into the memory with dynamic addressing. See the
     * class documentation of the memory for more detailed information.
     */
-  def read(idx: UInt)(using sourceInfo: SourceInfo): T = _readImpl(idx)
+  def read(idx: UInt)(using SourceInfo): T = _readImpl(idx)
 
   /** Creates a read accessor into the memory with dynamic addressing.
     * Takes a clock parameter to bind a clock that may be different
     * from the implicit clock. See the class documentation of the memory
     * for more detailed information.
     */
-  def read(idx: UInt, clock: Clock)(using sourceInfo: SourceInfo): T = _readImpl(idx, clock)
+  def read(idx: UInt, clock: Clock)(using SourceInfo): T = _readImpl(idx, clock)
 
   /** Creates a write accessor into the memory.
     *
     * @param idx memory element index to write into
     * @param data new data to write
     */
-  def write(idx: UInt, data: T)(using sourceInfo: SourceInfo): Unit = _writeImpl(idx, data)
+  def write(idx: UInt, data: T)(using SourceInfo): Unit = _writeImpl(idx, data)
 
   /** Creates a write accessor into the memory with a clock
     * that may be different from the implicit clock.
@@ -75,7 +75,7 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt, protected
     * @param data new data to write
     * @param clock clock to bind to this accessor
     */
-  def write(idx: UInt, data: T, clock: Clock)(using sourceInfo: SourceInfo): Unit = _writeImpl(idx, data, clock)
+  def write(idx: UInt, data: T, clock: Clock)(using SourceInfo): Unit = _writeImpl(idx, data, clock)
 
   /** Creates a masked write accessor into the memory.
     *
@@ -91,8 +91,8 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt, protected
     data: T,
     mask: Seq[Bool]
   )(
-    implicit evidence: T <:< Vec[_],
-    sourceInfo:        SourceInfo
+    using T <:< Vec[_],
+    SourceInfo
   ): Unit = _writeImpl(idx, data, mask)
 
   /** Creates a masked write accessor into the memory with a clock
@@ -112,8 +112,8 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt, protected
     mask:  Seq[Bool],
     clock: Clock
   )(
-    implicit evidence: T <:< Vec[_],
-    sourceInfo:        SourceInfo
+    using T <:< Vec[_],
+    SourceInfo
   ): Unit = _writeImpl(idx, data, mask, clock)
 }
 
@@ -141,7 +141,7 @@ object SyncReadMem extends ObjectSyncReadMemImpl {
     size: Int,
     t:    T
   )(
-    using sourceInfo: SourceInfo
+    using SourceInfo
   ): SyncReadMem[T] = _applyImpl(size, t)
 
   def apply[T <: Data](
@@ -149,7 +149,7 @@ object SyncReadMem extends ObjectSyncReadMemImpl {
     t:    T,
     ruw:  ReadUnderWrite = Undefined
   )(
-    using sourceInfo: SourceInfo
+    using SourceInfo
   ): SyncReadMem[T] = _applyImpl(size, t, ruw)
 }
 
@@ -167,15 +167,15 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
   t:                  T,
   n:                  BigInt,
   val readUnderWrite: SyncReadMem.ReadUnderWrite,
-  sourceInfo:         SourceInfo)
-    extends MemBase[T](t, n, sourceInfo)
+  sourceInfo:         SourceInfo
+) extends MemBase[T](t, n, sourceInfo)
     with SyncReadMemImpl[T] {
 
-  override def read(idx: UInt)(using sourceInfo: SourceInfo): T = _readImpl(idx)
+  override def read(idx: UInt)(using SourceInfo): T = _readImpl(idx)
 
-  def read(idx: UInt, en: Bool)(using sourceInfo: SourceInfo): T = _readImpl(idx, en)
+  def read(idx: UInt, en: Bool)(using SourceInfo): T = _readImpl(idx, en)
 
-  def read(idx: UInt, en: Bool, clock: Clock)(using sourceInfo: SourceInfo): T = _readImpl(idx, en, clock)
+  def read(idx: UInt, en: Bool, clock: Clock)(using SourceInfo): T = _readImpl(idx, en, clock)
 
   /** Generates an explicit read-write port for this SyncReadMem. Note that this does not infer
     * port directionality based on connection semantics and the `when` context unlike SyncReadMem.apply(),
@@ -209,7 +209,7 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
     *
     * }}}
     */
-  def readWrite(idx: UInt, writeData: T, en: Bool, isWrite: Bool)(using sourceInfo: SourceInfo): T =
+  def readWrite(idx: UInt, writeData: T, en: Bool, isWrite: Bool)(using SourceInfo): T =
     _readWriteImpl(idx, writeData, en, isWrite)
 
   /** Generates an explicit read-write port for this SyncReadMem, using a clock that may be
@@ -232,7 +232,7 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
     isWrite: Bool,
     clock:   Clock
   )(
-    using sourceInfo: SourceInfo
+    using SourceInfo
   ): T = _readWriteImpl(idx, data, en, isWrite, clock)
 
   /** Generates an explicit read-write port for this SyncReadMem, with a bytemask for
@@ -277,8 +277,8 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
     en:        Bool,
     isWrite:   Bool
   )(
-    implicit evidence: T <:< Vec[_],
-    sourceInfo:        SourceInfo
+    using T <:< Vec[_],
+    SourceInfo
   ): T = _readWriteImpl(idx, writeData, mask, en, isWrite)
 
   /** Generates an explicit read-write port for this SyncReadMem, with a bytemask for
@@ -307,7 +307,7 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
     isWrite:   Bool,
     clock:     Clock
   )(
-    implicit evidence: T <:< Vec[_],
-    sourceInfo:        SourceInfo
+    using T <:< Vec[_],
+    SourceInfo
   ): T = _readWriteImpl(idx, writeData, mask, en, isWrite, clock)
 }

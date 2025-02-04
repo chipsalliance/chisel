@@ -33,7 +33,7 @@ object DataMirror {
     // Cannot use isDefined because of the ClassTag
     target.topBindingOpt match {
       case Some(b: B) => true
-      case _ => false
+      case _          => false
     }
   }
 
@@ -74,8 +74,8 @@ object DataMirror {
     * @param x the `Data` to examine
     * @return a `Some[Layer]` if the data has a layer color, `None` otherwise
     */
-  def getLayerColor(x: Data): Option[layer.Layer] = x.probeInfo.collect {
-    case Data.ProbeInfo(_, Some(color)) => color
+  def getLayerColor(x: Data): Option[layer.Layer] = x.probeInfo.collect { case Data.ProbeInfo(_, Some(color)) =>
+    color
   }
 
   /** Get an early guess for the name of this [[Data]]
@@ -139,9 +139,9 @@ object DataMirror {
     * @return true if the two Chisel types have alignment type equivalence.
     */
   def checkAlignmentTypeEquivalence(x: Data, y: Data): Boolean = {
-    //TODO(azidar): Perhaps there is a better pattern of `iterateOverMatches` that we can support
-    collectMembersOverMatches(connectable.Alignment(x, true), connectable.Alignment(y, true)) {
-      case (a, b) => a.alignment == b.alignment
+    // TODO(azidar): Perhaps there is a better pattern of `iterateOverMatches` that we can support
+    collectMembersOverMatches(connectable.Alignment(x, true), connectable.Alignment(y, true)) { case (a, b) =>
+      a.alignment == b.alignment
     }(AlignmentMatchingZipOfChildren).forall(r => r)
   }
 
@@ -213,16 +213,14 @@ object DataMirror {
     def getPortNames(name: String, data: Data): Seq[(String, Data)] = Seq(name -> data) ++ (data match {
       case _: Element => Seq()
       case r: Record =>
-        r._elements.toSeq.flatMap {
-          case (eltName, elt) =>
-            if (r._isOpaqueType) { getPortNames(s"${name}", elt) }
-            else { getPortNames(s"${name}_${eltName}", elt) }
+        r._elements.toSeq.flatMap { case (eltName, elt) =>
+          if (r._isOpaqueType) { getPortNames(s"${name}", elt) }
+          else { getPortNames(s"${name}_${eltName}", elt) }
         }
       case v: Vec[_] => v.zipWithIndex.flatMap { case (elt, index) => getPortNames(s"${name}_${index}", elt) }
     })
-    modulePorts(target).flatMap {
-      case (name, data) =>
-        getPortNames(name, data).toList
+    modulePorts(target).flatMap { case (name, data) =>
+      getPortNames(name, data).toList
     }
   }
 
@@ -332,22 +330,19 @@ object DataMirror {
     * @tparam T Type of the component that will be collected
     */
   private[chisel3] def collectMembersAndPaths[T](
-    d:         Data,
-    path:      String = ""
-  )(collector: PartialFunction[Data, T]
-  ): Iterable[(T, String)] = new Iterable[(T, String)] {
+    d:    Data,
+    path: String = ""
+  )(collector: PartialFunction[Data, T]): Iterable[(T, String)] = new Iterable[(T, String)] {
     def iterator = {
       val myItems = collector.lift(d).map { x => (x -> path) }
       val deepChildrenItems = d match {
         case a: Record if (!hasProbeTypeModifier(a)) =>
-          a._elements.iterator.flatMap {
-            case (fieldName, fieldData) =>
-              collectMembersAndPaths(fieldData, s"$path.$fieldName")(collector)
+          a._elements.iterator.flatMap { case (fieldName, fieldData) =>
+            collectMembersAndPaths(fieldData, s"$path.$fieldName")(collector)
           }
         case a: Vec[_] if (!hasProbeTypeModifier(a)) =>
-          a.elementsIterator.zipWithIndex.flatMap {
-            case (fieldData, fieldIndex) =>
-              collectMembersAndPaths(fieldData, s"$path($fieldIndex)")(collector)
+          a.elementsIterator.zipWithIndex.flatMap { case (fieldData, fieldIndex) =>
+            collectMembersAndPaths(fieldData, s"$path($fieldIndex)")(collector)
           }
         case other => Nil
       }
@@ -404,8 +399,8 @@ object DataMirror {
     * @tparam T Type of the component that will be collected
     */
   def collectAlignedDeep[T](base: Data)(pf: PartialFunction[Data, T]): Seq[T] = {
-    collectMembersOverAllForAny(Some(Alignment(base, true)), None) {
-      case (Some(x: AlignedWithRoot), _) => (pf.lift(x.member), None)
+    collectMembersOverAllForAny(Some(Alignment(base, true)), None) { case (Some(x: AlignedWithRoot), _) =>
+      (pf.lift(x.member), None)
     }.map(_._1).flatten
   }
 
@@ -417,8 +412,8 @@ object DataMirror {
     * @tparam T Type of the component that will be collected
     */
   def collectFlippedDeep[T](base: Data)(pf: PartialFunction[Data, T]): Seq[T] = {
-    collectMembersOverAllForAny(Some(Alignment(base, true)), None) {
-      case (Some(x: FlippedWithRoot), _) => (pf.lift(x.member), None)
+    collectMembersOverAllForAny(Some(Alignment(base, true)), None) { case (Some(x: FlippedWithRoot), _) =>
+      (pf.lift(x.member), None)
     }.map(_._1).flatten
   }
 
@@ -445,10 +440,9 @@ object DataMirror {
     * @tparam T Type of the thing being collected
     */
   def collectMembersOverMatches[D: HasMatchingZipOfChildren, T](
-    left:      D,
-    right:     D
-  )(collector: PartialFunction[(D, D), T]
-  ): Seq[T] = {
+    left:  D,
+    right: D
+  )(collector: PartialFunction[(D, D), T]): Seq[T] = {
     def newCollector(lOpt: Option[D], rOpt: Option[D]): Option[(Option[T], Option[Unit])] = {
       (lOpt, rOpt) match {
         case (Some(l), Some(r)) =>
@@ -480,18 +474,16 @@ object DataMirror {
     * @tparam T Type of the thing being collected
     */
   def collectMembersOverAll[D: HasMatchingZipOfChildren, T](
-    left:      D,
-    right:     D
-  )(collector: PartialFunction[(Option[D], Option[D]), T]
-  ): Seq[T] = {
-    collectMembersOverAllForAnyFunction(Some(left), Some(right)) {
-      case (lOpt: Option[D], rOpt: Option[D]) =>
-        collector.lift((lOpt, rOpt)) match {
-          case Some(x) => Some((Some(x), None))
-          case None    => None
-        }
-    }.collect {
-      case (Some(x), None) => x
+    left:  D,
+    right: D
+  )(collector: PartialFunction[(Option[D], Option[D]), T]): Seq[T] = {
+    collectMembersOverAllForAnyFunction(Some(left), Some(right)) { case (lOpt: Option[D], rOpt: Option[D]) =>
+      collector.lift((lOpt, rOpt)) match {
+        case Some(x) => Some((Some(x), None))
+        case None    => None
+      }
+    }.collect { case (Some(x), None) =>
+      x
     }
   }
 
@@ -506,10 +498,9 @@ object DataMirror {
     * @tparam R Type of the thing being collected from the right
     */
   def collectMembersOverAllForAny[D: HasMatchingZipOfChildren, L, R](
-    left:       Option[D],
-    right:      Option[D]
-  )(pcollector: PartialFunction[(Option[D], Option[D]), (Option[L], Option[R])]
-  ): Seq[(Option[L], Option[R])] = {
+    left:  Option[D],
+    right: Option[D]
+  )(pcollector: PartialFunction[(Option[D], Option[D]), (Option[L], Option[R])]): Seq[(Option[L], Option[R])] = {
     collectMembersOverAllForAnyFunction(left, right)(pcollector.lift)
   }
 
@@ -524,18 +515,17 @@ object DataMirror {
     * @tparam R Type of the thing being collected from the right
     */
   def collectMembersOverAllForAnyFunction[D: HasMatchingZipOfChildren, L, R](
-    left:      Option[D],
-    right:     Option[D]
-  )(collector: ((Option[D], Option[D])) => Option[(Option[L], Option[R])]
-  ): Seq[(Option[L], Option[R])] = {
+    left:  Option[D],
+    right: Option[D]
+  )(collector: ((Option[D], Option[D])) => Option[(Option[L], Option[R])]): Seq[(Option[L], Option[R])] = {
     val myItems = collector((left, right)) match {
       case None               => Nil
       case Some((None, None)) => Nil
       case Some(other)        => Seq(other)
     }
     val matcher = implicitly[HasMatchingZipOfChildren[D]]
-    val childItems = matcher.matchingZipOfChildren(left, right).flatMap {
-      case (l, r) => collectMembersOverAllForAnyFunction(l, r)(collector)
+    val childItems = matcher.matchingZipOfChildren(left, right).flatMap { case (l, r) =>
+      collectMembersOverAllForAnyFunction(l, r)(collector)
     }
     myItems ++ childItems
   }

@@ -27,8 +27,8 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
     with ChiselOuterUtils {
   import global._
 
-  val phaseName: String = "chiselbundlephase"
-  val runsAfter: List[String] = "typer" :: Nil
+  val phaseName:             String = "chiselbundlephase"
+  val runsAfter:             List[String] = "typer" :: Nil
   def newPhase(prev: Phase): Phase = new BundlePhase(prev)
 
   private class BundlePhase(prev: Phase) extends StdPhase(prev) {
@@ -237,8 +237,7 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
 
     override def transform(tree: Tree): Tree = tree match {
 
-      case record: ClassDef
-          if isARecord(record.symbol) && !record.mods.hasFlag(Flag.ABSTRACT) => // check that its not abstract
+      case record: ClassDef if isARecord(record.symbol) && !record.mods.hasFlag(Flag.ABSTRACT) => // check that its not abstract
         val isBundle: Boolean = isABundle(record.symbol)
         val thiz:     global.This = gen.mkAttributedThis(record.symbol)
         val conArgs:  Option[List[List[Tree]]] = extractConArgs(record, thiz, isBundle)

@@ -43,8 +43,8 @@ class GaloisLFSR(
   seed:          Option[BigInt] = Some(1),
   val reduction: LFSRReduce = XOR,
   step:          Int = 1,
-  updateSeed:    Boolean = false)
-    extends PRNG(width, seed, step, updateSeed)
+  updateSeed:    Boolean = false
+) extends PRNG(width, seed, step, updateSeed)
     with LFSR {
 
   def delta(s: Seq[Bool]): Seq[Bool] = {

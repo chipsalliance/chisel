@@ -102,7 +102,7 @@ private[chisel3] object Namespace {
 
   /** Constructs an empty Namespace */
   def empty(separator: Char): Namespace = new Namespace(Set.empty[String], separator)
-  def empty: Namespace = new Namespace(Set.empty[String])
+  def empty:                  Namespace = new Namespace(Set.empty[String])
 }
 
 private[chisel3] class IdGen {
@@ -125,7 +125,7 @@ private[chisel3] trait HasId extends chisel3.InstanceId {
   private[chisel3] val _id: Long = Builder.idGen.next
 
   // TODO: remove this, but its removal seems to cause a nasty Scala compiler crash.
-  override def hashCode: Int = super.hashCode()
+  override def hashCode:          Int = super.hashCode()
   override def equals(that: Any): Boolean = super.equals(that)
 
   // Did the user suggest a name? This overrides names suggested by the compiler plugin.
@@ -252,8 +252,8 @@ private[chisel3] trait HasId extends chisel3.InstanceId {
       naming_prefix = Nil
     }
 
-  private var _refVar: Arg = null // using nullable var for better memory usage
-  private def _ref:    Option[Arg] = Option(_refVar)
+  private var _refVar:                   Arg = null // using nullable var for better memory usage
+  private def _ref:                      Option[Arg] = Option(_refVar)
   private[chisel3] def setRef(imm: Arg): Unit = setRef(imm, false)
   private[chisel3] def setRef(imm: Arg, force: Boolean): Unit = {
     if (_ref.isEmpty || force) {
@@ -314,9 +314,9 @@ private[chisel3] trait HasId extends chisel3.InstanceId {
     case Some(ViewParent) => reifyTarget.map(_.instanceName).getOrElse(this.refName(ViewParent.fakeComponent))
     case Some(p) =>
       (p._component, this) match {
-        case (Some(c), _) => refName(c)
+        case (Some(c), _)                                                   => refName(c)
         case (None, d: Data) if d.topBindingOpt == Some(CrossModuleBinding) => _ref.get.localName
-        case (None, _: MemBase[_]) => _ref.get.localName
+        case (None, _: MemBase[_])                                          => _ref.get.localName
         case (None, _) if _ref.isDefined => {
           // Support instance names for HasIds that don't have a _parent set yet, but do have a _ref set.
           // This allows HasIds to be named in atModuleBodyEnd, for example.
@@ -447,7 +447,7 @@ private[chisel3] trait NamedComponent extends HasId {
     val isVecSubaccess = getOptionRef.map {
       case Index(_, _: ULit) => true // Vec literal indexing
       case Index(_, _: Node) => true // Vec dynamic indexing
-      case _ => false
+      case _                 => false
     }.getOrElse(false)
 
     if (isVecSubaccess) {
@@ -489,7 +489,8 @@ private[chisel3] class DynamicContext(
   val loggerOptions: LoggerOptions,
   val definitions:   ArrayBuffer[Definition[_]],
   val contextCache:  BuilderContextCache,
-  val layerMap:      Map[layer.Layer, layer.Layer]) {
+  val layerMap:      Map[layer.Layer, layer.Layer]
+) {
   val importedDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
 
   // Map from proto module name to ext-module name
@@ -660,8 +661,8 @@ private[chisel3] object Builder extends LazyLogging {
         case Index(_, ILit(n))    => Some(n.toString) // Vec static indexing
         case LitIndex(_, n)       => Some(n.toString) // Vec static indexing
         case Index(_, ULit(n, _)) => Some(n.toString) // Vec lit indexing
-        case Index(_, _: Node) => None // Vec dynamic indexing
-        case ModuleIO(_, n) => Some(n) // BlackBox port
+        case Index(_, _: Node)    => None // Vec dynamic indexing
+        case ModuleIO(_, n)       => Some(n) // BlackBox port
         case f =>
           throw new InternalErrorException(s"Match Error: field=$f")
       }
@@ -678,8 +679,8 @@ private[chisel3] object Builder extends LazyLogging {
         case SampleElementBinding(parent)                            => recData(parent)
         case PortBinding(mod) if Builder.currentModule.contains(mod) => data.seedOpt
         case PortBinding(mod)                                        => map2(mod.seedOpt, data.seedOpt)(_ + "_" + _)
-        case (_: LitBinding | _: DontCareBinding) => None
-        case _ => Some("view_") // TODO implement
+        case (_: LitBinding | _: DontCareBinding)                    => None
+        case _                                                       => Some("view_") // TODO implement
       }
       id match {
         case d: Data => recData(d)
@@ -754,7 +755,7 @@ private[chisel3] object Builder extends LazyLogging {
   def referenceUserContainer: BaseModule = {
     currentModule match {
       case Some(module: RawModule) => module
-      case Some(cls: Class) => cls
+      case Some(cls: Class)        => cls
       case _ =>
         throwException(
           "Error: Not in a RawModule or Class. Likely cause: Missed Module() or Definition() wrap, bare chisel API call, or attempting to construct hardware inside a BlackBox."
@@ -917,7 +918,7 @@ private[chisel3] object Builder extends LazyLogging {
     case (id: Instance[_]) =>
       id.underlying match {
         case Clone(m: experimental.hierarchy.ModuleClone[_]) => namer(m.getPorts, prefix)
-        case _ =>
+        case _                                               =>
       }
     case (d: Data) =>
       // Views are often returned in lieu of the target, so name the target (as appropriate).
@@ -932,11 +933,10 @@ private[chisel3] object Builder extends LazyLogging {
         nameRecursively(s"${prefix}_${i}", elt, namer)
       }
     case product: Product =>
-      product.productIterator.zip(product.productElementNames).foreach {
-        case (elt, fullName) =>
-          val name = fullName.stripPrefix("_")
-          val prefixedName = if (name.nonEmpty) s"${prefix}_${name}" else prefix
-          nameRecursively(prefixedName, elt, namer)
+      product.productIterator.zip(product.productElementNames).foreach { case (elt, fullName) =>
+        val name = fullName.stripPrefix("_")
+        val prefixedName = if (name.nonEmpty) s"${prefix}_${name}" else prefix
+        nameRecursively(prefixedName, elt, namer)
       }
     case disable: Disable => nameRecursively(prefix, disable.value, namer)
     case _ => // Do nothing
@@ -1047,7 +1047,7 @@ private[chisel3] object Builder extends LazyLogging {
           // Conflict found:
           error(
             s"Attempted to redeclare an existing type alias '$alias' with a new Record structure:\n'$tpe'.\n\nThe alias was previously defined as:\n'${recordValue._1}${recordValue._2
-              .makeMessage(" " + _)}"
+                .makeMessage(" " + _)}"
           )(sourceInfo)
 
           None
@@ -1106,7 +1106,7 @@ private[chisel3] object Builder extends LazyLogging {
 
       val typeAliases = aliasMap.flatMap {
         case (name, (underlying: fir.Type, info: SourceInfo)) => Some(DefTypeAlias(info, underlying, name))
-        case _ => None
+        case _                                                => None
       }.toSeq
 
       /** Stores an adjacency list representation of layers.  Connections indicating children. */
@@ -1133,13 +1133,12 @@ private[chisel3] object Builder extends LazyLogging {
         Layer(l.sourceInfo, l.name, config, children.map(foldLayers).toSeq, l)
       }
 
-      val optionDefs = groupByIntoSeq(options)(opt => opt.group).map {
-        case (optGroup, cases) =>
-          DefOption(
-            optGroup.sourceInfo,
-            optGroup.name,
-            cases.map(optCase => DefOptionCase(optCase.sourceInfo, optCase.name))
-          )
+      val optionDefs = groupByIntoSeq(options)(opt => opt.group).map { case (optGroup, cases) =>
+        DefOption(
+          optGroup.sourceInfo,
+          optGroup.name,
+          cases.map(optCase => DefOptionCase(optCase.sourceInfo, optCase.name))
+        )
       }
 
       // Make the main module (the last component) public if this is not a
@@ -1189,10 +1188,9 @@ private[chisel3] object Builder extends LazyLogging {
     val ctx = chiselContext.get()
     val modulePrefixStack = ctx.modulePrefixStack
     val sep = ctx.modulePrefixSeperator
-    modulePrefixStack.foldLeft("") {
-      case (acc, (elt, useSep)) =>
-        val s = if (useSep) sep else ""
-        elt + s + acc
+    modulePrefixStack.foldLeft("") { case (acc, (elt, useSep)) =>
+      val s = if (useSep) sep else ""
+      elt + s + acc
     }
   }
 
@@ -1201,6 +1199,85 @@ private[chisel3] object Builder extends LazyLogging {
   }
 
   initializeSingletons()
+
+  /** The representation of the state of the [[Builder]] at a current point in
+    * time.  This is intended to capture _enough_ information to insert hardware
+    * at another point in the circuit.
+    *
+    * @see [[chisel3.Placeholder]]
+    */
+  case class State(
+    currentModule: Option[BaseModule],
+    whenStack:     List[WhenContext],
+    blockStack:    List[Block],
+    layerStack:    List[layer.Layer],
+    prefix:        Prefix,
+    clock:         Option[Delayed[Clock]],
+    reset:         Option[Delayed[Reset]],
+    enabledLayers: List[layer.Layer]
+  )
+
+  object State {
+
+    /** Return a [[State]] suitable for doing module construction.
+      */
+    def default: State = State(
+      currentModule = Builder.currentModule,
+      whenStack = Nil,
+      blockStack = Builder.blockStack,
+      layerStack = layer.Layer.Root :: Nil,
+      prefix = Nil,
+      clock = None,
+      reset = None,
+      enabledLayers = Nil
+    )
+
+    /** Capture the current [[Builder]] state.
+      */
+    def save: State = {
+      State(
+        currentModule = Builder.currentModule,
+        whenStack = Builder.whenStack,
+        blockStack = Builder.blockStack,
+        layerStack = Builder.layerStack,
+        prefix = Builder.getPrefix,
+        clock = Builder.currentClockDelayed,
+        reset = Builder.currentResetDelayed,
+        enabledLayers = Builder.enabledLayers.toList
+      )
+    }
+
+    /** Set the [[Builder]] state to that provided by the parameter.
+      *
+      * @param state the state to set the [[Builder]] to
+      */
+    def restore(state: State) = {
+      Builder.currentModule = state.currentModule
+      Builder.whenStack = state.whenStack
+      Builder.blockStack = state.blockStack
+      Builder.layerStack = state.layerStack
+      Builder.setPrefix(state.prefix)
+      Builder.currentClock = state.clock
+      Builder.currentReset = state.reset
+      Builder.enabledLayers = enabledLayers
+    }
+
+    /** Run the `thunk` with the context provided by `state`.  Save the [[Builder]]
+      * state before the thunk and restore it afterwards.
+      *
+      * @param state change the [[Builder]] to this state when running the thunk
+      * @param thunk some hardware to generate
+      * @return whatever the `thunk` returns
+      */
+    def guard[A](state: State)(thunk: => A): A = {
+      val old = save
+      restore(state)
+      val result = thunk
+      restore(old)
+      result
+    }
+
+  }
 }
 
 /** Allows public access to the naming stack in Builder / DynamicContext, and handles invocations

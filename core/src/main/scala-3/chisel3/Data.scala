@@ -13,7 +13,7 @@ import chisel3.experimental.SourceInfo
   * @define coll data
   */
 abstract class Data extends DataImpl with SourceInfoDoc {
-  
+
   /** Does a reinterpret cast of the bits in this node into the format that provides.
     * Returns a new Wire of that type. Does not modify existing nodes.
     *
@@ -22,7 +22,7 @@ abstract class Data extends DataImpl with SourceInfoDoc {
     * @note bit widths are NOT checked, may pad or drop bits from input
     * @note that should have known widths
     */
-  def asTypeOf[T <: Data](that: T)(using sourceInfo: SourceInfo): T = _asTypeOfImpl(that)
+  def asTypeOf[T <: Data](that: T)(using SourceInfo): T = _asTypeOfImpl(that)
 
   /** Reinterpret cast to UInt.
     *

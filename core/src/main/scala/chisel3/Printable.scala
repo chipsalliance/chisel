@@ -220,7 +220,7 @@ case class Character(bits: Bits) extends FirrtlFormat('c')
 /** Put innermost name (eg. field of bundle) */
 case class Name(data: Data) extends Printable {
   final def unpack(ctx: Component)(implicit info: SourceInfo): (String, Iterable[String]) = (data.ref.name, List.empty)
-  final def unpackArgs: Seq[Bits] = List.empty
+  final def unpackArgs:                                        Seq[Bits] = List.empty
 }
 
 /** Put full name within parent namespace (eg. bundleName.field) */
@@ -233,5 +233,5 @@ case class FullName(data: Data) extends Printable {
 /** Represents escaped percents */
 case object Percent extends Printable {
   final def unpack(ctx: Component)(implicit info: SourceInfo): (String, Iterable[String]) = ("%%", List.empty)
-  final def unpackArgs: Seq[Bits] = List.empty
+  final def unpackArgs:                                        Seq[Bits] = List.empty
 }

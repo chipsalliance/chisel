@@ -7,7 +7,7 @@ import chisel3._
 import chisel3.internal._
 import chisel3.internal.binding._
 import chisel3.experimental._
-import chisel3.properties.{Property, PropertyType => PropertyTypeclass, Class, DynamicObject}
+import chisel3.properties.{Class, DynamicObject, Property, PropertyType => PropertyTypeclass}
 import _root_.firrtl.{ir => firrtlir}
 import _root_.firrtl.{PrimOps, RenameMap}
 import _root_.firrtl.annotations.Annotation
@@ -70,10 +70,10 @@ private[chisel3] object ir {
   }
 
   sealed abstract class Arg {
-    def localName: String = name
+    def localName:                      String = name
     def contextualName(ctx: Component): String = name
     def fullName(ctx:       Component): String = contextualName(ctx)
-    def name: String
+    def name:                           String
   }
 
   case class Node(id: HasId) extends Arg {
@@ -117,7 +117,7 @@ private[chisel3] object ir {
 
   abstract class LitArg(val num: BigInt, widthArg: Width) extends Arg {
     def forcedWidth = widthArg.known
-    def width: Width = if (forcedWidth) widthArg else Width(minWidth)
+    def width:                                   Width = if (forcedWidth) widthArg else Width(minWidth)
     override def contextualName(ctx: Component): String = name
     // Ensure the node representing this LitArg has a ref to it and a literal binding.
     def bindLitArg[T <: Element](elem: T): T = {
@@ -184,12 +184,10 @@ private[chisel3] object ir {
     *
     * These are not LitArgs, because not all property literals are integers.
     */
-  case class PropertyLit[T, U](
-    propertyType: PropertyTypeclass[_] { type Underlying = U; type Type = T },
-    lit:          U)
+  case class PropertyLit[T, U](propertyType: PropertyTypeclass[_] { type Underlying = U; type Type = T }, lit: U)
       extends Arg {
-    def name:     String = s"PropertyLit($lit)"
-    def minWidth: Int = 0
+    def name:                            String = s"PropertyLit($lit)"
+    def minWidth:                        Int = 0
     def cloneWithWidth(newWidth: Width): this.type = PropertyLit(propertyType, lit).asInstanceOf[this.type]
 
     /** Expose a bindLitArg API for PropertyLit, similar to LitArg.
@@ -247,20 +245,20 @@ private[chisel3] object ir {
 
   case class OpaqueSlot(imm: Node) extends Arg {
     override def contextualName(ctx: Component): String = imm.contextualName(ctx)
-    override def name: String = imm.name
+    override def name:                           String = imm.name
   }
 
   case class Index(imm: Arg, value: Arg) extends Arg {
-    def name: String = s"[$value]"
+    def name:                                    String = s"[$value]"
     override def contextualName(ctx: Component): String = s"${imm.contextualName(ctx)}[${value.contextualName(ctx)}]"
-    override def localName: String = s"${imm.localName}[${value.localName}]"
+    override def localName:                      String = s"${imm.localName}[${value.localName}]"
   }
 
   // Like index above, except the index is a literal, used for elements of Vecs
   case class LitIndex(imm: Arg, value: Int) extends Arg {
-    def name: String = s"[$value]"
+    def name:                                    String = s"[$value]"
     override def contextualName(ctx: Component): String = s"${imm.contextualName(ctx)}[$value]"
-    override def localName: String = s"${imm.localName}[$value]"
+    override def localName:                      String = s"${imm.localName}[$value]"
   }
 
   sealed trait ProbeDetails { this: Arg =>
@@ -286,7 +284,7 @@ private[chisel3] object ir {
   }
 
   abstract class Definition extends Command {
-    def id: HasId
+    def id:   HasId
     def name: String = id.getRef.name
   }
 
@@ -307,8 +305,8 @@ private[chisel3] object ir {
     id:             HasId,
     t:              Data,
     size:           BigInt,
-    readUnderWrite: fir.ReadUnderWrite.Value)
-      extends Definition
+    readUnderWrite: fir.ReadUnderWrite.Value
+  ) extends Definition
 
   case class FirrtlMemory(
     sourceInfo:         SourceInfo,
@@ -317,8 +315,8 @@ private[chisel3] object ir {
     size:               BigInt,
     readPortNames:      Seq[String],
     writePortNames:     Seq[String],
-    readwritePortNames: Seq[String])
-      extends Definition
+    readwritePortNames: Seq[String]
+  ) extends Definition
 
   case class DefMemPort[T <: Data](
     sourceInfo: SourceInfo,
@@ -326,8 +324,8 @@ private[chisel3] object ir {
     source:     Node,
     dir:        MemPortDirection,
     index:      Arg,
-    clock:      Arg)
-      extends Definition
+    clock:      Arg
+  ) extends Definition
 
   case class DefInstance(sourceInfo: SourceInfo, id: BaseModule, ports: Seq[Port]) extends Definition
   case class DefInstanceChoice(
@@ -335,9 +333,42 @@ private[chisel3] object ir {
     id:         HasId,
     default:    BaseModule,
     option:     String,
-    choices:    Seq[(String, BaseModule)])
-      extends Definition
+    choices:    Seq[(String, BaseModule)]
+  ) extends Definition
   case class DefObject(sourceInfo: SourceInfo, id: HasId, className: String) extends Definition
+
+  class Placeholder(val sourceInfo: SourceInfo) extends Command {
+    private var commandBuilder: mutable.Builder[Command, ArraySeq[Command]] = null
+
+    private var commands: Seq[Command] = null
+
+    private var closed: Boolean = false
+
+    private def close(): Unit = {
+      if (commandBuilder == null)
+        commands = Seq.empty
+      else
+        commands = commandBuilder.result()
+      closed = true
+    }
+
+    def getBuffer: mutable.Builder[Command, ArraySeq[Command]] = {
+      require(!closed, "cannot add more commands to a closed Placeholder")
+      if (commandBuilder == null)
+        commandBuilder = ArraySeq.newBuilder[Command]
+      commandBuilder
+    }
+
+  }
+
+  object Placeholder {
+    def unapply(placeholder: Placeholder): Option[(SourceInfo, Seq[Command])] = {
+      placeholder.close()
+      Some(
+        (placeholder.sourceInfo, placeholder.commands)
+      )
+    }
+  }
 
   class Block(val sourceInfo: SourceInfo) {
     // While building block, commands go into _commandsBuilder.
@@ -355,6 +386,14 @@ private[chisel3] object ir {
     def addCommand(c: Command): Unit = {
       require(!_closed, "cannot add more commands after block is closed")
       _commandsBuilder += c
+    }
+
+    def appendToPlaceholder[A](placeholder: Placeholder)(thunk: => A): A = {
+      val oldPoint = _commandsBuilder
+      _commandsBuilder = placeholder.getBuffer
+      val result = thunk
+      _commandsBuilder = oldPoint
+      result
     }
 
     def close() = {
@@ -429,7 +468,8 @@ private[chisel3] object ir {
     name:        String,
     config:      LayerConfig,
     children:    Seq[Layer],
-    chiselLayer: layer.Layer)
+    chiselLayer: layer.Layer
+  )
 
   class LayerBlock(val sourceInfo: SourceInfo, val layer: chisel3.layer.Layer) extends Command {
     val region = new Block(sourceInfo)
@@ -441,10 +481,7 @@ private[chisel3] object ir {
     }
   }
 
-  case class DefOption(
-    sourceInfo: SourceInfo,
-    name:       String,
-    cases:      Seq[DefOptionCase])
+  case class DefOption(sourceInfo: SourceInfo, name: String, cases: Seq[DefOptionCase])
   case class DefOptionCase(sourceInfo: SourceInfo, name: String)
 
   case class Port(id: Data, dir: SpecifiedDirection, sourceInfo: SourceInfo)
@@ -469,13 +506,13 @@ private[chisel3] object ir {
     sourceInfo: SourceInfo,
     clock:      Arg,
     predicate:  Arg,
-    pable:      Printable)
-      extends Definition
+    pable:      Printable
+  ) extends Definition
 
   abstract class Component extends Arg {
-    def id:    BaseModule
-    def name:  String
-    def ports: Seq[Port]
+    def id:          BaseModule
+    def name:        String
+    def ports:       Seq[Port]
     val secretPorts: mutable.ArrayBuffer[Port] = id.secretPorts
   }
 
@@ -487,32 +524,43 @@ private[chisel3] object ir {
     isPublic: Boolean,
     layers:   Seq[chisel3.layer.Layer],
     ports:    Seq[Port],
-    block:    Block)
-      extends Component
+    block:    Block
+  ) extends Component
 
   case class DefBlackBox(
     id:     BaseBlackBox,
     name:   String,
     ports:  Seq[Port],
     topDir: SpecifiedDirection,
-    params: Map[String, Param])
-      extends Component
+    params: Map[String, Param]
+  ) extends Component
+
+  case class DefFormalTest(
+    name:       String,
+    module:     BaseModule,
+    params:     MapTestParam,
+    sourceInfo: SourceInfo
+  ) extends Component {
+    def id = module
+    val ports: Seq[Port] = Seq.empty
+    override val secretPorts = mutable.ArrayBuffer[Port]()
+  }
 
   case class DefIntrinsicModule(
     id:     BaseIntrinsicModule,
     name:   String,
     ports:  Seq[Port],
     topDir: SpecifiedDirection,
-    params: Map[String, Param])
-      extends Component
+    params: Map[String, Param]
+  ) extends Component
 
   case class DefIntrinsicExpr[T <: Data](
     sourceInfo: SourceInfo,
     intrinsic:  String,
     id:         T,
     args:       Seq[Arg],
-    params:     Seq[(String, Param)])
-      extends Definition
+    params:     Seq[(String, Param)]
+  ) extends Definition
 
   case class DefIntrinsic(sourceInfo: SourceInfo, intrinsic: String, args: Seq[Arg], params: Seq[(String, Param)])
       extends Command
@@ -527,7 +575,8 @@ private[chisel3] object ir {
     newAnnotations: Seq[ChiselMultiAnnotation],
     typeAliases:    Seq[DefTypeAlias],
     layers:         Seq[Layer],
-    options:        Seq[DefOption]) {
+    options:        Seq[DefOption]
+  ) {
 
     def this(
       name:        String,

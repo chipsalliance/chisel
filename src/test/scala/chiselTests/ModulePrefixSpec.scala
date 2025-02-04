@@ -399,8 +399,8 @@ class ModulePrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with
       val bar = Module(new Bar)
     }
     val (_, annos) = getFirrtlAndAnnos(new Top)
-    val dedupGroups = annos.collect {
-      case DedupGroupAnnotation(target, group) => target.module -> group
+    val dedupGroups = annos.collect { case DedupGroupAnnotation(target, group) =>
+      target.module -> group
     }
     dedupGroups should be(Seq("Outer_Inner_Foo" -> "Outer_Inner_Foo", "Outer_Bar" -> "Outer_Bar", "Top" -> "Top"))
   }

@@ -36,7 +36,7 @@ object RawClockedNonVoidFunctionCall {
     *
     * Please refer https://github.com/llvm/circt/blob/main/docs/Dialects/FIRRTL/FIRRTLIntrinsics.md#dpi-intrinsic-abi for DPI function ABI.
     * @example {{{
-    * val a = RawClockedNonVoidFunctionCall("dpi_func_foo", UInt(1.W), clock, enable, b, c)
+    * val a = RawClockedNonVoidFunctionCall("dpi_func_foo", UInt(1.W))(clock, enable, b, c)
     * }}}
     */
   def apply[T <: Data](
@@ -44,10 +44,7 @@ object RawClockedNonVoidFunctionCall {
     ret:          => T,
     inputNames:   Option[Seq[String]] = None,
     outputName:   Option[String] = None
-  )(clock:        Clock,
-    enable:       Bool,
-    data:         Data*
-  ): T = {
+  )(clock: Clock, enable: Bool, data: Data*): T = {
     IntrinsicExpr(
       "circt_dpi_call",
       ret,
@@ -69,7 +66,7 @@ object RawUnclockedNonVoidFunctionCall {
     *
     * Please refer https://github.com/llvm/circt/blob/main/docs/Dialects/FIRRTL/FIRRTLIntrinsics.md#dpi-intrinsic-abi for DPI function ABI.
     * @example {{{
-    * val a = RawUnclockedNonVoidFunctionCall("dpi_func_foo", UInt(1.W), enable, b, c)
+    * val a = RawUnclockedNonVoidFunctionCall("dpi_func_foo", UInt(1.W))(enable, b, c)
     * }}}
     */
   def apply[T <: Data](
@@ -77,9 +74,7 @@ object RawUnclockedNonVoidFunctionCall {
     ret:          => T,
     inputNames:   Option[Seq[String]] = None,
     outputName:   Option[String] = None
-  )(enable:       Bool,
-    data:         Data*
-  ): T = {
+  )(enable: Bool, data: Data*): T = {
     IntrinsicExpr(
       "circt_dpi_call",
       ret,
@@ -96,16 +91,13 @@ object RawClockedVoidFunctionCall {
     *
     * Please refer https://github.com/llvm/circt/blob/main/docs/Dialects/FIRRTL/FIRRTLIntrinsics.md#dpi-intrinsic-abi for DPI function ABI.
     * @example {{{
-    * RawClockedVoidFunctionCall("dpi_func_foo", UInt(1.W), clock, enable, b, c)
+    * RawClockedVoidFunctionCall("dpi_func_foo", UInt(1.W))(clock, enable, b, c)
     * }}}
     */
   def apply(
     functionName: String,
     inputNames:   Option[Seq[String]] = None
-  )(clock:        Clock,
-    enable:       Bool,
-    data:         Data*
-  ): Unit = {
+  )(clock: Clock, enable: Bool, data: Data*): Unit = {
     Intrinsic("circt_dpi_call", GetDPIParams(functionName, true, inputNames): _*)(
       (Seq(clock, enable) ++ data): _*
     )
@@ -115,13 +107,13 @@ object RawClockedVoidFunctionCall {
 // A common trait for DPI functions.
 trait DPIFunctionImport {
   def functionName: String
-  def inputNames: Option[Seq[String]] = None
+  def inputNames:   Option[Seq[String]] = None
 }
 
 // Base trait for a non-void function that returns `T`.
 trait DPINonVoidFunctionImport[T <: Data] extends DPIFunctionImport {
-  def ret:     T
-  def clocked: Boolean
+  def ret:        T
+  def clocked:    Boolean
   def outputName: Option[String] = None
   final def callWithEnable(enable: Bool, data: Data*): T =
     if (clocked) {

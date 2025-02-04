@@ -2,9 +2,11 @@
 
 package chisel3
 
-import chisel3.experimental.{SourceInfo, UnlocatableSourceInfo}
+import chisel3.Data.ProbeInfo
+import chisel3.experimental.{requireIsHardware, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal.{Builder, HasId}
 import chisel3.internal.firrtl.ir.{LayerBlock, Node}
+import chisel3.reflect.DataMirror
 import chisel3.util.simpleClassName
 import java.nio.file.{Path, Paths}
 import scala.annotation.tailrec
@@ -87,9 +89,7 @@ object layer {
     */
   abstract class Layer(
     val config: LayerConfig
-  )(
-    implicit _parent: Layer,
-    _sourceInfo:      SourceInfo) {
+  )(implicit _parent: Layer, _sourceInfo: SourceInfo) {
     self: Singleton =>
 
     @deprecated("`Convention` is being removed in favor of `LayerConfig`", "Chisel 7.0.0")
@@ -198,6 +198,111 @@ object layer {
     }
   }
 
+  /** A type class that describes how to post-process the return value from a layer block. */
+  sealed trait BlockReturnHandler[A] {
+
+    /** The type that will be returned by this handler. */
+    type R
+
+    /** Do not post-process the return value.  This is what should happen if the
+      * code early exits, i.e., if no layer block is created.
+      */
+    private[chisel3] def identity(result: A): R
+
+    /** Post-process the return value.
+      *
+      * @param placeholder the location above the layer block where commands can be inserted
+      * @param layerBlock the current layer block
+      * @param result the return value of the layer block
+      * @param sourceInfo source locator information
+      * @return the post-processed result
+      */
+    private[chisel3] def apply(placeholder: Placeholder, layerBlock: LayerBlock, result: A)(
+      implicit sourceInfo: SourceInfo
+    ): R
+  }
+
+  object BlockReturnHandler {
+
+    type Aux[A, B] = BlockReturnHandler[A] { type R = B }
+
+    /** Return a [[BlockReturnHandler]] that will always return [[Unit]]. */
+    def unit[A]: Aux[A, Unit] = new BlockReturnHandler[A] {
+
+      override type R = Unit
+
+      override private[chisel3] def identity(result: A): R = ()
+
+      override private[chisel3] def apply(
+        placeholder: Placeholder,
+        layerBlock:  LayerBlock,
+        result:      A
+      )(
+        implicit sourceInfo: SourceInfo
+      ): R = {
+        ()
+      }
+
+    }
+
+    /** Return a [[BlockReturnHandler]] that, if a layer block is created, will
+      * create a [[Wire]] of layer-colored probe type _above_ the layer block
+      * and [[probe.define]] this at the end of the layer block.  If no
+      * layer-block is created, then the result is pass-through.
+      */
+    implicit def layerColoredWire[A <: Data]: Aux[A, A] = new BlockReturnHandler[A] {
+
+      override type R = A
+
+      override private[chisel3] def identity(result: A): R = result
+
+      override private[chisel3] def apply(
+        placeholder: Placeholder,
+        layerBlock:  LayerBlock,
+        result:      A
+      )(
+        implicit sourceInfo: SourceInfo
+      ): R = {
+        // Don't allow returning non-hardware types.  This avoids problems like
+        // returning a probe type which we can't handle.
+        requireIsHardware(result)
+
+        // The result wire is either a new layer-colored probe wire or an
+        // existing layer-colored probe wire forwarded up.  If it is the former,
+        // the wire is colored with the current layer.  For the latter, the wire
+        // needs to have a compatible color.  If it has one, use it.  If it
+        // needs a color, set it on the wire.
+        val layerColoredWire = placeholder.append {
+          result.probeInfo match {
+            case None                     => Wire(probe.Probe(chiselTypeOf(result), layerBlock.layer))
+            case Some(ProbeInfo(_, None)) => Wire(probe.Probe(result.cloneType, layerBlock.layer))
+            case Some(ProbeInfo(_, Some(color))) =>
+              if (!layerBlock.layer.canWriteTo(color))
+                Builder.error(
+                  s"cannot return probe of color '${color.fullName}' from a layer block associated with layer '${layerBlock.layer.fullName}'"
+                )
+              Wire(chiselTypeOf(result))
+          }
+        }
+
+        // Similarly, if the result is a probe, then we forward it directly.  If
+        // it is a non-probe, then we need to probe it first.
+        Builder.forcedUserModule.withRegion(layerBlock.region) {
+          val source = DataMirror.hasProbeTypeModifier(result) match {
+            case true  => result
+            case false => probe.ProbeValue(result)
+          }
+          probe.define(layerColoredWire, source)
+        }
+
+        // Return the layer-colored wire _above_ the layer block.
+        layerColoredWire
+      }
+
+    }
+
+  }
+
   /** Create a new layer block.  This is hardware that will be enabled
     * collectively when the layer is enabled.
     *
@@ -205,6 +310,15 @@ object layer {
     * current layerblock is an ancestor of the desired layer.  The ancestor may
     * be the current layer which causes no layer block to be created.  (This is
     * not a _proper_ ancestor requirement.)
+    *
+    * By default, the return of the layer block will be either a subtype of
+    * [[Data]] or [[Unit]], depending on the `thunk` provided.  If the `thunk`
+    * (the hardware that should be constructed inside the layer block) returns a
+    * [[Data]], then this will either return a [[Wire]] of layer-colored
+    * [[Probe]] type if a layer block was created or the underlying [[Data]] if
+    * no layer block was created.  If the `thunk` returns anything else, this
+    * will return [[Unit]].  This is controlled by the implicit argument `tc`
+    * and may be customized by advanced users to do other things.
     *
     * @param layer the layer this block is associated with
     * @param skipIfAlreadyInBlock if true, then this will not create a layer if
@@ -216,22 +330,23 @@ object layer {
     * @param sourceInfo a source locator
     * @throws java.lang.IllegalArgumentException if the layer of the currnet
     * layerblock is not an ancestor of the desired layer
+    * @return either a subtype of [[Data]] or [[Unit]] depending on the `thunk`
+    * return type
     */
   def block[A](
     layer:                Layer,
     skipIfAlreadyInBlock: Boolean = false,
     skipIfLayersEnabled:  Boolean = false
-  )(thunk:                => A
-  )(
-    implicit sourceInfo: SourceInfo
-  ): Unit = {
+  )(thunk: => A)(
+    implicit tc: BlockReturnHandler[A] = BlockReturnHandler.unit[A],
+    sourceInfo:  SourceInfo
+  ): tc.R = {
     // Do nothing if we are already in a layer block and are not supposed to
     // create new layer blocks.
     if (
       skipIfAlreadyInBlock && Builder.layerStack.size > 1 || skipIfLayersEnabled && Builder.enabledLayers.nonEmpty || Builder.elideLayerBlocks
     ) {
-      thunk
-      return
+      return tc.identity(thunk)
     }
 
     val _layer = Builder.layerMap.getOrElse(layer, layer)
@@ -246,20 +361,37 @@ object layer {
       s"a layerblock associated with layer '${_layer.fullName}' cannot be created under a layerblock of non-ancestor layer '${Builder.layerStack.head.fullName}'"
     )
 
+    if (layersToCreate.isEmpty)
+      return tc.identity(thunk)
+
     addLayer(_layer)
 
+    // Save the append point _before_ the layer block so that we can insert a
+    // layer-colored wire once the `thunk` executes.
+    val beforeLayerBlock = new Placeholder
+
+    // Track the current layer block.  When this is used, this will be the
+    // innermost layer block that will be created.  This is guaranteed to be
+    // non-null as long as `layersToCreate` is not empty.
+    var layerBlock: LayerBlock = null
+
+    // Recursively create any necessary layers.  There are two cases:
+    //
+    // 1. There are no layers left to create.  Run the thunk, create the
+    //    layer-colored wire, and define it.
+    // 2. There are layers left to create.  Create the next layer and recurse.
     def createLayers(layers: List[Layer])(thunk: => A): A = layers match {
       case Nil => thunk
       case head :: tail =>
-        val layerBlock = new LayerBlock(sourceInfo, head)
-        Builder.pushCommand(layerBlock)
+        layerBlock = Builder.pushCommand(new LayerBlock(sourceInfo, head))
         Builder.layerStack = head :: Builder.layerStack
         val result = Builder.forcedUserModule.withRegion(layerBlock.region)(createLayers(tail)(thunk))
         Builder.layerStack = Builder.layerStack.tail
         result
     }
 
-    createLayers(layersToCreate)(thunk)
+    val result = createLayers(layersToCreate)(thunk)
+    return tc.apply(beforeLayerBlock, layerBlock, result)
   }
 
   /** API that will cause any calls to `block` in the `thunk` to not create new

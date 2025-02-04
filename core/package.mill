@@ -1,0 +1,78 @@
+package build.core
+
+import mill._
+import mill.scalalib._
+import mill.scalalib.scalafmt._
+import mill.define.Cross
+import de.tobiasroeser.mill.vcs.version.VcsVersion // pulled in by mill-ci-release
+
+import build._
+
+object `package` extends RootModule {
+  // https://github.com/com-lihaoyi/mill/issues/3693
+  object cross extends Cross[Core](v.scalaCrossVersions)
+}
+
+trait Core extends CrossSbtModule with HasScala2MacroAnno with HasCommonOptions with ScalafmtModule {
+  def scalaVersion = crossScalaVersion
+
+  def millSourcePath = super.millSourcePath / os.up
+
+  val crossModuleDeps = Seq(firrtl.cross(crossScalaVersion)) ++ {
+    if (v.isScala3(crossScalaVersion)) Seq.empty
+    else Seq(macros.cross(crossScalaVersion))
+  }
+
+  override def moduleDeps = super.moduleDeps ++ crossModuleDeps
+
+  val commonDeps = Agg(
+    v.osLib,
+    v.upickle
+  )
+
+  override def ivyDeps = if (v.isScala3(crossScalaVersion)) {
+    super.ivyDeps() ++ commonDeps ++ Agg(v.firtoolResolver.withDottyCompat(scalaVersion()))
+  } else {
+    super.ivyDeps() ++ commonDeps ++ Agg(v.firtoolResolver)
+  }
+
+  // Similar to the publish version, but no dirty indicators because otherwise
+  // this file will change any time any file is changed.
+  def publishVersion = Task {
+    VcsVersion
+      .vcsState()
+      .format(
+        countSep = "+",
+        revHashDigits = 8,
+        untaggedSuffix = "-SNAPSHOT",
+        dirtySep = "",
+        dirtyHashDigits = 0
+      )
+  }
+  def buildInfo = Task {
+    val outputFile = Task.dest / "chisel3" / "BuildInfo.scala"
+    val firtoolVersionString = "Some(\"" + v.firtoolVersion + "\")"
+    val contents =
+      s"""
+         |package chisel3
+         |case object BuildInfo {
+         |  val buildInfoPackage: String = "chisel3"
+         |  val version: String = "${publishVersion()}"
+         |  val scalaVersion: String = "${scalaVersion()}"
+         |  @deprecated("Chisel no longer uses SBT, this field will be removed.", "Chisel 7.0")
+         |  val sbtVersion: String = ""
+         |  val firtoolVersion: scala.Option[String] = $firtoolVersionString
+         |  override val toString: String = {
+         |    "buildInfoPackage: %s, version: %s, scalaVersion: %s, firtoolVersion %s".format(
+         |        buildInfoPackage, version, scalaVersion, firtoolVersion
+         |    )
+         |  }
+         |}
+         |""".stripMargin
+    os.write(outputFile, contents, createFolders = true)
+    PathRef(Task.dest)
+  }
+  override def generatedSources = Task {
+    super.generatedSources() :+ buildInfo()
+  }
+}

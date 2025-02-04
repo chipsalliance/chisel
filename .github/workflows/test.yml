@@ -90,7 +90,7 @@ jobs:
           $CHISEL_FIRTOOL_PATH/firtool -version >> $GITHUB_STEP_SUMMARY
           echo \`\`\` >> $GITHUB_STEP_SUMMARY
       - name: Test
-        run: ./mill -j0 firrtl[].test + svsim[].test + chisel[].test
+        run: ./mill -j0 firrtl.cross[].test + svsim.cross[].test + chisel[].test
       - name: Binary compatibility
         # TODO either make this also check the plugin or decide that we don't
         #      support binary compatibility for the plugin
@@ -108,7 +108,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'adopt'
-          java-version: '21'
+          java-version: ${{ inputs.jvm }}
       - name: Install CIRCT
         id: install-circt
         if: ${{ inputs.circt }}
@@ -146,7 +146,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'adopt'
-          java-version: '21'
+          java-version: ${{ inputs.jvm }}
       - name: Check Build Script Formatting
         run: ./mill --meta-level 1 mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll sources
       - name: Check Source File Format
@@ -168,7 +168,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'adopt'
-          java-version: '11'
+          java-version: ${{ inputs.jvm }}
       - name: Install CIRCT
         id: install-circt
         if: ${{ inputs.circt }}
@@ -183,7 +183,7 @@ jobs:
           dir=$(dirname $(which firtool))
           echo "CHISEL_FIRTOOL_PATH=$dir" >> "$GITHUB_ENV"
       - name: Integration Tests
-        run: ./mill -j0 integrationTests[].test
+        run: ./mill -j0 integration-tests.cross[].test
 
   # Currently just a sanity check that the benchmarking flow works
   benchmark:
@@ -198,7 +198,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'adopt'
-          java-version: '21'
+          java-version: ${{ inputs.jvm }}
       - name: JMH
         run: ./mill benchmark.runJmh
 
@@ -219,9 +219,9 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'adopt'
-          java-version: '11'
+          java-version: ${{ inputs.jvm }}
       - name: Compile
-        run: ./mill stdlib[_].compile
+        run: ./mill stdlib.cross[_].compile
 
   website:
     name: Build Mdoc & Website

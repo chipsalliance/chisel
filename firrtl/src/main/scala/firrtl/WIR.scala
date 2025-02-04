@@ -24,8 +24,8 @@ case class CDefMemory(
   tpe:            Type,
   size:           BigInt,
   seq:            Boolean,
-  readUnderWrite: ReadUnderWrite.Value = ReadUnderWrite.Undefined)
-    extends Statement
+  readUnderWrite: ReadUnderWrite.Value = ReadUnderWrite.Undefined
+) extends Statement
     with HasInfo
     with UseSerializer {
   def mapExpr(f:       Expression => Expression): Statement = this

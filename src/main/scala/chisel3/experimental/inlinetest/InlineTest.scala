@@ -17,7 +17,8 @@ class TestParameters[M <: RawModule, R] private[inlinetest] (
   /** A Definition of the DUT module. */
   val dutDefinition: Definition[M],
   /** The body for this test, returns a result. */
-  val body: Instance[M] => R)
+  val body: Instance[M] => R
+)
 
 /** An implementation of a testharness generator.
   *

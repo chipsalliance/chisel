@@ -37,7 +37,7 @@ class GCDTester(a: Int, b: Int, z: Int) extends BasicTester {
 
 class GCDSpec extends ChiselPropSpec {
 
-  //TODO: use generators and this function to make z's
+  // TODO: use generators and this function to make z's
   def gcd(a: Int, b: Int): Int = if (b == 0) a else gcd(b, a % b)
 
   val gcds = Table(

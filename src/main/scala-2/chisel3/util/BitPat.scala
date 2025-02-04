@@ -29,11 +29,11 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, val width: Int) extends
   import chisel3.util.experimental.BitSet
   def terms = Set(this)
 
-  def apply(x:  Int): BitPat = macro SourceInfoTransform.xArg
+  def apply(x:  Int):         BitPat = macro SourceInfoTransform.xArg
   def apply(x:  Int, y: Int): BitPat = macro SourceInfoTransform.xyArg
-  def ===(that: UInt):   Bool = macro SourceInfoTransform.thatArg
-  def =/=(that: UInt):   Bool = macro SourceInfoTransform.thatArg
-  def ##(that:  BitPat): BitPat = macro SourceInfoTransform.thatArg
+  def ===(that: UInt):        Bool = macro SourceInfoTransform.thatArg
+  def =/=(that: UInt):        Bool = macro SourceInfoTransform.thatArg
+  def ##(that:  BitPat):      BitPat = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
   def do_apply(x: Int)(implicit sourceInfo: SourceInfo): BitPat = _applyImpl(x)

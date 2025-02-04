@@ -21,17 +21,16 @@ case class AnAnnotation(
   statement:  Statement,
   expr:       Expression,
   tpe:        Type,
-  groundType: GroundType)
-    extends NoTargetAnnotation
+  groundType: GroundType
+) extends NoTargetAnnotation
 
 class JsonProtocolSpec extends AnyFlatSpec with Matchers {
   "Trying to serialize annotations that cannot be serialized" should "tell you why" in {
     case class MyAnno(x: Int) extends NoTargetAnnotation
-    inside(JsonProtocol.serializeTry(MyAnno(3) :: Nil)) {
-      case Failure(e: UnserializableAnnotationException) =>
-        e.getMessage should include("MyAnno")
-        // From json4s Exception
-        e.getMessage should include("Classes defined in method bodies are not supported")
+    inside(JsonProtocol.serializeTry(MyAnno(3) :: Nil)) { case Failure(e: UnserializableAnnotationException) =>
+      e.getMessage should include("MyAnno")
+      // From json4s Exception
+      e.getMessage should include("Classes defined in method bodies are not supported")
     }
   }
   "JsonProtocol.serializeRecover" should "emit even annotations that cannot be serialized" in {

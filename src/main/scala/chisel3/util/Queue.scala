@@ -13,10 +13,7 @@ import chisel3.util.experimental.BoringUtils
   * @param hasFlush A boolean for whether the generated Queue is flushable
   * @groupdesc Signals The hardware fields of the Bundle
   */
-class QueueIO[T <: Data](
-  private val gen: T,
-  val entries:     Int,
-  val hasFlush:    Boolean = false)
+class QueueIO[T <: Data](private val gen: T, val entries: Int, val hasFlush: Boolean = false)
     extends Bundle { // See github.com/freechipsproject/chisel3/issues/765 for why gen is a private val and proposed replacement APIs.
 
   /* These may look inverted, because the names (enq/deq) are from the perspective of the client,
@@ -66,8 +63,8 @@ class Queue[T <: Data](
   val pipe:           Boolean = false,
   val flow:           Boolean = false,
   val useSyncReadMem: Boolean = false,
-  val hasFlush:       Boolean = false)
-    extends Module() {
+  val hasFlush:       Boolean = false
+) extends Module() {
   require(entries > -1, "Queue must have non-negative number of entries")
   require(entries != 0, "Use companion object Queue.apply for zero entries")
   requireIsChiselType(gen)
@@ -219,7 +216,8 @@ object Queue {
     pipe:           Boolean,
     flow:           Boolean,
     useSyncReadMem: Boolean,
-    flush:          Option[Bool]) {
+    flush:          Option[Bool]
+  ) {
 
     /** The clock used when building the original Queue. */
     private val clock = Module.clock

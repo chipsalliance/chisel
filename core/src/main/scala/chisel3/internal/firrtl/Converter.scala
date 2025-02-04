@@ -2,7 +2,7 @@
 
 package chisel3.internal.firrtl
 
-import chisel3._
+import chisel3.{Placeholder => _, _}
 import chisel3.experimental._
 import chisel3.experimental.{NoSourceInfo, SourceInfo, SourceLine, UnlocatableSourceInfo}
 import chisel3.properties.Property
@@ -266,6 +266,8 @@ private[chisel3] object Converter {
       )
     case LayerBlock(info, layer, region) =>
       fir.LayerBlock(convert(info), layer, convert(region, ctx, typeAliases))
+    case Placeholder(info, block) =>
+      convert(block, ctx, typeAliases)
   }
 
   /** Convert Chisel IR Commands into FIRRTL Statements
@@ -356,7 +358,7 @@ private[chisel3] object Converter {
     case t: EnumType   => fir.UIntType(convert(t.width))
     case t: UInt       => fir.UIntType(convert(t.width))
     case t: SInt       => fir.SIntType(convert(t.width))
-    case t: Analog => fir.AnalogType(convert(t.width))
+    case t: Analog     => fir.AnalogType(convert(t.width))
     case t: Vec[_] =>
       val childClearDir = clearDir ||
         t.specifiedDirection == SpecifiedDirection.Input || t.specifiedDirection == SpecifiedDirection.Output
@@ -395,6 +397,14 @@ private[chisel3] object Converter {
       fir.StringParam(name, fir.StringLit(fmt))
     }
     case RawParam(value) => fir.RawStringParam(name, value)
+  }
+
+  def convert(param: TestParam): fir.TestParam = param match {
+    case IntTestParam(value)    => fir.IntTestParam(value)
+    case DoubleTestParam(value) => fir.DoubleTestParam(value)
+    case StringTestParam(value) => fir.StringTestParam(value)
+    case ArrayTestParam(value)  => fir.ArrayTestParam(value.map(convert))
+    case MapTestParam(value)    => fir.MapTestParam(value.map { case (name, value) => (name, convert(value)) })
   }
 
   // TODO: Modify Panama CIRCT to account for type aliasing information. This is a temporary hack to
@@ -454,6 +464,13 @@ private[chisel3] object Converter {
         name,
         (ports ++ ctx.secretPorts).map(p => convert(p, typeAliases)),
         convert(block, ctx, typeAliases)
+      )
+    case ctx @ DefFormalTest(name, module, params, sourceInfo) =>
+      fir.FormalTest(
+        convert(sourceInfo),
+        name,
+        module.name,
+        convert(params).asInstanceOf[fir.MapTestParam]
       )
   }
 

@@ -331,15 +331,14 @@ class DiGraph[T](private[graph] val edges: LinkedHashMap[T, LinkedHashSet[T]]) {
   def reverse: DiGraph[T] = {
     val mdg = new MutableDiGraph[T]
     edges.foreach({ case (u, edges) => mdg.addVertex(u) })
-    edges.foreach({
-      case (u, edges) =>
-        edges.foreach(v => mdg.addEdge(v, u))
+    edges.foreach({ case (u, edges) =>
+      edges.foreach(v => mdg.addEdge(v, u))
     })
     DiGraph(mdg)
   }
 
   private def filterEdges(vprime: Set[T]): LinkedHashMap[T, LinkedHashSet[T]] = {
-    def filterNodeSet(s:        LinkedHashSet[T]): LinkedHashSet[T] = s.filter({ case (k) => vprime.contains(k) })
+    def filterNodeSet(s: LinkedHashSet[T]): LinkedHashSet[T] = s.filter({ case (k) => vprime.contains(k) })
     def filterAdjacencyLists(m: LinkedHashMap[T, LinkedHashSet[T]]): LinkedHashMap[T, LinkedHashSet[T]] = m.map({
       case (k, v) => (k, filterNodeSet(v))
     })
@@ -417,17 +416,16 @@ class DiGraph[T](private[graph] val edges: LinkedHashMap[T, LinkedHashSet[T]]) {
       val last = children.size - 1
       children.toList // Convert LinkedHashSet to List to avoid determinism issues
         .zipWithIndex // Find last
-        .foldLeft(here :: prev) {
-          case (acc, (nodex, idx)) =>
-            val nextTab = if (idx == last) tab + ctab else tab + c + " "
-            val nextMark = if (idx == last) tab + l else tab + n
-            rec(nextTab, nodex, nextMark + " ", acc)
+        .foldLeft(here :: prev) { case (acc, (nodex, idx)) =>
+          val nextTab = if (idx == last) tab + ctab else tab + c + " "
+          val nextMark = if (idx == last) tab + l else tab + n
+          rec(nextTab, nodex, nextMark + " ", acc)
         }
     }
     this.findSources.toList // Convert LinkedHashSet to List to avoid determinism issues
       .sortBy(_.toString) // Make order deterministic
-      .foldLeft(Nil: List[String]) {
-        case (acc, root) => rec("", root, "", acc)
+      .foldLeft(Nil: List[String]) { case (acc, root) =>
+        rec("", root, "", acc)
       }
       .reverse
       .mkString("\n")

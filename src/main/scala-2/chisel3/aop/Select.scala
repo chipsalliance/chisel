@@ -44,6 +44,8 @@ object Select {
       case cmd @ LayerBlock(_, _, region) =>
         val head = f.lift(cmd).toSeq
         head ++ collect(region)(f)
+      case cmd @ Placeholder(_, block) =>
+        collect(block)(f)
       case cmd if f.isDefinedAt(cmd) => Some(f(cmd))
       case _                         => None
     }
@@ -58,14 +60,13 @@ object Select {
     implicit val mg = new chisel3.internal.MacroGenerated {}
     parent.proto._component.get match {
       case d: DefModule =>
-        collect(d.block.getCommands()) {
-          case d: DefInstance =>
-            d.id match {
-              case p: IsClone[_] =>
-                parent._lookup { x => new Instance(Clone(p)).asInstanceOf[Instance[BaseModule]] }
-              case other: BaseModule =>
-                parent._lookup { x => other }
-            }
+        collect(d.block.getCommands()) { case d: DefInstance =>
+          d.id match {
+            case p: IsClone[_] =>
+              parent._lookup { x => new Instance(Clone(p)).asInstanceOf[Instance[BaseModule]] }
+            case other: BaseModule =>
+              parent._lookup { x => other }
+          }
         }
       case other => Nil
     }
@@ -122,14 +123,13 @@ object Select {
     check(parent)
     val defs = parent.proto._component.get match {
       case d: DefModule =>
-        collect(d.block.getCommands()) {
-          case i: DefInstance =>
-            i.id match {
-              case p: IsClone[_] =>
-                parent._lookup { x => new Definition(Proto(p.getProto)).asInstanceOf[Definition[BaseModule]] }
-              case other: BaseModule =>
-                parent._lookup { x => other.toDefinition }
-            }
+        collect(d.block.getCommands()) { case i: DefInstance =>
+          i.id match {
+            case p: IsClone[_] =>
+              parent._lookup { x => new Definition(Proto(p.getProto)).asInstanceOf[Definition[BaseModule]] }
+            case other: BaseModule =>
+              parent._lookup { x => other.toDefinition }
+          }
         }
       case other => Nil
     }
@@ -303,8 +303,8 @@ object Select {
     */
   def syncReadMems(module: BaseModule): Seq[SyncReadMem[_]] = {
     check(module)
-    collect(module._component.get.asInstanceOf[DefModule].block.getCommands()) {
-      case r: DefSeqMemory => r.id.asInstanceOf[SyncReadMem[_]]
+    collect(module._component.get.asInstanceOf[DefModule].block.getCommands()) { case r: DefSeqMemory =>
+      r.id.asInstanceOf[SyncReadMem[_]]
     }
   }
 
@@ -313,8 +313,8 @@ object Select {
     */
   def mems(module: BaseModule): Seq[Mem[_]] = {
     check(module)
-    collect(module._component.get.asInstanceOf[DefModule].block.getCommands()) {
-      case r: DefMemory => r.id.asInstanceOf[Mem[_]]
+    collect(module._component.get.asInstanceOf[DefModule].block.getCommands()) { case r: DefMemory =>
+      r.id.asInstanceOf[Mem[_]]
     }
   }
 
@@ -323,8 +323,8 @@ object Select {
     */
   def ops(module: BaseModule): Seq[(String, Data)] = {
     check(module)
-    collect(module._component.get.asInstanceOf[DefModule].block.getCommands()) {
-      case d: DefPrim[_] => (d.op.name, d.id)
+    collect(module._component.get.asInstanceOf[DefModule].block.getCommands()) { case d: DefPrim[_] =>
+      (d.op.name, d.id)
     }
   }
 
@@ -345,8 +345,8 @@ object Select {
     */
   def wires(module: BaseModule): Seq[Data] = {
     check(module)
-    collect(module._component.get.asInstanceOf[DefModule].block.getCommands()) {
-      case r: DefWire => r.id
+    collect(module._component.get.asInstanceOf[DefModule].block.getCommands()) { case r: DefWire =>
+      r.id
     }
   }
 
@@ -355,8 +355,8 @@ object Select {
     */
   def memPorts(module: BaseModule): Seq[(Data, MemPortDirection, MemBase[_])] = {
     check(module)
-    collect(module._component.get.asInstanceOf[DefModule].block.getCommands()) {
-      case r: DefMemPort[_] => (r.id, r.dir, r.source.id.asInstanceOf[MemBase[_ <: Data]])
+    collect(module._component.get.asInstanceOf[DefModule].block.getCommands()) { case r: DefMemPort[_] =>
+      (r.id, r.dir, r.source.id.asInstanceOf[MemBase[_ <: Data]])
     }
   }
 
@@ -376,8 +376,8 @@ object Select {
     */
   def invalids(module: BaseModule): Seq[Data] = {
     check(module)
-    collect(module._component.get.asInstanceOf[DefModule].block.getCommands()) {
-      case DefInvalid(_, arg) => getData(arg)
+    collect(module._component.get.asInstanceOf[DefModule].block.getCommands()) { case DefInvalid(_, arg) =>
+      getData(arg)
     }
   }
 
@@ -489,11 +489,11 @@ object Select {
 
   // Given a loc, return all subcomponents of id that could be assigned to in connect
   private def getEffected(a: Arg): Seq[Data] = a match {
-    case Node(id: Data) => DataMirror.collectAllMembers(id)
+    case Node(id: Data)        => DataMirror.collectAllMembers(id)
     case Slot(imm: Node, name) => Seq(imm.id.asInstanceOf[Record].elements(name))
-    case Index(imm, _)    => getEffected(imm)
-    case LitIndex(imm, _) => getEffected(imm)
-    case _                => throw new InternalErrorException(s"Match error: a=$a")
+    case Index(imm, _)         => getEffected(imm)
+    case LitIndex(imm, _)      => getEffected(imm)
+    case _                     => throw new InternalErrorException(s"Match error: a=$a")
   }
 
   // Given an arg, return the corresponding id. Don't use on a loc of a connect.

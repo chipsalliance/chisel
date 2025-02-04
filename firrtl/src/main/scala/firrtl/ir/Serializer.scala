@@ -121,10 +121,9 @@ object Serializer {
     case SequencePropertyValue(tpe, values) =>
       b ++= "List<"; s(tpe); b ++= ">(";
       val lastIdx = values.size - 1
-      values.zipWithIndex.foreach {
-        case (value, idx) =>
-          s(value)
-          if (idx != lastIdx) b ++= ", "
+      values.zipWithIndex.foreach { case (value, idx) =>
+        s(value)
+        if (idx != lastIdx) b ++= ", "
       }
       b += ')'
     case ProbeExpr(expr, _)                          => b ++= "probe("; s(expr); b += ')'
@@ -146,7 +145,7 @@ object Serializer {
     def mapStmt(f:       Statement => Statement):   Statement = ???
     def mapString(f:     String => String):         Statement = ???
     def mapType(f:       Type => Type):             Statement = ???
-    def serialize: String = ???
+    def serialize:                                  String = ???
   }
 
   // To treat Statments as Iterable, we need to flatten out when scoping
@@ -296,10 +295,9 @@ object Serializer {
     case DefInstanceChoice(info, name, default, option, choices) =>
       b ++= "instchoice "; b ++= legalize(name); b ++= " of "; b ++= legalize(default);
       b ++= ", "; b ++= legalize(option); b ++= " : "; s(info)
-      choices.foreach {
-        case (choice, module) =>
-          newLineAndIndent(1)
-          b ++= legalize(choice); b ++= " => "; b ++= legalize(module)
+      choices.foreach { case (choice, module) =>
+        newLineAndIndent(1)
+        b ++= legalize(choice); b ++= " => "; b ++= legalize(module)
       }
     case DefObject(info, name, cls) =>
       b ++= "object "; b ++= legalize(name); b ++= " of "; b ++= legalize(cls); s(info)
@@ -326,7 +324,7 @@ object Serializer {
       b ++= "read-under-write => "; b ++= readUnderWrite.toString
     case DefTypeAlias(info, name, tpe) =>
       b ++= "type "; b ++= name; b ++= " = ";
-      s(tpe) //; s(info) TODO: Uncomment once firtool accepts infos for type aliases
+      s(tpe) // ; s(info) TODO: Uncomment once firtool accepts infos for type aliases
     case Attach(info, exprs) =>
       // exprs should never be empty since the attach statement takes *at least* two signals according to the spec
       b ++= "attach ("; s(exprs, ", "); b += ')'; s(info)
@@ -378,10 +376,9 @@ object Serializer {
     if (params.nonEmpty) {
       b += '<';
       val lastIdx = params.size - 1
-      params.zipWithIndex.foreach {
-        case (param, idx) =>
-          s(param)
-          if (idx != lastIdx) b ++= ", "
+      params.zipWithIndex.foreach { case (param, idx) =>
+        s(param)
+        if (idx != lastIdx) b ++= ", "
       }
       b += '>'
     }
@@ -440,8 +437,8 @@ object Serializer {
       }
       s(underlying, true)(b, indent)
     }
-    case UIntType(width: Width) => b ++= "UInt"; s(width)
-    case SIntType(width: Width) => b ++= "SInt"; s(width)
+    case UIntType(width: Width)    => b ++= "UInt"; s(width)
+    case SIntType(width: Width)    => b ++= "SInt"; s(width)
     case BundleType(fields)        => b ++= "{ "; sField(fields, ", "); b += '}'
     case VectorType(tpe, size)     => s(tpe, lastEmittedConst); b += '['; b ++= size.toString; b += ']'
     case ClockType                 => b ++= "Clock"
@@ -479,6 +476,27 @@ object Serializer {
     case RawStringParam(name, value) =>
       b ++= name; b ++= " = "
       b += '\''; b ++= value.replace("'", "\\'"); b += '\''
+    case other => b ++= other.serialize // Handle user-defined nodes
+  }
+
+  private def s(node: TestParam)(implicit b: StringBuilder, indent: Int): Unit = node match {
+    case IntTestParam(value)    => b ++= value.toString
+    case DoubleTestParam(value) => b ++= value.toString
+    case StringTestParam(value) => b ++= StringLit(value).escape
+    case ArrayTestParam(value) =>
+      b ++= "[";
+      value.zipWithIndex.foreach { case (value, i) =>
+        if (i > 0) b ++= ", "
+        s(value)
+      }
+      b ++= "]"
+    case MapTestParam(value) =>
+      b ++= "{"
+      value.keys.toSeq.sorted.zipWithIndex.foreach { case (name, i) =>
+        if (i > 0) b ++= ", "
+        b ++= name; b ++= " = "; s(value(name))
+      }
+      b ++= "}"
     case other => b ++= other.serialize // Handle user-defined nodes
   }
 
@@ -522,6 +540,13 @@ object Serializer {
         b.toString
       }
       Iterator(start) ++ sIt(body)(indent + 1)
+    case FormalTest(info, name, moduleName, params) =>
+      implicit val b = new StringBuilder
+      doIndent(0); b ++= "formal "; b ++= legalize(name); b ++= " of "; b ++= legalize(moduleName); b ++= " :"; s(info)
+      params.value.keys.toSeq.sorted.foreach { case name =>
+        newLineAndIndent(1); b ++= name; b ++= " = "; s(params.value(name))
+      }
+      Iterator(b.toString)
     case other =>
       Iterator(Indent * indent, other.serialize) // Handle user-defined nodes
   }
@@ -552,6 +577,7 @@ object Serializer {
     if (layers.nonEmpty) {
       implicit val b = new StringBuilder
       layers.foreach(s)
+      newLineNoIndent()
       Iterator(b.toString)
     } else Iterator.empty
   }
@@ -598,10 +624,9 @@ object Serializer {
       options ++
       typeAliases ++
       layers ++
-      circuit.modules.iterator.zipWithIndex.flatMap {
-        case (m, i) =>
-          val newline = Iterator(if (i == 0) s"$NewLine" else s"${NewLine}${NewLine}")
-          newline ++ sIt(m)(indent + 1)
+      circuit.modules.iterator.zipWithIndex.flatMap { case (m, i) =>
+        val newline = Iterator(if (i == 0) s"$NewLine" else s"${NewLine}${NewLine}")
+        newline ++ sIt(m)(indent + 1)
       } ++
       Iterator(s"$NewLine")
   }

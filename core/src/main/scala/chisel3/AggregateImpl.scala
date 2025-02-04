@@ -119,13 +119,12 @@ private[chisel3] trait AggregateImpl extends Data { thiz: Aggregate =>
     val clone: Aggregate = this.cloneTypeFull
     val mapping = clone.flatten.view
       .zip(elems)
-      .map {
-        case (thisElt, litElt) =>
-          val litArg = litElt.topBindingOpt match {
-            case Some(ElementLitBinding(value)) => value
-            case _                              => throwException(s"Internal Error! For field $thisElt, given non-literal $litElt!")
-          }
-          thisElt -> litArg
+      .map { case (thisElt, litElt) =>
+        val litArg = litElt.topBindingOpt match {
+          case Some(ElementLitBinding(value)) => value
+          case _ => throwException(s"Internal Error! For field $thisElt, given non-literal $litElt!")
+        }
+        thisElt -> litArg
       }
     val binding = clone match {
       case r: Record => BundleLitBinding(mapping.to(Map))
@@ -139,14 +138,13 @@ private[chisel3] trait AggregateImpl extends Data { thiz: Aggregate =>
     val _asUInt = _resizeToWidth(that, this.widthOption, true)(identity)
     // If that is a literal and all constituent Elements can be represented as literals, return a literal
     val ((_, allLit), rvalues) = {
-      this.flatten.toList.mapAccumulate[(Int, Boolean), Element]((0, _asUInt.isLit)) {
-        case ((lo, literal), elt) =>
-          val hi = lo + elt.getWidth
-          // Chisel only supports zero width extraction if hi = -1 and lo = 0, so do it manually
-          val _extracted = if (elt.getWidth == 0) 0.U(0.W) else _asUInt(hi - 1, lo)
-          // _fromUInt returns Data but we know that it is an Element
-          val rhs = elt._fromUInt(_extracted).asInstanceOf[Element]
-          ((hi, literal && rhs.isLit), rhs)
+      this.flatten.toList.mapAccumulate[(Int, Boolean), Element]((0, _asUInt.isLit)) { case ((lo, literal), elt) =>
+        val hi = lo + elt.getWidth
+        // Chisel only supports zero width extraction if hi = -1 and lo = 0, so do it manually
+        val _extracted = if (elt.getWidth == 0) 0.U(0.W) else _asUInt(hi - 1, lo)
+        // _fromUInt returns Data but we know that it is an Element
+        val rhs = elt._fromUInt(_extracted).asInstanceOf[Element]
+        ((hi, literal && rhs.isLit), rhs)
       }
     }
     if (allLit) {
@@ -220,9 +218,8 @@ private[chisel3] abstract class VecImpl[T <: Data] private[chisel3] (gen: => T, 
   override def toString: String = {
     topBindingOpt match {
       case Some(VecLitBinding(vecLitBinding)) =>
-        val contents = vecLitBinding.zipWithIndex.map {
-          case ((data, lit), index) =>
-            s"$index=$lit"
+        val contents = vecLitBinding.zipWithIndex.map { case ((data, lit), index) =>
+          s"$index=$lit"
         }.mkString(", ")
         s"${sample_element.cloneType}[$length]($contents)"
       case _ => stringAccessor(s"${sample_element.cloneType}[$length]")
@@ -462,8 +459,8 @@ private[chisel3] abstract class VecImpl[T <: Data] private[chisel3] (gen: => T, 
           val r = s
             .drop(p)
             .grouped(2)
-            .map {
-              case Seq(a, b) => op(a, b)
+            .map { case Seq(a, b) =>
+              op(a, b)
             }
             .toVector
           recReduce(l ++ r, op, lop)
@@ -494,13 +491,12 @@ private[chisel3] abstract class VecImpl[T <: Data] private[chisel3] (gen: => T, 
   ): this.type = {
 
     def checkLiteralConstruction(): Unit = {
-      val dupKeys = elementInitializers.map { x => x._1 }.groupBy(x => x).flatMap {
-        case (k, v) =>
-          if (v.length > 1) {
-            Some(k, v.length)
-          } else {
-            None
-          }
+      val dupKeys = elementInitializers.map { x => x._1 }.groupBy(x => x).flatMap { case (k, v) =>
+        if (v.length > 1) {
+          Some(k, v.length)
+        } else {
+          None
+        }
       }
       if (dupKeys.nonEmpty) {
         throw new VecLiteralException(
@@ -548,93 +544,90 @@ private[chisel3] abstract class VecImpl[T <: Data] private[chisel3] (gen: => T, 
 
     // Create the Vec literal binding from litArgs of arguments
     val vecLitLinkedMap = new mutable.LinkedHashMap[Data, LitArg]()
-    elementInitializers.sortBy { case (a, _) => a }.foreach {
-      case (fieldIndex, value) =>
-        val field = clone.apply(fieldIndex)
-        val fieldName = cloneFields.getOrElse(
-          field,
-          throw new VecLiteralException(
-            s"field $field (with value $value) is not a field," +
-              s" ensure the field is specified as a function returning a field on an object of class ${this.getClass}," +
-              s" eg '_.a' to select hypothetical bundle field 'a'"
-          )
+    elementInitializers.sortBy { case (a, _) => a }.foreach { case (fieldIndex, value) =>
+      val field = clone.apply(fieldIndex)
+      val fieldName = cloneFields.getOrElse(
+        field,
+        throw new VecLiteralException(
+          s"field $field (with value $value) is not a field," +
+            s" ensure the field is specified as a function returning a field on an object of class ${this.getClass}," +
+            s" eg '_.a' to select hypothetical bundle field 'a'"
         )
+      )
 
-        val valueBinding = value.topBindingOpt match {
-          case Some(litBinding: LitBinding) => litBinding
-          case _ => throw new VecLiteralException(s"field $fieldIndex specified with non-literal value $value")
-        }
+      val valueBinding = value.topBindingOpt match {
+        case Some(litBinding: LitBinding) => litBinding
+        case _ => throw new VecLiteralException(s"field $fieldIndex specified with non-literal value $value")
+      }
 
-        field match { // Get the litArg(s) for this field
-          case bitField: Bits =>
-            if (!field.typeEquivalent(bitField)) {
-              throw new VecLiteralException(
-                s"VecLit: Literal specified at index $fieldIndex ($value) does not match Vec type $sample_element"
+      field match { // Get the litArg(s) for this field
+        case bitField: Bits =>
+          if (!field.typeEquivalent(bitField)) {
+            throw new VecLiteralException(
+              s"VecLit: Literal specified at index $fieldIndex ($value) does not match Vec type $sample_element"
+            )
+          }
+          if (bitField.getWidth > field.getWidth) {
+            throw new VecLiteralException(
+              s"VecLit: Literal specified at index $fieldIndex ($value) is too wide for Vec type $sample_element"
+            )
+          }
+          val litArg = valueBinding match {
+            case ElementLitBinding(litArg) => litArg
+            case BundleLitBinding(litMap) =>
+              litMap.getOrElse(
+                value,
+                throw new BundleLiteralException(s"Field $fieldName specified with unspecified value")
               )
-            }
-            if (bitField.getWidth > field.getWidth) {
-              throw new VecLiteralException(
-                s"VecLit: Literal specified at index $fieldIndex ($value) is too wide for Vec type $sample_element"
+            case VecLitBinding(litMap) =>
+              litMap.getOrElse(
+                value,
+                throw new VecLiteralException(s"Field $fieldIndex specified with unspecified value")
               )
-            }
-            val litArg = valueBinding match {
-              case ElementLitBinding(litArg) => litArg
-              case BundleLitBinding(litMap) =>
-                litMap.getOrElse(
-                  value,
-                  throw new BundleLiteralException(s"Field $fieldName specified with unspecified value")
-                )
-              case VecLitBinding(litMap) =>
-                litMap.getOrElse(
-                  value,
-                  throw new VecLiteralException(s"Field $fieldIndex specified with unspecified value")
-                )
-            }
-            val adjustedLitArg = litArg.cloneWithWidth(sample_element.width)
-            vecLitLinkedMap(bitField) = adjustedLitArg
+          }
+          val adjustedLitArg = litArg.cloneWithWidth(sample_element.width)
+          vecLitLinkedMap(bitField) = adjustedLitArg
 
-          case recordField: Record =>
-            if (!(recordField.typeEquivalent(value))) {
-              throw new VecLiteralException(
-                s"field $fieldIndex $recordField specified with non-type-equivalent value $value"
-              )
-            }
-            // Copy the source BundleLitBinding with fields (keys) remapped to the clone
-            val remap = getMatchedFields(value, recordField).toMap
-            valueBinding.asInstanceOf[BundleLitBinding].litMap.map {
-              case (valueField, valueValue) =>
-                vecLitLinkedMap(remap(valueField)) = valueValue
-            }
-
-          case vecField: Vec[_] =>
-            if (!(vecField.typeEquivalent(value))) {
-              throw new VecLiteralException(
-                s"field $fieldIndex $vecField specified with non-type-equivalent value $value"
-              )
-            }
-            // Copy the source VecLitBinding with vecFields (keys) remapped to the clone
-            val remap = getMatchedFields(value, vecField).toMap
-            value.topBinding.asInstanceOf[VecLitBinding].litMap.map {
-              case (valueField, valueValue) =>
-                vecLitLinkedMap(remap(valueField)) = valueValue
-            }
-
-          case enumField: EnumType => {
-            if (!(enumField.typeEquivalent(value))) {
-              throw new VecLiteralException(
-                s"field $fieldIndex $enumField specified with non-type-equivalent enum value $value"
-              )
-            }
-            val litArg = valueBinding match {
-              case ElementLitBinding(litArg) => litArg
-              case _ =>
-                throw new VecLiteralException(s"field $fieldIndex $enumField could not bematched with $valueBinding")
-            }
-            vecLitLinkedMap(field) = litArg
+        case recordField: Record =>
+          if (!(recordField.typeEquivalent(value))) {
+            throw new VecLiteralException(
+              s"field $fieldIndex $recordField specified with non-type-equivalent value $value"
+            )
+          }
+          // Copy the source BundleLitBinding with fields (keys) remapped to the clone
+          val remap = getMatchedFields(value, recordField).toMap
+          valueBinding.asInstanceOf[BundleLitBinding].litMap.map { case (valueField, valueValue) =>
+            vecLitLinkedMap(remap(valueField)) = valueValue
           }
 
-          case _ => throw new VecLiteralException(s"unsupported field $fieldIndex of type $field")
+        case vecField: Vec[_] =>
+          if (!(vecField.typeEquivalent(value))) {
+            throw new VecLiteralException(
+              s"field $fieldIndex $vecField specified with non-type-equivalent value $value"
+            )
+          }
+          // Copy the source VecLitBinding with vecFields (keys) remapped to the clone
+          val remap = getMatchedFields(value, vecField).toMap
+          value.topBinding.asInstanceOf[VecLitBinding].litMap.map { case (valueField, valueValue) =>
+            vecLitLinkedMap(remap(valueField)) = valueValue
+          }
+
+        case enumField: EnumType => {
+          if (!(enumField.typeEquivalent(value))) {
+            throw new VecLiteralException(
+              s"field $fieldIndex $enumField specified with non-type-equivalent enum value $value"
+            )
+          }
+          val litArg = valueBinding match {
+            case ElementLitBinding(litArg) => litArg
+            case _ =>
+              throw new VecLiteralException(s"field $fieldIndex $enumField could not bematched with $valueBinding")
+          }
+          vecLitLinkedMap(field) = litArg
         }
+
+        case _ => throw new VecLiteralException(s"unsupported field $fieldIndex of type $field")
+      }
     }
 
     clone.bind(VecLitBinding(VectorMap(vecLitLinkedMap.toSeq: _*)))
@@ -668,18 +661,16 @@ private[chisel3] trait VecInitImpl {
     _applyImpl(elt0 +: elts.toSeq)
 
   protected def _tabulateImpl[T <: Data](
-    n:   Int
-  )(gen: (Int) => T
-  )(
+    n: Int
+  )(gen: (Int) => T)(
     implicit sourceInfo: SourceInfo
   ): Vec[T] =
     _applyImpl((0 until n).map(i => gen(i)))
 
   protected def _tabulateImpl[T <: Data](
-    n:   Int,
-    m:   Int
-  )(gen: (Int, Int) => T
-  )(
+    n: Int,
+    m: Int
+  )(gen: (Int, Int) => T)(
     implicit sourceInfo: SourceInfo
   ): Vec[Vec[T]] = {
     // TODO make this lazy (requires LazyList and cross compilation, beyond the scope of this PR)
@@ -701,11 +692,10 @@ private[chisel3] trait VecInitImpl {
   }
 
   protected def _tabulateImpl[T <: Data](
-    n:   Int,
-    m:   Int,
-    p:   Int
-  )(gen: (Int, Int, Int) => T
-  )(
+    n: Int,
+    m: Int,
+    p: Int
+  )(gen: (Int, Int, Int) => T)(
     implicit sourceInfo: SourceInfo
   ): Vec[Vec[Vec[T]]] = {
     // TODO make this lazy (requires LazyList and cross compilation, beyond the scope of this PR)
@@ -734,21 +724,19 @@ private[chisel3] trait VecInitImpl {
     else { _applyImpl(Seq.fill(n)(gen)) }
 
   protected def _fillImpl[T <: Data](
-    n:   Int,
-    m:   Int
-  )(gen: => T
-  )(
+    n: Int,
+    m: Int
+  )(gen: => T)(
     implicit sourceInfo: SourceInfo
   ): Vec[Vec[T]] = {
     _tabulateImpl(n, m)((_, _) => gen)
   }
 
   protected def _fillImpl[T <: Data](
-    n:   Int,
-    m:   Int,
-    p:   Int
-  )(gen: => T
-  )(
+    n: Int,
+    m: Int,
+    p: Int
+  )(gen: => T)(
     implicit sourceInfo: SourceInfo
   ): Vec[Vec[Vec[T]]] = {
     _tabulateImpl(n, m, p)((_, _, _) => gen)
@@ -757,8 +745,7 @@ private[chisel3] trait VecInitImpl {
   protected def _iterateImpl[T <: Data](
     start: T,
     len:   Int
-  )(f:     (T) => T
-  )(
+  )(f: (T) => T)(
     implicit sourceInfo: SourceInfo
   ): Vec[T] =
     _applyImpl(Seq.iterate(start, len)(f))
@@ -767,7 +754,7 @@ private[chisel3] trait VecInitImpl {
 private[chisel3] trait VecLikeImpl[T <: Data] extends IndexedSeq[T] with HasId {
 
   // IndexedSeq has its own hashCode/equals that we must not use
-  override def hashCode: Int = super[HasId].hashCode
+  override def hashCode:          Int = super[HasId].hashCode
   override def equals(that: Any): Boolean = super[HasId].equals(that)
 
   protected def _forallImpl(p: T => Bool)(implicit sourceInfo: SourceInfo): Bool =
@@ -960,85 +947,82 @@ private[chisel3] trait RecordImpl extends AggregateImpl { thiz: Record =>
     val cloneFields = getRecursiveFields(clone, "_").toMap
 
     // Create the Bundle literal binding from litargs of arguments
-    val bundleLitMapping = elems.map { fn => fn(clone) }.flatMap {
-      case (field, value) =>
-        val fieldName = cloneFields.getOrElse(
-          field,
-          throw new BundleLiteralException(
-            s"field $field (with value $value) is not a field," +
-              s" ensure the field is specified as a function returning a field on an object of class ${this.getClass}," +
-              s" eg '_.a' to select hypothetical bundle field 'a'"
-          )
+    val bundleLitMapping = elems.map { fn => fn(clone) }.flatMap { case (field, value) =>
+      val fieldName = cloneFields.getOrElse(
+        field,
+        throw new BundleLiteralException(
+          s"field $field (with value $value) is not a field," +
+            s" ensure the field is specified as a function returning a field on an object of class ${this.getClass}," +
+            s" eg '_.a' to select hypothetical bundle field 'a'"
         )
-        val valueBinding = value.topBindingOpt match {
-          case Some(litBinding: LitBinding) => litBinding
-          case _ => throw new BundleLiteralException(s"field $fieldName specified with non-literal value $value")
-        }
+      )
+      val valueBinding = value.topBindingOpt match {
+        case Some(litBinding: LitBinding) => litBinding
+        case _ => throw new BundleLiteralException(s"field $fieldName specified with non-literal value $value")
+      }
 
-        field match { // Get the litArg(s) for this field
-          case field: Bits =>
-            if (field.getClass != value.getClass) { // TODO typeEquivalent is too strict because it checks width
-              throw new BundleLiteralException(
-                s"Field $fieldName $field specified with non-type-equivalent value $value"
-              )
-            }
-            val litArg = valueBinding match {
-              case ElementLitBinding(litArg) => litArg
-              case BundleLitBinding(litMap) =>
-                litMap.getOrElse(
-                  value,
-                  throw new BundleLiteralException(s"Field $fieldName specified with unspecified value")
-                )
-              case VecLitBinding(litMap) =>
-                litMap.getOrElse(
-                  value,
-                  throw new VecLiteralException(s"Vec literal $fieldName specified with out literal values")
-                )
-
-            }
-            Seq(field -> litArg)
-
-          case field: Record =>
-            if (!(field.typeEquivalent(value))) {
-              throw new BundleLiteralException(
-                s"field $fieldName $field specified with non-type-equivalent value $value"
-              )
-            }
-            // Copy the source BundleLitBinding with fields (keys) remapped to the clone
-            val remap = getMatchedFields(value, field).toMap
-            value.topBinding.asInstanceOf[BundleLitBinding].litMap.map {
-              case (valueField, valueValue) =>
-                remap(valueField) -> valueValue
-            }
-
-          case vecField: Vec[_] =>
-            if (!(vecField.typeEquivalent(value))) {
-              throw new BundleLiteralException(
-                s"field $fieldName $vecField specified with non-type-equivalent value $value"
-              )
-            }
-            // Copy the source BundleLitBinding with fields (keys) remapped to the clone
-            val remap = getMatchedFields(value, vecField).toMap
-            value.topBinding.asInstanceOf[VecLitBinding].litMap.map {
-              case (valueField, valueValue) =>
-                remap(valueField) -> valueValue
-            }
-
-          case field: EnumType => {
-            if (!(field.typeEquivalent(value))) {
-              throw new BundleLiteralException(
-                s"field $fieldName $field specified with non-type-equivalent enum value $value"
-              )
-            }
-            val litArg = valueBinding match {
-              case ElementLitBinding(litArg) => litArg
-              case _ =>
-                throw new BundleLiteralException(s"field $fieldName $field could not be matched with $valueBinding")
-            }
-            Seq(field -> litArg)
+      field match { // Get the litArg(s) for this field
+        case field: Bits =>
+          if (field.getClass != value.getClass) { // TODO typeEquivalent is too strict because it checks width
+            throw new BundleLiteralException(
+              s"Field $fieldName $field specified with non-type-equivalent value $value"
+            )
           }
-          case _ => throw new BundleLiteralException(s"unsupported field $fieldName of type $field")
+          val litArg = valueBinding match {
+            case ElementLitBinding(litArg) => litArg
+            case BundleLitBinding(litMap) =>
+              litMap.getOrElse(
+                value,
+                throw new BundleLiteralException(s"Field $fieldName specified with unspecified value")
+              )
+            case VecLitBinding(litMap) =>
+              litMap.getOrElse(
+                value,
+                throw new VecLiteralException(s"Vec literal $fieldName specified with out literal values")
+              )
+
+          }
+          Seq(field -> litArg)
+
+        case field: Record =>
+          if (!(field.typeEquivalent(value))) {
+            throw new BundleLiteralException(
+              s"field $fieldName $field specified with non-type-equivalent value $value"
+            )
+          }
+          // Copy the source BundleLitBinding with fields (keys) remapped to the clone
+          val remap = getMatchedFields(value, field).toMap
+          value.topBinding.asInstanceOf[BundleLitBinding].litMap.map { case (valueField, valueValue) =>
+            remap(valueField) -> valueValue
+          }
+
+        case vecField: Vec[_] =>
+          if (!(vecField.typeEquivalent(value))) {
+            throw new BundleLiteralException(
+              s"field $fieldName $vecField specified with non-type-equivalent value $value"
+            )
+          }
+          // Copy the source BundleLitBinding with fields (keys) remapped to the clone
+          val remap = getMatchedFields(value, vecField).toMap
+          value.topBinding.asInstanceOf[VecLitBinding].litMap.map { case (valueField, valueValue) =>
+            remap(valueField) -> valueValue
+          }
+
+        case field: EnumType => {
+          if (!(field.typeEquivalent(value))) {
+            throw new BundleLiteralException(
+              s"field $fieldName $field specified with non-type-equivalent enum value $value"
+            )
+          }
+          val litArg = valueBinding match {
+            case ElementLitBinding(litArg) => litArg
+            case _ =>
+              throw new BundleLiteralException(s"field $fieldName $field could not be matched with $valueBinding")
+          }
+          Seq(field -> litArg)
         }
+        case _ => throw new BundleLiteralException(s"unsupported field $fieldName of type $field")
+      }
     }
 
     // don't convert to a Map yet to preserve duplicate keys
@@ -1048,28 +1032,27 @@ private[chisel3] trait RecordImpl extends AggregateImpl { thiz: Record =>
       throw new BundleLiteralException(s"duplicate fields $duplicateNames in Bundle literal constructor")
     }
     // Check widths and sign extend as appropriate.
-    val bundleLitMap = bundleLitMapping.view.map {
-      case (field, value) =>
-        field.width match {
-          // If width is unknown, then it is set by the literal value.
-          case UnknownWidth => field -> value
-          case width @ KnownWidth(widthValue) =>
-            val valuex = if (widthValue < value.width.get) {
-              // For legacy reasons, 0.U is 1-bit, don't warn when it comes up as a literal value for 0-bit Bundle lit field.
-              val dontWarnOnZeroDotU = widthValue == 0 && value.num == 0 && value.width.get == 1
-              if (!dontWarnOnZeroDotU) {
-                val msg = s"Literal value $value is too wide for field ${cloneFields(field)} with width $widthValue"
-                Builder.warning(Warning(WarningID.BundleLiteralValueTooWide, msg))
-              }
-              // Mask the value to the width of the field.
-              val mask = (BigInt(1) << widthValue) - 1
-              value.cloneWithValue(value.num & mask).cloneWithWidth(width)
-            } else if (widthValue > value.width.get) value.cloneWithWidth(width)
-            // Otherwise, ensure width is same as that of the field.
-            else value
+    val bundleLitMap = bundleLitMapping.view.map { case (field, value) =>
+      field.width match {
+        // If width is unknown, then it is set by the literal value.
+        case UnknownWidth => field -> value
+        case width @ KnownWidth(widthValue) =>
+          val valuex = if (widthValue < value.width.get) {
+            // For legacy reasons, 0.U is 1-bit, don't warn when it comes up as a literal value for 0-bit Bundle lit field.
+            val dontWarnOnZeroDotU = widthValue == 0 && value.num == 0 && value.width.get == 1
+            if (!dontWarnOnZeroDotU) {
+              val msg = s"Literal value $value is too wide for field ${cloneFields(field)} with width $widthValue"
+              Builder.warning(Warning(WarningID.BundleLiteralValueTooWide, msg))
+            }
+            // Mask the value to the width of the field.
+            val mask = (BigInt(1) << widthValue) - 1
+            value.cloneWithValue(value.num & mask).cloneWithWidth(width)
+          } else if (widthValue > value.width.get) value.cloneWithWidth(width)
+          // Otherwise, ensure width is same as that of the field.
+          else value
 
-            field -> valuex
-        }
+          field -> valuex
+      }
     }.toMap
     clone.bind(BundleLitBinding(bundleLitMap))
     clone
@@ -1093,9 +1076,8 @@ private[chisel3] trait RecordImpl extends AggregateImpl { thiz: Record =>
   override def toString: String = {
     topBindingOpt match {
       case Some(BundleLitBinding(_)) =>
-        val contents = _elements.toList.reverse.map {
-          case (name, data) =>
-            s"$name=$data"
+        val contents = _elements.toList.reverse.map { case (name, data) =>
+          s"$name=$data"
         }.mkString(", ")
         s"$className($contents)"
       case _ => stringAccessor(s"$className")
@@ -1127,19 +1109,18 @@ private[chisel3] trait RecordImpl extends AggregateImpl { thiz: Record =>
     // This is true if elements is not a VectorMap or if any names need sanitization
     var needNewMap = !originalElements.isInstanceOf[VectorMap[_, _]]
     val newNames =
-      elements.view.map {
-        case (name, field) =>
-          if (field.binding.isDefined) {
-            throw RebindingException(
-              s"Cannot create Record ${this.className}; element ${field} of Record must be a Chisel type, not hardware."
-            )
-          }
-          // namespace.name also sanitizes for firrtl, leave name alone for OpaqueTypes
-          val sanitizedName = namespace.map(_.name(name, leadingDigitOk = true)).getOrElse(name)
-          if (sanitizedName != name) {
-            needNewMap = true
-          }
-          sanitizedName
+      elements.view.map { case (name, field) =>
+        if (field.binding.isDefined) {
+          throw RebindingException(
+            s"Cannot create Record ${this.className}; element ${field} of Record must be a Chisel type, not hardware."
+          )
+        }
+        // namespace.name also sanitizes for firrtl, leave name alone for OpaqueTypes
+        val sanitizedName = namespace.map(_.name(name, leadingDigitOk = true)).getOrElse(name)
+        if (sanitizedName != name) {
+          needNewMap = true
+        }
+        sanitizedName
       }.toArray // It's very important we eagerly evaluate this sequence.
     if (needNewMap) {
       newNames.view
@@ -1170,9 +1151,8 @@ private[chisel3] trait RecordImpl extends AggregateImpl { thiz: Record =>
     val xs =
       if (elts.isEmpty) List.empty[Printable] // special case because of dropRight below
       else
-        elts.flatMap {
-          case (name, data) =>
-            List(PString(s"$name -> "), data.toPrintable, PString(", "))
+        elts.flatMap { case (name, data) =>
+          List(PString(s"$name -> "), data.toPrintable, PString(", "))
         }.dropRight(1) // Remove trailing ", "
     PString(s"$className(") + Printables(xs) + PString(")")
   }

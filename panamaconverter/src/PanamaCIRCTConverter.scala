@@ -25,7 +25,7 @@ import chisel3.stop.{Stop => VerifStop}
 import chisel3.util._
 
 case class Region(region: MlirRegion, blocks: Seq[MlirBlock]) {
-  def get(): MlirRegion = region
+  def get():         MlirRegion = region
   def block(i: Int): MlirBlock = blocks(i)
 }
 
@@ -44,7 +44,8 @@ case class Ports(
   typeAttrs:       Seq[MlirAttribute],
   annotationAttrs: Seq[MlirAttribute],
   symAttrs:        Seq[MlirAttribute],
-  locAttrs:        Seq[MlirAttribute])
+  locAttrs:        Seq[MlirAttribute]
+)
 
 final case class FirTypeLazy(private var tpeOrData: Either[fir.Type, ChiselData]) {
   def get: fir.Type = {
@@ -122,9 +123,8 @@ class InnerSymCache {
     slots += ((id._id, InnerSymSlot.Op(op)))
   def setPortSlots(op: MlirOperation, ports: Seq[Port]): Unit = {
     portSymbols = ports.map(_ => None)
-    ports.zipWithIndex.foreach {
-      case (port, i) =>
-        slots += ((port.id._id, InnerSymSlot.Port(op, i)))
+    ports.zipWithIndex.foreach { case (port, i) =>
+      slots += ((port.id._id, InnerSymSlot.Port(op, i)))
     }
   }
 
@@ -156,16 +156,16 @@ class FirContext {
   }
 
   def enterWhen(whenOp: Op): Unit = whenStack.push(WhenContext(whenOp, currentBlock, false))
-  def enterAlt():  Unit = whenStack.top.inAlt = true
-  def leaveWhen(): Unit = whenStack.pop
+  def enterAlt():            Unit = whenStack.top.inAlt = true
+  def leaveWhen():           Unit = whenStack.pop
 
-  def circuitBlock: MlirBlock = opCircuit.region(0).block(0)
+  def circuitBlock:                  MlirBlock = opCircuit.region(0).block(0)
   def findModuleBlock(name: String): MlirBlock = opModules.find(_._1 == name).get._2.region(0).block(0)
-  def currentModuleName:  String = opModules.last._1
-  def currentModuleBlock: MlirBlock = opModules.last._2.region(0).block(0)
-  def currentBlock:       MlirBlock = if (whenStack.nonEmpty) whenStack.top.block else currentModuleBlock
-  def currentWhen:        Option[WhenContext] = Option.when(whenStack.nonEmpty)(whenStack.top)
-  def rootWhen:           Option[WhenContext] = Option.when(whenStack.nonEmpty)(whenStack.last)
+  def currentModuleName:             String = opModules.last._1
+  def currentModuleBlock:            MlirBlock = opModules.last._2.region(0).block(0)
+  def currentBlock:                  MlirBlock = if (whenStack.nonEmpty) whenStack.top.block else currentModuleBlock
+  def currentWhen:                   Option[WhenContext] = Option.when(whenStack.nonEmpty)(whenStack.top)
+  def rootWhen:                      Option[WhenContext] = Option.when(whenStack.nonEmpty)(whenStack.last)
 }
 
 class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], annotationsJSON: String) {
@@ -190,8 +190,8 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
         case fir.AnalogType(width)                              => getWidthOrSentinel(width)
         case fir.ProbeType(underlying, _)                       => getWidthOrSentinel(underlying)
         case fir.RWProbeType(underlying, _)                     => getWidthOrSentinel(underlying)
-        case _: fir.BundleType | _: fir.VectorType => -2
-        case unhandled => throw new Exception(s"unhandled: $unhandled")
+        case _: fir.BundleType | _: fir.VectorType              => -2
+        case unhandled                                          => throw new Exception(s"unhandled: $unhandled")
       }
     }
 
@@ -289,7 +289,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
 
     def widthShl(lhs: fir.Width, rhs: fir.Width): fir.Width = (lhs, rhs) match {
       case (l: fir.IntWidth, r: fir.IntWidth) => fir.IntWidth(l.width << r.width.toInt)
-      case _ => fir.UnknownWidth
+      case _                                  => fir.UnknownWidth
     }
 
     case class OpBuilder(opName: String, parent: MlirBlock, loc: MlirLocation) {
@@ -321,12 +321,12 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
         this
       }
 
-      def withOperand(o: MlirValue): OpBuilder = { operands = operands :+ o; this }
+      def withOperand(o:   MlirValue):      OpBuilder = { operands = operands :+ o; this }
       def withOperands(os: Seq[MlirValue]): OpBuilder = { operands = operands ++ os; this }
 
-      def withResult(r: MlirType): OpBuilder = { results = results :+ r; this }
-      def withResults(rs: Seq[MlirType]): OpBuilder = { results = results ++ rs; this }
-      def withResultInference(expectedCount: Int): OpBuilder = { resultInference = Some(expectedCount); this }
+      def withResult(r:                      MlirType):      OpBuilder = { results = results :+ r; this }
+      def withResults(rs:                    Seq[MlirType]): OpBuilder = { results = results ++ rs; this }
+      def withResultInference(expectedCount: Int):           OpBuilder = { resultInference = Some(expectedCount); this }
 
       private[OpBuilder] def buildImpl(inserter: MlirOperation => Unit): Op = {
         val state = circt.mlirOperationStateGet(opName, loc)
@@ -368,7 +368,7 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
         Op(state, op, builtRegions, resultVals)
       }
 
-      def build(): Op = buildImpl(circt.mlirBlockAppendOwnedOperation(parent, _))
+      def build():              Op = buildImpl(circt.mlirBlockAppendOwnedOperation(parent, _))
       def buildAfter(ref:  Op): Op = buildImpl(circt.mlirBlockInsertOwnedOperationAfter(parent, ref.op, _))
       def buildBefore(ref: Op): Op = buildImpl(circt.mlirBlockInsertOwnedOperationBefore(parent, ref.op, _))
     }
@@ -812,13 +812,12 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
           RecursiveTypeProperties(true, false)
         case _:      fir.AnalogType => RecursiveTypeProperties(true, true)
         case bundle: fir.BundleType =>
-          bundle.fields.foldLeft(RecursiveTypeProperties(true, false)) {
-            case (properties, field) =>
-              val fieldProperties = recursiveTypeProperties(field.tpe)
-              RecursiveTypeProperties(
-                properties.isPassive && fieldProperties.isPassive && field.flip == fir.Flip,
-                properties.containsAnalog || fieldProperties.containsAnalog
-              )
+          bundle.fields.foldLeft(RecursiveTypeProperties(true, false)) { case (properties, field) =>
+            val fieldProperties = recursiveTypeProperties(field.tpe)
+            RecursiveTypeProperties(
+              properties.isPassive && fieldProperties.isPassive && field.flip == fir.Flip,
+              properties.containsAnalog || fieldProperties.containsAnalog
+            )
           }
         case _:      fir.PropertyType => RecursiveTypeProperties(true, false)
         case vector: fir.VectorType   => recursiveTypeProperties(vector.tpe)
@@ -881,19 +880,18 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
       val indexType = circt.mlirIntegerTypeGet(32)
       value.tpe match {
         case bundle: fir.BundleType =>
-          bundle.fields.zipWithIndex.foreach {
-            case (field, index) =>
-              val fieldAccess = Reference.Value(
-                util
-                  .OpBuilder("firrtl.subfield", firCtx.currentBlock, loc)
-                  .withNamedAttr("fieldIndex", circt.mlirIntegerAttrGet(indexType, index))
-                  .withOperand(value.value)
-                  .withResult(util.convert(field.tpe))
-                  .build()
-                  .results(0),
-                field.tpe
-              )
-              emitInvalidate(fieldAccess, loc, if (field.flip == fir.Flip) swapFlow(flow) else flow)
+          bundle.fields.zipWithIndex.foreach { case (field, index) =>
+            val fieldAccess = Reference.Value(
+              util
+                .OpBuilder("firrtl.subfield", firCtx.currentBlock, loc)
+                .withNamedAttr("fieldIndex", circt.mlirIntegerAttrGet(indexType, index))
+                .withOperand(value.value)
+                .withResult(util.convert(field.tpe))
+                .build()
+                .results(0),
+              field.tpe
+            )
+            emitInvalidate(fieldAccess, loc, if (field.flip == fir.Flip) swapFlow(flow) else flow)
           }
         case vector: fir.VectorType =>
           for (index <- 0 until vector.size) {
@@ -1879,8 +1877,8 @@ object PanamaCIRCTConverter {
 
   private def visitCommand(parent: Component, cmd: Command)(implicit cvt: PanamaCIRCTConverter): Unit = {
     cmd match {
-      case attach:     Attach  => visitAttach(attach)
-      case connect:    Connect => visitConnect(connect)
+      case attach:     Attach     => visitAttach(attach)
+      case connect:    Connect    => visitConnect(connect)
       case defInvalid: DefInvalid => visitDefInvalid(defInvalid)
       case when:       When =>
         visitWhen(

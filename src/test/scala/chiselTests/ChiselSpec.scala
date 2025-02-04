@@ -186,8 +186,8 @@ trait ChiselRunners extends Assertions {
         Array("--target-dir", BackendCompilationUtilities.createTestDirectory(this.getClass.getSimpleName).toString),
         Seq(ChiselGeneratorAnnotation(() => t), CIRCTTargetAnnotation(CIRCTTarget.SystemVerilog))
       )
-      .collectFirst {
-        case EmittedVerilogCircuitAnnotation(a) => a.value
+      .collectFirst { case EmittedVerilogCircuitAnnotation(a) =>
+        a.value
       }
       .getOrElse(fail("No Verilog circuit was emitted by the FIRRTL compiler!"))
   }
@@ -238,7 +238,7 @@ trait FileCheck extends BeforeAndAfterEachTestData { this: Suite =>
     // Filecheck needs the thing to check in a file
     os.write.over(checkFile.get, check)
     val extraArgs = os.Shellable(fileCheckArgs)
-    os.proc("FileCheck", checkFile.get, extraArgs).call(stdin = in)
+    os.proc("FileCheck", "--allow-empty", checkFile.get, extraArgs).call(stdin = in)
   }
 
   /** Elaborate a Module to FIRRTL and check the FIRRTL with FileCheck */
