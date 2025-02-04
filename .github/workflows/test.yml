@@ -131,6 +131,8 @@ jobs:
           echo \`\`\` >> $GITHUB_STEP_SUMMARY
           $CHISEL_FIRTOOL_PATH/firtool -version >> $GITHUB_STEP_SUMMARY
           echo \`\`\` >> $GITHUB_STEP_SUMMARY
+      - name: Publish Chisel locally for Panama modules
+        run: ./mill unipublish.publishLocal
       - name: Compile with Mill
         run: ./mill compileAll
 
