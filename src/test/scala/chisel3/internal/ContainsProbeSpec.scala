@@ -52,6 +52,11 @@ class ContainsProbeSpec extends ChiselFunSpec {
 
       require(containsProbe(a))
       require(containsProbe(b))
+
+      val aCopy = IO(chiselTypeOf(a))
+      val bCopy = IO(b)
+      require(containsProbe(aCopy))
+      require(containsProbe(bCopy))
     }
     ChiselStage.emitCHIRRTL(new TestMod)
   }
@@ -67,6 +72,15 @@ class ContainsProbeSpec extends ChiselFunSpec {
       require(containsProbe(b))
       require(containsProbe(c))
       require(containsProbe(d))
+
+      val aCopy = IO(chiselTypeOf(a))
+      val bCopy = IO(b)
+      val cCopy = IO(chiselTypeOf(c))
+      val dCopy = IO(d)
+      require(containsProbe(aCopy))
+      require(containsProbe(bCopy))
+      require(containsProbe(cCopy))
+      require(containsProbe(dCopy))
     }
     ChiselStage.emitCHIRRTL(new TestMod)
   }
