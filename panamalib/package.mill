@@ -6,6 +6,7 @@ import mill.scalalib.scalafmt._
 import mill.define.Cross
 
 import build._
+import build_.release
 
 object `package` extends RootModule {
   // https://github.com/com-lihaoyi/mill/issues/3693
@@ -13,7 +14,12 @@ object `package` extends RootModule {
 }
 
 // The Scala API for PanamaBinding, API here is experimentally public to all developers
-trait PanamaLib extends ScalaModule with HasCIRCTPanamaBindingModule with CrossModuleBase with ScalafmtModule {
+trait PanamaLib
+    extends ScalaModule
+    with HasCIRCTPanamaBindingModule
+    with CrossModuleBase
+    with ScalafmtModule
+    with release.ChiselPublishModule {
   def millSourcePath = super.millSourcePath / os.up
 
   def circtPanamaBindingModule = circtpanamabinding
