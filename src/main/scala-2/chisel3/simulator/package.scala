@@ -13,22 +13,22 @@ package object simulator {
   /**
     * An opaque class that can be passed to `Simulation.run` to get access to a `SimulatedModule` in the simulation body.
     */
-  final class ElaboratedModule[T] private[simulator] (
-    private[simulator] val wrapped: T,
-    private[simulator] val ports:   Seq[(Data, ModuleInfo.Port)],
+  final class ElaboratedModule[T]  (
+     val wrapped: T,
+     val ports:   Seq[(Data, ModuleInfo.Port)],
     private[simulator] val layers:  Seq[chisel3.layer.Layer]
   )
 
   /**
     * A class that enables using a Chisel module to control an `svsim.Simulation`.
     */
-  final class SimulatedModule[T] private[simulator] (
-    private[simulator] val elaboratedModule: ElaboratedModule[T],
+  final class SimulatedModule[T]  (
+     val elaboratedModule: ElaboratedModule[T],
     controller:                              Simulation.Controller
   ) extends AnySimulatedModule(elaboratedModule.ports, controller) {
     def wrapped: T = elaboratedModule.wrapped
   }
-  sealed class AnySimulatedModule protected (
+  sealed class AnySimulatedModule  (
     ports:          Seq[(Data, ModuleInfo.Port)],
     val controller: Simulation.Controller
   ) {
@@ -56,7 +56,7 @@ package object simulator {
 
     // When using the low-level API, the user must explicitly call `controller.completeInFlightCommands()` to ensure that all commands are executed. When using a higher-level API like peek/poke, we handle this automatically.
     private var shouldCompleteInFlightCommands: Boolean = false
-    private[simulator] def completeSimulation() = {
+     def completeSimulation() = {
       if (shouldCompleteInFlightCommands) {
         shouldCompleteInFlightCommands = false
         controller.completeInFlightCommands()
@@ -68,11 +68,11 @@ package object simulator {
     private[simulator] def willEvaluate() = {
       evaluateBeforeNextPeek = false
     }
-    private[simulator] def willPoke() = {
+    def willPoke() = {
       shouldCompleteInFlightCommands = true
       evaluateBeforeNextPeek = true
     }
-    private[simulator] def willPeek() = {
+     def willPeek() = {
       shouldCompleteInFlightCommands = true
       if (evaluateBeforeNextPeek) {
         willEvaluate()
@@ -80,7 +80,7 @@ package object simulator {
       }
     }
   }
-  private[simulator] object AnySimulatedModule {
+  object AnySimulatedModule {
     private val dynamicVariable = new scala.util.DynamicVariable[Option[AnySimulatedModule]](None)
     def withValue[T](module: AnySimulatedModule)(body: => T): T = {
       require(dynamicVariable.value.isEmpty, "Nested simulations are not supported.")
