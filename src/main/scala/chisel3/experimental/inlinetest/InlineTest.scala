@@ -6,7 +6,7 @@ import chisel3._
 import chisel3.experimental.hierarchy.{Definition, Instance}
 
 /** Per-test parametrization needed to build a testharness that instantiates
-  *  the DUT and elaborates a test body.
+  * the DUT and elaborates a test body.
   *
   *  @tparam M the type of the DUT module
   *  @tparam R the type of the result returned by the test body
