@@ -16,7 +16,7 @@ class TestResultBundle extends Bundle {
 object TestHarnessWithResultIO {
   class TestHarnessWithResultIOModule[M <: RawModule](val test: TestParameters[M, TestResultBundle])
       extends Module
-      with TestHarnessModule[M, TestResultBundle] {
+      with TestHarness.Module[M, TestResultBundle] {
     val result = IO(new TestResultBundle)
     result := elaborateTest()
   }
@@ -31,7 +31,7 @@ object TestHarnessWithMonitorSocket {
   // socket to which to attach a monitor.
   class TestHarnessWithMonitorSocketModule[M <: RawModule with HasMonitorSocket](val test: TestParameters[M, Unit])
       extends Module
-      with TestHarnessModule[M, Unit] {
+      with TestHarness.Module[M, Unit] {
     val monitor = Module(new ProtocolMonitor(dut.monProbe.cloneType))
     monitor.io :#= probe.read(dut.monProbe)
   }
@@ -109,7 +109,6 @@ class ModuleWithTests(ioWidth: Int = 32) extends Module with HasMonitorSocket wi
 
 class InlineTestSpec extends ChiselFlatSpec with FileCheck {
   it should "generate a public module for each test" in {
-    println(circt.stage.ChiselStage.emitCHIRRTL(new ModuleWithTests))
     generateFirrtlAndFileCheck(new ModuleWithTests)(
       """
       | CHECK:      module ModuleWithTests

@@ -21,35 +21,41 @@ class TestParameters[M <: RawModule, R] private[inlinetest] (
   /** The body for this test, returns a result. */
   val testBody: Instance[M] => R
 ) {
-  def desiredTestModuleName = s"test_${dutName}_${testName}"
+  final def desiredTestModuleName = s"test_${dutName}_${testName}"
 }
 
-/** TestHarnesses for inline tests without clock and reset IOs should extend this. This
-  * trait sets the correct desiredName for the module, instantiates the DUT, and provides
-  * methods to elaborate the test.
-  *
-  *  @tparam M the type of the DUT module
-  *  @tparam R the type of the result returned by the test body
-  */
-trait TestHarnessRawModule[M <: RawModule, R] extends Public { this: RawModule =>
-  def test: TestParameters[M, R]
-  override def desiredName = test.desiredTestModuleName
-  val dut = Instance(test.dutDefinition)
-  final def elaborateTest(): R = test.testBody(dut)
+/** Contains traits that implement behavior common to generators for unit test testharness modules. */
+object TestHarness {
+  import chisel3.{Module => ChiselModule, RawModule => ChiselRawModule}
+
+  /** TestHarnesses for inline tests without clock and reset IOs should extend this. This
+    * trait sets the correct desiredName for the module, instantiates the DUT, and provides
+    * methods to elaborate the test.
+    *
+    *  @tparam M the type of the DUT module
+    *  @tparam R the type of the result returned by the test body
+    */
+  trait RawModule[M <: ChiselRawModule, R] extends Public { this: ChiselRawModule =>
+    def test: TestParameters[M, R]
+    override def desiredName = test.desiredTestModuleName
+    val dut = Instance(test.dutDefinition)
+    final def elaborateTest(): R = test.testBody(dut)
+  }
+
+  /** TestHarnesses for inline tests should extend this. This trait sets the correct desiredName for
+   *  the module, instantiates the DUT, and provides methods to elaborate the test. By default, the
+   *  reset is synchronous, but this can be changed by overriding [[resetType]].
+   *
+   *  @tparam M the type of the DUT module
+   *  @tparam R the type of the result returned by the test body
+   */
+  trait Module[M <: ChiselRawModule, R] extends RawModule[M, R] { this: ChiselModule =>
+    override def resetType = Module.ResetType.Synchronous
+  }
 }
 
-/** TestHarnesses for inline tests should extend this. This trait sets the correct desiredName for
- *  the module, instantiates the DUT, and provides methods to elaborate the test. By default, the
- *  reset is synchronous, but this can be changed by overriding [[resetType]].
- *
- *  @tparam M the type of the DUT module
- *  @tparam R the type of the result returned by the test body
- */
-trait TestHarnessModule[M <: RawModule, R] extends TestHarnessRawModule[M, R] { this: Module =>
-  override def resetType = Module.ResetType.Synchronous
-}
-
-/** An implementation of a testharness generator.
+/** An implementation of a testharness generator. This is a type class that defines how to
+ *  generate a testharness. It is passed to each invocation of [[HasTests.test]].
   *
   *  @tparam M the type of the DUT module
   *  @tparam R the type of the result returned by the test body
@@ -67,7 +73,7 @@ object TestHarnessGenerator {
     */
   class UnitTestHarness[M <: RawModule](val test: TestParameters[M, Unit])
       extends Module
-      with TestHarnessModule[M, Unit] {
+      with TestHarness.Module[M, Unit] {
     elaborateTest()
   }
 
