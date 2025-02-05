@@ -20,7 +20,34 @@ class TestParameters[M <: RawModule, R] private[inlinetest] (
   val dutDefinition: Definition[M],
   /** The body for this test, returns a result. */
   val testBody: Instance[M] => R
-)
+) {
+  def desiredTestModuleName = s"test_${dutName}_${testName}"
+}
+
+/** TestHarnesses for inline tests without clock and reset IOs should extend this. This
+  * trait sets the correct desiredName for the module, instantiates the DUT, and provides
+  * methods to elaborate the test.
+  *
+  *  @tparam M the type of the DUT module
+  *  @tparam R the type of the result returned by the test body
+  */
+trait TestHarnessRawModule[M <: RawModule, R] extends Public { this: RawModule =>
+  def test: TestParameters[M, R]
+  override def desiredName = test.desiredTestModuleName
+  val dut = Instance(test.dutDefinition)
+  final def elaborateTest(): R = test.testBody(dut)
+}
+
+/** TestHarnesses for inline tests should extend this. This trait sets the correct desiredName for
+ *  the module, instantiates the DUT, and provides methods to elaborate the test. By default, the
+ *  reset is synchronous, but this can be changed by overriding [[resetType]].
+ *
+ *  @tparam M the type of the DUT module
+ *  @tparam R the type of the result returned by the test body
+ */
+trait TestHarnessModule[M <: RawModule, R] extends TestHarnessRawModule[M, R] { this: Module =>
+  override def resetType = Module.ResetType.Synchronous
+}
 
 /** An implementation of a testharness generator.
   *
@@ -38,11 +65,8 @@ object TestHarnessGenerator {
   /** The minimal implementation of a unit testharness. Has a clock input and a synchronous reset
     *  input. Connects these to the DUT and does nothing else.
     */
-  class UnitTestHarness[M <: RawModule](test: TestParameters[M, Unit]) extends Module with Public {
-    override def resetType = Module.ResetType.Synchronous
-    override val desiredName = s"test_${test.dutName}_${test.testName}"
-    val dut = Instance(test.dutDefinition)
-    test.testBody(dut)
+  class UnitTestHarness[M <: RawModule](val test: TestParameters[M, Unit]) extends Module with TestHarnessModule[M, Unit] {
+    elaborateTest()
   }
 
   implicit def unitTestHarness[M <: RawModule]: TestHarnessGenerator[M, Unit] = new TestHarnessGenerator[M, Unit] {

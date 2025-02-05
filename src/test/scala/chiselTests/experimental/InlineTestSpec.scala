@@ -14,35 +14,30 @@ class TestResultBundle extends Bundle {
 // Here is a testharness that consumes some kind of hardware from the test body, e.g.
 // a finish and pass/fail interface.
 object TestHarnessWithResultIO {
-  class TestHarnessModule[M <: RawModule](test: TestParameters[M, TestResultBundle]) extends Module {
-    override def resetType = Module.ResetType.Synchronous
-    override val desiredName = s"test_${test.dutName}_${test.testName}"
-    val dut = Instance(test.dutDefinition)
+  class TestHarnessWithResultIOModule[M <: RawModule](val test: TestParameters[M, TestResultBundle])
+    extends Module
+    with TestHarnessModule[M, TestResultBundle] {
     val result = IO(new TestResultBundle)
-    result := test.body(dut)
+    result := elaborateTest()
   }
   implicit def testharnessGenerator[M <: RawModule]: TestHarnessGenerator[M, TestResultBundle] =
     new TestHarnessGenerator[M, TestResultBundle] {
-      def generate(test: TestParameters[M, TestResultBundle]): RawModule with Public =
-        new TestHarnessModule(test) with Public
+      def generate(test: TestParameters[M, TestResultBundle]) = new TestHarnessWithResultIOModule(test)
     }
 }
 
 object TestHarnessWithMonitorSocket {
   // Here is a testharness that expects some sort of interface on its DUT, e.g. a probe
   // socket to which to attach a monitor.
-  class TestHarnessModule[M <: RawModule with HasMonitorSocket](test: TestParameters[M, Unit]) extends Module {
-    override def resetType = Module.ResetType.Synchronous
-    override val desiredName = s"test_${test.dutName}_${test.testName}"
-    val dut = Instance(test.dutDefinition)
-    test.body(dut)
+  class TestHarnessWithMonitorSocketModule[M <: RawModule with HasMonitorSocket](val test: TestParameters[M, Unit])
+    extends Module
+    with TestHarnessModule[M, Unit] {
     val monitor = Module(new ProtocolMonitor(dut.monProbe.cloneType))
     monitor.io :#= probe.read(dut.monProbe)
   }
   implicit def testharnessGenerator[M <: RawModule with HasMonitorSocket]: TestHarnessGenerator[M, Unit] =
     new TestHarnessGenerator[M, Unit] {
-      def generate(test: TestParameters[M, Unit]): RawModule with Public =
-        new TestHarnessModule(test) with Public
+      def generate(test: TestParameters[M, Unit]): RawModule with Public = new TestHarnessWithMonitorSocketModule(test)
     }
 }
 
