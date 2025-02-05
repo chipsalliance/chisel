@@ -19,7 +19,7 @@ class TestParameters[M <: RawModule, R] private[inlinetest] (
   /** A Definition of the DUT module. */
   val dutDefinition: Definition[M],
   /** The body for this test, returns a result. */
-  val body: Instance[M] => R
+  val testBody: Instance[M] => R
 )
 
 /** An implementation of a testharness generator.
@@ -42,11 +42,11 @@ object TestHarnessGenerator {
     override def resetType = Module.ResetType.Synchronous
     override val desiredName = s"test_${test.dutName}_${test.testName}"
     val dut = Instance(test.dutDefinition)
-    test.body(dut)
+    test.testBody(dut)
   }
 
   implicit def unitTestHarness[M <: RawModule]: TestHarnessGenerator[M, Unit] = new TestHarnessGenerator[M, Unit] {
-    def generate(test: TestParameters[M, Unit]): RawModule with Public = new UnitTestHarness(test)
+    override def generate(test: TestParameters[M, Unit]) = new UnitTestHarness(test)
   }
 }
 
@@ -72,11 +72,11 @@ trait HasTests[M <: RawModule] { module: M =>
     *  testharness has clock and synchronous reset IOs and contains the test
     *  body.
     *
-    *  @param body the circuit to elaborate inside the testharness
+    *  @param testBody the circuit to elaborate inside the testharness
     */
-  protected final def test[R](testName: String)(body: Instance[M] => R)(implicit th: TestHarnessGenerator[M, R]): Unit =
+  protected final def test[R](testName: String)(testBody: Instance[M] => R)(implicit th: TestHarnessGenerator[M, R]): Unit =
     elaborateParentModule { moduleDefinition =>
-      val test = new TestParameters[M, R](desiredName, testName, moduleDefinition, body)
+      val test = new TestParameters[M, R](desiredName, testName, moduleDefinition, testBody)
       th.generate(test)
     }
 }
