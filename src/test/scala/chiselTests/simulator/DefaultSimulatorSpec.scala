@@ -1,9 +1,7 @@
 package chiselTests.simulator
 
 import chisel3._
-import chisel3.layer.{block, Layer, LayerConfig}
-import chisel3.ltl.AssertProperty
-import chisel3.simulator.{HasTestingDirectory, LayerControl}
+import chisel3.simulator.HasTestingDirectory
 import chisel3.simulator.DefaultSimulator._
 import java.nio.file.FileSystems
 import org.scalatest.funspec.AnyFunSpec
