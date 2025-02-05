@@ -112,37 +112,39 @@ class ModuleWithTests(ioWidth: Int = 32) extends Module with HasMonitorSocket wi
   }
 }
 
-class HasTestsSpec extends ChiselFlatSpec with FileCheck {
+class InlineTestSpec extends ChiselFlatSpec with FileCheck {
   it should "generate a public module for each test" in {
+    println(circt.stage.ChiselStage.emitCHIRRTL(new ModuleWithTests))
     generateFirrtlAndFileCheck(new ModuleWithTests)(
       """
-      | CHECK: module ModuleWithTests
+      | CHECK:      module ModuleWithTests
+      | CHECK:        output monProbe : Probe<{ in : UInt<32>, out : UInt<32>}>
       |
-      | CHECK: public module test_ModuleWithTests_foo
-      | CHECK: input clock : Clock
-      | CHECK: input reset : UInt<1>
-      | CHECK: inst dut of ModuleWithTests
+      | CHECK:      public module test_ModuleWithTests_foo
+      | CHECK-NEXT:   input clock : Clock
+      | CHECK-NEXT:   input reset : UInt<1>
+      | CHECK:        inst dut of ModuleWithTests
       |
-      | CHECK: public module test_ModuleWithTests_bar
-      | CHECK: input clock : Clock
-      | CHECK: input reset : UInt<1>
-      | CHECK: inst dut of ModuleWithTests
+      | CHECK:      public module test_ModuleWithTests_bar
+      | CHECK-NEXT:   input clock : Clock
+      | CHECK-NEXT:   input reset : UInt<1>
+      | CHECK:        inst dut of ModuleWithTests
       |
-      | CHECK: public module test_ModuleWithTests_with_result
-      | CHECK: input clock : Clock
-      | CHECK: input reset : UInt<1>
-      | CHECK: output result : { finish : UInt<1>, code : UInt<8>}
-      | CHECK: inst dut of ModuleWithTests
+      | CHECK:      public module test_ModuleWithTests_with_result
+      | CHECK-NEXT:   input clock : Clock
+      | CHECK-NEXT:   input reset : UInt<1>
+      | CHECK-NEXT:   output result : { finish : UInt<1>, code : UInt<8>}
+      | CHECK:        inst dut of ModuleWithTests
       |
-      | CHECK: public module test_ModuleWithTests_with_monitor
-      | CHECK: input clock : Clock
-      | CHECK: input reset : UInt<1>
-      | CHECK: inst dut of ModuleWithTests
-      | CHECK: inst monitor of ProtocolMonitor
-      | CHECK: connect monitor.clock, clock
-      | CHECK: connect monitor.reset, reset
-      | CHECK: connect monitor.io.out, read(dut.monProbe).out
-      | CHECK: connect monitor.io.in, read(dut.monProbe).in
+      | CHECK:      public module test_ModuleWithTests_with_monitor
+      | CHECK-NEXT:   input clock : Clock
+      | CHECK-NEXT:   input reset : UInt<1>
+      | CHECK:        inst dut of ModuleWithTests
+      | CHECK:        inst monitor of ProtocolMonitor
+      | CHECK-NEXT:   connect monitor.clock, clock
+      | CHECK-NEXT:   connect monitor.reset, reset
+      | CHECK-NEXT:   connect monitor.io.out, read(dut.monProbe).out
+      | CHECK-NEXT:   connect monitor.io.in, read(dut.monProbe).in
       """
     )
   }
