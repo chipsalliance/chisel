@@ -65,7 +65,9 @@ object TestHarnessGenerator {
   /** The minimal implementation of a unit testharness. Has a clock input and a synchronous reset
     *  input. Connects these to the DUT and does nothing else.
     */
-  class UnitTestHarness[M <: RawModule](val test: TestParameters[M, Unit]) extends Module with TestHarnessModule[M, Unit] {
+  class UnitTestHarness[M <: RawModule](val test: TestParameters[M, Unit])
+      extends Module
+      with TestHarnessModule[M, Unit] {
     elaborateTest()
   }
 
@@ -98,7 +100,9 @@ trait HasTests[M <: RawModule] { module: M =>
     *
     *  @param testBody the circuit to elaborate inside the testharness
     */
-  protected final def test[R](testName: String)(testBody: Instance[M] => R)(implicit th: TestHarnessGenerator[M, R]): Unit =
+  protected final def test[R](
+    testName: String
+  )(testBody: Instance[M] => R)(implicit th: TestHarnessGenerator[M, R]): Unit =
     elaborateParentModule { moduleDefinition =>
       val test = new TestParameters[M, R](desiredName, testName, moduleDefinition, testBody)
       th.generate(test)
