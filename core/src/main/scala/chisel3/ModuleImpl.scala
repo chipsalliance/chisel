@@ -69,63 +69,31 @@ private[chisel3] trait ObjectModuleImpl {
     }
     Builder.readyForModuleConstr = true
 
-    val parent = Builder.currentModule
-    val parentWhenStack = Builder.whenStack
-    val parentBlockStack = Builder.blockStack
-    val parentLayerStack = Builder.layerStack
+    val module = Builder.State.guard(Builder.State.default) {
+      val module: T = bc
 
-    // Save then clear clock and reset to prevent leaking scope, must be set again in the Module
-    // Note that Disable is a function of whatever the current reset is, so it does not need a port
-    //   and thus does not change when we cross module boundaries
-    val (saveClock, saveReset) = (Builder.currentClockDelayed, Builder.currentResetDelayed)
-    val savePrefix = Builder.getPrefix
-    Builder.clearPrefix()
-    Builder.currentClock = None
-    Builder.currentReset = None
+      if (Builder.whenDepth != 0) {
+        throwException("Internal Error! when() scope depth is != 0, this should have been caught!")
+      }
+      if (Builder.readyForModuleConstr) {
+        throwException(
+          "Error: attempted to instantiate a Module, but nothing happened. " +
+            "This is probably due to rewrapping a Module instance with Module()." +
+            sourceInfo.makeMessage(" See " + _)
+        )
+      }
 
-    // Save the currently enabled layer.  Clear any enabled layers.
-    val saveEnabledLayers = Builder.enabledLayers
-    Builder.enabledLayers = LinkedHashSet.empty
+      // Only add the component if the module generates one
+      val componentOpt = module.generateComponent()
+      for (component <- componentOpt) {
+        Builder.components += component
+      }
 
-    // Execute the module, this has the following side effects:
-    //   - set currentModule
-    //   - unset readyForModuleConstr
-    //   - reset whenStack to be empty
-    //   - reset blockStack to body or empty if none
-    //   - reset layerStack to be root :: nil
-    //   - set currentClockAndReset
-    val module: T = bc // bc is actually evaluated here
+      if (module.localModulePrefix.isDefined) {
+        Builder.popModulePrefix() // Pop localModulePrefix if it was defined
+      }
 
-    require(Builder.blockDepth == module.getBody.size, "block leftover")
-    if (Builder.whenDepth != 0) {
-      throwException("Internal Error! when() scope depth is != 0, this should have been caught!")
-    }
-    if (Builder.readyForModuleConstr) {
-      throwException(
-        "Error: attempted to instantiate a Module, but nothing happened. " +
-          "This is probably due to rewrapping a Module instance with Module()." +
-          sourceInfo.makeMessage(" See " + _)
-      )
-    }
-
-    // Only add the component if the module generates one
-    val componentOpt = module.generateComponent()
-    for (component <- componentOpt) {
-      Builder.components += component
-    }
-
-    // Reset Builder state *after* generating the component, so any atModuleBodyEnd generators are still within the
-    // scope of the current Module.
-    Builder.currentModule = parent // Back to parent!
-    Builder.whenStack = parentWhenStack
-    Builder.blockStack = parentBlockStack
-    Builder.layerStack = parentLayerStack
-    Builder.currentClock = saveClock // Back to clock and reset scope
-    Builder.currentReset = saveReset
-    Builder.setPrefix(savePrefix)
-    Builder.enabledLayers = saveEnabledLayers
-    if (module.localModulePrefix.isDefined) {
-      Builder.popModulePrefix() // Pop localModulePrefix if it was defined
+      module
     }
 
     module.moduleBuilt()
@@ -509,10 +477,7 @@ package experimental {
       readyForModuleConstr = false
 
       Builder.currentModule = Some(this)
-      Builder.whenStack = Nil
-      Builder.blockStack = Nil
       getBody.foreach(Builder.pushBlock(_))
-      Builder.layerStack = layer.Layer.root :: Nil
     }
 
     //
