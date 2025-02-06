@@ -22,5 +22,7 @@ trait IntegrationTests extends CrossSbtModule with HasScala2Plugin with HasCommo
   object test extends SbtTests with TestModule.ScalaTest with ScalafmtModule {
     override def moduleDeps = super.moduleDeps :+ chisel().test
     def ivyDeps = Agg(v.scalatest, v.scalacheck)
+
+    override def testForkGrouping = discoveredTestClasses().grouped(8).toSeq
   }
 }

@@ -45,5 +45,5 @@ Please be sure to elaborate on any API changes or deprecations and any impact on
 - [ ] Did you review?
 - [ ] Did you check whether all relevant Contributor checkboxes have been checked?
 - [ ] Did you do one of the following when ready to merge:
-  - [ ] Squash: You/ the contributor `Enable auto-merge (squash)`, clean up the commit message, and label with `Please Merge`.
+  - [ ] Squash: You/ the contributor `Enable auto-merge (squash)` and clean up the commit message.
   - [ ] Merge: Ensure that contributor has cleaned up their commit history, then merge with `Create a merge commit`.
