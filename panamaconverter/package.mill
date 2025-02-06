@@ -6,6 +6,7 @@ import mill.scalalib.scalafmt._
 import mill.define.Cross
 
 import build._
+import build_.release
 
 object `package` extends RootModule {
   // https://github.com/com-lihaoyi/mill/issues/3693
@@ -17,12 +18,13 @@ trait PanamaConverter
     with HasPanamaOMModule
     with CrossModuleBase
     with HasScala2Plugin
-    with ScalafmtModule {
+    with ScalafmtModule
+    with release.ChiselPublishModule {
   def millSourcePath = super.millSourcePath / os.up
 
   def panamaOMModule = panamaom.cross(crossScalaVersion)
-  def chiselModule = chisel(crossScalaVersion)
   def pluginModule = plugin.cross(crossScalaVersion)
 
-  override def moduleDeps = super.moduleDeps ++ Some(chiselModule)
+  // depend published chisel artifact for publishing
+  override def ivyDeps = super.ivyDeps() ++ Agg(ivy"org.chipsalliance::chisel::${publishVersion()}")
 }
