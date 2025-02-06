@@ -5,15 +5,12 @@ import mill.scalalib._
 import mill.scalalib.scalafmt._
 
 import build._
-import build_.release
 
 object `package` extends RootModule with CIRCTPanamaBinding
 
 // Java Codegen for all declared functions.
 // All of these functions are not private API which is subject to change.
-trait CIRCTPanamaBinding extends HasJextractGeneratedSources with release.ChiselPublishModule {
-  override def javadocOptions = Task(super.javadocOptions() ++ Seq("--enable-preview", "--release", "21"))
-
+trait CIRCTPanamaBinding extends HasJextractGeneratedSources {
   object utils extends Module {
     val architecture = System.getProperty("os.arch")
     val operationSystem = System.getProperty("os.name")
