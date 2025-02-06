@@ -29,7 +29,12 @@ import chisel3.util.simpleClassName
 import chisel3.experimental.{annotate, ChiselAnnotation}
 import chisel3.experimental.hierarchy.Hierarchy
 
-private[chisel3] trait ObjectModuleImpl {
+// Base interface to tell scala-2 and scala-3 private interface traits what methods will be implemented by the public API.
+private[chisel3] trait BaseModuleIntf {
+  protected[chisel3] def _applyImpl[T <: BaseModule](bc: => T)(implicit sourceInfo: SourceInfo): T
+}
+
+object Module extends ObjectModuleIntf {
 
   protected[chisel3] def _applyImpl[T <: BaseModule](bc: => T)(implicit sourceInfo: SourceInfo): T = {
     // Instantiate the module definition.
@@ -212,7 +217,15 @@ private[chisel3] trait ObjectModuleImpl {
   }
 }
 
-private[chisel3] trait ModuleImpl extends RawModule with ImplicitClock with ImplicitReset {
+
+/** Abstract base class for Modules, which behave much like Verilog modules.
+  * These may contain both logic and state which are written in the Module
+  * body (constructor).
+  * This abstract base class includes an implicit clock and reset.
+  *
+  * @note Module instantiations must be wrapped in a Module() call.
+  */
+abstract class Module extends RawModule with ImplicitClock with ImplicitReset {
 
   /** Override this to explicitly set the type of reset you want on this module , before any reset inference */
   def resetType: Module.ResetType.Type = Module.ResetType.Default
