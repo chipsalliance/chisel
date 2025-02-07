@@ -32,7 +32,7 @@ trait WithTestingDirectory { self: TestSuite =>
     *
     * For different behavior, please override this in your test suite.
     */
-  def buildDir: String = "test_run_dir"
+  def buildDir: String = "test-run-dir"
 
   // Assemble all the directories that should be created for this test.  This is
   // done by examining the test (via a fixture) and then setting a dynamic
@@ -50,8 +50,13 @@ trait WithTestingDirectory { self: TestSuite =>
     */
   final implicit def implementation: HasTestingDirectory = new HasTestingDirectory {
 
-    /** Return the test name with some sanitization applied. */
-    final def getTestName = testName.value.map(_.replaceAll(" ", "_").replaceAll("\\W+", ""))
+    /** Return the test name with minimal sanitization applied:
+      *
+      *   - Replace all whitespace as this is incompatible with GNU make [1]
+      *
+      * [1]: https://savannah.gnu.org/bugs/?712
+      */
+    final def getTestName = testName.value.map(_.replaceAll("\\s", "-"))
 
     override def getDirectory(testClassName: String): Path = FileSystems
       .getDefault()

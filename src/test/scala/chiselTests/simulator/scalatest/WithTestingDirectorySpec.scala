@@ -12,63 +12,86 @@ import scala.reflect.io.Directory
 
 class WithTestingDirectorySpec extends AnyFunSpec with Matchers with WithTestingDirectory {
 
-  class Foo extends Module {
+  /** Check that the directory structure and the files contained within make sense
+    * for a Chiselsim/svsim build.
+    */
+  private def checkDirectoryStructure[A](dir: String, subDirs: String*)(thunk: => A): Unit = {
+
+    val directory = Directory(
+      FileSystems.getDefault
+        .getPath(
+          dir,
+          subDirs: _*
+        )
+        .toFile
+    )
+    directory.deleteRecursively()
+
+    thunk
+
+    val allFiles = directory.deepFiles.toSeq.map(_.toString).toSet
+    for (
+      file <- Seq(
+        directory.toFile.toString + "/workdir-default/Makefile",
+        directory.toFile.toString + "/primary-sources/Foo.sv"
+      )
+    ) {
+      info(s"found expected file: '$file'")
+      allFiles should contain(file)
+    }
+
+  }
+
+  private class Foo extends Module {
     stop()
   }
 
   describe("A test suite mixing in WithTestingDirectory") {
+
     it("should generate a directory structure derived from the suite and test name") {
-
-      val directory = Directory(
-        FileSystems
-          .getDefault()
-          .getPath(
-            "test_run_dir",
-            "WithTestingDirectorySpec",
-            "A_test_suite_mixing_in_WithTestingDirectory",
-            "should_generate_a_directory_structure_derived_from_the_suite_and_test_name"
-          )
-          .toFile()
-      )
-      directory.deleteRecursively()
-
-      simulate(new Foo()) { _ => }
-
-      info(s"found expected directory: '$directory'")
-      assert(directory.exists)
-      assert(directory.isDirectory)
-
-      val allFiles = directory.deepFiles.toSeq.map(_.toString).toSet
-      for (
-        file <- Seq(
-          directory.toFile.toString + "/workdir-default/Makefile",
-          directory.toFile.toString + "/primary-sources/Foo.sv"
-        )
+      checkDirectoryStructure(
+        "test-run-dir",
+        "WithTestingDirectorySpec",
+        "A-test-suite-mixing-in-WithTestingDirectory",
+        "should-generate-a-directory-structure-derived-from-the-suite-and-test-name"
       ) {
-        info(s"found expected file: '$file'")
-        allFiles should contain(file)
+        simulate(new Foo()) { _ => }
       }
     }
+
     it("should generate another directory, too") {
-      val directory = Directory(
-        FileSystems
-          .getDefault()
-          .getPath(
-            "test_run_dir",
-            "WithTestingDirectorySpec",
-            "A_test_suite_mixing_in_WithTestingDirectory",
-            "should_generate_another_directory_too"
-          )
-          .toFile()
-      )
-      directory.deleteRecursively()
-
-      simulate(new Foo()) { _ => }
-
-      info(s"found expected directory: '$directory'")
-      assert(directory.exists)
-      assert(directory.isDirectory)
+      checkDirectoryStructure(
+        "test-run-dir",
+        "WithTestingDirectorySpec",
+        "A-test-suite-mixing-in-WithTestingDirectory",
+        "should-generate-another-directory,-too"
+      ) {
+        simulate(new Foo()) { _ => }
+      }
     }
+
+    it("should handle emojis, e.g., 🚀") {
+      checkDirectoryStructure(
+        "test-run-dir",
+        "WithTestingDirectorySpec",
+        "A-test-suite-mixing-in-WithTestingDirectory",
+        "should-handle-emojis,-e.g.,-🚀"
+      ) {
+        simulate(new Foo()) { _ => }
+      }
+    }
+
+    it("should handle CJK characters, e.g., 好猫咪") {
+      checkDirectoryStructure(
+        "test-run-dir",
+        "WithTestingDirectorySpec",
+        "A-test-suite-mixing-in-WithTestingDirectory",
+        "should-handle-CJK-characters,-e.g.,-好猫咪"
+      ) {
+        simulate(new Foo()) { _ => }
+      }
+    }
+
   }
 
 }
