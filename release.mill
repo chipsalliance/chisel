@@ -13,7 +13,8 @@ import de.tobiasroeser.mill.vcs.version.VcsVersion // pulled in by mill-ci-relea
 
 import build._
 
-trait ChiselPublishModule extends CiReleaseModule {
+/** Adds basic publishing information--useful for local publishing */
+trait BaseChiselPublishModule extends PublishModule {
   // Publish information
   def pomSettings = PomSettings(
     description = artifactName(),
@@ -28,8 +29,6 @@ trait ChiselPublishModule extends CiReleaseModule {
     )
   )
 
-  override def sonatypeHost = Some(SonatypeHost.s01)
-
   override def publishVersion = VcsVersion
     .vcsState()
     .format(
@@ -37,6 +36,12 @@ trait ChiselPublishModule extends CiReleaseModule {
       revHashDigits = 8,
       untaggedSuffix = "-SNAPSHOT"
     )
+}
+
+/** Integrates the Module into the Chisel CI publishing flow */
+trait ChiselPublishModule extends BaseChiselPublishModule with CiReleaseModule {
+
+  override def sonatypeHost = Some(SonatypeHost.s01)
 
 }
 

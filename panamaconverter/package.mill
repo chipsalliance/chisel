@@ -19,7 +19,7 @@ trait PanamaConverter
     with CrossModuleBase
     with HasScala2Plugin
     with ScalafmtModule
-    with release.ChiselPublishModule {
+    with release.BaseChiselPublishModule {
   def millSourcePath = super.millSourcePath / os.up
 
   def panamaOMModule = panamaom.cross(crossScalaVersion)

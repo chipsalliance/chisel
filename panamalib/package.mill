@@ -19,7 +19,7 @@ trait PanamaLib
     with HasCIRCTPanamaBindingModule
     with CrossModuleBase
     with ScalafmtModule
-    with release.ChiselPublishModule {
+    with release.BaseChiselPublishModule {
   def millSourcePath = super.millSourcePath / os.up
 
   def circtPanamaBindingModule = circtpanamabinding
