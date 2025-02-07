@@ -274,6 +274,8 @@ trait Chisel extends CrossSbtModule with HasScala2MacroAnno with HasScala2Plugin
 
   override def moduleDeps = super.moduleDeps ++ Seq(coreModule, svsimModule)
 
+  def compileIvyDeps = Agg(v.scalatest)
+
   object test extends SbtTests with TestModule.ScalaTest with ScalafmtModule {
     def ivyDeps = Agg(v.scalatest, v.scalacheck)
 
