@@ -6,13 +6,19 @@ import mill.scalalib.scalafmt._
 import mill.define.Cross
 
 import build._
+import build_.release
 
 object `package` extends RootModule {
   // https://github.com/com-lihaoyi/mill/issues/3693
   object cross extends Cross[PanamaOM](v.scalaCrossVersions)
 }
 
-trait PanamaOM extends ScalaModule with HasPanamaLibModule with CrossModuleBase with ScalafmtModule {
+trait PanamaOM
+    extends ScalaModule
+    with HasPanamaLibModule
+    with CrossModuleBase
+    with ScalafmtModule
+    with release.ChiselPublishModule {
   def millSourcePath = super.millSourcePath / os.up
 
   def panamaLibModule = panamalib.cross(crossScalaVersion)
