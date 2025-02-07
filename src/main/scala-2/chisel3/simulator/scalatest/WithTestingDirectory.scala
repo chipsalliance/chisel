@@ -15,11 +15,11 @@ import scala.util.DynamicVariable
   * <buildDir>
   * └── <suite-name>
   *     └── <scope-1-name>
-  *         └── <scope-2-name>
-  *             └── ...
-  *                 └── <scope-n-name>
-  *                     ├── <test-1-name>
-  *                     └── <test-2-name>
+  *         └── ...
+  *             └── <scope-n-name>
+  *                 ├── <test-1-name>
+  *                 ├── ...
+  *                 └── <test-n-name>
   * }}}
   *
   * You may change the `buildDir` by overridding a method of the same name in
