@@ -32,7 +32,7 @@ trait WithTestingDirectory { self: TestSuite =>
     *
     * For different behavior, please override this in your test suite.
     */
-  def buildDir: String = "test-run-dir"
+  def buildDir: String = "build"
 
   // Assemble all the directories that should be created for this test.  This is
   // done by examining the test (via a fixture) and then setting a dynamic

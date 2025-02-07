@@ -50,7 +50,7 @@ class WithTestingDirectorySpec extends AnyFunSpec with Matchers with WithTesting
 
     it("should generate a directory structure derived from the suite and test name") {
       checkDirectoryStructure(
-        "test-run-dir",
+        "build",
         "WithTestingDirectorySpec",
         "A-test-suite-mixing-in-WithTestingDirectory",
         "should-generate-a-directory-structure-derived-from-the-suite-and-test-name"
@@ -61,7 +61,7 @@ class WithTestingDirectorySpec extends AnyFunSpec with Matchers with WithTesting
 
     it("should generate another directory, too") {
       checkDirectoryStructure(
-        "test-run-dir",
+        "build",
         "WithTestingDirectorySpec",
         "A-test-suite-mixing-in-WithTestingDirectory",
         "should-generate-another-directory,-too"
@@ -72,7 +72,7 @@ class WithTestingDirectorySpec extends AnyFunSpec with Matchers with WithTesting
 
     it("should handle emojis, e.g., 🚀") {
       checkDirectoryStructure(
-        "test-run-dir",
+        "build",
         "WithTestingDirectorySpec",
         "A-test-suite-mixing-in-WithTestingDirectory",
         "should-handle-emojis,-e.g.,-🚀"
@@ -83,7 +83,7 @@ class WithTestingDirectorySpec extends AnyFunSpec with Matchers with WithTesting
 
     it("should handle CJK characters, e.g., 好猫咪") {
       checkDirectoryStructure(
-        "test-run-dir",
+        "build",
         "WithTestingDirectorySpec",
         "A-test-suite-mixing-in-WithTestingDirectory",
         "should-handle-CJK-characters,-e.g.,-好猫咪"
