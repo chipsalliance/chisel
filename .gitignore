@@ -13,6 +13,7 @@ target/
 *.fir
 *.v
 test_run_dir
+build/
 *~
 \#*\#
 .\#*
