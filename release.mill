@@ -67,6 +67,9 @@ trait Unipublish extends ScalaModule with ChiselPublishModule {
   /** Aggregated ivy deps to include as dependencies in POM */
   def ivyDeps = Task { Task.traverse(components)(_.ivyDeps)().flatten }
 
+  /** Aggregated compile (Maven provided scope) dependencies to be included in POM */
+  def compileIvyDeps = Task { Task.traverse(components)(_.compileIvyDeps)().flatten }
+
   /** Aggregated local classpath to include in jar */
   override def localClasspath = Task { Task.traverse(components)(_.localClasspath)().flatten }
 
