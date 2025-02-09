@@ -39,10 +39,8 @@ trait BaseChiselPublishModule extends PublishModule {
 }
 
 /** Integrates the Module into the Chisel CI publishing flow */
-trait ChiselPublishModule extends BaseChiselPublishModule with CiReleaseModule {
-
+trait ChiselPublishModule extends CiReleaseModule with BaseChiselPublishModule {
   override def sonatypeHost = Some(SonatypeHost.s01)
-
 }
 
 /** Aggregate project for publishing Chisel as a single artifact
