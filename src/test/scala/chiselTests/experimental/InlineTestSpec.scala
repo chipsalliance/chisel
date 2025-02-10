@@ -34,6 +34,7 @@ object TestHarnessWithMonitorSocket {
       with TestHarness.Module[M, Unit] {
     val monitor = Module(new ProtocolMonitor(dut.monProbe.cloneType))
     monitor.io :#= probe.read(dut.monProbe)
+    elaborateTest()
   }
   implicit def testharnessGenerator[M <: RawModule with HasMonitorSocket]: TestHarnessGenerator[M, Unit] =
     new TestHarnessGenerator[M, Unit] {
