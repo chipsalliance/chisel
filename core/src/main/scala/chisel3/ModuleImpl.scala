@@ -983,10 +983,7 @@ private object ModulePrefixAnnotation {
   def annotate[T <: HasId](target: T): Unit = {
     val prefix = Builder.getModulePrefix
     if (prefix != "") {
-      val annotation: ChiselAnnotation = new ChiselAnnotation {
-        def toFirrtl: Annotation = ModulePrefixAnnotation(target.toTarget, prefix)
-      }
-      chisel3.experimental.annotate(annotation)
+      chisel3.experimental.annotate(target)(Seq(ModulePrefixAnnotation(target.toTarget, prefix)))
     }
   }
 }
