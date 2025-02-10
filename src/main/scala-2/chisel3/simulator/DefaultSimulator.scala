@@ -19,11 +19,11 @@ import java.nio.file.Files
   */
 object DefaultSimulator extends PeekPokeAPI {
 
-  private class DefaultSimulator(val workspacePath: String) extends SingleBackendSimulator[verilator.Backend] {
-    val backend = verilator.Backend.initializeFromProcessEnvironment()
-    val tag = "default"
-    val commonCompilationSettings = CommonCompilationSettings()
-    val backendSpecificCompilationSettings = verilator.Backend.CompilationSettings()
+  private class DefaultSimulator(val workspacePath: String) extends Simulator[verilator.Backend] {
+    override val backend = verilator.Backend.initializeFromProcessEnvironment()
+    override val tag = "default"
+    override val commonCompilationSettings = CommonCompilationSettings()
+    override val backendSpecificCompilationSettings = verilator.Backend.CompilationSettings()
   }
 
   def simulate[T <: RawModule](
@@ -37,7 +37,7 @@ object DefaultSimulator extends PeekPokeAPI {
       workspacePath = Files.createDirectories(testingDirectory.getDirectory(testClassName)).toString
     )
 
-    simulator.simulate(module, layerControl)({ module => body(module.wrapped) }).result
+    simulator.simulate(module, layerControl)({ module => body(module.wrapped) })
   }
 
 }

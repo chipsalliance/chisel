@@ -18,7 +18,7 @@ import scala.reflect.io.Directory
   */
 object EphemeralSimulator extends PeekPokeAPI {
 
-  private class DefaultSimulator(val workspacePath: String) extends SingleBackendSimulator[verilator.Backend] {
+  private class DefaultSimulator(val workspacePath: String) extends Simulator[verilator.Backend] {
     val backend = verilator.Backend.initializeFromProcessEnvironment()
     val tag = "default"
     val commonCompilationSettings = CommonCompilationSettings()
