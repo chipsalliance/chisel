@@ -139,17 +139,6 @@ trait Simulator {
   }
 }
 
-trait MultiBackendSimulator extends Simulator {
-  def processBackends(processor: Simulator.BackendProcessor): Unit
-
-  def simulate[T <: RawModule, U](
-    module:       => T,
-    layerControl: LayerControl.Type = LayerControl.EnableAll
-  )(body: (SimulatedModule[T]) => U): Seq[Simulator.BackendInvocationDigest[U]] = {
-    _simulate(module, layerControl)(body)
-  }
-}
-
 trait SingleBackendSimulator[T <: Backend] extends Simulator {
   val backend: T
   def tag:                                String
