@@ -142,7 +142,6 @@ trait Simulator {
 trait SingleBackendSimulator[T <: Backend] extends Simulator {
   val backend: T
   def tag:                                String
-  def commonCompilationSettings:          CommonCompilationSettings
   def backendSpecificCompilationSettings: backend.CompilationSettings
 
   final def processBackends(
