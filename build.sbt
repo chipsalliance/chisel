@@ -206,7 +206,7 @@ lazy val firrtl = (project in file("firrtl"))
 lazy val chiselSettings = Seq(
   name := "chisel",
   libraryDependencies ++= Seq(
-    "org.scalatest" %% "scalatest" % "3.2.19" % "test",
+    "org.scalatest" %% "scalatest" % "3.2.19" % "provided",
     "org.scalatestplus" %% "scalacheck-1-18" % "3.2.19.0" % "test",
     "com.lihaoyi" %% "upickle" % "3.3.1",
     "org.chipsalliance" %% "firtool-resolver" % "2.0.0"

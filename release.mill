@@ -13,7 +13,8 @@ import de.tobiasroeser.mill.vcs.version.VcsVersion // pulled in by mill-ci-relea
 
 import build._
 
-trait ChiselPublishModule extends CiReleaseModule {
+/** Adds basic publishing information--useful for local publishing */
+trait BaseChiselPublishModule extends PublishModule {
   // Publish information
   def pomSettings = PomSettings(
     description = artifactName(),
@@ -28,8 +29,6 @@ trait ChiselPublishModule extends CiReleaseModule {
     )
   )
 
-  override def sonatypeHost = Some(SonatypeHost.s01)
-
   override def publishVersion = VcsVersion
     .vcsState()
     .format(
@@ -37,7 +36,11 @@ trait ChiselPublishModule extends CiReleaseModule {
       revHashDigits = 8,
       untaggedSuffix = "-SNAPSHOT"
     )
+}
 
+/** Integrates the Module into the Chisel CI publishing flow */
+trait ChiselPublishModule extends CiReleaseModule with BaseChiselPublishModule {
+  override def sonatypeHost = Some(SonatypeHost.s01)
 }
 
 /** Aggregate project for publishing Chisel as a single artifact
@@ -61,6 +64,9 @@ trait Unipublish extends ScalaModule with ChiselPublishModule {
 
   /** Aggregated ivy deps to include as dependencies in POM */
   def ivyDeps = Task { Task.traverse(components)(_.ivyDeps)().flatten }
+
+  /** Aggregated compile (Maven provided scope) dependencies to be included in POM */
+  def compileIvyDeps = Task { Task.traverse(components)(_.compileIvyDeps)().flatten }
 
   /** Aggregated local classpath to include in jar */
   override def localClasspath = Task { Task.traverse(components)(_.localClasspath)().flatten }
