@@ -58,7 +58,7 @@ trait WithTestingDirectory { self: TestSuite =>
       */
     final def getTestName = testName.value.map(_.replaceAll("\\s", "-"))
 
-    override def getDirectory(testClassName: String): Path = FileSystems
+    override def getDirectory: Path = FileSystems
       .getDefault()
       .getPath(buildDir, self.suiteName +: getTestName: _*)
 

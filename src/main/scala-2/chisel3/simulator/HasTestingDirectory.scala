@@ -11,7 +11,7 @@ import scala.reflect.io.Directory
 trait HasTestingDirectory {
 
   /** Return the directory where tests should be placed. */
-  def getDirectory(testClassName: String): Path
+  def getDirectory: Path
 
 }
 
@@ -26,17 +26,17 @@ object HasTestingDirectory {
     * something like:
     *
     * {{{
-    * test_run_dir/
-    * └── DefaultSimulator
+    * test_run_dir
+    * └── chiselsim
     *     ├── 2025-02-05T16-58-02.175175
     *     ├── 2025-02-05T16-58-11.941263
     *     └── 2025-02-05T16-58-17.721776
     * }}}
     */
   val timestamp: HasTestingDirectory = new HasTestingDirectory {
-    override def getDirectory(testClassName: String) = FileSystems
+    override def getDirectory = FileSystems
       .getDefault()
-      .getPath("test_run_dir/", testClassName, LocalDateTime.now().toString().replace(':', '-'))
+      .getPath("test_run_dir", "chiselsim", LocalDateTime.now().toString().replace(':', '-'))
   }
 
   /** An implementation generator of [[HasTestingDirectory]] which will use an
@@ -46,13 +46,15 @@ object HasTestingDirectory {
     * @param deleteOnExit if true, delete the temporary directory when the JVM exits
     */
   def temporary(deleteOnExit: Boolean = true): HasTestingDirectory = new HasTestingDirectory {
-    override def getDirectory(testClassName: String) = {
+    override def getDirectory = {
       val path = FileSystems
         .getDefault()
         .getPath(
-          Files.createTempDirectory(s"${testClassName}-${LocalDateTime.now().toString().replace(':', '-')}").toString
+          Files.createTempDirectory(s"chiselsim-${LocalDateTime.now().toString().replace(':', '-')}").toString
         )
+      println(s"Creating: ${path.toString}")
       if (deleteOnExit) {
+        println(s"Deleting: ${path.toString}")
         sys.addShutdownHook(new Directory(path.toFile).deleteRecursively())
       }
       path
