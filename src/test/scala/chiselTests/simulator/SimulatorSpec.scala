@@ -10,7 +10,7 @@ import org.scalatest.matchers.must.Matchers
 import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 import svsim._
 
-class VerilatorSimulator(val workspacePath: String) extends SingleBackendSimulator[verilator.Backend] {
+class VerilatorSimulator(val workspacePath: String) extends Simulator[verilator.Backend] {
   val backend = verilator.Backend.initializeFromProcessEnvironment()
   val tag = "verilator"
   val commonCompilationSettings = CommonCompilationSettings()
