@@ -20,11 +20,11 @@ class DefaultSimulatorSpec extends AnyFunSpec with Matchers {
 
       /** An implementation that always writes to the subdirectory "test_run_dir/<class-name>/foo/" */
       implicit val fooDirectory = new HasTestingDirectory {
-        override def getDirectory(testClassName: String) =
-          FileSystems.getDefault().getPath("test_run_dir", testClassName, "foo")
+        override def getDirectory =
+          FileSystems.getDefault().getPath("test_run_dir", "foo")
       }
 
-      val directory = Directory(FileSystems.getDefault().getPath("test_run_dir", "DefaultSimulator", "foo").toFile())
+      val directory = Directory(FileSystems.getDefault().getPath("test_run_dir", "foo").toFile())
       directory.deleteRecursively()
 
       simulate(new Foo()) { _ => }
@@ -36,8 +36,8 @@ class DefaultSimulatorSpec extends AnyFunSpec with Matchers {
       val allFiles = directory.deepFiles.toSeq.map(_.toString).toSet
       for (
         file <- Seq(
-          "test_run_dir/DefaultSimulator/foo/workdir-default/Makefile",
-          "test_run_dir/DefaultSimulator/foo/primary-sources/Foo.sv"
+          "test_run_dir/foo/workdir-default/Makefile",
+          "test_run_dir/foo/primary-sources/Foo.sv"
         )
       ) {
         info(s"found expected file: '$file'")

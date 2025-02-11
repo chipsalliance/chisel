@@ -31,10 +31,8 @@ object DefaultSimulator extends PeekPokeAPI {
     layerControl: LayerControl.Type = LayerControl.EnableAll
   )(body: (T) => Unit)(implicit testingDirectory: HasTestingDirectory): Unit = {
 
-    val testClassName = simpleClassName(getClass())
-
     val simulator = new DefaultSimulator(
-      workspacePath = Files.createDirectories(testingDirectory.getDirectory(testClassName)).toString
+      workspacePath = Files.createDirectories(testingDirectory.getDirectory).toString
     )
 
     simulator.simulate(module, layerControl)({ module => body(module.wrapped) }).result
