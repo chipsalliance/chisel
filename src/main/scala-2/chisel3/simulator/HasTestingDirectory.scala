@@ -1,7 +1,9 @@
 package chisel3.simulator
 
-import java.nio.file.{FileSystems, Path}
+import java.io.File
+import java.nio.file.{FileSystems, Files, Path}
 import java.time.LocalDateTime
+import scala.reflect.io.Directory
 
 /** This is a trait that can be mixed into a class to determine where
   * compilation should happen and where simulation artifacts should be written.
@@ -35,6 +37,26 @@ object HasTestingDirectory {
     override def getDirectory(testClassName: String) = FileSystems
       .getDefault()
       .getPath("test_run_dir/", testClassName, LocalDateTime.now().toString().replace(':', '-'))
+  }
+
+  /** An implementation generator of [[HasTestingDirectory]] which will use an
+    * operating system-specific temporary directory.  This file can optionally
+    * be deleted when the JVM shuts down.
+    *
+    * @param deleteOnExit if true, delete the temporary directory when the JVM exits
+    */
+  def temporary(deleteOnExit: Boolean = true): HasTestingDirectory = new HasTestingDirectory {
+    override def getDirectory(testClassName: String) = {
+      val path = FileSystems
+        .getDefault()
+        .getPath(
+          Files.createTempDirectory(s"${testClassName}-${LocalDateTime.now().toString().replace(':', '-')}").toString
+        )
+      if (deleteOnExit) {
+        sys.addShutdownHook(new Directory(path.toFile).deleteRecursively())
+      }
+      path
+    }
   }
 
   /** The default testing directory behavior.  If the user does _not_ provide an
