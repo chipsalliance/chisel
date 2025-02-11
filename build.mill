@@ -276,7 +276,7 @@ trait Chisel extends CrossSbtModule with HasScala2MacroAnno with HasScala2Plugin
 
   def compileIvyDeps = Agg(v.scalatest)
 
-  object test extends SbtTests with TestModule.ScalaTest with ScalafmtModule {
+  object test extends CrossSbtTests with TestModule.ScalaTest with ScalafmtModule {
     def ivyDeps = Agg(v.scalatest, v.scalacheck)
 
     // TODO: enable sandbox and run tests in parallel
