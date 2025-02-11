@@ -36,7 +36,7 @@ class DefaultSimulatorSpec extends AnyFunSpec with Matchers {
       val allFiles = directory.deepFiles.toSeq.map(_.toString).toSet
       for (
         file <- Seq(
-          "test_run_dir/foo/workdir-default/Makefile",
+          "test_run_dir/foo/workdir-verilator/Makefile",
           "test_run_dir/foo/primary-sources/Foo.sv"
         )
       ) {

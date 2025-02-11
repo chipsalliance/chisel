@@ -32,7 +32,7 @@ class WithTestingDirectorySpec extends AnyFunSpec with Matchers with WithTesting
     val allFiles = directory.deepFiles.toSeq.map(_.toString).toSet
     for (
       file <- Seq(
-        directory.toFile.toString + "/workdir-default/Makefile",
+        directory.toFile.toString + "/workdir-verilator/Makefile",
         directory.toFile.toString + "/primary-sources/Foo.sv"
       )
     ) {
