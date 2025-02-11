@@ -37,7 +37,7 @@ object DefaultSimulator extends PeekPokeAPI {
       workspacePath = Files.createDirectories(testingDirectory.getDirectory(testClassName)).toString
     )
 
-    simulator.simulate(module, layerControl)({ module => body(module.wrapped) })
+    simulator.simulate(module, layerControl)({ module => body(module.wrapped) }).result
   }
 
 }

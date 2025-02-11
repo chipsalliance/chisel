@@ -44,5 +44,16 @@ class DefaultSimulatorSpec extends AnyFunSpec with Matchers {
         allFiles should contain(file)
       }
     }
+
+    it("should error if an expect fails") {
+      intercept[Exception] {
+        simulate {
+          new Module {
+            val a = IO(Output(Bool()))
+            a :<= false.B
+          }
+        } { _.a.expect(true.B) }
+      }.getMessage() should include("Expectation failed")
+    }
   }
 }
