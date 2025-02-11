@@ -17,13 +17,4 @@ import java.nio.file.Files
   * simulate(new MyChiselModule()) { module => ... }
   * }}}
   */
-object DefaultSimulator extends PeekPokeAPI {
-
-  def simulate[T <: RawModule](
-    module:       => T,
-    layerControl: LayerControl.Type = LayerControl.EnableAll
-  )(body: (T) => Unit)(implicit hasSimulator: HasSimulator, testingDirectory: HasTestingDirectory): Unit = {
-    hasSimulator.getSimulator.simulate(module, layerControl)({ module => body(module.wrapped) }).result
-  }
-
-}
+object DefaultSimulator extends PeekPokeAPI with SimulatorAPI
