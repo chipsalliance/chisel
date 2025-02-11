@@ -4,7 +4,6 @@ import svsim._
 import chisel3.RawModule
 import java.nio.file.Files
 import java.io.File
-import scala.reflect.io.Directory
 
 /** Provides a simple API for "ephemeral" invocations (where you don't care about the artifacts after the invocation completes) to
   * simulate Chisel modules. To keep things really simple, `EphemeralSimulator` simulations can only be controlled using the
