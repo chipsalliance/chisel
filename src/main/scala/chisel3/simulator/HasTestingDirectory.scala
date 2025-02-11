@@ -4,6 +4,7 @@ import java.io.IOException
 import java.nio.file._
 import java.nio.file.attribute.BasicFileAttributes
 import java.time.LocalDateTime
+import java.util.Comparator
 
 /** This is a trait that can be mixed into a class to determine where
   * compilation should happen and where simulation artifacts should be written.
@@ -37,12 +38,11 @@ object HasTestingDirectory {
       .getPath("test_run_dir", "chiselsim", LocalDateTime.now().toString.replace(':', '-'))
   }
 
-  /** An implementation generator of [[HasTestingDirectory]] which will
-    * use an operating system-specific temporary directory. This
-    * directory can optionally be deleted when the JVM shuts down.
+  /** An implementation generator of [[HasTestingDirectory]] which will use an
+    * operating system-specific temporary directory. This directory can
+    * optionally be deleted when the JVM shuts down.
     *
-    * @param deleteOnExit if true, delete the temporary directory when
-    * the JVM exits
+    * @param deleteOnExit if true, delete the temporary directory when the JVM exits
     */
   def temporary(deleteOnExit: Boolean = true): HasTestingDirectory = new HasTestingDirectory {
     override def getDirectory: Path = {
@@ -52,7 +52,7 @@ object HasTestingDirectory {
 
       if (deleteOnExit) {
         sys.addShutdownHook {
-          deleteDirectoryRecursively(dir)
+          deleteDir(dir)
         }
       }
       dir
@@ -65,25 +65,13 @@ object HasTestingDirectory {
     */
   implicit val default: HasTestingDirectory = timestamp
 
-  /** Recursively delete the provided directory using Java NIO. */
-  private def deleteDirectoryRecursively(directory: Path): Unit = {
+  /** Walk directory and delete contents */
+  private def deleteDir(directory: Path): Unit = {
     if (Files.exists(directory)) {
-      Files.walkFileTree(directory, new SimpleFileVisitor[Path] {
-        override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {
-          Files.delete(file)
-          FileVisitResult.CONTINUE
-        }
-
-        override def postVisitDirectory(dir: Path, exc: IOException): FileVisitResult = {
-          if (exc == null) {
-            Files.delete(dir)
-            FileVisitResult.CONTINUE
-          } else {
-            throw exc
-          }
-        }
-      })
+      Files
+        .walk(directory)
+        .sorted(Comparator.reverseOrder())
+        .forEach(Files.delete)
     }
   }
-
 }
