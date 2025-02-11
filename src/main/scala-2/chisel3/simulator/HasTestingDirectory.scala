@@ -52,9 +52,7 @@ object HasTestingDirectory {
         .getPath(
           Files.createTempDirectory(s"chiselsim-${LocalDateTime.now().toString().replace(':', '-')}").toString
         )
-      println(s"Creating: ${path.toString}")
       if (deleteOnExit) {
-        println(s"Deleting: ${path.toString}")
         sys.addShutdownHook(new Directory(path.toFile).deleteRecursively())
       }
       path
