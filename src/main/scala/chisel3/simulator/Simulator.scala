@@ -44,54 +44,60 @@ trait Simulator[T <: Backend] {
     val elaboratedModule = workspace.elaborateGeneratedModule({ () => module }, firtoolArgs)
     workspace.generateAdditionalSources()
 
+    val commonCompilationSettingsUpdated = commonCompilationSettings.copy(
+      // Append to the include directorires based on what the
+      // workspace indicates is the path for primary sources.  This
+      // ensures that `` `include `` directives can be resolved.
+      includeDirs = Some(commonCompilationSettings.includeDirs.getOrElse(Seq.empty) :+ workspace.primarySourcesPath),
+      verilogPreprocessorDefines =
+        commonCompilationSettings.verilogPreprocessorDefines ++ layerControl.preprocessorDefines(
+          elaboratedModule
+        ),
+      fileFilter = commonCompilationSettings.fileFilter.orElse(layerControl.shouldIncludeFile(elaboratedModule))
+    )
+
+    // Compile the design.  Early exit if the compilation fails for any reason.
     val compilationStartTime = System.nanoTime()
-    try {
-      val simulation = workspace
+    val simulation = try {
+      workspace
         .compile(backend)(
           tag,
-          commonCompilationSettings.copy(
-            // Append to the include directorires based on what the
-            // workspace indicates is the path for primary sources.  This
-            // ensures that `` `include `` directives can be resolved.
-            includeDirs =
-              Some(commonCompilationSettings.includeDirs.getOrElse(Seq.empty) :+ workspace.primarySourcesPath),
-            verilogPreprocessorDefines =
-              commonCompilationSettings.verilogPreprocessorDefines ++ layerControl.preprocessorDefines(
-                elaboratedModule
-              ),
-            fileFilter = commonCompilationSettings.fileFilter.orElse(layerControl.shouldIncludeFile(elaboratedModule))
-          ),
+          commonCompilationSettingsUpdated,
           backendSpecificCompilationSettings,
           customSimulationWorkingDirectory,
           verbose
         )
-      val compilationEndTime = System.nanoTime()
-      val simulationOutcome = Try {
-        simulation.runElaboratedModule(elaboratedModule = elaboratedModule) { (module: SimulatedModule[T]) =>
-          val outcome = body(module)
-          module.completeSimulation()
-          outcome
-
-        }
-      }
-      val simulationEndTime = System.nanoTime()
-      Simulator.BackendInvocationDigest(
-        compilationStartTime = compilationStartTime,
-        compilationEndTime = compilationEndTime,
-        outcome = Simulator.SimulationDigest(
-          simulationStartTime = compilationEndTime,
-          simulationEndTime = simulationEndTime,
-          outcome = simulationOutcome
-        )
-      )
     } catch {
       case error: Throwable =>
-        Simulator.BackendInvocationDigest(
+        return Simulator.BackendInvocationDigest(
           compilationStartTime = compilationStartTime,
           compilationEndTime = System.nanoTime(),
           outcome = Simulator.CompilationFailed(error)
         )
     }
+    val compilationEndTime = System.nanoTime()
+
+    // Simulate the compiled design.
+    val simulationOutcome = Try {
+      simulation.runElaboratedModule(elaboratedModule = elaboratedModule) { (module: SimulatedModule[T]) =>
+        val outcome = body(module)
+        module.completeSimulation()
+        outcome
+
+      }
+    }
+    val simulationEndTime = System.nanoTime()
+
+    // Return the simulation result.
+    Simulator.BackendInvocationDigest(
+      compilationStartTime = compilationStartTime,
+      compilationEndTime = compilationEndTime,
+      outcome = Simulator.SimulationDigest(
+        simulationStartTime = compilationEndTime,
+        simulationEndTime = simulationEndTime,
+        outcome = simulationOutcome
+      )
+    )
 
   }
 
