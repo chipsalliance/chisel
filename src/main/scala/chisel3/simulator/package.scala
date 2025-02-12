@@ -6,7 +6,7 @@ import chisel3.experimental.dataview.reifyIdentityView
 import chisel3.stage.DesignAnnotation
 import scala.collection.mutable
 import java.nio.file.{Files, Path, Paths}
-import firrtl.seqToAnnoSeq
+import firrtl.{annoSeqToSeq, seqToAnnoSeq}
 
 package object simulator {
 
