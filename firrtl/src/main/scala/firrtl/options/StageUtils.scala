@@ -22,7 +22,7 @@ object StageUtils {
     * @param message error message
     */
   def dramaticWarning(message: String): Unit = {
-    println(Console.YELLOW + dramaticMessage(header=None, body=s"Warning: $message") + Console.RESET)
+    println(Console.YELLOW + dramaticMessage(header = None, body = s"Warning: $message") + Console.RESET)
   }
 
   /** Print an error message (in red)
@@ -30,7 +30,7 @@ object StageUtils {
     * @note This does not stop the Driver.
     */
   def dramaticError(message: String): Unit = {
-    println(Console.RED + dramaticMessage(header=None, body=s"Error: $message") + Console.RESET)
+    println(Console.RED + dramaticMessage(header = None, body = s"Error: $message") + Console.RESET)
   }
 
   /** Generate a message suggesting that the user look at the usage text.
