@@ -21,6 +21,7 @@ import firrtl.options.Viewer.view
 import logger.{LoggerOptions, LoggerOptionsView}
 
 import scala.collection.mutable.ArrayBuffer
+import scala.annotation.nowarn
 
 /** Elaborate all [[chisel3.stage.ChiselGeneratorAnnotation]]s into [[chisel3.stage.ChiselCircuitAnnotation]]s.
   */
@@ -54,7 +55,7 @@ class Elaborate extends Phase {
             BuilderContextCache.empty,
             chiselOptions.layerMap
           )
-        val (circuit, dut) = {
+        val (elaboratedCircuit, dut) = {
           Builder.build(Module(gen()), context)
         }
 
@@ -63,7 +64,10 @@ class Elaborate extends Phase {
           layer.children.foldLeft(layers :+ layer.chiselLayer) { case (acc, x) => walkLayers(x, acc) }
         }
 
-        Seq(ChiselCircuitAnnotation(circuit), DesignAnnotation(dut, layers = circuit.layers.flatMap(walkLayers(_))))
+        Seq(
+          ChiselCircuitAnnotation(elaboratedCircuit),
+          DesignAnnotation(dut, layers = elaboratedCircuit._circuit.layers.flatMap(walkLayers(_)))
+        )
       } catch {
         /* if any throwable comes back and we're in "stack trace trimming" mode, then print an error and trim the stack trace
          */
