@@ -21,8 +21,10 @@ trait HasTestingDirectory {
   */
 object HasTestingDirectory {
 
-  /** An implementation of [[HasTestingDirectory]] which will use a timestamp.
-    * Everything is put in a `test_run_dir/chiselsim/<timestamp>/`. E.g.:
+  /** An implementation of [[HasTestingDirectory]] which will use the
+    * class name timestamp.  When this implementation is used,
+    * everything is put in a `test_run_dir/<class-name>/<timestamp>/`.
+    * E.g., this may produce something like:
     *
     * {{{
     * test_run_dir
