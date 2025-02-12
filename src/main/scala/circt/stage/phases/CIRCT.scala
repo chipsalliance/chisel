@@ -20,6 +20,7 @@ import firrtl.options.{
   StageOptionsView,
   Unserializable
 }
+import firrtl.options.StageUtils.dramaticMessage
 import firrtl.stage.{FirrtlOptions, FirrtlOptionsView}
 import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq, EmittedVerilogCircuit, EmittedVerilogCircuitAnnotation}
 
@@ -78,18 +79,6 @@ private object Helpers {
 
 private[this] object Exceptions {
 
-  /** Wrap a message in colorful error text in the sytle of StageUtils.dramaticError.  That method prints to stdout and by
-    * extracting this to just a method that does the string wrapping, this enables the message to be sent to another
-    * file, e.g., stderr.
-    * @todo Remove/unify this with StageUtils.dramaticError once SFC code is migrated into Chisel3.
-    */
-  def dramaticError(header: String, body: String): String = {
-    s"""|$header
-        |${"-" * 78}
-        |$body
-        |${"-" * 78}""".stripMargin
-  }
-
   def versionAdvice: String =
     s"Note that this version of Chisel ($chiselVersion) was published against firtool version " +
       firtoolVersion.getOrElse("<unknown>") + "."
@@ -104,8 +93,8 @@ private[this] object Exceptions {
     */
   class FirtoolNonZeroExitCode(binary: String, exitCode: Int, stdout: String, stderr: String)
       extends RuntimeException(
-        dramaticError(
-          header = s"${binary} returned a non-zero exit code. $versionAdvice",
+        dramaticMessage(
+          header = Some(s"${binary} returned a non-zero exit code. $versionAdvice"),
           body = s"ExitCode:\n${exitCode}\nSTDOUT:\n${stdout}\nSTDERR:\n${stderr}"
         )
       )
@@ -118,8 +107,8 @@ private[this] object Exceptions {
     */
   class FirtoolNotFound(msg: String)
       extends RuntimeException(
-        dramaticError(
-          header = s"Error resolving firtool",
+        dramaticMessage(
+          header = Some(s"Error resolving firtool"),
           body = s"""|Chisel requires firtool, the MLIR-based FIRRTL Compiler (MFC), to generate Verilog.
                      |Something is wrong with your firtool installation, please see the following logging
                      |information.
