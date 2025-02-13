@@ -10,6 +10,21 @@ import firrtl.{annoSeqToSeq, seqToAnnoSeq}
 
 package object simulator {
 
+  /** A trait that provides the minimal set of ChiselSim APIs.
+    *
+    * Example usage:
+    * {{{
+    * import chisel3.simulator.ChiselSim
+    *
+    * class Foo extends ChiselSim {
+    *   /** This has access to all ChiselSim APIs like `simulate`, `peek`, and `poke`. */
+    * }
+    * }}}
+    *
+    * @see [[chisel3.simulator.scalatest.ChiselSim]]
+    */
+  trait ChiselSim extends PeekPokeAPI with SimulatorAPI
+
   /**
     * An opaque class that can be passed to `Simulation.run` to get access to a `SimulatedModule` in the simulation body.
     */
