@@ -58,23 +58,24 @@ trait Simulator[T <: Backend] {
 
     // Compile the design.  Early exit if the compilation fails for any reason.
     val compilationStartTime = System.nanoTime()
-    val simulation = try {
-      workspace
-        .compile(backend)(
-          tag,
-          commonCompilationSettingsUpdated,
-          backendSpecificCompilationSettings,
-          customSimulationWorkingDirectory,
-          verbose
-        )
-    } catch {
-      case error: Throwable =>
-        return Simulator.BackendInvocationDigest(
-          compilationStartTime = compilationStartTime,
-          compilationEndTime = System.nanoTime(),
-          outcome = Simulator.CompilationFailed(error)
-        )
-    }
+    val simulation =
+      try {
+        workspace
+          .compile(backend)(
+            tag,
+            commonCompilationSettingsUpdated,
+            backendSpecificCompilationSettings,
+            customSimulationWorkingDirectory,
+            verbose
+          )
+      } catch {
+        case error: Throwable =>
+          return Simulator.BackendInvocationDigest(
+            compilationStartTime = compilationStartTime,
+            compilationEndTime = System.nanoTime(),
+            outcome = Simulator.CompilationFailed(error)
+          )
+      }
     val compilationEndTime = System.nanoTime()
 
     // Simulate the compiled design.
