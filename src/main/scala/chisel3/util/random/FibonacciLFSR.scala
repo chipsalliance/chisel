@@ -49,7 +49,7 @@ class FibonacciLFSR(
 ) extends PRNG(width, seed, step, updateSeed)
     with LFSR {
 
-  def delta(s: Seq[Bool]): Seq[Bool] = taps.map { case i => s(i - 1) }.reduce(reduction) +: s.dropRight(1)
+  def delta(s: Seq[Bool]): Seq[Bool] = taps.toSeq.sorted.map { case i => s(i - 1) }.reduce(reduction) +: s.dropRight(1)
 
 }
 
