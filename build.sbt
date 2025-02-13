@@ -69,7 +69,7 @@ lazy val warningSuppression = Seq(
     "cat=deprecation&origin=chisel3\\.util\\.experimental\\.BoringUtils.*:s",
     "cat=deprecation&origin=chisel3\\.experimental\\.IntrinsicModule:s",
     "cat=deprecation&origin=chisel3\\.ltl.*:s",
-    "cat=deprecation&msg=Looking up Modules is deprecated:s",
+    "cat=deprecation&msg=Looking up Modules is deprecated:s"
   ).mkString(",")
 )
 
@@ -124,7 +124,7 @@ lazy val firrtlSettings = Seq(
     "-language:implicitConversions",
     "-Yrangepos", // required by SemanticDB compiler plugin
     "-Xsource:3",
-    "-Xsource-features:infer-override",
+    "-Xsource-features:infer-override"
   ),
   // Always target Java8 for maximum compatibility
   javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
@@ -134,7 +134,7 @@ lazy val firrtlSettings = Seq(
     "org.scalatestplus" %% "scalacheck-1-18" % "3.2.19.0" % "test",
     "com.github.scopt" %% "scopt" % "4.1.0",
     "org.json4s" %% "json4s-native" % "4.0.7",
-    "org.apache.commons" % "commons-text" % "1.12.0",
+    "org.apache.commons" % "commons-text" % "1.13.0",
     "io.github.alexarchambault" %% "data-class" % "0.2.6",
     "com.lihaoyi" %% "os-lib" % "0.10.0"
   ),
@@ -316,7 +316,7 @@ lazy val core = (project in file("core"))
       "-unchecked",
       "-Xcheckinit",
       "-Xlint:infer-any",
-      "-Xsource:3",
+      "-Xsource:3"
 //      , "-Xlint:missing-interpolator"
     )
   )
@@ -342,7 +342,7 @@ lazy val chisel = (project in file("."))
   .settings(
     // Suppress Scala 3 behavior requiring explicit types on implicit definitions
     // Note this must come before the -Wconf is warningSuppression
-    Test / scalacOptions += "-Wconf:cat=other-implicit-type:s",
+    Test / scalacOptions += "-Wconf:cat=other-implicit-type:s"
   )
   .settings(warningSuppression: _*)
   .settings(fatalWarningsSettings: _*)
