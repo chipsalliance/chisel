@@ -255,6 +255,8 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselRunners {
     AssertProperty(a)
     AssumeProperty(a)
     CoverProperty(a)
+    RequireProperty(a)
+    EnsureProperty(a)
   }
   it should "support simple property asserts/assumes/covers and put them in layer blocks" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new BasicVerifMod)
@@ -268,8 +270,14 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselRunners {
     chirrtl should include("layerblock Verification")
     chirrtl should include("layerblock Cover")
     chirrtl should include(f"intrinsic(circt_verif_cover, a) $sourceLoc")
+    chirrtl should include("layerblock Verification")
+    chirrtl should include("layerblock Assume")
+    chirrtl should include(f"intrinsic(circt_verif_require, a) $sourceLoc")
+    chirrtl should include("layerblock Verification")
+    chirrtl should include("layerblock Assert")
+    chirrtl should include(f"intrinsic(circt_verif_ensure, a) $sourceLoc")
   }
-  it should "compile simple property asserts/assumes/covers" in {
+  it should "compile simple property checks" in {
     ChiselStage.emitSystemVerilog(new BasicVerifMod)
   }
   it should "not create layer blocks if already in a layer block" in {
@@ -290,7 +298,9 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselRunners {
     val properties = Seq(
       AssertProperty -> ("VerifAssertIntrinsic", "assert"),
       AssumeProperty -> ("VerifAssumeIntrinsic", "assume"),
-      CoverProperty -> ("VerifCoverIntrinsic", "cover")
+      CoverProperty -> ("VerifCoverIntrinsic", "cover"),
+      RequireProperty -> ("VerifRequireIntrinsic", "require"),
+      EnsureProperty -> ("VerifEnsureIntrinsic", "ensure")
     )
 
     for ((prop, (intrinsic, op)) <- properties) {
@@ -313,12 +323,16 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselRunners {
     AssertProperty(a, label = Some("foo0"))
     AssumeProperty(a, label = Some("foo1"))
     CoverProperty(a, label = Some("foo2"))
+    RequireProperty(a, label = Some("foo3"))
+    EnsureProperty(a, label = Some("foo4"))
   }
   it should "support labeled property asserts/assumes/covers" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new LabeledVerifMod)
     chirrtl should include("intrinsic(circt_verif_assert<label = \"foo0\">, a)")
     chirrtl should include("intrinsic(circt_verif_assume<label = \"foo1\">, a")
     chirrtl should include("intrinsic(circt_verif_cover<label = \"foo2\">, a)")
+    chirrtl should include("intrinsic(circt_verif_require<label = \"foo3\">, a)")
+    chirrtl should include("intrinsic(circt_verif_ensure<label = \"foo4\">, a)")
   }
   it should "compile labeled property asserts/assumes/covers" in {
     ChiselStage.emitSystemVerilog(new LabeledVerifMod)
