@@ -60,7 +60,12 @@ trait Simulator[T <: Backend] {
     */
   private def postProcessLog: Option[Throwable] = {
     val log = Paths.get(workspacePath, s"workdir-${tag}", "simulation-log.txt").toFile
-    val lines = scala.io.Source.fromFile(log).getLines().zipWithIndex.filter { case (line, lineNo) => backend.assertionFailed.matches(line) }.toSeq
+    val lines = scala.io.Source
+      .fromFile(log)
+      .getLines()
+      .zipWithIndex
+      .filter { case (line, lineNo) => backend.assertionFailed.matches(line) }
+      .toSeq
     if (lines.isEmpty)
       return None
 
