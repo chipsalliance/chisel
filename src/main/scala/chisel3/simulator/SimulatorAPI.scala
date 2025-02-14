@@ -22,12 +22,12 @@ trait SimulatorAPI {
     * change the behavior of where files will be created
     */
   def simulateRaw[T <: RawModule](
-    module:       => T,
-    layerControl: LayerControl.Type = LayerControl.EnableAll
+    module:         => T,
+    chiselSettings: ChiselSettings = ChiselSettings.default
   )(stimulus: (T) => Unit)(implicit hasSimulator: HasSimulator, testingDirectory: HasTestingDirectory): Unit = {
 
     hasSimulator.getSimulator
-      .simulate(module, layerControl) { module =>
+      .simulate(module, chiselSettings) { module =>
         stimulus(module.wrapped)
       }
       .result
@@ -74,12 +74,12 @@ trait SimulatorAPI {
     */
   def simulate[T <: Module](
     module:                => T,
-    layerControl:          LayerControl.Type = LayerControl.EnableAll,
+    chiselSettings:        ChiselSettings = ChiselSettings.default,
     additionalResetCycles: Int = 0
   )(stimulus: (T) => Unit)(implicit hasSimulator: HasSimulator, testingDirectory: HasTestingDirectory): Unit = {
 
     hasSimulator.getSimulator
-      .simulate(module, layerControl) { module =>
+      .simulate(module, chiselSettings) { module =>
         val dut = module.wrapped
         val reset = module.port(dut.reset)
         val clock = module.port(dut.clock)
