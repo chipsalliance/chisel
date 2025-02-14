@@ -5,12 +5,22 @@ import chisel3._
 
 import chisel3.experimental.{SourceInfo, SourceLine}
 import chisel3.internal.ExceptionHelpers
+import firrtl.options.StageUtils.dramaticMessage
+import scala.util.control.NoStackTrace
 
 object PeekPokeAPI extends PeekPokeAPI
 
 trait PeekPokeAPI {
   case class FailedExpectationException[T](observed: T, expected: T, message: String)
-      extends Exception(s"Failed Expectation: Observed value '$observed' != $expected. $message")
+      extends RuntimeException(
+        dramaticMessage(
+          header = Some("Failed Expectation"),
+          body = s"""|Observed value: '$observed'
+                     |Expected value: '$expected'
+                     |$message""".stripMargin
+        )
+      )
+      with NoStackTrace
   object FailedExpectationException {
     def apply[T](
       observed:     T,

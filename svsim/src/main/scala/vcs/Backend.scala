@@ -219,4 +219,7 @@ final class Backend(
     * different from Verilator.
     */
   override def escapeDefine(string: String): String = string.replace("$", "\\$")
+
+  override val assertionFailed =
+    "^((Assertion failed:)|(Error: )|(Fatal: )|(.* started at .* failed at .*)|(.*Offending)).*$".r
 }

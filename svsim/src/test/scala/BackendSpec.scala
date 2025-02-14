@@ -6,6 +6,7 @@ import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.must.Matchers
 import svsim._
 import java.io.{BufferedReader, FileReader}
+import java.nio.file.Path
 import svsimTests.Resources.TestWorkspace
 
 class VCSSpec extends BackendSpec {
@@ -46,6 +47,8 @@ case class CustomVerilatorBackend(actualBackend: verilator.Backend) extends Back
   }
 
   override def escapeDefine(string: String): String = string
+
+  override val assertionFailed = "^.*Assertion failed in.*".r
 }
 
 class VerilatorSpec extends BackendSpec {
