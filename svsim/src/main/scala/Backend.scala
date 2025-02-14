@@ -2,6 +2,7 @@ package svsim
 
 import java.io.File
 import java.nio.file.Path
+import scala.util.matching.Regex
 
 // -- Compilation Settings
 
@@ -84,13 +85,11 @@ trait Backend {
     */
   def escapeDefine(string: String): String
 
-  /** Process a log file and return a sequence of lines which indicate that there
-    * were assertion failures.
-    *
-    * @param log the log file to process
-    * @return lines that indicate an assertion fired
+  /** A regular expression that indicates lines in a log file which indicate
+    * assertion failure.
     */
-  def assertionFailed(log: Path): Seq[String]
+  def assertionFailed: Regex
+
 }
 
 final object Backend {

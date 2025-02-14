@@ -6,6 +6,7 @@ import java.nio.file.Path
 import svsim._
 import scala.sys.process._
 import scala.collection.mutable
+import scala.util.matching.Regex
 
 object Backend {
   object CompilationSettings {
@@ -171,8 +172,6 @@ final class Backend(executablePath: String) extends svsim.Backend {
 
   override def escapeDefine(string: String): String = string
 
-  override def assertionFailed(file: Path): Seq[String] = {
-    val re = "^.*Assertion failed in.*".r
-    scala.io.Source.fromFile(file.toFile).getLines().filter(re.matches).toSeq
-  }
+  override val assertionFailed: Regex = "^.*Assertion failed in.*".r
+
 }

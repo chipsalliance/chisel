@@ -4,6 +4,7 @@ package svsim.vcs
 
 import svsim._
 import java.nio.file.Path
+import scala.util.matching.Regex
 
 object Backend {
   object CompilationSettings {
@@ -221,5 +222,6 @@ final class Backend(
     */
   override def escapeDefine(string: String): String = string.replace("$", "\\$")
 
-  override def assertionFailed(file: Path): Seq[String] = ???
+  override def assertionFailed: Regex =
+    "^((Assertion failed:)|(Error: )|(.* started at .* failed at .*)|( *Offending)).*$".r
 }

@@ -10,7 +10,7 @@ import chiselTests.FileCheck
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 
-class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileCheck {
+class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileCheck with WithTestingDirectory {
 
   describe("scalatest.ChiselSim") {
 
@@ -55,7 +55,11 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
         """|CHECK:      One or more assertions failed during Chiselsim simulation
            |CHECK-NEXT: ---
            |CHECK-NEXT: The following assertion failures were extracted from the log file:
-           |CHECK-NEXT:   - {{.+}} foo assertion
+           |CHECK:      lineNo  line
+           |CHECK-NEXT: ---
+           |CHECK-NEXT:      0  [5] %Error:
+           |CHECK:      For more information, see the complete log file:
+           |CHECK:        build/ChiselSimSpec/scalatest.ChiselSim/should-error-if-a-chisel3.assert-fires-during-the-simulation/workdir-verilator/simulation-log.txt
            |CHECK-NEXT: ---
            |""".stripMargin
       )
@@ -76,7 +80,11 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
         """|CHECK:      One or more assertions failed during Chiselsim simulation
            |CHECK-NEXT: ---
            |CHECK-NEXT: The following assertion failures were extracted from the log file:
-           |CHECK-NEXT:   - {{.+$}}
+           |CHECK:      lineNo  line
+           |CHECK-NEXT: ---
+           |CHECK-NEXT:      0  [5] %Error:
+           |CHECK:      For more information, see the complete log file:
+           |CHECK:        build/ChiselSimSpec/scalatest.ChiselSim/should-error-if-an-ltl.AssertProperty-fires-during-the-simulation/workdir-verilator/simulation-log.txt
            |CHECK-NEXT: ---
            |""".stripMargin
       )

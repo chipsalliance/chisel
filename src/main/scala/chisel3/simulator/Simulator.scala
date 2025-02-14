@@ -54,6 +54,31 @@ trait Simulator[T <: Backend] {
   def commonCompilationSettings:          CommonCompilationSettings
   def backendSpecificCompilationSettings: backend.CompilationSettings
 
+  /** Post process a simulation log to see if there are any backend-specific failures.
+    *
+    * @return None if no failures found or Some if they are
+    */
+  private def postProcessLog: Option[Throwable] = {
+    val log = Paths.get(workspacePath, s"workdir-${tag}", "simulation-log.txt").toFile
+    val lines = scala.io.Source.fromFile(log).getLines().zipWithIndex.filter { case (line, lineNo) => backend.assertionFailed.matches(line) }.toSeq
+    if (lines.isEmpty)
+      return None
+
+    Some(
+      new Exceptions.AssertionFailed(
+        message = s"""|The following assertion failures were extracted from the log file:
+                      |
+                      |  lineNo  line
+                      |  ${"-" * 76}
+                      |${lines.map { case (line, lineNo) => f"$lineNo%8d  $line" }.mkString("\n")}
+                      |
+                      |For more information, see the complete log file:
+                      |
+                      |  ${log}""".stripMargin
+      )
+    )
+  }
+
   final def simulate[T <: RawModule, U](
     module:       => T,
     layerControl: LayerControl.Type = LayerControl.EnableAll
@@ -97,10 +122,18 @@ trait Simulator[T <: Backend] {
       }
     val compilationEndTime = System.nanoTime()
 
-    // Simulate the compiled design.  Because svsim returns extremely vague
-    // exceptions on failure (UnexpectedEndOfMessage), when we do see a failure,
-    // try to figure out what happened and return a better, more specific error.
-    // If we can't determine a more specific error, then keep the original one.
+    // Simulate the compiled design.  After the simulation completes,
+    // post-process the log to figure out what happened.  This post-processing
+    // occurs in _both_ the success and failure modes for multiple reasons:
+    //
+    // 1. svsim returns a vague UnexpectedEndOfMessage on failure
+    // 2. svsim assumes that simulators will either exit on an assertion failure
+    //    or can be compile-time configured to do so.  This is _not_ the case
+    //    for VCS as VCS requires runtime configuration to do and svsim
+    //    substitutes its own executable which ignores command line arguments.
+    //
+    // Note: this would be much better to handle with extensions to the FIRRTL
+    // ABI which would abstract away these differences.
     val simulationOutcome = Try {
       simulation.runElaboratedModule(elaboratedModule = elaboratedModule) { (module: SimulatedModule[T]) =>
         val outcome = body(module)
@@ -108,20 +141,21 @@ trait Simulator[T <: Backend] {
         outcome
 
       }
-    }.recoverWith { error =>
-      val asserts =
-        backend.assertionFailed(Paths.get(workspacePath, s"workdir-${tag}", "simulation-log.txt"))
-      asserts match {
-        case assertionLines if asserts.nonEmpty =>
-          Failure(
-            new Exceptions.AssertionFailed(message =
-              s"""|The following assertion failures were extracted from the log file:
-                  |${asserts.mkString("  - ", "\n  - ", "")} """.stripMargin
-            )
-          )
-        case _ => Failure(error)
+    }.transform(
+      s /*success*/ = { case success =>
+        postProcessLog match {
+          case None        => Success(success)
+          case Some(error) => Failure(error)
+        }
+      },
+      f /*failure*/ = { case originalError =>
+        postProcessLog match {
+          case None           => Failure(originalError)
+          case Some(newError) => Failure(newError)
+        }
       }
-    }
+    )
+
     val simulationEndTime = System.nanoTime()
 
     // Return the simulation result.
