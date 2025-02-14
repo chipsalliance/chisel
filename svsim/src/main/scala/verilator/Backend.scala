@@ -15,7 +15,7 @@ object Backend {
   }
 
   case class CompilationSettings(
-    traceStyle:                 Option[CompilationSettings.TraceStyle] = None,
+    traceStyle: Option[CompilationSettings.TraceStyle] = Some(CompilationSettings.TraceStyle.Vcd(filename = "foo.vcd")),
     outputSplit:                Option[Int] = None,
     outputSplitCFuncs:          Option[Int] = None,
     disabledWarnings:           Seq[String] = Seq(),
@@ -169,4 +169,7 @@ final class Backend(executablePath: String) extends svsim.Backend {
   }
 
   override def escapeDefine(string: String): String = string
+
+  override val assertionFailed = "^.*Assertion failed in.*".r
+
 }

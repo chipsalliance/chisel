@@ -32,18 +32,18 @@ class EphemeralSimulatorSpec extends AnyFunSpec with Matchers {
           }
         }
         it("should enable all layers by default") {
-          intercept[svsim.Simulation.UnexpectedEndOfMessages.type] {
+          intercept[Exception] {
             simulate(new Foo) { dut =>
               dut.clock.step()
             }
-          }
+          }.getMessage must include("Assertion failed")
         }
         it("should enable all layers when provied with EnableAll") {
-          intercept[svsim.Simulation.UnexpectedEndOfMessages.type] {
+          intercept[Exception] {
             simulate(new Foo, layerControl = LayerControl.EnableAll) { dut =>
               dut.clock.step()
             }
-          }
+          }.getMessage must include("Assertion failed")
         }
         it("should disable all layers when provided with Enable()") {
           simulate(new Foo, layerControl = LayerControl.Enable()) { dut =>
@@ -51,11 +51,11 @@ class EphemeralSimulatorSpec extends AnyFunSpec with Matchers {
           }
         }
         it("should enable specific layers with Enable") {
-          intercept[svsim.Simulation.UnexpectedEndOfMessages.type] {
+          intercept[Exception] {
             simulate(new Foo, layerControl = LayerControl.Enable(A)) { dut =>
               dut.clock.step()
             }
-          }
+          }.getMessage must include("Assertion failed")
         }
       }
       describe("for inline layers") {
@@ -67,18 +67,18 @@ class EphemeralSimulatorSpec extends AnyFunSpec with Matchers {
           }
         }
         it("should enable all layers by default") {
-          intercept[svsim.Simulation.UnexpectedEndOfMessages.type] {
+          intercept[Exception] {
             simulate(new Foo) { dut =>
               dut.clock.step()
             }
-          }
+          }.getMessage must include("Assertion failed")
         }
         it("should enable all layers when provied with EnableAll") {
-          intercept[svsim.Simulation.UnexpectedEndOfMessages.type] {
+          intercept[Exception] {
             simulate(new Foo, layerControl = LayerControl.EnableAll) { dut =>
               dut.clock.step()
             }
-          }
+          }.getMessage must include("Assertion failed")
         }
         it("should disable all layers when provided with Enable()") {
           simulate(new Foo, layerControl = LayerControl.Enable()) { dut =>
@@ -86,11 +86,11 @@ class EphemeralSimulatorSpec extends AnyFunSpec with Matchers {
           }
         }
         it("should enable specific layers with Enable") {
-          intercept[svsim.Simulation.UnexpectedEndOfMessages.type] {
+          intercept[Exception] {
             simulate(new Foo, layerControl = LayerControl.Enable(A)) { dut =>
               dut.clock.step()
             }
-          }
+          }.getMessage must include("Assertion failed")
         }
         it("should error if an enabled layer does not exist") {
           intercept[IllegalArgumentException] {

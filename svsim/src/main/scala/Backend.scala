@@ -1,6 +1,7 @@
 package svsim
 
 import java.io.File
+import scala.util.matching.Regex
 
 // -- Compilation Settings
 
@@ -82,6 +83,12 @@ trait Backend {
     * parse defines and require different escaping.
     */
   def escapeDefine(string: String): String
+
+  /** A regular expression that indicates lines in a log file which indicate
+    * assertion failure.
+    */
+  def assertionFailed: Regex
+
 }
 
 final object Backend {

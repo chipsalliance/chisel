@@ -89,7 +89,7 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
           }
           .result
       }
-      thrown.getMessage must include("Observed value '12' != 5.")
+      thrown.getMessage must include("observed value 12 != 5")
       (thrown.getMessage must include).regex(
         """ @\[src/test/scala-2/chiselTests/simulator/SimulatorSpec\.scala:\d+:\d+\]"""
       )
@@ -288,7 +288,7 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
           chisel3.assert(a, "a must be true")
         }
       }
-      intercept[svsim.Simulation.UnexpectedEndOfMessages.type] {
+      intercept[Exception] {
         new VerilatorSimulator("test_run_dir/simulator/has_layers_enabled")
           .simulate(new Foo) { module =>
             import PeekPokeAPI._
@@ -297,7 +297,7 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
             dut.clock.step(1)
           }
           .result
-      }
+      }.getMessage should include("Assertion failed")
     }
   }
 }

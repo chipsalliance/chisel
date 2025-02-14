@@ -1,8 +1,24 @@
 package chisel3.simulator
 
 import chisel3.{Data, RawModule}
-import scala.util.Try
+import firrtl.options.StageUtils.dramaticMessage
+import java.nio.file.Paths
+import scala.util.{Failure, Success, Try}
+import scala.util.control.NoStackTrace
 import svsim._
+
+private[this] object Exceptions {
+
+  class AssertionFailed(message: String)
+      extends RuntimeException(
+        dramaticMessage(
+          header = Some("One or more assertions failed during Chiselsim simulation"),
+          body = message
+        )
+      )
+      with NoStackTrace
+
+}
 
 final object Simulator {
 
@@ -34,6 +50,34 @@ trait Simulator[T <: Backend] {
   def firtoolArgs:                        Seq[String] = Seq()
   def commonCompilationSettings:          CommonCompilationSettings
   def backendSpecificCompilationSettings: backend.CompilationSettings
+
+  /** Post process a simulation log to see if there are any backend-specific failures.
+    *
+    * @return None if no failures found or Some if they are
+    */
+  private def postProcessLog: Option[Throwable] = {
+    val log = Paths.get(workspacePath, s"workdir-${tag}", "simulation-log.txt").toFile
+    val lines = scala.io.Source
+      .fromFile(log)
+      .getLines()
+      .zipWithIndex
+      .filter { case (line, _) => backend.assertionFailed.matches(line) }
+      .toSeq
+
+    Option.when(lines.nonEmpty)(
+      new Exceptions.AssertionFailed(
+        message = s"""|The following assertion failures were extracted from the log file:
+                      |
+                      |  lineNo  line
+                      |  ${"-" * 76}
+                      |${lines.map { case (line, lineNo) => f"$lineNo%8d  $line" }.mkString("\n")}
+                      |
+                      |For more information, see the complete log file:
+                      |
+                      |  ${log}""".stripMargin
+      )
+    )
+  }
 
   final def simulate[T <: RawModule, U](
     module:       => T,
@@ -78,7 +122,18 @@ trait Simulator[T <: Backend] {
       }
     val compilationEndTime = System.nanoTime()
 
-    // Simulate the compiled design.
+    // Simulate the compiled design.  After the simulation completes,
+    // post-process the log to figure out what happened.  This post-processing
+    // occurs in _both_ the success and failure modes for multiple reasons:
+    //
+    // 1. svsim returns a vague `UnexpectedEndOfMessage` on failure.
+    // 2. svsim assumes that simulators will either exit on an assertion failure
+    //    or can be compile-time configured to do so.  This is _not_ the case
+    //    for VCS as VCS requires runtime configuration to do and svsim
+    //    substitutes its own executable which ignores command line arguments.
+    //
+    // Note: this would be much better to handle with extensions to the FIRRTL
+    // ABI which would abstract away these differences.
     val simulationOutcome = Try {
       simulation.runElaboratedModule(elaboratedModule = elaboratedModule) { (module: SimulatedModule[T]) =>
         val outcome = body(module)
@@ -86,7 +141,21 @@ trait Simulator[T <: Backend] {
         outcome
 
       }
-    }
+    }.transform(
+      s /*success*/ = { case success =>
+        postProcessLog match {
+          case None        => Success(success)
+          case Some(error) => Failure(error)
+        }
+      },
+      f /*failure*/ = { case originalError =>
+        postProcessLog match {
+          case None           => Failure(originalError)
+          case Some(newError) => Failure(newError)
+        }
+      }
+    )
+
     val simulationEndTime = System.nanoTime()
 
     // Return the simulation result.
