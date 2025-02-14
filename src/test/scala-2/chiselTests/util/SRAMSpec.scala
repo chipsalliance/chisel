@@ -5,7 +5,7 @@ package chiselTests.util
 import _root_.circt.stage.ChiselStage.{emitCHIRRTL, emitSystemVerilog}
 import _root_.circt.stage.{CIRCTTarget, CIRCTTargetAnnotation, ChiselStage}
 import chisel3._
-import chisel3.experimental.{annotate, ChiselAnnotation, OpaqueType}
+import chisel3.experimental.{annotate, OpaqueType}
 import chisel3.stage.{ChiselGeneratorAnnotation, IncludeUtilMetadata, UseSRAMBlackbox}
 import chisel3.util.{MemoryReadWritePort, SRAM}
 import chiselTests.ChiselFlatSpec
@@ -32,9 +32,7 @@ class SRAMSpec extends ChiselFlatSpec {
         numReadwritePorts = 1
       )
       require(sram.underlying.nonEmpty)
-      annotate(new ChiselAnnotation {
-        override def toFirrtl: Annotation = DummyAnno(sram.underlying.get.toTarget)
-      })
+      annotate(sram.underlying.get)(Seq(DummyAnno(sram.underlying.get.toTarget)))
     }
     val (chirrtlCircuit, annos) = getFirrtlAndAnnos(new Top, providedAnnotations = Seq(IncludeUtilMetadata))
     val chirrtl = chirrtlCircuit.serialize
@@ -76,9 +74,7 @@ class SRAMSpec extends ChiselFlatSpec {
       )
       require(sramInterface.underlying.nonEmpty)
       sramInterface.underlying.get.suggestName("carrot")
-      annotate(new ChiselAnnotation {
-        override def toFirrtl: Annotation = DummyAnno(sramInterface.underlying.get.toTarget)
-      })
+      annotate(sramInterface.underlying.get)(Seq(DummyAnno(sramInterface.underlying.get.toTarget)))
     }
     val (chirrtlCircuit, annos) = getFirrtlAndAnnos(new Top)
     val chirrtl = chirrtlCircuit.serialize
