@@ -9,8 +9,6 @@ import svsim._
 
 private[this] object Exceptions {
 
-  case object CompilationFailed extends Exception
-
   class AssertionFailed(message: String)
       extends RuntimeException(
         dramaticMessage(
