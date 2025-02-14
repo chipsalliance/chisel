@@ -2,6 +2,7 @@ package chiselTests.simulator
 
 import chisel3._
 import chisel3.simulator._
+import chisel3.experimental.FlatIO
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
@@ -131,6 +132,28 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
       actualSV should include("output [7:0] out")
       (actualSV should not).include("emptyBundle")
       actualSV should include("bundle_x")
+    }
+
+    it("support peeking and poking FlatIO ports and other views of ports") {
+      import chisel3.experimental.dataview._
+      class SimpleModule extends Module {
+        val io = FlatIO(new Bundle {
+          val in = Input(UInt(8.W))
+          val out = Output(UInt(8.W))
+        })
+        val viewOfClock = clock.viewAs[Clock]
+        val delay = RegNext(io.in)
+        io.out := delay
+      }
+      new VerilatorSimulator("test_run_dir/simulator/flat_io_ports")
+        .simulate(new SimpleModule) { (_, dut) =>
+          import PeekPokeAPI._
+          dut.io.in.poke(12.U)
+          dut.viewOfClock.step(1)
+          dut.io.out.peek()
+          dut.io.out.expect(12)
+        }
+        .result
     }
   }
 }
