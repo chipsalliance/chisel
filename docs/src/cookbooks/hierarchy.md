@@ -163,12 +163,8 @@ class Top extends Module {
 ```
 ```scala mdoc:passthrough
 println("```")
-val chiselCircuit = (new chisel3.stage.phases.Elaborate)
-  .transform(Seq(chisel3.stage.ChiselGeneratorAnnotation(() => new Top)))
-  .collectFirst { case chisel3.stage.ChiselCircuitAnnotation(a) =>
-    a
-  }.get
-  println(chiselCircuit)
+// Run elaboration so that the println above shows up
+circt.stage.ChiselStage.convert(new Top)
 println("```")
 ```
 

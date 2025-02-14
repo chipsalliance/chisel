@@ -14,7 +14,7 @@ package object stage {
 
   final val pleaseSwitchToCIRCT = deprecatedMFCMessage + " Please switch to circt.stage.ChiselStage."
 
-  @nowarn("cat=deprecation&msg=WarnReflectiveNamingAnnotation")
+  @nowarn("cat=deprecation&msg=Use elaboratedCircuit instead")
   implicit object ChiselOptionsView extends OptionsView[ChiselOptions] {
 
     def view(options: AnnotationSeq): ChiselOptions = options.collect { case a: ChiselOption => a }
@@ -25,8 +25,9 @@ package object stage {
           case WarningsAsErrorsAnnotation =>
             c.copy(warningFilters = c.warningFilters :+ WarningsAsErrorsAnnotation.asFilter)
           case ChiselOutputFileAnnotation(f) => c.copy(outputFile = Some(f))
-          case ChiselCircuitAnnotation(a)    => c.copy(chiselCircuit = Some(a))
-          case SourceRootAnnotation(s)       => c.copy(sourceRoots = c.sourceRoots :+ s)
+          case a: ChiselCircuitAnnotation =>
+            c.copy(chiselCircuit = Some(a.circuit), elaboratedCircuit = a._circuit.toOption)
+          case SourceRootAnnotation(s) => c.copy(sourceRoots = c.sourceRoots :+ s)
           case a: WarningConfigurationAnnotation     => c.copy(warningFilters = c.warningFilters ++ a.filters)
           case a: WarningConfigurationFileAnnotation => c.copy(warningFilters = c.warningFilters ++ a.filters)
         }

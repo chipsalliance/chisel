@@ -22,7 +22,7 @@ class AddImplicitOutputFile extends Phase {
 
       val x: Option[AnnotationSeq] = annotations.collectFirst {
         case a: ChiselCircuitAnnotation =>
-          ChiselOutputFileAnnotation(a.circuit.name) +: annotations
+          ChiselOutputFileAnnotation(a.elaboratedCircuit.name) +: annotations
       }
 
       x.getOrElse(annotations)

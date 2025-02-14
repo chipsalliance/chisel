@@ -407,7 +407,9 @@ lazy val unipublish =
         ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.*._circuit"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.*._circuit_="),
         // setRef was package private
-        ProblemFilters.exclude[IncompatibleMethTypeProblem]("chisel3.*.setRef")
+        ProblemFilters.exclude[IncompatibleMethTypeProblem]("chisel3.*.setRef"),
+        // ChiselOptions constructor is package private
+        ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.stage.ChiselOptions.this")
       ),
       // Forward doc command to unidoc
       Compile / doc := (ScalaUnidoc / doc).value,
