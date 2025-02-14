@@ -3,7 +3,7 @@
 package chiselTests.experimental.hierarchy
 
 import _root_.firrtl.annotations._
-import chisel3.experimental.{annotate, BaseModule}
+import chisel3.experimental.{annotate, BaseModule, Targetable}
 import chisel3.{Data, HasTarget, MemBase}
 import chisel3.experimental.hierarchy.{Definition, Hierarchy, Instance}
 
@@ -12,26 +12,10 @@ private[hierarchy] object Annotations {
   case class MarkAnnotation(target: IsMember, tag: String) extends SingleTargetAnnotation[IsMember] {
     def duplicate(n: IsMember): Annotation = this.copy(target = n)
   }
-  case class MarkChiselHierarchyAnnotation[B <: BaseModule](d: Hierarchy[B], tag: String, isAbsolute: Boolean)
-      extends chisel3.experimental.ChiselAnnotation {
-    def toFirrtl = MarkAnnotation(d.toTarget, tag)
-  }
-  case class MarkChiselAnnotation(d: Data, tag: String, isAbsolute: Boolean)
-      extends chisel3.experimental.ChiselAnnotation {
-    def toFirrtl = if (isAbsolute) MarkAnnotation(d.toAbsoluteTarget, tag) else MarkAnnotation(d.toTarget, tag)
-  }
-  case class MarkChiselMemAnnotation[T <: Data](m: MemBase[T], tag: String, isAbsolute: Boolean)
-      extends chisel3.experimental.ChiselAnnotation {
-    def toFirrtl = if (isAbsolute) MarkAnnotation(m.toAbsoluteTarget, tag) else MarkAnnotation(m.toTarget, tag)
-  }
-  case class MarkChiselHasTargetAnnotation(d: HasTarget, tag: String, isAbsolute: Boolean)
-      extends chisel3.experimental.ChiselAnnotation {
-    def toFirrtl = if (isAbsolute) MarkAnnotation(d.toAbsoluteTarget, tag) else MarkAnnotation(d.toTarget, tag)
-  }
-  def mark(d:                  Data, tag:         String): Unit = annotate(MarkChiselAnnotation(d, tag, false))
-  def mark[T <: Data](d:       MemBase[T], tag:   String): Unit = annotate(MarkChiselMemAnnotation(d, tag, false))
-  def mark(d:                  HasTarget, tag:    String): Unit = annotate(MarkChiselHasTargetAnnotation(d, tag, false))
-  def mark[B <: BaseModule](d: Hierarchy[B], tag: String): Unit = annotate(MarkChiselHierarchyAnnotation(d, tag, true))
-  def amark(d:                 Data, tag:         String): Unit = annotate(MarkChiselAnnotation(d, tag, true))
-  def amark[B <: BaseModule](d: Hierarchy[B], tag: String): Unit = annotate(MarkChiselHierarchyAnnotation(d, tag, true))
+  def mark(d:                  Data, tag:         String): Unit = annotate(d)(Seq(MarkAnnotation(d.toTarget, tag)))
+  def mark[T <: Data](d:       MemBase[T], tag:   String): Unit = annotate(d)(Seq(MarkAnnotation(d.toTarget, tag)))
+  def mark(d:                  HasTarget, tag:    String): Unit = annotate(d)(Seq(MarkAnnotation(d.toTarget, tag)))
+  def mark[B <: BaseModule](d: Hierarchy[B], tag: String): Unit = annotate(d)(Seq(MarkAnnotation(d.toTarget, tag)))
+  def amark(d: Data, tag: String): Unit = annotate(d)(Seq(MarkAnnotation(d.toAbsoluteTarget, tag)))
+  def amark[B <: BaseModule](d: Hierarchy[B], tag: String): Unit = annotate(d)(Seq(MarkAnnotation(d.toTarget, tag)))
 }
