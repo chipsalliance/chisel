@@ -23,13 +23,13 @@ sealed trait ElaboratedCircuit {
   /** The circuit and annotations as a string of FIRRTL IR
     *
     * This will include annotations passed to Chisel to build the circuit and those created during elaboration.
-    * For large circuits (> 2 GiB of text) use [[lazilySerialize]].
+    * For large circuits (> 2 GiB of text) use `lazilySerialize`.
     */
   def serialize: String
 
   /** The circuit and annotations as a string of FIRRTL IR
     *
-    * For large circuits (> 2 GiB of text) use [[lazilySerialize]]
+    * For large circuits (> 2 GiB of text) use `lazilySerialize`.
     *
     * @param annotations annotations to include in the FIRRTL IR. No other annotations will be included.
     */
