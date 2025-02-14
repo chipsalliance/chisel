@@ -38,9 +38,18 @@ object dontTouch {
     data match {
       case d if DataMirror.hasProbeTypeModifier(d) => ()
       case _:   Property[_] => ()
+<<<<<<< HEAD
       case agg: Aggregate => agg.getElements.foreach(dontTouch.apply)
       case _:   Element =>
         annotate(new ChiselAnnotation { def toFirrtl = DontTouchAnnotation(data.toNamed) })
+||||||| parent of a95cfe4c (Add safer Chisel annotation API, deprecate old ones (#4643))
+      case agg: Aggregate   => agg.getElements.foreach(dontTouch.apply)
+      case _:   Element =>
+        annotate(new ChiselAnnotation { def toFirrtl: DontTouchAnnotation = DontTouchAnnotation(data.toNamed) })
+=======
+      case agg: Aggregate   => agg.getElements.foreach(dontTouch.apply)
+      case _:   Element     => annotate(data)(Seq(DontTouchAnnotation(data.toNamed)))
+>>>>>>> a95cfe4c (Add safer Chisel annotation API, deprecate old ones (#4643))
       case _ => throw new ChiselException("Non-hardware dontTouch")
     }
     data

@@ -5,7 +5,7 @@ package chiselTests
 import chisel3._
 import chisel3.util.Counter
 import chisel3.testers._
-import chisel3.experimental.{BaseModule, ChiselAnnotation, OpaqueType}
+import chisel3.experimental.{BaseModule, OpaqueType}
 import chisel3.probe._
 import chisel3.properties.Property
 import chisel3.util.experimental.BoringUtils
@@ -44,10 +44,7 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
   }
 
   trait WireX { this: BaseModule =>
-    val x = Wire(UInt(4.W))
-    chisel3.experimental.annotate(new ChiselAnnotation {
-      def toFirrtl: Annotation = DontTouchAnnotation(x.toNamed)
-    })
+    val x = dontTouch(Wire(UInt(4.W)))
   }
 
   class Source extends RawModule with WireX {

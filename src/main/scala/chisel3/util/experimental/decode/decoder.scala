@@ -30,11 +30,7 @@ object decoder extends LazyLogging {
       val (plaInput, plaOutput) =
         pla(minimizedTable.table.toSeq, BitPat(minimizedTable.default.value.U(minimizedTable.default.getWidth.W)))
 
-      requireIsAnnotatable(plaOutput, "DecodeTableAnnotation target")
-      annotate(new ChiselAnnotation {
-        override def toFirrtl: Annotation =
-          DecodeTableAnnotation(plaOutput.toTarget, truthTable.toString, minimizedTable.toString)
-      })
+      annotate(plaOutput)(Seq(DecodeTableAnnotation(plaOutput.toTarget, truthTable.toString, minimizedTable.toString)))
 
       plaInput := input
       plaOutput

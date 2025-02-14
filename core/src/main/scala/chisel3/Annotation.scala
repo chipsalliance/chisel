@@ -3,8 +3,10 @@
 package chisel3.experimental
 
 import scala.language.existentials
+import scala.annotation.nowarn
 import chisel3.internal.Builder
-import chisel3.{Data, InstanceId, RawModule}
+import chisel3.{Data, HasTarget, InstanceId, RawModule}
+import chisel3.experimental.AnyTargetable
 import firrtl.annotations._
 import firrtl.options.Unserializable
 import firrtl.transforms.{DedupGroupAnnotation, NoDedupAnnotation}
@@ -13,6 +15,10 @@ import firrtl.transforms.{DedupGroupAnnotation, NoDedupAnnotation}
   *
   * Defines a conversion to a corresponding FIRRTL Annotation
   */
+@deprecated(
+  "Avoid custom annotations. If you must use annotations, use annotate.apply method that takes Data",
+  "Chisel 6.7.0"
+)
 trait ChiselAnnotation {
 
   /** Conversion to FIRRTL Annotation */
@@ -23,16 +29,45 @@ trait ChiselAnnotation {
   *
   *  Defines a conversion to corresponding FIRRTL Annotation(s)
   */
+@deprecated(
+  "Avoid custom annotations. If you must use annotations, use annotate.apply method that takes Data",
+  "Chisel 6.7.0"
+)
 trait ChiselMultiAnnotation {
   def toFirrtl: Seq[Annotation]
 }
 
+@nowarn("msg=Avoid custom annotations")
 object annotate {
-  def apply(anno: ChiselAnnotation): Unit = {
+  @deprecated(
+    "Avoid custom annotations. If you must use annotations, use annotate.apply method that takes Data",
+    "Chisel 6.7.0"
+  )
+  def apply(anno: ChiselAnnotation): Unit =
     Builder.annotations += anno
-  }
-  def apply(annos: ChiselMultiAnnotation): Unit = {
+
+  @deprecated(
+    "Avoid custom annotations. If you must use annotations, use annotate.apply method that takes Data",
+    "Chisel 6.7.0"
+  )
+  def apply(annos: ChiselMultiAnnotation): Unit =
     Builder.newAnnotations += annos
+
+  /** Create annotations.
+    *
+    * Avoid this API if possible.
+    *
+    * Anything being annotated must be passed as arguments so that Chisel can do safety checks.
+    * The caller is still responsible for calling .toTarget on those arguments in mkAnnos.
+    */
+  def apply(targets: AnyTargetable*)(mkAnnos: => Seq[Annotation]): Unit = {
+    targets.map(_.a).foreach {
+      case d: Data => requireIsAnnotatable(d, "Data marked with annotation")
+      case _ => ()
+    }
+    Builder.newAnnotations += new ChiselMultiAnnotation {
+      def toFirrtl: Seq[Annotation] = mkAnnos
+    }
   }
 }
 
@@ -76,7 +111,13 @@ object doNotDedup {
     * @return Unmodified signal `module`
     */
   def apply[T <: RawModule](module: T): Unit = {
+<<<<<<< HEAD
     annotate(new ChiselAnnotation { def toFirrtl = NoDedupAnnotation(module.toNamed) })
+||||||| parent of a95cfe4c (Add safer Chisel annotation API, deprecate old ones (#4643))
+    annotate(new ChiselAnnotation { def toFirrtl: NoDedupAnnotation = NoDedupAnnotation(module.toNamed) })
+=======
+    annotate(module)(Seq(NoDedupAnnotation(module.toNamed)))
+>>>>>>> a95cfe4c (Add safer Chisel annotation API, deprecate old ones (#4643))
   }
 }
 
@@ -89,6 +130,12 @@ object dedupGroup {
     * @return Unmodified signal `module`
     */
   def apply[T <: BaseModule](module: T, group: String): Unit = {
+<<<<<<< HEAD
     annotate(new ChiselAnnotation { def toFirrtl = DedupGroupAnnotation(module.toTarget, group) })
+||||||| parent of a95cfe4c (Add safer Chisel annotation API, deprecate old ones (#4643))
+    annotate(new ChiselAnnotation { def toFirrtl: DedupGroupAnnotation = DedupGroupAnnotation(module.toTarget, group) })
+=======
+    annotate(module)(Seq(DedupGroupAnnotation(module.toTarget, group)))
+>>>>>>> a95cfe4c (Add safer Chisel annotation API, deprecate old ones (#4643))
   }
 }

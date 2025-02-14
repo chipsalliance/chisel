@@ -1,0 +1,294 @@
+package build
+
+import mill._
+import mill.scalalib._
+import mill.scalalib.scalafmt._
+
+import $packages._
+import build._
+
+object v extends Module {
+
+  val javaVersion = {
+    val rawVersion = sys.props("java.specification.version")
+    // Older versions of Java started with 1., e.g. 1.8 == 8
+    rawVersion.stripPrefix("1.").toInt
+  }
+
+  val firtoolVersion = {
+    val j = _root_.upickle.default.read[Map[String, String]](os.read(millSourcePath / os.up / "etc" / "circt.json"))
+    j("version").stripPrefix("firtool-")
+  }
+  // Java 21 only works with 2.13.11+, but Project Panama uses Java 21
+  // Only publish plugin for 2.13.11+ when using Java > 11, but still
+  // publish all versions when Java version <= 11.
+  val pluginScalaCrossVersions = {
+    val latest213 = 15
+    val java21Min213 = 11
+    val minVersion = if (javaVersion > 11) java21Min213 else 0
+    val versions = minVersion to latest213
+    val versionSeq = versions.map(v => s"2.13.$v").toSeq
+    versionSeq ++ Seq("3.3.4")
+  }
+
+  val scalaCrossVersions = Seq(
+    "2.13.15",
+    "3.3.4"
+  )
+
+  def isScala3(ver: String): Boolean = ver.startsWith("3.")
+
+  def buildUnits(): Seq[ScalaModule] = {
+    scalaCrossVersions.flatMap { ver =>
+      Seq(chisel(ver), stdlib.cross(ver), unipublish)
+    } ++ scalaCrossVersions.filterNot(isScala3(_)).flatMap { ver2 =>
+      Seq(
+        chisel(ver2).test,
+        firrtl.cross(ver2).test,
+        svsim.cross(ver2).test,
+        `integration-tests`.cross(ver2).test,
+        lit.utility.cross(ver2),
+        panamaconverter.cross(ver2),
+        panamalib.cross(ver2),
+        panamaom.cross(ver2)
+      )
+    }
+  }
+
+  val scalaVersion = scalaCrossVersions.head
+  val jmhVersion = "1.37"
+  val osLib = ivy"com.lihaoyi::os-lib:0.10.0"
+  val upickle = ivy"com.lihaoyi::upickle:3.3.1"
+  val firtoolResolver = ivy"org.chipsalliance::firtool-resolver:2.0.1"
+  val scalatest = ivy"org.scalatest::scalatest:3.2.19"
+  val scalacheck = ivy"org.scalatestplus::scalacheck-1-18:3.2.19.0"
+  val json4s = ivy"org.json4s::json4s-native:4.0.7"
+  val dataclass = ivy"io.github.alexarchambault::data-class:0.2.6"
+  val commonText = ivy"org.apache.commons:commons-text:1.12.0"
+  val scopt = ivy"com.github.scopt::scopt:4.1.0"
+
+  def scalaReflect(scalaVersion:  String) = ivy"org.scala-lang:scala-reflect:$scalaVersion"
+  def scalaCompiler(scalaVersion: String) = ivy"org.scala-lang:scala-compiler:$scalaVersion"
+  def scalaLibrary(scalaVersion:  String) = ivy"org.scala-lang:scala-library:$scalaVersion"
+
+  def circt(version: String, os: String, platform: String) =
+    s"https://github.com/llvm/circt/releases/download/firtool-${version}/circt-full-shared-${os}-${platform}.tar.gz"
+
+  val scala2WarnConf = Seq(
+    "msg=APIs in chisel3.internal:s",
+    "msg=Importing from firrtl:s",
+    "msg=migration to the MLIR:s",
+    "msg=method hasDefiniteSize in trait IterableOnceOps is deprecated:s", // replacement `knownSize` is not in 2.12
+    "msg=object JavaConverters in package collection is deprecated:s",
+    "msg=undefined in comment for method cf in class PrintableHelper:s",
+    // This is deprecated for external users but not internal use
+    "cat=deprecation&origin=firrtl\\.options\\.internal\\.WriteableCircuitAnnotation:s",
+    "cat=deprecation&origin=chisel3\\.util\\.experimental\\.BoringUtils.*:s",
+    "cat=deprecation&origin=chisel3\\.experimental\\.IntrinsicModule:s",
+    "cat=deprecation&origin=chisel3\\.ltl.*:s",
+    "cat=deprecation&origin=chisel3\\.InstanceId:s",
+    // Deprecated for external users, will eventually be removed.
+    "cat=deprecation&msg=Looking up Modules is deprecated:s",
+    // Only for testing of deprecated APIs
+    "cat=deprecation&msg=Use of @instantiable on user-defined types is deprecated:s"
+  )
+
+  // ScalacOptions
+  val scala2CommonOptions = Seq(
+    "-deprecation",
+    "-feature",
+    "-unchecked",
+    "-Werror",
+    "-Ymacro-annotations",
+    "-release:8",
+    "-explaintypes",
+    "-Xcheckinit",
+    "-Xlint:infer-any",
+    "-Xlint:missing-interpolator",
+    "-language:reflectiveCalls",
+    s"-Wconf:${scala2WarnConf.mkString(",")}"
+  )
+}
+
+def compileAll() = Task.Command {
+  Task.traverse(v.buildUnits())(_.compile)()
+}
+
+trait HasScala2MacroAnno extends CrossModuleBase {
+  override def scalacOptions = Task {
+    if (!v.isScala3(crossScalaVersion)) {
+      super.scalacOptions() ++ Agg("-Ymacro-annotations")
+    } else super.scalacOptions()
+  }
+}
+
+trait HasScala2Plugin extends CrossModuleBase {
+  import build_.plugin.Plugin
+  def pluginModule: Plugin
+
+  override def scalacOptions = Task {
+    if (!v.isScala3(crossScalaVersion)) {
+      super.scalacOptions() ++ Agg(s"-Xplugin:${pluginModule.jar().path}")
+    } else super.scalacOptions()
+  }
+
+  override def scalacPluginClasspath = Task {
+    if (!v.isScala3(crossScalaVersion)) {
+      super.scalacPluginClasspath() ++ Agg(pluginModule.jar())
+    } else super.scalacPluginClasspath()
+  }
+}
+
+trait HasCommonOptions extends CrossModuleBase {
+  def xsource3: Boolean = true
+  override def scalacOptions = Task {
+    if (!v.isScala3(crossScalaVersion)) {
+      super.scalacOptions() ++ v.scala2CommonOptions ++ Option.when(xsource3)("-Xsource:3")
+    } else super.scalacOptions()
+  }
+}
+
+trait HasJextractGeneratedSources extends JavaModule {
+
+  def jextractBinary: T[os.Path]
+
+  def includePaths: T[Seq[PathRef]]
+
+  def libraryPaths: T[Seq[PathRef]]
+
+  def header: T[PathRef]
+
+  def includeFunctions: T[Seq[String]]
+
+  def includeConstants: T[Seq[String]]
+
+  def includeStructs: T[Seq[String]]
+
+  def includeTypedefs: T[Seq[String]]
+
+  def includeUnions: T[Seq[String]]
+
+  def includeVars: T[Seq[String]]
+
+  def linkLibraries: T[Seq[String]]
+
+  def target: T[String]
+
+  def headerClassName: T[String]
+
+  def dumpAllIncludes = Task {
+    val f = os.temp()
+    os.proc(
+      Seq(jextractBinary().toString, header().path.toString)
+        ++ includePaths().flatMap(p => Seq("-I", p.path.toString))
+        ++ Seq("--dump-includes", f.toString)
+    ).call()
+    os.read.lines(f).filter(s => s.nonEmpty && !s.startsWith("#"))
+  }
+
+  override def generatedSources: T[Seq[PathRef]] = Task {
+    super.generatedSources() ++ {
+      // @formatter:off
+      os.proc(
+        Seq(jextractBinary().toString, header().path.toString)
+          ++ includePaths().flatMap(p => Seq("-I", p.path.toString))
+          ++ Seq(
+            "-t", target(),
+            "--header-class-name", headerClassName(),
+            "--source",
+            "--output", Task.dest.toString
+          ) ++ includeFunctions().flatMap(f => Seq("--include-function", f)) ++
+          includeConstants().flatMap(f => Seq("--include-constant", f)) ++
+          includeStructs().flatMap(f => Seq("--include-struct", f)) ++
+          includeTypedefs().flatMap(f => Seq("--include-typedef", f)) ++
+          includeUnions().flatMap(f => Seq("--include-union", f)) ++
+          includeVars().flatMap(f => Seq("--include-var", f)) ++
+          linkLibraries().flatMap(l => Seq("-l", l))
+      ).call(Task.dest)
+      // @formatter:on
+      Seq(PathRef(Task.dest))
+    }
+  }
+
+  override def javacOptions = Task(super.javacOptions() ++ Seq("--enable-preview", "--release", "21"))
+}
+
+trait HasCIRCTPanamaBindingModule extends JavaModule {
+  import build_.circtpanamabinding.CIRCTPanamaBinding
+  def circtPanamaBindingModule: CIRCTPanamaBinding
+
+  override def moduleDeps = super.moduleDeps ++ Some(circtPanamaBindingModule)
+  //
+  override def javacOptions = Task(super.javacOptions() ++ Seq("--enable-preview", "--release", "21"))
+
+  override def forkArgs: T[Seq[String]] = Task(
+    super.forkArgs() ++ Seq("--enable-native-access=ALL-UNNAMED", "--enable-preview")
+      ++ circtPanamaBindingModule
+        .libraryPaths()
+        .map(p => s"-Djava.library.path=${p.path}")
+  )
+}
+
+trait HasPanamaLibModule extends ScalaModule with HasCIRCTPanamaBindingModule {
+  import build_.panamalib.PanamaLib
+  def panamaLibModule: PanamaLib
+
+  def circtPanamaBindingModule = panamaLibModule.circtPanamaBindingModule
+
+  override def moduleDeps = super.moduleDeps ++ Some(panamaLibModule)
+}
+
+trait HasPanamaOMModule extends ScalaModule with HasCIRCTPanamaBindingModule {
+  import build_.panamaom.PanamaOM
+  def panamaOMModule: PanamaOM
+
+  def circtPanamaBindingModule = panamaOMModule.circtPanamaBindingModule
+
+  override def moduleDeps = super.moduleDeps ++ Some(panamaOMModule)
+}
+
+trait HasPanamaConverterModule extends ScalaModule with HasCIRCTPanamaBindingModule {
+  import build_.panamaconverter.PanamaConverter
+  def panamaConverterModule: PanamaConverter
+
+  def circtPanamaBindingModule = panamaConverterModule.circtPanamaBindingModule
+
+  override def moduleDeps = super.moduleDeps ++ Some(panamaConverterModule)
+}
+
+// TODO: move chisel src to subfolder once we have dropped sbt flow
+object chisel extends Cross[Chisel](v.scalaCrossVersions)
+
+trait Chisel extends CrossSbtModule with HasScala2MacroAnno with HasScala2Plugin with ScalafmtModule {
+  override def millSourcePath = super.millSourcePath / os.up
+  def svsimModule = svsim.cross(crossScalaVersion)
+  def coreModule = core.cross(crossScalaVersion)
+  def pluginModule = plugin.cross()
+
+  override def scalacOptions = Task {
+    if (v.isScala3(crossScalaVersion)) {
+      Seq.empty[String]
+    } else {
+      super.scalacOptions() ++ v.scala2CommonOptions
+    }
+  }
+
+  override def moduleDeps = super.moduleDeps ++ Seq(coreModule, svsimModule)
+
+  def compileIvyDeps = Agg(v.scalatest)
+
+  object test extends CrossSbtTests with TestModule.ScalaTest with ScalafmtModule {
+    def ivyDeps = Agg(v.scalatest, v.scalacheck)
+
+    // TODO: enable sandbox and run tests in parallel
+    override def testSandboxWorkingDir = false
+
+    // Suppress Scala 3 behavior requiring explicit types on implicit definitions
+    // Note this must come before the -Wconf is warningSuppression
+    override def scalacOptions = Task { super.scalacOptions() :+ "-Wconf:cat=other-implicit-type:s" }
+
+    override def testForkGrouping = discoveredTestClasses().grouped(8).toSeq
+  }
+}
+
+object unipublish extends release.Unipublish

@@ -69,6 +69,7 @@ lazy val warningSuppression = Seq(
     "cat=deprecation&origin=firrtl\\.options\\.internal\\.WriteableCircuitAnnotation:s",
     "cat=deprecation&origin=chisel3\\.util\\.experimental\\.BoringUtils.*:s",
     "cat=deprecation&origin=chisel3\\.ltl.*:s",
+<<<<<<< HEAD
     // This is deprecated and planned to be removed
     "cat=deprecation&origin=chisel3\\.aop\\.injecting.*:s",
     "cat=deprecation&origin=chisel3\\.stage\\.phases\\.MaybeInjectingPhase:s",
@@ -78,6 +79,12 @@ lazy val warningSuppression = Seq(
     "cat=deprecation&origin=chisel3\\.aop\\.Aspect$:s",
     "cat=deprecation&origin=chisel3\\.stage\\.phases.AspectPhase:s",
     "cat=deprecation&origin=chisel3\\.stage\\.phases.MaybeAspectPhase:s"
+||||||| parent of a95cfe4c (Add safer Chisel annotation API, deprecate old ones (#4643))
+    "cat=deprecation&msg=Looking up Modules is deprecated:s",
+=======
+    "cat=deprecation&origin=chisel3\\.InstanceId:s",
+    "cat=deprecation&msg=Looking up Modules is deprecated:s",
+>>>>>>> a95cfe4c (Add safer Chisel annotation API, deprecate old ones (#4643))
   ).mkString(",")
 )
 

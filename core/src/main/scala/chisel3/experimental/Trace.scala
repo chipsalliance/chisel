@@ -22,9 +22,7 @@ object Trace {
 
   /** Trace a Instance name. */
   def traceName(x: RawModule): Unit = {
-    annotate(new ChiselAnnotation {
-      def toFirrtl: Annotation = TraceAnnotation(x.toAbsoluteTarget, x.toAbsoluteTarget)
-    })
+    annotate(x)(Seq(TraceAnnotation(x.toAbsoluteTarget, x.toAbsoluteTarget)))
   }
 
   /** Trace a Data name. This does NOT add "don't touch" semantics to the traced data. If you want this behavior, use an explicit [[chisel3.dontTouch]]. */
@@ -33,9 +31,7 @@ object Trace {
       case aggregate: Aggregate =>
         aggregate.elementsIterator.foreach(traceName)
       case element: Element =>
-        annotate(new ChiselAnnotation {
-          def toFirrtl: Annotation = TraceAnnotation(element.toAbsoluteTarget, element.toAbsoluteTarget)
-        })
+        annotate(element)(Seq(TraceAnnotation(element.toAbsoluteTarget, element.toAbsoluteTarget)))
     }
   }
 
