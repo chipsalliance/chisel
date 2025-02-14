@@ -350,8 +350,8 @@ import CircuitSerializationAnnotation.{FirrtlFileFormat, Format}
 class CircuitSerializationAnnotation private (
   private val _circuit: Either[Circuit, ElaboratedCircuit],
   val filename:         String,
-  val format:           Format
-) extends NoTargetAnnotation
+  val format:           Format)
+    extends NoTargetAnnotation
     with BufferedCustomFileEmission
     with WriteableCircuitAnnotation
     with Product

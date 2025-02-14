@@ -26,15 +26,7 @@ class Convert extends Phase {
         /* Convert this Chisel Circuit to a FIRRTL Circuit */
         Some(FirrtlCircuitAnnotation(Converter.convert(a.elaboratedCircuit._circuit))) ++
         /* Convert all Chisel Annotations to FIRRTL Annotations */
-<<<<<<< HEAD
-        //TODO: clean up this code when firrtl is merged
-        a.circuit.firrtlAnnotations
-||||||| parent of 4d755737 (Add ElaboratedCircuit and deprecate use of internal ir Circuit (#4683))
-        // TODO: clean up this code when firrtl is merged
-        a.circuit.firrtlAnnotations
-=======
         a.elaboratedCircuit.annotations
->>>>>>> 4d755737 (Add ElaboratedCircuit and deprecate use of internal ir Circuit (#4683))
     case a => Some(a)
   }
 

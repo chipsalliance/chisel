@@ -113,23 +113,9 @@ object Definition extends SourceInfoDoc {
       )
     }
     dynamicContext.inDefinition = true
-<<<<<<< HEAD
     val (ir, module) = Builder.build(Module(proto), dynamicContext, false)
-    Builder.components ++= ir.components
-    Builder.annotations ++= ir.annotations: @nowarn // this will go away when firrtl is merged
-||||||| parent of 4d755737 (Add ElaboratedCircuit and deprecate use of internal ir Circuit (#4683))
-    val (ir, module) = Builder.build(Module(proto), dynamicContext)
-    Builder.components ++= ir.components
-    Builder.annotations ++= ir.annotations: @nowarn // this will go away when firrtl is merged
-    Builder.layers ++= dynamicContext.layers
-    Builder.options ++= dynamicContext.options
-=======
-    val (ir, module) = Builder.build(Module(proto), dynamicContext)
     Builder.components ++= ir._circuit.components
     Builder.annotations ++= ir._circuit.annotations
-    Builder.layers ++= dynamicContext.layers
-    Builder.options ++= dynamicContext.options
->>>>>>> 4d755737 (Add ElaboratedCircuit and deprecate use of internal ir Circuit (#4683))
     module._circuit = Builder.currentModule
     module.toDefinition
   }

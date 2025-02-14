@@ -20,18 +20,9 @@ class AddImplicitOutputAnnotationFile extends Phase {
     case _: OutputAnnotationFileAnnotation => annotations
   }.getOrElse {
 
-<<<<<<< HEAD
     val x: Option[AnnotationSeq] = annotations.collectFirst {
       case a: ChiselCircuitAnnotation =>
-        OutputAnnotationFileAnnotation(a.circuit.name) +: annotations
-||||||| parent of 4d755737 (Add ElaboratedCircuit and deprecate use of internal ir Circuit (#4683))
-    val x: Option[AnnotationSeq] = annotations.collectFirst { case a: ChiselCircuitAnnotation =>
-      OutputAnnotationFileAnnotation(a.circuit.name) +: annotations
-=======
-    // We are assuming these annotations are in sync
-    val x: Option[AnnotationSeq] = annotations.collectFirst { case a: ChiselCircuitAnnotation =>
-      OutputAnnotationFileAnnotation(a.elaboratedCircuit.name) +: annotations
->>>>>>> 4d755737 (Add ElaboratedCircuit and deprecate use of internal ir Circuit (#4683))
+        OutputAnnotationFileAnnotation(a.elaboratedCircuit.name) +: annotations
     }
 
     x.getOrElse(annotations)
