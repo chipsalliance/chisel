@@ -1074,8 +1074,16 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
           new ChiselStageSpec.Bar,
           args
         )
+<<<<<<< HEAD:src/test/scala/circtTests/stage/ChiselStageSpec.scala
         .collectFirst {
           case CircuitSerializationAnnotation(_, filename, _) => filename
+||||||| parent of 4d755737 (Add ElaboratedCircuit and deprecate use of internal ir Circuit (#4683)):src/test/scala-2/circtTests/stage/ChiselStageSpec.scala
+        .collectFirst { case CircuitSerializationAnnotation(_, filename, _) =>
+          filename
+=======
+        .collectFirst { case a: CircuitSerializationAnnotation =>
+          a.filename
+>>>>>>> 4d755737 (Add ElaboratedCircuit and deprecate use of internal ir Circuit (#4683)):src/test/scala-2/circtTests/stage/ChiselStageSpec.scala
         }
         .get should be("Bar")
 

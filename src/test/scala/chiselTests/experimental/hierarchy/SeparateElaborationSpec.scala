@@ -4,6 +4,7 @@ package chiselTests.experimental.hierarchy
 
 import chiselTests.ChiselFunSpec
 import chisel3._
+import chisel3.aop.Select
 import chisel3.experimental.BaseModule
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation, DesignAnnotation}
 import chisel3.experimental.hierarchy.{Definition, Instance}
@@ -50,7 +51,8 @@ class SeparateElaborationSpec extends ChiselFunSpec with Utils {
     annos.flatMap { a =>
       a match {
         case a: ChiselCircuitAnnotation =>
-          a.circuit.components.map { c => ImportDefinitionAnnotation(c.id.toDefinition) }
+          val allDefns = Select.allDefinitionsOf[BaseModule](a.elaboratedCircuit.topDefinition)
+          allDefns.map(ImportDefinitionAnnotation(_))
         case _ => Seq.empty
       }
     }

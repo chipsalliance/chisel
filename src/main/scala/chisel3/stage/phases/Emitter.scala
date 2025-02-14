@@ -36,7 +36,7 @@ class Emitter extends Phase {
     annotations.flatMap {
       case a: ChiselCircuitAnnotation if copts.outputFile.isDefined =>
         val filename = sopts.getBuildFileName(copts.outputFile.get, Some(".fir"))
-        val csa = CircuitSerializationAnnotation(a.circuit, filename, FirrtlFileFormat)
+        val csa = CircuitSerializationAnnotation(a.elaboratedCircuit, filename)
         csa.doWriteToFile(new File(filename), Nil)
         Some(a)
       case a => Some(a)

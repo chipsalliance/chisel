@@ -20,9 +20,17 @@ class AddImplicitOutputFile extends Phase {
   def transform(annotations: AnnotationSeq): AnnotationSeq =
     annotations.collectFirst { case _: ChiselOutputFileAnnotation => annotations }.getOrElse {
 
+<<<<<<< HEAD
       val x: Option[AnnotationSeq] = annotations.collectFirst {
         case a: ChiselCircuitAnnotation =>
           ChiselOutputFileAnnotation(a.circuit.name) +: annotations
+||||||| parent of 4d755737 (Add ElaboratedCircuit and deprecate use of internal ir Circuit (#4683))
+      val x: Option[AnnotationSeq] = annotations.collectFirst { case a: ChiselCircuitAnnotation =>
+        ChiselOutputFileAnnotation(a.circuit.name) +: annotations
+=======
+      val x: Option[AnnotationSeq] = annotations.collectFirst { case a: ChiselCircuitAnnotation =>
+        ChiselOutputFileAnnotation(a.elaboratedCircuit.name) +: annotations
+>>>>>>> 4d755737 (Add ElaboratedCircuit and deprecate use of internal ir Circuit (#4683))
       }
 
       x.getOrElse(annotations)

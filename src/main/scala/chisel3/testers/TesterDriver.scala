@@ -112,11 +112,14 @@ object TesterDriver extends BackendCompilationUtilities {
     override def invalidates(a: Phase) = false
 
     override def transform(a: AnnotationSeq) = a.flatMap {
-      case a @ ChiselCircuitAnnotation(circuit) =>
+      case a: ChiselCircuitAnnotation =>
         Seq(
           a,
           TargetDirAnnotation(
-            firrtl.util.BackendCompilationUtilities.createTestDirectory(circuit.name).getAbsolutePath.toString
+            firrtl.util.BackendCompilationUtilities
+              .createTestDirectory(a.elaboratedCircuit.name)
+              .getAbsolutePath
+              .toString
           )
         )
       case a => Seq(a)

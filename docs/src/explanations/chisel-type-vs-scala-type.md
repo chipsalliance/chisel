@@ -61,12 +61,7 @@ class MyModule(gen: () => MyBundle) extends Module {
 ```scala mdoc:invisible
 // Just here to compile check the above
 def elaborate(module: => chisel3.RawModule) = {
-  (new chisel3.stage.phases.Elaborate)
-    .transform(Seq(chisel3.stage.ChiselGeneratorAnnotation(() => module)))
-    .collectFirst { case chisel3.stage.ChiselCircuitAnnotation(circuit) =>
-      circuit
-    }
-    .get
+  circt.stage.ChiselStage.convert(module)
 }
 elaborate(new MyModule(() => new MyBundle(3)))
 ```

@@ -1015,9 +1015,17 @@ private[chisel3] object Builder extends LazyLogging {
 
   private[chisel3] def build[T <: BaseModule](
     f:              => T,
+<<<<<<< HEAD
     dynamicContext: DynamicContext,
     forceModName:   Boolean = true
   ): (Circuit, T) = {
+||||||| parent of 4d755737 (Add ElaboratedCircuit and deprecate use of internal ir Circuit (#4683))
+    dynamicContext: DynamicContext
+  ): (Circuit, T) = {
+=======
+    dynamicContext: DynamicContext
+  ): (ElaboratedCircuit, T) = {
+>>>>>>> 4d755737 (Add ElaboratedCircuit and deprecate use of internal ir Circuit (#4683))
     // Logger has its own context separate from Chisel's dynamic context
     _root_.logger.Logger.makeScope(dynamicContext.loggerOptions) {
       buildImpl(f, dynamicContext, forceModName)
@@ -1026,9 +1034,17 @@ private[chisel3] object Builder extends LazyLogging {
 
   private def buildImpl[T <: BaseModule](
     f:              => T,
+<<<<<<< HEAD
     dynamicContext: DynamicContext,
     forceModName:   Boolean
   ): (Circuit, T) = {
+||||||| parent of 4d755737 (Add ElaboratedCircuit and deprecate use of internal ir Circuit (#4683))
+    dynamicContext: DynamicContext
+  ): (Circuit, T) = {
+=======
+    dynamicContext: DynamicContext
+  ): (ElaboratedCircuit, T) = {
+>>>>>>> 4d755737 (Add ElaboratedCircuit and deprecate use of internal ir Circuit (#4683))
     dynamicContextVar.withValue(Some(dynamicContext)) {
       // Must initialize the singleton in a Builder context or weird things can happen
       // in tiny designs/testcases that never access anything in chisel3.internal.
@@ -1091,7 +1107,7 @@ private[chisel3] object Builder extends LazyLogging {
           )
       }
 
-      (
+      val circuit =
         Circuit(
           components.last.name,
           components.toSeq,
@@ -1101,9 +1117,8 @@ private[chisel3] object Builder extends LazyLogging {
           typeAliases,
           layerAdjacencyList(layer.Layer.Root).map(foldLayers).toSeq,
           optionDefs
-        ),
-        mod
-      )
+        )
+      (ElaboratedCircuit(circuit, dynamicContext.annotationSeq.toSeq), mod)
     }
   }
   initializeSingletons()
