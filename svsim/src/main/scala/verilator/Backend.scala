@@ -15,7 +15,7 @@ object Backend {
   }
 
   case class CompilationSettings(
-    traceStyle: Option[CompilationSettings.TraceStyle] = Some(CompilationSettings.TraceStyle.Vcd(filename = "foo.vcd")),
+    traceStyle:                 Option[CompilationSettings.TraceStyle] = None,
     outputSplit:                Option[Int] = None,
     outputSplitCFuncs:          Option[Int] = None,
     disabledWarnings:           Seq[String] = Seq(),
