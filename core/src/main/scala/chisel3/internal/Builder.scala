@@ -1041,7 +1041,7 @@ private[chisel3] object Builder extends LazyLogging {
   private[chisel3] def build[T <: BaseModule](
     f:              => T,
     dynamicContext: DynamicContext
-  ): (Circuit, T) = {
+  ): (ElaboratedCircuit, T) = {
     // Logger has its own context separate from Chisel's dynamic context
     _root_.logger.Logger.makeScope(dynamicContext.loggerOptions) {
       buildImpl(f, dynamicContext)
@@ -1051,7 +1051,7 @@ private[chisel3] object Builder extends LazyLogging {
   private def buildImpl[T <: BaseModule](
     f:              => T,
     dynamicContext: DynamicContext
-  ): (Circuit, T) = {
+  ): (ElaboratedCircuit, T) = {
     dynamicContextVar.withValue(Some(dynamicContext)) {
       // Must initialize the singleton in a Builder context or weird things can happen
       // in tiny designs/testcases that never access anything in chisel3.internal.
@@ -1129,7 +1129,7 @@ private[chisel3] object Builder extends LazyLogging {
         case _ =>
       }
 
-      (
+      val circuit =
         Circuit(
           components.last.name,
           components.toSeq,
@@ -1139,9 +1139,8 @@ private[chisel3] object Builder extends LazyLogging {
           typeAliases,
           layerAdjacencyList(layer.Layer.Root).map(foldLayers).toSeq,
           optionDefs
-        ),
-        mod
-      )
+        )
+      (ElaboratedCircuit(circuit, dynamicContext.annotationSeq.toSeq), mod)
     }
   }
 

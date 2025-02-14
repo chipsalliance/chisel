@@ -1111,8 +1111,8 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
           new ChiselStageSpec.Bar,
           args
         )
-        .collectFirst { case CircuitSerializationAnnotation(_, filename, _) =>
-          filename
+        .collectFirst { case a: CircuitSerializationAnnotation =>
+          a.filename
         }
         .get should be("Bar")
 

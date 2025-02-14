@@ -2,7 +2,7 @@
 
 package circt.stage
 
-import chisel3.RawModule
+import chisel3.{ElaboratedCircuit, RawModule}
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation, CircuitSerializationAnnotation}
 import chisel3.stage.CircuitSerializationAnnotation.FirrtlFileFormat
 import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq, EmittedVerilogCircuitAnnotation}
@@ -76,16 +76,16 @@ object ChiselStage {
 
     val resultAnnos = phase.transform(annos)
 
-    var circuitAnno: Option[CircuitSerializationAnnotation] = None
+    var elaboratedCircuit: Option[ElaboratedCircuit] = None
     val inFileAnnos = resultAnnos.flatMap {
       case a: ChiselCircuitAnnotation =>
-        circuitAnno = Some(CircuitSerializationAnnotation(a.circuit, "", FirrtlFileFormat))
+        elaboratedCircuit = Some(a.elaboratedCircuit)
         None
       case _: Unserializable     => None
       case _: CustomFileEmission => None
       case a => Some(a)
     }
-    circuitAnno.get.emitLazily(inFileAnnos).mkString
+    elaboratedCircuit.get.serialize(inFileAnnos)
   }
 
   /** Elaborates a Chisel circuit and emits it to a file

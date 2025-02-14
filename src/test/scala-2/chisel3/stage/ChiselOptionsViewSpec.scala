@@ -5,6 +5,7 @@ package chisel3.stage
 import firrtl.options.Viewer.view
 import firrtl.RenameMap
 
+import chisel3.ElaboratedCircuit
 import chisel3.stage._
 import chisel3.internal.firrtl.ir.Circuit
 import org.scalatest.flatspec.AnyFlatSpec
@@ -16,10 +17,11 @@ class ChiselOptionsViewSpec extends AnyFlatSpec with Matchers {
 
   it should "construct a view from an AnnotationSeq" in {
     val bar = Circuit("bar", Seq.empty, Seq.empty, RenameMap())
+    val circuit = ElaboratedCircuit(bar, Seq.empty)
     val annotations = Seq(
       PrintFullStackTraceAnnotation,
       ChiselOutputFileAnnotation("foo"),
-      ChiselCircuitAnnotation(bar)
+      ChiselCircuitAnnotation(circuit)
     )
     val out = view[ChiselOptions](annotations)
 
@@ -29,8 +31,8 @@ class ChiselOptionsViewSpec extends AnyFlatSpec with Matchers {
     info("outputFile was set to 'foo'")
     out.outputFile should be(Some("foo"))
 
-    info("chiselCircuit was set to circuit 'bar'")
-    out.chiselCircuit should be(Some(bar))
+    info("elaboratedCircuit was set to circuit 'circuit'")
+    out.elaboratedCircuit should be(Some(circuit))
 
   }
 
