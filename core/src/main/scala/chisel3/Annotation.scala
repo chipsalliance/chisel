@@ -111,13 +111,7 @@ object doNotDedup {
     * @return Unmodified signal `module`
     */
   def apply[T <: RawModule](module: T): Unit = {
-<<<<<<< HEAD
-    annotate(new ChiselAnnotation { def toFirrtl = NoDedupAnnotation(module.toNamed) })
-||||||| parent of a95cfe4c (Add safer Chisel annotation API, deprecate old ones (#4643))
-    annotate(new ChiselAnnotation { def toFirrtl: NoDedupAnnotation = NoDedupAnnotation(module.toNamed) })
-=======
     annotate(module)(Seq(NoDedupAnnotation(module.toNamed)))
->>>>>>> a95cfe4c (Add safer Chisel annotation API, deprecate old ones (#4643))
   }
 }
 
@@ -130,12 +124,6 @@ object dedupGroup {
     * @return Unmodified signal `module`
     */
   def apply[T <: BaseModule](module: T, group: String): Unit = {
-<<<<<<< HEAD
-    annotate(new ChiselAnnotation { def toFirrtl = DedupGroupAnnotation(module.toTarget, group) })
-||||||| parent of a95cfe4c (Add safer Chisel annotation API, deprecate old ones (#4643))
-    annotate(new ChiselAnnotation { def toFirrtl: DedupGroupAnnotation = DedupGroupAnnotation(module.toTarget, group) })
-=======
     annotate(module)(Seq(DedupGroupAnnotation(module.toTarget, group)))
->>>>>>> a95cfe4c (Add safer Chisel annotation API, deprecate old ones (#4643))
   }
 }

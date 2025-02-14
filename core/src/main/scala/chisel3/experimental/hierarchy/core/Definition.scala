@@ -116,15 +116,7 @@ object Definition extends SourceInfoDoc {
     val (ir, module) = Builder.build(Module(proto), dynamicContext, false)
     Builder.components ++= ir._circuit.components
     Builder.annotations ++= ir._circuit.annotations
-<<<<<<< HEAD
-||||||| parent of a95cfe4c (Add safer Chisel annotation API, deprecate old ones (#4643))
-    Builder.layers ++= dynamicContext.layers
-    Builder.options ++= dynamicContext.options
-=======
     Builder.newAnnotations ++= ir._circuit.newAnnotations
-    Builder.layers ++= dynamicContext.layers
-    Builder.options ++= dynamicContext.options
->>>>>>> a95cfe4c (Add safer Chisel annotation API, deprecate old ones (#4643))
     module._circuit = Builder.currentModule
     module.toDefinition
   }

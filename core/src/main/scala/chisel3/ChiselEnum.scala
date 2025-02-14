@@ -4,12 +4,8 @@ package chisel3
 
 import scala.language.experimental.macros
 import scala.language.existentials
-<<<<<<< HEAD:core/src/main/scala/chisel3/ChiselEnum.scala
 import scala.reflect.macros.blackbox.Context
-||||||| parent of a95cfe4c (Add safer Chisel annotation API, deprecate old ones (#4643)):core/src/main/scala/chisel3/ChiselEnumImpl.scala
-=======
 import scala.annotation.nowarn
->>>>>>> a95cfe4c (Add safer Chisel annotation API, deprecate old ones (#4643)):core/src/main/scala/chisel3/ChiselEnumImpl.scala
 import scala.collection.mutable
 import chisel3.experimental.{annotate, requireIsHardware, ChiselAnnotation, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal.Builder.pushOp
@@ -30,18 +26,10 @@ import chisel3.internal.{
 
 import chisel3.experimental.EnumAnnotations._
 
-<<<<<<< HEAD:core/src/main/scala/chisel3/ChiselEnum.scala
-abstract class EnumType(private[chisel3] val factory: ChiselEnum, selfAnnotating: Boolean = true) extends Element {
-||||||| parent of a95cfe4c (Add safer Chisel annotation API, deprecate old ones (#4643)):core/src/main/scala/chisel3/ChiselEnumImpl.scala
-private[chisel3] abstract class EnumTypeImpl(private[chisel3] val factory: ChiselEnum, selfAnnotating: Boolean = true)
-    extends Element { self: EnumType =>
-=======
 // Rather than refactoring the annotation work here, we should just remove ChiselEnum annotations
 @nowarn("msg=Avoid custom annotations")
 @nowarn("msg=Enum annotations will be removed")
-private[chisel3] abstract class EnumTypeImpl(private[chisel3] val factory: ChiselEnum, selfAnnotating: Boolean = true)
-    extends Element { self: EnumType =>
->>>>>>> a95cfe4c (Add safer Chisel annotation API, deprecate old ones (#4643)):core/src/main/scala/chisel3/ChiselEnumImpl.scala
+abstract class EnumType(private[chisel3] val factory: ChiselEnum, selfAnnotating: Boolean = true) extends Element {
 
   // Use getSimpleName instead of enumTypeName because for debugging purposes
   //   the fully qualified name isn't necessary (compared to for the
@@ -244,28 +232,16 @@ private[chisel3] abstract class EnumTypeImpl(private[chisel3] val factory: Chise
   }
 }
 
-<<<<<<< HEAD:core/src/main/scala/chisel3/ChiselEnum.scala
-private[chisel3] object ChiselEnum {
-||||||| parent of a95cfe4c (Add safer Chisel annotation API, deprecate old ones (#4643)):core/src/main/scala/chisel3/ChiselEnumImpl.scala
-private[chisel3] object ChiselEnumImpl {
-=======
 // Rather than refactoring the annotation work here, we should just remove ChiselEnum annotations
 @nowarn("msg=Avoid custom annotations")
-private[chisel3] object ChiselEnumImpl {
->>>>>>> a95cfe4c (Add safer Chisel annotation API, deprecate old ones (#4643)):core/src/main/scala/chisel3/ChiselEnumImpl.scala
+private[chisel3] object ChiselEnum {
   private[chisel3] case object CacheKey extends BuilderContextCache.Key[mutable.HashSet[ChiselAnnotation]]
 }
 
-<<<<<<< HEAD:core/src/main/scala/chisel3/ChiselEnum.scala
-abstract class ChiselEnum {
-||||||| parent of a95cfe4c (Add safer Chisel annotation API, deprecate old ones (#4643)):core/src/main/scala/chisel3/ChiselEnumImpl.scala
-private[chisel3] trait ChiselEnumImpl { self: ChiselEnum =>
-=======
 // Rather than refactoring the annotation work here, we should just remove ChiselEnum annotations
 @nowarn("msg=Avoid custom annotations")
 @nowarn("msg=Enum annotations will be removed")
-private[chisel3] trait ChiselEnumImpl { self: ChiselEnum =>
->>>>>>> a95cfe4c (Add safer Chisel annotation API, deprecate old ones (#4643)):core/src/main/scala/chisel3/ChiselEnumImpl.scala
+abstract class ChiselEnum {
   class Type extends EnumType(this)
   object Type {
     def apply(): Type = ChiselEnum.this.apply()

@@ -53,9 +53,9 @@ object Targetable {
 
   // Extension methods for using Targetable as the user expects
   implicit class TargetableSyntax[A](a: A)(implicit targetable: Targetable[A]) {
-    def toTarget:                                   IsMember = targetable.toTarget(a)
-    def toAbsoluteTarget:                           IsMember = targetable.toAbsoluteTarget(a)
-    def toRelativeTarget(root: Option[BaseModule]): IsMember = targetable.toRelativeTarget(a, root)
+    def toTarget:         IsMember = targetable.toTarget(a)
+    def toAbsoluteTarget: IsMember = targetable.toAbsoluteTarget(a)
+    def toRelativeTarget(root:            Option[BaseModule]): IsMember = targetable.toRelativeTarget(a, root)
     def toRelativeTargetToHierarchy(root: Option[Hierarchy[BaseModule]]): IsMember =
       targetable.toRelativeTargetToHierarchy(a, root)
   }
@@ -65,33 +65,33 @@ object Targetable {
     * This instance works for [[Data]], [[MemBase]], and [[SramTarget]]
     */
   implicit def forNamedComponent[A <: NamedComponent]: Targetable[A] = new Targetable[A] {
-    def toTarget(a:         A):                           IsMember = a.toTarget
-    def toAbsoluteTarget(a: A):                           IsMember = a.toAbsoluteTarget
-    def toRelativeTarget(a: A, root: Option[BaseModule]): IsMember = a.toRelativeTarget(root)
+    def toTarget(a:                    A):      IsMember = a.toTarget
+    def toAbsoluteTarget(a:            A): IsMember = a.toAbsoluteTarget
+    def toRelativeTarget(a:            A, root: Option[BaseModule]): IsMember = a.toRelativeTarget(root)
     def toRelativeTargetToHierarchy(a: A, root: Option[Hierarchy[BaseModule]]): IsMember =
       a.toRelativeTargetToHierarchy(root)
   }
 
   implicit def forBaseModule[A <: BaseModule]: Targetable[A] = new Targetable[A] {
-    def toTarget(a:         A):                           IsMember = a.toTarget
-    def toAbsoluteTarget(a: A):                           IsMember = a.toAbsoluteTarget
-    def toRelativeTarget(a: A, root: Option[BaseModule]): IsMember = a.toRelativeTarget(root)
+    def toTarget(a:                    A):      IsMember = a.toTarget
+    def toAbsoluteTarget(a:            A): IsMember = a.toAbsoluteTarget
+    def toRelativeTarget(a:            A, root: Option[BaseModule]): IsMember = a.toRelativeTarget(root)
     def toRelativeTargetToHierarchy(a: A, root: Option[Hierarchy[BaseModule]]): IsMember =
       a.toRelativeTargetToHierarchy(root)
   }
 
   implicit def forHierarchy[A <: BaseModule, H[A] <: Hierarchy[A]]: Targetable[H[A]] = new Targetable[H[A]] {
-    def toTarget(b:         H[A]):                           IsMember = b.toTarget
-    def toAbsoluteTarget(b: H[A]):                           IsMember = b.toAbsoluteTarget
-    def toRelativeTarget(b: H[A], root: Option[BaseModule]): IsMember = b.toRelativeTarget(root)
+    def toTarget(b:                    H[A]):      IsMember = b.toTarget
+    def toAbsoluteTarget(b:            H[A]): IsMember = b.toAbsoluteTarget
+    def toRelativeTarget(b:            H[A], root: Option[BaseModule]): IsMember = b.toRelativeTarget(root)
     def toRelativeTargetToHierarchy(b: H[A], root: Option[Hierarchy[BaseModule]]): IsMember =
       b.toRelativeTargetToHierarchy(root)
   }
 
   implicit def forHasTarget: Targetable[HasTarget] = new Targetable[HasTarget] {
-    def toTarget(a:         HasTarget):                           IsMember = a.toTarget
-    def toAbsoluteTarget(a: HasTarget):                           IsMember = a.toAbsoluteTarget
-    def toRelativeTarget(a: HasTarget, root: Option[BaseModule]): IsMember = a.toRelativeTarget(root)
+    def toTarget(a:                    HasTarget):      IsMember = a.toTarget
+    def toAbsoluteTarget(a:            HasTarget): IsMember = a.toAbsoluteTarget
+    def toRelativeTarget(a:            HasTarget, root: Option[BaseModule]): IsMember = a.toRelativeTarget(root)
     def toRelativeTargetToHierarchy(a: HasTarget, root: Option[Hierarchy[BaseModule]]): IsMember =
       a.toRelativeTargetToHierarchy(root)
   }
@@ -107,9 +107,9 @@ sealed trait AnyTargetable {
   def targetable: Targetable[A]
 
   // Convenience methods
-  def toTarget:                                   IsMember = targetable.toTarget(a)
-  def toAbsoluteTarget:                           IsMember = targetable.toAbsoluteTarget(a)
-  def toRelativeTarget(root: Option[BaseModule]): IsMember = targetable.toRelativeTarget(a, root)
+  def toTarget:         IsMember = targetable.toTarget(a)
+  def toAbsoluteTarget: IsMember = targetable.toAbsoluteTarget(a)
+  def toRelativeTarget(root:            Option[BaseModule]): IsMember = targetable.toRelativeTarget(a, root)
   def toRelativeTargetToHierarchy(root: Option[Hierarchy[BaseModule]]): IsMember =
     targetable.toRelativeTargetToHierarchy(a, root)
 }

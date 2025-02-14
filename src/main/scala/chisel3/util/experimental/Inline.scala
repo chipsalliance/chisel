@@ -42,28 +42,6 @@ trait InlineInstance { self: BaseModule =>
   chisel3.experimental.annotate(self)(Seq(InlineAnnotation(self.toNamed), NoDedupAnnotation(self.toNamed)))
 }
 
-<<<<<<< HEAD
-||||||| parent of a95cfe4c (Add safer Chisel annotation API, deprecate old ones (#4643))
-/** Inlines all instances of a module. If this module dedups with any other
-  * module, instances of that other module will also be inlined.
-  */
-trait InlineInstanceAllowDedup { self: BaseModule =>
-  chisel3.experimental.annotate(
-    new ChiselAnnotation {
-      def toFirrtl: Annotation = InlineAnnotation(self.toNamed)
-    }
-  )
-}
-
-=======
-/** Inlines all instances of a module. If this module dedups with any other
-  * module, instances of that other module will also be inlined.
-  */
-trait InlineInstanceAllowDedup { self: BaseModule =>
-  chisel3.experimental.annotate(self)(Seq(InlineAnnotation(self.toNamed)))
-}
-
->>>>>>> a95cfe4c (Add safer Chisel annotation API, deprecate old ones (#4643))
 /** Flattens an instance of a module
   *
   * @example {{{

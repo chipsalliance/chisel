@@ -14,8 +14,8 @@ object DataViewTargetSpec {
   private case class DummyAnno(target: ReferenceTarget, id: Int) extends SingleTargetAnnotation[ReferenceTarget] {
     override def duplicate(n: ReferenceTarget) = this.copy(target = n)
   }
-  private def mark(d:    Data, id: Int) = annotate(d)(Seq(DummyAnno(d.toTarget, id)))
-  private def markAbs(d: Data, id: Int) = annotate(d)(Seq(DummyAnno(d.toAbsoluteTarget, id)))
+  private def mark(d:    Data, id:   Int) = annotate(d)(Seq(DummyAnno(d.toTarget, id)))
+  private def markAbs(d: Data, id:   Int) = annotate(d)(Seq(DummyAnno(d.toAbsoluteTarget, id)))
   private def markRel(d: Data, root: Option[BaseModule], id: Int) =
     annotate(d)(Seq(DummyAnno(d.toRelativeTarget(root), id)))
 }

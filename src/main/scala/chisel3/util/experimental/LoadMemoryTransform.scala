@@ -8,58 +8,6 @@ import firrtl.annotations.{ComponentName, LoadMemoryAnnotation, MemoryFileInline
 
 import scala.collection.mutable
 
-<<<<<<< HEAD
-/** This is the annotation created when using [[loadMemoryFromFile]], it records the memory, the load file
-  * and the format of the file.
-  * @param target        memory to load
-  * @param fileName      name of input file
-  * @param hexOrBinary   use \$readmemh or \$readmemb, i.e. hex or binary text input, default is hex
-  */
-private case class ChiselLoadMemoryAnnotation[T <: Data](
-  target:      MemBase[T],
-  fileName:    String,
-  hexOrBinary: MemoryLoadFileType.FileType = MemoryLoadFileType.Hex)
-    extends ChiselAnnotation {
-
-  if (fileName.isEmpty) {
-    throw new Exception(
-      s"""LoadMemory from file annotations file empty file name"""
-    )
-  }
-
-  def toFirrtl: LoadMemoryAnnotation = {
-    val tx = target.toNamed.asInstanceOf[ComponentName]
-    LoadMemoryAnnotation(tx, fileName, hexOrBinary, Some(tx.name))
-  }
-}
-
-||||||| parent of a95cfe4c (Add safer Chisel annotation API, deprecate old ones (#4643))
-/** This is the annotation created when using [[loadMemoryFromFile]], it records the memory, the load file
-  * and the format of the file.
-  * @param target        memory to load
-  * @param fileName      name of input file
-  * @param hexOrBinary   use \$readmemh or \$readmemb, i.e. hex or binary text input, default is hex
-  */
-private case class ChiselLoadMemoryAnnotation[T <: Data](
-  target:      MemBase[T],
-  fileName:    String,
-  hexOrBinary: MemoryLoadFileType.FileType = MemoryLoadFileType.Hex
-) extends ChiselAnnotation {
-
-  if (fileName.isEmpty) {
-    throw new Exception(
-      s"""LoadMemory from file annotations file empty file name"""
-    )
-  }
-
-  def toFirrtl: LoadMemoryAnnotation = {
-    val tx = target.toNamed.asInstanceOf[ComponentName]
-    LoadMemoryAnnotation(tx, fileName, hexOrBinary, Some(tx.name))
-  }
-}
-
-=======
->>>>>>> a95cfe4c (Add safer Chisel annotation API, deprecate old ones (#4643))
 /** [[loadMemoryFromFile]] is an annotation generator that helps with loading a memory from a text file as a bind module. This relies on
   * Verilator and Verilog's `\$readmemh` or `\$readmemb`.
   *

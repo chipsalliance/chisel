@@ -3,16 +3,8 @@
 package chiselTests
 
 import chisel3._
-<<<<<<< HEAD:src/test/scala/chiselTests/AnnotatingDiamondSpec.scala
-import chisel3.experimental.{annotate, ChiselAnnotation}
-import chisel3.stage.{ChiselGeneratorAnnotation}
-||||||| parent of a95cfe4c (Add safer Chisel annotation API, deprecate old ones (#4643)):src/test/scala-2/chiselTests/AnnotatingDiamondSpec.scala
-import chisel3.experimental.{annotate, ChiselAnnotation}
-import chisel3.stage.ChiselGeneratorAnnotation
-=======
 import chisel3.experimental.{annotate, AnyTargetable}
 import chisel3.stage.ChiselGeneratorAnnotation
->>>>>>> a95cfe4c (Add safer Chisel annotation API, deprecate old ones (#4643)):src/test/scala-2/chiselTests/AnnotatingDiamondSpec.scala
 import chisel3.testers.BasicTester
 import circt.stage.ChiselStage
 import firrtl.annotations.{CircuitTarget, SingleTargetAnnotation, Target}
