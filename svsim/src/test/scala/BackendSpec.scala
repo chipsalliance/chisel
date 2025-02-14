@@ -48,10 +48,7 @@ case class CustomVerilatorBackend(actualBackend: verilator.Backend) extends Back
 
   override def escapeDefine(string: String): String = string
 
-  override def assertionFailed(file: Path): Seq[String] = {
-    val re = "^.*Assertion failed in.*".r
-    scala.io.Source.fromFile(file.toFile).getLines().filter(re.matches).toSeq
-  }
+  override val assertionFailed = "^.*Assertion failed in.*".r
 }
 
 class VerilatorSpec extends BackendSpec {

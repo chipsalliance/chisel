@@ -1,7 +1,6 @@
 package svsim
 
 import java.io.File
-import java.nio.file.Path
 import scala.util.matching.Regex
 
 // -- Compilation Settings

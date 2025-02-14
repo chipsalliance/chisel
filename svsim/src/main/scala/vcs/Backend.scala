@@ -3,8 +3,6 @@
 package svsim.vcs
 
 import svsim._
-import java.nio.file.Path
-import scala.util.matching.Regex
 
 object Backend {
   object CompilationSettings {
@@ -222,6 +220,6 @@ final class Backend(
     */
   override def escapeDefine(string: String): String = string.replace("$", "\\$")
 
-  override def assertionFailed: Regex =
+  override val assertionFailed =
     "^((Assertion failed:)|(Error: )|(Fatal: )|(.* started at .* failed at .*)|(.*Offending)).*$".r
 }

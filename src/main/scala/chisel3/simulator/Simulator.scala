@@ -37,7 +37,6 @@ final object Simulator {
 
   final case class SimulationDigest[T](simulationStartTime: Long, simulationEndTime: Long, outcome: Try[T])
       extends BackendInvocationOutcome[T]
-
 }
 
 trait Simulator[T <: Backend] {
@@ -127,7 +126,7 @@ trait Simulator[T <: Backend] {
     // post-process the log to figure out what happened.  This post-processing
     // occurs in _both_ the success and failure modes for multiple reasons:
     //
-    // 1. svsim returns a vague UnexpectedEndOfMessage on failure
+    // 1. svsim returns a vague `UnexpectedEndOfMessage` on failure.
     // 2. svsim assumes that simulators will either exit on an assertion failure
     //    or can be compile-time configured to do so.  This is _not_ the case
     //    for VCS as VCS requires runtime configuration to do and svsim

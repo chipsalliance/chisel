@@ -64,6 +64,5 @@ class DefaultSimulatorSpec extends AnyFunSpec with Matchers with FileCheck {
            |""".stripMargin
       }
     }
-
   }
 }

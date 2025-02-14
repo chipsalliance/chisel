@@ -31,7 +31,6 @@ trait SimulatorAPI {
         stimulus(module.wrapped)
       }
       .result
-
   }
 
   /** Simulate a [[Module]] using a standard initialization procedure that is
@@ -105,6 +104,7 @@ trait SimulatorAPI {
         stimulus(dut)
       }
       .result
+
   }
 
 }
