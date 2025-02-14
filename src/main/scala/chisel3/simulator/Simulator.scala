@@ -64,12 +64,10 @@ trait Simulator[T <: Backend] {
       .fromFile(log)
       .getLines()
       .zipWithIndex
-      .filter { case (line, lineNo) => backend.assertionFailed.matches(line) }
+      .filter { case (line, _) => backend.assertionFailed.matches(line) }
       .toSeq
-    if (lines.isEmpty)
-      return None
 
-    Some(
+    Option.when(lines.nonEmpty)(
       new Exceptions.AssertionFailed(
         message = s"""|The following assertion failures were extracted from the log file:
                       |
