@@ -220,7 +220,8 @@ final class Backend(
   /** VCS seems to require that dollar signs in arguments are escaped.  This is
     * different from Verilator.
     */
-  override def escapeDefine(string: String): String = string.replace("$", "\\$").q2
+  override def escapeDefine(string: String): String = string.replace("$", "\\$
+
   override def assertionFailed: Regex =
     "^((Assertion failed:)|(Error: )|(Fatal: )|(.* started at .* failed at .*)|(.*Offending)).*$".r
 }
