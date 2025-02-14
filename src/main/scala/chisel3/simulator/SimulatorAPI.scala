@@ -3,11 +3,8 @@
 package chisel3.simulator
 
 import chisel3.{Module, RawModule}
-import chisel3.simulator.Simulator.{BackendInvocationOutcome, CompilationFailed, SimulationDigest}
 import chisel3.util.simpleClassName
 import java.nio.file.Files
-import scala.util.{Failure, Success}
-import svsim.Backend
 
 trait SimulatorAPI {
 
@@ -108,7 +105,6 @@ trait SimulatorAPI {
         stimulus(dut)
       }
       .result
-
   }
 
 }
