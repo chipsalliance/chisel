@@ -3,6 +3,7 @@
 package svsim.vcs
 
 import svsim._
+import java.nio.file.Path
 
 object Backend {
   object CompilationSettings {
@@ -219,4 +220,6 @@ final class Backend(
     * different from Verilator.
     */
   override def escapeDefine(string: String): String = string.replace("$", "\\$")
+
+  override def assertionFailed(file: Path): Seq[String] = ???
 }

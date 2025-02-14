@@ -1,6 +1,7 @@
 package svsim
 
 import java.io.File
+import java.nio.file.Path
 
 // -- Compilation Settings
 
@@ -82,6 +83,14 @@ trait Backend {
     * parse defines and require different escaping.
     */
   def escapeDefine(string: String): String
+
+  /** Process a log file and return a sequence of lines which indicate that there
+    * were assertion failures.
+    *
+    * @param log the log file to process
+    * @return lines that indicate an assertion fired
+    */
+  def assertionFailed(log: Path): Seq[String]
 }
 
 final object Backend {

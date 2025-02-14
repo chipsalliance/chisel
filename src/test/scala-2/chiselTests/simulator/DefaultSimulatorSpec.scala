@@ -5,12 +5,13 @@ package chiselTests.simulator
 import chisel3._
 import chisel3.simulator.HasTestingDirectory
 import chisel3.simulator.DefaultSimulator._
+import chiselTests.FileCheck
 import java.nio.file.FileSystems
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 import scala.reflect.io.Directory
 
-class DefaultSimulatorSpec extends AnyFunSpec with Matchers {
+class DefaultSimulatorSpec extends AnyFunSpec with Matchers with FileCheck {
   class Foo extends Module {
     stop()
   }
@@ -46,14 +47,23 @@ class DefaultSimulatorSpec extends AnyFunSpec with Matchers {
     }
 
     it("should error if an expect fails") {
-      intercept[Exception] {
+      val message = intercept[Exception] {
         simulate {
           new Module {
             val a = IO(Output(Bool()))
             a :<= false.B
           }
         } { _.a.expect(true.B) }
-      }.getMessage() should include("Expectation failed")
+      }.getMessage
+      fileCheckString(message) {
+        """|CHECK:      Failed Expectation
+           |CHECK-NEXT: ---
+           |CHECK-NEXT: Observed value: '0'
+           |CHECK-NEXT: Expected value: '1'
+           |CHECK:      ---
+           |""".stripMargin
+      }
     }
+
   }
 }

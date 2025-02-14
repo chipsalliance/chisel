@@ -2,6 +2,7 @@
 
 package svsim.verilator
 
+import java.nio.file.Path
 import svsim._
 import scala.sys.process._
 import scala.collection.mutable
@@ -15,7 +16,7 @@ object Backend {
   }
 
   case class CompilationSettings(
-    traceStyle:                 Option[CompilationSettings.TraceStyle] = None,
+    traceStyle: Option[CompilationSettings.TraceStyle] = Some(CompilationSettings.TraceStyle.Vcd(filename = "foo.vcd")),
     outputSplit:                Option[Int] = None,
     outputSplitCFuncs:          Option[Int] = None,
     disabledWarnings:           Seq[String] = Seq(),
@@ -169,4 +170,9 @@ final class Backend(executablePath: String) extends svsim.Backend {
   }
 
   override def escapeDefine(string: String): String = string
+
+  override def assertionFailed(file: Path): Seq[String] = {
+    val re = "^.*Assertion failed in.*".r
+    scala.io.Source.fromFile(file.toFile).getLines().filter(re.matches).toSeq
+  }
 }

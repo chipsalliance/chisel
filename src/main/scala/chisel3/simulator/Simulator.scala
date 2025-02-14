@@ -1,8 +1,26 @@
 package chisel3.simulator
 
 import chisel3.{Data, RawModule}
-import scala.util.Try
+import firrtl.options.StageUtils.dramaticMessage
+import java.nio.file.Paths
+import scala.util.{Failure, Success, Try}
+import scala.util.control.NoStackTrace
 import svsim._
+
+private[this] object Exceptions {
+
+  case object CompilationFailed extends Exception
+
+  class AssertionFailed(message: String)
+      extends RuntimeException(
+        dramaticMessage(
+          header = Some("One or more assertions failed during Chiselsim simulation"),
+          body = message
+        )
+      )
+      with NoStackTrace
+
+}
 
 final object Simulator {
 
@@ -21,6 +39,7 @@ final object Simulator {
 
   final case class SimulationDigest[T](simulationStartTime: Long, simulationEndTime: Long, outcome: Try[T])
       extends BackendInvocationOutcome[T]
+
 }
 
 trait Simulator[T <: Backend] {
@@ -78,13 +97,29 @@ trait Simulator[T <: Backend] {
       }
     val compilationEndTime = System.nanoTime()
 
-    // Simulate the compiled design.
+    // Simulate the compiled design.  Because svsim returns extremely vague
+    // exceptions on failure (UnexpectedEndOfMessage), when we do see a failure,
+    // try to figure out what happened and return a better, more specific error.
+    // If we can't determine a more specific error, then keep the original one.
     val simulationOutcome = Try {
       simulation.runElaboratedModule(elaboratedModule = elaboratedModule) { (module: SimulatedModule[T]) =>
         val outcome = body(module)
         module.completeSimulation()
         outcome
 
+      }
+    }.recoverWith { error =>
+      val asserts =
+        backend.assertionFailed(Paths.get(workspacePath, s"workdir-${tag}", "simulation-log.txt"))
+      asserts match {
+        case assertionLines if asserts.nonEmpty =>
+          Failure(
+            new Exceptions.AssertionFailed(message =
+              s"""|The following assertion failures were extracted from the log file:
+                  |${asserts.mkString("  - ", "\n  - ", "")} """.stripMargin
+            )
+          )
+        case _ => Failure(error)
       }
     }
     val simulationEndTime = System.nanoTime()
