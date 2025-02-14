@@ -410,7 +410,10 @@ lazy val unipublish =
         // setRef was package private
         ProblemFilters.exclude[IncompatibleMethTypeProblem]("chisel3.*.setRef"),
         // ChiselOptions constructor is package private
-        ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.stage.ChiselOptions.this")
+        ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.stage.ChiselOptions.this"),
+        // ChiselLoadMemoryAnnotation was private
+        ProblemFilters.exclude[MissingClassProblem]("chisel3.util.experimental.ChiselLoadMemoryAnnotation"),
+        ProblemFilters.exclude[MissingClassProblem]("chisel3.util.experimental.ChiselLoadMemoryAnnotation$")
       ),
       // Forward doc command to unidoc
       Compile / doc := (ScalaUnidoc / doc).value,
