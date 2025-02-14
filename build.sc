@@ -57,6 +57,137 @@ object v {
   def scalaCompiler(scalaVersion: String) = ivy"org.scala-lang:scala-compiler:$scalaVersion"
 
   def scalaLibrary(scalaVersion: String) = ivy"org.scala-lang:scala-library:$scalaVersion"
+<<<<<<< HEAD
+=======
+
+  // 21, 1-2, {linux-x64, macos-x64, windows-x64}
+  // 22, 1-2, {linux-x64, macos-aarch64, macos-x64, windows-x64}
+  def jextract(jdkVersion: Int, jextractVersion: String, os: String, platform: String) =
+    s"https://download.java.net/java/early_access/jextract/21/1/openjdk-${jdkVersion}-jextract+${jextractVersion}_${os}-${platform}_bin.tar.gz"
+
+  def circt(version: String, os: String, platform: String) =
+    s"https://github.com/llvm/circt/releases/download/firtool-${version}/circt-full-shared-${os}-${platform}.tar.gz"
+
+  val warnConf = Seq(
+    "msg=APIs in chisel3.internal:s",
+    "msg=Importing from firrtl:s",
+    "msg=migration to the MLIR:s",
+    "msg=method hasDefiniteSize in trait IterableOnceOps is deprecated:s", // replacement `knownSize` is not in 2.12
+    "msg=object JavaConverters in package collection is deprecated:s",
+    "msg=undefined in comment for method cf in class PrintableHelper:s",
+    // This is deprecated for external users but not internal use
+    "cat=deprecation&origin=firrtl\\.options\\.internal\\.WriteableCircuitAnnotation:s",
+    "cat=deprecation&origin=chisel3\\.util\\.experimental\\.BoringUtils.*:s",
+    "cat=deprecation&origin=chisel3\\.experimental\\.IntrinsicModule:s",
+    "cat=deprecation&origin=chisel3\\.ltl.*:s"
+  )
+
+  // ScalacOptions
+  val commonOptions = Seq(
+    "-deprecation",
+    "-feature",
+    "-unchecked",
+    "-Werror",
+    "-Ymacro-annotations",
+    "-explaintypes",
+    "-Xcheckinit",
+    "-Xlint:infer-any",
+    "-Xlint:missing-interpolator",
+    "-language:reflectiveCalls",
+    s"-Wconf:${warnConf.mkString(",")}"
+  )
+}
+
+object utils extends Module {
+
+  val architecture = System.getProperty("os.arch")
+  val operationSystem = System.getProperty("os.name")
+
+  val mac = operationSystem.toLowerCase.startsWith("mac")
+  val linux = operationSystem.toLowerCase.startsWith("linux")
+  val windows = operationSystem.toLowerCase.startsWith("win")
+  val amd64 = architecture.matches("^(x8664|amd64|ia32e|em64t|x64|x86_64)$")
+  val aarch64 = architecture.equals("aarch64") | architecture.startsWith("armv8")
+
+  val firtoolVersion = {
+    val j = _root_.upickle.default.read[Map[String, String]](os.read(millSourcePath / os.up / "etc" / "circt.json"))
+    j("version").stripPrefix("firtool-")
+  }
+
+  // use T.persistent to avoid download repeatedly
+  def circtInstallDir: T[os.Path] = T.persistent {
+    T.ctx().env.get("CIRCT_INSTALL_PATH") match {
+      case Some(dir) => os.Path(dir)
+      case None =>
+        T.ctx().log.info("Use CIRCT_INSTALL_PATH to vendor circt")
+        val tarPath = T.dest / "circt.tar.gz"
+        if (!os.exists(tarPath)) {
+          val url = v.circt(
+            firtoolVersion,
+            if (linux) "linux" else if (mac) "macos" else throw new Exception("unsupported os"),
+            // circt does not yet publish for macos-aarch64, use x64 for now
+            if (amd64 || mac) "x64" else throw new Exception("unsupported arch")
+          )
+          T.ctx().log.info(s"Downloading circt from ${url}")
+          mill.util.Util.download(url, os.rel / "circt.tar.gz")
+          T.ctx().log.info(s"Download Successfully")
+        }
+        os.proc("tar", "xvf", tarPath, "--strip-components=1").call(T.dest)
+        T.dest
+    }
+  }
+
+  // use T.persistent to avoid download repeatedly
+  def jextractInstallDir: T[os.Path] = T.persistent {
+    T.ctx().env.get("JEXTRACT_INSTALL_PATH") match {
+      case Some(dir) => os.Path(dir)
+      case None =>
+        T.ctx().log.info("Use JEXTRACT_INSTALL_PATH to vendor jextract")
+        val tarPath = T.dest / "jextract.tar.gz"
+        if (!os.exists(tarPath)) {
+          val url = v.jextract(
+            21,
+            "1-2",
+            if (linux) "linux" else if (mac) "macos" else throw new Exception("unsupported os"),
+            // There is no macos-aarch64 for jextract 21, use x64 for now
+            if (amd64 || mac) "x64" else if (aarch64) "aarch64" else throw new Exception("unsupported arch")
+          )
+          T.ctx().log.info(s"Downloading jextract from ${url}")
+          mill.util.Util.download(url, os.rel / "jextract.tar.gz")
+          T.ctx().log.info(s"Download Successfully")
+        }
+        os.proc("tar", "xvf", tarPath, "--strip-components=1").call(T.dest)
+        T.dest
+    }
+  }
+}
+
+trait ChiselPublishModule extends CiReleaseModule {
+  // Publish information
+  def pomSettings = PomSettings(
+    description = artifactName(),
+    organization = "org.chipsalliance",
+    url = "https://www.chisel-lang.org",
+    licenses = Seq(License.`Apache-2.0`),
+    versionControl = VersionControl.github("chipsalliance", "chisel"),
+    developers = Seq(
+      Developer("jackkoenig", "Jack Koenig", "https://github.com/jackkoenig"),
+      Developer("azidar", "Adam Izraelevitz", "https://github.com/azidar"),
+      Developer("seldridge", "Schuyler Eldridge", "https://github.com/seldridge")
+    )
+  )
+
+  override def sonatypeHost = Some(SonatypeHost.s01)
+
+  override def publishVersion = VcsVersion
+    .vcsState()
+    .format(
+      countSep = "+",
+      revHashDigits = 8,
+      untaggedSuffix = "-SNAPSHOT"
+    )
+
+>>>>>>> ca773c08a (Fix missing string interpolators, add -Xlint:missing-interpolator (#4471))
 }
 private def majorScalaVersion(scalaVersion: String) = scalaVersion.split('.')(1).toInt
 
