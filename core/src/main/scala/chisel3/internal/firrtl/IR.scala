@@ -413,6 +413,7 @@ private[chisel3] object ir {
 
   case class DefClass(id: Class, name: String, ports: Seq[Port], commands: Seq[Command]) extends Component
 
+  @nowarn("msg=Avoid custom annotations")
   case class Circuit(
     name:           String,
     components:     Seq[Component],
@@ -451,6 +452,7 @@ private[chisel3] object ir {
 
   }
 
+  @nowarn("msg=Avoid custom annotations")
   object Circuit
       extends scala.runtime.AbstractFunction7[String, Seq[Component], Seq[ChiselAnnotation], RenameMap, Seq[
         DefTypeAlias

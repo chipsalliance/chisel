@@ -158,6 +158,7 @@ package object chisel3 {
     * currently, the node's name, the full path name, and references to its parent Module and component.
     * These are only valid once the design has been elaborated, and should not be used during its construction.
     */
+  @deprecated("User-defined annotations are not supported in CIRCT, use Targetable if you must.", "Chisel 6.7.0")
   trait InstanceId {
     def instanceName:   String
     def pathName:       String

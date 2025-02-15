@@ -116,6 +116,7 @@ object Definition extends SourceInfoDoc {
     val (ir, module) = Builder.build(Module(proto), dynamicContext, false)
     Builder.components ++= ir._circuit.components
     Builder.annotations ++= ir._circuit.annotations
+    Builder.newAnnotations ++= ir._circuit.newAnnotations
     module._circuit = Builder.currentModule
     module.toDefinition
   }

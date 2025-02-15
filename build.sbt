@@ -77,7 +77,8 @@ lazy val warningSuppression = Seq(
     "cat=deprecation&origin=chisel3\\.aop\\.Aspect:s",
     "cat=deprecation&origin=chisel3\\.aop\\.Aspect$:s",
     "cat=deprecation&origin=chisel3\\.stage\\.phases.AspectPhase:s",
-    "cat=deprecation&origin=chisel3\\.stage\\.phases.MaybeAspectPhase:s"
+    "cat=deprecation&origin=chisel3\\.stage\\.phases.MaybeAspectPhase:s",
+    "cat=deprecation&origin=chisel3\\.InstanceId:s"
   ).mkString(",")
 )
 
@@ -409,7 +410,10 @@ lazy val unipublish =
         // setRef was package private
         ProblemFilters.exclude[IncompatibleMethTypeProblem]("chisel3.*.setRef"),
         // ChiselOptions constructor is package private
-        ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.stage.ChiselOptions.this")
+        ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.stage.ChiselOptions.this"),
+        // ChiselLoadMemoryAnnotation was private
+        ProblemFilters.exclude[MissingClassProblem]("chisel3.util.experimental.ChiselLoadMemoryAnnotation"),
+        ProblemFilters.exclude[MissingClassProblem]("chisel3.util.experimental.ChiselLoadMemoryAnnotation$")
       ),
       // Forward doc command to unidoc
       Compile / doc := (ScalaUnidoc / doc).value,

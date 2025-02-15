@@ -39,15 +39,7 @@ import firrtl.annotations.Annotation
   * }}}
   */
 trait InlineInstance { self: BaseModule =>
-  Seq(
-    new ChiselAnnotation {
-      def toFirrtl: Annotation = InlineAnnotation(self.toNamed)
-    },
-    new ChiselAnnotation {
-      def toFirrtl: Annotation = NoDedupAnnotation(self.toNamed)
-    }
-  )
-    .map(chisel3.experimental.annotate(_))
+  chisel3.experimental.annotate(self)(Seq(InlineAnnotation(self.toNamed), NoDedupAnnotation(self.toNamed)))
 }
 
 /** Flattens an instance of a module
@@ -77,13 +69,5 @@ trait InlineInstance { self: BaseModule =>
   * }}}
   */
 trait FlattenInstance { self: BaseModule =>
-  Seq(
-    new ChiselAnnotation {
-      def toFirrtl: Annotation = FlattenAnnotation(self.toNamed)
-    },
-    new ChiselAnnotation {
-      def toFirrtl: Annotation = NoDedupAnnotation(self.toNamed)
-    }
-  )
-    .map(chisel3.experimental.annotate(_))
+  chisel3.experimental.annotate(self)(Seq(FlattenAnnotation(self.toNamed), NoDedupAnnotation(self.toNamed)))
 }
