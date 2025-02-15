@@ -62,7 +62,7 @@ object Targetable {
 
   /** NamedComponent is an awkward private API for all HasId except BaseModule
     *
-    * This instance works for [[Data]], [[MemBase]], and [[SramTarget]]
+    * This instance works for [[Data]] and [[MemBase]].
     */
   implicit def forNamedComponent[A <: NamedComponent]: Targetable[A] = new Targetable[A] {
     def toTarget(a:                    A):      IsMember = a.toTarget
