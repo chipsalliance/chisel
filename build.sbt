@@ -70,7 +70,7 @@ lazy val warningSuppression = Seq(
     "cat=deprecation&origin=chisel3\\.experimental\\.IntrinsicModule:s",
     "cat=deprecation&origin=chisel3\\.ltl.*:s",
     "cat=deprecation&origin=chisel3\\.InstanceId:s",
-    "cat=deprecation&msg=Looking up Modules is deprecated:s",
+    "cat=deprecation&msg=Looking up Modules is deprecated:s"
   ).mkString(",")
 )
 
@@ -125,7 +125,7 @@ lazy val firrtlSettings = Seq(
     "-language:implicitConversions",
     "-Yrangepos", // required by SemanticDB compiler plugin
     "-Xsource:3",
-    "-Xsource-features:infer-override",
+    "-Xsource-features:infer-override"
   ),
   // Always target Java8 for maximum compatibility
   javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
@@ -141,7 +141,7 @@ lazy val firrtlSettings = Seq(
   ),
   scalacOptions += "-Ymacro-annotations",
   // starting with scala 2.13 the parallel collections are separate from the standard library
-  libraryDependencies += "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4",
+  libraryDependencies += "org.scala-lang.modules" %% "scala-parallel-collections" % "1.2.0",
   Test / scalacOptions ++= Seq(
     "-Xsource-features:package-prefix-implicits"
   )
@@ -317,7 +317,7 @@ lazy val core = (project in file("core"))
       "-unchecked",
       "-Xcheckinit",
       "-Xlint:infer-any",
-      "-Xsource:3",
+      "-Xsource:3"
 //      , "-Xlint:missing-interpolator"
     )
   )
@@ -343,7 +343,7 @@ lazy val chisel = (project in file("."))
   .settings(
     // Suppress Scala 3 behavior requiring explicit types on implicit definitions
     // Note this must come before the -Wconf is warningSuppression
-    Test / scalacOptions += "-Wconf:cat=other-implicit-type:s",
+    Test / scalacOptions += "-Wconf:cat=other-implicit-type:s"
   )
   .settings(warningSuppression: _*)
   .settings(fatalWarningsSettings: _*)
@@ -353,13 +353,12 @@ lazy val chisel = (project in file("."))
 
 def addUnipublishDeps(proj: Project)(deps: Project*): Project = {
   def inTestScope(module: ModuleID): Boolean = module.configurations.exists(_ == "test")
-  deps.foldLeft(proj) {
-    case (p, dep) =>
-      p.settings(
-        libraryDependencies ++= (dep / libraryDependencies).value.filterNot(inTestScope),
-        Compile / packageBin / mappings ++= (dep / Compile / packageBin / mappings).value,
-        Compile / packageSrc / mappings ++= (dep / Compile / packageSrc / mappings).value
-      )
+  deps.foldLeft(proj) { case (p, dep) =>
+    p.settings(
+      libraryDependencies ++= (dep / libraryDependencies).value.filterNot(inTestScope),
+      Compile / packageBin / mappings ++= (dep / Compile / packageBin / mappings).value,
+      Compile / packageSrc / mappings ++= (dep / Compile / packageSrc / mappings).value
+    )
   }
 }
 
