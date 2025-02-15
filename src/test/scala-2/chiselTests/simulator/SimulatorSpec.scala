@@ -312,13 +312,13 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
       info("illegal constructs cause compilation failure")
       intercept[Exception] {
         new VerilatorSimulator("test_run_dir/simulator/does_not_compile_disabled_layers-enabledf")
-          .simulate(new Foo, new ChiselSettings(verilogLayers = LayerControl.EnableAll)) { _ => }
+          .simulate(new Foo, ChiselSettings.default[Foo].copy(verilogLayers = LayerControl.EnableAll)) { _ => }
           .result
       }.getMessage() should include("Unsupported: s_eventually")
 
       info("disabling unsupported constracts causes compilation to succeed")
       new VerilatorSimulator("test_run_dir/simulator/does_not_compile_disabled_layers-disabled")
-        .simulate(new Foo, new ChiselSettings(verilogLayers = LayerControl.DisableAll)) { _ => }
+        .simulate(new Foo, ChiselSettings.default[Foo].copy(verilogLayers = LayerControl.DisableAll)) { _ => }
         .result
 
     }

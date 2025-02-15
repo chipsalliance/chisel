@@ -4,9 +4,10 @@ package chiselTests.simulator.scalatest
 
 import chisel3._
 import chisel3.simulator.PeekPokeAPI.FailedExpectationException
-import chisel3.simulator.ChiselSim
+import chisel3.simulator.{ChiselSettings, ChiselSim, HasTestingDirectory, MacroText}
 import chisel3.simulator.scalatest.WithTestingDirectory
 import chiselTests.FileCheck
+import java.nio.file.FileSystems
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -86,6 +87,38 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
            |CHECK:      For more information, see the complete log file:
            |CHECK:        build/ChiselSimSpec/scalatest.ChiselSim/should-error-if-an-ltl.AssertProperty-fires-during-the-simulation/workdir-verilator/simulation-log.txt
            |CHECK-NEXT: ---
+           |""".stripMargin
+      )
+    }
+
+    it("should allow for customization of macros during simulation") {
+      class Foo extends RawModule {
+        val a, b, c = IO(Input(Bool()))
+      }
+
+      val chiselSettings = ChiselSettings
+        .defaultRaw[Foo]
+        .copy(
+          assertVerboseCond = Some(MacroText.Signal(_.a)),
+          printfCond = Some(MacroText.Signal(_.b)),
+          stopCond = Some(MacroText.NotSignal(_.c))
+        )
+
+      simulateRaw(new Foo, chiselSettings = chiselSettings) { _ => }
+
+      fileCheckString(
+        io.Source
+          .fromFile(
+            FileSystems
+              .getDefault()
+              .getPath(implicitly[HasTestingDirectory].getDirectory.toString, "workdir-verilator", "Makefile")
+              .toFile
+          )
+          .mkString
+      )(
+        """|CHECK:      '+define+ASSERT_VERBOSE_COND=svsimTestbench.a'
+           |CHECK-NEXT: '+define+PRINTF_COND=svsimTestbench.b'
+           |CHECK-NEXT: '+define+STOP_COND=!svsimTestbench.c'
            |""".stripMargin
       )
     }

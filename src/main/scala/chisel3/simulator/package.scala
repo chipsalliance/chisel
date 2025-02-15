@@ -32,7 +32,11 @@ package object simulator {
     private[simulator] val wrapped: T,
     private[simulator] val ports:   Seq[(Data, ModuleInfo.Port)],
     private[simulator] val layers:  Seq[chisel3.layer.Layer]
-  )
+  ) {
+
+    private[chisel3] val portMap = ports.toMap
+
+  }
 
   /**
     * A class that enables using a Chisel module to control an `svsim.Simulation`.

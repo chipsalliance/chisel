@@ -81,7 +81,7 @@ trait Simulator[T <: Backend] {
 
   final def simulate[T <: RawModule, U](
     module:         => T,
-    chiselSettings: ChiselSettings = ChiselSettings.default
+    chiselSettings: ChiselSettings[T] = ChiselSettings.defaultRaw[T]
   )(body: (SimulatedModule[T]) => U): Simulator.BackendInvocationDigest[U] = {
     val workspace = new Workspace(path = workspacePath, workingDirectoryPrefix = workingDirectoryPrefix)
     workspace.reset()
@@ -94,9 +94,7 @@ trait Simulator[T <: Backend] {
       // ensures that `` `include `` directives can be resolved.
       includeDirs = Some(commonCompilationSettings.includeDirs.getOrElse(Seq.empty) :+ workspace.primarySourcesPath),
       verilogPreprocessorDefines =
-        commonCompilationSettings.verilogPreprocessorDefines ++ chiselSettings.verilogLayers.preprocessorDefines(
-          elaboratedModule
-        ),
+        commonCompilationSettings.verilogPreprocessorDefines ++ chiselSettings.preprocessorDefines(elaboratedModule),
       fileFilter =
         commonCompilationSettings.fileFilter.orElse(chiselSettings.verilogLayers.shouldIncludeFile(elaboratedModule)),
       directoryFilter = commonCompilationSettings.directoryFilter.orElse(
