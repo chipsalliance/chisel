@@ -54,8 +54,8 @@ object FirtoolVersionsTable extends App {
     val result = allVersions.filter { case (v, _) => v.prerelease ^ release }
 
     val header = Vector("| Chisel Version | Firtool Version |", "| --- | --- |")
-    val table = (header ++ result.map {
-      case (sv, fv) => s"| ${sv.serialize} | [$fv](${firtoolGithubLink(fv)}) |"
+    val table = (header ++ result.map { case (sv, fv) =>
+      s"| ${sv.serialize} | [$fv](${firtoolGithubLink(fv)}) |"
     }).mkString("\n")
     table
   }
