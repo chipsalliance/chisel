@@ -69,6 +69,17 @@ object annotate {
       def toFirrtl: Seq[Annotation] = mkAnnos
     }
   }
+
+  /** Create annotations.
+    *
+    * Avoid this API if possible.
+    *
+    * Anything being annotated must be passed as arguments so that Chisel can do safety checks.
+    * The caller is still responsible for calling .toTarget on those arguments in mkAnnos.
+    */
+  def apply[T: Targetable](targets: Seq[T])(mkAnnos: => Seq[Annotation]): Unit = {
+    annotate(targets.map(t => AnyTargetable.toAnyTargetable(t)): _*)(mkAnnos)
+  }
 }
 
 /** Marks that a module to be ignored in Dedup Transform in Firrtl pass
