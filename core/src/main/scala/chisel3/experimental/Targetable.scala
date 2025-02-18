@@ -95,6 +95,14 @@ object Targetable {
     def toRelativeTargetToHierarchy(a: HasTarget, root: Option[Hierarchy[BaseModule]]): IsMember =
       a.toRelativeTargetToHierarchy(root)
   }
+
+  implicit def forAnyTargetable: Targetable[AnyTargetable] = new Targetable[AnyTargetable] {
+    def toTarget(a:         AnyTargetable):                           IsMember = a.toTarget
+    def toAbsoluteTarget(a: AnyTargetable):                           IsMember = a.toAbsoluteTarget
+    def toRelativeTarget(a: AnyTargetable, root: Option[BaseModule]): IsMember = a.toRelativeTarget(root)
+    def toRelativeTargetToHierarchy(a: AnyTargetable, root: Option[Hierarchy[BaseModule]]): IsMember =
+      a.toRelativeTargetToHierarchy(root)
+  }
 }
 
 /** Existential Type class for types that can be converted to a Target
@@ -116,8 +124,11 @@ sealed trait AnyTargetable {
 
 object AnyTargetable {
 
-  /** Implicit conversion making working with Targetables easier */
-  implicit def toAnyTargetable[A](a: A)(implicit targetable: Targetable[A]): AnyTargetable = {
+  /** Convert any Targetable A to an AnyTargetable
+    *
+    * This effectively erases the type parameter and allows mixing of different concrete Targetable objects.
+    */
+  def apply[A](a: A)(implicit targetable: Targetable[A]): AnyTargetable = {
     type _A = A
     val _a = a
     val _targetable = targetable
@@ -127,4 +138,7 @@ object AnyTargetable {
       val targetable: Targetable[A] = _targetable
     }
   }
+
+  /** Implicit conversion making working with Targetables easier */
+  implicit def toAnyTargetable[A: Targetable](a: A): AnyTargetable = apply(a)
 }
