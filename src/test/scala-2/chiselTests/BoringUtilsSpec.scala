@@ -8,9 +8,13 @@ import chisel3.testers._
 import chisel3.experimental.{BaseModule, OpaqueType}
 import chisel3.probe._
 import chisel3.properties.Property
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
 import chisel3.util.experimental.BoringUtils
 import firrtl.annotations.Annotation
 import firrtl.transforms.DontTouchAnnotation
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 abstract class ShouldntAssertTester(cyclesToWait: BigInt = 4) extends BasicTester {
   val dut: BaseModule
@@ -18,7 +22,7 @@ abstract class ShouldntAssertTester(cyclesToWait: BigInt = 4) extends BasicTeste
   when(done) { stop() }
 }
 
-class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with FileCheck {
+class BoringUtilsSpec extends AnyFlatSpec with Matchers with Utils with FileCheck with ChiselSim {
   val args = Array("--throw-on-first-error", "--full-stacktrace")
 
   class BoringInverter extends Module {
@@ -34,12 +38,10 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
     BoringUtils.addSink(b, "x")
   }
 
-  behavior.of("BoringUtils.{addSink, addSource}")
+  behavior.of("BoringUtils.addSink and BoringUtils.addSource")
 
   it should "connect two wires within a module" in {
-    runTester(
-      new ShouldntAssertTester { val dut = Module(new BoringInverter) }
-    ) should be(true)
+    simulate(new ShouldntAssertTester { val dut = Module(new BoringInverter) })(RunUntilFinished(3))
   }
 
   trait WireX { this: BaseModule =>
@@ -94,7 +96,7 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
   behavior.of("BoringUtils.bore")
 
   it should "connect across modules using BoringUtils.bore" in {
-    runTester(new TopTester) should be(true)
+    simulate(new TopTester)(RunUntilFinished(3))
   }
 
   // TODO: this test is not really testing anything as MFC does boring during
@@ -103,7 +105,7 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
   // pre-deduplicated circuit).  This is likely better handled as a test in
   // CIRCT than in Chisel.
   it should "still work even with dedup off" in {
-    runTester(new TopTesterFail)
+    simulate(new TopTesterFail)(RunUntilFinished(3))
   }
 
   class InternalBore extends RawModule {
@@ -119,8 +121,8 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
     chisel3.assert(dut.out === true.B)
   }
 
-  it should "work for an internal (same module) BoringUtils.bore" in {
-    runTester(new InternalBoreTester) should be(true)
+  it should "work for an internal, same module, BoringUtils.bore" in {
+    simulate(new InternalBoreTester)(RunUntilFinished(3))
   }
 
   it should "work using new API" in {
