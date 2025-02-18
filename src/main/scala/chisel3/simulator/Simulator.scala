@@ -7,7 +7,7 @@ import scala.util.{Failure, Success, Try}
 import scala.util.control.NoStackTrace
 import svsim._
 
-private[this] object Exceptions {
+private[simulator] object Exceptions {
 
   class AssertionFailed(message: String)
       extends RuntimeException(
