@@ -349,6 +349,13 @@ case class Conditionally(info: Info, pred: Expression, conseq: Statement, alt: S
     with HasInfo
     with UseSerializer
 
+case class DefContract(info: Info, names: Seq[String], exprs: Seq[Expression], body: Statement)
+    extends Statement
+    with HasInfo
+    with UseSerializer {
+  require(names.size == exprs.size)
+}
+
 object Block {
   def apply(head: Statement, tail: Statement*): Block = Block(head +: tail)
 }

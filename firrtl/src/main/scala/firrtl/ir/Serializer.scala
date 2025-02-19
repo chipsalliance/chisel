@@ -156,6 +156,9 @@ object Serializer {
   private case class LayerBlockBegin(info: Info, layer: String) extends PseudoStatement
   private case object LayerBlockEnd extends PseudoStatement
 
+  private case class ContractBegin(info: Info, names: Seq[String], exprs: Seq[Expression]) extends PseudoStatement
+  private case object ContractEnd extends PseudoStatement
+
   // This does not extend Iterator[Statement] because
   //  1. It is extended by StmtsSerializer which extends Iterator[String]
   //  2. Flattening out whens introduces fake Statements needed for [un]indenting
@@ -188,6 +191,10 @@ object Serializer {
             val begin = LayerBlockBegin(info, layer)
             val last = underlying
             underlying = Iterator(begin, body, LayerBlockEnd) ++ last
+          case DefContract(info, names, exprs, body) =>
+            val begin = ContractBegin(info, names, exprs)
+            val last = underlying
+            underlying = Iterator(begin, body, ContractEnd) ++ last
           case other =>
             next = other
         }
@@ -233,6 +240,25 @@ object Serializer {
             b ++= s"layerblock $layer :"; s(info)
             indent += 1
           case LayerBlockEnd =>
+            indent -= 1
+          case ContractBegin(info, names, exprs) =>
+            doIndent()
+            b ++= "contract"
+            if (names.nonEmpty) {
+              b ++= " "
+              names.zipWithIndex.foreach { case (name, idx) =>
+                if (idx > 0) b ++= ", "
+                b ++= name
+              }
+              b ++= " = ";
+              exprs.zipWithIndex.foreach { case (expr, idx) =>
+                if (idx > 0) b ++= ", "
+                s(expr)
+              }
+            }
+            b ++= " :"; s(info)
+            indent += 1
+          case ContractEnd =>
             indent -= 1
           case other =>
             doIndent()
