@@ -98,7 +98,10 @@ trait Simulator[T <: Backend] {
           elaboratedModule
         ),
       fileFilter =
-        commonCompilationSettings.fileFilter.orElse(chiselSettings.verilogLayers.shouldIncludeFile(elaboratedModule))
+        commonCompilationSettings.fileFilter.orElse(chiselSettings.verilogLayers.shouldIncludeFile(elaboratedModule)),
+      directoryFilter = commonCompilationSettings.directoryFilter.orElse(
+        chiselSettings.verilogLayers.shouldIncludeDirectory(elaboratedModule, workspace.primarySourcesPath)
+      )
     )
 
     // Compile the design.  Early exit if the compilation fails for any reason.

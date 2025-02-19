@@ -108,7 +108,7 @@ class LayerControlSpec extends AnyFunSpec with Matchers {
       }
 
       info("build/B is excluded")
-        layerControl.shouldIncludeDirectory(elaboratedModule, "build")(new File("build/B")) should be(false)
+      layerControl.shouldIncludeDirectory(elaboratedModule, "build")(new File("build/B")) should be(false)
     }
   }
 }

@@ -63,7 +63,8 @@ trait ChiselRunners extends Assertions {
             VerilogPreprocessorDefine("STOP_COND", s"!${Workspace.testbenchModuleName}.reset")
           ) ++ layerControl.preprocessorDefines(elaboratedModule),
           includeDirs = Some(Seq(workspace.primarySourcesPath)),
-          fileFilter = layerControl.shouldIncludeFile(elaboratedModule)
+          fileFilter = layerControl.shouldIncludeFile(elaboratedModule),
+          directoryFilter = layerControl.shouldIncludeDirectory(elaboratedModule, workspace.primarySourcesPath)
         )
       },
       verilator.Backend
