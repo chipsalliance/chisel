@@ -18,6 +18,15 @@ private[this] object Exceptions {
       )
       with NoStackTrace
 
+  class Timeout(timesteps: BigInt, message: String)
+      extends RuntimeException(
+        dramaticMessage(
+          header = Some(s"A timeout occurred after $timesteps timesteps"),
+          body = message
+        )
+      )
+      with NoStackTrace
+
 }
 
 final object Simulator {

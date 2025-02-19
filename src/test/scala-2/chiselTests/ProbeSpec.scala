@@ -6,10 +6,11 @@ import chisel3._
 import chisel3.layer.{Layer, LayerConfig}
 import chisel3.probe._
 import chisel3.util.Counter
+import chisel3.simulator.scalatest.ChiselSim
 import chisel3.testers.{BasicTester, TesterDriver}
 import circt.stage.ChiselStage
 
-class ProbeSpec extends ChiselFlatSpec with FileCheck with Utils {
+class ProbeSpec extends ChiselFlatSpec with FileCheck with Utils with ChiselSim {
   // Strip SourceInfos and split into lines
   private def processChirrtl(chirrtl: String): Array[String] =
     chirrtl.split('\n').map(line => line.takeWhile(_ != '@').trim())
@@ -657,7 +658,7 @@ class ProbeSpec extends ChiselFlatSpec with FileCheck with Utils {
       define(b.refs.out, RWProbeValue(out))
       define(b.refs.reg, RWProbeValue(r))
     }
-    runTester(new BasicTester {
+    simulate(new BasicTester {
       layer.enable(layers.Verification)
       layer.enable(layers.Verification.Assert)
       val dut = Module(new Top)
@@ -701,7 +702,7 @@ class ProbeSpec extends ChiselFlatSpec with FileCheck with Utils {
       }
 
       when(done) { stop() }
-    }) should be(true)
+    })(Stimulus.runUntilFinished(21))
   }
 
   "Enum probe" should "work" in {

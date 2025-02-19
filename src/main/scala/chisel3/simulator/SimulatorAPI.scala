@@ -8,6 +8,34 @@ import java.nio.file.Files
 
 trait SimulatorAPI {
 
+  /** This object provides certain canned stimulus patterns that can be used for other
+    */
+  object Stimulus {
+
+    /** Run a simulation expecting it to safely terminate before `maxCycles`.
+      *
+      * @param maxCycles the number of cycles to ait
+      * @throws [[Exceptions.Timeout]] if `maxCycles` is reached before
+      * termination
+      */
+    def runUntilFinished[T <: Module](maxCycles: Int): (T) => Unit = { dut =>
+      AnySimulatedModule.current
+        .port(dut.clock)
+        .tick(
+          timestepsPerPhase = 1,
+          maxCycles = maxCycles,
+          inPhaseValue = 1,
+          outOfPhaseValue = 0,
+          sentinel = None,
+          checkElapsedCycleCount = (count: BigInt) => {
+            if (count == maxCycles)
+              throw new Exceptions.Timeout(maxCycles, "Expected a $finish, but none received")
+          }
+        )
+    }
+
+  }
+
   /** Simulate a [[RawModule]] without any initialization procedure.
     *
     * Use of this method is not advised when [[simulate]] can be used instead.
