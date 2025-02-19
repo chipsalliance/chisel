@@ -71,7 +71,7 @@ void initTestBenchScope() { testbenchScope = svGetScope(); }
 #ifdef __cplusplus
 extern "C" {
 #endif
-extern int run_simulation(int timesteps);
+extern void run_simulation(int timesteps);
 extern void simulation_main(int argc, const char **argv);
 #ifdef __cplusplus
 }
@@ -672,8 +672,7 @@ static void processCommand() {
     if (*lineCursor != '\n') {
       failWithError("Unexpected data at end of RUN command.");
     }
-    if (run_simulation(time))
-      receivedDone = true;
+    run_simulation(time);
 
     sendAck();
     break;
@@ -758,15 +757,9 @@ static void processCommand() {
       }
 
       (*tickingPort.setter)(inPhaseValue);
-      if (run_simulation(timestepsPerPhase)) {
-        receivedDone = true;
-        break;
-      }
+      run_simulation(timestepsPerPhase);
       (*tickingPort.setter)(outOfPhaseValue);
-      if (run_simulation(timestepsPerPhase)) {
-        receivedDone = true;
-        break;
-      }
+      run_simulation(timestepsPerPhase);
     }
 
     cycles--; // Consume the unbalanced increment from the while condition
@@ -933,18 +926,16 @@ void simulation_main(int argc, char const **argv) {
   delete context;
 }
 
-int run_simulation(int delay) {
+void run_simulation(int delay) {
   if(!delay) {
     testbench->eval_step();
-    return context->gotFinish();
+    return;
   }
   testbench->eval();
-  if (context->gotFinish())
-    return context->gotFinish();
   context->timeInc(delay);
-  return 0;
 }
 
 } // extern "C"
 
 #endif // SVSIM_ENABLE_VERILATOR_SUPPORT
+

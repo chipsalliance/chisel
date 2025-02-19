@@ -298,39 +298,6 @@ trait BackendSpec extends AnyFunSpec with Matchers {
           }
         }
       }
-
-      it("ends the simulation on '$finish' (#4700)") {
-        workspace.reset()
-        workspace.elaborateFinishTest()
-        workspace.generateAdditionalSources()
-        simulation = workspace.compile(
-          backend
-        )(
-          workingDirectoryTag = name,
-          commonSettings = CommonCompilationSettings(),
-          backendSpecificSettings = compilationSettings,
-          customSimulationWorkingDirectory = None,
-          verbose = false
-        )
-        simulation.run(
-          verbose = false,
-          executionScriptLimit = None
-        ) { controller =>
-          val clock = controller.port("clock")
-          clock.tick(
-            inPhaseValue = 0,
-            outOfPhaseValue = 1,
-            timestepsPerPhase = 1,
-            maxCycles = 8,
-            sentinel = None
-          )
-        }
-        val re = ".*Verilog \\$finish.*".r
-        new BufferedReader(new FileReader(s"${simulation.workingDirectoryPath}/simulation-log.txt")).lines
-          .filter(re.matches(_))
-          .toArray
-          .size must be(1)
-      }
     }
   }
 }
