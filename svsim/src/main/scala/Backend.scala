@@ -16,7 +16,8 @@ case class CommonCompilationSettings(
   libraryExtensions: Option[Seq[String]] = None,
   libraryPaths:      Option[Seq[String]] = None,
   includeDirs:       Option[Seq[String]] = None,
-  fileFilter:        PartialFunction[File, Boolean] = PartialFunction.empty
+  fileFilter:        PartialFunction[File, Boolean] = PartialFunction.empty,
+  directoryFilter:   PartialFunction[File, Boolean] = PartialFunction.empty
 )
 object CommonCompilationSettings {
   object VerilogPreprocessorDefine {
