@@ -90,7 +90,7 @@ jobs:
           $CHISEL_FIRTOOL_PATH/firtool -version >> $GITHUB_STEP_SUMMARY
           echo \`\`\` >> $GITHUB_STEP_SUMMARY
       - name: Test
-        run: ./mill -j0 firrtl.cross[].test + svsim.cross[].test + chisel[].test
+        run: ./mill -j0 firrtl.cross[].test -oF + svsim.cross[].test -oF + chisel[].test -oF
       - name: Binary compatibility
         # TODO either make this also check the plugin or decide that we don't
         #      support binary compatibility for the plugin
@@ -183,7 +183,7 @@ jobs:
           dir=$(dirname $(which firtool))
           echo "CHISEL_FIRTOOL_PATH=$dir" >> "$GITHUB_ENV"
       - name: Integration Tests
-        run: ./mill -j0 integration-tests.cross[].test
+        run: ./mill -j0 integration-tests.cross[].test -oF
 
   # Currently just a sanity check that the benchmarking flow works
   benchmark:
