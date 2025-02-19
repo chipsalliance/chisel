@@ -131,5 +131,20 @@ object Resources {
         )
       )
     }
+    def elaborateFinishTest(): Unit = {
+      workspace.addPrimarySourceFromResource(getClass, "/Finish.sv")
+      workspace.elaborate(
+        ModuleInfo(
+          name = "Finish",
+          ports = Seq(
+            new ModuleInfo.Port(
+              name = "clock",
+              isSettable = true,
+              isGettable = false
+            )
+          )
+        )
+      )
+    }
   }
 }
