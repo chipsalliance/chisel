@@ -504,3 +504,37 @@ object AssumeProperty extends AssertPropertyLike(defaultLayer = layers.Verificat
 object CoverProperty extends AssertPropertyLike(defaultLayer = layers.Verification.Cover) {
   protected def createIntrinsic(label: Option[String])(implicit sourceInfo: SourceInfo) = VerifCoverIntrinsic(label)
 }
+
+/** Require that a property holds as a pre-condition of a contract. Behaves like
+  * an `AssertProperty` if used outside of a contract. When used inside of a
+  * contract, the behavior differs depending on how the contract is used in a
+  * formal proof:
+  *
+  * - During a proof that the contract is upheld by the surrounding circuit, the
+  *   property given to `RequireProperty` is assumed to hold.
+  * - During a larger proof where the contract is already assumed to be proven,
+  *   the property given to `RequireProperty` is asserted to hold.
+  *
+  * Use like `RequireProperty(p)`. See `AssertPropertyLike.apply` for optional
+  * clock, disable_iff, and label parameters.
+  */
+object RequireProperty extends AssertPropertyLike(defaultLayer = layers.Verification.Assume) {
+  protected def createIntrinsic(label: Option[String])(implicit sourceInfo: SourceInfo) = VerifRequireIntrinsic(label)
+}
+
+/** Ensure that a property holds as a post-condition of a contract. Behaves like
+  * an `AssertProperty` if used outside of a contract. When used inside of a
+  * contract, the behavior differs depending on how the contract is used in a
+  * formal proof:
+  *
+  * - During a proof that the contract is upheld by the surrounding circuit, the
+  *   property given to `EnsureProperty` is asserted to hold.
+  * - During a larger proof where the contract is already assumed to be proven,
+  *   the property given to `EnsureProperty` is assumed to hold.
+  *
+  * Use like `EnsureProperty(p)`. See `AssertPropertyLike.apply` for optional
+  * clock, disable_iff, and label parameters.
+  */
+object EnsureProperty extends AssertPropertyLike(defaultLayer = layers.Verification.Assert) {
+  protected def createIntrinsic(label: Option[String])(implicit sourceInfo: SourceInfo) = VerifEnsureIntrinsic(label)
+}

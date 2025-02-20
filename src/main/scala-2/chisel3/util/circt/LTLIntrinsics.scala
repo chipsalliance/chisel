@@ -169,3 +169,15 @@ private[chisel3] object VerifCoverIntrinsic {
   def apply(label: Option[String] = None)(prop: Bool, enable: Option[Bool])(implicit sourceInfo: SourceInfo) =
     VerifAssertLikeIntrinsic("cover", label)(prop, enable)
 }
+
+/** A wrapper intrinsic for the CIRCT `verif.require` operation. */
+private[chisel3] object VerifRequireIntrinsic {
+  def apply(label: Option[String] = None)(prop: Bool, enable: Option[Bool])(implicit sourceInfo: SourceInfo) =
+    VerifAssertLikeIntrinsic("require", label)(prop, enable)
+}
+
+/** A wrapper intrinsic for the CIRCT `verif.ensure` operation. */
+private[chisel3] object VerifEnsureIntrinsic {
+  def apply(label: Option[String] = None)(prop: Bool, enable: Option[Bool])(implicit sourceInfo: SourceInfo) =
+    VerifAssertLikeIntrinsic("ensure", label)(prop, enable)
+}
