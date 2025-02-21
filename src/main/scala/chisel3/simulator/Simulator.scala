@@ -7,9 +7,9 @@ import scala.util.{Failure, Success, Try}
 import scala.util.control.NoStackTrace
 import svsim._
 
-private[simulator] object Exceptions {
+object Exceptions {
 
-  class AssertionFailed(message: String)
+  class AssertionFailed private[simulator] (message: String)
       extends RuntimeException(
         dramaticMessage(
           header = Some("One or more assertions failed during Chiselsim simulation"),
@@ -18,7 +18,7 @@ private[simulator] object Exceptions {
       )
       with NoStackTrace
 
-  class Timeout(timesteps: BigInt, message: String)
+  class Timeout private[simulator] (timesteps: BigInt, message: String)
       extends RuntimeException(
         dramaticMessage(
           header = Some(s"A timeout occurred after $timesteps timesteps"),
