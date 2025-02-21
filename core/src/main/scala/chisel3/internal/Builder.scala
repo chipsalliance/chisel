@@ -542,8 +542,7 @@ private[chisel3] class DynamicContext(
   }
 
   val components = ArrayBuffer[Component]()
-  val annotations = ArrayBuffer[ChiselAnnotation]()
-  val newAnnotations = ArrayBuffer[ChiselMultiAnnotation]()
+  val annotations = ArrayBuffer[() => Seq[Annotation]]()
   val layers = mutable.LinkedHashSet[layer.Layer]()
   val options = mutable.LinkedHashSet[choice.Case]()
   var currentModule: Option[BaseModule] = None
@@ -613,15 +612,12 @@ private[chisel3] object Builder extends LazyLogging {
   def components:  ArrayBuffer[Component] = dynamicContext.components
   def definitions: ArrayBuffer[Definition[_]] = dynamicContext.definitions
 
-  def annotations: ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
+  def annotations: ArrayBuffer[() => Seq[Annotation]] = dynamicContext.annotations
 
   def layers:  mutable.LinkedHashSet[layer.Layer] = dynamicContext.layers
   def options: mutable.LinkedHashSet[choice.Case] = dynamicContext.options
 
   def contextCache: BuilderContextCache = dynamicContext.contextCache
-
-  // TODO : Unify this with annotations in the future - done this way for backward compatability
-  def newAnnotations: ArrayBuffer[ChiselMultiAnnotation] = dynamicContext.newAnnotations
 
   def annotationSeq:         AnnotationSeq = dynamicContext.annotationSeq
   def importedDefinitionMap: Map[String, String] = dynamicContext.importedDefinitionMap
@@ -1137,7 +1133,6 @@ private[chisel3] object Builder extends LazyLogging {
           components.toSeq,
           annotations.toSeq,
           makeViewRenameMap,
-          newAnnotations.toSeq,
           typeAliases,
           layerAdjacencyList(layer.Layer.Root).map(foldLayers).toSeq,
           optionDefs

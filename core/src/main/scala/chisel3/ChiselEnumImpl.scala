@@ -3,26 +3,19 @@
 package chisel3
 
 import scala.language.existentials
-import scala.annotation.nowarn
 import scala.collection.mutable
-import chisel3.experimental.{annotate, requireIsHardware, ChiselAnnotation, SourceInfo, UnlocatableSourceInfo}
+import chisel3.experimental.{requireIsHardware, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal.Builder.pushOp
 import chisel3.internal.firrtl.ir.PrimOp._
 import chisel3.internal.firrtl.ir._
 import chisel3.internal.{containsProbe, throwException, Builder, BuilderContextCache, Warning, WarningID}
 import chisel3.internal.binding.{Binding, ChildBinding, ConstrainedBinding}
 
-import chisel3.experimental.EnumAnnotations._
-
-// Rather than refactoring the annotation work here, we should just remove ChiselEnum annotations
-@nowarn("msg=Avoid custom annotations")
-@nowarn("msg=Enum annotations will be removed")
-private[chisel3] abstract class EnumTypeImpl(private[chisel3] val factory: ChiselEnum, selfAnnotating: Boolean = true)
-    extends Element { self: EnumType =>
+private[chisel3] abstract class EnumTypeImpl(private[chisel3] val factory: ChiselEnum) extends Element {
+  self: EnumType =>
 
   // Use getSimpleName instead of enumTypeName because for debugging purposes
-  //   the fully qualified name isn't necessary (compared to for the
-  //  Enum annotation), and it's more consistent with Bundle printing.
+  //   the fully qualified name isn't necessary, and it's more consistent with Bundle printing.
   override def toString: String = {
     litOption match {
       case Some(value) =>
@@ -149,13 +142,6 @@ private[chisel3] abstract class EnumTypeImpl(private[chisel3] val factory: Chise
     parentDirection: SpecifiedDirection = SpecifiedDirection.Unspecified
   ): Unit = {
     super.bind(target, parentDirection)
-
-    // Make sure we only annotate hardware and not literals or probes.
-    if (
-      selfAnnotating && isSynthesizable && topBindingOpt.get.isInstanceOf[ConstrainedBinding] && !containsProbe(this)
-    ) {
-      annotateEnum()
-    }
   }
 
   // This function conducts a depth-wise search to find all enum-type fields within a vector or bundle (or vector of bundles)
@@ -189,27 +175,6 @@ private[chisel3] abstract class EnumTypeImpl(private[chisel3] val factory: Chise
     }
   }
 
-  private def annotateEnum(): Unit = {
-    val anno = outerMostVec() match {
-      case Some(v) => EnumVecChiselAnnotation(v, enumTypeName, enumFields(v))
-      case None    => EnumComponentChiselAnnotation(this, enumTypeName)
-    }
-
-    // Enum annotations are added every time a ChiselEnum is bound
-    // To keep the number down, we keep them unique in the annotations
-    val enumAnnos =
-      Builder.contextCache.getOrElseUpdate(ChiselEnumImpl.CacheKey, mutable.HashSet.empty[ChiselAnnotation])
-    if (!enumAnnos.contains(anno)) {
-      enumAnnos += anno
-      annotate(anno)
-    }
-
-    if (!enumAnnos.contains(factory.globalAnnotation)) {
-      enumAnnos += factory.globalAnnotation
-      annotate(factory.globalAnnotation)
-    }
-  }
-
   protected def enumTypeName: String = factory.enumTypeName
 
   def toPrintable: Printable = {
@@ -235,15 +200,6 @@ private[chisel3] abstract class EnumTypeImpl(private[chisel3] val factory: Chise
   }
 }
 
-// Rather than refactoring the annotation work here, we should just remove ChiselEnum annotations
-@nowarn("msg=Avoid custom annotations")
-private[chisel3] object ChiselEnumImpl {
-  private[chisel3] case object CacheKey extends BuilderContextCache.Key[mutable.HashSet[ChiselAnnotation]]
-}
-
-// Rather than refactoring the annotation work here, we should just remove ChiselEnum annotations
-@nowarn("msg=Avoid custom annotations")
-@nowarn("msg=Enum annotations will be removed")
 private[chisel3] trait ChiselEnumImpl { self: ChiselEnum =>
   class Type extends EnumType(this)
   object Type {
@@ -267,9 +223,6 @@ private[chisel3] trait ChiselEnumImpl { self: ChiselEnum =>
     (this.getWidth < 31) && // guard against Integer overflow
     (enumRecords.size == (1 << this.getWidth))
   }
-
-  private[chisel3] def globalAnnotation: EnumDefChiselAnnotation =
-    EnumDefChiselAnnotation(enumTypeName, enumNames.zip(enumValues).toMap)
 
   def getWidth: Int = width.get
 
@@ -364,7 +317,7 @@ private[chisel3] trait ChiselEnumImpl { self: ChiselEnum =>
 
 // This is an enum type that can be connected directly to UInts. It is used as a "glue" to cast non-literal UInts
 // to enums.
-private[chisel3] class UnsafeEnum(override val width: Width) extends EnumType(UnsafeEnum, selfAnnotating = false) {
+private[chisel3] class UnsafeEnum(override val width: Width) extends EnumType(UnsafeEnum) {
   override def cloneType: this.type = new UnsafeEnum(width).asInstanceOf[this.type]
 }
 private object UnsafeEnum extends ChiselEnum

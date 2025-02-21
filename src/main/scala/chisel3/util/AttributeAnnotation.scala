@@ -5,7 +5,7 @@ import firrtl.AttributeAnnotation
 import firrtl.annotations.Named
 
 import chisel3.Data
-import chisel3.experimental.{annotate, requireIsAnnotatable, ChiselAnnotation}
+import chisel3.experimental.{annotate, requireIsAnnotatable}
 
 /** Helper Object for applying Attribute Annotations */
 object addAttribute {

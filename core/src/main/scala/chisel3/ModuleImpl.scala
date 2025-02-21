@@ -26,7 +26,7 @@ import _root_.firrtl.annotations.{
 import _root_.firrtl.AnnotationSeq
 import chisel3.internal.plugin.autoNameRecursively
 import chisel3.util.simpleClassName
-import chisel3.experimental.{annotate, ChiselAnnotation}
+import chisel3.experimental.annotate
 import chisel3.experimental.hierarchy.Hierarchy
 
 private[chisel3] trait ObjectModuleImpl {

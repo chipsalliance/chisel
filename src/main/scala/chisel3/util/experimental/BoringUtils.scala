@@ -6,7 +6,7 @@ import chisel3._
 import chisel3.probe.{Probe, RWProbe}
 import chisel3.reflect.DataMirror
 import chisel3.Data.ProbeInfo
-import chisel3.experimental.{annotate, requireIsHardware, skipPrefix, BaseModule, ChiselAnnotation, SourceInfo}
+import chisel3.experimental.{annotate, requireIsHardware, skipPrefix, BaseModule, SourceInfo}
 import chisel3.internal.{Builder, BuilderContextCache, NamedComponent, Namespace}
 import chisel3.internal.binding.{BlockBinding, CrossModuleBinding, PortBinding, SecretPortBinding}
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
@@ -144,18 +144,11 @@ object BoringUtils {
 
     val id = if (uniqueName) { newName(name) }
     else { name }
-    val maybeDedup =
-      if (disableDedup) { Seq(new ChiselAnnotation { def toFirrtl = NoDedupAnnotation(component.toNamed.module) }) }
-      else { Seq[ChiselAnnotation]() }
-    val annotations =
-      Seq(
-        new ChiselAnnotation {
-          def toFirrtl = SourceAnnotation(component.toNamed, id)
-        },
-        new ChiselAnnotation { def toFirrtl = DontTouchAnnotation(component.toNamed) }
-      ) ++ maybeDedup
-
-    annotations.foreach(annotate(_))
+    annotate(component)(
+      Seq(SourceAnnotation(component.toNamed, id), DontTouchAnnotation(component.toNamed)) ++ Option.when(disableDedup)(
+        NoDedupAnnotation(component.toNamed.module)
+      )
+    )
     id
   }
 
@@ -186,14 +179,9 @@ object BoringUtils {
       case c: ComponentName => c.module
       case _ => throw new ChiselException("Can only add a Module or Component sink", null)
     }
-    val maybeDedup =
-      if (disableDedup) { Seq(new ChiselAnnotation { def toFirrtl = NoDedupAnnotation(moduleName) }) }
-      else { Seq[ChiselAnnotation]() }
-    val annotations =
-      Seq(new ChiselAnnotation {
-        def toFirrtl = SinkAnnotation(component.toNamed, name)
-      }) ++ maybeDedup
-    annotations.foreach(annotate(_))
+    // annotate doesn't support InstanceId (which is deprecated) because InstanceId doesn't implement toRelativeTarget
+    // this API is deprecated anyway so probably fine to not check it.
+    annotate()(Seq(SinkAnnotation(component.toNamed, name)) ++ Option.when(disableDedup)(NoDedupAnnotation(moduleName)))
   }
 
   /** Connect a source to one or more sinks

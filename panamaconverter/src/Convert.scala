@@ -22,16 +22,16 @@ object Convert extends Phase {
 
   def transform(annotations: AnnotationSeq): AnnotationSeq =
     annotations.flatMap {
-      case c @ ChiselCircuitAnnotation(circuit) =>
+      case c: ChiselCircuitAnnotation =>
         Seq(
           c,
           PanamaCIRCTConverterAnnotation(
             PanamaCIRCTConverter.convert(
-              circuit,
+              c.elaboratedCircuit._circuit,
               annotations.collectFirst { case FirtoolOptionsAnnotation(firtoolOptions) =>
                 firtoolOptions
               },
-              firrtl.annotations.JsonProtocol.serialize(circuit.firrtlAnnotations.filter { anno =>
+              firrtl.annotations.JsonProtocol.serialize(c.elaboratedCircuit.annotations.filter { anno =>
                 Seq(
                   // This is all annotations that circt can parse(but may not use)
                   // It should be updated form [[https://github.com/llvm/circt/blob/main/include/circt/Dialect/FIRRTL/AnnotationDetails.h]]

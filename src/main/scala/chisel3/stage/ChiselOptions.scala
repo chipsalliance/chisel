@@ -12,7 +12,6 @@ class ChiselOptions private[stage] (
   val printFullStackTrace: Boolean = false,
   val throwOnFirstError:   Boolean = false,
   val outputFile:          Option[String] = None,
-  _chiselCircuit:          Option[Circuit] = None,
   val sourceRoots:         Vector[File] = Vector.empty,
   val warningFilters:      Vector[WarningFilter] = Vector.empty,
   val useLegacyWidth:      Boolean = false,
@@ -22,14 +21,10 @@ class ChiselOptions private[stage] (
   val elaboratedCircuit:   Option[ElaboratedCircuit] = None
 ) {
 
-  @deprecated("Use elaboratedCircuit instead", "Chisel 6.7.0")
-  def chiselCircuit: Option[Circuit] = _chiselCircuit
-
   private[stage] def copy(
     printFullStackTrace: Boolean = printFullStackTrace,
     throwOnFirstError:   Boolean = throwOnFirstError,
     outputFile:          Option[String] = outputFile,
-    chiselCircuit:       Option[Circuit] = _chiselCircuit,
     sourceRoots:         Vector[File] = sourceRoots,
     warningFilters:      Vector[WarningFilter] = warningFilters,
     useLegacyWidth:      Boolean = useLegacyWidth,
@@ -43,7 +38,6 @@ class ChiselOptions private[stage] (
       printFullStackTrace = printFullStackTrace,
       throwOnFirstError = throwOnFirstError,
       outputFile = outputFile,
-      _chiselCircuit = _chiselCircuit,
       sourceRoots = sourceRoots,
       warningFilters = warningFilters,
       useLegacyWidth = useLegacyWidth,
