@@ -87,11 +87,11 @@ final class Simulation private[svsim] (
     }
 
     // Treat all issues that occurred during graceful shutdown as errors, except
-    // for broken pipes.  A broken pipe can occur if the process exits while we
-    // are trying to shut it down.  Recover with the narrowest possible, exact
-    // match here.
+    // for certain `java.io.IOException`s.  These can occur if the process exits
+    // while we are trying to shut it down.  Recover with the narrowest
+    // possible, exact match here.
     gracefulShutdownOutcome.recoverWith {
-      case e: java.io.IOException if e.getMessage.contains("Broken pipe") => Success({})
+      case e: java.io.IOException if e.getMessage.matches("^.*(Broken pipe|Stream closed).*") => Success({})
     }.get
 
     result
