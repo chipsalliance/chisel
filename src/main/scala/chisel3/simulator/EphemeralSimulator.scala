@@ -22,7 +22,10 @@ object EphemeralSimulator extends PeekPokeAPI {
     layerControl: LayerControl.Type = LayerControl.EnableAll
   )(body: (T) => Unit): Unit = {
     implicit val temporary = HasTestingDirectory.temporary(deleteOnExit = true)
-    DefaultSimulator.simulateRaw(module, new ChiselSettings(verilogLayers = layerControl))(body)
+    DefaultSimulator.simulateRaw(
+      module,
+      ChiselSettings.defaultRaw[T].copy(verilogLayers = layerControl)
+    )(body)
   }
 
 }
