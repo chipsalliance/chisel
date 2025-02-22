@@ -149,13 +149,13 @@ object ChiselSettings {
     * must invoke this method like:
     *
     * {{{
-    * ChiselSettings.default[Foo]
+    * ChiselSettings.defaultRaw[Foo]
     * }}}
     *
     * If you invoke this method like the following, you will get an error:
     *
     * {{{
-    * ChiselSettings.default
+    * ChiselSettings.defaultRaw
     * }}}
     */
   final def defaultRaw[A <: RawModule]: ChiselSettings[A] = new ChiselSettings[A](
