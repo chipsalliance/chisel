@@ -4,6 +4,8 @@ package chiselTests
 
 import chisel3._
 import circt.stage.ChiselStage
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
 import chisel3.testers.BasicTester
 import chisel3.util._
 
@@ -142,9 +144,11 @@ class PrintableWhenScopeTester extends Module {
   }
 }
 
-class AssertSpec extends ChiselFlatSpec with Utils {
+class AssertSpec extends ChiselFlatSpec with Utils with ChiselSim {
   "A failing assertion" should "fail the testbench" in {
-    assert(!runTester { new FailingAssertTester })
+    intercept[Exception] {
+      simulate(new FailingAssertTester)(RunUntilFinished(3))
+    }.getMessage() should include("One or more assertions failed")
   }
   "A succeeding assertion" should "not fail the testbench" in {
     assertTesterPasses { new SucceedingAssertTester }
