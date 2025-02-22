@@ -80,8 +80,8 @@ trait Simulator[T <: Backend] {
   }
 
   final def simulate[T <: RawModule, U](
-    module:       => T,
-    layerControl: LayerControl.Type = LayerControl.EnableAll
+    module:         => T,
+    chiselSettings: ChiselSettings = ChiselSettings.default
   )(body: (SimulatedModule[T]) => U): Simulator.BackendInvocationDigest[U] = {
     val workspace = new Workspace(path = workspacePath, workingDirectoryPrefix = workingDirectoryPrefix)
     workspace.reset()
@@ -94,10 +94,14 @@ trait Simulator[T <: Backend] {
       // ensures that `` `include `` directives can be resolved.
       includeDirs = Some(commonCompilationSettings.includeDirs.getOrElse(Seq.empty) :+ workspace.primarySourcesPath),
       verilogPreprocessorDefines =
-        commonCompilationSettings.verilogPreprocessorDefines ++ layerControl.preprocessorDefines(
+        commonCompilationSettings.verilogPreprocessorDefines ++ chiselSettings.verilogLayers.preprocessorDefines(
           elaboratedModule
         ),
-      fileFilter = commonCompilationSettings.fileFilter.orElse(layerControl.shouldIncludeFile(elaboratedModule))
+      fileFilter =
+        commonCompilationSettings.fileFilter.orElse(chiselSettings.verilogLayers.shouldIncludeFile(elaboratedModule)),
+      directoryFilter = commonCompilationSettings.directoryFilter.orElse(
+        chiselSettings.verilogLayers.shouldIncludeDirectory(elaboratedModule, workspace.primarySourcesPath)
+      )
     )
 
     // Compile the design.  Early exit if the compilation fails for any reason.

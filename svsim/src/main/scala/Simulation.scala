@@ -3,7 +3,7 @@
 package svsim
 
 import scala.collection.mutable.Queue
-import scala.util.Try
+import scala.util.{Success, Try}
 import java.io.{BufferedReader, BufferedWriter, File, InputStreamReader, OutputStreamWriter}
 
 final class Simulation private[svsim] (
@@ -64,7 +64,10 @@ final class Simulation private[svsim] (
 
     // Always attempt graceful shutdown, even if `body` failed.
     val gracefulShutdownOutcome = Try[Unit] {
-      // If the process is still running, give it an opportunity to shut down gracefully
+      // If the process is still running, give it an opportunity to shut down
+      // gracefully.  Note: the code below is not safe.  While the process _may_
+      // be alive, there is no guarantee that it is still alive while we are
+      // trying to shut it down.
       if (process.isAlive()) {
         controller.sendCommand(Simulation.Command.Done)
         controller.completeInFlightCommands()
@@ -83,8 +86,13 @@ final class Simulation private[svsim] (
       throw new Exception(s"Nonzero exit status: ${process.exitValue()}")
     }
 
-    // Issues during graceful shutdown are considered test failures
-    gracefulShutdownOutcome.get
+    // Treat all issues that occurred during graceful shutdown as errors, except
+    // for broken pipes.  A broken pipe can occur if the process exits while we
+    // are trying to shut it down.  Recover with the narrowest possible, exact
+    // match here.
+    gracefulShutdownOutcome.recoverWith {
+      case e: java.io.IOException if e.getMessage.contains("Broken pipe") => Success({})
+    }.get
 
     result
   }

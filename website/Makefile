@@ -9,6 +9,9 @@ mdoc_out := $(chisel_dir)/docs/generated
 buildDir ?= build
 website_docs_dir = $(this_dir)/docs
 latest_scaladoc_dir = $(this_dir)/static/api/latest
+generate_scala_cli = $(chisel_dir)/.github/scripts/generate-scala-cli-example.sh
+latest_chisel_download = $(this_dir)/static/releases/latest/download
+snapshot_chisel_download = $(this_dir)/static/releases/snapshot/download
 install_timestamp = $(this_dir)/node_modules/timestamp
 build_timestamp = $(this_dir)/build.timestamp
 
@@ -62,6 +65,20 @@ $(latest_scaladoc_dir)/index.html: $(latest_version) | $(latest_scaladoc_dir)
 	  rm -rf temp.jar
 	touch $@
 
+$(latest_chisel_download):
+	mkdir -p $@
+
+$(latest_chisel_download)/chisel-example.scala: $(latest_chisel_download) $(latest_version)
+	$(eval VER := $(shell cat $(latest_version)))
+	$(generate_scala_cli) $(VER) > $@
+
+$(snapshot_chisel_download):
+	mkdir -p $@
+
+$(snapshot_chisel_download)/chisel-example.scala: $(snapshot_chisel_download)
+	$(eval VER := $(shell cd $(chisel_dir) && ./mill show unipublish.publishVersion | tr -d \"))
+	$(generate_scala_cli) $(VER) > $@
+
 generated_dir = $(this_dir)/src/pages/generated
 contributors = $(generated_dir)/contributors.md
 scaladoc_links = $(generated_dir)/scaladoc_links.md
@@ -82,7 +99,7 @@ $(install_timestamp): $(this_dir)/package.json
 
 install: $(install_timestamp)
 
-$(build_timestamp): $(this_dir)/docs/index.md $(latest_scaladoc_dir)/index.html $(contributors) $(scaladoc_links) $(install_timestamp) $(chisel-website-only)
+$(build_timestamp): $(this_dir)/docs/index.md $(latest_scaladoc_dir)/index.html $(contributors) $(scaladoc_links) $(install_timestamp) $(chisel-website-only) $(latest_chisel_download)/chisel-example.scala $(snapshot_chisel_download)/chisel-example.scala
 	cd $(this_dir) && npm run build
 	touch $@
 
@@ -94,7 +111,7 @@ serve: build
 	cd $(this_dir)/build && python3 -m http.server ${PORT}
 
 clean:
-	rm -rf $(this_dir)/docs $(this_dir)/build $(this_dir)/src/pages/generated $(chisel_dir)/docs/generated
+	rm -rf $(this_dir)/docs $(this_dir)/build $(this_dir)/src/pages/generated $(chisel_dir)/docs/generated $(latest_chisel_download) $(snapshot_chisel_download)
 
 mrproper: clean
 	rm -rf $(this_dir)/node_modules $(this_dir)/package-lock.json

@@ -30,10 +30,17 @@ class LayerControlSpec extends AnyFunSpec with Matchers {
 
       info("non-layer files are ignored")
       layerControl.shouldIncludeFile(elaboratedModule).isDefinedAt(new File("Foo.sv")) should be(false)
+      layerControl.shouldIncludeDirectory(elaboratedModule, "build").isDefinedAt(new File("build/foo")) should be(false)
 
+      info("layer ABI files are included")
       Seq("layers-Foo-A.sv", "layers-Foo-B.sv", "layers-Foo-B-C.sv").map(new File(_)).foreach { case filename =>
         info(s"$filename is included")
         layerControl.shouldIncludeFile(elaboratedModule)(filename) should be(true)
+      }
+      info("layer directories are included")
+      Seq("build/A", "build/B", "build/B/C").map(new File(_)).foreach { case directory =>
+        info(s"$directory is included")
+        layerControl.shouldIncludeDirectory(elaboratedModule, "build")(directory) should be(true)
       }
     }
   }
@@ -43,10 +50,17 @@ class LayerControlSpec extends AnyFunSpec with Matchers {
 
       info("non-layer files are ignored")
       layerControl.shouldIncludeFile(elaboratedModule).isDefinedAt(new File("Foo.sv")) should be(false)
+      layerControl.shouldIncludeDirectory(elaboratedModule, "build").isDefinedAt(new File("build/foo")) should be(false)
 
+      info("layer ABI files are excluded")
       Seq("layers-Foo-A.sv", "layers-Foo-B.sv", "layers-Foo-B-C.sv").map(new File(_)).foreach { case filename =>
         info(s"$filename is excluded")
         layerControl.shouldIncludeFile(elaboratedModule)(filename) should be(false)
+      }
+      info("layer directories are excluded")
+      Seq("build/A", "build/B", "build/B/C").map(new File(_)).foreach { case directory =>
+        info(s"$directory is excluded")
+        layerControl.shouldIncludeDirectory(elaboratedModule, "build")(directory) should be(false)
       }
     }
   }
@@ -56,10 +70,17 @@ class LayerControlSpec extends AnyFunSpec with Matchers {
 
       info("non-layer files are ignored")
       layerControl.shouldIncludeFile(elaboratedModule).isDefinedAt(new File("Foo.sv")) should be(false)
+      layerControl.shouldIncludeDirectory(elaboratedModule, "build").isDefinedAt(new File("build/foo")) should be(false)
 
+      info("layer ABI files are excluded")
       Seq("layers-Foo-A.sv", "layers-Foo-B.sv", "layers-Foo-B-C.sv").map(new File(_)).foreach { case filename =>
         info(s"$filename is excluded")
         layerControl.shouldIncludeFile(elaboratedModule)(filename) should be(false)
+      }
+      info("layer directories are excluded")
+      Seq("build/A", "build/B", "build/B/C").map(new File(_)).foreach { case directory =>
+        info(s"$directory is excluded")
+        layerControl.shouldIncludeDirectory(elaboratedModule, "build")(directory) should be(false)
       }
     }
   }
@@ -69,7 +90,9 @@ class LayerControlSpec extends AnyFunSpec with Matchers {
 
       info("non-layer files are ignored")
       layerControl.shouldIncludeFile(elaboratedModule).isDefinedAt(new File("foo")) should be(false)
+      layerControl.shouldIncludeDirectory(elaboratedModule, "build").isDefinedAt(new File("build/foo")) should be(false)
 
+      info("layer ABI files are excluded or excluded appropriately")
       Seq("layers-Foo-A.sv", "layers-Foo-B-C.sv").map(new File(_)).foreach { case filename =>
         info(s"$filename is included")
         layerControl.shouldIncludeFile(elaboratedModule)(filename) should be(true)
@@ -77,6 +100,15 @@ class LayerControlSpec extends AnyFunSpec with Matchers {
 
       info("layers-Foo-A-B.sv is excluded")
       layerControl.shouldIncludeFile(elaboratedModule)(new File("layers-Foo-A-B.sv")) should be(false)
+
+      info("layer directories are excluded or excluded appropriately")
+      Seq("build/A", "build/B/C").map(new File(_)).foreach { case directory =>
+        info(s"$directory is included")
+        layerControl.shouldIncludeDirectory(elaboratedModule, "build")(directory) should be(true)
+      }
+
+      info("build/B is excluded")
+      layerControl.shouldIncludeDirectory(elaboratedModule, "build")(new File("build/B")) should be(false)
     }
   }
 }

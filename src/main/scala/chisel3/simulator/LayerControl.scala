@@ -1,10 +1,11 @@
 package chisel3.simulator
 
-import java.io.File
 import chisel3.RawModule
-import chisel3.layer.{ABI, Layer}
+import chisel3.layer.{ABI, Layer, LayerConfig}
 import chisel3.simulator.ElaboratedModule
 import chisel3.stage.DesignAnnotation
+import java.io.File
+import java.nio.file.FileSystems
 import svsim.CommonCompilationSettings.VerilogPreprocessorDefine
 
 /** Utilities for enabling and disabling Chisel layers */
@@ -51,6 +52,61 @@ object LayerControl {
     final def preprocessorDefines(
       module: ElaboratedModule[_ <: RawModule]
     ): Seq[VerilogPreprocessorDefine] = preprocessorDefines(module.wrapped, module.layers)
+
+    /** Return a partial function that will return true if a directory should be
+      * visited when determining files to include in the build based on if a
+      * layer is enabled.  This supplements [[shouldIncludeFile]] by allowing
+      * for the constituent modules of extract layers to be fully excluded from
+      * the build.
+      *
+      * @param module a Chisel module
+      * @param allLayers all the layers that can be enabled
+      * @param buildDir the build directory
+      * @return a partial function to test if a directory should be included
+      */
+    final def shouldIncludeDirectory(
+      module:    RawModule,
+      allLayers: Seq[Layer],
+      buildDir:  String
+    ): PartialFunction[File, Boolean] = {
+
+      def getLayerDirectories(layers: Seq[Layer]): Set[String] = layers.flatMap { case layer =>
+        val fs = FileSystems.getDefault()
+        layer.config match {
+          case _: LayerConfig.Extract => layer.outputDir.map { case dir => fs.getPath(buildDir, dir.toString).toString }
+          case _ => None
+        }
+      }.toSet
+
+      // Every layer directory
+      val allLayerDirectories: Set[String] = getLayerDirectories(allLayers)
+      // Only the layer directories that should be included
+      val layerDirectories: Set[String] = getLayerDirectories(getLayerSubset(allLayers))
+
+      // This partial function should not be defined on anything which is NOT a
+      // layer directory.  This must only return true or false if we definitely
+      // know that a directory should be excluded or included as this partial
+      // function may be given other directories, e.g., `generated-sources/`.
+      {
+        case a if allLayerDirectories.contains(a.toString) => layerDirectories.contains(a.toString)
+      }
+
+    }
+
+    /** Return a partial function that will return true if a directory should be
+      * visited when determining files to include in the build based on if a
+      * layer is enabled.  This supplements [[shouldIncludeFile]] by allowing
+      * for the constituent modules of extract layers to be fully excluded from
+      * the build.
+      *
+      * @param module a Chisel module
+      * @param buildDir the build directory
+      * @return a partial function to test if a directory should be included
+      */
+    final def shouldIncludeDirectory(
+      module:   ElaboratedModule[_ <: RawModule],
+      buildDir: String
+    ): PartialFunction[File, Boolean] = shouldIncludeDirectory(module.wrapped, module.layers, buildDir)
 
     /** Return a partial function that will return true if a file should be included
       * in the build to enable a layer.  This partial function is not defined if

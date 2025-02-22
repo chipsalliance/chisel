@@ -1,7 +1,9 @@
 package svsim
 
 import java.io.{BufferedReader, BufferedWriter, File, FileWriter, InputStreamReader, PrintWriter}
-import java.nio.file.{Files, Paths}
+import java.nio.file.attribute.BasicFileAttributes
+import java.nio.file.{FileVisitResult, FileVisitor}
+import java.nio.file.{FileVisitor, Files, Path, Paths}
 import java.lang.ProcessBuilder.Redirect
 import scala.annotation.meta.param
 import scala.jdk.CollectionConverters._
@@ -150,10 +152,12 @@ final class Workspace(
       l("  export \"DPI-C\" task run_simulation;")
       l("  task run_simulation;")
       l("    input int timesteps;")
+      l("    output int done;")
       l("    #timesteps;")
+      l("    done = 0;")
       l("  endtask")
       l("  `else")
-      l("  import \"DPI-C\" function void run_simulation(int timesteps);")
+      l("  import \"DPI-C\" function int run_simulation(int timesteps);")
       l("  `endif")
       l()
 
@@ -317,12 +321,43 @@ final class Workspace(
       commonSettings = commonSettings,
       backendSpecificSettings = backendSpecificSettings
     )
-    val sourceFiles = Seq(primarySourcesPath, generatedSourcesPath)
-      .flatMap(p => Files.walk(Paths.get(p)).iterator().asScala.toSeq)
-      .map(_.toFile)
-      .filter(_.isFile)
-      .filter(commonSettings.fileFilter.orElse { case _ => true })
-      .map { file => workingDirectory.toPath().relativize(file.toPath()).toString() }
+
+    // Find all the source files by walking the build directory.  The behavior
+    // of which directories are visited and which files are included is
+    // controlled by fields in `CommonCompilationSettings`.
+    val sourceFiles = scala.collection.mutable.ArrayBuffer.empty[String]
+    val fileFilter: PartialFunction[File, Boolean] = commonSettings.fileFilter.orElse { case _ => true }
+    val directoryFilter: PartialFunction[File, Boolean] = commonSettings.directoryFilter.orElse { case _: File =>
+      true
+    }
+    class DirectoryVisitor extends FileVisitor[Path] {
+
+      override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {
+        if (fileFilter(file.toFile))
+          sourceFiles += workingDirectory.toPath().relativize(file).toString()
+        FileVisitResult.CONTINUE
+      }
+
+      override def preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult = {
+        if (directoryFilter(dir.toFile))
+          FileVisitResult.CONTINUE
+        else
+          FileVisitResult.SKIP_SUBTREE
+      }
+
+      override def postVisitDirectory(dir: Path, ioe: java.io.IOException): FileVisitResult = {
+        FileVisitResult.CONTINUE
+      }
+
+      override def visitFileFailed(file: Path, ioe: java.io.IOException): FileVisitResult = {
+        throw ioe
+      }
+
+    }
+
+    for (dir <- Seq(primarySourcesPath, generatedSourcesPath)) {
+      Files.walkFileTree(Paths.get(dir), new DirectoryVisitor)
+    }
 
     val traceFileStem = (backendSpecificSettings match {
       case s: verilator.Backend.CompilationSettings =>
