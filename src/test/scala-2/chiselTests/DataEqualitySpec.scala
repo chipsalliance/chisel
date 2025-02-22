@@ -5,8 +5,13 @@ import chisel3.experimental.VecLiterals._
 import chisel3.experimental.BundleLiterals._
 import chisel3.experimental.Analog
 import circt.stage.ChiselStage
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.Exceptions.AssertionFailed
+import chisel3.simulator.stimulus.RunUntilFinished
 import chisel3.testers.BasicTester
 import chisel3.util.Valid
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 class EqualityModule(lhsGen: => Data, rhsGen: => Data) extends Module {
   val out = IO(Output(Bool()))
@@ -51,7 +56,7 @@ class AnalogExceptionTester extends BasicTester {
   stop()
 }
 
-class DataEqualitySpec extends ChiselFlatSpec with Utils {
+class DataEqualitySpec extends AnyFlatSpec with Matchers with ChiselSim {
   object MyEnum extends ChiselEnum {
     val sA, sB = Value
   }
@@ -78,133 +83,139 @@ class DataEqualitySpec extends ChiselFlatSpec with Utils {
 
   behavior.of("UInt === UInt")
   it should "pass with equal values" in {
-    assertTesterPasses {
-      new EqualityTester(0.U, 0.U)
-    }
+    simulate(new EqualityTester(0.U, 0.U))(RunUntilFinished(3))
   }
   it should "fail with differing values" in {
-    assertTesterFails {
-      new EqualityTester(0.U, 1.U)
-    }
+    intercept[AssertionFailed] { simulate(new EqualityTester(0.U, 1.U))(RunUntilFinished(3)) }
   }
 
   behavior.of("SInt === SInt")
   it should "pass with equal values" in {
-    assertTesterPasses {
-      new EqualityTester(0.S, 0.S)
-    }
+    simulate(new EqualityTester(0.S, 0.S))(RunUntilFinished(3))
   }
   it should "fail with differing values" in {
-    assertTesterFails {
-      new EqualityTester(0.S, 1.S)
+    intercept[AssertionFailed] {
+      simulate(
+        new EqualityTester(0.S, 1.S)
+      )(RunUntilFinished(3))
     }
   }
 
   behavior.of("Reset === Reset")
   it should "pass with equal values" in {
-    assertTesterPasses {
+    simulate(
       new EqualityTester(true.B, true.B)
-    }
+    )(RunUntilFinished(3))
   }
   it should "fail with differing values" in {
-    assertTesterFails {
-      new EqualityTester(true.B, false.B)
+    intercept[AssertionFailed] {
+      simulate(
+        new EqualityTester(true.B, false.B)
+      )(RunUntilFinished(3))
     }
   }
   it should "support abstract reset wires" in {
-    assertTesterPasses {
+    simulate(
       new EqualityTester(WireDefault(Reset(), true.B), WireDefault(Reset(), true.B))
-    }
+    )(RunUntilFinished(3))
   }
 
   behavior.of("AsyncReset === AsyncReset")
   it should "pass with equal values" in {
-    assertTesterPasses {
+    simulate(
       new EqualityTester(true.B.asAsyncReset, true.B.asAsyncReset)
-    }
+    )(RunUntilFinished(3))
   }
   it should "fail with differing values" in {
-    assertTesterFails {
-      new EqualityTester(true.B.asAsyncReset, false.B.asAsyncReset)
+    intercept[AssertionFailed] {
+      simulate(
+        new EqualityTester(true.B.asAsyncReset, false.B.asAsyncReset)
+      )(RunUntilFinished(3))
     }
   }
 
   behavior.of("ChiselEnum === ChiselEnum")
   it should "pass with equal values" in {
-    assertTesterPasses {
+    simulate(
       new EqualityTester(MyEnum.sA, MyEnum.sA)
-    }
+    )(RunUntilFinished(3))
   }
   it should "fail with differing values" in {
-    assertTesterFails {
-      new EqualityTester(MyEnum.sA, MyEnum.sB)
+    intercept[AssertionFailed] {
+      simulate(
+        new EqualityTester(MyEnum.sA, MyEnum.sB)
+      )(RunUntilFinished(3))
     }
   }
 
   behavior.of("Vec === Vec")
   it should "pass with equal sizes, equal values" in {
-    assertTesterPasses {
+    simulate(
       new EqualityTester(
         Vec(3, UInt(8.W)).Lit(0 -> 1.U, 1 -> 2.U, 2 -> 3.U),
         Vec(3, UInt(8.W)).Lit(0 -> 1.U, 1 -> 2.U, 2 -> 3.U)
       )
-    }
+    )(RunUntilFinished(3))
   }
   it should "support empty Vecs" in {
-    assertTesterPasses {
+    simulate(
       new EqualityTester(
         Wire(Vec(0, UInt(8.W))),
         Wire(Vec(0, UInt(8.W)))
       )
-    }
+    )(RunUntilFinished(3))
   }
   it should "fail with equal sizes, differing values" in {
-    assertTesterFails {
-      new EqualityTester(
-        Vec(3, UInt(8.W)).Lit(0 -> 1.U, 1 -> 2.U, 2 -> 3.U),
-        Vec(3, UInt(8.W)).Lit(0 -> 0.U, 1 -> 1.U, 2 -> 2.U)
-      )
+    intercept[AssertionFailed] {
+      simulate(
+        new EqualityTester(
+          Vec(3, UInt(8.W)).Lit(0 -> 1.U, 1 -> 2.U, 2 -> 3.U),
+          Vec(3, UInt(8.W)).Lit(0 -> 0.U, 1 -> 1.U, 2 -> 2.U)
+        )
+      )(RunUntilFinished(3))
     }
   }
   it should "throw a ChiselException with differing sizes" in {
-    (the[ChiselException] thrownBy extractCause[ChiselException] {
-      assertTesterFails {
+    intercept[ChiselException] {
+      ChiselStage.convert(
         new EqualityTester(
           Vec(3, UInt(8.W)).Lit(0 -> 1.U, 1 -> 2.U, 2 -> 3.U),
           Vec(4, UInt(8.W)).Lit(0 -> 1.U, 1 -> 2.U, 2 -> 3.U, 3 -> 4.U)
         )
-      }
-    }).getMessage should include("Vec sizes differ")
+      )
+    }.getMessage should include("Vec sizes differ")
   }
 
   behavior.of("Bundle === Bundle")
   it should "pass with equal type, equal values" in {
-    assertTesterPasses {
+    simulate(
       new EqualityTester(
         (new MyBundle).Lit(_.a -> 42.U, _.b -> false.B, _.c -> MyEnum.sB),
         (new MyBundle).Lit(_.a -> 42.U, _.b -> false.B, _.c -> MyEnum.sB)
       )
-    }
+    )(RunUntilFinished(3))
   }
   it should "support empty Bundles" in {
-    assertTesterPasses {
+    simulate(
       new EqualityTester(
         (new MaybeEmptyBundle(false)).Lit(),
         (new MaybeEmptyBundle(false)).Lit()
       )
-    }
+    )(RunUntilFinished(3))
   }
   it should "fail with equal type, differing values" in {
-    assertTesterFails {
-      new EqualityTester(
-        (new MyBundle).Lit(_.a -> 42.U, _.b -> false.B, _.c -> MyEnum.sB),
-        (new MyBundle).Lit(_.a -> 42.U, _.b -> false.B, _.c -> MyEnum.sA)
-      )
+    intercept[AssertionFailed] {
+      simulate(
+        new EqualityTester(
+          (new MyBundle).Lit(_.a -> 42.U, _.b -> false.B, _.c -> MyEnum.sB),
+          (new MyBundle).Lit(_.a -> 42.U, _.b -> false.B, _.c -> MyEnum.sA)
+        )
+      )(RunUntilFinished(3))
     }
   }
   it should "throw a ChiselException with differing runtime types" in {
-    (the[ChiselException] thrownBy extractCause[ChiselException] {
-      assertTesterFails {
+    intercept[ChiselException] {
+      ChiselStage.convert(
         new EqualityTester(
           (new RuntimeSensitiveBundle(new MyBundle)).Lit(
             _.a -> 1.U,
@@ -223,21 +234,21 @@ class DataEqualitySpec extends ChiselFlatSpec with Utils {
             )
           )
         )
-      }
-    }).getMessage should include("Runtime types differ")
+      )
+    }.getMessage should include("Runtime types differ")
   }
 
   behavior.of("DontCare === DontCare")
   it should "pass with two invalids" in {
-    assertTesterPasses {
+    simulate(
       new EqualityTester(Valid(UInt(8.W)).Lit(_.bits -> 123.U), Valid(UInt(8.W)).Lit(_.bits -> 123.U))
-    }
+    )(RunUntilFinished(3))
   }
   it should "exhibit the same behavior as comparing two invalidated wires" in {
     // Also check that two invalidated wires are equal
-    assertTesterPasses {
+    simulate(
       new EqualityTester(WireInit(UInt(8.W), DontCare), WireInit(UInt(8.W), DontCare))
-    }
+    )(RunUntilFinished(3))
 
     // Compare the verilog generated from both test cases and verify that they both are equal to true
     val verilog1 = ChiselStage.emitSystemVerilog(
@@ -252,8 +263,8 @@ class DataEqualitySpec extends ChiselFlatSpec with Utils {
 
   behavior.of("Analog === Analog")
   it should "throw a ChiselException" in {
-    (the[ChiselException] thrownBy extractCause[ChiselException] {
-      assertTesterFails { new AnalogExceptionTester }
-    }).getMessage should include("Equality isn't defined for Analog values")
+    intercept[ChiselException] { ChiselStage.convert(new AnalogExceptionTester) }.getMessage should include(
+      "Equality isn't defined for Analog values"
+    )
   }
 }
