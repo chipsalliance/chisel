@@ -7,7 +7,11 @@ import circt.stage.ChiselStage
 import chisel3.util.{Cat, Counter}
 import chisel3.util.random._
 import chisel3.testers.{BasicTester, TesterDriver}
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
 import chiselTests.{ChiselFlatSpec, Utils}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 class FooLFSR(val reduction: LFSRReduce, seed: Option[BigInt]) extends PRNG(4, seed) with LFSR {
   def delta(s: Seq[Bool]): Seq[Bool] = s
@@ -102,7 +106,7 @@ class LFSRResetTester(gen: => LFSR, lockUpValue: BigInt) extends BasicTester {
 
 }
 
-class LFSRSpec extends ChiselFlatSpec with Utils {
+class LFSRSpec extends AnyFlatSpec with Matchers with ChiselSim {
 
   def periodCheck(gen: (Int, Set[Int], LFSRReduce) => PRNG, reduction: LFSRReduce, range: Range): Unit = {
     val testName = s"have a maximal period over a range of widths (${range.head} to ${range.last})" +
@@ -112,9 +116,7 @@ class LFSRSpec extends ChiselFlatSpec with Utils {
       range.foreach { width =>
         LFSR.tapsMaxPeriod(width).foreach { taps =>
           info(s"""width $width okay using taps: ${taps.mkString(", ")}""")
-          assertTesterPasses(
-            new LFSRMaxPeriod(PRNG(gen(width, taps, reduction)))
-          )
+          simulate(new LFSRMaxPeriod(PRNG(gen(width, taps, reduction))))(RunUntilFinished(math.pow(2, width).toInt + 1))
         }
       }
     }
@@ -124,7 +126,7 @@ class LFSRSpec extends ChiselFlatSpec with Utils {
 
   it should "throw an exception if initialized to a seed of zero for XOR configuration" in {
     {
-      the[IllegalArgumentException] thrownBy extractCause[IllegalArgumentException] {
+      intercept[IllegalArgumentException] {
         ChiselStage.emitCHIRRTL(new FooLFSR(XOR, Some(0)))
       }
     }.getMessage should include("Seed cannot be zero")
@@ -132,25 +134,25 @@ class LFSRSpec extends ChiselFlatSpec with Utils {
 
   it should "throw an exception if initialized to a seed of all ones for XNOR configuration" in {
     {
-      the[IllegalArgumentException] thrownBy extractCause[IllegalArgumentException] {
+      intercept[IllegalArgumentException] {
         ChiselStage.emitCHIRRTL(new FooLFSR(XNOR, Some(15)))
       }
     }.getMessage should include("Seed cannot be all ones")
   }
 
   it should "reset correctly without a seed for XOR configuration" in {
-    assertTesterPasses(new LFSRResetTester(new FooLFSR(XOR, None), 0))
+    simulate(new LFSRResetTester(new FooLFSR(XOR, None), 0))(RunUntilFinished(math.pow(2, 4).toInt + 1))
   }
 
   it should "reset correctly without a seed for XNOR configuration" in {
-    assertTesterPasses(new LFSRResetTester(new FooLFSR(XNOR, None), 15))
+    simulate(new LFSRResetTester(new FooLFSR(XNOR, None), 15))(RunUntilFinished(math.pow(2, 4).toInt + 1))
   }
 
   behavior.of("MaximalPeriodGaloisLFSR")
 
   it should "throw an exception if no LFSR taps are known" in {
     {
-      the[IllegalArgumentException] thrownBy extractCause[IllegalArgumentException] {
+      intercept[IllegalArgumentException] {
         ChiselStage.emitCHIRRTL(new MaxPeriodGaloisLFSR(787))
       }
     }.getMessage should include("No max period LFSR taps stored for requested width")
@@ -162,7 +164,8 @@ class LFSRSpec extends ChiselFlatSpec with Utils {
   ignore should "have a sane distribution for larger widths" in {
     ((17 to 32) ++ Seq(64, 128, 256, 512, 1024, 2048, 4096)).foreach { width =>
       info(s"width $width okay!")
-      assertTesterPasses(new LFSRDistribution(LFSR(width), math.pow(2, 22).toInt))
+      val cycles = math.pow(2, 22).toInt
+      simulate(new LFSRDistribution(LFSR(width), cycles))(RunUntilFinished(cycles.toInt + 1))
     }
   }
 
