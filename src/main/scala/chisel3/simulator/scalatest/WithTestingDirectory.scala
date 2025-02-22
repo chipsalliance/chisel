@@ -56,7 +56,8 @@ trait WithTestingDirectory { self: TestSuite =>
       *
       * [1]: https://savannah.gnu.org/bugs/?712
       */
-    final def getTestName = testName.value.map(_.replaceAll("\\s", "-"))
+    val re = "\\s|\\(|\\)|\\$".r
+    final def getTestName = testName.value.map(re.replaceAllIn(_, "-"))
 
     override def getDirectory: Path = FileSystems
       .getDefault()
