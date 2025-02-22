@@ -139,11 +139,11 @@ object ChiselSettings {
     stopCond = Some(MacroText.NotSignal(get = _.reset))
   )
 
-  /** Retun a default [[ChiselSettings]] for a [[Module]].
+  /** Retun a default [[ChiselSettings]] for a [[RawModule]].
     *
-    *  This differs from [[default]] in that it cannot set default values for
-    *  macros because a [[RawModule]] has no defined reset port.  You will
-    *  likely want to override the macros after using this factory.
+    * This differs from [[default]] in that it cannot set default values for
+    * macros because a [[RawModule]] has no defined reset port.  You will likely
+    * want to override the macros after using this factory.
     *
     * Note: this _requires_ that an explicit type parameter is provided.  You
     * must invoke this method like:
