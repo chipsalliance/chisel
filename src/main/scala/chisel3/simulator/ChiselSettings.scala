@@ -70,9 +70,14 @@ object MacroText {
   * compilation itself or the Verilog compilation and simulation.
   *
   * @param layerControl determines which [[chisel3.layer.Layer]]s should be
+  * @param assertVerboseCond a condition that guards the printing of assert
+  * messages created from `circt_chisel_ifelsefatal` intrinsics
+  * @param printfCond a condition that guards printing of [[chisel3.printf]]s
+  * @param stopCond a condition that guards terminating the simulation (via
+  * `$fatal`) for asserts created from `circt_chisel_ifelsefatal` intrinsics
   * enabled _during Verilog elaboration_.
   */
-final class ChiselSettings[A <: RawModule](
+final class ChiselSettings[A <: RawModule] private[simulator] (
   /** Layers to turn on/off during Verilog elaboration */
   val verilogLayers:     LayerControl.Type,
   val assertVerboseCond: Option[MacroText.Type[A]],
@@ -158,6 +163,31 @@ object ChiselSettings {
     assertVerboseCond = None,
     printfCond = None,
     stopCond = None
+  )
+
+  /** Simple factory for construcing a [[ChiselSettings]] from arguments.
+    *
+    * This method primarily exists as a way to make future refactors that add
+    * options to [[ChiselSettings]] easier.
+    *
+    * @param layerControl determines which [[chisel3.layer.Layer]]s should be
+    * @param assertVerboseCond a condition that guards the printing of assert
+    * messages created from `circt_chisel_ifelsefatal` intrinsics
+    * @param printfCond a condition that guards printing of [[chisel3.printf]]s
+    * @param stopCond a condition that guards terminating the simulation (via
+    * `$fatal`) for asserts created from `circt_chisel_ifelsefatal` intrinsics
+    * @return a [[ChiselSettings]] with the provided parameters set
+    */
+  def apply[A <: RawModule](
+    verilogLayers:     LayerControl.Type,
+    assertVerboseCond: Option[MacroText.Type[A]],
+    printfCond:        Option[MacroText.Type[A]],
+    stopCond:          Option[MacroText.Type[A]]
+  ): ChiselSettings[A] = new ChiselSettings(
+    verilogLayers = verilogLayers,
+    assertVerboseCond = assertVerboseCond,
+    printfCond = printfCond,
+    stopCond = stopCond
   )
 
 }
