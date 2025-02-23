@@ -71,12 +71,15 @@ final class Simulation private[svsim] (
       if (process.isAlive()) {
         controller.sendCommand(Simulation.Command.Done)
         controller.completeInFlightCommands()
-        process.waitFor()
       }
     }
 
-    // Ensure process is destroyed prior to returning or throwing an exception
+    // Ensure process is destroyed prior to returning or throwing an exception.
+    // Because the process may _not_ terminate immediately, use `waitFor` to
+    // ensure that it is dead.  If this is _not_ done, then `exitValue` may
+    // throw an exception.
     process.destroyForcibly()
+    process.waitFor()
 
     // Exceptions thrown from `body` have the highest priority
     val result = bodyOutcome.get
