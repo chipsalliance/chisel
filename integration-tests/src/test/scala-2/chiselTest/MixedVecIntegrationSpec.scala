@@ -6,8 +6,11 @@ import scala.language.reflectiveCalls
 
 import circt.stage.ChiselStage
 import chisel3._
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
 import chisel3.testers.BasicTester
 import chisel3.util._
+import org.scalatest.propspec.AnyPropSpec
 
 class MixedVecAssignTester(w: Int, values: List[Int]) extends BasicTester {
   val v = MixedVecInit(values.map(v => v.U(w.W)))
@@ -154,9 +157,9 @@ class MixedVecOneBitTester extends BasicTester {
   }
 }
 
-class MixedVecIntegrationSpec extends ChiselPropSpec with Utils {
+class MixedVecIntegrationSpec extends AnyPropSpec with PropertyUtils with ChiselSim {
   property("MixedVec varargs API should work") {
-    assertTesterPasses {
+    simulate {
       new BasicTester {
         val wire = Wire(MixedVec(UInt(1.W), UInt(8.W)))
         wire(0) := 1.U
@@ -171,60 +174,58 @@ class MixedVecIntegrationSpec extends ChiselPropSpec with Utils {
 
         stop()
       }
-    }
+    }(RunUntilFinished(3))
   }
 
   property("MixedVecs should be assignable") {
     forAll(safeUIntN(8)) { case (w: Int, v: List[Int]) =>
-      assertTesterPasses {
-        new MixedVecAssignTester(w, v)
-      }
+      simulate { new MixedVecAssignTester(w, v) }(RunUntilFinished(3))
     }
   }
 
   property("MixedVecs should be usable as the type for Reg()") {
     forAll(safeUIntN(8)) { case (w: Int, v: List[Int]) =>
-      assertTesterPasses {
+      simulate {
         new MixedVecRegTester(w, v)
-      }
+      }(RunUntilFinished(3))
     }
   }
 
   property("MixedVecs should be passed through IO") {
     forAll(safeUIntN(8)) { case (w: Int, v: List[Int]) =>
-      assertTesterPasses {
+      simulate {
         new MixedVecIOTester(v.map(i => i.U(w.W)))
-      }
+      }(RunUntilFinished(3))
     }
   }
 
   property("MixedVecs should work with mixed types") {
-    assertTesterPasses {
+    simulate {
       new MixedVecIOTester(Seq(true.B, 168.U(8.W), 888.U(10.W), -3.S))
-    }
+    }(RunUntilFinished(3))
   }
 
   property("MixedVecs with zero entries should compile and have zero width") {
-    assertTesterPasses { new MixedVecZeroEntryTester }
+    simulate { new MixedVecZeroEntryTester }(RunUntilFinished(3))
   }
 
   property("MixedVecs of UInts should be dynamically indexable (via VecInit)") {
-    assertTesterPasses { new MixedVecUIntDynamicIndexTester }
+    simulate { new MixedVecUIntDynamicIndexTester }(RunUntilFinished(5))
   }
 
   property("MixedVecs should be creatable from Vecs") {
-    assertTesterPasses { new MixedVecFromVecTester }
+    simulate { new MixedVecFromVecTester }(RunUntilFinished(3))
   }
 
   property("It should be possible to bulk connect a MixedVec and a Vec") {
-    assertTesterPasses { new MixedVecConnectWithVecTester }
+    simulate { new MixedVecConnectWithVecTester }(RunUntilFinished(3))
   }
 
   property("It should be possible to bulk connect a MixedVec and a Seq") {
-    assertTesterPasses { new MixedVecConnectWithSeqTester }
+    simulate { new MixedVecConnectWithSeqTester }(RunUntilFinished(3))
   }
 
   property("MixedVecs of a single 1 bit element should compile and work") {
-    assertTesterPasses { new MixedVecOneBitTester }
+    simulate { new MixedVecOneBitTester }(RunUntilFinished(3))
   }
 }
