@@ -5,8 +5,12 @@ package chiselTests
 import circt.stage.ChiselStage
 import chisel3._
 import chisel3.reflect.DataMirror
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
 import chisel3.testers.BasicTester
 import chisel3.experimental.Analog
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 
 class AsTypeOfBundleTester extends BasicTester {
   class MultiTypeBundle extends Bundle {
@@ -151,37 +155,37 @@ object AsTypeOfSpec {
   }
 }
 
-class AsTypeOfSpec extends ChiselFunSpec {
+class AsTypeOfSpec extends AnyFunSpec with Matchers with ChiselSim {
   import AsTypeOfSpec._
 
   describe("asTypeOf") {
 
     it("should work with Bundles containing Bits Types") {
-      assertTesterPasses { new AsTypeOfBundleTester }
+      simulate { new AsTypeOfBundleTester }(RunUntilFinished(3))
     }
 
     it("should work with Bundles that have fields of zero width") {
-      assertTesterPasses { new AsTypeOfBundleZeroWidthTester }
+      simulate { new AsTypeOfBundleZeroWidthTester }(RunUntilFinished(3))
     }
 
     it("should work with Vecs containing Bits Types") {
-      assertTesterPasses { new AsTypeOfVecTester }
+      simulate { new AsTypeOfVecTester }(RunUntilFinished(3))
     }
 
     it("should expand and truncate UInts of different width") {
-      assertTesterPasses { new AsTypeOfTruncationTester }
+      simulate { new AsTypeOfTruncationTester }(RunUntilFinished(3))
     }
 
     it("should work for casting implicit Reset to Bool") {
-      assertTesterPasses { new ResetAsTypeOfBoolTester }
+      simulate { new ResetAsTypeOfBoolTester }(RunUntilFinished(3))
     }
 
     it("should work for casting to and from ChiselEnums") {
-      assertTesterPasses(new AsChiselEnumTester)
+      simulate(new AsChiselEnumTester)(RunUntilFinished(3))
     }
 
     it("should work for casting to and from Clock") {
-      assertTesterPasses(new AsTypeOfClockTester)
+      simulate(new AsTypeOfClockTester)(RunUntilFinished(3))
     }
   }
 
