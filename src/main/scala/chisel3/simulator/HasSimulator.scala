@@ -39,19 +39,25 @@ object HasSimulator {
   object simulators {
 
     /** A [[HasSimulator]] implementation for a Verilator simulator. */
-    def verilator: HasSimulator = new HasSimulator {
+    def verilator(
+      compilationSettings: svsim.CommonCompilationSettings = svsim.CommonCompilationSettings(),
+      verilatorSettings:   svsim.verilator.Backend.CompilationSettings = svsim.verilator.Backend.CompilationSettings()
+    ): HasSimulator = new HasSimulator {
       override def getSimulator(implicit testingDirectory: HasTestingDirectory): Simulator[svsim.verilator.Backend] =
         new Simulator[svsim.verilator.Backend] {
           override val backend = svsim.verilator.Backend.initializeFromProcessEnvironment()
           override val tag = "verilator"
-          override val commonCompilationSettings = svsim.CommonCompilationSettings()
-          override val backendSpecificCompilationSettings = svsim.verilator.Backend.CompilationSettings()
+          override val commonCompilationSettings = compilationSettings
+          override val backendSpecificCompilationSettings = verilatorSettings
           override val workspacePath = Files.createDirectories(testingDirectory.getDirectory).toString
         }
     }
 
     /** A [[HasSimulator]] implementation for a VCS simulator. */
-    def vcs: HasSimulator = new HasSimulator {
+    def vcs(
+      compilationSettings: svsim.CommonCompilationSettings = svsim.CommonCompilationSettings(),
+      vcsSettings:         svsim.vcs.Backend.CompilationSettings = svsim.vcs.Backend.CompilationSettings()
+    ): HasSimulator = new HasSimulator {
       override def getSimulator(implicit testingDirectory: HasTestingDirectory): Simulator[svsim.vcs.Backend] =
         new Simulator[svsim.vcs.Backend] {
           override val backend = svsim.vcs.Backend.initializeFromProcessEnvironment().getOrElse {
@@ -60,8 +66,8 @@ object HasSimulator {
             )
           }
           override val tag = "vcs"
-          override val commonCompilationSettings = svsim.CommonCompilationSettings()
-          override val backendSpecificCompilationSettings = svsim.vcs.Backend.CompilationSettings()
+          override val commonCompilationSettings = compilationSettings
+          override val backendSpecificCompilationSettings = vcsSettings
           override val workspacePath = Files.createDirectories(testingDirectory.getDirectory).toString
         }
     }
@@ -72,6 +78,6 @@ object HasSimulator {
     * This is the default that will be used if the user does provide an
     * alternative.
     */
-  implicit def default: HasSimulator = simulators.verilator
+  implicit def default: HasSimulator = simulators.verilator()
 
 }
