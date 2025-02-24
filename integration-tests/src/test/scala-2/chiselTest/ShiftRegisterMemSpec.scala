@@ -3,9 +3,12 @@
 package chiselTests
 
 import chisel3._
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
 import chisel3.testers.BasicTester
 import chisel3.util.{Counter, ShiftRegister}
 import org.scalacheck.{Gen, Shrink}
+import org.scalatest.propspec.AnyPropSpec
 
 class ShiftMemTester(n: Int, dp_mem: Boolean) extends BasicTester {
   val (cntVal, done) = Counter(true.B, n)
@@ -17,17 +20,19 @@ class ShiftMemTester(n: Int, dp_mem: Boolean) extends BasicTester {
   }
 }
 
-class ShiftRegisterMemSpec extends ChiselPropSpec {
+class ShiftRegisterMemSpec extends AnyPropSpec with PropertyUtils with ChiselSim {
 
   implicit val nonNegIntShrinker: Shrink[Int] = Shrink.shrinkIntegral[Int].suchThat(_ >= 0)
 
   property("ShiftRegister with dual-port SRAM should shift") {
-    forAll(Gen.choose(0, 4)) { (shift: Int) => assertTesterPasses { new ShiftMemTester(shift, true) } }
+    forAll(Gen.choose(0, 4)) { (shift: Int) =>
+      simulate { new ShiftMemTester(shift, true) }(RunUntilFinished(shift + 2))
+    }
   }
 
   property("ShiftRegister with single-port SRAM should shift") {
     forAll(Gen.choose(0, 6).suchThat(_ % 2 == 0)) { (shift: Int) =>
-      assertTesterPasses { new ShiftMemTester(shift, false) }
+      simulate { new ShiftMemTester(shift, false) }(RunUntilFinished(shift + 2))
     }
   }
 }
