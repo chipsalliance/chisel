@@ -5,8 +5,12 @@ package chiselTests
 import chisel3._
 import circt.stage.ChiselStage
 import chisel3.util._
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
 import chisel3.testers.{BasicTester, TesterDriver}
 import chisel3.experimental.{attach, Analog, BaseModule}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 // IO for Modules that just connect bus to out
 class AnalogReaderIO extends Bundle {
@@ -24,10 +28,12 @@ trait AnalogReader {
   def bus: Analog
 }
 
-class AnalogReaderBlackBox extends BlackBox with AnalogReader {
+class AnalogReaderBlackBox extends BlackBox with AnalogReader with HasBlackBoxResource {
   val io = IO(new AnalogReaderIO)
   def out = io.out
   def bus = io.bus
+
+  addResource("/chisel3/AnalogBlackBox.v")
 }
 
 class AnalogReaderWrapper extends Module with AnalogReader {
@@ -88,7 +94,7 @@ abstract class AnalogTester extends BasicTester {
     assert(reader.out === BusValue)
 }
 
-class AnalogSpec extends ChiselFlatSpec with Utils {
+class AnalogSpec extends AnyFlatSpec with Matchers with Utils with ChiselSim {
   behavior.of("Analog")
 
   it should "NOT be bindable to registers" in {
@@ -173,14 +179,13 @@ class AnalogSpec extends ChiselFlatSpec with Utils {
   }
 
   it should "work with 2 blackboxes bulk connected" in {
-    assertTesterPasses(
+    simulate(
       new AnalogTester {
         val mod = Module(new AnalogReaderBlackBox)
         mod.io.bus <> writer.io.bus
         check(mod)
-      },
-      Seq("/chisel3/AnalogBlackBox.v")
-    )
+      }
+    )(RunUntilFinished(3))
   }
 
   it should "error if any bulk connected more than once" in {
@@ -239,18 +244,17 @@ class AnalogSpec extends ChiselFlatSpec with Utils {
   }
 
   it should "work with 3 blackboxes attached" in {
-    assertTesterPasses(
+    simulate(
       new AnalogTester {
         val mods = Seq.fill(2)(Module(new AnalogReaderBlackBox))
         attach(writer.io.bus, mods(0).io.bus, mods(1).io.bus)
         mods.foreach(check(_))
-      },
-      Seq("/chisel3/AnalogBlackBox.v")
-    )
+      }
+    )(RunUntilFinished(3))
   }
 
   it should "work with 3 blackboxes separately attached via a wire" in {
-    assertTesterPasses(
+    simulate(
       new AnalogTester {
         val mods = Seq.fill(2)(Module(new AnalogReaderBlackBox))
         val busWire = Wire(Analog(32.W))
@@ -258,15 +262,14 @@ class AnalogSpec extends ChiselFlatSpec with Utils {
         attach(busWire, mods(0).io.bus)
         attach(mods(1).io.bus, busWire)
         mods.foreach(check(_))
-      },
-      Seq("/chisel3/AnalogBlackBox.v")
-    )
+      }
+    )(RunUntilFinished(3))
   }
 
   // This does not currently work in Verilator unless Firrtl does constant prop and dead code
   // elimination on these wires
   ignore should "work with intermediate wires attached to each other" in {
-    assertTesterPasses(
+    simulate(
       new AnalogTester {
         val mod = Module(new AnalogReaderBlackBox)
         val busWire = Seq.fill(2)(Wire(Analog(32.W)))
@@ -274,71 +277,65 @@ class AnalogSpec extends ChiselFlatSpec with Utils {
         attach(busWire(1), mod.io.bus)
         attach(busWire(0), busWire(1))
         check(mod)
-      },
-      Seq("/chisel3/AnalogBlackBox.v")
-    )
+      }
+    )(RunUntilFinished(3))
   }
 
   it should "work with blackboxes at different levels of the module hierarchy" in {
-    assertTesterPasses(
+    simulate(
       new AnalogTester {
         val mods = Seq(Module(new AnalogReaderBlackBox), Module(new AnalogReaderWrapper))
         val busWire = Wire(writer.io.bus.cloneType)
         attach(writer.io.bus, mods(0).bus, mods(1).bus)
         mods.foreach(check(_))
-      },
-      Seq("/chisel3/AnalogBlackBox.v")
-    )
+      }
+    )(RunUntilFinished(3))
   }
 
   // This does not currently work in Verilator, but does work in VCS
   ignore should "support two analog ports in the same module" in {
-    assertTesterPasses(
+    simulate(
       new AnalogTester {
         val reader = Module(new AnalogReaderBlackBox)
         val connector = Module(new AnalogConnector)
         connector.io.bus1 <> writer.io.bus
         reader.io.bus <> connector.io.bus2
         check(reader)
-      },
-      Seq("/chisel3/AnalogBlackBox.v")
-    )
+      }
+    )(RunUntilFinished(3))
   }
 
   it should "NOT support conditional connection of analog types" in {
     a[ChiselException] should be thrownBy {
-      assertTesterPasses(
+      simulate(
         new AnalogTester {
           val mod = Module(new AnalogReaderBlackBox)
           when(cycle > 3.U) {
             mod.io.bus <> writer.io.bus
           }
           check(mod)
-        },
-        Seq("/chisel3/AnalogBlackBox.v")
-      )
+        }
+      )(RunUntilFinished(3))
     }
   }
 
   it should "work with Vecs of Analog" in {
-    assertTesterPasses(
+    simulate(
       new AnalogTester {
         val mod = Module(new VecAnalogReaderWrapper)
         mod.bus <> writer.io.bus
         check(mod)
-      },
-      Seq("/chisel3/AnalogBlackBox.v")
-    )
+      }
+    )(RunUntilFinished(3))
   }
 
   it should "work with Vecs of Bundles of Analog" in {
-    assertTesterPasses(
+    simulate(
       new AnalogTester {
         val mod = Module(new VecBundleAnalogReaderWrapper)
         mod.bus <> writer.io.bus
         check(mod)
-      },
-      Seq("/chisel3/AnalogBlackBox.v")
-    )
+      }
+    )(RunUntilFinished(3))
   }
 }
