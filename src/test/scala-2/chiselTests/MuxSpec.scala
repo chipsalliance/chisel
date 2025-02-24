@@ -3,11 +3,15 @@
 package chiselTests
 
 import chisel3._
-import chisel3.testers.BasicTester
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
 import chisel3.util.{log2Ceil, MuxLookup}
 import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.propspec.AnyPropSpec
 
-class MuxTester extends BasicTester {
+class MuxTester extends Module {
   assert(Mux(0.B, 1.U, 2.U) === 2.U)
   assert(Mux(1.B, 1.U, 2.U) === 1.U)
   val dontCareMux1 = Wire(UInt())
@@ -29,9 +33,9 @@ class MuxBetween[A <: Data, B <: Data](genA: A, genB: B) extends RawModule {
   val result = Mux(sel, in0, in1)
 }
 
-class MuxSpec extends ChiselFlatSpec {
+class MuxSpec extends AnyFlatSpec with Matchers with ChiselSim {
   "Mux" should "pass basic checks" in {
-    assertTesterPasses { new MuxTester }
+    simulate(new MuxTester)(RunUntilFinished(3))
   }
 
   it should "give reasonable error messages for mismatched user-defined types" in {
@@ -49,7 +53,7 @@ class MuxSpec extends ChiselFlatSpec {
 
 }
 
-class MuxLookupEnumTester extends BasicTester {
+class MuxLookupEnumTester extends Module {
   object TestEnum extends ChiselEnum {
     val a = Value
     val b = Value(7.U)
@@ -70,9 +74,9 @@ class MuxLookupEnumTester extends BasicTester {
   stop()
 }
 
-class MuxLookupEnumSpec extends ChiselFlatSpec {
+class MuxLookupEnumSpec extends AnyFlatSpec with Matchers with ChiselSim {
   "MuxLookup with enum selector" should "pass basic checks" in {
-    assertTesterPasses { new MuxLookupEnumTester }
+    simulate(new MuxLookupEnumTester)(RunUntilFinished(3))
   }
 }
 
@@ -83,7 +87,7 @@ class MuxLookupWrapper(keyWidth: Int, default: Int, mapping: () => Seq[(UInt, UI
   output := MuxLookup(key, default.U)(mapping())
 }
 
-class MuxLookupExhaustiveSpec extends ChiselPropSpec {
+class MuxLookupExhaustiveSpec extends AnyPropSpec with Matchers {
   val keyWidth = 2
   val default = 9 // must be less than 10 to avoid hex/decimal mismatches
   val firrtlLit = s"""UInt<4>(0h$default)"""
