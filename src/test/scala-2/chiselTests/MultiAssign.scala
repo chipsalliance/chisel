@@ -2,12 +2,15 @@
 
 package chiselTests
 
-import circt.stage.ChiselStage
 import chisel3._
-import chisel3.testers.BasicTester
-import chisel3.util._
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
+import chisel3.util.Counter
+import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class LastAssignTester() extends BasicTester {
+class LastAssignTester() extends Module {
   val countOnClockCycles = true.B
   val (cnt, wrap) = Counter(countOnClockCycles, 2)
 
@@ -25,20 +28,18 @@ class LastAssignTester() extends BasicTester {
   }
 }
 
-class MultiAssignSpec extends ChiselFlatSpec {
+class MultiAssignSpec extends AnyFlatSpec with Matchers with ChiselSim {
   "The last assignment" should "be used when multiple assignments happen" in {
-    assertTesterPasses { new LastAssignTester }
+    simulate { new LastAssignTester }(RunUntilFinished(3))
   }
 }
 
-class IllegalAssignSpec extends ChiselFlatSpec with Utils {
+class IllegalAssignSpec extends AnyFlatSpec with Matchers with Utils {
   "Reassignments to literals" should "be disallowed" in {
     intercept[ChiselException] {
-      extractCause[ChiselException] {
-        ChiselStage.emitCHIRRTL {
-          new BasicTester {
-            15.U := 7.U
-          }
+      ChiselStage.emitCHIRRTL {
+        new Module {
+          15.U := 7.U
         }
       }
     }
@@ -46,11 +47,9 @@ class IllegalAssignSpec extends ChiselFlatSpec with Utils {
 
   "Reassignments to ops" should "be disallowed" in {
     intercept[ChiselException] {
-      extractCause[ChiselException] {
-        ChiselStage.emitCHIRRTL {
-          new BasicTester {
-            (15.U + 1.U) := 7.U
-          }
+      ChiselStage.emitCHIRRTL {
+        new Module {
+          (15.U + 1.U) := 7.U
         }
       }
     }
@@ -58,11 +57,9 @@ class IllegalAssignSpec extends ChiselFlatSpec with Utils {
 
   "Reassignments to bit slices" should "be disallowed" in {
     intercept[ChiselException] {
-      extractCause[ChiselException] {
-        ChiselStage.emitCHIRRTL {
-          new BasicTester {
-            (15.U)(1, 0) := 7.U
-          }
+      ChiselStage.emitCHIRRTL {
+        new Module {
+          (15.U)(1, 0) := 7.U
         }
       }
     }
@@ -70,11 +67,9 @@ class IllegalAssignSpec extends ChiselFlatSpec with Utils {
 
   "Bulk-connecting two read-only nodes" should "be disallowed" in {
     intercept[ChiselException] {
-      extractCause[ChiselException] {
-        ChiselStage.emitCHIRRTL {
-          new BasicTester {
-            (15.U + 1.U) <> 7.U
-          }
+      ChiselStage.emitCHIRRTL {
+        new Module {
+          (15.U + 1.U) <> 7.U
         }
       }
     }
