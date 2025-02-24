@@ -4,26 +4,34 @@ package chiselTests
 
 import chisel3._
 import chisel3.experimental.ExtModule
-import circt.stage.ChiselStage
-import chisel3.testers.{BasicTester, TesterDriver}
 import chisel3.reflect.DataMirror
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
+import chisel3.util.HasExtModuleResource
+import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 // Avoid collisions with regular BlackBox tests by putting ExtModule blackboxes
 // in their own scope.
 package extmoduletests {
 
-  class BlackBoxInverter extends ExtModule {
+  class BlackBoxInverter extends ExtModule with HasExtModuleResource {
     val in = IO(Input(Bool()))
     val out = IO(Output(Bool()))
+
+    addResource("/chisel3/BlackBoxTest.v")
   }
 
-  class BlackBoxPassthrough extends ExtModule {
+  class BlackBoxPassthrough extends ExtModule with HasExtModuleResource {
     val in = IO(Input(Bool()))
     val out = IO(Output(Bool()))
+
+    addResource("/chisel3/BlackBoxTest.v")
   }
 }
 
-class ExtModuleTester extends BasicTester {
+class ExtModuleTester extends Module {
   val blackBoxPos = Module(new extmoduletests.BlackBoxInverter)
   val blackBoxNeg = Module(new extmoduletests.BlackBoxInverter)
 
@@ -40,7 +48,7 @@ class ExtModuleTester extends BasicTester {
   * deduplication.
   */
 
-class MultiExtModuleTester extends BasicTester {
+class MultiExtModuleTester extends Module {
   val blackBoxInvPos = Module(new extmoduletests.BlackBoxInverter)
   val blackBoxInvNeg = Module(new extmoduletests.BlackBoxInverter)
   val blackBoxPassPos = Module(new extmoduletests.BlackBoxPassthrough)
@@ -98,12 +106,12 @@ class ExtModuleInvalidatedTester extends Module {
   out := inst.out
 }
 
-class ExtModuleSpec extends ChiselFlatSpec {
+class ExtModuleSpec extends AnyFlatSpec with Matchers with ChiselSim {
   "A ExtModule inverter" should "work" in {
-    assertTesterPasses({ new ExtModuleTester }, Seq("/chisel3/BlackBoxTest.v"))
+    simulate(new ExtModuleTester)(RunUntilFinished(3))
   }
   "Multiple ExtModules" should "work" in {
-    assertTesterPasses({ new MultiExtModuleTester }, Seq("/chisel3/BlackBoxTest.v"))
+    simulate(new MultiExtModuleTester)(RunUntilFinished(3))
   }
   "DataMirror.modulePorts" should "work with ExtModule" in {
     ChiselStage.emitCHIRRTL(new Module {
