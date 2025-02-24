@@ -45,7 +45,7 @@ module BlackBoxConstant #(
 ) (
   output [WIDTH-1:0] out
 );
-  assign out = VALUE;
+  assign out = VALUE[WIDTH-1:0];
 endmodule
 
 module BlackBoxStringParam #(
@@ -70,5 +70,5 @@ module BlackBoxTypeParam #(
 ) (
   output T out
 );
-  assign out = 32'hdeadbeef;
+  assign out = {32'hdeadbeef}[$bits(out)-1:0];
 endmodule

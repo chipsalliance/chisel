@@ -234,12 +234,10 @@ class BlackBoxSpec extends AnyFlatSpec with Matchers with ChiselSim {
   "A BlackBoxed register" should "work" in {
     simulate(new BlackBoxWithClockTester)(RunUntilFinished(16))
   }
-  // TODO: SFC->MFC, this test is ignored because the parameters have undesired quotes around values in verilog in MFC
-  "BlackBoxes with simpler parameters" should "work" ignore {
+  "BlackBoxes with simpler parameters" should "work" in {
     simulate(new SimplerBlackBoxWithParamsTester)(RunUntilFinished(5))
   }
-  // TODO: SFC->MFC, this test is ignored because the parameters have undesired quotes around values in verilog in MFC
-  "BlackBoxes with parameters" should "work" ignore {
+  "BlackBoxes with parameters" should "work" in {
     simulate(new BlackBoxWithParamsTester)(RunUntilFinished(5))
   }
   "DataMirror.modulePorts" should "work with BlackBox" in {
