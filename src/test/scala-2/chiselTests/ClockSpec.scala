@@ -3,10 +3,13 @@
 package chiselTests
 
 import chisel3._
-import chisel3.testers.BasicTester
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
 import circt.stage.ChiselStage
+import org.scalatest.propspec.AnyPropSpec
+import org.scalatest.matchers.should.Matchers
 
-class ClockAsUIntTester extends BasicTester {
+class ClockAsUIntTester extends Module {
   assert(true.B.asClock.asUInt === 1.U)
   assert(true.B.asClock.asBool === true.B)
   stop()
@@ -24,9 +27,9 @@ class WithClockAndNoReset extends RawModule {
   out := a
 }
 
-class ClockSpec extends ChiselPropSpec {
+class ClockSpec extends AnyPropSpec with Matchers with ChiselSim {
   property("Bool.asClock.asUInt should pass a signal through unaltered") {
-    assertTesterPasses { new ClockAsUIntTester }
+    simulate { new ClockAsUIntTester }(RunUntilFinished(3))
   }
 
   property("Should be able to use withClock in a module with no reset") {
