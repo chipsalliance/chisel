@@ -5,12 +5,15 @@ package chiselTests
 import chisel3._
 import chisel3.util.Cat
 import circt.stage.ChiselStage
-import chisel3.testers.BasicTester
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
 import chisel3.experimental.BundleLiterals._
 import chisel3.experimental.VecLiterals.AddVecLiteralConstructor
 import chisel3.experimental.BundleLiteralException
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class BundleLiteralSpec extends ChiselFlatSpec with Utils {
+class BundleLiteralSpec extends AnyFlatSpec with Matchers with ChiselSim with Utils {
   object MyEnum extends ChiselEnum {
     val sA, sB = Value
   }
@@ -39,8 +42,8 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
   }
 
   "bundle literals" should "pack" in {
-    assertTesterPasses {
-      new BasicTester {
+    simulate {
+      new Module {
         val bundleLit = (new MyBundle).Lit(_.a -> 42.U, _.b -> false.B, _.c -> MyEnum.sB)
         bundleLit.litOption should equal(Some(169)) // packed as 42 (8-bit), false=0 (1-bit), sB=1 (1-bit)
         chisel3.assert(bundleLit.asUInt === bundleLit.litOption.get.U) // sanity-check consistency with runtime
@@ -58,13 +61,13 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
 
         stop()
       }
-    }
+    }(RunUntilFinished(3))
   }
 
   "bundle literals" should "work in RTL" in {
     val outsideBundleLit = (new MyBundle).Lit(_.a -> 42.U, _.b -> true.B, _.c -> MyEnum.sB)
-    assertTesterPasses {
-      new BasicTester {
+    simulate {
+      new Module {
         // TODO: add direct bundle compare operations, when that feature is added
         chisel3.assert(outsideBundleLit.a === 42.U)
         chisel3.assert(outsideBundleLit.b === true.B)
@@ -89,11 +92,11 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
 
         stop()
       }
-    }
+    }(RunUntilFinished(3))
   }
 
   "bundle literals of vec literals" should "work" in {
-    assertTesterPasses(new BasicTester {
+    simulate(new Module {
       val bundleWithVecs = new Bundle {
         val a = Vec(2, UInt(4.W))
         val b = Vec(2, SInt(4.W))
@@ -106,12 +109,12 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
       chisel3.assert(bundleWithVecs.b(0) === 1.S)
       chisel3.assert(bundleWithVecs.b(1) === (-1).S)
       stop()
-    })
+    })(RunUntilFinished(3))
   }
 
   "partial bundle literals" should "work in RTL" in {
-    assertTesterPasses {
-      new BasicTester {
+    simulate {
+      new Module {
         val bundleLit = (new MyBundle).Lit(_.a -> 42.U)
         chisel3.assert(bundleLit.a === 42.U)
 
@@ -122,7 +125,7 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
 
         stop()
       }
-    }
+    }(RunUntilFinished(3))
   }
 
   class MyOuterBundle extends Bundle {
@@ -136,8 +139,8 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
   }
 
   "contained bundles" should "work" in {
-    assertTesterPasses {
-      new BasicTester {
+    simulate {
+      new Module {
         // Specify the inner Bundle value as a Bundle literal
         val explicitBundleLit = (new MyOuterBundle).Lit(
           _.a -> (new MyBundle).Lit(_.a -> 42.U, _.b -> true.B, _.c -> MyEnum.sB)
@@ -181,12 +184,12 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
 
         stop()
       }
-    }
+    }(RunUntilFinished(3))
   }
 
   "Bundle literals" should "assign" in {
-    assertTesterPasses {
-      new BasicTester {
+    simulate {
+      new Module {
         val bundleWire = Wire(Output(new MyBundle))
         val bundleLit = (new MyBundle).Lit(_.a -> 42.U, _.b -> true.B, _.c -> MyEnum.sB)
         bundleWire := bundleLit
@@ -196,12 +199,12 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
         chisel3.assert(bundleWire.c === MyEnum.sB)
         stop()
       }
-    }
+    }(RunUntilFinished(3))
   }
 
   "partially initialized Bundle literals" should "assign" in {
-    assertTesterPasses {
-      new BasicTester {
+    simulate {
+      new Module {
         val bundleWire = Wire(Output(new MyBundle))
         val bundleLit = (new MyBundle).Lit(_.a -> 42.U)
         bundleWire := bundleLit
@@ -209,12 +212,12 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
         chisel3.assert(bundleWire.a === 42.U)
         stop()
       }
-    }
+    }(RunUntilFinished(3))
   }
 
   "Bundle literals" should "work as register reset values" in {
-    assertTesterPasses {
-      new BasicTester {
+    simulate {
+      new Module {
         val r = RegInit((new MyBundle).Lit(_.a -> 42.U, _.b -> true.B, _.c -> MyEnum.sB))
         r := (r.asUInt + 1.U).asTypeOf(new MyBundle) // prevent constprop
 
@@ -224,60 +227,58 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
         chisel3.assert(r.c === MyEnum.sB)
         stop()
       }
-    }
+    }(RunUntilFinished(3))
   }
 
   "partially initialized Bundle literals" should "work as register reset values" in {
-    assertTesterPasses {
-      new BasicTester {
+    simulate {
+      new Module {
         val r = RegInit((new MyBundle).Lit(_.a -> 42.U))
         r.a := r.a + 1.U // prevent const prop
         chisel3.assert(r.a === 42.U) // coming out of reset
         stop()
       }
-    }
+    }(RunUntilFinished(3))
   }
 
   "Fields extracted from BundleLiterals" should "work as register reset values" in {
-    assertTesterPasses {
-      new BasicTester {
+    simulate {
+      new Module {
         val r = RegInit((new MyBundle).Lit(_.a -> 42.U).a)
         r := r + 1.U // prevent const prop
         chisel3.assert(r === 42.U) // coming out of reset
         stop()
       }
-    }
+    }(RunUntilFinished(3))
   }
 
   "DontCare fields extracted from BundleLiterals" should "work as register reset values" in {
-    assertTesterPasses {
-      new BasicTester {
+    simulate {
+      new Module {
         val r = RegInit((new MyBundle).Lit(_.a -> 42.U).b)
         r := reset.asBool
         printf(p"r = $r\n") // Can't assert because reset value is DontCare
         stop()
       }
-    }
+    }(RunUntilFinished(3))
   }
 
   "DontCare fields extracted from BundleLiterals" should "work in other Expressions" in {
-    assertTesterPasses {
-      new BasicTester {
+    simulate {
+      new Module {
         val x = (new MyBundle).Lit(_.a -> 42.U).b || true.B
         chisel3.assert(x === true.B)
         stop()
       }
-    }
+    }(RunUntilFinished(3))
   }
 
   "bundle literals with bad field specifiers" should "fail" in {
     val exc = intercept[BundleLiteralException] {
-      extractCause[BundleLiteralException] {
-        ChiselStage.emitCHIRRTL {
-          new RawModule {
-            val bundle = new MyBundle
-            bundle.Lit(x => bundle.a -> 0.U) // DONT DO THIS, this gets past a syntax error to exercise the failure
-          }
+      ChiselStage.emitCHIRRTL {
+        new RawModule {
+          val bundle = new MyBundle
+          bundle.Lit(x => bundle.a -> 0.U) // DONT DO THIS, this gets past a syntax error to exercise the failure
         }
       }
     }
@@ -286,11 +287,9 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
 
   "bundle literals with duplicate fields" should "fail" in {
     val exc = intercept[BundleLiteralException] {
-      extractCause[BundleLiteralException] {
-        ChiselStage.emitCHIRRTL {
-          new RawModule {
-            (new MyBundle).Lit(_.a -> 0.U, _.a -> 0.U)
-          }
+      ChiselStage.emitCHIRRTL {
+        new RawModule {
+          (new MyBundle).Lit(_.a -> 0.U, _.a -> 0.U)
         }
       }
     }
@@ -300,11 +299,9 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
 
   "bundle literals with non-literal values" should "fail" in {
     val exc = intercept[BundleLiteralException] {
-      extractCause[BundleLiteralException] {
-        ChiselStage.emitCHIRRTL {
-          new RawModule {
-            (new MyBundle).Lit(_.a -> UInt())
-          }
+      ChiselStage.emitCHIRRTL {
+        new RawModule {
+          (new MyBundle).Lit(_.a -> UInt())
         }
       }
     }
@@ -314,11 +311,9 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
 
   "bundle literals with non-type-equivalent element fields" should "fail" in {
     val exc = intercept[BundleLiteralException] {
-      extractCause[BundleLiteralException] {
-        ChiselStage.emitCHIRRTL {
-          new RawModule {
-            (new MyBundle).Lit(_.a -> true.B)
-          }
+      ChiselStage.emitCHIRRTL {
+        new RawModule {
+          (new MyBundle).Lit(_.a -> true.B)
         }
       }
     }
@@ -328,11 +323,9 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
 
   "bundle literals with non-type-equivalent sub-bundles" should "fail" in {
     val exc = intercept[BundleLiteralException] {
-      extractCause[BundleLiteralException] {
-        ChiselStage.emitCHIRRTL {
-          new RawModule {
-            (new MyOuterBundle).Lit(_.b -> (new MyBundle).Lit(_.a -> 0.U))
-          }
+      ChiselStage.emitCHIRRTL {
+        new RawModule {
+          (new MyOuterBundle).Lit(_.b -> (new MyBundle).Lit(_.a -> 0.U))
         }
       }
     }
@@ -342,11 +335,9 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
 
   "bundle literals with non-type-equivalent enum element fields" should "fail" in {
     val exc = intercept[BundleLiteralException] {
-      extractCause[BundleLiteralException] {
-        ChiselStage.emitCHIRRTL {
-          new RawModule {
-            (new MyBundle).Lit(_.c -> MyEnumB.sB)
-          }
+      ChiselStage.emitCHIRRTL {
+        new RawModule {
+          (new MyBundle).Lit(_.c -> MyEnumB.sB)
         }
       }
     }
@@ -427,14 +418,14 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
     val ulit = blit.asUInt
     ulit.litOption should be(Some(171))
 
-    assertTesterPasses {
-      new BasicTester {
+    simulate {
+      new Module {
         // Check that it gives the same value as the generated hardware
         val wire = WireInit(blit).asUInt
         chisel3.assert(ulit.litValue.U === wire)
         stop()
       }
-    }
+    }(RunUntilFinished(3))
   }
 
   "Calling .asUInt on a Bundle literal with DontCare fields" should "NOT return a UInt literal" in {
@@ -453,14 +444,14 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
     val ulit = blit.asUInt
     ulit.litOption should be(Some(0xbac))
 
-    assertTesterPasses {
-      new BasicTester {
+    simulate {
+      new Module {
         // Check that it gives the same value as the generated hardware
         val wire = WireInit(blit).asUInt
         chisel3.assert(ulit.litValue.U === wire)
         stop()
       }
-    }
+    }(RunUntilFinished(3))
   }
 
   "Casting a Bundle literal to a complex Bundle type" should "maintain the literal value" in {
@@ -486,8 +477,8 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
     olit.b(1).foo.litValue should be(1)
     olit.b(1).bar.litValue should be(2)
 
-    assertTesterPasses {
-      new BasicTester {
+    simulate {
+      new Module {
         // Check that it gives the same value as the generated hardware.
         val wire = WireInit(blit).asTypeOf(new OtherBundle)
         // ScalaTest has its own multiversal === which overrules extension method.
@@ -495,6 +486,6 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
         chisel3.assert(new Data.DataEquality(olit).===(wire))
         stop()
       }
-    }
+    }(RunUntilFinished(3))
   }
 }
