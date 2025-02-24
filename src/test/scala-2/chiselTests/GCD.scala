@@ -3,8 +3,12 @@
 package chiselTests
 
 import chisel3._
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
 import chisel3.testers.BasicTester
 import circt.stage.ChiselStage
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
+import org.scalatest.propspec.AnyPropSpec
 
 class GCD extends Module {
   val io = IO(new Bundle {
@@ -35,7 +39,7 @@ class GCDTester(a: Int, b: Int, z: Int) extends BasicTester {
   }
 }
 
-class GCDSpec extends ChiselPropSpec {
+class GCDSpec extends AnyPropSpec with ScalaCheckPropertyChecks with ChiselSim {
 
   // TODO: use generators and this function to make z's
   def gcd(a: Int, b: Int): Int = if (b == 0) a else gcd(b, a % b)
@@ -53,7 +57,7 @@ class GCDSpec extends ChiselPropSpec {
 
   property("GCDTester should return the correct result") {
     forAll(gcds) { (a: Int, b: Int, z: Int) =>
-      assertTesterPasses { new GCDTester(a, b, z) }
+      simulate(new GCDTester(a, b, z))(RunUntilFinished(1024 * 10))
     }
   }
 }
