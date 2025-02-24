@@ -270,8 +270,8 @@ abstract class ChiselFreeSpec extends AnyFreeSpec with ChiselRunners with Matche
 /** Spec base class for BDD-style testers. */
 abstract class ChiselFunSpec extends AnyFunSpec with ChiselRunners with Matchers
 
-/** Spec base class for property-based testers. */
-abstract class ChiselPropSpec extends AnyPropSpec with ChiselRunners with ScalaCheckPropertyChecks with Matchers {
+/** Utilities for writing property-based checks */
+trait PropertyUtils extends ScalaCheckPropertyChecks {
 
   // Constrain the default number of instances generated for every use of forAll.
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
@@ -334,7 +334,11 @@ abstract class ChiselPropSpec extends AnyPropSpec with ChiselRunners with ScalaC
     i <- Gen.choose(0, (1 << w) - 1)
     j <- Gen.choose(0, (1 << w) - 1)
   } yield (w, i, j)
+
 }
+
+/** Spec base class for property-based testers. */
+abstract class ChiselPropSpec extends AnyPropSpec with ChiselRunners with PropertyUtils with Matchers
 
 trait Utils {
 
