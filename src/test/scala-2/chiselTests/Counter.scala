@@ -4,9 +4,13 @@ package chiselTests
 
 import chisel3._
 import chisel3.testers.BasicTester
-import chisel3.util._
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
+import chisel3.util.Counter
+import org.scalatest.propspec.AnyPropSpec
+import org.scalatest.matchers.should.Matchers
 
-class CountTester(max: Int) extends BasicTester {
+class CountTester(max: Int) extends Module {
   val cnt = Counter(max)
   assert(cnt.n == max)
   when(true.B) { cnt.inc() }
@@ -29,7 +33,7 @@ class EnableTester(seed: Int) extends BasicTester {
   }
 }
 
-class ResetTester(n: Int) extends BasicTester {
+class ResetTester(n: Int) extends Module {
   val triggerReset = WireInit(false.B)
   val wasReset = RegNext(triggerReset)
   val (value, _) = Counter(0 until 8, reset = triggerReset)
@@ -42,7 +46,7 @@ class ResetTester(n: Int) extends BasicTester {
   }
 }
 
-class WrapTester(max: Int) extends BasicTester {
+class WrapTester(max: Int) extends Module {
   val (cnt, wrap) = Counter(true.B, max)
   when(wrap) {
     assert(cnt === (max - 1).asUInt)
@@ -50,7 +54,7 @@ class WrapTester(max: Int) extends BasicTester {
   }
 }
 
-class RangeTester(r: Range) extends BasicTester {
+class RangeTester(r: Range) extends Module {
   val (cnt, wrap) = Counter(r)
   val checkWrap = RegInit(false.B)
 
@@ -63,28 +67,30 @@ class RangeTester(r: Range) extends BasicTester {
   }
 }
 
-class CounterSpec extends ChiselPropSpec {
+class CounterSpec extends AnyPropSpec with PropertyUtils with ChiselSim {
   property("Counter should count up") {
     for (i <- 0 until 4) {
-      assertTesterPasses(new CountTester(i))
+      simulate(new CountTester(i))(RunUntilFinished(i + 2))
     }
   }
 
   property("Counter can be en/disabled") {
-    forAll(safeUInts) { (seed: Int) => whenever(seed >= 0) { assertTesterPasses { new EnableTester(seed) } } }
+    forAll(safeUInts) { (seed: Int) =>
+      whenever(seed >= 0) { simulate { new EnableTester(seed) }(RunUntilFinished(34)) }
+    }
   }
 
   property("Counter can be reset") {
-    forAll(smallPosInts) { (seed: Int) => assertTesterPasses { new ResetTester(seed) } }
+    forAll(smallPosInts) { (seed: Int) => simulate { new ResetTester(seed) }(RunUntilFinished(1024 * 10)) }
   }
 
   property("Counter should wrap") {
-    forAll(smallPosInts) { (max: Int) => assertTesterPasses { new WrapTester(max) } }
+    forAll(smallPosInts) { (max: Int) => simulate { new WrapTester(max) }(RunUntilFinished(max + 1)) }
   }
 
   property("Counter should handle a range") {
     forAll(posRange) { (r: Range) =>
-      assertTesterPasses { new RangeTester(r) }
+      simulate { new RangeTester(r) }(RunUntilFinished(1024 * 10))
     }
   }
 }
