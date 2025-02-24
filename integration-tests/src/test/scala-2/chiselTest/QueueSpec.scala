@@ -4,10 +4,14 @@ package chiselTests
 
 import circt.stage.ChiselStage
 import chisel3._
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
 import chisel3.testers.BasicTester
 import chisel3.util._
 import chisel3.util.random.LFSR
 import org.scalacheck._
+import org.scalatest.propspec.AnyPropSpec
+import org.scalatest.matchers.should.Matchers
 
 class ThingsPassThroughTester(
   elements:       Seq[Int],
@@ -248,14 +252,14 @@ class ShadowQueueFactoryTester(queueDepth: Int, tap: Int, useSyncReadMem: Boolea
   probe.define(idOut, shadow(probe.read(idIn), layers.Verification))
 }
 
-class QueueSpec extends ChiselPropSpec {
+class QueueSpec extends AnyPropSpec with Matchers with PropertyUtils with ChiselSim {
 
   property("Queue should have things pass through") {
     forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15), Gen.oneOf(true, false)) { (depth, se, tap, isSync) =>
       whenever(se._1 >= 1 && depth >= 1 && se._2.nonEmpty) {
-        assertTesterPasses {
+        simulate {
           new ThingsPassThroughTester(se._2, depth, se._1, tap, isSync, false)
-        }
+        }(RunUntilFinished(1024 * 10))
       }
     }
   }
@@ -263,9 +267,9 @@ class QueueSpec extends ChiselPropSpec {
   property("Queue should have reasonable ready/valid") {
     forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15), Gen.oneOf(true, false)) { (depth, se, tap, isSync) =>
       whenever(se._1 >= 1 && depth >= 1 && se._2.nonEmpty) {
-        assertTesterPasses {
+        simulate {
           new QueueReasonableReadyValid(se._2, depth, se._1, tap, isSync)
-        }
+        }(RunUntilFinished(1024 * 10))
       }
     }
   }
@@ -273,9 +277,9 @@ class QueueSpec extends ChiselPropSpec {
   property("Queue should have correct count") {
     forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15), Gen.oneOf(true, false)) { (depth, se, tap, isSync) =>
       whenever(se._1 >= 1 && depth >= 1 && se._2.nonEmpty) {
-        assertTesterPasses {
+        simulate {
           new CountIsCorrectTester(se._2, depth, se._1, tap, isSync)
-        }
+        }(RunUntilFinished(1024 * 10))
       }
     }
   }
@@ -283,9 +287,9 @@ class QueueSpec extends ChiselPropSpec {
   property("Queue pipe should work for 1-element queues") {
     forAll(safeUIntN(20), Gen.choose(0, 15), Gen.oneOf(true, false)) { (se, tap, isSync) =>
       whenever(se._1 >= 1 && se._2.nonEmpty) {
-        assertTesterPasses {
+        simulate {
           new QueueSinglePipeTester(se._2, se._1, tap, isSync)
-        }
+        }(RunUntilFinished(1024 * 10))
       }
     }
   }
@@ -293,9 +297,9 @@ class QueueSpec extends ChiselPropSpec {
   property("Queue pipe should work for more general queues") {
     forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15), Gen.oneOf(true, false)) { (depth, se, tap, isSync) =>
       whenever(se._1 >= 1 && depth >= 1 && se._2.nonEmpty) {
-        assertTesterPasses {
+        simulate {
           new QueuePipeTester(se._2, depth, se._1, tap, isSync)
-        }
+        }(RunUntilFinished(1024 * 10))
       }
     }
   }
@@ -303,9 +307,9 @@ class QueueSpec extends ChiselPropSpec {
   property("Queue flow should work") {
     forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15), Gen.oneOf(true, false)) { (depth, se, tap, isSync) =>
       whenever(se._1 >= 1 && depth >= 1 && se._2.nonEmpty) {
-        assertTesterPasses {
+        simulate {
           new QueueFlowTester(se._2, depth, se._1, tap, isSync)
-        }
+        }(RunUntilFinished(1024 * 10))
       }
     }
   }
@@ -313,9 +317,9 @@ class QueueSpec extends ChiselPropSpec {
   property("Queue companion object factory method should work") {
     forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15), Gen.oneOf(true, false)) { (depth, se, tap, isSync) =>
       whenever(se._1 >= 1 && se._2.nonEmpty) {
-        assertTesterPasses {
+        simulate {
           new QueueFactoryTester(se._2, depth, se._1, tap, isSync)
-        }
+        }(RunUntilFinished(1024 * 10))
       }
     }
   }
@@ -347,9 +351,9 @@ class QueueSpec extends ChiselPropSpec {
   property("A shadow queue should track an identifier") {
     forAll(vecSizes, Gen.choose(0, 15), Gen.oneOf(true, false)) { (depth, tap, isSync) =>
       info(s"depth: $depth, tap: $tap, isSync: $isSync")
-      assertTesterPasses {
+      simulate {
         new ShadowQueueFactoryTester(depth, tap, isSync)
-      }
+      }(RunUntilFinished(1024 * 10))
     }
   }
 }
