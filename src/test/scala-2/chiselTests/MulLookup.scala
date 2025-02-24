@@ -3,7 +3,10 @@
 package chiselTests
 
 import chisel3._
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
 import chisel3.testers.BasicTester
+import org.scalatest.propspec.AnyPropSpec
 
 class MulLookup(val w: Int) extends Module {
   val io = IO(new Bundle {
@@ -28,11 +31,11 @@ class MulLookupTester(w: Int, x: Int, y: Int) extends BasicTester {
   stop()
 }
 
-class MulLookupSpec extends ChiselPropSpec {
+class MulLookupSpec extends AnyPropSpec with PropertyUtils with ChiselSim {
 
   property("Mul lookup table should return the correct result") {
     forAll(smallPosInts, smallPosInts) { (x: Int, y: Int) =>
-      assertTesterPasses { new MulLookupTester(3, x, y) }
+      simulate { new MulLookupTester(3, x, y) }(RunUntilFinished(3))
     }
   }
 }
