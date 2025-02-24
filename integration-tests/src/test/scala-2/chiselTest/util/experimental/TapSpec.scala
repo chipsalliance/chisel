@@ -2,13 +2,11 @@
 
 package chiselTests.util.experimental
 
-import circt.stage.ChiselStage
 import chisel3._
-import chisel3.util._
-import chisel3.testers.BasicTester
-import chisel3.util.experimental.BoringUtils._
-import org.scalacheck._
-import chiselTests.{ChiselFlatSpec, Utils}
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
+import chisel3.util.experimental.BoringUtils.tapAndRead
+import org.scalatest.flatspec.AnyFlatSpec
 
 class LeftLower(tapSignal: UInt) extends Module {
   val readTap = Wire(UInt(8.W))
@@ -31,7 +29,7 @@ class RightUpper extends Module {
   val rightLower = Module(new RightLower)
 }
 
-class UpDownTest extends BasicTester {
+class UpDownTest extends Module {
   val rightUpper = Module(new RightUpper)
   val leftUpper = Module(new LeftUpper(rightUpper.rightLower.tapMe))
 }
@@ -47,6 +45,12 @@ class UpDownTest extends BasicTester {
   * Tap a signal in RightLower from LeftLower and check that it contains the
   * correct value.
   */
-class TapSpec extends ChiselFlatSpec with Utils {
-  assertTesterPasses(new UpDownTest)
+class TapSpec extends AnyFlatSpec with ChiselSim {
+
+  behavior of "BoringUtils.tapAndRead"
+
+  they should "connect a value up/down through the hierarchy" in {
+    simulate(new UpDownTest)(RunUntilFinished(3))
+  }
+
 }
