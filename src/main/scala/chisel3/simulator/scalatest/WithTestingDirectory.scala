@@ -50,14 +50,21 @@ trait WithTestingDirectory { self: TestSuite =>
     */
   final implicit def implementation: HasTestingDirectory = new HasTestingDirectory {
 
+    // A sequence of regular expressions and their replacements that should be
+    // applied to the test name.
+    val res = Seq("\\s|\\(|\\)|\\$".r -> "-", "\"|\'|#".r -> "")
+
     /** Return the test name with minimal sanitization applied:
       *
       *   - Replace all whitespace as this is incompatible with GNU make [1]
+      *   - Replace any characters which Verilator Makefiles empirically have
+      *     problems with
       *
       * [1]: https://savannah.gnu.org/bugs/?712
       */
-    val re = "\\s|\\(|\\)|\\$".r
-    final def getTestName = testName.value.map(re.replaceAllIn(_, "-"))
+    final def getTestName = testName.value.map { case a =>
+      res.foldLeft(a) { case (string, (regex, replacement)) => regex.replaceAllIn(string, replacement) }
+    }
 
     override def getDirectory: Path = FileSystems
       .getDefault()
