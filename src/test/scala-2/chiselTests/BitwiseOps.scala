@@ -3,9 +3,11 @@
 package chiselTests
 
 import chisel3._
-import chisel3.testers.BasicTester
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
+import org.scalatest.propspec.AnyPropSpec
 
-class BitwiseOpsTester(w: Int, _a: Int, _b: Int) extends BasicTester {
+class BitwiseOpsTester(w: Int, _a: Int, _b: Int) extends Module {
   val mask = (1 << w) - 1
   val a = _a.asUInt(w.W)
   val b = _b.asUInt(w.W)
@@ -18,10 +20,10 @@ class BitwiseOpsTester(w: Int, _a: Int, _b: Int) extends BasicTester {
   stop()
 }
 
-class BitwiseOpsSpec extends ChiselPropSpec {
+class BitwiseOpsSpec extends AnyPropSpec with PropertyUtils with ChiselSim {
   property("All bit-wise ops should return the correct result") {
     forAll(safeUIntPair) { case (w: Int, a: Int, b: Int) =>
-      assertTesterPasses { new BitwiseOpsTester(w, a, b) }
+      simulate { new BitwiseOpsTester(w, a, b) }(RunUntilFinished(2))
     }
   }
 }
