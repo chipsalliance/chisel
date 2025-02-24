@@ -6,47 +6,61 @@ import circt.stage.ChiselStage
 import chisel3._
 import chisel3.experimental._
 import chisel3.reflect.DataMirror
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
 import chisel3.testers.{BasicTester, TesterDriver}
 import chisel3.util._
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class BlackBoxInverter extends BlackBox {
+class BlackBoxInverter extends BlackBox with HasBlackBoxResource {
   val io = IO(new Bundle() {
     val in = Input(Bool())
     val out = Output(Bool())
   })
+
+  addResource("/chisel3/BlackBoxTest.v")
 }
 
 // Due to the removal of "val io", this technically works
 // This style is discouraged, please use "val io"
-class BlackBoxInverterSuggestName extends BlackBox {
+class BlackBoxInverterSuggestName extends BlackBox with HasBlackBoxResource {
   override def desiredName: String = "BlackBoxInverter"
   val foo = IO(new Bundle() {
     val in = Input(Bool())
     val out = Output(Bool())
   }).suggestName("io")
+
+  addResource("/chisel3/BlackBoxTest.v")
 }
 
-class BlackBoxPassthrough extends BlackBox {
+class BlackBoxPassthrough extends BlackBox with HasBlackBoxResource {
   val io = IO(new Bundle() {
     val in = Input(Bool())
     val out = Output(Bool())
   })
+
+  addResource("/chisel3/BlackBoxTest.v")
 }
 
 // Test Flip on top-level IO
-class BlackBoxPassthrough2 extends BlackBox {
+class BlackBoxPassthrough2 extends BlackBox with HasBlackBoxResource {
   val io = IO(Flipped(new Bundle() {
     val in = Output(Bool())
     val out = Input(Bool())
   }))
+
+  addResource("/chisel3/BlackBoxTest.v")
 }
 
-class BlackBoxRegister extends BlackBox {
+class BlackBoxRegister extends BlackBox with HasBlackBoxResource {
   val io = IO(new Bundle() {
     val clock = Input(Clock())
     val in = Input(Bool())
     val out = Output(Bool())
   })
+
+  addResource("/chisel3/BlackBoxTest.v")
 }
 
 class BlackBoxTester extends BasicTester {
@@ -121,40 +135,54 @@ class BlackBoxWithClockTester extends BasicTester {
   when(end) { stop() }
 }
 
-class BlackBoxConstant(value: Int) extends BlackBox(Map("VALUE" -> value, "WIDTH" -> log2Ceil(value + 1))) {
+class BlackBoxConstant(value: Int)
+    extends BlackBox(Map("VALUE" -> value, "WIDTH" -> log2Ceil(value + 1)))
+    with HasBlackBoxResource {
   require(value >= 0, "value must be a UInt!")
   val io = IO(new Bundle {
     val out = Output(UInt(log2Ceil(value + 1).W))
   })
+
+  addResource("/chisel3/BlackBoxTest.v")
 }
 
-class BlackBoxStringParam(str: String) extends BlackBox(Map("STRING" -> str)) {
+class BlackBoxStringParam(str: String) extends BlackBox(Map("STRING" -> str)) with HasBlackBoxResource {
   val io = IO(new Bundle {
     val out = UInt(32.W)
   })
+
+  addResource("/chisel3/BlackBoxTest.v")
 }
 
-class BlackBoxRealParam(dbl: Double) extends BlackBox(Map("REAL" -> dbl)) {
+class BlackBoxRealParam(dbl: Double) extends BlackBox(Map("REAL" -> dbl)) with HasBlackBoxResource {
   val io = IO(new Bundle {
     val out = UInt(64.W)
   })
+
+  addResource("/chisel3/BlackBoxTest.v")
 }
 
-class BlackBoxTypeParam(w: Int, raw: String) extends BlackBox(Map("T" -> RawParam(raw))) {
+class BlackBoxTypeParam(w: Int, raw: String) extends BlackBox(Map("T" -> RawParam(raw))) with HasBlackBoxResource {
   val io = IO(new Bundle {
     val out = UInt(w.W)
   })
+
+  addResource("/chisel3/BlackBoxTest.v")
 }
 
-class BlackBoxNoIO extends BlackBox {
+class BlackBoxNoIO extends BlackBox with HasBlackBoxResource {
   // Whoops! typo
   val ioo = IO(new Bundle {
     val out = Output(UInt(8.W))
   })
+
+  addResource("/chisel3/BlackBoxTest.v")
 }
 
-class BlackBoxUIntIO extends BlackBox {
+class BlackBoxUIntIO extends BlackBox with HasBlackBoxResource {
   val io = IO(Output(UInt(8.W)))
+
+  addResource("/chisel3/BlackBoxTest.v")
 }
 
 class SimplerBlackBoxWithParamsTester extends BasicTester {
@@ -193,29 +221,26 @@ class BlackBoxWithParamsTester extends BasicTester {
   when(end) { stop() }
 }
 
-class BlackBoxSpec extends ChiselFlatSpec {
+class BlackBoxSpec extends AnyFlatSpec with Matchers with ChiselSim {
   "A BlackBoxed inverter" should "work" in {
-    assertTesterPasses({ new BlackBoxTester }, Seq("/chisel3/BlackBoxTest.v"))
+    simulate(new BlackBoxTester)(RunUntilFinished(5))
   }
   "A BlackBoxed with flipped IO" should "work" in {
-    assertTesterPasses({ new BlackBoxFlipTester }, Seq("/chisel3/BlackBoxTest.v"))
+    simulate(new BlackBoxFlipTester)(RunUntilFinished(5))
   }
   "Multiple BlackBoxes" should "work" in {
-    assertTesterPasses({ new MultiBlackBoxTester }, Seq("/chisel3/BlackBoxTest.v"))
+    simulate(new MultiBlackBoxTester)(RunUntilFinished(5))
   }
   "A BlackBoxed register" should "work" in {
-    assertTesterPasses({ new BlackBoxWithClockTester }, Seq("/chisel3/BlackBoxTest.v"))
+    simulate(new BlackBoxWithClockTester)(RunUntilFinished(16))
   }
   // TODO: SFC->MFC, this test is ignored because the parameters have undesired quotes around values in verilog in MFC
   "BlackBoxes with simpler parameters" should "work" ignore {
-    assertTesterPasses(
-      { new SimplerBlackBoxWithParamsTester },
-      Seq("/chisel3/BlackBoxTest.v")
-    )
+    simulate(new SimplerBlackBoxWithParamsTester)(RunUntilFinished(5))
   }
   // TODO: SFC->MFC, this test is ignored because the parameters have undesired quotes around values in verilog in MFC
   "BlackBoxes with parameters" should "work" ignore {
-    assertTesterPasses({ new BlackBoxWithParamsTester }, Seq("/chisel3/BlackBoxTest.v"))
+    simulate(new BlackBoxWithParamsTester)(RunUntilFinished(5))
   }
   "DataMirror.modulePorts" should "work with BlackBox" in {
     ChiselStage.emitCHIRRTL(new Module {
@@ -225,7 +250,7 @@ class BlackBoxSpec extends ChiselFlatSpec {
     })
   }
   "A BlackBox using suggestName(\"io\")" should "work (but don't do this)" in {
-    assertTesterPasses({ new BlackBoxTesterSuggestName }, Seq("/chisel3/BlackBoxTest.v"))
+    simulate(new BlackBoxTesterSuggestName)(RunUntilFinished(5))
   }
 
   "A BlackBox with no 'val io'" should "give a reasonable error message" in {
