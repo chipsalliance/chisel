@@ -6,8 +6,11 @@ import chisel3._
 import chisel3.aop.Select
 import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance}
 import chisel3.reflect.DataMirror
-import chisel3.testers.BasicTester
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
 import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 class UnclockedPlusOne extends RawModule {
   val in = IO(Input(UInt(32.W)))
@@ -16,7 +19,7 @@ class UnclockedPlusOne extends RawModule {
   out := in + 1.asUInt
 }
 
-class RawModuleTester extends BasicTester {
+class RawModuleTester extends Module {
   val plusModule = Module(new UnclockedPlusOne)
   plusModule.in := 42.U
   assert(plusModule.out === 43.U)
@@ -44,7 +47,7 @@ class RawModuleWithImplicitModule extends RawModule {
   }
 }
 
-class ImplicitModuleInRawModuleTester extends BasicTester {
+class ImplicitModuleInRawModuleTester extends Module {
   val plusModule = Module(new RawModuleWithImplicitModule)
   plusModule.clk := clock
   plusModule.rst := reset
@@ -57,18 +60,18 @@ class RawModuleWithDirectImplicitModule extends RawModule {
   val plusModule = Module(new PlusOneModule)
 }
 
-class ImplicitModuleDirectlyInRawModuleTester extends BasicTester {
+class ImplicitModuleDirectlyInRawModuleTester extends Module {
   val plusModule = Module(new RawModuleWithDirectImplicitModule)
   stop()
 }
 
-class RawModuleSpec extends ChiselFlatSpec with Utils with FileCheck {
+class RawModuleSpec extends AnyFlatSpec with Matchers with ChiselSim with FileCheck {
   "RawModule" should "elaborate" in {
     ChiselStage.emitCHIRRTL { new RawModuleWithImplicitModule }
   }
 
   "RawModule" should "work" in {
-    assertTesterPasses({ new RawModuleTester })
+    simulate({ new RawModuleTester })(RunUntilFinished(3))
   }
 
   "RawModule with atModuleBodyEnd" should "support late stage generators" in {
@@ -156,22 +159,18 @@ class RawModuleSpec extends ChiselFlatSpec with Utils with FileCheck {
   }
 
   "ImplicitModule in a withClock block in a RawModule" should "work" in {
-    assertTesterPasses({ new ImplicitModuleInRawModuleTester })
+    simulate({ new ImplicitModuleInRawModuleTester })(RunUntilFinished(3))
   }
 
   "ImplicitModule directly in a RawModule" should "fail" in {
     intercept[ChiselException] {
-      extractCause[ChiselException] {
-        ChiselStage.emitCHIRRTL { new RawModuleWithDirectImplicitModule }
-      }
+      ChiselStage.emitCHIRRTL { new RawModuleWithDirectImplicitModule }
     }
   }
 
   "ImplicitModule directly in a RawModule in an ImplicitModule" should "fail" in {
     intercept[ChiselException] {
-      extractCause[ChiselException] {
-        ChiselStage.emitCHIRRTL { new ImplicitModuleDirectlyInRawModuleTester }
-      }
+      ChiselStage.emitCHIRRTL { new ImplicitModuleDirectlyInRawModuleTester }
     }
   }
 
