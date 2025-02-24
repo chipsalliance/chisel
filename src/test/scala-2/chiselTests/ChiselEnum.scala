@@ -7,8 +7,11 @@ import chisel3.experimental.AffectsChiselPrefix
 import chisel3.stage.ChiselGeneratorAnnotation
 import circt.stage.ChiselStage
 import chisel3.util._
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
 import chisel3.testers.BasicTester
 import org.scalatest.Assertion
+import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -362,18 +365,18 @@ class IsOneOfTester extends BasicTester {
   stop()
 }
 
-class ChiselEnumSpec extends ChiselFlatSpec with Utils with FileCheck {
+class ChiselEnumSpec extends AnyFlatSpec with Matchers with Utils with FileCheck with ChiselSim {
 
   behavior.of("ChiselEnum")
 
   it should "fail to instantiate non-literal enums with the Value function" in {
-    an[ExceptionInInitializerError] should be thrownBy extractCause[ExceptionInInitializerError] {
+    intercept[ExceptionInInitializerError] {
       ChiselStage.emitCHIRRTL(new SimpleConnector(NonLiteralEnumType(), NonLiteralEnumType()))
     }
   }
 
   it should "fail to instantiate non-increasing enums with the Value function" in {
-    an[ExceptionInInitializerError] should be thrownBy extractCause[ExceptionInInitializerError] {
+    intercept[ExceptionInInitializerError] {
       ChiselStage.emitCHIRRTL(new SimpleConnector(NonIncreasingEnum(), NonIncreasingEnum()))
     }
   }
@@ -384,23 +387,23 @@ class ChiselEnumSpec extends ChiselFlatSpec with Utils with FileCheck {
   }
 
   it should "fail to connect a strong enum to a UInt" in {
-    a[ChiselException] should be thrownBy extractCause[ChiselException] {
+    intercept[ChiselException] {
       ChiselStage.emitCHIRRTL(new SimpleConnector(EnumExample(), UInt()))
     }
   }
 
   it should "fail to connect enums of different types" in {
-    a[ChiselException] should be thrownBy extractCause[ChiselException] {
+    intercept[ChiselException] {
       ChiselStage.emitCHIRRTL(new SimpleConnector(EnumExample(), OtherEnum()))
     }
 
-    a[ChiselException] should be thrownBy extractCause[ChiselException] {
+    intercept[ChiselException] {
       ChiselStage.emitCHIRRTL(new SimpleConnector(EnumExample.Type(), OtherEnum.Type()))
     }
   }
 
   it should "cast enums to UInts correctly" in {
-    assertTesterPasses(new CastToUIntTester)
+    simulate(new CastToUIntTester)(RunUntilFinished(3))
   }
 
   // See: https://github.com/chipsalliance/chisel/issues/4159
@@ -452,19 +455,19 @@ class ChiselEnumSpec extends ChiselFlatSpec with Utils with FileCheck {
   }
 
   it should "cast literal UInts to enums correctly" in {
-    assertTesterPasses(new CastFromLitTester)
+    simulate(new CastFromLitTester)(RunUntilFinished(3))
   }
 
   it should "cast non-literal UInts to enums correctly and detect illegal casts" in {
-    assertTesterPasses(new CastFromNonLitTester)
+    simulate(new CastFromNonLitTester)(RunUntilFinished(3))
   }
 
   it should "safely cast non-literal UInts to enums correctly and detect illegal casts" in {
-    assertTesterPasses(new SafeCastFromNonLitTester)
+    simulate(new SafeCastFromNonLitTester)(RunUntilFinished(3))
   }
 
   it should "prevent illegal literal casts to enums" in {
-    a[ChiselException] should be thrownBy extractCause[ChiselException] {
+    intercept[ChiselException] {
       ChiselStage.emitCHIRRTL(new CastToInvalidEnumTester)
     }
   }
@@ -473,37 +476,37 @@ class ChiselEnumSpec extends ChiselFlatSpec with Utils with FileCheck {
     for (w <- 0 to EnumExample.getWidth)
       ChiselStage.emitCHIRRTL(new CastFromNonLitWidth(Some(w)))
 
-    a[ChiselException] should be thrownBy extractCause[ChiselException] {
+    intercept[ChiselException] {
       ChiselStage.emitCHIRRTL(new CastFromNonLitWidth)
     }
 
     for (w <- (EnumExample.getWidth + 1) to (EnumExample.getWidth + 100)) {
-      a[ChiselException] should be thrownBy extractCause[ChiselException] {
+      intercept[ChiselException] {
         ChiselStage.emitCHIRRTL(new CastFromNonLitWidth(Some(w)))
       }
     }
   }
 
   it should "execute enum comparison operations correctly" in {
-    assertTesterPasses(new EnumOpsTester)
+    simulate(new EnumOpsTester)(RunUntilFinished(3))
   }
 
   it should "fail to compare enums of different types" in {
-    a[ChiselException] should be thrownBy extractCause[ChiselException] {
+    intercept[ChiselException] {
       ChiselStage.emitCHIRRTL(new InvalidEnumOpsTester)
     }
   }
 
   it should "correctly check whether or not enums are literal" in {
-    assertTesterPasses(new IsLitTester)
+    simulate(new IsLitTester)(RunUntilFinished(3))
   }
 
   it should "return the correct next values for enums" in {
-    assertTesterPasses(new NextTester)
+    simulate(new NextTester)(RunUntilFinished(3))
   }
 
   it should "return the correct widths for enums" in {
-    assertTesterPasses(new WidthTester)
+    simulate(new WidthTester)(RunUntilFinished(3))
   }
 
   it should "maintain Scala-level type-safety" in {
@@ -518,7 +521,7 @@ class ChiselEnumSpec extends ChiselFlatSpec with Utils with FileCheck {
   }
 
   "ChiselEnum FSM" should "work" in {
-    assertTesterPasses(new ChiselEnumFSMTester)
+    simulate(new ChiselEnumFSMTester)(RunUntilFinished(11))
   }
 
   "Casting a UInt to an Enum" should "warn if the UInt can express illegal states" in {
@@ -623,7 +626,7 @@ class ChiselEnumSpec extends ChiselFlatSpec with Utils with FileCheck {
   }
 
   it should "correctly check if the enumeration is one of the values in a given sequence" in {
-    assertTesterPasses(new IsOneOfTester)
+    simulate(new IsOneOfTester)(RunUntilFinished(3))
   }
 
   it should "work with Printables" in {
