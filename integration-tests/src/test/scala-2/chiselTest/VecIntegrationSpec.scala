@@ -5,9 +5,12 @@ package chiselTests
 import circt.stage.ChiselStage
 import chisel3._
 import chisel3.util._
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
 import chisel3.testers.BasicTester
 import org.scalacheck._
 import scala.language.reflectiveCalls
+import org.scalatest.propspec.AnyPropSpec
 
 class PassthroughModuleTester extends Module {
   val io = IO(Flipped(new PassthroughModuleIO))
@@ -16,7 +19,7 @@ class PassthroughModuleTester extends Module {
   assert(io.out === 123.U)
 }
 
-class VecIntegrationSpec extends ChiselPropSpec {
+class VecIntegrationSpec extends AnyPropSpec with PropertyUtils with ChiselSim {
 
   property("A Reg of a Vec should operate correctly") {
     class RegTesterMod(vecSize: Int) extends Module {
@@ -45,7 +48,7 @@ class VecIntegrationSpec extends ChiselPropSpec {
     }
 
     forAll(safeUIntN(8)) { case (w: Int, v: List[Int]) =>
-      assertTesterPasses { new RegTester(w, v) }
+      simulate { new RegTester(w, v) }(RunUntilFinished(1024 * 10))
     }
   }
 
@@ -60,7 +63,7 @@ class VecIntegrationSpec extends ChiselPropSpec {
       stop()
     }
     forAll(Gen.choose(1, 10), smallPosInts) { (start: Int, len: Int) =>
-      assertTesterPasses { new IterateTester(start, len)(x => x + 50.U) }
+      simulate { new IterateTester(start, len)(x => x + 50.U) }(RunUntilFinished(1024 * 10))
     }
   }
 
@@ -79,7 +82,7 @@ class VecIntegrationSpec extends ChiselPropSpec {
       }
     }
 
-    forAll(smallPosInts) { (n: Int) => assertTesterPasses { new ShiftRegisterTester(n) } }
+    forAll(smallPosInts) { (n: Int) => simulate { new ShiftRegisterTester(n) }(RunUntilFinished(1024 * 10)) }
   }
 
   property("Dynamic indexing of a Vec of Module IOs should work") {
@@ -103,7 +106,7 @@ class VecIntegrationSpec extends ChiselPropSpec {
       when(done) { stop() }
     }
 
-    assertTesterPasses { new ModuleIODynamicIndexTester(4) }
+    simulate { new ModuleIODynamicIndexTester(4) }(RunUntilFinished(1024 * 10))
   }
 
 }
