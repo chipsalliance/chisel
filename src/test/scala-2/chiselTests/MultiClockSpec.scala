@@ -3,9 +3,14 @@
 package chiselTests
 
 import chisel3._
-import chisel3.util.Counter
+import chisel3.simulator.HasSimulator.simulators
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
 import chisel3.testers.{BasicTester, TesterDriver}
+import chisel3.util.Counter
 import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 /** Multi-clock test of a Reg using a different clock via withClock */
 class ClockDividerTest extends BasicTester {
@@ -113,14 +118,16 @@ class MultiClockMemTest extends BasicTester {
   when(done) { stop() }
 }
 
-class MultiClockSpec extends ChiselFlatSpec with Utils {
+class MultiClockSpec extends AnyFlatSpec with Matchers with Utils with ChiselSim {
 
   "withClock" should "scope the clock of registers" in {
-    assertTesterPasses(new ClockDividerTest)
+    simulate(new ClockDividerTest)(RunUntilFinished(22))
   }
 
   it should "scope ports of memories" in {
-    assertTesterPasses(new MultiClockMemTest)
+    implicit val verilator = simulators
+      .verilator(verilatorSettings = svsim.verilator.Backend.CompilationSettings(disabledWarnings = Seq("MULTIDRIVEN")))
+    simulate(new MultiClockMemTest)(RunUntilFinished(21))
   }
 
   it should "return like a normal Scala block" in {
@@ -230,11 +237,11 @@ class MultiClockSpec extends ChiselFlatSpec with Utils {
   }
 
   "withReset" should "scope the reset of registers" in {
-    assertTesterPasses(new WithResetTest)
+    simulate(new WithResetTest)(RunUntilFinished(11))
   }
 
   it should "scope the clock and reset of Modules" in {
-    assertTesterPasses(new MultiClockSubModuleTest)
+    simulate(new MultiClockSubModuleTest)(RunUntilFinished(11))
   }
 
   it should "return like a normal Scala block" in {
@@ -243,7 +250,7 @@ class MultiClockSpec extends ChiselFlatSpec with Utils {
     })
   }
   it should "support literal Bools" in {
-    assertTesterPasses(new BasicTester {
+    simulate(new BasicTester {
       val reg = withReset(true.B) {
         RegInit(6.U)
       }
@@ -252,7 +259,7 @@ class MultiClockSpec extends ChiselFlatSpec with Utils {
       chisel3.assert(reg === 6.U)
       val (_, done) = Counter(true.B, 4)
       when(done) { stop() }
-    })
+    })(RunUntilFinished(5))
   }
 
   "withClockAndReset" should "return like a normal Scala block" in {
@@ -263,29 +270,33 @@ class MultiClockSpec extends ChiselFlatSpec with Utils {
 
   it should "scope the clocks and resets of asserts" in {
     // Check that assert can fire
-    assertTesterFails(new BasicTester {
-      withClockAndReset(clock, reset) {
-        chisel3.assert(0.U === 1.U)
-      }
-      val (_, done) = Counter(true.B, 2)
-      when(done) { stop() }
-    })
+    intercept[chisel3.simulator.Exceptions.AssertionFailed] {
+      simulate {
+        new BasicTester {
+          withClockAndReset(clock, reset) {
+            chisel3.assert(0.U === 1.U)
+          }
+          val (_, done) = Counter(true.B, 2)
+          when(done) { stop() }
+        }
+      }(RunUntilFinished(3))
+    }
     // Check that reset will block
-    assertTesterPasses(new BasicTester {
+    simulate(new BasicTester {
       withClockAndReset(clock, true.B) {
         chisel3.assert(0.U === 1.U)
       }
       val (_, done) = Counter(true.B, 2)
       when(done) { stop() }
-    })
+    })(RunUntilFinished(3))
     // Check that no rising edge will block
-    assertTesterPasses(new BasicTester {
+    simulate(new BasicTester {
       withClockAndReset(false.B.asClock, reset) {
         chisel3.assert(0.U === 1.U)
       }
       val (_, done) = Counter(true.B, 2)
       when(done) { stop() }
-    })
+    })(RunUntilFinished(3))
   }
 
   it should "support setting Clock and Reset to None" in {
