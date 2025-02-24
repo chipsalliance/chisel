@@ -3,11 +3,14 @@
 package chiselTests
 
 import chisel3._
-import chisel3.testers.BasicTester
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
 import chisel3.experimental.BundleLiterals._
 import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-trait BundleSpecUtils {
+object BundleSpec {
   class BundleFooBar extends Bundle {
     val foo = UInt(16.W)
     val bar = UInt(16.W)
@@ -39,7 +42,7 @@ trait BundleSpecUtils {
     io.out <> io.in
   }
 
-  class BundleSerializationTest extends BasicTester {
+  class BundleSerializationTest extends Module {
     // Note that foo is higher order because its defined earlier in the Bundle
     val bundle = Wire(new BundleFooBar)
     bundle.foo := 0x1234.U
@@ -56,13 +59,16 @@ trait BundleSpecUtils {
   }
 }
 
-class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
+class BundleSpec extends AnyFlatSpec with Matchers with Utils with ChiselSim {
+
+  import BundleSpec._
+
   "Bundles with the same fields but in different orders" should "bulk connect" in {
     ChiselStage.emitCHIRRTL { new MyModule(new BundleFooBar, new BundleBarFoo) }
   }
 
   "Bundles" should "follow UInt serialization/deserialization API" in {
-    assertTesterPasses { new BundleSerializationTest }
+    simulate { new BundleSerializationTest }(RunUntilFinished(3))
   }
 
   "Bulk connect on Bundles" should "check that the fields match" in {
@@ -88,8 +94,8 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
   }
 
   "Bundles" should "be allowed to have Seq if need be" in {
-    assertTesterPasses {
-      new BasicTester {
+    simulate {
+      new Module {
         val m = Module(new Module {
           val io = IO(new Bundle {
             val b = new BadSeqBundleWithIgnoreSeqInBundle
@@ -97,12 +103,12 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
         })
         stop()
       }
-    }
+    }(RunUntilFinished(3))
   }
 
   "Bundles" should "be allowed to have non-Chisel Seqs" in {
-    assertTesterPasses {
-      new BasicTester {
+    simulate {
+      new Module {
         val m = Module(new Module {
           val io = IO(new Bundle {
             val f = Output(UInt(8.W))
@@ -113,7 +119,7 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
         })
         stop()
       }
-    }
+    }(RunUntilFinished(3))
   }
 
   "Bundles" should "with aliased fields, should show a helpful error message" in {
