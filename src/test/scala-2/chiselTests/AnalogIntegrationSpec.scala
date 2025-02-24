@@ -4,8 +4,11 @@ package chiselTests
 
 import chisel3._
 import chisel3.util._
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
 import chisel3.testers.{BasicTester, TesterDriver}
 import chisel3.experimental._
+import org.scalatest.flatspec.AnyFlatSpec
 
 /* This test is different from AnalogSpec in that it uses more complicated black boxes that can each
  * drive the bidirectional bus. It was created to evaluate Analog with synthesis tools since the
@@ -27,8 +30,10 @@ class AnalogBlackBoxIO(val n: Int) extends Bundle {
 
 // Assigns bus to out
 // Assigns in.bits + index to bus when in.valid
-class AnalogBlackBox(index: Int) extends BlackBox(Map("index" -> index)) {
+class AnalogBlackBox(index: Int) extends BlackBox(Map("index" -> index)) with HasBlackBoxResource {
   val io = IO(new AnalogBlackBoxIO(1))
+
+  addResource("/chisel3/AnalogBlackBox.v")
 }
 
 // This interface exists to give a common interface type for AnalogBlackBoxModule and
@@ -130,19 +135,17 @@ class AnalogIntegrationTester(mod: => AnalogDUTModule) extends BasicTester {
   when(done) { stop() }
 }
 
-class AnalogIntegrationSpec extends ChiselFlatSpec {
+class AnalogIntegrationSpec extends AnyFlatSpec with ChiselSim {
   behavior.of("Verilator")
   it should "support simple bidirectional wires" in {
-    assertTesterPasses(
-      new AnalogIntegrationTester(new AnalogSmallDUT),
-      Seq("/chisel3/AnalogBlackBox.v")
-    )
+    simulate(
+      new AnalogIntegrationTester(new AnalogSmallDUT)
+    )(RunUntilFinished(1024 * 10))
   }
   // Use this test once Verilator supports alias
   ignore should "support arbitrary bidirectional wires" in {
-    assertTesterPasses(
-      new AnalogIntegrationTester(new AnalogDUT),
-      Seq("/chisel3/AnalogBlackBox.v")
-    )
+    simulate(
+      new AnalogIntegrationTester(new AnalogDUT)
+    )(RunUntilFinished(1024 * 10))
   }
 }
