@@ -22,7 +22,11 @@ object annotate {
     */
   def apply(targets: AnyTargetable*)(mkAnnos: => Seq[Annotation]): Unit = {
     targets.map(_.a).foreach {
-      case d: Data => requireIsAnnotatable(d, "Data marked with annotation")
+      case d: Data =>
+        requireIsAnnotatable(d, "Data marked with annotation")
+        if (dataview.isView(d)) {
+          dataview.recordViewForRenaming(d)
+        }
       case _ => ()
     }
     Builder.annotations += (() => mkAnnos)
