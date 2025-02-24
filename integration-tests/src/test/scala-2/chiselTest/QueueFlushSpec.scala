@@ -3,9 +3,12 @@ package chiselTests
 import org.scalacheck._
 
 import chisel3._
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
 import chisel3.testers.{BasicTester, TesterDriver}
 import chisel3.util._
 import chisel3.util.random.LFSR
+import org.scalatest.propspec.AnyPropSpec
 
 /** Test elements can be enqueued and dequeued when flush is tied to false
   *
@@ -230,59 +233,59 @@ class DequeueFullQueueEdgecaseTester(
 
 }
 
-class QueueFlushSpec extends ChiselPropSpec {
+class QueueFlushSpec extends AnyPropSpec with PropertyUtils with ChiselSim {
 
   property("Queue should have things pass through") {
     forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15), Gen.oneOf(true, false)) { (depth, se, tap, isSync) =>
       whenever(se._1 >= 1 && depth >= 1 && se._2.nonEmpty) {
-        assertTesterPasses {
+        simulate {
           new ThingsPassThroughFlushQueueTester(se._2, depth, se._1, tap, isSync)
-        }
+        }(RunUntilFinished(1024 * 10))
       }
     }
   }
   property("Queue should flush when requested") {
     forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15), Gen.oneOf(true, false)) { (depth, se, tap, isSync) =>
       whenever(se._1 >= 1 && depth >= 1 && se._2.nonEmpty) {
-        assertTesterPasses {
+        simulate {
           new QueueGetsFlushedTester(se._2, depth, se._1, tap, isSync)
-        }
+        }(RunUntilFinished(1024 * 10))
       }
     }
   }
   property("Queue flush when queue is empty") {
     forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15), Gen.oneOf(true, false)) { (depth, se, tap, isSync) =>
       whenever(se._1 >= 1 && depth >= 1 && se._2.nonEmpty) {
-        assertTesterPasses {
+        simulate {
           new EmptyFlushEdgecaseTester(se._2, depth, se._1, tap, isSync)
-        }
+        }(RunUntilFinished(1024 * 10))
       }
     }
   }
   property("Test queue can enqueue during a flush") {
     forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15), Gen.oneOf(true, false)) { (depth, se, tap, isSync) =>
       whenever(se._1 >= 1 && depth >= 1 && se._2.nonEmpty) {
-        assertTesterPasses {
+        simulate {
           new EnqueueEmptyFlushEdgecaseTester(se._2, depth, se._1, tap, isSync)
-        }
+        }(RunUntilFinished(1024 * 10))
       }
     }
   }
   property("Queue flush when queue is full") {
     forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15), Gen.oneOf(true, false)) { (depth, se, tap, isSync) =>
       whenever(se._1 >= 1 && depth >= 1 && se._2.nonEmpty) {
-        assertTesterPasses {
+        simulate {
           new FullQueueFlushEdgecaseTester(se._2, depth, se._1, tap, isSync)
-        }
+        }(RunUntilFinished(1024 * 10))
       }
     }
   }
   property("Queue should be able to dequeue when flush is high") {
     forAll(Gen.choose(3, 5), safeUIntN(20), Gen.choose(0, 15), Gen.oneOf(true, false)) { (depth, se, tap, isSync) =>
       whenever(se._1 >= 1 && depth >= 1 && se._2.nonEmpty) {
-        assertTesterPasses(
+        simulate(
           new DequeueFullQueueEdgecaseTester(se._2, depth, se._1, tap, isSync)
-        )
+        )(RunUntilFinished(1024 * 10))
       }
     }
   }
