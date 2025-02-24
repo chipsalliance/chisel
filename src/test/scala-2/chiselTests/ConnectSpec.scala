@@ -4,8 +4,11 @@ package chiselTests
 
 import chisel3._
 import chisel3.experimental.Analog
-import chisel3.testers.BasicTester
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
 import circt.stage.ChiselStage
+import org.scalatest.propspec.AnyPropSpec
+import org.scalatest.matchers.should.Matchers
 
 abstract class CrossCheck extends Bundle {
   val in:  Data
@@ -31,77 +34,61 @@ class PipeInternalWires extends Module {
   pipe.io.enq.bits <> io.b
 }
 
-class CrossConnectTester(inType: Data, outType: Data) extends BasicTester {
+class CrossConnectTester(inType: Data, outType: Data) extends Module {
   val dut = Module(new CrossConnects(inType, outType))
   dut.io := DontCare
   stop()
 }
 
-class ConnectSpec extends ChiselPropSpec with Utils {
+class ConnectSpec extends AnyPropSpec with Matchers with ChiselSim {
   property("SInt := SInt should succeed") {
-    assertTesterPasses { new CrossConnectTester(SInt(16.W), SInt(16.W)) }
+    simulate { new CrossConnectTester(SInt(16.W), SInt(16.W)) }(RunUntilFinished(3))
   }
   property("SInt := UInt should fail") {
     intercept[ChiselException] {
-      extractCause[ChiselException] {
-        ChiselStage.emitCHIRRTL { new CrossConnectTester(UInt(16.W), SInt(16.W)) }
-      }
+      ChiselStage.emitCHIRRTL { new CrossConnectTester(UInt(16.W), SInt(16.W)) }
     }
   }
   property("UInt := UInt should succeed") {
-    assertTesterPasses { new CrossConnectTester(UInt(16.W), UInt(16.W)) }
+    simulate { new CrossConnectTester(UInt(16.W), UInt(16.W)) }(RunUntilFinished(3))
   }
   property("UInt := SInt should fail") {
     intercept[ChiselException] {
-      extractCause[ChiselException] {
-        ChiselStage.emitCHIRRTL { new CrossConnectTester(SInt(16.W), UInt(16.W)) }
-      }
+      ChiselStage.emitCHIRRTL { new CrossConnectTester(SInt(16.W), UInt(16.W)) }
     }
   }
   property("Clock := Clock should succeed") {
-    assertTesterPasses { new CrossConnectTester(Clock(), Clock()) }
+    simulate { new CrossConnectTester(Clock(), Clock()) }(RunUntilFinished(3))
   }
   property("Clock := UInt should fail") {
     intercept[ChiselException] {
-      extractCause[ChiselException] {
-        ChiselStage.emitCHIRRTL { new CrossConnectTester(Clock(), UInt(16.W)) }
-      }
+      ChiselStage.emitCHIRRTL { new CrossConnectTester(Clock(), UInt(16.W)) }
     }
   }
 
   property("Analog := Analog should fail") {
     intercept[ChiselException] {
-      extractCause[ChiselException] {
-        ChiselStage.emitCHIRRTL { new CrossConnectTester(Analog(16.W), Analog(16.W)) }
-      }
+      ChiselStage.emitCHIRRTL { new CrossConnectTester(Analog(16.W), Analog(16.W)) }
     }
   }
   property("Analog := UInt should fail") {
     intercept[ChiselException] {
-      extractCause[ChiselException] {
-        ChiselStage.emitCHIRRTL { new CrossConnectTester(Analog(16.W), UInt(16.W)) }
-      }
+      ChiselStage.emitCHIRRTL { new CrossConnectTester(Analog(16.W), UInt(16.W)) }
     }
   }
   property("Analog := SInt should fail") {
     intercept[ChiselException] {
-      extractCause[ChiselException] {
-        ChiselStage.emitCHIRRTL { new CrossConnectTester(Analog(16.W), SInt(16.W)) }
-      }
+      ChiselStage.emitCHIRRTL { new CrossConnectTester(Analog(16.W), SInt(16.W)) }
     }
   }
   property("UInt := Analog should fail") {
     intercept[ChiselException] {
-      extractCause[ChiselException] {
-        ChiselStage.emitCHIRRTL { new CrossConnectTester(UInt(16.W), Analog(16.W)) }
-      }
+      ChiselStage.emitCHIRRTL { new CrossConnectTester(UInt(16.W), Analog(16.W)) }
     }
   }
   property("SInt := Analog should fail") {
     intercept[ChiselException] {
-      extractCause[ChiselException] {
-        ChiselStage.emitCHIRRTL { new CrossConnectTester(SInt(16.W), Analog(16.W)) }
-      }
+      ChiselStage.emitCHIRRTL { new CrossConnectTester(SInt(16.W), Analog(16.W)) }
     }
   }
   property("Pipe internal connections should succeed") {
