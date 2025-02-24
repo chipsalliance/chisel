@@ -297,56 +297,37 @@ object ChiselGeneratorAnnotation extends HasShellOptions {
 /** Stores a Chisel Circuit
   * @param circuit a Chisel Circuit
   */
-class ChiselCircuitAnnotation private (private[chisel3] val _circuit: Either[Circuit, ElaboratedCircuit])
+class ChiselCircuitAnnotation private (val elaboratedCircuit: ElaboratedCircuit)
     extends NoTargetAnnotation
     with ChiselOption
     with Unserializable
     with Product
     with Serializable {
-
-  @deprecated("Use factory method with ElaboratedCircuit instead.", "Chisel 6.7.0")
-  def this(circuit: Circuit) = this(Left(circuit))
-
-  @deprecated("Use elaboratedCircuit instead.", "Chisel 6.7.0")
-  def circuit: Circuit = _circuit.map(_._circuit).merge
-
-  // If constructed from a Circuit, we fake an ElaboratedCircuit with no annotations
-  def elaboratedCircuit: ElaboratedCircuit = _circuit.left.map(ElaboratedCircuit(_, Nil)).merge
-
   def canEqual(that: Any): Boolean = that.isInstanceOf[ChiselCircuitAnnotation]
 
   override def equals(obj: Any): Boolean = obj match {
-    case that: ChiselCircuitAnnotation => this._circuit == that._circuit
+    case that: ChiselCircuitAnnotation => this.elaboratedCircuit == that.elaboratedCircuit
     case _ => false
   }
 
   def productArity: Int = 1
 
   def productElement(n: Int): Any = n match {
-    case 0 => _circuit
+    case 0 => elaboratedCircuit
     case _ => throw new IndexOutOfBoundsException(s"Invalid index $n")
   }
 
   /* Caching the hashCode for a large circuit is necessary due to repeated queries.
    * Not caching the hashCode will cause severe performance degredations for large [[Circuit]]s.
    */
-  override lazy val hashCode: Int = _circuit.hashCode
-
-  @deprecated("Don't copy, just create a new one.", "Chisel 6.7.0")
-  def copy(circuit: Circuit = this.circuit): ChiselCircuitAnnotation = new ChiselCircuitAnnotation(Left(circuit))
+  override lazy val hashCode: Int = elaboratedCircuit.hashCode
 }
 
 object ChiselCircuitAnnotation extends scala.runtime.AbstractFunction1[ElaboratedCircuit, ChiselCircuitAnnotation] {
 
-  @deprecated("Construct with ElaboratedCircuit instead.", "Chisel 6.7.0")
-  def apply(circuit: Circuit): ChiselCircuitAnnotation = new ChiselCircuitAnnotation(Left(circuit))
-
   def apply(elaboratedCircuit: ElaboratedCircuit): ChiselCircuitAnnotation = new ChiselCircuitAnnotation(
-    Right(elaboratedCircuit)
+    elaboratedCircuit
   )
-
-  @deprecated("Unapply is deprecated, access fields directly.", "Chisel 6.7.0")
-  def unapply(c: ChiselCircuitAnnotation): Option[Circuit] = Some(c.circuit)
 }
 
 object CircuitSerializationAnnotation {

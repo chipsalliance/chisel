@@ -2,7 +2,7 @@
 
 package circt
 
-import chisel3.experimental.{annotate, BaseModule, ChiselAnnotation}
+import chisel3.experimental.{annotate, BaseModule}
 import firrtl.annotations.{ModuleTarget, SingleTargetAnnotation}
 import firrtl.FirrtlUserException
 

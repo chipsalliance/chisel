@@ -26,7 +26,7 @@ package object stage {
             c.copy(warningFilters = c.warningFilters :+ WarningsAsErrorsAnnotation.asFilter)
           case ChiselOutputFileAnnotation(f) => c.copy(outputFile = Some(f))
           case a: ChiselCircuitAnnotation =>
-            c.copy(chiselCircuit = Some(a.circuit), elaboratedCircuit = a._circuit.toOption)
+            c.copy(elaboratedCircuit = Some(a.elaboratedCircuit))
           case SourceRootAnnotation(s) => c.copy(sourceRoots = c.sourceRoots :+ s)
           case a: WarningConfigurationAnnotation     => c.copy(warningFilters = c.warningFilters ++ a.filters)
           case a: WarningConfigurationFileAnnotation => c.copy(warningFilters = c.warningFilters ++ a.filters)

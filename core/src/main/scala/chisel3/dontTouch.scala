@@ -2,7 +2,7 @@
 
 package chisel3
 
-import chisel3.experimental.{annotate, requireIsAnnotatable, ChiselAnnotation}
+import chisel3.experimental.{annotate, requireIsAnnotatable}
 import chisel3.properties.Property
 import chisel3.reflect.DataMirror
 import firrtl.transforms.DontTouchAnnotation

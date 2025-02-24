@@ -3,7 +3,7 @@
 package chisel3.util.experimental.decode
 
 import chisel3._
-import chisel3.experimental.{annotate, requireIsAnnotatable, ChiselAnnotation}
+import chisel3.experimental.{annotate, requireIsAnnotatable}
 import chisel3.util.{pla, BitPat}
 import chisel3.util.experimental.{getAnnotations, BitSet}
 import firrtl.annotations.Annotation

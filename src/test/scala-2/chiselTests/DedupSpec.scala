@@ -4,7 +4,7 @@ package chiselTests
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.{annotate, dedupGroup, ChiselAnnotation}
+import chisel3.experimental.{annotate, dedupGroup}
 import chisel3.experimental.hierarchy.Definition
 import chisel3.properties.Class
 import firrtl.transforms.DedupGroupAnnotation

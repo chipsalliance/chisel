@@ -11,47 +11,7 @@ import firrtl.annotations._
 import firrtl.options.Unserializable
 import firrtl.transforms.{DedupGroupAnnotation, NoDedupAnnotation}
 
-/** Interface for Annotations in Chisel
-  *
-  * Defines a conversion to a corresponding FIRRTL Annotation
-  */
-@deprecated(
-  "Avoid custom annotations. If you must use annotations, use annotate.apply method that takes Data",
-  "Chisel 6.7.0"
-)
-trait ChiselAnnotation {
-
-  /** Conversion to FIRRTL Annotation */
-  def toFirrtl: Annotation
-}
-
-/** Enhanced interface for Annotations in Chisel
-  *
-  *  Defines a conversion to corresponding FIRRTL Annotation(s)
-  */
-@deprecated(
-  "Avoid custom annotations. If you must use annotations, use annotate.apply method that takes Data",
-  "Chisel 6.7.0"
-)
-trait ChiselMultiAnnotation {
-  def toFirrtl: Seq[Annotation]
-}
-
-@nowarn("msg=Avoid custom annotations")
 object annotate {
-  @deprecated(
-    "Avoid custom annotations. If you must use annotations, use annotate.apply method that takes Data",
-    "Chisel 6.7.0"
-  )
-  def apply(anno: ChiselAnnotation): Unit =
-    Builder.annotations += anno
-
-  @deprecated(
-    "Avoid custom annotations. If you must use annotations, use annotate.apply method that takes Data",
-    "Chisel 6.7.0"
-  )
-  def apply(annos: ChiselMultiAnnotation): Unit =
-    Builder.newAnnotations += annos
 
   /** Create annotations.
     *
@@ -65,9 +25,7 @@ object annotate {
       case d: Data => requireIsAnnotatable(d, "Data marked with annotation")
       case _ => ()
     }
-    Builder.newAnnotations += new ChiselMultiAnnotation {
-      def toFirrtl: Seq[Annotation] = mkAnnos
-    }
+    Builder.annotations += (() => mkAnnos)
   }
 
   /** Create annotations.

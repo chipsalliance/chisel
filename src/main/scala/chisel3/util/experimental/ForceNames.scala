@@ -2,7 +2,7 @@
 
 package chisel3.util.experimental
 
-import chisel3.experimental.{annotate, ChiselAnnotation}
+import chisel3.experimental.annotate
 import firrtl.{FirrtlUserException, RenameMap}
 import firrtl.annotations.{Annotation, IsMember, ReferenceTarget, SingleTargetAnnotation}
 

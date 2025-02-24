@@ -567,53 +567,15 @@ private[chisel3] object ir {
 
   case class DefClass(id: Class, name: String, ports: Seq[Port], block: Block) extends Component
 
-  @nowarn("msg=Avoid custom annotations")
   case class Circuit(
-    name:           String,
-    components:     Seq[Component],
-    annotations:    Seq[ChiselAnnotation],
-    renames:        RenameMap,
-    newAnnotations: Seq[ChiselMultiAnnotation],
-    typeAliases:    Seq[DefTypeAlias],
-    layers:         Seq[Layer],
-    options:        Seq[DefOption]
+    name:        String,
+    components:  Seq[Component],
+    annotations: Seq[() => Seq[Annotation]],
+    renames:     RenameMap,
+    typeAliases: Seq[DefTypeAlias],
+    layers:      Seq[Layer],
+    options:     Seq[DefOption]
   ) {
-
-    def this(
-      name:        String,
-      components:  Seq[Component],
-      annotations: Seq[ChiselAnnotation],
-      renames:     RenameMap,
-      typeAliases: Seq[DefTypeAlias],
-      layers:      Seq[Layer],
-      options:     Seq[DefOption]
-    ) =
-      this(name, components, annotations, renames, Seq.empty, typeAliases, layers, options)
-
-    def firrtlAnnotations: Iterable[Annotation] =
-      annotations.flatMap(_.toFirrtl.update(renames)) ++ newAnnotations.flatMap(
-        _.toFirrtl.flatMap(_.update(renames))
-      )
-  }
-
-  @nowarn("msg=Avoid custom annotations")
-  object Circuit
-      extends scala.runtime.AbstractFunction7[String, Seq[Component], Seq[ChiselAnnotation], RenameMap, Seq[
-        DefTypeAlias
-      ], Seq[Layer], Seq[DefOption], Circuit] {
-    def unapply(c: Circuit): Option[(String, Seq[Component], Seq[ChiselAnnotation], RenameMap, Seq[DefTypeAlias])] = {
-      Some((c.name, c.components, c.annotations, c.renames, c.typeAliases))
-    }
-
-    def apply(
-      name:        String,
-      components:  Seq[Component],
-      annotations: Seq[ChiselAnnotation],
-      renames:     RenameMap,
-      typeAliases: Seq[DefTypeAlias] = Seq.empty,
-      layers:      Seq[Layer] = Seq.empty,
-      options:     Seq[DefOption] = Seq.empty
-    ): Circuit =
-      new Circuit(name, components, annotations, renames, typeAliases, layers, options)
+    def firrtlAnnotations: Iterable[Annotation] = annotations.flatMap(_().flatMap(_.update(renames)))
   }
 }
