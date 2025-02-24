@@ -3,7 +3,10 @@
 package chiselTests
 
 import chisel3._
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
 import chisel3.testers.BasicTester
+import org.scalatest.propspec.AnyPropSpec
 
 class IntegerMathTester extends BasicTester {
 
@@ -25,8 +28,8 @@ class IntegerMathTester extends BasicTester {
   stop()
 }
 
-class IntegerMathSpec extends ChiselPropSpec {
+class IntegerMathSpec extends AnyPropSpec with ChiselSim {
   property("All integer ops should return the correct result") {
-    assertTesterPasses { new IntegerMathTester }
+    simulate { new IntegerMathTester }(RunUntilFinished(3))
   }
 }
