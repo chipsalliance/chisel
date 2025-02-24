@@ -3,9 +3,13 @@
 package chiselTests
 
 import chisel3._
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
 import chisel3.testers.BasicTester
 import chisel3.util.{Counter, Queue}
 import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 class AsyncResetTester extends BasicTester {
   val (_, cDiv) = Counter(true.B, 4)
@@ -137,7 +141,7 @@ class AsyncResetDontCareModule extends RawModule {
   bulkAggPort <> DontCare
 }
 
-class AsyncResetSpec extends ChiselFlatSpec with Utils {
+class AsyncResetSpec extends AnyFlatSpec with Matchers with Utils with ChiselSim {
 
   behavior.of("AsyncReset")
 
@@ -153,7 +157,7 @@ class AsyncResetSpec extends ChiselFlatSpec with Utils {
 
   it should "NOT be allowed with non-literal reset values" in {
     val e = intercept[RuntimeException] {
-      compile(new BasicTester {
+      ChiselStage.emitSystemVerilog(new BasicTester {
         val x = WireInit(123.U + 456.U)
         withReset(reset.asAsyncReset)(RegInit(x))
       })
@@ -163,7 +167,7 @@ class AsyncResetSpec extends ChiselFlatSpec with Utils {
   }
 
   it should "NOT be allowed to connect directly to a Bool" in {
-    a[ChiselException] should be thrownBy extractCause[ChiselException] {
+    intercept[ChiselException] {
       ChiselStage.emitCHIRRTL(new BasicTester {
         val bool = Wire(Bool())
         val areset = reset.asAsyncReset
@@ -173,11 +177,11 @@ class AsyncResetSpec extends ChiselFlatSpec with Utils {
   }
 
   it should "simulate correctly" in {
-    assertTesterPasses(new AsyncResetTester)
+    simulate(new AsyncResetTester)(RunUntilFinished(17))
   }
 
   it should "simulate correctly with aggregates" in {
-    assertTesterPasses(new AsyncResetAggregateTester)
+    simulate(new AsyncResetAggregateTester)(RunUntilFinished(17))
   }
 
   it should "allow casting to and from Bool" in {
@@ -190,11 +194,11 @@ class AsyncResetSpec extends ChiselFlatSpec with Utils {
   }
 
   it should "allow changing the reset type of whole modules like Queue" in {
-    assertTesterPasses(new AsyncResetQueueTester)
+    simulate(new AsyncResetQueueTester)(RunUntilFinished(17))
   }
 
   it should "support SInt regs" in {
-    assertTesterPasses(new BasicTester {
+    simulate(new BasicTester {
       // Also check that it traces through wires
       val initValue = Wire(SInt())
       val reg = withReset(reset.asAsyncReset)(RegNext(initValue, 27.S))
@@ -206,7 +210,7 @@ class AsyncResetSpec extends ChiselFlatSpec with Utils {
         chisel3.assert(reg === -43.S)
       }
       when(done) { stop() }
-    })
+    })(RunUntilFinished(5))
   }
 
   it should "allow literals cast to Bundles as reset values" in {
@@ -214,7 +218,7 @@ class AsyncResetSpec extends ChiselFlatSpec with Utils {
       val x = UInt(16.W)
       val y = UInt(16.W)
     }
-    assertTesterPasses(new BasicTester {
+    simulate(new BasicTester {
       val reg = withReset(reset.asAsyncReset) {
         RegNext(0xbad0cad0L.U.asTypeOf(new MyBundle), 0xdeadbeefL.U.asTypeOf(new MyBundle))
       }
@@ -225,10 +229,10 @@ class AsyncResetSpec extends ChiselFlatSpec with Utils {
         chisel3.assert(reg.asUInt === 0xbad0cad0L.U)
       }
       when(done) { stop() }
-    })
+    })(RunUntilFinished(5))
   }
   it should "allow literals cast to Vecs as reset values" in {
-    assertTesterPasses(new BasicTester {
+    simulate(new BasicTester {
       val reg = withReset(reset.asAsyncReset) {
         RegNext(0xbad0cad0L.U.asTypeOf(Vec(4, UInt(8.W))), 0xdeadbeefL.U.asTypeOf(Vec(4, UInt(8.W))))
       }
@@ -239,6 +243,6 @@ class AsyncResetSpec extends ChiselFlatSpec with Utils {
         chisel3.assert(reg.asUInt === 0xbad0cad0L.U)
       }
       when(done) { stop() }
-    })
+    })(RunUntilFinished(5))
   }
 }
