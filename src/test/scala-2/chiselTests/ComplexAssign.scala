@@ -3,8 +3,10 @@
 package chiselTests
 
 import chisel3._
-import chisel3.testers.BasicTester
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
 import chisel3.util._
+import org.scalatest.propspec.AnyPropSpec
 
 class Complex[T <: Data](val re: T, val im: T) extends Bundle
 
@@ -25,7 +27,7 @@ class ComplexAssign(w: Int) extends Module {
   }
 }
 
-class ComplexAssignTester(enList: List[Boolean], re: Int, im: Int) extends BasicTester {
+class ComplexAssignTester(enList: List[Boolean], re: Int, im: Int) extends Module {
   val (cnt, wrap) = Counter(true.B, enList.size)
   val dut = Module(new ComplexAssign(32))
   dut.io.in.re := re.asUInt
@@ -39,10 +41,10 @@ class ComplexAssignTester(enList: List[Boolean], re: Int, im: Int) extends Basic
   }
 }
 
-class ComplexAssignSpec extends ChiselPropSpec {
+class ComplexAssignSpec extends AnyPropSpec with PropertyUtils with ChiselSim {
   property("All complex assignments should return the correct result") {
     forAll(enSequence(2), safeUInts, safeUInts) { (en: List[Boolean], re: Int, im: Int) =>
-      assertTesterPasses { new ComplexAssignTester(en, re, im) }
+      simulate { new ComplexAssignTester(en, re, im) }(RunUntilFinished(en.size + 1))
     }
   }
 }
