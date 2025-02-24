@@ -4,13 +4,14 @@ package chiselTests
 
 import chisel3._
 import chisel3.experimental.BundleLiterals._
-import chisel3.experimental._
-import chisel3.testers.BasicTester
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
 import circt.stage.ChiselStage
-
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import scala.collection.immutable.ListMap
 
-class LiteralExtractorSpec extends ChiselFlatSpec {
+class LiteralExtractorSpec extends AnyFlatSpec with Matchers with ChiselSim {
   "litValue" should "return the literal value" in {
     assert(0.U.litValue === BigInt(0))
     assert(1.U.litValue === BigInt(1))
@@ -79,7 +80,7 @@ class LiteralExtractorSpec extends ChiselFlatSpec {
       val y = UInt(88.W)
     }
 
-    class LitInsideOutsideTester(outsideLiteral: InsideBundle) extends BasicTester {
+    class LitInsideOutsideTester(outsideLiteral: InsideBundle) extends Module {
       val insideLiteral = (new InsideBundle).Lit(_.x -> 7.S, _.y -> 7777.U)
 
       // the following errors with "assertion failed"
@@ -98,7 +99,7 @@ class LiteralExtractorSpec extends ChiselFlatSpec {
     }
 
     val outsideLiteral = (new InsideBundle).Lit(_.x -> 7.S, _.y -> 7777.U)
-    assertTesterPasses { new LitInsideOutsideTester(outsideLiteral) }
+    simulate(new LitInsideOutsideTester(outsideLiteral))(RunUntilFinished(3))
 
   }
 
