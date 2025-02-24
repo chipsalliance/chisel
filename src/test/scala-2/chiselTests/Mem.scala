@@ -2,12 +2,16 @@
 
 package chiselTests
 
-import circt.stage.ChiselStage
 import chisel3._
-import chisel3.testers.BasicTester
-import chisel3.util._
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
+import chisel3.util.{is, switch, Counter, SRAM}
+import circt.stage.ChiselStage
+import org.scalatest.propspec.AnyPropSpec
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 
-class MemVecTester extends BasicTester {
+class MemVecTester extends Module {
   val mem = Mem(2, Vec(2, UInt(8.W)))
 
   // Circuit style tester is definitely the wrong abstraction here
@@ -20,7 +24,7 @@ class MemVecTester extends BasicTester {
   }
 }
 
-class SyncReadMemTester extends BasicTester {
+class SyncReadMemTester extends Module {
   val (cnt, _) = Counter(true.B, 5)
   val mem = SyncReadMem(2, UInt(2.W))
   val rdata = mem.read(cnt - 1.U, cnt =/= 0.U)
@@ -34,7 +38,7 @@ class SyncReadMemTester extends BasicTester {
   }
 }
 
-class SyncReadMemWriteCollisionTester extends BasicTester {
+class SyncReadMemWriteCollisionTester extends Module {
   val (cnt, _) = Counter(true.B, 5)
 
   // Write-first
@@ -58,7 +62,7 @@ class SyncReadMemWriteCollisionTester extends BasicTester {
   }
 }
 
-class SyncReadMemWithZeroWidthTester extends BasicTester {
+class SyncReadMemWithZeroWidthTester extends Module {
   val (cnt, _) = Counter(true.B, 3)
   val mem = SyncReadMem(2, UInt(0.W))
   val rdata = mem.read(0.U, true.B)
@@ -70,7 +74,7 @@ class SyncReadMemWithZeroWidthTester extends BasicTester {
 }
 
 // TODO this can't actually simulate with FIRRTL behavioral mems
-class HugeSMemTester(size: BigInt) extends BasicTester {
+class HugeSMemTester(size: BigInt) extends Module {
   val (cnt, _) = Counter(true.B, 5)
   val mem = SyncReadMem(size, UInt(8.W))
   val rdata = mem.read(cnt - 1.U, cnt =/= 0.U)
@@ -83,7 +87,7 @@ class HugeSMemTester(size: BigInt) extends BasicTester {
     is(4.U) { stop() }
   }
 }
-class HugeCMemTester(size: BigInt) extends BasicTester {
+class HugeCMemTester(size: BigInt) extends Module {
   val (cnt, _) = Counter(true.B, 5)
   val mem = Mem(size, UInt(8.W))
   val rdata = mem.read(cnt)
@@ -97,7 +101,7 @@ class HugeCMemTester(size: BigInt) extends BasicTester {
   }
 }
 
-class SyncReadMemBundleTester extends BasicTester {
+class SyncReadMemBundleTester extends Module {
   val (cnt, _) = Counter(true.B, 5)
   val tpe = new Bundle {
     val foo = UInt(2.W)
@@ -122,7 +126,7 @@ class SyncReadMemBundleTester extends BasicTester {
   }
 }
 
-class MemBundleTester extends BasicTester {
+class MemBundleTester extends Module {
   val tpe = new Bundle {
     val foo = UInt(2.W)
   }
@@ -188,7 +192,7 @@ private class TrueDualPortMemory(addrW: Int, dataW: Int) extends RawModule {
   }
 }
 
-class MemReadWriteTester extends BasicTester {
+class MemReadWriteTester extends Module {
   val (cnt, _) = Counter(true.B, 6)
   val mem = SyncReadMem(2, UInt(2.W))
 
@@ -243,7 +247,7 @@ class MemReadWriteTester extends BasicTester {
   }
 }
 
-class MemMaskedReadWriteTester extends BasicTester {
+class MemMaskedReadWriteTester extends Module {
   val (cnt, _) = Counter(true.B, 11)
   val mem = SyncReadMem(2, Vec(4, UInt(8.W)))
 
@@ -338,30 +342,30 @@ class MemMaskedReadWriteTester extends BasicTester {
   }
 }
 
-class MemorySpec extends ChiselPropSpec {
+class MemorySpec extends AnyPropSpec with Matchers with ChiselSim {
   property("Mem of Vec should work") {
-    assertTesterPasses { new MemVecTester }
+    simulate(new MemVecTester)(RunUntilFinished(3))
   }
 
   property("SyncReadMem should work") {
-    assertTesterPasses { new SyncReadMemTester }
+    simulate(new SyncReadMemTester)(RunUntilFinished(6))
   }
 
   property("SyncReadMems of Bundles should work") {
-    assertTesterPasses { new SyncReadMemBundleTester }
+    simulate(new SyncReadMemBundleTester)(RunUntilFinished(6))
   }
 
   property("Mems of Bundles should work") {
-    assertTesterPasses { new MemBundleTester }
+    simulate(new MemBundleTester)(RunUntilFinished(3))
   }
 
   // TODO: SFC->MFC, this test is ignored because the read-under-write specifiers are not emitted to work with MFC
   ignore("SyncReadMem write collision behaviors should work") {
-    assertTesterPasses { new SyncReadMemWriteCollisionTester }
+    simulate(new SyncReadMemWriteCollisionTester)(RunUntilFinished(3))
   }
 
   property("SyncReadMem should work with zero width entry") {
-    assertTesterPasses { new SyncReadMemWithZeroWidthTester }
+    simulate(new SyncReadMemWithZeroWidthTester)(RunUntilFinished(4))
   }
 
   property("SyncReadMems should be able to have an explicit number of read-write ports") {
@@ -370,7 +374,7 @@ class MemorySpec extends ChiselPropSpec {
     chirrtl should include(s"rdwr mport rdata = mem[_rdata_T_1], clock")
 
     // Check read/write logic
-    assertTesterPasses { new MemReadWriteTester }
+    simulate(new MemReadWriteTester)(RunUntilFinished(7))
   }
 
   property("SyncReadMem masked read-writes should work") {
@@ -379,7 +383,7 @@ class MemorySpec extends ChiselPropSpec {
     chirrtl should include(s"rdwr mport rdata = mem[_rdata_T_1], clock")
 
     // Check read/write logic
-    assertTesterPasses { new MemMaskedReadWriteTester }
+    simulate(new MemMaskedReadWriteTester)(RunUntilFinished(12))
   }
 
   property("Massive memories should be emitted in Verilog") {
@@ -448,7 +452,7 @@ class MemorySpec extends ChiselPropSpec {
   }
 }
 
-class SRAMSpec extends ChiselFunSpec {
+class SRAMSpec extends AnyFunSpec with Matchers {
   describe("SRAM") {
     val portCombos: Seq[(Int, Int, Int)] =
       for {
