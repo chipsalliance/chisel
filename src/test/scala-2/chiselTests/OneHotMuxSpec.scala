@@ -3,28 +3,28 @@
 package chiselTests
 
 import chisel3._
-import chisel3.testers.BasicTester
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
 import chisel3.util.{Mux1H, UIntToOH}
-import _root_.circt.stage.ChiselStage.emitCHIRRTL
-import org.scalatest._
+import circt.stage.ChiselStage.emitCHIRRTL
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
-class OneHotMuxSpec extends AnyFreeSpec with Matchers with ChiselRunners {
+class OneHotMuxSpec extends AnyFreeSpec with Matchers with ChiselSim {
   "simple one hot mux with uint should work" in {
-    assertTesterPasses(new SimpleOneHotTester)
+    simulate(new SimpleOneHotTester)(RunUntilFinished(3))
   }
   "simple one hot mux with sint should work" in {
-    assertTesterPasses(new SIntOneHotTester)
+    simulate(new SIntOneHotTester)(RunUntilFinished(3))
   }
   "simple one hot mux with all same parameterized sint values should work" in {
-    assertTesterPasses(new ParameterizedOneHotTester)
+    simulate(new ParameterizedOneHotTester)(RunUntilFinished(3))
   }
   "UIntToOH with output width greater than 2^(input width)" in {
-    assertTesterPasses(new UIntToOHTester)
+    simulate(new UIntToOHTester)(RunUntilFinished(3))
   }
   "UIntToOH should accept width of zero" in {
-    assertTesterPasses(new ZeroWidthOHTester)
+    simulate(new ZeroWidthOHTester)(RunUntilFinished(3))
   }
   "Mux1H should give a decent error when given an empty Seq" in {
     val e = intercept[IllegalArgumentException] {
@@ -52,7 +52,7 @@ class OneHotMuxSpec extends AnyFreeSpec with Matchers with ChiselRunners {
   }
 }
 
-class SimpleOneHotTester extends BasicTester {
+class SimpleOneHotTester extends Module {
   val out = Wire(UInt())
   out := Mux1H(
     Seq(
@@ -68,7 +68,7 @@ class SimpleOneHotTester extends BasicTester {
   stop()
 }
 
-class SIntOneHotTester extends BasicTester {
+class SIntOneHotTester extends Module {
   val out = Wire(SInt())
   out := Mux1H(
     Seq(
@@ -84,7 +84,7 @@ class SIntOneHotTester extends BasicTester {
   stop()
 }
 
-class ParameterizedOneHotTester extends BasicTester {
+class ParameterizedOneHotTester extends Module {
   val values: Seq[Int] = Seq(-3, -5, -7, -11)
   for ((v, i) <- values.zipWithIndex) {
     val dut = Module(new ParameterizedOneHot(values.map(_.S), SInt(8.W)))
@@ -121,7 +121,7 @@ class ParameterizedAggregateOneHot[T <: Data](valGen: HasMakeLit[T], outGen: T) 
   io.out := Mux1H(terms)
 }
 
-class UIntToOHTester extends BasicTester {
+class UIntToOHTester extends Module {
   val out = UIntToOH(1.U, 3)
   require(out.getWidth == 3)
   assert(out === 2.U)
@@ -133,7 +133,7 @@ class UIntToOHTester extends BasicTester {
   stop()
 }
 
-class ZeroWidthOHTester extends BasicTester {
+class ZeroWidthOHTester extends Module {
   val out = UIntToOH(0.U, 0)
   assert(out === 0.U(0.W))
   stop()
