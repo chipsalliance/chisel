@@ -6,7 +6,10 @@ import chisel3._
 import circt.stage.ChiselStage
 import chisel3.util.{log2Ceil, Decoupled, DeqIO, EnqIO, Queue, QueueIO}
 import chisel3.experimental.CloneModuleAsRecord
-import chisel3.testers.BasicTester
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
+import org.scalatest.propspec.AnyPropSpec
+import org.scalatest.matchers.should.Matchers
 
 class MultiIOQueue[T <: Data](gen: T, val entries: Int) extends Module {
   val clk = IO(Input(Clock()))
@@ -44,7 +47,7 @@ class QueueClone(multiIO: Boolean = false) extends Module {
   }
 }
 
-class QueueCloneTester(x: Int, multiIO: Boolean = false) extends BasicTester {
+class QueueCloneTester(x: Int, multiIO: Boolean = false) extends Module {
   val dut = Module(new QueueClone(multiIO))
   val start = RegNext(dut.io.enq.fire, true.B)
   val accept = RegNext(dut.io.deq.valid, false.B)
@@ -77,7 +80,7 @@ class CloneModuleAsRecordAnnotate extends Module {
   out <> q2_io.deq
 }
 
-class CloneModuleSpec extends ChiselPropSpec {
+class CloneModuleSpec extends AnyPropSpec with PropertyUtils with Matchers with ChiselSim {
 
   val xVals = Table(
     ("x"), // First tuple defines column names
@@ -88,7 +91,7 @@ class CloneModuleSpec extends ChiselPropSpec {
 
   property("QueueCloneTester should return the correct result") {
     forAll(xVals) { (x: Int) =>
-      assertTesterPasses { new QueueCloneTester(x) }
+      simulate { new QueueCloneTester(x) }(RunUntilFinished(5))
     }
   }
 
@@ -99,7 +102,7 @@ class CloneModuleSpec extends ChiselPropSpec {
 
   property("Clone of Module should simulate correctly") {
     forAll(xVals) { (x: Int) =>
-      assertTesterPasses { new QueueCloneTester(x, multiIO = true) }
+      simulate { new QueueCloneTester(x, multiIO = true) }(RunUntilFinished(5))
     }
   }
 
