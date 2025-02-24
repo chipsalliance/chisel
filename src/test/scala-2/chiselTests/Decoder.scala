@@ -2,11 +2,12 @@
 
 package chiselTests
 
-import org.scalacheck._
-
 import chisel3._
-import chisel3.testers.BasicTester
-import chisel3.util._
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
+import chisel3.util.{BitPat, Counter}
+import org.scalacheck.{Arbitrary, Gen}
+import org.scalatest.propspec.AnyPropSpec
 
 class Decoder(bitpats: List[String]) extends Module {
   val io = IO(new Bundle {
@@ -16,7 +17,7 @@ class Decoder(bitpats: List[String]) extends Module {
   io.matched := VecInit(bitpats.map(BitPat(_) === io.inst)).reduce(_ || _)
 }
 
-class DecoderTester(pairs: List[(String, String)]) extends BasicTester {
+class DecoderTester(pairs: List[(String, String)]) extends Module {
   val (insts, bitpats) = pairs.unzip
   val (cnt, wrap) = Counter(true.B, pairs.size)
   val dut = Module(new Decoder(bitpats))
@@ -30,7 +31,7 @@ class DecoderTester(pairs: List[(String, String)]) extends BasicTester {
   }
 }
 
-class DecoderSpec extends ChiselPropSpec {
+class DecoderSpec extends AnyPropSpec with PropertyUtils with ChiselSim {
 
   // Use a single Int to make both a specific instruction and a BitPat that will match it
   val bitpatPair = for (seed <- Arbitrary.arbitrary[Int]) yield {
@@ -53,7 +54,7 @@ class DecoderSpec extends ChiselPropSpec {
 
   property("BitPat wildcards should be usable in decoding") {
     forAll(nPairs(4)) { (pairs: List[(String, String)]) =>
-      assertTesterPasses { new DecoderTester(pairs) }
+      simulate { new DecoderTester(pairs) }(RunUntilFinished(pairs.size + 1))
     }
   }
 }
