@@ -2,7 +2,9 @@
 
 package chiselTests
 import chisel3._
-import chisel3.testers.BasicTester
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
+import org.scalatest.propspec.AnyPropSpec
 
 class Coord extends Bundle {
   val x = UInt(32.W)
@@ -21,7 +23,7 @@ class BundleWire(n: Int) extends Module {
   }
 }
 
-class BundleToUnitTester extends BasicTester {
+class BundleToUnitTester extends Module {
   val bundle1 = Wire(new Bundle {
     val a = UInt(4.W)
     val b = UInt(4.W)
@@ -42,7 +44,7 @@ class BundleToUnitTester extends BasicTester {
   stop()
 }
 
-class BundleWireTester(n: Int, x: Int, y: Int) extends BasicTester {
+class BundleWireTester(n: Int, x: Int, y: Int) extends Module {
   val dut = Module(new BundleWire(n))
   dut.io.in.x := x.asUInt
   dut.io.in.y := y.asUInt
@@ -53,17 +55,17 @@ class BundleWireTester(n: Int, x: Int, y: Int) extends BasicTester {
   stop()
 }
 
-class BundleWireSpec extends ChiselPropSpec {
+class BundleWireSpec extends AnyPropSpec with PropertyUtils with ChiselSim {
 
   property("All vec elems should match the inputs") {
     forAll(vecSizes, safeUInts, safeUInts) { (n: Int, x: Int, y: Int) =>
-      assertTesterPasses { new BundleWireTester(n, x, y) }
+      simulate { new BundleWireTester(n, x, y) }(RunUntilFinished(3))
     }
   }
 }
 
-class BundleToUIntSpec extends ChiselPropSpec {
+class BundleToUIntSpec extends AnyPropSpec with ChiselSim {
   property("Bundles with same data but different, underlying elements should compare as UInt") {
-    assertTesterPasses(new BundleToUnitTester)
+    simulate(new BundleToUnitTester)(RunUntilFinished(3))
   }
 }
