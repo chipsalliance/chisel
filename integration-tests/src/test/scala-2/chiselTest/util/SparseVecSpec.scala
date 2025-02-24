@@ -4,11 +4,15 @@ package chiselTests.util
 
 import chisel3._
 import chisel3.testers.BasicTester
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
 import chisel3.util.{log2Up, Counter, SparseVec}
 import chisel3.util.SparseVec.{DefaultValueBehavior, Lookup, OutOfBoundsBehavior}
 import chiselTests.{ChiselFlatSpec, Utils}
 import _root_.circt.stage.ChiselStage
 import java.util.ResourceBundle
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 /** Tester that checks that a a [[SparseVec]] behaves _exactly_ like a dynamic
   * index into a [[DontCare]]-initialized dense [[Vec]].  This checks
@@ -152,9 +156,9 @@ class SparseVecTest(
 
 }
 
-class SparseVecSpec extends ChiselFlatSpec with Utils {
+class SparseVecSpec extends AnyFlatSpec with Matchers with Utils with ChiselSim {
   "SparseVec equivalence to Dynamic Index" should "work for a complete user-specified mapping" in {
-    assertTesterPasses(
+    simulate(
       new SparseVecDynamicIndexEquivalenceTest(
         4,
         UInt(3.W),
@@ -165,11 +169,11 @@ class SparseVecSpec extends ChiselFlatSpec with Utils {
           3 -> 4.U
         )
       )
-    )
+    )(RunUntilFinished(math.pow(2, 4).toInt + 1))
   }
 
   it should "work for a mapping that includes default values" in {
-    assertTesterPasses(
+    simulate(
       new SparseVecDynamicIndexEquivalenceTest(
         4,
         UInt(3.W),
@@ -179,11 +183,11 @@ class SparseVecSpec extends ChiselFlatSpec with Utils {
           3 -> 4.U
         )
       )
-    )
+    )(RunUntilFinished(math.pow(2, 4).toInt + 1))
   }
 
   it should "work for a mapping that includes out-of-bounds accesses" in {
-    assertTesterPasses(
+    simulate(
       new SparseVecDynamicIndexEquivalenceTest(
         3,
         UInt(3.W),
@@ -193,11 +197,11 @@ class SparseVecSpec extends ChiselFlatSpec with Utils {
           2 -> 3.U
         )
       )
-    )
+    )(RunUntilFinished(math.pow(2, 3).toInt + 1))
   }
 
   it should "work for a mapping that includes out-of-bounds accesses and no zeroth element" in {
-    assertTesterPasses(
+    simulate(
       new SparseVecDynamicIndexEquivalenceTest(
         3,
         UInt(3.W),
@@ -206,7 +210,7 @@ class SparseVecSpec extends ChiselFlatSpec with Utils {
           2 -> 3.U
         )
       )
-    )
+    )(RunUntilFinished(math.pow(2, 3).toInt + 1))
   }
 
   "SparseVec" should "work for a complete user-specified mapping" in {
@@ -216,7 +220,7 @@ class SparseVecSpec extends ChiselFlatSpec with Utils {
       2 -> 3.U,
       3 -> 4.U
     )
-    assertTesterPasses(
+    simulate(
       new SparseVecTest(
         4,
         UInt(3.W),
@@ -225,7 +229,7 @@ class SparseVecSpec extends ChiselFlatSpec with Utils {
         mapping,
         expected = mapping
       )
-    )
+    )(RunUntilFinished(math.pow(2, 4).toInt + 1))
   }
 
   // This test is only checking that the indeterminate values didn't screw
@@ -237,7 +241,7 @@ class SparseVecSpec extends ChiselFlatSpec with Utils {
       1 -> 2.U,
       3 -> 4.U
     )
-    assertTesterPasses(
+    simulate(
       new SparseVecTest(
         4,
         UInt(3.W),
@@ -246,7 +250,7 @@ class SparseVecSpec extends ChiselFlatSpec with Utils {
         mapping,
         expected = mapping
       )
-    )
+    )(RunUntilFinished(math.pow(2, 4).toInt + 1))
   }
 
   it should "work for a mapping that includes default values" in {
@@ -255,7 +259,7 @@ class SparseVecSpec extends ChiselFlatSpec with Utils {
       1 -> 2.U,
       3 -> 4.U
     )
-    assertTesterPasses(
+    simulate(
       new SparseVecTest(
         4,
         UInt(3.W),
@@ -264,7 +268,7 @@ class SparseVecSpec extends ChiselFlatSpec with Utils {
         mapping,
         expected = mapping :+ (2 -> 7.U)
       )
-    )
+    )(RunUntilFinished(math.pow(2, 4).toInt + 1))
   }
 
   // As above, there's nothing to test here other than the values put in we get
@@ -275,7 +279,7 @@ class SparseVecSpec extends ChiselFlatSpec with Utils {
       1 -> 2.U,
       2 -> 3.U
     )
-    assertTesterPasses(
+    simulate(
       new SparseVecTest(
         3,
         UInt(3.W),
@@ -284,7 +288,7 @@ class SparseVecSpec extends ChiselFlatSpec with Utils {
         mapping,
         expected = mapping
       )
-    )
+    )(RunUntilFinished(math.pow(2, 3).toInt + 1))
   }
 
   it should "work for a mapping that includes \"first\" out-of-bounds behavior" in {
@@ -293,7 +297,7 @@ class SparseVecSpec extends ChiselFlatSpec with Utils {
       1 -> 2.U,
       2 -> 3.U
     )
-    assertTesterPasses(
+    simulate(
       new SparseVecTest(
         3,
         UInt(3.W),
@@ -302,12 +306,12 @@ class SparseVecSpec extends ChiselFlatSpec with Utils {
         mapping,
         expected = mapping :+ (3 -> mapping(0)._2)
       )
-    )
+    )(RunUntilFinished(math.pow(2, 3).toInt + 1))
   }
 
   it should "work for an empty mapping" in {
     val mapping = Seq.empty[(Int, UInt)]
-    assertTesterPasses(
+    simulate(
       new SparseVecTest(
         2,
         UInt(3.W),
@@ -316,12 +320,12 @@ class SparseVecSpec extends ChiselFlatSpec with Utils {
         mapping,
         expected = mapping ++ Seq(0 -> 7.U, 1 -> 7.U)
       )
-    )
+    )(RunUntilFinished(math.pow(2, 2).toInt + 1))
   }
 
   it should "work for a size-zero vec" in {
     val mapping = Seq.empty[(Int, UInt)]
-    assertTesterPasses(
+    simulate(
       new SparseVecTest(
         0,
         UInt(3.W),
@@ -330,7 +334,7 @@ class SparseVecSpec extends ChiselFlatSpec with Utils {
         mapping,
         expected = mapping ++ Seq(0 -> 7.U)
       )
-    )
+    )(RunUntilFinished(math.pow(2, 0).toInt + 1))
   }
 
   "SparseVec error behavior" should "disallow indices large than the size" in {
