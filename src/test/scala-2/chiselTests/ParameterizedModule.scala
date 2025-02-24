@@ -3,7 +3,10 @@
 package chiselTests
 
 import chisel3._
-import chisel3.testers.BasicTester
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 class ParameterizedModule(invert: Boolean) extends Module {
   val io = IO(new Bundle {
@@ -21,7 +24,7 @@ class ParameterizedModule(invert: Boolean) extends Module {
   * modules with the same name but different contents aren't aliased). Doesn't
   * check that deduplication actually happens, though.
   */
-class ParameterizedModuleTester() extends BasicTester {
+class ParameterizedModuleTester() extends Module {
   val invert = Module(new ParameterizedModule(true))
   val noninvert = Module(new ParameterizedModule(false))
 
@@ -33,8 +36,8 @@ class ParameterizedModuleTester() extends BasicTester {
   stop()
 }
 
-class ParameterizedModuleSpec extends ChiselFlatSpec {
+class ParameterizedModuleSpec extends AnyFlatSpec with Matchers with ChiselSim {
   "Different parameterized modules" should "have different behavior" in {
-    assertTesterPasses(new ParameterizedModuleTester())
+    simulate(new ParameterizedModuleTester())(RunUntilFinished(3))
   }
 }
