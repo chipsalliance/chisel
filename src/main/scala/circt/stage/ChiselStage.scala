@@ -57,6 +57,7 @@ object ChiselStage {
     Seq(
       Dependency[chisel3.stage.phases.Elaborate],
       Dependency[chisel3.stage.phases.Convert],
+      Dependency[chisel3.stage.phases.AddDedupGroupAnnotations],
       Dependency[circt.stage.phases.AddImplicitOutputFile],
       Dependency[chisel3.stage.phases.AddImplicitOutputAnnotationFile],
       Dependency[circt.stage.phases.Checks],
