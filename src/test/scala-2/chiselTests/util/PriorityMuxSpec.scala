@@ -2,13 +2,15 @@
 
 package chiselTests.util
 
-import chisel3._
-import chisel3.testers.BasicTester
-import chisel3.util.{Counter, PriorityMux}
-import chiselTests.ChiselFlatSpec
 import _root_.circt.stage.ChiselStage.emitCHIRRTL
+import chisel3._
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
+import chisel3.util.{Counter, PriorityMux}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class PriorityMuxTester extends BasicTester {
+class PriorityMuxTester extends Module {
 
   val sel = Wire(UInt(3.W))
   sel := 0.U // default
@@ -40,11 +42,11 @@ class PriorityMuxTester extends BasicTester {
   }
 }
 
-class PriorityMuxSpec extends ChiselFlatSpec {
+class PriorityMuxSpec extends AnyFlatSpec with Matchers with ChiselSim {
   behavior.of("PriorityMux")
 
   it should "be functionally correct" in {
-    assertTesterPasses(new PriorityMuxTester)
+    simulate(new PriorityMuxTester)(RunUntilFinished(9))
   }
 
   it should "be stack safe" in {
