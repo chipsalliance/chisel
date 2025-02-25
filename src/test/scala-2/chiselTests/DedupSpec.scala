@@ -101,29 +101,31 @@ class ModuleWithClass extends Module {
 }
 
 class DedupSpec extends AnyFlatSpec with Matchers {
-  private val ModuleRegex = """\s*module\s+(\w+)\b.*""".r
-  def countModules(verilog: String): Int =
-    (verilog.split("\n").collect { case ModuleRegex(name) => name }).filterNot(_.contains("ram_4x32")).size
+  implicit class VerilogHelpers(verilog: String) {
+    private val ModuleRegex = """\s*module\s+(\w+)\b.*""".r
+    def countModules: Int =
+      (verilog.split("\n").collect { case ModuleRegex(name) => name }).filterNot(_.contains("ram_4x32")).size
+  }
 
   "Deduplication" should "occur" in {
-    assert(countModules(ChiselStage.emitSystemVerilog(new DedupQueues(4))) === 2)
+    ChiselStage.emitSystemVerilog(new DedupQueues(4)).countModules should be(2)
   }
 
   it should "properly dedup modules with deduped submodules" in {
-    assert(countModules(ChiselStage.emitSystemVerilog(new NestedDedup)) === 3)
+    ChiselStage.emitSystemVerilog(new NestedDedup).countModules should be(3)
   }
 
   it should "dedup modules that share a literal" in {
-    assert(countModules(ChiselStage.emitSystemVerilog(new SharedConstantValDedupTop)) === 2)
+    ChiselStage.emitSystemVerilog(new SharedConstantValDedupTop).countModules should be(2)
   }
 
   it should "not dedup modules that are in different dedup groups" in {
-    assert(countModules(ChiselStage.emitSystemVerilog {
+    ChiselStage.emitSystemVerilog {
       val top = new SharedConstantValDedupTop
       dedupGroup(top.inst0, "inst0")
       dedupGroup(top.inst1, "inst1")
       top
-    }) === 3)
+    }.countModules should be(3)
   }
 
   it should "work natively for desiredNames" in {
@@ -141,9 +143,7 @@ class DedupSpec extends AnyFlatSpec with Matchers {
       }
       .get
 
-    assert(
-      countModules(verilog) === 3
-    )
+    verilog.countModules should be(3)
   }
 
   it should "error on conflicting dedup groups" in {
