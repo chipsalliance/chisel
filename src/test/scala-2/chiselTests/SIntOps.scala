@@ -3,8 +3,11 @@
 package chiselTests
 
 import chisel3._
-import chisel3.testers.BasicTester
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
 import circt.stage.ChiselStage
+import org.scalatest.propspec.AnyPropSpec
+import org.scalatest.matchers.should.Matchers
 
 class SIntOps extends Module {
   val io = IO(new Bundle {
@@ -84,7 +87,7 @@ class SIntOpsTester(c: SIntOps) extends Tester(c) {
 }
  */
 
-class SIntLitExtractTester extends BasicTester {
+class SIntLitExtractTester extends Module {
   assert(-5.S.extract(1) === true.B)
   assert(-5.S.extract(2) === false.B)
   assert(-5.S.extract(100) === true.B)
@@ -98,7 +101,7 @@ class SIntLitExtractTester extends BasicTester {
   stop()
 }
 
-class SIntLitZeroWidthTester extends BasicTester {
+class SIntLitZeroWidthTester extends Module {
   assert(-0.S(0.W) === 0.S)
   assert(~0.S(0.W) === 0.S)
   assert(0.S(0.W) + 0.S(0.W) === 0.S)
@@ -111,14 +114,14 @@ class SIntLitZeroWidthTester extends BasicTester {
   stop()
 }
 
-class SIntOpsSpec extends ChiselPropSpec with Utils with ShiftRightWidthBehavior {
+class SIntOpsSpec extends AnyPropSpec with Matchers with ShiftRightWidthBehavior with ChiselSim with Utils {
 
   property("SIntOps should elaborate") {
     ChiselStage.emitCHIRRTL { new SIntOps }
   }
 
   property("Negative shift amounts are invalid") {
-    a[ChiselException] should be thrownBy extractCause[ChiselException] {
+    intercept[ChiselException] {
       ChiselStage.emitCHIRRTL(new NegativeShift(SInt()))
     }
   }
@@ -126,11 +129,11 @@ class SIntOpsSpec extends ChiselPropSpec with Utils with ShiftRightWidthBehavior
   ignore("SIntOpsTester should return the correct result") {}
 
   property("Bit extraction on literals should work for all non-negative indices") {
-    assertTesterPasses(new SIntLitExtractTester)
+    simulate(new SIntLitExtractTester)(RunUntilFinished(3))
   }
 
   property("Basic arithmetic and bit operations with zero-width literals should return correct result (0)") {
-    assertTesterPasses(new SIntLitZeroWidthTester)
+    simulate(new SIntLitZeroWidthTester)(RunUntilFinished(3))
   }
 
   // We use WireDefault with 2 arguments because of
@@ -233,8 +236,8 @@ class SIntOpsSpec extends ChiselPropSpec with Utils with ShiftRightWidthBehavior
     val u2 = s2.asUInt
     u2.litValue should be(0xfd)
 
-    assertTesterPasses {
-      new BasicTester {
+    simulate {
+      new Module {
         // Check that it gives the same value as the generated hardware
         val wire0 = WireInit(s0).asUInt
         chisel3.assert(u0.litValue.U === wire0)
@@ -245,7 +248,7 @@ class SIntOpsSpec extends ChiselPropSpec with Utils with ShiftRightWidthBehavior
 
         stop()
       }
-    }
+    }(RunUntilFinished(3))
   }
 
   property("Calling .asSInt on a SInt literal should maintain the literal value") {
