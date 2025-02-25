@@ -3,8 +3,10 @@
 package chiselTests
 
 import chisel3._
-import chisel3.util._
-import chisel3.testers.BasicTester
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
+import chisel3.util.{is, switch, DecoupledIO, Enum}
+import org.scalatest.propspec.AnyPropSpec
 
 class Arbiter[T <: Data: Manifest](n: Int, private val gen: T) extends Module {
   val io = IO(new Bundle {
@@ -59,7 +61,7 @@ class Arbiter[T <: Data: Manifest](n: Int, private val gen: T) extends Module {
   io.out <> io.in.reduceTree(arbitrateTwo)
 }
 
-class ReduceTreeBalancedTester(nodes: Int) extends BasicTester {
+class ReduceTreeBalancedTester(nodes: Int) extends Module {
 
   val cnt = RegInit(0.U(8.W))
   val min = RegInit(99.U(8.W))
@@ -92,15 +94,15 @@ class ReduceTreeBalancedTester(nodes: Int) extends BasicTester {
   }
 }
 
-class ReduceTreeBalancedSpec extends ChiselPropSpec {
+class ReduceTreeBalancedSpec extends AnyPropSpec with ChiselSim {
   property("Tree shall be fair and shall have a maximum difference of one hop for each node") {
 
     // This test will fail for 5 nodes due to an unbalanced tree.
     // A fix is on the way.
     for (n <- 1 to 5) {
-      assertTesterPasses {
+      simulate {
         new ReduceTreeBalancedTester(n)
-      }
+      }(RunUntilFinished(12))
     }
   }
 }
