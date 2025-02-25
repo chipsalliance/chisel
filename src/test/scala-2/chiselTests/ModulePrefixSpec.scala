@@ -20,7 +20,7 @@ object ModulePrefixSpec {
   }
 }
 
-class ModulePrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with FileCheck {
+class ModulePrefixSpec extends ChiselFlatSpec with Utils with FileCheck {
   import ModulePrefixSpec._
   behavior.of("withModulePrefix")
 

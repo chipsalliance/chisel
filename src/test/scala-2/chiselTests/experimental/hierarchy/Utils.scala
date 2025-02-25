@@ -6,7 +6,7 @@ import _root_.firrtl.annotations._
 import chiselTests.ChiselRunners
 import org.scalatest.matchers.should.Matchers
 
-trait Utils extends ChiselRunners with chiselTests.Utils with Matchers {
+trait Utils extends chiselTests.Utils with Matchers {
   // TODO promote to standard API (in FIRRTL) and perhaps even implement with a macro
   implicit class Str2RefTarget(str: String) {
     def rt: ReferenceTarget = Target.deserialize(str).asInstanceOf[ReferenceTarget]

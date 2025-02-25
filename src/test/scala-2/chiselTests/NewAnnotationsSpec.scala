@@ -6,6 +6,7 @@ import circt.stage.ChiselStage
 
 import chisel3._
 import chisel3.experimental.{annotate, AnyTargetable}
+import chisel3.testers.TestUtils
 import chisel3.stage.ChiselGeneratorAnnotation
 import chiselTests.experimental.hierarchy.Utils
 
@@ -14,7 +15,7 @@ import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
-class NewAnnotationsSpec extends AnyFreeSpec with Matchers with ChiselRunners with Utils {
+class NewAnnotationsSpec extends AnyFreeSpec with Matchers with Utils {
 
   class MuchUsedModule extends Module {
     val io = IO(new Bundle {
@@ -75,7 +76,7 @@ class NewAnnotationsSpec extends AnyFreeSpec with Matchers with ChiselRunners wi
     }
 
     "It should be possible to annotate heterogeneous Targetable things" in {
-      val (_, annotations) = getFirrtlAndAnnos(new RawModule {
+      val (_, annotations) = TestUtils.getChirrtlAndAnnotations(new RawModule {
         override def desiredName: String = "Top"
         val in = IO(Input(UInt(8.W)))
         val out = IO(Output(UInt(8.W)))

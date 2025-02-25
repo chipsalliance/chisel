@@ -54,7 +54,7 @@ object BoringUtilsTapSpec {
 
 }
 
-class BoringUtilsTapSpec extends ChiselFlatSpec with ChiselRunners with Utils with FileCheck {
+class BoringUtilsTapSpec extends ChiselFlatSpec with Utils with FileCheck {
   val args = Array("--throw-on-first-error", "--full-stacktrace")
   "Ready-only tap" should "work downwards from parent to child" in {
     class Foo extends RawModule {
