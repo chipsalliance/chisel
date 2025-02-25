@@ -27,4 +27,6 @@ class BasicTester extends Module() {
     * add flow control logic for a decoupled io port of a device under test
     */
   def finish(): Unit = {}
+
+  atModuleBodyEnd(finish())
 }
