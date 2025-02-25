@@ -71,7 +71,7 @@ void initTestBenchScope() { testbenchScope = svGetScope(); }
 #ifdef __cplusplus
 extern "C" {
 #endif
-extern int run_simulation(int timesteps);
+extern void run_simulation(int timesteps, int *done);
 extern void simulation_main(int argc, const char **argv);
 #ifdef __cplusplus
 }
@@ -672,7 +672,9 @@ static void processCommand() {
     if (*lineCursor != '\n') {
       failWithError("Unexpected data at end of RUN command.");
     }
-    if (run_simulation(time))
+    int done = 0;
+    run_simulation(time, &done);
+    if (done)
       receivedDone = true;
 
     sendAck();
@@ -758,12 +760,15 @@ static void processCommand() {
       }
 
       (*tickingPort.setter)(inPhaseValue);
-      if (run_simulation(timestepsPerPhase)) {
+      int done = 0;
+      run_simulation(timestepsPerPhase, &done);
+      if (done) {
         receivedDone = true;
         break;
       }
       (*tickingPort.setter)(outOfPhaseValue);
-      if (run_simulation(timestepsPerPhase)) {
+      run_simulation(timestepsPerPhase, &done);
+      if (done) {
         receivedDone = true;
         break;
       }
@@ -933,16 +938,17 @@ void simulation_main(int argc, char const **argv) {
   delete context;
 }
 
-int run_simulation(int delay) {
+void run_simulation(int delay, int *done) {
   if(!delay) {
     testbench->eval_step();
-    return context->gotFinish();
+    *done = context->gotFinish();
+    return;
   }
   testbench->eval();
-  if (context->gotFinish())
-    return context->gotFinish();
+  *done = context->gotFinish();
+  if (*done)
+    return;
   context->timeInc(delay);
-  return 0;
 }
 
 } // extern "C"

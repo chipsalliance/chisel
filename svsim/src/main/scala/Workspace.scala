@@ -157,7 +157,7 @@ final class Workspace(
       l("    done = 0;")
       l("  endtask")
       l("  `else")
-      l("  import \"DPI-C\" function int run_simulation(int timesteps);")
+      l("  import \"DPI-C\" function void run_simulation(input int timesteps, output int done);")
       l("  `endif")
       l()
 
