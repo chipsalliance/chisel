@@ -1,12 +1,14 @@
 package chiselTests.util.experimental
 
 import chisel3._
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
 import chisel3.util.BitPat
 import chisel3.util.experimental.decode._
-import chisel3.testers.BasicTester
-import chiselTests.ChiselFlatSpec
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class DecoderTableSpec extends ChiselFlatSpec {
+class DecoderTableSpec extends AnyFlatSpec with Matchers with ChiselSim {
   /*
    * Assuming a simple ALU instruction scheme
    *      | Name Width Register
@@ -76,12 +78,12 @@ class DecoderTableSpec extends ChiselFlatSpec {
   }
 
   "DecoderTable" should "decode every field" in {
-    assertTesterPasses(new BasicTester {
+    simulate(new Module {
       val input = "b1100".U(4.W)
       val dut = Module(new ExampleALUDecoder)
       dut.inst := input
       chisel3.assert(dut.isWideOp, "WRONG OUTPUT %b", dut.isWideOp)
       stop()
-    })
+    })(RunUntilFinished(3))
   }
 }
