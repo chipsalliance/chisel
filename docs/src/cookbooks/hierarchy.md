@@ -352,11 +352,12 @@ class AddOne(val width: Int) extends Module {
   out := in + 1.U
 }
 
-class AddTwo(addOneDef: Definition[AddOne]) extends Module {
-  val i0 = Instance(addOneDef)
-  val i1 = Instance(addOneDef)
-  val in  = IO(Input(UInt(addOneDef.width.W)))
-  val out = IO(Output(UInt(addOneDef.width.W)))
+class AddTwo(addOneDef: => Definition[AddOne]) extends Module {
+  private val definition = addOneDef
+  val i0 = Instance(definition)
+  val i1 = Instance(definition)
+  val in  = IO(Input(UInt(definition.width.W)))
+  val out = IO(Output(UInt(definition.width.W)))
   i0.in := in
   i1.in := i0.out
   out   := i1.out

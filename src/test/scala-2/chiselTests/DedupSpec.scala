@@ -3,10 +3,11 @@
 package chiselTests
 
 import chisel3._
-import chisel3.util._
+import chisel3.util.{Counter, Decoupled, Queue}
 import chisel3.experimental.{annotate, dedupGroup}
 import chisel3.experimental.hierarchy.Definition
 import chisel3.properties.Class
+import circt.stage.ChiselStage
 import firrtl.transforms.DedupGroupAnnotation
 import chisel3.experimental.hierarchy._
 import chisel3.util.circt.PlusArgsValue
@@ -121,8 +122,15 @@ class DedupSpec extends ChiselFlatSpec {
     }) === 3)
   }
 
-  it should "work natively for desiredNames" in {
+  it should "work natively for desiredNames with ChiselStage (the class)" in {
     assert(countModules(compile {
+      val top = new SharedConstantValDedupTopDesiredName
+      top
+    }) === 3)
+  }
+
+  it should "work natively for desiredNames with ChiselStage$ (the object)" in {
+    assert(countModules(ChiselStage.emitSystemVerilog {
       val top = new SharedConstantValDedupTopDesiredName
       top
     }) === 3)
