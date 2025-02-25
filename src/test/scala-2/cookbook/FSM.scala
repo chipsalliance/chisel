@@ -4,6 +4,7 @@ package cookbook
 
 import chisel3._
 import chisel3.util._
+import chisel3.simulator.stimulus.RunUntilFinished
 
 /* ### How do I create a finite state machine?
  *
@@ -61,6 +62,6 @@ class DetectTwoOnesTester extends CookbookTester(10) {
 
 class FSMSpec extends CookbookSpec {
   "DetectTwoOnes" should "work" in {
-    assertTesterPasses { new DetectTwoOnesTester }
+    simulate(new DetectTwoOnesTester)(RunUntilFinished(12))
   }
 }

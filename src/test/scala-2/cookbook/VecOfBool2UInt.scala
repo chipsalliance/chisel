@@ -3,6 +3,7 @@
 package cookbook
 
 import chisel3._
+import chisel3.simulator.stimulus.RunUntilFinished
 
 /* ### How do I create a UInt from a Vec of Bool?
  *
@@ -23,6 +24,6 @@ class VecOfBool2UInt extends CookbookTester(1) {
 
 class VecOfBool2UIntSpec extends CookbookSpec {
   "VecOfBool2UInt" should "work" in {
-    assertTesterPasses { new VecOfBool2UInt }
+    simulate(new VecOfBool2UInt)(RunUntilFinished(3))
   }
 }
