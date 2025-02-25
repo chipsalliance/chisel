@@ -32,7 +32,7 @@ import java.util.Calendar
 import chisel3.reflect.DataMirror
 
 /** Common utility functions for Chisel unit tests. */
-trait ChiselRunners extends Assertions {
+sealed trait ChiselRunners extends Assertions {
   private val verilatorBackend = verilator.Backend.initializeFromProcessEnvironment()
   private val timeStampFormat = new SimpleDateFormat("yyyyMMddHHmmss")
   def runTester(
