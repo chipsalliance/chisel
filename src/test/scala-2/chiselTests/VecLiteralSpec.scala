@@ -7,13 +7,16 @@ import chisel3.util.Cat
 import chisel3.experimental.BundleLiterals.AddBundleLiteralConstructor
 import chisel3.experimental.VecLiterals._
 import chisel3.experimental.VecLiteralException
-import chisel3.testers.BasicTester
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
 import chisel3.util.Counter
 import circt.stage.ChiselStage
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 import scala.language.reflectiveCalls
 
-class VecLiteralSpec extends ChiselFreeSpec with Utils {
+class VecLiteralSpec extends AnyFreeSpec with Matchers with ChiselSim {
   object MyEnum extends ChiselEnum {
     val sA, sB, sC = Value
   }
@@ -116,7 +119,7 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
   }
 
   "Vec literals should only init specified fields when used to partially initialize a reg of vec" in {
-    assertTesterPasses(new BasicTester {
+    simulate(new Module {
       val m = Module(new ResetRegWithPartialVecLiteral)
       val (counter, wrapped) = Counter(true.B, 8)
       m.in := DontCare
@@ -138,7 +141,7 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
       when(wrapped) {
         stop()
       }
-    })
+    })(RunUntilFinished(9))
   }
 
   "lowest of vec literal contains least significant bits and " in {
@@ -164,22 +167,22 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
   }
 
   "registers can be initialized with a Vec literal" in {
-    assertTesterPasses(new BasicTester {
+    simulate(new Module {
       val y = RegInit(Vec(4, UInt(8.W)).Lit(0 -> 0xab.U(8.W), 1 -> 0xcd.U(8.W), 2 -> 0xef.U(8.W), 3 -> 0xff.U(8.W)))
       chisel3.assert(y.asUInt === BigInt("FFEFCDAB", 16).U)
       stop()
-    })
+    })(RunUntilFinished(3))
   }
 
   "how does asUInt work" in {
-    assertTesterPasses(new BasicTester {
+    simulate(new Module {
       val vec1 = Vec(4, UInt(16.W)).Lit(0 -> 0xdd.U, 1 -> 0xcc.U, 2 -> 0xbb.U, 3 -> 0xaa.U)
 
       val vec2 = VecInit(Seq(0xdd.U, 0xcc.U, 0xbb.U, 0xaa.U))
       printf("vec1 %x\n", vec1.asUInt)
       printf("vec2 %x\n", vec2.asUInt)
       stop()
-    })
+    })(RunUntilFinished(3))
   }
 
   "Vec literals uint conversion" in {
@@ -194,29 +197,29 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
       out2 := v2.asUInt
     }
 
-    assertTesterPasses(new BasicTester {
+    simulate(new Module {
       val m = Module(new M1)
       chisel3.assert(m.out1 === m.out2)
       stop()
-    })
+    })(RunUntilFinished(3))
   }
 
   "VecLits should work properly with .asUInt" in {
     val outsideVecLit = Vec(4, UInt(16.W)).Lit(0 -> 0xdd.U, 1 -> 0xcc.U, 2 -> 0xbb.U, 3 -> 0xaa.U)
 
-    assertTesterPasses {
-      new BasicTester {
+    simulate {
+      new Module {
         chisel3.assert(outsideVecLit(0) === 0xdd.U, "v(0)")
         stop()
       }
-    }
+    }(RunUntilFinished(3))
   }
 
   "bundle literals should work in RTL" in {
     val outsideVecLit = Vec(4, UInt(16.W)).Lit(0 -> 0xdd.U, 1 -> 0xcc.U, 2 -> 0xbb.U, 3 -> 0xaa.U)
 
-    assertTesterPasses {
-      new BasicTester {
+    simulate {
+      new Module {
         chisel3.assert(outsideVecLit(0) === 0xdd.U, "v(0)")
         chisel3.assert(outsideVecLit(1) === 0xcc.U)
         chisel3.assert(outsideVecLit(2) === 0xbb.U)
@@ -253,12 +256,12 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
 
         stop()
       }
-    }
+    }(RunUntilFinished(3))
   }
 
   "partial vec literals should work in RTL" in {
-    assertTesterPasses {
-      new BasicTester {
+    simulate {
+      new Module {
         val vecLit = Vec(4, UInt(8.W)).Lit(0 -> 42.U, 2 -> 5.U)
         chisel3.assert(vecLit(0) === 42.U)
         chisel3.assert(vecLit(2) === 5.U)
@@ -271,7 +274,7 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
 
         stop()
       }
-    }
+    }(RunUntilFinished(3))
   }
 
   "nested vec literals should be constructable" in {
@@ -292,8 +295,8 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
   }
 
   "contained vecs should work" in {
-    assertTesterPasses {
-      new BasicTester {
+    simulate {
+      new Module {
         val outerVec = Vec(2, Vec(3, UInt(4.W))).Lit(
           0 -> Vec(3, UInt(4.W)).Lit(0 -> 1.U, 1 -> 2.U, 2 -> 3.U),
           1 -> Vec(3, UInt(4.W)).Lit(0 -> 4.U, 1 -> 5.U, 2 -> 6.U)
@@ -317,12 +320,12 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
 
         stop()
       }
-    }
+    }(RunUntilFinished(3))
   }
 
   "partially initialized Vec literals should assign" in {
-    assertTesterPasses {
-      new BasicTester {
+    simulate {
+      new Module {
         def vecFactory = Vec(2, UInt(8.W))
 
         val vecWire1 = Wire(Output(vecFactory))
@@ -339,12 +342,12 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
         chisel3.assert(vecWire2(1) === 13.U(8.W))
         stop()
       }
-    }
+    }(RunUntilFinished(3))
   }
 
   "Vec literals should work as register reset values" in {
-    assertTesterPasses {
-      new BasicTester {
+    simulate {
+      new Module {
         val r = RegInit(Vec(3, UInt(11.W)).Lit(0 -> 0xa.U, 1 -> 0xb.U, 2 -> 0xc.U))
         r := (r.asUInt + 1.U).asTypeOf(Vec(3, UInt(11.W))) // prevent constprop
 
@@ -354,12 +357,12 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
         chisel3.assert(r(2) === 0xc.U)
         stop()
       }
-    }
+    }(RunUntilFinished(3))
   }
 
   "partially initialized Vec literals should work as register reset values" in {
-    assertTesterPasses {
-      new BasicTester {
+    simulate {
+      new Module {
         val r = RegInit(Vec(3, UInt(11.W)).Lit(0 -> 0xa.U, 2 -> 0xc.U))
         r := (r.asUInt + 1.U).asTypeOf(Vec(3, UInt(11.W))) // prevent constprop
         // check reset values on first cycle out of reset
@@ -367,48 +370,46 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
         chisel3.assert(r(2) === 0xc.U)
         stop()
       }
-    }
+    }(RunUntilFinished(3))
   }
 
   "Fields extracted from Vec Literals should work as register reset values" in {
-    assertTesterPasses {
-      new BasicTester {
+    simulate {
+      new Module {
         val r = RegInit(Vec(3, UInt(11.W)).Lit(0 -> 0xa.U, 2 -> 0xc.U).apply(0))
         r := r + 1.U // prevent const prop
         chisel3.assert(r === 0xa.U) // coming out of reset
         stop()
       }
-    }
+    }(RunUntilFinished(3))
   }
 
   "DontCare fields extracted from Vec Literals should work as register reset values" in {
-    assertTesterPasses {
-      new BasicTester {
+    simulate {
+      new Module {
         val r = RegInit(Vec(3, Bool()).Lit(0 -> true.B).apply(2))
         r := reset.asBool
         printf(p"r = $r\n") // Can't assert because reset value is DontCare
         stop()
       }
-    }
+    }(RunUntilFinished(3))
   }
 
   "DontCare fields extracted from Vec Literals should work in other Expressions" in {
-    assertTesterPasses {
-      new BasicTester {
+    simulate {
+      new Module {
         val x = Vec(3, Bool()).Lit(0 -> true.B).apply(2) || true.B
         chisel3.assert(x === true.B)
         stop()
       }
-    }
+    }(RunUntilFinished(3))
   }
 
   "vec literals with non-literal values should fail" in {
     val exc = intercept[VecLiteralException] {
-      extractCause[VecLiteralException] {
-        ChiselStage.emitCHIRRTL {
-          new RawModule {
-            (Vec(3, UInt(11.W)).Lit(0 -> UInt()))
-          }
+      ChiselStage.emitCHIRRTL {
+        new RawModule {
+          (Vec(3, UInt(11.W)).Lit(0 -> UInt()))
         }
       }
     }
@@ -557,8 +558,8 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
     val ulit1 = vlit1.asUInt
     ulit1.litOption should be(Some(0x23))
 
-    assertTesterPasses {
-      new BasicTester {
+    simulate {
+      new Module {
         // Check that it gives the same value as the generated hardware
         val wire0 = WireInit(vlit0).asUInt
         chisel3.assert(ulit0.litValue.U === wire0)
@@ -567,7 +568,7 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
 
         stop()
       }
-    }
+    }(RunUntilFinished(3))
   }
 
   "Calling .asUInt on a Vec literal with DontCare fields should NOT return a UInt literal" in {
@@ -599,8 +600,8 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
     olit(3).foo.litValue should be(1)
     olit(3).bar.litValue should be(-4)
 
-    assertTesterPasses {
-      new BasicTester {
+    simulate {
+      new Module {
         // Check that it gives the same value as the generated hardware.
         val wire = WireInit(vlit).asTypeOf(Vec(4, new MyBundle))
         // ScalaTest has its own multiversal === which overrules extension method.
@@ -608,6 +609,6 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
         chisel3.assert(new Data.DataEquality(olit).===(wire))
         stop()
       }
-    }
+    }(RunUntilFinished(3))
   }
 }
