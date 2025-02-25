@@ -5,10 +5,12 @@ package chiselTests
 import chisel3._
 import chisel3.experimental.OpaqueType
 import chisel3.reflect.DataMirror
-import chisel3.testers.BasicTester
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
 import chisel3.util.{Counter, Queue}
 import circt.stage.ChiselStage
-
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import scala.collection.immutable.{ListMap, SeqMap, VectorMap}
 
 object RecordSpec {
@@ -39,7 +41,7 @@ object RecordSpec {
     io.outBi <> io.inBi
   }
 
-  class RecordSerializationTest extends BasicTester {
+  class RecordSerializationTest extends Module {
     val recordType = new CustomBundle("fizz" -> UInt(16.W), "buzz" -> UInt(16.W))
     val record = Wire(recordType)
     // Note that "buzz" was added later than "fizz" and is therefore higher order
@@ -56,7 +58,7 @@ object RecordSpec {
     stop()
   }
 
-  class RecordQueueTester extends BasicTester {
+  class RecordQueueTester extends Module {
     val queue = Module(new Queue(fooBarType, 4))
     queue.io <> DontCare
     queue.io.enq.valid := false.B
@@ -88,21 +90,21 @@ object RecordSpec {
     io("out") := io("in")
   }
 
-  class RecordIOTester extends BasicTester {
+  class RecordIOTester extends Module {
     val mod = Module(new RecordIOModule)
     mod.io("in") := 1234.U
     assert(mod.io("out").asUInt === 1234.U)
     stop()
   }
 
-  class RecordDigitTester extends BasicTester {
+  class RecordDigitTester extends Module {
     val wire = Wire(new CustomBundle("0" -> UInt(32.W)))
     wire("0") := 123.U
     assert(wire("0").asUInt === 123.U)
     stop()
   }
 
-  class RecordTypeTester extends BasicTester {
+  class RecordTypeTester extends Module {
     val wire0 = Wire(new CustomBundle("0" -> UInt(32.W)))
     val wire1 = Reg(new CustomBundle("0" -> UInt(32.W)))
     val wire2 = Wire(new CustomBundle("1" -> UInt(32.W)))
@@ -111,7 +113,7 @@ object RecordSpec {
   }
 }
 
-class RecordSpec extends ChiselFlatSpec with Utils {
+class RecordSpec extends AnyFlatSpec with Matchers with ChiselSim {
   import RecordSpec._
 
   behavior.of("Records")
@@ -149,19 +151,19 @@ class RecordSpec extends ChiselFlatSpec with Utils {
   }
 
   they should "follow UInt serialization/deserialization API" in {
-    assertTesterPasses { new RecordSerializationTest }
+    simulate { new RecordSerializationTest }(RunUntilFinished(5))
   }
 
   they should "work as the type of a Queue" in {
-    assertTesterPasses { new RecordQueueTester }
+    simulate { new RecordQueueTester }(RunUntilFinished(5))
   }
 
   they should "work as the type of a Module's io" in {
-    assertTesterPasses { new RecordIOTester }
+    simulate { new RecordIOTester }(RunUntilFinished(3))
   }
 
   they should "support digits as names of fields" in {
-    assertTesterPasses { new RecordDigitTester }
+    simulate { new RecordDigitTester }(RunUntilFinished(3))
   }
 
   they should "sanitize the user-provided names" in {
@@ -175,13 +177,13 @@ class RecordSpec extends ChiselFlatSpec with Utils {
   }
 
   "Bulk connect on Record" should "check that the fields match" in {
-    (the[ChiselException] thrownBy extractCause[ChiselException] {
+    intercept[ChiselException] {
       ChiselStage.emitCHIRRTL { new MyModule(fooBarType, new CustomBundle("bar" -> UInt(32.W))) }
-    }).getMessage should include("Right Record missing field")
+    }.getMessage should include("Right Record missing field")
 
-    (the[ChiselException] thrownBy extractCause[ChiselException] {
+    intercept[ChiselException] {
       ChiselStage.emitCHIRRTL { new MyModule(new CustomBundle("bar" -> UInt(32.W)), fooBarType) }
-    }).getMessage should include("Left Record missing field")
+    }.getMessage should include("Left Record missing field")
   }
 
   "CustomBundle" should "work like built-in aggregates" in {
