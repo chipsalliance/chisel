@@ -3,8 +3,11 @@
 package chiselTests
 
 import chisel3._
-import chisel3.testers.BasicTester
-import chisel3.util._
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
+import chisel3.util.Counter
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 /**
   * This test used to fail when assignment statements were
@@ -50,7 +53,7 @@ class BrokenVectorPacketModule extends Module {
   io.outs.foreach(_.noenq())
 }
 
-class VectorPacketIOUnitTester extends BasicTester {
+class VectorPacketIOUnitTester extends Module {
   val dut = Module(new BrokenVectorPacketModule)
   dut.io <> DontCare
 
@@ -61,11 +64,11 @@ class VectorPacketIOUnitTester extends BasicTester {
   }
 }
 
-class VectorPacketIOUnitTesterSpec extends ChiselFlatSpec {
+class VectorPacketIOUnitTesterSpec extends AnyFlatSpec with ChiselSim {
   "a circuit using an io containing a vector of EnqIO wrapped packets" should
     "compile and run" in {
-      assertTesterPasses {
+      simulate {
         new VectorPacketIOUnitTester
-      }
+      }(RunUntilFinished(3))
     }
 }
