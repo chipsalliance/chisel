@@ -41,6 +41,9 @@ module VerilogVendingMachine(
       sOk: begin
         state <= sIdle;
       end
+      default: begin
+        assert(1'b0) else $error("illegal state");
+      end
       endcase
     end
   end

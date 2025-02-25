@@ -2,10 +2,13 @@
 
 package examples
 
-import chiselTests.ChiselFlatSpec
-import chisel3.testers.BasicTester
 import chisel3._
-import chisel3.util._
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
+import chisel3.util.{log2Ceil, Counter}
+import chiselTests.ChiselFlatSpec
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 import VendingMachineUtils._
 
@@ -69,7 +72,7 @@ class VendingMachineGenerator(legalCoins: Seq[Coin], sodaCost: Int)
   io.dispense := doDispense
 }
 
-class ParameterizedVendingMachineTester(mod: => ParameterizedVendingMachine, testLength: Int) extends BasicTester {
+class ParameterizedVendingMachineTester(mod: => ParameterizedVendingMachine, testLength: Int) extends Module {
   require(testLength > 0, "Test length must be positive!")
 
   // Construct the module
@@ -89,37 +92,37 @@ class ParameterizedVendingMachineTester(mod: => ParameterizedVendingMachine, tes
   val expectedVec: Vec[Bool] = VecInit(expected.map(_.B))
 
   val (idx, done) = Counter(true.B, testLength + 1)
-  when(done) { stop(); stop() } // Two stops for Verilator
+  when(done) { stop() }
 
   dut.io.inputs := inputVec(idx).asBools
   assert(dut.io.dispense === expectedVec(idx))
 }
 
-class VendingMachineGeneratorSpec extends ChiselFlatSpec {
+class VendingMachineGeneratorSpec extends AnyFlatSpec with Matchers with ChiselSim {
   behavior.of("The vending machine generator")
 
   it should "generate a vending machine that accepts only nickels and dimes and costs $0.20" in {
     val coins = Seq(Nickel, Dime)
-    assertTesterPasses {
+    simulate {
       new ParameterizedVendingMachineTester(new VendingMachineGenerator(coins, 20), 100)
-    }
+    }(RunUntilFinished(100 + 3))
   }
   it should "generate a vending machine that only accepts one kind of coin" in {
     val coins = Seq(Nickel)
-    assertTesterPasses {
+    simulate {
       new ParameterizedVendingMachineTester(new VendingMachineGenerator(coins, 30), 100)
-    }
+    }(RunUntilFinished(100 + 2))
   }
   it should "generate a more realistic vending machine that costs $1.50" in {
     val coins = Seq(Penny, Nickel, Dime, Quarter)
-    assertTesterPasses {
+    simulate {
       new ParameterizedVendingMachineTester(new VendingMachineGenerator(coins, 150), 100)
-    }
+    }(RunUntilFinished(150 + 2))
   }
   it should "generate a Harry Potter themed vending machine" in {
     val coins = Seq(Knut, Sickle) // Galleons are worth too much
-    assertTesterPasses {
+    simulate {
       new ParameterizedVendingMachineTester(new VendingMachineGenerator(coins, Galleon.value), 100)
-    }
+    }(RunUntilFinished(100 + 2))
   }
 }
