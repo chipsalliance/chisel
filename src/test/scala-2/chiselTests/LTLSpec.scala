@@ -4,17 +4,17 @@ package chiselTests
 
 import chisel3._
 import chisel3.ltl._
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
 import chisel3.testers.BasicTester
 import chisel3.experimental.SourceLine
-import _root_.circt.stage.ChiselStage
-import chiselTests.ChiselRunners
-
+import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 import Sequence._
 
-class LTLSpec extends AnyFlatSpec with Matchers with ChiselRunners {
+class LTLSpec extends AnyFlatSpec with Matchers with ChiselSim {
   it should "allow booleans to be used as sequences" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
       val a = IO(Input(Bool()))
@@ -419,11 +419,13 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselRunners {
   }
 
   it should "fail correctly in verilator simulation" in {
-    assertTesterFails(new BasicTester {
-      withClockAndReset(clock, reset) {
-        AssertProperty(0.U === 1.U)
-      }
-    })
+    intercept[chisel3.simulator.Exceptions.AssertionFailed] {
+      simulate(new BasicTester {
+        withClockAndReset(clock, reset) {
+          AssertProperty(0.U === 1.U)
+        }
+      })(RunUntilFinished(3))
+    }
   }
 
   class LayerBlockMod extends RawModule {
