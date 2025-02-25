@@ -211,7 +211,7 @@ class UIntLitZeroWidthTester extends BasicTester {
   stop()
 }
 
-trait ShiftRightWidthBehavior { self: ChiselRunners =>
+trait ShiftRightWidthBehavior extends WidthHelpers {
   // The UInt and SInt objects don't share a type, so make one up that they can conform to structurally
   type BitsFactory[T <: Bits] = {
     def apply():         T

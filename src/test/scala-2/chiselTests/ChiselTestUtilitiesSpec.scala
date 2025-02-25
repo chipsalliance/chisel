@@ -5,7 +5,7 @@ package chiselTests
 import chisel3._
 import org.scalatest.exceptions.TestFailedException
 
-class ChiselTestUtilitiesSpec extends ChiselFlatSpec {
+class ChiselTestUtilitiesSpec extends ChiselFlatSpec with WidthHelpers {
   // Who tests the testers?
   "assertKnownWidth" should "error when the expected width is wrong" in {
     intercept[TestFailedException] {

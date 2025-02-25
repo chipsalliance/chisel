@@ -44,7 +44,7 @@ class WidthSpec extends ChiselFlatSpec {
   }
 }
 
-abstract class WireRegWidthSpecImpl extends ChiselFlatSpec {
+abstract class WireRegWidthSpecImpl extends ChiselFlatSpec with WidthHelpers {
   def name:                     String
   def builder[T <: Data](x: T): T
 
@@ -126,7 +126,7 @@ class RegWidthSpec extends WireRegWidthSpecImpl {
   def builder[T <: Data](x: T): T = Reg(x)
 }
 
-abstract class WireDefaultRegInitSpecImpl extends ChiselFlatSpec {
+abstract class WireDefaultRegInitSpecImpl extends ChiselFlatSpec with WidthHelpers {
   def name:                            String
   def builder1[T <: Data](x: T):       T
   def builder2[T <: Data](x: T, y: T): T
