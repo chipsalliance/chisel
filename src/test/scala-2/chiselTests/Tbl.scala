@@ -3,8 +3,10 @@
 package chiselTests
 
 import chisel3._
-import chisel3.testers.BasicTester
-import chisel3.util._
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
+import chisel3.util.{log2Ceil, Counter}
+import org.scalatest.propspec.AnyPropSpec
 
 class Tbl(w: Int, n: Int) extends Module {
   val io = IO(new Bundle {
@@ -24,7 +26,7 @@ class Tbl(w: Int, n: Int) extends Module {
   }
 }
 
-class TblTester(w: Int, n: Int, idxs: List[Int], values: List[Int]) extends BasicTester {
+class TblTester(w: Int, n: Int, idxs: List[Int], values: List[Int]) extends Module {
   val (cnt, wrap) = Counter(true.B, idxs.size)
   val dut = Module(new Tbl(w, n))
   val vvalues = VecInit(values.map(_.asUInt))
@@ -47,14 +49,14 @@ class TblTester(w: Int, n: Int, idxs: List[Int], values: List[Int]) extends Basi
   }
 }
 
-class TblSpec extends ChiselPropSpec {
+class TblSpec extends AnyPropSpec with PropertyUtils with ChiselSim {
   property("All table reads should return the previous write") {
     forAll(safeUIntPairN(8)) { case (w: Int, pairs: List[(Int, Int)]) =>
       // Provide an appropriate whenever clause.
       // ScalaTest will try and shrink the values on error to determine the smallest values that cause the error.
       whenever(w > 0 && pairs.length > 0) {
         val (idxs, values) = pairs.unzip
-        assertTesterPasses { new TblTester(w, 1 << w, idxs, values) }
+        simulate { new TblTester(w, 1 << w, idxs, values) }(RunUntilFinished(idxs.size + 1))
       }
     }
   }
