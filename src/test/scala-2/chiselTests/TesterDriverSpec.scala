@@ -3,8 +3,12 @@
 package chiselTests
 
 import chisel3._
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
 import chisel3.testers.BasicTester
-import chisel3.util._
+import chisel3.util.Counter
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 /** Extend BasicTester with a simple circuit and finish method.  TesterDriver will call the
   * finish method after the FinishTester's constructor has completed, which will alter the
@@ -34,11 +38,11 @@ class FinishTester extends BasicTester {
   }
 }
 
-class TesterDriverSpec extends ChiselFlatSpec {
+class TesterDriverSpec extends AnyFlatSpec with Matchers with ChiselSim {
   "TesterDriver calls BasicTester's finish method which" should
     "allow modifications of test circuit after the tester's constructor is done" in {
-      assertTesterPasses {
+      simulate {
         new FinishTester
-      }
+      }(RunUntilFinished(3))
     }
 }
