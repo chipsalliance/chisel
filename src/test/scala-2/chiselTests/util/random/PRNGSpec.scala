@@ -3,12 +3,13 @@
 package chiselTests.util.random
 
 import chisel3._
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
 import circt.stage.ChiselStage
-import chisel3.testers.BasicTester
 import chisel3.util.Counter
 import chisel3.util.random.PRNG
-
-import chiselTests.{ChiselFlatSpec, Utils}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 class CyclePRNG(width: Int, seed: Option[BigInt], step: Int, updateSeed: Boolean)
     extends PRNG(width, seed, step, updateSeed) {
@@ -17,7 +18,7 @@ class CyclePRNG(width: Int, seed: Option[BigInt], step: Int, updateSeed: Boolean
 
 }
 
-class PRNGStepTest extends BasicTester {
+class PRNGStepTest extends Module {
 
   val count2: UInt = Counter(true.B, 2)._1
   val count4: UInt = Counter(true.B, 4)._1
@@ -42,7 +43,7 @@ class PRNGStepTest extends BasicTester {
 
 }
 
-class PRNGUpdateSeedTest(updateSeed: Boolean, seed: BigInt, expected: BigInt) extends BasicTester {
+class PRNGUpdateSeedTest(updateSeed: Boolean, seed: BigInt, expected: BigInt) extends Module {
 
   val a: CyclePRNG = Module(new CyclePRNG(16, Some(1), 1, updateSeed))
 
@@ -62,13 +63,13 @@ class PRNGUpdateSeedTest(updateSeed: Boolean, seed: BigInt, expected: BigInt) ex
 
 }
 
-class PRNGSpec extends ChiselFlatSpec with Utils {
+class PRNGSpec extends AnyFlatSpec with Matchers with ChiselSim {
 
   behavior.of("PRNG")
 
   it should "throw an exception if the step size is < 1" in {
     {
-      the[IllegalArgumentException] thrownBy extractCause[IllegalArgumentException] {
+      intercept[IllegalArgumentException] {
         ChiselStage.emitCHIRRTL(new CyclePRNG(0, Some(1), 1, true))
       }
     }.getMessage should include("Width must be greater than zero!")
@@ -76,22 +77,22 @@ class PRNGSpec extends ChiselFlatSpec with Utils {
 
   it should "throw an exception if the step size is <= 0" in {
     {
-      the[IllegalArgumentException] thrownBy extractCause[IllegalArgumentException] {
+      intercept[IllegalArgumentException] {
         ChiselStage.emitCHIRRTL(new CyclePRNG(1, Some(1), 0, true))
       }
     }.getMessage should include("Step size must be greater than one!")
   }
 
   it should "handle non-unary steps" in {
-    assertTesterPasses(new PRNGStepTest)
+    simulate(new PRNGStepTest)(RunUntilFinished(17))
   }
 
   it should "handle state update without and with updateSeed enabled" in {
     info("without updateSeed okay!")
-    assertTesterPasses(new PRNGUpdateSeedTest(false, 3, 3))
+    simulate(new PRNGUpdateSeedTest(false, 3, 3))(RunUntilFinished(5))
 
     info("with updateSeed okay!")
-    assertTesterPasses(new PRNGUpdateSeedTest(true, 3, 6))
+    simulate(new PRNGUpdateSeedTest(true, 3, 6))(RunUntilFinished(5))
   }
 
 }
