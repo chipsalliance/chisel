@@ -6,8 +6,7 @@ import chisel3._
 import chisel3.experimental.hierarchy._
 import chisel3.experimental.{annotate, dedupGroup}
 import chisel3.properties.Class
-import chisel3.stage.ChiselGeneratorAnnotation
-import chisel3.testers.TestUtils
+import chisel3.stage.{ChiselGeneratorAnnotation, CircuitSerializationAnnotation}
 import chisel3.util.circt.PlusArgsValue
 import chisel3.util.{Counter, Decoupled, Queue}
 import circt.stage.ChiselStage
@@ -100,7 +99,7 @@ class ModuleWithClass extends Module {
   val cls = Definition(new Class)
 }
 
-class DedupSpec extends AnyFlatSpec with Matchers {
+class DedupSpec extends AnyFlatSpec with Matchers with FileCheck {
   implicit class VerilogHelpers(verilog: String) {
     private val ModuleRegex = """\s*module\s+(\w+)\b.*""".r
     def countModules: Int =
@@ -160,18 +159,46 @@ class DedupSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "not add DedupGroupAnnotation to intrinsics" in {
-    val (_, annos) = TestUtils.getChirrtlAndAnnotations(new ModuleWithIntrinsic)
-    val dedupGroupAnnos = annos.collect { case DedupGroupAnnotation(target, _) =>
-      target.module
-    }
-    dedupGroupAnnos should contain theSameElementsAs Seq("ModuleWithIntrinsic")
+    // TODO: This test _should_ be able to use `ChiselStage$` methods, but there
+    // are problems with annotations and D/I.
+    //
+    // See: https://github.com/chipsalliance/chisel/issues/4730
+    val annotations = new ChiselStage()
+      .execute(
+        Array("--target", "chirrtl"),
+        Seq(ChiselGeneratorAnnotation(() => new ModuleWithIntrinsic))
+      )
+    val chirrtl = annotations.collectFirst { case a: CircuitSerializationAnnotation => a }.get
+      .emitLazily(annotations.collect { case a: DedupGroupAnnotation => a })
+      .mkString
+
+    fileCheckString(chirrtl)(
+      """|CHECK:      "class":"firrtl.transforms.DedupGroupAnnotation"
+         |CHECK-NEXT: "target":"~ModuleWithIntrinsic|ModuleWithIntrinsic"
+         |CHECK-NEXT: "group":"ModuleWithIntrinsic"
+         |""".stripMargin
+    )
   }
 
   it should "not add DedupGroupAnnotation to classes" in {
-    val (_, annos) = TestUtils.getChirrtlAndAnnotations(new ModuleWithClass)
-    val dedupGroupAnnos = annos.collect { case DedupGroupAnnotation(target, _) =>
-      target.module
-    }
-    dedupGroupAnnos should contain theSameElementsAs Seq("ModuleWithClass")
+    // TODO: This test _should_ be able to use `ChiselStage$` methods, but there
+    // are problems with annotations and D/I.
+    //
+    // See: https://github.com/chipsalliance/chisel/issues/4730
+    val annotations = new ChiselStage()
+      .execute(
+        Array("--target", "chirrtl"),
+        Seq(ChiselGeneratorAnnotation(() => new ModuleWithClass))
+      )
+    val chirrtl = annotations.collectFirst { case a: CircuitSerializationAnnotation => a }.get
+      .emitLazily(annotations.collect { case a: DedupGroupAnnotation => a })
+      .mkString
+
+    fileCheckString(chirrtl)(
+      """|CHECK:      "class":"firrtl.transforms.DedupGroupAnnotation"
+         |CHECK-NEXT: "target":"~ModuleWithClass|ModuleWithClass"
+         |CHECK-NEXT: "group":"ModuleWithClass"
+         |""".stripMargin
+    )
   }
 }
