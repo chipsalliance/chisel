@@ -32,17 +32,7 @@ import java.util.Calendar
 import chisel3.reflect.DataMirror
 
 /** Common utility functions for Chisel unit tests. */
-sealed trait ChiselRunners extends Assertions {
-
-  def elaborateAndGetModule[A <: RawModule](t: => A): A = {
-    var res: Any = null
-    ChiselStage.emitCHIRRTL {
-      res = t
-      res.asInstanceOf[A]
-    }
-    res.asInstanceOf[A]
-  }
-}
+sealed trait ChiselRunners extends Assertions
 
 trait WidthHelpers extends Assertions {
 
