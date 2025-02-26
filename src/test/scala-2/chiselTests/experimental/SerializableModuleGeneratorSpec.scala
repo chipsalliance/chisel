@@ -2,9 +2,13 @@
 
 package chiselTests
 package experimental
+
 import chisel3._
 import chisel3.experimental.{SerializableModule, SerializableModuleGenerator, SerializableModuleParameter}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import upickle.default._
+
 object GCDSerializableModuleParameter {
   implicit def rwP: ReadWriter[GCDSerializableModuleParameter] = macroRW
 }
@@ -41,7 +45,7 @@ class GCDSerializableModule(val parameter: GCDSerializableModuleParameter)
   io.z := z
 }
 
-class SerializableModuleGeneratorSpec extends ChiselFlatSpec with Utils {
+class SerializableModuleGeneratorSpec extends AnyFlatSpec with Matchers with Utils {
   val g = SerializableModuleGenerator(
     classOf[GCDSerializableModule],
     GCDSerializableModuleParameter(32)

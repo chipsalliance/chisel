@@ -4,9 +4,11 @@ package chiselTests
 
 import chisel3._
 import chisel3.choice.{Case, Group, ModuleChoice}
-import chiselTests.{ChiselFlatSpec, Utils}
 import chisel3.experimental.hierarchy.Definition
-import _root_.circt.stage.ChiselStage
+import chiselTests.Utils
+import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 object Platform extends Group {
   object FPGA extends Case
@@ -37,7 +39,7 @@ class ModuleWithChoice[T <: Data](
   io <> inst
 }
 
-class ModuleChoiceSpec extends ChiselFlatSpec with Utils with FileCheck {
+class ModuleChoiceSpec extends AnyFlatSpec with Matchers with Utils with FileCheck {
   it should "emit options and cases" in {
     class ModuleWithValidChoices
         extends ModuleWithChoice(new VerifTarget)(Seq(Platform.FPGA -> new FPGATarget, Platform.ASIC -> new ASICTarget))

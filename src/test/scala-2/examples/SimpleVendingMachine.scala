@@ -6,7 +6,6 @@ import chisel3._
 import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.RunUntilFinished
 import chisel3.util.{is, switch, Counter, Enum, HasBlackBoxResource}
-import chiselTests.ChiselFlatSpec
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 

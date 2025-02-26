@@ -2,12 +2,13 @@
 
 package chiselTests.util
 
+import _root_.circt.stage.ChiselStage.emitCHIRRTL
 import chisel3._
 import chisel3.util.{Pipe, Valid}
-import chiselTests.ChiselFlatSpec
-import _root_.circt.stage.ChiselStage.emitCHIRRTL
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class PipeSpec extends ChiselFlatSpec {
+class PipeSpec extends AnyFlatSpec with Matchers {
   behavior.of("Pipe")
 
   it should "Have decent names for Pipe(2)" in {

@@ -8,7 +8,8 @@ import chisel3.util.Valid
 import chisel3.experimental.OpaqueType
 import chisel3.reflect.DataMirror
 import circt.stage.ChiselStage
-
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import scala.collection.immutable.SeqMap
 
 object OpaqueTypeSpec {
@@ -128,7 +129,7 @@ object OpaqueTypeSpec {
   }
 }
 
-class OpaqueTypeSpec extends ChiselFlatSpec with Utils {
+class OpaqueTypeSpec extends AnyFlatSpec with Matchers with Utils {
   import OpaqueTypeSpec._
 
   behavior.of("OpaqueTypes")

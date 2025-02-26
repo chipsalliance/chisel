@@ -2,9 +2,11 @@ package chiselTests
 package experimental
 
 import chisel3._
-import chiselTests.experimental.GCDSerializableModule
 import chisel3.experimental.util.SerializableModuleElaborator
+import chiselTests.experimental.GCDSerializableModule
 import geny.Readable
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import upickle.default.read
 
 class GCDSerializableModuleElaborator extends SerializableModuleElaborator {
@@ -23,7 +25,7 @@ class GCDSerializableModuleElaborator extends SerializableModuleElaborator {
   }
 }
 
-class SerializableModuleElaboratorSpec extends ChiselFlatSpec {
+class SerializableModuleElaboratorSpec extends AnyFlatSpec with Matchers {
   val elaborator = new GCDSerializableModuleElaborator
   elaborator.config(GCDSerializableModuleParameter(16))
   elaborator.design()

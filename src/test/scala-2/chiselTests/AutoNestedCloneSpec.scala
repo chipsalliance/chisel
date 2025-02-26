@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 package chiselTests
+
 import chisel3._
 import circt.stage.ChiselStage.emitCHIRRTL
+import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 class BundleWithAnonymousInner(val w: Int) extends Bundle {
@@ -11,7 +13,7 @@ class BundleWithAnonymousInner(val w: Int) extends Bundle {
   }
 }
 
-class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers with Utils {
+class AutoNestedCloneSpec extends AnyFlatSpec with Matchers with Utils {
 
   behavior.of("autoCloneType of inner Bundle in Chisel3")
 

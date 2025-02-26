@@ -8,7 +8,7 @@ import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.RunUntilFinished
 import chisel3.util.{log2Up, Counter, SparseVec}
 import chisel3.util.SparseVec.{DefaultValueBehavior, Lookup, OutOfBoundsBehavior}
-import chiselTests.{ChiselFlatSpec, Utils}
+import chiselTests.Utils
 import _root_.circt.stage.ChiselStage
 import java.util.ResourceBundle
 import org.scalatest.flatspec.AnyFlatSpec

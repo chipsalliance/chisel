@@ -6,12 +6,14 @@ import chisel3._
 import chisel3.util.Valid
 import circt.stage.ChiselStage.emitCHIRRTL
 import chisel3.experimental.Analog
-import chiselTests.{ChiselFlatSpec, FileCheck}
+import chiselTests.FileCheck
 import chisel3.reflect.DataMirror
-import scala.collection.immutable.SeqMap
 import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
+import scala.collection.immutable.SeqMap
 
-class FlatIOSpec extends ChiselFlatSpec with FileCheck {
+class FlatIOSpec extends AnyFlatSpec with Matchers with FileCheck {
   behavior.of("FlatIO")
 
   it should "create ports without a prefix" in {

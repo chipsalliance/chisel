@@ -5,8 +5,10 @@ package chiselTests
 import chisel3._
 import circt.stage.ChiselStage
 import chisel3.util.Decoupled
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class DecoupledSpec extends ChiselFlatSpec with FileCheck {
+class DecoupledSpec extends AnyFlatSpec with Matchers with FileCheck {
   "Decoupled() and Decoupled.empty" should "give DecoupledIO with empty payloads" in {
     ChiselStage.emitCHIRRTL(new Module {
       val io = IO(new Bundle {

@@ -3,14 +3,16 @@
 package chiselTests
 
 import chisel3._
-import circt.stage.ChiselStage
-import scala.collection.immutable.ListMap
-import chisel3.reflect.DataMirror.internal.chiselTypeClone
 import chisel3.experimental.SourceInfo
 import chisel3.experimental.hierarchy.{instantiable, Definition, Instance, Instantiate}
 import chisel3.probe.Probe
+import chisel3.reflect.DataMirror.internal.chiselTypeClone
+import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
+import scala.collection.immutable.ListMap
 
-class FixedIOModuleSpec extends ChiselFlatSpec with Utils with FileCheck {
+class FixedIOModuleSpec extends AnyFlatSpec with Matchers with Utils with FileCheck {
 
   "FixedIOModule" should "create a module with flattened IO" in {
 

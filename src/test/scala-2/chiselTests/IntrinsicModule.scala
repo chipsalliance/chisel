@@ -2,11 +2,13 @@
 
 package chiselTests
 
-import circt.stage.ChiselStage
 import chisel3._
 import chisel3.experimental._
 import chisel3.testers.BasicTester
 import circt.stage.ChiselStage
+import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 class IntModuleTest extends IntrinsicModule("TestIntrinsic") {
   val foo = IO(new Bundle() {
@@ -26,7 +28,7 @@ class IntModuleTester extends BasicTester {
   val intM4 = Module(new IntModuleGenName("someIntName"))
 }
 
-class IntrinsicModuleSpec extends ChiselFlatSpec {
+class IntrinsicModuleSpec extends AnyFlatSpec with Matchers {
   (ChiselStage
     .emitCHIRRTL(new IntModuleTester)
     .split('\n')

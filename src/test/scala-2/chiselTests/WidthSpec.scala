@@ -3,6 +3,8 @@
 package chiselTests
 
 import chisel3._
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 class SimpleBundle extends Bundle {
   val x = UInt(4.W)
@@ -30,7 +32,7 @@ object ZeroWidthBundle {
   }
 }
 
-class WidthSpec extends ChiselFlatSpec {
+class WidthSpec extends AnyFlatSpec with Matchers {
   "Literals without specified widths" should "get the minimum legal width" in {
     "hdeadbeef".U.getWidth should be(32)
     "h_dead_beef".U.getWidth should be(32)
@@ -44,7 +46,7 @@ class WidthSpec extends ChiselFlatSpec {
   }
 }
 
-abstract class WireRegWidthSpecImpl extends ChiselFlatSpec with WidthHelpers {
+abstract class WireRegWidthSpecImpl extends AnyFlatSpec with Matchers with WidthHelpers {
   def name:                     String
   def builder[T <: Data](x: T): T
 
@@ -126,7 +128,7 @@ class RegWidthSpec extends WireRegWidthSpecImpl {
   def builder[T <: Data](x: T): T = Reg(x)
 }
 
-abstract class WireDefaultRegInitSpecImpl extends ChiselFlatSpec with WidthHelpers {
+abstract class WireDefaultRegInitSpecImpl extends AnyFlatSpec with Matchers with WidthHelpers {
   def name:                            String
   def builder1[T <: Data](x: T):       T
   def builder2[T <: Data](x: T, y: T): T

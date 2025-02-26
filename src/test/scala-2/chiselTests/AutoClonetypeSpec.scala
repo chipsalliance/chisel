@@ -5,7 +5,8 @@ package chiselTests
 import chisel3._
 import chisel3.util.QueueIO
 import circt.stage.ChiselStage.emitCHIRRTL
-
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import scala.collection.immutable.ListMap
 
 class BundleWithIntArg(val i: Int) extends Bundle {
@@ -90,7 +91,7 @@ class RecordWithVerbotenMethods(w: Int) extends Record {
   protected def _elementsImpl: Iterable[(String, Any)] = Nil
 }
 
-class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
+class AutoClonetypeSpec extends AnyFlatSpec with Matchers with Utils {
 
   "Bundles with Scala args" should "not need clonetype" in {
     emitCHIRRTL {

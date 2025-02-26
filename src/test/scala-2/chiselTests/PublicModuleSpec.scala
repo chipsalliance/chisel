@@ -5,8 +5,10 @@ package chiselTests
 import chisel3._
 import chisel3.experimental.hierarchy.{instantiable, Definition, Instance}
 import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class PublicModuleSpec extends ChiselFlatSpec with FileCheck {
+class PublicModuleSpec extends AnyFlatSpec with Matchers with FileCheck {
 
   @instantiable
   class Grault extends RawModule with Public {

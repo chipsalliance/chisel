@@ -1,10 +1,12 @@
 package chiselTests
 
 import chisel3._
-import circt.stage.ChiselStage
 import chisel3.experimental.{HasTypeAlias, RecordAlias}
+import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class TypeAliasSpec extends ChiselFlatSpec with Utils {
+class TypeAliasSpec extends AnyFlatSpec with Matchers with Utils {
   "Bundles with opt-in alias names" should "have an emitted FIRRTL type alias" in {
     class Test extends Module {
       class FooBundle extends Bundle with HasTypeAlias {

@@ -3,10 +3,12 @@
 package chiselTests
 
 import chisel3._
+import chisel3.util.Counter
 import circt.stage.ChiselStage
-import chisel3.util._
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class WarningSpec extends ChiselFlatSpec with Utils {
+class WarningSpec extends AnyFlatSpec with Matchers with Utils {
   behavior.of("Warnings")
 
   object MyEnum extends ChiselEnum {

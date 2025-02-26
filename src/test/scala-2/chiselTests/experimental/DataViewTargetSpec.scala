@@ -7,9 +7,11 @@ import chisel3.experimental.BaseModule
 import chisel3.experimental.dataview._
 import chisel3.experimental.conversions._
 import chisel3.experimental.annotate
-import chiselTests.{ChiselFlatSpec, FileCheck}
+import chiselTests.FileCheck
 import chiselTests.experimental.ExtensionMethods.ChiselStageHelpers
 import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 object DataViewTargetSpec {
   import firrtl.annotations._
@@ -22,7 +24,7 @@ object DataViewTargetSpec {
     annotate(d)(Seq(DummyAnno(d.toRelativeTarget(root), id)))
 }
 
-class DataViewTargetSpec extends ChiselFlatSpec with FileCheck {
+class DataViewTargetSpec extends AnyFlatSpec with Matchers with FileCheck {
   import DataViewTargetSpec._
   private val checks: Seq[Data => String] = Seq(
     _.toTarget.toString,

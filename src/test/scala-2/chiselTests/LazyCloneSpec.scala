@@ -5,8 +5,10 @@ package chiselTests
 import chisel3._
 import circt.stage.ChiselStage
 import collection.immutable.VectorMap
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class LazyCloneSpec extends ChiselFlatSpec {
+class LazyCloneSpec extends AnyFlatSpec with Matchers {
   object Counter {
     var count = 0L
   }

@@ -12,9 +12,10 @@ import chisel3.probe._
 import chisel3.properties.Property
 import chisel3.reflect.DataMirror.internal.chiselTypeClone
 import chisel3.util.{Decoupled, DecoupledIO, Valid, ValidIO}
-import chiselTests.ChiselFlatSpec
 import circt.stage.ChiselStage
 import scala.collection.immutable.SeqMap
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 object SimpleBundleDataView {
   class BundleA(val w: Int) extends Bundle {
@@ -77,7 +78,7 @@ object DontCareDataView {
   )
 }
 
-class DataViewSpec extends ChiselFlatSpec {
+class DataViewSpec extends AnyFlatSpec with Matchers {
 
   behavior.of("DataView")
 

@@ -3,12 +3,13 @@
 package chiselTests
 
 import chisel3._
-import circt.stage.ChiselStage
-import org.scalatest.matchers.should.Matchers
-import chiselTests.{ChiselFlatSpec, FileCheck}
 import chisel3.util.experimental.{InlineInstance, InlineInstanceAllowDedup}
+import chiselTests.FileCheck
+import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class InlineInstanceSpec extends ChiselFlatSpec with FileCheck {
+class InlineInstanceSpec extends AnyFlatSpec with Matchers with FileCheck {
   class ModuleA extends RawModule {
     val w = dontTouch(WireInit(false.B))
   }
@@ -31,7 +32,7 @@ class InlineInstanceSpec extends ChiselFlatSpec with FileCheck {
   }
 }
 
-class InlineInstanceAllowDedupSpec extends ChiselFlatSpec with FileCheck {
+class InlineInstanceAllowDedupSpec extends AnyFlatSpec with Matchers with FileCheck {
   class ModuleA extends RawModule {
     val w = dontTouch(WireInit(false.B))
   }

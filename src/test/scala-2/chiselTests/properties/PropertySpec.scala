@@ -3,14 +3,14 @@
 package chiselTests.properties
 
 import chisel3._
-import chisel3.properties.{Class, DynamicObject, Path, Property, PropertyType}
-import chiselTests.{ChiselFlatSpec, FileCheck}
-import circt.stage.ChiselStage
-import chisel3.properties.ClassType
-import chisel3.properties.AnyClassType
+import chisel3.properties.{AnyClassType, Class, ClassType, DynamicObject, Path, Property, PropertyType}
 import chisel3.util.experimental.BoringUtils
+import chiselTests.FileCheck
+import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class PropertySpec extends ChiselFlatSpec with FileCheck {
+class PropertySpec extends AnyFlatSpec with Matchers with FileCheck {
   behavior.of("Property")
 
   it should "fail to compile with unsupported Property types" in {

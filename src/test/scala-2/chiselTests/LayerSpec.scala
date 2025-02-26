@@ -2,17 +2,19 @@
 
 package chiselTests
 
+import _root_.circt.stage.ChiselStage
 import chisel3._
 import chisel3.experimental.hierarchy.core.{Definition, Instance}
 import chisel3.experimental.hierarchy.instantiable
 import chisel3.ltl.AssertProperty
 import chisel3.probe.{define, Probe, ProbeValue}
-import chiselTests.{ChiselFlatSpec, FileCheck, Utils}
-import java.nio.file.{FileSystems, Paths}
-import _root_.circt.stage.ChiselStage
 import chisel3.reflect.DataMirror.internal.chiselTypeClone
+import chiselTests.{FileCheck, Utils}
+import java.nio.file.{FileSystems, Paths}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class LayerSpec extends ChiselFlatSpec with Utils with FileCheck {
+class LayerSpec extends AnyFlatSpec with Matchers with Utils with FileCheck {
 
   val sep: String = FileSystems.getDefault().getSeparator()
 

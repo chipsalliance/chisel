@@ -4,8 +4,10 @@ package chiselTests
 
 import chisel3._
 import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class RebindingSpec extends ChiselFlatSpec with Utils {
+class RebindingSpec extends AnyFlatSpec with Matchers with Utils {
   "Rebinding a literal" should "fail" in {
     a[BindingException] should be thrownBy {
       ChiselStage.emitCHIRRTL {

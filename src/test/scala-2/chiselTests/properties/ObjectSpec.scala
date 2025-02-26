@@ -3,13 +3,15 @@
 package chiselTests.properties
 
 import chisel3._
-import chisel3.properties.{Class, DynamicObject, Property}
 import chisel3.experimental.hierarchy.{Definition, Instance}
+import chisel3.properties.{Class, DynamicObject, Property}
 import chisel3.util.experimental.BoringUtils
-import chiselTests.{ChiselFlatSpec, FileCheck}
+import chiselTests.FileCheck
 import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class ObjectSpec extends ChiselFlatSpec with FileCheck {
+class ObjectSpec extends AnyFlatSpec with Matchers with FileCheck {
   behavior.of("DynamicObject")
 
   it should "support Objects in Class ports" in {

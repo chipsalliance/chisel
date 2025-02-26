@@ -6,10 +6,11 @@ import chisel3._
 import chisel3.experimental.ExtModule
 import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance, Instantiate}
 import chisel3.stage.{ChiselGeneratorAnnotation, CircuitSerializationAnnotation}
-import circt.stage.ChiselStage.emitCHIRRTL
-import circt.stage.ChiselStage
 import chisel3.util.SRAM
+import circt.stage.ChiselStage
 import firrtl.transforms.DedupGroupAnnotation
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 object ModulePrefixSpec {
   // This has to be defined at the top-level because @instantiable doesn't work when nested.
@@ -21,7 +22,7 @@ object ModulePrefixSpec {
   }
 }
 
-class ModulePrefixSpec extends ChiselFlatSpec with Utils with FileCheck {
+class ModulePrefixSpec extends AnyFlatSpec with Matchers with Utils with FileCheck {
   import ModulePrefixSpec._
   behavior.of("withModulePrefix")
 

@@ -3,11 +3,12 @@
 package chiselTests.experimental
 
 import chisel3._
-import chisel3.experimental.{BaseModule, ExtModule}
 import chisel3.experimental.dataview.DataProduct
-import chiselTests.ChiselFlatSpec
+import chisel3.experimental.{BaseModule, ExtModule}
 import chiselTests.experimental.ExtensionMethods.ChiselStageHelpers
 import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 object ModuleDataProductSpec {
   class MyBundle extends Bundle {
@@ -38,7 +39,7 @@ object ModuleDataProductSpec {
   }
 }
 
-class ModuleDataProductSpec extends ChiselFlatSpec {
+class ModuleDataProductSpec extends AnyFlatSpec with Matchers {
   import ModuleDataProductSpec._
 
   behavior.of("DataProduct")

@@ -2,16 +2,16 @@
 
 package chiselTests.aop
 
-import chisel3.testers.BasicTester
-import chiselTests.ChiselFlatSpec
 import chisel3._
-import chisel3.aop.Select.{PredicatedConnect, When, WhenNot}
 import chisel3.aop.Select
+import chisel3.aop.Select.{PredicatedConnect, When, WhenNot}
 import chisel3.experimental.ExtModule
 import chisel3.stage.{ChiselGeneratorAnnotation, DesignAnnotation}
+import chisel3.testers.BasicTester
 import circt.stage.ChiselStage
 import firrtl.AnnotationSeq
-
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import scala.reflect.runtime.universe.TypeTag
 
 class SelectTester(results: Seq[Int]) extends BasicTester {
@@ -36,7 +36,7 @@ class SelectTester(results: Seq[Int]) extends BasicTester {
   }
 }
 
-class SelectSpec extends ChiselFlatSpec {
+class SelectSpec extends AnyFlatSpec with Matchers {
 
   "Test" should "pass if selecting correct registers" in {
     val dut = ChiselGeneratorAnnotation(() => {

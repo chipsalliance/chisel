@@ -5,6 +5,8 @@ package experimental
 
 import chisel3._
 import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 // NOTE This is currently an experimental API and subject to change
 // Example using a private port
@@ -31,7 +33,7 @@ class PortNameUniquenessTester extends NamedModuleTester {
   val output = expectName(IO(Output(UInt())).suggestName("wire"), "wire")
 }
 
-class ProgrammaticPortsSpec extends ChiselFlatSpec with Utils {
+class ProgrammaticPortsSpec extends AnyFlatSpec with Matchers with Utils {
 
   private def doTest(testMod: => NamedModuleTester): Unit = {
     var module: NamedModuleTester = null

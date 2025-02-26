@@ -4,6 +4,8 @@ package chiselTests
 
 import chisel3._
 import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 object IllegalRefSpec {
   class IllegalRefInner extends RawModule {
@@ -52,7 +54,7 @@ object IllegalRefSpec {
   }
 }
 
-class IllegalRefSpec extends ChiselFlatSpec with Utils {
+class IllegalRefSpec extends AnyFlatSpec with Matchers with Utils {
   import IllegalRefSpec._
 
   val variants = Map("a connect" -> true, "an op" -> false)

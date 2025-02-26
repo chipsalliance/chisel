@@ -4,8 +4,10 @@ package chiselTests
 
 import chisel3._
 import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class WireSpec extends ChiselFlatSpec {
+class WireSpec extends AnyFlatSpec with Matchers {
   "WireDefault.apply" should "work" in {
     assertCompiles("WireDefault(UInt(4.W), 2.U)")
   }

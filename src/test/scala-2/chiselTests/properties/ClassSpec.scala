@@ -5,10 +5,12 @@ package chiselTests.properties
 import chisel3._
 import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance}
 import chisel3.properties.{Class, DynamicObject, Property}
-import chiselTests.{ChiselFlatSpec, FileCheck}
+import chiselTests.FileCheck
 import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class ClassSpec extends ChiselFlatSpec with FileCheck {
+class ClassSpec extends AnyFlatSpec with Matchers with FileCheck {
   behavior.of("Class")
 
   it should "serialize to FIRRTL with anonymous names" in {

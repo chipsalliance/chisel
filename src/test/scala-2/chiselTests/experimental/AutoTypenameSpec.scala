@@ -5,6 +5,8 @@ import chisel3._
 import chisel3.experimental.HasAutoTypename
 import chisel3.util.{Decoupled, Queue}
 import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 class Top(gen: Bundle) extends Module {
   val in = IO(Input(gen))
@@ -33,7 +35,7 @@ class MultiParamBundle(x: Int)(y: String)(implicit z: Int) extends Bundle with H
   val bar = UInt(z.W)
 }
 
-class AutoTypenameSpec extends ChiselFlatSpec {
+class AutoTypenameSpec extends AnyFlatSpec with Matchers {
   private def runTest(gen: Bundle, expectedTypename: String): Unit = {
     val chirrtl = ChiselStage.emitCHIRRTL(new Top(gen))
     // Check that autoTypename even works; the default implementation should not be used

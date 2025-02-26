@@ -6,6 +6,8 @@ import chisel3._
 import chisel3.probe
 import chisel3.testers._
 import chisel3.util.experimental.BoringUtils
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 object BoringUtilsTapSpec {
 
@@ -54,7 +56,7 @@ object BoringUtilsTapSpec {
 
 }
 
-class BoringUtilsTapSpec extends ChiselFlatSpec with Utils with FileCheck {
+class BoringUtilsTapSpec extends AnyFlatSpec with Matchers with Utils with FileCheck {
   val args = Array("--throw-on-first-error", "--full-stacktrace")
   "Ready-only tap" should "work downwards from parent to child" in {
     class Foo extends RawModule {

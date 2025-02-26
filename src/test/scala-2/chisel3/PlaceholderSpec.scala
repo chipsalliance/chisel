@@ -2,10 +2,12 @@
 
 package chisel3
 
-import chiselTests.{ChiselFlatSpec, FileCheck}
+import chiselTests.FileCheck
 import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class PlaceholderSpec extends ChiselFlatSpec with FileCheck {
+class PlaceholderSpec extends AnyFlatSpec with Matchers with FileCheck {
 
   "Placeholders" should "allow insertion of commands" in {
 

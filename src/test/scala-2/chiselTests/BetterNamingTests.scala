@@ -3,9 +3,10 @@
 package chiselTests
 
 import chisel3._
+import chisel3.util.{Counter, Queue}
 import circt.stage.ChiselStage
-import chisel3.util._
-
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import scala.collection.mutable
 
 // Defined outside of the class so we don't get $ in name
@@ -75,7 +76,7 @@ class DigitFieldNamesInRecord extends NamedModuleTester {
  *
  * These tests are intended to validate that Chisel picks better names
  */
-class BetterNamingTests extends ChiselFlatSpec {
+class BetterNamingTests extends AnyFlatSpec with Matchers {
 
   behavior.of("Better Naming")
 

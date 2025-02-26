@@ -2,12 +2,13 @@
 
 package chiselTests.reflect
 
-import circt.stage.ChiselStage
 import chisel3._
-import chisel3.reflect.DataMirror
-import chiselTests.ChiselFlatSpec
-import org.scalactic.source.Position
 import chisel3.experimental.Analog
+import chisel3.reflect.DataMirror
+import circt.stage.ChiselStage
+import org.scalactic.source.Position
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 object CheckTypeEquivalenceSpec {
   private def test[A <: Data, B <: Data](gen1: A, gen2: B, expectSame: Boolean)(implicit pos: Position): Unit = {
@@ -38,7 +39,7 @@ object CheckTypeEquivalenceSpec {
   }
 }
 
-class CheckTypeEquivalenceSpec extends ChiselFlatSpec {
+class CheckTypeEquivalenceSpec extends AnyFlatSpec with Matchers {
   import CheckTypeEquivalenceSpec._
 
   behavior.of("DataMirror.checkTypeEquivalence")

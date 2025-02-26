@@ -4,8 +4,10 @@ package chiselTests
 
 import chisel3._
 import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class NameCollisionSpec extends ChiselFlatSpec with Utils {
+class NameCollisionSpec extends AnyFlatSpec with Matchers with Utils {
   behavior.of("Builder")
 
   it should "error on duplicated names with a correct message" in {

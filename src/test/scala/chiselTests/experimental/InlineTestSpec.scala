@@ -1,10 +1,12 @@
 package chiselTests
 
 import chisel3._
-import chisel3.util.Enum
-import chisel3.testers._
-import chisel3.experimental.inlinetest._
 import chisel3.experimental.hierarchy._
+import chisel3.experimental.inlinetest._
+import chisel3.testers._
+import chisel3.util.Enum
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 class TestResultBundle extends Bundle {
   val finish = Output(Bool())
@@ -108,7 +110,7 @@ class ModuleWithTests(ioWidth: Int = 32) extends Module with HasMonitorSocket wi
   }
 }
 
-class InlineTestSpec extends ChiselFlatSpec with FileCheck {
+class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck {
   it should "generate a public module for each test" in {
     generateFirrtlAndFileCheck(new ModuleWithTests)(
       """

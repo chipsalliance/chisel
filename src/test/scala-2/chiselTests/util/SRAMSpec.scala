@@ -8,14 +8,15 @@ import chisel3._
 import chisel3.experimental.{annotate, OpaqueType}
 import chisel3.stage.{ChiselGeneratorAnnotation, IncludeUtilMetadata, UseSRAMBlackbox}
 import chisel3.util.{MemoryReadWritePort, SRAM}
-import chiselTests.{ChiselFlatSpec, FileCheck}
+import chiselTests.FileCheck
 import firrtl.EmittedVerilogCircuitAnnotation
 import firrtl.annotations.{Annotation, ReferenceTarget, SingleTargetAnnotation}
-
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import scala.collection.immutable.SeqMap
 import scala.util.chaining.scalaUtilChainingOps
 
-class SRAMSpec extends ChiselFlatSpec with FileCheck {
+class SRAMSpec extends AnyFlatSpec with Matchers with FileCheck {
   case class DummyAnno(target: ReferenceTarget) extends SingleTargetAnnotation[ReferenceTarget] {
     override def duplicate(n: ReferenceTarget) = this.copy(target = n)
   }

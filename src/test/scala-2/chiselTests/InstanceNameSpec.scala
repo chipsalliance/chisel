@@ -3,8 +3,10 @@
 package chiselTests
 
 import chisel3._
-import circt.stage.ChiselStage
 import chisel3.util.Queue
+import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 class InstanceNameModule extends Module {
   val io = IO(new Bundle {
@@ -22,7 +24,7 @@ class InstanceNameModule extends Module {
   io.bar := io.foo + x
 }
 
-class InstanceNameSpec extends ChiselFlatSpec {
+class InstanceNameSpec extends AnyFlatSpec with Matchers {
   behavior.of("instanceName")
   val moduleName = "InstanceNameModule"
   var m: InstanceNameModule = _

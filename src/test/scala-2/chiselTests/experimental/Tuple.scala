@@ -4,10 +4,11 @@ package chiselTests.experimental
 
 import chisel3._
 import chisel3.experimental.conversions._
-import chiselTests.ChiselFlatSpec
 import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class TupleSpec extends ChiselFlatSpec {
+class TupleSpec extends AnyFlatSpec with Matchers {
 
   behavior.of("Tuple")
 
