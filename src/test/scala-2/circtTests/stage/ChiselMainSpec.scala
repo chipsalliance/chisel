@@ -53,7 +53,7 @@ object ChiselMainSpec {
 
 }
 
-class ChiselMainSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
+class ChiselMainSpec extends AnyFunSpec with Matchers {
   import ChiselMainSpec._
 
   val testDir = new File("test_run_dir/ChiselMainSpec")

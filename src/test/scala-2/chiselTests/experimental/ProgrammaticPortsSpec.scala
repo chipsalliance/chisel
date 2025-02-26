@@ -33,7 +33,7 @@ class PortNameUniquenessTester extends NamedModuleTester {
   val output = expectName(IO(Output(UInt())).suggestName("wire"), "wire")
 }
 
-class ProgrammaticPortsSpec extends AnyFlatSpec with Matchers with Utils {
+class ProgrammaticPortsSpec extends AnyFlatSpec with Matchers {
 
   private def doTest(testMod: => NamedModuleTester): Unit = {
     var module: NamedModuleTester = null

@@ -12,7 +12,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import scala.collection.immutable.ListMap
 
-class FixedIOModuleSpec extends AnyFlatSpec with Matchers with Utils with FileCheck {
+class FixedIOModuleSpec extends AnyFlatSpec with Matchers with FileCheck {
 
   "FixedIOModule" should "create a module with flattened IO" in {
 

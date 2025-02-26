@@ -7,7 +7,7 @@ import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-class NameCollisionSpec extends AnyFlatSpec with Matchers with Utils {
+class NameCollisionSpec extends AnyFlatSpec with Matchers {
   behavior.of("Builder")
 
   it should "error on duplicated names with a correct message" in {

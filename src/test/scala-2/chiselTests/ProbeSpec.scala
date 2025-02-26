@@ -13,7 +13,7 @@ import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-class ProbeSpec extends AnyFlatSpec with Matchers with FileCheck with Utils with ChiselSim {
+class ProbeSpec extends AnyFlatSpec with Matchers with FileCheck with ChiselSim {
   // Strip SourceInfos and split into lines
   private def processChirrtl(chirrtl: String): Array[String] =
     chirrtl.split('\n').map(line => line.takeWhile(_ != '@').trim())

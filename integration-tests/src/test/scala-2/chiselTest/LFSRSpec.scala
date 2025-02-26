@@ -9,7 +9,6 @@ import chisel3.util.random._
 import chisel3.testers.{BasicTester, TesterDriver}
 import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.RunUntilFinished
-import chiselTests.Utils
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 

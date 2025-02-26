@@ -6,12 +6,12 @@ import chisel3._
 import chisel3.aop.Select
 import chisel3.experimental.prefix
 import chisel3.experimental.AffectsChiselName
-import chiselTests.{FileCheck, Utils}
+import chiselTests.FileCheck
 import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-class NamePluginSpec extends AnyFlatSpec with Matchers with FileCheck with Utils {
+class NamePluginSpec extends AnyFlatSpec with Matchers with FileCheck {
   implicit val minimumScalaVersion: Int = 12
 
   "Scala plugin" should "name internally scoped components" in {

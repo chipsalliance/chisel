@@ -160,7 +160,7 @@ class PathFromInstanceToTarget extends RawModule {
   val instance1 = Instantiate(new Hierarchy1)
 }
 
-class ToTargetSpec extends AnyFlatSpec with Matchers with Utils {
+class ToTargetSpec extends AnyFlatSpec with Matchers {
 
   var m: InstanceNameModule = _
   ChiselStage.emitCHIRRTL { m = new InstanceNameModule; m }

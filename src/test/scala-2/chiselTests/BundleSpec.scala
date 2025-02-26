@@ -59,7 +59,7 @@ object BundleSpec {
   }
 }
 
-class BundleSpec extends AnyFlatSpec with Matchers with Utils with ChiselSim {
+class BundleSpec extends AnyFlatSpec with Matchers with ChiselSim {
 
   import BundleSpec._
 

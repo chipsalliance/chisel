@@ -35,7 +35,7 @@ class AbstractResetDontCareModule extends RawModule {
   bulkAggPort <> DontCare
 }
 
-class ResetSpec extends AnyFlatSpec with Matchers with Utils {
+class ResetSpec extends AnyFlatSpec with Matchers {
 
   behavior.of("Reset")
 

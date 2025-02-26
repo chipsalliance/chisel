@@ -2,10 +2,9 @@
 
 package chiselTests.experimental.hierarchy
 
-import _root_.firrtl.annotations._
-import org.scalatest.matchers.should.Matchers
+import firrtl.annotations.{CircuitTarget, InstanceTarget, ModuleTarget, ReferenceTarget, Target}
 
-trait Utils extends chiselTests.Utils with Matchers {
+trait Utils {
   // TODO promote to standard API (in FIRRTL) and perhaps even implement with a macro
   implicit class Str2RefTarget(str: String) {
     def rt: ReferenceTarget = Target.deserialize(str).asInstanceOf[ReferenceTarget]

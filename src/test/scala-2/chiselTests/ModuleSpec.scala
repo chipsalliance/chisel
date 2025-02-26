@@ -85,7 +85,7 @@ class NullModuleWrapper extends Module {
   val child = Module(new ModuleWire)
 }
 
-class ModuleSpec extends AnyPropSpec with Matchers with Utils {
+class ModuleSpec extends AnyPropSpec with Matchers {
 
   property("ModuleVec should elaborate") {
     ChiselStage.emitCHIRRTL { new ModuleVec(2) }

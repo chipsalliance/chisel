@@ -94,7 +94,7 @@ abstract class AnalogTester extends BasicTester {
     assert(reader.out === BusValue)
 }
 
-class AnalogSpec extends AnyFlatSpec with Matchers with Utils with ChiselSim {
+class AnalogSpec extends AnyFlatSpec with Matchers with ChiselSim {
   behavior.of("Analog")
 
   it should "NOT be bindable to registers" in {

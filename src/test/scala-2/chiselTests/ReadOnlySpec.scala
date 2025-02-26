@@ -77,7 +77,7 @@ object ReadOnlySpec {
   }
 }
 
-class ReadOnlySpec extends AnyFlatSpec with Matchers with Utils {
+class ReadOnlySpec extends AnyFlatSpec with Matchers {
   import ReadOnlySpec._
 
   behavior.of("readOnly")

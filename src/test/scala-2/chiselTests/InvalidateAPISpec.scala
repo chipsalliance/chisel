@@ -10,7 +10,7 @@ import firrtl.util.BackendCompilationUtilities._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.propspec.AnyPropSpec
 
-class InvalidateAPISpec extends AnyPropSpec with Matchers with Utils {
+class InvalidateAPISpec extends AnyPropSpec with Matchers {
 
   def myGenerateFirrtl(t: => Module): String = ChiselStage.emitCHIRRTL(t)
   def compileFirrtl(t: => Module): Unit = {

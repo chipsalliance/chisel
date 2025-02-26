@@ -129,7 +129,7 @@ object OpaqueTypeSpec {
   }
 }
 
-class OpaqueTypeSpec extends AnyFlatSpec with Matchers with Utils {
+class OpaqueTypeSpec extends AnyFlatSpec with Matchers {
   import OpaqueTypeSpec._
 
   behavior.of("OpaqueTypes")

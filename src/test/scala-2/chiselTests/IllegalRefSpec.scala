@@ -54,7 +54,7 @@ object IllegalRefSpec {
   }
 }
 
-class IllegalRefSpec extends AnyFlatSpec with Matchers with Utils {
+class IllegalRefSpec extends AnyFlatSpec with Matchers {
   import IllegalRefSpec._
 
   val variants = Map("a connect" -> true, "an op" -> false)

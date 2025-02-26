@@ -10,7 +10,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 /* Printable Tests */
-class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
+class PrintableSpec extends AnyFlatSpec with Matchers {
   // This regex is brittle, it specifically finds the clock and enable signals followed by commas
   private val PrintfRegex = """\s*printf\(\w+, [^,]+,(.*)\).*""".r
   private val StringRegex = """([^"]*)"(.*?)"(.*)""".r

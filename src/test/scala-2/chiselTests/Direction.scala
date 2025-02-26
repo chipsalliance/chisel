@@ -43,7 +43,7 @@ class TopDirectionOutput extends Module {
   io.out := 117.U
 }
 
-class DirectionSpec extends AnyPropSpec with Matchers with Utils {
+class DirectionSpec extends AnyPropSpec with Matchers {
 
   // TODO: In Chisel3 these are actually FIRRTL errors. Remove from tests?
 

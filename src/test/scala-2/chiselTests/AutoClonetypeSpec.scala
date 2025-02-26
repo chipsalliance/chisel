@@ -91,7 +91,7 @@ class RecordWithVerbotenMethods(w: Int) extends Record {
   protected def _elementsImpl: Iterable[(String, Any)] = Nil
 }
 
-class AutoClonetypeSpec extends AnyFlatSpec with Matchers with Utils {
+class AutoClonetypeSpec extends AnyFlatSpec with Matchers {
 
   "Bundles with Scala args" should "not need clonetype" in {
     emitCHIRRTL {

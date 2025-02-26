@@ -156,7 +156,7 @@ class SparseVecTest(
 
 }
 
-class SparseVecSpec extends AnyFlatSpec with Matchers with Utils with ChiselSim {
+class SparseVecSpec extends AnyFlatSpec with Matchers with ChiselSim {
   "SparseVec equivalence to Dynamic Index" should "work for a complete user-specified mapping" in {
     simulate(
       new SparseVecDynamicIndexEquivalenceTest(

@@ -5,7 +5,6 @@ package chiselTests
 import chisel3._
 import chisel3.choice.{Case, Group, ModuleChoice}
 import chisel3.experimental.hierarchy.Definition
-import chiselTests.Utils
 import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers

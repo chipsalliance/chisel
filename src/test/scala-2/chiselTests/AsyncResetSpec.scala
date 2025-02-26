@@ -141,7 +141,7 @@ class AsyncResetDontCareModule extends RawModule {
   bulkAggPort <> DontCare
 }
 
-class AsyncResetSpec extends AnyFlatSpec with Matchers with Utils with ChiselSim {
+class AsyncResetSpec extends AnyFlatSpec with Matchers with ChiselSim {
 
   behavior.of("AsyncReset")
 

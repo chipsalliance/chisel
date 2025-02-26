@@ -6,7 +6,7 @@ import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-class TypeAliasSpec extends AnyFlatSpec with Matchers with Utils {
+class TypeAliasSpec extends AnyFlatSpec with Matchers {
   "Bundles with opt-in alias names" should "have an emitted FIRRTL type alias" in {
     class Test extends Module {
       class FooBundle extends Bundle with HasTypeAlias {

@@ -13,7 +13,7 @@ class BundleWithAnonymousInner(val w: Int) extends Bundle {
   }
 }
 
-class AutoNestedCloneSpec extends AnyFlatSpec with Matchers with Utils {
+class AutoNestedCloneSpec extends AnyFlatSpec with Matchers {
 
   behavior.of("autoCloneType of inner Bundle in Chisel3")
 

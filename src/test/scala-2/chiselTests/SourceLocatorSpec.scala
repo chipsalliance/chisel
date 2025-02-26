@@ -39,7 +39,7 @@ object SourceLocatorSpec {
   }
 }
 
-class SourceLocatorSpec extends AnyFunSpec with Matchers with Utils {
+class SourceLocatorSpec extends AnyFunSpec with Matchers {
   import SourceLocatorSpec._
 
   describe("(0) Relative source paths") {

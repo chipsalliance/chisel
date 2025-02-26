@@ -102,7 +102,7 @@ object ConnectableSpec {
 
 }
 
-class ConnectableSpec extends AnyFunSpec with Matchers with Utils {
+class ConnectableSpec extends AnyFunSpec with Matchers {
   import ConnectableSpec._
 
   def testCheck(firrtl: String, matches: Seq[String], nonMatches: Seq[String]): String = {

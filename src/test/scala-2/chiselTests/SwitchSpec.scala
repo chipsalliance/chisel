@@ -8,7 +8,7 @@ import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-class SwitchSpec extends AnyFlatSpec with Matchers with Utils {
+class SwitchSpec extends AnyFlatSpec with Matchers {
   "switch" should "require literal conditions" in {
     a[java.lang.IllegalArgumentException] should be thrownBy {
       ChiselStage.emitCHIRRTL(new Module {

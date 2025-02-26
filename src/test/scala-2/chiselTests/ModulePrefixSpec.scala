@@ -22,7 +22,7 @@ object ModulePrefixSpec {
   }
 }
 
-class ModulePrefixSpec extends AnyFlatSpec with Matchers with Utils with FileCheck {
+class ModulePrefixSpec extends AnyFlatSpec with Matchers with FileCheck {
   import ModulePrefixSpec._
   behavior.of("withModulePrefix")
 

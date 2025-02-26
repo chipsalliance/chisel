@@ -9,7 +9,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.propspec.AnyPropSpec
 
 // Most tests are in MixedVecIntegrationSpec
-class MixedVecSpec extends AnyPropSpec with Matchers with Utils {
+class MixedVecSpec extends AnyPropSpec with Matchers {
 
   property("MixedVecs should not be able to take hardware types") {
     a[ExpectedChiselTypeException] should be thrownBy {

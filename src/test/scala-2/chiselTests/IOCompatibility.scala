@@ -36,7 +36,7 @@ class IOCModuleWire extends Module {
   io.out := inc.out
 }
 
-class IOCompatibilitySpec extends AnyPropSpec with Matchers with Utils {
+class IOCompatibilitySpec extends AnyPropSpec with Matchers {
 
   property("IOCModuleVec should elaborate") {
     ChiselStage.emitCHIRRTL { new IOCModuleVec(2) }
