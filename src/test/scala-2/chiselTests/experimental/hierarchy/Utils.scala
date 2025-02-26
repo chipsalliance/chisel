@@ -3,7 +3,6 @@
 package chiselTests.experimental.hierarchy
 
 import _root_.firrtl.annotations._
-import chiselTests.ChiselRunners
 import org.scalatest.matchers.should.Matchers
 
 trait Utils extends chiselTests.Utils with Matchers {

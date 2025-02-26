@@ -31,9 +31,6 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import chisel3.reflect.DataMirror
 
-/** Common utility functions for Chisel unit tests. */
-sealed trait ChiselRunners extends Assertions
-
 trait WidthHelpers extends Assertions {
 
   def assertKnownWidth(expected: Int, args: Iterable[String] = Nil)(gen: => Data)(implicit pos: Position): Unit = {
@@ -136,13 +133,13 @@ trait FileCheck extends BeforeAndAfterEachTestData { this: Suite =>
 }
 
 /** Spec base class for BDD-style testers. */
-abstract class ChiselFlatSpec extends AnyFlatSpec with ChiselRunners with Matchers
+abstract class ChiselFlatSpec extends AnyFlatSpec with Matchers
 
 /** Spec base class for BDD-style testers. */
-abstract class ChiselFreeSpec extends AnyFreeSpec with ChiselRunners with Matchers
+abstract class ChiselFreeSpec extends AnyFreeSpec with Matchers
 
 /** Spec base class for BDD-style testers. */
-abstract class ChiselFunSpec extends AnyFunSpec with ChiselRunners with Matchers
+abstract class ChiselFunSpec extends AnyFunSpec with Matchers
 
 /** Utilities for writing property-based checks */
 trait PropertyUtils extends ScalaCheckPropertyChecks {
@@ -212,7 +209,7 @@ trait PropertyUtils extends ScalaCheckPropertyChecks {
 }
 
 /** Spec base class for property-based testers. */
-abstract class ChiselPropSpec extends AnyPropSpec with ChiselRunners with PropertyUtils with Matchers
+abstract class ChiselPropSpec extends AnyPropSpec with PropertyUtils with Matchers
 
 trait Utils {
 
