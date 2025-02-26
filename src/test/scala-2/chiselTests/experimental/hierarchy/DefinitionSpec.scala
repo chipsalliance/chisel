@@ -799,7 +799,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
            |
            |CHECK:      public module Top :
            |CHECK:        connect i.in, foo
-           |CHECK:        connct bar, i.out
+           |CHECK:        connect bar, i.out
            |""".stripMargin
       )
     }
