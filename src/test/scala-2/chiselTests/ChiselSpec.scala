@@ -133,9 +133,6 @@ trait FileCheck extends BeforeAndAfterEachTestData { this: Suite =>
 }
 
 /** Spec base class for BDD-style testers. */
-abstract class ChiselFlatSpec extends AnyFlatSpec with Matchers
-
-/** Spec base class for BDD-style testers. */
 abstract class ChiselFreeSpec extends AnyFreeSpec with Matchers
 
 /** Spec base class for BDD-style testers. */
