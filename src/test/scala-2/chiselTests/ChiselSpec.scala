@@ -42,15 +42,6 @@ sealed trait ChiselRunners extends Assertions {
     }
     res.asInstanceOf[A]
   }
-
-  /** Compiles a Chisel Module to FIRRTL
-    * NOTE: This uses the "test_run_dir" as the default directory for generated code.
-    * @param t the generator for the module
-    * @return The FIRRTL Circuit and Annotations _before_ FIRRTL compilation
-    */
-  def getFirrtlAndAnnos(t: => RawModule, providedAnnotations: Seq[Annotation] = Nil): (Circuit, Seq[Annotation]) = {
-    TestUtils.getChirrtlAndAnnotations(t, providedAnnotations)
-  }
 }
 
 trait WidthHelpers extends Assertions {
