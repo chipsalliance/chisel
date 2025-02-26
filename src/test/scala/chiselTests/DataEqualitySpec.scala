@@ -5,7 +5,18 @@ import chisel3.experimental.VecLiterals._
 import chisel3.experimental.BundleLiterals._
 import chisel3.experimental.Analog
 import circt.stage.ChiselStage
+<<<<<<< HEAD:src/test/scala/chiselTests/DataEqualitySpec.scala
 import chisel3.testers.BasicTester
+||||||| parent of 62bdfce5 ([test] Remove unnecessary usages of BasicTester):src/test/scala-2/chiselTests/DataEqualitySpec.scala
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.Exceptions.AssertionFailed
+import chisel3.simulator.stimulus.RunUntilFinished
+import chisel3.testers.BasicTester
+=======
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.Exceptions.AssertionFailed
+import chisel3.simulator.stimulus.RunUntilFinished
+>>>>>>> 62bdfce5 ([test] Remove unnecessary usages of BasicTester):src/test/scala-2/chiselTests/DataEqualitySpec.scala
 import chisel3.util.Valid
 
 class EqualityModule(lhsGen: => Data, rhsGen: => Data) extends Module {
@@ -17,7 +28,7 @@ class EqualityModule(lhsGen: => Data, rhsGen: => Data) extends Module {
   out := lhs === rhs
 }
 
-class EqualityTester(lhsGen: => Data, rhsGen: => Data) extends BasicTester {
+class EqualityTester(lhsGen: => Data, rhsGen: => Data) extends Module {
   val equalityModule = Module(new EqualityModule(lhsGen, rhsGen))
 
   assert(equalityModule.out)
@@ -38,7 +49,7 @@ class AnalogExceptionModule extends Module {
   val io = IO(new AnalogExceptionModuleIO)
 }
 
-class AnalogExceptionTester extends BasicTester {
+class AnalogExceptionTester extends Module {
   val module = Module(new AnalogExceptionModule)
 
   module.io.bundle1 <> DontCare

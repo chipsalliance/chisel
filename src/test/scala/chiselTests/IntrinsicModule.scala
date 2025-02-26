@@ -5,7 +5,6 @@ package chiselTests
 import circt.stage.ChiselStage
 import chisel3._
 import chisel3.experimental._
-import chisel3.testers.BasicTester
 import circt.stage.ChiselStage
 
 class IntModuleTest extends IntrinsicModule("TestIntrinsic") {
@@ -20,7 +19,7 @@ class IntModuleParam(str: String, dbl: Double)
 
 class IntModuleGenName(GenIntName: String) extends IntrinsicModule(GenIntName) {}
 
-class IntModuleTester extends BasicTester {
+class IntModuleTester extends Module {
   val intM1 = Module(new IntModuleTest)
   val intM2 = Module(new IntModuleParam("one", 1.0))
   val intM4 = Module(new IntModuleGenName("someIntName"))

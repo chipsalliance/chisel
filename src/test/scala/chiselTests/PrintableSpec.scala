@@ -3,7 +3,6 @@
 package chiselTests
 
 import chisel3._
-import chisel3.testers.BasicTester
 import circt.stage.ChiselStage
 import org.scalactic.source.Position
 import org.scalatest.flatspec.AnyFlatSpec
@@ -47,7 +46,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
   behavior.of("Printable & Custom Interpolator")
 
   it should "pass exact strings through" in {
-    class MyModule extends BasicTester {
+    class MyModule extends Module {
       printf(p"An exact string")
     }
     generateAndCheck(new MyModule) {
@@ -55,7 +54,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
     }
   }
   it should "handle Printable and String concatenation" in {
-    class MyModule extends BasicTester {
+    class MyModule extends Module {
       printf(p"First " + PString("Second ") + "Third")
     }
     generateAndCheck(new MyModule) {
@@ -63,7 +62,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
     }
   }
   it should "call toString on non-Printable objects" in {
-    class MyModule extends BasicTester {
+    class MyModule extends Module {
       val myInt = 1234
       printf(p"myInt = $myInt")
     }
@@ -72,7 +71,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
     }
   }
   it should "generate proper printf for simple Decimal printing" in {
-    class MyModule extends BasicTester {
+    class MyModule extends Module {
       val myWire = WireDefault(1234.U)
       printf(p"myWire = ${Decimal(myWire)}")
     }
@@ -81,7 +80,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
     }
   }
   it should "handle printing literals" in {
-    class MyModule extends BasicTester {
+    class MyModule extends Module {
       printf(Decimal(10.U(32.W)))
     }
     generateAndCheck(new MyModule) {
@@ -90,7 +89,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
     }
   }
   it should "correctly escape percent" in {
-    class MyModule extends BasicTester {
+    class MyModule extends Module {
       printf(p"%")
     }
     generateAndCheck(new MyModule) {
@@ -98,7 +97,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
     }
   }
   it should "correctly emit tab" in {
-    class MyModule extends BasicTester {
+    class MyModule extends Module {
       printf(p"\t")
     }
     generateAndCheck(new MyModule) {
@@ -116,7 +115,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
     class MyBundle extends Bundle {
       val foo = UInt(32.W)
     }
-    class MyModule extends BasicTester {
+    class MyModule extends Module {
       override def desiredName: String = "MyModule"
       val myWire = Wire(new MyBundle)
       val myInst = Module(new MySubModule)
@@ -134,7 +133,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
         val fizz = UInt(32.W)
       })
     }
-    class MyModule extends BasicTester {
+    class MyModule extends Module {
       val myInst = Module(new MySubModule)
       printf(p"${myInst.io.fizz}")
     }
@@ -143,7 +142,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
     }
   }
   it should "print UInts and SInts as Decimal by default" in {
-    class MyModule extends BasicTester {
+    class MyModule extends Module {
       val myUInt = WireDefault(0.U)
       val mySInt = WireDefault(-1.S)
       printf(p"$myUInt & $mySInt")
@@ -153,7 +152,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
     }
   }
   it should "print Vecs like Scala Seqs by default" in {
-    class MyModule extends BasicTester {
+    class MyModule extends Module {
       val myVec = Wire(Vec(4, UInt(32.W)))
       myVec.foreach(_ := 0.U)
       printf(p"$myVec")
@@ -163,7 +162,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
     }
   }
   it should "print Bundles like Scala Maps by default" in {
-    class MyModule extends BasicTester {
+    class MyModule extends Module {
       val myBun = Wire(new Bundle {
         val foo = UInt(32.W)
         val bar = UInt(32.W)
@@ -194,7 +193,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
   // Unit tests for cf
   it should "print regular scala variables with cf format specifier" in {
 
-    class MyModule extends BasicTester {
+    class MyModule extends Module {
       val f1 = 20.4517
       val i1 = 10
       val str1 = "String!"
@@ -219,7 +218,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
           cf"Foo : $foo%x Bar : $bar%x"
       }
     }
-    class MyModule extends BasicTester {
+    class MyModule extends Module {
       val b1 = 10.U
       val w1 = Wire(new MyBundle)
       w1.foo := 5.U
@@ -242,7 +241,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
     class MyBundle extends Bundle {
       val foo = UInt(32.W)
     }
-    class MyModule extends BasicTester {
+    class MyModule extends Module {
       override def desiredName: String = "MyModule"
       val myWire = Wire(new MyBundle)
       val myInst = Module(new MySubModule)
@@ -256,7 +255,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
   }
 
   it should "correctly print strings after modifier" in {
-    class MyModule extends BasicTester {
+    class MyModule extends Module {
       val b1 = 10.U
       printf(cf"This is here $b1%x!!!! And should print everything else")
     }
@@ -266,7 +265,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
   }
 
   it should "correctly print strings with a lot of literal %% and different format specifiers for Wires" in {
-    class MyModule extends BasicTester {
+    class MyModule extends Module {
       val b1 = 10.U
       val b2 = 20.U
       printf(cf"%%  $b1%x%%$b2%b = ${b1 % b2}%d %%%% Tail String")
@@ -279,7 +278,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
   }
 
   it should "not allow unescaped % in the message" in {
-    class MyModule extends BasicTester {
+    class MyModule extends Module {
       printf(cf"This should error out for sure because of % - it should be %%")
     }
     a[java.util.UnknownFormatConversionException] should be thrownBy {
@@ -290,7 +289,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
   }
 
   it should "allow Printables to be expanded and used" in {
-    class MyModule extends BasicTester {
+    class MyModule extends Module {
       val w1 = 20.U
       val f1 = 30.2
       val i1 = 14
@@ -304,7 +303,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
   }
 
   it should "fail with a single  % in the message" in {
-    class MyModule extends BasicTester {
+    class MyModule extends Module {
       printf(cf"%")
     }
     a[java.util.UnknownFormatConversionException] should be thrownBy {
@@ -324,7 +323,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
   }
 
   it should "pass correctly escaped \\ when using Printable.pack" in {
-    class MyModule extends BasicTester {
+    class MyModule extends Module {
       printf(Printable.pack("\\ \\]"))
     }
     generateAndCheck(new MyModule) {

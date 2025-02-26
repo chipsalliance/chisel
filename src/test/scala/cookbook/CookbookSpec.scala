@@ -3,10 +3,23 @@
 package cookbook
 
 import chisel3._
+<<<<<<< HEAD:src/test/scala/cookbook/CookbookSpec.scala
 import chisel3.util._
 import chisel3.testers.BasicTester
 
 import chiselTests.ChiselFlatSpec
+||||||| parent of 62bdfce5 ([test] Remove unnecessary usages of BasicTester):src/test/scala-2/cookbook/CookbookSpec.scala
+import chisel3.util.Counter
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.testers.BasicTester
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
+=======
+import chisel3.util.Counter
+import chisel3.simulator.scalatest.ChiselSim
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
+>>>>>>> 62bdfce5 ([test] Remove unnecessary usages of BasicTester):src/test/scala-2/cookbook/CookbookSpec.scala
 
 /** Tester for concise cookbook tests
   *

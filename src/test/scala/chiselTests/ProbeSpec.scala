@@ -5,7 +5,16 @@ package chiselTests
 import chisel3._
 import chisel3.probe._
 import chisel3.util.Counter
+<<<<<<< HEAD:src/test/scala/chiselTests/ProbeSpec.scala
 import chisel3.testers.{BasicTester, TesterDriver}
+||||||| parent of 62bdfce5 ([test] Remove unnecessary usages of BasicTester):src/test/scala-2/chiselTests/ProbeSpec.scala
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
+import chisel3.testers.{BasicTester, TesterDriver}
+=======
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
+>>>>>>> 62bdfce5 ([test] Remove unnecessary usages of BasicTester):src/test/scala-2/chiselTests/ProbeSpec.scala
 import circt.stage.ChiselStage
 
 class ProbeSpec extends ChiselFlatSpec with Utils {
@@ -629,7 +638,17 @@ class ProbeSpec extends ChiselFlatSpec with Utils {
       define(b.refs.out, RWProbeValue(out))
       define(b.refs.reg, RWProbeValue(r))
     }
+<<<<<<< HEAD:src/test/scala/chiselTests/ProbeSpec.scala
     runTester(new BasicTester {
+||||||| parent of 62bdfce5 ([test] Remove unnecessary usages of BasicTester):src/test/scala-2/chiselTests/ProbeSpec.scala
+    simulate(new BasicTester {
+      layer.enable(layers.Verification)
+      layer.enable(layers.Verification.Assert)
+=======
+    simulate(new Module {
+      layer.enable(layers.Verification)
+      layer.enable(layers.Verification.Assert)
+>>>>>>> 62bdfce5 ([test] Remove unnecessary usages of BasicTester):src/test/scala-2/chiselTests/ProbeSpec.scala
       val dut = Module(new Top)
 
       val (cycle, done) = Counter(true.B, 20)

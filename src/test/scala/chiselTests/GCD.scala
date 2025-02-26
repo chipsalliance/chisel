@@ -3,7 +3,16 @@
 package chiselTests
 
 import chisel3._
+<<<<<<< HEAD:src/test/scala/chiselTests/GCD.scala
 import chisel3.testers.BasicTester
+||||||| parent of 62bdfce5 ([test] Remove unnecessary usages of BasicTester):src/test/scala-2/chiselTests/GCD.scala
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
+import chisel3.testers.BasicTester
+=======
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
+>>>>>>> 62bdfce5 ([test] Remove unnecessary usages of BasicTester):src/test/scala-2/chiselTests/GCD.scala
 import circt.stage.ChiselStage
 
 class GCD extends Module {
@@ -22,7 +31,7 @@ class GCD extends Module {
   io.v := y === 0.U
 }
 
-class GCDTester(a: Int, b: Int, z: Int) extends BasicTester {
+class GCDTester(a: Int, b: Int, z: Int) extends Module {
   val dut = Module(new GCD)
   val first = RegInit(true.B)
   dut.io.a := a.U

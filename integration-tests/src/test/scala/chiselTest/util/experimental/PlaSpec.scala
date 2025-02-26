@@ -2,13 +2,18 @@ package chiselTests.util.experimental
 
 import chisel3._
 import chisel3.stage.PrintFullStackTraceAnnotation
-import chisel3.testers.BasicTester
 import chisel3.util.{pla, BitPat}
 import chiselTests.ChiselFlatSpec
 
 class PlaSpec extends ChiselFlatSpec {
   "A 1-of-8 decoder (eg. 74xx138 without enables)" should "be generated correctly" in {
+<<<<<<< HEAD:integration-tests/src/test/scala/chiselTest/util/experimental/PlaSpec.scala
     assertTesterPasses(new BasicTester {
+||||||| parent of 62bdfce5 ([test] Remove unnecessary usages of BasicTester):integration-tests/src/test/scala-2/chiselTest/util/experimental/PlaSpec.scala
+    simulate(new BasicTester {
+=======
+    simulate(new Module {
+>>>>>>> 62bdfce5 ([test] Remove unnecessary usages of BasicTester):integration-tests/src/test/scala-2/chiselTest/util/experimental/PlaSpec.scala
       val table = Seq(
         (BitPat("b000"), BitPat("b00000001")),
         (BitPat("b001"), BitPat("b00000010")),
@@ -34,7 +39,13 @@ class PlaSpec extends ChiselFlatSpec {
   }
 
   "An active-low 1-of-8 decoder (eg. inverted 74xx138 without enables)" should "be generated correctly" in {
+<<<<<<< HEAD:integration-tests/src/test/scala/chiselTest/util/experimental/PlaSpec.scala
     assertTesterPasses(new BasicTester {
+||||||| parent of 62bdfce5 ([test] Remove unnecessary usages of BasicTester):integration-tests/src/test/scala-2/chiselTest/util/experimental/PlaSpec.scala
+    simulate(new BasicTester {
+=======
+    simulate(new Module {
+>>>>>>> 62bdfce5 ([test] Remove unnecessary usages of BasicTester):integration-tests/src/test/scala-2/chiselTest/util/experimental/PlaSpec.scala
       val table = Seq(
         (BitPat("b000"), BitPat("b00000001")),
         (BitPat("b001"), BitPat("b00000010")),
@@ -60,7 +71,13 @@ class PlaSpec extends ChiselFlatSpec {
   }
 
   "#2112" should "be generated correctly" in {
+<<<<<<< HEAD:integration-tests/src/test/scala/chiselTest/util/experimental/PlaSpec.scala
     assertTesterPasses(new BasicTester {
+||||||| parent of 62bdfce5 ([test] Remove unnecessary usages of BasicTester):integration-tests/src/test/scala-2/chiselTest/util/experimental/PlaSpec.scala
+    simulate(new BasicTester {
+=======
+    simulate(new Module {
+>>>>>>> 62bdfce5 ([test] Remove unnecessary usages of BasicTester):integration-tests/src/test/scala-2/chiselTest/util/experimental/PlaSpec.scala
       val table = Seq(
         (BitPat("b000"), BitPat("b?01")),
         (BitPat("b111"), BitPat("b?01"))
@@ -76,7 +93,13 @@ class PlaSpec extends ChiselFlatSpec {
   }
 
   "A simple PLA" should "be generated correctly" in {
+<<<<<<< HEAD:integration-tests/src/test/scala/chiselTest/util/experimental/PlaSpec.scala
     assertTesterPasses(new BasicTester {
+||||||| parent of 62bdfce5 ([test] Remove unnecessary usages of BasicTester):integration-tests/src/test/scala-2/chiselTest/util/experimental/PlaSpec.scala
+    simulate(new BasicTester {
+=======
+    simulate(new Module {
+>>>>>>> 62bdfce5 ([test] Remove unnecessary usages of BasicTester):integration-tests/src/test/scala-2/chiselTest/util/experimental/PlaSpec.scala
       val table = Seq(
         (BitPat("b0000"), BitPat("b1")),
         (BitPat("b0001"), BitPat("b1")),

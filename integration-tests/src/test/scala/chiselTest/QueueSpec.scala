@@ -4,7 +4,16 @@ package chiselTests
 
 import circt.stage.ChiselStage
 import chisel3._
+<<<<<<< HEAD:integration-tests/src/test/scala/chiselTest/QueueSpec.scala
 import chisel3.testers.BasicTester
+||||||| parent of 62bdfce5 ([test] Remove unnecessary usages of BasicTester):integration-tests/src/test/scala-2/chiselTest/QueueSpec.scala
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
+import chisel3.testers.BasicTester
+=======
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
+>>>>>>> 62bdfce5 ([test] Remove unnecessary usages of BasicTester):integration-tests/src/test/scala-2/chiselTest/QueueSpec.scala
 import chisel3.util._
 import chisel3.util.random.LFSR
 import org.scalacheck._
@@ -15,8 +24,16 @@ class ThingsPassThroughTester(
   bitWidth:       Int,
   tap:            Int,
   useSyncReadMem: Boolean,
+<<<<<<< HEAD:integration-tests/src/test/scala/chiselTest/QueueSpec.scala
   hasFlush:       Boolean)
     extends BasicTester {
+||||||| parent of 62bdfce5 ([test] Remove unnecessary usages of BasicTester):integration-tests/src/test/scala-2/chiselTest/QueueSpec.scala
+  hasFlush:       Boolean
+) extends BasicTester {
+=======
+  hasFlush:       Boolean
+) extends Module {
+>>>>>>> 62bdfce5 ([test] Remove unnecessary usages of BasicTester):integration-tests/src/test/scala-2/chiselTest/QueueSpec.scala
   val q = Module(new Queue(UInt(bitWidth.W), queueDepth, useSyncReadMem = useSyncReadMem, hasFlush = hasFlush))
   val elems = VecInit(elements.map {
     _.asUInt
@@ -42,7 +59,7 @@ class ThingsPassThroughTester(
 }
 
 class QueueReasonableReadyValid(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean)
-    extends BasicTester {
+    extends Module {
   val q = Module(new Queue(UInt(bitWidth.W), queueDepth, useSyncReadMem = useSyncReadMem))
   val elems = VecInit(elements.map {
     _.asUInt
@@ -71,7 +88,7 @@ class QueueReasonableReadyValid(elements: Seq[Int], queueDepth: Int, bitWidth: I
 }
 
 class CountIsCorrectTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean)
-    extends BasicTester {
+    extends Module {
   val q = Module(new Queue(UInt(bitWidth.W), queueDepth, useSyncReadMem = useSyncReadMem))
   val elems = VecInit(elements.map {
     _.asUInt(bitWidth.W)
@@ -98,7 +115,7 @@ class CountIsCorrectTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, t
   }
 }
 
-class QueueSinglePipeTester(elements: Seq[Int], bitWidth: Int, tap: Int, useSyncReadMem: Boolean) extends BasicTester {
+class QueueSinglePipeTester(elements: Seq[Int], bitWidth: Int, tap: Int, useSyncReadMem: Boolean) extends Module {
   val q = Module(new Queue(UInt(bitWidth.W), 1, pipe = true, useSyncReadMem = useSyncReadMem))
   val elems = VecInit(elements.map {
     _.asUInt(bitWidth.W)
@@ -125,7 +142,7 @@ class QueueSinglePipeTester(elements: Seq[Int], bitWidth: Int, tap: Int, useSync
 }
 
 class QueuePipeTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean)
-    extends BasicTester {
+    extends Module {
   val q = Module(new Queue(UInt(bitWidth.W), queueDepth, pipe = true, useSyncReadMem = useSyncReadMem))
   val elems = VecInit(elements.map {
     _.asUInt(bitWidth.W)
@@ -152,7 +169,7 @@ class QueuePipeTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: I
 }
 
 class QueueFlowTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean)
-    extends BasicTester {
+    extends Module {
   val q = Module(new Queue(UInt(bitWidth.W), queueDepth, flow = true, useSyncReadMem = useSyncReadMem))
   val elems = VecInit(elements.map {
     _.asUInt
@@ -181,7 +198,7 @@ class QueueFlowTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: I
 }
 
 class QueueFactoryTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean)
-    extends BasicTester {
+    extends Module {
   val enq = Wire(Decoupled(UInt(bitWidth.W)))
   val deq = Queue(enq, queueDepth, useSyncReadMem = useSyncReadMem)
 
@@ -208,7 +225,93 @@ class QueueFactoryTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap
   }
 }
 
+<<<<<<< HEAD:integration-tests/src/test/scala/chiselTest/QueueSpec.scala
 class QueueSpec extends ChiselPropSpec {
+||||||| parent of 62bdfce5 ([test] Remove unnecessary usages of BasicTester):integration-tests/src/test/scala-2/chiselTest/QueueSpec.scala
+/** Test that a Shadow Queue keeps track of shadow identifiers that are fed to
+  * it.  This feeds data into a queue and an identifier (which is `data >> 1`)
+  * into the shadow queue.  It then checks that each data read out has the
+  * expected identifier.
+  */
+class ShadowQueueFactoryTester(queueDepth: Int, tap: Int, useSyncReadMem: Boolean) extends BasicTester {
+  val enq, deq = Wire(Decoupled(UInt(32.W)))
+
+  private val (dataCounter, _) = Counter(0 to 31 by 2, enable = enq.fire)
+
+  enq.valid :<= true.B
+  deq.ready :<= LFSR(16)(tap)
+
+  enq.bits :<= dataCounter
+
+  private val idIn = Wire(probe.Probe(UInt(4.W), layers.Verification))
+  private val idOut = Wire(probe.Probe(Valid(UInt(4.W)), layers.Verification))
+  layer.block(layers.Verification) {
+    probe.define(idIn, probe.ProbeValue(dataCounter >> 1))
+
+    when(deq.fire) {
+      assert(deq.bits >> 1 === probe.read(idOut).bits)
+    }
+  }
+
+  private val (_, done) = Counter(0 to 8, enable = deq.fire)
+  when(done) {
+    stop()
+  }
+
+  private val (queue, shadow) =
+    Queue.withShadow(
+      enq = enq,
+      entries = queueDepth,
+      useSyncReadMem = useSyncReadMem
+    )
+  deq :<>= queue
+  probe.define(idOut, shadow(probe.read(idIn), layers.Verification))
+}
+
+class QueueSpec extends AnyPropSpec with Matchers with PropertyUtils with ChiselSim {
+=======
+/** Test that a Shadow Queue keeps track of shadow identifiers that are fed to
+  * it.  This feeds data into a queue and an identifier (which is `data >> 1`)
+  * into the shadow queue.  It then checks that each data read out has the
+  * expected identifier.
+  */
+class ShadowQueueFactoryTester(queueDepth: Int, tap: Int, useSyncReadMem: Boolean) extends Module {
+  val enq, deq = Wire(Decoupled(UInt(32.W)))
+
+  private val (dataCounter, _) = Counter(0 to 31 by 2, enable = enq.fire)
+
+  enq.valid :<= true.B
+  deq.ready :<= LFSR(16)(tap)
+
+  enq.bits :<= dataCounter
+
+  private val idIn = Wire(probe.Probe(UInt(4.W), layers.Verification))
+  private val idOut = Wire(probe.Probe(Valid(UInt(4.W)), layers.Verification))
+  layer.block(layers.Verification) {
+    probe.define(idIn, probe.ProbeValue(dataCounter >> 1))
+
+    when(deq.fire) {
+      assert(deq.bits >> 1 === probe.read(idOut).bits)
+    }
+  }
+
+  private val (_, done) = Counter(0 to 8, enable = deq.fire)
+  when(done) {
+    stop()
+  }
+
+  private val (queue, shadow) =
+    Queue.withShadow(
+      enq = enq,
+      entries = queueDepth,
+      useSyncReadMem = useSyncReadMem
+    )
+  deq :<>= queue
+  probe.define(idOut, shadow(probe.read(idIn), layers.Verification))
+}
+
+class QueueSpec extends AnyPropSpec with Matchers with PropertyUtils with ChiselSim {
+>>>>>>> 62bdfce5 ([test] Remove unnecessary usages of BasicTester):integration-tests/src/test/scala-2/chiselTest/QueueSpec.scala
 
   property("Queue should have things pass through") {
     forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15), Gen.oneOf(true, false)) { (depth, se, tap, isSync) =>

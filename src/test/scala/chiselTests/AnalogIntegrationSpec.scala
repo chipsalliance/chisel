@@ -4,7 +4,16 @@ package chiselTests
 
 import chisel3._
 import chisel3.util._
+<<<<<<< HEAD:src/test/scala/chiselTests/AnalogIntegrationSpec.scala
 import chisel3.testers.{BasicTester, TesterDriver}
+||||||| parent of 62bdfce5 ([test] Remove unnecessary usages of BasicTester):src/test/scala-2/chiselTests/AnalogIntegrationSpec.scala
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
+import chisel3.testers.{BasicTester, TesterDriver}
+=======
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
+>>>>>>> 62bdfce5 ([test] Remove unnecessary usages of BasicTester):src/test/scala-2/chiselTests/AnalogIntegrationSpec.scala
 import chisel3.experimental._
 
 /* This test is different from AnalogSpec in that it uses more complicated black boxes that can each
@@ -104,7 +113,7 @@ class AnalogSmallDUT extends AnalogDUTModule(4) { // 4 BlackBoxes
 }
 
 // This tester is primarily intended to be able to pass the dut to synthesis
-class AnalogIntegrationTester(mod: => AnalogDUTModule) extends BasicTester {
+class AnalogIntegrationTester(mod: => AnalogDUTModule) extends Module {
   val BusValue = 2.U(32.W) // arbitrary
 
   val dut = Module(mod)

@@ -3,7 +3,16 @@
 package chiselTests.util
 
 import chisel3._
+<<<<<<< HEAD:integration-tests/src/test/scala/chiselTest/util/SparseVecSpec.scala
 import chisel3.testers.BasicTester
+||||||| parent of 62bdfce5 ([test] Remove unnecessary usages of BasicTester):integration-tests/src/test/scala-2/chiselTest/util/SparseVecSpec.scala
+import chisel3.testers.BasicTester
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
+=======
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
+>>>>>>> 62bdfce5 ([test] Remove unnecessary usages of BasicTester):integration-tests/src/test/scala-2/chiselTest/util/SparseVecSpec.scala
 import chisel3.util.{log2Up, Counter, SparseVec}
 import chisel3.util.SparseVec.{DefaultValueBehavior, Lookup, OutOfBoundsBehavior}
 import chiselTests.{ChiselFlatSpec, Utils}
@@ -20,12 +29,20 @@ import java.util.ResourceBundle
   * @param tpe the type of the vecs
   * @param mapping a mapping of index to value
   */
+<<<<<<< HEAD:integration-tests/src/test/scala/chiselTest/util/SparseVecSpec.scala
 class SparseVecDynamicIndexEquivalenceTest(
   size:    Int,
   tpe:     UInt,
   mapping: Seq[(Int, UInt)],
   debug:   Boolean = false)
     extends BasicTester {
+||||||| parent of 62bdfce5 ([test] Remove unnecessary usages of BasicTester):integration-tests/src/test/scala-2/chiselTest/util/SparseVecSpec.scala
+class SparseVecDynamicIndexEquivalenceTest(size: Int, tpe: UInt, mapping: Seq[(Int, UInt)], debug: Boolean = false)
+    extends BasicTester {
+=======
+class SparseVecDynamicIndexEquivalenceTest(size: Int, tpe: UInt, mapping: Seq[(Int, UInt)], debug: Boolean = false)
+    extends Module {
+>>>>>>> 62bdfce5 ([test] Remove unnecessary usages of BasicTester):integration-tests/src/test/scala-2/chiselTest/util/SparseVecSpec.scala
 
   // The number of indices that needs to be checked.  This is larger than `size`
   // if `size` is not a power of 2.  This is done to check out-of-bounds
@@ -98,8 +115,16 @@ class SparseVecTest(
   outOfBoundsBehavior:  OutOfBoundsBehavior.Type,
   mapping:              Seq[(Int, UInt)],
   expected:             Seq[(Int, Data)],
+<<<<<<< HEAD:integration-tests/src/test/scala/chiselTest/util/SparseVecSpec.scala
   debug:                Boolean = false)
     extends BasicTester {
+||||||| parent of 62bdfce5 ([test] Remove unnecessary usages of BasicTester):integration-tests/src/test/scala-2/chiselTest/util/SparseVecSpec.scala
+  debug:                Boolean = false
+) extends BasicTester {
+=======
+  debug:                Boolean = false
+) extends Module {
+>>>>>>> 62bdfce5 ([test] Remove unnecessary usages of BasicTester):integration-tests/src/test/scala-2/chiselTest/util/SparseVecSpec.scala
   // Create a wire SparseVec and initialize it to the values in the mapping.
   private val sparseVec = Wire(new SparseVec(size, tpe, mapping.map(_._1), defaultValueBehavior, outOfBoundsBehavior))
   sparseVec.elements.values.zip(mapping.map(_._2)).foreach { case (a, b) => a :<>= b }

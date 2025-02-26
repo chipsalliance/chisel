@@ -3,8 +3,23 @@
 package chiselTests
 
 import chisel3._
+<<<<<<< HEAD:src/test/scala/chiselTests/Counter.scala
 import chisel3.testers.BasicTester
 import chisel3.util._
+||||||| parent of 62bdfce5 ([test] Remove unnecessary usages of BasicTester):src/test/scala-2/chiselTests/Counter.scala
+import chisel3.testers.BasicTester
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
+import chisel3.util.Counter
+import org.scalatest.propspec.AnyPropSpec
+import org.scalatest.matchers.should.Matchers
+=======
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
+import chisel3.util.Counter
+import org.scalatest.propspec.AnyPropSpec
+import org.scalatest.matchers.should.Matchers
+>>>>>>> 62bdfce5 ([test] Remove unnecessary usages of BasicTester):src/test/scala-2/chiselTests/Counter.scala
 
 class CountTester(max: Int) extends BasicTester {
   val cnt = Counter(max)
@@ -16,12 +31,14 @@ class CountTester(max: Int) extends BasicTester {
   }
 }
 
-class EnableTester(seed: Int) extends BasicTester {
+class EnableTester(seed: Int) extends Module {
   val ens = RegInit(seed.asUInt)
   ens := ens >> 1
 
   val (cntEnVal, _) = Counter(ens(0), 32)
   val (_, done) = Counter(true.B, 33)
+
+  private def popCount(n: Long): Int = n.toBinaryString.count(_ == '1')
 
   when(done) {
     assert(cntEnVal === popCount(seed).asUInt)

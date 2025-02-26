@@ -3,7 +3,16 @@ package chiselTests
 import org.scalacheck._
 
 import chisel3._
+<<<<<<< HEAD:integration-tests/src/test/scala/chiselTest/QueueFlushSpec.scala
 import chisel3.testers.{BasicTester, TesterDriver}
+||||||| parent of 62bdfce5 ([test] Remove unnecessary usages of BasicTester):integration-tests/src/test/scala-2/chiselTest/QueueFlushSpec.scala
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
+import chisel3.testers.{BasicTester, TesterDriver}
+=======
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
+>>>>>>> 62bdfce5 ([test] Remove unnecessary usages of BasicTester):integration-tests/src/test/scala-2/chiselTest/QueueFlushSpec.scala
 import chisel3.util._
 import chisel3.util.random.LFSR
 
@@ -36,8 +45,16 @@ abstract class FlushQueueTesterBase(
   queueDepth:     Int,
   bitWidth:       Int,
   tap:            Int,
+<<<<<<< HEAD:integration-tests/src/test/scala/chiselTest/QueueFlushSpec.scala
   useSyncReadMem: Boolean)
     extends BasicTester {
+||||||| parent of 62bdfce5 ([test] Remove unnecessary usages of BasicTester):integration-tests/src/test/scala-2/chiselTest/QueueFlushSpec.scala
+  useSyncReadMem: Boolean
+) extends BasicTester {
+=======
+  useSyncReadMem: Boolean
+) extends Module {
+>>>>>>> 62bdfce5 ([test] Remove unnecessary usages of BasicTester):integration-tests/src/test/scala-2/chiselTest/QueueFlushSpec.scala
   val q = Module(new Queue(UInt(bitWidth.W), queueDepth, hasFlush = true))
   val elems = VecInit(elements.map(_.U))
   val inCnt = Counter(elements.length + 1)

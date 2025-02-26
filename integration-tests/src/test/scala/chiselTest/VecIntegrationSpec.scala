@@ -5,7 +5,16 @@ package chiselTests
 import circt.stage.ChiselStage
 import chisel3._
 import chisel3.util._
+<<<<<<< HEAD:integration-tests/src/test/scala/chiselTest/VecIntegrationSpec.scala
 import chisel3.testers.BasicTester
+||||||| parent of 62bdfce5 ([test] Remove unnecessary usages of BasicTester):integration-tests/src/test/scala-2/chiselTest/VecIntegrationSpec.scala
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
+import chisel3.testers.BasicTester
+=======
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
+>>>>>>> 62bdfce5 ([test] Remove unnecessary usages of BasicTester):integration-tests/src/test/scala-2/chiselTest/VecIntegrationSpec.scala
 import org.scalacheck._
 import scala.language.reflectiveCalls
 
@@ -28,7 +37,7 @@ class VecIntegrationSpec extends ChiselPropSpec {
       io.out := vecReg
     }
 
-    class RegTester(w: Int, values: List[Int]) extends BasicTester {
+    class RegTester(w: Int, values: List[Int]) extends Module {
       val v = VecInit(values.map(_.U(w.W)))
       val dut = Module(new RegTesterMod(values.length))
       val doneReg = RegInit(false.B)
@@ -51,7 +60,7 @@ class VecIntegrationSpec extends ChiselPropSpec {
   }
 
   property("VecInit should iterate correctly") {
-    class IterateTester(start: Int, len: Int)(f: UInt => UInt) extends BasicTester {
+    class IterateTester(start: Int, len: Int)(f: UInt => UInt) extends Module {
       val controlVec = VecInit(Seq.iterate(start.U, len)(f))
       val testVec = VecInit.iterate(start.U, len)(f)
       chisel3.assert(
@@ -66,7 +75,7 @@ class VecIntegrationSpec extends ChiselPropSpec {
   }
 
   property("Regs of vecs should be usable as shift registers") {
-    class ShiftRegisterTester(n: Int) extends BasicTester {
+    class ShiftRegisterTester(n: Int) extends Module {
       val (cnt, wrap) = Counter(true.B, n * 2)
       val shifter = Reg(Vec(n, UInt((log2Ceil(n).max(1)).W)))
       shifter.zip(shifter.drop(1)).foreach { case (l, r) => l := r }
@@ -84,7 +93,7 @@ class VecIntegrationSpec extends ChiselPropSpec {
   }
 
   property("Dynamic indexing of a Vec of Module IOs should work") {
-    class ModuleIODynamicIndexTester(n: Int) extends BasicTester {
+    class ModuleIODynamicIndexTester(n: Int) extends Module {
       val duts = VecInit.fill(n)(Module(new PassthroughModule).io)
       val tester = Module(new PassthroughModuleTester)
 

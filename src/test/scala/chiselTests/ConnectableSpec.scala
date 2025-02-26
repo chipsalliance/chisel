@@ -7,10 +7,17 @@ import chisel3._
 import chisel3.experimental.Analog
 import chisel3.experimental.BundleLiterals._
 import chisel3.experimental.VecLiterals._
+<<<<<<< HEAD:src/test/scala/chiselTests/ConnectableSpec.scala
 import chisel3.testers.BasicTester
 import chisel3.experimental.OpaqueType
 import chisel3.reflect.DataMirror
 
+||||||| parent of 62bdfce5 ([test] Remove unnecessary usages of BasicTester):src/test/scala-2/chiselTests/ConnectableSpec.scala
+import chisel3.reflect.DataMirror
+import chisel3.testers.BasicTester
+=======
+import chisel3.reflect.DataMirror
+>>>>>>> 62bdfce5 ([test] Remove unnecessary usages of BasicTester):src/test/scala-2/chiselTests/ConnectableSpec.scala
 import circt.stage.ChiselStage
 import scala.collection.immutable.SeqMap
 

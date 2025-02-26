@@ -4,7 +4,6 @@ package chiselTests
 
 import chisel3._
 import chisel3.util.Counter
-import chisel3.testers._
 import chisel3.experimental.{BaseModule, OpaqueType}
 import chisel3.probe._
 import chisel3.properties.Property
@@ -12,7 +11,7 @@ import chisel3.util.experimental.BoringUtils
 import firrtl.annotations.Annotation
 import firrtl.transforms.DontTouchAnnotation
 
-abstract class ShouldntAssertTester(cyclesToWait: BigInt = 4) extends BasicTester {
+abstract class ShouldntAssertTester(cyclesToWait: BigInt = 4) extends Module {
   val dut: BaseModule
   val (_, done) = Counter(true.B, 2)
   when(done) { stop() }

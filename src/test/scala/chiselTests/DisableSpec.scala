@@ -3,12 +3,10 @@
 package chiselTests
 
 import chisel3._
-import chisel3.testers.BasicTester
-import _root_.circt.stage.ChiselStage
-
+import chisel3.experimental.prefix
+import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import chisel3.experimental.prefix
 
 class DisableSpec extends AnyFlatSpec with Matchers {
 

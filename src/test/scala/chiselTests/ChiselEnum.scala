@@ -7,7 +7,16 @@ import chisel3.experimental.AffectsChiselPrefix
 import chisel3.stage.ChiselGeneratorAnnotation
 import circt.stage.ChiselStage
 import chisel3.util._
+<<<<<<< HEAD:src/test/scala/chiselTests/ChiselEnum.scala
 import chisel3.testers.BasicTester
+||||||| parent of 62bdfce5 ([test] Remove unnecessary usages of BasicTester):src/test/scala-2/chiselTests/ChiselEnum.scala
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
+import chisel3.testers.BasicTester
+=======
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
+>>>>>>> 62bdfce5 ([test] Remove unnecessary usages of BasicTester):src/test/scala-2/chiselTests/ChiselEnum.scala
 import org.scalatest.Assertion
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -185,8 +194,16 @@ class LoadStoreExample extends Module {
   printf(p"${io.opcode}")
 }
 
+<<<<<<< HEAD:src/test/scala/chiselTests/ChiselEnum.scala
 class CastToUIntTester extends BasicTester {
   for ((enum, lit) <- EnumExample.all.zip(EnumExample.litValues)) {
+||||||| parent of 62bdfce5 ([test] Remove unnecessary usages of BasicTester):src/test/scala-2/chiselTests/ChiselEnum.scala
+class CastToUIntTester extends BasicTester {
+  for ((enumVal, lit) <- EnumExample.all.zip(EnumExample.litValues)) {
+=======
+class CastToUIntTester extends Module {
+  for ((enumVal, lit) <- EnumExample.all.zip(EnumExample.litValues)) {
+>>>>>>> 62bdfce5 ([test] Remove unnecessary usages of BasicTester):src/test/scala-2/chiselTests/ChiselEnum.scala
     val mod = Module(new CastToUInt)
     mod.io.in := enum
     assert(mod.io.out === lit)
@@ -194,8 +211,16 @@ class CastToUIntTester extends BasicTester {
   stop()
 }
 
+<<<<<<< HEAD:src/test/scala/chiselTests/ChiselEnum.scala
 class CastFromLitTester extends BasicTester {
   for ((enum, lit) <- EnumExample.all.zip(EnumExample.litValues)) {
+||||||| parent of 62bdfce5 ([test] Remove unnecessary usages of BasicTester):src/test/scala-2/chiselTests/ChiselEnum.scala
+class CastFromLitTester extends BasicTester {
+  for ((enumVal, lit) <- EnumExample.all.zip(EnumExample.litValues)) {
+=======
+class CastFromLitTester extends Module {
+  for ((enumVal, lit) <- EnumExample.all.zip(EnumExample.litValues)) {
+>>>>>>> 62bdfce5 ([test] Remove unnecessary usages of BasicTester):src/test/scala-2/chiselTests/ChiselEnum.scala
     val mod = Module(new CastFromLit(lit))
     assert(mod.io.out === enum)
     assert(mod.io.valid === true.B)
@@ -203,8 +228,16 @@ class CastFromLitTester extends BasicTester {
   stop()
 }
 
+<<<<<<< HEAD:src/test/scala/chiselTests/ChiselEnum.scala
 class CastFromNonLitTester extends BasicTester {
   for ((enum, lit) <- EnumExample.all.zip(EnumExample.litValues)) {
+||||||| parent of 62bdfce5 ([test] Remove unnecessary usages of BasicTester):src/test/scala-2/chiselTests/ChiselEnum.scala
+class CastFromNonLitTester extends BasicTester {
+  for ((enumVal, lit) <- EnumExample.all.zip(EnumExample.litValues)) {
+=======
+class CastFromNonLitTester extends Module {
+  for ((enumVal, lit) <- EnumExample.all.zip(EnumExample.litValues)) {
+>>>>>>> 62bdfce5 ([test] Remove unnecessary usages of BasicTester):src/test/scala-2/chiselTests/ChiselEnum.scala
     val mod = Module(new CastFromNonLit)
     mod.io.in := lit
     assert(mod.io.out === enum)
@@ -224,8 +257,16 @@ class CastFromNonLitTester extends BasicTester {
   stop()
 }
 
+<<<<<<< HEAD:src/test/scala/chiselTests/ChiselEnum.scala
 class SafeCastFromNonLitTester extends BasicTester {
   for ((enum, lit) <- EnumExample.all.zip(EnumExample.litValues)) {
+||||||| parent of 62bdfce5 ([test] Remove unnecessary usages of BasicTester):src/test/scala-2/chiselTests/ChiselEnum.scala
+class SafeCastFromNonLitTester extends BasicTester {
+  for ((enumVal, lit) <- EnumExample.all.zip(EnumExample.litValues)) {
+=======
+class SafeCastFromNonLitTester extends Module {
+  for ((enumVal, lit) <- EnumExample.all.zip(EnumExample.litValues)) {
+>>>>>>> 62bdfce5 ([test] Remove unnecessary usages of BasicTester):src/test/scala-2/chiselTests/ChiselEnum.scala
     val mod = Module(new SafeCastFromNonLit)
     mod.io.in := lit
     assert(mod.io.out === enum)
@@ -245,12 +286,12 @@ class SafeCastFromNonLitTester extends BasicTester {
   stop()
 }
 
-class CastToInvalidEnumTester extends BasicTester {
+class CastToInvalidEnumTester extends Module {
   val invalid_value: UInt = EnumExample.litValues.last + 1.U
   Module(new CastFromLit(invalid_value))
 }
 
-class EnumOpsTester extends BasicTester {
+class EnumOpsTester extends Module {
   for {
     x <- EnumExample.all
     y <- EnumExample.all
@@ -269,13 +310,13 @@ class EnumOpsTester extends BasicTester {
   stop()
 }
 
-class InvalidEnumOpsTester extends BasicTester {
+class InvalidEnumOpsTester extends Module {
   val mod = Module(new EnumOps(EnumExample, OtherEnum))
   mod.io.x := EnumExample.e0
   mod.io.y := OtherEnum.otherEnum
 }
 
-class IsLitTester extends BasicTester {
+class IsLitTester extends Module {
   for (e <- EnumExample.all) {
     val wire = WireDefault(e)
 
@@ -285,7 +326,7 @@ class IsLitTester extends BasicTester {
   stop()
 }
 
-class NextTester extends BasicTester {
+class NextTester extends Module {
   for ((e, n) <- EnumExample.all.zip(EnumExample.litValues.tail :+ EnumExample.litValues.head)) {
     assert(e.next.litValue == n.litValue)
     val w = WireDefault(e)
@@ -294,7 +335,7 @@ class NextTester extends BasicTester {
   stop()
 }
 
-class WidthTester extends BasicTester {
+class WidthTester extends Module {
   assert(EnumExample.getWidth == EnumExample.litValues.last.getWidth)
   assert(EnumExample.all.forall(_.getWidth == EnumExample.litValues.last.getWidth))
   assert(EnumExample.all.forall { e =>
@@ -304,7 +345,7 @@ class WidthTester extends BasicTester {
   stop()
 }
 
-class ChiselEnumFSMTester extends BasicTester {
+class ChiselEnumFSMTester extends Module {
   import ChiselEnumFSM.State._
 
   val dut = Module(new ChiselEnumFSM)
@@ -327,7 +368,7 @@ class ChiselEnumFSMTester extends BasicTester {
   }
 }
 
-class IsOneOfTester extends BasicTester {
+class IsOneOfTester extends Module {
   import EnumExample._
 
   // is one of itself

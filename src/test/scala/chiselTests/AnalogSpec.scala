@@ -5,7 +5,16 @@ package chiselTests
 import chisel3._
 import circt.stage.ChiselStage
 import chisel3.util._
+<<<<<<< HEAD:src/test/scala/chiselTests/AnalogSpec.scala
 import chisel3.testers.{BasicTester, TesterDriver}
+||||||| parent of 62bdfce5 ([test] Remove unnecessary usages of BasicTester):src/test/scala-2/chiselTests/AnalogSpec.scala
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
+import chisel3.testers.{BasicTester, TesterDriver}
+=======
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
+>>>>>>> 62bdfce5 ([test] Remove unnecessary usages of BasicTester):src/test/scala-2/chiselTests/AnalogSpec.scala
 import chisel3.experimental.{attach, Analog, BaseModule}
 
 // IO for Modules that just connect bus to out
@@ -75,7 +84,7 @@ class VecBundleAnalogReaderWrapper extends RawModule with AnalogReader {
 }
 
 // Parent class for tests connecing up AnalogReaders and AnalogWriters
-abstract class AnalogTester extends BasicTester {
+abstract class AnalogTester extends Module {
   final val BusValue = "hdeadbeef".U
 
   final val (cycle, done) = Counter(true.B, 2)
@@ -162,8 +171,16 @@ class AnalogSpec extends ChiselFlatSpec with Utils {
   // Also note this relies on executing Firrtl from Chisel directly
   it should "NOT be connectable to UInts" in {
     a[Exception] should be thrownBy {
+<<<<<<< HEAD:src/test/scala/chiselTests/AnalogSpec.scala
       runTester {
         new BasicTester {
+||||||| parent of 62bdfce5 ([test] Remove unnecessary usages of BasicTester):src/test/scala-2/chiselTests/AnalogSpec.scala
+      ChiselStage.emitSystemVerilog {
+        new BasicTester {
+=======
+      ChiselStage.emitSystemVerilog {
+        new Module {
+>>>>>>> 62bdfce5 ([test] Remove unnecessary usages of BasicTester):src/test/scala-2/chiselTests/AnalogSpec.scala
           val uint = WireDefault(0.U(32.W))
           val sint = Wire(Analog(32.W))
           sint := uint
