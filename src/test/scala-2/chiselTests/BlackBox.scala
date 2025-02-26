@@ -8,7 +8,6 @@ import chisel3.experimental._
 import chisel3.reflect.DataMirror
 import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.RunUntilFinished
-import chisel3.testers.{BasicTester, TesterDriver}
 import chisel3.util._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -63,7 +62,7 @@ class BlackBoxRegister extends BlackBox with HasBlackBoxResource {
   addResource("/chisel3/BlackBoxTest.v")
 }
 
-class BlackBoxTester extends BasicTester {
+class BlackBoxTester extends Module {
   val blackBoxPos = Module(new BlackBoxInverter)
   val blackBoxNeg = Module(new BlackBoxInverter)
 
@@ -75,7 +74,7 @@ class BlackBoxTester extends BasicTester {
   stop()
 }
 
-class BlackBoxTesterSuggestName extends BasicTester {
+class BlackBoxTesterSuggestName extends Module {
   val blackBoxPos = Module(new BlackBoxInverterSuggestName)
   val blackBoxNeg = Module(new BlackBoxInverterSuggestName)
 
@@ -87,7 +86,7 @@ class BlackBoxTesterSuggestName extends BasicTester {
   stop()
 }
 
-class BlackBoxFlipTester extends BasicTester {
+class BlackBoxFlipTester extends Module {
   val blackBox = Module(new BlackBoxPassthrough2)
 
   blackBox.io.in := 1.U
@@ -100,7 +99,7 @@ class BlackBoxFlipTester extends BasicTester {
   * deduplication.
   */
 
-class MultiBlackBoxTester extends BasicTester {
+class MultiBlackBoxTester extends Module {
   val blackBoxInvPos = Module(new BlackBoxInverter)
   val blackBoxInvNeg = Module(new BlackBoxInverter)
   val blackBoxPassPos = Module(new BlackBoxPassthrough)
@@ -118,7 +117,7 @@ class MultiBlackBoxTester extends BasicTester {
   stop()
 }
 
-class BlackBoxWithClockTester extends BasicTester {
+class BlackBoxWithClockTester extends Module {
   val blackBox = Module(new BlackBoxRegister)
   val model = Reg(Bool())
 
@@ -185,7 +184,7 @@ class BlackBoxUIntIO extends BlackBox with HasBlackBoxResource {
   addResource("/chisel3/BlackBoxTest.v")
 }
 
-class SimplerBlackBoxWithParamsTester extends BasicTester {
+class SimplerBlackBoxWithParamsTester extends Module {
   val blackBoxTypeParamBit = Module(new BlackBoxTypeParam(1, "bit"))
   val blackBoxTypeParamWord = Module(new BlackBoxTypeParam(32, "bit [31:0]"))
 
@@ -197,7 +196,7 @@ class SimplerBlackBoxWithParamsTester extends BasicTester {
   when(end) { stop() }
 }
 
-class BlackBoxWithParamsTester extends BasicTester {
+class BlackBoxWithParamsTester extends Module {
   val blackBoxOne = Module(new BlackBoxConstant(1))
   val blackBoxFour = Module(new BlackBoxConstant(4))
   val blackBoxStringParamOne = Module(new BlackBoxStringParam("one"))

@@ -6,7 +6,6 @@ import chisel3._
 import chisel3.ltl._
 import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.RunUntilFinished
-import chisel3.testers.BasicTester
 import chisel3.experimental.SourceLine
 import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
@@ -420,7 +419,7 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselSim {
 
   it should "fail correctly in verilator simulation" in {
     intercept[chisel3.simulator.Exceptions.AssertionFailed] {
-      simulate(new BasicTester {
+      simulate(new Module {
         withClockAndReset(clock, reset) {
           AssertProperty(0.U === 1.U)
         }

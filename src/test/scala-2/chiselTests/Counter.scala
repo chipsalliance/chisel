@@ -3,7 +3,6 @@
 package chiselTests
 
 import chisel3._
-import chisel3.testers.BasicTester
 import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.RunUntilFinished
 import chisel3.util.Counter
@@ -20,12 +19,14 @@ class CountTester(max: Int) extends Module {
   }
 }
 
-class EnableTester(seed: Int) extends BasicTester {
+class EnableTester(seed: Int) extends Module {
   val ens = RegInit(seed.asUInt)
   ens := ens >> 1
 
   val (cntEnVal, _) = Counter(ens(0), 32)
   val (_, done) = Counter(true.B, 33)
+
+  private def popCount(n: Long): Int = n.toBinaryString.count(_ == '1')
 
   when(done) {
     assert(cntEnVal === popCount(seed).asUInt)

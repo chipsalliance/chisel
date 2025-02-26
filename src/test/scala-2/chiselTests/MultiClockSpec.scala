@@ -6,14 +6,13 @@ import chisel3._
 import chisel3.simulator.HasSimulator.simulators
 import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.RunUntilFinished
-import chisel3.testers.{BasicTester, TesterDriver}
 import chisel3.util.Counter
 import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 /** Multi-clock test of a Reg using a different clock via withClock */
-class ClockDividerTest extends BasicTester {
+class ClockDividerTest extends Module {
   val cDiv = RegInit(true.B) // start with falling edge to simplify clock relationship assert
   cDiv := !cDiv
   val clock2 = cDiv.asClock
@@ -32,7 +31,7 @@ class ClockDividerTest extends BasicTester {
   }
 }
 
-class MultiClockSubModuleTest extends BasicTester {
+class MultiClockSubModuleTest extends Module {
   class SubModule extends Module {
     val io = IO(new Bundle {
       val out = Output(UInt())
@@ -58,7 +57,7 @@ class MultiClockSubModuleTest extends BasicTester {
 }
 
 /** Test withReset changing the reset of a Reg */
-class WithResetTest extends BasicTester {
+class WithResetTest extends Module {
   val reset2 = WireDefault(false.B)
   val reg = withReset(reset2 || reset.asBool) { RegInit(0.U(8.W)) }
   reg := reg + 1.U
@@ -75,7 +74,7 @@ class WithResetTest extends BasicTester {
 }
 
 /** Test Mem ports with different clocks */
-class MultiClockMemTest extends BasicTester {
+class MultiClockMemTest extends Module {
   val cDiv = RegInit(true.B)
   cDiv := !cDiv
   val clock2 = cDiv.asClock
@@ -131,7 +130,7 @@ class MultiClockSpec extends AnyFlatSpec with Matchers with Utils with ChiselSim
   }
 
   it should "return like a normal Scala block" in {
-    ChiselStage.emitCHIRRTL(new BasicTester {
+    ChiselStage.emitCHIRRTL(new Module {
       assert(withClock(this.clock) { 5 } == 5)
     })
   }
@@ -245,12 +244,12 @@ class MultiClockSpec extends AnyFlatSpec with Matchers with Utils with ChiselSim
   }
 
   it should "return like a normal Scala block" in {
-    ChiselStage.emitCHIRRTL(new BasicTester {
+    ChiselStage.emitCHIRRTL(new Module {
       assert(withReset(this.reset) { 5 } == 5)
     })
   }
   it should "support literal Bools" in {
-    simulate(new BasicTester {
+    simulate(new Module {
       val reg = withReset(true.B) {
         RegInit(6.U)
       }
@@ -263,7 +262,7 @@ class MultiClockSpec extends AnyFlatSpec with Matchers with Utils with ChiselSim
   }
 
   "withClockAndReset" should "return like a normal Scala block" in {
-    ChiselStage.emitCHIRRTL(new BasicTester {
+    ChiselStage.emitCHIRRTL(new Module {
       assert(withClockAndReset(this.clock, this.reset) { 5 } == 5)
     })
   }
@@ -272,7 +271,7 @@ class MultiClockSpec extends AnyFlatSpec with Matchers with Utils with ChiselSim
     // Check that assert can fire
     intercept[chisel3.simulator.Exceptions.AssertionFailed] {
       simulate {
-        new BasicTester {
+        new Module {
           withClockAndReset(clock, reset) {
             chisel3.assert(0.U === 1.U)
           }
@@ -282,7 +281,7 @@ class MultiClockSpec extends AnyFlatSpec with Matchers with Utils with ChiselSim
       }(RunUntilFinished(3))
     }
     // Check that reset will block
-    simulate(new BasicTester {
+    simulate(new Module {
       withClockAndReset(clock, true.B) {
         chisel3.assert(0.U === 1.U)
       }
@@ -290,7 +289,7 @@ class MultiClockSpec extends AnyFlatSpec with Matchers with Utils with ChiselSim
       when(done) { stop() }
     })(RunUntilFinished(3))
     // Check that no rising edge will block
-    simulate(new BasicTester {
+    simulate(new Module {
       withClockAndReset(false.B.asClock, reset) {
         chisel3.assert(0.U === 1.U)
       }

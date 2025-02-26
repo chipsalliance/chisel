@@ -3,7 +3,6 @@
 package chiselTests.util
 
 import chisel3._
-import chisel3.testers.BasicTester
 import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.RunUntilFinished
 import chisel3.util.{log2Up, Counter, SparseVec}
@@ -25,7 +24,7 @@ import org.scalatest.matchers.should.Matchers
   * @param mapping a mapping of index to value
   */
 class SparseVecDynamicIndexEquivalenceTest(size: Int, tpe: UInt, mapping: Seq[(Int, UInt)], debug: Boolean = false)
-    extends BasicTester {
+    extends Module {
 
   // The number of indices that needs to be checked.  This is larger than `size`
   // if `size` is not a power of 2.  This is done to check out-of-bounds
@@ -98,7 +97,7 @@ class SparseVecTest(
   mapping:              Seq[(Int, UInt)],
   expected:             Seq[(Int, Data)],
   debug:                Boolean = false
-) extends BasicTester {
+) extends Module {
   // Create a wire SparseVec and initialize it to the values in the mapping.
   private val sparseVec = Wire(new SparseVec(size, tpe, mapping.map(_._1), defaultValueBehavior, outOfBoundsBehavior))
   sparseVec.elements.values.zip(mapping.map(_._2)).foreach { case (a, b) => a :<>= b }

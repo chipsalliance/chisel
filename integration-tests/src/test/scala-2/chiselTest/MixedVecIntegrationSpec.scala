@@ -8,11 +8,10 @@ import circt.stage.ChiselStage
 import chisel3._
 import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.RunUntilFinished
-import chisel3.testers.BasicTester
 import chisel3.util._
 import org.scalatest.propspec.AnyPropSpec
 
-class MixedVecAssignTester(w: Int, values: List[Int]) extends BasicTester {
+class MixedVecAssignTester(w: Int, values: List[Int]) extends Module {
   val v = MixedVecInit(values.map(v => v.U(w.W)))
   for ((a, b) <- v.zip(values)) {
     assert(a === b.asUInt)
@@ -20,7 +19,7 @@ class MixedVecAssignTester(w: Int, values: List[Int]) extends BasicTester {
   stop()
 }
 
-class MixedVecRegTester(w: Int, values: List[Int]) extends BasicTester {
+class MixedVecRegTester(w: Int, values: List[Int]) extends Module {
   val valuesInit = MixedVecInit(values.map(v => v.U(w.W)))
   val reg = Reg(MixedVec(chiselTypeOf(valuesInit)))
 
@@ -47,7 +46,7 @@ class MixedVecIOPassthroughModule[T <: Data](hvec: MixedVec[T]) extends Module {
   io.out := io.in
 }
 
-class MixedVecIOTester(boundVals: Seq[Data]) extends BasicTester {
+class MixedVecIOTester(boundVals: Seq[Data]) extends Module {
   val v = MixedVecInit(boundVals)
   val dut = Module(new MixedVecIOPassthroughModule(MixedVec(chiselTypeOf(v))))
   dut.io.in := v
@@ -57,7 +56,7 @@ class MixedVecIOTester(boundVals: Seq[Data]) extends BasicTester {
   stop()
 }
 
-class MixedVecZeroEntryTester extends BasicTester {
+class MixedVecZeroEntryTester extends Module {
   def zeroEntryMixedVec: MixedVec[Data] = MixedVec(Seq.empty)
 
   require(zeroEntryMixedVec.getWidth == 0)
@@ -78,7 +77,7 @@ class MixedVecZeroEntryTester extends BasicTester {
   stop()
 }
 
-class MixedVecUIntDynamicIndexTester extends BasicTester {
+class MixedVecUIntDynamicIndexTester extends Module {
   val wire: MixedVec[UInt] = Wire(MixedVec(Seq(UInt(8.W), UInt(16.W), UInt(4.W), UInt(7.W))))
   val n = wire.length
 
@@ -104,7 +103,7 @@ class MixedVecSmallTestBundle extends Bundle {
   val y = UInt(3.W)
 }
 
-class MixedVecFromVecTester extends BasicTester {
+class MixedVecFromVecTester extends Module {
   val wire = Wire(MixedVec(Vec(3, UInt(8.W))))
   wire := MixedVecInit(Seq(20.U, 40.U, 80.U))
 
@@ -115,7 +114,7 @@ class MixedVecFromVecTester extends BasicTester {
   stop()
 }
 
-class MixedVecConnectWithVecTester extends BasicTester {
+class MixedVecConnectWithVecTester extends Module {
   val mixedVecType = MixedVec(Vec(3, UInt(8.W)))
 
   val m = Module(new MixedVecIOPassthroughModule(mixedVecType))
@@ -129,7 +128,7 @@ class MixedVecConnectWithVecTester extends BasicTester {
   stop()
 }
 
-class MixedVecConnectWithSeqTester extends BasicTester {
+class MixedVecConnectWithSeqTester extends Module {
   val mixedVecType = MixedVec(Vec(3, UInt(8.W)))
 
   val m = Module(new MixedVecIOPassthroughModule(mixedVecType))
@@ -143,7 +142,7 @@ class MixedVecConnectWithSeqTester extends BasicTester {
   stop()
 }
 
-class MixedVecOneBitTester extends BasicTester {
+class MixedVecOneBitTester extends Module {
   val flag = RegInit(false.B)
 
   val oneBit = Reg(MixedVec(Seq(UInt(1.W))))
@@ -160,7 +159,7 @@ class MixedVecOneBitTester extends BasicTester {
 class MixedVecIntegrationSpec extends AnyPropSpec with PropertyUtils with ChiselSim {
   property("MixedVec varargs API should work") {
     simulate {
-      new BasicTester {
+      new Module {
         val wire = Wire(MixedVec(UInt(1.W), UInt(8.W)))
         wire(0) := 1.U
         wire(1) := 101.U

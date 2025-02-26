@@ -7,7 +7,6 @@ import chisel3.experimental.{Analog, OpaqueType}
 import chisel3.experimental.BundleLiterals._
 import chisel3.experimental.VecLiterals._
 import chisel3.reflect.DataMirror
-import chisel3.testers.BasicTester
 import circt.stage.ChiselStage
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers

@@ -7,7 +7,6 @@ import circt.stage.ChiselStage
 import chisel3.util._
 import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.RunUntilFinished
-import chisel3.testers.{BasicTester, TesterDriver}
 import chisel3.experimental.{attach, Analog, BaseModule}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -81,7 +80,7 @@ class VecBundleAnalogReaderWrapper extends RawModule with AnalogReader {
 }
 
 // Parent class for tests connecing up AnalogReaders and AnalogWriters
-abstract class AnalogTester extends BasicTester {
+abstract class AnalogTester extends Module {
   final val BusValue = "hdeadbeef".U
 
   final val (cycle, done) = Counter(true.B, 2)
@@ -169,7 +168,7 @@ class AnalogSpec extends AnyFlatSpec with Matchers with ChiselSim {
   it should "NOT be connectable to UInts" in {
     a[Exception] should be thrownBy {
       ChiselStage.emitSystemVerilog {
-        new BasicTester {
+        new Module {
           val uint = WireDefault(0.U(32.W))
           val sint = Wire(Analog(32.W))
           sint := uint

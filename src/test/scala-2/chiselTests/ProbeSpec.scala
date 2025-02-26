@@ -8,7 +8,6 @@ import chisel3.probe._
 import chisel3.util.Counter
 import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.RunUntilFinished
-import chisel3.testers.{BasicTester, TesterDriver}
 import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -661,7 +660,7 @@ class ProbeSpec extends AnyFlatSpec with Matchers with FileCheck with ChiselSim 
       define(b.refs.out, RWProbeValue(out))
       define(b.refs.reg, RWProbeValue(r))
     }
-    simulate(new BasicTester {
+    simulate(new Module {
       layer.enable(layers.Verification)
       layer.enable(layers.Verification.Assert)
       val dut = Module(new Top)

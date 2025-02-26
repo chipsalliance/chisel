@@ -5,7 +5,6 @@ package chiselTests
 import chisel3._
 import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.RunUntilFinished
-import chisel3.testers.BasicTester
 import circt.stage.ChiselStage
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 import org.scalatest.propspec.AnyPropSpec
@@ -26,7 +25,7 @@ class GCD extends Module {
   io.v := y === 0.U
 }
 
-class GCDTester(a: Int, b: Int, z: Int) extends BasicTester {
+class GCDTester(a: Int, b: Int, z: Int) extends Module {
   val dut = Module(new GCD)
   val first = RegInit(true.B)
   dut.io.a := a.U

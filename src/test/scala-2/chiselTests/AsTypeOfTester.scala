@@ -7,12 +7,11 @@ import chisel3._
 import chisel3.reflect.DataMirror
 import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.RunUntilFinished
-import chisel3.testers.BasicTester
 import chisel3.experimental.Analog
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 
-class AsTypeOfBundleTester extends BasicTester {
+class AsTypeOfBundleTester extends Module {
   class MultiTypeBundle extends Bundle {
     val u = UInt(4.W)
     val s = SInt(4.W)
@@ -28,7 +27,7 @@ class AsTypeOfBundleTester extends BasicTester {
   stop()
 }
 
-class AsTypeOfBundleZeroWidthTester extends BasicTester {
+class AsTypeOfBundleZeroWidthTester extends Module {
   class ZeroWidthBundle extends Bundle {
     val a = UInt(0.W)
     val b = UInt(1.W)
@@ -46,7 +45,7 @@ class AsTypeOfBundleZeroWidthTester extends BasicTester {
   stop()
 }
 
-class AsTypeOfVecTester extends BasicTester {
+class AsTypeOfVecTester extends Module {
   val vec = ((15 << 12) + (0 << 8) + (1 << 4) + (2 << 0)).U.asTypeOf(Vec(4, SInt(4.W)))
 
   assert(vec(0) === 2.S)
@@ -57,7 +56,7 @@ class AsTypeOfVecTester extends BasicTester {
   stop()
 }
 
-class AsTypeOfTruncationTester extends BasicTester {
+class AsTypeOfTruncationTester extends Module {
   val truncate = (64 + 3).U.asTypeOf(UInt(3.W))
   val expand = 1.U.asTypeOf(UInt(3.W))
 
@@ -69,12 +68,12 @@ class AsTypeOfTruncationTester extends BasicTester {
   stop()
 }
 
-class ResetAsTypeOfBoolTester extends BasicTester {
+class ResetAsTypeOfBoolTester extends Module {
   assert(reset.asTypeOf(Bool()) === reset.asBool)
   stop()
 }
 
-class AsTypeOfClockTester extends BasicTester {
+class AsTypeOfClockTester extends Module {
   class MyBundle extends Bundle {
     val x = UInt(4.W)
     val y = Clock()
@@ -85,7 +84,7 @@ class AsTypeOfClockTester extends BasicTester {
   stop()
 }
 
-class AsChiselEnumTester extends BasicTester {
+class AsChiselEnumTester extends Module {
   object MyEnum extends ChiselEnum {
     val foo, bar = Value
     val fizz = Value(2.U)

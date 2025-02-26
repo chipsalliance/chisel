@@ -7,14 +7,13 @@ import chisel3.aop.Select
 import chisel3.aop.Select.{PredicatedConnect, When, WhenNot}
 import chisel3.experimental.ExtModule
 import chisel3.stage.{ChiselGeneratorAnnotation, DesignAnnotation}
-import chisel3.testers.BasicTester
 import circt.stage.ChiselStage
 import firrtl.AnnotationSeq
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import scala.reflect.runtime.universe.TypeTag
 
-class SelectTester(results: Seq[Int]) extends BasicTester {
+class SelectTester(results: Seq[Int]) extends Module {
   val values = VecInit(results.map(_.U))
   val counter = RegInit(0.U(results.length.W))
   val added = counter + 1.U

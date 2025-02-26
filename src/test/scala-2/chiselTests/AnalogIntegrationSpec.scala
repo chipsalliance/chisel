@@ -6,7 +6,6 @@ import chisel3._
 import chisel3.util._
 import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.RunUntilFinished
-import chisel3.testers.{BasicTester, TesterDriver}
 import chisel3.experimental._
 import org.scalatest.flatspec.AnyFlatSpec
 
@@ -109,7 +108,7 @@ class AnalogSmallDUT extends AnalogDUTModule(4) { // 4 BlackBoxes
 }
 
 // This tester is primarily intended to be able to pass the dut to synthesis
-class AnalogIntegrationTester(mod: => AnalogDUTModule) extends BasicTester {
+class AnalogIntegrationTester(mod: => AnalogDUTModule) extends Module {
   val BusValue = 2.U(32.W) // arbitrary
 
   val dut = Module(mod)

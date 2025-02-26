@@ -7,7 +7,6 @@ import chisel3._
 import chisel3.util._
 import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.RunUntilFinished
-import chisel3.testers.BasicTester
 import org.scalacheck._
 import scala.language.reflectiveCalls
 import org.scalatest.propspec.AnyPropSpec
@@ -31,7 +30,7 @@ class VecIntegrationSpec extends AnyPropSpec with PropertyUtils with ChiselSim {
       io.out := vecReg
     }
 
-    class RegTester(w: Int, values: List[Int]) extends BasicTester {
+    class RegTester(w: Int, values: List[Int]) extends Module {
       val v = VecInit(values.map(_.U(w.W)))
       val dut = Module(new RegTesterMod(values.length))
       val doneReg = RegInit(false.B)
@@ -53,7 +52,7 @@ class VecIntegrationSpec extends AnyPropSpec with PropertyUtils with ChiselSim {
   }
 
   property("VecInit should iterate correctly") {
-    class IterateTester(start: Int, len: Int)(f: UInt => UInt) extends BasicTester {
+    class IterateTester(start: Int, len: Int)(f: UInt => UInt) extends Module {
       val controlVec = VecInit(Seq.iterate(start.U, len)(f))
       val testVec = VecInit.iterate(start.U, len)(f)
       chisel3.assert(
@@ -68,7 +67,7 @@ class VecIntegrationSpec extends AnyPropSpec with PropertyUtils with ChiselSim {
   }
 
   property("Regs of vecs should be usable as shift registers") {
-    class ShiftRegisterTester(n: Int) extends BasicTester {
+    class ShiftRegisterTester(n: Int) extends Module {
       val (cnt, wrap) = Counter(true.B, n * 2)
       val shifter = Reg(Vec(n, UInt((log2Ceil(n).max(1)).W)))
       shifter.zip(shifter.drop(1)).foreach { case (l, r) => l := r }
@@ -86,7 +85,7 @@ class VecIntegrationSpec extends AnyPropSpec with PropertyUtils with ChiselSim {
   }
 
   property("Dynamic indexing of a Vec of Module IOs should work") {
-    class ModuleIODynamicIndexTester(n: Int) extends BasicTester {
+    class ModuleIODynamicIndexTester(n: Int) extends Module {
       val duts = VecInit.fill(n)(Module(new PassthroughModule).io)
       val tester = Module(new PassthroughModuleTester)
 

@@ -5,7 +5,6 @@ package chiselTests
 import chisel3._
 import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.RunUntilFinished
-import chisel3.testers.BasicTester
 import org.scalatest.propspec.AnyPropSpec
 
 class MulLookup(val w: Int) extends Module {
@@ -23,7 +22,7 @@ class MulLookup(val w: Int) extends Module {
   io.z := tbl(((io.x << w) | io.y))
 }
 
-class MulLookupTester(w: Int, x: Int, y: Int) extends BasicTester {
+class MulLookupTester(w: Int, x: Int, y: Int) extends Module {
   val dut = Module(new MulLookup(w))
   dut.io.x := x.asUInt
   dut.io.y := y.asUInt

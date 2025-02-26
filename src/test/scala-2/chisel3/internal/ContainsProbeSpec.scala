@@ -3,7 +3,6 @@ package chisel3.internal
 import chisel3._
 import chisel3.probe._
 import chisel3.util.DecoupledIO
-import chisel3.testers.{BasicTester, TesterDriver}
 import circt.stage.ChiselStage
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers

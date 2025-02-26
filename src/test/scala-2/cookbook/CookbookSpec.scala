@@ -5,7 +5,6 @@ package cookbook
 import chisel3._
 import chisel3.util.Counter
 import chisel3.simulator.scalatest.ChiselSim
-import chisel3.testers.BasicTester
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
