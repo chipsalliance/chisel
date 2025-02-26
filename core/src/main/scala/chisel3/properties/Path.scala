@@ -11,6 +11,8 @@ import firrtl.ir.PathPropertyLiteral
   */
 sealed abstract class Path {
   private[chisel3] def convert(): PathPropertyLiteral
+
+  private[chisel3] def serialize: String
 }
 
 /** Represent a Path type with a known target.
@@ -19,22 +21,30 @@ private[properties] sealed abstract class TargetPath extends Path {
   private[chisel3] def toTarget():   IsMember
   private[chisel3] def isMemberPath: Boolean
 
+  def targetType(target: IsMember) = if (isMemberPath) {
+    target match {
+      case _: ModuleTarget    => "OMMemberInstanceTarget"
+      case _: InstanceTarget  => "OMMemberInstanceTarget"
+      case _: ReferenceTarget => "OMMemberReferenceTarget"
+    }
+  } else {
+    target match {
+      case _: ModuleTarget    => "OMInstanceTarget"
+      case _: InstanceTarget  => "OMInstanceTarget"
+      case _: ReferenceTarget => "OMReferenceTarget"
+    }
+  }
+
   private[chisel3] def convert(): PathPropertyLiteral = {
     val target = toTarget()
-    val targetType = if (isMemberPath) {
-      target match {
-        case _: ModuleTarget    => "OMMemberInstanceTarget"
-        case _: InstanceTarget  => "OMMemberInstanceTarget"
-        case _: ReferenceTarget => "OMMemberReferenceTarget"
-      }
-    } else {
-      target match {
-        case _: ModuleTarget    => "OMInstanceTarget"
-        case _: InstanceTarget  => "OMInstanceTarget"
-        case _: ReferenceTarget => "OMReferenceTarget"
-      }
-    }
-    PathPropertyLiteral(s"$targetType:${target.serialize}")
+    val tt = targetType(target)
+    PathPropertyLiteral(s"$tt:${target.serialize}")
+  }
+
+  private[chisel3] def serialize: String = {
+    val target = toTarget()
+    val tt = targetType(target)
+    s"path($tt:${target.serialize})"
   }
 }
 
@@ -42,6 +52,7 @@ private[properties] sealed abstract class TargetPath extends Path {
   */
 private[properties] object DeletedPath extends Path {
   private[chisel3] def convert(): PathPropertyLiteral = PathPropertyLiteral("OMDeleted:")
+  private[chisel3] def serialize: String = "path(OMDeleted:)"
 }
 
 object Path {

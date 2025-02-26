@@ -120,6 +120,7 @@ private[this] object Exceptions {
 }
 
 /** A phase that calls and runs CIRCT, specifically `firtool`, while preserving an [[firrtl.AnnotationSeq AnnotationSeq]] API. */
+// TODO this uses the converted FIRRTL circuit yet doesn't depend on anything--probably needs fixing and maybe we can stop using the FIRRTL CIRCT
 class CIRCT extends Phase {
 
   import Helpers._
