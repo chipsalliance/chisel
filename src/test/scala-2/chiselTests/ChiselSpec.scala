@@ -257,11 +257,6 @@ trait Utils {
     (baos.toString, ret)
   }
 
-  /** Encodes a System.exit exit code
-    * @param status the exit code
-    */
-  private case class ExitException(status: Int) extends SecurityException(s"Found a sys.exit with code $status")
-
   /** Run some code and rethrow an exception with a specific type if an exception of that type occurs anywhere in the
     * stack trace.
     *
