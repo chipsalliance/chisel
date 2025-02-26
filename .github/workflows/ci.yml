@@ -84,7 +84,6 @@ jobs:
         uses: VirtusLab/scala-cli-setup@v1
         with:
           jvm: temurin:11
-          apps: sbt
       - name: Publish
         run: ./mill -i io.kipp.mill.ci.release.ReleaseModule/publishAll
         env:

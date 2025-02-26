@@ -68,7 +68,6 @@ jobs:
         with:
           distribution: 'adopt'
           java-version: ${{ inputs.jvm }}
-          cache: 'sbt'
       - name: Install CIRCT
         id: install-circt
         if: ${{ inputs.circt }}
@@ -91,10 +90,6 @@ jobs:
           echo \`\`\` >> $GITHUB_STEP_SUMMARY
       - name: Test
         run: ./mill -j0 firrtl.cross[].test -oF + svsim.cross[].test -oF + chisel[].test -oF
-      - name: Binary compatibility
-        # TODO either make this also check the plugin or decide that we don't
-        #      support binary compatibility for the plugin
-        run: sbt ++${{ inputs.scala }} unipublish/mimaReportBinaryIssues
 
   mill:
     name: compile project with mill
@@ -242,7 +237,6 @@ jobs:
         uses: VirtusLab/scala-cli-setup@v1
         with:
           jvm: adoptium:17
-          apps: sbt
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
