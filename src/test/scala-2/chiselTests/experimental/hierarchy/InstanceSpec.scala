@@ -3,18 +3,20 @@
 package chiselTests
 package experimental.hierarchy
 
-import circt.stage.ChiselStage.emitCHIRRTL
 import chisel3._
 import chisel3.experimental.BaseModule
 import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance}
 import chisel3.util.{DecoupledIO, Valid}
 import chisel3.experimental.{attach, Analog}
 import chisel3.stage.{ChiselGeneratorAnnotation, DesignAnnotation}
+import circt.stage.ChiselStage
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 
 // TODO/Notes
 // - In backport, clock/reset are not automatically assigned. I think this is fixed in 3.5
 // - CircuitTarget for annotations on the definition are wrong - needs to be fixed.
-class InstanceSpec extends ChiselFunSpec with Utils {
+class InstanceSpec extends AnyFunSpec with Matchers with Utils with FileCheck {
   import Annotations._
   import Examples._
   describe("(0) Instance instantiation") {
@@ -23,7 +25,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val definition = Definition(new AddOne)
         val i0 = Instance(definition)
       }
-      val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
+      val chirrtl = ChiselStage.emitCHIRRTL(new Top)
       chirrtl should include("inst i0 of AddOne")
     }
     it("(0.b): name of an instanceclone should not error") {
@@ -32,7 +34,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val i0 = Instance(definition)
         val i = i0.i0 // This should not error
       }
-      val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
+      val chirrtl = ChiselStage.emitCHIRRTL(new Top)
       chirrtl should include("inst i0 of AddTwo")
     }
     it("(0.c): accessing internal fields through non-generated means is hard to do") {
@@ -43,7 +45,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         // "You are trying to access a macro-only API. Please use the @public annotation instead."
         i0.in
       }
-      val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
+      val chirrtl = ChiselStage.emitCHIRRTL(new Top)
       chirrtl should include("inst i0 of AddOne")
     }
     it("(0.d): BlackBoxes should be supported") {
@@ -61,7 +63,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         out := i0.io.out
         io <> i1.io
       }
-      val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
+      val chirrtl = ChiselStage.emitCHIRRTL(new Top)
       chirrtl should include("inst i0 of AddOneBlackBox")
       chirrtl should include("inst i1 of AddOneBlackBox")
       chirrtl should include("connect i0.in, in")
@@ -75,7 +77,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val i0 = Instance(definition)
         i0.in := 123.U
       }
-      val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Top)
+      val chirrtl = ChiselStage.emitCHIRRTL(new Top)
       chirrtl should include("connect i0.realIn.aminusx, UInt<7>(0h7b)")
     }
     it("(0.f): access under when does not crash") {
@@ -86,7 +88,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
           val i = i0.i0 // This should not error
         }
       }
-      circt.stage.ChiselStage.emitCHIRRTL(new Top)
+      ChiselStage.emitCHIRRTL(new Top)
     }
     it("(0.g): access under layer does not crash") {
       object A extends layer.Layer(layer.LayerConfig.Extract())
@@ -100,7 +102,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
           val i = i0.i1 // This should not error
         }
       }
-      circt.stage.ChiselStage.emitCHIRRTL(new Top)
+      ChiselStage.emitCHIRRTL(new Top)
     }
   }
   describe("(1) Annotations on instances in same chisel compilation") {
@@ -110,8 +112,12 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val i0:         Instance[AddOne] = Instance(definition)
         mark(i0, "i0")
       }
-      val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos.collect { case c: MarkAnnotation => c } should contain(MarkAnnotation("~Top|Top/i0:AddOne".it, "i0"))
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i0:AddOne"
+           |CHECK-NEXT: "tag":"i0"
+           |""".stripMargin
+      )
     }
     it("(1.b): should work on a single instance, annotating an inner wire") {
       class Top extends Module {
@@ -119,9 +125,11 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val i0:         Instance[AddOne] = Instance(definition)
         mark(i0.innerWire, "i0.innerWire")
       }
-      val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos.collect { case c: MarkAnnotation => c } should contain(
-        MarkAnnotation("~Top|Top/i0:AddOne>innerWire".rt, "i0.innerWire")
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i0:AddOne>innerWire"
+           |CHECK-NEXT: "tag":"i0.innerWire"
+           |""".stripMargin
       )
     }
     it("(1.c): should work on a two nested instances, annotating the instance") {
@@ -130,9 +138,11 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val i0:         Instance[AddTwo] = Instance(definition)
         mark(i0.i0, "i0.i0")
       }
-      val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos.collect { case c: MarkAnnotation => c } should contain(
-        MarkAnnotation("~Top|Top/i0:AddTwo/i0:AddOne".it, "i0.i0")
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i0:AddTwo/i0:AddOne"
+           |CHECK-NEXT: "tag":"i0.i0"
+           |""".stripMargin
       )
     }
     it("(1.d): should work on a two nested instances, annotating the inner wire") {
@@ -141,9 +151,11 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val i0:         Instance[AddTwo] = Instance(definition)
         mark(i0.i0.innerWire, "i0.i0.innerWire")
       }
-      val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos.collect { case c: MarkAnnotation => c } should contain(
-        MarkAnnotation("~Top|Top/i0:AddTwo/i0:AddOne>innerWire".rt, "i0.i0.innerWire")
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i0:AddTwo/i0:AddOne>innerWire"
+           |CHECK-NEXT: "tag":"i0.i0.innerWire"
+           |""".stripMargin
       )
     }
     it("(1.e): should work on a nested module in an instance, annotating the module") {
@@ -152,9 +164,11 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val i0:         Instance[AddTwoMixedModules] = Instance(definition)
         mark(i0.i1, "i0.i1")
       }
-      val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos.collect { case c: MarkAnnotation => c } should contain(
-        MarkAnnotation("~Top|Top/i0:AddTwoMixedModules/i1:AddOne_1".it, "i0.i1")
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i0:AddTwoMixedModules/i1:AddOne_1"
+           |CHECK-NEXT: "tag":"i0.i1"
+           |""".stripMargin
       )
     }
     it("(1.f): should work on an instantiable container, annotating a wire") {
@@ -163,9 +177,11 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val i0:         Instance[AddOneWithInstantiableWire] = Instance(definition)
         mark(i0.wireContainer.innerWire, "i0.innerWire")
       }
-      val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos.collect { case c: MarkAnnotation => c } should contain(
-        MarkAnnotation("~Top|Top/i0:AddOneWithInstantiableWire>innerWire".rt, "i0.innerWire")
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i0:AddOneWithInstantiableWire>innerWire"
+           |CHECK-NEXT: "tag":"i0.innerWire"
+           |""".stripMargin
       )
     }
     it("(1.g): should work on an instantiable container, annotating a module") {
@@ -174,9 +190,11 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val i0 = Instance(definition)
         mark(i0.moduleContainer.i0, "i0.i0")
       }
-      val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos.collect { case c: MarkAnnotation => c } should contain(
-        MarkAnnotation("~Top|Top/i0:AddOneWithInstantiableModule/i0:AddOne".it, "i0.i0")
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i0:AddOneWithInstantiableModule/i0:AddOne"
+           |CHECK-NEXT: "tag":"i0.i0"
+           |""".stripMargin
       )
     }
     it("(1.h): should work on an instantiable container, annotating an instance") {
@@ -185,9 +203,11 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val i0 = Instance(definition)
         mark(i0.instanceContainer.i0, "i0.i0")
       }
-      val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos.collect { case c: MarkAnnotation => c } should contain(
-        MarkAnnotation("~Top|Top/i0:AddOneWithInstantiableInstance/i0:AddOne".it, "i0.i0")
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i0:AddOneWithInstantiableInstance/i0:AddOne"
+           |CHECK-NEXT: "tag":"i0.i0"
+           |""".stripMargin
       )
     }
     it("(1.i): should work on an instantiable container, annotating an instantiable container's module") {
@@ -196,9 +216,11 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val i0 = Instance(definition)
         mark(i0.containerContainer.container.i0, "i0.i0")
       }
-      val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos.collect { case c: MarkAnnotation => c } should contain(
-        MarkAnnotation("~Top|Top/i0:AddOneWithInstantiableInstantiable/i0:AddOne".it, "i0.i0")
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i0:AddOneWithInstantiableInstantiable/i0:AddOne"
+           |CHECK-NEXT: "tag":"i0.i0"
+           |""".stripMargin
       )
     }
     it("(1.j): should work on public member which references public member of another instance") {
@@ -207,9 +229,11 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val i0 = Instance(definition)
         mark(i0.containerContainer.container.i0, "i0.i0")
       }
-      val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos.collect { case c: MarkAnnotation => c } should contain(
-        MarkAnnotation("~Top|Top/i0:AddOneWithInstantiableInstantiable/i0:AddOne".it, "i0.i0")
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i0:AddOneWithInstantiableInstantiable/i0:AddOne"
+           |CHECK-NEXT: "tag":"i0.i0"
+           |""".stripMargin
       )
     }
     it("(1.k): should work for targets on definition to have correct circuit name") {
@@ -218,9 +242,11 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val definition = Definition(new AddOneWithAnnotation)
         val i0 = Instance(definition)
       }
-      val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos.collect { case c: MarkAnnotation => c } should contain(
-        MarkAnnotation("~Top|AddOneWithAnnotation>innerWire".rt, "innerWire")
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|AddOneWithAnnotation>innerWire"
+           |CHECK-NEXT: "tag":"innerWire"
+           |""".stripMargin
       )
     }
     it("(1.l): should work on things with type parameters") {
@@ -229,9 +255,11 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val i0 = Instance(definition)
         mark(i0.blah, "blah")
       }
-      val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos.collect { case c: MarkAnnotation => c } should contain(
-        MarkAnnotation("~Top|Top/i0:HasTypeParams>blah".rt, "blah")
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i0:HasTypeParams>blah"
+           |CHECK-NEXT: "tag":"blah"
+           |""".stripMargin
       )
     }
     it("(1.m): should work on Analog wires") {
@@ -242,11 +270,15 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         attach(port, i0.port)
         mark(i0.wire, "blah")
       }
-      val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
-      annos.collect { case c: MarkAnnotation => c } should contain(
-        MarkAnnotation("~Top|Top/i0:HasAnalogWire>wire".rt, "blah")
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i0:HasAnalogWire>wire"
+           |CHECK-NEXT: "tag":"blah"
+           |
+           |CHECK:      public module Top :
+           |CHECK:        attach (port, i0.port)
+           |""".stripMargin
       )
-      chirrtl.serialize should include("attach (port, i0.port)")
     }
     it("(1.n): should work on user-defined types that provide Lookupable") {
       class Top extends Module {
@@ -258,45 +290,63 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         mark(i0.simple.inst, "inst")
         mark(i0.parameterized.inst, "inst2")
       }
-      val (_, annos) = getFirrtlAndAnnos(new Top)
-      (annos.collect { case c: MarkAnnotation => c } should contain).allOf(
-        MarkAnnotation("~Top|Top/i0:HasUserDefinedType>wire".rt, "data"),
-        MarkAnnotation("~Top|Top/i0:HasUserDefinedType/inst0:AddOne".it, "inst"),
-        MarkAnnotation("~Top|Top/i0:HasUserDefinedType/inst1:AddOne".it, "inst2")
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i0:HasUserDefinedType>wire"
+           |CHECK-NEXT: "tag":"data"
+           |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i0:HasUserDefinedType/inst0:AddOne"
+           |CHECK-NEXT: "tag":"inst"
+           |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i0:HasUserDefinedType/inst1:AddOne"
+           |CHECK-NEXT: "tag":"inst2"
+           |""".stripMargin
       )
     }
   }
   describe("(2) Annotations on designs not in the same chisel compilation") {
+    // Extract the built `AddTwo` module for use in other tests.
+    val first = {
+      var result: AddTwo = null
+      ChiselStage.emitCHIRRTL {
+        result = new AddTwo
+        result
+      }
+      result
+    }
     it("(2.a): should work on an innerWire, marked in a different compilation") {
-      val first = elaborateAndGetModule(new AddTwo)
       class Top(x: AddTwo) extends Module {
         val parent = Instance(Definition(new ViewerParent(x, false, true)))
       }
-      val (_, annos) = getFirrtlAndAnnos(new Top(first))
-      annos.collect { case c: MarkAnnotation => c } should contain(
-        MarkAnnotation("~AddTwo|AddTwo/i0:AddOne>innerWire".rt, "first")
+      generateFirrtlAndFileCheck(new Top(first))(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~AddTwo|AddTwo/i0:AddOne>innerWire"
+           |CHECK-NEXT: "tag":"first"
+           |""".stripMargin
       )
     }
     it("(2.b): should work on an innerWire, marked in a different compilation, in instanced instantiable") {
-      val first = elaborateAndGetModule(new AddTwo)
       class Top(x: AddTwo) extends Module {
         val parent = Instance(Definition(new ViewerParent(x, true, false)))
       }
-      val (_, annos) = getFirrtlAndAnnos(new Top(first))
-      annos.collect { case c: MarkAnnotation => c } should contain(
-        MarkAnnotation("~AddTwo|AddTwo/i0:AddOne>innerWire".rt, "second")
+      generateFirrtlAndFileCheck(new Top(first))(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~AddTwo|AddTwo/i0:AddOne>innerWire"
+           |CHECK-NEXT: "tag":"second"
+           |""".stripMargin
       )
     }
     it("(2.c): should work on an innerWire, marked in a different compilation, in instanced module") {
-      val first = elaborateAndGetModule(new AddTwo)
       class Top(x: AddTwo) extends Module {
         val d = Definition(new ViewerParent(x, false, false))
         val parent = Instance(d)
         mark(parent.viewer.x.i0.innerWire, "third")
       }
-      val (_, annos) = getFirrtlAndAnnos(new Top(first))
-      annos.collect { case c: MarkAnnotation => c } should contain(
-        MarkAnnotation("~AddTwo|AddTwo/i0:AddOne>innerWire".rt, "third")
+      generateFirrtlAndFileCheck(new Top(first))(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~AddTwo|AddTwo/i0:AddOne>innerWire"
+           |CHECK-NEXT: "tag":"third"
+           |""".stripMargin
       )
     }
   }
@@ -306,16 +356,24 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val mv = Instance(Definition(new MultiVal()))
         mark(mv.x, "mv.x")
       }
-      val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos.collect { case c: MarkAnnotation => c } should contain(MarkAnnotation("~Top|Top/mv:MultiVal>x".rt, "mv.x"))
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/mv:MultiVal>x"
+           |CHECK-NEXT: "tag":"mv.x"
+           |""".stripMargin
+      )
     }
     it("(3.b): should work on lazy vals") {
       class Top() extends Module {
         val lv = Instance(Definition(new LazyVal()))
         mark(lv.x, lv.y)
       }
-      val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos.collect { case c: MarkAnnotation => c } should contain(MarkAnnotation("~Top|Top/lv:LazyVal>x".rt, "Hi"))
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/lv:LazyVal>x"
+           |CHECK-NEXT: "tag":"Hi"
+           |""".stripMargin
+      )
     }
     it("(3.c): should work on islookupables") {
       class Top() extends Module {
@@ -323,9 +381,11 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val up = Instance(Definition(new UsesParameters(p)))
         mark(up.x, up.y.string + up.y.int)
       }
-      val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos.collect { case c: MarkAnnotation => c } should contain(
-        MarkAnnotation("~Top|Top/up:UsesParameters>x".rt, "hi0")
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/up:UsesParameters>x"
+           |CHECK-NEXT: "tag":"hi0"
+           |""".stripMargin
       )
     }
     it("(3.d): should work on lists") {
@@ -333,49 +393,71 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val i = Instance(Definition(new HasList()))
         mark(i.x(1), i.y(1).toString)
       }
-      val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos.collect { case c: MarkAnnotation => c } should contain(MarkAnnotation("~Top|Top/i:HasList>x_1".rt, "2"))
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:HasList>x_1"
+           |CHECK-NEXT: "tag":"2"
+           |""".stripMargin
+      )
     }
     it("(3.e): should work on seqs") {
       class Top() extends Module {
         val i = Instance(Definition(new HasSeq()))
         mark(i.x(1), i.y(1).toString)
       }
-      val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos.collect { case c: MarkAnnotation => c } should contain(MarkAnnotation("~Top|Top/i:HasSeq>x_1".rt, "2"))
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:HasSeq>x_1"
+           |CHECK-NEXT: "tag":"2"
+           |""".stripMargin
+      )
     }
     it("(3.f): should work on options") {
       class Top() extends Module {
         val i = Instance(Definition(new HasOption()))
         i.x.map(x => mark(x, "x"))
       }
-      val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos.collect { case c: MarkAnnotation => c } should contain(MarkAnnotation("~Top|Top/i:HasOption>x".rt, "x"))
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:HasOption>x"
+           |CHECK-NEXT: "tag":"x"
+           |""".stripMargin
+      )
     }
     it("(3.g): should work on vecs") {
       class Top() extends Module {
         val i = Instance(Definition(new HasVec()))
         mark(i.x, "blah")
       }
-      val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos.collect { case c: MarkAnnotation => c } should contain(MarkAnnotation("~Top|Top/i:HasVec>x".rt, "blah"))
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:HasVec>x"
+           |CHECK-NEXT: "tag":"blah"
+           |""".stripMargin
+      )
     }
     it("(3.h): should work on statically indexed vectors external to module") {
       class Top() extends Module {
         val i = Instance(Definition(new HasVec()))
         mark(i.x(1), "blah")
       }
-      val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos.collect { case c: MarkAnnotation => c } should contain(MarkAnnotation("~Top|Top/i:HasVec>x[1]".rt, "blah"))
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:HasVec>x[1]"
+           |CHECK-NEXT: "tag":"blah"
+           |""".stripMargin
+      )
     }
     it("(3.i): should work on statically indexed vectors internal to module") {
       class Top() extends Module {
         val i = Instance(Definition(new HasIndexedVec()))
         mark(i.y, "blah")
       }
-      val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos.collect { case c: MarkAnnotation => c } should contain(
-        MarkAnnotation("~Top|Top/i:HasIndexedVec>x[1]".rt, "blah")
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:HasIndexedVec>x[1]"
+           |CHECK-NEXT: "tag":"blah"
+           |""".stripMargin
       )
     }
     it("(3.j): should work on accessed subfields of aggregate ports") {
@@ -387,31 +469,30 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         mark(i.valid, "valid")
         mark(i.bits, "bits")
       }
-      val expected = List(
-        "~Top|Top/i:HasSubFieldAccess>in.valid".rt -> "valid",
-        "~Top|Top/i:HasSubFieldAccess>in.bits".rt -> "bits"
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:HasSubFieldAccess>in.valid"
+           |CHECK-NEXT: "tag":"valid"
+           |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:HasSubFieldAccess>in.bits"
+           |CHECK-NEXT: "tag":"bits"
+           |
+           |CHECK:      public module Top :
+           |CHECK:        connect i.in.valid, input.valid
+           |CHECK:        connect i.in.bits, input.bits
+           |""".stripMargin
       )
-      val lines = List(
-        "connect i.in.valid, input.valid",
-        "connect i.in.bits, input.bits"
-      )
-      val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
-      val text = chirrtl.serialize
-      for (line <- lines) {
-        text should include(line)
-      }
-      for (e <- expected.map(MarkAnnotation.tupled)) {
-        annos should contain(e)
-      }
     }
     ignore("(3.k): should work on vals in constructor arguments") {
       class Top() extends Module {
         val i = Instance(Definition(new HasPublicConstructorArgs(10)))
         // mark(i.x, i.int.toString)
       }
-      val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos.collect { case c: MarkAnnotation => c } should contain(
-        MarkAnnotation("~Top|Top/i:HasPublicConstructorArgs>x".rt, "10")
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:HasPublicConstructorArgs>x"
+           |CHECK-NEXT: "tag":"10"
+           |""".stripMargin
       )
     }
     it("(3.l): should work on eithers") {
@@ -420,11 +501,15 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         i.x.map(x => mark(x, "xright")).left.map(x => mark(x, "xleft"))
         i.y.map(x => mark(x, "yright")).left.map(x => mark(x, "yleft"))
       }
-      val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos.collect { case c: MarkAnnotation => c } should contain(
-        MarkAnnotation("~Top|Top/i:HasEither>x".rt, "xright")
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:HasEither>x"
+           |CHECK-NEXT: "tag":"xright"
+           |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:HasEither>y"
+           |CHECK-NEXT: "tag":"yleft"
+           |""".stripMargin
       )
-      annos.collect { case c: MarkAnnotation => c } should contain(MarkAnnotation("~Top|Top/i:HasEither>y".rt, "yleft"))
     }
     it("(3.m): should work on tuple2") {
       class Top() extends Module {
@@ -432,9 +517,15 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         mark(i.xy._1, "x")
         mark(i.xy._2, "y")
       }
-      val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos.collect { case c: MarkAnnotation => c } should contain(MarkAnnotation("~Top|Top/i:HasTuple2>x".rt, "x"))
-      annos.collect { case c: MarkAnnotation => c } should contain(MarkAnnotation("~Top|Top/i:HasTuple2>y".rt, "y"))
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:HasTuple2>x"
+           |CHECK-NEXT: "tag":"x"
+           |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:HasTuple2>y"
+           |CHECK-NEXT: "tag":"y"
+           |""".stripMargin
+      )
     }
 
     it("(3.n): should properly support val modifiers") {
@@ -465,30 +556,40 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         mark(i.mem, "Mem")
         mark(i.syncReadMem, "SyncReadMem")
       }
-      val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos.collect { case c: MarkAnnotation => c } should contain(MarkAnnotation("~Top|Top/i:HasMems>mem".rt, "Mem"))
-      annos.collect { case c: MarkAnnotation => c } should contain(
-        MarkAnnotation("~Top|Top/i:HasMems>syncReadMem".rt, "SyncReadMem")
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:HasMems>mem"
+           |CHECK-NEXT: "tag":"Mem"
+           |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:HasMems>syncReadMem"
+           |CHECK-NEXT: "tag":"SyncReadMem"
+           |""".stripMargin
       )
     }
     it("(3.p): should make connectable IOs on nested IsInstantiables that have IO Datas in them") {
-      val (chirrtl, _) = getFirrtlAndAnnos(new AddTwoNestedInstantiableData(4))
-      exactly(3, chirrtl.serialize.split('\n')) should include("connect i1.in, i0.out")
+      generateFirrtlAndFileCheck(new AddTwoNestedInstantiableData(4))(
+        """|CHECK-COUNT-3: connect i1.in, i0.out
+           |CHECK-NOT:     connect i1.in, i0.out
+           |""".stripMargin
+      )
     }
     it(
       "(3.q): should make connectable IOs on nested IsInstantiables's Data when the Instance and Definition do not have the same parent"
     ) {
-      val (chirrtl, _) = getFirrtlAndAnnos(new AddTwoNestedInstantiableDataWrapper(4))
-      exactly(3, chirrtl.serialize.split('\n')) should include("connect i1.in, i0.out")
+      generateFirrtlAndFileCheck(new AddTwoNestedInstantiableDataWrapper(4))("""|CHECK-COUNT-3: connect i1.in, i0.out
+                                                                                |CHECK-NOT:     connect i1.in, i0.out
+                                                                                |""".stripMargin)
     }
     it("(3.r): should work on HasTarget") {
       class Top() extends Module {
         val i = Instance(Definition(new HasHasTarget))
         mark(i.x, "x")
       }
-      val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos.collect { case c: MarkAnnotation => c } should contain(
-        MarkAnnotation("~Top|Top/i:HasHasTarget>sram_sram".rt, "x")
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:HasHasTarget>sram_sram"
+           |CHECK-NEXT: "tag":"x"
+           |""".stripMargin
       )
     }
     it("(3.s): should work on Unit") {
@@ -498,9 +599,11 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         mark(i.y._1, "y_1")
         i.y._2 should be(())
       }
-      val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos.collect { case c: MarkAnnotation => c } should contain(
-        MarkAnnotation("~Top|Top/i:HasPublicUnit>y_1".rt, "y_1")
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:HasPublicUnit>y_1"
+           |CHECK-NEXT: "tag":"y_1"
+           |""".stripMargin
       )
     }
     it("(3.t): should work on Tuple5 with a Module in it") {
@@ -511,12 +614,14 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         mark(w, "wire")
         mark(inst, "inst")
       }
-      val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos.collect { case c: MarkAnnotation => c } should contain(
-        MarkAnnotation("~Top|Top/i:HasTuple5>wire".rt, "wire")
-      )
-      annos.collect { case c: MarkAnnotation => c } should contain(
-        MarkAnnotation("~Top|Top/i:HasTuple5/inst:AddOne".it, "inst")
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:HasTuple5>wire"
+           |CHECK-NEXT: "tag":"wire"
+           |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:HasTuple5/inst:AddOne"
+           |CHECK-NEXT: "tag":"inst"
+           |""".stripMargin
       )
     }
   }
@@ -527,9 +632,13 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         f(i.toInstance)
       }
       def f(i: Instance[AddOne]): Unit = mark(i.innerWire, "blah")
-      val (_, annos) = getFirrtlAndAnnos(new Top)
       // TODO: Should this be ~Top|Top/i:AddOne>innerWire ???
-      annos.collect { case c: MarkAnnotation => c } should contain(MarkAnnotation("~Top|AddOne>innerWire".rt, "blah"))
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|AddOne>innerWire"
+           |CHECK-NEXT: "tag":"blah"
+           |""".stripMargin
+      )
     }
     it("(4.b): should work on IsInstantiable") {
       class Top() extends Module {
@@ -538,9 +647,11 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         mark(f(v.toInstance), "blah")
       }
       def f(i: Instance[Viewer]): Data = i.x.i0.innerWire
-      val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos.collect { case c: MarkAnnotation => c } should contain(
-        MarkAnnotation("~Top|AddTwo/i0:AddOne>innerWire".rt, "blah")
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|AddTwo/i0:AddOne>innerWire"
+           |CHECK-NEXT: "tag":"blah"
+           |""".stripMargin
       )
     }
     it("(4.c): should work on seqs of modules") {
@@ -549,10 +660,12 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         mark(f(is), "blah")
       }
       def f(i: Seq[Instance[AddTwo]]): Data = i.head.i0.innerWire
-      val (c, annos) = getFirrtlAndAnnos(new Top)
       // TODO: Should this be ~Top|Top... ??
-      annos.collect { case c: MarkAnnotation => c } should contain(
-        MarkAnnotation("~Top|AddTwo/i0:AddOne>innerWire".rt, "blah")
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|AddTwo/i0:AddOne>innerWire"
+           |CHECK-NEXT: "tag":"blah"
+           |""".stripMargin
       )
     }
     it("(4.d): should work on seqs of IsInstantiable") {
@@ -562,9 +675,11 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         mark(f(vs), "blah")
       }
       def f(i: Seq[Instance[Viewer]]): Data = i.head.x.i0.innerWire
-      val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos.collect { case c: MarkAnnotation => c } should contain(
-        MarkAnnotation("~Top|AddTwo/i0:AddOne>innerWire".rt, "blah")
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|AddTwo/i0:AddOne>innerWire"
+           |CHECK-NEXT: "tag":"blah"
+           |""".stripMargin
       )
     }
     it("(4.e): should work on options of modules") {
@@ -573,9 +688,11 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         mark(f(is), "blah")
       }
       def f(i: Option[Instance[AddTwo]]): Data = i.get.i0.innerWire
-      val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos.collect { case c: MarkAnnotation => c } should contain(
-        MarkAnnotation("~Top|AddTwo/i0:AddOne>innerWire".rt, "blah")
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|AddTwo/i0:AddOne>innerWire"
+           |CHECK-NEXT: "tag":"blah"
+           |""".stripMargin
       )
     }
   }
@@ -585,17 +702,23 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val i = Instance(Definition(new AddTwo()))
         amark(i.in, "blah")
       }
-      val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos.collect { case c: MarkAnnotation => c } should contain(MarkAnnotation("~Top|Top/i:AddTwo>in".rt, "blah"))
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:AddTwo>in"
+           |CHECK-NEXT: "tag":"blah"
+           |""".stripMargin
+      )
     }
     it("(5.b): toAbsoluteTarget on a subinstance's data within an instance") {
       class Top() extends Module {
         val i = Instance(Definition(new AddTwo()))
         amark(i.i0.innerWire, "blah")
       }
-      val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos.collect { case c: MarkAnnotation => c } should contain(
-        MarkAnnotation("~Top|Top/i:AddTwo/i0:AddOne>innerWire".rt, "blah")
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:AddTwo/i0:AddOne>innerWire"
+           |CHECK-NEXT: "tag":"blah"
+           |""".stripMargin
       )
     }
     it("(5.c): toAbsoluteTarget on a submodule's data within an instance") {
@@ -603,9 +726,11 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val i = Instance(Definition(new AddTwoMixedModules()))
         amark(i.i1.in, "blah")
       }
-      val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos.collect { case c: MarkAnnotation => c } should contain(
-        MarkAnnotation("~Top|Top/i:AddTwoMixedModules/i1:AddOne_1>in".rt, "blah")
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:AddTwoMixedModules/i1:AddOne_1>in"
+           |CHECK-NEXT: "tag":"blah"
+           |""".stripMargin
       )
     }
     it("(5.d): toAbsoluteTarget on a submodule's data, in an aggregate, within an instance") {
@@ -613,9 +738,11 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val i = Instance(Definition(new InstantiatesHasVec()))
         amark(i.i1.x.head, "blah")
       }
-      val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos.collect { case c: MarkAnnotation => c } should contain(
-        MarkAnnotation("~Top|Top/i:InstantiatesHasVec/i1:HasVec_1>x[0]".rt, "blah")
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:InstantiatesHasVec/i1:HasVec_1>x[0]"
+           |CHECK-NEXT: "tag":"blah"
+           |""".stripMargin
       )
     }
     it("(5.e): toAbsoluteTarget on a submodule's data, in an aggregate, within an instance, ILit") {
@@ -633,9 +760,11 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val i = Instance(Definition(new InstantiatesHasVec()))
         amark(i.i1.x.head.x, "blah")
       }
-      val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos.collect { case c: MarkAnnotation => c } should contain(
-        MarkAnnotation("~Top|Top/i:InstantiatesHasVec/i1:HasVec_1>x[0].x".rt, "blah")
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:InstantiatesHasVec/i1:HasVec_1>x[0].x"
+           |CHECK-NEXT: "tag":"blah"
+           |""".stripMargin
       )
     }
     it("(5.f): toAbsoluteTarget on a subinstance") {
@@ -643,9 +772,11 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val i = Instance(Definition(new AddTwo()))
         amark(i.i1, "blah")
       }
-      val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos.collect { case c: MarkAnnotation => c } should contain(
-        MarkAnnotation("~Top|Top/i:AddTwo/i1:AddOne".it, "blah")
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:AddTwo/i1:AddOne"
+           |CHECK-NEXT: "tag":"blah"
+           |""".stripMargin
       )
     }
     it("(5.g): should work for absolute targets on definition to have correct circuit name") {
@@ -653,9 +784,11 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val definition = Definition(new AddOneWithAbsoluteAnnotation)
         val i0 = Instance(definition)
       }
-      val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos.collect { case c: MarkAnnotation => c } should contain(
-        MarkAnnotation("~Top|AddOneWithAbsoluteAnnotation>innerWire".rt, "innerWire")
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|AddOneWithAbsoluteAnnotation>innerWire"
+           |CHECK-NEXT: "tag":"innerWire"
+           |""".stripMargin
       )
     }
   }
@@ -683,14 +816,15 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         mark(i.io.in, "gotcha")
         mark(i, "inst")
       }
-      val expected = List(
-        "~Top|Top/i:ModuleWithCommonIntf>io.in".rt -> "gotcha",
-        "~Top|Top/i:ModuleWithCommonIntf".it -> "inst"
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:ModuleWithCommonIntf>io.in"
+           |CHECK-NEXT: "tag":"gotcha"
+           |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:ModuleWithCommonIntf"
+           |CHECK-NEXT: "tag":"inst"
+           |""".stripMargin
       )
-      val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
-      for (e <- expected.map(MarkAnnotation.tupled)) {
-        annos should contain(e)
-      }
     }
     it(
       "(6.b): An @instantiable Module that implements an @instantiable trait should be able to use extension methods from both"
@@ -701,15 +835,18 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         mark(i.sum, "also this")
         mark(i, "inst")
       }
-      val expected = List(
-        "~Top|Top/i:ModuleWithCommonIntf>io.in".rt -> "gotcha",
-        "~Top|Top/i:ModuleWithCommonIntf>sum".rt -> "also this",
-        "~Top|Top/i:ModuleWithCommonIntf".it -> "inst"
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:ModuleWithCommonIntf>io.in"
+           |CHECK-NEXT: "tag":"gotcha"
+           |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:ModuleWithCommonIntf>sum"
+           |CHECK-NEXT: "tag":"also this"
+           |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:ModuleWithCommonIntf"
+           |CHECK-NEXT: "tag":"inst"
+           |""".stripMargin
       )
-      val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
-      for (e <- expected.map(MarkAnnotation.tupled)) {
-        annos should contain(e)
-      }
     }
     it("(6.c): A BlackBox that implements an @instantiable trait should be instantiable as that trait") {
       class Top extends Module {
@@ -717,14 +854,15 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         mark(i.io.in, "gotcha")
         mark(i, "module")
       }
-      val expected = List(
-        "~Top|BlackBoxWithCommonIntf>in".rt -> "gotcha",
-        "~Top|BlackBoxWithCommonIntf".mt -> "module"
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|BlackBoxWithCommonIntf>in"
+           |CHECK-NEXT: "tag":"gotcha"
+           |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|BlackBoxWithCommonIntf"
+           |CHECK-NEXT: "tag":"module"
+           |""".stripMargin
       )
-      val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
-      for (e <- expected.map(MarkAnnotation.tupled)) {
-        annos should contain(e)
-      }
     }
     it("(6.d): It should be possible to have Vectors of @instantiable traits mixing concrete subclasses") {
       class Top extends Module {
@@ -738,15 +876,18 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         mark(insts(1).io.in, "bar")
         mark(insts(2).io.in, "fizz")
       }
-      val expected = List(
-        "~Top|ModuleWithCommonIntfY>io.in".rt -> "foo",
-        "~Top|BlackBoxWithCommonIntf>in".rt -> "bar",
-        "~Top|Top/insts_2:ModuleWithCommonIntfX>io.in".rt -> "fizz"
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|ModuleWithCommonIntfY>io.in"
+           |CHECK-NEXT: "tag":"foo"
+           |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|BlackBoxWithCommonIntf>in"
+           |CHECK-NEXT: "tag":"bar"
+           |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/insts_2:ModuleWithCommonIntfX>io.in"
+           |CHECK-NEXT: "tag":"fizz"
+           |""".stripMargin
       )
-      val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
-      for (e <- expected.map(MarkAnnotation.tupled)) {
-        annos should contain(e)
-      }
     }
   }
   // TODO don't forget to test this with heterogeneous Views (eg. viewing a tuple of a port and non-port as a single Bundle)
@@ -772,23 +913,22 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         mark(i.foo, "foo")
         mark(i.bar, "bar")
       }
-      val expectedAnnos = List(
-        "~Top|Top/i:MyModule>out".rt -> "out",
-        "~Top|Top/i:MyModule>in".rt -> "foo",
-        "~Top|Top/i:MyModule>sum".rt -> "bar"
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:MyModule>out"
+           |CHECK-NEXT: "tag":"out"
+           |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:MyModule>in"
+           |CHECK-NEXT: "tag":"foo"
+           |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:MyModule>sum"
+           |CHECK-NEXT: "tag":"bar"
+           |
+           |CHECK:      public module Top :
+           |CHECK:        connect i.in, foo
+           |CHECK:        connect bar, i.out
+           |""".stripMargin
       )
-      val expectedLines = List(
-        "connect i.in, foo",
-        "connect bar, i.out"
-      )
-      val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
-      val text = chirrtl.serialize
-      for (line <- expectedLines) {
-        text should include(line)
-      }
-      for (e <- expectedAnnos.map(MarkAnnotation.tupled)) {
-        annos should contain(e)
-      }
     }
 
     ignore("(7.b): should work on Aggregate Views") {
@@ -817,31 +957,34 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         mark(i.deq.bits.fizz, "deq.bits.fizz")
         mark(i.enq_valid, "enq_valid")
       }
-      val expectedAnnos = List(
-        "~Top|Top/i:MyModule>a".rt -> "enq", // Not split, checks 1:1
-        "~Top|Top/i:MyModule>a.fizz".rt -> "enq.bits", // Split, checks non-1:1 inner Aggregate
-        "~Top|Top/i:MyModule>a.buzz".rt -> "enq.bits",
-        "~Top|Top/i:MyModule>b.fizz".rt -> "deq.bits.fizz", // Checks 1 inner Element
-        "~Top|Top/i:MyModule>a.valid".rt -> "enq_valid"
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:MyModule>a"
+           |CHECK-NEXT: "tag":"enq"
+           |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:MyModule>a.fizz"
+           |CHECK-NEXT: "tag":"enq.bits"
+           |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:MyModule>a.buzz"
+           |CHECK-NEXT: "tag":"enq.bits"
+           |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:MyModule>b.fizz"
+           |CHECK-NEXT: "tag":"deq.bits.fizz"
+           |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:MyModule>a.valid"
+           |CHECK-NEXT: "tag":"enq_valid"
+           |
+           |CHECK:      public module Top :
+           |CHECK:        connect i.a.valid, foo.valid
+           |CHECK:        connect foo.ready, i.a.ready
+           |CHECK:        connect i.a.fizz, foo.bits.fizz
+           |CHECK:        connect i.a.buzz, foo.bits.buzz
+           |CHECK:        connect bar.valid, i.b.valid
+           |CHECK:        connect i.b.ready, bar.ready
+           |CHECK:        connect bar.bits.fizz, i.b.fizz
+           |CHECK:        connect bar.bits.buzz, i.b.buzz
+           |""".stripMargin
       )
-      val expectedLines = List(
-        "connect i.a.valid, foo.valid",
-        "connect foo.ready, i.a.ready",
-        "connect i.a.fizz, foo.bits.fizz",
-        "connect i.a.buzz, foo.bits.buzz",
-        "connect bar.valid, i.b.valid",
-        "connect i.b.ready, bar.ready",
-        "connect bar.bits.fizz, i.b.fizz",
-        "connect bar.bits.buzz, i.b.buzz"
-      )
-      val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
-      val text = chirrtl.serialize
-      for (line <- expectedLines) {
-        text should include(line)
-      }
-      for (e <- expectedAnnos.map(MarkAnnotation.tupled)) {
-        annos should contain(e)
-      }
     }
 
     it("(7.c): should work on views of views") {
@@ -864,22 +1007,19 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         mark(i.in, "in")
         mark(i.out.bar, "out_bar")
       }
-      val expected = List(
-        "~Top|Top/i:MyModule>a".rt -> "in",
-        "~Top|Top/i:MyModule>b.foo".rt -> "out_bar"
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:MyModule>a"
+           |CHECK-NEXT: "tag":"in"
+           |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:MyModule>b.foo"
+           |CHECK-NEXT: "tag":"out_bar"
+           |
+           |CHECK:      public module Top :
+           |CHECK:        connect i.a, foo
+           |CHECK:        connect bar.bar, i.b.foo
+           |""".stripMargin
       )
-      val lines = List(
-        "connect i.a, foo",
-        "connect bar.bar, i.b.foo"
-      )
-      val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
-      val text = chirrtl.serialize
-      for (line <- lines) {
-        text should include(line)
-      }
-      for (e <- expected.map(MarkAnnotation.tupled)) {
-        annos should contain(e)
-      }
     }
 
     it("(7.d): should work with DataView + implicit conversion") {
@@ -898,23 +1038,19 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         i.ports <> Seq(foo, bar)
         mark(i.ports, "i.ports")
       }
-      val expected = List(
-        // Not 1:1 so will get split out
-        "~Top|Top/i:MyModule>a".rt -> "i.ports",
-        "~Top|Top/i:MyModule>b".rt -> "i.ports"
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:MyModule>a"
+           |CHECK-NEXT: "tag":"i.ports"
+           |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:MyModule>b"
+           |CHECK-NEXT: "tag":"i.ports"
+           |
+           |CHECK:      public module Top :
+           |CHECK:        connect i.a, foo
+           |CHECK:        connect bar, i.b
+           |""".stripMargin
       )
-      val lines = List(
-        "connect i.a, foo",
-        "connect bar, i.b"
-      )
-      val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
-      val text = chirrtl.serialize
-      for (line <- lines) {
-        text should include(line)
-      }
-      for (e <- expected.map(MarkAnnotation.tupled)) {
-        annos should contain(e)
-      }
     }
 
     it("(7.e): should work on Views of BlackBoxes") {
@@ -940,25 +1076,25 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         mark(i.innerView.in, "i.innerView.in")
         mark(outerView.out, "outerView.out")
       }
-      val inst = "~Top|Top/i:MyBlackBox"
-      val expectedAnnos = List(
-        s"$inst>in".rt -> "i.foo",
-        s"$inst>out".rt -> "i.bar",
-        s"$inst>in".rt -> "i.innerView.in",
-        s"$inst>out".rt -> "outerView.out"
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:MyBlackBox>in"
+           |CHECK-NEXT: "tag":"i.foo"
+           |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:MyBlackBox>out"
+           |CHECK-NEXT: "tag":"i.bar"
+           |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:MyBlackBox>in"
+           |CHECK-NEXT: "tag":"i.innerView.in"
+           |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:MyBlackBox>out"
+           |CHECK-NEXT: "tag":"outerView.out"
+           |
+           |CHECK:      public module Top :
+           |CHECK:        connect i.in, foo
+           |CHECK:        connect bar, i.out
+           |""".stripMargin
       )
-      val expectedLines = List(
-        "connect i.in, foo",
-        "connect bar, i.out"
-      )
-      val (chirrtl, annos) = getFirrtlAndAnnos(new Top)
-      val text = chirrtl.serialize
-      for (line <- expectedLines) {
-        text should include(line)
-      }
-      for (e <- expectedAnnos.map(MarkAnnotation.tupled)) {
-        annos should contain(e)
-      }
     }
   }
 
@@ -977,14 +1113,15 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val bun = d.c("io").asInstanceOf[Record]
         mark(bun.elements("out"), "c.io.out")
       }
-      val expected = List(
-        "~Top|HasCMAR/c:AggregatePortModule>io".rt -> "c.io",
-        "~Top|HasCMAR/c:AggregatePortModule>io.out".rt -> "c.io.out"
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|HasCMAR/c:AggregatePortModule>io"
+           |CHECK-NEXT: "tag":"c.io"
+           |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|HasCMAR/c:AggregatePortModule>io.out"
+           |CHECK-NEXT: "tag":"c.io.out"
+           |""".stripMargin
       )
-      val (_, annos) = getFirrtlAndAnnos(new Top)
-      for (e <- expected.map(MarkAnnotation.tupled)) {
-        annos should contain(e)
-      }
     }
     it("(8.b): it should support @public on a CMAR Record in Instances") {
       @instantiable
@@ -1000,14 +1137,15 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val bun = i.c("io").asInstanceOf[Record]
         mark(bun.elements("out"), "i.c.io.out")
       }
-      val expected = List(
-        "~Top|Top/i:HasCMAR/c:AggregatePortModule>io".rt -> "i.c.io",
-        "~Top|Top/i:HasCMAR/c:AggregatePortModule>io.out".rt -> "i.c.io.out"
+      generateFirrtlAndFileCheck(new Top)(
+        """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:HasCMAR/c:AggregatePortModule>io"
+           |CHECK-NEXT: "tag":"i.c.io"
+           |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+           |CHECK-NEXT: "target":"~Top|Top/i:HasCMAR/c:AggregatePortModule>io.out"
+           |CHECK-NEXT: "tag":"i.c.io.out"
+           |""".stripMargin
       )
-      val (_, annos) = getFirrtlAndAnnos(new Top)
-      for (e <- expected.map(MarkAnnotation.tupled)) {
-        annos should contain(e)
-      }
     }
   }
   describe("(9) isA[..]") {
@@ -1016,7 +1154,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val d = Definition(new AddOne)
         require(d.isA[AddOne])
       }
-      getFirrtlAndAnnos(new Top)
+      ChiselStage.emitCHIRRTL(new Top)
     }
     it("(9.b): it should not work on inner classes") {
       class InnerClass extends Module
@@ -1025,7 +1163,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         "require(d.isA[Module])" should compile // ensures that the test below is checking something useful
         "require(d.isA[InnerClass])" shouldNot compile
       }
-      getFirrtlAndAnnos(new Top)
+      ChiselStage.emitCHIRRTL(new Top)
     }
     it("(9.c): it should work on super classes") {
       class InnerClass extends Module
@@ -1033,7 +1171,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val d = Definition(new InnerClass)
         require(d.isA[Module])
       }
-      getFirrtlAndAnnos(new Top)
+      ChiselStage.emitCHIRRTL(new Top)
     }
     it("(9.d): it should work after casts") {
       class Top extends Module {
@@ -1048,7 +1186,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val i2: Instance[Module] = Instance(Definition(new AddOne))
         require(i2.isA[AddOne])
       }
-      getFirrtlAndAnnos(new Top)
+      ChiselStage.emitCHIRRTL(new Top)
     }
     it("(9.e): it should ignore type parameters (even though it would be nice if it didn't)") {
       class Top extends Module {
@@ -1058,7 +1196,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         require(d0.isA[HasTypeParams[UInt]])
         require(!d0.isA[HasBlah])
       }
-      getFirrtlAndAnnos(new Top)
+      ChiselStage.emitCHIRRTL(new Top)
     }
   }
 
@@ -1316,7 +1454,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         inst0.suggestName("potato")
         inst1.suggestName("potato")
       }
-      val chirrtl = emitCHIRRTL(new Top)
+      val chirrtl = ChiselStage.emitCHIRRTL(new Top)
       chirrtl should include("inst potato of AddOne")
       chirrtl should include("inst potato_1 of AddOne_1")
     }
@@ -1324,7 +1462,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       class Top extends Module {
         val k = Instance(Definition(new AddOne)).suggestName("potato")
       }
-      val chirrtl = emitCHIRRTL(new Top)
+      val chirrtl = ChiselStage.emitCHIRRTL(new Top)
       chirrtl should include("inst potato of AddOne")
     }
     it("11.3 suggestName with sanitization") {
@@ -1335,7 +1473,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         inst0.suggestName("potato")
         inst1.suggestName("potato")
       }
-      val chirrtl = emitCHIRRTL(new Top)
+      val chirrtl = ChiselStage.emitCHIRRTL(new Top)
       chirrtl should include("inst potato of AddOne")
       chirrtl should include("inst potato_1 of AddOne")
     }
@@ -1345,7 +1483,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         val inst0 = Module(new AddOne()).suggestName("potato")
         val inst1 = Instance(Definition(new AddOne)).suggestName("potato")
       }
-      val chirrtl = emitCHIRRTL(new Top)
+      val chirrtl = ChiselStage.emitCHIRRTL(new Top)
       chirrtl should include("wire potato : UInt<8>")
       chirrtl should include("inst potato_1 of AddOne")
       chirrtl should include("inst potato_2 of AddOne_1")
