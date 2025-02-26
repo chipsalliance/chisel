@@ -4,7 +4,6 @@ package chisel3.testers
 
 import chisel3.RawModule
 import chisel3.stage.ChiselGeneratorAnnotation
-import chisel3.testers.TesterDriver.Backend
 import chisel3.experimental.SourceInfo
 import chisel3.internal.{Builder, Warning, WarningID}
 import circt.stage.ChiselStage
@@ -15,9 +14,6 @@ import firrtl.stage.FirrtlCircuitAnnotation
 import firrtl.util.BackendCompilationUtilities.createTestDirectory
 
 object TestUtils {
-  // Useful because TesterDriver.Backend is chisel3 package private
-  def containsBackend(annos: AnnotationSeq): Boolean =
-    annos.collectFirst { case b: Backend => b }.isDefined
 
   /** Helper for checking warnings, not really valid in normal Chisel */
   def warn(id: Int, msg: String)(implicit sourceInfo: SourceInfo): Unit = Builder.warning(Warning(WarningID(1), msg))
