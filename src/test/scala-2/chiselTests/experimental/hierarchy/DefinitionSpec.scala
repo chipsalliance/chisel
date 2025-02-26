@@ -7,11 +7,13 @@ import chisel3._
 import chisel3.experimental.BaseModule
 import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance}
 import circt.stage.ChiselStage
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 
 // TODO/Notes
 // - In backport, clock/reset are not automatically assigned. I think this is fixed in 3.5
 // - CircuitTarget for annotations on the definition are wrong - needs to be fixed.
-class DefinitionSpec extends ChiselFunSpec with FileCheck {
+class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
   import Annotations._
   import Examples._
   describe("(0): Definition instantiation") {
@@ -300,8 +302,16 @@ class DefinitionSpec extends ChiselFunSpec with FileCheck {
     }
   }
   describe("(2): Annotations on designs not in the same chisel compilation") {
+    // Extract the built `AddTwo` module for use in other tests.
+    val first = {
+      var result: AddTwo = null
+      ChiselStage.emitCHIRRTL {
+        result = new AddTwo
+        result
+      }
+      result
+    }
     it("(2.a): should work on an innerWire, marked in a different compilation") {
-      val first = elaborateAndGetModule(new AddTwo)
       class Top(x: AddTwo) extends Module {
         val parent = Definition(new ViewerParent(x, false, true))
       }
@@ -313,7 +323,6 @@ class DefinitionSpec extends ChiselFunSpec with FileCheck {
       )
     }
     it("(2.b): should work on an innerWire, marked in a different compilation, in instanced instantiable") {
-      val first = elaborateAndGetModule(new AddTwo)
       class Top(x: AddTwo) extends Module {
         val parent = Definition(new ViewerParent(x, true, false))
       }
@@ -325,7 +334,6 @@ class DefinitionSpec extends ChiselFunSpec with FileCheck {
       )
     }
     it("(2.c): should work on an innerWire, marked in a different compilation, in instanced module") {
-      val first = elaborateAndGetModule(new AddTwo)
       class Top(x: AddTwo) extends Module {
         val parent = Definition(new ViewerParent(x, false, false))
         mark(parent.viewer.x.i0.innerWire, "third")
