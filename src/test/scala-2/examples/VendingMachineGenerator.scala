@@ -82,7 +82,8 @@ class ParameterizedVendingMachineTester(mod: => ParameterizedVendingMachine, tes
   // Inputs and expected results
   // Do random testing
   private val _rand = scala.util.Random
-  val inputs:   Seq[Option[Coin]] = Seq.fill(testLength)(coins.lift(_rand.nextInt(coins.size + 1)))
+  val inputs: Seq[Option[Coin]] = Seq.fill(testLength)(coins.lift(_rand.nextInt(coins.size + 1))) :+ None
+
   val expected: Seq[Boolean] = getExpectedResults(inputs, dut.sodaCost)
 
   val inputVec: Vec[UInt] = VecInit(inputs.map {
@@ -95,6 +96,11 @@ class ParameterizedVendingMachineTester(mod: => ParameterizedVendingMachine, tes
   when(done) { stop() }
 
   dut.io.inputs := inputVec(idx).asBools
+
+  // There must not be an out-of-bounds index.  If we OOB, then the check below will be wrong.
+  assert(idx < expectedVec.size.U, "There was an out-of-bounds index")
+
+  // Check that we dispense a soda as expected.
   assert(dut.io.dispense === expectedVec(idx))
 }
 
