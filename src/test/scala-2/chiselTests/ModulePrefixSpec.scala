@@ -5,6 +5,7 @@ package chiselTests
 import chisel3._
 import chisel3.experimental.ExtModule
 import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance, Instantiate}
+import chisel3.stage.{ChiselGeneratorAnnotation, CircuitSerializationAnnotation}
 import circt.stage.ChiselStage.emitCHIRRTL
 import circt.stage.ChiselStage
 import chisel3.util.SRAM
@@ -398,11 +399,27 @@ class ModulePrefixSpec extends ChiselFlatSpec with Utils with FileCheck {
     class Top extends RawModule {
       val bar = Module(new Bar)
     }
-    val (_, annos) = getFirrtlAndAnnos(new Top)
-    val dedupGroups = annos.collect { case DedupGroupAnnotation(target, group) =>
-      target.module -> group
-    }
-    dedupGroups should be(Seq("Outer_Inner_Foo" -> "Outer_Inner_Foo", "Outer_Bar" -> "Outer_Bar", "Top" -> "Top"))
+
+    // TODO: Due to a known issue [1], `ChiselStage.emitCHIRRTL` cannot be used
+    // for this test and, instead, we need to hand-roll the construction of a
+    // FIRRTL output string with annotations.  Change this once the issue is
+    // fixed.
+    //
+    // [1]: https://github.com/chipsalliance/chisel/issues/4730
+    val annotations =
+      new ChiselStage().execute(Array("--target", "chirrtl"), Seq(ChiselGeneratorAnnotation(() => new Top)))
+    val firrtl = annotations.collectFirst { case a: CircuitSerializationAnnotation => a }.get
+      .emitLazily(annotations.collect { case a: DedupGroupAnnotation => a })
+      .mkString
+    fileCheckString(firrtl)(
+      """|CHECK:      "target":"~Top|Outer_Inner_Foo"
+         |CHECK-NEXT: "group":"Outer_Inner_Foo"
+         |CHECK:      "target":"~Top|Outer_Bar"
+         |CHECK-NEXT: "group":"Outer_Bar"
+         |CHECK:      "target":"~Top|Top"
+         |CHECK-NEXT: "group":"Top"
+         |""".stripMargin
+    )
   }
 
 }

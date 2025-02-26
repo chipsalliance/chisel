@@ -5,7 +5,7 @@ package chiselTests.experimental
 import chisel3._
 import chisel3.experimental.dataview._
 import chisel3.util._
-import chiselTests.ChiselFlatSpec
+import chiselTests.{ChiselFlatSpec, FileCheck}
 import firrtl.transforms.DontTouchAnnotation
 
 // Let's put it all together!
@@ -45,12 +45,12 @@ object DataViewIntegrationSpec {
   }
 }
 
-class DataViewIntegrationSpec extends ChiselFlatSpec {
+class DataViewIntegrationSpec extends ChiselFlatSpec with FileCheck {
   import DataViewIntegrationSpec.MyModule
 
   "Users" should "be able to view and annotate Modules" in {
-    val (_, annos) = getFirrtlAndAnnos(new MyModule)
-    val ts = annos.collect { case DontTouchAnnotation(t) => t.serialize }
-    ts should equal(Seq("~MyModule|Queue4_UInt8>enq_ptr_value"))
+    generateFirrtlAndFileCheck(new MyModule)(
+      """CHECK: "target":"~MyModule|Queue4_UInt8>enq_ptr_value""""
+    )
   }
 }
