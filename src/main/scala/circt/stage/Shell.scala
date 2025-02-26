@@ -6,11 +6,13 @@ import chisel3.stage.{
   ChiselCircuitAnnotation,
   ChiselGeneratorAnnotation,
   CircuitSerializationAnnotation,
+  IncludeUtilMetadata,
   PrintFullStackTraceAnnotation,
   RemapLayer,
   SourceRootAnnotation,
   ThrowOnFirstErrorAnnotation,
   UseLegacyWidthBehavior,
+  UseSRAMBlackbox,
   WarningConfigurationAnnotation,
   WarningConfigurationFileAnnotation,
   WarningsAsErrorsAnnotation
@@ -44,7 +46,9 @@ trait CLI extends BareShell { this: BareShell =>
     WarningConfigurationFileAnnotation,
     SourceRootAnnotation,
     DumpFir,
-    RemapLayer
+    RemapLayer,
+    IncludeUtilMetadata,
+    UseSRAMBlackbox
   ).foreach(_.addOptions(parser))
 
   parser.note("CIRCT (MLIR FIRRTL Compiler) options")
