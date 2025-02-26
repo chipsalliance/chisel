@@ -34,23 +34,6 @@ import chisel3.reflect.DataMirror
 /** Common utility functions for Chisel unit tests. */
 sealed trait ChiselRunners extends Assertions {
 
-  /** Compiles a Chisel Module to Verilog
-    * NOTE: This uses the "test_run_dir" as the default directory for generated code.
-    * @param t the generator for the module
-    * @return the Verilog code as a string.
-    */
-  def compile(t: => RawModule): String = {
-    (new ChiselStage)
-      .execute(
-        Array("--target-dir", BackendCompilationUtilities.createTestDirectory(this.getClass.getSimpleName).toString),
-        Seq(ChiselGeneratorAnnotation(() => t), CIRCTTargetAnnotation(CIRCTTarget.SystemVerilog))
-      )
-      .collectFirst { case EmittedVerilogCircuitAnnotation(a) =>
-        a.value
-      }
-      .getOrElse(fail("No Verilog circuit was emitted by the FIRRTL compiler!"))
-  }
-
   def elaborateAndGetModule[A <: RawModule](t: => A): A = {
     var res: Any = null
     ChiselStage.emitCHIRRTL {

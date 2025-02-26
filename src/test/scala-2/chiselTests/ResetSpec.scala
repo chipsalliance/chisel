@@ -62,7 +62,7 @@ class ResetSpec extends ChiselFlatSpec with Utils {
   }
 
   it should "allow writing modules that are reset agnostic" in {
-    val sync = compile(new Module {
+    val sync = ChiselStage.emitSystemVerilog(new Module {
       val io = IO(new Bundle {
         val out = Output(UInt(8.W))
       })
@@ -74,7 +74,7 @@ class ResetSpec extends ChiselFlatSpec with Utils {
     })
     sync should include("always @(posedge clk)")
 
-    val async = compile(new Module {
+    val async = ChiselStage.emitSystemVerilog(new Module {
       val io = IO(new Bundle {
         val out = Output(UInt(8.W))
       })
