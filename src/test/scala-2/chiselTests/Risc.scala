@@ -2,9 +2,11 @@
 
 package chiselTests
 
-import circt.stage.ChiselStage
 import chisel3._
-import chisel3.util._
+import chisel3.util.{is, switch, Enum}
+import circt.stage.ChiselStage
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.propspec.AnyPropSpec
 
 class Risc extends Module {
   val io = IO(new Bundle {
@@ -113,7 +115,7 @@ class RiscTester(c: Risc) extends Tester(c) {
 }
  */
 
-class RiscSpec extends ChiselPropSpec {
+class RiscSpec extends AnyPropSpec with Matchers {
 
   property("Risc should elaborate") {
     ChiselStage.emitCHIRRTL { new Risc }

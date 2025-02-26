@@ -4,6 +4,8 @@ package chiselTests
 
 import chisel3._
 import circt.stage.ChiselStage
+import org.scalatest.propspec.AnyPropSpec
+import org.scalatest.matchers.should.Matchers
 
 class MemorySearch extends Module {
   val io = IO(new Bundle {
@@ -48,7 +50,7 @@ class MemorySearchTester(c: MemorySearch) extends Tester(c) {
 }
  */
 
-class MemorySearchSpec extends ChiselPropSpec {
+class MemorySearchSpec extends AnyPropSpec with Matchers {
 
   property("MemorySearch should elaborate") {
     ChiselStage.emitCHIRRTL { new EnableShiftRegister }

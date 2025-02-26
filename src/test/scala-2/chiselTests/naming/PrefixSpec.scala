@@ -5,10 +5,12 @@ package chiselTests.naming
 import chisel3._
 import chisel3.aop.Select
 import chisel3.experimental.{noPrefix, prefix, skipPrefix, AffectsChiselPrefix}
-import chiselTests.{ChiselPropSpec, FileCheck, Utils}
+import chiselTests.{FileCheck, Utils}
 import circt.stage.ChiselStage
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.propspec.AnyPropSpec
 
-class PrefixSpec extends ChiselPropSpec with FileCheck with Utils {
+class PrefixSpec extends AnyPropSpec with Matchers with FileCheck with Utils {
   implicit val minimumMajorVersion: Int = 12
   property("Scala plugin should interact with prefixing so last plugin name wins?") {
     generateFirrtlAndFileCheck {

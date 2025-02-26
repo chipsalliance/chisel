@@ -5,6 +5,7 @@ package chiselTests
 import chisel3._
 import circt.stage.ChiselStage
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.propspec.AnyPropSpec
 
 class IOCSimpleIO extends Bundle {
   val in = Input(UInt(32.W))
@@ -35,7 +36,7 @@ class IOCModuleWire extends Module {
   io.out := inc.out
 }
 
-class IOCompatibilitySpec extends ChiselPropSpec with Matchers with Utils {
+class IOCompatibilitySpec extends AnyPropSpec with Matchers with Utils {
 
   property("IOCModuleVec should elaborate") {
     ChiselStage.emitCHIRRTL { new IOCModuleVec(2) }

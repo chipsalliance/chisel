@@ -2,12 +2,11 @@
 
 package chiselTests
 
-import org.scalatest._
-import org.scalatest.matchers.should.Matchers
 import chisel3._
 import chisel3.experimental.{ExtModule, OpaqueType}
-
 import circt.stage.ChiselStage
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.propspec.AnyPropSpec
 import scala.collection.immutable.SeqMap
 
 class DirectionedBundle extends Bundle {
@@ -44,7 +43,7 @@ class TopDirectionOutput extends Module {
   io.out := 117.U
 }
 
-class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
+class DirectionSpec extends AnyPropSpec with Matchers with Utils {
 
   // TODO: In Chisel3 these are actually FIRRTL errors. Remove from tests?
 

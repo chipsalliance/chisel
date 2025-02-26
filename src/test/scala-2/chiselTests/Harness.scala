@@ -2,9 +2,12 @@
 
 package chiselTests
 
-import java.io.File
 import firrtl.util.BackendCompilationUtilities._
-class HarnessSpec extends ChiselPropSpec {
+import java.io.File
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.propspec.AnyPropSpec
+
+class HarnessSpec extends AnyPropSpec with Matchers {
 
   def makeTrivialVerilog: (File => File) = makeHarness(
     (prefix: String) => s"""

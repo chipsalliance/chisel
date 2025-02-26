@@ -2,9 +2,11 @@
 
 package chiselTests
 
-import circt.stage.ChiselStage
 import chisel3._
-import chisel3.util._
+import chisel3.util.log2Ceil
+import circt.stage.ChiselStage
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.propspec.AnyPropSpec
 
 class ChiselStack(val depth: Int) extends Module {
   val io = IO(new Bundle {
@@ -67,7 +69,7 @@ class StackTester(c: Stack) extends Tester(c) {
 }
  */
 
-class StackSpec extends ChiselPropSpec {
+class StackSpec extends AnyPropSpec with Matchers {
 
   property("Stack should elaborate") {
     ChiselStage.emitCHIRRTL { new ChiselStack(2) }

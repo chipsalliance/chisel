@@ -2,7 +2,10 @@
 
 package chiselTests
 
-class Math extends ChiselPropSpec {
+import org.scalatest.propspec.AnyPropSpec
+import org.scalatest.matchers.should.Matchers
+
+class Math extends AnyPropSpec with Matchers with PropertyUtils {
   import chisel3.util._
 
   property("unsignedBitLength is computed correctly") {

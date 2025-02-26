@@ -2,10 +2,11 @@
 
 package chiselTests
 
-import circt.stage.ChiselStage
-import circt.stage.ChiselStage.emitCHIRRTL
 import chisel3._
-import chisel3.util._
+import chisel3.util.{Counter, DecoupledIO}
+import circt.stage.ChiselStage
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.propspec.AnyPropSpec
 
 class IOTesterModFill(vecSize: Int) extends Module {
   // This should generate a BindingException when we attempt to wire up the Vec.fill elements
@@ -54,7 +55,7 @@ class ReduceTreeTester extends Module {
   dut.io := DontCare
 }
 
-class VecSpec extends ChiselPropSpec with Utils {
+class VecSpec extends AnyPropSpec with Matchers with Utils {
 
   private def uint(value: BigInt): String = uint(value, value.bitLength.max(1))
   private def uint(value: BigInt, width: Int): String =
@@ -63,7 +64,7 @@ class VecSpec extends ChiselPropSpec with Utils {
   property("Vecs should be assignable") {
     val values = (0 until 10).toList
     val width = 4
-    val chirrtl = emitCHIRRTL(new RawModule {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
       val v = VecInit(values.map(_.U(width.W)))
     })
     for (v <- values) {
@@ -75,7 +76,7 @@ class VecSpec extends ChiselPropSpec with Utils {
     val values = (0 until 10).toList
     val width = 4
 
-    val chirrtl = emitCHIRRTL(new RawModule {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
       val out = IO(Output(Vec(values.size, UInt(width.W))))
       val v = VecInit(values.map(_.U(width.W)))
       out := v
@@ -93,7 +94,7 @@ class VecSpec extends ChiselPropSpec with Utils {
   property("VecInit should tabulate correctly") {
     val n = 4
     val w = 3
-    val chirrtl = emitCHIRRTL(new RawModule {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
       val x = VecInit(Seq.tabulate(n) { i => (i * 2).asUInt })
       val u = VecInit.tabulate(n)(i => (i * 2).asUInt)
     })
@@ -109,7 +110,7 @@ class VecSpec extends ChiselPropSpec with Utils {
     val n = 2
     val m = 3
     val w = 2
-    val chirrtl = emitCHIRRTL(new RawModule {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
       val v = VecInit.tabulate(n, m) { case (i, j) => (i + j).asUInt }
     })
     chirrtl should include(s"wire v : UInt<$w>[$m][$n]")
@@ -125,7 +126,7 @@ class VecSpec extends ChiselPropSpec with Utils {
     val m = 3
     val o = 2
     val w = 3
-    val chirrtl = emitCHIRRTL(new RawModule {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
       val v = VecInit.tabulate(n, m, o) { case (i, j, k) => (i + j + k).asUInt }
     })
     chirrtl should include(s"wire v : UInt<$w>[$o][$m][$n]")
@@ -142,7 +143,7 @@ class VecSpec extends ChiselPropSpec with Utils {
     val n = 4
     val value = 13
     val w = 4
-    val chirrtl = emitCHIRRTL(new RawModule {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
       val x = VecInit(Seq.fill(n)(value.U))
       val u = VecInit.fill(n)(value.U)
     })
@@ -156,7 +157,7 @@ class VecSpec extends ChiselPropSpec with Utils {
   }
 
   property("VecInit.fill should support size 0 Vecs") {
-    val chirrtl = emitCHIRRTL(new RawModule {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
       val out = IO(Output(Vec(0, UInt(8.W))))
       val u = VecInit.fill(0)(8.U)
       out := u
@@ -169,7 +170,7 @@ class VecSpec extends ChiselPropSpec with Utils {
     val m = 3
     val value = 7
     val w = 3
-    val chirrtl = emitCHIRRTL(new RawModule {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
       val v = VecInit.fill(n, m)(value.asUInt)
     })
     chirrtl should include(s"wire v : UInt<$w>[$m][$n]")
@@ -187,7 +188,7 @@ class VecSpec extends ChiselPropSpec with Utils {
     val o = 2
     val value = 11
     val w = 4
-    val chirrtl = emitCHIRRTL(new RawModule {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
       val v = VecInit.fill(n, m, o)(value.asUInt)
     })
     chirrtl should include(s"wire v : UInt<$w>[$o][$m][$n]")
@@ -204,7 +205,7 @@ class VecSpec extends ChiselPropSpec with Utils {
   property("VecInit should support 2D fill bidirectional wire connection") {
     val n = 2
     val m = 3
-    val chirrtl = emitCHIRRTL(new Module {
+    val chirrtl = ChiselStage.emitCHIRRTL(new Module {
       val vec2D = VecInit.fill(n, m) {
         val mod = Module(new PassthroughModule)
         mod.io
@@ -225,7 +226,7 @@ class VecSpec extends ChiselPropSpec with Utils {
     val n = 2
     val m = 3
     val o = 2
-    val chirrtl = emitCHIRRTL(new Module {
+    val chirrtl = ChiselStage.emitCHIRRTL(new Module {
       val vec3D = VecInit.fill(n, m, o) {
         val mod = Module(new PassthroughModule)
         mod.io
@@ -247,7 +248,7 @@ class VecSpec extends ChiselPropSpec with Utils {
   property("VecInit should support 2D tabulate bidirectional wire connection") {
     val n = 2
     val m = 3
-    val chirrtl = emitCHIRRTL(new Module {
+    val chirrtl = ChiselStage.emitCHIRRTL(new Module {
       val mods = Vector.fill(n, m)(Module(new PassthroughModule))
       val vec2D = VecInit.tabulate(n, m) { (i, j) =>
         // Swizzle a bit for fun and profit
@@ -267,7 +268,7 @@ class VecSpec extends ChiselPropSpec with Utils {
     val n = 2
     val m = 3
     val o = 2
-    val chirrtl = emitCHIRRTL(new Module {
+    val chirrtl = ChiselStage.emitCHIRRTL(new Module {
       val mods = Vector.fill(n, m, o)(Module(new PassthroughModule))
       val vec2D = VecInit.tabulate(n, m, o) { (i, j, k) =>
         // Swizzle a bit for fun and profit
@@ -290,7 +291,7 @@ class VecSpec extends ChiselPropSpec with Utils {
       val a = Output(UInt(8.W))
       val b = UInt(8.W)
     }
-    val chirrtl = emitCHIRRTL(new RawModule {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
       val w = VecInit(Seq.fill(2)(0.U.asTypeOf(new MyBundle)))
     })
     chirrtl should include("wire w : { a : UInt<8>, b : UInt<8>}[2]")
@@ -305,7 +306,7 @@ class VecSpec extends ChiselPropSpec with Utils {
   }
 
   property("A Reg of a Vec of a single 1 bit element should compile and work") {
-    val chirrtl = emitCHIRRTL(new Module {
+    val chirrtl = ChiselStage.emitCHIRRTL(new Module {
       val oneBitUnitRegVec = Reg(Vec(1, UInt(1.W)))
       oneBitUnitRegVec(0) := 1.U(1.W)
     })
@@ -315,7 +316,7 @@ class VecSpec extends ChiselPropSpec with Utils {
 
   property("A Vec with zero entries should compile and have zero width") {
 
-    val chirrtl = emitCHIRRTL(new Module {
+    val chirrtl = ChiselStage.emitCHIRRTL(new Module {
       require(Vec(0, Bool()).getWidth == 0)
 
       val bundleWithZeroEntryVec = new Bundle {
@@ -410,7 +411,7 @@ class VecSpec extends ChiselPropSpec with Utils {
   }
 
   property("Vecs should emit static indices when indexing with a literal UInt and not warn based on width") {
-    val (log, chirrtl) = grabLog(emitCHIRRTL(new RawModule {
+    val (log, chirrtl) = grabLog(ChiselStage.emitCHIRRTL(new RawModule {
       val vec = IO(Input(Vec(4, UInt(8.W))))
       val out = IO(Output(UInt(8.W)))
       out := vec(1.U)
@@ -420,7 +421,7 @@ class VecSpec extends ChiselPropSpec with Utils {
   }
 
   property("Vecs should warn on out-of-bounds literal indices") {
-    val (log, chirrtl) = grabLog(emitCHIRRTL(new RawModule {
+    val (log, chirrtl) = grabLog(ChiselStage.emitCHIRRTL(new RawModule {
       val vec = IO(Input(Vec(4, UInt(8.W))))
       val out = IO(Output(UInt(8.W)))
       out := vec(10.U)
@@ -430,7 +431,7 @@ class VecSpec extends ChiselPropSpec with Utils {
   }
 
   property("Vecs should warn on too large dynamic indices") {
-    val (log, _) = grabLog(emitCHIRRTL(new RawModule {
+    val (log, _) = grabLog(ChiselStage.emitCHIRRTL(new RawModule {
       val vec = IO(Input(Vec(7, UInt(8.W))))
       val idx = IO(Input(UInt(8.W)))
       val out = IO(Output(UInt(8.W)))
@@ -440,7 +441,7 @@ class VecSpec extends ChiselPropSpec with Utils {
   }
 
   property("Vecs should warn on too small dynamic indices") {
-    val (log, _) = grabLog(emitCHIRRTL(new RawModule {
+    val (log, _) = grabLog(ChiselStage.emitCHIRRTL(new RawModule {
       val vec = IO(Input(Vec(7, UInt(8.W))))
       val idx = IO(Input(UInt(2.W)))
       val out = IO(Output(UInt(8.W)))
@@ -451,7 +452,7 @@ class VecSpec extends ChiselPropSpec with Utils {
 
   // This will have to be checked in firtool
   property("Vecs should not warn on inferred with dynamic indices") {
-    val (log, _) = grabLog(emitCHIRRTL(new RawModule {
+    val (log, _) = grabLog(ChiselStage.emitCHIRRTL(new RawModule {
       val vec = IO(Input(Vec(7, UInt(8.W))))
       val idx = IO(Input(UInt(2.W)))
       val out = IO(Output(UInt(8.W)))
@@ -462,7 +463,7 @@ class VecSpec extends ChiselPropSpec with Utils {
   }
 
   property("Indexing a size 0 Vec should warn but also emit legal FIRRTL") {
-    val (log, chirrtl) = grabLog(emitCHIRRTL(new RawModule {
+    val (log, chirrtl) = grabLog(ChiselStage.emitCHIRRTL(new RawModule {
       val vec = IO(Input(Vec(0, UInt(8.W))))
       val idx = IO(Input(UInt(2.W)))
       val out = IO(Output(UInt(8.W)))

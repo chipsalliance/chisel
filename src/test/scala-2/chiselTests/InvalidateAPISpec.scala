@@ -5,12 +5,12 @@ package chiselTests
 import chisel3._
 import chisel3.stage.ChiselGeneratorAnnotation
 import chisel3.util.Counter
-import firrtl.util.BackendCompilationUtilities._
 import circt.stage.ChiselStage
-import org.scalatest._
+import firrtl.util.BackendCompilationUtilities._
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.propspec.AnyPropSpec
 
-class InvalidateAPISpec extends ChiselPropSpec with Matchers with Utils {
+class InvalidateAPISpec extends AnyPropSpec with Matchers with Utils {
 
   def myGenerateFirrtl(t: => Module): String = ChiselStage.emitCHIRRTL(t)
   def compileFirrtl(t: => Module): Unit = {

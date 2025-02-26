@@ -9,7 +9,8 @@ import chisel3.stage.ChiselGeneratorAnnotation
 import circt.stage.{CIRCTTarget, CIRCTTargetAnnotation, ChiselStage, FirtoolOption}
 import firrtl.annotations.NoTargetAnnotation
 import firrtl.options.{TargetDirAnnotation, Unserializable}
-
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.propspec.AnyPropSpec
 import scala.io.Source
 
 class SimpleIO extends Bundle {
@@ -84,7 +85,7 @@ class NullModuleWrapper extends Module {
   val child = Module(new ModuleWire)
 }
 
-class ModuleSpec extends ChiselPropSpec with Utils {
+class ModuleSpec extends AnyPropSpec with Matchers with Utils {
 
   property("ModuleVec should elaborate") {
     ChiselStage.emitCHIRRTL { new ModuleVec(2) }
