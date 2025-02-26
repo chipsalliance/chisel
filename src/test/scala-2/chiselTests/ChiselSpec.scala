@@ -256,43 +256,4 @@ trait Utils {
     }
     (baos.toString, ret)
   }
-
-  /** Run some code and rethrow an exception with a specific type if an exception of that type occurs anywhere in the
-    * stack trace.
-    *
-    * This is useful for "extracting" one exception that may be wrapped by other exceptions.
-    *
-    * Example usage:
-    * {{{
-    * a [ChiselException] should be thrownBy extractCause[ChiselException] { /* ... */ }
-    * }}}
-    *
-    * @param thunk some code to run
-    * @tparam A the type of the exception to extract
-    * @return nothing
-    */
-  def extractCause[A <: Throwable: ClassTag](thunk: => Any): Unit = {
-    def unrollCauses(a: Throwable): Seq[Throwable] = a match {
-      case null => Seq.empty
-      case _    => a +: unrollCauses(a.getCause)
-    }
-
-    val exceptions: Seq[_ <: Throwable] =
-      try {
-        thunk
-        Seq.empty
-      } catch {
-        case a: Throwable => unrollCauses(a)
-      }
-
-    exceptions.collectFirst { case a: A => a } match {
-      case Some(a) => throw a
-      case None =>
-        exceptions match {
-          case Nil    => ()
-          case h :: t => throw h
-        }
-    }
-
-  }
 }
