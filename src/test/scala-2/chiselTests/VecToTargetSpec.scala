@@ -4,30 +4,10 @@ package chiselTests
 
 import chisel3._
 import circt.stage.ChiselStage
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 
-trait VecToTargetSpecUtils extends Utils {
-  this: ChiselFunSpec =>
-
-  class Foo extends RawModule {
-    val vec = IO(Input(Vec(4, Bool())))
-
-    // Index a Vec with a Scala literal.
-    val scalaLit = 0
-    val vecSubaccessScalaLit = vec(scalaLit)
-
-    // Index a Vec with a Chisel literal.
-    val chiselLit = 0.U
-    val vecSubaccessChiselLit = vec(chiselLit)
-
-    // Index a Vec with a node.
-    val node = IO(Input(UInt(2.W)))
-    val vecSubaccessNode = vec(node)
-
-    // Put an otherwise un-targetable Vec subaccess into a temp.
-    val vecSubaccessTmp = WireInit(vecSubaccessNode)
-  }
-
-  val expectedError = "You cannot target Vec subaccess:"
+class VecToTargetSpec extends AnyFunSpec with Matchers {
 
   def conversionSucceeds(data: InstanceId) = {
     describe(".toTarget") {
@@ -60,9 +40,28 @@ trait VecToTargetSpecUtils extends Utils {
       }
     }
   }
-}
 
-class VecToTargetSpec extends ChiselFunSpec with VecToTargetSpecUtils {
+  class Foo extends RawModule {
+    val vec = IO(Input(Vec(4, Bool())))
+
+    // Index a Vec with a Scala literal.
+    val scalaLit = 0
+    val vecSubaccessScalaLit = vec(scalaLit)
+
+    // Index a Vec with a Chisel literal.
+    val chiselLit = 0.U
+    val vecSubaccessChiselLit = vec(chiselLit)
+
+    // Index a Vec with a node.
+    val node = IO(Input(UInt(2.W)))
+    val vecSubaccessNode = vec(node)
+
+    // Put an otherwise un-targetable Vec subaccess into a temp.
+    val vecSubaccessTmp = WireInit(vecSubaccessNode)
+  }
+
+  val expectedError = "You cannot target Vec subaccess:"
+
   describe("Vec subaccess") {
     var foo: Foo = null
     ChiselStage.emitCHIRRTL { foo = new Foo; foo }

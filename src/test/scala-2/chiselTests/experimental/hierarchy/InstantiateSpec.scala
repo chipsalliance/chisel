@@ -9,6 +9,8 @@ import chisel3.properties._
 import chisel3.experimental.hierarchy._
 import circt.stage.ChiselStage.convert
 import chisel3.experimental.{ExtModule, IntrinsicModule, SourceLine}
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 
 // Note, the instantiable classes must not be inner classes because the materialized WeakTypeTags
 // will be different and they will not give the same hashCode when looking up the Definition in the
@@ -184,7 +186,7 @@ class ParameterizedReset(hasAsyncNotSyncReset: Boolean) extends Module {
   override def resetType = if (hasAsyncNotSyncReset) Module.ResetType.Asynchronous else Module.ResetType.Synchronous
 }
 
-class InstantiateSpec extends ChiselFunSpec with Utils {
+class InstantiateSpec extends AnyFunSpec with Matchers with Utils {
 
   import InstantiateSpec._
 

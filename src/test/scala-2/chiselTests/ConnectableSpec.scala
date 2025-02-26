@@ -2,16 +2,15 @@
 
 package chiselTests
 
-import org.scalatest._
 import chisel3._
-import chisel3.experimental.Analog
+import chisel3.experimental.{Analog, OpaqueType}
 import chisel3.experimental.BundleLiterals._
 import chisel3.experimental.VecLiterals._
-import chisel3.testers.BasicTester
-import chisel3.experimental.OpaqueType
 import chisel3.reflect.DataMirror
-
+import chisel3.testers.BasicTester
 import circt.stage.ChiselStage
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 import scala.collection.immutable.SeqMap
 
 object ConnectableSpec {
@@ -103,7 +102,7 @@ object ConnectableSpec {
 
 }
 
-class ConnectableSpec extends ChiselFunSpec with Utils {
+class ConnectableSpec extends AnyFunSpec with Matchers with Utils {
   import ConnectableSpec._
 
   def testCheck(firrtl: String, matches: Seq[String], nonMatches: Seq[String]): String = {

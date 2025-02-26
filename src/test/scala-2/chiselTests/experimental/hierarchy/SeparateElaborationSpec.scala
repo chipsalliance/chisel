@@ -2,22 +2,22 @@
 
 package chiselTests.experimental.hierarchy
 
-import chiselTests.ChiselFunSpec
 import chisel3._
 import chisel3.aop.Select
 import chisel3.experimental.BaseModule
-import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation, DesignAnnotation}
-import chisel3.experimental.hierarchy.{Definition, Instance}
 import chisel3.experimental.hierarchy.core.ImportDefinitionAnnotation
+import chisel3.experimental.hierarchy.{Definition, Instance}
+import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation, DesignAnnotation}
 import circt.stage.{CIRCTTarget, CIRCTTargetAnnotation, ChiselStage}
 import firrtl.AnnotationSeq
 import firrtl.util.BackendCompilationUtilities.createTestDirectory
-
 import java.nio.file.Paths
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 import scala.annotation.nowarn
 import scala.io.Source
 
-class SeparateElaborationSpec extends ChiselFunSpec with Utils {
+class SeparateElaborationSpec extends AnyFunSpec with Matchers with Utils {
   import Examples._
 
   /** Return a [[DesignAnnotation]] from a list of annotations. */
