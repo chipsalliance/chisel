@@ -199,9 +199,6 @@ trait PropertyUtils extends ScalaCheckPropertyChecks {
 
 }
 
-/** Spec base class for property-based testers. */
-abstract class ChiselPropSpec extends AnyPropSpec with PropertyUtils with Matchers
-
 trait Utils {
 
   /** Run some Scala thunk and return STDOUT and STDERR as strings.
