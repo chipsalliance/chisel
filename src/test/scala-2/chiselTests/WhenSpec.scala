@@ -5,6 +5,7 @@ package chiselTests
 import chisel3._
 import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.RunUntilFinished
+import chisel3.testing.scalatest.FileCheck
 import chisel3.util.Counter
 import chisel3.experimental.{SourceInfo, SourceLine}
 import circt.stage.ChiselStage
@@ -131,7 +132,7 @@ class WhenCondTester extends Module {
   when(done) { stop() }
 }
 
-class WhenSpec extends AnyFlatSpec with Matchers with ChiselSim {
+class WhenSpec extends AnyFlatSpec with Matchers with ChiselSim with FileCheck {
   "When, elsewhen, and otherwise with orthogonal conditions" should "work" in {
     simulate(new WhenTester)(RunUntilFinished(5))
   }
@@ -212,6 +213,24 @@ class WhenSpec extends AnyFlatSpec with Matchers with ChiselSim {
     val msg =
       "'Top.foo_w: Wire[UInt<8>]' has escaped the scope of the block (@[Foo.scala:12:3]) in which it was constructed."
     e.getMessage should include(msg)
+  }
+
+  "Whens with empty clauses" should "emit an indented skip" in {
+    class Top extends Module {
+      val cond = IO(Input(Bool()))
+      val out = IO(Output(UInt(8.W)))
+      when(cond) {}
+      out := 1.U
+    }
+    // Strict check so we can match the exact location of the skip
+    ChiselStage
+      .emitCHIRRTL(new Top)
+      .fileCheck("--strict-whitespace", "--match-full-lines")(
+        """|     CHECK:    when cond : @{{.*}}
+           |CHECK-NEXT:      skip
+           |CHECK-NEXT:    connect out, UInt<1>(0h1) @{{.*}}
+           |""".stripMargin
+      )
   }
 
   "Whens with empty else clauses" should "not emit the else clause" in {

@@ -384,23 +384,14 @@ class DirectionSpec extends AnyPropSpec with Matchers {
       assert(DataMirror.directionOf(vecOutputFlipped(index).b) == Direction.Output)
     }
 
-    val emitted: String = ChiselStage.emitCHIRRTL(new MyModule)
-    val firrtl:  String = ChiselStage.convert(new MyModule).serialize
+    val s: String = ChiselStage.emitCHIRRTL(new MyModule)
 
-    // Check that emitted directions are correct.
-    Seq(emitted, firrtl).foreach { o =>
-      {
-        // Chisel Emitter formats spacing a little differently than the
-        // FIRRTL Emitter :-(
-        val s = o.replace("{a", "{ a")
-        assert(s.contains("input inputVec : { a : UInt<1>, b : UInt<1>}[2]"))
-        assert(s.contains("input vecInput : { a : UInt<1>, b : UInt<1>}[2]"))
-        assert(s.contains("input vecInputFlipped : { a : UInt<1>, b : UInt<1>}[2]"))
-        assert(s.contains("output outputVec : { a : UInt<1>, b : UInt<1>}[2]"))
-        assert(s.contains("output vecOutput : { a : UInt<1>, b : UInt<1>}[2]"))
-        assert(s.contains("output vecOutputFlipped : { a : UInt<1>, b : UInt<1>}[2]"))
-      }
-    }
+    assert(s.contains("input inputVec : { a : UInt<1>, b : UInt<1>}[2]"))
+    assert(s.contains("input vecInput : { a : UInt<1>, b : UInt<1>}[2]"))
+    assert(s.contains("input vecInputFlipped : { a : UInt<1>, b : UInt<1>}[2]"))
+    assert(s.contains("output outputVec : { a : UInt<1>, b : UInt<1>}[2]"))
+    assert(s.contains("output vecOutput : { a : UInt<1>, b : UInt<1>}[2]"))
+    assert(s.contains("output vecOutputFlipped : { a : UInt<1>, b : UInt<1>}[2]"))
   }
 
   property("Using OpaqueTypes and Flipped together should calculate directions properly") {

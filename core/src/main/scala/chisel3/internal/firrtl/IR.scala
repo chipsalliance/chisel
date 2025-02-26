@@ -154,7 +154,7 @@ private[chisel3] object ir {
   }
 
   case class ULit(n: BigInt, w: Width) extends LitArg(n, w) {
-    def name:     String = "UInt" + width + "(0h0" + num.toString(16) + ")"
+    def name:     String = "UInt" + width + "(0h" + num.toString(16) + ")"
     def minWidth: Int = (if (w.known) 0 else 1).max(n.bitLength)
 
     def cloneWithWidth(newWidth: Width): this.type = {
