@@ -270,9 +270,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
       printf(cf"This should error out for sure because of % - it should be %%")
     }
     a[java.util.UnknownFormatConversionException] should be thrownBy {
-      extractCause[java.util.UnknownFormatConversionException] {
-        ChiselStage.emitCHIRRTL { new MyModule }
-      }
+      ChiselStage.emitCHIRRTL { new MyModule }
     }
   }
 
@@ -295,18 +293,14 @@ class PrintableSpec extends AnyFlatSpec with Matchers with Utils {
       printf(cf"%")
     }
     a[java.util.UnknownFormatConversionException] should be thrownBy {
-      extractCause[java.util.UnknownFormatConversionException] {
-        ChiselStage.emitCHIRRTL { new MyModule }
-      }
+      ChiselStage.emitCHIRRTL { new MyModule }
     }
   }
 
   it should "fail when passing directly to StirngContext.cf a string with  literal \\ correctly escaped  " in {
     a[StringContext.InvalidEscapeException] should be thrownBy {
-      extractCause[StringContext.InvalidEscapeException] {
-        val s_seq = Seq("Test with literal \\ correctly escaped")
-        StringContext(s_seq: _*).cf(Seq(): _*)
-      }
+      val s_seq = Seq("Test with literal \\ correctly escaped")
+      StringContext(s_seq: _*).cf(Seq(): _*)
     }
   }
 

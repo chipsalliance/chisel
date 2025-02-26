@@ -98,7 +98,7 @@ class AnalogSpec extends AnyFlatSpec with Matchers with Utils with ChiselSim {
   behavior.of("Analog")
 
   it should "NOT be bindable to registers" in {
-    a[ChiselException] should be thrownBy extractCause[ChiselException] {
+    a[ChiselException] should be thrownBy {
       ChiselStage.emitCHIRRTL {
         new Module {
           val io = IO(new Bundle {})
@@ -109,7 +109,7 @@ class AnalogSpec extends AnyFlatSpec with Matchers with Utils with ChiselSim {
   }
 
   it should "NOT be bindable to a direction" in {
-    a[ChiselException] should be thrownBy extractCause[ChiselException] {
+    a[ChiselException] should be thrownBy {
       ChiselStage.emitCHIRRTL {
         new Module {
           val io = IO(new Bundle {
@@ -118,7 +118,7 @@ class AnalogSpec extends AnyFlatSpec with Matchers with Utils with ChiselSim {
         }
       }
     }
-    a[ChiselException] should be thrownBy extractCause[ChiselException] {
+    a[ChiselException] should be thrownBy {
       ChiselStage.emitCHIRRTL {
         new Module {
           val io = IO(new Bundle {
@@ -142,7 +142,7 @@ class AnalogSpec extends AnyFlatSpec with Matchers with Utils with ChiselSim {
   // There is no binding on the type of a memory
   // Should this be an error?
   ignore should "NOT be a legal type for Mem" in {
-    a[ChiselException] should be thrownBy extractCause[ChiselException] {
+    a[ChiselException] should be thrownBy {
       ChiselStage.emitCHIRRTL {
         new Module {
           val io = IO(new Bundle {})
@@ -153,7 +153,7 @@ class AnalogSpec extends AnyFlatSpec with Matchers with Utils with ChiselSim {
   }
 
   it should "NOT be bindable to Mem ports" in {
-    a[ChiselException] should be thrownBy extractCause[ChiselException] {
+    a[ChiselException] should be thrownBy {
       ChiselStage.emitCHIRRTL {
         new Module {
           val io = IO(new Bundle {})
@@ -189,7 +189,7 @@ class AnalogSpec extends AnyFlatSpec with Matchers with Utils with ChiselSim {
   }
 
   it should "error if any bulk connected more than once" in {
-    a[ChiselException] should be thrownBy extractCause[ChiselException] {
+    a[ChiselException] should be thrownBy {
       ChiselStage.emitCHIRRTL(new Module {
         val io = IO(new Bundle {})
         val wires = List.fill(3)(Wire(Analog(32.W)))
@@ -197,7 +197,7 @@ class AnalogSpec extends AnyFlatSpec with Matchers with Utils with ChiselSim {
         wires(0) <> wires(2)
       })
     }
-    a[ChiselException] should be thrownBy extractCause[ChiselException] {
+    a[ChiselException] should be thrownBy {
       ChiselStage.emitCHIRRTL(new Module {
         val io = IO(new Bundle {})
         val wires = List.fill(2)(Wire(Analog(32.W)))

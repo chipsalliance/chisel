@@ -211,7 +211,7 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
   }
 
   "Duplicate bundle type aliases with differing structures" should "error" in {
-    val msg = (the[ChiselException] thrownBy extractCause[ChiselException] {
+    val msg = (the[ChiselException] thrownBy {
       class Test extends Module {
         // These bundles are structurally unequivalent and so must be aliased with different names.
         // Error if they share the same name
@@ -319,7 +319,7 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
 
     // Prevent statements like type Clock = { ... }
     firrtlKeywords.map { tpe =>
-      (the[ChiselException] thrownBy extractCause[ChiselException] {
+      (the[ChiselException] thrownBy {
         class Test(val firrtlType: String) extends Module {
           class FooBundle extends Bundle with HasTypeAlias {
             override def aliasName = RecordAlias(firrtlType)

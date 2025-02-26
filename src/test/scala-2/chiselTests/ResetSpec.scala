@@ -147,7 +147,7 @@ class ResetSpec extends ChiselFlatSpec with Utils {
   }
 
   "Chisel" should "error if sync and async modules are nested" in {
-    a[ChiselException] should be thrownBy extractCause[ChiselException] {
+    a[ChiselException] should be thrownBy {
       ChiselStage.emitCHIRRTL(new Module with RequireAsyncReset {
         val mod = Module(new Module with RequireSyncReset)
       })

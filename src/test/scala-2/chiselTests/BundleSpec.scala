@@ -72,17 +72,17 @@ class BundleSpec extends AnyFlatSpec with Matchers with Utils with ChiselSim {
   }
 
   "Bulk connect on Bundles" should "check that the fields match" in {
-    (the[ChiselException] thrownBy extractCause[ChiselException] {
+    (the[ChiselException] thrownBy {
       ChiselStage.emitCHIRRTL { new MyModule(new BundleFooBar, new BundleFoo) }
     }).getMessage should include("Right Record missing field")
 
-    (the[ChiselException] thrownBy extractCause[ChiselException] {
+    (the[ChiselException] thrownBy {
       ChiselStage.emitCHIRRTL { new MyModule(new BundleFoo, new BundleFooBar) }
     }).getMessage should include("Left Record missing field")
   }
 
   "Bundles" should "not be able to use Seq for constructing hardware" in {
-    (the[ChiselException] thrownBy extractCause[ChiselException] {
+    (the[ChiselException] thrownBy {
       ChiselStage.emitCHIRRTL {
         new Module {
           val io = IO(new Bundle {
@@ -130,7 +130,7 @@ class BundleSpec extends AnyFlatSpec with Matchers with Utils with ChiselSim {
       val d = c
     }
 
-    (the[ChiselException] thrownBy extractCause[ChiselException] {
+    (the[ChiselException] thrownBy {
       ChiselStage.emitCHIRRTL {
         new Module {
           val io = IO(Output(new AliasedBundle))
@@ -142,7 +142,7 @@ class BundleSpec extends AnyFlatSpec with Matchers with Utils with ChiselSim {
   }
 
   "Bundles" should "not have bound hardware" in {
-    (the[ChiselException] thrownBy extractCause[ChiselException] {
+    (the[ChiselException] thrownBy {
       ChiselStage.emitCHIRRTL {
         new Module {
           class MyBundle(val foo: UInt) extends Bundle
@@ -155,7 +155,7 @@ class BundleSpec extends AnyFlatSpec with Matchers with Utils with ChiselSim {
     }).getMessage should include("MyBundle contains hardware fields: foo: UInt<7>(123)")
   }
   "Bundles" should "not recursively contain aggregates with bound hardware" in {
-    (the[ChiselException] thrownBy extractCause[ChiselException] {
+    (the[ChiselException] thrownBy {
       ChiselStage.emitCHIRRTL {
         new Module {
           class MyBundle(val foo: UInt) extends Bundle

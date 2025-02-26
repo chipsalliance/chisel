@@ -32,7 +32,7 @@ class WarningSpec extends ChiselFlatSpec with Utils {
   }
 
   "Warnings" should "be treated as errors with warningsAsErrors" in {
-    a[ChiselException] should be thrownBy extractCause[ChiselException] {
+    a[ChiselException] should be thrownBy {
       val args = Array("--warnings-as-errors")
       ChiselStage.emitCHIRRTL(new MyModule, args)
     }

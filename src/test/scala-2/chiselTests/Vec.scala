@@ -85,7 +85,7 @@ class VecSpec extends ChiselPropSpec with Utils {
   }
 
   property("Vec.fill with a pure type should generate an exception") {
-    a[BindingException] should be thrownBy extractCause[BindingException] {
+    a[BindingException] should be thrownBy {
       ChiselStage.emitCHIRRTL(new IOTesterModFill(8))
     }
   }
@@ -352,7 +352,7 @@ class VecSpec extends ChiselPropSpec with Utils {
   }
 
   property("Bulk connecting a Vec and Seq of different sizes should report a ChiselException") {
-    a[ChiselException] should be thrownBy extractCause[ChiselException] {
+    a[ChiselException] should be thrownBy {
       ChiselStage.emitCHIRRTL(new Module {
         val io = IO(new Bundle {
           val out = Output(Vec(4, UInt(8.W)))
@@ -373,7 +373,7 @@ class VecSpec extends ChiselPropSpec with Utils {
   }
 
   property("Indexing a Chisel type Vec by a hardware type should give a sane error message") {
-    a[ExpectedHardwareException] should be thrownBy extractCause[ChiselException] {
+    a[ExpectedHardwareException] should be thrownBy {
       ChiselStage.emitCHIRRTL {
         new Module {
           val io = IO(new Bundle {})

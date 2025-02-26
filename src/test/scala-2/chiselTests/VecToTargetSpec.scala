@@ -46,7 +46,7 @@ trait VecToTargetSpecUtils extends Utils {
   def conversionFails(data: InstanceId) = {
     describe(".toTarget") {
       it("should fail to convert with a useful error message") {
-        (the[ChiselException] thrownBy extractCause[ChiselException] {
+        (the[ChiselException] thrownBy {
           data.toTarget
         }).getMessage should include(expectedError)
       }
@@ -54,7 +54,7 @@ trait VecToTargetSpecUtils extends Utils {
 
     describe(".toNamed") {
       it("should fail to convert with a useful error message") {
-        (the[ChiselException] thrownBy extractCause[ChiselException] {
+        (the[ChiselException] thrownBy {
           data.toNamed
         }).getMessage should include(expectedError)
       }

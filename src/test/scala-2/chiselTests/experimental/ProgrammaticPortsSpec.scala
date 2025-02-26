@@ -48,7 +48,7 @@ class ProgrammaticPortsSpec extends ChiselFlatSpec with Utils {
   }
 
   "Port names" should "not conflict with any component names" in {
-    a[ChiselException] should be thrownBy extractCause[ChiselException] {
+    a[ChiselException] should be thrownBy {
       doTest(new PortNameUniquenessTester)
     }
   }
@@ -64,7 +64,7 @@ class ProgrammaticPortsSpec extends ChiselFlatSpec with Utils {
   }
 
   "SuggestName collisions on ports" should "be illegal" in {
-    a[ChiselException] should be thrownBy extractCause[ChiselException] {
+    a[ChiselException] should be thrownBy {
       ChiselStage.emitCHIRRTL(new Module {
         val foo = IO(UInt(8.W)).suggestName("apple")
         val bar = IO(UInt(8.W)).suggestName("apple")

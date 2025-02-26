@@ -204,7 +204,7 @@ class ToTargetSpec extends ChiselFlatSpec with Utils {
       out := in
     }
 
-    val e = the[ChiselException] thrownBy extractCause[ChiselException] {
+    val e = the[ChiselException] thrownBy {
       var e: Example = null
       circt.stage.ChiselStage.emitCHIRRTL { e = new Example; e }
       e.tpe.toTarget

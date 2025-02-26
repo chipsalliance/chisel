@@ -51,7 +51,7 @@ class IOCompatibilitySpec extends ChiselPropSpec with Matchers with Utils {
   }
 
   property("Unwrapped IO should generate an exception") {
-    a[BindingException] should be thrownBy extractCause[BindingException] {
+    a[BindingException] should be thrownBy {
       ChiselStage.emitCHIRRTL(new IOUnwrapped)
     }
   }

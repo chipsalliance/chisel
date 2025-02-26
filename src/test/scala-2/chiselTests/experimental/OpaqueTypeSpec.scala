@@ -185,13 +185,13 @@ class OpaqueTypeSpec extends ChiselFlatSpec with Utils {
   }
 
   they should "throw an error when map contains a named element and OpaqueType is mixed in" in {
-    (the[Exception] thrownBy extractCause[Exception] {
+    (the[Exception] thrownBy {
       ChiselStage.emitCHIRRTL { new NamedSingleElementModule }
     }).getMessage should include("Opaque types must have exactly one element with an empty name")
   }
 
   they should "throw an error when map contains more than one element and OpaqueType is mixed in" in {
-    (the[Exception] thrownBy extractCause[Exception] {
+    (the[Exception] thrownBy {
       ChiselStage.emitCHIRRTL { new ErroneousOverrideModule }
     }).getMessage should include("Opaque types must have exactly one element with an empty name")
   }

@@ -53,10 +53,10 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
   }
 
   property("Inputs should not be assignable") {
-    a[Exception] should be thrownBy extractCause[Exception] {
+    a[Exception] should be thrownBy {
       ChiselStage.emitCHIRRTL(new BadDirection)
     }
-    a[Exception] should be thrownBy extractCause[Exception] {
+    a[Exception] should be thrownBy {
       ChiselStage.emitCHIRRTL(new BadSubDirection)
     }
   }

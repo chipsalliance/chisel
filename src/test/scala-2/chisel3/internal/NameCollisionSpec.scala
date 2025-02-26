@@ -9,7 +9,7 @@ class NameCollisionSpec extends ChiselFlatSpec with Utils {
   behavior.of("Builder")
 
   it should "error on duplicated names with a correct message" in {
-    (the[ChiselException] thrownBy extractCause[ChiselException] {
+    (the[ChiselException] thrownBy {
       ChiselStage.emitCHIRRTL(
         new Module {
           val foo, bar = IO(Input(UInt(8.W)))
@@ -30,7 +30,7 @@ class NameCollisionSpec extends ChiselFlatSpec with Utils {
 
   it should "error on sanitization resulting in duplicated names with a helpful message" in {
     // Case one: An unsanitary name that results in a collision with an existing name once sanitized
-    (the[ChiselException] thrownBy extractCause[ChiselException] {
+    (the[ChiselException] thrownBy {
       ChiselStage.emitCHIRRTL(
         new Module {
           val foo, bar = IO(Input(UInt(8.W)))
@@ -64,7 +64,7 @@ class NameCollisionSpec extends ChiselFlatSpec with Utils {
   }
 
   it should "error on nameless ports being assigned default names" in {
-    ((the[ChiselException] thrownBy extractCause[ChiselException] {
+    ((the[ChiselException] thrownBy {
       ChiselStage.emitCHIRRTL(
         new Module {
           // Write to an output port that isn't assigned to a val, and so doesn't get prefixed
