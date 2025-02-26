@@ -8,6 +8,8 @@ import chisel3.experimental.dataview._
 import chisel3.experimental.conversions._
 import chisel3.experimental.annotate
 import chiselTests.{ChiselFlatSpec, FileCheck}
+import chiselTests.experimental.ExtensionMethods.ChiselStageHelpers
+import circt.stage.ChiselStage
 
 object DataViewTargetSpec {
   import firrtl.annotations._
@@ -56,7 +58,7 @@ class DataViewTargetSpec extends ChiselFlatSpec with FileCheck {
       val inst = Module(new MyChild)
       out := inst.out
     }
-    val m = elaborateAndGetModule(new MyParent)
+    val m = ChiselStage.getModule(new MyParent)
     val outsideView = m.inst.out.viewAs[UInt]
     checkSameAs(m.inst.out, m.inst.insideView, outsideView)
   }
@@ -81,7 +83,7 @@ class DataViewTargetSpec extends ChiselFlatSpec with FileCheck {
       val inst = Module(new MyChild)
       out := inst.out
     }
-    val m = elaborateAndGetModule(new MyParent)
+    val m = ChiselStage.getModule(new MyParent)
     val outView = m.inst.out.viewAs[Vec[UInt]] // Note different type
     val outFooView = m.inst.out.foo.viewAs[UInt]
     val outBarsView = m.inst.out.bars.viewAs[Vec[UInt]]

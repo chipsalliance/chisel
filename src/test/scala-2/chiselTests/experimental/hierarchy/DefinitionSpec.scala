@@ -6,6 +6,7 @@ package experimental.hierarchy
 import chisel3._
 import chisel3.experimental.BaseModule
 import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance}
+import chiselTests.experimental.ExtensionMethods.ChiselStageHelpers
 import circt.stage.ChiselStage
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
@@ -303,14 +304,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
   }
   describe("(2): Annotations on designs not in the same chisel compilation") {
     // Extract the built `AddTwo` module for use in other tests.
-    val first = {
-      var result: AddTwo = null
-      ChiselStage.emitCHIRRTL {
-        result = new AddTwo
-        result
-      }
-      result
-    }
+    val first = ChiselStage.getModule(new AddTwo)
     it("(2.a): should work on an innerWire, marked in a different compilation") {
       class Top(x: AddTwo) extends Module {
         val parent = Definition(new ViewerParent(x, false, true))

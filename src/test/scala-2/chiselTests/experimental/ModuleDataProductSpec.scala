@@ -6,6 +6,8 @@ import chisel3._
 import chisel3.experimental.{BaseModule, ExtModule}
 import chisel3.experimental.dataview.DataProduct
 import chiselTests.ChiselFlatSpec
+import chiselTests.experimental.ExtensionMethods.ChiselStageHelpers
+import circt.stage.ChiselStage
 
 object ModuleDataProductSpec {
   class MyBundle extends Bundle {
@@ -42,7 +44,7 @@ class ModuleDataProductSpec extends ChiselFlatSpec {
   behavior.of("DataProduct")
 
   it should "work for UserModules (recursively)" in {
-    val m = elaborateAndGetModule(new MyUserModule)
+    val m = ChiselStage.getModule(new MyUserModule)
     val expected = Seq(
       m.clock -> "m.clock",
       m.reset -> "m.reset",
@@ -72,7 +74,7 @@ class ModuleDataProductSpec extends ChiselFlatSpec {
   }
 
   it should "work for (wrapped) ExtModules" in {
-    val m = elaborateAndGetModule(new MyExtModuleWrapper).inst
+    val m = ChiselStage.getModule(new MyExtModuleWrapper).inst
     val expected = Seq(
       m.in -> "m.in",
       m.in.bar -> "m.in.bar",
