@@ -82,7 +82,7 @@ class ParameterizedVendingMachineTester(mod: => ParameterizedVendingMachine, tes
   // Inputs and expected results
   // Do random testing
   private val _rand = scala.util.Random
-  val inputs:   Seq[Option[Coin]] = Seq.fill(testLength)(coins.lift(_rand.nextInt(coins.size + 1))) :+ None
+  val inputs: Seq[Option[Coin]] = Seq.fill(testLength)(coins.lift(_rand.nextInt(coins.size + 1))) :+ None
 
   val expected: Seq[Boolean] = getExpectedResults(inputs, dut.sodaCost)
 
