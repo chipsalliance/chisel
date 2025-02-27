@@ -390,9 +390,9 @@ class MemorySpec extends AnyPropSpec with Matchers with ChiselSim {
     val addrWidth = 65
     val size = BigInt(1) << addrWidth
     val smem = ChiselStage.emitCHIRRTL(new HugeSMemTester(size))
-    smem should include(s"smem mem : UInt<8> [$size]")
+    smem should include(s"smem mem : UInt<8>[$size]")
     val cmem = ChiselStage.emitCHIRRTL(new HugeCMemTester(size))
-    cmem should include(s"cmem mem : UInt<8> [$size]")
+    cmem should include(s"cmem mem : UInt<8>[$size]")
   }
 
   property("Implicit conversions with Mem indices should work") {
