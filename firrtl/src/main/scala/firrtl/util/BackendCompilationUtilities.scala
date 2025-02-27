@@ -13,17 +13,21 @@ import firrtl.FileUtils
 
 import scala.sys.process.{ProcessBuilder, ProcessLogger, _}
 
+@deprecated("This object hasn't been practical to use since Chisel 5.0.0. If you are doing compilation to Verilog use `circt.stage.ChiselStage`.  For simulation use ChiselSim.", "Chisel 6.7.0")
 object BackendCompilationUtilities extends LazyLogging {
 
   /** Parent directory for tests */
+  @deprecated("BackendCompilationUtilities will be removed in Chisel 7.0.0", "Chisel 6.7.0")
   lazy val TestDirectory = new File("test_run_dir")
 
+  @deprecated("BackendCompilationUtilities will be removed in Chisel 7.0.0", "Chisel 6.7.0")
   def timeStamp: String = {
     val format = new SimpleDateFormat("yyyyMMddHHmmss")
     val now = Calendar.getInstance.getTime
     format.format(now)
   }
 
+  @deprecated("BackendCompilationUtilities will be removed in Chisel 7.0.0", "Chisel 6.7.0")
   def loggingProcessLogger: ProcessLogger =
     ProcessLogger(logger.info(_), logger.warn(_))
 
@@ -32,6 +36,7 @@ object BackendCompilationUtilities extends LazyLogging {
     * @param name the name of the resource
     * @param file the file to write it into
     */
+  @deprecated("BackendCompilationUtilities will be removed in Chisel 7.0.0", "Chisel 6.7.0")
   def copyResourceToFile(name: String, file: File): Unit = {
     val in = getClass.getResourceAsStream(name)
     if (in == null) {
@@ -47,12 +52,14 @@ object BackendCompilationUtilities extends LazyLogging {
     * Will create outer directory called testName then inner directory based on
     * the current time
     */
+  @deprecated("BackendCompilationUtilities will be removed in Chisel 7.0.0", "Chisel 6.7.0")
   def createTestDirectory(testName: String): File = {
     val outer = new File(TestDirectory, testName)
     outer.mkdirs()
     Files.createTempDirectory(outer.toPath, timeStamp).toFile
   }
 
+  @deprecated("BackendCompilationUtilities will be removed in Chisel 7.0.0", "Chisel 6.7.0")
   def makeHarness(template: String => String, post: String)(f: File): File = {
     val prefix = f.toString.split("/").last
     val vf = new File(f.toString + post)
@@ -69,6 +76,7 @@ object BackendCompilationUtilities extends LazyLogging {
     * @param dir    directory where file lives
     * @return       true if compiler completed successfully
     */
+  @deprecated("BackendCompilationUtilities will be removed in Chisel 7.0.0", "Chisel 6.7.0")
   def firrtlToVerilog(prefix: String, dir: File): ProcessBuilder = {
     Process(Seq("firrtl", "-i", s"$prefix.fir", "-o", s"$prefix.v", "-X", "verilog"), dir)
   }
@@ -98,6 +106,7 @@ object BackendCompilationUtilities extends LazyLogging {
     * @param resourceFileName specifies what filename to look for to find a .f file
     * @param extraCmdLineArgs list of additional command line arguments
     */
+  @deprecated("BackendCompilationUtilities will be removed in Chisel 7.0.0", "Chisel 6.7.0")
   def verilogToCpp(
     dutFile:          String,
     dir:              File,
@@ -160,9 +169,11 @@ object BackendCompilationUtilities extends LazyLogging {
     command
   }
 
+  @deprecated("BackendCompilationUtilities will be removed in Chisel 7.0.0", "Chisel 6.7.0")
   def cppToExe(prefix: String, dir: File): ProcessBuilder =
     Seq("make", "-C", dir.toString, "-j", "-f", s"V$prefix.mk", s"V$prefix")
 
+  @deprecated("BackendCompilationUtilities will be removed in Chisel 7.0.0", "Chisel 6.7.0")
   def executeExpectingFailure(
     prefix:       String,
     dir:          File,
@@ -183,6 +194,7 @@ object BackendCompilationUtilities extends LazyLogging {
     triggered || (e != 0 && (e != 134 || !assertionMessageSupplied))
   }
 
+  @deprecated("BackendCompilationUtilities will be removed in Chisel 7.0.0", "Chisel 6.7.0")
   def executeExpectingSuccess(prefix: String, dir: File): Boolean = {
     !executeExpectingFailure(prefix, dir)
   }
