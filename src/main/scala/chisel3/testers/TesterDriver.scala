@@ -16,6 +16,7 @@ import scala.annotation.nowarn
 import scala.sys.process.ProcessLogger
 
 @nowarn("msg=trait BackendCompilationUtilities in package chisel3 is deprecated")
+@deprecated("Please migrate to ChiselSim APIs", "Chisel 6.7.0")
 object TesterDriver extends BackendCompilationUtilities {
   //TODO: need to remove BackendCompilationUtilities here but it will break external API
   //      unless all methods of it are implemented
