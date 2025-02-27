@@ -481,6 +481,10 @@ private[chisel3] object ir {
     }
   }
 
+  case class DefContract(sourceInfo: SourceInfo, ids: Seq[Data], exprs: Seq[Arg]) extends Command {
+    val region = new Block(sourceInfo)
+  }
+
   case class DefOption(sourceInfo: SourceInfo, name: String, cases: Seq[DefOptionCase])
   case class DefOptionCase(sourceInfo: SourceInfo, name: String)
 
