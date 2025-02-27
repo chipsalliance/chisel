@@ -4,14 +4,15 @@ package chiselTests.simulator.scalatest
 
 import chisel3._
 import chisel3.simulator.PeekPokeAPI.FailedExpectationException
-import chisel3.simulator.{ChiselSettings, ChiselSim, HasTestingDirectory, MacroText}
-import chisel3.simulator.scalatest.WithTestingDirectory
+import chisel3.simulator.{ChiselSettings, ChiselSim, MacroText}
+import chisel3.testing.HasTestingDirectory
+import chisel3.testing.scalatest.TestingDirectory
 import chiselTests.FileCheck
 import java.nio.file.FileSystems
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 
-class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileCheck with WithTestingDirectory {
+class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileCheck with TestingDirectory {
 
   describe("scalatest.ChiselSim") {
 

@@ -3,7 +3,7 @@
 package chiselTests.simulator
 
 import chisel3._
-import chisel3.simulator.HasTestingDirectory
+import chisel3.testing.HasTestingDirectory
 import chisel3.simulator.DefaultSimulator._
 import chiselTests.FileCheck
 import java.nio.file.FileSystems

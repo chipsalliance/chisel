@@ -2,6 +2,7 @@ package chisel3.simulator
 
 import svsim._
 import chisel3.RawModule
+import chisel3.testing.HasTestingDirectory
 import java.nio.file.Files
 import java.io.File
 

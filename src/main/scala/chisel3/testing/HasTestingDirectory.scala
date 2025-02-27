@@ -1,4 +1,4 @@
-package chisel3.simulator
+package chisel3.testing
 
 import java.io.IOException
 import java.nio.file._
