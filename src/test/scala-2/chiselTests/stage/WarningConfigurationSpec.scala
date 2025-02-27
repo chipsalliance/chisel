@@ -5,6 +5,7 @@ package chiselTests.stage
 import chisel3._
 import chisel3.testers.TestUtils
 import chisel3.experimental.SourceInfo
+import chiselTests.FileCheck
 import circt.stage.ChiselStage
 
 import org.scalatest.funspec.AnyFunSpec
@@ -66,7 +67,7 @@ object WarningConfigurationSpec {
   }
 }
 
-class WarningConfigurationSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
+class WarningConfigurationSpec extends AnyFunSpec with Matchers with chiselTests.Utils with FileCheck {
   import WarningConfigurationSpec._
 
   private def checkInvalid(wconf: String, carat: String, expected: String): Unit = {
@@ -125,8 +126,12 @@ class WarningConfigurationSpec extends AnyFunSpec with Matchers with chiselTests
       info("For keeping them as warnings despite --warnings-as-errors")
       val args2 = Array("--warn-conf", "id=1:w,any:e", "--throw-on-first-error")
       val (log, _) = grabLog(ChiselStage.emitCHIRRTL(new ModuleWithWarning, args2))
-      log should include("sample warning")
-      log should include("There were 1 warning(s) during hardware elaboration.")
+      // Note: The regular expressions are to ignore ANSI color codes.
+      fileCheckString(log)(
+        """|CHECK: sample warning
+           |CHECK: There were {{.*}}1 warning(s){{.*}} during hardware elaboration.
+           |""".stripMargin
+      )
 
       info("For elevating individual warnings to errors")
       val args3 = Array("--warn-conf", "id=1:e", "--throw-on-first-error")
@@ -143,8 +148,12 @@ class WarningConfigurationSpec extends AnyFunSpec with Matchers with chiselTests
       info("For keeping them as warnings despite --warnings-as-errors")
       val args2 = Array("--warn-conf", s"src=$thisFile:w,any:e", "--throw-on-first-error")
       val (log, _) = grabLog(ChiselStage.emitCHIRRTL(new ModuleWithWarning, args2))
-      log should include("sample warning")
-      log should include("There were 1 warning(s) during hardware elaboration.")
+      // Note: The regular expressions are to ignore ANSI color codes.
+      fileCheckString(log)(
+        """|CHECK: sample warning
+           |CHECK: There were {{.*}}1 warning(s){{.*}} during hardware elaboration.
+           |""".stripMargin
+      )
 
       info("For elevating individual warnings to errors")
       val args3 = Array("--warn-conf", s"src=$thisFile:e", "--throw-on-first-error")
