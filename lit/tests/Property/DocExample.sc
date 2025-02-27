@@ -32,11 +32,7 @@ class CSRDescription extends Class {
 }
 
 // A hardware module representing a CSR and its description.
-class CSRModule(
-  csrDescDef:     Definition[CSRDescription],
-  width:          Int,
-  identifierStr:  String,
-  descriptionStr: String)
+class CSRModule(csrDescDef: Definition[CSRDescription], width: Int, identifierStr: String, descriptionStr: String)
     extends Module {
   override def desiredName = identifierStr
 

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import chisel3._
-import chisel3.experimental.{Analog, attach}
+import chisel3.experimental.{attach, Analog}
 import chisel3.util.SRAM
 
 // FIRRTL-LABEL: public module Attach :
@@ -76,7 +76,7 @@ class Mem extends Module {
   // FIRRTL: invalidate r.data
   r.data := DontCare
   // FIRRTL: when r.enable :
-  when (r.enable) {
+  when(r.enable) {
     // FIRRTL-NEXT: infer mport wrPort = mem[r.address], clock
     val wrPort = mem(r.address)
     // FIRRTL-NEXT: connect r.data, wrPort
@@ -86,7 +86,7 @@ class Mem extends Module {
   }
 
   // FIRRTL: when w.enable :
-  when (w.enable) {
+  when(w.enable) {
     // FIRRTL-NEXT: infer mport wrPort_1 = mem[w.address], clock
     val wrPort = mem(w.address)
     // FIRRTL-NEXT: connect wrPort_1, w.data
