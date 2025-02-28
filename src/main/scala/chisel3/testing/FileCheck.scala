@@ -54,10 +54,11 @@ trait FileCheck {
       *
       * {{{
       * import chisel3.testing.FileCheck
+      * import chisel3.testing.scalatest.TestingDirectory
       * import org.scalatest.flatspec.AnyFlatSpec
       * import org.scalatest.matchers.should.Matchers
       *
-      * class Foo extends AnyFlatSpec with Matchers with FileCheck {
+      * class Foo extends AnyFlatSpec with Matchers with FileCheck with TestingDirectory {
       *
       *   behavior of ("Bar")
       *
@@ -91,7 +92,7 @@ trait FileCheck {
       // os.makeDir(os.RelPath(testingDirectory.getDirectory))
       val dir = os.pwd / os.RelPath(testingDirectory.getDirectory)
       os.makeDir.all(dir)
-      val tempDir = os.temp.dir(dir = os.pwd / os.RelPath(testingDirectory.getDirectory))
+      val tempDir = os.temp.dir(dir = dir, deleteOnExit = false)
       val checkFile = tempDir / "check"
       val inputFile = tempDir / "input"
       os.write.over(target = checkFile, data = check, createFolders = true)
@@ -118,7 +119,7 @@ trait FileCheck {
       stderrWriter.close()
 
       result match {
-        case os.CommandResult(_, 0, _) => Seq(checkFile, inputFile).foreach(os.remove)
+        case os.CommandResult(_, 0, _) => os.remove.all(tempDir)
         case os.CommandResult(command, exitCode, _) =>
           throw new FileCheck.Exceptions.NonZeroExitCode(
             s"cat $inputFile | ${command.mkString(" ")}",
