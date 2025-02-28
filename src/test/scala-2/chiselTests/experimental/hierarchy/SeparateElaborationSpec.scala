@@ -8,16 +8,17 @@ import chisel3.experimental.BaseModule
 import chisel3.experimental.hierarchy.core.ImportDefinitionAnnotation
 import chisel3.experimental.hierarchy.{Definition, Instance}
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation, DesignAnnotation}
+import chisel3.testing.HasTestingDirectory
+import chisel3.testing.scalatest.TestingDirectory
 import circt.stage.{CIRCTTarget, CIRCTTargetAnnotation, ChiselStage}
 import firrtl.AnnotationSeq
-import firrtl.util.BackendCompilationUtilities.createTestDirectory
 import java.nio.file.Paths
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 import scala.annotation.nowarn
 import scala.io.Source
 
-class SeparateElaborationSpec extends AnyFunSpec with Matchers with Utils {
+class SeparateElaborationSpec extends AnyFunSpec with Matchers with Utils with TestingDirectory {
   import Examples._
 
   /** Return a [[DesignAnnotation]] from a list of annotations. */
@@ -60,7 +61,7 @@ class SeparateElaborationSpec extends AnyFunSpec with Matchers with Utils {
 
   describe("(0): Name conflicts") {
     it("(0.a): should not occur between a Module and an Instance of a previously elaborated Definition.") {
-      val testDir = createTestDirectory(this.getClass.getSimpleName).toString
+      val testDir = implicitly[HasTestingDirectory].getDirectory.toString
 
       val dutDef = getAddOneDefinition(testDir)
 
@@ -92,7 +93,7 @@ class SeparateElaborationSpec extends AnyFunSpec with Matchers with Utils {
     it(
       "(0.b): should not occur between an Instance of a Definition and an Instance of a previously elaborated Definition."
     ) {
-      val testDir = createTestDirectory(this.getClass.getSimpleName).toString
+      val testDir = implicitly[HasTestingDirectory].getDirectory.toString
 
       val dutDef = getAddOneDefinition(testDir)
 
@@ -124,7 +125,7 @@ class SeparateElaborationSpec extends AnyFunSpec with Matchers with Utils {
 
   describe("(1): Repeat Module definitions") {
     it("(1.a): should not occur when elaborating multiple Instances separately from its Definition.") {
-      val testDir = createTestDirectory(this.getClass.getSimpleName).toString
+      val testDir = implicitly[HasTestingDirectory].getDirectory.toString
 
       val dutDef = getAddOneDefinition(testDir)
 
@@ -148,7 +149,7 @@ class SeparateElaborationSpec extends AnyFunSpec with Matchers with Utils {
     it(
       "(2.a): should work if a list of imported Definitions is passed between Stages."
     ) {
-      val testDir = createTestDirectory(this.getClass.getSimpleName).toString
+      val testDir = implicitly[HasTestingDirectory].getDirectory.toString
 
       val dutAnnos0 = (new ChiselStage).execute(
         Array("--target-dir", s"$testDir/dutDef0", "--target", "systemverilog"),
@@ -201,7 +202,7 @@ class SeparateElaborationSpec extends AnyFunSpec with Matchers with Utils {
     it(
       "(2.b): should throw an exception if information is not passed between Stages."
     ) {
-      val testDir = createTestDirectory(this.getClass.getSimpleName).toString
+      val testDir = implicitly[HasTestingDirectory].getDirectory.toString
 
       val dutAnnos0 = (new ChiselStage).execute(
         Array("--target-dir", s"$testDir/dutDef0", "--target", "systemverilog"),
@@ -255,7 +256,7 @@ class SeparateElaborationSpec extends AnyFunSpec with Matchers with Utils {
     it(
       "(3.a): should work if a list of imported Definitions for all modules is passed between Stages."
     ) {
-      val testDir = createTestDirectory(this.getClass.getSimpleName).toString
+      val testDir = implicitly[HasTestingDirectory].getDirectory.toString
 
       val dutAnnos0 = (new ChiselStage).execute(
         Array("--target-dir", s"$testDir/dutDef0", "--target", "systemverilog"),
@@ -309,7 +310,7 @@ class SeparateElaborationSpec extends AnyFunSpec with Matchers with Utils {
   it(
     "(3.b): should throw an exception if submodules are not passed between Definition elaborations."
   ) {
-    val testDir = createTestDirectory(this.getClass.getSimpleName).toString
+    val testDir = implicitly[HasTestingDirectory].getDirectory.toString
 
     val dutAnnos0 = (new ChiselStage).execute(
       Array("--target-dir", s"$testDir/dutDef0", "--target", "systemverilog"),
@@ -361,7 +362,7 @@ class SeparateElaborationSpec extends AnyFunSpec with Matchers with Utils {
 
   describe("(4): With ExtMod Names") {
     it("(4.a): should pick correct ExtMod names when passed") {
-      val testDir = createTestDirectory(this.getClass.getSimpleName).toString
+      val testDir = implicitly[HasTestingDirectory].getDirectory.toString
 
       val dutDef = getAddOneDefinition(testDir)
 
@@ -395,7 +396,7 @@ class SeparateElaborationSpec extends AnyFunSpec with Matchers with Utils {
   it(
     "(4.b): should work if a list of imported Definitions is passed between Stages with ExtModName."
   ) {
-    val testDir = createTestDirectory(this.getClass.getSimpleName).toString
+    val testDir = implicitly[HasTestingDirectory].getDirectory.toString
 
     val dutAnnos0 = (new ChiselStage).execute(
       Array("--target-dir", s"$testDir/dutDef0", "--target", "systemverilog"),
@@ -448,7 +449,7 @@ class SeparateElaborationSpec extends AnyFunSpec with Matchers with Utils {
   it(
     "(4.c): should throw an exception  if a list of imported Definitions is passed between Stages with same ExtModName."
   ) {
-    val testDir = createTestDirectory(this.getClass.getSimpleName).toString
+    val testDir = implicitly[HasTestingDirectory].getDirectory.toString
 
     val dutAnnos0 = (new ChiselStage).execute(
       Array("--target-dir", s"$testDir/dutDef0", "--target", "systemverilog"),
