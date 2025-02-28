@@ -6,7 +6,15 @@ import firrtl.util.BackendCompilationUtilities._
 import java.io.File
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.propspec.AnyPropSpec
+import scala.annotation.nowarn
 
+@nowarn("msg=object BackendCompilationUtilities in package util is deprecated")
+@nowarn("msg=method makeHarness in object BackendCompilationUtilities is deprecated")
+@nowarn("msg=method cppToExe in object BackendCompilationUtilities is deprecated")
+@nowarn("msg=method executeExpectingSuccess in object BackendCompilationUtilities is deprecated")
+@nowarn("msg=method executeExpectingFailure in object BackendCompilationUtilities is deprecated")
+@nowarn("msg=method createTestDirectory in object BackendCompilationUtilities is deprecated")
+@nowarn("msg=method verilogToCpp in object BackendCompilationUtilities is deprecated")
 class HarnessSpec extends AnyPropSpec with Matchers {
 
   def makeTrivialVerilog: (File => File) = makeHarness(
