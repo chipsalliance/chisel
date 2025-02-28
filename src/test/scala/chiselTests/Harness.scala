@@ -3,6 +3,7 @@
 package chiselTests
 
 import java.io.File
+import firrtl.util.BackendCompilationUtilities._
 import scala.annotation.nowarn
 
 @nowarn("msg=object BackendCompilationUtilities in package util is deprecated")
