@@ -2,7 +2,6 @@
 
 package firrtlTests.annotationTests
 
-import firrtl.FileUtils
 import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq}
 import firrtl.annotations._
 import firrtl.passes.memlib.ReplSeqMemAnnotation
