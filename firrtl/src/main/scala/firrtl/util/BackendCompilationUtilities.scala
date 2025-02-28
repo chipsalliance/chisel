@@ -13,7 +13,10 @@ import firrtl.FileUtils
 
 import scala.sys.process.{ProcessBuilder, ProcessLogger, _}
 
-@deprecated("This object hasn't been practical to use since Chisel 5.0.0. If you are doing compilation to Verilog use `circt.stage.ChiselStage`.  For simulation use ChiselSim.", "Chisel 6.7.0")
+@deprecated(
+  "This object hasn't been practical to use since Chisel 5.0.0. If you are doing compilation to Verilog use `circt.stage.ChiselStage`.  For simulation use ChiselSim.",
+  "Chisel 6.7.0"
+)
 object BackendCompilationUtilities extends LazyLogging {
 
   /** Parent directory for tests */
