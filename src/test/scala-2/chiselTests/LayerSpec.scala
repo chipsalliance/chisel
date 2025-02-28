@@ -9,7 +9,8 @@ import chisel3.experimental.hierarchy.instantiable
 import chisel3.ltl.AssertProperty
 import chisel3.probe.{define, Probe, ProbeValue}
 import chisel3.reflect.DataMirror.internal.chiselTypeClone
-import chiselTests.{FileCheck, Utils}
+import chisel3.testing.scalatest.FileCheck
+import chiselTests.Utils
 import java.nio.file.{FileSystems, Paths}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -43,7 +44,7 @@ class LayerSpec extends AnyFlatSpec with Matchers with Utils with FileCheck {
     }
 
     info("CHIRRTL emission looks correct")
-    generateFirrtlAndFileCheck(new Foo) {
+    ChiselStage.emitCHIRRTL(new Foo).fileCheck() {
       s"""|CHECK:      layer A, bind, "A" :
           |CHECK-NEXT:   layer B, bind, "A${sep}B" :
           |
@@ -67,7 +68,7 @@ class LayerSpec extends AnyFlatSpec with Matchers with Utils with FileCheck {
     }
 
     val check =
-      generateFirrtlAndFileCheck(new Foo) {
+      ChiselStage.emitCHIRRTL(new Foo).fileCheck() {
         """|CHECK: layerblock A :
            |CHECK:   layerblock B :
            |CHECK:     layerblock C :
@@ -84,7 +85,7 @@ class LayerSpec extends AnyFlatSpec with Matchers with Utils with FileCheck {
     }
 
     val check =
-      generateFirrtlAndFileCheck(new Foo) {
+      ChiselStage.emitCHIRRTL(new Foo).fileCheck() {
         """|CHECK:     layerblock A :
            |CHECK-NOT:   layerblock C :
            |""".stripMargin
@@ -97,7 +98,7 @@ class LayerSpec extends AnyFlatSpec with Matchers with Utils with FileCheck {
       layer.block(A.B, skipIfLayersEnabled = true) {}
     }
 
-    generateFirrtlAndFileCheck(new Foo)("CHECK-NOT: layerblock")
+    ChiselStage.emitCHIRRTL(new Foo).fileCheck()("CHECK-NOT: layerblock")
   }
 
   they should "create no layer blocks when wrapped in 'elideBlocks'" in {
@@ -106,7 +107,7 @@ class LayerSpec extends AnyFlatSpec with Matchers with Utils with FileCheck {
         layer.block(A.B) {}
       }
     }
-    generateFirrtlAndFileCheck(new Foo)("CHECK-NOT: layerblock")
+    ChiselStage.emitCHIRRTL(new Foo).fileCheck()("CHECK-NOT: layerblock")
   }
 
   they should "generate valid CHIRRTL when module instantiated under layer block has layer blocks" in {
@@ -127,7 +128,7 @@ class LayerSpec extends AnyFlatSpec with Matchers with Utils with FileCheck {
 
     // Check the generated CHIRRTL only.
     // Layer-under-module-under-layer is rejected by firtool presently.
-    generateFirrtlAndFileCheck(new Foo) {
+    ChiselStage.emitCHIRRTL(new Foo).fileCheck() {
       """|CHECK:      module Bar :
          |CHECK:        layerblock A :
          |CHECK-NEXT:     layerblock B :
@@ -156,7 +157,7 @@ class LayerSpec extends AnyFlatSpec with Matchers with Utils with FileCheck {
       }
     }
 
-    generateFirrtlAndFileCheck(new Foo) {
+    ChiselStage.emitCHIRRTL(new Foo).fileCheck() {
       """|CHECK:      module Foo :
          |CHECK:        define x = probe(a)
          |CHECK-NEXT:   define y = probe(b)
@@ -205,7 +206,7 @@ class LayerSpec extends AnyFlatSpec with Matchers with Utils with FileCheck {
       layer.enable(layer.Layer.root)
     }
 
-    generateFirrtlAndFileCheck(new Foo) {
+    ChiselStage.emitCHIRRTL(new Foo).fileCheck() {
       """|CHECK:      layer A, bind
          |CHECK-NEXT:   layer B, bind
          |CHECK-NEXT: layer C, bind
@@ -279,7 +280,7 @@ class LayerSpec extends AnyFlatSpec with Matchers with Utils with FileCheck {
       s"layer $name, bind$dirsStr :"
     }
 
-    generateFirrtlAndFileCheck(new Foo) {
+    ChiselStage.emitCHIRRTL(new Foo).fileCheck() {
       s"""|CHECK:      circuit Foo :
           |CHECK-NEXT:   layer LayerWithDefaultOutputDir, bind, "LayerWithDefaultOutputDir" :
           |CHECK-NEXT:     layer SublayerWithDefaultOutputDir, bind, "LayerWithDefaultOutputDir${sep}SublayerWithDefaultOutputDir" :
@@ -382,7 +383,7 @@ class LayerSpec extends AnyFlatSpec with Matchers with Utils with FileCheck {
       assert(j.getClass() == classOf[Unit])
     }
 
-    generateFirrtlAndFileCheck(new Foo) {
+    ChiselStage.emitCHIRRTL(new Foo).fileCheck() {
       s"""|CHECK:      module Foo
           |CHECK:        wire a : Probe<UInt<1>, A>
           |CHECK-NEXT:   layerblock A :
@@ -441,7 +442,7 @@ class LayerSpec extends AnyFlatSpec with Matchers with Utils with FileCheck {
       layer.addLayer(A)
     }
 
-    generateFirrtlAndFileCheck(new Foo) {
+    ChiselStage.emitCHIRRTL(new Foo).fileCheck() {
       """|CHECK:     layer A
          |CHECK-NOT:   layerblock
          |""".stripMargin
@@ -453,7 +454,7 @@ class LayerSpec extends AnyFlatSpec with Matchers with Utils with FileCheck {
     val chirrtl = ChiselStage.emitCHIRRTL(new Foo)
 
     info("default layers are emitted")
-    fileCheckString(chirrtl) {
+    chirrtl.fileCheck() {
       s"""|CHECK:      layer Verification, bind, "verification" :
           |CHECK-NEXT:   layer Assert, bind, "verification${sep}assert" :
           |CHECK-NEXT:   layer Assume, bind, "verification${sep}assume" :
@@ -533,7 +534,7 @@ class LayerSpec extends AnyFlatSpec with Matchers with Utils with FileCheck {
     }
 
     info("FIRRTL okay")
-    generateFirrtlAndFileCheck(new Foo) {
+    ChiselStage.emitCHIRRTL(new Foo).fileCheck() {
       """|CHECK:      layer A, bind
          |CHECK-NEXT:   layer B, inline :
          |CHECK-NEXT:     layer C, inline :
@@ -548,7 +549,7 @@ class LayerSpec extends AnyFlatSpec with Matchers with Utils with FileCheck {
         "-enable-layers=Verification,Verification.Assert,Verification.Assume,Verification.Cover"
       )
     )
-    fileCheckString(verilog) {
+    verilog.fileCheck() {
       """|CHECK:      module Foo(
          |CHECK-NOT:    assert property
          |
@@ -604,7 +605,7 @@ class LayerSpec extends AnyFlatSpec with Matchers with Utils with FileCheck {
       }
     }
 
-    generateFirrtlAndFileCheck(new Foo) {
+    ChiselStage.emitCHIRRTL(new Foo).fileCheck() {
       s"""|CHECK:      layer LayerWithDefaultOutputDir, bind, "LayerWithDefaultOutputDir" :
           |CHECK-NEXT:   layer InlineSublayer, inline :
           |CHECK-NEXT:     layer SublayerWithDefaultOutputDir, bind, "LayerWithDefaultOutputDir${sep}SublayerWithDefaultOutputDir" :

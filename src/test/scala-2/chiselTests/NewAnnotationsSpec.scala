@@ -7,6 +7,7 @@ import circt.stage.ChiselStage
 import chisel3._
 import chisel3.experimental.{annotate, AnyTargetable}
 import chisel3.stage.ChiselGeneratorAnnotation
+import chisel3.testing.scalatest.FileCheck
 import chiselTests.experimental.hierarchy.Utils
 
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
@@ -75,32 +76,34 @@ class NewAnnotationsSpec extends AnyFreeSpec with Matchers with Utils with FileC
     }
 
     "It should be possible to annotate heterogeneous Targetable things" in {
-      generateFirrtlAndFileCheck(new RawModule {
-        override def desiredName: String = "Top"
-        val in = IO(Input(UInt(8.W)))
-        val out = IO(Output(UInt(8.W)))
-        out := in
-        // Given a Seq[UInt]
-        val xs: Seq[UInt] = Seq(in, out)
-        // We can manually use AnyTargetable to also include a Module
-        // Using either type ascriptions to invoke the implicit conversion, or manually
-        val ys = Seq[AnyTargetable](this) ++ xs.map(AnyTargetable(_))
-        annotate(ys)(
-          Seq(
-            DontTouchAnnotation(in.toTarget),
-            DontTouchAnnotation(out.toTarget),
-            NoDedupAnnotation(this.toNamed)
+      ChiselStage
+        .emitCHIRRTL(new RawModule {
+          override def desiredName: String = "Top"
+          val in = IO(Input(UInt(8.W)))
+          val out = IO(Output(UInt(8.W)))
+          out := in
+          // Given a Seq[UInt]
+          val xs: Seq[UInt] = Seq(in, out)
+          // We can manually use AnyTargetable to also include a Module
+          // Using either type ascriptions to invoke the implicit conversion, or manually
+          val ys = Seq[AnyTargetable](this) ++ xs.map(AnyTargetable(_))
+          annotate(ys)(
+            Seq(
+              DontTouchAnnotation(in.toTarget),
+              DontTouchAnnotation(out.toTarget),
+              NoDedupAnnotation(this.toNamed)
+            )
           )
+        })
+        .fileCheck()(
+          """|CHECK:      "class":"firrtl.transforms.DontTouchAnnotation"
+             |CHECK-NEXT: "target":"~Top|Top>in"
+             |CHECK:      "class":"firrtl.transforms.DontTouchAnnotation"
+             |CHECK-NEXT: "target":"~Top|Top>out"
+             |CHECK:      "class":"firrtl.transforms.NoDedupAnnotation"
+             |CHECK-NEXT: "target":"~Top|Top"
+             |""".stripMargin
         )
-      })(
-        """|CHECK:      "class":"firrtl.transforms.DontTouchAnnotation"
-           |CHECK-NEXT: "target":"~Top|Top>in"
-           |CHECK:      "class":"firrtl.transforms.DontTouchAnnotation"
-           |CHECK-NEXT: "target":"~Top|Top>out"
-           |CHECK:      "class":"firrtl.transforms.NoDedupAnnotation"
-           |CHECK-NEXT: "target":"~Top|Top"
-           |""".stripMargin
-      )
     }
   }
 }

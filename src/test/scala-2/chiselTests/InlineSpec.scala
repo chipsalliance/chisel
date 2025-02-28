@@ -3,8 +3,8 @@
 package chiselTests
 
 import chisel3._
+import chisel3.testing.FileCheck
 import chisel3.util.experimental.{InlineInstance, InlineInstanceAllowDedup}
-import chiselTests.FileCheck
 import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -24,11 +24,13 @@ class InlineInstanceSpec extends AnyFlatSpec with Matchers with FileCheck {
   }
 
   "InlineInstanceAllowDedup" should "Inline any module that dedups with a module marked inline" in {
-    generateSystemVerilogAndFileCheck(new TopModule, "--implicit-check-not=ModuleB")(
-      """|CHECK: ModuleA()
-         |CHECK: TopModule()
-         |""".stripMargin
-    )
+    ChiselStage
+      .emitSystemVerilog(new TopModule)
+      .fileCheck("--implicit-check-not=ModuleB")(
+        """|CHECK: ModuleA()
+           |CHECK: TopModule()
+           |""".stripMargin
+      )
   }
 }
 
@@ -47,10 +49,12 @@ class InlineInstanceAllowDedupSpec extends AnyFlatSpec with Matchers with FileCh
   }
 
   "InlineInstanceAllowDedup" should "Inline any module that dedups with a module marked inline" in {
-    generateSystemVerilogAndFileCheck(new TopModule)(
-      """|CHECK-NOT: Module{{A|B}}
-         |CHECK:     TopModule()
-         |""".stripMargin
-    )
+    ChiselStage
+      .emitSystemVerilog(new TopModule)
+      .fileCheck()(
+        """|CHECK-NOT: Module{{A|B}}
+           |CHECK:     TopModule()
+           |""".stripMargin
+      )
   }
 }

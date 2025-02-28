@@ -6,14 +6,16 @@ import chisel3._
 import chisel3.experimental.AffectsChiselPrefix
 import chisel3.stage.ChiselGeneratorAnnotation
 import circt.stage.ChiselStage
-import chisel3.util._
+import chisel3.util.{is, switch, Cat, Counter}
 import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.RunUntilFinished
+import chisel3.testing.scalatest.FileCheck
+import java.io.ByteArrayOutputStream
 import org.scalatest.Assertion
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
-
+import scala.Console.{withErr, withOut}
 import scala.annotation.nowarn
 
 object EnumExample extends ChiselEnum {
@@ -364,7 +366,7 @@ class IsOneOfTester extends Module {
   stop()
 }
 
-class ChiselEnumSpec extends AnyFlatSpec with Matchers with Utils with FileCheck with ChiselSim {
+class ChiselEnumSpec extends AnyFlatSpec with Matchers with Utils with ChiselSim with FileCheck {
 
   behavior.of("ChiselEnum")
 
@@ -533,7 +535,9 @@ class ChiselEnumSpec extends AnyFlatSpec with Matchers with Utils with FileCheck
       val out = IO(Output(MyEnum()))
       out := MyEnum(in)
     }
-    elaborateAndFileCheckOutAndErr(new MyModule)(
+    val outStream = new ByteArrayOutputStream()
+    withOut(outStream)(withErr(outStream)(ChiselStage.emitCHIRRTL(new MyModule)))
+    outStream.toString.fileCheck()(
       """| CHECK:      [W001] Casting non-literal UInt to [[enum:[a-zA-Z0-9_$.]+]].
          | CHECK-SAME: You can use [[enum]].safe to cast without this warning.
          |""".stripMargin

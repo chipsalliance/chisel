@@ -7,7 +7,7 @@ import chisel3.experimental.BaseModule
 import chisel3.experimental.dataview._
 import chisel3.experimental.conversions._
 import chisel3.experimental.annotate
-import chiselTests.FileCheck
+import chisel3.testing.scalatest.FileCheck
 import chiselTests.experimental.ExtensionMethods.ChiselStageHelpers
 import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
@@ -124,17 +124,19 @@ class DataViewTargetSpec extends AnyFlatSpec with Matchers with FileCheck {
       val inst = Module(new MyChild)
       out := inst.out
     }
-    generateFirrtlAndFileCheck(new MyParent)(
-      """|CHECK:      "target":"~MyParent|MyChild>out.foo"
-         |CHECK-NEXT: "id":0
-         |CHECK:      "target":"~MyParent|MyChild>out.foo"
-         |CHECK-NEXT: "id":1
-         |CHECK:      "target":"~MyParent|MyParent/inst:MyChild>out.foo"
-         |CHECK-NEXT: "id":2
-         |CHECK:      "target":"~MyParent|MyParent/inst:MyChild>out"
-         |CHECK-NEXT: "id":3
-         |""".stripMargin
-    )
+    ChiselStage
+      .emitCHIRRTL(new MyParent)
+      .fileCheck()(
+        """|CHECK:      "target":"~MyParent|MyChild>out.foo"
+           |CHECK-NEXT: "id":0
+           |CHECK:      "target":"~MyParent|MyChild>out.foo"
+           |CHECK-NEXT: "id":1
+           |CHECK:      "target":"~MyParent|MyParent/inst:MyChild>out.foo"
+           |CHECK-NEXT: "id":2
+           |CHECK:      "target":"~MyParent|MyParent/inst:MyChild>out"
+           |CHECK-NEXT: "id":3
+           |""".stripMargin
+      )
   }
 
   it should "support annotating views that cannot be mapped to a single ReferenceTarget" in {
@@ -160,29 +162,31 @@ class DataViewTargetSpec extends AnyFlatSpec with Matchers with FileCheck {
       val inst = Module(new MyChild)
       io <> inst.io
     }
-    generateFirrtlAndFileCheck(new MyParent)(
-      """|CHECK:      "target":"~MyParent|MyChild>io.b"
-         |CHECK-NEXT: "id":0
-         |CHECK:      "target":"~MyParent|MyChild>io.a"
-         |CHECK-NEXT: "id":0
-         |CHECK:      "target":"~MyParent|MyChild>io.d"
-         |CHECK-NEXT: "id":1
-         |CHECK:      "target":"~MyParent|MyChild>io.c"
-         |CHECK-NEXT: "id":1
-         |CHECK:      "target":"~MyParent|MyParent/inst:MyChild>io.b"
-         |CHECK-NEXT: "id":2
-         |CHECK:      "target":"~MyParent|MyParent/inst:MyChild>io.a"
-         |CHECK-NEXT: "id":2
-         |CHECK:      "target":"~MyParent|MyParent/inst:MyChild>io.d"
-         |CHECK-NEXT: "id":3
-         |CHECK:      "target":"~MyParent|MyParent/inst:MyChild>io.c"
-         |CHECK-NEXT: "id":3
-         |CHECK:      "target":"~MyParent|MyChild>io.d"
-         |CHECK-NEXT: "id":4
-         |CHECK:      "target":"~MyParent|MyChild>io.b"
-         |CHECK-NEXT: "id":4
-         |""".stripMargin
-    )
+    ChiselStage
+      .emitCHIRRTL(new MyParent)
+      .fileCheck()(
+        """|CHECK:      "target":"~MyParent|MyChild>io.b"
+           |CHECK-NEXT: "id":0
+           |CHECK:      "target":"~MyParent|MyChild>io.a"
+           |CHECK-NEXT: "id":0
+           |CHECK:      "target":"~MyParent|MyChild>io.d"
+           |CHECK-NEXT: "id":1
+           |CHECK:      "target":"~MyParent|MyChild>io.c"
+           |CHECK-NEXT: "id":1
+           |CHECK:      "target":"~MyParent|MyParent/inst:MyChild>io.b"
+           |CHECK-NEXT: "id":2
+           |CHECK:      "target":"~MyParent|MyParent/inst:MyChild>io.a"
+           |CHECK-NEXT: "id":2
+           |CHECK:      "target":"~MyParent|MyParent/inst:MyChild>io.d"
+           |CHECK-NEXT: "id":3
+           |CHECK:      "target":"~MyParent|MyParent/inst:MyChild>io.c"
+           |CHECK-NEXT: "id":3
+           |CHECK:      "target":"~MyParent|MyChild>io.d"
+           |CHECK-NEXT: "id":4
+           |CHECK:      "target":"~MyParent|MyChild>io.b"
+           |CHECK-NEXT: "id":4
+           |""".stripMargin
+      )
   }
 
   it should "support views with toRelativeTarget" in {
@@ -205,15 +209,17 @@ class DataViewTargetSpec extends AnyFlatSpec with Matchers with FileCheck {
         markRel(inst.outView, None, 2)
       }
     }
-    generateFirrtlAndFileCheck(new MyParent)(
-      """|CHECK:      "target":"~MyParent|MyParent/inst:MyChild>out"
-         |CHECK-NEXT: "id":0
-         |CHECK:      "target":"~MyParent|MyChild>out"
-         |CHECK-NEXT: "id":1
-         |CHECK:      "target":"~MyParent|MyParent/inst:MyChild>out"
-         |CHECK-NEXT: "id":2
-         |""".stripMargin
-    )
+    ChiselStage
+      .emitCHIRRTL(new MyParent)
+      .fileCheck()(
+        """|CHECK:      "target":"~MyParent|MyParent/inst:MyChild>out"
+           |CHECK-NEXT: "id":0
+           |CHECK:      "target":"~MyParent|MyChild>out"
+           |CHECK-NEXT: "id":1
+           |CHECK:      "target":"~MyParent|MyParent/inst:MyChild>out"
+           |CHECK-NEXT: "id":2
+           |""".stripMargin
+      )
   }
 
   // TODO check these properties when using @instance API (especially preservation of totality)

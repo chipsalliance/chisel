@@ -2,7 +2,7 @@
 
 package chisel3
 
-import chiselTests.FileCheck
+import chisel3.testing.scalatest.FileCheck
 import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -23,7 +23,7 @@ class PlaceholderSpec extends AnyFlatSpec with Matchers with FileCheck {
 
     }
 
-    generateFirrtlAndFileCheck(new Foo) {
+    ChiselStage.emitCHIRRTL(new Foo).fileCheck() {
       s"""|CHECK:      wire b : UInt<2>
           |CHECK-NEXT: wire a : UInt<1>
           |""".stripMargin
@@ -54,7 +54,7 @@ class PlaceholderSpec extends AnyFlatSpec with Matchers with FileCheck {
 
     }
 
-    generateFirrtlAndFileCheck(new Foo) {
+    ChiselStage.emitCHIRRTL(new Foo).fileCheck() {
       s"""|CHECK:      wire c : UInt<3>
           |CHECK-NEXT: wire b : UInt<2>
           |CHECK-NEXT: wire d : UInt<4>
@@ -70,7 +70,7 @@ class PlaceholderSpec extends AnyFlatSpec with Matchers with FileCheck {
       val a = new Placeholder()
     }
 
-    generateFirrtlAndFileCheck(new Foo) {
+    ChiselStage.emitCHIRRTL(new Foo).fileCheck() {
       """|CHECK: public module Foo :
          |CHECK:   skip
          |""".stripMargin
@@ -97,7 +97,7 @@ class PlaceholderSpec extends AnyFlatSpec with Matchers with FileCheck {
 
     }
 
-    generateFirrtlAndFileCheck(new Foo) {
+    ChiselStage.emitCHIRRTL(new Foo).fileCheck() {
       """|CHECK:      module Bar :
          |CHECK-NOT:    {{wire|connect}}
          |

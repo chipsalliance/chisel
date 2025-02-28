@@ -6,8 +6,7 @@ import chisel3._
 import chisel3.simulator.PeekPokeAPI.FailedExpectationException
 import chisel3.simulator.{ChiselSettings, ChiselSim, MacroText}
 import chisel3.testing.HasTestingDirectory
-import chisel3.testing.scalatest.TestingDirectory
-import chiselTests.FileCheck
+import chisel3.testing.scalatest.{FileCheck, TestingDirectory}
 import java.nio.file.FileSystems
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
@@ -53,7 +52,7 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
         }
       }.getMessage
 
-      fileCheckString(message)(
+      message.fileCheck()(
         """|CHECK:      One or more assertions failed during Chiselsim simulation
            |CHECK-NEXT: ---
            |CHECK-NEXT: The following assertion failures were extracted from the log file:
@@ -78,7 +77,7 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
         }
       }.getMessage
 
-      fileCheckString(message)(
+      message.fileCheck()(
         """|CHECK:      One or more assertions failed during Chiselsim simulation
            |CHECK-NEXT: ---
            |CHECK-NEXT: The following assertion failures were extracted from the log file:
@@ -107,21 +106,20 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
 
       simulateRaw(new Foo, chiselSettings = chiselSettings) { _ => }
 
-      fileCheckString(
-        io.Source
-          .fromFile(
-            FileSystems
-              .getDefault()
-              .getPath(implicitly[HasTestingDirectory].getDirectory.toString, "workdir-verilator", "Makefile")
-              .toFile
-          )
-          .mkString
-      )(
-        """|CHECK:      '+define+ASSERT_VERBOSE_COND=svsimTestbench.a'
-           |CHECK-NEXT: '+define+PRINTF_COND=svsimTestbench.b'
-           |CHECK-NEXT: '+define+STOP_COND=!svsimTestbench.c'
-           |""".stripMargin
-      )
+      io.Source
+        .fromFile(
+          FileSystems
+            .getDefault()
+            .getPath(implicitly[HasTestingDirectory].getDirectory.toString, "workdir-verilator", "Makefile")
+            .toFile
+        )
+        .mkString
+        .fileCheck()(
+          """|CHECK:      '+define+ASSERT_VERBOSE_COND=svsimTestbench.a'
+             |CHECK-NEXT: '+define+PRINTF_COND=svsimTestbench.b'
+             |CHECK-NEXT: '+define+STOP_COND=!svsimTestbench.c'
+             |""".stripMargin
+        )
     }
   }
 

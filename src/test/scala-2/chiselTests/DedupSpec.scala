@@ -7,6 +7,7 @@ import chisel3.experimental.hierarchy._
 import chisel3.experimental.{annotate, dedupGroup}
 import chisel3.properties.Class
 import chisel3.stage.{ChiselGeneratorAnnotation, CircuitSerializationAnnotation}
+import chisel3.testing.scalatest.FileCheck
 import chisel3.util.circt.PlusArgsValue
 import chisel3.util.{Counter, Decoupled, Queue}
 import circt.stage.ChiselStage
@@ -172,7 +173,7 @@ class DedupSpec extends AnyFlatSpec with Matchers with FileCheck {
       .emitLazily(annotations.collect { case a: DedupGroupAnnotation => a })
       .mkString
 
-    fileCheckString(chirrtl)(
+    chirrtl.fileCheck()(
       """|CHECK:      "class":"firrtl.transforms.DedupGroupAnnotation"
          |CHECK-NEXT: "target":"~ModuleWithIntrinsic|ModuleWithIntrinsic"
          |CHECK-NEXT: "group":"ModuleWithIntrinsic"
@@ -194,7 +195,7 @@ class DedupSpec extends AnyFlatSpec with Matchers with FileCheck {
       .emitLazily(annotations.collect { case a: DedupGroupAnnotation => a })
       .mkString
 
-    fileCheckString(chirrtl)(
+    chirrtl.fileCheck()(
       """|CHECK:      "class":"firrtl.transforms.DedupGroupAnnotation"
          |CHECK-NEXT: "target":"~ModuleWithClass|ModuleWithClass"
          |CHECK-NEXT: "group":"ModuleWithClass"

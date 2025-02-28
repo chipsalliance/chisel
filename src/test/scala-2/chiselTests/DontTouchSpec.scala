@@ -5,6 +5,7 @@ package chiselTests
 import chisel3._
 import chisel3.probe.{Probe, ProbeValue}
 import chisel3.properties.Property
+import chisel3.testing.scalatest.FileCheck
 import circt.stage.ChiselStage
 import firrtl.transforms.DontTouchAnnotation
 import org.scalatest.flatspec.AnyFlatSpec
@@ -116,31 +117,35 @@ class DontTouchSpec extends AnyFlatSpec with Matchers with FileCheck {
   }
 
   "fields" should "be marked don't touch by default" in {
-    generateFirrtlAndFileCheck(
-      new HasDeadCodeLeaves(),
-      "--implicit-check-not",
-      """"target":"~HasDeadCodeLeaves|HasDeadCodeChildLeaves>io.a""""
-    )(
-      """|CHECK:      "class":"firrtl.transforms.DontTouchAnnotation",
-         |CHECK-NEXT: "target":"~HasDeadCodeLeaves|HasDeadCodeChildLeaves>io.a.a2"
-         |CHECK:      "class":"firrtl.transforms.DontTouchAnnotation",
-         |CHECK-NEXT: "target":"~HasDeadCodeLeaves|HasDeadCodeChildLeaves>io.a.a1"
-         |""".stripMargin
-    )
+    ChiselStage
+      .emitCHIRRTL(new HasDeadCodeLeaves())
+      .fileCheck(
+        "--implicit-check-not",
+        """"target":"~HasDeadCodeLeaves|HasDeadCodeChildLeaves>io.a""""
+      )(
+        """|CHECK:      "class":"firrtl.transforms.DontTouchAnnotation",
+           |CHECK-NEXT: "target":"~HasDeadCodeLeaves|HasDeadCodeChildLeaves>io.a.a2"
+           |CHECK:      "class":"firrtl.transforms.DontTouchAnnotation",
+           |CHECK-NEXT: "target":"~HasDeadCodeLeaves|HasDeadCodeChildLeaves>io.a.a1"
+           |""".stripMargin
+      )
   }
 
   "probes and properties" should "NOT be marked dontTouch" in {
-    generateFirrtlAndFileCheck(
-      new HasProbesAndProperties(),
-      "--implicit-check-not",
-      """"target":"~HasProbesAndProperties|HasProbesAndProperties>io.probe"""",
-      "--implicit-check-not",
-      """"target":"~HasProbesAndProperties|HasProbesAndProperties>io.prop""""
-    )(
-      """|CHECK:      "class":"firrtl.transforms.DontTouchAnnotation",
-         |CHECK-NEXT: "target":"~HasProbesAndProperties|HasProbesAndProperties>io.a"
-         |""".stripMargin
-    )
+    ChiselStage
+      .emitCHIRRTL(
+        new HasProbesAndProperties()
+      )
+      .fileCheck(
+        "--implicit-check-not",
+        """"target":"~HasProbesAndProperties|HasProbesAndProperties>io.probe"""",
+        "--implicit-check-not",
+        """"target":"~HasProbesAndProperties|HasProbesAndProperties>io.prop""""
+      )(
+        """|CHECK:      "class":"firrtl.transforms.DontTouchAnnotation",
+           |CHECK-NEXT: "target":"~HasProbesAndProperties|HasProbesAndProperties>io.a"
+           |""".stripMargin
+      )
 
     // Ensure can compile the result.
     ChiselStage.emitSystemVerilog(new HasProbesAndProperties())

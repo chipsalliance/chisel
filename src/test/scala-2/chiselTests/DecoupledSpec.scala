@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.testing.scalatest.FileCheck
 import circt.stage.ChiselStage
 import chisel3.util.Decoupled
 import org.scalatest.flatspec.AnyFlatSpec
@@ -21,17 +22,19 @@ class DecoupledSpec extends AnyFlatSpec with Matchers with FileCheck {
   }
 
   "Decoupled.map" should "apply a function to a wrapped Data" in {
-    generateFirrtlAndFileCheck(new Module {
-      val enq = IO(Flipped(Decoupled(UInt(8.W))))
-      val deq = IO(Decoupled(UInt(8.W)))
-      deq <> enq.map(_ + 1.U)
-    })("""|CHECK: node [[node1:[a-zA-Z0-9_]+]] = add(enq.bits, UInt<1>(0h1))
-          |CHECK: node [[node2:[a-zA-Z0-9_]+]] = tail([[node1]], 1)
-          |CHECK: connect [[result:[a-zA-Z0-9_]+]].bits, [[node2]]
-          |# Check for back-pressure (ready signal is driven in the opposite direction of bits + valid)
-          |CHECK: connect enq.ready, [[result]].ready
-          |CHECK: connect deq, [[result]]
-          |""".stripMargin)
+    ChiselStage
+      .emitCHIRRTL(new Module {
+        val enq = IO(Flipped(Decoupled(UInt(8.W))))
+        val deq = IO(Decoupled(UInt(8.W)))
+        deq <> enq.map(_ + 1.U)
+      })
+      .fileCheck()("""|CHECK: node [[node1:[a-zA-Z0-9_]+]] = add(enq.bits, UInt<1>(0h1))
+                      |CHECK: node [[node2:[a-zA-Z0-9_]+]] = tail([[node1]], 1)
+                      |CHECK: connect [[result:[a-zA-Z0-9_]+]].bits, [[node2]]
+                      |# Check for back-pressure (ready signal is driven in the opposite direction of bits + valid)
+                      |CHECK: connect enq.ready, [[result]].ready
+                      |CHECK: connect deq, [[result]]
+                      |""".stripMargin)
   }
 
   "Decoupled.map" should "apply a function to a wrapped Bundle" in {

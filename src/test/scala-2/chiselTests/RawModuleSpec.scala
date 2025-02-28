@@ -8,6 +8,7 @@ import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instanc
 import chisel3.reflect.DataMirror
 import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.RunUntilFinished
+import chisel3.testing.scalatest.FileCheck
 import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -75,7 +76,7 @@ class RawModuleSpec extends AnyFlatSpec with Matchers with ChiselSim with FileCh
   }
 
   "RawModule with atModuleBodyEnd" should "support late stage generators" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new RawModule {
         atModuleBodyEnd {
           val extraPort0 = IO(Output(Bool()))
@@ -87,7 +88,7 @@ class RawModuleSpec extends AnyFlatSpec with Matchers with ChiselSim with FileCh
           extraPort1 := 1.B
         }
       }
-    }(
+    }.fileCheck()(
       """|CHECK-LABEL: public module
          |CHECK:         output extraPort0 : UInt<1>
          |CHECK:         output extraPort1 : UInt<1>
@@ -98,7 +99,7 @@ class RawModuleSpec extends AnyFlatSpec with Matchers with ChiselSim with FileCh
   }
 
   "RawModule with atModuleBodyEnd" should "support multiple connects" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new RawModule {
         val port = IO(Output(UInt(2.W)))
 
@@ -112,7 +113,7 @@ class RawModuleSpec extends AnyFlatSpec with Matchers with ChiselSim with FileCh
 
         port := 1.U
       }
-    }(
+    }.fileCheck()(
       """|CHECK-LABEL: public module
          |CHECK:         output port : UInt<2>
          |CHECK:         connect port, UInt<1>(0h1)
@@ -175,7 +176,7 @@ class RawModuleSpec extends AnyFlatSpec with Matchers with ChiselSim with FileCh
   }
 
   "RawModule with afterModuleBuilt" should "be able to create other modules" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new RawModule {
         override def desiredName = "Foo"
         val port0 = IO(Input(Bool()))
@@ -187,7 +188,7 @@ class RawModuleSpec extends AnyFlatSpec with Matchers with ChiselSim with FileCh
           })
         }
       }
-    }(
+    }.fileCheck()(
       """|CHECK-LABEL: module Foo :
          |CHECK:         input port0 : UInt<1>
          |CHECK-LABEL: public module Bar :
@@ -215,17 +216,19 @@ class RawModuleSpec extends AnyFlatSpec with Matchers with ChiselSim with FileCh
       }
     }
 
-    generateFirrtlAndFileCheck(new Foo)(
-      """|CHECK-LABEL: module Foo :
-         |CHECK:         input port0 : UInt<1>
-         |CHECK-LABEL: public module Bar
-         |CHECK:         input port1 : UInt<1>
-         |CHECK:         inst foo1 of Foo
-         |CHECK:         inst foo2 of Foo
-         |CHECK:         connect foo1.port0, port1
-         |CHECK:         connect foo2.port0, port1
-         |""".stripMargin
-    )
+    ChiselStage
+      .emitCHIRRTL(new Foo)
+      .fileCheck()(
+        """|CHECK-LABEL: module Foo :
+           |CHECK:         input port0 : UInt<1>
+           |CHECK-LABEL: public module Bar
+           |CHECK:         input port1 : UInt<1>
+           |CHECK:         inst foo1 of Foo
+           |CHECK:         inst foo2 of Foo
+           |CHECK:         connect foo1.port0, port1
+           |CHECK:         connect foo2.port0, port1
+           |""".stripMargin
+      )
   }
 
   "RawModule marked as formal test" should "emit a formal test declaration" in {
@@ -252,18 +255,20 @@ class RawModuleSpec extends AnyFlatSpec with Matchers with ChiselSim with FileCh
       )
     }
 
-    generateFirrtlAndFileCheck(new Foo)(
-      """|CHECK: formal Foo of [[FOO:Foo_.*]] :
-         |CHECK: formal Foo_1 of [[FOO]] :
-         |CHECK:   hello = "world"
-         |CHECK: formal thisBetterWork of [[FOO]] :
-         |CHECK:   a_int = 42
-         |CHECK:   b_double = 13.37
-         |CHECK:   c_string = "hello"
-         |CHECK:   d_array = [42, "hello"]
-         |CHECK:   e_map = {x = 42, y = "hello"}
-         |CHECK: module [[FOO]] :
-         |""".stripMargin
-    )
+    ChiselStage
+      .emitCHIRRTL(new Foo)
+      .fileCheck()(
+        """|CHECK: formal Foo of [[FOO:Foo_.*]] :
+           |CHECK: formal Foo_1 of [[FOO]] :
+           |CHECK:   hello = "world"
+           |CHECK: formal thisBetterWork of [[FOO]] :
+           |CHECK:   a_int = 42
+           |CHECK:   b_double = 13.37
+           |CHECK:   c_string = "hello"
+           |CHECK:   d_array = [42, "hello"]
+           |CHECK:   e_map = {x = 42, y = "hello"}
+           |CHECK: module [[FOO]] :
+           |""".stripMargin
+      )
   }
 }

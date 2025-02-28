@@ -4,7 +4,9 @@ import chisel3._
 import chisel3.experimental.hierarchy._
 import chisel3.experimental.inlinetest._
 import chisel3.testers._
+import chisel3.testing.scalatest.FileCheck
 import chisel3.util.Enum
+import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -112,8 +114,10 @@ class ModuleWithTests(ioWidth: Int = 32) extends Module with HasMonitorSocket wi
 
 class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck {
   it should "generate a public module for each test" in {
-    generateFirrtlAndFileCheck(new ModuleWithTests)(
-      """
+    ChiselStage
+      .emitCHIRRTL(new ModuleWithTests)
+      .fileCheck()(
+        """
       | CHECK:      module ModuleWithTests
       | CHECK:        output monProbe : Probe<{ in : UInt<32>, out : UInt<32>}>
       |
@@ -143,18 +147,20 @@ class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck {
       | CHECK-NEXT:   connect monitor.io.out, read(dut.monProbe).out
       | CHECK-NEXT:   connect monitor.io.in, read(dut.monProbe).in
       """
-    )
+      )
   }
 
   it should "compile to verilog" in {
-    generateSystemVerilogAndFileCheck(new ModuleWithTests)(
-      """
+    ChiselStage
+      .emitSystemVerilog(new ModuleWithTests)
+      .fileCheck()(
+        """
       | CHECK: module ModuleWithTests
       | CHECK: module test_ModuleWithTests_foo
       | CHECK: module test_ModuleWithTests_bar
       | CHECK: module test_ModuleWithTests_with_result
       | CHECK: module test_ModuleWithTests_with_monitor
       """
-    )
+      )
   }
 }

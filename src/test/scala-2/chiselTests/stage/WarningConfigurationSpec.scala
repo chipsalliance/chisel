@@ -5,7 +5,8 @@ package chiselTests.stage
 import chisel3._
 import chisel3.testers.TestUtils
 import chisel3.experimental.SourceInfo
-import chiselTests.FileCheck
+import chisel3.testing.HasTestingDirectory
+import chisel3.testing.scalatest.FileCheck
 import circt.stage.ChiselStage
 
 import org.scalatest.funspec.AnyFunSpec
@@ -90,17 +91,11 @@ class WarningConfigurationSpec extends AnyFunSpec with Matchers with chiselTests
     lines should contain("  " + carat)
   }
 
-  private lazy val buildDir = {
-    val testRunDir = os.pwd / os.RelPath(firrtl.util.BackendCompilationUtilities.TestDirectory)
-    val suiteDir = testRunDir / suiteName
-    os.remove.all(suiteDir) // clear it each time
-    os.makeDir.all(suiteDir)
-    suiteDir
-  }
-
-  private def makeFile(name: String)(contents: String): java.io.File = {
-    val file = buildDir / name
-    os.write(file, contents)
+  private def makeFile(name: String)(contents: String)(implicit testingDirectory: HasTestingDirectory): java.io.File = {
+    val dir = os.pwd / os.RelPath(testingDirectory.getDirectory)
+    os.makeDir.all(dir)
+    val file = dir / name
+    os.write.over(file, contents)
     file.toIO
   }
 
@@ -127,7 +122,7 @@ class WarningConfigurationSpec extends AnyFunSpec with Matchers with chiselTests
       val args2 = Array("--warn-conf", "id=1:w,any:e", "--throw-on-first-error")
       val (log, _) = grabLog(ChiselStage.emitCHIRRTL(new ModuleWithWarning, args2))
       // Note: The regular expressions are to ignore ANSI color codes.
-      fileCheckString(log)(
+      log.toString.fileCheck()(
         """|CHECK: sample warning
            |CHECK: There were {{.*}}1 warning(s){{.*}} during hardware elaboration.
            |""".stripMargin
@@ -149,7 +144,7 @@ class WarningConfigurationSpec extends AnyFunSpec with Matchers with chiselTests
       val args2 = Array("--warn-conf", s"src=$thisFile:w,any:e", "--throw-on-first-error")
       val (log, _) = grabLog(ChiselStage.emitCHIRRTL(new ModuleWithWarning, args2))
       // Note: The regular expressions are to ignore ANSI color codes.
-      fileCheckString(log)(
+      log.toString.fileCheck()(
         """|CHECK: sample warning
            |CHECK: There were {{.*}}1 warning(s){{.*}} during hardware elaboration.
            |""".stripMargin
