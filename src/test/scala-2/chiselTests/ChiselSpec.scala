@@ -30,58 +30,6 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import chisel3.reflect.DataMirror
 
-trait WidthHelpers extends Assertions {
-
-  def assertKnownWidth(expected: Int, args: Iterable[String] = Nil)(gen: => Data)(implicit pos: Position): Unit = {
-    class TestModule extends Module {
-      val testPoint = gen
-      assert(testPoint.getWidth === expected)
-      val out = IO(chiselTypeOf(testPoint))
-      // Sanity check that firrtl doesn't change the width
-      val zero = 0.U(0.W).asTypeOf(chiselTypeOf(testPoint))
-      if (DataMirror.isWire(testPoint)) {
-        testPoint := zero
-      }
-      out := zero
-      out := testPoint
-    }
-    val verilog = ChiselStage.emitSystemVerilog(new TestModule, args.toArray, Array("-disable-all-randomization"))
-    expected match {
-      case 0 => assert(!verilog.contains("out"))
-      case 1 =>
-        assert(verilog.contains(s"out"))
-        assert(!verilog.contains(s"0] out"))
-      case _ => assert(verilog.contains(s"[${expected - 1}:0] out"))
-    }
-  }
-
-  def assertInferredWidth(expected: Int, args: Iterable[String] = Nil)(gen: => Data)(implicit pos: Position): Unit = {
-    class TestModule extends Module {
-      val testPoint = gen
-      assert(!testPoint.isWidthKnown, s"Asserting that width should be inferred yet width is known to Chisel!")
-      // Sanity check that firrtl doesn't change the width
-      val widthcheck = Wire(chiselTypeOf(testPoint))
-      dontTouch(widthcheck)
-      val zero = 0.U(0.W).asTypeOf(chiselTypeOf(testPoint))
-      if (DataMirror.isWire(testPoint)) {
-        testPoint := zero
-      }
-      widthcheck := zero
-      widthcheck := testPoint
-    }
-    val verilog =
-      ChiselStage.emitSystemVerilog(new TestModule, args.toArray :+ "--dump-fir", Array("-disable-all-randomization"))
-    expected match {
-      case 0 => assert(!verilog.contains("widthcheck"))
-      case 1 =>
-        assert(verilog.contains(s"widthcheck"))
-        assert(!verilog.contains(s"0] widthcheck"))
-      case _ => assert(verilog.contains(s"[${expected - 1}:0] widthcheck"))
-    }
-  }
-
-}
-
 /** Utilities for writing property-based checks */
 trait PropertyUtils extends ScalaCheckPropertyChecks {
 
