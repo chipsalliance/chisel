@@ -5,7 +5,9 @@ package firrtlTests
 import firrtl.FileUtils
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import scala.annotation.nowarn
 
+@nowarn("msg=object FileUtils in package firrtl is deprecated")
 class FileUtilsSpec extends AnyFlatSpec with Matchers {
 
   private val sampleAnnotations:         String = "annotations/SampleAnnotations.anno.json"

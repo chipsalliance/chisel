@@ -80,7 +80,9 @@ lazy val warningSuppression = Seq(
     "cat=deprecation&origin=chisel3\\.stage\\.phases.MaybeAspectPhase:s",
     "cat=deprecation&origin=chisel3\\.InstanceId:s",
     "cat=deprecation&origin=chisel3\\.testers\\.BasicTester:s",
-    "cat=deprecation&origin=chisel3\\.testers\\.TesterDriver:s"
+    "cat=deprecation&origin=chisel3\\.testers\\.TesterDriver:s",
+    "cat=deprecation&origin=firrtl\\.util\\.BackendCompilationUtilities.*:s",
+    "cat=deprecation&origin=firrtl\\.transforms\\.BlackBoxSourceHelper.*:s"
   ).mkString(",")
 )
 
