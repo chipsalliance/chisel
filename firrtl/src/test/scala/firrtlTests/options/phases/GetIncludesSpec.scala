@@ -8,7 +8,6 @@ import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq}
 import firrtl.annotations.{AnnotationFileNotFoundException, JsonProtocol, NoTargetAnnotation}
 import firrtl.options.phases.GetIncludes
 import firrtl.options.{InputAnnotationFileAnnotation, Phase}
-import firrtl.util.BackendCompilationUtilities
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
