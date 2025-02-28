@@ -4,7 +4,6 @@ package chiselTests.testing.scalatest
 
 import chisel3.testing.FileCheck.Exceptions
 import chisel3.testing.scalatest.FileCheck
-import chisel3.testing.scalatest.TestingDirectory
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -12,7 +11,7 @@ class FileCheckSpec extends AnyFlatSpec with Matchers with FileCheck {
 
   behavior of ("FileCheck")
 
-  it should "check a string showing success" in {
+  it should "check an input string and suceed" in {
     "Hello world!".fileCheck()(
       """|CHECK:      Hello
          |CHECK-SAME: world
@@ -21,7 +20,7 @@ class FileCheckSpec extends AnyFlatSpec with Matchers with FileCheck {
     "Hello world!".fileCheck()("CHECK: Hello world!")
   }
 
-  it should "check a string showing failure" in {
+  it should "throw a NonZeroExitCode exception on failure" in {
     intercept[Exceptions.NonZeroExitCode] {
       "Hello world!".fileCheck()("CHECK: no match")
     }
