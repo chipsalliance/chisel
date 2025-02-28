@@ -3,26 +3,8 @@
 package chiselTests
 
 import java.io.File
-<<<<<<< HEAD:src/test/scala/chiselTests/Harness.scala
-import firrtl.util.BackendCompilationUtilities._
-class HarnessSpec extends ChiselPropSpec {
-||||||| parent of 868c1958 (Mass deprecations, to be removed in Chisel 7 (#4754)):src/test/scala-2/chiselTests/Harness.scala
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.propspec.AnyPropSpec
-=======
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.propspec.AnyPropSpec
 import scala.annotation.nowarn
->>>>>>> 868c1958 (Mass deprecations, to be removed in Chisel 7 (#4754)):src/test/scala-2/chiselTests/Harness.scala
 
-<<<<<<< HEAD:src/test/scala/chiselTests/Harness.scala
-  def makeTrivialVerilog: (File => File) = makeHarness((prefix: String) => s"""
-||||||| parent of 868c1958 (Mass deprecations, to be removed in Chisel 7 (#4754)):src/test/scala-2/chiselTests/Harness.scala
-class HarnessSpec extends AnyPropSpec with Matchers {
-
-  def makeTrivialVerilog: (File => File) = makeHarness(
-    (prefix: String) => s"""
-=======
 @nowarn("msg=object BackendCompilationUtilities in package util is deprecated")
 @nowarn("msg=method makeHarness in object BackendCompilationUtilities is deprecated")
 @nowarn("msg=method cppToExe in object BackendCompilationUtilities is deprecated")
@@ -30,11 +12,9 @@ class HarnessSpec extends AnyPropSpec with Matchers {
 @nowarn("msg=method executeExpectingFailure in object BackendCompilationUtilities is deprecated")
 @nowarn("msg=method createTestDirectory in object BackendCompilationUtilities is deprecated")
 @nowarn("msg=method verilogToCpp in object BackendCompilationUtilities is deprecated")
-class HarnessSpec extends AnyPropSpec with Matchers {
+class HarnessSpec extends ChiselPropSpec {
 
-  def makeTrivialVerilog: (File => File) = makeHarness(
-    (prefix: String) => s"""
->>>>>>> 868c1958 (Mass deprecations, to be removed in Chisel 7 (#4754)):src/test/scala-2/chiselTests/Harness.scala
+  def makeTrivialVerilog: (File => File) = makeHarness((prefix: String) => s"""
 module ${prefix};
   initial begin
     $$display("$prefix!");
