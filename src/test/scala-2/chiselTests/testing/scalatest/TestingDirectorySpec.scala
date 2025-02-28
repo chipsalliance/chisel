@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chiselTests.simulator.scalatest
+package chiselTests.testing.scalatest
 
 import chisel3._
 import chisel3.testing.scalatest.TestingDirectory
@@ -51,7 +51,7 @@ class TestingDirectorySpec extends AnyFunSpec with Matchers with TestingDirector
     it("should generate a directory structure derived from the suite and test name") {
       checkDirectoryStructure(
         "build",
-        "WithTestingDirectorySpec",
+        "TestingDirectorySpec",
         "A-test-suite-mixing-in-WithTestingDirectory",
         "should-generate-a-directory-structure-derived-from-the-suite-and-test-name"
       ) {
@@ -62,7 +62,7 @@ class TestingDirectorySpec extends AnyFunSpec with Matchers with TestingDirector
     it("should generate another directory, too") {
       checkDirectoryStructure(
         "build",
-        "WithTestingDirectorySpec",
+        "TestingDirectorySpec",
         "A-test-suite-mixing-in-WithTestingDirectory",
         "should-generate-another-directory,-too"
       ) {
@@ -73,7 +73,7 @@ class TestingDirectorySpec extends AnyFunSpec with Matchers with TestingDirector
     it("should handle emojis, e.g., 🚀") {
       checkDirectoryStructure(
         "build",
-        "WithTestingDirectorySpec",
+        "TestingDirectorySpec",
         "A-test-suite-mixing-in-WithTestingDirectory",
         "should-handle-emojis,-e.g.,-🚀"
       ) {
@@ -84,7 +84,7 @@ class TestingDirectorySpec extends AnyFunSpec with Matchers with TestingDirector
     it("should handle CJK characters, e.g., 好猫咪") {
       checkDirectoryStructure(
         "build",
-        "WithTestingDirectorySpec",
+        "TestingDirectorySpec",
         "A-test-suite-mixing-in-WithTestingDirectory",
         "should-handle-CJK-characters,-e.g.,-好猫咪"
       ) {
