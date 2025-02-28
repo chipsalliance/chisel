@@ -23,7 +23,7 @@ abstract class ShouldntAssertTester(cyclesToWait: BigInt = 4) extends Module {
   when(done) { stop() }
 }
 
-class BoringUtilsSpec extends AnyFlatSpec with Matchers with Utils with FileCheck with ChiselSim {
+class BoringUtilsSpec extends AnyFlatSpec with Matchers with LogUtils with FileCheck with ChiselSim {
   val args = Array("--throw-on-first-error", "--full-stacktrace")
 
   class BoringInverter extends Module {

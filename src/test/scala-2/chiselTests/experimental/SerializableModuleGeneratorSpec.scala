@@ -45,7 +45,7 @@ class GCDSerializableModule(val parameter: GCDSerializableModuleParameter)
   io.z := z
 }
 
-class SerializableModuleGeneratorSpec extends AnyFlatSpec with Matchers with Utils {
+class SerializableModuleGeneratorSpec extends AnyFlatSpec with Matchers {
   val g = SerializableModuleGenerator(
     classOf[GCDSerializableModule],
     GCDSerializableModuleParameter(32)

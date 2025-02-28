@@ -366,7 +366,7 @@ class IsOneOfTester extends Module {
   stop()
 }
 
-class ChiselEnumSpec extends AnyFlatSpec with Matchers with Utils with ChiselSim with FileCheck {
+class ChiselEnumSpec extends AnyFlatSpec with Matchers with LogUtils with ChiselSim with FileCheck {
 
   behavior.of("ChiselEnum")
 

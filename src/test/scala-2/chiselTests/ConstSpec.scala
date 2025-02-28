@@ -4,12 +4,11 @@ import chisel3._
 import chisel3.experimental.BundleLiterals.AddBundleLiteralConstructor
 import chisel3.experimental.VecLiterals.AddVecLiteralConstructor
 import chisel3.probe.Probe
-import chiselTests.Utils
 import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-class ConstSpec extends AnyFlatSpec with Matchers with Utils {
+class ConstSpec extends AnyFlatSpec with Matchers {
 
   "Const modifier on a wire" should "emit FIRRTL const descriptors" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new Module {

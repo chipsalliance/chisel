@@ -39,7 +39,7 @@ class ModuleWithChoice[T <: Data](
   io <> inst
 }
 
-class ModuleChoiceSpec extends AnyFlatSpec with Matchers with Utils with FileCheck {
+class ModuleChoiceSpec extends AnyFlatSpec with Matchers with FileCheck {
   it should "emit options and cases" in {
     class ModuleWithValidChoices
         extends ModuleWithChoice(new VerifTarget)(Seq(Platform.FPGA -> new FPGATarget, Platform.ASIC -> new ASICTarget))

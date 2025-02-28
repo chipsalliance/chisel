@@ -58,7 +58,7 @@ object BoringUtilsTapSpec {
 
 }
 
-class BoringUtilsTapSpec extends AnyFlatSpec with Matchers with Utils with FileCheck {
+class BoringUtilsTapSpec extends AnyFlatSpec with Matchers with FileCheck {
   val args = Array("--throw-on-first-error", "--full-stacktrace")
   "Ready-only tap" should "work downwards from parent to child" in {
     class Foo extends RawModule {

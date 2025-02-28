@@ -10,12 +10,11 @@ import chisel3.ltl.AssertProperty
 import chisel3.probe.{define, Probe, ProbeValue}
 import chisel3.reflect.DataMirror.internal.chiselTypeClone
 import chisel3.testing.scalatest.FileCheck
-import chiselTests.Utils
 import java.nio.file.{FileSystems, Paths}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-class LayerSpec extends AnyFlatSpec with Matchers with Utils with FileCheck {
+class LayerSpec extends AnyFlatSpec with Matchers with FileCheck {
 
   val sep: String = FileSystems.getDefault().getSeparator()
 

@@ -34,7 +34,7 @@ class MultiAssignSpec extends AnyFlatSpec with Matchers with ChiselSim {
   }
 }
 
-class IllegalAssignSpec extends AnyFlatSpec with Matchers with Utils {
+class IllegalAssignSpec extends AnyFlatSpec with Matchers {
   "Reassignments to literals" should "be disallowed" in {
     intercept[ChiselException] {
       ChiselStage.emitCHIRRTL {

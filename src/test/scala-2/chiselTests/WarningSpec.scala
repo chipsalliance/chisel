@@ -8,7 +8,7 @@ import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-class WarningSpec extends AnyFlatSpec with Matchers with Utils {
+class WarningSpec extends AnyFlatSpec with Matchers with LogUtils {
   behavior.of("Warnings")
 
   object MyEnum extends ChiselEnum {

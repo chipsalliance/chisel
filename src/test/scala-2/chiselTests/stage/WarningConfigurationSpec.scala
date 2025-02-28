@@ -68,7 +68,7 @@ object WarningConfigurationSpec {
   }
 }
 
-class WarningConfigurationSpec extends AnyFunSpec with Matchers with chiselTests.Utils with FileCheck {
+class WarningConfigurationSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils with FileCheck {
   import WarningConfigurationSpec._
 
   private def checkInvalid(wconf: String, carat: String, expected: String): Unit = {
