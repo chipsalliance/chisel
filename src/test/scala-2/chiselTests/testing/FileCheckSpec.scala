@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chiselTests.testing
+package chiselTests.testing.scalatest
 
-import chisel3.testing.FileCheck
+import chisel3.testing.FileCheck.Exceptions
+import chisel3.testing.scalatest.FileCheck
 import chisel3.testing.scalatest.TestingDirectory
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-class FileCheckSpec extends AnyFlatSpec with Matchers with TestingDirectory with FileCheck {
+class FileCheckSpec extends AnyFlatSpec with Matchers with FileCheck {
 
   behavior of ("FileCheck")
 
@@ -21,7 +22,7 @@ class FileCheckSpec extends AnyFlatSpec with Matchers with TestingDirectory with
   }
 
   it should "check a string showing failure" in {
-    intercept[FileCheck.Exceptions.NonZeroExitCode] {
+    intercept[Exceptions.NonZeroExitCode] {
       "Hello world!".fileCheck()("CHECK: no match")
     }
   }
