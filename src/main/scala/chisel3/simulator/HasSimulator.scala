@@ -2,6 +2,7 @@
 
 package chisel3.simulator
 
+import chisel3.testing.HasTestingDirectory
 import java.nio.file.Files
 
 /** Type class for providing a simulator. */

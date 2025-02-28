@@ -2,6 +2,7 @@
 
 package chisel3.simulator
 
+import chisel3.testing.scalatest.TestingDirectory
 import org.scalatest.TestSuite
 
 package object scalatest {
@@ -21,6 +22,6 @@ package object scalatest {
     *
     * @see [[chisel3.simulator.ChiselSim]]
     */
-  trait ChiselSim extends PeekPokeAPI with SimulatorAPI with WithTestingDirectory { self: TestSuite => }
+  trait ChiselSim extends PeekPokeAPI with SimulatorAPI with TestingDirectory { self: TestSuite => }
 
 }

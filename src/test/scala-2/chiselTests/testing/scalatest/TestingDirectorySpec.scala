@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chiselTests.simulator.scalatest
+package chiselTests.testing.scalatest
 
 import chisel3._
-import chisel3.simulator.scalatest.WithTestingDirectory
+import chisel3.testing.scalatest.TestingDirectory
 import chisel3.simulator.DefaultSimulator._
 import java.nio.file.FileSystems
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 import scala.reflect.io.Directory
 
-class WithTestingDirectorySpec extends AnyFunSpec with Matchers with WithTestingDirectory {
+class TestingDirectorySpec extends AnyFunSpec with Matchers with TestingDirectory {
 
   /** Check that the directory structure and the files contained within make sense
     * for a Chiselsim/svsim build.
@@ -51,7 +51,7 @@ class WithTestingDirectorySpec extends AnyFunSpec with Matchers with WithTesting
     it("should generate a directory structure derived from the suite and test name") {
       checkDirectoryStructure(
         "build",
-        "WithTestingDirectorySpec",
+        "TestingDirectorySpec",
         "A-test-suite-mixing-in-WithTestingDirectory",
         "should-generate-a-directory-structure-derived-from-the-suite-and-test-name"
       ) {
@@ -62,7 +62,7 @@ class WithTestingDirectorySpec extends AnyFunSpec with Matchers with WithTesting
     it("should generate another directory, too") {
       checkDirectoryStructure(
         "build",
-        "WithTestingDirectorySpec",
+        "TestingDirectorySpec",
         "A-test-suite-mixing-in-WithTestingDirectory",
         "should-generate-another-directory,-too"
       ) {
@@ -73,7 +73,7 @@ class WithTestingDirectorySpec extends AnyFunSpec with Matchers with WithTesting
     it("should handle emojis, e.g., 🚀") {
       checkDirectoryStructure(
         "build",
-        "WithTestingDirectorySpec",
+        "TestingDirectorySpec",
         "A-test-suite-mixing-in-WithTestingDirectory",
         "should-handle-emojis,-e.g.,-🚀"
       ) {
@@ -84,7 +84,7 @@ class WithTestingDirectorySpec extends AnyFunSpec with Matchers with WithTesting
     it("should handle CJK characters, e.g., 好猫咪") {
       checkDirectoryStructure(
         "build",
-        "WithTestingDirectorySpec",
+        "TestingDirectorySpec",
         "A-test-suite-mixing-in-WithTestingDirectory",
         "should-handle-CJK-characters,-e.g.,-好猫咪"
       ) {

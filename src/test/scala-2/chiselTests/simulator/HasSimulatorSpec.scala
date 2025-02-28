@@ -2,7 +2,8 @@
 
 package chiselTests.simulator
 
-import chisel3.simulator.{HasSimulator, HasTestingDirectory, Simulator}
+import chisel3.simulator.{HasSimulator, Simulator}
+import chisel3.testing.HasTestingDirectory
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 
