@@ -117,7 +117,7 @@ class MultiClockMemTest extends Module {
   when(done) { stop() }
 }
 
-class MultiClockSpec extends AnyFlatSpec with Matchers with Utils with ChiselSim {
+class MultiClockSpec extends AnyFlatSpec with Matchers with LogUtils with ChiselSim {
 
   "withClock" should "scope the clock of registers" in {
     simulate(new ClockDividerTest)(RunUntilFinished(22))

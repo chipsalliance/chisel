@@ -5,7 +5,7 @@ package chiselTests.properties
 import chisel3._
 import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance}
 import chisel3.properties.{Class, DynamicObject, Property}
-import chiselTests.FileCheck
+import chisel3.testing.scalatest.FileCheck
 import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -14,13 +14,13 @@ class ClassSpec extends AnyFlatSpec with Matchers with FileCheck {
   behavior.of("Class")
 
   it should "serialize to FIRRTL with anonymous names" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new RawModule {
         Definition(new Class)
         Definition(new Class)
         Definition(new Class)
       }
-    }(
+    }.fileCheck()(
       """|CHECK: class Class
          |CHECK: class Class_1
          |CHECK: class Class_2
@@ -45,14 +45,14 @@ class ClassSpec extends AnyFlatSpec with Matchers with FileCheck {
   }
 
   it should "support Property type ports" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new RawModule {
         Definition(new Class {
           val in = IO(Input(Property[Int]()))
           val out = IO(Output(Property[Int]()))
         })
       }
-    }(
+    }.fileCheck()(
       """|CHECK: input in : Integer
          |CHECK: output out : Integer
          |""".stripMargin
@@ -84,7 +84,7 @@ class ClassSpec extends AnyFlatSpec with Matchers with FileCheck {
   }
 
   it should "support instantiation through its own API" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new RawModule {
         val cls = Definition(new Class {
           override def desiredName = "Test"
@@ -96,7 +96,7 @@ class ClassSpec extends AnyFlatSpec with Matchers with FileCheck {
         val obj1 = Class.unsafeGetDynamicObject("Test")
         val obj2 = Class.unsafeGetDynamicObject("Test")
       }
-    }(
+    }.fileCheck()(
       """|CHECK: class Test
          |CHECK: object obj1 of Test
          |CHECK: object obj2 of Test
@@ -105,7 +105,7 @@ class ClassSpec extends AnyFlatSpec with Matchers with FileCheck {
   }
 
   it should "support instantiation within a Class" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new RawModule {
         val cls = Definition(new Class {
           override def desiredName = "Test"
@@ -119,7 +119,7 @@ class ClassSpec extends AnyFlatSpec with Matchers with FileCheck {
           val obj1 = Class.unsafeGetDynamicObject("Test")
         })
       }
-    }(
+    }.fileCheck()(
       """|CHECK: class Test
          |CHECK: class Parent
          |CHECK: object obj1 of Test
@@ -128,7 +128,7 @@ class ClassSpec extends AnyFlatSpec with Matchers with FileCheck {
   }
 
   it should "support instantiation with Instance" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new RawModule {
         val cls = Definition(new Class {
           override def desiredName = "Test"
@@ -140,7 +140,7 @@ class ClassSpec extends AnyFlatSpec with Matchers with FileCheck {
         val obj1 = Instance(cls)
         val obj2 = Instance(cls)
       }
-    }(
+    }.fileCheck()(
       """|CHECK:         class Test
          |CHECK:         object obj1 of Test
          |CHECK:         object obj2 of Test
@@ -149,7 +149,7 @@ class ClassSpec extends AnyFlatSpec with Matchers with FileCheck {
   }
 
   it should "support @instantiable and @public" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       @instantiable
       class Test extends Class {
         @public val in = IO(Input(Property[Int]()))
@@ -165,7 +165,7 @@ class ClassSpec extends AnyFlatSpec with Matchers with FileCheck {
 
         obj2.in := obj1.out
       }
-    }(
+    }.fileCheck()(
       """|CHECK-LABEL: class Test
          |CHECK-LABEL: public module
          |CHECK:         object obj1 of Test

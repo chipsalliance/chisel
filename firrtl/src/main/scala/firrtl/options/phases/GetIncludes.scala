@@ -5,7 +5,6 @@ package firrtl.options.phases
 import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq}
 import firrtl.annotations.{AnnotationFileNotFoundException, JsonProtocol}
 import firrtl.options.{InputAnnotationFileAnnotation, Phase, StageUtils}
-import firrtl.FileUtils
 import firrtl.stage.AllowUnrecognizedAnnotations
 
 import java.io.File

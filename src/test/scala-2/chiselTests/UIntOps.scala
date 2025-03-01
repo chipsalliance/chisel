@@ -272,7 +272,7 @@ trait ShiftRightWidthBehavior extends WidthHelpers {
 
 }
 
-class UIntOpsSpec extends AnyPropSpec with Matchers with Utils with ShiftRightWidthBehavior with ChiselSim {
+class UIntOpsSpec extends AnyPropSpec with Matchers with LogUtils with ShiftRightWidthBehavior with ChiselSim {
 
   // This is intentionally a val outside of any ScalaTest constructs to check that it is legal
   // to create a literal outside of a Chisel context and *before* any Chisel contexts have been created

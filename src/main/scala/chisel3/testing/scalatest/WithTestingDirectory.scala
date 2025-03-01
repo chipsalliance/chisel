@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chisel3.simulator.scalatest
+package chisel3.testing.scalatest
 
-import chisel3.simulator.HasTestingDirectory
+import chisel3.testing.HasTestingDirectory
 import java.nio.file.{FileSystems, Path}
 import org.scalatest.TestSuite
 import scala.util.DynamicVariable
@@ -26,7 +26,7 @@ import scala.util.DynamicVariable
   * this trait.
   *
   */
-trait WithTestingDirectory { self: TestSuite =>
+trait TestingDirectory { self: TestSuite =>
 
   /** Return the name of the root test directory.
     *

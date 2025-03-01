@@ -3,6 +3,7 @@
 package chisel3.simulator
 
 import chisel3.{Module, RawModule}
+import chisel3.testing.HasTestingDirectory
 import chisel3.util.simpleClassName
 import java.nio.file.Files
 

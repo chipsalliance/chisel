@@ -114,7 +114,7 @@ class SIntLitZeroWidthTester extends Module {
   stop()
 }
 
-class SIntOpsSpec extends AnyPropSpec with Matchers with ShiftRightWidthBehavior with ChiselSim with Utils {
+class SIntOpsSpec extends AnyPropSpec with Matchers with ShiftRightWidthBehavior with ChiselSim with LogUtils {
 
   property("SIntOps should elaborate") {
     ChiselStage.emitCHIRRTL { new SIntOps }

@@ -55,7 +55,7 @@ class ReduceTreeTester extends Module {
   dut.io := DontCare
 }
 
-class VecSpec extends AnyPropSpec with Matchers with Utils {
+class VecSpec extends AnyPropSpec with Matchers with LogUtils {
 
   private def uint(value: BigInt): String = uint(value, value.bitLength.max(1))
   private def uint(value: BigInt, width: Int): String =

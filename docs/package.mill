@@ -79,9 +79,10 @@ object `package` extends RootModule with SbtModule with HasScala2Plugin with Has
 
   def mdoc = T {
     val classpath = runClasspath().map(_.path)
+    val outDir = mdocOutDir()
 
     val inOutArgs =
-      mdocSources().flatMap(inDir => Seq[String]("--in", inDir.path.toString, "--out", mdocOutDir().toString))
+      mdocSources().flatMap(inDir => Seq[String]("--in", inDir.path.toString, "--out", outDir.toString))
     val mdocArgs =
       Seq("--classpath", classpath.mkString(":")) ++
         Seq("--scalac-options", scalacOptions().map("\"" + _ + "\"").mkString(" ")) ++
@@ -91,7 +92,7 @@ object `package` extends RootModule with SbtModule with HasScala2Plugin with Has
 
     Jvm.runLocal("mdoc.Main", classpath, mdocArgs)
 
-    PathRef(T.dest)
+    PathRef(outDir)
   }
 
   def contributors = Task {

@@ -9,7 +9,9 @@ import chisel3.probe._
 import chisel3.properties.Property
 import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.RunUntilFinished
+import chisel3.testing.scalatest.FileCheck
 import chisel3.util.experimental.BoringUtils
+import circt.stage.ChiselStage
 import firrtl.annotations.Annotation
 import firrtl.transforms.DontTouchAnnotation
 import org.scalatest.flatspec.AnyFlatSpec
@@ -21,7 +23,7 @@ abstract class ShouldntAssertTester(cyclesToWait: BigInt = 4) extends Module {
   when(done) { stop() }
 }
 
-class BoringUtilsSpec extends AnyFlatSpec with Matchers with Utils with FileCheck with ChiselSim {
+class BoringUtilsSpec extends AnyFlatSpec with Matchers with LogUtils with FileCheck with ChiselSim {
   val args = Array("--throw-on-first-error", "--full-stacktrace")
 
   class BoringInverter extends Module {
@@ -149,22 +151,24 @@ class BoringUtilsSpec extends AnyFlatSpec with Matchers with Utils with FileChec
       b := BoringUtils.bore(bar.b_wire)
       c := BoringUtils.bore(c_wire)
     }
-    generateFirrtlAndFileCheck(new Foo)(
-      """|CHECK-LABEL: module Baz :
-         |CHECK:         output a_bore : UInt<1>
-         |CHECK:         connect a_bore, a_wire
-         |CHECK-LABEL: module Bar :
-         |CHECK:         output b_bore : UInt<2>
-         |CHECK:         connect a_bore, baz.a_bore
-         |CHECK:         connect b_bore, b_wire
-         |CHECK-LABEL: module Foo :
-         |CHECK:         connect a, a_bore
-         |CHECK:         connect b, b_bore
-         |CHECK:         connect c, c_wire
-         |CHECK:         connect a_bore, bar.a_bore
-         |CHECK:         connect b_bore, bar.b_bore
-         |""".stripMargin
-    )
+    ChiselStage
+      .emitCHIRRTL(new Foo)
+      .fileCheck()(
+        """|CHECK-LABEL: module Baz :
+           |CHECK:         output a_bore : UInt<1>
+           |CHECK:         connect a_bore, a_wire
+           |CHECK-LABEL: module Bar :
+           |CHECK:         output b_bore : UInt<2>
+           |CHECK:         connect a_bore, baz.a_bore
+           |CHECK:         connect b_bore, b_wire
+           |CHECK-LABEL: module Foo :
+           |CHECK:         connect a, a_bore
+           |CHECK:         connect b, b_bore
+           |CHECK:         connect c, c_wire
+           |CHECK:         connect a_bore, bar.a_bore
+           |CHECK:         connect b_bore, bar.b_bore
+           |""".stripMargin
+      )
   }
 
   it should "bore up and down through the lowest common ancestor" in {
@@ -181,19 +185,21 @@ class BoringUtilsSpec extends AnyFlatSpec with Matchers with Utils with FileChec
       val baz = Module(new Baz(bar.a))
     }
 
-    generateFirrtlAndFileCheck(new Foo)(
-      """|CHECK-LABEL: module Bar :
-         |CHECK:         output b_bore : UInt<1>
-         |CHECK:         connect b_bore, a
-         |CHECK-LABEL: module Baz :
-         |CHECK:         input b_bore : UInt<1>
-         |CHECK:         wire b_bore_1 : UInt<1>
-         |CHECK:         connect b, b_bore_1
-         |CHECK:         connect b_bore_1, b_bore
-         |CHECK-LABEL: module Foo
-         |CHECK:         connect baz.b_bore, bar.b_bore
-         |""".stripMargin
-    )
+    ChiselStage
+      .emitCHIRRTL(new Foo)
+      .fileCheck()(
+        """|CHECK-LABEL: module Bar :
+           |CHECK:         output b_bore : UInt<1>
+           |CHECK:         connect b_bore, a
+           |CHECK-LABEL: module Baz :
+           |CHECK:         input b_bore : UInt<1>
+           |CHECK:         wire b_bore_1 : UInt<1>
+           |CHECK:         connect b, b_bore_1
+           |CHECK:         connect b_bore_1, b_bore
+           |CHECK-LABEL: module Foo
+           |CHECK:         connect baz.b_bore, bar.b_bore
+           |""".stripMargin
+      )
   }
 
   it should "not create input probes" in {
@@ -255,13 +261,15 @@ class BoringUtilsSpec extends AnyFlatSpec with Matchers with Utils with FileChec
       val bar = Instance(Definition((new Bar)))
       val sink = BoringUtils.bore(bar.out)
     }
-    generateFirrtlAndFileCheck(new Foo)(
-      """|CHECK-LABEL: module Bar :
-         |CHECK:         output out : UInt<1>
-         |CHECK-LABEL: module Foo :
-         |CHECK:         connect sink, bar.out
-         |""".stripMargin
-    )
+    ChiselStage
+      .emitCHIRRTL(new Foo)
+      .fileCheck()(
+        """|CHECK-LABEL: module Bar :
+           |CHECK:         output out : UInt<1>
+           |CHECK-LABEL: module Foo :
+           |CHECK:         connect sink, bar.out
+           |""".stripMargin
+      )
   }
 
   it should "work if driving an Instance's input port" in {
@@ -274,13 +282,15 @@ class BoringUtilsSpec extends AnyFlatSpec with Matchers with Utils with FileChec
       val bar = Instance(Definition((new Bar)))
       val source = BoringUtils.drive(bar.in)
     }
-    generateFirrtlAndFileCheck(new Foo)(
-      """|CHECK-LABEL: module Bar :
-         |CHECK:         input in : UInt<1>
-         |CHECK-LABEL: module Foo :
-         |CHECK:         connect bar.in, source
-         |""".stripMargin
-    )
+    ChiselStage
+      .emitCHIRRTL(new Foo)
+      .fileCheck()(
+        """|CHECK-LABEL: module Bar :
+           |CHECK:         input in : UInt<1>
+           |CHECK-LABEL: module Foo :
+           |CHECK:         connect bar.in, source
+           |""".stripMargin
+      )
   }
 
   it should "work boring upwards" in {
@@ -293,16 +303,18 @@ class BoringUtilsSpec extends AnyFlatSpec with Matchers with Utils with FileChec
       val a = IO(Input(UInt(1.W)))
       val bar = Module(new Bar(a))
     }
-    generateFirrtlAndFileCheck(new Foo)(
-      """|CHECK-LABEL: module Bar :
-         |CHECK:         input q_bore : UInt<1>
-         |CHECK:         connect q, q_bore_1
-         |CHECK:         connect q_bore_1, q_bore
-         |CHECK-LABEL: module Foo :
-         |CHECK:         input a : UInt<1>
-         |CHECK:         connect bar.q_bore, a
-         |""".stripMargin
-    )
+    ChiselStage
+      .emitCHIRRTL(new Foo)
+      .fileCheck()(
+        """|CHECK-LABEL: module Bar :
+           |CHECK:         input q_bore : UInt<1>
+           |CHECK:         connect q, q_bore_1
+           |CHECK:         connect q_bore_1, q_bore
+           |CHECK-LABEL: module Foo :
+           |CHECK:         input a : UInt<1>
+           |CHECK:         connect bar.q_bore, a
+           |""".stripMargin
+      )
   }
 
   it should "be included in DataMirror.modulePorts" in {
@@ -390,18 +402,20 @@ class BoringUtilsSpec extends AnyFlatSpec with Matchers with Utils with FileChec
       val y = BoringUtils.bore(bar.a_wire)
     }
 
-    generateFirrtlAndFileCheck(new Foo)(
-      """|CHECK-LABEL: module Bar :
-         |CHECK:         output port : UInt<8>
-         |CHECK:         output x_bore : UInt<1>
-         |CHECK:         output y_bore : UInt<1>
-         |CHECK:         connect x_bore, a_wire
-         |CHECK:         connect y_bore, a_wire
-         |CHECK-LABEL: module Foo :
-         |CHECK:         connect x, bar.x_bore
-         |CHECK:         connect y, bar.y_bore
-         |""".stripMargin
-    )
+    ChiselStage
+      .emitCHIRRTL(new Foo)
+      .fileCheck()(
+        """|CHECK-LABEL: module Bar :
+           |CHECK:         output port : UInt<8>
+           |CHECK:         output x_bore : UInt<1>
+           |CHECK:         output y_bore : UInt<1>
+           |CHECK:         connect x_bore, a_wire
+           |CHECK:         connect y_bore, a_wire
+           |CHECK-LABEL: module Foo :
+           |CHECK:         connect x, bar.x_bore
+           |CHECK:         connect y, bar.y_bore
+           |""".stripMargin
+      )
   }
 
   it should "not create a new port when source is a port" in {
@@ -462,14 +476,16 @@ class BoringUtilsSpec extends AnyFlatSpec with Matchers with Utils with FileChec
       a := BoringUtils.bore(bar.baz.a)
     }
 
-    generateFirrtlAndFileCheck(new Foo)(
-      """|CHECK-LABEL: module Bar :
-         |CHECK:         output a_bore : Integer
-         |CHECK:         propassign a_bore, baz.a
-         |CHECK-LABEL: public module Foo :
-         |CHECK:         propassign a, bar.a_bore
-         |""".stripMargin
-    )
+    ChiselStage
+      .emitCHIRRTL(new Foo)
+      .fileCheck()(
+        """|CHECK-LABEL: module Bar :
+           |CHECK:         output a_bore : Integer
+           |CHECK:         propassign a_bore, baz.a
+           |CHECK-LABEL: public module Foo :
+           |CHECK:         propassign a, bar.a_bore
+           |""".stripMargin
+      )
   }
 
   it should "bore from an opaque type that wraps a Property" in {
@@ -495,14 +511,16 @@ class BoringUtilsSpec extends AnyFlatSpec with Matchers with Utils with FileChec
       a := BoringUtils.bore(bar.baz.a)
     }
 
-    generateFirrtlAndFileCheck(new Foo)(
-      """|CHECK-LABEL: module Bar :
-         |CHECK:         output a_bore : Integer
-         |CHECK:         propassign a_bore, baz.a
-         |CHECK-LABEL: public module Foo :
-         |CHECK:         propassign a_bore, bar.a_bore
-         |""".stripMargin
-    )
+    ChiselStage
+      .emitCHIRRTL(new Foo)
+      .fileCheck()(
+        """|CHECK-LABEL: module Bar :
+           |CHECK:         output a_bore : Integer
+           |CHECK:         propassign a_bore, baz.a
+           |CHECK-LABEL: public module Foo :
+           |CHECK:         propassign a_bore, bar.a_bore
+           |""".stripMargin
+      )
 
   }
 
@@ -535,14 +553,16 @@ class BoringUtilsSpec extends AnyFlatSpec with Matchers with Utils with FileChec
       a := BoringUtils.bore(bar.baz.a)
     }
 
-    generateFirrtlAndFileCheck(new Foo)(
-      """|CHECK-LABEL: module Bar :
-         |CHECK:         output a_bore : Integer
-         |CHECK:         propassign a_bore, baz.a
-         |CHECK-LABEL: public module Foo :
-         |CHECK:         propassign a_bore, bar.a_bore
-         |""".stripMargin
-    )
+    ChiselStage
+      .emitCHIRRTL(new Foo)
+      .fileCheck()(
+        """|CHECK-LABEL: module Bar :
+           |CHECK:         output a_bore : Integer
+           |CHECK:         propassign a_bore, baz.a
+           |CHECK-LABEL: public module Foo :
+           |CHECK:         propassign a_bore, bar.a_bore
+           |""".stripMargin
+      )
   }
 
   behavior.of("BoringUtils.drive")
@@ -575,16 +595,18 @@ class BoringUtilsSpec extends AnyFlatSpec with Matchers with Utils with FileChec
       BoringUtils.drive(foo.a) := 1.B
     }
 
-    generateFirrtlAndFileCheck(new Bar)(
-      """|CHECK-LABEL: module Foo :
-         |CHECK:         input bore
-         |CHECK:         connect a, bore
-         |CHECK-LABEL: module Bar :
-         |CHECK:         wire bore
-         |CHECK:         connect bore, UInt<1>(0h1)
-         |CHECK:         connect foo.bore, bore
-         |""".stripMargin
-    )
+    ChiselStage
+      .emitCHIRRTL(new Bar)
+      .fileCheck()(
+        """|CHECK-LABEL: module Foo :
+           |CHECK:         input bore
+           |CHECK:         connect a, bore
+           |CHECK-LABEL: module Bar :
+           |CHECK:         wire bore
+           |CHECK:         connect bore, UInt<1>(0h1)
+           |CHECK:         connect foo.bore, bore
+           |""".stripMargin
+      )
 
   }
 
@@ -599,14 +621,16 @@ class BoringUtilsSpec extends AnyFlatSpec with Matchers with Utils with FileChec
       BoringUtils.drive(foo.a) := Property(1)
     }
 
-    generateFirrtlAndFileCheck(new Bar)(
-      """|CHECK-LABEL: module Foo :
-         |CHECK:         input bore :
-         |CHECK:         propassign a, bore
-         |CHECK-LABEL: public module Bar :
-         |CHECK:         propassign foo.bore, Integer(1)
-         |""".stripMargin
-    )
+    ChiselStage
+      .emitCHIRRTL(new Bar)
+      .fileCheck()(
+        """|CHECK-LABEL: module Foo :
+           |CHECK:         input bore :
+           |CHECK:         propassign a, bore
+           |CHECK-LABEL: public module Bar :
+           |CHECK:         propassign foo.bore, Integer(1)
+           |""".stripMargin
+      )
   }
 
   it should "bore to the final instance, but not into it, for inputs" in {
@@ -624,14 +648,16 @@ class BoringUtilsSpec extends AnyFlatSpec with Matchers with Utils with FileChec
       BoringUtils.drive(bar.foo.a) := Property(1)
     }
 
-    generateFirrtlAndFileCheck(new Baz)(
-      """|CHECK-LABEL: module Bar :
-         |CHECK:         input bore :
-         |CHECK:         propassign foo.a, bore
-         |CHECK-LABEL: public module Baz :
-         |CHECK:         propassign bar.bore, Integer(1)
-         |""".stripMargin
-    )
+    ChiselStage
+      .emitCHIRRTL(new Baz)
+      .fileCheck()(
+        """|CHECK-LABEL: module Bar :
+           |CHECK:         input bore :
+           |CHECK:         propassign foo.a, bore
+           |CHECK-LABEL: public module Baz :
+           |CHECK:         propassign bar.bore, Integer(1)
+           |""".stripMargin
+      )
   }
 
   it should "bore into the final instance for outputs" in {
@@ -649,16 +675,18 @@ class BoringUtilsSpec extends AnyFlatSpec with Matchers with Utils with FileChec
       BoringUtils.drive(bar.foo.a) := Property(1)
     }
 
-    generateFirrtlAndFileCheck(new Baz)(
-      """|CHECK-LABEL: module Foo :
-         |CHECK:         input bore :
-         |CHECK:         propassign a, bore
-         |CHECk-LABEL: module Bar :
-         |CHECK:         input bore :
-         |CHECK:         propassign foo.bore, bore
-         |CHECK-LABEL: public module Baz :
-         |CHECK:         propassign bar.bore, Integer(1)
-         |""".stripMargin
-    )
+    ChiselStage
+      .emitCHIRRTL(new Baz)
+      .fileCheck()(
+        """|CHECK-LABEL: module Foo :
+           |CHECK:         input bore :
+           |CHECK:         propassign a, bore
+           |CHECk-LABEL: module Bar :
+           |CHECK:         input bore :
+           |CHECK:         propassign foo.bore, bore
+           |CHECK-LABEL: public module Baz :
+           |CHECK:         propassign bar.bore, Integer(1)
+           |""".stripMargin
+      )
   }
 }

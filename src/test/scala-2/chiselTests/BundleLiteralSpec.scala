@@ -13,7 +13,7 @@ import chisel3.experimental.BundleLiteralException
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-class BundleLiteralSpec extends AnyFlatSpec with Matchers with ChiselSim with Utils {
+class BundleLiteralSpec extends AnyFlatSpec with Matchers with ChiselSim with LogUtils {
   object MyEnum extends ChiselEnum {
     val sA, sB = Value
   }

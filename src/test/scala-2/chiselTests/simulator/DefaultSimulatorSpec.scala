@@ -3,9 +3,9 @@
 package chiselTests.simulator
 
 import chisel3._
-import chisel3.simulator.HasTestingDirectory
+import chisel3.testing.HasTestingDirectory
 import chisel3.simulator.DefaultSimulator._
-import chiselTests.FileCheck
+import chisel3.testing.FileCheck
 import java.nio.file.FileSystems
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
@@ -55,7 +55,7 @@ class DefaultSimulatorSpec extends AnyFunSpec with Matchers with FileCheck {
           }
         } { _.a.expect(true.B) }
       }.getMessage
-      fileCheckString(message) {
+      message.fileCheck() {
         """|CHECK:      Failed Expectation
            |CHECK-NEXT: ---
            |CHECK-NEXT: Observed value: '0'
