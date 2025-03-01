@@ -29,8 +29,16 @@ Subsections below describe these packages and their use.
 ## ChiselSim
 
 ChiselSim provides a number of methods that you can use to run simulations and
-provide stimulus to Chisel modules being tested.  To use ChiselSim, mix-in one
-of the following two traits into a class:
+provide stimulus to Chisel modules being tested.
+
+:::info
+
+ChiselSim requires the installation of a compatible simulator tool, like
+Verilator or VCS.
+
+:::
+
+To use ChiselSim, mix-in one of the following two traits into a class:
 
 - `chisel3.simulator.ChiselSim`
 - `chisel3.simulator.scalatest.ChiselSim`
@@ -183,10 +191,8 @@ to write [FileCheck](https://llvm.org/docs/CommandGuide/FileCheck.html) tests.
 
 :::info
 
-FileCheck is a tool used extensively in the testing of compilers in the LLVM
-ecosystem.  [CIRCT](https://github.com/llvm/circt), the compiler that converts
-the FIRRTL that Chisel produces into SystemVerilog, makes heavy use of FileCheck
-for its own testing.
+Use of FileCheck tests requires installation of the FileCheck binary.  FileCheck
+is typically packaged as part of LLVM.
 
 :::
 
@@ -214,6 +220,15 @@ For more information on the API see the [Chisel API
 documentation](https://www.chisel-lang.org/api) for `chisel3.testing.FileCheck`.
 For more information on FileCheck and its usage see the [FileCheck
 documentation](https://llvm.org/docs/CommandGuide/FileCheck.html).
+
+:::note
+
+FileCheck is a tool used extensively in the testing of compilers in the LLVM
+ecosystem.  [CIRCT](https://github.com/llvm/circt), the compiler that converts
+the FIRRTL that Chisel produces into SystemVerilog, makes heavy use of FileCheck
+for its own testing.
+
+:::
 
 ### Example
 
