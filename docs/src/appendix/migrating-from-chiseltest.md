@@ -26,6 +26,14 @@ It is not expected that new versions of Chisel will be compatible with the SFC.
 
 We recommend using the latest minor version of Chisel 5 and ChiselTest 5 for migrating. At the time of writing this is Chisel v5.1.0 and ChiselTest v5.0.2, but please check for later versions.
 
+:::note
+
+The ChiselSim APIs have changed since this migration guide was written.
+On Chisel 7 or later, you should use newer APIs described in [the testing explanation](../explanations/testing).
+It may still be useful to use the Chisel 5 APIs for ChiselSim as part of your migration.
+
+:::
+
 ## Migration
 
 ChiselSim provides a minimal `peek`, `poke`, `expect`, and `step` API, similar to that of ChiselTest.
