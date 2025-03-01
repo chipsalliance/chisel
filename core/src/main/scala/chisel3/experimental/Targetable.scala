@@ -97,9 +97,9 @@ object Targetable {
   }
 
   implicit def forAnyTargetable: Targetable[AnyTargetable] = new Targetable[AnyTargetable] {
-    def toTarget(a:         AnyTargetable):                           IsMember = a.toTarget
-    def toAbsoluteTarget(a: AnyTargetable):                           IsMember = a.toAbsoluteTarget
-    def toRelativeTarget(a: AnyTargetable, root: Option[BaseModule]): IsMember = a.toRelativeTarget(root)
+    def toTarget(a:                    AnyTargetable):      IsMember = a.toTarget
+    def toAbsoluteTarget(a:            AnyTargetable): IsMember = a.toAbsoluteTarget
+    def toRelativeTarget(a:            AnyTargetable, root: Option[BaseModule]): IsMember = a.toRelativeTarget(root)
     def toRelativeTargetToHierarchy(a: AnyTargetable, root: Option[Hierarchy[BaseModule]]): IsMember =
       a.toRelativeTargetToHierarchy(root)
   }
