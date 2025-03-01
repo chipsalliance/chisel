@@ -3,12 +3,12 @@
 package chisel3
 
 import firrtl.annotations.Annotation
-import firrtl.ir.{CircuitWithAnnos, Serializer}
+import firrtl.ir.CircuitWithAnnos
 import firrtl.options.{CustomFileEmission, Unserializable}
 import chisel3.experimental.{BaseModule, SourceInfo, UnlocatableSourceInfo}
 import chisel3.experimental.hierarchy.Definition
 import chisel3.internal.firrtl.ir.Circuit
-import chisel3.internal.firrtl.Converter
+import chisel3.internal.firrtl.{Converter, Serializer}
 
 /** The result of running Chisel elaboration
   *
@@ -84,18 +84,7 @@ private class ElaboratedCircuitImpl(circuit: Circuit, initialAnnotations: Seq[An
   }
 
   override def lazilySerialize(annotations: Iterable[Annotation]): Iterable[String] = {
-    val prelude = {
-      val dummyCircuit = circuit.copy(components = Nil)
-      val converted = Converter.convert(dummyCircuit)
-      val withAnnos = CircuitWithAnnos(converted, annotations.toVector)
-      Serializer.lazily(withAnnos)
-    }
-    val typeAliases: Seq[String] = circuit.typeAliases.map(_.name)
-    val modules = circuit.components.iterator.map(c => Converter.convert(c, typeAliases))
-    val moduleStrings = modules.flatMap { m =>
-      Serializer.lazily(m, 1) ++ Seq("\n\n")
-    }
-    prelude ++ moduleStrings
+    Serializer.lazily(circuit, annotations.toSeq)
   }
 
   override def annotations: Iterable[Annotation] = circuit.firrtlAnnotations
