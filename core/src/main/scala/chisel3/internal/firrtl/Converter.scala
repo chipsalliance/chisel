@@ -266,6 +266,13 @@ private[chisel3] object Converter {
       )
     case LayerBlock(info, layer, region) =>
       fir.LayerBlock(convert(info), layer, convert(region, ctx, typeAliases))
+    case c @ DefContract(info, ids, exprs) =>
+      fir.DefContract(
+        convert(info),
+        ids.map(_.getRef.name),
+        exprs.map(convert(_, ctx, info)),
+        convert(c.region, ctx, typeAliases)
+      )
     case Placeholder(info, block) =>
       convert(block, ctx, typeAliases)
   }
