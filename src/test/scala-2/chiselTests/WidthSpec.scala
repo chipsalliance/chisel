@@ -90,7 +90,7 @@ trait WidthHelpers extends Assertions {
       widthcheck := testPoint
     }
     val verilog =
-      ChiselStage.emitSystemVerilog(new TestModule, args.toArray :+ "--dump-fir", Array("-disable-all-randomization"))
+      ChiselStage.emitSystemVerilog(new TestModule, args.toArray, Array("-disable-all-randomization"))
     expected match {
       case 0 => assert(!verilog.contains("widthcheck"))
       case 1 =>
