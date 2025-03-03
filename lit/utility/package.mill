@@ -17,7 +17,7 @@ trait LitUtility
     with HasPanamaConverterModule
     with HasPanamaOMModule
     with CrossModuleBase
-    with HasScala2Plugin
+    with HasScalaPlugin
     with ScalafmtModule {
   override def scalacOptions = Task { Seq("-Ymacro-annotations") }
   override def circtPanamaBindingModule = panamaConverterModule.circtPanamaBindingModule
