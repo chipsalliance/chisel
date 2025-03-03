@@ -3,14 +3,14 @@
 package chiselTests.testing.scalatest
 
 import chisel3._
+import chisel3.simulator.SimulatorAPI
 import chisel3.testing.scalatest.TestingDirectory
-import chisel3.simulator.DefaultSimulator._
 import java.nio.file.FileSystems
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 import scala.reflect.io.Directory
 
-class TestingDirectorySpec extends AnyFunSpec with Matchers with TestingDirectory {
+class TestingDirectorySpec extends AnyFunSpec with Matchers with SimulatorAPI with TestingDirectory {
 
   /** Check that the directory structure and the files contained within make sense
     * for a Chiselsim/svsim build.
