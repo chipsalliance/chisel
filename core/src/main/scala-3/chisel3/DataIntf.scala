@@ -4,15 +4,7 @@ package chisel3
 
 import chisel3.experimental.SourceInfo
 
-/** This forms the root of the type system for wire data types. The data value
-  * must be representable as some number (need not be known at Chisel compile
-  * time) of bits, and must have methods to pack / unpack structured data to /
-  * from bits.
-  *
-  * @groupdesc Connect Utilities for connecting hardware components
-  * @define coll data
-  */
-abstract class Data extends DataImpl with SourceInfoDoc {
+private[chisel3] trait DataIntf { self: Data =>
 
   /** Does a reinterpret cast of the bits in this node into the format that provides.
     * Returns a new Wire of that type. Does not modify existing nodes.
@@ -33,5 +25,3 @@ abstract class Data extends DataImpl with SourceInfoDoc {
     */
   def asUInt: UInt = _asUIntImpl
 }
-
-object Data extends ObjectDataImpl
