@@ -361,13 +361,13 @@ class IntLiteralApplyTransform(val c: Context) extends AutoSourceTransform {
     c.macroApplication match {
       case q"$_.$clazz($lit).$func.apply($arg)" =>
         if (
-          Set("U", "S").contains(func.toString) &&
+          Set("U", "S", "asUInt", "asSInt").contains(func.toString) &&
           Set("fromStringToLiteral", "fromIntToLiteral", "fromLongToIteral", "fromBigIntToLiteral").contains(
             clazz.toString
           )
         ) {
           val msg =
-            s"""Passing an Int to .$func is usually a mistake: It does *not* set the width but does a bit extract.
+            s"""Passing an Int to .$func is usually a mistake: It does *not* set the width; it does a bit extraction.
                |Did you mean .$func($arg.W)?
                |If you do want bit extraction, use .$func.extract($arg) instead.
                |""".stripMargin
