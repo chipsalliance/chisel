@@ -470,7 +470,8 @@ static uint8_t *scanHexBits(const char **scanCursor, const char *scanEnd,
       carry = scannedByte >> 8;
       if ((carry & ~1) != 0) {
         failWithError("Unexpected error in carry computation for "
-                      "negative value when %s", description);
+                      "negative value when %s",
+                      description);
       }
     }
     bytes[scannedByteCount] = (uint8_t)scannedByte;
@@ -487,8 +488,8 @@ static uint8_t *scanHexBits(const char **scanCursor, const char *scanEnd,
   // A mask of the "inapplicable" bits in the high order byte, used to determine
   // if we received too many bits for the value we are trying to scan. This
   // value could be calculated with bitwise operations, but I find a table to be
-  // cleaner and easier to understand. There's no sign bit in Scala's `BigInt.toString(16)`,
-  // instead a minus sign will be present.
+  // cleaner and easier to understand. There's no sign bit in Scala's
+  // `BigInt.toString(16)`, instead a minus sign will be present.
   uint8_t highOrderByteMask;
   switch (bitCount % 8) {
   case 1:
@@ -660,7 +661,7 @@ static void processCommand() {
     resolveGettablePort(id, &port, "resolving port for GET_BITS command");
 
     int byteCount = (port.bitWidth + 7) / 8;
-    uint8_t *bytes = (uint8_t *)calloc( byteCount, sizeof(uint8_t));
+    uint8_t *bytes = (uint8_t *)calloc(byteCount, sizeof(uint8_t));
     assert(bytes != NULL);
     (*port.getter)(bytes);
     sendBits(bytes, port.bitWidth, isSigned);
@@ -939,7 +940,7 @@ void simulation_main(int argc, char const **argv) {
 }
 
 void run_simulation(int delay, int *done) {
-  if(!delay) {
+  if (!delay) {
     testbench->eval_step();
     *done = context->gotFinish();
     return;
