@@ -124,7 +124,7 @@ object Instance extends SourceInfoDoc {
     }
   }
 
-  class ImportedDefinitionExtModule(
+  private class ImportedDefinitionExtModule(
     override val desiredName: String,
     val importedDefinition:   Definition[BaseModule with IsInstantiable]
   ) extends ExtModule {
