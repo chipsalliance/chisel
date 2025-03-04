@@ -26,13 +26,24 @@ trait Svsim extends CrossSbtModule with HasCommonOptions with ScalafmtModule {
     def ivyDeps = Agg(v.scalatest, v.scalacheck)
   }
 
-  def clangformat = Task {
-    os.proc(
+  def clangFormatConfig = Task.Source {
+    Task.workspace / "svsim" / ".clang-format"
+  }
+
+  def cppSources = Task.Sources {
+    Task.workspace / "svsim" / "src" / "main" / "resources" / "simulation-driver.cpp"
+  }
+
+  def clangformat(args: String *) = Task.Command {
+    val args: Seq[os.Shellable] = Seq(
       "clang-format",
       "-i",
       "--verbose",
-      s"--style=file:${os.pwd / os.RelPath("svsim/.clang-format")}",
-      os.pwd / os.RelPath("svsim/src/main/resources/simulation-driver.cpp")
-    ).call(cwd = Task.dest)
+      s"--style=file:${clangFormatConfig().path}",
+      cppSources()
+    )
+    println(args)
+    os.proc(args)call(cwd = Task.dest)
   }
+
 }
