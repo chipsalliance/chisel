@@ -336,7 +336,26 @@ private[chisel3] object Serializer {
         } else {
           block.iterator.flatMap(serializeCommand(_, ctx, typeAliases))
         }
-      // TODO can we avoid checking 3 less common Commands every single time?
+      case cmd @ DefContract(info, names, exprs) =>
+        val start = {
+          implicit val b = new StringBuilder
+          doIndent()
+          b ++= "contract"
+          if (names.nonEmpty) {
+            b ++= names.map(_.getRef.name).mkString(" ", ", ", "")
+            b ++= " = "
+            exprs.zipWithIndex.foreach { case (expr, idx) =>
+              if (idx > 0) b ++= ", "
+              serialize(expr, ctx, info)
+            }
+          }
+          b ++= " :"
+          serialize(info)
+          newLineNoIndent()
+          Iterator(b.toString)
+        }
+        start ++ cmd.region.getAllCommands().flatMap(serializeCommand(_, ctx, typeAliases)(indent + 1))
+      // TODO can we avoid checking 4 less common Commands every single time?
       case simple =>
         // TODO avoid Iterator boxing for every simple command
         implicit val b = new StringBuilder
