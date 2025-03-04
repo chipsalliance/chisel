@@ -71,7 +71,7 @@ void initTestBenchScope() { testbenchScope = svGetScope(); }
 #ifdef __cplusplus
 extern "C" {
 #endif
-extern void run_simulation(int timesteps, int *done);
+extern void run_simulation(int timesteps, int *finish);
 extern void simulation_main(int argc, const char **argv);
 #ifdef __cplusplus
 }
@@ -151,6 +151,23 @@ enum {
   // proper arguments are passed to the compiler, including the desired
   // SVSIM_ENABLE_*_TRACING define.
   COMMAND_TRACE = 'W',
+
+  // Indicates the absence of a command.  This is used to keep track of when
+  // there is no outstanding command.
+  COMMAND_NONE = 0,
+};
+
+// Struct that tracks an outstanding command.  This is used to keep track of a
+// command that is being processed while `run_simulation` is called.  Different
+// simulators will handle this function differently and outstanding commands may
+// be left around.
+struct OutstandingCommand {
+
+  // The command being executed.
+  char command = COMMAND_NONE;
+
+  // The number of cycles that have elapsed.
+  int cycles = -1;
 };
 
 // Global state shared acrcoss all functions in this file.
@@ -171,9 +188,15 @@ static struct {
 
   const char *simulationTraceFilepath = NULL;
 
-  bool receivedDone = false;
-
   bool aslrShenanigansDetected = false;
+
+  // Track any outstanding commands that are executing while `run_simulation` is
+  // called.  This will be cleared by `simulation_final` before termination.
+  //
+  // TODO: This could evolve into a `std::hashmap` of commands to allow for
+  // multiple outstanding commands to be running at the same time, e.g., to
+  // enable fork/join simulation primitives.
+  OutstandingCommand outstandingCommand;
 } state;
 
 // -- Sending Messages
@@ -602,16 +625,18 @@ static void resolveGettablePort(int id, GettablePort *out,
 
 // -- Processing Commands
 
-static void processCommand() {
+// Read a command and process it.  Return true if the simulation is dead, either
+// due to a done command being received or the Verilog deciding to terminate.
+static bool processCommand() {
   const char *lineCursor = NULL;
   const char *lineEnd = NULL;
   readCommand(&lineCursor, &lineEnd);
 
   char commandCode = *(lineCursor++);
+  state.outstandingCommand = {/*command=*/commandCode, /*cycles=*/0};
   switch (commandCode) {
   case COMMAND_DONE: {
-    state.receivedDone = true;
-    break;
+    return true;
   }
   case COMMAND_LOG: {
     sendLog();
@@ -681,10 +706,10 @@ static void processCommand() {
     if (*lineCursor != '\n') {
       failWithError("Unexpected data at end of RUN command.");
     }
-    int done = 0;
-    run_simulation(time, &done);
-    if (done)
-      state.receivedDone = true;
+    int finish = 0;
+    run_simulation(time, &finish);
+    if (finish)
+      return true;
 
     sendAck();
     break;
@@ -758,7 +783,8 @@ static void processCommand() {
       failWithError("Unexpected data at end of TICK command: %s.", lineCursor);
     }
 
-    int cycles = 0;
+    int finish = 0;
+    int &cycles = state.outstandingCommand.cycles;
     while (cycles++ < maxCycleCount) {
       if (sentinelPort.getter != NULL) {
         (*sentinelPort.getter)(sentinelPortValue);
@@ -769,22 +795,17 @@ static void processCommand() {
       }
 
       (*tickingPort.setter)(inPhaseValue);
-      int done = 0;
-      run_simulation(timestepsPerPhase, &done);
-      if (done) {
-        state.receivedDone = true;
-        break;
-      }
+      run_simulation(timestepsPerPhase, &finish);
+      if (finish)
+        return true;
       (*tickingPort.setter)(outOfPhaseValue);
-      run_simulation(timestepsPerPhase, &done);
-      if (done) {
-        state.receivedDone = true;
-        break;
-      }
+      run_simulation(timestepsPerPhase, &finish);
+      if (finish)
+        return true;
     }
 
-    cycles--; // Consume the unbalanced increment from the while condition
-    sendUintAsBits(cycles);
+    // Consume the unbalanced increment from the while condition
+    sendUintAsBits(--cycles);
 
     free(inPhaseValue);
     free(outOfPhaseValue);
@@ -792,6 +813,7 @@ static void processCommand() {
       free(sentinelValue);
     if (sentinelPortValue != NULL)
       free(sentinelPortValue);
+
     break;
   }
   case COMMAND_TRACE: {
@@ -826,6 +848,9 @@ static void processCommand() {
   default:
     failWithError("Unknown opcode '%d'.", commandCode);
   }
+
+  state.outstandingCommand = {};
+  return false;
 }
 
 DPI_TASK_RETURN_TYPE simulation_body() {
@@ -836,8 +861,62 @@ DPI_TASK_RETURN_TYPE simulation_body() {
   /// If we have made it to `simulation_body`, there were no errors on startup
   /// and the first thing we do is send a READY message.
   sendReady();
-  while (!state.receivedDone)
-    processCommand();
+  // Repeatedly process commands until the simulation says it is done.
+  while (!processCommand())
+    ;
+  return DPI_TASK_RETURN_VALUE;
+}
+
+// This is called at the end of simulation from a Verilog `final` block.  This
+// clears any outstanding commands.
+DPI_TASK_RETURN_TYPE simulation_final() {
+
+  // Handle any outstanding commands.  This can happen if the simulator never
+  // returned to `processCommand` after executing `run_simulation`.
+  // Specifically, VCS hits this code path as it will (correctly) stop the
+  // simulation when it sees a `$finish` whereas Verilator will _not_ stop the
+  // simulation.
+  auto &[command, cycles] = state.outstandingCommand;
+  switch (command) {
+  // If the outstanding command is "done", then just exit.
+  case COMMAND_DONE:
+    return DPI_TASK_RETURN_VALUE;
+  // If the outstanding commadn is "none", then `processCommand` finished
+  // cleanly.
+  case COMMAND_NONE:
+    break;
+  // Handle outstanding commands.
+  case COMMAND_RUN:
+    sendAck();
+    break;
+  case COMMAND_TICK:
+    sendUintAsBits(--cycles);
+    break;
+  // This command should _not_ be outstanding.
+  default:
+    failWithError(
+        "Unimplemented handling of command '%c' in `simulation_final`",
+        command);
+  }
+
+  // Block until we see a "done" command.  Error if any command _other_ than a
+  // "done" command is received.
+  //
+  // TOOD: It may be reasonable to accept other commands here, e.g., "get"
+  // commands.  However, other commands, like "tick" must clearly be rejected.
+  const char *lineCursor = NULL;
+  const char *lineEnd = NULL;
+  readCommand(&lineCursor, &lineEnd);
+
+  char commandCode = *(lineCursor++);
+  switch (commandCode) {
+  case COMMAND_DONE:
+    break;
+  default:
+    failWithError("the simulation has already finished and can only accept "
+                  "'done' commands to shut it down");
+  }
+
   return DPI_TASK_RETURN_VALUE;
 }
 
@@ -947,15 +1026,18 @@ void simulation_main(int argc, char const **argv) {
   delete context;
 }
 
-void run_simulation(int delay, int *done) {
+// Run the simulation for some time delay.  Set finish if a Verilog finish was
+// called while ticking.  This is specific to Verilator because Verilator does
+// _not_ terminate the simulation when it hits a finish.
+void run_simulation(int delay, int *finish) {
   if (!delay) {
     testbench->eval_step();
-    *done = context->gotFinish();
+    *finish = context->gotFinish();
     return;
   }
   testbench->eval();
-  *done = context->gotFinish();
-  if (*done)
+  *finish = context->gotFinish();
+  if (*finish)
     return;
   context->timeInc(delay);
 }
