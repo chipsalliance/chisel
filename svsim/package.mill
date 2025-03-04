@@ -35,15 +35,13 @@ trait Svsim extends CrossSbtModule with HasCommonOptions with ScalafmtModule {
   }
 
   def clangformat(args: String *) = Task.Command {
-    val args: Seq[os.Shellable] = Seq(
+    os.proc(
       "clang-format",
       "-i",
       "--verbose",
       s"--style=file:${clangFormatConfig().path}",
       cppSources()
-    )
-    println(args)
-    os.proc(args)call(cwd = Task.dest)
+    ).call(cwd = Task.dest)
   }
 
 }
