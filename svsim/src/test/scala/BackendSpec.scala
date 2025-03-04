@@ -7,9 +7,13 @@ import org.scalatest.matchers.must.Matchers
 import svsim._
 import java.io.{BufferedReader, FileReader}
 import java.nio.file.Path
+import scala.util.matching.Regex
 import svsimTests.Resources.TestWorkspace
 
 class VCSSpec extends BackendSpec {
+
+  override val finishRe = "^\\$finish called from file.*$".r
+
   import vcs.Backend.CompilationSettings._
   val backend = vcs.Backend.initializeFromProcessEnvironment()
   val compilationSettings = vcs.Backend.CompilationSettings(
@@ -52,6 +56,9 @@ case class CustomVerilatorBackend(actualBackend: verilator.Backend) extends Back
 }
 
 class VerilatorSpec extends BackendSpec {
+
+  override val finishRe = "^.*: Verilog \\$finish".r
+
   import verilator.Backend.CompilationSettings._
   val backend = CustomVerilatorBackend(verilator.Backend.initializeFromProcessEnvironment())
   val compilationSettings = verilator.Backend.CompilationSettings(
@@ -61,6 +68,12 @@ class VerilatorSpec extends BackendSpec {
 }
 
 trait BackendSpec extends AnyFunSpec with Matchers {
+
+  /** A regulare expression that matches a line in a backend-specific simulation
+    * log indicating that a Verilog `$finish` took place.
+    */
+  def finishRe: Regex
+
   def test[Backend <: svsim.Backend](
     name:    String,
     backend: Backend
@@ -325,9 +338,9 @@ trait BackendSpec extends AnyFunSpec with Matchers {
             sentinel = None
           )
         }
-        val re = ".*Verilog \\$finish.*".r
+
         new BufferedReader(new FileReader(s"${simulation.workingDirectoryPath}/simulation-log.txt")).lines
-          .filter(re.matches(_))
+          .filter(finishRe.matches(_))
           .toArray
           .size must be(1)
       }
