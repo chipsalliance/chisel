@@ -153,47 +153,59 @@ enum {
   COMMAND_TRACE = 'W',
 };
 
-/**
- * Messages and commands are logged to an execution script for potential replay.
- * Messages start at -1 because the "READY" message does not have an associated
- * command
- */
-FILE *executionScript = NULL;
-int executionScriptMessageCount = 0;
-int executionScriptCommandCount = 1;
-int executionScriptLimit = -1;
+// Global state shared acrcoss all functions in this file.
+static struct {
+  FILE *executionScript = NULL;
+
+  int executionScriptMessageCount = 0;
+
+  int executionScriptCommandCount = 1;
+
+  int executionScriptLimit = -1;
+
+  FILE *messageStream = NULL;
+
+  const char *logFilePath = NULL;
+
+  FILE *commandStream = NULL;
+
+  const char *simulationTraceFilepath = NULL;
+
+  bool receivedDone = false;
+
+  bool aslrShenanigansDetected = false;
+} state;
 
 // -- Sending Messages
 
-bool shouldLogMessageToExecutionScript() {
-  return executionScript != NULL &&
-         (executionScriptLimit == -1 ||
-          executionScriptMessageCount < executionScriptLimit);
+static bool shouldLogMessageToExecutionScript() {
+  return state.executionScript != NULL &&
+         (state.executionScriptLimit == -1 ||
+          state.executionScriptMessageCount < state.executionScriptLimit);
 }
 
-FILE *messageStream = NULL;
 static void writeMessageStart(char messageCode) {
   if (shouldLogMessageToExecutionScript()) {
-    fprintf(executionScript, "%d< %c ", executionScriptMessageCount,
+    fprintf(state.executionScript, "%d< %c ", state.executionScriptMessageCount,
             messageCode);
   }
-  fprintf(messageStream, "%c ", messageCode);
+  fprintf(state.messageStream, "%c ", messageCode);
 }
 #define writeMessageBody(format, args...)                                      \
   {                                                                            \
-    fprintf(messageStream, format, ##args);                                    \
+    fprintf(state.messageStream, format, ##args);                              \
     if (shouldLogMessageToExecutionScript()) {                                 \
-      fprintf(executionScript, format, ##args);                                \
+      fprintf(state.executionScript, format, ##args);                          \
     }                                                                          \
   }
 static void writeMessageEnd() {
-  fprintf(messageStream, "\n");
-  fflush(messageStream);
+  fprintf(state.messageStream, "\n");
+  fflush(state.messageStream);
   if (shouldLogMessageToExecutionScript()) {
-    fprintf(executionScript, "\n");
-    fflush(executionScript);
+    fprintf(state.executionScript, "\n");
+    fflush(state.executionScript);
   }
-  executionScriptMessageCount += 1;
+  state.executionScriptMessageCount += 1;
 }
 
 #define writeMessage(messageCode, format, args...)                             \
@@ -290,8 +302,6 @@ static void sendUintAsBits(uint64_t value) {
   sendBits((uint8_t *)&value, sizeof(uint64_t) * 8, false);
 }
 
-// `logFilePath` is set in `main`
-const char *logFilePath = NULL;
 static void sendLog() {
   /// `stdout` is a file and needs to be flushed so that the log is present
   fflush(stdout);
@@ -299,12 +309,12 @@ static void sendLog() {
   /// RUN responds with a LOG message and the currently logged data
   static FILE *log = NULL;
   if (log == NULL) {
-    if (logFilePath == NULL) {
+    if (state.logFilePath == NULL) {
       failWithError("No log file specified.");
     }
-    log = fopen(logFilePath, "rb");
+    log = fopen(state.logFilePath, "rb");
     if (log == NULL) {
-      failWithError("Could not open log file '%s'.", logFilePath);
+      failWithError("Could not open log file '%s'.", state.logFilePath);
     }
   }
   // Determine how many bytes can be read
@@ -339,26 +349,27 @@ static void sendLog() {
 
 // A subsequent call to `readCommand` will invalidate the string returned by the
 // previous call.
-FILE *commandStream = NULL;
 static void readCommand(const char **start, const char **end) {
   static char *stringBuffer = NULL;
   static size_t stringBufferLength = 0;
-  int byteCount = getline(&stringBuffer, &stringBufferLength, commandStream);
-  if (executionScript != NULL) {
-    if (executionScriptLimit == -1 ||
-        executionScriptCommandCount <= executionScriptLimit) {
-      fprintf(executionScript, "%d> %s", executionScriptCommandCount,
-              stringBuffer);
-      executionScriptCommandCount += 1;
+  int byteCount =
+      getline(&stringBuffer, &stringBufferLength, state.commandStream);
+  if (state.executionScript != NULL) {
+    if (state.executionScriptLimit == -1 ||
+        state.executionScriptCommandCount <= state.executionScriptLimit) {
+      fprintf(state.executionScript, "%d> %s",
+              state.executionScriptCommandCount, stringBuffer);
+      state.executionScriptCommandCount += 1;
     }
-    if (executionScriptCommandCount == executionScriptLimit + 1) {
-      fprintf(executionScript,
+    if (state.executionScriptCommandCount == state.executionScriptLimit + 1) {
+      fprintf(state.executionScript,
               "# Execution script limited to %d commands (not counting "
               "implicit 'Done').\n",
-              executionScriptLimit);
-      fprintf(executionScript, "%d> D\n", executionScriptCommandCount);
+              state.executionScriptLimit);
+      fprintf(state.executionScript, "%d> D\n",
+              state.executionScriptCommandCount);
     }
-    fflush(executionScript);
+    fflush(state.executionScript);
   }
   const char *stringEnd = stringBuffer + byteCount - 1;
   if (byteCount <= 0) {
@@ -591,9 +602,6 @@ static void resolveGettablePort(int id, GettablePort *out,
 
 // -- Processing Commands
 
-const char *simulationTraceFilepath = NULL;
-
-bool receivedDone = false;
 static void processCommand() {
   const char *lineCursor = NULL;
   const char *lineEnd = NULL;
@@ -602,7 +610,7 @@ static void processCommand() {
   char commandCode = *(lineCursor++);
   switch (commandCode) {
   case COMMAND_DONE: {
-    receivedDone = true;
+    state.receivedDone = true;
     break;
   }
   case COMMAND_LOG: {
@@ -676,7 +684,7 @@ static void processCommand() {
     int done = 0;
     run_simulation(time, &done);
     if (done)
-      receivedDone = true;
+      state.receivedDone = true;
 
     sendAck();
     break;
@@ -764,13 +772,13 @@ static void processCommand() {
       int done = 0;
       run_simulation(timestepsPerPhase, &done);
       if (done) {
-        receivedDone = true;
+        state.receivedDone = true;
         break;
       }
       (*tickingPort.setter)(outOfPhaseValue);
       run_simulation(timestepsPerPhase, &done);
       if (done) {
-        receivedDone = true;
+        state.receivedDone = true;
         break;
       }
     }
@@ -803,7 +811,7 @@ static void processCommand() {
     case '1':
       if (!traceInitialized) {
         traceInitialized = true;
-        simulation_initializeTrace(simulationTraceFilepath);
+        simulation_initializeTrace(state.simulationTraceFilepath);
       }
       simulation_enableTrace();
       break;
@@ -820,26 +828,26 @@ static void processCommand() {
   }
 }
 
-bool aslrShenanigansDetected = false;
 DPI_TASK_RETURN_TYPE simulation_body() {
-  if (aslrShenanigansDetected) {
+  if (state.aslrShenanigansDetected) {
     failWithError("Backend did not relaunch the executable with ASLR disabled "
                   "as expected.");
   }
   /// If we have made it to `simulation_body`, there were no errors on startup
   /// and the first thing we do is send a READY message.
   sendReady();
-  while (!receivedDone)
+  while (!state.receivedDone)
     processCommand();
   return DPI_TASK_RETURN_VALUE;
 }
 
 int main(int argc, const char *argv[]) {
+
 #ifdef SVSIM_BACKEND_ENGAGES_IN_ASLR_SHENANIGANS
   if (!(personality(0xffffffff) & ADDR_NO_RANDOMIZE)) {
     // See note in `Workspace.scala` on
     // SVSIM_BACKEND_ENGAGES_IN_ASLR_SHENANIGANS
-    aslrShenanigansDetected = true;
+    state.aslrShenanigansDetected = true;
     simulation_main(argc, argv);
     failWithError("simulation_main returned.");
   }
@@ -851,32 +859,32 @@ int main(int argc, const char *argv[]) {
   if (stdinCopy == -1) {
     failWithError("Failed to duplicate stdin.");
   }
-  commandStream = fdopen(stdinCopy, "r");
-  if (commandStream == NULL) {
+  state.commandStream = fdopen(stdinCopy, "r");
+  if (state.commandStream == NULL) {
     failWithError("Failed to open command stream for writing.");
   }
   int stdoutCopy = dup(STDOUT_FILENO);
   if (stdoutCopy == -1) {
     failWithError("Failed to duplicate stdout.");
   }
-  messageStream = fdopen(stdoutCopy, "w");
-  if (messageStream == NULL) {
+  state.messageStream = fdopen(stdoutCopy, "w");
+  if (state.messageStream == NULL) {
     failWithError("Failed to open message stream for reading.");
   }
   if (freopen("/dev/null", "r", stdin) == NULL) {
     failWithError("Failed to redirect stdin to /dev/null.");
   }
-  logFilePath = getenv("SVSIM_SIMULATION_LOG");
-  if (logFilePath == NULL) {
-    logFilePath = "simulation-log.txt";
+  state.logFilePath = getenv("SVSIM_SIMULATION_LOG");
+  if (state.logFilePath == NULL) {
+    state.logFilePath = "simulation-log.txt";
   }
-  if (freopen(logFilePath, "w", stdout) == NULL) {
-    failWithError("Failed to redirect stdout to %s.", logFilePath);
+  if (freopen(state.logFilePath, "w", stdout) == NULL) {
+    failWithError("Failed to redirect stdout to %s.", state.logFilePath);
   }
 
-  simulationTraceFilepath = getenv("SVSIM_SIMULATION_TRACE");
-  if (simulationTraceFilepath == NULL) {
-    simulationTraceFilepath = "trace";
+  state.simulationTraceFilepath = getenv("SVSIM_SIMULATION_TRACE");
+  if (state.simulationTraceFilepath == NULL) {
+    state.simulationTraceFilepath = "trace";
   }
 
   const char *executionScriptLimitString =
@@ -887,12 +895,12 @@ int main(int argc, const char *argv[]) {
     if (value < 0 || value > INT_MAX) {
       failWithError("Invalid execution script limit '%ld'.", value);
     }
-    executionScriptLimit = (int)value;
+    state.executionScriptLimit = (int)value;
   }
   const char *executionScriptPath = getenv("SVSIM_EXECUTION_SCRIPT");
   if (executionScriptPath != NULL) {
-    executionScript = fopen(executionScriptPath, "w");
-    if (executionScript == NULL) {
+    state.executionScript = fopen(executionScriptPath, "w");
+    if (state.executionScript == NULL) {
       failWithError("Failed to open execution script for writing.");
     }
   }
