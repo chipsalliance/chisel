@@ -34,7 +34,7 @@ trait Svsim extends CrossSbtModule with HasCommonOptions with ScalafmtModule {
     Task.workspace / "svsim" / "src" / "main" / "resources" / "simulation-driver.cpp"
   }
 
-  def clangformat(args: String *) = Task.Command {
+  def clangformat(args: String*) = Task.Command {
     os.proc(
       "clang-format",
       "-i",
