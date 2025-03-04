@@ -405,8 +405,8 @@ static int scanInt(const char **lineCursor, const char *description) {
   return (int)value;
 }
 
-int scanHexCharacterReverse(const char **reverseScanCursor,
-                            const char *description) {
+static int scanHexCharacterReverse(const char **reverseScanCursor,
+                                   const char *description) {
   char value = **reverseScanCursor;
   if (value >= '0' && value <= '9') {
     (*reverseScanCursor)--;
@@ -423,9 +423,9 @@ int scanHexCharacterReverse(const char **reverseScanCursor,
   }
 }
 
-int scanHexByteReverse(const char **reverseScanCursor,
-                       const char *firstCharacterOfValue,
-                       const char *description) {
+static int scanHexByteReverse(const char **reverseScanCursor,
+                              const char *firstCharacterOfValue,
+                              const char *description) {
   char low = scanHexCharacterReverse(reverseScanCursor, description);
   if (*reverseScanCursor < firstCharacterOfValue) {
     return low;
