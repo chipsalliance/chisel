@@ -4,12 +4,7 @@ package chisel3
 
 import chisel3.experimental.SourceInfo
 
-object Clock {
-  def apply(): Clock = new Clock
-}
-
-// TODO: Document this.
-sealed class Clock extends ClockImpl {
+private[chisel3] trait ClockIntf { self: Clock =>
 
   /** Returns the contents of the clock wire as a [[Bool]]. */
   def asBool(using SourceInfo): Bool = _asBoolImpl
