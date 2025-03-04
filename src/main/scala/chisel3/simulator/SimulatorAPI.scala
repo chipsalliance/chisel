@@ -24,11 +24,13 @@ trait SimulatorAPI {
     */
   def simulateRaw[T <: RawModule](
     module:         => T,
-    chiselSettings: ChiselSettings[T] = ChiselSettings.defaultRaw[T]
+    chiselSettings: ChiselSettings[T] = ChiselSettings.defaultRaw[T],
+    enableTrace:    Boolean = false
   )(stimulus: (T) => Unit)(implicit hasSimulator: HasSimulator, testingDirectory: HasTestingDirectory): Unit = {
 
     hasSimulator.getSimulator
       .simulate(module, chiselSettings) { module =>
+        module.controller.setTraceEnabled(enableTrace)
         stimulus(module.wrapped)
       }
       .result
@@ -76,7 +78,8 @@ trait SimulatorAPI {
   def simulate[T <: Module](
     module:                => T,
     chiselSettings:        ChiselSettings[T] = ChiselSettings.default[T],
-    additionalResetCycles: Int = 0
+    additionalResetCycles: Int = 0,
+    enableTrace:           Boolean = false
   )(stimulus: (T) => Unit)(implicit hasSimulator: HasSimulator, testingDirectory: HasTestingDirectory): Unit = {
 
     hasSimulator.getSimulator
@@ -85,6 +88,9 @@ trait SimulatorAPI {
         val reset = module.port(dut.reset)
         val clock = module.port(dut.clock)
         val controller = module.controller
+
+        // Set the trace enable flag.
+        controller.setTraceEnabled(enableTrace)
 
         // Run the initialization procedure.
         controller.run(1)
