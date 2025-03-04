@@ -6,7 +6,7 @@ import _root_.logger.{LogLevel, Logger}
 import chisel3.BuildInfo.{firtoolVersion, version => chiselVersion}
 import chisel3.InternalErrorException
 import chisel3.experimental.hierarchy.core.ImportDefinitionAnnotation
-import chisel3.stage.{ChiselCircuitAnnotation, DesignAnnotation, SourceRootAnnotation}
+import chisel3.stage.{ChiselCircuitAnnotation, ChiselOptions, ChiselOptionsView, DesignAnnotation, SourceRootAnnotation}
 import circt.stage.{CIRCTOptions, CIRCTOptionsView, CIRCTTarget, EmittedMLIR, PreserveAggregate}
 import firrtl.annotations.JsonProtocol
 import firrtl.ir.CircuitWithAnnos
@@ -120,6 +120,7 @@ private[this] object Exceptions {
 }
 
 /** A phase that calls and runs CIRCT, specifically `firtool`, while preserving an [[firrtl.AnnotationSeq AnnotationSeq]] API. */
+// TODO this uses the converted FIRRTL circuit yet doesn't depend on anything--probably needs fixing and maybe we can stop using the FIRRTL CIRCT
 class CIRCT extends Phase {
 
   import Helpers._
@@ -142,8 +143,9 @@ class CIRCT extends Phase {
       case _                         =>
     }
 
-    val firrtlOptions = view[FirrtlOptions](annotations)
     val stageOptions = view[StageOptions](annotations)
+    val firrtlOptions = view[FirrtlOptions](annotations)
+    val chiselOptions = view[ChiselOptions](annotations)
 
     var logLevel = _root_.logger.LogLevel.None
     var split = circtOptions.splitVerilog
@@ -184,12 +186,11 @@ class CIRCT extends Phase {
       case a => Some(a)
     }
 
-    val (serialization: Iterable[String], circuitName: String) = firrtlOptions.firrtlCircuit match {
+    val (serialization: Iterable[String], circuitName: String) = chiselOptions.elaboratedCircuit match {
       case None => throw new OptionsException("No input file specified!")
       // TODO can we avoid converting, how else would we include filteredAnnos?
       case Some(circuit) =>
-        val cwa = CircuitWithAnnos(circuit = circuit, annotations = filteredAnnotations)
-        (firrtl.ir.Serializer.lazily(cwa), circuit.main)
+        (circuit.lazilySerialize(filteredAnnotations), circuit.name)
     }
 
     // FIRRTL is serialized either in memory or to a file

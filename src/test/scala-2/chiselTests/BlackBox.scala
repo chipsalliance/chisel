@@ -8,6 +8,7 @@ import chisel3.experimental._
 import chisel3.reflect.DataMirror
 import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.RunUntilFinished
+import chisel3.testing.scalatest.FileCheck
 import chisel3.util._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -220,7 +221,7 @@ class BlackBoxWithParamsTester extends Module {
   when(end) { stop() }
 }
 
-class BlackBoxSpec extends AnyFlatSpec with Matchers with ChiselSim {
+class BlackBoxSpec extends AnyFlatSpec with Matchers with ChiselSim with FileCheck {
   "A BlackBoxed inverter" should "work" in {
     simulate(new BlackBoxTester)(RunUntilFinished(5))
   }
@@ -248,6 +249,26 @@ class BlackBoxSpec extends AnyFlatSpec with Matchers with ChiselSim {
   }
   "A BlackBox using suggestName(\"io\")" should "work (but don't do this)" in {
     simulate(new BlackBoxTesterSuggestName)(RunUntilFinished(5))
+  }
+
+  "A Blackbox with Flipped IO" should "work" in {
+    class Top extends RawModule {
+      val inst = Module(new BlackBox {
+        override def desiredName: String = "MyBB"
+        val io = IO(Flipped(new Bundle {
+          val in = Bool()
+          val out = Flipped(Bool())
+        }))
+      })
+    }
+    ChiselStage
+      .emitCHIRRTL(new Top)
+      .fileCheck()(
+        """|CHECK:      module MyBB :
+           |CHECK-NEXT:   input in : UInt<1>
+           |CHECK-NEXT:   output out : UInt<1>
+           |""".stripMargin
+      )
   }
 
   "A BlackBox with no 'val io'" should "give a reasonable error message" in {
