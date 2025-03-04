@@ -324,6 +324,13 @@ object Flipped {
   }
 }
 
+private[chisel3] trait DataVirtualMethods {
+
+  private[chisel3] def _asTypeOfImpl[T <: Data](that: T)(implicit sourceInfo: SourceInfo): T
+
+  protected def _asUIntImpl(implicit sourceInfo: SourceInfo): UInt
+}
+
 /** This forms the root of the type system for wire data types. The data value
   * must be representable as some number (need not be known at Chisel compile
   * time) of bits, and must have methods to pack / unpack structured data to /
@@ -332,7 +339,7 @@ object Flipped {
   * @groupdesc Connect Utilities for connecting hardware components
   * @define coll data
   */
-private[chisel3] trait DataImpl extends HasId with NamedComponent { self: Data =>
+abstract class Data extends HasId with NamedComponent with DataIntf {
   import Data.ProbeInfo
 
   // This is a bad API that punches through object boundaries.
@@ -854,7 +861,7 @@ private[chisel3] trait DataImpl extends HasId with NamedComponent { self: Data =
   /** Returns Some(width) if the width is known, else None. */
   final def widthOption: Option[Int] = if (isWidthKnown) Some(getWidth) else None
 
-  private[chisel3] def _asTypeOfImpl[T <: Data](that: T)(implicit sourceInfo: SourceInfo): T = {
+  override private[chisel3] def _asTypeOfImpl[T <: Data](that: T)(implicit sourceInfo: SourceInfo): T = {
     that._fromUInt(this.asUInt).asInstanceOf[T].viewAsReadOnly { _ =>
       "Return values of asTypeOf are now read-only"
     }
@@ -877,7 +884,7 @@ private[chisel3] trait DataImpl extends HasId with NamedComponent { self: Data =
   def typeName: String = simpleClassName(this.getClass)
 }
 
-private[chisel3] trait ObjectDataImpl {
+object Data {
   // Needed for the `implicit def toConnectableDefault`
   import scala.language.implicitConversions
 
