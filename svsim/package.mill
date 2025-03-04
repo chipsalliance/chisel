@@ -25,4 +25,14 @@ trait Svsim extends CrossSbtModule with HasCommonOptions with ScalafmtModule {
   object test extends SbtTests with TestModule.ScalaTest with ScalafmtModule {
     def ivyDeps = Agg(v.scalatest, v.scalacheck)
   }
+
+  def clangformat = Task {
+    os.proc(
+      "clang-format",
+      "-i",
+      "--verbose",
+      s"--style=file:${os.pwd / os.RelPath("svsim/.clang-format")}",
+      os.pwd / os.RelPath("svsim/src/main/resources/simulation-driver.cpp")
+    ).call(cwd = Task.dest)
+  }
 }
