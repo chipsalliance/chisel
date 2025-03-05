@@ -3,7 +3,7 @@
 package chisel3.testing.scalatest
 
 import chisel3.testing.HasTestingDirectory
-import java.nio.file.{FileSystems, Path}
+import java.nio.file.{FileSystems, Path, Paths}
 import org.scalatest.TestSuite
 import scala.util.DynamicVariable
 
@@ -32,7 +32,7 @@ trait TestingDirectory { self: TestSuite =>
     *
     * For different behavior, please override this in your test suite.
     */
-  def buildDir: String = "build"
+  def buildDir: Path = Paths.get("build")
 
   // Assemble all the directories that should be created for this test.  This is
   // done by examining the test (via a fixture) and then setting a dynamic
@@ -68,7 +68,7 @@ trait TestingDirectory { self: TestSuite =>
 
     override def getDirectory: Path = FileSystems
       .getDefault()
-      .getPath(buildDir, self.suiteName +: getTestName: _*)
+      .getPath(buildDir.toString, self.suiteName +: getTestName: _*)
 
   }
 
