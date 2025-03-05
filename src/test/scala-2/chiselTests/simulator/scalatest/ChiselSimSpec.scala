@@ -80,7 +80,7 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
            |CHECK-NEXT: ---
            |CHECK-NEXT:      0  [5] %Error:
            |CHECK:      For more information, see the complete log file:
-           |CHECK:        build/ChiselSimSpec/scalatest.ChiselSim/should-error-if-a-chisel3.assert-fires-during-the-simulation/workdir-verilator/simulation-log.txt
+           |CHECK:        build/chiselsim/ChiselSimSpec/scalatest.ChiselSim/should-error-if-a-chisel3.assert-fires-during-the-simulation/workdir-verilator/simulation-log.txt
            |CHECK-NEXT: ---
            |""".stripMargin
       )
@@ -105,7 +105,7 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
            |CHECK-NEXT: ---
            |CHECK-NEXT:      0  [5] %Error:
            |CHECK:      For more information, see the complete log file:
-           |CHECK:        build/ChiselSimSpec/scalatest.ChiselSim/should-error-if-an-ltl.AssertProperty-fires-during-the-simulation/workdir-verilator/simulation-log.txt
+           |CHECK:        build/chiselsim/ChiselSimSpec/scalatest.ChiselSim/should-error-if-an-ltl.AssertProperty-fires-during-the-simulation/workdir-verilator/simulation-log.txt
            |CHECK-NEXT: ---
            |""".stripMargin
       )

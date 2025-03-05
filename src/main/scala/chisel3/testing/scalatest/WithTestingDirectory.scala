@@ -32,7 +32,7 @@ trait TestingDirectory { self: TestSuite =>
     *
     * For different behavior, please override this in your test suite.
     */
-  def buildDir: Path = Paths.get("build")
+  def buildDir: Path = Paths.get("build", "chiselsim")
 
   // Assemble all the directories that should be created for this test.  This is
   // done by examining the test (via a fixture) and then setting a dynamic

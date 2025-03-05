@@ -51,6 +51,7 @@ class TestingDirectorySpec extends AnyFunSpec with Matchers with SimulatorAPI wi
     it("should generate a directory structure derived from the suite and test name") {
       checkDirectoryStructure(
         "build",
+        "chiselsim",
         "TestingDirectorySpec",
         "A-test-suite-mixing-in-WithTestingDirectory",
         "should-generate-a-directory-structure-derived-from-the-suite-and-test-name"
@@ -62,6 +63,7 @@ class TestingDirectorySpec extends AnyFunSpec with Matchers with SimulatorAPI wi
     it("should generate another directory, too") {
       checkDirectoryStructure(
         "build",
+        "chiselsim",
         "TestingDirectorySpec",
         "A-test-suite-mixing-in-WithTestingDirectory",
         "should-generate-another-directory,-too"
@@ -73,6 +75,7 @@ class TestingDirectorySpec extends AnyFunSpec with Matchers with SimulatorAPI wi
     it("should handle emojis, e.g., 🚀") {
       checkDirectoryStructure(
         "build",
+        "chiselsim",
         "TestingDirectorySpec",
         "A-test-suite-mixing-in-WithTestingDirectory",
         "should-handle-emojis,-e.g.,-🚀"
@@ -84,6 +87,7 @@ class TestingDirectorySpec extends AnyFunSpec with Matchers with SimulatorAPI wi
     it("should handle CJK characters, e.g., 好猫咪") {
       checkDirectoryStructure(
         "build",
+        "chiselsim",
         "TestingDirectorySpec",
         "A-test-suite-mixing-in-WithTestingDirectory",
         "should-handle-CJK-characters,-e.g.,-好猫咪"
