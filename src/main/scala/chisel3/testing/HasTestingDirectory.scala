@@ -9,12 +9,10 @@ import java.util.Comparator
 /** This is a trait that can be mixed into a class to determine where
   * compilation should happen and where simulation artifacts should be written.
   */
-trait HasTestingDirectory {
+trait HasTestingDirectory { parent =>
 
   /** Return the directory where tests should be placed. */
   def getDirectory: Path
-
-  private def _getDirectory: Path = getDirectory
 
   /** Factory that returns a new `HasTestingDirectory` which will put test files
     * in a subdirectory of the parent `HasTestingDirectory`.
@@ -34,7 +32,7 @@ trait HasTestingDirectory {
     */
   def withSubdirectory(subdirectory: String): HasTestingDirectory = new HasTestingDirectory {
 
-    override def getDirectory = _getDirectory.resolve(subdirectory)
+    override def getDirectory = parent.getDirectory.resolve(subdirectory)
 
   }
 
