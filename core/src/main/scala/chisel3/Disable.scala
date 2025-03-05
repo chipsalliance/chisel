@@ -7,14 +7,22 @@ import chisel3.experimental.{OpaqueType, SourceInfo}
 
 import scala.collection.immutable.ListMap
 
+/** API for handling disabling of simulation constructs
+  *
+  * Disables may be non-synthesizable so they can only be used for disabling simulation constructs
+  *
+  * The default disable is the "hasBeenReset" of the currently in scope reset.
+  * It can be set by the user via the [[withDisable]] API
+  *
+  * Users can access the current `Disable` with [[Module.disable]]
+  */
 // We could just an OpaqueType, but since OpaqueTypes have some API holes, this non-Data type
-private[chisel3] trait DisableImpl {
-  private[chisel3] def value: Bool
+class Disable private[chisel3] (private[chisel3] val value: Bool) extends DisableIntf {
 
-  def _impl_unary_!(implicit sourceInfo: SourceInfo): Disable = new Disable(!this.value)
+  private[chisel3] def _impl_unary_!(implicit sourceInfo: SourceInfo): Disable = new Disable(!this.value)
 }
 
-private[chisel3] trait ObectDisableImpl { self: Disable.type =>
+object Disable {
 
   sealed trait Type
 
