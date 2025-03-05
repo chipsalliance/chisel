@@ -5,10 +5,12 @@ package chiselTests.testing.scalatest
 import chisel3._
 import chisel3.simulator.SimulatorAPI
 import chisel3.testing.scalatest.TestingDirectory
-import java.nio.file.FileSystems
+import java.nio.file.{FileSystems, Paths}
+import org.scalatest.Suite
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 import scala.reflect.io.Directory
+import scala.util.DynamicVariable
 
 class TestingDirectorySpec extends AnyFunSpec with Matchers with SimulatorAPI with TestingDirectory {
 
@@ -45,6 +47,10 @@ class TestingDirectorySpec extends AnyFunSpec with Matchers with SimulatorAPI wi
     }
 
   }
+
+  private val seed = new DynamicVariable[Option[String]](None)
+
+  override def subDir = seed.value.map(Paths.get(_))
 
   describe("A test suite mixing in WithTestingDirectory") {
 
@@ -86,6 +92,23 @@ class TestingDirectorySpec extends AnyFunSpec with Matchers with SimulatorAPI wi
         "A-test-suite-mixing-in-WithTestingDirectory",
         "should-handle-CJK-characters,-e.g.,-好猫咪"
       )
+    }
+
+  }
+
+  describe("A test that sets a subdirectory") {
+
+    it("should have a subdirectory") {
+      seed.withValue(Some("foo")) {
+        checkDirectoryStructure(
+          "build",
+          "chiselsim",
+          "TestingDirectorySpec",
+          "A-test-that-sets-a-subdirectory",
+          "should-have-a-subdirectory",
+          "foo"
+        )
+      }
     }
 
   }

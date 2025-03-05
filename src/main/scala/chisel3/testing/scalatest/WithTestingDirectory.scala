@@ -25,6 +25,26 @@ import scala.util.DynamicVariable
   * You may change the `buildDir` by overridding a method of the same name in
   * this trait.
   *
+  * If multiple tests are being run with the same directory, you may override
+  * the optional `subDir` to add hierarchy under final test directory.  This is
+  * typically used to add information about a test seed if one is used.
+  *
+  * E.g., the above directory structure can be modified to create a directory
+  * structure like the following:
+  *
+  * {{{
+  * <buildDir>
+  * └── <suite-name>
+  *     └── <scope-1-name>
+  *         └── ...
+  *             └── <scope-n-name>
+  *                 ├── <test-1-name>
+  *                 │   └── <subDir>
+  *                 ├── ...
+  *                 └── <test-n-name>
+  *                     └── <subDir>
+  * }}}
+  *
   */
 trait TestingDirectory { self: TestSuite =>
 
@@ -33,6 +53,12 @@ trait TestingDirectory { self: TestSuite =>
     * For different behavior, please override this in your test suite.
     */
   def buildDir: Path = Paths.get("build", "chiselsim")
+
+  /** An option subdirectory to put the test in _under_ theh final test directory.
+    * This is typically used to differentiate different runs of the same test,
+    * e.g., if the test is given a seed.
+    */
+  def subDir: Option[Path] = None
 
   // Assemble all the directories that should be created for this test.  This is
   // done by examining the test (via a fixture) and then setting a dynamic
@@ -68,7 +94,7 @@ trait TestingDirectory { self: TestSuite =>
 
     override def getDirectory: Path = FileSystems
       .getDefault()
-      .getPath(buildDir.toString, self.suiteName +: getTestName: _*)
+      .getPath(buildDir.toString, self.suiteName +: (getTestName ++ subDir.map(_.toString)): _*)
 
   }
 
