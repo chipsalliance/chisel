@@ -2,7 +2,7 @@
 
 package chisel3.simulator
 
-import chisel3.testing.scalatest.TestingDirectory
+import chisel3.testing.scalatest.{HasConfigMap, TestingDirectory}
 import org.scalatest.TestSuite
 
 package object scalatest {
