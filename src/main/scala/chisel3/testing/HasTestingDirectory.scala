@@ -14,6 +14,30 @@ trait HasTestingDirectory {
   /** Return the directory where tests should be placed. */
   def getDirectory: Path
 
+  private def _getDirectory: Path = getDirectory
+
+  /** Factory that returns a new `HasTestingDirectory` which will put test files
+    * in a subdirectory of the parent `HasTestingDirectory`.
+    *
+    * For example, the object `bar` will have an output directory of `foo/bar/`.
+    * {{{
+    * import java.nio.file.Paths
+    *
+    * val foo = new HasTestingDirectory {
+    *   override def getDirectory = Paths.get("foo")
+    * }
+    *
+    * val bar = foo.getSubDir("bar")
+    * }}}
+    *
+    * @param subdirectory a subdirectory
+    */
+  def withSubdirectory(subdirectory: String): HasTestingDirectory = new HasTestingDirectory {
+
+    override def getDirectory = _getDirectory.resolve(subdirectory)
+
+  }
+
 }
 
 /** This provides some default implementations of the [[HasTestingDirectory]]
