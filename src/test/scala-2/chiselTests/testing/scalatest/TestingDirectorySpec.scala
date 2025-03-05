@@ -12,10 +12,14 @@ import scala.reflect.io.Directory
 
 class TestingDirectorySpec extends AnyFunSpec with Matchers with SimulatorAPI with TestingDirectory {
 
+  private class Foo extends Module {
+    stop()
+  }
+
   /** Check that the directory structure and the files contained within make sense
     * for a Chiselsim/svsim build.
     */
-  private def checkDirectoryStructure[A](dir: String, subDirs: String*)(thunk: => A): Unit = {
+  private def checkDirectoryStructure[A](dir: String, subDirs: String*): Unit = {
 
     val directory = Directory(
       FileSystems.getDefault
@@ -27,7 +31,7 @@ class TestingDirectorySpec extends AnyFunSpec with Matchers with SimulatorAPI wi
     )
     directory.deleteRecursively()
 
-    thunk
+    simulate(new Foo) { _ => }
 
     val allFiles = directory.deepFiles.toSeq.map(_.toString).toSet
     for (
@@ -42,10 +46,6 @@ class TestingDirectorySpec extends AnyFunSpec with Matchers with SimulatorAPI wi
 
   }
 
-  private class Foo extends Module {
-    stop()
-  }
-
   describe("A test suite mixing in WithTestingDirectory") {
 
     it("should generate a directory structure derived from the suite and test name") {
@@ -55,9 +55,7 @@ class TestingDirectorySpec extends AnyFunSpec with Matchers with SimulatorAPI wi
         "TestingDirectorySpec",
         "A-test-suite-mixing-in-WithTestingDirectory",
         "should-generate-a-directory-structure-derived-from-the-suite-and-test-name"
-      ) {
-        simulate(new Foo()) { _ => }
-      }
+      )
     }
 
     it("should generate another directory, too") {
@@ -67,9 +65,7 @@ class TestingDirectorySpec extends AnyFunSpec with Matchers with SimulatorAPI wi
         "TestingDirectorySpec",
         "A-test-suite-mixing-in-WithTestingDirectory",
         "should-generate-another-directory,-too"
-      ) {
-        simulate(new Foo()) { _ => }
-      }
+      )
     }
 
     it("should handle emojis, e.g., 🚀") {
@@ -79,9 +75,7 @@ class TestingDirectorySpec extends AnyFunSpec with Matchers with SimulatorAPI wi
         "TestingDirectorySpec",
         "A-test-suite-mixing-in-WithTestingDirectory",
         "should-handle-emojis,-e.g.,-🚀"
-      ) {
-        simulate(new Foo()) { _ => }
-      }
+      )
     }
 
     it("should handle CJK characters, e.g., 好猫咪") {
@@ -91,9 +85,7 @@ class TestingDirectorySpec extends AnyFunSpec with Matchers with SimulatorAPI wi
         "TestingDirectorySpec",
         "A-test-suite-mixing-in-WithTestingDirectory",
         "should-handle-CJK-characters,-e.g.,-好猫咪"
-      ) {
-        simulate(new Foo()) { _ => }
-      }
+      )
     }
 
   }
