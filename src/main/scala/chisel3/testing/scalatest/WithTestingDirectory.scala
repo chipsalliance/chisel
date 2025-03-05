@@ -4,7 +4,7 @@ package chisel3.testing.scalatest
 
 import chisel3.testing.HasTestingDirectory
 import java.nio.file.{FileSystems, Path, Paths}
-import org.scalatest.TestSuite
+import org.scalatest.{TestSuite, TestSuiteMixin}
 import scala.util.DynamicVariable
 
 /** A mix-in for a Scalatest test suite that will setup the output directory for
@@ -26,7 +26,7 @@ import scala.util.DynamicVariable
   * this trait.
   *
   */
-trait TestingDirectory { self: TestSuite =>
+trait TestingDirectory extends TestSuiteMixin { self: TestSuite =>
 
   /** Return the name of the root test directory.
     *
@@ -37,11 +37,13 @@ trait TestingDirectory { self: TestSuite =>
   // Assemble all the directories that should be created for this test.  This is
   // done by examining the test (via a fixture) and then setting a dynamic
   // variable for that test.  The exacct structure of the test is extracted,
-  // including any nesting (Scalatest scopes) in the test.
+  // including any nesting (Scalatest scopes) in the test.  The
+  // `super.withFixture` function must be called to make this mix-in "stackable"
+  // with other mix-ins.
   private val testName: DynamicVariable[List[String]] = new DynamicVariable[List[String]](Nil)
-  override def withFixture(test: NoArgTest) = {
+  abstract override def withFixture(test: NoArgTest) = {
     testName.withValue(test.scopes.toList :+ test.text) {
-      test()
+      super.withFixture(test)
     }
   }
 
