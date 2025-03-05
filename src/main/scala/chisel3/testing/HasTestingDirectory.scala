@@ -27,7 +27,7 @@ object HasTestingDirectory {
     * E.g., this may produce something like:
     *
     * {{{
-    * test_run_dir
+    * build
     * └── chiselsim
     *     ├── 2025-02-05T16-58-02.175175
     *     ├── 2025-02-05T16-58-11.941263
@@ -37,7 +37,7 @@ object HasTestingDirectory {
   val timestamp: HasTestingDirectory = new HasTestingDirectory {
     override def getDirectory: Path = FileSystems
       .getDefault()
-      .getPath("test_run_dir", "chiselsim", LocalDateTime.now().toString.replace(':', '-'))
+      .getPath("build", "chiselsim", LocalDateTime.now().toString.replace(':', '-'))
   }
 
   /** An implementation generator of [[HasTestingDirectory]] which will use an
