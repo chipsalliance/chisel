@@ -31,14 +31,18 @@ trait HasConfigMap extends TestSuiteMixin { self: TestSuite =>
   // Implement this via a `DynamicVariable` pattern that will be set via the
   // `withFixture` method.  The `super.withFixture` function must be called to
   // make this mix-in "stackable" with other mix-ins.
-  private val _configMap: DynamicVariable[ConfigMap] = new DynamicVariable[ConfigMap](ConfigMap.empty)
+  private val _configMap: DynamicVariable[Option[ConfigMap]] = new DynamicVariable[Option[ConfigMap]](None)
   abstract override def withFixture(test: NoArgTest) = {
-    _configMap.withValue(test.configMap) {
+    _configMap.withValue(Some(test.configMap)) {
       super.withFixture(test)
     }
   }
 
-  /** Return command line options passed to the test as a `Map`. */
-  def configMap: Map[String, Any] = _configMap.value
+  /** Return the config map which contains all command line options passed to Scalatest.
+    *
+    * This is only valid during a test.  It will be `None` if used outside a
+    * test.
+    */
+  def configMap: Option[ConfigMap] = _configMap.value
 
 }
