@@ -24,7 +24,7 @@ class AliasedAggregateFieldException(message: String) extends chisel3.ChiselExce
 /** An abstract class for data types that solely consist of (are an aggregate
   * of) other Data objects.
   */
-private[chisel3] trait AggregateImpl extends Data { thiz: Aggregate =>
+sealed trait Aggregate extends Data {
 
   protected def checkingLitOption(checkForDontCares: Boolean): Option[BigInt] = {
     // Shift the accumulated value by our width and add in our component, masked by our width.
@@ -216,8 +216,10 @@ trait VecFactory extends SourceInfoDoc {
   *  - when multiple conflicting assignments are performed on a Vec element, the last one takes effect (unlike Mem, where the result is undefined)
   *  - Vecs, unlike classes in Scala's collection library, are propagated intact to FIRRTL as a vector type, which may make debugging easier
   */
-private[chisel3] abstract class VecImpl[T <: Data] private[chisel3] (gen: => T, val length: Int) extends AggregateImpl {
-  thiz: Vec[T] =>
+sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
+    extends Aggregate
+    with VecIntf[T]
+    with VecLike[T] {
 
   override def toString: String = {
     topBindingOpt match {
@@ -240,7 +242,7 @@ private[chisel3] abstract class VecImpl[T <: Data] private[chisel3] (gen: => T, 
   /** Save this result, as it can be very expensive to determine this otherwise */
   override private[chisel3] lazy val elementsContainProbe: Boolean = chisel3.internal.containsProbe(sample_element)
 
-  private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
+  override private[chisel3] def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
     this.maybeAddToParentIds(target)
     binding = target
 
@@ -356,7 +358,7 @@ private[chisel3] abstract class VecImpl[T <: Data] private[chisel3] (gen: => T, 
     */
   def :=(that: Vec[T])(implicit sourceInfo: SourceInfo): Unit = this.connect(that)
 
-  protected def _applyImpl(p: UInt)(implicit sourceInfo: SourceInfo): T = {
+  private[chisel3] def _applyImpl(p: UInt)(implicit sourceInfo: SourceInfo): T = {
     requireIsHardware(this, "vec")
     requireIsHardware(p, "vec index")
 
@@ -444,7 +446,7 @@ private[chisel3] abstract class VecImpl[T <: Data] private[chisel3] (gen: => T, 
     PString("Vec(") + Printables(elts) + PString(")")
   }
 
-  protected def _reduceTreeImpl(
+  private[chisel3] def _reduceTreeImpl(
     redOp:   (T, T) => T,
     layerOp: (T) => T = (x: T) => x
   )(
@@ -642,9 +644,11 @@ private[chisel3] abstract class VecImpl[T <: Data] private[chisel3] (gen: => T, 
   }
 }
 
-private[chisel3] trait VecInitImpl {
+object Vec extends VecFactory
 
-  protected def _applyImpl[T <: Data](elts: Seq[T])(implicit sourceInfo: SourceInfo): Vec[T] = {
+object VecInit extends VecInit$Intf {
+
+  private[chisel3] def _applyImpl[T <: Data](elts: Seq[T])(implicit sourceInfo: SourceInfo): Vec[T] = {
     // REVIEW TODO: this should be removed in favor of the apply(elts: T*)
     // varargs constructor, which is more in line with the style of the Scala
     // collection API. However, a deprecation phase isn't possible, since
@@ -664,7 +668,7 @@ private[chisel3] trait VecInitImpl {
     vec
   }
 
-  protected def _applyImpl[T <: Data](elt0: T, elts: T*)(implicit sourceInfo: SourceInfo): Vec[T] =
+  private[chisel3] def _applyImpl[T <: Data](elt0: T, elts: T*)(implicit sourceInfo: SourceInfo): Vec[T] =
     _applyImpl(elt0 +: elts.toSeq)
 
   protected def _tabulateImpl[T <: Data](
@@ -758,22 +762,25 @@ private[chisel3] trait VecInitImpl {
     _applyImpl(Seq.iterate(start, len)(f))
 }
 
-private[chisel3] trait VecLikeImpl[T <: Data] extends IndexedSeq[T] with HasId {
+/** A trait for [[Vec]]s containing common hardware generators for collection
+  * operations.
+  */
+trait VecLike[T <: Data] extends VecLikeImpl[T] with IndexedSeq[T] with HasId {
 
   // IndexedSeq has its own hashCode/equals that we must not use
   override def hashCode:          Int = super[HasId].hashCode
   override def equals(that: Any): Boolean = super[HasId].equals(that)
 
-  protected def _forallImpl(p: T => Bool)(implicit sourceInfo: SourceInfo): Bool =
+  private[chisel3] def _forallImpl(p: T => Bool)(implicit sourceInfo: SourceInfo): Bool =
     (this.map(p)).fold(true.B)(_ && _)
 
-  protected def _existsImpl(p: T => Bool)(implicit sourceInfo: SourceInfo): Bool =
+  private[chisel3] def _existsImpl(p: T => Bool)(implicit sourceInfo: SourceInfo): Bool =
     (this.map(p)).fold(false.B)(_ || _)
 
-  protected def _containsImpl(x: T)(implicit sourceInfo: SourceInfo, ev: T <:< UInt): Bool =
+  private[chisel3] def _containsImpl(x: T)(implicit sourceInfo: SourceInfo, ev: T <:< UInt): Bool =
     this._existsImpl(_ === x)
 
-  protected def _countImpl(p: T => Bool)(implicit sourceInfo: SourceInfo): UInt =
+  private[chisel3] def _countImpl(p: T => Bool)(implicit sourceInfo: SourceInfo): UInt =
     SeqUtils.count(this.map(p))
 
   /** Helper function that appends an index (literal value) to each element,
@@ -781,13 +788,13 @@ private[chisel3] trait VecLikeImpl[T <: Data] extends IndexedSeq[T] with HasId {
     */
   private def indexWhereHelper(p: T => Bool) = this.map(p).zip((0 until length).map(i => i.asUInt))
 
-  protected def _indexWhereImpl(p: T => Bool)(implicit sourceInfo: SourceInfo): UInt =
+  private[chisel3] def _indexWhereImpl(p: T => Bool)(implicit sourceInfo: SourceInfo): UInt =
     SeqUtils.priorityMux(indexWhereHelper(p))
 
-  protected def _lastIndexWhereImpl(p: T => Bool)(implicit sourceInfo: SourceInfo): UInt =
+  private[chisel3] def _lastIndexWhereImpl(p: T => Bool)(implicit sourceInfo: SourceInfo): UInt =
     SeqUtils.priorityMux(indexWhereHelper(p).reverse)
 
-  protected def _onlyIndexWhereImpl(p: T => Bool)(implicit sourceInfo: SourceInfo): UInt =
+  private[chisel3] def _onlyIndexWhereImpl(p: T => Bool)(implicit sourceInfo: SourceInfo): UInt =
     SeqUtils.oneHotMux(indexWhereHelper(p))
 }
 
@@ -796,7 +803,7 @@ private[chisel3] trait VecLikeImpl[T <: Data] extends IndexedSeq[T] with HasId {
   * Record should only be extended by libraries and fairly sophisticated generators.
   * RTL writers should use [[Bundle]].  See [[Record#elements]] for an example.
   */
-private[chisel3] trait RecordImpl extends AggregateImpl { thiz: Record =>
+abstract class Record extends Aggregate {
 
   /** The list of parameter accessors used in the constructor of this [[chisel3.Record]].
     *
@@ -885,7 +892,7 @@ private[chisel3] trait RecordImpl extends AggregateImpl { thiz: Record =>
   /* In the context of Records, containsAFlipped is assigned true if any of its children are flipped. */
   override def containsAFlipped: Boolean = _containsAFlipped
 
-  private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
+  override private[chisel3] def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
     this.maybeAddToParentIds(target)
     binding = target
 

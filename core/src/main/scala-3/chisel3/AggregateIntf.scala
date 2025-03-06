@@ -14,43 +14,7 @@ import chisel3.internal.firrtl._
 import java.lang.Math.{floor, log10, pow}
 import scala.collection.mutable
 
-/** An abstract class for data types that solely consist of (are an aggregate
-  * of) other Data objects.
-  */
-sealed trait Aggregate extends AggregateImpl
-
-/** A vector (array) of [[Data]] elements. Provides hardware versions of various
-  * collection transformation functions found in software array implementations.
-  *
-  * Careful consideration should be given over the use of [[Vec]] vs
-  * [[scala.collection.immutable.Seq Seq]] or some other Scala collection. In general [[Vec]] only
-  * needs to be used when there is a need to express the hardware collection in a [[Reg]] or IO
-  * [[Bundle]] or when access to elements of the array is indexed via a hardware signal.
-  *
-  * Example of indexing into a [[Vec]] using a hardware address and where the [[Vec]] is defined in
-  * an IO [[Bundle]]
-  *
-  *  {{{
-  *    val io = IO(new Bundle {
-  *      val in = Input(Vec(20, UInt(16.W)))
-  *      val addr = Input(UInt(5.W))
-  *      val out = Output(UInt(16.W))
-  *    })
-  *    io.out := io.in(io.addr)
-  *  }}}
-  *
-  * @tparam T type of elements
-  *
-  * @note
-  *  - when multiple conflicting assignments are performed on a Vec element, the last one takes effect (unlike Mem, where the result is undefined)
-  *  - Vecs, unlike classes in Scala's collection library, are propagated intact to FIRRTL as a vector type, which may make debugging easier
-  */
-sealed class Vec[T <: Data] private[chisel3] (gen: => T, length: Int)
-    extends VecImpl[T](gen, length)
-    with VecLike[T]
-    with Aggregate {
-
-  override def toString: String = super[VecImpl].toString
+private[chisel3] trait VecIntf[T <: Data] { self: Vec[T] =>
 
   def apply(p: UInt)(using SourceInfo): T = _applyImpl(p)
 
@@ -79,9 +43,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, length: Int)
   ): T = _reduceTreeImpl(redOp, layerOp)
 }
 
-object Vec extends VecFactory
-
-object VecInit extends VecInitImpl with SourceInfoDoc {
+private[chisel3] trait VecInit$Intf extends SourceInfoDoc { self: VecInit.type =>
 
   /** Creates a new [[Vec]] composed of elements of the input Seq of [[Data]]
     * nodes.
@@ -208,10 +170,7 @@ object VecInit extends VecInitImpl with SourceInfoDoc {
   ): Vec[T] = _iterateImpl(start, len)(f)
 }
 
-/** A trait for [[Vec]]s containing common hardware generators for collection
-  * operations.
-  */
-trait VecLike[T <: Data] extends VecLikeImpl[T] with SourceInfoDoc {
+private[chisel3] trait VecLikeImpl[T <: Data] extends SourceInfoDoc { self: VecLike[T] =>
 
   /** Creates a dynamically indexed read or write accessor into the array.
     */
@@ -254,10 +213,3 @@ trait VecLike[T <: Data] extends VecLikeImpl[T] with SourceInfoDoc {
     */
   def onlyIndexWhere(p: T => Bool)(using SourceInfo): UInt = _onlyIndexWhereImpl(p)
 }
-
-/** Base class for Aggregates based on key values pairs of String and Data
-  *
-  * Record should only be extended by libraries and fairly sophisticated generators.
-  * RTL writers should use [[Bundle]].  See [[Record#elements]] for an example.
-  */
-abstract class Record extends Aggregate with RecordImpl
