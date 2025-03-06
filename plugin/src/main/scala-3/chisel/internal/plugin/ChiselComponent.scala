@@ -13,9 +13,9 @@ import dotty.tools.dotc.core.Constants.Constant
 import dotty.tools.dotc.typer.TyperPhase
 import dotty.tools.dotc.plugins.{PluginPhase, StandardPlugin}
 import dotty.tools.dotc.transform.{Pickler, PostTyper, Erasure}
+import dotty.tools.dotc.core.Types.*
 
 import scala.annotation.tailrec
-import scala.quoted.*
 
 class ChiselComponent extends StandardPlugin {
   val name: String = "ChiselComponent"
@@ -59,11 +59,28 @@ class ChiselComponentPhase extends PluginPhase {
   val phaseName: String = "chiselComponentPhase"
   override val runsAfter = Set(TyperPhase.name)
 
+
   override def transformValDef(tree: tpd.ValDef)(using Context): tpd.Tree = {
+
+    val dataTpe = requiredClassRef("chisel3.Data")
+    val memBaseTpe = requiredClassRef("chisel3.MemBase")
+    val verifTpe = requiredClassRef("chisel3.VerificationStatement")
+    val dynObjTpe = requiredClassRef("chisel3.Disable")
+    val affectsTpe = requiredClassRef("chisel3.experimental.AffectsChiselName")
+
+    def isNamed(t: Type): Boolean = {
+      t <:< dataTpe ||
+      t <:< memBaseTpe ||
+      t <:< verifTpe ||
+      t <:< dynObjTpe ||
+      t <:< affectsTpe
+    }
     val valName: String = tree.name.show
+    println(s"tpe: ${isNamed(tree.tpt.tpe)}")
+
     val nameLiteral = Literal(Constant(valName))
     val pluginModule = requiredModule("chisel3.internal.plugin")
-    val autoNameMethod = pluginSym.requiredMethod("autoNameRecursively")
+    val autoNameMethod = pluginModule.requiredMethod("autoNameRecursively")
     val newRhs = tpd.ref(pluginModule).select(autoNameMethod).appliedToType(tree.rhs.tpe).appliedTo(nameLiteral).appliedTo(tree.rhs)
     tpd.cpy.ValDef(tree)(rhs = newRhs)
     // case dd @ tpd.ValDef(name, tpt, rhs) =>
