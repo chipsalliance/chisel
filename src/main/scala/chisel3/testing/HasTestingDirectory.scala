@@ -9,10 +9,32 @@ import java.util.Comparator
 /** This is a trait that can be mixed into a class to determine where
   * compilation should happen and where simulation artifacts should be written.
   */
-trait HasTestingDirectory {
+trait HasTestingDirectory { parent =>
 
   /** Return the directory where tests should be placed. */
   def getDirectory: Path
+
+  /** Factory that returns a new `HasTestingDirectory` which will put test files
+    * in a subdirectory of the parent `HasTestingDirectory`.
+    *
+    * For example, the object `bar` will have an output directory of `foo/bar/`.
+    * {{{
+    * import java.nio.file.Paths
+    *
+    * val foo = new HasTestingDirectory {
+    *   override def getDirectory = Paths.get("foo")
+    * }
+    *
+    * val bar = foo.getSubDir("bar")
+    * }}}
+    *
+    * @param subdirectory a subdirectory
+    */
+  def withSubdirectory(subdirectory: String): HasTestingDirectory = new HasTestingDirectory {
+
+    override def getDirectory = parent.getDirectory.resolve(subdirectory)
+
+  }
 
 }
 
