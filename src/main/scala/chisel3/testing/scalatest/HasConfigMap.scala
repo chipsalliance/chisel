@@ -42,7 +42,11 @@ trait HasConfigMap extends TestSuiteMixin { self: TestSuite =>
     *
     * This is only valid during a test.  It will be `None` if used outside a
     * test.
+    *
+    * @throws RuntimeException if called outside a Scalatest test
     */
-  def configMap: Option[ConfigMap] = _configMap.value
+  def configMap: ConfigMap = _configMap.value.getOrElse {
+    throw new RuntimeException("configMap may only be accessed inside a Scalatest test")
+  }
 
 }
