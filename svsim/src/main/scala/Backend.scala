@@ -3,6 +3,14 @@ package svsim
 import java.io.File
 import scala.util.matching.Regex
 
+trait CommonSettingsModifications extends (CommonCompilationSettings => CommonCompilationSettings)
+
+object CommonSettingsModifications {
+
+  implicit def unmodified: CommonSettingsModifications = identity(_)
+
+}
+
 // -- Compilation Settings
 
 /** Settings supported by all svsim backends.
@@ -89,6 +97,15 @@ trait Backend {
     * assertion failure.
     */
   def assertionFailed: Regex
+
+}
+
+/** Type class to modify backend comopilation settings */
+trait BackendSettingsModifications extends (Backend.Settings => Backend.Settings)
+
+object BackendSettingsModifications {
+
+  implicit def unmodified: BackendSettingsModifications = identity(_)
 
 }
 
