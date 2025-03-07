@@ -335,18 +335,17 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners with Utils with 
       val y = BoringUtils.bore(bar.a_wire)
     }
 
-    generateFirrtlAndFileCheck(new Foo)(
-      """|CHECK-LABEL: module Bar :
-         |CHECK:         output port : UInt<8>
-         |CHECK:         output x_bore : UInt<1>
-         |CHECK:         output y_bore : UInt<1>
-         |CHECK:         connect x_bore, a_wire
-         |CHECK:         connect y_bore, a_wire
-         |CHECK-LABEL: module Foo :
-         |CHECK:         connect x, bar.x_bore
-         |CHECK:         connect y, bar.y_bore
-         |""".stripMargin
-    )
+    val chirrtl = circt.stage.ChiselStage.emitCHIRRTL(new Foo)
+    matchesAndOmits(chirrtl)(
+      "module Bar :",
+      "output x_bore : UInt<1>",
+      "output y_bore : UInt<1>",
+      "connect x_bore, a_wire",
+      "connect y_bore, a_wire",
+      "module Foo :",
+      "connect x, bar.x_bore",
+      "connect y, bar.y_bore"
+    )()
   }
 
   it should "not create a new port when source is a port" in {
